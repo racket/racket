@@ -4,6 +4,7 @@
          racket/class
          racket/match
          racket/path
+         racket/math
          "sig.rkt"
          "../gui-utils.rkt"
          "../preferences.rkt"
@@ -718,7 +719,7 @@
               (define x-start
                 (cond
                   [draw-first-line-number?
-                   (send this do-draw-single-line dc dx dy 0 (unbox by) #f)
+                   (send this do-draw-single-line dc dx dy 0 (unbox by) #f #f)
                    (send dc set-pen (if w-o-b? "white" "black") 1 'solid)
                    (send this draw-separator dc (unbox by) (+ (unbox by) line-height) dx dy)
                    (define-values (padding-left padding-top padding-right padding-bottom) (get-padding))
@@ -3862,7 +3863,15 @@ designates the character that triggers autocompletion
              line-end-position
              get-view-size
              set-padding
-             get-padding)
+             get-padding
+             get-start-position
+             get-end-position
+             position-paragraph
+             position-line
+             position-location
+             paragraph-start-position
+             invalidate-bitmap-cache
+             get-dc)
 
     (init-field [line-numbers-color #f])
     (init-field [show-line-numbers? #t])
@@ -3875,21 +3884,18 @@ designates the character that triggers autocompletion
     ;; add an extra 0 so it looks nice
     (define/private (number-space+1) (string-append (number-space) "0"))
 
-    (define/private (repaint)
-      (send this invalidate-bitmap-cache))
-
-    (define padding-dc (new bitmap-dc% [bitmap (make-screen-bitmap 1 1)]))
     (define/private (setup-padding)
-      (if (showing-line-numbers?)
-        (let ()
-          (send padding-dc set-font (get-style-font))
-          (define-values (padding-left padding-top padding-right padding-bottom) (get-padding))
-          (define new-padding (text-width padding-dc (number-space+1)))
-          (set-padding new-padding 0 0 0)
-          (when (not (= padding-left new-padding))
-            (repaint)))
-        (set-padding 0 0 0 0)))
-
+      (cond
+        [(showing-line-numbers?)
+         (send padding-dc set-font (get-style-font))
+         (define-values (padding-left padding-top padding-right padding-bottom) (get-padding))
+         (define new-padding (text-width padding-dc (number-space+1)))
+         (set-padding new-padding 0 0 0)
+         (unless (= padding-left new-padding)
+           (invalidate-bitmap-cache))]
+        [else 
+         (set-padding 0 0 0 0)]))
+    
     ;; call this method with #t or #f to turn on/off line numbers
     (define/public (show-line-numbers! what)
       (set! show-line-numbers? what)
@@ -3928,14 +3934,17 @@ designates the character that triggers autocompletion
     (define/private (get-style-font)
       (send (get-style) get-font))
 
-    (define-struct saved-dc-state (pen font foreground-color))
     (define/private (save-dc-state dc)
-      (saved-dc-state (send dc get-pen)
+      (saved-dc-state (send dc get-smoothing)
+                      (send dc get-pen)
+                      (send dc get-brush)
                       (send dc get-font)
                       (send dc get-text-foreground)))
 
     (define/private (restore-dc-state dc dc-state)
+      (send dc set-smoothing (saved-dc-state-smoothing dc-state))
       (send dc set-pen (saved-dc-state-pen dc-state))
+      (send dc set-brush (saved-dc-state-brush dc-state))
       (send dc set-font (saved-dc-state-font dc-state))
       (send dc set-text-foreground (saved-dc-state-foreground-color dc-state)))
 
@@ -3946,7 +3955,7 @@ designates the character that triggers autocompletion
         
     ;; set the dc stuff to values we want
     (define/private (setup-dc dc)
-      (send dc set-pen (get-foreground) 1 'solid)
+      (send dc set-smoothing 'aligned)
       (send dc set-font (get-style-font))
       (send dc set-text-foreground (get-foreground)))
 
@@ -4036,25 +4045,59 @@ designates the character that triggers autocompletion
 
     (define/private (draw-numbers dc top bottom dx dy start-line end-line)
       (define last-paragraph #f)
+      (define insertion-para
+        (let ([sp (get-start-position)])
+          (if (= sp (get-end-position))
+              (position-paragraph sp)
+              #f)))
       (for ([line (in-range start-line end-line)])
         (define y (line-location line))
         (define yb (line-location line #f))
+        (define this-paragraph (line-paragraph line))
         (when (and (y . <= . bottom) (yb . >= . top))
-          (do-draw-single-line dc dx dy line y last-paragraph))
-        (set! last-paragraph (line-paragraph line))))
+          (do-draw-single-line dc dx dy line y last-paragraph 
+                               (and insertion-para
+                                    (= insertion-para this-paragraph))))
+        (set! last-paragraph this-paragraph)))
     
-    (define/public (do-draw-single-line dc dx dy line y last-paragraph)
+    (define/public (do-draw-single-line dc dx dy line y last-paragraph is-insertion-line?)
       (define single-space (text-width dc "0"))
-      (define right-space (text-width dc (number-space)))
+      (define-values (single-w single-h _1 _2) (send dc get-text-extent "0"))
       (define view (number->string (add1 (line-paragraph line))))
+      (define ls (left-space dc dx))
+      (define right-space (text-width dc (number-space)))
       (define final-x
-        (+ (left-space dc dx)
+        (+ ls
            (case alignment
              [(left) 0]
              [(right) (- right-space (text-width dc view) single-space)]
              [else 0])))
       (define final-y (+ dy y))
       (cond
+        [is-insertion-line?
+         (send dc set-pen "black" 1 'transparent)
+         (send dc set-brush 
+               (if (get-highlight-text-color)
+                   (get-highlight-background-color)
+                   (if (preferences:get 'framework:white-on-black?)
+                       "lime"
+                       "forestgreen"))
+               'solid)
+         
+         (send dc draw-rectangle ls final-y (- right-space single-w) single-h)
+         (send dc draw-arc 
+               (- (+ ls (- right-space single-w)) single-w) final-y
+               (* 2 single-w) single-h
+               (* pi 3/2) (* pi 1/2))
+         
+         (define text-fg (send dc get-text-foreground))
+         (send dc set-text-foreground (if (get-highlight-text-color)
+                                          (send dc get-text-foreground)
+                                          (if (preferences:get 'framework:white-on-black?)
+                                              "black"
+                                              "white")))
+         (send dc draw-text view final-x final-y)
+         (send dc set-text-foreground text-fg)]
         [(and last-paragraph (= last-paragraph (line-paragraph line)))
          (send dc set-text-foreground (lighter-color (send dc get-text-foreground)))
          (send dc draw-text view final-x final-y)
@@ -4068,6 +4111,7 @@ designates the character that triggers autocompletion
       (define line-x (+ (left-space dc dx) x))
       (define line-y1 (+ dy top))
       (define line-y2 (+ dy bottom))
+      (send dc set-pen (get-foreground) 1 'solid)
       (send dc draw-line line-x line-y1
                          line-x line-y2))
 
@@ -4081,14 +4125,6 @@ designates the character that triggers autocompletion
       (define end-line (box 0))
       (get-visible-line-range start-line end-line #f)
 
-      #|
-      (define view-width (box 0))
-      (define view-height (box 0))
-      (send this get-view-size view-width view-height)
-      |#
-
-      ; (printf "dx ~a\n" dx)
-      ;; draw it!
       (draw-numbers dc top bottom dx dy (unbox start-line) (add1 (unbox end-line)))
       (draw-separator dc top bottom dx dy)
       (restore-dc-state dc saved-dc))
@@ -4133,8 +4169,43 @@ designates the character that triggers autocompletion
            (draw-line-numbers dc left top right bottom dx dy)]))
       (super on-paint before? dc left top right bottom dx dy draw-caret))
 
+    (define old-position #f)
+    (define/augment (after-set-position)
+      (when old-position
+        (invalidate-at-position old-position))
+      (set! old-position (and (= (get-start-position)
+                                 (get-end-position))
+                              (get-start-position)))
+      (when old-position
+        (invalidate-at-position old-position))
+      (inner (void) after-set-position))
+    
+    (define/private (invalidate-at-position pos)
+      (when (showing-line-numbers?)
+        (define dc (get-dc))
+        (when dc
+          (define bx (box 0))
+          (define by (box 0))
+          (define tw (text-width dc (number-space+1)))
+          (define th (text-height dc "0"))
+          (define start-para (position-paragraph pos))
+          (define start-line (position-line (paragraph-start-position start-para)))
+          (let loop ([line start-line])
+            (define para (position-paragraph (line-start-position line)))
+            (when (= start-para para)
+              (position-location (line-start-position line) bx by)
+              (invalidate-bitmap-cache (- (unbox bx) tw)
+                                       (unbox by) 
+                                       tw
+                                       th)
+              (unless (= line (last-line))
+                (loop (+ line 1))))))))
+    
     (super-new)
     (setup-padding)))
+
+(define-struct saved-dc-state (smoothing pen brush font foreground-color))
+(define padding-dc (new bitmap-dc% [bitmap (make-screen-bitmap 1 1)]))
 
 (define basic% (basic-mixin (editor:basic-mixin text%)))
 (define line-spacing% (line-spacing-mixin basic%))
