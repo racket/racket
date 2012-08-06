@@ -1729,18 +1729,14 @@
 (test 108.0+29.0i z-round (* 100 (expt 1+i 1/3)))
 (test 25.0-43.0i z-round (* 100 (expt -8 -1/3)))
 
-;; This choice doesn't make sense to me, but it fits
-;;   with other standards and implementations:
-(define INF-POWER-OF_NEGATIVE +inf.0)
-
 (test +inf.0 expt 2 +inf.0)
 (test +inf.0 expt +inf.0 10)
 (test 0.0 expt +inf.0 -2)
 (test 1 expt +inf.0 0)
 (test 1.0 expt +inf.0 0.)
 (test +inf.0 expt +inf.0 +inf.0)
-(test INF-POWER-OF_NEGATIVE expt -2 +inf.0)
-(test INF-POWER-OF_NEGATIVE expt -inf.0 +inf.0)
+(test +nan.0+nan.0i expt -2 +inf.0)
+(test +nan.0+nan.0i expt -inf.0 +inf.0)
 (test 0.0 expt 2 -inf.0)
 (test -inf.0 expt -inf.0 11)
 (test +inf.0 expt -inf.0 10)
@@ -1749,8 +1745,8 @@
 (test 1 expt -inf.0 0)
 (test 1.0 expt -inf.0 0.0)
 (test 0.0 expt +inf.0 -inf.0)
-(test 0.0 expt -2 -inf.0)
-(test 0.0 expt -inf.0 -inf.0)
+(test +nan.0+nan.0i expt -2 -inf.0)
+(test +nan.0+nan.0i expt -inf.0 -inf.0)
 (test 1 expt +nan.0 0)
 (test 0 expt 0 10)
 (test 0 expt 0 10.0)
@@ -1783,9 +1779,9 @@
 (test 0 expt 0 1+i)
 (test 0 expt 0 1-i)
 
-(test-nan.0 expt 1.0 +inf.0)
-(test-nan.0 expt 1.0 -inf.0)
-(test-nan.0 expt 1.0 +nan.0)
+(test 1.0 expt 1.0 +inf.0)
+(test 1.0 expt 1.0 -inf.0)
+(test 1.0 expt 1.0 +nan.0)
 
 (test 0.0 expt 0.0 5)
 (test -0.0 expt -0.0 5)
@@ -1796,13 +1792,13 @@
 
 (test 0.0 expt 0.5 +inf.0)
 (test +inf.0 expt 0.5 -inf.0)
-(test INF-POWER-OF_NEGATIVE expt -0.5 -inf.0)
+(test +nan.0+nan.0i expt -0.5 -inf.0)
 (test +inf.0 expt 1.5 +inf.0)
 (test 0.0 expt 1.5 -inf.0)
-(test 0.0 expt -0.5 +inf.0)
-(test +inf.0 expt -0.5 -inf.0)
-(test INF-POWER-OF_NEGATIVE expt -1.5 +inf.0)
-(test 0.0 expt -1.5 -inf.0)
+(test +nan.0+nan.0i expt -0.5 +inf.0)
+(test +nan.0+nan.0i expt -0.5 -inf.0)
+(test +nan.0+nan.0i expt -1.5 +inf.0)
+(test +nan.0+nan.0i expt -1.5 -inf.0)
 
 (err/rt-test (expt 0 -1) exn:fail:contract:divide-by-zero?)
 (err/rt-test (expt 0 -1.0) exn:fail:contract:divide-by-zero?)
@@ -1820,6 +1816,130 @@
 (err/rt-test (expt 0 'a))
 (err/rt-test (expt 1 'a))
 (err/rt-test (expt 3 'a))
+
+;; ----------------------------------------
+;; Check corners of `expt':
+;;  based on the flexpt tests of "flonum.rktl" by Neil T
+
+(let ()
+  (define-syntax-rule (check-equal? (expt v1 v2) b)
+    (test b expt v1 v2))
+  
+  ;; 2^53 and every larger flonum is even:
+  (define +big-even.0 (expt 2.0 53))
+  ;; The largest odd flonum:
+  (define +max-odd.0 (- +big-even.0 1.0))
+
+  (define -big-even.0 (- +big-even.0))
+  (define -max-odd.0 (- +max-odd.0))
+
+  (check-equal? (expt +0.0 +0.0) +1.0)
+  (check-equal? (expt +0.0 +1.0) +0.0)
+  (check-equal? (expt +0.0 +3.0) +0.0)
+  (check-equal? (expt +0.0 +max-odd.0) +0.0)
+  (check-equal? (expt +0.0 +0.5) +0.0)
+  (check-equal? (expt +0.0 +1.5) +0.0)
+  (check-equal? (expt +0.0 +2.0) +0.0)
+  (check-equal? (expt +0.0 +2.5) +0.0)
+  (check-equal? (expt +0.0 +big-even.0) +0.0)
+
+  (check-equal? (expt -0.0 +0.0) +1.0)
+  (check-equal? (expt -0.0 +1.0) -0.0)
+  (check-equal? (expt -0.0 +3.0) -0.0)
+  (check-equal? (expt -0.0 +max-odd.0) -0.0)
+  (check-equal? (expt -0.0 +0.5) +0.0)
+  (check-equal? (expt -0.0 +1.5) +0.0)
+  (check-equal? (expt -0.0 +2.0) +0.0)
+  (check-equal? (expt -0.0 +2.5) +0.0)
+  (check-equal? (expt -0.0 +big-even.0) +0.0)
+
+  (check-equal? (expt +1.0 +0.0) +1.0)
+  (check-equal? (expt +1.0 +0.5) +1.0)
+  (check-equal? (expt +1.0 +inf.0) +1.0)
+
+  (check-equal? (expt -1.0 +0.0) +1.0)
+  (test 612.0+1e19i 'expt (let ([c (* 1e19 (expt -1.0 +0.5))])
+                               (+ (round (real-part c))
+                                  (* 0+1i (round (imag-part c))))))
+  (check-equal? (expt -1.0 +inf.0) +nan.0+nan.0i)
+
+  (check-equal? (expt +0.5 +inf.0) +0.0)
+  (check-equal? (expt +1.5 +inf.0) +inf.0)
+
+  (check-equal? (expt +inf.0 +0.0) +1.0)
+  (check-equal? (expt +inf.0 +1.0) +inf.0)
+  (check-equal? (expt +inf.0 +2.0) +inf.0)
+  (check-equal? (expt +inf.0 +inf.0) +inf.0)
+
+  (check-equal? (expt -inf.0 +0.0) +1.0)
+  (check-equal? (expt -inf.0 +1.0) -inf.0)
+  (check-equal? (expt -inf.0 +3.0) -inf.0)
+  (check-equal? (expt -inf.0 +max-odd.0) -inf.0)
+  (check-equal? (expt -inf.0 +0.5) +inf.0+inf.0i)
+  (check-equal? (expt -inf.0 +1.5) -inf.0-inf.0i)
+  (check-equal? (expt -inf.0 +2.0) +inf.0)
+  (check-equal? (expt -inf.0 +2.5) +inf.0+inf.0i)
+  (check-equal? (expt -inf.0 +big-even.0) +inf.0)
+  (check-equal? (expt -inf.0 +inf.0) +nan.0+nan.0i)
+
+  ;; Same tests as above, but with negated y
+  ;; This identity should hold for these tests: (expt x y) = (/ 1.0 (expt x (- y)))
+
+  (check-equal? (expt +0.0 -0.0) +1.0)
+  (check-equal? (expt +0.0 -1.0) +inf.0)
+  (check-equal? (expt +0.0 -3.0) +inf.0)
+  (check-equal? (expt +0.0 -max-odd.0) +inf.0)
+  (check-equal? (expt +0.0 -0.5) +inf.0)
+  (check-equal? (expt +0.0 -1.5) +inf.0)
+  (check-equal? (expt +0.0 -2.0) +inf.0)
+  (check-equal? (expt +0.0 -2.5) +inf.0)
+  (check-equal? (expt +0.0 -big-even.0) +inf.0)
+
+  (check-equal? (expt -0.0 -0.0) +1.0)
+  (check-equal? (expt -0.0 -1.0) -inf.0)
+  (check-equal? (expt -0.0 -3.0) -inf.0)
+  (check-equal? (expt -0.0 -max-odd.0) -inf.0)
+  (check-equal? (expt -0.0 -0.5) +inf.0)
+  (check-equal? (expt -0.0 -1.5) +inf.0)
+  (check-equal? (expt -0.0 -2.0) +inf.0)
+  (check-equal? (expt -0.0 -2.5) +inf.0)
+  (check-equal? (expt -0.0 -big-even.0) +inf.0)
+
+  (check-equal? (expt +1.0 -0.0) +1.0)
+  (check-equal? (expt +1.0 -0.5) +1.0)
+  (check-equal? (expt +1.0 -inf.0) +1.0)
+
+  (check-equal? (expt -1.0 -0.0) +1.0)
+  (test 612.0-1e19i 'expt (let ([c (* 1e19 (expt -1.0 -0.5))])
+                            (+ (round (real-part c))
+                               (* 0+1i (round (imag-part c))))))
+  (check-equal? (expt -1.0 -inf.0) +nan.0+nan.0i)
+
+  (check-equal? (expt +0.5 -inf.0) +inf.0)
+  (check-equal? (expt +1.5 -inf.0) +0.0)
+
+  (check-equal? (expt +inf.0 -0.0) +1.0)
+  (check-equal? (expt +inf.0 -1.0) +0.0)
+  (check-equal? (expt +inf.0 -2.0) +0.0)
+  (check-equal? (expt +inf.0 -inf.0) +0.0)
+
+  (check-equal? (expt -inf.0 -0.0) +1.0)
+  (check-equal? (expt -inf.0 -1.0) -0.0)
+  (check-equal? (expt -inf.0 -3.0) -0.0)
+  (check-equal? (expt -inf.0 -max-odd.0) -0.0)
+  (check-equal? (expt -inf.0 -0.5) +0.0-0.0i)
+  (check-equal? (expt -inf.0 -1.5) -0.0+0.0i)
+  (check-equal? (expt -inf.0 -2.0) +0.0)
+  (check-equal? (expt -inf.0 -2.5) 0.0-0.0i)
+  (check-equal? (expt -inf.0 -big-even.0) +0.0)
+  (check-equal? (expt -inf.0 -inf.0) +nan.0+nan.0i)
+
+  ;; NaN input
+
+  (check-equal? (expt +nan.0 +0.0) +1.0)
+  (check-equal? (expt +nan.0 -0.0) +1.0)
+  (check-equal? (expt +1.0 +nan.0) +1.0)
+  (check-equal? (expt -1.0 +nan.0) +nan.0+nan.0i))
 
 ;;;;From: fred@sce.carleton.ca (Fred J Kaudel)
 ;;; Modified by jaffer.

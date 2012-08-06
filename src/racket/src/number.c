@@ -1278,23 +1278,29 @@ rational_p(int argc, Scheme_Object *argv[])
   return (is_rational(argv[0]) ? scheme_true : scheme_false);
 }
 
+XFORM_NONGCING static int double_is_integer(double d)
+{
+# ifdef NAN_EQUALS_ANYTHING
+  if (MZ_IS_NAN(d))
+    return 0;
+# endif
+
+  if (MZ_IS_INFINITY(d))
+    return 0;
+
+  if (floor(d) == d)
+    return 1;
+
+  return 0;
+}
+
 int scheme_is_integer(const Scheme_Object *o)
 {
   if (SCHEME_INTP(o) || SCHEME_BIGNUMP(o))
     return 1;
 
-  if (SCHEME_FLOATP(o)) {
-    double d;
-    d = SCHEME_FLOAT_VAL(o);
-# ifdef NAN_EQUALS_ANYTHING
-    if (MZ_IS_NAN(d))
-      return 0;
-# endif
-    if (MZ_IS_INFINITY(d))
-      return 0;
-    if (floor(d) == d)
-      return 1;
-  }
+  if (SCHEME_FLOATP(o))
+    return double_is_integer(SCHEME_FLOAT_VAL(o));
 
   return 0;
 }
@@ -2509,82 +2515,111 @@ static Scheme_Object *fixnum_expt(intptr_t x, intptr_t y)
   }
 }
 
-#ifdef POW_HANDLES_INF_CORRECTLY
-# define sch_pow pow
+#ifdef ASM_DBLPREC_CONTROL_87
+static double protected_pow(double x, double y)
+{
+  /* libm's pow() implementation seems to sometimes rely on
+     extended precision in pow(), so reset the control
+     word while calling pow(); note that the x87 control 
+     word is thread-specific */
+  to_extended_prec();
+  x = pow(x, y);
+  to_double_prec();
+  return x;
+}
+#else
+# define protected_pow pow
+#endif
+
+
+#ifdef POW_HANDLES_CASES_CORRECTLY
+# define sch_pow protected_pow
 #else
 static double sch_pow(double x, double y)
 {
-  if (MZ_IS_POS_INFINITY(y)) {
-    if ((x == 1.0) || (x == -1.0))
-      return not_a_number_val;
+  /* Explciitly handle all cases described by C99 */
+  if (x == 1.0)
+    return 1.0; /* even for NaN */
+  else if (y == 0.0)
+    return 1.0; /* even for NaN */
+  else if (MZ_IS_NAN(x))
+    return not_a_number_val;
+  else if (MZ_IS_NAN(y))
+    return not_a_number_val;
+  else if (x == 0.0) {
+    int neg = 0;
+    if (y < 0) {
+      neg = 1;
+      y = -y;
+    }
+    if (fmod(y, 2.0) == 1.0) {
+      if (neg) {
+        if (minus_zero_p(x))
+          return scheme_minus_infinity_val;
+        else
+          return scheme_infinity_val;
+      } else
+        return x;
+    } else {
+      if (neg)
+        return scheme_infinity_val;
+      else
+        return 0.0;
+    }    
+  } else if (MZ_IS_POS_INFINITY(y)) {
+    if (x == -1.0)
+      return 1.0;
     else if ((x < 1.0) && (x > -1.0))
       return 0.0;
     else
       return scheme_infinity_val;
   } else if (MZ_IS_NEG_INFINITY(y)) {
-    if ((x == 1.0) || (x == -1.0))
-      return not_a_number_val;
+    if (x == -1.0)
+      return 1.0;
     else if ((x < 1.0) && (x > -1.0))
       return scheme_infinity_val;
     else
       return 0.0;
   } else if (MZ_IS_POS_INFINITY(x)) {
-    if (y == 0.0)
-      return 1.0;
-    else if (y < 0)
+    if (y < 0)
       return 0.0;
     else
       return scheme_infinity_val;
   } else if (MZ_IS_NEG_INFINITY(x)) {
-    if (y == 0.0)
-      return 1.0;
-    else {
-      int neg = 0;
-      if (y < 0) {
-	neg = 1;
-	y = -y;
-      }
-      if (fmod(y, 2.0) == 1.0) {
-	if (neg)
-	  return scheme_floating_point_nzero;
-	else
-	  return scheme_minus_infinity_val;
-      } else {
-	if (neg)
-	  return 0.0;
-	else
-	  return scheme_infinity_val;
-      }
+    int neg = 0;
+    if (y < 0) {
+      neg = 1;
+      y = -y;
+    }
+    if (fmod(y, 2.0) == 1.0) {
+      if (neg)
+        return scheme_floating_point_nzero;
+      else
+        return scheme_minus_infinity_val;
+    } else {
+      if (neg)
+        return 0.0;
+      else
+        return scheme_infinity_val;
     }
   } else {
-#ifdef ASM_DBLPREC_CONTROL_87
-    /* libm's pow() implementation seems to rely on
-       extended precision in pow(), so reset the control
-       word while calling pow(); note that the x87 control 
-       word is thread-specific */
-    to_extended_prec();
-#endif
-    x = pow(x, y);
-#ifdef ASM_DBLPREC_CONTROL_87
-    to_double_prec();
-#endif
-    return x;
+    return protected_pow(x, y);
   }
 }
 #endif
 
 GEN_BIN_PROT(bin_expt);
 
-# define F_EXPT(x, y) (((x < 0.0) && (y != floor(y))) \
+# define F_EXPT(x, y) (((x < 0.0) && !double_is_integer(y))             \
                        ? scheme_complex_power(scheme_real_to_complex(scheme_make_double(x)), \
 				              scheme_real_to_complex(scheme_make_double(y))) \
                        : scheme_make_double(sch_pow((double)x, (double)y)))
-# define FS_EXPT(x, y) (((x < 0.0) && (y != floor(y))) \
+# define FS_EXPT(x, y) (((x < 0.0) && !double_is_integer(y))            \
                        ? scheme_complex_power(scheme_real_to_complex(scheme_make_float(x)), \
 				              scheme_real_to_complex(scheme_make_float(y))) \
                         : scheme_make_float(sch_pow((double)x, (double)y)))
 
-static GEN_BIN_OP(bin_expt, "expt", fixnum_expt, F_EXPT, FS_EXPT, scheme_generic_integer_power, scheme_rational_power, scheme_complex_power, GEN_RETURN_0_USUALLY, GEN_RETURN_1, NAN_RETURNS_NAN, NAN_RETURNS_SNAN, cx_NO_CHECK, cx_NO_CHECK, cx_NO_CHECK, cx_NO_CHECK)
+static GEN_BIN_OP(bin_expt, "expt", fixnum_expt, F_EXPT, FS_EXPT, scheme_generic_integer_power, scheme_rational_power, scheme_complex_power, GEN_RETURN_0_USUALLY, GEN_RETURN_1, NO_NAN_CHECK, NO_NAN_CHECK, NAN_RETURNS_NAN, NAN_RETURNS_SNAN, cx_NO_CHECK, cx_NO_CHECK, cx_NO_CHECK, cx_NO_CHECK)
 
 Scheme_Object *
 scheme_expt(int argc, Scheme_Object *argv[])
@@ -2731,14 +2766,7 @@ scheme_expt(int argc, Scheme_Object *argv[])
 }
 
 double scheme_double_expt(double x, double y) {
-  if ((x < 0) && (floor(y) != y))
-    return not_a_number_val;
-  else if ((x == 0.0) && (y <= 0))
-    return not_a_number_val;
-  else if (MZ_IS_NAN(x) || MZ_IS_NAN(y))
-    return not_a_number_val;
-  else
-    return sch_pow(x, y);
+  return sch_pow(x, y);
 }
 
 Scheme_Object *scheme_checked_make_rectangular (int argc, Scheme_Object *argv[])

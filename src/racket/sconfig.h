@@ -82,7 +82,6 @@
 # include "uconfig.h"
 
 # define USE_EXPLICT_FP_FORM_CHECK
-# define POW_HANDLES_INF_CORRECTLY
 
 # include <errno.h>
 # ifdef ECHRNG
@@ -143,8 +142,6 @@
 # define UNIX_LIMIT_STACK 33554944
 
 # define SELECT_INCLUDE
-
-# define POW_HANDLES_INF_CORRECTLY
 
 # define USE_FCNTL_O_NONBLOCK
 
@@ -261,7 +258,6 @@
 #endif
 
 # define USE_IEEE_FP_PREDS
-# define POW_HANDLES_INF_CORRECTLY
 
 # define USE_DYNAMIC_FDSET_SIZE
 
@@ -311,7 +307,6 @@
 #endif
 
 # define USE_IEEE_FP_PREDS
-# define POW_HANDLES_INF_CORRECTLY
 
 # define USE_DYNAMIC_FDSET_SIZE
 
@@ -382,9 +377,6 @@
 # define USE_UNDERSCORE_SETJMP
 
 # define USE_IEEE_FP_PREDS
-# ifndef ASM_DBLPREC_CONTROL_87
-#  define POW_HANDLES_INF_CORRECTLY
-# endif
 
 # define USE_DYNAMIC_FDSET_SIZE
 
@@ -773,6 +765,7 @@
 #ifdef MZ_NO_JIT_SSE
 # define ASM_DBLPREC_CONTROL_87
 #endif
+# define POW_HANDLES_CASES_CORRECTLY
 
 # define MZ_JIT_USE_MPROTECT
 
@@ -861,7 +854,6 @@
 # define NO_STAT_PROC
 # define DONT_IGNORE_PIPE_SIGNAL
 
-# define POW_HANDLES_INF_CORRECTLY
 # define TRIG_ZERO_NEEDS_SIGN_CHECK
 
 # define MACOS_UNICODE_SUPPORT
@@ -947,7 +939,6 @@
 # define DONT_IGNORE_PIPE_SIGNAL
 # define DONT_IGNORE_FPE_SIGNAL
 
-# define POW_HANDLES_INF_CORRECTLY
 # define USE_PALM_INF_TESTS
 
 # define FLAGS_ALREADY_SET
@@ -1323,9 +1314,9 @@
     SunOS/Solaris, and HP/UX by explicit pre-checking the form of the 
     number and looking for values that are obviously +inf.0 or -inf.0 */
 
- /* POW_HANDLES_INF_CORRECTLY indicates that thw pow() library procedure
-    handles +/-inf.0 correctly. Otherwise, code in inserted to specifically
-    check for infinite arguments. */
+ /* POW_HANDLES_CASES_CORRECTLY indicates that the pow() library procedure
+    handles all +/-inf.0, +/-0.0, or +nan.0 cases according to C99. This
+    might save time on redundant checking before Racket calls pow(). */
     
  /* ATAN2_DOESNT_WORK_WITH_INFINITIES indicates that atan2(+/-inf, +/-inf)
     is not the same as atan2(1, 1). */ 

@@ -79,6 +79,11 @@ The @racketmodname[racket] library combines
 
 @(bibliography
 
+  (bib-entry #:key "C99"
+             #:author "ISO/IEC"
+             #:title "ISO/IEC 9899:1999 Cor. 3:2007(E))"
+             #:date "2007")
+
   (bib-entry #:key "Danvy90"
              #:author "Olivier Danvy and Andre Filinski"
              #:title "Abstracting Control"

@@ -455,9 +455,9 @@ static Scheme_Object *unary_minus(const Scheme_Object *n)
 #define ret_1other(n1, n2) if (SAME_OBJ(n1, scheme_make_integer(1))) return (Scheme_Object *)n2
 #define ret_zero(n1, n2) if (SAME_OBJ(n1, scheme_make_integer(0))) return scheme_make_integer(0)
 
-GEN_BIN_OP(scheme_bin_plus, "+", ADD, F_ADD, FS_ADD, scheme_bignum_add, scheme_rational_add, scheme_complex_add, GEN_RETURN_N2, GEN_RETURN_N1, NO_NAN_CHECK, NO_NAN_CHECK, ret_other, cx_NO_CHECK, ret_other, cx_NO_CHECK)
-GEN_BIN_OP(scheme_bin_minus, "-", SUBTRACT, F_SUBTRACT, FS_SUBTRACT, scheme_bignum_subtract, scheme_rational_subtract, scheme_complex_subtract, GEN_SINGLE_SUBTRACT_N2, GEN_RETURN_N1, NO_NAN_CHECK, NO_NAN_CHECK, cx_NO_CHECK, cx_NO_CHECK, ret_other, cx_NO_CHECK)
-GEN_BIN_OP(scheme_bin_mult, "*", MULTIPLY, F_MULTIPLY, FS_MULTIPLY, scheme_bignum_multiply, scheme_rational_multiply, scheme_complex_multiply, GEN_RETURN_0, GEN_RETURN_0, NO_NAN_CHECK, NO_NAN_CHECK, ret_zero, ret_1other, ret_zero, ret_1other)
+GEN_BIN_OP(scheme_bin_plus, "+", ADD, F_ADD, FS_ADD, scheme_bignum_add, scheme_rational_add, scheme_complex_add, GEN_RETURN_N2, GEN_RETURN_N1, NO_NAN_CHECK, NO_NAN_CHECK, NO_NAN_CHECK, NO_NAN_CHECK, ret_other, cx_NO_CHECK, ret_other, cx_NO_CHECK)
+GEN_BIN_OP(scheme_bin_minus, "-", SUBTRACT, F_SUBTRACT, FS_SUBTRACT, scheme_bignum_subtract, scheme_rational_subtract, scheme_complex_subtract, GEN_SINGLE_SUBTRACT_N2, GEN_RETURN_N1, NO_NAN_CHECK, NO_NAN_CHECK, NO_NAN_CHECK, NO_NAN_CHECK, cx_NO_CHECK, cx_NO_CHECK, ret_other, cx_NO_CHECK)
+GEN_BIN_OP(scheme_bin_mult, "*", MULTIPLY, F_MULTIPLY, FS_MULTIPLY, scheme_bignum_multiply, scheme_rational_multiply, scheme_complex_multiply, GEN_RETURN_0, GEN_RETURN_0, NO_NAN_CHECK, NO_NAN_CHECK, NO_NAN_CHECK, NO_NAN_CHECK, ret_zero, ret_1other, ret_zero, ret_1other)
 GEN_BIN_DIV_OP(scheme_bin_div, "/", DIVIDE, F_DIVIDE, FS_DIVIDE, scheme_make_rational, scheme_rational_divide, scheme_complex_divide, ret_zero, cx_NO_CHECK, cx_NO_CHECK, ret_1other)
 
 GEN_NARY_OP(static, plus, "+", scheme_bin_plus, 0, SCHEME_NUMBERP, "number?", GEN_IDENT)
