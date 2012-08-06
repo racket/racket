@@ -382,150 +382,231 @@
   (check array= (array-fft arr) (list->array number? '((4 0) (0 0))))
   (check array= (array-inverse-fft (array-fft arr)) arr))
 
-
 ;; ---------------------------------------------------------------------------------------------------
-;; Ref
-
-;; Unsafe
+;; Unsafe ref
 
 (let* ([l-arr  (make-array '() 0)]
-       [s-arr  (array-strict l-arr)])
-  (check-equal? (unsafe-array-ref* l-arr) 0)
-  (check-equal? (unsafe-array-ref* s-arr) 0)
+       [s-arr  (array-strict l-arr)]
+       [idxs  (vector)])
   (check-equal? (unsafe-array-ref l-arr (vector)) 0)
-  (check-equal? (unsafe-array-ref s-arr (vector)) 0))
+  (check-equal? (unsafe-array-ref s-arr (vector)) 0)
+  (check-equal? (unsafe-array-ref l-arr #()) 0)
+  (check-equal? (unsafe-array-ref s-arr #()) 0)
+  (check-equal? (unsafe-array-ref l-arr idxs) 0)
+  (check-equal? (unsafe-array-ref s-arr idxs) 0))
 
 (let* ([l-arr  (indexes-array '(2))]
-       [s-arr  (array-strict l-arr)])
-  (check-equal? (unsafe-array-ref* l-arr 0) '(0))
-  (check-equal? (unsafe-array-ref* s-arr 0) '(0))
-  (check-equal? (unsafe-array-ref* l-arr 1) '(1))
-  (check-equal? (unsafe-array-ref* s-arr 1) '(1))
-  (check-equal? (unsafe-array-ref l-arr (ann (vector 0) (Vectorof Index))) '(0))
-  (check-equal? (unsafe-array-ref s-arr (ann (vector 0) (Vectorof Index))) '(0))
-  (check-equal? (unsafe-array-ref l-arr (ann (vector 1) (Vectorof Index))) '(1))
-  (check-equal? (unsafe-array-ref s-arr (ann (vector 1) (Vectorof Index))) '(1)))
+       [s-arr  (array-strict l-arr)]
+       [idxs0  ((inst vector Index) 0)]
+       [idxs1  ((inst vector Index) 1)])
+  (check-equal? (unsafe-array-ref l-arr (vector 0)) '(0))
+  (check-equal? (unsafe-array-ref s-arr (vector 0)) '(0))
+  (check-equal? (unsafe-array-ref l-arr (vector 1)) '(1))
+  (check-equal? (unsafe-array-ref s-arr (vector 1)) '(1))
+  (check-equal? (unsafe-array-ref l-arr #(0)) '(0))
+  (check-equal? (unsafe-array-ref s-arr #(0)) '(0))
+  (check-equal? (unsafe-array-ref l-arr #(1)) '(1))
+  (check-equal? (unsafe-array-ref s-arr #(1)) '(1))
+  (check-equal? (unsafe-array-ref l-arr idxs0) '(0))
+  (check-equal? (unsafe-array-ref s-arr idxs0) '(0))
+  (check-equal? (unsafe-array-ref l-arr idxs1) '(1))
+  (check-equal? (unsafe-array-ref s-arr idxs1) '(1)))
 
 (let* ([l-arr  (indexes-array '(2 2))]
-       [s-arr  (array-strict l-arr)])
-  (check-equal? (unsafe-array-ref* l-arr 0 0) '(0 0))
-  (check-equal? (unsafe-array-ref* s-arr 0 0) '(0 0))
-  (check-equal? (unsafe-array-ref* l-arr 1 1) '(1 1))
-  (check-equal? (unsafe-array-ref* s-arr 1 1) '(1 1))
-  (check-equal? (unsafe-array-ref l-arr (ann (vector 0 0) (Vectorof Index))) '(0 0))
-  (check-equal? (unsafe-array-ref s-arr (ann (vector 0 0) (Vectorof Index))) '(0 0))
-  (check-equal? (unsafe-array-ref l-arr (ann (vector 1 1) (Vectorof Index))) '(1 1))
-  (check-equal? (unsafe-array-ref s-arr (ann (vector 1 1) (Vectorof Index))) '(1 1)))
+       [s-arr  (array-strict l-arr)]
+       [idxs0  ((inst vector Index) 0 0)]
+       [idxs1  ((inst vector Index) 1 1)])
+  (check-equal? (unsafe-array-ref l-arr (vector 0 0)) '(0 0))
+  (check-equal? (unsafe-array-ref s-arr (vector 0 0)) '(0 0))
+  (check-equal? (unsafe-array-ref l-arr (vector 1 1)) '(1 1))
+  (check-equal? (unsafe-array-ref s-arr (vector 1 1)) '(1 1))
+  (check-equal? (unsafe-array-ref l-arr #(0 0)) '(0 0))
+  (check-equal? (unsafe-array-ref s-arr #(0 0)) '(0 0))
+  (check-equal? (unsafe-array-ref l-arr #(1 1)) '(1 1))
+  (check-equal? (unsafe-array-ref s-arr #(1 1)) '(1 1))
+  (check-equal? (unsafe-array-ref l-arr idxs0) '(0 0))
+  (check-equal? (unsafe-array-ref s-arr idxs0) '(0 0))
+  (check-equal? (unsafe-array-ref l-arr idxs1) '(1 1))
+  (check-equal? (unsafe-array-ref s-arr idxs1) '(1 1)))
 
-;; Safe
+;; ---------------------------------------------------------------------------------------------------
+;; Unsafe set!
+
+(let* ([arr  ((inst array-strict Byte) (make-array '() 0))]
+       [idxs  (vector)])
+  (unsafe-array-set! arr (vector) 1)
+  (check-equal? (unsafe-array-ref arr #()) 1)
+  (unsafe-array-set! arr #() 2)
+  (check-equal? (unsafe-array-ref arr #()) 2)
+  (unsafe-array-set! arr idxs 3)
+  (check-equal? (unsafe-array-ref arr #()) 3))
+
+(let* ([arr  (array-strict (indexes-array '(2)))]
+       [idxs0  ((inst vector Index) 0)]
+       [idxs1  ((inst vector Index) 1)])
+  (unsafe-array-set! arr (vector 0) '(2))
+  (unsafe-array-set! arr (vector 1) '(3))
+  (check-equal? (unsafe-array-ref arr #(0)) '(2))
+  (check-equal? (unsafe-array-ref arr #(1)) '(3))
+  (unsafe-array-set! arr #(0) '(4))
+  (unsafe-array-set! arr #(1) '(5))
+  (check-equal? (unsafe-array-ref arr #(0)) '(4))
+  (check-equal? (unsafe-array-ref arr #(1)) '(5))
+  (unsafe-array-set! arr idxs0 '(6))
+  (unsafe-array-set! arr idxs1 '(7))
+  (check-equal? (unsafe-array-ref arr #(0)) '(6))
+  (check-equal? (unsafe-array-ref arr #(1)) '(7)))
+
+(let* ([arr  (array-strict (indexes-array '(2 2)))]
+       [idxs0  ((inst vector Index) 0 0)]
+       [idxs1  ((inst vector Index) 1 1)])
+  (unsafe-array-set! arr (vector 0 0) '(2 2))
+  (unsafe-array-set! arr (vector 1 1) '(3 3))
+  (check-equal? (unsafe-array-ref arr #(0 0)) '(2 2))
+  (check-equal? (unsafe-array-ref arr #(1 1)) '(3 3))
+  (unsafe-array-set! arr #(0 0) '(4 4))
+  (unsafe-array-set! arr #(1 1) '(5 5))
+  (check-equal? (unsafe-array-ref arr #(0 0)) '(4 4))
+  (check-equal? (unsafe-array-ref arr #(1 1)) '(5 5))
+  (unsafe-array-set! arr idxs0 '(6 6))
+  (unsafe-array-set! arr idxs1 '(7 7))
+  (check-equal? (unsafe-array-ref arr #(0 0)) '(6 6))
+  (check-equal? (unsafe-array-ref arr #(1 1)) '(7 7)))
+
+;; ---------------------------------------------------------------------------------------------------
+;; Safe ref
 
 (let* ([l-arr  (make-array '() 0)]
-       [s-arr  (array-strict l-arr)])
-  (check-equal? (array-ref* l-arr) 0)
-  (check-equal? (array-ref* s-arr) 0)
+       [s-arr  (array-strict l-arr)]
+       [idxs  '()]
+       [bad-idxs  '(1)])
+  (check-equal? (array-ref l-arr (list)) 0)
+  (check-equal? (array-ref s-arr (list)) 0)
   (check-equal? (array-ref l-arr '()) 0)
   (check-equal? (array-ref s-arr '()) 0)
-  (check-exn exn? (λ () (array-ref* l-arr 1)))
-  (check-exn exn? (λ () (array-ref* s-arr 1)))
+  (check-equal? (array-ref l-arr idxs) 0)
+  (check-equal? (array-ref s-arr idxs) 0)
+  (check-exn exn? (λ () (array-ref l-arr (list 1))))
+  (check-exn exn? (λ () (array-ref s-arr (list 1))))
   (check-exn exn? (λ () (array-ref l-arr '(1))))
-  (check-exn exn? (λ () (array-ref s-arr '(1)))))
+  (check-exn exn? (λ () (array-ref s-arr '(1))))
+  (check-exn exn? (λ () (array-ref l-arr bad-idxs)))
+  (check-exn exn? (λ () (array-ref s-arr bad-idxs))))
 
 (let* ([l-arr  (indexes-array '(2))]
-       [s-arr  (array-strict l-arr)])
-  (check-equal? (array-ref* l-arr 0) '(0))
-  (check-equal? (array-ref* s-arr 0) '(0))
-  (check-equal? (array-ref* l-arr 1) '(1))
-  (check-equal? (array-ref* s-arr 1) '(1))
+       [s-arr  (array-strict l-arr)]
+       [idxs0  '(0)]
+       [idxs1  '(1)]
+       [bad-idxs0  '(0 0)]
+       [bad-idxs1  '(-1)]
+       [bad-idxs2  '( 2)])
+  (check-equal? (array-ref l-arr (list 0)) '(0))
+  (check-equal? (array-ref s-arr (list 0)) '(0))
+  (check-equal? (array-ref l-arr (list 1)) '(1))
+  (check-equal? (array-ref s-arr (list 1)) '(1))
   (check-equal? (array-ref l-arr '(0)) '(0))
   (check-equal? (array-ref s-arr '(0)) '(0))
   (check-equal? (array-ref l-arr '(1)) '(1))
   (check-equal? (array-ref s-arr '(1)) '(1))
-  (check-exn exn? (λ () (array-ref* l-arr 0 0)))
-  (check-exn exn? (λ () (array-ref* s-arr 0 0)))
-  (check-exn exn? (λ () (array-ref* l-arr -1)))
-  (check-exn exn? (λ () (array-ref* s-arr -1)))
-  (check-exn exn? (λ () (array-ref* l-arr 2)))
-  (check-exn exn? (λ () (array-ref* s-arr 2)))
+  (check-equal? (array-ref l-arr idxs0) '(0))
+  (check-equal? (array-ref s-arr idxs0) '(0))
+  (check-equal? (array-ref l-arr idxs1) '(1))
+  (check-equal? (array-ref s-arr idxs1) '(1))
+  (check-exn exn? (λ () (array-ref l-arr (list 0 0))))
+  (check-exn exn? (λ () (array-ref s-arr (list 0 0))))
+  (check-exn exn? (λ () (array-ref l-arr (list -1))))
+  (check-exn exn? (λ () (array-ref s-arr (list -1))))
+  (check-exn exn? (λ () (array-ref l-arr (list 2))))
+  (check-exn exn? (λ () (array-ref s-arr (list 2))))
   (check-exn exn? (λ () (array-ref l-arr '(0 0))))
   (check-exn exn? (λ () (array-ref s-arr '(0 0))))
   (check-exn exn? (λ () (array-ref l-arr '(-1))))
   (check-exn exn? (λ () (array-ref s-arr '(-1))))
   (check-exn exn? (λ () (array-ref l-arr '(2))))
-  (check-exn exn? (λ () (array-ref s-arr '(2)))))
+  (check-exn exn? (λ () (array-ref s-arr '(2))))
+  (check-exn exn? (λ () (array-ref l-arr bad-idxs0)))
+  (check-exn exn? (λ () (array-ref s-arr bad-idxs0)))
+  (check-exn exn? (λ () (array-ref l-arr bad-idxs1)))
+  (check-exn exn? (λ () (array-ref s-arr bad-idxs1)))
+  (check-exn exn? (λ () (array-ref l-arr bad-idxs2)))
+  (check-exn exn? (λ () (array-ref s-arr bad-idxs2))))
 
 (let* ([l-arr  (indexes-array '(2 2))]
-       [s-arr  (array-strict l-arr)])
-  (check-equal? (array-ref* l-arr 0 0) '(0 0))
-  (check-equal? (array-ref* s-arr 0 0) '(0 0))
-  (check-equal? (array-ref* l-arr 1 1) '(1 1))
-  (check-equal? (array-ref* s-arr 1 1) '(1 1))
+       [s-arr  (array-strict l-arr)]
+       [idxs0  '(0 0)]
+       [idxs1  '(1 1)])
+  (check-equal? (array-ref l-arr (list 0 0)) '(0 0))
+  (check-equal? (array-ref s-arr (list 0 0)) '(0 0))
+  (check-equal? (array-ref l-arr (list 1 1)) '(1 1))
+  (check-equal? (array-ref s-arr (list 1 1)) '(1 1))
   (check-equal? (array-ref l-arr '(0 0)) '(0 0))
   (check-equal? (array-ref s-arr '(0 0)) '(0 0))
   (check-equal? (array-ref l-arr '(1 1)) '(1 1))
-  (check-equal? (array-ref s-arr '(1 1)) '(1 1)))
+  (check-equal? (array-ref s-arr '(1 1)) '(1 1))
+  (check-equal? (array-ref l-arr idxs0) '(0 0))
+  (check-equal? (array-ref s-arr idxs0) '(0 0))
+  (check-equal? (array-ref l-arr idxs1) '(1 1))
+  (check-equal? (array-ref s-arr idxs1) '(1 1)))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; Set
+;; Safe set!
 
-;; Unsafe
-
-(let* ([arr  ((inst array-strict Byte) (make-array '() 0))])
-  (unsafe-array-set!* arr 1)
-  (check-equal? (unsafe-array-ref* arr) 1)
-  (unsafe-array-set! arr (vector) 2)
-  (check-equal? (unsafe-array-ref arr (vector)) 2))
-
-(let* ([arr  (array-strict (indexes-array '(2)))])
-  (unsafe-array-set!* arr '(1) 0)
-  (unsafe-array-set!* arr '(2) 1)
-  (check-equal? (unsafe-array-ref* arr 0) '(1))
-  (check-equal? (unsafe-array-ref* arr 1) '(2))
-  (unsafe-array-set! arr ((inst vector Index) 0) '(2))
-  (unsafe-array-set! arr ((inst vector Index) 1) '(3))
-  (check-equal? (unsafe-array-ref arr ((inst vector Index) 0)) '(2))
-  (check-equal? (unsafe-array-ref arr ((inst vector Index) 1)) '(3)))
-
-(let* ([arr  (array-strict (indexes-array '(2 2)))])
-  (check-equal? (unsafe-array-ref* arr 0 0) '(0 0))
-  (check-equal? (unsafe-array-ref* arr 1 1) '(1 1))
-  (check-equal? (unsafe-array-ref arr (ann (vector 0 0) (Vectorof Index))) '(0 0))
-  (check-equal? (unsafe-array-ref arr (ann (vector 1 1) (Vectorof Index))) '(1 1)))
-
-;; Safe
-
-(let* ([arr  ((inst array-strict Byte) (make-array '() 0))])
-  (array-set!* arr 1)
-  (check-equal? (array-ref* arr) 1)
+(let* ([arr  ((inst array-strict Byte) (make-array '() 0))]
+       [idxs  '()]
+       [bad-idxs '(1)])
+  (array-set! arr (list) 1)
+  (check-equal? (array-ref arr '()) 1)
   (array-set! arr '() 2)
   (check-equal? (array-ref arr '()) 2)
-  (check-exn exn? (λ () (array-set!* arr 1 2)))
-  (check-exn exn? (λ () (array-set! arr '(1) 2))))
+  (array-set! arr idxs 3)
+  (check-equal? (array-ref arr '()) 3)
+  (check-exn exn? (λ () (array-set! arr (list 1) 2)))
+  (check-exn exn? (λ () (array-set! arr '(1) 2)))
+  (check-exn exn? (λ () (array-set! arr bad-idxs 2))))
 
-(let* ([arr  (array-strict (indexes-array '(2)))])
-  (array-set!* arr '(1) 0)
-  (array-set!* arr '(2) 1)
-  (check-equal? (array-ref* arr 0) '(1))
-  (check-equal? (array-ref* arr 1) '(2))
-  (array-set! arr '(0) '(2))
-  (array-set! arr '(1) '(3))
+(let* ([arr  (array-strict (indexes-array '(2)))]
+       [idxs0  '(0)]
+       [idxs1  '(1)]
+       [bad-idxs0  '(0 0)]
+       [bad-idxs1  '(-1)]
+       [bad-idxs2  '(2)])
+  (array-set! arr (list 0) '(2))
+  (array-set! arr (list 1) '(3))
   (check-equal? (array-ref arr '(0)) '(2))
   (check-equal? (array-ref arr '(1)) '(3))
-  (check-exn exn? (λ () (array-set!* arr '(1) 0 0)))
-  (check-exn exn? (λ () (array-set!* arr '(1) -1)))
-  (check-exn exn? (λ () (array-set!* arr '(1) 2)))
+  (array-set! arr '(0) '(4))
+  (array-set! arr '(1) '(5))
+  (check-equal? (array-ref arr '(0)) '(4))
+  (check-equal? (array-ref arr '(1)) '(5))
+  (array-set! arr idxs0 '(6))
+  (array-set! arr idxs1 '(7))
+  (check-equal? (array-ref arr '(0)) '(6))
+  (check-equal? (array-ref arr '(1)) '(7))
+  (check-exn exn? (λ () (array-set! arr (list 0 0) '(1))))
+  (check-exn exn? (λ () (array-set! arr (list -1) '(1))))
+  (check-exn exn? (λ () (array-set! arr (list 2) '(1))))
   (check-exn exn? (λ () (array-set! arr '(0 0) '(1))))
   (check-exn exn? (λ () (array-set! arr '(-1) '(1))))
-  (check-exn exn? (λ () (array-set! arr '(2) '(1)))))
+  (check-exn exn? (λ () (array-set! arr '(2) '(1))))
+  (check-exn exn? (λ () (array-set! arr bad-idxs0 '(1))))
+  (check-exn exn? (λ () (array-set! arr bad-idxs1 '(1))))
+  (check-exn exn? (λ () (array-set! arr bad-idxs2 '(1)))))
 
-(let* ([arr  (array-strict (indexes-array '(2 2)))])
-  (array-set!* arr '(1 1) 0 0)
-  (array-set!* arr '(2 2) 1 1)
-  (check-equal? (array-ref* arr 0 0) '(1 1))
-  (check-equal? (array-ref* arr 1 1) '(2 2))
-  (array-set! arr '(0 0) '(2 2))
-  (array-set! arr '(1 1) '(3 3))
+(let* ([arr  (array-strict (indexes-array '(2 2)))]
+       [idxs0  '(0 0)]
+       [idxs1  '(1 1)])
+  (array-set! arr (list 0 0) '(2 2))
+  (array-set! arr (list 1 1) '(3 3))
   (check-equal? (array-ref arr '(0 0)) '(2 2))
-  (check-equal? (array-ref arr '(1 1)) '(3 3)))
+  (check-equal? (array-ref arr '(1 1)) '(3 3))
+  (array-set! arr '(0 0) '(4 4))
+  (array-set! arr '(1 1) '(5 5))
+  (check-equal? (array-ref arr '(0 0)) '(4 4))
+  (check-equal? (array-ref arr '(1 1)) '(5 5))
+  (array-set! arr idxs0 '(6 6))
+  (array-set! arr idxs1 '(7 7))
+  (check-equal? (array-ref arr '(0 0)) '(6 6))
+  (check-equal? (array-ref arr '(1 1)) '(7 7)))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Transforms
@@ -543,10 +624,10 @@
 
 (check-equal? (array->list
                (unsafe-array-transform (indexes-array '(4 2))
-                                       (ann (vector 2 4) (Vectorof Index))
+                                       ((inst vector Index) 2 4)
                                        (λ: ([js : (Vectorof Index)])
                                          (match-define (vector j0 j1) js)
-                                         (ann (vector j1 j0) (Vectorof Index)))))
+                                         ((inst vector Index) j1 j0))))
               '[[(0 0) (1 0) (2 0) (3 0)]
                 [(0 1) (1 1) (2 1) (3 1)]])
 
@@ -562,7 +643,7 @@
 (check-exn exn? (λ () (array-axis-transform (indexes-array '(4 4)) '((0 4) (1 2)))))
 
 (check-equal? (array->list (array-slice (indexes-array '(4 4))
-                                        (list (in-range 0 4 2) (in-range 2 -1 -2))))
+                                        (list (:: 0 4 2) (:: 2 -1 -2))))
               '[[(0 2) (0 0)]
                 [(2 2) (2 0)]])
 

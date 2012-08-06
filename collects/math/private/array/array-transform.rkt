@@ -1,15 +1,14 @@
 #lang typed/racket/base
 
-(require racket/sequence
-         racket/vector
+(require racket/vector
          "../unsafe.rkt"
          "array-struct.rkt"
          "utils.rkt")
 
 (provide array-transform
          unsafe-array-transform
+         unsafe-array-axis-transform
          array-axis-transform
-         array-slice
          array-axis-permute
          array-axis-swap
          array-axis-insert
@@ -40,13 +39,54 @@
 ;; ===================================================================================================
 ;; Separable (per-axis) transforms
 
+(: unsafe-array-axis-transform (All (A) ((Array A) (Vectorof (Vectorof Index)) -> (view-array A))))
+(define (unsafe-array-axis-transform arr old-jss)
+  (define: new-ds : (Vectorof Index) (vector-map vector-length old-jss))
+  (define dims (vector-length new-ds))
+  (case dims
+    [(0)  (array-view arr)]
+    [(1)  (define g (unsafe-array-proc (array-view arr)))
+          (unsafe-view-array
+           new-ds
+           (λ: ([js : (Vectorof Index)])
+             (define j0 (unsafe-vector-ref js 0))
+             (unsafe-vector-set! js 0 (unsafe-vector-ref (unsafe-vector-ref old-jss 0) j0))
+             (define v (g js))
+             (unsafe-vector-set! js 0 j0)
+             v))]
+    [(2)  (define g (unsafe-array-proc (array-view arr)))
+          (unsafe-view-array
+           new-ds
+           (λ: ([js : (Vectorof Index)])
+             (define j0 (unsafe-vector-ref js 0))
+             (define j1 (unsafe-vector-ref js 1))
+             (unsafe-vector-set! js 0 (unsafe-vector-ref (unsafe-vector-ref old-jss 0) j0))
+             (unsafe-vector-set! js 1 (unsafe-vector-ref (unsafe-vector-ref old-jss 1) j1))
+             (define v (g js))
+             (unsafe-vector-set! js 0 j0)
+             (unsafe-vector-set! js 1 j1)
+             v))]
+    [else
+     (define old-js (make-thread-local-indexes dims))
+     (unsafe-array-transform
+      arr new-ds
+      (λ: ([new-js : (Vectorof Index)])
+        (let ([old-js  (old-js)])
+          (let: loop : (Vectorof Index) ([i : Nonnegative-Fixnum  0])
+            (cond [(i . < . dims)
+                   (define new-ji (unsafe-vector-ref new-js i))
+                   (define old-ji (unsafe-vector-ref (unsafe-vector-ref old-jss i) new-ji))
+                   (unsafe-vector-set! old-js i old-ji)
+                   (loop (+ i 1))]
+                  [else  old-js])))))]))
+
 (: array-axis-transform (All (A) ((Array A) (Listof (Listof Integer)) -> (view-array A))))
 (define (array-axis-transform arr old-jss)
   (define old-ds (unsafe-array-shape arr))
   (define dims (vector-length old-ds))
   ;; number of indexes should match
   (unless (= dims (length old-jss))
-    (error 'array-separable-transform
+    (error 'array-axis-transform
            "expected ~e index vectors; given ~e index vectors in ~e"
            dims (length old-jss) old-jss))
   ;; check bounds, reconstruct indexes as vectors
@@ -64,52 +104,12 @@
                       (unsafe-vector-set! old-js* k old-jk)
                       (k-loop (unsafe-cdr old-js) (+ k 1))]
                      [else
-                      (error 'array-separable-transform "out of bounds")])]
+                      (error 'array-axis-transform "out of bounds")])]
               [else
                (unsafe-vector-set! old-jss* i old-js*)]))
       (i-loop (unsafe-cdr old-jss) (+ i 1))))
   
-  (define: new-ds : (Vectorof Index) (vector-map vector-length old-jss*))
-  (case dims
-    [(0)  (array-view arr)]
-    [(1)  (define g (unsafe-array-proc (array-view arr)))
-          (unsafe-view-array
-           new-ds
-           (λ: ([js : (Vectorof Index)])
-             (define j0 (unsafe-vector-ref js 0))
-             (unsafe-vector-set! js 0 (unsafe-vector-ref (unsafe-vector-ref old-jss* 0) j0))
-             (define v (g js))
-             (unsafe-vector-set! js 0 j0)
-             v))]
-    [(2)  (define g (unsafe-array-proc (array-view arr)))
-          (unsafe-view-array
-           new-ds
-           (λ: ([js : (Vectorof Index)])
-             (define j0 (unsafe-vector-ref js 0))
-             (define j1 (unsafe-vector-ref js 1))
-             (unsafe-vector-set! js 0 (unsafe-vector-ref (unsafe-vector-ref old-jss* 0) j0))
-             (unsafe-vector-set! js 1 (unsafe-vector-ref (unsafe-vector-ref old-jss* 1) j1))
-             (define v (g js))
-             (unsafe-vector-set! js 0 j0)
-             (unsafe-vector-set! js 1 j1)
-             v))]
-    [else
-     (define old-js (make-thread-local-indexes dims))
-     (unsafe-array-transform
-      arr new-ds
-      (λ: ([new-js : (Vectorof Index)])
-        (let ([old-js  (old-js)])
-          (let: loop : (Vectorof Index) ([i : Nonnegative-Fixnum  0])
-            (cond [(i . < . dims)
-                   (define new-ji (unsafe-vector-ref new-js i))
-                   (define old-ji (unsafe-vector-ref (unsafe-vector-ref old-jss* i) new-ji))
-                   (unsafe-vector-set! old-js i old-ji)
-                   (loop (+ i 1))]
-                  [else  old-js])))))]))
-
-(: array-slice (All (A) ((Array A) (Listof (Sequenceof Integer)) -> (view-array A))))
-(define (array-slice arr ss)
-  (array-axis-transform arr (map (inst sequence->list Integer) ss)))
+  (unsafe-array-axis-transform arr old-jss*))
 
 ;; ===================================================================================================
 ;; Back permutation and swap

@@ -170,7 +170,7 @@
 (: flat-vector->matrix : (All (A) (Index Index (Vectorof A) -> (view-array A))))
 (define (flat-vector->matrix m n v)
   (if (= (* m n) (vector-length v))
-      (array-view (strict-array (ann (vector m n) (Vectorof Index)) v))
+      (array-view (strict-array ((inst vector Index) m n) v))
       (error 'flat-vector->matrix
              "dimensions and vector length does not match, got ~a, ~a, ~a"
              m n v)))

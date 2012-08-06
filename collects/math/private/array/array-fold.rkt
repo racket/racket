@@ -116,13 +116,14 @@
                     ((Array T) T -> T) ...))
     (define name 
       (case-lambda
-        [(arr)  (array-ref* (array-fold arr array-axis-op))]
+        [(arr)  (array-ref (array-fold arr array-axis-op) '())]
         [(arr init)
          (plet: (A) ([arr : (Array A)  arr]
                      [array-axis-op : ((Array A) Index A -> (view-array A))  array-axis-op]
                      [init : A  init])
-                (array-ref* (array-fold arr (λ: ([arr : (Array A)] [k : Index])
-                                              (array-axis-op arr k init)))))]))))
+                (array-ref (array-fold arr (λ: ([arr : (Array A)] [k : Index])
+                                             (array-axis-op arr k init)))
+                           '()))]))))
 
 (define-fold array-sum array-axis-sum Float Real Float-Complex Number)
 (define-fold array-prod array-axis-prod Float Real Float-Complex Number)

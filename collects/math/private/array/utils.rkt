@@ -79,6 +79,10 @@
   
   )  ; begin-encourage-inline
 
+;; Using this instead of literal #() is currently slightly faster (about 18% on my machine)
+(define: empty-vectorof-index : (Vectorof Index)
+  #())
+
 (: vector-copy-all! (All (A) ((Vectorof A) (Vectorof A) -> Void)))
 (define (vector-copy-all! dst-js src-js)
   (define dims (vector-length src-js))

@@ -1,17 +1,18 @@
 #lang typed/racket/base
 
 (require (for-syntax racket/base racket/syntax)
+         racket/performance-hint
          "../unsafe.rkt"
          "array-struct.rkt"
          "utils.rkt")
 
-(provide unsafe-array-ref* unsafe-array-ref
-         array-ref* array-ref
-         unsafe-array-set!* unsafe-array-set!
-         array-set!* array-set!)
+(provide (rename-out [inline-unsafe-array-ref   unsafe-array-ref]
+                     [inline-unsafe-array-set!  unsafe-array-set!]
+                     [inline-array-ref   array-ref]
+                     [inline-array-set!  array-set!]))
 
 ;; ===================================================================================================
-;; Unsafe array ref
+;; Unsafe array ref/set!
 
 (define-syntax (unsafe-indexes->index stx)
   (syntax-case stx ()
@@ -22,54 +23,96 @@
          (unsafe-indexes->index ds i+1 (js ...)
                                 (unsafe-fx+ ji (unsafe-fx* (unsafe-vector-ref ds i) j)))))]))
 
-(define-syntax (unsafe-array-ref* stx)
+(define-syntax (inline-unsafe-array-ref* stx)
   (syntax-case stx ()
     [(_ arr-expr)
      (syntax/loc stx
-       ((plambda: (A) ([arr : (Array A)])
-          (if (view-array? arr)
-              ((unsafe-array-proc arr) #())
-              (unsafe-vector-ref (strict-array-data arr) 0)))
-        arr-expr))]
-    [(_ arr-expr j0 js ...)
-     (with-syntax ([(new-j0 new-js ...)  (generate-temporaries #'(j0 js ...))])
+       (plet: (A) ([arr : (Array A)  arr-expr])
+         (if (view-array? arr)
+             ((unsafe-array-proc arr) empty-vectorof-index)
+             (unsafe-vector-ref (strict-array-data arr) 0))))]
+    [(_ arr-expr j0-expr js-expr ...)
+     (with-syntax ([(j0 js ...)  (generate-temporaries #'(j0-expr js-expr ...))])
        (syntax/loc stx
-         ((plambda: (A) ([arr : (Array A)] [new-j0 : Index] [new-js : Index] ...)
-            (let ([ds  (unsafe-array-shape arr)])
-              (if (view-array? arr)
-                  ((unsafe-array-proc arr) (vector new-j0 new-js ...))
-                  (unsafe-vector-ref (strict-array-data arr)
-                                     (unsafe-indexes->index ds 1 (new-js ...) new-j0)))))
-           arr-expr j0 js ...)))]
-    [_  (syntax/loc stx unsafe-array-ref*-proc)]))
+         (plet: (A) ([arr : (Array A)  arr-expr] [j0 : Index  j0-expr] [js : Index  js-expr] ...)
+           (let ([ds  (unsafe-array-shape arr)])
+             (if (view-array? arr)
+                 ((unsafe-array-proc arr) (vector j0 js ...))
+                 (unsafe-vector-ref (strict-array-data arr)
+                                    (unsafe-indexes->index ds 1 (js ...) j0)))))))]))
 
-(: unsafe-array-ref*-proc
-   (All (A) (case-> ((Array A) -> A)
-                    ((Array A) Index -> A)
-                    ((Array A) Index Index -> A)
-                    ((Array A) Index Index Index Index * -> A))))
-(define unsafe-array-ref*-proc
-  (case-lambda:
-    [([arr : (Array A)])
-     (unsafe-array-ref* arr)]
-    [([arr : (Array A)] [j0 : Index])
-     (unsafe-array-ref* arr j0)]
-    [([arr : (Array A)] [j0 : Index] [j1 : Index])
-     (unsafe-array-ref* arr j0 j1)]
-    [([arr : (Array A)] [j0 : Index] [j1 : Index] [j2 : Index])
-     (unsafe-array-ref* arr j0 j1 j2)]
-    [([arr : (Array A)] [j0 : Index] [j1 : Index] [j2 : Index] . [js : Index *])
-     (unsafe-array-ref arr ((inst list->vector Index) (list* j0 j1 j2 js)))]))
+(define-syntax (inline-unsafe-array-set!* stx)
+  (syntax-case stx ()
+    [(_ arr-expr v-expr)
+     (syntax/loc stx
+       (plet: (A) ([arr : (strict-array A)  arr-expr] [v : A  v-expr])
+         (unsafe-vector-set! (strict-array-data arr) 0 v)))]
+    [(_ arr-expr v-expr j0-expr js-expr ...)
+     (with-syntax ([(j0 js ...)  (generate-temporaries #'(j0-expr js-expr ...))])
+       (syntax/loc stx
+         (plet: (A) ([arr : (strict-array A)  arr-expr]
+                     [v : A  v-expr]
+                     [j0 : Index  j0-expr] [js : Index  js-expr] ...)
+           (let ([ds  (unsafe-array-shape arr)])
+             (unsafe-vector-set! (strict-array-data arr)
+                                 (unsafe-indexes->index ds 1 (js ...) j0)
+                                 v)))))]))
+
+(define-syntax (inline-unsafe-array-ref stx)
+  (syntax-case stx ()
+    [(_ arr js)
+     (let ([js-stx  (local-expand #'js (syntax-local-context) null)])
+       (syntax-case js-stx (#%plain-app vector quote)
+         [(#%plain-app vector j ...)
+          (syntax/loc stx (begin (ann js (Vectorof Index))
+                                 (inline-unsafe-array-ref* arr j ...)))]
+         [(quote #(j ...))
+          (andmap integer? (syntax->datum #'(j ...)))
+          (syntax/loc stx (begin (ann js (Vectorof Index))
+                                 (inline-unsafe-array-ref* arr j ...)))]
+         [_
+          (syntax/loc stx (unsafe-array-ref arr js))]))]
+    [(_ e ...)
+     (syntax/loc stx (unsafe-array-ref e ...))]
+    [_
+     (syntax/loc stx unsafe-array-ref)]))
+
+(define-syntax (inline-unsafe-array-set! stx)
+  (syntax-case stx ()
+    [(_ arr js v)
+     (let ([js-stx  (local-expand #'js (syntax-local-context) null)])
+       (syntax-case js-stx (#%plain-app vector quote)
+         [(#%plain-app vector j ...)
+          (syntax/loc stx (begin (ann js (Vectorof Index))
+                                 (inline-unsafe-array-set!* arr v j ...)))]
+         [(quote #(j ...))
+          (andmap integer? (syntax->datum #'(j ...)))
+          (syntax/loc stx (begin (ann js (Vectorof Index))
+                                 (inline-unsafe-array-set!* arr v j ...)))]
+         [_
+          (syntax/loc stx (unsafe-array-set! arr js v))]))]
+    [(_ e ...)
+     (syntax/loc stx (unsafe-array-set! e ...))]
+    [_
+     (syntax/loc stx unsafe-array-set!)]))
 
 (: unsafe-array-ref (All (A) ((Array A) (Vectorof Index) -> A)))
-(define (unsafe-array-ref arr js)
-  (if (view-array? arr)
-      ((unsafe-array-proc arr) js)
-      (unsafe-vector-ref (strict-array-data arr)
-                         (unsafe-array-index->value-index (unsafe-array-shape arr) js))))
+(begin-encourage-inline
+  (define (unsafe-array-ref arr js)
+    (if (view-array? arr)
+        ((unsafe-array-proc arr) js)
+        (unsafe-vector-ref (strict-array-data arr)
+                           (unsafe-array-index->value-index (unsafe-array-shape arr) js)))))
+
+(: unsafe-array-set! (All (A) ((strict-array A) (Vectorof Index) A -> Void)))
+(begin-encourage-inline
+  (define (unsafe-array-set! arr js v)
+    (unsafe-vector-set! (strict-array-data arr)
+                        (unsafe-array-index->value-index (unsafe-array-shape arr) js)
+                        v)))
 
 ;; ===================================================================================================
-;; Safe array ref
+;; Safe array ref/set!
 
 (define-syntax (indexes->index stx)
   (syntax-case stx ()
@@ -79,165 +122,117 @@
        (indexes->index (ds ...) (js ...)
                        (unsafe-fx+ ji (unsafe-fx* di j))))]))
 
-(define-syntax (array-ref* stx)
+(define-syntax (inline-array-ref* stx)
   (syntax-case stx ()
     [(_ arr-expr)
      (syntax/loc stx
-       ((plambda: (A) ([arr : (Array A)])
-          (if (= 0 (array-dims arr))
-              (if (view-array? arr)
-                  ((unsafe-array-proc arr) #())
-                  (unsafe-vector-ref (strict-array-data arr) 0))
-              (raise-array-index-error 'array-ref* (unsafe-array-shape arr) null)))
-        arr-expr))]
-    [(_ arr-expr j0 js ...)
-     (with-syntax* ([len  (length (syntax->list #'(j0 js ...)))]
-                    [(new-j0 new-js ...)  (generate-temporaries #'(j0 js ...))]
-                    [(new-ds ...)  (generate-temporaries #'(js ...))]
-                    [(is ...)  (build-list (- (syntax->datum #'len) 1) add1)])
+       (plet: (A) ([arr : (Array A)  arr-expr])
+         (if (= 0 (array-dims arr))
+             (if (view-array? arr)
+                 ((unsafe-array-proc arr) empty-vectorof-index)
+                 (unsafe-vector-ref (strict-array-data arr) 0))
+             (raise-array-index-error 'array-ref* (unsafe-array-shape arr) null))))]
+    [(_ arr-expr j0-expr js-expr ...)
+     (with-syntax* ([dims  (length (syntax->list #'(j0-expr js-expr ...)))]
+                    [(j0 js ...)  (generate-temporaries #'(j0-expr js-expr ...))]
+                    [(ds ...)  (generate-temporaries #'(js-expr ...))]
+                    [(is ...)  (build-list (- (syntax->datum #'dims) 1) add1)])
        (syntax/loc stx
-         ((plambda: (A) ([arr : (Array A)] [new-j0 : Integer] [new-js : Integer] ...)
-            (let* ([ds  (unsafe-array-shape arr)]
-                   [index-error  (λ () (raise-array-index-error
-                                        'array-ref* ds (list new-j0 new-js ...)))])
-              (if (= (vector-length ds) len)
-                  (let-values ([(new-ds ...)  (values (unsafe-vector-ref ds is) ...)])
-                    (if (and (and (0 . <= . new-j0) (new-j0 . < . (unsafe-vector-ref ds 0)))
-                             (and (0 . <= . new-js) (new-js . < . new-ds)) ...)
-                        (if (view-array? arr)
-                            ((unsafe-array-proc arr) (vector new-j0 new-js ...))
-                            (let ([j  (indexes->index (new-ds ...) (new-js ...) new-j0)])
-                              (unsafe-vector-ref (strict-array-data arr) j)))
-                        (index-error)))
-                  (index-error))))
-          arr-expr j0 js ...)))]
-    [_  (syntax/loc stx array-ref*-proc)]))
+         (plet: (A) ([arr : (Array A)  arr-expr] [j0 : Integer  j0-expr] [js : Integer  js-expr] ...)
+           (let* ([ds-vec  (unsafe-array-shape arr)]
+                  [index-error  (λ () (raise-array-index-error
+                                       'array-ref* ds-vec (list j0 js ...)))])
+             (if (= (vector-length ds-vec) dims)
+                 (let-values ([(ds ...)  (values (unsafe-vector-ref ds-vec is) ...)])
+                   (if (and (and (0 . <= . j0) (j0 . < . (unsafe-vector-ref ds-vec 0)))
+                            (and (0 . <= . js) (js . < . ds)) ...)
+                       (if (view-array? arr)
+                           ((unsafe-array-proc arr) (vector j0 js ...))
+                           (let ([j  (indexes->index (ds ...) (js ...) j0)])
+                             (unsafe-vector-ref (strict-array-data arr) j)))
+                       (index-error)))
+                 (index-error))))))]))
 
-(: array-ref*-proc
-   (All (A) (case-> ((Array A) -> A)
-                    ((Array A) Integer -> A)
-                    ((Array A) Integer Integer -> A)
-                    ((Array A) Integer Integer Integer Integer * -> A))))
-(define array-ref*-proc
-  (case-lambda:
-    [([arr : (Array A)])
-     (array-ref* arr)]
-    [([arr : (Array A)] [j0 : Integer])
-     (array-ref* arr j0)]
-    [([arr : (Array A)] [j0 : Integer] [j1 : Integer])
-     (array-ref* arr j0 j1)]
-    [([arr : (Array A)] [j0 : Integer] [j1 : Integer] [j2 : Integer])
-     (array-ref* arr j0 j1 j2)]
-    [([arr : (Array A)] [j0 : Integer] [j1 : Integer] [j2 : Integer] . [js : Integer *])
-     (array-ref arr (list* j0 j1 j2 js))]))
+(define-syntax (inline-array-set!* stx)
+  (syntax-case stx ()
+    [(_ arr-expr v-expr)
+     (syntax/loc stx
+       (plet: (A) ([arr : (strict-array A)  arr-expr] [v : A  v-expr])
+         (if (= 0 (array-dims arr))
+             (unsafe-vector-set! (strict-array-data arr) 0 v)
+             (raise-array-index-error 'array-set!* (unsafe-array-shape arr) null))))]
+    [(_ arr-expr v-expr j0-expr js-expr ...)
+     (with-syntax* ([dims  (length (syntax->list #'(j0-expr js-expr ...)))]
+                    [(j0 js ...)  (generate-temporaries #'(j0-expr js-expr ...))]
+                    [(ds ...)  (generate-temporaries #'(js-expr ...))]
+                    [(is ...)  (build-list (- (syntax->datum #'dims) 1) add1)])
+       (syntax/loc stx
+         (plet: (A) ([arr : (strict-array A)  arr-expr]
+                     [v : A  v-expr]
+                     [j0 : Integer  j0-expr] [js : Integer  js-expr] ...)
+           (let* ([ds-vec  (unsafe-array-shape arr)]
+                  [index-error  (λ () (raise-array-index-error
+                                       'array-set!* ds-vec (list j0 js ...)))])
+             (if (= (vector-length ds-vec) dims)
+                 (let-values ([(ds ...)  (values (unsafe-vector-ref ds-vec is) ...)])
+                   (if (and (and (0 . <= . j0) (j0 . < . (unsafe-vector-ref ds-vec 0)))
+                            (and (0 . <= . js) (js . < . ds)) ...)
+                       (let ([j  (indexes->index (ds ...) (js ...) j0)])
+                         (unsafe-vector-set! (strict-array-data arr) j v))
+                       (index-error)))
+                 (index-error))))))]))
+
+(define-syntax (inline-array-ref stx)
+  (syntax-case stx ()
+    [(_ arr js)
+     (let ([js-stx  (local-expand #'js (syntax-local-context) null)])
+       (syntax-case js-stx (#%plain-app list quote)
+         [(#%plain-app list j ...)
+          (syntax/loc stx (begin (ann js (Listof Integer))
+                                 (inline-array-ref* arr j ...)))]
+         [(quote (j ...))
+          (andmap integer? (syntax->datum #'(j ...)))
+          (syntax/loc stx (begin (ann js (Listof Integer))
+                                 (inline-array-ref* arr j ...)))]
+         [_
+          (syntax/loc stx (array-ref arr js))]))]
+    [(_ e ...)
+     (syntax/loc stx (array-ref e ...))]
+    [_
+     (syntax/loc stx array-ref)]))
+
+(define-syntax (inline-array-set! stx)
+  (syntax-case stx ()
+    [(_ arr js v)
+     (let ([js-stx  (local-expand #'js (syntax-local-context) null)])
+       (syntax-case js-stx (#%plain-app list quote)
+         [(#%plain-app list j ...)
+          (syntax/loc stx (begin (ann js (Listof Integer))
+                                 (inline-array-set!* arr v j ...)))]
+         [(quote (j ...))
+          (andmap integer? (syntax->datum #'(j ...)))
+          (syntax/loc stx (begin (ann js (Listof Integer))
+                                 (inline-array-set!* arr v j ...)))]
+         [_
+          (syntax/loc stx (array-set! arr js v))]))]
+    [(_ e ...)
+     (syntax/loc stx (array-set! e ...))]
+    [_
+     (syntax/loc stx array-set!)]))
 
 (: array-ref (All (A) ((Array A) (Listof Integer) -> A)))
-(define (array-ref arr js)
-  (define ds (unsafe-array-shape arr))
-  (if (view-array? arr)
-      ((unsafe-array-proc arr) (check-array-indexes 'array-ref ds js))
-      (unsafe-vector-ref (strict-array-data arr)
-                         (array-index->value-index 'array-ref ds js))))
-
-;; ===================================================================================================
-;; Unsafe array set
-
-(define-syntax (unsafe-array-set!* stx)
-  (syntax-case stx ()
-    [(_ arr-expr v-expr)
-     (syntax/loc stx
-       ((plambda: (A) ([arr : (strict-array A)] [v : A])
-          (unsafe-vector-set! (strict-array-data arr) 0 v))
-        arr-expr v-expr))]
-    [(_ arr-expr v-expr j0 js ...)
-     (with-syntax ([(new-j0 new-js ...)  (generate-temporaries #'(j0 js ...))])
-       (syntax/loc stx
-         ((plambda: (A) ([arr : (strict-array A)] [v : A] [new-j0 : Index] [new-js : Index] ...)
-            (let ([ds  (unsafe-array-shape arr)])
-              (unsafe-vector-set! (strict-array-data arr)
-                                  (unsafe-indexes->index ds 1 (new-js ...) new-j0)
-                                  v)))
-           arr-expr v-expr j0 js ...)))]
-    [_  (syntax/loc stx unsafe-array-set!*-proc)]))
-
-(: unsafe-array-set!*-proc
-   (All (A) (case-> ((strict-array A) A -> Void)
-                    ((strict-array A) A Index -> Void)
-                    ((strict-array A) A Index Index -> Void)
-                    ((strict-array A) A Index Index Index Index * -> Void))))
-(define unsafe-array-set!*-proc
-  (case-lambda:
-    [([arr : (strict-array A)] [v : A])
-     (unsafe-array-set!* arr v)]
-    [([arr : (strict-array A)] [v : A] [j0 : Index])
-     (unsafe-array-set!* arr v j0)]
-    [([arr : (strict-array A)] [v : A] [j0 : Index] [j1 : Index])
-     (unsafe-array-set!* arr v j0 j1)]
-    [([arr : (strict-array A)] [v : A] [j0 : Index] [j1 : Index] [j2 : Index])
-     (unsafe-array-set!* arr v j0 j1 j2)]
-    [([arr : (strict-array A)] [v : A] [j0 : Index] [j1 : Index] [j2 : Index] . [js : Index *])
-     (unsafe-array-set! arr ((inst list->vector Index) (list* j0 j1 j2 js)) v)]))
-
-(: unsafe-array-set! (All (A) ((strict-array A) (Vectorof Index) A -> Void)))
-(define (unsafe-array-set! arr js v)
-  (unsafe-vector-set! (strict-array-data arr)
-                      (unsafe-array-index->value-index (unsafe-array-shape arr) js)
-                      v))
-
-;; ===================================================================================================
-;; Safe array set
-
-(define-syntax (array-set!* stx)
-  (syntax-case stx ()
-    [(_ arr-expr v-expr)
-     (syntax/loc stx
-       ((plambda: (A) ([arr : (strict-array A)] [v : A])
-          (if (= 0 (array-dims arr))
-              (unsafe-vector-set! (strict-array-data arr) 0 v)
-              (raise-array-index-error 'array-set!* (unsafe-array-shape arr) null)))
-        arr-expr v-expr))]
-    [(_ arr-expr v-expr j0 js ...)
-     (with-syntax* ([len  (length (syntax->list #'(j0 js ...)))]
-                    [(new-j0 new-js ...)  (generate-temporaries #'(j0 js ...))]
-                    [(new-ds ...)  (generate-temporaries #'(js ...))]
-                    [(is ...)  (build-list (- (syntax->datum #'len) 1) add1)])
-       (syntax/loc stx
-         ((plambda: (A) ([arr : (strict-array A)] [v : A] [new-j0 : Integer] [new-js : Integer] ...)
-            (let* ([ds  (unsafe-array-shape arr)]
-                   [index-error  (λ () (raise-array-index-error
-                                        'array-set!* ds (list new-j0 new-js ...)))])
-              (if (= (vector-length ds) len)
-                  (let-values ([(new-ds ...)  (values (unsafe-vector-ref ds is) ...)])
-                    (if (and (and (0 . <= . new-j0) (new-j0 . < . (unsafe-vector-ref ds 0)))
-                             (and (0 . <= . new-js) (new-js . < . new-ds)) ...)
-                        (let ([j  (indexes->index (new-ds ...) (new-js ...) new-j0)])
-                          (unsafe-vector-set! (strict-array-data arr) j v))
-                        (index-error)))
-                  (index-error))))
-          arr-expr v-expr j0 js ...)))]
-    [_  (syntax/loc stx array-set!*-proc)]))
-
-(: array-set!*-proc
-   (All (A) (case-> ((strict-array A) A -> Void)
-                    ((strict-array A) A Integer -> Void)
-                    ((strict-array A) A Integer Integer -> Void)
-                    ((strict-array A) A Integer Integer Integer Integer * -> Void))))
-(define array-set!*-proc
-  (case-lambda:
-    [([arr : (strict-array A)] [v : A])
-     (array-set!* arr v)]
-    [([arr : (strict-array A)] [v : A] [j0 : Integer])
-     (array-set!* arr v j0)]
-    [([arr : (strict-array A)] [v : A] [j0 : Integer] [j1 : Integer])
-     (array-set!* arr v j0 j1)]
-    [([arr : (strict-array A)] [v : A] [j0 : Integer] [j1 : Integer] [j2 : Integer])
-     (array-set!* arr v j0 j1 j2)]
-    [([arr : (strict-array A)] [v : A] [j0 : Integer] [j1 : Integer] [j2 : Integer] . [js : Integer *])
-     (array-set! arr (list* j0 j1 j2 js) v)]))
+(begin-encourage-inline
+  (define (array-ref arr js)
+    (define ds (unsafe-array-shape arr))
+    (if (view-array? arr)
+        ((unsafe-array-proc arr) (check-array-indexes 'array-ref ds js))
+        (unsafe-vector-ref (strict-array-data arr)
+                           (array-index->value-index 'array-ref ds js)))))
 
 (: array-set! (All (A) ((strict-array A) (Listof Integer) A -> Void)))
-(define (array-set! arr js v)
-  (define ds (unsafe-array-shape arr))
-  (unsafe-vector-set! (strict-array-data arr)
-                      (array-index->value-index 'array-set! ds js)
-                      v))
+(begin-encourage-inline
+  (define (array-set! arr js v)
+    (define ds (unsafe-array-shape arr))
+    (unsafe-vector-set! (strict-array-data arr)
+                        (array-index->value-index 'array-set! ds js)
+                        v)))
