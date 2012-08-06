@@ -821,12 +821,26 @@
     This method hides the searching information on the bottom of the frame.
   }
 
-  @defmethod[(unhide-search [move-focus? boolean?]) void?]{
+  @defmethod[(unhide-search [move-focus? boolean?]
+                            [#:new-search-string-from-selection? new-search-string-from-selection? boolean? #f])
+             void?]{
     When the searching sub window is hidden, makes it visible. If
     @racket[move-focus?] is @racket[#f], the focus is not moved, but if it is
     any other value, the focus is moved to the find window.
+    
+    If @racket[new-search-string-from-selection?] is a true value and the selection
+    in the result of @method[frame:searchable<%> get-text-to-search] is not empty, 
+    then the search editor is replaced with the selection.
   }
 
+  @defmethod[(unhide-search-and-toggle-focus
+              [#:new-search-string-from-selection? new-search-string-from-selection? boolean? #f])
+             void?]{
+     Like @method[frame:searchable<%> unhide-search], except it also moves the focus into the
+          text to be searched, or into the search string text, depending on where it 
+          currently is.
+  }
+                   
   @defmethod[(get-case-sensitive-search?) boolean?]{
     Returns @racket[#t] if the search is currently case-sensitive.  (This
     method's value depends on the preference
