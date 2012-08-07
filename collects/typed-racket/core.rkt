@@ -5,7 +5,7 @@
          (for-template racket/base)
          (private with-types type-contract parse-type)
          (except-in syntax/parse id)
-         racket/match racket/syntax unstable/match racket/list
+         racket/match racket/syntax unstable/match racket/list syntax/stx
          (types utils abbrev generalize)
          (typecheck provide-handling tc-toplevel tc-app-helper)
          (rep type-rep)
@@ -61,6 +61,19 @@
                                       (match type
                                         [(tc-result1: t f o) t]
                                         [(tc-results: t) (cons 'Values t)])))))]
+    ;; given a function and input types, display the result type
+    [(_ . ((~literal :query-type/args) op:expr arg-type:expr ...))
+     (with-syntax ([(dummy-arg ...) (generate-temporaries #'(arg-type ...))])
+       #`(display #,(tc-setup #'stx
+                              ;; create a dummy function with the right argument types
+                              #`(lambda #,(stx-map (lambda (a t)
+                                                     (syntax-property a 'type-label t))
+                                                   #'(dummy-arg ...) #'(arg-type ...))
+                                  (op dummy-arg ...))
+                              'top-level expanded init tc-toplevel-form before type
+                              (format "~a\n"
+                                      (match type
+                                        [(tc-result1: (and t (Function: _)) f o) t])))))]
     ;; given a function and a desired return type, fill in the blanks
     [(_ . ((~literal :query-type/result) op:expr desired-type:expr))
      (let ([expected (parse-type #'desired-type)])

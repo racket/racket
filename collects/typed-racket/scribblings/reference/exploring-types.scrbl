@@ -14,6 +14,9 @@ The following bindings are only available at the Typed Racket REPL.
 @defform[(:print-type e)]{Prints the type of @racket[_e]. This prints the whole
 type, which can sometimes be quite large.}
 
+@defform[(:query-type/args f t ...)]{Given a function @racket[f] and argument
+types @racket[t], shows the result type of @racket[f].}
+
 @defform[(:query-type/result f t)]{Given a function @racket[f] and a desired
 return type @racket[t], shows the arguments types @racket[f] should be given to
 return a value of type @racket[t].}
