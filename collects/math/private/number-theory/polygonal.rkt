@@ -1,6 +1,5 @@
 #lang typed/racket
-(provide square?
-         triangle triangle?
+(provide triangle triangle?
          square square?
          pentagonal pentagonal?
          hexagonal hexagonal?
@@ -57,4 +56,3 @@
 (: octagonal? : Natural -> Boolean)
 (define (octagonal? n)
   (not (null? (quadratic-natural-solutions 3 -2 (- n)))))
-
