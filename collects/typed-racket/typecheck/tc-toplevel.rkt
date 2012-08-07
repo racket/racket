@@ -11,10 +11,10 @@
          ;; to appease syntax-parse
          "internal-forms.rkt"
          (rep type-rep)
-         (types utils convenience type-table)
+         (types utils abbrev type-table)
          (private parse-type type-annotation type-contract)
          (env global-env init-envs type-name-env type-alias-env lexical-env env-req)
-	 syntax/id-table
+         syntax/id-table
          (utils tc-utils mutated-vars)
          "provide-handling.rkt"
          "def-binding.rkt"
@@ -50,9 +50,9 @@
   (parameterize ([current-orig-stx form])
     (syntax-parse form
       #:literals (values define-type-alias-internal define-typed-struct-internal define-type-internal
-			 define-typed-struct/exec-internal :-internal assert-predicate-internal
-			 require/typed-internal declare-refinement-internal
-			 define-values quote-syntax #%plain-app begin define-syntaxes)
+                         define-typed-struct/exec-internal :-internal assert-predicate-internal
+                         require/typed-internal declare-refinement-internal
+                         define-values quote-syntax #%plain-app begin define-syntaxes)
       ;#:literal-sets (kernel-literals)
 
       ;; forms that are handled in other ways
@@ -60,7 +60,7 @@
        #:when (or (syntax-property form 'typechecker:ignore)
                   (syntax-property form 'typechecker:ignore-some))
        (list)]
-      
+
       [((~literal module) n:id spec ((~literal #%plain-module-begin) body ...))
        (list)]
        ;; module* is not expanded, so it doesn't have a `#%plain-module-begin`
@@ -153,10 +153,10 @@
            [else
             (match (get-type/infer vars #'expr tc-expr tc-expr/check)
               [(tc-results: ts)
-	       (for/list ([i (in-list vars)] [t (in-list ts)])
-		 (register-type i t)
-		 (free-id-table-set! unann-defs i #t)
-		 (make-def-binding i t))])]))]
+               (for/list ([i (in-list vars)] [t (in-list ts)])
+                 (register-type i t)
+                 (free-id-table-set! unann-defs i #t)
+                 (make-def-binding i t))])]))]
 
       ;; to handle the top-level, we have to recur into begins
       [(begin . rest)
@@ -205,8 +205,8 @@
        (void)]
       [(define-values () (begin (quote-syntax (define-typed-struct-internal . rest)) (#%plain-app values)))
        (void)]
-      
-      ;; submodules take care of themselves:      
+
+      ;; submodules take care of themselves:
       [(module n spec (#%plain-module-begin body ...))
        (void)]
       ;; module* is not expanded, so it doesn't have a `#%plain-module-begin`
@@ -343,12 +343,12 @@
      (values
       #`(begin
           (begin-for-syntax
-            (module* #%type-decl #f    
+            (module* #%type-decl #f
               (require typed-racket/types/numeric-tower typed-racket/env/type-name-env
                        typed-racket/env/global-env typed-racket/env/type-alias-env
                        typed-racket/types/type-table)
-              #,(env-init-code syntax-provide? provide-tbl def-tbl)              
-              #,(talias-env-init-code)              
+              #,(env-init-code syntax-provide? provide-tbl def-tbl)
+              #,(talias-env-init-code)
               #,(tname-env-init-code)
               #,(make-struct-table-code)
               #,@(for/list ([a (in-list aliases)])

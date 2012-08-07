@@ -1,8 +1,8 @@
 #lang racket/base
 
 (require "../utils/utils.rkt"
-	 (except-in (rep type-rep) make-arr)
-         (rename-in (types convenience union utils printer filter-ops resolve)
+         (except-in (rep type-rep object-rep filter-rep) make-arr)
+         (rename-in (types abbrev union utils printer filter-ops resolve)
                     [make-arr* make-arr])
          (utils tc-utils stxclass-util)
          syntax/stx (prefix-in c: racket/contract)
@@ -40,10 +40,10 @@
      (parse-type #'ty)]
     [(x ...)
      #:fail-unless (= 1 (length
-			 (for/list ([i (syntax->list #'(x ...))]
-				    #:when (and (identifier? i)
-						(free-identifier=? i #'t:->)))
-				   i)))
+                         (for/list ([i (syntax->list #'(x ...))]
+                                    #:when (and (identifier? i)
+                                                (free-identifier=? i #'t:->)))
+                                   i)))
      #f
      (parse-type s)]))
 

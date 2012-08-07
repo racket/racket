@@ -4,8 +4,10 @@
          (prefix-in s: srfi/1)
          (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt"
                   "rep/rep-utils.rkt" "types/abbrev.rkt" "types/subtype.rkt"
-                  "types/numeric-tower.rkt" "utils/utils.rkt"
+                  "utils/utils.rkt"
                   "utils/tc-utils.rkt"))
+
+;;TODO try to remove requirement on abbrev once promise is fixed
 
 ;; do we attempt to find instantiations of polymorphic types to print?
 ;; FIXME - currently broken

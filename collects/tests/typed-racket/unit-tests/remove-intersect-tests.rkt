@@ -2,7 +2,7 @@
 (require "test-utils.rkt" (for-syntax scheme/base)
          (rep type-rep)
          (r:infer infer infer-dummy)
-         (types convenience subtype union remove-intersect)
+         (types abbrev numeric-tower subtype union remove-intersect)
          rackunit)
 
 (define-syntax (over-tests stx)

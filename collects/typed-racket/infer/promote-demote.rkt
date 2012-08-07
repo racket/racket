@@ -2,7 +2,7 @@
 
 (require "../utils/utils.rkt")
 (require (rep type-rep rep-utils)
-	 (types convenience union utils)
+         (types abbrev union utils)
          "signatures.rkt"
          racket/list racket/match)
 

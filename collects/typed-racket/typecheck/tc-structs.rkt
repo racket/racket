@@ -1,14 +1,14 @@
 #lang racket/base
 
 (require "../utils/utils.rkt"
-	 (except-in (rep type-rep free-variance) Dotted)
+         (rep type-rep object-rep free-variance)
          (private parse-type)
-	 (types convenience utils union resolve abbrev substitute type-table)
-	 (env global-env type-env-structs type-name-env tvar-env)
-	 (utils tc-utils)
+         (types abbrev utils union resolve substitute type-table)
+         (env global-env type-env-structs type-name-env tvar-env)
+         (utils tc-utils)
          "def-binding.rkt"
          syntax/kerncase
-         syntax/struct         
+         syntax/struct
          racket/function
          racket/match
          (only-in racket/contract
