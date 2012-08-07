@@ -1,6 +1,14 @@
 #lang typed/racket
 (require typed/rackunit)
 
+(require "fibonacci-lucas.rkt")
+(check-equal? ((inst map Natural Natural) fibonacci '(0 1 2 3 4 5 6 7))
+              '(0 1 1 2 3 5 8 13))
+(check-equal? ((inst map Natural Natural) lucas '(0 1 2 3 4 5 6 7))
+              '(1 3 4 7 11 18 29 47))
+(check-equal? ((inst map Natural Natural) (λ: ([x : Natural]) (fibonacci-mod x 7)) '(0 1 2 3 4 5 6 7))
+              ((inst map Natural Natural) (λ: ([x : Natural]) (modulo (fibonacci x) 7)) '(0 1 2 3 4 5 6 7)))
+
 (require "partitions.rkt")
 (check-equal? ((inst map Natural Integer) partitions '(0 1 2 3 4 5 6 7 8 9 10))
               '(1 1 2 3 5 7 11 15 22 30 42))
