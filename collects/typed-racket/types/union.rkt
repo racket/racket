@@ -34,9 +34,17 @@
     [(Union: es) es]
     [_ (list t)]))
 
+(define empty-union (make-Union null))
+
 ;; Union constructor
 ;; Normalizes representation by sorting types.
 ;; Type * -> Type
 ;; The input types can overlap and be union types
-(define (Un . args)
-  (make-union* (foldr merge '() (remove-dups (sort (append-map flat args) type<?)))))
+(define Un
+  (case-lambda 
+    [() empty-union]
+    [(t) t]
+    [args 
+     (define ts (foldr merge '()
+                       (remove-dups (sort (append-map flat args) type<?))))
+     (make-union* ts)]))
