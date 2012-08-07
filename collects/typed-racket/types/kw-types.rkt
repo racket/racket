@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require "convenience.rkt" "../rep/type-rep.rkt"
+(require "abbrev.rkt" "../rep/type-rep.rkt"
          "union.rkt" "../utils/tc-utils.rkt"
          racket/list racket/dict racket/match)
 

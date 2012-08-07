@@ -4,7 +4,7 @@
  "../utils/utils.rkt"
  (for-template racket/base racket/list racket/unsafe/ops racket/flonum)
  (utils tc-utils) 
- (rename-in (types union convenience) [-Number N] [-Boolean B] [-Symbol Sym]))
+ (rename-in (types union abbrev numeric-tower) [-Number N] [-Boolean B] [-Symbol Sym]))
 
 (provide indexing)
 

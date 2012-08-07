@@ -3,7 +3,8 @@
 (require "../utils/utils.rkt"
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
-         "convenience.rkt" "subtype.rkt" "substitute.rkt" "union.rkt"
+         "abbrev.rkt" "subtype.rkt" "substitute.rkt" "union.rkt"
+         "numeric-tower.rkt"
          racket/match
          (for-syntax syntax/parse racket/base)
          syntax/id-table racket/dict)

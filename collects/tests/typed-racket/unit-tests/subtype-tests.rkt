@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require "test-utils.rkt"
-         (types subtype convenience union utils abbrev)
+         (types subtype numeric-tower union utils abbrev)
          (rep type-rep)
          (env init-envs type-env-structs)
          (r:infer infer infer-dummy)
@@ -18,9 +18,9 @@
   (syntax-case stx ()
     [(_ cl ...)
      (with-syntax ([(new-cl ...) (map single-test (syntax->list #'(cl ...)))])
-		  (syntax/loc stx
-			      (begin (test-suite "Tests for subtyping"
-						 new-cl ...))))]))
+                  (syntax/loc stx
+                              (begin (test-suite "Tests for subtyping"
+                                                 new-cl ...))))]))
 
 (infer-param infer)
 
@@ -112,9 +112,9 @@
    [(->* (list -Number -Number) -Boolean -Number) (->* (list -Number -Number -Boolean -Boolean) -Number)]
 
    [(-poly (a) (cl-> [() a]
-		     [(-Number) a]))
+                     [(-Number) a]))
     (cl-> [() (-pair -Number (-v b))]
-	  [(-Number) (-pair -Number (-v b))])]
+          [(-Number) (-pair -Number (-v b))])]
 
    [(-values (list -Number)) (-values (list Univ))]
 

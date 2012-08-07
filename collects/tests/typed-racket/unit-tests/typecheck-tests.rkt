@@ -14,7 +14,7 @@
           define lambda λ)
          (typecheck typechecker)
          (rep type-rep filter-rep object-rep)
-         (rename-in (types utils union convenience abbrev filter-ops)
+         (rename-in (types utils union numeric-tower abbrev filter-ops)
                     [Un t:Un]
                     [true-lfilter -true-lfilter]
                     [true-filter -true-filter]

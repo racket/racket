@@ -3,9 +3,11 @@
 (require racket/require racket/match unstable/sequence racket/string racket/promise
          (prefix-in s: srfi/1)
          (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt"
-                  "rep/rep-utils.rkt" "types/convenience.rkt" "types/subtype.rkt"
+                  "rep/rep-utils.rkt" "types/abbrev.rkt" "types/subtype.rkt"
                   "utils/utils.rkt"
                   "utils/tc-utils.rkt"))
+
+;;TODO try to remove requirement on abbrev once promise is fixed
 
 ;; do we attempt to find instantiations of polymorphic types to print?
 ;; FIXME - currently broken

@@ -1,7 +1,7 @@
 #lang racket/unit
 
 (require "../utils/utils.rkt"
-	 (types convenience utils union subtype)
+	 (types abbrev utils union subtype)
 	 (rep type-rep)
 	 (utils tc-utils)
 	 unstable/sequence unstable/hash

@@ -9,7 +9,7 @@
          racket/syntax unstable/struct syntax/stx
          (rename-in racket/contract [-> -->] [->* -->*] [one-of/c -one-of/c])
          (except-in (rep type-rep) make-arr)
-         (rename-in (types convenience utils union)
+         (rename-in (types abbrev utils union)
                     [make-arr* make-arr])
          (private type-annotation)
          (env type-env-structs lexical-env tvar-env index-env)

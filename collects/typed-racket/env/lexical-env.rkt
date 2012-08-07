@@ -7,17 +7,17 @@
 ;; but split here for performance
 
 (require "../utils/utils.rkt"
-	 "type-env-structs.rkt"
+         "type-env-structs.rkt"
          "global-env.rkt"
          "../types/kw-types.rkt"
-	 syntax/id-table
+         syntax/id-table
          racket/keyword-transform racket/list
          (for-syntax syntax/parse syntax/parse/experimental/contract racket/base)
          (only-in racket/contract ->* -> or/c any/c listof cons/c)
          (utils tc-utils mutated-vars)
          (only-in (rep type-rep) Type/c)
          (typecheck tc-metafunctions)
-	 (except-in (types utils convenience) -> ->*))
+         (except-in (types utils abbrev) -> ->*))
 
 (provide lexical-env with-lexical-env with-lexical-env/extend
          with-lexical-env/extend/props update-type/lexical)

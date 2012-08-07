@@ -4,7 +4,7 @@
          (except-in syntax/parse id)
          racket/pretty racket/promise
          (private type-contract)
-         (types utils convenience)
+         (types utils)
          (typecheck typechecker provide-handling tc-toplevel)
          (env tvar-env type-name-env type-alias-env env-req)
          (r:infer infer)

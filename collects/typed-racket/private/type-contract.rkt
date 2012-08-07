@@ -10,14 +10,14 @@
  (utils tc-utils require-contract)
  (env type-name-env)
  (types resolve utils)
- (prefix-in t: (types convenience))
+ (prefix-in t: (types abbrev numeric-tower))
  (private parse-type)
  racket/match unstable/match syntax/struct syntax/stx racket/syntax racket/list
  (only-in racket/contract -> ->* case-> cons/c flat-rec-contract provide/contract any/c)
  (for-template racket/base racket/contract racket/set (utils any-wrap)
                (prefix-in t: (types numeric-predicates))
                (only-in unstable/contract sequence/c)
-	       (only-in racket/class object% is-a?/c subclass?/c object-contract class/c init object/c class?)))
+               (only-in racket/class object% is-a?/c subclass?/c object-contract class/c init object/c class?)))
 
 (define (define/fixup-contract? stx)
   (or (syntax-property stx 'typechecker:contract-def)
@@ -95,14 +95,14 @@
                             [(list r) r]
                             [_ #`(values #,@rngs*)])]
                     [rst* rst])
-		 ;; Garr, I hate case->!
-		 (if (and (pair? (syntax-e #'(opt-dom* ...))) case->)
-		     (exit (fail))
-		     (if (or rst (pair? (syntax-e #'(opt-dom* ...))))
-			 (if case->
-			     #'(dom* ... #:rest (listof rst*) . -> . rng*)
-			     #'((dom* ...) (opt-dom* ...) #:rest (listof rst*) . ->* . rng*))
-			 #'(dom* ... . -> . rng*)))))
+                 ;; Garr, I hate case->!
+                 (if (and (pair? (syntax-e #'(opt-dom* ...))) case->)
+                     (exit (fail))
+                     (if (or rst (pair? (syntax-e #'(opt-dom* ...))))
+                         (if case->
+                             #'(dom* ... #:rest (listof rst*) . -> . rng*)
+                             #'((dom* ...) (opt-dom* ...) #:rest (listof rst*) . ->* . rng*))
+                         #'(dom* ... . -> . rng*)))))
              (unless (no-duplicates (for/list ([t arrs])
                                       (match t
                                         [(arr: dom _ _ _ _) (length dom)]
@@ -185,7 +185,7 @@
                ([cnts (append (map t->c vars) (map t->c notvars))])
              #'(or/c . cnts)))]
         [(and t (Function: _)) (t->c/fun t)]
-	[(Set: t) #`(set/c #,(t->c t))]
+        [(Set: t) #`(set/c #,(t->c t))]
         [(Sequence: ts) #`(sequence/c #,@(map t->c ts))]
         [(Vector: t)
          (when flat? (exit (fail)))
@@ -202,7 +202,7 @@
          #`(flat-named-contract (quote #,(syntax-e p?)) #,(cert p?))]
         [(F: v) (cond [(assoc v (vars)) => second]
                       [else (int-err "unknown var: ~a" v)])]
-	[(Poly: vs b)
+        [(Poly: vs b)
          (if from-typed?
              ;; in positive position, no checking needed for the variables
              (parameterize ([vars (append (for/list ([v vs]) (list v #'any/c)) (vars))])
@@ -286,7 +286,7 @@
         [(Syntax: t) #`(syntax/c #,(t->c t))]
         [(Value: v) #`(flat-named-contract #,(format "~a" v) (lambda (x) (equal? x '#,v)))]
         [(Param: in out) #`(parameter/c #,(t->c out))]
-	[(Hashtable: k v)
+        [(Hashtable: k v)
          (when flat? (exit (fail)))                  
          #`(hash/c #,(t->c k) #,(t->c v) #:immutable 'dont-care)]
         [else

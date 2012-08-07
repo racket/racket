@@ -1,11 +1,11 @@
 #lang racket/base
 
 (require "../utils/utils.rkt")
-(require (rename-in (types subtype convenience remove-intersect union utils filter-ops)
+(require (rename-in (types subtype abbrev remove-intersect union utils filter-ops)
                     [-> -->]
                     [->* -->*]
                     [one-of/c -one-of/c])
-         (rep type-rep filter-rep rep-utils) racket/list
+         (rep type-rep object-rep filter-rep rep-utils) racket/list
          racket/contract racket/match unstable/match
          (for-syntax racket/base)
          "tc-metafunctions.rkt")
@@ -42,9 +42,9 @@
   (define (st t) (subst-type t k o polarity))
   (define/cond-contract (sf fs) (FilterSet? . -> . FilterSet?) (subst-filter-set fs k o polarity))
   (type-case (#:Type st
-	      #:Filter sf
-	      #:Object (lambda (f) (subst-object f k o polarity)))
-	      t
+              #:Filter sf
+              #:Object (lambda (f) (subst-object f k o polarity)))
+              t
               [#:arr dom rng rest drest kws
                      ;; here we have to increment the count for the domain, where the new bindings are in scope
                      (let* ([arg-count (+ (length dom) (if rest 1 0) (if drest 1 0) (length kws))]
@@ -64,12 +64,12 @@
     [(Empty:) t]
     [(Path: p i)
      (if (name-ref=? i k)
-	 (match o
-	   [(Empty:) (make-Empty)]
-	   ;; the result is not from an annotation, so it isn't a NoObject
-	   [(NoObject:) (make-Empty)]
-	   [(Path: p* i*) (make-Path (append p p*) i*)])
-	 t)]))
+         (match o
+           [(Empty:) (make-Empty)]
+           ;; the result is not from an annotation, so it isn't a NoObject
+           [(NoObject:) (make-Empty)]
+           [(Path: p* i*) (make-Path (append p p*) i*)])
+         t)]))
 
 ;; this is the substitution metafunction
 (define/cond-contract (subst-filter f k o polarity)
@@ -79,17 +79,17 @@
     (match o
       [(or (Empty:) (NoObject:))
        (cond [(name-ref=? i k)
-	      (if polarity -top -bot)]
-	     [(index-free-in? k t) (if polarity -top -bot)]
+              (if polarity -top -bot)]
+             [(index-free-in? k t) (if polarity -top -bot)]
              [else f])]
       [(Path: p* i*)
        (cond [(name-ref=? i k)
-	      (maker
-	       (subst-type t k o polarity)
-	       i*
+              (maker
+               (subst-type t k o polarity)
+               i*
                (append p p*))]
-	     [(index-free-in? k t) (if polarity -top -bot)]
-	     [else f])]))
+             [(index-free-in? k t) (if polarity -top -bot)]
+             [else f])]))
   (match f
     [(ImpFilter: ant consq)
      (make-ImpFilter (subst-filter ant k o (not polarity)) (ap consq))]
@@ -107,28 +107,28 @@
    return
    (define (for-object o)
      (object-case (#:Type for-type)
-		  o
-		  [#:Path p i
-			  (if (name-ref=? i k)
-			      (return #t)
-			      o)]))
+                  o
+                  [#:Path p i
+                          (if (name-ref=? i k)
+                              (return #t)
+                              o)]))
    (define (for-filter o)
      (filter-case (#:Type for-type
-		   #:Filter for-filter)
-		  o
-		  [#:NotTypeFilter t p i
-				   (if (name-ref=? i k)
-				       (return #t)
-				       o)]
-		  [#:TypeFilter t p i
-				(if (name-ref=? i k)
-				    (return #t)
-				    o)]))
+                   #:Filter for-filter)
+                  o
+                  [#:NotTypeFilter t p i
+                                   (if (name-ref=? i k)
+                                       (return #t)
+                                       o)]
+                  [#:TypeFilter t p i
+                                (if (name-ref=? i k)
+                                    (return #t)
+                                    o)]))
    (define (for-type t)
      (type-case (#:Type for-type
-		 #:Filter for-filter
-		 #:Object for-object)
-		t
+                 #:Filter for-filter
+                 #:Object for-object)
+                t
                 [#:arr dom rng rest drest kws
                        ;; here we have to increment the count for the domain, where the new bindings are in scope
                        (let* ([arg-count (+ (length dom) (if rest 1 0) (if drest 1 0) (length kws))]
