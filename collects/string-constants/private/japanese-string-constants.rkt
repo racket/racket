@@ -867,7 +867,7 @@ please adhere to these guidelines:
  (force-quit-menu-item-help-string "現在の式評価を強制終了するには custodian-shutdown-all を使用してください")
  (limit-memory-menu-item-label "メモリを制限する...")
  (limit-memory-msg-1 "ここで指定したメモリ制限値は、プログラムを次回に実行するときに有効になります。")
- (limit-memory-msg-2 "制限値は 1MB 以上にしてください。")
+ (limit-memory-msg-2 "制限値は 8MB 以上にしてください。")
  (limit-memory-unlimited "制限しない")
  (limit-memory-limited "制限する")
  (limit-memory-megabytes "MB")

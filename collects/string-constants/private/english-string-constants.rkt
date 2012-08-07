@@ -961,7 +961,7 @@ please adhere to these guidelines:
  (force-quit-menu-item-help-string "Uses custodian-shutdown-all to abort the current evaluation")
  (limit-memory-menu-item-label "Limit Memory...")
  (limit-memory-msg-1 "The limit will take effect the next time the program")
- (limit-memory-msg-2 "is Run, and it must be at least one megabyte.")
+ (limit-memory-msg-2 "is Run, and it must be at least eight megabytes.")
  (limit-memory-unlimited "Unlimited")
  (limit-memory-limited "Limited")
  (limit-memory-megabytes "Megabytes")

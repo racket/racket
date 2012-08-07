@@ -947,8 +947,8 @@
   (force-quit-menu-item-label "Forcer le programme à quitter")
   (force-quit-menu-item-help-string "Utilise custodian-shutdown-all pour terminer toute l'évaluation courante")
   (limit-memory-menu-item-label "Limiter la mémoire...")
-  (limit-memory-msg-1 "La limite prendra effet à la prochaine exécution du programme.")
-  (limit-memory-msg-2 "Elle doit être d'au moins un megaoctet.")
+  ;(limit-memory-msg-1 "La limite prendra effet à la prochaine exécution du programme.")
+  ;(limit-memory-msg-2 "Elle doit être d'au moins un megaoctet.")  ;; the minimum limit is now 8 megs
   (limit-memory-unlimited "Illimitée")
   (limit-memory-limited "Limitée à")
   (limit-memory-megabytes "megaoctets")

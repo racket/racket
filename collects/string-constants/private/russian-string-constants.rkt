@@ -873,8 +873,8 @@ please adhere to these guidelines:
  (force-quit-menu-item-label "Принудительно выйти из программы")
  (force-quit-menu-item-help-string "Прервать все текущие вычисления")
  (limit-memory-menu-item-label "Ограничение по памяти...")
- (limit-memory-msg-1 "Ограничение станет действовать после следующего запуска программы")
- (limit-memory-msg-2 "Для выполнения необходим, по крайней мере, один мегабайт.")
+ ;(limit-memory-msg-1 "Ограничение станет действовать после следующего запуска программы")
+ ;(limit-memory-msg-2 "Для выполнения необходим, по крайней мере, один мегабайт.")  ;; minimum memory limit is now 8 megs
  (limit-memory-unlimited "Без ограничений")
  (limit-memory-limited "С ограничением")
  (limit-memory-megabytes "Мегабайт")

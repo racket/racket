@@ -116,8 +116,8 @@
 
 (drr:set-default 'drracket:child-only-memory-limit (* 1024 1024 128)
                          (λ (x) (or (boolean? x)
-                                    (integer? x)
-                                    (x . >= . (* 1024 1024 1)))))
+                                    (exact-integer? x)
+                                    (x . >= . (* 1024 1024 8)))))
 
 (drr:set-default 'drracket:recent-language-names 
                          null 

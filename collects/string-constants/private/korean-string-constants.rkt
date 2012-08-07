@@ -799,7 +799,7 @@
  (force-quit-menu-item-label "프로그램 강제중단")
  (force-quit-menu-item-help-string "작업관리자를 사용하여 현재 계산을 중단")
  (limit-memory-menu-item-label "메모리 제한")
- (limit-memory-msg-1 "메모리 제한은 1MB 이상이어야 하며, 바꾼 제한 설")
+ (limit-memory-msg-1 "메모리 제한은 8MB 이상이어야 하며, 바꾼 제한 설")
  (limit-memory-msg-2 "정은 프로그램을 다시 시작할 때부터 적용됩니다.")
  (limit-memory-unlimited "제한없음")
  (limit-memory-limited "제한있음")

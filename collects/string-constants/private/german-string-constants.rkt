@@ -853,8 +853,8 @@
  (force-quit-menu-item-label "Programm zwingen aufzuhören")
  (force-quit-menu-item-help-string "Benutzt custodian-shutdown-all, um die Auswertung abzubrechen")
  (limit-memory-menu-item-label "Speicherverbrauch einschränken...")
- (limit-memory-msg-1 "Das Limit wird beim nächsten Programmstart aktiv")
- (limit-memory-msg-2 "und muss mindestens ein Megabyte betragen.")
+ ;(limit-memory-msg-1 "Das Limit wird beim nächsten Programmstart aktiv")
+ ;(limit-memory-msg-2 "und muss mindestens ein Megabyte betragen.") ;; minimum memory limit is now 8 megabytes
  (limit-memory-unlimited "nicht einschränken")
  (limit-memory-limited "einschränken")
  (limit-memory-megabytes "Megabytes")
