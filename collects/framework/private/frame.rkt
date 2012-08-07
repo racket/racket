@@ -1436,31 +1436,30 @@
                   (when s
                     (send (current-ps-setup) copy-from s))))])))
     
-    (define/override edit-menu:between-select-all-and-find
-      (λ (edit-menu)
-        (let* ([c% (get-checkable-menu-item%)]
-               [on-demand
-                (λ (menu-item)
-                  (let ([edit (get-edit-target-object)])
-                    (if (and edit (is-a? edit editor<%>))
-                        (begin
-                          (send menu-item enable #t)
-                          (send menu-item check (send edit auto-wrap)))
-                        (begin 
-                          (send menu-item check #f)
-                          (send menu-item enable #f)))))]
-               [callback
-                (λ (item event)
-                  (let ([edit (get-edit-target-object)])
-                    (when (and edit
-                               (is-a? edit editor<%>))
-                      (let ([new-pref (not (send edit auto-wrap))])
-                        (preferences:set 'framework:auto-set-wrap? new-pref)
-                        (send edit auto-wrap new-pref)))))])
-          (make-object c% (string-constant wrap-text-item)
-            edit-menu callback #f #f on-demand))
-        
-        (make-object separator-menu-item% edit-menu)))
+    (define/override (edit-menu:between-select-all-and-find edit-menu)
+      (define c% (get-checkable-menu-item%))
+      (define (on-demand menu-item)
+        (define edit (get-edit-target-object))
+        (cond
+          [(and edit (is-a? edit editor<%>))
+           (send menu-item enable #t)
+           (send menu-item check (send edit auto-wrap))]
+          [else 
+           (send menu-item check #f)
+           (send menu-item enable #f)]))
+      (define (callback item event)
+        (define edit (get-edit-target-object))
+        (when (and edit
+                   (is-a? edit editor<%>))
+          (define new-pref (not (send edit auto-wrap)))
+          (preferences:set 'framework:auto-set-wrap? new-pref)
+          (send edit auto-wrap new-pref)))
+      (new c%
+           [label (string-constant wrap-text-item)]
+           [parent edit-menu]
+           [callback callback]
+           [demand-callback on-demand])
+      (make-object separator-menu-item% edit-menu))
     
     (define/override help-menu:about-callback 
       (λ (menu evt) 
