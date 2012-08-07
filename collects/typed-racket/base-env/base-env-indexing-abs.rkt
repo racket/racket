@@ -275,6 +275,9 @@
    [flvector-set! (cl->* (-> -FlVector -NonNegFixnum -Flonum -Void)
                          (-> -FlVector -Fixnum -Flonum -Void)
                          (-> -FlVector index-type -Flonum -Void))]
+   [flvector-copy (cl->* (-> -FlVector -FlVector)
+                         (-> -FlVector index-type -FlVector)
+                         (-> -FlVector index-type index-type -FlVector))]
 
    [unsafe-flvector-length (-> -FlVector -NonNegFixnum)]
    [unsafe-flvector-ref (cl->* (-> -FlVector -NonNegFixnum -Flonum)
