@@ -11,8 +11,7 @@
  (utils tc-utils)
  (env init-envs)
  (except-in (rep filter-rep object-rep type-rep) make-arr)
- (types convenience union)
- (only-in (types convenience) [make-arr* make-arr])
+ (rename-in (types abbrev numeric-tower union) [make-arr* make-arr])
  (for-syntax racket/base syntax/parse (only-in racket/syntax syntax-local-eval)))
 
 (define-syntax (define-initial-env stx)

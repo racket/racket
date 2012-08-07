@@ -2,7 +2,7 @@
 (require (rename-in "../utils/utils.rkt" [infer r:infer])
          "signatures.rkt" "check-below.rkt"
          (rep type-rep filter-rep object-rep)
-         (types convenience subtype union utils filter-ops)
+         (types abbrev subtype union utils filter-ops)
          (env lexical-env type-env-structs)
          (r:infer infer)
          (utils tc-utils)

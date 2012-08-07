@@ -5,7 +5,7 @@
    racket/list racket/math racket/flonum racket/unsafe/ops
    (for-template racket/flonum racket/fixnum racket/math racket/unsafe/ops racket/base
                  (only-in "../types/numeric-predicates.rkt" index?))
-   (only-in (types convenience) [-Number N] [-Boolean B] [-Symbol Sym] [-Real R] [-PosInt -Pos]))
+   (only-in (types abbrev numeric-tower) [-Number N] [-Boolean B] [-Symbol Sym] [-Real R] [-PosInt -Pos]))
 
   ;; TODO having definitions only at the top is really inconvenient.
 

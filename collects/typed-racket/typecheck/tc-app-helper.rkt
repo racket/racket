@@ -6,7 +6,7 @@
          "check-below.rkt" "tc-subst.rkt"
          (utils tc-utils)
          (rep type-rep object-rep)
-         (types utils union convenience subtype))
+         (types utils union abbrev subtype))
 
 (provide (all-defined-out))
 
@@ -40,7 +40,7 @@
                                  ta))])
          (define-values (t-r f-r o-r)
            (for/lists (t-r f-r o-r)
-             ([r (in-list results)])             
+             ([r (in-list results)])
              (open-Result r o-a t-a)))
          (ret t-r f-r o-r)))]
     [((arr: _ _ _ drest '()) _)

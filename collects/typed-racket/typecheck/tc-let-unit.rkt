@@ -3,10 +3,10 @@
 (require (rename-in "../utils/utils.rkt" [infer r:infer])
          "signatures.rkt" "tc-metafunctions.rkt" "tc-subst.rkt"
          "check-below.rkt"
-         (types utils convenience)
+         (types utils abbrev)
          (private type-annotation parse-type)
-	 (env lexical-env type-alias-env global-env type-env-structs)
-         (rep type-rep)
+         (env lexical-env type-alias-env global-env type-env-structs)
+         (rep type-rep filter-rep object-rep)
          syntax/free-vars
          racket/match (prefix-in c: racket/contract)
          (except-in racket/contract -> ->* one-of/c)

@@ -2,9 +2,9 @@
 
 (require (rename-in "../utils/utils.rkt" [private private-in])
          racket/match (prefix-in - racket/contract)
-         (types utils convenience union subtype remove-intersect type-table filter-ops)
+         (types utils union subtype remove-intersect type-table filter-ops)
          (private-in parse-type type-annotation)
-         (rep type-rep)
+         (rep type-rep object-rep filter-rep)
          (only-in (infer infer) restrict)
          (except-in (utils tc-utils stxclass-util))
          (env lexical-env type-env-structs tvar-env index-env)

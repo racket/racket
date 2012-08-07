@@ -25,8 +25,11 @@
   (only-in racket/match/runtime match:error matchable? match-equality-test))
  racket/file
  (only-in racket/private/pre-base new-apply-proc)
- (only-in (types convenience) [-Number N] [-Boolean B] [-Symbol Sym])
+ (only-in (types abbrev) [-Boolean B] [-Symbol Sym])
+ (only-in (types numeric-tower) [-Number N])
  (only-in (rep type-rep)
+          make-Name
+          make-ValuesDots
           make-MPairTop
           make-BoxTop make-ChannelTop make-VectorTop
           make-ThreadCellTop
@@ -38,7 +41,7 @@
 ;Section 9.2
 
 [raise (cl->* (Univ . -> . (Un))
-	      (Univ Univ . -> . (Un)))]
+              (Univ Univ . -> . (Un)))]
 
 [error
  (cl->* (-> Sym (Un))
@@ -247,8 +250,8 @@
 
 
 [assert (-poly (a b) (cl->*
-		      (Univ (make-pred-ty (list a) Univ b) . -> . b)
-		      (-> (Un a (-val #f)) a)))]
+                      (Univ (make-pred-ty (list a) Univ b) . -> . b)
+                      (-> (Un a (-val #f)) a)))]
 [defined? (->* (list Univ) -Boolean : (-FS (-not-filter -Undefined 0 null) (-filter -Undefined 0 null)))]
 
 
@@ -389,12 +392,12 @@
 [list (-poly (a) (->* '() a (-lst a)))]
 [procedure? (make-pred-ty top-func)]
 [map (-polydots (c a b)
-		(cl->*
-		 (-> (-> a c) (-pair a (-lst a)) (-pair c (-lst c)))
-		((list
-		  ((list a) (b b) . ->... . c)
-		  (-lst a))
-		 ((-lst b) b) . ->... .(-lst c))))]
+                (cl->*
+                 (-> (-> a c) (-pair a (-lst a)) (-pair c (-lst c)))
+                ((list
+                  ((list a) (b b) . ->... . c)
+                  (-lst a))
+                 ((-lst b) b) . ->... .(-lst c))))]
 [for-each (-polydots (c a b) ((list ((list a) (b b) . ->... . Univ) (-lst a))
                               ((-lst b) b) . ->... . -Void))]
 #;[fold-left (-polydots (c a b) ((list ((list c a) (b b) . ->... . c) c (-lst a))
@@ -1457,8 +1460,8 @@
 
 [tcp-abandon-port (-Port . -> . -Void)]
 [tcp-addresses (cl->*
-		(-Port [(-val #f)] . ->opt . (-values (list -String -String)))
-		(-Port (-val #t) . -> . (-values (list -String -Index -String -Index))))]
+                (-Port [(-val #f)] . ->opt . (-values (list -String -String)))
+                (-Port (-val #t) . -> . (-values (list -String -Index -String -Index))))]
 
 [tcp-port? (asym-pred Univ B (-FS (-filter (Un -Input-Port -Output-Port) 0) -top))]
 
@@ -1750,8 +1753,8 @@
 
 ;; probably the most useful cases
 [curry (-poly (a b c)
-	      (cl->* ((a b . -> . c) a . -> . (b . -> . c))
-		     ((a b . -> . c) . -> . (a . -> . (b . -> . c)))))]
+              (cl->* ((a b . -> . c) a . -> . (b . -> . c))
+                     ((a b . -> . c) . -> . (a . -> . (b . -> . c)))))]
 ;; mutable pairs
 [mcons (-poly (a b) (-> a b (-mpair a b)))]
 [mcar (-poly (a b)

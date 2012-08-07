@@ -1,12 +1,12 @@
 #lang racket/base
 
 (require (rename-in "../utils/utils.rkt" [infer infer-in]))
-(require (rename-in (types subtype convenience remove-intersect union)
+(require (rename-in (types subtype abbrev remove-intersect union)
                     [-> -->]
                     [->* -->*]
                     [one-of/c -one-of/c])
          (infer-in infer)
-         (rep type-rep object-rep)
+         (rep type-rep filter-rep object-rep)
          (utils tc-utils)
          (types resolve)
          (only-in (env type-env-structs lexical-env)

@@ -6,7 +6,7 @@
          (private with-types type-contract parse-type)
          (except-in syntax/parse id)
          racket/match racket/syntax unstable/match racket/list
-         (types utils convenience generalize)
+         (types utils abbrev generalize)
          (typecheck provide-handling tc-toplevel tc-app-helper)
          (rep type-rep)
          (env env-req)

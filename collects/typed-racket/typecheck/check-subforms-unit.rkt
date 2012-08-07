@@ -1,14 +1,14 @@
 #lang racket/unit
 
 (require "../utils/utils.rkt"
-	 syntax/kerncase
-	 syntax/parse
+         syntax/kerncase
+         syntax/parse
          racket/match
          "signatures.rkt" "tc-metafunctions.rkt"
          "tc-funapp.rkt" "tc-subst.rkt"
-         (types utils convenience union subtype)
-	 (utils tc-utils)
-	 (rep type-rep))
+         (types utils abbrev union subtype)
+         (utils tc-utils)
+         (rep type-rep))
 
 (import tc-if^ tc-lambda^ tc-app^ tc-let^ tc-expr^)
 (export check-subforms^)
@@ -69,8 +69,8 @@
          (set! body-stx form)
          (set! body-ty (tc-expr form))]
         [(a . b)
-	 (loop #'a)
-	 (loop #'b)]
+         (loop #'a)
+         (loop #'b)]
         [_ (void)])))
   (apply combine-types body-ty handler-tys))
 

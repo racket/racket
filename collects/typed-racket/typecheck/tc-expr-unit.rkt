@@ -5,10 +5,10 @@
          racket/match (prefix-in - racket/contract)
          "signatures.rkt" "tc-envops.rkt" "tc-metafunctions.rkt" "tc-subst.rkt"
          "check-below.rkt" "tc-funapp.rkt" "tc-app-helper.rkt" "../types/kw-types.rkt"
-         (types utils convenience union subtype remove-intersect 
+         (types utils abbrev numeric-tower union subtype remove-intersect 
                 type-table filter-ops generalize)
          (private-in parse-type type-annotation)
-         (rep type-rep)
+         (rep type-rep filter-rep object-rep)
          (only-in (infer infer) restrict)
          (except-in (utils tc-utils stxclass-util))
          (env lexical-env type-env-structs tvar-env index-env)
@@ -35,7 +35,7 @@
       [i:exp expected]
       [i:boolean (-val (syntax-e #'i))]
       [i:identifier (-val (syntax-e #'i))]
-      
+
       ;; Numbers
       [0 -Zero]
       [1 -One]

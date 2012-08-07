@@ -4,7 +4,7 @@
 	 (rep type-rep)
 	 (utils tc-utils)
 	 (env global-env)
-         (except-in (types subtype union convenience resolve utils generalize) -> ->* one-of/c)
+         (except-in (types subtype union resolve utils generalize))
          (private parse-type)
          (contract-req)
          racket/match)

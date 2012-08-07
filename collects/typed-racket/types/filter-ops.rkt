@@ -4,7 +4,7 @@
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils) (only-in (infer infer) restrict)
          (only-in racket/contract [-> -->] listof)
-         (types union subtype utils remove-intersect convenience)
+         (types union subtype utils remove-intersect abbrev)
          racket/list racket/match
          (for-syntax syntax/parse racket/base)
          syntax/id-table racket/dict

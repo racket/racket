@@ -15,7 +15,7 @@
          ;; end fixme
          (for-syntax syntax/parse scheme/base (utils tc-utils))
          (private type-annotation)
-         (types utils abbrev union subtype resolve convenience type-table substitute generalize)
+         (types utils abbrev numeric-tower union subtype resolve type-table substitute generalize)
          (utils tc-utils)
          (only-in srfi/1 alist-delete)
          (except-in (env type-env-structs tvar-env index-env) extend)

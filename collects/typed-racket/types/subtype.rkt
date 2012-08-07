@@ -7,8 +7,12 @@
          (only-in (infer infer-dummy) unify)
          racket/match unstable/match
          racket/function
+         unstable/lazy-require
          (prefix-in c: racket/contract)
          (for-syntax racket/base syntax/parse))
+
+(lazy-require
+  ("union.rkt" (Un)))
 
 ;; exn representing failure of subtyping
 ;; s,t both types
@@ -193,7 +197,7 @@
        [(not (apply = (length dom1) (map length dom))) #f]
        [(not (for/and ([rng2 (in-list rng)]) (type-equal? rng1 rng2)))
         #f]
-       [else (make-arr (apply map *Un (cons dom1 dom)) rng1 #f #f '())])]
+       [else (make-arr (apply map Un (cons dom1 dom)) rng1 #f #f '())])]
     [_ #f]))
 
 (define-match-expander NameStruct:

@@ -7,9 +7,9 @@
          "type-alias-env.rkt"
          (rep type-rep object-rep filter-rep rep-utils)
          (for-template (rep type-rep object-rep filter-rep)
-                       (types union convenience)
+                       (types union abbrev)
                        racket/shared racket/base)
-         (types union convenience)
+         (types abbrev)
          racket/syntax
          mzlib/pconvert racket/match)
 
