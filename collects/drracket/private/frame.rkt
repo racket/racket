@@ -258,7 +258,8 @@
       
       (define/override (edit-menu:between-find-and-preferences menu)
         (super edit-menu:between-find-and-preferences menu)
-        (make-object separator-menu-item% menu)
+        (when (current-eventspace-has-standard-menus?)
+          (new separator-menu-item% [parent menu]))
         (let ([keybindings-on-demand
                (λ (menu-item)
                  (let ([last-edit-object (get-edit-target-window)])
