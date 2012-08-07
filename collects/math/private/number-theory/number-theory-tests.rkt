@@ -1,6 +1,11 @@
 #lang typed/racket
 (require typed/rackunit)
 
+(require "partitions.rkt")
+(check-equal? ((inst map Natural Integer) partitions '(0 1 2 3 4 5 6 7 8 9 10))
+              '(1 1 2 3 5 7 11 15 22 30 42))
+
+
 (require "bernoulli.rkt")
 (check-equal? (map bernoulli '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18))
               '(1 -1/2 1/6 0 -1/30 0 1/42 0 -1/30 0 5/66 0 -691/2730 0 7/6 0 -3617/510 0 43867/798))

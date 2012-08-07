@@ -6,6 +6,7 @@
 
 (require/typed typed/racket
                [integer-sqrt/remainder (Natural -> (Values Natural Natural))])
+(require "list-operations.rkt")
 
 (provide bezout
          bezout-binary
@@ -30,7 +31,7 @@
          
          ; roots
          integer-root
-         integer-root/remainder
+         integer-root/remainder         
          
          ; Powers
          max-dividing-power
@@ -40,6 +41,7 @@
          prime-power?
          odd-prime-power?
          as-power
+         perfect-square
          ; sum and product of lists:
          sum
          product
@@ -87,24 +89,6 @@
 (define-predicate naturals? Ns)
 (define-predicate Integer?  Z)
 (define-predicate integers? Zs)
-
-;;;
-;;;
-;;;
-
-(: sum : Zs -> Z)
-(define (sum xs)
-  (define s 0)
-  (for: ([x (in-list xs)])
-    (set! s (+ x s)))
-  s)
-
-(: product : Zs -> Z)
-(define (product xs)
-  (define p 1)
-  (for: ([x (in-list xs)])
-    (set! p (* x p)))
-  p)
 
 ;;;
 ;;; DIVISIBILITY
@@ -656,6 +640,13 @@
          (if (and (> n 1) (> a 1))
              (list base n)
              #f))))
+
+(: perfect-square : N -> (U N False))
+(define (perfect-square n)
+  (let ([sqrt-n (integer-sqrt n)])
+    (if (= (* sqrt-n sqrt-n) n)
+        sqrt-n
+        #f)))
 
 (: powers-of : N N -> (Listof N))
 ;   returns a list of numbers: a^0, ..., a^n
