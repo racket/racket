@@ -1,5 +1,5 @@
 #lang typed/racket
-(provide farey)
+(provide farey mediant)
 
 (define-type Q Exact-Rational)
 (define-predicate natural? Natural)
@@ -9,28 +9,16 @@
   (/ (+ (numerator x) (numerator y))
      (+ (denominator x) (denominator y))))
 
-(define memo ((inst make-hasheqv Q Q)))
-
-(: farey : Natural -> (Listof Q))
-(define (farey d)
-  
-  (: delete-last : (Listof Q) -> (Listof Q))
-  (define (delete-last xs)
-    (reverse (cdr (reverse xs))))
-  
-  (: successive? : Q Q -> Boolean)
-  (define (successive? x y)
-    (= (- (* (denominator x) (numerator y))
-          (* (denominator y) (numerator x)))
-       1))
-  
-  (cond
-    [(= d 0) (raise-type-error 'farey "Expected positive number" d)]
-    [(= d 1) '(0 1)]
-    [else    
-     (define fs (farey (assert (sub1 d) natural?)))
-     (sort (append fs
-                   (filter (λ: ([x : Q]) (<= (denominator x) d))
-                           (map mediant
-                                (delete-last fs) (rest fs))))
-           <)]))
+(: farey : Positive-Integer -> (Listof Q))
+(define (farey n)
+  (define: fs : (Listof Q) '())
+  (let: loop : (Listof Q)
+    ([a : Integer 1]
+     [b : Integer 1]
+     [c : Integer (sub1 n)]
+     [d : Integer n])
+    (set! fs (cons (/ a b) fs))
+    (when (positive? a)
+      (define k (quotient (+ n b) d))
+      (loop c d (- (* k c) a) (- (* k d) b)))
+    fs))
