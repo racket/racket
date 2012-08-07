@@ -28,12 +28,15 @@ things out.
 For more information about XREPL, see @other-doc[xrepl-doc].
 
 @; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@section{Bash completion}
+@section{Shell completion}
 
-Shell auto-completion for @exec{bash} is available in
-@filepath{collects/meta/contrib/completion/racket-completion.bash}.
-To enable it, just run the file from your @tt{.bashrc}.
+Shell auto-completion for @exec{bash} and @exec{zsh} is available in
+@filepath{collects/meta/contrib/completion/racket-completion.bash} and
+@filepath{collects/meta/contrib/completion/racket-completion.zsh},
+respectively.
+To enable it, just run the appropriate file from your @tt{.bashrc} or
+your @tt{.zshrc}.
 
 The @filepath{meta} collection is only available in the Racket Full
-distribution. The completion script is also available
-@hyperlink["https://raw.github.com/plt/racket/master/collects/meta/contrib/completion/racket-completion.bash"]{online}.
+distribution. The completion scripts are also available
+@hyperlink["https://github.com/plt/racket/tree/master/collects/meta/contrib/completion"]{online}.
