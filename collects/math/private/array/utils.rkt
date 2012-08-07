@@ -1,6 +1,6 @@
 #lang typed/racket/base
 
-(require racket/flonum racket/fixnum racket/list
+(require racket/fixnum racket/list
          racket/performance-hint
          (for-syntax racket/base)
          "../unsafe.rkt")
@@ -9,53 +9,46 @@
 
 (define-type (Listof* A) (Rec T (U A (Listof T))))
 (define-type (Vectorof* A) (Rec T (U A (Vectorof T))))
-(define-predicate listof-index? (Listof Index))
+
+(define-type Indexes (Vectorof Index))
+(define-type User-Indexes (U (Vectorof Integer) Indexes))
 
 (begin-encourage-inline
   
-  (: unsafe-vector-copy-all! (All (A) ((Vectorof A) (Vectorof A) -> Void)))
-  (define (unsafe-vector-copy-all! dst-js src-js)
-    (define dims (vector-length src-js))
-    (let loop ([#{i : Nonnegative-Fixnum} 0])
-      (when (i . < . dims)
-        (unsafe-vector-set! dst-js i (unsafe-vector-ref src-js i))
-        (loop (+ i 1)))))
-  
-  (: vector-copy-all (All (A) ((Vectorof A) -> (Vectorof A))))
-  (define (vector-copy-all js)
+  (: vector->supertype-vector (All (A B) ((Vectorof A) -> (Vectorof (U A B)))))
+  (define (vector->supertype-vector js)
     (define dims (vector-length js))
-    (cond [(= dims 0)  js]
-          [else  (define: new-js : (Vectorof A) (make-vector dims (unsafe-vector-ref js 0)))
+    (cond [(= dims 0)  (vector)]
+          [else  (define: new-js : (Vectorof (U A B)) (make-vector dims (unsafe-vector-ref js 0)))
                  (let loop ([#{i : Nonnegative-Fixnum} 1])
                    (cond [(i . < . dims)  (unsafe-vector-set! new-js i (unsafe-vector-ref js i))
                                           (loop (+ i 1))]
                          [else  new-js]))]))
   
-  (: array-shape? (Any -> Boolean : (Listof Index)))
-  (define (array-shape? ds)
-    (and (list? ds) (index? (apply * ds)) (listof-index? ds)))
+  (: vector-copy-all (All (A) ((Vectorof A) -> (Vectorof A))))
+  (define (vector-copy-all js) ((inst vector->supertype-vector A A) js))
   
-  (: unsafe-array-shape-size ((Vectorof Index) -> Nonnegative-Integer))
-  (define (unsafe-array-shape-size ds)
+  (: array-shape-size (Indexes -> Nonnegative-Integer))
+  (define (array-shape-size ds)
     (define dims (vector-length ds))
     (let loop ([#{i : Nonnegative-Fixnum} 0] [#{n : Nonnegative-Integer} 1])
       (cond [(i . < . dims)  (define d (unsafe-vector-ref ds i))
                              (loop (+ i 1) (* n d))]
             [else  n])))
   
-  (: array-shape-safe->unsafe ((Listof Integer) (-> Nothing) -> (Vectorof Index)))
-  (define (array-shape-safe->unsafe ds fail)
-    (define dims (length ds))
-    (define: new-ds : (Vectorof Index) (make-vector dims 0))
-    (let loop ([ds ds] [#{i : Nonnegative-Fixnum} 0])
+  (: check-array-shape (User-Indexes (-> Nothing) -> Indexes))
+  (define (check-array-shape ds fail)
+    (define dims (vector-length ds))
+    (define: new-ds : Indexes (make-vector dims 0))
+    (let loop ([#{i : Nonnegative-Fixnum} 0])
       (cond [(i . < . dims)
-             (define di (unsafe-car ds))
+             (define di (unsafe-vector-ref ds i))
              (cond [(index? di)  (unsafe-vector-set! new-ds i di)
-                                 (loop (unsafe-cdr ds) (+ i 1))]
+                                 (loop (+ i 1))]
                    [else  (fail)])]
             [else  new-ds])))
   
-  (: unsafe-array-index->value-index ((Vectorof Index) (Vectorof Index) -> Nonnegative-Fixnum))
+  (: unsafe-array-index->value-index (Indexes Indexes -> Nonnegative-Fixnum))
   (define (unsafe-array-index->value-index ds js)
     (define dims (vector-length ds))
     (let loop ([#{i : Nonnegative-Fixnum} 0] [#{j : Nonnegative-Fixnum} 0])
@@ -65,7 +58,7 @@
              (loop (+ i 1) (unsafe-fx+ ji (unsafe-fx* di j)))]
             [else  j])))
   
-  (: unsafe-value-index->array-index! ((Vectorof Index) Nonnegative-Fixnum (Vectorof Index) -> Void))
+  (: unsafe-value-index->array-index! (Indexes Nonnegative-Fixnum Indexes -> Void))
   (define (unsafe-value-index->array-index! ds j js)
     (with-asserts ([j index?])
       (define dims (vector-length ds))
@@ -80,112 +73,93 @@
   )  ; begin-encourage-inline
 
 ;; Using this instead of literal #() is currently slightly faster (about 18% on my machine)
-(define: empty-vectorof-index : (Vectorof Index)
+(define: empty-vectorof-index : Indexes
   #())
 
-(: vector-copy-all! (All (A) ((Vectorof A) (Vectorof A) -> Void)))
-(define (vector-copy-all! dst-js src-js)
-  (define dims (vector-length src-js))
-  (unless (= dims (vector-length dst-js))
-    (raise-type-error 'vector-copy-all! (format "Vector with ~e elements" dims) 0 dst-js src-js))
-  (let loop ([#{i : Nonnegative-Fixnum} 0])
-    (when (i . < . dims)
-      (unsafe-vector-set! dst-js i (unsafe-vector-ref src-js i))
-      (loop (+ i 1)))))
-
-(: raise-array-index-error (Symbol (Vectorof Index) (Listof Integer) -> Nothing))
+(: raise-array-index-error (Symbol Indexes User-Indexes -> Nothing))
 (define (raise-array-index-error name ds js)
   (error name "expected indexes for shape ~e; given ~e"
          (vector->list ds) js))
 
-(: array-shape-unsafe->safe ((Vectorof Index) -> (Listof Index)))
-(define array-shape-unsafe->safe vector->list)
-
-(: array-index->value-index (Symbol (Vectorof Index) (Listof Integer) -> Nonnegative-Fixnum))
+(: array-index->value-index (Symbol Indexes User-Indexes -> Nonnegative-Fixnum))
 (define (array-index->value-index name ds js)
   (define (raise-index-error) (raise-array-index-error name ds js))
   (define dims (vector-length ds))
-  (unless (= dims (length js)) (raise-index-error))
-  (let loop ([#{i : Nonnegative-Fixnum} 0] [js js] [#{j : Nonnegative-Fixnum}  0])
+  (unless (= dims (vector-length js)) (raise-index-error))
+  (let loop ([#{i : Nonnegative-Fixnum} 0] [#{j : Nonnegative-Fixnum}  0])
     (cond [(i . < . dims)
            (define di (unsafe-vector-ref ds i))
-           (define ji (unsafe-car js))
-           (cond [(and (0 . <= . ji) (ji . < . di))
-                  (loop (+ i 1) (unsafe-cdr js) (unsafe-fx+ ji (unsafe-fx* di j)))]
+           (define ji (unsafe-vector-ref js i))
+           (cond [(and (exact-integer? ji) (0 . <= . ji) (ji . < . di))
+                  (loop (+ i 1) (unsafe-fx+ ji (unsafe-fx* di j)))]
                  [else  (raise-index-error)])]
           [else  j])))
 
-(: check-array-indexes (Symbol (Vectorof Index) (Listof Integer) -> (Vectorof Index)))
+(: check-array-indexes (Symbol Indexes User-Indexes -> Indexes))
 (define (check-array-indexes name ds js)
   (define (raise-index-error) (raise-array-index-error name ds js))
   (define dims (vector-length ds))
-  (unless (= dims (length js)) (raise-index-error))
-  (define: new-js : (Vectorof Index) (make-vector dims 0))
-  (let loop ([#{i : Nonnegative-Fixnum} 0] [js js])
+  (unless (= dims (vector-length js)) (raise-index-error))
+  (define: new-js : Indexes (make-vector dims 0))
+  (let loop ([#{i : Nonnegative-Fixnum} 0])
     (cond [(i . < . dims)
            (define di (unsafe-vector-ref ds i))
-           (define ji (unsafe-car js))
-           (cond [(and (0 . <= . ji) (ji . < . di))
+           (define ji (unsafe-vector-ref js i))
+           (cond [(and (exact-integer? ji) (0 . <= . ji) (ji . < . di))
                   (unsafe-vector-set! new-js i ji)
-                  (loop (+ i 1) (unsafe-cdr js))]
+                  (loop (+ i 1))]
                  [else  (raise-index-error)])]
           [else  new-js])))
 
-(: unsafe-check-equal-array-shape! (Symbol (Vectorof Index) (Vectorof Index) -> Void))
-(define (unsafe-check-equal-array-shape! name ds1 ds2)
+(: check-equal-array-shape! (Symbol Indexes Indexes -> Void))
+(define (check-equal-array-shape! name ds1 ds2)
   (unless (equal? ds1 ds2)
-    (error name
-           "expected Arrays with the same shape; given Arrays with shapes ~e and ~e"
-           (array-shape-unsafe->safe ds1)
-           (array-shape-unsafe->safe ds2))))
+    (error name "expected Arrays with the same shape; given Arrays with shapes ~e and ~e" ds1 ds2)))
 
-(: vector-shape (All (A) (((Vectorof* A) -> Boolean : A) (Vectorof* A) -> (U #f (Listof Integer)))))
+(: maybe-list->vector (All (A) ((U #f (Listof A)) -> (U #f (Vectorof A)))))
+(define (maybe-list->vector vs)
+  (and vs (list->vector vs)))
+
+(: vector-shape (All (A) (((Vectorof* A) -> Boolean : A) (Vectorof* A) -> (U #f (Vectorof Integer)))))
 (define (vector-shape pred? vec)
-  (let: vector-shape : (U #f (Listof Integer)) ([vec : (Vectorof* A)  vec])
-    (cond [(pred? vec)  (list)]
-          [else
-           (define d (vector-length vec))
-           (cond [(= d 0)  (list 0)]
-                 [else
-                  (define ds (vector-shape (vector-ref vec 0)))
-                  (if ds
+  (maybe-list->vector
+   (let: vector-shape : (U #f (Listof Integer)) ([vec : (Vectorof* A)  vec])
+     (cond [(pred? vec)  (list)]
+           [else
+            (define d (vector-length vec))
+            (cond [(= d 0)  (list 0)]
+                  [else
+                   (define ds (vector-shape (vector-ref vec 0)))
+                   (if ds
                       (let loop ([#{i : Nonnegative-Fixnum} 1])
                         (cond [(i . >= . d)  (cons d ds)]
                               [(equal? ds (vector-shape (vector-ref vec i)))
                                (loop (+ i 1))]
                               [else  #f]))
-                      #f)])])))
+                      #f)])]))))
 
-(: list-shape (All (A) (((Listof* A) -> Boolean : A) (Listof* A) -> (U #f (Listof Integer)))))
+(: list-shape (All (A) (((Listof* A) -> Boolean : A) (Listof* A) -> (U #f (Vectorof Integer)))))
 (define (list-shape pred? lst)
-  (let: list-shape : (U #f (Listof Integer)) ([lst : (Listof* A)  lst])
-    (cond [(pred? lst)  (list)]
-          [(null? lst)  (list 0)]
-          [else
-           (define d (length lst))
-           (define ds (list-shape (car lst)))
-           (if ds
-               (let loop ([lst  (cdr lst)])
-                 (cond [(null? lst)  (cons d ds)]
-                       [(equal? ds (list-shape (car lst)))
-                        (loop (cdr lst))]
-                       [else  #f]))
-               #f)])))
+  (maybe-list->vector
+   (let: list-shape : (U #f (Listof Integer)) ([lst : (Listof* A)  lst])
+     (cond [(pred? lst)  (list)]
+           [(null? lst)  (list 0)]
+           [else
+            (define d (length lst))
+            (define ds (list-shape (car lst)))
+            (if ds
+                (let loop ([lst  (cdr lst)])
+                  (cond [(null? lst)  (cons d ds)]
+                        [(equal? ds (list-shape (car lst)))
+                         (loop (cdr lst))]
+                        [else  #f]))
+                #f)]))))
 
 (: list-flatten (All (A) (((Listof* A) -> Boolean : A) (Listof* A) -> (Listof A))))
 (define (list-flatten pred? lst)
   (let loop ([lst lst])
     (cond [(pred? lst)  (list lst)]
           [else  (append* (map loop lst))])))
-
-(: list->flvector ((Listof Float) -> FlVector))
-(define (list->flvector vs)
-  (define n (length vs))
-  (define new-vs (make-flvector n))
-  (let loop ([vs vs] [#{i : Nonnegative-Fixnum} 0])
-    (cond [(i . < . n)  (unsafe-flvector-set! new-vs i (unsafe-car vs))
-                        (loop (unsafe-cdr vs) (+ i 1))]
-          [else  new-vs])))
 
 (: unsafe-vector-remove (All (I) ((Vectorof I) Index -> (Vectorof I))))
 (define (unsafe-vector-remove vec k)
@@ -226,29 +200,26 @@
   (define-values (_line col _pos) (port-next-location port))
   (if col col 0))
 
-(: apply-permutation (All (A) ((Listof Integer) (Vectorof Index) (-> Nothing)
-                                                -> (Values (Vectorof Index) (Vectorof Index)))))
+(: apply-permutation (All (A) ((Listof Integer) Indexes (-> Nothing) -> (Values Indexes Indexes))))
 (define (apply-permutation perm ds fail)
   (define dims (vector-length ds))
+  (unless (= dims (length perm)) (fail))
   (define: visited  : (Vectorof Boolean) (make-vector dims #f))
   (define: new-perm : (Vectorof Index) (make-vector dims 0))
-  (define: new-ds   : (Vectorof Index) (make-vector dims 0))
-  ;; This loop fails if the length of perm isn't dims, it writes to a `visited' element twice,
-  ;; or an element of perm is not an Index < dims
+  (define: new-ds   : Indexes (make-vector dims 0))
+  ;; This loop fails if it writes to a `visited' element twice, or an element of perm is not an
+  ;; Index < dims
   (let loop ([perm perm] [#{i : Nonnegative-Fixnum} 0])
     (cond [(i . < . dims)
-           (cond [(null? perm)  (fail)]
-                 [else
-                  (define k (car perm))
-                  (cond [(and (0 . <= . k) (k . < . dims))
-                         (cond [(unsafe-vector-ref visited k)  (fail)]
-                               [else  (unsafe-vector-set! visited k #t)])
-                         (unsafe-vector-set! new-ds i (unsafe-vector-ref ds k))
-                         (unsafe-vector-set! new-perm i k)]
-                        [else  (fail)])
-                  (loop (cdr perm) (+ i 1))])]
-          [(null? perm)  (values new-ds new-perm)]
-          [else  (fail)])))
+           (define k (unsafe-car perm))
+           (cond [(and (0 . <= . k) (k . < . dims))
+                  (cond [(unsafe-vector-ref visited k)  (fail)]
+                        [else  (unsafe-vector-set! visited k #t)])
+                  (unsafe-vector-set! new-ds i (unsafe-vector-ref ds k))
+                  (unsafe-vector-set! new-perm i k)]
+                 [else  (fail)])
+           (loop (unsafe-cdr perm) (+ i 1))]
+          [else  (values new-ds new-perm)])))
 
 (define-syntax (plet: stx)
   (syntax-case stx (:)
@@ -256,10 +227,10 @@
      (syntax/loc stx
        ((plambda: (A ...) ([x : T] ...) body ...) e ...))]))
 
-(: make-thread-local-indexes (Integer -> (-> (Vectorof Index))))
+(: make-thread-local-indexes (Integer -> (-> Indexes)))
 (define (make-thread-local-indexes dims)
-  (let: ([val : (Thread-Cellof (U #f (Vectorof Index))) (make-thread-cell #f)])
+  (let: ([val : (Thread-Cellof (U #f Indexes)) (make-thread-cell #f)])
     (λ () (or (thread-cell-ref val)
-              (let: ([v : (Vectorof Index)  (make-vector dims 0)])
+              (let: ([v : Indexes  (make-vector dims 0)])
                 (thread-cell-set! val v)
                 v)))))

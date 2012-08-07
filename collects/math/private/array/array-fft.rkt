@@ -16,9 +16,9 @@
 
 ;; Fast Fourier Transform
 
-(: array-last-axis-fft ((Array Number) -> (view-array Float-Complex)))
+(: array-last-axis-fft ((Array Number) -> (View-Array Float-Complex)))
 (define (array-last-axis-fft arr)
-  (define ds (unsafe-array-shape arr))
+  (define ds (array-shape arr))
   (define dims (vector-length ds))
   (define k (- dims 1))
   (cond
@@ -35,9 +35,9 @@
                  (vector-fft! vs old-j (unsafe-fx+ old-j dk) new-vs old-j)))
        (array-view (unsafe-strict-array ds new-vs)))]))
 
-(: array-axis-fft ((Array Number) Integer -> (view-array Float-Complex)))
+(: array-axis-fft ((Array Number) Integer -> (View-Array Float-Complex)))
 (define (array-axis-fft arr k)
-  (define ds (unsafe-array-shape arr))
+  (define ds (array-shape arr))
   (define dims (vector-length ds))
   (cond [(= dims 0)
          (raise-type-error 'array-axis-fft "Array with at least one axis" 0 arr k)]
@@ -48,11 +48,11 @@
         [else
          (array-axis-swap (array-last-axis-fft (array-axis-swap arr k (- dims 1))) k (- dims 1))]))
 
-(: array-fft ((Array Number) -> (view-array Float-Complex)))
+(: array-fft ((Array Number) -> (View-Array Float-Complex)))
 (define (array-fft arr)
   (define dims (array-dims arr))
   (cond [(= dims 0)  (raise-type-error 'array-fft "Array with at least one axis" arr)]
-        [(not (andmap power-of-two? (array-shape arr)))
+        [(not (andmap power-of-two? (vector->list (array-shape arr))))
          (raise-type-error 'array-fft "Array with power-of-two shape" arr)]
         [else
          (let loop ([#{k : Nonnegative-Fixnum} 1] [arr  (array-axis-fft arr 0)])
@@ -62,12 +62,12 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; Inverse Fast Fourier Transform
 
-(: array-axis-inverse-fft ((Array Number) Integer -> (view-array Float-Complex)))
+(: array-axis-inverse-fft ((Array Number) Integer -> (View-Array Float-Complex)))
 (define (array-axis-inverse-fft arr k)
   (parameterize ([dft-convention  (dft-inverse-convention)])
     (array-axis-fft arr k)))
 
-(: array-inverse-fft ((Array Number) -> (view-array Float-Complex)))
+(: array-inverse-fft ((Array Number) -> (View-Array Float-Complex)))
 (define (array-inverse-fft arr)
   (parameterize ([dft-convention  (dft-inverse-convention)])
     (array-fft arr)))

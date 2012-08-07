@@ -7,14 +7,14 @@
 (provide (all-defined-out))
 
 (define-syntax-rule (for-each-array+data-index ds-expr f-expr)
-  (let*: ([ds : (Vectorof Index)  ds-expr]
+  (let*: ([ds : Indexes  ds-expr]
           [dims : Index  (vector-length ds)])
     (define-syntax-rule (f js j)
-      ((ann f-expr ((Vectorof Index) Nonnegative-Fixnum -> Void)) js j))
+      ((ann f-expr (Indexes Nonnegative-Fixnum -> Void)) js j))
     (cond
       [(= dims 0)  (f ds 0)]
       [else
-       (define: js : (Vectorof Index) (make-vector dims 0))
+       (define: js : Indexes (make-vector dims 0))
        (case dims
          [(1)  (define: d0 : Index (unsafe-vector-ref ds 0))
                (let: j0-loop : Void ([j0 : Nonnegative-Fixnum  0])
@@ -51,14 +51,14 @@
                 (void)])])))
 
 (define-syntax-rule (for-each-array-index ds-expr f-expr)
-  (let*: ([ds : (Vectorof Index)  ds-expr]
+  (let*: ([ds : Indexes  ds-expr]
           [dims : Index  (vector-length ds)])
     (define-syntax-rule (f js)
-      ((ann f-expr ((Vectorof Index) -> Void)) js))
+      ((ann f-expr (Indexes -> Void)) js))
     (cond
       [(= dims 0)  (f ds)]
       [else
-       (define: js : (Vectorof Index) (make-vector dims 0))
+       (define: js : Indexes (make-vector dims 0))
        (case dims
          [(1)  (define: d0 : Index (unsafe-vector-ref ds 0))
                (let: j0-loop : Void ([j0 : Nonnegative-Fixnum  0])
@@ -89,7 +89,7 @@
                         [else  (f js)]))])])))
 
 (define-syntax-rule (for-each-data-index ds-expr f-expr)
-  (let*: ([ds : (Vectorof Index)  ds-expr]
+  (let*: ([ds : Indexes  ds-expr]
           [dims : Index  (vector-length ds)])
     (define-syntax-rule (f j)
       ((ann f-expr (Nonnegative-Fixnum -> Void)) j))
@@ -128,23 +128,23 @@
                 (void)])])))
 
 (define-syntax-rule (inline-build-array-data ds-expr g-expr)
-  (let*: ([ds : (Vectorof Index)  ds-expr]
+  (let*: ([ds : Indexes  ds-expr]
           [dims : Index  (vector-length ds)])
     (define-syntax-rule (g js j)
-      ((ann g-expr ((Vectorof Index) Nonnegative-Fixnum -> A)) js j))
+      ((ann g-expr (Indexes Nonnegative-Fixnum -> A)) js j))
     (define: size : Nonnegative-Fixnum
       (let: loop : Nonnegative-Fixnum ([k : Nonnegative-Fixnum  0] [size : Nonnegative-Fixnum  1])
         (cond [(k . < . dims)  (loop (+ k 1) (unsafe-fx* size (unsafe-vector-ref ds k)))]
               [else  size])))
     (cond [(= size 0)  (ann (vector) (Vectorof A))]
           [else
-           (define: js0 : (Vectorof Index) (make-vector dims 0))
+           (define: js0 : Indexes (make-vector dims 0))
            (define: vs : (Vectorof A) (make-vector size (g js0 0)))
            (for-each-array+data-index ds (λ (js j) (unsafe-vector-set! vs j (g js j))))
            vs])))
 
-(: build-array-data (All (A) ((Vectorof Index) ((Vectorof Index) Nonnegative-Fixnum -> A)
-                                               -> (Vectorof A))))
+(: build-array-data (All (A) (Indexes (Indexes Nonnegative-Fixnum -> A)
+                                      -> (Vectorof A))))
 (begin-encourage-inline
   (define (build-array-data ds g)
     (inline-build-array-data ds g)))
