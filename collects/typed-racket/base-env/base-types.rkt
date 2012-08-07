@@ -6,7 +6,7 @@
 ;; I don't understand this at all. :(
 ;; -- STH, 6/26/12
 (require (for-syntax "../env/global-env.rkt"))
-(require "../types/abbrev.rkt" "../types/numeric-tower.rkt" "../rep/type-rep.rkt")
+(require "../types/abbrev.rkt" "../types/union.rkt" "../types/numeric-tower.rkt" "../rep/type-rep.rkt")
 
 [Complex -Number]
 [Number -Number]
@@ -161,7 +161,7 @@
 [False (-val #f)]
 [True (-val #t)]
 [Null (-val null)]
-[Nothing (*Un)]
+[Nothing (Un)]
 [Futureof (-poly (a) (-future a))]
 [Pairof (-poly (a b) (-pair a b))]
 [MPairof (-poly (a b) (-mpair a b))]

@@ -26,8 +26,6 @@
 
 (provide (except-out (all-defined-out) make-Base)
          (all-from-out "base-abbrev.rkt")
-         ;; TODO change the uses of this export to Un
-         (rename-out (Un *Un))
          (rename-out [make-Listof -lst]
                      [make-MListof -mlst]))
 

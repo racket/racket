@@ -56,7 +56,7 @@
    [(-mu x (Un -Number (make-Listof x))) (-mu x (Un -Number -Symbol (make-Listof x)))]
    [(-mu x (Un -Number (make-Listof x))) (-mu y (Un -Number -Symbol (make-Listof y)))]
    ;; a hard one
-   [(-mu x (*Un -Number (-pair x (-pair -Symbol (-pair x (-val null)))))) -Sexp]
+   [(-mu x (Un -Number (-pair x (-pair -Symbol (-pair x (-val null)))))) -Sexp]
    [t1 (unfold t1)]
    [(unfold t1) t1]
    ;; simple function types

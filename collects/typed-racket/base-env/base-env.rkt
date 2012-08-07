@@ -1210,43 +1210,43 @@
 
 [identifier-binding
  (Ident [(-opt -Integer)]. ->opt .
-  (*Un (-val 'lexical) (-val #f)
+  (Un (-val 'lexical) (-val #f)
    (-lst* -Module-Path-Index
           -Symbol
           -Module-Path-Index
           -Symbol
-          (*Un (-val 0) (-val 1))
+          (Un (-val 0) (-val 1))
           (-opt -Integer)
           (-opt -Integer))))]
 
 [identifier-transformer-binding
  (Ident . -> .
-  (*Un (-val 'lexical) (-val #f)
+  (Un (-val 'lexical) (-val #f)
    (-lst* -Module-Path-Index
           -Symbol
           -Module-Path-Index
           -Symbol
-          (*Un (-val 0) (-val 1))
+          (Un (-val 0) (-val 1))
           (-opt -Integer)
           (-opt -Integer))))]
 [identifier-template-binding
  (Ident . -> .
-  (*Un (-val 'lexical) (-val #f)
+  (Un (-val 'lexical) (-val #f)
    (-lst* -Module-Path-Index
           -Symbol
           -Module-Path-Index
           -Symbol
-          (*Un (-val 0) (-val 1))
+          (Un (-val 0) (-val 1))
           (-opt -Integer)
           (-opt -Integer))))]
 [identifier-label-binding
  (Ident . -> .
-  (*Un (-val 'lexical) (-val #f)
+  (Un (-val 'lexical) (-val #f)
    (-lst* -Module-Path-Index
           -Symbol
           -Module-Path-Index
           -Symbol
-          (*Un (-val 0) (-val 1))
+          (Un (-val 0) (-val 1))
           (-opt -Integer)
           (-opt -Integer))))]
 

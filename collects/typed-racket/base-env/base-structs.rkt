@@ -43,10 +43,10 @@
 
   (define-hierarchy srcloc (#:kernel-maker k:srcloc)
     ([source : Univ]
-     [line : (*Un -Integer (-val #f))]
-     [column : (*Un -Integer (-val #f))]
-     [position : (*Un -Integer (-val #f))]
-     [span : (*Un -Integer (-val #f))]))
+     [line : (Un -Integer (-val #f))]
+     [column : (Un -Integer (-val #f))]
+     [position : (Un -Integer (-val #f))]
+     [span : (Un -Integer (-val #f))]))
 
   (define-hierarchy date (#:kernel-maker k:date)
     ([second : -Nat]

@@ -46,7 +46,7 @@
   (-poly (a b)
         (cl->*
          (-> (-lst a) (-val '()) (-lst a))
-         (-> (-lst a) (-lst b) (-lst (*Un a b)))))]
+         (-> (-lst a) (-lst b) (-lst (Un a b)))))]
   ;; make-sequence
   [(make-template-identifier 'make-sequence 'racket/private/for)
    (-poly (a b)
