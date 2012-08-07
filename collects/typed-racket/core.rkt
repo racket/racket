@@ -10,7 +10,7 @@
          (typecheck provide-handling tc-toplevel tc-app-helper)
          (rep type-rep)
          (env env-req)
-         (for-template (only-in (base-env prims) :type :print-type :query-result-type))
+         (for-template (only-in (base-env prims) :type :print-type :query-type/result))
          (utils utils tc-utils arm)
          "tc-setup.rkt" "utils/debug.rkt")
 
@@ -62,7 +62,7 @@
                                         [(tc-result1: t f o) t]
                                         [(tc-results: t) (cons 'Values t)])))))]
     ;; given a function and a desired return type, fill in the blanks
-    [(_ . ((~literal :query-result-type) op:expr desired-type:expr))
+    [(_ . ((~literal :query-type/result) op:expr desired-type:expr))
      (let ([expected (parse-type #'desired-type)])
        (tc-setup #'stx #'op 'top-level expanded init tc-toplevel-form before type
                  (match type
