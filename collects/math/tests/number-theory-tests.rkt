@@ -2,6 +2,21 @@
 (require math/number-theory)
 (require typed/rackunit)
 
+; "quadratic.rkt"
+(check-equal? (quadratic-solutions 1 0 -4) '(-2 2))
+(check-equal? (quadratic-solutions 1 0 +4) '())
+(check-equal? (quadratic-solutions 1 0 0)  '(0))
+(check-equal? (quadratic-integer-solutions 1 0 -4) '(-2 2))
+(check-equal? (quadratic-integer-solutions 1 0 +4) '())
+(check-equal? (quadratic-integer-solutions 1 0 0)  '(0))
+(check-equal? (quadratic-natural-solutions 1 0 -4) '(2))
+(check-equal? (quadratic-natural-solutions 1 0 +4) '())
+(check-equal? (quadratic-natural-solutions 1 0 0)  '(0))
+
+; "eulerian-number.rkt"
+(check-equal? (map (λ: ([x : Natural]) (eulerian-number 5 x)) '(0 1 2 3 4))
+              '(1 26 66 26 1))
+
 ; "primitive-roots.rkt"
 (check-equal? (unit-group 20) '(1 3 7 9 11 13 17 19))  ; 19 !!!!
 (check-equal? (order 19 20) 2)
