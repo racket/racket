@@ -435,6 +435,25 @@
     (exec-runtime-error-tests "run-err-tests/define-union-language.rktd"))
   
   (exec-syntax-error-tests "syn-err-tests/language-definition.rktd")
+  
+  ;; term with #:lang tests
+  (exec-syntax-error-tests "syn-err-tests/term-lang.rktd")
+  
+  (let ()
+    (define-language L
+      (a number)
+      (b (a a))
+      (c (b b)))
+    (test (term 1 #:lang L) 1)
+    (test (term ((1 2) (3 4)) #:lang L) '((1 2) (3 4)))
+    (test (term (1 2 3 4) #:lang L) '(1 2 3 4))
+    (test (redex-let L ([a_1 5])
+                     (term (a_1 6) #:lang L))
+          '(5 6))
+    (test (redex-let L ([number_1 5])
+                     (term (number_1 6) #:lang L))
+          '(5 6)))
+    
 ;                                                                                             
 ;                                                                                             
 ;                                 ;;;                                ;                        

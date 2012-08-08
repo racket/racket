@@ -662,7 +662,7 @@
                  (λ (bindings rhs-binder)
                    (term-let ([lhs-to-id rhs-binder]
                               [names/ellipses (lookup-binding bindings 'names)] ...)
-                             (term rhs-to)))
+                             (term rhs-to #:lang lang)))
                  #,child-proc
                  `fresh-rhs-from))
             (get-choices stx orig-name bm #'lang
@@ -721,7 +721,7 @@
                         sides/withs/freshs
                         'flatten
                         #`(list (cons #,(or computed-name #'none)
-                                      (term #,to)))
+                                      (term #,to #:lang #,lang)))
                         (syntax->list #'(names ...))
                         (syntax->list #'(names/ellipses ...))
                         #t))
@@ -1243,7 +1243,7 @@
                                     syn-error-name '()  
                                     #'effective-lang lang-nts
                                     sc/b 'flatten
-                                    #`(list (term #,rhs))
+                                    #`(list (term #,rhs #:lang lang))
                                     (syntax->list names) 
                                     (syntax->list names/ellipses)
                                     #t))

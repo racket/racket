@@ -450,15 +450,25 @@ them.}
 produces the boolean or the string.}
 ]
 
-@defform[(term @#,tttterm)]{
+@defform*[[(term @#,tttterm) (term @#,tttterm #:lang lang-id)]]{
 
-This form is used for construction of a term.
+Used for construction of a term.
 
 It behaves similarly to @racket[quasiquote], except for a few special
 forms that are recognized (listed below) and that names bound by
 @racket[term-let] are implicitly substituted with the values that
 those names were bound to, expanding ellipses as in-place sublists (in
 the same manner as syntax-case patterns).
+
+The optional @racket[#:lang] keyword must supply an identifier bound
+by @racket[define-language], and adds a check that any symbol containing
+an underscore in @tttterm could have been bound by a pattern in the
+language referenced by @racket[lang-id].  In practice, this means that the
+underscore must be preceded by a non-terminal in that langauge or a
+built-in @ttpattern such as @racket[number].  This form of @racket[term]
+is used internally by default, so this check is applied to terms 
+that are constructed by Redex forms such as @racket[reduction-relation] 
+and @racket[define-metafunction].
 
 For example,
 

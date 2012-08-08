@@ -3,6 +3,7 @@
   (require mzlib/list
            "underscore-allowed.rkt")
   (require "term.rkt"
+           "term-fn.rkt"
            setup/path-to-relative
            (for-template
             mzscheme
@@ -17,18 +18,6 @@
            language-id-nts)
   
   (provide (struct-out id/depth))
-  
-  (define-values (language-id make-language-id language-id? language-id-get language-id-set) (make-struct-type 'language-id #f 2 0 #f '() #f 0))
-  
-  (define (language-id-nts stx id) (language-id-getter stx id 1))
-  (define (language-id-getter stx id n)
-    (unless (identifier? stx)
-      (raise-syntax-error id "expected an identifier defined by define-language" stx))
-    (let ([val (syntax-local-value stx (λ () #f))])
-      (unless (and (set!-transformer? val)
-                   (language-id? (set!-transformer-procedure val)))
-        (raise-syntax-error id "expected an identifier defined by define-language" stx))
-      (language-id-get (set!-transformer-procedure val) n)))
   
   (define (rewrite-side-conditions/check-errs all-nts what bind-names? orig-stx)
     (define (expected-exact name n stx)

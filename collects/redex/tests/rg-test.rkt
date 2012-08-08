@@ -1201,12 +1201,12 @@
     (define-extended-language M L (x 2))
     (define-metafunction L 
       [(f)
-       _
+       ?
        (where x 2)])
     (define-metafunction/extension f M
       g : any -> any)
     (test (with-handlers ([exn:fail:redex:generation-failure? (const #f)])
-            (check-metafunction g (λ (_) #t) #:attempts 1 #:print? #f))
+            (check-metafunction g (λ (?) #t) #:attempts 1 #:print? #f))
           #t))
   
   (test (output (λ () (check-metafunction m (λ (_) #t)))) #rx"no counterexamples")

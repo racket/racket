@@ -105,7 +105,8 @@
                           lang-nts
                           'reduction-relation
                           #t
-                          #'x)])
+                          #'x)]
+                        [lang-stx lang])
             (define-values (binding-constraints temporaries env+)
               (generate-binding-constraints (syntax->list #'(names ...))
                                             (syntax->list #'(names/ellipses ...))
@@ -120,7 +121,7 @@
                      [(predicate)
                       #'combine-where-results/predicate]
                      [else (error 'unknown-where-mode "~s" where-mode)])
-                 (match-pattern (compile-pattern #,lang `side-conditions-rewritten #t) (term e))
+                 (match-pattern (compile-pattern #,lang `side-conditions-rewritten #t) (term/nts e #,lang-nts))
                  (λ (bindings)
                    (let ([x (lookup-binding bindings 'names)] ...)
                      (and binding-constraints ...
@@ -184,7 +185,7 @@
                        (generate-binding-constraints output-names output-names/ellipses env orig-name)]
                       [(rest-body) (loop rest-clauses #`(list judgment-output #,to-not-be-in) env+)]
                       [(call)
-                       (let ([input (quasisyntax/loc premise (term #,input-template))])
+                       (let ([input (quasisyntax/loc premise (term/nts #,input-template #,lang-nts))])
                          (define (make-traced input)
                            (quasisyntax/loc premise
                              (call-judgment-form 'form-name #,judgment-proc '#,mode #,input)))
@@ -341,10 +342,10 @@
   (define definitions
     #`(begin
         (define-syntax #,judgment-form-name 
-          (judgment-form '#,judgment-form-name '#,(cdr (syntax->datum mode)) #'judgment-form-proc #'mk-judgment-form-proc #'#,lang #'judgment-form-lws))
+          (judgment-form '#,judgment-form-name '#,(cdr (syntax->datum mode)) #'judgment-form-runtime-proc #'mk-judgment-form-proc #'#,lang #'judgment-form-lws))
         (define mk-judgment-form-proc
           (compile-judgment-form-proc #,judgment-form-name #,mode #,lang #,clauses #,position-contracts #,orig #,stx #,syn-err-name))
-        (define judgment-form-proc (mk-judgment-form-proc #,lang))
+        (define judgment-form-runtime-proc (mk-judgment-form-proc #,lang))
         (define judgment-form-lws
           (compiled-judgment-form-lws #,clauses))))
   (syntax-property
@@ -353,7 +354,7 @@
         ; Introduce the names before using them, to allow
         ; judgment form definition at the top-level.
         #`(begin 
-            (define-syntaxes (judgment-form-proc judgment-form-lws) (values))
+            (define-syntaxes (judgment-form-runtime-proc judgment-form-lws) (values))
             #,definitions)
         definitions))
    'disappeared-use
@@ -455,7 +456,7 @@
             [judgment (syntax-case stx () [(_ judgment _) #'judgment])])
        (check-judgment-arity stx judgment)
        #`(sort #,(bind-withs syn-err-name '() lang nts (list judgment)
-                             'flatten #`(list (term #,#'tmpl)) '() '() #f)
+                             'flatten #`(list (term #,#'tmpl #:lang #,lang)) '() '() #f)
                string<=?
                #:key (λ (x) (format "~s" x))))]
     [(_ (not-form-name . _) . _)
@@ -492,7 +493,7 @@
                                    (struct-copy judgment-form (lookup-judgment-form-id name)
                                                 [proc #'recur]))])
                (bind-withs syn-error-name '() #'lang nts (syntax->list #'prems) 
-                           'flatten #`(list (term (#,@output-pats))) 
+                           'flatten #`(list (term/nts (#,@output-pats) #,nts)) 
                            (syntax->list #'(names ...))
                            (syntax->list #'(names/ellipses ...))
                            #f)))
