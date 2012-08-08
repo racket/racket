@@ -2,6 +2,7 @@
 
 (require racket/flonum
          math/array
+         math/functions
          typed/rackunit
          math/private/array/utils)
 
@@ -293,8 +294,6 @@
 ;; Pointwise
 ;; Not much to test here because most pointwise ops are defined by the same two lifts
 
-;; array= is tested on other tests (e.g. FFT)
-
 (check-equal? (array-sqrt (array [1.0 4.0 9.0 16.0]))
               (array [1.0 2.0 3.0 4.0]))
 
@@ -426,12 +425,12 @@
 (check-exn exn? (λ () (array-fft (make-array #(3) 1))))
 
 (let ([arr  (make-array #(4) 1)])
-  (check array= (array-fft arr) (array [4 0 0 0]))
-  (check array= (array-inverse-fft (array-fft arr)) arr))
+  (check array-all= (array-fft arr) (array [4 0 0 0]))
+  (check array-all= (array-inverse-fft (array-fft arr)) arr))
 
 (let ([arr  (make-array #(2 2) 1)])
-  (check array= (array-fft arr) (array [[4 0] [0 0]]))
-  (check array= (array-inverse-fft (array-fft arr)) arr))
+  (check array-all= (array-fft arr) (array [[4 0] [0 0]]))
+  (check array-all= (array-inverse-fft (array-fft arr)) arr))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Unsafe ref
@@ -849,7 +848,8 @@
               (strict-array 'foo))
 (check-equal? (for/strict-array Integer 0 (2) ([x (in-naturals)]) x) 
               (strict-array [0 1]))
-(check-equal? (for/strict-array (Vectorof Integer) #(0 0) (2 3) ([i (in-range 0 6)]) (vector (quotient i 3) (remainder i 3)))
+(check-equal? (for/strict-array (Vectorof Integer) #(0 0) (2 3) ([i (in-range 0 6)])
+                                (vector (quotient i 3) (remainder i 3)))
               (array-strict (indexes-array #(2 3))))
 
 (check-equal? (for*/strict-array Integer 0 () () 3)
@@ -868,8 +868,10 @@
               (for/array Symbol 'a-sym () () 'foo))
 (check-equal? (for/strict-array Integer 0 (2) ([x (in-naturals)]) x) 
               (for/array Integer 0 (2) ([x (in-naturals)]) x))
-(check-equal? (for/strict-array (Listof Integer) '(0 0) (2 3) ([i (in-range 0 6)]) (list (quotient i 3) (remainder i 3)))
-              (for/array (Listof Integer) '(0 0) (2 3) ([i (in-range 0 6)]) (list (quotient i 3) (remainder i 3))))
+(check-equal? (for/strict-array (Listof Integer) '(0 0) (2 3) ([i (in-range 0 6)])
+                                (list (quotient i 3) (remainder i 3)))
+              (for/array (Listof Integer) '(0 0) (2 3) ([i (in-range 0 6)])
+                         (list (quotient i 3) (remainder i 3))))
 
 (check-equal? (for*/strict-array Integer 0 () () 3)
               (for*/array Integer 0 () () 3))
@@ -877,9 +879,10 @@
               (for*/array Symbol 'a-sym () () 'foo))
 (check-equal? (for*/strict-array Integer 0 (2) ([x (in-naturals)]) x)
               (for*/array Integer 0 (2) ([x (in-naturals)]) x))
-(check-equal? (for*/array (Listof Integer) '(0 0) (2 3) ([i (in-range 0 2)] [j (in-range 0 3)]) (list i j))
-              (for*/strict-array (Listof Integer) '(0 0) (2 3) ([i (in-range 0 2)] [j (in-range 0 3)]) (list i j)))
-
+(check-equal? (for*/array (Listof Integer) '(0 0) (2 3) ([i (in-range 0 2)] [j (in-range 0 3)])
+                          (list i j))
+              (for*/strict-array (Listof Integer) '(0 0) (2 3) ([i (in-range 0 2)] [j (in-range 0 3)])
+                                 (list i j)))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Sequences
@@ -896,3 +899,31 @@
   (define s (in-array (make-view-array #(2 2) (λ: ([js : User-Indexes]) js))))
   (check-equal? (for/list: : (Listof User-Indexes) ([x s]) x)
                 '(#(0 0) #(0 1) #(1 0) #(1 1))))
+
+;; ---------------------------------------------------------------------------------------------------
+;; Conditionals
+
+(: array-factorial ((Array Real) -> (View-Array Real)))
+(define (array-factorial arr)
+  (define ds (array-shape arr))
+  (define zeros (make-array ds 0))
+  (define ones (make-array ds 1))
+  (array-if (array< arr zeros)
+            (raise-type-error 'array-factorial "(Array Natural)" arr)
+            (let: loop : (Array Real) ([arr : (Array Real)  arr])
+              (array-if (array= arr zeros)
+                        ones
+                        (array* arr (loop (array- arr ones)))))))
+
+(let ([arr  (make-view-array #(10 10) (λ: ([js : Indexes]) (apply + (vector->list js))))])
+  (check-equal? (array-factorial arr)
+                (array-map factorial arr))
+  (check-equal? (array-ref (array-factorial (array [0 -1])) #(0))
+                1)
+  (check-exn exn? (λ () (array-ref (array-factorial (array [0 -1])) #(1))))
+  (check-equal? (array-or (array< arr (make-array #(10 10) 9))
+                          (array> arr (make-array #(10 10) 9)))
+                (array-map (λ: ([v : Integer]) (or (< v 9) (> v 9))) arr))
+  (check-equal? (array-and (array< arr (make-array #(10 10) 10))
+                           (array> arr (make-array #(10 10) 8)))
+                (array-map (λ: ([v : Integer]) (= v 9)) arr)))

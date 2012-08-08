@@ -21,6 +21,8 @@
          unsafe-strict-array
          unsafe-array-proc
          strict-array-data
+         ;; equality testing
+         array-lift-comparison
          ;; conversion
          array-view
          array-strict
@@ -34,37 +36,9 @@
 ;; ===================================================================================================
 ;; Equality and hashing
 
-(: view-array-equal? (All (A) ((View-Array A) (View-Array A) Indexes (Any Any -> Boolean)
-                                              -> Boolean)))
-(define (view-array-equal? arr brr ds recur-equal?)
-  (let/ec: return : Boolean
-    (define f (unsafe-array-proc arr))
-    (define g (unsafe-array-proc brr))
-    (for-each-array-index ds (λ (js) (unless (recur-equal? (f js) (g js))
-                                       (return #f))))
-    #t))
-
-(: mixed-array-equal? (All (A) ((View-Array A) (Strict-Array A) Indexes (Any Any -> Boolean)
-                                               -> Boolean)))
-(define (mixed-array-equal? arr brr ds recur-equal?)
-  (let/ec: return : Boolean
-    (define f (unsafe-array-proc arr))
-    (define vs (Strict-Array-data brr))
-    (for-each-array+data-index ds (λ (js j) (unless (recur-equal? (f js) (unsafe-vector-ref vs j))
-                                              (return #f))))
-    #t))
-
-(: array-equal? (All (A) ((Array A) (Array A) (Any Any -> Boolean) -> Boolean)))
-(define (array-equal? arr brr recur-equal?)
-  (define ds (array-shape arr))
-  (and (equal? ds (array-shape brr))
-       (cond [(view-array? arr)
-              (cond [(view-array? brr)  (view-array-equal? arr brr ds recur-equal?)]
-                    [else  (mixed-array-equal? arr brr ds recur-equal?)])]
-             [else
-              (cond [(view-array? brr)  (mixed-array-equal? brr arr ds recur-equal?)]
-                    [else  (recur-equal? (strict-array-data arr)
-                                         (strict-array-data brr))])])))
+(: array-recur-equal? ((Array Any) (Array Any) (Any Any -> Boolean) -> Boolean))
+(define (array-recur-equal? arr brr recur-equal?)
+  ((array-lift-comparison recur-equal?) arr brr))
 
 (: array-hash-code (All (A) ((Array A) (Any -> Integer) -> Integer)))
 (define (array-hash-code arr recur-hash-code)
@@ -91,7 +65,7 @@
         [else  (values (vector->immutable-vector ds) size)]))
 
 (struct: (A) array ([shape : Indexes] [size : Index])
-  #:property prop:equal+hash (list array-equal? array-hash-code array-hash-code)
+  #:property prop:equal+hash (list array-recur-equal? array-hash-code array-hash-code)
   #:guard array-guard)
 
 (: array-dims (All (A) ((Array A) -> Index)))
@@ -234,3 +208,55 @@
 ;; In "array.rkt", this is set to `print-array' from from "array-print.rkt"
 (: array-custom-printer (Parameterof (All (A) ((Array A) Output-Port (U #t #f 0 1) -> Any))))
 (define array-custom-printer (make-parameter print-array-fields))
+
+;; ===================================================================================================
+;; Comparison
+
+(begin-encourage-inline
+  
+  (: view-array-compare (All (A) ((A A -> Boolean) (View-Array A) (View-Array A) Indexes -> Boolean)))
+  ;; Assumes both arrays have shape `ds'
+  (define (view-array-compare comp arr brr ds)
+    (let/ec: return : Boolean
+      (define f (unsafe-array-proc arr))
+      (define g (unsafe-array-proc brr))
+      (for-each-array-index ds (λ (js) (unless (comp (f js) (g js))
+                                         (return #f))))
+      #t))
+
+  (: mixed-array-compare
+     (All (A) ((A A -> Boolean) (View-Array A) (Strict-Array A) Indexes -> Boolean)))
+  ;; Assumes both arrays have shape `ds'
+  (define (mixed-array-compare comp arr brr ds)
+    (let/ec: return : Boolean
+      (define f (unsafe-array-proc arr))
+      (define vs (strict-array-data brr))
+      (for-each-array+data-index ds (λ (js j) (unless (comp (f js) (unsafe-vector-ref vs j))
+                                                (return #f))))
+      #t))
+
+  (: strict-array-compare (All (A) ((A A -> Boolean) (Strict-Array A) (Strict-Array A) -> Boolean)))
+  ;; Assumes arrays have the same size, and returns nonsense if they have different shapes
+  (define (strict-array-compare comp arr brr)
+    (define n (array-size arr))
+    (define xs (strict-array-data arr))
+    (define ys (strict-array-data brr))
+    (let loop ([#{j : Nonnegative-Fixnum} 0])
+      (cond [(j . < . n)
+             (cond [(not (comp (unsafe-vector-ref xs j) (unsafe-vector-ref ys j)))  #f]
+                   [else  (loop (+ j 1))])]
+            [else  #t])))
+  
+  (: array-lift-comparison (All (A) ((A A -> Boolean) -> ((Array A) (Array A) -> Boolean))))
+  (define ((array-lift-comparison comp) arr brr)
+    (define ds (array-shape arr))
+    (and (equal? ds (array-shape brr))
+         (cond [(view-array? arr)
+                (cond [(view-array? brr)  (view-array-compare comp arr brr ds)]
+                      [else  (mixed-array-compare comp arr brr ds)])]
+               [else
+                (cond [(view-array? brr)  (mixed-array-compare (λ: ([x : A] [y : A]) (comp y x))
+                                                               brr arr ds)]
+                      [else  (strict-array-compare comp arr brr)])])))
+  
+  ) ; begin-encourage-inline

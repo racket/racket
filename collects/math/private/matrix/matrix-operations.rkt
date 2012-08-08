@@ -903,7 +903,7 @@
         (let ()
           (define ei (unit-column m i))
           (define pi (projection-on-subspace ei vs))
-          (if (matrix= ei pi)
+          (if (matrix-all= ei pi)
               (loop vs ws (+ i 1))
               (let ([w (matrix- ei pi)])
                 (loop (cons w vs) (cons w ws) (+ i 1)))))))

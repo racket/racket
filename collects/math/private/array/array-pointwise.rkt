@@ -8,94 +8,74 @@
          "for-each.rkt"
          "utils.rkt")
 
-(provide array=
-         array-scale
-         ;; Lifting
-         inline-array-lift
-         inline-array-lift2
-         array-lift
-         array-lift2
-         array-map
-         array-map2
-         ;; Lifted operators
-         array-abs
-         array-round
-         array-floor
-         array-ceiling
-         array-truncate
-         array-sqr
-         array-sqrt
-         array-conjugate
-         array-magnitude
-         array-log
-         array-exp
-         array-sin
-         array-cos
-         array-tan
-         array-asin
-         array-acos
-         array-atan
-         array+
-         array-
-         array*
-         array/
-         array-expt
-         array-min
-         array-max         
-         ;; Number conversions
-         array-inexact->exact
-         array-exact->inexact
-         array-real->double-flonum
-         array-real->single-flonum
-         array-number->float-complex
-         array-real-part
-         array-imag-part)
+(provide
+ ;; Equality
+ array-all-equal?
+ array-all-eqv?
+ array-all-eq?
+ array-all=
+ ;; Lifting
+ inline-array-lift
+ inline-array-lift2
+ array-lift
+ array-lift2
+ array-map
+ array-map2
+ ;; Lifted operators
+ array-scale
+ array-abs
+ array-round
+ array-floor
+ array-ceiling
+ array-truncate
+ array-sqr
+ array-sqrt
+ array-conjugate
+ array-magnitude
+ array-log
+ array-exp
+ array-sin
+ array-cos
+ array-tan
+ array-asin
+ array-acos
+ array-atan
+ array+
+ array-
+ array*
+ array/
+ array-expt
+ array-min
+ array-max     
+ array=
+ array<
+ array<=
+ array>
+ array>=
+ array-not
+ ;; Number conversions
+ array-inexact->exact
+ array-exact->inexact
+ array-real->double-flonum
+ array-real->single-flonum
+ array-number->float-complex
+ array-real-part
+ array-imag-part)
 
 ;; ===================================================================================================
-;; Numeric equality
+;; Equality
 
-(: view-array= ((View-Array Number) (View-Array Number) Indexes -> Boolean))
-;; Assumes both arrays have shape `ds'
-(define (view-array= arr brr ds)
-  (let/ec: return : Boolean
-    (define f (unsafe-array-proc arr))
-    (define g (unsafe-array-proc brr))
-    (for-each-array-index ds (λ (js) (unless (= (f js) (g js))
-                                       (return #f))))
-    #t))
+(: array-all-equal? ((Array Any) (Array Any) -> Boolean))
+(define array-all-equal? equal?)
 
-(: mixed-array= ((View-Array Number) (Strict-Array Number) Indexes -> Boolean))
-;; Assumes both arrays have shape `ds'
-(define (mixed-array= arr brr ds)
-  (let/ec: return : Boolean
-    (define f (unsafe-array-proc arr))
-    (define vs (strict-array-data brr))
-    (for-each-array+data-index ds (λ (js j) (unless (= (f js) (unsafe-vector-ref vs j))
-                                              (return #f))))
-    #t))
+(: array-all-eqv? ((Array Any) (Array Any) -> Boolean))
+(define array-all-eqv? (array-lift-comparison eqv?))
 
-(: strict-array= ((Strict-Array Number) (Strict-Array Number) -> Boolean))
-;; Assumes arrays have the same size, and returns nonsense if they have different shapes
-(define (strict-array= arr brr)
-  (define n (array-size arr))
-  (define xs (strict-array-data arr))
-  (define ys (strict-array-data brr))
-  (let loop ([#{j : Nonnegative-Fixnum} 0])
-    (cond [(j . < . n)
-           (cond [(not (= (unsafe-vector-ref xs j) (unsafe-vector-ref ys j)))  #f]
-                 [else  (loop (+ j 1))])]
-          [else  #t])))
+(: array-all-eq? ((Array Any) (Array Any) -> Boolean))
+(define array-all-eq? (array-lift-comparison eq?))
 
-(: array= ((Array Number) (Array Number) -> Boolean))
-(define (array= arr brr)
-  (define ds (array-shape arr))
-  (and (equal? ds (array-shape brr))
-       (cond [(view-array? arr)
-              (cond [(view-array? brr)  (view-array= arr brr ds)]
-                    [else  (mixed-array= arr brr ds)])]
-             [else
-              (cond [(view-array? brr)  (mixed-array= brr arr ds)]
-                    [else  (strict-array= arr brr)])])))
+(: array-all= ((Array Number) (Array Number) -> Boolean))
+(define array-all= (array-lift-comparison =))
 
 ;; ===================================================================================================
 ;; Lifting
@@ -119,7 +99,7 @@ IOW, the macro lift operators allow us to have array-exp do the job of both arra
 array-number-exp.
 |#
 
-;(: inline-array-lift (All (A B) ((A -> B) -> ((Array A) -> (View-Array B)))))
+; (All (A B) ((A -> B) -> ((Array A) -> (View-Array B))))
 (define-syntax (inline-array-lift stx)
   (syntax-case stx ()
     [(_ f)
@@ -130,7 +110,7 @@ array-number-exp.
            (define g (unsafe-array-proc arr))
            (unsafe-view-array ds (λ: ([js : Indexes]) (f (g js)))))))]))
 
-;(: inline-array-lift2 (All (A B C) ((A B -> C) -> ((Array A) (Array B) -> (View-Array C)))))
+; (All (A B C) ((A B -> C) -> ((Array A) (Array B) -> (View-Array C))))
 (define-syntax (inline-array-lift2 stx)
   (syntax-case stx ()
     [(_ name f)
@@ -179,7 +159,6 @@ array-number-exp.
                           ((Array Real)  -> (View-Array Real))))
 (: array-truncate (case-> ((Array Float) -> (View-Array Float))
                           ((Array Real)  -> (View-Array Real))))
-
 
 (: array-sqrt      ((Array Number) -> (View-Array Number)))
 (: array-conjugate ((Array Number) -> (View-Array Number)))
@@ -239,8 +218,13 @@ array-number-exp.
 (: array-max  (case-> ((Array Float) (Array Float) -> (View-Array Float))
                       ((Array Real)  (Array Real)  -> (View-Array Real))))
 
+(: array=  ((Array Real) (Array Real) -> (View-Array Boolean)))
+(: array<  ((Array Real) (Array Real) -> (View-Array Boolean)))
+(: array<= ((Array Real) (Array Real) -> (View-Array Boolean)))
+(: array>  ((Array Real) (Array Real) -> (View-Array Boolean)))
+(: array>= ((Array Real) (Array Real) -> (View-Array Boolean)))
 
-
+(: array-not ((Array Any) -> (View-Array Boolean)))
 
 (begin-encourage-inline
   
@@ -263,7 +247,6 @@ array-number-exp.
   (define array-acos      (inline-array-lift acos))
   (define array-atan      (inline-array-lift atan))
   
-  
   (define array+ (inline-array-lift2 'array+ +))
   (define array* (inline-array-lift2 'array* *))
   
@@ -281,8 +264,15 @@ array-number-exp.
   (define array-min  (inline-array-lift2 'array-min  min))
   (define array-max  (inline-array-lift2 'array-max  max))
   
+  (define array=  (inline-array-lift2 'array=  =))
+  (define array<  (inline-array-lift2 'array<  <))
+  (define array<= (inline-array-lift2 'array<= <=))
+  (define array>  (inline-array-lift2 'array>  >))
+  (define array>= (inline-array-lift2 'array>= >=))
+  
+  (define array-not (inline-array-lift not))
+  
   )  ; begin-encourage-inline
-
 
 ;; ===================================================================================================
 ;; Conversions
@@ -312,4 +302,3 @@ array-number-exp.
   (define array-imag-part (array-lift imag-part))
   
   )  ; begin-encourage-inline
-
