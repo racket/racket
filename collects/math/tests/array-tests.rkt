@@ -101,6 +101,18 @@
 (check-equal? (array-strict (list->array '[[[1.0]]] flonum?))
               (make-strict-array #(1 1 1) #(1.0)))
 
+(check-equal? (array-strict (list->array '() listof-flonum?))
+              (make-strict-array #() #(())))
+
+(check-equal? (array-strict (list->array '[()] listof-flonum?))
+              (make-strict-array #(1) #(())))
+
+(check-equal? (array-strict (list->array '[(1.0) (2.0)] listof-flonum?))
+              (make-strict-array #(2) #((1.0) (2.0))))
+
+(check-equal? (array-strict (list->array '[((1.0)) ((2.0))] listof-flonum?))
+              (make-strict-array #(2 1) #((1.0) (2.0))))
+
 ;; ---------------------------------------------------------------------------------------------------
 ;; array->list
 
