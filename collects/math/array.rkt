@@ -34,6 +34,7 @@
                        "private/array/array-fft.rkt"
                        ; TODO "private/array/array-comprehension.rkt"
                        ; TODO "private/array/array-sequence.rkt"
+                       )
          ;; from utils.rkt
          Listof*
          Vectorof*
