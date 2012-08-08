@@ -155,12 +155,6 @@
                         [else  #f]))
                 #f)]))))
 
-(: list-flatten (All (A) (((Listof* A) -> Boolean : A) (Listof* A) -> (Listof A))))
-(define (list-flatten pred? lst)
-  (let loop ([lst lst])
-    (cond [(pred? lst)  (list lst)]
-          [else  (append* (map loop lst))])))
-
 (: unsafe-vector-remove (All (I) ((Vectorof I) Index -> (Vectorof I))))
 (define (unsafe-vector-remove vec k)
   (define n (vector-length vec))

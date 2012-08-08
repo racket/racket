@@ -13,6 +13,27 @@
 ;; ===================================================================================================
 ;; Conversion to and from lists
 
+(: first* (All (A) ((Listof* A) ((Listof* A) -> Boolean : A) -> A)))
+(define (first* lst pred?)
+  (: fail (-> A))
+  (define (fail) (error 'first* "all empty in ~e" lst))
+  (let loop ([lst lst] [kont fail])
+    (cond [(empty? lst)  (kont)]
+          [(pred? lst)  lst]
+          [(pair? lst)  (loop (car lst) (λ () (loop (cdr lst) kont)))])))
+
+(: list->flat-vector (All (A) ((Listof* A) Integer ((Listof* A) -> Boolean : A) -> (Vectorof A))))
+(define (list->flat-vector lst size pred?)
+  (cond [(zero? size)  (vector)]
+        [else
+         (define vec (make-vector size (first* lst pred?)))
+         (let: loop : Fixnum ([lst : (Listof* A)  lst] [i : Fixnum  0])
+           (cond [(empty? lst)  i]
+                 [(pred? lst)  (unsafe-vector-set! vec i lst)
+                               (unsafe-fx+ i 1)]
+                 [(pair? lst)  (loop (cdr lst) (loop (car lst) i))]))
+         vec]))
+
 (: list->array (All (A) ((Listof* A) (Any -> Boolean : A) -> (View-Array A))))
 (define (list->array lst pred?)
   (define (raise-shape-error)
@@ -22,7 +43,8 @@
   (define ds (list-shape pred? lst))
   (cond [(pred? lst)  (unsafe-view-array #() (λ (js) lst))]
         [ds  (let ([ds  (check-array-shape ds raise-shape-error)])
-               (array-view (unsafe-strict-array ds (list->vector (list-flatten pred? lst)))))]
+               (define size (array-shape-size ds))
+               (array-view (unsafe-strict-array ds (list->flat-vector lst size pred?))))]
         [else  (raise-shape-error)]))
 
 (: array->list (All (A) ((Array A) -> (Listof* A))))
