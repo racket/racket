@@ -1026,8 +1026,6 @@
     
     (check-equal? (max-dividing-power-naive 3 27) 3)
     (check-equal? (max-dividing-power-naive 3 (* 27 2)) 3)
-    (check-equal? (max-dividing-power 3 27) 3)
-    (check-equal? (max-dividing-power 3 (* 27 2)) 3)
     
     (check-true   (<= 4 (random-integer-in-interval 4 5) 4))
     

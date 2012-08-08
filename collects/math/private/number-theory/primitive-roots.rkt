@@ -1,5 +1,12 @@
 #lang typed/racket
-
+(provide unit-group
+         order
+         orders
+         exists-primitive-root?
+         primitive-root?
+         primitive-root
+         primitive-roots)
+         
 (require (only-in "number-theory.rkt" 
                   coprime?
                   with-modulus
@@ -30,7 +37,7 @@
   (when (= n 1) (raise-type-error 'unit-group "expected n>1, got ~a" n))    
   ((inst filter Natural Boolean) 
    (λ: ([m : Natural]) (coprime? m n))
-   (natural-interval 1 (sub1 n))))
+   (natural-interval 1 n)))
 
 
 (: order : Natural Natural -> Natural)

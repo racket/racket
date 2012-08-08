@@ -2,6 +2,47 @@
 (require math/number-theory)
 (require typed/rackunit)
 
+; "primitive-roots.rkt"
+(check-equal? (unit-group 20) '(1 3 7 9 11 13 17 19))  ; 19 !!!!
+(check-equal? (order 19 20) 2)
+(check-equal? (order  3 20) 4)
+(check-equal? (orders 20) '(1 4 4 2 2 4 4 2)) ; (order 3 20)=4, ...
+(check-true   (andmap exists-primitive-root? '(1 2 4 3 9 6 18)))
+(check-false  (ormap  exists-primitive-root? '(8 16 12)))
+(check-equal? (primitive-root 20) #f)
+(check-equal? (primitive-root 10) 7) ; (length (unit-group 10)) = (order 7 10)
+(check-true   (primitive-root? 7 10))
+(check-false  (primitive-root? 7 20))
+(check-equal? (primitive-roots 10) '(3 7))
+(: find-and-check-root : Positive-Integer -> Boolean)
+(define (find-and-check-root n)
+  (define r (primitive-root n))
+  (cond [(not r) #t]
+        [else (= (length (unit-group n)) (order r n))]))
+(check-true   (andmap find-and-check-root '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 78125)))
+
+; "list-operations.rkt"
+(check-equal? (sum '(1 2 3 4)) 10)
+(check-equal? (product '(2 3 5)) 30)
+
+;"polygonal.rkt"
+(check-equal? (map triangle    '(0 1 2 3 4 5)) '(0 1 3  6 10 15))
+(check-equal? (map square      '(0 1 2 3 4 5)) '(0 1 4  9 16 25))
+(check-equal? (map pentagonal  '(0 1 2 3 4 5)) '(0 1 5 12 22 35))
+(check-equal? (map hexagonal   '(0 1 2 3 4 5)) '(0 1 6 15 28 45))
+(check-equal? (map heptagonal  '(0 1 2 3 4 5)) '(0 1 7 18 34 55))
+(check-equal? (map octagonal   '(0 1 2 3 4 5)) '(0 1 8 21 40 65))
+(check-true   (andmap triangle?    '(0 1 3  6 10 15)))
+(check-true   (andmap square?      '(0 1 4  9 16 25)))
+(check-true   (andmap pentagonal?  '(0 1 5 12 22 35)))
+(check-true   (andmap hexagonal?   '(0 1 6 15 28 45)))
+(check-true   (andmap heptagonal?  '(0 1 7 18 34 55)))
+(check-true   (andmap octagonal?   '(0 1 8 21 40 65)))
+
+; "farey.rkt"
+(check-equal? (farey 5) '(0 1/5 1/4 1/3 2/5 1/2 3/5 2/3 3/4 4/5 1))
+(check-equal? (mediant 1/1 1/2) 2/3)
+
 ; "fibonacci-lucas.rkt"
 (check-equal? ((inst map Natural Natural) fibonacci '(0 1 2 3 4 5 6 7))
               '(0 1 1 2 3 5 8 13))
@@ -42,6 +83,9 @@
 (check-false (divides? 2 13))
 (check-true  (divides? 2 0))
 ; (check-exn   (divides? 0 2)) ?
+
+(check-equal? (max-dividing-power 3 27) 3)
+(check-equal? (max-dividing-power 3 (* 27 2)) 3)
 
 (: list-dot : (Listof Integer) (Listof Integer) -> Integer)
 (define (list-dot as bs)
