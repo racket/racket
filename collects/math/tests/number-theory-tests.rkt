@@ -1,7 +1,8 @@
 #lang typed/racket
+(require math/number-theory)
 (require typed/rackunit)
 
-(require "fibonacci-lucas.rkt")
+; "fibonacci-lucas.rkt"
 (check-equal? ((inst map Natural Natural) fibonacci '(0 1 2 3 4 5 6 7))
               '(0 1 1 2 3 5 8 13))
 (check-equal? ((inst map Natural Natural) lucas '(0 1 2 3 4 5 6 7))
@@ -9,25 +10,25 @@
 (check-equal? ((inst map Natural Natural) (λ: ([x : Natural]) (fibonacci-mod x 7)) '(0 1 2 3 4 5 6 7))
               ((inst map Natural Natural) (λ: ([x : Natural]) (modulo (fibonacci x) 7)) '(0 1 2 3 4 5 6 7)))
 
-(require "partitions.rkt")
+; "partitions.rkt"
 (check-equal? ((inst map Natural Integer) partitions '(0 1 2 3 4 5 6 7 8 9 10))
               '(1 1 2 3 5 7 11 15 22 30 42))
 
 
-(require "bernoulli.rkt")
+; "bernoulli.rkt"
 (check-equal? (map bernoulli '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18))
               '(1 -1/2 1/6 0 -1/30 0 1/42 0 -1/30 0 5/66 0 -691/2730 0 7/6 0 -3617/510 0 43867/798))
 
-(require "bernoulli-via-tangent.rkt")
+; "bernoulli-via-tangent.rkt"
 (check-equal? (map bernoulli/tangent '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18))
               '(1 -1/2 1/6 0 -1/30 0 1/42 0 -1/30 0 5/66 0 -691/2730 0 7/6 0 -3617/510 0 43867/798))
 
-(require "tangent-number.rkt")
+; "tangent-number.rkt"
 (require typed/rackunit)
 (check-equal? (map tangent-number '(1 3 5 7 9 11 13)) '(1 2 16 272 7936 353792 22368256))
 (check-equal? (map tangent-number '(0 2 4 6 8 10)) '(0 0 0 0 0 0))
 
-(require "binomial.rkt")
+; "binomial.rkt"
 (check-equal? (binomial 10 3) 120)
 (check-equal? (binomial 10 11) 0)
 (check-equal? (binomial 10 0) 1)
@@ -36,7 +37,7 @@
 (check-equal? (binomial 10 9) 10)
 
 
-(require "number-theory.rkt")
+; "number-theory.rkt"
 (check-true  (divides? 2 12))
 (check-false (divides? 2 13))
 (check-true  (divides? 2 0))
