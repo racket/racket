@@ -11,6 +11,97 @@
          "matrix-operations.rkt"
          "matrix-2d.rkt")
 (begin  
+  (begin "matrix-types.rkt"
+         (list
+          'array-matrix?
+          (array-matrix? (list->array '[[1 2] [3 4]] real? ))
+          (not (array-matrix? (list->array '[[[1 2] [3 4]] [[1 2] [3 4]]] real? ))))
+         (list
+          'square-matrix?
+          (square-matrix? (list->array '[[1 2] [3 4]] real? ))
+          (not (square-matrix? (list->array '[[1 2 3] [4 5 6]] real? ))))
+         (list
+          'square-matrix-size
+          (= 2 (square-matrix-size (list->array '[[1 2 3] [4 5 6]] real? ))))
+         (list
+          'matrix=-
+          (matrix= (list->array '[[1 2] [3 4]] real?) (list->array '[[1 2] [3 4]] real? ))
+          (not (matrix= (list->array '[[1 2] [3 4]] real?) (list->array '[[1 2]] real? ))))
+         (list
+          'matrix-dimensions
+          (let-values ([(m n) (matrix-dimensions (list->matrix '[[1 2 3] [4 5 6]]))])
+            (equal? (list m n) '(2 3)))))
+  
+  (begin "matrix-constructors.rkt"
+         (list
+          'identity-matrix
+          (equal? (array->list (identity-matrix 1)) '[[1]])
+          (equal? (array->list (identity-matrix 2)) '[[1 0] [0 1]])
+          (equal? (array->list (identity-matrix 3)) '[[1 0 0] [0 1 0] [0 0 1]]) 
+          (equal? (array->list (flidentity-matrix 1)) '[[1.]])
+          (equal? (array->list (flidentity-matrix 2)) '[[1. 0.] [0. 1.]])
+          (equal? (array->list (flidentity-matrix 3)) '[[1. 0. 0.] [0. 1. 0.] [0. 0. 1.]]))
+         (list
+          'const-matrix
+          (equal? (array->list (make-matrix 2 3 0)) '((0 0 0) (0 0 0)))
+          (equal? (array->list (make-matrix 2 3 0.)) '((0. 0. 0.) (0. 0. 0.))))
+         (list
+          'matrix->list
+          (equal? (matrix->list (list->matrix '((1 2) (3 4)))) '((1 2) (3 4)))
+          (equal? (matrix->list (fllist->matrix '((1. 2.) (3. 4.)))) '((1. 2.) (3. 4.))))
+         (list
+          'matrix->vector
+          (equal? (matrix->vector (vector->matrix '#(#(1 2) #(3 4)))) '#(#(1 2) #(3 4)))
+          (equal? (matrix->vector (flvector->matrix '#(#(1. 2.) #(3. 4.)))) '#(#(1. 2.) #(3. 4.))))
+         (list
+          'matrix-row
+          (equal? (matrix-row (identity-matrix 3) 0) (list->matrix '[[1 0 0]]))
+          (equal? (matrix-row (identity-matrix 3) 1) (list->matrix '[[0 1 0]]))
+          (equal? (matrix-row (identity-matrix 3) 2) (list->matrix '[[0 0 1]])))
+         (list
+          'matrix-col
+          (equal? (matrix-column (identity-matrix 3) 0) (list->matrix '[[1] [0] [0]]))
+          (equal? (matrix-column (identity-matrix 3) 1) (list->matrix '[[0] [1] [0]]))
+          (equal? (matrix-column (identity-matrix 3) 2) (list->matrix '[[0] [0] [1]])))
+         (list
+          'submatrix
+          (equal? (submatrix (identity-matrix 3) 
+                             (in-range 0 1) (in-range 0 2)) (list->matrix '[[1 0]]))
+          (equal? (submatrix (identity-matrix 3) 
+                             (in-range 0 2) (in-range 0 3)) (list->matrix '[[1 0 0] [0 1 0]]))))
+
+  (begin 
+    "matrix-pointwise.rkt"
+    (let ()
+      (define A   (list->matrix '[[1 2] [3 4]]))
+      (define ~A  (list->matrix '[[-1 -2] [-3 -4]]))
+      (define B   (list->matrix '[[5 6] [7 8]]))
+      (define A+B (list->matrix '[[6 8] [10 12]]))
+      (define A-B (list->matrix '[[-4 -4] [-4 -4]]))         
+      (list 'matrix+ (equal? (matrix+ A B) A+B))
+      (list 'matrix- 
+            (equal? (matrix- A B) A-B)
+            (equal? (matrix- A)   ~A))))
+  
+  (begin  
+    "matrix-expt.rkt"
+    (let ()
+      (define A (list->matrix '[[1 2] [3 4]]))
+      (list
+       'matrix-expt
+       (equal? (matrix-expt A 0) (identity-matrix 2))
+       (equal? (matrix-expt A 1) A)
+       (equal? (matrix-expt A 2) (list->matrix '[[7 10] [15 22]]))
+       (equal? (matrix-expt A 3) (list->matrix '[[37 54] [81 118]]))
+       (equal? (matrix-expt A 8) (list->matrix '[[165751 241570] [362355 528106]]))))
+    #;(list
+       (define A (fllist->matrix '[[1. 2.] [3. 4.]]))
+       (check-equal? (matrix->list (flmatrix-expt A 0)) (matrix->list (flidentity-matrix 2)))
+       (check-equal? (matrix->list (flmatrix-expt A 1)) (matrix->list A))
+       (check-equal? (matrix->list (flmatrix-expt A 2)) '[[7. 10.] [15. 22.]])
+       (check-equal? (matrix->list (flmatrix-expt A 3)) '[[37. 54.] [81. 118.]])
+       (check-equal? (matrix->list (flmatrix-expt A 8)) '[[165751. 241570.] [362355. 528106.]])))
+
   (begin
     "matrix-operations.rkt"
     (list 'vandermonde-matrix
@@ -60,7 +151,9 @@
             (= (column-dot (column 1 2)   (column 3 4)) 11)
             (= (column-dot (column 3 4)   (column 3 4)) 25)
             (= (column-dot (column 1 2 3) (column 4 5 6))
-               (+ (* 1 4) (* 2 5) (* 3 6)))))
+               (+ (* 1 4) (* 2 5) (* 3 6)))
+            (= (column-dot (column +3i +4i) (column +3i +4i))
+               25)))
     (list 'matrix-trace
           (equal? (matrix-trace (flat-vector->matrix 2 2 #(1 2 3 4))) 5))
     (let ([matrix: flat-vector->matrix])
@@ -167,15 +260,15 @@
     (list 
      'matrix-scale-row
      (equal? (matrix-scale-row (identity-matrix 3) 0 2)
-             (list->array real? '[[2 0 0] [0 1 0] [0 0 1]])))
+             (list->array '[[2 0 0] [0 1 0] [0 0 1]] real? )))
     (list
      'matrix-swap-rows
-     (equal? (matrix-swap-rows (list->array real? '[[1 2 3] [4 5 6] [7 8 9]]) 0 1)
-             (list->array real? '[[4 5 6] [1 2 3] [7 8 9]])))
+     (equal? (matrix-swap-rows (list->array '[[1 2 3] [4 5 6] [7 8 9]] real? ) 0 1)
+             (list->array '[[4 5 6] [1 2 3] [7 8 9]] real? )))
     (list
      'matrix-add-scaled-row
-     (equal? (matrix-add-scaled-row (list->array real? '[[1 2 3] [4 5 6] [7 8 9]]) 0 2 1)
-             (list->array real? '[[9 12 15] [4 5 6] [7 8 9]])))
+     (equal? (matrix-add-scaled-row (list->array '[[1 2 3] [4 5 6] [7 8 9]] real? ) 0 2 1)
+             (list->array '[[9 12 15] [4 5 6] [7 8 9]] real? )))
     (let ()
       (define M (list->matrix '[[1  1  0  3]
                                 [2  1 -1  1]
@@ -232,98 +325,13 @@
                           (list->matrix '[[2] [5]])))
          (equal? n3 '()))))
   
-  (begin "matrix-types.rkt"
-         (list
-          'array-matrix?
-          (array-matrix? (list->array real? '[[1 2] [3 4]]))
-          (not (array-matrix? (list->array real? '[[[1 2] [3 4]] [[1 2] [3 4]]]))))
-         (list
-          'square-matrix?
-          (square-matrix? (list->array real? '[[1 2] [3 4]]))
-          (not (square-matrix? (list->array real? '[[1 2 3] [4 5 6]]))))
-         (list
-          'square-matrix-size
-          (= 2 (square-matrix-size (list->array real? '[[1 2 3] [4 5 6]]))))
-         (list
-          'matrix=-
-          (matrix= (list->array real? '[[1 2] [3 4]]) (list->array real? '[[1 2] [3 4]]))
-          (not (matrix= (list->array real? '[[1 2] [3 4]]) (list->array real? '[[1 2]]))))
-         (list
-          'matrix-dimensions
-          (let-values ([(m n) (matrix-dimensions (list->matrix '[[1 2 3] [4 5 6]]))])
-            (equal? (list m n) '(2 3)))))
   
-  (begin "matrix-constructors.rkt"
-         (list
-          'identity-matrix
-          (equal? (array->list (identity-matrix 1)) '[[1]])
-          (equal? (array->list (identity-matrix 2)) '[[1 0] [0 1]])
-          (equal? (array->list (identity-matrix 3)) '[[1 0 0] [0 1 0] [0 0 1]]) 
-          (equal? (array->list (flidentity-matrix 1)) '[[1.]])
-          (equal? (array->list (flidentity-matrix 2)) '[[1. 0.] [0. 1.]])
-          (equal? (array->list (flidentity-matrix 3)) '[[1. 0. 0.] [0. 1. 0.] [0. 0. 1.]]))
-         (list
-          'const-matrix
-          (equal? (array->list (make-matrix 2 3 0)) '((0 0 0) (0 0 0)))
-          (equal? (array->list (make-matrix 2 3 0.)) '((0. 0. 0.) (0. 0. 0.))))
-         (list
-          'matrix->list
-          (equal? (matrix->list (list->matrix '((1 2) (3 4)))) '((1 2) (3 4)))
-          (equal? (matrix->list (fllist->matrix '((1. 2.) (3. 4.)))) '((1. 2.) (3. 4.))))
-         (list
-          'matrix->vector
-          (equal? (matrix->vector (vector->matrix '#(#(1 2) #(3 4)))) '#(#(1 2) #(3 4)))
-          (equal? (matrix->vector (flvector->matrix '#(#(1. 2.) #(3. 4.)))) '#(#(1. 2.) #(3. 4.))))
-         (list
-          'matrix-row
-          (equal? (matrix-row (identity-matrix 3) 0) (list->matrix '[[1 0 0]]))
-          (equal? (matrix-row (identity-matrix 3) 1) (list->matrix '[[0 1 0]]))
-          (equal? (matrix-row (identity-matrix 3) 2) (list->matrix '[[0 0 1]])))
-         (list
-          'matrix-col
-          (equal? (matrix-column (identity-matrix 3) 0) (list->matrix '[[1] [0] [0]]))
-          (equal? (matrix-column (identity-matrix 3) 1) (list->matrix '[[0] [1] [0]]))
-          (equal? (matrix-column (identity-matrix 3) 2) (list->matrix '[[0] [0] [1]])))
-         (list
-          'submatrix
-          (equal? (submatrix (identity-matrix 3) 
-                             (in-range 0 1) (in-range 0 2)) (list->matrix '[[1 0]]))
-          (equal? (submatrix (identity-matrix 3) 
-                             (in-range 0 2) (in-range 0 3)) (list->matrix '[[1 0 0] [0 1 0]]))))
   
-  (begin 
-    "matrix-pointwise.rkt"
-    (let ()
-      (define A   (list->matrix '[[1 2] [3 4]]))
-      (define ~A  (list->matrix '[[-1 -2] [-3 -4]]))
-      (define B   (list->matrix '[[5 6] [7 8]]))
-      (define A+B (list->matrix '[[6 8] [10 12]]))
-      (define A-B (list->matrix '[[-4 -4] [-4 -4]]))         
-      (list 'matrix+ (equal? (matrix+ A B) A+B))
-      (list 'matrix- 
-            (equal? (matrix- A B) A-B)
-            (equal? (matrix- A)   ~A))))
   
-  (begin  
-    "matrix-expt.rkt"
-    (let ()
-      (define A (list->matrix '[[1 2] [3 4]]))
-      (list
-       'matrix-expt
-       (equal? (matrix-expt A 0) (identity-matrix 2))
-       (equal? (matrix-expt A 1) A)
-       (equal? (matrix-expt A 2) (list->matrix '[[7 10] [15 22]]))
-       (equal? (matrix-expt A 3) (list->matrix '[[37 54] [81 118]]))
-       (equal? (matrix-expt A 8) (list->matrix '[[165751 241570] [362355 528106]]))))
-    #;(list
-       (define A (fllist->matrix '[[1. 2.] [3. 4.]]))
-       (check-equal? (matrix->list (flmatrix-expt A 0)) (matrix->list (flidentity-matrix 2)))
-       (check-equal? (matrix->list (flmatrix-expt A 1)) (matrix->list A))
-       (check-equal? (matrix->list (flmatrix-expt A 2)) '[[7. 10.] [15. 22.]])
-       (check-equal? (matrix->list (flmatrix-expt A 3)) '[[37. 54.] [81. 118.]])
-       (check-equal? (matrix->list (flmatrix-expt A 8)) '[[165751. 241570.] [362355. 528106.]])))
   
-  (begin
+  
+  
+  #;(begin
     "matrix-multiply.rkt"
     (list 'matrix*
           (let ()
@@ -332,7 +340,7 @@
           (let () 
             (define-values (A B AB) (values '[[1 2] [3 4]] '[[5 6 7] [8 9 10]] '[[21 24 27] [47 54 61]]))
             (equal? (matrix* (list->matrix A) (list->matrix B)) (list->matrix AB)))))
-  (begin
+  #;(begin
     "matrix-2d.rkt"
     (let ()
       (define  e1  (matrix-transpose (vector->matrix #(#( 1  0)))))

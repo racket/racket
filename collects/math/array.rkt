@@ -12,7 +12,10 @@
          "private/array/array-print.rkt"
          "private/array/array-fft.rkt"
          "private/array/array-syntax.rkt"
-         "private/array/utils.rkt")
+         "private/array/utils.rkt"
+         "private/array/array-comprehension.rkt"
+         "private/array/array-sequence.rkt"
+         )
 
 ;; Set the custom printer to a pretty one
 (array-custom-printer print-array)
@@ -28,7 +31,10 @@
                        "private/array/array-fold.rkt"
                        "private/array/array-print.rkt"
                        "private/array/array-syntax.rkt"
-                       "private/array/array-fft.rkt")
+                       "private/array/array-fft.rkt"
+                       "private/array/array-comprehension.rkt"
+                       "private/array/array-sequence.rkt"
+                       )
          ;; from utils.rkt
          Listof*
          Vectorof*

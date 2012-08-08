@@ -15,7 +15,7 @@
     (error 'matrix-expt "Square matrix expected, got ~a" a))
   (cond
     [(= n 0)  (identity-matrix (square-matrix-size a))]
-    [(= n 1)  (array-lazy a)]
+    [(= n 1)  (array-view a)]
     [(= n 2)  (matrix* a a)]
     [(even? n) (let ([a^n/2 (matrix-expt a (quotient n 2))])
                  (matrix* a^n/2 a^n/2))]

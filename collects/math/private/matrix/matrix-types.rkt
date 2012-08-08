@@ -14,7 +14,7 @@
 
 (define-type (Matrix A) (Array A))
 ; matrices are represented as arrays
-(define-type (Result-Matrix A) (lazy-array A))
+(define-type (Result-Matrix A) (View-Array A))
 ; all return values are lazy arrays
 (define-type (Column A)        (U (Vectorof A) (Matrix A)))
 ; functions accepting column vectors accept
@@ -31,19 +31,19 @@
 (: square-matrix? : (All (A) (Matrix A) -> Boolean))
 (define (square-matrix? a)
   (and (array-matrix? a)
-       (let ([sh (unsafe-array-shape a)])
+       (let ([sh (array-shape a)])
          (= (vector-ref sh 0) (vector-ref sh 1)))))
 
 (: square-matrix-size : (All (A) (Matrix A) -> Index))
 (define (square-matrix-size a)
-  (vector-ref (unsafe-array-shape a) 0))
+  (vector-ref (array-shape a) 0))
 
 (: matrix= : (Matrix Number) (Matrix Number) -> Boolean)
 (define matrix= array=)
 
 (: matrix-dimensions : (Matrix Number) -> (Values Index Index))
 (define (matrix-dimensions a)
-  (define sh (unsafe-array-shape a))
+  (define sh (array-shape a))
   ; TODO: Remove list conversion when trbug1 is fixed
   (define sh-tmp (vector->list sh))
   (values (car sh-tmp) (cadr sh-tmp))
@@ -52,10 +52,10 @@
 
 (: matrix-row-dimension : (Matrix Number) -> Index)
 (define (matrix-row-dimension a)
-  (define sh (unsafe-array-shape a))
+  (define sh (array-shape a))
   (vector-ref sh 0))
 
 (: matrix-column-dimension : (Matrix Number) -> Index)
 (define (matrix-column-dimension a)
-  (define sh (unsafe-array-shape a))
+  (define sh (array-shape a))
   (vector-ref sh 1))
