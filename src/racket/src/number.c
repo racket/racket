@@ -2330,12 +2330,27 @@ atan_prim (int argc, Scheme_Object *argv[])
       ESCAPED_BEFORE_HERE;
     }
 
-    if ((v == 0.0) && (v2 == 0.0)) {
+    /* Handle special zero cases, just in case: */
 #ifdef MZ_USE_SINGLE_FLOATS
-      if (MZ_USE_SINGLE)
-	return scheme_zerof;
-#endif      
-      return scheme_zerod;
+# define SELECT_ATAN_PRECISION(d, s) if (MZ_USE_SINGLE) return s; return d;
+#else
+# define SELECT_ATAN_PRECISION(d, s) return d;
+#endif
+    if ((v == 0.0) && (v2 == 0.0)) {
+      if (minus_zero_p(v)) {
+        if (minus_zero_p(v2)) {
+          SELECT_ATAN_PRECISION(scheme_make_double(-SCHEME_DBL_VAL(scheme_pi)),
+                                scheme_make_float(-SCHEME_FLT_VAL(scheme_single_pi)));
+        } else {
+          SELECT_ATAN_PRECISION(scheme_nzerod, scheme_nzerof);
+        }
+      } else {
+        if (minus_zero_p(v2)) {
+          SELECT_ATAN_PRECISION(scheme_pi, scheme_single_pi);
+        } else {
+          SELECT_ATAN_PRECISION(scheme_zerod, scheme_zerof);
+        }
+      }
     }
 
 #ifdef ATAN2_DOESNT_WORK_WITH_INFINITIES
@@ -2344,6 +2359,7 @@ atan_prim (int argc, Scheme_Object *argv[])
       v2 = MZ_IS_POS_INFINITY(v2) ? 1.0 : -1.0;
     }
 #endif
+
 #ifdef ATAN2_DOESNT_WORK_WITH_NAN
     if (MZ_IS_NAN(v) || MZ_IS_NAN(v2))
       return scheme_nan_object;
