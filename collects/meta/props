@@ -804,7 +804,7 @@ path/s is either such a string or a list of them.
 "collects/meta/drdr" responsible (jay) drdr:command-line #f
 "collects/meta/drdr2" responsible (jay) drdr:command-line #f
 "collects/meta/images/mkheart.rkt" drdr:command-line #f
-"collects/meta/props" drdr:command-line (racket "-um" * "verify") responsible (eli jay)
+"collects/meta/props" responsible (eli jay) drdr:command-line (racket "-um" * "verify")
 "collects/meta/web" drdr:command-line #f
 "collects/mred" responsible (mflatt)
 "collects/mred/edit-main.rkt" drdr:command-line (mzc *)
@@ -862,6 +862,7 @@ path/s is either such a string or a list of them.
 "collects/plot/tests/slideshow-test.rkt" drdr:command-line #f
 "collects/preprocessor" responsible (eli)
 "collects/profile" responsible (eli)
+"collects/profile/analyzer.rkt" drdr:command-line (raco "test" *)
 "collects/r5rs" responsible (mflatt)
 "collects/r6rs" responsible (mflatt)
 "collects/r6rs/run.rkt" drdr:command-line (mzc *)
