@@ -202,12 +202,15 @@
 ;Gets log events for an execution timeline
 ;;timeline-events : (listof indexed-future-event)
 (define (timeline-events)
-  (define sorted (sort (timeline-events/private)
-                       #:key future-event-time 
-                       <)) 
-  (for/list ([fe (in-list sorted)] 
-             [i (in-naturals)]) 
-    (indexed-future-event i fe)))
+  (cond 
+    [(not (futures-enabled?)) '()]
+    [else 
+     (define sorted (sort (timeline-events/private)
+                          #:key future-event-time 
+                          <)) 
+     (for/list ([fe (in-list sorted)] 
+                [i (in-naturals)]) 
+       (indexed-future-event i fe))]))
 
 ;Produces a vector of vectors, where each inner vector contains 
 ;all the log output messages for a specific process
