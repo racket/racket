@@ -7,7 +7,7 @@
 
 (: in-array/proc : (All (A) ((Array A) -> (Sequenceof A))))
 (define (in-array/proc a)
-  (define v (unsafe-array-data (array-strict a)))
+  (define v (strict-array-data (array-strict a)))
   (define n (vector-length v))
   (make-do-sequence
    (λ ()

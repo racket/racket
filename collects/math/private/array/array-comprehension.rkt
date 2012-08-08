@@ -2,7 +2,6 @@
 (require "array-struct.rkt")
 (provide for/array for*/array
          for/strict-array for*/strict-array)
-;;; COMPREHENSIONS
 
 ; (for/strict-array elm-type de(m1 m2 ... mn) (clause ...) . defs+exprs)
 ;    Return an  m1 x m2 x ... mn  strict array with elements from the last expr.
