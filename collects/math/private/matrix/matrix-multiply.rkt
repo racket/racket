@@ -17,8 +17,8 @@
   (λ (arr brr)
     (unless (array-matrix? arr) (raise-type-error name "matrix" 0 arr brr))
     (unless (array-matrix? brr) (raise-type-error name "matrix" 1 arr brr))
-    (match-define (vector ad0 ad1) (unsafe-array-shape arr))
-    (match-define (vector bd0 bd1) (unsafe-array-shape brr))
+    (match-define (vector ad0 ad1) (array-shape arr))
+    (match-define (vector bd0 bd1) (array-shape brr))
     (unless (= ad1 bd0)
       (error name
              "1st argument column size and 2nd argument row size are not equal; given ~e and ~e"
@@ -32,7 +32,7 @@
       ;; Extend arr in the center dimension
       (define: ds-ext : (Vectorof Index) (vector ad0 bd1 ad1))
       (define arr-ext
-        (unsafe-lazy-array
+        (unsafe-view-array 
          ds-ext (λ: ([js : (Vectorof Index)])
                   (define j0 (unsafe-vector-ref js 0))
                   (define j1 (unsafe-vector-ref js 2))
@@ -41,7 +41,7 @@
       ;; Transpose brr and extend in the leftmost dimension
       ;; Note that ds-ext = (vector ad0 bd1 bd0) because bd0 = ad1
       (define brr-ext
-        (unsafe-lazy-array
+        (unsafe-view-array 
          ds-ext (λ: ([js : (Vectorof Index)])
                   (define j0 (unsafe-vector-ref js 2))
                   (define j1 (unsafe-vector-ref js 1))

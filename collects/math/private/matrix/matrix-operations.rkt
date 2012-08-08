@@ -101,7 +101,7 @@
 
 (: matrix-ref : (Matrix Number) Integer Integer -> Number)
 (define (matrix-ref M i j)
-  ((inst array-ref Number) M (list i j)))
+  ((inst array-ref Number) M (vector i j)))
 
 (: matrix-scale : Number (Matrix Number) -> (Result-Matrix Number))
 (define (matrix-scale s a)
@@ -128,11 +128,8 @@
       (array-axis-sum 
        (array-axis-sum 
         (matrix.sqr (matrix.magnitude a)) 0) 0)
-      '())))
-  (if (real? n) 
-      n 
-      (error 'matrix-norm 
-             "internal error: to keep the type checker happy")))
+      '#())))
+  (assert n real?))
 
 ;;;
 ;;; Operators
@@ -164,8 +161,8 @@
     [(_ i c)
      (syntax/loc stx
        (λ (arr)
-         (let ([arr  (array-lazy arr)])
-           (define ds (unsafe-array-shape arr))
+         (let ([arr  (array-view arr)])
+           (define ds (array-shape arr))
            (define g (unsafe-array-proc arr))
            (cond
              [(< i 0)
@@ -173,7 +170,7 @@
              [(not (< i (vector-ref ds 0)))
               (error 'matrix-scale-row "row index must be smaller than the number of rows, got ~a" i)]
              [else
-              (unsafe-lazy-array ds (λ: ([js : (Vectorof Index)]) 
+              (unsafe-view-array ds (λ: ([js : (Vectorof Index)]) 
                                       (if (= i (vector-ref js 0))
                                           (* c (g js))
                                           (g js))))]))))]))
@@ -187,8 +184,8 @@
     [(_ j c)
      (syntax/loc stx
        (λ (arr)
-         (let ([arr  (array-lazy arr)])
-           (define ds (unsafe-array-shape arr))
+         (let ([arr  (array-view arr)])
+           (define ds (array-shape arr))
            (define g (unsafe-array-proc arr))
            (cond
              [(< j 0)
@@ -196,7 +193,7 @@
              [(not (< j (vector-ref ds 1)))
               (error 'matrix-scale-row "column index must be smaller than the number of rows, got ~a" j)]
              [else
-              (unsafe-lazy-array ds (λ: ([js : (Vectorof Index)]) 
+              (unsafe-view-array ds (λ: ([js : (Vectorof Index)]) 
                                       (if (= j (vector-ref js 1))
                                           (* c (g js))
                                           (g js))))]))))]))
@@ -210,8 +207,8 @@
     [(_ i j)
      (syntax/loc stx
        (λ (arr)
-         (let ([arr  (array-lazy arr)])
-           (define ds (unsafe-array-shape arr))
+         (let ([arr  (array-view arr)])
+           (define ds (array-shape arr))
            (define g (unsafe-array-proc arr))
            (cond
              [(< i 0)
@@ -223,7 +220,7 @@
              [(not (< j (vector-ref ds 0)))
               (error 'matrix-swap-rows "row index must be smaller than the number of rows, got ~a" j)]
              [else
-              (unsafe-lazy-array ds (λ: ([js : (Vectorof Index)]) 
+              (unsafe-view-array ds (λ: ([js : (Vectorof Index)]) 
                                       (cond
                                         [(= i (vector-ref js 0)) 
                                          (g (vector j (vector-ref js 1)))]
@@ -241,8 +238,8 @@
     [(_ i j)
      (syntax/loc stx
        (λ (arr)
-         (let ([arr  (array-lazy arr)])
-           (define ds (unsafe-array-shape arr))
+         (let ([arr  (array-view arr)])
+           (define ds (array-shape arr))
            (define g (unsafe-array-proc arr))
            (cond
              [(< i 0)
@@ -254,7 +251,7 @@
              [(not (< j (vector-ref ds 0)))
               (error 'matrix-swap-columns "column index must be smaller than the number of columns, got ~a" j)]
              [else
-              (unsafe-lazy-array ds (λ: ([js : (Vectorof Index)]) 
+              (unsafe-view-array ds (λ: ([js : (Vectorof Index)]) 
                                       (cond
                                         [(= i (vector-ref js 1)) 
                                          (g (vector j (vector-ref js 1)))]
@@ -276,8 +273,8 @@
     [(_ i c j)
      (syntax/loc stx
        (λ (arr)
-         (let ([arr  (array-lazy arr)])
-           (define ds (unsafe-array-shape arr))
+         (let ([arr  (array-view arr)])
+           (define ds (array-shape arr))
            (define g (unsafe-array-proc arr))
            (cond
              [(< i 0)
@@ -291,7 +288,7 @@
               (error 'matrix-add-scaled-row 
                      "row index must be smaller than the number of rows, got ~a" j)]
              [else
-              (unsafe-lazy-array ds (λ: ([js : (Vectorof Index)]) 
+              (unsafe-view-array ds (λ: ([js : (Vectorof Index)]) 
                                       (if (= i (vector-ref js 0))
                                           (+ (g js) (* c (g (vector j (vector-ref js 1)))))
                                           (g js))))]))))]))
@@ -363,7 +360,7 @@
                                   M
                                   (matrix-add-scaled-row M l (- (/ x_lj pivot)) i))))))))])]))
   (let-values ([(M without) (loop 0 0 M 0 '())])
-    (values (array-lazy M) without)))
+    (values (array-view M) without)))
 
 (: matrix-rank : (Matrix Number) -> Integer)
 (define (matrix-rank M)
@@ -510,7 +507,7 @@
                                  M
                                  (matrix-add-scaled-row M l (- (/ x_lj pivot)) i))))]))))])]))
   (let-values ([(M without) (loop 0 0 M 0 '())])
-    (values (array-lazy M) without)))
+    (values (array-view M) without)))
 
 (: matrix-reduced-row-echelon-form : 
    (case-> ((Matrix Number) Boolean -> (Result-Matrix Number))
@@ -638,14 +635,14 @@
           (vector-set! L-matrix (+ (* i m) i) 1))
         
         (define: L : (Matrix Number)
-          (let ([ds (unsafe-array-shape M)])
-            (unsafe-lazy-array
+          (let ([ds (array-shape M)])
+            (unsafe-view-array
              ds (λ: ([js : (Vectorof Index)])
                   (define i (unsafe-vector-ref js 0))
                   (define j (unsafe-vector-ref js 1))
                   (vector-ref L-matrix (+ (* i m) j))))))
-        (list (array-lazy L) 
-              (array-lazy V)))))
+        (list (array-view L) 
+              (array-view V)))))
 
 
 (: column-dimension : (Column Number) -> Index)
@@ -679,7 +676,7 @@
 (define (result-column c)
   (if (vector? c)
       (vector->column c)
-      (array-lazy c)))
+      (array-view c)))
 
 (: scale-column : Number (Column Number) -> (Result-Column Number))
 (define (scale-column s a)
@@ -773,7 +770,7 @@
 ;    (define: b : (Result-Column Number) (result-column b1))
 ;    (cond [(not sum) (set! sum (column-projection v b))]
 ;          [else      (set! sum (matrix+ (assert sum) (column-projection v b)))]))
-;  (cond [sum (array-lazy (assert sum))]
+;  (cond [sum (array-view (assert sum))]
 ;        [else (error 'projection-on-orthogonal-basis 
 ;                     "received empty list of basis vectors")])
 
@@ -791,7 +788,7 @@
     (define: b : (Result-Column Number) (result-column b1))
     (cond [(not sum) (set! sum (column-projection-on-unit v b))]
           [else      (set! sum (matrix+ (assert sum) (column-projection-on-unit v b)))]))
-  (cond [sum (array-lazy (assert sum))]
+  (cond [sum (array-view (assert sum))]
         [else (error 'projection-on-orthogonal-basis 
                      "received empty list of basis vectors")]))
 
@@ -811,7 +808,7 @@
   (define ws (map result-column ws1))
   (cond 
     [(null? ws)       '()]
-    [(null? (cdr ws)) (list (array-lazy (car ws)))]
+    [(null? (cdr ws)) (list (array-view (car ws)))]
     [else 
      (: loop : (Listof (Result-Column Number)) (Listof (Column-Matrix Number)) -> (Listof (Result-Column Number)))
      (define (loop vs ws)
@@ -825,7 +822,7 @@
                   (if (zero-column-vector? w-minus-proj)
                       (loop vs (cdr ws)) ; w in span{vs} => omit it
                       (loop (cons (matrix- w w-proj) vs) (cdr ws)))))]))
-     (reverse (loop (list (array-lazy (car ws))) (cdr ws)))]))
+     (reverse (loop (list (array-view (car ws))) (cdr ws)))]))
 
 
 
