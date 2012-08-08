@@ -24,6 +24,7 @@
          prev-prime
          prev-primes
          prime?
+         odd-prime?
          factorize
          divisors
          prime-divisors
@@ -288,9 +289,9 @@
 ;;; PRIMES
 ;;;
 
-;(: odd-prime? : Natural -> Boolean)
-;(define (odd-prime? n)
-;  (and (odd? n) (prime? n)))
+(: odd-prime? : Natural -> Boolean)
+(define (odd-prime? n)
+  (and (odd? n) (prime? n)))
 
 ;;; PRIMALITY TESTS
 

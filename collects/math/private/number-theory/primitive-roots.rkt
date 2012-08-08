@@ -116,26 +116,26 @@
 ;  return list of all primitive roots of Un
 (: primitive-roots : Natural -> (Listof Natural))
 (define (primitive-roots n)
-  (if  (not (exists-primitive-root? n))
-       empty
-       (let* ([phi-n (totient n)]
-              [qs    (prime-divisors phi-n)])
-         (: primitive-root? : Natural -> Boolean)
-         (define (primitive-root? g)
-           (with-modulus n
-                         ((inst andmap Boolean Boolean Boolean)
-                          (λ: ([x : Boolean]) x)
-                          (map (λ: ([q : Natural])
-                                 (not (= (^ g (quotient phi-n q)) 1)))
-                               qs))))
-         (let: loop : (Listof Natural)
-           ([g     : Natural          1] 
-            [roots : (Listof Natural) empty])
-           (cond
-             [(= g n)                (reverse roots)]
-             [(not (coprime? g n))   (loop (+ g 1)  roots)]
-             [(primitive-root? g)    (loop (+ g 1) (cons g roots))]
-             [else                   (loop (+ g 1)  roots)])))))
+  (if (not (exists-primitive-root? n))
+      '()
+      (let* ([phi-n (totient n)]
+             [qs    (prime-divisors phi-n)])
+        (: primitive-root? : Natural -> Boolean)
+        (define (primitive-root? g)
+          (with-modulus n
+                        ((inst andmap Boolean Boolean Boolean)
+                         (λ: ([x : Boolean]) x)
+                         (map (λ: ([q : Natural])
+                                (not (= (^ g (quotient phi-n q)) 1)))
+                              qs))))
+        (let: loop : (Listof Natural)
+          ([g     : Natural          1] 
+           [roots : (Listof Natural) empty])
+          (cond
+            [(= g n)                (reverse roots)]
+            [(not (coprime? g n))   (loop (+ g 1)  roots)]
+            [(primitive-root? g)    (loop (+ g 1) (cons g roots))]
+            [else                   (loop (+ g 1)  roots)])))))
 
 (: primitive-root : Natural -> (U Natural False))
 (define (primitive-root n)
@@ -157,7 +157,6 @@
           (if (odd? g)
               g
               (modulo (+ g (quotient n 2)) n))]
-         
          ; General case
          [else                                
           (define phi-n (totient n))
