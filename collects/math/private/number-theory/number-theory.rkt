@@ -1,9 +1,5 @@
 #lang typed/racket
 
-;; Partial port of:
-;  http://planet.racket-lang.org/package-source/soegaard/math.plt/1/5/number-theory.ss
-;; TODO: Port primitive roots.
-
 (require/typed typed/racket
                [integer-sqrt/remainder (Natural -> (Values Natural Natural))])
 (require "list-operations.rkt")
@@ -14,6 +10,7 @@
          divides?
          gcd
          pairwise-coprime?
+         inverse
          with-modulus
          solve-chinese
          
@@ -26,6 +23,7 @@
          prime?
          odd-prime?
          factorize
+         defactorize
          divisors
          prime-divisors
          
@@ -49,6 +47,7 @@
          ; number theoretic functions
          totient
          moebius-mu
+         divisor-sum
          )
 
 ;;;
@@ -59,6 +58,7 @@
 (define prime-strong-pseudo-trials (integer-length (assert (/ 1 prime-strong-pseudo-certainty) integer?)))
 
 (define *SMALL-PRIME-LIMIT* 1000000)
+; (define *SMALL-PRIME-LIMIT* 1000) ; use 1000 for coverage testing
 ; Determines the size of the pre-built table of small primes
 (define *SMALL-FACORIZATION-LIMIT* *SMALL-PRIME-LIMIT*)
 ; Determines whether to use naive factorization or Pollards rho method.
@@ -276,7 +276,7 @@
 
 ; Example : (solve-chinese '(2 3 2) '(3 5 7)) = 23
 
-(: solve-chinese : Zs (List N+) -> N)
+(: solve-chinese : Zs (Listof N+) -> N)
 (define (solve-chinese as ns)
   ; the ns should be coprime
   (let* ([n  (product ns)]
@@ -464,11 +464,18 @@
 ;;; FACTORIZATION
 ;;;
 
-(: factorize : Natural -> (Listof (List N N)))
+(: factorize : N -> (Listof (List N N)))
 (define (factorize n)
   (if (< n *SMALL-PRIME-LIMIT*)   ; NOTE: Do measurement of best cut
       (factorize-small n)
       (factorize-large n)))
+
+(: defactorize : (Listof (List N N)) -> N)
+(define (defactorize bes)
+  (cond [(empty? bes) 1]
+        [else (define be (first bes))
+              (* (expt (first be) (second be))
+                 (defactorize (rest bes)))]))
 
 (: factorize-small : N -> (Listof (List N N)))
 (define (factorize-small n)
@@ -485,7 +492,7 @@
     [(divides? p n)  (let ([m (max-dividing-power p n)])
                        (cons (list p m)
                              (small-prime-factors-over 
-                              (quotient n (natural-expt p m))
+                              (quotient n (expt p m))
                               (next-prime p))))]
     [else            (small-prime-factors-over n (next-prime p))]))
 
@@ -682,19 +689,6 @@
 ; OUTPUT
 ;       g in R with phi(g)=0 mod p^l  and  g=g0 mod p
 
-
-(: integer-expt : Z Z -> Z)
-(define (integer-expt x n)
-  (assert (expt x n) integer?))
-
-(: integer-expt+ : Z N -> Z)
-(define (integer-expt+ x n)
-  (expt x n))
-
-(: natural-expt : N N -> N)
-(define (natural-expt x n)
-  (assert (expt x n) natural?))
-
 (: p-adic-newton-iteration : (N -> N) (N -> N) N N N N -> N)
 (define (p-adic-newton-iteration phi Dphi p l g0 s0)
   (let ([r (integer-length l)])
@@ -703,13 +697,13 @@
                     [si : N s0])
       (cond
         [(< i r) (let ([g_i+1 (modulo (- gi (* (phi gi) si))
-                                      (natural-expt p (natural-expt 2 i)))])
+                                      (expt p (expt 2 i)))])
                    (loop (+ i 1)
                          g_i+1
                          (modulo (- (* 2 si) (* (Dphi g_i+1) si si)) 
-                                 (natural-expt p (natural-expt 2 i)))))]
+                                 (expt p (expt 2 i)))))]
         [else    (modulo (- gi (* (phi gi) si)) 
-                         (natural-expt p l))]))))
+                         (expt p l))]))))
 
 ;(= (p-adic-newton-iteration (lambda (y) (- (* y y y y) 1))
 ;                            (lambda (y) (* 4 (* y y y)))
@@ -744,9 +738,9 @@
              ; (display `((k ,k) (r ,r) (i ,i) (gi ,gi) (si ,si) (ti ,ti)))   (newline)
              (cond
                [(< i r) (let* ([g_i+1 (modulo (- gi (* (- (* gi ti) a) si)) 
-                                              (natural-expt 2 (natural-expt 2 i)))]
-                               [t_i+1 (modulo (integer-expt g_i+1 (assert (- n 1) natural?))
-                                              (natural-expt 2 (natural-expt 2 (+ i 1))))])
+                                              (expt 2 (expt 2 i)))]
+                               [t_i+1 (modulo (expt g_i+1 (assert (- n 1) natural?))
+                                              (expt 2 (expt 2 (+ i 1))))])
                           (loop (+ i 1)
                                 g_i+1
                                 (modulo (- (* 2 si) (* n t_i+1 si si))
@@ -803,38 +797,7 @@
     (list d e b1 r)))
 
 
-#;(define (integer-root a n)
-    ; factor a = 2^d 3^e b^r  , where gcd(6,b)=1
-    (cond
-      [(= n 1) a]
-      [(= n 2) (let-values ([(s r) (integer-sqrt/remainder a)])
-                 (if (zero? r)
-                     s
-                     #f))]
-      [else
-       (let ([d (max-dividing-power 2 a)])
-         (if (not (divides? n d))
-             #f
-             (let ([e (max-dividing-power 3 a)])
-               (if (not (divides? n e))
-                   #f
-                   (let* ([b-to-r (quotient a (* (expt 2 d) (expt 3 e)))]
-                          ; factor n = 2^f c , where gcd(2,c)=1
-                          [f         (max-dividing-power 2 n)]
-                          [two-to-f  (expt 2 f)]
-                          [c         (quotient n two-to-f)])
-                     ;
-                     (cond
-                       [(integer-root/odd-odd b-to-r c) 
-                        => (lambda (cth-root--of--b-to-r)
-                             (cond
-                               [(integer-root/power-of-two cth-root--of--b-to-r two-to-f)
-                                => (lambda (nth-root--of--b-to-r)
-                                     (* (expt 2 (quotient d n))
-                                        (expt 3 (quotient e n))
-                                        nth-root--of--b-to-r))]
-                               [else #f]))]
-                       [else #f]))))))]))
+
 
 (: integer-root/remainder : N N -> (Values N N))
 (define (integer-root/remainder a n)
@@ -843,49 +806,82 @@
 
 (: integer-root : N N -> N)
 (define (integer-root x y)
-  ; y'th root of x
-  (cond 
-    [(eq? x 0) 0]
-    [(eq? x 1) 1]
-    [(eq? y 1) x]
-    [(eq? y 2) (integer-sqrt x)]
-    [(not (integer? y))
-     (error 'integer-root "internal error - (used to return 1 here - why?) todo: remove this error after testing")]
+    ; y'th root of x
+    (cond 
+      [(eq? x 0) 0]
+      [(eq? x 1) 1]
+      [(eq? y 1) x]
+      [(eq? y 2) (integer-sqrt x)]
+      [(not (integer? y))
+       (error 'integer-root "internal error - (used to return 1 here - why?) todo: remove this error after testing")]
+      [else
+       (define length (integer-length x))
+       ;; (expt 2 (- length l 1)) <= x < (expt 2 length)
+       (assert
+        (cond [(<= length y) 1]
+              ;; result is >= 2
+              [(<= length (* 2 y))
+               ;; result is < 4
+               (if (< x (expt 3 y)) 2 3)]
+              [(even? y) (integer-root (integer-sqrt x) (quotient y 2))]
+              [else
+               (let* ([length/y/2 ;; length/y/2 >= 1 because (< (* 2 y) length)
+                       (quotient (quotient (- length 1) y) 2)])
+                 (let ([init-g
+                        (let* ([top-bits          (arithmetic-shift x (- (* length/y/2 y)))]
+                               [nth-root-top-bits (integer-root top-bits y)])
+                          (arithmetic-shift (+ nth-root-top-bits 1) length/y/2))])
+                   (let: loop : Z ([g : Z init-g])
+                     (let* ([a (expt g (assert (- y 1) natural?))]
+                            [b (* a y)]
+                            [c (* a (- y 1))]
+                            [d (quotient (+ x (* g c)) b)])
+                       (let ([diff (- d g)])
+                         (cond [(not (negative? diff))
+                                g]
+                               [(< diff -1)
+                                (loop d)]
+                               [else
+                                ;; once the difference is one, it's more
+                                ;; efficient to just decrement until g^y <= x
+                                (let loop ((g d))
+                                  (if (not (< x (expt g y)))
+                                      g
+                                      (loop (- g 1))))]))))))])
+        natural?)]))
+
+#;(define (integer-root a n)
+  ; factor a = 2^d 3^e b^r  , where gcd(6,b)=1
+  (cond
+    [(= n 1) a]
+    [(= n 2) (let-values ([(s r) (integer-sqrt/remainder a)])
+               (if (zero? r)
+                   s
+                   #f))]
     [else
-     (define length (integer-length x))
-     ;; (expt 2 (- length l 1)) <= x < (expt 2 length)
-     (assert
-      (cond [(<= length y) 1]
-            ;; result is >= 2
-            [(<= length (* 2 y))
-             ;; result is < 4
-             (if (< x (expt 3 y)) 2 3)]
-            [(even? y) (integer-root (integer-sqrt x) (quotient y 2))]
-            [else
-             (let* ([length/y/2 ;; length/y/2 >= 1 because (< (* 2 y) length)
-                     (quotient (quotient (- length 1) y) 2)])
-               (let ([init-g
-                      (let* ([top-bits          (arithmetic-shift x (- (* length/y/2 y)))]
-                             [nth-root-top-bits (integer-root top-bits y)])
-                        (arithmetic-shift (+ nth-root-top-bits 1) length/y/2))])
-                 (let: loop : Z ([g : Z init-g])
-                   (let* ([a (integer-expt g (- y 1))]
-                          [b (* a y)]
-                          [c (* a (- y 1))]
-                          [d (quotient (+ x (* g c)) b)])
-                     (let ([diff (- d g)])
-                       (cond [(not (negative? diff))
-                              g]
-                             [(< diff -1)
-                              (loop d)]
-                             [else
-                              ;; once the difference is one, it's more
-                              ;; efficient to just decrement until g^y <= x
-                              (let loop ((g d))
-                                (if (not (< x (expt g y)))
-                                    g
-                                    (loop (- g 1))))]))))))])
-      natural?)]))
+     (let ([d (max-dividing-power 2 a)])
+       (if (not (divides? n d))
+           #f
+           (let ([e (max-dividing-power 3 a)])
+             (if (not (divides? n e))
+                 #f
+                 (let* ([b-to-r (quotient a (* (expt 2 d) (expt 3 e)))]
+                        ; factor n = 2^f c , where gcd(2,c)=1
+                        [f         (max-dividing-power 2 n)]
+                        [two-to-f  (expt 2 f)]
+                        [c         (quotient n two-to-f)])
+                   ;
+                   (cond
+                     [(integer-root/odd-odd b-to-r c) 
+                      => (lambda (cth-root--of--b-to-r)
+                           (cond
+                             [(integer-root/power-of-two cth-root--of--b-to-r two-to-f)
+                              => (lambda (nth-root--of--b-to-r)
+                                   (* (expt 2 (quotient d n))
+                                      (expt 3 (quotient e n))
+                                      nth-root--of--b-to-r))]
+                             [else #f]))]
+                     [else #f]))))))]))
 
 (: simple-as-power : N+ -> (Values N N))
 ;    For a>0 write it as a = b^r where r maximal

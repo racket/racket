@@ -12,6 +12,7 @@
          "private/number-theory/polygonal.rkt"
          "private/number-theory/primitive-roots.rkt"
          "private/number-theory/quadratic.rkt"
+         "private/number-theory/quadratic-residues.rkt"
          "private/number-theory/tangent-number.rkt")
 
 (provide (all-from-out "private/number-theory/number-theory.rkt"
@@ -26,4 +27,5 @@
          "private/number-theory/polygonal.rkt"
          "private/number-theory/primitive-roots.rkt"
          "private/number-theory/quadratic.rkt"
+         "private/number-theory/quadratic-residues.rkt"
          "private/number-theory/tangent-number.rkt"))
