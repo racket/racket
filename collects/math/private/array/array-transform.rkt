@@ -1,15 +1,14 @@
 #lang typed/racket/base
 
-(require racket/sequence
-         racket/vector
+(require racket/vector
          "../unsafe.rkt"
          "array-struct.rkt"
          "utils.rkt")
 
 (provide array-transform
          unsafe-array-transform
+         unsafe-array-axis-transform
          array-axis-transform
-         array-slice
          array-axis-permute
          array-axis-swap
          array-axis-insert
@@ -21,74 +20,47 @@
 ;; ===================================================================================================
 ;; Arbitrary transforms
 
-(: array-transform (All (A) ((Array A) (Listof Integer) ((Listof Index) -> (Listof Integer))
-                                       -> (view-array A))))
+(: array-transform (All (A) ((Array A) User-Indexes (Indexes -> User-Indexes) -> (View-Array A))))
 (define (array-transform arr new-ds idx-fun)
   (let ([arr  (array-view arr)])
-    (define old-ds (unsafe-array-shape arr))
+    (define old-ds (array-shape arr))
     (define old-f (unsafe-array-proc arr))
-    (make-view-array new-ds (λ: ([js : (Listof Index)])
-                              (old-f (check-array-indexes 'array-transform old-ds (idx-fun js)))))))
+    (make-view-array
+     new-ds (λ: ([js : Indexes])
+              (old-f (check-array-indexes 'array-transform old-ds (idx-fun js)))))))
 
-(: unsafe-array-transform (All (A) ((Array A) (Vectorof Index) ((Vectorof Index) -> (Vectorof Index))
-                                              -> (view-array A))))
+(: unsafe-array-transform (All (A) ((Array A) Indexes (Indexes -> Indexes) -> (View-Array A))))
 (define (unsafe-array-transform arr new-ds idx-fun)
   (let ([arr  (array-view arr)])
     (define old-f (unsafe-array-proc arr))
-    (unsafe-view-array new-ds (λ: ([js : (Vectorof Index)]) (old-f (idx-fun js))))))
+    (unsafe-view-array new-ds (λ: ([js : Indexes]) (old-f (idx-fun js))))))
 
 ;; ===================================================================================================
 ;; Separable (per-axis) transforms
 
-(: array-axis-transform (All (A) ((Array A) (Listof (Listof Integer)) -> (view-array A))))
-(define (array-axis-transform arr old-jss)
-  (define old-ds (unsafe-array-shape arr))
-  (define dims (vector-length old-ds))
-  ;; number of indexes should match
-  (unless (= dims (length old-jss))
-    (error 'array-separable-transform
-           "expected ~e index vectors; given ~e index vectors in ~e"
-           dims (length old-jss) old-jss))
-  ;; check bounds, reconstruct indexes as vectors
-  (define: old-jss* : (Vectorof (Vectorof Index)) (make-vector dims (vector)))
-  (let i-loop ([old-jss old-jss] [#{i : Nonnegative-Fixnum} 0])
-    (when (i . < . dims)
-      (define old-js (unsafe-car old-jss))
-      (define new-di (length old-js))
-      (define old-di (unsafe-vector-ref old-ds i))
-      (define: old-js* : (Vectorof Index) (make-vector new-di 0))
-      (let k-loop ([old-js old-js] [#{k : Nonnegative-Fixnum} 0])
-        (cond [(k . < . new-di)
-               (define old-jk (unsafe-car old-js))
-               (cond [(and (0 . <= . old-jk) (old-jk . < . old-di))
-                      (unsafe-vector-set! old-js* k old-jk)
-                      (k-loop (unsafe-cdr old-js) (+ k 1))]
-                     [else
-                      (error 'array-separable-transform "out of bounds")])]
-              [else
-               (unsafe-vector-set! old-jss* i old-js*)]))
-      (i-loop (unsafe-cdr old-jss) (+ i 1))))
-  
-  (define: new-ds : (Vectorof Index) (vector-map vector-length old-jss*))
+(: unsafe-array-axis-transform (All (A) ((Array A) (Vectorof (Vectorof Index)) -> (View-Array A))))
+(define (unsafe-array-axis-transform arr old-jss)
+  (define: new-ds : Indexes (vector-map vector-length old-jss))
+  (define dims (vector-length new-ds))
   (case dims
     [(0)  (array-view arr)]
     [(1)  (define g (unsafe-array-proc (array-view arr)))
           (unsafe-view-array
            new-ds
-           (λ: ([js : (Vectorof Index)])
+           (λ: ([js : Indexes])
              (define j0 (unsafe-vector-ref js 0))
-             (unsafe-vector-set! js 0 (unsafe-vector-ref (unsafe-vector-ref old-jss* 0) j0))
+             (unsafe-vector-set! js 0 (unsafe-vector-ref (unsafe-vector-ref old-jss 0) j0))
              (define v (g js))
              (unsafe-vector-set! js 0 j0)
              v))]
     [(2)  (define g (unsafe-array-proc (array-view arr)))
           (unsafe-view-array
            new-ds
-           (λ: ([js : (Vectorof Index)])
+           (λ: ([js : Indexes])
              (define j0 (unsafe-vector-ref js 0))
              (define j1 (unsafe-vector-ref js 1))
-             (unsafe-vector-set! js 0 (unsafe-vector-ref (unsafe-vector-ref old-jss* 0) j0))
-             (unsafe-vector-set! js 1 (unsafe-vector-ref (unsafe-vector-ref old-jss* 1) j1))
+             (unsafe-vector-set! js 0 (unsafe-vector-ref (unsafe-vector-ref old-jss 0) j0))
+             (unsafe-vector-set! js 1 (unsafe-vector-ref (unsafe-vector-ref old-jss 1) j1))
              (define v (g js))
              (unsafe-vector-set! js 0 j0)
              (unsafe-vector-set! js 1 j1)
@@ -97,26 +69,53 @@
      (define old-js (make-thread-local-indexes dims))
      (unsafe-array-transform
       arr new-ds
-      (λ: ([new-js : (Vectorof Index)])
+      (λ: ([new-js : Indexes])
         (let ([old-js  (old-js)])
-          (let: loop : (Vectorof Index) ([i : Nonnegative-Fixnum  0])
+          (let: loop : Indexes ([i : Nonnegative-Fixnum  0])
             (cond [(i . < . dims)
                    (define new-ji (unsafe-vector-ref new-js i))
-                   (define old-ji (unsafe-vector-ref (unsafe-vector-ref old-jss* i) new-ji))
+                   (define old-ji (unsafe-vector-ref (unsafe-vector-ref old-jss i) new-ji))
                    (unsafe-vector-set! old-js i old-ji)
                    (loop (+ i 1))]
                   [else  old-js])))))]))
 
-(: array-slice (All (A) ((Array A) (Listof (Sequenceof Integer)) -> (view-array A))))
-(define (array-slice arr ss)
-  (array-axis-transform arr (map (inst sequence->list Integer) ss)))
+(: array-axis-transform (All (A) ((Array A) (Listof (Listof Integer)) -> (View-Array A))))
+(define (array-axis-transform arr old-jss)
+  (define old-ds (array-shape arr))
+  (define dims (vector-length old-ds))
+  ;; number of indexes should match
+  (unless (= dims (length old-jss))
+    (error 'array-axis-transform
+           "expected ~e index vectors; given ~e index vectors in ~e"
+           dims (length old-jss) old-jss))
+  ;; check bounds, reconstruct indexes
+  (define: old-jss* : (Vectorof (Vectorof Index)) (make-vector dims (vector)))
+  (let i-loop ([old-jss old-jss] [#{i : Nonnegative-Fixnum} 0])
+    (when (i . < . dims)
+      (define old-js (car old-jss))
+      (define new-di (length old-js))
+      (define old-di (unsafe-vector-ref old-ds i))
+      (define: old-js* : (Vectorof Index) (make-vector new-di 0))
+      (let k-loop ([old-js old-js] [#{k : Nonnegative-Fixnum} 0])
+        (cond [(k . < . new-di)
+               (define old-jk (car old-js))
+               (cond [(and (0 . <= . old-jk) (old-jk . < . old-di))
+                      (unsafe-vector-set! old-js* k old-jk)
+                      (k-loop (cdr old-js) (+ k 1))]
+                     [else
+                      (error 'array-axis-transform "out of bounds")])]
+              [else
+               (unsafe-vector-set! old-jss* i old-js*)]))
+      (i-loop (cdr old-jss) (+ i 1))))
+  
+  (unsafe-array-axis-transform arr old-jss*))
 
 ;; ===================================================================================================
 ;; Back permutation and swap
 
-(: array-axis-permute (All (A) ((Array A) (Listof Integer) -> (view-array A))))
+(: array-axis-permute (All (A) ((Array A) (Listof Integer) -> (View-Array A))))
 (define (array-axis-permute arr perm)
-  (define ds (unsafe-array-shape arr))
+  (define ds (array-shape arr))
   (let-values ([(ds perm) (apply-permutation
                            perm ds (λ () (raise-type-error 'array-axis-permute "permutation"
                                                            1 arr perm)))])
@@ -124,18 +123,18 @@
     (define old-js (make-thread-local-indexes dims))
     (unsafe-array-transform
      arr ds
-     (λ: ([js : (Vectorof Index)])
+     (λ: ([js : Indexes])
        (let ([old-js  (old-js)])
-         (let: loop : (Vectorof Index) ([i : Nonnegative-Fixnum  0])
+         (let: loop : Indexes ([i : Nonnegative-Fixnum  0])
            (cond [(i . < . dims)  (unsafe-vector-set! old-js
                                                       (unsafe-vector-ref perm i)
                                                       (unsafe-vector-ref js i))
                                   (loop (+ i 1))]
                  [else  old-js])))))))
 
-(: array-axis-swap (All (A) ((Array A) Integer Integer -> (view-array A))))
+(: array-axis-swap (All (A) ((Array A) Integer Integer -> (View-Array A))))
 (define (array-axis-swap arr i0 i1)
-  (define ds (unsafe-array-shape arr))
+  (define ds (array-shape arr))
   (define dims (vector-length ds))
   (cond [(or (i0 . < . 0) (i0 . >= . dims))
          (raise-type-error 'array-transpose (format "Index < ~a" dims) 1 arr i0 i1)]
@@ -151,7 +150,7 @@
          (let ([arr  (array-view arr)])
            (define proc (unsafe-array-proc arr))
            (unsafe-view-array
-            new-ds (λ: ([js : (Vectorof Index)])
+            new-ds (λ: ([js : Indexes])
                      (define j0 (unsafe-vector-ref js i0))
                      (define j1 (unsafe-vector-ref js i1))
                      (unsafe-vector-set! js i0 j1)
@@ -164,9 +163,10 @@
 ;; ===================================================================================================
 ;; Adding/removing axes
 
-(: array-axis-insert (All (A) ((Array A) Integer Integer -> (view-array A))))
-(define (array-axis-insert arr k dk)
-  (define ds (unsafe-array-shape arr))
+(: array-axis-insert (All (A) (case-> ((Array A) Integer -> (View-Array A))
+                                      ((Array A) Integer Integer -> (View-Array A)))))
+(define (array-axis-insert arr k [dk 1])
+  (define ds (array-shape arr))
   (define dims (vector-length ds))
   (cond [(or (k . < . 0) (k . > . dims))
          (raise-type-error 'array-axis-insert (format "Index <= ~a" dims) 1 arr k dk)]
@@ -177,12 +177,12 @@
            (define new-ds (unsafe-vector-insert ds k dk))
            (define proc (unsafe-array-proc arr))
            (unsafe-view-array
-            new-ds (λ: ([js : (Vectorof Index)])
+            new-ds (λ: ([js : Indexes])
                      (proc (unsafe-vector-remove js k)))))]))
 
-(: array-axis-remove (All (A) ((Array A) Integer Integer -> (view-array A))))
+(: array-axis-remove (All (A) ((Array A) Integer Integer -> (View-Array A))))
 (define (array-axis-remove arr k jk)
-  (define ds (unsafe-array-shape arr))
+  (define ds (array-shape arr))
   (define dims (vector-length ds))
   (cond [(or (k . < . 0) (k . >= . dims))
          (raise-type-error 'array-axis-remove (format "Index < ~a" dims) 1 arr k jk)]
@@ -194,29 +194,29 @@
            (define new-ds (unsafe-vector-remove ds k))
            (define proc (unsafe-array-proc arr))
            (unsafe-view-array
-            new-ds (λ: ([js : (Vectorof Index)])
+            new-ds (λ: ([js : Indexes])
                      (proc (unsafe-vector-insert js k jk)))))]))
 
 ;; ===================================================================================================
 ;; Reshape
 
-(: array-reshape (All (A) (case-> ((view-array A) (Listof Integer) -> (view-array A))
-                                  ((strict-array A) (Listof Integer) -> (strict-array A))
-                                  ((Array A) (Listof Integer) -> (Array A)))))
+(: array-reshape (All (A) (case-> ((View-Array A) User-Indexes -> (View-Array A))
+                                  ((Strict-Array A) User-Indexes -> (Strict-Array A))
+                                  ((Array A) User-Indexes -> (Array A)))))
 (define (array-reshape arr ds)
-  (let ([ds  (array-shape-safe->unsafe
-              ds (λ () (raise-type-error 'array-reshape "(Listof Index)" 1 arr ds)))])
+  (let ([ds  (check-array-shape
+              ds (λ () (raise-type-error 'array-reshape "(Vectorof Index)" 1 arr ds)))])
     (define size (array-size arr))
-    (unless (= size (unsafe-array-shape-size ds))
-      (raise-type-error 'array-reshape (format "(Listof Index) with product ~a" size) 1 arr ds))
-    (define old-ds (unsafe-array-shape arr))
+    (unless (= size (array-shape-size ds))
+      (raise-type-error 'array-reshape (format "(Vectorof Index) with product ~a" size) 1 arr ds))
+    (define old-ds (array-shape arr))
     (cond [(equal? ds old-ds)  arr]
           [(view-array? arr)
            (define old-dims (vector-length old-ds))
            (define g (unsafe-array-proc arr))
            (define old-js (make-thread-local-indexes old-dims))
            (unsafe-view-array
-            ds (λ: ([js : (Vectorof Index)])
+            ds (λ: ([js : Indexes])
                  (let ([old-js  (old-js)])
                    (define j (unsafe-array-index->value-index ds js))
                    (unsafe-value-index->array-index! old-ds j old-js)
@@ -224,20 +224,20 @@
           [else
            (unsafe-strict-array ds (strict-array-data arr))])))
 
-(: array-flatten (All (A) (case-> ((view-array A) -> (view-array A))
-                                  ((strict-array A) -> (strict-array A))
+(: array-flatten (All (A) (case-> ((View-Array A) -> (View-Array A))
+                                  ((Strict-Array A) -> (Strict-Array A))
                                   ((Array A) -> (Array A)))))
 (define (array-flatten arr)
   (define size (array-size arr))
-  (define: ds : (Vectorof Index) (vector size))
-  (define old-ds (unsafe-array-shape arr))
+  (define: ds : Indexes (vector size))
+  (define old-ds (array-shape arr))
   (cond [(equal? ds old-ds)  arr]
         [(view-array? arr)
          (define old-dims (vector-length old-ds))
          (define g (unsafe-array-proc arr))
          (define old-js (make-thread-local-indexes old-dims))
          (unsafe-view-array
-          ds (λ: ([js : (Vectorof Index)])
+          ds (λ: ([js : Indexes])
                (let ([old-js  (old-js)])
                  (define j (unsafe-vector-ref js 0))
                  (unsafe-value-index->array-index! old-ds j old-js)
@@ -248,7 +248,7 @@
 ;; ===================================================================================================
 ;; Append
 
-(: check-compatible-array-shapes! (Symbol (Listof (Vectorof Index)) Index -> Void))
+(: check-compatible-array-shapes! (Symbol (Listof Indexes) Index -> Void))
 (define (check-compatible-array-shapes! name dss k)
   (define (raise-error)
     (error name "expected Arrays with the same shape except axis ~e; given shapes ~e" k dss))
@@ -265,23 +265,23 @@
        (let loop ([#{i : Nonnegative-Fixnum} 0])
          (cond [(i . >= . dims)  (void)]
                [(or (= i k) (apply = (unsafe-vector-ref ds0 i) (unsafe-vector-ref ds1 i)
-                                   (map (λ: ([ds : (Vectorof Index)])
+                                   (map (λ: ([ds : Indexes])
                                           (unsafe-vector-ref ds i))
                                         dss)))
               (loop (+ i 1))]
              [else  (raise-error)])))]))
 
-(: array-append (All (A) ((Array A) Integer (Array A) * -> (view-array A))))
+(: array-append (All (A) ((Array A) Integer (Array A) * -> (View-Array A))))
 (define (array-append arr k . arrs)
-  (define dims (vector-length (unsafe-array-shape arr)))
+  (define dims (array-dims arr))
   (cond
     [(or (k . < . 0) (k . >= . dims))
      (apply raise-type-error 'array-append (format "Index < ~a" dims) 0 k arr arrs)]
     [else
      (let ([arrs  (map (λ: ([arr : (Array A)]) (array-view arr)) (cons arr arrs))])
-       (define dss (map (λ: ([arr : (view-array A)]) (unsafe-array-shape arr)) arrs))
+       (define dss (map (λ: ([arr : (View-Array A)]) (array-shape arr)) arrs))
        (check-compatible-array-shapes! 'array-append dss k)
-       (define dks (map (λ: ([ds : (Vectorof Index)]) (unsafe-vector-ref ds k)) dss))
+       (define dks (map (λ: ([ds : Indexes]) (unsafe-vector-ref ds k)) dss))
        (define new-dk (apply + dks))
        (cond
          [(index? new-dk)
@@ -291,7 +291,7 @@
           ;; 1. old-procs : new array index -> old array procedure
           ;; 2. old-jks :   new array index -> old array index
           (define old-procs (make-vector new-dk (unsafe-array-proc (car arrs))))
-          (define: old-jks : (Vectorof Index) (make-vector new-dk 0))
+          (define: old-jks : Indexes (make-vector new-dk 0))
           (let arrs-loop ([arrs arrs] [dks  dks] [#{jk : Nonnegative-Fixnum} 0])
             (unless (null? arrs)
               (define arr (car arrs))
@@ -305,7 +305,7 @@
                       [else  (arrs-loop (cdr arrs) (cdr dks) jk)]))))
           
           (unsafe-view-array
-           new-ds (λ: ([js : (Vectorof Index)])
+           new-ds (λ: ([js : Indexes])
                     (define jk (unsafe-vector-ref js k))
                     (unsafe-vector-set! js k (unsafe-vector-ref old-jks jk))
                     (define v ((unsafe-vector-ref old-procs jk) js))

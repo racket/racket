@@ -8,32 +8,25 @@
 
 (provide Array
          (rename-out [-array?        array?]
-                     [-view-array    view-array]
-                     [-strict-array  strict-array])
+                     [-View-Array    View-Array]
+                     [-Strict-Array  Strict-Array])
          view-array? strict-array?
-         (rename-out [-view-array  lazy-array]
-                     [view-array?  lazy-array?]
-                     [make-view-array  make-lazy-array]
-                     [unsafe-view-array  unsafe-lazy-array]
-                     [array-view  array-lazy])
          ;; accessors and constructors
-         (rename-out [safe-array-shape array-shape])
+         array-shape
          array-dims
          array-size
          make-view-array
          make-strict-array
-         unsafe-array-shape
          unsafe-view-array
          unsafe-strict-array
          unsafe-array-proc
-         (rename-out [strict-array-data  unsafe-array-data])
          strict-array-data
          ;; conversion
          array-view
          array-strict
          array-copy
          ;; printing
-         default-print-array
+         print-array-fields
          array-custom-printer
          ; matrix
          flat-vector->matrix)
@@ -41,7 +34,7 @@
 ;; ===================================================================================================
 ;; Equality and hashing
 
-(: view-array-equal? (All (A) ((view-array A) (view-array A) (Vectorof Index) (Any Any -> Boolean)
+(: view-array-equal? (All (A) ((View-Array A) (View-Array A) Indexes (Any Any -> Boolean)
                                               -> Boolean)))
 (define (view-array-equal? arr brr ds recur-equal?)
   (let/ec: return : Boolean
@@ -51,20 +44,20 @@
                                        (return #f))))
     #t))
 
-(: mixed-array-equal? (All (A) ((view-array A) (strict-array A) (Vectorof Index) (Any Any -> Boolean)
+(: mixed-array-equal? (All (A) ((View-Array A) (Strict-Array A) Indexes (Any Any -> Boolean)
                                                -> Boolean)))
 (define (mixed-array-equal? arr brr ds recur-equal?)
   (let/ec: return : Boolean
     (define f (unsafe-array-proc arr))
-    (define vs (strict-array-data brr))
+    (define vs (Strict-Array-data brr))
     (for-each-array+data-index ds (λ (js j) (unless (recur-equal? (f js) (unsafe-vector-ref vs j))
                                               (return #f))))
     #t))
 
 (: array-equal? (All (A) ((Array A) (Array A) (Any Any -> Boolean) -> Boolean)))
 (define (array-equal? arr brr recur-equal?)
-  (define ds (unsafe-array-shape arr))
-  (and (equal? ds (unsafe-array-shape brr))
+  (define ds (array-shape arr))
+  (and (equal? ds (array-shape brr))
        (cond [(view-array? arr)
               (cond [(view-array? brr)  (view-array-equal? arr brr ds recur-equal?)]
                     [else  (mixed-array-equal? arr brr ds recur-equal?)])]
@@ -76,113 +69,91 @@
 (: array-hash-code (All (A) ((Array A) (Any -> Integer) -> Integer)))
 (define (array-hash-code arr recur-hash-code)
   (cond [(view-array? arr)
-         (define ds (unsafe-array-shape arr))
+         (define ds (array-shape arr))
          (define f (unsafe-array-proc arr))
          (define h 0)
          (for-each-array-index ds (λ (js) (set! h (bitwise-xor h (recur-hash-code (f js))))))
          (bitwise-xor h (recur-hash-code ds))]
         [else
-         (bitwise-xor (recur-hash-code (unsafe-array-shape arr))
+         (bitwise-xor (recur-hash-code (array-shape arr))
                       (recur-hash-code (strict-array-data arr)))]))
 
 ;; ===================================================================================================
 ;; Parent array data type
 
-(: array-guard ((Vectorof Index) Symbol -> (Vectorof Index)))
-(define (array-guard ds name)
-  (define size (unsafe-array-shape-size ds))
-  (cond [(index? size)  ds]
-        [else  (error name "array size ~e (shape ~e) is not an Index" size ds)]))
+(: array-guard (Indexes Index Symbol -> (Values Indexes Index)))
+(define (array-guard ds size name)
+  (cond [(zero? size)
+         (let ([size  (array-shape-size ds)])
+           (cond [(index? size)  (values (vector->immutable-vector ds) size)]
+                 [else  (error 'array "array size ~e (for shape ~e) is too large (is not an Index)"
+                               size ds)]))]
+        [else  (values (vector->immutable-vector ds) size)]))
 
-(struct: (A) array ([shape : (Vectorof Index)])
+(struct: (A) array ([shape : Indexes] [size : Index])
   #:property prop:equal+hash (list array-equal? array-hash-code array-hash-code)
   #:guard array-guard)
 
-(: internal-array-size-error (All (A) ((Array A) Integer -> Nothing)))
-(define (internal-array-size-error arr n)
-  (error 'array-size "internal error: size of ~e should be an Index, but is ~e" arr n))
-
+(: array-dims (All (A) ((Array A) -> Index)))
 (begin-encourage-inline
-  
-  (: unsafe-array-shape (All (A) ((Array A) -> (Vectorof Index))))
-  (define (unsafe-array-shape arr) (array-shape arr))
-  
-  (: array-dims (All (A) ((Array A) -> Index)))
-  (define (array-dims arr) (vector-length (unsafe-array-shape arr)))
-  
-  (: array-size (All (A) ((Array A) -> Index)))
-  (define (array-size arr)
-    (define n (unsafe-array-shape-size (unsafe-array-shape arr)))
-    (cond [(index? n)  n]
-          [else  (internal-array-size-error arr n)]))
-  
-  (: safe-array-shape (All (A) ((Array A) -> (Listof Index))))
-  (define (safe-array-shape arr) (array-shape-unsafe->safe (unsafe-array-shape arr)))
-  
-  )  ; begin-encourage-inline
+  (define (array-dims arr) (vector-length (array-shape arr))))
 
 ;; ===================================================================================================
 ;; View array data type
 
-(struct: (A) view-array array ([proc : ((Vectorof Index) -> A)])
+(struct: (A) View-Array array ([proc : (Indexes -> A)])
   #:property prop:custom-print-quotable 'never
-  #:property prop:custom-write
-  (λ (arr port mode)
-    ((array-custom-printer) arr port mode)))
+  #:property prop:custom-write (λ (arr port mode) ((array-custom-printer) arr port mode)))
 
-(define unsafe-array-proc view-array-proc)
+(define view-array? View-Array?)
+(define unsafe-array-proc View-Array-proc)
 
-(: make-view-array (All (A) ((Listof Integer) ((Listof Index) -> A) -> (view-array A))))
+(: make-view-array (All (A) (User-Indexes (Indexes -> A) -> (View-Array A))))
 (define (make-view-array ds proc)
-  (let ([ds  (array-shape-safe->unsafe
-              ds (λ () (raise-type-error 'view-array "(Listof Index)" 0 ds proc)))])
-    (view-array ds (λ: ([js : (Vectorof Index)]) (proc (vector->list js))))))
+  (let ([ds  (check-array-shape
+              ds (λ () (raise-type-error 'make-view-array "(Vectorof Index)" 0 ds proc)))])
+    (View-Array ds 0 (λ: ([js : Indexes])
+                       (proc (vector->immutable-vector js))))))
 
-;; A version of view-array that isn't also a type and a match expander
-(: unsafe-view-array (All (A) ((Vectorof Index) ((Vectorof Index) -> A) -> (view-array A))))
+(: unsafe-view-array (All (A) (Indexes (Indexes -> A) -> (View-Array A))))
 (define (unsafe-view-array ds proc)
-  (view-array ds proc))
+  (View-Array ds 0 proc))
 
 ;; ===================================================================================================
 ;; Strict array data type
 
-(struct: (A) strict-array array ([data : (Vectorof A)])
+(struct: (A) Strict-Array array ([data : (Vectorof A)])
   #:property prop:custom-print-quotable 'never
-  #:property prop:custom-write
-  (λ (arr port mode)
-    ((array-custom-printer) arr port mode)))
+  #:property prop:custom-write (λ (arr port mode) ((array-custom-printer) arr port mode)))
 
-(: make-strict-array (All (A) ((Listof Integer) (Vectorof A) -> (strict-array A))))
+(define strict-array? Strict-Array?)
+(define strict-array-data Strict-Array-data)
+
+(: make-strict-array (All (A) (User-Indexes (Vectorof A) -> (Strict-Array A))))
 (define (make-strict-array ds vs)
-  (let ([ds  (array-shape-safe->unsafe
-              ds (λ () (raise-type-error 'strict-array "(Listof Index)" 0 ds vs)))])
-    (define size (unsafe-array-shape-size ds))
-    (unless (= size (vector-length vs))
-      (raise-type-error 'strict-array (format "Vector of length ~e" size)
-                        1 (array-shape-unsafe->safe ds) vs))
-    (strict-array ds vs)))
+  (let* ([ds  (check-array-shape
+               ds (λ () (raise-type-error 'strict-array "(Vectorof Index)" 0 ds vs)))]
+         [size  (array-shape-size ds)]
+         [n  (vector-length vs)])
+    (cond [(= size n)  (Strict-Array ds n vs)]
+          [else  (raise-type-error 'strict-array (format "Vector of length ~e" size) 1 ds vs)])))
 
-;; A version of strict-array that isn't also a type and a match expander
-(: unsafe-strict-array (All (A) ((Vectorof Index) (Vectorof A) -> (strict-array A))))
+(: unsafe-strict-array (All (A) (Indexes (Vectorof A) -> (Strict-Array A))))
 (define (unsafe-strict-array ds vs)
-  (strict-array ds vs))
+  (Strict-Array ds (vector-length vs) vs))
 
-(: flat-vector->matrix : (All (A) (Index Index (Vectorof A) -> (view-array A))))
+(: flat-vector->matrix : (All (A) (Index Index (Vectorof A) -> (View-Array A))))
 (define (flat-vector->matrix m n v)
-  (if (= (* m n) (vector-length v))
-      (array-view (strict-array (ann (vector m n) (Vectorof Index)) v))
-      (error 'flat-vector->matrix
-             "dimensions and vector length does not match, got ~a, ~a, ~a"
-             m n v)))
+  (array-view (make-strict-array (vector m n) v)))
 
 ;; ===================================================================================================
 ;; More types
 
-(define-type (Array A) (U (view-array A) (strict-array A)))
+(define-type (Array A) (U (View-Array A) (Strict-Array A)))
 
 ;; Versions of view-array and strict-array that aren't also constructors and match expanders
-(define-type (-view-array A) (view-array A))
-(define-type (-strict-array A) (strict-array A))
+(define-type (-View-Array A) (View-Array A))
+(define-type (-Strict-Array A) (Strict-Array A))
 
 ;; Predicate for the union type (`array?' is different: identifies instances of array's descendants)
 (begin-encourage-inline
@@ -191,39 +162,43 @@
 ;; ===================================================================================================
 ;; View/strict conversion
 
-(: array-view (All (A) ((Array A) -> (view-array A))))
 (begin-encourage-inline
+
+  (: array-view (All (A) ((Array A) -> (View-Array A))))
   (define (array-view arr)
     (cond [(view-array? arr)  arr]
-          [else  (define ds (unsafe-array-shape arr))
-                 (define vs (strict-array-data arr))
-                 (unsafe-view-array
-                  ds (λ: ([js : (Vectorof Index)])
-                       (unsafe-vector-ref vs (unsafe-array-index->value-index ds js))))])))
-
-(: array-strict (All (A) ((Array A) -> (strict-array A))))
-(define (array-strict arr)
-  (cond [(view-array? arr)
-         (define ds (unsafe-array-shape arr))
-         (define g (unsafe-array-proc arr))
-         (define size (array-size arr))
-         (unsafe-strict-array ds (inline-build-array-data ds (λ (js j) (g js))))]
-        [else  arr]))
-
-(: array-copy (All (A) ((Array A) -> (strict-array A))))
-(define (array-copy arr)
-  (cond [(view-array? arr)  (array-strict arr)]
-        [else  (unsafe-strict-array (unsafe-array-shape arr)
-                                    (vector-copy-all (strict-array-data arr)))]))
+          [else
+           (define ds (array-shape arr))
+           (define vs (strict-array-data arr))
+           (unsafe-view-array
+            ds (λ: ([js : Indexes])
+                 (unsafe-vector-ref vs (unsafe-array-index->value-index ds js))))]))
+  
+  (: array-strict (All (A) ((Array A) -> (Strict-Array A))))
+  (define (array-strict arr)
+    (cond [(view-array? arr)
+           (define ds (array-shape arr))
+           (define g (unsafe-array-proc arr))
+           (define size (array-size arr))
+           (unsafe-strict-array ds (inline-build-array-data ds (λ (js j) (g js))))]
+          [else  arr]))
+  
+  (: array-copy (All (A) ((Array A) -> (Strict-Array A))))
+  (define (array-copy arr)
+    (cond [(view-array? arr)  (array-strict arr)]
+          [else  (unsafe-strict-array (array-shape arr)
+                                      (vector-copy-all (strict-array-data arr)))]))
+  
+  )  ; begin-encourage-inline
 
 ;; ===================================================================================================
 ;; Printing
 
 (require racket/pretty)
 
-(: default-print-array (All (A) ((Array A) Output-Port (U #t #f 0 1) -> Any)))
+(: print-array-fields (All (A) ((Array A) Output-Port (U #t #f 0 1) -> Any)))
 ;; Mimicks the default custom printer for transparent struct values
-(define (default-print-array arr port mode)
+(define (print-array-fields arr port mode)
   (define col (port-next-column port))
   (define cols (pretty-print-columns))
   (define pp? (pretty-printing))
@@ -244,18 +219,18 @@
   (cond [(view-array? arr)
          (write-string "(view-array" port)
          (maybe-print-newline 1)
-         (recur-print (unsafe-array-shape arr) port)
+         (recur-print (array-shape arr) port)
          (maybe-print-newline 1)
          (recur-print (unsafe-array-proc arr) port)
          (write-string ")" port)]
         [else
          (write-string "(strict-array" port)
          (maybe-print-newline 1)
-         (recur-print (unsafe-array-shape arr) port)
+         (recur-print (array-shape arr) port)
          (maybe-print-newline 1)
          (recur-print (strict-array-data arr) port)
          (write-string ")" port)]))
 
 ;; In "array.rkt", this is set to `print-array' from from "array-print.rkt"
 (: array-custom-printer (Parameterof (All (A) ((Array A) Output-Port (U #t #f 0 1) -> Any))))
-(define array-custom-printer (make-parameter default-print-array))
+(define array-custom-printer (make-parameter print-array-fields))
