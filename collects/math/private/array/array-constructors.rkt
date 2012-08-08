@@ -6,6 +6,7 @@
 
 (provide make-array
          axis-index-array
+         index-array
          indexes-array
          diagonal-array)
 
@@ -23,6 +24,14 @@
     (cond [(and (0 . <= . k) (k . < . dims))
            (unsafe-view-array ds (λ: ([js : Indexes]) (unsafe-vector-ref js k)))]
           [else  (raise-type-error 'axis-index-array (format "Index < ~a" dims) 1 ds k)])))
+
+(: index-array (User-Indexes -> (View-Array Index)))
+(define (index-array ds)
+  (let ([ds  (check-array-shape
+              ds (λ () (raise-type-error 'index-array "(Vectorof Index)" ds)))])
+    (unsafe-view-array ds (λ: ([js : Indexes])
+                            (define j (unsafe-array-index->value-index ds js))
+                            (with-asserts ([j index?]) j)))))
 
 (: indexes-array (User-Indexes -> (View-Array Indexes)))
 (define (indexes-array ds)

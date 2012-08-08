@@ -268,6 +268,10 @@
 (check-exn exn? (λ () (axis-index-array #(3 3) -1)))
 (check-exn exn? (λ () (axis-index-array #() 0)))
 
+(check-equal? (index-array #()) (array 0))
+(check-equal? (index-array #(4)) (array [0 1 2 3]))
+(check-equal? (index-array #(2 2)) (array [[0 1] [2 3]]))
+
 (check-equal? (indexes-array #(3 3))
               (make-view-array #(3 3) (λ: ([js : Indexes]) (vector-copy js))))
 
