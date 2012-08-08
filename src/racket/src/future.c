@@ -39,7 +39,7 @@ Scheme_Object *scheme_fsemaphore_p(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *futures_enabled(int argc, Scheme_Object *argv[])
 {
-#ifdef MZ_USE_FUTURESRACKET  
+#ifdef MZ_USE_FUTURES
   return scheme_true;
 #else 
   return scheme_false;
