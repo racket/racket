@@ -150,7 +150,7 @@ of an analyzed profile result.
   edge is charged by a whole second for its total time (the same goes
   for the @tt{A @'rarr A} edge, for example).  Its caller time is
   charged 1/2 second because @tt{A} appears twice in this stack
-  snapshot (in the other half, @tt{A} is chared for being a leaf ---
+  snapshot (in the other half, @tt{A} is charged for being a leaf ---
   the caller of the special @racket[*-node]), and its callee time is
   charged 1/3 respectively.}
 
