@@ -828,28 +828,27 @@
               (array [#(0) #(1) #(2) #(3) #(0) #(1) #(2) #(0) #(1)]))
 
 
-#;(  ; TODO Merging
 ;; ---------------------------------------------------------------------------------------------------
 ;; Comprehensions
 
 (check-equal? (for/strict-array Integer 0 () () 3) 
-              (make-strict-array '() '#(3)))
+              (strict-array 3))
 (check-equal? (for/strict-array Symbol 'a-sym () () 'foo) 
-              (make-strict-array '() '#(foo)))
+              (strict-array 'foo))
 (check-equal? (for/strict-array Integer 0 (2) ([x (in-naturals)]) x) 
-              (make-strict-array '(2) '#(0 1)))
-(check-equal? (for/strict-array (Listof Integer) '(0 0) (2 3) ([i (in-range 0 6)]) (list (quotient i 3) (remainder i 3)))
-              (indexes-array '(2 3)))
+              (strict-array [0 1]))
+(check-equal? (for/strict-array (Vectorof Integer) #(0 0) (2 3) ([i (in-range 0 6)]) (vector (quotient i 3) (remainder i 3)))
+              (array-strict (indexes-array #(2 3))))
 
 (check-equal? (for*/strict-array Integer 0 () () 3)
-              (make-strict-array '() '#(3)))
+              (strict-array 3))
 (check-equal? (for*/strict-array Symbol 'a-sym () () 'foo)
-              (make-strict-array '() '#(foo)))
+              (strict-array 'foo))
 (check-equal? (for*/strict-array Integer 0 (2) ([x (in-naturals)]) x)
-              (make-strict-array '(2) '#(0 1)))
-(check-equal? (for*/strict-array (Listof Integer) '(0 0) (2 3) 
-                                 ([i (in-range 0 2)] [j (in-range 0 3)]) (list i j))
-              (indexes-array '(2 3)))
+              (strict-array [0 1]))
+(check-equal? (for*/strict-array (Vectorof Integer) #(0 0) (2 3) 
+                                 ([i (in-range 0 2)] [j (in-range 0 3)]) (vector i j))
+              (array-strict (indexes-array #(2 3))))
 
 (check-equal? (for/strict-array Integer 0 () () 3) 
               (for/array Integer 0 () () 3))
@@ -873,11 +872,15 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; Sequences
 
-(check-equal? (for/list: : (Listof (Listof Index))
-                ([x (in-array (make-view-array '(2 2) (λ: ([js : (Listof Index)]) js)))]) x)
-              '((0 0) (0 1) (1 0) (1 1)))
+(check-equal? (for/list: : (Listof Number)
+                ([x (in-array (array [[1 2 3] [4 5 6]]))])
+                x)
+              '(1 2 3 4 5 6))
+
+(check-equal? (for/list: : (Listof User-Indexes)
+                ([x (in-array (make-view-array #(2 2) (λ: ([js : User-Indexes]) js)))]) x)
+              '(#(0 0) #(0 1) #(1 0) #(1 1)))
 (let ()
-  (define s (in-array (make-view-array '(2 2) (λ: ([js : (Listof Index)]) js))))
-  (check-equal? (for/list: : (Listof (Listof Index)) ([x s]) x)
-                '((0 0) (0 1) (1 0) (1 1))))
-)
+  (define s (in-array (make-view-array #(2 2) (λ: ([js : User-Indexes]) js))))
+  (check-equal? (for/list: : (Listof User-Indexes) ([x s]) x)
+                '(#(0 0) #(0 1) #(1 0) #(1 1))))
