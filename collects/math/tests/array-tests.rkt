@@ -308,9 +308,9 @@
 (check-equal? (array-map inexact->exact (array [1.0 2.0]))
               (array [1 2]))
 
-(check-equal? (array-map2 (inst cons Float Float)
-                          (array [1.0 2.0])
-                          (array [10.0 20.0]))
+(check-equal? (array-map (inst cons Float Float)
+                         (array [1.0 2.0])
+                         (array [10.0 20.0]))
               (make-strict-array #(2) #[(1.0 . 10.0) (2.0 . 20.0)]))
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -664,7 +664,7 @@
   (check-equal? (array-ref arr #(1 1)) #(7 7)))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; Indexing forms
+;; Indexing
 
 (let ([arr  (strict-array [[0 1 2 3 4 5]
                            [1 2 3 4 5 6]
@@ -907,24 +907,11 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; Conditionals
 
-(: array-factorial ((Array Real) -> (View-Array Real)))
-(define (array-factorial arr)
-  (define ds (array-shape arr))
-  (define zeros (make-array ds 0))
-  (define ones (make-array ds 1))
-  (array-if (array< arr zeros)
-            (raise-type-error 'array-factorial "(Array Natural)" arr)
-            (let: loop : (Array Real) ([arr : (Array Real)  arr])
-              (array-if (array= arr zeros)
-                        ones
-                        (array* arr (loop (array- arr ones)))))))
-
 (let ([arr  (make-view-array #(10 10) (λ: ([js : Indexes]) (apply + (vector->list js))))])
-  (check-equal? (array-factorial arr)
-                (array-map factorial arr))
-  (check-equal? (array-ref (array-factorial (array [0 -1])) #(0))
-                1)
-  (check-exn exn? (λ () (array-ref (array-factorial (array [0 -1])) #(1))))
+  (check-equal? (array-if (array< arr (array 5))
+                          (array 0)
+                          (array 1))
+                (array-map (λ: ([v : Integer]) (if (v . < . 5) 0 1)) arr))
   (check-equal? (array-or (array< arr (make-array #(10 10) 9))
                           (array> arr (make-array #(10 10) 9)))
                 (array-map (λ: ([v : Integer]) (or (< v 9) (> v 9))) arr))
