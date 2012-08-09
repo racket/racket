@@ -105,7 +105,7 @@
 
 (: matrix-scale : Number (Matrix Number) -> (Result-Matrix Number))
 (define (matrix-scale s a)
-  (array-scale s a))
+  (array-scale a s))
 
 (: matrix-row-vector? : (Matrix Number) -> Boolean)
 (define (matrix-row-vector? a)

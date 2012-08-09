@@ -188,12 +188,6 @@ array-number-exp.
         ds (λ: ([js : Indexes]) (apply f (g1 js) (g2 js)
                                        (map (λ: ([g : (Indexes -> T)]) (g js)) gs)))))]))
 
-(: array-scale (case-> (Float  (Array Float)  -> (View-Array Float))
-                       (Real   (Array Real)   -> (View-Array Real))
-                       (Number (Array Number) -> (View-Array Number))))
-(define (array-scale s arr)
-  ((inline-array-lift1 (λ (x) (* s x))) arr))
-
 ;; ===================================================================================================
 ;; Lifted operations on Real and Number
 
@@ -259,6 +253,10 @@ array-number-exp.
                   ((Array Real)   (Array Real)   -> (View-Array Real))
                   ((Array Number) (Array Number) -> (View-Array Number))))
 
+(: array-scale (case-> ((Array Float)  Float   -> (View-Array Float))
+                       ((Array Real)   Real    -> (View-Array Real))
+                       ((Array Number) Number  -> (View-Array Number))))
+
 (: array-expt ((Array Number) (Array Number) -> (View-Array Number)))
 
 (: array-min  (case-> ((Array Float) (Array Float) -> (View-Array Float))
@@ -310,6 +308,9 @@ array-number-exp.
     (case-lambda
       [(arr)        (array-map / arr)]
       [(arr1 arr2)  (array-map / arr1 arr2)]))
+  
+  (define (array-scale arr s)
+    ((inline-array-lift1 (λ (x) (* s x))) arr))
   
   (define array-expt (inline-array-lift2 expt))
   (define array-min  (inline-array-lift2 min))
