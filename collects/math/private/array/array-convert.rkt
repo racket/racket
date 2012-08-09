@@ -13,14 +13,17 @@
 ;; ===================================================================================================
 ;; Conversion to and from lists
 
+(struct: Fail ())
+(define fail (Fail))
+
 (: first* (All (A) ((Listof* A) ((Listof* A) -> Boolean : A) -> A)))
 (define (first* lst pred?)
-  (: fail (-> A))
-  (define (fail) (error 'first* "all empty in ~e" lst))
-  (let loop ([lst lst] [kont fail])
-    (cond [(empty? lst)  (kont)]
-          [(pred? lst)  lst]
-          [(pair? lst)  (loop (car lst) (λ () (loop (cdr lst) kont)))])))
+  (let/ec: return : A
+    (let: loop : A ([lst : (Listof* A)  lst])
+      (cond [(pred? lst)  (return lst)]
+            [else  (for ([lst  (in-list lst)])
+                     (loop lst))
+                   (error 'first* "no first* element")]))))
 
 (: list->flat-vector (All (A) ((Listof* A) Integer ((Listof* A) -> Boolean : A) -> (Vectorof A))))
 (define (list->flat-vector lst size pred?)
@@ -28,10 +31,10 @@
         [else
          (define vec (make-vector size (first* lst pred?)))
          (let: loop : Fixnum ([lst : (Listof* A)  lst] [i : Fixnum  0])
-           (cond [(empty? lst)  i]
-                 [(pred? lst)  (unsafe-vector-set! vec i lst)
+           (cond [(pred? lst)  (unsafe-vector-set! vec i lst)
                                (unsafe-fx+ i 1)]
-                 [(pair? lst)  (loop (cdr lst) (loop (car lst) i))]))
+                 [else  (for/fold: ([i : Fixnum  i]) ([lst  (in-list lst)])
+                          (loop lst i))]))
          vec]))
 
 (: list->array (All (A) ((Listof* A) (Any -> Boolean : A) -> (View-Array A))))

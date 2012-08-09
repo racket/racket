@@ -3,7 +3,7 @@
          Column Result-Column
          Column-Matrix
          array-matrix?
-         matrix=
+         matrix-all=
          square-matrix? 
          square-matrix-size
          matrix-dimensions
@@ -38,8 +38,8 @@
 (define (square-matrix-size a)
   (vector-ref (array-shape a) 0))
 
-(: matrix= : (Matrix Number) (Matrix Number) -> Boolean)
-(define matrix= array=)
+(: matrix-all= : (Matrix Number) (Matrix Number) -> Boolean)
+(define matrix-all= array-all=)
 
 (: matrix-dimensions : (Matrix Number) -> (Values Index Index))
 (define (matrix-dimensions a)

@@ -3,7 +3,8 @@
 (require (for-syntax racket/base
                      syntax/parse
                      racket/list)
-         "array-struct.rkt")
+         "array-struct.rkt"
+         "utils.rkt")
 
 (provide array strict-array)
 
@@ -26,11 +27,14 @@
              #f)]))
 
 (define-for-syntax (syntax-list-flatten e-stx)
-  (define lst (syntax->list e-stx))
-  (cond [(and lst (square-bracket? e-stx))
-         (append* (map syntax-list-flatten lst))]
-        [else
-         (list e-stx)]))
+  (reverse
+   (let loop ([e-stx e-stx] [acc empty])
+     (define lst (syntax->list e-stx))
+     (cond [(and lst (square-bracket? e-stx))
+            (for/fold ([acc acc]) ([lst  (in-list lst)])
+              (loop lst acc))]
+           [else
+            (cons e-stx acc)]))))
 
 (define-syntax (make-array/stx stx)
   (syntax-case stx ()

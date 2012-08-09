@@ -24,9 +24,9 @@
           'square-matrix-size
           (= 2 (square-matrix-size (list->array '[[1 2 3] [4 5 6]] real? ))))
          (list
-          'matrix=-
-          (matrix= (list->array '[[1 2] [3 4]] real?) (list->array '[[1 2] [3 4]] real? ))
-          (not (matrix= (list->array '[[1 2] [3 4]] real?) (list->array '[[1 2]] real? ))))
+          'matrix-all=-
+          (matrix-all= (list->array '[[1 2] [3 4]] real?) (list->array '[[1 2] [3 4]] real? ))
+          (not (matrix-all= (list->array '[[1 2] [3 4]] real?) (list->array '[[1 2]] real? ))))
          (list
           'matrix-dimensions
           (let-values ([(m n) (matrix-dimensions (list->matrix '[[1 2 3] [4 5 6]]))])

@@ -127,7 +127,7 @@
                                (unsafe-fx+ j 1)]))
                 (void)])])))
 
-(define-syntax-rule (inline-build-array-data ds-expr g-expr)
+(define-syntax-rule (inline-build-array-data ds-expr g-expr A)
   (let*: ([ds : Indexes  ds-expr]
           [dims : Index  (vector-length ds)])
     (define-syntax-rule (g js j)
@@ -147,4 +147,4 @@
                                       -> (Vectorof A))))
 (begin-encourage-inline
   (define (build-array-data ds g)
-    (inline-build-array-data ds g)))
+    (inline-build-array-data ds g A)))

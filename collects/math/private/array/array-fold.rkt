@@ -16,13 +16,13 @@
          array-axis-andmap
          array-axis-ormap
          array-fold
-         array-sum
-         array-prod
-         array-min-value
-         array-max-value
-         array-count
-         array-andmap
-         array-ormap)
+         array-all-sum
+         array-all-prod
+         array-all-min
+         array-all-max
+         array-all-count
+         array-all-andmap
+         array-all-ormap)
 
 ;; ===================================================================================================
 ;; Per-axis folds
@@ -124,10 +124,10 @@
                                              (array-axis-op arr k init)))
                            #()))]))))
 
-(define-fold array-sum array-axis-sum Float Real Float-Complex Number)
-(define-fold array-prod array-axis-prod Float Real Float-Complex Number)
-(define-fold array-min-value array-axis-min Float Real)
-(define-fold array-max-value array-axis-max Float Real)
+(define-fold array-all-sum array-axis-sum Float Real Float-Complex Number)
+(define-fold array-all-prod array-axis-prod Float Real Float-Complex Number)
+(define-fold array-all-min array-axis-min Float Real)
+(define-fold array-all-max array-axis-max Float Real)
 
 ;; ===================================================================================================
 ;; Count
@@ -163,8 +163,8 @@
           [else
            (with-asserts ([i index?]) i)])))
 
-(: array-count (All (A) ((Array A) (A -> Any) -> Index)))
-(define (array-count arr pred?)
+(: array-all-count (All (A) ((Array A) (A -> Any) -> Index)))
+(define (array-all-count arr pred?)
   (cond [(view-array? arr)  (view-array-count arr pred?)]
         [else  (strict-array-count arr pred?)]))
 
@@ -196,8 +196,8 @@
     (cond [(j . < . n)  (if (pred? (unsafe-vector-ref vs j)) (loop (+ j 1)) #f)]
           [else  #t])))
 
-(: array-andmap (All (A) ((Array A) (A -> Any) -> Boolean)))
-(define (array-andmap arr pred?)
+(: array-all-andmap (All (A) ((Array A) (A -> Any) -> Boolean)))
+(define (array-all-andmap arr pred?)
   (cond [(view-array? arr)  (view-array-andmap arr pred?)]
         [else  (strict-array-andmap arr pred?)]))
 
@@ -229,7 +229,7 @@
     (cond [(j . < . n)  (if (pred? (unsafe-vector-ref vs j)) #t (loop (+ j 1)))]
           [else  #f])))
 
-(: array-ormap (All (A) ((Array A) (A -> Any) -> Boolean)))
-(define (array-ormap arr pred?)
+(: array-all-ormap (All (A) ((Array A) (A -> Any) -> Boolean)))
+(define (array-all-ormap arr pred?)
   (cond [(view-array? arr)  (view-array-ormap arr pred?)]
         [else  (strict-array-ormap arr pred?)]))

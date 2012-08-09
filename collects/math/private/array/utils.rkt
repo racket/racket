@@ -111,11 +111,6 @@
                  [else  (raise-index-error)])]
           [else  new-js])))
 
-(: check-equal-array-shape! (Symbol Indexes Indexes -> Void))
-(define (check-equal-array-shape! name ds1 ds2)
-  (unless (equal? ds1 ds2)
-    (error name "expected Arrays with the same shape; given Arrays with shapes ~e and ~e" ds1 ds2)))
-
 (: maybe-list->vector (All (A) ((U #f (Listof A)) -> (U #f (Vectorof A)))))
 (define (maybe-list->vector vs)
   (and vs (list->vector vs)))

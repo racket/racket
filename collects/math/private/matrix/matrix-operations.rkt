@@ -105,7 +105,7 @@
 
 (: matrix-scale : Number (Matrix Number) -> (Result-Matrix Number))
 (define (matrix-scale s a)
-  (array-scale s a))
+  (array-scale a s))
 
 (: matrix-row-vector? : (Matrix Number) -> Boolean)
 (define (matrix-row-vector? a)
@@ -903,7 +903,7 @@
         (let ()
           (define ei (unit-column m i))
           (define pi (projection-on-subspace ei vs))
-          (if (matrix= ei pi)
+          (if (matrix-all= ei pi)
               (loop vs ws (+ i 1))
               (let ([w (matrix- ei pi)])
                 (loop (cons w vs) (cons w ws) (+ i 1)))))))
