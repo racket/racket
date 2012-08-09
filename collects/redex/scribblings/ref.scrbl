@@ -1147,18 +1147,21 @@ and @racket[#f] otherwise.
               [pos-use I
                        O]
               [rule [premise
-                     ...
-                     dashes
+                     ... 
+                     dashes rule-name
                      conclusion]
                     [conclusion 
                      premise 
-                     ...]]
+                     ...
+                     rule-name]]
               [conclusion (form-id pat/term ...)]
               [premise (code:line (judgment-form-id pat/term ...) maybe-ellipsis)
                        (where @#,ttpattern @#,tttterm)
                        (where/hidden @#,ttpattern @#,tttterm)
                        (side-condition @#,tttterm)
                        (side-condition/hidden @#,tttterm)]
+              [rule-name (code:line)
+                         string]
               [pat/term @#,ttpattern
                         @#,tttterm]
               [maybe-ellipsis (code:line)
@@ -1187,11 +1190,11 @@ For example, the following defines addition on natural numbers:
        (define-judgment-form nats
          #:mode (sum I I O)
          #:contract (sum n n n)
-         [-----------
+         [-----------  "zero"
           (sum z n n)]
          
          [(sum n_1 n_2 n_3)
-          -------------------------
+          ------------------------- "add1"
           (sum (s n_1) n_2 (s n_3))])]
 
 The @racket[judgment-holds] form checks whether a relation holds for any 
@@ -1267,11 +1270,11 @@ one.
          #:mode (even I)
          #:contract (even n)
          
-         [--------
+         [-------- "evenz"
           (even z)]
          
          [(even n)
-          ----------------
+          ---------------- "even2"
           (even (s (s n)))])
        
        (define-judgment-form nats
@@ -2546,8 +2549,24 @@ precede ellipses that represent argument sequences; when it is
                                          (or/c zero? positive?)))
                           pair?))]{
 
-This parameter controls which cases in a metafunction are rendered. If it is @racket[#f] (the default), then all of the
+Controls which cases in a metafunction are rendered. If it is @racket[#f] (the default), then all of the
 cases appear. If it is a list of numbers, then only the selected cases appear (counting from @racket[0]).
+
+This parameter also controls how which clauses in judgment forms are rendered, but
+only in the case that @racket[judgment-form-cases] is @racket[#f].
+}
+                                  
+@defparam[judgment-form-cases 
+          cases
+          (or/c #f
+                (and/c (listof (or/c exact-nonnegative-integer?
+                                     string?))
+                       pair?))]{
+   Controls which clauses in a judgment form are rendered. If it is 
+   @racket[#f] (the default), then all of them are rendered. If
+   it is a list, then only the selected clauses appear (numbers
+   count from @racket[0], and strings correspond to the labels
+   in a judgment form).
 }
 
 @deftogether[[

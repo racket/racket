@@ -337,12 +337,12 @@
 
 (define-for-syntax (do-extended-judgment-form lang syn-err-name body orig stx)
   (define nts (definition-nts lang stx syn-err-name))
-  (define-values (judgment-form-name dup-form-names mode position-contracts clauses)
+  (define-values (judgment-form-name dup-form-names mode position-contracts clauses rule-names)
     (parse-judgment-form-body body syn-err-name stx (identifier? orig)))
   (define definitions
     #`(begin
         (define-syntax #,judgment-form-name 
-          (judgment-form '#,judgment-form-name '#,(cdr (syntax->datum mode)) #'judgment-form-runtime-proc #'mk-judgment-form-proc #'#,lang #'judgment-form-lws))
+          (judgment-form '#,judgment-form-name '#,(cdr (syntax->datum mode)) #'judgment-form-runtime-proc #'mk-judgment-form-proc #'#,lang #'judgment-form-lws '#,rule-names))
         (define mk-judgment-form-proc
           (compile-judgment-form-proc #,judgment-form-name #,mode #,lang #,clauses #,position-contracts #,orig #,stx #,syn-err-name))
         (define judgment-form-runtime-proc (mk-judgment-form-proc #,lang))
@@ -375,13 +375,29 @@
     (regexp-match? #rx"^-+$" (symbol->string (syntax-e id))))
   (define-syntax-class horizontal-line
     (pattern x:id #:when (horizontal-line? #'x)))
+  (define-syntax-class name
+    (pattern x #:when (string? (syntax-e #'x))))
   (define (parse-rules rules)
-    (for/list ([rule rules])
-      (syntax-parse rule
-        [(prem ... _:horizontal-line conc)
-         #'(conc prem ...)]
-        [_ rule])))
-  (define-values (name/mode mode-stx name/contract contract rules)
+    (define-values (backward-rules backward-names)
+      (for/fold ([parsed-rules '()]
+                 [names '()])
+        ([rule rules])
+        (syntax-parse rule
+          [(prem ... _:horizontal-line n:name conc)
+           (values (cons #'(conc prem ...) parsed-rules)
+                   (cons #'n names))]
+          [(prem ... _:horizontal-line conc)
+           (values (cons #'(conc prem ...) parsed-rules)
+                   (cons #f names))]
+          [(conc prem ... n:name)
+           (values (cons #'(conc prem ...) parsed-rules)
+                   (cons #'n names))]
+          [else
+           (values (cons rule parsed-rules)
+                   (cons #f names))])))
+    (values (reverse backward-rules)
+            (reverse backward-names)))
+  (define-values (name/mode mode-stx name/contract contract rules rule-names)
     (syntax-parse body #:context full-stx
       [((~or (~seq #:mode ~! mode:mode-spec)
              (~seq #:contract ~! contract:contract-spec))
@@ -405,9 +421,10 @@
                         (raise-syntax-error 
                          syn-err-name "expected at most one contract specification"
                          #f #f (syntax->list #'dups))])])
-         (values name/mode mode name/ctc ctc
-                 (parse-rules (syntax->list #'(rule ...)))))]))
+         (define-values (parsed-rules rule-names) (parse-rules (syntax->list #'(rule ...)))) 
+         (values name/mode mode name/ctc ctc parsed-rules rule-names))]))
   (check-clauses full-stx syn-err-name rules #t)
+  (check-dup-rule-names full-stx syn-err-name rule-names)
   (check-arity-consistency mode-stx contract full-stx)
   (define-values (form-name dup-names)
     (syntax-case rules ()
@@ -415,8 +432,21 @@
        (not extension?)
        (raise-syntax-error #f "expected at least one rule" full-stx)]
       [_ (defined-name (list name/mode name/contract) rules full-stx)]))
-  (values form-name dup-names mode-stx contract rules))
+  (values form-name dup-names mode-stx contract rules rule-names))
 
+;; names : (listof (or/c #f syntax[string]))
+(define-for-syntax (check-dup-rule-names full-stx syn-err-name names)
+  (define tab (make-hash))
+  (for ([name (in-list names)])
+    (when (syntax? name)
+      (define k (syntax-e name))
+      (hash-set! tab k (cons name (hash-ref tab k '())))))
+  (for ([(k names) (in-hash tab)])
+    (unless (= 1 (length names))
+      (raise-syntax-error syn-err-name
+                          "duplicate rule names"
+                          (car names) #f (cdr names)))))
+                          
 (define-for-syntax (check-arity-consistency mode-stx contracts full-def)
   (when (and contracts (not (= (length (cdr (syntax->datum mode-stx)))
                                (length contracts))))

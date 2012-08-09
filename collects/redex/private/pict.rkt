@@ -62,6 +62,7 @@
          label-space
          metafunction-pict-style
          metafunction-cases
+         judgment-form-cases
          compact-vertical-min-width
          extend-language-show-union
          set-arrow-pict!
@@ -360,22 +361,26 @@
                        max-w))
 
 (define (rp->pict-label rp)
-  (define (bracket label)
-    (hbl-append
-     ((current-text) " [" (label-style) (label-font-size))
-     label
-     ((current-text) "]" (label-style) (label-font-size))))
   (cond [(rule-pict-computed-label rp) => bracket]
         [(rule-pict-label rp)
-         (let ([m (regexp-match #rx"^([^_]*)(?:_([^_]*)|)$" 
-                                (format "~a" (rule-pict-label rp)))])
-           (bracket
-            (hbl-append
-             ((current-text) (cadr m) (label-style) (label-font-size))
-             (if (caddr m)
-                 ((current-text) (caddr m) `(subscript . ,(label-style)) (label-font-size))
-                 (blank)))))]
+         (string->bracketed-label 
+          (format "~a" (rule-pict-label rp)))]
         [else (blank)]))
+
+(define (string->bracketed-label str)
+  (define m (regexp-match #rx"^([^_]*)(?:_([^_]*)|)$" str))
+  (bracket
+   (hbl-append
+    ((current-text) (cadr m) (label-style) (label-font-size))
+    (if (caddr m)
+        ((current-text) (caddr m) `(subscript . ,(label-style)) (label-font-size))
+        (blank)))))
+
+(define (bracket label)
+  (hbl-append
+   ((current-text) " [" (label-style) (label-font-size))
+   label
+   ((current-text) "]" (label-style) (label-font-size))))
 
 (define (add-between i l)
   (cond
@@ -774,7 +779,7 @@
 
 (define metafunction-pict-style (make-parameter 'left-right))
 (define metafunction-cases (make-parameter #f))
-(define (select-cases eqns)
+(define (select-mf-cases eqns)
   (let ([cases (metafunction-cases)])
     (if cases
         (let loop ([eqns eqns]
@@ -791,6 +796,31 @@
                [else
                 (loop (cdr eqns) cases (+ i 1))])]))
         eqns)))
+
+(define judgment-form-cases (make-parameter #f))
+(define (select-jf-cases eqns conclusions eqn-names)
+  (define cases
+    (or (judgment-form-cases)
+        (metafunction-cases)))
+  (cond
+    [cases
+     (define-values (rev-eqns rev-concs rev-eqn-names)
+       (for/fold ([eqns '()]
+                  [concs '()]
+                  [eqn-names '()])
+                 ([eqn (in-list eqns)]
+                  [conc (in-list conclusions)]
+                  [eqn-name (in-list eqn-names)]
+                  [i (in-naturals)])
+         (if (or (member i cases)
+                 (member eqn-name cases))
+             (values (cons eqn eqns)
+                     (cons conc concs)
+                     (cons eqn-name eqn-names))
+             (values eqns concs eqn-names))))
+      (values (reverse rev-eqns) (reverse rev-concs) (reverse rev-eqn-names))]
+    [else 
+     (values eqns conclusions eqn-names)]))
 
 ;; remove-dups : (listof number)[sorted] -> (listof number)[sorted]
 ;; removes duplicate numbers from 'l'
@@ -826,8 +856,8 @@
                                                    (list-ref eqn 0))))
                              (metafunc-proc-pict-info (metafunction-proc mf))))
                       mfs))]
-         [eqns (select-cases all-eqns)]
-         [lhss (select-cases all-lhss)]
+         [eqns (select-mf-cases all-eqns #f)]
+         [lhss (select-mf-cases all-lhss #f)]
          [rhss (map (lambda (eqn) (wrapper->pict (list-ref eqn 2))) eqns)]
          [_ (unless (or (not current-linebreaks)
                         (= (length current-linebreaks) (length eqns)))
@@ -1034,6 +1064,7 @@
     (error form "expected relation as argument, got a metafunction"))
   (inference-rules-pict (metafunc-proc-name (metafunction-proc mf))
                         (metafunc-proc-pict-info (metafunction-proc mf))
+                        (map (λ (x) #f) (metafunc-proc-pict-info (metafunction-proc mf)))
                         (metafunc-proc-lang (metafunction-proc mf))))
 
 (define (render-pict make-pict filename)
@@ -1044,17 +1075,17 @@
      (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
        (make-pict))]))
 
-(define (inference-rules-pict name all-eqns lang)
-  (let* ([all-nts (language-nts lang)]
-         [wrapper->pict (lambda (lw) (lw->pict all-nts lw))]
-         [all-conclusions 
-          (map (lambda (eqn) 
-                 (wrapper->pict
-                  (metafunction-call name (list-ref eqn 0))))
-               all-eqns)]
-         [eqns (select-cases all-eqns)]
-         [conclusions (select-cases all-conclusions)]
-         [premisess (map (lambda (eqn)
+(define (inference-rules-pict name all-eqns eqn-names lang)
+  (define all-nts (language-nts lang))
+  (define (wrapper->pict lw) (lw->pict all-nts lw))
+  (define all-conclusions 
+    (map (lambda (eqn) 
+           (wrapper->pict
+            (metafunction-call name (list-ref eqn 0))))
+         all-eqns))
+  (define-values (selected-eqns conclusions selected-eqn-names)
+    (select-jf-cases all-eqns all-conclusions eqn-names))
+  (define premisess (map (lambda (eqn)
                            (append (map wrapper->pict (list-ref eqn 2))
                                    (map (match-lambda
                                           [(struct metafunc-extra-where (lhs rhs))
@@ -1063,18 +1094,29 @@
                                            (wrapper->pict expr)]
                                           [wrapper (wrapper->pict wrapper)])
                                         (list-ref eqn 1))))
-                         eqns)])
-    ((relation-clauses-combine)
-     (for/list ([conclusion (in-list conclusions)]
-                [premises (in-list premisess)])
-       (define top (apply hbl-append 20 premises))
-       (define line-w (max (pict-width top) (pict-width conclusion)))
+                         selected-eqns))
+  ((relation-clauses-combine)
+   (for/list ([conclusion (in-list conclusions)]
+              [premises (in-list premisess)]
+              [name (in-list selected-eqn-names)])
+     (define top (apply hbl-append 20 premises))
+     (define line-w (max (pict-width top) (pict-width conclusion)))
+     (define line (dc (λ (dc dx dy) (send dc draw-line dx dy (+ dx line-w) dy))
+                      line-w 1)) 
+     (define w/out-label
        (vc-append
         (horizontal-bar-spacing)
         top
-        (dc (λ (dc dx dy) (send dc draw-line dx dy (+ dx line-w) dy))
-            line-w 1)
-        conclusion)))))
+        line
+        conclusion))
+     (if name
+         (let ([label (string->bracketed-label name)])
+           (let-values ([(x y) (rc-find w/out-label line)])
+             (hb-append w/out-label 
+                        (vl-append label
+                                   (blank 0 (- (- (pict-height w/out-label) y)
+                                               (/ (pict-height label) 2)))))))
+         w/out-label))))
 
 (define horizontal-bar-spacing (make-parameter 4))
 (define relation-clauses-combine (make-parameter (λ (l) (apply vc-append 20 l))))
@@ -1084,6 +1126,7 @@
   (syntax-property
    #`(inference-rules-pict '#,(judgment-form-name jf)
                            #,(judgment-form-lws jf)
+                           '#,(judgment-form-rule-names jf)
                            #,(judgment-form-lang jf))
    'disappeared-use
    form-name))

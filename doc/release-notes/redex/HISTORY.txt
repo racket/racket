@@ -2,6 +2,10 @@ v5.3.1
 
   * added optional #:lang keyword to term
 
+  * added the ability to name clauses to define-judgment-form
+
+  * added judgment-form-cases
+
 v5.3
 
   * added the amb tutorial.

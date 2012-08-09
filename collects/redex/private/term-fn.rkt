@@ -27,7 +27,7 @@
        (cond [(syntax-local-value stx (λ () #f)) => p?]
              [else #f])))
 
-(define-struct judgment-form (name mode proc mk-proc lang lws))
+(define-struct judgment-form (name mode proc mk-proc lang lws rule-names))
 
 (define-struct defined-term (value))
 (define (defined-term-id? stx)
