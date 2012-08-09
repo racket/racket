@@ -217,7 +217,7 @@
          (match-let ([(Mu-name: n-nm _) ty])
            (with-syntax ([(n*) (generate-temporaries (list n-nm))])
              (parameterize ([vars (cons (list n #'n* #'n*) (vars))])
-               #`(letrec ([n* (recursive-contract #,(t->c b))])
+               #`(letrec ([n* (recursive-contract #,(t->c b) #,(if flat? #'#:flat #'#:impersonator))])
                    n*))))]
         [(Value: #f) #'false/c]
         [(Instance: (Class: _ _ (list (list name fcn) ...)))
@@ -258,7 +258,7 @@
                                 (#,pred? val)
                                 #,@(for/list ([fty flds] [f-acc acc-ids])
                                     #`((flat-contract-predicate
-                                       #,(t->c fty #:seen (cons (cons ty #'(recursive-contract rec)) structs-seen)))
+                                       #,(t->c fty #:seen (cons (cons ty #'(recursive-contract rec #:flat)) structs-seen)))
                                        (#,f-acc val))))))])
                     rec)
                 ;Should make this case a chaperone/impersonator contract
