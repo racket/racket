@@ -767,16 +767,6 @@
               (array [[#(0 0) #(1 0) #(2 0) #(3 0)]
                       [#(0 1) #(1 1) #(2 1) #(3 1)]]))
 
-;; Separable transforms
-
-(check-equal? (array-axis-transform (indexes-array #(4 4))
-                                    '((3 0) (1 2)))
-              (array [[#(3 1) #(3 2)]
-                      [#(0 1) #(0 2)]]))
-
-(check-exn exn? (λ () (array-axis-transform (indexes-array #(4 4)) '((0 3)))))
-(check-exn exn? (λ () (array-axis-transform (indexes-array #(4 4)) '((0 4) (1 2)))))
-
 ;; Permutation
 
 (let ([arr  (make-array #() 0)])
@@ -899,7 +889,6 @@
                             (indexes-array #(2)))
               (array [#(0) #(1) #(2) #(3) #(0) #(1) #(2) #(0) #(1)]))
 
-
 ;; ---------------------------------------------------------------------------------------------------
 ;; Comprehensions
 
@@ -1011,3 +1000,6 @@
 
 (check-equal? (make-lazy-arr)
               (make-strict-arr))
+
+(check-equal? (array-lazy (array-axis-swap (indexes-array #(4 4)) 0 1))
+              (array-axis-swap (indexes-array #(4 4)) 0 1))

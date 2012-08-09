@@ -1,14 +1,11 @@
 #lang typed/racket/base
 
-(require racket/vector
-         "../unsafe.rkt"
+(require "../unsafe.rkt"
          "array-struct.rkt"
          "utils.rkt")
 
 (provide array-transform
          unsafe-array-transform
-         unsafe-array-axis-transform
-         array-axis-transform
          array-axis-permute
          array-axis-swap
          array-axis-insert
@@ -34,81 +31,6 @@
   (let ([arr  (array-view arr)])
     (define old-f (unsafe-array-proc arr))
     (unsafe-view-array new-ds (λ: ([js : Indexes]) (old-f (idx-fun js))))))
-
-;; ===================================================================================================
-;; Separable (per-axis) transforms
-
-(: unsafe-array-axis-transform (All (A) ((Array A) (Vectorof (Vectorof Index)) -> (View-Array A))))
-(define (unsafe-array-axis-transform arr old-jss)
-  (define: new-ds : Indexes (vector-map vector-length old-jss))
-  (define dims (vector-length new-ds))
-  (case dims
-    [(0)  (array-view arr)]
-    [(1)  (define g (unsafe-array-proc (array-view arr)))
-          (unsafe-view-array
-           new-ds
-           (λ: ([js : Indexes])
-             (define j0 (unsafe-vector-ref js 0))
-             (unsafe-vector-set! js 0 (unsafe-vector-ref (unsafe-vector-ref old-jss 0) j0))
-             (define v (g js))
-             (unsafe-vector-set! js 0 j0)
-             v))]
-    [(2)  (define g (unsafe-array-proc (array-view arr)))
-          (unsafe-view-array
-           new-ds
-           (λ: ([js : Indexes])
-             (define j0 (unsafe-vector-ref js 0))
-             (define j1 (unsafe-vector-ref js 1))
-             (unsafe-vector-set! js 0 (unsafe-vector-ref (unsafe-vector-ref old-jss 0) j0))
-             (unsafe-vector-set! js 1 (unsafe-vector-ref (unsafe-vector-ref old-jss 1) j1))
-             (define v (g js))
-             (unsafe-vector-set! js 0 j0)
-             (unsafe-vector-set! js 1 j1)
-             v))]
-    [else
-     (define old-js (make-thread-local-indexes dims))
-     (unsafe-array-transform
-      arr new-ds
-      (λ: ([new-js : Indexes])
-        (let ([old-js  (old-js)])
-          (let: loop : Indexes ([i : Nonnegative-Fixnum  0])
-            (cond [(i . < . dims)
-                   (define new-ji (unsafe-vector-ref new-js i))
-                   (define old-ji (unsafe-vector-ref (unsafe-vector-ref old-jss i) new-ji))
-                   (unsafe-vector-set! old-js i old-ji)
-                   (loop (+ i 1))]
-                  [else  old-js])))))]))
-
-(: array-axis-transform (All (A) ((Array A) (Listof (Listof Integer)) -> (View-Array A))))
-(define (array-axis-transform arr old-jss)
-  (define old-ds (array-shape arr))
-  (define dims (vector-length old-ds))
-  ;; number of indexes should match
-  (unless (= dims (length old-jss))
-    (error 'array-axis-transform
-           "expected ~e index vectors; given ~e index vectors in ~e"
-           dims (length old-jss) old-jss))
-  ;; check bounds, reconstruct indexes
-  (define: old-jss* : (Vectorof (Vectorof Index)) (make-vector dims (vector)))
-  (let i-loop ([old-jss old-jss] [#{i : Nonnegative-Fixnum} 0])
-    (when (i . < . dims)
-      (define old-js (car old-jss))
-      (define new-di (length old-js))
-      (define old-di (unsafe-vector-ref old-ds i))
-      (define: old-js* : (Vectorof Index) (make-vector new-di 0))
-      (let k-loop ([old-js old-js] [#{k : Nonnegative-Fixnum} 0])
-        (cond [(k . < . new-di)
-               (define old-jk (car old-js))
-               (cond [(and (0 . <= . old-jk) (old-jk . < . old-di))
-                      (unsafe-vector-set! old-js* k old-jk)
-                      (k-loop (cdr old-js) (+ k 1))]
-                     [else
-                      (error 'array-axis-transform "out of bounds")])]
-              [else
-               (unsafe-vector-set! old-jss* i old-js*)]))
-      (i-loop (cdr old-jss) (+ i 1))))
-  
-  (unsafe-array-axis-transform arr old-jss*))
 
 ;; ===================================================================================================
 ;; Back permutation and swap

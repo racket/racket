@@ -174,8 +174,11 @@
     (define proc (unsafe-array-proc arr))
     (define: vs : (Vectorof (Promise A))
       (inline-build-array-data
-       ds (λ (js j) (let ([js  (vector->immutable-vector js)])
-                      (delay (proc js))))
+       ds (λ (js j)
+            ;; Because `delay' captures js in its closure, if we don't make this copy, `js' will have
+            ;; been mutated by the time the promise is forced
+            (let ([js  (vector-copy-all js)])
+              (delay (proc js))))
        (Promise A)))
     (unsafe-view-array
      ds (λ: ([js : Indexes])
