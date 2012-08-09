@@ -234,18 +234,19 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-parse stx
     [(_ v:expr ty:expr)
      (define (apply-contract ctc-expr)
-       #`(ann
-           #,(syntax-property
-               #`(let-values (((val) #,(syntax-property #'(ann v Any) 'with-type #t)))
-                   (contract
-                     #,ctc-expr
-                     val
-                     'cast
-                     'typed-world
-                     val
-                     (quote-syntax #,stx)))
-                 'typechecker:ignore-some #t)
-           ty))
+       #`(#%expression
+           (ann
+             #,(syntax-property
+                 #`(let-values (((val) #,(syntax-property #'(ann v Any) 'with-type #t)))
+                     (contract
+                       #,ctc-expr
+                       val
+                       'cast
+                       'typed-world
+                       val
+                       (quote-syntax #,stx)))
+                   'typechecker:ignore-some #t)
+             ty)))
 
      (if (syntax-transforming-module-expression?)
          (let ((ctc (syntax-local-lift-expression
