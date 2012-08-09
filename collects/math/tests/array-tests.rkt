@@ -8,6 +8,7 @@
 
 (define-predicate listof-index? (Listof Index))
 (define-predicate listof-flonum? (Listof Float))
+(define-predicate undefined? Undefined)
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; array-strict
@@ -974,3 +975,39 @@
   (check-equal? (array-and (array< arr (make-array #(10 10) 10))
                            (array> arr (make-array #(10 10) 8)))
                 (array-map (λ: ([v : Integer]) (= v 9)) arr)))
+
+;; ---------------------------------------------------------------------------------------------------
+;; Lazy arrays
+
+(define (make-lazy-arr)
+  (: arr (View-Array Integer))
+  (define arr
+    (array-lazy
+     (make-view-array
+      #(12 12)
+      (λ: ([js : Indexes])
+        (match-define (vector j0 j1) js)
+        (cond [(or (= j0 0) (= j1 0))  1]
+              [(undefined? arr)  (error 'undefined)]
+              [else  (+ (array-ref arr (vector (- j0 1) j1))
+                        (array-ref arr (vector j0 (- j1 1))))])))))
+  arr)
+
+(define (make-strict-arr)
+  (define: arr : (Strict-Array Integer)
+    (array-strict
+     (make-view-array
+      #(12 12)
+      (λ: ([js : Indexes])
+        (match-define (vector j0 j1) js)
+        (cond [(or (= j0 0) (= j1 0))  1]
+              [else  0])))))
+  (for*: ([j0  (in-range 1 12)]
+          [j1  (in-range 1 12)])
+    (array-set! arr (vector j0 j1)
+                (+ (array-ref arr (vector (- j0 1) j1))
+                   (array-ref arr (vector j0 (- j1 1))))))
+  arr)
+
+(check-equal? (make-lazy-arr)
+              (make-strict-arr))

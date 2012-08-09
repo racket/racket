@@ -1,6 +1,7 @@
 #lang typed/racket/base
 
-(require racket/performance-hint
+(require racket/promise
+         racket/performance-hint
          (for-syntax racket/base racket/syntax)
          "../unsafe.rkt"
          "for-each.rkt"
@@ -27,6 +28,7 @@
          array-view
          array-strict
          array-copy
+         array-lazy
          ;; printing
          print-array-fields
          array-custom-printer
@@ -148,15 +150,6 @@
             ds (λ: ([js : Indexes])
                  (unsafe-vector-ref vs (unsafe-array-index->value-index ds js))))]))
   
-  (: array-strict (All (A) ((Array A) -> (Strict-Array A))))
-  (define (array-strict arr)
-    (cond [(view-array? arr)
-           (define ds (array-shape arr))
-           (define g (unsafe-array-proc arr))
-           (define size (array-size arr))
-           (unsafe-strict-array ds (inline-build-array-data ds (λ (js j) (g js))))]
-          [else  arr]))
-  
   (: array-copy (All (A) ((Array A) -> (Strict-Array A))))
   (define (array-copy arr)
     (cond [(view-array? arr)  (array-strict arr)]
@@ -164,6 +157,29 @@
                                       (vector-copy-all (strict-array-data arr)))]))
   
   )  ; begin-encourage-inline
+
+(: array-strict (All (A) ((Array A) -> (Strict-Array A))))
+(define (array-strict arr)
+  (cond [(view-array? arr)
+         (define ds (array-shape arr))
+         (define g (unsafe-array-proc arr))
+         (define size (array-size arr))
+         (unsafe-strict-array ds (inline-build-array-data ds (λ (js j) (g js)) A))]
+        [else  arr]))
+
+(: array-lazy (All (A) ((Array A) -> (View-Array A))))
+(define (array-lazy arr)
+  (let ([arr  (array-view arr)])
+    (define ds (array-shape arr))
+    (define proc (unsafe-array-proc arr))
+    (define: vs : (Vectorof (Promise A))
+      (inline-build-array-data
+       ds (λ (js j) (let ([js  (vector->immutable-vector js)])
+                      (delay (proc js))))
+       (Promise A)))
+    (unsafe-view-array
+     ds (λ: ([js : Indexes])
+          (force (unsafe-vector-ref vs (unsafe-array-index->value-index ds js)))))))
 
 ;; ===================================================================================================
 ;; Printing
