@@ -186,6 +186,11 @@
        (syntax-property form 'typechecker:ignore)
        (void)]
 
+      ;; this is a form that we mostly ignore, but we check some interior parts
+      [stx
+       (syntax-property form 'typechecker:ignore-some)
+       (check-subforms/ignore form)]
+
       ;; these forms should always be ignored
       [(#%require . _) (void)]
       [(#%provide . _) (void)]
