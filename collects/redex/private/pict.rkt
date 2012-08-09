@@ -856,8 +856,8 @@
                                                    (list-ref eqn 0))))
                              (metafunc-proc-pict-info (metafunction-proc mf))))
                       mfs))]
-         [eqns (select-mf-cases all-eqns #f)]
-         [lhss (select-mf-cases all-lhss #f)]
+         [eqns (select-mf-cases all-eqns)]
+         [lhss (select-mf-cases all-lhss)]
          [rhss (map (lambda (eqn) (wrapper->pict (list-ref eqn 2))) eqns)]
          [_ (unless (or (not current-linebreaks)
                         (= (length current-linebreaks) (length eqns)))

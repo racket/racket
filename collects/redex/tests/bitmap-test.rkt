@@ -290,9 +290,11 @@
   
   (define-judgment-form nats
     #:mode (sum I I O)
-    [(sum z n n)]
-    [(sum (s n_1) n_2 (s n_3))
-     (sum n_1 n_2 n_3)])
+    [----------- "sumz"
+     (sum z n n)]
+    [(sum n_1 n_2 n_3)
+     ------------------------- "sums"
+     (sum (s n_1) n_2 (s n_3))])
   
   (define-judgment-form nats
     #:mode (mfw I O)
