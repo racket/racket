@@ -24,7 +24,8 @@
  ::... slice-dots?
  ::new slice-new-axis? slice-new-axis-length
  array-slice-ref
- slice-indexes-array)
+ slice-indexes-array
+ array-slice-set!)
 
 ;; ===================================================================================================
 ;; Indexing using array of indexes
@@ -69,8 +70,9 @@
 (define-type -Slice Slice)
 (define-type -Slice-Dots Slice-Dots)
 (define-type -Slice-New-Axis Slice-New-Axis)
-(define-type Slice-Spec (U Integer Slice Slice-Dots Slice-New-Axis (Sequenceof Integer)))
-(define-type Slice-Spec- (U Integer Slice Slice-New-Axis (Sequenceof Integer)))
+(define-type Slice-Spec-- (U Integer Slice (Sequenceof Integer)))
+(define-type Slice-Spec- (U Slice-Spec-- Slice-New-Axis))
+(define-type Slice-Spec (U Slice-Spec- Slice-Dots))
 
 (define slice? Slice?)
 (define slice-start Slice-start)
@@ -172,24 +174,22 @@
                 (error 'array-slice-ref "axis for slice ~e (axis ~e) is too large" s k)])]))
 
 (: slices->array-axis-transform
-   (All (A) (Symbol (Array A) (Listof Slice-Spec-) -> (Values (Array A)
-                                                              (Vectorof (Vectorof Index))))))
+   (All (A) (Symbol (Array A) (Listof Slice-Spec--) -> (Values (Array A)
+                                                               (Vectorof (Vectorof Index))))))
 (define (slices->array-axis-transform name arr slices)
+  (define n (length slices))
   (define ds (array-shape arr))
   (define dims (vector-length ds))
   (define-values (new-arr old-jss)
     (for/fold: ([arr : (Array A)  arr]
                 [jss : (Listof (Vectorof Index))  null]
                 ) ([s  (in-list (reverse slices))]
-                   [k  (in-range (- (array-dims arr) 1) -1 -1)])
+                   [k  (in-range (- dims 1) -1 -1)])
       (define dk (unsafe-vector-ref ds k))
       (cond [(integer? s)
              (when (or (s . < . 0) (s . >= . dk))
                (error name "expected Index < ~e in slice ~e (axis ~e)" dk s k))
              (values (array-axis-remove arr k s) jss)]
-            [(slice-new-axis? s)
-             (define dk (slice-new-axis-length s))
-             (values (array-axis-insert arr k dk) jss)]
             [(slice? s)
              (values arr (cons (slice->vector s k dk) jss))]
             [else
@@ -199,30 +199,52 @@
                         (error name "expected Index < ~e in slice ~e (axis ~e); given ~e"
                                dk s k jk)]
                        [else  (cons jk js)])))
-             (values arr (cons ((inst list->vector Index) (reverse js))
-                               jss))])))
+             (values arr (cons ((inst list->vector Index) (reverse js)) jss))])))
   (values new-arr (list->vector old-jss)))
 
 (: expand-dots (Index (Listof Slice-Spec) -> (Listof Slice-Spec-)))
 (define (expand-dots dims slices)
-  (let loop ([slices slices] [n  (count (compose not slice-dots?) slices)])
+  (define n (count (λ (s) (and (not (slice-dots? s)) (not (slice-new-axis? s)))) slices))
+  (let loop ([slices slices] [n n])
     (cond [(null? slices)  null]
           [(slice-dots? (car slices))
            (append (make-list (max 0 (- dims n)) (Slice #f #f 1))
                    (loop (cdr slices) dims))]
           [else  (cons (car slices) (loop (cdr slices) n))])))
 
+(: extract-new-axes ((Listof Slice-Spec-) -> (Values (Listof Slice-Spec--)
+                                                     (Listof (Pair Integer Index)))))
+(define (extract-new-axes slices)
+  (define-values (new-slices new-axes _)
+    (for/fold: ([new-slices : (Listof Slice-Spec--)  null]
+                [new-axes : (Listof (Pair Integer Index))  null]
+                [k : Integer  0]
+                ) ([s  (in-list slices)])
+      (cond [(slice-new-axis? s)
+             (values new-slices (cons (cons k (slice-new-axis-length s)) new-axes) k)]
+            [else
+             (values (cons s new-slices) new-axes (+ k 1))])))
+  (values (reverse new-slices) (reverse new-axes)))
+
 (: array-slice-ref (All (A) ((Array A) (Listof Slice-Spec) -> (View-Array A))))
-(define (array-slice-ref arr slices)
+(define (array-slice-ref arr orig-slices)
   (define dims (array-dims arr))
-  (let ([slices  (expand-dots dims slices)])
+  (let*-values ([(slices)  (expand-dots dims orig-slices)]
+                [(slices new-axes)  (extract-new-axes slices)])
     ;; number of indexes should match
-    (unless (= dims (length slices))
-      (error 'array-slice-ref "expected list of ~e Slice-Specs; given ~e in ~e"
-             dims (length slices) slices))
+    (define num-specs (length slices))
+    (unless (= dims num-specs)
+      (error 'array-slice-ref "expected list with ~e slices; given ~e in ~e"
+             dims num-specs orig-slices))
     (let-values ([(arr jss)  (slices->array-axis-transform 'array-slice-ref arr slices)])
-      (unsafe-array-axis-transform arr jss))))
+      (for/fold ([arr (unsafe-array-axis-transform arr jss)]) ([na  (in-list new-axes)])
+        (match-define (cons k dk) na)
+        (array-axis-insert arr k dk)))))
 
 (: slice-indexes-array (User-Indexes (Listof Slice-Spec) -> (View-Array Indexes)))
 (define (slice-indexes-array ds slices)
   (array-slice-ref (indexes-array ds) slices))
+
+(: array-slice-set! (All (A) ((Strict-Array A) (Listof Slice-Spec) (Array A) -> Void)))
+(define (array-slice-set! arr slices vals)
+  (array-indexes-set! arr (slice-indexes-array (array-shape arr) slices) vals))
