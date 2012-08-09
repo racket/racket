@@ -376,7 +376,10 @@
   (define-syntax-class horizontal-line
     (pattern x:id #:when (horizontal-line? #'x)))
   (define-syntax-class name
-    (pattern x #:when (string? (syntax-e #'x))))
+    (pattern x #:when (or (and (symbol? (syntax-e #'x))
+                               (not (horizontal-line? #'x))
+                               (not (eq? '... (syntax-e #'x))))
+                          (string? (syntax-e #'x)))))
   (define (parse-rules rules)
     (define-values (backward-rules backward-names)
       (for/fold ([parsed-rules '()]
@@ -432,14 +435,23 @@
        (not extension?)
        (raise-syntax-error #f "expected at least one rule" full-stx)]
       [_ (defined-name (list name/mode name/contract) rules full-stx)]))
-  (values form-name dup-names mode-stx contract rules rule-names))
+  (define string-rule-names
+    (for/list ([name (in-list rule-names)])
+      (cond
+        [(not name) name]
+        [(symbol? (syntax-e name))
+         (symbol->string (syntax-e name))]
+        [else (syntax-e name)])))
+  (values form-name dup-names mode-stx contract rules string-rule-names))
 
 ;; names : (listof (or/c #f syntax[string]))
 (define-for-syntax (check-dup-rule-names full-stx syn-err-name names)
   (define tab (make-hash))
   (for ([name (in-list names)])
     (when (syntax? name)
-      (define k (syntax-e name))
+      (define k (if (symbol? (syntax-e name))
+                    (symbol->string (syntax-e name))
+                    (syntax-e name)))
       (hash-set! tab k (cons name (hash-ref tab k '())))))
   (for ([(k names) (in-hash tab)])
     (unless (= 1 (length names))

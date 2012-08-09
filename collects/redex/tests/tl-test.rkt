@@ -2066,6 +2066,19 @@
       (test (judgment-holds (sumi ,'z (s z) (s z))) #t)
       
       (define-judgment-form nats
+        #:mode (sumi2 I I O)
+        #:contract (sumi2 n n n)
+        [------------- sumz ;; symbol name
+         (sumi2 z n n)]
+        [(sumi2 n_1 n_2 n_3)
+         ---------------------------  "sumn" ;; string name
+         (sumi2 (s n_1) n_2 (s n_3))])
+      (test (judgment-holds (sumi2 z (s z) n) n)
+            (list (term (s z))))
+      (test (judgment-holds (sumi2 (s (s z)) (s z) n) n)
+            (list (term (s (s (s z))))))
+
+      (define-judgment-form nats
         #:mode (sumo O O I)
         #:contract (sumo n n n)
         [(sumo z n n)]
@@ -2201,7 +2214,7 @@
       
       (test (judgment-holds (map-add-some-one (z (s z) (s (s z))) (n ...))
                             (n ...))
-            (list (term ((s z) (s (s z)) (s (s (s z)))))))      
+            (list (term ((s z) (s (s z)) (s (s (s z)))))))
       
       (define-judgment-form nats
         #:mode (hyphens I)

@@ -1161,7 +1161,8 @@ and @racket[#f] otherwise.
                        (side-condition @#,tttterm)
                        (side-condition/hidden @#,tttterm)]
               [rule-name (code:line)
-                         string]
+                         string
+                         non-ellipsis-non-hypens-var]
               [pat/term @#,ttpattern
                         @#,tttterm]
               [maybe-ellipsis (code:line)
