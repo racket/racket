@@ -252,3 +252,82 @@
           (if (> n-unrollings 0)
               (format " and ~a" (pluralize n-unrollings   "unrolling"))
               "")))
+
+
+
+(module+ test
+  (require rackunit)
+
+  ;; log parsing tests
+
+  (define (parse l) (regexp-match inlining-event-regexp l))
+
+  ;; Windows path
+  (check-equal? (parse "mzc optimizer: no inlining, out of fuel: involving: #(.../private/map.rkt:22:14 #<path:C:\\Users\\bernardip\\Documents\\Local\\RacketPortable\\App\\Racket\\collects\\racket\\private\\map.rkt> 22 14 620 335 #t) in: C:\\Users\\bernardip\\Documents\\Scheme\\fotografia.rkt:23:0: prova2 in module: 'anonymous-module size: 55 threshold: 8")
+                '("mzc optimizer: no inlining, out of fuel: involving: #(.../private/map.rkt:22:14 #<path:C:\\Users\\bernardip\\Documents\\Local\\RacketPortable\\App\\Racket\\collects\\racket\\private\\map.rkt> 22 14 620 335 #t) in: C:\\Users\\bernardip\\Documents\\Scheme\\fotografia.rkt:23:0: prova2 in module: 'anonymous-module size: 55 threshold: 8"
+                  "no inlining, out of fuel: "
+                  "#(.../private/map.rkt:22:14 #<path:C:\\Users\\bernardip\\Documents\\Local\\RacketPortable\\App\\Racket\\collects\\racket\\private\\map.rkt> 22 14 620 335 #t)"
+                  ".../private/map.rkt:22:14"
+                  "#<path:C:\\Users\\bernardip\\Documents\\Local\\RacketPortable\\App\\Racket\\collects\\racket\\private\\map.rkt>"
+                  "C:\\Users\\bernardip\\Documents\\Local\\RacketPortable\\App\\Racket\\collects\\racket\\private\\map.rkt"
+                  #f
+                  "22"
+                  "14"
+                  "620"
+                  "335"
+                  #f
+                  " in: C:\\Users\\bernardip\\Documents\\Scheme\\fotografia.rkt:23:0: prova2"
+                  "C:\\Users\\bernardip\\Documents\\Scheme\\fotografia.rkt:23:0: "
+                  "C:\\Users\\bernardip\\Documents\\Scheme\\fotografia.rkt"
+                  "23"
+                  "0"
+                  "prova2"
+                  " in module: 'anonymous-module"
+                  "55"
+                  "8"))
+
+  (check-equal? (parse "mzc optimizer: no inlining, out of fuel: involving: #(sqr #<path:/home/stamourv/src/plt/collects/racket/math.rkt> 35 2 838 93 #f) in: /home/stamourv/src/examples/example-shapes.rkt:41:0: inC in module: 'example-shapes size: 21 threshold: 6")
+                '("mzc optimizer: no inlining, out of fuel: involving: #(sqr #<path:/home/stamourv/src/plt/collects/racket/math.rkt> 35 2 838 93 #f) in: /home/stamourv/src/examples/example-shapes.rkt:41:0: inC in module: 'example-shapes size: 21 threshold: 6"
+                  "no inlining, out of fuel: "
+                  "#(sqr #<path:/home/stamourv/src/plt/collects/racket/math.rkt> 35 2 838 93 #f)"
+                  "sqr"
+                  "#<path:/home/stamourv/src/plt/collects/racket/math.rkt>"
+                  "/home/stamourv/src/plt/collects/racket/math.rkt"
+                  #f
+                  "35"
+                  "2"
+                  "838"
+                  "93"
+                  #f
+                  " in: /home/stamourv/src/examples/example-shapes.rkt:41:0: inC"
+                  "/home/stamourv/src/examples/example-shapes.rkt:41:0: "
+                  "/home/stamourv/src/examples/example-shapes.rkt"
+                  "41"
+                  "0"
+                  "inC"
+                  " in module: 'example-shapes"
+                  "21"
+                  "6"))
+
+  (check-equal? (parse "mzc optimizer: inlining: involving: #(inC #<path:/home/stamourv/src/examples/example-shapes.rkt> 41 0 993 165 #f) in: /home/stamourv/src/examples/example-shapes.rkt:27:0: in in module: 'example-shapes size: 41 threshold: 128")
+                '("mzc optimizer: inlining: involving: #(inC #<path:/home/stamourv/src/examples/example-shapes.rkt> 41 0 993 165 #f) in: /home/stamourv/src/examples/example-shapes.rkt:27:0: in in module: 'example-shapes size: 41 threshold: 128"
+                  "inlining: "
+                  "#(inC #<path:/home/stamourv/src/examples/example-shapes.rkt> 41 0 993 165 #f)"
+                  "inC"
+                  "#<path:/home/stamourv/src/examples/example-shapes.rkt>"
+                  "/home/stamourv/src/examples/example-shapes.rkt"
+                  #f
+                  "41"
+                  "0"
+                  "993"
+                  "165"
+                  #f
+                  " in: /home/stamourv/src/examples/example-shapes.rkt:27:0: in"
+                  "/home/stamourv/src/examples/example-shapes.rkt:27:0: "
+                  "/home/stamourv/src/examples/example-shapes.rkt"
+                  "27"
+                  "0"
+                  "in"
+                  " in module: 'example-shapes"
+                  "41"
+                  "128")))
