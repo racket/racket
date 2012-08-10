@@ -1,6 +1,7 @@
 #lang racket/base 
 (provide get-event-color 
          get-event-forecolor
+         get-event-opacity
          header-forecolor 
          header-backcolor 
          timeline-event-baseline-color 
@@ -89,7 +90,14 @@
     [(touch-pause) "blue"] 
     [(result abort suspend) "white"] 
     [(complete end-work) "white"] 
-    [else "black"]))  
+    [(gc) "maroon"]
+    [else "black"])) 
+
+;;get-event-opacity : symbol -> real [0 .. 1]
+(define (get-event-opacity type) 
+  (case type 
+    [(gc) 0.15] 
+    [else 1]))
 
 ;;get-event-forecolor : symbol -> string
 (define (get-event-forecolor type) 

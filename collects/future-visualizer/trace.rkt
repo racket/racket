@@ -2,6 +2,7 @@
 (require racket/contract 
          "private/visualizer-data.rkt")
 (provide (struct-out future-event) 
+         (struct-out gc-info)
          (struct-out indexed-future-event) 
          trace-futures 
          (contract-out

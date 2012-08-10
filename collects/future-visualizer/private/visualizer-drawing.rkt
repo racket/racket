@@ -29,7 +29,8 @@
          (struct-out timeline-tick) 
          find-node-for-coords
          find-fid-for-coords
-         first-seg-for-fid)
+         first-seg-for-fid 
+         print-seg)
 
 ;Represents a dot or square on the timeline
 (struct segment (event
@@ -38,6 +39,7 @@
                  width 
                  height 
                  color 
+                 opacity
                  p 
                  prev-future-seg
                  next-future-seg 
@@ -45,7 +47,6 @@
                  next-proc-seg  
                  prev-targ-future-seg
                  next-targ-future-seg) #:transparent #:mutable)
-
 
 ;General information about the timeline image
 (struct frame-info (adjusted-width 
@@ -67,6 +68,16 @@
                    0 
                    (frame-info-adjusted-width finfo) 
                    (frame-info-adjusted-height finfo)))
+
+;;print-seg : segment -> void
+(define (print-seg seg) 
+  (printf "(segment type:~a x:~a y:~a width:~a height:~a color:~a\n" 
+          (event-type (segment-event seg)) 
+          (segment-x seg) 
+          (segment-y seg) 
+          (segment-width seg) 
+          (segment-height seg) 
+          (segment-color seg)))
 
 ;;seg-in-vregion : viewable-region segment -> bool
 (define (seg-in-vregion vregion)
@@ -141,12 +152,17 @@
                               x))) 
   (- (- w (- max-x-extent w)) MIN-SEG-WIDTH))
 
-;;calc-row-mid-y : uint uint -> uint
-(define (calc-row-mid-y proc-index row-height) 
-  (floor (- (+ (* proc-index 
-                  row-height) 
-               (/ row-height 2)) 
-            2)))
+;;calc-row-mid-y : uint (or uint symbol) uint uint -> uint
+(define (calc-row-mid-y proc-index proc-id row-height num-tls)
+  (define PADDING 2)
+  ;GC events span the entire height of the execution timeline
+  (cond
+    [(symbol? proc-id) 0] 
+    [else 
+     (floor (- (+ (* (- proc-index 1) 
+                     row-height) 
+                  (/ row-height 2)) 
+               PADDING))]))
 
 ;Gets the center of a circle with (xleft, ytop) as the top-left coordinate.
 ;;calc-center : uint uint uint -> (values uint uint)
@@ -242,16 +258,19 @@
                   ticks 
                   new-label-x-extent 
                   r-segs))))
-  tks)
+  tks) 
 
-;;calc-process-timespan-lines : trace (listof segment) -> (listof (uint . uint))
-(define (calc-process-timespan-lines trace segs) 
+;;calc-process-timespan-lines : trace (listof segment) uint -> (listof (uint . uint))
+(define (calc-process-timespan-lines trace segs max-x)
   (for/list ([tl (in-list (trace-proc-timelines trace))]) 
-    (let ([segs (filter (λ (s) (= (process-timeline-proc-id tl) 
-                                  (event-proc-id (segment-event s)))) 
-                        segs)]) 
-      (cons (segment-x (car segs)) 
-            (segment-x (last segs))))))
+    (define sgs (filter (λ (s) (equal? (process-timeline-proc-id tl) 
+                                        (event-proc-id (segment-event s)))) 
+                         segs)) 
+    (cond 
+      [(empty? sgs) (cons 0 max-x)]
+      [else
+       (cons (segment-x (car sgs)) 
+             (segment-x (last sgs)))])))
 
 ;;get-first-future-seg : seg -> seg
 (define (get-first-future-seg seg) 
@@ -274,16 +293,28 @@
     (cond 
       [(or (not prev) (not ((seg-in-vregion vregion) cur))) cur] 
       [else (loop prev)])))
-  
-;;adjust-work-segs! : (listof segment) -> void
-(define (adjust-work-segs! segs) 
-  (for ([seg (in-list segs)]) 
-    (case (event-type (segment-event seg)) 
-      [(start-work start-0-work) 
-       (set-segment-width! seg (max MIN-SEG-WIDTH 
-                                    (- (segment-x (segment-next-proc-seg seg)) (segment-x seg))))] 
-      [else 
-       void])))
+
+;;Set pixel widths of segments with variable widths, e.g. 
+;;work and GC events
+;;adjust-variable-width-segs! : (listof segment) -> void
+(define (adjust-variable-width-segs! segs) 
+  (cond 
+    [(empty? segs) void]
+    [else 
+     (define cur (car segs)) 
+     (case (event-type (segment-event cur)) 
+       [(start-work start-0-work) 
+        (set-segment-width! cur (max MIN-SEG-WIDTH 
+                                     (- (segment-x (segment-next-proc-seg cur)) (segment-x cur)))) 
+        (adjust-variable-width-segs! (cdr segs))]
+       [(gc) 
+        (cond 
+          [(empty? (cdr segs)) void] 
+          [else 
+           (set-segment-width! cur (max MIN-SEG-WIDTH 
+                                        (- (segment-x (car (cdr segs))) (segment-x cur)))) 
+           (adjust-variable-width-segs! (cdr segs))])] 
+       [else (adjust-variable-width-segs! (cdr segs))])]))
 
 ;;connect-segments! : (listof segment) -> void
 (define (connect-segments! segs) 
@@ -309,13 +340,18 @@
                                                #f)))))
 
 ;;build-seg-layout : flonum (listof event) trace -> (values (listof segment) uint uint)
-(define (build-seg-layout timeToPixModifier events tr)
-  (define last-right-edges (build-vector (length (trace-proc-timelines tr)) (λ (n) 0)))
+(define (build-seg-layout timeToPixModifier events tr max-y)
+  (define num-tls (length (trace-proc-timelines tr)))
+  (define last-right-edges (build-vector num-tls (λ (n) 0)))
   (define-values (sgs d x-extent)
     (for/fold ([segs '()]
                [delta 0]
                [largest-x 0]) ([evt (in-list events)])
-      (define last-right-edge (vector-ref last-right-edges (event-proc-index evt)))
+      (define is-gc-evt? (equal? (event-type evt) 'gc))
+      (define last-right-edge (if is-gc-evt? 
+                                  largest-x 
+                                  (vector-ref last-right-edges (event-proc-index evt))))
+      #;(define last-right-edge (vector-ref last-right-edges (event-proc-index evt)))
       (define wanted-offset (+ delta (* DEFAULT-TIMELINE-WIDTH
                                         (inexact->exact 
                                          (/ (- (event-start-time evt) (trace-start-time tr))
@@ -324,14 +360,18 @@
         (if (last-right-edge . <= . wanted-offset) 
             (values wanted-offset delta)
             (values last-right-edge (+ delta (- last-right-edge wanted-offset)))))
-      (define radius (/ MIN-SEG-WIDTH 2))
+      (define radius (if is-gc-evt? 0 (/ MIN-SEG-WIDTH 2)))
       (define segw MIN-SEG-WIDTH)
+      (define segh (cond 
+                     [is-gc-evt? max-y] 
+                     [else MIN-SEG-WIDTH]))
       (define seg (segment evt 
                            (round offset) 
-                           (- (calc-row-mid-y (event-proc-index evt) TIMELINE-ROW-HEIGHT) radius)
+                           (- (calc-row-mid-y (event-proc-index evt) (event-proc-id evt) TIMELINE-ROW-HEIGHT num-tls) radius)
                            segw
-                           MIN-SEG-WIDTH 
+                           segh 
                            (get-event-color (event-type evt)) 
+                           (get-event-opacity (event-type evt))
                            #f 
                            #f 
                            #f 
@@ -343,40 +383,45 @@
       (vector-set! last-right-edges (event-proc-index evt) (+ offset segw))
       (values (cons seg segs)
               new-delta
-              (max largest-x last-right-edge))))
+              (max largest-x (+ offset segw) #;last-right-edge))))
   (values sgs x-extent))
 
 ;;calc-segments : trace uint uint -> (values frame-info (listof segment))
 (define (calc-segments tr) 
   (define evts (trace-all-events tr))
   (define timeToPixModifier (/ DEFAULT-TIMELINE-WIDTH (- (trace-end-time tr) (trace-start-time tr))))
+  (define max-y (* TIMELINE-ROW-HEIGHT (sub1 (length (trace-proc-timelines tr)))))
   (define-values (segments x) 
-    (build-seg-layout timeToPixModifier evts tr))
+    (build-seg-layout timeToPixModifier evts tr max-y))
   (define ordered-segs (reverse segments))
   (connect-segments! ordered-segs)
-  (adjust-work-segs! ordered-segs)
+  (adjust-variable-width-segs! ordered-segs)
   (define ticks (calc-ticks ordered-segs timeToPixModifier tr))
-  (values (frame-info (+ MIN-SEG-WIDTH (round x)) 
-                      (* TIMELINE-ROW-HEIGHT (length (trace-proc-timelines tr)))
+  (define max-x (+ MIN-SEG-WIDTH (round x)))
+  (values (frame-info max-x 
+                      max-y
                       TIMELINE-ROW-HEIGHT 
                       timeToPixModifier 
                       ticks
-                      (calc-process-timespan-lines tr ordered-segs)) 
+                      (calc-process-timespan-lines tr ordered-segs max-x)) 
           ordered-segs))
 
 ;;pict-for-segment : segment -> pict
 (define (pict-for-segment seg) 
   (unless (segment-p seg)
-    (set-segment-p! seg (if (event-has-duration? (segment-event seg)) 
-                            (rect-pict (segment-color seg)
-                                       (timeline-event-strokecolor) 
-                                       (segment-width seg) 
-                                       MIN-SEG-WIDTH 
-                                       #:stroke-width .5) 
-                            (circle-pict (segment-color seg) 
-                                         (timeline-event-strokecolor) 
-                                         MIN-SEG-WIDTH  
-                                         #:stroke-width .5)))) 
+    (define p (if (event-has-duration? (segment-event seg)) 
+                  (rect-pict (segment-color seg)
+                             (timeline-event-strokecolor) 
+                             (segment-width seg) 
+                             (segment-height seg) 
+                             #:stroke-width .5) 
+                  (circle-pict (segment-color seg) 
+                               (timeline-event-strokecolor) 
+                               MIN-SEG-WIDTH  
+                               #:stroke-width .5))) 
+    (set-segment-p! seg (if (< (segment-opacity seg) 1) 
+                            (cellophane p (segment-opacity seg)) 
+                            p))) 
   (segment-p seg))
 
 ;;draw-ruler-on : pict viewable-region frameinfo -> pict
@@ -401,16 +446,22 @@
 
 ;;draw-row-lines-on : pict viewable-region trace frameinfo -> pict
 (define (draw-row-lines-on base vregion tr finfo opacity) 
+  (define num-tls (length (trace-proc-timelines tr)))
   (pin-over base 
             0 
             0
-            (for/fold ([pct base]) ([tl (in-list (filter (λ (tline)
-                                                           (define midy (calc-row-mid-y (process-timeline-proc-index tline) 
-                                                                                        (frame-info-row-height finfo)))
-                                                           (define topy (- midy (frame-info-row-height finfo))) 
-                                                           (define boty (+ midy (frame-info-row-height finfo))) 
-                                                           (or (in-viewable-region-vert? vregion topy) 
-                                                               (in-viewable-region-vert? vregion boty)))                                                           
+            (for/fold ([pct base]) ([tl (in-list (filter (λ (tline) 
+                                                           (cond 
+                                                             [(equal? (process-timeline-proc-id tline) 'gc) #f] 
+                                                             [else 
+                                                              (define midy (calc-row-mid-y (process-timeline-proc-index tline) 
+                                                                                           (process-timeline-proc-id tline)
+                                                                                           (frame-info-row-height finfo) 
+                                                                                           num-tls))
+                                                              (define topy (- midy (frame-info-row-height finfo))) 
+                                                              (define boty (+ midy (frame-info-row-height finfo))) 
+                                                              (or (in-viewable-region-vert? vregion topy) 
+                                                                  (in-viewable-region-vert? vregion boty))]))                                                           
                                                          (trace-proc-timelines tr)))])
               (let* ([line-coords (list-ref (frame-info-process-line-coords finfo) 
                                            (process-timeline-proc-index tl))]
@@ -429,7 +480,7 @@
                                (- line-end vregion-start)] 
                               [else vregion-end])]
                      [index (process-timeline-proc-index tl)]
-                     [proc-name (if (zero? index) 
+                     [proc-name (if (= 1 index) 
                                     "Thread 0 (Runtime Thread)" 
                                     (format "Thread ~a" (process-timeline-proc-id tl)))]
                      [proc-title (text-block-pict proc-name 
@@ -440,15 +491,18 @@
                                                   #:width (viewable-region-width vregion))])
                 (draw-stack-onto pct 
                                  (at 0 
-                                     (- (* (add1 index) (frame-info-row-height finfo)) (viewable-region-y vregion)) 
+                                     (- (* index (frame-info-row-height finfo)) (viewable-region-y vregion)) 
                                      (colorize (hline (viewable-region-width vregion) 1) (timeline-baseline-color))) 
                                  (at 0  
-                                     (+ (+ (- (* index (frame-info-row-height finfo)) (viewable-region-y vregion)) 
+                                     (+ (+ (- (* (sub1 index) (frame-info-row-height finfo)) (viewable-region-y vregion)) 
                                            (- (frame-info-row-height finfo) (pict-height proc-title))) 
                                         1) 
                                      proc-title) 
                                  (at start-x 
-                                     (- (calc-row-mid-y index (frame-info-row-height finfo))
+                                     (- (calc-row-mid-y index 
+                                                        (process-timeline-proc-id tl) 
+                                                        (frame-info-row-height finfo) 
+                                                        num-tls)
                                         (viewable-region-y vregion))
                                      (colorize (hline (- end-x start-x) 1) 
                                                (timeline-event-baseline-color))))))))
@@ -459,6 +513,7 @@
 (define (make-stand-out-pict seg) 
   (case (event-type (segment-event seg)) 
     [(start-work start-0-work) (scale (pict-for-segment seg) 1 2)] 
+    [(gc) (cellophane (pict-for-segment seg) 1)]
     [else (scale (pict-for-segment seg) 2)]))
 
 ;;frame-bg : viewable-region frame-info trace -> pict
@@ -515,10 +570,10 @@
   (cond 
     [selected-event-index 
      (define overlay (timeline-overlay vregion
-                                              #f 
-                                              (list-ref segments selected-event-index) 
-                                              finfo 
-                                              tr)) 
+                                       #f 
+                                       (list-ref segments selected-event-index) 
+                                       finfo 
+                                       tr)) 
      (pin-over tp 
                0 
                0 
@@ -572,33 +627,7 @@
                         color 
                         #:width width 
                         #:with-arrow with-arrow 
-                        #:style style))))
-
-#;(define (get-seg-left-of-vregion vregion seg) 
-  (define prev-in-time (segment-prev-future-seg seg))
-  (cond 
-    [(not prev-in-time) seg] 
-    [((segment-edge prev-in-time) . < . (viewable-region-x vregion)) prev-in-time]
-    [else (get-seg-left-of-vregion vregion prev-in-time)]))
-
-#;(define (draw-arrows base-pct vregion seg) 
-  (define fst (get-seg-left-of-vregion vregion seg))
-  (let loop ([p base-pct] 
-             [cur-seg fst])
-    (define next-seg (segment-next-future-seg cur-seg))
-    (cond 
-      [(not next-seg) p] 
-      [else 
-       (define new-p (draw-connection vregion 
-                                      cur-seg 
-                                      next-seg 
-                                      p 
-                                      (event-connection-line-color) 
-                                      #:width 1)) 
-       (if (not (in-viewable-region-horiz vregion (segment-x next-seg))) 
-           new-p
-           (loop new-p next-seg))])))
-                            
+                        #:style style))))                            
 
 ;;draw-arrows : pict viewable-region segment -> pict
 (define (draw-arrows base-pct vregion seg) 
@@ -649,43 +678,48 @@
                                         (viewable-region-height vregion)))
   (define base (blank (viewable-region-width vregion) 
                       (viewable-region-height vregion))) 
-  (define-values (seg-with-arrows showing-tacked) 
+  (define-values (picked-seg showing-tacked) 
     (if tacked (values tacked #t) (values hovered #f)))
-  (if seg-with-arrows 
-      (let* ([bg base] 
-             [aseg-rel-x (- (segment-x seg-with-arrows) (viewable-region-x vregion))] 
-             [aseg-rel-y (- (segment-y seg-with-arrows) (viewable-region-y vregion))]
-             [line (pin-over bg
-                             (- (+ aseg-rel-x 
-                                   (/ (segment-width seg-with-arrows) 2)) 
-                                2)
-                             0
-                             (colorize (vline 1 height) (hover-tickline-color)))]
-             [bigger (make-stand-out-pict seg-with-arrows)]
-             [width-dif (/ (- (pict-width bigger) (segment-width seg-with-arrows)) 2)]
-             [height-dif (/ (- (pict-height bigger) (segment-height seg-with-arrows)) 2)]
-             [magnified (pin-over line 
-                                  (- aseg-rel-x width-dif)
-                                  (- aseg-rel-y height-dif) 
-                                  bigger)] 
-             [hover-magnified (if (and showing-tacked 
-                                       hovered 
-                                       (not (eq? hovered tacked)))
-                                  (let* ([hmag (make-stand-out-pict hovered)] 
-                                         [hwidth-dif (/ (- (pict-width hmag)
-                                                           (pict-width (pict-for-segment hovered)))
-                                                        2)] 
-                                         [hheight-dif (/ (- (pict-height hmag)
-                                                            (pict-height (pict-for-segment hovered)))
-                                                         2)])
-                                    (pin-over magnified 
-                                              (- (- (segment-x hovered) (viewable-region-x vregion)) hwidth-dif) 
-                                              (- (- (segment-y hovered) (viewable-region-y vregion)) hheight-dif)
-                                              hmag)) 
-                                  magnified)] 
-             [arrows (draw-arrows hover-magnified vregion seg-with-arrows)])
-        arrows)
-      base))
+  (cond 
+    [picked-seg 
+     (define bg base) 
+     (define aseg-rel-x (- (segment-x picked-seg) (viewable-region-x vregion))) 
+     (define aseg-rel-y (- (segment-y picked-seg) (viewable-region-y vregion))) 
+     (define emphasized (make-stand-out-pict picked-seg))
+     (case (event-type (segment-event picked-seg)) 
+       [(gc) 
+        (pin-over bg aseg-rel-x aseg-rel-y emphasized)]
+       [else 
+        (let* ([line (pin-over bg
+                               (- (+ aseg-rel-x 
+                                     (/ (segment-width picked-seg) 2)) 
+                                  2)
+                               0
+                               (colorize (vline 1 height) (hover-tickline-color)))]
+               [width-dif (/ (- (pict-width emphasized) (segment-width picked-seg)) 2)]
+               [height-dif (/ (- (pict-height emphasized) (segment-height picked-seg)) 2)]
+               [magnified (pin-over line 
+                                    (- aseg-rel-x width-dif)
+                                    (- aseg-rel-y height-dif) 
+                                    emphasized)] 
+               [hover-magnified (if (and showing-tacked 
+                                         hovered 
+                                         (not (eq? hovered tacked)))
+                                    (let* ([hmag (make-stand-out-pict hovered)] 
+                                           [hwidth-dif (/ (- (pict-width hmag)
+                                                             (pict-width (pict-for-segment hovered)))
+                                                          2)] 
+                                           [hheight-dif (/ (- (pict-height hmag)
+                                                              (pict-height (pict-for-segment hovered)))
+                                                           2)])
+                                      (pin-over magnified 
+                                                (- (- (segment-x hovered) (viewable-region-x vregion)) hwidth-dif) 
+                                                (- (- (segment-y hovered) (viewable-region-y vregion)) hheight-dif)
+                                                hmag)) 
+                                    magnified)] 
+               [arrows (draw-arrows hover-magnified vregion picked-seg)])
+          arrows)])]
+    [else base]))
 
 ;Draw a line from one node on the creation graph to another
 ;;line-from : drawable-node drawable-node pict viewable-region -> pict

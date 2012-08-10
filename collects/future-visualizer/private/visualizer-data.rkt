@@ -6,6 +6,7 @@
          racket/set 
          "constants.rkt"
          "graph-drawing.rkt" 
+         "display.rkt"
          (only-in '#%futures 
                   reset-future-logs-for-tracing! 
                   mark-future-trace-end!)) 
@@ -13,6 +14,7 @@
 (provide start-future-tracing! 
          stop-future-tracing!
          (struct-out future-event)
+         (struct-out gc-info)
          (struct-out indexed-future-event)
          (struct-out trace) 
          (struct-out process-timeline) 
@@ -29,12 +31,24 @@
          allocation-event? 
          jitcompile-event? 
          synchronization-event? 
-         runtime-synchronization-event?
+         runtime-synchronization-event? 
+         gc-event?
          final-event? 
          relative-time)
 
 (define-struct future-event (future-id process-id what time prim-name user-data) 
   #:prefab)
+
+(define-struct gc-info (major? 
+                        pre-used 
+                        pre-admin 
+                        code-page-total 
+                        post-used 
+                        post-admin 
+                        start-time 
+                        end-time 
+                        start-real-time 
+                        end-real-time) #:prefab)
 
 ;Contains an index and a future-event, 
 ;so we can preserve the order in which future-events 
@@ -53,7 +67,8 @@
                real-time ;Total amount of time for the trace (in ms)
                num-futures ;Number of futures created
                num-blocks ;Number of barricades hit
-               num-syncs ;Number of 'atomic' ops done
+               num-syncs ;Number of 'atomic' ops done 
+               num-gcs ;Number of GC's that occurred during the trace
                blocked-futures ;Number of futures which encountered a barricade at some point
                avg-syncs-per-future 
                block-counts ;prim name --o--> number of blocks 
@@ -101,7 +116,7 @@
 ;;event-has-duration? : event -> bool
 (define (event-has-duration? evt) 
   (case (event-type evt) 
-    [(start-work start-0-work) #t] 
+    [(start-work start-0-work gc) #t] 
     [else #f]))
 
 (define (missing-data? log) 
@@ -120,8 +135,9 @@
 (define (what evt) 
   (cond 
     [(event? evt) (event-type evt)] 
-    [(indexed-future-event? evt) (future-event-what (indexed-future-event-fevent evt))] 
-    [(future-event? evt) (future-event-what evt)]))
+    [(indexed-future-event? evt) (what (indexed-future-event-fevent evt))] 
+    [(future-event? evt) (future-event-what evt)] 
+    [(gc-info? evt) 'gc]))
 
 ;;process-id : (or event indexed-future-event future-event) -> exact-nonnegative-integer
 (define (process-id evt) 
@@ -164,6 +180,10 @@
 (define (runtime-sync-evt? evt) 
   (and (runtime-thread-evt? evt) (equal? (what evt) 'sync)))
 
+;;gc-event? : (or event indexed-future-event future-event) -> bool
+(define (gc-event? evt) 
+  (equal? (what evt) 'gc))
+
 ;;final-event? : event -> bool
 (define (final-event? evt) 
   (case (event-timeline-position evt) 
@@ -187,16 +207,30 @@
 (define (stop-future-tracing!) 
   (mark-future-trace-end!))
 
+;;event-or-gc-time : (or future-event gc-info) -> float
+(define (event-or-gc-time evt) 
+  (if (future-event? evt) 
+      (future-event-time evt) 
+      (gc-info-start-real-time evt)))
+
+;;process-id-or-gc : (or future-event gc-info) -> (or nonnegative-integer 'gc)
+(define (process-id-or-gc evt) 
+  (if (future-event? evt) 
+      (future-event-process-id evt) 
+      'gc))
+
 ;;timeline-events/private : -> void
 (define (timeline-events/private) 
   (let ([info (sync/timeout 0 recv)]) 
     (if info 
         (let ([v (vector-ref info 2)]) 
-          (if (future-event? v) 
-              (case (future-event-what v) 
-                [(stop-trace) '()] 
-                [else (cons v (timeline-events/private))]) 
-              (timeline-events/private))) 
+          (cond 
+            [(future-event? v) 
+             (case (future-event-what v) 
+               [(stop-trace) '()] 
+               [else (cons v (timeline-events/private))])] 
+            [(gc-info? v) (cons v (timeline-events/private))] 
+            [else (timeline-events/private)])) 
         (timeline-events/private))))
           
 ;Gets log events for an execution timeline
@@ -206,90 +240,147 @@
     [(not (futures-enabled?)) '()]
     [else 
      (define sorted (sort (timeline-events/private)
-                          #:key future-event-time 
+                          #:key event-or-gc-time 
                           <)) 
-     (for/list ([fe (in-list sorted)] 
+     (for/list ([evt (in-list sorted)] 
                 [i (in-naturals)]) 
-       (indexed-future-event i fe))]))
+       (indexed-future-event i evt))]))
+
+;;proc-id-or-gc<? : (or number symbol) (or number symbol) -> bool
+(define (proc-id-or-gc<? a b) 
+  (cond 
+    [(equal? a 'gc) #t] 
+    [(equal? b 'gc) #t] 
+    [else (< a b)]))
 
 ;Produces a vector of vectors, where each inner vector contains 
 ;all the log output messages for a specific process
-;;organize-output : (listof indexed-future-event) -> (vectorof (vectorof future-event))
-(define (organize-output raw-log-output)
+;;organize-output : (listof indexed-future-event) real real -> (vectorof (vectorof future-event))
+(define (organize-output raw-log-output start-time end-time)
   (define unique-proc-ids (for/set ([ie (in-list raw-log-output)]) 
-                                     (future-event-process-id (indexed-future-event-fevent ie))))
-  (for/vector ([procid (in-list (sort (set->list unique-proc-ids) <))])
+                                     (process-id-or-gc (indexed-future-event-fevent ie))))
+  (for/vector ([procid (in-list (sort (set->list unique-proc-ids) proc-id-or-gc<?))])
     (for/vector ([e (in-list raw-log-output)] 
-                 #:when (eq? procid (future-event-process-id (indexed-future-event-fevent e)))) 
+                 #:when (and (equal? procid (process-id-or-gc (indexed-future-event-fevent e))) 
+                             (between (event-or-gc-time (indexed-future-event-fevent e)) 
+                                      start-time 
+                                      end-time))) 
       e)))
-  
+
+;;Grab the first and last future events in the trace. 
+;;first-and-last-fevents : (listof (or future-event gc-info)) -> (values future-event future-event)
+(define (first-and-last-fevents log)  
+  (let loop ([fst #f] 
+             [last #f] 
+             [remaining-log log])
+    (cond 
+      [(empty? remaining-log) (values fst last)] 
+      [else 
+       (define f (indexed-future-event-fevent (car remaining-log)))
+       (define rest (cdr remaining-log))
+       (cond 
+         [fst (if (future-event? f) 
+                  (loop fst f rest) 
+                  (loop fst last rest))] 
+         [else (if (future-event? f) 
+                   (loop f last rest) 
+                   (loop fst last rest))])])))
+    
 ;;build-trace : (listof indexed-future-event) -> trace
 (define (build-trace log-output) 
   (when (empty? log-output) 
     (error 'build-trace "Empty timeline in log-output"))
-  (define data (organize-output log-output))
-  (define start-time (future-event-time (indexed-future-event-fevent (car log-output)))) 
-  (define end-time (future-event-time (indexed-future-event-fevent (last log-output))))
-  (define-values (unique-fids nblocks nsyncs) 
+  (define-values (fst last) (first-and-last-fevents log-output))
+  (define start-time (future-event-time fst)) 
+  (define end-time (future-event-time last))
+  (define data (organize-output log-output start-time end-time))
+  (define-values (unique-fids nblocks nsyncs ngcs) 
     (for/fold ([unique-fids (set)]
                [nblocks 0] 
-               [nsyncs 0]) ([ie (in-list log-output)]) 
-      (let* ([evt (indexed-future-event-fevent ie)] 
-             [fid (future-event-future-id evt)]
-             [is-future-thread? (not (= (future-event-process-id evt) RT-THREAD-ID))])
-        (values 
-         (if fid 
-             (set-add unique-fids fid) 
-             unique-fids)
-         (if (and is-future-thread? 
-                  (case (future-event-what evt) 
-                    [(block touch) #t] 
-                    [else #f]))
-             (add1 nblocks) 
-             nblocks) 
-         (if (and is-future-thread? (symbol=? (future-event-what evt) 'sync)) 
-             (add1 nsyncs) 
-             nsyncs)))))
+               [nsyncs 0] 
+               [ngcs 0]) ([ie (in-list log-output)])
+      (define evt (indexed-future-event-fevent ie)) 
+      (cond 
+        [(gc-info? evt) 
+         (cond 
+           [(between (event-or-gc-time evt) start-time end-time) 
+            (values unique-fids nblocks nsyncs (add1 ngcs))] 
+           [else (values unique-fids nblocks nsyncs ngcs)])]
+        [else 
+         (define fid (future-event-future-id evt)) 
+         (define is-future-thread? (not (= (future-event-process-id evt) RT-THREAD-ID)))
+         (values 
+          (if fid 
+              (set-add unique-fids fid) 
+              unique-fids)
+          (if (and is-future-thread? 
+                   (case (future-event-what evt) 
+                     [(block touch) #t] 
+                     [else #f]))
+              (add1 nblocks) 
+              nblocks) 
+          (if (and is-future-thread? (symbol=? (future-event-what evt) 'sync)) 
+              (add1 nsyncs) 
+              nsyncs) 
+          ngcs)])))
   (define tls (for/list ([proc-log-vec (in-vector data)]  
                          [i (in-naturals)]) 
-                (let* ([fst-ie (vector-ref proc-log-vec 0)]
-                       [fst-log-msg (indexed-future-event-fevent fst-ie)])
-                  (process-timeline (future-event-process-id fst-log-msg) 
-                                    i
-                                    (future-event-time fst-log-msg) 
-                                    (future-event-time (indexed-future-event-fevent 
-                                                        (vector-ref proc-log-vec 
-                                                                    (sub1 (vector-length proc-log-vec))))) 
-                                    (for/list ([ie (in-vector proc-log-vec)]
-                                               [j (in-naturals)])
-                                      (let* ([evt (indexed-future-event-fevent ie)]
-                                             [start (future-event-time evt)] 
-                                             [pos (cond 
-                                                   [(zero? j) (if (= j (sub1 (vector-length proc-log-vec))) 
-                                                                  'singleton 
-                                                                  'start)]
-                                                   [(= j (sub1 (vector-length proc-log-vec))) 'end] 
-                                                   [else 'interior])])
-                                        (event (indexed-future-event-index ie) 
-                                               start 
-                                               (if (or (equal? pos 'end) (equal? pos 'singleton))
+                (cond 
+                  [(= (vector-length proc-log-vec) 0) 
+                   (process-timeline 'gc 
+                                     0 
+                                     start-time 
+                                     end-time 
+                                     '())] 
+                  [else
+                   (let* ([fst-ie (vector-ref proc-log-vec 0)]
+                          [fst-log-msg (indexed-future-event-fevent fst-ie)])
+                     (process-timeline (process-id-or-gc fst-log-msg) 
+                                       i
+                                       (event-or-gc-time fst-log-msg) 
+                                       (event-or-gc-time (indexed-future-event-fevent 
+                                                          (vector-ref proc-log-vec 
+                                                                      (sub1 (vector-length proc-log-vec))))) 
+                                       (for/list ([ie (in-vector proc-log-vec)]
+                                                  [j (in-naturals)])
+                                         (define evt (indexed-future-event-fevent ie)) 
+                                         (define start (event-or-gc-time evt)) 
+                                         (define pos (cond 
+                                                       [(zero? j) (if (= j (sub1 (vector-length proc-log-vec))) 
+                                                                      'singleton 
+                                                                      'start)] 
+                                                       [(= j (sub1 (vector-length proc-log-vec))) 'end] 
+                                                       [else 'interior]))
+                                         (define end (cond 
+                                                       [(gc-info? evt) (gc-info-end-real-time evt)] 
+                                                       [else
+                                                        (if (or (equal? pos 'end) (equal? pos 'singleton)) 
+                                                                        start 
+                                                                        (future-event-time (indexed-future-event-fevent 
+                                                                                           (vector-ref proc-log-vec (add1 j)))))]))
+                                         (cond 
+                                           [(gc-info? evt) 
+                                            (event (indexed-future-event-index ie) 
                                                    start 
-                                                   (future-event-time (indexed-future-event-fevent 
-                                                                       (vector-ref proc-log-vec (add1 j)))))
-                                               (future-event-process-id evt) 
-                                               i
-                                               (future-event-future-id evt) 
-                                               (future-event-user-data evt)
-                                               (future-event-what evt) 
-                                               (future-event-prim-name evt)
-                                               pos 
-                                               #f 
-                                               #f 
-                                               #f 
-                                               #f 
-                                               #f 
-                                               #f
-                                               #f)))))))
+                                                   end 
+                                                   'gc
+                                                   i 
+                                                   #f 
+                                                   #f 
+                                                   'gc 
+                                                   #f 
+                                                   pos #f #f #f #f #f #f #f)] 
+                                           [else  
+                                            (event (indexed-future-event-index ie) 
+                                                   start 
+                                                   end
+                                                   (process-id-or-gc evt) 
+                                                   i
+                                                   (future-event-future-id evt) 
+                                                   (future-event-user-data evt)
+                                                   (future-event-what evt) 
+                                                   (future-event-prim-name evt)
+                                                   pos #f #f #f #f #f #f #f)]))))])))
   (define all-evts (sort (flatten (for/list ([tl (in-list tls)]) (process-timeline-events tl))) 
                          #:key event-index 
                          <))
@@ -310,7 +401,8 @@
                     (- end-time start-time) ;real time 
                     (set-count unique-fids) ;num-futures
                     nblocks ;num-blocks
-                    nsyncs ;num-syncs
+                    nsyncs ;num-syncs 
+                    ngcs
                     0 
                     0 
                     block-hash
