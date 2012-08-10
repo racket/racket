@@ -368,11 +368,7 @@ void scheme_init_module(Scheme_Env *env)
     REGISTER_SO(empty_self_modname);
     empty_self_modidx = scheme_make_modidx(scheme_false, scheme_false, scheme_false);
     (void)scheme_hash_key(empty_self_modidx);
-#ifdef MZ_USE_PLACES
-    empty_self_modname = scheme_intern_symbol("expanded module"); /* FIXME: needs to be uninterned */
-#else
     empty_self_modname = scheme_make_symbol("expanded module"); /* uninterned */
-#endif
     empty_self_modname = scheme_intern_resolved_module_path(empty_self_modname);
   }
 
@@ -3530,38 +3526,17 @@ void scheme_init_module_path_table()
 static Scheme_Object *make_resolved_module_path_obj(Scheme_Object *o)
 {
   Scheme_Object *rmp;
-  Scheme_Object *newo;
-
-#if defined(MZ_USE_PLACES)
-  if (SCHEME_SYMBOLP(o)) {
-    newo = scheme_make_sized_offset_byte_string((char *)o, SCHEME_SYMSTR_OFFSET(o), SCHEME_SYM_LEN(o), 1);
-  }
-  else {
-    newo = o;
-  }
-#else
-  newo = o;
-#endif
   
   rmp = scheme_alloc_small_object();
   rmp->type = scheme_resolved_module_path_type;
-  SCHEME_PTR_VAL(rmp) = newo;
+  SCHEME_PTR_VAL(rmp) = o;
 
   return rmp;
 }
 
 Scheme_Object *scheme_resolved_module_path_value(Scheme_Object *rmp)
 {
-  Scheme_Object *rmp_val;
-  rmp_val = SCHEME_RMP_VAL(rmp);
-
-/*symbols aren't equal across places now*/                                                                                                                                                                                                                                  
-#if defined(MZ_USE_PLACES)
-    if (SCHEME_BYTE_STRINGP(rmp_val))
-      return scheme_intern_exact_symbol(SCHEME_BYTE_STR_VAL(rmp_val), SCHEME_BYTE_STRLEN_VAL(rmp_val));
-#endif
-
-  return rmp_val;
+  return SCHEME_RMP_VAL(rmp);
 }
 
 int scheme_resolved_module_path_value_matches(Scheme_Object *rmp, Scheme_Object *o) {
