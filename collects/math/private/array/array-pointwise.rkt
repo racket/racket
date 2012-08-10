@@ -204,7 +204,7 @@ array-number-exp.
 
 (: array-sqrt      ((Array Number) -> (View-Array Number)))
 (: array-conjugate ((Array Number) -> (View-Array Number)))
-(: array-magnitude ((Array Number) -> (View-Array Number)))
+(: array-magnitude ((Array Number) -> (View-Array Real)))
 (: array-log       ((Array Number) -> (View-Array Number)))
 
 (: array-sqr  (case-> ((Array Float)  -> (View-Array Float))
