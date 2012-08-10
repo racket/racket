@@ -48,6 +48,7 @@ READ_ONLY static Scheme_Object *write_property;
 READ_ONLY static Scheme_Object *print_attribute_property;
 READ_ONLY static Scheme_Object *evt_property;
 READ_ONLY static Scheme_Object *proc_property;
+READ_ONLY static Scheme_Object *method_property;
 READ_ONLY static Scheme_Object *rename_transformer_property;
 READ_ONLY static Scheme_Object *set_transformer_property;
 READ_ONLY static Scheme_Object *not_free_id_symbol;
@@ -491,6 +492,12 @@ scheme_init_struct (Scheme_Env *env)
     scheme_liberal_def_ctx_type = scheme_make_struct_type_from_string("liberal-define-context", NULL, 0, 
                                                                       cons(cons(prop, scheme_true), scheme_null),
                                                                       NULL, 1);
+  }
+
+  {
+    REGISTER_SO(method_property);
+    method_property = scheme_make_struct_type_property(scheme_intern_symbol("method-arity-error"));
+    scheme_add_global_constant("prop:method-arity-error", method_property, env);
   }
 
   REGISTER_SO(not_free_id_symbol);
@@ -4921,6 +4928,11 @@ Scheme_Object *scheme_extract_struct_procedure(Scheme_Object *obj, int num_rands
       if (scheme_reduced_procedure_struct
 	  && scheme_is_struct_instance(scheme_reduced_procedure_struct, plain_obj))
 	meth_wrap = SCHEME_TRUEP(((Scheme_Structure *)obj)->slots[3]);
+      else {
+        a = do_prop_accessor(method_property, plain_obj);
+        if (a && SCHEME_TRUEP(a))
+          meth_wrap = 1;
+      }
 
       scheme_wrong_count_m((char *)obj,
 			   -1 /* means "name argument is really a proc struct" */, 0,

@@ -53,7 +53,8 @@
   (define-values (struct:keyword-method make-km keyword-method? km-ref km-set!)
     (make-struct-type 'procedure
                       struct:keyword-procedure
-                      0 0 #f))
+                      0 0 #f
+                      (list (cons prop:method-arity-error #t))))
 
   (define (generate-arity-string proc)
     (let-values ([(req allowed) (procedure-keywords proc)]
@@ -124,7 +125,8 @@
   (define-values (struct:okm make-optional-keyword-method okm? okm-ref okm-set!)
     (make-struct-type 'procedure
                       struct:okp
-                      0 0 #f))
+                      0 0 #f
+                      (list (cons prop:method-arity-error #t))))
 
   (define-values (prop:named-keyword-procedure named-keyword-procedure? keyword-procedure-name+fail)
     (make-struct-type-property 'named-keyword-procedure))

@@ -1673,6 +1673,23 @@
       (super-new)))
   (test '(applied-to 1 2 3) (new c%) 1 2 3))
 
+;; ----------------------------------------
+;; Method error reporting:
+
+(let ()
+  (define required% (class object%
+                      (define/public (m x #:y y) 1)
+                      (super-new)))
+
+  (define optional% (class object%
+                      (define/public (m x #:y [y 1]) 1)
+                      (super-new)))
+  (define (given-3? exn) 
+    (regexp-match? "given: 3" (exn-message exn)))
+
+  (err/rt-test (send (new required%) m 1 2 3) given-3?)
+  (err/rt-test (send (new optional%) m 1 2 3) given-3?))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; ----------------------------------------
