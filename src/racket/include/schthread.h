@@ -230,6 +230,7 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Thread *scheme_current_thread_;
   struct Scheme_Thread *scheme_main_thread_;
   struct Scheme_Thread *scheme_first_thread_;
+  struct Scheme_Thread *gc_prep_thread_chain_;
   struct Scheme_Thread_Set *scheme_thread_set_top_;
   struct Scheme_Current_LWC *scheme_current_lwc_;
   int num_running_threads_;
@@ -333,6 +334,7 @@ typedef struct Thread_Local_Variables {
   int place_evts_array_size_;
   struct Evt **place_evts_;
   struct Scheme_Place_Object *place_object_;
+  struct Scheme_Place *all_child_places_;
   struct Scheme_Object **reusable_ifs_stack_;
   struct Scheme_Object *empty_self_shift_cache_;
   struct Scheme_Bucket_Table *scheme_module_code_cache_;
@@ -575,6 +577,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define scheme_current_thread XOA (scheme_get_thread_local_variables()->scheme_current_thread_)
 #define scheme_main_thread XOA (scheme_get_thread_local_variables()->scheme_main_thread_)
 #define scheme_first_thread XOA (scheme_get_thread_local_variables()->scheme_first_thread_)
+#define gc_prep_thread_chain XOA (scheme_get_thread_local_variables()->gc_prep_thread_chain_)
 #define scheme_thread_set_top XOA (scheme_get_thread_local_variables()->scheme_thread_set_top_)
 #define scheme_current_lwc XOA (scheme_get_thread_local_variables()->scheme_current_lwc_)
 #define num_running_threads XOA (scheme_get_thread_local_variables()->num_running_threads_)
@@ -678,6 +681,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define place_evts_array_size XOA (scheme_get_thread_local_variables()->place_evts_array_size_)
 #define place_evts XOA (scheme_get_thread_local_variables()->place_evts_)
 #define place_object XOA (scheme_get_thread_local_variables()->place_object_)
+#define all_child_places XOA (scheme_get_thread_local_variables()->all_child_places_)
 #define reusable_ifs_stack XOA (scheme_get_thread_local_variables()->reusable_ifs_stack_)
 #define empty_self_shift_cache XOA (scheme_get_thread_local_variables()->empty_self_shift_cache_)
 #define scheme_module_code_cache XOA (scheme_get_thread_local_variables()->scheme_module_code_cache_)

@@ -156,6 +156,7 @@ THREAD_LOCAL_DECL(static int buffer_init_size);
 THREAD_LOCAL_DECL(Scheme_Thread *scheme_current_thread = NULL);
 THREAD_LOCAL_DECL(Scheme_Thread *scheme_main_thread = NULL);
 THREAD_LOCAL_DECL(Scheme_Thread *scheme_first_thread = NULL);
+THREAD_LOCAL_DECL(static Scheme_Thread *gc_prep_thread_chain = NULL);
 
 XFORM_NONGCING Scheme_Thread *scheme_get_current_thread() { return scheme_current_thread; }
 XFORM_NONGCING intptr_t scheme_get_multiple_count() { return scheme_current_thread->ku.multiple.count; }
@@ -292,10 +293,16 @@ typedef struct {
 # define MALLOC_MREF() (Scheme_Custodian_Reference *)scheme_make_late_weak_box(NULL)
 # define CUSTODIAN_FAM(x) ((Scheme_Custodian_Weak_Box *)x)->val
 # define xCUSTODIAN_FAM(x) SCHEME_BOX_VAL(x)
+# define SET_MREF_POSITION(mref, i) (((Scheme_Custodian_Weak_Box *)mref)->hash_key = (i & 0xFFFF))
+# define EXTRACT_MREF_START_POSITION(mref, c) (((Scheme_Custodian_Weak_Box *)mref)->hash_key | ((c) & ~0xFFFF))
+# define EXTRACT_MREF_POSITION_DELTA(mref, c) 0x10000
 #else
 # define MALLOC_MREF() MALLOC_ONE_WEAK(Scheme_Custodian_Reference)
 # define CUSTODIAN_FAM(x) (*(x))
 # define xCUSTODIAN_FAM(x) (*(x))
+# define SET_MREF_POSITION(mref, i) /* empty */
+# define EXTRACT_MREF_START_POSITION(mref, c) ((c)-1)
+# define EXTRACT_MREF_POSITION_DELTA(mref, c) 1
 #endif
 
 typedef struct Proc_Global_Rec {
@@ -891,7 +898,7 @@ static void add_managed_box(Scheme_Custodian *m,
 			    Scheme_Object **box, Scheme_Custodian_Reference *mref,
 			    Scheme_Close_Custodian_Client *f, void *data)
 {
-  int i;
+  int i, saw = 0;
 
   for (i = m->count; i--; ) {
     if (!m->boxes[i]) {
@@ -899,11 +906,16 @@ static void add_managed_box(Scheme_Custodian *m,
       m->closers[i] = f;
       m->data[i] = data;
       m->mrefs[i] = mref;
+      SET_MREF_POSITION(mref, i);
 
       m->elems++;
       adjust_limit_table(m);
 
       return;
+    } else {
+      saw++;
+      if (i + saw == m->elems)
+        break; /* no empty spaces left */
     }
   }
 
@@ -913,6 +925,7 @@ static void add_managed_box(Scheme_Custodian *m,
   m->closers[m->count] = f;
   m->data[m->count] = data;
   m->mrefs[m->count] = mref;
+  SET_MREF_POSITION(mref, m->count);
 
   m->elems++;
   adjust_limit_table(m);
@@ -924,7 +937,7 @@ static void remove_managed(Scheme_Custodian_Reference *mr, Scheme_Object *o,
 			   Scheme_Close_Custodian_Client **old_f, void **old_data)
 {
   Scheme_Custodian *m;
-  int i;
+  int i, delta;
 
   if (!mr)
     return;
@@ -932,21 +945,27 @@ static void remove_managed(Scheme_Custodian_Reference *mr, Scheme_Object *o,
   if (!m)
     return;
 
-  for (i = m->count; i--; ) {
-    if (m->boxes[i] && SAME_OBJ((xCUSTODIAN_FAM(m->boxes[i])),  o)) {
-      xCUSTODIAN_FAM(m->boxes[i]) = 0;
-      m->boxes[i] = NULL;
-      CUSTODIAN_FAM(m->mrefs[i]) = 0;
-      m->mrefs[i] = NULL;
-      if (old_f)
-	*old_f = m->closers[i];
-      if (old_data)
-	*old_data = m->data[i];
-      m->data[i] = NULL;
-      --m->elems;
-      adjust_limit_table(m);
-      break;
+  i = EXTRACT_MREF_START_POSITION(mr, m->count);
+  delta = EXTRACT_MREF_POSITION_DELTA(mr, m->count);
+
+  while (i >= 0) {
+    if (i < m->count) {
+      if (m->boxes[i] && SAME_OBJ((xCUSTODIAN_FAM(m->boxes[i])),  o)) {
+        xCUSTODIAN_FAM(m->boxes[i]) = 0;
+        m->boxes[i] = NULL;
+        CUSTODIAN_FAM(m->mrefs[i]) = 0;
+        m->mrefs[i] = NULL;
+        if (old_f)
+          *old_f = m->closers[i];
+        if (old_data)
+          *old_data = m->data[i];
+        m->data[i] = NULL;
+        --m->elems;
+        adjust_limit_table(m);
+        break;
+      }
     }
+    i -= delta;
   }
 
   while (m->count && !m->boxes[m->count - 1]) {
@@ -1265,11 +1284,12 @@ Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_F
 	CUSTODIAN_FAM(m->mrefs[i]) = NULL;
 	
 	/* Set m->count to i in case a GC happens while
-	   the closer is running. If there's a GC, then
-	   for_each_managed will be called. */
+	   the closer is running. */
 	m->count = i;
 
-	if (is_thread && !the_thread) {
+        if (!o) {
+          /* weak link disappeared */
+        } else if (is_thread && !the_thread) {
 	  /* Thread is already collected, so skip */
 	} else if (cf) {
 	  cf(o, f, data);
@@ -1357,53 +1377,6 @@ Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_F
   return kill_self;
 }
 
-typedef void (*Scheme_For_Each_Func)(Scheme_Object *);
-
-static void for_each_managed(Scheme_Type type, Scheme_For_Each_Func cf)
-  XFORM_SKIP_PROC
-/* This function must not allocate. */
-{
-  Scheme_Custodian *m;
-  int i;
-
-  if (SAME_TYPE(type, scheme_thread_type))
-    type = scheme_thread_hop_type;
-
-  /* back to front so children are first: */
-  m = last_custodian;
-
-  while (m) {
-    for (i = m->count; i--; ) {
-      if (m->boxes[i]) {
-	Scheme_Object *o;
-
-	o = xCUSTODIAN_FAM(m->boxes[i]);
-      
-	if (SAME_TYPE(SCHEME_TYPE(o), type)) {
-	  if (SAME_TYPE(type, scheme_thread_hop_type)) {
-	    /* We've added an indirection and made it weak. See mr_hop note above. */
-	    Scheme_Thread *t;
-	    t = (Scheme_Thread *)WEAKIFIED(((Scheme_Thread_Custodian_Hop *)o)->p);
-	    if (!t) {
-	      /* The thread is already collected */
-	      continue;
-	    } else if (SAME_OBJ(t->mref, m->mrefs[i]))
-	      o = (Scheme_Object *)t;
-	    else {
-	      /* The main custodian for this thread is someone else */
-	      continue;
-	    }
-	  }
-
-	  cf(o);
-	}
-      }
-    }
-
-    m = CUSTODIAN_FAM(m->global_prev);
-  }
-}
-
 static void do_close_managed(Scheme_Custodian *m)
 /* The trick is that we may need to kill the thread
    that is running us. If so, delay it to the very
@@ -1481,30 +1454,6 @@ int scheme_custodian_is_shut_down(Scheme_Custodian* c)
 static Scheme_Object *extract_thread(Scheme_Object *o)
 {
   return (Scheme_Object *)WEAKIFIED(((Scheme_Thread_Custodian_Hop *)o)->p);
-}
-
-static void pause_place(Scheme_Object *o)
-{
-#ifdef MZ_USE_PLACES
-  scheme_pause_one_place((Scheme_Place *)o);
-#endif
-}
-
-void scheme_pause_all_places()
-{
-  for_each_managed(scheme_place_type, pause_place);
-}
-
-static void resume_place(Scheme_Object *o)
-{
-#ifdef MZ_USE_PLACES
-  scheme_resume_one_place((Scheme_Place *)o);
-#endif
-}
-
-void scheme_resume_all_places()
-{
-  for_each_managed(scheme_place_type, resume_place);
 }
 
 void scheme_init_custodian_extractors()
@@ -2053,6 +2002,9 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
     process->prev = NULL;
     process->next = NULL;
 
+    gc_prep_thread_chain = process;
+    scheme_current_thread->gc_prep_chain = process;
+
     process->suspend_break = 1; /* until start-up finished */
 
     process->error_buf = NULL;
@@ -2444,7 +2396,6 @@ static void do_swap_thread()
   }
 #endif
 
-
   if (!swap_no_setjmp && SETJMP(scheme_current_thread)) {
     /* We're back! */
     /* See also initial swap in in start_child() */
@@ -2537,6 +2488,10 @@ static void do_swap_thread()
 #endif
 
     scheme_current_thread = new_thread;
+    if (!new_thread->gc_prep_chain) {
+      new_thread->gc_prep_chain = gc_prep_thread_chain;
+      gc_prep_thread_chain = new_thread;
+    }
 
     /* Fixup current pointers in thread sets */
     if (!scheme_current_thread->return_marks_to) {
@@ -3239,6 +3194,9 @@ Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], voi
   np->next = scheme_first_thread;
   scheme_first_thread->prev = np;
   scheme_first_thread = np;
+
+  np->gc_prep_chain = gc_prep_thread_chain;
+  gc_prep_thread_chain = np;
 
   np->t_set_parent = p->t_set_parent;
   schedule_in_set((Scheme_Object *)np, np->t_set_parent);
@@ -8095,6 +8053,8 @@ static void prepare_thread_for_GC(Scheme_Object *t)
 {
   Scheme_Thread *p = (Scheme_Thread *)t;
 
+  if (!p->running) return;
+
   /* zero ununsed part of env stack in each thread */
 
   if (!p->nestee) {
@@ -8267,7 +8227,20 @@ static void get_ready_for_GC()
   }
 #endif
 
-  for_each_managed(scheme_thread_type, prepare_thread_for_GC);
+  /* Prepare each thread that has run: */
+  if (gc_prep_thread_chain) {
+    Scheme_Thread *p, *next;
+    p = gc_prep_thread_chain;
+    while (p != p->gc_prep_chain) {
+      prepare_thread_for_GC((Scheme_Object *)p);
+      next = p->gc_prep_chain;
+      p->gc_prep_chain = NULL;
+      p = next;
+    }
+    prepare_thread_for_GC((Scheme_Object *)p);
+    p->gc_prep_chain = NULL;
+    gc_prep_thread_chain = NULL;
+  }
 
 #ifdef MZ_PRECISE_GC
   scheme_flush_stack_copy_cache();
@@ -8317,6 +8290,9 @@ static void done_with_GC()
   end_this_gc_time = scheme_get_process_milliseconds();
   end_this_gc_real_time = scheme_get_inexact_milliseconds();
   scheme_total_gc_time += (end_this_gc_time - start_this_gc_time);
+
+  gc_prep_thread_chain = scheme_current_thread;
+  scheme_current_thread->gc_prep_chain = scheme_current_thread;
 
   run_gc_callbacks(0);
 
