@@ -67,7 +67,9 @@
    ;; _Where_ this happens (in which function, can't get more precise info).
    (string-append
     ;; maybe full path info: path, line, col, name
-    "( in: (([^ :]+):([^ :]+):([^ :]+): )?([^ ]+))?"
+    ;; path allows `:' as the second character (and first, but not a problem)
+    ;; to support absolute windows paths (e.g. C:\...)
+    "( in: (([^ :]?[^ ]?[^ :]+):([^ :]+):([^ :]+): )?([^ ]+))?"
     ;; maybe module info, useless to us (at least for now)
     "( in module: [^ ]+)?")
    " size: ([^ ]+) threshold: ([^ ]+)"
