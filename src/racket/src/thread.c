@@ -3840,6 +3840,61 @@ static int check_fd_semaphores()
 #endif
 }
 
+typedef struct {
+  int running;
+  double sleep_end;
+  int block_descriptor;
+  Scheme_Object *blocker;
+  Scheme_Ready_Fun block_check;
+  Scheme_Needs_Wakeup_Fun block_needs_wakeup;
+  Scheme_Kill_Action_Func private_on_kill;
+  void *private_kill_data;
+  void **private_kill_next;
+} Thread_Schedule_State_Record;
+
+static void save_thread_schedule_state(Scheme_Thread *p,
+				       Thread_Schedule_State_Record *s,
+				       int save_kills)
+{
+  s->running = p->running;
+  s->sleep_end = p->sleep_end;
+  s->block_descriptor = p->block_descriptor;
+  s->blocker = p->blocker;
+  s->block_check = p->block_check;
+  s->block_needs_wakeup = p->block_needs_wakeup;
+
+  if (save_kills) {
+    s->private_on_kill = p->private_on_kill;
+    s->private_kill_data = p->private_kill_data;
+    s->private_kill_next = p->private_kill_next;
+  }
+
+  p->running = MZTHREAD_RUNNING;
+  p->sleep_end = 0.0;
+  p->block_descriptor = 0;
+  p->blocker = NULL;
+  p->block_check = NULL;
+  p->block_needs_wakeup = NULL;
+}
+
+static void restore_thread_schedule_state(Scheme_Thread *p,
+					  Thread_Schedule_State_Record *s,
+					  int save_kills)
+{
+  p->running = s->running;
+  p->sleep_end = s->sleep_end;
+  p->block_descriptor = s->block_descriptor;
+  p->blocker = s->blocker;
+  p->block_check = s->block_check;
+  p->block_needs_wakeup = s->block_needs_wakeup;
+
+  if (save_kills) {
+    p->private_on_kill = s->private_on_kill;
+    p->private_kill_data = s->private_kill_data;
+    p->private_kill_next = s->private_kill_next;
+  }
+}
+
 static int check_sleep(int need_activity, int sleep_now)
 /* Signals should be suspended */
 {
@@ -3921,7 +3976,11 @@ static int check_sleep(int need_activity, int sleep_now)
         needs_sleep_time_end = -1.0;
 	if (p->block_needs_wakeup) {
 	  Scheme_Needs_Wakeup_Fun f = p->block_needs_wakeup;
-	  f(p->blocker, fds);
+	  Scheme_Object *blocker = p->blocker;
+	  Thread_Schedule_State_Record ssr;
+	  save_thread_schedule_state(scheme_current_thread, &ssr, 0);
+	  f(blocker, fds);
+	  restore_thread_schedule_state(scheme_current_thread, &ssr, 0);
 	}
         p_time = p->sleep_end;
 	merge_time = (p_time > 0.0);
@@ -4186,10 +4245,7 @@ static Scheme_Object *raise_user_break(int argc, Scheme_Object ** volatile argv)
 
 static void raise_break(Scheme_Thread *p)
 {
-  int block_descriptor;
-  Scheme_Object *blocker; /* semaphore or port */
-  Scheme_Ready_Fun block_check;
-  Scheme_Needs_Wakeup_Fun block_needs_wakeup;
+  Thread_Schedule_State_Record ssr;
   Scheme_Object *a[1];
   Scheme_Cont_Frame_Data cframe;
 
@@ -4200,15 +4256,7 @@ static void raise_break(Scheme_Thread *p)
     scheme_post_syncing_nacks((Syncing *)p->blocker);
   }
 
-  block_descriptor = p->block_descriptor;
-  blocker = p->blocker;
-  block_check = p->block_check;
-  block_needs_wakeup = p->block_needs_wakeup;
-  
-  p->block_descriptor = NOT_BLOCKED;
-  p->blocker = NULL;
-  p->block_check = NULL;
-  p->block_needs_wakeup = NULL;
+  save_thread_schedule_state(p, &ssr, 0);
   p->ran_some = 1;
   
   a[0] = scheme_make_prim((Scheme_Prim *)raise_user_break);
@@ -4223,10 +4271,7 @@ static void raise_break(Scheme_Thread *p)
   scheme_pop_continuation_frame(&cframe);
 
   /* Continue from break... */
-  p->block_descriptor = block_descriptor;
-  p->blocker = blocker;
-  p->block_check = block_check;
-  p->block_needs_wakeup = block_needs_wakeup;
+  restore_thread_schedule_state(p, &ssr, 0);
 }
 
 static void escape_to_kill(Scheme_Thread *p)
@@ -4339,37 +4384,12 @@ void scheme_break_thread(Scheme_Thread *p)
 static void call_on_atomic_timeout(int must)
 {
   Scheme_Thread *p = scheme_current_thread;
-  int running;
-  double sleep_end;
-  int block_descriptor;
-  Scheme_Object *blocker;
-  Scheme_Ready_Fun block_check;
-  Scheme_Needs_Wakeup_Fun block_needs_wakeup;
-  Scheme_Kill_Action_Func private_on_kill;
-  void *private_kill_data;
-  void **private_kill_next;
+  Thread_Schedule_State_Record ssr;
   Scheme_On_Atomic_Timeout_Proc oat;
 
   /* Save any state that has to do with the thread blocking or 
      sleeping, in case on_atomic_timeout() runs Racket code. */
-
-  running = p->running;
-  sleep_end = p->sleep_end;
-  block_descriptor = p->block_descriptor;
-  blocker = p->blocker;
-  block_check = p->block_check;
-  block_needs_wakeup = p->block_needs_wakeup;
-
-  private_on_kill = p->private_on_kill;
-  private_kill_data = p->private_kill_data;
-  private_kill_next = p->private_kill_next;
-
-  p->running = MZTHREAD_RUNNING;
-  p->sleep_end = 0.0;
-  p->block_descriptor = 0;
-  p->blocker = NULL;
-  p->block_check = NULL;
-  p->block_needs_wakeup = NULL;
+  save_thread_schedule_state(p, &ssr, 1);
 
   /* When on_atomic_timeout is thread-local, need a
      local variable so that the function call isn't
@@ -4377,16 +4397,7 @@ static void call_on_atomic_timeout(int must)
   oat = on_atomic_timeout;
   oat(must);
 
-  p->running = running;
-  p->sleep_end = sleep_end;
-  p->block_descriptor = block_descriptor;
-  p->blocker = blocker;
-  p->block_check = block_check;
-  p->block_needs_wakeup = block_needs_wakeup;
-
-  p->private_on_kill = private_on_kill;
-  p->private_kill_data = private_kill_data;
-  p->private_kill_next = private_kill_next;
+  restore_thread_schedule_state(p, &ssr, 1);
 }
 
 static void find_next_thread(Scheme_Thread **return_arg) {
@@ -4460,9 +4471,19 @@ static void find_next_thread(Scheme_Thread **return_arg) {
       if (next->block_descriptor == GENERIC_BLOCKED) {
         if (next->block_check) {
           Scheme_Ready_Fun_FPC f = (Scheme_Ready_Fun_FPC)next->block_check;
+	  Scheme_Object *blocker = next->blocker;
           Scheme_Schedule_Info sinfo;
+	  Thread_Schedule_State_Record ssr;
+	  int b;
+
+	  save_thread_schedule_state(p, &ssr, 0);
+
           init_schedule_info(&sinfo, next, 1, next->sleep_end);
-          if (f(next->blocker, &sinfo))
+	  b = f(blocker, &sinfo);
+	  
+	  restore_thread_schedule_state(p, &ssr, 0);
+
+          if (b)
             break;
           next->sleep_end = sinfo.sleep_end;
           msecs = 0.0; /* that could have taken a while */
@@ -4614,9 +4635,19 @@ void scheme_thread_block(float sleep_time)
     if (!do_atomic && (p->block_descriptor == GENERIC_BLOCKED)) {
       if (p->block_check) {
         Scheme_Ready_Fun_FPC f = (Scheme_Ready_Fun_FPC)p->block_check;
+	Scheme_Object *blocker = p->blocker;
         Scheme_Schedule_Info sinfo;
+	Thread_Schedule_State_Record ssr;
+	int b;
+
+	save_thread_schedule_state(p, &ssr, 0);
+
         init_schedule_info(&sinfo, p, 1, sleep_end);
-        if (f(p->blocker, &sinfo)) {
+	b = f(blocker, &sinfo);
+
+	restore_thread_schedule_state(p, &ssr, 0);
+
+        if (b) {
           sleep_end = 0;
           skip_sleep = 1;
         } else {
@@ -4752,9 +4783,19 @@ void scheme_thread_block(float sleep_time)
       if (p->block_descriptor == GENERIC_BLOCKED) {
 	if (p->block_check) {
 	  Scheme_Ready_Fun_FPC f = (Scheme_Ready_Fun_FPC)p->block_check;
+	  Scheme_Object *blocker = p->blocker;
 	  Scheme_Schedule_Info sinfo;
+	  Thread_Schedule_State_Record ssr;
+	  int b;
+	  
+	  save_thread_schedule_state(p, &ssr, 0);
+
 	  init_schedule_info(&sinfo, p, 1, sleep_end);
-	  if (f(p->blocker, &sinfo)) {
+	  b = f(blocker, &sinfo);
+
+	  restore_thread_schedule_state(p, &ssr, 0);
+
+	  if (b) {
 	    sleep_end = 0;
 	  } else {
 	    sleep_end = sinfo.sleep_end;
