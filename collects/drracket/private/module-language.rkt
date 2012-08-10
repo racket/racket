@@ -24,7 +24,8 @@
          "drsig.rkt"
          "rep.rkt"
          "eval-helpers.rkt"
-         "local-member-names.rkt")
+         "local-member-names.rkt"
+         "rectangle-intersect.rkt")
 
 (define-runtime-path expanding-place.rkt "expanding-place.rkt")
 
