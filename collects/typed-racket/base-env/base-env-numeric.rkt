@@ -1188,9 +1188,8 @@
     (commutative-case -InexactReal (Un -PosRat -NegRat -InexactReal) -InexactReal)
     (varop-1+ -InexactReal)
     ;; reals
-    (varop-1+ -PosReal)
-    (-> -NegReal -NegReal)
-    (-> -NonPosReal -NonPosReal)
+    (varop-1+ -PosReal -NonNegReal)
+    (-> -NegReal -NonPosReal)
     (-> -NegReal -NegReal -NonNegReal)
     (-> -NegReal -PosReal -NonPosReal)
     (-> -PosReal -NegReal -NonPosReal)
