@@ -3325,6 +3325,11 @@ Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], voi
 
   scheme_current_thread = p;
 
+  if (!p->gc_prep_chain) {
+    p->gc_prep_chain = gc_prep_thread_chain;
+    gc_prep_thread_chain = p;
+  }
+
   if (p != scheme_main_thread)
     scheme_weak_resume_thread(p);
 
