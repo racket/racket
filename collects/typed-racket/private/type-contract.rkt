@@ -88,20 +88,21 @@
                                 (and rst (t->c/neg rst)))
                         (exit (fail)))]
                    [_ (exit (fail))]))
-               (with-syntax
+               (with-syntax*
                    ([(dom* ...) (if method? (cons #'any/c dom*) dom*)]
                     [(opt-dom* ...) opt-dom*]
                     [rng* (match rngs*
                             [(list r) r]
                             [_ #`(values #,@rngs*)])]
-                    [rst* rst])
+                    [rst* rst]
+                    [(rst-spec ...) (if rst #'(#:rest (listof rst*)) #'())])
                  ;; Garr, I hate case->!
                  (if (and (pair? (syntax-e #'(opt-dom* ...))) case->)
                      (exit (fail))
                      (if (or rst (pair? (syntax-e #'(opt-dom* ...))))
                          (if case->
-                             #'(dom* ... #:rest (listof rst*) . -> . rng*)
-                             #'((dom* ...) (opt-dom* ...) #:rest (listof rst*) . ->* . rng*))
+                             #'(dom* ... rst-spec ... . -> . rng*)
+                             #'((dom* ...) (opt-dom* ...) rst-spec ... . ->* . rng*))
                          #'(dom* ... . -> . rng*)))))
              (unless (no-duplicates (for/list ([t arrs])
                                       (match t
