@@ -4,7 +4,6 @@
          (types subtype numeric-tower union utils abbrev)
          (rep type-rep)
          (env init-envs type-env-structs)
-         (r:infer infer infer-dummy)
          rackunit
          (for-syntax scheme/base))
 
@@ -22,7 +21,6 @@
                               (begin (test-suite "Tests for subtyping"
                                                  new-cl ...))))]))
 
-(infer-param infer)
 
 
 (define t1 (-mu T (-lst (Un (-v a) T))))

@@ -1,10 +1,9 @@
 #lang racket/base
-(require "../utils/utils.rkt"
+(require (except-in "../utils/utils.rkt" infer)
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
          (types utils resolve base-abbrev numeric-tower substitute)
          (env type-name-env)
-         (only-in (infer infer-dummy) unify)
          racket/match unstable/match
          racket/function
          unstable/lazy-require
@@ -12,7 +11,9 @@
          (for-syntax racket/base syntax/parse))
 
 (lazy-require
-  ("union.rkt" (Un)))
+  ("union.rkt" (Un))
+  ("../infer/infer.rkt" (infer)))
+
 
 ;; exn representing failure of subtyping
 ;; s,t both types
@@ -344,7 +345,7 @@
               ;; use unification to see if we can use the polytype here
               [((Poly: vs b) s)
                (=> unmatch)
-               (if (unify vs (list b) (list s)) A0 (unmatch))]
+               (if (infer vs null (list b) (list s) (make-Univ)) A0 (unmatch))]
               [(s (Poly: vs b))
                (=> unmatch)
                (if (null? (fv b)) (subtype* A0 s b) (unmatch))]
