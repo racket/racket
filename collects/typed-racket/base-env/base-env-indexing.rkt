@@ -1,11 +1,11 @@
 #lang racket/base
 
 (require
- (rename-in "../utils/utils.rkt" [infer r:infer])
- (types numeric-tower) (env init-envs) (r:infer infer-dummy infer)
+ "../utils/utils.rkt"
+ (types numeric-tower) (env init-envs)
  "base-env-indexing-abs.rkt")
 
-(define e (parameterize ([infer-param infer]) (indexing -Integer)))
+(define e (indexing -Integer))
 (define (initialize-indexing) (initialize-type-env e))
 (provide initialize-indexing)
 

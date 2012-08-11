@@ -15,13 +15,11 @@
  "module-tests.rkt" ;; pass
  "contract-tests.rkt"
 
- (r:infer infer infer-dummy)
  racket/runtime-path
  rackunit rackunit/text-ui)
 
 (provide unit-tests)
 
-(infer-param infer)
 
 (define-runtime-path special "special-env-typecheck-tests.rkt")
 

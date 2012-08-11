@@ -1,17 +1,14 @@
 #lang racket/base
 
-(require (rename-in "utils/utils.rkt" [infer r:infer])
+(require "utils/utils.rkt"
          (except-in syntax/parse id)
          racket/pretty racket/promise
          (private type-contract)
          (types utils)
          (typecheck typechecker provide-handling tc-toplevel)
          (env tvar-env type-name-env type-alias-env env-req)
-         (r:infer infer)
          (utils tc-utils disarm mutated-vars debug)
          (rep type-rep)
-         (except-in (utils utils) infer)
-         (only-in (r:infer infer-dummy) infer-param)
          (for-syntax racket/base)
          (for-template racket/base))
 
@@ -41,8 +38,6 @@
           (λ (e) (tc-error "Internal Typed Racket Error : ~a" e))])
       (parameterize (;; enable fancy printing?
                      [custom-printer #t]
-                     ;; a cheat to avoid units
-                     [infer-param infer]
                      ;; do we report multiple errors
                      [delay-errors? #t]
                      ;; do we print the fully-expanded syntax?

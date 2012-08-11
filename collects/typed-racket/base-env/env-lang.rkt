@@ -1,12 +1,10 @@
 #lang racket/base
 
-(require (rename-in "../utils/utils.rkt" [infer r:infer]))
+(require "../utils/utils.rkt")
 
 (require (for-syntax racket/base syntax/parse)
          (utils tc-utils)
          (env init-envs)
-         (r:infer infer)
-         (only-in (r:infer infer-dummy) infer-param)
          (types abbrev numeric-tower union filter-ops)
          (rep object-rep filter-rep type-rep))
 
@@ -21,8 +19,7 @@
         (begin
           extra
           (define e
-            (parameterize ([infer-param infer])
-              (make-env [id (λ () ty)] ...)))
+            (make-env [id (λ () ty)] ...))
           (define (init)
            (initialize-type-env e))
           (provide init)))]
