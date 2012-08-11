@@ -7,11 +7,10 @@
          racket/sandbox racket/cmdline
          "random-real.rkt")
 
-(require (except-in typed-racket/utils/utils infer)
+(require typed-racket/utils/utils
          (typecheck typechecker)
          (utils tc-utils)
-         (types subtype utils)
-         typed-racket/infer/infer-dummy typed-racket/infer/infer)
+         (types subtype utils))
 
 (require (prefix-in b: (base-env base-env))
          (prefix-in n: (base-env base-env-numeric)))
@@ -106,7 +105,6 @@
   (parameterize ([delay-errors? #f]
                  [current-namespace (namespace-anchor->namespace anch)]
                  [custom-printer #t]
-                 [infer-param infer]
                  [orig-module-stx (quote-syntax e)])
     (typecheck (datum->syntax #'here e))))
 

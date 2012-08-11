@@ -1,7 +1,7 @@
 #lang scheme/base
 (require "test-utils.rkt" (for-syntax scheme/base)
          (rep type-rep)
-         (r:infer infer infer-dummy)
+         (r:infer infer)
          (types abbrev numeric-tower subtype union remove-intersect)
          rackunit)
 
@@ -21,7 +21,6 @@
      #'(test-suite "Tests for intersect"
                    (test-check (format "Restrict test: ~a ~a" t1 t2) type-compare? (restrict t1 t2) res) ...)]))
 
-(infer-param infer)
 
 (define (restrict-tests)
   (restr-tests
