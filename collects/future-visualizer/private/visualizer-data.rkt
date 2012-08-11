@@ -34,7 +34,9 @@
          runtime-synchronization-event? 
          gc-event?
          final-event? 
-         relative-time)
+         relative-time 
+         event-or-gc-time
+         proc-id-or-gc<?)
 
 (define-struct future-event (future-id process-id what time prim-name user-data) 
   #:prefab)
@@ -128,8 +130,9 @@
 (define (op-name evt) 
   (cond 
     [(event? evt) (event-prim-name evt)] 
-    [(indexed-future-event? evt) (future-event-prim-name (indexed-future-event-fevent evt))] 
-    [(future-event? evt) (future-event-prim-name evt)]))
+    [(indexed-future-event? evt) (op-name (indexed-future-event-fevent evt))] 
+    [(future-event? evt) (future-event-prim-name evt)]
+    [(gc-info? evt) 'gc]))
 
 ;;event-what : (or event indexed-future-event future-event) -> symbol
 (define (what evt) 
@@ -143,8 +146,9 @@
 (define (process-id evt) 
   (cond 
     [(event? evt) (event-proc-id evt)] 
-    [(indexed-future-event? evt) (future-event-process-id (indexed-future-event-fevent evt))] 
-    [(future-event? evt) (future-event-process-id evt)]))
+    [(indexed-future-event? evt) (process-id (indexed-future-event-fevent evt))] 
+    [(future-event? evt) (future-event-process-id evt)]
+    [(gc-info? evt) RT-THREAD-ID]))
 
 ;;touch-event? : (or event indexed-future-event future-event) -> symbol
 (define (touch-event? evt) 
@@ -249,8 +253,8 @@
 ;;proc-id-or-gc<? : (or number symbol) (or number symbol) -> bool
 (define (proc-id-or-gc<? a b) 
   (cond 
-    [(equal? a 'gc) #t] 
-    [(equal? b 'gc) #t] 
+    [(equal? b 'gc) #f]
+    [(equal? a 'gc) #t]  
     [else (< a b)]))
 
 ;Produces a vector of vectors, where each inner vector contains 

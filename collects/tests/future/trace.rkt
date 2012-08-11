@@ -25,7 +25,7 @@ Invariants:
     [(_ log) 
      (with-syntax ([line (syntax-line stx)]) 
        #'(let ([time-sorted (sort log 
-                                  #:key (λ (e) (future-event-time (indexed-future-event-fevent e))) 
+                                  #:key (λ (e) (event-or-gc-time (indexed-future-event-fevent e))) 
                                   <)])
            (for ([e (in-list time-sorted)]
                  [i (in-naturals)]) 
@@ -36,7 +36,7 @@ Invariants:
                                 occurs at actual index ~a\n" 
                             line 
                             (indexed-future-event-index e) 
-                            (future-event-time (indexed-future-event-fevent e)) 
+                            (event-or-gc-time (indexed-future-event-fevent e)) 
                             i)))))]))
 
 (cond 
@@ -83,7 +83,13 @@ Invariants:
    (check-true (list? (memf allocation-event? log4)) "No allocation events found in log4")
    (define ae (findf allocation-event? log4)) 
    (check-true (allocation-event? ae)) 
-   (check-true (runtime-synchronization-event? ae))]
+   (check-true (runtime-synchronization-event? ae))
+   
+   (check-true (proc-id-or-gc<? 'gc 0)) 
+   (check-false (proc-id-or-gc<? 0 'gc)) 
+   (check-false (proc-id-or-gc<? 'gc 'gc)) 
+   (check-true (proc-id-or-gc<? 0 1)) 
+   (check-false (proc-id-or-gc<? 1 0))]   
   [else 
    (define l (trace-futures (let ([f (future (λ () (printf "hello\n")))]) 
                               (sleep 0.1) 
