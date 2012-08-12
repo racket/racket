@@ -1586,3 +1586,12 @@ from @racket[exported-index-desc] names the class or interface that
 contains the method. The @racket[method-name] field names the method.
 The @racket[class-tag] field provides a pointer to the start of the
 documentation for the method's class or interface.}
+
+@defstruct[(constructor-index-desc exported-index-desc) ([class-tag tag?])]{
+
+Indicates that the index entry corresponds to a constructor
+via @racket[defconstructor] and company. The @racket[_name] field
+from @racket[exported-index-desc] names the class or interface that
+contains the method. 
+The @racket[class-tag] field provides a pointer to the start of the
+documentation for the method's class or interface.}

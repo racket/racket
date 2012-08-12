@@ -11,6 +11,7 @@
 ; XXX unknown contracts
 (provide *method **method
          method-tag
+         constructor-tag
          name-this-object)
 
 (define-syntax-rule (method a b)
@@ -23,24 +24,25 @@
   (**method sym id))
 
 (define (**method sym id/tag)
-  (let ([content (list (symbol->string sym))])
-    ((if (identifier? id/tag)
-       (lambda (c mk)
-         (make-delayed-element
-          (lambda (ren p ri)
-            (let ([tag (find-scheme-tag p ri id/tag #f)])
-              (if tag (list (mk tag)) content)))
-          (lambda () (car content))
-          (lambda () (car content))))
-       (lambda (c mk) (mk id/tag)))
-     content
-     (lambda (tag)
-       (make-element symbol-color
-                     (list (make-link-element value-link-color content
-                                              (method-tag tag sym))))))))
+  (define content (list (symbol->string sym)))
+  (define (mk tag)
+    (make-element symbol-color
+                  (list (make-link-element value-link-color content
+                                           (method-tag tag sym)))))
+  (if (identifier? id/tag)
+      (make-delayed-element
+       (λ (ren p ri)
+         (let ([tag (find-scheme-tag p ri id/tag #f)])
+           (if tag (list (mk tag)) content)))
+       (λ () (car content))
+       (λ () (car content)))
+      (mk id/tag)))
 
 (define (method-tag vtag sym)
   (list 'meth (list (cadr vtag) sym)))
+
+(define (constructor-tag vtag)
+  (list 'construtor (cadr vtag)))
 
 (define (name-this-object type-sym)
   (to-element

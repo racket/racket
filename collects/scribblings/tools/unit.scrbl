@@ -230,10 +230,6 @@ This frame inserts the @onscreen{Racket} and @onscreen{Language} menus into the 
 Passes all arguments to @racket[super-init].
 }
 
-@defconstructor[()]{
-Passes all arguments to @racket[super-init].
-}
-
 @defmethod[#:mode override 
            (add-show-menu-items [show-menu (is-a?/c menu%)])
            void?]{
