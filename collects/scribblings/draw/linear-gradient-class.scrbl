@@ -8,10 +8,8 @@
 @defclass/title[linear-gradient% object% ()]{
 
 A @deftech{linear gradient} is used with a @racket[brush%] to fill
- areas, such as the interior of a rectangle or ellipse, with smooth
- color transitions.
-
-Colors transitions are based on a line, where colors are assigned to
+ areas with smooth color transitions.
+ Color transitions are based on a line, where colors are assigned to
  stop points along the line, and colors for in-between points are
  interpolated from the stop-point colors. The color of a point on the
  gradient's line is propagated to all points in the drawing context
@@ -31,6 +29,13 @@ assigns colors to stop points along the line, where @racket[0.0]
 corresponds to (@racket[x0], @racket[y0]), @racket[1.0] corresponds to
 (@racket[x1], @racket[y2]), and numbers in between correspond to
 points in between.
+
+Elements in @racket[stops] are implicitly sorted by point (i.e., by
+the number between @racket[0.0] and @racket[1.0]). Order is preserved
+for multiple elements for the same point, in which case the first
+element for a given point is treated infinitesimally before the point,
+and additional elements between the first and last for a stop point
+are effectively ignored.
 
 @examples[
   #:eval class-eval

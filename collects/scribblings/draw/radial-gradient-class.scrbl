@@ -7,14 +7,13 @@
 @defclass/title[radial-gradient% object% ()]{
 
 A @deftech{radial gradient} is used with a @racket[brush%] to fill
- areas, such as the interior of a rectangle or ellipse, with smooth
- color transitions.
-
-Colors transitions are based on two circles and the sequence of circles that
- ``morph'' from the starting circle to the ending circle. Colors are
- assigned to stop circles in the sequence, and the colors of
- the start and end circles radiate inward and outward to points that
- are not on any intermediate circles.
+ areas with smooth color transitions.
+ Color transitions are based on two circles and the sequence of
+ circles that ``morph'' from the starting circle to the ending
+ circle. Normally, one of the two circles defining a gradient is
+ nested within the other; in that case, points within the inner circle
+ get the same color as the inner circle's edge, while points outside
+ the outer circle get the same color as the outer circle's edge.
 
 @defconstructor[([x0 real?]
                  [y0 real?]
@@ -31,6 +30,9 @@ ending circle as the one with radius @racket[r1] centered at
 circles, where @racket[0.0] corresponds to the starting circle,
 @racket[1.0] corresponds to the ending circle, and numbers in between
 correspond to circles in between.
+
+The order of elements within @racket[stops] and duplicate points are
+treated in the same way for as @racket[linear-gradient%].
 
 @examples[
   #:eval class-eval
