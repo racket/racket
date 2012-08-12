@@ -529,6 +529,8 @@
            (cset-meet (cg e e*) (cg e* e))]
           [((ThreadCell: e) (ThreadCell: e*))
            (cset-meet (cg e e*) (cg e* e))]
+          [((Promise: e) (Promise: e*))
+           (cg e e*)]
           [((Ephemeron: e) (Ephemeron: e*))
            (cg e e*)]
           [((CustodianBox: e) (CustodianBox: e*))

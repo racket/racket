@@ -413,6 +413,9 @@
               [((Struct: nm _ _ _ _ _ _ _) (StructTop: (Struct: nm* _ _ _ _ _ _ _))) (=> nevermind)
                (unless (free-identifier=? nm nm*) (nevermind))
                A0]
+              ;; Promises are covariant
+              [((Promise: s) (Promise: t))
+               (subtype* A0 s t)]
               ;ephemerons are covariant
               [((Ephemeron: s) (Ephemeron: t))
                (subtype* A0 s t)]
@@ -432,10 +435,6 @@
               [((Struct: nm (? Type? parent) flds proc _ _ _ _) other)
                ;(dprintf "subtype - hierarchy : ~a ~a ~a\n" nm parent other)
                (subtype* A0 parent other)]
-              ;; Promises are covariant
-              [((Struct: (? (lambda (n) (free-identifier=? n promise-id))) _ (list t) _ _ _ _ _)
-                (Struct: (? (lambda (n) (free-identifier=? n promise-id))) _ (list t*) _ _ _ _ _))
-               (subtype* A0 t t*)]
               ;; subtyping on values is pointwise
               [((Values: vals1) (Values: vals2)) (subtypes* A0 vals1 vals2)]
               ;; trivial case for Result
