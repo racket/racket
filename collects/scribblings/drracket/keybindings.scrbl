@@ -159,6 +159,13 @@ on how to bind keys to menu items on a selective basis.
 @keybinding["F5"]{Run}
 ]
 
+@section{Documentation}
+@itemize[
+  @keybinding["f1"]{Search in the documentation for the words near the insertion point}
+  @keybinding["f2"]{Reveal the blue box for the identifier at the insertion point (requires
+                    online check syntax to be enabled, or normal check syntax to have been
+                    run).}
+]
 
 @section{Interactions}
 

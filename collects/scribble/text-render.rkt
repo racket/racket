@@ -1,5 +1,6 @@
 #lang racket/base
-(require "core.rkt" racket/class racket/port racket/list racket/string
+(require "core.rkt" "base-render.rkt"
+         racket/class racket/port racket/list racket/string
          scribble/text/wrap)
 (provide render-mixin)
 
@@ -15,8 +16,8 @@
   (newline)
   (indent))
 
-(define (render-mixin %)
-  (class %
+(define render-mixin
+  (mixin (render<%>) ()
 
     (define/override (current-render-mode)
       '(text))

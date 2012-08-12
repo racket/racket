@@ -228,12 +228,16 @@ please adhere to these guidelines:
   (cs-mode-menu-show-client-obligations "Client Contract Obligations")
   (cs-mode-menu-show-syntax "Syntactic Categories")
   
+  ;; the documentation blue boxes in the upper-right corner of the drracket window
+  (sc-read-more... "read more ...")
+  (sc-f2-to-un/lock "f2 to (un)lock")
+  
  ;; the online check syntax status messages (mouse over the bottom right of drracket's window to see the messages during online expansion's various phases)
  (online-expansion-running "Online expansion running")
  (online-expansion-only-raw-text-files-supported "Only pure text files supported")
  (online-expansion-abnormal-termination "Online expansion terminated abnormally")
  (online-expansion-finished-successfully "Online expansion finished successfully")
-
+  
  (jump-to-error "Jump to Error")
  (online-expansion-is-disabled "Online expansion is disabled")
  ;; these next two show up in the bar along the bottom of the drracket window

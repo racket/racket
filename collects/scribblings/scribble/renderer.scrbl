@@ -114,51 +114,7 @@ the methods of the renderer. Documents built with higher layers, such
 as @racketmodname[scribble/manual], generally do not call the render
 object's methods directly.
 
-@defclass[render% object% ()]{
-
-Represents a renderer.
-
-@defconstructor[([dest-dir path-string?]
-                 [refer-to-existing-files any/c #f]
-                 [root-path (or/c path-string? #f) #f]
-                 [prefix-file (or/c path-string? #f) #f]
-                 [style-file (or/c path-string? #f) #f]
-                 [style-extra-files (listof path-string?) null]
-                 [extra-files (listof path-string?) null]
-                 [helper-file-prefix (or/c string? #f) #f])]{
-
-Creates a renderer whose output will go to @racket[dest-dir]. For
-example, @racket[dest-dir] could name the directory containing the
-output Latex file, the HTML file for a single-file output, or the
-output sub-directory for multi-file HTML output.
-
-If @racket[refer-to-existing-files] is true, then when a document
-refers to external files, such as an image or a style file, then the
-file is referenced from its source location instead of copied to the
-document destination.
-
-If @racket[root-path] is not @racket[#f], it is normally the same as
-@racket[dest-dir] or a parent of @racket[dest-dir]. It causes
-cross-reference information to record destination files relative to
-@racket[root-path]; when cross-reference information is serialized, it
-can be deserialized via @method[render% deserialize-info] with a
-different root path (indicating that the destination files have
-moved).
-
-The @racket[prefix-file], @racket[style-file], and
-@racket[style-extra-files] arguments set files that control output
-styles in a formal-specific way; see @secref["config-style"] for more
-information.
-
-The @racket[extra-files] argument names files to be copied to the
-output location, such as image files or extra configuration files.
-
-The @racket[helper-file-prefix] argument specifies a string that is
-added as a prefix to the name of each support file that is generated
-or copied to the destination---not including files specified in
-@racket[extra-files], but including @racket[prefix-file],
-@racket[style-file], and @racket[style-extra-files].}
-
+@definterface[render<%> ()]{
 
 @defmethod[(traverse [srcs (listof part?)]
                      [dests (listof path-string?)])
@@ -166,7 +122,7 @@ or copied to the destination---not including files specified in
 
 Performs the @techlink{traverse pass}, producing a hash table that
 contains the replacements for and @racket[traverse-block]s and
-@racket[traverse-elements]s. See @method[render% render] for
+@racket[traverse-elements]s. See @method[render<%> render] for
 information on the @racket[dests] argument.}
 
 @defmethod[(collect [srcs (listof part?)]
@@ -174,18 +130,18 @@ information on the @racket[dests] argument.}
                     [fp (and/c hash? immutable?)])
            collect-info?]{
 
-Performs the @techlink{collect pass}. See @method[render% render] for
+Performs the @techlink{collect pass}. See @method[render<%> render] for
 information on the @racket[dests] argument. The @racket[fp] argument
-is a result from the @method[render% traverse] method.}
+is a result from the @method[render<%> traverse] method.}
 
 @defmethod[(resolve [srcs (listof part?)]
                     [dests (listof path-string?)]
                     [ci collect-info?])
            resolve-info?]{
 
-Performs the @techlink{resolve pass}. See @method[render% render] for
+Performs the @techlink{resolve pass}. See @method[render<%> render] for
 information on the @racket[dests] argument.  The @racket[ci] argument
-is a result from the @method[render% collect] method.}
+is a result from the @method[render<%> collect] method.}
 
 @defmethod[(render [srcs (listof part?)]
                    [dests (listof path-string?)]
@@ -193,7 +149,7 @@ is a result from the @method[render% collect] method.}
            void?]{
 
 Produces the final output.  The @racket[ri] argument is a result from
-the @method[render% render] method.
+the @method[render<%> render] method.
 
 The @racket[dests] provide names of files for Latex or single-file
 HTML output, or names of sub-directories for multi-file HTML output.
@@ -248,15 +204,54 @@ then no tag in the set is included in the list of undefined tags.}
 
 }
 
+@defclass[render% object% (render<%>)]{
+
+Represents a renderer.
+
+@defconstructor[([dest-dir path-string?]
+                 [refer-to-existing-files any/c #f]
+                 [root-path (or/c path-string? #f) #f]
+                 [prefix-file (or/c path-string? #f) #f]
+                 [style-file (or/c path-string? #f) #f]
+                 [style-extra-files (listof path-string?) null]
+                 [extra-files (listof path-string?) null])]{
+
+Creates a renderer whose output will go to @racket[dest-dir]. For
+example, @racket[dest-dir] could name the directory containing the
+output Latex file, the HTML file for a single-file output, or the
+output sub-directory for multi-file HTML output.
+
+If @racket[refer-to-existing-files] is true, then when a document
+refers to external files, such as an image or a style file, then the
+file is referenced from its source location instead of copied to the
+document destination.
+
+If @racket[root-path] is not @racket[#f], it is normally the same as
+@racket[dest-dir] or a parent of @racket[dest-dir]. It causes
+cross-reference information to record destination files relative to
+@racket[root-path]; when cross-reference information is serialized, it
+can be deserialized via @method[render<%> deserialize-info] with a
+different root path (indicating that the destination files have
+moved).
+
+The @racket[prefix-file], @racket[style-file], and
+@racket[style-extra-files] arguments set files that control output
+styles in a formal-specific way; see @secref["config-style"] for more
+information.
+
+The @racket[extra-files] argument names files to be copied to the
+output location, such as image files or extra configuration files.}
+}
+
 @; ----------------------------------------
 
 @section{Text Renderer}
 
 @defmodule/local[scribble/text-render]{
 
-@defmixin[render-mixin (render%) ()]{
+@defmixin[render-mixin (render<%>) ()]{
 
-Specializes a @racket[render%] class for generating plain text.}}
+Specializes a @racket[render<%>] class for generating plain text.}}
 
 @; ----------------------------------------
 
@@ -264,9 +259,9 @@ Specializes a @racket[render%] class for generating plain text.}}
 
 @defmodule/local[scribble/html-render]{
 
-@defmixin[render-mixin (render%) ()]{
+@defmixin[render-mixin (render<%>) ()]{
 
-Specializes a @racket[render%] class for generating HTML output.
+Specializes a @racket[render<%>] class for generating HTML output.
 
 @defmethod[(set-external-tag-path [url string?]) void?]{
 
@@ -284,7 +279,7 @@ directory.}
 
 }
 
-@defmixin[render-multi-mixin (render%) ()]{
+@defmixin[render-multi-mixin (render<%>) ()]{
 
 Further specializes a rendering class produced by
 @racket[render-mixin] for generating multiple HTML
@@ -298,9 +293,9 @@ files.}
 
 @defmodule/local[scribble/latex-render]{
 
-@defmixin[render-mixin (render%) ()]{
+@defmixin[render-mixin (render<%>) ()]{
 
-Specializes a @racket[render%] class for generating Latex input.}}
+Specializes a @racket[render<%>] class for generating Latex input.}}
 
 @; ----------------------------------------
 
@@ -308,7 +303,63 @@ Specializes a @racket[render%] class for generating Latex input.}}
 
 @defmodule/local[scribble/pdf-render]{
 
-@defmixin[render-mixin (render%) ()]{
+@defmixin[render-mixin (render<%>) ()]{
 
-Specializes a @racket[render%] class for generating PDF output via
+Specializes a @racket[render<%>] class for generating PDF output via
 Latex, building on @|latex:render-mixin| from @racketmodname[scribble/latex-render].}}
+
+@; ----------------------------------------
+
+@section{Contract (Blue boxes) Renderer}
+
+@defmodule/local[scribble/contract-render]{
+
+@defmixin[override-render-mixin-multi (render<%>) ()]{
+
+Overrides the @method[render<%> render] method of 
+given renderer to record the content of the 
+blue boxes (generated by @racket[defproc], @racket[defform], etc)
+that appear in the document. 
+   
+@defmethod[#:mode override
+                  (render [srcs (listof part?)]
+                          [dests (listof path?)]
+                          [ri render-info?])
+                  void?]{
+In addition to doing whatever the @racket[super] method
+does, also save the content of the blue boxes (rendered
+via a @racketmodname[scribble/text-render] renderer).
+   
+It saves this information in three pieces in a file
+inside the @racket[dests] directories called
+@filepath{contract-blueboxes.rktd}. The first piece is
+a single line containing a (decimal, ASCII) number. That number
+is the number of bytes that the second piece of information
+occupies in the file. The second piece of information
+is a @racket[hash] that maps @racket[tag?] values to
+a list of offsets and line numbers that follow the hash table.
+For example, if the @racket[hash] maps
+@racket['(def ((lib "x/main.rkt") abcdef))] to
+@racket['((10 . 3))], then that means that the documentation
+for the @racket[abcdef] export from the @racket[x] collection
+starts 10 bytes after the end of the hash table and continues for
+@racket[3] lines. Multiple elements in the list mean that that
+@racket[tag?] has multiple blue boxes and each shows where one
+of the boxes appears in the file.
+}}
+ 
+@defmixin[override-render-mixin-single (render<%>) ()]{
+
+Just like @racket[override-render-mixin-multi], except
+it saves the resulting files in a different place.
+
+@defmethod[#:mode override
+                  (render [srcs (listof part?)]
+                          [dests (listof path?)]
+                          [ri render-info?])
+                  void?]{
+  Just like @method[override-render-mixin-multi render], except
+  that it saves the file @filepath{contract-blueboxes.rktd} in
+  the same directory where each @racket[dests] element resides.
+}}
+}
