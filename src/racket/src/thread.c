@@ -3228,9 +3228,6 @@ Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], voi
   scheme_first_thread->prev = np;
   scheme_first_thread = np;
 
-  np->gc_prep_chain = gc_prep_thread_chain;
-  gc_prep_thread_chain = np;
-
   np->t_set_parent = p->t_set_parent;
   schedule_in_set((Scheme_Object *)np, np->t_set_parent);
 
@@ -3282,6 +3279,9 @@ Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], voi
     scheme_weak_reference((void **)(void *)&hop->p);
 #endif
   }
+
+  np->gc_prep_chain = gc_prep_thread_chain;
+  gc_prep_thread_chain = np;
 
 #ifdef RUNSTACK_IS_GLOBAL
   MZ_CONT_MARK_STACK = np->cont_mark_stack;
