@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "utils.rkt")
+@(require "utils.rkt"
+          (for-label ffi/unsafe/custodian))
 
 @title[#:tag "foreign:pointer-funcs"]{Pointer Functions}
 
@@ -313,8 +314,9 @@ Registers a finalizer procedure @racket[finalizer-proc] with the given
 @racket[obj], which can be any Racket (GC-able) object.  The finalizer
 is registered with a will executor; see
 @racket[make-will-executor]. The finalizer is invoked when
-@racket[obj] is about to be collected.  (This is done by a thread that
-is in charge of triggering these will executors.)
+@racket[obj] is about to be collected.  (The finalizer is invoked in a
+thread that is in charge of triggering these will executors.)
+See also @racket[register-custodian-shutdown].
 
 Finalizers are mostly intended to be used with cpointer objects (for
 freeing unused memory that is not under GC control), but it can be

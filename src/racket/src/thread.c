@@ -872,7 +872,7 @@ static void ensure_custodian_space(Scheme_Custodian *m, int k)
       m->alloc += k;
     
     naya_boxes = MALLOC_N(Scheme_Object**, m->alloc);
-    naya_closers = MALLOC_N(Scheme_Close_Custodian_Client*, m->alloc);
+    naya_closers = MALLOC_N_ATOMIC(Scheme_Close_Custodian_Client*, m->alloc);
     naya_data = MALLOC_N(void*, m->alloc);
     naya_mrefs = MALLOC_N(Scheme_Custodian_Reference*, m->alloc);
 
@@ -1220,6 +1220,36 @@ Scheme_Custodian_Reference *scheme_add_managed(Scheme_Custodian *m, Scheme_Objec
   add_managed_box(m, (Scheme_Object **)b, mr, f, data);
 
   return mr;
+}
+
+static void chain_close_at_exit(Scheme_Object *o, void *_data)
+/* This closer is recognized specially in scheme_run_atexit_closers() */
+{
+  Scheme_Object *data = (Scheme_Object *)_data;
+  Scheme_Close_Custodian_Client *f;
+  void **fp;
+  
+  fp = (void **)SCHEME_CAR(data);
+  
+  if (fp) {
+    f = (Scheme_Close_Custodian_Client *)*fp;
+    SCHEME_CAR(data) = NULL;
+    f(o, SCHEME_CDR(data));
+  }
+}
+
+Scheme_Custodian_Reference *scheme_add_managed_close_on_exit(Scheme_Custodian *m, Scheme_Object *o, 
+                                                             Scheme_Close_Custodian_Client *f, void *data)
+{
+  void **p;
+
+  p = (void **)scheme_malloc_atomic(sizeof(void *));
+  *p = f;
+
+  return scheme_add_managed(m, o, 
+                            chain_close_at_exit, scheme_make_raw_pair((Scheme_Object *)p, 
+                                                                      (Scheme_Object *)data),
+                            1);
 }
 
 void scheme_remove_managed(Scheme_Custodian_Reference *mr, Scheme_Object *o)
@@ -1704,6 +1734,9 @@ void scheme_run_atexit_closers(Scheme_Object *o, Scheme_Close_Custodian_Client *
       cf(o, f, data);
     }
   }
+
+  if (f == chain_close_at_exit)
+    f(o, data);
 }
 
 void scheme_run_atexit_closers_on_all(Scheme_Exit_Closer_Func alt)

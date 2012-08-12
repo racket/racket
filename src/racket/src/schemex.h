@@ -107,6 +107,8 @@ Scheme_Custodian *(*scheme_make_custodian)(Scheme_Custodian *);
 Scheme_Custodian_Reference *(*scheme_add_managed)(Scheme_Custodian *m, Scheme_Object *o,
 							 Scheme_Close_Custodian_Client *f, void *data,
 							 int strong);
+Scheme_Custodian_Reference *(*scheme_add_managed_close_on_exit)(Scheme_Custodian *m, Scheme_Object *o, 
+                                                                       Scheme_Close_Custodian_Client *f, void *data);
 void (*scheme_custodian_check_available)(Scheme_Custodian *m, const char *who, const char *what);
 int (*scheme_custodian_is_available)(Scheme_Custodian *m);
 void (*scheme_remove_managed)(Scheme_Custodian_Reference *m, Scheme_Object *o);
