@@ -184,7 +184,7 @@
 
 (time
  (plot (list (x-axis)
-             (discrete-histogram '(#(a -1) #(b 2.6) #(c 4) #(d 3.1)) #:y-min #f
+             (discrete-histogram '((a -1) (b 2.6) (c 4) (d 3.1)) #:y-min #f
                                  #:color 5 #:line-color 5 #:line-style 'long-dash
                                  #:label "Corrupt")
              (discrete-histogram '(#(a 1) #(b 2.6) #(c 4) #(d 3.1))
@@ -215,7 +215,7 @@
                 [discrete-histogram-skip  2]
                 [stacked-histogram-line-widths '(3)])
    (plot (list (stacked-histogram '(#(a (0.2 1)) #(b (2.5 1.2)) #(c (2 0))))
-               (stacked-histogram '(#(a (2 1)) #(b (1.1 0.9)) #(c (1 1.1))) #:x-min 7/8
+               (stacked-histogram '((a (2 1)) (b (1.1 0.9)) (c (1 1.1))) #:x-min 7/8
                                   #:colors '(3 4)
                                   #:line-colors '(3 4))))))
 
