@@ -7,6 +7,8 @@
                   "utils/utils.rkt"
                   "utils/tc-utils.rkt"))
 
+(provide print-type print-filter print-object print-pathelem)
+
 ;;TODO try to remove requirement on abbrev once promise is fixed
 
 ;; do we attempt to find instantiations of polymorphic types to print?
@@ -307,9 +309,3 @@
     [else (fp "(Unknown Type: ~a)" (struct->vector c))]
     ))
 
-(set-box! print-type* print-type)
-(set-box! print-filter* print-filter)
-;(set-box! print-latentfilter* print-latentfilter)
-(set-box! print-object* print-object)
-;(set-box! print-latentobject* print-latentobject)
-(set-box! print-pathelem* print-pathelem)
