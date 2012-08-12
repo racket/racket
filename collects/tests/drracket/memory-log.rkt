@@ -68,7 +68,7 @@
         (not (send (send drs-frame get-definitions-text) syncheck:arrows-visible?))))
      
      ; enable online check syntax and wait for the results to appear
-     (queue-callback/res (λ () (preferences:set 'drracket:online-compilation-default-off #t)))
+     (queue-callback/res (λ () (preferences:set 'drracket:online-compilation-default-on #t)))
      (poll-until
       (λ ()
         (send (send drs-frame get-definitions-text) syncheck:arrows-visible?)))

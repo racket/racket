@@ -1032,7 +1032,7 @@
       (define tooltip-frame #f)
       (define/private (show-tooltip)
         (define tooltip-labels-to-show
-          (if (preferences:get 'drracket:online-compilation-default-off)
+          (if (preferences:get 'drracket:online-compilation-default-on)
               tooltip-labels
               (list (string-constant online-expansion-is-disabled))))
         (cond
@@ -1051,7 +1051,7 @@
         (when tooltip-frame
           (cond
             [(or tooltip-labels
-                 (not (preferences:get 'drracket:online-compilation-default-off)))
+                 (not (preferences:get 'drracket:online-compilation-default-on)))
              (when (send tooltip-frame is-shown?)
                ;; just call this, as it updates the tooltip label already
                (show-tooltip))]
@@ -1084,7 +1084,7 @@
                      (define colors-to-draw
                        (cond
                          [(not (in-module-language tlw)) #f]
-                         [(preferences:get 'drracket:online-compilation-default-off)
+                         [(preferences:get 'drracket:online-compilation-default-on)
                           colors]
                          [else (list "red")]))
                      (when colors-to-draw
@@ -1115,13 +1115,13 @@
                  (define cb-proc (λ (sym new-val)
                                    (set! colors #f)
                                    (refresh)))
-                 (preferences:add-callback 'drracket:online-compilation-default-off cb-proc #t)
+                 (preferences:add-callback 'drracket:online-compilation-default-on cb-proc #t)
                  (define/override (on-event evt) 
                    (cond
                      [(not (in-module-language tlw)) (void)]
                      [(send evt button-down?)
                       (define menu (new popup-menu%))
-                      (define on? (preferences:get 'drracket:online-compilation-default-off))
+                      (define on? (preferences:get 'drracket:online-compilation-default-on))
                       (new menu-item% 
                            [parent menu]
                            [label (if on?
@@ -1129,7 +1129,7 @@
                                       "Enable online compilation")]
                            [callback
                             (λ args
-                              (preferences:set 'drracket:online-compilation-default-off (not on?)))])
+                              (preferences:set 'drracket:online-compilation-default-on (not on?)))])
                       (popup-menu menu (send evt get-x) (send evt get-y))]
                      [(send evt entering?)
                       (show-tooltip)]
@@ -1307,7 +1307,7 @@
       (define cb-proc (λ (sym new-val) 
                         (when new-val
                           (queue-callback (λ () (buffer-modified))))))
-      (preferences:add-callback 'drracket:online-compilation-default-off cb-proc #t)
+      (preferences:add-callback 'drracket:online-compilation-default-on cb-proc #t)
       
       ;; buffer-modified and restart-place
       ;; are the two entry points that might
@@ -1318,7 +1318,7 @@
       ;; before doing anything
 
       (define/private (buffer-modified)
-        (when (and (preferences:get 'drracket:online-compilation-default-off)
+        (when (and (preferences:get 'drracket:online-compilation-default-on)
                    (> (processor-count) 1))
           (clear-old-error)
           (reset-frame-expand-error #t)
@@ -1336,7 +1336,7 @@
                (hide-module-language-error-panel)]))))
       
       (define/public (restart-place)
-        (when (and (preferences:get 'drracket:online-compilation-default-off)
+        (when (and (preferences:get 'drracket:online-compilation-default-on)
                    (> (processor-count) 1))
           (stop-place-running)
           (when compilation-out-of-date?

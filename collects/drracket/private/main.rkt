@@ -503,7 +503,7 @@
                   lang
                   (or settings (send lang default-settings)))))))))
 
-  (preferences:set-default 'drracket:online-compilation-default-off #f boolean?)
+  (preferences:set-default 'drracket:online-compilation-default-on #t boolean?)
   (preferences:set-default 'drracket:online-expansion:read-in-defs-errors 
                            'corner
                            (or/c 'margin 'gold 'corner))
