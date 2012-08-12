@@ -3,6 +3,7 @@
          ffi/unsafe/alloc
 	 ffi/winapi
          ffi/unsafe/atomic
+         ffi/unsafe/custodian
          racket/date
          racket/runtime-path
          (for-syntax racket/base)
@@ -554,37 +555,18 @@
 
 (define SCHEME_GUARD_FILE_EXECUTE #x4)
 
-(define scheme_add_managed
-  (get-ffi-obj 'scheme_add_managed #f
-               (_fun _racket _racket _fpointer _racket _int 
-                     -> _gcpointer)))
-(define scheme_remove_managed
-  (get-ffi-obj 'scheme_remove_managed #f
-               (_fun _gcpointer _racket -> _void)))
-(define (custodian-shutdown-com impl proc-self) (impl-release impl))
-(define custodian_shutdown_com 
-  (cast custodian-shutdown-com (_fun #:atomic? #t _racket _racket -> _void) _fpointer))
-
 (define (register-with-custodian obj)
   (define impl (com-object-impl obj))
   (set-com-impl-mref!
    impl
-   (scheme_add_managed (current-custodian) 
-                       impl
-                       custodian_shutdown_com 
-                       custodian-shutdown-com ; proc as data -> ffi callback retained
-                       1))
+   (register-custodian-shutdown impl impl-release #:atexit? #t))
   ;; If we don't finalize the object, then it could
   ;; happen that the object becomes unreachable and
   ;; pointers that the object references could be
   ;; finalized at the same time that the custodian
   ;; changes its weak reference to a strong one; then,
   ;; a custodian shutdown would try to redundantly
-  ;; free the pointers. At the same time, use 1 as
-  ;; the last argument above to `scheme_add_managed',
-  ;; in case the custodian is shutdown between the
-  ;; time that the finalizer is enqueued and when it
-  ;; is run.
+  ;; free the pointers.
   (register-finalizer obj (lambda (obj) (impl-release impl))))
 
 (define (do-cocreate-instance who clsid [where 'local])
@@ -660,7 +642,7 @@
      (let ([mref (com-impl-mref impl)])
        (when mref
          (set-com-impl-mref! impl #f)
-	 (scheme_remove_managed mref impl)))
+	 (unregister-custodian-shutdown impl mref)))
      ;; Although reference counting should let us release in any
      ;; order, comments in the MysterX source suggest that the
      ;; order matters, so release type descriptions first and
