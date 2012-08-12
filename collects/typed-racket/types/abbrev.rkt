@@ -43,6 +43,7 @@
 (define -box make-Box)
 (define -channel make-Channel)
 (define -thread-cell make-ThreadCell)
+(define -Promise make-Promise)
 (define -set make-Set)
 (define -vec make-Vector)
 (define -future make-Future)

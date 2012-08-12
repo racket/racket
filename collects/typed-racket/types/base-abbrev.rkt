@@ -9,7 +9,7 @@
          (for-template racket/base)
          (for-syntax racket/base syntax/parse racket/list))
 
-(provide (except-out (all-defined-out) Promise))
+(provide (all-defined-out))
 
 ;Top and error types
 (define Univ (make-Univ))
@@ -22,13 +22,6 @@
 (define ManyUniv Univ)
 
 
-; Promise type
-; TODO make this not a struct type, but the same as all other container types
-(define Promise #f)
-(define promise-id #'Promise)
-(define -Promise
- (lambda (t)
-   (make-Struct promise-id #f (list (make-fld t #'values #f)) #f #f #'promise? values #'values)))
 
 
 ;; Char type (needed because of how sequences are checked in subtype)
