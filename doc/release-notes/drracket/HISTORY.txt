@@ -1,4 +1,11 @@
 ------------------------------
+       Version 5.3.1
+------------------------------
+
+  . Check Syntax now shows the blue boxes from the documentation in
+    the definitions window
+
+------------------------------
        Version 5.3
 ------------------------------
 
