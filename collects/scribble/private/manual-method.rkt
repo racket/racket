@@ -42,7 +42,7 @@
   (list 'meth (list (cadr vtag) sym)))
 
 (define (constructor-tag vtag)
-  (list 'construtor (cadr vtag)))
+  (list 'constructor (cadr vtag)))
 
 (define (name-this-object type-sym)
   (to-element
