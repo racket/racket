@@ -39,7 +39,7 @@
   (syntax-parse expr
    [((~literal quote) i:number)
     (let ((type (tc-literal #'i)))
-      (add-typeof-expr expr type)
+      (add-typeof-expr expr (ret type))
       (values type (syntax-e #'i)))]
    [_
     (match (tc-expr expr)

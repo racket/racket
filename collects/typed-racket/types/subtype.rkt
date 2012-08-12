@@ -45,7 +45,7 @@
 ;; is s a subtype of t?
 ;; type type -> boolean
 (define/cond-contract (subtype s t)
-  (c-> Type/c Type/c boolean?)
+  (c:-> (c:or/c Type/c Values?) (c:or/c Type/c Values?) boolean?)
   (define k (cons (Type-seq s) (Type-seq t)))
   (define lookup? (hash-ref subtype-cache k 'no))
   (if (eq? 'no lookup?)
@@ -432,7 +432,7 @@
               [((MPair: _ _) (MPairTop:)) A0]
               [((Hashtable: _ _) (HashtableTop:)) A0]
               ;; subtyping on structs follows the declared hierarchy
-              [((Struct: nm (? Type? parent) flds proc _ _ _ _) other)
+              [((Struct: nm (? Type? parent) _ _ _ _ _ _) other)
                ;(dprintf "subtype - hierarchy : ~a ~a ~a\n" nm parent other)
                (subtype* A0 parent other)]
               ;; subtyping on values is pointwise
@@ -464,7 +464,7 @@
 
 
 (provide/cond-contract
- [subtype (c-> Type/c Type/c boolean?)])
+ [subtype (c:-> (c:or/c Type/c Values?) (c:or/c Type/c Values?) boolean?)])
 (provide
   type-compare? subtypes/varargs subtypes)
 
