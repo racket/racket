@@ -109,19 +109,6 @@ at least theoretically.
       #'(void)))
 
 ;; custom printing
-;; this requires lots of work for two reasons:
-;; - 1 printers have to be defined at the same time as the structs
-;; - 2 we want to support things printing corectly even when the custom printer is off
-
-(define-syntax-rule (defprinter t ...)
-  (begin
-    (define t (box (lambda _ (error (format "~a not yet defined" 't))))) ...
-    (provide t ...)))
-
-(defprinter
-  print-type* print-filter* print-latentfilter* print-object* print-latentobject*
-  print-pathelem*)
-
 (define custom-printer (make-parameter #t))
 (define print-multi-line-case-> (make-parameter #f))
 
@@ -131,13 +118,14 @@ at least theoretically.
      #`(define-struct name (flds ...)
          #:property prop:custom-print-quotable 'never
          #:property prop:custom-write
-         (lambda (a b c) (if (custom-printer)
-                             (printer a b c)
-                             ;; ok to make this case slow, it never runs in real code
-                             ((if c
-                                  (dynamic-require 'racket/pretty 'pretty-write)
-                                  (dynamic-require 'racket/pretty 'pretty-print))
-                              a b)))
+         (lambda (v port write?)
+           (if (custom-printer)
+               (printer v port write?)
+               ;; ok to make this case slow, it never runs in real code
+               ((if write?
+                    (dynamic-require 'racket/pretty 'pretty-write)
+                    (dynamic-require 'racket/pretty 'pretty-print))
+                v port)))
          #:transparent)]))
 
 

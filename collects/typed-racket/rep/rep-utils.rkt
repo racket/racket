@@ -1,9 +1,10 @@
 #lang racket/base
-(require "../utils/utils.rkt"         
+(require "../utils/utils.rkt"
          racket/match
          (contract-req)
          "free-variance.rkt"
          "interning.rkt" unstable/struct
+         unstable/lazy-require
          racket/stxparam
          (for-syntax
           racket/match
@@ -15,6 +16,11 @@
           (rename-in (except-in (utils stxclass-util) bytes byte-regexp regexp byte-pregexp pregexp)
                      [id* id]
                      [keyword* keyword])))
+
+
+(lazy-require
+  ("../types/printer.rkt" (print-type print-filter print-object print-pathelem)))
+
 
 (provide == defintern hash-id (for-syntax fold-target))
 
@@ -297,7 +303,7 @@
               define-id:id ;; e.g. def-type
               kw:keyword ;; e.g. #:Type
               case:id ;; e.g. type-case
-              printer:id ;; e.g. print-type*
+              printer:id ;; e.g. print-type
               hashtable:id ;; e.g. type-name-ht
               rec-id:id ;; e.g. type-rec-id
               (~optional (~and #:key ;; only given for Type.
@@ -311,7 +317,6 @@
     [(_ i:type-name ...)
      #'(begin
          (provide i.define-id ...
-                  i.printer ...
                   i.name ...
                   i.pred? ...
                   i.rec-id ...
@@ -323,8 +328,7 @@
          (define-syntax i.define-id
            (mk #'i.name #'i.hashtable i.key? #'i.rec-id)) ...
          (define-for-syntax i.hashtable (make-hasheq)) ...
-         (define-struct/printer (i.name Rep) (i.field-names ...)
-           (lambda (a b c) ((unbox i.printer) a b c))) ...
+         (define-struct/printer (i.name Rep) (i.field-names ...) i.printer) ...
          (define-syntax-parameter i.rec-id
            (λ (stx)
               (raise-syntax-error #f
@@ -343,10 +347,10 @@
                                     '(i.kw ...)))
                          (list i.hashtable ...))))))]))
 
-(make-prim-type [Type def-type #:Type type-case print-type* type-name-ht type-rec-id #:key]
-                [Filter def-filter #:Filter filter-case print-filter* filter-name-ht filter-rec-id]
-                [Object def-object #:Object object-case print-object* object-name-ht object-rec-id]
-                [PathElem def-pathelem #:PathElem pathelem-case print-pathelem* pathelem-name-ht pathelem-rec-id])
+(make-prim-type [Type def-type #:Type type-case print-type type-name-ht type-rec-id #:key]
+                [Filter def-filter #:Filter filter-case print-filter filter-name-ht filter-rec-id]
+                [Object def-object #:Object object-case print-object object-name-ht object-rec-id]
+                [PathElem def-pathelem #:PathElem pathelem-case print-pathelem pathelem-name-ht pathelem-rec-id])
 
 (provide PathElem? (rename-out [Rep-seq Type-seq]
                                [Rep-free-vars free-vars*]
