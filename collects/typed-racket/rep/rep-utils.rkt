@@ -360,14 +360,4 @@
 (provide/cond-contract (struct Rep ([seq exact-nonnegative-integer?]
                                     [free-vars (hash/c symbol? variance?)]
                                     [free-idxs (hash/c symbol? variance?)]
-                                    [stx (or/c #f syntax?)]))
-                       [replace-syntax (Rep? syntax? . -> . Rep?)])
-
-(define (replace-field val new-val idx)
-  (define-values (type skipped) (struct-info val))
-  (define maker (struct-type-make-constructor type))
-  (define flds (struct->list val))
-  (apply maker (list-set flds idx new-val)))
-
-(define (replace-syntax rep stx)
-  (replace-field rep stx 3))
+                                    [stx (or/c #f syntax?)])))
