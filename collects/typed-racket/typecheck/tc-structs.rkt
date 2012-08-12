@@ -11,6 +11,7 @@
          syntax/struct
          racket/function
          racket/match
+         racket/list
          (only-in racket/contract
                   listof any/c or/c
                   [->* c->*]
@@ -228,14 +229,18 @@
   ;; instantiate the parent if necessary, with new-tvars
   (define concrete-parent
     (if (Poly? parent)
-        (instantiate-poly parent new-tvars)
+        (if (> (Poly-n parent) (length new-tvars))
+            (tc-error "Could not instantiate parent struct type. Required ~a type variables, recieved ~a."
+              (Poly-n parent)
+              (length new-tvars))
+            (instantiate-poly parent (take new-tvars (Poly-n parent))))
         parent))
   ;; get the fields of the parent, if it exists
   (define parent-field-types (get-parent-flds concrete-parent))
   ;; create the actual structure type, and the types of the fields
   ;; that the outside world will see
   ;; then register them
-  (mk/register-sty nm flds parent-name parent-field-types types
+  (mk/register-sty nm flds concrete-parent parent-field-types types
                    #:maker maker
                    #:mutable mutable
                    #:struct-info (syntax-property nm/par 'struct-info)
@@ -268,6 +273,11 @@
     (if proc-ty
         (parse-type proc-ty)
         #f))
+
+  (when (Poly? parent)
+    (tc-error "Could not instantiate parent struct type. Required ~a type variables, recieved none."
+            (Poly-n parent)))
+
   ;; create the actual structure type, and the types of the fields
   ;; that the outside world will see
   (mk/register-sty nm flds parent-name (get-parent-flds parent) types
@@ -276,7 +286,7 @@
                    #:maker maker
                    #:predicate pred
                    #:struct-info (syntax-property nm/par 'struct-info)
-		   #:constructor-return (and cret (parse-type cret))
+                   #:constructor-return (and cret (parse-type cret))
                    #:mutable mutable
                    #:type-only type-only))
 

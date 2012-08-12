@@ -10,11 +10,11 @@
            (env type-name-env index-env tvar-env))
           make-env -> ->* one-of/c)
          "constraint-structs.rkt"
-	 "signatures.rkt"
+         "signatures.rkt"
          racket/match
          mzlib/etc
          racket/contract
-	 unstable/sequence unstable/list unstable/hash
+         unstable/sequence unstable/list unstable/hash
          racket/list)
 
 (import dmap^ constraints^ promote-demote^)
@@ -31,7 +31,7 @@
               (listof (cons/c exact-nonnegative-integer? exact-nonnegative-integer?)))
  (cons (seen-before s t) A))
 (define/cond-contract (seen? s t)
- (Type? Type? . -> . boolean?)
+ (Type? Type? . -> . any/c)
  (member (seen-before s t) (current-seen)))
 
 
@@ -421,9 +421,9 @@
                     (for/list ([e es])
                       (with-handlers ([exn:infer? (λ _ #f)]) (cg S e)))))]
 
-          ;; two structs with the same name and parent
+          ;; two structs with the same name
           ;; just check pairwise on the fields
-          [((Struct: nm p flds proc _ _ _ _) (Struct: nm* p flds* proc* _ _ _ _)) (=> nevermind)
+          [((Struct: nm _ flds proc _ _ _ _) (Struct: nm* _ flds* proc* _ _ _ _)) (=> nevermind)
            (unless (free-identifier=? nm nm*) (nevermind))
            (let ([proc-c
                   (cond [(and proc proc*)
@@ -516,6 +516,12 @@
           [(_ (App: _ _ _))
            (let ((T* (resolve-once T)))
             (if T* (cg S T*) (fail! S T)))]
+
+          ;; If the struct names don't match, try the parent of S
+          ;; Needs to be done after App and Mu in case T is actually the current struct
+          ;; but not currently visible
+          [((Struct: nm (? Type? parent) _ _ _ _ _ _) other)
+           (cg parent other)]
 
           ;; vectors are invariant - generate constraints *both* ways
           [((Vector: e) (Vector: e*))
