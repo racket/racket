@@ -141,7 +141,6 @@
                   [(tc-results: ts) ts]))
           (loop (cdr names) (cdr exprs) (apply append (cdr names)) (cdr clauses)))]
         [else
-         ;(for-each (lambda (vs) (for-each (lambda (v) (printf/log "Letrec Var: ~a\n" (syntax-e v))) vs)) names)
          (do-check (lambda (stx e t) (tc-expr/check e t))
                    names
                    ;; compute set of variables that can't be undefined. see below.
