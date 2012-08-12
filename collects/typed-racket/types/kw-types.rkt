@@ -111,6 +111,6 @@
              [(arr: mand rng rest drest kws)
               (convert kws mand v rng rest drest split?)])))
        (make-Poly names (apply cl->* fns))]
-      [_ (int-err 'kw-convert "non-function type" ft)]))
+      [_ (int-err "kw-convert: non-function type ~a" ft)]))
 
 (provide kw-convert)
