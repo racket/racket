@@ -601,12 +601,16 @@
   ;; but just to print and return.
   (define orig-display-handler (error-display-handler))
   
-  (define (fire-up-drracket-and-run-tests #:use-focus-table? [use-focus-table? #t] run-test)
+  (define (fire-up-drracket-and-run-tests
+           #:use-focus-table? [use-focus-table? #t] 
+           #:prefs [prefs '()]
+           run-test)
     (on-eventspace-handler-thread 'fire-up-drracket-and-run-tests)
     (let ()
       (use-hash-for-prefs fw:preferences:low-level-get-preference
                           fw:preferences:low-level-put-preferences
-                          fw:preferences:restore-defaults)
+                          fw:preferences:restore-defaults
+                          prefs)
       
       (parameterize ([current-command-line-arguments #()])
         (dynamic-require 'drracket #f))
@@ -654,7 +658,8 @@
            (λ ()
              (use-hash-for-prefs (dynamic-require 'framework 'preferences:low-level-get-preference)
                                  (dynamic-require 'framework 'preferences:low-level-put-preferences)
-                                 (dynamic-require 'framework 'preferences:restore-defaults))
+                                 (dynamic-require 'framework 'preferences:restore-defaults)
+                                 '())
              (dynamic-require 'drracket #f)
              (thread (λ ()
                        (run-test)
@@ -664,23 +669,37 @@
 
   (define (use-hash-for-prefs preferences:low-level-get-preference 
                               preferences:low-level-put-preferences
-                              preferences:restore-defaults)
+                              preferences:restore-defaults
+                              prefs)
     ;; change the preferences system so that it doesn't write to 
     ;; a file; partly to avoid problems of concurrency in drdr
     ;; but also to make the test suite easier for everyone to run.
     (let ([prefs-table (make-hash)])
       (preferences:low-level-put-preferences
-       (lambda (names vals)
-         (for-each (lambda (name val) (hash-set! prefs-table name val))
-                   names vals)))
+       (λ (names vals)
+         (for ([name (in-list names)]
+               [val (in-list vals)])
+           (hash-set! prefs-table name val))))
       (preferences:low-level-get-preference 
-       (lambda (name [fail (lambda () #f)])
+       (λ (name [fail (lambda () #f)])
          (hash-ref prefs-table name fail)))
       
       ;; set all preferences to their defaults (some pref values may have
       ;; been read by this point, but hopefully that won't affect the
       ;; startup of drracket)
-      (preferences:restore-defaults)))
+      (preferences:restore-defaults)
+      
+      ;; initialize some preferences to simulate these
+      ;; being saved already in the user's prefs file 
+      (for ([pref (in-list prefs)])
+        (define pref-key (list-ref pref 0))
+        (define pref-val (list-ref pref 1))
+        (unless (regexp-match #rx"^plt:framework-pref:" (symbol->string pref-key))
+          ;; this currently doesn't happen, and it is easy to forget
+          ;; that prefix, so print a message here to remind 
+          (printf "WARNING: setting a preference that isn't set via the framework: ~s\n" 
+                  pref-key))
+        (hash-set! prefs-table pref-key pref-val))))
   
 (define (not-on-eventspace-handler-thread fn)
   (when (eq? (current-thread) (eventspace-handler-thread (current-eventspace)))
