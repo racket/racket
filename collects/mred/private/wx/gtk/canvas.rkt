@@ -239,7 +239,8 @@
               get-top-win
               set-auto-size 
               adjust-client-delta infer-client-delta
-              is-auto-scroll? get-virtual-width get-virtual-height
+              is-auto-scroll? is-disabled-scroll?
+              get-virtual-width get-virtual-height
               refresh-for-autoscroll refresh-all-children
               get-eventspace)
 
@@ -609,19 +610,25 @@
                           (lambda ()
                             (gtk_adjustment_set_value adj v))))))
 
+     (define/private (is-disabled-scroll-dir? which)
+       (or (if (eq? which 'vertical)
+               (not vscroll-gtk)
+               (not hscroll-gtk))
+           (is-disabled-scroll?)))
+
      (define/public (get-scroll-page which) 
-       (if (is-auto-scroll?)
+       (if (or (is-disabled-scroll-dir? which) (is-auto-scroll?))
            0
            (->long (dispatch which gtk_adjustment_get_page_size 0))))
      (define/public (get-scroll-range which)
-       (if (is-auto-scroll?)
+       (if (or (is-disabled-scroll-dir? which) (is-auto-scroll?))
            0
            (->long (dispatch which (lambda (adj)
                                      (- (gtk_adjustment_get_upper adj)
                                         (gtk_adjustment_get_page_size adj)))
                              0))))
      (define/public (get-scroll-pos which)
-       (if (is-auto-scroll?)
+       (if (or (is-disabled-scroll-dir? which) (is-auto-scroll?))
            0
            (->long (dispatch which gtk_adjustment_get_value 0))))
      

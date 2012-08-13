@@ -70,7 +70,7 @@
                                                                                   SIF_PAGE SIF_TRACKPOS)
                                                                      0 0 0 0 0))
                                     -> (r : _BOOL)
-                                    -> (if r i (error 'GetScrollInfo "failed"))))
+                                    -> (if r i (failed 'GetScrollInfo))))
 
 (define COMBO-WIDTH 18)
 
@@ -87,7 +87,8 @@
               get-client-size
               get-eventspace
               set-control-font
-              is-auto-scroll? get-virtual-width get-virtual-height
+              is-auto-scroll? is-disabled-scroll?
+              get-virtual-width get-virtual-height
               reset-auto-scroll
               refresh-for-autoscroll)
 
@@ -416,12 +417,18 @@
     (define/override (get-virtual-v-pos)
       (GetScrollPos canvas-hwnd SB_VERT))
 
+    (define/private (is-disabled-scroll-dir? which)
+      (or (if (eq? which 'vertical)
+              (not vscroll?)
+              (not hscroll?))
+          (is-disabled-scroll?)))
+
      (define/public (get-scroll-pos which)
-       (if (is-auto-scroll?)
+       (if (or (is-disabled-scroll-dir? which) (is-auto-scroll?))
            0
            (GetScrollPos canvas-hwnd (if (eq? which 'vertical) SB_VERT SB_HORZ))))
      (define/public (get-scroll-range which)
-       (if (is-auto-scroll?)
+       (if (or (is-disabled-scroll-dir? which) (is-auto-scroll?))
            0
            (get-real-scroll-range which)))
      (define/public (get-real-scroll-range which)
@@ -430,7 +437,7 @@
                (SCROLLINFO-nPage i))
             1)))
      (define/public (get-scroll-page which)
-       (if (is-auto-scroll?)
+       (if (or (is-disabled-scroll-dir? which) (is-auto-scroll?))
            0
            (let ([i (GetScrollInfo canvas-hwnd (if (eq? which 'vertical) SB_VERT SB_HORZ))])
              (SCROLLINFO-nPage i))))

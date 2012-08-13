@@ -233,7 +233,8 @@
               get-size get-position
               set-focus
               client-to-screen
-              is-auto-scroll? get-virtual-width get-virtual-height
+              is-auto-scroll? is-disabled-scroll? 
+              get-virtual-width get-virtual-height
               reset-auto-scroll
               refresh-for-autoscroll
               refresh-all-children
@@ -521,25 +522,32 @@
      (define/public (set-scroll-pos which v)
        (update which scroll-pos v))
 
-     (define/private (guard-scroll skip-guard? which v)
+     (define/private (guard-scroll skip-guard? which get-v)
        (if skip-guard?
-           v
-           (if (is-auto-scroll?)
+           (get-v)
+           (if (or (if (eq? which 'vertical)
+                       (not vscroll-ok?)
+                       (not hscroll-ok?))
+                   (is-disabled-scroll?)
+                   (is-auto-scroll?))
                0
-               v)))
+               (get-v))))
 
      (define/public (get-scroll-page which [skip-guard? #f]) 
        (guard-scroll skip-guard?
                      which
-                     (scroll-page (if (eq? which 'vertical) v-scroller h-scroller))))
+                     (lambda ()
+                       (scroll-page (if (eq? which 'vertical) v-scroller h-scroller)))))
      (define/public (get-scroll-range which [skip-guard? #f])
        (guard-scroll skip-guard?
                      which
-                     (scroll-range (if (eq? which 'vertical) v-scroller h-scroller))))
+                     (lambda ()
+                       (scroll-range (if (eq? which 'vertical) v-scroller h-scroller)))))
      (define/public (get-scroll-pos which [skip-guard? #f])
        (guard-scroll skip-guard?
                      which
-                     (scroll-pos (if (eq? which 'vertical) v-scroller h-scroller))))
+                     (lambda ()
+                       (scroll-pos (if (eq? which 'vertical) v-scroller h-scroller)))))
      
      (define v-scroller
        (and vscroll-ok?
