@@ -145,10 +145,13 @@
         (set! highlights '())
         (set! on? #f))
 
+      (define (clear-and-close)
+        (when on?
+          (send+ this (get-tab) (get-frame) (close-optimization-coach))))
       (define/augment (on-insert start len)
-        (clear-highlights))
+        (clear-and-close))
       (define/augment (on-delete start len)
-        (clear-highlights))
+        (clear-and-close))
 
       (define/public (build-optimization-coach-popup-menu menu pos text)
         (and pos
