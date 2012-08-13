@@ -6497,7 +6497,7 @@ static Scheme_Object *strip_lexical_context(Scheme_Object *stx)
 
 static Scheme_Object *do_annotate_submodules_k(void);
 
-Scheme_Object *do_annotate_submodules(Scheme_Object *fm, int phase)
+Scheme_Object *do_annotate_submodules(Scheme_Object *fm, int phase, int incl_star)
 {
   Scheme_Object *a, *d, *v;
   int changed = 0;
@@ -6507,6 +6507,8 @@ Scheme_Object *do_annotate_submodules(Scheme_Object *fm, int phase)
   {
     Scheme_Thread *p = scheme_current_thread;
     p->ku.k.p1 = (void *)fm;
+    p->ku.k.i1 = phase;
+    p->ku.k.i2 = incl_star;
     return scheme_handle_stack_overflow(do_annotate_submodules_k);
   }
 #endif
@@ -6521,17 +6523,21 @@ Scheme_Object *do_annotate_submodules(Scheme_Object *fm, int phase)
       if (scheme_stx_module_eq3(scheme_module_stx, v, 
                                 scheme_make_integer(0), scheme_make_integer(phase), 
                                 NULL)
-          || scheme_stx_module_eq3(scheme_modulestar_stx, v, 
-                                   scheme_make_integer(0), scheme_make_integer(phase), 
-                                   NULL)) {
+          || (incl_star
+              && scheme_stx_module_eq3(scheme_modulestar_stx, v, 
+                                       scheme_make_integer(0), scheme_make_integer(phase), 
+                                       NULL))) {
         /* found a submodule */
-        a = scheme_stx_property(a, scheme_intern_symbol("submodule"), a);
-        changed = 1;
+        v = scheme_stx_property(a, scheme_intern_symbol("submodule"), NULL);
+        if (SCHEME_FALSEP(v)) {
+          a = scheme_stx_property(a, scheme_intern_symbol("submodule"), a);
+          changed = 1;
+        }
       } else if (scheme_stx_module_eq3(scheme_begin_for_syntax_stx, v, 
                                        scheme_make_integer(0), scheme_make_integer(phase), 
                                        NULL)) {
         /* found `begin-for-syntax' */
-        v = do_annotate_submodules(a, phase+1);
+        v = do_annotate_submodules(a, phase+1, incl_star);
         if (!SAME_OBJ(v, a)) {
           changed = 1;
           a = v;
@@ -6540,7 +6546,7 @@ Scheme_Object *do_annotate_submodules(Scheme_Object *fm, int phase)
                                        scheme_make_integer(0), scheme_make_integer(phase), 
                                        NULL)) {
         /* found `begin' */
-        v = do_annotate_submodules(a, phase);
+        v = do_annotate_submodules(a, phase, incl_star);
         if (!SAME_OBJ(v, a)) {
           changed = 1;
           a = v;
@@ -6550,7 +6556,7 @@ Scheme_Object *do_annotate_submodules(Scheme_Object *fm, int phase)
   }
 
   v = SCHEME_STX_CDR(fm);
-  d = do_annotate_submodules(v, phase);
+  d = do_annotate_submodules(v, phase, incl_star);
 
   if (!changed && SAME_OBJ(v, d))
     return fm;
@@ -6569,10 +6575,10 @@ static Scheme_Object *do_annotate_submodules_k(void)
 
   p->ku.k.p1 = NULL;
 
-  return do_annotate_submodules(fm, p->ku.k.i1);
+  return do_annotate_submodules(fm, p->ku.k.i1, p->ku.k.i2);
 }
 
-static Scheme_Object *annotate_existing_submodules(Scheme_Object *orig_fm)
+Scheme_Object *scheme_annotate_existing_submodules(Scheme_Object *orig_fm, int incl_star)
 {
   Scheme_Object *fm = orig_fm;
 
@@ -6584,7 +6590,7 @@ static Scheme_Object *annotate_existing_submodules(Scheme_Object *orig_fm)
 
   if (scheme_stx_module_eq(scheme_module_begin_stx, fm, 0)) {
     /* It's a `#%plain-module-begin' form */
-    return do_annotate_submodules(orig_fm, 0);
+    return do_annotate_submodules(orig_fm, 0, incl_star);
   }
 
   return orig_fm;
@@ -7022,7 +7028,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
        attach the original form as a property to the `module' form, so
        that re-expansion can use it instead of dropping all lexical
        context: */
-    fm = annotate_existing_submodules(fm);
+    fm = scheme_annotate_existing_submodules(fm, 1);
   } else {
     fm = scheme_make_pair(scheme_datum_to_syntax(module_begin_symbol, form, mb_ctx, 0, 2), 
 			  fm);

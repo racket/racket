@@ -763,4 +763,26 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(module local-expand-lang racket/base
+  (require (for-syntax racket/base))
+  (provide (rename-out [mb #%module-begin]) (except-out (all-from-out racket/base) #%module-begin))
+  (define-syntax (mb stx)
+    (syntax-case stx ()
+      [(_ rest ...)
+       (local-expand #'(#%plain-module-begin rest ...) 'module-begin (list #'module*))])))
+
+(module local-expand-lang2 racket/base
+  (require (for-syntax racket/base))
+  (provide (rename-out [mb #%module-begin]) (except-out (all-from-out racket/base) #%module-begin))
+  (define-syntax (mb stx)
+    (syntax-case stx ()
+      [(_ rest ...)
+       #'(#%plain-module-begin (begin-for-syntax (module* foo #f)) rest ...)])))
+
+;; check that the macro-introduced `module*' works right:
+(module local-expand-lang-test 'local-expand-lang
+  (module m 'local-expand-lang2))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

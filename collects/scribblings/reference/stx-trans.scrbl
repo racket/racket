@@ -223,8 +223,14 @@ and @racket[module*] is in @racket[stop-ids], then the
 @racket[#%plain-module-begin] transformer refrains from expanding
 @racket[module*] sub-forms. Otherwise, the
 @racket[#%plain-module-begin] transformer detects and expands sub-forms
-(such as @racket[define-values]) independent of the correspond
+(such as @racket[define-values]) independent of the corresponding
 identifier's presence in @racket[stop-ids].
+
+When @racket[context-v] is @racket['module-begin], and the result of
+expansion is a @racket[#%plain-module-begin] form, then a
+@racket['submodule] @tech{syntax property} is added to each enclosed
+@racket[module] form (but not @racket[module*] forms) in the same way as by
+@racket[module] expansion.
 
 The optional @racket[intdef-ctx] argument must be either @racket[#f],
 the result of @racket[syntax-local-make-definition-context], or a list

@@ -3307,6 +3307,8 @@ void scheme_prep_namespace_rename(Scheme_Env *menv);
 Scheme_Object *scheme_string_to_submodule_path(char *_s, intptr_t len);
 char *scheme_submodule_path_to_string(Scheme_Object *p, intptr_t *_len);
 
+Scheme_Object *scheme_annotate_existing_submodules(Scheme_Object *orig_fm, int incl_star);
+
 /*========================================================================*/
 /*                         errors and exceptions                          */
 /*========================================================================*/
