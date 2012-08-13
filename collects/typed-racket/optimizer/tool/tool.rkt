@@ -23,6 +23,21 @@
      ,(match-lambda [(sub-report-entry s m 'mzc) #t]
                     [_ #f]))))
 
+(define (copy-definitions definitions)
+  ;; this code is from Robby
+  (define definitions-copy
+    (new (class text:basic%
+           ;; overriding get-port-name like this ensures
+           ;; that the resulting syntax objects are connected
+           ;; to the actual definitions-text, not this copy
+           (define/override (get-port-name)
+             (send definitions get-port-name))
+           (super-new))))
+  (send definitions-copy set-style-list
+        (send definitions get-style-list)) ;; speeds up the copy
+  (send definitions copy-self-to definitions-copy)
+  definitions-copy)
+
 (define-local-member-name
   get-optimization-coach-menu-item
   add-highlights
@@ -253,18 +268,7 @@
         (define interactions (get-interactions-text))
         ;; copy contents of the definitions window before handing control back
         ;; to the event loop
-        ;; this code is from Robby
-        (define definitions-copy
-          (new (class text:basic%
-                 ;; overriding get-port-name like this ensures
-                 ;; that the resulting syntax objects are connected
-                 ;; to the actual definitions-text, not this copy
-                 (define/override (get-port-name)
-                   (send definitions get-port-name))
-                 (super-new))))
-        (send definitions-copy set-style-list
-              (send definitions get-style-list)) ;; speeds up the copy
-        (send definitions copy-self-to definitions-copy)
+        (define definitions-copy (copy-definitions definitions))
         ;; launch OC proper
         (show-optimization-coach)
         (send this update-running #t)
