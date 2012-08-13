@@ -202,6 +202,13 @@
     (define mouse-in-lock-icon? #f)
     (define mouse-in-read-more? #f)
     
+    (define the-strs #f)
+    (define the-strs-id-start #f)
+    (define the-strs-id-end #f)
+    (define/public (get-current-strs) the-strs)
+    
+    (define visit-docs-url void)
+    
     (define/public (get-show-docs?) (and the-strs (or locked? mouse-in-blue-box?)))
     (define/public (toggle-syncheck-docs)
       (when locked?
@@ -249,10 +256,6 @@
       (interval-map-set! docs-im start (+ end 1) rng)
       (define c (get-canvas))
       (when c (send c refresh)))
-    
-    (define the-strs #f)
-    (define visit-docs-url void)
-    (define/public (get-current-strs) the-strs)
     
     (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
       (super on-paint before? dc left top right bottom dx dy draw-caret)
@@ -348,11 +351,15 @@
       (when (= sp (get-end-position))
         (define tag+rng (interval-map-ref docs-im sp #f))
         (when tag+rng
+          (define ir-start (list-ref tag+rng 0))
+          (define ir-end (list-ref tag+rng 1))
           (define tag (list-ref tag+rng 2))
           (define new-visit-docs-url (list-ref tag+rng 3))
           (define new-strs (fetch-strs tag))
           (when new-strs
             (set! the-strs new-strs)
+            (set! the-strs-id-start ir-start)
+            (set! the-strs-id-end ir-end)
             (set! visit-docs-url new-visit-docs-url)
             (when last-evt-seen
               (update-mouse-in-blue-box (in-blue-box? last-evt-seen))
@@ -361,24 +368,36 @@
             (define c (get-canvas))
             (when c (send c refresh))))))
     
-    (define/augment (after-insert where len)
-      (inner (void) after-insert where len)
+    (define/augment (on-insert where len)
       (clear-im-range where len)
       (interval-map-expand! docs-im where (+ where len))
-      (possibly-reset-strs-gui))
+      (possibly-clobber-strs where len #f)
+      (when the-strs-id-start
+        (when (<= where the-strs-id-start)
+          (set! the-strs-id-start (+ the-strs-id-start len))
+          (set! the-strs-id-end (+ the-strs-id-end len))))
+      (inner (void) on-insert where len))
     
-    (define/augment (after-delete where len) 
-      (inner (void) after-delete where len)
+    (define/augment (on-delete where len)
       (clear-im-range where len)
       (interval-map-contract! docs-im where (+ where len))
-      (possibly-reset-strs-gui))
+      (possibly-clobber-strs where len #t)
+      (when the-strs-id-start
+        (when (<= where the-strs-id-start)
+          (set! the-strs-id-start (- the-strs-id-start len))
+          (set! the-strs-id-end (- the-strs-id-end len))))
+      (inner (void) on-delete where len))
     
-    (define/private (possibly-reset-strs-gui)
-      (let ([old-strs the-strs])
-        (set! the-strs #f)
-        (set! visit-docs-url void)
-        (update-the-strs)
-        (unless (equal? old-strs the-strs)
+    (define/private (possibly-clobber-strs where len delete?)
+      (when (or (not the-strs-id-start)
+                (not the-strs-id-end)
+                (and (<= the-strs-id-start where)
+                     (< where the-strs-id-end))
+                (and delete? (<= the-strs-id-start (+ where len) the-strs-id-end)))
+        (when the-strs
+          (set! the-strs #f)
+          (set! the-strs-id-start #f)
+          (set! the-strs-id-end #f)
           (define c (get-canvas))
           (when c (send c refresh)))))
 
