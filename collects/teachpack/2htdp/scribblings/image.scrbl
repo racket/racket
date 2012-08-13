@@ -542,9 +542,10 @@ other. The top and bottom pair of angles is @racket[angle] and the left and righ
   Constructs an arbitrary regular star polygon (a generalization of the regular polygons). 
   The polygon is enclosed by a regular polygon with @racket[side-count] sides each
   @racket[side-length] long. The polygon is actually constructed by going from vertex to
-  vertex around the regular polgon, but skipping over every @racket[step-count] vertices.
+  vertex around the regular polgon, but connecting every @racket[step-count]-th vertex
+  (i.e., skipping every @racket[(- step-count 1)] verticies).
   
-  For examples, if @racket[side-count] is @racket[5] and @racket[step-count] is @racket[2],
+  For example, if @racket[side-count] is @racket[5] and @racket[step-count] is @racket[2],
   then this function produces a shape just like @racket[star].
   
   @mode/color-text
