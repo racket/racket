@@ -523,7 +523,7 @@
           (loop (sub1 delta))))))
   
   (define/private (do-key w msg wParam lParam is-char? is-up? default)
-    (let ([e (make-key-event #f wParam lParam is-char? is-up? hwnd)])
+    (let ([e (maybe-make-key-event #f wParam lParam is-char? is-up? hwnd)])
       (if (and e
                (if (definitely-wants-event? w msg wParam e)
                    (begin
