@@ -47,50 +47,6 @@ are just ignored.
 
 }
 
-@defmethod[(do-many-evals [run-loop (((-> void) -> void) -> void)])
-           void?]{
-@methspec{
-
-Use this function to evaluate code or run actions that should mimic
-the user's interactions. For example, DrRacket uses this function to
-evaluate expressions in the definitions window and expressions
-submitted at the prompt.
-
-}
-@methimpl{
-
-The function @racket[run-loop] is called. It is expected to loop, calling
-its argument with a thunk that corresponds to the user's
-evaluation. It should call its argument once for each expression the
-user is evaluating.  It should pass a thunk to its argument that
-actually does the users's evaluation.
-
-
-}}
-
-@defmethod[(do-many-text-evals [text (is-a?/c text%)]
-                               [start int]
-                               [end int ]
-                               [complete-program? any/c])
-           void?]{
-@methspec{
-
-This function evaluates all of the expressions in a text.
-
-}
-@methimpl{
-
-It evaluates all of the expressions in @racket[text] starting at
-@racket[start] and ending at @racket[end], calling
-@method[drracket:rep:text% do-many-evals] to handle the evaluation.
-
-The @racket[complete-program?] argument determines if the
-@method[drracket:language:language<%> front-end/complete-program] method or the
-@method[drracket:language:language<%> front-end/interaction] method is called.
-
-
-}}
-
 @defmethod[(evaluate-from-port [port input-port?]
                                [complete-program? boolean?]
                                [cleanup (-> void)])
@@ -310,9 +266,6 @@ This method resets the highlighting being displayed for this repl. See also:
 
 This function runs its arguments in the user evaluation thread. This
 thread is the same as the user's eventspace main thread.
-
-See also  
-@method[drracket:rep:text% do-many-evals].
 
 }
 @methimpl{
