@@ -21,6 +21,7 @@
 (define-struct/cond-contract (i-subst/dotted subst-rhs) ([types (listof Type/c)] [dty Type/c] [dbound symbol?]) #:transparent)
 
 (define substitution/c (hash/c symbol? subst-rhs? #:immutable #t))
+(define simple-substitution/c (hash/c symbol? Type/c #:immutable #t))
 
 (define (subst v t e) (substitute t v e))
 
@@ -32,37 +33,47 @@
     (values v (t-subst t))))
 
 
-;; substitute : Type Name Type -> Type
-(define/cond-contract (substitute image name target #:Un [Un (lambda (args) (apply Un args))])
-  ((Type/c symbol? Type?) (#:Un procedure?) . ->* . Type?)
-  (define (sb t) (substitute image name t #:Un Un))
-  (if (hash-ref (free-vars* target) name #f)
+
+;; substitute-many : Hash[Name,Type] Type -> Type
+(define/cond-contract (substitute-many subst target #:Un [Un (lambda (args) (apply Un args))])
+  ((simple-substitution/c Type?) (#:Un procedure?) . ->* . Type?)
+  (define (sb t) (substitute-many subst t #:Un Un))
+  (define names (hash-keys subst))
+  (if (ormap (lambda (name) (hash-has-key? (free-vars* target) name)) names)
       (type-case (#:Type sb #:Filter (sub-f sb) #:Object (sub-o sb))
                  target
                  [#:Union tys (Un (map sb tys))]
-                 [#:F name* (if (eq? name* name) image target)]
+                 [#:F name (hash-ref subst name target)]
                  [#:arr dom rng rest drest kws
-                        (begin
-                          (when (and (pair? drest)
-                                     (eq? name (cdr drest))
-                                     (not (bound-tvar? name)))
-                            (int-err "substitute used on ... variable ~a in type ~a" name target))
-                          (make-arr (map sb dom)
-                                    (sb rng)
-                                    (and rest (sb rest))
-                                    (and drest (cons (sb (car drest)) (cdr drest)))
-                                    (map sb kws)))]
+                        (cond
+                          ((and (pair? drest) (ormap (and/c (cdr drest) (not/c bound-tvar?)) names)) =>
+                           (lambda (name)
+                             (int-err "substitute used on ... variable ~a in type ~a" name target)))
+                          (else
+                           (make-arr (map sb dom)
+                                     (sb rng)
+                                     (and rest (sb rest))
+                                     (and drest (cons (sb (car drest)) (cdr drest)))
+                                     (map sb kws))))]
                  [#:ValuesDots types dty dbound
-                               (begin
-                                 (when (and (eq? name dbound) (not (bound-tvar? name)))
-                                   (int-err "substitute used on ... variable ~a in type ~a" name target))
+                               (cond
+                                 ((ormap (and/c dbound (not/c bound-tvar?)) names) =>
+                                  (lambda (name)
+                                    (int-err "substitute used on ... variable ~a in type ~a" name target)))
                                  (make-ValuesDots (map sb types) (sb dty) dbound))]
                  [#:ListDots dty dbound
-                             (begin
-                               (when (and (eq? name dbound) (not (bound-tvar? name)))
-                                 (int-err "substitute used on ... variable ~a in type ~a" name target))
+                             (cond
+                               ((ormap (and/c dbound (not/c bound-tvar?)) names) =>
+                                (lambda (name)
+                                  (int-err "substitute used on ... variable ~a in type ~a" name target)))
                                (make-ListDots (sb dty) dbound))])
       target))
+
+
+;; substitute : Type Name Type -> Type
+(define/cond-contract (substitute image name target #:Un [Un (lambda (args) (apply Un args))])
+  ((Type/c symbol? Type?) (#:Un procedure?) . ->* . Type?)
+  (substitute-many (hash name image) target #:Un Un))
 
 ;; implements angle bracket substitution from the formalism
 ;; substitute-dots : Listof[Type] Option[type] Name Type -> Type
@@ -142,12 +153,21 @@
 ;; substitute many variables
 ;; substitution = Listof[U List[Name,Type] List[Name,Listof[Type]]]
 ;; subst-all : substitution Type -> Type
-(define/cond-contract (subst-all s t)
+(define/cond-contract (subst-all s ty)
   (substitution/c Type? . -> . Type?)
-  (for/fold ([t t]) ([(v r) (in-hash s)])
+
+  (define t-substs
+    (for/fold ([acc (hash)]) ([(v r) (in-hash s)])
+      (match r
+        [(t-subst img)
+         (hash-set acc v img)]
+        [_ acc])))
+  (define t-substed-ty (substitute-many t-substs ty))
+
+
+  (for/fold ([t t-substed-ty]) ([(v r) (in-hash s)])
     (match r
-      [(t-subst img)
-       (substitute img v t)]
+      [(t-subst img) t]
       [(i-subst imgs)
        (substitute-dots imgs #f v t)]
       [(i-subst/starred imgs rest)

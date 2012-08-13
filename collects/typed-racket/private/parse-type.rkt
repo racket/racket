@@ -366,33 +366,13 @@
        (let loop
          ([rator (parse-type #'id)]
           [args (map parse-type (syntax->list #'(arg args ...)))])
+         (resolve-app-check-error rator args stx)
          (match rator
-           [(Name: n)
-            (when (and (current-poly-struct)
-                       (free-identifier=? n (poly-name (current-poly-struct)))
-                       (not (or (ormap Error? args)
-                                (andmap type-equal? args (poly-vars (current-poly-struct))))))
-              (tc-error "Structure type constructor ~a applied to non-regular arguments ~a" rator args))
-            (make-App rator args stx)]
-           [(Poly: ns _)
-            (unless (= (length args) (length ns))
-              (tc-error "Wrong number of arguments to type ~a, expected ~a but got ~a" rator (length ns) (length args)))
-            (instantiate-poly rator args)]
+           [(Name: _) (make-App rator args stx)]
+           [(Poly: _ _) (instantiate-poly rator args)]
            [(Mu: _ _) (loop (unfold rator) args)]
            [(Error:) Err]
-           [_ (tc-error/delayed "Type ~a cannot be applied, arguments were: ~a" rator args)
-              Err]))
-       #;
-       (let ([ty (parse-type #'id)])
-         #;(printf "ty is ~a" ty)
-         (unless (Poly? ty)
-           (tc-error "not a polymorphic type: ~a" (syntax-e #'id)))
-         (unless (= (length (syntax->list #'(arg args ...))) (Poly-n ty))
-           (tc-error "wrong number of arguments to type constructor ~a: expected ~a, got ~a"
-                     (syntax-e #'id)
-                     (Poly-n ty)
-                     (length (syntax->list #'(arg args ...)))))
-         (instantiate-poly ty (map parse-type (syntax->list #'(arg args ...)))))]
+           [_ Err]))]
       [t:atom
        (-val (syntax-e #'t))]
       [_ (tc-error "not a valid type: ~a" (syntax->datum stx))])))
@@ -463,4 +443,3 @@
 (define parse-tc-results/id (parse/id parse-tc-results))
 
 (define parse-type/id (parse/id parse-type))
-
