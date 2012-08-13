@@ -67,9 +67,7 @@
                       [(id ...) exids]
                       [(ty ...) extys])
           (local-expand #'(let () (begin (: id ty) ... body ... (values id ...))) ctx null))))
-  (parameterize (;; disable fancy printing?
-                 [custom-printer #t]
-                 ;; a cheat to avoid units
+  (parameterize (;; a cheat to avoid units
                  [infer-param infer]
                  ;; do we report multiple errors
                  [delay-errors? #t]

@@ -7,6 +7,7 @@ at least theoretically.
 
 (require (for-syntax racket/base syntax/parse racket/string)
          racket/require-syntax racket/provide-syntax         
+         racket/generic
          racket/struct-info "timing.rkt")
 
 ;; to move to unstable
@@ -20,7 +21,7 @@ at least theoretically.
  ;; logging
  printf/log show-input?
  ;; struct printing
- custom-printer print-multi-line-case-> define-struct/printer
+ print-multi-line-case-> define-struct/printer
  ;; provide macros
  rep utils typecheck infer env private types)
 
@@ -109,7 +110,7 @@ at least theoretically.
       #'(void)))
 
 ;; custom printing
-(define custom-printer (make-parameter #t))
+(define-for-syntax custom-printer #t)
 (define print-multi-line-case-> (make-parameter #f))
 
 (define-syntax (define-struct/printer stx)
@@ -117,15 +118,13 @@ at least theoretically.
     [(form name (flds ...) printer:expr)
      #`(define-struct name (flds ...)
          #:property prop:custom-print-quotable 'never
-         #:property prop:custom-write
-         (lambda (v port write?)
-           (if (custom-printer)
-               (printer v port write?)
-               ;; ok to make this case slow, it never runs in real code
-               ((if write?
-                    (dynamic-require 'racket/pretty 'pretty-write)
-                    (dynamic-require 'racket/pretty 'pretty-print))
-                v port)))
+         ;; Eta expansion so that printer is not evaluated
+         ;; until needed.
+         #,@(if custom-printer
+              #'(#:methods gen:custom-write
+                 [(define (write-proc v port write?)
+                    (printer v port write?))])
+              #'())
          #:transparent)]))
 
 

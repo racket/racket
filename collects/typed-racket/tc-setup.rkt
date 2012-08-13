@@ -39,9 +39,7 @@
     (with-handlers
         (#;[(λ (e) (and (exn:fail? e) (not (exn:fail:syntax? e)) (not (exn:fail:filesystem? e))))
           (λ (e) (tc-error "Internal Typed Racket Error : ~a" e))])
-      (parameterize (;; enable fancy printing?
-                     [custom-printer #t]
-                     ;; a cheat to avoid units
+      (parameterize (;; a cheat to avoid units
                      [infer-param infer]
                      ;; do we report multiple errors
                      [delay-errors? #t]
