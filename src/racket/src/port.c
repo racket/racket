@@ -2712,7 +2712,7 @@ static int complete_peeked_read_via_get(Scheme_Input_Port *ip,
   /* We used to return `did', but since an event has already been
      selected, claim success at this point always. */
 
-  return 1;
+  return 1 || did;
 }
 
 static Scheme_Object *return_data(void *data, int argc, Scheme_Object **argv)

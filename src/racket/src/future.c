@@ -966,9 +966,7 @@ static Scheme_Object *reset_future_logs_for_tracking(int argc, Scheme_Object **a
   Scheme_Future_State *fs;
   Scheme_Future_Thread_State *fts;
   Scheme_Future_Thread_State *rt_fts;
-  Scheme_Logger *logger;
 
-  logger = scheme_main_logger;
   fs = scheme_future_state;
   rt_fts = scheme_future_thread_state;
   if (fs) {
