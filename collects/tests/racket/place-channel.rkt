@@ -363,16 +363,26 @@
     (place-wait pl))
 
   ; test place-break
-  (let ([p (place ch
-             (with-handlers ([exn:break? (lambda (x) (place-channel-put ch "OK"))])
-              (place-channel-put ch "ALIVE")
-              (sync never-evt)
-              (place-channel-put ch "NOK")))])
-
-  (test "ALIVE" place-channel-get p)
-  (place-break p)
-  (test "OK" place-channel-get p)
-  (place-wait p))
+  (let ()
+    (define (go kind)
+      (let ([p (place ch
+                 (define kind (place-channel-get ch))
+                 (with-handlers ([(case kind
+                                    [(hang-up) exn:break:hang-up?]
+                                    [(terminate) exn:break:terminate?]
+                                    [else exn:break?])
+                                  (lambda (x) (place-channel-put ch "OK"))])
+                   (place-channel-put ch "ALIVE")
+                   (sync never-evt)
+                   (place-channel-put ch "NOK")))])
+        (place-channel-put p kind)
+        (test "ALIVE" place-channel-get p)
+        (place-break p kind)
+        (test "OK" place-channel-get p)
+        (place-wait p)))
+    (go #f)
+    (go 'hang-up)
+    (go 'terminate))
 
   ; test place-dead-evt
   (define wbs '())

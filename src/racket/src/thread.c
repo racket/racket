@@ -506,7 +506,7 @@ void scheme_init_thread(Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY("thread-wait"           , thread_wait        , 1, 1, env);
   GLOBAL_PRIM_W_ARITY("current-thread"        , sch_current        , 0, 0, env);
   GLOBAL_PRIM_W_ARITY("kill-thread"           , kill_thread        , 1, 1, env);
-  GLOBAL_PRIM_W_ARITY("break-thread"          , break_thread       , 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("break-thread"          , break_thread       , 1, 2, env);
   GLOBAL_PRIM_W_ARITY("thread-suspend"        , thread_suspend     , 1, 1, env);
   GLOBAL_PRIM_W_ARITY("thread-resume"         , thread_resume      , 1, 2, env);
   GLOBAL_PRIM_W_ARITY("thread-resume-evt"     , make_thread_resume , 1, 1, env);
@@ -4205,7 +4205,7 @@ void scheme_pop_break_enable(Scheme_Cont_Frame_Data *cframe, int post_check)
   }
 }
 
-static Scheme_Object *raise_user_break(int argc, Scheme_Object ** volatile argv)
+static Scheme_Object *raise_user_break(void *data, int argc, Scheme_Object ** volatile argv)
 {
   /* The main action here is buried in code to free temporary bignum
      space on escapes. Aside from a thread kill, this is the only
@@ -4216,6 +4216,9 @@ static Scheme_Object *raise_user_break(int argc, Scheme_Object ** volatile argv)
      that's why we save and restore an old snapshot. */
   mz_jmp_buf *savebuf, newbuf;
   intptr_t save[4];
+  int kind;
+
+  kind = SCHEME_INT_VAL((Scheme_Object *)data);
 
   savebuf = scheme_current_thread->error_buf;
   scheme_current_thread->error_buf = &newbuf;
@@ -4223,7 +4226,11 @@ static Scheme_Object *raise_user_break(int argc, Scheme_Object ** volatile argv)
 
   if (!scheme_setjmp(newbuf)) {
     /* >>>> This is the main action <<<< */
-    scheme_raise_exn(MZEXN_BREAK, argv[0], "user break");
+    scheme_raise_exn(kind, argv[0], ((kind == MZEXN_BREAK_TERMINATE)
+                                     ? "terminate break"
+                                     : ((kind == MZEXN_BREAK_HANG_UP)
+                                        ? "hang-up break"
+                                        : "user break")));
     /* will definitely escape (or thread will die) */
   } else {
     /* As expected, we're escaping. Unless we're continuing, then
@@ -4244,7 +4251,9 @@ static void raise_break(Scheme_Thread *p)
   Thread_Schedule_State_Record ssr;
   Scheme_Object *a[1];
   Scheme_Cont_Frame_Data cframe;
+  int kind;
 
+  kind = p->external_break;
   p->external_break = 0;
 
   if (p->blocker && (p->block_check == (Scheme_Ready_Fun)syncing_ready)) {
@@ -4255,7 +4264,7 @@ static void raise_break(Scheme_Thread *p)
   save_thread_schedule_state(p, &ssr, 0);
   p->ran_some = 1;
   
-  a[0] = scheme_make_prim((Scheme_Prim *)raise_user_break);
+  a[0] = scheme_make_closed_prim((Scheme_Closed_Prim *)raise_user_break, scheme_make_integer(kind));
 
   /* Continuation frame ensures that this doesn't
      look like it's in tail position with respect to
@@ -4304,14 +4313,22 @@ static void exit_or_escape(Scheme_Thread *p)
   select_thread();
 }
 
-void scheme_break_main_thread_at(void *p)
+void scheme_break_kind_main_thread_at(void *p, int kind)
 /* This function can be called from an interrupt handler. 
    On some platforms, it will even be called from multiple
    OS threads. In the case of multiple threads, there's a
    tiny chance that a single Ctl-C will trigger multiple
    break exceptions. */
+  XFORM_SKIP_PROC
 {
-  *(volatile short *)p = 1;
+  if (kind > *(volatile short *)p)
+    *(volatile short *)p = kind;
+}
+
+void scheme_break_main_thread_at(void *p)
+  XFORM_SKIP_PROC
+{
+  scheme_break_kind_main_thread_at(p, MZEXN_BREAK);
 }
 
 void scheme_break_main_thread()
@@ -4343,13 +4360,14 @@ static void check_ready_break()
 
   if (delayed_break_ready) {
     if (scheme_main_thread) {
+      int kind = delayed_break_ready;
       delayed_break_ready = 0;
-      scheme_break_thread(main_break_target_thread);
+      scheme_break_kind_thread(main_break_target_thread, kind);
     }
   }
 }
 
-void scheme_break_thread(Scheme_Thread *p)
+void scheme_break_kind_thread(Scheme_Thread *p, int kind)
 {
   if (!p) {
     p = scheme_main_thread;
@@ -4362,7 +4380,8 @@ void scheme_break_thread(Scheme_Thread *p)
     p = p->nestee;
   }
 
-  p->external_break = 1;
+  if (kind > p->external_break)
+    p->external_break = kind;
 
   if (p == scheme_current_thread) {
     if (scheme_can_break(p)) {
@@ -4375,6 +4394,11 @@ void scheme_break_thread(Scheme_Thread *p)
   if (SAME_OBJ(p, scheme_main_thread))
     ReleaseSemaphore((HANDLE)scheme_break_semaphore, 1, NULL);
 # endif
+}
+
+void scheme_break_thread(Scheme_Thread *p)
+{
+  return scheme_break_kind_thread(p, MZEXN_BREAK);
 }
 
 static void call_on_atomic_timeout(int must)
@@ -5113,19 +5137,29 @@ sch_sleep(int argc, Scheme_Object *args[])
 static Scheme_Object *break_thread(int argc, Scheme_Object *args[])
 {
   Scheme_Thread *p;
+  int kind = MZEXN_BREAK;
 
   if (!SAME_TYPE(SCHEME_TYPE(args[0]), scheme_thread_type))
     scheme_wrong_contract("break-thread", "thread?", 0, argc, args);
 
+  if ((argc > 1) && SCHEME_TRUEP(args[1])) {
+    if (SCHEME_SYMBOLP(args[1]) 
+        && !SCHEME_SYM_WEIRDP(args[1]) 
+        && !strcmp(SCHEME_SYM_VAL(args[1]), "hang-up"))
+      kind = MZEXN_BREAK_HANG_UP;
+    else if (SCHEME_SYMBOLP(args[1]) 
+             && !SCHEME_SYM_WEIRDP(args[1]) 
+             && !strcmp(SCHEME_SYM_VAL(args[1]), "terminate"))
+      kind = MZEXN_BREAK_TERMINATE;
+    else
+      scheme_wrong_contract("break-thread", "(or/c #f 'hang-up 'terminate)", 1, argc, args);
+  }
+
   p = (Scheme_Thread *)args[0];
 
-  scheme_break_thread(p);
+  scheme_break_kind_thread(p, kind);
 
-  /* In case p == scheme_current_thread */
-  if (!scheme_fuel_counter) {
-    scheme_thread_block(0.0);
-    scheme_current_thread->ran_some = 1;
-  }
+  scheme_check_break_now();
 
   return scheme_void;
 }

@@ -595,6 +595,7 @@
 
 # define SIGSET_IS_SIGNAL
 # define SIGSET_NEEDS_REINSTALL
+# define NO_SIGHUP_HANDLER
 
 #define USE_WINSOCK_TCP
 
@@ -1499,7 +1500,12 @@
  /* NO_INLINE_KEYWORD indicates that the C compiler doesn't recognize
     C's `inline' keyword. */
 
- /* NO_USER_BREAK_HANDLER turns off handling of INT signal in main.c */
+ /* NO_USER_BREAK_HANDLER turns off handling of SIGINT, SIGTERM, and 
+    SIGHUP in main.c */
+
+ /* NO_SIGTERM_HANDLER turns off handling of SIGTERM in main.c */
+
+ /* NO_SIGHUP_HANDLER turns off handling of SIGHUP in main.c */
 
  /* DIR_INCLUDE if there's a <dir.h> file (mainly for Windows). */
 

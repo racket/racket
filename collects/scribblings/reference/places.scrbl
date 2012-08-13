@@ -251,8 +251,10 @@ If any pumping threads were created to connect a non-@tech{file-stream
   completion value already.}
 
 
-@defproc[(place-break [p place?]) void?]{
-  Sends place @racket[p] a break signal; see @secref["breakhandler"].
+@defproc[(place-break [p place?]
+                      [kind (or/c #f 'hang-up 'terminate) #f])
+         void?]{
+  Sends the main thread of place @racket[p] a break; see @secref["breakhandler"].
 }
 
 

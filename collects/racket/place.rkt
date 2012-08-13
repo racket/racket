@@ -21,7 +21,7 @@
          place-sleep
          place-wait
          place-kill
-         place-break
+         (rename-out [place-break/opt place-break])
          place-channel
          place-channel-put
          place-channel-get
@@ -59,13 +59,17 @@
 (define-pl-func place-sleep p)
 (define-pl-func place-wait p)
 (define-pl-func place-kill p)
-(define-pl-func place-break p)
+(define-pl-func place-break p kind)
 (define-pl-func place-channel-put p msg)
 (define-pl-func place-channel-get p)
 (define-pl-func place-channel? p)
 (define-pl-func place? p)
 (define-pl-func place-message-allowed? p)
 (define-pl-func place-dead-evt p)
+
+(define place-break/opt
+  (let ([place-break (lambda (p [kind #f]) (place-break p kind))])
+    place-break))
 
 (define (pump-place p pin pout perr in out err)
   (cond

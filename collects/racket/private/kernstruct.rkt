@@ -403,6 +403,41 @@
           (quote-syntax exn)))
        (λ () (quote-syntax kernel:exn:break)))))
   (begin
+    (#%require
+     (rename '#%kernel kernel:exn:break:terminate exn:break:terminate))
+    (define make-exn:break:terminate kernel:exn:break:terminate)
+    (define-syntax exn:break:terminate
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn:break:terminate)
+          (quote-syntax make-exn:break:terminate)
+          (quote-syntax exn:break:terminate?)
+          (list
+           (quote-syntax exn:break-continuation)
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f #f)
+          (quote-syntax exn:break)))
+       (λ () (quote-syntax kernel:exn:break:terminate)))))
+  (begin
+    (#%require (rename '#%kernel kernel:exn:break:hang-up exn:break:hang-up))
+    (define make-exn:break:hang-up kernel:exn:break:hang-up)
+    (define-syntax exn:break:hang-up
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn:break:hang-up)
+          (quote-syntax make-exn:break:hang-up)
+          (quote-syntax exn:break:hang-up?)
+          (list
+           (quote-syntax exn:break-continuation)
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f #f)
+          (quote-syntax exn:break)))
+       (λ () (quote-syntax kernel:exn:break:hang-up)))))
+  (begin
     (#%require (rename '#%kernel kernel:arity-at-least arity-at-least))
     (define make-arity-at-least kernel:arity-at-least)
     (define-syntax arity-at-least

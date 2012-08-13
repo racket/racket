@@ -1,3 +1,8 @@
+Version 5.3.0.20
+Added exn:break:hang-up and exn:break:terminate, added
+ extra argument to break-thread and place-break, and
+ redirect SIGTERM and SIGHUP as breaks
+
 Version 5.3.0.16
 scribble/base: add items/c
 scribble/decode: add spliceof

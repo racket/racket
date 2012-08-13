@@ -135,7 +135,7 @@ void scheme_init_place(Scheme_Env *env)
   PLACE_PRIM_W_ARITY("place-sleep",           place_sleep,     1, 1, plenv);
   PLACE_PRIM_W_ARITY("place-wait",            place_wait,      1, 1, plenv);
   PLACE_PRIM_W_ARITY("place-kill",            place_kill,      1, 1, plenv);
-  PLACE_PRIM_W_ARITY("place-break",           place_break,     1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place-break",           place_break,     1, 2, plenv);
   PLACE_PRIM_W_ARITY("place?",                place_p,         1, 1, plenv);
   PLACE_PRIM_W_ARITY("place-channel",         place_channel,   0, 0, plenv);
   PLACE_PRIM_W_ARITY("place-channel-put",     place_send,      2, 2, plenv);
@@ -550,7 +550,7 @@ static void do_place_kill(Scheme_Place *place)
   place->place_obj = NULL;
 }
 
-static int do_place_break(Scheme_Place *place) 
+static int do_place_break(Scheme_Place *place, int kind) 
 {
   Scheme_Place_Object *place_obj;
   place_obj = place->place_obj;
@@ -558,7 +558,7 @@ static int do_place_break(Scheme_Place *place)
   if (place_obj) {
     mzrt_mutex_lock(place_obj->lock);
 
-    place_obj->pbreak = 1;
+    place_obj->pbreak = kind;
 
     if (place_obj->signal_handle)
       scheme_signal_received_at(place_obj->signal_handle);
@@ -585,14 +585,30 @@ static Scheme_Object *place_kill(int argc, Scheme_Object *args[]) {
   return scheme_void;
 }
 
-static Scheme_Object *place_break(int argc, Scheme_Object *args[]) {
-  Scheme_Place          *place;
-  place = (Scheme_Place *) args[0];
+static Scheme_Object *place_break(int argc, Scheme_Object *args[]) 
+{
+  Scheme_Place *place = (Scheme_Place *) args[0];
+  int kind = MZEXN_BREAK;
 
   if (!SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_type))
     scheme_wrong_contract("place-break", "place?", 0, argc, args);
 
-  return scheme_make_integer(do_place_break(place));
+  if ((argc > 1) && SCHEME_TRUEP(args[1])) {
+    if (SCHEME_SYMBOLP(args[1]) 
+        && !SCHEME_SYM_WEIRDP(args[1]) 
+        && !strcmp(SCHEME_SYM_VAL(args[1]), "hang-up"))
+      kind = MZEXN_BREAK_HANG_UP;
+    else if (SCHEME_SYMBOLP(args[1]) 
+             && !SCHEME_SYM_WEIRDP(args[1]) 
+             && !strcmp(SCHEME_SYM_VAL(args[1]), "terminate"))
+      kind = MZEXN_BREAK_TERMINATE;
+    else
+      scheme_wrong_contract("place-break", "(or/c #f 'hang-up 'terminate)", 1, argc, args);
+  }
+
+  do_place_break(place, kind);
+
+  return scheme_void;
 }
 
 static int place_deadp(Scheme_Object *place) {
@@ -2324,7 +2340,7 @@ void scheme_place_check_for_interruption()
   if (local_die > 0)
     scheme_kill_thread(scheme_main_thread);
   if (local_break)
-    scheme_break_thread(NULL);
+    scheme_break_kind_thread(NULL, local_break);
 }
 
 void scheme_place_set_memory_use(intptr_t mem_use)

@@ -61,7 +61,9 @@
                        (mkp "exn:fail:out-of-memory")
                        (mkp "exn:fail:unsupported")
                        (mkp "exn:fail:user")
-                       (mkp "exn:break")))])
+                       (mkp "exn:break")
+                       (mkp "exn:break:hang-up")
+                       (mkp "exn:break:terminate")))])
   (test #t 'names
 	(andmap
 	 (lambda (nv-pair)

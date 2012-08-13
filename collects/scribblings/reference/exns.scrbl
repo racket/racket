@@ -406,8 +406,12 @@ it returns, an exception is raised (to be handled by an exception
 handler that reports both the original and newly raised exception).
 
 The default uncaught-exception handler prints an error message using
-the current @tech{error display handler} (see @racket[error-display-handler])
-and then escapes by calling the current @tech{error escape handler} (see
+the current @tech{error display handler} (see @racket[error-display-handler]).
+If the argument to the handler is an instance of @racket[exn:break:hang-up]
+or @racket[exn:break:terminate], the default uncaught-exception handler
+then calls the @tech{exit handler} with @racket[1], which normally exits
+or escapes. For any argument, the default uncaught-exception handler
+then escapes by calling the current @tech{error escape handler} (see
 @racket[error-escape-handler]). The call to each handler is
 @racket[parameterize]d to set @racket[error-display-handler] to the
 default @tech{error display handler}, and it is @racket[parameterize-break]ed
@@ -698,6 +702,20 @@ context when printing the error message.}
 Raised asynchronously (when enabled) in response to a break request.
 The @racket[continuation] field can be used by a handler to resume the
 interrupted computation.}
+
+@defstruct[(exn:break:hang-up exn:break) ()
+           #:inspector #f]{
+
+Raised asynchronously for hang-up breaks. The default
+ @tech{uncaught-exception handler} reacts to this exception type by
+ calling the @tech{exit handler}.}
+
+@defstruct[(exn:break:terminate exn:break) ()
+           #:inspector #f]{
+
+Raised asynchronously for termination-request breaks. The default
+ @tech{uncaught-exception handler} reacts to this exception type by
+ calling the @tech{exit handler}.}
 
 
 @defthing[prop:exn:srclocs struct-type-property?]{

@@ -107,8 +107,10 @@ MZ_EXTERN Scheme_Object *scheme_thread_w_details(Scheme_Object *thunk,
 						 int suspend_to_kill);
 MZ_EXTERN void scheme_kill_thread(Scheme_Thread *p);
 MZ_EXTERN void scheme_break_thread(Scheme_Thread *p);
+MZ_EXTERN void scheme_break_kind_thread(Scheme_Thread *p, int kind);
 MZ_EXTERN void scheme_break_main_thread();
 MZ_EXTERN void scheme_break_main_thread_at(void *);
+MZ_EXTERN void scheme_break_kind_main_thread_at(void *, int kind);
 MZ_EXTERN void *scheme_get_main_thread_break_handle();
 MZ_EXTERN void scheme_set_break_main_target(Scheme_Thread *p);
 
