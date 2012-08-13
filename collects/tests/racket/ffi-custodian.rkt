@@ -13,7 +13,7 @@
                                  (when done? (error "duplicate!"))
                                  (set! done? (equal? x '(1 . 2))))
                                c
-                               #:atexit? #t))
+                               #:at-exit? #t))
 
 (unregister-custodian-shutdown val (reg))
 (void (reg))

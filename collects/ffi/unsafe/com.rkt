@@ -559,7 +559,7 @@
   (define impl (com-object-impl obj))
   (set-com-impl-mref!
    impl
-   (register-custodian-shutdown impl impl-release #:atexit? #t))
+   (register-custodian-shutdown impl impl-release #:at-exit? #t))
   ;; If we don't finalize the object, then it could
   ;; happen that the object becomes unreachable and
   ;; pointers that the object references could be

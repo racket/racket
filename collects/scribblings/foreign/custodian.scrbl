@@ -11,7 +11,7 @@ registering shutdown callbacks with custodians.}
 @defproc[(register-custodian-shutdown [v any/c]
                                       [callback (any/c . -> . any)]
                                       [custodian custodian? (current-custodian)]
-                                      [#:atexit? atexit? any/c #f]
+                                      [#:at-exit? at-exit? any/c #f]
                                       [#:weak? weak? any/c #f])
           cpointer?]{
 
@@ -20,7 +20,7 @@ unspecified Racket thread) to @racket[v] when @racket[custodian] is
 shutdown. The result is a pointer that can be supplied to
 @racket[unregister-custodian-shutdown] to remove the registration.
 
-If @racket[atexit?] is true, then @racket[callback] is applied when
+If @racket[at-exit?] is true, then @racket[callback] is applied when
 Racket exits, even if the custodian is not explicitly shut down.
 
 If @racket[weak?]  is true, then @racket[callback] may not be called

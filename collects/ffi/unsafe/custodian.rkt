@@ -26,11 +26,11 @@
   (cast shutdown-callback (_fun #:atomic? #t _racket _racket -> _void) _fpointer))
 
 (define (register-custodian-shutdown obj proc [custodian (current-custodian)]
-                                     #:atexit? [atexit? #f]
+                                     #:at-exit? [at-exit? #f]
                                      #:weak? [weak? #f])
   (define proc+self (cons proc
                           shutdown-callback)) ; proc as data -> ffi callback retained
-  (if atexit?
+  (if at-exit?
       (scheme_add_managed_close_on_exit custodian
                                         obj shutdown_callback proc+self)
       (scheme_add_managed custodian
