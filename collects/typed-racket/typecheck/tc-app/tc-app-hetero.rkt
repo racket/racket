@@ -1,36 +1,19 @@
 #lang racket/unit
 
-(require (rename-in "../../utils/utils.rkt" [infer r:infer])
+(require "../../utils/utils.rkt"
+         (prefix-in c: (contract-req))
+         syntax/parse racket/match
          "signatures.rkt"
-         "../signatures.rkt" "../tc-metafunctions.rkt" "../check-below.rkt"
-         "../find-annotation.rkt" "../tc-funapp.rkt"
-         "../tc-subst.rkt" (prefix-in c: racket/contract)
-         syntax/parse racket/match racket/trace scheme/list
-         unstable/sequence  unstable/list
          ;; fixme - don't need to be bound in this phase - only to make tests work
-         scheme/bool
          racket/unsafe/ops
-         (only-in racket/private/class-internal do-make-object)
-         (only-in syntax/location module-name-fixup)
-         (only-in '#%kernel [apply k:apply] [reverse k:reverse])
          ;; end fixme
-         (for-syntax syntax/parse scheme/base (utils tc-utils))
-         (private type-annotation)
-         (types utils abbrev numeric-tower union subtype resolve type-table substitute generalize)
+         (types utils abbrev numeric-tower union resolve type-table generalize)
+         (typecheck signatures check-below)
          (utils tc-utils)
-         (only-in srfi/1 alist-delete)
-         (except-in (env type-env-structs tvar-env index-env) extend)
-         (rep type-rep filter-rep object-rep rep-utils)
-         (r:infer infer)
-         '#%paramz
-         (for-template
-          racket/unsafe/ops racket/fixnum racket/flonum
-          (only-in '#%kernel [apply k:apply] [reverse k:reverse])
-          "../internal-forms.rkt" scheme/base scheme/bool '#%paramz
-          (only-in racket/private/class-internal do-make-object)
-          (only-in syntax/location module-name-fixup)))
+         (rep type-rep rep-utils)
+         (for-template racket/unsafe/ops racket/base))
 
-(import tc-expr^ tc-lambda^ tc-let^ tc-apply^ tc-app^)
+(import tc-expr^ tc-app^)
 (export tc-app-hetero^)
 
 
