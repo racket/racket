@@ -60,13 +60,13 @@
                                  ((ormap (and/c dbound (not/c bound-tvar?)) names) =>
                                   (lambda (name)
                                     (int-err "substitute used on ... variable ~a in type ~a" name target)))
-                                 (make-ValuesDots (map sb types) (sb dty) dbound))]
+                                 (else (make-ValuesDots (map sb types) (sb dty) dbound)))]
                  [#:ListDots dty dbound
                              (cond
                                ((ormap (and/c dbound (not/c bound-tvar?)) names) =>
                                 (lambda (name)
                                   (int-err "substitute used on ... variable ~a in type ~a" name target)))
-                               (make-ListDots (sb dty) dbound))])
+                               (else (make-ListDots (sb dty) dbound)))])
       target))
 
 
