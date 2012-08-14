@@ -7,9 +7,8 @@
          (env init-envs)
          (r:infer infer)
          (only-in (r:infer infer-dummy) infer-param)
-         (except-in (rep object-rep filter-rep type-rep) make-arr)
-         (types convenience union filter-ops)
-         (only-in (types convenience) [make-arr* make-arr]))
+         (types abbrev numeric-tower union filter-ops)
+         (rep object-rep filter-rep type-rep))
 
 (define-syntax (-#%module-begin stx)
   (define-syntax-class clause
@@ -17,15 +16,15 @@
     (pattern [id:identifier ty]))
   (syntax-parse stx #:literals (require begin)
     [(mb (~optional (~and extra (~or (begin . _) (require . args))))
-	 ~! :clause ...)
+         ~! :clause ...)
      #'(#%plain-module-begin
-	(begin
-	  extra
-	  (define e
-	    (parameterize ([infer-param infer])
-	      (make-env [id (λ () ty)] ...)))
-	  (define (init)
-	   (initialize-type-env e))
+        (begin
+          extra
+          (define e
+            (parameterize ([infer-param infer])
+              (make-env [id (λ () ty)] ...)))
+          (define (init)
+           (initialize-type-env e))
           (provide init)))]
     [(mb . rest)
      #'(mb (begin) . rest)]))
@@ -34,4 +33,4 @@
          require
          (except-out (all-from-out racket/base) #%module-begin)
          types rep private utils
-         (types-out convenience union filter-ops))
+         (types-out abbrev numeric-tower union filter-ops))

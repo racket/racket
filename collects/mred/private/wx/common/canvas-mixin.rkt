@@ -18,11 +18,13 @@
     (inherit get-client-size
              refresh)
 
+    (define any-scroll? #f)
     (define auto-scroll? #f)
     (define virtual-height #f)
     (define virtual-width #f)
 
     (define/public (is-auto-scroll?) auto-scroll?)
+    (define/public (is-disabled-scroll?) (not any-scroll?))
     (define/public (get-virtual-height) virtual-height)
     (define/public (get-virtual-width) virtual-width)
     
@@ -31,6 +33,7 @@
                                    h-page v-page
                                    h-pos v-pos
                                    auto?)
+       (set! any-scroll? #t)
        (cond
         [auto?
          (set! auto-scroll? #t)

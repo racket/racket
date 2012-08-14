@@ -1046,6 +1046,8 @@ typedef struct Scheme_Thread {
   Scheme_Object *dead_box;      /* contains non-zero when the thread is dead */
   Scheme_Object *running_box;   /* contains pointer to thread when it's running */
 
+  struct Scheme_Thread *gc_prep_chain;
+
   struct Scheme_Thread *nester, *nestee;
 
   struct future_t *current_ft;

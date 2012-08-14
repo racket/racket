@@ -105,7 +105,8 @@
                           lang-nts
                           'reduction-relation
                           #t
-                          #'x)])
+                          #'x)]
+                        [lang-stx lang])
             (define-values (binding-constraints temporaries env+)
               (generate-binding-constraints (syntax->list #'(names ...))
                                             (syntax->list #'(names/ellipses ...))
@@ -120,7 +121,7 @@
                      [(predicate)
                       #'combine-where-results/predicate]
                      [else (error 'unknown-where-mode "~s" where-mode)])
-                 (match-pattern (compile-pattern #,lang `side-conditions-rewritten #t) (term e))
+                 (match-pattern (compile-pattern #,lang `side-conditions-rewritten #t) (term/nts e #,lang-nts))
                  (λ (bindings)
                    (let ([x (lookup-binding bindings 'names)] ...)
                      (and binding-constraints ...
@@ -184,7 +185,7 @@
                        (generate-binding-constraints output-names output-names/ellipses env orig-name)]
                       [(rest-body) (loop rest-clauses #`(list judgment-output #,to-not-be-in) env+)]
                       [(call)
-                       (let ([input (quasisyntax/loc premise (term #,input-template))])
+                       (let ([input (quasisyntax/loc premise (term/nts #,input-template #,lang-nts))])
                          (define (make-traced input)
                            (quasisyntax/loc premise
                              (call-judgment-form 'form-name #,judgment-proc '#,mode #,input)))
@@ -336,15 +337,15 @@
 
 (define-for-syntax (do-extended-judgment-form lang syn-err-name body orig stx)
   (define nts (definition-nts lang stx syn-err-name))
-  (define-values (judgment-form-name dup-form-names mode position-contracts clauses)
+  (define-values (judgment-form-name dup-form-names mode position-contracts clauses rule-names)
     (parse-judgment-form-body body syn-err-name stx (identifier? orig)))
   (define definitions
     #`(begin
         (define-syntax #,judgment-form-name 
-          (judgment-form '#,judgment-form-name '#,(cdr (syntax->datum mode)) #'judgment-form-proc #'mk-judgment-form-proc #'#,lang #'judgment-form-lws))
+          (judgment-form '#,judgment-form-name '#,(cdr (syntax->datum mode)) #'judgment-form-runtime-proc #'mk-judgment-form-proc #'#,lang #'judgment-form-lws '#,rule-names))
         (define mk-judgment-form-proc
           (compile-judgment-form-proc #,judgment-form-name #,mode #,lang #,clauses #,position-contracts #,orig #,stx #,syn-err-name))
-        (define judgment-form-proc (mk-judgment-form-proc #,lang))
+        (define judgment-form-runtime-proc (mk-judgment-form-proc #,lang))
         (define judgment-form-lws
           (compiled-judgment-form-lws #,clauses))))
   (syntax-property
@@ -353,7 +354,7 @@
         ; Introduce the names before using them, to allow
         ; judgment form definition at the top-level.
         #`(begin 
-            (define-syntaxes (judgment-form-proc judgment-form-lws) (values))
+            (define-syntaxes (judgment-form-runtime-proc judgment-form-lws) (values))
             #,definitions)
         definitions))
    'disappeared-use
@@ -374,13 +375,32 @@
     (regexp-match? #rx"^-+$" (symbol->string (syntax-e id))))
   (define-syntax-class horizontal-line
     (pattern x:id #:when (horizontal-line? #'x)))
+  (define-syntax-class name
+    (pattern x #:when (or (and (symbol? (syntax-e #'x))
+                               (not (horizontal-line? #'x))
+                               (not (eq? '... (syntax-e #'x))))
+                          (string? (syntax-e #'x)))))
   (define (parse-rules rules)
-    (for/list ([rule rules])
-      (syntax-parse rule
-        [(prem ... _:horizontal-line conc)
-         #'(conc prem ...)]
-        [_ rule])))
-  (define-values (name/mode mode-stx name/contract contract rules)
+    (define-values (backward-rules backward-names)
+      (for/fold ([parsed-rules '()]
+                 [names '()])
+        ([rule rules])
+        (syntax-parse rule
+          [(prem ... _:horizontal-line n:name conc)
+           (values (cons #'(conc prem ...) parsed-rules)
+                   (cons #'n names))]
+          [(prem ... _:horizontal-line conc)
+           (values (cons #'(conc prem ...) parsed-rules)
+                   (cons #f names))]
+          [(conc prem ... n:name)
+           (values (cons #'(conc prem ...) parsed-rules)
+                   (cons #'n names))]
+          [else
+           (values (cons rule parsed-rules)
+                   (cons #f names))])))
+    (values (reverse backward-rules)
+            (reverse backward-names)))
+  (define-values (name/mode mode-stx name/contract contract rules rule-names)
     (syntax-parse body #:context full-stx
       [((~or (~seq #:mode ~! mode:mode-spec)
              (~seq #:contract ~! contract:contract-spec))
@@ -404,9 +424,10 @@
                         (raise-syntax-error 
                          syn-err-name "expected at most one contract specification"
                          #f #f (syntax->list #'dups))])])
-         (values name/mode mode name/ctc ctc
-                 (parse-rules (syntax->list #'(rule ...)))))]))
+         (define-values (parsed-rules rule-names) (parse-rules (syntax->list #'(rule ...)))) 
+         (values name/mode mode name/ctc ctc parsed-rules rule-names))]))
   (check-clauses full-stx syn-err-name rules #t)
+  (check-dup-rule-names full-stx syn-err-name rule-names)
   (check-arity-consistency mode-stx contract full-stx)
   (define-values (form-name dup-names)
     (syntax-case rules ()
@@ -414,8 +435,30 @@
        (not extension?)
        (raise-syntax-error #f "expected at least one rule" full-stx)]
       [_ (defined-name (list name/mode name/contract) rules full-stx)]))
-  (values form-name dup-names mode-stx contract rules))
+  (define string-rule-names
+    (for/list ([name (in-list rule-names)])
+      (cond
+        [(not name) name]
+        [(symbol? (syntax-e name))
+         (symbol->string (syntax-e name))]
+        [else (syntax-e name)])))
+  (values form-name dup-names mode-stx contract rules string-rule-names))
 
+;; names : (listof (or/c #f syntax[string]))
+(define-for-syntax (check-dup-rule-names full-stx syn-err-name names)
+  (define tab (make-hash))
+  (for ([name (in-list names)])
+    (when (syntax? name)
+      (define k (if (symbol? (syntax-e name))
+                    (symbol->string (syntax-e name))
+                    (syntax-e name)))
+      (hash-set! tab k (cons name (hash-ref tab k '())))))
+  (for ([(k names) (in-hash tab)])
+    (unless (= 1 (length names))
+      (raise-syntax-error syn-err-name
+                          "duplicate rule names"
+                          (car names) #f (cdr names)))))
+                          
 (define-for-syntax (check-arity-consistency mode-stx contracts full-def)
   (when (and contracts (not (= (length (cdr (syntax->datum mode-stx)))
                                (length contracts))))
@@ -455,7 +498,7 @@
             [judgment (syntax-case stx () [(_ judgment _) #'judgment])])
        (check-judgment-arity stx judgment)
        #`(sort #,(bind-withs syn-err-name '() lang nts (list judgment)
-                             'flatten #`(list (term #,#'tmpl)) '() '() #f)
+                             'flatten #`(list (term #,#'tmpl #:lang #,lang)) '() '() #f)
                string<=?
                #:key (λ (x) (format "~s" x))))]
     [(_ (not-form-name . _) . _)
@@ -492,7 +535,7 @@
                                    (struct-copy judgment-form (lookup-judgment-form-id name)
                                                 [proc #'recur]))])
                (bind-withs syn-error-name '() #'lang nts (syntax->list #'prems) 
-                           'flatten #`(list (term (#,@output-pats))) 
+                           'flatten #`(list (term/nts (#,@output-pats) #,nts)) 
                            (syntax->list #'(names ...))
                            (syntax->list #'(names/ellipses ...))
                            #f)))

@@ -4,9 +4,7 @@
          (for-syntax scheme/base)
          (for-template scheme/base)
          (private type-contract)
-         (rep type-rep filter-rep object-rep)
-         (types utils union convenience)
-         (utils tc-utils)
+         (types abbrev numeric-tower)
          rackunit)
 
 (define-syntax-rule (t e)

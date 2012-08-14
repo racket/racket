@@ -106,18 +106,19 @@
     (define data (cdr sample))
     (vector-set! threads id (cons data (vector-ref threads id))))
   threads)
-#|
-(equal? (split-by-thread '())
-        '#())
-(equal? (split-by-thread '([0 x]))
-        '#([(x)]))
-(equal? (split-by-thread '([0 x] [0 y] [0 z]))
-        '#([(z) (y) (x)]))
-(equal? (split-by-thread '([0 x] [1 y] [2 z]))
-        '#([(x)] [(y)] [(z)]))
-(equal? (split-by-thread '([0 x1] [1 y1] [0 x2] [2 z1] [0 x3] [2 z2]))
-        '#([(x3) (x2) (x1)] [(y1)] [(z2) (z1)]))
-|#
+
+(module+ test
+  (require rackunit)
+  (check-equal? (split-by-thread '())
+                '#())
+  (check-equal? (split-by-thread '([0 x]))
+                '#([(x)]))
+  (check-equal? (split-by-thread '([0 x] [0 y] [0 z]))
+                '#([(z) (y) (x)]))
+  (check-equal? (split-by-thread '([0 x] [1 y] [2 z]))
+                '#([(x)] [(y)] [(z)]))
+  (check-equal? (split-by-thread '([0 x1] [1 y1] [0 x2] [2 z1] [0 x3] [2 z2]))
+                '#([(x3) (x2) (x1)] [(y1)] [(z2) (z1)])))
 
 ;; gets a list of thread-id and data for that thread beginning with the
 ;; millisecond count, and returns a similar list where the samples begin with
@@ -152,20 +153,20 @@
                                     (- cur prev))
                                   data)
                             r)))))]))
-#|
-(equal? (get-times '())
-        '())
-(equal? (get-times '([10 a]))
-        '())
-(equal? (get-times '([10 a] [20 b]))
-        '([10 a] [10 b]))
-(equal? (get-times '([10 a] [20 b] [60 c]))
-        '([10 a] [25 b] [40 c]))
-(equal? (get-times '([10 a] [20 b] [30 c] [40 d]))
-        '([10 a] [10 b] [10 c] [10 d]))
-(equal? (get-times '([10 a] [20 b] [60 c] [80 d]))
-        '([10 a] [25 b] [30 c] [20 d]))
-|#
+
+(module+ test
+  (check-equal? (get-times '())
+                '())
+  (check-equal? (get-times '([10 a]))
+                '())
+  (check-equal? (get-times '([10 a] [20 b]))
+                '([10 a] [10 b]))
+  (check-equal? (get-times '([10 a] [20 b] [60 c]))
+                '([10 a] [25 b] [40 c]))
+  (check-equal? (get-times '([10 a] [20 b] [30 c] [40 d]))
+                '([10 a] [10 b] [10 c] [10 d]))
+  (check-equal? (get-times '([10 a] [20 b] [60 c] [80 d]))
+                '([10 a] [25 b] [30 c] [20 d])))
 
 ;; returns a list of (cons item occurrences) for the items in l
 (define (get-counts l)
@@ -177,12 +178,12 @@
           (cond [(null? l) (loop l1 (cons (cons 1st c) r))]
                 [(eq? 1st (car l)) (loop* l1 (add1 c) (cdr l))]
                 [else (loop* (cons (car l) l1) c (cdr l))]))))))
-#|
-(equal? (get-counts '()) '())
-(equal? (get-counts '(1)) '([1 . 1]))
-(equal? (get-counts '(1 1 1)) '([1 . 3]))
-(define (set=? xs ys) (null? (append (remove* xs ys) (remove* ys xs))))
-(set=? (get-counts '(1 2 3)) '([1 . 1] [2 . 1] [3 . 1]))
-(set=? (get-counts '(1 2 2 3 3 3)) '([1 . 1] [2 . 2] [3 . 3]))
-(set=? (get-counts '(3 1 2 3 2 3)) '([1 . 1] [2 . 2] [3 . 3]))
-|#
+
+(module+ test
+  (check-equal? (get-counts '()) '())
+  (check-equal? (get-counts '(1)) '([1 . 1]))
+  (check-equal? (get-counts '(1 1 1)) '([1 . 3]))
+  (define (set=? xs ys) (null? (append (remove* xs ys) (remove* ys xs))))
+  (check set=? (get-counts '(1 2 3)) '([1 . 1] [2 . 1] [3 . 1]))
+  (check set=? (get-counts '(1 2 2 3 3 3)) '([1 . 1] [2 . 2] [3 . 3]))
+  (check set=? (get-counts '(3 1 2 3 2 3)) '([1 . 1] [2 . 2] [3 . 3])))

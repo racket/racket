@@ -124,12 +124,19 @@ blinking caret. Each window maintains its own Undo and Redo history.
   @item{@defmenuitem{Wrap Text} Toggles between wrapped text and
   unwrapped text in the window.}
 
- @item{@defmenuitem{Find...} Opens an interactive search
+ @item{@defmenuitem{Find} Opens an interactive search
  window at the bottom of the frame and moves the insertion
  point to the search string editor (or out of it, if the
  insertion point is already there).
 
  See also @secref["Searching"].}
+
+ @item{@defmenuitem{Find From Selection}
+        Just like @onscreen{Find}, except that it
+        copies the current selection into the search
+        window (but without using the clipboard, so
+        paste will paste whatever was last copied,
+        not the new search string)}
 
  @item{@defmenuitem{Find Again} Finds the next occurrence of the text 
  in the search window.}

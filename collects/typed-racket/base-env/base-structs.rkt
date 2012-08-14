@@ -5,8 +5,7 @@
  (utils tc-utils)
  (env init-envs)
  (except-in (rep filter-rep object-rep type-rep) make-arr)
- (types convenience union)
- (only-in (types convenience) [make-arr* make-arr])
+ (rename-in (types abbrev numeric-tower union) [make-arr* make-arr])
  (typecheck tc-structs)
  ;;For tests
  (prefix-in k: '#%kernel))
@@ -44,10 +43,10 @@
 
   (define-hierarchy srcloc (#:kernel-maker k:srcloc)
     ([source : Univ]
-     [line : (*Un -Integer (-val #f))]
-     [column : (*Un -Integer (-val #f))]
-     [position : (*Un -Integer (-val #f))]
-     [span : (*Un -Integer (-val #f))]))
+     [line : (Un -Integer (-val #f))]
+     [column : (Un -Integer (-val #f))]
+     [position : (Un -Integer (-val #f))]
+     [span : (Un -Integer (-val #f))]))
 
   (define-hierarchy date (#:kernel-maker k:date)
     ([second : -Nat]

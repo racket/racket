@@ -200,16 +200,30 @@ used in the middle of a paragraph; at the same time, its content is
 constrained to form a single paragraph in the margin.}
 
 
-@defproc[(itemlist [itm item?] ...
+@defproc[(itemlist [itm items/c] ...
                    [#:style style (or/c style? string? symbol? #f) #f]) 
          itemization?]{
 
- Constructs an @racket[itemization] given a sequence of items
- constructed by @racket[item].
-
+ Constructs an @racket[itemization] given a sequence of items. Typical
+ each @racket[itm] is constructed by @racket[item], but an
+ @racket[itm] can be a @tech{block} that is coerced to an
+ @racket[item]. Finally, @racket[itm] can be a list or @racket[splice]
+ whose elements are spliced (recursively, if necessary) into the
+ @racket[itemlist] sequence.
+ 
  The @racket[style] argument is handled the same as @racket[para]. The
  @racket['ordered] style numbers items, instead of just using a
  bullet.}
+
+
+@defthing[items/c flat-contract?]{
+
+A contract that is equivalent to the following recursive
+specification:
+
+@racketblock[
+ (or/c item? block? (listof items/c) (spliceof items/c))
+]}
 
 
 @defproc[(item [pre-flow pre-flow?] ...) item?]{

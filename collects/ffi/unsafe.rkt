@@ -1651,10 +1651,26 @@
                                                                              _pointer ; break_cell
                                                                              _scheme ; custodian
                                                                              _int ; suspend-to-kill?
-                                                                             -> _scheme))])
+                                                                             -> _scheme))]
+              [logger (current-logger)]
+              [cweh #f]) ; <- avoids a reference to a module-level binding
+          (set! cweh call-with-exception-handler)
           (set! killer-thread
                 (thread/details (lambda ()
-                                  (let loop () (will-execute killer-executor) (loop)))
+                                  (let retry-loop ()
+                                    (call-with-continuation-prompt
+                                     (lambda ()
+                                       (cweh
+                                        (lambda (exn)
+                                          (log-message logger
+                                                       (if (exn? exn)
+                                                           (exn-message exn)
+                                                           (format "~s" exn))
+                                                       #f)
+                                          (abort-current-continuation void))
+                                        (lambda ()
+                                          (let loop () (will-execute killer-executor) (loop))))))
+                                    (retry-loop)))
                                 min-config
                                 no-cells
                                 #f ; default break cell

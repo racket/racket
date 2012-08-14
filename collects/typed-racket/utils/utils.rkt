@@ -19,8 +19,6 @@ at least theoretically.
  start-timing do-time
  ;; logging
  printf/log show-input?
- ;; struct printing
- custom-printer define-struct/printer
  ;; provide macros
  rep utils typecheck infer env private types)
 
@@ -107,38 +105,6 @@ at least theoretically.
         [(_ fmt . args)
 	 #'(log-debug (format fmt . args))])
       #'(void)))
-
-;; custom printing
-;; this requires lots of work for two reasons:
-;; - 1 printers have to be defined at the same time as the structs
-;; - 2 we want to support things printing corectly even when the custom printer is off
-
-(define-syntax-rule (defprinter t ...)
-  (begin
-    (define t (box (lambda _ (error (format "~a not yet defined" 't))))) ...
-    (provide t ...)))
-
-(defprinter
-  print-type* print-filter* print-latentfilter* print-object* print-latentobject*
-  print-pathelem*)
-
-(define custom-printer (make-parameter #t))
-
-(define-syntax (define-struct/printer stx)
-  (syntax-parse stx
-    [(form name (flds ...) printer:expr)
-     #`(define-struct name (flds ...)
-         #:property prop:custom-print-quotable 'never
-         #:property prop:custom-write
-         (lambda (a b c) (if (custom-printer)
-                             (printer a b c)
-                             ;; ok to make this case slow, it never runs in real code
-                             ((if c
-                                  (dynamic-require 'racket/pretty 'pretty-write)
-                                  (dynamic-require 'racket/pretty 'pretty-print))
-                              a b)))
-         #:transparent)]))
-
 
 ;; turn contracts on and off - off by default for performance.
 (provide (for-syntax enable-contracts?)

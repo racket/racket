@@ -990,9 +990,13 @@
     (set-doc:verbose)
     (with-handlers ([exn:fail?
                      (lambda (exn)
-                       (setup-printf #f "docs failure: ~a" (exn->string exn)))])
-      (doc:setup-scribblings #f (and (not (null? (archives)))
-                                     (archive-implies-reindex)))))
+                       (setup-printf #f "docs failure: ~a" (exn->string exn))
+                       (for ([x (in-list (continuation-mark-set->context (exn-continuation-marks exn)))])
+                         (setup-printf #f "~s" x)))])
+      (define auto-start-doc?
+        (and (not (null? (archives)))
+             (archive-implies-reindex)))
+      (doc:setup-scribblings #f auto-start-doc?)))
 
   (define (doc-pdf-dest-step)
     (setup-printf #f "--- building PDF documentation (via pdflatex) ---")
@@ -1166,7 +1170,7 @@
     (when (file-exists? (collection-file-path "scribble.rkt" "setup"))
       (make-docs-step)))
   (when (doc-pdf-dest) (doc-pdf-dest-step))
-
+  
   (do-install-part 'general)
   (do-install-part 'post)
 

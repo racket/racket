@@ -21,21 +21,11 @@ object using a color name, and see also @racket[make-color].
                        ([color-name string?]))]{
 
 Creates a new color with the given RGB values and alpha, or matching
- the given color name (using ``black'' if no color is given or if the
+ the given color name (using @racket["black"] if no color is given or if the
  name is not recognized). See @racket[color-database<%>] for more
  information on color names.
 
 }
-
-@defmethod[(copy-from [src (is-a?/c color%)]) (is-a?/c color%)]{
-  Copies the RGB values of another color object to this one, returning
-  this object as the result.}
-
-@defmethod[(is-immutable?) boolean?]{
-  Returns @racket[#t] if the color object is immutable.}
-
-@defmethod[(ok?) boolean?]{
-  Returns @racket[#t] if the color object is valid.}
 
 @defmethod[(red) byte?]{
   Returns the red component of the color.}
@@ -53,5 +43,20 @@ Creates a new color with the given RGB values and alpha, or matching
                 [alpha (real-in 0 1) 1.0])
            void?]{
   Sets the four (red, green, blue, and alpha) component values of the color.}
+
+@defmethod[(copy-from [src (is-a?/c color%)]) (is-a?/c color%)]{
+  Copies the RGB values of another color object to this one, returning
+  this object as the result.}
+
+@defmethod[(is-immutable?) boolean?]{
+  Returns @racket[#t] if the color object is immutable.
+
+  See also @racket[make-color] and @xmethod[color-database<%> find-color].}
+
+@defmethod[(ok?) #t]{ 
+  Returns @racket[#t] to indicate that the color object is valid.
+
+  (Historically, the result could be @racket[#f], but color objects 
+  are now always valid.)}
 
 }

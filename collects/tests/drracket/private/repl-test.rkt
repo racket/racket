@@ -713,7 +713,7 @@ This produces an ACK message
             #rx"user break"
             #rx"user break"
             #rx"user break")
-           'definitions
+           'dont-care
            #t
            void
            void)
@@ -1212,6 +1212,8 @@ This produces an ACK message
            (define defs-focus? (eq? edit-target definitions-canvas))
            (define ints-focus? (eq? edit-target interactions-canvas))
            (cond
+             [(eq? source-location 'dont-care)
+              (void)]
              [(eq? source-location 'definitions)
               (unless defs-focus?
                 (eprintf "FAILED execute test for ~s\n  expected definitions to have the focus\n"

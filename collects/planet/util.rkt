@@ -443,19 +443,12 @@
   (parameterize ([current-directory target])
     (unpack plt-file)))
 
-(define (location->path loc)
-  (match loc
-    ['same (build-path 'same)]
-    [(list 'same path) path]
-    [(list other _) (error (format "bad location ~a (illegal in PLaneT packages)" other))]
-    [other (error (format "bad location ~a" other))]))
-
 (define (foreach-planet-archive plt-file on-dir on-file)
   (fold-plt-archive plt-file
                     void
                     void 
-                    (λ (l _)     (on-dir (location->path l)))
-                    (λ (l fip _) (on-file (location->path l) fip))
+                    (λ (l _)     (on-dir l))
+                    (λ (l fip _) (on-file l fip))
                     (void)))
 
 ;; hash-tree ::= (hash-table [string -o> (union string hash-tree)])

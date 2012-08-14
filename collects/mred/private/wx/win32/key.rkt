@@ -7,7 +7,7 @@
          "../common/event.rkt")
 
 (provide
- (protect-out make-key-event
+ (protect-out maybe-make-key-event
               generates-key-event?
 	      reset-key-mapping
               key-symbol-to-menu-key))
@@ -18,15 +18,17 @@
 
 (define (generates-key-event? msg)
   (let ([message (MSG-message msg)])
-    (and (memq message (list WM_KEYDOWN WM_SYSKEYDOWN
-                             WM_KEYUP WM_SYSKEYUP))
-         (make-key-event #t 
-                         (MSG-wParam msg)
-                         (MSG-lParam msg)
-                         #f
-                         (or (= message WM_KEYUP)
-                             (= message WM_SYSKEYUP))
-			 (MSG-hwnd msg)))))
+    (and (or (eq? message WM_KEYDOWN)
+             (eq? message WM_SYSKEYDOWN)
+             (eq? message WM_KEYUP)
+             (eq? message WM_SYSKEYUP))
+         (maybe-make-key-event #t 
+                               (MSG-wParam msg)
+                               (MSG-lParam msg)
+                               #f
+                               (or (= message WM_KEYUP)
+                                   (= message WM_SYSKEYUP))
+                               (MSG-hwnd msg)))))
 
 (define (THE_SCAN_CODE lParam)
   (bitwise-and (arithmetic-shift lParam -16) #x1FF))
@@ -126,7 +128,7 @@
           VK_SCROLL 'scroll))
 
 
-(define (make-key-event just-check? wParam lParam is-char? is-up? hwnd)
+(define (maybe-make-key-event just-check? wParam lParam is-char? is-up? hwnd)
   (let* ([control-down? (not (zero? (arithmetic-shift (GetKeyState VK_CONTROL) -1)))]
          [rcontrol-down? (and control-down?
                               (not (zero? (arithmetic-shift (GetKeyState VK_RCONTROL) -1))))]

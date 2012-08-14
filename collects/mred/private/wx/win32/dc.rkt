@@ -23,6 +23,12 @@
 
 (define-gdi32 SelectClipRgn (_wfun _pointer _pointer -> _int))
 
+(define-gdi32 GetClipBox (_wfun _pointer _RECT-pointer -> _int))
+(define SIMPLEREGION 2)
+
+(define-gdi32 BitBlt (_wfun _pointer _int _int _int _int _pointer _int _int _DWORD -> _BOOL))
+(define SRCCOPY #X00cc0020)
+
 (define hwnd-param (make-parameter #f))
 
 (define win32-bitmap%
@@ -119,11 +125,41 @@
           (let ([w (box 0)]
                 [h (box 0)])
             (send canvas get-client-size w h)
-            (let* ([surface (cairo_win32_surface_create hdc)]
-                   [cr (cairo_create surface)])
-              (cairo_surface_destroy surface)
-              (backing-draw-bm bm cr (unbox w) (unbox h))
-              (cairo_destroy cr))))))
+	    (define r (make-RECT 0 0 (unbox w) (unbox h)))
+	    (define clip-type
+	      (if win64?
+		  (GetClipBox hdc r)
+		  SIMPLEREGION))
+	    (cond
+	     [(and win64?
+		   (not (and (= clip-type SIMPLEREGION)
+			     (= (RECT-left r) 0)
+			     (= (RECT-top r) 0)
+			     (= (RECT-right r) (unbox w))
+			     (= (RECT-bottom r) (unbox h)))))
+	      ;; Another workaround: a clipping region installed by BeginPaint()
+	      ;; seems to interfere with Cairo drawing. So, draw to a
+	      ;; fresh context and copy back and forth using Win32.
+	      (define cw (- (RECT-right r) (RECT-left r)))
+	      (define ch (- (RECT-bottom r) (RECT-top r)))
+	      (let* ([surface (cairo_win32_surface_create_with_ddb hdc
+								   CAIRO_FORMAT_RGB24
+								   cw
+								   ch)]
+		     [cr (cairo_create surface)]
+		     [hdc2 (cairo_win32_surface_get_dc surface)])
+		(BitBlt hdc2 0 0 cw ch hdc (RECT-left r) (RECT-top r) SRCCOPY)
+		(backing-draw-bm bm cr (unbox w) (unbox h) (- (RECT-left r)) (- (RECT-top r)))
+		(cairo_surface_flush surface)
+		(BitBlt hdc (RECT-left r) (RECT-top r) cw ch hdc2 0 0 SRCCOPY)
+		(cairo_surface_destroy surface)
+		(cairo_destroy cr))]
+	     [else
+	      (let* ([surface (cairo_win32_surface_create hdc)]
+		     [cr (cairo_create surface)])
+		(cairo_surface_destroy surface)
+		(backing-draw-bm bm cr (unbox w) (unbox h))
+		(cairo_destroy cr))])))))
 
 (define (request-flush-delay canvas)
   (do-request-flush-delay 

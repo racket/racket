@@ -117,6 +117,14 @@
     (500000000 "#e1/2#e10")
     (16140901064495857664-50176i "#e#x+e#s+e@-e#l-e")
 
+    (,(make-rectangular -inf.f 3.1415927f0) "-inf.f+3.1415927f0i")
+    (,(make-rectangular -inf.0 3.1415927) "-inf.f+3.1415927i")
+    (,(make-rectangular 3.1415927f0 -inf.f) "3.1415927f0-inf.fi")
+    (,(make-rectangular 3.1415927 -inf.0) "3.1415927-inf.fi")
+    (,(make-rectangular +inf.f -inf.f) "+inf.f-inf.fi")
+    (,(make-rectangular +inf.0 -inf.0) "+inf.0-inf.fi")
+    (,(make-rectangular +inf.0 -inf.0) "+inf.f-inf.0i")
+
     (#f "d")
     (D "D")
     (#f "i")

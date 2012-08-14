@@ -47,7 +47,8 @@ If the namespace does not, they are colored the unbound color.
          "colors.rkt"
          "traversals.rkt"
          "annotate.rkt"
-         "../tooltip.rkt")
+         "../tooltip.rkt"
+         "contract-gui.rkt")
 (provide tool@)
 
 (define orig-output-port (current-output-port))
@@ -327,13 +328,14 @@ If the namespace does not, they are colored the unbound color.
     (define make-syncheck-text%
       (λ (super%)
         (let* ([cursor-arrow (make-object cursor% 'arrow)])
-          (class* super% (syncheck-text<%>)
+          (class* (docs-text-mixin super%) (syncheck-text<%>)
             (inherit set-cursor get-admin invalidate-bitmap-cache set-position
                      get-pos/text get-pos/text-dc-location position-location
                      get-canvas last-position dc-location-to-editor-location
                      find-position begin-edit-sequence end-edit-sequence
                      highlight-range unhighlight-range
-                     paragraph-end-position first-line-currently-drawn-specially?)
+                     paragraph-end-position first-line-currently-drawn-specially?
+                     syncheck:add-docs-range)
             
             ;; arrow-records : (U #f hash[text% => arrow-record])
             ;; arrow-record = interval-map[(listof arrow-entry)]
@@ -581,7 +583,21 @@ If the namespace does not, they are colored the unbound color.
                 (void))
               (syncheck:add-menu text start-pos end-pos #f (make-require-open-menu file)))
             
-            (define/public (syncheck:add-docs-menu text start-pos end-pos id the-label path tag)
+            (define/public (syncheck:add-docs-menu text start-pos end-pos id the-label path definition-tag tag)
+              (define (visit-docs-url)
+                (define url (path->url path))
+                (define url2 (if tag
+                                 (make-url (url-scheme url)
+                                           (url-user url)
+                                           (url-host url)
+                                           (url-port url)
+                                           (url-path-absolute? url)
+                                           (url-path url)
+                                           (url-query url)
+                                           tag)
+                                 url))
+                (send-url (url->string url2)))
+              (syncheck:add-docs-range start-pos end-pos definition-tag visit-docs-url)
               (syncheck:add-menu 
                text start-pos end-pos id
                (λ (menu)
@@ -590,18 +606,7 @@ If the namespace does not, they are colored the unbound color.
                    (label (gui-utils:format-literal-label "~a" the-label))
                    (callback
                     (λ (x y)
-                      (let* ([url (path->url path)]
-                             [url2 (if tag
-                                       (make-url (url-scheme url)
-                                                 (url-user url)
-                                                 (url-host url)
-                                                 (url-port url)
-                                                 (url-path-absolute? url)
-                                                 (url-path url)
-                                                 (url-query url)
-                                                 tag)
-                                       url)])
-                        (send-url (url->string url2)))))))))
+                      (visit-docs-url)))))))
             
             (define/public (syncheck:add-rename-menu id-as-sym to-be-renamed/poss name-dup?)
               (define (make-menu menu)
@@ -1067,7 +1072,7 @@ If the namespace does not, they are colored the unbound color.
               ;; If this were done more directly, the tooltip would show up in
               ;; the wrong canvas half the time - when the current admin isn't
               ;; the admin for the canvas the mouse is over.
-              (invalidate-bitmap-cache))
+              (invalidate-bitmap-cache 0 0 'display-end 'display-end))
             
             (define/public (syncheck:build-popup-menu pos text)
               (and pos
@@ -1576,7 +1581,8 @@ If the namespace does not, they are colored the unbound color.
             ;; reset any previous check syntax information
             (let ([tab (get-current-tab)])
               (send tab syncheck:clear-error-message)
-              (send tab syncheck:clear-highlighting))
+              (send tab syncheck:clear-highlighting)
+              (send defs-text syncheck:reset-docs-im))
             
             (send (send defs-text get-tab) add-bkg-running-color 'syncheck "orchid" cs-syncheck-running)
             (send defs-text syncheck:init-arrows)
@@ -1584,6 +1590,7 @@ If the namespace does not, they are colored the unbound color.
                        [i 0])
               (cond
                 [(null? val)
+                 (send defs-text syncheck:update-blue-boxes)
                  (send defs-text syncheck:update-drawn-arrows)
                  (send (send defs-text get-tab) remove-bkg-running-color 'syncheck)
                  (set-syncheck-running-mode #f)]
@@ -1618,8 +1625,8 @@ If the namespace does not, they are colored the unbound color.
              (send defs-text syncheck:add-jump-to-definition defs-text start end id filename)]
             [`(syncheck:add-require-open-menu ,text ,start-pos ,end-pos ,file)
              (send defs-text syncheck:add-require-open-menu defs-text start-pos end-pos file)]
-            [`(syncheck:add-docs-menu ,text ,start-pos ,end-pos ,key ,the-label ,path ,tag)
-             (send defs-text syncheck:add-docs-menu defs-text start-pos end-pos key the-label path tag)]
+            [`(syncheck:add-docs-menu ,text ,start-pos ,end-pos ,key ,the-label ,path ,definition-tag ,tag)
+             (send defs-text syncheck:add-docs-menu defs-text start-pos end-pos key the-label path definition-tag tag)]
             [`(syncheck:add-rename-menu ,id-as-sym ,to-be-renamed/poss ,name-dup-pc ,name-dup-id)
              (define other-side-dead? #f)
              (define (name-dup? name) 
@@ -2016,7 +2023,12 @@ If the namespace does not, they are colored the unbound color.
       (send keymap map-function "c:c;c:c" "check syntax")
       (send keymap map-function "c:x;b" "jump to binding occurrence")
       (send keymap map-function "c:x;n" "jump to next bound occurrence")
-      (send keymap map-function "c:x;d" "jump to definition (in other file)"))
+      (send keymap map-function "c:x;d" "jump to definition (in other file)")
+      
+      (send keymap add-function "f2 docs"
+            (λ (txt evt)
+              (send txt toggle-syncheck-docs)))
+      (send keymap map-function "f2" "f2 docs"))
     
     ;; find-syncheck-text : text% -> (union #f (is-a?/c syncheck-text<%>))
     (define (find-syncheck-text text)
@@ -2053,15 +2065,16 @@ If the namespace does not, they are colored the unbound color.
                                              syncheck-add-to-preferences-panel)
     (drracket:language:register-capability 'drscheme:check-syntax-button (flat-contract boolean?) #t)
     (drracket:get/extend:extend-definitions-text make-syncheck-text%)
+    (drracket:get/extend:extend-definitions-canvas docs-editor-canvas-mixin)
     (drracket:get/extend:extend-unit-frame unit-frame-mixin #f)
     (drracket:get/extend:extend-tab tab-mixin)
     
     (drracket:module-language-tools:add-online-expansion-handler
-     compile-comp.rkt
+     online-comp.rkt
      'go
      (λ (defs-text val) (send (send (send defs-text get-canvas) get-top-level-window)
                               replay-compile-comp-trace
                               defs-text 
                               val)))))
 
-(define-runtime-path compile-comp.rkt "online-comp.rkt")
+(define-runtime-path online-comp.rkt "online-comp.rkt")

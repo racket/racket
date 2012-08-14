@@ -2,7 +2,7 @@
 (require "test-utils.rkt" (for-syntax scheme/base))
 (require (rep type-rep)
          (r:infer infer)
-         (types convenience union utils abbrev)
+         (types numeric-tower union utils abbrev)
          rackunit)
 
 

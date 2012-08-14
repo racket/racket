@@ -136,3 +136,10 @@
     syn-err-lang
     (--> 1 1
          (judgment-holds bad-judgment)))))
+
+(#rx"before underscore"
+ ([not-non-term Z_1])
+ (reduction-relation 
+  syn-err-lang
+  (--> (in-hole E (Q_1 M_1))
+       (in-hole E (M_1 not-non-term)))))

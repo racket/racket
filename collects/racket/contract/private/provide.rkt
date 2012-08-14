@@ -2,7 +2,9 @@
 
 (provide provide/contract
          (protect-out (for-syntax true-provide/contract
-                                  make-provide/contract-transformer)))
+                                  make-provide/contract-transformer
+                                  provide/contract-transformer?
+                                  replace-provide/contract-transformer-positive-blame)))
 
 (require (for-syntax racket/base
                      racket/list
@@ -48,60 +50,76 @@
                                      (current-inspector) #f '(0))])
     make-))
 
-(define-for-syntax (make-provide/contract-transformer
-                    contract-id id external-id pos-module-source)
-  (make-set!-transformer
-   (let ([saved-id-table (make-hasheq)])
-     (λ (stx)
-       (if (eq? 'expression (syntax-local-context))
-         ;; In an expression context:
-         (let* ([key (syntax-local-lift-context)]
-                ;; Already lifted in this lifting context?
-                [lifted-id
-                 (or (hash-ref saved-id-table key #f)
-                     ;; No: lift the contract creation:
-                     (with-syntax ([contract-id contract-id]
-                                   [id id]
-                                   [external-id external-id]
-                                   [pos-module-source pos-module-source]
-                                   [loc-id (identifier-prune-to-source-module id)])
-                       (let ([srcloc-code
-                              (with-syntax
-                                  ([src
-                                    (or (and (path-string? (syntax-source #'id))
-                                             (path->relative-string/library
-                                              (syntax-source #'id) #f))
-                                        (syntax-source #'id))]
-                                   [line (syntax-line     #'id)]
-                                   [col  (syntax-column   #'id)]
-                                   [pos  (syntax-position #'id)]
-                                   [span (syntax-span     #'id)])
-                                #'(make-srcloc 'src 'line 'col 'pos 'span))])
-                         (syntax-local-introduce
-                          (syntax-local-lift-expression
-                           #`(contract contract-id
-                                       id
-                                       pos-module-source
-                                       (quote-module-name)
-                                       'external-id
-                                       #,srcloc-code))))))])
-           (when key (hash-set! saved-id-table key lifted-id))
-           ;; Expand to a use of the lifted expression:
-           (with-syntax ([saved-id (syntax-local-introduce lifted-id)])
-             (syntax-case stx (set!)
-               [name (identifier? #'name) #'saved-id]
-               [(set! id arg)
-                (raise-syntax-error
-                 'contract/out
-                 "cannot set! a contract/out variable"
-                 stx #'id)]
-               [(name . more)
-                (with-syntax ([app (datum->syntax stx '#%app)])
-                  (syntax/loc stx (app saved-id . more)))])))
-         ;; In case of partial expansion for module-level and internal-defn
-         ;; contexts, delay expansion until it's a good time to lift
-         ;; expressions:
-         (quasisyntax/loc stx (#%expression #,stx)))))))
+(begin-for-syntax
+
+ (struct provide/contract-transformer (contract-id id external-id pos-module-source saved-id-table)
+         #:property
+         prop:set!-transformer
+         (lambda (self stx)
+           (let ([contract-id (provide/contract-transformer-contract-id self)]
+                 [id (provide/contract-transformer-id self)]
+                 [external-id (provide/contract-transformer-external-id self)]
+                 [pos-module-source (provide/contract-transformer-pos-module-source self)]
+                 [saved-id-table (provide/contract-transformer-saved-id-table self)])
+             (if (eq? 'expression (syntax-local-context))
+                 ;; In an expression context:
+                 (let* ([key (syntax-local-lift-context)]
+                        ;; Already lifted in this lifting context?
+                        [lifted-id
+                         (or (hash-ref saved-id-table key #f)
+                             ;; No: lift the contract creation:
+                             (with-syntax ([contract-id contract-id]
+                                           [id id]
+                                           [external-id external-id]
+                                           [pos-module-source pos-module-source]
+                                           [loc-id (identifier-prune-to-source-module id)])
+                               (let ([srcloc-code
+                                      (with-syntax
+                                          ([src
+                                            (or (and (path-string? (syntax-source #'id))
+                                                     (path->relative-string/library
+                                                      (syntax-source #'id) #f))
+                                                (syntax-source #'id))]
+                                           [line (syntax-line     #'id)]
+                                           [col  (syntax-column   #'id)]
+                                           [pos  (syntax-position #'id)]
+                                           [span (syntax-span     #'id)])
+                                        #'(make-srcloc 'src 'line 'col 'pos 'span))])
+                                 (syntax-local-introduce
+                                  (syntax-local-lift-expression
+                                   #`(contract contract-id
+                                               id
+                                               pos-module-source
+                                               (quote-module-name)
+                                               'external-id
+                                               #,srcloc-code))))))])
+                   (when key (hash-set! saved-id-table key lifted-id))
+                   ;; Expand to a use of the lifted expression:
+                   (with-syntax ([saved-id (syntax-local-introduce lifted-id)])
+                     (syntax-case stx (set!)
+                       [name (identifier? #'name) #'saved-id]
+                       [(set! id arg)
+                        (raise-syntax-error
+                         'contract/out
+                         "cannot set! a contract/out variable"
+                         stx #'id)]
+                       [(name . more)
+                        (with-syntax ([app (datum->syntax stx '#%app)])
+                          (syntax/loc stx (app saved-id . more)))])))
+                 ;; In case of partial expansion for module-level and internal-defn
+                 ;; contexts, delay expansion until it's a good time to lift
+                 ;; expressions:
+                 (quasisyntax/loc stx (#%expression #,stx))))))
+
+ (define (make-provide/contract-transformer cid id eid pos)
+   (provide/contract-transformer cid id eid pos (make-hasheq)))
+
+ (define (replace-provide/contract-transformer-positive-blame self new-pos)
+   (let ([contract-id (provide/contract-transformer-contract-id self)]
+         [id (provide/contract-transformer-id self)]
+         [external-id (provide/contract-transformer-external-id self)])
+     (provide/contract-transformer contract-id id external-id new-pos (make-hasheq))))
+ )
 
 (define-for-syntax (true-provide/contract provide-stx just-check-errors? who)
   (syntax-case provide-stx ()

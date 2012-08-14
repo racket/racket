@@ -1,14 +1,14 @@
 #lang scribble/doc
 @(require scribblings/reference/mz scribble/racket
-          (for-label compatibility/mpair))
+          (for-label compatibility/mlist))
 
 @title[#:tag "mlists"]{Mutable List Functions}
 
 @(define reference '(lib "scribblings/reference/reference.scrbl"))
 
-@defmodule[compatibility/mpair]
+@defmodule[compatibility/mlist]
 
-This @racketmodname[compatibility/mpair] library provides support for
+This @racketmodname[compatibility/mlist] library provides support for
 @tech[#:doc reference]{mutable list}s.
 Support is provided primarily to help porting Lisp/Scheme code to Racket.
 
@@ -151,3 +151,11 @@ Like @racket[assq], but for @tech[#:doc reference]{mutable lists} of
 Returns a procedure that returns @racket[#t] when given a
 @tech[#:doc reference]{mutable list} for which @racket[pred] returns a true
 value for all elements.}
+
+@; ----------------------------------------------------------------------
+
+@section[#:style '(hidden)]{Legacy Racket Mutable List Library}
+
+@defmodule[racket/mpair]{The @racket[racket/mpair] library
+re-exports @racketmodname[compatibility/mlist] for backward
+compatibility.}

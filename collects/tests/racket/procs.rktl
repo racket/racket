@@ -65,6 +65,20 @@
     (,f_0_2+ ,(list 0 (make-arity-at-least 2)) () ())
     (,f1:+ 1 () #f)))
 
+(define (check-arity-error p n err-n)
+  (cond
+   [(procedure-arity-includes? p n #t)
+    (unless (n . <= . 1)
+      (check-arity-error p 1 (+ 1 (- err-n n))))]
+   [else
+    (define-values (reqs allows) (procedure-keywords p))
+    (err/rt-test (keyword-apply p reqs reqs (make-list n #f))
+                 (lambda (exn)
+                   (regexp-match? (format "given: ~a|no case matching ~a" 
+                                          err-n 
+                                          err-n)
+                                  (exn-message exn))))]))
+
 (let ()
   (define (try-combos procs add-chaperone) 
     (for-each (lambda (p)
@@ -102,6 +116,8 @@
                     (test 'other object-name (procedure-rename (car p) 'other))
                     (test (procedure-arity (car p)) procedure-arity (procedure-rename (car p) 'other))
                     (test (procedure-arity (car p)) procedure-arity (procedure->method (car p)))
+                    (check-arity-error (car p) 10 10)
+                    (check-arity-error (procedure->method (car p)) 10 9)
                     (unless (null? (list-tail p 4))
                       (test (object-name (list-ref p 4)) object-name (car p)))
                     (let ([allowed (cadddr p)]

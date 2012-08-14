@@ -195,6 +195,7 @@ static void *signal_handle;
 # ifndef NO_USER_BREAK_HANDLER
 
 static void user_break_hit(int ignore)
+  XFORM_SKIP_PROC
 {
   scheme_break_main_thread_at(break_handle);
   scheme_signal_received_at(signal_handle);
@@ -202,13 +203,33 @@ static void user_break_hit(int ignore)
 #  ifdef SIGSET_NEEDS_REINSTALL
   MZ_SIGSET(SIGINT, user_break_hit);
 #  endif
-#  ifdef MZ_PRECISE_GC
-#   ifndef GC_STACK_CALLEE_RESTORE
-  /* Restore variable stack. */
-  GC_variable_stack = (void **)__gc_var_stack__[0];
-#   endif
+}
+
+# ifndef NO_SIGTERM_HANDLER
+static void term_hit(int ignore)
+  XFORM_SKIP_PROC
+{
+  scheme_break_kind_main_thread_at(break_handle, MZEXN_BREAK_TERMINATE);
+  scheme_signal_received_at(signal_handle);
+
+#  ifdef SIGSET_NEEDS_REINSTALL
+  MZ_SIGSET(SIGTERM, term_hit);
 #  endif
 }
+# endif
+
+# ifndef NO_SIGHUP_HANDLER
+static void hup_hit(int ignore)
+  XFORM_SKIP_PROC
+{
+  scheme_break_kind_main_thread_at(break_handle, MZEXN_BREAK_HANG_UP);
+  scheme_signal_received_at(signal_handle);
+
+#  ifdef SIGSET_NEEDS_REINSTALL
+  MZ_SIGSET(SIGHUP, hup_hit);
+#  endif
+}
+# endif
 
 # endif
 
@@ -352,6 +373,12 @@ static int main_after_stack(void *data)
   signal_handle = scheme_get_signal_handle();
 # ifndef NO_USER_BREAK_HANDLER
   MZ_SIGSET(SIGINT, user_break_hit);
+#  ifndef NO_SIGTERM_HANDLER
+  MZ_SIGSET(SIGTERM, term_hit);
+#  endif
+#  ifndef NO_SIGHUP_HANDLER
+  MZ_SIGSET(SIGHUP, hup_hit);
+#  endif
 # endif
 # ifdef DOS_FILE_SYSTEM
   SetConsoleCtrlHandler(ConsoleBreakHandler, TRUE);      

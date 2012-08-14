@@ -1335,7 +1335,7 @@ use in the contract system:
         (raise-blame-error
          blame
          val
-         '(expected "<integer>," given: "~e")
+         '(expected: "<integer>" given: "~e")
          val))))
 ]
 The new argument specifies who is to be blamed for
@@ -1366,7 +1366,7 @@ Compare that to the projection for our function contract:
           (raise-blame-error
            blame
            val
-           '(expected "a procedure of one argument," given: "~e")
+           '(expected "a procedure of one argument" given: "~e")
            val)))))
 ]
 
@@ -1424,7 +1424,7 @@ when a contract violation is detected.
             (raise-blame-error
              blame
              val
-             '(expected "a procedure of one argument," given: "~e")
+             '(expected "a procedure of one argument" given: "~e")
              val))))))
 ]
 
@@ -1443,9 +1443,11 @@ the contract library primitives below.
                  x
                  (raise-blame-error
                   b x
-                  '(expected "<~a>," given: "~e")
+                  '(expected: "~a" given: "~e")
                   name x))))]
-          [#:stronger stronger (-> contract? contract? boolean?)])
+          [#:stronger stronger
+                      (or/c #f (-> contract? contract? boolean?))
+                      #f])
          contract?]
 @defproc[(make-chaperone-contract
           [#:name name any/c 'anonymous-chaperone-contract]
@@ -1457,9 +1459,11 @@ the contract library primitives below.
                  x
                  (raise-blame-error
                   b x
-                  '(expected "<~a>," given: "~e")
+                  '(expected: "~a" given: "~e")
                   name x))))]
-          [#:stronger stronger (-> contract? contract? boolean?)])
+          [#:stronger stronger 
+                      (or/c #f (-> contract? contract? boolean?))
+                      #f])
          chaperone-contract?]
 @defproc[(make-flat-contract
           [#:name name any/c 'anonymous-flat-contract]
@@ -1471,9 +1475,11 @@ the contract library primitives below.
                  x
                  (raise-blame-error
                   b x
-                  '(expected "<~a>," given: "~e")
+                  '(expected: "~a" given: "~e")
                   name x))))]
-          [#:stronger stronger (-> contract? contract? boolean?)])
+          [#:stronger stronger 
+                      (or/c #f (-> contract? contract? boolean?))
+                      #f])
          flat-contract?]
 )]{
 
@@ -1536,7 +1542,7 @@ was passed as the second argument to @racket[contract-stronger?].
            (λ (x) (range (f (domain x))))
            (raise-blame-error
             b f
-            '(expected "a function of one argument," 'given: "~e")
+            '(expected "a function of one argument" 'given: "~e")
             f)))))))
 (contract int->int/c "not fun" 'positive 'negative)
 (define halve 
@@ -1724,6 +1730,11 @@ replacing @racket['given] with @racket["produced"] and
 @racket['expected] with @racket["promised"], depending on whether or not
 the @racket[b] argument has been swapped or not (see @racket[blame-swap]).
 
+If @racket[fmt] contains the symbols @racket['given:] or @racket['expected:],
+they are replaced like @racket['given:] and @racket['expected:] are, but
+the replacements are prefixed with the string @racket["\n "] to conform
+to the error message guidelines in @secref["err-msg-conventions"].
+
 }
 
 @defstruct[(exn:fail:contract:blame exn:fail:contract) ([object blame?])]{
@@ -1826,7 +1837,7 @@ is expected to be the contract on the value).
                  (if ((get-first-order c) x)
                    x
                    (raise-blame-error
-                    b x "expected <~a>, given: ~e" (get-name c) x)))))]
+                    b x '(expected: "~a" given: "~e") (get-name c) x)))))]
          [#:stronger
 	  stronger
 	  (or/c (-> contract? contract? boolean?) #f)
@@ -1854,7 +1865,7 @@ is expected to be the contract on the value).
                  (if ((get-first-order c) x)
                    x
                    (raise-blame-error
-                    b x "expected <~a>, given: ~e" (get-name c) x)))))]
+                    b x '(expected: "~a" given: "~e") (get-name c) x)))))]
          [#:stronger
 	  stronger
 	  (or/c (-> contract? contract? boolean?) #f)
@@ -1882,7 +1893,7 @@ is expected to be the contract on the value).
                  (if ((get-first-order c) x)
                    x
                    (raise-blame-error
-                    b x "expected <~a>, given: ~e" (get-name c) x)))))]
+                    b x '(expected: "~a" given: "~e") (get-name c) x)))))]
          [#:stronger
 	  stronger
 	  (or/c (-> contract? contract? boolean?) #f)

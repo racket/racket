@@ -4,7 +4,7 @@
          (for-syntax scheme/base)
          (for-template scheme/base)
          (rep type-rep filter-rep object-rep)
-         (for-syntax (rename-in (types utils union convenience abbrev filter-ops)
+         (for-syntax (rename-in (types utils union numeric-tower abbrev filter-ops)
                                 [Un t:Un]
                                 [true-lfilter -true-lfilter]
                                 [true-filter -true-filter]
@@ -12,12 +12,12 @@
          (except-in (utils tc-utils utils) infer)
          typed-racket/infer/infer-dummy typed-racket/infer/infer
          (utils mutated-vars)
-         
+
          rackunit rackunit/text-ui
-         syntax/parse         
+         syntax/parse
          racket/file racket/port
          (for-syntax syntax/kerncase syntax/parse racket/syntax
-                     (types abbrev convenience utils)
+                     (types abbrev numeric-tower utils)
                      (utils mutated-vars)
                      (utils tc-utils) (typecheck typechecker))
          typed-racket/base-env/prims

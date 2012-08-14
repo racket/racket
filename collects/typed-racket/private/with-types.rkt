@@ -9,21 +9,18 @@
          "../tc-setup.rkt"
          syntax/parse racket/match
          unstable/sequence  "../base-env/base-types-extra.rkt"
-         (except-in (path-up "env/type-name-env.rkt"
-                             "env/type-alias-env.rkt"
-                             "infer/infer-dummy.rkt"
-                             "private/parse-type.rkt"
-                             "private/type-contract.rkt"
-                             "typecheck/typechecker.rkt"
-                             "env/type-env-structs.rkt"
-                             "env/global-env.rkt"
-                             "env/tvar-env.rkt"
-                             "infer/infer.rkt"
-                             "utils/tc-utils.rkt"
-                             "types/utils.rkt"
-                             "types/convenience.rkt"
-                             "types/abbrev.rkt")
-                    ->)
+         (path-up "env/type-name-env.rkt"
+                  "env/type-alias-env.rkt"
+                  "infer/infer-dummy.rkt"
+                  "private/parse-type.rkt"
+                  "private/type-contract.rkt"
+                  "typecheck/typechecker.rkt"
+                  "env/type-env-structs.rkt"
+                  "env/global-env.rkt"
+                  "env/tvar-env.rkt"
+                  "infer/infer.rkt"
+                  "utils/tc-utils.rkt"
+                  "types/utils.rkt")
          (except-in (path-up "utils/utils.rkt") infer))
 
 (provide wt-core)
@@ -70,9 +67,7 @@
                       [(id ...) exids]
                       [(ty ...) extys])
           (local-expand #'(let () (begin (: id ty) ... body ... (values id ...))) ctx null))))
-  (parameterize (;; disable fancy printing?
-                 [custom-printer #t]
-                 ;; a cheat to avoid units
+  (parameterize (;; a cheat to avoid units
                  [infer-param infer]
                  ;; do we report multiple errors
                  [delay-errors? #t]

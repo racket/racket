@@ -21,7 +21,7 @@
          place-sleep
          place-wait
          place-kill
-         place-break
+         (rename-out [place-break/opt place-break])
          place-channel
          place-channel-put
          place-channel-get
@@ -48,7 +48,7 @@
              [(pl-place-enabled?) (pl-func p args ...)]
              [else (th-func p args ...)])))]))
 
-(lazy-require [racket/place/distributed (supervise-dynamic-place-at)])
+(lazy-require [racket/place/distributed (supervise-place-at)])
 
 (define (place-channel-put/get ch msg)
   (place-channel-put ch msg)
@@ -59,13 +59,17 @@
 (define-pl-func place-sleep p)
 (define-pl-func place-wait p)
 (define-pl-func place-kill p)
-(define-pl-func place-break p)
+(define-pl-func place-break p kind)
 (define-pl-func place-channel-put p msg)
 (define-pl-func place-channel-get p)
 (define-pl-func place-channel? p)
 (define-pl-func place? p)
 (define-pl-func place-message-allowed? p)
 (define-pl-func place-dead-evt p)
+
+(define place-break/opt
+  (let ([place-break (lambda (p [kind #f]) (place-break p kind))])
+    place-break))
 
 (define (pump-place p pin pout perr in out err)
   (cond
@@ -74,10 +78,10 @@
       (pl-place-pumper-threads p (vector t-in t-out t-err))]
     [else (void)]))
 
-(define (dynamic-place module-path function #:at [node #f])
+(define (dynamic-place module-path function #:at [node #f] #:named [named #f])
   (cond
     [node
-      (supervise-dynamic-place-at node module-path function)]
+      (supervise-place-at node module-path function #:named named)]
     [else
       (start-place 'dynamic-place module-path function
                    #f (current-output-port) (current-error-port))]))

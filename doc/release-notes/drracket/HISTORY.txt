@@ -1,4 +1,15 @@
 ------------------------------
+       Version 5.3.1
+------------------------------
+
+  . Enable online check syntax by default (it has been 
+    available in the last two releases, but was disabled
+    by default)
+
+  . Check Syntax now shows the blue boxes from the 
+    documentation in the definitions window
+
+------------------------------
        Version 5.3
 ------------------------------
 

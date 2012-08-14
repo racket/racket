@@ -787,6 +787,16 @@ call_error(char *buffer, int len, Scheme_Object *exn)
     p[1] = exn;
     scheme_apply_multi(display_handler, 2, p);
 
+    if (SCHEME_CHAPERONE_STRUCTP(exn)
+        && (scheme_is_struct_instance(exn_table[MZEXN_BREAK_HANG_UP].type, exn)
+            || scheme_is_struct_instance(exn_table[MZEXN_BREAK_TERMINATE].type, exn))) {
+      /* Default uncaught exception handler exits on `exn:break:hang-up'
+         or `exn:break:terminate'. */
+      p[0] = scheme_make_integer(1);
+      scheme_do_exit(1, p);
+      /* Fall through to regular escape if the exit handler doesn't exit/escape. */
+    }
+
     v = scheme_make_byte_string_without_copying("error escape handler");
     v = scheme_make_closed_prim_w_arity(nested_exn_handler,
 					scheme_make_pair(v, exn),

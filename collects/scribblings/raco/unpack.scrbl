@@ -2,7 +2,8 @@
 @(require scribble/manual 
           "common.rkt" 
           (for-label racket/base
-                     setup/unpack))
+                     setup/unpack
+                     setup/dirs))
 
 @title[#:tag "unpack"]{@exec{raco unpack}: Unpacking Library Collections}
 
@@ -76,9 +77,23 @@ while the second will refer to the main installation.}
 @defproc[(fold-plt-archive [archive path-string?]
                            [on-config-fn (any/c any/c . -> . any/c)]
                            [on-setup-unit (any/c input-port? any/c . -> . any/c)]
-                           [on-directory (path-string? any/c . -> . any/c)]
-                           [on-file (or/c (path-string? input-port? any/c . -> . any/c)
-                                          (path-string? input-port? (one-of/c 'file 'file-replace) any/c 
+                           [on-directory ((or/c path-string?
+                                                (list/c (or/c 'collects 'doc 'lib 'include)
+                                                        path-string?))
+                                          any/c 
+                                          . -> . any/c)]
+                           [on-file (or/c ((or/c path-string?
+                                                 (list/c (or/c 'collects 'doc 'lib 'include)
+                                                         path-string?))   
+                                           input-port? 
+                                           any/c 
+                                           . -> . any/c)
+                                          ((or/c path-string?
+                                                 (list/c (or/c 'collects 'doc 'lib 'include)
+                                                         path-string?))
+                                           input-port? 
+                                           (one-of/c 'file 'file-replace) 
+                                           any/c 
                                            . -> . any/c))]
                            [initial-value any/c])
           any/c]{
@@ -109,15 +124,25 @@ not checked by anything, and therefore could cause an error.)
 The result of @racket[on-setup-unit] becomes the new accumulated value.
 
 For each directory that would be created by the archive when unpacking
-normally, @racket[on-directory] is called with the directory path and the
-accumulated value up to that point, and its result is the new
-accumulated value.
+normally, @racket[on-directory] is called with the directory
+path (described more below) and the accumulated value up to that
+point, and its result is the new accumulated value.
 
 For each file that would be created by the archive when unpacking
-normally, @racket[on-file] is called with the file path, an input port
-containing the contents of the file, an optional mode symbol indicating 
-whether the file should be replaced, and the accumulated value up to
-that point; its result is the new accumulated value. The input port
-can be used or ignored, and parsing of the rest of the file continues
-the same either way. After @racket[on-file] returns control, however,
-the input port is drained of its content.}
+normally, @racket[on-file] is called with the file path (described
+more below), an input port containing the contents of the file, an
+optional mode symbol indicating whether the file should be replaced,
+and the accumulated value up to that point; its result is the new
+accumulated value. The input port can be used or ignored, and parsing
+of the rest of the file continues the same either way. After
+@racket[on-file] returns control, however, the input port is drained
+of its content.
+
+A directory or file path can be a plain path, or it can be a list
+containing @racket['collects], @racket['doc], @racket['lib], or
+@racket['include] and a relative path. The latter case corresponds to
+a directory or file relative to a target installation's collection
+directory (in the sense of @racket[find-collects-dir]), documentation
+directory (in the sense of @racket[find-doc-dir]), library
+directory (in the sense of @racket[find-lib-dir]), or ``include''
+directory (in the sense of @racket[find-include-dir]).}

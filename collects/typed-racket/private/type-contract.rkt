@@ -10,14 +10,14 @@
  (utils tc-utils require-contract)
  (env type-name-env)
  (types resolve utils)
- (prefix-in t: (types convenience abbrev))
+ (prefix-in t: (types abbrev numeric-tower))
  (private parse-type)
  racket/match unstable/match syntax/struct syntax/stx racket/syntax racket/list
  (only-in racket/contract -> ->* case-> cons/c flat-rec-contract provide/contract any/c)
  (for-template racket/base racket/contract racket/set (utils any-wrap)
                (prefix-in t: (types numeric-predicates))
                (only-in unstable/contract sequence/c)
-	       (only-in racket/class object% is-a?/c subclass?/c object-contract class/c init object/c class?)))
+               (only-in racket/class object% is-a?/c subclass?/c object-contract class/c init object/c class?)))
 
 (define (define/fixup-contract? stx)
   (or (syntax-property stx 'typechecker:contract-def)
@@ -88,21 +88,22 @@
                                 (and rst (t->c/neg rst)))
                         (exit (fail)))]
                    [_ (exit (fail))]))
-               (with-syntax
+               (with-syntax*
                    ([(dom* ...) (if method? (cons #'any/c dom*) dom*)]
                     [(opt-dom* ...) opt-dom*]
                     [rng* (match rngs*
                             [(list r) r]
                             [_ #`(values #,@rngs*)])]
-                    [rst* rst])
-		 ;; Garr, I hate case->!
-		 (if (and (pair? (syntax-e #'(opt-dom* ...))) case->)
-		     (exit (fail))
-		     (if (or rst (pair? (syntax-e #'(opt-dom* ...))))
-			 (if case->
-			     #'(dom* ... #:rest (listof rst*) . -> . rng*)
-			     #'((dom* ...) (opt-dom* ...) #:rest (listof rst*) . ->* . rng*))
-			 #'(dom* ... . -> . rng*)))))
+                    [rst* rst]
+                    [(rst-spec ...) (if rst #'(#:rest (listof rst*)) #'())])
+                 ;; Garr, I hate case->!
+                 (if (and (pair? (syntax-e #'(opt-dom* ...))) case->)
+                     (exit (fail))
+                     (if (or rst (pair? (syntax-e #'(opt-dom* ...))))
+                         (if case->
+                             #'(dom* ... rst-spec ... . -> . rng*)
+                             #'((dom* ...) (opt-dom* ...) rst-spec ... . ->* . rng*))
+                         #'(dom* ... . -> . rng*)))))
              (unless (no-duplicates (for/list ([t arrs])
                                       (match t
                                         [(arr: dom _ _ _ _) (length dom)]
@@ -185,11 +186,14 @@
                ([cnts (append (map t->c vars) (map t->c notvars))])
              #'(or/c . cnts)))]
         [(and t (Function: _)) (t->c/fun t)]
-	[(Set: t) #`(set/c #,(t->c t))]
+        [(Set: t) #`(set/c #,(t->c t))]
         [(Sequence: ts) #`(sequence/c #,@(map t->c ts))]
         [(Vector: t)
          (when flat? (exit (fail)))
          #`(vectorof #,(t->c t))]
+        [(HeterogenousVector: ts)
+         (when flat? (exit (fail)))
+         #`(vector/c #,@(map t->c ts))]
         [(Box: t)
          (when flat? (exit (fail)))
          #`(box/c #,(t->c t))]
@@ -199,7 +203,7 @@
          #`(flat-named-contract (quote #,(syntax-e p?)) #,(cert p?))]
         [(F: v) (cond [(assoc v (vars)) => second]
                       [else (int-err "unknown var: ~a" v)])]
-	[(Poly: vs b)
+        [(Poly: vs b)
          (if from-typed?
              ;; in positive position, no checking needed for the variables
              (parameterize ([vars (append (for/list ([v vs]) (list v #'any/c)) (vars))])
@@ -214,7 +218,7 @@
          (match-let ([(Mu-name: n-nm _) ty])
            (with-syntax ([(n*) (generate-temporaries (list n-nm))])
              (parameterize ([vars (cons (list n #'n* #'n*) (vars))])
-               #`(letrec ([n* (recursive-contract #,(t->c b))])
+               #`(letrec ([n* (recursive-contract #,(t->c b) #,(if flat? #'#:flat #'#:impersonator))])
                    n*))))]
         [(Value: #f) #'false/c]
         [(Instance: (Class: _ _ (list (list name fcn) ...)))
@@ -255,7 +259,7 @@
                                 (#,pred? val)
                                 #,@(for/list ([fty flds] [f-acc acc-ids])
                                     #`((flat-contract-predicate
-                                       #,(t->c fty #:seen (cons (cons ty #'(recursive-contract rec)) structs-seen)))
+                                       #,(t->c fty #:seen (cons (cons ty #'(recursive-contract rec #:flat)) structs-seen)))
                                        (#,f-acc val))))))])
                     rec)
                 ;Should make this case a chaperone/impersonator contract
@@ -283,7 +287,7 @@
         [(Syntax: t) #`(syntax/c #,(t->c t))]
         [(Value: v) #`(flat-named-contract #,(format "~a" v) (lambda (x) (equal? x '#,v)))]
         [(Param: in out) #`(parameter/c #,(t->c out))]
-	[(Hashtable: k v)
+        [(Hashtable: k v)
          (when flat? (exit (fail)))                  
          #`(hash/c #,(t->c k) #,(t->c v) #:immutable 'dont-care)]
         [else

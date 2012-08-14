@@ -205,6 +205,12 @@ See @racket[decode].}
 See @racket[decode], @racket[decode-part], and @racket[decode-flow].}
 
 
+@defproc[(spliceof [ctc flat-contract?]) flat-contract?]{
+
+Produces a contract for a @racket[splice] instance whose
+@racketidfont{run} elements satisfy @racket[ctc].}
+
+
 @defproc[(clean-up-index-string [str string?]) string?]{
 
 Trims leading and trailing whitespace, and converts non-empty

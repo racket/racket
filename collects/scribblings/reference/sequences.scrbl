@@ -3,7 +3,7 @@
           (for-syntax racket/base)
           (for-label racket/generator
                      racket/generic
-                     compatibility/mpair))
+                     compatibility/mlist))
 
 @(define (info-on-seq where what)
    @margin-note{See @secref[where] for information on using @|what| as

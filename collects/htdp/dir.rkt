@@ -1,22 +1,21 @@
-#lang scheme
-
-(require htdp/error
-         lang/prim
-         (only-in scheme/base [file-size s:file-size]))
+#lang racket
 
 (provide
- create-dir ; path -> Directory
+ ;; map the directory tree at the given path into a data representation according to model 3 of 
+ ;; HtDP/1e (part III) and HtDP/2e (Part IV); 
+ ;; effects: if a directory d isn't accessible, the function prints (inaccessible d) to stdout
+ create-dir ; String -> Dir.v3
  
  ; structure 
- dir?
- make-dir
- dir-name
- dir-dirs
- dir-files
+ dir? make-dir dir-name dir-dirs dir-files
  
  ; structure 
  file? make-file file-name file-content file-size
  )
+
+;; ---------------------------------------------------------------------------------------------------
+
+(require htdp/error lang/prim (only-in racket/base [file-size s:file-size]))
 
 ;; Structures: 
 (define-struct dir (name dirs files) #:transparent)
@@ -29,7 +28,7 @@
 ;; File       = (make-file Symbol Number (union '() X))
 
 (define (create-dir/proc a-path)
-  (check-arg 'create-dir (string? a-path) "string" "first" a-path)    
+  (check-arg 'create-dir (string? a-path) "string" "first" a-path)
   (let ([a-path! (string->path a-path)])
     (if (directory-exists? a-path!)
         (car (explore (list a-path!)))
@@ -46,7 +45,7 @@
                  (map (compose string->symbol path->string) fs)
                  (map (lambda (x) (if (file-exists? x) (s:file-size x) 0))
                       (map (lambda (x) (build-path d x)) fs))
-                 (map (lambda (x) (if (link-exists? x) 'link null)) fs)))))
+                 (map (lambda (x) "") fs)))))
        dirs))
 
 ;; String -> String
@@ -62,17 +61,19 @@
 ;; directory-files&directories : 
 ;;  (-> (values (listof String[file-names]) (listof String[directory-names])))
 (define (directory-files&directories)
-  (let ((contents (directory-list)))
-    (values
-     (filter (lambda (x) (or (file-exists? x) (link-exists? x))) contents)
-     (filter (lambda (x) (and (directory-exists? x) (not (link-exists? x))))
-             contents))))
+  (with-handlers ((exn:fail:filesystem? 
+                   (lambda (x)
+                     (displayln `(inaccessible ,(current-directory)))
+                     (values '() '()))))
+    (let ((contents (directory-list)))
+      (values
+       (filter (lambda (x) (or (file-exists? x) (link-exists? x))) contents)
+       (filter (lambda (x) (and (directory-exists? x) (not (link-exists? x))))
+               contents)))))
 
 ;; get-file-content : file -> (int -> string)
 ;; to read a file on demand as a string
 ;; option to expand the library ... 
 ;; cache it ... 
 (define (get-file-content f)
-  (read-string (file-size f) 
-               (open-input-file (symbol->string (file-name f)))))
-
+  (read-string (file-size f) (open-input-file (symbol->string (file-name f)))))

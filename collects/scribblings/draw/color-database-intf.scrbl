@@ -205,7 +205,8 @@ See also @racket[color%].
            (or/c (is-a?/c color%) #f)]{
 
 Finds a color by name (character case is ignored). If no color is
- found for the name, @racket[#f] is returned.}
+ found for the name, @racket[#f] is returned, otherwise the result
+ is an immutable color object.}
 
 
 @defmethod[(get-names) (listof string?)]{

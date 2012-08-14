@@ -1,4 +1,4 @@
-(require compatibility/mpair)
+(require compatibility/mlist)
 (define SIZE 10000)
 
 (: sequence (Integer Integer -> (MListof Integer)))

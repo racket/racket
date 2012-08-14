@@ -114,7 +114,7 @@
   (cond
    [(null? v) 'same]
    [(and (pair? v) (symbol? (car v)) (symbol=? (car v) 'same))
-    (list 'same (apply build-path 'same (cdr v)))]
+    (apply build-path 'same (cdr v))]
    [(and (pair? v) (string? (car v)))
     (let ([location (string->loc (car v))])
       (if (eq? location 'relative)
@@ -198,7 +198,8 @@
                                (shuffle-path parent-dir get-dir shuffle? (read p))])
                    (unless (or (eq? s 'same) (relative-path? s))
                      (error "expected a directory name relative path string, got" s))
-                   (when (or (eq? s 'same) (filter 'dir s target-dir))
+                   (when (and target-dir
+                              (or (eq? s 'same) (filter 'dir s target-dir)))
                      (let ([d (build-path target-dir s)])
                        (unless (directory-exists? d)
                          (print-status

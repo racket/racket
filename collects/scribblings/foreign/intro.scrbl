@@ -504,6 +504,11 @@ finalizer for the function's argument.  An @racket[allocator] wrapper
 refers to the deallocator, so that the deallocator can be run if
 necessary by a finalizer.
 
+If a resource is scarce or visible to end users, then @tech[#:doc
+reference.scrbl]{custodian} management is more appropriate than
+mere finalization as implemented by @racket[allocator]. See the
+@racketmodname[ffi/unsafe/custodian] library.
+
 @; ------------------------------------------------------------
 
 @section{More Examples}

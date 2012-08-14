@@ -23,6 +23,8 @@ enum {
   MZEXN_FAIL_UNSUPPORTED,
   MZEXN_FAIL_USER,
   MZEXN_BREAK,
+  MZEXN_BREAK_TERMINATE,
+  MZEXN_BREAK_HANG_UP,
   MZEXN_OTHER
 };
 #endif
@@ -53,7 +55,9 @@ static exn_rec exn_table[] = {
   { 2, NULL, NULL, 0, NULL, 1 },
   { 2, NULL, NULL, 0, NULL, 1 },
   { 2, NULL, NULL, 0, NULL, 1 },
-  { 3, NULL, NULL, 0, NULL, 0 }
+  { 3, NULL, NULL, 0, NULL, 0 },
+  { 3, NULL, NULL, 0, NULL, 20 },
+  { 3, NULL, NULL, 0, NULL, 20 }
 };
 #else
 static exn_rec *exn_table;
@@ -86,6 +90,8 @@ static exn_rec *exn_table;
   exn_table[MZEXN_FAIL_UNSUPPORTED].args = 2;
   exn_table[MZEXN_FAIL_USER].args = 2;
   exn_table[MZEXN_BREAK].args = 3;
+  exn_table[MZEXN_BREAK_TERMINATE].args = 3;
+  exn_table[MZEXN_BREAK_HANG_UP].args = 3;
 #endif
 
 #endif
@@ -125,4 +131,6 @@ static exn_rec *exn_table;
   SETUP_STRUCT(MZEXN_FAIL_UNSUPPORTED, EXN_PARENT(MZEXN_FAIL), "exn:fail:unsupported", 0, NULL, scheme_null, NULL)
   SETUP_STRUCT(MZEXN_FAIL_USER, EXN_PARENT(MZEXN_FAIL), "exn:fail:user", 0, NULL, scheme_null, NULL)
   SETUP_STRUCT(MZEXN_BREAK, EXN_PARENT(MZEXN), "exn:break", 1, MZEXN_BREAK_FIELDS, scheme_null, scheme_make_prim(break_field_check))
+  SETUP_STRUCT(MZEXN_BREAK_TERMINATE, EXN_PARENT(MZEXN_BREAK), "exn:break:terminate", 0, NULL, scheme_null, NULL)
+  SETUP_STRUCT(MZEXN_BREAK_HANG_UP, EXN_PARENT(MZEXN_BREAK), "exn:break:hang-up", 0, NULL, scheme_null, NULL)
 #endif

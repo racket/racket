@@ -205,10 +205,10 @@
   (for ([n nodes]
         [c config])
     (match-define (list-rest host port name id rest) c)
-    (supervise-named-dynamic-place-at n 
-                                      name 
-                                      (lookup-config-value rest "mpi-module")
-                                      (lookup-config-value rest "mpi-func")))
+    (supervise-place-at n 
+                        (lookup-config-value rest "mpi-module")
+                        (lookup-config-value rest "mpi-func")
+                        #:named name))
 
   (define-values (mrth ch)
     (start-message-router/thread

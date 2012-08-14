@@ -107,30 +107,36 @@
           (apply string-append (reverse so-far))]
          [else
           (define fst (car strs))
+          (define (add-indent s)
+            (if (null? so-far)
+                s
+                (string-append "\n " s)))
           (define nxt
             (cond
-              [(eq? 'given: fst) (if (blame-original? blame)
-                                     "produced:"
-                                     "given:")]
+              [(eq? 'given: fst) (add-indent
+                                  (if (blame-original? blame)
+                                      "produced:"
+                                      "given:"))]
               [(eq? 'given fst) (if (blame-original? blame)
                                     "produced"
                                     "given")]
-              [(eq? 'expected: fst) (if (blame-original? blame)
-                                        "promised:"
-                                        "expected:")]
+              [(eq? 'expected: fst) (add-indent
+                                     (if (blame-original? blame)
+                                         "promised:"
+                                         "expected:"))]
               [(eq? 'expected fst) (if (blame-original? blame)
                                        "promised"
                                        "expected")]
               [else fst]))
           (define new-so-far
             (if (or last-ended-in-whitespace?
-                    (regexp-match #rx"^ " nxt))
+                    (regexp-match #rx"^[\n ]" nxt))
                 (cons nxt so-far)
                 (list* nxt " " so-far)))
           (loop (cdr strs)
                 new-so-far
                 (regexp-match #rx" $" nxt))]))]))
-              
+
 (define (default-blame-format blme x custom-message)
   (define source-message (source-location->string (blame-source blme)))
   (define positive-message (show/display (convert-blame-party (blame-positive blme))))
@@ -142,13 +148,13 @@
                                    (for/list ([context (in-list context)]
                                               [n (in-naturals)])
                                      (format (if (zero? n)
-                                                 "  in: ~a\n"
-                                                 "      ~a\n")
+                                                 " in: ~a\n"
+                                                 "     ~a\n")
                                              context)))))
   (define contract-line (show/write (blame-contract blme) #:alone? #t))
   (define at-line (if (string=? source-message "")
                       #f
-                      (format "  at: ~a" source-message)))
+                      (format " at: ~a" source-message)))
   
   (define self-or-not (if (blame-original? blme)
                           "broke its contract"
@@ -163,22 +169,22 @@
       [else
        (format "~a:" self-or-not)]))
   
-  (define blaming-line (format "  blaming: ~a" positive-message))
+  (define blaming-line (format " blaming: ~a" positive-message))
   
   (define from-line 
     (if (blame-original? blme)
-        (format "  contract from: ~a" positive-message)
+        (format " contract from: ~a" positive-message)
         (let ([negative-message (show/display (convert-blame-party (blame-negative blme)))])
-          (format "  contract from: ~a" negative-message))))
+          (format " contract from: ~a" negative-message))))
   
   (combine-lines
    start-of-message
-   (format "  ~a"  custom-message)
+   (format " ~a"  custom-message)
    context-lines
    (if context-lines
        contract-line
        (string-append
-        "  in:" 
+        " in:" 
         (substring contract-line 5 (string-length contract-line))))
    from-line
    blaming-line

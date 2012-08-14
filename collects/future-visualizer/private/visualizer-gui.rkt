@@ -16,22 +16,30 @@
 (define (rebuild-mouse-index frameinfo tr segs) 
   (let ([ym (make-interval-map)]) 
     (for ([tl (in-list (trace-proc-timelines tr))]) 
-      (let* ([xm (make-interval-map)] 
-             [midy (calc-row-mid-y (process-timeline-proc-index tl) (frame-info-row-height frameinfo))] 
-             [miny (floor (- midy (/ MIN-SEG-WIDTH 2)))] 
-             [maxy (floor (+ midy (/ MIN-SEG-WIDTH 2)))])
+      (define xm (make-interval-map)) 
+      (define-values (miny maxy) 
+        (cond 
+          [(equal? (process-timeline-proc-id tl) 'gc) 
+           (values 0 (frame-info-adjusted-height frameinfo))] 
+          [else 
+           (define midy (calc-row-mid-y (process-timeline-proc-index tl) 
+                                        (process-timeline-proc-id tl) 
+                                        (frame-info-row-height frameinfo) 
+                                        (length (trace-proc-timelines tr)))) 
+           (values (floor (- midy (/ MIN-SEG-WIDTH 2))) 
+                   (floor (+ midy (/ MIN-SEG-WIDTH 2))))]))
         (interval-map-set! ym 
                            miny 
                            maxy 
                            xm) 
         (for ([seg (in-list (filter (λ (s) 
-                                      (= (event-proc-id (segment-event s)) 
-                                         (process-timeline-proc-id tl))) 
+                                      (equal? (event-proc-id (segment-event s)) 
+                                              (process-timeline-proc-id tl))) 
                                     segs))]) 
           (interval-map-set! xm 
                              (segment-x seg) 
                              (+ (segment-x seg) (segment-width seg)) 
-                             seg))))
+                             seg)))
     ym)) 
 
 ;;display-evt-details : segment trace message message message message message message -> void
@@ -51,14 +59,19 @@
         (send fid-label set-label (format "Future ID: ~a" (if (not (event-future-id evt)) 
                                                               "None (top-level event)" 
                                                               (event-future-id evt)))) 
-        (send pid-label set-label (format "Process ID: ~a" (event-proc-id evt))) 
+        (send pid-label set-label (format "Process ID: ~a" 
+                                          (let ([id (event-proc-id evt)]) 
+                                            (if (equal? id 'gc) 
+                                                RT-THREAD-ID 
+                                                id))))
         (case (event-type evt) 
-          [(start-work start-0-work) 
+          [(start-work start-0-work gc) 
            (send data-label1 set-label (format "Duration: ~a" (get-time-string (- (event-end-time evt) 
                                                                                   (event-start-time evt)))))] 
           [(block sync) 
-           (when (= (event-proc-id evt) RT-THREAD-ID) 
-             (send data-label1 set-label (format "Primitive: ~a" (symbol->string (event-prim-name evt)))))
+           (if (= (event-proc-id evt) RT-THREAD-ID) 
+             (send data-label1 set-label (format "Primitive: ~a" (symbol->string (event-prim-name evt)))) 
+             (send data-label1 set-label ""))
            (define label2-txt (cond 
                                 [(touch-event? evt) (format "Touching future ~a" (event-user-data evt))]
                                 [(allocation-event? evt) (format "Size: ~a" (event-user-data evt))] 
@@ -289,6 +302,8 @@
                               (format "Barricades: ~a" (trace-num-blocks the-trace)))) 
   (define syncs-label (label left-bot-panel 
                              (format "Syncs: ~a" (trace-num-syncs the-trace))))
+  (define gcs-label (label left-bot-panel 
+                           (format "GC's: ~a" (trace-num-gcs the-trace))))
                                
   ;Selected-event-specific labels   
   (define hover-label (mt-bold-label mid-bot-panel))

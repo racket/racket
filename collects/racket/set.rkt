@@ -381,11 +381,11 @@
         [name (get-name ctc)])
     (λ (val fail [first-order? #f])
       (unless (pred val)
-        (fail "expected a <~a>, got ~a" name val))
+        (fail '(expected: "~a" given: "~e") name val))
       (when first-order?
         (for ([e (in-set val)])
           (unless (contract-first-order-passes? elem-ctc e)
-            (fail "expected: ~s, got ~v" (contract-name elem-ctc) e))))
+            (fail '(expected: "~a" given: "~e") (contract-name elem-ctc) e))))
       #t)))
 
 (define (set/c-first-order ctc)

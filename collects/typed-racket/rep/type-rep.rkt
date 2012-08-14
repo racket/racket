@@ -2,10 +2,14 @@
 (require "../utils/utils.rkt")
 
 (require (utils tc-utils)
-	 "rep-utils.rkt" "object-rep.rkt" "filter-rep.rkt" "free-variance.rkt"
+         "rep-utils.rkt" "object-rep.rkt" "filter-rep.rkt" "free-variance.rkt"
          racket/match ;mzlib/etc
          racket/contract
+         unstable/lazy-require
          (for-syntax racket/base syntax/parse))
+
+;; Ugly hack - should use units
+(lazy-require ("../types/union.rkt" (Un)))
 
 (define name-table (make-weak-hasheq))
 
@@ -358,7 +362,7 @@
                                                       e))])
                                        sorted?))))])
   [#:frees (λ (f) (combine-frees (map f elems)))]
-  [#:fold-rhs ((get-union-maker) (map type-rec-id elems))]
+  [#:fold-rhs (apply Un (map type-rec-id elems))]
   [#:key (let loop ([res null] [ts elems])
            (if (null? ts) res
                (let ([k (Type-key (car ts))])
@@ -424,17 +428,6 @@
   [#:key #f] [#:fold-rhs (*Sequence (map type-rec-id tys))])
 
 (def-type Future ([t Type/c]) [#:key 'future])
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Ugly hack - should use units
-
-(define union-maker (box (lambda args (int-err "Union not yet available"))))
-
-(define (set-union-maker! v) (set-box! union-maker v))
-(define (get-union-maker) (unbox union-maker))
-
-(provide set-union-maker! get-union-maker)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

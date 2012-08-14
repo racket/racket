@@ -232,6 +232,11 @@ matches the @nonterm{general-number@sub{2}},
 @nonterm{general-number@sub{8}}, @nonterm{general-number@sub{10}}, or
 @nonterm{general-number@sub{16}} grammar, respectively.
 
+A @litchar{#e} or @litchar{#i} followed immediately by @litchar{#b},
+@litchar{#o}, @litchar{#d}, or @litchar{#x} is treated the same as the
+reverse order: @litchar{#b}, @litchar{#o}, @litchar{#d}, or
+@litchar{#x} followed by @litchar{#e} or @litchar{#i}.
+
 An @nunterm{exponent-mark} in an inexact number serves both to specify
 an exponent and to specify a numerical precision. If single-precision
 IEEE floating point is supported (see @secref["numbers"]), the marks
@@ -253,18 +258,18 @@ that the digit's actual value is unknown.
                                   @nunterm{exact-complex})
      (list @nunterm{exact-integer} @BNF-seq[@optional{@nonterm{sign}} @nunterm{unsigned-integer}])
      (list @nunterm{unsigned-integer} @kleeneplus{@nunterm{digit}})
-     (list @nunterm{exact-rational} @BNF-seq[@nunterm{exact-integer} @litchar{/} @nunterm{unsigned-integer}])
-     (list @nunterm{exact-complex} @BNF-seq[@nunterm{exact-rational} @nonterm{sign} @nunterm{exact-rational} @litchar{i}])
+     (list @nunterm{exact-rational} @BNF-seq[@optional{@nonterm{sign}} @nunterm{unsigned-rational}])
+     (list @nunterm{unsigned-rational} @BNF-seq[@nunterm{unsigned-integer} @litchar{/} @nunterm{unsigned-integer}])
+     (list @nunterm{exact-complex} @BNF-seq[@nunterm{exact-rational} @nonterm{sign} @nunterm{unsigned-rational} @litchar{i}])
      (list @nunterm{inexact} @BNF-alt[@nunterm{inexact-real}
                                       @nunterm{inexact-complex}])
      (list @nunterm{inexact-real} @BNF-seq[@optional{@nonterm{sign}} @nunterm{inexact-normal}]
                                   @BNF-seq[@nonterm{sign} @nunterm{inexact-special}])
      (list @nunterm{inexact-unsigned} @BNF-alt[@nunterm{inexact-normal}
                                                @nunterm{inexact-special}])
-     (list @nunterm{inexact-normal} @BNF-seq[@nunterm{inexact-simple} @optional{@nunterm{exp-mark}
-                                                                                @optional[@nonterm{sign}] @nunterm{digits#}}])
+     (list @nunterm{inexact-normal} @BNF-seq[@nunterm{inexact-simple} @optional{@nunterm{exp-mark} @nunterm{exact-integer}}])
      (list @nunterm{inexact-simple} @BNF-seq[@nunterm{digits#} @optional{@litchar{.}} @kleenestar{@litchar{#}}]
-                                    @BNF-seq[@optional{@nunterm{exact-integer}} @litchar{.} @nunterm{digits#}]
+                                    @BNF-seq[@optional{@nunterm{unsigned-integer}} @litchar{.} @nunterm{digits#}]
                                     @BNF-seq[@nunterm{digits#} @litchar{/} @nunterm{digits#}])
      (list @nunterm{inexact-special} @BNF-alt[@litchar{inf.0} @litchar{nan.0} @litchar{inf.f} @litchar{nan.f}])
      (list @nunterm{digits#} @BNF-seq[@kleeneplus{@nunterm{digit}} @kleenestar{@litchar{#}}])

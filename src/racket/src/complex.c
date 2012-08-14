@@ -300,6 +300,7 @@ Scheme_Object *scheme_complex_power(const Scheme_Object *base, const Scheme_Obje
   Scheme_Complex *cb = (Scheme_Complex *)base;
   Scheme_Complex *ce = (Scheme_Complex *)exponent;
   double a, b, c, d, bm, ba, nm, na, r1, r2;
+  int d_is_zero;
 
   if ((ce->i == zero) && !SCHEME_FLOATP(ce->r)) {
     if (SCHEME_INTP(ce->r) || SCHEME_BIGNUMP(ce->r))
@@ -310,13 +311,17 @@ Scheme_Object *scheme_complex_power(const Scheme_Object *base, const Scheme_Obje
   b = scheme_get_val_as_double(cb->i);
   c = scheme_get_val_as_double(ce->r);
   d = scheme_get_val_as_double(ce->i);
+  d_is_zero = (ce->i == zero);
 
   bm = sqrt(a * a + b * b);
   ba = atan2(b, a);
 
   /* New mag & angle */
-  nm = pow(bm, c) * exp(-(ba * d));
-  na = log(bm) * d + ba * c;
+  nm = scheme_double_expt(bm, c) * exp(-(ba * d));
+  if (d_is_zero) /* precision here can avoid NaNs */
+    na = ba * c;
+  else
+    na = log(bm) * d + ba * c;
 
   r1 = nm * cos(na);
   r2 = nm * sin(na);

@@ -187,8 +187,43 @@
 (arity-test kill-thread 1 1)
 (err/rt-test (kill-thread 5) type?)
 
-(arity-test break-thread 1 1)
+(arity-test break-thread 1 2)
 (err/rt-test (break-thread 5) type?)
+(err/rt-test (break-thread (current-thread) 5) type?)
+
+(err/rt-test (break-thread (current-thread)) exn:break?)
+(err/rt-test (break-thread (current-thread) 'hang-up) exn:break:hang-up?)
+(err/rt-test (break-thread (current-thread) 'terminate) exn:break:terminate?)
+
+(let ([ex? #f]
+      [s (make-semaphore)])
+  (define (go)
+    (exit-handler (lambda (exn)
+                    (set! ex? #t)
+                    (kill-thread (current-thread))))
+    (error-display-handler void)
+    (semaphore-post s)
+    (sync (make-semaphore)))
+
+  (define t1 (thread go))
+  (semaphore-wait s)
+  (test (void) break-thread t1)
+  (sync t1)
+  (test #f values ex?)
+
+  (define t2 (thread go))
+  (semaphore-wait s)
+  (test (void) break-thread t2 'hang-up)
+  (sync t2)
+  (test #t values ex?)
+  (set! ex? #f)
+
+  (define t3 (thread go))
+  (semaphore-wait s)
+  (test (void) break-thread t3 'terminate)
+  (sync t3)
+  (test #t values ex?)
+  (set! ex? #f))
 
 (arity-test thread-wait 1 1)
 (err/rt-test (thread-wait 5) type?)

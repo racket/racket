@@ -158,10 +158,13 @@ threads. For example, if a thread is killed while extracting a
 character from an input port, the character is either completely
 consumed or not consumed, and other threads can safely use the port.}
 
-@defproc[(break-thread [thd thread?]) void?]{
+@defproc[(break-thread [thd thread?]
+                       [kind (or/c #f 'hang-up 'terminate) #f])
+         void?]{
 
 @index['("threads" "breaking")]{Registers} a break with the specified
-thread. If breaking is disabled in @racket[thd], the break will be
+thread, where @racket[kind] optionally indicates the kind of break to
+register. If breaking is disabled in @racket[thd], the break will be
 ignored until breaks are re-enabled (see @secref["breakhandler"]).}
 
 @defproc[(sleep [secs (>=/c 0) 0]) void?]{

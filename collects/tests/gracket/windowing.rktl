@@ -909,14 +909,29 @@
 	(send parent delete-child t)
 	(loop (cdr styles)))))
 
-  (let ([c (make-object canvas% parent '(hscroll vscroll))])
+  (define (check-canvas-no-scroll c)
+    (st 0 c get-scroll-range 'vertical)
+    (st 0 c get-scroll-range 'horizontal)
+    (st 0 c get-scroll-page 'vertical)
+    (st 0 c get-scroll-page 'horizontal)
+    (st 0 c get-scroll-pos 'vertical)
+    (st 0 c get-scroll-pos 'horizontal))
 
+  (let ([c (make-object canvas% parent '())])
+    (check-canvas-no-scroll c)
+    (stv c init-manual-scrollbars 5 6 2 3 4 5)
+    (check-canvas-no-scroll c))
+
+  (let ([c (make-object canvas% parent '(hscroll vscroll))])
+    
     (printf "Tab Focus\n")
     (st #f c accept-tab-focus)
     (stv c accept-tab-focus #t)
     (st #t c accept-tab-focus)
     (stv c accept-tab-focus #f)
     (st #f c accept-tab-focus)
+
+    (check-canvas-no-scroll c)
 
     (stv c init-auto-scrollbars 500 606 .02 .033)
     ; (stv c set-scrollbars 100 101 5 6 2 3 10 20 #t)

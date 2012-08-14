@@ -360,6 +360,14 @@
                       '(string-constant find-menu-item)
                       edit-menu:edit-target-on-demand
                       #f)
+        (make-an-item 'edit-menu 'find-from-selection
+                      '(string-constant find-info)
+                      '(λ (item control) (void))
+                      #\f
+                      '(cons 'shift (get-default-shortcut-prefix))
+                      '(string-constant find-from-selection-menu-item)
+                      edit-menu:edit-target-on-demand
+                      #f)
 
         (make-an-item 'edit-menu 'find-next
                       '(string-constant find-next-info)

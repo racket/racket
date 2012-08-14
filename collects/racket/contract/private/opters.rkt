@@ -183,7 +183,7 @@
   (raise-blame-error
    blame
    val
-   '(expected "a number between ~a and ~a," given: "~e")
+   '(expected: "a number between ~a and ~a" given: "~e")
    lo hi val))
 
 (define-for-syntax (single-comparison-opter opt/info stx check-arg comparison arg)
@@ -220,7 +220,7 @@
   (raise-blame-error
    blame
    val
-   '(expected "a number ~a ~a," given: "~e")
+   '(expected: "a number ~a ~a" given: "~e")
    (object-name comparison) m val))
 
 
@@ -304,7 +304,7 @@
                      (raise-blame-error
                       blame
                       val
-                      '(expected: "~s," given: "~e")
+                      '(expected: "~s" given: "~e")
                       (contract-name ctc)
                       val))))
        #:lifts
@@ -590,6 +590,6 @@
 (define (bad-number-of-arguments blame val args dom-len)
   (define num-values (length args))
   (raise-blame-error (blame-swap blame) val 
-                     '(expected "~a argument~a," given "~a argument~a")
+                     '(expected: "~a argument~a" given: "~a argument~a")
                      dom-len (if (= dom-len 1) "" "s")
                      num-values (if (= num-values 1) "" "s")))

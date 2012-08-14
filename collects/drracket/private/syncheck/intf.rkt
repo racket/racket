@@ -37,7 +37,7 @@
     (define/public (syncheck:add-background-color source start end color) (void))
     (define/public (syncheck:add-require-open-menu source start end key) (void))
     (define/public (syncheck:add-rename-menu id all-ids new-name-intereferes?) (void))
-    (define/public (syncheck:add-docs-menu text start-pos end-pos key the-label path tag) (void))
+    (define/public (syncheck:add-docs-menu text start-pos end-pos key the-label path definition-tag tag) (void))
     (define/public (syncheck:add-arrow start-text start-pos-left start-pos-right
                                        end-text end-pos-left end-pos-right
                                        actual? level)

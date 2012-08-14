@@ -1310,6 +1310,20 @@
 (let ([is (open-input-string "barfoo")]) 
   (test '(#f #\f) list (regexp-match "foo" is 0 3) (read-char is)))
 
+;; Check that lazy decoding of strings works right with sending
+;; unmatched output to a port:
+(for ([succeed? '(#f #t)])
+  (for ([N '(1 100 1000 1023 1024 10000)])
+    (define o (open-output-bytes))
+    (void (regexp-match-positions #rx"y" 
+                                  (string-append
+                                   (make-string N #\x) 
+                                   (if succeed? "y" ""))
+                                  0 
+                                  (+ N (if succeed? 1 0))
+                                  o))
+    (test N bytes-length (get-output-bytes o))))
+
 (arity-test regexp 1 1)
 (arity-test regexp? 1 1)
 (arity-test regexp-match 2 6)

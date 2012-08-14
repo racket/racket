@@ -262,7 +262,7 @@
         (if (first-order x)
             x
             (raise-blame-error b x
-                               '(expected: "~s," given: "~e")
+                               '(expected: "~s" given: "~e")
                                name 
                                x))))))
 

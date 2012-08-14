@@ -228,12 +228,16 @@ please adhere to these guidelines:
   (cs-mode-menu-show-client-obligations "Client Contract Obligations")
   (cs-mode-menu-show-syntax "Syntactic Categories")
   
+  ;; the documentation blue boxes in the upper-right corner of the drracket window
+  (sc-read-more... "read more ...")
+  (sc-f2-to-un/lock "f2 to (un)lock")
+  
  ;; the online check syntax status messages (mouse over the bottom right of drracket's window to see the messages during online expansion's various phases)
  (online-expansion-running "Online expansion running")
  (online-expansion-only-raw-text-files-supported "Only pure text files supported")
  (online-expansion-abnormal-termination "Online expansion terminated abnormally")
  (online-expansion-finished-successfully "Online expansion finished successfully")
-
+  
  (jump-to-error "Jump to Error")
  (online-expansion-is-disabled "Online expansion is disabled")
  ;; these next two show up in the bar along the bottom of the drracket window
@@ -733,6 +737,7 @@ please adhere to these guidelines:
  (select-all-menu-item "Select A&ll")
  
   (find-menu-item "Find") ;; menu item
+  (find-from-selection-menu-item "Find From Selection")
   (find-info "Toggles the keyboard focus between the window being searched and the search bar")
   
  (find-next-info "Skip to the next occurrence of the string in the find window")
@@ -960,7 +965,7 @@ please adhere to these guidelines:
  (force-quit-menu-item-help-string "Uses custodian-shutdown-all to abort the current evaluation")
  (limit-memory-menu-item-label "Limit Memory...")
  (limit-memory-msg-1 "The limit will take effect the next time the program")
- (limit-memory-msg-2 "is Run, and it must be at least one megabyte.")
+ (limit-memory-msg-2 "is Run, and it must be at least eight megabytes.")
  (limit-memory-unlimited "Unlimited")
  (limit-memory-limited "Limited")
  (limit-memory-megabytes "Megabytes")

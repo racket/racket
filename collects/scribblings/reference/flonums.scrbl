@@ -80,9 +80,31 @@ or @racket[flsqrt].}
          flonum?]{
 
 Like @racket[expt], but constrained to consume and produce
-@tech{flonums}. The result is @racket[+nan.0] when @racket[a] is
-negative and @racket[b] is not an integer or when @racket[a] is zero
-and @racket[b] is not positive.}
+@tech{flonums}.
+
+Due to the result constraint, the results compared to @racket[expt]
+differ in the following cases:
+@margin-note*{These special cases correspond to @tt{pow} in C99 @cite["C99"].}
+@;
+@itemlist[#:style 'compact
+
+ @item{@racket[(flexpt -1.0 +inf.0)] --- @racket[1.0]}
+
+ @item{@racket[(flexpt a +inf.0)] where @racket[a] is
+  negative --- @racket[(expt (abs a) +inf.0)]}
+
+ @item{@racket[(flexpt a -inf.0)] where @racket[a] is
+  negative --- @racket[(expt (abs a) -inf.0)]}
+
+ @item{@racket[(expt -inf.0 b)] where @racket[b] is a non-integer:
+       @itemlist[#:style 'compact
+         @item{@racket[b] is negative --- @racket[+0.0]}
+         @item{@racket[b] is positive --- @racket[+inf.0]}]}
+
+ @item{@racket[(flexpt a b)] where @racket[a] is
+  negative and @racket[b] is not an integer --- @racket[+nan.0]}
+
+]}
 
 
 @defproc[(->fl [a exact-integer?]) flonum?]{

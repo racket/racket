@@ -2,8 +2,9 @@
 
 (require "../utils/utils.rkt")
 
-(require (types abbrev numeric-predicates)
+(require (types numeric-predicates)
          (rename-in (rep type-rep) [make-Base make-Base*])
+         racket/match
          racket/function
          unstable/function
          (for-template racket/base racket/contract racket/flonum (types numeric-predicates)))
@@ -23,6 +24,19 @@
 ;; all the types defined here are numeric
 (define (make-Base name contract predicate marshaled)
   (make-Base* name contract predicate marshaled #t))
+
+;; Simple union constructor.
+;; Flattens nested unions and sorts types, but does not check for
+;; overlapping subtypes.
+(define-syntax *Un
+  (syntax-rules ()
+    [(_ . args) (make-Union (remove-dups (sort (apply append (map flat (list . args))) type<?)))]))
+
+(define (flat t)
+  (match t
+    [(Union: es) es]
+    [_ (list t)]))
+
 
 
 ;; Numeric hierarchy
@@ -50,8 +64,8 @@
        (>= n 0)))
 
 ;; Singletons
-(define -Zero (-val 0)) ; exact
-(define -One  (-val 1))
+(define -Zero (make-Value 0)) ; exact
+(define -One  (make-Value 1))
 
 ;; Integers
 (define -Byte>1 (make-Base 'Byte-Larger-Than-One ; unsigned
@@ -131,6 +145,11 @@
 (define -Rat       (*Un -NegRat -Zero -PosRat))
 
 ;; Floating-point numbers
+;; NaN is included in all floating-point types
+(define -FlonumNan (make-Base 'Float-Nan
+                              #'(and/c flonum? (lambda (x) (eqv? x +nan.0)))
+                              (lambda (x) (and (flonum? x) (eqv? x +nan.0)))
+                              #'-FlonumNan))
 (define -FlonumPosZero (make-Base 'Float-Positive-Zero
                                   #'(lambda (x) (eqv? x 0.0))
                                   (lambda (x) (eqv? x 0.0))
@@ -139,25 +158,27 @@
                                   #'(lambda (x) (eqv? x -0.0))
                                   (lambda (x) (eqv? x -0.0))
                                   #'-FlonumNegZero))
-(define -FlonumZero (*Un -FlonumPosZero -FlonumNegZero))
-(define -FlonumNan (make-Base 'Float-Nan
-                              #'(and/c flonum? (lambda (x) (eqv? x +nan.0)))
-                              (lambda (x) (and (flonum? x) (eqv? x +nan.0)))
-                              #'-FlonumNan))
-(define -PosFlonum
-  (make-Base 'Positive-Float
+(define -FlonumZero (*Un -FlonumPosZero -FlonumNegZero -FlonumNan))
+(define -PosFlonumNoNan
+  (make-Base 'Positive-Float-No-NaN
              #'(and/c flonum? positive?)
              (lambda (x) (and (flonum? x) (positive? x)))
-             #'-PosFlonum))
+             #'-PosFlonumNoNan))
+(define -PosFlonum (*Un -PosFlonumNoNan -FlonumNan))
 (define -NonNegFlonum (*Un -PosFlonum -FlonumZero))
-(define -NegFlonum
-  (make-Base 'Negative-Float
+(define -NegFlonumNoNan
+  (make-Base 'Negative-Float-No-NaN
              #'(and/c flonum? negative?)
              (lambda (x) (and (flonum? x) (negative? x)))
-             #'-NegFlonum))
+             #'-NegFlonumNoNan))
+(define -NegFlonum (*Un -NegFlonumNoNan -FlonumNan))
 (define -NonPosFlonum (*Un -NegFlonum -FlonumZero))
-(define -Flonum (*Un -NegFlonum -FlonumNegZero -FlonumPosZero -PosFlonum -FlonumNan)) ; 64-bit floats
+(define -Flonum (*Un -NegFlonumNoNan -FlonumNegZero -FlonumPosZero -PosFlonumNoNan -FlonumNan)) ; 64-bit floats
 ;; inexact reals can be flonums (64-bit floats) or 32-bit floats
+(define -SingleFlonumNan (make-Base 'Single-Flonum-Nan
+                                    #'(and/c single-flonum? (lambda (x) (eqv? x +nan.f)))
+                                    (lambda (x) (and (single-flonum? x) (eqv? x +nan.f)))
+                                    #'-SingleFlonumNan))
 (define -SingleFlonumPosZero ; disjoint from Flonum 0s
   (make-Base 'Single-Flonum-Positive-Zero
              ;; eqv? equates 0.0f0 with itself, but not eq?
@@ -171,29 +192,28 @@
              #'(and/c single-flonum? (lambda (x) (eqv? x -0.0f0)))
              (lambda (x) #f)
 	     #'-SingleFlonumNegZero))
-(define -SingleFlonumZero (*Un -SingleFlonumPosZero -SingleFlonumNegZero))
-(define -SingleFlonumNan (make-Base 'Single-Flonum-Nan
-                                    #'(and/c single-flonum? (lambda (x) (eqv? x +nan.f)))
-                                    (lambda (x) (and (single-flonum? x) (eqv? x +nan.f)))
-                                    #'-SingleFlonumNan))
+(define -SingleFlonumZero (*Un -SingleFlonumPosZero -SingleFlonumNegZero -SingleFlonumNan))
+(define -InexactRealNan     (*Un -FlonumNan -SingleFlonumNan))
 (define -InexactRealPosZero (*Un -SingleFlonumPosZero -FlonumPosZero))
 (define -InexactRealNegZero (*Un -SingleFlonumNegZero -FlonumNegZero))
 (define -InexactRealZero    (*Un -InexactRealPosZero
-                                 -InexactRealNegZero))
-(define -InexactRealNan     (*Un -FlonumNan -SingleFlonumNan))
-(define -PosSingleFlonum
-  (make-Base 'Positive-Single-Flonum
+                                 -InexactRealNegZero
+                                 -InexactRealNan))
+(define -PosSingleFlonumNoNan
+  (make-Base 'Positive-Single-Flonum-No-Nan
              #'(and/c single-flonum? positive?)
              (lambda (x) #f)
-	     #'-PosSingleFlonum))
+	     #'-PosSingleFlonumNoNan))
+(define -PosSingleFlonum    (*Un -PosSingleFlonumNoNan -SingleFlonumNan))
 (define -PosInexactReal     (*Un -PosSingleFlonum -PosFlonum))
 (define -NonNegSingleFlonum (*Un -PosSingleFlonum -SingleFlonumZero))
 (define -NonNegInexactReal  (*Un -PosInexactReal -InexactRealZero))
-(define -NegSingleFlonum
-  (make-Base 'Negative-Single-Flonum
+(define -NegSingleFlonumNoNan
+  (make-Base 'Negative-Single-Flonum-No-Nan
              #'(and/c single-flonum? negative?)
              (lambda (x) #f)
-	     #'-NegSingleFlonum))
+	     #'-NegSingleFlonumNoNan))
+(define -NegSingleFlonum    (*Un -NegSingleFlonumNoNan -SingleFlonumNan))
 (define -NegInexactReal     (*Un -NegSingleFlonum -NegFlonum))
 (define -NonPosSingleFlonum (*Un -NegSingleFlonum -SingleFlonumZero))
 (define -NonPosInexactReal  (*Un -NegInexactReal -InexactRealZero))

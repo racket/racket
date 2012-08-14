@@ -250,7 +250,9 @@ end-of-file, at least one byte (or special) past the skipped bytes, or
 until a non-@racket[#f] @racket[progress] becomes ready. Furthermore,
 if @racket[progress] is ready before bytes are peeked, no bytes are
 peeked or skipped, and @racket[progress] may cut short the skipping
-process if it becomes available during the peek attempt.
+process if it becomes available during the peek attempt. Furthermore,
+@racket[progress] is checked even before determining whether the port
+is still open.
 
 The result of @racket[peek-bytes-avail!] is @racket[0] only in the
 case that @racket[progress] becomes ready before bytes are peeked.}
@@ -331,9 +333,9 @@ like @racket[peek-bytes-avail!].}
                                 (current-input-port)])
          progress-evt?]{
 
-Returns a @tech{synchronizable event} that becomes ready after any subsequent read from
-@racket[in], or after @racket[in] is closed. After the event becomes
-ready, it remains ready.}
+Returns a @tech{synchronizable event} that becomes ready after any
+subsequent read from @racket[in] or after @racket[in] is
+closed. After the event becomes ready, it remains ready.}
 
 
 @defproc[(port-provides-progress-evts? [in input-port?]) boolean]{

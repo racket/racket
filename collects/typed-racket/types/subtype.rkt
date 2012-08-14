@@ -2,14 +2,17 @@
 (require "../utils/utils.rkt"
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
-         (types utils resolve abbrev numeric-tower substitute)
+         (types utils resolve base-abbrev numeric-tower substitute)
          (env type-name-env)
          (only-in (infer infer-dummy) unify)
          racket/match unstable/match
          racket/function
-         (rename-in racket/contract
-                    [-> c->] [->* c->*])
+         unstable/lazy-require
+         (prefix-in c: racket/contract)
          (for-syntax racket/base syntax/parse))
+
+(lazy-require
+  ("union.rkt" (Un)))
 
 ;; exn representing failure of subtyping
 ;; s,t both types
@@ -186,7 +189,7 @@
 ;(trace subtypes*/varargs)
 
 (define/cond-contract (combine-arrs arrs)
-  (c-> (listof arr?) (or/c #f arr?))
+  (c:-> (c:listof arr?) (c:or/c #f arr?))
   (match arrs
     [(list (and a1 (arr: dom1 rng1 #f #f '())) (arr: dom rng #f #f '()) ...)
      (cond
@@ -194,7 +197,7 @@
        [(not (apply = (length dom1) (map length dom))) #f]
        [(not (for/and ([rng2 (in-list rng)]) (type-equal? rng1 rng2)))
         #f]
-       [else (make-arr (apply map *Un (cons dom1 dom)) rng1 #f #f '())])]
+       [else (make-arr (apply map Un (cons dom1 dom)) rng1 #f #f '())])]
     [_ #f]))
 
 (define-match-expander NameStruct:

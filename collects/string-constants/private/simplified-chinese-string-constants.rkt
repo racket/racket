@@ -776,8 +776,8 @@
   (force-quit-menu-item-label "终止")
   (force-quit-menu-item-help-string "使用custodian-shutdown-all退出当前计算")
   (limit-memory-menu-item-label "限制内存使用...")
-  (limit-memory-msg-1 "内存限制会在下一次运行")
-  (limit-memory-msg-2 "时生效。内存限制最低值为1megabyte.")
+  ;(limit-memory-msg-1 "内存限制会在下一次运行")
+  ;(limit-memory-msg-2 "时生效。内存限制最低值为1megabyte.") ;; memory limit is now 8 megabytes
   (limit-memory-unlimited "无限制")
   (limit-memory-limited "限制")
   (limit-memory-megabytes "Megabytes")

@@ -64,11 +64,30 @@ the execution of parallel programs written using @racket[future].
 }
   
 @defstruct[indexed-future-event ([index exact-nonnegative-integer?] 
-                                 [event future-event?])]{
-  Represents an individual log message in a program trace.  Because multiple 
+                                 [event (or future-event? gc-info?)])]{
+  Represents an individual log message in a program trace.  In addition to 
+  future events, the tracing code also records garbage collection events; hence 
+  the @racket[event] field may contain either a @racket[future-event] or @racket[gc-info], 
+  where the latter describes a GC operation.  Because multiple 
   @racket[future-event] structures may contain identical timestamps, the 
   @racket[index] field ranks them in the order in which they were recorded 
   in the log output.
+}
+                                                                      
+@defstruct[gc-info ([major? boolean?] 
+                    [pre-used integer?] 
+                    [pre-admin integer?] 
+                    [code-page-total integer?] 
+                    [post-used integer?] 
+                    [post-admin integer?] 
+                    [start-time integer?] 
+                    [end-time integer?] 
+                    [start-real-time real?] 
+                    [end-real-time real?]) 
+                   #:prefab]{
+  Represents a garbage collection.  The only fields used by the visualizer 
+  are @racket[start-real-time] and @racket[end-real-time], which are inexact 
+  numbers representing time in the same way as @racket[current-inexact-milliseconds].
 }
 
 @; ------------------------------------------------------------

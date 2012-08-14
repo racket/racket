@@ -283,11 +283,40 @@
                (syntax->datum stx-id) names)))
     (define tagged
       (cond
-        [(eq? mode 'new)
-         (make-element #f (list (racket new) spacer (to-element within-id)))]
-        [(eq? mode 'make)
-         (make-element
-          #f (list (racket make-object) spacer (to-element within-id)))]
+        [(or (eq? mode 'new)
+             (eq? mode 'make))
+         (define content
+           (list (if (eq? mode 'new)
+                     (racket new)
+                     (racket make-object))))
+         (define new-elem
+           (if first?
+               (let* ([target-maker (id-to-target-maker within-id #f)])
+                 (if target-maker
+                     (target-maker
+                      content
+                      (lambda (ctag)
+                        (let ([tag (constructor-tag ctag)])
+                          (make-toc-target-element
+                           #f
+                           (list (make-index-element
+                                  #f
+                                  content
+                                  tag
+                                  (list (datum-intern-literal (symbol->string (syntax-e within-id))) 
+                                        (if (eq? mode 'new)
+                                            "new"
+                                            "make-object"))
+                                  content
+                                  (with-exporting-libraries
+                                   (lambda (libs)
+                                     (make-constructor-index-desc
+                                      (syntax-e within-id)
+                                      libs ctag)))))
+                           tag))))
+                     (car content)))
+               (car content)))
+         (make-element #f (list new-elem spacer (to-element within-id)))]
         [(eq? mode 'send)
          (make-element
           #f

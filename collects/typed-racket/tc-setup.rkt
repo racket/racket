@@ -4,7 +4,7 @@
          (except-in syntax/parse id)
          racket/pretty racket/promise
          (private type-contract)
-         (types utils convenience)
+         (types utils)
          (typecheck typechecker provide-handling tc-toplevel)
          (env tvar-env type-name-env type-alias-env env-req)
          (r:infer infer)
@@ -39,9 +39,7 @@
     (with-handlers
         (#;[(λ (e) (and (exn:fail? e) (not (exn:fail:syntax? e)) (not (exn:fail:filesystem? e))))
           (λ (e) (tc-error "Internal Typed Racket Error : ~a" e))])
-      (parameterize (;; enable fancy printing?
-                     [custom-printer #t]
-                     ;; a cheat to avoid units
+      (parameterize (;; a cheat to avoid units
                      [infer-param infer]
                      ;; do we report multiple errors
                      [delay-errors? #t]

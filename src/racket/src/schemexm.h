@@ -71,6 +71,7 @@
 #define scheme_tls_get (scheme_extension_table->scheme_tls_get)
 #define scheme_make_custodian (scheme_extension_table->scheme_make_custodian)
 #define scheme_add_managed (scheme_extension_table->scheme_add_managed)
+#define scheme_add_managed_close_on_exit (scheme_extension_table->scheme_add_managed_close_on_exit)
 #define scheme_custodian_check_available (scheme_extension_table->scheme_custodian_check_available)
 #define scheme_custodian_is_available (scheme_extension_table->scheme_custodian_is_available)
 #define scheme_remove_managed (scheme_extension_table->scheme_remove_managed)

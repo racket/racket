@@ -153,7 +153,7 @@ export from a module that is implemented in an @|r5rs|-like language.
 
 The @racket[cons] of @racketmodname[r5rs] corresponds to
 @racketmodname[racket/base]'s @racket[mcons]. Similarly, @racket[cdr]
-is @racket[mcdr], and @racket[map] is @racketmodname[compatibility/mpair]'s
+is @racket[mcdr], and @racket[map] is @racketmodname[compatibility/mlist]'s
 @racket[mmap], and so on.
 
 An @|r5rs| @defterm{environment} is implemented as a

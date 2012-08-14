@@ -972,7 +972,7 @@
           (when source-editor
             (define info (get-index-entry-info binding-info))
             (when info
-              (define-values (entry-desc path tag) (apply values info))
+              (define-values (entry-desc path definition-tag tag) (apply values info))
               (send defs-text syncheck:add-background-color
                     source-editor start fin 
                     "palegreen")
@@ -983,6 +983,7 @@
                     (syntax-e stx)
                     (build-docs-label entry-desc)
                     path
+                    definition-tag
                     tag))))))
     
     (define (build-docs-label entry-desc)

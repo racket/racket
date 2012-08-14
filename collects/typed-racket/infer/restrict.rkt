@@ -2,7 +2,7 @@
 
 (require "../utils/utils.rkt")
 (require (rep type-rep)
-	 (types utils union subtype remove-intersect resolve substitute abbrev)
+         (types utils union subtype remove-intersect resolve substitute)
          "signatures.rkt"
          racket/match)
 
@@ -19,7 +19,7 @@
 ;; NEW IMPL
 ;; restrict t1 to be a subtype of t2
 ;; if `f' is 'new, use t2 when giving up, otherwise use t1
-(define (restrict* t1 t2 [f 'new])  
+(define (restrict* t1 t2 [f 'new])
   (cond
     [(subtype t1 t2) t1] ;; already a subtype
     [(match t2 
@@ -34,5 +34,5 @@
     [(subtype t2 t1) t2] ;; we don't actually want this - want something that's a part of t1
     [(not (overlap t1 t2)) (Un)] ;; there's no overlap, so the restriction is empty
     [else (if (eq? f 'new) t2 t1)])) ;; t2 and t1 have a complex relationship, so we punt
-    
+
 (define restrict restrict*)

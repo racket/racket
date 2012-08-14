@@ -94,11 +94,10 @@
   (define nodes (spawn-nodes/join/local config))
   (for ([n nodes]
         [i (in-naturals)])
-    (supervise-named-dynamic-place-at n
-                                      (i->place-name i)
-                                      (->module-path (quote-module-path))
-                                      'map-reduce-worker))
-
+    (supervise-place-at n
+                        (->module-path (quote-module-path))
+                        'map-reduce-worker
+                        #:named (i->place-name)))
   nodes)
 
 (define (default-sorter a b)

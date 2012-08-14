@@ -4,7 +4,7 @@
 
 (require redex
          racket/flonum racket/unsafe/ops
-         racket/sandbox
+         racket/sandbox racket/cmdline
          "random-real.rkt")
 
 (require (except-in typed-racket/utils/utils infer)
@@ -105,7 +105,6 @@
 (define (get-type e [typecheck (compose tc-expr expand)])
   (parameterize ([delay-errors? #f]
                  [current-namespace (namespace-anchor->namespace anch)]
-                 [custom-printer #t]
                  [infer-param infer]
                  [orig-module-stx (quote-syntax e)])
     (typecheck (datum->syntax #'here e))))
@@ -144,11 +143,16 @@
         #f) ; go on and check preservation
       (right-type? sexp)))
 
+(define n-attempts 1000)
+(command-line
+ #:once-each
+ [("-n") n "Number of attempts" (set! n-attempts (string->number n))])
+
 (call-with-limits
  #f 1000
  (lambda ()
    (redex-check tr-arith F (check-all-reals (term F))
-                #:attempts 1000
+                #:attempts n-attempts
                 #:prepare exp->real-exp)))
 
 ;(printf "bad tests (usually typechecking failed): ~v~n" num-exceptions)

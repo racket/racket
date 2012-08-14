@@ -200,8 +200,10 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (error ":type is only valid at the top-level of an interaction"))
 (define-syntax (:print-type stx)
   (error ":print-type is only valid at the top-level of an interaction"))
-(define-syntax (:query-result-type stx)
-  (error ":query-result-type is only valid at the top-level of an interaction"))
+(define-syntax (:query-type/args stx)
+  (error ":query-type/args is only valid at the top-level of an interaction"))
+(define-syntax (:query-type/result stx)
+  (error ":query-type/result is only valid at the top-level of an interaction"))
 
 (define-syntax (require/opaque-type stx)
   (define-syntax-class name-exists-kw

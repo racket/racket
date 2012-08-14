@@ -100,4 +100,62 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(let ()
+  (define tmp-src-dir
+    (make-temporary-file "example~a" 'directory))
+
+  (write-to-file 0 (build-path tmp-src-dir "foo"))
+  (write-to-file 1 (build-path tmp-src-dir "bar"))
+  (make-directory (build-path tmp-src-dir "zog"))
+  (write-to-file 2 (build-path tmp-src-dir "zog" "zip"))
+
+  ;; The structure is...
+  ;; root
+  ;;  + foo => 0
+  ;;  + bar => 1
+  ;;  - zog
+  ;;    + zip => 2
+
+  ;; Turn it into a .plt archive
+  (define tmp-plt
+    (make-temporary-file "example~a.plt"))
+
+  (pack-plt tmp-plt "example" (list tmp-src-dir)
+            #:as-paths (list "."))
+
+  ;; Now unpack it
+  (define tmp-dest-dir
+    (make-temporary-file "example~a" 'directory))
+
+  ;; This errors because #f is given to build-path, because target-dir
+  ;; is bound to #f at some point, because of the (values #f 'same) is
+  ;; the result when v is just '(same) to shuffle-path
+  (parameterize ([current-directory tmp-dest-dir])
+    (unpack tmp-plt (current-directory) void))
+
+  (fold-plt-archive
+   tmp-plt
+   void
+   void
+   (λ (dir _)
+      ;; Each of these fails because the values are actually `(same
+      ;; ,path), despite the contract claiming to give path-string?
+      ;; values (same with below)
+      ;;
+      ;; The code calls expr->path-descriptor which returns this and
+      ;; another list'd value
+      ;;
+      ;; The only use of fold-plt-archive in the tree, planet/util,
+      ;; works around this by just pulling out the path component or
+      ;; erroring.
+      (test #t path-string? dir))
+   (λ (file content-p _1 [_2 #f])
+      (test #t path-string? file))
+   #f)
+
+  (delete-directory/files tmp-plt)
+  (delete-directory/files tmp-dest-dir))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

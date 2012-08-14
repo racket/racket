@@ -106,7 +106,8 @@
     (values x-ticks x-far-ticks y-ticks y-far-ticks)))
 
 (defproc (discrete-histogram
-          [cat-vals (listof (vector/c any/c (or/c real? ivl? #f)))]
+          [cat-vals (listof (or/c (vector/c any/c (or/c real? ivl? #f))
+                                  (list/c any/c (or/c real? ivl? #f))))]
           [#:x-min x-min (or/c rational? #f) 0] [#:x-max x-max (or/c rational? #f) #f]
           [#:y-min y-min (or/c rational? #f) 0] [#:y-max y-max (or/c rational? #f) #f]
           [#:gap gap (real-in 0 1) (discrete-histogram-gap)]
@@ -122,7 +123,7 @@
           [#:add-ticks? add-ticks? boolean? #t]
           [#:far-ticks? far-ticks? boolean? #f]
           ) renderer2d?
-  (match-define (list (vector cats ys) ...) cat-vals)
+  (match-define (list (or (vector cats ys) (list cats ys)) ...) cat-vals)
   (define rys (filter rational? (append* (for/list ([y  (in-list ys)])
                                            (match y
                                              [(ivl y1 y2)  (list y1 y2)]
@@ -148,7 +149,8 @@
                                 color style line-color line-width line-style alpha label)))]))
 
 (defproc (stacked-histogram
-          [cat-vals (listof (vector/c any/c (listof real?)))]
+          [cat-vals (listof (or/c (vector/c any/c (listof real?))
+                                  (list/c any/c (listof real?))))]
           [#:x-min x-min (or/c rational? #f) 0] [#:x-max x-max (or/c rational? #f) #f]
           [#:y-min y-min (or/c rational? #f) 0] [#:y-max y-max (or/c rational? #f) #f]
           [#:gap gap (real-in 0 1) (discrete-histogram-gap)]
@@ -164,7 +166,7 @@
           [#:add-ticks? add-ticks? boolean? #t]
           [#:far-ticks? far-ticks? boolean? #f]
           ) (listof renderer2d?)
-  (match-define (list (vector cats ys) ...) cat-vals)
+  (match-define (list (or (vector cats ys) (list cats ys)) ...) cat-vals)
   (define yss (map cumulative-sum ys))
   (define y-ivlss (for/list ([ys  (in-list yss)])
                     (for/list ([y1  (in-list ys)] [y2  (in-list (rest ys))])

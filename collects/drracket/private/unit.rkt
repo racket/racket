@@ -4639,7 +4639,7 @@ module browser threading seems wrong.
       (let* ([n (string->number (send txt get-text))])
         (and n
              (integer? n)
-             (1 . <= . n))))
+             (8 . <= . n))))
     
     (define (background sd)
       (let ([txt (send tb get-editor)])
