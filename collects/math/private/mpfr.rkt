@@ -2,6 +2,7 @@
 
 (require ffi/unsafe
          ffi/unsafe/cvector
+         ffi/unsafe/custodian
          racket/list
          racket/promise
          (for-syntax racket/base))
@@ -69,15 +70,8 @@
     (λ xs (apply (force fun) xs))))
 
 (define mpfr-free-cache (get-mpfr-fun 'mpfr_free_cache (_fun -> _void)))
-
-(define scheme-add-atexit-closer
-  (get-ffi-obj 'scheme_add_atexit_closer #f
-               (_fun (_fun _scheme _pointer _pointer -> _void) -> _void)))
-
-;; Add an exit handler to clear the MPFR constants cache (pi, e, etc.)
-;; This isn't working right now: causes a segfault
-;; Best guess: MPFR is trying to free memory allocated by Racket
-;(scheme-add-atexit-closer (λ (x _1 _2) (mpfr-free-cache)))
+(define mpfr-shutdown (register-custodian-shutdown
+                       mpfr-free-cache (λ (free) (free))))
 
 ;; ===================================================================================================
 ;; Parameters: rounding mode, bit precision, printing
