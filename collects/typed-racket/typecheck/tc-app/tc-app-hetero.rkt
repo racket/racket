@@ -91,12 +91,6 @@
      (single-value val-e)
      (index-error i-val i-bound i-e vec-t expected) name]))
 
-
-(define-syntax-class special-op
-  (pattern i:identifier
-           #:when (or (syntax-property #'i 'type-inst)
-                      (syntax-property #'i 'type-ascription))))
-
 (define (tc/app-hetero form expected)
   (syntax-parse form
     #:literals (#%plain-app 

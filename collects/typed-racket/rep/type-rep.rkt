@@ -139,6 +139,9 @@
   [#:frees (λ (f) (make-invariant (f elem)))]
   [#:key 'thread-cell])
 
+;; elem is a Type
+(def-type Promise ([elem Type/c])
+  [#:key 'promise])
 
 ;; elem is a Type
 (def-type Ephemeron ([elem Type/c])

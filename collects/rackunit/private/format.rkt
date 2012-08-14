@@ -1,6 +1,5 @@
 #lang racket/base
 (require racket/match
-         srfi/13
          "base.rkt"
          "check-info.rkt")
 
@@ -30,6 +29,15 @@
 
 (define (display-error)
   (display "ERROR"))
+
+(define (string-pad-right s n)
+  (define m (string-length s))
+  (cond
+   [(= m n) s]
+   [(m . < . n)
+    (string-append (make-string (- n m) #\space) s)]
+   [else
+    (substring s (- m n))]))
 
 (define (display-check-info-name-value name value [value-printer write])
   (display (string-pad-right

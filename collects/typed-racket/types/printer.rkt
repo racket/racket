@@ -3,7 +3,7 @@
 (require racket/require racket/match unstable/sequence racket/string racket/promise
          (prefix-in s: srfi/1)
          (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt"
-                  "rep/rep-utils.rkt" "types/abbrev.rkt" "types/subtype.rkt"
+                  "rep/rep-utils.rkt" "types/subtype.rkt"
                   "utils/utils.rkt"
                   "utils/tc-utils.rkt")
          (for-syntax racket/base syntax/parse))
@@ -22,7 +22,6 @@
 
 (provide print-multi-line-case-> special-dots-printing? print-complex-filters?)
 
-;;TODO try to remove requirement on abbrev once promise is fixed
 
 ;; do we attempt to find instantiations of polymorphic types to print?
 ;; FIXME - currently broken
@@ -238,9 +237,6 @@
      (fp "~a" (cons 'List (tuple-elems t)))]
     [(Base: n cnt _ _ _) (fp "~s" n)]
     [(Opaque: pred _) (fp "(Opaque ~a)" (syntax->datum pred))]
-    [(Struct: (? (lambda (nm) (free-identifier=? promise-id nm)))
-              #f (list (fld: t _ _)) _    _ _ _ _)
-     (fp "(Promise ~a)" t)]
     [(Struct: nm       par (list (fld: t _ _) ...)       proc _ _ _ _)
      (fp "#(struct:~a ~a" nm t)
      (when proc
@@ -257,6 +253,7 @@
     [(Future: e) (fp "(Futureof ~a)" e)]
     [(Channel: e) (fp "(Channelof ~a)" e)]
     [(ThreadCell: e) (fp "(ThreadCellof ~a)" e)]
+    [(Promise: e) (fp "(Promise ~a)" e)]
     [(Ephemeron: e) (fp "(Ephemeronof ~a)" e)]
     [(CustodianBox: e) (fp "(CustodianBoxof ~a)" e)]
     [(Set: e) (fp "(Setof ~a)" e)]

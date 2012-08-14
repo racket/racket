@@ -53,10 +53,16 @@
                                           [(syntax-procedure-converted-arguments-property i)
                                            => (λ (prop)
                                                 (define orig (car (flatten prop)))
-                                                (define t (kw-convert (lookup-type/lexical orig env)))
+                                                (define pre-t
+                                                  (lookup-type/lexical orig env
+                                                    #:fail (lambda (i) (lookup-fail i) #f)))
+                                                (define t (if pre-t
+                                                              (kw-convert pre-t)
+                                                              Err))
                                                 (register-type i t)
                                                 t)]
                                           [else ((or fail lookup-fail) i)]))))))
+
 
 ;; refine the type of i in the lexical env
 ;; (identifier type -> type) identifier -> environment

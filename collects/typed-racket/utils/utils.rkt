@@ -18,7 +18,7 @@ at least theoretically.
  ;; timing
  start-timing do-time
  ;; logging
- printf/log show-input?
+ show-input?
  ;; provide macros
  rep utils typecheck infer env private types)
 
@@ -92,19 +92,6 @@ at least theoretically.
 (define-requirer types types-out)
 (define-requirer optimizer optimizer-out)
 (define-requirer base-env base-env-out)
-
-;; conditionalized logging
-;; there's some logging code in the source
-;; which was used for gathering statistics about various programs
-;; no longer used, probably bitrotted
-(define-for-syntax logging? #f)
-
-(define-syntax (printf/log stx)
-  (if logging?
-      (syntax-case stx ()
-        [(_ fmt . args)
-	 #'(log-debug (format fmt . args))])
-      #'(void)))
 
 ;; turn contracts on and off - off by default for performance.
 (provide (for-syntax enable-contracts?)

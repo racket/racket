@@ -9,8 +9,7 @@
                                 [true-lfilter -true-lfilter]
                                 [true-filter -true-filter]
                                 [-> t:->]))
-         (except-in (utils tc-utils utils) infer)
-         typed-racket/infer/infer-dummy typed-racket/infer/infer
+         (utils tc-utils utils)
          (utils mutated-vars)
 
          rackunit rackunit/text-ui

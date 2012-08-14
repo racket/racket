@@ -3,7 +3,6 @@
          (prefix-in text: "text-render.rkt")
          "base-render.rkt"
          "core.rkt"
-         (only-in slideshow/pict pict?)
          file/convertible)
 (provide override-render-mixin-single
          override-render-mixin-multi)
@@ -157,7 +156,6 @@
        (r-content content mode index-table))]
     [(string? content) (void)]
     [(symbol? content) (void)]
-    [(pict? content) (void)]
     [(convertible? content) (void)]
     [(delayed-element? content)
      (r-content (delayed-element-content content (the-ri)) mode index-table)]

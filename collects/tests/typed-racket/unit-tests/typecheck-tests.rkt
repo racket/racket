@@ -19,8 +19,7 @@
                     [true-lfilter -true-lfilter]
                     [true-filter -true-filter]
                     [-> t:->])
-         (except-in (utils tc-utils utils) infer)
-         typed-racket/infer/infer-dummy typed-racket/infer/infer
+         (utils tc-utils utils)
          (utils mutated-vars)
          (env type-name-env type-env-structs init-envs)
          rackunit rackunit/text-ui
@@ -74,7 +73,6 @@
     [(_ e)
      #`(parameterize ([delay-errors? #f]
                       [current-namespace (namespace-anchor->namespace anch)]
-                      [infer-param infer]
                       [orig-module-stx (quote-syntax e)])
          (let ([ex (expand 'e)])
            (parameterize ([mutated-vars (find-mutated-vars ex)])
@@ -85,7 +83,6 @@
     [(_ e)
      #`(parameterize ([delay-errors? #f]
                       [current-namespace (namespace-anchor->namespace anch)]
-                      [infer-param infer]
                       [orig-module-stx (quote-syntax e)])
          (let ([ex (expand 'e)])
            (parameterize ([mutated-vars (find-mutated-vars ex)])
@@ -210,6 +207,10 @@
         (tc-e (flexpt 0.5 0.3) -NonNegFlonum)
         (tc-e (flexpt 0.00000000001 100000000000.0) -NonNegFlonum)
         (tc-e (flexpt -2.0 -0.5) -Flonum) ; NaN
+        (tc-e (angle -1) -Real)
+        (tc-e (angle 2.3) -Zero)
+        (tc-e (magnitude 3/4) -Rat)
+        (tc-e (magnitude 3+2i) -Real)
 
         [tc-e/t (lambda: () 3) (t:-> -PosByte : -true-lfilter)]
         [tc-e/t (lambda: ([x : Number]) 3) (t:-> N -PosByte : -true-lfilter)]
@@ -1504,6 +1505,10 @@
               Univ]
         [tc-e ((inst vector Index) 0)
               (-vec -Index)]
+        [tc-err ((inst list Void) 1 2 3)]
+        [tc-e ((inst list Any) 1 2 3)
+              (-lst Univ)]
+
         )
   (test-suite
    "check-type tests"

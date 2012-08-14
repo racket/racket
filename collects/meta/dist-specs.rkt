@@ -368,6 +368,7 @@ mz-manuals := (scribblings: "main/") ; generates main pages (next line)
                         "scheme/"
                         "honu/")
               (doc: "*.{html|css|js|sxref}")
+              (doc: "contract-blueboxes.rktd")
               (scribblings: "{{info|icons}.rkt|*.png}" "compiled")
 
 mr-base := (package: "gracket") (bin: "gracket-text")
@@ -686,7 +687,14 @@ mz-extras :+= (- (package: "unstable")
 plt-extras :+= (package: "plai/")
 
 ;; -------------------- rackunit & older schemeunit compatibility
-plt-extras :+= (package: "rackunit/") (package: "schemeunit/")
+mz-extras :+= (- (package: "rackunit/")
+                 (collects: "rackunit/private/gui/")
+                 (srcfile: "rackunit/gui.rkt")
+                 (srcfile: "rackunit/tool.rkt"))
+plt-extras :+= (collects: "rackunit/private/gui/") 
+               (srcfile: "rackunit/gui.rkt")
+               (srcfile: "rackunit/tool.rkt")
+               (package: "schemeunit/")
 
 ;; -------------------- racklog (aka schelog)
 plt-extras :+= (package: "racklog/")
