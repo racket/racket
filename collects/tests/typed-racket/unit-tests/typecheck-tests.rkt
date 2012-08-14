@@ -74,7 +74,6 @@
     [(_ e)
      #`(parameterize ([delay-errors? #f]
                       [current-namespace (namespace-anchor->namespace anch)]
-                      [custom-printer #t]
                       [infer-param infer]
                       [orig-module-stx (quote-syntax e)])
          (let ([ex (expand 'e)])
@@ -86,7 +85,6 @@
     [(_ e)
      #`(parameterize ([delay-errors? #f]
                       [current-namespace (namespace-anchor->namespace anch)]
-                      [custom-printer #t]
                       [infer-param infer]
                       [orig-module-stx (quote-syntax e)])
          (let ([ex (expand 'e)])
