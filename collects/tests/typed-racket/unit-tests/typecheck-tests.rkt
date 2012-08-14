@@ -1508,6 +1508,10 @@
               Univ]
         [tc-e ((inst vector Index) 0)
               (-vec -Index)]
+        [tc-err ((inst list Void) 1 2 3)]
+        [tc-e ((inst list Any) 1 2 3)
+              (-lst Univ)]
+
         )
   (test-suite
    "check-type tests"

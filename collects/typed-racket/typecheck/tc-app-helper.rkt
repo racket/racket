@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require "../utils/utils.rkt" racket/match unstable/list unstable/sequence
+         syntax/parse
          (only-in srfi/1 unzip4) (only-in racket/list make-list)
          (prefix-in c: racket/contract)
          "check-below.rkt" "tc-subst.rkt"
@@ -10,6 +11,10 @@
 
 (provide (all-defined-out))
 
+(define-syntax-class special-op
+  (pattern i:identifier
+           #:when (or (syntax-property #'i 'type-inst)
+                      (syntax-property #'i 'type-ascription))))
 
 ;; syntax? syntax? arr? (listof tc-results?) (or/c #f tc-results) [boolean?] -> tc-results?
 (define/cond-contract (tc/funapp1 f-stx args-stx ftype0 argtys expected #:check [check? #t])
