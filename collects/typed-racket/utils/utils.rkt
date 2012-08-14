@@ -7,7 +7,6 @@ at least theoretically.
 
 (require (for-syntax racket/base syntax/parse racket/string)
          racket/require-syntax racket/provide-syntax         
-         racket/generic
          racket/struct-info "timing.rkt")
 
 ;; to move to unstable
@@ -20,8 +19,6 @@ at least theoretically.
  start-timing do-time
  ;; logging
  printf/log show-input?
- ;; struct printing
- define-struct/printer
  ;; provide macros
  rep utils typecheck infer env private types)
 
@@ -108,20 +105,6 @@ at least theoretically.
         [(_ fmt . args)
 	 #'(log-debug (format fmt . args))])
       #'(void)))
-
-
-(define-syntax (define-struct/printer stx)
-  (syntax-parse stx
-    [(form name (flds ...) printer:expr)
-     #`(define-struct name (flds ...)
-         #:property prop:custom-print-quotable 'never
-         ;; Eta expansion so that printer is not evaluated
-         ;; until needed.
-         #:methods gen:custom-write
-         [(define (write-proc v port write?)
-            (printer v port write?))]
-         #:transparent)]))
-
 
 ;; turn contracts on and off - off by default for performance.
 (provide (for-syntax enable-contracts?)

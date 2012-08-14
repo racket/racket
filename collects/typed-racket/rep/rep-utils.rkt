@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../utils/utils.rkt"
+         "../utils/print-struct.rkt"
          racket/match
          (contract-req)
          "free-variance.rkt"
@@ -19,7 +20,7 @@
 
 
 (lazy-require
-  ("../types/printer.rkt" (print-type print-filter print-object print-pathelem)))
+  ["../types/printer.rkt" (print-type print-filter print-object print-pathelem)])
 
 
 (provide == defintern hash-id (for-syntax fold-target))
