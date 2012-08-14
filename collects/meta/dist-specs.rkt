@@ -686,7 +686,14 @@ mz-extras :+= (- (package: "unstable")
 plt-extras :+= (package: "plai/")
 
 ;; -------------------- rackunit & older schemeunit compatibility
-plt-extras :+= (package: "rackunit/") (package: "schemeunit/")
+mz-extras :+= (- (package: "rackunit/")
+                 (collects: "rackunit/private/gui/")
+                 (srcfile: "rackunit/gui.rkt")
+                 (srcfile: "rackunit/tool.rkt"))
+plt-extras :+= (collects: "rackunit/private/gui/") 
+               (srcfile: "rackunit/gui.rkt")
+               (srcfile: "rackunit/tool.rkt")
+               (package: "schemeunit/")
 
 ;; -------------------- racklog (aka schelog)
 plt-extras :+= (package: "racklog/")
