@@ -5,7 +5,7 @@
           (combine-in
            (utils tc-utils)
            (rep free-variance type-rep filter-rep object-rep rep-utils)
-           (types utils abbrev numeric-tower union subtype remove-intersect resolve
+           (types utils abbrev numeric-tower union subtype resolve
                   substitute generalize)
            (env type-name-env index-env tvar-env))
           make-env -> ->* one-of/c)

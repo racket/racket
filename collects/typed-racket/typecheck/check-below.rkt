@@ -2,7 +2,7 @@
 
 (require (rename-in "../utils/utils.rkt" [private private-in])
          racket/match (prefix-in - racket/contract)
-         (types utils union subtype remove-intersect type-table filter-ops)
+         (types utils union subtype type-table filter-ops)
          (private-in parse-type type-annotation)
          (rep type-rep object-rep filter-rep)
          (only-in (infer infer) restrict)
