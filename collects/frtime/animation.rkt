@@ -10,7 +10,7 @@
            frtime/frlibs/list
            frtime/frlibs/etc
            frtime/frlibs/math
-           (rename mzscheme mz:define-struct define-struct))
+           #;(rename mzscheme mz:define-struct define-struct))
   
   (require-for-syntax mzlib/etc)
   
