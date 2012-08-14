@@ -23,6 +23,7 @@ Approximations:
 (require racket/flonum racket/fixnum
          (only-in racket/math exact-truncate)
          "../../constants.rkt"
+         "../vector/flvector.rkt"
          "../utils.rkt"
          "factorial.rkt"
          "polyfun.rkt")

@@ -19,7 +19,6 @@
 
 (define unsafe-car car)
 (define unsafe-cdr cdr)
-
 #|
 (define unsafe-vector-ref :unsafe-vector-ref)
 (define unsafe-vector-set! :unsafe-vector-set!)

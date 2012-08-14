@@ -3,16 +3,20 @@
 (require racket/list
          racket/match
          racket/vector
+         racket/performance-hint
          "../unsafe.rkt"
          "array-struct.rkt"
          "array-transform.rkt"
          "array-constructors.rkt"
          "array-broadcast.rkt"
-         "array-ref.rkt"
          "for-each.rkt"
          "utils.rkt")
 
 (provide
+ array-ref
+ array-set!
+ unsafe-array-ref
+ unsafe-array-set!
  ;; Indexing by array of indexes
  array-indexes-ref
  array-indexes-set!
@@ -29,22 +33,44 @@
  array-slice-set!)
 
 ;; ===================================================================================================
+;; Array ref/set!
+
+(begin-encourage-inline
+
+  (: unsafe-array-ref (All (A) ((Array A) Indexes -> A)))
+  (define (unsafe-array-ref arr js)
+    ((unsafe-array-proc arr) js))
+
+  (: unsafe-array-set! (All (A) ((Settable-Array A) Indexes A -> Void)))
+  (define (unsafe-array-set! arr js v)
+    ((unsafe-settable-array-set-proc arr) js v))
+  
+  (: array-ref (All (A) ((Array A) User-Indexes -> A)))
+  (define (array-ref arr js)
+    ((unsafe-array-proc arr) (check-array-indexes 'array-ref (array-shape arr) js)))
+
+  (: array-set! (All (A) ((Settable-Array A) User-Indexes A -> Void)))
+  (define (array-set! arr js v)
+    (define ds (array-shape arr))
+    (define set-proc (unsafe-settable-array-set-proc arr))
+    (set-proc (check-array-indexes 'array-set! ds js) v))
+  
+  )  ; begin-encourage-inline
+
+;; ===================================================================================================
 ;; Indexing using array of indexes
 
-(: array-indexes-ref (All (A) ((Array A) (Array User-Indexes) -> (View-Array A))))
+(: array-indexes-ref (All (A) ((Array A) (Array User-Indexes) -> (Array A))))
 (define (array-indexes-ref arr idxs)
-  (let ([arr   (array-view arr)]
-        [idxs  (array-view idxs)])
-    (define ds (array-shape idxs))
-    (define idxs-proc (unsafe-array-proc idxs))
-    (unsafe-view-array ds (λ: ([js : Indexes]) (array-ref arr (idxs-proc js))))))
+  (define ds (array-shape idxs))
+  (define idxs-proc (unsafe-array-proc idxs))
+  (unsafe-build-array ds (λ: ([js : Indexes]) (array-ref arr (idxs-proc js)))))
 
-(: array-indexes-set! (All (A) ((Strict-Array A) (Array User-Indexes) (Array A) -> Void)))
+(: array-indexes-set! (All (A) ((Settable-Array A) (Array User-Indexes) (Array A) -> Void)))
 (define (array-indexes-set! arr idxs vals)
-  (let*-values ([(idxs vals)  (array-broadcast idxs vals)]
-                [(idxs)  (array-view idxs)]
-                [(vals)  (array-view vals)])
-    (define ds (array-shape idxs))
+  (define ds (array-shape-broadcast (list (array-shape idxs) (array-shape vals))))
+  (let ([idxs  (array-broadcast idxs ds)]
+        [vals  (array-broadcast vals ds)])
     (define idxs-proc (unsafe-array-proc idxs))
     (define vals-proc (unsafe-array-proc vals))
     (for-each-array-index ds (λ (js) (array-set! arr (idxs-proc js) (vals-proc js))))))
@@ -177,7 +203,7 @@
       (cond [(integer? s)
              (when (or (s . < . 0) (s . >= . dk))
                (error name "expected Index < ~e in slice ~e (axis ~e)" dk s k))
-             (values (array-axis-remove arr k s) jss)]
+             (values (array-axis-ref arr k s) jss)]
             [(slice? s)
              (values arr (cons (slice->vector s k dk) jss))]
             [else
@@ -214,7 +240,7 @@
              (values (cons s new-slices) new-axes (+ k 1))])))
   (values (reverse new-slices) (reverse new-axes)))
 
-(: array-slice-ref (All (A) ((Array A) (Listof Slice-Spec) -> (View-Array A))))
+(: array-slice-ref (All (A) ((Array A) (Listof Slice-Spec) -> (Array A))))
 (define (array-slice-ref arr orig-slices)
   (define dims (array-dims arr))
   (let*-values ([(slices)  (expand-dots dims orig-slices)]
@@ -229,24 +255,24 @@
         (match-define (cons k dk) na)
         (array-axis-insert arr k dk)))))
 
-(: slice-indexes-array (User-Indexes (Listof Slice-Spec) -> (View-Array Indexes)))
+(: slice-indexes-array (User-Indexes (Listof Slice-Spec) -> (Array Indexes)))
 (define (slice-indexes-array ds slices)
   (array-slice-ref (indexes-array ds) slices))
 
-(: array-slice-set! (All (A) ((Strict-Array A) (Listof Slice-Spec) (Array A) -> Void)))
+(: array-slice-set! (All (A) ((Settable-Array A) (Listof Slice-Spec) (Array A) -> Void)))
 (define (array-slice-set! arr slices vals)
   (array-indexes-set! arr (slice-indexes-array (array-shape arr) slices) vals))
 
 ;; ---------------------------------------------------------------------------------------------------
 
-(: unsafe-array-axis-transform (All (A) ((Array A) (Vectorof (Vectorof Index)) -> (View-Array A))))
+(: unsafe-array-axis-transform (All (A) ((Array A) (Vectorof (Vectorof Index)) -> (Array A))))
 (define (unsafe-array-axis-transform arr old-jss)
   (define: new-ds : Indexes (vector-map vector-length old-jss))
   (define dims (vector-length new-ds))
   (case dims
-    [(0)  (array-view arr)]
-    [(1)  (define g (unsafe-array-proc (array-view arr)))
-          (unsafe-view-array
+    [(0)  arr]
+    [(1)  (define g (unsafe-array-proc arr))
+          (unsafe-build-array
            new-ds
            (λ: ([js : Indexes])
              (define j0 (unsafe-vector-ref js 0))
@@ -254,8 +280,8 @@
              (define v (g js))
              (unsafe-vector-set! js 0 j0)
              v))]
-    [(2)  (define g (unsafe-array-proc (array-view arr)))
-          (unsafe-view-array
+    [(2)  (define g (unsafe-array-proc arr))
+          (unsafe-build-array
            new-ds
            (λ: ([js : Indexes])
              (define j0 (unsafe-vector-ref js 0))
@@ -279,4 +305,3 @@
                    (unsafe-vector-set! old-js i old-ji)
                    (loop (+ i 1))]
                   [else  old-js])))))]))
-

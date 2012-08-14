@@ -142,9 +142,3 @@
            (define: vs : (Vectorof A) (make-vector size (g js0 0)))
            (for-each-array+data-index ds (λ (js j) (unsafe-vector-set! vs j (g js j))))
            vs])))
-
-(: build-array-data (All (A) (Indexes (Indexes Nonnegative-Fixnum -> A)
-                                      -> (Vectorof A))))
-(begin-encourage-inline
-  (define (build-array-data ds g)
-    (inline-build-array-data ds g A)))

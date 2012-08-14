@@ -3,6 +3,7 @@
 (require racket/flonum racket/fixnum
          "factorial.rkt"
          "../../constants.rkt"
+         "../vector/flvector.rkt"
          "../utils.rkt")
 
 (provide fllog-factorial

@@ -268,7 +268,7 @@
    [make-flvector (cl->* (-> index-type -FlVector)
                          (-> index-type -Flonum -FlVector))]
 
-   [flvector-length (-> -FlVector -NonNegFixnum)]
+   [flvector-length (-> -FlVector -Index)]
    [flvector-ref (cl->* (-> -FlVector -NonNegFixnum -Flonum)
                         (-> -FlVector -Fixnum -Flonum)
                         (-> -FlVector index-type -Flonum))]
@@ -276,7 +276,7 @@
                          (-> -FlVector -Fixnum -Flonum -Void)
                          (-> -FlVector index-type -Flonum -Void))]
 
-   [unsafe-flvector-length (-> -FlVector -NonNegFixnum)]
+   [unsafe-flvector-length (-> -FlVector -Index)]
    [unsafe-flvector-ref (cl->* (-> -FlVector -NonNegFixnum -Flonum)
                                (-> -FlVector -Fixnum -Flonum)
                                (-> -FlVector index-type -Flonum))]

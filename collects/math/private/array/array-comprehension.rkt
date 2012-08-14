@@ -1,104 +1,60 @@
-#lang typed/racket
-(require "array-struct.rkt")
-(provide for/array for*/array
-         for/strict-array for*/strict-array)
+#lang typed/racket/base
 
-; (for/strict-array elm-type de(m1 m2 ... mn) (clause ...) . defs+exprs)
-;    Return an  m1 x m2 x ... mn  strict array with elements from the last expr.
-;    The bindings in clauses run in parallel.
-(define-syntax (for/strict-array stx)
+(require (for-syntax racket/base syntax/parse)
+         "../unsafe.rkt"
+         "array-struct.rkt"
+         "mutable-array.rkt"
+         "utils.rkt")
+
+(provide for/array: for*/array:)
+
+(define-syntax (base-for/array: stx)
   (syntax-case stx ()
-    [(_ elm-type default-val () (clause ...) . defs+exprs)
+    [(_ name for A ds-expr (clauses ...) defs+exprs ...)
+     (syntax/loc stx
+       (let*: ([ds : User-Indexes  ds-expr]
+               [ds : Indexes  (check-array-shape
+                               ds (λ () (raise-type-error 'name "Indexes" ds)))]
+               [n : Natural  (array-shape-size ds)])
+         (cond [(index? n)
+                (define: vs : (Vectorof A) (vector))
+                (define: i : Nonnegative-Fixnum 0)
+                (let/ec: break : Void
+                  (for (clauses ...)
+                    (define: v : A (let () defs+exprs ...))
+                    (cond [(= i 0)  (set! vs (make-vector n v))]
+                          [else  (unsafe-vector-set! vs i v)])
+                    (set! i (unsafe-fx+ i 1))
+                    (when (i . >= . n) (break (void)))))
+                (define len (vector-length vs))
+                (cond [(= len n)  (unsafe-mutable-array ds vs)]
+                      [else  (error 'name "expected ~e elements; produced ~e" n len)])]
+               [else
+                (error 'name "array size ~e (for shape ~e) is too large (is not an Index)" n ds)])))]
+    [(_ for A (clauses ...) defs+exprs ...)
      (syntax/loc stx
        (let ()
-         (define: v : (Vectorof elm-type) (make-vector 1 default-val))
-         (for: ([i (in-range 0 1)] clause ...) 
-           (define x (let () . defs+exprs))
-           (vector-set! v i x))
-         (unsafe-strict-array #() v)))]
-    [(_ elm-type default-val (m1-expr) (clause ...) . defs+exprs)
+         (define: lst : (Listof A) null)
+         (for (clauses ...)
+           (define: v : A (let () defs+exprs ...))
+           (set! lst (cons v lst)))
+         (define vs (list->vector (reverse lst)))
+         (unsafe-mutable-array ((inst vector Index) (vector-length vs)) vs)))]))
+
+(define-syntax (for/array: stx)
+  (syntax-parse stx
+    [(_ A:expr #:shape ds-expr:expr ([bnd val] ...) defs+exprs:expr ...+)
      (syntax/loc stx
-       (let ()
-         (define: m1 : Index m1-expr)
-         (define: v : (Vectorof elm-type) (make-vector m1 default-val))
-         (for: ([i (in-range 0 m1)] clause ...) 
-           (define x (let () . defs+exprs))
-           (vector-set! v i x))
-         (define: ds : (Vectorof Index) (vector m1))
-         (unsafe-strict-array ds v)))]
-    [(_ elm-type default-val (m-expr ...) (clause ...) . defs+exprs)
-     (with-syntax ([(m ...) (generate-temporaries #'(m-expr ...))])
-       (syntax/loc stx
-         (let ()
-           (define: m : Index m-expr) ...
-           (define: length : Index (assert (* m ...) index?))
-           (define: v : (Vectorof elm-type) (make-vector length default-val))
-           (for: ([i (in-range 0 length)] clause ...)
-             (define x (let () . defs+exprs))
-             (vector-set! v i x))
-           (define: ds : (Vectorof Index) (vector m ...))
-           (unsafe-strict-array ds v))))]
-    [_ (raise-syntax-error 
-        'for/array 
-        "expected (for/array <elm-type> <default-val> (<m-expr> ...) (for:-clause ...) . <defs+exprs>)")]))
-
-(define-syntax (for*/strict-array stx)
-  (syntax-case stx ()
-    [(_ elm-type default-val () (clause ...) . defs+exprs)
+       (base-for/array: for/array: for: A ds-expr ([bnd val] ...) defs+exprs ...))]
+    [(_ A:expr ([bnd val] ...) defs+exprs:expr ...+)
      (syntax/loc stx
-       (let ()
-         (define: v : (Vectorof elm-type) (make-vector 1 default-val))
-         (define: i : Index 0) 
-         (for*: (clause ...) 
-           (define x (let () . defs+exprs))
-           (vector-set! v i x)
-           (set! i (assert (+ i 1) index?)))
-         (unsafe-strict-array #() v)))]
-    [(_ elm-type default-val (m1-expr) (clause ...) . defs+exprs)
+       (base-for/array: for: A ([bnd val] ...) defs+exprs ...))]))
+
+(define-syntax (for*/array: stx)
+  (syntax-parse stx
+    [(_ A:expr #:shape ds-expr:expr ([bnd val] ...) defs+exprs:expr ...+)
      (syntax/loc stx
-       (let ()
-         (define: m1 : Index m1-expr)
-         (define: v : (Vectorof elm-type) (make-vector m1 default-val))
-         (define: i : Index 0)
-         (let/ec: return : 'done
-           (for*: ([i (in-range 0 m1)] clause ...)
-             (define x (let () . defs+exprs))
-             (vector-set! v i x)
-             (set! i (assert (+ i 1) index?))
-             (when (= i m1) (return 'done))))
-         (define: ds : (Vectorof Index) (vector m1))
-         (unsafe-strict-array ds v)))]
-    [(_ elm-type default-val (m-expr ...) (clause ...) . defs+exprs)
-     (with-syntax ([(m ...) (generate-temporaries #'(m-expr ...))])
-       (syntax/loc stx
-         (let ()
-           (define: m : Index m-expr) ...
-           (define: length : Index (assert (* m ...) index?))
-           (define: v : (Vectorof elm-type) (make-vector length default-val))
-           (define: i : Index 0)
-           (let/ec: return : 'done
-             (for*: ([i (in-range 0 length)] clause ...)
-               (define x (let () . defs+exprs))
-               (vector-set! v i x)
-               (set! i (assert (+ i 1) index?))
-               (when (= i length) (return 'done))))
-           (define: ds : (Vectorof Index) (vector m ...))
-           (unsafe-strict-array ds v))))]
-    [_ (raise-syntax-error 
-        'for/array 
-        "expected (for*/array <elm-type> <default-val> (<m-expr> ...) (for:-clause ...) . <defs+exprs>)")]))
-
-
-(define-syntax (for/array stx)
-  (syntax-case stx ()
-    [(_ . more)
-     #'(array-view (for/strict-array . more))]))
-       
-(define-syntax (for*/array stx)
-  (syntax-case stx ()
-    [(_ . more)
-     #'(array-view (for*/strict-array . more))]))
-
-
-    
-
+       (base-for/array: for*/array: for*: A ds-expr ([bnd val] ...) defs+exprs ...))]
+    [(_ A:expr ([bnd val] ...) defs+exprs:expr ...+)
+     (syntax/loc stx
+       (base-for/array: for*: A ([bnd val] ...) defs+exprs ...))]))

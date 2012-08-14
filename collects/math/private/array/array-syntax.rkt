@@ -3,10 +3,10 @@
 (require (for-syntax racket/base
                      syntax/parse
                      racket/list)
-         "array-struct.rkt"
+         "../unsafe.rkt"
          "utils.rkt")
 
-(provide array strict-array)
+(provide array/syntax)
 
 (define-for-syntax (square-bracket? e-stx)
   (eq? #\[ (syntax-property e-stx 'paren-shape)))
@@ -36,7 +36,7 @@
            [else
             (cons e-stx acc)]))))
 
-(define-syntax (make-array/stx stx)
+(define-syntax (array/syntax stx)
   (syntax-case stx ()
     [(_ orig-name constr ->array e)
      (let ([ds  (syntax-list-shape #'e)])
@@ -46,20 +46,3 @@
                      [(v ...)  (syntax-list-flatten #'e)])
          (syntax/loc stx
            (->array (vector d ...) (constr v ...)))))]))
-
-(: flat-list->view-array (All (A) ((Vectorof Integer) (Listof A) -> (View-Array A))))
-(define (flat-list->view-array ds lst)
-  (array-view (make-strict-array ds (list->vector lst))))
-
-(define-syntax (strict-array stx)
-  (syntax-parse stx
-    [(_ e:expr)
-     (syntax/loc stx (make-array/stx strict-array vector make-strict-array e))]
-    [(_ e:expr T:expr)
-     (syntax/loc stx (make-array/stx strict-array (inst vector T) make-strict-array e))]
-    [_:id  (raise-syntax-error 'strict-array "not allowed as an expression" stx)]))
-
-(define-syntax (array stx)
-  (syntax-parse stx
-    [(_ e:expr)  (syntax/loc stx (make-array/stx array list flat-list->view-array e))]
-    [_:id  (raise-syntax-error 'array "not allowed as an expression" stx)]))

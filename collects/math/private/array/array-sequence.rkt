@@ -1,70 +1,214 @@
 #lang typed/racket
 
-(require "array-struct.rkt"
-         "../unsafe.rkt")
+(require "../unsafe.rkt"
+         "array-struct.rkt"
+         "array-constructors.rkt"
+         "array-transform.rkt"
+         "array-broadcast.rkt"
+         "utils.rkt")
 
-(provide in-array)
+(provide (rename-out [in-array-clause  in-array]
+                     [in-array-indexes-clause  in-array-indexes]
+                     [in-unsafe-array-indexes-clause  in-unsafe-array-indexes])
+         in-array-axis
+         array->array-list
+         array-list->array)
 
-(: in-array/proc : (All (A) ((Array A) -> (Sequenceof A))))
-(define (in-array/proc a)
-  (define v (strict-array-data (array-strict a)))
-  (define n (vector-length v))
+(: next-js! (Indexes Index Indexes -> Void))
+;; Sets js to the next vector of indexes, in row-major order
+(define (next-js! ds dims js)
+  (let loop ([#{k : Nonnegative-Fixnum}  dims])
+    (unless (zero? k)
+      (let ([k  (- k 1)])
+        (define jk (unsafe-vector-ref js k))
+        (define dk (unsafe-vector-ref ds k))
+        (let ([jk  (+ jk 1)])
+          (cond [(jk . >= . dk)
+                 (unsafe-vector-set! js k 0)
+                 (loop k)]
+                [else
+                 (unsafe-vector-set! js k jk)]))))))
+
+;; ===================================================================================================
+;; Sequence of array elements
+
+(: in-array : (All (A) ((Array A) -> (Sequenceof A))))
+(define (in-array arr)
+  (define ds (array-shape arr))
+  (define dims (vector-length ds))
+  (define size (array-size arr))
+  (define proc (unsafe-array-proc arr))
+  (define: js : Indexes (make-vector dims 0))
   (make-do-sequence
-   (λ ()
-     (values
-      ; pos->element
-      (λ: ([j : Index])
-        (vector-ref v j))
-      ; next-pos
-      (λ: ([j : Index]) (assert (+ j 1) index?))
-      ; initial-pos
-      0
-      ; continue-with-pos?
-      (λ: ([j : Index ]) (< j n))
-      #f #f))))
+   (λ () (values (λ: ([jjs : (Pair Fixnum Indexes)]) (proc (cdr jjs)))
+                 (λ: ([jjs : (Pair Fixnum Indexes)])
+                   (define js (vector-copy-all (cdr jjs)))
+                   (next-js! ds dims js)
+                   (cons (unsafe-fx+ (car jjs) 1) js))
+                 (cons 0 js)
+                 (λ: ([jjs : (Pair Fixnum Indexes)]) ((car jjs) . < . size))
+                 #f
+                 #f))))
 
 ; (in-array a]
 ;     Returns a sequence of all elements of the array a.
-(define-sequence-syntax in-array
-  (λ () #'in-array/proc)
+(define-sequence-syntax in-array-clause
+  (λ () #'in-array)
   (λ (stx)
     (syntax-case stx ()
-      [[(x) (_ a-expr)]
-       #'((x)
+      [[(x) (_ arr-expr)]
+       (syntax/loc stx
+         [(x)
           (:do-in
-           ([(a n d) 
-             (let ([a1 a-expr])
-               (define data (strict-array-data (array-strict a1)))
-               (define n (vector-length data))
-               (values a1 n data))])
-           (begin 
-             (unless (array? a) 
-               (raise-type-error 'in-array "expected array, got ~a" a)))
-           ([j 0])
-           (< j n)
-           ([(x) (vector-ref d j)])
+           ([(ds size dims js proc)
+             (plet: (A) ([arr : (Array A) arr-expr])
+               (define ds (array-shape arr))
+               (define dims (vector-length ds))
+               (define size (array-size arr))
+               (define proc (unsafe-array-proc arr))
+               (define: js : Indexes (make-vector dims 0))
+               (values ds size dims js proc))])
+           (void)
+           ([#{j : Nonnegative-Fixnum} 0])
+           (< j size)
+           ([(x)  (proc js)])
            #true
            #true
-           [(+ j 1)]))]
-      ; for: does not support the indices in for:-clauses yet :-(
-      #;[[(i x) (_ M-expr r-expr)]
-         #'((i x)
-          (:do-in
-           ([(a n d) 
-             (let ([a1 a-expr])
-               (define data (strict-array-data (array-strict a1)))
-               (define n (vector-length data))
-               (values a1 n data))])
-           (begin 
-             (unless (array? a) 
-               (raise-type-error 'in-array "expected array, got ~a" a)))
-           ([j 0])
-           (< j n)
-           ([(x) (vector-ref d j)]
-            [(i) j])
-           #true
-           #true
-           [(+ j 1)]))]
-      [[_ clause] (raise-syntax-error 
-                   'in-array "expected (in-array <array>)" #'clause #'clause)])))
+           [(begin (next-js! ds dims js)
+                   (+ j 1))])])]
+      [[_ clause] (raise-syntax-error 'in-array "expected (in-array <Array>)" #'clause #'clause)])))
 
+;; ===================================================================================================
+;; Sequence of indexes
+
+(: in-array-indexes : (User-Indexes -> (Sequenceof Indexes)))
+(define (in-array-indexes ds)
+  (let: ([ds : Indexes  (check-array-shape
+                         ds (λ () (raise-type-error 'in-array-indexes "Indexes" ds)))])
+    (define dims (vector-length ds))
+    (define size (array-shape-size ds))
+    (cond [(index? size)
+           (define: js : Indexes (make-vector dims 0))
+           (make-do-sequence
+            (λ () (values (λ: ([jjs : (Pair Fixnum Indexes)]) (cdr jjs))
+                          (λ: ([jjs : (Pair Fixnum Indexes)])
+                            (define js (vector-copy (cdr jjs)))
+                            (next-js! ds dims js)
+                            (cons (unsafe-fx+ (car jjs) 1) js))
+                          (cons 0 js)
+                          (λ: ([jjs : (Pair Fixnum Indexes)]) ((car jjs) . < . size))
+                          #f
+                          #f)))]
+          [else  (error 'in-array-indexes
+                        "array size ~e (for shape ~e) is too large (is not an Index)"
+                        size ds)])))
+
+(define-sequence-syntax in-array-indexes-clause
+  (λ () #'in-array-indexes)
+  (λ (stx)
+    (syntax-case stx ()
+      [[(x) (_ ds-expr)]
+       (syntax/loc stx
+         [(x)
+          (:do-in
+           ([(ds size dims js)
+             (let*: ([ds : User-Indexes  ds-expr]
+                     [ds : Indexes  (check-array-shape
+                                     ds (λ () (raise-type-error 'in-array-indexes "Indexes" ds)))])
+               (define dims (vector-length ds))
+               (define size (array-shape-size ds))
+               (cond [(index? size)  (define: js : Indexes (make-vector dims 0))
+                                     (values ds size dims js)]
+                     [else  (error 'in-array-indexes
+                                   "array size ~e (for shape ~e) is too large (is not an Index)"
+                                   size ds)]))])
+           (void)
+           ([#{j : Nonnegative-Fixnum} 0])
+           (< j size)
+           ([(x)  (vector-copy-all js)])
+           #true
+           #true
+           [(begin (next-js! ds dims js)
+                   (+ j 1))])])]
+      [[_ clause]
+       (raise-syntax-error 'in-array-indexes "expected (in-array-indexes <Indexes>)"
+                           #'clause #'clause)])))
+
+(: in-unsafe-array-indexes : (Indexes -> (Sequenceof Indexes)))
+(define (in-unsafe-array-indexes ds)
+  (in-array-indexes ds))
+
+(define-sequence-syntax in-unsafe-array-indexes-clause
+  (λ () #'in-array-indexes)
+  (λ (stx)
+    (syntax-case stx ()
+      [[(x) (_ ds-expr)]
+       (syntax/loc stx
+         [(x)
+          (:do-in
+           ([(ds size dims js)
+             (let: ([ds : Indexes  ds-expr])
+               (define dims (vector-length ds))
+               (define size (array-shape-size ds))
+               (cond [(index? size)  (define: js : Indexes (make-vector dims 0))
+                                     (values ds size dims js)]
+                     [else  (error 'in-array-indexes
+                                   "array size ~e (for shape ~e) is too large (is not an Index)"
+                                   size ds)]))])
+           (void)
+           ([#{j : Nonnegative-Fixnum} 0])
+           (< j size)
+           ([(x)  js])
+           #true
+           #true
+           [(begin (next-js! ds dims js)
+                   (+ j 1))])])]
+      [[_ clause]
+       (raise-syntax-error 'in-array-indexes "expected (in-unsafe-array-indexes <Indexes>)"
+                           #'clause #'clause)])))
+
+;; ===================================================================================================
+;; in-array-axis
+
+(: in-array-axis : (All (A) ((Array A) Integer -> (Sequenceof (Array A)))))
+(define (in-array-axis arr k)
+  (define ds (array-shape arr))
+  (define dims (vector-length ds))
+  (cond [(and (0 . <= . k) (k . < . dims))
+         (define dk (unsafe-vector-ref ds k))
+         (make-do-sequence
+          (λ ()
+            (values (λ: ([jk : Integer]) (array-axis-ref arr k jk))
+                    add1
+                    0
+                    (λ: ([jk : Integer]) (jk . < . dk))
+                    #f
+                    #f)))]
+        [else
+         (error 'in-array-axis (format "expected axis Index < ~e; given ~e" dims k))]))
+
+(: array->array-list (All (A) ((Array A) Integer -> (Listof (Array A)))))
+(define (array->array-list arr k)
+  (define ds (array-shape arr))
+  (define dims (vector-length ds))
+  (cond [(and (0 . <= . k) (k . < . dims))
+         (define dk (unsafe-vector-ref ds k))
+         (build-list dk (λ: ([jk : Index]) (array-axis-ref arr k jk)))]
+        [else
+         (error 'array->array-list (format "expected axis Index < ~e; given ~e" dims k))]))
+
+(: array-list->array (All (A) ((Listof (Array A)) Integer -> (Array A))))
+(define (array-list->array arrs k)
+  (define ds (array-shape-broadcast ((inst map Indexes (Array A)) array-shape arrs)))
+  (define dims (vector-length ds))
+  (cond [(and (0 . <= . k) (k . <= . dims))
+         (let ([arrs  (list->vector (map (λ: ([arr : (Array A)]) (array-broadcast arr ds)) arrs))])
+           (define dk (vector-length arrs))
+           (define new-ds (unsafe-vector-insert ds k dk))
+           (unsafe-build-array
+            new-ds (λ: ([js : Indexes])
+                     (define jk (unsafe-vector-ref js k))
+                     (let ([old-js  (unsafe-vector-remove js k)])
+                       ((unsafe-array-proc (unsafe-vector-ref arrs jk)) old-js)))))]
+        [else
+         (error 'array-list->array (format "expected axis Index <= ~e; given ~e" dims k))]))

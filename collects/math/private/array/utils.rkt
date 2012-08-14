@@ -223,3 +223,10 @@
               (let: ([v : Indexes  (make-vector dims 0)])
                 (thread-cell-set! val v)
                 v)))))
+
+(: all-equal? (Any Any * -> Boolean))
+(define (all-equal? x . xs)
+  (cond [(empty? xs)  #t]
+        [else  (define first-xs (first xs))
+               (cond [(equal? x first-xs)  (all-equal? first-xs (rest xs))]
+                     [else  #f])]))
