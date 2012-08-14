@@ -1622,7 +1622,6 @@
              (-PosRat -Int . -> . -PosRat)
              (-NonNegRat -Int . -> . -NonNegRat)
              (-Rat -Int . -> . -Rat)
-             (-Rat -Rat . -> . -ExactNumber)
              (-PosFlonum -Real . -> . -PosFlonum)
              (-PosReal -Flonum . -> . -PosFlonum)
              (-NonNegFlonum -Real . -> . -NonNegFlonum)
