@@ -5,9 +5,23 @@
          (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt"
                   "rep/rep-utils.rkt" "types/abbrev.rkt" "types/subtype.rkt"
                   "utils/utils.rkt"
-                  "utils/tc-utils.rkt"))
+                  "utils/tc-utils.rkt")
+         (for-syntax racket/base))
 
-(provide print-type print-filter print-object print-pathelem)
+;; printer-type: (one-of/c 'custom 'debug)
+(define-for-syntax printer-type 'custom)
+
+(define-syntax (make-provides stx)
+  (if (eq? printer-type 'debug)
+      #'(provide (rename-out
+                   (debug-printer print-type)
+                   (debug-printer print-filter)
+                   (debug-printer print-object)
+                   (debug-printer print-pathelem)))
+      #'(provide print-type print-filter print-object print-pathelem)))
+(make-provides)
+
+(provide print-multi-line-case-> special-dots-printing? print-complex-filters?)
 
 ;;TODO try to remove requirement on abbrev once promise is fixed
 
@@ -17,9 +31,9 @@
 ;; do we use simple type aliases in printing
 (define print-aliases #t)
 
+(define print-multi-line-case-> (make-parameter #f))
 (define special-dots-printing? (make-parameter #f))
 (define print-complex-filters? (make-parameter #f))
-(provide special-dots-printing? print-complex-filters?)
 
 ;; does t have a type name associated with it currently?
 ;; has-name : Type -> Maybe[Symbol]
@@ -308,4 +322,38 @@
     [(fld: t a m) (fp "(fld ~a)" t)]
     [else (fp "(Unknown Type: ~a)" (struct->vector c))]
     ))
+
+
+
+(define-syntax (make-debug-printer stx)
+  (syntax-local-introduce
+    (if (eq? printer-type 'debug)
+      #'(begin
+          (require racket/pretty)
+          (require mzlib/pconvert)
+
+          (define (converter v basic sub)
+            (define (gen-constructor sym)
+              (string->symbol (string-append "make-" (substring (symbol->string sym) 7))))
+            (match v
+              [(? (lambda (e) (or (Filter? e)
+                                  (Object? e)
+                                  (PathElem? e)))
+                  (app (lambda (v) (vector->list (struct->vector v)))
+                       (list-rest tag seq fv fi stx vals)))
+               `(,(gen-constructor tag) ,@(map sub vals))]
+              [(? Type?
+                  (app (lambda (v) (vector->list (struct->vector v))) (list-rest tag seq fv fi stx key vals)))
+               `(,(gen-constructor tag) ,@(map sub vals))]
+              [_ (basic v)]))
+
+          (define (debug-printer v port write?)
+            ((if write?
+                 pretty-write
+                 pretty-print)
+             (parameterize ((current-print-convert-hook converter))
+               (print-convert v))
+             port)))
+      #'(begin))))
+(make-debug-printer)
 

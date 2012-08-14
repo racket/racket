@@ -21,7 +21,7 @@ at least theoretically.
  ;; logging
  printf/log show-input?
  ;; struct printing
- print-multi-line-case-> define-struct/printer
+ define-struct/printer
  ;; provide macros
  rep utils typecheck infer env private types)
 
@@ -109,9 +109,6 @@ at least theoretically.
 	 #'(log-debug (format fmt . args))])
       #'(void)))
 
-;; custom printing
-(define-for-syntax custom-printer #t)
-(define print-multi-line-case-> (make-parameter #f))
 
 (define-syntax (define-struct/printer stx)
   (syntax-parse stx
@@ -120,11 +117,9 @@ at least theoretically.
          #:property prop:custom-print-quotable 'never
          ;; Eta expansion so that printer is not evaluated
          ;; until needed.
-         #,@(if custom-printer
-              #'(#:methods gen:custom-write
-                 [(define (write-proc v port write?)
-                    (printer v port write?))])
-              #'())
+         #:methods gen:custom-write
+         [(define (write-proc v port write?)
+            (printer v port write?))]
          #:transparent)]))
 
 
