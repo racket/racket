@@ -1,10 +1,10 @@
-#lang scheme
-(require "list.rkt")
+#lang racket
+#;(require "list.rkt")
 (require (rename-in (only-in frtime/frtime provide)
                     [provide frtime:provide]))
 
 (frtime:provide
-	(lifted date->string
+ (lifted date->string
                 date-display-format
                 find-seconds
                 
