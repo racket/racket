@@ -501,11 +501,15 @@
     (define (search-text-field-callback)
       (preferences:set 'drracket:multi-file-search:search-string (send search-text-field get-value)))
     (define (dir-button-callback) 
-      (let ([d (get-directory)])
-        (when (and d
-                   (directory-exists? d))
-          (preferences:set 'drracket:multi-file-search:directory d)
-          (send dir-field set-value (path->string d)))))
+      (define old-d (string->path (send dir-field get-value)))
+      (define new-d (get-directory #f 
+                                   #f 
+                                   (and (directory-exists? old-d)
+                                        old-d)))
+      (when (and new-d
+                 (directory-exists? new-d))
+        (preferences:set 'drracket:multi-file-search:directory new-d)
+        (send dir-field set-value (path->string new-d))))
     
     (define (get-files)
       (let ([dir (string->path (send dir-field get-value))])
