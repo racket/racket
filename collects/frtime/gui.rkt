@@ -1,9 +1,7 @@
 (module gui frtime
   (require
    (all-except mzlib/etc rec)
-   frtime/gui/fred
-   (rename frtime/core/frp proc->signal proc->signal)
-   (all-except mred send-event))
+   frtime/gui/fred)
   
   (define frame (new ft-frame% [label "GUI"] [min-height 150] [min-width 200] [shown #t]))
   
