@@ -39,34 +39,35 @@
   ((simple-substitution/c Type?) (#:Un procedure?) . ->* . Type?)
   (define (sb t) (substitute-many subst t #:Un Un))
   (define names (hash-keys subst))
-  (if (ormap (lambda (name) (hash-has-key? (free-vars* target) name)) names)
+  (define fvs (free-vars* target))
+  (if (ormap (lambda (name) (hash-has-key? fvs name)) names)
       (type-case (#:Type sb #:Filter (sub-f sb) #:Object (sub-o sb))
                  target
                  [#:Union tys (Un (map sb tys))]
                  [#:F name (hash-ref subst name target)]
                  [#:arr dom rng rest drest kws
                         (cond
-                          ((and (pair? drest) (ormap (and/c (cdr drest) (not/c bound-tvar?)) names)) =>
+                          [(and (pair? drest) (ormap (and/c (cdr drest) (not/c bound-tvar?)) names)) =>
                            (lambda (name)
-                             (int-err "substitute used on ... variable ~a in type ~a" name target)))
-                          (else
+                             (int-err "substitute used on ... variable ~a in type ~a" name target))]
+                          [else
                            (make-arr (map sb dom)
                                      (sb rng)
                                      (and rest (sb rest))
                                      (and drest (cons (sb (car drest)) (cdr drest)))
-                                     (map sb kws))))]
+                                     (map sb kws))])]
                  [#:ValuesDots types dty dbound
                                (cond
-                                 ((ormap (and/c dbound (not/c bound-tvar?)) names) =>
+                                 [(ormap (and/c dbound (not/c bound-tvar?)) names) =>
                                   (lambda (name)
-                                    (int-err "substitute used on ... variable ~a in type ~a" name target)))
-                                 (make-ValuesDots (map sb types) (sb dty) dbound))]
+                                    (int-err "substitute used on ... variable ~a in type ~a" name target))]
+                                 [else (make-ValuesDots (map sb types) (sb dty) dbound)])]
                  [#:ListDots dty dbound
                              (cond
-                               ((ormap (and/c dbound (not/c bound-tvar?)) names) =>
+                               [(ormap (and/c dbound (not/c bound-tvar?)) names) =>
                                 (lambda (name)
-                                  (int-err "substitute used on ... variable ~a in type ~a" name target)))
-                               (make-ListDots (sb dty) dbound))])
+                                  (int-err "substitute used on ... variable ~a in type ~a" name target))]
+                               [else (make-ListDots (sb dty) dbound)])])
       target))
 
 
