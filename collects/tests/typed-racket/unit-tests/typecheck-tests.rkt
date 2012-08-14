@@ -210,6 +210,10 @@
         (tc-e (flexpt 0.5 0.3) -NonNegFlonum)
         (tc-e (flexpt 0.00000000001 100000000000.0) -NonNegFlonum)
         (tc-e (flexpt -2.0 -0.5) -Flonum) ; NaN
+        (tc-e (angle -1) -Real)
+        (tc-e (angle 2.3) -Zero)
+        (tc-e (magnitude 3/4) -Rat)
+        (tc-e (magnitude 3+2i) -Real)
 
         [tc-e/t (lambda: () 3) (t:-> -PosByte : -true-lfilter)]
         [tc-e/t (lambda: ([x : Number]) 3) (t:-> N -PosByte : -true-lfilter)]
