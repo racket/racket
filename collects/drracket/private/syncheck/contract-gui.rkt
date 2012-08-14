@@ -34,7 +34,7 @@
                [doc-dir-name (in-list (if (directory-exists? doc-search-dir)
                                           (directory-list doc-search-dir)
                                           '()))])
-     (define x (build-path doc-search-dir doc-dir-name "contract-blueboxes.rktd"))
+     (define x (build-path doc-search-dir doc-dir-name "blueboxes.rktd"))
      (and (file-exists? x)
           (call-with-input-file x
             (λ (port)

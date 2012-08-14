@@ -27,10 +27,10 @@
         (define cb.rktd 
           (cond
             [multi?
-             (build-path dest "contract-blueboxes.rktd")]
+             (build-path dest "blueboxes.rktd")]
             [else
              (define-values (base name dir?) (split-path dest))
-             (build-path base "contract-blueboxes.rktd")]))
+             (build-path base "blueboxes.rktd")]))
         (call-with-output-file cb.rktd
           (λ (port)
             (fprintf port "~a\n" (string-utf-8-length table-str))
