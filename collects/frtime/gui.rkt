@@ -1,7 +1,6 @@
 (module gui frtime
   (require
    (all-except mzlib/etc rec)
-   mzlib/list
    frtime/gui/fred
    (rename frtime/core/frp proc->signal proc->signal)
    (all-except mred send-event))
