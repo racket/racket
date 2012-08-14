@@ -402,7 +402,10 @@
         [(x . < . 4.5)  (fllog-gamma-small-positive x)]
         [else  (fllog-gamma-large-positive x)]))
 
-(: log-gamma (Real -> Real))
+(: log-gamma (case-> (Nonpositive-Integer -> Nothing)
+                     (Single-Flonum -> Single-Flonum)
+                     (Float -> Float)
+                     (Real -> Real)))
 (define (log-gamma x)
   (cond [(double-flonum? x)  (fllog-gamma x)]
         [(single-flonum? x)  (real->single-flonum (fllog-gamma (real->double-flonum x)))]

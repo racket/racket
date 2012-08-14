@@ -4,7 +4,8 @@
          flonum->ordinal ordinal->flonum
          flstep flnext flprev flonums-between
          -max.0 -min.0 +min.0 +max.0 +epsilon.0
-         flulp flulp-error relative-error)
+         flulp flulp-error relative-error
+         float-complex?)
 
 ;; ===================================================================================================
 ;; Floating-point representation
@@ -111,3 +112,8 @@
         [else  (let ([x  (inexact->exact x)]
                      [r  (inexact->exact r)])
                  (real->double-flonum (/ (abs (- x r)) r)))]))
+
+;; ===================================================================================================
+;; Misc. stuff
+
+(define-predicate float-complex? Float-Complex)

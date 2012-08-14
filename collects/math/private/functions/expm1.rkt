@@ -36,25 +36,19 @@
         [else  (+ (* x 0.10281276702880859e1)
                   (* x (/ (expm1-poly-numer x) (expm1-poly-denom x))))]))
 
-(: flexpm1 (case->
-            ;(Zero -> Zero)
-            ;(Float-Negative-Zero -> Float-Negative-Zero)
-            ;(Float-Positive-Zero -> Float-Positive-Zero)
-            (Float -> Float)))
+(: flexpm1 (Float -> Float))
 (define (flexpm1 x)
   (define ax (abs x))
   (cond [(ax . >= . 0.5)  (- (exp x) 1.0)]
         [(ax . > . (* 0.5 +epsilon.0))  (flexpm1/poly x)]
         [else  x]))
 
-(: expm1 (case->
-          ;(Zero -> Zero)
-          ;(Float-Negative-Zero -> Float-Negative-Zero)
-          ;(Float-Positive-Zero -> Float-Positive-Zero)
-          ;(Float -> Float)
-          (Real -> Real)))
+(: expm1 (case-> (Zero -> Zero)
+                 (Float -> Float)
+                 (Single-Flonum -> Single-Flonum)
+                 (Real -> Real)))
 (define (expm1 x)
-  (cond [(zero? x)  x]
-        [(double-flonum? x)  (flexpm1 x)]
+  (cond [(double-flonum? x)  (flexpm1 x)]
         [(single-flonum? x)  (real->single-flonum (flexpm1 (real->double-flonum x)))]
+        [(eqv? x 0)  0]
         [else  (flexpm1 (real->double-flonum x))]))

@@ -6,4 +6,3 @@
 (provide (all-defined-out))
 
 (define-predicate nonnegative-fixnum? Nonnegative-Fixnum)
-(define-predicate listof-nonnegative-fixnum? (Listof Nonnegative-Fixnum))

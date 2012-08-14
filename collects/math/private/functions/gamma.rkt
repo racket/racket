@@ -28,9 +28,6 @@ Approximations:
          "factorial.rkt"
          "polyfun.rkt")
 
-(provide (all-defined-out))
-
-#;
 (provide gamma flgamma
          +flgamma-max.0
          +flgamma-min.0
@@ -312,10 +309,11 @@ Approximations:
         [(and (x . > . -4.5) (x . < . 4.5))  (flgamma-taylor x)]
         [else  (flgamma-lanczos x)]))
 
-(: gamma (case-> ;(Exact-Positive-Integer -> Exact-Positive-Integer)
-          ;(Single-Flonum -> Single-Flonum)
-          ;(Float -> Float)
-          (Real -> Real)))
+(: gamma (case-> (Nonpositive-Integer -> Nothing)
+                 (Integer -> Positive-Integer)
+                 (Single-Flonum -> Single-Flonum)
+                 (Float -> Float)
+                 (Real -> Real)))
 (define (gamma x)
   (cond [(double-flonum? x)  (flgamma x)]
         [(single-flonum? x)  (real->single-flonum (flgamma (real->double-flonum x)))]
@@ -323,4 +321,3 @@ Approximations:
                            (factorial (- x 1))
                            (error 'gamma "undefined for nonpositive integers"))]
         [else  (flgamma (real->double-flonum x))]))
-

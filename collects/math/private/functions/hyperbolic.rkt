@@ -42,15 +42,21 @@ log(+max) <= x <= +max.0    sinh(x) ~ exp(x) / 2 = (exp(x/2) / 2) * exp(x/2)
          (define y (flexp (* 0.5 x)))
          (* 0.5 y y)]))
 
-(: sinh (Number -> Number))
+(: sinh (case-> (Zero -> Zero)
+                (Float -> Float)
+                (Single-Flonum -> Single-Flonum)
+                (Real -> Real)
+                (Float-Complex -> Float-Complex)
+                (Number -> Number)))
 (define (sinh x)
   (cond [(real? x)
-         (cond [(zero? x)  x]
-               [(flonum? x)  (flsinh x)]
+         (cond [(flonum? x)  (flsinh x)]
                [(single-flonum? x)  (real->single-flonum (flsinh (real->double-flonum x)))]
+               [(eqv? x 0)  0]
                [else  (flsinh (real->double-flonum x))])]
         [else
-         (* 0-i (sin (* 0+i x)))]))
+         (cond [(float-complex? x)  (* 0.0-1.0i (sin (* 0.0+1.0i x)))]
+               [else  (* -i (sin (* +i x)))])]))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Hyperbolic cosine
@@ -86,15 +92,21 @@ log(+max.0) <= x <= +max.0    cosh(x) ~ exp(x) / 2 = (exp(x/2) / 2) * exp(x/2)
           (define w (flexp (* 0.5 x)))
           (* 0.5 w w)])))
 
-(: cosh (Number -> Number))
+(: cosh (case-> (Zero -> One)
+                (Float -> Float)
+                (Single-Flonum -> Single-Flonum)
+                (Real -> Real)
+                (Float-Complex -> Float-Complex)
+                (Number -> Number)))
 (define (cosh x)
   (cond [(real? x)
-         (cond [(equal? 0 x)  1]
-               [(flonum? x)  (flcosh x)]
+         (cond [(flonum? x)  (flcosh x)]
                [(single-flonum? x)  (real->single-flonum (flcosh (real->double-flonum x)))]
+               [(eqv? x 0)  1]
                [else  (flcosh (real->double-flonum x))])]
         [else
-         (cos (* 0+i x))]))
+         (cond [(float-complex? x)  (cos (* 0.0+1.0i x))]
+               [else  (cos (* 0+i x))])]))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Hyperbolic tangent
@@ -128,12 +140,18 @@ Domain               Computation
         [(x . <= . +inf.0)  1.0]
         [else  +nan.0]))
 
-(: tanh (Number -> Number))
+(: tanh (case-> (Zero -> Zero)
+                (Float -> Float)
+                (Single-Flonum -> Single-Flonum)
+                (Real -> Real)
+                (Float-Complex -> Float-Complex)
+                (Number -> Number)))
 (define (tanh x)
   (cond [(real? x)
-         (cond [(zero? x)  x]
-               [(flonum? x)  (fltanh x)]
+         (cond [(flonum? x)  (fltanh x)]
                [(single-flonum? x)  (real->single-flonum (fltanh (real->double-flonum x)))]
+               [(eqv? x 0)  0]
                [else  (fltanh (real->double-flonum x))])]
         [else
-         (* 0-i (tan (* 0+i x)))]))
+         (cond [(float-complex? x)  (* 0.0-1.0i (tan (* 0.0+1.0i x)))]
+               [else  (* 0-i (tan (* 0+i x)))])]))
