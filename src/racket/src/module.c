@@ -232,10 +232,12 @@ THREAD_LOCAL_DECL(static Scheme_Object *empty_self_shift_cache);
 THREAD_LOCAL_DECL(static Scheme_Bucket_Table *starts_table);
 THREAD_LOCAL_DECL(static Scheme_Bucket_Table *submodule_empty_modidx_table);
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+# define PLACE_LOCAL_MODPATH_TABLE 1
 THREAD_LOCAL_DECL(static Scheme_Bucket_Table *place_local_modpath_table);
+#else
+# define PLACE_LOCAL_MODPATH_TABLE 0
 #endif
 
-/* FIXME eventually theses initial objects should be shared, but work required */
 THREAD_LOCAL_DECL(static Scheme_Env *initial_modules_env);
 THREAD_LOCAL_DECL(static int num_initial_modules);
 THREAD_LOCAL_DECL(static Scheme_Object **initial_modules);
@@ -450,7 +452,7 @@ void scheme_init_module_resolver(void)
   if (!starts_table) {
     REGISTER_SO(starts_table);
     starts_table = scheme_make_weak_equal_table();
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+#if PLACE_LOCAL_MODPATH_TABLE
     REGISTER_SO(place_local_modpath_table);
     place_local_modpath_table = scheme_make_weak_equal_table();
 #endif
@@ -3516,7 +3518,7 @@ Scheme_Object *scheme_modidx_submodule(Scheme_Object *_modidx)
 void scheme_init_module_path_table()
 {
   REGISTER_SO(modpath_table);
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+#if PLACE_LOCAL_MODPATH_TABLE
   modpath_table = scheme_make_nonlock_equal_bucket_table();
 #else
   modpath_table = scheme_make_weak_equal_table();
@@ -3562,24 +3564,30 @@ Scheme_Object *scheme_intern_resolved_module_path(Scheme_Object *o)
   Scheme_Bucket *b;
 
   rmp = make_resolved_module_path_obj(o);
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+#if PLACE_LOCAL_MODPATH_TABLE
   if (place_local_modpath_table) {
+    scheme_start_atomic();
     b = scheme_bucket_or_null_from_table(place_local_modpath_table, (const char *)rmp, 0);
+    scheme_end_atomic_no_swap();
     if (b) {
       return (Scheme_Object *)HT_EXTRACT_WEAK(b->key);
     }
   }
 #endif
+
+  scheme_start_atomic();
   b = scheme_bucket_or_null_from_table(modpath_table, (const char *)rmp, 0);
+  scheme_end_atomic_no_swap();
+
   if (b) {
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+#if PLACE_LOCAL_MODPATH_TABLE
     return (Scheme_Object *)b->key;
 #else
     return (Scheme_Object *)HT_EXTRACT_WEAK(b->key);
 #endif
   }
 
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+#if PLACE_LOCAL_MODPATH_TABLE
   create_table = place_local_modpath_table ? place_local_modpath_table : modpath_table;
 #else
   create_table = modpath_table;
@@ -3588,10 +3596,11 @@ Scheme_Object *scheme_intern_resolved_module_path(Scheme_Object *o)
   scheme_start_atomic();
   b = scheme_bucket_from_table(create_table, (const char *)rmp);
   scheme_end_atomic_no_swap();
+
   if (!b->val)
     b->val = scheme_true;
 
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+#if PLACE_LOCAL_MODPATH_TABLE
   if (!place_local_modpath_table)
     return (Scheme_Object *)b->key;
 #endif
