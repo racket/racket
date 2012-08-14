@@ -12,7 +12,8 @@
            frtime/frlibs/math
            #;(rename mzscheme mz:define-struct define-struct))
   
-  (require-for-syntax mzlib/etc)
+  (require-for-syntax (only racket/base build-list)
+                      (only racket/function identity))
   
   (open-graphics)
   
