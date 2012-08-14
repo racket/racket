@@ -105,7 +105,6 @@
 (define (get-type e [typecheck (compose tc-expr expand)])
   (parameterize ([delay-errors? #f]
                  [current-namespace (namespace-anchor->namespace anch)]
-                 [custom-printer #t]
                  [infer-param infer]
                  [orig-module-stx (quote-syntax e)])
     (typecheck (datum->syntax #'here e))))
