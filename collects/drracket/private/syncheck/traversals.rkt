@@ -491,7 +491,6 @@
       
       (for ([vars (in-list (get-idss templrefs))])
         (for ([var (in-list vars)])
-          
           ;; build a set of all of the known phases
           (define phases (set))
           (for ([phase (in-list (hash-keys phase-to-binders))])
@@ -501,6 +500,7 @@
           
           ;; connect every identifier inside a quote-syntax to each binder at any phase
           (for ([phase (in-set phases)])
+            (document-variable var phase)
             (connect-identifier var
                                 (lookup-phase-to-mapping phase-to-binders phase)
                                 unused/phases
