@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require "contract.rkt"
          "match.rkt"
          scheme/async-channel)

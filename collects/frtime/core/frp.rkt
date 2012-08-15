@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require (only-in mzlib/etc 
                   identity nor)
          "contract.rkt"
