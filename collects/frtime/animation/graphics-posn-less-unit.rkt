@@ -7,14 +7,21 @@
 
   (require mred/mred-sig
 	   racket/class
-	   mzlib/etc
-           frtime/core/frp
+     (for-syntax syntax/parse racket/base)
+     frtime/core/frp
 	   "graphics-sig.rkt")
 
+  
   (import (prefix mred: mred^)
           graphics:posn^)
   (export graphics:posn-less^)
   
+  (define-syntax (rec stx)
+    (syntax-parse stx
+                  [((~literal rec) var:identifier rhs:expr)
+                   #'(letrec ([var rhs])
+                       var)]))
+
   (define send/proc
     (lambda (class method . args)
       (send-generic class (make-generic mred:dc<%> method) . args)))
@@ -961,7 +968,7 @@
 	c)))
 
   (define draw-pixmap-posn
-    (opt-lambda (filename [type 'unknown/mask])
+    (lambda (filename [type 'unknown/mask])
       (check 'draw-pixmap-posn
 	     string? filename "filename"
 	     (lambda (x) (memq x '(gif xbm xpm bmp pict unknown unknown/mask gif/mask))) type "file type symbol")
@@ -969,7 +976,7 @@
 	(lambda (viewport)
 	  (check 'draw-pixmap-posn
 		 viewport? viewport "viewport")
-	  (opt-lambda (posn [color #f])
+	  (lambda (posn [color #f])
 	    (check 'draw-pixmap-posn
 		   posn? posn "posn"
 		   (orp not color?) color (format "color or ~e" #f))
@@ -984,7 +991,7 @@
     (lambda (viewport)
       (check 'draw-pixmap
 	     viewport? viewport "viewport")
-      (opt-lambda (filename p [color #f])
+      (lambda (filename p [color #f])
 	(check 'draw-pixmap
 	       (andp string? file-exists?) filename "filename"
 	       posn? p "posn"
@@ -1006,7 +1013,7 @@
     (lambda (viewport)
       (check 'save-pixmap
 	     viewport? viewport "viewport")
-      (opt-lambda (filename [kind 'xpm])
+      (lambda (filename [kind 'xpm])
 	(check 'save-pixmap
 	       (andp string? (orp relative-path? absolute-path?)) filename "filename"
 	       (lambda (x) (memq x '(xpm xbm bmp pict))) kind "file type symbol")
