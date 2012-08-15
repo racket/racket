@@ -202,9 +202,9 @@ elements of @racket[vec] from @racket[start] (inclusive) to
 
 
 @defproc[(in-flvector [vec flvector?]
-                    [start exact-nonnegative-integer? 0]
-                    [stop (or/c exact-integer? #f) #f]
-                    [step (and/c exact-integer? (not/c zero?)) 1])
+                      [start exact-nonnegative-integer? 0]
+                      [stop (or/c exact-integer? #f) #f]
+                      [step (and/c exact-integer? (not/c zero?)) 1])
          sequence?]{
   Returns a sequence equivalent to @racket[vec] when no optional
   arguments are supplied.
@@ -217,13 +217,17 @@ elements of @racket[vec] from @racket[start] (inclusive) to
 }
 
 @deftogether[(
-@defform*[((for/flvector (for-clause ...) body ...)
-           (for/flvector #:length length-expr (for-clause ...) body ...))]
-@defform*[((for*/flvector (for-clause ...) body ...)
-           (for*/flvector #:length length-expr (for-clause ...) body ...))])]{
+@defform[(for/flvector maybe-length (for-clause ...) body ...)]
+@defform/subs[(for*/flvector maybe-length (for-clause ...) body ...)
+              ([maybe-length (code:line)
+                             (code:line #:length length-expr)
+                             (code:line #:length length-expr #:fill fill-expr)])
+              #:contracts ([length-expr exact-nonnegative-integer?]
+                           [fill-expr flonum?])]
+)]{
 
 Like @racket[for/vector] or @racket[for*/vector], but for
-@tech{flvector}s.}
+@tech{flvector}s. The default @racket[fill-expr] produces @racket[0.0].}
 
 @defproc[(shared-flvector [x flonum?] ...) flvector?]{
 

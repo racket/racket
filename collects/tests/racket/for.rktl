@@ -159,6 +159,8 @@
 ;; Basic sanity checks.
 (test '#(1 2 3 4) 'for/vector (for/vector ((i (in-range 4))) (+ i 1)))
 (test '#(1 2 3 4) 'for/vector-fast (for/vector #:length 4 ((i (in-range 4))) (+ i 1)))
+(test '#(1 2 3 4 0 0) 'for/vector-fast (for/vector #:length 6 ((i (in-range 4))) (+ i 1)))
+(test '#(1 2 3 4 #f #f) 'for/vector-fast (for/vector #:length 6 #:fill #f ((i (in-range 4))) (+ i 1)))
 
 (test '#(0 0 0 0 1 2 0 2 4) 'for*/vector (for*/vector ((i (in-range 3))
                                                        (j (in-range 3)))
@@ -270,9 +272,10 @@
                    #:unless #f
                    [y (in-range 3)])
         (+ x y)))
-(test (vector 1 2 3 0 0)
+(test (vector 1 2 3 -1 -1)
       'unless-...
       (for/vector #:length 5
+                  #:fill -1
                   ([x (in-range 3)]
                    #:unless (even? x)
                    [y (in-range 3)])

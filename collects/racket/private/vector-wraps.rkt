@@ -15,7 +15,8 @@
                       in-fXvector
                       for/fXvector
                       for*/fXvector
-                      fXvector-copy)
+                      fXvector-copy
+                      fXzero)
   (...
    (begin
      (define-:vector-like-gen :fXvector-gen unsafe-fXvector-ref)
@@ -49,10 +50,10 @@
        (unsafe-fXvector-copy! new-vec 0 vec 0 i)
        new-vec)
 
-     (define-for-syntax (for_/fXvector stx for_/fXvector-stx for_/fold/derived-stx wrap-all?)
+     (define-for-syntax (for_/fXvector stx orig-stx for_/fXvector-stx for_/fold/derived-stx wrap-all?)
        (syntax-case stx ()
          [(for*/fXvector (for-clause ...) body ...)
-          (with-syntax ([orig-stx stx]
+          (with-syntax ([orig-stx orig-stx]
                         [for_/fold/derived for_/fold/derived-stx])
             (syntax/loc stx
               (let-values ([(vec i)
@@ -67,8 +68,8 @@
                                (unsafe-fXvector-set! new-vec i (let () body ...))
                                (values new-vec (unsafe-fx+ i 1))))])
                 (shrink-fXvector vec i))))]
-         [(for*/fXvector #:length length-expr (for-clause ...) body ...)
-          (with-syntax ([orig-stx stx]
+         [(for*/fXvector #:length length-expr #:fill fill-expr (for-clause ...) body ...)
+          (with-syntax ([orig-stx orig-stx]
                         [(limited-for-clause ...)
                          ;; If `wrap-all?', wrap all binding clauses. Otherwise, wrap
                          ;; only the first and the first after each keyword clause:
@@ -102,21 +103,25 @@
               (let ([len length-expr])
                 (unless (exact-nonnegative-integer? len)
                   (raise-argument-error 'for_/fXvector "exact-nonnegative-integer?" len))
-                (let ([v (make-fXvector len)])
-                  (unless (zero? len)
-                    (for_/fold/derived
-                     orig-stx 
-                     ([i 0])
-                     (limited-for-clause ...)
-                     (fXvector-set! v i (let () body ...))
-                     (add1 i)))
-                  v))))]))
+                (let ([fill fill-expr])
+                  (let ([v (make-fXvector len fill)])
+                    (unless (zero? len)
+                      (for_/fold/derived
+                       orig-stx 
+                       ([i 0])
+                       (limited-for-clause ...)
+                       (fXvector-set! v i (let () body ...))
+                       (add1 i)))
+                    v)))))]
+      [(_ #:length length-expr (for-clause ...) body ...)
+       (for_/fXvector #'(fv #:length length-expr #:fill fXzero (for-clause ...) body ...) 
+                      orig-stx for_/fXvector-stx for_/fold/derived-stx wrap-all?)]))
 
      (define-syntax (for/fXvector stx)
-       (for_/fXvector stx #'for/fXvector #'for/fold/derived #f))
+       (for_/fXvector stx stx #'for/fXvector #'for/fold/derived #f))
 
      (define-syntax (for*/fXvector stx)
-       (for_/fXvector stx #'for*/fXvector #'for*/fold/derived #t))
+       (for_/fXvector stx stx #'for*/fXvector #'for*/fold/derived #t))
 
      (define (fXvector-copy flv [start 0] [end (and (fXvector? flv) (fXvector-length flv))])
        (unless (fXvector? flv)

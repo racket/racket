@@ -94,20 +94,31 @@ element.
   (error "doesn't get here"))
 ]}
 
-@defform*[((for/vector (for-clause ...) body ...+)
-           (for/vector #:length length-expr (for-clause ...) body ...+))]{
+@defform/subs[(for/vector maybe-length (for-clause ...) body ...+)
+              ([maybe-length (code:line)
+                             (code:line #:length length-expr)
+                             (code:line #:length length-expr #:fill fill-expr)])
+              #:contracts ([length-expr exact-nonnegative-integer?])]{
 
-Iterates like @racket[for/list], but the result are accumulated into
-a vector instead of a list.  If the optional @racket[#:length]
-form is used, then @racket[length-expr] must evaluate to an
-@racket[exact-nonnegative-integer?], and the result vector is
-constructed with this length.  In this case, the iteration can be
-performed more efficiently, and terminates when the vector is full or
-the requested number of iterations have been performed, whichever
-comes first.  If the provided @racket[length-expr] evaluates to a
-length longer than the number of iterations then the remaining slots
-of the vector are initialized to the default argument of
-@racket[make-vector].}
+Iterates like @racket[for/list], but results are accumulated into
+a vector instead of a list. 
+
+If the optional @racket[#:length] clause is specified, the result of
+@racket[length-expr] determines the length of the result vector.  In
+that case, the iteration can be performed more efficiently, and it
+terminates when the vector is full or the requested number of
+iterations have been performed, whichever comes first. If
+@racket[length-expr] specifies a length longer than the number of
+iterations, then the remaining slots of the vector are initialized to
+the value of @racket[fill-expr], which defaults to @racket[0] (i.e.,
+the default argument of @racket[make-vector]).
+
+@examples[
+(for/vector ([i '(1 2 3)]) (number->string i))
+(for/vector #:length 2 ([i '(1 2 3)]) (number->string i))
+(for/vector #:length 4 ([i '(1 2 3)]) (number->string i))
+(for/vector #:length 4 #:fill "?" ([i '(1 2 3)]) (number->string i))
+]}
 
 @deftogether[(
 @defform[(for/hash (for-clause ...) body ...+)]
@@ -258,8 +269,7 @@ nested.
 @deftogether[(
 @defform[(for*/list (for-clause ...) body ...+)]
 @defform[(for*/lists (id ...) (for-clause ...) body ...+)]
-@defform*[((for*/vector (for-clause ...) body ...+)
-           (for*/vector #:length length-expr (for-clause ...) body ...+))]
+@defform[(for*/vector maybe-length (for-clause ...) body ...+)]
 @defform[(for*/hash (for-clause ...) body ...+)]
 @defform[(for*/hasheq (for-clause ...) body ...+)]
 @defform[(for*/hasheqv (for-clause ...) body ...+)]

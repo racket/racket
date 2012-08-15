@@ -1368,10 +1368,10 @@
     (vector-copy! new-vec 0 vec 0 i)
     new-vec)
 
-  (define-for-syntax (for_/vector stx for_/vector-stx for_/fold/derived-stx wrap-all?)
+  (define-for-syntax (for_/vector stx orig-stx for_/vector-stx for_/fold/derived-stx wrap-all?)
     (syntax-case stx ()
       [(_ (for-clause ...) body ...)
-       (with-syntax ([orig-stx stx]
+       (with-syntax ([orig-stx orig-stx]
                      [for_/fold/derived for_/fold/derived-stx])
          (syntax/loc stx
            (let-values ([(vec i)
@@ -1386,8 +1386,8 @@
                             (unsafe-vector-set! new-vec i (let () body ...))
                             (values new-vec (unsafe-fx+ i 1))))])
              (shrink-vector vec i))))]
-      [(_ #:length length-expr (for-clause ...) body ...)
-       (with-syntax ([orig-stx stx]
+      [(_ #:length length-expr #:fill fill-expr (for-clause ...) body ...)
+       (with-syntax ([orig-stx orig-stx]
                      [(limited-for-clause ...)
                       ;; If `wrap-all?', wrap all binding clauses. Otherwise, wrap
                       ;; only the first and the first after each keyword clause:
@@ -1421,7 +1421,7 @@
          (let ([len length-expr])
            (unless (exact-nonnegative-integer? len)
              (raise-argument-error 'for_/vector "exact-nonnegative-integer?" len))
-           (let ([v (make-vector len)])
+           (let ([v (make-vector len fill-expr)])
              (unless (zero? len)
                (for_/fold/derived
                 orig-stx 
@@ -1429,13 +1429,16 @@
                 (limited-for-clause ...)
                 (vector-set! v i (let () body ...))
                 (add1 i)))
-             v))))]))
+             v))))]
+      [(_ #:length length-expr (for-clause ...) body ...)
+       (for_/vector #'(fv #:length length-expr #:fill 0 (for-clause ...) body ...) 
+                    orig-stx for_/vector-stx for_/fold/derived-stx wrap-all?)]))
 
   (define-syntax (for/vector stx)
-    (for_/vector stx #'for/vector #'for/fold/derived #f))
+    (for_/vector stx stx #'for/vector #'for/fold/derived #f))
 
   (define-syntax (for*/vector stx)
-    (for_/vector stx #'for*/vector #'for*/fold/derived #t))
+    (for_/vector stx stx #'for*/vector #'for*/fold/derived #t))
 
   (define-for-syntax (do-for/lists for/fold-id stx)
     (syntax-case stx ()
