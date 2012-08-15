@@ -139,7 +139,7 @@
       (let ((op (with-all-output-to-string (failing-test))))
         (check string-contains
                op
-               "location:   text-ui-test.rkt"))))
+               "location: text-ui-test.rkt"))))
    
    (test-case
     "Name and location displayed before actual/expected"

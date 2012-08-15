@@ -39,10 +39,11 @@ Outta here!
 --------------------
 --------------------
 FAILURE
-name:       check
-location:   (#<path:PLTHOME/collects/tests/rackunit/standalone-check-test.rkt> 44 0 1344 17)
+      name: check
+  location: (#<path:PLTHOME/collects/tests/rackunit/standalone-check-test.rkt> 44 0 1344 17)
 expression: (check = 1 2)
-params:     (#<procedure:=> 1 2)\nmessage:    0.0
+    params: (#<procedure:=> 1 2)
+   message: 0.0
 
 Check failure
 --------------------
@@ -64,22 +65,22 @@ Second Outta here!
 --------------------
 --------------------
 FAILURE
-name:       check-eq?
-location:   (#<path:PLTHOME/collects/tests/rackunit/standalone-test-case-test.rkt> 19 12 520 15)
+      name: check-eq?
+  location: (#<path:PLTHOME/collects/tests/rackunit/standalone-test-case-test.rkt> 19 12 520 15)
 expression: (check-eq? 1 2)
-actual:     1
-expected:   2
+    actual: 1
+  expected: 2
 
 Check failure
 --------------------
 --------------------
 failure
 FAILURE
-name:       check-eq?
-location:   (#<path:PLTHOME/collects/tests/rackunit/standalone-test-case-test.rkt> 20 21 558 15)
+      name: check-eq?
+  location: (#<path:PLTHOME/collects/tests/rackunit/standalone-test-case-test.rkt> 20 21 558 15)
 expression: (check-eq? 1 2)
-actual:     1
-expected:   2
+    actual: 1
+  expected: 2
 
 Check failure
 --------------------

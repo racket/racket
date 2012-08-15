@@ -6,17 +6,17 @@
 
 (define output
   (with-output-to-string
-     (lambda ()
-       (parameterize ([current-error-port (current-output-port)])
-         (define-check (check3)
-           (fail-check))
-         
-         (run-tests (test-suite "tests" (let ((foo check3)) (foo))))))))
+    (lambda ()
+      (parameterize ([current-error-port (current-output-port)])
+        (define-check (check3)
+          (fail-check))
+
+        (run-tests (test-suite "tests" (let ((foo check3)) (foo))))))))
 
 (test
  (regexp-match
-  (regexp (format "~a.*~a.*~a"
-                 (regexp-quote "--------------------\ntests > #f\nUnnamed test \nFAILURE\nname:       check3\nlocation:   ")                 
-                 (regexp-quote "pr10950.rkt:14:51")
-                 (regexp-quote "0 success(es) 1 failure(s) 0 error(s) 1 test(s) run\n")))
+  (regexp
+   (format "~a.*~a"
+           (regexp-quote "--------------------\ntests > #f\nUnnamed test \nFAILURE\n      name: check3\n  location: pr10950.rkt:14:50\n    params: \nCheck failure\n  context...:\n")           
+           (regexp-quote "\n--------------------\n0 success(es) 1 failure(s) 0 error(s) 1 test(s) run\n")))
   output))
