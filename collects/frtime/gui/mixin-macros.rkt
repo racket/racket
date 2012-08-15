@@ -1,5 +1,5 @@
 (module mixin-macros frtime
-  (require mzlib/class)  
+  (require racket/class)  
   
   (define-syntax events->callbacks
     (lambda (stx)
