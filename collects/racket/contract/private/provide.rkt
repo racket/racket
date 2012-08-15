@@ -570,8 +570,9 @@
                                [struct-name struct-name]
                                [(selector-ids ...) selector-ids]
                                [(constructor-args ...) (generate-temporaries selector-ids)]
-                               [struct-name-srcloc `'(,(path->relative-string/library
-                                                        (syntax-source struct-name))
+                               [struct-name-srcloc `'(,(and (path-string? (syntax-source struct-name))
+                                                            (path->relative-string/library
+                                                             (syntax-source struct-name)))
                                                       ,(syntax-line struct-name)
                                                       ,(syntax-column struct-name)
                                                       ,(syntax-position struct-name)
