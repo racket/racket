@@ -20,12 +20,17 @@
  ["--missed-opt" "run the missed optimization tests" (missed-opt? #t)]
  ["--benchmarks" "compile the typed benchmarks" (bench? #t)]
  ["--just" path "run only this test" (single (just-one path))]
- ["--nightly" "for the nightly builds" (begin (nightly? #t) (unit? #t) (opt? #t) (missed-opt? #t))]
+ ["--nightly" "for the nightly builds" (begin (nightly? #t) (unit? #t) (opt? #t) (missed-opt? #t) (places 1))]
  ["--all" "run all tests" (begin (unit? #t) (int? #t) (opt? #t) (missed-opt? #t) (bench? #t))]
+ ["-j" num "number of places to use" 
+       (let ([n (string->number num)])
+         (places (and (integer? n) (> n 1) n)))]
  ["--gui" "run using the gui"
           (if (gui-available?)
               (begin (exec go))
               (error "GUI not available"))])
+
+(start-workers)
 
 (if (and (nightly?) (eq? 'cgc (system-type 'gc)))
     (printf "Skipping Typed Racket tests.\n")
