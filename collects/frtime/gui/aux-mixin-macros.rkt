@@ -1,6 +1,6 @@
 (module aux-mixin-macros frtime
   (require "mixin-macros.rkt")
-  (require mzlib/class)
+  (require racket/class)
 
   
   ;; consider taking out setter
