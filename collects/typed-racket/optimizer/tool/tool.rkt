@@ -6,7 +6,7 @@
          (for-syntax racket/base images/icons/misc images/icons/style)
          string-constants)
 
-(require "report.rkt" "display.rkt")
+(require "report.rkt" "profiling.rkt" "display.rkt")
 
 (provide tool@ optimization-coach-drracket-button)
 
@@ -49,7 +49,9 @@
   optimization-coach-visible?
   build-optimization-coach-popup-menu
   launch-optimization-coach
-  close-optimization-coach)
+  close-optimization-coach
+  optimization-coach-profile
+  launch-profile)
 
 (define optimization-coach-drracket-button
   (list
@@ -169,6 +171,9 @@
                              [callback (lambda _
                                          (popup-fun text start end))]))))))
 
+      (define/public (optimization-coach-profile source)
+        (generate-profile this source))
+
       (super-new)))
 
   (drracket:get/extend:extend-definitions-text highlights-mixin)
@@ -227,6 +232,10 @@
              [label "Clear"]
              [parent panel]
              [callback (lambda _ (close-optimization-coach))])
+        (new button%
+             [label "Profile"]
+             [parent panel]
+             [callback (lambda _ (launch-profile))])
         (for ([(l f) (in-pairs check-boxes)])
           (new check-box%
                [label l]
@@ -268,29 +277,40 @@
           (show-optimization-coach)))
 
 
-      ;; entry point
-      (define/public (launch-optimization-coach)
+      ;; sets up definitions copying, separate thread, error handling, etc.
+      (define (launch-operation callback)
         (define definitions  (get-definitions-text))
         (define interactions (get-interactions-text))
         ;; copy contents of the definitions window before handing control back
         ;; to the event loop
         (define definitions-copy (copy-definitions definitions))
-        ;; launch OC proper
-        (show-optimization-coach)
         (send this update-running #t)
         (thread ; do the work in a separate thread, to avoid blocking the GUI
            (lambda ()
              (with-handlers
                  ([(lambda (e) (and (exn? e) (not (exn:break? e))))
-                   ;; typechecking failed, report in the interactions window
+                   ;; something failed, report in the interactions window
                    (lambda (e)
                      (close-optimization-coach)
                      (send interactions reset-console)
                      (send interactions run-in-evaluation-thread
                            (lambda () (raise e))))])
-               (send (get-definitions-text) add-highlights
-                     #:source definitions-copy))
+               (callback definitions-copy))
              (send this update-running #f))))
+
+      ;; entry point
+      (define/public (launch-optimization-coach)
+        (launch-operation
+         (lambda (definitions-copy)
+           (show-optimization-coach)
+           (send (get-definitions-text) add-highlights
+                 #:source definitions-copy))))
+
+      (define/public (launch-profile)
+        (launch-operation
+         (lambda (definitions-copy)
+           (send (get-definitions-text) optimization-coach-profile
+                 definitions-copy))))
 
       (define/public (close-optimization-coach)
         (hide-optimization-coach)
