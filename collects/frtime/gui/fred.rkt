@@ -1,8 +1,8 @@
 (module fred frtime
   (require "mixin-macros.rkt"
            "aux-mixin-macros.rkt"
-           mzlib/class
-           mzlib/string
+           racket/class
+           racket/string
            texpict/mrpict
            (all-except mred send-event)
            framework)
@@ -18,7 +18,7 @@
         ""
         (if (string? itm)
             itm
-            (expr->string itm))))
+            (number->string itm))))
   
   
   ;; adding assumed methods
@@ -323,6 +323,6 @@
   
   
   (provide (all-defined)
-           (all-from mzlib/class)
+           (all-from racket/class)
            (all-from "mixin-macros.rkt")
            (all-from "aux-mixin-macros.rkt")))
