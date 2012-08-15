@@ -20,5 +20,5 @@
                              (make-check-actual 1)
                              (make-check-expected 2)))
                       (get-output-string p))
-               "      name: \"foo\"\n    actual: 1\n  expected: 2\n\n"))))
+               "name:       \"foo\"\nactual:     1\nexpected:   2\n\n"))))
    ))
