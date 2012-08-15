@@ -2,6 +2,7 @@
 
 (require '#%flfxnum
          "for.rkt"
+         racket/unsafe/ops
          (for-syntax racket/base))
 
 (provide define-vector-wraps)
@@ -31,13 +32,22 @@
                             #'in-fXvector*
                             #'unsafe-fXvector-ref))
 
-     (define (list->fXvector l)
-       (let ((n (length l)))
-         (let ((v (make-fXvector n)))
-           (for ((i (in-range n))
-                 (x (in-list l)))
-             (fXvector-set! v i x))
-           v)))
+     (define (unsafe-fXvector-copy! vec dest-start flv start end)
+       (let ([len (- end start)])
+         (for ([i (in-range len)])
+           (unsafe-fXvector-set! vec (unsafe-fx+ i dest-start) 
+                                 (unsafe-fXvector-ref flv (unsafe-fx+ i start))))))
+
+     (define (grow-fXvector vec)
+       (define n (fXvector-length vec))
+       (define new-vec (make-fXvector (* 2 n)))
+       (unsafe-fXvector-copy! new-vec 0 vec 0 n)
+       new-vec)
+     
+     (define (shrink-fXvector vec i)
+       (define new-vec (make-fXvector i))
+       (unsafe-fXvector-copy! new-vec 0 vec 0 i)
+       new-vec)
 
      (define-for-syntax (for_/fXvector stx for_/fXvector-stx for_/fold/derived-stx wrap-all?)
        (syntax-case stx ()
@@ -45,13 +55,18 @@
           (with-syntax ([orig-stx stx]
                         [for_/fold/derived for_/fold/derived-stx])
             (syntax/loc stx
-              (list->fXvector
-               (reverse
-                (for_/fold/derived
-                 orig-stx
-                 ([l null])
-                 (for-clause ...) 
-                 (cons (let () body ...) l))))))]
+              (let-values ([(vec i)
+                            (for_/fold/derived
+                             orig-stx
+                             ([vec (make-fXvector 16)]
+                              [i 0])
+                             (for-clause ...) 
+                             (let ([new-vec (if (eq? i (unsafe-fXvector-length vec))
+                                                (grow-fXvector vec)
+                                                vec)])
+                               (unsafe-fXvector-set! new-vec i (let () body ...))
+                               (values new-vec (unsafe-fx+ i 1))))])
+                (shrink-fXvector vec i))))]
          [(for*/fXvector #:length length-expr (for-clause ...) body ...)
           (with-syntax ([orig-stx stx]
                         [(limited-for-clause ...)
@@ -120,5 +135,5 @@
        (let* ([len (- end start)]
               [vec (make-fXvector len)])
          (for ([i (in-range len)])
-           (unsafe-fXvector-set! vec i (unsafe-fXvector-ref flv (+ i start))))
+           (unsafe-fXvector-set! vec i (unsafe-fXvector-ref flv (unsafe-fx+ i start))))
          vec)))))

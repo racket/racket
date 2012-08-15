@@ -1357,20 +1357,36 @@
     (lambda (x) x)
     (lambda (x) `(,#'cons ,x ,#'fold-var)))
 
+  (define (grow-vector vec)
+    (define n (vector-length vec))
+    (define new-vec (make-vector (* 2 n)))
+    (vector-copy! new-vec 0 vec 0 n)
+    new-vec)
+
+  (define (shrink-vector vec i)
+    (define new-vec (make-vector i))
+    (vector-copy! new-vec 0 vec 0 i)
+    new-vec)
+
   (define-for-syntax (for_/vector stx for_/vector-stx for_/fold/derived-stx wrap-all?)
     (syntax-case stx ()
-      [(for*/vector (for-clause ...) body ...)
+      [(_ (for-clause ...) body ...)
        (with-syntax ([orig-stx stx]
                      [for_/fold/derived for_/fold/derived-stx])
          (syntax/loc stx
-           (list->vector
-            (reverse
-             (for_/fold/derived
-              orig-stx
-              ([l null])
-              (for-clause ...) 
-              (cons (let () body ...) l))))))]
-      [(for*/vector #:length length-expr (for-clause ...) body ...)
+           (let-values ([(vec i)
+                         (for_/fold/derived
+                          orig-stx
+                          ([vec (make-vector 16)]
+                           [i 0])
+                          (for-clause ...) 
+                          (let ([new-vec (if (eq? i (unsafe-vector-length vec))
+                                             (grow-vector vec)
+                                             vec)])
+                            (unsafe-vector-set! new-vec i (let () body ...))
+                            (values new-vec (unsafe-fx+ i 1))))])
+             (shrink-vector vec i))))]
+      [(_ #:length length-expr (for-clause ...) body ...)
        (with-syntax ([orig-stx stx]
                      [(limited-for-clause ...)
                       ;; If `wrap-all?', wrap all binding clauses. Otherwise, wrap
