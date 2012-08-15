@@ -39,44 +39,15 @@
              (fXvector-set! v i x))
            v)))
 
-     (define-syntax (for/fXvector stx)
-       (syntax-case stx ()
-         [(for/fXvector (for-clause ...) body ...)
-          (with-syntax ([orig-stx stx])
-            (syntax/loc stx
-              (list->fXvector
-               (reverse
-                (for/fold/derived 
-                 orig-stx
-                 ([l null])
-                 (for-clause ...) 
-                 (cons (let () body ...) l))))))]
-         [(for/fXvector #:length length-expr (for-clause ...) body ...)
-          (with-syntax ([orig-stx stx])
-            (syntax/loc stx
-              (let ([len length-expr])
-                (unless (exact-nonnegative-integer? len)
-                  (raise-argument-error 'for/fXvector "exact-nonnegative-integer?" len))
-                (let ([v (make-fXvector len)])
-                  (unless (zero? len)
-                    (let ([len-1 (sub1 len)])
-                      (for/fold/derived 
-                       orig-stx 
-                       ([vd (void)])
-                       ([i (stop-after (in-naturals) (lambda (i) (= i len-1)))]
-                        for-clause ...)
-                       (fXvector-set! v i (let () body ...))
-                       (void))))
-                  v))))]))
-
-     (define-syntax (for*/fXvector stx)
+     (define-for-syntax (for_/fXvector stx for_/fXvector-stx for_/fold/derived-stx wrap-all?)
        (syntax-case stx ()
          [(for*/fXvector (for-clause ...) body ...)
-          (with-syntax ([orig-stx stx])
+          (with-syntax ([orig-stx stx]
+                        [for_/fold/derived for_/fold/derived-stx])
             (syntax/loc stx
               (list->fXvector
                (reverse
-                (for*/fold/derived
+                (for_/fold/derived
                  orig-stx
                  ([l null])
                  (for-clause ...) 
@@ -84,31 +55,53 @@
          [(for*/fXvector #:length length-expr (for-clause ...) body ...)
           (with-syntax ([orig-stx stx]
                         [(limited-for-clause ...)
-                         (map (lambda (fc)
-                                (syntax-case fc ()
-                                  [[ids rhs]
-                                   (or (identifier? #'ids)
-                                       (let ([l (syntax->list #'ids)])
-                                         (and l (andmap identifier? l))))
-                                   (syntax/loc fc [ids (stop-after
-                                                        rhs
-                                                        (lambda x
-                                                          (= i len)))])]
-                                  [_ fc]))
-                              (syntax->list #'(for-clause ...)))])
+                         ;; If `wrap-all?', wrap all binding clauses. Otherwise, wrap
+                         ;; only the first and the first after each keyword clause:
+                         (let loop ([fcs (syntax->list #'(for-clause ...))] [wrap? #t])
+                           (cond
+                            [(null? fcs) null]
+                            [(keyword? (syntax-e (car fcs)))
+                             (if (null? (cdr fcs))
+                                 fcs
+                                 (list* (car fcs) (cadr fcs) (loop (cddr fcs) #t)))]
+                            [(not wrap?)
+                             (cons (car fcs) (loop (cdr fcs) #f))]
+                            [else
+                             (define fc (car fcs))
+                             (define wrapped-fc
+                               (syntax-case fc ()
+                                 [[ids rhs]
+                                  (or (identifier? #'ids)
+                                      (let ([l (syntax->list #'ids)])
+                                        (and l (andmap identifier? l))))
+                                  (syntax/loc fc [ids (stop-after
+                                                       rhs
+                                                       (lambda x
+                                                         (= i len)))])]
+                                 [_ fc]))
+                             (cons wrapped-fc
+                                   (loop (cdr fcs) wrap-all?))]))]
+                        [for_/fXvector for_/fXvector-stx]
+                        [for_/fold/derived for_/fold/derived-stx])
             (syntax/loc stx
               (let ([len length-expr])
                 (unless (exact-nonnegative-integer? len)
-                  (raise-argument-error 'for*/fXvector "exact-nonnegative-integer?" len))
+                  (raise-argument-error 'for_/fXvector "exact-nonnegative-integer?" len))
                 (let ([v (make-fXvector len)])
                   (unless (zero? len)
-                    (for*/fold/derived
+                    (for_/fold/derived
                      orig-stx 
                      ([i 0])
                      (limited-for-clause ...)
                      (fXvector-set! v i (let () body ...))
                      (add1 i)))
                   v))))]))
+
+     (define-syntax (for/fXvector stx)
+       (for_/fXvector stx #'for/fXvector #'for/fold/derived #f))
+
+     (define-syntax (for*/fXvector stx)
+       (for_/fXvector stx #'for*/fXvector #'for*/fold/derived #t))
 
      (define (fXvector-copy flv [start 0] [end (and (fXvector? flv) (fXvector-length flv))])
        (unless (fXvector? flv)

@@ -87,6 +87,53 @@
     (test '(2.0 3.0) 'flvector-copy (for/list ([i (in-flvector (flvector-copy v 2))]) i))
     (test '(2.0) 'flvector-copy (for/list ([i (in-flvector (flvector-copy v 2 3))]) i))))
 
+;; Check empty clauses
+(let ()
+  (define vector-iters 0)
+  (test (flvector 3.4 0.0 0.0 0.0)
+        'no-clauses
+        (for/flvector #:length 4 ()
+                      (set! vector-iters (+ 1 vector-iters))
+                      3.4))
+  (test 1 values vector-iters)
+  (test (flvector 3.4 0.0 0.0 0.0)
+        'no-clauses
+        (for*/flvector #:length 4 ()
+                       (set! vector-iters (+ 1 vector-iters))
+                       3.4))
+  (test 2 values vector-iters))
+
+;; Check #:when and #:unless:
+(test (flvector 0.0 1.0 2.0 1.0 2.0)
+      'when-#t
+      (for/flvector #:length 5
+                    ([x (in-range 3)]
+                     #:when #t
+                     [y (in-range 3)])
+         (exact->inexact (+ x y))))
+(test (flvector 0.0 1.0 2.0 2.0 3.0)
+      'when-...
+      (for/flvector #:length 5
+                    ([x (in-range 3)]
+                     #:when (even? x)
+                     [y (in-range 3)])
+        (exact->inexact (+ x y))))
+(test (flvector 0.0 1.0 2.0 1.0 2.0)
+      'unless-#f
+      (for/flvector #:length 5
+                    ([x (in-range 3)]
+                     #:unless #f
+                     [y (in-range 3)])
+        (exact->inexact (+ x y))))
+(test (flvector 1.0 2.0 3.0 0.0 0.0)
+      'unless-...
+      (for/flvector #:length 5
+                    ([x (in-range 3)]
+                     #:unless (even? x)
+                     [y (in-range 3)])
+        (exact->inexact (+ x y))))
+
+
 ;; in-flvector tests, copied from for.rktl
 
 (test-sequence [(1.0 2.0 3.0)] (in-flvector (flvector 1.0 2.0 3.0)))
