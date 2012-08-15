@@ -1,11 +1,13 @@
 #lang typed/racket/base
 
+(require (for-syntax racket/base))
+
 (provide flonum->bit-field bit-field->flonum
          flonum->ordinal ordinal->flonum
          flstep flnext flprev flonums-between
          -max.0 -min.0 +min.0 +max.0 +epsilon.0
          flulp flulp-error relative-error
-         float-complex?)
+         float-complex? (rename-out [inline-number->float-complex number->float-complex]))
 
 ;; ===================================================================================================
 ;; Floating-point representation
@@ -117,3 +119,15 @@
 ;; Misc. stuff
 
 (define-predicate float-complex? Float-Complex)
+
+(define-syntax (inline-number->float-complex stx)
+  (syntax-case stx ()
+    [(_ z-expr)  (syntax/loc stx
+                   (let: ([z : Number  z-expr])
+                     (make-rectangular (real->double-flonum (real-part z))
+                                       (real->double-flonum (imag-part z)))))]
+    [(_ e ...)  (syntax/loc stx (number->float-complex e ...))]
+    [_  (syntax/loc stx number->float-complex)]))
+
+(: number->float-complex (Number -> Float-Complex))
+(define (number->float-complex z) (inline-number->float-complex z))

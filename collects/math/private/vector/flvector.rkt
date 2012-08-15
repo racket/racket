@@ -2,41 +2,53 @@
 
 (require racket/flonum
          racket/string
-         (for-syntax racket/base)
+         (for-syntax racket/base syntax/parse)
          "../unsafe.rkt")
 
-(provide (rename-out [inline-build-flvector  build-flvector]
-                     [inline-flvector-map  flvector-map])
-         unsafe-flvector-map
-         ;; Pointwise operations
-         flvector-scale
-         flvector-round
-         flvector-floor
-         flvector-ceiling
-         flvector-truncate
-         flvector-abs
-         flvector-sqr
-         flvector-sqrt
-         flvector-log
-         flvector-exp
-         flvector-sin
-         flvector-cos
-         flvector-tan
-         flvector-asin
-         flvector-acos
-         flvector-atan
-         flvector+
-         flvector*
-         flvector-
-         flvector/
-         flvector-expt
-         flvector-min
-         flvector-max
-         flvector=
-         flvector<
-         flvector<=
-         flvector>
-         flvector>=)
+(provide
+ ;; Construction
+ (rename-out [inline-build-flvector  build-flvector])
+ unsafe-flvector-copy!
+ flvector-copy!
+ (rename-out [inline-flvector-map  flvector-map])
+ unsafe-flvector-map
+ ;; Loops
+ for/flvector:
+ for*/flvector:
+ ;; Conversion
+ list->flvector
+ flvector->list
+ vector->flvector
+ flvector->vector
+ ;; Pointwise operations
+ flvector-scale
+ flvector-round
+ flvector-floor
+ flvector-ceiling
+ flvector-truncate
+ flvector-abs
+ flvector-sqr
+ flvector-sqrt
+ flvector-log
+ flvector-exp
+ flvector-sin
+ flvector-cos
+ flvector-tan
+ flvector-asin
+ flvector-acos
+ flvector-atan
+ flvector+
+ flvector*
+ flvector-
+ flvector/
+ flvector-expt
+ flvector-min
+ flvector-max
+ flvector=
+ flvector<
+ flvector<=
+ flvector>
+ flvector>=)
 
 ;; ===================================================================================================
 ;; build-flvector
@@ -59,6 +71,44 @@
 (define (build-flvector size f)
   (cond [(index? size)  (inline-build-flvector size f)]
         [else  (raise-type-error 'build-flvector "Index" 0 size f)]))
+
+;; ===================================================================================================
+;; flvector-copy
+
+(: unsafe-flvector-copy! (FlVector Integer FlVector Integer Integer -> Void))
+(define (unsafe-flvector-copy! dest dest-start src src-start src-end)
+  (let loop ([i dest-start] [j src-start])
+    (when (j . unsafe-fx< . src-end)
+      (unsafe-flvector-set! dest i (unsafe-flvector-ref src j))
+      (loop (unsafe-fx+ i 1) (unsafe-fx+ j 1)))))
+
+(: flvector-copy! (case-> (FlVector Integer FlVector -> Void)
+                          (FlVector Integer FlVector Integer -> Void)
+                          (FlVector Integer FlVector Integer Integer -> Void)))
+(define flvector-copy!
+  (case-lambda
+    [(dest dest-start src)
+     (flvector-copy! dest dest-start src 0 (flvector-length src))]
+    [(dest dest-start src src-start)
+     (flvector-copy! dest dest-start src src-start (flvector-length src))]
+    [(dest dest-start src src-start src-end)
+     (define dest-len (flvector-length dest))
+     (define src-len (flvector-length src))
+     (cond [(or (dest-start . < . 0) (dest-start . > . dest-len))
+            (raise-type-error 'flvector-copy! (format "Index <= ~e" dest-len) 1
+                              dest dest-start src src-start src-end)]
+           [(or (src-start . < . 0) (src-start . > . src-len))
+            (raise-type-error 'flvector-copy! (format "Index <= ~e" src-len) 3
+                              dest dest-start src src-start src-end)]
+           [(or (src-end . < . 0) (src-end . > . src-len))
+            (raise-type-error 'flvector-copy! (format "Index <= ~e" src-len) 4
+                              dest dest-start src src-start src-end)]
+           [(src-end . < . src-start)
+            (error 'flvector-copy! "ending index is smaller than starting index")]
+           [((- dest-len dest-start) . < . (- src-end src-start))
+            (error 'flvector-copy! "not enough room in target vector")]
+           [else
+            (unsafe-flvector-copy! dest dest-start src src-start src-end)])]))
 
 ;; ===================================================================================================
 ;; flvector-map
@@ -119,6 +169,81 @@
       n (λ: ([i : Index])
           (apply f (unsafe-flvector-ref xs i)
                  (map (λ: ([zs : FlVector]) (unsafe-flvector-ref zs i)) yss))))])) 
+
+;; ===================================================================================================
+;; Loops
+
+(define-syntax (base-for/flvector: stx)
+  (syntax-parse stx
+    [(_ for: #:length n-expr:expr (clauses ...) body ...+)
+     (syntax/loc stx
+       (let: ([n : Integer  n-expr])
+         (cond [(n . > . 0)
+                (define xs (make-flvector n))
+                (define: i : Nonnegative-Fixnum 0)
+                (let/ec: break : Void
+                  (for: (clauses ...)
+                    (unsafe-flvector-set! xs i (let () body ...))
+                    (set! i (unsafe-fx+ i 1))
+                    (when (i . unsafe-fx>= . n) (break (void)))))
+                xs]
+               [else  (flvector)])))]
+    [(_ for: (clauses ...) body ...+)
+     (syntax/loc stx
+       (let ()
+         (define n 4)
+         (define xs (make-flvector 4))
+         (define i 0)
+         (for: (clauses ...)
+           (let: ([x : Float  (let () body ...)])
+             (cond [(unsafe-fx= i n)  (define new-n (unsafe-fx* 2 n))
+                                      (define new-xs (make-flvector new-n x))
+                                      (unsafe-flvector-copy! new-xs 0 xs 0 n)
+                                      (set! n new-n)
+                                      (set! xs new-xs)]
+                   [else  (unsafe-flvector-set! xs i x)]))
+           (set! i (unsafe-fx+ i 1)))
+         (flvector-copy xs 0 i)))]))
+
+(define-syntax-rule (for/flvector: e ...)
+  (base-for/flvector: for: e ...))
+
+(define-syntax-rule (for*/flvector: e ...)
+  (base-for/flvector: for*: e ...))
+
+;; ===================================================================================================
+;; Conversion
+
+(: list->flvector ((Listof Real) -> FlVector))
+(define (list->flvector vs)
+  (define n (length vs))
+  (define xs (make-flvector n))
+  (let loop ([#{i : Nonnegative-Fixnum} 0] [vs vs])
+    (cond [(i . < . n)  (unsafe-flvector-set! xs i (real->double-flonum (unsafe-car vs)))
+                        (loop (+ i 1) (unsafe-cdr vs))]
+          [else  xs])))
+
+(: flvector->list (FlVector -> (Listof Float)))
+(define (flvector->list xs)
+  (for/list: : (Listof Float) ([x  (in-flvector xs)]) x))
+
+(: vector->flvector ((Vectorof Real) -> FlVector))
+(define (vector->flvector vs)
+  (define n (vector-length vs))
+  (define xs (make-flvector n))
+  (let loop ([#{i : Nonnegative-Fixnum} 0])
+    (cond [(i . < . n)  (unsafe-flvector-set! xs i (real->double-flonum (unsafe-vector-ref vs i)))
+                        (loop (+ i 1))]
+          [else  xs])))
+
+(: flvector->vector (FlVector -> (Vectorof Float)))
+(define (flvector->vector xs)
+  (define n (flvector-length xs))
+  (define vs (make-vector n 0.0))
+  (let loop ([#{i : Nonnegative-Fixnum} 0])
+    (cond [(i . < . n)  (unsafe-vector-set! vs i (unsafe-flvector-ref xs i))
+                        (loop (+ i 1))]
+          [else  vs])))
 
 ;; ===================================================================================================
 ;; Pointwise operations

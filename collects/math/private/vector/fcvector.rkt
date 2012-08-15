@@ -3,46 +3,60 @@
 (require racket/flonum
          racket/string
          (only-in racket/math conjugate)
-         (for-syntax racket/base)
+         (for-syntax racket/base syntax/parse)
          "flvector.rkt"
+         "../../flonum.rkt"
          "../unsafe.rkt")
 
-(provide (rename-out [-FCVector FCVector]) fcvector?
-         fcvector-length fcvector-real-part fcvector-imag-part
-         fcvector list->fcvector fcvector->list
-         make-fcvector
-         (rename-out [inline-unsafe-fcvector-ref   unsafe-fcvector-ref]
-                     [inline-unsafe-fcvector-set!  unsafe-fcvector-set!]
-                     [inline-fcvector-ref   fcvector-ref]
-                     [inline-fcvector-set!  fcvector-set!])
-         (rename-out [inline-build-fcvector  build-fcvector]
-                     [inline-fcvector-map  fcvector-map])
-         unsafe-fcvector-map
-         fcvector-copy-all
-         ;; Pointwise operations
-         fcvector-scale
-         fcvector-sqr
-         fcvector-sqrt
-         fcvector-conjugate
-         fcvector-magnitude
-         fcvector-angle
-         fcvector-log
-         fcvector-exp
-         fcvector-sin
-         fcvector-cos
-         fcvector-tan
-         fcvector-asin
-         fcvector-acos
-         fcvector-atan
-         fcvector+
-         fcvector*
-         fcvector-
-         fcvector/
-         fcvector-expt
-         fcvector=
-         fcvector-real-part
-         fcvector-imag-part
-         fcvector-make-rectangular)
+(provide
+ (rename-out [-FCVector FCVector]) fcvector?
+ fcvector-length fcvector-real-part fcvector-imag-part
+ ;; Construction
+ fcvector
+ make-fcvector
+ (rename-out [inline-unsafe-fcvector-ref   unsafe-fcvector-ref]
+             [inline-unsafe-fcvector-set!  unsafe-fcvector-set!]
+             [inline-fcvector-ref   fcvector-ref]
+             [inline-fcvector-set!  fcvector-set!])
+ (rename-out [inline-build-fcvector  build-fcvector])
+ unsafe-fcvector-copy!
+ fcvector-copy!
+ fcvector-copy
+ (rename-out [inline-fcvector-map  fcvector-map])
+ unsafe-fcvector-map
+ ;; Loops
+ for/fcvector:
+ for*/fcvector:
+ (rename-out [in-fcvector-clause in-fcvector])
+ ;; Conversion
+ list->fcvector
+ fcvector->list
+ vector->fcvector
+ fcvector->vector
+ ;; Pointwise operations
+ fcvector-scale
+ fcvector-sqr
+ fcvector-sqrt
+ fcvector-conjugate
+ fcvector-magnitude
+ fcvector-angle
+ fcvector-log
+ fcvector-exp
+ fcvector-sin
+ fcvector-cos
+ fcvector-tan
+ fcvector-asin
+ fcvector-acos
+ fcvector-atan
+ fcvector+
+ fcvector*
+ fcvector-
+ fcvector/
+ fcvector-expt
+ fcvector=
+ fcvector-real-part
+ fcvector-imag-part
+ fcvector-make-rectangular)
 
 ;; ===================================================================================================
 ;; Types and other basics
@@ -71,34 +85,8 @@
 (define fcvector-real-part FCVector-real-part)
 (define fcvector-imag-part FCVector-imag-part)
 
-(: list->fcvector ((Listof Float-Complex) -> FCVector))
-(define (list->fcvector zs)
-  (define n (length zs))
-  (define xs (make-flvector n))
-  (define ys (make-flvector n))
-  (let loop ([#{i : Nonnegative-Fixnum} 0] [zs zs])
-    (cond [(i . < . n)
-           (define z (unsafe-car zs))
-           (unsafe-flvector-set! xs i (real-part z))
-           (unsafe-flvector-set! ys i (imag-part z))
-           (loop (+ i 1) (unsafe-cdr zs))]
-          [else
-           (FCVector n xs ys)])))
-
 (: fcvector (Float-Complex * -> FCVector))
 (define (fcvector . zs) (list->fcvector zs))
-
-(: fcvector->list (FCVector -> (Listof Float-Complex)))
-(define (fcvector->list zs)
-  (define n (fcvector-length zs))
-  (define xs (fcvector-real-part zs))
-  (define ys (fcvector-imag-part zs))
-  (let loop ([#{i : Nonnegative-Fixnum} 0] [#{acc : (Listof Float-Complex)} null])
-    (cond [(i . < . n)
-           (loop (+ i 1) (cons (make-rectangular (unsafe-flvector-ref xs i)
-                                                 (unsafe-flvector-ref ys i))
-                               acc))]
-          [else  (reverse acc)])))
 
 (: make-fcvector (case-> (Integer -> FCVector)
                          (Integer Float-Complex -> FCVector)))
@@ -200,19 +188,57 @@
   (cond [(index? size)  (inline-build-fcvector size f)]
         [else  (raise-type-error 'build-fcvector "Index" 0 size f)]))
 
-(: fcvector-copy-all (FCVector -> FCVector))
-(define (fcvector-copy-all zs)
+;; ===================================================================================================
+;; fcvector-copy
+
+(: unsafe-fcvector-copy! (FCVector Integer FCVector Integer Integer -> Void))
+(define (unsafe-fcvector-copy! dest dest-start src src-start src-end)
+  (define dest-xs (fcvector-real-part dest))
+  (define dest-ys (fcvector-imag-part dest))
+  (define src-xs (fcvector-real-part src))
+  (define src-ys (fcvector-imag-part src))
+  (let loop ([i dest-start] [j src-start])
+    (when (j . unsafe-fx< . src-end)
+      (unsafe-flvector-set! dest-xs i (unsafe-flvector-ref src-xs j))
+      (unsafe-flvector-set! dest-ys i (unsafe-flvector-ref src-ys j))
+      (loop (unsafe-fx+ i 1) (unsafe-fx+ j 1)))))
+
+(: fcvector-copy! (case-> (FCVector Integer FCVector -> Void)
+                          (FCVector Integer FCVector Integer -> Void)
+                          (FCVector Integer FCVector Integer Integer -> Void)))
+(define fcvector-copy!
+  (case-lambda
+    [(dest dest-start src)
+     (fcvector-copy! dest dest-start src 0 (fcvector-length src))]
+    [(dest dest-start src src-start)
+     (fcvector-copy! dest dest-start src src-start (fcvector-length src))]
+    [(dest dest-start src src-start src-end)
+     (define dest-len (fcvector-length dest))
+     (define src-len (fcvector-length src))
+     (cond [(or (dest-start . < . 0) (dest-start . > . dest-len))
+            (raise-type-error 'fcvector-copy! (format "Index <= ~e" dest-len) 1
+                              dest dest-start src src-start src-end)]
+           [(or (src-start . < . 0) (src-start . > . src-len))
+            (raise-type-error 'fcvector-copy! (format "Index <= ~e" src-len) 3
+                              dest dest-start src src-start src-end)]
+           [(or (src-end . < . 0) (src-end . > . src-len))
+            (raise-type-error 'fcvector-copy! (format "Index <= ~e" src-len) 4
+                              dest dest-start src src-start src-end)]
+           [(src-end . < . src-start)
+            (error 'fcvector-copy! "ending index is smaller than starting index")]
+           [((- dest-len dest-start) . < . (- src-end src-start))
+            (error 'fcvector-copy! "not enough room in target vector")]
+           [else
+            (unsafe-fcvector-copy! dest dest-start src src-start src-end)])]))
+
+(: fcvector-copy (case-> (FCVector -> FCVector)
+                         (FCVector Integer -> FCVector)
+                         (FCVector Integer Integer -> FCVector)))
+(define (fcvector-copy zs [start 0] [end (fcvector-length zs)])
   (define n (fcvector-length zs))
-  (define xs (fcvector-real-part zs))
-  (define ys (fcvector-imag-part zs))
-  (define new-xs (make-flvector n))
-  (define new-ys (make-flvector n))
-  (let loop ([#{i : Nonnegative-Fixnum} 0])
-    (cond [(i . < . n)
-           (unsafe-flvector-set! new-xs i (unsafe-flvector-ref xs i))
-           (unsafe-flvector-set! new-ys i (unsafe-flvector-ref ys i))
-           (loop (+ i 1))]
-          [else  (FCVector n new-xs new-ys)])))
+  (define new-zs (FCVector n (make-flvector n) (make-flvector n)))
+  (fcvector-copy! new-zs 0 zs start end)
+  new-zs)
 
 ;; ===================================================================================================
 ;; fcvector-map
@@ -283,6 +309,162 @@
       n (λ: ([i : Index])
           (apply f (unsafe-fcvector-ref xs i)
                  (map (λ: ([ys : FCVector]) (unsafe-fcvector-ref ys i)) yss))))]))
+
+;; ===================================================================================================
+;; Loops
+
+(define-syntax (base-for/fcvector: stx)
+  (syntax-parse stx
+    [(_ for: #:length n-expr:expr (clauses ...) body ...+)
+     (quasisyntax/loc stx
+       (let: ([n : Integer  n-expr])
+         (cond [(n . > . 0)
+                (define xs (make-flvector n))
+                (define ys (make-flvector n))
+                (define i 0)
+                (let/ec: break : Void
+                  (for: (clauses ...)
+                    (let: ([z : Float-Complex  (let () body ...)])
+                      (unsafe-flvector-set! xs i (real-part z))
+                      (unsafe-flvector-set! ys i (imag-part z)))
+                    (set! i (unsafe-fx+ i 1))
+                    (when (i . unsafe-fx>= . n) (break (void)))))
+                (with-asserts ([n index?])
+                  (FCVector n xs ys))]
+               [else
+                (FCVector 0 (flvector) (flvector))])))]
+    [(_ for: (clauses ...) body ...+)
+     (quasisyntax/loc stx
+       (let ([n   4]
+             [xs  (make-flvector 4)]
+             [ys  (make-flvector 4)]
+             [i   0])
+         (for: (clauses ...)
+           (let: ([z : Float-Complex  (let () body ...)])
+             (let ([x  (real-part z)]
+                   [y  (imag-part z)])
+               (cond [(unsafe-fx= i n)
+                      (let ([new-n  (unsafe-fx* 2 n)])
+                        (let ([new-xs  (make-flvector new-n x)]
+                              [new-ys  (make-flvector new-n y)])
+                          (unsafe-flvector-copy! new-xs 0 xs 0 n)
+                          (unsafe-flvector-copy! new-ys 0 ys 0 n)
+                          (set! n new-n)
+                          (set! xs new-xs)
+                          (set! ys new-ys)))]
+                     [else
+                      (unsafe-flvector-set! xs i x)
+                      (unsafe-flvector-set! ys i y)])))
+           (set! i (unsafe-fx+ i 1)))
+         (define new-xs (if (unsafe-fx= i n) xs (flvector-copy xs 0 i)))
+         (define new-ys (if (unsafe-fx= i n) ys (flvector-copy ys 0 i)))
+         (let ([i i])
+           (with-asserts ([i index?])
+             (FCVector i new-xs new-ys)))))]))
+
+(define-syntax-rule (for/fcvector: e ...)
+  (base-for/fcvector: for: e ...))
+
+(define-syntax-rule (for*/fcvector: e ...)
+  (base-for/fcvector: for*: e ...))
+
+;; ===================================================================================================
+;; Sequences
+
+(: in-fcvector : (FCVector -> (Sequenceof Float-Complex)))
+(define (in-fcvector zs)
+  (define n (fcvector-length zs))
+  (define xs (fcvector-real-part zs))
+  (define ys (fcvector-imag-part zs))
+  (make-do-sequence
+   (λ () (values (λ: ([i : Fixnum]) (make-rectangular (unsafe-flvector-ref xs i)
+                                                      (unsafe-flvector-ref ys i)))
+                 (λ: ([i : Fixnum]) (unsafe-fx+ i 1))
+                 0
+                 (λ: ([i : Fixnum]) (i . < . n))
+                 #f
+                 #f))))
+
+(define-sequence-syntax in-fcvector-clause
+  (λ () #'in-fcvector)
+  (λ (stx)
+    (syntax-case stx ()
+      [[(z) (_ zs-expr)]
+       (syntax/loc stx
+         [(z)
+          (:do-in
+           ([(n xs ys)
+             (let: ([zs : FCVector  zs-expr])
+               (define n (fcvector-length zs))
+               (define xs (fcvector-real-part zs))
+               (define ys (fcvector-imag-part zs))
+               (values n xs ys))])
+           (void)
+           ([#{i : Nonnegative-Fixnum} 0])
+           (< i n)
+           ([(z)  (make-rectangular (unsafe-flvector-ref xs i)
+                                    (unsafe-flvector-ref ys i))])
+           #true
+           #true
+           [(+ i 1)])])]
+      [[_ clause] (raise-syntax-error 'in-array "expected (in-fcvector <FCVector>)"
+                                      #'clause #'clause)])))
+
+;; ===================================================================================================
+;; Conversion
+
+(: list->fcvector ((Listof Number) -> FCVector))
+(define (list->fcvector zs)
+  (define n (length zs))
+  (define xs (make-flvector n))
+  (define ys (make-flvector n))
+  (let loop ([#{i : Nonnegative-Fixnum} 0] [zs zs])
+    (cond [(i . < . n)
+           (define z (unsafe-car zs))
+           (unsafe-flvector-set! xs i (real->double-flonum (real-part z)))
+           (unsafe-flvector-set! ys i (real->double-flonum (imag-part z)))
+           (loop (+ i 1) (unsafe-cdr zs))]
+          [else
+           (FCVector n xs ys)])))
+
+(: fcvector->list (FCVector -> (Listof Float-Complex)))
+(define (fcvector->list zs)
+  (define n (fcvector-length zs))
+  (define xs (fcvector-real-part zs))
+  (define ys (fcvector-imag-part zs))
+  (let loop ([#{i : Nonnegative-Fixnum} 0] [#{acc : (Listof Float-Complex)} null])
+    (cond [(i . < . n)
+           (loop (+ i 1) (cons (make-rectangular (unsafe-flvector-ref xs i)
+                                                 (unsafe-flvector-ref ys i))
+                               acc))]
+          [else  (reverse acc)])))
+
+(: vector->fcvector ((Vectorof Number) -> FCVector))
+(define (vector->fcvector vs)
+  (define n (vector-length vs))
+  (define xs (make-flvector n))
+  (define ys (make-flvector n))
+  (let loop ([#{i : Nonnegative-Fixnum} 0])
+    (cond [(i . < . n)
+           (define z (unsafe-vector-ref vs i))
+           (unsafe-flvector-set! xs i (real->double-flonum (real-part z)))
+           (unsafe-flvector-set! ys i (real->double-flonum (imag-part z)))
+           (loop (+ i 1))]
+          [else
+           (FCVector n xs ys)])))
+
+(: fcvector->vector (FCVector -> (Vectorof Float-Complex)))
+(define (fcvector->vector zs)
+  (define n (fcvector-length zs))
+  (define xs (fcvector-real-part zs))
+  (define ys (fcvector-imag-part zs))
+  (define vs (make-vector n 0.0+0.0i))
+  (let loop ([#{i : Nonnegative-Fixnum} 0])
+    (cond [(i . < . n)
+           (unsafe-vector-set! vs i (make-rectangular (unsafe-flvector-ref xs i)
+                                                      (unsafe-flvector-ref ys i)))
+           (loop (+ i 1))]
+          [else  vs])))
 
 ;; ===================================================================================================
 ;; Pointwise operations

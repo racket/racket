@@ -16,6 +16,9 @@
 (define unsafe-fx* fx*)
 (define unsafe-fx+ fx+)
 (define unsafe-fxmodulo fxmodulo)
+(define unsafe-fx>= fx>=)
+(define unsafe-fx= fx=)
+(define unsafe-fx< fx<)
 
 (define unsafe-car car)
 (define unsafe-cdr cdr)
@@ -30,6 +33,7 @@
 (define unsafe-fx* :unsafe-fx*)
 (define unsafe-fx+ :unsafe-fx+)
 (define unsafe-fxmodulo :unsafe-fxmodulo)
+(define unsafe-fx>= unsafe-fx>=)
 
 (define unsafe-car :unsafe-car)
 (define unsafe-cdr :unsafe-cdr)

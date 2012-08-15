@@ -819,36 +819,41 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; Comprehensions
 
-(check-equal? (for/array: Integer #:shape #() () 3) 
+(check-equal? (for/array: #:shape #() () : Integer 3)
               (mutable-array 3))
-(check-equal? (for/array: Symbol #:shape #() () 'foo) 
+(check-equal? (for/array: #:shape #() () : Symbol 'foo) 
               (mutable-array 'foo))
-(check-equal? (for/array: Integer #:shape #(2) ([x (in-naturals)]) x) 
+(check-equal? (for/array: #:shape #(2) ([x (in-naturals)]) : Integer x) 
               (mutable-array [0 1]))
-(check-equal? (for/array: (Vectorof Integer) #:shape #(2 3) ([i (in-range 0 6)])
+(check-equal? (for/array: #:shape #(2 3) ([i (in-range 0 6)]) : (Vectorof Integer)
                 (vector (quotient i 3) (remainder i 3)))
               (indexes-array #(2 3)))
 
-(check-equal? (for*/array: Integer #:shape #() () 3)
+(check-equal? (for*/array: #:shape #() () : Integer 3)
               (mutable-array 3))
-(check-equal? (for*/array: Symbol #:shape #() () 'foo)
+(check-equal? (for*/array: #:shape #() () : Symbol 'foo)
               (mutable-array 'foo))
-(check-equal? (for*/array: Integer #:shape #(2) ([x (in-naturals)]) x)
+(check-equal? (for*/array: #:shape #(2) ([x (in-naturals)]) : Integer x)
               (mutable-array [0 1]))
-(check-equal? (for*/array: (Vectorof Integer) #:shape #(2 3) 
-                ([i (in-range 0 2)] [j (in-range 0 3)])
+(check-equal? (for*/array: #:shape #(2 3) ([i (in-range 0 2)]
+                                           [j (in-range 0 3)]
+                                           ) : (Vectorof Integer)
                 (vector i j))
               (indexes-array #(2 3)))
 
-(check-equal? (for*/array: Integer #:shape #() () 3)
-              (for*/array: Integer #:shape #() () 3))
-(check-equal? (for*/array: Symbol #:shape #() () 'foo)
-              (for*/array: Symbol #:shape #() () 'foo))
-(check-equal? (for*/array: Integer #:shape #(2) ([x (in-naturals)]) x)
-              (for*/array: Integer #:shape #(2) ([x (in-naturals)]) x))
-(check-equal? (for*/array: (Listof Integer) #:shape #(2 3) ([i (in-range 0 2)] [j (in-range 0 3)])
+(check-equal? (for*/array: #:shape #() () : Integer 3)
+              (for*/array: #:shape #() () : Integer 3))
+(check-equal? (for*/array: #:shape #() () : Symbol 'foo)
+              (for*/array: #:shape #() () : Symbol 'foo))
+(check-equal? (for*/array: #:shape #(2) ([x (in-naturals)]) : Integer x)
+              (for*/array: #:shape #(2) ([x (in-naturals)]) : Integer x))
+(check-equal? (for*/array: #:shape #(2 3) ([i (in-range 0 2)]
+                                           [j (in-range 0 3)]
+                                           ) : (Listof Integer)
                 (list i j))
-              (for*/array: (Listof Integer) #:shape #(2 3) ([i (in-range 0 2)] [j (in-range 0 3)])
+              (for*/array: #:shape #(2 3) ([i (in-range 0 2)]
+                                           [j (in-range 0 3)]
+                                           ) : (Listof Integer)
                 (list i j)))
 
 ;; ---------------------------------------------------------------------------------------------------

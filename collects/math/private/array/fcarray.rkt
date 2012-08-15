@@ -5,6 +5,7 @@
          (only-in racket/math conjugate)
          (for-syntax racket/base syntax/parse)
          "../unsafe.rkt"
+         "../../flonum.rkt"
          "../vector/fcvector.rkt"
          "../vector/flvector.rkt"
          "array-struct.rkt"
@@ -64,22 +65,10 @@
                     Float-Complex ds (λ (j v) (unsafe-fcvector-set! zs j v))))
   (fcarray ds 0 #t proc set-proc zs))
 
-(define-syntax (inline-number->float-complex stx)
-  (syntax-case stx ()
-    [(_ z-expr)  (syntax/loc stx
-                   (let: ([z : Number  z-expr])
-                     (make-rectangular (real->double-flonum (real-part z))
-                                       (real->double-flonum (imag-part z)))))]
-    [(_ e ...)  (syntax/loc stx (number->float-complex e ...))]
-    [_  (syntax/loc stx number->float-complex)]))
-
-(: number->float-complex (Number -> Float-Complex))
-(define (number->float-complex z) (inline-number->float-complex z))
-
 (: unsafe-vector->fcarray (Indexes (Vectorof Number) -> FCArray))
 (define (unsafe-vector->fcarray ds zs)
   (define size (vector-length zs))
-  (define-syntax-rule (ref j) (inline-number->float-complex (unsafe-vector-ref zs j)))
+  (define-syntax-rule (ref j) (number->float-complex (unsafe-vector-ref zs j)))
   (define new-zs (build-fcvector size ref))
   (unsafe-fcarray ds new-zs))
 
@@ -96,7 +85,7 @@
   (define proc (unsafe-array-proc arr))
   (define zs (make-fcvector size))
   (for-each-array+data-index
-   ds (λ (js j) (unsafe-fcvector-set! zs j (inline-number->float-complex (proc js)))))
+   ds (λ (js j) (unsafe-fcvector-set! zs j (number->float-complex (proc js)))))
   (unsafe-fcarray ds zs))
 
 ;; ===================================================================================================
