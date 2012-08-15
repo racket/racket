@@ -458,7 +458,6 @@
                           names
                           (cdr selector-strs)
                           (cdr field-names)))])))
-           
            (with-syntax ([((selector-codes selector-new-names) ...)
                           (filter
                            (λ (x) x)
@@ -570,7 +569,13 @@
                                [-struct:struct-name -struct:struct-name]
                                [struct-name struct-name]
                                [(selector-ids ...) selector-ids]
-                               [(constructor-args ...) (generate-temporaries selector-ids)])
+                               [(constructor-args ...) (generate-temporaries selector-ids)]
+                               [struct-name-srcloc `'(,(path->relative-string/library
+                                                        (syntax-source struct-name))
+                                                      ,(syntax-line struct-name)
+                                                      ,(syntax-column struct-name)
+                                                      ,(syntax-position struct-name)
+                                                      ,(syntax-span struct-name))])
                    (quasisyntax/loc stx
                      (begin
                        struct-code
@@ -589,7 +594,10 @@
                        ;; directly here in the expansion makes this very expensive at compile time
                        ;; when there are a lot of provide/contract clause using structs
                        (define -struct:struct-name 
-                         (make-pc-struct-type 'struct-name struct:struct-name field-contract-ids ...))
+                         (make-pc-struct-type 'struct-name
+                                              struct-name-srcloc
+                                              struct:struct-name
+                                              field-contract-ids ...))
                        (provide (rename-out [-struct:struct-name struct:struct-name]))))))))))
        
        (define (map/count f . ls)
@@ -830,53 +838,28 @@
                                     s-l-c))
                         stx)]))
 
-(define (make-pc-struct-type struct-name struct:struct-name . ctcs)
+(define (make-pc-struct-type struct-name srcloc struct:struct-name . ctcs)
   (chaperone-struct-type
    struct:struct-name
    (λ (a b c d e f g h) (values a b c d e f g h))
    (λ (x) x)
    (λ args
-     (let ([vals (let loop ([args args])
-                   (cond
-                     [(null? args) null]
-                     [(null? (cdr args)) null]
-                     [else (cons (car args) (loop (cdr args)))]))])
-       (apply values
-              (map (λ (ctc val)
-                     (contract ctc
-                               val
-                               'not-enough-info-for-blame
-                               'not-enough-info-for-blame
-                               '#f
-                               (build-source-location #f)))
-                   ctcs
-                   vals)))))
-  
-  #;
-  (let-values ([(struct:struct-name _make _pred _get _set)
-                (make-struct-type struct-name
-                                  struct:struct-name
-                                  0 ;; init
-                                  0 ;; auto
-                                  #f  ;; auto-v
-                                  '() ;; props
-                                  #f  ;; inspector
-                                  #f ;; proc-spec
-                                  '()  ;; immutable-k-list
-                                  (λ args
-                                    (let ([vals (let loop ([args args])
-                                                  (cond
-                                                    [(null? args) null]
-                                                    [(null? (cdr args)) null]
-                                                    [else (cons (car args) (loop (cdr args)))]))])
-                                      (apply values
-                                             (map (λ (ctc val)
-                                                    (contract ctc
-                                                              val
-                                                              'not-enough-info-for-blame
-                                                              'not-enough-info-for-blame
-                                                              '#f
-                                                              (build-source-location #f)))
-                                                  ctcs
-                                                  vals)))))])
-    (values struct:struct-name _make)))
+     (define name #f)
+     (define vals 
+       (let loop ([args args])
+         (cond
+           [(null? args) null]
+           [(null? (cdr args))
+            (set! name (car args))
+            null]
+           [else (cons (car args) (loop (cdr args)))])))
+     (apply values
+            (map (λ (ctc val)
+                   (contract ctc
+                             val
+                             'not-enough-info-for-blame
+                             'not-enough-info-for-blame
+                             name
+                             srcloc))
+                 ctcs
+                 vals)))))
