@@ -58,7 +58,7 @@ by a base @racket[require-spec]. Also, @racket[only-in] optionally
 renames each binding that is preserved: in a @racket[[orig-id
 bind-id]] form, the @racket[orig-id] refers to a binding implied by
 @racket[require-spec], and @racket[bind-id] is the name that will be
-bound in the importing context instead of @racket[bind-id].
+bound in the importing context instead of @racket[orig-id].
 
 @examples[
 (module m (lib "racket")
@@ -77,7 +77,7 @@ less-filling?
 @specspecsubform[#:literals (except-in)
                  (except-in require-spec id ...)]{
 
-This form is the complement of @racket[only]: it excludes specific
+This form is the complement of @racket[only-in]: it excludes specific
 bindings from the set specified by @racket[require-spec].
 
 }
