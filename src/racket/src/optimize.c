@@ -3324,20 +3324,33 @@ Scheme_Object *scheme_make_noninline_proc(Scheme_Object *e)
   return ni;
 }
 
-static int is_values_apply(Scheme_Object *e)
+static int is_values_apply(Scheme_Object *e, int n)
 {
   if (SAME_TYPE(SCHEME_TYPE(e), scheme_application_type)) {
     Scheme_App_Rec *app = (Scheme_App_Rec *)e;
+    if (n != app->num_args) return 0;
     return SAME_OBJ(scheme_values_func, app->args[0]);
-  } else if (SAME_TYPE(SCHEME_TYPE(e), scheme_application2_type)) {
+  } else if ((n == 1) && SAME_TYPE(SCHEME_TYPE(e), scheme_application2_type)) {
     Scheme_App2_Rec *app = (Scheme_App2_Rec *)e;
     return SAME_OBJ(scheme_values_func, app->rator);
-  } else if (SAME_TYPE(SCHEME_TYPE(e), scheme_application3_type)) {
+  } else if ((n == 2) && SAME_TYPE(SCHEME_TYPE(e), scheme_application3_type)) {
     Scheme_App3_Rec *app = (Scheme_App3_Rec *)e;
     return SAME_OBJ(scheme_values_func, app->rator);
   }
 
   return 0;
+}
+
+static int no_mutable_bindings(Scheme_Compiled_Let_Value *pre_body)
+{
+  int i;
+
+  for (i = pre_body->count; i--; ) {
+    if (pre_body->flags[i]  & SCHEME_WAS_SET_BANGED)
+      return 0;
+  }
+
+  return 1;
 }
 
 static void unpack_values_application(Scheme_Object *e, Scheme_Compiled_Let_Value *naya,
@@ -3847,12 +3860,13 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
     /* Change (let-values ([(id ...) (values e ...)]) body)
        to (let-values ([id e] ...) body) for simple e. */
     if ((pre_body->count != 1)
-        && is_values_apply(value)
-        && scheme_omittable_expr(value, pre_body->count, -1, 0, info,
-                                 (is_rec
-                                  ? (pre_body->position + pre_body->count)
-                                  : -1),
-                                 0)) {
+        && is_values_apply(value, pre_body->count)
+        && ((!is_rec && no_mutable_bindings(pre_body))
+            || scheme_omittable_expr(value, pre_body->count, -1, 0, info,
+                                     (is_rec
+                                      ? (pre_body->position + pre_body->count)
+                                      : -1),
+                                     0))) {
       if (!pre_body->count && !i) {
         /* We want to drop the clause entirely, but doing it
            here messes up the loop for letrec. So wait and
