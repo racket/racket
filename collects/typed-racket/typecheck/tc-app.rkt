@@ -9,7 +9,6 @@
          ;; fixme - don't need to be bound in this phase - only to make tests work
          racket/bool
          racket/unsafe/ops
-         (only-in racket/private/class-internal do-make-object)
          (only-in syntax/location module-name-fixup)
          ;; end fixme
          (for-syntax syntax/parse racket/base (utils tc-utils))
@@ -24,11 +23,12 @@
          (for-template
           racket/unsafe/ops racket/fixnum racket/flonum
           "internal-forms.rkt" racket/base racket/bool '#%paramz
-          (only-in racket/private/class-internal do-make-object)
+          
           (only-in syntax/location module-name-fixup)))
 
 (import tc-expr^ tc-lambda^ tc-let^ tc-apply^ tc-app-keywords^
-        tc-app-hetero^ tc-app-list^ tc-app-apply^ tc-app-values^)
+        tc-app-hetero^ tc-app-list^ tc-app-apply^ tc-app-values^
+        tc-app-objects^)
 (export tc-app^)
 
 
@@ -77,51 +77,6 @@
                  (-not-filter-at ty o))))]
     [(_ _) (ret -Boolean)]))
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Objects
-
-;; do-make-object now takes blame as its first argument, which isn't checked
-;; (it's just an s-expression)
-(define (check-do-make-object b cl pos-args names named-args)
-  (let* ([names (map syntax-e (syntax->list names))]
-         [name-assoc (map list names (syntax->list named-args))])
-    (let loop ([t (tc-expr cl)])
-      (match t
-        [(tc-result1: (? Mu? t*)) (loop (ret (unfold t*)))]
-        [(tc-result1: (Union: '())) (ret (Un))]
-        [(tc-result1: (and c (Class: pos-tys (list (and tnflds (list tnames _ _)) ...) _)))
-         (unless (= (length pos-tys)
-                    (length (syntax->list pos-args)))
-           (tc-error/delayed "expected ~a positional arguments, but got ~a"
-                             (length pos-tys) (length (syntax->list pos-args))))
-         ;; use for, since they might be different lengths in error case
-         (for ([pa (in-syntax pos-args)]
-               [pt (in-list pos-tys)])
-           (tc-expr/check pa (ret pt)))
-         (for ([n names]
-               #:unless (memq n tnames))
-           (tc-error/delayed
-            "unknown named argument ~a for class\nlegal named arguments are ~a"
-            n (stringify tnames)))
-         (for-each (match-lambda
-                     [(list tname tfty opt?)
-                      (let ([s (cond [(assq tname name-assoc) => cadr]
-                                     [(not opt?)
-                                      (tc-error/delayed "value not provided for named init arg ~a"
-                                                        tname)
-                                      #f]
-                                     [else #f])])
-                        (if s
-                            ;; this argument was present
-                            (tc-expr/check s (ret tfty))
-                            ;; this argument wasn't provided, and was optional
-                            #f))])
-                   tnflds)
-         (ret (make-Instance c))]
-        [(tc-result1: t)
-         (tc-error/expr #:return (ret (Un))
-                        "expected a class value for object creation, got: ~a" t)]))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; let loop
@@ -189,10 +144,11 @@
       (tc/app-apply form expected)
       (tc/app-values form expected)
       (tc/app-keywords form expected)
+      (tc/app-objects form expected)
   (syntax-parse form
     #:literals (#%plain-app #%plain-lambda letrec-values quote
                 not false? list
-                do-make-object module-name-fixup cons
+                module-name-fixup cons
                 extend-parameterization)
     ;; bail out immediately if we have one of these
     [(#%plain-app rator:special-op . rands) (tc/app/regular form expected)]
@@ -250,13 +206,6 @@
     ;; (quote-module-name) originally.
     [(#%plain-app module-name-fixup src path)
      (ret Univ)]
-    ;; special cases for classes
-    [(#%plain-app do-make-object b cl 
-                  (#%plain-app list . pos-args)
-                  (#%plain-app list (#%plain-app cons 'names named-args) ...))
-     (check-do-make-object #'b #'cl #'pos-args #'(names ...) #'(named-args ...))]
-    [(#%plain-app do-make-object args ...)
-     (int-err "unexpected arguments to do-make-object")]
     ;; special case for `delay'
     [(#%plain-app
       mp1
