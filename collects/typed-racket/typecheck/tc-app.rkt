@@ -11,7 +11,7 @@
          racket/unsafe/ops
          (only-in racket/private/class-internal do-make-object)
          (only-in syntax/location module-name-fixup)
-         (only-in '#%kernel [apply k:apply] [reverse k:reverse])
+         (only-in '#%kernel [apply k:apply])
          ;; end fixme
          (for-syntax syntax/parse racket/base (utils tc-utils))
          (private type-annotation)
@@ -24,12 +24,12 @@
          '#%paramz
          (for-template
           racket/unsafe/ops racket/fixnum racket/flonum
-          (only-in '#%kernel [apply k:apply] [reverse k:reverse])
+          (only-in '#%kernel [apply k:apply])
           "internal-forms.rkt" racket/base racket/bool '#%paramz
           (only-in racket/private/class-internal do-make-object)
           (only-in syntax/location module-name-fixup)))
 
-(import tc-expr^ tc-lambda^ tc-let^ tc-apply^ tc-app-hetero^)
+(import tc-expr^ tc-lambda^ tc-let^ tc-apply^ tc-app-hetero^ tc-app-list^)
 (export tc-app^)
 
 
@@ -267,14 +267,12 @@
 ;; syntax tc-results? -> tc-results?
 (define (tc/app/internal form expected)
   (or (tc/app-hetero form expected)
+      (tc/app-list form expected)
   (syntax-parse form
     #:literals (#%plain-app #%plain-lambda letrec-values quote
-                values apply k:apply not false? list list* call-with-values
+                values apply k:apply not false? list call-with-values
                 do-make-object module-name-fixup cons
-                map andmap ormap reverse k:reverse extend-parameterization
-                vector-ref unsafe-vector-ref unsafe-vector*-ref
-                vector-set! unsafe-vector-set! unsafe-vector*-set!
-                unsafe-struct-ref unsafe-struct*-ref unsafe-struct-set! unsafe-struct*-set!)
+                extend-parameterization)
     ;; bail out immediately if we have one of these
     [(#%plain-app rator:special-op . rands) (tc/app/regular form expected)]
     [(#%plain-app extend-parameterization pmz args ...)
@@ -294,7 +292,7 @@
     ;; use the additional but normally ignored first argument to make-sequence
     ;; to provide a better instantiation
     [(#%plain-app (~var op (id-from 'make-sequence 'racket/private/for))
-                  (~and quo ((~literal quote) (i:id ...))) arg:expr)
+                  (~and quo (quote (i:id ...))) arg:expr)
      #:when (andmap type-annotation (syntax->list #'(i ...)))
      (match (single-value #'op)
          [(tc-result1: (and t Poly?))
@@ -413,46 +411,6 @@
      (check-do-make-object #'b #'cl #'pos-args #'(names ...) #'(named-args ...))]
     [(#%plain-app do-make-object args ...)
      (int-err "unexpected arguments to do-make-object")]
-    [(#%plain-app (~and map-expr (~literal map)) f arg0 arg ...)
-     (match* ((single-value #'arg0) (map single-value (syntax->list #'(arg ...))))
-       ;; if the argument is a ListDots
-       [((tc-result1: (ListDots: t0 bound0))
-         (list (tc-result1: (or (and (ListDots: t bound) (app (λ _ #f) var))
-                                ;; a devious hack - just generate #f so the test below succeeds
-                                ;; have to explicitly bind `var' since otherwise `var' appears
-                                ;; on only one side of the or
-                                ;; NOTE: safe to include these, `map' will error if any list is
-                                ;; not the same length as all the others
-                                (and (Listof: t var) (app (λ _ #f) bound))))
-               ...))
-        (=> fail)
-        (unless (for/and ([b bound]) (or (not b) (eq? bound0 b))) (fail))
-        (match (extend-tvars (list bound0)
-                 ;; just check that the function applies successfully to the element type
-                 (tc/funapp #'f #'(arg0 arg ...) (tc-expr #'f) (cons (ret t0) (map ret t)) expected))
-          [(tc-result1: t) (ret (make-ListDots t bound0))]
-          [(tc-results: ts)
-           (tc-error/expr #:return (ret (Un))
-                          "Expected one value, but got ~a" (-values ts))])]
-       ;; otherwise, if it's not a ListDots, defer to the regular function typechecking
-       [(res0 res)
-        (tc/funapp #'map-expr #'(f arg0 arg ...) (single-value #'map-expr)
-                   (list* (tc-expr #'f) res0 res) expected)])]
-    ;; ormap/andmap of ... argument
-    [(#%plain-app (~and fun (~or (~literal andmap) (~literal ormap))) f arg)
-     ;; check the arguments
-     (match-let* ([arg-ty (single-value #'arg)]
-                  [ft (tc-expr #'f)])
-       (match (match arg-ty
-                ;; if the argument is a ListDots
-                [(tc-result1: (ListDots: t bound))
-                 ;; just check that the function applies successfully to the element type
-                 (tc/funapp #'f #'(arg) ft (list (ret (substitute Univ bound t))) expected)]
-                ;; otherwise ...
-                [_ #f])
-         [(tc-result1: t) (ret (Un (-val #f) t))]
-         ;; if it's not a ListDots, defer to the regular function typechecking
-         [_ (tc/funapp #'fun #'(f arg) (single-value #'fun) (list ft arg-ty) expected)]))]
     ;; special case for `delay'
     [(#%plain-app
       mp1
@@ -461,48 +419,6 @@
      #:declare mp1 (id-from 'make-promise 'racket/promise)
      #:declare mp2 (id-from 'make-promise 'racket/promise)
      (ret (-Promise (tc-expr/t #'e)))]
-    ;; special case for `list'
-    [(#%plain-app list . args)
-     (begin
-       ;(printf "calling list: ~a ~a\n" (syntax->datum #'args) expected)
-       (match expected
-         [(tc-result1: (Mu: var (Union: (or
-                                         (list (Pair: elem-ty (F: var)) (Value: '()))
-                                         (list (Value: '()) (Pair: elem-ty (F: var)))))))
-          ;(printf "special case 1 ~a\n" elem-ty)
-          (for ([i (in-list (syntax->list #'args))])
-               (tc-expr/check i (ret elem-ty)))
-          expected]
-         [(tc-result1: (app untuple (? (lambda (ts) (and ts (= (length (syntax->list #'args))
-                                                               (length ts))))
-                                       ts)))
-          ;(printf "special case 2 ~a\n" ts)
-          (for ([ac (in-list (syntax->list #'args))]
-                [exp (in-list ts)])
-               (tc-expr/check ac (ret exp)))
-          expected]
-         [_
-          ;(printf "not special case\n")
-          (let ([tys (map tc-expr/t (syntax->list #'args))])
-            (ret (apply -lst* tys)))]))]
-    ;; special case for `list*'
-    [(#%plain-app list* . args)
-     (match-let* ([(list tys ... last) (map tc-expr/t (syntax->list #'args))])
-       (ret (foldr make-Pair last tys)))]
-    ;; special case for `reverse' to propagate expected type info
-    [(#%plain-app (~or reverse k:reverse) arg)
-     (match expected
-       [(tc-result1: (Listof: _))
-        (tc-expr/check #'arg expected)]
-       [(tc-result1: (List: ts))
-        (tc-expr/check #'arg (ret (-Tuple (reverse ts))))
-        expected]
-       [_
-        (match (single-value #'arg)
-          [(tc-result1: (List: ts))
-           (cond-check-below (ret (-Tuple (reverse ts))) expected)]
-          [arg-ty
-           (tc/funapp #'reverse #'(arg) (single-value #'reverse) (list arg-ty) expected)])])]
     ;; inference for ((lambda
     [(#%plain-app (#%plain-lambda (x ...) . body) args ...)
      #:fail-unless (= (length (syntax->list #'(x ...)))
