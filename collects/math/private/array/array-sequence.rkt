@@ -14,21 +14,6 @@
          array->array-list
          array-list->array)
 
-(: next-js! (Indexes Index Indexes -> Void))
-;; Sets js to the next vector of indexes, in row-major order
-(define (next-js! ds dims js)
-  (let loop ([#{k : Nonnegative-Fixnum}  dims])
-    (unless (zero? k)
-      (let ([k  (- k 1)])
-        (define jk (unsafe-vector-ref js k))
-        (define dk (unsafe-vector-ref ds k))
-        (let ([jk  (+ jk 1)])
-          (cond [(jk . >= . dk)
-                 (unsafe-vector-set! js k 0)
-                 (loop k)]
-                [else
-                 (unsafe-vector-set! js k jk)]))))))
-
 ;; ===================================================================================================
 ;; Sequence of array elements
 
@@ -43,7 +28,7 @@
    (λ () (values (λ: ([jjs : (Pair Fixnum Indexes)]) (proc (cdr jjs)))
                  (λ: ([jjs : (Pair Fixnum Indexes)])
                    (define js (vector-copy-all (cdr jjs)))
-                   (next-js! ds dims js)
+                   (next-indexes! ds dims js)
                    (cons (unsafe-fx+ (car jjs) 1) js))
                  (cons 0 js)
                  (λ: ([jjs : (Pair Fixnum Indexes)]) ((car jjs) . < . size))
@@ -74,7 +59,7 @@
            ([(x)  (proc js)])
            #true
            #true
-           [(begin (next-js! ds dims js)
+           [(begin (next-indexes! ds dims js)
                    (+ j 1))])])]
       [[_ clause] (raise-syntax-error 'in-array "expected (in-array <Array>)" #'clause #'clause)])))
 
@@ -93,7 +78,7 @@
             (λ () (values (λ: ([jjs : (Pair Fixnum Indexes)]) (cdr jjs))
                           (λ: ([jjs : (Pair Fixnum Indexes)])
                             (define js (vector-copy (cdr jjs)))
-                            (next-js! ds dims js)
+                            (next-indexes! ds dims js)
                             (cons (unsafe-fx+ (car jjs) 1) js))
                           (cons 0 js)
                           (λ: ([jjs : (Pair Fixnum Indexes)]) ((car jjs) . < . size))
@@ -128,7 +113,7 @@
            ([(x)  (vector-copy-all js)])
            #true
            #true
-           [(begin (next-js! ds dims js)
+           [(begin (next-indexes! ds dims js)
                    (+ j 1))])])]
       [[_ clause]
        (raise-syntax-error 'in-array-indexes "expected (in-array-indexes <Indexes>)"
@@ -161,7 +146,7 @@
            ([(x)  js])
            #true
            #true
-           [(begin (next-js! ds dims js)
+           [(begin (next-indexes! ds dims js)
                    (+ j 1))])])]
       [[_ clause]
        (raise-syntax-error 'in-array-indexes "expected (in-unsafe-array-indexes <Indexes>)"

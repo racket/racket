@@ -17,6 +17,7 @@
          "private/array/mutable-array.rkt"
          "private/array/flarray.rkt"
          "private/array/fcarray.rkt"
+         "private/array/array-parallel.rkt"
          )
 
 ;; Set the custom printer to a pretty one
@@ -39,6 +40,7 @@
           "private/array/mutable-array.rkt"
           "private/array/flarray.rkt"
           "private/array/fcarray.rkt"
+          "private/array/array-parallel.rkt"
           )
          ;; from utils.rkt
          Listof*
