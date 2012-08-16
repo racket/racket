@@ -5,8 +5,8 @@
            frtime/frlibs/math
            frtime/frlibs/date)
   
-  (provide (all-from frtime/frtime)
-           (all-from frtime/frlibs/list)
-           (all-from frtime/frlibs/etc)
-           (all-from frtime/frlibs/math)
-           (all-from frtime/frlibs/date)))
+  (provide (all-from-out frtime/frtime)
+           (all-from-out frtime/frlibs/list)
+           (all-from-out frtime/frlibs/etc)
+           (all-from-out frtime/frlibs/math)
+           (all-from-out frtime/frlibs/date)))

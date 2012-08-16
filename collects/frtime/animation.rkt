@@ -1,19 +1,26 @@
 (module animation frtime
   
-  (require (all-except frtime/animation/graphics
+  (require (except-in frtime/animation/graphics
                        make-posn posn-x posn-y make-rgb)
-           (lifted frtime/animation/graphics
-                   posn-x posn-y make-posn make-rgb)
+           (for-syntax racket/base (only-in racket/function identity))
+           (lifted (only-in frtime/animation/graphics posn-x)
+                   posn-x)
+           (lifted (only-in frtime/animation/graphics posn-y)
+                   posn-y)
+           (lifted (only-in frtime/animation/graphics make-posn)
+                   make-posn)
+           (lifted (only-in frtime/animation/graphics make-rgb) make-rgb)
+                   
            racket/match
            (as-is:unchecked frtime/lang-ext lift)
            racket/class
            frtime/frlibs/list
            frtime/frlibs/etc
            frtime/frlibs/math
-           #;(rename mzscheme mz:define-struct define-struct))
+           #;(rename-in racket [define-struct mz:define-struct]))
   
-  (require-for-syntax (only racket/base build-list)
-                      (only racket/function identity))
+  (require (for-syntax (only-in racket/base build-list)
+                      (only-in racket/function identity)))
   
   (open-graphics)
   
@@ -76,7 +83,7 @@
     (syntax-case stx ()
       [(_ name (field ...))
        (with-syntax
-           ([ctor-name (datum->syntax-object stx (string->symbol (format "make-~a" (syntax-e #'name))))]
+           ([ctor-name (datum->syntax stx (string->symbol (format "make-~a" (syntax-e #'name))))]
             [(accessor-name ...)
              (map (lambda (fd)
                     (string->symbol (format "~a-~a" (syntax-e #'name) (syntax-e fd))))
@@ -376,6 +383,6 @@
     (make-posn (integral (posn-x p)) (integral (posn-y p))))
   
   (provide
-   (all-defined-except pixmap window draw-list l d 
+   (except-out (all-defined-out) pixmap window draw-list l d 
                        make-wave-state wave-state-hz wave-state-offset)
-   (all-from frtime/animation/graphics)))
+   (all-from-out frtime/animation/graphics)))

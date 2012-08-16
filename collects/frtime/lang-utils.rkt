@@ -1,7 +1,6 @@
 (module lang-utils "lang-core.rkt"
-  
-  (require (only mzscheme let define-syntax define apply procedure-arity syntax-object->datum with-input-from-file require-for-syntax make-namespace expand-path collection-path begin syntax-rules)
-           (all-except racket
+  (require (only-in racket let define-syntax define apply procedure-arity syntax->datum with-input-from-file for-syntax make-empty-namespace cleanse-path collection-path begin syntax-rules)
+           (except-in racket
                        else
                        module
                        begin
@@ -28,8 +27,7 @@
                        collection-path
                        collection-file-path
                        list-ref
-                       require
-                       collection-path
+                       require 
                        raise-arity-error
                        procedure-rename
                        impersonate-procedure
@@ -57,13 +55,14 @@
                        or
                        cond when unless
                        map ormap andmap assoc member open-input-file open-output-file open-input-output-file call-with-output-file call-with-input-file with-output-to-file with-input-from-file)
-           (rename mzscheme mzscheme:if if)
-           (rename "lang-ext.rkt" lift lift)
-           (only frtime/core/frp super-lift behavior? value-now)
-           (rename "lang-ext.rkt"  undefined undefined)
-           (rename "lang-ext.rkt" undefined? undefined?)
-           racket/class)
-  (require (only racket/list empty))
+           (rename-in (only-in mzscheme if) [if mzscheme:if])
+           (rename-in (only-in "lang-ext.rkt" lift) [lift lift])
+           (only-in frtime/core/frp super-lift behavior? value-now)
+           (rename-in "lang-ext.rkt"  [undefined undefined])
+           (rename-in "lang-ext.rkt" [undefined? undefined?])
+           racket/class
+           (for-syntax racket/base))
+  (require (only-in racket/list empty))
   
   (define-syntax (lifted-send stx)
     (syntax-case stx ()
@@ -277,7 +276,7 @@
     (lift #t list->string (raise-reactivity lst)))
   
   (define (reverse lst)
-    (let loop ([lst lst] [acc ()])
+    (let loop ([lst lst] [acc '()])
       (if (pair? lst)
           (loop (cdr lst) (cons (car lst) acc))
           acc)))
@@ -313,10 +312,11 @@
            dont-optimize
            
            list-ref
-           (rename frp:case case)
-           (rename frp:apply apply)
-           (rename frp:length length)
-           (rename frp:list->string list->string)
+           (rename-out [frp:case case])
+           (rename-out [frp:apply apply])
+           (rename-out [frp:length length])
+           (rename-out [frp:list->string list->string])
+           (rename-out [eq? mzscheme:eq?])
            reverse
            
            (lifted + - * / = 
@@ -342,13 +342,13 @@
                    make-polar denominator truncate bitwise-not bitwise-xor bitwise-and bitwise-ior inexact?
                    char-whitespace? assq assv memq memv list-tail
                    seconds->date
-                   expand syntax-object->datum exn-message continuation-mark-set->list exn-continuation-marks
+                   expand syntax->datum exn-message continuation-mark-set->list exn-continuation-marks
                    exn:fail? regexp-match
                    vector->list list->vector make-vector)
            
-           (rename eq? mzscheme:eq?)
+           
            make-exn:fail  current-inspector make-inspector
-           make-namespace namespace? namespace-symbol->identifier namespace-variable-value
+           make-empty-namespace namespace? namespace-symbol->identifier namespace-variable-value
            namespace-set-variable-value! namespace-undefine-variable! namespace-mapped-symbols
            parameterize current-seconds current-milliseconds current-inexact-milliseconds
            call-with-values make-parameter
@@ -357,7 +357,7 @@
            error set! printf fprintf current-error-port for-each void
            procedure-arity-includes? raise-type-error raise thread
            current-continuation-marks
-           raise-mismatch-error require-for-syntax define-syntax define-syntaxes syntax-rules syntax-case
+           raise-mismatch-error for-syntax define-syntax define-syntaxes syntax-rules syntax-case
            (lifted:nonstrict format)
            print-struct
            define
@@ -385,7 +385,7 @@
            path->complete-path
            string->path path->string
            bytes->path path->bytes
-           split-path simplify-path normal-case-path expand-path resolve-path
+           split-path simplify-path normal-case-path cleanse-path resolve-path
            path-replace-suffix
            current-directory
            exit
@@ -402,6 +402,6 @@
            read)
   
   ; from core
-  (provide (all-from "lang-core.rkt"))
+  (provide (all-from-out "lang-core.rkt"))
   
   )

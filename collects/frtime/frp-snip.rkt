@@ -1,11 +1,8 @@
-#lang scheme/base
-(require scheme/class
-         (only-in mzlib/string expr->string)
-         scheme/list
-         scheme/port
-         
+#lang racket/base
+(require racket/class
+         racket/list
+         racket/port
          framework
-         
          ;; FRP requires
          
          frtime/core/frp
@@ -50,7 +47,7 @@
            [(event-set? tmp) (format "#<event (last: ~a@~a)>"
                                      (event-set-events tmp) (event-set-time tmp))]
            [(undefined? tmp) "<undefined>"]
-           [else (expr->string tmp)])))]
+           [else (number->string tmp)])))]
     [(bhvr super-render-fun)
      (get-rendering (value-now bhvr) super-render-fun)]))
 
