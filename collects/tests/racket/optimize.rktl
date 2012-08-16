@@ -1558,6 +1558,18 @@
                       10
                       (cons (f i) (loop (sub1 n))))))))
 
+(test-comp `(module m racket/base
+              (require racket/unsafe/ops)
+              (define (f x)
+                (let-values ([(a b) (values x (unsafe-fx+ x x))])
+                  (list a b))))
+           `(module m racket/base
+              (require racket/unsafe/ops)
+              (define (f x)
+                (let ([a x]
+                      [b (unsafe-fx+ x x)])
+                  (list a b)))))
+
 ;; check omit & reorder possibilities for unsafe
 ;; operations on mutable values:
 (let ()

@@ -1411,7 +1411,7 @@
                                (syntax/loc fc [ids (stop-after
                                                     rhs
                                                     (lambda x
-                                                      (= i len)))])]
+                                                      (unsafe-fx= i len)))])]
                               [_ fc]))
                           (cons wrapped-fc
                                 (loop (cdr fcs) wrap-all?))]))]

@@ -372,7 +372,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
     }
 
     if (SCHEME_PRIMP(app->args[0])) {
-      if ((SCHEME_PRIM_PROC_FLAGS(app->args[0]) & SCHEME_PRIM_IS_OMITABLE)
+      if ((SCHEME_PRIM_PROC_FLAGS(app->args[0]) & (SCHEME_PRIM_IS_OMITABLE | SCHEME_PRIM_IS_UNSAFE_NONMUTATING))
           && (app->num_args >= ((Scheme_Primitive_Proc *)app->args[0])->mina)
           && (app->num_args <= ((Scheme_Primitive_Proc *)app->args[0])->mu.maxa)
           && ((vals < 0) 
@@ -399,7 +399,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
   if (vtype == scheme_application2_type) {
     Scheme_App2_Rec *app = (Scheme_App2_Rec *)o;
     if (SCHEME_PRIMP(app->rator)) {
-      if ((SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_OMITABLE)
+      if ((SCHEME_PRIM_PROC_FLAGS(app->rator) & (SCHEME_PRIM_IS_OMITABLE | SCHEME_PRIM_IS_UNSAFE_NONMUTATING))
           && (1 >= ((Scheme_Primitive_Proc *)app->rator)->mina)
           && (1 <= ((Scheme_Primitive_Proc *)app->rator)->mu.maxa)
           && ((vals < 0) 
@@ -419,7 +419,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
   if (vtype == scheme_application3_type) {
     Scheme_App3_Rec *app = (Scheme_App3_Rec *)o;
     if (SCHEME_PRIMP(app->rator)) {
-      if ((SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_OMITABLE)
+      if ((SCHEME_PRIM_PROC_FLAGS(app->rator) & (SCHEME_PRIM_IS_OMITABLE | SCHEME_PRIM_IS_UNSAFE_NONMUTATING))
           && (2 >= ((Scheme_Primitive_Proc *)app->rator)->mina)
           && (2 <= ((Scheme_Primitive_Proc *)app->rator)->mu.maxa)
           && ((vals < 0) 
@@ -1404,7 +1404,7 @@ static Scheme_Object *check_app_let_rator(Scheme_Object *app, Scheme_Object *rat
 static int is_nonmutating_primitive(Scheme_Object *rator, int n)
 {
   if (SCHEME_PRIMP(rator)
-      && (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_OMITABLE)
+      && (SCHEME_PRIM_PROC_FLAGS(rator) & (SCHEME_PRIM_IS_OMITABLE | SCHEME_PRIM_IS_UNSAFE_NONMUTATING))
       && (n >= ((Scheme_Primitive_Proc *)rator)->mina)
       && (n <= ((Scheme_Primitive_Proc *)rator)->mu.maxa))
     return 1;
