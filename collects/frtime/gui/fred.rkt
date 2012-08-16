@@ -4,7 +4,7 @@
            racket/class
            racket/string
            texpict/mrpict
-           (all-except mred send-event)
+           mred
            framework)
   
   
@@ -322,7 +322,7 @@
       menu-item%)))  
   
   
-  (provide (all-defined)
-           (all-from racket/class)
-           (all-from "mixin-macros.rkt")
-           (all-from "aux-mixin-macros.rkt")))
+  (provide (all-defined-out)
+           (all-from-out racket/class)
+           (all-from-out "mixin-macros.rkt")
+           (all-from-out "aux-mixin-macros.rkt")))

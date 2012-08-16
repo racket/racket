@@ -1,6 +1,7 @@
 (module aux-mixin-macros frtime
   (require "mixin-macros.rkt")
   (require racket/class)
+  (require (for-syntax racket/base))
 
   
   ;; consider taking out setter
@@ -70,4 +71,4 @@
       [(_ src)
        src]))
   
-  (provide (all-defined)))
+  (provide (all-defined-out)))

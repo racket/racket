@@ -1,12 +1,14 @@
 
 (module etc frtime/frtime-lang-only
   (require setup/main-collects)
-  (require-for-syntax syntax/kerncase
+  (require (for-syntax 
+            racket/base
+            syntax/kerncase
 		      syntax/stx
 		      syntax/name
 		      syntax/context
 		      setup/main-collects
-		      mzlib/private/stxset)
+		      mzlib/private/stxset))
 
   (provide true false
 	   boolean=? symbol=?
@@ -314,7 +316,7 @@
 	      (let loop ([tests tests])
 		(unless (null? (cdr tests))
 		  (when (and (identifier? (car tests))
-			     (module-identifier=? (quote-syntax else) (car tests)))
+			     (free-identifier=? (quote-syntax else) (car tests)))
 		    (raise-syntax-error
 		     #f
 		     "else is not in last clause"

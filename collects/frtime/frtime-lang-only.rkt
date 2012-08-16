@@ -1,6 +1,6 @@
 (module frtime-lang-only "lang-utils.rkt"
-  (require (only frtime/lang-ext undefined? signal? value-now lift))
-  (require (as-is:unchecked frtime/core/frp
+  (require (only-in frtime/lang-ext undefined? signal? value-now lift))
+  (require (as-is:unchecked (except-in frtime/core/frp undefined? undefined) 
 	    event-set? signal-value))
   
   (define (value-nowable? x)
@@ -13,5 +13,5 @@
           (pred v))))
 
   (provide value-nowable? behaviorof
-	   (all-from "lang-utils.rkt")
-       (all-from-except frtime/lang-ext lift)))
+	   (all-from-out "lang-utils.rkt")
+       (all-from-out frtime/lang-ext)))
