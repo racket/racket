@@ -11,7 +11,6 @@
          racket/unsafe/ops
          (only-in racket/private/class-internal do-make-object)
          (only-in syntax/location module-name-fixup)
-         (only-in '#%kernel [apply k:apply])
          ;; end fixme
          (for-syntax syntax/parse racket/base (utils tc-utils))
          (private type-annotation)
@@ -24,12 +23,12 @@
          '#%paramz
          (for-template
           racket/unsafe/ops racket/fixnum racket/flonum
-          (only-in '#%kernel [apply k:apply])
           "internal-forms.rkt" racket/base racket/bool '#%paramz
           (only-in racket/private/class-internal do-make-object)
           (only-in syntax/location module-name-fixup)))
 
-(import tc-expr^ tc-lambda^ tc-let^ tc-apply^ tc-app-hetero^ tc-app-list^)
+(import tc-expr^ tc-lambda^ tc-let^ tc-apply^
+        tc-app-hetero^ tc-app-list^ tc-app-apply^ tc-app-values^)
 (export tc-app^)
 
 
@@ -268,9 +267,11 @@
 (define (tc/app/internal form expected)
   (or (tc/app-hetero form expected)
       (tc/app-list form expected)
+      (tc/app-apply form expected)
+      (tc/app-values form expected)
   (syntax-parse form
     #:literals (#%plain-app #%plain-lambda letrec-values quote
-                values apply k:apply not false? list call-with-values
+                not false? list
                 do-make-object module-name-fixup cons
                 extend-parameterization)
     ;; bail out immediately if we have one of these
@@ -303,11 +304,6 @@
                                                       Univ)))
                      (list (ret Univ) (single-value #'arg))
                      expected)])]
-    ;; call-with-values
-    [(#%plain-app call-with-values prod con)
-     (match (tc/funapp #'prod #'() (single-value #'prod) null #f)
-       [(tc-results: ts fs os)
-        (tc/funapp #'con #'(prod) (single-value #'con) (map ret ts fs os) expected)])]
     ;; in eq? cases, call tc/eq
     [(#%plain-app eq?:comparator v1 v2)
      ;; make sure the whole expression is type correct
@@ -322,45 +318,6 @@
      (match (single-value #'arg)
        [(tc-result1: t (FilterSet: f+ f-) _)
         (ret -Boolean (make-FilterSet f- f+))])]
-    ;; (apply values l) gets special handling
-    [(#%plain-app apply values e)
-     (match (single-value #'e)
-       [(tc-result1: (ListDots: dty dbound)) (values->tc-results (make-ValuesDots null dty dbound) #f)]
-       [(tc-result1: (List: ts)) (ret ts)]
-       [_ (tc/apply #'values #'(e))])]
-    ;; rewrite this so that it takes advantages of all the special cases
-    [(#%plain-app k:apply . args)
-     (tc/app/internal (syntax/loc form (#%plain-app apply . args)) expected)]
-    ;; handle apply specially
-    [(#%plain-app apply f . args) (tc/apply #'f #'args)]
-    ;; special case for `values' with single argument
-    ;; we just ignore the values, except that it forces arg to return one value
-    [(#%plain-app values arg)
-     (match expected
-      [#f (single-value #'arg)]
-      [(tc-result1: tp)
-       (single-value #'arg expected)]
-      [(tc-results: ts)
-       (single-value #'arg) ;Type check the argument, to find other errors
-       (tc-error/expr #:return expected
-         "wrong number of values: expected ~a but got one"
-          (length ts))])]
-    ;; handle `values' specially
-    [(#%plain-app values . args)
-     (match expected
-       [(tc-results: ets efs eos)
-        (match-let ([(list (tc-result1: ts fs os) ...)
-                     (for/list ([arg (syntax->list #'args)]
-                                [et ets] [ef efs] [eo eos])
-                       (single-value arg (ret et ef eo)))])
-          (if (= (length ts) (length ets) (length (syntax->list #'args)))
-              (ret ts fs os)
-              (tc-error/expr #:return expected "wrong number of values: expected ~a but got ~a"
-                             (length ets) (length (syntax->list #'args)))))]
-       [_ (match-let ([(list (tc-result1: ts fs os) ...)
-                       (for/list ([arg (syntax->list #'args)])
-                         (single-value arg))])
-            (ret ts fs os))])]
     ;; special case for keywords
     [(#%plain-app
       (#%plain-app cpce s-kp fn kpe kws num)
