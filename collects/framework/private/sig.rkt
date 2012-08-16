@@ -318,7 +318,8 @@
     (get-the-frame-group
      on-close-action
      can-close-check
-     add-to-windows-menu))
+     add-to-windows-menu
+     create-windows-menu))
   
   (define-signature handler-class^
     ())

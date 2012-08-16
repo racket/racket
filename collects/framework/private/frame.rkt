@@ -242,12 +242,7 @@
               (set-icon large (send large get-loaded-mask) 'large))
             (set-icon icon (send icon get-loaded-mask) 'both))))
     
-    (let ([mb (make-object (get-menu-bar%) this)])
-      (make-object menu:can-restore-underscore-menu%
-        (case (system-type)
-          [(macosx) (string-constant windows-menu-label)]
-          [else (string-constant tabs-menu-label)])
-        mb))
+    (group:create-windows-menu (make-object (get-menu-bar%) this))
     
     (reorder-menus this)
     
