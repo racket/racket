@@ -356,8 +356,20 @@ Scheme_Object *scheme_complex_sqrt(const Scheme_Object *o)
     r = scheme_sqrt(1, &r);
     if (!SCHEME_COMPLEXP(r))
       return scheme_make_complex(r, i);
-    else
-      return r;
+    else {
+      c = (Scheme_Complex *)r;
+      if (SAME_OBJ(c->r, zero)) {
+        /* need an inexact-zero real part: */
+#ifdef MZ_USE_SINGLE_FLOATS
+        if (SCHEME_FLTP(c->i))
+          r = scheme_make_float(0.0);
+        else
+#endif
+          r = scheme_make_double(0.0);
+        return scheme_make_complex(r, c->i);
+      } else
+        return r;
+    }
   }
 
   ssq = scheme_bin_plus(scheme_bin_mult(r, r),
