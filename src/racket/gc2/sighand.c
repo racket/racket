@@ -60,7 +60,7 @@ void launchgdb() {
 }
 #endif
 
-void fault_handler(int sn, struct siginfo *si, void *ctx)
+void fault_handler(int sn, siginfo_t *si, void *ctx)
 {
   void *p = si->si_addr;
   /* quick access to SIGSEGV info in GDB */
