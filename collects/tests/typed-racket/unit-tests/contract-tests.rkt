@@ -12,7 +12,8 @@
 
 (define (contract-tests)
   (test-suite "Contract Tests"
-              (t (-Number . -> . -Number))))
+              (t (-Number . -> . -Number))
+              (t (-Promise -Number))))
 
 (define-go contract-tests)
 (provide contract-tests)
