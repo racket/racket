@@ -161,7 +161,7 @@ racket
 
 @code:comment{@#,dominates1}
 (define (dominates-all f@r f lov)
-  (for/and ([v lov]) (>= (f v) f@r)))
+  (for/and ([v lov]) (>= f@r (f v))))
 
 @code:comment{@#,first?1}
 (define (is-first-max? r f@r f lov)
@@ -181,8 +181,8 @@ This step leaves us with the problem of the newly introduced inefficiency.
 
 @(define first?2
   @multiarg-element['tt]{
-   @list{@racket[r] is @racket[(second x)] for the first
-         @racket[x] in @racket[flov+lov] s.t. @racket[(= (first x) f@r)]}})
+   @list{@racket[r] is @racket[(first x)] for the first
+         @racket[x] in @racket[flov+lov] s.t. @racket[(= (second x) f@r)]}})
 
 @racketmod[#:file @tt{version 3 rev. b} 
 racket
@@ -211,7 +211,7 @@ racket
   (define fst (first lov+flov))
   (if (= (second fst) f@r)
       (eq? (first fst) r)
-      (is-first-max? f@r r (rest lov+flov))))
+      (is-first-max? r f@r (rest lov+flov))))
 ]
  Now the predicate on the result once again computes all values of @racket[f]
  for elements of @racket[lov] once. 
