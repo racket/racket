@@ -37,6 +37,12 @@
 (define-signature tc-app-list^
   ([cond-contracted tc/app-list (syntax? (or/c #f tc-results?). -> . (or/c #f tc-results?))]))
 
+(define-signature tc-app-apply^
+  ([cond-contracted tc/app-apply (syntax? (or/c #f tc-results?). -> . (or/c #f tc-results?))]))
+
+(define-signature tc-app-values^
+  ([cond-contracted tc/app-values (syntax? (or/c #f tc-results?). -> . (or/c #f tc-results?))]))
+
 (define-signature tc-apply^
   ([cond-contracted tc/apply (syntax? syntax? . -> . tc-results?)]))
 
