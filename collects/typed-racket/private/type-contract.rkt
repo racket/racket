@@ -199,6 +199,9 @@
          #`(box/c #,(t->c t))]
         [(Pair: t1 t2)
          #`(cons/c #,(t->c t1) #,(t->c t2))]
+        [(Promise: t)
+         (when flat? (exit (fail)))
+         #`(promise/c #,(t->c t))]
         [(Opaque: p? cert)
          #`(flat-named-contract (quote #,(syntax-e p?)) #,(cert p?))]
         [(F: v) (cond [(assoc v (vars)) => second]
