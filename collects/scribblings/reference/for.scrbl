@@ -118,7 +118,13 @@ the default argument of @racket[make-vector]).
 (for/vector #:length 2 ([i '(1 2 3)]) (number->string i))
 (for/vector #:length 4 ([i '(1 2 3)]) (number->string i))
 (for/vector #:length 4 #:fill "?" ([i '(1 2 3)]) (number->string i))
-]}
+]
+
+The @racket[for/vector] form may allocate a vector and mutate it after
+each iteration of @racket[body], which means that capturing a
+continuation during @racket[body] and applying it multiple times may
+mutate a shared vector.}
+
 
 @deftogether[(
 @defform[(for/hash (for-clause ...) body ...+)]
