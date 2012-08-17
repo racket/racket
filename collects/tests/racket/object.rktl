@@ -1690,6 +1690,116 @@
   (err/rt-test (send (new required%) m 1 2 3) given-3?)
   (err/rt-test (send (new optional%) m 1 2 3) given-3?))
 
+;; ----------------------------------------
+;; Origin tracking
+
+(let ()
+  ;; tries to find each of 'searching-for' in the
+  ;; origin property of the fully expanded version
+  ;; of stx. Returns the ones it cannot find.
+  (define (search-prop property stx . searching-for)
+    (define (check-prop o)
+      (let loop ([o o])
+        (cond
+          [(pair? o)
+           (loop (car o))
+           (loop (cdr o))]
+          [(identifier? o)
+           (set! searching-for 
+                 (filter (λ (x) (not (free-identifier=? x o)))
+                         searching-for))])))
+    
+    (let loop ([stx (expand stx)])
+      (cond
+        [(pair? stx)
+         (loop (car stx))
+         (loop (cdr stx))]
+        [(syntax? stx)
+         (check-prop (syntax-property stx property))
+         (loop (syntax-e stx))]))
+    
+    searching-for)
+  
+  (test '() search-prop 'origin
+        '(class object%)
+        #'class)
+  (test '() search-prop 'disappeared-use
+        '(class object% (inherit m)) 
+        #'inherit)
+  (test '() search-prop 'origin
+        '(class object% (super-new)) #'super-new)
+  (test '() search-prop 'disappeared-use
+        '(class* object% () (inherit m))
+        #'inherit)
+  (test '() search-prop 'origin
+        '(mixin () () (define/private (m x) x))
+        #'define/private)
+  (test '() search-prop 'origin
+        '(class object% (super-make-object))
+        #'super-make-object)
+  (test '() search-prop 'origin
+        '(class object% (define/public (m x) x))
+        #'define/public)
+  (test '() search-prop 'origin
+        '(class object% (define/public m (lambda (x) x)))
+        #'define/public
+        #'lambda)
+  (test '() search-prop 'origin
+        '(class object% (define/augment m (lambda (x) x)))
+        #'define/augment
+        #'lambda)
+  (test '() search-prop 'origin
+        '(class object% (define/override (m x) (super m x)))
+        #'define/override
+        #'super)
+  (test '() search-prop 'origin 
+        '(class object% (define/augment (m x) (inner 1 m x)))
+        #'define/augment
+        #'inner)
+  (test '() search-prop 'origin
+        '(class object% (define f 11))
+        #'define)
+  (test '() search-prop 'origin
+        '(class object% (public f) (define f (λ (x) x)))
+        #'define
+        #'λ)
+  (test '() search-prop 'disappeared-use
+        '(class object% (public f) (define f (λ (x) x)))
+        #'public)
+  (test '() search-prop 'origin
+        '(class object% (private f) (define f (λ (x) x)))
+        #'define
+        #'λ)
+  (test '() search-prop 'disappeared-use
+        '(class object% (private f) (define f (λ (x) x)))
+        #'private)
+  (test '() search-prop 'origin
+        '(class object%
+           (begin
+             (define/public (m x) x)
+             (define/private (n x) x)))
+        #'begin
+        #'define/public
+        #'define/private)
+  (test '() search-prop 'disappeared-use
+        '(class object% (inspect #f))
+        #'inspect)
+  (test '() search-prop 'origin
+        '(class object% (field [x #f]))
+        #'field)
+  (test '() search-prop 'origin
+        '(class object% (init x))
+        #'init)
+  (test '() search-prop 'origin
+        '(class object% (init-field x))
+        #'init-field)
+  (test '() search-prop 'origin
+        '(class object% (init-rest args))
+        #'init-rest)
+  (test '() search-prop 'origin
+        '(class object% (init-rest))
+        #'init-rest))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; ----------------------------------------
@@ -1713,4 +1823,3 @@
 
 
 (report-errs)
-

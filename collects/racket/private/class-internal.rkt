@@ -380,12 +380,8 @@
                    (begin
                      (map bind-local-id (syntax->list #'(id ...)))
                      (cons e (loop (cdr l))))]
-                  [(begin . _)
-                   (raise-syntax-error 
-                    #f
-                    "ill-formed begin expression"
-                    e)]
-                  [_else (cons e (loop (cdr l)))]))))))
+                  [_else 
+                   (cons e (loop (cdr l)))]))))))
     
     ;; returns two lists: expressions that start with an identifier in
     ;; `kws', and expressions that don't
@@ -533,9 +529,12 @@
                               (lambda (the-obj . vars) 
                                 (let-syntax ([the-finder (quote-syntax the-obj)])
                                   body1 body ...)))])
-                     (with-syntax ([l (rearm (add-method-property l) stx)])
-                       (syntax/loc stx 
-                         (let ([name l]) name))))))
+                     (syntax-track-origin
+                      (with-syntax ([l (rearm (add-method-property l) stx)])
+                        (syntax/loc stx 
+                          (let ([name l]) name)))                  
+                      stx
+                      (syntax-local-introduce #'lam)))))
                stx)]
           [(#%plain-lambda . _)
            (bad "ill-formed lambda expression for method" stx)]
@@ -543,8 +542,9 @@
            (bad "ill-formed lambda expression for method" stx)]
           [(λ . _)
            (bad "ill-formed lambda expression for method" stx)]
-          [(case-lambda [vars body1 body ...] ...)
-           (andmap vars-ok? (syntax->list (syntax (vars ...))))
+          [(case-lam [vars body1 body ...] ...)
+           (and (free-identifier=? #'case-lam #'case-lambda)
+                (andmap vars-ok? (syntax->list (syntax (vars ...)))))
            (if xform?
                (with-syntax ([the-obj the-obj]
                              [the-finder the-finder]
@@ -553,9 +553,12 @@
                              (case-lambda [(the-obj . vars) 
                                            (let-syntax ([the-finder (quote-syntax the-obj)])
                                              body1 body ...)] ...))])
-                   (with-syntax ([cl (rearm (add-method-property cl) stx)])
-                     (syntax/loc stx
-                       (let ([name cl]) name)))))
+                   (syntax-track-origin 
+                    (with-syntax ([cl (rearm (add-method-property cl) stx)])
+                      (syntax/loc stx
+                        (let ([name cl]) name)))
+                    stx
+                    (syntax-local-introduce #'case-lam))))
                stx)]
           [(case-lambda . _)
            (bad "ill-formed case-lambda expression for method" stx)]
@@ -612,18 +615,21 @@
                                  ids new-ids)
                                 null)]
                            [body body])
-               (rearm
-                (if xform?
-                    (if letrec?
-                        (syntax/loc stx (letrec-syntax mappings
-                                          (let- ([(new-id) proc] ...) 
-                                                body)))
-                        (syntax/loc stx (let- ([(new-id) proc] ...) 
-                                              (letrec-syntax mappings
-                                                body))))
-                    (syntax/loc stx (let- ([(new-id) proc] ...) 
-                                          body)))
-                stx)))]
+               (syntax-track-origin
+                (rearm
+                 (if xform?
+                     (if letrec?
+                         (syntax/loc stx (letrec-syntax mappings
+                                           (let- ([(new-id) proc] ...) 
+                                                 body)))
+                         (syntax/loc stx (let- ([(new-id) proc] ...) 
+                                               (letrec-syntax mappings
+                                                 body))))
+                     (syntax/loc stx (let- ([(new-id) proc] ...) 
+                                           body)))
+                 stx)
+                stx
+                (syntax-local-introduce #'let-))))]
           [_else 
            (if can-expand?
                (loop (expand stx locals) #f name locals)
@@ -920,6 +926,28 @@
                           [(rename-inners)
                            (flatten pair (extract* (list (quote-syntax -rename-inner)) decls))])
               
+              ;; this function copies properties from the declarations expressions
+              ;; that get dropped from a class form (e.g. (public x) from the body
+              ;; of a class). It doesn't use syntax-track-origin because there is
+              ;; no residual code that it would make sense to be the result of expanding
+              ;; those away. So, instead we only look at a few properties (as below).
+              (define (add-decl-props stx)
+                (for/fold ([stx stx])
+                          ([decl (in-list (append inspect-decls decls))])
+                  (define (copy-prop src dest stx)
+                    (syntax-property 
+                     stx
+                     dest
+                     (cons (syntax-property decl src)
+                           (syntax-property stx dest))))
+                  (copy-prop
+                   'origin 'disappeared-use
+                   (copy-prop
+                    'disappeared-use 'disappeared-use
+                    (copy-prop
+                     'disappeared-binding 'disappeared-binding
+                     stx)))))
+              
               ;; At most one inspect:
               (unless (or (null? inspect-decls)
                           (null? (cdr inspect-decls)))
@@ -1000,7 +1028,8 @@
                                 (if (null? exprs)
                                     (values (reverse ms) (reverse pms) (reverse es) (reverse sd))
                                     (syntax-case (car exprs) (define-values define-syntaxes)
-                                      [(define-values (id ...) expr)
+                                      [(d-v (id ...) expr)
+                                       (free-identifier=? #'d-v #'define-values)
                                        (let ([ids (syntax->list (syntax (id ...)))])
                                          ;; Check form:
                                          (for-each (lambda (id)
@@ -1017,10 +1046,14 @@
                                                (unless (null? (cdr ids))
                                                  (bad "each method variable needs its own definition"
                                                       (car exprs)))
-                                               (let ([expr (proc-shape #f (syntax expr) #f 
-                                                                       the-obj the-finder
-                                                                       bad class-name expand-stop-names
-                                                                       def-ctx lookup-localize)]
+                                               (let ([expr 
+                                                      (syntax-track-origin
+                                                       (proc-shape #f (syntax expr) #f 
+                                                                   the-obj the-finder
+                                                                   bad class-name expand-stop-names
+                                                                   def-ctx lookup-localize)
+                                                       (car exprs)
+                                                       (syntax-local-introduce #'d-v))]
                                                      [public? (ormap (lambda (i) 
                                                                        (bound-identifier=? i (car ids)))
                                                                      local-public-names)])
@@ -1156,9 +1189,12 @@
                     ;;  Non-method definitions to set!
                     ;;  Initializations args access/set!
                     (let ([exprs (map (lambda (e)
-                                        (syntax-case e (define-values -field -init-rest)
-                                          [(define-values (id ...) expr)
-                                           (syntax/loc e (set!-values (id ...) expr))]
+                                        (syntax-case e ()
+                                          [(d-v (id ...) expr)
+                                           (free-identifier=? #'d-v #'define-values)
+                                           (syntax-track-origin (syntax/loc e (set!-values (id ...) expr))
+                                                                e
+                                                                #'d-v)]
                                           [(_init orig idp ...)
                                            (and (identifier? (syntax _init))
                                                 (ormap (lambda (it) 
@@ -1179,28 +1215,40 @@
                                                                          (syntax (lambda () defexp)))))
                                                                  norms)]
                                                            [class-name class-name])
-                                               (syntax/loc e 
-                                                 (begin 
-                                                   1 ; to ensure a non-empty body
-                                                   (set! id (extract-arg 'class-name `idpos init-args defval))
-                                                   ...))))]
-                                          [(-field orig idp ...)
+                                               (syntax-track-origin
+                                                (syntax/loc e 
+                                                  (begin 
+                                                    1 ; to ensure a non-empty body
+                                                    (set! id (extract-arg 'class-name `idpos init-args defval))
+                                                    ...))
+                                                e
+                                                #'_init)))]
+                                          [(-fld orig idp ...)
+                                           (free-identifier=? #'-fld #'-field)
                                            (with-syntax ([(((iid eid) expr) ...)
                                                           (map normalize-init/field (syntax->list #'(idp ...)))])
-                                             (syntax/loc e (begin 
-                                                             1 ; to ensure a non-empty body
-                                                             (set! iid expr)
-                                                             ...)))]
-                                          [(-init-rest id/rename)
+                                             (syntax-track-origin
+                                              (syntax/loc e (begin 
+                                                              1 ; to ensure a non-empty body
+                                                              (set! iid expr)
+                                                              ...))
+                                              e
+                                              #'-fld))]
+                                          [(-i-r id/rename)
+                                           (free-identifier=? #'-i-r #'-init-rest)
                                            (with-syntax ([n (+ (length plain-inits)
                                                                (length plain-init-fields)
                                                                -1)]
                                                          [id (if (identifier? #'id/rename)
                                                                  #'id/rename
                                                                  (stx-car #'id/rename))])
-                                             (syntax/loc e (set! id (extract-rest-args n init-args))))]
-                                          [(-init-rest)
-                                           (syntax (void))]
+                                             (syntax-track-origin
+                                              (syntax/loc e (set! id (extract-rest-args n init-args)))
+                                              e
+                                              #'-i-r))]
+                                          [(-i-r)
+                                           (free-identifier=? #'-i-r #'-init-rest)
+                                           (syntax-track-origin (syntax (void)) e #'-i-r)]
                                           [_else e]))
                                       exprs)]
                           [mk-method-temp
@@ -1437,7 +1485,7 @@
                                                          (stx-car (stx-cdr (car inspect-decls)))
                                                          #'(current-inspector))]
                                           [deserialize-id-expr deserialize-id-expr])
-                              
+                              (add-decl-props
                               (quasisyntax/loc stx
                                 (let ([superclass super-expression]
                                       [interfaces (list interface-expression ...)])
@@ -1605,7 +1653,7 @@
                                                         (void) ; in case the body is empty
                                                         . exprs)))))))))))))
                                    ;; Not primitive:
-                                   #f))))))))))))))))
+                                   #f)))))))))))))))))
     
     ;; The class* and class entry points:
     (values
