@@ -1,8 +1,9 @@
 #lang racket/unit
 
 (require (rename-in "../../utils/utils.rkt" [infer r:infer])
+         "signatures.rkt"
          "../signatures.rkt" "../tc-metafunctions.rkt" "../check-below.rkt"
-         "../tc-app-helper.rkt" "../find-annotation.rkt" "../tc-funapp.rkt"
+         "../find-annotation.rkt" "../tc-funapp.rkt"
          "../tc-subst.rkt" (prefix-in c: racket/contract)
          syntax/parse racket/match racket/trace scheme/list
          unstable/sequence  unstable/list
@@ -99,7 +100,6 @@
                 unsafe-struct-ref unsafe-struct*-ref
                 unsafe-struct-set! unsafe-struct*-set!
                 vector-immutable vector)
-    [(#%plain-app op:special-op args ...) #f]
     ;; unsafe struct-ref 
     [(#%plain-app (~or unsafe-struct-ref unsafe-struct*-ref) struct:expr index:expr)
      (match (single-value #'struct)

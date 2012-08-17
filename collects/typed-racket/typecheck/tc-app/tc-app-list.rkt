@@ -2,9 +2,10 @@
 
 
 (require "../../utils/utils.rkt"
+         "signatures.rkt"
          syntax/parse racket/match
          (only-in '#%kernel [reverse k:reverse])
-         (typecheck signatures tc-app-helper tc-funapp check-below)
+         (typecheck signatures tc-funapp check-below)
          (types abbrev utils union substitute)
          (rep type-rep)
          (env tvar-env)
@@ -27,7 +28,6 @@
     #:literals (#%plain-app
                 reverse k:reverse list list*
                 cons map andmap ormap)
-    [(#%plain-app op:special-op args ...) #f]
     [(#%plain-app map f arg0 arg ...)
      (match* ((single-value #'arg0) (map single-value (syntax->list #'(arg ...))))
        ;; if the argument is a ListDots

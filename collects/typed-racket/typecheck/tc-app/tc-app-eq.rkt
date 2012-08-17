@@ -1,12 +1,17 @@
 #lang racket/unit
 
 (require "../../utils/utils.rkt"
+         "signatures.rkt"
          syntax/parse racket/match
-         (typecheck signatures tc-app-helper tc-funapp check-below)
+         (typecheck signatures tc-funapp check-below)
          (types abbrev union utils)
          (rep type-rep)
 
-         (for-template racket/base))
+         ;; fixme - don't need to be bound in this phase - only to make tests work
+         racket/bool
+         ;; end fixme
+
+         (for-template racket/base racket/bool))
 
 (import tc-expr^)
 (export tc-app-eq^)

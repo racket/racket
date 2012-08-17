@@ -31,34 +31,6 @@
   ([cond-contracted tc/app (syntax? . -> . tc-results?)]
    [cond-contracted tc/app/check (syntax? tc-results? . -> . tc-results?)]))
 
-(define-signature tc-app-hetero^
-  ([cond-contracted tc/app-hetero (syntax? (or/c #f tc-results?). -> . (or/c #f tc-results?))]))
-
-(define-signature tc-app-list^
-  ([cond-contracted tc/app-list (syntax? (or/c #f tc-results?). -> . (or/c #f tc-results?))]))
-
-(define-signature tc-app-apply^
-  ([cond-contracted tc/app-apply (syntax? (or/c #f tc-results?). -> . (or/c #f tc-results?))]))
-
-(define-signature tc-app-values^
-  ([cond-contracted tc/app-values (syntax? (or/c #f tc-results?). -> . (or/c #f tc-results?))]))
-
-(define-signature tc-app-keywords^
-  ([cond-contracted tc/app-keywords (syntax? (or/c #f tc-results?). -> . (or/c #f tc-results?))]))
-
-(define-signature tc-app-objects^
-  ([cond-contracted tc/app-objects (syntax? (or/c #f tc-results?). -> . (or/c #f tc-results?))]))
-
-(define-signature tc-app-eq^
-  ([cond-contracted tc/app-eq (syntax? (or/c #f tc-results?). -> . (or/c #f tc-results?))]))
-
-(define-signature tc-app-lambda^
-  ([cond-contracted tc/app-lambda (syntax? (or/c #f tc-results?). -> . (or/c #f tc-results?))]))
-
-(define-signature tc-app-special^
-  ([cond-contracted tc/app-special (syntax? (or/c #f tc-results?). -> . (or/c #f tc-results?))]))
-
-
 (define-signature tc-apply^
   ([cond-contracted tc/apply (syntax? syntax? . -> . tc-results?)]))
 
