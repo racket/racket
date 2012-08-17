@@ -1191,7 +1191,8 @@
                     (let ([exprs (map (lambda (e)
                                         (syntax-case e ()
                                           [(d-v (id ...) expr)
-                                           (free-identifier=? #'d-v #'define-values)
+                                           (and (identifier? #'d-v)
+                                                (free-identifier=? #'d-v #'define-values))
                                            (syntax-track-origin (syntax/loc e (set!-values (id ...) expr))
                                                                 e
                                                                 #'d-v)]
@@ -1224,7 +1225,8 @@
                                                 e
                                                 #'_init)))]
                                           [(-fld orig idp ...)
-                                           (free-identifier=? #'-fld #'-field)
+                                           (and (identifier? #'-fld)
+					        (free-identifier=? #'-fld #'-field))
                                            (with-syntax ([(((iid eid) expr) ...)
                                                           (map normalize-init/field (syntax->list #'(idp ...)))])
                                              (syntax-track-origin
@@ -1235,7 +1237,8 @@
                                               e
                                               #'-fld))]
                                           [(-i-r id/rename)
-                                           (free-identifier=? #'-i-r #'-init-rest)
+                                           (and (identifier? #'-i-r) 
+                                                (free-identifier=? #'-i-r #'-init-rest))
                                            (with-syntax ([n (+ (length plain-inits)
                                                                (length plain-init-fields)
                                                                -1)]
@@ -1247,7 +1250,8 @@
                                               e
                                               #'-i-r))]
                                           [(-i-r)
-                                           (free-identifier=? #'-i-r #'-init-rest)
+                                           (and (identifier? #'-i-r) 
+                                                (free-identifier=? #'-i-r #'-init-rest))
                                            (syntax-track-origin (syntax (void)) e #'-i-r)]
                                           [_else e]))
                                       exprs)]
