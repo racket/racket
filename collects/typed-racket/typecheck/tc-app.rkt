@@ -5,7 +5,8 @@
          syntax/parse racket/match 
          (typecheck signatures check-below tc-funapp)
          (types utils abbrev)
-         (rep type-rep filter-rep object-rep rep-utils))
+         (rep type-rep filter-rep object-rep rep-utils)
+         (for-template racket/base))
 
 (import tc-expr^ tc-app-keywords^
         tc-app-hetero^ tc-app-list^ tc-app-apply^ tc-app-values^
