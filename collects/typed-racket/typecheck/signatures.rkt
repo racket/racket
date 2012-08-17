@@ -49,6 +49,10 @@
 (define-signature tc-app-objects^
   ([cond-contracted tc/app-objects (syntax? (or/c #f tc-results?). -> . (or/c #f tc-results?))]))
 
+(define-signature tc-app-eq^
+  ([cond-contracted tc/app-eq (syntax? (or/c #f tc-results?). -> . (or/c #f tc-results?))]))
+
+
 (define-signature tc-apply^
   ([cond-contracted tc/apply (syntax? syntax? . -> . tc-results?)]))
 
