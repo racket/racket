@@ -195,7 +195,9 @@
   (class %
     (inherit get-canvas get-admin get-style-list
              dc-location-to-editor-location get-dc
-             get-start-position get-end-position)
+             get-start-position get-end-position
+             begin-edit-sequence end-edit-sequence
+             invalidate-bitmap-cache)
     
     (define locked? (preferences:get 'drracket:syncheck:contracts-locked?))
     (define mouse-in-blue-box? #f)
@@ -211,34 +213,73 @@
     
     (define/public (get-show-docs?) (and the-strs (or locked? mouse-in-blue-box?)))
     (define/public (toggle-syncheck-docs)
-      (when locked?
-        (set! mouse-in-blue-box? #f)
-        (define c (get-canvas))
-        (when c (send c refresh)))
+      (begin-edit-sequence)
+      (invalidate-blue-box-region)
+      (cond
+        [locked?
+         (set! mouse-in-blue-box? #f)]
+        [else
+         (update-the-strs)])
       (update-locked (not locked?))
       (when last-evt-seen
         (update-mouse-in-blue-box (in-blue-box? last-evt-seen))
         (define-values (is-in-lock? is-in-read-more?) (in-lock/in-read-more? last-evt-seen))
-        (update-mouse-in-lock-icon/read-more? is-in-lock? is-in-read-more?)))
+        (update-mouse-in-lock-icon/read-more? is-in-lock? is-in-read-more?))
+      (invalidate-blue-box-region)
+      (end-edit-sequence))
     (define/public (update-mouse-in-blue-box b)
       (unless (equal? b mouse-in-blue-box?)
+        (begin-edit-sequence)
+        (invalidate-blue-box-region)
         (set! mouse-in-blue-box? b)
-        (define c (get-canvas))
-        (when c (send c refresh))))
+        (invalidate-blue-box-region)
+        (end-edit-sequence)))
     (define/public (update-locked b)
       (preferences:set 'drracket:syncheck:contracts-locked? b)
       (unless (equal? b locked?)
+        (begin-edit-sequence)
+        (invalidate-blue-box-region)
         (set! locked? b)
-        (define c (get-canvas))
-        (when c (send c refresh))))
+        (invalidate-blue-box-region)
+        (end-edit-sequence)))
     (define/public (update-mouse-in-lock-icon/read-more? lk? rm?)
       (unless (and (equal? lk? mouse-in-lock-icon?)
                    (equal? rm? mouse-in-read-more?))
+        (begin-edit-sequence)
+        (invalidate-blue-box-region)
         (set! mouse-in-lock-icon? lk?)
         (set! mouse-in-read-more? rm?)
-        (define c (get-canvas))
-        (when c (send c refresh))))
+        (invalidate-blue-box-region)
+        (end-edit-sequence)))
     
+    (define/private (invalidate-blue-box-region)
+      (define c (get-canvas))
+      (when c (send c refresh))
+      ;; the code below is what I'd like to do here,
+      ;; but this doesn't redraw the margin (the part
+      ;; of the editor-canvas that is always outside
+      ;; of th editor) and it doesn't seem possible to
+      ;; trigger a redraw of that part without also
+      ;; triggering a redraw of the entire editor
+      ;; so we just do that instead (above)
+
+      #;
+      (begin
+        (define-values (br bt _1 _2) (get-box-upper-right-and-lock-coordinates))
+        (when (and bt br)
+          (cond
+            [(get-show-docs?)
+             (define-values (box-width box-height label-overlap?)
+               (get-blue-box-size (get-dc) (get-style-list) the-strs))
+             (define x (- br box-width shadow-size))
+             (invalidate-bitmap-cache (max x 0)
+                                      (max bt 0)
+                                      (+ box-width shadow-size)
+                                      (+ box-height shadow-size))]
+            [the-strs
+             (define size (+ corner-radius shadow-size))
+             (invalidate-bitmap-cache (max 0 (- br size)) (max 0 bt) size size)]))))
+
     (define bx (box 0))
     (define by (box 0))
     (define bw (box 0))
@@ -246,16 +287,12 @@
     
     (define docs-im (make-interval-map))
     (define/public (syncheck:reset-docs-im)
-      (set! docs-im (make-interval-map))
-      (define c (get-canvas))
-      (when c (send c refresh)))
+      (set! docs-im (make-interval-map)))
     (define/public (syncheck:add-docs-range start end tag visit-docs-url) 
       ;; the +1 to end is effectively assuming that there
       ;; are no abutting identifiers with documentation
       (define rng (list start (+ end 1) tag visit-docs-url))
-      (interval-map-set! docs-im start (+ end 1) rng)
-      (define c (get-canvas))
-      (when c (send c refresh)))
+      (interval-map-set! docs-im start (+ end 1) rng))
     
     (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
       (super on-paint before? dc left top right bottom dx dy draw-caret)
@@ -339,9 +376,19 @@
         [else
          (super on-event evt)]))
     
+    (define timer (new timer%
+                       [notify-callback
+                        (λ () 
+                          (set! timer-running? #f)
+                          (update-the-strs))]))
+    (define timer-running? #f)
     (define/augment (after-set-position)
       (inner (void) after-set-position)
-      (update-the-strs))
+      (when (or locked?
+                (not the-strs))
+        (unless timer-running?
+          (set! timer-running? #t)
+          (send timer start 300 #t))))
     
     (define/public (syncheck:update-blue-boxes)
       (update-the-strs))
@@ -357,6 +404,8 @@
           (define new-visit-docs-url (list-ref tag+rng 3))
           (define new-strs (fetch-strs tag))
           (when new-strs
+            (begin-edit-sequence)
+            (invalidate-blue-box-region)
             (set! the-strs new-strs)
             (set! the-strs-id-start ir-start)
             (set! the-strs-id-end ir-end)
@@ -365,8 +414,8 @@
               (update-mouse-in-blue-box (in-blue-box? last-evt-seen))
               (define-values (is-in-lock? is-in-read-more?) (in-lock/in-read-more? last-evt-seen))
               (update-mouse-in-lock-icon/read-more? is-in-lock? is-in-read-more?))
-            (define c (get-canvas))
-            (when c (send c refresh))))))
+            (invalidate-blue-box-region)
+            (end-edit-sequence)))))
     
     (define/augment (on-insert where len)
       (clear-im-range where len)
@@ -395,11 +444,13 @@
                      (< where the-strs-id-end))
                 (and delete? (<= the-strs-id-start (+ where len) the-strs-id-end)))
         (when the-strs
+          (begin-edit-sequence)
+          (invalidate-blue-box-region)
           (set! the-strs #f)
           (set! the-strs-id-start #f)
           (set! the-strs-id-end #f)
-          (define c (get-canvas))
-          (when c (send c refresh)))))
+          (invalidate-blue-box-region)
+          (end-edit-sequence))))
 
     (define/private (clear-im-range where len)
       (for ([x (in-range len)])
@@ -541,7 +592,6 @@
                    br bt bmp-x bmp-y
                    show-lock? mouse-in-lock-icon? mouse-in-read-more? locked?
                    left top right bottom)
-  
   
   (define-values (box-width box-height label-overlap?)
     (get-blue-box-size dc sl strs))
