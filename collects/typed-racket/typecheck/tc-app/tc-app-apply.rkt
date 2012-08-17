@@ -1,8 +1,9 @@
 #lang racket/unit
 
 (require "../../utils/utils.rkt"
+         "signatures.rkt"
          syntax/parse racket/match
-         (typecheck signatures tc-app-helper tc-funapp check-below tc-subst)
+         (typecheck signatures tc-funapp check-below tc-subst)
          (types abbrev utils)
          (rep type-rep)
 
@@ -20,7 +21,6 @@
 (define (tc/app-apply form expected)
   (syntax-parse form
     #:literals (#%plain-app k:apply apply values)
-    [(#%plain-app op:special-op args ...) #f]
     ;; rewrite this so that it takes advantages of all the special cases
     [(#%plain-app k:apply . args)
      (tc/app-apply (syntax/loc form (#%plain-app apply . args)) expected)]

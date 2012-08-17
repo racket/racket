@@ -1,8 +1,9 @@
 #lang racket/unit
 
 (require "../../utils/utils.rkt"
+         "signatures.rkt"
          syntax/parse racket/match
-         (typecheck signatures tc-app-helper tc-funapp check-below)
+         (typecheck signatures tc-funapp check-below)
          (types abbrev utils)
          (rep type-rep)
 
@@ -15,7 +16,6 @@
 (define (tc/app-values form expected)
   (syntax-parse form
     #:literals (#%plain-app values call-with-values)
-    [(#%plain-app op:special-op args ...) #f]
     ;; call-with-values
     [(#%plain-app call-with-values prod con)
      (match (tc/funapp #'prod #'() (single-value #'prod) null #f)

@@ -2,6 +2,7 @@
 #lang racket/unit
 
 (require (rename-in "../../utils/utils.rkt" [infer r:infer])
+         "signatures.rkt"
          syntax/parse racket/match
          (typecheck signatures tc-app-helper tc-funapp tc-metafunctions)
          (types abbrev utils union substitute subtype)
@@ -18,7 +19,6 @@
 (define (tc/app-keywords form expected)
   (syntax-parse form
     #:literals (#%plain-app list)
-    [(#%plain-app op:special-op args ...) #f]
     [(#%plain-app
       (#%plain-app cpce s-kp fn kpe kws num)
       kw-list

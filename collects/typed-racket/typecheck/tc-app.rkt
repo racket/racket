@@ -1,32 +1,13 @@
 #lang racket/unit
 
-(require (rename-in "../utils/utils.rkt" [infer r:infer])
-         "signatures.rkt" "tc-metafunctions.rkt" "check-below.rkt"
-         "tc-app-helper.rkt" "find-annotation.rkt" "tc-funapp.rkt"
-         "tc-subst.rkt" (prefix-in c: racket/contract)
-         syntax/parse racket/match racket/list
-         unstable/sequence  unstable/list
-         ;; fixme - don't need to be bound in this phase - only to make tests work
-         racket/bool
-         racket/unsafe/ops
-         (only-in syntax/location module-name-fixup)
-         ;; end fixme
-         (for-syntax syntax/parse racket/base (utils tc-utils))
-         (private type-annotation)
-         (types utils union subtype resolve abbrev
-                type-table substitute generalize)
-         (utils tc-utils)
-         (except-in (env type-env-structs tvar-env index-env) extend)
-         (rep type-rep filter-rep object-rep rep-utils)
-         (r:infer infer)
-         '#%paramz
-         (for-template
-          racket/unsafe/ops racket/fixnum racket/flonum
-          "internal-forms.rkt" racket/base racket/bool '#%paramz
-          
-          (only-in syntax/location module-name-fixup)))
+(require "../utils/utils.rkt"
+         "tc-app/signatures.rkt"
+         syntax/parse racket/match 
+         (typecheck signatures check-below tc-funapp)
+         (types utils abbrev)
+         (rep type-rep filter-rep object-rep rep-utils))
 
-(import tc-expr^ tc-lambda^ tc-let^ tc-apply^ tc-app-keywords^
+(import tc-expr^ tc-app-keywords^
         tc-app-hetero^ tc-app-list^ tc-app-apply^ tc-app-values^
         tc-app-objects^ tc-app-eq^ tc-app-lambda^ tc-app-special^)
 (export tc-app^)
@@ -48,11 +29,17 @@
     (tc/app-special form expected)
     (tc/app-regular form expected)))
 
+
+(define-syntax-class annotated-op
+  (pattern i:identifier
+           #:when (or (syntax-property #'i 'type-inst)
+                      (syntax-property #'i 'type-ascription))))
+
 (define (tc/app-annotated form expected)
   (syntax-parse form
     #:literals (#%plain-app)
-    ;; bail out immediately if we have one of these
-    [(#%plain-app rator:special-op . rands) (tc/app-regular form expected)]
+    ;; Just do regular typechecking if we have one of these.
+    [(#%plain-app rator:annotated-op . rands) (tc/app-regular form expected)]
     [_ #f]))
 
 (define (tc/app-regular form expected)

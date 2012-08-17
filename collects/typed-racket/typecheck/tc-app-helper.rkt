@@ -11,11 +11,6 @@
 
 (provide (all-defined-out))
 
-(define-syntax-class special-op
-  (pattern i:identifier
-           #:when (or (syntax-property #'i 'type-inst)
-                      (syntax-property #'i 'type-ascription))))
-
 ;; syntax? syntax? arr? (listof tc-results?) (or/c #f tc-results) [boolean?] -> tc-results?
 (define/cond-contract (tc/funapp1 f-stx args-stx ftype0 argtys expected #:check [check? #t])
   ((syntax? (c:and/c syntax? syntax->list) arr? (c:listof tc-results?) (c:or/c #f tc-results?)) (#:check boolean?) . c:->* . tc-results?)

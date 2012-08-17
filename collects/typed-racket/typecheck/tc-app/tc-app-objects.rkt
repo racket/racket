@@ -1,8 +1,9 @@
 #lang racket/unit
 
 (require "../../utils/utils.rkt"
+         "signatures.rkt"
          syntax/parse racket/match unstable/sequence
-         (typecheck signatures tc-app-helper tc-funapp check-below)
+         (typecheck signatures tc-funapp check-below)
          (types abbrev union utils)
          (rep type-rep)
          (utils tc-utils)

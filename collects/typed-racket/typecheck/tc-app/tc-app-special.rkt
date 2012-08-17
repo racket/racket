@@ -1,15 +1,21 @@
 #lang racket/unit
 
 (require "../../utils/utils.rkt"
+         "signatures.rkt"
          syntax/parse racket/match
          unstable/list
-         (typecheck signatures tc-app-helper tc-funapp check-below)
+         (typecheck signatures tc-funapp check-below)
          (types abbrev utils)
          (private type-annotation)
          (rep type-rep filter-rep)
          (utils tc-utils)
 
-         (for-template racket/base))
+         ;; fixme - don't need to be bound in this phase - only to make tests work
+         racket/bool
+         '#%paramz
+         ;; end fixme
+
+         (for-template racket/base racket/bool '#%paramz))
 
 
 (import tc-expr^)
