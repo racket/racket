@@ -246,7 +246,10 @@ types.  In most cases, use of @racket[:] is preferred to use of @racket[define:]
   When @racket[parent] is present, the
 structure is a substructure of @racket[parent].  When
 @racket[maybe-type-vars] is present, the structure is polymorphic in the type
- variables @racket[v].
+ variables @racket[v]. If @racket[parent] is also a polymorphic struct, then
+there must be at least as many type variables as in the parent type, and the
+parent type is instantiated with a prefix of the type variables matching the
+amount it needs.
 
 Options provided have the same meaning as for the @racket[struct] form.}
 
