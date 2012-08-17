@@ -55,6 +55,9 @@
 (define-signature tc-app-lambda^
   ([cond-contracted tc/app-lambda (syntax? (or/c #f tc-results?). -> . (or/c #f tc-results?))]))
 
+(define-signature tc-app-special^
+  ([cond-contracted tc/app-special (syntax? (or/c #f tc-results?). -> . (or/c #f tc-results?))]))
+
 
 (define-signature tc-apply^
   ([cond-contracted tc/apply (syntax? syntax? . -> . tc-results?)]))
