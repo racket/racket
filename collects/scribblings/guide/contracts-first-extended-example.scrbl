@@ -182,7 +182,7 @@ This step leaves us with the problem of the newly introduced inefficiency.
 @(define first?2
   @multiarg-element['tt]{
    @list{@racket[r] is @racket[(first x)] for the first
-         @racket[x] in @racket[flov+lov] s.t. @racket[(= (second x) f@r)]}})
+         @racket[x] in @racket[lov+flov] s.t. @racket[(= (second x) f@r)]}})
 
 @racketmod[#:file @tt{version 3 rev. b} 
 racket
