@@ -10,6 +10,7 @@
          "tc-app/tc-app-eq.rkt"
          "tc-app/tc-app-hetero.rkt"
          "tc-app/tc-app-keywords.rkt"
+         "tc-app/tc-app-lambda.rkt"
          "tc-app/tc-app-list.rkt"
          "tc-app/tc-app-objects.rkt"
          "tc-app/tc-app-values.rkt"
@@ -23,4 +24,4 @@
 (define-values/invoke-unit/infer
   (link tc-if@ tc-lambda@ tc-app@ tc-let@ tc-expr@ check-subforms@ tc-apply@
         tc-app-hetero@ tc-app-list@ tc-app-apply@ tc-app-values@ tc-app-keywords@
-        tc-app-objects@ tc-app-eq@))
+        tc-app-objects@ tc-app-eq@ tc-app-lambda@))
