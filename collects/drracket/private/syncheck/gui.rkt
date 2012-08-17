@@ -2025,10 +2025,10 @@ If the namespace does not, they are colored the unbound color.
       (send keymap map-function "c:x;n" "jump to next bound occurrence")
       (send keymap map-function "c:x;d" "jump to definition (in other file)")
       
-      (send keymap add-function "f2 docs"
+      (send keymap add-function "show/hide blue boxes in upper-right corner"
             (λ (txt evt)
               (send txt toggle-syncheck-docs)))
-      (send keymap map-function "f2" "f2 docs"))
+      (send keymap map-function "f2" "show/hide blue boxes in upper-right corner"))
     
     ;; find-syncheck-text : text% -> (union #f (is-a?/c syncheck-text<%>))
     (define (find-syncheck-text text)
