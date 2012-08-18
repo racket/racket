@@ -160,15 +160,12 @@
   ;; the type name that is used in all the types
   (define name (type-wrapper (make-Name nm)))
   ;; is this structure covariant in *all* arguments?
-  (define covariant? (if (and setters? (list? poly?))
-                         #f
-                         (if poly?
-                             (for*/and ([var (in-list poly?)]
-                                        [t (in-list external-fld-types)])
-                               (let ([variance (hash-ref (free-vars* t) var Constant)])
-                                 (or (eq? variance Constant)
-                                     (eq? variance Covariant))))
-                             #t)))
+  (define covariant?
+    (for*/and ([var (in-list poly?)]
+               [t (in-list external-fld-types)])
+      (let ([variance (hash-ref (free-vars* t) var Constant)])
+        (or (eq? variance Constant)
+            (and (not setters?) (eq? variance Covariant))))))
   (define parent-count (- (length external-fld-types) (length external-fld-types/no-parent)))
   ;; the list of names w/ types
   (register-type struct-type-id (make-StructType sty))
