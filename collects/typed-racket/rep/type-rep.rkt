@@ -301,7 +301,8 @@
 ;; parent : Struct
 ;; flds : Listof[fld]
 ;; proc : Function Type
-;; poly? : is this a polymorphic type?
+;; poly? : is this type polymorphicly variant
+;;         If not, then the predicate is enough for higher order checks
 ;; pred-id : identifier for the predicate of the struct
 ;; cert : syntax certifier for pred-id
 ;; acc-ids : names of the accessors
@@ -310,7 +311,7 @@
                   [parent (or/c #f Struct?)]
                   [flds (listof fld?)]
                   [proc (or/c #f Function?)]
-                  [poly? (or/c #f (listof symbol?))]
+                  [poly? boolean?]
                   [pred-id identifier?])
   [#:intern (list (hash-id name)
                   (hash-id pred-id)

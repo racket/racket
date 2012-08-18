@@ -36,14 +36,12 @@
 (define unann-defs (make-free-id-table))
 
 (define-splicing-syntax-class dtsi-fields
- #:attributes (mutable type-only maker constructor-return predicate)
+ #:attributes (mutable type-only maker)
  (pattern
   (~seq
     (~or (~optional (~and #:mutable (~bind (mutable #t))))
          (~optional (~and #:type-only (~bind (type-only #t))))
-         (~optional (~seq #:maker maker))
-         (~optional (~seq #:predicate predicate))
-         (~optional (~seq #:constructor-return constructor-return))) ...)))
+         (~optional (~seq #:maker maker))) ...)))
 
 
 (define (tc-toplevel/pass1 form)
@@ -106,8 +104,6 @@
        (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...))
             #:mutable (attribute fields.mutable)
             #:maker (attribute fields.maker)
-            #:constructor-return (attribute fields.constructor-return)
-            #:predicate (attribute fields.predicate)
             #:type-only (attribute fields.type-only))]
 
       ;; define-typed-struct w/ polymorphism
