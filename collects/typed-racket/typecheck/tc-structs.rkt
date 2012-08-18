@@ -9,6 +9,7 @@
          "def-binding.rkt"
          syntax/kerncase
          syntax/struct
+         syntax/parse
          racket/function
          racket/match
          racket/list
@@ -26,47 +27,42 @@
 
 (provide tc/struct tc/poly-struct names-of-struct d-s)
 
+(define-syntax-class parent
+  #:attributes (name par)
+  (pattern (name:id par:id))
+  (pattern name:id #:attr par #f))
+
+
+;; TODO make this not return a list
 (define (names-of-struct stx)
-  (define (parent? stx)
-    (syntax-case stx ()
-      [(a b)
-       (and (identifier? #'a)
-            (identifier? #'b))
-       #t]
-      [a
-       (identifier? #'a)
-       #t]
-      [_ #f]))
-  (kernel-syntax-case* stx #f
-    (define-typed-struct-internal values)
-    [(#%define-values () (begin (quote-syntax (define-typed-struct-internal (ids ...) nm/par . rest))
+  (syntax-parse stx
+    #:literal-sets (kernel-literals)
+    #:literals (define-typed-struct-internal values)
+    [(#%define-values () (begin (quote-syntax
+                                  (~or
+                                    (define-typed-struct-internal
+                                      (~optional (ids:id ...))
+                                      nm/par:parent . rest)
+                                    (define-typed-struct/exec-internal
+                                      nm/par:parent . rest)))
                                 (#%plain-app values)))
-     (and (andmap identifier? (syntax->list #'(ids ...)))
-          (parent? #'nm/par))
-     (let-values ([(nm _1 _2 _3 _4) (parse-parent #'nm/par)])
-       (list nm))]
-    [(#%define-values () (begin (quote-syntax (define-typed-struct-internal nm/par . rest))
-                                (#%plain-app values)))
-     (let-values ([(nm _1 _2 _3 _4) (parse-parent #'nm/par)])
-       (list nm))]
-    [(#%define-values () (begin (quote-syntax (define-typed-struct/exec-internal nm/par . rest))
-                                (#%plain-app values)))
-     (let-values ([(nm _1 _2 _3 _4) (parse-parent #'nm/par)])
-       (list nm))]
-    [_ (int-err "not define-typed-struct: ~a" (syntax->datum stx))]))
+     (list #'nm/par.name)]))
+
 
 ;; parse name field of struct, determining whether a parent struct was specified
-;; syntax -> (values identifier Option[Name] Option[Struct] List[Types] Symbol Type)
+;; syntax -> (values identifier Option[Name] Option[Struct] Symbol Type)
 (define (parse-parent nm/par)
-  (syntax-case nm/par ()
-    [nm (identifier? #'nm) (values #'nm #f #f (syntax-e #'nm) (make-F (syntax-e #'nm)))]
-    [(nm par) (let* ([parent0 (parse-type #'par)]
-                     [parent (if (Name? parent0)
-                                 (resolve-name parent0)
-                                 (tc-error/stx #'par "parent type not a valid structure name: ~a"
-                                               (syntax->datum #'par)))])
-                (values #'nm parent0 parent (syntax-e #'nm) (make-F (syntax-e #'nm))))]
-    [_ (int-err "not a parent: ~a" (syntax->datum nm/par))]))
+  (syntax-parse nm/par
+    [v:parent
+      (if (attribute v.par)
+          (let* ([parent0 (parse-type #'v.par)]
+                 [parent (if (Name? parent0)
+                             ;; TODO ensure this is a struct
+                             (resolve-name parent0)
+                             (tc-error/stx #'v.par "parent type not a valid structure name: ~a"
+                                           (syntax->datum #'v.par)))])
+                (values #'v.name parent0 parent))
+          (values #'v.name #f #f))]))
 
 ;; generate struct names given type name and field names
 ;; generate setters if setters? is true
@@ -91,7 +87,6 @@
 (define (get-parent-flds p)
   (match p
     [(Struct: _ _ flds _ _ _) flds]
-    [(Name: n) (get-parent-flds (lookup-type-name n))]
     [#f null]))
 
 
@@ -103,78 +98,69 @@
                                        #:type-wrapper [type-wrapper values]
                                        #:pred-wrapper [pred-wrapper values]
                                        #:mutable [setters? #f]
-                                       #:struct-info [si #f]
                                        #:proc-ty [proc-ty #f]
                                        #:maker [maker* #f]
-                                       #:predicate [pred* #f]
-                                       #:poly? [poly? #f]
+                                       #:poly? [poly? null]
                                        #:type-only [type-only #f])
      (c->* (identifier? (listof identifier?) (or/c Type/c #f) (listof fld?) (listof Type/c))
            (#:wrapper procedure?
             #:type-wrapper procedure?
             #:pred-wrapper procedure?
             #:mutable boolean?
-            #:struct-info any/c
             #:proc-ty (or/c #f Type/c)
             #:maker (or/c #f identifier?)
-            #:predicate (or/c #f identifier?)
-            #:constructor-return (or/c #f Type/c)
-            #:poly? (or/c #f (listof symbol?))
+            #:poly? (listof symbol?)
             #:type-only boolean?)
            any/c)
   ;; create the approriate names that define-struct will bind
-  (define-values (struct-type-id maker pred getters setters) (struct-names nm flds setters?))
+  (define-values (_1 maker** pred getters _2) (struct-names nm flds setters?))
+  (define maker (or maker* maker**))
   (let* ([fld-names flds]
          [this-flds (for/list ([t (in-list types)]
                                [g (in-list getters)])
                        (make-fld t g setters?))]
          [flds (append parent-fields this-flds)]
-         [sty (make-Struct nm parent flds proc-ty poly? pred)]
+         [sty (make-Struct nm parent flds proc-ty (not (null? poly?)) pred)]
          [external-fld-types/no-parent types]
          [external-fld-types (map fld-t flds)])
-    (if type-only
-        (register-type-name nm (wrapper sty))
-        (register-struct-types nm sty fld-names external-fld-types
-                               external-fld-types/no-parent setters?
-                               #:wrapper wrapper
-                               #:type-wrapper type-wrapper
-                               #:pred-wrapper pred-wrapper
-                               #:maker (or maker* maker)
-                               #:predicate (or pred* pred)
-                               #:struct-info si
-                               #:poly? poly?))))
+
+    (register-type-name nm (wrapper sty))
+    (unless type-only
+      (register-struct-types nm sty fld-names external-fld-types
+                             external-fld-types/no-parent setters?
+                             #:wrapper wrapper
+                             #:type-wrapper type-wrapper
+                             #:pred-wrapper pred-wrapper
+                             #:maker maker
+                             #:poly? poly?))))
+
 
 
 
 ;; generate names, and register the approriate types give field types and structure type
 ;; optionally wrap things
 ;; identifier Type Listof[identifier] Listof[Type] Listof[Type]
-;;   #:wrapper (Type -> Type) #:maker identifier
+;;   #:wrapper (Type -> Type) #:maker identifier -> Void
 (define/cond-contract (register-struct-types nm sty flds external-fld-types
                                              external-fld-types/no-parent setters?
-                                             #:wrapper [wrapper values]
-                                             #:struct-info [si #f]
-                                             #:type-wrapper [type-wrapper values]
-                                             #:pred-wrapper [pred-wrapper values]
-                                             #:maker [maker* #f]
-                                             #:predicate [pred* #f]
-                                             #:poly? [poly? #f])
-     (c->* (identifier? Struct? (listof identifier?) (listof Type/c) (listof Type/c) boolean?)
-           (#:wrapper procedure?
-            #:type-wrapper procedure?
-            #:pred-wrapper procedure?
-            #:struct-info any/c
-            #:maker (or/c #f identifier?)
-            #:predicate (or/c #f identifier?)
-            #:constructor-return (or/c #f Type/c)
-            #:poly? (or/c #f (listof symbol?)))
-           list?)
+                                             #:wrapper wrapper
+                                             #:type-wrapper type-wrapper
+                                             #:pred-wrapper pred-wrapper
+                                             #:maker maker
+                                             #:poly? poly?)
+     (c-> identifier? Struct? (listof identifier?) (listof Type/c) (listof Type/c) boolean?
+          #:wrapper procedure?
+          #:type-wrapper procedure?
+          #:pred-wrapper procedure?
+          #:maker identifier?
+          #:poly? (listof symbol?)
+          void?)
   ;; create the approriate names that define-struct will bind
-  (define-values (struct-type-id maker pred getters setters) (struct-names nm flds setters?))
+  (define-values (struct-type-id _2 pred getters setters) (struct-names nm flds setters?))
   ;; the type name that is used in all the types
   (define name (type-wrapper (make-Name nm)))
   ;; is this structure covariant in *all* arguments?
-  (define covariant? (if (and setters? poly?)
+  (define covariant? (if (and setters? (list? poly?))
                          #f
                          (if poly?
                              (for*/and ([var (in-list poly?)]
@@ -185,41 +171,27 @@
                              #t)))
   (define parent-count (- (length external-fld-types) (length external-fld-types/no-parent)))
   ;; the list of names w/ types
-  (define bindings
-    (list*
-     (cons struct-type-id
-           (make-StructType sty))
-     (cons (or maker* maker)
-           (wrapper (->* external-fld-types name)))
-     (cons (or pred* pred)
-           (make-pred-ty (if (not covariant?)
-                             (make-StructTop sty)
-                             (pred-wrapper name))))
-     (append
-      (for/list ([g (in-list getters)]
-                 [t (in-list external-fld-types/no-parent)]
-                 [i (in-naturals parent-count)])
-        (let* ([path (make-StructPE name i)]
-               [func (if setters?
-                         (->* (list name) t)
-                         (->acc (list name) t (list path)))])
-          (add-struct-fn! g path #f)
-          (cons g (wrapper func))))
-      (if setters?
-          (for/list ([g (in-list setters)]
-                     [t (in-list external-fld-types/no-parent)]
-                     [i (in-naturals parent-count)])
-            (add-struct-fn! g (make-StructPE name i) #t)
-            (cons g (wrapper (->* (list name t) -Void))))
-          null))))
-  (register-type-name nm (wrapper sty))
-  (cons
-   (make-def-struct-stx-binding nm si)
-   (for/list ([e bindings])
-             (let ([nm (car e)]
-                   [t (cdr e)])
-               (register-type nm t)
-               (make-def-binding nm t)))))
+  (register-type struct-type-id (make-StructType sty))
+  (register-type maker (wrapper (->* external-fld-types name)))
+  (register-type pred
+                 (make-pred-ty (if (not covariant?)
+                                   (make-StructTop sty)
+                                   (pred-wrapper name))))
+  (for ([g (in-list getters)]
+        [t (in-list external-fld-types/no-parent)]
+        [i (in-naturals parent-count)])
+    (let* ([path (make-StructPE name i)]
+           [func (if setters?
+                     (->* (list name) t)
+                     (->acc (list name) t (list path)))])
+      (add-struct-fn! g path #f)
+      (register-type g (wrapper func))))
+  (when setters?
+    (for ([g (in-list setters)]
+          [t (in-list external-fld-types/no-parent)]
+          [i (in-naturals parent-count)])
+      (add-struct-fn! g (make-StructPE name i) #t)
+      (register-type g (wrapper (->* (list name t) -Void))))))
 
 ;; check and register types for a polymorphic define struct
 ;; tc/poly-struct : Listof[identifier] (U identifier (list identifier identifier))
@@ -227,7 +199,7 @@
 ;;                  -> void
 (define (tc/poly-struct vars nm/par flds tys #:maker [maker #f] #:mutable [mutable #f])
   ;; parent field types can't actually be determined here
-  (define-values (nm parent-name parent name name-tvar) (parse-parent nm/par))
+  (define-values (nm parent-name parent) (parse-parent nm/par))
   ;; create type variables for the new type parameters
   (define tvars (map syntax-e vars))
   (define new-tvars (map make-F tvars))
@@ -255,7 +227,6 @@
   (mk/register-sty nm flds concrete-parent parent-field-types types
                    #:maker maker
                    #:mutable mutable
-                   #:struct-info (syntax-property nm/par 'struct-info)
                    ;; wrap everything in the approriate forall
                    #:wrapper (λ (t) (make-Poly tvars t))
                    #:type-wrapper (λ (t) (make-App t new-tvars #f))
@@ -269,17 +240,15 @@
 (define/cond-contract (tc/struct nm/par flds tys [proc-ty #f]
                                  #:maker [maker #f]
                                  #:mutable [mutable #f]
-                                 #:predicate [pred #f]
                                  #:type-only [type-only #f])
      (c->* (syntax? (listof identifier?) (listof syntax?))
            ((or/c #f syntax?)
             #:maker any/c
             #:mutable boolean?
-            #:predicate any/c
             #:type-only boolean?)
            any/c)
   ;; get the parent info and create some types and type variables
-  (define-values (nm parent-name parent name name-tvar) (parse-parent nm/par))
+  (define-values (nm parent-name parent) (parse-parent nm/par))
   ;; parse the field types, and determine if the type is recursive
   (define types (map parse-type tys))
   (define proc-ty-parsed (and proc-ty (parse-type proc-ty)))
@@ -294,8 +263,6 @@
                    ;; procedure
                    #:proc-ty proc-ty-parsed
                    #:maker maker
-                   #:predicate pred
-                   #:struct-info (syntax-property nm/par 'struct-info)
                    #:mutable mutable
                    #:type-only type-only))
 
@@ -311,7 +278,8 @@
           any/c)
   (define parent-name (and parent (make-Name parent)))
   (define parent-type (and parent (lookup-type-name parent)))
-  (define parent-flds (if parent (get-parent-flds parent-name) null))
+  (define parent-flds (get-parent-flds (and parent-name (resolve-name parent-name))))
+
   (define parent-tys (map fld-t parent-flds))
   (define defs (mk/register-sty nm flds parent-type parent-flds tys #:mutable #t))
   (when kernel-maker    
