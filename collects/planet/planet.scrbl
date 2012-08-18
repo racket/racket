@@ -554,6 +554,11 @@ numbers in documentation for @|PLaneT| packages, and
 @other-manual['(lib "scribblings/scribble/scribble.scrbl")]
 for instructions on how to write Scribble documentation.
 
+When testing your documentation, set up a development link and  use 
+@centered{@tt{raco setup -P <owner> <package-name> <maj> <min>}}
+with arguments based on the development link to build and 
+test your documentation.
+
 @italic{Note:} Always use @racket[this-package-in] in @racket[for-label]
 bindings when documenting @|PLaneT| packages, and always use the bindings in
 @racketmodname[planet/scribble] rather than @racketmodname[scribble/manual].
