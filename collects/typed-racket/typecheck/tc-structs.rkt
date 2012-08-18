@@ -39,33 +39,40 @@
       [_ #f]))
   (kernel-syntax-case* stx #f
     (define-typed-struct-internal values)
-    [(#%define-values () (begin (quote-syntax (define-typed-struct-internal (ids ...) nm/par . rest)) (#%plain-app values)))
+    [(#%define-values () (begin (quote-syntax (define-typed-struct-internal (ids ...) nm/par . rest))
+                                (#%plain-app values)))
      (and (andmap identifier? (syntax->list #'(ids ...)))
           (parent? #'nm/par))
      (let-values ([(nm _1 _2 _3 _4) (parse-parent #'nm/par)])
        (list nm))]
-    [(#%define-values () (begin (quote-syntax (define-typed-struct-internal nm/par . rest)) (#%plain-app values)))
+    [(#%define-values () (begin (quote-syntax (define-typed-struct-internal nm/par . rest))
+                                (#%plain-app values)))
      (let-values ([(nm _1 _2 _3 _4) (parse-parent #'nm/par)])
        (list nm))]
-    [(#%define-values () (begin (quote-syntax (define-typed-struct/exec-internal nm/par . rest)) (#%plain-app values)))
+    [(#%define-values () (begin (quote-syntax (define-typed-struct/exec-internal nm/par . rest))
+                                (#%plain-app values)))
      (let-values ([(nm _1 _2 _3 _4) (parse-parent #'nm/par)])
        (list nm))]
     [_ (int-err "not define-typed-struct: ~a" (syntax->datum stx))]))
 
 ;; parse name field of struct, determining whether a parent struct was specified
-;; syntax -> (values identifier Option[Type](must be name) Option[Type](must be struct) List[Types] Symbol Type)
+;; syntax -> (values identifier Option[Name] Option[Struct] List[Types] Symbol Type)
 (define (parse-parent nm/par)
   (syntax-case nm/par ()
     [nm (identifier? #'nm) (values #'nm #f #f (syntax-e #'nm) (make-F (syntax-e #'nm)))]
     [(nm par) (let* ([parent0 (parse-type #'par)]
-                     [parent (if (Name? parent0) (resolve-name parent0) (tc-error/stx #'par "parent type not a valid structure name: ~a" (syntax->datum #'par)))])
+                     [parent (if (Name? parent0)
+                                 (resolve-name parent0)
+                                 (tc-error/stx #'par "parent type not a valid structure name: ~a"
+                                               (syntax->datum #'par)))])
                 (values #'nm parent0 parent (syntax-e #'nm) (make-F (syntax-e #'nm))))]
     [_ (int-err "not a parent: ~a" (syntax->datum nm/par))]))
 
 ;; generate struct names given type name and field names
 ;; generate setters if setters? is true
 ;; all have syntax loc of name
-;; identifier listof[identifier] boolean -> (values identifier identifier list[identifier] Option[list[identifier]])
+;; identifier listof[identifier] boolean ->
+;;   (values identifier identifier list[identifier] Option[list[identifier]])
 (define (struct-names nm flds setters?)
   (define (split l)
     (let loop ([l l] [getters '()] [setters '()])
@@ -89,7 +96,8 @@
 
 
 ;; construct all the various types for structs, and then register the approriate names
-;; identifier listof[identifier] type listof[fld] listof[Type] boolean -> Type listof[Type] listof[Type]
+;; identifier listof[identifier] type listof[fld] listof[Type] boolean ->
+;;  (values Type listof[Type] listof[Type])
 (define/cond-contract (mk/register-sty nm flds parent parent-fields types
                                        #:wrapper [wrapper values]
                                        #:type-wrapper [type-wrapper values]
@@ -140,8 +148,10 @@
 
 ;; generate names, and register the approriate types give field types and structure type
 ;; optionally wrap things
-;; identifier Type Listof[identifier] Listof[Type] Listof[Type] #:wrapper (Type -> Type) #:maker identifier
-(define/cond-contract (register-struct-types nm sty flds external-fld-types external-fld-types/no-parent setters?
+;; identifier Type Listof[identifier] Listof[Type] Listof[Type]
+;;   #:wrapper (Type -> Type) #:maker identifier
+(define/cond-contract (register-struct-types nm sty flds external-fld-types
+                                             external-fld-types/no-parent setters?
                                              #:wrapper [wrapper values]
                                              #:struct-info [si #f]
                                              #:type-wrapper [type-wrapper values]
@@ -187,7 +197,9 @@
                              (make-StructTop sty)
                              (pred-wrapper name))))
      (append
-      (for/list ([g (in-list getters)] [t (in-list external-fld-types/no-parent)] [i (in-naturals parent-count)])
+      (for/list ([g (in-list getters)]
+                 [t (in-list external-fld-types/no-parent)]
+                 [i (in-naturals parent-count)])
         (let* ([path (make-StructPE name i)]
                [func (if setters?
                          (->* (list name) t)
@@ -195,7 +207,9 @@
           (add-struct-fn! g path #f)
           (cons g (wrapper func))))
       (if setters?
-          (for/list ([g (in-list setters)] [t (in-list external-fld-types/no-parent)] [i (in-naturals parent-count)])
+          (for/list ([g (in-list setters)]
+                     [t (in-list external-fld-types/no-parent)]
+                     [i (in-naturals parent-count)])
             (add-struct-fn! g (make-StructPE name i) #t)
             (cons g (wrapper (->* (list name t) -Void))))
           null))))
@@ -209,7 +223,9 @@
                (make-def-binding nm t)))))
 
 ;; check and register types for a polymorphic define struct
-;; tc/poly-struct : Listof[identifier] (U identifier (list identifier identifier)) Listof[identifier] Listof[syntax] -> void
+;; tc/poly-struct : Listof[identifier] (U identifier (list identifier identifier))
+;;                  Listof[identifier] Listof[syntax]
+;;                  -> void
 (define (tc/poly-struct vars nm/par flds tys #:maker [maker #f] #:mutable [mutable #f])
   ;; parent field types can't actually be determined here
   (define-values (nm parent-name parent name name-tvar) (parse-parent nm/par))
@@ -244,14 +260,17 @@
                    ;; wrap everything in the approriate forall
                    #:wrapper (λ (t) (make-Poly tvars t))
                    #:type-wrapper (λ (t) (make-App t new-tvars #f))
-                   #:pred-wrapper (λ (t) (subst-all (make-simple-substitution tvars (map (const Univ) tvars)) t))
+                   #:pred-wrapper (λ (t) (subst-all (make-simple-substitution
+                                                      tvars (map (const Univ) tvars)) t))
                    #:poly? tvars))
 
 
 ;; typecheck a non-polymophic struct and register the approriate types
 ;; tc/struct : (U identifier (list identifier identifier)) Listof[identifier] Listof[syntax] -> void
 (define/cond-contract (tc/struct nm/par flds tys [proc-ty #f]
-                                 #:maker [maker #f] #:constructor-return [cret #f] #:mutable [mutable #f]
+                                 #:maker [maker #f]
+                                 #:constructor-return [cret #f]
+                                 #:mutable [mutable #f]
                                  #:predicate [pred #f]
                                  #:type-only [type-only #f])
      (c->* (syntax? (listof identifier?) (listof syntax?))
@@ -289,7 +308,9 @@
 
 ;; register a struct type
 ;; convenience function for built-in structs
-;; tc/builtin-struct : identifier Maybe[identifier] Listof[identifier] Listof[Type] Maybe[identifier] Listof[Type] -> void
+;; tc/builtin-struct : identifier Maybe[identifier] Listof[identifier]
+;;                     Listof[Type] Maybe[identifier] Listof[Type]
+;;                     -> void
 ;; FIXME - figure out how to make this lots lazier
 (define/cond-contract (tc/builtin-struct nm parent flds tys kernel-maker)
      (c-> identifier? (or/c #f identifier?) (listof identifier?)
