@@ -107,7 +107,6 @@
                                        #:proc-ty [proc-ty #f]
                                        #:maker [maker* #f]
                                        #:predicate [pred* #f]
-                                       #:constructor-return [cret #f]
                                        #:poly? [poly? #f]
                                        #:type-only [type-only #f])
      (c->* (identifier? (listof identifier?) (or/c Type/c #f) (listof fld?) (listof Type/c))
@@ -143,8 +142,9 @@
                                #:maker (or maker* maker)
                                #:predicate (or pred* pred)
                                #:struct-info si
-                               #:poly? poly?
-                               #:constructor-return cret))))
+                               #:poly? poly?))))
+
+
 
 ;; generate names, and register the approriate types give field types and structure type
 ;; optionally wrap things
@@ -158,8 +158,7 @@
                                              #:pred-wrapper [pred-wrapper values]
                                              #:maker [maker* #f]
                                              #:predicate [pred* #f]
-                                             #:poly? [poly? #f]
-                                             #:constructor-return [cret #f])
+                                             #:poly? [poly? #f])
      (c->* (identifier? Struct? (listof identifier?) (listof Type/c) (listof Type/c) boolean?)
            (#:wrapper procedure?
             #:type-wrapper procedure?
@@ -191,7 +190,7 @@
      (cons struct-type-id
            (make-StructType sty))
      (cons (or maker* maker)
-           (wrapper (->* external-fld-types (if cret cret name))))
+           (wrapper (->* external-fld-types name)))
      (cons (or pred* pred)
            (make-pred-ty (if (not covariant?)
                              (make-StructTop sty)
@@ -269,7 +268,6 @@
 ;; tc/struct : (U identifier (list identifier identifier)) Listof[identifier] Listof[syntax] -> void
 (define/cond-contract (tc/struct nm/par flds tys [proc-ty #f]
                                  #:maker [maker #f]
-                                 #:constructor-return [cret #f]
                                  #:mutable [mutable #f]
                                  #:predicate [pred #f]
                                  #:type-only [type-only #f])
@@ -277,7 +275,6 @@
            ((or/c #f syntax?)
             #:maker any/c
             #:mutable boolean?
-            #:constructor-return any/c
             #:predicate any/c
             #:type-only boolean?)
            any/c)
@@ -285,10 +282,7 @@
   (define-values (nm parent-name parent name name-tvar) (parse-parent nm/par))
   ;; parse the field types, and determine if the type is recursive
   (define types (map parse-type tys))
-  (define proc-ty-parsed
-    (if proc-ty
-        (parse-type proc-ty)
-        #f))
+  (define proc-ty-parsed (and proc-ty (parse-type proc-ty)))
 
   (when (Poly? parent)
     (tc-error "Could not instantiate parent struct type. Required ~a type variables, recieved none."
@@ -302,7 +296,6 @@
                    #:maker maker
                    #:predicate pred
                    #:struct-info (syntax-property nm/par 'struct-info)
-                   #:constructor-return (and cret (parse-type cret))
                    #:mutable mutable
                    #:type-only type-only))
 
