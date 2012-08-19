@@ -364,7 +364,10 @@
                       '(string-constant find-info)
                       '(λ (item control) (void))
                       #\f
-                      '(cons 'shift (get-default-shortcut-prefix))
+                      '(cons (if (eq? (system-type) 'macosx)
+                                 'option
+                                 'alt )
+                             (get-default-shortcut-prefix))
                       '(string-constant find-from-selection-menu-item)
                       edit-menu:edit-target-on-demand
                       #f)
