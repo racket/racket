@@ -729,41 +729,51 @@ for more information on @filepath{info.rkt} files.
 
 @subsection{Build a Distribution Archive}
 
-Use the planet command-line tool in its archive-creation mode to
-create a planet archive:
+@itemlist[#:style 
+          'ordered
+          @item{So that the next step can find @racket[for-label] documentation
+                in your own package, first set up a development link
+                (if it is not already set), using 
+                @commandline{raco planet link <owner> pkg.plt> <maj> <min> <path-to-files>}
+                This step is not necessary if your package has no documentation.}
+          @item{Use the planet command-line tool in its archive-creation mode to
+                create a planet archive:
 
-@commandline{raco planet create /home/jacobm/my-app/}
+                @commandline{raco planet create /home/jacobm/my-app/}
 
-This will create a planet archive named @filepath{my-app.plt} in the current
-directory whose contents are the contents of @filepath{/home/jacobm/my-app} and
-all its subdirectories. 
+                This will create a planet archive named @filepath{my-app.plt} in the current
+                directory whose contents are the contents of @filepath{/home/jacobm/my-app} and
+                all its subdirectories. 
 
-Alternately, you can run @racket[make-planet-archive] with the name of the directory
-you've prepared as its argument:
+                Alternately, you can run @racket[make-planet-archive] with the name of the directory
+                you've prepared as its argument:
+                
+                @racket[(make-planet-archive "/home/jacobm/my-app/")]
 
-@racket[(make-planet-archive "/home/jacobm/my-app/")]
+                This function will build a packaged version of your directory and
+                return the path to that package. The path will always be a file named
+                @filepath{X.plt}, where @filepath{X} is the name of the directory you
+                gave to @racket[make-planet-archive], located in that same directory.}
+          @item{Remove the development link from the first step (assuming you added one) using
+                @commandline{raco planet unlink <owner> <packagename.plt> <maj> <min>}}
+          @item{Now test that your archive file works as intended using the
+                planet command-line tool in its install mode:
+                @commandline{raco planet fileinject <owner> <path to .plt file> <maj> <min>}
+                installs the specified file into your local PLaneT cache as
+                though it had been downloaded from the PLaneT server with the given
+                owner name and major and minor versions. After you run this command,
+                you can require your package on your local machine using
 
-This function will build a packaged version of your directory and
-return the path to that package. The path will always be a file named
-@filepath{X.plt}, where @filepath{X} is the name of the directory you
-gave to @racket[make-planet-archive], located in that same directory.
+                @racket[(require (planet <file> (<owner> <.plt file name> <maj> <min>)))]
 
-You can now test that your archive file works as intended using the
-planet command-line tool in its install mode:
-@commandline{raco planet fileinject <owner> <path to your .plt file> <maj> <min>}
-installs the specified file into your local PLaneT cache as
-though it had been downloaded from the PLaneT server with the given
-owner name and major and minor versions. After you run this command,
-you can require your package on your local machine using
-
-@racket[(require (planet <file> (<owner> <.plt file name> <maj> <min>)))]
-
-to verify everything works. After you do so, you can use
-@commandline{raco planet remove <owner> <.plt file name> <maj> <min>}
-to remove the test package from your local cache. (Not removing it is
-safe as long as you use the same name and version numbers the package
-will have on the PLaneT server; otherwise you may experience
-problems.)
+                to verify everything works.}
+          
+          @item{Finally, use
+                @commandline{raco planet remove <owner> <.plt file name> <maj> <min>}
+                to remove the test package from your local cache. (Not removing it is
+                safe as long as you use the same name and version numbers the package
+                will have on the PLaneT server; otherwise you may experience
+                problems.)}]
 
 @subsection[#:tag "backwards-compatibility"]{Determine Your Package's Backwards-Compatibility}
 
