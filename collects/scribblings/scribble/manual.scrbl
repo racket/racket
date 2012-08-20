@@ -1295,6 +1295,8 @@ as follows:
 
 @itemize[
 
+ @item{The string is case-folded.}
+
  @item{A trailing ``ies'' is replaced by ``y''.}
 
  @item{A trailing ``s'' is removed.}
