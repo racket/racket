@@ -154,8 +154,6 @@
    (f
     (build-path path p)
     (lambda ()
-      (force (run-in-other-place p*))
-      #;
       (parameterize ([read-accept-reader #t]
                      [current-load-relative-directory
                       (path->complete-path path)]
