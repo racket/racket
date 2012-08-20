@@ -97,6 +97,7 @@ Keep documentation and tests up to date.
 @include-section["parameter-group.scrbl"]
 @include-section["pretty.scrbl"]
 @include-section["recontract.scrbl"]
+@include-section["sandbox.scrbl"]
 @include-section["sequence.scrbl"]
 @include-section["string.scrbl"]
 @include-section["struct.scrbl"]
