@@ -1283,15 +1283,16 @@ Alias of @racket[hyperlink] for backward compatibility.}
 Alias of @racket[other-doc] for backward compatibility.}
 
 @defproc[(deftech [pre-content pre-content?] ...
-                  [#:style? style? boolean? #t]) element?]{
+                  [#:normalize? normalize? any/c #t]
+                  [#:style? style? any/c #t]) element?]{
 
 Produces an element for the @tech{decode}d @racket[pre-content], and
 also defines a term that can be referenced elsewhere using
 @racket[tech].
 
 The @racket[content->string] result of the @tech{decode}d
-@racket[pre-content] is used as a key for references, but normalized
-as follows:
+@racket[pre-content] is used as a key for references; if
+@racket[normalize?] is true, then the string is normalized as follows:
 
 @itemize[
 
@@ -1315,6 +1316,7 @@ If @racket[style?] is true, then @racket[defterm] is used on
 
 @defproc[(tech [pre-content pre-content?] ...
                [#:key key (or/c string? #f) #f]
+               [#:normalize? normalize? any/c #t]
                [#:doc module-path (or/c module-path? #f) #f]
                [#:tag-prefixes prefixes (or/c (listof string?) #f) #f])
          element?]{
@@ -1323,7 +1325,7 @@ Produces an element for the @tech{decode}d @racket[pre-content], and
 hyperlinks it to the definition of the key as established by
 @racket[deftech]. If @racket[key] is false, the decoded content is
 converted to a string (using @racket[content->string]) to use as a
-key; in either case, the key is normalized in the same way as for
+key; in either case, if @racket[normalize?] is true, the key is normalized in the same way as for
 @racket[deftech]. The @racket[#:doc] and @racket[#:tag-prefixes]
 arguments support cross-document and section-specific references, like
 in @racket[secref].
@@ -1341,6 +1343,7 @@ linked to the former using @racketfont["@tech{bind}ing"].}
 
 @defproc[(techlink [pre-content pre-content?] ...
                    [#:key key (or/c string? #f) #f]
+                   [#:normalize? normalize? any/c #t]
                    [#:doc module-path (or/c module-path? #f) #f]
                    [#:tag-prefixes prefixes (or/c (listof string?) #f) #f]) 
          element?]{
