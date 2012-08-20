@@ -9,7 +9,6 @@
          images/icons/misc
          "../rectangle-intersect.rkt"
          string-constants)
-
 (provide docs-text-mixin
          docs-editor-canvas-mixin
          syncheck:add-docs-range
@@ -361,6 +360,7 @@
     (define last-evt-seen #f)
     (define/override (on-event evt)
       (set! last-evt-seen evt)
+      (update-the-strs/maybe-invalidate void void)
       (update-mouse-in-blue-box (in-blue-box? evt))
       (define-values (is-in-lock? is-in-read-more?) (in-lock/in-read-more? last-evt-seen))
       (update-mouse-in-lock-icon/read-more? is-in-lock? is-in-read-more?)
@@ -385,6 +385,7 @@
     (define/augment (after-set-position)
       (inner (void) after-set-position)
       (when (or locked?
+                mouse-in-blue-box?
                 (not the-strs))
         (unless timer-running?
           (set! timer-running? #t)
@@ -394,28 +395,37 @@
       (update-the-strs))
     
     (define/private (update-the-strs)
-      (define sp (get-start-position))
-      (when (= sp (get-end-position))
-        (define tag+rng (interval-map-ref docs-im sp #f))
-        (when tag+rng
-          (define ir-start (list-ref tag+rng 0))
-          (define ir-end (list-ref tag+rng 1))
-          (define tag (list-ref tag+rng 2))
-          (define new-visit-docs-url (list-ref tag+rng 3))
-          (define new-strs (fetch-strs tag))
-          (when new-strs
-            (begin-edit-sequence)
-            (invalidate-blue-box-region)
-            (set! the-strs new-strs)
-            (set! the-strs-id-start ir-start)
-            (set! the-strs-id-end ir-end)
-            (set! visit-docs-url new-visit-docs-url)
-            (when last-evt-seen
-              (update-mouse-in-blue-box (in-blue-box? last-evt-seen))
-              (define-values (is-in-lock? is-in-read-more?) (in-lock/in-read-more? last-evt-seen))
-              (update-mouse-in-lock-icon/read-more? is-in-lock? is-in-read-more?))
-            (invalidate-blue-box-region)
-            (end-edit-sequence)))))
+      (update-the-strs/maybe-invalidate
+       (λ ()
+         (begin-edit-sequence)
+         (invalidate-blue-box-region))
+       (λ ()
+         (when last-evt-seen
+           (update-mouse-in-blue-box (in-blue-box? last-evt-seen))
+           (define-values (is-in-lock? is-in-read-more?) (in-lock/in-read-more? last-evt-seen))
+           (update-mouse-in-lock-icon/read-more? is-in-lock? is-in-read-more?))
+         (invalidate-blue-box-region)
+         (end-edit-sequence))))
+    
+      ;; update-the-strs/maybe-invalidate : (-> void) (-> void) -> boolean
+      ;; returns #t if something changed (and thus invalidation should happen)
+      (define/private (update-the-strs/maybe-invalidate before after)
+        (define sp (get-start-position))
+        (when (= sp (get-end-position))
+          (define tag+rng (interval-map-ref docs-im sp #f))
+          (when tag+rng
+            (define ir-start (list-ref tag+rng 0))
+            (define ir-end (list-ref tag+rng 1))
+            (define tag (list-ref tag+rng 2))
+            (define new-visit-docs-url (list-ref tag+rng 3))
+            (define new-strs (fetch-strs tag))
+            (when new-strs
+              (before)
+              (set! the-strs new-strs)
+              (set! the-strs-id-start ir-start)
+              (set! the-strs-id-end ir-end)
+              (set! visit-docs-url new-visit-docs-url)
+              (after)))))
     
     (define/augment (on-insert where len)
       (clear-im-range where len)
