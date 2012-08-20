@@ -89,7 +89,7 @@
        name (match i-t [(tc-result1: t) t]))]
     [else
      (single-value val-e)
-     (index-error i-val i-bound i-e vec-t expected) name]))
+     (index-error i-val i-bound i-e vec-t expected name)]))
 
 (define (tc/app-hetero form expected)
   (syntax-parse form
