@@ -1082,7 +1082,7 @@ earlier fields.}}
   (rename orig-id id contract-expr)
   (id contract-expr)
   (code:line #:∃ poly-variables)
-  (code:line #:poly exists-variables)
+  (code:line #:exists poly-variables)
   (code:line #:∀ poly-variables)
   (code:line #:forall poly-variables)]
  [poly-variables identifier
