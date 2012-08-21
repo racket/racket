@@ -128,7 +128,8 @@
                             (vector (let ([mthd-generic (vector-ref generic-vector generic-idx)])
                                       (and mthd-generic
                                            (generic-arity-coerce mthd-generic)))
-                                    ...))))))
+                                    ...))
+                          null #t))))
              ;; Hash table mapping method name symbols to
              ;; whether the given method is implemented
              (define (defined-table this)
@@ -220,11 +221,11 @@
         [else val]))
 
 ;; projection for generic methods
-(define ((generic-instance/c-proj proxy-struct) ctc)
+(define ((generic-instance/c-proj proxy-struct proxy-vector) ctc)
   (λ (blame)
     ;; for redirecting the method table accessor
     (define (redirect struct v)
-      (chaperone-vector
+      (proxy-vector
        v
        (method-table-redirect ctc blame)
        (λ (vec i v) v)))
@@ -266,13 +267,13 @@
 (struct chaperone-generic-instance/c base-generic-instance/c ()
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
-   #:projection (generic-instance/c-proj chaperone-struct)
+   #:projection (generic-instance/c-proj chaperone-struct chaperone-vector)
    #:first-order generic-instance/c-first-order
    #:name generic-instance/c-name))
 
 (struct impersonator-generic-instance/c base-generic-instance/c ()
   #:property prop:contract
   (build-contract-property
-   #:projection (generic-instance/c-proj impersonate-struct)
+   #:projection (generic-instance/c-proj impersonate-struct impersonate-vector)
    #:first-order generic-instance/c-first-order
    #:name generic-instance/c-name))

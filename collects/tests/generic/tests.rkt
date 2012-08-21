@@ -10,4 +10,5 @@
          (submod "custom-write.rkt" test)
          "base-interfaces.rkt"
          "contract.rkt"
-         "from-unstable.rkt")
+         "from-unstable.rkt"
+         "poly-contracts.rkt")
