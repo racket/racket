@@ -13990,6 +13990,86 @@ so that propagation occurs.
 
       (dynamic-require ''provide/contract38-b 'the-answer))
    #t)
+
+  ;; #:forall contract-out clauses
+  (test/spec-passed/result
+   'provide/contract39
+   '(begin
+      (eval '(module provide/contract39-m1 racket/base
+               (require racket/contract)
+               (provide/contract
+                #:∀ x
+                [f (-> x (-> x x) x)])
+               (define (f x g) (g x))))
+
+      (eval '(module provide/contract39-m2 racket/base
+               (require racket/contract 'provide/contract39-m1)
+               (provide provide/contract39-x)
+               (define provide/contract39-x (f 10 (λ (x) x)))))
+      
+      (eval '(require 'provide/contract39-m2))
+      (eval 'provide/contract39-x))
+   10)
+  
+  (test/spec-passed/result
+   'provide/contract40
+   '(begin
+      (eval '(module provide/contract40-m1 racket/base
+               (require racket/contract)
+               (provide/contract
+                #:forall x
+                [f (-> x (-> x x) x)])
+               (define (f x g) (g x))))
+
+      (eval '(module provide/contract40-m2 racket/base
+               (require racket/contract 'provide/contract40-m1)
+               (provide provide/contract40-x)
+               (define provide/contract40-x (f 10 (λ (x) x)))))
+      
+      (eval '(require 'provide/contract40-m2))
+      (eval 'provide/contract40-x))
+   10)
+  
+  (test/spec-passed/result
+   'provide/contract41
+   '(begin
+      (eval '(module provide/contract41-m1 racket/base
+               (require racket/contract)
+               (provide/contract
+                #:forall (x)
+                [f (-> x (-> x x) x)])
+               (define (f x g) (g x))))
+
+      (eval '(module provide/contract41-m2 racket/base
+               (require racket/contract 'provide/contract41-m1)
+               (provide provide/contract41-x)
+               (define provide/contract41-x (f 10 (λ (x) x)))))
+      
+      (eval '(require 'provide/contract41-m2))
+      (eval 'provide/contract41-x))
+   10)
+  
+  (test/spec-passed/result
+   'provide/contract42
+   '(begin
+      (eval '(module provide/contract42-m1 racket/base
+               (require racket/contract)
+               (define x integer?)
+               (define g 11)
+               (provide/contract
+                [g x]
+                #:forall (x)
+                [f (-> x (-> x x) x)])
+               (define (f x g) (g x))))
+
+      (eval '(module provide/contract42-m2 racket/base
+               (require racket/contract 'provide/contract42-m1)
+               (provide provide/contract42-x)
+               (define provide/contract42-x (f 10 (λ (x) x)))))
+      
+      (eval '(require 'provide/contract42-m2))
+      (eval 'provide/contract42-x))
+   10)
   
   (contract-error-test
    'contract-error-test8

@@ -1081,10 +1081,12 @@ earlier fields.}}
   (struct (id identifier) ((id contract-expr) ...))
   (rename orig-id id contract-expr)
   (id contract-expr)
-  (code:line #:∃ exists-variables)
-  (code:line #:exists exists-variables)]
- [exists-variables identifier
-                   (identifier ...)])]{
+  (code:line #:∃ poly-variables)
+  (code:line #:poly exists-variables)
+  (code:line #:∀ poly-variables)
+  (code:line #:forall poly-variables)]
+ [poly-variables identifier
+                 (identifier ...)])]{
 
 A @racket[_provide-spec] for use in @racket[provide] (currently only for
 the same @tech{phase level} as the @racket[provide] form; for example,
@@ -1124,10 +1126,12 @@ the selector or mutators for the super-struct are not provided. The
 exported structure-type name always doubles as a constructor, even if
 the original structure-type name does not act as a constructor.
 
-The @racket[#:∃] and @racket[#:exists] clauses define new abstract
-contracts. The variables are bound in the remainder of the @racket[contract-out]
-form to new contracts that hide the values they accept and
-ensure that the exported functions are treated parametrically.
+The @racket[#:∃], @racket[#:exists], @racket[#:∀], and @racket[#:forall]
+clauses define new abstract contracts. The variables are bound in the
+remainder of the @racket[contract-out] form to new contracts that hide
+the values they accept and ensure that the exported functions are treated
+parametrically. See @racket[new-∃/c] and @racket[new-∀/c] for details
+on how the clauses hide the values.
 
 The implementation of @racket[contract-out] attaches uses
 @racket[syntax-property] to attach properties to the code it generates

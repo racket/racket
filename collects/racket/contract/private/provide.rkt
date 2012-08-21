@@ -169,7 +169,8 @@
               ;; compare raw identifiers for `struct' and `rename' just like provide does
               (syntax-case* clause (struct rename) (λ (x y) (eq? (syntax-e x) (syntax-e y))) 
                 [exists
-		 (or (eq? '#:exists (syntax-e #'exists)) (eq? '#:∃ (syntax-e #'exists)))
+		 (or (eq? '#:exists (syntax-e #'exists)) (eq? '#:∃ (syntax-e #'exists))
+                     (eq? '#:forall (syntax-e #'exists)) (eq? '#:∀ (syntax-e #'exists)))
                  (cond
                    [(null? (cdr clauses))
                     (raise-syntax-error who
@@ -184,7 +185,7 @@
                        (if just-check-errors?
                            (loop (cddr clauses) exists-binders)
                            (with-syntax ([(x-gen) (generate-temporaries #'(x))])
-                             (cons (code-for-one-exists-id #'x #'x-gen)
+                             (cons (code-for-one-poly-id #'x #'x-gen #'exists)
                                    (loop (cddr clauses) 
                                          (add-a-binder #'x #'x-gen exists-binders)))))]
                       [(x ...)
@@ -192,7 +193,7 @@
                        (if just-check-errors?
                            (loop (cddr clauses) exists-binders)
                            (with-syntax ([(x-gen ...) (generate-temporaries #'(x ...))])
-                             (append (map code-for-one-exists-id 
+                             (append (map (λ (x x-gen) (code-for-one-poly-id x x-gen #'exists))
                                           (syntax->list #'(x ...))
                                           (syntax->list #'(x-gen ...)))
                                      (loop (cddr clauses)
@@ -678,9 +679,11 @@
                        field-contract-id
                        void?))))
        
-       ;; code-for-one-exists-id : syntax -> syntax
-       (define (code-for-one-exists-id x x-gen)
-         #`(define #,x-gen (new-∃/c '#,x)))
+       ;; code-for-one-poly-id : syntax -> syntax
+       (define (code-for-one-poly-id x x-gen poly)
+         (if (or (eq? '#:exists (syntax-e poly)) (eq? '#:∃ (syntax-e poly)))
+             #`(define #,x-gen (new-∃/c '#,x))
+             #`(define #,x-gen (new-∀/c '#,x))))
        
        (define (add-exists-binders stx exists-binders)
          (if (null? exists-binders)
