@@ -1,7 +1,5 @@
 #lang racket
-(require (only-in mzlib/etc 
-                  identity nor)
-         "contract.rkt"
+(require "contract.rkt"
          "erl.rkt"
          "heap.rkt")
 
@@ -410,8 +408,8 @@
        sup
        (filter (lambda (a)
                  (let ([v (weak-box-value a)])
-                   (nor (eq? v inf)
-                        (eq? v #f))))
+                   (not (or (eq? v inf)
+                            (eq? v #f)))))
                dependents))]
      [_ (void)])))
 
