@@ -1,10 +1,18 @@
 #lang frtime
-(require (lifted texpict/mrpict colorize vl-append vr-append text
-                 cc-superimpose hb-append ht-append pin-over blank
-                 dc-for-text-size)
-         (lifted texpict/utils filled-rectangle rectangle)
+(require (lifted (only-in texpict/mrpict colorize) colorize)
+         (lifted (only-in texpict/mrpict vl-append) vl-append)
+         (lifted (only-in texpict/mrpict vr-append) vr-append)
+         (lifted (only-in texpict/mrpict text) text)
+         (lifted (only-in texpict/mrpict cc-superimpose) cc-superimpose)
+         (lifted (only-in texpict/mrpict hb-append) hb-append)
+         (lifted (only-in texpict/mrpict ht-append) ht-append)
+         (lifted (only-in texpict/mrpict pin-over) pin-over)
+         (lifted (only-in texpict/mrpict blank) blank)
+         (lifted (only-in texpict/mrpict dc-for-text-size) dc-for-text-size) 
+         (lifted (only-in texpict/utils filled-rectangle) filled-rectangle)
+         (lifted (only-in texpict/utils rectangle) rectangle)
          frtime/gui/fred mred
-         (only frtime/core/frp do-in-manager do-in-manager-after))
+         (only-in frtime/core/frp do-in-manager do-in-manager-after))
 
 ;; TODO: layered drawing, pause, game over
 
@@ -14,7 +22,7 @@
 (define size (new-cell 20))
 (define row-width 12)
 
-(do-in-manager-after ())
+(do-in-manager-after '())
 
 (define list-ref*
   (case-lambda
