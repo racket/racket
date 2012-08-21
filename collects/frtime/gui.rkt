@@ -1,6 +1,5 @@
 (module gui frtime
   (require
-   (except-in mzlib/etc rec)
    frtime/gui/fred)
   
   (define frame (new ft-frame% [label "GUI"] [min-height 150] [min-width 200] [shown #t]))
