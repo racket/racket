@@ -7,6 +7,12 @@
           "tabbing.rkt"
           (for-label db db/util/geometry db/util/postgresql racket/dict))
 
+@;{ c - misc connection (alias to pgc)
+    myc - MySQL connection (???)
+    slc - SQLite connection (???)
+}
+@(the-eval '(define c pgc))
+
 @title[#:tag "query-api"]{Queries}
 
 @declare-exporting[db db/base #:use-sources (db/base)]
@@ -126,11 +132,9 @@ The types of parameters and returned fields are described in
 
   Executes a SQL statement for effect.
 
-@examples/results[
-[(query-exec c "insert into some_table values (1, 'a')")
- (void)]
-[(query-exec pgc "delete from some_table where n = $1" 42)
- (void)]
+@examples[#:eval the-eval
+(query-exec pgc "insert into the_numbers values (42, 'the answer')")
+(query-exec pgc "delete from the_numbers where n = $1" 42)
 ]
 }
 
@@ -150,11 +154,9 @@ The types of parameters and returned fields are described in
   Executes a SQL query, which must produce rows, and returns the list
   of rows (as vectors) from the query.
 
-@examples/results[
-[(query-rows pgc "select * from the_numbers where n = $1" 2)
- (list (vector 2 "company"))]
-[(query-rows c "select 17")
- (list (vector 17))]
+@examples[#:eval the-eval
+(query-rows pgc "select * from the_numbers where n = $1" 2)
+(query-rows c "select 17")
 ]
 
   If @racket[groupings] is not empty, the result is the same as if
@@ -169,11 +171,9 @@ The types of parameters and returned fields are described in
   Executes a SQL query, which must produce rows of exactly one
   column, and returns the list of values from the query.
 
-@examples/results[
-[(query-list c "select n from the_numbers where n < 2")
- (list 0 1)]
-[(query-list c "select 'hello'")
- (list "hello")]
+@examples[#:eval the-eval
+(query-list c "select n from the_numbers where n < 2")
+(query-list c "select 'hello'")
 ]
 }
 
@@ -185,11 +185,9 @@ The types of parameters and returned fields are described in
   Executes a SQL query, which must produce exactly one row, and
   returns its (single) row result as a vector.
 
-@examples/results[
-[(query-row myc "select * from the_numbers where n = ?" 2)
- (vector 2 "company")]
-[(query-row c "select 17")
- (vector 17)]
+@examples[#:eval the-eval
+(query-row pgc "select * from the_numbers where n = $1" 2)
+(query-row pgc "select min(n), max(n) from the_numbers")
 ]
 }
 
@@ -201,11 +199,9 @@ The types of parameters and returned fields are described in
   Like @racket[query-row], but the query may produce zero rows; in
   that case, @racket[#f] is returned.
 
-@examples/results[
-[(query-maybe-row pgc "select * from the_numbers where n = $1" 100)
- #f]
-[(query-maybe-row c "select 17")
- (vector 17)]
+@examples[#:eval the-eval
+(query-maybe-row pgc "select * from the_numbers where n = $1" 100)
+(query-maybe-row c "select 17")
 ]
 }
 
@@ -217,11 +213,9 @@ The types of parameters and returned fields are described in
   Executes a SQL query, which must produce exactly one row of exactly
   one column, and returns its single value result.
 
-@examples/results[
-[(query-value pgc "select timestamp 'epoch'")
- (sql-timestamp 1970 1 1 0 0 0 0 #f)]
-[(query-value pgc "select s from the_numbers where n = $1" 3)
- "a crowd"]
+@examples[#:eval the-eval
+(query-value pgc "select timestamp 'epoch'")
+(query-value pgc "select d from the_numbers where n = $1" 3)
 ]
 }
 
@@ -233,11 +227,9 @@ The types of parameters and returned fields are described in
   Like @racket[query-value], but the query may produce zero rows; in
   that case, @racket[#f] is returned.
 
-@examples/results[
-[(query-value myc "select s from some_table where n = ?" 100)
- #f]
-[(query-value c "select 17")
- 17]
+@examples[#:eval the-eval
+(query-value pgc "select d from the_numbers where n = $1" 100)
+(query-value c "select count(*) from the_numbers")
 ]
 }
 
@@ -272,18 +264,15 @@ The types of parameters and returned fields are described in
   @racket[groupings] is not empty, then @racket[fetch-size] must
   be @racket[+inf.0]; otherwise, an exception is raised.
 
-@examples/results[
-[(for/list ([n (in-query pgc "select n from the_numbers where n < 2")])
-   n)
- '(0 1)]
-[(call-with-transaction pgc
-   (lambda ()
-     (for ([(n d)
-            (in-query pgc "select * from the_numbers where n < $1" 4
-                      #:fetch 1)])
-       (printf "~a is ~a\n" n d))))
- (for-each (lambda (n d) (printf "~a: ~a\n" n d))
-           '(0 1 2 3) '("nothing" "the loneliest number" "company" "a crowd"))]
+@examples[#:eval the-eval
+(for/list ([n (in-query pgc "select n from the_numbers where n < 2")])
+  n)
+(call-with-transaction pgc
+  (lambda ()
+    (for ([(n d)
+           (in-query pgc "select * from the_numbers where n < $1" 4
+                     #:fetch 1)])
+      (printf "~a: ~a\n" n d))))
 ]
 
 An @racket[in-query] application can provide better performance when
@@ -291,11 +280,9 @@ it appears directly in a @racket[for] clause. In addition, it may
 perform stricter checks on the number of columns returned by the query
 based on the number of variables in the clause's left-hand side:
 
-@examples/results[
-[(for ([n (in-query pgc "select * from the_numbers")])
-   (displayln n))
- (error 'in-query "query returned 2 columns (expected 1): ~e"
-        "select * from the_numbers")]
+@examples[#:eval the-eval
+(for ([n (in-query pgc "select * from the_numbers")])
+  (displayln n))
 ]
 }
 
@@ -490,16 +477,16 @@ closed.
   but it must be used with the same connection that created
   @racket[pst].
 
-  @(examples/results
-    [(let* ([get-name-pst
+  @examples[#:eval the-eval
+    (let* ([get-name-pst
             (prepare pgc "select d from the_numbers where n = $1")]
-            [get-name2
-             (bind-prepared-statement get-name-pst (list 2))]
-            [get-name3
-             (bind-prepared-statement get-name-pst (list 3))])
-       (list (query-value pgc get-name2)
-             (query-value pgc get-name3)))
-     (list "company" "a crowd")])
+           [get-name2
+            (bind-prepared-statement get-name-pst (list 2))]
+           [get-name3
+            (bind-prepared-statement get-name-pst (list 3))])
+      (list (query-value pgc get-name2)
+            (query-value pgc get-name3)))
+  ]
 
   Most query functions perform the binding step implicitly.
 }
@@ -526,19 +513,17 @@ closed.
   function variant allows the SQL syntax to be dynamically customized
   for the database system in use.
 
-@examples/results[
-[(define pst
-   (virtual-statement
-    (lambda (dbsys)
-      (case (dbsystem-name dbsys)
-        ((postgresql) "select n from the_numbers where n < $1")
-        ((sqlite3) "select n from the_numbers where n < ?")
-        (else (error "unknown system"))))))
- (void)]
-[(query-list pgc pst 3)
- (list 1 2)]
-[(query-list slc pst 3)
- (list 1 2)]
+@examples[#:eval the-eval
+(define pst
+  (virtual-statement
+   (lambda (dbsys)
+     (case (dbsystem-name dbsys)
+       ((postgresql) "select n from the_numbers where n < $1")
+       ((sqlite3) "select n from the_numbers where n < ?")
+       (else (error "unknown system"))))))
+(query-list pgc pst 3)
+(eval:alts (query-list slc pst 3)
+           (query-list pgc pst 3))
 ]
 }
 
@@ -748,13 +733,9 @@ type.
   @racket['message] key is typically present; its value is a string
   containing the error message.
 
-@examples/results[
-[(with-handlers ([exn:fail:sql? exn:fail:sql-info])
-   (query pgc "select * from nosuchtable"))
- '((severity . "ERROR")
-   (code . "42P01")
-   (message . "relation \"nosuchtable\" does not exist")
-   ...)]
+@examples[#:eval the-eval
+(with-handlers ([exn:fail:sql? exn:fail:sql-info])
+  (query pgc "select * from nosuchtable"))
 ]
 
   Errors originating from the @racketmodname[db] library, such as

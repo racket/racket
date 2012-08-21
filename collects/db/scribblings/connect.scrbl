@@ -100,7 +100,7 @@ Base connections are made using the following functions.
 
   If the connection cannot be made, an exception is raised.
 
-  @(examples/results
+  @fake-examples[
     [(postgresql-connect #:server "db.mysite.com"
                          #:port 5432
                          #:database "webappdb"
@@ -119,7 +119,7 @@ Base connections are made using the following functions.
     [(postgresql-connect #:socket 'guess (code:comment "or (postgresql-guess-socket-path)")
                          #:user "me"
                          #:database "me")
-     (new connection%)])
+     (new connection%)]]
 }
 
 @defproc[(postgresql-guess-socket-path)
@@ -162,7 +162,7 @@ Base connections are made using the following functions.
 
   If the connection cannot be made, an exception is raised.
 
-  @(examples/results
+  @fake-examples[
     [(mysql-connect #:server "db.mysite.com"
                     #:port 3306
                     #:database "webappdb"
@@ -181,7 +181,7 @@ Base connections are made using the following functions.
     [(mysql-connect #:socket (mysql-guess-socket-path)
                     #:user "me"
                     #:database "me")
-     (new connection%)])
+     (new connection%)]]
 }
 
 @defproc[(mysql-guess-socket-path)
@@ -234,12 +234,12 @@ Base connections are made using the following functions.
 
   If the connection cannot be made, an exception is raised.
 
-  @(examples/results
+  @fake-examples[
     [(sqlite3-connect #:database "/path/to/my.db")
      (new connection%)]
     [(sqlite3-connect #:database "relpath/to/my.db"
                       #:mode 'create)
-     (new connection%)])
+     (new connection%)]]
 }
 
 @defproc[(odbc-connect [#:dsn dsn string?]
@@ -348,20 +348,19 @@ Creates a @tech{connection pool}. The pool consists of up to
 @racket[connect] function must return a fresh connection each time it
 is called.
 
-@examples/results[
-[(define pool
-  (connection-pool
-   (lambda () (displayln "connecting!") (sqlite3-connect ....))
-   #:max-idle-connections 1))
- (void)]
-[(define c1 (connection-pool-lease pool))
- (displayln "connecting!")]
-[(define c2 (connection-pool-lease pool))
- (displayln "connecting!")]
-[(disconnect c1)
- (void)]
-[(code:line (define c3 (connection-pool-lease pool)) (code:comment "reuses actual conn. from c1"))
- (void)]
+@examples[#:eval the-eval
+(eval:alts
+ (define pool
+   (connection-pool
+    (lambda () (displayln "connecting!") (sqlite3-connect ....))
+    #:max-idle-connections 1))
+ (define pool
+   (connection-pool
+    (lambda () (displayln "connecting!") (sqlite3-connect #:database 'memory)))))
+(define c1 (connection-pool-lease pool))
+(define c2 (connection-pool-lease pool))
+(disconnect c1)
+(code:line (define c3 (connection-pool-lease pool)) (code:comment "reuses actual conn. from c1"))
 ]
 
 See also @racket[virtual-connection] for a mechanism that eliminates
@@ -434,10 +433,9 @@ closing its own connections. In particular, a @tech{virtual
 connection} backed by a @tech{connection pool} combines convenience
 with efficiency:
 
-@examples/results[
-[(define the-connection
-   (virtual-connection (connection-pool (lambda () ....))))
- (void)]
+@racketblock[
+(define the-connection
+  (virtual-connection (connection-pool (lambda () ....))))
 ]
 
 The resulting virtual connection leases a connection from the pool on
@@ -451,27 +449,25 @@ causes the current actual connection associated with the thread (if
 there is one) to be disconnected, but the connection will be recreated
 if a query function is executed.
 
-@examples/results[
-[(define c
+@examples[#:eval the-eval
+(eval:alts
+ (define c
    (virtual-connection
     (lambda ()
       (printf "connecting!\n")
       (postgresql-connect ....))))
- (void)]
-[(connected? c)
- (values #f)]
-[(query-value c "select 1")
- (begin (printf "connecting!\n") 1)]
-[(connected? c)
- (values #t)]
-[(void (thread (lambda () (displayln (query-value c "select 2")))))
- (begin (printf "connecting!\n") (displayln 2))]
-[(disconnect c)
- (void)]
-[(connected? c)
- (values #f)]
-[(query-value c "select 3")
- (begin (printf "connecting!\n") 3)]
+ (define c
+   (virtual-connection
+    (lambda ()
+      (printf "connecting!\n")
+      (dsn-connect 'db-scribble-env)))))
+(connected? c)
+(query-value c "select 1")
+(connected? c)
+(void (thread (lambda () (displayln (query-value c "select 2")))))
+(disconnect c)
+(connected? c)
+(query-value c "select 3")
 ]
 
 Connections produced by @racket[virtual-connection] may not be used
@@ -479,17 +475,15 @@ with the @racket[prepare] function. However, they may still be used to
 execute parameterized queries expressed as strings or encapsulated via
 @racket[virtual-statement].
 
-@examples/results[
-[(prepare c "select 2 + $1")
- (error 'prepare "cannot prepare statement with virtual connection")]
-[(query-value c "select 2 + $1" 2)
- 4]
-[(define pst (virtual-statement "select 2 + $1"))
- (void)]
-[(query-value c pst 3)
- 5]
+@examples[#:eval the-eval
+(prepare c "select 2 + $1")
+(query-value c "select 2 + $1" 2)
+(define pst (virtual-statement "select 2 + $1"))
+(query-value c pst 3)
 ]
 }
+
+@(the-eval '(begin (set! c #f) (set! pst #f)))
 
 @;{========================================}
 
@@ -555,7 +549,7 @@ ODBC's DSNs.
   for @racket[dsn], an exception is raised. If @racket[dsn] is a
   @racket[data-source], then @racket[dsn-file] is ignored.
 
-@examples/results[
+@fake-examples[
 [(put-dsn 'pg
           (postgresql-data-source #:user "me"
                                   #:database "mydb" 

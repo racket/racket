@@ -16,21 +16,19 @@ Connections automatically convert query results to appropriate Racket
 types. Likewise, query parameters are accepted as Racket values and
 converted to the appropriate SQL type.
 
-@examples/results[
-[(query-value pgc "select count(*) from the_numbers") 4]
-[(query-value pgc "select false") (values #f)]
-[(query-value pgc "select 1 + $1" 2) 3]
+@examples[#:eval the-eval
+(query-value pgc "select count(*) from the_numbers")
+(query-value pgc "select false")
+(query-value pgc "select 1 + $1" 2)
 ]
 
 If a query result contains a column with a SQL type not supported by
 this library, an exception is raised. As a workaround, cast the column
 to a supported type:
 
-@examples/results[
-[(query-value pgc "select inet '127.0.0.1'")
- (error 'query-value "unsupported type: inet (typeid 869)")]
-[(query-value pgc "select cast(inet '127.0.0.1' as varchar)")
- "127.0.0.1/32"]
+@examples[#:eval the-eval
+(query-value pgc "select inet '127.0.0.1'")
+(query-value pgc "select cast(inet '127.0.0.1' as varchar)")
 ]
 
 The exception for unsupported types in result columns is raised when
@@ -100,11 +98,9 @@ lower precision.) Other real values are converted to decimals with a
 loss of precision. In PostgreSQL, @tt{numeric} and @tt{decimal} refer
 to the same type.
 
-@examples/results[
-[(query-value pgc "select real '+Infinity'")
- +inf.0]
-[(query-value pgc "select numeric '12345678901234567890'")
- 12345678901234567890]
+@examples[#:eval the-eval
+(query-value pgc "select real '+Infinity'")
+(query-value pgc "select numeric '12345678901234567890'")
 ]
 
 The geometric types such as @racket['point] are represented by
@@ -128,11 +124,10 @@ the
 @tt{= ANY}} syntax with an array parameter instead of dynamically
 constructing a SQL @tt{IN} expression:
 
-@examples/results[
-[(query-value pgc "select 1 in (1, 2, 3)") #t]
-[(query-value pgc "select 1 = any ($1::integer[])"
-              (list->pg-array (list 1 2 3)))
- #t]
+@examples[#:eval the-eval
+(query-value pgc "select 1 in (1, 2, 3)")
+(query-value pgc "select 1 = any ($1::integer[])"
+             (list->pg-array (list 1 2 3)))
 ]
 
 A list may be provided for an array parameter, in which case it is
@@ -140,15 +135,12 @@ automatically converted using @racket[list->pg-array]. The type
 annotation can be dropped when the array type can be inferred from the
 left-hand side.
 
-@examples/results[
-[(query-value pgc "select 1 = any ($1)" (list 1 2 3))
- #t]
-[(query-value pgc "select $1::integer = any ($2)"
-              1 (list 1 2 3))
- #t]
-[(query-value pgc "select $1 = any ($2)" (code:comment "what type are we using?")
-              1 (list 1 2 3))
- (error 'query-value "cannot convert to PostgreSQL string type: 1")]
+@examples[#:eval the-eval
+(query-value pgc "select 1 = any ($1)" (list 1 2 3))
+(query-value pgc "select $1::integer = any ($2)"
+             1 (list 1 2 3))
+(query-value pgc "select $1 = any ($2)" (code:comment "what type are we using?")
+             1 (list 1 2 3))
 ]
 
 PostgreSQL defines many other types, such as network addresses and row
@@ -247,7 +239,7 @@ strings, bytes, and real numbers.
 An exact integer that cannot be represented as a 64-bit signed integer
 is converted as @tt{real}, not @tt{integer}.
 
-@examples/results[
+@fake-examples[
 [(expt 2 80)
  (expt 2 80)]
 [(query-value slc "select ?" (expt 2 80))
@@ -326,9 +318,9 @@ SQL @tt{NULL} is translated into the unique @racket[sql-null] value.
   results. The @racket[sql-null] value may be recognized using
   @racket[eq?].
 
-@(examples/results
-  [(query-value c "select NULL")
-   sql-null])
+@examples[#:eval the-eval
+(query-value c "select NULL")
+]
 }
 
 @defproc[(sql-null? [x any/c]) boolean?]{
@@ -410,25 +402,13 @@ values.
   support nanosecond precision; PostgreSQL, for example, only supports
   microsecond precision.
 
-@(examples/results
-  [(query-value pgc "select date '25-dec-1980'")
-   (make-sql-date 1980 12 25)]
-  [(query-value pgc "select time '7:30'")
-   (make-sql-time 7 30 0 0 #f)]
-  [(query-value pgc "select timestamp 'epoch'")
-   (make-sql-timestamp 1970 1 1 0 0 0 0 #f)]
-  [(query-value pgc "select timestamp with time zone 'epoch'")
-   (make-sql-timestamp 1969 12 31 19 0 0 0 -18000)])
-}
-
-@examples/results[
-[(query-value myc "select date('1980-12-25')")
- (make-sql-date 1980 12 25)]
-[(query-value myc "select time('7:30')")
- (make-sql-time 7 30 0 0 #f)]
-[(query-value myc "select from_unixtime(0)")
- (make-sql-timestamp 1969 12 31 19 0 0 0 #f)]
+@examples[#:eval the-eval
+(query-value pgc "select date '25-dec-1980'")
+(query-value pgc "select time '7:30'")
+(query-value pgc "select timestamp 'epoch'")
+(query-value pgc "select timestamp with time zone 'epoch'")
 ]
+}
 
 @defstruct*[sql-interval
             ([years exact-integer?]
@@ -550,10 +530,8 @@ represented by sql-bits values.
   Converts a sql-bits value to or from its representation as a list or
   string.
 
-@examples/results[
-[(sql-bits->list (string->sql-bits "1011"))
- (sql-bits->list (string->sql-bits "1011"))]
-[(sql-bits->string (query-value pgc "select B'010110111'"))
- (sql-bits->string (string->sql-bits "010110111"))]
+@examples[#:eval the-eval
+(sql-bits->list (string->sql-bits "1011"))
+(sql-bits->string (query-value pgc "select B'010110111'"))
 ]
 }
