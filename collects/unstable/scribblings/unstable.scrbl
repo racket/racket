@@ -93,6 +93,7 @@ Keep documentation and tests up to date.
 @include-section["logging.scrbl"]
 @include-section["markparam.scrbl"]
 @include-section["match.scrbl"]
+@include-section["open-place.scrbl"]
 @include-section["parameter-group.scrbl"]
 @include-section["pretty.scrbl"]
 @include-section["recontract.scrbl"]
