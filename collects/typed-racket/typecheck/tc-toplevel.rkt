@@ -96,32 +96,32 @@
 
       ;; define-typed-struct
       [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...))) (#%plain-app values)))
-       (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)))]
+       (tc/struct null #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)))]
       [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...) #:mutable)) (#%plain-app values)))
-       (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:mutable #t)]
+       (tc/struct null #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:mutable #t)]
 
       [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...) fields:dtsi-fields)) (#%plain-app values)))
-       (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...))
+       (tc/struct null #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...))
             #:mutable (attribute fields.mutable)
             #:maker (attribute fields.maker)
             #:type-only (attribute fields.type-only))]
 
       ;; define-typed-struct w/ polymorphism
       [(define-values () (begin (quote-syntax (define-typed-struct-internal (vars ...) nm ([fld : ty] ...) #:maker m)) (#%plain-app values)))
-       (tc/poly-struct (syntax->list #'(vars ...)) #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:maker #'m)]
+       (tc/struct (syntax->list #'(vars ...)) #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:maker #'m)]
       [(define-values () (begin (quote-syntax (define-typed-struct-internal (vars ...) nm ([fld : ty] ...) #:maker m #:mutable)) (#%plain-app values)))
-       (tc/poly-struct (syntax->list #'(vars ...)) #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:maker #'m #:mutable #t)]
+       (tc/struct (syntax->list #'(vars ...)) #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:maker #'m #:mutable #t)]
       [(define-values () (begin (quote-syntax (define-typed-struct-internal (vars ...) nm ([fld : ty] ...) #:mutable)) (#%plain-app values)))
-       (tc/poly-struct (syntax->list #'(vars ...)) #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:mutable #t)]
+       (tc/struct (syntax->list #'(vars ...)) #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:mutable #t)]
       [(define-values () (begin (quote-syntax (define-typed-struct-internal (vars ...) nm ([fld : ty] ...))) (#%plain-app values)))
-       (tc/poly-struct (syntax->list #'(vars ...)) #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)))]
+       (tc/struct (syntax->list #'(vars ...)) #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)))]
       ;; error in other cases
       [(define-values () (begin (quote-syntax (define-typed-struct-internal . _)) (#%plain-app values)))
        (int-err "unknown structure form")]
 
       ;; executable structs - this is a big hack
       [(define-values () (begin (quote-syntax (define-typed-struct/exec-internal nm ([fld : ty] ...) proc-ty)) (#%plain-app values)))
-       (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #'proc-ty)]
+       (tc/struct null #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #'proc-ty)]
 
       ;; predicate assertion - needed for define-type b/c or doesn't work
       [(define-values () (begin (quote-syntax (assert-predicate-internal ty pred)) (#%plain-app values)))
