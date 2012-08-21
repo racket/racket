@@ -1,5 +1,5 @@
 (module lang-core racket
-  (require (for-syntax (only-in syntax/struct build-struct-names build-struct-generation build-struct-expand-info)
+  (require (for-syntax (only-in frtime/struct build-struct-names build-struct-generation build-struct-expand-info)
                       (only-in racket/base foldl)
                       (only-in racket/list empty)))
   (require (only-in racket/list cons? first second rest empty empty?)
