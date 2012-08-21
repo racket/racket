@@ -16,8 +16,7 @@
            racket/class
            frtime/frlibs/list
            frtime/frlibs/etc
-           frtime/frlibs/math
-           #;(rename-in racket [define-struct mz:define-struct]))
+           frtime/frlibs/math)
   
   (require (for-syntax (only-in racket/base build-list)
                       (only-in racket/function identity)))
@@ -26,7 +25,7 @@
   
   (define fresh-anim
     (let ([first #t])
-      (opt-lambda ([x 400] [y 400] [title "Animation - DrRacket"])
+      (lambda ([x 400] [y 400] [title "Animation - DrRacket"])
         (if first
             (set! first #f)
             (begin
@@ -285,7 +284,7 @@
       (apply make-rgb (map fix (list r g b)))))
 
   (define range-control
-    (opt-lambda (up down limit [init 0])
+    (lambda (up down limit [init 0])
       (accum-b
        (merge-e (up   . -=> . (inc-max limit))
                 (down . -=> . (dec-min 0)))
