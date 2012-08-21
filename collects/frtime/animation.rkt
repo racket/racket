@@ -15,7 +15,6 @@
            (as-is:unchecked frtime/lang-ext lift)
            racket/class
            frtime/frlibs/list
-           frtime/frlibs/etc
            frtime/frlibs/math)
   
   (require (for-syntax (only-in racket/base build-list)
