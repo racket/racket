@@ -18,6 +18,8 @@ Typed Racket provides some additional utility functions to facilitate typed prog
 Verifies that the argument satisfies the constraint.  If no predicate
 is provided, simply checks that the value is not
 @racket[#f].
+
+See also the @racket[cast] form.
 }
 
 @examples[#:eval the-top-eval

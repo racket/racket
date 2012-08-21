@@ -279,8 +279,10 @@ cycles among them are prohibited.
 @section{Generating Predicates Automatically}
 
 @defform[(make-predicate t)]{
+
 Evaluates to a predicate for the type @racket[t], with the type
-@racket[(Any -> Boolean : t)]. @racket[t] may not contain function types.}
+@racket[(Any -> Boolean : t)]. @racket[t] may not contain function types, or
+types that may refer to mutable data such as @racket[(Vectorof Integer)].} 
 
 @defform[(define-predicate name t)]{
 Equivalent to @racket[(define name (make-predicate t))].
@@ -308,15 +310,21 @@ This is legal only in expression contexts.}
 @defform[(cast e t)]{The entire expression has the type @racket[t], while
 @racket[e] may have any type. The value of the entire expression is the value
 returned by @racket[e], protected by a contract ensuring that it has type
-@racket[t]. This is legal only in expression contexts.}
+@racket[t]. This is legal only in expression contexts.
+
+@ex[(cast 3 Integer)
+(cast 3 String)
+(cast (lambda: ([x : Any]) x) (String -> String))
+]
+}
 
 @defform[(inst e t ...)]{Instantiate the type of @racket[e] with types
 @racket[t ...].  @racket[e] must have a polymorphic type with the
 appropriate number of type variables. This is legal only in expression
 contexts.
-@ex[(foldl (inst cons Integer Integer) null (list 1 2 3 4))]
+@ex[(foldl (inst cons Integer Integer) null (list 1 2 3 4))
 
-@ex[(: fold-list : (All (A) (Listof A) -> (Listof A)))
+    (: fold-list : (All (A) (Listof A) -> (Listof A)))
     (define (fold-list lst)
       (foldl (inst cons A A) null lst))
 
