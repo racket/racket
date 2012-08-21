@@ -81,6 +81,7 @@ Keep documentation and tests up to date.
 @include-section["wrapc.scrbl"]
 @include-section["debug.scrbl"]
 @include-section["define.scrbl"]
+@include-section["error.scrbl"]
 @include-section["file.scrbl"]
 @include-section["find.scrbl"]
 @include-section["flonum.scrbl"]
