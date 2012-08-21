@@ -5,7 +5,6 @@
   (require (only-in racket/list cons? first second rest empty empty?)
            (only-in racket/base vector-ref build-vector build-list)
            (only-in racket/function identity)
-           (only-in mzlib/etc opt-lambda)
            (only-in frtime/core/frp super-lift undefined undefined? behavior? do-in-manager-after do-in-manager proc->signal set-signal-thunk! register unregister iq-enqueue value-now/no-copy
                  signal? signal-depth signal:switching? signal-value value-now signal:compound? signal:compound-content signal:switching-current signal:switching-trigger set-cell!)
            (only-in frtime/lang-ext lift new-cell switch ==> changes deep-value-now))
@@ -107,7 +106,7 @@
              new-clause ...))]))
   
   (define any-nested-reactivity?
-    (opt-lambda (obj [mem empty])
+    (lambda (obj [mem empty])
       (with-handlers ((exn:fail?
                        (lambda (e)
                          (eprintf
@@ -181,7 +180,7 @@
      (deep-value-now obj empty)))
   
   (define any-spinal-reactivity?
-    (opt-lambda (lst [mem empty])
+    (lambda (lst [mem empty])
       (cond
         [(memq lst mem) #f]
         [(behavior? lst) #t]
