@@ -1,11 +1,11 @@
-#lang scheme/base
-(require scheme/unit
-         scheme/class
-         scheme/bool
+#lang racket/base
+(require racket/unit
+         racket/class
+         racket/bool
          mred
-         (only-in mzlib/etc identity)
-         scheme/list
-         drscheme/tool
+         (only-in racket/function identity)
+         racket/list
+         drracket/tool
          string-constants)
 
 (provide tool@)
