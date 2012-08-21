@@ -1,8 +1,8 @@
 #lang scribble/doc
 @(require scribble/manual
-  (for-label scheme
-    scheme/class
-    scheme/gui/base
+  (for-label racket
+    racket/class
+    racket/gui/base
     (only-in frtime 
              undefined undefined? behavior? event? signal? seconds milliseconds never-e
 	     new-cell set-cell! event-receiver send-event
@@ -20,8 +20,7 @@
 
 The @racketmodname[frtime] language supports declarative construction
 of reactive systems in a syntax very similar to that of Racket. It
-extends the @racketmodname[scheme] language (as opposed to
-@racketmodname[racket]).
+extends @racketmodname[racket].
 
 Within DrRacket, as an alternative to using @racket[@#,hash-lang[]
 @#,racketmodname[frtime]], you can choose @onscreen{FrTime} from the
