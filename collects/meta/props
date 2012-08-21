@@ -1139,6 +1139,7 @@ path/s is either such a string or a list of them.
 "collects/tests/planet/examples/scribblings-package" drdr:command-line #f
 "collects/tests/planet/lang.rkt" drdr:command-line (raco "make" *)
 "collects/tests/planet/run-all.rkt" drdr:timeout 240
+"collects/tests/planet/submod.rkt" drdr:command-line #f
 "collects/tests/planet/test-docs-complete.rkt" drdr:command-line (raco "make" *)
 "collects/tests/planet/thread-safe-resolver.rkt" drdr:command-line (raco "make" *) drdr:timeout 1000
 "collects/tests/planet/version.rkt" drdr:command-line (raco "make" *)
