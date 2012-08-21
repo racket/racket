@@ -1,7 +1,7 @@
 #lang racket
 (require "contract.rkt"
          "match.rkt"
-         scheme/async-channel)
+         racket/async-channel)
 
 ; XXX More efficient structure
 (define (snoc x l) (append l (list x)))
