@@ -737,7 +737,7 @@ please adhere to these guidelines:
  (select-all-menu-item "Select A&ll")
  
   (find-menu-item "Find") ;; menu item
-  (find-from-selection-menu-item "Find From Selection")
+  (find-from-selection-menu-item "Find From S&election")
   (find-info "Toggles the keyboard focus between the window being searched and the search bar")
   
  (find-next-info "Skip to the next occurrence of the string in the find window")

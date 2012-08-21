@@ -1671,6 +1671,10 @@
 (test (make-rectangular 0 (expt 5 13)) sqrt (- (expt 5 26)))
 (test (make-rectangular 0 545915034.0) z-round (sqrt (- (expt 5 25))))
 
+(test 0.0+1.0i sqrt -1.0+0.0i)
+(test 0.0f0+1.0f0i sqrt -1.0f0+0.0f0i)
+(test 0.0+0.0i sqrt 0.0+0.0i)
+
 (err/rt-test (sqrt "a"))
 (arity-test sqrt 1 1)
 

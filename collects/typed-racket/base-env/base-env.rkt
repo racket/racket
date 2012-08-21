@@ -23,6 +23,7 @@
   (only-in string-constants/private/only-once maybe-print-message)
   (only-in mzscheme make-namespace)
   (only-in racket/match/runtime match:error matchable? match-equality-test))
+ "base-structs.rkt"
  racket/file
  (only-in racket/private/pre-base new-apply-proc)
  (only-in (types abbrev) [-Boolean B] [-Symbol Sym])
@@ -390,7 +391,6 @@
 
 [list? (make-pred-ty (-lst Univ))]
 [list (-poly (a) (->* '() a (-lst a)))]
-[procedure? (make-pred-ty top-func)]
 [map (-polydots (c a b)
                 (cl->*
                  (-> (-> a c) (-pair a (-lst a)) (-pair c (-lst c)))
@@ -510,6 +510,8 @@
 
 [future (-poly (A) ((-> A) . -> . (-future A)))]
 [touch (-poly (A) ((-future A) . -> . A))]
+[processor-count (-> -Nat)]
+
 
 [reverse (-poly (a) (-> (-lst a) (-lst a)))]
 [kernel:reverse (-poly (a) (-> (-lst a) (-lst a)))]
@@ -569,6 +571,16 @@
 [assoc (-poly (a b) (a (-lst (-pair a b)) . -> . (-opt (-pair a b))))]
 [assf  (-poly (a b) ((a . -> . Univ) (-lst (-pair a b))
                      . -> . (-opt (-pair a b))))]
+
+;Procedures Section 3.17
+[procedure? (make-pred-ty top-func)]
+[compose (-poly (a b c) (-> (-> b c) (-> a b) (-> a c)))]
+[compose1 (-poly (a b c) (-> (-> b c) (-> a b) (-> a c)))]
+[procedure-arity (-> top-func (Un -Nat -Arity-At-Least (-lst (Un -Nat -Arity-At-Least))))]
+[procedure-arity? (make-pred-ty (Un -Nat -Arity-At-Least (-lst (Un -Nat -Arity-At-Least))))]
+[procedure-arity-includes? (->opt top-func -Nat [Univ] B)]
+[procedure-reduce-arity (-> top-func (Un -Nat -Arity-At-Least (-lst (Un -Nat -Arity-At-Least))) top-func)]
+[procedure-keywords (-> top-func (-values (list (-lst -Keyword) (-opt (-lst -Keyword)))))]
 
 [apply        (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
 [new-apply-proc (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
@@ -701,8 +713,8 @@
 
 
 
-[seconds->date (cl->* (-Integer . -> . (make-Name #'date))
-                      (-Integer Univ . -> . (make-Name #'date)))]
+[seconds->date (cl->* (-Integer . -> . -Date)
+                      (-Integer Univ . -> . -Date))]
 [current-seconds (-> -Integer)]
 
 ;Section 14.2
@@ -1993,10 +2005,6 @@
 
 ;Section 13.9 (Code Inspectors)
 [current-code-inspector (-Param -Inspector -Inspector)]
-
-
-[compose (-poly (a b c) (-> (-> b c) (-> a b) (-> a c)))]
-
 
 ;ephemerons
 [make-ephemeron (-poly (k v) (-> k v (make-Ephemeron v)))]

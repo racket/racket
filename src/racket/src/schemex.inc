@@ -42,8 +42,10 @@
   scheme_extension_table->scheme_thread_w_details = scheme_thread_w_details;
   scheme_extension_table->scheme_kill_thread = scheme_kill_thread;
   scheme_extension_table->scheme_break_thread = scheme_break_thread;
+  scheme_extension_table->scheme_break_kind_thread = scheme_break_kind_thread;
   scheme_extension_table->scheme_break_main_thread = scheme_break_main_thread;
   scheme_extension_table->scheme_break_main_thread_at = scheme_break_main_thread_at;
+  scheme_extension_table->scheme_break_kind_main_thread_at = scheme_break_kind_main_thread_at;
   scheme_extension_table->scheme_get_main_thread_break_handle = scheme_get_main_thread_break_handle;
   scheme_extension_table->scheme_set_break_main_target = scheme_set_break_main_target;
   scheme_extension_table->scheme_thread_block = scheme_thread_block;

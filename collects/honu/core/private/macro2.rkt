@@ -170,7 +170,7 @@
 
          (define output 
            (syntax (quote-syntax 
-                     (lambda (stx context-name)
+                     (lambda (stx)
                        (define-literal-set local-literals (literal ...))
                        (syntax-parse stx
                          #:literal-sets ([cruft #:at name]
@@ -193,7 +193,7 @@
 
 (provide honu-macro)
 (define-honu-syntax honu-macro
-  (lambda (code context)
+  (lambda (code)
     (syntax-parse code #:literal-sets (cruft)
       [(_ name
           (#%parens literal ...)
@@ -238,7 +238,7 @@
 (provide honu-syntax)
 ;; Do any honu-specific expansion here
 (define-honu-syntax honu-syntax
-  (lambda (code context)
+  (lambda (code)
     (syntax-parse code #:literal-sets (cruft)
       #;
       [(_ (#%parens single) . rest)
@@ -426,7 +426,7 @@
 ;; generates a phase 1 binding for the pattern. analyzes its pattern so it
 ;; must execute in phase 2
 (define-honu-syntax honu-pattern
-  (lambda (code context)
+  (lambda (code)
     (syntax-parse code #:literal-sets (cruft)
       [(_ name (#%parens literal ...)
           (#%braces pattern ...)

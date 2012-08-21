@@ -146,7 +146,9 @@ void scheme_init_place(Scheme_Env *env)
 
   scheme_finish_primitive_module(plenv);
 
+#ifdef MZ_USE_PLACES
   REGISTER_SO(all_child_places);
+#endif
 }
 
 static Scheme_Object* scheme_place_enabled(int argc, Scheme_Object *args[]) {

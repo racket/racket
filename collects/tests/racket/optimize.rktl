@@ -1558,6 +1558,53 @@
                       10
                       (cons (f i) (loop (sub1 n))))))))
 
+(test-comp `(module m racket/base
+              (require racket/unsafe/ops)
+              (define (f x)
+                (let-values ([(a b) (values x (unsafe-fx+ x x))])
+                  (list a b))))
+           `(module m racket/base
+              (require racket/unsafe/ops)
+              (define (f x)
+                (let ([a x]
+                      [b (unsafe-fx+ x x)])
+                  (list a b)))))
+
+(test-comp `(module m racket/base
+              (define (f x)
+                (let-values ([(a b) (values x (+ x x))])
+                  (list a b))))
+           `(module m racket/base
+              (define (f x)
+                (let ([a x]
+                      [b (+ x x)])
+                  (list a b)))))
+
+(test-comp `(module m racket/base
+              (define (f x)
+                (let*-values ([(a b) (values x (+ x x))])
+                  (list a b))))
+           `(module m racket/base
+              (define (f x)
+                (let* ([a x]
+                       [b (+ x x)])
+                  (list a b)))))
+
+(test-comp `(module m racket/base
+              (define (f x)
+                (let*-values ([(a b) (values x (+ x x))])
+                  (set! a 5)
+                  (/ a b))))
+           `(module m racket/base
+              (define (f x)
+                ;; Not equivalent if a continuation capture
+                ;; during `+' somehow exposes the shared `a'?
+                (let* ([a x]
+                       [b (+ x x)])
+                  (set! a 5)
+                  (/ a b))))
+           #f)
+
 ;; check omit & reorder possibilities for unsafe
 ;; operations on mutable values:
 (let ()

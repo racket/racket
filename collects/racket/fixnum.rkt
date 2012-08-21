@@ -26,4 +26,5 @@
   in-fxvector
   for/fxvector
   for*/fxvector
-  fxvector-copy)
+  fxvector-copy
+  0)

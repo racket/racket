@@ -193,10 +193,11 @@ describing an author's name, especially where the last name is not
 merely a sequence of ASCII alphabet letters or where the name has a
 suffix (such as ``Jr.'').}
 
-@defproc[(authors [name any/c] ...) element?]{
+@defproc[(authors [name content?] [names content?] ...) element?]{
 
 Combines multiple author elements into one, so that it is rendered and
-alphabetized appropriately. If a @racket[name] is a string, it is
+alphabetized appropriately. Any of @racket[name] or @racket[names]
+that are strings are
 parsed in the same way as by @racket[make-bib].}
 
 @defproc[(org-author-name [name any/c]) element?]{

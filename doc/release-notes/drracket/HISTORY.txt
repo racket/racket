@@ -9,6 +9,10 @@
   . Check Syntax now shows the blue boxes from the 
     documentation in the definitions window
 
+  . Change the "Variables" pane of the debugger so that it does not do
+    word-wrapping (this avoids some performance problems when very
+    large values are rendered there)
+
 ------------------------------
        Version 5.3
 ------------------------------

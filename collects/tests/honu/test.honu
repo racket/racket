@@ -15,7 +15,7 @@ function test(t, a, b){
 }
 */
 
-test1(){
+function test1(){
   var x = 3;
 /*
   const y = 2;
@@ -27,12 +27,12 @@ test1(){
   // print(x ^ 2)
 }
 
-val test2(val x, val y){
+function test2(x, y){
   printf("~a\n", x);
   printf("~a\n", y);
 }
 
-val test3(val what){
+function test3(what){
     printf("~a and true = ~a\n", what, what and true);
     printf("~a and false = ~a\n", what, what and false);
 }

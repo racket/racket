@@ -413,15 +413,15 @@ instead, since it manages a wide range of complicated cases.
 
 The resulting type can be used to reference foreign functions (usually
 @racket[ffi-obj]s, but any pointer object can be referenced with this type),
-generating a matching foreign callout object.  Such objects are new primitive
+generating a matching foreign @deftech{callout} object.  Such objects are new primitive
 procedure objects that can be used like any other Racket procedure.
 As with other pointer types, @racket[#f] is treated as a @cpp{NULL}
 function pointer and vice versa.
 
 A type created with @racket[_cprocedure] can also be used for passing
 Racket procedures to foreign functions, which will generate a foreign
-function pointer that calls the given Racket procedure when it is
-used.  There are no restrictions on the Racket procedure; in
+function pointer that calls to the given Racket @deftech{callback}
+procedure.  There are no restrictions on the Racket procedure; in
 particular, its lexical context is properly preserved.
 
 The optional @racket[abi] keyword argument determines the foreign ABI
@@ -431,137 +431,177 @@ values---@racket['stdcall] and @racket['sysv] (i.e., ``cdecl'')---are
 currently supported only for 32-bit Windows; using them on other
 platforms raises an exception. See also @racketmodname[ffi/winapi].
 
-If @racket[atomic?] is true, then when a Racket procedure is given
-this procedure type and called from foreign code, then the Racket
-process is put into atomic mode while evaluating the Racket procedure
-body. In atomic mode, other Racket threads do not run, so the Racket
-code must not call any function that potentially blocks on
-synchronization with other threads, or else it may lead to deadlock. In
-addition, the Racket code must not perform any potentially blocking
-operation (such as I/O), it must not raise an uncaught exception, it
-must not perform any escaping continuation jumps, and its non-tail
-recursion must be minimal to avoid C-level stack overflow; otherwise,
-the process may crash or misbehave.
+For @tech{callouts} to foreign functions with the generated type:
 
-If an @racket[async-apply] procedure is provided, then a Racket
-procedure with the generated procedure type can be applied in a
-foreign thread (i.e., an OS-level thread other than the one used to
-run Racket). The call in the foreign thread is transferred to the
-OS-level thread that runs Racket, but the Racket-level thread (in the
-sense of @racket[thread]) is unspecified; the job of the provided
-@racket[async-apply] procedure is to arrange for the callback procedure to be
-run in a suitable Racket thread. The given @racket[async-apply] procedure is
-applied to a thunk that encapsulates the specific callback invocation,
-and the foreign OS-level thread blocks until the thunk is called and
-completes; the thunk must be called exactly once, and the callback
-invocation must return normally. The given @racket[async-apply] procedure
-itself is called in atomic mode (see @racket[atomic?] above). If the
-callback is known to complete quickly, requires no synchronization,
-and works independent of the Racket thread in which it runs, then
-it is safe for the given 
-@racket[async-apply] procedure to apply the thunk directly. Otherwise,
-the given @racket[async-apply] procedure
-must arrange for the thunk to be applied in a
-suitable Racket thread sometime after the given
-@racket[async-apply] procedure itself
-returns; if the thunk raises an exception or synchronizes within an
-unsuitable Racket-level thread, it can deadlock or otherwise damage
-the Racket process. Foreign-thread detection to trigger
-@racket[async-apply] works only when Racket is compiled with OS-level
-thread support, which is the default for many platforms. If a callback
-with an @racket[async-apply] is called from foreign code in the same
-OS-level thread that runs Racket, then the @racket[async-apply] wrapper is
-not used.
+@itemize[
 
-@margin-note{The @racket[atomic?] and @racket[async-apply] arguments
-affect callbacks into Racket, while @racket[in-original-place?]
-affects calls from Racket into foreign code.}
+ @item{If @racket[save-errno] is @racket['posix], then the value of
+       @as-index{@tt{errno}} is saved (specific to the current thread)
+       immediately after a foreign function @tech{callout}
+       returns. The saved value is accessible through
+       @racket[saved-errno]. If @racket[save-errno] is
+       @racket['windows], then the value of
+       @as-index{@tt{GetLastError}}@tt{()} is saved for later use via
+       @racket[saved-errno]; the @racket['windows] option is available
+       only on Windows (on other platforms @racket[saved-errno] will
+       return 0). If @racket[save-errno] is @racket[#f], no error
+       value is saved automatically.
 
-If @racket[in-original-place?] is true, then when a foreign procedure
-with the generated type is called in any Racket @tech[#:doc '(lib
-"scribblings/reference/reference.scrbl")]{place}, the procedure is
-called from the original Racket place. Use this mode for a foreign
-function that is not thread-safe at the C level, which means that it
-is not place-safe at the Racket level. Callbacks from place-unsafe
-code back into Racket at a non-original place typically will not work,
-since the place of the Racket code may have a different allocator than
-the original place.
+       The error-recording support provided by @racket[save-errno] is
+       needed because the Racket runtime system may otherwise preempt
+       the current Racket thread and itself call functions that set
+       error values.}
 
-If @racket[save-errno] is @racket['posix], then the value of
-@as-index{@tt{errno}} is saved (specific to the current thread)
-immediately after a foreign function returns. The saved value is
-accessible through @racket[saved-errno]. If @racket[save-errno] is
-@racket['windows], then the value of
-@as-index{@tt{GetLastError}}@tt{()} is saved for later use via
-@racket[saved-errno]; the @racket['windows] option is available only
-on Windows (on other platforms @racket[saved-errno] will return
-0). If @racket[save-errno] is @racket[#f], no error value is saved
-automatically. The error-recording support provided by
-@racket[save-errno] is needed because the Racket runtime system
-may otherwise preempt the current Racket thread and itself call
-functions that set error values.
+ @item{If @racket[wrapper] is not @racket[#f], it takes the
+       @tech{callout} that would otherwise be generated and returns a
+       replacement procedure. Thus, @racket[wrapper] acts a hook to
+       perform various argument manipulations before the true
+       @tech{callout} is invoked, and it can return different results
+       (for example, grabbing a value stored in an ``output'' pointer
+       and returning multiple values).}
 
-The optional @racket[wrapper], if provided, is expected to be a
-function that can change a callout procedure: when a callout is
-generated, the wrapper is applied on the newly created primitive
-procedure, and its result is used as the new function.  Thus,
-@racket[wrapper] is a hook that can perform various argument
-manipulations before the foreign function is invoked, and return
-different results (for example, grabbing a value stored in an
-``output'' pointer and returning multiple values).  It can also be
-used for callbacks, as an additional layer that tweaks arguments from
-the foreign code before they reach the Racket procedure, and possibly
-changes the result values too.
+ @item{If @racket[in-original-place?] is true, then when a foreign
+       @tech{callout} procedure with the generated type is called in
+       any Racket @tech[#:doc '(lib
+       "scribblings/reference/reference.scrbl")]{place}, the procedure
+       is called from the original Racket place. Use this mode for a
+       foreign function that is not thread-safe at the C level, which
+       means that it is not place-safe at the Racket
+       level. @tech{Callbacks} from place-unsafe code back into Racket
+       at a non-original place typically will not work, since the
+       place of the Racket code may have a different allocator than
+       the original place.}
 
-Sending Racket functions as callbacks to foreign code is achieved by
-translating them to a foreign ``closure,'' which foreign code can call
-as plain C functions.  Additional care must be taken in case the
-foreign code might hold on to the callback function.  In these cases
-you must arrange for the callback value to not be garbage-collected,
-or the held callback will become invalid.  The optional @racket[keep]
-keyword argument is used to achieve this.  It can have the following
-values: @itemize[
+ @item{Values that are provided to a @tech{callout} (i.e., the
+       underlying callout, and not the replacement produced by a
+       @racket[wrapper], if any) are always considered reachable by the
+       garbage collector until the called foreign function returns. If
+       the foreign function invokes Racket callbacks, however, beware
+       that values managed by the Racket garbage collector might be
+       moved in memory by the garbage collector.}
 
-@item{@racket[#t] makes the callback value stay in memory as long as
-  the converted function is.  In order to use this, you need to hold
-  on to the original function, for example, have a binding for it.
-  Note that each function can hold onto one callback value (it is
-  stored in a weak hash table), so if you need to use a function in
-  multiple callbacks you will need to use one of the last two
-  options below.  (This is the default, as it is fine in most cases.)}
+]
 
-@item{@racket[#f] means that the callback value is not held.  This may
-  be useful for a callback that is only used for the duration of the
-  foreign call --- for example, the comparison function argument to
-  the standard C library @tt{qsort} function is only used while
-  @tt{qsort} is working, and no additional references to the
-  comparison function are kept.  Use this option only in such cases,
-  when no holding is necessary and you want to avoid the extra cost.}
+For @tech{callbacks} to Racket functions with the generated type:
 
-@item{A box holding @racket[#f] (or a callback value) --- in this case
-  the callback value will be stored in the box, overriding any value
-  that was in the box (making it useful for holding a single callback
-  value).  When you know that it is no longer needed, you can
-  ``release'' the callback value by changing the box contents, or by
-  allowing the box itself to be garbage-collected.  This is can be
-  useful if the box is held for a dynamic extent that corresponds to
-  when the callback is needed; for example, you might encapsulate some
-  foreign functionality in a Racket class or a unit, and keep the
-  callback box as a field in new instances or instantiations of the
-  unit.}
+@itemize[
 
-@item{A box holding @racket[null] (or any list) -- this is similar to
-  the previous case, except that new callback values are consed onto
-  the contents of the box.  It is therefore useful in (rare) cases
-  when a Racket function is used in multiple callbacks (that is, sent
-  to foreign code to hold onto multiple times).}
+@item{The @racket[keep] argument provides control over reachbility by
+      the garbage collector of the underlying value that foreign code
+      see as a plain C function.  Additional care must be taken in
+      case the foreign code might retain the callback function, in
+      which case the callback value must remain reachable or else the
+      held callback will become invalid.  The possible values of
+      @racket[keep] are as follows:
 
-@item{Finally, if a one-argument function is provided as
-  @racket[keep], it will be invoked with the callback value when it
-  is generated.  This allows you to grab the value directly and use it
-  in any way.}
+   @itemize[
 
-]}
+    @item{@racket[#t] --- the @tech{callback} stays in memory as long
+      as the converted Racket function is reachable. This mode is the
+      default, as it is fine in most cases. Note that each Racket
+      function can hold onto only one callback value through this
+      mode, so it is not suitable for a function used multiple times
+      as a reatined callback.}
+
+   @item{@racket[#f] --- the @tech{callback} value is not held.  This
+      mode may be useful for a callback that is only used for the
+      duration of the foreign call; for example, the comparison
+      function argument to the standard C library @tt{qsort} function
+      is only used while @tt{qsort} is working, and no additional
+      references to the comparison function are kept.  Use this option
+      only in such cases, when no holding is necessary and you want to
+      avoid the extra cost.}
+
+   @item{A box holding @racket[#f] or any other non-list value --- the
+      callback value is stored in the box, overriding any non-list
+      value that was in the box (making it useful for holding a single
+      callback value).  When you know that the callback is no longer
+      needed, you can ``release'' the callback value by changing the
+      box contents or by allowing the box itself to become
+      unreachable.  This mode can be useful if the box is held for a
+      dynamic extent that corresponds to when the callback is needed;
+      for example, you might encapsulate some foreign functionality in
+      a Racket class or a unit, and keep the callback box as a field
+      in new instances or instantiations of the unit.}
+
+   @item{A box holding @racket[null] (or any list) --- similar to a
+      box holding a non-list value, except that new callback values are
+      @racket[cons]ed onto the contents of the box.  This mode is
+      therefore useful in cases when a Racket function is used
+      in multiple callbacks (that is, sent to foreign code to hold
+      onto multiple times) and all callbacks should be retained together.}
+
+   @item{A one-argument function --- the function is invoked with the
+      callback value when it is generated.  This mode allows you to
+      explicitly manage reachability of the generated callback closure.}
+
+   ]}
+
+ @item{If @racket[wrapper] is not @racket[#f], it takes the procedure
+       to be converted into a @tech{callback} and returns a
+       replacement procedure to be invoked as the callback. Thus,
+       @racket[wrapper] acts a hook to perform various argument
+       manipulations before a Racket callback function is called, and
+       it can return different results to the foreign caller.
+
+       The callback value's reachability (and its interaction with
+       @racket[keep] is based on the original function for the
+       callback, not the result of @racket[wrapper].}
+
+ @item{If @racket[atomic?] is true, then when a Racket procedure is
+       given this procedure type and called as a @tech{callback} from
+       foreign code, then the Racket process is put into atomic mode
+       while evaluating the Racket procedure body.
+
+        In atomic mode, other Racket threads do not run, so the Racket
+       code must not call any function that potentially blocks on
+       synchronization with other threads, or else it may lead to
+       deadlock. In addition, the Racket code must not perform any
+       potentially blocking operation (such as I/O), it must not raise
+       an uncaught exception, it must not perform any escaping
+       continuation jumps, and its non-tail recursion must be minimal
+       to avoid C-level stack overflow; otherwise, the process may
+       crash or misbehave.}
+
+ @item{If an @racket[async-apply] procedure is provided, then a Racket
+       @tech{callback} procedure with the generated procedure type can
+       be applied in a foreign thread (i.e., an OS-level thread other
+       than the one used to run Racket). The call in the foreign
+       thread is transferred to the OS-level thread that runs Racket,
+       but the Racket-level thread (in the sense of @racket[thread])
+       is unspecified; the job of the provided @racket[async-apply]
+       procedure is to arrange for the callback procedure to be run in
+       a suitable Racket thread.
+
+       The given @racket[async-apply]
+       procedure is applied to a thunk that encapsulates the specific
+       callback invocation, and the foreign OS-level thread blocks
+       until the thunk is called and completes; the thunk must be
+       called exactly once, and the callback invocation must return
+       normally. The given @racket[async-apply] procedure itself is
+       called in atomic mode (see @racket[atomic?] above). 
+
+       If the callback is known to complete quickly, requires no
+       synchronization, and works independent of the Racket thread in
+       which it runs, then it is safe for the given
+       @racket[async-apply] procedure to apply the thunk
+       directly. Otherwise, the given @racket[async-apply] procedure
+       must arrange for the thunk to be applied in a suitable Racket
+       thread sometime after the given @racket[async-apply] procedure
+       itself returns; if the thunk raises an exception or
+       synchronizes within an unsuitable Racket-level thread, it can
+       deadlock or otherwise damage the Racket process.
+
+
+       Foreign-thread detection to trigger @racket[async-apply] works
+       only when Racket is compiled with OS-level thread support,
+       which is the default for many platforms. If a callback with an
+       @racket[async-apply] is called from foreign code in the same
+       OS-level thread that runs Racket, then the @racket[async-apply]
+       wrapper is not used.}
+
+]
+}
 
 @defform/subs[#:literals (->> :: :)
               (_fun fun-option ... maybe-args type-spec ... ->> type-spec
@@ -589,7 +629,7 @@ form, only the input @racket[type-expr]s and the output @racket[type-expr] are
 specified, and each types is a simple expression, which creates a
 straightforward function type.
 
-For instance,
+For example,
 
 @racketblock[
 (_fun _int _string ->> _int)
@@ -616,7 +656,7 @@ previous labels, including a label given for the output which can be
 used to access the actual foreign return value.
 
 In rare cases where complete control over the input arguments is needed, the
-wrapper's argument list can be specified as @racket[args], in any form
+wrapper's argument list can be specified as @racket[maybe-args], in any form
 (including a ``rest'' argument).  Identifiers in this place are related to type
 labels, so if an argument is there is no need to use an expression.
 

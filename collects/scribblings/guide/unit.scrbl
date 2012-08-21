@@ -562,7 +562,7 @@ racket
   (define (repaint t col)
     (make-toy col)))
 
-(provide contracted-simple-factory@)
+(provide wrapped-simple-factory@)
 ]
 
 @interaction[

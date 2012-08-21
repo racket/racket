@@ -11,6 +11,8 @@ This test checks:
 
   - if there are any adjacent separators in the menus
 
+  - if there are any duplicate shortcuts in the menus
+
 |#
 
 (require "private/drracket-test-util.rkt"
@@ -90,14 +92,18 @@ This test checks:
   
 (define (check-menus frame)
   
+  (define shortcuts (make-hash))
+  
   (define (process-container container)
     (define sub-items (send container get-items))
     (unless (null? sub-items)
+      (record-shortcut (car sub-items))
       (when (is-a? (car sub-items) menu-item-container<%>)
         (process-container (car sub-items)))
       (define printed? #f)
       (for ([prev-item (in-list sub-items)]
             [item (in-list (cdr sub-items))])
+        (record-shortcut item)
         (when (and (is-a? prev-item separator-menu-item%)
                    (is-a? item separator-menu-item%)
                    (not printed?))
@@ -108,6 +114,18 @@ This test checks:
           (eprintf "\n"))
         (when (is-a? item menu-item-container<%>)
           (process-container item)))))
+  
+  (define (record-shortcut item)
+    (when (is-a? item selectable-menu-item<%>)
+      (when (send item get-shortcut)
+        (define k (append (sort (send item get-shortcut-prefix)
+                                string<=?
+                                #:key symbol->string)
+                          (list (send item get-shortcut))))
+        (hash-set! shortcuts 
+                   k
+                   (cons (send item get-label)
+                         (hash-ref shortcuts k '()))))))
   
   (define (get-lab item)
     (cond
@@ -126,6 +144,13 @@ This test checks:
         [else
          '()])))
   
-  (process-container (send frame get-menu-bar)))
+  (define (check-shortcuts)
+    (for ([(k v) (in-hash shortcuts)])
+      (unless (= 1 (length v))
+        (eprintf "found multiple menu items with the shortcut ~s: ~s\n"
+                 k v))))
+  
+  (process-container (send frame get-menu-bar))
+  (check-shortcuts))
 
 (main)

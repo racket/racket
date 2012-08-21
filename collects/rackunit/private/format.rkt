@@ -35,9 +35,9 @@
   (cond
    [(= m n) s]
    [(m . < . n)
-    (string-append (make-string (- n m) #\space) s)]
+    (string-append s (make-string (- n m) #\space))]
    [else
-    (substring s (- m n))]))
+    (substring s n)]))
 
 (define (display-check-info-name-value name value [value-printer write])
   (display (string-pad-right

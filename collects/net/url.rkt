@@ -216,7 +216,9 @@
            (file://get-pure-port url)]
           [else (url-error "Scheme ~a unsupported" scheme)])))
 
-(define (get-pure-port/headers url [strings '()] #:redirections [redirections 0])
+(define (get-pure-port/headers url [strings '()] 
+                               #:redirections [redirections 0]
+                               #:status? [status? #f])
   (let redirection-loop ([redirections redirections] [url url])
     (define ip
       (http://getpost-impure-port #t url #f strings))
@@ -234,9 +236,19 @@
            =>
            (λ (m) 
              (define m1 (list-ref m 1))
-             (define url (with-handlers ((exn:fail? (λ (x) #f)))
-                           (string->url m1)))
-             (loop (or url new-url) chunked? (cons line headers)))]
+             (define next-url 
+               (with-handlers ((exn:fail? (λ (x) #f)))
+                 (define next-url (string->url m1))
+                 (make-url
+                  (or (url-scheme next-url) (url-scheme url))
+                  (or (url-user next-url) (url-user url))
+                  (or (url-host next-url) (url-host url))
+                  (or (url-port next-url) (url-port url))
+                  (url-path-absolute? next-url)
+                  (url-path next-url)
+                  (url-query next-url)
+                  (url-fragment next-url))))
+             (loop (or next-url new-url) chunked? (cons line headers)))]
           [else (loop new-url chunked? (cons line headers))])))
     (define redirection-status-line?
       (regexp-match #rx"^HTTP/[0-9]+[.][0-9]+ 3[0-9][0-9]" status))
@@ -251,7 +263,9 @@
           (close-input-port ip)))
        (values in-pipe
                (apply string-append (map (λ (x) (string-append x "\r\n"))
-                                         (reverse headers))))])))
+                                         (if status?
+                                           (cons status (reverse headers))
+                                           (reverse headers)))))])))
 
 ;; get-pure-port : url [x list (str)] -> in-port
 (define (get-pure-port url [strings '()] #:redirections [redirections 0])
@@ -690,7 +704,7 @@
  (put-impure-port (->* (url? bytes?) ((listof string?)) input-port?))
  (display-pure-port (input-port? . -> . void?))
  (purify-port (input-port? . -> . string?))
- (get-pure-port/headers (->* (url?) ((listof string?) #:redirections exact-nonnegative-integer?) 
+ (get-pure-port/headers (->* (url?) ((listof string?) #:redirections exact-nonnegative-integer? #:status? boolean?) 
                              (values input-port? string?)))
  (netscape/string->url (string? . -> . url?))
  (call/input-url (case-> (-> url?

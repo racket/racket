@@ -526,13 +526,13 @@ Now, suppose that we also want to ensure that the first result of
     (format "substring of ~s" s)
     (lambda (s2)
       (and (string? s2)
-           (<= (string-length s2) s)
+           (<= (string-length s2) (string-length s))
            (equal? (substring s 0 (string-length s2)) s2)))))
 
 (provide
  (contract-out
   [split (->i ([fl (listof char?)])
-              (values [s (fl) (substring-of (list->string fl))]
+              (values [s (fl) (substring-of? (list->string fl))]
                       [c (listof char?)]))]))
 ]
  Like @racket[->*], the @racket[->i] combinator uses a function over the

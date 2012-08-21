@@ -4,7 +4,7 @@
 @title{Byte and String Input}
 
 @defproc[(read-char [in input-port? (current-input-port)]) 
-         (or/c character? eof-object?)]{
+         (or/c char? eof-object?)]{
 
 Reads a single character from @racket[in]---which may involve reading
 several bytes to UTF-8-decode them into a character (see
@@ -284,7 +284,7 @@ with @racket[skip-bytes-amt] and @racket[progress] arguments like
 
 
 @defproc[(read-char-or-special [in input-port? (current-input-port)])
-         (or/c character? eof-object? any/c)]{
+         (or/c char? eof-object? any/c)]{
 
 Like @racket[read-char], but if the input port returns a non-byte
 value (through a value-generating procedure in a custom port; see
@@ -299,7 +299,7 @@ instead of a character.}
 
 @defproc[(peek-char [in input-port? (current-input-port)]
                     [skip-bytes-amt exact-nonnegative-integer? 0])
-         (or/c character? eof-object?)]{
+         (or/c char? eof-object?)]{
 
 Like @racket[read-char], but peeks instead of reading, and skips
 @racket[skip-bytes-amt] bytes (not characters) at the start of the
@@ -314,7 +314,7 @@ character.}
 
 @defproc[(peek-char-or-special [in input-port? (current-input-port)]
                                [skip-bytes-amt exact-nonnegative-integer? 0])
-         (or/c character? eof-object? any/c)]{
+         (or/c char? eof-object? any/c)]{
 
 Like @racket[peek-char], but if the input port returns a non-byte
 value after @racket[skip-bytes-amt] byte positions, then it is returned.}
@@ -322,7 +322,7 @@ value after @racket[skip-bytes-amt] byte positions, then it is returned.}
 @defproc[(peek-byte-or-special [in input-port? (current-input-port)]
                                [skip-bytes-amt exact-nonnegative-integer? 0]
                                [progress (or/c progress-evt? #f) #f])
-         (or/c character? eof-object? any/c)]{
+         (or/c byte? eof-object? any/c)]{
 
 Like @racket[peek-char-or-special], but reads and returns a byte
 instead of a character, and it supports a @racket[progress] argument

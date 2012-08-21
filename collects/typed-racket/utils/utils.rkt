@@ -9,9 +9,6 @@ at least theoretically.
          racket/require-syntax racket/provide-syntax         
          racket/struct-info "timing.rkt")
 
-;; to move to unstable
-(provide list-update list-set)
-
 (provide
  ;; optimization
  optimize?
@@ -156,16 +153,6 @@ at least theoretically.
       (syntax-rules ()
         [(_ hd ([i c] ...) . opts)
          (define-struct hd (i ...) . opts)])))
-
-(define (list-update l i f)
-  (cond [(null? l) (error 'list-update "list not long enough" l i f)]
-        [(zero? i) (cons (f (car l)) (cdr l))]
-        [else (cons (car l) (list-update (cdr l) (sub1 i) f))]))
-
-(define (list-set l k v)
-  (if (zero? k)
-      (cons v (cdr l))
-      (cons (car l) (list-set (cdr l) (sub1 k) v))))
 
 
 (provide make-struct-info-self-ctor)

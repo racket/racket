@@ -1,29 +1,12 @@
 #lang racket
 (require racket/runtime-path compiler/compiler
          rackunit rackunit/text-ui
-         typed-racket/optimizer/logging)
+         typed-racket/optimizer/logging
+         "../send-places.rkt")
 
 (provide optimization-tests missed-optimization-tests
          test-opt test-missed-optimization test-file?
          generate-log tests-dir missed-optimizations-dir)
-
-(define comp (compile-zos #f #:module? #t))
-
-(define (generate-log name dir)
-  ;; some tests require other tests, so some fiddling is required
-  (define f (build-path dir name))
-  (with-output-to-string
-    (lambda ()
-      (with-tr-logging-to-port
-       (current-output-port)
-       (lambda ()
-         (comp (list f) 'auto)))
-      (parameterize
-          ([current-namespace (make-base-empty-namespace)]
-           [current-load-relative-directory dir])
-        (dynamic-require f #f))
-      ;; clean up compiled files in prevision of the next testing run
-      (delete-directory/files (build-path dir "compiled")))))
 
 ;; we log optimizations and compare to an expected log to make sure that all
 ;; the optimizations we expected did indeed happen
@@ -59,15 +42,17 @@
 
 ;; proc returns the list of tests to be run on each file
 (define (mk-suite suite-name dir proc)
+  (define prms (for/list ([name (directory-list dir)]
+                          #:when (test-file? name))
+                 (list name (delay/thread (proc name)))))
   (make-test-suite
    suite-name
-   (for/list ([name (directory-list dir)]
-              #:when (test-file? name))
+   (for/list ([p prms])
      (make-test-suite
-      (path->string name)
-      (proc name)))))
+      (path->string (first p))
+      (force (second p))))))
 
-(define optimization-tests
+(define (optimization-tests)
   (mk-suite "Optimization Tests" tests-dir test-opt))
-(define missed-optimization-tests
+(define (missed-optimization-tests)
   (mk-suite "Missed Optimization Tests" missed-optimizations-dir test-missed-optimization))

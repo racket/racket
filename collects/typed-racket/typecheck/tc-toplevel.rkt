@@ -372,7 +372,7 @@
 
 ;; typecheck a top-level form
 ;; used only from #%top-interaction
-;; syntax -> void
+;; syntax -> (values #f (or/c void? tc-results?))
 (define (tc-toplevel-form form)
   (tc-toplevel/pass1 form)
   (begin0 (values #f (tc-toplevel/pass2 form))

@@ -31,6 +31,11 @@
                                  v)))
      (list (cons prop:equal+hash vector->list))))
 
+  ;; forgeries of generic functions that don't exist
+  (define (equal-proc a b e) (equal? a b))
+  (define (hash-proc x h)  (equal-hash-code x))
+  (define (hash2-proc x h) (equal-secondary-hash-code x))
+
   (define-syntax gen:equal+hash
     (list (quote-syntax prop:gen:equal+hash)
           (quote-syntax equal-proc)
@@ -51,6 +56,14 @@
                                  "(vector/c (procedure-arity-includes/c 3))"
                                  v)))
      (list (cons prop:custom-write (lambda (v) (vector-ref v 0))))))
+
+  ;; see above for equal+hash
+  (define (write-proc v p w)
+    (case w
+      [(#t) (write v p)]
+      [(#f) (display v p)]
+      [(0 1) (print v p w)]
+      [else (error 'write-proc "internal error; should not happen")]))
 
   (define-syntax gen:custom-write
     (list (quote-syntax prop:gen:custom-write)

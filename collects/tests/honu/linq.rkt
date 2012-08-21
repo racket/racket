@@ -20,7 +20,7 @@
                           [linq-select select]))
 
 (define-honu-syntax linq
-  (lambda (code context)
+  (lambda (code)
     (syntax-parse code #:literal-sets (cruft linq-literals)
                        #:literals (honu-in)
       [(_ linq-from name:id honu-in

@@ -10,14 +10,19 @@
          (for-syntax syntax/parse
                      racket/base)
          scheme/string
-         setup/main-collects)
+         setup/main-collects
+         racket/contract)
 
 (provide define-cite
          author+date-style number-style
          make-bib in-bib (rename-out [auto-bib? bib?])
          proceedings-location journal-location book-location
          techrpt-location dissertation-location
-         author-name org-author-name authors other-authors editor)
+         author-name org-author-name 
+         (contract-out
+          [authors (->* (content?) #:rest (listof content?) element?)])
+         other-authors
+         editor)
 
 (define autobib-style-extras
   (let ([abs (lambda (s)

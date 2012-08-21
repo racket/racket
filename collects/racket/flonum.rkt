@@ -25,4 +25,5 @@
   in-flvector
   for/flvector
   for*/flvector
-  flvector-copy)
+  flvector-copy
+  0.0)

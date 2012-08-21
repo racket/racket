@@ -13,6 +13,7 @@
                   env? update-type/lexical env-map env-props replace-props)
          racket/contract racket/match
          unstable/struct
+         unstable/list
          "tc-metafunctions.rkt"
          (for-syntax racket/base))
 

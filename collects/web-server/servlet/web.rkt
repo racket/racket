@@ -158,6 +158,7 @@
         (lambda (exn)
           (send/finish-or-back
            (response/xexpr
+            #:code 500
             `(html (head (title "Servlet Error"))
                    (body ([bgcolor "white"])
                          (p "The following error occured: "

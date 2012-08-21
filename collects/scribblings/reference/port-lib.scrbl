@@ -351,8 +351,8 @@ the peeking port, we end up skipping over the @litchar{456} in the port.
 
 @defproc[(reencode-input-port [in input-port?]
                               [encoding string?]
-                              [error-bytes (or/c #f bytes?)]
-                              [close? any/c #t]
+                              [error-bytes (or/c #f bytes?) #f]
+                              [close? any/c #f]
                               [name any/c (object-name in)]
                               [convert-newlines? any/c #f]
                               [enc-error (string? input-port? . -> . any) 
@@ -385,8 +385,8 @@ incomplete encoding sequence.)}
 
 @defproc[(reencode-output-port [out output-port?]
                                [encoding string?]
-                               [error-bytes (or/c #f bytes?)]
-                               [close? any/c #t]
+                               [error-bytes (or/c #f bytes?) #f]
+                               [close? any/c #f]
                                [name any/c (object-name out)]
                                [newline-bytes (or/c #f bytes?) #f]
                                [enc-error (string? output-port? . -> . any) 

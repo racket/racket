@@ -34,6 +34,8 @@
       [(macosx) (string-constant windows-menu-label)]
       [else (string-constant tabs-menu-label)]))
   
+  (define-local-member-name update-windows-menu)
+  
   (define %
     (class object%
       
@@ -68,7 +70,7 @@
         (let ([menu (get-windows-menu frame)])
           
           (when menu
-            ;; to help the (conservative) gc.
+            ;; to help the gc.
             (for-each (λ (i) (send i delete)) (send menu get-items))
             
             (set! windows-menus
@@ -77,7 +79,7 @@
                    windows-menus
                    eq?)))))
       
-      (define/private (update-windows-menus)
+      (define/public (update-windows-menu menu)
         (let* ([windows (length windows-menus)]
                [default-name (string-constant untitled)]
                [get-name 
@@ -97,49 +99,46 @@
                  (λ (f1 f2)
                    (string-ci<=? (get-name (frame-frame f1))
                                  (get-name (frame-frame f2)))))])
-          (for-each
-           (λ (menu)
-             (for-each (λ (item) (send item delete)) (send menu get-items))
-             (when (eq? (system-type) 'macosx)
-               (new menu:can-restore-menu-item%
-                    [label (string-constant minimize)]
-                    [parent menu]
-                    [callback (λ (x y) (send (send (send menu get-parent) get-frame) iconize #t))]
-                    [shortcut #\m])
-               (new menu:can-restore-menu-item%
-                    [label (string-constant zoom)]
-                    [parent menu]
-                    [callback (λ (x y) 
-                                (let ([frame (send (send menu get-parent) get-frame)])
-                                  (send frame maximize (not (send frame is-maximized?)))))]) 
-               (instantiate menu:can-restore-menu-item% ()
-                 (label (string-constant bring-frame-to-front...))
-                 (parent menu)
-                 (callback (λ (x y) (choose-a-frame (send (send menu get-parent) get-frame))))
-                 (shortcut #\j))
-               (instantiate menu:can-restore-menu-item% ()
-                 (label (string-constant most-recent-window))
-                 (parent menu)
-                 (callback (λ (x y) (most-recent-window-to-front)))
-                 (shortcut #\'))
-               (make-object separator-menu-item% menu))
-             
-             (extra-windows-menus-proc menu)
-             
-             (when (eq? (system-type) 'macosx)
-               (for-each
-                (λ (frame)
-                  (let ([frame (frame-frame frame)])
-                    (make-object menu-item% 
-                      (regexp-replace*
-                       #rx"&"
-                       (gui-utils:trim-string (get-name frame) 200)
-                       "&&")
-                      menu
-                      (λ (_1 _2)
-                        (send frame show #t)))))
-                sorted/visible-frames)))
-           windows-menus)))
+          (for-each (λ (item) (send item delete)) (send menu get-items))
+          (when (eq? (system-type) 'macosx)
+            (new menu:can-restore-menu-item%
+                 [label (string-constant minimize)]
+                 [parent menu]
+                 [callback (λ (x y) (send (send (send menu get-parent) get-frame) iconize #t))]
+                 [shortcut #\m])
+            (new menu:can-restore-menu-item%
+                 [label (string-constant zoom)]
+                 [parent menu]
+                 [callback (λ (x y) 
+                             (let ([frame (send (send menu get-parent) get-frame)])
+                               (send frame maximize (not (send frame is-maximized?)))))]) 
+            (instantiate menu:can-restore-menu-item% ()
+              (label (string-constant bring-frame-to-front...))
+              (parent menu)
+              (callback (λ (x y) (choose-a-frame (send (send menu get-parent) get-frame))))
+              (shortcut #\j))
+            (instantiate menu:can-restore-menu-item% ()
+              (label (string-constant most-recent-window))
+              (parent menu)
+              (callback (λ (x y) (most-recent-window-to-front)))
+              (shortcut #\'))
+            (make-object separator-menu-item% menu))
+          
+          (extra-windows-menus-proc menu)
+          
+          (when (eq? (system-type) 'macosx)
+            (for-each
+             (λ (frame)
+               (let ([frame (frame-frame frame)])
+                 (make-object menu-item% 
+                   (regexp-replace*
+                    #rx"&"
+                    (gui-utils:trim-string (get-name frame) 200)
+                    "&&")
+                   menu
+                   (λ (_1 _2)
+                     (send frame show #t)))))
+             sorted/visible-frames))))
       
       ;; most-recent-window-to-front : -> void?
       ;; brings the most recent window to the front
@@ -174,12 +173,10 @@
       (define/public (get-frames) (map frame-frame frames))
       
       (define/public (frame-label-changed frame)
-        (when (memq frame (map frame-frame frames))
-          (update-windows-menus)))
+        (void))
       
       (define/public (frame-shown/hidden frame)
-        (when (memq frame (map frame-frame frames))
-          (update-windows-menus)))
+        (void))
       
       (define/public (for-each-frame f)
         (for-each (λ (x) (f (frame-frame x))) frames)
@@ -207,8 +204,7 @@
                                   frames)])
             (set! frames new-frames)
             (update-close-menu-item-state)
-            (insert-windows-menu new-frame)
-            (update-windows-menus))
+            (insert-windows-menu new-frame))
           (todo-to-new-frames new-frame)))
       
       (define/public (remove-frame f)
@@ -220,8 +216,7 @@
                 (λ (f fr) (eq? f (frame-frame fr))))])
           (set! frames new-frames)
           (update-close-menu-item-state)
-          (remove-windows-menu f)
-          (update-windows-menus)))
+          (remove-windows-menu f)))
       
       (define/public (clear)
         (set! frames null)
@@ -261,6 +256,12 @@
                      (loop (cdr frames))))]))))
       
       (super-new)))
+
+  (define (create-windows-menu mb)
+    (new menu:can-restore-underscore-menu%
+         [label windows-menu-label]
+         [demand-callback (λ (menu) (send (get-the-frame-group) update-windows-menu menu))]
+         [parent mb]))
   
   (define (can-close-check)
     (let ([number-of-frames (length (send (get-the-frame-group) get-frames))])

@@ -1,6 +1,7 @@
-#lang racket
+#lang racket/base
 
 (require racket/class
+         racket/contract/base
          racket/draw
          "snip.rkt"
          "snip-admin.rkt"

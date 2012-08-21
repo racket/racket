@@ -1,8 +1,9 @@
-#lang racket
+#lang racket/base
 
 ;; Contracts for racket/draw
 
-(require racket/class
+(require racket/contract/base
+         racket/class
          "color.rkt"
          "point.rkt"
          "font.rkt"

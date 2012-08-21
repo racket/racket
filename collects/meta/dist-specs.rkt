@@ -368,7 +368,7 @@ mz-manuals := (scribblings: "main/") ; generates main pages (next line)
                         "scheme/"
                         "honu/")
               (doc: "*.{html|css|js|sxref}")
-              (doc: "contract-blueboxes.rktd")
+              (doc: "blueboxes.rktd")
               (scribblings: "{{info|icons}.rkt|*.png}" "compiled")
 
 mr-base := (package: "gracket") (bin: "gracket-text")

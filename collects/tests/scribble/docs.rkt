@@ -16,7 +16,8 @@
          [fp       (send renderer traverse docs fns)]
          [info     (send renderer collect  docs fns fp)]
          [r-info   (send renderer resolve  docs fns info)])
-    (send renderer render docs fns r-info)))
+    (send renderer render docs fns r-info)
+    (send renderer get-undefined r-info)))
 
 (provide docs-tests)
 (module+ main (docs-tests))
@@ -38,7 +39,12 @@
           (define generated-file (build-path work-dir "gen.txt"))
           (define (contents file)
             (regexp-replace #rx"\n+$" (file->string file) ""))
-          (build-text-doc src-file "gen.txt")
+          (define undefineds (build-text-doc src-file "gen.txt"))
+          (for ([u (in-list undefineds)])
+            (when (eq? 'tech (car u))
+              (test #:failure-message
+                    (format "undefined tech: ~e" u)
+                    #f)))
           (test #:failure-message
                 (format
                  "mismatch for: \"~a\", expected text in: \"~a\", got:\n~a"
