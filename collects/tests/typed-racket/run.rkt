@@ -39,9 +39,9 @@
                          (make-test-suite
                           "Typed Racket Tests"
                           (append (if (unit?)       (list unit-tests)                    '())
-                                  (if (int?)        (list int-tests)                     '())
-                                  (if (opt?)        (list optimization-tests)            '())
-                                  (if (missed-opt?) (list missed-optimization-tests)     '())
+                                  (if (int?)        (list (int-tests))                     '())
+                                  (if (opt?)        (list (optimization-tests))            '())
+                                  (if (missed-opt?) (list (missed-optimization-tests))     '())
                                   (if (bench?)      (list (compile-benchmarks))          '())))])])
       (unless (= 0 ((exec) to-run))
         (eprintf "Typed Racket Tests did not pass.\n")

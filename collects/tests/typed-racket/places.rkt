@@ -1,7 +1,8 @@
 #lang racket
 
-(require racket/place data/queue racket/async-channel)
-(provide start-worker dr serialize-exn deserialize-exn s-exn?)
+(require racket/place typed-racket/optimizer/logging
+         unstable/open-place compiler/compiler)
+(provide start-worker dr serialize-exn deserialize-exn s-exn? generate-log/place)
 (struct s-exn (message) #:prefab)
 (struct s-exn:fail s-exn () #:prefab)
 (struct s-exn:fail:syntax s-exn:fail (exprs) #:prefab)
@@ -32,23 +33,45 @@
     (dynamic-require `(file ,(if (string? p) p (path->string p))) #f)))
 
 (define (start-worker get-ch name)
-  (define p 
-    (place ch
-           (define n (place-channel-get ch))
-           (define get-ch (place-channel-get ch))
-           (let loop ()
-             (match-define (vector p* res error?) (place-channel-get get-ch))
-             (define-values (path p b) (split-path p*))
-             (parameterize ([read-accept-reader #t]
-                            [current-load-relative-directory
-                             (path->complete-path path)]
-                            [current-directory path]
-                            [current-output-port (open-output-nowhere)]
-                            [error-display-handler (if error? void (error-display-handler))])
-               (with-handlers ([exn? (λ (e)
-                                       (place-channel-put res (serialize-exn e)))])
-                 (dr p)
-                 (place-channel-put res #t)))
-             (loop))))
-  (place-channel-put p name)
-  (place-channel-put p get-ch))
+  (open-place ch
+    (let loop ()
+      (match (place-channel-get get-ch)                
+        [(vector 'log name dir res)
+         (with-handlers ([exn:fail? 
+                          (λ (e) (place-channel-put 
+                                  res 
+                                  (string-append "EXCEPTION: " (exn-message e))))])
+           (define lg (generate-log/place name dir))
+           (place-channel-put res lg))
+         (loop)]
+        [(vector p* res error?) 
+         (define-values (path p b) (split-path p*))
+         (parameterize ([read-accept-reader #t]
+                        [current-load-relative-directory
+                         (path->complete-path path)]
+                        [current-directory path]
+                        [current-output-port (open-output-nowhere)]
+                        [error-display-handler (if error? void (error-display-handler))])
+           (with-handlers ([exn? (λ (e)
+                                   (place-channel-put res (serialize-exn e)))])
+             (dr p)
+             (place-channel-put res #t)))
+         (loop)]))))
+
+(define comp (compile-zos #f #:module? #t))
+
+(define (generate-log/place name dir)
+  ;; some tests require other tests, so some fiddling is required
+  (define f (build-path dir name))
+  (with-output-to-string
+    (lambda ()
+      (with-tr-logging-to-port
+       (current-output-port)
+       (lambda ()
+         (comp (list f) 'auto)))
+      (parameterize
+          ([current-namespace (make-base-empty-namespace)]
+           [current-load-relative-directory dir])
+        (dynamic-require f #f))
+      ;; clean up compiled files in prevision of the next testing run
+      (delete-directory/files (build-path dir "compiled")))))

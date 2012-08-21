@@ -7,9 +7,7 @@
          "unit-tests/all-tests.rkt"
          "unit-tests/test-utils.rkt"
          "optimizer/run.rkt"
-         "places.rkt")
-
-(define places (make-parameter (and (place-enabled?) (min 8 (processor-count)))))
+         "places.rkt" "send-places.rkt")
 
 (define (scheme-file? s)
   (regexp-match ".*[.](rkt|ss|scm)$" (path->string s)))
@@ -88,7 +86,7 @@
                                   (check-exn pred thnk))))
                              #:error #t))
 
-(define int-tests
+(define (int-tests)
   (test-suite "Integration tests"
               (succ-tests)
               (fail-tests)))
@@ -113,23 +111,6 @@
               (delete-directory/files (build-path shootout "compiled"))
               (mk common)
               (delete-directory/files (build-path common "compiled"))))
-
-(require racket/place data/queue racket/async-channel)
-
-
-(define-values (enq-ch deq-ch) (place-channel))
-(define (start-workers)
-  (when (places)
-    (for ([i (places)])
-      (start-worker deq-ch i))))
-
-(define (run-in-other-place p* [error? #f])
-  (define-values (res-ch res-ch*) (place-channel))
-  (place-channel-put enq-ch (vector p* res-ch* error?))
-  (delay/thread
-   (define res (place-channel-get res-ch))
-   (when (s-exn? res)
-     (raise (deserialize-exn res)))))
 
 
 (define (just-one p*)
