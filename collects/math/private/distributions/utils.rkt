@@ -1,117 +1,68 @@
 #lang typed/racket/base
 
-(require racket/flonum)
+(require racket/flonum
+         "../probability.rkt"
+         "delta-dist.rkt")
 
 (provide (all-defined-out))
 
 ;; ===================================================================================================
-;; Conversions from standard distributions for "scale" families
+;; One-sided scale family distributions (e.g. exponential)
 
-(define-syntax-rule (scale-pdf f)
-  (λ: ([s : Float])
-    (: pdf (Float -> Float))
-    (define (pdf x)
-      (/ (f (/ x s)) s))
-    pdf))
+(define-syntax-rule (make-one-sided-scale-flpdf standard-flpdf)
+  (λ: ([s : Float] [x : Float] [log? : Any])
+    (cond [(s . = . 0.0)  (fldelta-pdf 0.0 x log?)]
+          [(and (s . > . 0.0) (x . < . 0.0))  (if log? -inf.0 0.0)]
+          [(and (s . < . 0.0) (x . > . 0.0))  (if log? -inf.0 0.0)]
+          [else  (let ([q  (standard-flpdf (/ x s) log?)])
+                   (if log? (- q (fllog (abs s))) (/ q (abs s))))])))
 
-(define-syntax-rule (scale-log-pdf log-f)
-  (λ: ([s : Float])
-    (: log-pdf (Float -> Float))
-    (define (log-pdf x)
-      (- (log-f (/ x s)) (fllog s)))
-    log-pdf))
+(define-syntax-rule (make-one-sided-scale-flcdf standard-flcdf)
+  (λ: ([s : Float] [x : Float] [log? : Any] [upper-tail? : Any])
+    (cond [(s . = . 0.0)  (fldelta-cdf 0.0 x log? upper-tail?)]
+          [(and (s . > . 0.0) (x . < . 0.0))
+           (cond [upper-tail?  (if log? 0.0 1.0)]
+                 [else  (if log? -inf.0 0.0)])]
+          [(and (s . < . 0.0) (x . > . 0.0))
+           (cond [upper-tail?  (if log? -inf.0 0.0)]
+                 [else  (if log? 0.0 1.0)])]
+          [else
+           (standard-flcdf (/ x s) log? (if (s . > . 0.0) upper-tail? (not upper-tail?)))])))
 
-(define-syntax-rule (scale-cdf f)
-  (λ: ([s : Float])
-    (: cdf (Float -> Float))
-    (define (cdf x)
-      (f (/ x s)))
-    cdf))
+(define-syntax-rule (make-one-sided-scale-flinv-cdf standard-flinv-cdf)
+  (λ: ([s : Float] [q : Float] [log? : Any] [upper-tail? : Any])
+    (cond [(s . = . 0.0)  (fldelta-inv-cdf 0.0 q log? upper-tail?)]
+          [(not (flprobability? q log?))  +nan.0]
+          [else  (* s (standard-flinv-cdf q log? upper-tail?))])))
 
-(define-syntax-rule (scale-ccdf f)
+(define-syntax-rule (make-one-sided-scale-flrandom standard-flinv-cdf)
   (λ: ([s : Float])
-    (: ccdf (Float -> Float))
-    (define (ccdf x)
-      (f (/ x s)))
-    ccdf))
-
-(define-syntax-rule (scale-log-cdf log-f)
-  (λ: ([s : Float])
-    (: log-cdf (Float -> Float))
-    (define (log-cdf x)
-      (log-f (/ x s)))
-    log-cdf))
-
-(define-syntax-rule (scale-log-ccdf log-f)
-  (λ: ([s : Float])
-    (: log-ccdf (Float -> Float))
-    (define (log-ccdf x)
-      (log-f (/ x s)))
-    log-ccdf))
-
-(define-syntax-rule (scale-inv-cdf inv-f)
-  (λ: ([s : Float])
-    (: inv-cdf (Float -> Float))
-    (define (inv-cdf p)
-      (* s (inv-f p)))
-    inv-cdf))
+    (* s (standard-flinv-cdf (* 0.5 (random)) #f ((random) . > . 0.5)))))
 
 ;; ===================================================================================================
-;; Conversions from standard distributions for "location-scale" families
+;; Location-scale family distributions (e.g. Cauchy, logistic, normal)
 
-(define-syntax-rule (location-scale-pdf f)
+(define-syntax-rule (make-symmetric-location-scale-flpdf standard-flpdf)
+  (λ: ([x0 : Float] [s : Float] [x : Float] [log? : Any])
+    (cond [(s . = . 0.0)  (fldelta-pdf x0 x log?)]
+          [else  (let ([q  (standard-flpdf (abs (/ (- x x0) s)) log?)])
+                   (if log? (- q (fllog (abs s))) (/ q (abs s))))])))
+
+(define-syntax-rule (make-symmetric-location-scale-flcdf standard-flcdf)
+  (λ: ([x0 : Float] [s : Float] [x : Float] [log? : Any] [upper-tail? : Any])
+    (cond [(s . = . 0.0)  (fldelta-cdf x0 x log? upper-tail?)]
+          [else  (let ([x  (/ (- x x0) s)])
+                   (standard-flcdf (if upper-tail? (- x) x) log?))])))
+
+(define-syntax-rule (make-symmetric-location-scale-flinv-cdf standard-flinv-cdf)
+  (λ: ([x0 : Float] [s : Float] [q : Float] [log? : Any] [upper-tail? : Any])
+    (cond [(s . = . 0.0)  (fldelta-inv-cdf x0 q log? upper-tail?)]
+          [(not (flprobability? q log?))  +nan.0]
+          [else  (let* ([x  (standard-flinv-cdf q log?)]
+                        [x  (if upper-tail? (- x) x)])
+                   (+ (* x s) x0))])))
+
+(define-syntax-rule (make-symmetric-location-scale-flrandom standard-flinv-cdf)
   (λ: ([x0 : Float] [s : Float])
-    (: pdf (Float -> Float))
-    (define (pdf x)
-      (/ (f (/ (- x x0) s)) s))
-    pdf))
-
-(define-syntax-rule (location-scale-log-pdf log-f)
-  (λ: ([x0 : Float] [s : Float])
-    (: log-pdf (Float -> Float))
-    (define (log-pdf x)
-      (- (log-f (/ (- x x0) s)) (fllog s)))
-    log-pdf))
-
-(define-syntax-rule (location-scale-cdf f)
-  (λ: ([x0 : Float] [s : Float])
-    (: cdf (Float -> Float))
-    (define (cdf x)
-      (f (/ (- x x0) s)))
-    cdf))
-
-(define-syntax-rule (location-scale-log-cdf log-f)
-  (λ: ([x0 : Float] [s : Float])
-    (: log-cdf (Float -> Float))
-    (define (log-cdf x)
-      (log-f (/ (- x x0) s)))
-    log-cdf))
-
-(define-syntax-rule (location-scale-symmetric-ccdf f)
-  (λ: ([x0 : Float] [s : Float])
-    (: ccdf (Float -> Float))
-    (define (ccdf x)
-      (f (/ (- x0 x) s)))
-    ccdf))
-
-(define-syntax-rule (location-scale-symmetric-log-ccdf log-f)
-  (λ: ([x0 : Float] [s : Float])
-    (: log-ccdf (Float -> Float))
-    (define (log-ccdf x)
-      (log-f (/ (- x0 x) s)))
-    log-ccdf))
-
-(define-syntax-rule (location-scale-inv-cdf inv-f)
-  (λ: ([x0 : Float] [s : Float])
-    (: inv-cdf (Float -> Float))
-    (define (inv-cdf p)
-      (+ x0 (* s (inv-f p))))
-    inv-cdf))
-
-;; ===================================================================================================
-;; Sampling using the inverse-cdf-transform method
-
-(define-syntax-rule (inv-cdf-random inv-cdf)
-  (λ ()
-    (define r (* 0.5 (random)))
-    (inv-cdf (if ((random). > . 0.5) r (- r)))))
+    (define x (standard-flinv-cdf (* 0.5 (random)) #f))
+    (+ x0 (* s (if ((random) . > . 0.5) x (- x))))))

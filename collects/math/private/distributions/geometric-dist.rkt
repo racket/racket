@@ -3,110 +3,99 @@
 #|
 TODO
 
-fix when p very large or very small
-fix when k very large
-allow p = 0.0 (reason using limits)
+test when p very large or very small
+test when k very large
 |#
 
 (require racket/flonum
          racket/performance-hint
-         "../../constants.rkt"
+         "../../types.rkt"
          "../functions/expm1.rkt"
          "../functions/log1p.rkt"
-         "../random.rkt"
+         "../probability.rkt"
          "utils.rkt")
 
-(provide geom-pdf geom-log-pdf
-         geom-cdf geom-log-cdf
-         geom-ccdf geom-log-ccdf
+(provide flgeom-pdf
+         flgeom-cdf
+         flgeom-inv-cdf
+         flgeom-random
+         geom-pdf
+         geom-cdf
          geom-inv-cdf
          geom-random)
 
-(define-syntax-rule (geom-fun name f)
-  (let ()
-    (: fun (Float -> (Float -> Float)))
-    (define (fun p)
-      (cond [(and (0.0 . < . p) (p . <= . 1.0))
-             (: name  (Float -> Float))
-             (define (name  k) (f p (floor k)))
-             name ]
-            [else
-             (: name  (Float -> Float))
-             (define (name  k) +nan.0)
-             name ]))
-    fun))
+(: flgeom-pdf (Float Float Any -> Float))
+(define (flgeom-pdf p k log?)
+  (cond [(or (p . <= . 0.0) (p . >= . 1.0))
+         (cond [(= p 1.0)  (cond [(= k 0.0)  (if log? 0.0 1.0)]
+                                 [else  (if log? -inf.0 0.0)])]
+               [else  +nan.0])]
+        [(k . < . 0.0)  (if log? -inf.0 0.0)]
+        [log?  (+ (fllog p) (* k (fllog1p (- p))))]
+        [else  (* p (exp (* k (fllog1p (- p)))))]))
+
+(: flgeom-cdf (Float Float Any Any -> Float))
+(define (flgeom-cdf p k log? upper-tail?)
+  (cond [(or (p . <= . 0.0) (p . > . 1.0))  +nan.0]
+        [(k . < . 0.0)  (cond [upper-tail?  (if log? 0.0 1.0)]
+                              [else  (if log? -inf.0 0.0)])]
+        [(p . = . 1.0)
+         (define q (if (k . >= . 0.0) 1.0 0.0))
+         (cond [upper-tail?  (if log? (fllog1p (- q)) (- 1.0 q))]
+               [else  (if log? (fllog q) q)])]
+        [else
+         (define log-1-q (* (+ k 1.0) (fllog1p (- p))))
+         (cond [upper-tail?  (if log? log-1-q (exp log-1-q))]
+               [else  (if log? (fllog1p (- (exp log-1-q))) (- (flexpm1 log-1-q)))])]))
+
+(: flgeom-inv-cdf (Float Float Any Any -> Float))
+(define (flgeom-inv-cdf p q log? upper-tail?)
+  (define log-1-p (fllog1p (- p)))
+  (: k (Float -> Float))
+  (define (k log-1-q)
+    (abs (max 0.0 (ceiling (/ (- log-1-q log-1-p) log-1-p)))))
+  (cond [(or (p . <= . 0.0) (p . > . 1.0))  +nan.0]
+        [(not (flprobability? q log?))  +nan.0]
+        [(p . = . 1.0)  0.0]
+        [upper-tail?  (if log? (k q) (k (fllog q)))]
+        [else  (if log? (k (fllog (- (flexpm1 q)))) (k (fllog1p (- q))))]))
+
+(: flgeom-random (Float -> Float))
+(define (flgeom-random p)
+  (flgeom-inv-cdf p (* 0.5 (random)) #f ((random) . > . 0.5)))
 
 (begin-encourage-inline
-  (define geom-pdf
-    (geom-fun
-     pdf
-     (λ: ([p : Float] [k : Float])
-       (cond [(k . < . 0.0)  0.0]
-             [else  (* p (flexpt (- 1.0 p) (floor k)))]))))
+  (: geom-pdf (case-> (-> Integer-Density-Function)
+                      (Real -> Integer-Density-Function)))
+  (define (geom-pdf [p 0.5])
+    (let ([p  (real->double-flonum p)])
+      (: pdf Integer-Density-Function)
+      (define (pdf k [log? #f])
+        (flgeom-pdf p (real->double-flonum k) log?))
+      pdf))
   
-  (define geom-log-pdf
-    (geom-fun
-     log-pdf
-     (λ: ([p : Float] [k : Float])
-       (cond [(k . < . 0.0)  -inf.0]
-             [else  (+ (fllog p) (* k (fllog1p (- p))))]))))
+  (: geom-cdf (case-> (-> Integer-Distribution-Function)
+                      (Real -> Integer-Distribution-Function)))
+  (define (geom-cdf [p 0.5])
+    (let ([p  (real->double-flonum p)])
+      (: cdf Integer-Distribution-Function)
+      (define (cdf k [log? #f] [upper-tail? #f])1
+        (flgeom-cdf p (real->double-flonum k) log? upper-tail?))
+      cdf))
   
-  (define geom-cdf
-    (geom-fun
-     cdf
-     (λ: ([p : Float] [k : Float])
-       (cond [(k . < . 0.0)  0.0]
-             [else  (- 1.0 (flexpt (- 1.0 p) (+ k 1.0)))]))))
+  (: geom-inv-cdf (case-> (-> Integer-Inverse-Distribution-Function)
+                          (Real -> Integer-Inverse-Distribution-Function)))
+  (define (geom-inv-cdf [p 0.5])
+    (let ([p  (real->double-flonum p)])
+      (: inv-cdf Integer-Inverse-Distribution-Function)
+      (define (inv-cdf q [log? #f] [upper-tail? #f])
+        (flonum->extended-integer
+         (flgeom-inv-cdf p (real->double-flonum q) log? upper-tail?)))
+      inv-cdf))
   
-  (define geom-ccdf
-    (geom-fun
-     ccdf
-     (λ: ([p : Float] [k : Float])
-       (cond [(k . < . 0.0)  1.0]
-             [else  (flexpt (- 1.0 p) (+ k 1.0))]))))
+  (: geom-random (Real -> (-> Extended-Integer)))
+  (define (geom-random p)
+    (let ([p  (real->double-flonum p)])
+      (λ () (flonum->extended-integer (flgeom-random p)))))
   
-  (define geom-log-cdf
-    (geom-fun
-     log-cdf
-     (λ: ([p : Float] [k : Float])
-       (cond [(k . < . 0.0)  -inf.0]
-             [else  (fllog1p (- (flexpt (- 1.0 p) (+ k 1.0))))]))))
-  
-  (define geom-log-ccdf
-    (geom-fun
-     log-ccdf
-     (λ: ([p : Float] [k : Float])
-       (cond [(k . < . 0.0)  0.0]
-             [else  (* (+ k 1.0) (fllog1p (- p)))]))))
-  
-  (: geom-inv-cdf (Float -> (Float -> Float)))
-  (define (geom-inv-cdf p)
-    (cond
-      [(and (0.0 . < . p) (p . <= . 1.0))
-       (: inv-cdf (Float -> Float))
-       (define (inv-cdf q)
-         (cond [(q . > . 1.0)  +nan.0]
-               [(q . = . 1.0)  +inf.0]
-               [(q . > . 0.0)
-                (define log-1-q (fllog1p (- q)))
-                (define log-1-p (fllog1p (- p)))
-                (abs (max 0.0 (ceiling (/ (- log-1-q log-1-p) log-1-p))))]
-               [(q . = . 0.0)  (if (eqv? q -0.0) +inf.0 0.0)]
-               [(q . > . -1.0)
-                (define log-1-q (fllog (- q)))
-                (define log-p (fllog1p (- p)))
-                (abs (max 0.0 (ceiling (/ (- log-1-q log-p) log-p))))]
-               [(q . = . -1.0)  0.0]
-               [else  +nan.0]))
-       inv-cdf]
-      [else
-       (: inv-cdf (Float -> Float))
-       (define (inv-cdf k) +nan.0)
-       inv-cdf]))
-  
-  (: geom-random (Float -> (-> Float)))
-  (define (geom-random s)
-    (: random (-> Float))
-    (define random (inv-cdf-random (geom-inv-cdf s)))
-    random)
   )  ; begin-encourage-inline
