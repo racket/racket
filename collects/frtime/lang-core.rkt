@@ -206,7 +206,7 @@
         (let ([rtn (proc->signal void)])
           (set-signal-thunk!
            rtn
-           (let ([deps (make-hash)])
+           (let ([deps (make-hasheq)])
              (lambda ()
                (begin0
                  (deep-cdr-value-now/update-deps obj deps empty)
@@ -230,7 +230,7 @@
     (let ([rtn (proc->signal void)])
       (set-signal-thunk!
        rtn
-       (let ([deps (make-hash)])
+       (let ([deps (make-hasheq)])
          (lambda ()
            (begin0
              (deep-value-now/update-deps obj deps empty)
@@ -251,7 +251,7 @@
     (let ([rtn (proc->signal void)])
       (set-signal-thunk!
        rtn
-       (let ([deps (make-hash)])
+       (let ([deps (make-hasheq)])
          (lambda ()
            (begin0
              (let/ec esc
