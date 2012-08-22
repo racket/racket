@@ -3,7 +3,7 @@
 #lang typed/racket
 
 (define-struct: (A B) Box ([value : A]
-                           [other : B]) #:transparent)
-(define-struct: (C) (Child-Box Box) () #:transparent)
+                           [other : B]))
+(define-struct: (C) (Child-Box Box) ())
 
 
