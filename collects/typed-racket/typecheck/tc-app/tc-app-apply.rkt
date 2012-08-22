@@ -3,6 +3,7 @@
 (require "../../utils/utils.rkt"
          "signatures.rkt"
          syntax/parse racket/match
+         syntax/parse/experimental/reflect
          (typecheck signatures tc-funapp check-below tc-subst)
          (types abbrev utils)
          (rep type-rep)
@@ -18,20 +19,21 @@
 (import tc-expr^ tc-apply^)
 (export tc-app-apply^)
 
-(define (tc/app-apply form expected)
-  (syntax-parse form
-    #:literals (#%plain-app k:apply apply values)
-    ;; rewrite this so that it takes advantages of all the special cases
-    [(#%plain-app k:apply . args)
-     (tc/app-apply (syntax/loc form (#%plain-app apply . args)) expected)]
-    ;; (apply values l) gets special handling
-    ;; Needs to be above the general apply checking
-    [(#%plain-app apply values e)
-     (match (single-value #'e)
-       [(tc-result1: (ListDots: dty dbound)) (values->tc-results (make-ValuesDots null dty dbound) #f)]
-       [(tc-result1: (List: ts)) (ret ts)]
-       [_ (tc/apply #'values #'(e))])]
-    ;; handle apply specially
-    [(#%plain-app apply f . args) (tc/apply #'f #'args)]
-    [_ #f]))
+(define-syntax-class (tc/app-apply* expected)
+                     #:attributes (check)
+                     #:literals (k:apply apply values)
+  (pattern ((~or apply k:apply) values e)
+    #:attr check
+      (lambda () 
+        (match (single-value #'e)
+          [(tc-result1: (ListDots: dty dbound)) (values->tc-results (make-ValuesDots null dty dbound) #f)]
+          [(tc-result1: (List: ts)) (ret ts)]
+          [_ (tc/apply #'values #'(e))])))
+  (pattern ((~or apply k:apply) f . args)
+    #:attr check
+      (lambda () (tc/apply #'f #'args))))
+
+
+(define tc/app-apply (reify-syntax-class tc/app-apply*))
+
 
