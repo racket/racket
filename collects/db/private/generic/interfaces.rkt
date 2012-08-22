@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/class
-         racket/serialize)
+         racket/serialize
+         unstable/error)
 (provide connection<%>
          dbsystem<%>
          prepared-statement<%>
@@ -165,8 +166,9 @@ producing plain old exn:fail.
 
 ;; raise-sql-error : symbol string string alist -> raises exn
 (define (raise-sql-error who sqlstate message info)
-  (raise 
-   (make-exn:fail:sql (format "~a: ~a (SQLSTATE ~a)" who message sqlstate)
+  (raise
+   (make-exn:fail:sql (compose-error-message who message
+                                             "SQLSTATE" sqlstate)
                       (current-continuation-marks)
                       sqlstate
                       info)))
@@ -175,45 +177,55 @@ producing plain old exn:fail.
 
 ;; Common Errors
 
-(provide uerror
-         error/internal
+(provide error/internal
+         error/internal*
          error/not-connected
+         error/no-support
          error/need-password
          error/comm
          error/hopeless
          error/unsupported-type
          error/no-convert
+         error/invalid-nested-isolation
+         error/tx-bad-stmt
          error/unbalanced-tx
-         error/unclosed-tx)
-
-;;(define uerror raise-user-error)
-(define uerror error)
+         error/unclosed-tx
+         error/exn-in-rollback
+         error/stmt-arity
+         error/stmt
+         error/want-rows
+         error/want-cursor
+         error/column-count
+         error/row-count
+         error/statement-binding-args)
 
 (define (error/internal fsym fmt . args)
-  (apply error fsym (string-append "internal error: " fmt) args))
+  (raise-misc-error fsym "internal error"
+                    #:continued (apply format fmt args)))
 
-(define (error/not-connected fsym)
-  (uerror fsym "not connected"))
+(define (error/internal* fsym msg . args)
+  (apply raise-misc-error fsym "internal error" #:continued msg args))
 
-(define (error/need-password fsym)
-  (uerror fsym "password needed but not supplied"))
-
+;; FIXME; clean up
 (define (error/comm fsym [when-occurred #f])
-  (if when-occurred
-      (error/internal fsym "communication problem ~a" when-occurred)
-      (error/internal fsym "communication problem")))
+  (raise-misc-error fsym "communication failure"
+                    "when" when-occurred))
+
+(define (error/no-support fsym feature)
+  (raise-misc-error fsym "feature not supported"
+                    "feature" feature))
 
 (define (error/hopeless fsym)
-  (uerror fsym "connection is permanently locked due to a terminated thread"))
+  (error fsym "connection is permanently locked due to a terminated thread"))
 
-(define (error/unsupported-type fsym typeid [type #f])
-  (if type
-      (uerror fsym "unsupported type: ~a (typeid ~a)" type typeid)
-      (uerror fsym "unsupported type: (typeid ~a)" typeid)))
+(define (error/not-connected fsym)
+  (error fsym "not connected"))
 
-(define (error/no-convert fsym sys type param [note #f])
-  (uerror fsym "cannot convert to ~a ~a type~a~a: ~e"
-          sys type (if note " " "") (or note "") param))
+;; ----
+
+(define (error/invalid-nested-isolation fsym isolation)
+  (raise-misc-error fsym "invalid isolation level for nested transaction"
+                    '("isolation level" value) isolation))
 
 (define (error/unbalanced-tx fsym mode saved-cwt?)
   (error fsym "~a-transaction without matching start-transaction~a"
@@ -222,3 +234,83 @@ producing plain old exn:fail.
 (define (error/unclosed-tx fsym mode saved-cwt?)
   (error fsym "unclosed nested transaction~a"
          (if saved-cwt? " (within extent of call-with-transaction)" "")))
+
+(define (error/tx-bad-stmt fsym stmt-type-string tx-state)
+  (raise-misc-error fsym "statement not allowed in current transaction state"
+                    "statement type" stmt-type-string
+                    "transaction state" tx-state))
+
+(define (error/exn-in-rollback fsym e1 e2)
+  (raise-misc-error fsym "error during rollback"
+    #:continued "secondary error occurred during rollback triggered by primary error"
+    '("primary" value) (exn-message e1)
+    '("secondary" value) (exn-message e2)))
+
+;; ----
+
+(define (error/stmt-arity fsym expected given)
+  (raise-misc-error fsym "wrong number of parameters for query"
+                    ;; FIXME: add stmt, use error/stmt
+                    "expected" expected
+                    "given" given))
+
+;; ----
+
+(define (error/need-password fsym)
+  (error fsym "password needed but not supplied"))
+
+;; ----
+
+(define (error/unsupported-type fsym typeid [type #f])
+  (raise-misc-error fsym "unsupported type"
+                    "type" type
+                    "typeid" typeid))
+
+(define (error/no-convert fsym sys type param [note #f])
+  (raise-misc-error fsym "cannot convert given value to SQL type"
+                    '("given" value) param
+                    "type" type
+                    "dialect" sys
+                    "note" note))
+
+;; ----
+
+(define (error/stmt fsym stmt message . args)
+  (apply raise-misc-error fsym message
+         '("statement" value) (or (let loop ([stmt stmt])
+                                    (cond [(string? stmt) stmt]
+                                          [(statement-binding? stmt) (loop (statement-binding-pst stmt))]
+                                          [(prepared-statement? stmt) (loop (send stmt get-stmt))]
+                                          [else #f]))
+                                  stmt)
+         ;; FIXME: include params from statement-binding values?
+         ;; must first change statement-binding to store raw params
+         args))
+
+(define (error/want-rows fsym sql executed?)
+  (error/stmt fsym sql
+              (if executed?
+                  "query did not return rows"
+                  "query does not return rows")))
+
+(define (error/want-cursor fsym sql)
+  (error/stmt fsym sql "query did not return cursor"))
+
+(define (error/column-count fsym sql want-columns got-columns executed?)
+  (error/stmt fsym sql
+              (if executed?
+                  "query returned wrong number of columns"
+                  "query returns wrong number of columns")
+              "expected" want-columns
+              "got" got-columns))
+
+(define (error/row-count fsym sql want-rows got-rows)
+  (error/stmt fsym sql "query returned wrong number of rows"
+              "expected" want-rows
+              "got" got-rows))
+
+(define (error/statement-binding-args fsym stmt args)
+  (raise-misc-error fsym
+                    "cannot execute statement-binding with additional inline arguments"
+                    '("statement" value) stmt
+                    '("arguments" value) args))

@@ -4,6 +4,7 @@
          racket/vector
          file/md5
          openssl
+         unstable/error
          "../generic/interfaces.rkt"
          "../generic/common.rkt"
          "../generic/sql-data.rkt"
@@ -128,7 +129,7 @@
                                  ((transaction) #t)
                                  ((failed) 'invalid)))]
               [(and or-eof? (eof-object? r)) (void)]
-              [else (error/comm fsym "expected ready")])))
+              [else (error/comm fsym "expecting ready-for-query")])))
 
     ;; == Asynchronous messages
 
@@ -145,11 +146,8 @@
          (cond [(equal? name "client_encoding")
                 (unless (equal? value "UTF8")
                   (disconnect* #f)
-                  (uerror fsym
-                          (string-append
-                           "server attempted to change the client character encoding "
-                           "from UTF8 to ~a, disconnecting")
-                          value))]
+                  (raise-misc-error fsym "client character encoding changed, disconnecting"
+                                    '("new encoding" value) value))]
                [else (void)])]))
 
     ;; == Connection management
@@ -209,20 +207,20 @@
            (unless (string? password)
              (error/need-password 'postgresql-connect))
            (unless allow-cleartext-password?
-             (uerror 'postgresql-connect (nosupport "cleartext password")))
+             (error/no-support 'postgresql-connect "cleartext password"))
            (send-message (make-PasswordMessage password))
            (connect:expect-auth username password)]
           [(struct AuthenticationCryptPassword (salt))
-           (uerror 'postgresql-connect (nosupport "crypt()-encrypted password"))]
+           (error/no-support 'postgresql-connect "crypt()-encrypted password")]
           [(struct AuthenticationMD5Password (salt))
            (unless password
              (error/need-password 'postgresql-connect))
            (send-message (make-PasswordMessage (md5-password username password salt)))
            (connect:expect-auth username password)]
           [(struct AuthenticationKerberosV5 ())
-           (uerror 'postgresql-connect (nosupport "KerberosV5 authentication"))]
+           (error/no-support 'postgresql-connect "KerberosV5 authentication")]
           [(struct AuthenticationSCMCredential ())
-           (uerror 'postgresql-connect (nosupport "SCM authentication"))]
+           (error/no-support 'postgresql-connect "SCM authentication")]
           ;; ErrorResponse handled by recv-message
           [_ (error/comm 'postgresql-connect "during authentication")])))
 
@@ -294,7 +292,8 @@
                       [pst-name (send pst get-handle)]
                       [params (statement-binding-params stmt)])
                  (unless pst-name
-                   (error/internal 'query1:enqueue "statement was deleted: ~s" (send pst get-stmt)))
+                   (error/internal* 'query1:enqueue "statement was deleted"
+                                    "statement" (send pst get-stmt)))
                  (buffer-message (make-Bind portal pst-name
                                             (map typeid->format (send pst get-param-typeids))
                                             params
@@ -365,10 +364,11 @@
     (define/private (query1:error fsym r)
       (match r
         [(struct CopyInResponse (format column-formats))
-         (uerror fsym (nosupport "COPY IN statements"))]
+         (error/no-support fsym "COPY IN statements")]
         [(struct CopyOutResponse (format column-formats))
-         (uerror fsym (nosupport "COPY OUT statements"))]
-        [_ (error/comm fsym (format "got: ~e" r))]))
+         (error/no-support fsym "COPY OUT statements")]
+        [_ (error/internal* fsym "unexpected message from back end"
+                            '("message" value) r)]))
 
     (define/private (get-convert-row! fsym field-dvecs)
       (let* ([type-reader-v

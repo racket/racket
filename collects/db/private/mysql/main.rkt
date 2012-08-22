@@ -27,7 +27,7 @@
          (+ (if (or server port) 1 0)
             (if socket 1 0))])
     (when (> connection-options 1)
-      (uerror 'mysql-connect "cannot give both server/port and socket arguments")))
+      (error 'mysql-connect "cannot give both server/port and socket arguments")))
   (let* ([notice-handler
           (cond [(procedure? notice-handler) notice-handler]
                 [else (make-print-notice notice-handler)])]

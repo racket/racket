@@ -72,8 +72,7 @@
 (define (guess-socket-path/paths function paths)
   (or (for/or ([path (in-list paths)])
         (and (file-exists? path) path))
-      (error function
-             "could not find socket path")))
+      (error function "could not find socket path")))
 
 ;; ----------------------------------------
 
@@ -254,7 +253,7 @@
     ;; check-valid-tx-status : symbol -> void
     (define/public (check-valid-tx-status fsym)
       (when (eq? tx-status 'invalid)
-        (uerror fsym "current transaction is invalid")))
+        (error fsym "current transaction is invalid")))
 
     ;; ----
 
@@ -300,7 +299,7 @@
                  (set! tx-stack (list (cons #f cwt?)))]
                 [else ;; in transaction
                  (unless (eq? isolation #f)
-                   (error fsym "invalid isolation level for nested transaction: ~e" isolation))
+                   (error/invalid-nested-isolation fsym isolation))
                  (let ([savepoint (start-transaction* fsym 'nested)])
                    (set! tx-stack (cons (cons savepoint cwt?) tx-stack)))])))
       (void))
@@ -384,13 +383,13 @@
        - implicit-commit now allowed
       |#
 
-      (define (no! why)
-        (error fsym "~a not allowed~a"
-               (or (statement-type->string stmt-type)
-                   (case stmt-type
-                     ((implicit-commit) "statement with implicit commit")
-                     (else "unknown")))
-               (or why "")))
+      (define (no! tx-state)
+        (error/tx-bad-stmt fsym
+                           (or (statement-type->string stmt-type)
+                               (case stmt-type
+                                 ((implicit-commit) "statement with implicit commit")
+                                 (else #f)))
+                           tx-state))
 
       (case (transaction-nesting)
         ((#f)
@@ -400,12 +399,12 @@
         ((top-level nested)
          (case stmt-type
            ((start)
-            (no! " within transaction"))
+            (no! "within transaction"))
            ((commit rollback
              savepoint prepare-transaction
              release-savepoint rollback-savepoint
              implicit-commit)
-            (no! " within managed transaction"))
+            (no! "within managed transaction"))
            (else (void))))))
 
     (super-new)))

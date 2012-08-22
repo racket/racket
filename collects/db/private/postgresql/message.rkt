@@ -1,6 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base)
          racket/match
+         unstable/error
          "../generic/interfaces.rkt"
          "../generic/sql-data.rkt")
 (provide write-message
@@ -54,8 +55,9 @@
 (define (subport in len)
   (let ([bytes (io:read-bytes-as-bytes in len)])
     (unless (and (bytes? bytes) (= (bytes-length bytes) len))
-      (error/internal 'subport "truncated input; expected ~s bytes, got ~s"
-                      len (if (bytes? bytes) (bytes-length bytes) 0)))
+      (error/internal* 'subport "truncated input; got fewer bytes than expected"
+                       "expected" len
+                       "got" (if (bytes? bytes) (bytes-length bytes) 0)))
     (open-input-bytes bytes)))
 
 
@@ -161,8 +163,8 @@
                (make-AuthenticationMD5Password salt)))
         ((6) (make-AuthenticationSCMCredential))
         (else
-         (error/internal 'authentication
-                         "unknown authentication method requested (~s)" tag))))))
+         (error/internal* 'authentication "back end requested unknown authentication method"
+                          "method code" tag))))))
 
 (define-struct StartupMessage (parameters) #:transparent)
 (define (write:StartupMessage p v)
@@ -430,7 +432,8 @@
                                 (string->symbol (format "write:~a" (syntax-e type))))))])
          #'(cond [(pred msg) (write port msg)] ...
                  [else
-                  (error/internal 'write-message "unknown message type: ~e" msg)]))]))
+                  (error/internal* 'write-message "unknown message type"
+                                   '("message" value) msg)]))]))
   (gen-cond Sync
             Parse
             Describe
@@ -470,7 +473,8 @@
       (else
        (if (eof-object? c)
            c
-           (error/internal 'parse-server-message "unknown message header byte: ~e" c))))))
+           (error/internal* 'parse-server-message "unknown message header"
+                            '("header" value) c))))))
 
 ;; ========================================
 ;; Helpers

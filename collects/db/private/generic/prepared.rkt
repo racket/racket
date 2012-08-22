@@ -54,22 +54,18 @@
       (cond [(eq? checktype 'rows)
              (unless (positive? (get-result-count))
                (when close-on-exec? (finalize #t))
-               (error fsym "expected statement producing rows, got ~e" obj))]
+               (error/want-rows fsym obj #f))]
             [(exact-positive-integer? checktype)
              (unless (= (get-result-count) checktype)
                (when close-on-exec? (finalize #t))
-               (error fsym
-                      "expected statement producing rows with ~a ~a, got ~e"
-                      checktype
-                      (if (= checktype 1) "column" "columns")
-                      obj))]
+               (error/column-count fsym obj checktype (get-result-count) #f))]
             [else (void)]))
 
     (define/public (check-owner fsym c obj)
       (unless handle
         (error fsym "prepared statement is closed"))
       (unless (eq? c (weak-box-value owner))
-        (error fsym "prepared statement owned by another connection: ~e" obj)))
+        (error fsym "prepared statement owned by another connection")))
 
     (define/public (bind fsym params)
       (statement-binding this (apply-type-handlers fsym params param-handlers)))
@@ -95,7 +91,7 @@
   (let ([given-len (length params)]
         [expected-len (length param-handlers)])
     (when (not (= given-len expected-len))
-      (uerror fsym "statement requires ~s parameters, given ~s" expected-len given-len)))
+      (error/stmt-arity fsym expected-len given-len)))
   (for/list ([handler (in-list param-handlers)]
              [index (in-naturals)]
              [param (in-list params)])

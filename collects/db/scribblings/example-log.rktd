@@ -120,7 +120,7 @@
   (c
    exn
    c
-   "query-value: query returned zero rows (expected 1): \"select d from the_numbers where n = 5\""))
+   "query-value: query returned wrong number of rows\n  statement: \"select d from the_numbers where n = 5\"\n  expected: 1\n  got: 0"))
  #""
  #"")
 ((query-maybe-value pgc "select d from the_numbers where n = 5")
@@ -146,7 +146,7 @@
     (query-value pgc "select NoSuchField from NoSuchTable"))
    (query-value pgc "select 'okay to proceed!'"))
  ((3) 0 () 0 () () (c values c (u . "okay to proceed!")))
- #"query-value: relation \"nosuchtable\" does not exist (SQLSTATE 42P01)\n"
+ #"query-value: relation \"nosuchtable\" does not exist\n  SQLSTATE: 42P01\n"
  #"")
 ((query-value pgc "select d from the_numbers where n = $1" 2)
  ((3) 0 () 0 () () (c values c (u . "company")))
@@ -300,7 +300,7 @@
   (c
    exn
    c
-   "query-value: query returned zero rows (expected 1): #<statement-binding>"))
+   "query-value: query returned wrong number of rows\n  statement: \"select d from the_numbers where n = $1\"\n  expected: 1\n  got: 0"))
  #""
  #"")
 ((query-value c "select count(*) from the_numbers")
@@ -331,7 +331,7 @@
   (c
    exn
    c
-   "in-query: query returned 2 columns (expected 1): \"select * from the_numbers\""))
+   "in-query: query returned wrong number of columns\n  statement: \"select * from the_numbers\"\n  expected: 1\n  got: 2"))
  #""
  #"")
 ((define vehicles-result
@@ -518,7 +518,7 @@
   0
   ()
   ()
-  (c exn c "query-value: unsupported type: inet (typeid 869)"))
+  (c exn c "query-value: unsupported type\n  type: inet\n  typeid: 869"))
  #""
  #"")
 ((query-value pgc "select cast(inet '127.0.0.1' as varchar)")
@@ -559,7 +559,10 @@
   0
   ()
   ()
-  (c exn c "query-value: cannot convert to PostgreSQL string type: 1"))
+  (c
+   exn
+   c
+   "query-value: cannot convert given value to SQL type\n  given: 1\n  type: string\n  dialect: PostgreSQL"))
  #""
  #"")
 ((query-value c "select NULL")

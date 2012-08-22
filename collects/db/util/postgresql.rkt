@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/contract/base
          racket/string
+         unstable/error
          "geometry.rkt")
 
 #|
@@ -41,13 +42,13 @@ polygon = #points:int4 (x y : float8)*
         #:transparent
         #:guard (lambda (ndim counts lbounds vals _n)
                   (unless (= (length counts) ndim)
-                    (error 'pg-array
-                           "expected list of ~s integers for dimension-lengths, got: ~e"
-                           ndim counts))
+                    (raise-misc-error 'pg-array "list for dimension lengths has wrong length"
+                                      "expected length" ndim
+                                      '("got" value) counts))
                   (unless (= (length lbounds) ndim)
-                    (error 'pg-array
-                           "expected list of ~s integers for dimension-lower-bounds, got: ~e"
-                           ndim lbounds))
+                    (raise-misc-error 'pg-array "list for dimension lower bounds has wrong length"
+                                      "expected length" ndim
+                                      '("got" value) lbounds))
                   (let loop ([counts* counts] [vals* vals])
                     (when (pair? counts*)
                       (unless (and (vector? vals*)
@@ -59,18 +60,19 @@ polygon = #points:int4 (x y : float8)*
 
 (define (pg-array-ref arr . indexes)
   (unless (= (pg-array-dimensions arr) (length indexes))
-    (error 'pg-array-ref "expected ~s indexes, got: ~e" indexes))
+    (raise-misc-error 'pg-array-ref "wrong number of indexes"
+                      "expected number" (pg-array-dimensions arr)
+                      '("got" value) indexes))
   (let* ([counts (pg-array-dimension-lengths arr)]
          [lbounds (pg-array-dimension-lower-bounds arr)]
          [ubounds (map (lambda (c lb) (+ c lb -1)) counts lbounds)])
     (unless (for/and ([index indexes] [lbound lbounds] [ubound ubounds])
               (<= lbound index ubound))
-      (error 'pg-array-ref
-             "index ~s of of range (~a)"
-             indexes
-             (string-join (for/list ([lbound lbounds] [ubound ubounds])
-                            (format "[~a,~a]" lbound ubound))
-                          ", ")))
+      (raise-misc-error 'pg-array-ref "index out of range"
+                        '("index" value) indexes
+                        "valid range" (string-join (for/list ([lbound lbounds] [ubound ubounds])
+                                                     (format "[~a,~a]" lbound ubound))
+                                                   ", ")))
     (let loop ([indexes (map - indexes lbounds)]
                [vals (pg-array-contents arr)])
       (cond [(pair? indexes)

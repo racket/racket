@@ -38,7 +38,7 @@
              (postgresql-guess-socket-path)
              socket)])
     (when (> connection-options 1)
-      (uerror 'postgresql-connect "cannot give both server/port and socket arguments"))
+      (error 'postgresql-connect "cannot give both server/port and socket arguments"))
     (let ([c (new connection%
                   (notice-handler notice-handler)
                   (notification-handler notification-handler)

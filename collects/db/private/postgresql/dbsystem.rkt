@@ -387,7 +387,7 @@ record = cols:int4 (typeoid:int4 len/-1:int4 data:byte^len)^cols
   (case (bytes-ref x 0)
     ((0) #f)
     ((1) #t)
-    (else (error/internal 'recv-boolean "bad value: ~e" x))))
+    (else (error/internal* 'recv-boolean "bad value" '("value" value) x))))
 
 (define (recv-char1 x)
   (integer->char (bytes-ref x 0)))

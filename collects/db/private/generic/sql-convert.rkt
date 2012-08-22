@@ -1,4 +1,5 @@
 #lang racket/base
+(require "interfaces.rkt")
 
 ;; ========================================
 
@@ -16,7 +17,8 @@
               (+ (string->number (cadr m))
                  (parse-exact-fraction (caddr m))))]
         [else
-         (error 'parse-decimal "internal error: cannot parse ~s as decimal" s)]))
+         (error/internal* 'parse-decimal "cannot parse as decimal"
+                          '("string" value) s)]))
 
 (define (parse-exact-fraction s)
   ;; eg: (parse-exact-fraction "12") = 12/100
@@ -97,5 +99,4 @@
 
 ;; marshal-error : string datum -> (raises error)
 (define (marshal-error f i type datum)
-  (error f "cannot marshal as SQL type ~s: ~e"
-         type datum))
+  (error/no-convert f #f type datum))

@@ -204,8 +204,7 @@
       (send (get-connection #t) prepare fsym stmt close-on-exec?))
 
     (define/public (free-statement stmt need-lock?)
-      (error 'free-statement
-             "internal error: virtual connection does not own statements"))))
+      (error/internal 'free-statement "virtual connection does not own statements"))))
 
 ;; ----
 
@@ -287,7 +286,7 @@
              (begin0 actual-counter
                (set! actual-counter (add1 actual-counter)))])
         (when (or (hash-ref proxy=>evt c #f) (memq c idle-list))
-          (uerror 'connection-pool "connect function did not produce a fresh connection"))
+          (error 'connection-pool "connect function did not produce a fresh connection"))
         (hash-set! actual=>number c actual-number)
         c))
 
@@ -376,6 +375,5 @@
                 [else key])]
          [result (sync/timeout 0.1 (send pool lease-evt key))])
     (unless result
-      (uerror 'connection-pool-lease
-              "cannot obtain connection; connection pool limit reached"))
+      (error 'connection-pool-lease "connection pool limit reached"))
     result))

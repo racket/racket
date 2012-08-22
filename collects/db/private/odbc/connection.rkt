@@ -4,6 +4,7 @@
          racket/math
          ffi/unsafe
          ffi/unsafe/atomic
+         unstable/error
          "../generic/interfaces.rkt"
          "../generic/common.rkt"
          "../generic/prepared.rkt"
@@ -234,7 +235,9 @@
                        (integer->integer-bytes (sql-timestamp-nanosecond x) 4 #f)))))]
             [(sql-null? param)
              (bind SQL_C_CHAR SQL_VARCHAR #f)]
-            [else (error/internal fsym "cannot convert to typeid ~a: ~e" typeid param)]))
+            [else (error/internal* fsym "cannot convert given value to SQL type"
+                                   '("given" value) param
+                                   "typeid" typeid)]))
 
     (define/private (fetch* fsym stmt result-typeids end-box limit)
       ;; scratchbuf: create a single buffer here to try to reduce garbage
@@ -516,7 +519,8 @@
 
     (define/override (start-transaction* fsym isolation)
       (when (eq? isolation 'nested)
-        (uerror fsym "already in transaction (nested transactions not supported for ODBC)"))
+        (raise-misc-error fsym "already in transaction"
+                          #:continued "nested transactions not supported for ODBC connections"))
       (let* ([db (get-db fsym)]
              [ok-levels
               (let-values ([(status value)
@@ -537,7 +541,8 @@
                  ;; So if 0, use serializable.
                  (if (zero? default-level) SQL_TXN_SERIALIZABLE default-level)))])
         (when (zero? (bitwise-and requested-level ok-levels))
-          (uerror fsym "requested isolation level ~a is not available" isolation))
+          (raise-misc-error fsym "requested isolation level is not available"
+                            '("isolation level" value) isolation))
         (let ([status (SQLSetConnectAttr db SQL_ATTR_TXN_ISOLATION requested-level)])
           (handle-status fsym status db)))
       (let ([status (SQLSetConnectAttr db SQL_ATTR_AUTOCOMMIT SQL_AUTOCOMMIT_OFF)])
@@ -563,7 +568,7 @@
 
     (define/public (list-tables fsym schema)
       (define (no-search)
-        (uerror fsym "schema search path cannot be determined for this DBMS"))
+        (error fsym "schema search path cannot be determined for this DBMS"))
       (let ([stmt
              (cond
               [(regexp-match? #rx"^DB2" dbms)
@@ -591,7 +596,7 @@
                                 "SELECT view_name AS name FROM sys.all_views "
                                 "WHERE " schema-cond))]
               [else
-               (uerror fsym "not supported for this DBMS")])])
+               (error fsym "not supported for this DBMS")])])
         (let* ([result (query fsym stmt #f)]
                [rows (rows-result-rows result)])
           (for/list ([row (in-list rows)])
@@ -664,7 +669,7 @@
          s]
         [(= s SQL_ERROR)
          (when handle (diag-info who handle 'error #f))
-         (uerror who "unknown error (no diagnostic returned)")]
+         (error who "unknown error (no diagnostic returned)")]
         [else s]))
 
 (define (diag-info who handle mode on-notice)
@@ -673,7 +678,7 @@
                [(sqlhdbc? handle) SQL_HANDLE_DBC]
                [(sqlhstmt? handle) SQL_HANDLE_STMT]
                [else
-                (error/internal 'diag-info "unknown handle type: ~e" handle)])])
+                (error/internal* 'diag-info "unknown handle type" '("handle" value) handle)])])
     (let-values ([(status sqlstate native-errcode message)
                   (SQLGetDiagRec handle-type handle 1)])
       (case mode

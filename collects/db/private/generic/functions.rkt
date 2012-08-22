@@ -3,6 +3,7 @@
          racket/vector
          racket/class
          racket/promise
+         unstable/error
          "interfaces.rkt"
          (only-in "sql-data.rkt" sql-null sql-null?))
 (provide (all-defined-out))
@@ -80,35 +81,31 @@
 (define (query/rows c fsym sql want-columns)
   (let [(result (query1 c fsym sql))]
     (unless (rows-result? result)
-      (uerror fsym "query did not return rows: ~e" sql))
+      (error/want-rows fsym sql #t))
     (let ([got-columns (length (rows-result-headers result))])
       (when (and want-columns (not (= got-columns want-columns)))
-        (uerror fsym "query returned ~a ~a (expected ~a): ~e"
-                got-columns (if (= got-columns 1) "column" "columns") want-columns sql)))
+        (error/column-count fsym sql want-columns got-columns #t)))
     result))
 
 (define (query/cursor c fsym sql want-columns)
   (let ([result (send c query fsym sql #t)])
     (unless (cursor-result? result)
-      (uerror fsym "query did not return cursor: ~e" sql))
+      (error/want-cursor fsym sql))
     (let ([got-columns (length (cursor-result-headers result))])
       (when (and want-columns (not (= got-columns want-columns)))
-        (uerror fsym "query returned ~a ~a (expected ~a): ~e"
-                got-columns (if (= got-columns 1) "column" "columns")
-                want-columns sql)))
+        (error/column-count fsym sql want-columns got-columns #t)))
     result))
 
 (define (rows-result->row fsym rs sql maybe-row? one-column?)
   (define rows (rows-result-rows rs))
   (cond [(null? rows)
          (cond [maybe-row? #f]
-               [else (uerror fsym "query returned zero rows (expected 1): ~e" sql)])]
+               [else (error/row-count fsym sql 1 0)])]
         [(null? (cdr rows))
          (let ([row (car rows)])
            (cond [one-column? (vector-ref row 0)]
                  [else row]))]
-        [else
-         (uerror fsym "query returned multiple rows (expected 1): ~e" sql)]))
+        [else (error/row-count fsym sql 1 (length rows))]))
 
 (define (compose-statement fsym c stmt args checktype)
   (cond [(prop:statement? stmt)
@@ -124,16 +121,11 @@
                        ;; Ownership check done later, by query method.
                        stmt]
                       [(statement-binding? stmt)
-                       (error fsym
-                              (string-append
-                               "cannot execute statement-binding with "
-                               "additional inline arguments: ~e")
-                              stmt)])])
+                       (error/statement-binding-args fsym stmt args)])])
            (send pst check-results fsym checktype stmt)
            (send pst bind fsym args))]
         [else ;; no args, and stmt is either string or statement-binding
          stmt]))
-
 
 ;; Query API procedures
 
@@ -291,15 +283,12 @@
 (define (call-with-transaction c proc #:isolation [isolation #f])
   (send c start-transaction '|call-with-transaction (start)| isolation #t)
   (with-handlers ([exn?
-                   (lambda (e)
+                   (lambda (e1)
                      (with-handlers ([exn?
                                       (lambda (e2)
-                                        (error 'call-with-transaction
-                                               "error during rollback: ~a\ncaused by underlying error: ~a"
-                                               (exn-message e2)
-                                               (exn-message e)))])
+                                        (error/exn-in-rollback 'call-with-transaction e1 e2))])
                        (send c end-transaction '|call-with-transaction (rollback)| 'rollback #t))
-                     (raise e))])
+                     (raise e1))])
     (begin0 (call-with-continuation-barrier proc)
       (send c end-transaction '|call-with-transaction (commit)| 'commit #t))))
 
@@ -358,11 +347,12 @@
          [residual-length
           (for/sum ([x (in-vector fields-used)]) (if x 0 1))])
     (when (= residual-length 0)
-      (error fsym "cannot group by all fields"))
+      (raise-arguments-error fsym "cannot group by all fields"
+                             "grouping field sets" key-fields-list))
     (when (and (> residual-length 1) as-list?)
-      (error fsym
-             "expected exactly one residual field for #:group-mode 'list, got ~a"
-             residual-length))
+      (raise-arguments-error fsym "expected exactly one residual field when #:group-mode is 'list"
+                             "grouping field sets" key-fields-list
+                             "residual field count" residual-length))
     (let* ([initial-projection
             (for/vector #:length total-fields ([i (in-range total-fields)]) i)]
            [headers
@@ -401,20 +391,19 @@
                [else key-field])])
     (when (string? key-field)
       (unless key-index
-        (error fsym "expected grouping field in ~s, got: ~e"
-               (sort (hash-keys name-map) string<?)
-               key-field)))
+        (raise-arguments-error fsym "bad grouping field"
+                               "given" key-field
+                               "available" (sort (hash-keys name-map) string<?))))
     (when (exact-integer? key-field)
       (unless (< key-index total-fields)
-        (error fsym "grouping index ~s out of range [0, ~a]"
-               key-index (sub1 total-fields))))
+        (raise-range-error fsym "fields" "grouping "
+                           key-index
+                           (sort (hash-keys name-map) string<?)
+                           0 total-fields)))
     (when fields-used
       (when (vector-ref fields-used key-index)
-        (error fsym "grouping field ~s~a used multiple times"
-               key-field
-               (if (string? key-field)
-                   (format " (index ~a)" key-index)
-                   "")))
+        (raise-arguments-error fsym "grouping field used multiple times"
+                               "field" key-field))
       (vector-set! fields-used key-index #t))
     key-index))
 
@@ -532,8 +521,9 @@
                     (eq? (hash-ref table key not-given) not-given)
                     ;; FIXME: okay to coalesce values if equal?
                     (equal? value old-value))
-          (error who "duplicate value for key: ~e; values are ~e and ~e"
-                 key old-value value))
+          (raise-misc-error who "duplicate value for key"
+                            '("key" value) key
+                            '("values" multi value) (list old-value value)))
         (if value-list?
             (hash-set table key
                       (if (ok-value? value)

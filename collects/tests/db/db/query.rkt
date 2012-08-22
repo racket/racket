@@ -317,7 +317,7 @@
     (test-case "error on managed st, unmanaged end"
       (with-connection c
         (start-transaction c)
-        (check-exn #rx"ROLLBACK not allowed within managed transaction"
+        (check-exn #rx"statement not allowed in current transaction state.*statement type: ROLLBACK"
                    (lambda () (query-exec c "ROLLBACK")))
         (check-equal? (in-transaction? c) #t)
         ;; SQLite-ODBC is unhappy with open tx on disconnect
@@ -332,7 +332,7 @@
           (check-equal? (in-transaction? c) #f))))
     (test-case "error on cwt, unmanaged end"
       (with-connection c
-        (check-exn #rx"ROLLBACK not allowed within managed transaction"
+        (check-exn #rx"statement not allowed in current transaction state.*statement type: ROLLBACK"
                    (lambda ()
                      (call-with-transaction c
                        (lambda () (query-exec c "ROLLBACK")))))
@@ -352,7 +352,7 @@
       (test-case "error on implicit-commit stmt"
         (with-connection c
           (start-transaction c)
-          (check-exn #rx"statement with implicit commit not allowed"
+          (check-exn #rx"statement not allowed.*statement type: statement with implicit commit"
                      (lambda () (query-exec c "create table foo (n integer)")))
           ;; SQLite-ODBC is unhappy with open tx on disconnect
           (rollback-transaction c))))
