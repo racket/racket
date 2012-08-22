@@ -29,7 +29,8 @@
 
 (define-signature tc-app^
   ([cond-contracted tc/app (syntax? . -> . tc-results?)]
-   [cond-contracted tc/app/check (syntax? tc-results? . -> . tc-results?)]))
+   [cond-contracted tc/app/check (syntax? tc-results? . -> . tc-results?)]
+   [cond-contracted tc/app-regular (syntax? . -> . tc-results?)]))
 
 (define-signature tc-apply^
   ([cond-contracted tc/apply (syntax? syntax? . -> . tc-results?)]))

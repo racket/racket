@@ -3,6 +3,7 @@
 (require "../utils/utils.rkt"
          "tc-app/signatures.rkt"
          syntax/parse racket/match 
+         syntax/parse/experimental/reflect
          (typecheck signatures check-below tc-funapp)
          (types utils abbrev)
          (rep type-rep filter-rep object-rep rep-utils)
@@ -19,13 +20,17 @@
 (define (tc/app/internal form expected)
   (or
     (tc/app-annotated form expected)
+    (syntax-parse form
+      [(#%plain-app .
+         (~or (~reflect v (tc/app-list expected) #:attributes (check))
+              (~reflect v (tc/app-apply expected) #:attributes (check))
+              (~reflect v (tc/app-eq expected) #:attributes (check))))
+       ((attribute v.check))]
+      [_ #f])
     (tc/app-hetero form expected)
-    (tc/app-list form expected)
-    (tc/app-apply form expected)
     (tc/app-values form expected)
     (tc/app-keywords form expected)
     (tc/app-objects form expected)
-    (tc/app-eq form expected)
     (tc/app-lambda form expected)
     (tc/app-special form expected)
     (tc/app-regular form expected)))
