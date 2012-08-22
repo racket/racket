@@ -1471,7 +1471,6 @@ path/s is either such a string or a list of them.
 "collects/tests/unstable/srcloc.rktl" responsible (cce)
 "collects/tests/unstable/temp-c" responsible (jay)
 "collects/tests/utils/gui.rkt" responsible (robby)
-"collects/tests/utils/mz-testing.rkt" responsible (clements)
 "collects/tests/utils/sexp-diff.rkt" responsible (clements)
 "collects/tests/web-server" responsible (jay)
 "collects/tests/web-server/pr/length.rkt" drdr:command-line #f
