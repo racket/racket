@@ -15,7 +15,7 @@
 @defform[(open-place id body ...+)]{ 
 
 Like @racket[(place id body ...)], but @racket[body ...] may have free lexical
-variables, which are automatically sent to the newly-created @tech{place}.
+variables, which are automatically sent to the newly-created @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{place}.
 Note that these variables must have values accepted by
-@racket[place-message-allowed?], otherwise an @[exn:fail:contract] is raised.
+@racket[place-message-allowed?], otherwise an @racket[exn:fail:contract] exception is raised.
 }
