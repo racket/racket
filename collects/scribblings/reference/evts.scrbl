@@ -406,5 +406,5 @@ and the @racket[prop:input-port] property takes precedence over
 
 @defparam[current-evt-pseudo-random-generator generator pseudo-random-generator?]{
 
-A parameter that determines the pseudo-random number generator used by
+A @tech{parameter} that determines the pseudo-random number generator used by
 @racket[sync] for events created by @racket[choice-evt].}

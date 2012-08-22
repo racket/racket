@@ -62,7 +62,7 @@ The result of an @racket[untrace] expression is @|void-const|.}
 
 @defparam[current-trace-notify proc (string? . -> . any)]{
 
-A parameter that determines the way that trace output is
+A @tech{parameter} that determines the way that trace output is
 displayed. The string given to @racket[proc] is a trace; it does not
 end with a newline, but it may contain internal newlines. Each call or
 result is converted into a string using @racket[pretty-print].  The

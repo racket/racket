@@ -33,15 +33,15 @@ closed, @racket[#f] otherwise.}
 Return a @tech{synchronizable event} that becomes ready when @racket[port] is 
 closed.}
 
-@defparam[current-input-port in input-port?]{A parameter that
+@defparam[current-input-port in input-port?]{A @tech{parameter} that
 determines a default input port for many operations, such as
 @racket[read].}
 
-@defparam[current-output-port out output-port?]{A parameter that
+@defparam[current-output-port out output-port?]{A @tech{parameter} that
 determines a default output port for many operations, such as
 @racket[write].}
 
-@defparam[current-error-port out output-port?]{A parameter that
+@defparam[current-error-port out output-port?]{A @tech{parameter} that
 determines an output port that is typically used for errors and
 logging. For example, the default error display handler writes to this
 port.}

@@ -167,20 +167,20 @@ Formats to a string. The result is the same as
 
 @defboolparam[print-pair-curly-braces on?]{
 
-A parameter that controls pair printing. If the value is true, then
+A @tech{parameter} that controls pair printing. If the value is true, then
 pairs print using @litchar["{"] and @litchar["}"] instead of
 @litchar{(} and @litchar{)}. The default is @racket[#f].}
 
 
 @defboolparam[print-mpair-curly-braces on?]{
 
-A parameter that controls pair printing. If the value is true, then
+A @tech{parameter} that controls pair printing. If the value is true, then
 mutable pairs print using @litchar["{"] and @litchar["}"] instead of
 @litchar{(} and @litchar{)}. The default is @racket[#t].}
 
 @defboolparam[print-unreadable on?]{
 
-A parameter that enables or disables printing of values that have no
+A @tech{parameter} that enables or disables printing of values that have no
 @racket[read]able form (using the default reader), including
 structures that have a custom-write procedure (see
 @racket[prop:custom-write]), but not including @tech{uninterned}
@@ -192,12 +192,12 @@ more information.}
 
 @defboolparam[print-graph on?]{
 
-A parameter that controls printing data with sharing; defaults to
+A @tech{parameter} that controls printing data with sharing; defaults to
 @racket[#f]. See @secref["printing"] for more information.}
 
 @defboolparam[print-struct on?]{
 
-A parameter that controls printing structure values in vector or
+A @tech{parameter} that controls printing structure values in vector or
 @tech{prefab} form; defaults to @racket[#t]. See @secref["printing"]
 for more information. This parameter has no effect on the printing of
 structures that have a custom-write procedure (see
@@ -205,23 +205,23 @@ structures that have a custom-write procedure (see
 
 @defboolparam[print-box on?]{
 
-A parameter that controls printing box values; defaults to
+A @tech{parameter} that controls printing box values; defaults to
 @racket[#t]. See @secref["print-box"] for more information.}
 
 @defboolparam[print-vector-length on?]{
 
-A parameter that controls printing vectors; defaults to
+A @tech{parameter} that controls printing vectors; defaults to
 @racket[#f]. See @secref["print-vectors"] for more information.}
 
 @defboolparam[print-hash-table on?]{
 
-A parameter that controls printing hash tables; defaults to
+A @tech{parameter} that controls printing hash tables; defaults to
 @racket[#f]. See @secref["print-hashtable"] for more information.}
 
 
 @defboolparam[print-boolean-long-form on?]{
 
-A parameter that controls printing of booleans. When the parameter's
+A @tech{parameter} that controls printing of booleans. When the parameter's
 value is true, @racket[#t] and @racket[#f] print as @litchar{#true}
 and @litchar{#false}, otherwise they print as @litchar{#t}
 and @litchar{#f}. The default is @racket[#f].}
@@ -229,7 +229,7 @@ and @litchar{#f}. The default is @racket[#f].}
 
 @defboolparam[print-reader-abbreviations on?]{
 
-A parameter that controls printing of two-element lists that start
+A @tech{parameter} that controls printing of two-element lists that start
 with @racket[quote], @racket['quasiquote], @racket['unquote],
 @racket['unquote-splicing], @racket['syntax], @racket['quasisyntax],
 @racket['unsyntax], or @racket['unsyntax-splicing]; defaults to
@@ -237,14 +237,14 @@ with @racket[quote], @racket['quasiquote], @racket['unquote],
 
 @defboolparam[print-as-expression on?]{
 
-A parameter that controls printing in @racket[print] mode (as opposed
+A @tech{parameter} that controls printing in @racket[print] mode (as opposed
 to @racket[write] or @racket[display]); defaults to @racket[#t]. See
 @secref["printing"] for more information.}
 
 
 @defparam[print-syntax-width width (or/c +inf.0 0 (and/c exact-integer? (>/c 3)))]{
 
-A parameter that controls printing of @tech{syntax objects}. Up to
+A @tech{parameter} that controls printing of @tech{syntax objects}. Up to
 @racket[width] characters are used to show the datum form of a syntax
 object within @litchar{#<syntax}...@litchar{>} (after the
 @tech{syntax object}'s source location, if any).}
@@ -260,7 +260,7 @@ object within @litchar{#<syntax}...@litchar{>} (after the
                                                           (and/c path? complete-path?))
                                                   #f)]{
 
-A parameter that is used when writing compiled code (see @secref["print-compiled"]) that contains
+A @tech{parameter} that is used when writing compiled code (see @secref["print-compiled"]) that contains
 pathname literals, including source-location pathnames for procedure
 names. When the parameter's value is a @racket[_path], paths that syntactically extend @racket[_path]
 are converted to relative paths; when the resulting
@@ -314,7 +314,7 @@ global port print handler is the same as the default write handler.}
                                                    (any/c output-port? . -> . any))])
             void?])]{
 
-A parameter that determines @deftech{global port print handler},
+A @tech{parameter} that determines @deftech{global port print handler},
 which is called by the default port print handler (see
 @racket[port-print-handler]) to @racket[print] values into a port.
 The default value uses the built-in printer (see

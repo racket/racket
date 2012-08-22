@@ -71,7 +71,7 @@ the grammar for @racket[_module-path] for @racket[require],
              . -> .
              resolved-module-path?))]{
 
-A parameter that determines the current @deftech{module name
+A @tech{parameter} that determines the current @deftech{module name
 resolver}, which manages the conversion from other kinds of module
 references to a @tech{resolved module path}. For example,
 when the expander encounters @racket[(require _module-path)] where
@@ -150,7 +150,7 @@ should not necessarily be loaded in the current namespace.}
 
 @defparam[current-module-declare-name name (or/c resolved-module-path? #f)]{
 
-A parameter that determines a module name that is used when evaluating
+A @tech{parameter} that determines a module name that is used when evaluating
 a @racket[module] declaration (when the parameter value is not
 @racket[#f]). In that case, the @racket[_id] from the @racket[module]
 declaration is ignored, and the parameter's value is used as the name
@@ -163,7 +163,7 @@ submodule path relative to the root module is unaffected.}
 
 @defparam[current-module-declare-source src (or/c symbol? (and/c path? complete-path?) #f)]{
 
-A parameter that determines source information to be associated with a
+A @tech{parameter} that determines source information to be associated with a
 module when evaluating a @racket[module] declaration. Source
 information is used in error messages and reflected by
 @racket[variable-reference->module-source]. When the parameter value

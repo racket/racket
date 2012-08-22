@@ -32,5 +32,5 @@ otherwise.}
 
 @defparam[current-thread-group group thread-group?]{
 
-A parameter that determines the thread group for newly created
+A @tech{parameter} that determines the thread group for newly created
 threads.}

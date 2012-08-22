@@ -176,7 +176,7 @@ called. The default @racket[fail-thunk] raises
 
 @defboolparam[read-case-sensitive on?]{
 
-A parameter that controls parsing and printing of symbols. When this
+A @tech{parameter} that controls parsing and printing of symbols. When this
 parameter's value is @racket[#f], the reader case-folds symbols (e.g.,
 producing @racket['hi] when the input is any one of @litchar{hi},
 @litchar{Hi}, @litchar{HI}, or @litchar{hI}). The parameter also
@@ -192,30 +192,30 @@ loaded, the parameter is set to @racket[#t] (see
 
 @defboolparam[read-square-bracket-as-paren on?]{
 
-A parameter that controls whether @litchar{[} and @litchar{]} 
+A @tech{parameter} that controls whether @litchar{[} and @litchar{]} 
 are treated as parentheses. See @secref["parse-pair"] for more
 information.}
 
 @defboolparam[read-curly-brace-as-paren on?]{
 
-A parameter that controls whether @litchar["{"] and @litchar["}"] 
+A @tech{parameter} that controls whether @litchar["{"] and @litchar["}"] 
 are treated as parentheses. See @secref["parse-pair"] for more
 information.}
 
 @defboolparam[read-accept-box on?]{
 
-A parameter that controls parsing @litchar{#&} input. See
+A @tech{parameter} that controls parsing @litchar{#&} input. See
 @secref["parse-box"] for more information.}
 
 @defboolparam[read-accept-compiled on?]{
 
-A parameter that controls parsing @litchar{#~} compiled input. See
+A @tech{parameter} that controls parsing @litchar{#~} compiled input. See
 @secref["reader"] and @racket[current-compile] for more
 information.}
 
 @defboolparam[read-accept-bar-quote on?]{
 
-A parameter that controls parsing and printing of @litchar{|} in
+A @tech{parameter} that controls parsing and printing of @litchar{|} in
 symbols. See @secref["parse-symbol"] and @secref["printing"] for
 more information.}
 
@@ -226,37 +226,37 @@ A parameter value that controls parsing input with sharing. See
 
 @defboolparam[read-decimal-as-inexact on?]{
 
-A parameter that controls parsing input numbers with a decimal point
+A @tech{parameter} that controls parsing input numbers with a decimal point
 or exponent (but no explicit exactness tag). See
 @secref["parse-number"] for more information.}
 
 @defboolparam[read-accept-dot on?]{
 
-A parameter that controls parsing input with a dot, which is normally
+A @tech{parameter} that controls parsing input with a dot, which is normally
 used for literal cons cells. See @secref["parse-pair"] for more
 information.}
 
 @defboolparam[read-accept-infix-dot on?]{
 
-A parameter that controls parsing input with two dots to trigger infix
+A @tech{parameter} that controls parsing input with two dots to trigger infix
  conversion. See @secref["parse-pair"] for more information.}
 
 @defboolparam[read-accept-quasiquote on?]{
 
-A parameter that controls parsing input with @litchar{`} or
+A @tech{parameter} that controls parsing input with @litchar{`} or
 @litchar{,} which is normally used for @racket[quasiquote],
 @racket[unquote], and @racket[unquote-splicing] abbreviations. See
 @secref["parse-quote"] for more information.}
 
 @defboolparam[read-accept-reader on?]{
 
-A parameter that controls whether @litchar{#reader}, @litchar{#lang},
+A @tech{parameter} that controls whether @litchar{#reader}, @litchar{#lang},
 or @litchar{#!} are allowed for selecting a parser. See
 @secref["parse-reader"] for more information.}
 
 @defboolparam[read-accept-lang on?]{
 
-A parameter that (along with @racket[read-accept-reader] controls
+A @tech{parameter} that (along with @racket[read-accept-reader] controls
 whether @litchar{#lang} and @litchar{#!} are allowed for selecting a
 parser. See @secref["parse-reader"] for more information.}
 
@@ -276,7 +276,7 @@ default behavior. See @secref["readtables"] for more information.}
 
 @defparam[read-on-demand-source path (and/c path? complete-path?)]{
 
-A parameter that enables lazy parsing of compiled code, so that
+A @tech{parameter} that enables lazy parsing of compiled code, so that
 closure bodies and syntax objects are extracted (and validated) from
 marshaled compiled code on demand. Normally, this parameter is set by
 the default @tech{load handler} when @racket[load-on-demand-enabled]

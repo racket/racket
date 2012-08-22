@@ -12,7 +12,7 @@ returned.}
 
 @defparam[exit-handler proc (any/c . -> . any)]{
 
-A parameter that determines the current @deftech{exit handler}. The
+A @tech{parameter} that determines the current @deftech{exit handler}. The
 @tech{exit handler} is called by @racket[exit].
 
 The default @tech{exit handler} in the Racket executable
@@ -25,7 +25,7 @@ means ``success'').}
 
 @defparam[executable-yield-handler proc (byte? . -> . any)]{
 
-A parameter that determines a procedure to be called as the Racket
+A @tech{parameter} that determines a procedure to be called as the Racket
 process is about to exit normally. The procedure associated with this
 parameter is not called when @racket[exit] (or, more precisely, the
 default @tech{exit handler}) is used to exit early. The argument to

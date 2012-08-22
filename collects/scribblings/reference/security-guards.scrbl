@@ -148,7 +148,7 @@ into or out of the @racket[file-guard] or @racket[network-guard] call
 
 @defparam[current-security-guard guard security-guard?]{
 
-A parameter that determines the current security guard that controls
+A @tech{parameter} that determines the current security guard that controls
 access to the filesystem and network.}
 
 
