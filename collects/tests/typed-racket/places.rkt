@@ -2,11 +2,15 @@
 
 (require racket/place typed-racket/optimizer/logging
          unstable/open-place compiler/compiler)
-(provide start-worker dr serialize-exn deserialize-exn s-exn? generate-log/place)
+(provide start-worker dr serialize-exn deserialize-exn s-exn? generate-log/place verbose?)
+
+(define verbose? (make-parameter #f))
+
 (struct s-exn (message) #:prefab)
 (struct s-exn:fail s-exn () #:prefab)
 (struct s-exn:fail:syntax s-exn:fail (exprs) #:prefab)
 (struct s-exn:fail:contract s-exn:fail () #:prefab)
+
 (define (serialize-exn e)
   (match e
     [(exn:fail:syntax msg _ exprs)
@@ -34,7 +38,9 @@
     (dynamic-require `(file ,(if (string? p) p (path->string p))) #f)
     (and reg-box (set-box! reg-box (namespace-module-registry (current-namespace))))))
 
+
 (define (start-worker get-ch name)
+  (define verb (verbose?))
   (open-place ch
     (define reg (box #f))
     (let loop ()
@@ -49,14 +55,13 @@
          (loop)]
         [(vector p* res error?) 
          (define-values (path p b) (split-path p*))
-         (parameterize ([read-accept-reader #t]
-                        [current-load-relative-directory
-                         (path->complete-path path)]
-                        [current-directory path]
-                        [current-output-port (open-output-nowhere)]
-                        [error-display-handler (if error? void (error-display-handler))])
-           (with-handlers ([exn? (λ (e)
-                                   (place-channel-put res (serialize-exn e)))])
+         (with-handlers ([exn? (λ (e) (place-channel-put res (serialize-exn e)))])
+           (parameterize ([read-accept-reader #t]
+                          [current-load-relative-directory
+                           (path->complete-path path)]
+                          [current-directory path]
+                          [current-output-port (open-output-nowhere)]                        
+                          [error-display-handler (if error? void (error-display-handler))]) 
              (dr p reg)
              (place-channel-put res #t)))
          (loop)]))))

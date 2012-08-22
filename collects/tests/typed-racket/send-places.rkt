@@ -3,7 +3,7 @@
 (require "places.rkt")
 
 (require racket/place data/queue racket/async-channel)
-(provide generate-log start-workers run-in-other-place places)
+(provide generate-log start-workers run-in-other-place places verbose?)
 
 (define places (make-parameter (and (place-enabled?) (min 8 (processor-count)))))
 
