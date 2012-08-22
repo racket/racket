@@ -344,9 +344,10 @@ connections.
 Creates a @tech{connection pool}. The pool consists of up to
 @racket[max-connections], divided between leased connections and up to
 @racket[max-idle-connections] idle connections. The pool uses
-@racket[connect] to create new connections when needed; the
-@racket[connect] function must return a fresh connection each time it
-is called.
+@racket[connect] to create new connections when needed. The
+@racket[connect] function is called with the same
+@racket[current-custodian] value as when the connection pool was
+created, and it must return a fresh connection each time it is called.
 
 @examples[#:eval the-eval
 (eval:alts
@@ -417,7 +418,11 @@ automatically releases them when they are no longer needed.
 Creates a @tech{virtual connection} that creates actual connections on
 demand using the @racket[connect] function, or by calling
 @racket[(connection-pool-lease connect)] if @racket[connect] is a
-@tech{connection pool}. A virtual connection encapsulates a mapping
+@tech{connection pool}. If @racket[connect] is a function, it is
+called with the same @racket[current-custodian] value as when the
+virtual connection was created.
+
+A virtual connection encapsulates a mapping
 of threads to actual connections. When a query function is called with
 a virtual connection, the current thread's associated actual
 connection is used to execute the query. If there is no actual
