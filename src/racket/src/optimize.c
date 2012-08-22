@@ -1452,6 +1452,7 @@ int scheme_wants_flonum_arguments(Scheme_Object *rator, int argpos, int rotate_m
             || IS_NAMED_PRIM(rator, "flatan")
             || IS_NAMED_PRIM(rator, "fllog")
             || IS_NAMED_PRIM(rator, "flexp")
+            || IS_NAMED_PRIM(rator, "flexpt")
             || IS_NAMED_PRIM(rator, "fl+")
             || IS_NAMED_PRIM(rator, "fl-")
             || IS_NAMED_PRIM(rator, "fl*")
@@ -1535,6 +1536,7 @@ static int produces_unboxed(Scheme_Object *rator, int *non_fl_args, int argc, in
           || IS_NAMED_PRIM(rator, "fl/")
           || IS_NAMED_PRIM(rator, "flmin")
           || IS_NAMED_PRIM(rator, "flmax")
+          || IS_NAMED_PRIM(rator, "flexpt")
           || (for_args
               && (IS_NAMED_PRIM(rator, "fl<")
                   || IS_NAMED_PRIM(rator, "fl<=")
