@@ -2708,7 +2708,7 @@ void scheme_optimize_info_never_inline(Optimize_Info *);
 
 Scheme_Object *scheme_toplevel_to_flagged_toplevel(Scheme_Object *tl, int flags);
 
-int scheme_wants_flonum_arguments(Scheme_Object *rator, int argpos, int rotate_mode);
+int scheme_wants_flonum_arguments(Scheme_Object *rator, int argpos);
 int scheme_expr_produces_flonum(Scheme_Object *expr);
 
 Scheme_Object *scheme_make_compiled_syntax(Scheme_Syntax *syntax,
