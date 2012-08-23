@@ -5,7 +5,7 @@
 
 @defparam[current-eval proc (any/c . -> . any)]{
 
-A parameter that determines the current @deftech{evaluation handler}.
+A @tech{parameter} that determines the current @deftech{evaluation handler}.
 The evaluation handler is a procedure that takes a top-level form and
 evaluates it, returning the resulting values. The @tech{evaluation
 handler} is called by @racket[eval], @racket[eval-syntax], the default
@@ -83,7 +83,7 @@ and its lexical context is not enriched before it is passed to the
                                    . -> . 
                                    any)]{
 
-A parameter that determines the current @deftech{load handler} to load
+A @tech{parameter} that determines the current @deftech{load handler} to load
 top-level forms from a file. The @tech{load handler} is called by
 @racket[load], @racket[load-relative], @racket[load/cd], and the
 default @tech{compiled-load handler}.
@@ -204,7 +204,7 @@ handler}.}
 
 @defparam[current-load-extension proc (path? (or/c symbol? #f) . -> . any)]{
 
-A parameter that determines a @deftech{extension-load handler}, which is
+A @tech{parameter} that determines a @deftech{extension-load handler}, which is
 called by @racket[load-extension] and the default @tech{compiled-load
 handler}.
 
@@ -236,7 +236,7 @@ Like @racket[load-extension], but resolves @racket[file] using
                                                               (non-empty-listof symbol?)))
                                                 . -> . any)]{
 
-A parameter that determines the current @deftech{compiled-load
+A @tech{parameter} that determines the current @deftech{compiled-load
 handler} to load from a file that may have a compiled form. The
 @tech{compiled-load handler} is called by @racket[load/use-compiled].
 
@@ -313,7 +313,7 @@ Calls the current @tech{compiled-load handler} in tail position.}
 @defparam[current-load-relative-directory path 
           (or/c (and/c path-string? complete-path?) #f)]{
 
-A parameter that is set by @racket[load], @racket[load-relative],
+A @tech{parameter} that is set by @racket[load], @racket[load-relative],
 @racket[load-extension], @racket[load-relative-extension], and the
 default @tech{compiled-load handler}, and used by
 @racket[load-relative], @racket[load-relative-extension], and the
@@ -351,7 +351,7 @@ the @racket[current-prompt-read], @racket[current-eval], and
 
 @defparam[current-prompt-read proc (-> any)]{
 
-A parameter that determines a @deftech{prompt read handler}, which is
+A @tech{parameter} that determines a @deftech{prompt read handler}, which is
 a procedure that takes no arguments, displays a prompt string, and
 returns a top-level form to evaluate. The prompt read handler is
 called by @racket[read-eval-print-loop], and after printing a prompt,
@@ -378,7 +378,7 @@ before returning the read result.}
 
 @defparam[current-get-interaction-input-port proc (-> input-port?)]{
 
-A parameter that determines the @deftech{interaction port handler},
+A @tech{parameter} that determines the @deftech{interaction port handler},
 which returns a port to use for @racket[read-eval-print-loop] inputs.
 
 The default interaction port handler returns the current input port.
@@ -393,7 +393,7 @@ blocks.}
 
 @defparam[current-read-interaction proc (any/c input-port? -> any)]{
 
-A parameter that determines the current @deftech{read interaction
+A @tech{parameter} that determines the current @deftech{read interaction
 handler}, which is procedure that takes an arbitrary value and an
 input port and returns an expression read from the input port. 
 
@@ -409,7 +409,7 @@ The default read interaction handler accepts @racket[_src] and
 
 @defparam[current-print proc (any/c -> any)]{
 
-A parameter that determines the @deftech{print handler} that is called
+A @tech{parameter} that determines the @deftech{print handler} that is called
  by @racket[read-eval-print-loop] to print the result of an evaluation
  (and the result is ignored).
 
@@ -421,7 +421,7 @@ The default @tech{print handler} @racket[print]s the value to the
 
 @defparam[current-compile proc (any/c boolean? . -> . compiled-expression?)]{
 
-A parameter that determines the current @deftech{compilation handler}.
+A @tech{parameter} that determines the current @deftech{compilation handler}.
 The @tech{compilation handler} is a procedure that takes a top-level form and
 returns a compiled form; see @secref["compilation-model"] for
 more information on compilation.
@@ -465,7 +465,7 @@ otherwise.}
 
 @defboolparam[compile-enforce-module-constants on?]{
 
-A parameter that determines how a module declaration is compiled. 
+A @tech{parameter} that determines how a module declaration is compiled. 
 
 When constants are enforced, and when the macro-expanded body of a
 module contains no @racket[set!] assignment to a particular variable
@@ -481,7 +481,7 @@ generate code that skips certain run-time checks.}
 
 @defboolparam[compile-allow-set!-undefined allow?]{
 
-A parameter that determines how a @racket[set!] expression is compiled
+A @tech{parameter} that determines how a @racket[set!] expression is compiled
 when it mutates a global variable. If the value of this parameter is a
 true value, @racket[set!] expressions for global variables are
 compiled so that the global variable is set even if it was not
@@ -494,7 +494,7 @@ when it is @italic{evaluated}.}
 
 @defboolparam[compile-context-preservation-enabled on?]{
 
-A parameter that determines whether compilation should avoid
+A @tech{parameter} that determines whether compilation should avoid
 function-call inlining and other optimizations that may cause
 information to be lost from stack traces (as reported by
 @racket[continuation-mark-set->context]). The default is @racket[#f],
@@ -504,7 +504,7 @@ which allows such optimizations.}
 
 @guidealso["JIT"]
 
-A parameter that determines whether the native-code just-in-time
+A @tech{parameter} that determines whether the native-code just-in-time
 compiler (@deftech{JIT}) is enabled for code (compiled or not) that is passed to
 the default evaluation handler. A true parameter value is effective
 only on platforms for which the JIT is supported.
@@ -518,7 +518,7 @@ value).}
 
 @defboolparam[load-on-demand-enabled on?]{
 
-A parameter that determines whether the default @tech{load handler}
+A @tech{parameter} that determines whether the default @tech{load handler}
 sets @racket[read-on-demand-source]. See @racket[current-load] for
 more information. The default is @racket[#t], unless it is disabled
 through the @Flag{d}/@DFlag{no-delay} command-line flag.}

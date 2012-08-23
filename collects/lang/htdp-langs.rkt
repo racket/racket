@@ -34,7 +34,7 @@
          "htdp-langs-save-file-prefix.rkt"
 
          (only-in test-engine/scheme-gui make-formatter)
-         (only-in test-engine/scheme-tests
+         (only-in test-engine/racket-tests
                   scheme-test-data error-handler test-format test-execute display-results
                   build-test-engine)
          (lib "test-engine/test-display.scm")
@@ -139,7 +139,7 @@
                   [set-result-module-name 
                    ((current-module-name-resolver) '(lib "lang/private/set-result.ss") #f #f)]
                   [scheme-test-module-name
-                   ((current-module-name-resolver) '(lib "test-engine/scheme-tests.ss") #f #f)]
+                   ((current-module-name-resolver) '(lib "test-engine/racket-tests.ss") #f #f)]
                   [scheme-signature-module-name
                    ((current-module-name-resolver) '(lib "deinprogramm/signature/signature-english.rkt") #f #f)]
                   [tests-on? (preferences:get 'test-engine:enable?)])

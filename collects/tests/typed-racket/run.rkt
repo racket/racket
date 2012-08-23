@@ -14,6 +14,7 @@
 (current-namespace (make-base-namespace))
 (command-line
  #:once-each
+ ["-v" "verbose" (verbose? #t)]
  ["--unit" "run the unit tests" (unit? #t)]
  ["--int" "run the integration tests" (int? #t)]
  ["--opt" "run the optimization tests" (opt? #t)]

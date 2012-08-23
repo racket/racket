@@ -36,4 +36,21 @@
 (test 2 'stream (stream-length (stream 1 (/ 0))))
 (test 'a 'stream (stream-first (stream 'a (/ 0))))
 
+;; make sure stream operations work on lists
+(test #t stream-empty? '())
+(test 1 stream-first '(1 2 3))
+(test '(2 3) stream-rest '(1 2 3))
+(test 3 stream-length '(1 2 3))
+(test 1 stream-ref '(1 2 3) 0)
+(test '(2 3) stream-tail '(1 2 3) 1)
+(test '(1 2 3 4 5) stream->list (stream-append '(1 2 3) '(4 5)))
+(test '(1 2 3) stream->list (stream-map values '(1 2 3)))
+(test #f stream-andmap even? '(1 2 3))
+(test #t stream-ormap even? '(1 2 3))
+(test #t void? (stream-for-each void '(1 2 3)))
+(test 6 stream-fold + 0 '(1 2 3))
+(test 1 stream-count even? '(1 2 3))
+(test '(1 3) stream->list (stream-filter odd? '(1 2 3)))
+(test '(1 a 2 a 3) stream->list (stream-add-between '(1 2 3) 'a))
+
 (report-errs)

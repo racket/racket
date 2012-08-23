@@ -543,6 +543,18 @@ Scales a pict drawing, as well as its @tech{bounding box}. The drawing
 is scaled by adjusting the destination @racket[dc<%>]'s scale while
 drawing the original @racket[pict].}
 
+@defproc*[([(scale-to-fit [pict pict?] [size-pict pict?]) pict?]
+           [(scale-to-fit [pict pict?] [width real?] [height real?]) pict?])]{
+  Scales @racket[pict] so that it fits within the bounding box of
+         @racket[size-pict] (if two arguments are supplied) or
+         into a box of size @racket[width] by @racket[height] 
+         (if three arguments are supplied).
+         
+         The aspect ratio of the pict is preserved, so the resulting pict
+         will have either the width or the height of the @racket[size-pict]
+         (or @racket[width] by @racket[height] box), but not necessarily
+         both.
+}
 
 @defproc[(rotate [pict pict?] [theta real?]) pict?]{
 

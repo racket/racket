@@ -42,7 +42,7 @@ thread.}
 
 @margin-note{In GRacket, custodians also manage @|eventspaces|.}
 
-A parameter that determines a custodian that assumes responsibility
+A @tech{parameter} that determines a custodian that assumes responsibility
 for newly created threads, @tech{file-stream ports}, TCP ports,
 @tech{TCP listeners}, @tech{UDP sockets}, and @tech{byte converters}.}
 

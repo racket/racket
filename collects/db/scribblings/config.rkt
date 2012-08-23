@@ -1,6 +1,8 @@
 #lang racket/base
 (require scribble/manual
          scribble/eval
+         unstable/sandbox
+         racket/runtime-path
          (for-label racket/base
                     racket/contract))
 (provide (all-defined-out)
@@ -18,18 +20,26 @@
 
 ;; ----
 
-(define the-eval (make-base-eval))
-(void
- (interaction-eval #:eval the-eval
-                   (require racket/class
-                            db/base
-                            db/util/datetime))
- (interaction-eval #:eval the-eval
-                   (define connection% (class object% (super-new))))
- (interaction-eval #:eval the-eval
-                   (define connection-pool% (class object% (super-new)))))
+#|
+The log-based-eval should be run in an environment that defines
+the DSN 'db-scribble-env as a PostgreSQL data source.
+|#
 
-(define-syntax-rule (examples/results [example result] ...)
-  (examples #:eval the-eval (eval:alts example result) ...))
-(define-syntax-rule (my-interaction [example result] ...)
-  (interaction #:eval the-eval (eval:alts example result) ...))
+(define-runtime-path example-log "example-log.rktd")
+(define the-eval (make-log-based-eval example-log 'replay))
+
+(the-eval '(require racket/class
+                    db
+                    db/util/postgresql
+                    db/util/datetime))
+
+#|
+The fake eval is for eg connection examples
+|#
+
+(define fake-eval (make-base-eval))
+(fake-eval '(begin (require racket/class)
+                   (define connection% (class object% (super-new)))))
+
+(define-syntax-rule (fake-examples [example result] ...)
+  (examples #:eval fake-eval (eval:alts example result) ...))

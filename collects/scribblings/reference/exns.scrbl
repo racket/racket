@@ -534,7 +534,7 @@ after the first @racket[cnt] lines. A @racket[0] value for
                                                   . -> .
                                                   string?)]{
 
-A parameter that determines the @deftech{error value conversion
+A @tech{parameter} that determines the @deftech{error value conversion
 handler}, which is used to print a Racket value that is embedded in a
 primitive error message.
 
@@ -559,7 +559,7 @@ enable printing of unreadable values (see @racket[print-unreadable]).}
 
 @defboolparam[error-print-source-location include?]{
 
-A parameter that controls whether read and syntax error messages
+A @tech{parameter} that controls whether read and syntax error messages
 include source information, such as the source line and column or the
 expression.  This parameter also controls the error message when a
 module-defined variable is accessed before its definition is executed;

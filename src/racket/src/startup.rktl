@@ -583,7 +583,7 @@
                                             string-append
                                             (map (lambda (p)
                                                    (format "\n   ~a" (unbox p)))
-                                            (filter box? all-paths))))
+                                                 (filter box? all-paths))))
                                    "")))))
                 (let ([dir (*build-path-rep (car paths) collection)])
                   (if (*directory-exists? (car paths) dir)

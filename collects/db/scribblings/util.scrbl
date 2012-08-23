@@ -37,17 +37,14 @@ modules below, not by @racketmodname[db] or @racketmodname[db/base].
   SRFI date, for example, puts zeroes in the year, month, and day
   fields.
 
-@(examples/results
-  [(sql-datetime->srfi-date
-    (query-value pgc "select time '7:30'"))
-   (sql-datetime->srfi-date (make-sql-time 7 30 0 0 #f))]
-  [(sql-datetime->srfi-date
-    (query-value pgc "select date '25-dec-1980'"))
-   (sql-datetime->srfi-date
-    (make-sql-date 1980 12 25))]
-  [(sql-datetime->srfi-date
-    (query-value pgc "select timestamp 'epoch'"))
-   (sql-datetime->srfi-date (make-sql-timestamp 1970 1 1 0 0 0 0 #f))])
+@examples[#:eval the-eval
+(sql-datetime->srfi-date
+ (query-value pgc "select time '7:30'"))
+(sql-datetime->srfi-date
+ (query-value pgc "select date '25-dec-1980'"))
+(sql-datetime->srfi-date
+ (query-value pgc "select timestamp 'epoch'"))
+]
 }
 
 @defproc[(sql-day-time-interval->seconds [interval sql-day-time-interval?])

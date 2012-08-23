@@ -557,7 +557,7 @@ Like @racket[prop:match-expander], but for the legacy match syntax.
 
 @defparam[match-equality-test comp-proc (any/c any/c . -> . any)]{
 
-A parameter that determines the comparison procedure used to check
+A @tech{parameter} that determines the comparison procedure used to check
 whether multiple uses of an identifier match the ``same'' value. The
 default is @racket[equal?].}
 

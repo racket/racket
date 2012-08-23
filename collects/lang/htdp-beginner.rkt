@@ -16,7 +16,7 @@
 ;; Implements the forms:
 (require "private/teach.rkt"
          "private/teach-module-begin.rkt"
-         test-engine/scheme-tests)
+         test-engine/racket-tests)
 
 ;; syntax:
 (provide (rename-out

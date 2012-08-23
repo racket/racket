@@ -71,6 +71,8 @@
          (test
           (build-path path p)
           (λ ()
+            (when (verbose?)
+              (log-warning (format "TR tests: waiting for ~a ~a" dir p)))
             (force prm))))))
   (make-test-suite dir tests)))
 
@@ -147,5 +149,6 @@
 (define (go/text tests) (run-tests tests 'verbose))
 
 (provide go go/text just-one places start-workers
+         verbose?
          int-tests unit-tests compile-benchmarks
          optimization-tests missed-optimization-tests)

@@ -1750,7 +1750,7 @@ to the error message guidelines in @secref["err-msg-conventions"].
           proc
           (-> blame? any/c string? string?)]{
 
-A parameter that is used when constructing a
+A @tech{parameter} that is used when constructing a
 contract violation error. Its value is procedure that
 accepts three arguments:
 @itemize[

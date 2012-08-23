@@ -883,7 +883,7 @@ Returns @racket[#t] if @racket[v] is a pseudo-random number generator,
 
 @defparam[current-pseudo-random-generator generator pseudo-random-generator?]{
 
-A parameter that determines the pseudo-random number generator
+A @tech{parameter} that determines the pseudo-random number generator
 used by @racket[random].}
 
 

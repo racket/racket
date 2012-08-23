@@ -346,6 +346,8 @@ type @racket[_t] on each iteration.}
 @defform[(Custodian-Boxof t)]{A @rtech{custodian box} of @racket[t].}
 @defform[(Thread-Cellof t)]{A @rtech{thread cell} of @racket[t].}
 
+@defform[(Ephemeronof t)]{An @rtech{ephemeron} whose value is of type @racket[t].}
+
 
 @section{Syntax Objects}
 
@@ -381,7 +383,6 @@ of type @racket[Syntax-E].}
 @racket[Datum] produces a value of type @racket[Syntax].  Equivalent to
 @racket[(Sexpof Syntax)].}
 
-@defform[(Ephemeronof t)]{An @rtech{ephemeron} whose value is of type @racket[t].}
 
 @section{Other Type Constructors}
 

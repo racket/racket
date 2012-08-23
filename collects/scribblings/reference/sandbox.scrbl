@@ -328,7 +328,7 @@ ports settings are not included.)}
 
 @defparam[sandbox-init-hook thunk (-> any)]{
 
-A parameter that determines a thunk to be called for initializing a
+A @tech{parameter} that determines a thunk to be called for initializing a
 new evaluator.  The hook is called just before the program is
 evaluated in a newly-created evaluator context.  It can be used to
 setup environment parameters related to reading, writing, evaluation,
@@ -339,7 +339,7 @@ hook is used after that initialization, so it can override settings.}
 
 @defparam[sandbox-reader proc (any/c . -> . any)]{
 
-A parameter that specifies a function that reads all expressions from
+A @tech{parameter} that specifies a function that reads all expressions from
 @racket[(current-input-port)].  The function is used to read program
 source for an evaluator when a string, byte string, or port is
 supplied.  The reader function receives a value to be used as input
@@ -360,7 +360,7 @@ used to read the program input for @racket[make-module-evaluator],
                                  'pipe
                                  (-> input-port?))]{
 
-A parameter that determines the initial @racket[current-input-port]
+A @tech{parameter} that determines the initial @racket[current-input-port]
 setting for a newly created evaluator. It defaults to @racket[#f],
 which creates an empty port.  The following other values are allowed:
 
@@ -389,7 +389,7 @@ which creates an empty port.  The following other values are allowed:
                                   'string
                                   (-> output-port?))]{
 
-A parameter that determines the initial @racket[current-output-port]
+A @tech{parameter} that determines the initial @racket[current-output-port]
 setting for a newly created evaluator. It defaults to @racket[#f],
 which creates a port that discards all data.  The following other
 values are allowed:
@@ -436,7 +436,7 @@ generated evaluator goes to the calling context's error port.}
 
 @defboolparam[sandbox-coverage-enabled enabled?]{
 
-A parameter that controls whether syntactic coverage information is
+A @tech{parameter} that controls whether syntactic coverage information is
 collected by sandbox evaluators.  Use
 @racket[get-uncovered-expressions] to retrieve coverage information.}
 
@@ -459,7 +459,7 @@ further). The default is @racket[#t].}
 
 @defboolparam[sandbox-propagate-exceptions propagate?]{
 
-A parameter that controls how uncaught exceptions during a sandbox
+A @tech{parameter} that controls how uncaught exceptions during a sandbox
 evaluation are treated. When the parameter value is @racket[#t], 
 then the exception is propagated to the caller of sandbox.
 When the parameter value is @racket[#f], the exception message
@@ -471,7 +471,7 @@ is @racket[#t].}
 @defparam[sandbox-namespace-specs spec (cons/c (-> namespace?) 
                                                (listof module-path?))]{
 
-A parameter that holds a list of values that specify how to create a
+A @tech{parameter} that holds a list of values that specify how to create a
 namespace for evaluation in @racket[make-evaluator] or
 @racket[make-module-evaluator].  The first item in the list is a thunk
 that creates the namespace, and the rest are module paths for modules
@@ -521,7 +521,7 @@ available, such as using a new eventspace for each evaluator.}
 
 @defparam[sandbox-override-collection-paths paths (listof path-string?)]{
 
-A parameter that determines a list of collection directories to prefix
+A @tech{parameter} that determines a list of collection directories to prefix
 @racket[current-library-collection-paths] in an evaluator. This
 parameter is useful for cases when you want to test code using an
 alternate, test-friendly version of a collection, for example, testing
@@ -533,7 +533,7 @@ actual interaction. The default is @racket[null].}
 @defparam[sandbox-security-guard guard
           (or/c security-guard? (-> security-guard?))]{
 
-A parameter that determines the initial
+A @tech{parameter} that determines the initial
 @racket[(current-security-guard)] for sandboxed evaluations.  It can
 be either a security guard, or a function to construct one.  The
 default is a function that restricts the access of the current
@@ -547,7 +547,7 @@ specifications in @racket[sandbox-path-permissions], and it uses
                                 'read-bytecode 'read 'exists)
                           (or/c byte-regexp? bytes? string? path?)))]{
 
-A parameter that configures the behavior of the default sandbox
+A @tech{parameter} that configures the behavior of the default sandbox
 security guard by listing paths and access modes that are allowed for
 them.  The contents of this parameter is a list of specifications,
 each is an access mode and a byte-regexp for paths that are granted this
@@ -594,14 +594,14 @@ to use collection libraries (including
            (or/c 'server 'client)
            . -> . any)]{
 
-A parameter that specifies a procedure to be used (as is) by the
+A @tech{parameter} that specifies a procedure to be used (as is) by the
 default @racket[sandbox-security-guard].  The default forbids all
 network connection.}
 
 
 @defparam[sandbox-exit-handler handler (any/c . -> . any)]{
 
-A parameter that determines the initial @racket[(exit-handler)] for
+A @tech{parameter} that determines the initial @racket[(exit-handler)] for
 sandboxed evaluations.  The default kills the evaluator with an
 appropriate error message (see
 @racket[exn:fail:sandbox-terminated-reason]).}
@@ -609,7 +609,7 @@ appropriate error message (see
 
 @defparam[sandbox-memory-limit limit (or/c nonnegative-number? #f)]{
 
-A parameter that determines the total memory limit on the sandbox in
+A @tech{parameter} that determines the total memory limit on the sandbox in
 megabytes (it can hold a rational or a floating point number).  When
 this limit is exceeded, the sandbox is terminated.  This value is used
 when the sandbox is created and the limit cannot be changed
@@ -646,7 +646,7 @@ than one block counts against the interaction limit).}
                         (or/c nonnegative-number? #f))
                 #f)]{
 
-A parameter that determines the default limits on @italic{each} use of
+A @tech{parameter} that determines the default limits on @italic{each} use of
 a @racket[make-evaluator] function, including the initial evaluation
 of the input program.  Its value should be a list of two numbers;
 where the first is a timeout value in seconds, and the second is a
@@ -715,7 +715,7 @@ then, assuming sufficiently small limits,
           (list/c (or/c #f ((-> any) . -> . any))
                   (or/c #f ((-> any) . -> . any)))]{
 
-A parameter that determines two (optional) handlers that wrap
+A @tech{parameter} that determines two (optional) handlers that wrap
 sandboxed evaluations.  The first one is used when evaluating the
 initial program when the sandbox is being set-up, and the second is
 used for each interaction.  Each of these handlers should expect a
@@ -731,7 +731,7 @@ other resources intact.}
 
 @defparam[sandbox-make-inspector make (-> inspector?)]{
 
-A parameter that determines the (nullary) procedure that is used to
+A @tech{parameter} that determines the (nullary) procedure that is used to
 create the inspector for sandboxed evaluation.  The procedure is called
 when initializing an evaluator.  The default parameter value is
 @racket[(lambda () (make-inspector (current-inspector)))].}
@@ -739,7 +739,7 @@ when initializing an evaluator.  The default parameter value is
 
 @defparam[sandbox-make-code-inspector make (-> inspector?)]{
 
-A parameter that determines the (nullary) procedure that is used to
+A @tech{parameter} that determines the (nullary) procedure that is used to
 create the code inspector for sandboxed evaluation.  The procedure is
 called when initializing an evaluator.  The default parameter value is
 @racket[(lambda () (make-inspector (current-code-inspector)))].
@@ -753,7 +753,7 @@ possible.}
 
 @defparam[sandbox-make-logger make (-> logger?)]{
 
-A parameter that determines the procedure used to create the logger
+A @tech{parameter} that determines the procedure used to create the logger
 for sandboxed evaluation.  The procedure is called when initializing
 an evaluator, and the default parameter value is
 @racket[current-logger].  This means that it is not creating a new

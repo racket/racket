@@ -57,5 +57,5 @@ requires control over the old one).
 
 @defparam[current-code-inspector insp inspector?]{
 
-A parameter that determines an inspector to control access to module
+A @tech{parameter} that determines an inspector to control access to module
 bindings and redefinitions.}

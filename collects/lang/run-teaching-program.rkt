@@ -5,7 +5,7 @@
          stepper/private/syntax-property
          scheme/class
          scheme/contract
-         test-engine/scheme-tests
+         test-engine/racket-tests
          (only-in racket/list split-at)
          (only-in racket/sequence sequence->list))
 

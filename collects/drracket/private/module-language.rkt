@@ -1236,6 +1236,10 @@
 
   (define expanding-place #f)
   (define pending-thread #f)
+  (define pending-tell-the-tab-show-bkg-running #f)
+  (define (set-pending-thread tttsbr pt) 
+    (set! pending-thread pt)
+    (set! pending-tell-the-tab-show-bkg-running tttsbr))
   
   (define (send-to-place editor-contents 
                          filename 
@@ -1251,41 +1255,43 @@
        (for/list ([o-e-h (in-list (drracket:module-language-tools:get-online-expansion-handlers))])
          (list (drracket:module-language-tools:online-expansion-handler-mod-path o-e-h)
                (drracket:module-language-tools:online-expansion-handler-id o-e-h)))))
-    (set! pending-thread
-          (thread (λ () 
-                    (define-values (pc-in pc-out) (place-channel))
-                    (define-values (pc-status-drracket-place pc-status-expanding-place) (place-channel))
-                    (define to-send
-                      (vector-immutable editor-contents
-                                        filename
-                                        pc-in 
-                                        prefab-module-settings
-                                        pc-status-expanding-place))
-                    (place-channel-put expanding-place to-send)
-                    (define us (current-thread))
-                    (thread (λ () 
-                              (define got-status-update (place-channel-get pc-status-drracket-place))
-                              (queue-callback
-                               (λ ()
-                                 (when (eq? us pending-thread)
-                                   (tell-the-tab-show-bkg-running
-                                    'finished-expansion
-                                    sc-online-expansion-running))))))
-                    (define res (place-channel-get pc-out))
-                    (when res
-                      (queue-callback
-                       (λ ()
-                         (when (eq? us pending-thread)
-                           (set! pending-thread #f)
-                           (when (getenv "PLTDRPLACEPRINT")
-                             (printf "PLTDRPLACEPRINT: got results back from the place\n"))
-                           (show-results res)))))))))
+    (set-pending-thread
+     tell-the-tab-show-bkg-running
+     (thread (λ () 
+               (define-values (pc-in pc-out) (place-channel))
+               (define-values (pc-status-drracket-place pc-status-expanding-place) (place-channel))
+               (define to-send
+                 (vector-immutable editor-contents
+                                   filename
+                                   pc-in 
+                                   prefab-module-settings
+                                   pc-status-expanding-place))
+               (place-channel-put expanding-place to-send)
+               (define us (current-thread))
+               (thread (λ () 
+                         (define got-status-update (place-channel-get pc-status-drracket-place))
+                         (queue-callback
+                          (λ ()
+                            (when (and (eq? us pending-thread)
+                                       pending-tell-the-tab-show-bkg-running)
+                              (pending-tell-the-tab-show-bkg-running
+                               'finished-expansion
+                               sc-online-expansion-running))))))
+               (define res (place-channel-get pc-out))
+               (when res
+                 (queue-callback
+                  (λ ()
+                    (when (eq? us pending-thread)
+                      (set-pending-thread #f #f)
+                      (when (getenv "PLTDRPLACEPRINT")
+                        (printf "PLTDRPLACEPRINT: got results back from the place\n"))
+                      (show-results res)))))))))
   
   (define (stop-place-running)
     (when expanding-place
       (when pending-thread
         (place-channel-put expanding-place 'abort)
-        (set! pending-thread #f))))
+        (set-pending-thread #f #f))))
   
   (struct error-range (start end [clear-highlight #:mutable]))
   

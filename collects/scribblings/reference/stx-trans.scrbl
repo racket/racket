@@ -948,7 +948,7 @@ into a module.
 
 @defparam[current-require-module-path module-path (or/c #f module-path-index?)]{
 
-A parameter that determines how relative @racket[require]-level module
+A @tech{parameter} that determines how relative @racket[require]-level module
 paths are expanded to @racket[#%require]-level module paths by
 @racket[convert-relative-module-path] (which is used implicitly by all
 built-in @racket[require] sub-forms).

@@ -89,7 +89,7 @@ anchor definition was evaluated.}
 
 @defparam[current-namespace n namespace?]{
 
-A parameter that determines the @techlink{current namespace}.}
+A @tech{parameter} that determines the @techlink{current namespace}.}
 
 
 @defproc[(namespace-symbol->identifier [sym symbol?]) identifier?]{

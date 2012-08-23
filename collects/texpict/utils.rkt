@@ -71,6 +71,8 @@
   (provide/contract 
    [scale (case-> (-> pict? number? number? pict?)
                   (-> pict? number? pict?))]
+   [scale-to-fit (case-> (-> pict? number? number? pict?)
+                         (-> pict? pict? pict?))]
    [rotate (case-> (-> pict? number? pict?))]
    [pin-line (->* (pict?
                    pict-path? (-> pict? pict-path? (values number? number?))
@@ -1067,6 +1069,14 @@
           (s (send c red))
           (s (send c green))
           (s (send c blue))))))
+  
+  (define scale-to-fit
+    (case-lambda
+      [(main-pict size-pict)
+       (scale-to-fit main-pict (pict-width size-pict) (pict-height size-pict))]
+      [(main-pict w h)
+       (scale main-pict (min (/ w (pict-width main-pict))
+                             (/ h (pict-height main-pict))))]))
   
   (define scale
     (case-lambda

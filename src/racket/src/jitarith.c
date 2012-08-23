@@ -128,6 +128,11 @@ static int is_unboxing_immediate(Scheme_Object *obj, int unsafely)
       return 1;
     return unsafely;
   case scheme_toplevel_type:
+    /* Can generalize to allow any toplevel if scheme_generate_pop_unboxed() is fixed */
+    if ((SCHEME_TOPLEVEL_FLAGS(obj) & SCHEME_TOPLEVEL_FLAGS_MASK) < SCHEME_TOPLEVEL_READY)
+      return 0;
+    return unsafely;
+    break;
   case scheme_local_unbox_type:
     return unsafely;
     break;
