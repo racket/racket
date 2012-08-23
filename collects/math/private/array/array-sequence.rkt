@@ -17,7 +17,7 @@
 ;; ===================================================================================================
 ;; Sequence of array elements
 
-(: in-array : (All (A) ((Array A) -> (Sequenceof A))))
+(: in-array (All (A) ((Array A) -> (Sequenceof A))))
 (define (in-array arr)
   (define ds (array-shape arr))
   (define dims (vector-length ds))
@@ -66,7 +66,7 @@
 ;; ===================================================================================================
 ;; Sequence of indexes
 
-(: in-array-indexes : (User-Indexes -> (Sequenceof Indexes)))
+(: in-array-indexes (User-Indexes -> (Sequenceof Indexes)))
 (define (in-array-indexes ds)
   (let: ([ds : Indexes  (check-array-shape
                          ds (λ () (raise-type-error 'in-array-indexes "Indexes" ds)))])
@@ -119,7 +119,7 @@
        (raise-syntax-error 'in-array-indexes "expected (in-array-indexes <Indexes>)"
                            #'clause #'clause)])))
 
-(: in-unsafe-array-indexes : (Indexes -> (Sequenceof Indexes)))
+(: in-unsafe-array-indexes (Indexes -> (Sequenceof Indexes)))
 (define (in-unsafe-array-indexes ds)
   (in-array-indexes ds))
 
@@ -155,8 +155,9 @@
 ;; ===================================================================================================
 ;; in-array-axis
 
-(: in-array-axis : (All (A) ((Array A) Integer -> (Sequenceof (Array A)))))
-(define (in-array-axis arr k)
+(: in-array-axis (All (A) (case-> ((Array A) -> (Sequenceof (Array A)))
+                                  ((Array A) Integer -> (Sequenceof (Array A))))))
+(define (in-array-axis arr [k 0])
   (define ds (array-shape arr))
   (define dims (vector-length ds))
   (cond [(and (0 . <= . k) (k . < . dims))
@@ -172,8 +173,9 @@
         [else
          (error 'in-array-axis (format "expected axis Index < ~e; given ~e" dims k))]))
 
-(: array->array-list (All (A) ((Array A) Integer -> (Listof (Array A)))))
-(define (array->array-list arr k)
+(: array->array-list (All (A) (case-> ((Array A) -> (Listof (Array A)))
+                                      ((Array A) Integer -> (Listof (Array A))))))
+(define (array->array-list arr [k 0])
   (define ds (array-shape arr))
   (define dims (vector-length ds))
   (cond [(and (0 . <= . k) (k . < . dims))
@@ -182,8 +184,9 @@
         [else
          (error 'array->array-list (format "expected axis Index < ~e; given ~e" dims k))]))
 
-(: array-list->array (All (A) ((Listof (Array A)) Integer -> (Array A))))
-(define (array-list->array arrs k)
+(: array-list->array (All (A) (case-> ((Listof (Array A)) -> (Array A))
+                                      ((Listof (Array A)) Integer -> (Array A)))))
+(define (array-list->array arrs [k 0])
   (define ds (array-shape-broadcast ((inst map Indexes (Array A)) array-shape arrs)))
   (define dims (vector-length ds))
   (cond [(and (0 . <= . k) (k . <= . dims))

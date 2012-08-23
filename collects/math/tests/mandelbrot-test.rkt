@@ -37,15 +37,18 @@
                       [1 1 1 1 1 2 2 2 3 6 20 3 2 1 1]
                       [1 1 1 1 1 1 2 2 2 3 2 2 1 1 1]
                       [0 1 1 1 1 1 1 1 1 1 1 1 1 1 1]]))
-
 #;
 (begin
   (require images/flomap)
   
   (: array->flomap ((Array Real) -> flomap))
   (define (array->flomap arr)
-    (match-define (vector h w) (array-shape arr))
-    (build-flomap 1 w h (λ (k x y) (real->double-flonum (array-ref arr (vector y x))))))
+    (let ([arr (array->flarray arr)])
+      (define ds (array-shape arr))
+      (match ds
+        [(vector h w)  (flomap (flarray-data arr) 1 w h)]
+        [(vector h w c)  (flomap (flarray-data arr) c w h)]
+        [_  (error 'array->flomap "expected array with 2 or 3 dimensions; given shape ~e" ds)])))
   
   (define fm
     (array->flomap

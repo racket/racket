@@ -132,7 +132,7 @@
      (inline-fcarray-map f arr)]
     [([f : (Float-Complex Float-Complex * -> Float-Complex)] [arr : FCArray] . [arrs : FCArray *])
      (define ds (array-shape arr))
-     (define dss (map array-shape arrs))
+     (define dss (map (λ: ([arr : FCArray]) (array-shape arr)) arrs))
      (cond [(apply all-equal? ds dss)
             (unsafe-fcarray ds (apply fcvector-map f (fcarray-data arr)
                                       (map (λ: ([arr : FCArray]) (fcarray-data arr)) arrs)))]

@@ -131,7 +131,7 @@
      (inline-flarray-map f arr)]
     [([f : (Float Float * -> Float)] [arr : FlArray] . [arrs : FlArray *])
      (define ds (array-shape arr))
-     (define dss (map array-shape arrs))
+     (define dss (map (λ: ([arr : FlArray]) (array-shape arr)) arrs))
      (cond [(apply all-equal? ds dss)
             (unsafe-flarray ds (apply flvector-map f (flarray-data arr)
                                       (map (λ: ([arr : FlArray]) (flarray-data arr)) arrs)))]
