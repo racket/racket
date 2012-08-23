@@ -1039,7 +1039,10 @@
                   [else
                    (define si-selectors (fourth si))
                    (cond
-                     [(ormap (λ (x) (and x (free-identifier=? x sel)))
+                     [(ormap (λ (x) (and x 
+                                         (free-identifier=? x sel)
+                                         (free-identifier=? (datum->syntax stx x)
+                                                            sel)))
                              si-selectors)
                       (define strip-reg (regexp (format "^~a-" (regexp-quote (symbol->string (syntax-e struct-id))))))
                       (define field-name
@@ -1054,7 +1057,7 @@
                [else #f])))
          (unless candidate
            (raise-syntax-error 'struct/c
-                               (format "could not determine selector id for field ~a (counting from 0)"
+                               (format "could not find selector id for field ~a (counting from 0) in current scope"
                                        i)
                                stx
                                sel))
