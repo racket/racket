@@ -9441,6 +9441,32 @@
       (define v (make-s 3))
       (let ([v* (contract (struct/c s alpha) v 'pos 'neg)])
         (set-s-a! v* 4))))
+  
+  (test/spec-passed/result
+   'struct/c14
+   '(let ()
+      (struct heap (v))
+      (struct heap-node heap ())
+      
+      (heap-v (contract (struct/c heap-node number?) 
+                        (heap-node 11)
+                        'pos
+                        'neg)))
+   11)
+  
+  (test/spec-passed/result
+   'struct/c15
+   '(let ()
+      (struct a (x))
+      (struct b a (y))
+      (struct c b (z))
+      (struct d c (w))
+      
+      (b-y (contract (struct/c d number? number? number? number?) 
+                     (d 11 22 33 44)
+                     'pos
+                     'neg)))
+   22)
 
 
 ;
@@ -10164,6 +10190,42 @@
                 (s (λ (x) x) 1)
                 'pos
                 'neg)))
+  
+  (test/spec-passed/result
+   'struct/dc-new43
+   '(let ()
+      (struct a (x))
+      (struct b a (y))
+      (struct c b (z))
+      (struct d c (w))
+      
+      (b-y (contract (struct/dc d 
+                                [(x #:parent a) boolean?]
+                                [(y #:parent b) char?]
+                                [(z #:parent c) number?]
+                                [w string?])
+                     (d #t #\a 3 "x")
+                     'pos
+                     'neg)))
+   #\a)
+  
+  (test/spec-passed/result
+   'struct/dc-new44
+   '(let ()
+      (struct a (x))
+      (struct b a (y))
+      (struct c b (z))
+      (struct d c (w))
+      
+      (b-y (contract (struct/dc d 
+                                [(x #:parent a) (w) boolean?]
+                                [(y #:parent b) ((x #:parent a)) char?]
+                                [(z #:parent c) number?]
+                                [w string?])
+                     (d #t #\a 3 "x")
+                     'pos
+                     'neg)))
+   #\a)
 
   (contract-error-test
    'struct/dc-imp-nondep-runtime-error

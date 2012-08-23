@@ -390,12 +390,14 @@ produced.  Otherwise, an impersonator contract is produced.
 
 
 @defform/subs[(struct/dc struct-id field-spec ...)
-              ([field-spec [field-id maybe-lazy contract-expr]
-                           [field-id (dep-field-id ...)
-                                     maybe-lazy
-                                     maybe-flat-or-impersonator
-                                     maybe-dep-state
-                                     contract-expr]]
+              ([field-spec [field-name maybe-lazy contract-expr]
+                           [field-name (dep-field-name ...)
+                                       maybe-lazy
+                                       maybe-flat-or-impersonator
+                                       maybe-dep-state
+                                       contract-expr]]
+               [field-name field-id
+                           (field-id #:parent struct-id)]
                [maybe-lazy (code:line) #:lazy]
                [maybe-flat-or-impersonator (code:line) #:flat #:impersonator]
                [maybe-dep-state (code:line) #:depends-on-state])]{
@@ -406,7 +408,8 @@ contracts produced by the @racket[field-spec]s.
 If the @racket[field-spec] lists the names of other fields,
 then the contract depends on values in those fields, and the @racket[contract-expr]
 expression is evaluated each time a selector is applied, building a new contract
-for the fields based on the values of the @racket[dep-field-id] fields.
+for the fields based on the values of the @racket[dep-field-name] fields (the
+@racket[dep-field-name] syntax is the same as the @racket[field-name] syntax).
 If the field is a dependent field, then it is assumed that the contract is
 a chaperone, but not always a flat contract (and theus the entire @racket[struct/dc]
 contract is not a flat contract).
