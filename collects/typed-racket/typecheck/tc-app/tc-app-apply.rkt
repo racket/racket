@@ -2,6 +2,7 @@
 
 (require "../../utils/utils.rkt"
          "signatures.rkt"
+         "utils.rkt"
          syntax/parse racket/match
          syntax/parse/experimental/reflect
          (typecheck signatures tc-funapp check-below tc-subst)
@@ -19,21 +20,12 @@
 (import tc-expr^ tc-apply^)
 (export tc-app-apply^)
 
-(define-syntax-class (tc/app-apply* expected)
-                     #:attributes (check)
-                     #:literals (k:apply apply values)
+(define-tc/app-syntax-class (tc/app-apply expected)
+  #:literals (k:apply apply values)
   (pattern ((~or apply k:apply) values e)
-    #:attr check
-      (lambda () 
-        (match (single-value #'e)
-          [(tc-result1: (ListDots: dty dbound)) (values->tc-results (make-ValuesDots null dty dbound) #f)]
-          [(tc-result1: (List: ts)) (ret ts)]
-          [_ (tc/apply #'values #'(e))])))
+    (match (single-value #'e)
+      [(tc-result1: (ListDots: dty dbound)) (values->tc-results (make-ValuesDots null dty dbound) #f)]
+      [(tc-result1: (List: ts)) (ret ts)]
+      [_ (tc/apply #'values #'(e))]))
   (pattern ((~or apply k:apply) f . args)
-    #:attr check
-      (lambda () (tc/apply #'f #'args))))
-
-
-(define tc/app-apply (reify-syntax-class tc/app-apply*))
-
-
+    (tc/apply #'f #'args)))

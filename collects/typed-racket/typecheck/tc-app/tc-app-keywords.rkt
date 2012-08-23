@@ -3,6 +3,7 @@
 
 (require (rename-in "../../utils/utils.rkt" [infer r:infer])
          "signatures.rkt"
+         "utils.rkt"
          syntax/parse racket/match
          syntax/parse/experimental/reflect
          (typecheck signatures tc-app-helper tc-funapp tc-metafunctions)
@@ -17,45 +18,39 @@
 (import tc-expr^)
 (export tc-app-keywords^)
 
-(define-syntax-class (tc/app-keywords* expected)
-                     #:attributes (check)
-                     #:literals (#%plain-app list)
-    (pattern (~and form
-                   ((#%plain-app cpce s-kp fn kpe kws num)
-                    kw-list
-                    (#%plain-app list . kw-arg-list)
-                    . pos-args))
-      #:declare cpce (id-from 'checked-procedure-check-and-extract 'racket/private/kw)
-      #:declare s-kp (id-from 'struct:keyword-procedure 'racket/private/kw)
-      #:declare kpe  (id-from 'keyword-procedure-extract 'racket/private/kw)
-      #:attr check
-        (lambda ()
-
-          (match (tc-expr #'fn)
-            [(tc-result1: 
-              (Poly: vars
-                     (Function: (list (and ar (arr: dom rng (and rest #f) (and drest #f) kw-formals))))))
-             (=> fail)
-             (unless (null? (fv/list kw-formals))
-               (fail))
-             (match (map single-value (syntax->list #'pos-args))
-               [(list (tc-result1: argtys-t) ...)
-                (let* ([subst (infer vars null argtys-t dom rng
-                                     (and expected (tc-results->values expected)))])
-                  (unless subst (fail))
-                  (tc-keywords #'form (list (subst-all subst ar))
-                               (type->list (tc-expr/t #'kws)) #'kw-arg-list #'pos-args expected))])]
-            [(tc-result1: (Function: arities))
-             (tc-keywords #'(#%plain-app . form) arities (type->list (tc-expr/t #'kws))
-                          #'kw-arg-list #'pos-args expected)]
-            [(tc-result1: (Poly: _ (Function: _)))
-             (tc-error/expr #:return (ret (Un))
-                            "Inference for polymorphic keyword functions not supported")]
-            [(tc-result1: t) 
-             (tc-error/expr #:return (ret (Un))
-                            "Cannot apply expression of type ~a, since it is not a function type" t)]))))
-
-(define tc/app-keywords (reify-syntax-class tc/app-keywords*))
+(define-tc/app-syntax-class (tc/app-keywords expected)
+  #:literals (#%plain-app list)
+  (pattern (~and form
+                 ((#%plain-app cpce s-kp fn kpe kws num)
+                  kw-list
+                  (#%plain-app list . kw-arg-list)
+                  . pos-args))
+    #:declare cpce (id-from 'checked-procedure-check-and-extract 'racket/private/kw)
+    #:declare s-kp (id-from 'struct:keyword-procedure 'racket/private/kw)
+    #:declare kpe  (id-from 'keyword-procedure-extract 'racket/private/kw)
+    (match (tc-expr #'fn)
+      [(tc-result1: 
+        (Poly: vars
+               (Function: (list (and ar (arr: dom rng (and rest #f) (and drest #f) kw-formals))))))
+       (=> fail)
+       (unless (null? (fv/list kw-formals))
+         (fail))
+       (match (map single-value (syntax->list #'pos-args))
+         [(list (tc-result1: argtys-t) ...)
+          (let* ([subst (infer vars null argtys-t dom rng
+                               (and expected (tc-results->values expected)))])
+            (unless subst (fail))
+            (tc-keywords #'form (list (subst-all subst ar))
+                         (type->list (tc-expr/t #'kws)) #'kw-arg-list #'pos-args expected))])]
+      [(tc-result1: (Function: arities))
+       (tc-keywords #'(#%plain-app . form) arities (type->list (tc-expr/t #'kws))
+                    #'kw-arg-list #'pos-args expected)]
+      [(tc-result1: (Poly: _ (Function: _)))
+       (tc-error/expr #:return (ret (Un))
+                      "Inference for polymorphic keyword functions not supported")]
+      [(tc-result1: t) 
+       (tc-error/expr #:return (ret (Un))
+                      "Cannot apply expression of type ~a, since it is not a function type" t)])))
 
 (define (tc-keywords/internal arity kws kw-args error?)
   (match arity
