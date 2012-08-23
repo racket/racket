@@ -7,19 +7,9 @@
            mred
            framework)
   
-  
-  
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Helpers
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  
-  (define (in-string itm)
-    (if (undefined? itm)
-        ""
-        (if (string? itm)
-            itm
-            (number->string itm))))
-  
   
   ;; adding assumed methods
   (define (add-void-set-value super-class)
@@ -40,8 +30,6 @@
       (inherit show)
       (show shown-val)))
       
-  
-  
   ;; *-event-processor init-argument values
   (define event-is-val
     (lambda (es)
