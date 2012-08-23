@@ -1,15 +1,12 @@
 #lang racket
-#;(require "list.rkt")
-(require (rename-in (only-in frtime/frtime provide)
+(require (rename-in (only-in frtime/frtime provide) 
                     [provide frtime:provide]))
 
-(frtime:provide
- (lifted date->string
-                date-display-format
-                find-seconds
-                
-                date->julian/scalinger
-                julian/scalinger->string))
+(frtime:provide (lifted date->string
+                        date-display-format
+                        find-seconds
+                        date->julian/scalinger
+                        julian/scalinger->string))
 
 
 ;; Support for Julian calendar added by Shriram;
