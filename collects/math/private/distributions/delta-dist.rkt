@@ -1,8 +1,7 @@
 #lang typed/racket/base
 
 (require racket/performance-hint
-         "../../types.rkt"
-         "../probability.rkt")
+         "../../types.rkt")
 
 (provide fldelta-pdf
          fldelta-cdf

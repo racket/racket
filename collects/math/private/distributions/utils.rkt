@@ -1,7 +1,7 @@
 #lang typed/racket/base
 
 (require racket/flonum
-         "../probability.rkt"
+         "../../types.rkt"
          "delta-dist.rkt")
 
 (provide (all-defined-out))

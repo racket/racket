@@ -1,18 +1,11 @@
 #lang typed/racket/base
 
-#|
-TODO
-
-test when p very large or very small
-test when k very large
-|#
-
 (require racket/flonum
          racket/performance-hint
          "../../types.rkt"
          "../functions/expm1.rkt"
          "../functions/log1p.rkt"
-         "../probability.rkt"
+         "../functions/log-arithmetic.rkt"
          "utils.rkt")
 
 (provide flgeom-pdf

@@ -70,6 +70,7 @@
     (λ xs (apply (force fun) xs))))
 
 (define mpfr-free-cache (get-mpfr-fun 'mpfr_free_cache (_fun -> _void)))
+#;; This may be crashing Racket
 (define mpfr-shutdown (register-custodian-shutdown
                        mpfr-free-cache (λ (free) (free))))
 
@@ -419,7 +420,7 @@
   (cond
     [(bfzero? x)  (if (= 0 (bigfloat-sign x)) "0.0" "-0.0")]
     [(bfinfinite? x)  (if (= 0 (bigfloat-sign x)) "+inf.bf" "-inf.bf")]
-    [(bfnan? x)   (if (= 0 (bigfloat-sign x)) "+nan.bf" "-nan.bf")]
+    [(bfnan? x)   "+nan.bf"]
     [else
      (define-values (exp str) (mpfr-get-string x 10 'nearest))
      (cond
@@ -448,7 +449,6 @@
     [("+1.bf")  (force +1.bf)]
     [("+inf.bf" "+inf.0" "+inf.f")  (force +inf.bf)]
     [("+nan.bf" "+nan.0" "+nan.f")  (force +nan.bf)]
-    [("-nan.bf" "-nan.0" "-nan.f")  (force -nan.bf)]
     [else
      (define y (new-mpfr (bf-precision)))
      (define bs (string->bytes/utf-8 str))
@@ -467,7 +467,7 @@
                      (format "(bf #e~a)" str))]
                 [else  (format "(bf ~a)" str)])]
          [(bfinfinite? x)  (if (= 0 (bigfloat-sign x)) "+inf.bf" "-inf.bf")]
-         [else  (if (= 0 (bigfloat-sign x)) "+nan.bf" "-nan.bf")])
+         [else  "+nan.bf"])
    port))
 
 ;; ===================================================================================================
@@ -803,30 +803,34 @@
 (define-for-syntax consts (list))
 (provide (for-syntax consts))
 
-(define-syntax-rule (define-bf-constant name expr)
+(define-syntax-rule (define-bf-constant name prec expr)
   (begin
-    (define lazy-name (lazy (parameterize ([bf-precision  bf-min-precision])
-                               expr)))
-    (define-syntax (name stx)
-      (syntax-case stx ()
-        [(_ e (... ...))  (syntax/loc stx ((force lazy-name) e (... ...)))]
-        [_  (syntax/loc stx (force lazy-name))]))))
+    (define name (lazy (parameterize ([bf-precision  prec]) expr)))
+    (provide name)
+    (begin-for-syntax
+      (set! consts (cons #'name consts)))))
 
-(define-values (-inf.bf -1.bf -0.bf +0.bf +1.bf +inf.bf +nan.bf -nan.bf)
-  (values (lazy (parameterize ([bf-precision  bf-min-precision]) (flonum->bigfloat -inf.0)))
-          (lazy (parameterize ([bf-precision  bf-min-precision]) (flonum->bigfloat -1.0)))
-          (lazy (parameterize ([bf-precision  bf-min-precision]) (flonum->bigfloat -0.0)))
-          (lazy (parameterize ([bf-precision  bf-min-precision]) (flonum->bigfloat +0.0)))
-          (lazy (parameterize ([bf-precision  bf-min-precision]) (flonum->bigfloat +1.0)))
-          (lazy (parameterize ([bf-precision  bf-min-precision]) (flonum->bigfloat +inf.0)))
-          (lazy (parameterize ([bf-precision  bf-min-precision]) (flonum->bigfloat +nan.0)))
-          (lazy (parameterize ([bf-precision  bf-min-precision])
-                  (bfneg (flonum->bigfloat +nan.0))))))
+(define-bf-constant -inf.bf 2 (flonum->bigfloat -inf.0))
+(define-bf-constant -0.bf   2 (flonum->bigfloat -0.0))
+(define-bf-constant +0.bf   2 (flonum->bigfloat +0.0))
+(define-bf-constant +inf.bf 2 (flonum->bigfloat +inf.0))
+(define-bf-constant +nan.bf 2 (flonum->bigfloat +nan.0))
 
-(provide -inf.bf -1.bf -0.bf +0.bf +1.bf +inf.bf +nan.bf -nan.bf)
+(define-bf-constant +1.bf 2 (flonum->bigfloat +1.0))
+(define-bf-constant +2.bf 2 (flonum->bigfloat +2.0))
+(define-bf-constant +3.bf 2 (flonum->bigfloat +3.0))
+(define-bf-constant +4.bf 3 (flonum->bigfloat +4.0))
+(define-bf-constant -1.bf 2 (flonum->bigfloat -1.0))
+(define-bf-constant -2.bf 2 (flonum->bigfloat -2.0))
+(define-bf-constant -3.bf 2 (flonum->bigfloat -3.0))
+(define-bf-constant -4.bf 3 (flonum->bigfloat -4.0))
+
+(define (+epsilon.bf)
+  (bfexpt (force +2.bf) (bf (- (bf-precision)))))
+
+(provide +epsilon.bf)
 (begin-for-syntax
-  (set! consts (list* #'-inf.bf #'-1.bf #'-0.bf #'+0.bf #'+1.bf #'+inf.bf #'+nan.bf #'-nan.bf
-                      consts)))
+  (set! 0ary-funs (cons #'+epsilon.bf 0ary-funs)))
 
 ;; ===================================================================================================
 ;; Extra functions

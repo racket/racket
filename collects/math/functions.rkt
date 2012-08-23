@@ -47,6 +47,13 @@
         [else  (and (= 1 (numerator x))
                     (power-of-two? (denominator x)))]))
 
+(: fleven? (Float -> Boolean))
+(define (fleven? x)
+  (or (= x 0.0)
+      (and ((abs x) . >= . 2.0)
+           (let ([0.5x  (* 0.5 x)])
+             (= (truncate 0.5x) 0.5x)))))
+
 ;; from plot:
 ;; floor-log/base
 ;; ceiling-log/base

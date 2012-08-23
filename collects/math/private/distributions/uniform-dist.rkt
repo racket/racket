@@ -2,9 +2,8 @@
 
 (require racket/flonum
          racket/performance-hint
-         "../../types.rkt"
-         "../probability.rkt")
-#;
+         "../../types.rkt")
+
 (provide flunif-pdf
          flunif-cdf
          flunif-inv-cdf

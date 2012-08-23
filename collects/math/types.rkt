@@ -1,6 +1,7 @@
 #lang typed/racket/base
 
-(require racket/flonum)
+(require racket/flonum
+         racket/performance-hint)
 
 (provide Real-Density-Function
          Real-Distribution-Function
@@ -9,7 +10,8 @@
          flonum->extended-integer
          Integer-Density-Function
          Integer-Distribution-Function
-         Integer-Inverse-Distribution-Function)
+         Integer-Inverse-Distribution-Function
+         flprobability? probability?)
 
 (define-type Real-Density-Function
   (case-> (Real -> Float)
@@ -45,3 +47,17 @@
   (case-> (Real -> Extended-Integer)
           (Real Any -> Extended-Integer)
           (Real Any Any -> Extended-Integer)))
+
+(begin-encourage-inline
+  
+  (: flprobability? (Float Any -> Boolean))
+  (define (flprobability? p log?)
+    (cond [log?  (and (p . >= . -inf.0) (p . <= . 0.0))]
+          [else  (and (p . >= . 0.0) (p . <= . 1.0))]))
+  
+  (: probability? (case-> (Real -> Boolean)
+                          (Real Any -> Boolean)))
+  (define (probability? p [log? #f])
+    (flprobability? (real->double-flonum p) log?))
+  
+  )  ; begin-encourage-inline
