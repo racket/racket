@@ -2,6 +2,7 @@
 
 (require "../../utils/utils.rkt"
          "signatures.rkt"
+         "utils.rkt"
          syntax/parse racket/match
          syntax/parse/experimental/reflect
          (typecheck signatures tc-funapp check-below)
@@ -24,20 +25,15 @@
   (pattern member) (pattern memq) (pattern memv))
 
 
-(define-syntax-class (tc/app-eq* expected)
-                     #:attributes (check)
+(define-tc/app-syntax-class (tc/app-eq expected)
   (pattern (eq?:comparator v1 v2)
-    #:attr check
-      (lambda () 
-        ;; make sure the whole expression is type correct
-        (match* ((tc/funapp #'eq? #'(v1 v2) (single-value #'eq?)
-                            (map single-value (syntax->list #'(v1 v2))) expected)
-                 ;; check thn and els with the eq? info
-                 (tc/eq #'eq? #'v1 #'v2))
-          [((tc-result1: t) (tc-result1: t* f o))
-           (ret t f o)]))))
-
-(define tc/app-eq (reify-syntax-class tc/app-eq*))
+    ;; make sure the whole expression is type correct
+    (match* ((tc/funapp #'eq? #'(v1 v2) (single-value #'eq?)
+                        (map single-value (syntax->list #'(v1 v2))) expected)
+             ;; check thn and els with the eq? info
+             (tc/eq #'eq? #'v1 #'v2))
+      [((tc-result1: t) (tc-result1: t* f o))
+           (ret t f o)])))
 
 
 ;; typecheck eq? applications

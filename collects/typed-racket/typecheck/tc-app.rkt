@@ -18,38 +18,39 @@
 ;; the main dispatching function
 ;; syntax tc-results? -> tc-results?
 (define (tc/app/internal form expected)
-  (or
-    (tc/app-annotated form expected)
-    (syntax-parse form
-      [(#%plain-app .
-         (~or (~reflect v (tc/app-list expected) #:attributes (check))
-              (~reflect v (tc/app-apply expected) #:attributes (check))
-              (~reflect v (tc/app-eq expected) #:attributes (check))
-              (~reflect v (tc/app-hetero expected) #:attributes (check))
-              (~reflect v (tc/app-values expected) #:attributes (check))
-              (~reflect v (tc/app-keywords expected) #:attributes (check))
-              (~reflect v (tc/app-objects expected) #:attributes (check))
-              (~reflect v (tc/app-lambda expected) #:attributes (check))
-              (~reflect v (tc/app-special expected) #:attributes (check))))
-       ((attribute v.check))]
-      [_ #f])
-    (tc/app-regular form expected)))
+  (syntax-parse form
+    [(#%plain-app .
+       (~or (~var v (tc/app-annotated expected))
+            (~reflect v (tc/app-list expected) #:attributes (check))
+            (~reflect v (tc/app-apply expected) #:attributes (check))
+            (~reflect v (tc/app-eq expected) #:attributes (check))
+            (~reflect v (tc/app-hetero expected) #:attributes (check))
+            (~reflect v (tc/app-values expected) #:attributes (check))
+            (~reflect v (tc/app-keywords expected) #:attributes (check))
+            (~reflect v (tc/app-objects expected) #:attributes (check))
+            (~reflect v (tc/app-lambda expected) #:attributes (check))
+            (~reflect v (tc/app-special expected) #:attributes (check))
+            (~var v (tc/app-regular* expected))))
+     ((attribute v.check))]))
 
 (define-syntax-class annotated-op
   (pattern i:identifier
            #:when (or (syntax-property #'i 'type-inst)
                       (syntax-property #'i 'type-ascription))))
 
-(define (tc/app-annotated form expected)
-  (syntax-parse form
-    #:literals (#%plain-app)
-    ;; Just do regular typechecking if we have one of these.
-    [(#%plain-app rator:annotated-op . rands) (tc/app-regular form expected)]
-    [_ #f]))
+
+(define-syntax-class (tc/app-annotated expected)
+  ;; Just do regular typechecking if we have one of these.
+  (pattern (~and form (rator:annotated-op . rands))
+   #:attr check (lambda () (tc/app-regular #'form expected))))
+
+(define-syntax-class (tc/app-regular* expected)
+  (pattern form 
+   #:attr check (lambda () (tc/app-regular #'form expected))))
 
 (define (tc/app-regular form expected)
-  (syntax-parse form #:literals (#%plain-app)
-    [(#%plain-app f . args)
+  (syntax-parse form
+    [(f . args)
      (let* ([f-ty (single-value #'f)])
        (match f-ty
          [(tc-result1:

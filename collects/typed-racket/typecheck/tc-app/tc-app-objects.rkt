@@ -2,6 +2,7 @@
 
 (require "../../utils/utils.rkt"
          "signatures.rkt"
+         "utils.rkt"
          syntax/parse racket/match unstable/sequence
          syntax/parse/experimental/reflect
          (typecheck signatures tc-funapp check-below)
@@ -16,24 +17,16 @@
 (export tc-app-objects^)
 
 
-(define-syntax-class (tc/app-objects* expected)
-                     #:attributes (check)
-                     #:literals (#%plain-app list cons quote)
-
+(define-tc/app-syntax-class (tc/app-objects expected)
+  #:literals (#%plain-app list cons quote)
   (pattern (dmo b cl
             (#%plain-app list . pos-args)
             (#%plain-app list (#%plain-app cons (quote names) named-args) ...))
      #:declare dmo (id-from 'do-make-object 'racket/private/class-internal)
-     #:attr check
-       (lambda ()
-         (check-do-make-object #'b #'cl #'pos-args #'(names ...) #'(named-args ...))))
+     (check-do-make-object #'b #'cl #'pos-args #'(names ...) #'(named-args ...)))
   (pattern (dmo . args)
      #:declare dmo (id-from 'do-make-object 'racket/private/class-internal)
-     #:attr check
-       (lambda ()
-         (int-err "unexpected arguments to do-make-object"))))
-
-(define tc/app-objects (reify-syntax-class tc/app-objects*))
+     (int-err "unexpected arguments to do-make-object")))
 
 ;; do-make-object now takes blame as its first argument, which isn't checked
 ;; (it's just an s-expression)
