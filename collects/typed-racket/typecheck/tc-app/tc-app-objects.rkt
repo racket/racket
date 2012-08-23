@@ -3,6 +3,7 @@
 (require "../../utils/utils.rkt"
          "signatures.rkt"
          syntax/parse racket/match unstable/sequence
+         syntax/parse/experimental/reflect
          (typecheck signatures tc-funapp check-below)
          (types abbrev union utils)
          (rep type-rep)
@@ -14,18 +15,25 @@
 (import tc-expr^)
 (export tc-app-objects^)
 
-(define (tc/app-objects form expected)
-  (syntax-parse form
-    #:literals (#%plain-app list cons quote)
-    [(#%plain-app dmo b cl
-                  (#%plain-app list . pos-args)
-                  (#%plain-app list (#%plain-app cons (quote names) named-args) ...))
+
+(define-syntax-class (tc/app-objects* expected)
+                     #:attributes (check)
+                     #:literals (#%plain-app list cons quote)
+
+  (pattern (dmo b cl
+            (#%plain-app list . pos-args)
+            (#%plain-app list (#%plain-app cons (quote names) named-args) ...))
      #:declare dmo (id-from 'do-make-object 'racket/private/class-internal)
-     (check-do-make-object #'b #'cl #'pos-args #'(names ...) #'(named-args ...))]
-    [(#%plain-app dmo . args)
+     #:attr check
+       (lambda ()
+         (check-do-make-object #'b #'cl #'pos-args #'(names ...) #'(named-args ...))))
+  (pattern (dmo . args)
      #:declare dmo (id-from 'do-make-object 'racket/private/class-internal)
-     (int-err "unexpected arguments to do-make-object")]
-    [_ #f]))
+     #:attr check
+       (lambda ()
+         (int-err "unexpected arguments to do-make-object"))))
+
+(define tc/app-objects (reify-syntax-class tc/app-objects*))
 
 ;; do-make-object now takes blame as its first argument, which isn't checked
 ;; (it's just an s-expression)

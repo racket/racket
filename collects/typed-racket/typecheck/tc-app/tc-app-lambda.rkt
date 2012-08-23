@@ -3,6 +3,7 @@
 (require "../../utils/utils.rkt"
          "signatures.rkt"
          syntax/parse racket/match racket/list
+         syntax/parse/experimental/reflect
          unstable/sequence
          (typecheck signatures tc-funapp check-below find-annotation )
          (types abbrev utils generalize type-table)
@@ -15,40 +16,47 @@
 (import tc-expr^ tc-let^ tc-lambda^)
 (export tc-app-lambda^)
 
-(define (tc/app-lambda form expected)
-  (syntax-parse form
-    #:literals (#%plain-app #%plain-lambda letrec-values)
+(define-syntax-class (tc/app-lambda* expected)
+                     #:attributes (check)
+                     #:literals (#%plain-app #%plain-lambda letrec-values)
     ;; let loop
-    [(#%plain-app (letrec-values ([(lp) (~and lam (#%plain-lambda args . body))]) lp*) . actuals)
-     #:fail-unless expected #f
-     #:fail-unless (not (andmap type-annotation (syntax->list #'(lp . args)))) #f
-     #:fail-unless (free-identifier=? #'lp #'lp*) #f
-     (let-loop-check form #'lam #'lp #'actuals #'args #'body expected)]
+    (pattern (~and form ((letrec-values ([(lp) (~and lam (#%plain-lambda args . body))]) lp*) . actuals))
+      #:fail-unless expected #f
+      #:fail-unless (not (andmap type-annotation (syntax->list #'(lp . args)))) #f
+      #:fail-unless (free-identifier=? #'lp #'lp*) #f
+      #:attr check
+        (lambda ()
+          (let-loop-check #'(#%plain-app . form) #'lam #'lp #'actuals #'args #'body expected)))
     ;; inference for ((lambda
-    [(#%plain-app (#%plain-lambda (x ...) . body) args ...)
+    (pattern ((#%plain-lambda (x ...) . body) args ...)
      #:fail-unless (= (length (syntax->list #'(x ...)))
-                      (length (syntax->list #'(args ...))))
-     #f
+                      (length (syntax->list #'(args ...)))) #f
      #:fail-when (andmap type-annotation (syntax->list #'(x ...))) #f
-     (tc/let-values #'((x) ...) #'(args ...) #'body
-                    #'(let-values ([(x) args] ...) . body)
-                    expected)]
+     #:attr check
+       (lambda ()
+         (tc/let-values #'((x) ...) #'(args ...) #'body
+                        #'(let-values ([(x) args] ...) . body)
+                        expected)))
     ;; inference for ((lambda with dotted rest
-    [(#%plain-app (#%plain-lambda (x ... . rst:id) . body) args ...)
+    (pattern ((#%plain-lambda (x ... . rst:id) . body) args ...)
      #:fail-unless (<= (length (syntax->list #'(x ...)))
                        (length (syntax->list #'(args ...)))) #f
      ;; FIXME - remove this restriction - doesn't work because the annotation
      ;; on rst is not a normal annotation, may have * or ...
      #:fail-when (type-annotation #'rst) #f
      #:fail-when (andmap type-annotation (syntax->list #'(x ...))) #f
-     (let-values ([(fixed-args varargs) 
-                   (split-at (syntax->list #'(args ...)) (length (syntax->list #'(x ...))))])
-       (with-syntax ([(fixed-args ...) fixed-args]
-                     [varg #`(#%plain-app list #,@varargs)])
-         (tc/let-values #'((x) ... (rst)) #`(fixed-args ... varg) #'body
-                        #'(let-values ([(x) fixed-args] ... [(rst) varg]) . body)
-                        expected)))]
-    [_ #f]))
+     #:attr check
+       (lambda ()
+         (let-values ([(fixed-args varargs) 
+                       (split-at (syntax->list #'(args ...)) (length (syntax->list #'(x ...))))])
+           (with-syntax ([(fixed-args ...) fixed-args]
+                         [varg #`(#%plain-app list #,@varargs)])
+             (tc/let-values #'((x) ... (rst)) #`(fixed-args ... varg) #'body
+                            #'(let-values ([(x) fixed-args] ... [(rst) varg]) . body)
+                            expected))))))
+
+(define tc/app-lambda (reify-syntax-class tc/app-lambda*))
+
 
 (define (let-loop-check form lam lp actuals args body expected)
   (syntax-parse #`(#,args #,body #,actuals)

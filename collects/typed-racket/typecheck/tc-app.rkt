@@ -24,17 +24,16 @@
       [(#%plain-app .
          (~or (~reflect v (tc/app-list expected) #:attributes (check))
               (~reflect v (tc/app-apply expected) #:attributes (check))
-              (~reflect v (tc/app-eq expected) #:attributes (check))))
+              (~reflect v (tc/app-eq expected) #:attributes (check))
+              (~reflect v (tc/app-hetero expected) #:attributes (check))
+              (~reflect v (tc/app-values expected) #:attributes (check))
+              (~reflect v (tc/app-keywords expected) #:attributes (check))
+              (~reflect v (tc/app-objects expected) #:attributes (check))
+              (~reflect v (tc/app-lambda expected) #:attributes (check))
+              (~reflect v (tc/app-special expected) #:attributes (check))))
        ((attribute v.check))]
       [_ #f])
-    (tc/app-hetero form expected)
-    (tc/app-values form expected)
-    (tc/app-keywords form expected)
-    (tc/app-objects form expected)
-    (tc/app-lambda form expected)
-    (tc/app-special form expected)
     (tc/app-regular form expected)))
-
 
 (define-syntax-class annotated-op
   (pattern i:identifier
