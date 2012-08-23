@@ -47,7 +47,7 @@
            [(event-set? tmp) (format "#<event (last: ~a@~a)>"
                                      (event-set-events tmp) (event-set-time tmp))]
            [(undefined? tmp) "<undefined>"]
-           [else (number->string tmp)])))]
+           [else (format "~a" tmp)])))]
     [(bhvr super-render-fun)
      (get-rendering (value-now bhvr) super-render-fun)]))
 
