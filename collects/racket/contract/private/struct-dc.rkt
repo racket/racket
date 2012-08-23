@@ -469,7 +469,7 @@
 
 (define-for-syntax (get-struct-info id stx)
   (unless (identifier? id)
-    (raise-syntax-error #f "expected a struct name" stx id))
+    (raise-syntax-error 'struct/dc "expected a struct name" stx id))
   (define inf (syntax-local-value id (λ () #f)))
   (unless (struct-info? inf)
     (raise-syntax-error 'struct/dc "expected a struct" stx id))
@@ -495,14 +495,14 @@
          (define selector-candidate (name->sel-id #'id sel-name))
          (unless (for/or ([selector (in-list (list-ref info 3))])
                    (and selector (free-identifier=? selector-candidate selector)))
-           (raise-syntax-error #f 
+           (raise-syntax-error 'struct/dc 
                                "expected an identifier that names a field or a sequence with a field name, the #:parent keyword, and the parent struct"
                                stx
                                sel-name)))
        
        (define (check-not-both this that)
          (when (and this that)
-           (raise-syntax-error #f 
+           (raise-syntax-error 'struct/dc
                                (format "found both ~a and ~a on the same field"
                                        (syntax-e this)
                                        (syntax-e that))
@@ -530,10 +530,10 @@
               (sel-name? #'sel-name)
               (let ()
                 (unless (sel-name? #'sel-name)
-                  (raise-syntax-error #f not-field-name-str stx #'sel-name))
+                  (raise-syntax-error 'struct/dc not-field-name-str stx #'sel-name))
                 (for ([name (in-list (syntax->list #'(dep-name ...)))])
                   (unless (sel-name? name)
-                    (raise-syntax-error #f not-field-name-str stx name)))
+                    (raise-syntax-error 'struct/dc not-field-name-str stx name)))
                 (ensure-valid-field #'sel-name)
                 (define-values (ctc-exp lazy? type depends-on-state?)
                   (let loop ([stuff  #'(stuff1 . stuff)]
@@ -549,7 +549,7 @@
                          (loop #'more-stuff lazy? (stx-car stuff) depends-on-state?))]
                       [(#:depends-on-state . more-stuff) (loop #'more-stuff lazy? type #t)]
                       [(#:lazy . more-stuff) (loop #'more-stuff #t type depends-on-state?)]
-                      [_ (raise-syntax-error #f "could not parse clause" stx clause)])))
+                      [_ (raise-syntax-error 'struct/dc "could not parse clause" stx clause)])))
                 (dep-clause ctc-exp lazy?
                             #'sel-name (name->sel-id #'id #'sel-name)
                             (if type (syntax-e type) '#:chaperone)
@@ -560,15 +560,15 @@
              [(sel-name . rest)
               (let ()
                 (unless (sel-name? #'sel-name)
-                  (raise-syntax-error #f not-field-name-str stx #'sel-name))
+                  (raise-syntax-error 'struct/dc not-field-name-str stx #'sel-name))
                 (ensure-valid-field #'sel-name)
                 (define-values (lazy? exp)
                   (syntax-case #'rest ()
                     [(#:lazy exp) (values #t #'exp)]
                     [(exp) (values #f #'exp)]
-                    [else (raise-syntax-error #f "could not parse clause" stx clause)]))
+                    [else (raise-syntax-error 'struct/dc "could not parse clause" stx clause)]))
                 (indep-clause exp lazy? #'sel-name (name->sel-id #'id #'sel-name)))]
-             [_ (raise-syntax-error #f "could not parse clause" stx #'clause)])))
+             [_ (raise-syntax-error 'struct/dc "could not parse clause" stx #'clause)])))
        
        
        (let ()
@@ -607,7 +607,7 @@
                    (free-identifier-mapping-get
                     lazy-mapping
                     id
-                    (λ () (raise-syntax-error #f
+                    (λ () (raise-syntax-error 'struct/dc
                                               (format "the field: ~s is depended on (by the contract on the field: ~s), but it has no contract"
                                                       (syntax->datum dep-name)
                                                       (syntax->datum (clause-sel-name clause)))
@@ -618,7 +618,7 @@
                (when (and (dep-clause? clause)
                           (eq? (dep-clause-type clause) '#:impersonator))
                  (unless mut
-                   (raise-syntax-error #f
+                   (raise-syntax-error 'struct/dc
                                        (format "the ~a field is immutable, so the contract cannot be an impersonator contract"
                                                (syntax-e (clause-sel-name clause)))
                                        stx
@@ -626,7 +626,7 @@
 
                ;; check that mutable fields aren't lazy
                (when (and (clause-lazy? clause) mut)
-                 (raise-syntax-error #f 
+                 (raise-syntax-error 'struct/dc 
                                      (format "the ~s field is mutable, so the contract cannot be lazy"
                                              (syntax->datum (clause-sel-name clause)))
                                      stx
@@ -666,12 +666,13 @@
        (for/list ([id (in-list (dep-clause-dep-ids x))])
          (free-identifier-mapping-get id->children id
                                       (λ ()
-                                        (raise-syntax-error #f "unknown clause" stx id))))]
+                                        (raise-syntax-error 'struct/dc "unknown clause" stx id))))]
       [else '()]))
   
   (top-sort clauses neighbors
             (λ (leftovers)
-              (raise-syntax-error #f "found cyclic dependencies"
+              (raise-syntax-error 'struct/dc
+                                  "found cyclic dependencies"
                                   stx))))
 
 (define-for-syntax (do-struct/dc struct/c? stx)
