@@ -6,7 +6,7 @@
                   provide-signature-elements
                   define-values/invoke-unit/infer link)
          "signatures.rkt"
-         "tc-app/tc-app-combined.rkt"
+         "tc-app-combined.rkt"
          "tc-if.rkt" "tc-lambda-unit.rkt"
          "tc-let-unit.rkt" "tc-apply.rkt"
          "tc-expr-unit.rkt" "check-subforms-unit.rkt")

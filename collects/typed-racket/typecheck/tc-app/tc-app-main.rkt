@@ -1,8 +1,8 @@
 #lang racket/unit
 
-(require "../utils/utils.rkt"
-         "tc-app/signatures.rkt"
-         "tc-app/utils.rkt"
+(require "../../utils/utils.rkt"
+         "signatures.rkt"
+         "utils.rkt"
          syntax/parse racket/match 
          syntax/parse/experimental/reflect
          (typecheck signatures check-below tc-funapp)
