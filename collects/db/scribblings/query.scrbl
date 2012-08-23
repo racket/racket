@@ -228,8 +228,8 @@ The types of parameters and returned fields are described in
   that case, @racket[#f] is returned.
 
 @examples[#:eval the-eval
-(query-value pgc "select d from the_numbers where n = $1" 100)
-(query-value c "select count(*) from the_numbers")
+(query-maybe-value pgc "select d from the_numbers where n = $1" 100)
+(query-maybe-value c "select count(*) from the_numbers")
 ]
 }
 

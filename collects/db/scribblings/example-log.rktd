@@ -290,20 +290,11 @@
  ((3) 0 () 0 () () (c values c (u . "a crowd")))
  #""
  #"")
-((query-value pgc "select d from the_numbers where n = $1" 100)
- ((3)
-  0
-  ()
-  0
-  ()
-  ()
-  (c
-   exn
-   c
-   "query-value: query returned wrong number of rows\n  statement: \"select d from the_numbers where n = $1\"\n  expected: 1\n  got: 0"))
+((query-maybe-value pgc "select d from the_numbers where n = $1" 100)
+ ((3) 0 () 0 () () (c values c #f))
  #""
  #"")
-((query-value c "select count(*) from the_numbers")
+((query-maybe-value c "select count(*) from the_numbers")
  ((3) 0 () 0 () () (c values c 4))
  #""
  #"")
