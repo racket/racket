@@ -596,6 +596,28 @@
       (send gl1 call-as-current (lambda () (error "fail"))))
     (test 12 'post-exn (send gl1 call-as-current (lambda () 12)))))
 
+
+;; ----------------------------------------
+;; check clipping
+
+(let ()
+  (define rdc (new record-dc%))
+  (send rdc set-brush "green" 'solid)
+  (send rdc set-clipping-rect 2 2 5 5)
+  (send rdc draw-rectangle 0 0 9 9)
+
+  (define bm (make-bitmap 25 25))
+  (define bm-dc (make-object bitmap-dc% bm))
+
+  (send bm-dc set-clipping-rect 10 10 5 5)
+
+  ((send rdc get-recorded-procedure) bm-dc)
+
+  (define s (make-bytes (* 20 20 4)))
+  (send bm get-argb-pixels 0 0 20 20 s)
+  (for ([i (in-range 0 (* 20 20 4) 4)])
+    (test 0 'record-dc-clipping-byte (bytes-ref s i))))
+
 ;; ----------------------------------------
 
 (report-errs)
