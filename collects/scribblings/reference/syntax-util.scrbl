@@ -155,7 +155,8 @@ object.
 Looks up @racket[id] in the syntactic environment (as
 @racket[syntax-local-value]). If the lookup succeeds and returns a
 value satisfying the predicate, the value is returned and @racket[id]
-is recorded as a disappeared use. If the lookup fails or if the value
+is recorded as a disappeared use by calling @racket[record-disappeared-uses]. 
+If the lookup fails or if the value
 does not satisfy the predicate, @racket[#f] is returned and the
 identifier is not recorded as a disappeared use.
 }
@@ -163,9 +164,11 @@ identifier is not recorded as a disappeared use.
 @defproc[(record-disappeared-uses [ids (listof identifier?)])
          void?]{
 
-Add @racket[ids] to @racket[(current-recorded-disappeared-uses)]. If
-not used within the extent of a @racket[with-disappeared-uses] form or
-similar, has no effect.
+Add @racket[ids] to @racket[(current-recorded-disappeared-uses)] after calling
+@racket[syntax-local-introduce] on each of the identifiers. 
+
+If not used within the extent of a @racket[with-disappeared-uses] 
+form or similar, has no effect.
 }
 
 
