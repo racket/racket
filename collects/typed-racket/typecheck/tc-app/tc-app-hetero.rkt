@@ -83,32 +83,32 @@
               unsafe-struct-ref unsafe-struct*-ref
               unsafe-struct-set! unsafe-struct*-set!
               vector-immutable vector)
-  (pattern ((~or unsafe-struct-ref unsafe-struct*-ref) struct:expr index:expr)
+  (pattern (~and form ((~or unsafe-struct-ref unsafe-struct*-ref) struct:expr index:expr))
     (match (single-value #'struct)
       [(tc-result1: (and struct-t (app resolve (Struct: _ _ (list (fld: flds _ _) ...) _ _ _ _ _))))
        (tc/hetero-ref #'index flds struct-t expected "struct")]
-      [s-ty #f]))
+      [s-ty (tc/app-regular #'form expected)]))
   ;; vector-ref on het vectors
-  (pattern ((~or vector-ref unsafe-vector-ref unsafe-vector*-ref) vec:expr index:expr)
+  (pattern (~and form ((~or vector-ref unsafe-vector-ref unsafe-vector*-ref) vec:expr index:expr))
     (match (single-value #'vec)
       [(tc-result1: (and vec-t (app resolve (HeterogenousVector: es))))
        (tc/hetero-ref #'index es vec-t expected "vector")]
-      [v-ty #f]))
+      [v-ty (tc/app-regular #'form expected)]))
   ;; unsafe struct-set! 
-  (pattern ((~or unsafe-struct-set! unsafe-struct*-set!) s:expr index:expr val:expr)
+  (pattern (~and form ((~or unsafe-struct-set! unsafe-struct*-set!) s:expr index:expr val:expr))
     (match (single-value #'s)
       [(tc-result1: (and struct-t (app resolve (Struct: _ _ (list (fld: flds _ _) ...) _ _ _ _ _))))
        (tc/hetero-set! #'index flds #'val struct-t expected "struct")]
-      [s-ty #f]))
+      [s-ty (tc/app-regular #'form expected)]))
   ;; vector-set! on het vectors
-  (pattern ((~or vector-set! unsafe-vector-set! unsafe-vector*-set!) v:expr index:expr val:expr)
+  (pattern (~and form ((~or vector-set! unsafe-vector-set! unsafe-vector*-set!) v:expr index:expr val:expr))
     (match (single-value #'v)
       [(tc-result1: (and vec-t (app resolve (HeterogenousVector: es))))
        (tc/hetero-set! #'index es #'val vec-t expected "vector")]
-      [v-ty #f]))
+      [v-ty (tc/app-regular #'form expected)]))
   (pattern (~and form ((~or vector-immutable vector) args:expr ...))
     (match expected
-      [(tc-result1: (app resolve (Vector: t))) #f]
+      [(tc-result1: (app resolve (Vector: t))) (tc/app-regular #'form expected)]
       [(tc-result1: (app resolve (HeterogenousVector: ts)))
        (unless (= (length ts) (length (syntax->list #'(args ...))))
          (tc-error/expr "expected vector with ~a elements, but got ~a"

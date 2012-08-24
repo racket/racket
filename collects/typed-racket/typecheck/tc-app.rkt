@@ -2,6 +2,7 @@
 
 (require "../utils/utils.rkt"
          "tc-app/signatures.rkt"
+         "tc-app/utils.rkt"
          syntax/parse racket/match 
          syntax/parse/experimental/reflect
          (typecheck signatures check-below tc-funapp)
@@ -15,38 +16,46 @@
 (export tc-app^)
 
 
-;; the main dispatching function
-;; syntax tc-results? -> tc-results?
-(define (tc/app/internal form expected)
-  (syntax-parse form
-    [(#%plain-app .
-       (~or (~var v (tc/app-annotated expected))
-            (~reflect v (tc/app-list expected) #:attributes (check))
-            (~reflect v (tc/app-apply expected) #:attributes (check))
-            (~reflect v (tc/app-eq expected) #:attributes (check))
-            (~reflect v (tc/app-hetero expected) #:attributes (check))
-            (~reflect v (tc/app-values expected) #:attributes (check))
-            (~reflect v (tc/app-keywords expected) #:attributes (check))
-            (~reflect v (tc/app-objects expected) #:attributes (check))
-            (~reflect v (tc/app-lambda expected) #:attributes (check))
-            (~reflect v (tc/app-special expected) #:attributes (check))
-            (~var v (tc/app-regular* expected))))
-     ((attribute v.check))]))
-
 (define-syntax-class annotated-op
   (pattern i:identifier
            #:when (or (syntax-property #'i 'type-inst)
                       (syntax-property #'i 'type-ascription))))
 
-
-(define-syntax-class (tc/app-annotated expected)
+(define-tc/app-syntax-class (tc/app-annotated expected)
   ;; Just do regular typechecking if we have one of these.
   (pattern (~and form (rator:annotated-op . rands))
-   #:attr check (lambda () (tc/app-regular #'form expected))))
+    (tc/app-regular #'form expected)))
 
-(define-syntax-class (tc/app-regular* expected)
-  (pattern form 
-   #:attr check (lambda () (tc/app-regular #'form expected))))
+(define-tc/app-syntax-class (tc/app-regular* expected)
+  (pattern form (tc/app-regular #'form expected)))
+
+(define-syntax-rule (combine-tc/app-syntax-classes class-name case ...)
+  (define-syntax-class (class-name expected)
+    #:attributes (check)
+    (pattern (~reflect v (case expected) #:attributes (check))
+             #:attr check (attribute v.check)) ...))
+
+(combine-tc/app-syntax-classes tc/app-special-cases
+  tc/app-annotated
+  tc/app-list
+  tc/app-apply
+  tc/app-eq
+  tc/app-hetero
+  tc/app-values
+  tc/app-keywords
+  tc/app-objects
+  tc/app-lambda
+  tc/app-special
+  tc/app-regular*)
+
+;; the main dispatching function
+;; syntax tc-results? -> tc-results?
+(define (tc/app/internal form expected)
+  (syntax-parse form
+    [(#%plain-app . (~var v (tc/app-special-cases expected)))
+     ((attribute v.check))]))
+
+
 
 (define (tc/app-regular form expected)
   (syntax-parse form
