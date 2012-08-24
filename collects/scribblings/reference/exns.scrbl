@@ -406,7 +406,8 @@ it returns, an exception is raised (to be handled by an exception
 handler that reports both the original and newly raised exception).
 
 The default uncaught-exception handler prints an error message using
-the current @tech{error display handler} (see @racket[error-display-handler]).
+the current @tech{error display handler} (see @racket[error-display-handler]),
+unless the argument to the handler is an instance of @racket[exn:break:hang-up].
 If the argument to the handler is an instance of @racket[exn:break:hang-up]
 or @racket[exn:break:terminate], the default uncaught-exception handler
 then calls the @tech{exit handler} with @racket[1], which normally exits

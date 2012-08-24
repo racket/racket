@@ -783,9 +783,14 @@ call_error(char *buffer, int len, Scheme_Object *exn)
     scheme_set_cont_mark(scheme_exn_handler_key, v);
     scheme_push_break_enable(&cframe2, 0, 0);
 
-    p[0] = scheme_make_immutable_sized_utf8_string(buffer, len);
-    p[1] = exn;
-    scheme_apply_multi(display_handler, 2, p);
+    if (SCHEME_CHAPERONE_STRUCTP(exn)
+        && (scheme_is_struct_instance(exn_table[MZEXN_BREAK_HANG_UP].type, exn))) {
+      /* skip printout */
+    } else {
+      p[0] = scheme_make_immutable_sized_utf8_string(buffer, len);
+      p[1] = exn;
+      scheme_apply_multi(display_handler, 2, p);
+    }
 
     if (SCHEME_CHAPERONE_STRUCTP(exn)
         && (scheme_is_struct_instance(exn_table[MZEXN_BREAK_HANG_UP].type, exn)
