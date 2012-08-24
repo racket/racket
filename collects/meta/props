@@ -1019,6 +1019,7 @@ path/s is either such a string or a list of them.
 "collects/tests/drracket/language-test.rkt" responsible (robby matthias) drdr:command-line (gracket *) drdr:timeout 1500
 "collects/tests/drracket/memory-log.rkt" drdr:command-line (gracket *)
 "collects/tests/drracket/module-lang-test.rkt" drdr:command-line (gracket "-j" "-e" "(void (putenv \"PLTDRDRTEST\" \"yes\"))" "-t" *) drdr:timeout 800
+"collects/tests/drracket/no-write-and-frame-leak.rkt" drdr:timeout 500
 "collects/tests/drracket/randomly-click-language-dialog.rkt" drdr:command-line (mzc *)
 "collects/tests/drracket/randomly-click-preferences.rkt" drdr:command-line (mzc *)
 "collects/tests/drracket/repl-test-debug.rkt" drdr:command-line (gracket *) drdr:timeout 300
