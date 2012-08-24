@@ -223,3 +223,25 @@
               (let: ([v : Indexes  (make-vector dims 0)])
                 (thread-cell-set! val v)
                 v)))))
+
+(: all-equal? (Any Any * -> Boolean))
+(define (all-equal? x . xs)
+  (cond [(empty? xs)  #t]
+        [else  (define first-xs (first xs))
+               (cond [(equal? x first-xs)  (all-equal? first-xs (rest xs))]
+                     [else  #f])]))
+
+(: next-indexes! (Indexes Index Indexes -> Void))
+;; Sets js to the next vector of indexes, in row-major order
+(define (next-indexes! ds dims js)
+  (let loop ([#{k : Nonnegative-Fixnum}  dims])
+    (unless (zero? k)
+      (let ([k  (- k 1)])
+        (define jk (unsafe-vector-ref js k))
+        (define dk (unsafe-vector-ref ds k))
+        (let ([jk  (+ jk 1)])
+          (cond [(jk . >= . dk)
+                 (unsafe-vector-set! js k 0)
+                 (loop k)]
+                [else
+                 (unsafe-vector-set! js k jk)]))))))

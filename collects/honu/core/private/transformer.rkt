@@ -17,10 +17,10 @@
 
 (define (make-honu-transformer proc)
   (unless (and (procedure? proc)
-               (procedure-arity-includes? proc 2))
+               (procedure-arity-includes? proc 1))
     (raise-type-error
       'define-honu-syntax
-      "procedure (arity 2)"
+      "procedure (arity 1)"
       proc))
   (make-honu-trans proc))
 

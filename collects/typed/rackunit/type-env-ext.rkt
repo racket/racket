@@ -7,8 +7,7 @@
           (utils tc-utils)
           (env init-envs)
           (except-in (rep filter-rep object-rep type-rep) make-arr)
-          (types convenience union)
-          (only-in (types convenience) [make-arr* make-arr])))
+          (rename-in (types abbrev union) [make-arr* make-arr])))
 
 (define-for-syntax unit-env
   (make-env

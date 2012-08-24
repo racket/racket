@@ -189,6 +189,14 @@
 
 (time (plot3d (contour-intervals3d f5 -4 4 -4 4 #:label "z")))
 
+(time (plot3d (contour-intervals3d
+               (λ (x y)
+                 (define z (- x y))
+                 (cond [(< z -1) -1]
+                       [(> z 1)   1]
+                       [else      z]))
+               -2 2 -2 2)))
+
 (time
  (plot3d (contour-intervals3d (λ (x y) (+ x y)))
          #:x-min #e100000000000000.0 #:x-max #e100000000000000.1

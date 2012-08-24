@@ -804,7 +804,7 @@ path/s is either such a string or a list of them.
 "collects/meta/drdr" responsible (jay) drdr:command-line #f
 "collects/meta/drdr2" responsible (jay) drdr:command-line #f
 "collects/meta/images/mkheart.rkt" drdr:command-line #f
-"collects/meta/props" drdr:command-line (racket "-um" * "verify") responsible (eli jay)
+"collects/meta/props" responsible (eli jay) drdr:command-line (racket "-um" * "verify")
 "collects/meta/web" drdr:command-line #f
 "collects/mred" responsible (mflatt)
 "collects/mred/edit-main.rkt" drdr:command-line (mzc *)
@@ -862,6 +862,7 @@ path/s is either such a string or a list of them.
 "collects/plot/tests/slideshow-test.rkt" drdr:command-line #f
 "collects/preprocessor" responsible (eli)
 "collects/profile" responsible (eli)
+"collects/profile/analyzer.rkt" drdr:command-line (raco "test" *)
 "collects/r5rs" responsible (mflatt)
 "collects/r6rs" responsible (mflatt)
 "collects/r6rs/run.rkt" drdr:command-line (mzc *)
@@ -1138,6 +1139,7 @@ path/s is either such a string or a list of them.
 "collects/tests/planet/examples/scribblings-package" drdr:command-line #f
 "collects/tests/planet/lang.rkt" drdr:command-line (raco "make" *)
 "collects/tests/planet/run-all.rkt" drdr:timeout 240
+"collects/tests/planet/submod.rkt" drdr:command-line #f
 "collects/tests/planet/test-docs-complete.rkt" drdr:command-line (raco "make" *)
 "collects/tests/planet/thread-safe-resolver.rkt" drdr:command-line (raco "make" *) drdr:timeout 1000
 "collects/tests/planet/version.rkt" drdr:command-line (raco "make" *)
@@ -1354,6 +1356,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/object.rktl" drdr:command-line #f
 "collects/tests/racket/optimize.rktl" drdr:command-line #f
 "collects/tests/racket/package-gen.rktl" drdr:timeout 600
+"collects/tests/racket/parallel-plot.rkt" drdr:timeout 400
 "collects/tests/racket/parallel.rktl" drdr:command-line #f
 "collects/tests/racket/path.rktl" drdr:command-line #f
 "collects/tests/racket/pconvert.rktl" drdr:command-line #f
@@ -1468,7 +1471,6 @@ path/s is either such a string or a list of them.
 "collects/tests/unstable/srcloc.rktl" responsible (cce)
 "collects/tests/unstable/temp-c" responsible (jay)
 "collects/tests/utils/gui.rkt" responsible (robby)
-"collects/tests/utils/mz-testing.rkt" responsible (clements)
 "collects/tests/utils/sexp-diff.rkt" responsible (clements)
 "collects/tests/web-server" responsible (jay)
 "collects/tests/web-server/pr/length.rkt" drdr:command-line #f

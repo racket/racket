@@ -107,8 +107,10 @@ MZ_EXTERN Scheme_Object *scheme_thread_w_details(Scheme_Object *thunk,
 						 int suspend_to_kill);
 MZ_EXTERN void scheme_kill_thread(Scheme_Thread *p);
 MZ_EXTERN void scheme_break_thread(Scheme_Thread *p);
+MZ_EXTERN void scheme_break_kind_thread(Scheme_Thread *p, int kind);
 MZ_EXTERN void scheme_break_main_thread();
 MZ_EXTERN void scheme_break_main_thread_at(void *);
+MZ_EXTERN void scheme_break_kind_main_thread_at(void *, int kind);
 MZ_EXTERN void *scheme_get_main_thread_break_handle();
 MZ_EXTERN void scheme_set_break_main_target(Scheme_Thread *p);
 
@@ -153,6 +155,9 @@ MZ_EXTERN Scheme_Custodian *scheme_make_custodian(Scheme_Custodian *);
 MZ_EXTERN Scheme_Custodian_Reference *scheme_add_managed(Scheme_Custodian *m, Scheme_Object *o,
 							 Scheme_Close_Custodian_Client *f, void *data,
 							 int strong);
+MZ_EXTERN Scheme_Custodian_Reference *scheme_add_managed_close_on_exit(Scheme_Custodian *m, Scheme_Object *o, 
+                                                                       Scheme_Close_Custodian_Client *f, void *data);
+
 MZ_EXTERN void scheme_custodian_check_available(Scheme_Custodian *m, const char *who, const char *what);
 MZ_EXTERN int scheme_custodian_is_available(Scheme_Custodian *m);
 MZ_EXTERN void scheme_remove_managed(Scheme_Custodian_Reference *m, Scheme_Object *o);

@@ -7,14 +7,13 @@
 @defclass/title[radial-gradient% object% ()]{
 
 A @deftech{radial gradient} is used with a @racket[brush%] to fill
- areas, such as the interior of a rectangle or ellipse, with smooth
- color transitions.
-
-Colors transitions are based on two circles and the sequence of circles that
- ``morph'' from the starting circle to the ending circle. Colors are
- assigned to stop circles in the sequence, and the colors of
- the start and end circles radiate inward and outward to points that
- are not on any intermediate circles.
+ areas with smooth color transitions.
+ Color transitions are based on two circles and the sequence of
+ circles that ``morph'' from the starting circle to the ending
+ circle. Normally, one of the two circles defining a gradient is
+ nested within the other; in that case, points within the inner circle
+ get the same color as the inner circle's edge, while points outside
+ the outer circle get the same color as the outer circle's edge.
 
 @defconstructor[([x0 real?]
                  [y0 real?]
@@ -32,29 +31,52 @@ circles, where @racket[0.0] corresponds to the starting circle,
 @racket[1.0] corresponds to the ending circle, and numbers in between
 correspond to circles in between.
 
+The order of elements within @racket[stops] and duplicate points are
+treated in the same way for as @racket[linear-gradient%].
+
 @examples[
   #:eval class-eval
-  (define no-pen (make-object pen% "BLACK" 1 'transparent))
-  (define brush-grad (new brush% [gradient (new radial-gradient% 
-    [x0 400] [y0 150] [r0 10] [x1 400] [y1 150] [r1 100]
-    [stops
-      (list (list 0   (make-object color% 255 0 0))
-            (list 0.5 (make-object color% 0 255 0))
-            (list 1   (make-object color% 0 0 255)))])]))
+(define ellipse-brush 
+  (new brush%
+       [gradient
+        (new radial-gradient% 
+             [x0 100] [y0 100] [r0 0]
+             [x1 100] [y1 100] [r1 100]
+             [stops
+              (list (list 0   (make-object color% 0 0 255))
+                    (list 0.5 (make-object color% 0 255 0))
+                    (list 1   (make-object color% 255 0 0)))])]))
 
-  (define brush-grad2 (new brush% [gradient
-    (make-object radial-gradient% 150 150 0 150 150 100
-                 (list (list 0   (make-object color% 0 0 255))
-                       (list 0.5 (make-object color% 0 255 0))
-                       (list 1   (make-object color% 255 0 0))))]))
+(define rectangle-brush
+  (new brush% 
+       [gradient
+        (new radial-gradient%
+             [x0 100] [y0 100] [r0 10] 
+             [x1 100] [y1 100] [r1 100]
+             [stops
+              (list (list 0   (make-object color% 255 0 0))
+                    (list 0.5 (make-object color% 0 255 0))
+                    (list 1   (make-object color% 0 0 255)))])]))
 
-  (dc (lambda (dc x y)
-    (send dc set-pen no-pen)
-    (send dc set-brush brush-grad2)
-    (send dc draw-ellipse 50 50 200 200)
-        
-    (send dc set-brush brush-grad)
-    (send dc draw-rectangle 300 50 200 200)) 550 300)
+(dc 
+ (λ (dc dx dy)
+   (define old-pen (send dc get-pen))
+   (define old-brush (send dc get-brush))
+   (define-values (ox oy) (send dc get-origin))
+   
+   (send dc set-pen "black" 1 'transparent)
+   (send dc set-brush ellipse-brush)
+   (send dc set-origin (+ ox dx 50) (+ oy dy 50))
+   (send dc draw-ellipse 0 0 200 200)
+   
+   (send dc set-origin (+ ox dx 300) (+ oy dy 50))
+   (send dc set-brush rectangle-brush)
+   (send dc draw-rectangle 0 0 200 200)
+   
+   (send dc set-pen old-pen)
+   (send dc set-brush old-brush)
+   (send dc set-origin ox oy))
+ 550 300)  
 ]}
 
 @defmethod[(get-circles)

@@ -31,7 +31,7 @@
 
 (provide honu-structure)
 (define-honu-syntax honu-structure
-  (lambda (code context)
+  (lambda (code)
     (syntax-parse code #:literal-sets (cruft)
       [(_ name:id (#%braces fields:identifier-comma-list) . rest)
        (define out

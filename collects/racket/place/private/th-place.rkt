@@ -60,7 +60,7 @@
 (define (th-place-sleep n) (sleep n))
 (define (th-place-wait pl) (thread-wait (TH-place-th pl)) 0)
 (define (th-place-kill pl) (custodian-shutdown-all (TH-place-cust pl)))
-(define (th-place-break pl) (break-thread (TH-place-th pl)))
+(define (th-place-break pl kind) (break-thread (TH-place-th pl) kind))
 (define (th-place-dead-evt pl) (thread-dead-evt (TH-place-th pl)))
 (define (th-place-channel)
   (define-values (as ar) (make-th-async-channel))

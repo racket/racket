@@ -152,4 +152,12 @@ of identifiers for existing bindings of package's exports.}
 
 @; ----------------------------------------------------------------------
 
+@section[#:style '(hidden)]{Legacy Racket Package Library}
+
+@defmodule[racket/package]{The @racket[racket/package] library
+re-exports @racketmodname[compatibility/package] for backward
+compatibility.}
+
+@; ----------------------------------------------------------------------
+
 @close-eval[pack-eval]

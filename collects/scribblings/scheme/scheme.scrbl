@@ -201,7 +201,7 @@ See also @racketmodname[scheme/runtime-config].
 @compat[scheme/local racket/local]
 @compat[scheme/match racket/match]
 @compat[scheme/math racket/math]
-@compat[scheme/mpair racket/mpair]
+@compat[scheme/mpair compatibility/mlist]
 
 @;------------------------------------------------------------------------
 @section[#:tag "nest"]{@racketmodname[scheme/nest]}
@@ -253,7 +253,7 @@ than a precise prose description:
 
 @; ----------------------------------------
 
-@compat[scheme/package racket/package]
+@compat[scheme/package compatibility/package]
 @compat[scheme/path racket/path]
 @compat[scheme/port racket/port]
 

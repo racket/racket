@@ -31,15 +31,19 @@
          (* x (+ 1.0 (* #i-1/6 x x)))]
         [else  x]))  ; Taylor series order 1
 
-(: asinh (Number -> Number))
+(: asinh (case-> (Zero -> Zero)
+                 (Float -> Float)
+                 (Single-Flonum -> Single-Flonum)
+                 (Real -> Real)
+                 (Float-Complex -> Float-Complex)
+                 (Number -> Number)))
 (define (asinh x)
-  (cond [(real? x)
-         (cond [(zero? x)  x]
-               [(flonum? x)  (flasinh x)]
-               [(single-flonum? x)  (real->single-flonum (flasinh (real->double-flonum x)))]
-               [else  (flasinh (real->double-flonum x))])]
-        [else
-         (log (+ x (sqrt (+ (* x x) 1))))]))
+  (cond [(flonum? x)  (flasinh x)]
+        [(single-flonum? x)  (real->single-flonum (flasinh (real->double-flonum x)))]
+        [(eqv? x 0)  0]
+        [(real? x)  (flasinh (real->double-flonum x))]
+        [(float-complex? x)  (log (+ x (sqrt (+ (* x x) 1.0))))]
+        [else  (log (+ x (sqrt (+ (* x x) 1))))]))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Inverse hyperbolic cosine
@@ -64,16 +68,19 @@
          (* (flsqrt (* 2.0 y))
             (+ 1.0 (/ y -12.0) (/ (* 3.0 y y) 160.0)))]))
 
-(: acosh (Number -> Number))
+(: acosh (case-> (One -> Zero)
+                 (Float -> Float)
+                 (Single-Flonum -> Single-Flonum)
+                 (Real -> Number)
+                 (Float-Complex -> Float-Complex)
+                 (Number -> Number)))
 (define (acosh x)
-  (cond [(real? x)
-         (cond [(equal? x 1)  0]
-               [(flonum? x)  (flacosh x)]
-               [(single-flonum? x)  (real->single-flonum (flacosh (real->double-flonum x)))]
-               [(x . < . 1)  (raise-type-error 'acosh "Real >= 1" x)]
-               [else  (flacosh (real->double-flonum x))])]
-        [else
-         (log (+ x (* (sqrt (+ x 1)) (sqrt (- x 1)))))]))
+  (cond [(flonum? x)  (flacosh x)]
+        [(single-flonum? x)  (real->single-flonum (flacosh (real->double-flonum x)))]
+        [(eqv? x 1)  0]
+        [(and (real? x) (x . >= . 1))  (flacosh (real->double-flonum x))]
+        [(float-complex? x)  (log (+ x (* (sqrt (+ x 1.0)) (sqrt (- x 1.0)))))]
+        [else  (log (+ x (* (sqrt (+ x 1)) (sqrt (- x 1)))))]))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Inverse hyperbolic tangent
@@ -96,12 +103,16 @@
          (+ x (* #i1/3 x x x))]
         [else  x]))  ; Taylor series order 1
 
-(: atanh (Number -> Number))
+(: atanh (case-> (Zero -> Zero)
+                 (Float -> Float)
+                 (Single-Flonum -> Single-Flonum)
+                 (Real -> Real)
+                 (Float-Complex -> Float-Complex)
+                 (Number -> Number)))
 (define (atanh x)
-  (cond [(real? x)
-         (cond [(zero? x)  x]
-               [(flonum? x)  (flatanh x)]
-               [(single-flonum? x)  (real->single-flonum (flatanh (real->double-flonum x)))]
-               [else  (flatanh (real->double-flonum x))])]
-        [else
-         (* 1/2 (- (log (+ 1 x)) (log (- 1 x))))]))
+  (cond [(flonum? x)  (flatanh x)]
+        [(single-flonum? x)  (real->single-flonum (flatanh (real->double-flonum x)))]
+        [(eqv? x 0)  0]
+        [(real? x)  (flatanh (real->double-flonum x))]
+        [(float-complex? x)  (* 0.5 (- (log (+ 1.0 x)) (log (- 1.0 x))))]
+        [else  (* 1/2 (- (log (+ 1 x)) (log (- 1 x))))]))

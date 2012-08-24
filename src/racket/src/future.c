@@ -39,7 +39,7 @@ Scheme_Object *scheme_fsemaphore_p(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *futures_enabled(int argc, Scheme_Object *argv[])
 {
-#ifdef MZ_USE_FUTURESRACKET  
+#ifdef MZ_USE_FUTURES
   return scheme_true;
 #else 
   return scheme_false;
@@ -966,9 +966,7 @@ static Scheme_Object *reset_future_logs_for_tracking(int argc, Scheme_Object **a
   Scheme_Future_State *fs;
   Scheme_Future_Thread_State *fts;
   Scheme_Future_Thread_State *rt_fts;
-  Scheme_Logger *logger;
 
-  logger = scheme_main_logger;
   fs = scheme_future_state;
   rt_fts = scheme_future_thread_state;
   if (fs) {

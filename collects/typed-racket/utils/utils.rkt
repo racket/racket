@@ -9,18 +9,13 @@ at least theoretically.
          racket/require-syntax racket/provide-syntax         
          racket/struct-info "timing.rkt")
 
-;; to move to unstable
-(provide list-update list-set)
-
 (provide
  ;; optimization
  optimize?
  ;; timing
  start-timing do-time
  ;; logging
- printf/log show-input?
- ;; struct printing
- custom-printer define-struct/printer
+ show-input?
  ;; provide macros
  rep utils typecheck infer env private types)
 
@@ -95,51 +90,6 @@ at least theoretically.
 (define-requirer optimizer optimizer-out)
 (define-requirer base-env base-env-out)
 
-;; conditionalized logging
-;; there's some logging code in the source
-;; which was used for gathering statistics about various programs
-;; no longer used, probably bitrotted
-(define-for-syntax logging? #f)
-
-(define-syntax (printf/log stx)
-  (if logging?
-      (syntax-case stx ()
-        [(_ fmt . args)
-	 #'(log-debug (format fmt . args))])
-      #'(void)))
-
-;; custom printing
-;; this requires lots of work for two reasons:
-;; - 1 printers have to be defined at the same time as the structs
-;; - 2 we want to support things printing corectly even when the custom printer is off
-
-(define-syntax-rule (defprinter t ...)
-  (begin
-    (define t (box (lambda _ (error (format "~a not yet defined" 't))))) ...
-    (provide t ...)))
-
-(defprinter
-  print-type* print-filter* print-latentfilter* print-object* print-latentobject*
-  print-pathelem*)
-
-(define custom-printer (make-parameter #t))
-
-(define-syntax (define-struct/printer stx)
-  (syntax-parse stx
-    [(form name (flds ...) printer:expr)
-     #`(define-struct name (flds ...)
-         #:property prop:custom-print-quotable 'never
-         #:property prop:custom-write
-         (lambda (a b c) (if (custom-printer)
-                             (printer a b c)
-                             ;; ok to make this case slow, it never runs in real code
-                             ((if c
-                                  (dynamic-require 'racket/pretty 'pretty-write)
-                                  (dynamic-require 'racket/pretty 'pretty-print))
-                              a b)))
-         #:transparent)]))
-
-
 ;; turn contracts on and off - off by default for performance.
 (provide (for-syntax enable-contracts?)
          provide/cond-contract
@@ -203,16 +153,6 @@ at least theoretically.
       (syntax-rules ()
         [(_ hd ([i c] ...) . opts)
          (define-struct hd (i ...) . opts)])))
-
-(define (list-update l i f)
-  (cond [(null? l) (error 'list-update "list not long enough" l i f)]
-        [(zero? i) (cons (f (car l)) (cdr l))]
-        [else (cons (car l) (list-update (cdr l) (sub1 i) f))]))
-
-(define (list-set l k v)
-  (if (zero? k)
-      (cons v (cdr l))
-      (cons (car l) (list-set (cdr l) (sub1 k) v))))
 
 
 (provide make-struct-info-self-ctor)

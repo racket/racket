@@ -100,6 +100,6 @@ a @tech{custom port} that defines its own counting function, then
 
 @defboolparam[port-count-lines-enabled on?]{
 
-A parameter that determines whether line counting is enabled
+A @tech{parameter} that determines whether line counting is enabled
 automatically for newly created ports. The default value is
 @racket[#f].}

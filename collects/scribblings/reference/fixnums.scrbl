@@ -169,13 +169,17 @@ elements of @racket[vec] from @racket[start] (inclusive) to
 }
 
 @deftogether[(
-@defform*[((for/fxvector (for-clause ...) body ...)
-           (for/fxvector #:length length-expr (for-clause ...) body ...))]
-@defform*[((for*/fxvector (for-clause ...) body ...)
-           (for*/fxvector #:length length-expr (for-clause ...) body ...))])]{
+@defform[(for/fxvector maybe-length (for-clause ...) body ...)]
+@defform/subs[(for*/fxvector maybe-length (for-clause ...) body ...)
+              ([maybe-length (code:line)
+                             (code:line #:length length-expr)
+                             (code:line #:length length-expr #:fill fill-expr)])
+              #:contracts ([length-expr exact-nonnegative-integer?]
+                           [fill-expr fixnum?])]
+)]{
 
 Like @racket[for/vector] or @racket[for*/vector], but for
-@tech{fxvector}s.}
+@tech{fxvector}s. The default @racket[fill-expr] produces @racket[0].}
 
 @defproc[(shared-fxvector [x fixnum?] ...) fxvector?]{
 

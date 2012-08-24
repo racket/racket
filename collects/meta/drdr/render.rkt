@@ -76,6 +76,8 @@
         the-base-path*))
   (define prev-rev-url (format "/~a~a" (previous-rev) the-base-path))
   (define next-rev-url (format "/~a~a" (next-rev) the-base-path))
+  (define prev-change-url (format "/previous-change/~a~a" the-rev the-base-path))
+  (define next-change-url (format "/next-change/~a~a" the-rev the-base-path))
   (define cur-rev-url (format "/~a~a" "current" the-base-path))
   ; XXX Don't special case top level
   (values (apply string-append 
@@ -96,10 +98,18 @@
                              ,(last string-parts)))
                      " / "))
             (span ([class "revnav"])
+                  ,@(if directory?
+                      empty
+                      `((a ([href ,prev-change-url])
+                           (img ([src "/images/rewind-change.png"])))))
                   (a ([href ,prev-rev-url])
                      (img ([src "/images/rewind.png"])))
                   (a ([href ,next-rev-url])
                      (img ([src "/images/fast-forward.png"])))
+                  ,@(if directory?
+                      empty
+                      `((a ([href ,next-change-url])
+                           (img ([src "/images/fast-forward-change.png"])))))
                   (a ([href ,cur-rev-url])
                      (img ([src "/images/skip-forward1.png"])))))))
 
@@ -383,7 +393,7 @@
                            `(div ([class "error"])
                                  "This result of executing this file has changed since the previous push."
                                  " "
-                                 (a ([href ,(format "/diff/~a/~a~a" (current-rev) (previous-rev) the-base-path)])
+                                 (a ([href ,(format "/diff/~a/~a~a" (previous-rev) (current-rev) the-base-path)])
                                     "See the difference")))
                       ,@(if (empty? output)
                             '()
@@ -647,6 +657,13 @@
                                    
                                    @h1{What output patterns constitute a "change"?}
                                    @p{At the most basic level, if the bytes are different. However, there are a few subtleties. First, DrDr knows to ignore the result of @code{time}. Second, the standard output and standard error streams are compared independently. Finally, if the file has the @code{drdr:random} property, then changes do not affect any reporting DrDr would otherwise perform. The difference display pages present changed lines with a @span[([class "difference"])]{unique background}.}
+
+                                   @h1{What do the green buttons do?}
+                                   @p{They switch between revisions where there was a change from the previous revision.}
+
+                                   @p{For example, if there where seven revisions with three different outputs---1A 2A 3A 4B 5B 6C 7C---then the green buttons will go from 1 to 4 to 6 to 7. (1 and 7 are included because they are the last possible revisions and the search stops.)}
+
+                                   @p{In other words, the green buttons go forwards and backwards to the nearest pushes that have the red 'This result of executing this file has changed' box on them.}
                                    
                                    @h1{How is this site organized?}
                                    @p{Each file's test results are displayed on a separate page, with a link to the previous push on changes. All the files in a directory are collated and indexed recursively. On these pages each column is sortable and each row is clickable. The root of a push also includes the git commit messages with links to the test results of the modified files. The top DrDr page displays the summary information for all the tested pushes.}
@@ -927,6 +944,34 @@
             maybe
             (find-previous-rev maybe)))))
 
+(define (show-file/prev-change req rev path-to-file)
+  (show-file/change -1 rev path-to-file))
+(define (show-file/next-change req rev path-to-file)
+  (show-file/change +1 rev path-to-file))
+(define (show-file/change direction top-rev path-to-file)
+  (define the-rev
+    (let loop ([last-rev top-rev]
+               [this-rev (+ direction top-rev)])
+      (parameterize ([current-rev this-rev]
+                     [previous-rev (find-previous-rev this-rev)])
+        (define log-dir (revision-log-dir this-rev))
+        (define log-pth
+          (apply build-path log-dir path-to-file))
+        (match 
+            (with-handlers ([(lambda (x)
+                               (regexp-match #rx"No cache available" (exn-message x)))
+                             (lambda (x)
+                               #f)])
+              (log-rendering log-pth))
+          [#f
+           last-rev]
+          [(and the-log-rendering (struct rendering (_ _ _ _ _ _ _ changed)))
+           (if (empty? changed)
+             (loop this-rev (+ direction this-rev))
+             this-rev)]))))
+  (redirect-to
+   (top-url show-file the-rev path-to-file)))
+
 (define (show-file req rev path-to-file)
   (define log-dir (revision-log-dir rev))
   (parameterize ([current-rev rev]
@@ -1011,6 +1056,8 @@
    [("") show-revisions]
    [("diff" (integer-arg) (integer-arg) (string-arg) ...) show-diff]
    [("json" "timing" (string-arg) ...) json-timing]
+   [("previous-change" (integer-arg) (string-arg) ...) show-file/prev-change]
+   [("next-change" (integer-arg) (string-arg) ...) show-file/next-change]
    [("current" "") show-revision/current]
    [("current" (string-arg) ...) show-file/current]
    [((integer-arg) "") show-revision]

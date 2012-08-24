@@ -112,8 +112,8 @@
    ;;  thunk and then tries again to invoke the continuation --- but inside a
    ;;  `dw' for the already-run pre-thunk, so that it's treated as shared and not
    ;;  run again.
-   (~~> (% v_1 (in-hole D_2 (in-hole W_3 ((cont v_1 (name k_1 (in-hole D_6 (in-hole W_4 (dw x_1 e_1 (hide-hole E_5) e_2))))) v_2))) v_3)
-        (% v_1 (in-hole D_6 (in-hole W_4 (begin e_1 (dw x_1 e_1 ((cont v_1 k_1) v_2) e_2)))) v_3)
+   (~~> (% v_1 (in-hole D_2 (in-hole W_3 ((cont v_1 (name k (in-hole D_6 (in-hole W_4 (dw x_1 e_1 (hide-hole E_5) e_2))))) v_2))) v_3)
+        (% v_1 (in-hole D_6 (in-hole W_4 (begin e_1 (dw x_1 e_1 ((cont v_1 k) v_2) e_2)))) v_3)
         (side-condition (term (noMatch (in-hole D_2 W_3) E (% v_1 E v))))
         (side-condition (term (sameDWs D_2 D_6)))
         (side-condition (term (noShared W_3 (in-hole W_4 (dw x_1 e_1 E_5 e_2)))))

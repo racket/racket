@@ -156,6 +156,7 @@ THREAD_LOCAL_DECL(static int buffer_init_size);
 THREAD_LOCAL_DECL(Scheme_Thread *scheme_current_thread = NULL);
 THREAD_LOCAL_DECL(Scheme_Thread *scheme_main_thread = NULL);
 THREAD_LOCAL_DECL(Scheme_Thread *scheme_first_thread = NULL);
+THREAD_LOCAL_DECL(static Scheme_Thread *gc_prep_thread_chain = NULL);
 
 XFORM_NONGCING Scheme_Thread *scheme_get_current_thread() { return scheme_current_thread; }
 XFORM_NONGCING intptr_t scheme_get_multiple_count() { return scheme_current_thread->ku.multiple.count; }
@@ -292,10 +293,16 @@ typedef struct {
 # define MALLOC_MREF() (Scheme_Custodian_Reference *)scheme_make_late_weak_box(NULL)
 # define CUSTODIAN_FAM(x) ((Scheme_Custodian_Weak_Box *)x)->val
 # define xCUSTODIAN_FAM(x) SCHEME_BOX_VAL(x)
+# define SET_MREF_POSITION(mref, i) (((Scheme_Custodian_Weak_Box *)mref)->hash_key = (i & 0xFFFF))
+# define EXTRACT_MREF_START_POSITION(mref, c) (((Scheme_Custodian_Weak_Box *)mref)->hash_key | ((c) & ~0xFFFF))
+# define EXTRACT_MREF_POSITION_DELTA(mref, c) 0x10000
 #else
 # define MALLOC_MREF() MALLOC_ONE_WEAK(Scheme_Custodian_Reference)
 # define CUSTODIAN_FAM(x) (*(x))
 # define xCUSTODIAN_FAM(x) (*(x))
+# define SET_MREF_POSITION(mref, i) /* empty */
+# define EXTRACT_MREF_START_POSITION(mref, c) ((c)-1)
+# define EXTRACT_MREF_POSITION_DELTA(mref, c) 1
 #endif
 
 typedef struct Proc_Global_Rec {
@@ -499,7 +506,7 @@ void scheme_init_thread(Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY("thread-wait"           , thread_wait        , 1, 1, env);
   GLOBAL_PRIM_W_ARITY("current-thread"        , sch_current        , 0, 0, env);
   GLOBAL_PRIM_W_ARITY("kill-thread"           , kill_thread        , 1, 1, env);
-  GLOBAL_PRIM_W_ARITY("break-thread"          , break_thread       , 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("break-thread"          , break_thread       , 1, 2, env);
   GLOBAL_PRIM_W_ARITY("thread-suspend"        , thread_suspend     , 1, 1, env);
   GLOBAL_PRIM_W_ARITY("thread-resume"         , thread_resume      , 1, 2, env);
   GLOBAL_PRIM_W_ARITY("thread-resume-evt"     , make_thread_resume , 1, 1, env);
@@ -865,7 +872,7 @@ static void ensure_custodian_space(Scheme_Custodian *m, int k)
       m->alloc += k;
     
     naya_boxes = MALLOC_N(Scheme_Object**, m->alloc);
-    naya_closers = MALLOC_N(Scheme_Close_Custodian_Client*, m->alloc);
+    naya_closers = MALLOC_N_ATOMIC(Scheme_Close_Custodian_Client*, m->alloc);
     naya_data = MALLOC_N(void*, m->alloc);
     naya_mrefs = MALLOC_N(Scheme_Custodian_Reference*, m->alloc);
 
@@ -891,7 +898,7 @@ static void add_managed_box(Scheme_Custodian *m,
 			    Scheme_Object **box, Scheme_Custodian_Reference *mref,
 			    Scheme_Close_Custodian_Client *f, void *data)
 {
-  int i;
+  int i, saw = 0;
 
   for (i = m->count; i--; ) {
     if (!m->boxes[i]) {
@@ -899,11 +906,16 @@ static void add_managed_box(Scheme_Custodian *m,
       m->closers[i] = f;
       m->data[i] = data;
       m->mrefs[i] = mref;
+      SET_MREF_POSITION(mref, i);
 
       m->elems++;
       adjust_limit_table(m);
 
       return;
+    } else {
+      saw++;
+      if (i + saw == m->elems)
+        break; /* no empty spaces left */
     }
   }
 
@@ -913,6 +925,7 @@ static void add_managed_box(Scheme_Custodian *m,
   m->closers[m->count] = f;
   m->data[m->count] = data;
   m->mrefs[m->count] = mref;
+  SET_MREF_POSITION(mref, m->count);
 
   m->elems++;
   adjust_limit_table(m);
@@ -924,7 +937,7 @@ static void remove_managed(Scheme_Custodian_Reference *mr, Scheme_Object *o,
 			   Scheme_Close_Custodian_Client **old_f, void **old_data)
 {
   Scheme_Custodian *m;
-  int i;
+  int i, delta;
 
   if (!mr)
     return;
@@ -932,21 +945,27 @@ static void remove_managed(Scheme_Custodian_Reference *mr, Scheme_Object *o,
   if (!m)
     return;
 
-  for (i = m->count; i--; ) {
-    if (m->boxes[i] && SAME_OBJ((xCUSTODIAN_FAM(m->boxes[i])),  o)) {
-      xCUSTODIAN_FAM(m->boxes[i]) = 0;
-      m->boxes[i] = NULL;
-      CUSTODIAN_FAM(m->mrefs[i]) = 0;
-      m->mrefs[i] = NULL;
-      if (old_f)
-	*old_f = m->closers[i];
-      if (old_data)
-	*old_data = m->data[i];
-      m->data[i] = NULL;
-      --m->elems;
-      adjust_limit_table(m);
-      break;
+  i = EXTRACT_MREF_START_POSITION(mr, m->count);
+  delta = EXTRACT_MREF_POSITION_DELTA(mr, m->count);
+
+  while (i >= 0) {
+    if (i < m->count) {
+      if (m->boxes[i] && SAME_OBJ((xCUSTODIAN_FAM(m->boxes[i])),  o)) {
+        xCUSTODIAN_FAM(m->boxes[i]) = 0;
+        m->boxes[i] = NULL;
+        CUSTODIAN_FAM(m->mrefs[i]) = 0;
+        m->mrefs[i] = NULL;
+        if (old_f)
+          *old_f = m->closers[i];
+        if (old_data)
+          *old_data = m->data[i];
+        m->data[i] = NULL;
+        --m->elems;
+        adjust_limit_table(m);
+        break;
+      }
     }
+    i -= delta;
   }
 
   while (m->count && !m->boxes[m->count - 1]) {
@@ -1203,6 +1222,36 @@ Scheme_Custodian_Reference *scheme_add_managed(Scheme_Custodian *m, Scheme_Objec
   return mr;
 }
 
+static void chain_close_at_exit(Scheme_Object *o, void *_data)
+/* This closer is recognized specially in scheme_run_atexit_closers() */
+{
+  Scheme_Object *data = (Scheme_Object *)_data;
+  Scheme_Close_Custodian_Client *f;
+  void **fp;
+  
+  fp = (void **)SCHEME_CAR(data);
+  
+  if (fp) {
+    f = (Scheme_Close_Custodian_Client *)*fp;
+    SCHEME_CAR(data) = NULL;
+    f(o, SCHEME_CDR(data));
+  }
+}
+
+Scheme_Custodian_Reference *scheme_add_managed_close_on_exit(Scheme_Custodian *m, Scheme_Object *o, 
+                                                             Scheme_Close_Custodian_Client *f, void *data)
+{
+  void **p;
+
+  p = (void **)scheme_malloc_atomic(sizeof(void *));
+  *p = f;
+
+  return scheme_add_managed(m, o, 
+                            chain_close_at_exit, scheme_make_raw_pair((Scheme_Object *)p, 
+                                                                      (Scheme_Object *)data),
+                            1);
+}
+
 void scheme_remove_managed(Scheme_Custodian_Reference *mr, Scheme_Object *o)
 {
   /* Is this a good idea? I'm not sure: */
@@ -1265,11 +1314,12 @@ Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_F
 	CUSTODIAN_FAM(m->mrefs[i]) = NULL;
 	
 	/* Set m->count to i in case a GC happens while
-	   the closer is running. If there's a GC, then
-	   for_each_managed will be called. */
+	   the closer is running. */
 	m->count = i;
 
-	if (is_thread && !the_thread) {
+        if (!o) {
+          /* weak link disappeared */
+        } else if (is_thread && !the_thread) {
 	  /* Thread is already collected, so skip */
 	} else if (cf) {
 	  cf(o, f, data);
@@ -1357,53 +1407,6 @@ Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_F
   return kill_self;
 }
 
-typedef void (*Scheme_For_Each_Func)(Scheme_Object *);
-
-static void for_each_managed(Scheme_Type type, Scheme_For_Each_Func cf)
-  XFORM_SKIP_PROC
-/* This function must not allocate. */
-{
-  Scheme_Custodian *m;
-  int i;
-
-  if (SAME_TYPE(type, scheme_thread_type))
-    type = scheme_thread_hop_type;
-
-  /* back to front so children are first: */
-  m = last_custodian;
-
-  while (m) {
-    for (i = m->count; i--; ) {
-      if (m->boxes[i]) {
-	Scheme_Object *o;
-
-	o = xCUSTODIAN_FAM(m->boxes[i]);
-      
-	if (SAME_TYPE(SCHEME_TYPE(o), type)) {
-	  if (SAME_TYPE(type, scheme_thread_hop_type)) {
-	    /* We've added an indirection and made it weak. See mr_hop note above. */
-	    Scheme_Thread *t;
-	    t = (Scheme_Thread *)WEAKIFIED(((Scheme_Thread_Custodian_Hop *)o)->p);
-	    if (!t) {
-	      /* The thread is already collected */
-	      continue;
-	    } else if (SAME_OBJ(t->mref, m->mrefs[i]))
-	      o = (Scheme_Object *)t;
-	    else {
-	      /* The main custodian for this thread is someone else */
-	      continue;
-	    }
-	  }
-
-	  cf(o);
-	}
-      }
-    }
-
-    m = CUSTODIAN_FAM(m->global_prev);
-  }
-}
-
 static void do_close_managed(Scheme_Custodian *m)
 /* The trick is that we may need to kill the thread
    that is running us. If so, delay it to the very
@@ -1481,30 +1484,6 @@ int scheme_custodian_is_shut_down(Scheme_Custodian* c)
 static Scheme_Object *extract_thread(Scheme_Object *o)
 {
   return (Scheme_Object *)WEAKIFIED(((Scheme_Thread_Custodian_Hop *)o)->p);
-}
-
-static void pause_place(Scheme_Object *o)
-{
-#ifdef MZ_USE_PLACES
-  scheme_pause_one_place((Scheme_Place *)o);
-#endif
-}
-
-void scheme_pause_all_places()
-{
-  for_each_managed(scheme_place_type, pause_place);
-}
-
-static void resume_place(Scheme_Object *o)
-{
-#ifdef MZ_USE_PLACES
-  scheme_resume_one_place((Scheme_Place *)o);
-#endif
-}
-
-void scheme_resume_all_places()
-{
-  for_each_managed(scheme_place_type, resume_place);
 }
 
 void scheme_init_custodian_extractors()
@@ -1755,6 +1734,9 @@ void scheme_run_atexit_closers(Scheme_Object *o, Scheme_Close_Custodian_Client *
       cf(o, f, data);
     }
   }
+
+  if (f == chain_close_at_exit)
+    f(o, data);
 }
 
 void scheme_run_atexit_closers_on_all(Scheme_Exit_Closer_Func alt)
@@ -2052,6 +2034,9 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
     scheme_first_thread = scheme_main_thread = process;
     process->prev = NULL;
     process->next = NULL;
+
+    gc_prep_thread_chain = process;
+    scheme_current_thread->gc_prep_chain = process;
 
     process->suspend_break = 1; /* until start-up finished */
 
@@ -2444,7 +2429,6 @@ static void do_swap_thread()
   }
 #endif
 
-
   if (!swap_no_setjmp && SETJMP(scheme_current_thread)) {
     /* We're back! */
     /* See also initial swap in in start_child() */
@@ -2537,6 +2521,10 @@ static void do_swap_thread()
 #endif
 
     scheme_current_thread = new_thread;
+    if (!new_thread->gc_prep_chain) {
+      new_thread->gc_prep_chain = gc_prep_thread_chain;
+      gc_prep_thread_chain = new_thread;
+    }
 
     /* Fixup current pointers in thread sets */
     if (!scheme_current_thread->return_marks_to) {
@@ -3292,6 +3280,9 @@ Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], voi
 #endif
   }
 
+  np->gc_prep_chain = gc_prep_thread_chain;
+  gc_prep_thread_chain = np;
+
 #ifdef RUNSTACK_IS_GLOBAL
   MZ_CONT_MARK_STACK = np->cont_mark_stack;
   MZ_CONT_MARK_POS = np->cont_mark_pos;
@@ -3366,6 +3357,11 @@ Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], voi
   thread_is_dead(np);
 
   scheme_current_thread = p;
+
+  if (!p->gc_prep_chain) {
+    p->gc_prep_chain = gc_prep_thread_chain;
+    gc_prep_thread_chain = p;
+  }
 
   if (p != scheme_main_thread)
     scheme_weak_resume_thread(p);
@@ -3840,6 +3836,61 @@ static int check_fd_semaphores()
 #endif
 }
 
+typedef struct {
+  int running;
+  double sleep_end;
+  int block_descriptor;
+  Scheme_Object *blocker;
+  Scheme_Ready_Fun block_check;
+  Scheme_Needs_Wakeup_Fun block_needs_wakeup;
+  Scheme_Kill_Action_Func private_on_kill;
+  void *private_kill_data;
+  void **private_kill_next;
+} Thread_Schedule_State_Record;
+
+static void save_thread_schedule_state(Scheme_Thread *p,
+				       Thread_Schedule_State_Record *s,
+				       int save_kills)
+{
+  s->running = p->running;
+  s->sleep_end = p->sleep_end;
+  s->block_descriptor = p->block_descriptor;
+  s->blocker = p->blocker;
+  s->block_check = p->block_check;
+  s->block_needs_wakeup = p->block_needs_wakeup;
+
+  if (save_kills) {
+    s->private_on_kill = p->private_on_kill;
+    s->private_kill_data = p->private_kill_data;
+    s->private_kill_next = p->private_kill_next;
+  }
+
+  p->running = MZTHREAD_RUNNING;
+  p->sleep_end = 0.0;
+  p->block_descriptor = 0;
+  p->blocker = NULL;
+  p->block_check = NULL;
+  p->block_needs_wakeup = NULL;
+}
+
+static void restore_thread_schedule_state(Scheme_Thread *p,
+					  Thread_Schedule_State_Record *s,
+					  int save_kills)
+{
+  p->running = s->running;
+  p->sleep_end = s->sleep_end;
+  p->block_descriptor = s->block_descriptor;
+  p->blocker = s->blocker;
+  p->block_check = s->block_check;
+  p->block_needs_wakeup = s->block_needs_wakeup;
+
+  if (save_kills) {
+    p->private_on_kill = s->private_on_kill;
+    p->private_kill_data = s->private_kill_data;
+    p->private_kill_next = s->private_kill_next;
+  }
+}
+
 static int check_sleep(int need_activity, int sleep_now)
 /* Signals should be suspended */
 {
@@ -3921,7 +3972,11 @@ static int check_sleep(int need_activity, int sleep_now)
         needs_sleep_time_end = -1.0;
 	if (p->block_needs_wakeup) {
 	  Scheme_Needs_Wakeup_Fun f = p->block_needs_wakeup;
-	  f(p->blocker, fds);
+	  Scheme_Object *blocker = p->blocker;
+	  Thread_Schedule_State_Record ssr;
+	  save_thread_schedule_state(scheme_current_thread, &ssr, 0);
+	  f(blocker, fds);
+	  restore_thread_schedule_state(scheme_current_thread, &ssr, 0);
 	}
         p_time = p->sleep_end;
 	merge_time = (p_time > 0.0);
@@ -4150,7 +4205,7 @@ void scheme_pop_break_enable(Scheme_Cont_Frame_Data *cframe, int post_check)
   }
 }
 
-static Scheme_Object *raise_user_break(int argc, Scheme_Object ** volatile argv)
+static Scheme_Object *raise_user_break(void *data, int argc, Scheme_Object ** volatile argv)
 {
   /* The main action here is buried in code to free temporary bignum
      space on escapes. Aside from a thread kill, this is the only
@@ -4161,6 +4216,9 @@ static Scheme_Object *raise_user_break(int argc, Scheme_Object ** volatile argv)
      that's why we save and restore an old snapshot. */
   mz_jmp_buf *savebuf, newbuf;
   intptr_t save[4];
+  int kind;
+
+  kind = SCHEME_INT_VAL((Scheme_Object *)data);
 
   savebuf = scheme_current_thread->error_buf;
   scheme_current_thread->error_buf = &newbuf;
@@ -4168,7 +4226,11 @@ static Scheme_Object *raise_user_break(int argc, Scheme_Object ** volatile argv)
 
   if (!scheme_setjmp(newbuf)) {
     /* >>>> This is the main action <<<< */
-    scheme_raise_exn(MZEXN_BREAK, argv[0], "user break");
+    scheme_raise_exn(kind, argv[0], ((kind == MZEXN_BREAK_TERMINATE)
+                                     ? "terminate break"
+                                     : ((kind == MZEXN_BREAK_HANG_UP)
+                                        ? "hang-up break"
+                                        : "user break")));
     /* will definitely escape (or thread will die) */
   } else {
     /* As expected, we're escaping. Unless we're continuing, then
@@ -4186,13 +4248,12 @@ static Scheme_Object *raise_user_break(int argc, Scheme_Object ** volatile argv)
 
 static void raise_break(Scheme_Thread *p)
 {
-  int block_descriptor;
-  Scheme_Object *blocker; /* semaphore or port */
-  Scheme_Ready_Fun block_check;
-  Scheme_Needs_Wakeup_Fun block_needs_wakeup;
+  Thread_Schedule_State_Record ssr;
   Scheme_Object *a[1];
   Scheme_Cont_Frame_Data cframe;
+  int kind;
 
+  kind = p->external_break;
   p->external_break = 0;
 
   if (p->blocker && (p->block_check == (Scheme_Ready_Fun)syncing_ready)) {
@@ -4200,18 +4261,10 @@ static void raise_break(Scheme_Thread *p)
     scheme_post_syncing_nacks((Syncing *)p->blocker);
   }
 
-  block_descriptor = p->block_descriptor;
-  blocker = p->blocker;
-  block_check = p->block_check;
-  block_needs_wakeup = p->block_needs_wakeup;
-  
-  p->block_descriptor = NOT_BLOCKED;
-  p->blocker = NULL;
-  p->block_check = NULL;
-  p->block_needs_wakeup = NULL;
+  save_thread_schedule_state(p, &ssr, 0);
   p->ran_some = 1;
   
-  a[0] = scheme_make_prim((Scheme_Prim *)raise_user_break);
+  a[0] = scheme_make_closed_prim((Scheme_Closed_Prim *)raise_user_break, scheme_make_integer(kind));
 
   /* Continuation frame ensures that this doesn't
      look like it's in tail position with respect to
@@ -4223,10 +4276,7 @@ static void raise_break(Scheme_Thread *p)
   scheme_pop_continuation_frame(&cframe);
 
   /* Continue from break... */
-  p->block_descriptor = block_descriptor;
-  p->blocker = blocker;
-  p->block_check = block_check;
-  p->block_needs_wakeup = block_needs_wakeup;
+  restore_thread_schedule_state(p, &ssr, 0);
 }
 
 static void escape_to_kill(Scheme_Thread *p)
@@ -4263,14 +4313,22 @@ static void exit_or_escape(Scheme_Thread *p)
   select_thread();
 }
 
-void scheme_break_main_thread_at(void *p)
+void scheme_break_kind_main_thread_at(void *p, int kind)
 /* This function can be called from an interrupt handler. 
    On some platforms, it will even be called from multiple
    OS threads. In the case of multiple threads, there's a
    tiny chance that a single Ctl-C will trigger multiple
    break exceptions. */
+  XFORM_SKIP_PROC
 {
-  *(volatile short *)p = 1;
+  if (kind > *(volatile short *)p)
+    *(volatile short *)p = kind;
+}
+
+void scheme_break_main_thread_at(void *p)
+  XFORM_SKIP_PROC
+{
+  scheme_break_kind_main_thread_at(p, MZEXN_BREAK);
 }
 
 void scheme_break_main_thread()
@@ -4302,13 +4360,14 @@ static void check_ready_break()
 
   if (delayed_break_ready) {
     if (scheme_main_thread) {
+      int kind = delayed_break_ready;
       delayed_break_ready = 0;
-      scheme_break_thread(main_break_target_thread);
+      scheme_break_kind_thread(main_break_target_thread, kind);
     }
   }
 }
 
-void scheme_break_thread(Scheme_Thread *p)
+void scheme_break_kind_thread(Scheme_Thread *p, int kind)
 {
   if (!p) {
     p = scheme_main_thread;
@@ -4321,7 +4380,8 @@ void scheme_break_thread(Scheme_Thread *p)
     p = p->nestee;
   }
 
-  p->external_break = 1;
+  if (kind > p->external_break)
+    p->external_break = kind;
 
   if (p == scheme_current_thread) {
     if (scheme_can_break(p)) {
@@ -4336,40 +4396,20 @@ void scheme_break_thread(Scheme_Thread *p)
 # endif
 }
 
+void scheme_break_thread(Scheme_Thread *p)
+{
+  return scheme_break_kind_thread(p, MZEXN_BREAK);
+}
+
 static void call_on_atomic_timeout(int must)
 {
   Scheme_Thread *p = scheme_current_thread;
-  int running;
-  double sleep_end;
-  int block_descriptor;
-  Scheme_Object *blocker;
-  Scheme_Ready_Fun block_check;
-  Scheme_Needs_Wakeup_Fun block_needs_wakeup;
-  Scheme_Kill_Action_Func private_on_kill;
-  void *private_kill_data;
-  void **private_kill_next;
+  Thread_Schedule_State_Record ssr;
   Scheme_On_Atomic_Timeout_Proc oat;
 
   /* Save any state that has to do with the thread blocking or 
      sleeping, in case on_atomic_timeout() runs Racket code. */
-
-  running = p->running;
-  sleep_end = p->sleep_end;
-  block_descriptor = p->block_descriptor;
-  blocker = p->blocker;
-  block_check = p->block_check;
-  block_needs_wakeup = p->block_needs_wakeup;
-
-  private_on_kill = p->private_on_kill;
-  private_kill_data = p->private_kill_data;
-  private_kill_next = p->private_kill_next;
-
-  p->running = MZTHREAD_RUNNING;
-  p->sleep_end = 0.0;
-  p->block_descriptor = 0;
-  p->blocker = NULL;
-  p->block_check = NULL;
-  p->block_needs_wakeup = NULL;
+  save_thread_schedule_state(p, &ssr, 1);
 
   /* When on_atomic_timeout is thread-local, need a
      local variable so that the function call isn't
@@ -4377,16 +4417,7 @@ static void call_on_atomic_timeout(int must)
   oat = on_atomic_timeout;
   oat(must);
 
-  p->running = running;
-  p->sleep_end = sleep_end;
-  p->block_descriptor = block_descriptor;
-  p->blocker = blocker;
-  p->block_check = block_check;
-  p->block_needs_wakeup = block_needs_wakeup;
-
-  p->private_on_kill = private_on_kill;
-  p->private_kill_data = private_kill_data;
-  p->private_kill_next = private_kill_next;
+  restore_thread_schedule_state(p, &ssr, 1);
 }
 
 static void find_next_thread(Scheme_Thread **return_arg) {
@@ -4460,9 +4491,19 @@ static void find_next_thread(Scheme_Thread **return_arg) {
       if (next->block_descriptor == GENERIC_BLOCKED) {
         if (next->block_check) {
           Scheme_Ready_Fun_FPC f = (Scheme_Ready_Fun_FPC)next->block_check;
+	  Scheme_Object *blocker = next->blocker;
           Scheme_Schedule_Info sinfo;
+	  Thread_Schedule_State_Record ssr;
+	  int b;
+
+	  save_thread_schedule_state(p, &ssr, 0);
+
           init_schedule_info(&sinfo, next, 1, next->sleep_end);
-          if (f(next->blocker, &sinfo))
+	  b = f(blocker, &sinfo);
+	  
+	  restore_thread_schedule_state(p, &ssr, 0);
+
+          if (b)
             break;
           next->sleep_end = sinfo.sleep_end;
           msecs = 0.0; /* that could have taken a while */
@@ -4614,9 +4655,19 @@ void scheme_thread_block(float sleep_time)
     if (!do_atomic && (p->block_descriptor == GENERIC_BLOCKED)) {
       if (p->block_check) {
         Scheme_Ready_Fun_FPC f = (Scheme_Ready_Fun_FPC)p->block_check;
+	Scheme_Object *blocker = p->blocker;
         Scheme_Schedule_Info sinfo;
+	Thread_Schedule_State_Record ssr;
+	int b;
+
+	save_thread_schedule_state(p, &ssr, 0);
+
         init_schedule_info(&sinfo, p, 1, sleep_end);
-        if (f(p->blocker, &sinfo)) {
+	b = f(blocker, &sinfo);
+
+	restore_thread_schedule_state(p, &ssr, 0);
+
+        if (b) {
           sleep_end = 0;
           skip_sleep = 1;
         } else {
@@ -4752,9 +4803,19 @@ void scheme_thread_block(float sleep_time)
       if (p->block_descriptor == GENERIC_BLOCKED) {
 	if (p->block_check) {
 	  Scheme_Ready_Fun_FPC f = (Scheme_Ready_Fun_FPC)p->block_check;
+	  Scheme_Object *blocker = p->blocker;
 	  Scheme_Schedule_Info sinfo;
+	  Thread_Schedule_State_Record ssr;
+	  int b;
+	  
+	  save_thread_schedule_state(p, &ssr, 0);
+
 	  init_schedule_info(&sinfo, p, 1, sleep_end);
-	  if (f(p->blocker, &sinfo)) {
+	  b = f(blocker, &sinfo);
+
+	  restore_thread_schedule_state(p, &ssr, 0);
+
+	  if (b) {
 	    sleep_end = 0;
 	  } else {
 	    sleep_end = sinfo.sleep_end;
@@ -5076,19 +5137,29 @@ sch_sleep(int argc, Scheme_Object *args[])
 static Scheme_Object *break_thread(int argc, Scheme_Object *args[])
 {
   Scheme_Thread *p;
+  int kind = MZEXN_BREAK;
 
   if (!SAME_TYPE(SCHEME_TYPE(args[0]), scheme_thread_type))
     scheme_wrong_contract("break-thread", "thread?", 0, argc, args);
 
+  if ((argc > 1) && SCHEME_TRUEP(args[1])) {
+    if (SCHEME_SYMBOLP(args[1]) 
+        && !SCHEME_SYM_WEIRDP(args[1]) 
+        && !strcmp(SCHEME_SYM_VAL(args[1]), "hang-up"))
+      kind = MZEXN_BREAK_HANG_UP;
+    else if (SCHEME_SYMBOLP(args[1]) 
+             && !SCHEME_SYM_WEIRDP(args[1]) 
+             && !strcmp(SCHEME_SYM_VAL(args[1]), "terminate"))
+      kind = MZEXN_BREAK_TERMINATE;
+    else
+      scheme_wrong_contract("break-thread", "(or/c #f 'hang-up 'terminate)", 1, argc, args);
+  }
+
   p = (Scheme_Thread *)args[0];
 
-  scheme_break_thread(p);
+  scheme_break_kind_thread(p, kind);
 
-  /* In case p == scheme_current_thread */
-  if (!scheme_fuel_counter) {
-    scheme_thread_block(0.0);
-    scheme_current_thread->ran_some = 1;
-  }
+  scheme_check_break_now();
 
   return scheme_void;
 }
@@ -8054,6 +8125,8 @@ static void prepare_thread_for_GC(Scheme_Object *t)
 {
   Scheme_Thread *p = (Scheme_Thread *)t;
 
+  if (!p->running) return;
+
   /* zero ununsed part of env stack in each thread */
 
   if (!p->nestee) {
@@ -8226,7 +8299,20 @@ static void get_ready_for_GC()
   }
 #endif
 
-  for_each_managed(scheme_thread_type, prepare_thread_for_GC);
+  /* Prepare each thread that has run: */
+  if (gc_prep_thread_chain) {
+    Scheme_Thread *p, *next;
+    p = gc_prep_thread_chain;
+    while (p != p->gc_prep_chain) {
+      prepare_thread_for_GC((Scheme_Object *)p);
+      next = p->gc_prep_chain;
+      p->gc_prep_chain = NULL;
+      p = next;
+    }
+    prepare_thread_for_GC((Scheme_Object *)p);
+    p->gc_prep_chain = NULL;
+    gc_prep_thread_chain = NULL;
+  }
 
 #ifdef MZ_PRECISE_GC
   scheme_flush_stack_copy_cache();
@@ -8276,6 +8362,9 @@ static void done_with_GC()
   end_this_gc_time = scheme_get_process_milliseconds();
   end_this_gc_real_time = scheme_get_inexact_milliseconds();
   scheme_total_gc_time += (end_this_gc_time - start_this_gc_time);
+
+  gc_prep_thread_chain = scheme_current_thread;
+  scheme_current_thread->gc_prep_chain = scheme_current_thread;
 
   run_gc_callbacks(0);
 

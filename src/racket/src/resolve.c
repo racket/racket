@@ -1211,8 +1211,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
           Scheme_App2_Rec *app = (Scheme_App2_Rec *)((Scheme_Let_One *)body)->body;
           if (SAME_TYPE(SCHEME_TYPE(app->rand), scheme_local_type)
               && (SCHEME_LOCAL_POS(app->rand) == 1)) {
-            if ((SCHEME_TYPE(app->rator) > _scheme_values_types_)
-                && !scheme_wants_flonum_arguments(app->rator, 0, 1)) {
+            if (SCHEME_TYPE(app->rator) > _scheme_values_types_) {
               /* Move <expr> to app, and drop let-one: */
               app->rand = ((Scheme_Let_One *)body)->value;
               scheme_reset_app2_eval_type(app);

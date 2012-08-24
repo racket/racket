@@ -76,7 +76,7 @@ UTF-8 for encoding.
 
 @defparam[current-locale locale (or/c string? #f)]{
 
-A parameter that determines the current @tech{locale} for
+A @tech{parameter} that determines the current @tech{locale} for
 procedures such as @racket[string-locale-ci=?].
 
 When locale sensitivity is disabled by setting the parameter to

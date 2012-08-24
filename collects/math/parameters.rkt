@@ -1,15 +1,13 @@
 #lang typed/racket/base
 
-(require/typed
- racket/future
- [processor-count  (-> Positive-Integer)])
+(require racket/future)
 
 (provide max-math-threads
          dft-convention
          dft-inverse-convention)
 
 (: max-math-threads (Parameterof Positive-Integer))
-(define max-math-threads (make-parameter (processor-count)))
+(define max-math-threads (make-parameter (max 1 (processor-count))))
 
 (: dft-convention (Parameterof (List Real Real)))
 (define dft-convention (make-parameter (list 1 -1)))

@@ -20,40 +20,34 @@ database and perform simple queries. Some of the SQL syntax used below
 is PostgreSQL-specific, such as the syntax of query parameters
 (@litchar{$1} rather than @litchar{?}).
 
-@my-interaction[
-[(require db)
- (void)]
+@interaction[#:eval the-eval
+(require db)
 ]
 
 First we create a connection. Replace @racket[_user], @racket[_db],
 and @racket[_password] below with the appropriate values for your
 configuration (see @secref{creating-connections} for other connection examples):
 
-@my-interaction[
-[(define pgc
+@interaction[#:eval the-eval
+(eval:alts
+ (define pgc
    (postgresql-connect #:user _user
                        #:database _db
                        #:password _password))
- (void)]
-[pgc
- (new connection%)]
+ (define pgc (dsn-connect 'db-scribble-env)))
 ]
 
 Use @racket[query-exec] method to execute a SQL statement for effect.
 
-@my-interaction[
-[(query-exec pgc
-  "create temporary table the_numbers (n integer, d varchar(20))")
- (void)]
-[(query-exec pgc
-   "insert into the_numbers values (0, 'nothing')")
- (void)]
-[(query-exec pgc 
-   "insert into the_numbers values (1, 'the loneliest number')")
- (void)]
-[(query-exec pgc
-   "insert into the_numbers values (2, 'company')")
- (void)]
+@interaction[#:eval the-eval
+(query-exec pgc
+ "create temporary table the_numbers (n integer, d varchar(20))")
+(query-exec pgc
+  "insert into the_numbers values (0, 'nothing')")
+(query-exec pgc 
+  "insert into the_numbers values (1, 'the loneliest number')")
+(query-exec pgc
+  "insert into the_numbers values (2, 'company')")
 ]
 
 The @racket[query] function is a more general way to execute a
@@ -61,121 +55,95 @@ statement. It returns a structure encapsulating information about the
 statement's execution. (But some of that information varies from
 system to system and is subject to change.)
 
-@my-interaction[
-[(query pgc "insert into the_numbers values (3, 'a crowd')")
- (simple-result '((command insert 0 1)))]
-[(query pgc "select n, d from the_numbers where n % 2 = 0")
- (rows-result
-  (list
-   '((name . "n") (typeid . 23))
-   '((name . "d") (typeid . 1043)))
-  '(#(0 "nothing") #(2 "company")))]
+@interaction[#:eval the-eval
+(query pgc "insert into the_numbers values (3, 'a crowd')")
+(query pgc "select n, d from the_numbers where n % 2 = 0")
 ]
 
 When the query is known to return rows and when the field
 descriptions are not needed, it is more convenient to use the
 @racket[query-rows] function.
 
-@my-interaction[
-[(query-rows pgc "select n, d from the_numbers where n % 2 = 0")
- '(#(0 "nothing") #(2 "company"))]
+@interaction[#:eval the-eval
+(query-rows pgc "select n, d from the_numbers where n % 2 = 0")
 ]
 
 Use @racket[query-row] for queries that are known to return exactly
 one row.
 
-@my-interaction[
-[(query-row pgc "select * from the_numbers where n = 0")
- (vector 0 "nothing")]
+@interaction[#:eval the-eval
+(query-row pgc "select * from the_numbers where n = 0")
 ]
 
 Similarly, use @racket[query-list] for queries that produce rows of
 exactly one column.
 
-@my-interaction[
-[(query-list pgc "select d from the_numbers order by n")
- (list "nothing" "the loneliest number" "company" "a crowd")]
+@interaction[#:eval the-eval
+(query-list pgc "select d from the_numbers order by n")
 ]
 
 When a query is known to return a single value (one row and one
 column), use @racket[query-value].
 
-@my-interaction[
-[(query-value pgc "select count(*) from the_numbers")
- 4]
-[(query-value pgc "select d from the_numbers where n = 5")
- (error 'query-value
-        "query returned zero rows: ~s"
-        "select d from the_numbers where n = 5")]
+@interaction[#:eval the-eval
+(query-value pgc "select count(*) from the_numbers")
+(query-value pgc "select d from the_numbers where n = 5")
 ]
 
 When a query may return zero or one rows, as the last example, use
 @racket[query-maybe-row] or @racket[query-maybe-value] instead.
 
-@my-interaction[
-[(query-maybe-value pgc "select d from the_numbers where n = 5")
- (values #f)]
+@interaction[#:eval the-eval
+(query-maybe-value pgc "select d from the_numbers where n = 5")
 ]
 
 The @racket[in-query] function produces a sequence that can be used
 with Racket's iteration forms:
 
-@my-interaction[
-[(for ([(n d) (in-query pgc "select * from the_numbers where n < 4")])
-   (printf "~a is ~a\n" n d))
- (for-each (lambda (n d) (printf "~a: ~a\n" n d))
-           '(0 1 2 3)
-           '("nothing" "the loneliest number" "company" "a crowd"))]
-[(for/fold ([sum 0]) ([n (in-query pgc "select n from the_numbers")])
-   (+ sum n))
- (for/fold ([sum 0]) ([n (in-list '(0 1 2 3))])
-   (+ sum n))]
+@interaction[#:eval the-eval
+(for ([(n d) (in-query pgc "select * from the_numbers where n < 4")])
+  (printf "~a: ~a\n" n d))
+(for/fold ([sum 0]) ([n (in-query pgc "select n from the_numbers")])
+  (+ sum n))
 ]
 
 Errors in queries generally do not cause the connection to disconnect.
 
-@my-interaction[
-[(begin (with-handlers [(exn:fail?
-                         (lambda (e)
-                           (printf "~a~n" (exn-message e))))]
-          (query-value pgc "select NoSuchField from NoSuchTable"))
-        (query-value pgc "select 'okay to proceed!'"))
- (begin (display "query-value: relation \"nosuchtable\" does not exist (SQLSTATE 42P01)")
-        "okay to proceed!")]
+@interaction[#:eval the-eval
+(begin (with-handlers [(exn:fail?
+                       (lambda (e)
+                         (printf "~a~n" (exn-message e))))]
+         (query-value pgc "select NoSuchField from NoSuchTable"))
+       (query-value pgc "select 'okay to proceed!'"))
 ]
 
 Queries may contain parameters. The easiest way to execute a
 parameterized query is to provide the parameters ``inline'' after the
 SQL statement in the query function call.
 
-@my-interaction[
-[(query-value pgc
-  "select d from the_numbers where n = $1" 2)
- "company"]
-[(query-list pgc
-  "select n from the_numbers where n > $1 and n < $2" 0 3)
- (list 1 2)]
+@interaction[#:eval the-eval
+(query-value pgc
+ "select d from the_numbers where n = $1" 2)
+(query-list pgc
+ "select n from the_numbers where n > $1 and n < $2" 0 3)
 ]
 
 Alternatively, a parameterized query may be prepared in advance and
 executed later. @tech{Prepared statements} can be executed multiple
 times with different parameter values.
 
-@my-interaction[
-[(define get-less-than-pst
-   (prepare pgc "select n from the_numbers where n < $1"))
- (void)]
-[(query-list pgc get-less-than-pst 1)
- (list 0)]
-[(query-list pgc (bind-prepared-statement get-less-than-pst '(2)))
- (list 0 1)]
+@interaction[#:eval the-eval
+(define get-less-than-pst
+  (prepare pgc "select n from the_numbers where n < $1"))
+(query-list pgc get-less-than-pst 1)
+(query-list pgc (bind-prepared-statement get-less-than-pst '(2)))
 ]
 
 When a connection's work is done, it should be disconnected.
 
-@my-interaction[
-[(disconnect pgc)
- (void)]
+@;{ Don't actually disconnect; use this connection for the rest of the examples. }
+@interaction[#:eval the-eval
+(eval:alts (disconnect pgc) (void))
 ]
 
 
@@ -480,32 +448,3 @@ web-server
 By using a virtual connection backed by a connection pool, a servlet
 can achieve simplicity, isolation, and performance all at the same
 time.
-
-@;{
-
-TODO:
- - talk about virtual statements, too
- - show actual working servlet code
-
---
-
-A prepared statement is tied to the connection used to create it;
-attempting to use it with another connection results in an
-error. Unfortunately, in some scenarios such as web servlets, the
-lifetimes of connections are short or difficult to track, making
-prepared statements inconvenient. In such cases, a better tool is the
-@tech{virtual statement}, which prepares statements on demand and
-caches them for future use with the same connection.
-
-@my-interaction[
-[(define get-less-than-pst
-   (virtual-statement "select n from the_numbers where n < $1"))
- (void)]
-[(code:line (query-list pgc1 get-less-than-pst 1) (code:comment "prepares statement for pgc1"))
- (list 0)]
-[(code:line (query-list pgc2 get-less-than-pst 2) (code:comment "prepares statement for pgc2"))
- (list 0 1)]
-[(code:line (query-list pgc1 get-less-than-pst 3) (code:comment "uses existing prep. stmt."))
- (list 0 1 2)]
-]
-}

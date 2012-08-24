@@ -4,9 +4,7 @@
          (for-syntax scheme/base)
          (for-template scheme/base)
          (private type-contract)
-         (rep type-rep filter-rep object-rep)
-         (types utils union convenience)
-         (utils tc-utils)
+         (types abbrev numeric-tower)
          rackunit)
 
 (define-syntax-rule (t e)
@@ -14,7 +12,8 @@
 
 (define (contract-tests)
   (test-suite "Contract Tests"
-              (t (-Number . -> . -Number))))
+              (t (-Number . -> . -Number))
+              (t (-Promise -Number))))
 
 (define-go contract-tests)
 (provide contract-tests)

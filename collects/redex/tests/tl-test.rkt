@@ -435,6 +435,25 @@
     (exec-runtime-error-tests "run-err-tests/define-union-language.rktd"))
   
   (exec-syntax-error-tests "syn-err-tests/language-definition.rktd")
+  
+  ;; term with #:lang tests
+  (exec-syntax-error-tests "syn-err-tests/term-lang.rktd")
+  
+  (let ()
+    (define-language L
+      (a number)
+      (b (a a))
+      (c (b b)))
+    (test (term 1 #:lang L) 1)
+    (test (term ((1 2) (3 4)) #:lang L) '((1 2) (3 4)))
+    (test (term (1 2 3 4) #:lang L) '(1 2 3 4))
+    (test (redex-let L ([a_1 5])
+                     (term (a_1 6) #:lang L))
+          '(5 6))
+    (test (redex-let L ([number_1 5])
+                     (term (number_1 6) #:lang L))
+          '(5 6)))
+    
 ;                                                                                             
 ;                                                                                             
 ;                                 ;;;                                ;                        
@@ -2047,6 +2066,19 @@
       (test (judgment-holds (sumi ,'z (s z) (s z))) #t)
       
       (define-judgment-form nats
+        #:mode (sumi2 I I O)
+        #:contract (sumi2 n n n)
+        [------------- sumz ;; symbol name
+         (sumi2 z n n)]
+        [(sumi2 n_1 n_2 n_3)
+         ---------------------------  "sumn" ;; string name
+         (sumi2 (s n_1) n_2 (s n_3))])
+      (test (judgment-holds (sumi2 z (s z) n) n)
+            (list (term (s z))))
+      (test (judgment-holds (sumi2 (s (s z)) (s z) n) n)
+            (list (term (s (s (s z))))))
+
+      (define-judgment-form nats
         #:mode (sumo O O I)
         #:contract (sumo n n n)
         [(sumo z n n)]
@@ -2182,7 +2214,7 @@
       
       (test (judgment-holds (map-add-some-one (z (s z) (s (s z))) (n ...))
                             (n ...))
-            (list (term ((s z) (s (s z)) (s (s (s z)))))))      
+            (list (term ((s z) (s (s z)) (s (s (s z)))))))
       
       (define-judgment-form nats
         #:mode (hyphens I)

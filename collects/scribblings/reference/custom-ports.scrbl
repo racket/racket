@@ -164,13 +164,15 @@ The arguments implement the port as follows:
 
      ]
 
-    The results and conventions for @racket[peek] are
-    mostly the same as for @racket[read-in]. The main difference is in
-    the handling of the progress event, if it is not @racket[#f].  If
-    the given progress event becomes ready, the
-    @racket[peek] must abort any skip attempts and not peek
-    any values. In particular, @racket[peek] must not peek
-    any values if the progress event is initially ready.
+    The results and conventions for @racket[peek] are mostly the same
+    as for @racket[read-in]. The main difference is in the handling of
+    the progress event, if it is not @racket[#f].  If the given
+    progress event becomes ready, the @racket[peek] must abort any
+    skip attempts and not peek any values. In particular,
+    @racket[peek] must not peek any values if the progress event is
+    initially ready. If the port has been closed, the progress event
+    should be ready, in which case @racket[peek] should complete
+    (instead of failing because the port is closed).
     
     Unlike @racket[read-in], @racket[peek] should produce
     @racket[#f] (or an event whose value is @racket[#f]) if no bytes
@@ -219,7 +221,8 @@ The arguments implement the port as follows:
   @item{@racket[get-progress-evt] --- either @racket[#f] (the
     default), or a procedure that takes no arguments and returns an
     event. The event must become ready only after data is next read
-    from the port or the port is closed. After the event becomes
+    from the port or the port is closed. If the port is already closed,
+    the event must be ready. After the event becomes
     ready, it must remain so. See the description of @racket[read-in]
     for information about the allowed results of this function when
     @racket[read-in] returns a pipe input port. See also

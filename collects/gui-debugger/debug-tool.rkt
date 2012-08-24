@@ -1337,7 +1337,7 @@
                               (when (and paragraph expr)
                                 (send (get-current-tab) move-to-frame paragraph))]
                              [else (void)]))))))
-          (set! variables-text (new text% [auto-wrap #t]))
+          (set! variables-text (new text% [auto-wrap #f]))
           (let ([stack-frames-panel (make-object vertical-panel% stack-view-panel)])
             (new message% [parent stack-frames-panel] [label "Stack"])
             (new editor-canvas% [parent stack-frames-panel] [editor stack-frames] [style '(no-hscroll)]))

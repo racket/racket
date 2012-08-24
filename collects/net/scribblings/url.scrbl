@@ -316,14 +316,17 @@ empty string, or it will be a string matching the following regexp:
 @defproc[(get-pure-port/headers
           [url url?]
           [headers (listof string?) '()]
-          [#:redirections redirections exact-nonnegative-integer? 0])
+          [#:redirections redirections exact-nonnegative-integer? 0]
+          [#:status? status? boolean? #f])
          (values input-port? string?)]{
   This function is an alternative to calling @racket[get-impure-port] and
   @racket[purify-port] when needing to follow redirections.
   
   That is, it does a GET request on @racket[url], follows up to
   @racket[redirections] redirections and returns a port containing
-  the data as well as the headers for the final connection.
+  the data as well as the headers for the final connection. If 
+  @racket[status?] is true, then the status line is included in the
+  result string.
 }
 
 @defproc*[([(call/input-url [URL url?]

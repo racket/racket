@@ -4,7 +4,7 @@
 	 (rep type-rep)
 	 (utils tc-utils)
 	 (env global-env)
-         (except-in (types subtype union convenience resolve utils generalize) -> ->* one-of/c)
+         (except-in (types subtype union resolve utils generalize))
          (private parse-type)
          (contract-req)
          racket/match)
@@ -24,14 +24,6 @@
 (define type-label-symbol 'type-label)
 (define type-ascrip-symbol 'type-ascription)
 (define type-dotted-symbol 'type-dotted)
-
-(define (print-size stx)
-  (syntax-case stx ()
-    [(a . b) (begin
-               (printf/log "Annotation Sexp Pair \n")
-               (print-size #'a)
-               (print-size #'b))]
-    [_ (printf/log "Annotation Sexp \n")]))
 
 ;; get the type annotation of this syntax
 ;; syntax -> Maybe[Type]
@@ -91,13 +83,6 @@
                                   last))
                               #f))]
                      [else #f])))
-
-(define (log/ann stx ty)
-  (printf/log "Required Annotated Variable: ~a ~a\n" (syntax-e stx) ty))
-(define (log/extra stx ty ty2)
-  (printf/log "Extra Annotated Variable: ~a ~a ~a\n" (syntax-e stx) ty ty2))
-(define (log/noann stx ty)
-  (printf/log "Unannotated Variable: ~a ~a\n" (syntax-e stx) ty))
 
 ;; get the type annotation of this identifier, otherwise error
 ;; if #:default is provided, return that instead of error

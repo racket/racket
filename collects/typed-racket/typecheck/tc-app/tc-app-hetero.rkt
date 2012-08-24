@@ -15,7 +15,7 @@
          ;; end fixme
          (for-syntax syntax/parse scheme/base (utils tc-utils))
          (private type-annotation)
-         (types utils abbrev union subtype resolve convenience type-table substitute generalize)
+         (types utils abbrev numeric-tower union subtype resolve type-table substitute generalize)
          (utils tc-utils)
          (only-in srfi/1 alist-delete)
          (except-in (env type-env-structs tvar-env index-env) extend)
@@ -39,7 +39,7 @@
   (syntax-parse expr
    [((~literal quote) i:number)
     (let ((type (tc-literal #'i)))
-      (add-typeof-expr expr type)
+      (add-typeof-expr expr (ret type))
       (values type (syntax-e #'i)))]
    [_
     (match (tc-expr expr)
@@ -89,13 +89,7 @@
        name (match i-t [(tc-result1: t) t]))]
     [else
      (single-value val-e)
-     (index-error i-val i-bound i-e vec-t expected) name]))
-
-
-(define-syntax-class special-op
-  (pattern i:identifier
-           #:when (or (syntax-property #'i 'type-inst)
-                      (syntax-property #'i 'type-ascription))))
+     (index-error i-val i-bound i-e vec-t expected name)]))
 
 (define (tc/app-hetero form expected)
   (syntax-parse form

@@ -1,6 +1,6 @@
 #lang racket/base
 
-;; compatibility library, see compatibility/mpair
+;; compatibility library, see compatibility/mlist
 
-(require compatibility/mpair)
-(provide (all-from-out compatibility/mpair))
+(require compatibility/mlist)
+(provide (all-from-out compatibility/mlist))

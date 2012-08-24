@@ -78,7 +78,7 @@ by @racket[read-eval-print-loop].}
 
 @defparam[pretty-print-columns width (or/c exact-positive-integer? 'infinity)]{
 
-A parameter that determines the default width for pretty printing.
+A @tech{parameter} that determines the default width for pretty printing.
 
 If the display width is @racket['infinity], then pretty-printed output
 is never broken into lines, and a newline is not added to the end of
@@ -97,14 +97,14 @@ depths.}
 
 @defboolparam[pretty-print-exact-as-decimal as-decimal?]{
 
-A parameter that determines how exact non-integers are printed.  If
+A @tech{parameter} that determines how exact non-integers are printed.  If
 the parameter's value is @racket[#t], then an exact non-integer with a
 decimal representation is printed as a decimal number instead of a
 fraction. The initial value is @racket[#f].}
 
 @defboolparam[pretty-print-.-symbol-without-bars on?]{
 
-A parameter that controls the printing of the symbol whose print name
+A @tech{parameter} that controls the printing of the symbol whose print name
 is just a period. If set to a true value, then such a symbol is
 printed as only the period.  If set to a false value, it is printed as
 a period with vertical bars surrounding it.}
@@ -112,7 +112,7 @@ a period with vertical bars surrounding it.}
 
 @defboolparam[pretty-print-show-inexactness show?]{
 
-A parameter that determines how inexact numbers are printed.  If the
+A @tech{parameter} that determines how inexact numbers are printed.  If the
 parameter's value is @racket[#t], then inexact numbers are always
 printed with a leading @litchar{#i}. The initial value is @racket[#f].}
 
@@ -123,7 +123,7 @@ printed with a leading @litchar{#i}. The initial value is @racket[#f].}
 
 @defboolparam[pretty-print-abbreviate-read-macros abbrev?]{
 
-A parameter that controls whether or not @racketidfont{quote},
+A @tech{parameter} that controls whether or not @racketidfont{quote},
 @racketidfont{unquote}, @racketidfont{unquote-splicing}, @|etc|, are
 abbreviated with @litchar{'}, @litchar{,}, @litchar[",@"], etc. 
 By default, the abbreviations are enabled.
@@ -140,7 +140,7 @@ Returns @racket[#t] if @racket[v] is a style table for use with
 
 @defparam[pretty-print-current-style-table style-table pretty-print-style-table?]{
 
-A parameter that holds a table of style mappings. See
+A @tech{parameter} that holds a table of style mappings. See
 @racket[pretty-print-extend-style-table].}
 
 
@@ -191,7 +191,7 @@ so that the output follows popular code-formatting rules:
           proc 
           (any/c . -> . (or/c symbol? #f))]{
 
-A parameter that controls remapping for styles and for the determination of 
+A @tech{parameter} that controls remapping for styles and for the determination of 
 the reader shorthands.
 
 This procedure is
@@ -227,7 +227,7 @@ target column width, typically obtained from
            . -> .
            exact-nonnegative-integer?)]{
 
-A parameter that determines a procedure for printing the newline
+A @tech{parameter} that determines a procedure for printing the newline
 separator between lines of a pretty-printed value. The procedure is
 called with four arguments: a new line number, an output port, the old
 line's length, and the number of destination columns. The return value
@@ -270,7 +270,7 @@ redirected to the port supplied to @racket[pretty-print] or
            . -> . 
            (or/c #f exact-nonnegative-integer?))]{
 
-A parameter that determines a sizing hook for pretty-printing.
+A @tech{parameter} that determines a sizing hook for pretty-printing.
 
 The sizing hook is applied to each value to be printed. If the hook
 returns @racket[#f], then printing is handled internally by the
@@ -292,7 +292,7 @@ pretty-printing.}
 @defparam[pretty-print-print-hook proc
           (any/c boolean? output-port? . -> . void?)]{
 
-A parameter that determines a print hook for pretty-printing.  The
+A @tech{parameter} that determines a print hook for pretty-printing.  The
 print-hook procedure is applied to a value for printing when the
 sizing hook (see @racket[pretty-print-size-hook]) returns an integer
 size for the value.
@@ -310,7 +310,7 @@ this port is ultimately redirected to the port supplied to
 @defparam[pretty-print-pre-print-hook proc
           (any/c output-port? . -> . void)]{
 
-A parameter that determines a hook procedure to be called just before
+A @tech{parameter} that determines a hook procedure to be called just before
 an object is printed. The hook receives two arguments: the object and
 the output port. The port is the one supplied to @racket[pretty-print]
 or @racket[pretty-display] (or the current output port).}
@@ -319,7 +319,7 @@ or @racket[pretty-display] (or the current output port).}
 @defparam[pretty-print-post-print-hook proc
           (any/c output-port? . -> . void)]{
 
-A parameter that determines a hook procedure to be called just after
+A @tech{parameter} that determines a hook procedure to be called just after
 an object is printed. The hook receives two arguments: the object and
 the output port. The port is the one supplied to @racket[pretty-print]
 or @racket[pretty-display] (or the current output port).}
@@ -330,7 +330,7 @@ or @racket[pretty-display] (or the current output port).}
 
 @defboolparam[pretty-printing on?]{
 
-A parameter that is set to @racket[#t] when the pretty printer calls a
+A @tech{parameter} that is set to @racket[#t] when the pretty printer calls a
 custom-write procedure (see @racket[prop:custom-write]) for output in
 a mode that supports line breaks.  When pretty printer calls a
 custom-write procedure merely to detect cycles or to try to print on a

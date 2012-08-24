@@ -53,8 +53,12 @@
          ;;   Otherwise, does nothing.
          [set-size
           (lambda (x y width height)
-            (set! x (+ x (send (area-parent) dx)))
-            (set! y (+ y (send (area-parent) dy)))
+	    (set! x (if (= x -11111)
+			(get-x)
+			(+ x (send (area-parent) dx))))
+	    (set! y (if (= y -11111)
+			(get-y)
+			(+ y (send (area-parent) dy))))
             (unless (and (same-dimension? x (get-x))
                          (same-dimension? y (get-y))
                          (same-dimension? width (get-width))

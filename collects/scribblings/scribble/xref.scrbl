@@ -20,13 +20,13 @@ by @racket[load-xref], @racket[#f] otherwise.}
 
 
 @defproc[(load-xref [sources (listof (-> any/c))]
-                    [#:render% using-render% (subclass?/c render%)
+                    [#:render% using-render% (implementation?/c render<%>)
                                (render-mixin render%)]
                     [#:root root-path (or/c path-string? false/c) #f])
          xref?]{
 
 Creates a cross-reference record given a list of functions that each
-produce a serialized information obtained from @xmethod[render%
+produce a serialized information obtained from @xmethod[render<%>
 serialize-info]. If a @racket[sources] element produces @racket[#f],
 its result is ignored.
 
@@ -101,7 +101,7 @@ is found in @racket[xref], the result is @racket[#f].}
 @defproc[(xref-tag->path+anchor [xref xref?]
                                 [tag tag?]
                                 [#:external-root-url root-url (or/c string? #f) #f]
-                                [#:render% using-render% (subclass?/c render%)
+                                [#:render% using-render% (implementation?/c render<%>)
                                            (render-mixin render%)])
          (values (or/c false/c path?)
                  (or/c false/c string?))]{
@@ -133,7 +133,7 @@ the binding and its original name.}
 @defproc[(xref-render [xref xref?]
                       [doc part?]
                       [dest (or/c path-string? false/c)]
-                      [#:render% using-render% (subclass?/c render%)
+                      [#:render% using-render% (implemenation?/c render<%>)
                                  (render-mixin render%)]
                       [#:refer-to-existing-files? use-existing? any/c (not dest)])
          (or/c void? any/c)]{
@@ -156,7 +156,7 @@ rendering (such as image files) are referenced from their existing
 locations, instead of copying to the directory of @racket[dest].}
 
 
-@defproc[(xref-transfer-info [renderer (is-a?/c render%)]
+@defproc[(xref-transfer-info [renderer (is-a?/c render<%>)]
                              [ci collect-info?]
                              [xref xref?])
          void?]{

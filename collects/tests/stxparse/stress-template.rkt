@@ -7,7 +7,7 @@
     [(_ body)
      #'(discard-exn body #f)]
     [(_ body on-exn)
-     #'(with-handlers ([not-break-exn? (lambda (_) on-exn)])
+     #'(with-handlers ([exn:fail? (lambda (_) on-exn)])
          body)]))
 
 (define (f1-tmpl stx)
@@ -15,7 +15,7 @@
     [(_ body)
      (template (discard-exn body #f))]
     [(_ body on-exn)
-     (template (with-handlers ([not-break-exn? (lambda (_) on-exn)])
+     (template (with-handlers ([exn:fail? (lambda (_) on-exn)])
                  body))]))
 
 (define (f2-stx stx)

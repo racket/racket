@@ -65,7 +65,11 @@ propeties (the latter in curly braces), strings are contracts/comments.
 
      (break [break_field_check
              (continuation "escape continuation" "resumes from the break")]
-            "asynchronous break signal"))
+            "asynchronous break signal"
+            (hang-up []
+                     "terminal disconnect")
+            (terminate []
+                       "termination request")))
 
 )
 

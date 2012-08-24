@@ -1,5 +1,13 @@
 #lang scribble/doc
-@(require "common.rkt" (for-label syntax/modcollapse))
+@(require "common.rkt" scribble/eval
+          (for-label syntax/modcollapse))
+
+@(define (new-evaluator)
+   (let* ([e (make-base-eval)])
+     (e '(require (for-syntax racket/base) syntax/modcollapse))
+     e))
+
+@(define evaluator (new-evaluator))
 
 @title[#:tag "modcollapse"]{Simplifying Module Paths}
 
@@ -31,7 +39,15 @@ is normalized so that equivalent module paths are represented by
 @racket[equal?] results. When the result is a @racket['submod] module
 path, it contains only symbols after the base module path, and the
 base is normalized in the case of a @racket['lib] or @racket['planet]
-base.}
+base.
+
+@examples[#:eval evaluator
+(collapse-module-path "m.rkt"  '(lib "n/main.rkt"))
+(collapse-module-path '(submod "." x)  '(lib "n/main.rkt"))
+(collapse-module-path '(submod "." x)  '(submod (lib "n/main.rkt") y))
+]
+
+}
 
 @defproc[(collapse-module-path-index [module-path-index module-path-index?]
                                      [rel-to-module-path-v (or/c module-path?

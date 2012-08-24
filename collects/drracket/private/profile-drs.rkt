@@ -32,7 +32,7 @@ itself.
   (define pause-b (new button% [label "Pause"] [parent bp] [callback (λ (a b) (pause))] [stretchable-width #t]))
   (define resume-b (new button% [label "Resume"] [parent bp] [callback (λ (a b) (resume))] [stretchable-width #t]))
   (define start-stop-b (new button% [label "Stop"] [parent bp] [callback (λ (a b) (start-stop))] [stretchable-width #t]))
-  (define choice (new choice% [label #f] [choices '("9" "10" "12")] [parent bp] [callback (λ (a b) (font-size))]))
+  (define choice (new choice% [label #f] [choices '("12" "9")] [parent bp] [callback (λ (a b) (font-size))]))
 
   
   (define mb (new menu-bar% [parent frame]))
@@ -66,7 +66,9 @@ itself.
   (define running? #f)
   (define current-sampler #f)
   (define (start-sampler)
-    (let ([s (create-sampler (list drs-custodian drs-main-thread) 1/2 super-custodian)])
+    (let ([s (create-sampler (list drs-custodian drs-main-thread) 
+                             #e0.05
+                             super-custodian)])
       (set! current-sampler s)))
   (define (stop-sampler)
     (current-sampler 'stop)
@@ -74,7 +76,7 @@ itself.
     (set! running? #f))
 
   (define sd (let ([sd (make-object style-delta%)])
-               (send sd set-delta 'change-size 9)
+               (send sd set-delta 'change-size 12)
                (send sd set-family 'modern)
                sd))
   

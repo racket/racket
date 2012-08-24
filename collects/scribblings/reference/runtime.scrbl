@@ -116,14 +116,14 @@ ends with a newline.}
 
 @defparam[current-command-line-arguments argv (vectorof (and/c string? immutable?))]{
 
-A parameter that is initialized with command-line arguments when
+A @tech{parameter} that is initialized with command-line arguments when
 Racket starts (not including any command-line arguments that were
 treated as flags for the system).}
 
 
 @defparam[current-thread-initial-stack-size size exact-positive-integer?]{
 
-A parameter that provides a hint about how much space to reserve for a
+A @tech{parameter} that provides a hint about how much space to reserve for a
 newly created thread's local variables. The actual space used by a
 computation is affected by @tech{JIT} compilation, but it is
 otherwise platform-independent.}

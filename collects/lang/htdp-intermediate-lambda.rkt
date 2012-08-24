@@ -5,7 +5,7 @@
          mzlib/etc
          mzlib/list
          syntax/docprovide
-         test-engine/scheme-tests)
+         test-engine/racket-tests)
 
 (require "private/provide-and-scribble.rkt")
 

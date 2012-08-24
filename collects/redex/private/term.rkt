@@ -4,14 +4,17 @@
                      "term-fn.rkt"
                      syntax/boundmap
                      syntax/parse
-                     racket/syntax)
+                     racket/syntax
+                     "keyword-macros.rkt"
+                     "matcher.rkt")
          syntax/datum
          "error.rkt"
          "matcher.rkt")
 
 (provide term term-let define-term
          hole in-hole
-         term-let/error-name term-let-fn term-define-fn)
+         term-let/error-name term-let-fn term-define-fn
+         term/nts)
 
 (define-syntax (hole stx) (raise-syntax-error 'hole "used outside of term"))
 (define-syntax (in-hole stx) (raise-syntax-error 'in-hole "used outside of term"))
@@ -21,13 +24,36 @@
     [(_ () e) (syntax e)]
     [(_ (a b ...) e) (syntax (with-syntax (a) (with-syntax* (b ...) e)))]))
 
-(define-syntax-rule (term t)
-  (#%expression (term/private t)))
+(define-for-syntax lang-keyword
+  (list '#:lang #f))
+
+(define-syntax (term stx)
+  (syntax-case stx ()
+    [(term t . kw-args)
+     (with-syntax ([(lang-stx) (parse-kw-args (list lang-keyword)
+                                                 (syntax kw-args)
+                                                 stx
+                                                 (syntax-e #'form))])
+       (if (syntax->datum #'lang-stx)
+           (let ([lang-nts (language-id-nts #'lang-stx 'term)])
+             #`(term/nts t #,lang-nts))
+           #'(term/nts t #f)))]))
+
+(define-syntax (term/nts stx)
+  (syntax-case stx ()
+    [(_ arg nts)
+     #'(#%expression (term/private arg nts))]))
 
 (define-syntax (term/private orig-stx)
+  (define lang-nts #f)
   (define outer-bindings '())
   (define applied-metafunctions
     (make-free-identifier-mapping))
+  
+  (define error-stx
+    (syntax-case orig-stx ()
+      [(_ e-stx nts-stx)
+       #'e-stx]))
   
   (define (rewrite stx)
     (let-values ([(rewritten _) (rewrite/max-depth stx 0)])
@@ -71,6 +97,7 @@
        (and (identifier? (syntax x))
             (term-id? (syntax-local-value (syntax x) (λ () #f))))
        (let ([id (syntax-local-value/record (syntax x) (λ (x) #t))])
+         (check-id (syntax->datum (term-id-id id)) stx)
          (values (datum->syntax (term-id-id id) (syntax-e (term-id-id id)) (syntax x))
                  (term-id-depth id)))]
       [x
@@ -78,6 +105,7 @@
        (let ([ref (syntax-property
                    (defined-term-value (syntax-local-value #'x))
                    'disappeared-use #'x)])
+         (check-id (syntax->datum #'x) stx)
          (with-syntax ([v #`(begin
                               #,(defined-check ref "term" #:external #'x)
                               #,ref)])
@@ -95,6 +123,10 @@
       [(in-hole . x)
        (raise-syntax-error 'term "malformed in-hole" orig-stx stx)]
       [hole (values (syntax (undatum the-hole)) 0)]
+      [x
+       (and (identifier? (syntax x))
+            (check-id (syntax->datum #'x) stx))
+       (values stx 0)]
       
       
       [() (values stx 0)]
@@ -121,22 +153,32 @@
       
       [_ (values stx 0)]))
   
+  (define (check-id id stx)
+    (when lang-nts
+      (define m (regexp-match #rx"^([^_]*)_" (symbol->string id)))
+      (when m
+        (unless (memq (string->symbol (list-ref m 1)) (append pattern-symbols lang-nts))
+          (raise-syntax-error 'term "before underscore must be either a non-terminal or a built-in pattern" error-stx stx)))))
+  
   (syntax-case orig-stx ()
-    [(_ arg)
-     (with-disappeared-uses
-      (with-syntax ([rewritten (rewrite (syntax arg))])
-        #`(begin
-            #,@(free-identifier-mapping-map
-                applied-metafunctions
-                (λ (f _) (defined-check f "metafunction")))
-            #,(let loop ([bs (reverse outer-bindings)])
-                (cond
-                  [(null? bs) (syntax (quasidatum rewritten))]
-                  [else (with-syntax ([rec (loop (cdr bs))]
-                                      [fst (car bs)])
-                          (syntax (with-datum (fst)
-                                    rec)))])))))]))
-
+    [(_ arg nts-stx)
+     (begin
+       (when (syntax->datum #'nts-stx)
+         (set! lang-nts (syntax->datum #'nts-stx)))
+       (with-disappeared-uses
+        (with-syntax ([rewritten (rewrite (syntax arg))])
+          #`(begin
+              #,@(free-identifier-mapping-map
+                  applied-metafunctions
+                  (λ (f _) (defined-check f "metafunction")))
+              #,(let loop ([bs (reverse outer-bindings)])
+                  (cond
+                    [(null? bs) (syntax (quasidatum rewritten))]
+                    [else (with-syntax ([rec (loop (cdr bs))]
+                                        [fst (car bs)])
+                            (syntax (with-datum (fst)
+                                                rec)))]))))))]))
+ 
 (define-syntax (term-let-fn stx)
   (syntax-case stx ()
     [(_ ([f rhs] ...) body1 body2 ...)

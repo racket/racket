@@ -1,8 +1,8 @@
 #lang racket/base
 
-(require "convenience.rkt" "../rep/type-rep.rkt"
-         "union.rkt" "abbrev.rkt" "../utils/tc-utils.rkt"
-         racket/list racket/dict racket/set racket/match)
+(require "abbrev.rkt" "../rep/type-rep.rkt"
+         "union.rkt" "../utils/tc-utils.rkt"
+         racket/list racket/dict racket/match)
 
 ;; convert : [Listof Keyword] [Listof Type] [Listof Type] [Option Type] [Option Type] -> (values Type Type)
 (define (convert kw-t plain-t opt-t rng rest drest split?)
@@ -111,6 +111,6 @@
              [(arr: mand rng rest drest kws)
               (convert kws mand v rng rest drest split?)])))
        (make-Poly names (apply cl->* fns))]
-      [_ (int-err 'kw-convert "non-function type" ft)]))
+      [_ (int-err "kw-convert: non-function type ~a" ft)]))
 
 (provide kw-convert)

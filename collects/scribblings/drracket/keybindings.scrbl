@@ -48,9 +48,12 @@ On most keyboards, ``<'' and ``>'' are shifted characters. So, to
 get M->, you actually have to type Meta-Shift->. That is, press and
 hold down both the Meta and Shift keys, and then strike ``>''.
 
-On Windows, some of these keybindings are actually standard menu
+On Windows (and sometimes under Unix)
+some of these keybindings are actually standard menu
 items.  Those keybindings will behave according to the menus, unless
 the @onscreen{Enable keybindings in menus} preference is unchecked.
+For example, the C-e keybinding mentioned above actually toggles
+the visibility of the interactions window.
 
 @index['("Emacs keybindings")]{If} you are most familiar with
 Emacs-style key bindings (especially on windows or some linux installations
@@ -159,6 +162,13 @@ on how to bind keys to menu items on a selective basis.
 @keybinding["F5"]{Run}
 ]
 
+@section{Documentation}
+@itemize[
+  @keybinding["f1"]{Search in the documentation for the words near the insertion point}
+  @keybinding["f2"]{Reveal the blue box for the identifier at the insertion point (requires
+                    online check syntax to be enabled, or normal check syntax to have been
+                    run).}
+]
 
 @section{Interactions}
 

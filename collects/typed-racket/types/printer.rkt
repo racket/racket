@@ -3,9 +3,25 @@
 (require racket/require racket/match unstable/sequence racket/string racket/promise
          (prefix-in s: srfi/1)
          (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt"
-                  "rep/rep-utils.rkt" "types/abbrev.rkt" "types/subtype.rkt"
-                  "types/numeric-tower.rkt" "utils/utils.rkt"
-                  "utils/tc-utils.rkt"))
+                  "rep/rep-utils.rkt" "types/subtype.rkt"
+                  "utils/utils.rkt"
+                  "utils/tc-utils.rkt")
+         (for-syntax racket/base syntax/parse))
+
+;; printer-type: (one-of/c 'custom 'debug)
+(define-for-syntax printer-type 'custom)
+
+(define-syntax (provide-printer stx)
+  (if (eq? printer-type 'debug)
+      #'(provide (rename-out [debug-printer print-type]
+                             [debug-printer print-filter]
+                             [debug-printer print-object]
+                             [debug-printer print-pathelem]))
+      #'(provide print-type print-filter print-object print-pathelem)))
+(provide-printer)
+
+(provide print-multi-line-case-> special-dots-printing? print-complex-filters?)
+
 
 ;; do we attempt to find instantiations of polymorphic types to print?
 ;; FIXME - currently broken
@@ -13,9 +29,9 @@
 ;; do we use simple type aliases in printing
 (define print-aliases #t)
 
+(define print-multi-line-case-> (make-parameter #f))
 (define special-dots-printing? (make-parameter #f))
 (define print-complex-filters? (make-parameter #f))
-(provide special-dots-printing? print-complex-filters?)
 
 ;; does t have a type name associated with it currently?
 ;; has-name : Type -> Maybe[Symbol]
@@ -170,9 +186,10 @@
          [(list) "(case->)"]
          [(list a) (format-arr a)]
          [(list a b ...)
-          (format "(case-> ~a ~a)"
+          (define multi-line? (print-multi-line-case->))
+          (format (string-append "(case-> ~a" (if multi-line? "\n        " " ") "~a)")
                   (format-arr a)
-                  (string-join (map format-arr b)))]))]))
+                  (string-join (map format-arr b) (if multi-line? "\n        " " ")))]))]))
 
 ;; print out a type
 ;; print-type : Type Port Boolean -> Void
@@ -220,9 +237,6 @@
      (fp "~a" (cons 'List (tuple-elems t)))]
     [(Base: n cnt _ _ _) (fp "~s" n)]
     [(Opaque: pred _) (fp "(Opaque ~a)" (syntax->datum pred))]
-    [(Struct: (? (lambda (nm) (free-identifier=? promise-id nm)))
-              #f (list (fld: t _ _)) _    _ _ _ _)
-     (fp "(Promise ~a)" t)]
     [(Struct: nm       par (list (fld: t _ _) ...)       proc _ _ _ _)
      (fp "#(struct:~a ~a" nm t)
      (when proc
@@ -239,6 +253,7 @@
     [(Future: e) (fp "(Futureof ~a)" e)]
     [(Channel: e) (fp "(Channelof ~a)" e)]
     [(ThreadCell: e) (fp "(ThreadCellof ~a)" e)]
+    [(Promise: e) (fp "(Promise ~a)" e)]
     [(Ephemeron: e) (fp "(Ephemeronof ~a)" e)]
     [(CustodianBox: e) (fp "(CustodianBoxof ~a)" e)]
     [(Set: e) (fp "(Setof ~a)" e)]
@@ -304,9 +319,37 @@
     [else (fp "(Unknown Type: ~a)" (struct->vector c))]
     ))
 
-(set-box! print-type* print-type)
-(set-box! print-filter* print-filter)
-;(set-box! print-latentfilter* print-latentfilter)
-(set-box! print-object* print-object)
-;(set-box! print-latentobject* print-latentobject)
-(set-box! print-pathelem* print-pathelem)
+
+
+(define-syntax (define-debug-printer stx)
+  (syntax-parse stx
+    [(_ debug-printer:id)
+     #:when (eq? printer-type 'debug)
+     #'(begin
+         (require racket/pretty)
+         (require mzlib/pconvert)
+         
+         (define (converter v basic sub)
+           (define (gen-constructor sym)
+             (string->symbol (string-append "make-" (substring (symbol->string sym) 7))))
+           (match v
+             [(? (lambda (e) (or (Filter? e)
+                                 (Object? e)
+                                 (PathElem? e)))
+                 (app (lambda (v) (vector->list (struct->vector v)))
+                      (list-rest tag seq fv fi stx vals)))
+              `(,(gen-constructor tag) ,@(map sub vals))]
+             [(? Type?
+                 (app (lambda (v) (vector->list (struct->vector v))) (list-rest tag seq fv fi stx key vals)))
+              `(,(gen-constructor tag) ,@(map sub vals))]
+             [_ (basic v)]))
+         
+         (define (debug-printer v port write?)
+           ((if write? pretty-write pretty-print)
+            (parameterize ((current-print-convert-hook converter))
+              (print-convert v))
+            port)))]
+    [_ #'(begin)]))
+
+(define-debug-printer debug-printer)
+

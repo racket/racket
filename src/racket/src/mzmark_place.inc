@@ -57,6 +57,8 @@ static int place_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(pr->mref, gc);
   gcMARK2(pr->pumper_threads, gc);
   gcMARK2(pr->place_obj, gc);
+  gcMARK2(pr->prev, gc);
+  gcMARK2(pr->next, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Place));
@@ -68,6 +70,8 @@ static int place_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(pr->mref, gc);
   gcFIXUP2(pr->pumper_threads, gc);
   gcFIXUP2(pr->place_obj, gc);
+  gcFIXUP2(pr->prev, gc);
+  gcFIXUP2(pr->next, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Place));

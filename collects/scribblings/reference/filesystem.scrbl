@@ -394,7 +394,7 @@ See also: @racket[rename-file-or-directory],
 
 @defparam[current-directory path path-string?]{
 
-A parameter that determines the current directory for resolving
+A @tech{parameter} that determines the current directory for resolving
 relative paths.
 
 When the parameter procedure is called to set the current directory,

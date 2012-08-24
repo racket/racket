@@ -4,7 +4,7 @@
  "../utils/utils.rkt"
  (for-template racket/base racket/list racket/unsafe/ops racket/flonum)
  (utils tc-utils) 
- (rename-in (types union convenience abbrev numeric-tower) [-Number N] [-Boolean B] [-Symbol Sym]))
+ (rename-in (types union abbrev numeric-tower) [-Number N] [-Boolean B] [-Symbol Sym]))
 
 (provide indexing)
 
@@ -268,15 +268,18 @@
    [make-flvector (cl->* (-> index-type -FlVector)
                          (-> index-type -Flonum -FlVector))]
 
-   [flvector-length (-> -FlVector -NonNegFixnum)]
+   [flvector-length (-> -FlVector -Index)]
    [flvector-ref (cl->* (-> -FlVector -NonNegFixnum -Flonum)
                         (-> -FlVector -Fixnum -Flonum)
                         (-> -FlVector index-type -Flonum))]
    [flvector-set! (cl->* (-> -FlVector -NonNegFixnum -Flonum -Void)
                          (-> -FlVector -Fixnum -Flonum -Void)
                          (-> -FlVector index-type -Flonum -Void))]
+   [flvector-copy (cl->* (-> -FlVector -FlVector)
+                         (-> -FlVector index-type -FlVector)
+                         (-> -FlVector index-type index-type -FlVector))]
 
-   [unsafe-flvector-length (-> -FlVector -NonNegFixnum)]
+   [unsafe-flvector-length (-> -FlVector -Index)]
    [unsafe-flvector-ref (cl->* (-> -FlVector -NonNegFixnum -Flonum)
                                (-> -FlVector -Fixnum -Flonum)
                                (-> -FlVector index-type -Flonum))]

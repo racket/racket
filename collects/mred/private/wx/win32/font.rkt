@@ -61,11 +61,12 @@
    [lfFaceName (_array _uint16 32)]))
 
 (define (logfont->pango-family logfontw)
-  (define logfont (malloc _LOGFONTW))
-  (memcpy logfont logfontw (ctype-sizeof _LOGFONTW)) ; bit enough for _LOGFONTA, too
+  ;; We'll allocate `logfont' as LOGFONTW but use it as LOGFONTA:
+  (define logfont (cast (malloc _LOGFONTW) _pointer (_gcable _LOGFONTW-pointer)))
+  (memcpy logfont logfontw (ctype-sizeof _LOGFONTW))
   (WideCharToMultiByte 0 0 
-                       (array-ptr (LOGFONTW-lfFaceName logfontw)) 0
-                       (array-ptr (LOGFONTW-lfFaceName logfontw)) 32
+                       (array-ptr (LOGFONTW-lfFaceName logfontw)) -1
+                       (array-ptr (LOGFONTW-lfFaceName logfont)) 32
                        #f #f)
   (define desc
     (pango_win32_font_description_from_logfont logfont))

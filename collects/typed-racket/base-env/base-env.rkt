@@ -15,7 +15,7 @@
   (only-in racket/private/pre-base new-apply-proc)
   racket/promise racket/system
   racket/function
-  compatibility/mpair
+  compatibility/mlist
   racket/base
   racket/set
   racket/place
@@ -23,10 +23,14 @@
   (only-in string-constants/private/only-once maybe-print-message)
   (only-in mzscheme make-namespace)
   (only-in racket/match/runtime match:error matchable? match-equality-test))
+ "base-structs.rkt"
  racket/file
  (only-in racket/private/pre-base new-apply-proc)
- (only-in (types abbrev numeric-tower) [-Number N] [-Boolean B] [-Symbol Sym])
+ (only-in (types abbrev) [-Boolean B] [-Symbol Sym])
+ (only-in (types numeric-tower) [-Number N])
  (only-in (rep type-rep)
+          make-Name
+          make-ValuesDots
           make-MPairTop
           make-BoxTop make-ChannelTop make-VectorTop
           make-ThreadCellTop
@@ -38,7 +42,7 @@
 ;Section 9.2
 
 [raise (cl->* (Univ . -> . (Un))
-	      (Univ Univ . -> . (Un)))]
+              (Univ Univ . -> . (Un)))]
 
 [error
  (cl->* (-> Sym (Un))
@@ -247,8 +251,8 @@
 
 
 [assert (-poly (a b) (cl->*
-		      (Univ (make-pred-ty (list a) Univ b) . -> . b)
-		      (-> (Un a (-val #f)) a)))]
+                      (Univ (make-pred-ty (list a) Univ b) . -> . b)
+                      (-> (Un a (-val #f)) a)))]
 [defined? (->* (list Univ) -Boolean : (-FS (-not-filter -Undefined 0 null) (-filter -Undefined 0 null)))]
 
 
@@ -387,14 +391,13 @@
 
 [list? (make-pred-ty (-lst Univ))]
 [list (-poly (a) (->* '() a (-lst a)))]
-[procedure? (make-pred-ty top-func)]
 [map (-polydots (c a b)
-		(cl->*
-		 (-> (-> a c) (-pair a (-lst a)) (-pair c (-lst c)))
-		((list
-		  ((list a) (b b) . ->... . c)
-		  (-lst a))
-		 ((-lst b) b) . ->... .(-lst c))))]
+                (cl->*
+                 (-> (-> a c) (-pair a (-lst a)) (-pair c (-lst c)))
+                ((list
+                  ((list a) (b b) . ->... . c)
+                  (-lst a))
+                 ((-lst b) b) . ->... .(-lst c))))]
 [for-each (-polydots (c a b) ((list ((list a) (b b) . ->... . Univ) (-lst a))
                               ((-lst b) b) . ->... . -Void))]
 #;[fold-left (-polydots (c a b) ((list ((list c a) (b b) . ->... . c) c (-lst a))
@@ -507,6 +510,8 @@
 
 [future (-poly (A) ((-> A) . -> . (-future A)))]
 [touch (-poly (A) ((-future A) . -> . A))]
+[processor-count (-> -Nat)]
+
 
 [reverse (-poly (a) (-> (-lst a) (-lst a)))]
 [kernel:reverse (-poly (a) (-> (-lst a) (-lst a)))]
@@ -566,6 +571,16 @@
 [assoc (-poly (a b) (a (-lst (-pair a b)) . -> . (-opt (-pair a b))))]
 [assf  (-poly (a b) ((a . -> . Univ) (-lst (-pair a b))
                      . -> . (-opt (-pair a b))))]
+
+;Procedures Section 3.17
+[procedure? (make-pred-ty top-func)]
+[compose (-poly (a b c) (-> (-> b c) (-> a b) (-> a c)))]
+[compose1 (-poly (a b c) (-> (-> b c) (-> a b) (-> a c)))]
+[procedure-arity (-> top-func (Un -Nat -Arity-At-Least (-lst (Un -Nat -Arity-At-Least))))]
+[procedure-arity? (make-pred-ty (Un -Nat -Arity-At-Least (-lst (Un -Nat -Arity-At-Least))))]
+[procedure-arity-includes? (->opt top-func -Nat [Univ] B)]
+[procedure-reduce-arity (-> top-func (Un -Nat -Arity-At-Least (-lst (Un -Nat -Arity-At-Least))) top-func)]
+[procedure-keywords (-> top-func (-values (list (-lst -Keyword) (-opt (-lst -Keyword)))))]
 
 [apply        (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
 [new-apply-proc (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
@@ -698,8 +713,8 @@
 
 
 
-[seconds->date (cl->* (-Integer . -> . (make-Name #'date))
-                      (-Integer Univ . -> . (make-Name #'date)))]
+[seconds->date (cl->* (-Integer . -> . -Date)
+                      (-Integer Univ . -> . -Date))]
 [current-seconds (-> -Integer)]
 
 ;Section 14.2
@@ -1207,43 +1222,43 @@
 
 [identifier-binding
  (Ident [(-opt -Integer)]. ->opt .
-  (*Un (-val 'lexical) (-val #f)
+  (Un (-val 'lexical) (-val #f)
    (-lst* -Module-Path-Index
           -Symbol
           -Module-Path-Index
           -Symbol
-          (*Un (-val 0) (-val 1))
+          (Un (-val 0) (-val 1))
           (-opt -Integer)
           (-opt -Integer))))]
 
 [identifier-transformer-binding
  (Ident . -> .
-  (*Un (-val 'lexical) (-val #f)
+  (Un (-val 'lexical) (-val #f)
    (-lst* -Module-Path-Index
           -Symbol
           -Module-Path-Index
           -Symbol
-          (*Un (-val 0) (-val 1))
+          (Un (-val 0) (-val 1))
           (-opt -Integer)
           (-opt -Integer))))]
 [identifier-template-binding
  (Ident . -> .
-  (*Un (-val 'lexical) (-val #f)
+  (Un (-val 'lexical) (-val #f)
    (-lst* -Module-Path-Index
           -Symbol
           -Module-Path-Index
           -Symbol
-          (*Un (-val 0) (-val 1))
+          (Un (-val 0) (-val 1))
           (-opt -Integer)
           (-opt -Integer))))]
 [identifier-label-binding
  (Ident . -> .
-  (*Un (-val 'lexical) (-val #f)
+  (Un (-val 'lexical) (-val #f)
    (-lst* -Module-Path-Index
           -Symbol
           -Module-Path-Index
           -Symbol
-          (*Un (-val 0) (-val 1))
+          (Un (-val 0) (-val 1))
           (-opt -Integer)
           (-opt -Integer))))]
 
@@ -1457,8 +1472,8 @@
 
 [tcp-abandon-port (-Port . -> . -Void)]
 [tcp-addresses (cl->*
-		(-Port [(-val #f)] . ->opt . (-values (list -String -String)))
-		(-Port (-val #t) . -> . (-values (list -String -Index -String -Index))))]
+                (-Port [(-val #f)] . ->opt . (-values (list -String -String)))
+                (-Port (-val #t) . -> . (-values (list -String -Index -String -Index))))]
 
 [tcp-port? (asym-pred Univ B (-FS (-filter (Un -Input-Port -Output-Port) 0) -top))]
 
@@ -1750,8 +1765,8 @@
 
 ;; probably the most useful cases
 [curry (-poly (a b c)
-	      (cl->* ((a b . -> . c) a . -> . (b . -> . c))
-		     ((a b . -> . c) . -> . (a . -> . (b . -> . c)))))]
+              (cl->* ((a b . -> . c) a . -> . (b . -> . c))
+                     ((a b . -> . c) . -> . (a . -> . (b . -> . c)))))]
 ;; mutable pairs
 [mcons (-poly (a b) (-> a b (-mpair a b)))]
 [mcar (-poly (a b)
@@ -1990,10 +2005,6 @@
 
 ;Section 13.9 (Code Inspectors)
 [current-code-inspector (-Param -Inspector -Inspector)]
-
-
-[compose (-poly (a b c) (-> (-> b c) (-> a b) (-> a c)))]
-
 
 ;ephemerons
 [make-ephemeron (-poly (k v) (-> k v (make-Ephemeron v)))]
@@ -2587,7 +2598,10 @@
 [place? (make-pred-ty -Place)]
 [place-channel? (make-pred-ty -Place-Channel)]
 ;; FIXME: the `#:at` keyword is for remote places, not supported yet
-[dynamic-place (->key -Module-Path Sym #:at (-val #f) #f -Place)]
+[dynamic-place (->key -Module-Path Sym
+                      #:at (-val #f) #f
+                      #:named (Un (-val #f) -Symbol) #f
+                      -Place)]
 [place-wait (-> -Place -Int)]
 [place-break (-> -Place -Void)]
 [place-kill (-> -Place -Void)]

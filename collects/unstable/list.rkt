@@ -182,3 +182,23 @@
 (provide/contract
  [group-by (->* (procedure? list?) (#:key procedure?)
                 list?)])
+
+;; endobson added:
+
+(define (list-update l i f)
+  (cond
+    [(zero? i) (cons (f (car l)) (cdr l))]
+    [else (cons (car l) (list-update (cdr l) (sub1 i) f))]))
+
+(define (list-set l k v)
+  (list-update l k (lambda (_) v)))
+
+(provide/contract
+ [list-update (->i [(list list?)
+                    (index (list) (and/c (>=/c 0) (</c (length list))))
+                    (updater (-> any/c any/c))]
+                   [_ list?])]
+ [list-set  (->i [(list list?)
+                  (index (list) (and/c (>=/c 0) (</c (length list))))
+                  (value any/c)]
+                 [_ list?])])

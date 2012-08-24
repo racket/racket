@@ -56,7 +56,7 @@
                          (indexed-future-event 1 (future-event 0 1 'start-work 1 #f #f)) 
                          (indexed-future-event 2 (future-event 0 1 'end-work 2 #f #f)) 
                          (indexed-future-event 3 (future-event 0 0 'complete 3 #f #f)))] 
-       [organized (organize-output future-log)]) 
+       [organized (organize-output future-log 0 3)]) 
   (check-equal? (vector-length organized) 2) 
   (let ([proc0log (vector-ref organized 0)] 
         [proc1log (vector-ref organized 1)]) 
@@ -82,7 +82,7 @@
                          (indexed-future-event 5 (future-event 0 0 'complete 5 #f #f)) 
                          (indexed-future-event 6 (future-event 1 2 'end-work 5 #f #f)) 
                          (indexed-future-event 7 (future-event 1 0 'complete 7 #f #f)))] 
-       [organized (organize-output future-log)]) 
+       [organized (organize-output future-log 0 7)]) 
   (check-equal? (vector-length organized) 3) 
   (let ([proc0log (vector-ref organized 0)] 
         [proc1log (vector-ref organized 1)] 
@@ -202,7 +202,7 @@
 
 ;Viewable region tests 
 (define (make-seg-at x y w h) 
-  (segment #f x y w h #f #f #f #f #f #f #f #f))
+  (segment #f x y w h #f #f #f #f #f #f #f #f #f))
 
 ;;make-segs-with-times : (listof (or float (float . float))) -> (listof segment)
 (define (make-segs-with-times . times) 
@@ -216,8 +216,8 @@
   (segment (event index
                   real-start-time 
                   real-end-time 
-                  0 0 0 0 0 0 0 0 0 0 0 0 0 #f) 
-           0 0 0 0 #f #f #f #f #f #f #f #f))
+                  0 0 0 0 0 0 0 0 0 0 0 0 0 #f)  
+           0 0 0 0 #f #f #f #f #f #f #f #f #f))
                    
 
 (let ([vregion (viewable-region 20 30 100 100)] 
@@ -290,6 +290,49 @@
   (check-equal? (length (hash-keys (trace-block-counts tr))) 1) 
   (check-equal? (length (hash-keys (trace-sync-counts tr))) 0) 
   (check-equal? (length (hash-keys (trace-future-rtcalls tr))) 1))
+
+(define gci (gc-info #f 0 0 0 0 0 0 0 4.0 6.0))
+(check-true (gc-event? gci)) 
+(check-true (gc-event? (indexed-future-event 0 gci)))
+
+(define gc-log1 
+  (list 
+   (indexed-future-event 0 (future-event #f 0 'create 10.0 #f 1)) 
+   (indexed-future-event 1 (gc-info #f 0 0 0 0 0 0 0 4.0 6.0)) 
+   (indexed-future-event 2 (future-event 1 1 'start-work 11.0 #f 0)) 
+   (indexed-future-event 3 (future-event 1 1 'complete 14.0 #f 0)) 
+   (indexed-future-event 4 (future-event 1 1 'end-work 15.0 #f 0)))) 
+(let ([tr (build-trace gc-log1)]) 
+  (check-true (not (findf gc-event? (trace-all-events tr)))) 
+  (check-equal? (trace-num-gcs tr) 0))
+
+(define gc-log2 
+  (list 
+   (indexed-future-event 0 (future-event #f 0 'create 10.0 #f 1)) 
+   (indexed-future-event 1 (gc-info #f 0 0 0 0 0 0 0 14.0 19.0)) 
+   (indexed-future-event 2 (future-event 1 1 'start-work 11.0 #f 0)) 
+   (indexed-future-event 3 (future-event 1 1 'complete 20.0 #f 0)) 
+   (indexed-future-event 4 (future-event 1 1 'end-work 21.0 #f 0)))) 
+(let ([tr (build-trace gc-log2)]) 
+  (check-equal? (length (filter gc-event? (trace-all-events tr))) 1) 
+  (check-equal? (trace-num-gcs tr) 1))
+
+(define gc-log3 
+  (list 
+   (indexed-future-event 0 (future-event #f 0 'create 10.0 #f 1)) 
+   (indexed-future-event 1 (future-event 1 1 'start-work 11.0 #f 0))
+   (indexed-future-event 2 (gc-info #f 0 0 0 0 0 0 0 14.0 15.0)) 
+   (indexed-future-event 3 (gc-info #f 0 0 0 0 0 0 0 15.0 19.5)) 
+   (indexed-future-event 4 (future-event 1 1 'complete 20.0 #f 0)) 
+   (indexed-future-event 5 (future-event 1 1 'end-work 21.0 #f 0)))) 
+(let-values ([(tr finfo segs ticks) (compile-trace-data gc-log3)]) 
+  (check-equal? (length (filter gc-event? (trace-all-events tr))) 2) 
+  (check-equal? (trace-num-gcs tr) 2) 
+  (let ([gc-segs (filter (λ (s) (gc-event? (segment-event s))) segs)]) 
+    (check-equal? (length gc-segs) 2) 
+    (for ([gs (in-list gc-segs)]) 
+      (check-true (= (segment-height gs) (frame-info-adjusted-height finfo))) 
+      (check-true (> (segment-width gs) 10)))))
 
 ;Graph drawing tests 
 (let* ([nodea (drawable-node (node 'a '()) 5 5 10 0 0 '() 10)]

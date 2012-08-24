@@ -544,10 +544,13 @@
       (super erase)
       (reset-recording))
 
-    ;; For the compsable part of the DC, we writ things out the long way.
+    ;; For the compsable part of the DC, we write things out the long way.
     ;; For everythign else, we use `define/record'.
 
     (define/override (set-clipping-region r)
+      (do-set-clipping-region r))
+
+    (define/private (do-set-clipping-region r)
       (super set-clipping-region r)
       (when (continue-recording?)
         (let-values ([(make-r paths has-dc?) (region-maker r)])
@@ -557,6 +560,14 @@
                                                                   (make-r dc state)))
                     state)
                   (lambda () (list 'set-clipping-region (convert-region paths has-dc?)))))))
+
+    (def/override (set-clipping-rect [real? x] 
+                                     [real? y] 
+                                     [nonnegative-real? w]
+                                     [nonnegative-real? h])
+      (let ([r (make-object region% this)])
+        (send r set-rectangle x y w h)
+        (do-set-clipping-region r)))
 
     (define/override (set-alpha a)
       (super set-alpha a)
@@ -595,6 +606,16 @@
                                                                                (dc-state-region state)
                                                                                (make-r dc state)))
                                  state))]
+      [(set-clipping-rect) ;; backward compatibility for old datums
+       (lambda (x y w h)
+         (define r (make-object region% #f))
+         (send r set-rectangle x y w h)
+         (define make-r (unconvert-region (convert-region r #f)))
+         (lambda (dc state)
+           (send dc set-clipping-region (combine-regions dc
+                                                         (dc-state-region state)
+                                                         (make-r dc state)))
+           state))]
       [(set-alpha) (lambda (a)
                      (lambda (dc state)
                        (send dc set-alpha (* a (dc-state-alpha state)))
@@ -630,8 +651,6 @@
      (define/record (set-background [c clone-color convert-color unconvert-color]))
      
      (define/record (set-text-mode m))
-
-     (define/record (set-clipping-rect x y w h))
 
      (define/record (clear))
      

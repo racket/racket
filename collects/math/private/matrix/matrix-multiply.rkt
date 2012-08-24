@@ -10,9 +10,9 @@
 ;; explanation.
 
 #;(: make-matrix-multiply (All (A) (Symbol
-                                    ((Array A) Integer -> (lazy-array A))
-                                    ((Array A) (Array A) -> (lazy-array A))
-                                    -> ((Array A) (Array A) -> (lazy-array A)))))
+                                    ((Array A) Integer -> (Array A))
+                                    ((Array A) (Array A) -> (Array A))
+                                    -> ((Array A) (Array A) -> (Array A)))))
 (define-syntax-rule (make-matrix-multiply name array-axis-sum array*)
   (λ (arr brr)
     (unless (array-matrix? arr) (raise-type-error name "matrix" 0 arr brr))
@@ -24,15 +24,15 @@
              "1st argument column size and 2nd argument row size are not equal; given ~e and ~e"
              arr brr))
     ;; Get strict versions of both because each element in both is evaluated multiple times
-    (let ([arr  (array-strict arr)]
-          [brr  (array-strict brr)])
+    (let ([arr  (array->mutable-array arr)]
+          [brr  (array->mutable-array brr)])
       ;; This next part could be done with array-permute, but it's much slower that way
-      (define avs (strict-array-data arr))
-      (define bvs (strict-array-data brr))
+      (define avs (mutable-array-data arr))
+      (define bvs (mutable-array-data brr))
       ;; Extend arr in the center dimension
       (define: ds-ext : (Vectorof Index) (vector ad0 bd1 ad1))
       (define arr-ext
-        (unsafe-view-array 
+        (unsafe-build-array 
          ds-ext (λ: ([js : (Vectorof Index)])
                   (define j0 (unsafe-vector-ref js 0))
                   (define j1 (unsafe-vector-ref js 2))
@@ -41,7 +41,7 @@
       ;; Transpose brr and extend in the leftmost dimension
       ;; Note that ds-ext = (vector ad0 bd1 bd0) because bd0 = ad1
       (define brr-ext
-        (unsafe-view-array 
+        (unsafe-build-array 
          ds-ext (λ: ([js : (Vectorof Index)])
                   (define j0 (unsafe-vector-ref js 2))
                   (define j1 (unsafe-vector-ref js 1))
@@ -51,10 +51,10 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 
-(: matrix* (case-> ((Matrix Real)   (Matrix Real)   -> (Result-Matrix Real))
-                   ((Matrix Number) (Matrix Number) -> (Result-Matrix Number))))
+(: matrix* (case-> ((Matrix Real)   (Matrix Real)   -> (Matrix Real))
+                   ((Matrix Number) (Matrix Number) -> (Matrix Number))))
 (define matrix* (make-matrix-multiply 'matrix* array-axis-sum array*))
 
-;(: matrix-fl* ((Array Float) (Array Float) -> (lazy-array Float)))
+;(: matrix-fl* ((Array Float) (Array Float) -> (Array Float)))
 ;(define matrix-fl* (make-matrix-multiply 'matrix-fl* array-axis-flsum array-fl*))
 

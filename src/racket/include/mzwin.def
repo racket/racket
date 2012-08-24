@@ -36,8 +36,10 @@ EXPORTS
  scheme_thread_w_details
  scheme_kill_thread
  scheme_break_thread
+ scheme_break_kind_thread
  scheme_break_main_thread
  scheme_break_main_thread_at
+ scheme_break_kind_main_thread_at
  scheme_get_main_thread_break_handle
  scheme_set_break_main_target
  scheme_thread_block
@@ -65,6 +67,7 @@ EXPORTS
  scheme_tls_get
  scheme_make_custodian
  scheme_add_managed
+ scheme_add_managed_close_on_exit
  scheme_custodian_check_available
  scheme_custodian_is_available
  scheme_remove_managed

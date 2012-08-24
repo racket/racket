@@ -4980,6 +4980,8 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     return scheme_values(2, a);
   } else {
     SCHEME_EXPAND_OBSERVE_EXIT_LOCAL(observer, l);
+    if (kind == SCHEME_MODULE_FRAME)
+      l = scheme_annotate_existing_submodules(l, 0);
     return l;
   }
 }

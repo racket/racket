@@ -2728,9 +2728,6 @@ provides a hook to control interactive evaluation through
 @racket[read-eval-print-loop].}
 
 @;------------------------------------------------------------------------
-@include-section["package.scrbl"]
-
-@;------------------------------------------------------------------------
 @include-section["block.scrbl"]
 
 @;------------------------------------------------------------------------

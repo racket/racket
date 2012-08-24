@@ -27,7 +27,7 @@
 
 (provide honu-class)
 (define-honu-syntax honu-class
-  (lambda (code context)
+  (lambda (code)
     (syntax-parse code #:literal-sets (cruft)
       ;; FIXME: empty parenthesis for constructor arguments should be optional
       [(_ name (#%parens (~var constructor-argument (separate-ids (literal-syntax-class honu-comma) (literal-syntax-class honu-comma))))
@@ -41,7 +41,7 @@
 
 (provide honu-new)
 (define-honu-syntax honu-new
-  (lambda (code context)
+  (lambda (code)
     (syntax-parse code #:literal-sets (cruft)
       [(_ name (#%parens arg:honu-expression/comma) . rest)
        (define new (racket-syntax (make-object name (let () arg.result) ...)))

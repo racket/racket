@@ -25,6 +25,7 @@
 	 lang/debugger-language-interface
 	 lang/run-teaching-program
 	 lang/private/continuation-mark-key
+         lang/private/rewrite-error-message
 	 
 	 (only-in test-engine/scheme-gui make-formatter)
 	 test-engine/scheme-tests
@@ -1187,7 +1188,7 @@
       (define (teaching-languages-error-display-handler msg exn)
           
           (if (exn? exn)
-              (display (exn-message exn) (current-error-port))
+              (display (get-rewriten-error-message exn) (current-error-port))
               (eprintf "uncaught exception: ~e" exn))
           (eprintf "\n")
 

@@ -64,6 +64,16 @@ If @var{m} (or the current custodian if @var{m} is @cpp{NULL})is shut
 down, then @var{f} is called immediately, and the result is
 @cpp{NULL}.}
 
+@function[(Scheme_Custodian_Reference* scheme_add_managed_close_on_exit
+           [Scheme_Custodian* m]
+           [Scheme_Object* o]
+           [Scheme_Close_Custodian_Client* f]
+           [void* data])]{
+
+Like @cpp{scheme_add_managed} with a @cpp{1} final argument, but also
+causes @var{f} to be called when Racket exists without an explicit
+custodian shutdown.}
+
 @function[(void scheme_custodian_check_available
            [Scheme_Custodian* m]
            [const-char* name]
@@ -107,7 +117,8 @@ where @var{d} is the second argument for @var{f}.
 
 At-exit functions are run in reverse of the order that they are
 added. An at-exit function is initially registered (and therefore runs
-last) that flushes each file-stream output port.
+last) that flushes each file-stream output port and calls every
+function registered with @cpp{scheme_add_managed_close_on_exit}.
 
 An at-exit function should not necessarily apply the closer function
 for every object that it is given. In particular, shutting down a

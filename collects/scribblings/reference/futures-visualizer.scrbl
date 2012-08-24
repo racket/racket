@@ -68,7 +68,8 @@ The @deftech{execution timeline}, shown in the top left-hand corner of the
 profiler window, displays a history of the program 
 and all events associated with its futures, with OS-level threads 
 or @deftech{processes} organized along the y-axis and time increasing along 
-the x-axis.  A coloring convention is used to distinguish between 
+the x-axis.  Garbage collections are shown as translucent maroon bars spanning 
+the height of the timeline.  A coloring convention is used to distinguish between 
 different types of events (see @secref["future-logging"] for a full 
 description of these event types): 
 
@@ -83,10 +84,12 @@ description of these event types):
   
   @item{White dot: @racket['result], @racket['end-work]} 
   
-  @item{Green dot: @racket['touch-pause], @racket['touch-resume]}  
+  @item{Green dot: @racket['touch-pause], @racket['touch-resume]} 
+  
+  @item{Maroon bar: @racket['gc]}
 ]
 
-Mousing over any event connects it via purple lines to the sequence 
+Mousing over any non-GC event connects it via purple lines to the sequence 
 of events for its future.  Additionally, orange dotted lines 
 with arrowheads may be shown to indicate operations performed from 
 one future to another (e.g. @racket['create] or @racket['touch] actions).  

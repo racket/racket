@@ -312,6 +312,14 @@
    #f
    void))
 
+(let ([p (make-input-port/read-to-peek 
+          'example
+          (lambda (bytes) (bytes-set! bytes 0 0) 1)
+          #f
+          void)])
+  (close-input-port p)
+  (test #t evt? (sync/timeout 0 (port-progress-evt p))))
+
 (let ([p (make-list-port #\h #\e #\l #\l #\o)])
   (test (char->integer #\h) peek-byte p)
   (test (char->integer #\e) peek-byte p 1)

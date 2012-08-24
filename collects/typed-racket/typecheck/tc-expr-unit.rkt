@@ -5,10 +5,10 @@
          racket/match (prefix-in - racket/contract)
          "signatures.rkt" "tc-envops.rkt" "tc-metafunctions.rkt" "tc-subst.rkt"
          "check-below.rkt" "tc-funapp.rkt" "tc-app-helper.rkt" "../types/kw-types.rkt"
-         (types utils convenience union subtype remove-intersect 
+         (types utils abbrev numeric-tower union subtype remove-intersect 
                 type-table filter-ops generalize)
          (private-in parse-type type-annotation)
-         (rep type-rep)
+         (rep type-rep filter-rep object-rep)
          (only-in (infer infer) restrict)
          (except-in (utils tc-utils stxclass-util))
          (env lexical-env type-env-structs tvar-env index-env)
@@ -35,7 +35,7 @@
       [i:exp expected]
       [i:boolean (-val (syntax-e #'i))]
       [i:identifier (-val (syntax-e #'i))]
-      
+
       ;; Numbers
       [0 -Zero]
       [1 -One]
@@ -239,6 +239,13 @@
                   (check-below ts** expected))]
                ;; no annotations possible on dotted results
                [ty (add-typeof-expr form ty) ty])]
+            [(syntax-property form* 'typechecker:external-check)
+             =>
+             (lambda (check)
+               (check form*)
+               (loop (syntax-property form* 'typechecker:external-check #f)
+                     expected
+                     checked?))]
             ;; nothing to see here
             [checked? expected]
             [else 
@@ -286,10 +293,9 @@
          (check-subforms/with-handlers/check form expected)]
         [stx
          #:when (syntax-property form 'typechecker:ignore-some)
-         (let ([ty (check-subforms/ignore form)])
-           (unless ty
-             (int-err "internal error: ignore-some"))
-           (check-below ty expected))]
+         (check-subforms/ignore form)
+         ;; We trust ignore to be only on syntax objects objects that are well typed
+         expected]
         ;; explicit failure
         [(quote-syntax ((~literal typecheck-fail-internal) stx msg:str var))
          (explicit-fail #'stx #'msg #'var)]
@@ -397,10 +403,8 @@
          ty)]
       [stx
        #:when (syntax-property form 'typechecker:ignore-some)
-       (let ([ty (check-subforms/ignore form)])
-         (unless ty
-           (int-err "internal error: ignore-some"))
-         ty)]
+       (check-subforms/ignore form)
+       (ret Univ)]
       ;; explicit failure
       [(quote-syntax ((~literal typecheck-fail-internal) stx msg var))
        (explicit-fail #'stx #'msg #'var)]

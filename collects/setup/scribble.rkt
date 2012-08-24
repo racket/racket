@@ -22,7 +22,8 @@
          scribble/private/run-pdflatex
          unstable/file
          (prefix-in html: scribble/html-render)
-         (prefix-in latex: scribble/latex-render))
+         (prefix-in latex: scribble/latex-render)
+         (prefix-in contract: scribble/contract-render))
 
 (provide setup-scribblings
          verbose
@@ -399,9 +400,14 @@
              [main?  (doc-under-main? doc)]
              [ddir   (doc-dest-dir doc)]
              [root?  (or (memq 'main-doc-root flags)
-                         (memq 'user-doc-root flags))])
-        (new ((if multi? html:render-multi-mixin values)
-              (html:render-mixin render%))
+                         (memq 'user-doc-root flags))]
+             [contract-override-mixin
+              (if multi?
+                  contract:override-render-mixin-multi 
+                  contract:override-render-mixin-single)])
+        (new (contract-override-mixin
+              ((if multi? html:render-multi-mixin values)
+               (html:render-mixin render%)))
              [dest-dir (if multi?
                            (let-values ([(base name dir?) (split-path ddir)]) base)
                            ddir)]
@@ -424,17 +430,19 @@
              [search-box? #t]))))
 
 (define (pick-dest latex-dest doc)
-  (cond [latex-dest
+  (cond [(path? latex-dest)
          (let-values ([(base name dir?) (split-path (doc-src-file doc))])
            (build-path latex-dest (path-replace-suffix name #".tex")))]
-        [(memq 'multi-page (doc-flags doc)) (doc-dest-dir doc)]
-        [else (build-path (doc-dest-dir doc) "index.html")]))
+        [(not latex-dest)
+         (cond
+           [(memq 'multi-page (doc-flags doc)) (doc-dest-dir doc)]
+           [else (build-path (doc-dest-dir doc) "index.html")])]))
 
 (define (sxref-path latex-dest doc file)
-  (cond [latex-dest
+  (cond [(path? latex-dest)
          (let-values ([(base name dir?) (split-path (doc-src-file doc))])
            (build-path latex-dest (path-replace-suffix name (string-append "." file))))]
-        [else (build-path (doc-dest-dir doc) file)]))
+        [(not latex-dest) (build-path (doc-dest-dir doc) file)]))
 
 (define (can-build? only-dirs doc)
   (or (not only-dirs)
@@ -526,9 +534,9 @@
          [renderer-path (build-path (collection-path "scribble")
                                     "compiled"
                                     (path-add-suffix
-                                     (if latex-dest
-                                         "latex-render.rkt"
-                                         "html-render.rkt")
+                                     (cond
+                                       [(path? latex-dest) "latex-render.rkt"]
+                                       [(not latex-dest) "html-render.rkt"])
                                      ".zo"))]
          [css-path (collection-file-path "scribble.css" "scribble")]
          [aux-time (max (file-or-directory-modify-seconds/stamp

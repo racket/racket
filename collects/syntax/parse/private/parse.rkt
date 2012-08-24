@@ -94,15 +94,10 @@
 (define-syntax (parser/rhs/parsed stx)
   (syntax-case stx ()
     [(prp name formals attrs rhs rhs-has-description? splicing? ctx)
-     #`(let ([get-description
-              (lambda formals
-                (if 'rhs-has-description?
-                    #,(rhs-description (syntax-e #'rhs))
-                    (symbol->string 'name)))])
-         (parse:rhs rhs attrs formals splicing?
-                    (if 'rhs-has-description?
-                        #,(rhs-description (syntax-e #'rhs))
-                        (symbol->string 'name))))]))
+     #`(parse:rhs rhs attrs formals splicing?
+                  (if 'rhs-has-description?
+                      #,(rhs-description (syntax-e #'rhs))
+                      (symbol->string 'name)))]))
 
 (define-syntax (syntax-parse stx)
   (syntax-case stx ()
@@ -244,7 +239,7 @@ Conventions:
   - fh, cp, rl : id (var)
 |#
 
-;; (parse:rhs rhs relsattrs (arg:id ...) get-description:id splicing?)
+;; (parse:rhs rhs relsattrs formals splicing? expr)
 ;;   : expr[stxclass-parser]
 ;; Takes a list of the relevant attrs; order is significant!
 (define-syntax (parse:rhs stx)
@@ -252,23 +247,37 @@ Conventions:
     [(parse:rhs #s(rhs _ _ transparent? _ variants (def ...)
                        #s(options commit? delimit-cut?) _integrate)
                 relsattrs formals splicing? description)
-     #'(lambda (x cx pr es fh0 cp0 rl success . formals)
-         def ...
-         (#%expression
-          (with ([this-syntax x]
-                 [this-role rl])
-            (syntax-parameterize ((this-context-syntax
-                                   (syntax-rules ()
-                                     [(tbs) (ps-context-syntax pr)])))
-              (let ([es (es-add-thing pr description 'transparent? rl es)]
-                    [pr (if 'transparent? pr (ps-add-opaque pr))])
-                (with ([fail-handler fh0]
-                       [cut-prompt cp0])
-                  ;; Update the prompt, if required
-                  ;; FIXME: can be optimized away if no cut immediately within variants...
-                  (with-maybe-delimit-cut delimit-cut?
-                    (parse:variants x cx relsattrs variants splicing? transparent?
-                                    pr es success cp0 commit?))))))))]))
+     (with-syntax ([formals
+                    (let loop ([fstx #'formals])
+                      (syntax-case fstx ()
+                        [([kw arg default] . more)
+                         (keyword? (syntax-e #'kw))
+                         (cons #'(kw arg (with ([this-syntax x] [this-role rl]) default))
+                               (loop #'more))]
+                        [([arg default] . more)
+                         (not (keyword? (syntax-e #'kw)))
+                         (cons #'(arg (with ([this-syntax x] [this-role rl]) default))
+                               (loop #'more))]
+                        [(formal . more)
+                         (cons #'formal (loop #'more))]
+                        [_ fstx]))])
+       #'(lambda (x cx pr es fh0 cp0 rl success . formals)
+           (with ([this-syntax x]
+                  [this-role rl])
+             def ...
+             (#%expression
+              (syntax-parameterize ((this-context-syntax
+                                     (syntax-rules ()
+                                       [(tbs) (ps-context-syntax pr)])))
+                (let ([es (es-add-thing pr description 'transparent? rl es)]
+                      [pr (if 'transparent? pr (ps-add-opaque pr))])
+                  (with ([fail-handler fh0]
+                         [cut-prompt cp0])
+                    ;; Update the prompt, if required
+                    ;; FIXME: can be optimized away if no cut immediately within variants...
+                    (with-maybe-delimit-cut delimit-cut?
+                      (parse:variants x cx relsattrs variants splicing? transparent?
+                                      pr es success cp0 commit?)))))))))]))
 
 ;; (with-maybe-delimit-cut bool expr)
 (define-syntax with-maybe-delimit-cut

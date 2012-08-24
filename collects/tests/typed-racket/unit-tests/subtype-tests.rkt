@@ -1,10 +1,9 @@
 #lang scheme/base
 
 (require "test-utils.rkt"
-         (types subtype convenience union utils abbrev)
+         (types subtype numeric-tower union utils abbrev)
          (rep type-rep)
          (env init-envs type-env-structs)
-         (r:infer infer infer-dummy)
          rackunit
          (for-syntax scheme/base))
 
@@ -18,11 +17,10 @@
   (syntax-case stx ()
     [(_ cl ...)
      (with-syntax ([(new-cl ...) (map single-test (syntax->list #'(cl ...)))])
-		  (syntax/loc stx
-			      (begin (test-suite "Tests for subtyping"
-						 new-cl ...))))]))
+                  (syntax/loc stx
+                              (begin (test-suite "Tests for subtyping"
+                                                 new-cl ...))))]))
 
-(infer-param infer)
 
 
 (define t1 (-mu T (-lst (Un (-v a) T))))
@@ -56,7 +54,7 @@
    [(-mu x (Un -Number (make-Listof x))) (-mu x (Un -Number -Symbol (make-Listof x)))]
    [(-mu x (Un -Number (make-Listof x))) (-mu y (Un -Number -Symbol (make-Listof y)))]
    ;; a hard one
-   [(-mu x (*Un -Number (-pair x (-pair -Symbol (-pair x (-val null)))))) -Sexp]
+   [(-mu x (Un -Number (-pair x (-pair -Symbol (-pair x (-val null)))))) -Sexp]
    [t1 (unfold t1)]
    [(unfold t1) t1]
    ;; simple function types
@@ -112,9 +110,9 @@
    [(->* (list -Number -Number) -Boolean -Number) (->* (list -Number -Number -Boolean -Boolean) -Number)]
 
    [(-poly (a) (cl-> [() a]
-		     [(-Number) a]))
+                     [(-Number) a]))
     (cl-> [() (-pair -Number (-v b))]
-	  [(-Number) (-pair -Number (-v b))])]
+          [(-Number) (-pair -Number (-v b))])]
 
    [(-values (list -Number)) (-values (list Univ))]
 

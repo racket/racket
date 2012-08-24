@@ -113,7 +113,7 @@ attention to the @filepath{.rkt} sources only to confirm that each
 
 In contrast,
 
-@commandline{racket b.rkt c.rkt}
+@commandline{raco make b.rkt c.rkt}
 
 would create only @filepath{compiled/b_rkt.zo} and
 @filepath{compiled/c_rkt.zo}, since neither @filepath{b.rkt} nor

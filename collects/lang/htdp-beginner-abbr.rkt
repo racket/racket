@@ -4,7 +4,7 @@
          mzlib/list
          mzlib/math
          syntax/docprovide
-         test-engine/scheme-tests)
+         test-engine/racket-tests)
 
 (require "private/provide-and-scribble.rkt")
 

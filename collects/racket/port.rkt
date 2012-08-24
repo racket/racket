@@ -545,6 +545,10 @@
                                  ((list-ref c 0))
                                  (send-result #t))))))
               commits))))
+    (define (close-it)
+      (close)
+      ;; to ensure that progress evts are ready:
+      (close-input-port peeked-r))
     (make-input-port
      name
      ;; Read
@@ -559,7 +563,7 @@
              (peek-it s skip unless-evt)
              (fast-peek s skip fast-peek-k))))
        peek-it)
-     close
+     close-it
      (lambda ()
        (set! progress-requested? #t)
        (port-progress-evt peeked-r))
@@ -1006,7 +1010,9 @@
                   eof)
               (let ([n (peek-bytes-avail!* str skip progress-evt port 0 count)])
                 (if (eq? n 0)
-                    (wrap-evt port (lambda (x) 0))
+                    (if (and progress-evt (sync/timeout 0 progress-evt))
+                        #f
+                        (wrap-evt port (lambda (x) 0)))
                     n)))))
       (define (try-again)
         (wrap-evt
@@ -1110,7 +1116,8 @@
   ;; go is the main reading function, either called directly for
   ;; a poll, or called in a thread for a non-poll read
   (define (go nack ch poll?)
-    ;; FIXME - what if the input port is closed?
+    ;; Beware that the input port might become closed at any time.
+    ;; For the most part, progress evts should take care of that.
     (let try-again ([pos 0] [bstr orig-bstr] [progress-evt #f])
       (let* ([progress-evt 
               ;; if no progress event is given, get one to ensure that
@@ -1119,7 +1126,7 @@
              [v (and 
                  ;; to implement weak support for reusing the buffer in `read-bytes!-evt',
                  ;; need to check nack after getting progress-evt:
-                 (not (sync/timeout 0 nack)) 
+                 (not (sync/timeout 0 nack))
                  ;; try to get bytes:
                  ((if poll? peek-bytes-avail!* peek-bytes-avail!)
                   bstr (+ pos (or peek-offset 0)) progress-evt input-port pos))])

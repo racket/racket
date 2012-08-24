@@ -150,7 +150,7 @@
          (unless (sequence? seq)
            (raise-blame-error
             blame seq
-            "expected a sequence, got: ~e"
+            '(expected: "a sequence" given: "~e")
             seq))
          (make-do-sequence
           (lambda ()
@@ -163,7 +163,7 @@
                                      (unless (= n-elems n-cs)
                                        (raise-blame-error
                                         blame seq
-                                        "expected a sequence of ~a values, got ~a values: ~s"
+                                        '(expected: "a sequence of ~a values" given: "~a values\n values: ~e")
                                         n-cs n-elems elems))
                                      (apply
                                       values

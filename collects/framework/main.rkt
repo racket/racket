@@ -770,6 +770,14 @@
   @{Procedures passed to this function are called when the @onscreen{Windows}
     menu is created. Use it to add additional menu items.})
 
+  (proc-doc/names
+   group:create-windows-menu
+   (-> (is-a?/c menu-item-container<%>) (is-a?/c menu%))
+   (mb)
+   @{Creates a windows menu, registers it (internally) with
+     the frame group (see @racket[(get-the-frame-group)]), and
+     returns it.})
+ 
  (proc-doc/names
   handler:handler?
   (any/c . -> . boolean?)

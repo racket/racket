@@ -25,8 +25,8 @@
         ok?)))
 
   (define remote-node (spawn-remote-racket-node "localhost" #:listen-port 6344))
-  (define tuple-place (supervise-named-dynamic-place-at remote-node 'tuple-server tuple-path 'make-tuple-server))
-  (define bank-place  (supervise-dynamic-place-at remote-node bank-path 'make-bank))
+  (define tuple-place (supervise-place-at remote-node #:named 'tuple-server tuple-path 'make-tuple-server))
+  (define bank-place  (supervise-place-at remote-node bank-path 'make-bank))
 
   (message-router
     remote-node

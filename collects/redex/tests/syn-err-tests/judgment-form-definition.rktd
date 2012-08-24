@@ -68,7 +68,8 @@
    (define-judgment-form syn-err-lang
      #:mode (J I)
      [(J number)
-      bad-prem])
+      bad-prem
+      q])
    (void)))
 (#rx"expected judgment form name"
  ([bad-judgment-form q])

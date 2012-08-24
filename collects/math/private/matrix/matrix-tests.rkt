@@ -237,7 +237,7 @@
           (equal? (matrix-hermitian (list->matrix '[[1+i 2-i] [3+i 4-i]]))
                   (list->matrix '[[1-i 3-i] [2+i 4+i]])))
     (let ()
-      (: gauss-eliminate : (Matrix Number) Boolean Boolean -> (Result-Matrix Number))
+      (: gauss-eliminate : (Matrix Number) Boolean Boolean -> (Matrix Number))
       (define (gauss-eliminate M u? p?)
         (let-values ([(M wp) (matrix-gauss-eliminate M u? p?)])
           M))

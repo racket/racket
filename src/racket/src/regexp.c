@@ -5391,8 +5391,10 @@ static Scheme_Object *gen_compare(char *name, int pos,
 	      startv, endv, &dropped, 
               prefix, prefix_len, prefix_offset);
 
-  if (lazy_string)
+  if (lazy_string) {
     full_s = lazy_string->s;
+    endset = lazy_string->end;
+  }
 
   if (iport) {
     minpos = -prefix_len;

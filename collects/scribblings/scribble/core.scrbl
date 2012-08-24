@@ -290,18 +290,18 @@ HTML display when the mouse hovers over the text.
 The @techlink{collect pass}, @techlink{resolve pass}, and
 @techlink{render pass} processing steps all produce information that
 is specific to a rendering mode. Concretely, the operations are all
-represented as methods on a @racket[render%] object.
+represented as methods on a @racket[render<%>] object.
 
-The result of the @method[render% collect] method is a
+The result of the @method[render<%> collect] method is a
 @racket[collect-info] instance. This result is provided back as an
-argument to the @method[render% resolve] method, which produces a
+argument to the @method[render<%> resolve] method, which produces a
 @racket[resolve-info] value that encapsulates the results from both
 iterations. The @racket[resolve-info] value is provided back to the
-@method[render% resolve] method for final rendering.
+@method[render<%> resolve] method for final rendering.
 
-Optionally, before the @method[render% resolve] method is called,
+Optionally, before the @method[render<%> resolve] method is called,
 serialized information from other documents can be folded into the
-@racket[collect-info] instance via the @method[render%
+@racket[collect-info] instance via the @method[render<%>
 deserialize-info] method. Other methods provide serialized information
 out of the collected and resolved records.
 

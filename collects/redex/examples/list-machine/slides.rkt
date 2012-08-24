@@ -55,14 +55,14 @@
        (list "dom(" arg ")"))])
    (t)))
 
-(define (scale-to-fit p)
+(define (scale-to-fit/m p)
   (scale p (min (/ (- 1024 margin margin) (pict-width p))
                 (/ (- 768 margin margin) (pict-height p)))))
 
 (slide 
  (with-rewriters
   (λ ()
-    (scale-to-fit 
+    (scale-to-fit/m
      (ht-append
       40
       (language->pict list-machine #:nts '(a p ι))
@@ -71,13 +71,13 @@
 (slide
  (with-rewriters
   (λ ()
-    (scale-to-fit
+    (scale-to-fit/m
      (judgment-form->pict check-instr)))))
 
 (slide
  (with-rewriters
   (λ ()
-    (scale-to-fit
+    (scale-to-fit/m
      (vc-append
       40
       (judgment-form->pict check-block)

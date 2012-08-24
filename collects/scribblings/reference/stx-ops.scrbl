@@ -198,7 +198,7 @@ then the resulting immediate @tech{syntax object} is given the
 properties (see @secref["stxprops"]) of @racket[prop]; if @racket[v]
 is a pair, vector, box, immutable @tech{hash table}, or immutable
 @tech{prefab} structure, recursively converted values are not given
-properties or certificates. If @racket[ctxt] is @tech{tainted} or
+properties. If @racket[ctxt] is @tech{tainted} or
 @tech{armed}, then the resulting syntax object from
 @racket[datum->syntax] is @tech{tainted}.
 

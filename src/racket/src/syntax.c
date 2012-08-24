@@ -6852,7 +6852,7 @@ static Scheme_Object *unmarshal_mark(Scheme_Object *_a, Scheme_Unmarshal_Tables 
   return n;
 }
 
-#if 1 
+#if 0 
 # define return_NULL return (printf("%d\n", __LINE__), NULL)
 #else
 # define return_NULL return NULL

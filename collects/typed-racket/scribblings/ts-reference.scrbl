@@ -19,6 +19,7 @@
 @include-section["reference/special-forms.scrbl"]
 @include-section["reference/libraries.scrbl"]
 @include-section["reference/utilities.scrbl"]
+@include-section["reference/exploring-types.scrbl"]
 @include-section["reference/no-check.scrbl"]
 @include-section["reference/typed-regions.scrbl"]
 @include-section["reference/optimization.scrbl"]

@@ -106,11 +106,20 @@
                   [callback (λ (x y) (insert-comment-box))]
                   [demand-callback on-demand])])
         (func item))
+      (define plain-insert-callback (edit-menu:do 'insert-image))
+      (define lowercase-imgs "*.png;*.jpg;*.jpeg;*.gif;*.xpm;*.bmp")
+      (define imgs (string-append
+                    lowercase-imgs ";"
+                    (string-upcase lowercase-imgs)))
       (let ([item 
              (new c% 
                   [label (string-constant insert-image-item)]
                   [parent edit-menu]
-                  [callback (edit-menu:do 'insert-image)]
+                  [callback (λ (menu evt)
+                              (parameterize ([finder:default-filters 
+                                              `(["Image" ,imgs]
+                                                ["Any" "*.*"])])
+                                (plain-insert-callback menu evt)))]
                   [demand-callback on-demand])])
         (func item))
       (void))))
@@ -233,12 +242,7 @@
               (set-icon large (send large get-loaded-mask) 'large))
             (set-icon icon (send icon get-loaded-mask) 'both))))
     
-    (let ([mb (make-object (get-menu-bar%) this)])
-      (make-object menu:can-restore-underscore-menu%
-        (case (system-type)
-          [(macosx) (string-constant windows-menu-label)]
-          [else (string-constant tabs-menu-label)])
-        mb))
+    (group:create-windows-menu (make-object (get-menu-bar%) this))
     
     (reorder-menus this)
     
@@ -1427,31 +1431,30 @@
                   (when s
                     (send (current-ps-setup) copy-from s))))])))
     
-    (define/override edit-menu:between-select-all-and-find
-      (λ (edit-menu)
-        (let* ([c% (get-checkable-menu-item%)]
-               [on-demand
-                (λ (menu-item)
-                  (let ([edit (get-edit-target-object)])
-                    (if (and edit (is-a? edit editor<%>))
-                        (begin
-                          (send menu-item enable #t)
-                          (send menu-item check (send edit auto-wrap)))
-                        (begin 
-                          (send menu-item check #f)
-                          (send menu-item enable #f)))))]
-               [callback
-                (λ (item event)
-                  (let ([edit (get-edit-target-object)])
-                    (when (and edit
-                               (is-a? edit editor<%>))
-                      (let ([new-pref (not (send edit auto-wrap))])
-                        (preferences:set 'framework:auto-set-wrap? new-pref)
-                        (send edit auto-wrap new-pref)))))])
-          (make-object c% (string-constant wrap-text-item)
-            edit-menu callback #f #f on-demand))
-        
-        (make-object separator-menu-item% edit-menu)))
+    (define/override (edit-menu:between-select-all-and-find edit-menu)
+      (define c% (get-checkable-menu-item%))
+      (define (on-demand menu-item)
+        (define edit (get-edit-target-object))
+        (cond
+          [(and edit (is-a? edit editor<%>))
+           (send menu-item enable #t)
+           (send menu-item check (send edit auto-wrap))]
+          [else 
+           (send menu-item check #f)
+           (send menu-item enable #f)]))
+      (define (callback item event)
+        (define edit (get-edit-target-object))
+        (when (and edit
+                   (is-a? edit editor<%>))
+          (define new-pref (not (send edit auto-wrap)))
+          (preferences:set 'framework:auto-set-wrap? new-pref)
+          (send edit auto-wrap new-pref)))
+      (new c%
+           [label (string-constant wrap-text-item)]
+           [parent edit-menu]
+           [callback callback]
+           [demand-callback on-demand])
+      (make-object separator-menu-item% edit-menu))
     
     (define/override help-menu:about-callback 
       (λ (menu evt) 
@@ -2160,6 +2163,15 @@
   
     (define/override (edit-menu:find-callback menu evt) (unhide-search-and-toggle-focus) #t)
     (define/override (edit-menu:create-find?) #t)
+
+    (define/override (edit-menu:find-from-selection-callback menu evt) 
+      (unhide-search-and-toggle-focus #:new-search-string-from-selection? #t)
+      #t)
+    (define/override (edit-menu:find-from-selection-on-demand item)
+      (define t (get-text-to-search))
+      (send item enable (and t (not (= (send t get-start-position)
+                                       (send t get-end-position))))))
+    (define/override (edit-menu:create-find-from-selection?) #t)
     
     (define/override (edit-menu:find-next-callback menu evt) (search 'forward) #t)
     (define/override (edit-menu:create-find-next?) #t)
@@ -2271,26 +2283,47 @@
             (when canvas
               (send canvas focus))))))
     
-    (define/public (unhide-search focus?)
+    (define/public (unhide-search focus? #:new-search-string-from-selection? [new-search-string-from-selection? #f])
       (when hidden?
         (set! hidden? #f)
         (build-search-gui-in-frame)
         (unless (memq search/replace-panel (send super-root get-children))
           (send super-root add-child search/replace-panel))
         (search-parameters-changed)
+        (send find-edit begin-edit-sequence)
+        (when new-search-string-from-selection?
+          (update-search-string-from-selection))
         (when focus?
           (send find-edit set-position 0 (send find-edit last-position))
-          (send (send find-edit get-canvas) focus))))
+          (send (send find-edit get-canvas) focus))
+        (send find-edit end-edit-sequence)))
     
-    (define/public (unhide-search-and-toggle-focus)
+    (define/public (unhide-search-and-toggle-focus #:new-search-string-from-selection? [new-search-string-from-selection? #f])
       (if hidden?
-        (unhide-search #t)
+        (unhide-search #t #:new-search-string-from-selection? new-search-string-from-selection?)
         (let ([canvas (and text-to-search (send text-to-search get-canvas))])
           (cond
             [(or (not text-to-search) (and canvas (send canvas has-focus?)))
+             (send find-edit begin-edit-sequence)
+             (when new-search-string-from-selection?
+               (update-search-string-from-selection))
              (send find-edit set-position 0 (send find-edit last-position))
-             (send find-canvas focus)]
-            [canvas (send canvas focus)]))))
+             (send find-canvas focus)
+             (send find-edit end-edit-sequence)]
+            [canvas
+             (send canvas focus)]))))
+    
+    (define/private (update-search-string-from-selection)
+      (when (and text-to-search
+                 (not (= (send text-to-search get-start-position)
+                         (send text-to-search get-end-position))))
+        (send find-edit delete 0 (send find-edit last-position))
+        (send text-to-search move/copy-to-edit 
+              find-edit 
+              (send text-to-search get-start-position)
+              (send text-to-search get-end-position)
+              0
+              #:try-to-move? #f)))
     
     (define/public (search searching-direction)
       (unhide-search #f)

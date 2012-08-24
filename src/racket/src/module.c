@@ -232,10 +232,12 @@ THREAD_LOCAL_DECL(static Scheme_Object *empty_self_shift_cache);
 THREAD_LOCAL_DECL(static Scheme_Bucket_Table *starts_table);
 THREAD_LOCAL_DECL(static Scheme_Bucket_Table *submodule_empty_modidx_table);
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+# define PLACE_LOCAL_MODPATH_TABLE 1
 THREAD_LOCAL_DECL(static Scheme_Bucket_Table *place_local_modpath_table);
+#else
+# define PLACE_LOCAL_MODPATH_TABLE 0
 #endif
 
-/* FIXME eventually theses initial objects should be shared, but work required */
 THREAD_LOCAL_DECL(static Scheme_Env *initial_modules_env);
 THREAD_LOCAL_DECL(static int num_initial_modules);
 THREAD_LOCAL_DECL(static Scheme_Object **initial_modules);
@@ -368,11 +370,7 @@ void scheme_init_module(Scheme_Env *env)
     REGISTER_SO(empty_self_modname);
     empty_self_modidx = scheme_make_modidx(scheme_false, scheme_false, scheme_false);
     (void)scheme_hash_key(empty_self_modidx);
-#ifdef MZ_USE_PLACES
-    empty_self_modname = scheme_intern_symbol("expanded module"); /* FIXME: needs to be uninterned */
-#else
     empty_self_modname = scheme_make_symbol("expanded module"); /* uninterned */
-#endif
     empty_self_modname = scheme_intern_resolved_module_path(empty_self_modname);
   }
 
@@ -454,7 +452,7 @@ void scheme_init_module_resolver(void)
   if (!starts_table) {
     REGISTER_SO(starts_table);
     starts_table = scheme_make_weak_equal_table();
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+#if PLACE_LOCAL_MODPATH_TABLE
     REGISTER_SO(place_local_modpath_table);
     place_local_modpath_table = scheme_make_weak_equal_table();
 #endif
@@ -3520,7 +3518,7 @@ Scheme_Object *scheme_modidx_submodule(Scheme_Object *_modidx)
 void scheme_init_module_path_table()
 {
   REGISTER_SO(modpath_table);
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+#if PLACE_LOCAL_MODPATH_TABLE
   modpath_table = scheme_make_nonlock_equal_bucket_table();
 #else
   modpath_table = scheme_make_weak_equal_table();
@@ -3530,38 +3528,17 @@ void scheme_init_module_path_table()
 static Scheme_Object *make_resolved_module_path_obj(Scheme_Object *o)
 {
   Scheme_Object *rmp;
-  Scheme_Object *newo;
-
-#if defined(MZ_USE_PLACES)
-  if (SCHEME_SYMBOLP(o)) {
-    newo = scheme_make_sized_offset_byte_string((char *)o, SCHEME_SYMSTR_OFFSET(o), SCHEME_SYM_LEN(o), 1);
-  }
-  else {
-    newo = o;
-  }
-#else
-  newo = o;
-#endif
   
   rmp = scheme_alloc_small_object();
   rmp->type = scheme_resolved_module_path_type;
-  SCHEME_PTR_VAL(rmp) = newo;
+  SCHEME_PTR_VAL(rmp) = o;
 
   return rmp;
 }
 
 Scheme_Object *scheme_resolved_module_path_value(Scheme_Object *rmp)
 {
-  Scheme_Object *rmp_val;
-  rmp_val = SCHEME_RMP_VAL(rmp);
-
-/*symbols aren't equal across places now*/                                                                                                                                                                                                                                  
-#if defined(MZ_USE_PLACES)
-    if (SCHEME_BYTE_STRINGP(rmp_val))
-      return scheme_intern_exact_symbol(SCHEME_BYTE_STR_VAL(rmp_val), SCHEME_BYTE_STRLEN_VAL(rmp_val));
-#endif
-
-  return rmp_val;
+  return SCHEME_RMP_VAL(rmp);
 }
 
 int scheme_resolved_module_path_value_matches(Scheme_Object *rmp, Scheme_Object *o) {
@@ -3587,24 +3564,30 @@ Scheme_Object *scheme_intern_resolved_module_path(Scheme_Object *o)
   Scheme_Bucket *b;
 
   rmp = make_resolved_module_path_obj(o);
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+#if PLACE_LOCAL_MODPATH_TABLE
   if (place_local_modpath_table) {
+    scheme_start_atomic();
     b = scheme_bucket_or_null_from_table(place_local_modpath_table, (const char *)rmp, 0);
+    scheme_end_atomic_no_swap();
     if (b) {
       return (Scheme_Object *)HT_EXTRACT_WEAK(b->key);
     }
   }
 #endif
+
+  scheme_start_atomic();
   b = scheme_bucket_or_null_from_table(modpath_table, (const char *)rmp, 0);
+  scheme_end_atomic_no_swap();
+
   if (b) {
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+#if PLACE_LOCAL_MODPATH_TABLE
     return (Scheme_Object *)b->key;
 #else
     return (Scheme_Object *)HT_EXTRACT_WEAK(b->key);
 #endif
   }
 
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+#if PLACE_LOCAL_MODPATH_TABLE
   create_table = place_local_modpath_table ? place_local_modpath_table : modpath_table;
 #else
   create_table = modpath_table;
@@ -3613,10 +3596,11 @@ Scheme_Object *scheme_intern_resolved_module_path(Scheme_Object *o)
   scheme_start_atomic();
   b = scheme_bucket_from_table(create_table, (const char *)rmp);
   scheme_end_atomic_no_swap();
+
   if (!b->val)
     b->val = scheme_true;
 
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+#if PLACE_LOCAL_MODPATH_TABLE
   if (!place_local_modpath_table)
     return (Scheme_Object *)b->key;
 #endif
@@ -6522,7 +6506,7 @@ static Scheme_Object *strip_lexical_context(Scheme_Object *stx)
 
 static Scheme_Object *do_annotate_submodules_k(void);
 
-Scheme_Object *do_annotate_submodules(Scheme_Object *fm, int phase)
+Scheme_Object *do_annotate_submodules(Scheme_Object *fm, int phase, int incl_star)
 {
   Scheme_Object *a, *d, *v;
   int changed = 0;
@@ -6532,6 +6516,8 @@ Scheme_Object *do_annotate_submodules(Scheme_Object *fm, int phase)
   {
     Scheme_Thread *p = scheme_current_thread;
     p->ku.k.p1 = (void *)fm;
+    p->ku.k.i1 = phase;
+    p->ku.k.i2 = incl_star;
     return scheme_handle_stack_overflow(do_annotate_submodules_k);
   }
 #endif
@@ -6546,17 +6532,21 @@ Scheme_Object *do_annotate_submodules(Scheme_Object *fm, int phase)
       if (scheme_stx_module_eq3(scheme_module_stx, v, 
                                 scheme_make_integer(0), scheme_make_integer(phase), 
                                 NULL)
-          || scheme_stx_module_eq3(scheme_modulestar_stx, v, 
-                                   scheme_make_integer(0), scheme_make_integer(phase), 
-                                   NULL)) {
+          || (incl_star
+              && scheme_stx_module_eq3(scheme_modulestar_stx, v, 
+                                       scheme_make_integer(0), scheme_make_integer(phase), 
+                                       NULL))) {
         /* found a submodule */
-        a = scheme_stx_property(a, scheme_intern_symbol("submodule"), a);
-        changed = 1;
+        v = scheme_stx_property(a, scheme_intern_symbol("submodule"), NULL);
+        if (SCHEME_FALSEP(v)) {
+          a = scheme_stx_property(a, scheme_intern_symbol("submodule"), a);
+          changed = 1;
+        }
       } else if (scheme_stx_module_eq3(scheme_begin_for_syntax_stx, v, 
                                        scheme_make_integer(0), scheme_make_integer(phase), 
                                        NULL)) {
         /* found `begin-for-syntax' */
-        v = do_annotate_submodules(a, phase+1);
+        v = do_annotate_submodules(a, phase+1, incl_star);
         if (!SAME_OBJ(v, a)) {
           changed = 1;
           a = v;
@@ -6565,7 +6555,7 @@ Scheme_Object *do_annotate_submodules(Scheme_Object *fm, int phase)
                                        scheme_make_integer(0), scheme_make_integer(phase), 
                                        NULL)) {
         /* found `begin' */
-        v = do_annotate_submodules(a, phase);
+        v = do_annotate_submodules(a, phase, incl_star);
         if (!SAME_OBJ(v, a)) {
           changed = 1;
           a = v;
@@ -6575,7 +6565,7 @@ Scheme_Object *do_annotate_submodules(Scheme_Object *fm, int phase)
   }
 
   v = SCHEME_STX_CDR(fm);
-  d = do_annotate_submodules(v, phase);
+  d = do_annotate_submodules(v, phase, incl_star);
 
   if (!changed && SAME_OBJ(v, d))
     return fm;
@@ -6594,10 +6584,10 @@ static Scheme_Object *do_annotate_submodules_k(void)
 
   p->ku.k.p1 = NULL;
 
-  return do_annotate_submodules(fm, p->ku.k.i1);
+  return do_annotate_submodules(fm, p->ku.k.i1, p->ku.k.i2);
 }
 
-static Scheme_Object *annotate_existing_submodules(Scheme_Object *orig_fm)
+Scheme_Object *scheme_annotate_existing_submodules(Scheme_Object *orig_fm, int incl_star)
 {
   Scheme_Object *fm = orig_fm;
 
@@ -6609,7 +6599,7 @@ static Scheme_Object *annotate_existing_submodules(Scheme_Object *orig_fm)
 
   if (scheme_stx_module_eq(scheme_module_begin_stx, fm, 0)) {
     /* It's a `#%plain-module-begin' form */
-    return do_annotate_submodules(orig_fm, 0);
+    return do_annotate_submodules(orig_fm, 0, incl_star);
   }
 
   return orig_fm;
@@ -7047,7 +7037,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
        attach the original form as a property to the `module' form, so
        that re-expansion can use it instead of dropping all lexical
        context: */
-    fm = annotate_existing_submodules(fm);
+    fm = scheme_annotate_existing_submodules(fm, 1);
   } else {
     fm = scheme_make_pair(scheme_datum_to_syntax(module_begin_symbol, form, mb_ctx, 0, 2), 
 			  fm);

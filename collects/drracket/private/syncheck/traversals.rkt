@@ -407,7 +407,7 @@
                (loop (cdr prop))]
               [(identifier? prop)
                (add-origins prop disappaeared-uses)
-               (add-id binders prop #:add-if-not-original? #T)])))))
+               (add-id binders prop)])))))
     
     ;; add-disappeared-uses : syntax id-set -> void
     (define (add-disappeared-uses stx id-set)
@@ -419,7 +419,7 @@
                (loop (car prop))
                (loop (cdr prop))]
               [(identifier? prop)
-               (add-id id-set prop #:add-if-not-original? #t)])))))
+               (add-id id-set prop)])))))
     
     ;; add-require-spec : hash-table[sexp[require-spec] -o> (listof syntax)]
     ;;                 -> sexp[require-spec]
@@ -491,7 +491,6 @@
       
       (for ([vars (in-list (get-idss templrefs))])
         (for ([var (in-list vars)])
-          
           ;; build a set of all of the known phases
           (define phases (set))
           (for ([phase (in-list (hash-keys phase-to-binders))])
@@ -501,6 +500,7 @@
           
           ;; connect every identifier inside a quote-syntax to each binder at any phase
           (for ([phase (in-set phases)])
+            (document-variable var phase)
             (connect-identifier var
                                 (lookup-phase-to-mapping phase-to-binders phase)
                                 unused/phases
@@ -972,7 +972,7 @@
           (when source-editor
             (define info (get-index-entry-info binding-info))
             (when info
-              (define-values (entry-desc path tag) (apply values info))
+              (define-values (entry-desc path definition-tag tag) (apply values info))
               (send defs-text syncheck:add-background-color
                     source-editor start fin 
                     "palegreen")
@@ -983,6 +983,7 @@
                     (syntax-e stx)
                     (build-docs-label entry-desc)
                     path
+                    definition-tag
                     tag))))))
     
     (define (build-docs-label entry-desc)
@@ -1182,9 +1183,8 @@
           (free-identifier-mapping-put! mapping id new))))
     
     ;; add-id : id-set identifier -> void
-    (define (add-id mapping id #:add-if-not-original? [add-if-not-original? #f])
-      (when (or add-if-not-original?
-                (syntax-original? id))
+    (define (add-id mapping id)
+      (when (syntax-original? id)
         (let* ([old (free-identifier-mapping-get mapping id (λ () '()))]
                [new (cons id old)])
           (free-identifier-mapping-put! mapping id new))))

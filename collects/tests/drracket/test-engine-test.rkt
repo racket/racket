@@ -12,21 +12,29 @@
 (define (set-language close-dialog?)
   (set-language-level! (language) close-dialog?))
 
-(define (common-test-engine)
-    (test-expression "(check-expect 1 1)"
-		     "The test passed!"
-		     #:repl-expected "Both tests passed!")
-
-    (test-expression "(check-within 1 1.1 0.5)"
-		     "The test passed!"
-		     #:repl-expected "Both tests passed!")
-
-    (test-expression "(check-expect 1 2)"
-		     ""
-		     #:check-failures-expected
-		     (list (make-check-expect-failure "1" "2" 1 0))
-		     #:repl-check-failures-expected
-		     (list (make-check-expect-failure "1" "2" 3 2))))
+(define (common-test-engine dmda?)
+  (test-expression "(check-expect 1 1)"
+                   "The test passed!"
+                   #:repl-expected "Both tests passed!")
+  
+  (test-expression "(check-within 1 1.1 0.5)"
+                   "The test passed!"
+                   #:repl-expected "Both tests passed!")
+  
+  (test-expression "(check-expect 1 2)"
+                   ""
+                   #:check-failures-expected
+                   (list (make-check-expect-failure "1" "2" 1 0))
+                   #:repl-check-failures-expected
+                   (list (make-check-expect-failure "1" "2" 3 2)))
+  
+  (unless dmda?
+    (test-expression "(check-expect (car 0) 2)"
+                     "car: expects a pair, given 0"
+                     #:check-failures-expected
+                     (list (make-check-expect-error "2." ":: car: expects a pair, given 0" 1 0))
+                     #:repl-check-failures-expected
+                     (list (make-check-expect-error "2." ":: car: expects a pair, given 0" 4 2)))))
 
 (define (common-signatures-*sl)
   (test-expression "(: foo Integer) (define foo 5)"
@@ -94,7 +102,7 @@
 (define (beginner)
   (parameterize ([language (list "How to Design Programs" #rx"Beginning Student(;|$)")])
     (prepare-for-test-expression)
-    (common-test-engine)))
+    (common-test-engine #f)))
 
 
 ;                                                                            
@@ -117,7 +125,7 @@
   (parameterize ([language (list "How to Design Programs" 
                                  #rx"Beginning Student with List Abbreviations(;|$)")])
     (prepare-for-test-expression)
-    (common-test-engine)))
+    (common-test-engine #f)))
 
 
 ;                                                                                          
@@ -139,7 +147,7 @@
 (define (intermediate)
   (parameterize ([language (list "How to Design Programs" #rx"Intermediate Student(;|$)")])
     (prepare-for-test-expression)
-    (common-test-engine)))
+    (common-test-engine #f)))
 
 ;                                                                                    
 ;                                                                                    
@@ -162,7 +170,7 @@
   (parameterize ([language (list "How to Design Programs" 
                                  #rx"Intermediate Student with lambda(;|$)")])
     (prepare-for-test-expression)
-    (common-test-engine)))
+    (common-test-engine #f)))
 
 
 ;                                                                           
@@ -185,32 +193,32 @@
 (define (advanced)
   (parameterize ([language (list "How to Design Programs" #rx"Advanced Student(;|$)")])
     (prepare-for-test-expression)
-    (common-test-engine)
+    (common-test-engine #f)
     (common-signatures-*sl)))
 
 
 (define (DMdA-beginner)
   (parameterize ([language (list "DeinProgramm" #rx"Die Macht der Abstraktion - Anfänger(;|$)")])
     (prepare-for-test-expression)
-    (common-test-engine)
+    (common-test-engine #t)
     (common-signatures-DMdA)))
 
 (define (DMdA-vanilla)
   (parameterize ([language (list "DeinProgramm" #rx"Die Macht der Abstraktion(;|$)")])
     (prepare-for-test-expression)
-    (common-test-engine)
+    (common-test-engine #t)
     (common-signatures-DMdA)))
 
 (define (DMdA-assignments)
   (parameterize ([language (list "DeinProgramm" #rx"Die Macht der Abstraktion mit Zuweisungen(;|$)")])
     (prepare-for-test-expression)
-    (common-test-engine)
+    (common-test-engine #t)
     (common-signatures-DMdA)))
 
 (define (DMdA-advanced)
   (parameterize ([language (list "DeinProgramm" #rx"Die Macht der Abstraktion - fortgeschritten(;|$)")])
     (prepare-for-test-expression)
-    (common-test-engine)
+    (common-test-engine #t)
     (common-signatures-DMdA)))
 
 (define (prepare-for-test-expression)
@@ -301,6 +309,8 @@
   (actual expected line column)
   #:transparent)
 
+(define-struct check-expect-error (value message line column) #:transparent)
+
 (define (parse-check-failures txt)
   (cond
     ((string=? txt "") '())
@@ -309,7 +319,7 @@
     ((regexp-match #rx"^[ \t]*\n(.*)" txt)
      => (lambda (match)
           (parse-check-failures (cadr match))))
-    ((regexp-match "^[ \t]+Actual value ([^\n]+) differs from ([^\n]+), the expected value.\nat line ([0-9]+), column ([0-9]+)(.*)"
+    ((regexp-match #rx"^[ \t]+Actual value ([^\n]+) differs from ([^\n]+), the expected value.\nat line ([0-9]+), column ([0-9]+)(.*)"
                    txt)
      => (lambda (match)
           (let-values (((_ actual expected line-text col-text rest) (apply values match)))
@@ -318,6 +328,16 @@
                                         (string->number line-text)
                                         (string->number col-text))
              (parse-check-failures rest)))))
+    ((regexp-match #rx"^[ \t]+check-expect encountered the following error instead of the expected value, ([^\n]*). *\n[ \t]*([^\n]*)\n[^\n]*line ([0-9]+), column ([0-9]+)[ ]*\n(.*)$"
+                   txt)
+     => (lambda (match)
+          (define-values (_ value message line-text col-text rest) (apply values match))
+          (cons
+           (make-check-expect-error value
+                                    message
+                                    (string->number line-text)
+                                    (string->number col-text))
+           (parse-check-failures rest))))
     (else 
      (error "unknown check failure" txt (string-ref txt 0)))))
 
@@ -347,7 +367,7 @@
 ;; types an expression in the REPL and tests the output from the REPL.
 (define (test-expression expression defs-expected 
 			 #:repl-expression (repl-expression expression)
-			 #:repl-expected (repl-expected defs-expected)
+                         #:repl-expected (repl-expected defs-expected)
 			 #:check-failures-expected (check-failures-expected '())
 			 #:signature-violations-expected (signature-violations-expected '())
 			 #:repl-check-failures-expected (repl-check-failures-expected '())
@@ -371,7 +391,7 @@
               [(procedure? expected)
                (expected got)]))]
 	 [check-failures
-	  (lambda (signature-violations-expected check-failures-expected)
+	  (lambda (where signature-violations-expected check-failures-expected)
 	    (let ((text
 		   (cond
 		    ((send (send definitions-text get-tab) get-test-editor)
@@ -387,16 +407,16 @@
 		     (null? check-failures-expected))
 		(when text
 		  (eprintf "FAILED: ~s ~s expected ~s to produce no check failures or signature violations:\ngot:\n~a\ninstead\n"
-			   'definitions (language) expression text)))
+			   where (language) expression text)))
 	       (text
 		(let-values (((test-count test-passed-count signature-violation-count check-failures signature-violations)
 			      (parse-test-failures text)))
 		  (when (not (equal? check-failures check-failures-expected))
 		    (eprintf "FAILED: ~s ~s expected ~s to produce check failures:\n~s\ngot:\n~s\ninstead\n"
-			     'definitions (language) expression check-failures-expected check-failures))
+			     where (language) expression check-failures-expected check-failures))
 		  (when (not (equal? signature-violations signature-violations-expected))
 		    (eprintf "FAILED: ~s ~s expected ~s to produce signature violations:\n~s\ngot:\n~s\ninstead\n"
-			     'definitions (language) expression signature-violations-expected signature-violations))))
+			     where (language) expression signature-violations-expected signature-violations))))
 	       (else
 		(eprintf "expected ~a check failures and ~a signature violations but got none"
 			 (length check-failures-expected) (length signature-violations-expected))))))]
@@ -429,8 +449,8 @@
       (unless (check-expectation defs-expected got)
         (eprintf (make-err-msg defs-expected) 
                  'definitions (language) expression defs-expected got)))
-
-    (check-failures signature-violations-expected check-failures-expected)
+    
+    (check-failures 'definitions signature-violations-expected check-failures-expected)
     
     (cond
      [(pair? repl-expression) (for-each handle-interaction-insertion repl-expression)]
@@ -455,7 +475,8 @@
           (eprintf (make-err-msg repl-expected) 'interactions (language) expression repl-expected got))))
     
     ;; the failures from the definition window stick around
-    (check-failures (append signature-violations-expected repl-signature-violations-expected)
+    (check-failures 'interactions
+                    (append signature-violations-expected repl-signature-violations-expected)
 		    (append check-failures-expected repl-check-failures-expected))))
 
 (define (test-disabling-tests)

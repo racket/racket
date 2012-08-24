@@ -540,14 +540,14 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
 
 # define NAN_CHECK_0(x) if (MZ_IS_NAN(x)) return 0
 
-#define GEN_BIN_OP(name, scheme_name, iop, fop, fsop, bn_op, rop, cxop, exzeopl, exzeopr, nanckop, snanckop, c0_1, c1_1, c0_2, c1_2) \
+#define GEN_BIN_OP(name, scheme_name, iop, fop, fsop, bn_op, rop, cxop, exzeopl, exzeopr, nanckop, snanckop, nanckop_more, snanckop_more, c0_1, c1_1, c0_2, c1_2) \
   GEN_BIN_THING(Scheme_Object *, name, scheme_name, \
                 iop, fop, fsop, bn_op, rop, cxop, \
                 GEN_OMIT, GEN_FIRST_ONLY, \
                 0, 0, 0, 0, \
                 0, 0, 0, 0, \
                 GEN_SCHEME_BOOL_APPLY, badfunc, badfunc, badfunc, badfunc, \
-                nanckop, snanckop, nanckop, snanckop, \
+                nanckop, snanckop, nanckop_more, snanckop_more, \
                 GEN_IDENT, GEN_IDENT, exzeopl, exzeopr, "number?", GEN_TOI, \
                 c0_1, c1_1, c0_2, c1_2)
 

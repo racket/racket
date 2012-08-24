@@ -218,7 +218,7 @@
                   empty))))))
   
   ; Send message to IRC
-  (send-mail-message "drdr"
+  (send-mail-message "drdr@racket-lang.org"
                      (format "http://drdr.racket-lang.org/~a/" 
                              cur-rev)
                      (list "eli+ircbot@eli.barzilay.org")

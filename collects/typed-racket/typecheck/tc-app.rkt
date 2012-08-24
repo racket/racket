@@ -15,10 +15,9 @@
          ;; end fixme
          (for-syntax syntax/parse racket/base (utils tc-utils))
          (private type-annotation)
-         (types utils abbrev union subtype resolve convenience 
+         (types utils union subtype resolve abbrev
                 type-table substitute generalize)
          (utils tc-utils)
-         (only-in srfi/1 alist-delete)
          (except-in (env type-env-structs tvar-env index-env) extend)
          (rep type-rep filter-rep object-rep rep-utils)
          (r:infer infer)
@@ -276,6 +275,8 @@
                 vector-ref unsafe-vector-ref unsafe-vector*-ref
                 vector-set! unsafe-vector-set! unsafe-vector*-set!
                 unsafe-struct-ref unsafe-struct*-ref unsafe-struct-set! unsafe-struct*-set!)
+    ;; bail out immediately if we have one of these
+    [(#%plain-app rator:special-op . rands) (tc/app/regular form expected)]
     [(#%plain-app extend-parameterization pmz args ...)
      (let loop ([args (syntax->list #'(args ...))])
        (if (null? args) (ret Univ)
@@ -526,7 +527,7 @@
          (tc/let-values #'((x) ... (rst)) #`(fixed-args ... varg) #'body
                         #'(let-values ([(x) fixed-args] ... [(rst) varg]) . body)
                         expected)))]
-    [else (tc/app/regular form expected)])))
+    [_ (tc/app/regular form expected)])))
 
 (define (tc/app/regular form expected)
   (syntax-parse form #:literals (#%plain-app)

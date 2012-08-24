@@ -11,10 +11,37 @@
          file/convertible
          "render-struct.rkt")
 
-(provide render%)
+(provide render%
+         render<%>)
+
+(define render<%>
+  (interface ()
+    traverse
+    collect
+    resolve
+    render
+    serialize-info
+    deserialize-info
+    get-external
+    get-undefined
+    
+    ;; undocumented:
+    current-render-mode
+    get-substitutions
+    render-part
+    render-flow
+    render-intrapara-block
+    render-table
+    render-itemization
+    render-paragraph
+    render-content
+    render-nested-flow
+    render-block
+    render-other
+    get-dest-directory))
 
 (define render%
-  (class object%
+  (class* object% (render<%>)
 
     (init-field dest-dir
                 [refer-to-existing-files #f]

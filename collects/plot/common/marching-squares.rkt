@@ -584,10 +584,10 @@ above.
           polys2220 polys2221 polys2222))
 
 (define (unsafe-heights->polys za zb z1 z2 z3 z4)
-  (define t1 (if (z1 . unsafe-fl< . za) 0 (if (z1 . unsafe-fl< . zb) 1 2)))
-  (define t2 (if (z2 . unsafe-fl< . za) 0 (if (z2 . unsafe-fl< . zb) 1 2)))
-  (define t3 (if (z3 . unsafe-fl< . za) 0 (if (z3 . unsafe-fl< . zb) 1 2)))
-  (define t4 (if (z4 . unsafe-fl< . za) 0 (if (z4 . unsafe-fl< . zb) 1 2)))
+  (define t1 (if (z1 . unsafe-fl< . za) 0 (if (z1 . unsafe-fl<= . zb) 1 2)))
+  (define t2 (if (z2 . unsafe-fl< . za) 0 (if (z2 . unsafe-fl<= . zb) 1 2)))
+  (define t3 (if (z3 . unsafe-fl< . za) 0 (if (z3 . unsafe-fl<= . zb) 1 2)))
+  (define t4 (if (z4 . unsafe-fl< . za) 0 (if (z4 . unsafe-fl<= . zb) 1 2)))
   (define facet-num
     (unsafe-fx+ (unsafe-fx+ (unsafe-fx+ (unsafe-fx* (unsafe-fx* (unsafe-fx* t1 3) 3) 3)
                                         (unsafe-fx* (unsafe-fx* t2 3) 3))

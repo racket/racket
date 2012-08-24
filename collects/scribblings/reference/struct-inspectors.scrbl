@@ -46,7 +46,7 @@ inspector control mutually disjoint sets of structure types.}
 
 @defparam[current-inspector insp inspector?]{
 
-A parameter that determines the default inspector for newly created
+A @tech{parameter} that determines the default inspector for newly created
 structure types.}
 
 

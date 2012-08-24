@@ -1,8 +1,8 @@
 #lang racket/base
 
 (require "../utils/utils.rkt"
-	 (except-in (rep type-rep) make-arr)
-         (rename-in (types convenience union utils printer filter-ops resolve)
+         (except-in (rep type-rep object-rep filter-rep) make-arr)
+         (rename-in (types abbrev union utils printer filter-ops resolve)
                     [make-arr* make-arr])
          (utils tc-utils stxclass-util)
          syntax/stx (prefix-in c: racket/contract)
@@ -40,10 +40,10 @@
      (parse-type #'ty)]
     [(x ...)
      #:fail-unless (= 1 (length
-			 (for/list ([i (syntax->list #'(x ...))]
-				    #:when (and (identifier? i)
-						(free-identifier=? i #'t:->)))
-				   i)))
+                         (for/list ([i (syntax->list #'(x ...))]
+                                    #:when (and (identifier? i)
+                                                (free-identifier=? i #'t:->)))
+                                   i)))
      #f
      (parse-type s)]))
 
@@ -212,14 +212,21 @@
          (extend-tvars (list var)
            (let ([t* (parse-type #'t)])
              ;; is t in a productive position?
-             (unless (match t*
-                       [(Union: es)
-                        (define seq-tvar (Type-seq tvar))
-                        (not (memf (λ (e) (eq? (Type-seq e) seq-tvar)) es))]
-                       [_ #t]) ; it's fine
+             (define productive
+               (let loop ((ty t*))
+                 (match ty
+                  [(Union: elems) (andmap loop elems)]
+                  [(F: _) (not (equal? ty tvar))]
+                  [(App: rator rands stx)
+                   (loop (resolve-app rator rands stx))]
+                  [(Mu: _ body) (loop body)]
+                  [(Poly: names body) (loop body)]
+                  [(PolyDots: names body) (loop body)]
+                  [else #t])))
+             (unless productive
                (tc-error/stx
                 stx
-                "Recursive types are not allowed as members of unions directly inside their definition"))
+                "Recursive types are not allowed directly inside their definition"))
              (if (memq var (fv t*))
                  (make-Mu var t*)
                  t*))))]
@@ -359,33 +366,13 @@
        (let loop
          ([rator (parse-type #'id)]
           [args (map parse-type (syntax->list #'(arg args ...)))])
+         (resolve-app-check-error rator args stx)
          (match rator
-           [(Name: n)
-            (when (and (current-poly-struct)
-                       (free-identifier=? n (poly-name (current-poly-struct)))
-                       (not (or (ormap Error? args)
-                                (andmap type-equal? args (poly-vars (current-poly-struct))))))
-              (tc-error "Structure type constructor ~a applied to non-regular arguments ~a" rator args))
-            (make-App rator args stx)]
-           [(Poly: ns _)
-            (unless (= (length args) (length ns))
-              (tc-error "Wrong number of arguments to type ~a, expected ~a but got ~a" rator (length ns) (length args)))
-            (instantiate-poly rator args)]
+           [(Name: _) (make-App rator args stx)]
+           [(Poly: _ _) (instantiate-poly rator args)]
            [(Mu: _ _) (loop (unfold rator) args)]
            [(Error:) Err]
-           [_ (tc-error/delayed "Type ~a cannot be applied, arguments were: ~a" rator args)
-              Err]))
-       #;
-       (let ([ty (parse-type #'id)])
-         #;(printf "ty is ~a" ty)
-         (unless (Poly? ty)
-           (tc-error "not a polymorphic type: ~a" (syntax-e #'id)))
-         (unless (= (length (syntax->list #'(arg args ...))) (Poly-n ty))
-           (tc-error "wrong number of arguments to type constructor ~a: expected ~a, got ~a"
-                     (syntax-e #'id)
-                     (Poly-n ty)
-                     (length (syntax->list #'(arg args ...)))))
-         (instantiate-poly ty (map parse-type (syntax->list #'(arg args ...)))))]
+           [_ Err]))]
       [t:atom
        (-val (syntax-e #'t))]
       [_ (tc-error "not a valid type: ~a" (syntax->datum stx))])))
@@ -456,4 +443,3 @@
 (define parse-tc-results/id (parse/id parse-tc-results))
 
 (define parse-type/id (parse/id parse-type))
-

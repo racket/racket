@@ -18,3 +18,9 @@
 (#rx"expected an identifier"
  ([not-id junk])
  (define-metafunction not-id also-junk))
+
+(#rx"before underscore"
+ ([not-non-term z!_1])
+ (define-metafunction syn-err-lang
+  [(func M_1 E_2)
+   (M_1 (E_2 not-non-term) M_1)]))

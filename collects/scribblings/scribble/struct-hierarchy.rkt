@@ -124,9 +124,9 @@
                                              image-element-scale)
                                        #f))
   
-  (define multi-arg-element-name (class-name "multi-arg-\nelement"))
-  (define multi-arg-element-tag (field-spec #f "tag"))
-  (define multi-arg-element-box (class-box multi-arg-element-name (list multi-arg-element-tag) #f))
+  (define multiarg-element-name (class-name "multiarg-\nelement"))
+  (define multiarg-element-tag (field-spec #f "tag"))
+  (define multiarg-element-box (class-box multiarg-element-name (list multiarg-element-tag) #f))
 
   (define target-element-name (class-name "target-\nelement"))
   (define target-tag (field-spec #f "tag"))
@@ -192,7 +192,7 @@
                 (blank 0 50)
                 (inset (ht-append 20 
                                   collect-element-box
-                                  multi-arg-element-box
+                                  multiarg-element-box
                                   (refocus target-element-hierarchy target-element-box)
                                   link-element-box
                                   image-element-box
@@ -203,7 +203,7 @@
            index-element-box
            image-element-box
            target-element-box
-           multi-arg-element-box
+           multiarg-element-box
            link-element-box
            )))
 

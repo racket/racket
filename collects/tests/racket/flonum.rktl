@@ -25,6 +25,13 @@
   (test flv 'for/flvector flv1)
   (test flv 'for/flvector-fast flv2))
 
+(test (flvector 1.0 2.0 3.0 0.0 0.0)
+      'for/flvector-fill
+      (for/flvector #:length 5 ([i 3]) (+ i 1.0)))
+(test (flvector 1.0 2.0 3.0 -10.0 -10.0)
+      'for/flvector-fill
+      (for/flvector #:length 5 #:fill -10.0 ([i 3]) (+ i 1.0)))
+
 ;; for*/flvector test
 (let ((flv (flvector 0.0 0.0 0.0 0.0 1.0 2.0 0.0 2.0 4.0))
       (flv1 (for*/flvector ((i (in-range 3)) (j (in-range 3))) (exact->inexact (* 1.0 i j))))
@@ -87,6 +94,53 @@
     (test '(2.0 3.0) 'flvector-copy (for/list ([i (in-flvector (flvector-copy v 2))]) i))
     (test '(2.0) 'flvector-copy (for/list ([i (in-flvector (flvector-copy v 2 3))]) i))))
 
+;; Check empty clauses
+(let ()
+  (define vector-iters 0)
+  (test (flvector 3.4 0.0 0.0 0.0)
+        'no-clauses
+        (for/flvector #:length 4 ()
+                      (set! vector-iters (+ 1 vector-iters))
+                      3.4))
+  (test 1 values vector-iters)
+  (test (flvector 3.4 0.0 0.0 0.0)
+        'no-clauses
+        (for*/flvector #:length 4 ()
+                       (set! vector-iters (+ 1 vector-iters))
+                       3.4))
+  (test 2 values vector-iters))
+
+;; Check #:when and #:unless:
+(test (flvector 0.0 1.0 2.0 1.0 2.0)
+      'when-#t
+      (for/flvector #:length 5
+                    ([x (in-range 3)]
+                     #:when #t
+                     [y (in-range 3)])
+         (exact->inexact (+ x y))))
+(test (flvector 0.0 1.0 2.0 2.0 3.0)
+      'when-...
+      (for/flvector #:length 5
+                    ([x (in-range 3)]
+                     #:when (even? x)
+                     [y (in-range 3)])
+        (exact->inexact (+ x y))))
+(test (flvector 0.0 1.0 2.0 1.0 2.0)
+      'unless-#f
+      (for/flvector #:length 5
+                    ([x (in-range 3)]
+                     #:unless #f
+                     [y (in-range 3)])
+        (exact->inexact (+ x y))))
+(test (flvector 1.0 2.0 3.0 0.0 0.0)
+      'unless-...
+      (for/flvector #:length 5
+                    ([x (in-range 3)]
+                     #:unless (even? x)
+                     [y (in-range 3)])
+        (exact->inexact (+ x y))))
+
+
 ;; in-flvector tests, copied from for.rktl
 
 (test-sequence [(1.0 2.0 3.0)] (in-flvector (flvector 1.0 2.0 3.0)))
@@ -97,6 +151,126 @@
 (test-sequence [(2.0 4.0 6.0)] (in-flvector (flvector 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0) 1 6 2))
 (test-sequence [(8.0 6.0 4.0)] (in-flvector (flvector 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0) 7 2 -2))
 
+;; ----------------------------------------
+;; Check corners of `flexpt':
+;;  Tests by Neil T.:
 
+(let ()
+  (define-syntax-rule (check-equal? (flexpt v1 v2) b)
+    (test b flexpt v1 v2))
+  
+  ;; 2^53 and every larger flonum is even:
+  (define +big-even.0 (expt 2.0 53))
+  ;; The largest odd flonum:
+  (define +max-odd.0 (- +big-even.0 1.0))
+
+  (define -big-even.0 (- +big-even.0))
+  (define -max-odd.0 (- +max-odd.0))
+
+  (check-equal? (flexpt +0.0 +0.0) +1.0)
+  (check-equal? (flexpt +0.0 +1.0) +0.0)
+  (check-equal? (flexpt +0.0 +3.0) +0.0)
+  (check-equal? (flexpt +0.0 +max-odd.0) +0.0)
+  (check-equal? (flexpt +0.0 +0.5) +0.0)
+  (check-equal? (flexpt +0.0 +1.5) +0.0)
+  (check-equal? (flexpt +0.0 +2.0) +0.0)
+  (check-equal? (flexpt +0.0 +2.5) +0.0)
+  (check-equal? (flexpt +0.0 +big-even.0) +0.0)
+
+  (check-equal? (flexpt -0.0 +0.0) +1.0)
+  (check-equal? (flexpt -0.0 +1.0) -0.0)
+  (check-equal? (flexpt -0.0 +3.0) -0.0)
+  (check-equal? (flexpt -0.0 +max-odd.0) -0.0)
+  (check-equal? (flexpt -0.0 +0.5) +0.0)
+  (check-equal? (flexpt -0.0 +1.5) +0.0)
+  (check-equal? (flexpt -0.0 +2.0) +0.0)
+  (check-equal? (flexpt -0.0 +2.5) +0.0)
+  (check-equal? (flexpt -0.0 +big-even.0) +0.0)
+
+  (check-equal? (flexpt +1.0 +0.0) +1.0)
+  (check-equal? (flexpt +1.0 +0.5) +1.0)
+  (check-equal? (flexpt +1.0 +inf.0) +1.0)
+
+  (check-equal? (flexpt -1.0 +0.0) +1.0)
+  (check-equal? (flexpt -1.0 +0.5) +nan.0)
+  (check-equal? (flexpt -1.0 +inf.0) +1.0)
+
+  (check-equal? (flexpt +0.5 +inf.0) +0.0)
+  (check-equal? (flexpt +1.5 +inf.0) +inf.0)
+
+  (check-equal? (flexpt +inf.0 +0.0) +1.0)
+  (check-equal? (flexpt +inf.0 +1.0) +inf.0)
+  (check-equal? (flexpt +inf.0 +2.0) +inf.0)
+  (check-equal? (flexpt +inf.0 +inf.0) +inf.0)
+
+  (check-equal? (flexpt -inf.0 +0.0) +1.0)
+  (check-equal? (flexpt -inf.0 +1.0) -inf.0)
+  (check-equal? (flexpt -inf.0 +3.0) -inf.0)
+  (check-equal? (flexpt -inf.0 +max-odd.0) -inf.0)
+  (check-equal? (flexpt -inf.0 +0.5) +inf.0)
+  (check-equal? (flexpt -inf.0 +1.5) +inf.0)
+  (check-equal? (flexpt -inf.0 +2.0) +inf.0)
+  (check-equal? (flexpt -inf.0 +2.5) +inf.0)
+  (check-equal? (flexpt -inf.0 +big-even.0) +inf.0)
+  (check-equal? (flexpt -inf.0 +inf.0) +inf.0)
+
+  ;; Same tests as above, but with negated y
+  ;; This identity should hold for these tests: (flexpt x y) = (/ 1.0 (flexpt x (- y)))
+
+  (check-equal? (flexpt +0.0 -0.0) +1.0)
+  (check-equal? (flexpt +0.0 -1.0) +inf.0)
+  (check-equal? (flexpt +0.0 -3.0) +inf.0)
+  (check-equal? (flexpt +0.0 -max-odd.0) +inf.0)
+  (check-equal? (flexpt +0.0 -0.5) +inf.0)
+  (check-equal? (flexpt +0.0 -1.5) +inf.0)
+  (check-equal? (flexpt +0.0 -2.0) +inf.0)
+  (check-equal? (flexpt +0.0 -2.5) +inf.0)
+  (check-equal? (flexpt +0.0 -big-even.0) +inf.0)
+
+  (check-equal? (flexpt -0.0 -0.0) +1.0)
+  (check-equal? (flexpt -0.0 -1.0) -inf.0)
+  (check-equal? (flexpt -0.0 -3.0) -inf.0)
+  (check-equal? (flexpt -0.0 -max-odd.0) -inf.0)
+  (check-equal? (flexpt -0.0 -0.5) +inf.0)
+  (check-equal? (flexpt -0.0 -1.5) +inf.0)
+  (check-equal? (flexpt -0.0 -2.0) +inf.0)
+  (check-equal? (flexpt -0.0 -2.5) +inf.0)
+  (check-equal? (flexpt -0.0 -big-even.0) +inf.0)
+
+  (check-equal? (flexpt +1.0 -0.0) +1.0)
+  (check-equal? (flexpt +1.0 -0.5) +1.0)
+  (check-equal? (flexpt +1.0 -inf.0) +1.0)
+
+  (check-equal? (flexpt -1.0 -0.0) +1.0)
+  (check-equal? (flexpt -1.0 -0.5) +nan.0)
+  (check-equal? (flexpt -1.0 -inf.0) +1.0)
+
+  (check-equal? (flexpt +0.5 -inf.0) +inf.0)
+  (check-equal? (flexpt +1.5 -inf.0) +0.0)
+
+  (check-equal? (flexpt +inf.0 -0.0) +1.0)
+  (check-equal? (flexpt +inf.0 -1.0) +0.0)
+  (check-equal? (flexpt +inf.0 -2.0) +0.0)
+  (check-equal? (flexpt +inf.0 -inf.0) +0.0)
+
+  (check-equal? (flexpt -inf.0 -0.0) +1.0)
+  (check-equal? (flexpt -inf.0 -1.0) -0.0)
+  (check-equal? (flexpt -inf.0 -3.0) -0.0)
+  (check-equal? (flexpt -inf.0 -max-odd.0) -0.0)
+  (check-equal? (flexpt -inf.0 -0.5) +0.0)
+  (check-equal? (flexpt -inf.0 -1.5) +0.0)
+  (check-equal? (flexpt -inf.0 -2.0) +0.0)
+  (check-equal? (flexpt -inf.0 -2.5) +0.0)
+  (check-equal? (flexpt -inf.0 -big-even.0) +0.0)
+  (check-equal? (flexpt -inf.0 -inf.0) +0.0)
+
+  ;; NaN input
+
+  (check-equal? (flexpt +nan.0 +0.0) +1.0)
+  (check-equal? (flexpt +nan.0 -0.0) +1.0)
+  (check-equal? (flexpt +1.0 +nan.0) +1.0)
+  (check-equal? (flexpt -1.0 +nan.0) +nan.0))
+
+;; ----------------------------------------
 
 (report-errs)

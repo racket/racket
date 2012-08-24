@@ -175,4 +175,38 @@ determined by @racket[=?].
 }
 
 
+@addition{Eric Dobson}
+
+
+@defproc[(list-update [lst list?]
+                      [index (and/c (>=/c 0) (</c (length lst)))]
+                      [updater (-> any/c any/c)])
+         list?]{
+
+Returns a list that is the same as @racket[lst] except at the specified index.
+The element at the specified index is @racket[(updater (list-ref lst index))].
+
+@examples[#:eval the-eval
+(list-update '(zero one two) 1 symbol->string)
+]
+}
+
+
+@defproc[(list-set [lst list?]
+                   [index (and/c (>=/c 0) (</c (length lst)))]
+                   [value any/c])
+         list?]{
+
+Returns a list that is the same as @racket[lst] except at the specified index.
+The element at the specified index is @racket[value].
+
+@examples[#:eval the-eval
+(list-set '(zero one two) 2 "two")
+]
+
+
+}
+
+
+
 @close-eval[the-eval]

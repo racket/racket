@@ -4,7 +4,7 @@
 @title{Byte and String Input}
 
 @defproc[(read-char [in input-port? (current-input-port)]) 
-         (or/c character? eof-object?)]{
+         (or/c char? eof-object?)]{
 
 Reads a single character from @racket[in]---which may involve reading
 several bytes to UTF-8-decode them into a character (see
@@ -250,7 +250,9 @@ end-of-file, at least one byte (or special) past the skipped bytes, or
 until a non-@racket[#f] @racket[progress] becomes ready. Furthermore,
 if @racket[progress] is ready before bytes are peeked, no bytes are
 peeked or skipped, and @racket[progress] may cut short the skipping
-process if it becomes available during the peek attempt.
+process if it becomes available during the peek attempt. Furthermore,
+@racket[progress] is checked even before determining whether the port
+is still open.
 
 The result of @racket[peek-bytes-avail!] is @racket[0] only in the
 case that @racket[progress] becomes ready before bytes are peeked.}
@@ -282,7 +284,7 @@ with @racket[skip-bytes-amt] and @racket[progress] arguments like
 
 
 @defproc[(read-char-or-special [in input-port? (current-input-port)])
-         (or/c character? eof-object? any/c)]{
+         (or/c char? eof-object? any/c)]{
 
 Like @racket[read-char], but if the input port returns a non-byte
 value (through a value-generating procedure in a custom port; see
@@ -297,7 +299,7 @@ instead of a character.}
 
 @defproc[(peek-char [in input-port? (current-input-port)]
                     [skip-bytes-amt exact-nonnegative-integer? 0])
-         (or/c character? eof-object?)]{
+         (or/c char? eof-object?)]{
 
 Like @racket[read-char], but peeks instead of reading, and skips
 @racket[skip-bytes-amt] bytes (not characters) at the start of the
@@ -312,7 +314,7 @@ character.}
 
 @defproc[(peek-char-or-special [in input-port? (current-input-port)]
                                [skip-bytes-amt exact-nonnegative-integer? 0])
-         (or/c character? eof-object? any/c)]{
+         (or/c char? eof-object? any/c)]{
 
 Like @racket[peek-char], but if the input port returns a non-byte
 value after @racket[skip-bytes-amt] byte positions, then it is returned.}
@@ -320,7 +322,7 @@ value after @racket[skip-bytes-amt] byte positions, then it is returned.}
 @defproc[(peek-byte-or-special [in input-port? (current-input-port)]
                                [skip-bytes-amt exact-nonnegative-integer? 0]
                                [progress (or/c progress-evt? #f) #f])
-         (or/c character? eof-object? any/c)]{
+         (or/c byte? eof-object? any/c)]{
 
 Like @racket[peek-char-or-special], but reads and returns a byte
 instead of a character, and it supports a @racket[progress] argument
@@ -331,9 +333,9 @@ like @racket[peek-bytes-avail!].}
                                 (current-input-port)])
          progress-evt?]{
 
-Returns a @tech{synchronizable event} that becomes ready after any subsequent read from
-@racket[in], or after @racket[in] is closed. After the event becomes
-ready, it remains ready.}
+Returns a @tech{synchronizable event} that becomes ready after any
+subsequent read from @racket[in] or after @racket[in] is
+closed. After the event becomes ready, it remains ready.}
 
 
 @defproc[(port-provides-progress-evts? [in input-port?]) boolean]{

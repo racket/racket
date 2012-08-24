@@ -1,15 +1,19 @@
 #lang racket/base
-(require "../utils/utils.rkt"
+(require (except-in "../utils/utils.rkt" infer)
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
-         (types utils resolve abbrev numeric-tower substitute)
+         (types utils resolve base-abbrev numeric-tower substitute)
          (env type-name-env)
-         (only-in (infer infer-dummy) unify)
          racket/match unstable/match
          racket/function
-         (rename-in racket/contract
-                    [-> c->] [->* c->*])
+         unstable/lazy-require
+         (prefix-in c: racket/contract)
          (for-syntax racket/base syntax/parse))
+
+(lazy-require
+  ("union.rkt" (Un))
+  ("../infer/infer.rkt" (infer)))
+
 
 ;; exn representing failure of subtyping
 ;; s,t both types
@@ -41,7 +45,7 @@
 ;; is s a subtype of t?
 ;; type type -> boolean
 (define/cond-contract (subtype s t)
-  (c-> Type/c Type/c boolean?)
+  (c:-> (c:or/c Type/c Values?) (c:or/c Type/c Values?) boolean?)
   (define k (cons (Type-seq s) (Type-seq t)))
   (define lookup? (hash-ref subtype-cache k 'no))
   (if (eq? 'no lookup?)
@@ -186,7 +190,7 @@
 ;(trace subtypes*/varargs)
 
 (define/cond-contract (combine-arrs arrs)
-  (c-> (listof arr?) (or/c #f arr?))
+  (c:-> (c:listof arr?) (c:or/c #f arr?))
   (match arrs
     [(list (and a1 (arr: dom1 rng1 #f #f '())) (arr: dom rng #f #f '()) ...)
      (cond
@@ -194,7 +198,7 @@
        [(not (apply = (length dom1) (map length dom))) #f]
        [(not (for/and ([rng2 (in-list rng)]) (type-equal? rng1 rng2)))
         #f]
-       [else (make-arr (apply map *Un (cons dom1 dom)) rng1 #f #f '())])]
+       [else (make-arr (apply map Un (cons dom1 dom)) rng1 #f #f '())])]
     [_ #f]))
 
 (define-match-expander NameStruct:
@@ -341,7 +345,7 @@
               ;; use unification to see if we can use the polytype here
               [((Poly: vs b) s)
                (=> unmatch)
-               (if (unify vs (list b) (list s)) A0 (unmatch))]
+               (if (infer vs null (list b) (list s) (make-Univ)) A0 (unmatch))]
               [(s (Poly: vs b))
                (=> unmatch)
                (if (null? (fv b)) (subtype* A0 s b) (unmatch))]
@@ -409,6 +413,9 @@
               [((Struct: nm _ _ _ _ _ _ _) (StructTop: (Struct: nm* _ _ _ _ _ _ _))) (=> nevermind)
                (unless (free-identifier=? nm nm*) (nevermind))
                A0]
+              ;; Promises are covariant
+              [((Promise: s) (Promise: t))
+               (subtype* A0 s t)]
               ;ephemerons are covariant
               [((Ephemeron: s) (Ephemeron: t))
                (subtype* A0 s t)]
@@ -425,13 +432,9 @@
               [((MPair: _ _) (MPairTop:)) A0]
               [((Hashtable: _ _) (HashtableTop:)) A0]
               ;; subtyping on structs follows the declared hierarchy
-              [((Struct: nm (? Type? parent) flds proc _ _ _ _) other)
+              [((Struct: nm (? Type? parent) _ _ _ _ _ _) other)
                ;(dprintf "subtype - hierarchy : ~a ~a ~a\n" nm parent other)
                (subtype* A0 parent other)]
-              ;; Promises are covariant
-              [((Struct: (? (lambda (n) (free-identifier=? n promise-id))) _ (list t) _ _ _ _ _)
-                (Struct: (? (lambda (n) (free-identifier=? n promise-id))) _ (list t*) _ _ _ _ _))
-               (subtype* A0 t t*)]
               ;; subtyping on values is pointwise
               [((Values: vals1) (Values: vals2)) (subtypes* A0 vals1 vals2)]
               ;; trivial case for Result
@@ -461,7 +464,7 @@
 
 
 (provide/cond-contract
- [subtype (c-> Type/c Type/c boolean?)])
+ [subtype (c:-> (c:or/c Type/c Values?) (c:or/c Type/c Values?) boolean?)])
 (provide
   type-compare? subtypes/varargs subtypes)
 

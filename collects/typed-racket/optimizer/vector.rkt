@@ -14,7 +14,7 @@
 
 (define-syntax-class vector-op
   #:commit
-  ;; we need the * versions of these unsafe operations to be chaperone-safe
+  ;; we need the non-* versions of these unsafe operations to be chaperone-safe
   (pattern (~literal vector-ref)  #:with unsafe #'unsafe-vector-ref  #:with unsafe-no-impersonator #'unsafe-vector*-ref)
   (pattern (~literal vector-set!) #:with unsafe #'unsafe-vector-set! #:with unsafe-no-impersonator #'unsafe-vector*-set!))
 (define-syntax-class flvector-op
@@ -95,7 +95,7 @@
                                         one-sided
                                         #`(and (unsafe-fx>= new-i 0)
                                                #,one-sided)))
-                                (op.unsafe-no-impersonator new-v new-i #,@(syntax-map (optimize) #'(new ...)))
+                                (op.unsafe new-v new-i #,@(syntax-map (optimize) #'(new ...)))
                                 #,safe-fallback) ; will error. to give the right error message
                             ;; not an impersonator, can use unsafe-vector* ops
                             (if #,(let ([one-sided #'(unsafe-fx< new-i (unsafe-vector-length v))])
@@ -103,7 +103,7 @@
                                         one-sided
                                         #`(and (unsafe-fx>= new-i 0)
                                                #,one-sided)))
-                                (op.unsafe new-v new-i #,@(syntax-map (optimize) #'(new ...)))
+                                (op.unsafe-no-impersonator new-v new-i #,@(syntax-map (optimize) #'(new ...)))
                                 #,safe-fallback))))))
   ;; similarly for flvectors
   (pattern (#%plain-app op:flvector-op v:expr i:fixnum-expr new:expr ...)

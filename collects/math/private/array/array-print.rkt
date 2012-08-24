@@ -8,10 +8,16 @@
 
 (provide print-array)
 
-(: print-array (All (A) ((Array A) Output-Port (U #t #f 0 1) -> Any)))
-;; Outputs an array using the given mode (write, display, or print with quote depth 0 or 1); uses
-;; as many lines as needed to not overflow lines
-(define (print-array arr port mode)
+;; An array is printed in one of three layouts:
+;;   1. one-line     on one line, with " " between elements
+;;   2. compact      on multiple lines, with "\n" between elements *except the innermost*
+;;   3. multi-line   on multiple lines, with "\n" between elements
+(define-type Array-Layout (U 'one-line 'compact 'multi-line))
+
+(: print-array (All (A) ((Array A) Symbol Output-Port (U #t #f 0 1) -> Any)))
+;; The logic in `print-array' causes the REPL printer to try printing an array in each layout, and
+;; keep the first successful one. An overflowing line means failure.
+(define (print-array arr name port mode)
   ;; Called to print array elements; may recur (e.g. printing arrays of arrays)
   ;; We never have to consider the `mode' argument again after defining `recur-print'
   (define recur-print
@@ -19,22 +25,7 @@
           [(integer? mode) (λ: ([p : Any] [port : Output-Port])
                              (print p port mode))]  ; pass the quote depth through
           [else write]))
-  ;; Actually print the array
-  (do-print-array (array-view arr)  ; view arrays are easy to ref elements from
-                  port
-                  recur-print
-                  (if (view-array? arr) 'array 'strict-array)))
-
-;; An array is printed in one of three layouts:
-;;   1. one-line     on one line, with " " between elements
-;;   2. compact      on multiple lines, with "\n" between elements *except the innermost*
-;;   3. multi-line   on multiple lines, with "\n" between elements
-;; The logic in `print-view-array' causes the REPL printer to try printing every array in those
-;; layouts, in that order. If a line overflows, it tries the next layout.
-(define-type Array-Layout (U 'one-line 'compact 'multi-line))
-
-(: do-print-array (All (A) ((View-Array A) Output-Port (Any Output-Port -> Any) Symbol -> Any)))
-(define (do-print-array arr port recur-print struct-name)
+  
   ;; Width of a line
   (define cols (pretty-print-columns))
   
@@ -42,7 +33,7 @@
   ;; to `port' and to a tentative pretty-printing port we set up further on
   
   (define: (print-prefix [port : Output-Port]) : Any
-    (write-string (format "(~a" struct-name) port))
+    (write-string (format "(~a" name) port))
   
   (define: (print-suffix [port : Output-Port]) : Any
     (write-string ")" port))

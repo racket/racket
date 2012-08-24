@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/place
+         racket/port
          "eval-helpers.rkt"
          compiler/cm)
 (provide start)
@@ -118,7 +119,20 @@
                                (namespace-syntax-introduce stx)
                                raise-hopeless-syntax-error))
            (log-info "expanding-place.rkt: 09 starting expansion")
-           (define expanded (expand transformed-stx))
+           (define log-io? (log-level? (current-logger) 'warning))
+           (define-values (in out) (if log-io? 
+                                       (make-pipe)
+                                       (values #f (open-output-nowhere))))
+           (define io-sema (make-semaphore 0))
+           (when log-io?
+             (thread (λ () (catch-and-log in io-sema))))
+           (define expanded 
+             (parameterize ([current-output-port out]
+                            [current-error-port out])
+               (expand transformed-stx)))
+           (when log-io?
+             (close-output-port out)
+             (semaphore-wait io-sema))
            (channel-put old-registry-chan 
                         (namespace-module-registry (current-namespace)))
            (place-channel-put pc-status-expanding-place (void))
@@ -201,6 +215,18 @@
                    #:key (λ (x) (vector-ref x 0)))
                   '()))])))))))
   (job cust response-pc working-thd))
+
+(define (catch-and-log port sema)
+  (let loop ()
+    (sync
+     (handle-evt (read-line-evt port 'linefeed)
+                 (λ (l)
+                   (cond
+                     [(eof-object? l)
+                      (semaphore-post sema)]
+                     [else
+                      (log-warning (format "online comp io: ~a" l))
+                      (loop)]))))))
 
 (define (raise-hopeless-syntax-error . args)
   (apply raise-syntax-error '|Module Language| args))

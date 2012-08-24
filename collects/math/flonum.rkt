@@ -1,10 +1,15 @@
 #lang typed/racket/base
 
+(require (for-syntax racket/base)
+         "private/exception.rkt")
+
 (provide flonum->bit-field bit-field->flonum
          flonum->ordinal ordinal->flonum
          flstep flnext flprev flonums-between
          -max.0 -min.0 +min.0 +max.0 +epsilon.0
-         flulp flulp-error relative-error)
+         flulp flulp-error relative-error
+         float-complex? (rename-out [inline-number->float-complex number->float-complex])
+         find-least-flonum)
 
 ;; ===================================================================================================
 ;; Floating-point representation
@@ -20,7 +25,7 @@
   (cond [(and (i . >= . 0) (i . <= . #xffffffffffffffff))
          (floating-point-bytes->real (integer->integer-bytes i 8 #f))]
         [else
-         (raise-type-error 'bit-field->flonum "Integer in [0,#xffffffffffffffff]" i)]))
+         (raise-argument-error 'bit-field->flonum "Integer in [0,#xffffffffffffffff]" i)]))
 
 (: flonum->ordinal (Float -> Integer))
 (define (flonum->ordinal x)
@@ -33,8 +38,8 @@
          (cond [(i . < . 0)  (- (bit-field->flonum (- i)))]
                [else            (bit-field->flonum i)])]
         [else
-         (raise-type-error
-          'ordinal->flonum "Integer in [#x-7fffffffffffffff,#xffffffffffffffff]" i)]))
+         (raise-argument-error
+          'ordinal->flonum "Integer in [#x-7fffffffffffffff,#x7fffffffffffffff]" i)]))
 
 (define +inf-ordinal (flonum->ordinal +inf.0))
 (define -inf-ordinal (flonum->ordinal -inf.0))
@@ -111,3 +116,54 @@
         [else  (let ([x  (inexact->exact x)]
                      [r  (inexact->exact r)])
                  (real->double-flonum (/ (abs (- x r)) r)))]))
+
+;; ===================================================================================================
+;; Types, conversion
+
+(define-predicate float-complex? Float-Complex)
+
+(define-syntax (inline-number->float-complex stx)
+  (syntax-case stx ()
+    [(_ z-expr)  (syntax/loc stx
+                   (let: ([z : Number  z-expr])
+                     (make-rectangular (real->double-flonum (real-part z))
+                                       (real->double-flonum (imag-part z)))))]
+    [(_ e ...)  (syntax/loc stx (number->float-complex e ...))]
+    [_  (syntax/loc stx number->float-complex)]))
+
+(: number->float-complex (Number -> Float-Complex))
+(define (number->float-complex z) (inline-number->float-complex z))
+
+;; ===================================================================================================
+;; Search
+
+(: find-least-flonum (case-> ((Float -> Any) Float -> (U Float #f))
+                             ((Float -> Any) Float Float -> (U Float #f))))
+
+(define find-least-flonum
+  (case-lambda
+    [(pred? x-start)
+     (when (eqv? +nan.0 x-start)
+       (raise-argument-error 'find-least-flonum "non-NaN Float" 1 pred? x-start))
+     (let loop ([n-end  (flonum->ordinal x-start)] [step 1])
+       (define x-end (ordinal->flonum n-end))
+       (cond [(pred? x-end)  (find-least-flonum pred? x-start x-end)]
+             [(= x-end +inf.0)  #f]
+             [else  (loop (min +inf-ordinal (+ n-end step)) (* step 2))]))]
+    [(pred? x-start x-end)
+     (when (eqv? x-start +nan.0)
+       (raise-argument-error 'find-least-flonum "non-NaN Float" 1 pred? x-start x-end))
+     (when (eqv? x-end +nan.0)
+       (raise-argument-error 'find-least-flonum "non-NaN Float" 2 pred? x-start x-end))
+     (cond [(pred? x-start)  x-start]
+           [(not (pred? x-end))  #f]
+           [else
+            (let loop ([n-start  (flonum->ordinal x-start)] [n-end  (flonum->ordinal x-end)])
+              (cond [(= n-start n-end)  (define x (ordinal->flonum n-end))
+                                        (if (pred? x) x #f)]
+                    [else
+                     (define n-mid (quotient (+ n-start n-end) 2))
+                     (cond [(pred? (ordinal->flonum n-mid))
+                            (loop n-start n-mid)]
+                           [else
+                            (loop (+ n-mid 1) n-end)])]))])]))

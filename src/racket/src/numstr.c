@@ -500,7 +500,7 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
   }
 
   /* look for +inf.0, etc: */
-  if (len -delta == 6) {
+  if (len - delta == 6) {
     Scheme_Object *special;
     special = read_special_number(str, delta);
     if (special) {
@@ -525,7 +525,7 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
       s2 = (mzchar *)scheme_malloc_atomic((len - delta - 6 + 4 + 1) * sizeof(mzchar));
       s2[0] = '+';
       s2[1] = '0';
-      s2[2] = '.';
+      s2[2] = (SCHEME_DBLP(special) ? '.' : 's');
       s2[3] = '0';
       memcpy(s2 + 4, str + delta + 6, (len - delta - 5) * sizeof(mzchar));
     } else {
@@ -536,7 +536,7 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
 	memcpy(s2, str + delta, (len - delta - 7) * sizeof(mzchar));
 	s2[len - delta - 7] = '+';
 	s2[len - delta - 7 + 1] = '0';
-	s2[len - delta - 7 + 2] = '.';
+	s2[len - delta - 7 + 2] = (SCHEME_DBLP(special) ? '.' : 's');
 	s2[len - delta - 7 + 3] = '0';
 	s2[len - delta - 7 + 4] = 'i';
 	s2[len - delta - 7 + 5] = 0;

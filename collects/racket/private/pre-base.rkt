@@ -160,7 +160,7 @@
                               procedure->method procedure-rename
                               chaperone-procedure impersonate-procedure
                               assq assv assoc
-                              prop:incomplete-arity)
+                              prop:incomplete-arity prop:method-arity-error)
              (all-from "reqprov.rkt")
              (all-from-except "for.rkt"
                               define-in-vector-like

@@ -7,15 +7,28 @@
 
 A @deftech{break} is an asynchronous exception, usually triggered
 through an external source controlled by the user, or through the
-@racket[break-thread] procedure. A break exception can only occur in a
+@racket[break-thread] procedure. For example, the user may type Ctl-C
+in a terminal to trigger a break. On some platforms, the Racket
+process may receive @as-index{@tt{SIGINT}}, @as-index{@tt{SIGHUP}},
+or @as-index{@tt{SIGTERM}}; the latter two correspond to hang-up and
+terminate breaks as reflected by @racket[exn:break:hang-up] and
+@racket[exn:break:terminate], respectively. Multiple breaks may be
+collapsed into a single exception, and multiple breaks of different
+kinds may be collapsed to a single ``strongest'' break, where a
+hang-up break is stronger than a interrupt break, and a terminate
+break is stronger than a hang-up break.
+
+A break exception can only occur in a
 thread while breaks are enabled. When a break is detected and enabled,
-the @exnraise[exn:break] in the thread sometime afterward; if breaking
+the @racket[exn:break] (or @racket[exn:break:hang-up] or 
+@racket[exn:break:terminate]) exception is raised
+in the thread sometime afterward; if breaking
 is disabled when @racket[break-thread] is called, the break is
 suspended until breaking is again enabled for the thread. While a
 thread has a suspended break, additional breaks are ignored.
 
 Breaks are enabled through the @racket[break-enabled] parameter-like
-procedure, and through the @racket[parameterize-break] form, which is
+procedure and through the @racket[parameterize-break] form, which is
 analogous to @racket[parameterize]. The @racket[break-enabled]
 procedure does not represent a parameter to be used with
 @racket[parameterize], because changing the break-enabled state of a

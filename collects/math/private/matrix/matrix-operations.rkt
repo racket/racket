@@ -103,7 +103,7 @@
 (define (matrix-ref M i j)
   ((inst array-ref Number) M (vector i j)))
 
-(: matrix-scale : Number (Matrix Number) -> (Result-Matrix Number))
+(: matrix-scale : Number (Matrix Number) -> (Matrix Number))
 (define (matrix-scale s a)
   (array-scale a s))
 
@@ -135,15 +135,15 @@
 ;;; Operators
 ;;;
 
-(: matrix-transpose : (Matrix Number) -> (Result-Matrix Number))
+(: matrix-transpose : (Matrix Number) -> (Matrix Number))
 (define (matrix-transpose a)
   (array-axis-swap a 0 1))
 
-(: matrix-conjugate : (Matrix Number) -> (Result-Matrix Number))
+(: matrix-conjugate : (Matrix Number) -> (Matrix Number))
 (define (matrix-conjugate a)
   (array-conjugate a))
 
-(: matrix-hermitian : (Matrix Number) -> (Result-Matrix Number))
+(: matrix-hermitian : (Matrix Number) -> (Matrix Number))
 (define (matrix-hermitian a)
   (matrix-transpose 
    (array-conjugate a)))
@@ -152,7 +152,7 @@
 ;;; Row and column
 ;;;
 
-(: matrix-scale-row : (Matrix Number) Integer Number -> (Result-Matrix Number))
+(: matrix-scale-row : (Matrix Number) Integer Number -> (Matrix Number))
 (define (matrix-scale-row a i c)
   ((inline-matrix-scale-row i c) a))
 
@@ -161,21 +161,20 @@
     [(_ i c)
      (syntax/loc stx
        (λ (arr)
-         (let ([arr  (array-view arr)])
-           (define ds (array-shape arr))
-           (define g (unsafe-array-proc arr))
-           (cond
-             [(< i 0)
-              (error 'matrix-scale-row "row index must be non-negative, got ~a" i)]
-             [(not (< i (vector-ref ds 0)))
-              (error 'matrix-scale-row "row index must be smaller than the number of rows, got ~a" i)]
-             [else
-              (unsafe-view-array ds (λ: ([js : (Vectorof Index)]) 
-                                      (if (= i (vector-ref js 0))
-                                          (* c (g js))
-                                          (g js))))]))))]))
+         (define ds (array-shape arr))
+         (define g (unsafe-array-proc arr))
+         (cond
+           [(< i 0)
+            (error 'matrix-scale-row "row index must be non-negative, got ~a" i)]
+           [(not (< i (vector-ref ds 0)))
+            (error 'matrix-scale-row "row index must be smaller than the number of rows, got ~a" i)]
+           [else
+            (unsafe-build-array ds (λ: ([js : (Vectorof Index)]) 
+                                     (if (= i (vector-ref js 0))
+                                         (* c (g js))
+                                         (g js))))])))]))
 
-(: matrix-scale-column : (Matrix Number) Integer Number -> (Result-Matrix Number))
+(: matrix-scale-column : (Matrix Number) Integer Number -> (Matrix Number))
 (define (matrix-scale-column a i c)
   ((inline-matrix-scale-column i c) a))
 
@@ -184,21 +183,20 @@
     [(_ j c)
      (syntax/loc stx
        (λ (arr)
-         (let ([arr  (array-view arr)])
-           (define ds (array-shape arr))
-           (define g (unsafe-array-proc arr))
-           (cond
-             [(< j 0)
-              (error 'matrix-scale-row "column index must be non-negative, got ~a" j)]
-             [(not (< j (vector-ref ds 1)))
-              (error 'matrix-scale-row "column index must be smaller than the number of rows, got ~a" j)]
-             [else
-              (unsafe-view-array ds (λ: ([js : (Vectorof Index)]) 
-                                      (if (= j (vector-ref js 1))
-                                          (* c (g js))
-                                          (g js))))]))))]))
+         (define ds (array-shape arr))
+         (define g (unsafe-array-proc arr))
+         (cond
+           [(< j 0)
+            (error 'matrix-scale-row "column index must be non-negative, got ~a" j)]
+           [(not (< j (vector-ref ds 1)))
+            (error 'matrix-scale-row "column index must be smaller than the number of rows, got ~a" j)]
+           [else
+            (unsafe-build-array ds (λ: ([js : (Vectorof Index)]) 
+                                     (if (= j (vector-ref js 1))
+                                         (* c (g js))
+                                         (g js))))])))]))
 
-(: matrix-swap-rows : (Matrix Number) Integer Integer -> (Result-Matrix Number))
+(: matrix-swap-rows : (Matrix Number) Integer Integer -> (Matrix Number))
 (define (matrix-swap-rows a i j)
   ((inline-matrix-swap-rows i j) a))
 
@@ -207,29 +205,28 @@
     [(_ i j)
      (syntax/loc stx
        (λ (arr)
-         (let ([arr  (array-view arr)])
-           (define ds (array-shape arr))
-           (define g (unsafe-array-proc arr))
-           (cond
-             [(< i 0)
-              (error 'matrix-swap-rows "row index must be non-negative, got ~a" i)]
-             [(< j 0)
-              (error 'matrix-swap-rows "row index must be non-negative, got ~a" j)]
-             [(not (< i (vector-ref ds 0)))
-              (error 'matrix-swap-rows "row index must be smaller than the number of rows, got ~a" i)]
-             [(not (< j (vector-ref ds 0)))
-              (error 'matrix-swap-rows "row index must be smaller than the number of rows, got ~a" j)]
-             [else
-              (unsafe-view-array ds (λ: ([js : (Vectorof Index)]) 
-                                      (cond
-                                        [(= i (vector-ref js 0)) 
-                                         (g (vector j (vector-ref js 1)))]
-                                        [(= j (vector-ref js 0)) 
-                                         (g (vector i (vector-ref js 1)))]
-                                        [else                    
-                                         (g js)])))]))))]))
+         (define ds (array-shape arr))
+         (define g (unsafe-array-proc arr))
+         (cond
+           [(< i 0)
+            (error 'matrix-swap-rows "row index must be non-negative, got ~a" i)]
+           [(< j 0)
+            (error 'matrix-swap-rows "row index must be non-negative, got ~a" j)]
+           [(not (< i (vector-ref ds 0)))
+            (error 'matrix-swap-rows "row index must be smaller than the number of rows, got ~a" i)]
+           [(not (< j (vector-ref ds 0)))
+            (error 'matrix-swap-rows "row index must be smaller than the number of rows, got ~a" j)]
+           [else
+            (unsafe-build-array ds (λ: ([js : (Vectorof Index)]) 
+                                     (cond
+                                       [(= i (vector-ref js 0)) 
+                                        (g (vector j (vector-ref js 1)))]
+                                       [(= j (vector-ref js 0)) 
+                                        (g (vector i (vector-ref js 1)))]
+                                       [else                    
+                                        (g js)])))])))]))
 
-(: matrix-swap-columns : (Matrix Number) Integer Integer -> (Result-Matrix Number))
+(: matrix-swap-columns : (Matrix Number) Integer Integer -> (Matrix Number))
 (define (matrix-swap-columns a i j)
   ((inline-matrix-swap-columns i j) a))
 
@@ -238,33 +235,32 @@
     [(_ i j)
      (syntax/loc stx
        (λ (arr)
-         (let ([arr  (array-view arr)])
-           (define ds (array-shape arr))
-           (define g (unsafe-array-proc arr))
-           (cond
-             [(< i 0)
-              (error 'matrix-swap-columns "column index must be non-negative, got ~a" i)]
-             [(< j 0)
-              (error 'matrix-swap-columns "column index must be non-negative, got ~a" j)]
-             [(not (< i (vector-ref ds 0)))
-              (error 'matrix-swap-columns "column index must be smaller than the number of columns, got ~a" i)]
-             [(not (< j (vector-ref ds 0)))
-              (error 'matrix-swap-columns "column index must be smaller than the number of columns, got ~a" j)]
-             [else
-              (unsafe-view-array ds (λ: ([js : (Vectorof Index)]) 
-                                      (cond
-                                        [(= i (vector-ref js 1)) 
-                                         (g (vector j (vector-ref js 1)))]
-                                        [(= j (vector-ref js 1)) 
-                                         (g (vector i (vector-ref js 1)))]
-                                        [else                    
-                                         (g js)])))]))))]))
+         (define ds (array-shape arr))
+         (define g (unsafe-array-proc arr))
+         (cond
+           [(< i 0)
+            (error 'matrix-swap-columns "column index must be non-negative, got ~a" i)]
+           [(< j 0)
+            (error 'matrix-swap-columns "column index must be non-negative, got ~a" j)]
+           [(not (< i (vector-ref ds 0)))
+            (error 'matrix-swap-columns "column index must be smaller than the number of columns, got ~a" i)]
+           [(not (< j (vector-ref ds 0)))
+            (error 'matrix-swap-columns "column index must be smaller than the number of columns, got ~a" j)]
+           [else
+            (unsafe-build-array ds (λ: ([js : (Vectorof Index)]) 
+                                     (cond
+                                       [(= i (vector-ref js 1)) 
+                                        (g (vector j (vector-ref js 1)))]
+                                       [(= j (vector-ref js 1)) 
+                                        (g (vector i (vector-ref js 1)))]
+                                       [else                    
+                                        (g js)])))])))]))
 
-(: matrix-add-scaled-row : (Matrix Number) Integer Number Integer -> (Result-Matrix Number))
+(: matrix-add-scaled-row : (Matrix Number) Integer Number Integer -> (Matrix Number))
 (define (matrix-add-scaled-row a i c j)
   ((inline-matrix-add-scaled-row i c j) a))
 
-(: flmatrix-add-scaled-row : (Matrix Flonum) Index Flonum Index -> (Result-Matrix Flonum))
+(: flmatrix-add-scaled-row : (Matrix Flonum) Index Flonum Index -> (Matrix Flonum))
 (define (flmatrix-add-scaled-row a i c j)
   ((inline-matrix-add-scaled-row i c j) a))
 
@@ -273,33 +269,32 @@
     [(_ i c j)
      (syntax/loc stx
        (λ (arr)
-         (let ([arr  (array-view arr)])
-           (define ds (array-shape arr))
-           (define g (unsafe-array-proc arr))
-           (cond
-             [(< i 0)
-              (error 'matrix-add-scaled-row "row index must be non-negative, got ~a" i)]
-             [(< j 0)
-              (error 'matrix-add-scaled-row "row index must be non-negative, got ~a" j)]
-             [(not (< i (vector-ref ds 0)))
-              (error 'matrix-add-scaled-row 
-                     "row index must be smaller than the number of rows, got ~a" i)]
-             [(not (< j (vector-ref ds 0)))
-              (error 'matrix-add-scaled-row 
-                     "row index must be smaller than the number of rows, got ~a" j)]
-             [else
-              (unsafe-view-array ds (λ: ([js : (Vectorof Index)]) 
-                                      (if (= i (vector-ref js 0))
-                                          (+ (g js) (* c (g (vector j (vector-ref js 1)))))
-                                          (g js))))]))))]))
+         (define ds (array-shape arr))
+         (define g (unsafe-array-proc arr))
+         (cond
+           [(< i 0)
+            (error 'matrix-add-scaled-row "row index must be non-negative, got ~a" i)]
+           [(< j 0)
+            (error 'matrix-add-scaled-row "row index must be non-negative, got ~a" j)]
+           [(not (< i (vector-ref ds 0)))
+            (error 'matrix-add-scaled-row 
+                   "row index must be smaller than the number of rows, got ~a" i)]
+           [(not (< j (vector-ref ds 0)))
+            (error 'matrix-add-scaled-row 
+                   "row index must be smaller than the number of rows, got ~a" j)]
+           [else
+            (unsafe-build-array ds (λ: ([js : (Vectorof Index)]) 
+                                     (if (= i (vector-ref js 0))
+                                         (+ (g js) (* c (g (vector j (vector-ref js 1)))))
+                                         (g js))))])))]))
 
 
 ;;; GAUSS ELIMINATION / ROW ECHELON FORM
 
 (: matrix-gauss-eliminate : 
-   (case-> ((Matrix Number) Boolean Boolean -> (Values (Result-Matrix Number) (Listof Integer)))
-           ((Matrix Number) Boolean         -> (Values (Result-Matrix Number) (Listof Integer)))
-           ((Matrix Number)                 -> (Values (Result-Matrix Number) (Listof Integer)))))
+   (case-> ((Matrix Number) Boolean Boolean -> (Values (Matrix Number) (Listof Integer)))
+           ((Matrix Number) Boolean         -> (Values (Matrix Number) (Listof Integer)))
+           ((Matrix Number)                 -> (Values (Matrix Number) (Listof Integer)))))
 (define (matrix-gauss-eliminate M [unitize-pivot-row? #f] [partial-pivoting? #t])
   (define-values (m n) (matrix-dimensions M))
   (: loop : (Integer Integer (Matrix Number) Integer (Listof Integer) 
@@ -360,7 +355,7 @@
                                   M
                                   (matrix-add-scaled-row M l (- (/ x_lj pivot)) i))))))))])]))
   (let-values ([(M without) (loop 0 0 M 0 '())])
-    (values (array-view M) without)))
+    (values M without)))
 
 (: matrix-rank : (Matrix Number) -> Integer)
 (define (matrix-rank M)
@@ -417,7 +412,7 @@
   (for/sum: : Number ([i (in-range 0 m)]) 
     (matrix-ref M i i)))
 
-(: matrix-column-space : (Matrix Number) -> (Listof (Result-Matrix Number)))
+(: matrix-column-space : (Matrix Number) -> (Listof (Matrix Number)))
 ; Returns
 ;  1) a list of column vectors spanning the column space
 ;  2) a list of column vectors spanning the null space
@@ -426,8 +421,8 @@
   (: M1 (Matrix Number))
   (: cols-without-pivot (Listof Integer))
   (define-values (M1 cols-without-pivot) (matrix-gauss-eliminate M #t))
-  (set! M1 (array-strict M1))  
-  (define: column-space : (Listof (Result-Matrix Number))
+  (set! M1 (array->mutable-array M1))  
+  (define: column-space : (Listof (Matrix Number))
     (for/list:
         ([i : Index n]
          #:when (not (member i cols-without-pivot)))
@@ -435,17 +430,17 @@
   column-space)
 
 (: matrix-row-echelon-form : 
-   (case-> ((Matrix Number) Boolean -> (Result-Matrix Number))
-           ((Matrix Number) Boolean -> (Result-Matrix Number))
-           ((Matrix Number)         -> (Result-Matrix Number))))
+   (case-> ((Matrix Number) Boolean -> (Matrix Number))
+           ((Matrix Number) Boolean -> (Matrix Number))
+           ((Matrix Number)         -> (Matrix Number))))
 (define (matrix-row-echelon-form M [unitize-pivot-row? #f])
   (let-values ([(M wp) (matrix-gauss-eliminate M unitize-pivot-row?)])
     M))
 
 (: matrix-gauss-jordan-eliminate : 
-   (case-> ((Matrix Number) Boolean Boolean -> (Values (Result-Matrix Number) (Listof Integer)))
-           ((Matrix Number) Boolean         -> (Values (Result-Matrix Number) (Listof Integer)))
-           ((Matrix Number)                 -> (Values (Result-Matrix Number) (Listof Integer)))))
+   (case-> ((Matrix Number) Boolean Boolean -> (Values (Matrix Number) (Listof Integer)))
+           ((Matrix Number) Boolean         -> (Values (Matrix Number) (Listof Integer)))
+           ((Matrix Number)                 -> (Values (Matrix Number) (Listof Integer)))))
 (define (matrix-gauss-jordan-eliminate M [unitize-pivot-row? #f] [partial-pivoting? #t])
   (define-values (m n) (matrix-dimensions M))
   (: loop : (Integer Integer (Matrix Number) Integer (Listof Integer) 
@@ -507,29 +502,29 @@
                                  M
                                  (matrix-add-scaled-row M l (- (/ x_lj pivot)) i))))]))))])]))
   (let-values ([(M without) (loop 0 0 M 0 '())])
-    (values (array-view M) without)))
+    (values M without)))
 
 (: matrix-reduced-row-echelon-form : 
-   (case-> ((Matrix Number) Boolean -> (Result-Matrix Number))
-           ((Matrix Number) Boolean -> (Result-Matrix Number))
-           ((Matrix Number)         -> (Result-Matrix Number))))
+   (case-> ((Matrix Number) Boolean -> (Matrix Number))
+           ((Matrix Number) Boolean -> (Matrix Number))
+           ((Matrix Number)         -> (Matrix Number))))
 (define (matrix-reduced-row-echelon-form M [unitize-pivot-row? #f])
   (let-values ([(M wp) (matrix-gauss-jordan-eliminate M unitize-pivot-row?)])
     M))
 
-(: matrix-augment : (Matrix Number) (Matrix Number) * -> (Result-Matrix Number))
+(: matrix-augment : (Matrix Number) (Matrix Number) * -> (Matrix Number))
 (define (matrix-augment a . as)
-  (apply array-append a 1 as))
+  (array-append* (cons a as) 1))
 
-(: matrix-stack : (Matrix Number) * -> (Result-Matrix Number))
+(: matrix-stack : (Matrix Number) * -> (Matrix Number))
 (define (matrix-stack . as)
   (if (null? as)
       (error 'matrix-stack 
              "expected non-empty list of matrices")
-      (apply array-append (car as) 0 (cdr as))))
+      (array-append* as 0)))
 
 
-(: matrix-inverse : (Matrix Number) -> (Result-Matrix Number))
+(: matrix-inverse : (Matrix Number) -> (Matrix Number))
 (define (matrix-inverse M)
   (define-values (m n) (matrix-dimensions M))
   (unless (= m n) (error 'matrix-inverse "matrix not square"))
@@ -540,7 +535,7 @@
                    (in-range 0 m) (in-range m 2m))
         (error 'matrix-inverse "internal error"))))
 
-(: matrix-solve : (Matrix Number) (Matrix Number) -> (Result-Matrix Number))
+(: matrix-solve : (Matrix Number) (Matrix Number) -> (Matrix Number))
 ;    Return a column-vector x such that Mx = b.
 ;    If no such vector exists return #f.
 (define (matrix-solve M b)
@@ -557,7 +552,7 @@
       (in-range 0 m) (in-range m m+1))]
     [else (error 'matrix-solve "internatl error")]))
 
-(: matrix-solve-many : (Matrix Number) (Listof (Matrix Number)) -> (Result-Matrix Number))
+(: matrix-solve-many : (Matrix Number) (Listof (Matrix Number)) -> (Matrix Number))
 (define (matrix-solve-many M bs)
   ; TODO: Rewrite matrix-augment* to use array-append when it is ready
   (: matrix-augment* : (Listof (Matrix Number)) -> (Matrix Number))
@@ -587,7 +582,7 @@
 ; a LU-factorization is possible.
 
 (: matrix-lu : 
-   (Matrix Number) -> (U False (List (Result-Matrix Number) (Result-Matrix Number))))
+   (Matrix Number) -> (U False (List (Matrix Number) (Matrix Number))))
 (define (matrix-lu M)
   (define-values (m _) (matrix-dimensions M))
   (define: ms : (Listof Number) '())
@@ -636,13 +631,12 @@
         
         (define: L : (Matrix Number)
           (let ([ds (array-shape M)])
-            (unsafe-view-array
+            (unsafe-build-array
              ds (λ: ([js : (Vectorof Index)])
                   (define i (unsafe-vector-ref js 0))
                   (define j (unsafe-vector-ref js 1))
                   (vector-ref L-matrix (+ (* i m) j))))))
-        (list (array-view L) 
-              (array-view V)))))
+        (list L V))))
 
 
 (: column-dimension : (Column Number) -> Index)
@@ -658,7 +652,7 @@
       (let ()
         (define-values (m n) (matrix-dimensions v))
         (if (= n 1)
-            (strict-array-data (array-strict v))
+            (mutable-array-data (array->mutable-array v))
             (error 'unsafe-column->vector
                    "expected a column (vector or mx1 matrix), got ~a" v)))))
 
@@ -676,7 +670,7 @@
 (define (result-column c)
   (if (vector? c)
       (vector->column c)
-      (array-view c)))
+      c))
 
 (: scale-column : Number (Column Number) -> (Result-Column Number))
 (define (scale-column s a)
@@ -770,7 +764,7 @@
 ;    (define: b : (Result-Column Number) (result-column b1))
 ;    (cond [(not sum) (set! sum (column-projection v b))]
 ;          [else      (set! sum (matrix+ (assert sum) (column-projection v b)))]))
-;  (cond [sum (array-view (assert sum))]
+;  (cond [sum (assert sum)]
 ;        [else (error 'projection-on-orthogonal-basis 
 ;                     "received empty list of basis vectors")])
 
@@ -788,7 +782,7 @@
     (define: b : (Result-Column Number) (result-column b1))
     (cond [(not sum) (set! sum (column-projection-on-unit v b))]
           [else      (set! sum (matrix+ (assert sum) (column-projection-on-unit v b)))]))
-  (cond [sum (array-view (assert sum))]
+  (cond [sum (assert sum)]
         [else (error 'projection-on-orthogonal-basis 
                      "received empty list of basis vectors")]))
 
@@ -808,7 +802,7 @@
   (define ws (map result-column ws1))
   (cond 
     [(null? ws)       '()]
-    [(null? (cdr ws)) (list (array-view (car ws)))]
+    [(null? (cdr ws)) (list (car ws))]
     [else 
      (: loop : (Listof (Result-Column Number)) (Listof (Column-Matrix Number)) -> (Listof (Result-Column Number)))
      (define (loop vs ws)
@@ -822,7 +816,7 @@
                   (if (zero-column-vector? w-minus-proj)
                       (loop vs (cdr ws)) ; w in span{vs} => omit it
                       (loop (cons (matrix- w w-proj) vs) (cdr ws)))))]))
-     (reverse (loop (list (array-view (car ws))) (cdr ws)))]))
+     (reverse (loop (list (car ws)) (cdr ws)))]))
 
 
 
@@ -947,7 +941,7 @@
             (flat-vector->matrix n n v))])
     (values Q R)))
 
-(: matrix/dim : Integer Integer Number * -> (Result-Matrix Number))
+(: matrix/dim : Integer Integer Number * -> (Matrix Number))
 ; construct a mxn matrix with elements from the values xs
 ; the length of xs must be m*n
 (define (matrix/dim m n . xs)
@@ -955,7 +949,7 @@
          (flat-vector->matrix m n (list->vector xs))]
         [else (error 'matrix/dim "expected two indices as dimensions, got ~a and ~a" m n)]))
 
-(: matrix-block-diagonal : (Listof (Matrix Number)) -> (Result-Matrix Number))
+(: matrix-block-diagonal : (Listof (Matrix Number)) -> (Matrix Number))
 (define (matrix-block-diagonal as)
   (define sum-m 0)
   (define sum-n 0)
@@ -970,7 +964,7 @@
   (set! ms (reverse ms))
   (set! ns (reverse ns))
   (: loop : (Listof (Matrix Number)) (Listof Index) (Listof Index) 
-     (Listof (Result-Matrix Number)) Integer -> (Result-Matrix Number))
+     (Listof (Matrix Number)) Integer -> (Matrix Number))
   (define (loop as ms ns rows left)
     (cond [(null? as) (apply matrix-stack (reverse rows))]
           [else
@@ -1058,7 +1052,7 @@
     [(_ : type (for:-clause ...) . defs+exprs)
      (syntax/loc stx
        (let ()
-         (define: sum : (U False (Result-Matrix Number)) #f)
+         (define: sum : (U False (Matrix Number)) #f)
          (for: (for:-clause ...)
            (define a (let () . defs+exprs))
            (set! sum (if sum (matrix+ (assert sum) a) a)))
@@ -1114,8 +1108,8 @@
              (let ([M1 M-expr])
                (define-values (rd cd) (matrix-dimensions M1))
                (values M1 r-expr rd 
-                       (strict-array-data
-                        (array-strict M1))))])
+                       (mutable-array-data
+                        (array->mutable-array M1))))])
            (begin 
              (unless (array-matrix? M) 
                (raise-type-error 'in-row "expected matrix, got ~a" M))
@@ -1136,8 +1130,8 @@
              (let ([M1 M-expr])
                (define-values (rd cd) (matrix-dimensions M1))
                (values M1 r-expr rd 
-                       (strict-array-data
-                        (array-strict M1))))])
+                       (mutable-array-data
+                        (array->mutable-array M1))))])
            (begin 
              (unless (array-matrix? M) 
                (raise-type-error 'in-row "expected matrix, got ~a" M))
@@ -1169,8 +1163,8 @@
              (let ([M1 M-expr])
                (define-values (rd cd) (matrix-dimensions M1))
                (values M1 rd cd 
-                       (strict-array-data
-                        (array-strict M1))))])
+                       (mutable-array-data
+                        (array->mutable-array M1))))])
            (unless (array-matrix? M) 
              (raise-type-error 'in-row "expected matrix, got ~a" M))
            ([j 0])
@@ -1187,8 +1181,8 @@
              (let ([M1 M-expr])
                (define-values (rd cd) (matrix-dimensions M1))
                (values M1 s-expr rd cd 
-                       (strict-array-data
-                        (array-strict M1))))])
+                       (mutable-array-data
+                        (array->mutable-array M1))))])
            (begin 
              (unless (array-matrix? M) 
                (raise-type-error 'in-row "expected matrix, got ~a" M))
@@ -1209,8 +1203,8 @@
              (let ([M1 M-expr])
                (define-values (rd cd) (matrix-dimensions M1))
                (values M1 s-expr rd cd
-                       (strict-array-data
-                        (array-strict M1))))])
+                       (mutable-array-data
+                        (array->mutable-array M1))))])
            (begin 
              (unless (array-matrix? M) 
                (raise-type-error 'in-column "expected matrix, got ~a" M))
@@ -1228,7 +1222,7 @@
       [[_ clause] (raise-syntax-error 
                    'in-column "expected (in-column <matrix> <column>)" #'clause #'clause)])))
 
-(: vandermonde-matrix : (Listof Number) Integer -> (Result-Matrix Number))
+(: vandermonde-matrix : (Listof Number) Integer -> (Matrix Number))
 (define (vandermonde-matrix xs n)
   ; construct matrix M with M(i,j)=α_i^j ; where i and j begin from 0 ... 
   ; Inefficient version:

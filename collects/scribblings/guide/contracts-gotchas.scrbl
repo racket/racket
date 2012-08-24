@@ -99,7 +99,7 @@ Instead, use
   (promise/c
    (or/c
     null?
-    (cons/c 1 (recursive-contract stream/c)))))
+    (cons/c number? (recursive-contract stream/c)))))
 ]
 
 The use of @racket[recursive-contract] delays the evaluation of the

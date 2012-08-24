@@ -35,6 +35,7 @@
                                 (and index-entry
                                      (list (entry-desc index-entry)
                                            path
+                                           definition-tag
                                            tag))))))))))
        (thread
         (λ ()

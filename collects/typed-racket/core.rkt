@@ -5,12 +5,12 @@
          (for-template racket/base)
          (private with-types type-contract parse-type)
          (except-in syntax/parse id)
-         racket/match racket/syntax unstable/match racket/list
-         (types utils convenience generalize)
+         racket/match racket/syntax unstable/match racket/list syntax/stx
+         (types utils abbrev generalize printer)
          (typecheck provide-handling tc-toplevel tc-app-helper)
          (rep type-rep)
          (env env-req)
-         (for-template (only-in (base-env prims) :type :print-type :query-result-type))
+         (for-template (only-in (base-env prims) :type :print-type :query-type/result))
          (utils utils tc-utils arm)
          "tc-setup.rkt" "utils/debug.rkt")
 
@@ -55,13 +55,28 @@
      #`(display #,(format "~a\n" (parse-type #'ty)))]
     ;; Prints the _entire_ type. May be quite large.
     [(_ . ((~literal :print-type) e:expr))
-     #`(display #,(format "~a\n"
-                          (tc-setup #'stx #'e 'top-level expanded init tc-toplevel-form before type
-                                    (match type
-                                      [(tc-result1: t f o) t]
-                                      [(tc-results: t) (cons 'Values t)]))))]
+     (tc-setup #'stx #'e 'top-level expanded init tc-toplevel-form before type
+               #`(display
+                  #,(parameterize ([print-multi-line-case-> #t])
+                      (format "~a\n" (match type
+                                       [(tc-result1: t f o) t]
+                                       [(tc-results: t) (cons 'Values t)])))))]
+    ;; given a function and input types, display the result type
+    [(_ . ((~literal :query-type/args) op:expr arg-type:expr ...))
+     (with-syntax ([(dummy-arg ...) (generate-temporaries #'(arg-type ...))])
+       (tc-setup #'stx
+                 ;; create a dummy function with the right argument types
+                 #`(lambda #,(stx-map (lambda (a t)
+                                        (syntax-property a 'type-label t))
+                                      #'(dummy-arg ...) #'(arg-type ...))
+                     (op dummy-arg ...))
+                 'top-level expanded init tc-toplevel-form before type
+                 #`(display
+                    #,(format "~a\n"
+                              (match type
+                                [(tc-result1: (and t (Function: _)) f o) t])))))]
     ;; given a function and a desired return type, fill in the blanks
-    [(_ . ((~literal :query-result-type) op:expr desired-type:expr))
+    [(_ . ((~literal :query-type/result) op:expr desired-type:expr))
      (let ([expected (parse-type #'desired-type)])
        (tc-setup #'stx #'op 'top-level expanded init tc-toplevel-form before type
                  (match type
@@ -75,8 +90,9 @@
                               (format "~a\n" cleaned)])))]
                    [_ (error (format "~a: not a function" (syntax->datum #'op) ))])))]
     [(_ . form)
+     (init)
      (tc-setup
-      stx #'form 'top-level body2 init tc-toplevel-form before type
+      stx #'form 'top-level body2 void tc-toplevel-form before type
       (with-syntax*
        ([optimized-body (car (maybe-optimize #`(#,body2)))])
        (syntax-parse body2

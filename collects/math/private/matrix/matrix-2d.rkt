@@ -11,7 +11,7 @@
 ; Transformations from:
 ;     http://en.wikipedia.org/wiki/Transformation_matrix
 
-(: matrix-2d-rotation : Real -> (Result-Matrix Number))
+(: matrix-2d-rotation : Real -> (Matrix Number))
 ; matrix representing rotation θ radians counter clockwise
 (define (matrix-2d-rotation θ)
   (define cosθ (cos θ))
@@ -20,25 +20,25 @@
               cosθ (- sinθ)
               sinθ cosθ))
 
-(: matrix-2d-scaling : Real Real -> (Result-Matrix Number))
+(: matrix-2d-scaling : Real Real -> (Matrix Number))
 (define (matrix-2d-scaling sx sy)
   (matrix/dim 2 2 
               sx 0
               0 sy))
 
-(: matrix-2d-shear-x : Real -> (Result-Matrix Number))
+(: matrix-2d-shear-x : Real -> (Matrix Number))
 (define (matrix-2d-shear-x k)
   (matrix/dim 2 2 
               1 k
               0 1))
 
-(: matrix-2d-shear-y : Real -> (Result-Matrix Number))
+(: matrix-2d-shear-y : Real -> (Matrix Number))
 (define (matrix-2d-shear-y k)
   (matrix/dim 2 2 
               1 0
               k 1))
 
-(: matrix-2d-reflection : Real Real -> (Result-Matrix Number))
+(: matrix-2d-reflection : Real Real -> (Matrix Number))
 (define (matrix-2d-reflection a b)
   ; reflection about the line through (0,0) and (a,b)
   (define a2 (* a a))
@@ -50,7 +50,7 @@
               (/ (- a2 b2) norm2) 2ab/norm2
               2ab/norm2           (/ (- b2 a2) norm2)))
 
-(: matrix-2d-orthogonal-projection : Real Real -> (Result-Matrix Number))
+(: matrix-2d-orthogonal-projection : Real Real -> (Matrix Number))
 ; orthogonal projection onto the line through (0,0) and (a,b)
 (define (matrix-2d-orthogonal-projection a b)
   (define a2 (* a a))

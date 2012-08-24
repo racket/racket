@@ -11,7 +11,9 @@
                        "private/functions/inverse-hyperbolic.rkt")
          flhypot hypot
          fllog/base
-         power-of-two?)
+         power-of-two?
+         fleven?
+         flodd?)
 
 (: flhypot (Float Float -> Float))
 (define (flhypot x y)
@@ -47,7 +49,19 @@
         [else  (and (= 1 (numerator x))
                     (power-of-two? (denominator x)))]))
 
-;; from plot:
-;; floor-log/base
-;; ceiling-log/base
+(: fleven? (Float -> Boolean))
+(define (fleven? x)
+  (let ([x  (abs x)])
+    (or (= x 0.0)
+        (and (x . >= . 2.0)
+             (let ([0.5x  (* 0.5 x)])
+               (= (truncate 0.5x) 0.5x))))))
 
+(define last-odd (- (flexpt 2.0 53.0) 1.0))
+
+(: flodd? (Float -> Boolean))
+(define (flodd? x)
+  (let ([x  (abs x)])
+    (and (x . >= . 1.0) (x . <= . last-odd)
+         (let ([0.5x  (* 0.5 (+ 1.0 x))])
+           (= (truncate 0.5x) 0.5x)))))

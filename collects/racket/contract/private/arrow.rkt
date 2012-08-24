@@ -113,7 +113,7 @@ v4 todo:
                           [res-checker (λ (res-x ...) (values (p-app-x res-x) ...))])
                      (λ (val)
                        (unless (procedure? val)
-                         (raise-blame-error orig-blame val '(expected: "a procedure," given: "~v") val))
+                         (raise-blame-error orig-blame val '(expected: "a procedure" given: "~v") val))
                        (wrapper
                         val
                         (make-keyword-procedure
@@ -394,7 +394,7 @@ v4 todo:
              (define args-len (length args))
              (unless (valid-number-of-args? args)
                (raise-blame-error (blame-swap blame) val
-                                  '("received ~a argument~a," expected: "~a")
+                                  '("received ~a argument~a" expected: "~a")
                                   args-len (if (= args-len 1) "" "s") arity-string))
              
              ;; these two for loops are doing O(n^2) work that could be linear 
@@ -416,7 +416,7 @@ v4 todo:
              (unless (valid-number-of-args? args)
                (define args-len (length args))
                (raise-blame-error (blame-swap blame) val
-                                  '("received ~a argument~a," expected: "~a")
+                                  '("received ~a argument~a" expected: "~a")
                                   args-len (if (= args-len 1) "" "s") arity-string))
              (apply basic-lambda args))
            (λ args
@@ -1876,7 +1876,7 @@ v4 todo:
        (raise-blame-error
         blame
         val
-        '(expected" a ~a that accepts ~a~a~a argument~a~a~a," given: "~e")
+        '(expected " a ~a that accepts ~a~a~a argument~a~a~a" given: "~e")
         (if mtd? "method" "procedure")
         (if (zero? dom-length) "no" dom-length)
         (if (null? optionals) "" " mandatory")
@@ -1951,7 +1951,7 @@ v4 todo:
        (raise-blame-error
         blame
         val
-        '(expected "a ~a that accepts ~a argument~a and arbitrarily more~a," given: "~e")
+        '(expected " a ~a that accepts ~a argument~a and arbitrarily more~a" given: "~e")
         (if mtd? "method" "procedure")
         (cond
           [(zero? dom-length) "no"]

@@ -84,10 +84,11 @@ passes it a @racket["Hello World"] string:
     ;; remote-connection% instance (pl) for communicating with the
     ;; new node and place
     (define-values (node pl)
-      (spawn-node-supervise-place-thunk-at "localhost"
-                                           #:listen-port 6344
-                                           (quote-module-path "..")
-                                           'hello-world))
+      (spawn-node-supervise-place-at "localhost"
+                                     #:listen-port 6344
+                                     #:thunk #t
+                                     (quote-module-path "..")
+                                     'hello-world))
 
     ;; starts a message router which adds three event-container<%>s to
     ;; its list of events to handle: the node and two after-seconds
@@ -115,7 +116,7 @@ passes it a @racket["Hello World"] string:
   events for the node.
 }
 
-@defproc[(spawn-node-with-dynamic-place-at
+@defproc[(spawn-node-with-place-at
            [hostname string?]
            [instance-module-path module-path?]
            [instance-place-function-name symbol?]
@@ -124,13 +125,25 @@ passes it a @racket["Hello World"] string:
            [#:racket-path racket-path string-path? (racket-path)]
            [#:ssh-bin-path ssh-path string-path? (ssh-bin-path)]
            [#:distributed-launch-path launcher-path string-path? (path->string distributed-launch-path)]
-           [#:restart-on-exit restart-on-exit any/c #f]) (is-a?/c remote-connection%)]{
+           [#:restart-on-exit restart-on-exit any/c #f]
+           [#:named place-name (or/c #f symbol?) #f]
+           [#:thunk thunk (or/c #f #t) #f]) (is-a?/c remote-connection%)]{
 
 Spawns a new remote node at @racket[hostname] with one instance place specified by
-the @racket[instance-module-path] and @racket[instance-place-function-name]; that
-is, the result of
-@racket[(dynamic-place instance-module-path instance-place-function-name)].
-is called in the new place of the new node.
+the @racket[instance-module-path] and @racket[instance-place-function-name].
+
+When @racket[thunk] is @racket[#f], the place is created as the result of the framework
+calling @racket[(dynamic-place instance-module-path instance-place-function-name)].
+in the new node.
+
+When @racket[thunk] is @racket[#t] the
+@racket[instance-place-function-name] function should use
+@racket[dynamic-place] or @racket[place] to create and return an
+initial place in the new node.
+
+When the @racket[place-name] symbol is present a named place is
+created.  The @racket[place-name] symbol is used to establish later
+connections to the named place.}
 
 The result is a @racket[remote-node%] instance, not a
 @racket[remote-connection%].  Use @method[remote-node%
@@ -143,9 +156,7 @@ procedure of zero arguments to implement the restart procedure, or it
 can be an object that support a @racket[restart] method that takes a
 @tech{place} argument.}
 
-
-
-@defproc[(spawn-node-supervise-dynamic-place-at
+@defproc[(spawn-node-supervise-place-at
            [hostname string?]
            [instance-module-path module-path?]
            [instance-place-function-name symbol?]
@@ -154,47 +165,12 @@ can be an object that support a @racket[restart] method that takes a
            [#:racket-path racket-path string-path? (racket-path)]
            [#:ssh-bin-path ssh-path string-path? (ssh-bin-path)]
            [#:distributed-launch-path launcher-path string-path? (path->string distributed-launch-path)]
-           [#:restart-on-exit restart-on-exit any/c #f]) (values  (is-a?/c remote-node%) (is-a?/c remote-connection%))]{
+           [#:restart-on-exit restart-on-exit any/c #f]
+           [#:named named (or/c #f string?) #f]
+           [#:thunk thunk (or/c #f #t) #f]) (values (is-a?/c remote-node%) (is-a?/c remote-connection%))]{
 
 Like @racket[spawn-node-with-dynamic-place-at], but the result is two values: the
 new @racket[remote-node%] and its @racket[remote-connection%] instance.}
-
-
-
-@defproc[(spawn-node-with-place-thunk-at
-           [hostname string?]
-           [instance-module-path module-path?]
-           [instance-thunk-function-name symbol?]
-           [#:listen-port port port-no? DEFAULT-ROUTER-PORT]
-           [#:initial-message initial-message any #f]
-           [#:racket-path racket-path string-path? (racket-path)]
-           [#:ssh-bin-path ssh-path string-path? (ssh-bin-path)]
-           [#:distributed-launch-path launcher-path string-path? (path->string distributed-launch-path)]
-           [#:restart-on-exit restart-on-exit any/c #f]) (is-a?/c remote-connection%)]{
-
-Like @racket[spawn-node-with-dynamic-place-at], but in the new node,
-@racket[(dynamic-place instance-module-path instance-thunk-function-name)]
-is called to create a place and return the newly constructed
-the place descriptor. That is, the
-@racket[instance-thunk-function-name] function should
-use @racket[dynamic-place] or @racket[place] to create an initial
-place in the new node.}
-
-@defproc[(spawn-node-supervise-place-thunk-at
-           [hostname string?]
-           [instance-module-path module-path?]
-           [instance-thunk-function-name symbol?]
-           [#:listen-port port port-no? DEFAULT-ROUTER-PORT]
-           [#:initial-message initial-message any #f]
-           [#:racket-path racket-path string-path? (racket-path)]
-           [#:ssh-bin-path ssh-path string-path? (ssh-bin-path)]
-           [#:distributed-launch-path launcher-path string-path? (path->string distributed-launch-path)]
-           [#:restart-on-exit restart-on-exit any/c #f]) (values  (is-a?/c remote-node%) (is-a?/c remote-connection%))]{
-
-Like @racket[spawn-node-with-place-thunk-at], but the result is two
-values (like @racket[spawn-node-supervise-dynamic-place-at]): the new
-@racket[remote-node%] and its @racket[remote-connection%] instance.}
-
 
 @defproc[(spawn-remote-racket-node
            [hostname string?]
@@ -217,30 +193,28 @@ Spawns a new remote node at @racket[hostname] and returns a @racket[remote-node%
 Like @racket[spawn-remote-racket-node], but the @racket[current-output-port] and @racket[current-error-port]
 are used as the standard ports for the spawned process instead of new pipe ports.}
 
-@defproc[(supervise-dynamic-place-at
+@defproc[(supervise-place-at
            [remote-node (is-a?/c remote-node%)]
            [instance-module-path module-path?]
            [instance-place-function-name symbol?]
-           [#:restart-on-exit restart-on-exit any/c #f]) (is-a?/c remote-connection%)]{
+           [#:restart-on-exit restart-on-exit any/c #f]
+           [#:named named (or/c #f symbol?) #f]
+           [#:thunk thunk (or/c #f #t) #f]) (is-a?/c remote-connection%)]{
 
-Creates a new place on @racket[remote-node] by using
+When @racket[thunk] is @racket[#f], creates a new place on @racket[remote-node] by using
 @racket[dynamic-place] to invoke
 @racket[instance-place-function-name] from the module
-@racket[instance-module-path].}
+@racket[instance-module-path].
 
-
-@defproc[(supervise-place-thunk-at
-           [remote-node (is-a?/c remote-node%)]
-           [instance-module-path module-path?]
-           [instance-thunk-function-name symbol?]
-           [#:restart-on-exit restart-on-exit any/c #f]) (is-a?/c remote-connection%)]{
-
-Creates a new place at @racket[remote-node] by executing the thunk
-exported as @racket[instance-thunk-function-name] from the module
+When @racket[thunk] is @racket[#t], creates a new place at @racket[remote-node] by executing the thunk
+exported as @racket[instance-place-function-name] from the module
 @racket[instance-module-path]. The function should use
-@racket[dynamic-place] or @racket[place] to create a place in the new
-node.}
+@racket[dynamic-place] or @racket[place] to create and return a place in the new
+node.
 
+When the @racket[place-name] symbol is present a named place is
+created.  The @racket[place-name] symbol is used to establish later
+connections to the named place.}
 
 @defproc[(supervise-process-at
            [hostname string?]
@@ -248,33 +222,6 @@ node.}
            [#:listen-port port port-no? DEFAULT-ROUTER-PORT]) (is-a?/c remote-process%)]{
 Spawns an attached external process at host @racket[hostname].
 }
-
-@defproc[(supervise-named-dynamic-place-at
-           [remote-node (is-a?/c remote-node%)]
-           [place-name symbol?]
-           [instance-module-path module-path?]
-           [instance-place-function-name symbol?]
-           [#:restart-on-exit restart-on-exit any/c #f]) (is-a?/c remote-connection%)]{
-Creates a new place on the @racket[remote-node] by using
-@racket[dynamic-place] to invoke
-@racket[instance-place-function-name] from the module
-@racket[instance-module-path]. The @racket[place-name] symbol
-is used to establish later connections to the named place.}
-
-
-@defproc[(supervise-named-place-thunk-at
-           [remote-node (is-a?/c remote-node%)]
-           [place-name symbol?]
-           [instance-module-path module-path?]
-           [instance-thunk-function-name symbol?]
-           [#:restart-on-exit restart-on-exit any/c #f]) (is-a?/c remote-connection%)]{
-Creates a new place on the @racket[remote-node] by executing the thunk
-@racket[instance-thunk-function-name] from the module
-@racket[instance-module-path]; that is, the function should use
-@racket[dynamic-place] or @racket[place] to create a place. 
-The @racket[place-name] symbol
-is used to establish later connections to the named place.}
-
 
 @defproc[(supervise-thread-at
            [remote-node (is-a?/c remote-node%)]

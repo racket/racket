@@ -33,6 +33,7 @@
                                    [honu-new new]
                                    [honu-while while]
                                    [honu-macro macro]
+                                   [honu-primitive-macro primitive_macro]
                                    [honu-pattern pattern]
                                    [racket:read-line readLine]
                                    [honu-with-input-from-file withInputFromFile]

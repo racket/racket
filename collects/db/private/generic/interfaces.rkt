@@ -1,5 +1,6 @@
 #lang racket/base
-(require racket/class)
+(require racket/class
+         racket/serialize)
 (provide connection<%>
          dbsystem<%>
          prepared-statement<%>
@@ -115,8 +116,8 @@
 ;;  - (simple-result alist)
 ;;  - (rows-result Header data)
 ;;    for user-visible rows-results: headers present, data is (listof vector)
-(struct simple-result (info) #:transparent)
-(struct rows-result (headers rows) #:transparent)
+(serializable-struct simple-result (info) #:transparent)
+(serializable-struct rows-result (headers rows) #:transparent)
 
 ;; A cursor-result is
 ;;  - (cursor-result Header prepared-statement ???)
