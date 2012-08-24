@@ -1,13 +1,13 @@
 #lang racket
 (require setup/dirs)
 
-(define planet (build-path (find-console-bin-dir)
-                           (if (eq? 'windows (system-type))
-                               "planet.exe"
-                               "planet")))
+(define raco (build-path (find-console-bin-dir)
+                         (if (eq? 'windows (system-type))
+                             "raco.exe"
+                             "raco")))
 
 (void
- (system* planet "link" "racket-tester" "p1.plt" "1" "0"
+ (system* raco "planet" "link" "racket-tester" "p1.plt" "1" "0"
           (path->string (collection-path "tests" "racket" "embed-planet-1"))))
 
 (define (test expected got)
@@ -34,5 +34,5 @@
 (test #t (module-declared? `(submod (planet racket-tester/p1/has-sub) the-sub) #t))
 
 (void
- (system* planet "unlink" "racket-tester" "p1.plt" "1" "0"))
+ (system* raco "planet" "unlink" "racket-tester" "p1.plt" "1" "0"))
 
