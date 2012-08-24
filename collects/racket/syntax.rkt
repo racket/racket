@@ -83,7 +83,9 @@
     (when uses
       (current-recorded-disappeared-uses 
        (append
-        (map syntax-local-introduce ids)
+        (if (syntax-transforming?)
+            (map syntax-local-introduce ids)
+            ids)
         uses)))))
 
 
