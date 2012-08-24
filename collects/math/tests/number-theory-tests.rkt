@@ -136,8 +136,8 @@
 (check-equal? (solve-chinese '(2 3 2) '(3 5 7)) 23)
 
 
-(check-equal? (divisors 12)  '(1 3 2 6 4 12))
-(check-equal? (divisors -12) '(1 3 2 6 4 12))
+(check-equal? (divisors 12)  '(1 2 3 4 6 12))
+(check-equal? (divisors -12) '(1 2 3 4 6 12))
 (check-equal? (divisors 0)   '())
 
 (check-equal? (next-primes -5 10) '(-3 -2 2 3 5 7 11 13 17 19))

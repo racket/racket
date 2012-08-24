@@ -33,13 +33,14 @@
           (/ (* k k-1 k-2 k-3 k-4 k-5 )
              (* (- x k-1) (- x k-2) (- x k-3) (- x k-4) (- x k-5) (- x (- k 6)))))
        integer?)))
-  (: A : Integer Integer -> Exact-Rational)
+  (: A : Natural Integer -> Exact-Rational)
   (define (A m M)
     (cond 
       [(< M 1) 0]
       [else
        (define: sum : Exact-Rational 0)
-       (define: bin : Integer (binomial (+ m 3) (- m 6)))
+       (define: m-6 : Natural (assert (- m 6) natural?))
+       (define: bin : Integer (binomial (+ m 3) m-6))
        (for ([j (in-range 1 (+ M 1))])
          (set! sum (+ sum (* bin (bern (- m (* 6 j))))))
          (set! bin (next-binom bin (+ m 3) (- m (* 6 j)))))       

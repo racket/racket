@@ -1,6 +1,7 @@
 #lang typed/racket/base
 
 (require racket/math racket/flonum
+         "../number-theory/binomial.rkt"
          "../unsafe.rkt"
          "../utils.rkt")
 
@@ -40,16 +41,6 @@
            (cond [(n-m . <= . 0)  n]
                  [else  (define 2m (unsafe-fx* m 2))
                         (* (loop n 2m) (loop n-m 2m))]))]))
-
-(: binomial (Integer Integer -> Natural))
-(define (binomial n k)
-  (cond [(not (nonnegative-fixnum? n))  (raise-type-error 'binomial "Nonnegative-Fixnum" 0 n k)]
-        [(not (nonnegative-fixnum? k))  (raise-type-error 'binomial "Nonnegative-Fixnum" 1 n k)]
-        [(k . > . n)  0]
-        [(zero? k)  1]
-        [(zero? n)  0]
-        [else  (define m (/ (factorial n) (factorial k) (factorial (- n k))))
-               (with-asserts ([m  exact-nonnegative-integer?]) m)]))
 
 (: permutations (Integer Integer -> Natural))
 (define (permutations n k)

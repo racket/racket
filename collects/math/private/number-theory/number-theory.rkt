@@ -17,7 +17,7 @@
          
          ; primes
          nth-prime
-         next-prime 
+         next-prime untyped-next-prime
          next-primes
          prev-prime
          prev-primes
@@ -60,7 +60,7 @@
 (define prime-strong-pseudo-certainty 1/10000000)
 (define prime-strong-pseudo-trials (integer-length (assert (/ 1 prime-strong-pseudo-certainty) integer?)))
 
-(define *SMALL-PRIME-LIMIT* 1000000)
+(define *SMALL-PRIME-LIMIT* 10000000)
 ; (define *SMALL-PRIME-LIMIT* 1000) ; use 1000 for coverage testing
 ; Determines the size of the pre-built table of small primes
 (define *SMALL-FACORIZATION-LIMIT* *SMALL-PRIME-LIMIT*)
@@ -341,11 +341,16 @@
         (for ([m (in-range (+ n n) (+ N 1) n)])
           (! ps m #f))))
     (lambda (n)
-      (if (< n N)
-          (vector-ref ps n)
-          (prime-strong-pseudo? n)))))
+      (let ([n (abs n)])
+        (if (< n N)
+            (vector-ref ps n)
+            (prime-strong-pseudo? n))))))
 
-(: next-prime : (case-> (N -> N) (Z -> Z)))
+(: untyped-next-prime : Z -> Z)
+(define (untyped-next-prime z)
+  (next-prime z))
+
+(: next-prime : (case-> (N -> N) (Z -> Z)) )
 (define (next-prime n)
   (cond
     [(negative? n) (- (prev-prime (abs n)))]
@@ -400,6 +405,7 @@
               (cons prev (loop prev (sub1 primes-wanted)))
               '()))))
   (loop m primes-wanted))
+
 
 (: nth-prime : N -> Prime)
 (define (nth-prime n)
@@ -691,7 +697,7 @@
 (define (divisors n)
   (cond [(zero? n) '()]
         [else (define n+ (if (positive? n) n (- n)))
-              (factorization->divisors (factorize n+))]))
+              (sort (factorization->divisors (factorize n+)) <)]))
 
 (: factorization->divisors : (Listof (List N N)) -> (Listof N))
 (define (factorization->divisors f)
