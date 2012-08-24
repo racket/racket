@@ -1,6 +1,6 @@
 #lang scribble/manual
 
-@title[#:tag "top"]{The Typed Racket Reference}
+@title[#:tag "top"]{The Math Reference}
 
 @(defmodulelang* (racket)
    #:use-sources
