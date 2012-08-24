@@ -3,9 +3,13 @@
           scribble/eval
           scribble/struct
           racket/sandbox
+          racket/runtime-path
           "config.rkt"
           "tabbing.rkt"
           (for-label db db/util/geometry db/util/postgresql racket/dict))
+
+@(define-runtime-path log-file "log-for-query.rktd")
+@(define the-eval (make-pg-eval log-file #t))
 
 @;{ c - misc connection (alias to pgc)
     myc - MySQL connection (???)
@@ -791,3 +795,6 @@ A struct type property for creating new kinds of statements. The
 property value is applied to the struct instance and a connection, and
 it must return a @tech{statement}.
 }
+
+
+@(close-eval the-eval)

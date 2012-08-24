@@ -3,8 +3,12 @@
           scribble/eval
           scribble/struct
           racket/sandbox
+          racket/runtime-path
           "config.rkt"
           (for-label db db/util/datetime db/util/geometry db/util/postgresql db/util/testing))
+
+@(define-runtime-path log-file "log-for-util.rktd")
+@(define the-eval (make-pg-eval log-file #t))
 
 @title[#:tag "util"]{Utilities}
 
@@ -230,3 +234,5 @@ call (see @secref["ffi-concurrency"]). Even so, it may not accurately
 simulate an ODBC connection that internally uses cursors to fetch data
 on demand, as each fetch would introduce additional latency.
 }
+
+@(close-eval the-eval)

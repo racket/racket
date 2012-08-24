@@ -21,17 +21,35 @@
 ;; ----
 
 #|
-The log-based-eval should be run in an environment that defines
-the DSN 'db-scribble-env as a PostgreSQL data source.
+Whenever examples are changed, added, removed, or reordered, the
+example log files must be regenerated. To do so, set log-mode below to
+'record and run setup. Regenerating the logs require an environment
+that defines the DSN 'db-scribble-env as a PostgreSQL data source.
+
+Set log-mode back to 'replay before checking in the changes.
+
+Use one evaluator (and log file) per scribble file, so that when DrDr
+runs scribble files individually, they still work.
 |#
 
-(define-runtime-path example-log "example-log.rktd")
-(define the-eval (make-log-based-eval example-log 'replay))
+(define log-mode 'replay)
 
-(the-eval '(require racket/class
-                    db
-                    db/util/postgresql
-                    db/util/datetime))
+(define (make-pg-eval log-file init?)
+  (let ([ev (make-log-based-eval log-file log-mode)])
+    (ev '(require racket/class
+                  db
+                  db/util/postgresql
+                  db/util/datetime))
+    (when init?
+      (ev '(begin
+             ;; Must be kept in sync with beginning of using-db.scrbl
+             (define pgc (dsn-connect 'db-scribble-env))
+             (query-exec pgc "create temporary table the_numbers (n integer, d varchar(20))")
+             (query-exec pgc "insert into the_numbers values (0, 'nothing')")
+             (query-exec pgc "insert into the_numbers values (1, 'the loneliest number')")
+             (query-exec pgc "insert into the_numbers values (2, 'company')")
+             (query-exec pgc "insert into the_numbers values (3, 'a crowd')"))))
+    ev))
 
 #|
 The fake eval is for eg connection examples

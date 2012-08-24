@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual
           scribble/struct
+          scribble/eval
           "config.rkt")
 
 @title{DB: Database Connectivity}
@@ -56,3 +57,5 @@ code from Jay McCarthy's @tt{sqlite} package.
 @include-section["sql-types.scrbl"]
 @include-section["util.scrbl"]
 @include-section["notes.scrbl"]
+
+@(close-eval fake-eval)

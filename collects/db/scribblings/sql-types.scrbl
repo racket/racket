@@ -3,10 +3,14 @@
           scribble/eval
           scribble/struct
           racket/sandbox
+          racket/runtime-path
           "config.rkt"
           "tabbing.rkt"
           (for-label (prefix-in srfi: srfi/19)
                      db db/util/geometry db/util/postgresql))
+
+@(define-runtime-path log-file "log-for-sql-types.rktd")
+@(define the-eval (make-pg-eval log-file #t))
 
 @title[#:tag "sql-types"]{SQL Types and Conversions}
 
@@ -535,3 +539,6 @@ represented by sql-bits values.
 (sql-bits->string (query-value pgc "select B'010110111'"))
 ]
 }
+
+
+@(close-eval the-eval)
