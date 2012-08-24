@@ -793,7 +793,9 @@
              #t)]
     [else
      ;; otherwise we make an extra line at the top for the first line
-     (values (max main-w label-w)
+     (values (max main-w 
+                  (+ label-w blue-box-margin blue-box-margin)
+                  (+ read-more-w blue-box-margin blue-box-margin))
              (+ main-h label-h read-more-h read-more-gap)
              #f)]))
 
