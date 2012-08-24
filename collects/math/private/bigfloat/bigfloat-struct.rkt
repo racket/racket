@@ -1,7 +1,7 @@
 #lang typed/racket/base
 
 (require (only-in "mpfr.rkt"
-                  consts 0ary-funs 1ary-funs 1ary-preds 1ary2-funs 2ary-funs 2ary-preds)
+                  consts 0ary-funs 1ary-funs 1ary-preds 1ary2-funs 2ary-funs)
          racket/promise
          (for-syntax racket/base racket/syntax syntax/strip-context))
 
@@ -36,14 +36,83 @@
  ;; Main constructor
  [bf  (case-> ((U String Real) -> Bigfloat)
               (Integer Integer -> Bigfloat))]
+ ;; Functions that will only be provided wrapped
+ [bfadd  (Bigfloat Bigfloat -> Bigfloat)]
+ [bfsub  (Bigfloat Bigfloat -> Bigfloat)]
+ [bfmul  (Bigfloat Bigfloat -> Bigfloat)]
+ [bfdiv  (Bigfloat Bigfloat -> Bigfloat)]
+ [bfneg  (Bigfloat -> Bigfloat)]
+ [bfsum  ((Listof Bigfloat) -> Bigfloat)]
+ [bfmax2  (Bigfloat Bigfloat -> Bigfloat)]
+ [bfmin2  (Bigfloat Bigfloat -> Bigfloat)]
+ [bfeqv?  (Bigfloat Bigfloat -> Boolean)]
+ [bflt?   (Bigfloat Bigfloat -> Boolean)]
+ [bflte?  (Bigfloat Bigfloat -> Boolean)]
+ [bfgt?   (Bigfloat Bigfloat -> Boolean)]
+ [bfgte?  (Bigfloat Bigfloat -> Boolean)]
  ;; Functions with non-uniform types
  [bffactorial  (Integer -> Bigfloat)]
- [bfsum  ((Listof Bigfloat) -> Bigfloat)]
  [bfjn  (Integer Bigfloat -> Bigfloat)]
  [bfyn  (Integer Bigfloat -> Bigfloat)]
  [bfshift  (Bigfloat Integer -> Bigfloat)]
  [bflog-gamma/sign  (Bigfloat -> (Values Bigfloat (U -1 1)))]
  [bfrandom  (-> Bigfloat)])
+
+;; Rackety wrappers
+
+(: bf+ (Bigfloat * -> Bigfloat))
+(define (bf+ . xs)
+  (case (length xs)
+    [(0)   (force +0.bf)]
+    [(1)   (car xs)]
+    [(2)   (bfadd (car xs) (cadr xs))]
+    [else  (bfsum xs)]))
+
+(: bf- (Bigfloat Bigfloat * -> Bigfloat))
+(define (bf- x . xs)
+  (cond [(null? xs)  (bfneg x)]
+        [else  (bfsub x (apply bf+ xs))]))
+
+(: bf* (Bigfloat * -> Bigfloat))
+(define (bf* . xs)
+  (cond [(null? xs)  (force +1.bf)]
+        [else  (let loop ([x  (car xs)] [xs  (cdr xs)])
+                 (cond [(null? xs)  x]
+                       [else  (loop (bfmul x (car xs)) (cdr xs))]))]))
+
+(: bf/ (Bigfloat Bigfloat * -> Bigfloat))
+(define (bf/ x . xs)
+  (cond [(null? xs)  (bfdiv (force +1.bf) x)]
+        [else  (bfdiv x (apply bf* xs))]))
+
+(: bfmin (Bigfloat * -> Bigfloat))
+(define (bfmin . xs)
+  (cond [(null? xs)  (force +inf.bf)]
+        [else  (foldl bfmin2 (car xs) (cdr xs))]))
+
+(: bfmax (Bigfloat * -> Bigfloat))
+(define (bfmax . xs)
+  (cond [(null? xs)  (force -inf.bf)]
+        [else  (foldl bfmax2 (car xs) (cdr xs))]))
+
+(: fold-binary-pred (All (A) ((A A -> Boolean) A (Listof A) -> Boolean)))
+(define (fold-binary-pred pred? x xs)
+  (let loop ([x x] [xs xs])
+    (cond [(null? xs)  #t]
+          [else  (define fst-xs (car xs))
+                 (cond [(pred? x fst-xs)  (loop fst-xs (cdr xs))]
+                       [else  #f])])))
+
+(define-syntax-rule (define-nary-pred bfpred? bfpred2?)
+  (begin
+    (: bfpred? (Bigfloat Bigfloat * -> Boolean))
+    (define (bfpred? x . xs) (fold-binary-pred bfpred2? x xs))))
+
+(define-nary-pred bf=  bfeqv?)
+(define-nary-pred bf<  bflt?)
+(define-nary-pred bf<= bflte?)
+(define-nary-pred bf>  bfgt?)
+(define-nary-pred bf>= bfgte?)
 
 (provide
  ;; Parameters
@@ -74,12 +143,23 @@
  bf
  ;; Functions with non-uniform types
  bffactorial
- bfsum
  bfjn
  bfyn
  bfshift
  bflog-gamma/sign
- bfrandom)
+ bfrandom
+ ;; Function wrappers with Rackety APIs
+ bf+
+ bf-
+ bf*
+ bf/
+ bfmin
+ bfmax
+ bf=
+ bf<
+ bf<=
+ bf>
+ bf>=)
 
 (define-syntax (req/prov-uniform-collection stx)
   (syntax-case stx ()
@@ -99,7 +179,6 @@
 (req/prov-uniform-collection "mpfr.rkt" 1ary-preds (Bigfloat -> Boolean))
 (req/prov-uniform-collection "mpfr.rkt" 1ary2-funs (Bigfloat -> (Values Bigfloat Bigfloat)))
 (req/prov-uniform-collection "mpfr.rkt" 2ary-funs (Bigfloat Bigfloat -> Bigfloat))
-(req/prov-uniform-collection "mpfr.rkt" 2ary-preds (Bigfloat Bigfloat -> Boolean))
 
 (define-syntax consts-syntax consts)
 (define-syntax 0ary-syntax 0ary-funs)

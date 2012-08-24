@@ -20,4 +20,4 @@
 (: bflog- (Bigfloat Bigfloat -> Bigfloat))
 (define (bflog- log-x log-y)
   (cond [(log-y . bf> . log-x)  +nan.bf]
-        [else  (bf+ log-x (bflog1p (bfneg (bfexp (bf- log-y log-x)))))]))
+        [else  (bf+ log-x (bflog1p (bf- (bfexp (bf- log-y log-x)))))]))

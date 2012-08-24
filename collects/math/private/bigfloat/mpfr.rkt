@@ -137,7 +137,7 @@
   (define x1-rational? (bfrational? x1))
   (define x2-rational? (bfrational? x2))
   (and (= (bigfloat-sign x1) (bigfloat-sign x2))
-       (or (bf= x1 x2) 
+       (or (bfeqv? x1 x2) 
            (and (bfnan? x1) (bfnan? x2)))))
 
 (define (canonicalize-sig+exp sig exp)
@@ -556,6 +556,9 @@
  [bffrac 'mpfr_frac]
  [bfcopy 'mpfr_set])
 
+(begin-for-syntax
+  (set! 1ary-funs (remove* (list #'bfneg) 1ary-funs free-identifier=?)))
+
 (define (bfsgn x)
   (cond [(bfzero? x)  x]
         [(= 0 (mpfr-signbit x))  (force +1.bf)]
@@ -672,10 +675,10 @@
  [bfzero? 'mpfr_zero_p])
 
 (define (bfpositive? x)
-  (bf> x (force +0.bf)))
+  (bfgt? x (force +0.bf)))
 
 (define (bfnegative? x)
-  (bf< x (force +0.bf)))
+  (bflt? x (force +0.bf)))
 
 (define (bfeven? x)
   (unless (bfinteger? x) (raise-type-error 'bfeven? "bfinteger?" x))
@@ -711,16 +714,21 @@
   (begin (provide-2ary-fun name c-name) ...))
 
 (provide-2ary-funs
- [bf+ 'mpfr_add]
- [bf- 'mpfr_sub]
- [bf* 'mpfr_mul]
- [bf/ 'mpfr_div]
+ [bfadd 'mpfr_add]
+ [bfsub 'mpfr_sub]
+ [bfmul 'mpfr_mul]
+ [bfdiv 'mpfr_div]
  [bfexpt 'mpfr_pow]
- [bfmax 'mpfr_max]
- [bfmin 'mpfr_min]
+ [bfmax2 'mpfr_max]
+ [bfmin2 'mpfr_min]
  [bfatan2 'mpfr_atan2]
  [bfhypot 'mpfr_hypot]
  [bfagm 'mpfr_agm])
+
+(begin-for-syntax
+  (set! 2ary-funs (remove* (list #'bfadd #'bfsub #'bfmul #'bfdiv #'bfmax2 #'bfmin2)
+                           2ary-funs
+                           free-identifier=?)))
 
 (define mpfr-jn (get-mpfr-fun 'mpfr_jn (_fun _mpfr-pointer _long _mpfr-pointer _rnd_t -> _int)))
 (define mpfr-yn (get-mpfr-fun 'mpfr_yn (_fun _mpfr-pointer _long _mpfr-pointer _rnd_t -> _int)))
@@ -755,25 +763,21 @@
 ;; ===================================================================================================
 ;; Binary predicates
 
-(define-for-syntax 2ary-preds (list))
-(provide (for-syntax 2ary-preds))
-
 (define-syntax-rule (provide-2ary-pred name c-name)
   (begin (define cfun (get-mpfr-fun c-name (_fun _mpfr-pointer _mpfr-pointer -> _int)))
          (define (name x1 x2)
            (not (zero? (cfun x1 x2))))
-         (provide name)
-         (begin-for-syntax (set! 2ary-preds (cons #'name 2ary-preds)))))
+         (provide name)))
 
 (define-syntax-rule (provide-2ary-preds [name c-name] ...)
   (begin (provide-2ary-pred name c-name) ...))
 
 (provide-2ary-preds
- [bf> 'mpfr_greater_p]
- [bf>= 'mpfr_greaterequal_p]
- [bf< 'mpfr_less_p]
- [bf<= 'mpfr_lessequal_p]
- [bf= 'mpfr_equal_p])
+ [bfeqv? 'mpfr_equal_p]
+ [bflt?  'mpfr_less_p]
+ [bflte? 'mpfr_lessequal_p]
+ [bfgt?  'mpfr_greater_p]
+ [bfgte? 'mpfr_greaterequal_p])
 
 ;; ===================================================================================================
 ;; 0-arity functions (variable-precision constants)

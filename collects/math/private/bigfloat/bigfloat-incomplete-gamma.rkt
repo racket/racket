@@ -16,7 +16,7 @@
                          [i  : Bigfloat  +0.bf])
     (define new-y (bf+ y dy))
     (cond [(or (bf= new-y +inf.bf) ((bfabs dy) . bf<= . (bf* eps new-y)))  new-y]
-          [else  (loop new-y (bf/ (bf* dy x) (bf+ (bf+ +2.bf i) k)) (bf+ i +1.bf))])))
+          [else  (loop new-y (bf/ (bf* dy x) (bf+ +2.bf i k)) (bf+ i +1.bf))])))
 
 (: bfgamma-lower-series (Bigfloat Bigfloat -> Bigfloat))
 ;; Computes the lower gamma function from its series
@@ -27,7 +27,7 @@
      (define y (bfgamma-lower-iter k x +epsilon.bf))
      (define log-z (bf- (bf* k (bflog x)) (bf+ x (bflog k))))
      (let ([z  (cond [((bfabs log-z) . bf< . +1.bf)  (bfexp log-z)]
-                     [else  (bf/ (bf* (bfexpt x k) (bfexp (bfneg x))) k)])])
+                     [else  (bf/ (bf* (bfexpt x k) (bfexp (bf- x))) k)])])
        (bf+ z (bf* z y))))))
 
 (: bflog-gamma-lower-series (Bigfloat Bigfloat -> Bigfloat))
@@ -56,7 +56,7 @@
      (define y (bfgamma-upper-iter k x eps))
      (define log-z (bf- (bf* k (bflog x)) x))
      (let ([z  (cond [((bfabs log-z) . bf< . +1.bf)  (bfexp log-z)]
-                     [else  (bf* (bfexpt x k) (bfexp (bfneg x)))])])
+                     [else  (bf* (bfexpt x k) (bfexp (bf- x)))])])
        (bf* y z)))))
   
 (: bflog-gamma-upper-frac (Bigfloat Bigfloat -> Bigfloat))
