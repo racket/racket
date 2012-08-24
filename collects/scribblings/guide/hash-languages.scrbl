@@ -594,12 +594,12 @@ racket
   (show-enabled #t))
 ]
 
-Finally, the @filepath{literal/runtime-config.rkt} module must provide
+Finally, the @filepath{literal/show.rkt} module must provide
 the @racketidfont{show-enabled} parameter and @racketidfont{show}
 function:
 
 @racketmod[
-#:file "literal/runtime-config.rkt"
+#:file "literal/show.rkt"
 racket
 
 (provide show show-enabled)
