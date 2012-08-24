@@ -12,8 +12,7 @@
          "array.rkt"
          "matrix.rkt"
          "vector.rkt"
-         "polynomial.rkt"
-         "random.rkt")
+         "polynomial.rkt")
 
 (provide (all-from-out
           "types.rkt"
@@ -28,5 +27,4 @@
           "array.rkt"
           "matrix.rkt"
           "vector.rkt"
-          "polynomial.rkt"
-          "random.rkt"))
+          "polynomial.rkt"))

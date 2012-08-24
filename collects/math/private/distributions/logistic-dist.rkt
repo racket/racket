@@ -5,7 +5,6 @@
          "../../types.rkt"
          "../../constants.rkt"
          "../functions/log1p.rkt"
-         "../random.rkt"
          "utils.rkt")
 
 (provide fllogistic-pdf

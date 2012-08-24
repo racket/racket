@@ -124,8 +124,8 @@
              (let ([M1 M-expr])
                (define-values (rd cd) (matrix-dimensions M1))
                (values M1 r-expr rd 
-                       (strict-array-data
-                        (array-strict M1))))])
+                       (mutable-array-data
+                        (array->mutable-array M1))))])
            (begin 
              (unless (array-matrix? M) 
                (raise-type-error 'in-row "expected matrix, got ~a" M))
@@ -146,8 +146,8 @@
              (let ([M1 M-expr])
                (define-values (rd cd) (matrix-dimensions M1))
                (values M1 r-expr rd 
-                       (strict-array-data
-                        (array-strict M1))))])
+                       (mutable-array-data
+                        (array->mutable-array M1))))])
            (begin 
              (unless (array-matrix? M) 
                (raise-type-error 'in-row "expected matrix, got ~a" M))
@@ -194,8 +194,8 @@
              (let ([M1 M-expr])
                (define-values (rd cd) (matrix-dimensions M1))
                (values M1 s-expr rd cd 
-                       (strict-array-data
-                        (array-strict M1))))])
+                       (mutable-array-data
+                        (array->mutable-array M1))))])
            (begin 
              (unless (array-matrix? M) 
                (raise-type-error 'in-row "expected matrix, got ~a" M))
@@ -216,8 +216,8 @@
              (let ([M1 M-expr])
                (define-values (rd cd) (matrix-dimensions M1))
                (values M1 s-expr rd cd
-                       (strict-array-data
-                        (array-strict M1))))])
+                       (mutable-array-data
+                        (array->mutable-array M1))))])
            (begin 
              (unless (array-matrix? M) 
                (raise-type-error 'in-column "expected matrix, got ~a" M))
