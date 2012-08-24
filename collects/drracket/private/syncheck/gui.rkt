@@ -48,7 +48,7 @@ If the namespace does not, they are colored the unbound color.
          "traversals.rkt"
          "annotate.rkt"
          "../tooltip.rkt"
-         "contract-gui.rkt")
+         "blueboxes-gui.rkt")
 (provide tool@)
 
 (define orig-output-port (current-output-port))
