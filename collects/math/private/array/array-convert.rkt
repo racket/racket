@@ -2,6 +2,7 @@
 
 (require racket/vector racket/flonum
          "../unsafe.rkt"
+         "../exception.rkt"
          "array-struct.rkt"
          "mutable-array.rkt"
          "utils.rkt")
@@ -39,7 +40,7 @@
 (define (list->array lst pred?)
   (define (raise-shape-error)
     ;; don't have to worry about non-Index size - can't fit in memory anyway
-    (raise-type-error 'list->array "rectangular (Listof* A)" lst))
+    (raise-argument-error 'list->array "rectangular (Listof* A)" lst))
   
   (define ds (list-shape pred? lst))
   (cond [(pred? lst)  (unsafe-build-array #() (λ (js) lst))]
@@ -75,7 +76,7 @@
 (define (vector->array vec pred?)
   (define (raise-shape-error)
     ;; don't have to worry about non-Index size - can't fit in memory anyway
-    (raise-type-error 'vector->array "rectangular (Vectorof* A)" vec))
+    (raise-argument-error 'vector->array "rectangular (Vectorof* A)" vec))
   
   (define ds (vector-shape pred?  vec))
   (cond [(pred? vec)  (unsafe-build-array #() (λ (js) vec))]

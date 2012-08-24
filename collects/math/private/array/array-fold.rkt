@@ -2,6 +2,7 @@
 
 (require racket/performance-hint
          "../unsafe.rkt"
+         "../exception.rkt"
          "array-struct.rkt"
          "array-indexing.rkt"
          "utils.rkt"
@@ -35,9 +36,9 @@
 (define (check-array-axis name arr k)
   (define dims (array-dims arr))
   (cond
-    [(= dims 0)  (raise-type-error 'name "Array with at least one axis" 0 arr k)]
+    [(= dims 0)  (raise-argument-error 'name "Array with at least one axis" 0 arr k)]
     [(or (0 . > . k) (k . >= . dims))
-     (raise-type-error 'name (format "Index < ~a" dims) 1 arr k)]
+     (raise-argument-error 'name (format "Index < ~a" dims) 1 arr k)]
     [else  k]))
 
 (: unsafe-array-axis-reduce (All (A B) ((Array A) Index (Index (Index -> A) -> B) -> (Array B))))
@@ -68,7 +69,7 @@
 (define (array-axis-fold/no-init arr k f)
   (let ([k  (check-array-axis 'array-axis-fold arr k)])
     (when (= (unsafe-vector-ref (array-shape arr) k) 0)
-      (raise-type-error 'array-axis-fold "nonzero axis" 0 arr k))
+      (raise-argument-error 'array-axis-fold "nonzero axis" 0 arr k))
     (unsafe-array-axis-reduce
      arr k (λ: ([dk : Index] [proc : (Index -> A)])
              (let: loop : A ([jk : Nonnegative-Fixnum  1] [acc : A  (proc 0)])

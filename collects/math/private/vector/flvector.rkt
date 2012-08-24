@@ -3,7 +3,8 @@
 (require racket/flonum
          racket/string
          (for-syntax racket/base syntax/parse)
-         "../unsafe.rkt")
+         "../unsafe.rkt"
+         "../exception.rkt")
 
 (provide
  ;; Construction
@@ -70,7 +71,7 @@
 (: build-flvector (Integer (Index -> Float) -> FlVector))
 (define (build-flvector size f)
   (cond [(index? size)  (inline-build-flvector size f)]
-        [else  (raise-type-error 'build-flvector "Index" 0 size f)]))
+        [else  (raise-argument-error 'build-flvector "Index" 0 size f)]))
 
 ;; ===================================================================================================
 ;; flvector-copy
@@ -95,14 +96,14 @@
      (define dest-len (flvector-length dest))
      (define src-len (flvector-length src))
      (cond [(or (dest-start . < . 0) (dest-start . > . dest-len))
-            (raise-type-error 'flvector-copy! (format "Index <= ~e" dest-len) 1
-                              dest dest-start src src-start src-end)]
+            (raise-argument-error 'flvector-copy! (format "Index <= ~e" dest-len) 1
+                                  dest dest-start src src-start src-end)]
            [(or (src-start . < . 0) (src-start . > . src-len))
-            (raise-type-error 'flvector-copy! (format "Index <= ~e" src-len) 3
-                              dest dest-start src src-start src-end)]
+            (raise-argument-error 'flvector-copy! (format "Index <= ~e" src-len) 3
+                                  dest dest-start src src-start src-end)]
            [(or (src-end . < . 0) (src-end . > . src-len))
-            (raise-type-error 'flvector-copy! (format "Index <= ~e" src-len) 4
-                              dest dest-start src src-start src-end)]
+            (raise-argument-error 'flvector-copy! (format "Index <= ~e" src-len) 4
+                                  dest dest-start src src-start src-end)]
            [(src-end . < . src-start)
             (error 'flvector-copy! "ending index is smaller than starting index")]
            [((- dest-len dest-start) . < . (- src-end src-start))

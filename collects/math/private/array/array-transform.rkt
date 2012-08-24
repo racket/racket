@@ -2,6 +2,7 @@
 
 (require racket/vector
          "../unsafe.rkt"
+         "../exception.rkt"
          "array-struct.rkt"
          "array-broadcast.rkt"
          "utils.rkt")
@@ -39,8 +40,8 @@
 (define (array-axis-permute arr perm)
   (define ds (array-shape arr))
   (let-values ([(ds perm) (apply-permutation
-                           perm ds (λ () (raise-type-error 'array-axis-permute "permutation"
-                                                           1 arr perm)))])
+                           perm ds (λ () (raise-argument-error 'array-axis-permute "permutation"
+                                                               1 arr perm)))])
     (define dims (vector-length ds))
     (define old-js (make-thread-local-indexes dims))
     (unsafe-array-transform
@@ -59,9 +60,9 @@
   (define ds (array-shape arr))
   (define dims (vector-length ds))
   (cond [(or (i0 . < . 0) (i0 . >= . dims))
-         (raise-type-error 'array-transpose (format "Index < ~a" dims) 1 arr i0 i1)]
+         (raise-argument-error 'array-transpose (format "Index < ~a" dims) 1 arr i0 i1)]
         [(or (i1 . < . 0) (i1 . >= . dims))
-         (raise-type-error 'array-transpose (format "Index < ~a" dims) 2 arr i0 i1)]
+         (raise-argument-error 'array-transpose (format "Index < ~a" dims) 2 arr i0 i1)]
         [(= i0 i1)  arr]
         [else
          (define new-ds (vector-copy-all ds))
@@ -90,9 +91,9 @@
   (define ds (array-shape arr))
   (define dims (vector-length ds))
   (cond [(or (k . < . 0) (k . > . dims))
-         (raise-type-error 'array-axis-insert (format "Index <= ~a" dims) 1 arr k dk)]
+         (raise-argument-error 'array-axis-insert (format "Index <= ~a" dims) 1 arr k dk)]
         [(not (index? dk))
-         (raise-type-error 'array-axis-insert "Index" 2 arr k dk)]
+         (raise-argument-error 'array-axis-insert "Index" 2 arr k dk)]
         [else
          (define new-ds (unsafe-vector-insert ds k dk))
          (define proc (unsafe-array-proc arr))
@@ -105,9 +106,9 @@
   (define ds (array-shape arr))
   (define dims (vector-length ds))
   (cond [(or (k . < . 0) (k . >= . dims))
-         (raise-type-error 'array-axis-ref (format "Index < ~a" dims) 1 arr k jk)]
+         (raise-argument-error 'array-axis-ref (format "Index < ~a" dims) 1 arr k jk)]
         [(or (jk . < . 0) (jk . >= . (unsafe-vector-ref ds k)))
-         (raise-type-error 'array-axis-ref (format "Index < ~a" (unsafe-vector-ref ds k))
+         (raise-argument-error 'array-axis-ref (format "Index < ~a" (unsafe-vector-ref ds k))
                            2 arr k jk)]
         [else
          (define new-ds (unsafe-vector-remove ds k))
@@ -122,10 +123,10 @@
 (: array-reshape (All (A) ((Array A) User-Indexes -> (Array A))))
 (define (array-reshape arr ds)
   (let ([ds  (check-array-shape
-              ds (λ () (raise-type-error 'array-reshape "(Vectorof Index)" 1 arr ds)))])
+              ds (λ () (raise-argument-error 'array-reshape "(Vectorof Index)" 1 arr ds)))])
     (define size (array-size arr))
     (unless (= size (array-shape-size ds))
-      (raise-type-error 'array-reshape (format "(Vectorof Index) with product ~a" size) 1 arr ds))
+      (raise-argument-error 'array-reshape (format "(Vectorof Index) with product ~a" size) 1 arr ds))
     (define old-ds (array-shape arr))
     (cond [(equal? ds old-ds)  arr]
           [else
@@ -167,7 +168,7 @@
   (define dims (apply max (map vector-length dss)))
   (cond [(not (index? dims))  (error 'array-broadcast-for-append "can't happen")]
         [(or (k . < . 0) (k . >= . dims))
-         (raise-type-error 'array-append* (format "Index < ~a" dims) k)]
+         (raise-argument-error 'array-append* (format "Index < ~a" dims) k)]
         [else
          (let* ([dss  (map (λ: ([ds : Indexes])
                              (define dms (vector-length ds))
@@ -184,7 +185,7 @@
 (: array-append* (All (A) (case-> ((Listof (Array A)) -> (Array A))
                                   ((Listof (Array A)) Integer -> (Array A)))))
 (define (array-append* arrs [k 0])
-  (when (null? arrs) (raise-type-error 'array-append* "nonempty (Listof (Array A))" arrs))
+  (when (null? arrs) (raise-argument-error 'array-append* "nonempty (Listof (Array A))" arrs))
   (let-values ([(arrs dks)  (array-broadcast-for-append arrs k)])
     (define new-dk (apply + dks))
     (cond

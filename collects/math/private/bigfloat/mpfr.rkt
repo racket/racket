@@ -346,7 +346,7 @@
 ;; bigfloat->integer : bigfloat -> integer
 ;; Converts a bigfloat to a Racket integer; rounds if necessary.
 (define (bigfloat->integer x)
-  (unless (bfinteger? x) (raise-type-error 'bigfloat->integer "integer Bigfloat" x))
+  (unless (bfinteger? x) (raise-argument-error 'bigfloat->integer "bfinteger?" x))
   (define z (raw-mpz))
   (mpfr-get-z z x (bf-rounding-mode))
   (define res (mpz->integer z))
@@ -356,7 +356,7 @@
 ;; bigfloat->rational : bigfloat -> rational
 ;; Converts a bigfloat to a Racket rational; does not round.
 (define (bigfloat->rational x)
-  (unless (bfrational? x) (raise-type-error 'bigfloat->rational "rational Bigfloat" x))
+  (unless (bfrational? x) (raise-argument-error 'bigfloat->rational "bfrational?" x))
   (define-values (sig exp) (bigfloat-sig+exp x))
   (* sig (expt 2 exp)))
 
@@ -575,7 +575,7 @@
 (define mpfr-fac-ui (get-mpfr-fun 'mpfr_fac_ui (_fun _mpfr-pointer _ulong _rnd_t -> _int)))
 
 (define (bffactorial n)
-  (cond [(n . < . 0)  (raise-type-error 'bffactorial "Natural" n)]
+  (cond [(n . < . 0)  (raise-argument-error 'bffactorial "Natural" n)]
         [(n . > . 100000000)  (force +inf.bf)]
         [else  (define y (new-mpfr (bf-precision)))
                (mpfr-fac-ui y n (bf-rounding-mode))
@@ -681,12 +681,10 @@
   (bflt? x (force +0.bf)))
 
 (define (bfeven? x)
-  (unless (bfinteger? x) (raise-type-error 'bfeven? "bfinteger?" x))
-  (even? (bigfloat->integer x)))
+  (and (bfinteger? x) (even? (bigfloat->integer x))))
 
 (define (bfodd? x)
-  (unless (bfinteger? x) (raise-type-error 'bfodd? "bfinteger?" x))
-  (odd? (bigfloat->integer x)))
+  (and (bfinteger? x) (odd? (bigfloat->integer x))))
 
 (provide bfpositive? bfnegative? bfeven? bfodd?)
 (begin-for-syntax
@@ -734,13 +732,13 @@
 (define mpfr-yn (get-mpfr-fun 'mpfr_yn (_fun _mpfr-pointer _long _mpfr-pointer _rnd_t -> _int)))
 
 (define (bfjn n x)
-  (unless (fixnum? n) (raise-type-error 'bfjn "Fixnum" 0 n x))
+  (unless (fixnum? n) (raise-argument-error 'bfjn "Fixnum" 0 n x))
   (define y (new-mpfr (bf-precision)))
   (mpfr-jn y n x (bf-rounding-mode))
   y)
 
 (define (bfyn n x)
-  (unless (fixnum? n) (raise-type-error 'bfyn "Fixnum" 0 n x))
+  (unless (fixnum? n) (raise-argument-error 'bfyn "Fixnum" 0 n x))
   (define y (new-mpfr (bf-precision)))
   (mpfr-yn y n x (bf-rounding-mode))
   y)
@@ -749,7 +747,7 @@
 (define mpfr-set (get-mpfr-fun 'mpfr_set (_fun _mpfr-pointer _mpfr-pointer _rnd_t -> _int)))
 
 (define (bfshift x n)
-  (unless (fixnum? n) (raise-type-error 'bfshift "Fixnum" 1 x n))
+  (unless (fixnum? n) (raise-argument-error 'bfshift "Fixnum" 1 x n))
   (cond [(bfzero? x)  x]
         [(not (bfrational? x))  x]
         [else  (define exp (mpfr-get-exp x))

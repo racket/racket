@@ -6,7 +6,8 @@
          (for-syntax racket/base syntax/parse)
          "flvector.rkt"
          "../../flonum.rkt"
-         "../unsafe.rkt")
+         "../unsafe.rkt"
+         "../exception.rkt")
 
 (provide
  (rename-out [-FCVector FCVector]) fcvector?
@@ -64,9 +65,9 @@
 (: fcvector-guard (Index FlVector FlVector Symbol -> (Values Index FlVector FlVector)))
 (define (fcvector-guard n xs ys name)
   (cond [(not (= n (flvector-length xs)))
-         (raise-type-error name (format "FlVector of length ~e" n) xs)]
+         (raise-argument-error name (format "FlVector of length ~e" n) xs)]
         [(not (= n (flvector-length ys)))
-         (raise-type-error name (format "FlVector of length ~e" n) ys)]
+         (raise-argument-error name (format "FlVector of length ~e" n) ys)]
         [else  (values n xs ys)]))
 
 (: fcvector-print (FCVector Output-Port (U #t #f 0 1) -> Void))
@@ -186,7 +187,7 @@
 (: build-fcvector (Integer (Index -> Float-Complex) -> FCVector))
 (define (build-fcvector size f)
   (cond [(index? size)  (inline-build-fcvector size f)]
-        [else  (raise-type-error 'build-fcvector "Index" 0 size f)]))
+        [else  (raise-argument-error 'build-fcvector "Index" 0 size f)]))
 
 ;; ===================================================================================================
 ;; fcvector-copy
@@ -216,14 +217,14 @@
      (define dest-len (fcvector-length dest))
      (define src-len (fcvector-length src))
      (cond [(or (dest-start . < . 0) (dest-start . > . dest-len))
-            (raise-type-error 'fcvector-copy! (format "Index <= ~e" dest-len) 1
-                              dest dest-start src src-start src-end)]
+            (raise-argument-error 'fcvector-copy! (format "Index <= ~e" dest-len) 1
+                                  dest dest-start src src-start src-end)]
            [(or (src-start . < . 0) (src-start . > . src-len))
-            (raise-type-error 'fcvector-copy! (format "Index <= ~e" src-len) 3
-                              dest dest-start src src-start src-end)]
+            (raise-argument-error 'fcvector-copy! (format "Index <= ~e" src-len) 3
+                                  dest dest-start src src-start src-end)]
            [(or (src-end . < . 0) (src-end . > . src-len))
-            (raise-type-error 'fcvector-copy! (format "Index <= ~e" src-len) 4
-                              dest dest-start src src-start src-end)]
+            (raise-argument-error 'fcvector-copy! (format "Index <= ~e" src-len) 4
+                                  dest dest-start src src-start src-end)]
            [(src-end . < . src-start)
             (error 'fcvector-copy! "ending index is smaller than starting index")]
            [((- dest-len dest-start) . < . (- src-end src-start))

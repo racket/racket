@@ -3,6 +3,7 @@
 (require (for-syntax racket/base
                      syntax/parse)
          "../unsafe.rkt"
+         "../exception.rkt"
          "../vector/vector.rkt"
          "array-struct.rkt"
          "mutable-array.rkt"
@@ -18,7 +19,7 @@
        (syntax/loc stx
          (let*: ([ds : User-Indexes  ds-expr]
                  [ds : Indexes  (check-array-shape
-                                 ds (λ () (raise-type-error 'name "Indexes" ds)))])
+                                 ds (λ () (raise-argument-error 'name "Indexes" ds)))])
            (define vs (for/vector #:length (array-shape-size ds) maybe-fill ...
                         (clause ...) : A body ...))
            (unsafe-mutable-array ds vs))))]

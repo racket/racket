@@ -3,6 +3,7 @@
 (require racket/promise
          (for-syntax racket/base syntax/parse)
          "../unsafe.rkt"
+         "../exception.rkt"
          "array-struct.rkt"
          "array-syntax.rkt"
          "utils.rkt"
@@ -41,11 +42,11 @@
 (: make-mutable-array (All (A) (User-Indexes (Vectorof A) -> (Mutable-Array A))))
 (define (make-mutable-array ds vs)
   (let* ([ds  (check-array-shape
-               ds (λ () (raise-type-error 'make-mutable-array "(Vectorof Index)" 0 ds vs)))]
+               ds (λ () (raise-argument-error 'make-mutable-array "(Vectorof Index)" 0 ds vs)))]
          [size  (array-shape-size ds)]
          [n  (vector-length vs)])
     (cond [(= size n)  (unsafe-mutable-array ds vs)]
-          [else  (raise-type-error 'mutable-array (format "Vector of length ~e" size) 1 ds vs)])))
+          [else  (raise-argument-error 'mutable-array (format "Vector of length ~e" size) 1 ds vs)])))
 
 (: mutable-array-copy (All (A) ((Mutable-Array A) -> (Mutable-Array A))))
 (define (mutable-array-copy arr)

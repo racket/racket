@@ -1,6 +1,7 @@
 #lang typed/racket
 
 (require "../unsafe.rkt"
+         "../exception.rkt"
          "array-struct.rkt"
          "array-constructors.rkt"
          "array-transform.rkt"
@@ -69,7 +70,7 @@
 (: in-array-indexes (User-Indexes -> (Sequenceof Indexes)))
 (define (in-array-indexes ds)
   (let: ([ds : Indexes  (check-array-shape
-                         ds (λ () (raise-type-error 'in-array-indexes "Indexes" ds)))])
+                         ds (λ () (raise-argument-error 'in-array-indexes "Indexes" ds)))])
     (define dims (vector-length ds))
     (define size (array-shape-size ds))
     (cond [(index? size)
@@ -99,7 +100,8 @@
            ([(ds size dims js)
              (let*: ([ds : User-Indexes  ds-expr]
                      [ds : Indexes  (check-array-shape
-                                     ds (λ () (raise-type-error 'in-array-indexes "Indexes" ds)))])
+                                     ds (λ () (raise-argument-error 'in-array-indexes "Indexes"
+                                                                    ds)))])
                (define dims (vector-length ds))
                (define size (array-shape-size ds))
                (cond [(index? size)  (define: js : Indexes (make-vector dims 0))

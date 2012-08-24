@@ -7,6 +7,7 @@
          (only-in racket/math exact-ceiling pi)
          "fcvector.rkt"
          "../unsafe.rkt"
+         "../exception.rkt"
          "../../parameters.rkt"
          "../../functions.rkt")
 
@@ -40,12 +41,12 @@
     [(not (power-of-two? n))
      (error 'fcvector-fft "expected power-of-two length; given length ~e" n)]
     [(or (start . < . 0) (start . >= . len))
-     (raise-type-error 'fcvector-fft (format "Index < ~e" len) 1 as start end)]
+     (raise-argument-error 'fcvector-fft (format "Index < ~e" len) 1 as start end)]
     [(or (n . < . 0) (n . > . len))
-     (raise-type-error 'fcvector-fft (format "Index <= ~e" len) 2 as start end)]
+     (raise-argument-error 'fcvector-fft (format "Index <= ~e" len) 2 as start end)]
     [((- (fcvector-length bs) b-start) . < . n)
-     (raise-type-error 'fcvector-fft! (format "FCVector with length >= ~e" (+ n b-start))
-                       3 as start end bs b-start)]
+     (raise-argument-error 'fcvector-fft! (format "FCVector with length >= ~e" (+ n b-start))
+                           3 as start end bs b-start)]
     [else
      (define as-r (make-flvector n 0.0))
      (define as-i (make-flvector n 0.0))

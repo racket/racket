@@ -4,7 +4,8 @@
          "factorial.rkt"
          "../../constants.rkt"
          "../vector/flvector.rkt"
-         "../utils.rkt")
+         "../utils.rkt"
+         "../exception.rkt")
 
 (provide fllog-factorial
          fllog-binomial
@@ -56,7 +57,7 @@
                          (One -> Zero)
                          (Integer -> (U Zero Float))))
 (define (log-factorial n)
-  (cond [(n . < . 0)  (raise-type-error 'log-factorial "Natural" n)]
+  (cond [(n . < . 0)  (raise-argument-error 'log-factorial "Natural" n)]
         [(or (eqv? n 0) (eqv? n 1))  0]
         [else  (fllog-factorial n)]))
 
@@ -74,8 +75,10 @@
                         (Integer Zero -> Zero)
                         (Integer Integer -> Real)))
 (define (log-binomial n k)
-  (cond [(not (nonnegative-fixnum? n))  (raise-type-error 'log-binomial "Nonnegative-Fixnum" 0 n k)]
-        [(not (nonnegative-fixnum? k))  (raise-type-error 'log-binomial "Nonnegative-Fixnum" 1 n k)]
+  (cond [(not (nonnegative-fixnum? n))
+         (raise-argument-error 'log-binomial "Nonnegative-Fixnum" 0 n k)]
+        [(not (nonnegative-fixnum? k))
+         (raise-argument-error 'log-binomial "Nonnegative-Fixnum" 1 n k)]
         [(zero? k)  0]
         [(k . > . n)  -inf.0]  ; also handles n = 0 case
         [(k . = . n)  0]
@@ -95,9 +98,9 @@
                             (Integer Integer -> Real)))
 (define (log-permutations n k)
   (cond [(not (nonnegative-fixnum? n))
-         (raise-type-error 'log-permutations "Nonnegative-Fixnum" 0 n k)]
+         (raise-argument-error 'log-permutations "Nonnegative-Fixnum" 0 n k)]
         [(not (nonnegative-fixnum? k))
-         (raise-type-error 'log-permutations "Nonnegative-Fixnum" 1 n k)]
+         (raise-argument-error 'log-permutations "Nonnegative-Fixnum" 1 n k)]
         [(zero? k)  0]
         [(k . > . n)  -inf.0]  ; also handles n = 0 case
         [(= k n 1)  0]
@@ -114,9 +117,9 @@
 (: log-multinomial (Integer Integer * -> Real))
 (define (log-multinomial n . ks)
   (cond [(not (nonnegative-fixnum? n))
-         (raise-type-error 'log-multinomial "Nonnegative-Fixnum" 0 n ks)]
+         (raise-argument-error 'log-multinomial "Nonnegative-Fixnum" 0 n ks)]
         [(not (andmap nonnegative-fixnum? ks))
-         (raise-type-error 'log-multinomial "(Listof Nonnegative-Fixnum)" 1 n ks)]
+         (raise-argument-error 'log-multinomial "(Listof Nonnegative-Fixnum)" 1 n ks)]
         [(not (= n (apply + ks)))  -inf.0]
         [(ormap (λ: ([k : Nonnegative-Fixnum]) (= n k)) ks)  0]
         [else  (apply - (fllog-factorial n) (map fllog-factorial ks))]))

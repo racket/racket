@@ -5,6 +5,7 @@
          racket/vector
          racket/performance-hint
          "../unsafe.rkt"
+         "../exception.rkt"
          "array-struct.rkt"
          "array-transform.rkt"
          "array-constructors.rkt"
@@ -111,7 +112,7 @@
                  (Integer -> Slice-New-Axis)))
 (define (::new [dk 1])
   (cond [(index? dk)  (Slice-New-Axis dk)]
-        [else  (raise-type-error '::new "Index" dk)]))
+        [else  (raise-argument-error '::new "Index" dk)]))
 
 (define slice-new-axis? Slice-New-Axis?)
 (define slice-new-axis-length Slice-New-Axis-length)
@@ -124,7 +125,7 @@
   (case-lambda
     [()  (Slice 0 #f 1)]
     [(end)  (cond [(and end (fixnum? end))  (Slice 0 end 1)]
-                  [end  (raise-type-error 'Slice "Fixnum or #f" end)]
+                  [end  (raise-argument-error 'Slice "Fixnum or #f" end)]
                   [else  (Slice 0 #f 1)])]
     [(start end)  (:: start end 1)]
     [(start end step)
@@ -134,15 +135,15 @@
           [(and start (fixnum? start))
            (cond
              [(and end (fixnum? end))  (Slice start end step)]
-             [end  (raise-type-error 'Slice "Fixnum or #f" 1 start end step)]
+             [end  (raise-argument-error 'Slice "Fixnum or #f" 1 start end step)]
              [else  (Slice start #f step)])]
-          [start  (raise-type-error 'Slice "Fixnum or #f" 0 start end step)]
+          [start  (raise-argument-error 'Slice "Fixnum or #f" 0 start end step)]
           [else
            (cond [(and end (fixnum? end))  (Slice #f end step)]
-                 [end  (raise-type-error 'Slice "Fixnum or #f" 1 start end)]
+                 [end  (raise-argument-error 'Slice "Fixnum or #f" 1 start end)]
                  [else  (Slice #f #f step)])])]
        [else
-        (raise-type-error 'Slice "Fixnum" 2 start end step)])]))
+        (raise-argument-error 'Slice "Fixnum" 2 start end step)])]))
 
 (: slice->range-values (Slice Index -> (Values Fixnum Fixnum Fixnum)))
 (define (slice->range-values s dk)

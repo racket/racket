@@ -2,7 +2,8 @@
 
 (require racket/vector
          (for-syntax racket/base syntax/parse)
-         racket/unsafe/ops)
+         racket/unsafe/ops
+         "../exception.rkt")
 
 (provide for/vector: for*/vector:)
 
@@ -41,7 +42,7 @@
          (cond [(= (vector-length vs) n)  vs]
                [else
                 ;; Only happens when n > 0 and vs = (vector)
-                (error 'name "expected ~e elements; produced ~e" n (vector-length vs))])))]
+                (raise-result-error 'name (format "~e-element vector" n) vs)])))]
     [(_ for ann T K (clauses ...) body-expr)
      (syntax/loc stx
        (let ()

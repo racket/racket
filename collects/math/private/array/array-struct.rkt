@@ -4,6 +4,7 @@
          racket/performance-hint
          (for-syntax racket/base syntax/parse)
          "../unsafe.rkt"
+         "../exception.rkt"
          "array-syntax.rkt"
          "for-each.rkt"
          "utils.rkt")
@@ -96,7 +97,7 @@
 (: build-array (All (A) (User-Indexes (Indexes -> A) -> (Array A))))
 (define (build-array ds proc)
   (let ([ds  (check-array-shape
-              ds (λ () (raise-type-error 'build-array "(Vectorof Index)" 0 ds proc)))])
+              ds (λ () (raise-argument-error 'build-array "(Vectorof Index)" 0 ds proc)))])
     (Array ds 0 #f (λ: ([js : Indexes])
                      (proc (vector->immutable-vector js))))))
 
@@ -122,7 +123,7 @@
 
 (: flat-list->array (All (A) ((Vectorof Integer) (Listof A) -> (Array A))))
 (define (flat-list->array ds lst)
-  (let ([ds  (check-array-shape ds (λ () (raise-type-error 'array "(Vectorof Index)" ds)))])
+  (let ([ds  (check-array-shape ds (λ () (raise-argument-error 'array "(Vectorof Index)" ds)))])
     (define vs (list->vector lst))
     (unsafe-build-array
      ds (λ: ([js : Indexes]) (unsafe-vector-ref vs (unsafe-array-index->value-index ds js))))))

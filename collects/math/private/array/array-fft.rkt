@@ -1,6 +1,7 @@
 #lang typed/racket/base
 
 (require "../unsafe.rkt"
+         "../exception.rkt"
          "../vector/fcvector.rkt"
          "../vector/fcvector-fft.rkt"
          "array-struct.rkt"
@@ -25,7 +26,8 @@
   (define dims (vector-length ds))
   (define k (- dims 1))
   (cond
-    [(not (index? k))  (raise-type-error 'fcarray-last-axis-fft "FCArray with at least one axis" arr)]
+    [(not (index? k))
+     (raise-argument-error 'fcarray-last-axis-fft "FCArray with at least one axis" arr)]
     [else
      (define vs (fcarray-data arr))
      (define dk (unsafe-vector-ref ds k))
@@ -42,9 +44,9 @@
   (define ds (array-shape arr))
   (define dims (vector-length ds))
   (cond [(= dims 0)
-         (raise-type-error 'array-axis-fft "Array with at least one axis" 0 arr k)]
+         (raise-argument-error 'array-axis-fft "Array with at least one axis" 0 arr k)]
         [(or (0 . > . k) (k . >= . dims))
-         (raise-type-error 'array-axis-fft (format "Index less than ~a" dims) 1 arr k)]
+         (raise-argument-error 'array-axis-fft (format "Index less than ~a" dims) 1 arr k)]
         [(= k (- dims 1))
          (fcarray-last-axis-fft (array->fcarray arr))]
         [else
@@ -54,9 +56,9 @@
 (: fcarray-fft (FCArray -> FCArray))
 (define (fcarray-fft arr)
   (define dims (array-dims arr))
-  (cond [(zero? dims)  (raise-type-error 'fcarray-fft "FCArray with at least one axis" arr)]
+  (cond [(zero? dims)  (raise-argument-error 'fcarray-fft "FCArray with at least one axis" arr)]
         [(not (andmap power-of-two? (vector->list (array-shape arr))))
-         (raise-type-error 'fcarray-fft "FCArray with power-of-two shape" arr)]
+         (raise-argument-error 'fcarray-fft "FCArray with power-of-two shape" arr)]
         [else
          (define dims-1 (- dims 1))
          (cond [(zero? dims-1)  (fcarray-last-axis-fft arr)]
@@ -68,9 +70,9 @@
 (: array-fft ((Array Number) -> FCArray))
 (define (array-fft arr)
   (define dims (array-dims arr))
-  (cond [(= dims 0)  (raise-type-error 'array-fft "Array with at least one axis" arr)]
+  (cond [(= dims 0)  (raise-argument-error 'array-fft "Array with at least one axis" arr)]
         [(not (andmap power-of-two? (vector->list (array-shape arr))))
-         (raise-type-error 'array-fft "Array with power-of-two shape" arr)]
+         (raise-argument-error 'array-fft "Array with power-of-two shape" arr)]
         [else
          (fcarray-fft (array->fcarray arr))]))
 

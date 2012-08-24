@@ -1,6 +1,7 @@
 #lang typed/racket/base
 
-(require (for-syntax racket/base))
+(require (for-syntax racket/base)
+         "private/exception.rkt")
 
 (provide flonum->bit-field bit-field->flonum
          flonum->ordinal ordinal->flonum
@@ -24,7 +25,7 @@
   (cond [(and (i . >= . 0) (i . <= . #xffffffffffffffff))
          (floating-point-bytes->real (integer->integer-bytes i 8 #f))]
         [else
-         (raise-type-error 'bit-field->flonum "Integer in [0,#xffffffffffffffff]" i)]))
+         (raise-argument-error 'bit-field->flonum "Integer in [0,#xffffffffffffffff]" i)]))
 
 (: flonum->ordinal (Float -> Integer))
 (define (flonum->ordinal x)
@@ -37,7 +38,7 @@
          (cond [(i . < . 0)  (- (bit-field->flonum (- i)))]
                [else            (bit-field->flonum i)])]
         [else
-         (raise-type-error
+         (raise-argument-error
           'ordinal->flonum "Integer in [#x-7fffffffffffffff,#x7fffffffffffffff]" i)]))
 
 (define +inf-ordinal (flonum->ordinal +inf.0))
@@ -143,7 +144,7 @@
   (case-lambda
     [(pred? x-start)
      (when (eqv? +nan.0 x-start)
-       (raise-type-error 'find-least-flonum "non-NaN Float" 1 pred? x-start))
+       (raise-argument-error 'find-least-flonum "non-NaN Float" 1 pred? x-start))
      (let loop ([n-end  (flonum->ordinal x-start)] [step 1])
        (define x-end (ordinal->flonum n-end))
        (cond [(pred? x-end)  (find-least-flonum pred? x-start x-end)]
@@ -151,9 +152,9 @@
              [else  (loop (min +inf-ordinal (+ n-end step)) (* step 2))]))]
     [(pred? x-start x-end)
      (when (eqv? x-start +nan.0)
-       (raise-type-error 'find-least-flonum "non-NaN Float" 1 pred? x-start x-end))
+       (raise-argument-error 'find-least-flonum "non-NaN Float" 1 pred? x-start x-end))
      (when (eqv? x-end +nan.0)
-       (raise-type-error 'find-least-flonum "non-NaN Float" 2 pred? x-start x-end))
+       (raise-argument-error 'find-least-flonum "non-NaN Float" 2 pred? x-start x-end))
      (cond [(pred? x-start)  x-start]
            [(not (pred? x-end))  #f]
            [else
