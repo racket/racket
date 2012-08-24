@@ -1072,5 +1072,30 @@
 (test #t prefab-key? '(apple 4))
 
 ;; ----------------------------------------
+;; We can make a bogus mutator, but we can't apply it:
+
+(let ()
+  ;; Test based on code from dmarshall:
+  (define-values (struct:thing make-thing thing? thing-ref thing-set!)
+    (make-struct-type
+     'thing #f 1 0  
+     #f               ; auto val
+     (list)           ; property list
+     #f               ; inspector
+     #f               ; proc-spec
+     (list 0)))       ; immutables
+  
+  (define thing.id  (make-struct-field-accessor thing-ref 0))
+  (define thing.id! (make-struct-field-mutator thing-set! 0))
+
+  (test #t struct-mutator-procedure? thing.id!)
+  (err/rt-test (thing.id!  'new-val))
+  
+  (let ([f #f])
+    ;; defeat inlining to ensure that thunk is JITted:
+    (set! f (lambda () (thing.id! (make-thing 1) 'new-val)))
+    (err/rt-test (f))))
+
+;; ----------------------------------------
 
 (report-errs)

@@ -1325,7 +1325,7 @@ static Scheme_Object *guard_property(Scheme_Object *prop, Scheme_Object *v, Sche
     if (SCHEME_INTP(v)) {
       intptr_t pos;
       pos = SCHEME_INT_VAL(orig_v);
-      if (!t->immutables || !t->immutables[pos]) {
+      if (!t->immutables || !t->immutables[pos]) { 
         scheme_contract_error("make-struct-type", 
                               "field is not specified as immutable for a prop:procedure index", 
                               "index", 1, orig_v,
@@ -3040,7 +3040,8 @@ struct_setter_p(int argc, Scheme_Object *argv[])
   Scheme_Object *v = argv[0];
   if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
   return ((STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER)
-	   || STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER))
+	   || STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER)
+           || STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_BROKEN_INDEXED_SETTER))
 	  ? scheme_true : scheme_false);
 }
 
@@ -3827,6 +3828,8 @@ make_struct_proc(Scheme_Struct_Type *struct_type,
 					   2 + need_pos, 2 + need_pos, 0);
       if (need_pos)
 	flags |= SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER;
+      else if (struct_type->immutables && struct_type->immutables[field_num])
+	flags |= SCHEME_PRIM_STRUCT_TYPE_BROKEN_INDEXED_SETTER;
       else
 	flags |= SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER;
       /* See note above:
@@ -3844,7 +3847,8 @@ Scheme_Object *scheme_rename_struct_proc(Scheme_Object *p, Scheme_Object *sym)
   if (SCHEME_PRIMP(p)) {
     unsigned short flags = ((Scheme_Primitive_Proc *)p)->pp.flags;
     int is_getter = ((flags & SCHEME_PRIM_OTHER_TYPE_MASK) == SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER);
-    int is_setter = ((flags & SCHEME_PRIM_OTHER_TYPE_MASK) == SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER);
+    int is_setter = (((flags & SCHEME_PRIM_OTHER_TYPE_MASK) == SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER)
+                     || ((flags & SCHEME_PRIM_OTHER_TYPE_MASK) == SCHEME_PRIM_STRUCT_TYPE_BROKEN_INDEXED_SETTER));
       
     if (is_getter || is_setter) {
       const char *func_name;
