@@ -1129,7 +1129,7 @@
                            '#,(judgment-form-rule-names jf)
                            #,(judgment-form-lang jf))
    'disappeared-use
-   form-name))
+   (syntax-local-introduce form-name)))
 
 (define-syntax (render-judgment-form stx)
   (syntax-case stx ()

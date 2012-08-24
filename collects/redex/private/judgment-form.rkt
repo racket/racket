@@ -497,10 +497,13 @@
             [nts (definition-nts lang stx syn-err-name)]
             [judgment (syntax-case stx () [(_ judgment _) #'judgment])])
        (check-judgment-arity stx judgment)
-       #`(sort #,(bind-withs syn-err-name '() lang nts (list judgment)
-                             'flatten #`(list (term #,#'tmpl #:lang #,lang)) '() '() #f)
-               string<=?
-               #:key (λ (x) (format "~s" x))))]
+       (syntax-property
+        #`(sort #,(bind-withs syn-err-name '() lang nts (list judgment)
+                              'flatten #`(list (term #,#'tmpl #:lang #,lang)) '() '() #f)
+                string<=?
+                #:key (λ (x) (format "~s" x)))
+        'disappeared-use
+        (syntax-local-introduce #'form-name)))]
     [(_ (not-form-name . _) . _)
      (not (judgment-form-id? #'form-name))
      (raise-syntax-error #f "expected a judgment form name" stx #'not-form-name)]))

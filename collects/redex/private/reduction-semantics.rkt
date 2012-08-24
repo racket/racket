@@ -1650,7 +1650,7 @@
            (syntax-property
             #`(make-metafunction #,(term-fn-get-id v))
             'disappeared-use
-            (list #'id))
+            (list (syntax-local-introduce #'id)))
            (raise-syntax-error
             #f
             "not bound as a metafunction"

@@ -104,7 +104,8 @@
        (defined-term-id? #'x)
        (let ([ref (syntax-property
                    (defined-term-value (syntax-local-value #'x))
-                   'disappeared-use #'x)])
+                   'disappeared-use 
+                   (syntax-local-introduce #'x))])
          (check-id (syntax->datum #'x) stx)
          (with-syntax ([v #`(begin
                               #,(defined-check ref "term" #:external #'x)
