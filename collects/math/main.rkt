@@ -12,7 +12,8 @@
          "array.rkt"
          "matrix.rkt"
          "vector.rkt"
-         "polynomial.rkt")
+         "polynomial.rkt"
+         "number-theory.rkt")
 
 (provide (all-from-out
           "types.rkt"
@@ -27,4 +28,5 @@
           "array.rkt"
           "matrix.rkt"
           "vector.rkt"
-          "polynomial.rkt"))
+          "polynomial.rkt"
+          "number-theory.rkt"))

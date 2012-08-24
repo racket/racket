@@ -125,13 +125,32 @@
 (check-false (pairwise-coprime? 10 7 33 14))
 (check-false (pairwise-coprime? 6 10 15))
 (check-true  (coprime? 6 10 15))
+(: check-inverse : Natural -> Boolean)
+(define (check-inverse n)
+  (define m (inverse n 20))
+  (cond [(and (coprime? n 20) m)         
+         (= (remainder (* n m) 20) 1)]
+        [else (not m)]))
+(check-true (andmap check-inverse (build-list 20 (λ: ([x : Natural]) x))))
 
-(check-equal? (divisors 12)  '(1 3 2 6 4 12))
-(check-equal? (divisors -12) '(1 3 2 6 4 12))
+(check-equal? (solve-chinese '(2 3 2) '(3 5 7)) 23)
+
+
+(check-equal? (divisors 12)  '(1 2 3 4 6 12))
+(check-equal? (divisors -12) '(1 2 3 4 6 12))
 (check-equal? (divisors 0)   '())
 
 (check-equal? (next-primes -5 10) '(-3 -2 2 3 5 7 11 13 17 19))
 (check-equal? (prev-primes  5 10) '(3 2 -2 -3 -5 -7 -11 -13 -17 -19))
+(check-equal? (next-prime 0) 2)
+(check-equal? (next-prime 1) 2)
+(check-equal? (prev-prime 10) 7)
+(check-equal? (prev-prime 8) 7)
+(check-equal? (prev-prime 17) 13)
+(check-equal? (nth-prime 0) 2)
+(check-equal? (nth-prime 1) 3)
+(check-equal? (nth-prime 2) 5)
+                              
 
 (let ()
   (: prime-sum : Integer Integer -> Integer)
@@ -160,3 +179,87 @@
                     (set! p (next-prime p))
                     (set! s (+ s p)))
                   s))
+
+(check-equal? (next-prime (expt 10 7)) 10000019)
+(check-equal? (next-prime (expt 10 8)) 100000007)
+(check-equal? (factorize (* 10000019 100000007)) '((10000019 1) (100000007 1)))
+(: check-factorize : Natural -> Boolean)
+(define (check-factorize n)
+  (= (defactorize (factorize n)) n))
+(check-true (for/and: : Boolean ([n : Natural (in-range (expt 10 9) (+ (expt 10 9) 10000))])
+              (check-factorize n)))
+
+(: check-as-power : Positive-Integer Natural Natural -> Boolean) 
+(define (check-as-power a r n)
+  (define-values (b e) (as-power a))
+  (and (= b r) (= e n)))
+(check-true (check-as-power 27 3 3))
+(check-true (check-as-power 28 28 1))
+(check-true (check-as-power (* 5 5 7 7 7) (* 5 5 7 7 7) 1))
+(check-true (check-as-power (* 5 5 7 7 7 7) 245 2))
+
+(check-true (prime-power? (expt 3 7)))
+(check-false (prime-power? (expt 12 7)))
+
+(check-false (perfect-power? 3))
+(check-true (perfect-power? 9))
+(check-true (perfect-power? (expt 12 7)))
+(check-false (perfect-power? (- (expt 12 7) 1)))
+
+
+(check-equal? (moebius-mu (* 3 5 7 11)) 1)
+(check-equal? (moebius-mu (* 3 5 7))    -1)
+(check-equal? (moebius-mu (* 3 5 5 7))  0)
+ 
+(check-equal? (divisor-sum 1000)   2340)
+(check-equal? (divisor-sum 1000 0) 16)
+(check-equal? (divisor-sum 1000 1) 2340)
+(check-equal? (divisor-sum 1000 2) 1383460)
+
+(: check-integer-root : Natural Natural -> Boolean)
+(define (check-integer-root a n)
+  (define r (integer-root a n))
+  (unless (and (<= (expt r n) a) (> (expt (+ r 1) n) a))
+    (displayln (list 'check-integer-root 'a a 'n n)))
+  (and (<= (expt r n) a) (> (expt (+ r 1) n) a)))
+  
+(for:([a : Natural (in-range (expt 10 9) (+ (expt 10 9) 10000))]
+      [n : Natural (in-range 2 5)])
+  (check-true (check-integer-root a n)))
+
+; "integer-root.rkt"
+;(: check-faster-integer-root : Natural Natural -> Boolean)
+;(define (check-faster-integer-root a n)
+;  (define r (faster-integer-root a n))
+;  (unless (and (<= (expt a n) a) (<= (expt (+ a 1)) n))
+;    (displayln (list 'check-faster-integer-root 'a a 'n n)))
+;  (and (<= (expt r n) a) (<= (expt (+ r 1)) n)))
+;(for:([a : Natural (in-range (expt 10 9) (+ (expt 10 9) 10000))]
+;      [n : Natural (in-range 2 5)])
+;  (check-true (check-faster-integer-root a n)))
+
+; "quadratic-residues.rkt"
+(check-equal? (legendre  2 5) -1)
+(check-equal? (legendre  3 5) -1)
+(check-equal? (legendre  5 5)  0)
+(check-equal? (legendre  7 5) -1)
+(check-equal? (legendre 11 5)  1)
+
+(check-true  (quadratic-residue? 1 17))
+(check-true  (quadratic-residue? 2 17))
+(check-true  (quadratic-residue? 4 17))
+(check-true  (quadratic-residue? 8 17))
+(check-true  (quadratic-residue? 9 17))
+(check-true  (quadratic-residue? 13 17))
+(check-true  (quadratic-residue? 15 17))
+(check-true  (quadratic-residue? 16 17))
+(check-false (quadratic-residue?  3 17))
+(check-false (quadratic-residue?  5 17))
+(check-false (quadratic-residue?  6 17))
+(check-false (quadratic-residue?  7 17))
+(check-false (quadratic-residue? 10 17))
+(check-false (quadratic-residue? 11 17))
+(check-false (quadratic-residue? 12 17))
+(check-false (quadratic-residue? 14 17))
+
+

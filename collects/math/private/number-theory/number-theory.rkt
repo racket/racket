@@ -1,12 +1,9 @@
 #lang typed/racket
 
-;; Partial port of:
-;  http://planet.racket-lang.org/package-source/soegaard/math.plt/1/5/number-theory.ss
-;; TODO: Port primitive roots.
-
 (require/typed typed/racket
                [integer-sqrt/remainder (Natural -> (Values Natural Natural))])
-(require "list-operations.rkt")
+(require "list-operations.rkt"
+         "types.rkt")
 
 (provide bezout
          bezout-binary
@@ -14,18 +11,20 @@
          divides?
          gcd
          pairwise-coprime?
+         inverse
          with-modulus
          solve-chinese
          
          ; primes
          nth-prime
-         next-prime 
+         next-prime untyped-next-prime
          next-primes
          prev-prime
          prev-primes
          prime?
          odd-prime?
          factorize
+         defactorize
          divisors
          prime-divisors
          
@@ -43,12 +42,15 @@
          odd-prime-power?
          as-power
          perfect-square
+
          ; sum and product of lists:
          sum
          product
+
          ; number theoretic functions
          totient
          moebius-mu
+         divisor-sum
          )
 
 ;;;
@@ -59,37 +61,11 @@
 (define prime-strong-pseudo-trials (integer-length (assert (/ 1 prime-strong-pseudo-certainty) integer?)))
 
 (define *SMALL-PRIME-LIMIT* 1000000)
+; (define *SMALL-PRIME-LIMIT* 1000) ; use 1000 for coverage testing
 ; Determines the size of the pre-built table of small primes
 (define *SMALL-FACORIZATION-LIMIT* *SMALL-PRIME-LIMIT*)
 ; Determines whether to use naive factorization or Pollards rho method.
 
-;;;
-;;; Types and Predicates
-;;;
-
-(define-type N  Natural)
-(define-type N+ Exact-Positive-Integer)
-(define-type Z  Integer)
-
-(define-type Ns (Listof N))
-(define-type Zs (Listof Z))
-
-(define-type Base-Exponent (List N N))
-(define-type BE Base-Exponent)
-(define-type Factorization (List Base-Exponent))
-
-(define-type Prime N) ; non-checked of course
-
-(define-syntax (cast stx) (syntax-case stx () [(_ . more) #'(assert . more)]))
-; Note: (cast val predicate) is used in the code, where
-; the math says predicate must be true, but the type system
-; can prove it. Replace assert with a "proper" cast when
-; it appears in Typed Racket.
-
-(define-predicate natural?  N)  ; Note: 0 is natural
-(define-predicate naturals? Ns)
-(define-predicate Integer?  Z)
-(define-predicate integers? Zs)
 
 ;;;
 ;;; DIVISIBILITY
@@ -123,14 +99,16 @@
 ; (bezout a b c ...) -> (list u v w ...)    <=>  gcd(a,b,c,...) = au + bv + cw + ...
 (: bezout : Z Z * -> Zs)
 (define (bezout a . bs)
-  (if (null? bs)
-      (list 1)
-      (let ([uvs (apply bezout bs)]
-            [st  (bezout-binary (apply gcd bs) a)])
-        (let ([s (first st)]
-              [t (second st)])
-          (cons t (map (lambda: ([u : Integer]) (* s u))
-                       uvs))))))
+  (cond
+    [(empty? bs)        (list 1)]
+    [(empty? (cdr bs))  (bezout-binary a (car bs))]
+    [else    
+     (let ([uvs (apply bezout bs)]
+           [st  (bezout-binary (apply gcd bs) a)])
+       (let ([s (first st)]
+             [t (second st)])
+         (cons t (map (lambda: ([u : Integer]) (* s u))
+                      uvs))))]))
 
 ; DEF (Coprime, relatively prime)
 ;  Two or more integers are called coprime, if their greatest common divisor is 1.
@@ -233,7 +211,7 @@
 ;   return b, where a*b=1 mod n and b in {0,...,n-1}
 (define (inverse a n)
   (if (coprime? a n)
-      (modulo (first (bezout a n)) n)
+      (modulo (first (bezout-binary a n)) n)
       #f))
 
 ; Within a (with-modulus n form1 ...) the return values of
@@ -276,7 +254,7 @@
 
 ; Example : (solve-chinese '(2 3 2) '(3 5 7)) = 23
 
-(: solve-chinese : Zs (List N+) -> N)
+(: solve-chinese : Zs (Listof N+) -> N)
 (define (solve-chinese as ns)
   ; the ns should be coprime
   (let* ([n  (product ns)]
@@ -294,33 +272,6 @@
   (and (odd? n) (prime? n)))
 
 ;;; PRIMALITY TESTS
-
-; THEOREM (Fermat's little theorem) [MCA,p.75]
-;                        p
-;  p prime, a in Z  =>  a  = a mod p
-;                        p-1
-;  (not p|a)        =>  a  = a mod p
-
-; [MCA, p.507  -  Fermat test]
-(: prime-fermat? : Integer -> (U Boolean 'possibly-prime))
-; The Fermat test answers 
-;   #t                if n=2 or n=3
-;   'possibly-prime   if n is a prime
-;   'possibly-prime   if Carmichael number with gcd(a,n)=1.
-;   #f otherwise
-(define (prime-fermat? n)
-  (let ([n (abs n)])
-    (cond
-      [(= n 2)   #t]
-      [(zero? n) #f]
-      [(= n 1)   #f]
-      [(= n 3)   #t]
-      [else    
-       (let* ([a (random-integer-in-interval 2 (- n 1))]
-              [b (with-modulus n (^ a (- n 1)))])
-         (if (= b 1)
-             'possibly-prime
-             #f))])))
 
 ; Strong pseudoprimality test
 ; The strong test returns one of:
@@ -392,11 +343,16 @@
         (for ([m (in-range (+ n n) (+ N 1) n)])
           (! ps m #f))))
     (lambda (n)
-      (if (< n N)
-          (vector-ref ps n)
-          (prime-strong-pseudo? n)))))
+      (let ([n (abs n)])
+        (if (< n N)
+            (vector-ref ps n)
+            (prime-strong-pseudo? n))))))
 
-(: next-prime : (case-> (N -> N) (Z -> Z)))
+(: untyped-next-prime : Z -> Z)
+(define (untyped-next-prime z)
+  (next-prime z))
+
+(: next-prime : (case-> (N -> N) (Z -> Z)) )
 (define (next-prime n)
   (cond
     [(negative? n) (- (prev-prime (abs n)))]
@@ -452,6 +408,7 @@
               '()))))
   (loop m primes-wanted))
 
+
 (: nth-prime : N -> Prime)
 (define (nth-prime n)
   (define: p : Prime 2)
@@ -464,11 +421,18 @@
 ;;; FACTORIZATION
 ;;;
 
-(: factorize : Natural -> (Listof (List N N)))
+(: factorize : N -> (Listof (List N N)))
 (define (factorize n)
   (if (< n *SMALL-PRIME-LIMIT*)   ; NOTE: Do measurement of best cut
       (factorize-small n)
       (factorize-large n)))
+
+(: defactorize : (Listof (List N N)) -> N)
+(define (defactorize bes)
+  (cond [(empty? bes) 1]
+        [else (define be (first bes))
+              (* (expt (first be) (second be))
+                 (defactorize (rest bes)))]))
 
 (: factorize-small : N -> (Listof (List N N)))
 (define (factorize-small n)
@@ -485,26 +449,9 @@
     [(divides? p n)  (let ([m (max-dividing-power p n)])
                        (cons (list p m)
                              (small-prime-factors-over 
-                              (quotient n (natural-expt p m))
+                              (quotient n (expt p m))
                               (next-prime p))))]
     [else            (small-prime-factors-over n (next-prime p))]))
-
-
-;;; ALGORITHM 19.6  Floyd's cycle detection trick
-; [MCA, p. 536]
-
-; Let α = {0,...,p-1} be a finite set.
-; A function f : α -> α and x0 in α generates an infinite sequence:
-;    x0, x1=f(x0), x2=f(x1), ...
-; An infinite sequence in a finite set will repeat.
-
-; Floyd-detect-cycle returns an index i>0 s.t. x_i = x_2i
-(: floyd-detect-cycle : ((Z -> Z) Z -> Z))
-(define (floyd-detect-cycle f x0)
-  (do ([xi x0 (f xi)]
-       [yi x0 (f (f yi))]
-       [i  0  (add1 i)])
-    [(= xi yi) i]))
 
 
 ;;; ALGORITHM 19.8  Pollard's rho method
@@ -674,168 +621,6 @@
        (prime-divisors/exponents n)))
 
 
-;;; ALGORITHM 9.22  p-adic Newton Iteration  [MCA, p.264]
-; INPUT phi in Z[y] (represented a normal function f : Z -> Z)
-;       p in Z, l>0,
-;       g0 in Z with phi(g)=0 mod p,  phi'(go) invertible mod p
-;       and a modular inverse s0 of phi'(g0) mod p
-; OUTPUT
-;       g in R with phi(g)=0 mod p^l  and  g=g0 mod p
-
-
-(: integer-expt : Z Z -> Z)
-(define (integer-expt x n)
-  (assert (expt x n) integer?))
-
-(: integer-expt+ : Z N -> Z)
-(define (integer-expt+ x n)
-  (expt x n))
-
-(: natural-expt : N N -> N)
-(define (natural-expt x n)
-  (assert (expt x n) natural?))
-
-(: p-adic-newton-iteration : (N -> N) (N -> N) N N N N -> N)
-(define (p-adic-newton-iteration phi Dphi p l g0 s0)
-  (let ([r (integer-length l)])
-    (let: loop : N ([i  : N 1]
-                    [gi : N g0]
-                    [si : N s0])
-      (cond
-        [(< i r) (let ([g_i+1 (modulo (- gi (* (phi gi) si))
-                                      (natural-expt p (natural-expt 2 i)))])
-                   (loop (+ i 1)
-                         g_i+1
-                         (modulo (- (* 2 si) (* (Dphi g_i+1) si si)) 
-                                 (natural-expt p (natural-expt 2 i)))))]
-        [else    (modulo (- gi (* (phi gi) si)) 
-                         (natural-expt p l))]))))
-
-;(= (p-adic-newton-iteration (lambda (y) (- (* y y y y) 1))
-;                            (lambda (y) (* 4 (* y y y)))
-;                            5
-;                            4
-;                            2
-;                            3)
-;   182)
-
-
-(: is-nth-root : N N N -> (U N False))
-;    Return candidate if it's the nth root of a, otherwise #f
-(define (is-nth-root a n candidate)
-  (if (= (expt candidate n) a)
-      candidate
-      #f))
-
-(: integer-root/odd-odd : N N -> (U N False))
-(define (integer-root/odd-odd a n)
-  ; INPUT   a odd, n odd
-  ; OUTPUT  The n'th root of a, if it's an integer, #f otherwise
-  (unless (and (odd? a) (odd? n))
-    (error "integer-root/odd-odd: Both a and n must be odd; given " a n))
-  ; Newton iteration with phi(y)=y^n-a and initial guess g0=1         
-  (let ([candidate 
-         ; Newton iteration with phi(y)=y^n-a and initial guess g0=1         
-         (let* ([k (do: : N ([k : N 1 (add1 k)])
-                     [(> (expt 2 (* n k)) a) k])]
-                [r (integer-length k)])
-           (let: loop : N
-             ([i  : N 1] [gi : N 1] [si : N 1] [ti : N 1])
-             ; (display `((k ,k) (r ,r) (i ,i) (gi ,gi) (si ,si) (ti ,ti)))   (newline)
-             (cond
-               [(< i r) (let* ([g_i+1 (modulo (- gi (* (- (* gi ti) a) si)) 
-                                              (natural-expt 2 (natural-expt 2 i)))]
-                               [t_i+1 (modulo (integer-expt g_i+1 (assert (- n 1) natural?))
-                                              (natural-expt 2 (natural-expt 2 (+ i 1))))])
-                          (loop (+ i 1)
-                                g_i+1
-                                (modulo (- (* 2 si) (* n t_i+1 si si))
-                                        (expt 2 (expt 2 i)))
-                                t_i+1))]
-               [else    (modulo (- gi (* (- (* gi ti) a) si))
-                                (expt 2 (expt 2 i)))])))])
-    (is-nth-root a n candidate)))
-
-#;(define (integer-root/power-of-two  a n)
-    ; INPUT   n a power of 2
-    ;          gcd(6,a)=1
-    ; OUTPUT 
-    ;        
-    (let ([phi  (lambda (y) (- (expt y n) a))]
-          [Dphi (lambda (y) (* n (expt y (- n 1))))])
-      (let ([candidate1 (p-adic-newton-iteration phi Dphi 3 11 1 (inverse (Dphi 1) 3))])
-        (if (= (expt candidate1 n) a)
-            candidate1
-            (let ([candidate2 (p-adic-newton-iteration phi Dphi 3 11 2 (inverse (Dphi 2) 3))])
-              (is-nth-root a n candidate2))))))
-
-(: integer-root/power-of-two : N N -> (U N False))
-(define (integer-root/power-of-two a n)
-  ; INPUT    n = 2^d
-  ; OUTPUT   an n'th root of a, or #f
-  (let: loop : (U N False)
-    ([d : Z (- (integer-length n) 1)]
-     [b : N a])
-    (if (= d 0)
-        b
-        (let-values ([(s r) (integer-sqrt/remainder b)])
-          (if (not (zero? r))
-              #f
-              (loop (- d 1) s))))))
-
-(: integer-root-factor : N N -> (List N N N N))
-(define (integer-root-factor a n)
-  ; factor a = 2^d 3^e b^r  , where gcd(6,b)=1
-  (let* ([d      (max-dividing-power 2 a)]
-         [e      (max-dividing-power 3 a)]
-         [b-to-r (quotient a (* (expt 2 d) (expt 3 e)))]
-         ; factor n = 2^f c , where gcd(2,c)=1
-         [f         (max-dividing-power 2 n)]
-         [two-to-f  (expt 2 f)]
-         [c         (quotient n two-to-f)]
-         [x (integer-root/odd-odd b-to-r c)]
-         ;
-         [b (if x
-                (integer-root/power-of-two x two-to-f)
-                (error 'integer-root-factor "internal error - send bug report"))]
-         [b1 (if b b (error 'integer-root-factor "internal error - send bug report"))]
-         [r (max-dividing-power b1 b-to-r)])
-    (list d e b1 r)))
-
-
-#;(define (integer-root a n)
-    ; factor a = 2^d 3^e b^r  , where gcd(6,b)=1
-    (cond
-      [(= n 1) a]
-      [(= n 2) (let-values ([(s r) (integer-sqrt/remainder a)])
-                 (if (zero? r)
-                     s
-                     #f))]
-      [else
-       (let ([d (max-dividing-power 2 a)])
-         (if (not (divides? n d))
-             #f
-             (let ([e (max-dividing-power 3 a)])
-               (if (not (divides? n e))
-                   #f
-                   (let* ([b-to-r (quotient a (* (expt 2 d) (expt 3 e)))]
-                          ; factor n = 2^f c , where gcd(2,c)=1
-                          [f         (max-dividing-power 2 n)]
-                          [two-to-f  (expt 2 f)]
-                          [c         (quotient n two-to-f)])
-                     ;
-                     (cond
-                       [(integer-root/odd-odd b-to-r c) 
-                        => (lambda (cth-root--of--b-to-r)
-                             (cond
-                               [(integer-root/power-of-two cth-root--of--b-to-r two-to-f)
-                                => (lambda (nth-root--of--b-to-r)
-                                     (* (expt 2 (quotient d n))
-                                        (expt 3 (quotient e n))
-                                        nth-root--of--b-to-r))]
-                               [else #f]))]
-                       [else #f]))))))]))
-
 (: integer-root/remainder : N N -> (Values N N))
 (define (integer-root/remainder a n)
   (let ([i (integer-root a n)])
@@ -843,49 +628,50 @@
 
 (: integer-root : N N -> N)
 (define (integer-root x y)
-  ; y'th root of x
-  (cond 
-    [(eq? x 0) 0]
-    [(eq? x 1) 1]
-    [(eq? y 1) x]
-    [(eq? y 2) (integer-sqrt x)]
-    [(not (integer? y))
-     (error 'integer-root "internal error - (used to return 1 here - why?) todo: remove this error after testing")]
-    [else
-     (define length (integer-length x))
-     ;; (expt 2 (- length l 1)) <= x < (expt 2 length)
-     (assert
-      (cond [(<= length y) 1]
-            ;; result is >= 2
-            [(<= length (* 2 y))
-             ;; result is < 4
-             (if (< x (expt 3 y)) 2 3)]
-            [(even? y) (integer-root (integer-sqrt x) (quotient y 2))]
-            [else
-             (let* ([length/y/2 ;; length/y/2 >= 1 because (< (* 2 y) length)
-                     (quotient (quotient (- length 1) y) 2)])
-               (let ([init-g
-                      (let* ([top-bits          (arithmetic-shift x (- (* length/y/2 y)))]
-                             [nth-root-top-bits (integer-root top-bits y)])
-                        (arithmetic-shift (+ nth-root-top-bits 1) length/y/2))])
-                 (let: loop : Z ([g : Z init-g])
-                   (let* ([a (integer-expt g (- y 1))]
-                          [b (* a y)]
-                          [c (* a (- y 1))]
-                          [d (quotient (+ x (* g c)) b)])
-                     (let ([diff (- d g)])
-                       (cond [(not (negative? diff))
-                              g]
-                             [(< diff -1)
-                              (loop d)]
-                             [else
-                              ;; once the difference is one, it's more
-                              ;; efficient to just decrement until g^y <= x
-                              (let loop ((g d))
-                                (if (not (< x (expt g y)))
-                                    g
-                                    (loop (- g 1))))]))))))])
-      natural?)]))
+    ; y'th root of x
+    (cond 
+      [(eq? x 0) 0]
+      [(eq? x 1) 1]
+      [(eq? y 1) x]
+      [(eq? y 2) (integer-sqrt x)]
+      [(not (integer? y))
+       (error 'integer-root "internal error - (used to return 1 here - why?) todo: remove this error after testing")]
+      [else
+       (define length (integer-length x))
+       ;; (expt 2 (- length l 1)) <= x < (expt 2 length)
+       (assert
+        (cond [(<= length y) 1]
+              ;; result is >= 2
+              [(<= length (* 2 y))
+               ;; result is < 4
+               (if (< x (expt 3 y)) 2 3)]
+              [(even? y) (integer-root (integer-sqrt x) (quotient y 2))]
+              [else
+               (let* ([length/y/2 ;; length/y/2 >= 1 because (< (* 2 y) length)
+                       (quotient (quotient (- length 1) y) 2)])
+                 (let ([init-g
+                        (let* ([top-bits          (arithmetic-shift x (- (* length/y/2 y)))]
+                               [nth-root-top-bits (integer-root top-bits y)])
+                          (arithmetic-shift (+ nth-root-top-bits 1) length/y/2))])
+                   (let: loop : Z ([g : Z init-g])
+                     (let* ([a (expt g (assert (- y 1) natural?))]
+                            [b (* a y)]
+                            [c (* a (- y 1))]
+                            [d (quotient (+ x (* g c)) b)])
+                       (let ([diff (- d g)])
+                         (cond [(not (negative? diff))
+                                g]
+                               [(< diff -1)
+                                (loop d)]
+                               [else
+                                ;; once the difference is one, it's more
+                                ;; efficient to just decrement until g^y <= x
+                                (let loop ((g d))
+                                  (if (not (< x (expt g y)))
+                                      g
+                                      (loop (- g 1))))]))))))])
+        natural?)]))
+
 
 (: simple-as-power : N+ -> (Values N N))
 ;    For a>0 write it as a = b^r where r maximal
@@ -913,7 +699,7 @@
 (define (divisors n)
   (cond [(zero? n) '()]
         [else (define n+ (if (positive? n) n (- n)))
-              (factorization->divisors (factorize n+))]))
+              (sort (factorization->divisors (factorize n+)) <)]))
 
 (: factorization->divisors : (Listof (List N N)) -> (Listof N))
 (define (factorization->divisors f)
@@ -1050,5 +836,4 @@
     (check-equal? (prime-strong-pseudo-single? 7)   'probably-prime)
     (check-equal? (prime-strong-pseudo-single? 11)  'probably-prime)
     (check-true   (member? (prime-strong-pseudo-single? 561) (cons 'probably-prime (divisors 561)))) ; Carmichael number
-    
     )
