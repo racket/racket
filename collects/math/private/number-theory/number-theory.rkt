@@ -60,7 +60,7 @@
 (define prime-strong-pseudo-certainty 1/10000000)
 (define prime-strong-pseudo-trials (integer-length (assert (/ 1 prime-strong-pseudo-certainty) integer?)))
 
-(define *SMALL-PRIME-LIMIT* 10000000)
+(define *SMALL-PRIME-LIMIT* 1000000)
 ; (define *SMALL-PRIME-LIMIT* 1000) ; use 1000 for coverage testing
 ; Determines the size of the pre-built table of small primes
 (define *SMALL-FACORIZATION-LIMIT* *SMALL-PRIME-LIMIT*)
@@ -99,14 +99,16 @@
 ; (bezout a b c ...) -> (list u v w ...)    <=>  gcd(a,b,c,...) = au + bv + cw + ...
 (: bezout : Z Z * -> Zs)
 (define (bezout a . bs)
-  (if (null? bs)
-      (list 1)
-      (let ([uvs (apply bezout bs)]
-            [st  (bezout-binary (apply gcd bs) a)])
-        (let ([s (first st)]
-              [t (second st)])
-          (cons t (map (lambda: ([u : Integer]) (* s u))
-                       uvs))))))
+  (cond
+    [(empty? bs)        (list 1)]
+    [(empty? (cdr bs))  (bezout-binary a (car bs))]
+    [else    
+     (let ([uvs (apply bezout bs)]
+           [st  (bezout-binary (apply gcd bs) a)])
+       (let ([s (first st)]
+             [t (second st)])
+         (cons t (map (lambda: ([u : Integer]) (* s u))
+                      uvs))))]))
 
 ; DEF (Coprime, relatively prime)
 ;  Two or more integers are called coprime, if their greatest common divisor is 1.
@@ -209,7 +211,7 @@
 ;   return b, where a*b=1 mod n and b in {0,...,n-1}
 (define (inverse a n)
   (if (coprime? a n)
-      (modulo (first (bezout a n)) n)
+      (modulo (first (bezout-binary a n)) n)
       #f))
 
 ; Within a (with-modulus n form1 ...) the return values of
