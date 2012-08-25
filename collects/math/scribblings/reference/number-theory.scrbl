@@ -219,7 +219,7 @@ The divisors appear in ascending order.
  @interaction[(require math)
               (divisors 120)
               (divisors -120)]
-}                                                       
+}
 
 @defproc[(prime-divisors [z Integer]) (Listof Natural)]{
 Returns a list of all positive prime divisors of the integer 
@@ -227,7 +227,7 @@ Returns a list of all positive prime divisors of the integer
                                                        
  @interaction[(require math)
               (prime-divisors 120)]
-}                                                       
+}
 
 @; ----------------------------------------
 @section[#:tag "roots"]{Roots}
@@ -241,7 +241,7 @@ This is the largest number @racket[r] such that
  @interaction[(require math)
               (integer-root (expt 3 4) 4)
               (integer-root (+ (expt 3 4) 1) 4)]
-}                                                       
+}
  
 @defproc[(integer-root/remainder [n Natural] [m Natural]) 
          (values natural? natural?)]{
@@ -251,4 +251,97 @@ integer root of @racket[n]. The second is @racket[n-r^m].
  @interaction[(require math)
               (integer-root/remainder (expt 3 4) 4)
               (integer-root/remainder (+ (expt 3 4) 1) 4)]
-}                                                       
+}
+
+ 
+@; ----------------------------------------
+@section[#:tag "powers"]{Powers}
+
+@defproc[(max-dividing-power [a Integer] [b Integer]) natural?]{
+Returns the largest exponent, @racket[n], of a power with 
+base @racket[a] that divides @racket[b].
+
+That is, @racket[a^n] divides @racket[b] but @racket[a^(n+1)] does not divide
+@racket[b].
+            
+ @interaction[(require math)
+              (max-dividing-power 3 (expt 3 4))
+              (max-dividing-power 3 5)]
+}
+
+@defproc[(perfect-power [m Integer]) 
+         (Union (List natural? natural?) #f)]{
+If @racket[m] is a perfect power, a list with two elements 
+@racket[b] and @racket[n] such that @racket[b^n = m] 
+is returned, otherwise @racket[#f] is returned.
+            
+ @interaction[(require math)
+              (perfect-power (expt 3 4))
+              (perfect-power (+ (expt 3 4) 1))]
+}
+ 
+ 
+@defproc[(perfect-power? [m Integer]) boolean?]{
+Returns @racket[#t] if @racket[m] is a perfect power,
+otherwise @racket[#f].        
+
+  @interaction[(require math)
+              (perfect-power? (expt 3 4))
+              (perfect-power? (+ (expt 3 4) 1))]
+}
+
+ 
+@defproc[(prime-power [m Natural])
+         (Union (List prime? natural?) #f)]{
+If @racket[m] is a power of the form @racket[p^n]
+where @racket[p] is prime, then a list with the
+prime and the exponent is returned, otherwise
+@racket[#f] is returned.
+
+  @interaction[(require math)
+              (prime-power (expt 3 4))
+              (prime-power (expt 6 4))]
+}
+
+@defproc[(prime-power? [m Natural]) boolean?]{
+Returns @racket[#t] if @racket[m] is a prime power,
+otherwise @racket[#f].
+
+  @interaction[(require math)
+              (prime-power? (expt 3 4))
+              (prime-power? (expt 6 4))
+              (prime-power? 1)
+              (prime-power? 0)]
+}
+
+@defproc[(odd-prime-power? [m Natural]) boolean?]{
+Returns @racket[#t] if @racket[m] is a power of an odd prime,
+otherwise @racket[#f].
+
+  @interaction[(require math)
+              (odd-prime-power? (expt 2 4))
+              (odd-prime-power? (expt 3 4))
+              (odd-prime-power? (expt 15 4))]
+}
+
+@defproc[(as-power [m Positive-Integer]) 
+         (values natural? natural?)]{
+Returns two values @racket[b] and @racket[n]
+such that @racket[m=b^r] and @racket[n] is maximal.
+                                     
+  @interaction[(require math)
+              (as-power (* (expt 2 4) (expt 3 4)))
+              (expt 6 4)
+              (* (expt 2 4) (expt 3 4))
+              (as-power (* (expt 2 4) (expt 3 5)))]
+}
+
+@defproc[(perfect-square [m Natural]) 
+         (Union natural? #f)]{
+Returns @racket[sqrt(m)] if @racket[m] is perfect square.
+otherwise @racket[#f].        
+
+@interaction[(require math)
+              (perfect-square 9)
+              (perfect-square 10)]
+}
