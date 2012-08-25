@@ -222,10 +222,33 @@ The divisors appear in ascending order.
 }                                                       
 
 @defproc[(prime-divisors [z Integer]) (Listof Natural)]{
-Returns a list of all positive prime divisors of the integer @racket[z].
-The divisors appear in ascending order.                                                       
+Returns a list of all positive prime divisors of the integer 
+@racket[z]. The divisors appear in ascending order.                                                       
                                                        
  @interaction[(require math)
               (prime-divisors 120)]
 }                                                       
 
+@; ----------------------------------------
+@section[#:tag "roots"]{Roots}
+
+
+@defproc[(integer-root [n Natural] [m Natural]) natural?]{
+Returns the @racket[m]'th integer root of @racket[n].
+This is the largest number @racket[r] such that 
+@racket[r^m<=n].
+            
+ @interaction[(require math)
+              (integer-root (expt 3 4) 4)
+              (integer-root (+ (expt 3 4) 1) 4)]
+}                                                       
+ 
+@defproc[(integer-root/remainder [n Natural] [m Natural]) 
+         (values natural? natural?)]{
+Returns two values. The first, @racket[r], is the @racket[m]'th 
+integer root of @racket[n]. The second is @racket[n-r^m].
+            
+ @interaction[(require math)
+              (integer-root/remainder (expt 3 4) 4)
+              (integer-root/remainder (+ (expt 3 4) 1) 4)]
+}                                                       
