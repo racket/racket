@@ -19,7 +19,7 @@
          nth-prime
          next-prime untyped-next-prime
          next-primes
-         prev-prime
+         prev-prime untyped-prev-prime
          prev-primes
          prime?
          odd-prime?
@@ -348,9 +348,6 @@
             (vector-ref ps n)
             (prime-strong-pseudo? n))))))
 
-(: untyped-next-prime : Z -> Z)
-(define (untyped-next-prime z)
-  (next-prime z))
 
 (: next-prime : (case-> (N -> N) (Z -> Z)) )
 (define (next-prime n)
@@ -367,6 +364,15 @@
                  (if (prime? n+2)
                      n+2
                      (next-prime n+2)))]))
+
+(: untyped-next-prime : Z -> Z)
+(define (untyped-next-prime z)
+  (next-prime z))
+
+(: untyped-prev-prime : Z -> Z)
+(define (untyped-prev-prime z)
+  (prev-prime z))
+
 
 (: prev-prime : Z -> Z)
 (define (prev-prime n)

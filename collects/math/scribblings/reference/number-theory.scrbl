@@ -1,9 +1,9 @@
 #lang scribble/doc
-@(require (for-label racket/math
-                     racket/flonum
+@(require (for-label racket/flonum
                      racket/fixnum
                      racket/unsafe/ops
-                     racket/require)
+                     racket/require
+                     math)
           scribble/extract
           scribble/eval
           scribble/base
@@ -14,7 +14,7 @@
 @(define math-eval 
    (parameterize ([sandbox-output 'string]
                   [sandbox-error-output 'string])
-     (make-evaluator 'racket )))
+     (make-evaluator 'racket)))
 @;(interaction-eval #:eval math-eval (require math))
 
 @title[#:tag "number-theory" #:style '(toc)]{Number Theory}
@@ -119,4 +119,113 @@
   
   @; http://en.wikipedia.org/wiki/Chinese_remainder_theorem
 }
+
+
+@; ----------------------------------------
+@section[#:tag "primes"]{Primes}
+
+
+@defproc[(prime? [z Integer]) boolean?]{
+Returns @racket[#t] if @racket[z] is a prime,
+@racket[#f] otherwise.
+
+Note: An integer @racket[z] is considered a prime, if the only 
+positive divisors of @racket[z] are @racket[1] and @racket[|z|].
+
+The positive primes below 20 are:
+  @interaction[(require math racket/list)
+               (filter prime? (range 1 21))]
+The corresponding negative primes are:
+  @interaction[(require math racket/list)
+               (filter prime? (range 1 -21 -1))]
+}
+
+@defproc[(odd-prime? [z Integer]) boolean?]{
+Returns @racket[#t] if @racket[z] is a odd prime,
+@racket[#f] otherwise.
+
+@interaction[(require math)
+             (odd-prime? 2)
+             (odd-prime? 3)]
+}
+
+@defproc[(nth-prime [n Natural]) natural?]{
+Returns the n'th positive prime. 
+@interaction[(require math)
+             (nth-prime 0)
+             (nth-prime 1)
+             (nth-prime 2)]
+}
+
+@defproc[(next-prime [z Integer]) prime?]{
+Returns the first prime larger than @racket[z].
+
+@interaction[(require math)
+             (untyped-next-prime 4)
+             (untyped-next-prime 5)]
+
+TODO: Figure out how to export next-prime even though
+TR can't make contract automatically.
+}
+
+@defproc[(prev-prime [z Integer]) prime?]{
+Returns the first prime smaller than @racket[z].
+
+@interaction[(require math)
+             (untyped-prev-prime 4)
+             (untyped-prev-prime 5)]
+
+TODO: Figure out how to export prev-prime even though
+TR can't make contract automatically.
+}
+
+@defproc[(next-primes [z Integer] [n Natural]) (Listof prime?)]{
+Returns list of the next @racket[n] primes larger than @racket[z].
+
+@interaction[(require math)
+             (next-primes 2 4)]
+}
+
+@defproc[(prev-primes [z Integer] [n Natural]) (Listof prime?)]{
+Returns list of the next @racket[n] primes smaller than @racket[z].
+
+@interaction[(require math)
+             (prev-primes 13 4)]
+}
+
+@defproc[(factorize [n Natural]) (Listof (List prime? natural?))]{
+Returns the factorization of a natural number @racket[n].
+The factorization consists of a list of corresponding 
+primes and exponents. The primes will be in ascending order.
+
+The prime factorization of 600 = 2^3 * 3^1 * 5^2:
+@interaction[(require math)
+             (factorize 600)]
+}
+
+@defproc[(defactorize [f (Listof (List prime? natural?))]) natural?]{
+Returns the natural number, whose factorization is given 
+by @racket[f]. The factorization @racket[f] is represented
+as described in @racket[factorize].
+
+@interaction[(require math)
+             (defactorize '((2 3) (3 1) (5 2)))]
+}
+
+@defproc[(divisors [z Integer]) (Listof Natural)]{
+Returns a list of all positive divisors of the integer @racket[z].
+The divisors appear in ascending order.                                                       
+                                                       
+ @interaction[(require math)
+              (divisors 120)
+              (divisors -120)]
+}                                                       
+
+@defproc[(prime-divisors [z Integer]) (Listof Natural)]{
+Returns a list of all positive prime divisors of the integer @racket[z].
+The divisors appear in ascending order.                                                       
+                                                       
+ @interaction[(require math)
+              (prime-divisors 120)]
+}                                                       
 
