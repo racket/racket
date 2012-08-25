@@ -370,28 +370,19 @@
         [_ (error/internal* fsym "unexpected message from back end"
                             '("message" value) r)]))
 
-    (define/private (get-convert-row! fsym field-dvecs)
-      (let* ([type-reader-v
-              (list->vector (query1:get-type-readers fsym field-dvecs))])
-        (lambda (row)
-          (vector-map! (lambda (value type-reader)
-                         (cond [(sql-null? value) sql-null]
-                               [else (type-reader value)]))
-                       row
-                       type-reader-v))))
-
     (define/private (query1:process-result fsym result)
       (match result
         [(vector 'rows field-dvecs rows)
-         (for-each (get-convert-row! fsym field-dvecs) rows)
-         (rows-result (map field-dvec->field-info field-dvecs) rows)]
+         (let ([type-readers (query1:get-type-readers fsym field-dvecs)])
+           (rows-result (map field-dvec->field-info field-dvecs)
+                        (map (lambda (data) (bytes->row data type-readers))
+                             rows)))]
         [(vector 'cursor field-dvecs stmt portal)
-         (let* ([convert-row! (get-convert-row! fsym field-dvecs)]
-                [pst (statement-binding-pst stmt)])
-           ;; FIXME: register finalizer to close portal?
+         (let ([pst (statement-binding-pst stmt)]
+               [type-readers (query1:get-type-readers fsym field-dvecs)])
            (cursor-result (map field-dvec->field-info field-dvecs)
                           pst
-                          (list portal convert-row! (box #f))))]
+                          (list portal type-readers (box #f))))]
         [(vector 'command command)
          (simple-result command)]))
 
@@ -408,7 +399,7 @@
             [extra (cursor-result-extra cursor)])
         (send pst check-owner fsym this pst)
         (let ([portal (car extra)]
-              [convert-row! (cadr extra)]
+              [type-readers (cadr extra)]
               [end-box (caddr extra)])
           (let ([rows
                  (call-with-lock fsym
@@ -423,7 +414,7 @@
                               (when (unbox end-box)
                                 (cursor:close fsym pst portal))
                               rows)])))])
-            (and rows (begin (for-each convert-row! rows) rows))))))
+            (and rows (map (lambda (data) (bytes->row data type-readers)) rows))))))
 
     (define/private (cursor:close fsym pst portal)
       (let ([close-on-exec? (send pst get-close-on-exec?)])
@@ -561,9 +552,11 @@
                  ((current)
                   "table_schema = current_schema")))]
              [result (call-with-lock fsym (lambda () (internal-query1 fsym stmt)))]
-             [rows (vector-ref result 2)])
+             [rows (vector-ref result 2)]
+             [type-readers (list subbytes)])
         (for/list ([row (in-list rows)])
-          (bytes->string/utf-8 (vector-ref row 0)))))
+          (let ([row (bytes->row row type-readers)])
+            (bytes->string/utf-8 (vector-ref row 0))))))
     ))
 
 ;; ========================================

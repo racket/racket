@@ -44,7 +44,7 @@
          (struct-out RowDescription)
          (struct-out Sync)
          (struct-out Terminate)
-
+         bytes->row
          field-dvec->typeid
          field-dvec->field-info)
 
@@ -288,17 +288,25 @@
               (io:read-int16 p))])
       (make-CopyOutResponse format column-formats))))
 
-(define-struct DataRow (values) #:transparent)
+(define-struct DataRow (data) #:transparent)
 (define (parse:DataRow p)
-  (with-length-in p #\D
-    (let* ([values
-            (build-vector (io:read-int16 p)
-                          (lambda (i)
-                            (let ([len (io:read-int32 p)])
-                              (if (= len -1)
-                                  sql-null
-                                  (io:read-bytes-as-bytes p len)))))])
-      (make-DataRow values))))
+  (let ([len (io:read-int32 p)])
+    (make-DataRow (read-bytes (- len 4) p))))
+
+(define (bytes->row buf type-readers)
+  (let* ([columns (integer-bytes->integer buf #t #t 0 2)]
+         [row (make-vector columns)])
+    (let loop ([i 0] [type-readers type-readers] [start 2])
+      (when (< i columns)
+        (let ([len (integer-bytes->integer buf #t #t start (+ start 4))]
+              [start* (+ start 4)])
+          (vector-set! row i
+                       (if (= len -1)
+                           sql-null
+                           ((car type-readers) buf start* (+ start* len))))
+          (let ([next (+ start* (max 0 len))])
+            (loop (add1 i) (cdr type-readers) next)))))
+    row))
 
 (define-struct Describe (type name) #:transparent)
 (define (write:Describe p v)
