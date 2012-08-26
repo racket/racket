@@ -229,6 +229,16 @@ Returns a list of all positive prime divisors of the integer
               (prime-divisors 120)]
 }
 
+@defproc[(prime-exponents [z Integer]) (Listof Natural)]{
+Returns a list of the exponents of in a factorization of the integer
+@racket[z].                                                       
+                                                       
+ @interaction[(require math)
+              (define z (* 2 2 2 3 5 5))
+              (prime-divisors z)
+              (prime-exponents z)]
+}
+
 @; ----------------------------------------
 @section[#:tag "roots"]{Roots}
 
@@ -338,10 +348,69 @@ such that @racket[m=b^r] and @racket[n] is maximal.
 
 @defproc[(perfect-square [m Natural]) 
          (Union natural? #f)]{
-Returns @racket[sqrt(m)] if @racket[m] is perfect square.
-otherwise @racket[#f].        
+Returns @racket[sqrt(m)] if @racket[m] is perfect 
+square, otherwise @racket[#f].        
 
 @interaction[(require math)
               (perfect-square 9)
               (perfect-square 10)]
+}
+
+@; ----------------------------------------
+@section[#:tag "multiplicative"]{Multiplicative Functions}
+
+In number theory a multiplicative function is a 
+function @racket[f] such that @racket[f(a b) = f(a) f(b)]
+for all coprime natural numbers @racket[a] and @racket[b].
+
+The functions @racket[totient], @racket[moebius-mu], and, 
+@racket[divisor-sum] are multiplicative.
+
+@defproc[(totient [n Natural]) natural?]{
+Returns the number of integers from 1 to @racket[n]
+that are coprime with @racket[n].
+
+This function is known as Eulers totient or phi function.
+
+Note: The function @racket[totient] is multiplicative.
+
+@interaction[(require math racket)
+              (totient 9)
+              (length (filter (curry coprime? 9) (range 10)))]
+
+@; http://en.wikipedia.org/wiki/Euler%27s_totient_function
+}
+
+
+@defproc[(moebius-mu [n Natural]) (Union -1 0 1)]{
+Returns:
+
+@racket[1]  if @racket[n] is a product of an even number of primes
+
+@racket[-1] if @racket[n] is a product of an odd number of primes
+
+@racket[0]  if @racket[n] has a multiple prime factor
+ 
+Note: The function @racket[moebius-mu] is multiplicative.
+
+@interaction[(require math racket)
+              (moebius-mu (* 2 3 5))
+              (moebius-mu (* 2 3 5 7))
+              (moebius-mu (* 2 2 3 5 7))]
+
+@; http://en.wikipedia.org/wiki/M%C3%B6bius_function
+}
+
+
+@defproc[(divisor-sum [n Natural] [k Natural]) natural?]{
+Returns sum of the @racket[k]th powers of 
+all divisors of @racket[n].
+
+Note: The function @racket[divisor-sum] is multiplicative.
+
+@interaction[(require math racket)              
+              (divisor-sum 12 2)
+              (apply + (map sqr (divisors 12)))]
+
+@; http://en.wikipedia.org/wiki/Divisor_function
 }

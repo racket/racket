@@ -27,7 +27,7 @@
          defactorize
          divisors
          prime-divisors
-         
+         prime-exponents
          
          ; roots
          integer-root
