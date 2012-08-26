@@ -1338,6 +1338,9 @@ See also the @racketmodname[2htdp/planetcute] library.
 
 @defproc[(image-baseline [i image?]) (and/c integer? (not/c negative?) exact?)]{
   Returns the distance from the top of the image to its baseline. 
+  The baseline of an image is the place where the bottoms any letters line up, 
+  but without counting the descenders, e.g. the tail on ``y'' or ``g'' or ``j''.
+  
   Unless the image was constructed with @racket[text], @racket[text/font] 
   or, in some cases, @racket[crop], this will be the same as its height.
   
@@ -1444,9 +1447,9 @@ This section lists predicates for the basic structures provided by the image lib
 @racket["pinhole"], or
 @racket['pinhole].
 
-The baseline of an image is the place where the bottoms any letters line up, not counting descenders, e.g. the tail on ``y'' or ``g'' or ``j''.
-
 Using @racket["pinhole"] or @racket['pinhole] is only allowed when all of the image arguments have @seclink["pinholes"]{pinholes}.
+
+See also @racket[image-baseline] for more discussion of baselines.
 
 }
 
