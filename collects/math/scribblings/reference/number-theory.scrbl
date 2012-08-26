@@ -414,3 +414,16 @@ Note: The function @racket[divisor-sum] is multiplicative.
 
 @; http://en.wikipedia.org/wiki/Divisor_function
 }
+
+
+@; ----------------------------------------
+@section[#:tag "number-sequences"]{Number Sequences}
+
+@defproc[(bernoulli [n Natural]) exact-rational?]{
+  Returns the @racket[n]th Bernoulli number.
+  Definition:
+  @racket[http://en.wikipedia.org/wiki/Bernoulli_number].
+
+  @interaction[(require math racket)
+             (map bernoulli (range 9))]
+}
