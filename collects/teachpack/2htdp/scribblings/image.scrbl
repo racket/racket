@@ -208,7 +208,20 @@ Unlike @racket[scene+curve], if the line passes outside of @racket[image], the i
                                  (rectangle 10 10 "solid" "red"))
                           (beside empty-image
                                   (rectangle 10 10 "solid" "red")))]
-}
+  
+  
+  In most cases, combining an image with @racket[empty-image] produces the
+  original image (as shown in the above example). In some situations,
+  however, the combination can cause the resulting pict to have a different
+  baseline (see @racket[image-baseline]) and thus not
+  be equal.
+  
+  @image-examples[(image-baseline (above (text "Hello" 24 "olive") empty-image))
+                  (image-baseline (text "Hello" 24 "olive"))
+                  (equal? (above (text "Hello" 24 "olive") empty-image)
+                          (text "Hello" 24 "olive"))]
+  
+  }
 
 @section{Polygons}
 
