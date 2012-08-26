@@ -204,7 +204,8 @@
 
 ;; ----------------------------------------
 
-(define-objc objc_lookUpClass (_fun _string -> _Class))
+(define-objc objc_lookUpClass (_fun _string -> _Class)
+  #:fail (lambda () (lambda (name) #f)))
 
 (define-objc objc_getProtocol (_fun _string -> _Protocol)
   #:fail (lambda () (lambda (name)
