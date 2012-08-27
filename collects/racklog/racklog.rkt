@@ -53,26 +53,25 @@
     ((%rel (v ...) ((a ...) subgoal ...) ...)
      (lambda __fmls
        (lambda (fail-relation)
-         (define cut? #f)
          (let/racklog-cc 
           __sk
           (%let (v ...)
-                (begin
-                  (let/racklog-cc 
-                   fail-case
-                   (define fail-unify
-                     ((%= __fmls (list a ...))
-                      fail-case))
-                   (define this-! 
-                     (lambda (fk1) 
-                       (set! cut? #t)
-                       fail-unify))
-                   (syntax-parameterize 
-                       ([! (make-rename-transformer #'this-!)])
-                     (__sk 
-                      ((%and subgoal ...) fail-unify))))
-                  (when cut?
-                    (fail-relation 'fail)))
+                (let/racklog-cc 
+                 fail-case
+                 (define-values
+                   (unify-cleanup fail-unify)
+                   ((inner-unify __fmls (list a ...))
+                    fail-case))
+                 (define this-! 
+                   (lambda (fk1) 
+                     (λ (fk2)
+                       (unify-cleanup)
+                       (fail-relation 'fail))))
+                 (syntax-parameterize 
+                     ([! (make-rename-transformer #'this-!)])
+                   (__sk 
+                    ((%and subgoal ...) 
+                     fail-unify))))
                 ...
                 (fail-relation 'fail))))))))
 
