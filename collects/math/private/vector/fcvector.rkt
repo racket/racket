@@ -103,15 +103,11 @@
   (syntax-case stx ()
     ;; This is split into identifier and non-identifier cases because intervening "let" bindings
     ;; confuse TR's optimizer's Float-Complex unboxer into not unboxing everything
-    [(_ zs i)
-     (and (identifier? #'zs) (identifier? #'i))
-     (syntax/loc stx
-       (make-rectangular (unsafe-flvector-ref (fcvector-real-part zs) i)
-                         (unsafe-flvector-ref (fcvector-imag-part zs) i)))]
     [(_ zs-expr i-expr)
      (syntax/loc stx
        (let: ([zs : FCVector  zs-expr] [i : Integer  i-expr])
-         (inline-unsafe-fcvector-ref zs i)))]
+         (make-rectangular (unsafe-flvector-ref (fcvector-real-part zs) i)
+                           (unsafe-flvector-ref (fcvector-imag-part zs) i))))]
     [(_ e ...)  (syntax/loc stx (unsafe-fcvector-ref e ...))]
     [_  (syntax/loc stx unsafe-fcvector-ref)]))
 
@@ -122,10 +118,12 @@
   (syntax-case stx ()
     [(_ zs-expr i-expr)
      (syntax/loc stx
-       (let: ([zs : FCVector  zs-expr] [i : Integer  i-expr])
-         (define n (fcvector-length zs))
-         (cond [(and (0 . <= . i) (i . < . n))  (inline-unsafe-fcvector-ref zs i)]
-               [else  (error 'fcvector-ref "expected Index < ~e; given ~e" n i)])))]
+       (let*: ([zs : FCVector  zs-expr]
+               [i : Integer  i-expr]
+               [n : Index  (fcvector-length zs)])
+         (if (and (0 . <= . i) (i . < . n))
+             (inline-unsafe-fcvector-ref zs i)
+             (error 'fcvector-ref "expected Index < ~e; given ~e" n i))))]
     [(_ e ...)  (syntax/loc stx (fcvector-ref e ...))]
     [_  (syntax/loc stx fcvector-ref)]))
 
@@ -134,15 +132,11 @@
 
 (define-syntax (inline-unsafe-fcvector-set! stx)
   (syntax-case stx ()
-    [(_ zs i v)
-     (and (identifier? #'zs) (identifier? #'i) (identifier? #'v))
-     (syntax/loc stx
-       (begin (unsafe-flvector-set! (fcvector-real-part zs) i (real-part v))
-              (unsafe-flvector-set! (fcvector-imag-part zs) i (imag-part v))))]
     [(_ zs-expr i-expr v-expr)
      (syntax/loc stx
        (let: ([zs : FCVector  zs-expr] [i : Integer  i-expr] [v : Float-Complex  v-expr])
-         (inline-unsafe-fcvector-set! zs i v)))]
+         (unsafe-flvector-set! (fcvector-real-part zs) i (real-part v))
+         (unsafe-flvector-set! (fcvector-imag-part zs) i (imag-part v))))]
     [(_ e ...)  (syntax/loc stx (unsafe-fcvector-set! e ...))]
     [_  (syntax/loc stx unsafe-fcvector-set!)]))
 
@@ -153,10 +147,12 @@
   (syntax-case stx ()
     [(_ zs-expr i-expr v)
      (syntax/loc stx
-       (let: ([zs : FCVector  zs-expr] [i : Integer  i-expr])
-         (define n (fcvector-length zs))
-         (cond [(and (0 . <= . i) (i . < . n))  (inline-unsafe-fcvector-set! zs i v)]
-               [else  (error 'fcvector-set! "expected Index < ~e; given ~e" n i)])))]
+       (let*: ([zs : FCVector  zs-expr]
+               [i : Integer  i-expr]
+               [n : Index  (fcvector-length zs)])
+         (if (and (0 . <= . i) (i . < . n))
+             (inline-unsafe-fcvector-set! zs i v)
+             (error 'fcvector-set! "expected Index < ~e; given ~e" n i))))]
     [(_ e ...)  (syntax/loc stx (fcvector-set! e ...))]
     [_  (syntax/loc stx fcvector-set!)]))
 
@@ -170,15 +166,15 @@
   (syntax-case stx ()
     [(_ size f)
      (syntax/loc stx
-       (let: ([n : Integer  size])
-         (define xs (make-flvector n))
-         (define ys (make-flvector n))
+       (let*: ([n : Integer  size]
+               [xs : FlVector  (make-flvector n)]
+               [ys : FlVector  (make-flvector n)])
          (with-asserts ([n index?])
            (let: loop : FCVector ([i : Nonnegative-Fixnum  0])
              (cond [(i . < . n)
-                    (define z (f i))
-                    (unsafe-flvector-set! xs i (real-part z))
-                    (unsafe-flvector-set! ys i (imag-part z))
+                    (let ([z  (f i)])
+                      (unsafe-flvector-set! xs i (real-part z))
+                      (unsafe-flvector-set! ys i (imag-part z)))
                     (loop (+ i 1))]
                    [else  (FCVector n xs ys)])))))]
     [(_ e ...)  (syntax/loc stx (build-fcvector e ...))]
@@ -249,13 +245,13 @@
     [(_ f zs-expr)
      (syntax/loc stx
        (let: ([zs : FCVector  zs-expr])
-         (define n (fcvector-length zs))
-         (define xs (fcvector-real-part zs))
-         (define ys (fcvector-imag-part zs))
-         (define-syntax-rule (fun i)
-           (f (make-rectangular (unsafe-flvector-ref xs i)
-                                (unsafe-flvector-ref ys i))))
-         (inline-build-fcvector n fun)))]
+         (let ([n  (fcvector-length zs)]
+               [xs  (fcvector-real-part zs)]
+               [ys  (fcvector-imag-part zs)])
+           (define-syntax-rule (fun i)
+             (f (make-rectangular (unsafe-flvector-ref xs i)
+                                  (unsafe-flvector-ref ys i))))
+           (inline-build-fcvector n fun))))]
     [(_ f zs-expr zss-expr ...)
      (with-syntax ([(xs xss ...)  (generate-temporaries #'(zs-expr zss-expr ...))]
                    [(ys yss ...)  (generate-temporaries #'(zs-expr zss-expr ...))]
@@ -264,17 +260,17 @@
                                           (λ _ #'Float-Complex))])
        (syntax/loc stx
          (let: ([zs : FCVector  zs-expr] [zss : FCVector  zss-expr] ...)
-           (define n (fcvector-length zs))
-           (define xs (fcvector-real-part zs))
-           (define xss (fcvector-real-part zss)) ...
-           (define ys (fcvector-imag-part zs))
-           (define yss (fcvector-imag-part zss)) ...
-           (define-syntax-rule (fun i)
-             (f (make-rectangular (unsafe-flvector-ref xs i)
-                                  (unsafe-flvector-ref ys i))
-                (make-rectangular (unsafe-flvector-ref xss i)
-                                  (unsafe-flvector-ref yss i)) ...))
-           (inline-build-fcvector n fun))))]))
+           (let ([n  (fcvector-length zs)]
+                 [xs  (fcvector-real-part zs)]
+                 [ys  (fcvector-imag-part zs)]
+                 [xss  (fcvector-real-part zss)] ...
+                 [yss  (fcvector-imag-part zss)] ...)
+             (define-syntax-rule (fun i)
+               (f (make-rectangular (unsafe-flvector-ref xs i)
+                                    (unsafe-flvector-ref ys i))
+                  (make-rectangular (unsafe-flvector-ref xss i)
+                                    (unsafe-flvector-ref yss i)) ...))
+             (inline-build-fcvector n fun)))))]))
 
 (define-syntax (inline-fcvector-map stx)
   (syntax-case stx ()
@@ -284,12 +280,12 @@
                    [(n ns ...)    (generate-temporaries #'(zs-expr zss-expr ...))])
        (syntax/loc stx
          (let: ([zs : FCVector  zs-expr] [zss : FCVector  zss-expr] ...)
-           (define n (fcvector-length zs))
-           (define ns (fcvector-length zss)) ...
-           (unless (= n ns ...)
-             (error 'fcvector-map "fcvectors must be the same length; given lengths ~a"
-                    (string-join (list (number->string n) (number->string ns) ...) ", ")))
-           (unsafe-fcvector-map f zs-expr zss-expr ...))))]
+           (let ([n  (fcvector-length zs)]
+                 [ns  (fcvector-length zss)] ...)
+             (unless (= n ns ...)
+               (error 'fcvector-map "fcvectors must be the same length; given lengths ~a"
+                      (string-join (list (number->string n) (number->string ns) ...) ", ")))
+             (unsafe-fcvector-map f zs-expr zss-expr ...)))))]
     [(_ e ...)  (syntax/loc stx (fcvector-map e ...))]
     [_  (syntax/loc stx fcvector-map)]))
 
@@ -320,18 +316,19 @@
      (quasisyntax/loc stx
        (let: ([n : Integer  n-expr])
          (cond [(n . > . 0)
-                (define xs (make-flvector n))
-                (define ys (make-flvector n))
-                (define i 0)
-                (let/ec: break : Void
-                  (for: (clauses ...)
-                    (let: ([z : Float-Complex  (let () body ...)])
-                      (unsafe-flvector-set! xs i (real-part z))
-                      (unsafe-flvector-set! ys i (imag-part z)))
-                    (set! i (unsafe-fx+ i 1))
-                    (when (i . unsafe-fx>= . n) (break (void)))))
-                (with-asserts ([n index?])
-                  (FCVector n xs ys))]
+                (let ([xs  (make-flvector n)]
+                      [ys  (make-flvector n)]
+                      [i  0])
+                  (let/ec: break : Void
+                    (for: (clauses ...)
+                      (let: ([z : Float-Complex  (let () body ...)])
+                        (unsafe-flvector-set! xs i (real-part z))
+                        (unsafe-flvector-set! ys i (imag-part z)))
+                      (set! i (unsafe-fx+ i 1))
+                      (when (i . unsafe-fx>= . n) (break (void))))
+                    (void))
+                  (with-asserts ([n index?])
+                    (FCVector n xs ys)))]
                [else
                 (FCVector 0 (flvector) (flvector))])))]
     [(_ for: (clauses ...) body ...+)
@@ -357,9 +354,10 @@
                       (unsafe-flvector-set! xs i x)
                       (unsafe-flvector-set! ys i y)])))
            (set! i (unsafe-fx+ i 1)))
-         (define new-xs (if (unsafe-fx= i n) xs (flvector-copy xs 0 i)))
-         (define new-ys (if (unsafe-fx= i n) ys (flvector-copy ys 0 i)))
-         (let ([i i])
+         (void)
+         (let ([new-xs  (if (unsafe-fx= i n) xs (flvector-copy xs 0 i))]
+               [new-ys  (if (unsafe-fx= i n) ys (flvector-copy ys 0 i))]
+               [i i])
            (with-asserts ([i index?])
              (FCVector i new-xs new-ys)))))]))
 
@@ -396,10 +394,9 @@
           (:do-in
            ([(n xs ys)
              (let: ([zs : FCVector  zs-expr])
-               (define n (fcvector-length zs))
-               (define xs (fcvector-real-part zs))
-               (define ys (fcvector-imag-part zs))
-               (values n xs ys))])
+               (values (fcvector-length zs)
+                       (fcvector-real-part zs)
+                       (fcvector-imag-part zs)))])
            (void)
            ([#{i : Nonnegative-Fixnum} 0])
            (< i n)

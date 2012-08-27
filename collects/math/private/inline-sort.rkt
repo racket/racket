@@ -1,44 +1,36 @@
 #lang racket/base
 
-(require (for-syntax racket/base))
+(require (for-syntax racket/base
+                     racket/list
+                     "syntax-utils.rkt"))
 
 (provide inline-sort)
 
 (define-syntax (inline-sort stx)
   (syntax-case stx ()
     [(_ < vs ...)
-     (with-syntax ([(as ...)  (generate-temporaries #'(vs ...))]
-                   [(lt-binding ...)  (if (identifier? #'<) #'() #'([lt? <]))]
-                   [lt?  (if (identifier? #'<) #'< #'lt?)])
+     (with-syntax ([(bnds (< vs ...))  (generate-bindings #'(< vs ...))])
        (quasisyntax/loc stx
-         (let (lt-binding ... [as vs] ...)
-           #,(inline-sort/k (λ (vs) #`(values #,@vs))
-                            #'lt?
-                            #'(as ...)))))]))
+         (let bnds
+           #,(inline-sort/k #'(vs ...) #'< (λ (lst) #`(values #,@lst))))))]))
 
-(begin-for-syntax
-  (require racket/list)
-  
-  (define (inline-sort/k k < vs)
-    (syntax-case vs ()
-      [()  (k #'())]
-      [(a)  (k #'(a))]
-      [(a b)  #`(if (#,< a b) #,(k #'(a b)) #,(k #'(b a)))]
-      [(vs ...)
-       (let ([vs  (syntax->list #'(vs ...))])
-         (define n (length vs))
-         (define left-vs (take vs (quotient n 2)))
-         (define right-vs (drop vs (quotient n 2)))
-         (inline-sort/k (λ (lvs) (inline-sort/k (λ (rvs) (merge/k k < lvs rvs)) < right-vs))
-                        <
-                        left-vs))]))
-  
-  (define (merge/k k < as bs)
-    (syntax-case #`(#,as #,bs) ()
-      [(() bs)  (k #'bs)]
-      [(as ())  (k #'as)]
-      [((a . as) (b . bs))
-       #`(if (#,< a b)
-             #,(merge/k (λ (vs) (k (cons #'a vs))) < #'as #'(b . bs))
-             #,(merge/k (λ (vs) (k (cons #'b vs))) < #'(a . as) #'bs))]))
-  )
+(define-for-syntax (inline-sort/k vs < k)
+  (syntax-case vs ()
+    [()  (k #'())]
+    [(a)  (k #'(a))]
+    [_  (let ([vs  (if (list? vs) vs (syntax->list vs))])
+          (define-values (lvs rvs) (split-at vs (quotient (length vs) 2)))
+          (inline-sort/k 
+           lvs <
+           (λ (lvs) (inline-sort/k
+                     rvs <
+                     (λ (rvs) (inline-merge/k lvs rvs < k))))))]))
+
+(define-for-syntax (inline-merge/k as bs < k)
+  (syntax-case #`(#,as #,bs) ()
+    [(() bs)  (k #'bs)]
+    [(as ())  (k #'as)]
+    [((a . as) (b . bs))
+     #`(if (#,< a b)
+           #,(inline-merge/k #'as #'(b . bs) < (λ (vs) (k (cons #'a vs))))
+           #,(inline-merge/k #'(a . as) #'bs < (λ (vs) (k (cons #'b vs)))))]))

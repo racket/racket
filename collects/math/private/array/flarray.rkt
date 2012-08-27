@@ -2,7 +2,9 @@
 
 (require racket/flonum
          racket/list
-         (for-syntax racket/base syntax/parse)
+         (for-syntax racket/base
+                     syntax/parse
+                     "../syntax-utils.rkt")
          "../unsafe.rkt"
          "../vector/flvector.rkt"
          "array-struct.rkt"
@@ -104,7 +106,7 @@
                    [(procs ...)  (generate-temporaries #'(arr-exprs ...))])
        (syntax/loc stx
          (let: ([arr : FlArray  arr-expr]
-                [arrs : FlArray arr-exprs] ...)
+                [arrs : FlArray  arr-exprs] ...)
            (define ds (array-shape arr))
            (define dss (array-shape arrs)) ...
            (cond [(and (equal? ds dss) ...)
@@ -112,13 +114,11 @@
                    ds (unsafe-flvector-map f (flarray-data arr) (flarray-data arrs) ...))]
                  [else
                   (define new-ds (array-shape-broadcast (list ds dss ...)))
-                  (let: ([arr  : (Array Float)  (array-broadcast arr new-ds)]
-                         [arrs : (Array Float)  (array-broadcast arrs new-ds)] ...)
-                    (define proc  (unsafe-array-proc arr))
-                    (define procs (unsafe-array-proc arrs)) ...
-                    (array->flarray
-                     (unsafe-build-array new-ds (λ: ([js : Indexes])
-                                                  (f (proc js) (procs js) ...)))))]))))]))
+                  (define proc  (unsafe-array-proc (array-broadcast arr new-ds)))
+                  (define procs (unsafe-array-proc (array-broadcast arrs new-ds))) ...
+                  (array->flarray
+                   (unsafe-build-array new-ds (λ: ([js : Indexes])
+                                                (f (proc js) (procs js) ...))))]))))]))
 
 (: flarray-map (case-> ((-> Float) -> FlArray)
                        ((Float -> Float) FlArray -> FlArray)
