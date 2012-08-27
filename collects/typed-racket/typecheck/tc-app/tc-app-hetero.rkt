@@ -1,35 +1,21 @@
 #lang racket/unit
 
-(require (rename-in "../../utils/utils.rkt" [infer r:infer])
-         "../signatures.rkt" "../tc-metafunctions.rkt" "../check-below.rkt"
-         "../tc-app-helper.rkt" "../find-annotation.rkt" "../tc-funapp.rkt"
-         "../tc-subst.rkt" (prefix-in c: racket/contract)
-         syntax/parse racket/match racket/trace scheme/list
-         unstable/sequence  unstable/list
+(require "../../utils/utils.rkt"
+         (prefix-in c: (contract-req))
+         syntax/parse racket/match
+         syntax/parse/experimental/reflect
+         "signatures.rkt"
+         "utils.rkt"
          ;; fixme - don't need to be bound in this phase - only to make tests work
-         scheme/bool
          racket/unsafe/ops
-         (only-in racket/private/class-internal do-make-object)
-         (only-in syntax/location module-name-fixup)
-         (only-in '#%kernel [apply k:apply] [reverse k:reverse])
          ;; end fixme
-         (for-syntax syntax/parse scheme/base (utils tc-utils))
-         (private type-annotation)
-         (types utils abbrev numeric-tower union subtype resolve type-table substitute generalize)
+         (types utils abbrev numeric-tower union resolve type-table generalize)
+         (typecheck signatures check-below)
          (utils tc-utils)
-         (only-in srfi/1 alist-delete)
-         (except-in (env type-env-structs tvar-env index-env) extend)
-         (rep type-rep filter-rep object-rep rep-utils)
-         (r:infer infer)
-         '#%paramz
-         (for-template
-          racket/unsafe/ops racket/fixnum racket/flonum
-          (only-in '#%kernel [apply k:apply] [reverse k:reverse])
-          "../internal-forms.rkt" scheme/base scheme/bool '#%paramz
-          (only-in racket/private/class-internal do-make-object)
-          (only-in syntax/location module-name-fixup)))
+         (rep type-rep rep-utils)
+         (for-template racket/unsafe/ops racket/base))
 
-(import tc-expr^ tc-lambda^ tc-let^ tc-apply^ tc-app^)
+(import tc-expr^ tc-app^)
 (export tc-app-hetero^)
 
 
@@ -91,65 +77,60 @@
      (single-value val-e)
      (index-error i-val i-bound i-e vec-t expected name)]))
 
-(define (tc/app-hetero form expected)
-  (syntax-parse form
-    #:literals (#%plain-app 
-                vector-ref unsafe-vector-ref unsafe-vector*-ref
-                vector-set! unsafe-vector-set! unsafe-vector*-set!
-                unsafe-struct-ref unsafe-struct*-ref
-                unsafe-struct-set! unsafe-struct*-set!
-                vector-immutable vector)
-    [(#%plain-app op:special-op args ...) #f]
-    ;; unsafe struct-ref 
-    [(#%plain-app (~or unsafe-struct-ref unsafe-struct*-ref) struct:expr index:expr)
-     (match (single-value #'struct)
-       [(tc-result1: (and struct-t (app resolve (Struct: _ _ (list (fld: flds _ _) ...) _ _ _ _ _))))
-        (tc/hetero-ref #'index flds struct-t expected "struct")]
-       [s-ty #f])]
-    ;; vector-ref on het vectors
-    [(#%plain-app (~or vector-ref unsafe-vector-ref unsafe-vector*-ref) vec:expr index:expr)
-     (match (single-value #'vec)
-       [(tc-result1: (and vec-t (app resolve (HeterogenousVector: es))))
-        (tc/hetero-ref #'index es vec-t expected "vector")]
-       [v-ty #f])]
-    ;; unsafe struct-set! 
-    [(#%plain-app (~or unsafe-struct-set! unsafe-struct*-set!) s:expr index:expr val:expr)
-     (match (single-value #'s)
-       [(tc-result1: (and struct-t (app resolve (Struct: _ _ (list (fld: flds _ _) ...) _ _ _ _ _))))
-        (tc/hetero-set! #'index flds #'val struct-t expected "struct")]
-       [s-ty #f])]
-    ;; vector-set! on het vectors
-    [(#%plain-app (~or vector-set! unsafe-vector-set! unsafe-vector*-set!) v:expr index:expr val:expr)
-     (match (single-value #'v)
-       [(tc-result1: (and vec-t (app resolve (HeterogenousVector: es))))
-        (tc/hetero-set! #'index es #'val vec-t expected "vector")]
-       [v-ty #f])]
-    [(#%plain-app (~or vector-immutable vector) args:expr ...)
-     (match expected
-       [(tc-result1: (app resolve (Vector: t))) #f]
-       [(tc-result1: (app resolve (HeterogenousVector: ts)))
-        (unless (= (length ts) (length (syntax->list #'(args ...))))
-          (tc-error/expr "expected vector with ~a elements, but got ~a"
-                         (length ts)
-                         (make-HeterogenousVector (map tc-expr/t (syntax->list #'(args ...))))))
-        (for ([e (in-list (syntax->list #'(args ...)))]
-              [t (in-list ts)])
-          (tc-expr/check e (ret t)))
-        expected]
-       ;; If the expected type is a union, then we examine just the parts
-       ;; of the union that are vectors.  If there's only one of those,
-       ;; we re-run this whole algorithm with that.  Otherwise, we treat
-       ;; it like any other expected type.
-       [(tc-result1: (app resolve (Union: ts))) (=> continue)
-        (define u-ts (for/list ([t (in-list ts)]
-                                #:when (eq? 'vector (Type-key t)))
-                       t))
-        (match u-ts
-          [(list t0) (tc/app/check form (ret t0))]
-          [_ (continue)])]
-       ;; since vectors are mutable, if there is no expected type, we want to generalize the element type
-       [(or #f (tc-result1: _))
-        (ret (make-HeterogenousVector (map (lambda (x) (generalize (tc-expr/t x)))
-                                           (syntax->list #'(args ...)))))]
-       [_ (int-err "bad expected: ~a" expected)])]
-    [_ #f]))
+(define-tc/app-syntax-class (tc/app-hetero expected)
+  #:literals (vector-ref unsafe-vector-ref unsafe-vector*-ref
+              vector-set! unsafe-vector-set! unsafe-vector*-set!
+              unsafe-struct-ref unsafe-struct*-ref
+              unsafe-struct-set! unsafe-struct*-set!
+              vector-immutable vector)
+  (pattern (~and form ((~or unsafe-struct-ref unsafe-struct*-ref) struct:expr index:expr))
+    (match (single-value #'struct)
+      [(tc-result1: (and struct-t (app resolve (Struct: _ _ (list (fld: flds _ _) ...) _ _ _ _ _))))
+       (tc/hetero-ref #'index flds struct-t expected "struct")]
+      [s-ty (tc/app-regular #'form expected)]))
+  ;; vector-ref on het vectors
+  (pattern (~and form ((~or vector-ref unsafe-vector-ref unsafe-vector*-ref) vec:expr index:expr))
+    (match (single-value #'vec)
+      [(tc-result1: (and vec-t (app resolve (HeterogenousVector: es))))
+       (tc/hetero-ref #'index es vec-t expected "vector")]
+      [v-ty (tc/app-regular #'form expected)]))
+  ;; unsafe struct-set! 
+  (pattern (~and form ((~or unsafe-struct-set! unsafe-struct*-set!) s:expr index:expr val:expr))
+    (match (single-value #'s)
+      [(tc-result1: (and struct-t (app resolve (Struct: _ _ (list (fld: flds _ _) ...) _ _ _ _ _))))
+       (tc/hetero-set! #'index flds #'val struct-t expected "struct")]
+      [s-ty (tc/app-regular #'form expected)]))
+  ;; vector-set! on het vectors
+  (pattern (~and form ((~or vector-set! unsafe-vector-set! unsafe-vector*-set!) v:expr index:expr val:expr))
+    (match (single-value #'v)
+      [(tc-result1: (and vec-t (app resolve (HeterogenousVector: es))))
+       (tc/hetero-set! #'index es #'val vec-t expected "vector")]
+      [v-ty (tc/app-regular #'form expected)]))
+  (pattern (~and form ((~or vector-immutable vector) args:expr ...))
+    (match expected
+      [(tc-result1: (app resolve (Vector: t))) (tc/app-regular #'form expected)]
+      [(tc-result1: (app resolve (HeterogenousVector: ts)))
+       (unless (= (length ts) (length (syntax->list #'(args ...))))
+         (tc-error/expr "expected vector with ~a elements, but got ~a"
+                        (length ts)
+                        (make-HeterogenousVector (map tc-expr/t (syntax->list #'(args ...))))))
+       (for ([e (in-list (syntax->list #'(args ...)))]
+             [t (in-list ts)])
+         (tc-expr/check e (ret t)))
+       expected]
+      ;; If the expected type is a union, then we examine just the parts
+      ;; of the union that are vectors.  If there's only one of those,
+      ;; we re-run this whole algorithm with that.  Otherwise, we treat
+      ;; it like any other expected type.
+      [(tc-result1: (app resolve (Union: ts))) (=> continue)
+       (define u-ts (for/list ([t (in-list ts)]
+                               #:when (eq? 'vector (Type-key t)))
+                      t))
+       (match u-ts
+         [(list t0) (tc/app/check #'(#%plain-app . form) (ret t0))]
+         [_ (continue)])]
+      ;; since vectors are mutable, if there is no expected type, we want to generalize the element type
+      [(or #f (tc-result1: _))
+       (ret (make-HeterogenousVector (map (lambda (x) (generalize (tc-expr/t x)))
+                                          (syntax->list #'(args ...)))))]
+      [_ (int-err "bad expected: ~a" expected)])))
