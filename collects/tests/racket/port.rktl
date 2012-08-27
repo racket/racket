@@ -394,14 +394,17 @@
 			    (- end start))))
    (lambda (special) always-evt)))
 (test (void) display "hello" /dev/null-out)
+(set! should-be-breakable? #f)
 (test 5 write-bytes-avail #"hello" /dev/null-out)
+(set! should-be-breakable? #t)
 (test #t write-special 'hello /dev/null-out)
 (test 5 sync (write-bytes-avail-evt #"hello" /dev/null-out))
+(set! should-be-breakable? #f)
 (test 5 write-bytes-avail/enable-break #"hello" /dev/null-out)
 (test #t write-special-avail* 'hello /dev/null-out)
 (parameterize-break #f
-  (test 5 write-bytes-avail/enable-break #"hello" /dev/null-out)
   (set! should-be-breakable? #f)
+  (test 5 write-bytes-avail/enable-break #"hello" /dev/null-out)
   (test #t write-special-avail* 'hello /dev/null-out)
   (test 5 write-bytes-avail #"hello" /dev/null-out))
 
@@ -638,6 +641,34 @@
   (parameterize-break 
    #f 
    (try (lambda (x) (read-bytes-avail!/enable-break (make-bytes 10) x)))))
+
+;; Check nonblock? and break? interaction (again):
+(let ()
+  (define status '())
+  (define p (make-output-port
+             'p
+             always-evt
+             (lambda (bstr start end nonblock? break?)
+               (set! status (list nonblock? break? (break-enabled)))
+               (- end start))
+             void
+             (lambda (v nonblock? break?)
+               (set! status (list 'special nonblock? break? (break-enabled)))
+               #t)))
+  (write-bytes #"hi" p)
+  (test '(#f #t #f) values status)
+  (parameterize-break
+   #f
+   (write-bytes #"hi" p))
+  (test '(#f #f #f) values status)
+  (write-bytes-avail #"hi" p)
+  (test '(#t #f #f) values status)
+  (write-bytes-avail* #"hi" p)
+  (test '(#t #f #f) values status)
+  (write-special 'any p)
+  (test '(special #f #t #f) values status)
+  (write-special-avail* 'any p)
+  (test '(special #t #f #f) values status))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that an uncooperative output port doesn't keep breaks

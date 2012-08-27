@@ -1375,7 +1375,9 @@ user_write_bytes(Scheme_Output_Port *port, const char *str, intptr_t offset, int
   int n, re_enable_break;
   Scheme_Cont_Frame_Data cframe;
 
-  if (enable_break)
+  if (rarely_block)
+    re_enable_break = 0;
+  else if (enable_break)
     re_enable_break = 1;
   else
     re_enable_break = scheme_can_break(scheme_current_thread);
@@ -1512,7 +1514,10 @@ user_write_special (Scheme_Output_Port *port, Scheme_Object *v, int nonblock)
   int re_enable_break;
   Scheme_Cont_Frame_Data cframe;
 
-  re_enable_break = scheme_can_break(scheme_current_thread);
+  if (nonblock)
+    re_enable_break = 0;
+  else
+    re_enable_break = scheme_can_break(scheme_current_thread);
 
   a[0] = v;
   a[1] = (nonblock ? scheme_true : scheme_false);
