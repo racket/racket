@@ -472,7 +472,7 @@
                                [pAuthInfo _pointer]
                                [dwReserved2 _DWORD]))
 (define-cstruct _MULTI_QI ([pIID _GUID-pointer]
-                           [pItf _IUnknown-pointer]
+                           [pItf _IUnknown-pointer/null]
                            [hr _HRESULT]))
 
 (define-ole CoCreateInstance (_hfun _REFCLSID _pointer _DWORD _REFIID
@@ -600,12 +600,17 @@
                            (bitwise-ior CLSCTX_LOCAL_SERVER CLSCTX_INPROC_SERVER)
                            IID_IUnknown)]
         [else
-         (define csi (make-COSERVERINFO 0 (cast machine _system-string/utf-16 _pointer) #f 0))
+	 (define cleanup (box null))
+         (define csi (parameterize ([current-cleanup cleanup])
+		       (make-COSERVERINFO 0 machine #f 0)))
          (define mqi (make-MULTI_QI IID_IUnknown #f 0))
          (define unknown
-           (CoCreateInstanceEx clsid #f CLSCTX_REMOTE_SERVER (and machine csi) 1 mqi))
-         (when machine
-           (SysFreeString (COSERVERINFO-pwszName csi)))
+	   (dynamic-wind
+	    void
+	    (lambda ()
+	      (CoCreateInstanceEx clsid #f CLSCTX_REMOTE_SERVER (and machine csi) 1 mqi))
+	    (lambda ()
+	      (for ([proc (in-list (unbox cleanup))]) (proc)))))
          (unless (and (zero? (MULTI_QI-hr mqi))
                       unknown)
            (error who "unable to obtain IUnknown interface for remote server"))
