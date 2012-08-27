@@ -1,15 +1,6 @@
 (module sexp-diff mzscheme
-  (require tests/utils/mz-testing)
-
-  (define-syntax (test-begin stx)
-    (syntax-case stx ()
-      [(_ expr ...)
-       ;#'(begin expr ...) ; testing version
-       #'(void) ; non-testing version
-       ]))
+  (require rackunit)
   
-  (test-begin (section 'sexp-diff))
-
   ; sexp-diff and sexp-diff/expound show the difference between two specified s-expressions.
   ; in each case, the part of the s-expression that is the same is preserved in the result. When
   ; traversal reveals a difference, the point that is different is replaced with either the symbol
@@ -17,6 +8,8 @@
   ; in the sexp-diff/expound function.
   
   (provide sexp-diff sexp-diff/expound)
+  (provide list-diff list-diff/expound)
+
   
   (define (sexp-diff/core expound? collect?)    
     (letrec ([construct-diff-result (if expound? 
@@ -74,28 +67,26 @@
   ; cdr's of two pair elements is different, the results are recombined to make the whole pair labeled
   ; different.
   
-  (provide list-diff list-diff/expound)
-  
   (define list-diff (sexp-diff/core #f #t))
   (define list-diff/expound (sexp-diff/core #t #t))
   
-  (test-begin
-   (test null sexp-diff null null)
-   (define a `(1 2 (3 4 (5 6) (6 7) () 8) 9))
-   (test a sexp-diff a a)
-   (define b `(1 0 (3 0 (5 7) 0 0 8 3 4) 9))
-   (test `(1 ,diff-id (3 ,diff-id (5 ,diff-id) ,diff-id ,diff-id 8 . ,diff-id) 9) sexp-diff a b)
-   
-   (test null sexp-diff/expound null null)
-   (test a sexp-diff/expound a a)
-   (test `(1 (,diff-id 2 0) (3 (,diff-id 4 0) (5 (,diff-id 6 7)) (,diff-id (6 7) 0) (,diff-id () 0) 8 . (,diff-id () (3 4))) 9) sexp-diff/expound a b)
-   
-   (test null list-diff null null)
-   (test null list-diff/expound null null)
-   (test a list-diff a a)
-   (test a list-diff/expound a a)
-   (test `(1 ,diff-id ,diff-id 9) list-diff a b)
-   (test `(1 (,diff-id 2 0) (,diff-id (3 4 (5 6) (6 7) () 8) (3 0 (5 7) 0 0 8 3 4)) 9) list-diff/expound a b)
-   
-   (report-errs)))
+  (check-equal? (sexp-diff null null) null)
+  (define a `(1 2 (3 4 (5 6) (6 7) () 8) 9))
+  (check-equal? (sexp-diff a a) a)
+  (define b `(1 0 (3 0 (5 7) 0 0 8 3 4) 9))
+  (check-equal? (sexp-diff a b)
+                `(1 ,diff-id (3 ,diff-id (5 ,diff-id) ,diff-id ,diff-id 8 . ,diff-id) 9))
+  
+  (check-equal? (sexp-diff/expound null null) null)
+  (check-equal? (sexp-diff/expound a a) a)
+  (check-equal? (sexp-diff/expound a b)
+                `(1 (,diff-id 2 0) (3 (,diff-id 4 0) (5 (,diff-id 6 7)) (,diff-id (6 7) 0) (,diff-id () 0) 8 . (,diff-id () (3 4))) 9))
+  
+  (check-equal? (list-diff null null) null)
+  (check-equal? (list-diff/expound null null) null)
+  (check-equal? (list-diff a a) a)
+  (check-equal? (list-diff/expound a a) a)
+  (check-equal? (list-diff a b) `(1 ,diff-id ,diff-id 9))
+  (check-equal? (list-diff/expound a b) 
+                `(1 (,diff-id 2 0) (,diff-id (3 4 (5 6) (6 7) () 8) (3 0 (5 7) 0 0 8 3 4)) 9)))
 
