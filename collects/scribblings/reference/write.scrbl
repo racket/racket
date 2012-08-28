@@ -275,20 +275,20 @@ to @racket[_rel-to-path].}
 
 
 
+@deftogether[(
 @defproc*[([(port-write-handler [out output-port?]) (any/c output-port? . -> . any)]
            [(port-write-handler [out output-port?]
                                 [proc (any/c output-port? . -> . any)])
-            void?])]{}
-
+            void?])]
 @defproc*[([(port-display-handler [out output-port?]) (any/c output-port? . -> . any)]
            [(port-display-handler [out output-port?]
                                   [proc (any/c output-port? . -> . any)])
-            void?])]{}
-
+            void?])]
 @defproc*[([(port-print-handler [out output-port?]) ((any/c output-port?) ((or/c 0 1)) . ->* . any)]
            [(port-print-handler [out output-port?]
                                 [proc (any/c output-port? . -> . any)])
-            void?])]{
+            void?])]
+)]{
 
 Gets or sets the @deftech{port write handler}, @deftech{port display
 handler}, or @deftech{port print handler} for @racket[out]. This
