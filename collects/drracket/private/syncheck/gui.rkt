@@ -335,6 +335,7 @@ If the namespace does not, they are colored the unbound color.
                      find-position begin-edit-sequence end-edit-sequence
                      highlight-range unhighlight-range
                      paragraph-end-position first-line-currently-drawn-specially?
+                     line-end-position position-line
                      syncheck:add-docs-range)
             
             ;; arrow-records : (U #f hash[text% => arrow-record])
@@ -427,10 +428,8 @@ If the namespace does not, they are colored the unbound color.
               
               ;; find-dc-location : text number -> (values number number)
               (define (find-dc-location text pos)
-                (let ([bx (box 0)]
-                      [by (box 0)])
-                  (send text position-location pos bx by)
-                  (send text editor-location-to-dc-location (unbox bx) (unbox by))))
+                (send text position-location pos xlb xrb)
+                (send text editor-location-to-dc-location (unbox xlb) (unbox xrb)))
               
               (hash-for-each
                bindings-table
@@ -443,21 +442,17 @@ If the namespace does not, they are colored the unbound color.
             ;; returns the bounding box (left, top, right, bottom) for the text range.
             ;; only works right if the text is on a single line.
             (define/private (find-char-box text left-pos right-pos)
-              (let ([xlb (box 0)]
-                    [ylb (box 0)]
-                    [xrb (box 0)]
-                    [yrb (box 0)])
-                (send text position-location left-pos xlb ylb #t)
-                (send text position-location right-pos xrb yrb #f)
-                (let*-values ([(xl-off yl-off) (send text editor-location-to-dc-location (unbox xlb) (unbox ylb))]
-                              [(xl yl) (dc-location-to-editor-location xl-off yl-off)]
-                              [(xr-off yr-off) (send text editor-location-to-dc-location (unbox xrb) (unbox yrb))]
-                              [(xr yr) (dc-location-to-editor-location xr-off yr-off)])
-                  (values 
-                   xl
-                   yl
-                   xr 
-                   yr))))
+              (send text position-location left-pos xlb ylb #t)
+              (send text position-location right-pos xrb yrb #f)
+              (let*-values ([(xl-off yl-off) (send text editor-location-to-dc-location (unbox xlb) (unbox ylb))]
+                            [(xl yl) (dc-location-to-editor-location xl-off yl-off)]
+                            [(xr-off yr-off) (send text editor-location-to-dc-location (unbox xrb) (unbox yrb))]
+                            [(xr yr) (dc-location-to-editor-location xr-off yr-off)])
+                (values 
+                 xl
+                 yl
+                 xr 
+                 yr)))
             
             (define/private (get-arrow-poss arrow)
               (cond
@@ -1213,10 +1208,6 @@ If the namespace does not, they are colored the unbound color.
                 (send ed get-canvas)))
             
             (define/private (tooltip-info->ltrb tooltip)
-              (define xlb (box 0))
-              (define ylb (box 0))
-              (define xrb (box 0))
-              (define yrb (box 0))
               (define left-pos (tooltip-info-pos-left tooltip))
               (define right-pos (tooltip-info-pos-right tooltip))
               (define text (tooltip-info-text tooltip))
