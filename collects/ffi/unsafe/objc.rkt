@@ -5,7 +5,7 @@
          "atomic.rkt"
          "define.rkt")
 
-(define objc-lib (ffi-lib "libobjc" #:fail (lambda () #f)))
+(define objc-lib (ffi-lib "libobj" #:fail (lambda () #f)))
 
 (define-ffi-definer define-objc objc-lib
   #:provide provide-protected
@@ -211,7 +211,10 @@
   #:fail (lambda () (lambda (name)
                       (cast (objc_lookUpClass name) _Class _Protocol))))
 
-(define-objc sel_registerName (_fun _string -> _SEL))
+(define-objc sel_registerName (_fun _string -> _SEL)
+  #:fail (lambda () (lambda (name)
+                      ;; Fake registration using interned symbols
+                      (cast (string->symbol name) _racket _gcpointer))))
 
 (define-objc objc_allocateClassPair (_fun _Class _string _long -> _Class)
   #:fail (lambda () #f))
