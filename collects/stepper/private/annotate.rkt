@@ -22,14 +22,14 @@
 (provide/contract
  [annotate
   (syntax?                         ; syntax to annotate
-   (((or/c continuation-mark-set? false/c) 
-     break-kind?)
-    (list?)
-    . ->* .
+   ((or/c continuation-mark-set? false/c) 
+    break-kind?
+    (or/c list? false/c)
+    . -> .
     any/c)                       ; procedure for runtime break
    boolean?   ; show-lambdas-as-lambdas?
    . -> .
-   syntax?)]                       ; results
+   syntax?)]                       ; result
  
  #;[top-level-rewrite (-> syntax? syntax?)])
 
@@ -90,10 +90,10 @@
           temp))))
   
   (define (normal-break)
-    (break (current-continuation-marks) 'normal-break))
+    (break (current-continuation-marks) 'normal-break #f))
   
   (define (result-exp-break)
-    (break (current-continuation-marks) 'result-exp-break))
+    (break (current-continuation-marks) 'result-exp-break #f))
   
   (define (result-value-break vals-list)
     (break (current-continuation-marks) 'result-value-break vals-list))
@@ -105,7 +105,7 @@
     (break #f 'expr-finished-break info-list))
   
   (define (double-break)
-    (break (current-continuation-marks) 'double-break))
+    (break (current-continuation-marks) 'double-break #f))
   
   (define ((make-opaque-exp-break exp))
     (exp-finished-break 
