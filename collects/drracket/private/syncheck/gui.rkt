@@ -1211,10 +1211,11 @@ If the namespace does not, they are colored the unbound color.
               (define left-pos (tooltip-info-pos-left tooltip))
               (define right-pos (tooltip-info-pos-right tooltip))
               (define text (tooltip-info-text tooltip))
-              (send text position-location left-pos xlb ylb #t)
-              (send text position-location right-pos xrb yrb #f)
-              (define-values (xl-off yl-off) (send text editor-location-to-dc-location (unbox xlb) (unbox ylb)))
-              (define-values (xr-off yr-off) (send text editor-location-to-dc-location (unbox xrb) (unbox yrb)))
+              
+              (define eol-pos (line-end-position (position-line right-pos)))
+              
+              (send text position-location eol-pos xlb ylb #t #t)
+              (define-values (x-off y-off) (send text editor-location-to-dc-location (+ (unbox xlb) 4) (unbox ylb)))
               (define window
                 (let loop ([ed text])
                   (cond
@@ -1227,12 +1228,8 @@ If the namespace does not, they are colored the unbound color.
               (cond
                 [window
                  (define (c n) (inexact->exact (round n)))
-                 (define-values (glx gly) (send window client->screen (c xl-off) (c yl-off)))
-                 (define-values (grx gry) (send window client->screen (c xr-off) (c yr-off)))
-                 (values (min glx grx)
-                         (min gly gry)
-                         (max glx grx)
-                         (max gly gry))]
+                 (define-values (gx gy) (send window client->screen (c x-off) (c y-off)))
+                 (values gx gy gx gy)]
                 [else
                  (values #f #f #f #f)]))
             
