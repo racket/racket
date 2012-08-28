@@ -56,15 +56,21 @@
      (object-name p)
      p
      (lambda (s start end nonblock? breakable?)
-       (let ([v ((if nonblock? 
-                     write-bytes-avail*
-                     (if breakable?
-                         write-bytes-avail/enable-break
-                         write-bytes-avail))
-                 s p start end)])
-         (if (and (zero? v) (not (= start end)))
-             (wrap-evt p (lambda (x) #f))
-             v)))
+       (if (= start end)
+           (parameterize-break
+            breakable?
+            (flush-output p)
+            0)
+           (let ([v (if nonblock? 
+                        (write-bytes-avail* s p start end)
+                        (if breakable?
+                            (parameterize-break
+                             #t
+                             (write-bytes s p start end))
+                            (write-bytes s p start end)))])
+             (if (and (zero? v) (not (= start end)))
+                 (wrap-evt p (lambda (x) #f))
+                 v))))
      (lambda ()
        (when close?
          (close-output-port p)))
@@ -87,7 +93,10 @@
             (write-special-evt spec p)))
      location-proc
      count-lines!-proc
-     pos)))
+     pos
+     (case-lambda
+      [(mode) (file-stream-buffer-mode p mode)]
+      [() (file-stream-buffer-mode p)]))))
 
 (define (copy-port src dest . dests)
   (unless (input-port? src)

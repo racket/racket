@@ -73,7 +73,7 @@ accordingly. If the port does not support setting the mode, the
 
 If @racket[mode] is not provided, the current mode is returned, or
 @racket[#f] is returned if the mode cannot be determined. If
-@racket[file-stream-port] is an input port and @racket[mode] is
+@racket[port] is an input port and @racket[mode] is
 @racket['line], the @exnraise[exn:fail:contract].}
 
 @defproc*[([(file-position [port port?]) exact-nonnegative-integer?]

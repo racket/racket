@@ -758,6 +758,42 @@
 
 ;; --------------------------------------------------
 
+(let ([o (open-output-bytes)])
+  (port-count-lines! o)
+  (define o2 (transplant-output-port o
+                                     (lambda ()
+                                       (define-values (l c p) (port-next-location o))
+                                       (values (* 2 l) (* 2 c) (* 2 p)))
+                                     57))
+  (test 0 file-position o)
+  (test 56 file-position o2)
+  (port-count-lines! o2)
+  (test-values '(1 0 1) (lambda () (port-next-location o)))
+  (test-values '(2 0 2) (lambda () (port-next-location o2)))
+  (write-byte 45 o2)
+  (test-values '(1 1 2) (lambda () (port-next-location o)))
+  (test-values '(2 2 4) (lambda () (port-next-location o2)))
+  (test (file-stream-buffer-mode o) file-stream-buffer-mode o2))
+
+(let ([i (open-input-bytes #"x")])
+  (port-count-lines! i)
+  (define i2 (transplant-input-port i
+                                    (lambda ()
+                                      (define-values (l c p) (port-next-location i))
+                                      (values (* 2 l) (* 2 c) (* 2 p)))
+                                    57))
+  (test 0 file-position i)
+  (test 56 file-position i2)
+  (port-count-lines! i2)
+  (test-values '(1 0 1) (lambda () (port-next-location i)))
+  (test-values '(2 0 2) (lambda () (port-next-location i2)))
+  (read-byte i)
+  (test-values '(1 1 2) (lambda () (port-next-location i)))
+  (test-values '(2 2 4) (lambda () (port-next-location i2)))
+  (test (file-stream-buffer-mode i) file-stream-buffer-mode i2))
+
+;; --------------------------------------------------
+
 (let-values ([(in out) (make-pipe)])
   (let ([in2 (dup-input-port in #f)]
         [out2 (dup-output-port out #f)])

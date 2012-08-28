@@ -623,7 +623,10 @@
           (lambda (n evt target-evt) (port-commit-peeked n evt target-evt p)))
      location-proc
      count-lines!-proc
-     pos)))
+     pos
+     (case-lambda
+      [(mode) (file-stream-buffer-mode p mode)]
+      [() (file-stream-buffer-mode p)]))))
 
 (define filter-read-input-port
   (lambda (p wrap-read wrap-peek [close? #t])
