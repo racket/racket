@@ -112,3 +112,9 @@ is the same as the old position). However, although input and output
 ports produced by @racket[open-input-output-file] share the file
 position, setting the position via one port does not flush the other
 port's buffer.}
+
+@defproc[(file-position* [port port?]) (or/c exact-nonnegative-integer? #f)]{
+
+Like @racket[file-position] on a single argument, but returns
+@racket[#f] if the position is not known.}
+

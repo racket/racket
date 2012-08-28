@@ -39,7 +39,11 @@ written.
                                          #f)
                                         #f]
                           [count-lines! (-> any) void]
-                          [init-position exact-positive-integer? 1]
+                          [init-position (or/c exact-positive-integer?
+                                               port?
+                                               #f
+                                               (-> (or/c exact-positive-integer? #f)))
+                                         1]
                           [buffer-mode (or/c (case-> ((or/c 'block 'none) . -> . any)
                                                      (-> (or/c 'block 'none #f)))
                                              #f)
@@ -344,10 +348,15 @@ The arguments implement the port as follows:
     that is called if and when line counting is enabled for the port.
     The default procedure is @racket[void].}
 
-  @item{@racket[init-position] --- an exact, positive integer that
-    determines the position of the port's first item, used when line
-    counting is @italic{not} enabled for the port. The default is
-    @racket[1].}
+  @item{@racket[init-position] --- normally an exact, positive integer
+    that determines the position of the port's first item, which is
+    used by @racket[file-position] or when line counting is
+    @italic{not} enabled for the port. The default is @racket[1].  If
+    @racket[init-position] is @racket[#f], the port is treated as
+    having an unknown position. If @racket[init-position] is a port,
+    then the given port's position is always used for the new port's
+    position. If @racket[init-position] is a procedure, it is called
+    as needed to obtain the port's position.}
 
   @item{@racket[buffer-mode] --- either @racket[#f] (the default) or a
     procedure that accepts zero or one arguments. If
@@ -721,7 +730,11 @@ s
                                           #f)
                                          #f]
                            [count-lines! (-> any) void]
-                           [init-position exact-positive-integer? 1]
+                           [init-position (or/c exact-positive-integer?
+                                                port?
+                                                #f
+                                                (-> (or/c exact-positive-integer? #f)))
+                                          1]
                            [buffer-mode (or/c (case-> 
                                                ((or/c 'block 'line 'none) . -> . any)
                                                (-> (or/c 'block 'line 'none #f)))
@@ -988,10 +1001,15 @@ procedures.
     that is called if and when line counting is enabled for the port.
     The default procedure is @racket[void].}
 
-  @item{@racket[init-position] --- an exact, positive integer that
-    determines the position of the port's first output item, used when
-    line counting is @italic{not} enabled for the port. The default is
-    @racket[1].}
+  @item{@racket[init-position] --- normally an exact, positive integer
+    that determines the position of the port's first item, which is
+    used by @racket[file-position] or when line counting is
+    @italic{not} enabled for the port. The default is @racket[1].  If
+    @racket[init-position] is @racket[#f], the port is treated as
+    having an unknown position. If @racket[init-position] is a port,
+    then the given port's position is always used for the new port's
+    position. If @racket[init-position] is a procedure, it is called
+    as needed to obtain the port's position.}
 
   @item{@racket[buffer-mode] --- either @racket[#f] (the
     default) or a procedure that accepts zero or one arguments. If

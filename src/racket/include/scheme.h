@@ -1379,6 +1379,7 @@ struct Scheme_Port
   Scheme_Location_Fun location_fun;
   Scheme_Count_Lines_Fun count_lines_fun;
   Scheme_Buffer_Mode_Fun buffer_mode_fun;
+  Scheme_Object *position_redirect; /* for `file-position' */
 };
 
 struct Scheme_Input_Port

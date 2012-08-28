@@ -99,7 +99,12 @@
             (write-special-evt spec p)))
      location-proc
      count-lines!-proc
-     pos
+     (let ([delta (- pos (or (file-position* p) pos))])
+       (if (= delta 1)
+           p
+           (lambda ()
+             (define v (file-position* p))
+             (and v (+ delta v)))))
      (case-lambda
       [(mode) (file-stream-buffer-mode p mode)]
       [() (file-stream-buffer-mode p)]))))

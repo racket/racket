@@ -314,6 +314,7 @@ scheme_init_port_fun(Scheme_Env *env)
   GLOBAL_NONCM_PRIM("port-print-handler",             port_print_handler,             1, 2, env);
   GLOBAL_NONCM_PRIM("flush-output",                   flush_output,                   0, 1, env);
   GLOBAL_NONCM_PRIM("file-position",                  scheme_file_position,           1, 2, env);
+  GLOBAL_NONCM_PRIM("file-position*",                 scheme_file_position_star,      1, 1, env);
   GLOBAL_NONCM_PRIM("file-stream-buffer-mode",        scheme_file_buffer,             1, 2, env);
   GLOBAL_NONCM_PRIM("port-try-file-lock?",            scheme_file_try_lock,           2, 2, env);
   GLOBAL_NONCM_PRIM("port-file-unlock",               scheme_file_unlock,             1, 1, env);
@@ -2270,12 +2271,16 @@ make_input_port(int argc, Scheme_Object *argv[])
     scheme_check_proc_arity2("make-input-port", 0, 6, argc, argv, 1); /* location */
   if (argc > 7)
     scheme_check_proc_arity("make-input-port", 0, 7, argc, argv); /* count-lines! */
-  if (argc > 8) { /* buffer-mode */
+  if (argc > 8) { /* position */
     if (!((SCHEME_INTP(argv[8]) && SCHEME_INT_VAL(argv[8]) > 0)
-	  || (SCHEME_BIGNUMP(argv[8]) && SCHEME_BIGPOS(argv[8]))))
-      scheme_wrong_contract("make-input-port", "exact-positive-integer?", 8, argc, argv);
+	  || (SCHEME_BIGNUMP(argv[8]) && SCHEME_BIGPOS(argv[8]))
+          || SCHEME_FALSEP(argv[8])
+          || scheme_check_proc_arity(NULL, 0, 8, argc, argv)
+          || SCHEME_INPUT_PORTP(argv[8])
+          || SCHEME_OUTPUT_PORTP(argv[8])))
+      scheme_wrong_contract("make-input-port", "(or/c exact-positive-integer? port? #f (-> (or/c exact-positive-integer? #f)))", 8, argc, argv);
   }
-  if (argc > 9) {
+  if (argc > 9) { /* buffer-mode */
     if (SCHEME_TRUEP(argv[9])
 	&& !scheme_check_proc_arity(NULL, 0, 9, argc, argv)
 	&& !scheme_check_proc_arity(NULL, 1, 9, argc, argv))
@@ -2362,8 +2367,12 @@ make_input_port(int argc, Scheme_Object *argv[])
   if (argc > 8) {
     if (SCHEME_INTP(argv[8]))
       ip->p.position = (SCHEME_INT_VAL(argv[8]) - 1);
-    else
+    else if (SCHEME_FALSEP(argv[8]) || SCHEME_BIGNUMP(argv[8]))
       ip->p.position = -1;
+    else {
+      ip->p.position = 0;
+      ip->p.position_redirect = argv[8];
+    }
   }
 
   if (uip->buffer_mode_proc)
@@ -2411,8 +2420,12 @@ make_output_port (int argc, Scheme_Object *argv[])
     scheme_check_proc_arity("make-output-port", 0, 8, argc, argv); /* count-lines! */
   if (argc > 9) {
     if (!((SCHEME_INTP(argv[9]) && SCHEME_INT_VAL(argv[9]) > 0)
-	  || (SCHEME_BIGNUMP(argv[9]) && SCHEME_BIGPOS(argv[9]))))
-      scheme_wrong_contract("make-output-port", "positive-exact-integer?", 9, argc, argv);
+	  || (SCHEME_BIGNUMP(argv[9]) && SCHEME_BIGPOS(argv[9]))
+          || SCHEME_FALSEP(argv[9])
+          || scheme_check_proc_arity(NULL, 0, 9, argc, argv)
+          || SCHEME_INPUT_PORTP(argv[9])
+          || SCHEME_OUTPUT_PORTP(argv[9])))
+      scheme_wrong_contract("make-output-port", "(or/c exact-positive-integer? port? #f (-> (or/c exact-positive-integer? #f)))", 9, argc, argv);
   }
   if (argc > 10) { /* buffer-mode */
     if (SCHEME_TRUEP(argv[10])
@@ -2490,12 +2503,16 @@ make_output_port (int argc, Scheme_Object *argv[])
     scheme_set_port_location_fun((Scheme_Port *)op, user_output_location);
   if (uop->count_lines_proc)
     scheme_set_port_count_lines_fun((Scheme_Port *)op, user_output_count_lines);
-
+  
   if (argc > 9) {
     if (SCHEME_INTP(argv[9]))
       op->p.position = (SCHEME_INT_VAL(argv[9]) - 1);
-    else
+    else if (SCHEME_FALSEP(argv[9]) && !SCHEME_BIGNUMP(argv[9]))
       op->p.position = -1;
+    else {
+      op->p.position = 0;
+      op->p.position_redirect = argv[9];
+    }
   }
 
   if (uop->buffer_mode_proc)

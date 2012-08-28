@@ -3842,8 +3842,8 @@ static void check_input_port_lock(Scheme_Port *ip)
   }
 }
 
-intptr_t
-scheme_tell (Scheme_Object *port)
+static intptr_t
+do_tell (Scheme_Object *port, int not_via_loc)
 {
   Scheme_Port *ip;
   intptr_t pos;
@@ -3854,12 +3854,18 @@ scheme_tell (Scheme_Object *port)
   
   CHECK_IOPORT_CLOSED("get-file-position", ip);
 
-  if (!ip->count_lines || (ip->position < 0))
+  if (not_via_loc || !ip->count_lines || (ip->position < 0))
     pos = ip->position;
   else
     pos = ip->readpos;
 
   return pos;
+}
+
+intptr_t
+scheme_tell (Scheme_Object *port)
+{
+  return do_tell(port, 0);
 }
 
 intptr_t
@@ -3988,12 +3994,46 @@ scheme_tell_all (Scheme_Object *port, intptr_t *_line, intptr_t *_col, intptr_t 
 
     line = scheme_tell_line(port);
     col = scheme_tell_column(port);
-    pos = scheme_tell(port);
+    pos = scheme_tell_can_redirect(port, 0);
 
     if (_line) *_line = line;
     if (_col) *_col = col;
     if (_pos) *_pos = pos;
   }
+}
+
+intptr_t
+scheme_tell_can_redirect (Scheme_Object *port, int not_via_loc)
+{
+  Scheme_Port *ip;
+  Scheme_Object *v;
+
+  while (1) {
+    ip = scheme_port_record(port);
+    
+    if (ip->position_redirect) {
+      if (SCHEME_INPUT_PORTP(ip->position_redirect)
+          || SCHEME_OUTPUT_PORTP(ip->position_redirect)) {
+        SCHEME_USE_FUEL(1);
+        port = ip->position_redirect;
+      } else {
+        v = scheme_apply(ip->position_redirect, 0, NULL);
+        if (SCHEME_INTP(v) && (SCHEME_INT_VAL(v) >= 1))
+          return SCHEME_INT_VAL(v) - 1;
+        else if (SCHEME_FALSEP(v) || (SCHEME_BIGNUMP(v) && SCHEME_BIGPOS(v)))
+          return -1;
+        else {
+          Scheme_Object *a[1];
+          a[0] = v;
+          scheme_wrong_contract("file-position", "exact-positive-integer?", 0, -1, a);
+          return -1;
+        }
+      }
+    } else
+      break;
+  }
+
+  return do_tell(port, not_via_loc);
 }
 
 void scheme_set_port_location(int argc, Scheme_Object **argv)
@@ -5072,8 +5112,8 @@ static int win_seekable(int fd)
 }
 #endif
 
-Scheme_Object *
-scheme_file_position(int argc, Scheme_Object *argv[])
+static Scheme_Object *
+do_file_position(const char *who, int argc, Scheme_Object *argv[], int can_false)
 {
   FILE *f;
   Scheme_Indexed_String *is;
@@ -5084,7 +5124,7 @@ scheme_file_position(int argc, Scheme_Object *argv[])
   int wis;
 
   if (!SCHEME_OUTPUT_PORTP(argv[0]) && !SCHEME_INPUT_PORTP(argv[0]))
-    scheme_wrong_contract("file-position", "port?", 0, argc, argv);
+    scheme_wrong_contract(who, "port?", 0, argc, argv);
   if (argc == 2) {
     if (!SCHEME_EOFP(argv[1])) {
       int ok = 0;
@@ -5098,7 +5138,7 @@ scheme_file_position(int argc, Scheme_Object *argv[])
       }
       
       if (!ok)
-	scheme_wrong_contract("file-position", "(or/c exact-nonnegative-integer? eof-object?)", 1, argc, argv);
+	scheme_wrong_contract(who, "(or/c exact-nonnegative-integer? eof-object?)", 1, argc, argv);
     }
   }
 
@@ -5125,8 +5165,18 @@ scheme_file_position(int argc, Scheme_Object *argv[])
     } else if (SAME_OBJ(op->sub_type, scheme_string_output_port_type)) {
       is = (Scheme_Indexed_String *)op->port_data;
       wis = 1;
-    } else if (argc < 2)
-      return scheme_make_integer(scheme_output_tell(argv[0]));
+    } else if (argc < 2) {
+      intptr_t pos;
+      pos = scheme_tell_can_redirect(argv[0], 1);
+      if (pos < 0) {
+        if (can_false) return scheme_false;
+	scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+			 "the port's current position is not known\n"
+                         "  port: %v",
+			 op);
+      } else
+        return scheme_make_integer(pos);
+    }
   } else {
     Scheme_Input_Port *ip;
 
@@ -5146,9 +5196,10 @@ scheme_file_position(int argc, Scheme_Object *argv[])
       is = (Scheme_Indexed_String *)ip->port_data;
     else if (argc < 2) {
       intptr_t pos;
-      pos = ip->p.position;
+      pos = scheme_tell_can_redirect((Scheme_Object *)ip, 1);
       if (pos < 0) {
-	scheme_raise_exn(MZEXN_FAIL,
+        if (can_false) return scheme_false;
+	scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
 			 "the port's current position is not known\n"
                          "  port: %v",
 			 ip);
@@ -5162,7 +5213,7 @@ scheme_file_position(int argc, Scheme_Object *argv[])
       && !had_fd
 #endif
       && !is)
-    scheme_contract_error("file-position",
+    scheme_contract_error(who,
                           "setting position allowed for file-stream and string ports only",
                           "port", 1, argv[0],
                           "position", 1, argv[1],
@@ -5186,7 +5237,7 @@ scheme_file_position(int argc, Scheme_Object *argv[])
     }
 
     if (nll < 0) {
-      scheme_contract_error("file-position",
+      scheme_contract_error(who,
                             "new position is too large",
                             "port", 1, argv[0],
                             "position", 1, argv[1],
@@ -5334,11 +5385,7 @@ scheme_file_position(int argc, Scheme_Object *argv[])
       pll = BIG_OFF_T_IZE(lseek)(fd, 0, 1);
 # endif
       if (pll < 0) {
-	if (SCHEME_INPUT_PORTP(argv[0])) {
-	  pll = scheme_tell(argv[0]);
-	} else {
-	  pll = scheme_output_tell(argv[0]);
-	}
+        pll = do_tell(argv[0], 0);
       } else {
 	if (SCHEME_INPUT_PORTP(argv[0])) {          
           Scheme_Input_Port *ip;
@@ -5371,6 +5418,18 @@ scheme_file_position(int argc, Scheme_Object *argv[])
 
     return scheme_make_integer_value_from_long_long(pll);
   }
+}
+
+Scheme_Object *
+scheme_file_position(int argc, Scheme_Object *argv[])
+{
+  return do_file_position("file-position", argc, argv, 0);
+}
+
+Scheme_Object *
+scheme_file_position_star(int argc, Scheme_Object *argv[])
+{
+  return do_file_position("file-position*", argc, argv, 1);
 }
 
 intptr_t scheme_set_file_position(Scheme_Object *port, intptr_t pos)

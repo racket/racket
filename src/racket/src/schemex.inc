@@ -481,6 +481,7 @@
   scheme_extension_table->scheme_get_bytes = scheme_get_bytes;
   scheme_extension_table->scheme_get_ready_special = scheme_get_ready_special;
   scheme_extension_table->scheme_tell = scheme_tell;
+  scheme_extension_table->scheme_tell_can_redirect = scheme_tell_can_redirect;
   scheme_extension_table->scheme_output_tell = scheme_output_tell;
   scheme_extension_table->scheme_tell_line = scheme_tell_line;
   scheme_extension_table->scheme_tell_column = scheme_tell_column;

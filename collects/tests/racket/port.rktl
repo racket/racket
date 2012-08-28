@@ -726,6 +726,7 @@
 (let ([check
        (lambda (in [d 0] [first-three-bytes #"123"] [char-len 3])
          (test d file-position in)
+         (test d file-position* in)
          (let-values ([(l c p) (port-next-location in)])
            (test p add1 d)
            (test first-three-bytes peek-bytes 3 0 in)
@@ -811,6 +812,21 @@
            (if (char? c)
                (char->integer c)
                c))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(let* ([p (open-input-bytes #"123")]
+       [p2 (make-input-port
+            (object-name p)
+            p
+            p
+            void
+            #f #f #f void
+            #f)])
+  (test #f file-position* p2)
+  (test #\1 read-char p2)
+  (test #f file-position* p2)
+  (err/rt-test (file-position p2) exn:fail:filesystem?))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

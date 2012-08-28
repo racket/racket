@@ -439,6 +439,7 @@ scheme_get_char_string
 scheme_get_bytes
 scheme_get_ready_special
 scheme_tell
+scheme_tell_can_redirect
 scheme_output_tell
 scheme_tell_line
 scheme_tell_column

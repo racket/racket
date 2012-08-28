@@ -629,7 +629,12 @@
           (lambda (n evt target-evt) (port-commit-peeked n evt target-evt p)))
      location-proc
      count-lines!-proc
-     pos
+     (let ([delta (- pos (or (file-position* p) pos))])
+       (if (= delta 1)
+           p
+           (lambda () 
+             (define v (file-position* p))
+             (+ delta v))))
      (case-lambda
       [(mode) (file-stream-buffer-mode p mode)]
       [() (file-stream-buffer-mode p)]))))
@@ -660,7 +665,7 @@
           (lambda (n evt target-evt) (port-commit-peeked n evt target-evt p)))
      (lambda () (port-next-location p))
      (lambda () (port-count-lines! p))
-     (add1 (file-position p)))))
+     p)))
 
 ;; Not kill-safe.
 (define make-pipe-with-specials
@@ -1059,7 +1064,7 @@
                                       (lambda (v) (loop))))))))
        (lambda () (port-next-location port))
        (lambda () (port-count-lines! port))
-       (add1 (file-position port))))))
+       port))))
 
 (define special-filter-input-port
   (lambda (p filter [close? #t])
@@ -1093,7 +1098,7 @@
           (lambda (n evt target-evt) (port-commit-peeked n evt target-evt p)))
      (lambda () (port-next-location p))
      (lambda () (port-count-lines! p))
-     (add1 (file-position p)))))
+     p)))
 
 ;; ----------------------------------------
 
@@ -1938,7 +1943,7 @@
     (let ([new (transplant-output-port
                 p
                 (lambda () (port-next-location p))
-                (add1 (file-position p))
+                (add1 (or (file-position* p) 0))
                 close?
                 (lambda () (port-count-lines! p)))])
       (port-display-handler new (port-display-handler p))
@@ -1950,7 +1955,7 @@
     (let ([new (transplant-input-port
                 p
                 (lambda () (port-next-location p))
-                (add1 (file-position p))
+                (add1 (or (file-position* p) 0))
                 close?
                 (lambda () (port-count-lines! p)))])
       (port-read-handler new (port-read-handler p))
