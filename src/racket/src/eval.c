@@ -5133,6 +5133,7 @@ static Scheme_Object *do_eval_string_all(Scheme_Object *port, const char *str, S
           printer = scheme_get_param(scheme_current_config(), MZCONFIG_PRINT_HANDLER);
           arg[0] = a[i];
           scheme_apply(printer, 1, arg);
+          scheme_flush_output(scheme_get_param(scheme_current_config(), MZCONFIG_OUTPUT_PORT));
         }
       }
     }
