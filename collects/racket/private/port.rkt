@@ -55,6 +55,9 @@
     (make-output-port
      (object-name p)
      p
+     p ; `write' just redirects to `p'
+     ;; Here's the slow way to redirect:
+     #;
      (lambda (s start end nonblock? breakable?)
        (if (= start end)
            (parameterize-break
@@ -75,6 +78,9 @@
        (when close?
          (close-output-port p)))
      (and (port-writes-special? p)
+          p ; `write-special' just redirects to `p'
+          ;; Here's the slow way to redirect:
+          #;
           (lambda (special nonblock? breakable?)
             ((if nonblock? 
                  write-special-avail*

@@ -8206,10 +8206,10 @@ scheme_make_null_output_port(int can_write_special)
 
 static Scheme_Object *redirect_write_bytes_k(void);
 
-static intptr_t
-redirect_write_bytes(Scheme_Output_Port *op,
-		     const char *str, intptr_t d, intptr_t len,
-		     int rarely_block, int enable_break)
+intptr_t
+scheme_redirect_write_bytes(Scheme_Output_Port *op,
+                            const char *str, intptr_t d, intptr_t len,
+                            int rarely_block, int enable_break)
 {
   /* arbitrary nesting means we can overflow the stack */
 #ifdef DO_STACK_CHECK
@@ -8231,9 +8231,19 @@ redirect_write_bytes(Scheme_Output_Port *op,
 #endif
 
   return scheme_put_byte_string("redirect-output",
-				(Scheme_Object *)op->port_data,
+				(Scheme_Object *)op,
 				str, d, len,
-				rarely_block);
+				(enable_break && !rarely_block) ? -1 : rarely_block);
+}
+
+static intptr_t
+redirect_write_bytes(Scheme_Output_Port *op,
+                            const char *str, intptr_t d, intptr_t len,
+                            int rarely_block, int enable_break)
+{
+  return scheme_redirect_write_bytes(scheme_output_port_record((Scheme_Object *)op->port_data),
+                                     str, d, len,
+                                     rarely_block, enable_break);
 }
 
 static Scheme_Object *redirect_write_bytes_k(void)
@@ -8250,7 +8260,57 @@ static Scheme_Object *redirect_write_bytes_k(void)
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
 
-  n = redirect_write_bytes(op, str, d, len, rarely_block, enable_break);
+  n = scheme_redirect_write_bytes(op, str, d, len, rarely_block, enable_break);
+
+  return scheme_make_integer(n);
+}
+
+static Scheme_Object *redirect_write_special_k(void);
+
+int scheme_redirect_write_special (Scheme_Output_Port *op, Scheme_Object *v, int nonblock)
+{
+  Scheme_Object *a[2];
+
+#ifdef DO_STACK_CHECK
+  {
+# include "mzstkchk.h"
+    {
+      Scheme_Thread *p = scheme_current_thread;
+      Scheme_Object *n;
+      
+      p->ku.k.p1 = (void *)op;
+      p->ku.k.p2 = (void *)v;
+      p->ku.k.i1 = nonblock;
+      
+      n = scheme_handle_stack_overflow(redirect_write_special_k);
+      return SCHEME_INT_VAL(n);
+    }
+  }
+#endif
+
+  a[0] = (Scheme_Object *)v;
+  a[1] = (Scheme_Object *)op;
+  
+  if (nonblock)
+    v = scheme_write_special_nonblock(2, a);
+  else
+    v = scheme_write_special(2, a);
+
+  return SCHEME_TRUEP(v);
+}
+
+static Scheme_Object *redirect_write_special_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Output_Port *op = (Scheme_Output_Port *)p->ku.k.p1;
+  Scheme_Object *v = (Scheme_Object *)p->ku.k.p2;
+  intptr_t nonblock = p->ku.k.i1;
+  intptr_t n;
+
+  p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
+
+  n = scheme_redirect_write_special(op, v, nonblock);
 
   return scheme_make_integer(n);
 }
@@ -8279,17 +8339,9 @@ redirect_write_special_evt(Scheme_Output_Port *op, Scheme_Object *special)
 static int 
 redirect_write_special(Scheme_Output_Port *op, Scheme_Object *special, int nonblock)
 {
-  Scheme_Object *v, *a[2];
-
-  a[0] = (Scheme_Object *)op->port_data;
-  a[1] = special;
-
-  if (nonblock)
-    v = scheme_write_special(2, a);
-  else
-    v = scheme_write_special(2, a);
-  
-  return SCHEME_TRUEP(v);
+  return scheme_redirect_write_special(scheme_output_port_record((Scheme_Object *)op->port_data),
+                                       special,
+                                       nonblock);
 }
 
 Scheme_Object *
@@ -8318,6 +8370,92 @@ scheme_make_redirect_output_port(Scheme_Object *port)
 			       0);
 
   return (Scheme_Object *)op;
+}
+
+static Scheme_Object *redirect_get_or_peek_bytes_k(void);
+
+intptr_t scheme_redirect_get_or_peek_bytes(Scheme_Input_Port *orig_port,
+                                           Scheme_Input_Port *port,
+                                           char *buffer, intptr_t offset, intptr_t size,
+                                           int nonblock,
+                                           int peek, Scheme_Object *peek_skip,
+                                           Scheme_Object *unless,
+                                           Scheme_Schedule_Info *sinfo)
+{
+  int r;
+
+  if (sinfo) {
+    scheme_set_sync_target(sinfo, (Scheme_Object *)port, (Scheme_Object *)orig_port, NULL, 0, 1, NULL);
+    return 0;
+  }
+
+#ifdef DO_STACK_CHECK
+  {
+# include "mzstkchk.h"
+    {
+      Scheme_Thread *p = scheme_current_thread;
+      Scheme_Object *n;
+      
+      p->ku.k.p1 = (void *)port;
+      p->ku.k.p2 = (void *)buffer;
+      p->ku.k.p3 = (void *)peek_skip;
+      p->ku.k.p4 = (void *)unless;
+      p->ku.k.p4 = (void *)orig_port;
+      p->ku.k.i1 = offset;
+      p->ku.k.i1 = size;
+      p->ku.k.i2 = nonblock;
+      p->ku.k.i3 = peek;
+      
+      n = scheme_handle_stack_overflow(redirect_get_or_peek_bytes_k);
+      return SCHEME_INT_VAL(n);
+    }
+  }
+#endif
+
+  r = scheme_get_byte_string_special_ok_unless("redirect-read-or-peek",
+                                               (Scheme_Object *)port,
+                                               buffer, offset, size, 
+                                               ((nonblock == -1)
+                                                ? -1
+                                                : (nonblock ? 2 : 1)),
+                                               peek, (peek ? peek_skip : NULL),
+                                               unless);
+
+  if (r == SCHEME_SPECIAL) {
+    Scheme_Object *res;
+    res = scheme_get_special_proc((Scheme_Object *)port);
+    orig_port->special = res;
+  }
+
+  return r;
+}
+
+static Scheme_Object *redirect_get_or_peek_bytes_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Input_Port *ip = (Scheme_Input_Port *)p->ku.k.p1;
+  char *buffer = (char *)p->ku.k.p2;
+  Scheme_Object *peek_skip = (Scheme_Object *)p->ku.k.p3;
+  Scheme_Object *unless = (Scheme_Object *)p->ku.k.p4;
+  Scheme_Input_Port *orig_port = (Scheme_Input_Port *)p->ku.k.p5;
+  intptr_t d = p->ku.k.i1;
+  intptr_t len = p->ku.k.i2;
+  int nonblock = p->ku.k.i3;
+  int peek = p->ku.k.i4;
+  intptr_t n;
+
+  p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
+  p->ku.k.p3 = NULL;
+  p->ku.k.p4 = NULL;
+  p->ku.k.p5 = NULL;
+
+  n = scheme_redirect_get_or_peek_bytes(orig_port, ip, buffer, d, len,
+                                        nonblock, 
+                                        peek, peek_skip,
+                                        unless, NULL);
+
+  return scheme_make_integer(n);
 }
 
 /*********** Unix/Windows: process status stuff *************/

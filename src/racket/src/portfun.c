@@ -895,6 +895,20 @@ user_get_or_peek_bytes(Scheme_Input_Port *port,
   intptr_t r;
   Scheme_Cont_Frame_Data cframe;
 
+  if (peek)
+    fun = uip->peek_proc;
+  else
+    fun = uip->read_proc;
+
+  if (SCHEME_INPUT_PORTP(fun)) {
+    return scheme_redirect_get_or_peek_bytes(port,
+                                             scheme_input_port_record(fun),
+                                             buffer, offset, size,
+                                             nonblock,
+                                             peek, peek_skip,
+                                             unless, sinfo);
+  }
+
   val = uip->peeked;
   if (val) {
     /* Leftover from a read-based peek used to implement `char-ready?'
@@ -913,11 +927,6 @@ user_get_or_peek_bytes(Scheme_Input_Port *port,
 
   if (unless && SCHEME_PAIRP(unless))
     unless = SCHEME_CDR(unless);
-
-  if (peek)
-    fun = uip->peek_proc;
-  else
-    fun = uip->read_proc;
 
   while (1) {
     int nb;
@@ -971,7 +980,7 @@ user_get_or_peek_bytes(Scheme_Input_Port *port,
 
     /* Call the read/peek function: */
     val = scheme_apply(fun, peek ? 3 : 1, a);
-
+    
     if ((size <= MAX_USER_INPUT_REUSE_SIZE)
 	&& (SCHEME_INTP(val) || SCHEME_EOFP(val) || SCHEME_PROCP(val))) {
       uip->reuse_str = bstr;
@@ -1375,6 +1384,12 @@ user_write_bytes(Scheme_Output_Port *port, const char *str, intptr_t offset, int
   int n, re_enable_break;
   Scheme_Cont_Frame_Data cframe;
 
+  if (SCHEME_OUTPUT_PORTP(uop->write_proc)) {
+    return scheme_redirect_write_bytes(scheme_output_port_record(uop->write_proc),
+                                       str, offset, len, 
+                                       rarely_block, enable_break);
+  }
+
   if (rarely_block)
     re_enable_break = 0;
   else if (enable_break)
@@ -1513,6 +1528,12 @@ user_write_special (Scheme_Output_Port *port, Scheme_Object *v, int nonblock)
   User_Output_Port *uop = (User_Output_Port *)port->port_data;
   int re_enable_break;
   Scheme_Cont_Frame_Data cframe;
+
+  if (SCHEME_OUTPUT_PORTP(uop->write_special_proc)) {
+    return scheme_redirect_write_special(scheme_output_port_record(uop->write_special_proc),
+                                         v,
+                                         nonblock);
+  }
 
   if (nonblock)
     re_enable_break = 0;
@@ -2228,9 +2249,18 @@ make_input_port(int argc, Scheme_Object *argv[])
   Scheme_Input_Port *ip;
   User_Input_Port *uip;
   Scheme_Object *name;
+  int read_port, peek_port;
 
-  scheme_check_proc_arity("make-input-port", 1, 1, argc, argv); /* read */
-  scheme_check_proc_arity2("make-input-port", 3, 2, argc, argv, 1); /* peek */
+  read_port = SCHEME_INPUT_PORTP(argv[1]);
+  if (!read_port
+      && !scheme_check_proc_arity(NULL, 1, 1, argc, argv)) { /* read */
+    scheme_wrong_contract("make-input-port", "(or/c (procedure-arity-includes/c 1) input-port?)", 1, argc, argv);
+  }
+  peek_port = SCHEME_INPUT_PORTP(argv[2]);
+  if (!peek_port
+      && !scheme_check_proc_arity2(NULL, 3, 2, argc, argv, 1)) { /* peek */
+    scheme_wrong_contract("make-input-port", "(or/c (procedure-arity-includes/c 3) input-port?)", 2, argc, argv);
+  }
   scheme_check_proc_arity("make-input-port", 0, 3, argc, argv); /* close */
   if (argc > 4)
     scheme_check_proc_arity2("make-input-port", 0, 4, argc, argv, 1); /* progress-evt */
@@ -2252,6 +2282,17 @@ make_input_port(int argc, Scheme_Object *argv[])
       scheme_wrong_contract("make-input-port", "(case-> (-> any)  (any/c . -> . any))", 9, argc, argv);
   }
   name = argv[0];
+
+  /* Shortcut ports for read & peek must be consistent: */
+  if (!!read_port != !!peek_port) {
+    scheme_contract_error("make-input-port",
+                          (read_port
+                           ? "read argument is an input port, but peek argument is not a port"
+                           : "read argument is not an input port, but peek argument is a port"),
+                          "read argument", 1, argv[1],
+                          "peek argument", 1, argv[2],
+                          NULL);
+  }
 
   /* It makes no sense to supply progress-evt without peek: */
   if ((argc > 5) && SCHEME_FALSEP(argv[2]) && !SCHEME_FALSEP(argv[4]))
@@ -2344,10 +2385,22 @@ make_output_port (int argc, Scheme_Object *argv[])
   if (!scheme_is_evt(argv[1])) {
     scheme_wrong_contract("make-output-port", "evt?", 1, argc, argv);
   }
-  scheme_check_proc_arity("make-output-port", 5, 2, argc, argv); /* write */
+  if (!SCHEME_OUTPUT_PORTP(argv[2])
+      && !scheme_check_proc_arity(NULL, 5, 2, argc, argv)) { /* write */
+    scheme_wrong_contract("make-output-port", 
+                          "(or/c (procedure-arity-includes/c 5) output-port?)", 
+                          2, argc, argv);
+  }
   scheme_check_proc_arity("make-output-port", 0, 3, argc, argv); /* close */
-  if (argc > 4)
-    scheme_check_proc_arity2("make-output-port", 3, 4, argc, argv, 1); /* write-special */
+  if (argc > 4) {
+    if (!SCHEME_FALSEP(argv[4])
+        && !SCHEME_OUTPUT_PORTP(argv[2])
+        && !scheme_check_proc_arity(NULL, 3, 4, argc, argv)) { /* write-special */
+      scheme_wrong_contract("make-output-port", 
+                            "(or/c (procedure-arity-includes/c 3) output-port?)", 
+                            4, argc, argv);
+    }
+  }
   if (argc > 5)
   scheme_check_proc_arity2("make-output-port", 3, 5, argc, argv, 1); /* write-evt */
   if (argc > 6)

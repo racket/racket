@@ -605,9 +605,15 @@
   (lambda (p location-proc pos [close? #t] [count-lines!-proc void])
     (make-input-port
      (object-name p)
+     p ;; redirect `read' to `p'
+     ;; Here's the long way to redirect:
+     #;
      (lambda (s)
        (let ([v (read-bytes-avail!* s p)])
          (if (eq? v 0) (wrap-evt p (lambda (x) 0)) v)))
+     p ;; redirect `peek' to `p'
+     ;; Here's the long way to redirect:
+     #;
      (lambda (s skip evt)
        (let ([v (peek-bytes-avail!* s skip evt p)])
          (if (eq? v 0)

@@ -10,17 +10,21 @@ obtain fine control over the action of committing bytes as read or
 written.
 
 @defproc[(make-input-port [name any/c]
-                          [read-in (bytes? 
-                                    . -> . (or/c exact-nonnegative-integer?
-                                                 eof-object?
-                                                 procedure?
-                                                 evt?))]
-                          [peek (bytes? exact-nonnegative-integer? (or/c evt? #f)
-                                        . -> . (or/c exact-nonnegative-integer?
-                                                     eof-object?
-                                                     procedure?
-                                                     evt?
-                                                     #f))]
+                          [read-in (or/c
+                                    (bytes? 
+                                     . -> . (or/c exact-nonnegative-integer?
+                                                  eof-object?
+                                                  procedure?
+                                                  evt?))
+                                    input-port?)]
+                          [peek (or/c
+                                 (bytes? exact-nonnegative-integer? (or/c evt? #f)
+                                         . -> . (or/c exact-nonnegative-integer?
+                                                      eof-object?
+                                                      procedure?
+                                                      evt?
+                                                      #f))
+                                 input-port?)]
                           [close (-> any)]
                           [get-progress-evt (or/c (-> evt?) #f) #f]
                           [commit (or/c (exact-positive-integer? evt? evt? . -> . any)
@@ -52,7 +56,9 @@ The arguments implement the port as follows:
 
   @item{@racket[name] --- the name for the input port.}
 
-  @item{@racket[read-in] --- a procedure that takes a single argument:
+  @item{@racket[read-in] --- either an input port, in which case reads
+    are redirected to the given port, or a procedure that takes a single
+    argument:
     a mutable byte string to receive read bytes. The procedure's
     result is one of the following:
     @itemize[
@@ -146,10 +152,14 @@ The arguments implement the port as follows:
     @racket[get-progress-evt], and @racket[commit]
     procedures, however, and even an implementor who does supply
     them may provide a different @racket[read-in]
-    that uses a fast path for non-blocking reads.}
+    that uses a fast path for non-blocking reads.
+
+    In an input port is provided for @racket[read-in], then an input port
+    must also be provided for @racket[peek].}
 
 
-  @item{@racket[peek] --- either @racket[#f] or a procedure
+  @item{@racket[peek] --- either @racket[#f], an input port (in which
+   case peeks are redirected to the given port), or a procedure
    that takes three arguments:
 
      @itemize[
@@ -206,7 +216,10 @@ The arguments implement the port as follows:
     @racket[#f], then @racket[progress-evt] and @racket[commit] must
     be @racket[#f]. See also @racket[make-input-port/peek-to-read],
     which implements peeking in terms of @racket[read-in] without
-    these constraints.}
+    these constraints.
+
+    In an input port is provided for @racket[peek], then an input port
+    must also be provided for @racket[read-in].}
 
   @item{@racket[close] --- a procedure of zero arguments that is
     called to close the port. The port is not considered closed until
@@ -669,20 +682,23 @@ s
 
 @defproc[(make-output-port [name any/c]
                            [evt evt?]
-                           [write-out (bytes? exact-nonnegative-integer?
-                                              exact-nonnegative-integer?
-                                              boolean?
-                                              boolean?
-                                              . -> .
-                                              (or/c exact-nonnegative-integer?
-                                                    #f
-                                                    evt?))]
+                           [write-out (or/c
+                                       (bytes? exact-nonnegative-integer?
+                                               exact-nonnegative-integer?
+                                               boolean?
+                                               boolean?
+                                               . -> .
+                                               (or/c exact-nonnegative-integer?
+                                                     #f
+                                                     evt?))
+                                       output-port?)]
                            [close (-> any)]
                            [write-out-special (or/c (any/c boolean? boolean?
                                                            . -> .
                                                            (or/c any/c
                                                                  #f
                                                                  evt?))
+                                                    output-port?
                                                     #f)
                                               #f]
                            [get-write-evt (or/c
@@ -735,7 +751,9 @@ procedures.
     @racket[always-evt] if writes to the port always succeed without
     blocking.}
 
-   @item{@racket[write-out] --- a procedure of five arguments:
+   @item{@racket[write-out] --- either an output port, which indicates that
+         writes should be redirected to the given port, or a procedure
+         of five arguments:
 
      @itemize[
 
@@ -849,7 +867,9 @@ procedures.
     terminated immediately with an error.}
 
   @item{@racket[write-out-special] --- either @racket[#f] (the
-    default), or a procedure to handle @racket[write-special] calls
+    default), an output port (which indicates that
+    special writes should be redirected to the given port),
+    or a procedure to handle @racket[write-special] calls
     for the port. If @racket[#f], then the port does not support
     special output, and @racket[port-writes-special?] will return
     @racket[#f] when applied to the port.
