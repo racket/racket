@@ -1,6 +1,8 @@
 #lang scribble/doc
 @(require "common.rkt")
 
+@centered{@image[#:suffixes @list[".png"]]{image/gauge}}
+
 @defclass/title[gauge% object% (control<%>)]{
 
 A gauge is a horizontal or vertical bar for displaying the output

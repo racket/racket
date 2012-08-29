@@ -1,6 +1,8 @@
 #lang scribble/doc
 @(require "common.rkt")
 
+@centered{@image[#:suffixes @list[".png"]]{image/check-box}}
+
 @defclass/title[check-box% object% (control<%>)]{
 
 A check box is a labeled box which is either checked or unchecked.

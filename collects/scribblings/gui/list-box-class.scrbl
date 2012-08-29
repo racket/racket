@@ -1,6 +1,8 @@
 #lang scribble/doc
 @(require "common.rkt")
 
+@centered{@image[#:suffixes @list[".png"]]{image/list-box}}
+
 @(define lbnumnote @elem{List box rows are indexed from @racket[0].})
 @(define lbcnumnote @elem{List box rows and columns are indexed from @racket[0].})
 
