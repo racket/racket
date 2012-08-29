@@ -298,8 +298,9 @@
 
     (test/blame-pos (app-ctc (free-id-table/c symbol? symbol? #:immutable #t) im-tbl))
     (test/blame-pos (app-ctc (free-id-table/c identifier? number? #:immutable #t) im-tbl))
-    (test #t free-id-table? (app-ctc (free-id-table/c identifier? number?) im-tbl))
-    (test #t free-id-table? (app-ctc (free-id-table/c symbol? symbol?) im-tbl))
+;; --- ryanc: I don't think these should be checked lazily.
+;;    (test #t free-id-table? (app-ctc (free-id-table/c identifier? number?) im-tbl))
+;;    (test #t free-id-table? (app-ctc (free-id-table/c symbol? symbol?) im-tbl))
 
     ; These are not failures yet because they are not flat contracts
     ; Looking at the hash ensures that the contract fails

@@ -154,11 +154,15 @@ identifier table (free or bound, mutable or immutable), @racket[#f]
 otherwise.
 }
 
-@defproc[(free-id-table/c [val contract?]
-                          [#:immutable immutable (or/c #t #f 'dont-care) 'dont-care])
+@defproc[(free-id-table/c [key-ctc flat-contract?]
+                          [val-ctc contract?]
+                          [#:immutable immutable? (or/c #t #f 'dont-care) 'dont-care])
          contract?]{
 
-Like @racket[hash/c], but more limited. It only supports contracts on the values in the identifier table.
+Like @racket[hash/c], but for free-identifier tables. If
+@racket[immutable?] is @racket[#t], the contract accepts only
+immutable identifier tables; if @racket[immutable?] is @racket[#f],
+the contract accepts only mutable identifier tables.
 }
 
 @;{----------}
