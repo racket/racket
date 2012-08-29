@@ -71,22 +71,15 @@
          (close-output-port log-out)
          (sync log-done-chan))))))
 
-(define (generate-log this)
+;; Returns a predicate that, given a path, returns whether it corresponds
+;; to the right file.
+(define (make-file-predicate this)
   (define portname (send this get-port-name))
-  (define input    (open-input-text-editor this))
-  (port-count-lines! input)
   (define unsaved-file?
     (and (symbol? portname)
          (regexp-match #rx"^unsaved-editor" (symbol->string portname))))
   (define good-portname-cache #f)
-  (define (right-file? l) ; does the log-entry refer to the file we're in?
-    (define stx (log-entry-stx l))
-    (define path
-      (let ([dir  (syntax-source-directory stx)]
-            [file (syntax-source-file-name stx)])
-        (if (and dir file)
-            (build-path dir file)
-            #f)))
+  (lambda (path) ; (or/c path? #f)
     (cond [(and good-portname-cache ; cache is populated
                 (equal? path good-portname-cache))
            #t]
@@ -101,14 +94,30 @@
            (set! good-portname-cache path) ; populate cache
            #t]
           [else ; different file
-           #f]))
+           #f])))
+
+(define (generate-log this)
+  (define file-predicate (make-file-predicate this))
+  (define input          (open-input-text-editor this))
+  (port-count-lines! input)
+  (define (right-file? l) ; does the log-entry refer to the file we're in?
+    (define stx (log-entry-stx l))
+    (define path
+      (let ([dir  (syntax-source-directory stx)]
+            [file (syntax-source-file-name stx)])
+        (if (and dir file)
+            (build-path dir file)
+            #f)))
+    (file-predicate path))
   (define log '())
   (with-intercepted-opt-logging
    (lambda (l)
      (set! log (cons l log)))
    (lambda ()
      (run-inside-optimization-coach-sandbox
-      this (lambda () (void (compile (read-syntax portname input)))))))
+      this
+      (lambda ()
+        (void (compile (read-syntax (send this get-port-name) input)))))))
   (filter right-file? (reverse log)))
 
 
