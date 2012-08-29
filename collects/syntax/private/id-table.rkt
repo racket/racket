@@ -27,26 +27,20 @@
                       [entry (in-list l-alist)])
              (equal? (idtbl-ref right (car entry) (lambda () (k #f))) (cdr entry)))))))
 
+#|
+prop:id-table-impersonator : (vector wrapped-id-table key-in key-out value-in value-out)
+The {key,value}-{in-out} functions should all return a chaperone of their argument.
+|#
 (define-values (prop:id-table-impersonator
                 id-table-impersonator?
                 id-table-impersonator-value)
   (make-impersonator-property 'id-table-impersonator))
 
-(define-values (id-table-imp-wrapped
-                id-table-imp-ref-wrapper
-                id-table-imp-set!-wrapper
-                id-table-imp-remove!-wrapper
-                id-table-imp-key-wrapper)
-  (let ((extractor (lambda (i)
-                     (lambda (d)
-                       (vector-ref (id-table-impersonator-value d) i)))))
-    (apply values (build-list 5 extractor))))
-
-(define (chaperone-mutable-id-table d ref set! remove! key . args)
+(define (chaperone-mutable-id-table d key-in key-out value-in value-out . args)
   (apply chaperone-struct d
          ;; FIXME: chaperone-struct currently demands at least one orig-proc+redirect-proc pair
          id-table-phase (lambda (d p) p)
-         prop:id-table-impersonator (vector d ref set! remove! key)
+         prop:id-table-impersonator (vector d key-in key-out value-in value-out)
          args))
 
 (define (chaperone-immutable-id-table d wrap-key wrap-value . args)
@@ -79,31 +73,29 @@
 ;; ========
 
 (define (id-table-ref who d id default identifier->symbol identifier=?)
-  (let loop ((d d) (id id) (return values))
+  (let do-ref ([d d] [id id] [escape #f])
     (if (id-table-impersonator? d)
-        (let-values (((new-id return-wrapper)
-                      ((id-table-imp-ref-wrapper d) d id)))
-          (loop (id-table-imp-wrapped d) new-id
-                (lambda (new-v) (return-wrapper d new-id new-v))))
+        (let-values ([(wrapped key-in key-out value-in value-out)
+                      (vector->values (id-table-impersonator-value d))])
+          (let/ec k
+            (value-out (do-ref wrapped (key-in id) (or escape k)))))
         (let ([phase (id-table-phase d)])
-          (let ([i (for/first ([i (in-list (hash-ref (id-table-hash d)
-                                                     (identifier->symbol id phase)
-                                                     null))]
-                               #:when (identifier=? (car i) id phase))
-                              i)])
+          (let* ([sym (identifier->symbol id phase)]
+                 [l (hash-ref (id-table-hash d) sym null)]
+                 [i (for/first ([i (in-list l)] #:when (identifier=? (car i) id phase)) i)])
             (if i
-                (return (cdr i))
+                (cdr i)
                 (cond [(eq? default not-given)
                        (error who "no mapping for ~e" id)]
-                      [(procedure? default) (default)]
-                      [else default])))))))
+                      [(procedure? default) ((or escape values) (default))]
+                      [else ((or escape values) default)])))))))
 
 (define (id-table-set! who d id v identifier->symbol identifier=?)
-  (let loop ((d d) (id id) (v v))
+  (let do-set! ([d d] [id id] [v v])
     (if (id-table-impersonator? d)
-        (let-values (((new-id new-v)
-                      ((id-table-imp-set!-wrapper d) d id v)))
-          (loop (id-table-imp-wrapped d) new-id new-v))
+        (let-values ([(wrapped key-in key-out value-in value-out)
+                      (vector->values (id-table-impersonator-value d))])
+          (do-set! wrapped (key-in id) (value-in v)))
         (let* ([phase (id-table-phase d)]
                [sym (identifier->symbol id phase)]
                [l (hash-ref (id-table-hash d) sym null)]
@@ -111,10 +103,11 @@
           (hash-set! (id-table-hash d) sym new-l)))))
 
 (define (id-table-remove! who d id identifier->symbol identifier=?)
-  (let loop ((d d) (id id))
+  (let do-remove! ([d d] [id id])
     (if (id-table-impersonator? d)
-        (let ((new-id ((id-table-imp-remove!-wrapper d) d id)))
-          (loop (id-table-imp-wrapped d) new-id))
+        (let-values ([(wrapped key-in key-out value-in value-out)
+                      (vector->values (id-table-impersonator-value d))])
+          (do-remove! wrapped (key-in id)))
         (let* ([phase (id-table-phase d)]
                [sym (identifier->symbol id phase)]
                [l (hash-ref (id-table-hash d) sym null)]
@@ -182,18 +175,22 @@ Notes (FIXME?):
 
 (define (id-table-iterate-key who d pos)
   (if (id-table-impersonator? d)
-      (let ((wrapper (id-table-imp-key-wrapper d)))
-        (wrapper d (id-table-iterate-key who (id-table-imp-wrapped d) pos)))
-    (let-values ([(h a br b) (rebase-iter who d pos)])
-      (caar b))))
+      (let-values ([(wrapped key-in key-out value-in value-out)
+                    (vector->values (id-table-impersonator-value d))])
+        (key-out (id-table-iterate-key who wrapped pos)))
+      (let-values ([(h a br b) (rebase-iter who d pos)])
+        (caar b))))
 
 ;; TODO figure out how to provide API compatibility with hashes with regards
 ;; to iterate-key and provide the checking from rebase-iter
 (define (id-table-iterate-value who d pos identifier->symbol identifier=?)
- (if (id-table-impersonator? d)
-     (id-table-ref who d (id-table-iterate-key who d pos) not-given identifier->symbol identifier=?)
-     (let-values ([(h a br b) (rebase-iter who d pos)])
-       (cdar b))))
+  (let do-iterate-value ([d d])
+    (if (id-table-impersonator? d)
+        (let-values ([(wrapped key-in key-out value-in value-out)
+                      (vector->values (id-table-impersonator-value d))])
+          (value-out (do-iterate-value wrapped)))
+        (let-values ([(h a br b) (rebase-iter who d pos)])
+          (cdar b)))))
 
 (define (rebase-iter who d pos)
   (unless (chaperone-of? (id-table-iter-d pos) d)
@@ -415,5 +412,6 @@ Notes (FIXME?):
            free-identifier=?)
 
 (provide id-table-iter?
+         ;; just for use by syntax/id-table
          chaperone-mutable-id-table
          chaperone-immutable-id-table)

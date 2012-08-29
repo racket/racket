@@ -253,8 +253,9 @@
   (test #f flat-contract? (free-id-table/c any/c number?))
   (test #t flat-contract? (free-id-table/c any/c number? #:immutable #t))
   (test #f flat-contract? (free-id-table/c any/c (vectorof number?) #:immutable #t))
-  (test #f chaperone-contract? (free-id-table/c any/c (new-∀/c 'v)))
-  (error-test #'(free-id-table/c (new-∀/c 'v) any/c))
+;;  --- ryanc: chaperone contracts only for now
+;;  (test #f chaperone-contract? (free-id-table/c any/c (new-∀/c 'v)))
+;;  (error-test #'(free-id-table/c (new-∀/c 'v) any/c))
 
   (let ()
 
@@ -295,19 +296,11 @@
     (test #t free-id-table? (app-ctc (free-id-table/c identifier? symbol?) im-tbl))
     (test #t free-id-table? (app-ctc (free-id-table/c identifier? number?) tbl))
 
-
     (test/blame-pos (app-ctc (free-id-table/c symbol? symbol? #:immutable #t) im-tbl))
     (test/blame-pos (app-ctc (free-id-table/c identifier? number? #:immutable #t) im-tbl))
-;; --- ryanc: I don't think these should be checked lazily.
-;;    (test #t free-id-table? (app-ctc (free-id-table/c identifier? number?) im-tbl))
-;;    (test #t free-id-table? (app-ctc (free-id-table/c symbol? symbol?) im-tbl))
 
-    ; These are not failures yet because they are not flat contracts
-    ; Looking at the hash ensures that the contract fails
-    ;(test/blame-pos (app-ctc (free-id-table/c identifier? number?) im-tbl))
-    ;(test/blame-pos (app-ctc (free-id-table/c symbol? symbol?) im-tbl))
-    (test/blame-pos (free-id-table-count (app-ctc (free-id-table/c identifier? number?) im-tbl)))
-    (test/blame-pos (free-id-table-count (app-ctc (free-id-table/c symbol? symbol?) im-tbl)))
+    (test/blame-pos (app-ctc (free-id-table/c identifier? number?) im-tbl))
+    (test/blame-pos (app-ctc (free-id-table/c symbol? symbol?) im-tbl))
 
     (define (short-identifier? id)
       (and (identifier? id) (equal? 1 (string-length (symbol->string (syntax-e id))))))

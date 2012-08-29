@@ -64,11 +64,12 @@
      (proj base-id-table/c-rng "the values of" #f)
      (proj base-id-table/c-rng "the values of" #t))))
 
-(define (make-id-table/c-functions idtbl/c-symbol
-                                   idtbl?
-                                   mutable-idtbl?
-                                   immutable-idtbl?
-                                   immutable-idtbl)
+(define (make-id-table/c idtbl/c-symbol
+                         idtbl?
+                         mutable-idtbl?
+                         immutable-idtbl?
+                         immutable-idtbl)
+
   (define (id-table/c-name ctc)
     (apply build-compound-type-name
            idtbl/c-symbol
@@ -136,23 +137,50 @@
             (chaperone-immutable-id-table tbl pos-dom-proj pos-rng-proj
                                           impersonator-prop:contracted ctc)
             (chaperone-mutable-id-table tbl
-              (λ (t k)
-                 (values (neg-dom-proj k)
-                         (λ (h k v) (pos-rng-proj v))))
-              (λ (t k v)
-                 (values (neg-dom-proj k)
-                         (neg-rng-proj v)))
-              (λ (t k)
-                 (neg-dom-proj k))
-              (λ (t k)
-                 (pos-dom-proj k))
-              impersonator-prop:contracted ctc)))))
+                                        neg-dom-proj
+                                        pos-dom-proj
+                                        neg-rng-proj
+                                        pos-rng-proj
+                                        impersonator-prop:contracted ctc)))))
 
-  (values id-table/c-name
-          id-table/c-first-order
-          check-id-table/c
-          fo-projection
-          ho-projection))
+  (struct flat-id-table/c base-id-table/c ()
+    #:omit-define-syntaxes
+    #:property prop:flat-contract
+    (build-flat-contract-property
+     #:name id-table/c-name
+     #:first-order id-table/c-first-order
+     #:projection fo-projection))
+
+  (struct chaperone-id-table/c base-id-table/c ()
+    #:omit-define-syntaxes
+    #:property prop:chaperone-contract
+    (build-chaperone-contract-property
+     #:name id-table/c-name
+     #:first-order id-table/c-first-order
+     #:projection ho-projection))
+
+  ;; Note: impersonator contracts not currently supported.
+  (struct impersonator-id-table/c base-id-table/c ()
+    #:omit-define-syntaxes
+    #:property prop:contract
+    (build-contract-property
+     #:name id-table/c-name
+     #:first-order id-table/c-first-order
+     #:projection ho-projection))
+
+  (define (id-table/c key/c value/c #:immutable [immutable 'dont-care])
+    (define key/ctc (coerce-contract idtbl/c-symbol key/c))
+    (define value/ctc (coerce-contract idtbl/c-symbol value/c))
+    (cond [(and (eq? immutable #t)
+                (flat-contract? key/ctc)
+                (flat-contract? value/ctc))
+           (flat-id-table/c key/ctc value/ctc immutable)]
+          [(chaperone-contract? value/ctc)
+           (chaperone-id-table/c key/ctc value/ctc immutable)]
+          [else
+           (impersonator-id-table/c key/ctc value/ctc immutable)]))
+
+  (procedure-rename id-table/c idtbl/c-symbol))
 
 ;; ========
 
@@ -174,8 +202,7 @@
           idtbl-iterate-key idtbl-iterate-value
           idtbl-map idtbl-for-each
           idtbl-mutable-methods idtbl-immutable-methods
-          idtbl/c
-          chaperone-mutable-idtbl))
+          idtbl/c))
        #'(begin
 
            ;; Struct defs at end, so that dict methods can refer to earlier procs
@@ -225,52 +252,10 @@
              (list idtbl-immutable-methods
                    dict-contract-methods))
 
-           (define-values (idtbl/c-name
-                           idtbl/c-first-order
-                           check-idtbl/c
-                           fo-projection
-                           ho-projection)
-             (make-id-table/c-functions 'idtbl/c
-                                        idtbl?
-                                        mutable-idtbl?
-                                        immutable-idtbl?
-                                        immutable-idtbl))
-
-           (struct flat-idtbl/c base-id-table/c ()
-             #:omit-define-syntaxes
-             #:property prop:flat-contract
-             (build-flat-contract-property
-              #:name idtbl/c-name
-              #:first-order idtbl/c-first-order
-              #:projection fo-projection))
-
-           (struct chaperone-idtbl/c base-id-table/c ()
-             #:omit-define-syntaxes
-             #:property prop:chaperone-contract
-             (build-chaperone-contract-property
-              #:name idtbl/c-name
-              #:first-order idtbl/c-first-order
-              #:projection ho-projection))
-
-           (struct impersonator-idtbl/c base-id-table/c ()
-             #:omit-define-syntaxes
-             #:property prop:contract
-             (build-contract-property
-              #:name idtbl/c-name
-              #:first-order idtbl/c-first-order
-              #:projection ho-projection))
-
-           (define (idtbl/c key/c value/c #:immutable [immutable 'dont-care])
-             (define key/ctc (coerce-contract 'idtbl/c key/c))
-             (define value/ctc (coerce-contract 'idtbl/c value/c))
-             (cond [(and (eq? immutable #t)
-                         (flat-contract? key/ctc)
-                         (flat-contract? value/ctc))
-                    (flat-idtbl/c key/ctc value/ctc immutable)]
-                   [(chaperone-contract? value/ctc)
-                    (chaperone-idtbl/c key/ctc value/ctc immutable)]
-                   [else
-                    (impersonator-idtbl/c key/ctc value/ctc immutable)]))
+           (define idtbl/c
+             (make-id-table/c 'idtbl/c
+                              idtbl? mutable-idtbl? immutable-idtbl?
+                              immutable-idtbl))
 
            (provide/contract
             [make-idtbl
@@ -308,7 +293,7 @@
             [idtbl-for-each
              (-> idtbl? (-> identifier? any/c any) any)]
             [idtbl/c
-             (->* (flat-contract? contract?)
+             (->* (flat-contract? chaperone-contract?)
                   (#:immutable (or/c 'dont-care #t #f))
                   contract?)])))]))
 

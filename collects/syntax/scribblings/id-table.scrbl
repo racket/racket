@@ -155,7 +155,7 @@ otherwise.
 }
 
 @defproc[(free-id-table/c [key-ctc flat-contract?]
-                          [val-ctc contract?]
+                          [val-ctc chaperone-contract?]
                           [#:immutable immutable? (or/c #t #f 'dont-care) 'dont-care])
          contract?]{
 
@@ -214,10 +214,6 @@ etc) can be used on bound-identifier tables.
          void?]
 @defproc[(bound-id-table-count [table bound-id-table?])
          exact-nonnegative-integer?]
-@defproc[(bound-id-table/c [val contract?]
-                           [#:immutable immutable (or/c #t #f 'dont-care) 'dont-care])
-         contract?]
-@;{
 @defproc[(bound-id-table-iterate-first [table bound-id-table?])
          id-table-position?]
 @defproc[(bound-id-table-iterate-next [table bound-id-table?]
@@ -229,7 +225,11 @@ etc) can be used on bound-identifier tables.
 @defproc[(bound-id-table-iterate-value [table bound-id-table?]
                                        [position id-table-position?])
          identifier?]
-}]]{
+@defproc[(bound-id-table/c [key-ctc flat-contract?]
+                           [val-ctc chaperone-contract?]
+                           [#:immutable immutable (or/c #t #f 'dont-care) 'dont-care])
+         contract?]
+]]{
 
 Like the procedures for free-identifier tables
 (@racket[make-free-id-table], @racket[free-id-table-ref], etc), but
