@@ -44,6 +44,9 @@
          [(not (syncinfo? v)) v]
          ;; being forced...
          [(running-thread? (syncinfo-thunk v))
+          ;; Note: after `(syncinfo-thunk v)' changes to a `running-thread' instance,
+          ;; it doesn't change again, so we can assume that it's still a `running-thread'
+          ;; instance.
           (let ([r (syncinfo-thunk v)])
             (if (eq? (running-thread-thread r) (current-thread))
               ;; ... by the current thread => throw the usual reentrant error
@@ -53,19 +56,25 @@
          [else
           ;; wasn't forced yet: try to do it now
           (call-with-semaphore (syncinfo-access-sema v)
-            (lambda ()
-              (let ([thunk (syncinfo-thunk v)] [done (syncinfo-done-sema v)])
-                ;; set the thread last
-                (set-syncinfo-thunk!
-                 v (make-running-thread (object-name thunk) (current-thread)))
-                (call-with-exception-handler
-                 (lambda (e)
-                   (pset! p (make-reraise e))
-                   (semaphore-post done)
-                   e)
-                 (lambda ()
-                   (pset! p (call-with-values thunk list))
-                   (semaphore-post done))))))
+            (lambda (p v) ; pass `p' and `v' to avoid closure allocation
+              (let ([thunk (syncinfo-thunk v)]
+                    [done (syncinfo-done-sema v)])
+                ;; Now that we've taken the lock, check thunk' again:
+                (unless (running-thread? thunk)
+                  ;; set the thread last
+                  (set-syncinfo-thunk!
+                   v 
+                   (make-running-thread (object-name thunk) (current-thread)))
+                  (call-with-exception-handler
+                   (lambda (e)
+                     (pset! p (make-reraise e))
+                     (semaphore-post done)
+                     e)
+                   (lambda ()
+                     (pset! p (call-with-values thunk list))
+                     (semaphore-post done))))))
+            #f
+            p v)
           ;; whether it was this thread that forced it or not, the results are
           ;; now in
           (pref p)]))))
