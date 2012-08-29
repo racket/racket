@@ -38,18 +38,20 @@
 
     (define/private (call* proc chan as-evt?)
       (thread-resume mthread (current-thread))
-      (let* ([return-channel (make-channel)]
+      (let* ([result #f]
+             [sema (make-semaphore 0)]
              [proc (lambda ()
-                     (channel-put return-channel
-                                  (with-handlers ([(lambda (e) #t)
-                                                   (lambda (e) (cons 'exn e))])
-                                    (cons 'values (call-with-values proc list)))))]
+                     (set! result
+                           (with-handlers ([(lambda (e) #t)
+                                            (lambda (e) (cons 'exn e))])
+                             (cons 'values (call-with-values proc list))))
+                     (semaphore-post sema))]
              [handler
               (lambda (_evt)
-                (let ([result (channel-get return-channel)])
-                  (case (car result)
-                    ((values) (apply values (cdr result)))
-                    ((exn) (raise (cdr result))))))])
+                (semaphore-wait sema)
+                (case (car result)
+                  ((values) (apply values (cdr result)))
+                  ((exn) (raise (cdr result)))))])
         (if as-evt?
             (wrap-evt (channel-put-evt chan proc) handler)
             (begin (channel-put chan proc)
