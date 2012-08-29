@@ -111,7 +111,10 @@ group} specified by @racket[thread-group-expr], which defaults to
 appear at most once.
 
 Exceptions raised by the @racket[body]s are caught as usual and raised
-only when the promise is @racket[force]d.}
+only when the promise is @racket[force]d. Unlike @racket[delay/sync],
+if the thread running @racket[body] terminates without producing a result
+or exception, @racket[force] of the promise raises an exception (instead
+of blocking).}
 
 @defform/subs[(delay/idle body/option ...+)
               ([body/option body
