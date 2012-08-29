@@ -1,6 +1,8 @@
 #lang scribble/doc
 @(require "common.rkt")
 
+@centered{@image[#:suffixes @list[".png"]]{image/message}}
+
 @defclass/title[message% object% (control<%>)]{
 
 A message control is a static line of text or a static bitmap. The

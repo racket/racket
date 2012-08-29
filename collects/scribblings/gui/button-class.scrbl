@@ -1,6 +1,8 @@
 #lang scribble/doc
 @(require "common.rkt")
 
+@centered{@image[#:suffixes @list[".png"]]{image/button}}
+
 @defclass/title[button% object% (control<%>)]{
 
 Whenever a button is clicked by the user, the button's callback

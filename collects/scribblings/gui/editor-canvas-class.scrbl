@@ -1,6 +1,8 @@
 #lang scribble/doc
 @(require "common.rkt")
 
+@centered{@image[#:suffixes @list[".png"]]{image/editor-canvas}}
+
 @defclass/title[editor-canvas% object% (canvas<%>)]{
 
 An @racket[editor-canvas%] object manages and displays a
