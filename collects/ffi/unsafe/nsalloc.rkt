@@ -18,11 +18,13 @@
 (define (call-with-autorelease thunk)
   (unless NSAutoreleasePool
     (error 'NSAutoreleasePool "not available"))
-  (call-as-atomic
+  (dynamic-wind
+   start-atomic
    (lambda ()
      (let ([pool (tell (tell NSAutoreleasePool alloc) init)])
        (dynamic-wind
            void
            thunk
            (lambda ()
-             (tellv pool release)))))))
+             (tellv pool release)))))
+   end-atomic))
