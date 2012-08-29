@@ -8,7 +8,7 @@
 
 ;; libtermcap needed on some platforms
 (define libtermcap  (with-handlers ([exn:fail? void]) (ffi-lib "libtermcap")))
-(define libreadline (ffi-lib "libreadline" '("6" "5" "4" "")))
+(define libreadline (ffi-lib "libreadline" '("5" "6" "4" "")))
 
 (define make-byte-string ; helper for the two types below
   (get-ffi-obj "scheme_make_byte_string" #f (_fun _pointer -> _scheme)))
