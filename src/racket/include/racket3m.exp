@@ -22,6 +22,7 @@ scheme_fuel_counter
 scheme_current_thread_ptr
 scheme_fuel_counter_ptr
 scheme_get_current_thread
+scheme_is_atomic
 scheme_start_atomic
 scheme_end_atomic
 scheme_end_atomic_no_swap

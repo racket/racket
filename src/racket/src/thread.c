@@ -4971,6 +4971,11 @@ void scheme_thread_block_enable_break(float sleep_time, int enable_break)
     scheme_thread_block(sleep_time);
 }
 
+int scheme_is_atomic(void)
+{
+  return !!do_atomic;
+}
+
 void scheme_start_atomic(void)
 {
   do_atomic++;

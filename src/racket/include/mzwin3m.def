@@ -24,6 +24,7 @@ EXPORTS
  scheme_current_thread_ptr DATA
  scheme_fuel_counter_ptr DATA
  scheme_get_current_thread
+ scheme_is_atomic
  scheme_start_atomic
  scheme_end_atomic
  scheme_end_atomic_no_swap

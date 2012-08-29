@@ -30,6 +30,7 @@
 # endif
 #endif
   scheme_extension_table->scheme_get_current_thread = scheme_get_current_thread;
+  scheme_extension_table->scheme_is_atomic = scheme_is_atomic;
   scheme_extension_table->scheme_start_atomic = scheme_start_atomic;
   scheme_extension_table->scheme_end_atomic = scheme_end_atomic;
   scheme_extension_table->scheme_end_atomic_no_swap = scheme_end_atomic_no_swap;
