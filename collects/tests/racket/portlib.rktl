@@ -285,6 +285,48 @@
     (go-stream #t #f #t #t)
     (go-stream #t #t #t #t)))
 
+;; Check port shortcuts for `make-input-port' and `make-output-port' with
+;; pipes and specials
+(let-values ([(i o) (make-pipe-with-specials 5)])
+  (define i2 (make-input-port
+              (object-name i)
+              i
+              i
+              void))
+  (define o2 (make-output-port
+              (object-name o)
+              o
+              o
+              void
+              o))
+  (test #f sync/timeout 0 i2)
+  (test o2 sync/timeout 0 o2)
+  (write-bytes #"01234" o2)
+  (test #f sync/timeout 0 o2)
+  (test i2 sync/timeout 0 i2)
+  (test #"01234" read-bytes 5 i2)
+  (test 0 read-bytes-avail!* (make-bytes 3) i2)
+  (thread (lambda () 
+            (sync (system-idle-evt))
+            (write-bytes #"5" o2)))
+  (test #\5 read-char i2)
+  (let ([s (make-bytes 6)])
+    (thread (lambda () 
+              (sync (system-idle-evt))
+              (test 5 write-bytes-avail #"6789ab" o2)))
+    (test 5 read-bytes-avail! s i2)
+    (test #"6789a\0" values s))
+
+  (test #t port-writes-special? o2)
+  (write-special 'ok o2)
+  (test 'ok read-byte-or-special i2)
+
+  (test #t write-special-avail* 'ok-again o2)
+  (test i2 sync i2)
+  (test 'ok-again read-byte-or-special i2)
+
+  (void))
+
 ;; make-input-port/read-to-peek
 (define (make-list-port #:eof-as-special? [eof-as-special? #f] . l)
   (make-input-port/read-to-peek 
@@ -787,7 +829,7 @@
   (port-count-lines! i2)
   (test-values '(1 0 1) (lambda () (port-next-location i)))
   (test-values '(2 0 2) (lambda () (port-next-location i2)))
-  (read-byte i)
+  (test (char->integer #\x) read-byte i)
   (test-values '(1 1 2) (lambda () (port-next-location i)))
   (test-values '(2 2 4) (lambda () (port-next-location i2)))
   (test (file-stream-buffer-mode i) file-stream-buffer-mode i2))

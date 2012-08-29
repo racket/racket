@@ -1565,6 +1565,7 @@ static int input_port_SIZE(void *p, struct NewGC *gc) {
 static int input_port_MARK(void *p, struct NewGC *gc) {
   Scheme_Input_Port *ip = (Scheme_Input_Port *)p;
   
+  gcMARK2(ip->p.position_redirect, gc);
   gcMARK2(ip->sub_type, gc);
   gcMARK2(ip->port_data, gc);
   gcMARK2(ip->name, gc);
@@ -1591,6 +1592,7 @@ static int input_port_MARK(void *p, struct NewGC *gc) {
 static int input_port_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Input_Port *ip = (Scheme_Input_Port *)p;
   
+  gcFIXUP2(ip->p.position_redirect, gc);
   gcFIXUP2(ip->sub_type, gc);
   gcFIXUP2(ip->port_data, gc);
   gcFIXUP2(ip->name, gc);
@@ -1626,6 +1628,7 @@ static int output_port_SIZE(void *p, struct NewGC *gc) {
 static int output_port_MARK(void *p, struct NewGC *gc) {
   Scheme_Output_Port *op = (Scheme_Output_Port *)p;
 
+  gcMARK2(op->p.position_redirect, gc);
   gcMARK2(op->sub_type, gc);
   gcMARK2(op->port_data, gc);
   gcMARK2(op->name, gc);
@@ -1643,6 +1646,7 @@ static int output_port_MARK(void *p, struct NewGC *gc) {
 static int output_port_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Output_Port *op = (Scheme_Output_Port *)p;
 
+  gcFIXUP2(op->p.position_redirect, gc);
   gcFIXUP2(op->sub_type, gc);
   gcFIXUP2(op->port_data, gc);
   gcFIXUP2(op->name, gc);

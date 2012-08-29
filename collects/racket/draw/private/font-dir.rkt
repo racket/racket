@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/class
          racket/contract/base
+         "lock.rkt"
          "font-syms.rkt")
 
 (provide font-name-directory<%>
@@ -16,11 +17,12 @@
     (define screen-table (make-hash))
 
     (define/private (intern val)
-      (hash-ref table val (lambda ()
-                            (let ([n (add1 (hash-count table))])
-                              (hash-set! table val n)
-                              (hash-set! reverse-table n val)
-                              n))))
+      (atomically
+       (hash-ref table val (lambda ()
+                             (let ([n (add1 (hash-count table))])
+                               (hash-set! table val n)
+                               (hash-set! reverse-table n val)
+                               n)))))
 
     (for-each (lambda  (s) (intern s))
               '(default decorative roman script
@@ -33,17 +35,17 @@
       (intern (cons name family)))
 
     (define/public (get-face-name id)
-      (let ([v (hash-ref reverse-table id #f)])
+      (let ([v (atomically (hash-ref reverse-table id #f))])
         (and v (pair? v) (car v))))
     
     (define/public (get-family id)
-      (let ([v (hash-ref reverse-table id #f)])
+      (let ([v (atomically (hash-ref reverse-table id #f))])
         (or (and (pair? v) (cdr v))
             (and (symbol? v) v)
             'default)))
 
     (define/public (get-font-id name family)
-      (hash-ref table (cons string family) 0))
+      (atomically (hash-ref table (cons string family) 0)))
 
     (define/private (default-font s)
       (case s
@@ -68,26 +70,28 @@
                 [else "Sans"])]))
 
     (define/public (get-post-script-name id w s)
-      (let ([s (or (hash-ref ps-table (list id w s) #f)
-                   (hash-ref reverse-table id #f))])
+      (let ([s (atomically
+                (or (hash-ref ps-table (list id w s) #f)
+                    (hash-ref reverse-table id #f)))])
         (cond
          [(pair? s) (car s)]
          [(symbol? s) (default-font s)]
          [else "Serif"])))
 
     (define/public (get-screen-name id w s)
-      (let ([s (or (hash-ref screen-table (list id w s) #f)
-                   (hash-ref reverse-table id #f))])
+      (let ([s (atomically
+                (or (hash-ref screen-table (list id w s) #f)
+                    (hash-ref reverse-table id #f)))])
         (cond
          [(pair? s) (car s)]
          [(symbol? s) (default-font s)]
          [else "Serif"])))
 
     (define/public (set-post-script-name id w s name)
-      (hash-set! ps-table (list id w s) name))
+      (atomically (hash-set! ps-table (list id w s) name)))
 
     (define/public (set-screen-name id w s name)
-      (hash-set! screen-table (list id w s) name))
+      (atomically (hash-set! screen-table (list id w s) name)))
 
     (super-new)))
 

@@ -2155,6 +2155,7 @@
                                [(-Port (one-of/c 'none 'line 'block)) -Void])]
 [file-position (cl-> [(-Port) -Nat]
                      [(-Port -Integer) -Void])]
+[file-position* (-> -Port (Un -Nat (-val #f)))]
 
 ;Section 12.1.4
 [port-count-lines! (-> (Un -Input-Port -Output-Port) -Void)]

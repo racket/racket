@@ -599,6 +599,7 @@ input_port {
  mark:
   Scheme_Input_Port *ip = (Scheme_Input_Port *)p;
   
+  gcMARK2(ip->p.position_redirect, gc);
   gcMARK2(ip->sub_type, gc);
   gcMARK2(ip->port_data, gc);
   gcMARK2(ip->name, gc);
@@ -626,6 +627,7 @@ output_port {
  mark:
   Scheme_Output_Port *op = (Scheme_Output_Port *)p;
 
+  gcMARK2(op->p.position_redirect, gc);
   gcMARK2(op->sub_type, gc);
   gcMARK2(op->port_data, gc);
   gcMARK2(op->name, gc);

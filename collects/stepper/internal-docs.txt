@@ -297,3 +297,26 @@ collision can occur.
 stepper-hint.  To resolve this, the expansion of let allows an existing
 stepper-hint to stand.
 
+
+KINDS OF BREAKPOINTS:
+
+'normal-break : occurs before an expression's evaluation. The "before"
+  steps.
+
+'result-exp-break : occurs before an expression's evaluation that is the
+  "after" of some other step. E.G., the rhs of a cond, the body of
+  a procedure, etc.
+
+'result-value-break : occurs when a value is returned. Also corresponds
+  to an "after" step.
+
+'normal-break/values : occurs before an expression's evaluation, when
+  that expression has intermediate values. For instance, an "if"'s
+  reduction occurs after its test value has been evaluated, so the
+  "before" step for the "if" must already know about the test value.
+
+'expr-finished-break : occurs when a top-level expression is complete.
+
+'double-break : occurs as part of the evaluation of a let or local,
+  after the evaluation of all the binding rhses. Called a double-break
+  because it must generate two steps.

@@ -68,15 +68,42 @@ failed, and anything else to indicate it passed.}
 
 ]
 
+Contracts in Racket are subdivided into three different categories:
+@itemlist[@item{@deftech{Flat contract}s can be fully checked immediately for
+                 a given value. These kinds of contracts are essentially
+                 predicate functions. Using @racket[flat-contract-predicate],
+                 you can extract the predicate from a flat contract, and
+                 @racket[flat-contract?] recognizes a flat contract.}
+          @item{@deftech{Chaperone contracts} are not always immediately
+                 checkable, but are guaranteed to not change any properties
+                 of any values that they check. That is, they may wrap
+                 a value in such a way that it signals contract violations
+                 later, as the value is used (e.g., a function contract
+                 checks the inputs and outputs to the function only when
+                 the function is called and returned), but any properties
+                 that the value had before being wrapped by the contract
+                 are preserved by the contract wrapper. 
+                 
+                 All flat contracts are also chaperone contracts (but
+                 not vice-versa).}
+         @item{@deftech{Impersonator contracts} do not provide any 
+                guarantees about values they check. Impersonator contracts
+                may hide properties of values, or even make them completely
+                opaque (e.g, @racket[new-∀/c]).
+                
+                All contracts are impersonator contracts.}]
+
+For more about this hierarchy, see @tech{chaperones} and
+a research paper on chaperones, impersonators, and how they can be used to 
+implement contracts @cite{Strickland12}.
+
+
 @local-table-of-contents[]
 
 @; ----------------------------------------
 
 @section[#:tag "data-structure-contracts"]{Data-structure Contracts}
 @declare-exporting-ctc[racket/contract/base]
-
-A @deftech{flat contract} can be fully checked immediately for
-a given value.
 
 @defproc[(flat-contract [predicate (any/c . -> . any/c)]) flat-contract?]{
 

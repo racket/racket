@@ -292,16 +292,19 @@
   
   (define/override (on-size)
     (unless noloop?
-      (unless (and media
-                   (send media get-printing))
-        (begin-refresh-sequence)
-        (let-boxes ([w 0]
-                    [h 0])
-            (get-size w h)
-          (unless (and (= w lastwidth)
-                       (= h lastheight))
-            (reset-size)))
-        (end-refresh-sequence))))
+      (queue-window-callback
+       this
+       (lambda ()
+         (unless (and media
+                      (send media get-printing))
+           (begin-refresh-sequence)
+           (let-boxes ([w 0]
+                       [h 0])
+               (get-size w h)
+             (unless (and (= w lastwidth)
+                          (= h lastheight))
+               (reset-size)))
+           (end-refresh-sequence))))))
 
   (define/private (reset-size)
     (reset-visual #f)

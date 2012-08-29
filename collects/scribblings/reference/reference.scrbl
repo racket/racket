@@ -182,6 +182,12 @@ The @racketmodname[racket] library combines
              #:url "http://srfi.schemers.org/srfi-42/"
              #:date "2003")
 
+  (bib-entry #:key "Strickland12"
+             #:title "Chaperones and Impersonators: Run-time Support for Reasonable Interposition"
+             #:author "T. Stephen Strickland, Sam Tobin-Hochstadt, Matthew Flatt, and Robert Bruce Findler"
+             #:location "Object-Oriented Programming, Systems, and Languages (OOPSLA"
+             #:url "http://www.eecs.northwestern.edu/~robby/pubs/papers/oopsla2012-stff.pdf"
+             #:date "2012")
   )
 
 @;------------------------------------------------------------------------

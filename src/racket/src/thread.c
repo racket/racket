@@ -4984,7 +4984,11 @@ void scheme_start_atomic_no_break(void)
 
 void scheme_end_atomic_no_swap(void)
 {
-  --do_atomic;
+  int v = --do_atomic;
+  if (v < 0) {
+    scheme_log_abort("unbalanced end-atomic");
+    abort();
+  }
 }
 
 void scheme_start_in_scheduler(void)
@@ -4995,8 +4999,12 @@ void scheme_start_in_scheduler(void)
       
 void scheme_end_in_scheduler(void)
 {
-  --do_atomic;
+  int v = --do_atomic;
   --scheme_no_stack_overflow;
+  if (v < 0) {
+    scheme_log_abort("unbalanced end-atomic");
+    abort();
+  }
 }
 
 void scheme_end_atomic(void)

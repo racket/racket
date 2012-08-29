@@ -3578,6 +3578,7 @@ Scheme_Object *scheme_do_open_input_file(char *name, int offset, int argc, Schem
 Scheme_Object *scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv[], int and_read, 
                                           int internal, char **err, int *eerrno);
 Scheme_Object *scheme_file_position(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_file_position_star(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_file_buffer(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_file_identity(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_file_try_lock(int argc, Scheme_Object **argv);
@@ -3630,6 +3631,18 @@ intptr_t scheme_port_closed_p (Scheme_Object *port);
 #endif
 
 #define MAX_UTF8_CHAR_BYTES 6
+
+intptr_t scheme_redirect_write_bytes(Scheme_Output_Port *op,
+                                     const char *str, intptr_t d, intptr_t len,
+                                     int rarely_block, int enable_break);
+int scheme_redirect_write_special (Scheme_Output_Port *op, Scheme_Object *v, int nonblock);
+intptr_t scheme_redirect_get_or_peek_bytes(Scheme_Input_Port *orig_port,
+                                           Scheme_Input_Port *port,
+                                           char *buffer, intptr_t offset, intptr_t size,
+                                           int nonblock,
+                                           int peek, Scheme_Object *peek_skip,
+                                           Scheme_Object *unless,
+                                           Scheme_Schedule_Info *sinfo);
 
 /*========================================================================*/
 /*                         memory debugging                               */

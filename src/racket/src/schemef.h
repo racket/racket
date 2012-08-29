@@ -822,6 +822,7 @@ MZ_EXTERN intptr_t scheme_get_char_string(const char *who,
 MZ_EXTERN intptr_t scheme_get_bytes(Scheme_Object *port, intptr_t size, char *buffer, int offset);
 MZ_EXTERN Scheme_Object *scheme_get_ready_special(Scheme_Object *port, Scheme_Object *stxsrc, int peek);
 MZ_EXTERN intptr_t scheme_tell(Scheme_Object *port);
+MZ_EXTERN intptr_t scheme_tell_can_redirect(Scheme_Object *port, int not_via_loc);
 MZ_EXTERN intptr_t scheme_output_tell(Scheme_Object *port);
 MZ_EXTERN intptr_t scheme_tell_line(Scheme_Object *port);
 MZ_EXTERN intptr_t scheme_tell_column(Scheme_Object *port);

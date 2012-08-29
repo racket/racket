@@ -207,7 +207,7 @@
   (define steps-received 0)
   
   (define break
-    (lambda (mark-set break-kind [returned-value-list #f])
+    (lambda (mark-set break-kind returned-value-list)
       (when DEBUG
         (printf "\n---------- BREAK TYPE = ~a ----------\n" break-kind))
       
@@ -516,14 +516,14 @@
         ;; break when lifting is off.
         (lambda (stx dont-care) (list stx))))
   
-  (define (step-through-expression expanded expand-next-expression)
-    (define show-lambdas-as-lambdas?
+  (define show-lambdas-as-lambdas?
       (render-settings-show-lambdas-as-lambdas? render-settings))
-    (let* ([annotated (a:annotate expanded break
-                                  show-lambdas-as-lambdas?)])
-      (parameterize ([test-engine:test-silence #t])
-        (eval-syntax annotated))
-      (expand-next-expression)))
+  
+  ;; step through a single expanded expression.
+  (define (step-through-expression expanded)  
+    (define annotated (a:annotate expanded break show-lambdas-as-lambdas?))
+    (parameterize ([test-engine:test-silence #t])
+      (eval-syntax annotated)))
   
   (define (err-display-handler message exn)
     (match held-exp-list
@@ -538,15 +538,15 @@
          (set! held-exp-list the-no-sexp))]))
   
   (program-expander
-   (lambda ()
+   (lambda () ; init
      (unless disable-error-handling?
        (error-display-handler err-display-handler)))
    (lambda (expanded continue-thunk) ; iter
      (r:reset-special-values)
      (if (eof-object? expanded)
-         (begin
-           (receive-result (finished-stepping)))
-         (step-through-expression expanded continue-thunk)))))
+         (receive-result (finished-stepping))
+         (begin (step-through-expression expanded)
+                (continue-thunk))))))
 
 
 ; no-sexp is used to indicate no sexpression for display.
