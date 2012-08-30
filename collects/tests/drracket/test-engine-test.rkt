@@ -29,6 +29,11 @@
                    (list (make-check-expect-failure "1" "2" 3 2)))
   
   (unless dmda?
+    (test-expression (format "~s" '(check-error (first 212) "first: expects a non-empty list; given: 212"))
+                     "The test passed!"
+                     #:repl-expected "Both tests passed!"))
+  
+  (unless dmda?
     (test-expression "(check-expect (car 0) 2)"
                      "car: expects a pair, given 0"
                      #:check-failures-expected
