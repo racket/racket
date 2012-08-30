@@ -154,6 +154,12 @@ identifier table (free or bound, mutable or immutable), @racket[#f]
 otherwise.
 }
 
+@defproc[(free-id-table/c [val contract?]
+                          [#:immutable immutable (or/c #t #f 'dont-care) 'dont-care])
+         contract?]{
+
+Like @racket[hash/c], but more limited. It only supports contracts on the values in the identifier table.
+}
 
 @;{----------}
 @section{Dictionaries for @racket[bound-identifier=?]}
@@ -204,6 +210,9 @@ etc) can be used on bound-identifier tables.
          void?]
 @defproc[(bound-id-table-count [table bound-id-table?])
          exact-nonnegative-integer?]
+@defproc[(bound-id-table/c [val contract?]
+                           [#:immutable immutable (or/c #t #f 'dont-care) 'dont-care])
+         contract?]
 @;{
 @defproc[(bound-id-table-iterate-first [table bound-id-table?])
          id-table-position?]
