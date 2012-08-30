@@ -249,7 +249,7 @@
   (let* ([drs (test:get-active-top-level-window)]
          [interactions (send drs get-interactions-text)])
     (clear-definitions drs)
-    (type-in-definitions drs expression)
+    (insert-in-definitions drs expression)
     (do-execute drs)
     (let ([got (fetch-output/should-be-tested drs)])
       (unless (string=? result got)
@@ -382,10 +382,10 @@
          [definitions-text (queue-callback/res (λ () (send drs get-definitions-text)))]
          [handle-definition-insertion
           (lambda (item)
-	    (type-in-definitions drs item))]
+	    (insert-in-definitions drs item))]
          [handle-interaction-insertion
           (lambda (item)
-	    (type-in-interactions drs item))]
+	    (insert-in-interactions drs item))]
          [check-expectation
           (lambda (expected got)
             (cond
