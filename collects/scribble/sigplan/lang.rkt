@@ -68,8 +68,8 @@ Read here for more:
                    (string->bytes/utf-8
                     (format "\\documentclass~a{sigplanconf}\n~a~a~a~a"
                             options
-                            "\\usepackage[utf8]{inputenc}"
-                            "\\usepackage[T1]{fontenc}"
+                            "\\usepackage[utf8]{inputenc}\n"
+                            "\\usepackage[T1]{fontenc}\n"
                             (if times? 
                                 "\\usepackage{times}\n"
                                 "")
