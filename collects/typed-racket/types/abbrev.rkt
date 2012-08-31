@@ -6,6 +6,7 @@
          (utils tc-utils)
          "base-abbrev.rkt"
          (types union numeric-tower)
+         (env mvar-env)
          racket/list
          racket/match
          racket/function

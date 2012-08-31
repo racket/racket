@@ -13,7 +13,7 @@
          (rep type-rep)
          (types utils abbrev type-table)
          (private parse-type type-annotation type-contract)
-         (env global-env init-envs type-name-env type-alias-env lexical-env env-req)
+         (env global-env init-envs type-name-env type-alias-env lexical-env env-req mvar-env)
          syntax/id-table
          (utils tc-utils mutated-vars)
          "provide-handling.rkt"
@@ -350,6 +350,7 @@
               #,(env-init-code syntax-provide? provide-tbl def-tbl)
               #,(talias-env-init-code)
               #,(tname-env-init-code)
+              #,(mvar-env-init-code mvar-env)
               #,(make-struct-table-code)
               #,@(for/list ([a (in-list aliases)])
                    (match a

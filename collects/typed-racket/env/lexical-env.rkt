@@ -10,11 +10,12 @@
          "type-env-structs.rkt"
          "global-env.rkt"
          "../types/kw-types.rkt"
+         "mvar-env.rkt"
          syntax/id-table
          racket/keyword-transform racket/list
          (for-syntax syntax/parse syntax/parse/experimental/contract racket/base)
          (only-in racket/contract ->* -> or/c any/c listof cons/c)
-         (utils tc-utils mutated-vars)
+         (utils tc-utils)
          (only-in (rep type-rep) Type/c)
          (typecheck tc-metafunctions)
          (except-in (types utils abbrev) -> ->*))

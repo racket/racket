@@ -5,12 +5,13 @@
          "global-env.rkt"
          "type-name-env.rkt"
          "type-alias-env.rkt"
+         "mvar-env.rkt"
          (rep type-rep object-rep filter-rep rep-utils)
          (for-template (rep type-rep object-rep filter-rep)
                        (types union abbrev)
                        racket/shared racket/base)
          (types abbrev)
-         racket/syntax
+         racket/syntax racket/dict
          mzlib/pconvert racket/match)
 
 (define (initialize-type-name-env initial-type-names)
@@ -101,6 +102,12 @@
                  (show-sharing #f)
                  (booleans-as-true/false #f))
     #`(begin #,@(filter values (type-env-map f)))))
+
+(define (mvar-env-init-code mvar-env)
+  (define (f id v)
+    (and v (bound-in-this-module id)
+         #`(register-mutated-var #'#,id)))
+  #`(begin #,@(filter values (dict-map mvar-env f))))
 
 
 

@@ -6,7 +6,7 @@
          (private type-contract)
          (types utils)
          (typecheck typechecker provide-handling tc-toplevel)
-         (env tvar-env type-name-env type-alias-env env-req)
+         (env tvar-env type-name-env type-alias-env env-req mvar-env)
          (utils tc-utils disarm mutated-vars debug)
          (rep type-rep)
          (for-syntax racket/base)
@@ -58,8 +58,8 @@
         (do-time "Local Expand Done")
         (init)
         (do-time "Initialized Envs")
-        (parameterize ([mutated-vars (find-mutated-vars fully-expanded-stx)]
-                       [orig-module-stx (or (orig-module-stx) orig-stx)]
+        (find-mutated-vars fully-expanded-stx mvar-env)
+        (parameterize ([orig-module-stx (or (orig-module-stx) orig-stx)]
                        [expanded-module-stx fully-expanded-stx]
                        [debugging? #f])
           (do-time "Starting `checker'")
