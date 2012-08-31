@@ -5632,6 +5632,8 @@ call_with_continuation_barrier (int argc, Scheme_Object *argv[])
 {
   scheme_check_proc_arity("call-with-continuation-barrier", 0, 0, argc, argv);
 
+  /* scheme_apply_multi() is a top-level evaluation function and will
+     thus install a continuation barrier */
   return scheme_apply_multi(argv[0], 0, NULL);
 }
 
