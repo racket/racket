@@ -1456,7 +1456,9 @@ be a result of @racket[path->main-collects-relative].
 Languages (used with @hash-lang[]) like
 @racketmodname[scribble/manual] and @racketmodname[scribble/sigplan]
 add this property to a document to specify appropriate files for Latex
-rendering.}
+rendering.
+
+See also @racketmodname[scribble/latex-prefix].}
 
 
 @defstruct[latex-auto-extra-files ([paths (listof (or/c path-string? 

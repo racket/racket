@@ -2,7 +2,8 @@
 @(require scribble/manual scribble/core scribble/decode
           scribble/html-properties scribble/latex-properties
           "utils.rkt"
-          (for-label racket/base))
+          (for-label racket/base
+                     scribble/latex-prefix))
 
 @(define (fake-title . str) (apply bold str))
 
@@ -264,3 +265,15 @@ style:
 
 ]
 
+@; ------------------------------------------------------------
+
+@section[#:tag "latex-prefix"]{Latex Prefix Support}
+
+@defmodule[scribble/latex-prefix]{Provides a string that is useful for
+constructing a Latex document prefix.}
+
+@defthing[unicode-encoding-packages string?]{
+
+A string containing Latex code that is useful after a
+@tt{\documentclass} declaration to make Latex work with Unicode
+characters.}

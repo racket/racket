@@ -9,6 +9,7 @@
          setup/main-collects
          scribble/html-properties
          scribble/latex-properties
+         scribble/latex-prefix
          racket/stxparam
          net/ftp
          file/gunzip
@@ -43,7 +44,8 @@
 
 (define ((post-process) doc)
   (add-defaults doc
-                (string->bytes/utf-8 "\\documentclass{llncs}\n") 
+                (string->bytes/utf-8 (string-append "\\documentclass{llncs}\n"
+                                                    unicode-encoding-packages))
                 (scribble-file "lncs/style.tex")
                 (list cls-file)
                 #f))
