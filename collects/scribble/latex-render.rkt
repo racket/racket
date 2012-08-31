@@ -785,6 +785,11 @@
                      [(#\uDF) "{\\ss}"]
                      [else
                       (if ((char->integer c) . > . 127)
+                          ;; latex-prefix.rkt enables utf8 input, but this does not work for
+                          ;; all the characters below (e.g. ∞). Some parts of the table
+                          ;; below are therefore necessary, but some parts probably are not.
+                          ;; Which parts are necessary may depend on the latex version,
+                          ;; though, so we keep this table around to avoid regressions.
                           (case c
                             [(#\u2011) "\\mbox{-}"] ; non-breaking hyphen
                             [(#\uB0) "$^{\\circ}$"] ; degree
