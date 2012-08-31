@@ -1840,6 +1840,8 @@
                     (lambda () (read-char p*)))
                   eof)]])))
 
+  (define in-directory-tag (make-continuation-prompt-tag 'in-directory))
+
   (define in-directory
     (case-lambda
       [(dir)
@@ -1852,7 +1854,7 @@
                             (define (reply v)
                               (let/cc k
                                 (abort-current-continuation
-                                 (default-continuation-prompt-tag)
+                                 in-directory-tag
                                  (lambda () (cons (lambda () v) k)))))
                             (let loop ([dir (path->complete-path (or dir (current-directory)))]
                                        [prefix dir])
@@ -1862,14 +1864,16 @@
                                   (reply p)
                                   (when (directory-exists? fp)
                                     (loop fp p)))))
-                            (reply eof))))])
+                            (reply eof))
+                          in-directory-tag))])
          (make-do-sequence
           (lambda ()
             (values
              (lambda (gen) ((car gen)))
              (lambda (gen) (call-with-continuation-prompt
                             (lambda ()
-                              ((cdr gen)))))
+                              ((cdr gen)))
+                            in-directory-tag))
              (make-gen)
              (lambda (gen) (not (eof-object? ((car gen)))))
              (lambda (val) #t)

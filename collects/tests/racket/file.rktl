@@ -1530,5 +1530,20 @@
     (err/rt-test (udp-send-to early-udp "localhost" 40000 #"hi")  (net-reject? 'udp-send-to "localhost" 40000 'client))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that `in-directory' fails properly on filesystem errors
+
+(let ()
+  (define tmp (build-path (build-path (find-system-path 'temp-dir))
+                          (format "in-dir-tmp-dir~a" (random 1000))))
+  (define sub (build-path tmp "sub"))
+  (make-directory* tmp)
+  (make-directory* sub)
+  (file-or-directory-permissions sub #o000)
+  (file-or-directory-permissions sub)
+  (err/rt-test (for ([v (in-directory sub)]) v) exn:fail:filesystem?)
+  (delete-directory sub)
+  (delete-directory/files tmp))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
