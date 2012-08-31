@@ -157,19 +157,20 @@
                                        ((length number) . > . 3)))])
               (printf "\n\n\\~a~a~a"
                       (case (+ (length number) (or (render-part-depth) 0))
-                        [(0 1) "sectionNewpage\n\n\\section"]
-                        [(2) "subsection"]
-                        [(3) "subsubsection"]
-                        [else "subsubsection"])
+                        [(0 1) "sectionNewpage\n\n\\Ssection"]
+                        [(2) "Ssubsection"]
+                        [(3) "Ssubsubsection"]
+                        [(4) "Ssubsubsubsection"]
+                        [else "Ssubsubsubsubsection"])
                       (if (and (part-style? d 'hidden) (not no-number?))
                           "hidden" "")
-                      (if no-number? "*" ""))
+                      (if no-number? "star" ""))
               (when (not (or (part-style? d 'hidden) no-number?))
-                (printf "[")
+                (printf "{")
                 (parameterize ([disable-images #t]
                                [escape-brackets #t])
                   (render-content (part-title-content d) d ri))
-                (printf "]")))
+                (printf "}")))
             (printf "{")
             (render-content (part-title-content d) d ri)
             (printf "}")

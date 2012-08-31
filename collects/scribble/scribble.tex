@@ -149,12 +149,30 @@
 % Useful for some styles, such as sigalternate:
 \newcommand{\SNumberOfAuthors}[1]{}
 
-% Used for parts with the 'hidden style variant:
-\newcommand{\sectionhidden}[1]{\section{#1}}
-\newcommand{\subsectionhidden}[1]{\subsection{#1}}
-\newcommand{\subsubsectionhidden}[1]{\subsubsection{#1}}
+% sections
+\newcommand{\Ssection}[2]{\section[#1]{#2}}
+\newcommand{\Ssubsection}[2]{\subsection[#1]{#2}}
+\newcommand{\Ssubsubsection}[2]{\subsubsection[#1]{#2}}
+\newcommand{\Ssubsubsubsection}[2]{{\bf #2}}
+\newcommand{\Ssubsubsubsubsection}[2]{\Ssubsubsubsection{#1}{#2}}
 
-\newcommand{\SSubSubSubSection}[1]{{\bf #1}}
+\newcommand{\Ssectionstar}[1]{\section*{#1}}
+\newcommand{\Ssubsectionstar}[1]{\subsection*{#1}}
+\newcommand{\Ssubsubsectionstar}[1]{\subsubsection*{#1}}
+\newcommand{\Ssubsubsubsectionstar}[1]{{\bf #1}}
+\newcommand{\Ssubsubsubsubsectionstar}[1]{\Ssubsubsubsectionstar{#1}}
+
+\newcommand{\Ssectionhidden}[1]{\sectionhidden{#1}}
+\newcommand{\Ssubsectionhidden}[1]{\subsectionhidden{#1}}
+\newcommand{\Ssubsubsectionhidden}[1]{\subsubsectionhidden{#1}}
+\newcommand{\Ssubsubsubsectionhidden}[1]{\subsubsubsectionhidden{#1}}
+\newcommand{\Ssubsubsubsubsectionhidden}[1]{\Ssubsubsubsectionhidden{#1}}
+
+% Used for parts with the 'hidden style variant:
+\newcommand{\sectionhidden}[1]{\Ssection{#1}}
+\newcommand{\subsectionhidden}[1]{\Ssubsection{#1}}
+\newcommand{\subsubsectionhidden}[1]{\Ssubsubsection{#1}}
+\newcommand{\subsubsubsectionhidden}[1]{\Ssubsubsubsection{#1}}
 
 % For hidden parts with an empty title:
 \newcommand{\notitlesection}{\vspace{2ex}\phantomsection\noindent}

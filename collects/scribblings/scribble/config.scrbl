@@ -263,6 +263,24 @@ style:
  @item{@ltxd[2]{SecRefUC} --- like @ltx{BookRef}, but for @racket[Secref].
        The default shows defers to @ltx{BookRef}.}
 
+ @item{@ltxd[2]{Ssection}, @ltxd[2]{Ssubsection},
+        @ltxd[2]{Ssubsubsection}, @ltxd[2]{Ssubsubsubsection},
+        @ltxd[2]{Ssubsubsubsubsection} --- for a top-level section, a
+        second-level section, etc., where the last variant is used for
+        all sections that are deeper than four levels. The first
+        argument corresponds to the optional argument to
+        @ltx{section}, which is used for the table of contents.}
+
+ @item{@ltxd[1]{Ssectionstar}, @ltxd[1]{Ssubsectionstar},
+        @ltxd[1]{Ssubsubsectionstar}, @ltxd[1]{Ssubsubsubsectionstar},
+        @ltxd[1]{Ssubsubsubsubsectionstar} --- like @ltx{Ssection},
+        etc., but for unnumbered sections.}
+
+ @item{@ltxd[1]{Ssectionhidden}, @ltxd[1]{Ssubsectionhidden},
+        @ltxd[1]{Ssubsubsectionhidden}, @ltxd[1]{Ssubsubsubsectionhidden},
+        @ltxd[1]{Ssubsubsubsubsectionhidden} --- like @ltx{Ssection},
+        etc., but for sections with the @racket['hidden] style property.}
+
 ]
 
 @; ------------------------------------------------------------
