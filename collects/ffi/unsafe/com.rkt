@@ -1869,7 +1869,6 @@
                         method-result))
               (cond
                [(zero? hr)
-                                (log-error (format "result kind: ~s" (VARIANT-vt method-result)))
                 (begin0
                  (if method-result
                      (variant-to-scheme method-result)
