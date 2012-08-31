@@ -120,10 +120,14 @@
       ;; source is either a copy of the definitions text (we're not in the
       ;; main thread, so operating on the definitions directly is a bad idea)
       ;; or #f, in which case the report cache is used.
-      (define/public (add-highlights #:source [source #f])
+      ;; profile is either a list of analyzed profile nodes (in which case we
+      ;; use it to refine the report) or #f. Profile information causes the
+      ;; report to be recomputed, invalidating the cache.
+      (define/public (add-highlights #:source  [source  #f]
+                                     #:profile [profile #f])
         (clear-highlights)
-        (unless (and report-cache (not source))
-          (set! report-cache (generate-report source)))
+        (unless (and report-cache (not source) (not profile))
+          (set! report-cache (generate-report source profile)))
         (define report
           (collapse-report
            (for/list ([entry (in-list report-cache)]
@@ -171,8 +175,10 @@
                              [callback (lambda _
                                          (popup-fun text start end))]))))))
 
+      ;; gather profiling information, and use it to generate a refined report
       (define/public (optimization-coach-profile source)
-        (generate-profile this source))
+        (add-highlights #:source  source
+                        #:profile (generate-profile this source)))
 
       (super-new)))
 

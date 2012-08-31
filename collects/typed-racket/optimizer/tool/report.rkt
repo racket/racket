@@ -25,10 +25,12 @@
 (struct opt-report-entry        sub-report-entry ())
 (struct missed-opt-report-entry sub-report-entry (badness irritants))
 
-(define (generate-report this)
+;; profile is currently only used to refine the inlining logs
+(define (generate-report this profile)
   (log->report
    (post-process-inline-log
-    (generate-log this))))
+    (generate-log this)
+    profile)))
 
 
 (define (generate-log this)

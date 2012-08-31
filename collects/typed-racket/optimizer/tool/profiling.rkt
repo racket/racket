@@ -4,7 +4,18 @@
 
 (require "sandbox.rkt")
 
-(provide generate-profile)
+(provide generate-profile
+         node-source node-line node-col node-pos node-span
+         (all-from-out profile/analyzer))
+
+(define ((mk accessor) node)
+  (define src (node-src node))
+  (and src (accessor src)))
+(define node-source  (mk srcloc-source))
+(define node-line    (mk srcloc-line))
+(define node-col     (mk srcloc-column))
+(define node-pos     (mk srcloc-position))
+(define node-span    (mk srcloc-span))
 
 (define compiled-module-name 'optimization-coach-compiled-module)
 
@@ -28,8 +39,5 @@
   (define (right-file? node)
     (define src (node-src node))
     (equal? (and src (srcloc-source src)) res-mpi))
-  (define nodes
-    (filter right-file? (profile-nodes (analyze-samples snapshots))))
-  (for ([n nodes])
-    (printf "~a -- ~a -- ~a -- ~a\n" (node-id n) (node-total n) (node-self n) (node-src n)))
-  nodes)
+  (define orig-profile (analyze-samples snapshots))
+  (filter right-file? (profile-nodes orig-profile)))

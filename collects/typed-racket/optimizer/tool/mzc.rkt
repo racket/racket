@@ -4,7 +4,8 @@
 
 (require typed-racket/optimizer/logging
          unstable/syntax racket/match unstable/match racket/list racket/string
-         unstable/list)
+         unstable/list
+         "profiling.rkt")
 
 (provide mzc-opt-log-message->log-entry
          post-process-inline-log)
@@ -140,7 +141,7 @@
 ;; We aggregate results for each function.
 ;; Log messages produced by the inliner are very raw, unlike the TR logs,
 ;; which have gone through some aggregation. We do the aggregation here.
-(define (post-process-inline-log log)
+(define (post-process-inline-log log profile)
   (define-values (inliner-logs tr-logs)
     (partition inliner-log-entry? log))
   (define grouped-events
@@ -152,9 +153,16 @@
                                            (not (self-out-of-fuel? x)))
                                          g))]
                 #:when (not (null? group)))
-      (define head (car group))
-      (match head ; events are grouped, first element is representative
+      (match (car group) ; events are grouped, first element is representative
         [(log-entry kind msg stx located-stx pos provenance)
+
+         ;; #f if no profiling info is available for this function
+         (define (pos->node pos)
+           (and profile
+                (for/first ([p (in-list (profile-nodes profile))]
+                            #:when (equal? pos (node-pos p)))
+                  p)))
+         (define profile-entry (pos->node pos))
 
          ;; We consider that a function is a loop if it gets inlined in itself
          ;; at least once.
