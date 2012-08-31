@@ -195,7 +195,7 @@
     [(list (and a1 (arr: dom1 rng1 #f #f '())) (arr: dom rng #f #f '()) ...)
      (cond
        [(null? dom) (make-arr dom1 rng1 #f #f '())]
-       [(not (apply = (length dom1) (map length dom))) #f]
+       [(not (apply = 1 (length dom1) (map length dom))) #f]
        [(not (for/and ([rng2 (in-list rng)]) (type-equal? rng1 rng2)))
         #f]
        [else (make-arr (apply map Un (cons dom1 dom)) rng1 #f #f '())])]
@@ -310,10 +310,11 @@
                (subtype* A0 -Nat t*)]
               [((Hashtable: k v) (Sequence: (list k* v*)))
                (subtypes* A0 (list k v) (list k* v*))]
-              ;; special-case for case-lambda/union
+              ;; special-case for case-lambda/union with only one argument              
               [((Function: arr1) (Function: (list arr2)))
                (when (null? arr1) (fail! s t))
-               (or (arr-subtype*/no-fail A0 (combine-arrs arr1) arr2)
+               (define comb (combine-arrs arr1))
+               (or (and comb (arr-subtype*/no-fail A0 comb arr2))
                    (supertype-of-one/arr A0 arr2 arr1)
                    (fail! s t))]
               ;; case-lambda
