@@ -284,6 +284,7 @@
                  ([(lambda (e) (and (exn? e) (not (exn:break? e))))
                    ;; typechecking failed, report in the interactions window
                    (lambda (e)
+                     (close-optimization-coach)
                      (send interactions reset-console)
                      (send interactions run-in-evaluation-thread
                            (lambda () (raise e))))])
