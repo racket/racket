@@ -1,11 +1,12 @@
 #lang racket/base
 (require racket/unit  
          "../../utils/utils.rkt" "../../utils/unit-utils.rkt"
+         syntax/parse/experimental/reflect
          racket/contract
          (types utils))
 (provide (except-out (all-defined-out) checker/c))
 
-(define checker/c (syntax? (or/c #f tc-results?). -> . (or/c #f tc-results?)))
+(define checker/c reified-syntax-class?)
 
 (define-signature tc-app-hetero^
   ([cond-contracted tc/app-hetero checker/c]))
