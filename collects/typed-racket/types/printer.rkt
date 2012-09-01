@@ -213,7 +213,7 @@
     [(Name: stx) (fp "~a" (syntax-e stx))]
     [(app has-name? (? values name))
      (fp "~a" name)]
-    [(StructTop: (Struct: nm _ _ _ _ _ _ _)) (fp "(Struct ~a)" (syntax-e nm))]
+    [(StructTop: (Struct: nm _ _ _ _ _)) (fp "(Struct ~a)" (syntax-e nm))]
     [(BoxTop:) (fp "Box")]
     [(ChannelTop:) (fp "Channel")]
     [(ThreadCellTop:) (fp "ThreadCell")]
@@ -237,7 +237,7 @@
      (fp "~a" (cons 'List (tuple-elems t)))]
     [(Base: n cnt _ _ _) (fp "~s" n)]
     [(Opaque: pred _) (fp "(Opaque ~a)" (syntax->datum pred))]
-    [(Struct: nm       par (list (fld: t _ _) ...)       proc _ _ _ _)
+    [(Struct: nm       par (list (fld: t _ _) ...)       proc _ _)
      (fp "#(struct:~a ~a" nm t)
      (when proc
        (fp " ~a" proc))

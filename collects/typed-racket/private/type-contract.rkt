@@ -313,7 +313,7 @@
                        [(by-name-init ...) by-name-init])
            #'(class/c (name fcn-cnt) ... (init [by-name-init by-name-cnt] ...)))]
         [(Value: '()) #'null?]
-        [(Struct: nm par (list (fld: flds acc-ids mut?) ...) proc poly? pred? cert maker-id)
+        [(Struct: nm par (list (fld: flds acc-ids mut?) ...) proc poly? pred?)
          (cond
            [(assf (λ (t) (type-equal? t ty)) structs-seen)
             =>
@@ -334,7 +334,7 @@
                         #`(let ((rec (recursive-contract struct-ctc #,(contract-kind->keyword (current-contract-kind)))))
                             #,fld-ctc))))))
               #`(letrec ((struct-ctc (struct/c #,nm #,@field-contracts))) struct-ctc))]
-           [else #`(flat-named-contract '#,(syntax-e pred?) (lambda (x) (#,(cert pred?) x)))])]
+           [else #`(flat-named-contract '#,(syntax-e pred?) #,pred?)])]
         [(Syntax: (Base: 'Symbol _ _ _ _)) #'identifier?]
         [(Syntax: t)
          #`(syntax/c #,(t->c t #:kind flat-sym))]

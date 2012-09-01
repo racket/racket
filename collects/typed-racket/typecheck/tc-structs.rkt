@@ -83,7 +83,7 @@
 ;; Option[Struct-Ty] -> Listof[Type]
 (define (get-parent-flds p)
   (match p
-    [(Struct: _ _ flds _ _ _ _ _) flds]
+    [(Struct: _ _ flds _ _ _) flds]
     [(Name: n) (get-parent-flds (lookup-type-name n))]
     [#f null]))
 
@@ -122,10 +122,7 @@
                                [g (in-list getters)])
                        (make-fld t g setters?))]
          [flds (append parent-fields this-flds)]
-         [sty (make-Struct nm parent flds proc-ty poly? pred
-                           ;; this check is so that the tests work
-                           (if (syntax-transforming?) (syntax-local-certifier) values)
-                           (or maker* maker))]
+         [sty (make-Struct nm parent flds proc-ty poly? pred)]
          [external-fld-types/no-parent types]
          [external-fld-types (map fld-t flds)])
     (if type-only

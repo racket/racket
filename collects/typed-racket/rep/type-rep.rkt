@@ -311,12 +311,9 @@
                   [flds (listof fld?)]
                   [proc (or/c #f Function?)]
                   [poly? (or/c #f (listof symbol?))]
-                  [pred-id identifier?]
-                  [cert procedure?]
-                  [maker-id identifier?])
+                  [pred-id identifier?])
   [#:intern (list (hash-id name)
                   (hash-id pred-id)
-                  (hash-id maker-id)
                   (and parent (Rep-seq parent))
                   (map Rep-seq flds)
                   (and proc (Rep-seq proc)))]
@@ -328,9 +325,7 @@
                        (map type-rec-id flds)
                        (and proc (type-rec-id proc))
                        poly?
-                       pred-id
-                       cert
-                       maker-id)]
+                       pred-id)]
   [#:key 'struct])
 
 ;; A structure type descriptor
