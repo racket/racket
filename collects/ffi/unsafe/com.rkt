@@ -1195,6 +1195,8 @@
       `(array ? ,(vt-to-scheme-type (- vt VT_ARRAY)))]
      [(= vt (bitwise-ior VT_USERDEFINED VT_BYREF))
       'iunknown]
+     [(= VT_BYREF (bitwise-and vt VT_BYREF))
+      `(box ,(vt-to-scheme-type (- vt VT_BYREF)))]
      [else
       (string->symbol (format "COM-0x~x" vt))])]))
 
