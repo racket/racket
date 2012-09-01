@@ -124,14 +124,17 @@
 ;; ----------------------------------------
 ;; Manual memory management and strings
 
-(define _system-string/utf-16
+(define (_system-string/utf-16 mode)
   (make-ctype _pointer
 	      (lambda (s)
 		(and s                     
                      (let ([c (string->pointer s)])
                        (register-cleanup! (lambda () (SysFreeString c)))
                        c)))
-	      (lambda (p) (cast p _pointer _string/utf-16))))
+	      (lambda (p)
+		(begin0
+		 (cast p _pointer _string/utf-16)
+		 (when (memq 'out mode) (SysFreeString p))))))
 
 (define current-cleanup (make-parameter #f))
 (define current-commit (make-parameter #f))
@@ -469,7 +472,7 @@
 ;; COM object creation
 
 (define-cstruct _COSERVERINFO ([dwReserved1 _DWORD]
-                               [pwszName _system-string/utf-16]
+                               [pwszName (_system-string/utf-16 '(in))]
                                [pAuthInfo _pointer]
                                [dwReserved2 _DWORD]))
 (define-cstruct _MULTI_QI ([pIID _GUID-pointer]
@@ -538,18 +541,6 @@
   (ptr-equal? (com-object-unknown a) (com-object-unknown b)))
 
 (struct com-type (type-info clsid))
-
-(define _com-object
-  (make-ctype _pointer
-              (lambda (v)
-                (com-object-get-dispatch v))
-              (lambda (p)
-                (if p
-                    (let ()
-                      (define dispatch (cast p _pointer _IDispatch-pointer))
-                      (((allocator Release) (lambda () dispatch)))
-                      (make-com-object dispatch #f))
-                    #f))))
 
 (define scheme_security_check_file
   (get-ffi-obj 'scheme_security_check_file #f (_fun _string _path _int -> _void)))
@@ -1551,12 +1542,12 @@
 (define (variant-set! var type val)
   (ptr-set! (union-ptr (VARIANT-u var)) type val))
 
-(define (scheme-to-variant! var a elem-desc scheme-type)
+(define (scheme-to-variant! var a elem-desc scheme-type #:mode [mode '(in)])
   (cond
    [(type-described? a)
-    (scheme-to-variant! var (type-described-value a) elem-desc scheme-type)]
+    (scheme-to-variant! var (type-described-value a) elem-desc scheme-type #:mode mode)]
    [(and (pair? scheme-type) (eq? 'variant (car scheme-type)))
-    (scheme-to-variant! var a elem-desc (cadr scheme-type))]
+    (scheme-to-variant! var a elem-desc (cadr scheme-type) #:mode mode)]
    [(eq? a com-omit)
     (if (and elem-desc
              (elem-desc-has-default? elem-desc))
@@ -1571,13 +1562,13 @@
           (variant-set! var _ulong DISP_E_PARAMNOTFOUND)))]
    [(and elem-desc (not (any-type? scheme-type)))
     (set-VARIANT-vt! var (get-var-type-from-elem-desc elem-desc))
-    (variant-set! var (to-ctype scheme-type) a)]
+    (variant-set! var (to-ctype scheme-type #:mode mode) a)]
    [else
     (define use-scheme-type (if (any-type? scheme-type)
 				(arg-to-type a)
 				scheme-type))
     (set-VARIANT-vt! var (to-vt use-scheme-type))
-    (variant-set! var (to-ctype use-scheme-type) a)]))
+    (variant-set! var (to-ctype use-scheme-type #:mode mode) a)]))
 
 (define (any-type? t)
   (or (eq? t 'any)
@@ -1593,7 +1584,7 @@
 (define (_box/permanent _t)
   (define (extract p)
     (if (eq? _t _VARIANT)
-	(variant-to-scheme (cast p _pointer _VARIANT-pointer))
+	(variant-to-scheme (cast p _pointer _VARIANT-pointer) #:mode '(in out))
 	(ptr-ref p _t)))
   (make-ctype _pointer
               (lambda (v)
@@ -1602,7 +1593,7 @@
 		    (let ([p (cast p _pointer _VARIANT-pointer)]
 			  [v (unbox v)])
 		      (VariantInit p)
-		      (scheme-to-variant! p v #f (arg-to-type v)))
+		      (scheme-to-variant! p v #f (arg-to-type v) #:mode '(in out)))
 		    (ptr-set! p _t (unbox v)))
 		(register-cleanup! 
                  (lambda ()
@@ -1610,7 +1601,9 @@
                    (free p)))
                 p)
               (lambda (p)
-                (extract p))))
+		;; We box the value, but we don't support reflecting box
+		;; changes back to changes of the original reference:
+                (box (extract p)))))
 
 (define (make-a-VARIANT [mode 'atomic-interior])
   (define var (cast (malloc _VARIANT mode)
@@ -1631,7 +1624,7 @@
    [VT_VARIANT var]
    [else ptr]))
 
-(define (_safe-array/vectors given-dims base)
+(define (_safe-array/vectors given-dims base mode)
   (make-ctype _pointer
 	      (lambda (v)
 	        (define base-vt (to-vt base))
@@ -1650,7 +1643,7 @@
 		    (define idx (cons i index))
 		    (if (null? (cdr dims))
 			(let ([var (make-a-VARIANT)])
-			  (scheme-to-variant! var v #f base)
+			  (scheme-to-variant! var v #f base #:mode mode)
 			  (SafeArrayPutElement sa (reverse idx) 
 					       (extract-variant-pointer var #f base-vt)))
 			(loop v idx (cdr dims)))))
@@ -1669,24 +1662,33 @@
 			  (set-VARIANT-vt! var vt)
 			  (SafeArrayGetElement sa (reverse (cons i index)) 
 					       (extract-variant-pointer var #t))
-			  (variant-to-scheme var))
+			  (variant-to-scheme var #:mode mode))
 			(loop (cdr dims) (add1 level) (cons i index))))))))
 
-(define _IUnknown-pointer-or-com-object
+(define (_IUnknown-pointer-or-com-object mode)
   (make-ctype 
-   _IUnknown-pointer
+   _IUnknown-pointer/null
    (lambda (v)
      (define p
        (if (com-object? v)
            (com-object-get-iunknown v)
            v))
-     (register-commit! (lambda () (AddRef/no-release p)))
+     (when (memq 'out mode)
+       (register-commit! (lambda () (AddRef/no-release p))))
      p)
    (lambda (p) 
-     (((allocator Release) (lambda () p)))
-     (make-com-object p #f))))
+     (if p
+	 (begin
+	   (if (memq 'out mode)
+	       (((allocator Release) (lambda () p)))
+	       (AddRef p))
+	   (make-com-object p #f))
+	 p))))
 
-(define (to-ctype type [as-boxed? #f])
+(define (_com-object mode)
+  (_IUnknown-pointer-or-com-object mode))
+
+(define (to-ctype type [as-boxed? #f] #:mode [mode '()])
   (cond
    [(symbol? type)
     (case type
@@ -1701,22 +1703,22 @@
       [(long-long) _llong]
       [(float) _float*]
       [(double) _double*]
-      [(string) _system-string/utf-16]
+      [(string) (_system-string/utf-16 mode)]
       [(currency) _currency]
       [(date) _date]
       [(boolean) _bool]
       [(scode) _SCODE]
-      [(iunknown) _IUnknown-pointer-or-com-object]
-      [(com-object) _com-object]
+      [(iunknown) (_IUnknown-pointer-or-com-object mode)]
+      [(com-object) (_com-object mode)]
       [(any ...) (if as-boxed?
                      _VARIANT
                      (error "internal error: cannot marshal to any"))]
       [(com-enumeration) _int]
       [else (error 'to-ctype "internal error: unknown type ~s" type)])]
    [(eq? 'opt (car type))
-    (to-ctype (cadr type))]
+    (to-ctype (cadr type) #:mode mode)]
    [(eq? 'box (car type))
-    (_box/permanent (to-ctype (cadr type) #t))]
+    (_box/permanent (to-ctype (cadr type) #t #:mode '(in out)))]
    [(eq? 'array (car type))
     (define-values (dims base)
       (let loop ([t type] [?-ok? #t])
@@ -1728,9 +1730,9 @@
 	  (values (cons (cadr t) d) b)]
 	 [else
 	  (values null t)])))
-    (_safe-array/vectors dims base)]
+    (_safe-array/vectors dims base mode)]
    [(eq? 'variant (car type))
-    (to-ctype (cadr type))]
+    (to-ctype (cadr type) #:mode mode)]
    [else #f]))
 
 (define (to-vt type)
@@ -1820,8 +1822,8 @@
           (cons (lambda () (free disp-params)) (unbox cleanup))
           (unbox commit)))
 
-(define (variant-to-scheme var)
-  (define _t (to-ctype (vt-to-scheme-type (VARIANT-vt var))))
+(define (variant-to-scheme var #:mode [mode '(out)])
+  (define _t (to-ctype (vt-to-scheme-type (VARIANT-vt var)) #:mode mode))
   (if _t
       (ptr-ref (union-ptr (VARIANT-u var)) _t)
       (void)))
@@ -1903,7 +1905,8 @@
                           (for/list ([i (in-range num-params-passed)])
                             (variant-to-scheme (ptr-ref (DISPPARAMS-rgvarg method-arguments) 
                                                         _VARIANT 
-                                                        i))))))
+                                                        i)
+					       #:mode '())))))
               (define-values (method-result cleanups)
                 (if (= inv-kind INVOKE_PROPERTYPUT)
                     (values #f arg-cleanups)
@@ -2060,7 +2063,7 @@
                        (ptr-ref (ptr-ref argv _pointer i) _racket)))))
 
 (define (sink-variant-to-scheme var)
-  (malloc-immobile-cell (variant-to-scheme var)))
+  (malloc-immobile-cell (variant-to-scheme var #:mode '(in add-ref))))
 
 (define (sink-unmarshal-scheme p var)
   (define a (ptr-ref p _racket))
