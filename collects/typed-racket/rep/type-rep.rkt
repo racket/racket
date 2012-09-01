@@ -307,7 +307,7 @@
 ;; acc-ids : names of the accessors
 ;; maker-id : name of the constructor
 (def-type Struct ([name identifier?]
-                  [parent (or/c #f Struct? Name?)]
+                  [parent (or/c #f Struct?)]
                   [flds (listof fld?)]
                   [proc (or/c #f Function?)]
                   [poly? (or/c #f (listof symbol?))]

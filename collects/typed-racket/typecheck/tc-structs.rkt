@@ -277,7 +277,7 @@
 
   ;; create the actual structure type, and the types of the fields
   ;; that the outside world will see
-  (mk/register-sty nm flds parent-name (get-parent-flds parent) types
+  (mk/register-sty nm flds parent (get-parent-flds parent) types
                    ;; procedure
                    #:proc-ty proc-ty-parsed
                    #:maker maker
@@ -295,10 +295,11 @@
      (c-> identifier? (or/c #f identifier?) (listof identifier?)
           (listof Type/c) (or/c #f identifier?)
           any/c)
-  (define parent-name (if parent (make-Name parent) #f))
+  (define parent-name (and parent (make-Name parent)))
+  (define parent-type (and parent (lookup-type-name parent)))
   (define parent-flds (if parent (get-parent-flds parent-name) null))
   (define parent-tys (map fld-t parent-flds))
-  (define defs (mk/register-sty nm flds parent-name parent-flds tys #:mutable #t))
+  (define defs (mk/register-sty nm flds parent-type parent-flds tys #:mutable #t))
   (when kernel-maker    
     (register-type kernel-maker (λ () (->* (append parent-tys tys) (lookup-type-name nm))))))
 
