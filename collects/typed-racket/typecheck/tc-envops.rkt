@@ -39,7 +39,7 @@
      (make-Syntax (update t (-not-filter u x rst)))]
 
     ;; struct ops
-    [((Struct: nm par flds proc poly pred cert maker-id)
+    [((Struct: nm par flds proc poly pred)
       (TypeFilter: u (list rst ... (StructPE: (? (lambda (s) (subtype t s)) s) idx)) x))
      (make-Struct nm par
                   (list-update flds idx
@@ -48,8 +48,8 @@
                                             (update e (-filter u x rst))
                                             acc-id #f)]
                                           [_ (int-err "update on mutable struct field")]))
-                  proc poly pred cert maker-id)]
-    [((Struct: nm par flds proc poly pred cert maker-id)
+                  proc poly pred)]
+    [((Struct: nm par flds proc poly pred)
       (NotTypeFilter: u (list rst ... (StructPE: (? (lambda (s) (subtype t s)) s) idx)) x))
      (make-Struct nm par (list-update flds idx
                                       (match-lambda [(fld: e acc-id #f)
@@ -57,7 +57,7 @@
                                                       (update e (-not-filter u x rst))
                                                       acc-id #f)]
                                           [_ (int-err "update on mutable struct field")]))
-                  proc poly pred cert maker-id)]
+                  proc poly pred)]
 
     ;; otherwise
     [(t (TypeFilter: u (list) _))

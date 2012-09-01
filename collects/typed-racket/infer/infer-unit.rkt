@@ -423,7 +423,7 @@
 
           ;; two structs with the same name
           ;; just check pairwise on the fields
-          [((Struct: nm _ flds proc _ _ _ _) (Struct: nm* _ flds* proc* _ _ _ _)) (=> nevermind)
+          [((Struct: nm _ flds proc _ _) (Struct: nm* _ flds* proc* _ _)) (=> nevermind)
            (unless (free-identifier=? nm nm*) (nevermind))
            (let ([proc-c
                   (cond [(and proc proc*)
@@ -520,7 +520,7 @@
           ;; If the struct names don't match, try the parent of S
           ;; Needs to be done after App and Mu in case T is actually the current struct
           ;; but not currently visible
-          [((Struct: nm (? Type? parent) _ _ _ _ _ _) other)
+          [((Struct: nm (? Type? parent) _ _ _ _) other)
            (cg parent other)]
 
           ;; vectors are invariant - generate constraints *both* ways

@@ -28,11 +28,10 @@
     [(Base: n cnt pred marshaled _) marshaled]
     [(Name: stx) `(make-Name (quote-syntax ,stx))]
     [(fld: t acc mut) `(make-fld ,(sub t) (quote-syntax ,acc) ,mut)]
-    [(Struct: name parent flds proc poly? pred-id cert maker-id)
+    [(Struct: name parent flds proc poly? pred-id)
      `(make-Struct (quote-syntax ,name) ,(sub parent)
                    ,(sub flds) ,(sub proc) ,(sub poly?)
-                   (quote-syntax ,pred-id) (syntax-local-certifier)
-                   (quote-syntax ,maker-id))]
+                   (quote-syntax ,pred-id))]
     [(App: rator rands stx) `(make-App ,(sub rator) ,(sub rands) (quote-syntax ,stx))]
     [(Opaque: pred cert) `(make-Opaque (quote-syntax ,pred) (syntax-local-certifier))]
     [(Refinement: parent pred cert) `(make-Refinement ,(sub parent)
