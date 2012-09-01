@@ -6,6 +6,7 @@
          ffi/unsafe/custodian
          racket/date
          racket/runtime-path
+	 racket/list
          (for-syntax racket/base)
          "private/win32.rkt")
 
@@ -1062,29 +1063,40 @@
                  (hash-set! (com-object-types obj) (cons name inv-kind) mx-type-desc))
                mx-type-desc)))))
 
-(define (get-var-type-from-elem-desc elem-desc)
-  (define param-desc (union-ref (ELEMDESC-u elem-desc) 1))
-  (define flags (PARAMDESC-wParamFlags param-desc))
+(define (get-var-type-from-elem-desc elem-desc
+				     #:keep-safe-array? [keep-safe-array? #f])
+  ;; hack: allow elem-desc as a TYPEDESC
+  (define param-desc (and (ELEMDESC? elem-desc)
+			  (union-ref (ELEMDESC-u elem-desc) 1)))
+  (define flags (if param-desc
+		    (PARAMDESC-wParamFlags param-desc)
+		    0))
   (define (fixup-vt vt)
     (cond
      [(= vt (bitwise-ior VT_USERDEFINED VT_BYREF))
       VT_UNKNOWN]
      [(= vt VT_USERDEFINED)
       VT_INT]
+     [(and (= vt VT_SAFEARRAY)
+	   (not keep-safe-array?))
+      (bitwise-ior VT_ARRAY VT_VARIANT)]
      [else vt]))
+  (define type-desc (if (ELEMDESC? elem-desc)
+			(ELEMDESC-tdesc elem-desc)
+			elem-desc))
   (cond
    [(and (bit-and? flags PARAMFLAG_FOPT)
          (bit-and? flags PARAMFLAG_FHASDEFAULT))
     (fixup-vt
      (VARIANT-vt (PARAMDESCEX-varDefaultValue (PARAMDESC-pparamdescex param-desc))))]
-   [(= (TYPEDESC-vt (ELEMDESC-tdesc elem-desc)) VT_PTR)
+   [(= (TYPEDESC-vt type-desc) VT_PTR)
     (fixup-vt
      (bitwise-ior VT_BYREF
-		  (TYPEDESC-vt (cast (union-ref (TYPEDESC-u (ELEMDESC-tdesc elem-desc)) 0) 
+		  (TYPEDESC-vt (cast (union-ref (TYPEDESC-u type-desc) 0) 
 				     _pointer 
 				     _TYPEDESC-pointer))))]
    [else
-    (fixup-vt (TYPEDESC-vt (ELEMDESC-tdesc elem-desc)))]))
+    (fixup-vt (TYPEDESC-vt type-desc))]))
 
 (define (elem-desc-has-default? elem-desc)
   (define param-desc (union-ref (ELEMDESC-u elem-desc) 1))
@@ -1104,7 +1116,7 @@
      [else else-expr])))
 
 (define (elem-desc-to-scheme-type elem-desc ignore-by-ref? is-opt? internal?)
-  (define vt (let ([vt (get-var-type-from-elem-desc elem-desc)])
+  (define vt (let ([vt (get-var-type-from-elem-desc elem-desc #:keep-safe-array? #t)])
                (if (and ignore-by-ref?
 			(not (= vt (bitwise-ior VT_USERDEFINED VT_BYREF))))
                    (- vt (bitwise-and vt VT_BYREF))
@@ -1117,6 +1129,7 @@
     (if is-opt?
         '(opt iunknown)
         'iunknown)]
+   [(= vt VT_SAFEARRAY) `(array ? any)]
    [(bit-and? vt VT_ARRAY)
     (define array-desc (cast (union-ref (TYPEDESC-u (ELEMDESC-tdesc elem-desc)) 1)
                              _pointer
@@ -1125,8 +1138,8 @@
       (elem-desc-to-scheme-type (ARRAYDESC-tdescElem array-desc) #f #f internal?))
     (for/fold ([base base]) ([i (in-range (ARRAYDESC-cDims array-desc))])
       `(array ,(SAFEARRAYBOUND-cElements (ptr-ref (array-ptr (ARRAYDESC-rgbounds array-desc)) 
-                                                  i
-                                                  _SAFEARRAYBOUND))
+                                                  _SAFEARRAYBOUND
+                                                  i))
               ,base))]
    [else
     (define as-iunk? (= vt (bitwise-ior VT_USERDEFINED VT_BYREF)))
@@ -1175,6 +1188,7 @@
     ;; but we'll report them as an enumeration.
     'com-enumeration]
    [VT_VOID 'void]
+   [VT_SAFEARRAY `(array ? any)]
    [else 
     (cond
      [(= VT_ARRAY (bitwise-and vt VT_ARRAY))
@@ -1262,15 +1276,16 @@
            (define num-actual-params (FUNCDESC-cParams func-desc))
            (cond
             [(= -1 (FUNCDESC-cParamsOpt func-desc))
-             ;; all args > pFuncDesc->cParams - 1 get packaged into SAFEARRAY
+             ;; all args > pFuncDesc->cParams - 1 get packaged into SAFEARRAY,
+	     ;; but that is handled by COM automation; we just pass "any"s
              (values
               (append
-               (for/list ([i (in-range num-actual-params)])
+               (for/list ([i (in-range (sub1 num-actual-params))])
                  (elem-desc-to-scheme-type (elem-desc-ref func-desc i)
                                            #f
                                            #f
                                            internal?))
-               (list '...))
+               '(any ...))
               (elem-desc-to-scheme-type (FUNCDESC-elemdescFunc func-desc)
                                         #f
                                         #f
@@ -1443,7 +1458,7 @@
       [(iunknown) (or (IUnknown? arg)
                       (com-object? arg))]
       [(com-object) (com-object? arg)]
-      [(any) #t]
+      [(any ...) #t]
       [(com-enumeration) (signed-int? arg 32)]
       [else #f])]
    [(eq? 'opt (car type))
@@ -1454,7 +1469,8 @@
          (ok-argument? (unbox arg) (cadr type)))]
    [(eq? 'array (car type))
     (and (vector? arg)
-         (= (vector-length arg) (cadr type))
+	 (or (eq? (cadr type) '?)
+	     (= (vector-length arg) (cadr type)))
          (for/and ([v (in-vector arg)])
            (ok-argument? v (caddr type))))]
    [(eq? 'variant (car type))
@@ -1484,7 +1500,10 @@
              (iunknown . #t)
              (com-object . #t)
              (any . #t)
-             (com-enumeration . #t))
+             (com-enumeration . #t)
+             ;; meant to to be used only at the end 
+             ;; of an argument list:
+             (... . #t))
      type
      #f)]
    [(and (list? type)
@@ -1498,7 +1517,8 @@
            (type-description? (cadr type)))]
      [(eq? 'array (car type))
       (and (= (length type) 3)
-           (exact-positive-integer? (cadr type))
+           (or (exact-positive-integer? (cadr type))
+               (eq? '? (cadr type)))
            (type-description? (caddr type)))]
      [(eq? 'variant (car type))
       (and (= (length type) 2)
@@ -1609,10 +1629,13 @@
    [VT_VARIANT var]
    [else ptr]))
 
-(define (_safe-array/vectors dims base)
+(define (_safe-array/vectors given-dims base)
   (make-ctype _pointer
 	      (lambda (v)
 	        (define base-vt (to-vt base))
+		(define dims (if (equal? given-dims '(?))
+				 (list (vector-length v))
+				 given-dims))
 		(define sa (SafeArrayCreate base-vt
 					    (length dims)
 					    (for/list ([d (in-list dims)])
@@ -1683,9 +1706,9 @@
       [(scode) _SCODE]
       [(iunknown) _IUnknown-pointer-or-com-object]
       [(com-object) _com-object]
-      [(any) (if as-boxed?
-		 _VARIANT
-		 (error "internal error: cannot marshal to any"))]
+      [(any ...) (if as-boxed?
+                     _VARIANT
+                     (error "internal error: cannot marshal to any"))]
       [(com-enumeration) _int]
       [else (error 'to-ctype "internal error: unknown type ~s" type)])]
    [(eq? 'opt (car type))
@@ -1694,10 +1717,12 @@
     (_box/permanent (to-ctype (cadr type) #t))]
    [(eq? 'array (car type))
     (define-values (dims base)
-      (let loop ([t type])
+      (let loop ([t type] [?-ok? #t])
 	(cond
-	 [(and (pair? t) (eq? 'array (car t)))
-	  (define-values (d b) (loop (caddr t)))
+	 [(and (pair? t) (eq? 'array (car t)) (or ?-ok? (number? (cadr t))))
+	  (define-values (d b) (if (number? (cadr t))
+                                   (loop (caddr t) #f)
+                                   (values null (cadr t))))
 	  (values (cons (cadr t) d) b)]
 	 [else
 	  (values null t)])))
@@ -1726,7 +1751,7 @@
     [(boolean) VT_BOOL]
     [(iunknown) VT_UNKNOWN]
     [(com-object) VT_DISPATCH]
-    [(any) VT_VARIANT]
+    [(any ...) VT_VARIANT]
     [(com-enumeration) VT_INT]
     [else 
      (case (and (pair? type)
@@ -1741,11 +1766,18 @@
 (define (build-method-arguments-using-function-desc func-desc scheme-types inv-kind args)
   (define lcid-index (and func-desc (get-lcid-param-index func-desc)))
   (define last-is-retval? (and func-desc (is-last-param-retval? inv-kind func-desc)))
-  (define count (if func-desc
-                    (- (FUNCDESC-cParams func-desc)
-                       (if lcid-index 1 0)
-                       (if last-is-retval? 1 0))
-                    (length scheme-types)))
+  (define last-is-repeat-any? (and func-desc (= -1 (FUNCDESC-cParamsOpt func-desc))))
+  (define base-count (if func-desc
+			 (- (FUNCDESC-cParams func-desc)
+			    (if lcid-index 1 0)
+			    (if last-is-retval? 1 0))
+			 (length scheme-types)))
+  (define count (if last-is-repeat-any?
+		    (if (or lcid-index
+			    last-is-retval?)
+			(error "cannot handle combination of `any ...' and lcid/retval")
+			(length scheme-types))
+		    base-count))
   (define vars (if (zero? count)
                    #f
                    (malloc count _VARIANTARG 'raw)))
@@ -1761,7 +1793,13 @@
           [scheme-type (in-list scheme-types)])
       (define var (ptr-ref vars _VARIANT (- count i 1))) ; reverse order
       (VariantInit var)
-      (scheme-to-variant! var a (and func-desc (elem-desc-ref func-desc i)) scheme-type)))
+      (scheme-to-variant! var 
+			  a 
+			  (and func-desc 
+			       (or (not last-is-repeat-any?)
+				   (i . < . (sub1 base-count)))
+			       (elem-desc-ref func-desc i)) 
+			  scheme-type)))
   (define disp-params (cast (malloc _DISPPARAMS 'raw)
 			    _pointer
 			    _DISPPARAMS-pointer))
@@ -1811,14 +1849,28 @@
     (windows-error (format "~a: error getting ID of method ~s" who name)
                      r)]))
 
+(define (adjust-any-... args t)
+  (define ta (cadr t))
+  (define len (length ta))
+  (if (and (len . >= . 2)
+	   ((length args) . >= . (- len 2))
+	   (eq? '... (list-ref ta (sub1 len)))
+	   (eq? 'any (list-ref ta (- len 2))))
+      ;; Replace `any ...' with the right number of `any's
+      `(,(car t) ,(append (take ta (- len 2))
+			  (make-list (- (length args) (- len 2)) 'any))
+	. ,(cddr t))
+      t))
+
 (define (do-com-invoke who obj name args inv-kind)
   (check-com-obj who obj)
   (unless (string? name) (raise-type-error who "string" name))
-  (let ([t (or (call-as-atomic
-                (lambda ()
-                  (do-get-method-type who obj name inv-kind #t)))
-               ;; wing it by inferring types from the arguments:
-               `(-> ,(map arg-to-type args) any))])
+  (let* ([t (or (call-as-atomic
+		 (lambda ()
+		   (do-get-method-type who obj name inv-kind #t)))
+		;; wing it by inferring types from the arguments:
+		`(-> ,(map arg-to-type args) any))]
+	 [t (adjust-any-... args t)])
     (unless (<= (length (filter (lambda (v) (not (and (pair? v) (eq? (car v) 'opt))))
                                 (cadr t)))
                 (length args)

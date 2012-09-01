@@ -442,6 +442,9 @@ used to represent various atomic types:
 
  @item{@racket['any] --- any of the above, or an array when not nested in an array type}
 
+ @item{@racket['...] --- treated like @racket['any], but when it appears at the end of the sequence of types for
+                         arguments, allows the preceding type 0 or more times}
+
  @item{@racket['void] --- no value}
 
 ]
@@ -456,8 +459,10 @@ replaced with @racket[com-omit].
 
 A type wrapped in a list with @racket['array] and a positive exact
 integer, such as @racket['(array 7 int)], represents a vector of
-values to be used as a COM array.  Array types can be nested to
-specify a multidimensional array as represented by nested vectors.
+values to be used as a COM array. A @racket['?] can be used in place
+of the length integer to support a vector of any length.  Array types
+with non-@racket['?] lengths can be nested to specify a
+multidimensional array as represented by nested vectors.
 
 A type wrapped in a list with @racket['variant], such as
 @racket['(variant (array 7 int))], is the same as the wrapped type,
