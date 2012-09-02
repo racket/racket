@@ -40,12 +40,11 @@
    ;; found bug
    [FAIL (Un (-mu heap-node
                   (-struct #'heap-node #f
-                           (map fld* (list (-base 'comparator) -Number (-v a) (Un heap-node (-base 'heap-empty))))
-                           #'values))
+                           (map fld* (list (-base 'comparator) -Number (-v a) (Un heap-node (-base 'heap-empty))))))
              (-base 'heap-empty))
          (Un (-mu heap-node
                   (-struct #'heap-node #f
-                           (map fld* (list (-base 'comparator) -Number (-pair -Number -Number) (Un heap-node (-base 'heap-empty)))) #'values))
+                           (map fld* (list (-base 'comparator) -Number (-pair -Number -Number) (Un heap-node (-base 'heap-empty))))))
              (-base 'heap-empty))]))
 
 (define-go
