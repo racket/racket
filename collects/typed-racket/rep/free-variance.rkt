@@ -2,7 +2,7 @@
 (require "../utils/utils.rkt" (for-syntax racket/base) (contract-req)) 
 
 (provide Covariant Contravariant Invariant Constant Dotted
-         combine-frees flip-variances without-below unless-in-table
+         combine-frees flip-variances without-below
          fix-bound make-invariant make-constant variance?)
 
 ;; this file contains support for calculating the free variables/indexes of types
@@ -22,6 +22,9 @@
 (define (variance? e)
   (memq e (list Covariant Contravariant Invariant Constant Dotted)))
 
+(struct frees ())
+(struct (ht-frees frees) (table))
+
 ;; frees = HT[Idx,Variance] where Idx is either Symbol or Number
 ;; (listof frees) -> frees
 (define (combine-frees freess)
@@ -33,10 +36,11 @@
       [(eq? v Constant) w]
       [(eq? w Constant) v]
       [else Invariant]))
-  (for*/fold ([ht #hasheq()])
-    ([old-ht (in-list freess)]
-     [(sym var) (in-hash old-ht)])
-    (hash-update ht sym (combine-var var) var)))
+  (ht-frees
+    (for*/fold ([ht #hasheq()])
+      ([old-free (in-list freess)]
+       [(sym var) (in-hash (ht-frees-table old-ht))])
+      (hash-update ht sym (combine-var var) var))))
 
 ;; given a set of free variables, change bound to ...
 ;; (if bound wasn't free, this will add it as Dotted
@@ -44,31 +48,47 @@
 ;;  it as "free" will -- fixes the case where the
 ;;  dotted pre-type base doesn't use the bound).
 (define (fix-bound vs bound)
-  (hash-set vs bound Dotted))
+  (match vs
+    ((ht-frees ht)
+     (ht-frees (hash-set ht bound Dotted)))))
 
 ;; frees -> frees
 (define (flip-variances vs)
-  (for/hasheq ([(k v) (in-hash vs)])
-    (values k 
-            (cond [(eq? v Covariant) Contravariant]
-                  [(eq? v Contravariant) Covariant]
-                  [else v]))))
+  (ht-frees
+    (for/hasheq ([(k v) (in-hash (ht-frees-table vs))])
+      (values k 
+              (cond [(eq? v Covariant) Contravariant]
+                    [(eq? v Contravariant) Covariant]
+                    [else v])))))
 
 (define (make-invariant vs)
-  (for/hasheq ([(k v) (in-hash vs)])
-    (values k Invariant)))
+  (ht-frees
+    (for/hasheq ([(k v) (in-hash (ht-frees-table vs))])
+      (values k Invariant))))
 
 (define (make-constant vs)
-  (for/hasheq ([(k v) (in-hash vs)])
-    (values k Constant)))
+  (ht-frees
+    (for/hasheq ([(k v) (in-hash (ht-frees-table vs))])
+      (values k Constant))))
 
 (define (without-below n frees)
-  (for/hasheq ([(k v) (in-hash frees)]
-               #:when (>= k n))
-    (values k v)))
+  (ht-frees
+    (for/hasheq ([(k v) (in-hash (ht-frees-table frees))]
+                 #:when (>= k n))
+      (values k v))))
 
-(define-syntax (unless-in-table stx)
-  (syntax-case stx ()
-    [(_ table val . body)
-     (quasisyntax/loc stx
-       (hash-ref table val #,(syntax/loc #'body (lambda () . body))))]))
+(define (single-free-var name (variance Covariant))
+  (ht-frees (hasheq name variance)))
+
+(define empty-free-vars 
+  (ht-frees (hasheq)))
+
+(define (free-vars-remove vars name)
+  (ht-frees
+    (hash-remove (ht-frees-table vars) name)))
+
+;; Only valid after full type resolution
+(define (free-vars-hash vars)
+  (ht-frees-table vars))
+
+
