@@ -48,6 +48,7 @@
   (define maker? (typechecker:contract-def/maker stx))
   (define flat? (typechecker:flat-contract-def stx))
   (define typ (parse-type prop))
+  (define kind (if flat? 'flat 'impersonator))
   (syntax-parse stx #:literals (define-values)
     [(define-values (n) _)
      (let ([typ (if maker?
@@ -57,9 +58,9 @@
                            typ
                            ;; this is for a `require/typed', so the value is not from the typed side
                            #:typed-side #f
-                           #:kind (if flat? 'flat 'impersonator)
+                           #:kind kind
                            (lambda () (tc-error/stx prop "Type ~a could not be converted to a contract." typ)))])
-         (quasisyntax/loc stx (define-values (n) cnt))))]
+         (quasisyntax/loc stx (define-values (n) (recursive-contract cnt #,(contract-kind->keyword kind))))))]
     [_ (int-err "should never happen - not a define-values: ~a" (syntax->datum stx))]))
 
 (define (change-contract-fixups forms)

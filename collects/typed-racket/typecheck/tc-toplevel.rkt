@@ -121,7 +121,7 @@
 
       ;; executable structs - this is a big hack
       [(define-values () (begin (quote-syntax (define-typed-struct/exec-internal nm ([fld : ty] ...) proc-ty)) (#%plain-app values)))
-       (tc/struct null #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #'proc-ty)]
+       (tc/struct null #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:proc-ty #'proc-ty)]
 
       ;; predicate assertion - needed for define-type b/c or doesn't work
       [(define-values () (begin (quote-syntax (assert-predicate-internal ty pred)) (#%plain-app values)))
