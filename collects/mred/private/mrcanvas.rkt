@@ -204,12 +204,19 @@
         (when y-on? (unless has-y? (bad "vertical" 'vscroll)))
         (send wx show-scrollbars x-on? y-on?)))
 
-    (define get-scroll-pos (entry-point (lambda (d) (send wx get-scroll-pos d))))
-    (define set-scroll-pos (entry-point (lambda (d v) (send wx set-scroll-pos d v))))
-    (define get-scroll-range (entry-point (lambda (d) (send wx get-scroll-range d))))
-    (define set-scroll-range (entry-point (lambda (d v) (send wx set-scroll-range d v))))
-    (define get-scroll-page (entry-point (lambda (d) (send wx get-scroll-page d))))
-    (define set-scroll-page (entry-point (lambda (d v) (send wx set-scroll-page d v))))
+    (define/private (check-scroll name d v must-positive?)
+      (unless (or (eq? d 'horizontal) (eq? d 'vertical))
+        (raise-argument-error (who->name `(method canvas% ,name)) "(or/c 'horizontal 'vertical)" d))
+      (let ([bottom (if must-positive? 1 0)])
+        (unless (<= bottom v 10000000)
+          ((check-bounded-integer bottom 10000000 #f) `(method canvas% ,name) v))))
+
+    (define get-scroll-pos (entry-point (lambda (d) (check-scroll 'get-scroll-pos d 1 #f) (send wx get-scroll-pos d))))
+    (define set-scroll-pos (entry-point (lambda (d v) (check-scroll 'set-scroll-pos d v #f) (send wx set-scroll-pos d v))))
+    (define get-scroll-range (entry-point (lambda (d) (check-scroll 'get-scroll-range d 1 #f) (send wx get-scroll-range d))))
+    (define set-scroll-range (entry-point (lambda (d v) (check-scroll 'set-scroll-range d v #f) (send wx set-scroll-range d v))))
+    (define get-scroll-page (entry-point (lambda (d) (check-scroll 'get-scroll-page d 1 #t) (send wx get-scroll-page d))))
+    (define set-scroll-page (entry-point (lambda (d v) (check-scroll 'set-scroll-page d v #t) (send wx set-scroll-page d v))))
     (public get-scroll-pos set-scroll-pos
             get-scroll-range set-scroll-range
             get-scroll-page set-scroll-page)
