@@ -12,8 +12,8 @@
          (only-in srfi/1 split-at))
 
 (provide/cond-contract
- [check-below (-->d ([s (-or/c Type/c tc-results?)] [t (-or/c Type/c tc-results?)]) () [_ (if (Type? s) Type/c tc-results?)])]
- [cond-check-below (-->d ([s (-or/c Type/c tc-results?)] [t (-or/c #f Type/c tc-results?)]) () [_ (if (Type? s) Type/c tc-results?)])])
+ [check-below (-->d ([s (-or/c Type/c tc-results?)] [t (-or/c Type/c tc-results?)]) () [_ (if (Type/c s) Type/c tc-results?)])]
+ [cond-check-below (-->d ([s (-or/c Type/c tc-results?)] [t (-or/c #f Type/c tc-results?)]) () [_ (if (Type/c s) Type/c tc-results?)])])
 
 (define (print-object o)
   (match o

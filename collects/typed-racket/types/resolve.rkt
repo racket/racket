@@ -17,7 +17,7 @@
 (define (resolve-name t)
   (match t
     [(Name: n) (let ([t (lookup-type-name n)])
-                 (if (Type? t) t #f))]
+                 (if (Type/c t) t #f))]
     [_ (int-err "resolve-name: not a name ~a" t)]))
 
 (define already-resolving? (make-parameter #f))

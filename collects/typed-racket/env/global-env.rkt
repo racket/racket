@@ -4,7 +4,7 @@
 ;; maps identifiers to their types, updated by mutation
 
 (require "../types/tc-error.rkt"
-	 syntax/id-table
+         syntax/id-table
          unstable/lazy-require) 
 (provide register-type register-type-if-undefined
          finish-register-type

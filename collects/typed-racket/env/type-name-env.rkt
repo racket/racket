@@ -1,7 +1,7 @@
 #lang racket/base
 (require "../utils/utils.rkt")
 
-(require syntax/boundmap        
+(require syntax/boundmap
          racket/dict
          (env type-alias-env)
          (utils tc-utils)

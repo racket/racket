@@ -353,9 +353,23 @@
                 [Object def-object #:Object object-case print-object object-name-ht object-rec-id]
                 [PathElem def-pathelem #:PathElem pathelem-case print-pathelem pathelem-name-ht pathelem-rec-id])
 
-(provide PathElem? (rename-out [Rep-seq Type-seq]
-                               [Rep-free-vars free-vars*]
-                               [Rep-free-idxs free-idxs*]))
+(define (Rep-values rep)
+  (match rep
+    [(? (lambda (e) (or (Filter? e)
+                        (Object? e)
+                        (PathElem? e)))
+        (app (lambda (v) (vector->list (struct->vector v))) (list-rest tag seq fv fi stx vals)))
+     vals]
+    [(? Type?
+        (app (lambda (v) (vector->list (struct->vector v))) (list-rest tag seq fv fi stx key vals)))
+     vals]))
+
+
+(provide
+  Rep-values
+  (rename-out [Rep-seq Type-seq]
+              [Rep-free-vars free-vars*]
+              [Rep-free-idxs free-idxs*]))
 
 (provide/cond-contract (struct Rep ([seq exact-nonnegative-integer?]
                                     [free-vars (hash/c symbol? variance?)]

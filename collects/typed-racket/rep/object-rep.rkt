@@ -7,7 +7,7 @@
 (def-pathelem CdrPE () [#:fold-rhs #:base])
 (def-pathelem SyntaxPE () [#:fold-rhs #:base])
 ;; t is always a Name (can't put that into the contract b/c of circularity)
-(def-pathelem StructPE ([t Type?] [idx natural-number/c])
+(def-pathelem StructPE ([t Type/c] [idx natural-number/c])
   [#:frees (λ (f) (f t))]
   [#:fold-rhs (*StructPE (type-rec-id t) idx)])
 

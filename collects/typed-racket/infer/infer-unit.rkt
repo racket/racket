@@ -27,11 +27,11 @@
 (define (seen-before s t)
   (cons (Type-seq s) (Type-seq t)))
 (define/cond-contract (remember s t A)
- (Type? Type? (listof (cons/c exact-nonnegative-integer? exact-nonnegative-integer?)) . -> .
-              (listof (cons/c exact-nonnegative-integer? exact-nonnegative-integer?)))
+ (Type/c Type/c (listof (cons/c exact-nonnegative-integer? exact-nonnegative-integer?)) . -> .
+                (listof (cons/c exact-nonnegative-integer? exact-nonnegative-integer?)))
  (cons (seen-before s t) A))
 (define/cond-contract (seen? s t)
- (Type? Type? . -> . any/c)
+ (Type/c Type/c . -> . any/c)
  (member (seen-before s t) (current-seen)))
 
 
@@ -167,7 +167,7 @@
     [(_ _) (fail! s t)]))
 
 (define/cond-contract (cgen/arr V X Y s-arr t-arr)
-  ((listof symbol?) (listof symbol?) (listof symbol?) Type? Type? . -> . cset?)
+  ((listof symbol?) (listof symbol?) (listof symbol?) Type/c Type/c . -> . cset?)
   (define (cg S T) (cgen V X Y S T))
   (match* (s-arr t-arr)
     ;; the simplest case - no rests, drests, keywords
@@ -310,10 +310,10 @@
 ;; implements the V |-_X S <: T => C judgment from Pierce+Turner, extended with
 ;; the index variables from the TOPLAS paper
 (define/cond-contract (cgen V X Y S T)
-  ((listof symbol?) (listof symbol?) (listof symbol?) Type? Type? . -> . cset?)
+  ((listof symbol?) (listof symbol?) (listof symbol?) Type/c Type/c . -> . cset?)
   ;; useful quick loop
   (define/cond-contract (cg S T)
-   (Type? Type? . -> . cset?)
+   (Type/c Type/c . -> . cset?)
    (cgen V X Y S T))
   ;; this places no constraints on any variables in X
   (define empty (empty-cset X Y))
@@ -578,9 +578,9 @@
 
 ;; C : cset? - set of constraints found by the inference engine
 ;; Y : (listof symbol?) - index variables that must have entries
-;; R : Type? - result type into which we will be substituting
+;; R : Type/c - result type into which we will be substituting
 (define/cond-contract (subst-gen C Y R)
-  (cset? (listof symbol?) Type? . -> . (or/c #f substitution/c))
+  (cset? (listof symbol?) Type/c . -> . (or/c #f substitution/c))
   (define var-hash (free-vars-hash (free-vars* R)))
   (define idx-hash (free-vars-hash (free-idxs* R)))
   ;; v : Symbol - variable for which to check variance
@@ -687,7 +687,7 @@
 ;; produces a cset which determines a substitution that makes the Ss subtypes of the Ts
 (define/cond-contract (cgen/list V X Y S T
                                  #:expected-cset [expected-cset (empty-cset '() '())])
-  (((listof symbol?) (listof symbol?) (listof symbol?) (listof Type?) (listof Type?))
+  (((listof symbol?) (listof symbol?) (listof symbol?) (listof Type/c) (listof Type/c))
    (#:expected-cset cset?) . ->* . cset?)
   (unless (= (length S) (length T))
     (fail! S T))
@@ -712,7 +712,7 @@
 (define infer
  (let ()
   (define/cond-contract (infer X Y S T R [expected #f])
-    (((listof symbol?) (listof symbol?) (listof Type/c) (listof Type/c) Type?) ((or/c #f Type?)) . ->* . (or/c boolean? substitution/c))
+    (((listof symbol?) (listof symbol?) (listof Type/c) (listof Type/c) Type/c) ((or/c #f Type/c)) . ->* . (or/c boolean? substitution/c))
     (with-handlers ([exn:infer? (lambda _ #f)])
       (let* ([expected-cset (if expected
                                 (cgen null X Y R expected)
