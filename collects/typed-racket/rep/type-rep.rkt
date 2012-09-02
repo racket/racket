@@ -758,8 +758,8 @@
  Mu-unsafe: Poly-unsafe:
  PolyDots-unsafe:
  Mu? Poly? PolyDots?
- Type? Filter? Object?
- Type/c
+ Filter? Object?
+ Type/c Type/c?
  Poly-n
  PolyDots-n
  free-vars*
