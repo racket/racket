@@ -8,14 +8,14 @@
 (def-pathelem SyntaxPE () [#:fold-rhs #:base])
 ;; t is always a Name (can't put that into the contract b/c of circularity)
 (def-pathelem StructPE ([t Type?] [idx natural-number/c])
-  [#:frees (free-vars* t) (free-idxs* t)]
+  [#:frees (λ (f) (f t))]
   [#:fold-rhs (*StructPE (type-rec-id t) idx)])
 
 (def-object Empty () [#:fold-rhs #:base])
 
 (def-object Path ([p (listof PathElem?)] [v name-ref/c])
   [#:intern (list (map Rep-seq p) (hash-name v))]
-  [#:frees (combine-frees (map free-vars* p)) (combine-frees (map free-idxs* p))]
+  [#:frees (λ (f) (combine-frees (map f p)))]
   [#:fold-rhs (*Path (map pathelem-rec-id p) v)])
 
 ;; represents no info about the object of this expression
@@ -28,6 +28,6 @@
 (dlo LEmpty () [#:fold-rhs #:base])
 
 (dlo LPath ([p (listof PathElem?)] [idx index/c])
-  [#:frees (combine-frees (map free-vars* p)) (combine-frees (map free-idxs* p))]
+  [#:frees (λ (f) (combine-frees (map f p)))]
   [#:fold-rhs (*LPath (map pathelem-rec-id p) idx)])
 |#

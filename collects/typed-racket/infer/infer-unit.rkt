@@ -581,8 +581,8 @@
 ;; R : Type? - result type into which we will be substituting
 (define/cond-contract (subst-gen C Y R)
   (cset? (listof symbol?) Type? . -> . (or/c #f substitution/c))
-  (define var-hash (free-vars* R))
-  (define idx-hash (free-idxs* R))
+  (define var-hash (free-vars-hash (free-vars* R)))
+  (define idx-hash (free-vars-hash (free-idxs* R)))
   ;; v : Symbol - variable for which to check variance
   ;; h : (Hash Symbol Variance) - hash to check variance in (either var or idx hash)
   ;; variable: Symbol - variable to use instead, if v was a temp var for idx extension
