@@ -1707,7 +1707,7 @@ static void do_out_of_range(const char *name, const char *type, const char *whic
     type = (SCHEME_BYTE_STRINGP(s) ? "byte string" : "string");
   }
   
-  if (!SAME_OBJ(slen, scheme_make_integer(0))) {
+  if (!scheme_bin_lt(slen, sstart)) {
     char *sstr;
     intptr_t strlen;
     int small_end = 0;
@@ -1776,7 +1776,7 @@ static Scheme_Object *raise_range_error(int argc, Scheme_Object *argv[])
   type = scheme_char_string_to_byte_string(argv[1]);
   desc = scheme_char_string_to_byte_string(argv[2]);
 
-  do_out_of_range(scheme_symbol_name(argv[0]), 
+  do_out_of_range(scheme_symbol_val(argv[0]), 
                   SCHEME_BYTE_STR_VAL(type), /* type */
                   SCHEME_BYTE_STR_VAL(desc), /* index description */
                   ((argc > 7) && SCHEME_TRUEP(argv[7])),

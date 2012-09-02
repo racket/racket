@@ -378,7 +378,7 @@ void scheme_bad_vec_index(char *name, Scheme_Object *i, const char *which, Schem
                 ? "fxvector"
                 : NULL)));
 
-  scheme_out_of_range(name, type, which, i, vec, bottom, len);
+  scheme_out_of_range(name, type, which, i, vec, bottom, len-1);
 }
 
 static Scheme_Object *
