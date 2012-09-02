@@ -25,7 +25,9 @@
 (require (for-template racket/base
                        "internal-forms.rkt"))
 
-(provide tc/struct names-of-struct d-s)
+(provide tc/struct names-of-struct d-s
+         register-parsed-struct-sty!
+         register-parsed-struct-bindings!)
 
 (define-syntax-class parent
   #:attributes (name par)
@@ -64,6 +66,7 @@
                                  ((or (Poly? parent) (Mu? parent) (Struct? parent))
                                   parent)
                                  (else
+                                  (displayln parent0)
                                   (tc-error/stx #'v.par "parent type not a valid structure name: ~a"
                                                 (syntax->datum #'v.par)))))])
                 (values #'v.name parent0 parent))
@@ -185,6 +188,20 @@
       (add-struct-fn! s (make-StructPE poly-base i) #t)
       (register-type s (poly-wrapper (->* (list poly-base t) -Void))))))
 
+(struct parsed-struct (names desc sty type-only) #:transparent)
+
+(define (register-parsed-struct-sty! ps)
+  (match ps
+    ((parsed-struct sty names desc type-only)
+     (register-sty! sty names desc))))
+
+(define (register-parsed-struct-bindings! ps)
+  (match ps
+    ((parsed-struct sty names desc type-only)
+     (unless type-only
+       (register-struct-bindings! sty names desc)))))
+
+
 ;; check and register types for a define struct
 ;; tc/struct : Listof[identifier] (U identifier (list identifier identifier))
 ;;             Listof[identifier] Listof[syntax]
@@ -227,11 +244,7 @@
                  (and proc-ty (parse-type proc-ty))))
   (define sty (mk/inner-struct-type names desc concrete-parent))
 
-
-  (register-sty! sty names desc)
-  ;; Register the struct bindings.
-  (unless type-only
-    (register-struct-bindings! sty names desc)))
+  (parsed-struct sty names desc type-only))
 
 
 ;; register a struct type
