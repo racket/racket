@@ -57,7 +57,7 @@
   (case-lambda [(t)
                 (let ([mk (lambda (t) (make-FilterSet (make-Top) (make-Top)))])
                   (make-tc-results
-                   (cond [(Type? t)
+                   (cond [(Type/c? t)
                           (list (make-tc-result t (mk t) (make-Empty)))]
                          [else
                           (for/list ([i t])
@@ -65,7 +65,7 @@
                    #f))]
                [(t f)
                 (make-tc-results
-                 (if (Type? t)
+                 (if (Type/c? t)
                      (list (make-tc-result t f (make-Empty)))
                      (for/list ([i t] [f f])
                                (make-tc-result i f (make-Empty))))
