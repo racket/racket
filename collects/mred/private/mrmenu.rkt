@@ -185,7 +185,8 @@
               (char? c)
               (and (symbol? c)
                    (wx:key-symbol-to-menu-key c)))
-    (raise-type-error (who->name who) "character, key-code symbol, or #f" c)))
+    ;; FIXME: `key-code-symbol?' is not exported
+    (raise-argument-error (who->name who) "(or/c char? key-code-symbol? #f)" c)))
 
 (define (check-shortcut-prefix who p)
   (unless (and (list? p)
@@ -197,25 +198,28 @@
                   [(null? p) #t]
                   [(memq (car p) (cdr p)) #f]
                   [else (loop (cdr p))])))
-    (raise-type-error (who->name who)
-                      "list of unique symbols: 'shift, 'meta, 'alt, 'cmd, 'option, and 'ctl"
-                      p))
+    (raise-arguments-error (who->name who)
+                           (string-append
+                            "bad prefix;\n"
+                            " given prefix is not a list of unique prefix symbols\n"
+                            "  allowed symbols: 'shift, 'meta, 'alt, 'cmd, 'option, and 'ctl")
+                           "given prefix" p))
   (let ([disallowed (case (system-type)
                       [(unix) '(cmd option)]
                       [(windows) '(cmd option meta)]
                       [(macosx) '(meta alt)])])
     (for-each (lambda (i)
                 (when (memq i p)
-                  (raise-mismatch-error (who->name who)
-                                        "prefix not supported for the current platform: "
-                                        i)))
+                  (raise-arguments-error (who->name who)
+                                         "prefix not supported for the current platform"
+                                         "prefix" i)))
               disallowed)
     (when (eq? 'unix (system-type))
       (when (and (memq 'meta p)
                  (memq 'alt p))
-        (raise-mismatch-error (who->name who)
-                              "prefix contains both 'meta and 'alt: "
-                              p)))))
+        (raise-arguments-error (who->name who)
+                               "given prefix contains both 'meta and 'alt"
+                               "given" p)))))
 
 (define default-prefix
   (case (system-type)
@@ -414,13 +418,13 @@
   (class* mred% (menu-item-container<%>)
     (init parent [demand-callback void])
     (unless (or (is-a? parent frame%) (eq? parent 'root))
-      (raise-type-error (constructor-name 'menu-bar) "frame% object or 'root" parent))
+      (raise-argument-error (constructor-name 'menu-bar) "(or/c (is-a?/c frame%) 'root)" parent))
     (check-callback1 '(constructor menu-bar) demand-callback)
     (if (eq? parent 'root)
         (unless (current-eventspace-has-menu-root?)
-          (raise-mismatch-error (constructor-name 'menu-bar) "no menu bar allowed in the current eventspace for: " parent))
+          (raise-arguments-error (constructor-name 'menu-bar) "no 'root menu bar allowed in the current eventspace"))
         (when (as-entry (lambda () (send (mred->wx parent) get-the-menu-bar)))
-          (raise-mismatch-error (constructor-name 'menu-bar) "the specified frame already has a menu bar: " parent)))
+          (raise-arguments-error (constructor-name 'menu-bar) "given frame already has a menu bar" "given" parent)))
     (define callback demand-callback)
     (define prnt
       (if (eq? parent 'root)
@@ -428,7 +432,8 @@
             (as-entry
              (lambda ()
                (when root-menu-frame-used?
-                 (raise-mismatch-error (constructor-name 'menu-bar) "already has a menu bar: " parent))
+                 (raise-arguments-error (constructor-name 'menu-bar) "given parent already has a menu bar" 
+                                        "given" parent))
                (set! root-menu-frame-used? #t)))
             root-menu-frame)
           parent))
@@ -455,8 +460,11 @@
 
 (define (menu-parent-only who p)
   (unless (is-a? p internal-menu<%>)
-    (raise-type-error (constructor-name who) "parent menu% or popup-menu% object" p)))
+    (raise-argument-error (constructor-name who) "(or/c (is-a?/c menu%) (is-a?/c popup-menu%))" p)))
 
 (define (menu-or-bar-parent who p)
   (unless (or (is-a? p internal-menu<%>) (is-a? p menu-bar%))
-    (raise-type-error (constructor-name who) "built-in menu-item-container<%> object" p)))
+    (unless (is-a? p menu-item-container<%>)
+      (raise-arguments-error (constructor-name who) "(is-a?/c menu-item-container<%>)" p))
+    (raise-arguments-error (who->name who) "invalid parent;\n given parent is not an instance of a built-in menu item container class"
+                           "given parent" p)))

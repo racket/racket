@@ -29,7 +29,7 @@
     (check-label-string/false cwho label)
     (when choices?
       (unless (and (list? choices) (andmap label-string? choices))
-	(raise-type-error (who->name cwho) "list of strings (up to 200 characters)" choices)))
+	(raise-argument-error (who->name cwho) "(listof label-string?)" choices)))
     (check-container-parent cwho parent)
     (check-callback cwho callback)
     (check-string cwho init-value)

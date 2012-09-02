@@ -33,7 +33,10 @@
 
 (define (check-container-parent who p)
   (unless (is-a? p internal-container<%>)
-    (raise-type-error (who->name who) "built-in container<%> object" p)))
+    (unless (is-a? p area-container<%>)
+      (raise-argument-error (who->name who) "(is-a?/c area-container<%>)" p))
+    (raise-arguments-error (who->name who) "invalid container;\n given container is not an instance of a built-in container class"
+                           "given container" p)))
 
 (define-local-member-name
   has-wx-child?
@@ -54,7 +57,7 @@
                      (= 2 (length alignment))
                      (memq (car alignment) '(left center right))
                      (memq (cadr alignment) '(top center bottom)))
-          (raise-type-error (who->name cwho) "alignment list" alignment))))
+          (raise-argument-error (who->name cwho) "(list/c (or/c 'left center right) (or/c 'top 'center 'bottom))" alignment))))
     (define get-wx-panel get-wx-pan)
     
     (define bdr (param get-wx-panel border))
@@ -81,9 +84,9 @@
                        (lambda (f)
                          (unless (and (procedure? f)
                                       (procedure-arity-includes? f 1))
-                           (raise-type-error (who->name '(method container<%> change-children))
-                                             "procedure of arity 1"
-                                             f))
+                           (raise-argument-error (who->name '(method container<%> change-children))
+                                                 "(procedure-arity-includes/c 1)"
+                                                 f))
                          (send (get-wx-panel) change-children
                                (lambda (kids)
                                  (let* ([hidden (send (get-wx-panel) get-hidden-child)]
@@ -91,9 +94,10 @@
                                         [l (as-exit (lambda () (f mred-kids)))])
                                    (unless (and (list? l)
                                                 (andmap (lambda (x) (is-a? x internal-subarea<%>)) l))
-                                     (raise-mismatch-error 'change-children
-                                                           "result of given procedure was not a list of subareas: "
-                                                           l))
+                                     (raise-arguments-error 'change-children
+                                                            "result of given procedure was not a list of subareas"
+                                                            "procedure" f
+                                                            "result" l))
                                    (append
                                     (if hidden (list hidden) null)
                                     (map mred->wx l)))))))]
@@ -107,9 +111,9 @@
                                              (integer? (car l)) (exact? (car l)) (<= 0 (car l) 10000)
                                              (integer? (cadr l)) (exact? (cadr l)) (<= 0 (cadr l) 10000)))
                                       l))
-                          (raise-type-error (who->name '(method area-container<%> container-size))
-                                            "list of lists containing two exact integers in [0, 10000] and two booleans"
-                                            l))
+                          (raise-argument-error (who->name '(method area-container<%> container-size))
+                                                "(listof (list/c (integer-in 0 10000) (integer-in 0 10000) any/c any/c))"
+                                                l))
                         (let ([l (send (get-wx-panel) do-get-graphical-min-size)])
                           (apply values l))))]
      [place-children (entry-point (lambda (l w h) (send (get-wx-panel) do-place-children l w h)))]
@@ -155,19 +159,20 @@
                  (let ([p1 (send (mred->wx this) get-top-level)]
                        [p2 (send (mred->wx new-parent) get-top-level)])
                    (eq? (send p1 get-eventspace) (send p1 get-eventspace)))))
-        (raise-mismatch-error
+        (raise-arguments-error
          (who->name '(subwindow<%> reparent))
-         "current parent's eventspace is not the same as the eventspace of the new parent: "
-         new-parent))
+         "current parent's eventspace is not the same as the eventspace of the new parent"
+         "subwindow" this
+         "new parent" new-parent))
       (let loop ([p new-parent])
         (when p
           (when (eq? p this)
-            (raise-mismatch-error
+            (raise-arguments-error
              (who->name '(subwindow<%> reparent))
              (if (eq? new-parent this)
-                 "cannot set parent to self: "
-                 "cannot set parent to a descedant: ")
-             new-parent))
+                 "cannot set parent to self"
+                 "cannot set parent to a descedant")
+             "subwindow" this))
           (loop (send p get-parent))))
       (let* ([added? (memq this (send (get-parent) get-children))]
              [shown? (and added? (is-shown?))])

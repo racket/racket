@@ -323,11 +323,11 @@
 
 (define (check-top-level-parent/false who p)
   (unless (or (not p) (is-a? p frame%) (is-a? p dialog%))
-    (raise-type-error (who->name who) "frame% or dialog% object or #f" p)))
+    (raise-argument-error (who->name who) "(or/c (is-a?/c frame%) (is-a?/c dialog%) #f)" p)))
 
 (define (check-frame-parent/false who p)
   (unless (or (not p) (is-a? p frame%))
-    (raise-type-error (who->name who) "frame% object or #f" p)))
+    (raise-argument-error (who->name who) "(or/c (is-a?/c frame%) #f)" p)))
 
 (define root-menu-frame
   (and (current-eventspace-has-menu-root?)

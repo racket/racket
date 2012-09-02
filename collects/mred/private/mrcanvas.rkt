@@ -50,13 +50,13 @@
     (public get-dc)
     (define/public (make-bitmap w h)
       (unless (exact-positive-integer? w)
-        (raise-type-error (who->name '(method canvas% make-bitmap))
-                          "exact positive integer"
-                          w))
+        (raise-argument-error (who->name '(method canvas% make-bitmap))
+                              "exact-positive-integer?"
+                              w))
       (unless (exact-positive-integer? h)
-        (raise-type-error (who->name '(method canvas% make-bitmap))
-                          "exact positive integer"
-                          h))
+        (raise-argument-error (who->name '(method canvas% make-bitmap))
+                              "exact-positive-integer?"
+                              h))
       (send wx make-compatible-bitmap w h))
 
     (define/public (suspend-flush)
@@ -69,13 +69,13 @@
       (entry-point
        (lambda (c)
          (unless (c . is-a? . wx:color%)
-           (raise-type-error (who->name '(method canvas<%> set-canvas-background))
-                             "color% object"
-                             c))
-         (unless (send wx get-canvas-background)
-           (raise-mismatch-error (who->name '(method canvas<%> set-canvas-background))
-                                 "cannot set a transparent canvas's background color: "
+           (raise-argument-error (who->name '(method canvas<%> set-canvas-background))
+                                 "(is-a?/c color%)"
                                  c))
+         (unless (send wx get-canvas-background)
+           (raise-arguments-error (who->name '(method canvas<%> set-canvas-background))
+                                  "cannot set a transparent canvas's background color"
+                                  "given color" c))
          (send wx set-canvas-background c))))
     (public set-canvas-background)
     (define get-canvas-background
@@ -179,27 +179,27 @@
         (check-range-integer who x-val)
         (check-range-integer who y-val)
         (when (and x-len (< x-len x-val))
-          (raise-mismatch-error (who->name who)
-                                (format "horizontal value: ~e larger than the horizontal range: "
-                                        x-val)
-                                x-len))
+          (raise-arguments-error (who->name who)
+                                 "horizontal value is larger than the horizontal range"
+                                 "value" x-val
+                                 "range" x-len))
         (when (and y-len (< y-len y-val))
-          (raise-mismatch-error (who->name who)
-                                (format "vertical value: ~e larger than the vertical range: "
-                                        y-val)
-                                y-len)))
+          (raise-arguments-error (who->name who)
+                                 "vertical value is larger than the vertical range"
+                                 "value" y-val
+                                 "range" y-len)))
       (send wx set-scrollbars (if x-len 1 0) (if y-len 1 0)
             (or x-len 0) (or y-len 0) x-page y-page x-val y-val #f))
 
     (define/public (show-scrollbars x-on? y-on?)
       (let ([bad (lambda (which what)
-                   (raise-mismatch-error 
+                   (raise-arguments-error 
                     (who->name '(method canvas% show-scrollbars))
                     (format
-                     "cannot show ~a scrollbars, because the canvas style did not include ~a: "
+                     "cannot show ~a scrollbars;\n the canvas style did not include ~a"
                      which
                      what)
-                    this))])
+                    "canvas" this))])
         (when x-on? (unless has-x? (bad "horizontal" 'hscroll)))
         (when y-on? (unless has-y? (bad "vertical" 'vscroll)))
         (send wx show-scrollbars x-on? y-on?)))

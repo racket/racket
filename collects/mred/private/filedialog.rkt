@@ -37,7 +37,7 @@
                               (string? (car p))
                               (string? (cadr p))))
                        filters))
-    (raise-type-error who "list of 2-string lists" filters))
+    (raise-argument-error who "(listof (list/c string? string?))" filters))
   (let* ([std? (memq 'common style)]
          [style (if std? (remq 'common style) style)])
     (if std?

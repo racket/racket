@@ -159,12 +159,12 @@
        [add-child
         (lambda (new-child)
           (unless (eq? this (send new-child area-parent))
-            (raise-mismatch-error 'add-child 
-                                  "not a child of this container: "
-                                  (wx->proxy new-child)))
+            (raise-arguments-error 'add-child 
+                                   "subwindow is not a child of this container"
+                                   "subwindow" (wx->proxy new-child)))
           (when (memq new-child children)
-            (raise-mismatch-error 'add-child "child already active: "
-                                  (wx->proxy new-child)))
+            (raise-arguments-error 'add-child "subwindow area is already active"
+                                   "subwindow" (wx->proxy new-child)))
           (change-children
            (lambda (l)
              (append l (list new-child)))))]
@@ -180,19 +180,19 @@
             (unless (andmap (lambda (child)
                               (eq? this (send child area-parent)))
                             new-children)
-              (raise-mismatch-error 'change-children
-                                    (format
+              (raise-arguments-error 'change-children
                                      (string-append 
                                       "not all members of the returned list are "
-                                      "children of the container ~e; list: ")
-                                     (wx->proxy this))
-                                    (map wx->proxy (remq hidden-child new-children))))
+                                      "children of the container")
+                                     "container" (wx->proxy this)
+                                     "list" (map wx->proxy (remq hidden-child new-children))))
             (let loop ([l new-children])
               (unless (null? l)
                 (if (memq (car l) (cdr l))
-                    (raise-mismatch-error 'change-children 
-                                          "child in the returned list twice: " 
-                                          (wx->proxy (car l)))
+                    (raise-arguments-error 'change-children 
+                                           "child appears  multiple times in the returned list" 
+                                           "child" (wx->proxy (car l))
+                                           "list" (map wx->proxy (remq hidden-child new-children)))
                     (loop (cdr l)))))
             ;; show all new children, hide all deleted children.
             (let ([added-children (list-diff new-children children)]
@@ -202,11 +202,11 @@
                                               child))
                                        removed-children)])
                 (when non-window
-                  (raise-mismatch-error 'change-children
-                                        (format "cannot delete non-window area in ~e: "
-                                                (wx->proxy this))
-                                        non-window)))
-
+                  (raise-arguments-error 'change-children
+                                         "cannot delete non-window area"
+                                         "area" non-window
+                                         "container" (wx->proxy this))))
+              
               ;; Newly-added children may have been removed when
               ;;  disabled, or now added into a disabled panel:
               (for-each (lambda (child) (send child queue-active))
@@ -227,9 +227,9 @@
        [delete-child
         (lambda (child)
           (unless (memq child children)
-            (raise-mismatch-error 'delete-child 
-                                  "not a child of this container or child is not active: " 
-                                  (wx->proxy child)))
+            (raise-arguments-error 'delete-child 
+                                   "subwindow is not a child of this container or child is not active" 
+                                   "subwindow" (wx->proxy child)))
           (change-children (lambda (child-list)
                              (remq child child-list))))]
 		 
@@ -372,9 +372,9 @@
                                                 (integer? (car x)) (not (negative? (car x))) (exact? (car x))
                                                 (integer? (cadr x)) (not (negative? (cadr x))) (exact? (cadr x))))
                                children-info))
-            (raise-type-error (who->name '(method area-container-window<%> place-children))
-                              "list of (list of non-negative-integer non-negative-integer boolean boolean)"
-                              children-info))
+            (raise-argument-error (who->name '(method area-container-window<%> place-children))
+                                  "(listof (list/c exact-nonnegative-integer? exact-nonnegative-integer? any/c any/c))"
+                                  children-info))
           (check-non-negative-integer '(method area-container-window<%> place-children) width)
           (check-non-negative-integer '(method area-container-window<%> place-children) height))]
        [do-place-children
@@ -403,9 +403,9 @@
 
        [do-align (lambda (h v set-h set-v)
                    (unless (memq h '(left center right))
-                     (raise-type-error 'set-alignment "horizontal alignment symbol: left, center, or right" h))
+                     (raise-argument-error 'set-alignment "(or/c 'left 'center 'right)" h))
                    (unless (memq v '(top center bottom))
-                     (raise-type-error 'set-alignment "vertical alignment symbol: top, center, or bottom" v))
+                     (raise-argument-error 'set-alignment "(or/c 'top 'center 'bottom)" v))
                    (set-h h)
                    (set-v (case v [(top) 'left] [(center) 'center] [(bottom) 'right])))]
        [alignment (lambda (h v) 
@@ -472,9 +472,9 @@
                                                     (= 4 (length x))
                                                     (andmap (lambda (x) (and (integer? x) (exact? x))) x)))
                                    l))
-                (raise-mismatch-error 'container-redraw 
-                                      "result from place-children is not a list of 4-integer lists with the correct length: "
-                                      l))
+                (raise-arguments-error 'container-redraw 
+                                       "result from place-children is not a list of 4-integer lists with the correct length"
+                                       "result" l))
               (panel-redraw children children-info (if hidden-child
                                                        (cons (list 0 0 width height)
                                                              (let ([dy (child-info-y-min (car children-info))])

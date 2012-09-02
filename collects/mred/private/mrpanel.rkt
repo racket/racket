@@ -308,7 +308,7 @@
 
     (let ([cwho '(constructor tab-panel)])
       (unless (and (list? choices) (andmap label-string? choices))
-        (raise-type-error (who->name cwho) "list of strings (up to 200 characters)" choices))
+        (raise-argument-error (who->name cwho) "label-string?" choices))
       (check-callback cwho callback)
       (check-container-parent cwho parent)
       (check-style cwho #f '(deleted no-border) style)
@@ -367,8 +367,8 @@
      [set
       (entry-point (lambda (l)
                      (unless (and (list? l) (andmap label-string? l))
-                       (raise-type-error (who->name '(method tab-panel% set))
-                                         "list of strings (up to 200 characters)" l))
+                       (raise-argument-error (who->name '(method tab-panel% set))
+                                             "(listof label-string?)" l))
                      (set! save-choices (map string->immutable-string l))
                      (send (mred->wx this) set l)))]
      [get-item-label (entry-point
@@ -382,12 +382,13 @@
         (check-non-negative-integer `(method tab-panel% ,method) n)
         (let ([m (length save-choices)])
           (unless (< n m)
-            (raise-mismatch-error (who->name `(method tab-panel% ,method))
-                                  (if (zero? m)
-                                      "panel has no tabs; given index: "
-                                      (format "panel has only ~a tabs, indexed 0 to ~a; given out-of-range index: "
-                                              m (sub1 m)))
-                                  n))))])))
+            (raise-range-error (who->name `(method tab-panel% ,method))
+                               "panel" "tab "
+                               n
+                               this
+                               0
+                               (sub1 m)
+                               #f))))])))
 
 (define group-box-panel%
   (class vertical-panel%
