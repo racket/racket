@@ -43,6 +43,20 @@
          (~optional (~and #:type-only (~bind (type-only #t))))
          (~optional (~seq #:maker maker))) ...)))
 
+(define-syntax-class struct-name
+ (pattern nm:id)
+ (pattern (nm:id parent:id)))
+
+
+(define-syntax-class define-typed-struct
+  #:attributes (mutable type-only maker nm (tvars 1) (fld 1) (ty 1))
+  (pattern ((~optional (tvars:id ...) #:defaults (((tvars 1) null)))
+            nm:struct-name ([fld:id : ty:expr] ...) fields:dtsi-fields)
+           #:attr mutable (attribute fields.mutable)
+           #:attr type-only (attribute fields.type-only)
+           #:attr maker (attribute fields.maker)))
+
+
 
 (define (tc-toplevel/pass1 form)
   (parameterize ([current-orig-stx form])
@@ -95,29 +109,11 @@
          (list (make-def-binding #'nm mk-ty)))]
 
       ;; define-typed-struct
-      [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...))) (#%plain-app values)))
-       (tc/struct null #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)))]
-      [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...) #:mutable)) (#%plain-app values)))
-       (tc/struct null #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:mutable #t)]
-
-      [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...) fields:dtsi-fields)) (#%plain-app values)))
-       (tc/struct null #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...))
-            #:mutable (attribute fields.mutable)
-            #:maker (attribute fields.maker)
-            #:type-only (attribute fields.type-only))]
-
-      ;; define-typed-struct w/ polymorphism
-      [(define-values () (begin (quote-syntax (define-typed-struct-internal (vars ...) nm ([fld : ty] ...) #:maker m)) (#%plain-app values)))
-       (tc/struct (syntax->list #'(vars ...)) #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:maker #'m)]
-      [(define-values () (begin (quote-syntax (define-typed-struct-internal (vars ...) nm ([fld : ty] ...) #:maker m #:mutable)) (#%plain-app values)))
-       (tc/struct (syntax->list #'(vars ...)) #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:maker #'m #:mutable #t)]
-      [(define-values () (begin (quote-syntax (define-typed-struct-internal (vars ...) nm ([fld : ty] ...) #:mutable)) (#%plain-app values)))
-       (tc/struct (syntax->list #'(vars ...)) #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:mutable #t)]
-      [(define-values () (begin (quote-syntax (define-typed-struct-internal (vars ...) nm ([fld : ty] ...))) (#%plain-app values)))
-       (tc/struct (syntax->list #'(vars ...)) #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)))]
-      ;; error in other cases
-      [(define-values () (begin (quote-syntax (define-typed-struct-internal . _)) (#%plain-app values)))
-       (int-err "unknown structure form")]
+      [(define-values () (begin (quote-syntax (define-typed-struct-internal ~! . dts:define-typed-struct)) (#%plain-app values)))
+       (tc/struct (attribute dts.tvars) #'dts.nm (syntax->list #'(dts.fld ...)) (syntax->list #'(dts.ty ...))
+                  #:mutable (attribute dts.mutable)
+                  #:maker (attribute dts.maker)
+                  #:type-only (attribute dts.type-only))]
 
       ;; executable structs - this is a big hack
       [(define-values () (begin (quote-syntax (define-typed-struct/exec-internal nm ([fld : ty] ...) proc-ty)) (#%plain-app values)))
