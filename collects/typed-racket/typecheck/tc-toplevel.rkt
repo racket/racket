@@ -56,6 +56,25 @@
            #:attr type-only (attribute fields.type-only)
            #:attr maker (attribute fields.maker)))
 
+(define (parse-define-struct-internal form)
+  (parameterize ([current-orig-stx form])
+    (syntax-parse form
+      #:literals (values define-typed-struct-internal
+                  define-typed-struct/exec-internal quote-syntax #%plain-app)
+
+      ;; define-typed-struct
+      [(define-values () (begin (quote-syntax (define-typed-struct-internal ~! . dts:define-typed-struct)) (#%plain-app values)))
+       (tc/struct (attribute dts.tvars) #'dts.nm (syntax->list #'(dts.fld ...)) (syntax->list #'(dts.ty ...))
+                  #:mutable (attribute dts.mutable)
+                  #:maker (attribute dts.maker)
+                  #:type-only (attribute dts.type-only))]
+
+      ;; executable structs - this is a big hack
+      [(define-values () (begin (quote-syntax (define-typed-struct/exec-internal ~! nm ([fld : ty] ...) proc-ty)) (#%plain-app values)))
+       (tc/struct null #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:proc-ty #'proc-ty)])))
+
+
+
 
 
 (define (tc-toplevel/pass1 form)
@@ -108,16 +127,13 @@
          (register-type #'nm mk-ty)
          (list (make-def-binding #'nm mk-ty)))]
 
-      ;; define-typed-struct
-      [(define-values () (begin (quote-syntax (define-typed-struct-internal ~! . dts:define-typed-struct)) (#%plain-app values)))
-       (tc/struct (attribute dts.tvars) #'dts.nm (syntax->list #'(dts.fld ...)) (syntax->list #'(dts.ty ...))
-                  #:mutable (attribute dts.mutable)
-                  #:maker (attribute dts.maker)
-                  #:type-only (attribute dts.type-only))]
+      ;; define-typed-struct (handled earlier)
+      [(define-values () (begin (quote-syntax (define-typed-struct-internal . _)) (#%plain-app values)))
+       (list)]
 
-      ;; executable structs - this is a big hack
-      [(define-values () (begin (quote-syntax (define-typed-struct/exec-internal nm ([fld : ty] ...) proc-ty)) (#%plain-app values)))
-       (tc/struct null #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:proc-ty #'proc-ty)]
+      ;; executable structs (handled earlier)
+      [(define-values () (begin (quote-syntax (define-typed-struct/exec-internal . _)) (#%plain-app values)))
+       (list)]
 
       ;; predicate assertion - needed for define-type b/c or doesn't work
       [(define-values () (begin (quote-syntax (assert-predicate-internal ty pred)) (#%plain-app values)))
@@ -275,10 +291,19 @@
      define/fixup-contract?))
   (do-time "Form splitting done")
   (for-each (compose register-type-alias parse-type-alias) type-aliases)
-  ;; add the struct names to the type table
+  ;; Add the struct names to the type table, but not with a type
   (for-each (compose add-type-name! names-of-struct) struct-defs)
   ;; resolve all the type aliases, and error if there are cycles
   (resolve-type-aliases parse-type)
+  ;; Parse and register the structure types
+  (define parsed-structs
+    (for/list ((def struct-defs))
+      (define parsed (parse-define-struct-internal def))
+      (register-parsed-struct-sty! parsed)
+      parsed))
+
+  ;; register the bindings of the structs
+  (for-each register-parsed-struct-bindings! parsed-structs)
   (do-time "Starting pass1")
   ;; do pass 1, and collect the defintions
   (define defs (apply append (filter list? (map tc-toplevel/pass1 forms))))
