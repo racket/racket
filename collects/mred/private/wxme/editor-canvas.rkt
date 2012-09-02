@@ -876,28 +876,28 @@
                             (unless fake-x-scroll?
                               (let ([x (min x hnum-scrolls)])
                                 (when (hspp . < . hscrolls-per-page)
-                                  (set-scroll-page 'horizontal hspp))
+                                  (set-scroll-page 'horizontal (min hspp 10000000)))
                                 (when (x . < . sx)
                                   (set-scroll-pos 'horizontal x))
                                 (when (not (= scroll-width hnum-scrolls))
-                                  (set-scroll-range 'horizontal hnum-scrolls))
+                                  (set-scroll-range 'horizontal (min hnum-scrolls 10000000)))
                                 (when (x . > . sx)
-                                  (set-scroll-pos 'horizontal x))
+                                  (set-scroll-pos 'horizontal (min x 10000000)))
                                 (when (hspp . > . hscrolls-per-page)
-                                  (set-scroll-page 'horizontal hspp))))
+                                  (set-scroll-page 'horizontal (min hspp 10000000)))))
                             
                             (unless fake-y-scroll?
                               (let ([y (min y vnum-scrolls)])
                                 (when (vspp . < . vscrolls-per-page)
-                                  (set-scroll-page 'vertical vspp))
+                                  (set-scroll-page 'vertical (min vspp 10000000)))
                                 (when (y . < . sy)
-                                  (set-scroll-pos 'vertical y))
+                                  (set-scroll-pos 'vertical (min y 10000000)))
                                 (when (not (= scroll-height vnum-scrolls))
-                                  (set-scroll-range 'vertical vnum-scrolls))
+                                  (set-scroll-range 'vertical (min vnum-scrolls 10000000)))
                                 (when (y . > . sy)
-                                  (set-scroll-pos 'vertical y))
+                                  (set-scroll-pos 'vertical (min y 10000000)))
                                 (when (vspp . > . vscrolls-per-page)
-                                  (set-scroll-page 'vertical vspp))))
+                                  (set-scroll-page 'vertical (min vspp 10000000)))))
 
                             (let ([go-again? (or go-again?
                                                  (given-h-scrolls-per-page . < . -1))])
@@ -921,12 +921,12 @@
       (when (and (x . > . -1)
                  (not fake-x-scroll?))
         (when (positive? scroll-width)
-          (set-scroll-pos 'horizontal (->long (min x scroll-width)))))
+          (set-scroll-pos 'horizontal (min (->long (min x scroll-width)) 10000000))))
       
       (when (and (y . > . -1)
                  (not fake-y-scroll?))
         (when (positive? scroll-height)
-          (set-scroll-pos 'vertical (->long (min y scroll-height)))))
+          (set-scroll-pos 'vertical (min (->long (min y scroll-height))  10000000))))
       
       (set! noloop? savenoloop?)
 
