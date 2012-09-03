@@ -10,7 +10,7 @@
          "typechecker.rkt"
          ;; to appease syntax-parse
          "internal-forms.rkt"
-         (rep type-rep)
+         (rep type-rep free-variance)
          (types utils abbrev type-table)
          (private parse-type type-annotation type-contract)
          (env global-env init-envs type-name-env type-alias-env lexical-env env-req mvar-env)
@@ -49,9 +49,10 @@
 
 
 (define-syntax-class define-typed-struct
-  #:attributes (mutable type-only maker nm (tvars 1) (fld 1) (ty 1))
+  #:attributes (name mutable type-only maker nm (tvars 1) (fld 1) (ty 1))
   (pattern ((~optional (tvars:id ...) #:defaults (((tvars 1) null)))
             nm:struct-name ([fld:id : ty:expr] ...) fields:dtsi-fields)
+           #:attr name #'nm.nm
            #:attr mutable (attribute fields.mutable)
            #:attr type-only (attribute fields.type-only)
            #:attr maker (attribute fields.maker)))
@@ -72,6 +73,20 @@
       ;; executable structs - this is a big hack
       [(define-values () (begin (quote-syntax (define-typed-struct/exec-internal ~! nm ([fld : ty] ...) proc-ty)) (#%plain-app values)))
        (tc/struct null #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:proc-ty #'proc-ty)])))
+
+(define (add-constant-variance! form)
+  (parameterize ([current-orig-stx form])
+    (syntax-parse form
+      #:literals (values define-typed-struct-internal quote-syntax #%plain-app)
+      ;; define-typed-struct
+      [(define-values () (begin (quote-syntax (define-typed-struct-internal ~! . dts:define-typed-struct)) (#%plain-app values)))
+       ;; TODO make constant
+       (unless (null? (attribute dts.tvars))
+         (register-type-variance! #'dts.name (map (lambda (_) Covariant) (attribute dts.tvars))))]
+      [(define-values () (begin (quote-syntax (define-typed-struct/exec-internal ~! nm ([fld : ty] ...) proc-ty)) (#%plain-app values)))
+       ;; Not polymorphic
+       (void)])))
+
 
 
 
@@ -290,12 +305,13 @@
      provide?
      define/fixup-contract?))
   (do-time "Form splitting done")
-  (printf "before parsing type aliases~n")
+  ;(printf "before parsing type aliases~n")
   (for-each (compose register-type-alias parse-type-alias) type-aliases)
   ;; Add the struct names to the type table, but not with a type
-  (printf "before adding type names~n")
+  ;(printf "before adding type names~n")
   (for-each (compose add-type-name! names-of-struct) struct-defs)
-  (printf "after adding type names~n")
+  (for-each add-constant-variance! struct-defs)
+  ;(printf "after adding type names~n")
   ;; resolve all the type aliases, and error if there are cycles
   (resolve-type-aliases parse-type)
   ;; Parse and register the structure types
@@ -305,22 +321,26 @@
       (register-parsed-struct-sty! parsed)
       parsed))
 
+  (refine-struct-variance! parsed-structs)
+
+
+
   ;; register the bindings of the structs
   (for-each register-parsed-struct-bindings! parsed-structs)
-  (printf "after resolving type aliases~n")
-  (displayln "Starting pass1")
+  ;(printf "after resolving type aliases~n")
+  ;(displayln "Starting pass1")
   ;; do pass 1, and collect the defintions
   (define defs (apply append (filter list? (map tc-toplevel/pass1 forms))))
-  (displayln "Finished pass1")
+  ;(displayln "Finished pass1")
   ;; separate the definitions into structures we'll handle for provides
   (define def-tbl
     (for/fold ([h (make-immutable-free-id-table)])
       ([def (in-list defs)])
       (dict-set h (binding-name def) def)))
   ;; typecheck the expressions and the rhss of defintions
-  (displayln "Starting pass2")
+  ;(displayln "Starting pass2")
   (for-each tc-toplevel/pass2 forms)
-  (displayln "Finished pass2")
+  ;(displayln "Finished pass2")
   ;; check that declarations correspond to definitions
   (check-all-registered-types)
   ;; report delayed errors
@@ -371,6 +391,7 @@
               #,(env-init-code syntax-provide? provide-tbl def-tbl)
               #,(talias-env-init-code)
               #,(tname-env-init-code)
+              #,(tvariance-env-init-code)
               #,(mvar-env-init-code mvar-env)
               #,(make-struct-table-code)
               #,@(for/list ([a (in-list aliases)])

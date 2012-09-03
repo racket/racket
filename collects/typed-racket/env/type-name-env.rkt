@@ -12,19 +12,20 @@
          lookup-type-name
          register-type-names
          add-alias
-         type-name-env-map)
+         type-name-env-map
+
+         register-type-variance!
+         lookup-type-variance
+         type-variance-env-map)
 
 ;; a mapping from id -> type (where id is the name of the type)
 (define the-mapping
   (make-module-identifier-mapping))
 
-(define (mapping-put! id v) (module-identifier-mapping-put! the-mapping id v))
-;(trace mapping-put!)
-
 ;; add a name to the mapping
 ;; identifier Type -> void
 (define (register-type-name id [type #t])
-  (mapping-put! id type))
+  (module-identifier-mapping-put! the-mapping id type))
 
 ;; add a bunch of names to the mapping
 ;; listof[identifier] listof[type] -> void
@@ -46,5 +47,26 @@
   (module-identifier-mapping-map the-mapping f))
 
 (define (add-alias from to)
-  (when (lookup-type-name to (lambda () #f))    
+  (when (lookup-type-name to (lambda () #f))
     (register-resolved-type-alias from (make-Name to))))
+
+
+;; a mapping from id -> listof[Variance] (where id is the name of the type)
+(define variance-mapping
+  (make-module-identifier-mapping))
+
+;; add a name to the mapping
+;; identifier Type -> void
+(define (register-type-variance! id variance)
+  (module-identifier-mapping-put! variance-mapping id variance))
+
+(define (lookup-type-variance id )
+  (module-identifier-mapping-get variance-mapping id))
+
+;; map over the-mapping, producing a list
+;; (id variance -> T) -> listof[T]
+(define (type-variance-env-map f)
+  (module-identifier-mapping-map variance-mapping f))
+
+
+

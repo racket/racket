@@ -3,7 +3,7 @@
 (require "../utils/utils.rkt"
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
-         (only-in (rep free-variance) combine-frees)
+         (rep free-variance)
          (env index-env tvar-env)
          racket/match
          racket/contract
@@ -40,7 +40,7 @@
   (define (sb t) (substitute-many subst t #:Un Un))
   (define names (hash-keys subst))
   (define fvs (free-vars* target))
-  (if (ormap (lambda (name) (hash-has-key? fvs name)) names)
+  (if (ormap (lambda (name) (free-vars-has-key? fvs name)) names)
       (type-case (#:Type sb #:Filter (sub-f sb) #:Object (sub-o sb))
                  target
                  [#:Union tys (Un (map sb tys))]
@@ -81,7 +81,8 @@
 (define/cond-contract (substitute-dots images rimage name target)
   ((listof Type/c) (or/c #f Type/c) symbol? Type? . -> . Type?)
   (define (sb t) (substitute-dots images rimage name t))
-  (if (or (hash-ref (free-idxs* target) name #f) (hash-ref (free-vars* target) name #f))
+  (if (or (hash-ref (free-vars-hash (free-idxs* target)) name #f)
+          (hash-ref (free-vars-hash (free-vars* target)) name #f))
       (type-case (#:Type sb #:Filter (sub-f sb)) target
                  [#:ListDots dty dbound
                              (if (eq? name dbound)
@@ -127,7 +128,7 @@
 ;; substitute-dotted : Type Name Name Type -> Type
 (define (substitute-dotted image image-bound name target)
   (define (sb t) (substitute-dotted image image-bound name t))
-  (if (hash-ref (free-idxs* target) name #f)
+  (if (hash-ref (free-vars-hash (free-idxs* target)) name #f)
       (type-case (#:Type sb #:Filter (sub-f sb))
                  target
                  [#:ValuesDots types dty dbound

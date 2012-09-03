@@ -26,6 +26,7 @@
                        "internal-forms.rkt"))
 
 (provide tc/struct names-of-struct d-s
+         refine-struct-variance!
          register-parsed-struct-sty!
          register-parsed-struct-bindings!)
 
@@ -157,7 +158,7 @@
   (define covariant?
     (for*/and ([var (in-list tvars)]
                [t (in-list all-fields)])
-      (let ([variance (hash-ref (free-vars* t) var Constant)])
+      (let ([variance (hash-ref (free-vars-hash (free-vars* t)) var Constant)])
         (or (eq? variance Constant)
             (and (not mutable) (eq? variance Covariant))))))
 
@@ -188,7 +189,7 @@
       (add-struct-fn! s (make-StructPE poly-base i) #t)
       (register-type s (poly-wrapper (->* (list poly-base t) -Void))))))
 
-(struct parsed-struct (names desc sty type-only) #:transparent)
+(struct parsed-struct (sty names desc type-only) #:transparent)
 
 (define (register-parsed-struct-sty! ps)
   (match ps
@@ -200,6 +201,25 @@
     ((parsed-struct sty names desc type-only)
      (unless type-only
        (register-struct-bindings! sty names desc)))))
+
+(define (refine-struct-variance! parsed-structs)
+  (define stys (map parsed-struct-sty parsed-structs))
+  (define tvarss (map (compose struct-desc-tvars parsed-struct-desc)  parsed-structs))
+  (let loop ()
+    (define sames
+      (for/list ((sty stys) (tvars tvarss))
+        (cond
+          ((null? tvars) #t)
+          (else
+            (define name (Struct-name sty))
+            (define free-vars (free-vars-hash (free-vars* sty)))
+            (define variance (map (λ (v) (hash-ref free-vars v Constant)) tvars))
+            (define old-variance (lookup-type-variance name))
+
+            (register-type-variance! name variance)
+            (equal? variance old-variance)))))
+    (unless (andmap values sames)
+      (loop))))
 
 
 ;; check and register types for a define struct
