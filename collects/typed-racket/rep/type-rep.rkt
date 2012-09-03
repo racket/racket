@@ -9,7 +9,9 @@
          (for-syntax racket/base syntax/parse))
 
 ;; Ugly hack - should use units
-(lazy-require ("../types/union.rkt" (Un)))
+(lazy-require
+  ("../types/union.rkt" (Un))
+  ("../types/resolve.rkt" (resolve-app)))
 
 (define name-table (make-weak-hasheq))
 
@@ -55,6 +57,7 @@
 (def-type F ([n symbol?]) [#:frees (single-free-var n) empty-free-vars] [#:fold-rhs #:base])
 
 ;; id is an Identifier
+;; This will always resolve to a struct
 (def-type Name ([id identifier?]) [#:intern (hash-id id)] [#:frees #f] [#:fold-rhs #:base])
 
 ;; rator is a type
@@ -62,8 +65,13 @@
 ;; stx is the syntax of the pair of parens
 (def-type App ([rator Type/c] [rands (listof Type/c)] [stx (or/c #f syntax?)])
   [#:intern (cons (Rep-seq rator) (map Rep-seq rands))]
-  ;;TODO THIS
-  [#:frees (λ (f) (combine-frees (map f (cons rator rands))))]
+  [#:frees (λ (f)
+              (match rator 
+                ((Name: n)
+                 (instantiate-frees (named-poly-variance n)
+                                    (map f rands)))
+                (else (f (resolve-app rator rands stx)))))]
+
   [#:fold-rhs (*App (type-rec-id rator)
                     (map type-rec-id rands)
                     stx)])

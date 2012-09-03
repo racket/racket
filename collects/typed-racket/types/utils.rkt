@@ -4,7 +4,7 @@
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
          "substitute.rkt" "tc-result.rkt"
-         (only-in (rep free-variance) combine-frees)
+         (rep free-variance) 
          (env index-env tvar-env)
          racket/match
          racket/list
@@ -60,12 +60,12 @@
 
 
 ;; fv : Type -> Listof[Symbol]
-(define (fv t) (hash-map (free-vars* t) (lambda (k v) k)))
-(define (fi t) (for/list ([(k v) (in-hash (free-idxs* t))]) k))
+(define (fv t) (hash-map (free-vars-hash (free-vars* t)) (lambda (k v) k)))
+(define (fi t) (for/list ([(k v) (in-hash (free-vars-hash (free-idxs* t)))]) k))
 
 ;; fv/list : Listof[Type] -> Listof[Symbol]
 (define (fv/list ts)
-  (hash-map (combine-frees (map free-vars* ts)) (lambda (k v) k)))
+  (hash-map (free-vars-hash (combine-frees (map free-vars* ts))) (lambda (k v) k)))
 
 ;; a parameter for the current polymorphic structure being defined
 ;; to allow us to prevent non-regular datatypes

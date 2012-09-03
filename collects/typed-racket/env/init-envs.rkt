@@ -6,7 +6,7 @@
          "type-name-env.rkt"
          "type-alias-env.rkt"
          "mvar-env.rkt"
-         (rep type-rep object-rep filter-rep rep-utils)
+         (rep type-rep object-rep filter-rep rep-utils free-variance)
          (for-template (rep type-rep object-rep filter-rep)
                        (types union abbrev)
                        racket/shared racket/base)
@@ -81,6 +81,17 @@
                  (show-sharing #f)
                  (booleans-as-true/false #f))
     #`(begin #,@(filter values (type-name-env-map f)))))
+
+(define (tvariance-env-init-code)
+  (define (f id var)
+    (if (bound-in-this-module id)
+        #`(register-type-variance! #'#,id (list #,@(map variance->binding var)))
+        #f))
+  (parameterize ((current-print-convert-hook converter)
+                 (show-sharing #f)
+                 (booleans-as-true/false #f))
+    #`(begin #,@(filter values (type-variance-env-map f)))))
+
 
 (define (talias-env-init-code)
   (define (f id ty)
