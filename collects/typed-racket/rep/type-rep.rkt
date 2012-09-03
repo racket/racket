@@ -68,8 +68,7 @@
   [#:frees (λ (f)
               (match rator 
                 ((Name: n)
-                 (instantiate-frees (named-poly-variance n)
-                                    (map f rands)))
+                 (instantiate-frees n (map f rands)))
                 (else (f (resolve-app rator rands stx)))))]
 
   [#:fold-rhs (*App (type-rec-id rator)
