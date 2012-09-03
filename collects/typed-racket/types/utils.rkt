@@ -7,6 +7,7 @@
          (rep free-variance) 
          (env index-env tvar-env)
          racket/match
+         racket/set
          racket/list
          (contract-req)
          "tc-error.rkt")
@@ -60,12 +61,12 @@
 
 
 ;; fv : Type -> Listof[Symbol]
-(define (fv t) (hash-map (free-vars-hash (free-vars* t)) (lambda (k v) k)))
-(define (fi t) (for/list ([(k v) (in-hash (free-vars-hash (free-idxs* t)))]) k))
+(define (fv t) (set->list (free-vars-names (free-vars* t))))
+(define (fi t) (set->list (free-vars-names (free-idxs* t))))
 
-;; fv/list : Listof[Type] -> Listof[Symbol]
+;; fv/list : Listof[Type] -> Setof[Symbol]
 (define (fv/list ts)
-  (hash-map (free-vars-hash (combine-frees (map free-vars* ts))) (lambda (k v) k)))
+  (apply set-union (seteq) (map (compose free-vars-names free-vars*) ts)))
 
 ;; a parameter for the current polymorphic structure being defined
 ;; to allow us to prevent non-regular datatypes
@@ -90,7 +91,7 @@
                  . ->* . any/c)]
  [fv (Rep? . -> . (listof symbol?))]
  [fi (Rep? . -> . (listof symbol?))]
- [fv/list ((listof Type/c) . -> . (listof symbol?))]
+ [fv/list ((listof Type/c) . -> . (set/c symbol?))]
  [lookup-fail (identifier? . -> . Type/c)]
  [lookup-type-fail (identifier? . -> . Type/c)] 
  [current-poly-struct (parameter/c (or/c #f poly?))]

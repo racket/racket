@@ -5,6 +5,7 @@
          "signatures.rkt"
          "utils.rkt"
          syntax/parse racket/match
+         racket/set
          syntax/parse/experimental/reflect
          (typecheck signatures tc-app-helper tc-funapp tc-metafunctions)
          (types abbrev utils union substitute subtype)
@@ -33,7 +34,7 @@
         (Poly: vars
                (Function: (list (and ar (arr: dom rng (and rest #f) (and drest #f) kw-formals))))))
        (=> fail)
-       (unless (null? (fv/list kw-formals))
+       (unless (set-empty? (fv/list kw-formals))
          (fail))
        (match (map single-value (syntax->list #'pos-args))
          [(list (tc-result1: argtys-t) ...)

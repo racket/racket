@@ -6,6 +6,7 @@
          (rep free-variance)
          (env index-env tvar-env)
          racket/match
+         racket/set
          racket/contract
          unstable/lazy-require)
 (lazy-require ("union.rkt" (Un)))
@@ -81,8 +82,8 @@
 (define/cond-contract (substitute-dots images rimage name target)
   ((listof Type/c) (or/c #f Type/c) symbol? Type? . -> . Type?)
   (define (sb t) (substitute-dots images rimage name t))
-  (if (or (hash-ref (free-vars-hash (free-idxs* target)) name #f)
-          (hash-ref (free-vars-hash (free-vars* target)) name #f))
+  (if (or (set-member? (free-vars-names (free-idxs* target)) name)
+          (set-member? (free-vars-names (free-vars* target)) name))
       (type-case (#:Type sb #:Filter (sub-f sb)) target
                  [#:ListDots dty dbound
                              (if (eq? name dbound)
@@ -128,7 +129,7 @@
 ;; substitute-dotted : Type Name Name Type -> Type
 (define (substitute-dotted image image-bound name target)
   (define (sb t) (substitute-dotted image image-bound name t))
-  (if (hash-ref (free-vars-hash (free-idxs* target)) name #f)
+  (if (set-member? (free-vars-names (free-idxs* target)) name)
       (type-case (#:Type sb #:Filter (sub-f sb))
                  target
                  [#:ValuesDots types dty dbound
