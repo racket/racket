@@ -1409,13 +1409,25 @@ If @racket[obj-expr] does not produce an object, the
 @exnraise[exn:fail:contract]. If the object has no @racket[id] field,
 the @exnraise[exn:fail:object].}
 
+@defproc[(dynamic-get-field [field-name symbol?] [obj object?]) any/c]{
+
+Extracts the field from @racket[obj] with the (external) name that
+matches @racket[field-name]. If the object has no field matching @racket[field-name],
+the @exnraise[exn:fail:object].}
+
 @defform[(set-field! id obj-expr expr)]{
 
 Sets the field with (external) name @racket[id] from the value of
 @racket[obj-expr] to the value of @racket[expr].
 
 If @racket[obj-expr] does not produce an object, the
-@exnraise[exn:fail:contract].  If the object has no @racket[id] method,
+@exnraise[exn:fail:contract].  If the object has no @racket[id] field,
+the @exnraise[exn:fail:object].}
+
+@defproc[(dynamic-set-field! [field-name symbol?] [obj object?] [v any/c]) void?]{
+
+Sets the field from @racket[obj] with the (external) name that
+matches @racket[field-name] to @racket[v]. If the object has no field matching @racket[field-name],
 the @exnraise[exn:fail:object].}
 
 @defform[(field-bound? id obj-expr)]{

@@ -1,5 +1,6 @@
 Version 5.3.0.22
 ffi/unsafe: added cpointer-gcable?
+racket/class: added dynamic-get-field and dynamic-set-field!
 
 Version 5.3.0.20
 Added exn:break:hang-up and exn:break:terminate, added
