@@ -7,7 +7,7 @@
 
 (provide ctype-sizeof ctype-alignof compiler-sizeof
          malloc free end-stubborn-change
-         cpointer? prop:cpointer
+         cpointer? cpointer-gcable? prop:cpointer
          ptr-equal? ptr-add ptr-ref ptr-set! (protect-out cast)
          ptr-offset ptr-add! offset-ptr? set-ptr-offset!
          vector->cpointer flvector->cpointer saved-errno lookup-errno
@@ -1159,9 +1159,43 @@
                            "representation sizes of from and to types differ"
                            "size of from type" (ctype-sizeof from-type)
                            "size of to size" (ctype-sizeof to-type)))
-  (let ([p2 (malloc from-type)])
-    (ptr-set! p2 from-type p)
-    (ptr-ref p2 to-type)))
+  (define (convert p from-type to-type)
+    (let ([p2 (malloc from-type)])
+      (ptr-set! p2 from-type p)
+      (ptr-ref p2 to-type)))
+  
+  (cond
+   [(and (cpointer? p)
+         (cpointer-gcable? p))
+    (define from-t (ctype-coretype from-type))
+    (define to-t (ctype-coretype to-type))
+    (let loop ([p p])
+      (cond
+       [(and (not (zero? (ptr-offset p)))
+             (or (or (eq? to-t 'pointer)
+                     (eq? to-t 'gcpointer))))
+        (define o (ptr-offset p))
+        (define from-t (cpointer-tag p))
+        (define z (ptr-add p (- o)))
+        (when from-t
+          (set-cpointer-tag! z from-t))
+        (define q (loop z))
+        (define to-t (cpointer-tag q))
+        (define r (ptr-add q o))
+        (when to-t
+          (set-cpointer-tag! r to-t))
+        r]
+       [else
+        (if (and (or (eq? from-t 'pointer)
+                     (eq? to-t 'pointer))
+                 (or (eq? from-t 'pointer)
+                     (eq? from-t 'gcpointer))
+                 (or (eq? to-t 'pointer)
+                     (eq? to-t 'gcpointer)))
+            (convert p (_gcable from-type) (_gcable to-type))
+            (convert p from-type to-type))]))]
+   [else
+    (convert p from-type to-type)]))
 
 (define* (_or-null ctype)
   (let ([coretype (ctype-coretype ctype)])
@@ -1176,15 +1210,20 @@
      (lambda (v) (and v (cast v _pointer ctype))))))
 
 (define* (_gcable ctype)
-  (unless (memq (ctype-coretype ctype) '(pointer gcpointer))
-    (raise-argument-error '_or-null "(and/c ctype? (lambda (ct) (memq (ctype-coretype ct) '(pointer gcpointer))))" ctype))
-  (let loop ([ctype ctype])
-     (if (eq? ctype 'pointer)
-         _gcpointer
-         (make-ctype
-          (loop (ctype-basetype ctype))
-          (ctype-scheme->c ctype)
-          (ctype-c->scheme ctype)))))
+  (define t (ctype-coretype ctype))
+  (cond
+   [(eq? t 'gcpointer) ctype]
+   [(eq? t 'pointer)
+    (let loop ([ctype ctype])
+      (if (eq? ctype 'pointer)
+          _gcpointer
+          (make-ctype
+           (loop (ctype-basetype ctype))
+           (ctype-scheme->c ctype)
+           (ctype-c->scheme ctype))))]
+   [else
+    (raise-argument-error '_or-null "(and/c ctype? (lambda (ct) (memq (ctype-coretype ct) '(pointer gcpointer))))"
+                          ctype)]))
 
 (define (ctype-coretype c)
   (let loop ([c (ctype-basetype c)])

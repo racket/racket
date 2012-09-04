@@ -52,6 +52,13 @@ and non-cpointers.}
 Returns the offset of a pointer that has an offset. The resulting
 offset is always in bytes.}
 
+
+@defproc[(cpointer-gcable? [cptr cpointer?]) boolean?]{
+
+Returns @racket[#t] if @racket[cptr] is treated as a reference to
+memory that is managed by the garbage collector, @racket[#f]
+otherwise.}
+
 @; ----------------------------------------------------------------------
 
 @section{Pointer Dereferencing}

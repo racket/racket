@@ -1365,9 +1365,28 @@ int scheme_is_cpointer(Scheme_Object *cp) {
   Scheme_Object *cp;
   cp = unwrap_cpointer_property(argv[0]);
   if (!SCHEME_CPTRP(cp))
-    scheme_wrong_contract(MYNAME, "propert-cpointer?", 0, argc, argv);
+    scheme_wrong_contract(MYNAME, "proper-cpointer?", 0, argc, argv);
   SCHEME_CPTR_TYPE(cp) = argv[1];
   return scheme_void;
+}
+
+@cdefine[cpointer-gcable? 1]{
+  Scheme_Object *cp;
+  cp = unwrap_cpointer_property(argv[0]);
+  if (SCHEME_CPTRP(cp)) {
+    return ((SCHEME_CPTR_FLAGS(cp) & 0x1)
+            ? scheme_false
+            : scheme_true);
+  } else if (SCHEME_FALSEP(cp)
+             || SCHEME_FFIOBJP(cp)
+             || SCHEME_FFICALLBACKP(cp))
+    return scheme_false;
+  else if (SCHEME_BYTE_STRINGP(cp))
+    return scheme_true;
+  else {
+    scheme_wrong_contract(MYNAME, "cpointer?", 0, argc, argv);
+    return NULL;
+  }
 }
 
 void *scheme_extract_pointer(Scheme_Object *v) {
