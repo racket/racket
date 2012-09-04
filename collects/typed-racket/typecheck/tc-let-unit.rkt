@@ -23,12 +23,13 @@
 
 (define (erase-filter tc)
   (match tc
+    [(tc-any-results:) tc]
     [(tc-results: ts _ _)
      (ret ts (for/list ([f ts]) (make-NoFilter)) (for/list ([f ts]) (make-NoObject)))]))
 
 (define/cond-contract (do-check expr->type namess results expected-results form exprs body clauses expected #:abstract [abstract null])
      (((syntax? syntax? tc-results/c . c:-> . any/c)
-       (listof (listof identifier?)) (listof tc-results/c) (listof tc-results/c)
+       (listof (listof identifier?)) (listof tc-results?) (listof tc-results?)
        syntax? (listof syntax?) syntax? (listof syntax?) (or/c #f tc-results/c))
       (#:abstract any/c)
       . c:->* .

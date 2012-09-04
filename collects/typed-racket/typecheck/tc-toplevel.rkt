@@ -255,7 +255,7 @@
                     (loop (cdr l)))))]
 
       ;; otherwise, the form was just an expression
-      [_ (tc-expr form)])))
+      [_ (tc-expr/check form tc-any-results)])))
 
 
 
