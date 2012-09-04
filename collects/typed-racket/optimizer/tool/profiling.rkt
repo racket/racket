@@ -2,7 +2,7 @@
 
 (require profile/analyzer racket/gui/base)
 
-(require "report.rkt")
+(require "sandbox.rkt")
 
 (provide generate-profile)
 
