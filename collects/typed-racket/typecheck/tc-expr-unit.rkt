@@ -550,11 +550,11 @@
 (define (tc-exprs exprs)
   (cond [(null? exprs) (ret -Void)]
         [(null? (cdr exprs)) (tc-expr (car exprs))]
-        [else (tc-expr/check/type (car exprs) Univ)
+        [else (tc-expr/check (car exprs) tc-any-results)
               (tc-exprs (cdr exprs))]))
 
 (define (tc-exprs/check exprs expected)
   (cond [(null? exprs) (check-below (ret -Void) expected)]
         [(null? (cdr exprs)) (tc-expr/check (car exprs) expected)]
-        [else (tc-expr/check/type (car exprs) Univ)
+        [else (tc-expr/check (car exprs) tc-any-results)
               (tc-exprs/check (cdr exprs) expected)]))

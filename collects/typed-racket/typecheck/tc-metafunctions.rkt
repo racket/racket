@@ -73,6 +73,7 @@
 
 (define (tc-results->values tc)
   (match tc
+    [(tc-any-results:) ManyUniv]
     [(tc-results: ts) (-values ts)]))
 
 (provide combine-props tc-results->values)
