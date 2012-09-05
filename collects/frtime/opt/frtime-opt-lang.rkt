@@ -2,6 +2,9 @@
 ;; as well as their lowered equivalents.  It doesn't know how to perform
 ;; optimization, though -- that is left to the frtime-opt module.
 (module frtime-opt-lang racket
+  ;; TODO(ghcooper/paddymahoney): Fix the duplicate requires and uncomment the
+  ;; body of this module.
+  #|
   (require (prefix-in frtime: frtime/frtime))
   (require (for-syntax racket/base frtime/opt/lowered-equivs))
   (require (only-in frtime/frtime-big event-receiver send-event 
@@ -213,4 +216,5 @@
            (frtime:define-struct STRUCT (FIELD ...) . REST)
            #,(lowered-equiv-defns #'STRUCT (syntax->list #'(FIELD ...))))]))
   (provide (rename-out [my-define-struct define-struct]))
+|#
   )
