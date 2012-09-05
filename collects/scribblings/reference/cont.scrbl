@@ -83,7 +83,12 @@ The protocol for @racket[v]s supplied to an abort is specific to the
 should be supplied that is suitable for use with the default prompt
 handler. Similarly, when @racket[call-with-continuation-prompt] is
 used with @racket[(default-continuation-prompt-tag)], the associated
-handler should generally accept a single thunk argument.}
+handler should generally accept a single thunk argument.
+
+Each @tech{thread}'s continuation starts with a prompt for
+@racket[(default-continuation-prompt-tag)] that uses the default
+handler, which accepts a single thunk to apply (with the prompt
+intact).}
 
 @defproc*[([(make-continuation-prompt-tag) continuation-prompt-tag?]
            [(make-continuation-prompt-tag [sym symbol?]) continuation-prompt-tag?])]{

@@ -192,6 +192,7 @@ scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key
                                      MZ_MARK_POS_TYPE *_vpos);
 
 static Scheme_Object *jump_to_alt_continuation();
+static void reset_cjs(Scheme_Continuation_Jump_State *a);
 
 typedef void (*DW_PrePost_Proc)(void *);
 
@@ -1084,6 +1085,24 @@ void scheme_set_dynamic_state(Scheme_Dynamic_State *state, Scheme_Comp_Env *env,
   state->menv              = menv;
 }
 
+static void *apply_again_k()
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *val = p->ku.k.p1;
+  int num_vals = p->ku.k.i1;
+
+  p->ku.k.p1 = NULL;
+
+  if (num_vals != 1) {
+    scheme_wrong_return_arity("call-with-continuation-prompt", 1, num_vals, (Scheme_Object **)val,
+                              "application of default prompt handler");
+    return NULL;
+  } else {
+    scheme_check_proc_arity("default-continuation-prompt-handler", 0, 0, 1, &val);
+    return (void *)_scheme_apply(val, 0, NULL);
+  }
+}
+
 void *scheme_top_level_do(void *(*k)(void), int eb) {
     return scheme_top_level_do_worker(k, eb, 0, NULL);
 }
@@ -1147,32 +1166,45 @@ void *scheme_top_level_do_worker(void *(*k)(void), int eb, int new_thread, Schem
   save = p->error_buf;
   p->error_buf = &newbuf;
 
-  if (scheme_setjmp(newbuf)) {
-    if (!new_thread) {
+  while (1) {
+
+    if (scheme_setjmp(newbuf)) {
       p = scheme_current_thread;
-      scheme_restore_env_stack_w_thread(envss, p);
+      if (SAME_OBJ(p->cjs.jumping_to_continuation, (Scheme_Object *)original_default_prompt)) {
+        /* an abort to the thread start; act like the default prompt handler */
+        p->ku.k.i1 = p->cjs.num_vals;
+        p->ku.k.p1 = p->cjs.val;
+        reset_cjs(&p->cjs);
+        k = apply_again_k;
+      } else {
+        if (!new_thread) {
+          scheme_restore_env_stack_w_thread(envss, p);
 #ifdef MZ_PRECISE_GC
-      if (scheme_set_external_stack_val)
-        scheme_set_external_stack_val(external_stack);
+          if (scheme_set_external_stack_val)
+            scheme_set_external_stack_val(external_stack);
 #endif
-      if (prompt) {
-        scheme_pop_continuation_frame(&cframe);
-        if (old_pcc == scheme_prompt_capture_count) {
-          /* It wasn't used */
-          available_prompt = prompt;
+          if (prompt) {
+            scheme_pop_continuation_frame(&cframe);
+            if (old_pcc == scheme_prompt_capture_count) {
+              /* It wasn't used */
+              available_prompt = prompt;
+            }
+          }
+          restore_dynamic_state(&save_dyn_state, p);
         }
+        scheme_longjmp(*save, 1);
       }
-      restore_dynamic_state(&save_dyn_state, p);
+    } else {
+      if (new_thread) {
+        /* check for initial break before we do anything */
+        scheme_check_break_now();
+      }
+      
+      v = k();
+
+      break;
     }
-    scheme_longjmp(*save, 1);
   }
-
-  if (new_thread) {
-    /* check for initial break before we do anything */
-    scheme_check_break_now();
-  }
-
-  v = k();
 
   /* IMPORTANT: no GCs from here to return, since v
      may refer to multiple values, and we don't want the

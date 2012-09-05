@@ -1437,7 +1437,20 @@
                           [current-logger l])
              (raise 'ack))))
         (vector-ref (sync r) 1)))
-      
+
+
+; --------------------
+;; initial prompt uses the default abort handler:
+
+(let ([v #f])
+  (sync
+   (thread
+    (lambda ()
+      (abort-current-continuation
+       (default-continuation-prompt-tag)
+       (lambda () (set! v "yes"))))))
+  (test "yes" values v))
+
 ; --------------------
 
 (report-errs)
