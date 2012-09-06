@@ -215,7 +215,7 @@
             ;; Yes, a submodule:
             (let ([rmp-mod (collapse-mpi rmp)])
               (if (and (pair? rmp-mod)
-                       (eq? (car rmp-mod 'submod)))
+                       (eq? (car rmp-mod) 'submod))
                   (d->s (append rmp-mod (cadr mp)))
                   (d->s `(submod ,rmp-mod . ,(cddr mp)))))
             mp/stx)]
@@ -255,7 +255,7 @@
                               (syntax->datum new-sub/stx)
                               new-sub/stx))
           (if (and (pair? new-sub)
-                   (eq? (car new-sub 'submod)))
+                   (eq? (car new-sub) 'submod))
               (d->s (append new-sub (cddr sub)))
               (d->s `(submod ,new-sub/stx . ,(cddr sub))))])]
        [else mp/stx])]))
