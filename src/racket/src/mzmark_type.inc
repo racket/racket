@@ -2916,8 +2916,10 @@ static int mark_logger_MARK(void *p, struct NewGC *gc) {
   Scheme_Logger *l = (Scheme_Logger *)p;
   gcMARK2(l->name, gc);
   gcMARK2(l->parent, gc);
-  gcMARK2(l->readers, gc);
   gcMARK2(l->timestamp, gc);
+  gcMARK2(l->syslog_level, gc);
+  gcMARK2(l->stderr_level, gc);
+  gcMARK2(l->readers, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Logger));
 }
@@ -2926,8 +2928,10 @@ static int mark_logger_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Logger *l = (Scheme_Logger *)p;
   gcFIXUP2(l->name, gc);
   gcFIXUP2(l->parent, gc);
-  gcFIXUP2(l->readers, gc);
   gcFIXUP2(l->timestamp, gc);
+  gcFIXUP2(l->syslog_level, gc);
+  gcFIXUP2(l->stderr_level, gc);
+  gcFIXUP2(l->readers, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Logger));
 }
@@ -2943,6 +2947,7 @@ static int mark_log_reader_SIZE(void *p, struct NewGC *gc) {
 
 static int mark_log_reader_MARK(void *p, struct NewGC *gc) {
   Scheme_Log_Reader *lr = (Scheme_Log_Reader *)p;
+  gcMARK2(lr->level, gc);
   gcMARK2(lr->sema, gc);
   gcMARK2(lr->head, gc);
   gcMARK2(lr->tail, gc);
@@ -2952,6 +2957,7 @@ static int mark_log_reader_MARK(void *p, struct NewGC *gc) {
 
 static int mark_log_reader_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Log_Reader *lr = (Scheme_Log_Reader *)p;
+  gcFIXUP2(lr->level, gc);
   gcFIXUP2(lr->sema, gc);
   gcFIXUP2(lr->head, gc);
   gcFIXUP2(lr->tail, gc);

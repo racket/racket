@@ -287,11 +287,14 @@ void scheme_init_gmp_places(void);
 void scheme_init_print_global_constants(void);
 void scheme_init_variable_references_constants(void);
 void scheme_init_logger(void);
+void scheme_init_logging_once(void);
 void scheme_init_file_places(void);
 void scheme_init_foreign_places(void);
 void scheme_init_place_local_symbol_table(void);
 
 Scheme_Logger *scheme_get_main_logger(void);
+Scheme_Logger *scheme_get_gc_logger(void);
+Scheme_Logger *scheme_get_future_logger(void);
 void scheme_init_logger_config(void);
 
 void register_network_evts();
@@ -2701,10 +2704,13 @@ int scheme_resolve_info_use_jit(Resolve_Info *ri);
 void scheme_enable_expression_resolve_lifts(Resolve_Info *ri);
 Scheme_Object *scheme_merge_expression_resolve_lifts(Scheme_Object *expr, Resolve_Prefix *rp, Resolve_Info *ri);
 
-Optimize_Info *scheme_optimize_info_create(Comp_Prefix *cp);
+Optimize_Info *scheme_optimize_info_create(Comp_Prefix *cp, int get_logger);
 void scheme_optimize_info_enforce_const(Optimize_Info *, int enforce_const);
 void scheme_optimize_info_set_context(Optimize_Info *, Scheme_Object *ctx);
 void scheme_optimize_info_never_inline(Optimize_Info *);
+
+char *scheme_optimize_info_context(Optimize_Info *);
+Scheme_Logger *scheme_optimize_info_logger(Optimize_Info *);
 
 Scheme_Object *scheme_toplevel_to_flagged_toplevel(Scheme_Object *tl, int flags);
 
@@ -2879,8 +2885,8 @@ int scheme_is_env_variable_boxed(Scheme_Comp_Env *env, int which);
 
 int scheme_get_eval_type(Scheme_Object *obj);
 
-Scheme_Object *scheme_make_application(Scheme_Object *v);
-Scheme_Object *scheme_try_apply(Scheme_Object *f, Scheme_Object *args, Scheme_Object *context);
+Scheme_Object *scheme_make_application(Scheme_Object *v, Optimize_Info *info);
+Scheme_Object *scheme_try_apply(Scheme_Object *f, Scheme_Object *args, Optimize_Info *info);
 
 Scheme_Object *scheme_get_stop_expander(void);
 
@@ -3414,16 +3420,19 @@ struct Scheme_Logger {
   Scheme_Logger *parent;
   int want_level;
   intptr_t *timestamp, local_timestamp; /* determines when want_level is up-to-date */
-  int syslog_level, stderr_level;
+  Scheme_Object *syslog_level; /* (list* <level-int> <name-sym> ... <level-int>) */
+  Scheme_Object *stderr_level;
   Scheme_Object *readers; /* list of (cons (make-weak-box <reader>) <sema>) */
 };
 
 typedef struct Scheme_Log_Reader {
   Scheme_Object so;
-  int want_level;
+  Scheme_Object *level; /* (list* <level-int> <name-sym> ... <level-int>) */
   Scheme_Object *sema;
   Scheme_Object *head, *tail;
 } Scheme_Log_Reader;
+
+Scheme_Logger *scheme_make_logger(Scheme_Logger *parent, Scheme_Object *name);
 
 char *scheme_optimize_context_to_string(Scheme_Object *context);
 
@@ -3742,6 +3751,10 @@ int scheme_regexp_is_pregexp(Scheme_Object *re);
 Scheme_Object *scheme_make_regexp(Scheme_Object *str, int byte, int pcre, int * volatile result_is_err_string);
 int scheme_is_pregexp(Scheme_Object *o);
 void scheme_clear_rx_buffers(void);
+
+int scheme_regexp_match_p(Scheme_Object *regexp, Scheme_Object *target);
+
+Scheme_Object *scheme_symbol_to_string(Scheme_Object *sym);
 
 #ifdef SCHEME_BIG_ENDIAN
 # define MZ_UCS4_NAME "UCS-4BE"

@@ -3953,7 +3953,7 @@ static void *compile_k(void)
 	  break;
       }
 
-      oi = scheme_optimize_info_create(cenv->prefix);
+      oi = scheme_optimize_info_create(cenv->prefix, 1);
       scheme_optimize_info_enforce_const(oi, enforce_consts);
       if (!(comp_flags & COMP_CAN_INLINE))
         scheme_optimize_info_never_inline(oi);

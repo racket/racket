@@ -280,6 +280,8 @@ Scheme_Env *scheme_engine_instance_init()
 #endif
   make_kernel_env();
 
+  scheme_init_logging_once();
+
 #if defined(MZ_PLACES_WAITPID)
   scheme_places_start_child_signal_handler();
 #endif

@@ -1076,7 +1076,7 @@ typedef struct Scheme_Thread {
 
   struct Scheme_Marshal_Tables *current_mt;
 
-  Scheme_Object *constant_folding; /* compiler hack */
+  struct Optimize_Info *constant_folding; /* compiler hack */
   Scheme_Object *reading_delayed; /* reader hack */
 
   Scheme_Object *(*overflow_k)(void);
@@ -1769,6 +1769,7 @@ MZ_EXTERN void scheme_set_startup_load_on_demand(int);
 MZ_EXTERN void scheme_set_ignore_user_paths(int);
 MZ_EXTERN void scheme_set_ignore_link_paths(int);
 MZ_EXTERN void scheme_set_logging(int syslog_level, int stderr_level);
+MZ_EXTERN void scheme_set_logging_spec(Scheme_Object *syslog_level, Scheme_Object *stderr_level);
 
 MZ_EXTERN int scheme_get_allow_set_undefined();
 

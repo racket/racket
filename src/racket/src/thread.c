@@ -8387,13 +8387,13 @@ static void done_with_GC()
 
 #ifndef MZ_PRECISE_GC
   {
-    Scheme_Logger *logger = scheme_get_main_logger();
+    Scheme_Logger *logger = scheme_get_gc_logger();
     if (logger) {
       char buf[64];
       intptr_t buflen;
 
       sprintf(buf,
-              "GC in %" PRIdPTR " msec",
+              "in %" PRIdPTR " msec",
               end_this_gc_time - start_this_gc_time);
       buflen = strlen(buf);
 
@@ -8444,7 +8444,7 @@ static void inform_GC(int master_gc, int major_gc,
                       intptr_t post_child_places_used)
 {
   Scheme_Logger *logger;
-  logger = scheme_get_main_logger();
+  logger = scheme_get_gc_logger();
   if (logger && scheme_log_level_p(logger, SCHEME_LOG_DEBUG)) {
     /* Don't use scheme_log(), because it wants to allocate a buffer
        based on the max value-print width, and we may not be at a
@@ -8486,7 +8486,7 @@ static void inform_GC(int master_gc, int major_gc,
     delta = pre_used - post_used;
     admin_delta = (pre_admin - post_admin) - delta;
     sprintf(buf,
-            "GC[" PLACE_ID_FORMAT "%s] @ %sK(+%sK)[+%sK];"
+            "" PLACE_ID_FORMAT "%s @ %sK(+%sK)[+%sK];"
             " free %sK(%s%sK) %" PRIdPTR "ms @ %" PRIdPTR,
 #ifdef MZ_USE_PLACES
             scheme_current_place_id,

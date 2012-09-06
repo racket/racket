@@ -7995,7 +7995,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
       o = scheme_get_param(scheme_current_config(), MZCONFIG_USE_JIT);
       use_jit = SCHEME_TRUEP(o);
 
-      oi = scheme_optimize_info_create(env->prefix);
+      oi = scheme_optimize_info_create(env->prefix, 1);
       scheme_optimize_info_enforce_const(oi, rec[drec].comp_flags & COMP_ENFORCE_CONSTS);
       if (!(rec[drec].comp_flags & COMP_CAN_INLINE))
         scheme_optimize_info_never_inline(oi);
@@ -8592,7 +8592,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
           if (!for_stx)
             lifted_reqs = scheme_append(scheme_frame_get_require_lifts(eenv), lifted_reqs);
 
-	  oi = scheme_optimize_info_create(eenv->prefix);
+	  oi = scheme_optimize_info_create(eenv->prefix, 1);
           scheme_optimize_info_set_context(oi, (Scheme_Object *)env->genv->module);
           if (!(rec[drec].comp_flags & COMP_CAN_INLINE))
             scheme_optimize_info_never_inline(oi);

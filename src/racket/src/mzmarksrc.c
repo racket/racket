@@ -1173,8 +1173,10 @@ mark_logger {
   Scheme_Logger *l = (Scheme_Logger *)p;
   gcMARK2(l->name, gc);
   gcMARK2(l->parent, gc);
-  gcMARK2(l->readers, gc);
   gcMARK2(l->timestamp, gc);
+  gcMARK2(l->syslog_level, gc);
+  gcMARK2(l->stderr_level, gc);
+  gcMARK2(l->readers, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Logger));
 }
@@ -1182,6 +1184,7 @@ mark_logger {
 mark_log_reader {
  mark:
   Scheme_Log_Reader *lr = (Scheme_Log_Reader *)p;
+  gcMARK2(lr->level, gc);
   gcMARK2(lr->sema, gc);
   gcMARK2(lr->head, gc);
   gcMARK2(lr->tail, gc);
@@ -1305,6 +1308,7 @@ mark_optimize_info {
   gcMARK2(i->transitive_use, gc);
   gcMARK2(i->transitive_use_len, gc);
   gcMARK2(i->context, gc);
+  gcMARK2(i->logger, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Optimize_Info));

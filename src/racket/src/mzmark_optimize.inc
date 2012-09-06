@@ -18,6 +18,7 @@ static int mark_optimize_info_MARK(void *p, struct NewGC *gc) {
   gcMARK2(i->transitive_use, gc);
   gcMARK2(i->transitive_use_len, gc);
   gcMARK2(i->context, gc);
+  gcMARK2(i->logger, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Optimize_Info));
@@ -36,6 +37,7 @@ static int mark_optimize_info_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(i->transitive_use, gc);
   gcFIXUP2(i->transitive_use_len, gc);
   gcFIXUP2(i->context, gc);
+  gcFIXUP2(i->logger, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Optimize_Info));

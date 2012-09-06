@@ -3,7 +3,7 @@
 ;; more-scheme : case, do, etc. - remaining syntax
 
 (module more-scheme '#%kernel
-  (#%require "small-scheme.rkt" "define.rkt" '#%paramz "case.rkt"
+  (#%require "small-scheme.rkt" "define.rkt" '#%paramz "case.rkt" "logger.rkt"
              (for-syntax '#%kernel "stx.rkt" "small-scheme.rkt" "stxcase-scheme.rkt" "qqstx.rkt"))
 
   (define-syntax case-test
@@ -333,27 +333,6 @@
 	    (printf "cpu time: ~s real time: ~s gc time: ~s\n" cpu user gc)
 	    (apply values v)))])))
 
-  (define-syntax (log-it stx)
-    (syntax-case stx ()
-      [(_ id mode str-expr) 
-       #'(let ([l (current-logger)])
-           (when (log-level? l 'mode)
-             (log-message l 'mode str-expr (current-continuation-marks))))]))
-  (define-syntax (define-log stx)
-    (syntax-case stx ()
-      [(_ id mode) 
-       #'(define-syntax (id stx)
-           (syntax-case stx ()
-             [(_ str-expr)
-              #'(log-it id mode str-expr)]
-             [(_ str-expr arg (... ...))
-              #'(log-it id mode (format str-expr arg (... ...)))]))]))
-  (define-log log-fatal fatal)
-  (define-log log-error error)
-  (define-log log-warning warning)
-  (define-log log-info info)
-  (define-log log-debug debug)
-
   (define-values (hash-update hash-update! hash-has-key? hash-ref!)
     (let* ([not-there (gensym)]
            [up (lambda (who mut? set ht key xform default)
@@ -405,5 +384,5 @@
              with-handlers with-handlers* call-with-exception-handler
              set!-values
              let/cc fluid-let time
-             log-fatal log-error log-warning log-info log-debug
+             log-fatal log-error log-warning log-info log-debug define-logger
              hash-ref! hash-has-key? hash-update hash-update!))

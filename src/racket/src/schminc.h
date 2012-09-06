@@ -12,7 +12,7 @@
    finally, set EXPECTED_PRIM_COUNT to the right value and
    USE_COMPILED_STARTUP to 1 and `make' again. */
 
-#define USE_COMPILED_STARTUP 1
+#define USE_COMPILED_STARTUP 0
 
 #define EXPECTED_PRIM_COUNT 1072
 #define EXPECTED_UNSAFE_COUNT 79

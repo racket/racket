@@ -306,14 +306,14 @@ flags:
         ports. This flag currently has no effect, because binary mode
         is always used.}
 
-  @item{@FlagFirst{W} @nonterm{level} or @DFlagFirst{warn}
-        @nonterm{level} : Sets the logging level for writing events to
+  @item{@FlagFirst{W} @nonterm{levels} or @DFlagFirst{warn}
+        @nonterm{levels} : Sets the logging level for writing events to
         the original error port. The possible @nonterm{level} values
         are the same as for the @envvar{PLTSTDERR} environment
         variable. See @secref["logging"] for more information.}
 
-  @item{@FlagFirst{L} @nonterm{level} or @DFlagFirst{syslog}
-        @nonterm{level} : Sets the logging level for writing events to
+  @item{@FlagFirst{L} @nonterm{levels} or @DFlagFirst{syslog}
+        @nonterm{levels} : Sets the logging level for writing events to
         the system log. The possible @nonterm{level} values
         are the same as for the @envvar{PLTSYSLOG} environment
         variable. See @secref["logging"] for more information.}

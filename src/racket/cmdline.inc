@@ -548,38 +548,91 @@ static Scheme_Object *reverse_path_list(Scheme_Object *l, int rel_to_cwd)
   return r;
 }   
 
-static int get_log_level(char *prog, char *real_switch, const char *envvar, const char *what, char *str)
-{
-  if (!strcmp(str, "none"))
-    return 0;
-  else if (!strcmp(str, "fatal"))
-    return SCHEME_LOG_FATAL;
-  else if (!strcmp(str, "error"))
-    return SCHEME_LOG_ERROR;
-  else if (!strcmp(str, "warning"))
-    return SCHEME_LOG_WARNING;
-  else if (!strcmp(str, "info"))
-    return SCHEME_LOG_INFO;
-  else if (!strcmp(str, "debug"))
-    return SCHEME_LOG_DEBUG;
+#ifndef MZ_XFORM
+# define GC_CAN_IGNORE /**/
+#endif
 
-  PRINTF("%s: %s level %s%s%s must be one of the following:\n"
-         "  none fatal error warning info or debug\n"
-         " given: %s\n",
-         prog, what, 
-         real_switch ? "after " : "in ",
-         real_switch ? real_switch : envvar,
-         real_switch ? " switch" : " envrionment variable",
-         str);
-  return -1;
+static Scheme_Object *get_log_level(char *prog, char *real_switch, const char *envvar, const char *what, GC_CAN_IGNORE char *str)
+{
+  int k, len, default_lvl = -1;
+  Scheme_Object *l = scheme_null, *last = NULL;
+  GC_CAN_IGNORE char *s, *orig_str = str;
+
+  while (1) {
+    if (!*str) {
+      if (default_lvl == -1) default_lvl = 0;
+      if (last)
+        SCHEME_CDR(last) = scheme_make_integer(default_lvl);
+      else
+        l = scheme_make_integer(default_lvl);
+      return l;
+    }
+
+    if (!strncmp(str, "none", 4)) {
+      k = 0;
+      len = 4;
+    } else if (!strncmp(str, "fatal", 5)) {
+      k = SCHEME_LOG_FATAL;
+      len = 5;
+    } else if (!strncmp(str, "error", 5)) {
+      k = SCHEME_LOG_ERROR;
+      len = 5;
+    } else if (!strncmp(str, "warning", 7)) {
+      k = SCHEME_LOG_WARNING;
+      len = 7;
+    } else if (!strncmp(str, "info", 4)) {
+      k = SCHEME_LOG_INFO;
+      len = 4;
+    } else if (!strncmp(str, "debug", 5)) {
+      k  = SCHEME_LOG_DEBUG;
+      len = 5;
+    } else 
+      k = -1;
+
+    str += len;
+
+    if (k != -1) {
+      if (*str == '@') {
+        str++;
+        for (s = str; *s && *s != ' '; s++) {
+        }
+        l = scheme_make_pair(scheme_make_sized_byte_string(str, s - str, 1), l);
+        if (!last) last = l;
+        l = scheme_make_pair(scheme_make_integer(k), l);
+        str = s;
+      } else if ((*str == ' ') || !*str) {
+        if (default_lvl == -1)
+          default_lvl = k;
+        else
+          k = -1;
+      } else
+        k = -1;
+      if (*str) str++;
+    }
+
+    if (k == -1) {
+      PRINTF("%s: %s <levels> %s%s%s must be one of the following\n"
+             " <level>s:\n"
+             "   none fatal error warning info debug\n"
+             " or up to one such <level> in space-separated sequence of\n"
+             "   <level>@<name>\n"
+             " given: %s\n",
+             prog, what, 
+             real_switch ? "after " : "in ",
+             real_switch ? real_switch : envvar,
+             real_switch ? " switch" : " environment variable",
+             orig_str);
+      return NULL;
+    }
+  }
 }
 
-static int get_arg_log_level(char *prog, char *real_switch, const char *what, int argc, char **argv)
+static Scheme_Object *get_arg_log_level(char *prog, char *real_switch, const char *what, int argc, char **argv)
 {
   if (argc < 2) {
     PRINTF("%s: missing %s level after %s switch\n", 
            prog, what, real_switch);
-    return -1;
+    return NULL;
   }
 
   return get_log_level(prog, real_switch, NULL, what, argv[1]);
@@ -652,7 +705,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
   int was_config_flag = 0, saw_nc_flag = 0;
   int no_compiled = 0;
   int init_ns = 0, no_init_ns = 0;
-  int syslog_level = -1, stderr_level = -1;
+  Scheme_Object *syslog_level = NULL, *stderr_level = NULL;
   FinishArgs *fa;
   FinishArgsAtoms *fa_a;
 
@@ -1177,7 +1230,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 #endif
         case 'W':
           stderr_level = get_arg_log_level(prog, real_switch, "stderr", argc, argv);
-          if (stderr_level < 0)
+          if (!stderr_level)
             goto show_need_help;
           --argc;
           argv++;
@@ -1185,7 +1238,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
           break;
 	case 'L':
           syslog_level = get_arg_log_level(prog, real_switch, "syslog", argc, argv);
-          if (syslog_level < 0)
+          if (!syslog_level)
             goto show_need_help;
           --argc;
           argv++;
@@ -1257,14 +1310,14 @@ static int run_from_cmd_line(int argc, char *_argv[],
 #endif /* DONT_PARSE_COMMAND_LINE */
 
 #ifdef GETENV_FUNCTION
-  if (syslog_level < 0) {
+  if (!syslog_level) {
     char *s;
     s = getenv("PLTSYSLOG");
     if (s) {
       syslog_level = get_log_level(prog, NULL, "PLTSYSLOG", "syslog", s);
     }
   }
-  if (stderr_level < 0) {
+  if (!stderr_level) {
     char *s;
     s = getenv("PLTSTDERR");
     if (s) {
@@ -1276,7 +1329,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
   }
 #endif
 
-  scheme_set_logging(syslog_level, stderr_level);
+  scheme_set_logging_spec(syslog_level, stderr_level);
   
 #ifndef NO_FILE_SYSTEM_UTILS
   /* Setup path for "collects" collection directory: */
@@ -1471,8 +1524,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
 # endif
          "  -d, --no-delay: Disable on-demand loading of syntax and code\n"
 	 "  -b, --binary : Read stdin and write stdout/stderr in binary mode\n"
-	 "  -W <level>, --warn <level> : Set stderr logging to <level>\n"
-	 "  -L <level>, --syslog <level> : Set syslog logging to <level>\n"
+	 "  -W <levels>, --warn <levels> : Set stderr logging to <levels>\n"
+	 "  -L <levels>, --syslog <levels> : Set syslog logging to <levels>\n"
 	 " Meta options:\n"
 	 "  -- : No argument following this switch is used as a switch\n"
 	 "  -h, --help : Show this information and exits, ignoring other options\n"

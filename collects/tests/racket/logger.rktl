@@ -76,4 +76,58 @@
 
 ; --------------------
 
+(let ()
+  (define-logger test)
+  (define r (make-log-receiver (current-logger) 'warning 'test))
+  (log-test-debug (/ 0))
+  (log-test-debug "debug")
+  (test #f sync/timeout 0 r)
+  (log-test-warning "warning")
+  (test "test: warning" (lambda (v) (vector-ref v 1)) (sync r)))
+
+; ----------------------------------------
+
+(let ()
+  (define root (make-logger))
+  (define sub1 (make-logger 'sub1 root))
+  (define sub2 (make-logger 'sub2 root))
+  (define sub3 (make-logger 'sub3 root))
+  (define sub4 (make-logger 'sub4 root))
+  (define r (make-log-receiver root 
+                               'error #f
+                               'info 'sub1 
+                               'none 'sub4
+                               'info 'sub2
+                               'warning 'sub1 
+                               'fatal #f))
+  (define (get)
+    (define m (sync/timeout 0 r))
+    (and m (vector-ref m 1)))
+  (log-message root 'debug "message" 'data)
+  (test #f get)
+  (log-message sub1 'info "message" 'data)
+  (test #f get)
+  (log-message sub2 'info "message" 'data)
+  (test "sub2: message" get)
+  (log-message sub2 'debug "message" 'data)
+  (test #f get)
+  (log-message sub1 'warning "message" 'data)
+  (test "sub1: message" get)
+  (log-message root 'fatal "message" 'data)
+  (test "message" get)
+  (log-message sub3 'fatal "message" 'data)
+  (test "sub3: message" get)
+  (log-message sub3 'debug "message" 'data)
+  (log-message sub3 'info "message" 'data)
+  (log-message sub3 'warning "message" 'data)
+  (test #f get)
+  (log-message sub4 'debug "message" 'data)
+  (log-message sub4 'info "message" 'data)
+  (log-message sub4 'warning "message" 'data)
+  (log-message sub4 'error "message" 'data)
+  (log-message sub4 'fatal "message" 'data)
+  (test #f get))
+
+; --------------------
+
 (report-errs)
