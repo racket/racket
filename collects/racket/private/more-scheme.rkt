@@ -345,7 +345,9 @@
        #'(define-syntax (id stx)
            (syntax-case stx ()
              [(_ str-expr)
-              #'(log-it id mode str-expr)]))]))
+              #'(log-it id mode str-expr)]
+             [(_ str-expr arg (... ...))
+              #'(log-it id mode (format str-expr arg (... ...)))]))]))
   (define-log log-fatal fatal)
   (define-log log-error error)
   (define-log log-warning warning)

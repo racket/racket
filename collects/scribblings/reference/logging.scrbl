@@ -130,18 +130,23 @@ currently returns @racket[#f] for all levels.}
 
 
 @deftogether[(
-@defform[(log-fatal string-expr)]
-@defform[(log-error string-expr)]
-@defform[(log-warning string-expr)]
-@defform[(log-info string-expr)]
-@defform[(log-debug string-expr)]
+@defform*[[(log-fatal string-expr)
+           (log-fatal format-string-expr v ...)]]
+@defform*[[(log-error string-expr)
+           (log-error format-string-expr v ...)]]
+@defform*[[(log-warning string-expr)
+           (log-warning format-string-expr v ...)]]
+@defform*[[(log-info string-expr)
+           (log-info format-string-expr v ...)]]
+@defform*[[(log-debug string-expr)
+           (log-debug format-string-expr v ...)]]
 )]{
 
 Log an event with the @tech{current logger}, evaluating
-@racket[string-expr] only if the logger has receivers that are
-interested in the event. In addition, the current continuation's
-@tech{continuation marks} are sent to the logger with the message
-string.
+@racket[string-expr] or @racket[(format format-string-expr v ...)]
+only if the logger has receivers that are interested in the event. In
+addition, the current continuation's @tech{continuation marks} are
+sent to the logger with the message string.
 
 For each @racketkeywordfont{log-}@racket[_level],
 
