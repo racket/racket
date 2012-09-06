@@ -500,5 +500,8 @@ trimmed (which is an alternative to using a @tech{regular expression}
   (string-trim "aaaxaayaa" "aa")
 ]}
 
+@; ----------------------------------------
+@include-section["format.scrbl"]
 
+@; ----------------------------------------
 @close-eval[string-eval]

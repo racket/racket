@@ -1,6 +1,7 @@
 Version 5.3.0.22
 Changed a thread's initial prompt to use the default handler
  (instead of accepting and ignoring abort arguments)
+Added racket/format, which is re-exported by racket
 ffi/unsafe: added cpointer-gcable?
 racket/class: added dynamic-get-field and dynamic-set-field!
 

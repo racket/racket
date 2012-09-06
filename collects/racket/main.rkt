@@ -30,6 +30,7 @@
          racket/sequence
          racket/local
          racket/system
+         racket/format
          (for-syntax racket/base))
 
 (provide (all-from-out racket/contract
@@ -61,5 +62,6 @@
                        racket/stream
                        racket/sequence
                        racket/local
-                       racket/system)
+                       racket/system
+                       racket/format)
          (for-syntax (all-from-out racket/base)))
