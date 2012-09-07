@@ -903,7 +903,7 @@ static void *mz_proc_thread_signal_worker(void *data) {
             if (prev_unused)
               prev_unused->next_unused = unused_status->next_unused;
             else
-              unused_pid_statuses = next;
+              unused_pid_statuses = unused_status->next_unused;
             free(unused_status);
             unused_status = NULL;
           }
