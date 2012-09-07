@@ -561,8 +561,10 @@ static Scheme_Object *reverse_path_list(Scheme_Object *l, int rel_to_cwd)
 static Scheme_Object *get_log_level(char *prog, char *real_switch, const char *envvar, const char *what, GC_CAN_IGNORE char *str)
 {
   int k, len, default_lvl = -1;
-  Scheme_Object *l = scheme_null, *last = NULL;
+  Scheme_Object *l, *last = NULL;
   GC_CAN_IGNORE char *s, *orig_str = str;
+
+  l =  scheme_make_null();
 
   while (1) {
     if (!*str) {
