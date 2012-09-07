@@ -1111,19 +1111,16 @@ void *scheme_top_level_do_worker(void *(*k)(void), int eb, int new_thread, Schem
 {
   /* Wraps a function `k' with a handler for stack overflows and
      barriers to full-continuation jumps. No barrier if !eb. */
-  
   void * v;
   Scheme_Prompt * volatile prompt = NULL;
   mz_jmp_buf *save;
   mz_jmp_buf newbuf;
   Scheme_Stack_State envss;
-
   Scheme_Dynamic_State save_dyn_state;
-
   Scheme_Thread * volatile p = scheme_current_thread;
   volatile int old_pcc = scheme_prompt_capture_count;
   Scheme_Cont_Frame_Data cframe;
-
+  volatile int need_final_abort = 0;
 #ifdef MZ_PRECISE_GC
   void *external_stack;
 #endif
@@ -1171,11 +1168,13 @@ void *scheme_top_level_do_worker(void *(*k)(void), int eb, int new_thread, Schem
     if (scheme_setjmp(newbuf)) {
       p = scheme_current_thread;
       if (SAME_OBJ(p->cjs.jumping_to_continuation, (Scheme_Object *)original_default_prompt)) {
-        /* an abort to the thread start; act like the default prompt handler */
+        /* an abort to the thread start; act like the default prompt handler,
+           but remember to jump again */
         p->ku.k.i1 = p->cjs.num_vals;
         p->ku.k.p1 = p->cjs.val;
         reset_cjs(&p->cjs);
         k = apply_again_k;
+        need_final_abort = 1;
       } else {
         if (!new_thread) {
           scheme_restore_env_stack_w_thread(envss, p);
@@ -1228,6 +1227,11 @@ void *scheme_top_level_do_worker(void *(*k)(void), int eb, int new_thread, Schem
 
   if (scheme_active_but_sleeping)
     scheme_wake_up();
+
+  if (need_final_abort) {
+    p = scheme_current_thread;
+    scheme_longjmp(*p->error_buf, 1);
+  }
 
   return (Scheme_Object *)v;
 }

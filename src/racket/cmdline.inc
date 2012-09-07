@@ -384,6 +384,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
             }
           }
         } else {
+          scheme_clear_escape();
 	  exit_val = 1;
 	  p->error_buf = save;
 	  break;
@@ -444,6 +445,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
             e = SCHEME_CDR(e);
           }
 	} else {
+          scheme_clear_escape();
 	  exit_val = 1;
 	  p->error_buf = save;
 	  break;
@@ -473,6 +475,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
 	scheme_apply_multi_with_prompt(f, 0, NULL);
       }
     } else {
+      scheme_clear_escape();
       exit_val = 1;
     }
     p->error_buf = save;
@@ -503,6 +506,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
       repl(fa->global_env, fa);
       exit_val = 0;
     } else {
+      scheme_clear_escape();
       exit_val = 1;
 #ifndef NO_YIELD_BEFORE_EXIT
       fa->a->add_yield = 0;
@@ -524,6 +528,8 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
       yh = scheme_get_param(scheme_current_config(), MZCONFIG_EXE_YIELD_HANDLER);
       yha[0] = scheme_make_integer(exit_val);
       scheme_apply(yh, 1, yha);
+    } else {
+      scheme_clear_escape();
     }
     p->error_buf = save;
   }
