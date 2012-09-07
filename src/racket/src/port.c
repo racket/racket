@@ -81,6 +81,9 @@ static int mzerrno = 0;
 extern int osk_not_console; /* set by cmd-line flag */
 #endif
 #include <math.h> /* for fmod , used by default_sleep */
+#if defined(__QNX__)
+#include <process.h>  /* for subprocess vfork() */
+#endif
 
 #ifndef MZ_BINARY
 # define MZ_BINARY 0
@@ -9309,7 +9312,11 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
     scheme_block_child_signals(1);
 #endif
 
+#if !defined(__QNX__)
     pid = fork();
+#else
+    pid = vfork();
+#endif
 
     if (pid > 0) {
       if (new_process_group)
