@@ -19,7 +19,7 @@
          nth-prime
          next-prime untyped-next-prime
          next-primes
-         prev-prime
+         prev-prime untyped-prev-prime
          prev-primes
          prime?
          odd-prime?
@@ -27,7 +27,7 @@
          defactorize
          divisors
          prime-divisors
-         
+         prime-exponents
          
          ; roots
          integer-root
@@ -44,8 +44,8 @@
          perfect-square
 
          ; sum and product of lists:
-         sum
-         product
+         list-sum
+         list-product
 
          ; number theoretic functions
          totient
@@ -257,11 +257,11 @@
 (: solve-chinese : Zs (Listof N+) -> N)
 (define (solve-chinese as ns)
   ; the ns should be coprime
-  (let* ([n  (product ns)]
+  (let* ([n  (list-product ns)]
          [cs (map (λ: ([ni : Z]) (quotient n ni)) ns)]
          [ds (map inverse cs ns)]
          [es (cast ds integers?)])
-    (cast (modulo (sum (map * as cs es)) n) natural?)))
+    (cast (modulo (list-sum (map * as cs es)) n) natural?)))
 
 ;;;
 ;;; PRIMES
@@ -348,9 +348,6 @@
             (vector-ref ps n)
             (prime-strong-pseudo? n))))))
 
-(: untyped-next-prime : Z -> Z)
-(define (untyped-next-prime z)
-  (next-prime z))
 
 (: next-prime : (case-> (N -> N) (Z -> Z)) )
 (define (next-prime n)
@@ -367,6 +364,15 @@
                  (if (prime? n+2)
                      n+2
                      (next-prime n+2)))]))
+
+(: untyped-next-prime : Z -> Z)
+(define (untyped-next-prime z)
+  (next-prime z))
+
+(: untyped-prev-prime : Z -> Z)
+(define (untyped-prev-prime z)
+  (prev-prime z))
+
 
 (: prev-prime : Z -> Z)
 (define (prev-prime n)
@@ -738,8 +744,8 @@
 (: totient : N -> N)
 (define (totient n)
   (let ((ps (prime-divisors n)))
-    (assert (* (quotient n (product ps))
-               (product (map (λ: ([p : N]) (sub1 p)) ps)))
+    (assert (* (quotient n (list-product ps))
+               (list-product (map (λ: ([p : N]) (sub1 p)) ps)))
             natural?)))
 
 (: every : (All (A) (A -> Boolean) (Listof A) -> Boolean))
@@ -798,7 +804,7 @@
                            [else (let ([t (* p-to-k p-to-kn)])
                                    (loop (+ t sum) (+ n 1) t))]))))
                (cast
-                (product
+                (list-product
                  (map (cond [(= k 0) divisor-sum0]
                             [(= k 1) divisor-sum1]
                             [else    divisor-sumk])

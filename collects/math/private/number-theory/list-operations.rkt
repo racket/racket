@@ -1,17 +1,18 @@
 #lang typed/racket
-(provide sum product)
+(provide list-sum list-product)
 
-(: sum : (Listof Integer) -> Integer)
-(define (sum xs)
+(: list-sum : (Listof Integer) -> Integer)
+(define (list-sum xs)
   (define s 0)
   (for: ([x (in-list xs)])
     (set! s (+ x s)))
   s)
 
-(: product : (Listof Integer) -> Integer)
-(define (product xs)
+(: list-product : (Listof Integer) -> Integer)
+(define (list-product xs)
   (define p 1)
   (for: ([x (in-list xs)])
     (set! p (* x p)))
   p)
+
 
