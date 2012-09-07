@@ -1,5 +1,7 @@
 #lang scribble/doc 
-@(require "mz.rkt" (for-label future-visualizer/trace racket/future)) 
+@(require "common.rkt" (for-label future-visualizer
+                                  future-visualizer/trace
+                                  racket/future)) 
 
 @title[#:tag "futures-visualizer"]{Futures Visualizer} 
 
@@ -70,7 +72,7 @@ and all events associated with its futures, with OS-level threads
 or @deftech{processes} organized along the y-axis and time increasing along 
 the x-axis.  Garbage collections are shown as translucent maroon bars spanning 
 the height of the timeline.  A coloring convention is used to distinguish between 
-different types of events (see @secref["future-logging"] for a full 
+different types of events (see @refsecref["future-logging"] for a full 
 description of these event types): 
 
 @itemlist[ 
@@ -140,3 +142,7 @@ and is denoted @deftech{RTT}.
   between each depth and horizontally between siblings.  The @racket[zoom] argument specifies the zoom factor for the 
   tree image in the range 1-5, where 5 returns a 500% zoom.
 }
+
+@; ----------------------------------------
+
+@include-section["futures-trace.scrbl"]
