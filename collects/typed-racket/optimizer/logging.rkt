@@ -14,15 +14,16 @@
 ;;--------------------------------------------------------------------
 
 (define TR-logging-level 'debug)
+(define TR-logger (make-logger 'TR-optimizer (current-logger)))
 
 (define (emit-log-message l)
-  (log-message (current-logger) TR-logging-level
+  (log-message TR-logger TR-logging-level
                (format-log-entry l)
                (cons optimization-log-key l)))
 
 ;; producing logs can be expensive, don't do it if no-one's listening
 ;; to the logs
-(define (anyone-listening?) (log-level? (current-logger) TR-logging-level))
+(define (anyone-listening?) (log-level? TR-logger TR-logging-level))
 
 ;; to identify log messages that come from the optimizer
 ;; to be stored in the data section of log messages

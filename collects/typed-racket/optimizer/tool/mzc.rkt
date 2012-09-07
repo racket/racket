@@ -13,21 +13,17 @@
 
 ;;; Low-level log parsing. Goes from strings to log-entry structs.
 
-(define mzc-optimizer-regexp "^mzc optimizer: ")
 (define success-regexp       "inlining: ")
 (define failure-regexp       "no inlining: ")
 (define out-of-fuel-regexp   "no inlining, out of fuel: ")
 (define any-inlining-event-regexp
-  (string-append mzc-optimizer-regexp
-                 "("
-                 (string-join (list success-regexp
-                                    failure-regexp
-                                    out-of-fuel-regexp)
-                              "|")
-                 ")"))
+  (format "^optimizer: (~a)" (string-join (list success-regexp
+                                                failure-regexp
+                                                out-of-fuel-regexp)
+                                          "|")))
 
 (define (log-message-from-mzc-opt? l)
-  (regexp-match mzc-optimizer-regexp l))
+  (regexp-match any-inlining-event-regexp l))
 
 
 (struct inliner-log-entry log-entry (inlining-event) #:prefab)
