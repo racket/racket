@@ -39,7 +39,7 @@
         [else
          (define log-1-q (* (+ k 1.0) (fllog1p (- p))))
          (cond [upper-tail?  (if log? log-1-q (exp log-1-q))]
-               [else  (if log? (fllog1p (- (exp log-1-q))) (- (flexpm1 log-1-q)))])]))
+               [else  (if log? (fllog1- log-1-q) (- (flexpm1 log-1-q)))])]))
 
 (: flgeom-inv-cdf (Float Float Any Any -> Float))
 (define (flgeom-inv-cdf p q log? upper-tail?)
@@ -51,7 +51,7 @@
         [(not (flprobability? q log?))  +nan.0]
         [(p . = . 1.0)  0.0]
         [upper-tail?  (if log? (k q) (k (fllog q)))]
-        [else  (if log? (k (fllog (- (flexpm1 q)))) (k (fllog1p (- q))))]))
+        [else  (if log? (k (fllog1- q)) (k (fllog1p (- q))))]))
 
 (: flgeom-random (Float -> Float))
 (define (flgeom-random p)

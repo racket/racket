@@ -9,8 +9,7 @@
 ;; Compute the value of exp(x)-1 in a way that is accurate for small x
 
 (define expm1-poly-numer
-  (make-polyfun
-   Float
+  (make-flpolyfun
    (-0.28127670288085937e-1
      0.51278186299064534e0
     -0.6310029069350198e-1
@@ -19,8 +18,7 @@
      0.21491399776965688e-4)))
 
 (define expm1-poly-denom
-  (make-polyfun
-   Float
+  (make-flpolyfun
    ( 1.0
     -0.45442309511354755e0
      0.90850389570911714e-1

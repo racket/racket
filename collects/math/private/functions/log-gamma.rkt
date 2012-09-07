@@ -28,8 +28,7 @@
 (: fllog-gamma-taylor-0.00 (Float -> Float))
 ;; Good for -0.25 <= x <= 0.25
 (define (fllog-gamma-taylor-0.00 x)
-  (- (* x ((make-polyfun
-            Float
+  (- (* x ((make-flpolyfun
             (-5.7721566490153286060651209008240243104216e-1
              +8.2246703342411321823620758332301259460947e-1
              -4.0068563438653142846657938717048333025499e-1
@@ -61,8 +60,7 @@
 (: fllog-gamma-taylor-0.25 (Float -> Float))
 ;; Good for 0.2 <= x <= 0.3
 (define (fllog-gamma-taylor-0.25 x)
-  ((make-polyfun
-    Float
+  ((make-flpolyfun
     (+1.2880225246980774573706104402197172959254e0
      -4.2274535333762654080895301460966835773672e0
      +8.5986645772535553696356595596676120107535e0
@@ -94,8 +92,7 @@
 (: fllog-gamma-taylor-0.35 (Float -> Float))
 ;; Good for 0.3 <= x <= 0.4
 (define (fllog-gamma-taylor-0.35 x)
-  ((make-polyfun
-    Float
+  ((make-flpolyfun
     (+9.3458122714623255657034665561114707129281e-1
      -2.9710708698259454387463064442084878587473e0
      +4.6202295211029058483300084111499864142794e0
@@ -127,8 +124,7 @@
 (: fllog-gamma-taylor-0.50 (Float -> Float))
 ;; Good for 0.4 <= x <= 0.6
 (define (fllog-gamma-taylor-0.50 x)
-  ((make-polyfun
-    Float
+  ((make-flpolyfun
     (+5.7236494292470008707171367567652935582365e-1
      -1.9635100260214234794409763329987555671932e0
      +2.4674011002723396547086227499690377838284e0
@@ -160,8 +156,7 @@
 (: fllog-gamma-taylor-0.75 (Float -> Float))
 ;; Good for 0.55 <= x <= 0.95
 (define (fllog-gamma-taylor-0.75 x)
-  ((make-polyfun
-    Float
+  ((make-flpolyfun
     (+2.0328095143129537148143297186242969975967e-1
      -1.0858608797864721696268867628171806931701e0
      +1.2709398238358032491988314402085391245601e0
@@ -194,8 +189,7 @@
 ;; Good for 0.75 <= x <= 1.25
 (define (fllog-gamma-taylor-1.00 x)
   (* (- x 1.0)
-     ((make-polyfun
-       Float
+     ((make-flpolyfun
        (-5.7721566490153286060651209008240243104216e-1
         +8.2246703342411321823620758332301259460947e-1
         -4.0068563438653142846657938717048333025499e-1
@@ -226,8 +220,7 @@
 (: fllog-gamma-taylor-1.50 (Float -> Float))
 ;; Good for 1.15 <= x <= 1.9
 (define (fllog-gamma-taylor-1.50 x)
-  ((make-polyfun
-    Float
+  ((make-flpolyfun
     (-1.2078223763524522234551844578164721225185e-1
      +3.6489973978576520559023667001244432806837e-2
      +4.6740110027233965470862274996903778382841e-1
@@ -260,8 +253,7 @@
 ;; Good for 1.6 <= x <= 2.55
 (define (fllog-gamma-taylor-2.00 x)
   (* (- x 2.0)
-     ((make-polyfun
-       Float
+     ((make-flpolyfun
        (+4.2278433509846713939348790991759756895784e-1
         +3.2246703342411321823620758332301259460947e-1
         -6.7352301053198095133246053837149996921661e-2
@@ -292,8 +284,7 @@
 (: fllog-gamma-taylor-3.00 (Float -> Float))
 ;; Good for 2.2 <= x <= 3.85
 (define (fllog-gamma-taylor-3.00 x)
-  ((make-polyfun
-    Float
+  ((make-flpolyfun
     (+6.9314718055994530941723212145817656807550e-1
      +9.2278433509846713939348790991759756895784e-1
      +1.9746703342411321823620758332301259460947e-1
@@ -325,8 +316,7 @@
 (: fllog-gamma-taylor-4.00 (Float -> Float))
 ;; Good for 2.95 <= x <= 5.2
 (define (fllog-gamma-taylor-4.00 x)
-  ((make-polyfun
-    Float
+  ((make-flpolyfun
     (+1.7917594692280550008124773583807022727230e0
      +1.2561176684318004727268212432509309022912e0
      +1.4191147786855766268065202776745703905392e-1
@@ -388,8 +378,10 @@
 
 (: fllog-gamma-large-positive (Float -> Float))
 (define (fllog-gamma-large-positive x)
-  (cond [(x . < . 143.0)  (fllog (flgamma x))]
+  (cond [(x . < . 150.0)  (fllog (flgamma x))]
         [else  (fllog-gamma-stirling x)]))
+
+(define: fllog-gamma-hash : (HashTable Float Float) (make-weak-hash))
 
 (: fllog-gamma (Float -> Float))
 (define (fllog-gamma x)
@@ -397,10 +389,14 @@
         [(x . > . +fllog-gamma-max.0)  +inf.0]
         [(x . = . -inf.0)  +inf.0]
         [(eqv? x +nan.0)   +nan.0]
-        [(x . < . -5.5)  (fllog-gamma-large-negative x)]
-        [(x . < . 0.0)  (fllog-gamma-small-negative x)]
-        [(x . < . 4.5)  (fllog-gamma-small-positive x)]
-        [else  (fllog-gamma-large-positive x)]))
+        [else
+         (hash-ref!
+          fllog-gamma-hash x
+          (λ ()
+            (cond [(x . < . -5.5)  (fllog-gamma-large-negative x)]
+                  [(x . < . 0.0)  (fllog-gamma-small-negative x)]
+                  [(x . < . 4.5)  (fllog-gamma-small-positive x)]
+                  [else  (fllog-gamma-large-positive x)])))]))
 
 (: log-gamma (case-> (Nonpositive-Integer -> Nothing)
                      (Single-Flonum -> Single-Flonum)

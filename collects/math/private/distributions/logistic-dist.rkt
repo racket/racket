@@ -1,10 +1,10 @@
 #lang typed/racket/base
 
-(require racket/flonum
-         racket/performance-hint
+(require racket/performance-hint
+         "../../flonum.rkt"
          "../../types.rkt"
-         "../../constants.rkt"
          "../functions/log1p.rkt"
+         "../functions/log-arithmetic.rkt"
          "utils.rkt")
 
 (provide fllogistic-pdf
@@ -22,10 +22,10 @@
    (λ: ([x : Float] [log? : Any])
      (cond [log?
             (cond [(x . > . 40.0)  (- x)]
-                  [else  (- x (* 2.0 (fllog1p (flexp x))))])]
+                  [else  (- x (* 2.0 (fllog1p (exp x))))])]
            [else
             (cond [(x . > . 40.0)  (exp (- x))]
-                  [else  (define exp-x (flexp x))
+                  [else  (define exp-x (exp x))
                          (define 1+exp-x (+ 1.0 exp-x))
                          (/ exp-x 1+exp-x 1+exp-x)])]))))
 
@@ -36,7 +36,7 @@
      (cond [log?
             (cond [(x . > . 750.0)  0.0]
                   [(x . < . -40.0)  x]
-                  [else  (- (log1p (exp (- x))))])]
+                  [else  (- (fllog1p (exp (- x))))])]
            [else
             (cond [(x . > . 40.0)  1.0]
                   [(x . < . -40.0)  (exp x)]
@@ -46,7 +46,7 @@
 (define (standard-fllogistic-inv-cdf q log?)
   (cond [log?
          (cond [(q . = . (fllog 1.0))  +inf.0]
-               [(q . > . (fllog 0.0))  (- q (fllog1p (- (exp q))))]
+               [(q . > . (fllog 0.0))  (- q (fllog1- q))]
                [else  -inf.0])]
         [else
          (cond [(q . = . 1.0)  +inf.0]

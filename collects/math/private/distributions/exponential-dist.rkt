@@ -1,10 +1,11 @@
 #lang typed/racket/base
 
-(require racket/flonum
-         racket/performance-hint
+(require racket/performance-hint
+         "../../flonum.rkt"
          "../../types.rkt"
          "../functions/expm1.rkt"
          "../functions/log1p.rkt"
+         "../functions/log-arithmetic.rkt"
          "utils.rkt")
 
 (provide flexp-pdf
@@ -30,7 +31,7 @@
             (cond [log?  (- x)]
                   [else  (exp (- x))])]
            [else
-            (cond [log?  (fllog1p (- (exp (- x))))]
+            (cond [log?  (fllog1- (- x))]
                   [else  (- (flexpm1 (- x)))])]))))
 
 (: standard-flexp-inv-cdf (Float Any Any -> Float))
@@ -39,7 +40,7 @@
          (cond [log?  (- q)]
                [else  (- (fllog q))])]
         [else
-         (cond [log?  (- (fllog1p (- (exp q))))]
+         (cond [log?  (- (fllog1- q))]
                [else  (- (fllog1p (- q)))])]))
 
 (: flexp-inv-cdf (Float Float Any Any -> Float))

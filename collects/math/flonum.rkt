@@ -1,15 +1,19 @@
 #lang typed/racket/base
 
 (require (for-syntax racket/base)
-         "private/exception.rkt")
+         "private/exception.rkt"
+         racket/flonum)
 
-(provide flonum->bit-field bit-field->flonum
+(provide (all-from-out racket/flonum)
+         (rename-out [real->double-flonum fl])
+         flonum->bit-field bit-field->flonum
          flonum->ordinal ordinal->flonum
          flstep flnext flprev flonums-between
          -max.0 -min.0 +min.0 +max.0 +epsilon.0
          flulp flulp-error relative-error
          float-complex? (rename-out [inline-number->float-complex number->float-complex])
-         find-least-flonum)
+         find-least-flonum
+         fleven? flodd? flsgn flhypot fllog/base)
 
 ;; ===================================================================================================
 ;; Floating-point representation
@@ -167,3 +171,44 @@
                             (loop n-start n-mid)]
                            [else
                             (loop (+ n-mid 1) n-end)])]))])]))
+
+;; ===================================================================================================
+;; More floating-point functions
+
+(: flsgn (Float -> Float))
+(define (flsgn x)
+  (cond [(< x 0.0) -1.0]
+        [(< 0.0 x)  1.0]
+        [else  0.0]))
+
+(: fleven? (Float -> Boolean))
+(define (fleven? x)
+  (let ([x  (abs x)])
+    (or (= x 0.0)
+        (and (x . >= . 2.0)
+             (let ([0.5x  (* 0.5 x)])
+               (= (truncate 0.5x) 0.5x))))))
+
+(define last-odd (- (flexpt 2.0 53.0) 1.0))
+
+(: flodd? (Float -> Boolean))
+(define (flodd? x)
+  (let ([x  (abs x)])
+    (and (x . >= . 1.0) (x . <= . last-odd)
+         (let ([0.5x  (* 0.5 (+ 1.0 x))])
+           (= (truncate 0.5x) 0.5x)))))
+
+(: flhypot (Float Float -> Float))
+(define (flhypot x y)
+  (define xa (abs x))
+  (define ya (abs y))
+  (let ([xa  (min xa ya)]
+        [ya  (max xa ya)])
+    (cond [(= xa 0.0)  ya]
+          [else  (define u (/ xa ya))
+                 (* ya (flsqrt (+ 1.0 (* u u))))])))
+
+;; todo: overflow not likely; underflow likely
+(: fllog/base (Float Float -> Float))
+(define (fllog/base b x)
+  (/ (fllog x) (fllog b)))
