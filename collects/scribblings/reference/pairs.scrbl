@@ -292,7 +292,7 @@ Applies @racket[proc] to the elements of the @racket[lst]s from the
           any]{
 
 Similar to @racket[map] in the sense that @racket[proc] is applied to
-each element of racket[lst], but
+each element of @racket[lst], but
 
 @margin-note{The @racket[andmap] function is actually closer to
 @racket[foldl] than @racket[map], since @racket[andmap] doesn't
@@ -328,7 +328,7 @@ If the @racket[lst]s are empty, then @racket[#t] is returned.
          any]{
 
 Similar to @racket[map] in the sense that @racket[proc] is applied to
-each element of racket[lst], but
+each element of @racket[lst], but
 
 @margin-note{To continue the @racket[andmap] note above,
 @racket[(ormap f (list x y z))] is equivalent to @racket[(or (f x) (f

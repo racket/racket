@@ -235,7 +235,7 @@ last argument to @racket[log-message] when the event was logged.
 
 Multiple pairs of @racket[level] and @racket[name] can be provided to
 indicate different specific @racket[level]s for different
-@racket[name]s (where @racket[name] defaults to racket[#f] only for
+@racket[name]s (where @racket[name] defaults to @racket[#f] only for
 the last given @racket[level]). A @racket[level] for a @racket[#f]
 @racket[name] applies only to loggers whose names do not match any other
 provided @racket[name]. If the same @racket[name] is provided multiple

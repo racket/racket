@@ -202,7 +202,7 @@ The @racket[style] argument must be one of the following:
 If both @racket['combine] and @racket['no-combine] are specified, the
 first one in @racket[style] takes precedence. Similarly, if both
 @racket['aligned] and @racket['unaligned] are specified, the first one
-in !racket[style] takes precedence. If @racket['caps] is specified,
+in @racket[style] takes precedence. If @racket['caps] is specified,
 the @racket[angle] must be zero.
 
 The given @racket[size] is in pixels, but it is ignored if a
