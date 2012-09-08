@@ -1080,4 +1080,28 @@
   test:get-active-top-level-window
   (-> (or/c (is-a?/c frame%) (is-a?/c dialog%) #f))
   ()
-  @{Returns the frontmost frame, based on @racket[test:use-focus-table].}))
+  @{Returns the frontmost frame, based on @racket[test:use-focus-table].})
+ 
+ (proc-doc/names
+  label-of-enabled/shown-button-in-top-level-window?
+  (-> string? boolean?)
+  (label)
+  @{Returns @racket[#t] when @racket[label] is
+            the label of an enabled and shown
+            @racket[button%] instance that
+            is in the top-level window that currently
+            has the focus, using @racket[test:top-level-focus-window-has?].})
+ 
+ (proc-doc/names
+  enabled-shown-button?
+  (-> (is-a?/c button%) boolean?)
+  (button)
+  @{Returns @racket[#t] when @racket[button]
+            is both enabled and shown.})
+ 
+ (proc-doc/names
+  button-in-top-level-focusd-window?
+  (-> (is-a?/c button%) boolean?)
+  (button)
+  @{Returns @racket[#t] when @racket[button] is
+            in the top-level focused window.}))
