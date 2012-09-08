@@ -60,7 +60,8 @@
  [~.s format/c]
  [~.v format/c]
  [~r (->* (rational?)
-          (#:exponential? any/c
+          (#:notation (or/c 'positional 'exponential
+                            (-> rational? (or/c 'positional 'exponential)))
            #:sign sign-mode/c
            #:base base/c
            #:precision precision/c
@@ -177,29 +178,29 @@
             #:sign [sign-mode #f]
             #:base [base 10]
             #:precision [precision 6]
-            #:exponential? [exponential? (not (or (zero? N)
-                                                  (< (expt (extract base) (- (extract precision)))
-                                                     (abs N) 
-                                                     (expt (extract base) (extract precision)))))]
+            #:notation [notation 'positional]
             #:format-exponent [exp-format-exponent #f]
             #:min-width [pad-digits-to 1]
             #:pad-string [digits-padding " "])
-  (if exponential?
-      (catne N
-             #:who 'catn
-             #:sign sign-mode
-             #:base base
-             #:precision precision
-             #:format-exponent exp-format-exponent
-             #:pad-digits-to pad-digits-to
-             #:digits-padding digits-padding)
-      (catnp N
-             #:who 'catn
-             #:sign sign-mode
-             #:base base
-             #:precision precision
-             #:pad-digits-to pad-digits-to
-             #:digits-padding digits-padding)))
+  (let ([notation (if (procedure? notation) (notation N) notation)])
+    (case notation
+      ((exponential)
+       (catne N
+              #:who 'catn
+              #:sign sign-mode
+              #:base base
+              #:precision precision
+              #:format-exponent exp-format-exponent
+              #:pad-digits-to pad-digits-to
+              #:digits-padding digits-padding))
+      ((positional)
+       (catnp N
+              #:who 'catn
+              #:sign sign-mode
+              #:base base
+              #:precision precision
+              #:pad-digits-to pad-digits-to
+              #:digits-padding digits-padding)))))
 
 (define (catnp N
                #:who [who 'catnp]

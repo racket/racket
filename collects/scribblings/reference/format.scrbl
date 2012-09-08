@@ -12,7 +12,6 @@
   (the-eval '(require racket/math racket/format)))
 
 @title[#:tag "format"]{Converting Values to Strings}
-@author[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
 @note-lib[racket/format]
 
@@ -47,7 +46,7 @@ at most @racket[max-width] characters.
 (~a #\w "e" 'st)
 (~a (list "red" 'green #"blue"))
 (~a 17)
-(~a #e1e20)
+(eval:alts (~a @#,(racketvalfont "#e1e20")) (~a #e1e20))
 (~a pi)
 (~a (expt 6.1 87))
 ]
@@ -189,17 +188,10 @@ marker is @racket["..."].
                             (or/c exact-nonnegative-integer?
                                   (list/c '= exact-nonnegative-integer?)) 
                             3]
-               [#:exponential? exponential
-                               any/c
-                               (let ([num (lambda (n) (if (list? n) (cadr n) n))])
-                                 (not (or (zero? x)
-                                          (< (expt (num base) (- (num precision)))
-                                             (abs x) 
-                                             (expt (num base) (num precision))))))]
-               [#:exp-precision exp-precision
-                                (or/c exact-nonnegative-integer?
-                                      (list/c '= exact-nonnegative-integer?))
-                                5]
+               [#:notation notation
+                           (or/c 'positional 'exponential
+                                 (-> rational? (or/c 'positional 'exponential)))
+                           'positional]
                [#:format-exponent format-exponent
                 (or/c #f string? (-> exact-integer? string?))
                 #f]
@@ -209,17 +201,35 @@ marker is @racket["..."].
 
 Converts the rational number @racket[x] to a string in either
 positional or exponential notation, depending on
-@racket[exponential?]. The exactness or inexactness of @racket[x] does
-not affect its formatting.
+@racket[notation]. The exactness or inexactness of @racket[x] does not
+affect its formatting.
 
 The optional arguments control number formatting:
 
 @itemize[
 
-@item{@racket[precision] --- controls the number of digits after the decimal point
-(or more accurately, the
-@hyperlink["http://en.wikipedia.org/wiki/Radix_point"]{radix point}). When @racket[x]
-is converted to exponential form, @racket[precision] applies only to the significand.
+@item{@racket[notation] --- determines whether the number is printed
+in positional or exponential notation. If @racket[notation] is a
+function, it is applied to @racket[x] to get the notation to be used.
+
+@interaction[#:eval the-eval
+(~r 12345)
+(~r 12345 #:notation 'exponential)
+(let ([pick-notation
+       (lambda (x)
+         (if (or (< (abs x) 0.001) (> (abs x) 1000))
+             'exponential
+             'positional))])
+  (for/list ([i (in-range 1 5)])
+    (~r (expt 17 i) #:notation pick-notation)))
+]
+}
+
+@item{@racket[precision] --- controls the number of digits after the
+decimal point (or more accurately, the
+@hyperlink["http://en.wikipedia.org/wiki/Radix_point"]{radix point}).
+When @racket[x] is formatted in exponential form, @racket[precision]
+applies to the significand.
 
 If @racket[precision] is a natural number, then up to @racket[precision] digits are
 displayed, but trailing zeroes are dropped, and if all digits after the decimal
@@ -240,7 +250,7 @@ decimal point are used, and the decimal point is never dropped.
 
 @item{@racket[min-width] --- if @racket[x] would normally be printed
 with fewer than @racket[min-width] digits (including the decimal
-point but not including the sign indicator), the output is left-padded
+point but not including the sign indicator), the digits are left-padded
 using @racket[pad-string].
 
 @interaction[#:eval the-eval
@@ -250,7 +260,8 @@ using @racket[pad-string].
 (~r 1.5 #:min-width 4)
 (~r 1.5 #:precision 4 #:min-width 10)
 (~r 1.5 #:precision '(= 4) #:min-width 10)
-(~r 1e10 #:min-width 6)
+(eval:alts (~r @#,(racketvalfont "#e1e10") #:min-width 6)
+           (~r #e1e10 #:min-width 6))
 ]}
 
 @item{@racket[pad-string] --- specifies the string used to pad the
@@ -324,17 +335,18 @@ greater than @racket[10], then upper-case letters are used.
 (~r 4.5 #:base 2)
 (~r 3735928559 #:base 16)
 (~r 3735928559 #:base '(up 16))
+(~r 3735928559 #:base '(up 16) #:notation 'exponential)
 ]}
 
 @item{@racket[format-exponent] --- determines how the exponent is displayed. 
 
 If @racket[format-exponent] is a string, the exponent is displayed with an
-explicit sign (as with a @racket[sign-mode] of @racket['++]) and at least two
+explicit sign (as with a @racket[sign] of @racket['++]) and at least two
 digits, separated from the significand by the ``exponent marker''
 @racket[format-exponent]:
 
 @interaction[#:eval the-eval
-(~r 1234 #:exponential? #t #:format-exponent "E")
+(~r 1234 #:notation 'exponential #:format-exponent "E")
 ]
 
 If @racket[format-exponent] is @racket[#f], the ``exponent marker'' is
@@ -342,15 +354,15 @@ If @racket[format-exponent] is @racket[#f], the ``exponent marker'' is
 @racket[base] otherwise:
 
 @interaction[#:eval the-eval
-(~r 1234 #:exponential? #t)
-(~r 1234 #:exponential? #t #:base 8)
+(~r 1234 #:notation 'exponential)
+(~r 1234 #:notation 'exponential #:base 8)
 ]
 
 If @racket[format-exponent] is a procedure, it is applied to the exponent and
 the resulting string is appended to the significand:
 
 @interaction[#:eval the-eval
-(~r 1234 #:exponential? #t 
+(~r 1234 #:notation 'exponential
          #:format-exponent (lambda (e) (format "E~a" e)))
 ]}
 
