@@ -1,6 +1,8 @@
 #lang scribble/doc
 @(require "common.rkt")
 
+@centered{@image[#:suffixes @list[".png"]]{image/menu-bar}}
+
 @defclass/title[menu-bar% object% (menu-item-container<%>)]{
 
 A @racket[menu-bar%] object is created for a particular
