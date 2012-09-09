@@ -686,7 +686,7 @@
 [zero? (asym-pred N B (-FS (-filter (Un -RealZero -InexactComplex) 0)
                            (-not-filter -RealZero 0)))]
 [number? (make-pred-ty N)]
-[integer? (asym-pred Univ B (-FS (-filter (Un -Int -Flonum) 0) ; inexact-integers exist...
+[integer? (asym-pred Univ B (-FS (-filter (Un -Int -Flonum -SingleFlonum) 0) ; inexact-integers exist...
                                  (-not-filter -Int 0)))]
 [exact-integer? (make-pred-ty -Int)]
 [real? (make-pred-ty -Real)]
