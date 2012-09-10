@@ -6,8 +6,7 @@
          unstable/syntax racket/match unstable/match racket/list racket/string
          unstable/list)
 
-(provide log-message-from-mzc-opt?
-         mzc-opt-log-message->log-entry
+(provide mzc-opt-log-message->log-entry
          post-process-inline-log)
 
 
@@ -21,9 +20,6 @@
                                                 failure-regexp
                                                 out-of-fuel-regexp)
                                           "|")))
-
-(define (log-message-from-mzc-opt? l)
-  (regexp-match any-inlining-event-regexp l))
 
 
 (struct inliner-log-entry log-entry (inlining-event) #:prefab)
