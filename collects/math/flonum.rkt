@@ -1,8 +1,9 @@
 #lang typed/racket/base
 
-(require (for-syntax racket/base)
-         "private/exception.rkt"
-         racket/flonum)
+(require racket/flonum
+         racket/performance-hint
+         (for-syntax racket/base)
+         "private/exception.rkt")
 
 (provide (all-from-out racket/flonum)
          (rename-out [real->double-flonum fl])
@@ -13,7 +14,8 @@
          flulp flulp-error relative-error
          float-complex? (rename-out [inline-number->float-complex number->float-complex])
          find-least-flonum
-         fleven? flodd? flsgn flhypot fllog/base)
+         fleven? flodd? flsgn flhypot fllog/base
+         flprobability?)
 
 ;; ===================================================================================================
 ;; Floating-point representation
@@ -175,40 +177,50 @@
 ;; ===================================================================================================
 ;; More floating-point functions
 
-(: flsgn (Float -> Float))
-(define (flsgn x)
-  (cond [(< x 0.0) -1.0]
-        [(< 0.0 x)  1.0]
-        [else  0.0]))
-
-(: fleven? (Float -> Boolean))
-(define (fleven? x)
-  (let ([x  (abs x)])
-    (or (= x 0.0)
-        (and (x . >= . 2.0)
-             (let ([0.5x  (* 0.5 x)])
-               (= (truncate 0.5x) 0.5x))))))
-
-(define last-odd (- (flexpt 2.0 53.0) 1.0))
-
-(: flodd? (Float -> Boolean))
-(define (flodd? x)
-  (let ([x  (abs x)])
-    (and (x . >= . 1.0) (x . <= . last-odd)
-         (let ([0.5x  (* 0.5 (+ 1.0 x))])
-           (= (truncate 0.5x) 0.5x)))))
-
-(: flhypot (Float Float -> Float))
-(define (flhypot x y)
-  (define xa (abs x))
-  (define ya (abs y))
-  (let ([xa  (min xa ya)]
-        [ya  (max xa ya)])
-    (cond [(= xa 0.0)  ya]
-          [else  (define u (/ xa ya))
-                 (* ya (flsqrt (+ 1.0 (* u u))))])))
-
-;; todo: overflow not likely; underflow likely
-(: fllog/base (Float Float -> Float))
-(define (fllog/base b x)
-  (/ (fllog x) (fllog b)))
+(begin-encourage-inline
+  
+  (: flsgn (Float -> Float))
+  (define (flsgn x)
+    (cond [(< x 0.0) -1.0]
+          [(< 0.0 x)  1.0]
+          [else  0.0]))
+  
+  (: fleven? (Float -> Boolean))
+  (define (fleven? x)
+    (let ([x  (abs x)])
+      (or (= x 0.0)
+          (and (x . >= . 2.0)
+               (let ([0.5x  (* 0.5 x)])
+                 (= (truncate 0.5x) 0.5x))))))
+  
+  (define last-odd (- (flexpt 2.0 53.0) 1.0))
+  
+  (: flodd? (Float -> Boolean))
+  (define (flodd? x)
+    (let ([x  (abs x)])
+      (and (x . >= . 1.0) (x . <= . last-odd)
+           (let ([0.5x  (* 0.5 (+ 1.0 x))])
+             (= (truncate 0.5x) 0.5x)))))
+  
+  (: flhypot (Float Float -> Float))
+  (define (flhypot x y)
+    (define xa (abs x))
+    (define ya (abs y))
+    (let ([xa  (min xa ya)]
+          [ya  (max xa ya)])
+      (cond [(= xa 0.0)  ya]
+            [else  (define u (/ xa ya))
+                   (* ya (flsqrt (+ 1.0 (* u u))))])))
+  
+  ;; todo: overflow not likely; underflow likely
+  (: fllog/base (Float Float -> Float))
+  (define (fllog/base b x)
+    (/ (fllog x) (fllog b)))
+  
+  (: flprobability? (case-> (Float -> Boolean)
+                            (Float Any -> Boolean)))
+  (define (flprobability? p [log? #f])
+    (cond [log?  (and (p . >= . -inf.0) (p . <= . 0.0))]
+          [else  (and (p . >= . 0.0) (p . <= . 1.0))]))
+  
+  )  ; begin-encourage-inline

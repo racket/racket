@@ -1,10 +1,42 @@
 #lang typed/racket/base
 
-(require racket/flonum
-         "../../types.rkt"
-         "delta-dist.rkt")
+(require (for-syntax racket/base
+                     racket/syntax
+                     racket/string)
+         "../../flonum.rkt"
+         "types.rkt"
+         "fldelta-dist.rkt")
 
 (provide (all-defined-out))
+
+(define-syntax (define-distribution-type: stx)
+  (syntax-case stx ()
+    [(_ name type-name parent-type-name ([arg-names arg-opts ...] ...))
+     (let ([arg-name-lst  (syntax->list #'(arg-names ...))])
+       (with-syntax ([hidden-type-name  (datum->syntax #f (syntax->datum #'type-name))]
+                     [(hidden-proc-names ...)  (map (λ (arg-name)
+                                                      (format-id #f "~a-~a" #'type-name arg-name))
+                                                    arg-name-lst)]
+                     [hidden-pred-name  (format-id #f "~a?" #'type-name)]
+                     [make-name  (format-id #'name "make-~a" #'name)]
+                     [(proc-names ...)  (map (λ (arg-name) (format-id #'name "~a-~a" #'name arg-name))
+                                             arg-name-lst)]
+                     [pred-name  (format-id #'name "~a?" #'name)]
+                     [format-str
+                      (string-append "(~a "
+                                     (string-join (build-list (length arg-name-lst) (λ _ "~a")))
+                                     ")")])
+         (syntax/loc stx
+           (begin
+             (struct: hidden-type-name parent-type-name ([arg-names arg-opts ...] ...)
+               #:property prop:custom-print-quotable 'never
+               #:property prop:custom-write
+               (λ (v port write?)
+                 (fprintf port format-str 'name (proc-names v) ...)))
+             (define-type type-name hidden-type-name)
+             (define proc-names hidden-proc-names) ...
+             (define make-name hidden-type-name)
+             (define pred-name hidden-pred-name)))))]))
 
 ;; ===================================================================================================
 ;; One-sided scale family distributions (e.g. exponential)

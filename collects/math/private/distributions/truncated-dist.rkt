@@ -1,5 +1,6 @@
 #lang racket
 
+#|
 (module defs typed/racket
   
   (require racket/flonum
@@ -24,3 +25,4 @@
 (require 'defs plot math/distributions)
 
 (plot (function (truncated-pdf (exp-pdf 1) (exp-cdf 1) 1 2) 0 3))
+|#

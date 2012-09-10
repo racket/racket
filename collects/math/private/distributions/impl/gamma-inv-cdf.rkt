@@ -1,4 +1,4 @@
-#lang racket
+#lang typed/racket/base
 
 #|
 D. J. Best and D. E. Roberts
@@ -7,118 +7,146 @@ Algorithm AS 91: The Percentage Points of the Chi^2 Distribution
 Used for starting points in Newton's method
 |#
 
+#|
+#lang racket
+
 (module defs typed/racket/base
-  
-  (require racket/fixnum
-           "../../../flonum.rkt"
-           "../../functions/log1p.rkt"
-           "../../functions/log-arithmetic.rkt"
-           "../../functions/gamma.rkt"
-           "../../functions/log-gamma.rkt"
-           "../../functions/incomplete-gamma.rkt"
-           "gamma-pdf.rkt"
-           "normal-inv-cdf.rkt")
-  
-  (provide (all-defined-out))
-  
-  #;
-  (provide flgamma-inv-cdf)
-  
-  (: z02 (Float Float -> Float))
-  ;; Derived from z02 in Best-Roberts, or from asymptotic behavior of lower gamma
-  (define (z02 k log-p)
-    (exp (/ (+ log-p (fllog k) (fllog-gamma k)) k)))
-  
-  (: z01 (Float Float -> Float))
-  ;; Normal approximation, and if p tends to 1, use z03
-  (define (z01 k log-p)
-    (define x (* k (flexpt (- (/ (standard-flnormal-inv-log-cdf log-p)
-                                 (* 3.0 (flsqrt k)))
-                              -1.0
-                              (/ #i1/9 k))
-                           3.0)))
-    (cond [(x . > . (+ (* 2.2 2.0 k) 6.0))
-           (z03 k log-p x)]
-          [else  x]))
-  
-  (: z03 (Float Float Float -> Float))
-  ;; Alteration from Best-Roberts: negate instead of multiplying by -2
-  ;; Why: z03 is usually used when z01 *over*estimates, but multiplying by 2 *way* overestimates
-  (define (z03 k log-p x)
-    (- (+ (- (fllog1- log-p) (* (- k 1.0) (fllog (* 0.5 x))))
-          (fllog-gamma k))))
-  
-  (: z04 (Float Float -> Float))
-  ;; Derived from z04 in Best-Roberts
-  (define (z04 k log-p)
-    (define a (+ (fllog1- log-p) (fllog-gamma k) (* (- k 1.0) (fllog 2.0))))
-    (let loop ([ch  0.4] [n 99])
-      (define p1 (/ 1.0 (+ 1.0 (* ch (+ 4.67 ch)))))
-      (define p2 (* ch (+ 6.73 (* ch (+ 6.66 ch)))))
-      (define t (- (+ -0.5 (* (+ 4.67 (* 2.0 ch)) p1))
-                   (/ (+ 6.73 (* ch (+ 13.32 (* 3.0 ch)))) p2)))
-      (define new-ch (- ch (/ (- 1.0 (* (exp (+ a (* 0.5 ch))) p2 p1)) t)))
-      (cond [(or (= n 0) ((abs (- ch new-ch)) . <= . (abs (* 4.0 +epsilon.0 new-ch))))
-             (* 0.5 new-ch)]
-            [((abs (- ch new-ch)) . <= . (abs (* 1000.0 +epsilon.0 new-ch)))
-             (loop new-ch (min 1 (- n 1)))]
-            [else  (loop new-ch (- n 1))])))
-  
-  (: flgamma-inv-cdf-appx (Float Float -> Float))
-  (define (flgamma-inv-cdf-appx k log-p)
-    (cond [(k . < . (* -0.62 log-p))  (z02 k log-p)]
-          [(k . > . 0.16)  (z01 k log-p)]
-          [else  (z04 k log-p)]))
-  
-  (: newton-log-iter (Float Float Float -> Float))
-  (define (newton-log-iter k log-p x)
-    ;(printf "newton-log-iter ~v ~v ~v~n" k log-p x)
-    (define real-log-p (fllog-gamma-lower-regularized k x))
-    (define new-x
-      (cond [(log-p . < . real-log-p)
-             (define dx (exp (fllog/ (fllog- real-log-p log-p)
-                                     (standard-flgamma-log-pdf k x))))
-             (- x dx)]
+|#
+
+(require racket/fixnum
+         "../../../flonum.rkt"
+         "../../functions/log1p.rkt"
+         "../../functions/log-arithmetic.rkt"
+         "../../functions/gamma.rkt"
+         "../../functions/log-gamma.rkt"
+         "../../functions/incomplete-gamma.rkt"
+         "../../functions/lambert.rkt"
+         "gamma-pdf.rkt"
+         "normal-inv-cdf.rkt")
+
+(provide standard-flgamma-inv-cdf)
+
+(: log-z01 (Float Float Float Any -> Float))
+;; Normal approximation
+(define (log-z01 k log-p log-1-p upper-tail?)
+  (define norm-x (if upper-tail?
+                     (- (standard-flnormal-inv-log-cdf log-1-p))
+                     (standard-flnormal-inv-log-cdf log-p)))
+  (+ (fllog k)
+     (* 3.0 (fllog1p (+ (/ norm-x (* 3.0 (flsqrt k))) (/ #i-1/9 k))))))
+
+(: z02 (Float Float -> Float))
+;; Derived from z02 in Best-Roberts, or from asymptotic behavior of lower gamma
+(define (z02 k log-p)
+  (exp (/ (+ log-p (fllog k) (fllog-gamma k)) k)))
+
+(: z03 (Float Float Float -> Float))
+;; Derived from z03 in Best-Roberts
+(define (z03 k log-1-p log-x)
+  (- (+ (- log-1-p (* (- k 1.0) (+ (fllog 0.5) log-x)))
+        (fllog-gamma k))))
+
+(: z04 (Float Float -> Float))
+;; Derived from z04 in Best-Roberts
+(define (z04 k log-1-p)
+  (define a (+ log-1-p (fllog-gamma k) (* (- k 1.0) (fllog 2.0))))
+  (let loop ([ch  0.4] [n 99])
+    (define p1 (/ 1.0 (+ 1.0 (* ch (+ 4.67 ch)))))
+    (define p2 (* ch (+ 6.73 (* ch (+ 6.66 ch)))))
+    (define t (- (+ -0.5 (* (+ 4.67 (* 2.0 ch)) p1))
+                 (/ (+ 6.73 (* ch (+ 13.32 (* 3.0 ch)))) p2)))
+    (define new-ch (- ch (/ (- 1.0 (* (exp (+ a (* 0.5 ch))) p2 p1)) t)))
+    (cond [(or (= n 0) ((abs (- ch new-ch)) . <= . (abs (* 4.0 +epsilon.0 new-ch))))
+           (* 0.5 new-ch)]
+          [((abs (- ch new-ch)) . <= . (abs (* 1000.0 +epsilon.0 new-ch)))
+           (loop new-ch (min 1 (- n 1)))]
+          [else  (loop new-ch (- n 1))])))
+
+;; For testing: tells which approximation `flgamma-inv-log-cdf-appx' chooses
+#;;(: flgamma-inv-log-cdf-which-appx (Float Float Float Any -> Float))
+(define (flgamma-inv-log-cdf-which-appx k log-p log-1-p upper-tail?)
+  (cond [(k . < . (* -0.62 log-p))  2.0]
+        [(k . > . 0.16)
+         (define log-x (log-z01 k log-p log-1-p upper-tail?))
+         (define x (exp log-x))
+         (if (x . > . (+ (* 2.2 2.0 k) 6.0)) 3.0 1.0)]
+        [else  4.0]))
+
+(: flgamma-inv-log-cdf-appx (Float Float Float Any -> Float))
+(define (flgamma-inv-log-cdf-appx k log-p log-1-p upper-tail?)
+  (cond [(k . < . (* -0.62 log-p))  (z02 k log-p)]
+        [(k . > . 0.16)
+         (define log-x (log-z01 k log-p log-1-p upper-tail?))
+         (define x (exp log-x))
+         (if (x . > . (+ (* 2.2 2.0 k) 6.0)) (z03 k log-1-p log-x) x)]
+        [else  (z04 k log-1-p)]))
+
+(: newton-lower-log-iter (Float Float Float -> Float))
+(define (newton-lower-log-iter k log-p x)
+  (define real-log-p (fllog-gamma-lower-regularized k x))
+  (define pdf-log-p (standard-flgamma-log-pdf k x))
+  (define dx (/ (- log-p real-log-p) (exp (- pdf-log-p real-log-p))))
+  (define new-x (+ x dx))
+  (if (and (new-x . >= . 0.0) (new-x . < . +inf.0)) new-x x))
+
+(: newton-upper-log-iter (Float Float Float -> Float))
+(define (newton-upper-log-iter k log-1-p x)
+  (define real-log-1-p (fllog-gamma-upper-regularized k x))
+  (define pdf-log-p (standard-flgamma-log-pdf k x))
+  (define dx (/ (- real-log-1-p log-1-p) (exp (- pdf-log-p real-log-1-p))))
+  (define new-x (+ x dx))
+  (if (and (new-x . >= . 0.0) (new-x . < . +inf.0)) new-x x))
+
+;(define: max-c : Integer  0)
+;(define: max-c-values : (Listof Any)  null)
+
+(: flgamma-inv-log-cdf-newton (Float Float Float Any Float -> Float))
+(define (flgamma-inv-log-cdf-newton k log-p log-1-p upper-tail? x)
+  (define-values (new-x c)
+    (let: loop : (Values Float Fixnum) ([dx : Float  0.0]
+                                        [x : Float  x]
+                                        [c : Fixnum  1])
+      (define new-x
+        (cond [upper-tail?  (newton-upper-log-iter k log-1-p x)]
+              [else  (newton-lower-log-iter k log-p x)]))
+      (define new-dx (- new-x x))
+      ;(printf "~v ~v~n" x new-x)
+      (cond [(or ((abs (- x new-x)) . <= . (abs (* 4.0 +epsilon.0 new-x)))
+                 (c . >= . 100)
+                 (not (rational? new-x)))
+             (values new-x c)]
+            [(and (c . > . 3) (not (= (flsgn new-dx) (flsgn dx))))
+             ;; If we detect oscillation, the true value is between new-x and x
+             (values (* 0.5 (+ new-x x)) c)]
             [else
-             (define dx (exp (fllog/ (fllog- log-p real-log-p)
-                                     (standard-flgamma-log-pdf k x))))
-             (+ x dx)]))
-    (if (and (new-x . >= . 0.0) (new-x . < . +inf.0)) new-x x))
-  
-  (define: max-c : Integer  0)
-  (define: max-c-values : (Listof Float)  null)
-  
-  (: flgamma-inv-log-cdf-newton (Float Float Float -> Float))
-  (define (flgamma-inv-log-cdf-newton k log-p x)
-    (define-values (new-x c)
-      (let: loop : (Values Float Fixnum) ([x : Float  x] [n : Fixnum  99] [c : Fixnum  1])
-        (define new-x (newton-log-iter k log-p x))
-        (cond [(or (= n 0) ((abs (- x new-x)) . <= . (abs (* 4.0 +epsilon.0 new-x))))
-               (values new-x c)]
-              [((abs (- x new-x)) . <= . (abs (* 1000.0 +epsilon.0 new-x)))
-               ;; Attempt to be smart: when we're less than three digits off, iterating sometimes
-               ;; oscillates around the true answer, so give it a couple more iterations and quit
-               (loop new-x (fxmin 1 (fx- n 1)) (fx+ c 1))]
-              [else
-               (loop new-x (fx- n 1) (fx+ c 1))])))
-    (when (c . > . max-c)
-      (set! max-c c)
-      (set! max-c-values (list k log-p x new-x)))
-    new-x)
-  
-  (: standard-flgamma-inv-log-cdf (Float Float -> Float))
-  ;; Alteration from Best-Roberts: don't use the normal approximation directly
-  ;; Why: applying the cdf to the result gives a `p' with millions of epsilons relative error
-  (define (standard-flgamma-inv-log-cdf k log-p)
+             (loop new-dx new-x (fx+ c 1))])))
+  #;; For testing
+  (when (c . > . max-c)
+    (set! max-c c)
+    (set! max-c-values (list k log-p upper-tail? x new-x)))
+  new-x)
+
+(: standard-flgamma-inv-log-cdf (Float Float Any -> Float))
+(define (standard-flgamma-inv-log-cdf k log-p upper-tail?)
+  (let-values ([(log-p log-1-p)  (cond [upper-tail?  (values (fllog1- log-p) log-p)]
+                                       [else  (values log-p (fllog1- log-p))])])
     (cond [(k . < . 0.0)  +nan.0]
+          [(k . = . 0.0)  (if (log-p . = . -inf.0) 0.0 +inf.0)]
+          [(k . > . 1e32)  (exp (log-z01 k log-p log-1-p upper-tail?))]
+          [(or (and (not upper-tail?) (log-p . > . -inf.0) (log-p . < . 0.0))
+               (and upper-tail? (log-1-p . > . -inf.0) (log-1-p . < . 0.0)))
+           (define x (flgamma-inv-log-cdf-appx k log-p log-1-p upper-tail?))
+           (flgamma-inv-log-cdf-newton k log-p log-1-p upper-tail? x)]
           [(log-p . = . -inf.0)  0.0]
           [(log-p . = . 0.0)  +inf.0]
-          [else  (flgamma-inv-log-cdf-newton k log-p (flgamma-inv-cdf-appx k log-p))]))
-  
-  (: standard-flgamma-inv-cdf (Float Float -> Float))
-  (define (standard-flgamma-inv-cdf k p)
-    (standard-flgamma-inv-log-cdf k (fllog p)))
-  )
+          [else  +nan.0])))
+
+(: standard-flgamma-inv-cdf (Float Float Any Any -> Float))
+(define (standard-flgamma-inv-cdf k p log? upper-tail?)
+  (cond [log?  (standard-flgamma-inv-log-cdf k p upper-tail?)]
+        [else  (standard-flgamma-inv-log-cdf k (fllog p) upper-tail?)]))
+#|  
+)
 
 (require 'defs plot
          "../../../flonum.rkt"
@@ -127,6 +155,7 @@ Used for starting points in Newton's method
          "../../functions/gamma.rkt"
          "../../functions/log-gamma.rkt"
          "../../functions/incomplete-gamma.rkt"
+         "../../functions/lambert.rkt"
          "gamma-pdf.rkt"
          "normal-inv-cdf.rkt")
 #;
@@ -140,23 +169,36 @@ Used for starting points in Newton's method
         #:x-label "k"
         #:y-label "p")
 
-(define min-k 0.5)
+(define (relative-inverse-error p x f)
+  (define new-ps
+    (sort (filter rational? (list (f (flstep x -1)) (f x) (f (flstep x 1))))
+          <))
+  (values
+   new-ps
+   (cond [(empty? new-ps)  +inf.0]
+         [(<= (first new-ps) p (last new-ps))  0.0]
+         [else
+          (define new-p (/ (apply + new-ps) (length new-ps)))
+          (relative-error new-p p)])))
 
-(time
- (plot3d (contour-intervals3d
-          (λ (k p)
-            (let ([k  (fl k)] [p  (fl p)])
-              (printf "k = ~v  p = ~v~n" k p)
-              (define x (standard-flgamma-inv-cdf k p))
-              (define new-p (flgamma-lower-regularized k x))
-              #;(define err (abs (- new-p p)))
-              (define err
-                (abs (relative-error new-p p)))
-              (if (rational? err) err -1.0)))
-          min-k 1.0
-          0.0 1.0)
-         #:x-label "k"
-         #:y-label "p"))
+(define (err k p)
+  (let ([k  (fl k)] [log-p  (fllog (fl p))])
+    ;(printf "k = ~v  p = ~v~n" k p)
+    (define x (standard-flgamma-inv-log-cdf k log-p #f))
+    (define-values (new-ps err)
+      (relative-inverse-error log-p x (λ (x) (fllog-gamma-lower-regularized k x))))
+    (when (not (rational? err))
+      (printf "k = ~v  p = ~v  x = ~v  new-ps = ~v  err = ~v~n" k (exp log-p) x new-ps err))
+    (if (rational? err) err -1.0)))
+
+#;
+(plot3d (contour-intervals3d
+         err
+         0.1 1.0
+         0.0001 0.9999)
+        #:x-label "k"
+        #:y-label "p")
 
 max-c
 max-c-values
+|#

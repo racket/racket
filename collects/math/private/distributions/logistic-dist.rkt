@@ -2,19 +2,16 @@
 
 (require racket/performance-hint
          "../../flonum.rkt"
-         "../../types.rkt"
          "../functions/log1p.rkt"
          "../functions/log-arithmetic.rkt"
-         "utils.rkt")
+         "utils.rkt"
+         "types.rkt")
 
 (provide fllogistic-pdf
          fllogistic-cdf
          fllogistic-inv-cdf
          fllogistic-random
-         logistic-pdf
-         logistic-cdf
-         logistic-inv-cdf
-         logistic-random)
+         Logistic-Distribution logistic-dist logistic-dist? logistic-dist-center logistic-dist-scale)
 
 (: fllogistic-pdf (Float Float Float Any -> Float))
 (define fllogistic-pdf
@@ -59,47 +56,26 @@
 (: fllogistic-random (Float Float -> Float))
 (define fllogistic-random (make-symmetric-location-scale-flrandom standard-fllogistic-inv-cdf))
 
+;; ===================================================================================================
+;; Distribution object
+
 (begin-encourage-inline
   
-  (: logistic-pdf (case-> (-> Real-Density-Function)
-                          (Real -> Real-Density-Function)
-                          (Real Real -> Real-Density-Function)))
-  (define (logistic-pdf [x0 0.0] [s 1.0])
-    (let ([x0  (real->double-flonum x0)]
-          [s   (real->double-flonum s)])
-      (: pdf Real-Density-Function)
-      (define (pdf x [log? #f])
-        (fllogistic-pdf x0 s (real->double-flonum x) log?))
-      pdf))
+  (define-distribution-type: logistic-dist
+    Logistic-Distribution Real-Distribution ([center : Float] [scale : Float]))
   
-  (: logistic-cdf (case-> (-> Real-Distribution-Function)
-                          (Real -> Real-Distribution-Function)
-                          (Real Real -> Real-Distribution-Function)))
-  (define (logistic-cdf [x0 0.0] [s 1.0])
-    (let ([x0  (real->double-flonum x0)]
-          [s   (real->double-flonum s)])
-      (: cdf Real-Distribution-Function)
-      (define (cdf x [log? #f] [upper-tail? #f])
-        (fllogistic-cdf x0 s (real->double-flonum x) log? upper-tail?))
-      cdf))
+  (: logistic-dist (case-> (-> Logistic-Distribution)
+                           (Real -> Logistic-Distribution)
+                           (Real Real -> Logistic-Distribution)))
+  (define (logistic-dist [x0 0.0] [s 1.0])
+    (let ([x0  (fl x0)] [s   (fl s)])
+      (define pdf (opt-lambda: ([x : Real] [log? : Any #f])
+                    (fllogistic-pdf x0 s (fl x) log?)))
+      (define cdf (opt-lambda: ([x : Real] [log? : Any #f] [upper-tail? : Any #f])
+                    (fllogistic-cdf x0 s (fl x) log? upper-tail?)))
+      (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [upper-tail? : Any #f])
+                        (fllogistic-inv-cdf x0 s (fl p) log? upper-tail?)))
+      (define (random) (fllogistic-random x0 s))
+      (make-logistic-dist pdf cdf inv-cdf random x0 s)))
   
-  (: logistic-inv-cdf (case-> (-> Real-Distribution-Function)
-                              (Real -> Real-Distribution-Function)
-                              (Real Real -> Real-Distribution-Function)))
-  (define (logistic-inv-cdf [x0 0.0] [s 1.0])
-    (let ([x0  (real->double-flonum x0)]
-          [s   (real->double-flonum s)])
-      (: inv-cdf Real-Distribution-Function)
-      (define (inv-cdf q [log? #f] [upper-tail? #f])
-        (fllogistic-inv-cdf x0 s (real->double-flonum q) log? upper-tail?))
-      inv-cdf))
-  
-  (: logistic-random (case-> (-> (-> Float))
-                             (Real -> (-> Float))
-                             (Real Real -> (-> Float))))
-  (define (logistic-random [x0 0.0] [s 1.0])
-    (let ([x0  (real->double-flonum x0)]
-          [s   (real->double-flonum s)])
-      (λ () (fllogistic-random x0 s))))
-  
-  )  ; begin-encourage-inline
+  )

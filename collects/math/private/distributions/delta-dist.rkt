@@ -1,76 +1,33 @@
 #lang typed/racket/base
 
 (require racket/performance-hint
-         "../../types.rkt")
+         "../../flonum.rkt"
+         "fldelta-dist.rkt"
+         "utils.rkt"
+         "types.rkt")
 
 (provide fldelta-pdf
          fldelta-cdf
          fldelta-inv-cdf
          fldelta-random
-         delta-pdf
-         delta-cdf
-         delta-inv-cdf
-         delta-random)
-
-(: fldelta-pdf (Float Float Any -> Float))
-(define (fldelta-pdf x0 x log?)
-  (cond [(= x x0)  +inf.0]
-        [else  (if log? -inf.0 0.0)]))
-
-(: fldelta-cdf (Float Float Any Any -> Float))
-(define (fldelta-cdf x0 x log? upper-tail?)
-  (cond [(x . < . x0)
-         (cond [upper-tail?  (if log? 0.0 1.0)]
-               [else  (if log? -inf.0 0.0)])]
-        [else
-         (cond [upper-tail?  (if log? -inf.0 0.0)]
-               [else  (if log? 0.0 1.0)])]))
-
-(: fldelta-inv-cdf (Float Float Any Any -> Float))
-(define (fldelta-inv-cdf x0 q log? upper-tail?)
-  (cond [(not (flprobability? q log?))  +nan.0]
-        [upper-tail?
-         (cond [log?  (if (q . > . -inf.0) x0 +inf.0)]
-               [else  (if (q . > . 0.0) x0 +inf.0)])]
-        [else
-         (cond [log?  (if (q . < . 0.0) x0 +inf.0)]
-               [else  (if (q . < . 1.0) x0 +inf.0)])]))
-
-(: fldelta-random (Float -> Float))
-(define (fldelta-random x0) x0)
+         Delta-Distribution delta-dist delta-dist? delta-dist-center)
 
 (begin-encourage-inline
-  (: delta-pdf (case-> (-> Real-Density-Function)
-                       (Real -> Real-Density-Function)))
-  (define (delta-pdf [x0 0.0])
-    (let ([x0  (real->double-flonum x0)])
-      (: pdf Real-Density-Function)
-      (define (pdf x [log? #f])
-        (fldelta-pdf x0 (real->double-flonum x) log?))
-      pdf))
   
-  (: delta-cdf (case-> (-> Real-Distribution-Function)
-                       (Real -> Real-Distribution-Function)))
-  (define (delta-cdf [x0 0.0])
-    (let ([x0  (real->double-flonum x0)])
-      (: cdf Real-Distribution-Function)
-      (define (cdf x [log? #f] [upper-tail? #f])
-        (fldelta-cdf x0 (real->double-flonum x) log? upper-tail?))
-      cdf))
+  (define-distribution-type: delta-dist
+    Delta-Distribution Real-Distribution ([center : Float]))
   
-  (: delta-inv-cdf (case-> (-> Real-Distribution-Function)
-                           (Real -> Real-Distribution-Function)))
-  (define (delta-inv-cdf [x0 0.0])
-    (let ([x0  (real->double-flonum x0)])
-      (: inv-cdf Real-Distribution-Function)
-      (define (inv-cdf q [log? #f] [upper-tail? #f])
-        (fldelta-inv-cdf x0 (real->double-flonum q) log? upper-tail?))
-      inv-cdf))
+  (: delta-dist (case-> (-> Delta-Distribution)
+                        (Real -> Delta-Distribution)))
+  (define (delta-dist [x0 0.0])
+    (let ([x0  (fl x0)])
+      (define pdf (opt-lambda: ([x : Real] [log? : Any #f])
+                    (fldelta-pdf x0 (fl x) log?)))
+      (define cdf (opt-lambda: ([x : Real] [log? : Any #f] [upper-tail? : Any #f])
+                    (fldelta-cdf x0 (fl x) log? upper-tail?)))
+      (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [upper-tail? : Any #f])
+                        (fldelta-inv-cdf x0 (fl p) log? upper-tail?)))
+      (define (random) x0)
+      (make-delta-dist pdf cdf inv-cdf random x0)))
   
-  (: delta-random (case-> (-> (-> Float))
-                          (Real -> (-> Float))))
-  (define (delta-random [x0 0.0])
-    (let ([x0  (real->double-flonum x0)])
-      (λ () x0)))
-  
-  )  ; begin-encourage-inline
+  )

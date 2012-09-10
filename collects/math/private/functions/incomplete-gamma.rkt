@@ -1,5 +1,9 @@
 #lang typed/racket/base
+#|
+#lang racket
 
+(module defs typed/racket/base
+|#
 #|
 Algorithms taken from:
 
@@ -11,7 +15,7 @@ For certain algorithms for a few subdomains of RxR, the above paper references t
 W Gautschi. A Computational Procedure for Incomplete Gamma Functions.
 ACM Transactions on Mathematical Software, 1979, vol. 5, pp. 466--481.
 
-This implementation extends those in the papers in a three ways:
+This implementation extends those in the papers in three ways:
 
  * Results are more correct, generally with relative error <= 1e-14.
 
@@ -33,7 +37,7 @@ This implementation extends those in the papers in a three ways:
          "log-gamma.rkt"
          "log-arithmetic.rkt"
          "polyfun.rkt")
-
+;(provide (all-defined-out))
 (provide flgamma-lower
          flgamma-upper
          flgamma-lower-regularized
@@ -97,10 +101,10 @@ This implementation extends those in the papers in a three ways:
 (define (use-gautschi? k x log?)
   (and (use-gautschi-appx?)
        (cond [log?  (and (x . < . 1.0)
-                         (or (x . >= . k) (k . < . 0.5))
+                         (or (x . >= . k) (k . < . 0.9))
                          (not (and (= k +min.0) (x . > . 0.01))))]
              [else  (and (x . < . 1.5)
-                         (or (x . >= . k) (k . < . 0.5)))])))
+                         (or (x . >= . k) (k . < . 0.9)))])))
 
 (: use-lower? (Float Float -> Boolean))
 ;; Determines whether to compute incomplete gamma functions using a lower gamma function; i.e.
@@ -188,8 +192,8 @@ This implementation extends those in the papers in a three ways:
 ;; ===================================================================================================
 ;; Gautschi's algorithm (as presented by Temme) for the regularized upper gamma for x < 1
 
-(: fl1-1/gammap1-taylor-0 (Float -> Float))
-(define (fl1-1/gammap1-taylor-0 x)
+(: fl1-1/gamma1p-taylor-0 (Float -> Float))
+(define (fl1-1/gamma1p-taylor-0 x)
   (* x ((make-flpolyfun
          (-5.7721566490153286060651209008240243104215933593992e-1
           +6.5587807152025388107701951514539048127976638047858e-1
@@ -208,8 +212,8 @@ This implementation extends those in the papers in a three ways:
           -6.1160951044814158178624986828553428672758673305935e-9))
         x)))
 
-(: fl1-1/gammap1-taylor-1 (Float -> Float))
-(define (fl1-1/gammap1-taylor-1 x)
+(: fl1-1/gamma1p-taylor-1 (Float -> Float))
+(define (fl1-1/gamma1p-taylor-1 x)
   (* (- x 1.0)
      ((make-flpolyfun
        (+4.2278433509846713939348790991759756895784066406008e-1
@@ -228,8 +232,8 @@ This implementation extends those in the papers in a three ways:
         +1.5952678485086792358158795888938797557013266594503e-10
         -6.2756218893322837414440866417447308428460020476605e-9))
       (- x 1.0))))
-  
-(define fl1-1/gammap1-0.3-0.7
+
+(define fl1-1/gamma1p-0.3-0.7
   (inline-chebyshev-flpoly-fun
    0.3 0.7
    (-0.2357535799644732185145165985112978133459
@@ -246,16 +250,16 @@ This implementation extends those in the papers in a three ways:
     2.777819095314707020162876992918284024147e-16
     -4.289212074552049664300497789553082042299e-18)))
 
-(: fl1-1/gammap1 (Float -> Float))
+(: fl1-1/gamma1p (Float -> Float))
 ;; Computes 1-1/gamma(x+1); relative error <= 2*eps
-(define (fl1-1/gammap1 x)
-  (cond [(x . < . 0.3)  (fl1-1/gammap1-taylor-0 x)]
-        [(x . < . 0.7)  (fl1-1/gammap1-0.3-0.7 x)]
-        [else  (fl1-1/gammap1-taylor-1 x)]))
+(define (fl1-1/gamma1p x)
+  (cond [(x . < . 0.3)  (fl1-1/gamma1p-taylor-0 x)]
+        [(x . < . 0.7)  (fl1-1/gamma1p-0.3-0.7 x)]
+        [else  (fl1-1/gamma1p-taylor-1 x)]))
   
-(: flgamma-upper-gautschi-iter (Float Float -> Float))
+(: flgamma-gautschi-iter (Float Float -> Float))
 ;; Calculates the series part of Gautschi's algorithm
-(define (flgamma-upper-gautschi-iter k x)
+(define (flgamma-gautschi-iter k x)
   (let loop ([p  (* k x)] [q  (+ k 1.0)] [r  (+ k 3.0)] [t  1.0] [v  1.0])
     (cond [((abs t) . <= . (abs (* +epsilon.0 v)))  v]
           [else  (let* ([p  (+ p x)] [q  (+ q r)] [r  (+ r 2.0)] [t  (/ (* (- p) t) q)] [v  (+ v t)])
@@ -277,9 +281,9 @@ This implementation extends those in the papers in a three ways:
 (: flgamma-upper-regularized-gautschi (Float Float Any -> Float))
 ;; Temme's implementation of Gautschi's series for upper gamma, extended to compute logs
 (define (flgamma-upper-regularized-gautschi k x log?)
-  (define y (flgamma-upper-gautschi-iter k x))
+  (define y (flgamma-gautschi-iter k x))
   (cond [log?
-         (define s (fl1-1/gammap1 k))
+         (define s (fl1-1/gamma1p k))
          ;; Divide by k (by dividing by (flsqrt k) twice) to try to keep some precision when k is very
          ;; small: the computation (* k (fllog x)) loses a lot of bits otherwise
          (define A (/ (+ (- (* (fllog x) (flsqrt k))
@@ -290,11 +294,30 @@ This implementation extends those in the papers in a three ways:
                  (+ (fllog k) (+ (- (* k (fllog x)) (fllog1p k))
                                  (fllog (+ (* s x y) (- (* x y)) (- s) 1.0)))))]
         [else
-         (define x^k-1 (flexpm1 (* k (fllog x))))
-         (define s (fl1-1/gammap1 k))
-         (define u (- s (* x^k-1 (- 1.0 s))))
+         (define s (fl1-1/gamma1p k))
+         (define u (- s (* (flexpm1 (* k (fllog x))) (- 1.0 s))))
          (define v (/ (* k (- 1.0 s) (exp (* (+ k 1.0) (fllog x))) y) (+ k 1.0)))
          (+ u v)]))
+
+(: flgamma-lower-regularized-gautschi (Float Float Any -> Float))
+;; Gautschi's series for upper gamma, altered to compute lower
+(define (flgamma-lower-regularized-gautschi k x log?)
+  (define y (flgamma-gautschi-iter k x))
+  (cond [log?
+         ;; Catastrophic cancellation in log-1-s around 1e-16..2e-14: 
+         #|
+         (define log-1-s (- (+ (fllog k) (fllog-gamma k))))
+         (define log-1-u (+ log-1-s (* k (fllog x))))
+         (define log-v (- (+ (fllog k) log-1-s (* (+ k 1.0) (fllog x)) (fllog y))
+                          (fllog1p k)))
+         (fllog- log-1-u log-v)
+|#
+         (fllog1- (flgamma-upper-regularized-gautschi k x #t))]
+        [else
+         (define 1-s (/ 1.0 (* k (flgamma k))))
+         (define 1-u (* 1-s (flexpt x k)))
+         (define v (/ (* k 1-s (exp (* (+ k 1.0) (fllog x))) y) (+ k 1.0)))
+         (- 1-u v)]))
 
 ;; ===================================================================================================
 ;; Temme's series for the incomplete gamma functions (used when k ~ x and k is not small)
@@ -388,22 +411,25 @@ This implementation extends those in the papers in a three ways:
 (: fllog-gamma-lower-regularized (Float Float -> Float))
 (define (fllog-gamma-lower-regularized k x)
   (cond [(or (k . < . 0.0) (x . < . 0.0))  +nan.0]
-        [(= k 0.0)  0.0]
-        [(= x 0.0)  -inf.0]
-        [(and (k . > . 0.0) (x . > . 0.0))
+        [(and (k . > . 0.0) (k . < . +inf.0) (x . > . 0.0) (x . < . +inf.0))
          (cond [(use-normal? k x #t #f)  (flgamma-regularized-normal k x #t #f)]
                [(use-temme? k x)  (fllog-gamma-regularized-temme k x #f)]
-               [(use-gautschi? k x #t)  (fllog1- (flgamma-upper-regularized-gautschi k x #t))]
+               [(use-gautschi? k x #t)  (flgamma-lower-regularized-gautschi k x #t)]
                [(use-lower? k x)  (fllog-gamma-lower-series k x)]
                [else  (fllog1- (fllog-gamma-upper-frac k x))])]
+        ;; k = +inf.0: a step function with the step "at infinity"
+        [(= k +inf.0)  (if (= x +inf.0) (fllog 1.0) (fllog 0.0))]
+        ;; k = 0.0: a step function with the step at 0.0
+        [(= k 0.0)  (fllog 1.0)]
+        [(= x 0.0)  (fllog 0.0)]
+        [(= x +inf.0)  (fllog 1.0)]
+        ;; k is +nan.0 and x is +nan.0
         [else  +nan.0]))
 
 (: fllog-gamma-upper-regularized (Float Float -> Float))
 (define (fllog-gamma-upper-regularized k x)
   (cond [(or (k . < . 0.0) (x . < . 0.0))  +nan.0]
-        [(= k 0.0)  -inf.0]
-        [(= x 0.0)  0.0]
-        [(and (k . > . 0.0) (x . > . 0.0))
+        [(and (k . > . 0.0) (k . < . +inf.0) (x . > . 0.0) (x . < . +inf.0))
          (cond [(or (and (k . >= . 1.0) ((/ x k) . > . 1e19))
                     (and (k . < . 1.0) (x . > . 1e19)))
                 (- x)]
@@ -412,35 +438,52 @@ This implementation extends those in the papers in a three ways:
                [(use-gautschi? k x #t)  (flgamma-upper-regularized-gautschi k x #t)]
                [(use-lower? k x)  (fllog1- (fllog-gamma-lower-series k x))]
                [else  (fllog-gamma-upper-frac k x)])]
+        ;; k = +inf.0: a step function with the step "at infinity"
+        [(= k +inf.0)  (if (= x +inf.0) (fllog 0.0) (fllog 1.0))]
+        ;; k = 0.0: a step function with the step at 0.0
+        [(= k 0.0)  (fllog 0.0)]
+        [(= x 0.0)  (fllog 1.0)]
+        [(= x +inf.0)  (fllog 0.0)]
+        ;; k is +nan.0 and x is +nan.0
         [else  +nan.0]))
 
 (: flgamma-lower-regularized (Float Float -> Float))
 (define (flgamma-lower-regularized k x)
   (cond [(or (k . < . 0.0) (x . < . 0.0))  +nan.0]
-        [(= k 0.0)  1.0]
-        [(= x 0.0)  0.0]
-        [(and (k . > . 0.0) (x . > . 0.0))
+        [(and (k . > . 0.0) (k . < . +inf.0) (x . > . 0.0) (x . < . +inf.0))
          (cond [(k . < . 1e-20)  1.0]
                [(use-normal? k x #f #f)  (flgamma-regularized-normal k x #f #f)]
                [(use-temme? k x)  (flgamma-regularized-temme k x #f)]
-               [(use-gautschi? k x #f)  (- 1.0 (flgamma-upper-regularized-gautschi k x #f))]
+               [(use-gautschi? k x #f)  (flgamma-lower-regularized-gautschi k x #f)]
                [(use-log? k x)  (flexp (fllog-gamma-lower-regularized k x))]
                [(use-lower? k x)  (flgamma-lower-series k x)]
                [else  (- 1.0 (flgamma-upper-frac k x))])]
+        ;; k = +inf.0: a step function with the step "at infinity"
+        [(= k +inf.0)  (if (= x +inf.0) 1.0 0.0)]
+        ;; k = 0.0: a step function with the step at 0.0
+        [(= k 0.0)  1.0]
+        [(= x 0.0)  0.0]
+        [(= x +inf.0)  1.0]
+        ;; k is +nan.0 and x is +nan.0
         [else  +nan.0]))
 
 (: flgamma-upper-regularized (Float Float -> Float))
 (define (flgamma-upper-regularized k x)
   (cond [(or (k . < . 0.0) (x . < . 0.0))  +nan.0]
-        [(= k 0.0)  0.0]
-        [(= x 0.0)  1.0]
-        [(and (k . > . 0.0) (x . > . 0.0))
+        [(and (k . > . 0.0) (k . < . +inf.0) (x . > . 0.0) (x . < . +inf.0))
          (cond [(use-normal? k x #f #t)  (flgamma-regularized-normal k x #f #t)]
                [(use-temme? k x)  (flgamma-regularized-temme k x #t)]
                [(use-gautschi? k x #f)  (flgamma-upper-regularized-gautschi k x #f)]
                [(use-log? k x)  (flexp (fllog-gamma-upper-regularized k x))]
                [(use-lower? k x)  (- 1.0 (flgamma-lower-series k x))]
                [else  (flgamma-upper-frac k x)])]
+        ;; k = +inf.0: a step function with the step "at infinity"
+        [(= k +inf.0)  (if (= x +inf.0) 0.0 1.0)]
+        ;; k = 0.0: a step function with the step at 0.0
+        [(= k 0.0)  0.0]
+        [(= x 0.0)  1.0]
+        [(= x +inf.0)  0.0]
+        ;; k is +nan.0 and x is +nan.0
         [else  +nan.0]))
 
 ;; ===================================================================================================
@@ -487,29 +530,25 @@ This implementation extends those in the papers in a three ways:
 (define-incomplete-gamma-wrapper log-gamma-upper fllog-gamma-upper)
 (define-incomplete-gamma-wrapper log-gamma-lower-regularized fllog-gamma-lower-regularized)
 (define-incomplete-gamma-wrapper log-gamma-upper-regularized fllog-gamma-upper-regularized)
-
 #|
-(require 'defs plot
-         racket/fixnum
-         math/flonum
+)
+
+(require plot
+         'defs
          math/bigfloat
          "../../flonum.rkt"
+         "../../constants.rkt"
+         "../../vector.rkt"
+         "../polynomial/chebyshev.rkt"
+         "../distributions/impl/normal-cdf.rkt"
          "continued-fraction.rkt"
          "log1p.rkt"
          "expm1.rkt"
-         "log1pmx.rkt"
          "gamma.rkt"
          "gammastar.rkt"
          "log-gamma.rkt"
-         "log-arithmetic.rkt")
-#;
-(plot3d (contour-intervals3d
-         (λ (k x)
-           (printf "k = ~v  x = ~v~n" (fl k) (fl x))
-           (define y (flgamma-lower (fl k) (fl x)))
-           (if (= y +inf.0) 0.0 y))
-         +min.0 +max.0
-         0.0 +max.0))
+         "log-arithmetic.rkt"
+         "polyfun.rkt")
 
 (define h (make-hash))
 
@@ -600,4 +639,33 @@ This implementation extends those in the papers in a three ways:
               +min.0 end
               +min.0 end))))
   (newline))
+
+#;
+(plot3d
+ (contour-intervals3d
+  (λ (k x)
+    (let ([k  (fl k)] [x  (fl x)])
+      (relative-error
+       (flgamma-lower-regularized k x)
+       (gamma-lower-regularized* k x))))
+  +min.0 +epsilon.0
+  +min.0 +epsilon.0))
+
+(plot3d
+ (contour-intervals3d
+  (λ (k x)
+    (let ([k  (fl k)] [x  (fl x)])
+      (fllog-gamma-lower-regularized k x)))
+  1e-16 1e-15
+  0 1.1))
+#;
+(plot3d
+ (contour-intervals3d
+  (λ (k x)
+    (let ([k  (fl k)] [x  (fl x)])
+      (relative-error
+       (flgamma-lower-regularized k x)
+       (gamma-lower-regularized* k x))))
+  +min.0 +epsilon.0
+  +min.0 +epsilon.0))
 |#
