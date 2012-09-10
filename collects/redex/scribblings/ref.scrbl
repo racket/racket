@@ -2773,8 +2773,8 @@ its head.
 The result list is constrained to have at most 2 adjacent
 non-@racket[lw]s. That list is then transformed by adding
 @racket[lw] structs for each of the non-@racket[lw]s in the
-list (see the description of @racket[lw] below for an
-explanation of logical-space):
+list (see the text just below the description of @racket[lw] for a
+explanation of logical space):
 
 @itemize[
 @item{
@@ -2798,6 +2798,13 @@ explanation of logical-space):
     absorbed by a new @racket[lw] that renders using no
     actual space in the typeset version.
 }]
+
+One useful way to take advantage of @racket[with-compound-rewriters]
+is to return a list that begins and ends with @racket[""] (the
+empty string). In that situation, any extra logical space that
+would have been just outside the sequence is replaced with an 
+@racket[lw] that does not draw anything at all.
+
 }
 
 @defform[(with-compound-rewriters ([name-symbol proc] ...)
