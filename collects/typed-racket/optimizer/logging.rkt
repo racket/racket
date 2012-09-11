@@ -6,7 +6,7 @@
 
 (provide log-optimization log-missed-optimization
          log-message-from-tr-opt?
-         with-intercepted-tr-logging with-tr-logging-to-port
+         with-tr-logging-to-port
          (struct-out log-entry)
          (struct-out opt-log-entry)
          (struct-out missed-opt-log-entry))
@@ -128,17 +128,11 @@
     (and (pair? data)
          (eq? (car data) optimization-log-key))))
 
-;; only intercepts TR log messages
-(define (with-intercepted-tr-logging interceptor thunk)
-  (with-intercepted-logging
-   #:level TR-logging-level
-   (lambda (l) ;; look only for optimizer messages
-     (when (log-message-from-tr-opt? l)
-       (interceptor l)))
-   thunk))
-
 (define (with-tr-logging-to-port port thunk)
-  (with-intercepted-tr-logging
+  (with-intercepted-logging
    (lambda (l)
-     (displayln (vector-ref l 1) port)) ; print log message
-   thunk))
+     (displayln ; print log message
+      (string-trim (vector-ref l 1) "TR-optimizer: ") ; remove logger prefix
+      port))
+   thunk
+   'debug 'TR-optimizer))
