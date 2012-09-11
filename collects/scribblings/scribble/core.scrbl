@@ -1405,6 +1405,13 @@ The @racket[path] field can be a result of
 @racket[path->main-collects-relative].}
 
 
+@defstruct[js-addition ([path (or/c path-string? 
+                                    (cons/c 'collects (listof bytes?))
+                                    bytes?)])]{
+
+Like @racket[css-addition], but for a Javascript file instead of a CSS file.}
+
+
 @defstruct[body-id ([value string?])]{
 
 Used as a @tech{style property} to associate an @tt{id} attribute with

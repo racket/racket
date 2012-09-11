@@ -686,6 +686,19 @@
                                   (list style-file)
                                   style-extra-files))
                    ,(scribble-js-contents script-file (lookup-path script-file alt-paths))
+                   ,@(map (lambda (script-file)
+                            (if (bytes? script-file)
+                                (scribble-js-contents script-file #f)
+                                (let ([p (lookup-path script-file alt-paths)])
+                                  (unless p (install-file script-file))
+                                  (scribble-js-contents script-file p))))
+                          (extract-part-style-files
+                           d
+                           ri
+                           'css
+                           (lambda (p) (part-whole-page? p ri))
+                           js-addition?
+                           js-addition-path))
                    ,(xml:comment "[if IE 6]><style type=\"text/css\">.SIEHidden { overflow: hidden; }</style><![endif]")
                    ,@(for/list ([p (style-properties (part-style d))]
                                 #:when (head-extra? p))
