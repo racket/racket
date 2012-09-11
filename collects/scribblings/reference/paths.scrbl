@@ -292,7 +292,7 @@ does not access the filesystem.}
 
 @defproc[(complete-path? [path (or/c path-string? path-for-some-system?)]) boolean?]{
 
-Returns @racket[#t] if @racket[path] is a completely determined path
+Returns @racket[#t] if @racket[path] is a @deftech{complete}ly determined path
 (@italic{not} relative to a directory or drive), @racket[#f]
 otherwise. The @racket[path] argument can be a path for any
 platform. Note that for Windows paths, an absolute path can omit the
@@ -499,6 +499,32 @@ Similar to @racket[path-replace-suffix], but any existing suffix on
 @racket[path] is preserved by replacing every @litchar{.} in the last
 @tech{path element} with @litchar{_}, and then the @racket[suffix] is added
 to the end.}
+
+
+@defproc[(reroot-path [path (or/c path-string? path-for-some-system?)]
+                      [root-path (or/c path-string? path-for-some-system?)])
+         path-for-some-system?]{
+
+Produces a path that extends @racket[root-path] based on the complete
+form of @racket[path].
+
+If @racket[path] is not already @tech{complete}, is it completed via
+@racket[path->complete-path], in which case @racket[path] must be a
+path for the current platform. The @racket[path] argument is also
+@tech{cleanse}d and case-normalized via @racket[normal-case-path]. The
+path is then appended to @racket[root-path]; in the case of Windows
+paths, a root letter drive becomes a letter path element, while a root
+UNC path is prefixed with @racket["UNC"] as a path element and the
+machine and volume names become path elements.
+
+@examples[
+(reroot-path (bytes->path #"/home/caprica/baltar" 'unix)
+             (bytes->path #"/earth" 'unix))
+(reroot-path (bytes->path #"c:\\usr\\adama" 'windows)
+             (bytes->path #"\\\\earth\\africa\\" 'windows))
+(reroot-path (bytes->path #"\\\\galactica\\cac\\adama" 'windows)
+             (bytes->path #"s:\\earth\\africa\\" 'windows))
+]}
 
 @;------------------------------------------------------------------------
 @section{More Path Utilities}

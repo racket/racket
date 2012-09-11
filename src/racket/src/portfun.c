@@ -159,6 +159,7 @@ READ_ONLY Scheme_Object *scheme_display_proc;
 READ_ONLY Scheme_Object *scheme_print_proc;
 
 SHARED_OK Scheme_Object *initial_compiled_file_paths;
+SHARED_OK Scheme_Object *initial_compiled_file_roots;
 
 THREAD_LOCAL_DECL(static Scheme_Object *dummy_input_port);
 THREAD_LOCAL_DECL(static Scheme_Object *dummy_output_port);
@@ -346,6 +347,10 @@ void scheme_init_port_fun_config(void)
     scheme_set_root_param(MZCONFIG_USE_COMPILED_KIND, initial_compiled_file_paths);
   else
     scheme_set_root_param(MZCONFIG_USE_COMPILED_KIND, scheme_make_pair(scheme_make_path("compiled"), scheme_null));
+  if (initial_compiled_file_roots)
+    scheme_set_root_param(MZCONFIG_USE_COMPILED_ROOTS, initial_compiled_file_roots);
+  else
+    scheme_set_root_param(MZCONFIG_USE_COMPILED_ROOTS, scheme_make_pair(scheme_intern_symbol("same"), scheme_null));
   scheme_set_root_param(MZCONFIG_USE_USER_PATHS, (scheme_ignore_user_paths ? scheme_false : scheme_true));
   scheme_set_root_param(MZCONFIG_USE_LINK_PATHS, (scheme_ignore_link_paths ? scheme_false : scheme_true));
 
@@ -369,6 +374,13 @@ void scheme_set_compiled_file_paths(Scheme_Object *list)
   if (!initial_compiled_file_paths)
     REGISTER_SO(initial_compiled_file_paths);
   initial_compiled_file_paths = list;
+}
+
+void scheme_set_compiled_file_roots(Scheme_Object *list)
+{
+  if (!initial_compiled_file_roots)
+    REGISTER_SO(initial_compiled_file_roots);
+  initial_compiled_file_roots = list;
 }
 
 /*========================================================================*/

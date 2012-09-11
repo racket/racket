@@ -1,3 +1,7 @@
+Version 5.3.0.24
+Added PLTCOMPILEDROOTS and --compiled/-R command-line flag
+Added `reroot-path'
+
 Version 5.3.0.23
 Changed make-log-receiver to accept a logger name as an
  event filter

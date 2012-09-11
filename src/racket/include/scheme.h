@@ -1281,6 +1281,7 @@ enum {
   MZCONFIG_CODE_INSPECTOR,
 
   MZCONFIG_USE_COMPILED_KIND,
+  MZCONFIG_USE_COMPILED_ROOTS,
   MZCONFIG_USE_USER_PATHS,
   MZCONFIG_USE_LINK_PATHS,
 
@@ -1836,9 +1837,11 @@ MZ_EXTERN void scheme_set_addon_dir(Scheme_Object *p);
 MZ_EXTERN void scheme_set_links_file(Scheme_Object *p);
 MZ_EXTERN void scheme_set_command_line_arguments(Scheme_Object *vec);
 MZ_EXTERN void scheme_set_compiled_file_paths(Scheme_Object *list);
+MZ_EXTERN void scheme_set_compiled_file_roots(Scheme_Object *list);
 
 MZ_EXTERN void scheme_init_collection_paths(Scheme_Env *global_env, Scheme_Object *extra_dirs);
 MZ_EXTERN void scheme_init_collection_paths_post(Scheme_Env *global_env, Scheme_Object *extra_dirs, Scheme_Object *extra_post_dirs);
+MZ_EXTERN void scheme_init_compiled_roots(Scheme_Env *global_env, const char *paths);
 
 MZ_EXTERN void scheme_seal_parameters();
 

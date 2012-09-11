@@ -5227,6 +5227,8 @@ void scheme_init_collection_paths_post(Scheme_Env *global_env, Scheme_Object *ex
       a[0] = _scheme_apply(flcp, 2, a);
       _scheme_apply(clcp, 1, a);
     }
+  } else {
+    scheme_clear_escape();
   }
   p->error_buf = save;
 }
@@ -5234,6 +5236,40 @@ void scheme_init_collection_paths_post(Scheme_Env *global_env, Scheme_Object *ex
 void scheme_init_collection_paths(Scheme_Env *global_env, Scheme_Object *extra_dirs)
 {
   scheme_init_collection_paths_post(global_env, extra_dirs, scheme_null);
+}
+
+void scheme_init_compiled_roots(Scheme_Env *global_env, const char *paths)
+{
+  mz_jmp_buf * volatile save, newbuf;
+  Scheme_Thread * volatile p;
+  p = scheme_get_current_thread();
+  save = p->error_buf;
+  p->error_buf = &newbuf;
+  if (!scheme_setjmp(newbuf)) {
+    Scheme_Object *rr, *ccfr, *pls2pl, *a[3];
+
+    rr = scheme_builtin_value("regexp-replace*");
+    ccfr = scheme_builtin_value("current-compiled-file-roots");
+    pls2pl = scheme_builtin_value("path-list-string->path-list");
+
+    if (rr && ccfr && pls2pl) {
+      a[0] = scheme_make_utf8_string("@[(]version[)]");
+      a[1] = scheme_make_utf8_string(paths);
+      a[2] = scheme_make_utf8_string(scheme_version());
+      a[2] = _scheme_apply(rr, 3, a);
+
+      a[0] = scheme_intern_symbol("same");
+      a[1] = scheme_build_path(1, a);
+
+      a[0] = a[2];
+      a[1] = scheme_make_pair(a[1], scheme_null);
+      a[0] = _scheme_apply(pls2pl, 2, a);
+      _scheme_apply(ccfr, 1, a);
+    }
+  } else {
+    scheme_clear_escape();
+  }
+  p->error_buf = save;  
 }
 
 static Scheme_Object *allow_set_undefined(int argc, Scheme_Object **argv)

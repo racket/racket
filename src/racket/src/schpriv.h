@@ -3767,6 +3767,7 @@ Scheme_Object *scheme_symbol_to_string(Scheme_Object *sym);
 #define SCHEME_SYM_WEIRDP(o) (MZ_OPT_HASH_KEY(&((Scheme_Symbol *)(o))->iso) & 0x3)
 
 Scheme_Object *scheme_current_library_collection_paths(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_compiled_file_roots(int argc, Scheme_Object *argv[]);
 
 #ifdef MZ_USE_JIT
 int scheme_can_inline_fp_op();

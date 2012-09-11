@@ -201,6 +201,7 @@ static Scheme_Object *file_identity(int argc, Scheme_Object *argv[]);
 static Scheme_Object *file_size(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_library_collection_paths(int argc, Scheme_Object *argv[]);
 static Scheme_Object *use_compiled_kind(int, Scheme_Object *[]);
+static Scheme_Object *compiled_file_roots(int, Scheme_Object *[]);
 static Scheme_Object *use_user_paths(int, Scheme_Object *[]);
 static Scheme_Object *use_link_paths(int, Scheme_Object *[]);
 static Scheme_Object *find_system_path(int argc, Scheme_Object **argv);
@@ -547,6 +548,11 @@ void scheme_init_file(Scheme_Env *env)
 			     scheme_register_parameter(use_compiled_kind,
 						       "use-compiled-file-paths",
 						       MZCONFIG_USE_COMPILED_KIND),
+			     env);
+  scheme_add_global_constant("current-compiled-file-roots",
+			     scheme_register_parameter(compiled_file_roots,
+						       "current-compiled-file-roots",
+						       MZCONFIG_USE_COMPILED_ROOTS),
 			     env);
   scheme_add_global_constant("use-user-specific-search-paths",
 			     scheme_register_parameter(use_user_paths,
@@ -5839,7 +5845,7 @@ static Scheme_Object *current_directory(int argc, Scheme_Object **argv)
 
 #endif
 
-static Scheme_Object *collpaths_gen_p(int argc, Scheme_Object **argv, int rel)
+static Scheme_Object *collpaths_gen_p(int argc, Scheme_Object **argv, int rel_ok, int abs_ok, int sym_ok)
 {
   Scheme_Object *v = argv[0];
 
@@ -5852,17 +5858,21 @@ static Scheme_Object *collpaths_gen_p(int argc, Scheme_Object **argv, int rel)
   while (SCHEME_PAIRP(v)) {
     Scheme_Object *s;
     s = SCHEME_CAR(v);
-    if (!SCHEME_PATH_STRINGP(s))
-      return NULL;
-    s = TO_PATH(s);
-    if (rel && !scheme_is_relative_path(SCHEME_PATH_VAL(s),
-					SCHEME_PATH_LEN(s),
-                                        SCHEME_PLATFORM_PATH_KIND))
-      return NULL;
-    if (!rel && !scheme_is_complete_path(SCHEME_PATH_VAL(s),
-					 SCHEME_PATH_LEN(s),
-                                         SCHEME_PLATFORM_PATH_KIND))
-      return NULL;
+    if (sym_ok && SAME_OBJ(s, same_symbol)) {
+      /* ok */
+    } else {
+      if (!SCHEME_PATH_STRINGP(s))
+        return NULL;
+      s = TO_PATH(s);
+      if (!abs_ok && !scheme_is_relative_path(SCHEME_PATH_VAL(s),
+                                              SCHEME_PATH_LEN(s),
+                                              SCHEME_PLATFORM_PATH_KIND))
+        return NULL;
+      if (!rel_ok && !scheme_is_complete_path(SCHEME_PATH_VAL(s),
+                                              SCHEME_PATH_LEN(s),
+                                              SCHEME_PLATFORM_PATH_KIND))
+        return NULL;
+    }
     v = SCHEME_CDR(v);
   }
 
@@ -5875,7 +5885,8 @@ static Scheme_Object *collpaths_gen_p(int argc, Scheme_Object **argv, int rel)
     v = argv[0];
     while (SCHEME_PAIRP(v)) {
       s = SCHEME_CAR(v);
-      s = TO_PATH(s);
+      if (!SCHEME_SYMBOLP(s))
+        s = TO_PATH(s);
       
       p = scheme_make_pair(s, scheme_null);
       if (!first)
@@ -5895,7 +5906,7 @@ static Scheme_Object *collpaths_gen_p(int argc, Scheme_Object **argv, int rel)
 
 static Scheme_Object *collpaths_p(int argc, Scheme_Object **argv)
 {
-  return collpaths_gen_p(argc, argv, 0);
+  return collpaths_gen_p(argc, argv, 0, 1, 0);
 }
 
 Scheme_Object *scheme_current_library_collection_paths(int argc, Scheme_Object *argv[]) {
@@ -5914,7 +5925,7 @@ static Scheme_Object *current_library_collection_paths(int argc, Scheme_Object *
 
 static Scheme_Object *compiled_kind_p(int argc, Scheme_Object **argv)
 {
-  return collpaths_gen_p(argc, argv, 1);
+  return collpaths_gen_p(argc, argv, 1, 0, 0);
 }
 
 static Scheme_Object *use_compiled_kind(int argc, Scheme_Object *argv[])
@@ -5923,6 +5934,24 @@ static Scheme_Object *use_compiled_kind(int argc, Scheme_Object *argv[])
 			     scheme_make_integer(MZCONFIG_USE_COMPILED_KIND),
 			     argc, argv,
 			     -1, compiled_kind_p, "list of relative paths and strings", 1);
+}
+
+static Scheme_Object *compiled_roots_p(int argc, Scheme_Object **argv)
+{
+  return collpaths_gen_p(argc, argv, 1, 1, 1);
+}
+
+Scheme_Object *scheme_compiled_file_roots(int argc, Scheme_Object *argv[])
+{
+  return compiled_file_roots(argc, argv);
+}
+
+static Scheme_Object *compiled_file_roots(int argc, Scheme_Object *argv[])
+{
+  return scheme_param_config("current-compiled-file-roots",
+			     scheme_make_integer(MZCONFIG_USE_COMPILED_ROOTS),
+			     argc, argv,
+			     -1, compiled_roots_p, "list of paths, string, and 'same", 1);
 }
 
 static Scheme_Object *use_user_paths(int argc, Scheme_Object *argv[])

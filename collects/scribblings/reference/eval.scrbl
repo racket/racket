@@ -255,8 +255,15 @@ X) files.
 The check for a compiled file occurs whenever the given path
 @racket[_file] ends with any extension (e.g., @filepath{.rkt} or
 @filepath{.scrbl}), and the check consults the subdirectories
-indicated by the @racket[use-compiled-file-paths] parameter relative
-to @racket[_file].  The subdirectories are checked in order. A
+indicated by the @racket[current-compiled-file-roots] and
+@racket[use-compiled-file-paths] parameters relative to
+@racket[_file], where the former supplies ``roots'' for compiled files
+and the latter provides subdirectories. A ``root'' can be an absolute
+path, in which case @racket[_file]'s directory is combined with
+@racket[reroot-path] and the root as the second argument; if the
+``root'' is a relative path, then the relative path is instead
+suffixed onto the directory of @racket[_file]. The roots are tried in
+order, and the subdirectories are checked in order within each root. A
 @filepath{.zo} version of the file (whose name is formed by passing
 @racket[_file] and @racket[#".zo"] to @racket[path-add-suffix]) is
 loaded if it exists directly in one of the indicated subdirectories,
@@ -329,6 +336,23 @@ path. (The directory need not exist.)}
 A list of relative paths, which defaults to @racket[(list
 (string->path "compiled"))]. It is used by the @tech{compiled-load
 handler} (see @racket[current-load/use-compiled]).}
+
+
+@defparam*[current-compiled-file-roots paths (listof (or/c path-string? 'same)) (listof (or/c path? 'path))]{
+
+A list of paths and @racket['same]s that is is used by the default
+@tech{compiled-load handler} (see @racket[current-load/use-compiled]).
+
+The parameter is normally initialized to @racket[(list 'same)], but
+the parameter's initial value can be adjusted by the
+@as-index{@envvar{PLTCOMPILEDROOTS}} environment variable or the
+@DFlag{compiled} or @Flag{R} command-line flag for @exec{racket}.  If
+the environment variable is defined and not overridden by a
+command-line flag, it is parsed by first replacing any
+@litchar["@(version)"] with the result of @racket[(version)], then using
+@racket[path-list-string->path-list] with a default path list
+@racket[(list (build-path 'same))] to arrive at the parameter's
+initial value.}
 
 
 @defproc[(read-eval-print-loop) any]{

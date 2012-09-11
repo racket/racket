@@ -684,6 +684,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
   Scheme_Object *sch_argv;
   int skip_coll_dirs = 0;
   Scheme_Object *collects_path = NULL, *collects_extra = NULL, *addon_dir = NULL;
+  char *compiled_paths = NULL;
   Scheme_Object *links_file = NULL;
 #ifndef NO_FILE_SYSTEM_UTILS
   Scheme_Object *collects_paths_l, *collects_paths_r;
@@ -958,6 +959,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
       argv[0] = "-X";
     else if (!strcmp("--search", argv[0]))
       argv[0] = "-S";
+    else if (!strcmp("--compiled", argv[0]))
+      argv[0] = "-R";
     else if (!strcmp("--addon", argv[0]))
       argv[0] = "-A";
     else if (!strcmp("--links", argv[0]))
@@ -1011,6 +1014,17 @@ static int run_from_cmd_line(int argc, char *_argv[],
             collects_path = scheme_make_false();
           } else
             collects_path = check_make_path(prog, real_switch, argv[0]);
+          was_config_flag = 1;
+	  break;
+        case 'R':
+          if (argc < 2) {
+	    PRINTF("%s: missing path after %s switch\n", 
+		   prog, real_switch);
+	    goto show_need_help;
+	  }
+	  argv++;
+	  --argc;
+	  compiled_paths = argv[0];
           was_config_flag = 1;
 	  break;
 	case 'A':
@@ -1395,6 +1409,15 @@ static int run_from_cmd_line(int argc, char *_argv[],
     scheme_set_compiled_file_paths(scheme_make_null());
 
 #ifndef NO_FILE_SYSTEM_UTILS
+  /* Setup compiled-file search path: */
+# ifdef GETENV_FUNCTION
+  if (!compiled_paths) {
+    compiled_paths = getenv("PLTCOMPILEDROOTS");
+  }
+# endif
+#endif /* NO_FILE_SYSTEM_UTILS */
+
+#ifndef NO_FILE_SYSTEM_UTILS
   /* Setup path for "addon" directory: */
 # ifdef GETENV_FUNCTION
   if (!addon_dir) {
@@ -1436,6 +1459,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
 #ifndef NO_FILE_SYSTEM_UTILS
   if (!skip_coll_dirs)
     scheme_init_collection_paths_post(global_env, collects_paths_l, collects_paths_r);
+  if (compiled_paths)
+    scheme_init_compiled_roots(global_env, compiled_paths);
 #endif
 
   scheme_seal_parameters();
@@ -1519,6 +1544,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	 "  -X <dir>, --collects <dir> : Main collects at <dir> (or \"\" disables all)\n"
 	 "  -S <dir>, --search <dir> : More collects at <dir> (after main collects)\n"
 	 "  -A <dir>, --addon <dir> : Addon directory at <dir>\n"
+         "  -R <paths>, --compiled <paths> : Set compiled-file search roots to <paths>\n"
 	 "  -C <file>, --links <file> : User-specific collection links at <file>\n"
 	 "  -U, --no-user-path : Ignore user-specific collects, etc.\n"
 	 "  -N <file>, --name <file> : Sets `(find-system-path 'run-file)' to <file>\n"
