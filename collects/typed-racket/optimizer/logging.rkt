@@ -5,7 +5,6 @@
          "../utils/tc-utils.rkt")
 
 (provide log-optimization log-missed-optimization
-         log-message-from-tr-opt?
          with-tr-logging-to-port
          (struct-out log-entry)
          (struct-out opt-log-entry)
@@ -17,19 +16,11 @@
 (define TR-logger (make-logger 'TR-optimizer (current-logger)))
 
 (define (emit-log-message l)
-  (log-message TR-logger TR-logging-level
-               (format-log-entry l)
-               (cons optimization-log-key l)))
+  (log-message TR-logger TR-logging-level (format-log-entry l) l))
 
 ;; producing logs can be expensive, don't do it if no-one's listening
 ;; to the logs
 (define (anyone-listening?) (log-level? TR-logger TR-logging-level))
-
-;; to identify log messages that come from the optimizer
-;; to be stored in the data section of log messages
-;; external tools/scripts (like the test harness) can look for it
-;; since this is used across phases, can't be a gensym
-(define optimization-log-key 'log-message-coming-from-the-TR-optimizer)
 
 ;; msg is for consumption by the DrRacket tool
 (struct log-entry (kind msg stx located-stx pos provenance) #:prefab)
@@ -122,11 +113,6 @@
                      ""))]))
 
 ;;--------------------------------------------------------------------
-
-(define (log-message-from-tr-opt? l)
-  (let ([data (vector-ref l 2)])
-    (and (pair? data)
-         (eq? (car data) optimization-log-key))))
 
 (define (with-tr-logging-to-port port thunk)
   (with-intercepted-logging

@@ -15,7 +15,7 @@
       (with-intercepted-logging
           (lambda (l)
             ;; From TR, use the log-entry struct provided.
-            (interceptor (cdr (vector-ref l 2))))
+            (interceptor (vector-ref l 2)))
         thunk
         'debug 'TR-optimizer))
     'debug 'optimizer))
