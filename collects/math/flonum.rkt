@@ -11,6 +11,8 @@
          flonum->ordinal ordinal->flonum
          flstep flnext flprev flonums-between
          -max.0 -min.0 +min.0 +max.0 +epsilon.0
+         +min-normal.0 +max-subnormal.0 -min-normal.0 -max-subnormal.0 flsubnormal?
+         flnext* flprev*
          flulp flulp-error relative-error
          float-complex? (rename-out [inline-number->float-complex number->float-complex])
          find-least-flonum
@@ -91,6 +93,46 @@
 
 ;; The smallest flonum that can be added to 1.0 to get a result != 1.0
 (define +epsilon.0 (flulp 1.0))
+
+;; ===================================================================================================
+;; Subnormal numbers
+
+(define +min-normal.0 (ordinal->flonum #x10000000000000))
+(define +max-subnormal.0 (flprev +min-normal.0))
+(define -min-normal.0 (- +min-normal.0))
+(define -max-subnormal.0 (- +max-subnormal.0))
+
+(: flsubnormal? (Float -> Boolean))
+(define (flsubnormal? x)
+  ((flabs x) . < . +min-normal.0))
+
+(: flsubnormal-next* (Float -> Float))
+(define (flsubnormal-next* x)
+  (/ (+ (* x (flexpt 2.0 1022.0)) +epsilon.0)
+     (flexpt 2.0 1022.0)))
+
+(: flsubnormal-prev* (Float -> Float))
+(define (flsubnormal-prev* x)
+  (/ (- (* x (flexpt 2.0 1022.0)) +epsilon.0)
+     (flexpt 2.0 1022.0)))
+
+(: flnext* (Float -> Float))
+(define (flnext* x)
+  (cond [(x . < . 0.0)  (- (flprev* (- x)))]
+        [(= x 0.0)  +min.0]
+        [(= x +inf.0)  +inf.0]
+        [else  (define next-x (+ x (* x (* 0.5 +epsilon.0))))
+               (cond [(= next-x x)  (+ x (* x +epsilon.0))]
+                     [else  next-x])]))
+
+(: flprev* (Float -> Float))
+(define (flprev* x)
+  (cond [(x . < . 0.0)  (- (flnext* (- x)))]
+        [(= x 0.0)  -min.0]
+        [(= x +inf.0)  +max.0]
+        [else  (define prev-x (- x (* x (* 0.5 +epsilon.0))))
+               (cond [(= prev-x x)  (- x (* x +epsilon.0))]
+                     [else  prev-x])]))
 
 ;; ===================================================================================================
 ;; Error measurement
