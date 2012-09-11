@@ -55,8 +55,8 @@ void scheme_set_exit(Scheme_Exit_Proc p) { scheme_exit = p; }
 HOOK_SHARED_OK void (*scheme_console_output)(char *str, intptr_t len);
 void scheme_set_console_output(scheme_console_output_t p) { scheme_console_output = p; }
 
-SHARED_OK static Scheme_Object *init_syslog_level = NULL;
-SHARED_OK static Scheme_Object *init_stderr_level = NULL;
+SHARED_OK static Scheme_Object *init_syslog_level = scheme_make_integer(INIT_SYSLOG_LEVEL);
+SHARED_OK static Scheme_Object *init_stderr_level = scheme_make_integer(SCHEME_LOG_ERROR);
 THREAD_LOCAL_DECL(static Scheme_Logger *scheme_main_logger);
 THREAD_LOCAL_DECL(static Scheme_Logger *scheme_gc_logger);
 THREAD_LOCAL_DECL(static Scheme_Logger *scheme_future_logger);
