@@ -1,17 +1,18 @@
 #lang typed/racket/base
 
 (require racket/performance-hint
+         racket/promise
          "../../flonum.rkt"
          "../inline-sort.rkt"
-         "utils.rkt"
-         "types.rkt")
+         "dist-struct.rkt"
+         "utils.rkt")
 
 (provide fltriangle-pdf
          fltriangle-cdf
          fltriangle-inv-cdf
          fltriangle-random
          Triangular-Distribution triangle-dist triangle-dist?
-         triangle-dist-min triangle-dist-center triangle-dist-max)
+         triangle-dist-min triangle-dist-max triangle-dist-center)
 
 (: unsafe-fltriangle-pdf (Float Float Float Float Any -> Float))
 (define (unsafe-fltriangle-pdf a b c x log?)
@@ -25,7 +26,7 @@
   (if log? (fllog p) p))
 
 (: unsafe-fltriangle-cdf (Float Float Float Float Any Any -> Float))
-(define (unsafe-fltriangle-cdf a b c x log? upper-tail?)
+(define (unsafe-fltriangle-cdf a b c x log? 1-p?)
   (define q
     (cond [(x . < . a)  0.0]
           [(x . < . c)  (define x-a (- x a))
@@ -35,12 +36,12 @@
                         (- 1.0 (/ (* b-x b-x)
                                   (* (- b a) (- b c))))]
           [else  1.0]))
-  (cond [upper-tail?  (if log? (fllog (- 1.0 q)) (- 1.0 q))]
+  (cond [1-p?  (if log? (fllog (- 1.0 q)) (- 1.0 q))]
         [else  (if log? (fllog q) q)]))
 
 (: unsafe-fltriangle-inv-cdf (Float Float Float Float Any Any -> Float))
-(define (unsafe-fltriangle-inv-cdf a b c q log? upper-tail?)
-  (let ([q  (cond [upper-tail?  (if log? (- 1.0 (exp q)) (- 1.0 q))]
+(define (unsafe-fltriangle-inv-cdf a b c q log? 1-p?)
+  (let ([q  (cond [1-p?  (if log? (- 1.0 (exp q)) (- 1.0 q))]
                   [else  (if log? (exp q) q)])])
     (cond [(q . < . 0.0)  +nan.0]
           [(q . = . 0.0)  a]
@@ -65,14 +66,14 @@
       (unsafe-fltriangle-pdf a b c x log?)))
   
   (: fltriangle-cdf (Float Float Float Float Any Any -> Float))
-  (define (fltriangle-cdf a b c x log? upper-tail?)
+  (define (fltriangle-cdf a b c x log? 1-p?)
     (let-values ([(a c b)  (inline-sort < a b c)])
-      (unsafe-fltriangle-cdf a b c x log? upper-tail?)))
+      (unsafe-fltriangle-cdf a b c x log? 1-p?)))
   
   (: fltriangle-inv-cdf (Float Float Float Float Any Any -> Float))
-  (define (fltriangle-inv-cdf a b c x log? upper-tail?)
+  (define (fltriangle-inv-cdf a b c x log? 1-p?)
     (let-values ([(a c b)  (inline-sort < a b c)])
-      (unsafe-fltriangle-inv-cdf a b c x log? upper-tail?)))
+      (unsafe-fltriangle-inv-cdf a b c x log? 1-p?)))
   
   (: fltriangle-random (Float Float Float -> Float))
   (define (fltriangle-random a b c)
@@ -98,11 +99,13 @@
       (let-values ([(a c b)  (inline-sort < a c b)])
         (define pdf (opt-lambda: ([x : Real] [log? : Any #f])
                       (unsafe-fltriangle-pdf a b c (fl x) log?)))
-        (define cdf (opt-lambda: ([x : Real] [log? : Any #f] [upper-tail? : Any #f])
-                      (unsafe-fltriangle-cdf a b c (fl x) log? upper-tail?)))
-        (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [upper-tail? : Any #f])
-                          (unsafe-fltriangle-inv-cdf a b c (fl p) log? upper-tail?)))
+        (define cdf (opt-lambda: ([x : Real] [log? : Any #f] [1-p? : Any #f])
+                      (unsafe-fltriangle-cdf a b c (fl x) log? 1-p?)))
+        (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [1-p? : Any #f])
+                          (unsafe-fltriangle-inv-cdf a b c (fl p) log? 1-p?)))
         (define (random) (unsafe-fltriangle-random a b c))
-        (make-triangle-dist pdf cdf inv-cdf random a b c))))
+        (make-triangle-dist pdf cdf inv-cdf random
+                            a b (delay (unsafe-fltriangle-inv-cdf a b c 0.5 #f #f))
+                            a b c))))
   
   )

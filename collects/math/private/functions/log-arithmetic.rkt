@@ -24,7 +24,8 @@
   (define (fllog+ log-x log-y)
     (let ([log-x  (max log-x log-y)]
           [log-y  (min log-x log-y)])
-      (+ log-x (fllog1p (exp (- log-y log-x))))))
+      (cond [(= log-x -inf.0)  -inf.0]
+            [else  (+ log-x (fllog1p (exp (- log-y log-x))))])))
   
   (: fllog1- (Float -> Float))
   (define (fllog1- log-x)

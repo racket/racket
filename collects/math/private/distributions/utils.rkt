@@ -4,8 +4,8 @@
                      racket/syntax
                      racket/string)
          "../../flonum.rkt"
-         "types.rkt"
-         "fldelta-dist.rkt")
+         "impl/delta-dist.rkt"
+         "dist-struct.rkt")
 
 (provide (all-defined-out))
 
@@ -50,22 +50,22 @@
                    (if log? (- q (fllog (abs s))) (/ q (abs s))))])))
 
 (define-syntax-rule (make-one-sided-scale-flcdf standard-flcdf)
-  (λ: ([s : Float] [x : Float] [log? : Any] [upper-tail? : Any])
-    (cond [(s . = . 0.0)  (fldelta-cdf 0.0 x log? upper-tail?)]
+  (λ: ([s : Float] [x : Float] [log? : Any] [1-p? : Any])
+    (cond [(s . = . 0.0)  (fldelta-cdf 0.0 x log? 1-p?)]
           [(and (s . > . 0.0) (x . < . 0.0))
-           (cond [upper-tail?  (if log? 0.0 1.0)]
+           (cond [1-p?  (if log? 0.0 1.0)]
                  [else  (if log? -inf.0 0.0)])]
           [(and (s . < . 0.0) (x . > . 0.0))
-           (cond [upper-tail?  (if log? -inf.0 0.0)]
+           (cond [1-p?  (if log? -inf.0 0.0)]
                  [else  (if log? 0.0 1.0)])]
           [else
-           (standard-flcdf (/ x s) log? (if (s . > . 0.0) upper-tail? (not upper-tail?)))])))
+           (standard-flcdf (/ x s) log? (if (s . > . 0.0) 1-p? (not 1-p?)))])))
 
 (define-syntax-rule (make-one-sided-scale-flinv-cdf standard-flinv-cdf)
-  (λ: ([s : Float] [q : Float] [log? : Any] [upper-tail? : Any])
-    (cond [(s . = . 0.0)  (fldelta-inv-cdf 0.0 q log? upper-tail?)]
+  (λ: ([s : Float] [q : Float] [log? : Any] [1-p? : Any])
+    (cond [(s . = . 0.0)  (fldelta-inv-cdf 0.0 q log? 1-p?)]
           [(not (flprobability? q log?))  +nan.0]
-          [else  (* s (standard-flinv-cdf q log? upper-tail?))])))
+          [else  (* s (standard-flinv-cdf q log? 1-p?))])))
 
 (define-syntax-rule (make-one-sided-scale-flrandom standard-flinv-cdf)
   (λ: ([s : Float])
@@ -75,26 +75,26 @@
 ;; Location-scale family distributions (e.g. Cauchy, logistic, normal)
 
 (define-syntax-rule (make-symmetric-location-scale-flpdf standard-flpdf)
-  (λ: ([x0 : Float] [s : Float] [x : Float] [log? : Any])
-    (cond [(s . = . 0.0)  (fldelta-pdf x0 x log?)]
-          [else  (let ([q  (standard-flpdf (abs (/ (- x x0) s)) log?)])
+  (λ: ([c : Float] [s : Float] [x : Float] [log? : Any])
+    (cond [(s . = . 0.0)  (fldelta-pdf c x log?)]
+          [else  (let ([q  (standard-flpdf (abs (/ (- x c) s)) log?)])
                    (if log? (- q (fllog (abs s))) (/ q (abs s))))])))
 
 (define-syntax-rule (make-symmetric-location-scale-flcdf standard-flcdf)
-  (λ: ([x0 : Float] [s : Float] [x : Float] [log? : Any] [upper-tail? : Any])
-    (cond [(s . = . 0.0)  (fldelta-cdf x0 x log? upper-tail?)]
-          [else  (let ([x  (/ (- x x0) s)])
-                   (standard-flcdf (if upper-tail? (- x) x) log?))])))
+  (λ: ([c : Float] [s : Float] [x : Float] [log? : Any] [1-p? : Any])
+    (cond [(s . = . 0.0)  (fldelta-cdf c x log? 1-p?)]
+          [else  (let ([x  (/ (- x c) s)])
+                   (standard-flcdf (if 1-p? (- x) x) log?))])))
 
 (define-syntax-rule (make-symmetric-location-scale-flinv-cdf standard-flinv-cdf)
-  (λ: ([x0 : Float] [s : Float] [q : Float] [log? : Any] [upper-tail? : Any])
-    (cond [(s . = . 0.0)  (fldelta-inv-cdf x0 q log? upper-tail?)]
+  (λ: ([c : Float] [s : Float] [q : Float] [log? : Any] [1-p? : Any])
+    (cond [(s . = . 0.0)  (fldelta-inv-cdf c q log? 1-p?)]
           [(not (flprobability? q log?))  +nan.0]
           [else  (let* ([x  (standard-flinv-cdf q log?)]
-                        [x  (if upper-tail? (- x) x)])
-                   (+ (* x s) x0))])))
+                        [x  (if 1-p? (- x) x)])
+                   (+ (* x s) c))])))
 
 (define-syntax-rule (make-symmetric-location-scale-flrandom standard-flinv-cdf)
-  (λ: ([x0 : Float] [s : Float])
+  (λ: ([c : Float] [s : Float])
     (define x (standard-flinv-cdf (* 0.5 (random)) #f))
-    (+ x0 (* s (if ((random) . > . 0.5) x (- x))))))
+    (+ c (* s (if ((random) . > . 0.5) x (- x))))))

@@ -1,7 +1,6 @@
 #lang typed/racket/base
 
-(require "types.rkt"
-         "constants.rkt"
+(require "constants.rkt"
          "functions.rkt"
          "special-functions.rkt"
          "distributions.rkt"
@@ -16,7 +15,6 @@
          "number-theory.rkt")
 
 (provide (all-from-out
-          "types.rkt"
           "constants.rkt"
           "functions.rkt"
           "special-functions.rkt"

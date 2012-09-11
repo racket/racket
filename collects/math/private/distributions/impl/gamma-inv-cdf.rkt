@@ -28,10 +28,9 @@ Used for starting points in Newton's method
 
 (: log-z01 (Float Float Float Any -> Float))
 ;; Normal approximation
-(define (log-z01 k log-p log-1-p upper-tail?)
-  (define norm-x (if upper-tail?
-                     (- (standard-flnormal-inv-log-cdf log-1-p))
-                     (standard-flnormal-inv-log-cdf log-p)))
+(define (log-z01 k log-p log-1-p 1-p?)
+  (define norm-x (cond [1-p?  (- (standard-flnormal-inv-log-cdf log-1-p))]
+                       [else     (standard-flnormal-inv-log-cdf log-p)]))
   (+ (fllog k)
      (* 3.0 (fllog1p (+ (/ norm-x (* 3.0 (flsqrt k))) (/ #i-1/9 k))))))
 
@@ -64,19 +63,19 @@ Used for starting points in Newton's method
 
 ;; For testing: tells which approximation `flgamma-inv-log-cdf-appx' chooses
 #;;(: flgamma-inv-log-cdf-which-appx (Float Float Float Any -> Float))
-(define (flgamma-inv-log-cdf-which-appx k log-p log-1-p upper-tail?)
+(define (flgamma-inv-log-cdf-which-appx k log-p log-1-p 1-p?)
   (cond [(k . < . (* -0.62 log-p))  2.0]
         [(k . > . 0.16)
-         (define log-x (log-z01 k log-p log-1-p upper-tail?))
+         (define log-x (log-z01 k log-p log-1-p 1-p?))
          (define x (exp log-x))
          (if (x . > . (+ (* 2.2 2.0 k) 6.0)) 3.0 1.0)]
         [else  4.0]))
 
 (: flgamma-inv-log-cdf-appx (Float Float Float Any -> Float))
-(define (flgamma-inv-log-cdf-appx k log-p log-1-p upper-tail?)
+(define (flgamma-inv-log-cdf-appx k log-p log-1-p 1-p?)
   (cond [(k . < . (* -0.62 log-p))  (z02 k log-p)]
         [(k . > . 0.16)
-         (define log-x (log-z01 k log-p log-1-p upper-tail?))
+         (define log-x (log-z01 k log-p log-1-p 1-p?))
          (define x (exp log-x))
          (if (x . > . (+ (* 2.2 2.0 k) 6.0)) (z03 k log-1-p log-x) x)]
         [else  (z04 k log-1-p)]))
@@ -101,14 +100,13 @@ Used for starting points in Newton's method
 ;(define: max-c-values : (Listof Any)  null)
 
 (: flgamma-inv-log-cdf-newton (Float Float Float Any Float -> Float))
-(define (flgamma-inv-log-cdf-newton k log-p log-1-p upper-tail? x)
+(define (flgamma-inv-log-cdf-newton k log-p log-1-p 1-p? x)
   (define-values (new-x c)
     (let: loop : (Values Float Fixnum) ([dx : Float  0.0]
                                         [x : Float  x]
                                         [c : Fixnum  1])
-      (define new-x
-        (cond [upper-tail?  (newton-upper-log-iter k log-1-p x)]
-              [else  (newton-lower-log-iter k log-p x)]))
+      (define new-x (cond [1-p?  (newton-upper-log-iter k log-1-p x)]
+                          [else  (newton-lower-log-iter k log-p x)]))
       (define new-dx (- new-x x))
       ;(printf "~v ~v~n" x new-x)
       (cond [(or ((abs (- x new-x)) . <= . (abs (* 4.0 +epsilon.0 new-x)))
@@ -123,28 +121,28 @@ Used for starting points in Newton's method
   #;; For testing
   (when (c . > . max-c)
     (set! max-c c)
-    (set! max-c-values (list k log-p upper-tail? x new-x)))
+    (set! max-c-values (list k log-p 1-p? x new-x)))
   new-x)
 
 (: standard-flgamma-inv-log-cdf (Float Float Any -> Float))
-(define (standard-flgamma-inv-log-cdf k log-p upper-tail?)
-  (let-values ([(log-p log-1-p)  (cond [upper-tail?  (values (fllog1- log-p) log-p)]
+(define (standard-flgamma-inv-log-cdf k log-p 1-p?)
+  (let-values ([(log-p log-1-p)  (cond [1-p?  (values (fllog1- log-p) log-p)]
                                        [else  (values log-p (fllog1- log-p))])])
     (cond [(k . < . 0.0)  +nan.0]
           [(k . = . 0.0)  (if (log-p . = . -inf.0) 0.0 +inf.0)]
-          [(k . > . 1e32)  (exp (log-z01 k log-p log-1-p upper-tail?))]
-          [(or (and (not upper-tail?) (log-p . > . -inf.0) (log-p . < . 0.0))
-               (and upper-tail? (log-1-p . > . -inf.0) (log-1-p . < . 0.0)))
-           (define x (flgamma-inv-log-cdf-appx k log-p log-1-p upper-tail?))
-           (flgamma-inv-log-cdf-newton k log-p log-1-p upper-tail? x)]
+          [(k . > . 1e32)  (exp (log-z01 k log-p log-1-p 1-p?))]
+          [(or (and (not 1-p?) (log-p . > . -inf.0) (log-p . < . 0.0))
+               (and 1-p? (log-1-p . > . -inf.0) (log-1-p . < . 0.0)))
+           (define x (flgamma-inv-log-cdf-appx k log-p log-1-p 1-p?))
+           (flgamma-inv-log-cdf-newton k log-p log-1-p 1-p? x)]
           [(log-p . = . -inf.0)  0.0]
           [(log-p . = . 0.0)  +inf.0]
           [else  +nan.0])))
 
 (: standard-flgamma-inv-cdf (Float Float Any Any -> Float))
-(define (standard-flgamma-inv-cdf k p log? upper-tail?)
-  (cond [log?  (standard-flgamma-inv-log-cdf k p upper-tail?)]
-        [else  (standard-flgamma-inv-log-cdf k (fllog p) upper-tail?)]))
+(define (standard-flgamma-inv-cdf k p log? 1-p?)
+  (cond [log?  (standard-flgamma-inv-log-cdf k p 1-p?)]
+        [else  (standard-flgamma-inv-log-cdf k (fllog p) 1-p?)]))
 #|  
 )
 

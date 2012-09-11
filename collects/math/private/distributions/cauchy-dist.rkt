@@ -1,12 +1,13 @@
 #lang typed/racket/base
 
 (require racket/performance-hint
+         racket/promise
          "../../flonum.rkt"
          "../../constants.rkt"
          "../functions/expm1.rkt"
          "../functions/log1p.rkt"
-         "utils.rkt"
-         "types.rkt")
+         "dist-struct.rkt"
+         "utils.rkt")
 
 (provide flcauchy-pdf
          flcauchy-cdf
@@ -69,15 +70,15 @@
   (: cauchy-dist (case-> (-> Cauchy-Distribution)
                          (Real -> Cauchy-Distribution)
                          (Real Real -> Cauchy-Distribution)))
-  (define (cauchy-dist [x0 0.0] [s 1.0])
-    (let ([x0  (fl x0)] [s   (fl s)])
+  (define (cauchy-dist [c 0.0] [s 1.0])
+    (let ([c  (fl c)] [s   (fl s)])
       (define pdf (opt-lambda: ([x : Real] [log? : Any #f])
-                    (flcauchy-pdf x0 s (fl x) log?)))
-      (define cdf (opt-lambda: ([x : Real] [log? : Any #f] [upper-tail? : Any #f])
-                    (flcauchy-cdf x0 s (fl x) log? upper-tail?)))
-      (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [upper-tail? : Any #f])
-                        (flcauchy-inv-cdf x0 s (fl p) log? upper-tail?)))
-      (define (random) (flcauchy-random x0 s))
-      (make-cauchy-dist pdf cdf inv-cdf random x0 s)))
+                    (flcauchy-pdf c s (fl x) log?)))
+      (define cdf (opt-lambda: ([x : Real] [log? : Any #f] [complement? : Any #f])
+                    (flcauchy-cdf c s (fl x) log? complement?)))
+      (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [complement? : Any #f])
+                        (flcauchy-inv-cdf c s (fl p) log? complement?)))
+      (define (random) (flcauchy-random c s))
+      (make-cauchy-dist pdf cdf inv-cdf random -inf.0 +inf.0 (delay c) c s)))
   
   )

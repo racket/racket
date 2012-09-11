@@ -72,10 +72,10 @@ This implementation extends those in the papers in three ways:
 
 (: use-normal? (Float Float Any Any -> Boolean))
 ;; Determines whether to use the normal cdf approximation
-(define (use-normal? k x log? upper-tail?)
+(define (use-normal? k x log? upper?)
   (and (use-normal-appx?)
        (k . > . 1e10)
-       (cond [log?  (or (if upper-tail? (x . < . k) (x . > . k))
+       (cond [log?  (or (if upper? (x . < . k) (x . > . k))
                         (k . > . 1e32))]
              [else  #t])))
 
@@ -117,7 +117,7 @@ This implementation extends those in the papers in three ways:
 ;; Using Temme's because it's much better than the standard one
 
 (: flgamma-regularized-normal (Float Float Any Any -> Float))
-(define (flgamma-regularized-normal k x log? upper-tail?)
+(define (flgamma-regularized-normal k x log? upper?)
   (define l (/ x k))
   (define norm-x
     (cond [(or (l . < . +epsilon.0) (l . > . (/ 1.0 +epsilon.0)))
@@ -130,7 +130,7 @@ This implementation extends those in the papers in three ways:
           [else
            (define n (* (flsgn (- l 1.0)) (flsqrt (* 2.0 (- (- l 1.0) (fllog l))))))
            (* n (flsqrt k))]))
-  (let ([norm-x  (if upper-tail? (- norm-x) norm-x)])
+  (let ([norm-x  (if upper? (- norm-x) norm-x)])
     (cond [log?  (standard-flnormal-log-cdf norm-x)]
           [else  (standard-flnormal-cdf norm-x)])))
 
@@ -371,24 +371,24 @@ This implementation extends those in the papers in three ways:
 
 (: flgamma-regularized-temme (Float Float Any -> Float))
 ;; Computes a regularized incomplete gamma using Temme's series
-(define (flgamma-regularized-temme k x upper-tail?)
+(define (flgamma-regularized-temme k x upper?)
   (define l (/ x k))
   (define n (* (flsgn (- l 1.0)) (flsqrt (* 2.0 (- (- l 1.0) (fllog l))))))
   (define norm-x (let ([norm-x  (* n (flsqrt k))])
-                   (if upper-tail? (- norm-x) norm-x)))
+                   (if upper? (- norm-x) norm-x)))
   (define r (let ([r  (R k n)])
-              (if upper-tail? (- r) r)))
+              (if upper? (- r) r)))
   (cond [(norm-x . <= . 0.0)  (- (standard-flnormal-cdf norm-x) r)]
         [else  (- 1.0 (+ (standard-flnormal-cdf (- norm-x)) r))]))
 
 (: fllog-gamma-regularized-temme (Float Float Any -> Float))
-(define (fllog-gamma-regularized-temme k x upper-tail?)
+(define (fllog-gamma-regularized-temme k x upper?)
   (define l (/ x k))
   (define n (* (flsgn (- l 1.0)) (flsqrt (* 2.0 (- (- l 1.0) (fllog l))))))
   (define norm-x (let ([norm-x  (* n (flsqrt k))])
-                   (if upper-tail? (- norm-x) norm-x)))
+                   (if upper? (- norm-x) norm-x)))
   (define-values (log-r r-sgn) (let-values ([(log-r r-sgn)  (R-log k n)])
-                                 (if upper-tail? (values log-r (- r-sgn)) (values log-r r-sgn))))
+                                 (if upper? (values log-r (- r-sgn)) (values log-r r-sgn))))
   (cond [(norm-x . <= . 0.0)
          (define norm-log-p (standard-flnormal-log-cdf norm-x))
          (define log-p (if (r-sgn . < . 0.0)

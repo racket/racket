@@ -1,13 +1,14 @@
 #lang typed/racket/base
 
 (require racket/performance-hint
+         racket/promise
          "../../flonum.rkt"
          "impl/normal-pdf.rkt"
          "impl/normal-cdf.rkt"
          "impl/normal-inv-cdf.rkt"
          "impl/normal-random.rkt"
-         "utils.rkt"
-         "types.rkt")
+         "dist-struct.rkt"
+         "utils.rkt")
 
 (provide flnormal-pdf
          flnormal-cdf
@@ -37,8 +38,8 @@
            [else  (standard-flnormal-inv-cdf q)]))))
 
 (: flnormal-random (Float Float -> Float))
-(define (flnormal-random x0 s)
-  (+ x0 (* s (standard-flnormal-random))))
+(define (flnormal-random c s)
+  (+ c (* s (standard-flnormal-random))))
 
 ;; ===================================================================================================
 ;; Distribution object
@@ -51,15 +52,15 @@
   (: normal-dist (case-> (-> Normal-Distribution)
                          (Real -> Normal-Distribution)
                          (Real Real -> Normal-Distribution)))
-  (define (normal-dist [x0 0.0] [s 1.0])
-    (let ([x0  (fl x0)] [s   (fl s)])
+  (define (normal-dist [c 0.0] [s 1.0])
+    (let ([c  (fl c)] [s   (fl s)])
       (define pdf (opt-lambda: ([x : Real] [log? : Any #f])
-                    (flnormal-pdf x0 s (fl x) log?)))
-      (define cdf (opt-lambda: ([x : Real] [log? : Any #f] [upper-tail? : Any #f])
-                    (flnormal-cdf x0 s (fl x) log? upper-tail?)))
-      (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [upper-tail? : Any #f])
-                        (flnormal-inv-cdf x0 s (fl p) log? upper-tail?)))
-      (define (random) (flnormal-random x0 s))
-      (make-normal-dist pdf cdf inv-cdf random x0 s)))
+                    (flnormal-pdf c s (fl x) log?)))
+      (define cdf (opt-lambda: ([x : Real] [log? : Any #f] [1-p? : Any #f])
+                    (flnormal-cdf c s (fl x) log? 1-p?)))
+      (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [1-p? : Any #f])
+                        (flnormal-inv-cdf c s (fl p) log? 1-p?)))
+      (define (random) (flnormal-random c s))
+      (make-normal-dist pdf cdf inv-cdf random -inf.0 +inf.0 (delay c) c s)))
   
   )

@@ -1,9 +1,10 @@
 #lang typed/racket/base
 
 (require racket/performance-hint
+         racket/promise
          "../../flonum.rkt"
-         "utils.rkt"
-         "types.rkt")
+         "dist-struct.rkt"
+         "utils.rkt")
 
 (provide fluniform-pdf
          fluniform-cdf
@@ -19,33 +20,29 @@
                      [else  0.0])]))
 
 (: unsafe-fluniform-cdf (Float Float Float Any Any -> Float))
-(define (unsafe-fluniform-cdf a b x log? upper-tail?)
-  (cond [upper-tail?
-         (define q
-           (cond [(x . < . a)  1.0]
-                 [(x . > . b)  0.0]
-                 [else  (/ (- b x) (- b a))]))
-         (if log? (fllog q) q)]
-        [else
-         (define q
-           (cond [(x . < . a)  0.0]
-                 [(x . > . b)  1.0]
-                 [else  (/ (- x a) (- b a))]))
-         (if log? (fllog q) q)]))
+(define (unsafe-fluniform-cdf a b x log? 1-p?)
+  (cond [1-p?  (define q
+                 (cond [(x . < . a)  1.0]
+                       [(x . > . b)  0.0]
+                       [else  (/ (- b x) (- b a))]))
+               (if log? (fllog q) q)]
+        [else  (define q
+                 (cond [(x . < . a)  0.0]
+                       [(x . > . b)  1.0]
+                       [else  (/ (- x a) (- b a))]))
+               (if log? (fllog q) q)]))
 
 (: unsafe-fluniform-inv-cdf (Float Float Float Any Any -> Float))
-(define (unsafe-fluniform-inv-cdf a b q log? upper-tail?)
+(define (unsafe-fluniform-inv-cdf a b q log? 1-p?)
   (cond [(not (flprobability? q log?))  +nan.0]
-        [upper-tail?
-         (let ([q  (if log? (exp q) q)])
-           (cond [(q . = . 1.0)  a]
-                 [(q . = . 0.0)  b]
-                 [else  (+ (* (- a b) q) b)]))]
-        [else
-         (let ([q  (if log? (exp q) q)])
-           (cond [(q . = . 1.0)  b]
-                 [(q . = . 0.0)  a]
-                 [else  (+ (* (- b a) q) a)]))]))
+        [1-p?  (let ([q  (if log? (exp q) q)])
+                 (cond [(q . = . 1.0)  a]
+                       [(q . = . 0.0)  b]
+                       [else  (+ (* (- a b) q) b)]))]
+        [else  (let ([q  (if log? (exp q) q)])
+                 (cond [(q . = . 1.0)  b]
+                       [(q . = . 0.0)  a]
+                       [else  (+ (* (- b a) q) a)]))]))
 
 (: unsafe-fluniform-random (Float Float -> Float))
 ;; Chooses a random flonum in [a,b] in a way that preserves the precision of the random flonum
@@ -67,12 +64,12 @@
     (unsafe-fluniform-pdf (min a b) (max a b) x log?))
   
   (: fluniform-cdf (Float Float Float Any Any -> Float))
-  (define (fluniform-cdf a b x log? upper-tail?)
-    (unsafe-fluniform-cdf (min a b) (max a b) x log? upper-tail?))
+  (define (fluniform-cdf a b x log? 1-p?)
+    (unsafe-fluniform-cdf (min a b) (max a b) x log? 1-p?))
   
   (: fluniform-inv-cdf (Float Float Float Any Any -> Float))
-  (define (fluniform-inv-cdf a b q log? upper-tail?)
-    (unsafe-fluniform-inv-cdf (min a b) (max a b) q log? upper-tail?))
+  (define (fluniform-inv-cdf a b q log? 1-p?)
+    (unsafe-fluniform-inv-cdf (min a b) (max a b) q log? 1-p?))
   
   (: fluniform-random (Float Float -> Float))
   (define (fluniform-random a b)
@@ -100,11 +97,11 @@
          (let ([a  (min a b)] [b  (max a b)])
            (define pdf (opt-lambda: ([x : Real] [log? : Any #f])
                          (unsafe-fluniform-pdf a b (fl x) log?)))
-           (define cdf (opt-lambda: ([x : Real] [log? : Any #f] [upper-tail? : Any #f])
-                         (unsafe-fluniform-cdf a b (fl x) log? upper-tail?)))
-           (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [upper-tail? : Any #f])
-                             (unsafe-fluniform-inv-cdf a b (fl p) log? upper-tail?)))
+           (define cdf (opt-lambda: ([x : Real] [log? : Any #f] [1-p? : Any #f])
+                         (unsafe-fluniform-cdf a b (fl x) log? 1-p?)))
+           (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [1-p? : Any #f])
+                             (unsafe-fluniform-inv-cdf a b (fl p) log? 1-p?)))
            (define (random) (fluniform-random a b))
-           (make-uniform-dist pdf cdf inv-cdf random a b)))]))
+           (make-uniform-dist pdf cdf inv-cdf random a b (delay (* 0.5 (+ a b))) a b)))]))
   
   )
