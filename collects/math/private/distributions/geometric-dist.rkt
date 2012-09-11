@@ -60,20 +60,19 @@
 (begin-encourage-inline
   
   (define-distribution-type: geometric-dist
-    Geometric-Distribution Integer-Distribution ([prob : Float]))
+    Geometric-Distribution Real-Distribution ([prob : Float]))
   
   (: geometric-dist (case-> (-> Geometric-Distribution)
                             (Real -> Geometric-Distribution)))
   (define (geometric-dist [p 0.5])
     (let ([p  (fl p)])
-      (define pdf (opt-lambda: ([k : Extended-Integer] [log? : Any #f])
+      (define pdf (opt-lambda: ([k : Real] [log? : Any #f])
                     (flgeometric-pdf p (fl k) log?)))
-      (define cdf (opt-lambda: ([k : Extended-Integer] [log? : Any #f] [upper-tail? : Any #f])
+      (define cdf (opt-lambda: ([k : Real] [log? : Any #f] [upper-tail? : Any #f])
                     (flgeometric-cdf p (fl k) log? upper-tail?)))
       (define inv-cdf (opt-lambda: ([q : Real] [log? : Any #f] [upper-tail? : Any #f])
-                        (real->extended-integer
-                         (flgeometric-inv-cdf p (fl q) log? upper-tail?))))
-      (define (random) (fl->exact-integer (flgeometric-random p)))
+                        (flgeometric-inv-cdf p (fl q) log? upper-tail?)))
+      (define (random) (flgeometric-random p))
       (make-geometric-dist pdf cdf inv-cdf random p)))
   
   )

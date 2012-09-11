@@ -7,12 +7,7 @@
  ;; Real-valued distributions
  Real-Density-Function
  Real-Distribution-Function
- Real-Distribution real-pdf real-cdf real-inv-cdf real-random random-real
- ;; Integer-valued distributions
- Integer-Density-Function
- Integer-Distribution-Function
- Integer-Inverse-Distribution-Function
- Integer-Distribution int-pdf int-cdf int-inv-cdf int-random random-int)
+ Real-Distribution real-pdf real-cdf real-inv-cdf real-random random-real)
 
 ;; ===================================================================================================
 ;; Real-valued distributions
@@ -41,40 +36,5 @@
   
   (: random-real (Real-Distribution -> Float))
   (define (random-real d) ((real-random d)))
-  
-  )
-
-;; ===================================================================================================
-;; Integer-valued distributions
-
-(define-type Integer-Density-Function
-  (case-> (Extended-Integer -> Float)
-          (Extended-Integer Any -> Float)))
-
-(define-type Integer-Distribution-Function
-  (case-> (Extended-Integer -> Float)
-          (Extended-Integer Any -> Float)
-          (Extended-Integer Any Any -> Float)))
-
-(define-type Integer-Inverse-Distribution-Function
-  (case-> (Real -> Extended-Integer)
-          (Real Any -> Extended-Integer)
-          (Real Any Any -> Extended-Integer)))
-
-(struct: Integer-Distribution ([pdf : Integer-Density-Function]
-                               [cdf : Integer-Distribution-Function]
-                               [inv-cdf : Integer-Inverse-Distribution-Function]
-                               [random : (-> Integer)])
-  #:transparent)
-
-(begin-encourage-inline
-  
-  (define int-pdf Integer-Distribution-pdf)
-  (define int-cdf Integer-Distribution-cdf)
-  (define int-inv-cdf Integer-Distribution-inv-cdf)
-  (define int-random Integer-Distribution-random)
-  
-  (: random-int (Integer-Distribution -> Integer))
-  (define (random-int d) ((int-random d)))
   
   )
