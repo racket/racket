@@ -36,7 +36,7 @@
           (identifier? #'name?)
           (identifier? #'defined-table)
           (let ([generics (syntax->list #'(generic ...))])
-            (and (pair? generics) (andmap identifier? generics))))
+            (and (list? generics) (andmap identifier? generics))))
      (let* ([idxs (for/list ([i (in-naturals 0)]
                              [_ (syntax->list #'(generic ...))])
                     i)]
