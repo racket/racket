@@ -4,7 +4,8 @@
           (for-label scribble/manual-struct
                      file/convertible
                      setup/main-collects
-                     scriblib/render-cond))
+                     scriblib/render-cond
+                     xml/xexpr))
 
 @title[#:tag "core"]{Structures And Processing}
 
@@ -407,12 +408,20 @@ The recognized @tech{style properties} are as follows:
        @racket[""] to suppress a date in an output document.}
 
   @item{@racket[body-id] structure --- Generated HTML uses the given
-        string @tt{id} attribute of the @tt{body} tag; this style can
+        string @tt{id} attribute of the @tt{<body>} tag; this style can
         be set separately for parts that start different HTML pages,
         otherwise it is effectively inherited by sub-parts; the
         default is @racket["scribble-racket-lang.org"], but
         @exec{setup-plt} installs @racket["doc-racket-lang.org"] as the
         @tt{id} for any document that it builds.}
+
+ @item{@racket[attributes] structure --- Provides additional HTML
+       attributes for the @tt{<html>} tag when the part corresponds to
+       its own HTML page.}
+
+ @item{@racket[head-extra] structure --- Provides additional HTML
+       content for the @tt{<head>} tag when the part corresponds to
+       its own HTML page.}
 
 ]
 
@@ -1413,6 +1422,11 @@ Like @racket[latex-defaults], but use for the
 @exec{scribble} command-line tool's @DFlag{html} and
 @DFlag{htmls} modes.}
 
+
+@defstruct[head-extra ([xexpr xexpr/c])]{
+
+For a @racket[part] that corresponds to an HTML page, adds content to
+the @tt{<head>} tag.}
 
 @; ----------------------------------------
 

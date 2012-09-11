@@ -664,7 +664,7 @@
                  (copy-port in (current-output-port)))))
           (parameterize ([xml:empty-tag-shorthand xml:html-empty-tags])
             (xml:write-xexpr
-              `(html ()
+              `(html ,(style->attribs (part-style d))
                  (head ()
                    (meta ([http-equiv "content-type"]
                           [content "text-html; charset=utf-8"]))
@@ -686,7 +686,10 @@
                                   (list style-file)
                                   style-extra-files))
                    ,(scribble-js-contents script-file (lookup-path script-file alt-paths))
-                   ,(xml:comment "[if IE 6]><style type=\"text/css\">.SIEHidden { overflow: hidden; }</style><![endif]"))
+                   ,(xml:comment "[if IE 6]><style type=\"text/css\">.SIEHidden { overflow: hidden; }</style><![endif]")
+                   ,@(for/list ([p (style-properties (part-style d))]
+                                #:when (head-extra? p))
+                       (head-extra-xexpr p)))
                  (body ([id ,(or (extract-part-body-id d ri)
                                  "scribble-racket-lang-org")])
                    ,@(render-toc-view d ri)

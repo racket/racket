@@ -1,6 +1,7 @@
 #lang scheme/base
 (require "private/provide-structs.rkt"
-         racket/contract/base)
+         racket/contract/base
+         xml/xexpr)
 
 (provide-structs
  [body-id ([value string?])]
@@ -15,4 +16,6 @@
  [url-anchor ([name string?])]
  [alt-tag ([name (and/c string? #rx"^[a-zA-Z0-9]+$")])]
  [attributes ([assoc (listof (cons/c symbol? string?))])]
- [column-attributes ([assoc (listof (cons/c symbol? string?))])])
+ [column-attributes ([assoc (listof (cons/c symbol? string?))])]
+
+ [head-extra ([xexpr xexpr/c])])
