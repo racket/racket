@@ -732,7 +732,7 @@
              (trace-printf "skipping:  ~a file does not exist" path)
              (when delete-zos-when-rkt-file-does-not-exist?
                (unless (or (null? modes) (null? roots))
-                 (define to-delete (path-add-suffix (get-compilation-path (car modes) (car roots) path) #".zo")) 
+                 (define to-delete (path-add-suffix (get-compilation-path (car modes) roots path) #".zo")) 
                  (when (file-exists? to-delete)
                    (trace-printf "deleting:  ~s" to-delete)
                    (with-compiler-security-guard (delete-file to-delete)))))]
