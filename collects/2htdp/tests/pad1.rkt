@@ -2,6 +2,8 @@
 
 (require 2htdp/image 2htdp/universe)
 
+(pad=? "left" "left")
+
 ;; constants 
 (define width  1200)
 (define height 300)

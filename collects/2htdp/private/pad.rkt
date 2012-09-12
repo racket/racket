@@ -33,5 +33,5 @@
 (define (pad-event? ke)
   (pair? (member ke pad-buttons)))
 
-(define (pad=? ke)
-  (pair? (member ke pad-buttons)))
+(define (pad=? ke kq)
+  (and (pad-event? ke) (pad-event? kq) (string=? ke kq)))
