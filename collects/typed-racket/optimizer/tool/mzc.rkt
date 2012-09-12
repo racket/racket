@@ -135,8 +135,22 @@
 
 (define (unrolling? l) (and (success? l) (self-inline? l)))
 
+(define (n-unrollings   group)    (length (filter unrolling?   group)))
+(define (n-successes    group) (- (length (filter success?     group))
+                                  (n-unrollings group)))
+(define (n-failures     group)    (length (filter failure?     group)))
+(define (n-out-of-fuels group)    (length (filter out-of-fuel? group)))
+
 ;; self out-of-fuels are not interesting, they're the end of loop unrolling
 (define (self-out-of-fuel? l) (and (out-of-fuel? l) (self-inline? l)))
+
+(define (any-self-o-o-f? group) (ormap self-out-of-fuel? group))
+
+(define (counts-as-a-missed-opt? group)
+  (or (> (n-failures group) 0) ; any straight failure is a problem
+      (> (n-out-of-fuels group) (n-successes group)); fails more often than not
+      ))
+
 
 ;; We aggregate results for each function.
 ;; Log messages produced by the inliner are very raw, unlike the TR logs,
@@ -191,9 +205,8 @@
            ;; floats, in which case having all calls to `f' originate from `f''s
            ;; body (as opposed to `g') may make unboxing possible.
            ;; Of course, we lose precision if `g' has multiple call sites to `f'.
-           (define n-unrollings    (length (filter unrolling? group)))
-           (define any-self-o-o-f? (ormap self-out-of-fuel?   group))
-           (define is-a-loop?      (or any-self-o-o-f? (> n-unrollings 0)))
+           (define is-a-loop?
+             (or (any-self-o-o-f? group) (> (n-unrollings group) 0)))
            (define inlining-sites
              (group-by equal? #:key (lambda (x)
                                       (inlining-event-where-loc
@@ -214,21 +227,6 @@
                                     (success? evt))))
                     site))))
 
-           (define n-successes (- (length (filter success?     group)) n-unrollings))
-           (define n-failures     (length (filter failure?     group)))
-           ;; self o-o-f are already gone at this point
-           (define n-out-of-fuels (length (filter out-of-fuel? group)))
-
-           (define aggregation-string
-             (format-aggregation-string
-              n-successes n-unrollings n-failures n-out-of-fuels))
-
-           ;; This is where the interesting decisions are taken.
-           (define counts-as-a-missed-opt?
-             (or (> n-failures 0) ; any straight failure is a problem
-                 (> n-out-of-fuels n-successes) ; we fail more often than not
-                 ))
-
            (define recommendation
              (cond [is-a-loop?
                     "Consider making this function smaller to encourage inlining."]
@@ -236,31 +234,35 @@
                     ;; Non-recursive function -> macro
                     "Consider turning this function into a macro to force inlining."]))
 
-           (if counts-as-a-missed-opt?
+           (if (counts-as-a-missed-opt? group)
                (missed-opt-log-entry
                 kind
                 (format "Missed Inlining ~a\n~a"
-                        aggregation-string recommendation)
+                        (format-aggregation-string group) recommendation)
                 stx located-stx pos provenance
                 '() '()
-                (+ n-failures (- n-out-of-fuels n-successes))) ; badness
+                (group-badness group))
                (opt-log-entry
                 kind
-                (format "Inlining ~a" aggregation-string)
+                (format "Inlining ~a" (format-aggregation-string group))
                 stx located-stx pos provenance))]))))
   (append tr-logs (filter values new-inline-log-entries)))
 
-(define (format-aggregation-string
-         n-successes n-unrollings n-failures n-out-of-fuels)
+(define (group-badness group)
+  (+ (n-failures group) (- (n-out-of-fuels group) (n-successes group))))
+
+(define (format-aggregation-string group)
   ;; Integer String #:suffix String -> (U Null (List String))
   ;; if n = 0, nothing, if n = 1 singular, o/w plural
   (define (pluralize n noun #:suffix [suffix "s"])
     (format "~a ~a~a" n noun (if (> n 1) suffix "")))
+  (define n-u (n-unrollings group))
+  (define n-s (n-successes  group))
   (format "(~a out of ~a~a)"
-          (pluralize n-successes "success" #:suffix "es")
-          (+ n-successes n-failures n-out-of-fuels)
-          (if (> n-unrollings 0)
-              (format " and ~a" (pluralize n-unrollings   "unrolling"))
+          (pluralize n-s "success" #:suffix "es")
+          (+ n-s (n-failures group) (n-out-of-fuels group))
+          (if (> n-u 0)
+              (format " and ~a" (pluralize n-u "unrolling"))
               "")))
 
 
