@@ -144,6 +144,7 @@
 (define (post-process-inline-log log profile)
   (define-values (inliner-logs tr-logs)
     (partition inliner-log-entry? log))
+  (define hot-functions (and profile (prune-profile profile)))
   (define grouped-events
     (group-by equal? #:key log-entry-pos ; right file, so that's enough
               inliner-logs))
@@ -153,91 +154,101 @@
                                            (not (self-out-of-fuel? x)))
                                          g))]
                 #:when (not (null? group)))
-      (match (car group) ; events are grouped, first element is representative
-        [(log-entry kind msg stx located-stx pos provenance)
+      (let/ec escape
+        (define (prune) (escape #f)) ; prune this entry from the logs
+        (match (car group) ; events are grouped, first element is representative
+          [(log-entry kind msg stx located-stx pos provenance)
 
-         ;; #f if no profiling info is available for this function
-         (define (pos->node pos)
-           (and profile
-                (for/first ([p (in-list (profile-nodes profile))]
-                            #:when (equal? pos (node-pos p)))
-                  p)))
-         (define profile-entry (pos->node pos))
+           ;; #f if no profiling info is available for this function
+           (define (pos->node pos)
+             (and profile
+                  (for/first ([p (in-list (profile-nodes profile))]
+                              #:when (equal? pos (node-pos p)))
+                    p)))
+           (define profile-entry (pos->node pos))
 
-         ;; We consider that a function is a loop if it gets inlined in itself
-         ;; at least once.
-         ;; We treat loops specially, mostly to avoid spurious reports.
-         ;; For instance, if `f' is a loop, and gets inlined in `g' multiple
-         ;; times, it's likely to be unrolling. Same for out-of-fuels in `g'.
-         ;; Therefore, we don't want to report these as inlinings (or failed
-         ;; inlinings). If `g' has multiple call sites for `f', we lose
-         ;; precision, and may discard actual inlinings.
-         ;; However, we care about `f' being unrolled at least once in `g'.
-         ;; If we run out of fuel trying to inline `f' in `g' for the first
-         ;; time, we report. The reason for this is that it's possible to
-         ;; optimize better if `f''s body inside `g' calls `f' than if `g'
-         ;; calls `f' directly. For instance, `f' may be a loop involving
-         ;; floats, in which case having all calls to `f' originate from `f''s
-         ;; body (as opposed to `g') may make unboxing possible.
-         ;; Of course, we lose precision if `g' has multiple call sites to `f'.
-         (define n-unrollings    (length (filter unrolling? group)))
-         (define any-self-o-o-f? (ormap self-out-of-fuel?   group))
-         (define is-a-loop?      (or any-self-o-o-f? (> n-unrollings 0)))
-         (define inlining-sites
-           (group-by equal? #:key (lambda (x)
-                                    (inlining-event-where-loc
-                                     (inliner-log-entry-inlining-event x)))
-                     group))
+           (define inside-hot-function?
+             (and profile (memq profile-entry hot-functions)))
 
-         (define pruned-group
-           (if (not is-a-loop?)
-               group
-               ;; `f' is a loop. We ignore anything beyond the first inlining
-               ;; in `g'.
-               (apply
-                append
-                (for/list ([site (in-list inlining-sites)]
-                           #:when
-                           ;; If at least one inlining of `f' in `g', prune.
-                           (not (for/or ([evt (in-list site)])
-                                  (success? evt))))
-                  site))))
+           ;; If we know which regions are hot, prune reports about cold
+           ;; regions. If we don't know, err on the side of showing more.
+           (when (and profile (not inside-hot-function?))
+             (prune))
 
-         (define n-successes (- (length (filter success?     group)) n-unrollings))
-         (define n-failures     (length (filter failure?     group)))
-         ;; self o-o-f are already gone at this point
-         (define n-out-of-fuels (length (filter out-of-fuel? group)))
+           ;; We consider that a function is a loop if it gets inlined in itself
+           ;; at least once.
+           ;; We treat loops specially, mostly to avoid spurious reports.
+           ;; For instance, if `f' is a loop, and gets inlined in `g' multiple
+           ;; times, it's likely to be unrolling. Same for out-of-fuels in `g'.
+           ;; Therefore, we don't want to report these as inlinings (or failed
+           ;; inlinings). If `g' has multiple call sites for `f', we lose
+           ;; precision, and may discard actual inlinings.
+           ;; However, we care about `f' being unrolled at least once in `g'.
+           ;; If we run out of fuel trying to inline `f' in `g' for the first
+           ;; time, we report. The reason for this is that it's possible to
+           ;; optimize better if `f''s body inside `g' calls `f' than if `g'
+           ;; calls `f' directly. For instance, `f' may be a loop involving
+           ;; floats, in which case having all calls to `f' originate from `f''s
+           ;; body (as opposed to `g') may make unboxing possible.
+           ;; Of course, we lose precision if `g' has multiple call sites to `f'.
+           (define n-unrollings    (length (filter unrolling? group)))
+           (define any-self-o-o-f? (ormap self-out-of-fuel?   group))
+           (define is-a-loop?      (or any-self-o-o-f? (> n-unrollings 0)))
+           (define inlining-sites
+             (group-by equal? #:key (lambda (x)
+                                      (inlining-event-where-loc
+                                       (inliner-log-entry-inlining-event x)))
+                       group))
 
-         (define aggregation-string
-           (format-aggregation-string
-            n-successes n-unrollings n-failures n-out-of-fuels))
+           (define pruned-group
+             (if (not is-a-loop?)
+                 group
+                 ;; `f' is a loop. We ignore anything beyond the first inlining
+                 ;; in `g'.
+                 (apply
+                  append
+                  (for/list ([site (in-list inlining-sites)]
+                             #:when
+                             ;; If at least one inlining of `f' in `g', prune.
+                             (not (for/or ([evt (in-list site)])
+                                    (success? evt))))
+                    site))))
 
-         ;; This is where the interesting decisions are taken.
-         (define counts-as-a-missed-opt?
-           (or (> n-failures 0) ; any straight failure is a problem
-               (> n-out-of-fuels n-successes) ; we fail more often than not
-               ))
+           (define n-successes (- (length (filter success?     group)) n-unrollings))
+           (define n-failures     (length (filter failure?     group)))
+           ;; self o-o-f are already gone at this point
+           (define n-out-of-fuels (length (filter out-of-fuel? group)))
 
-         (define recommendation
-           (cond [is-a-loop?
-                  "Consider making this function smaller to encourage inlining."]
-                 [else
-                  ;; Non-recursive function -> macro
-                  "Consider turning this function into a macro to force inlining."]))
+           (define aggregation-string
+             (format-aggregation-string
+              n-successes n-unrollings n-failures n-out-of-fuels))
 
-         (if counts-as-a-missed-opt?
-             (missed-opt-log-entry
-              kind
-              (format "Missed Inlining ~a\n~a"
-                      aggregation-string recommendation)
-              stx located-stx pos provenance
-              '() '()
-              (+ n-failures (- n-out-of-fuels n-successes))) ; badness
-             (opt-log-entry
-              kind
-              (format "Inlining ~a" aggregation-string)
-              stx located-stx pos provenance))])))
-  (append tr-logs new-inline-log-entries))
+           ;; This is where the interesting decisions are taken.
+           (define counts-as-a-missed-opt?
+             (or (> n-failures 0) ; any straight failure is a problem
+                 (> n-out-of-fuels n-successes) ; we fail more often than not
+                 ))
+
+           (define recommendation
+             (cond [is-a-loop?
+                    "Consider making this function smaller to encourage inlining."]
+                   [else
+                    ;; Non-recursive function -> macro
+                    "Consider turning this function into a macro to force inlining."]))
+
+           (if counts-as-a-missed-opt?
+               (missed-opt-log-entry
+                kind
+                (format "Missed Inlining ~a\n~a"
+                        aggregation-string recommendation)
+                stx located-stx pos provenance
+                '() '()
+                (+ n-failures (- n-out-of-fuels n-successes))) ; badness
+               (opt-log-entry
+                kind
+                (format "Inlining ~a" aggregation-string)
+                stx located-stx pos provenance))]))))
+  (append tr-logs (filter values new-inline-log-entries)))
 
 (define (format-aggregation-string
          n-successes n-unrollings n-failures n-out-of-fuels)
