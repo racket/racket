@@ -74,17 +74,17 @@
   (c
    exn
    c
-   "query-value: cannot convert given value to SQL type\n  given: 1\n  type: string\n  dialect: PostgreSQL"))
+   "query-value: cannot convert given value to SQL type\n  given: 1\n  type: string\n  expected: string?\n  dialect: PostgreSQL"))
  #""
  #"")
-((query-value c "select NULL")
+((query-value pgc "select NULL")
  ((3)
+  1
+  (((lib "db/private/generic/sql-data.rkt") . deserialize-info:sql-null-v0))
   0
   ()
-  0
   ()
-  ()
-  (c exn c "c: undefined;\n cannot reference undefined identifier"))
+  (c values c (0)))
  #""
  #"")
 ((sql-null->false "apple") ((3) 0 () 0 () () (c values c "apple")) #"" #"")
@@ -142,7 +142,7 @@
   0
   ()
   ()
-  (c values c (0 1969 12 31 19 0 0 0 -18000)))
+  (c values c (0 1970 1 1 0 0 0 0 0)))
  #""
  #"")
 ((sql-bits->list (string->sql-bits "1011"))

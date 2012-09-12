@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/contract/base
+         racket/serialize
          racket/string
          unstable/error
          "geometry.rkt")
@@ -17,7 +18,7 @@ point = x y (all float8)
 polygon = #points:int4 (x y : float8)*
 |#
 
-(struct pg-box (ne sw)
+(serializable-struct pg-box (ne sw)
         #:transparent
         #:guard (lambda (ne sw _n)
                   (let ([x1 (point-x ne)]
@@ -27,18 +28,18 @@ polygon = #points:int4 (x y : float8)*
                     (values (point (max x1 x2) (max y1 y2))
                             (point (min x1 x2) (min y1 y2))))))
 
-(struct pg-circle (center radius)
+(serializable-struct pg-circle (center radius)
         #:transparent
         #:guard (lambda (center radius _n)
                   (values center (exact->inexact radius))))
 
-(struct pg-path (closed? points)
+(serializable-struct pg-path (closed? points)
         #:transparent
         #:guard (lambda (closed? points _n)
                   (values (and closed? #t)
                           points)))
 
-(struct pg-array (dimensions dimension-lengths dimension-lower-bounds contents)
+(serializable-struct pg-array (dimensions dimension-lengths dimension-lower-bounds contents)
         #:transparent
         #:guard (lambda (ndim counts lbounds vals _n)
                   (unless (= (length counts) ndim)
@@ -91,6 +92,14 @@ polygon = #points:int4 (x y : float8)*
          (pg-array 0 '() '() '#())]
         [else (pg-array 1 (list (length lst)) '(1) (list->vector lst))]))
 
+(serializable-struct pg-empty-range ()
+  #:transparent)
+(serializable-struct pg-range (lb includes-lb? ub includes-ub?)
+  #:transparent)
+
+(define (pg-range-or-empty? v)
+  (or (pg-empty-range? v) (pg-range? v)))
+
 (provide/contract
  [struct pg-box ([ne point?] [sw point?])]
  [struct pg-circle ([center point?] [radius (and/c real? (not/c negative?))])]
@@ -105,4 +114,11 @@ polygon = #points:int4 (x y : float8)*
  [pg-array->list
   (-> pg-array? list?)]
  [list->pg-array
-  (-> list? pg-array?)])
+  (-> list? pg-array?)]
+
+ [struct pg-empty-range ()]
+ [struct pg-range ([lb any/c]
+                   [includes-lb? boolean?]
+                   [ub any/c]
+                   [includes-ub? boolean?])]
+ [pg-range-or-empty? (-> any/c boolean?)])

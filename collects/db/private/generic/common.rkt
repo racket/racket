@@ -4,6 +4,7 @@
          ffi/unsafe/atomic
          "interfaces.rkt")
 (provide define-type-table
+         dbsystem-base%
          locking%
          debugging%
          transactions%
@@ -20,35 +21,41 @@
 
 ;; Defining type tables
 
-(define-syntax-rule (define-type-table (supported-types
-                                        type-alias->type
+(define-syntax-rule (define-type-table (type-list
                                         typeid->type
-                                        type->typeid
                                         describe-typeid)
-                      (typeid type (alias ...) supported?) ...)
+                      (typeid type since-version) ...)
+  ;; since-version is #f is this library does not support it,
+  ;; *DBMS* version number of introduction (0 for "virtually forever")
   (begin
-    (define all-types '((type supported?) ...))
-    (define supported-types
-      (sort (map car (filter cadr all-types))
-            string<?
-            #:key symbol->string
-            #:cache-keys? #t))
-    (define (type-alias->type x)
-      (case x
-        ((alias ...) 'type) ...
-        (else x)))
+    (define type-list '((type since-version) ...))
     (define (typeid->type x)
       (case x
         ((typeid) 'type) ...
         (else #f)))
-    (define (type->typeid x)
-      (case x
-        ((type) 'typeid) ...
-        (else #f)))
     (define (describe-typeid x)
       (let ([t (typeid->type x)]
-            [ok? (case x ((typeid) supported?) ... (else #f))])
+            [ok? (case x ((typeid) (and since-version #t)) ... (else #f))])
         (list ok? t x)))))
+
+;; ----------------------------------------
+
+(define dbsystem-base%
+  (class object%
+    (super-new)
+    (define/public (get-known-types version)
+      (let* ([all-types (get-type-list)]
+             [supported-types
+              (filter (lambda (type+version)
+                        (let ([since-version (cadr type+version)])
+                          (and since-version
+                               (>= version since-version))))
+                      all-types)])
+        (sort (map car supported-types)
+              string<?
+              #:key symbol->string
+              #:cache-keys? #t)))
+    (define/public (get-type-list) null)))
 
 ;; ----------------------------------------
 

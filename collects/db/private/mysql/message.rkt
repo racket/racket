@@ -7,7 +7,6 @@ Based on protocol documentation here:
 (require racket/match
          racket/port
          "../generic/sql-data.rkt"
-         "../generic/sql-convert.rkt"
          "../generic/interfaces.rkt"
          "../../util/private/geometry.rkt")
 (provide write-packet
@@ -743,6 +742,25 @@ computed string on the server can be. See also:
      (error/internal 'get-result "unimplemented type" "type" type))
     (else
      (error/internal 'get-result "unknown type" "type" type))))
+
+(define (parse-decimal s)
+  (cond [(equal? s "NaN") +nan.0]
+        [(regexp-match #rx"^-?([0-9]*)$" s)
+         ;; big integer
+         => (lambda (m)
+              (string->number s))]
+        [(regexp-match #rx"^-?([0-9]*)\\.([0-9]*)$" s)
+         => (lambda (m)
+              (+ (string->number (cadr m))
+                 (parse-exact-fraction (caddr m))))]
+        [else
+         (error/internal* 'parse-decimal "cannot parse as decimal"
+                          '("string" value) s)]))
+
+(define (parse-exact-fraction s)
+  ;; eg: (parse-exact-fraction "12") = 12/100
+  (/ (string->number s)
+     (expt 10 (string-length s))))
 
 (define (supported-result-typeid? typeid)
   (case typeid

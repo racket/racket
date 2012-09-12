@@ -1,6 +1,5 @@
 #lang racket/base
-(require (for-syntax racket/base)
-         racket/vector
+(require racket/vector
          racket/class
          racket/promise
          unstable/error
@@ -23,7 +22,8 @@
   (send x get-short-name))
 
 (define (dbsystem-supported-types x)
-  (send x get-known-types))
+  ;; FIXME: make version sensitive?
+  (send x get-known-types +inf.0))
 
 ;; == Misc procedures
 

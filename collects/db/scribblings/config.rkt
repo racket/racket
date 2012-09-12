@@ -2,7 +2,6 @@
 (require scribble/manual
          scribble/eval
          unstable/sandbox
-         racket/runtime-path
          (for-label racket/base
                     racket/contract))
 (provide (all-defined-out)

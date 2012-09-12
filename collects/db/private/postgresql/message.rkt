@@ -1,7 +1,6 @@
 #lang racket/base
 (require (for-syntax racket/base)
          racket/match
-         unstable/error
          "../generic/interfaces.rkt"
          "../generic/sql-data.rkt")
 (provide write-message

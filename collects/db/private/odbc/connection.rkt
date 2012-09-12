@@ -690,6 +690,22 @@
         ((notice)
          (on-notice sqlstate message))))))
 
+;; ========================================
+
+(define (marshal-decimal f n)
+  (cond [(not (real? n))
+         (error/no-convert f #f "numeric" n)]
+        [(eqv? n +nan.0)
+         "NaN"]
+        [(or (eqv? n +inf.0) (eqv? n -inf.0))
+         (error/no-convert f #f "numeric" n)]
+        [(or (integer? n) (inexact? n))
+         (number->string n)]
+        [(exact? n)
+         ;; Bleah.
+         (or (exact->decimal-string n)
+             (number->string (exact->inexact n)))]))
+
 #|
 Historical note: I tried using ODBC async execution to avoid blocking
 all Racket threads for a long time.

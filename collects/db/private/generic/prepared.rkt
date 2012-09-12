@@ -93,10 +93,9 @@
     (when (not (= given-len expected-len))
       (error/stmt-arity fsym expected-len given-len)))
   (for/list ([handler (in-list param-handlers)]
-             [index (in-naturals)]
              [param (in-list params)])
     (cond [(sql-null? param) sql-null]
-          [else (handler fsym index param)])))
+          [else (handler fsym param)])))
 
 ;; ----
 

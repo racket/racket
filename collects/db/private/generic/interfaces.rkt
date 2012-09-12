@@ -59,7 +59,7 @@
     field-dvecs->typeids   ;; (listof field-dvec) -> (listof typeid)
 
     ;; inspection only
-    get-known-types        ;; -> (listof symbol)
+    get-known-types        ;; real -> (listof symbol)
     describe-params        ;; (listof typeid) -> (listof TypeDesc)
     describe-fields))      ;; (listof field-dvec) -> (listof TypeDesc)
 
@@ -266,10 +266,11 @@ producing plain old exn:fail.
                     "type" type
                     "typeid" typeid))
 
-(define (error/no-convert fsym sys type param [note #f])
+(define (error/no-convert fsym sys type param [note #f] #:contract [ctc #f])
   (raise-misc-error fsym "cannot convert given value to SQL type"
                     '("given" value) param
                     "type" type
+                    "expected" (and ctc (format "~.s" ctc))
                     "dialect" sys
                     "note" note))
 

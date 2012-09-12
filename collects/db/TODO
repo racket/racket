@@ -1,4 +1,8 @@
 
+- postgresql: send no-arg queries without prepare step (?)
+
+- add under-the-hood doc section (eg, debugging, adjusting statement cache)
+
 - type annotations
   - two modes: mandatory and opportunistic
   - on result fields (eg sqlite, convert to date)

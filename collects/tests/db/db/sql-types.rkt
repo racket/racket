@@ -1,7 +1,9 @@
 #lang racket/unit
 (require rackunit
          racket/class
+         racket/list
          racket/math
+         racket/match
          racket/string
          (prefix-in srfi: srfi/19)
          db/base
@@ -21,7 +23,7 @@
   (let* ([known-types
           (if (ANYFLAGS 'sqlite3)
               '(bigint double text blob)
-              (send dbsystem get-known-types))]
+              (send dbsystem get-known-types +inf.0))]
          [type (for/or ([type types])
                  (and (member type known-types) type))])
     (when type
@@ -29,9 +31,18 @@
         (parameterize ((current-type type)) (proc))))))
 
 (define (check-timestamptz-equal? a b)
-  (check srfi:time=?
-         (srfi:date->time-utc (sql-datetime->srfi-date a))
-         (srfi:date->time-utc (sql-datetime->srfi-date b))))
+  (cond [(and (sql-timestamp? a) (sql-timestamp? b))
+         (check srfi:time=?
+                (srfi:date->time-utc (sql-datetime->srfi-date a))
+                (srfi:date->time-utc (sql-datetime->srfi-date b)))]
+        [(and (pg-range? a) (pg-range? b))
+         (match (list a b)
+           [(list (pg-range alb ali? aub aui?) (pg-range blb bli? bub bui?))
+            (and (check-timestamptz-equal? alb blb)
+                 (check-equal? ali? bli?)
+                 (check-timestamptz-equal? aub bub)
+                 (check-equal? aui? bui?))])]
+        [else (check-equal? a b)]))
 
 (define (check-bits-equal? a b)
   (check-equal? (sql-bits->string a) (sql-bits->string b)))
@@ -108,6 +119,21 @@
 (define-check (check-roundtrip c value)
   (check-roundtrip* c value check-equal?))
 
+(define (check-value/text* c val text check-val-equal? check-text-equal?)
+  (cond [(ANYFLAGS 'postgresql)
+         (let* ([tname (pg-type-name (current-type))]
+                [q-text->val (sql (format "select ($1::text)::~a" tname))]
+                [q-val->text (sql (format "select ($1::~a)::text" tname))])
+           (when check-val-equal?
+             (check-val-equal? (query-value c q-text->val text) val))
+           (when check-text-equal?
+             (check-text-equal? (query-value c q-val->text val) text)))]
+        ;; FIXME: mysql just test val->text since text->val irregular
+        [else (void)]))
+
+(define-check (check-value/text c val text)
+  (check-value/text* c val text check-equal? check-equal?))
+
 (define-check (check-varchar c str)
   ;; Check roundtrip (only checks same when arrives back at client)
   (check-roundtrip c str)
@@ -155,6 +181,54 @@
   (check-equal? (query-value c (format "select ~a = any ($1)" elt) (list->pg-array lst))
                 in?))
 
+(define some-dates
+  `((,(sql-date 1776 07 04) "1776-07-04")
+    (,(sql-date 2000 01 01) "2000-01-01")
+    (,(sql-date 2012 02 14) "2012-02-14")))
+
+(define some-times
+  `((,(sql-time 01 02 03 0 #f) "01:02:03")
+    (,(sql-time 12 34 56 0 #f) "12:34:56")
+    (,(sql-time 17 30 01 0 #f) "17:30:01")
+    (,(sql-time 01 02 03 #e4e7 #f) "01:02:03.04")
+    (,(sql-time 12 34 56 123456000 #f) "12:34:56.123456")))
+
+(define some-timetzs
+  `((,(sql-time 01 02 03 0 3600) "01:02:03+01")
+    (,(sql-time 12 34 56 0 3600) "12:34:56+01")
+    (,(sql-time 17 30 01 0 -7200) "17:30:01-02")
+    (,(sql-time 01 02 03 #e4e7 3600) "01:02:03.04+01")
+    (,(sql-time 12 34 56 123456000 3600) "12:34:56.123456+01")
+    (,(sql-time 12 34 56 123456000 -7200) "12:34:56.123456-02")))
+
+(define some-timestamps
+  `((,(sql-timestamp 2000 01 01 12 34 56 0 #f) "2000-01-01 12:34:56")
+    (,(sql-timestamp 1776 07 04 12 34 56 0 #f) "1776-07-04 12:34:56")
+    (,(sql-timestamp 2012 02 14 12 34 56 0 #f) "2012-02-14 12:34:56")
+    (,(sql-timestamp 2000 01 01 12 34 56 123456000 #f) "2000-01-01 12:34:56.123456")
+    (,(sql-timestamp 1776 07 04 12 34 56 123456000 #f) "1776-07-04 12:34:56.123456")
+    (,(sql-timestamp 2012 02 14 12 34 56 123456000 #f) "2012-02-14 12:34:56.123456")
+    (-inf.0 "-infinity")
+    (+inf.0 "infinity")))
+
+(define some-timestamptzs
+  `((,(sql-timestamp 2000 01 01 12 34 56 0 -14400) "2000-01-01 12:34:56-04")
+    (,(sql-timestamp 1776 07 04 12 34 56 0 -14400) "1776-07-04 12:34:56-04")
+    (,(sql-timestamp 2012 02 14 12 34 56 0 7200) "2012-02-14 12:34:56+02")
+    (,(sql-timestamp 2000 01 01 12 34 56 123456000 14400) "2000-01-01 12:34:56.123456+04")
+    (,(sql-timestamp 1776 07 04 12 34 56 123456000 -14400) "1776-07-04 12:34:56.123456-04")
+    (,(sql-timestamp 2012 02 14 12 34 56 123456000 -7200) "2012-02-14 12:34:56.123456-02")
+    (-inf.0 "-infinity")
+    (+inf.0 "infinity")))
+
+(define some-intervals
+  `((,(sql-interval 0 0 3 4 5 6 0) "3 days 04:05:06")
+    (,(sql-interval 87 1 0 0 0 0 0) "87 years 1 mon")
+    (,(sql-interval 1 2 3 4 5 6 45000) "1 year 2 mons 3 days 04:05:06.000045")
+    (,(sql-interval 0 0 -3 -4 -5 -6 0) "-3 days -04:05:06")
+    (,(sql-interval -87 -1 0 0 0 0 0) "-87 years -1 mons")
+    (,(sql-interval -1 -2 3 4 5 6 45000) "-1 years -2 mons +3 days 04:05:06.000045")))
+
 (define test
   (test-suite "SQL types (roundtrip, etc)"
     (type-test-case '(bool boolean)
@@ -182,12 +256,13 @@
          (when (ANYFLAGS 'mysql)
            ;; Test able to read large blobs
            ;; (depends on max_allowed_packet, though)
-           (let ([r (query-value c "select cast(repeat('a', 10000000) as binary)")])
-             (check-pred bytes? r)
-             (check-equal? r (make-bytes 10000000 (char->integer #\a))))
-           (let ([r (query-value c "select cast(repeat('a', 100000000) as binary)")])
-             (check-pred bytes? r)
-             (check-equal? r (make-bytes 100000000 (char->integer #\a))))))))
+           (define max-allowed-packet (query-value c "select @@session.max_allowed_packet"))
+           (for ([N (in-list '(#e1e7 #e1e8))])
+             (when (<= N max-allowed-packet)
+               (let* ([q (format "select cast(repeat('a', ~s) as binary)" N)]
+                      [r (query-value c q)])
+                 (check-pred bytes? r)
+                 (check-equal? r (make-bytes N (char->integer #\a))))))))))
     (type-test-case '(text)
       (call-with-connection
        (lambda (c)
@@ -302,50 +377,48 @@
     (type-test-case '(date)
       (call-with-connection
        (lambda (c)
-         (check-roundtrip c (make-sql-date 1980 08 17)))))
+         (for ([d+s some-dates])
+           (check-roundtrip c (car d+s))
+           (check-value/text c (car d+s) (cadr d+s))))))
     (type-test-case '(time)
       (call-with-connection
        (lambda (c)
-         (check-roundtrip c (make-sql-time 12 34 56 0 #f))
-         (unless (eq? dbsys 'odbc) ;; ODBC time has no fractional part
-           (check-roundtrip c (make-sql-time 12 34 56 123456000 #f))
-           (check-roundtrip c (make-sql-time 12 34 56 100000000 #f))
-           (check-roundtrip c (make-sql-time 12 34 56 000001000 #f))))))
+         (for ([t+s some-times])
+           (unless (and (eq? dbsys 'odbc) (> (sql-time-nanosecond (car t+s)) 0))
+             ;; ODBC time has no fractional part
+             (check-roundtrip c (car t+s))
+             (check-value/text c (car t+s) (cadr t+s)))))))
     (type-test-case '(timetz)
       (call-with-connection
        (lambda (c)
-         (check-roundtrip c (make-sql-time 12 34 56 0 3600))
-         (check-roundtrip c (make-sql-time 12 34 56 123456000 3600))
-         (check-roundtrip c (make-sql-time 12 34 56 100000000 3600))
-         (check-roundtrip c (make-sql-time 12 34 56 000001000 3600)))))
+         (for ([t+s some-timetzs])
+           (check-roundtrip c (car t+s))
+           (check-value/text c (car t+s) (cadr t+s))))))
     (type-test-case '(timestamp datetime)
       (call-with-connection
        (lambda (c)
-         (check-roundtrip c (make-sql-timestamp 1980 08 17 12 34 56 0 #f))
-         (check-roundtrip c (make-sql-timestamp 1980 08 17 12 34 56 123456000 #f))
-         (check-roundtrip c (make-sql-timestamp 1980 08 17 12 34 56 100000000 #f))
-         (check-roundtrip c (make-sql-timestamp 1980 08 17 12 34 56 000001000 #f)))))
-    ;; Bizarrely, PostgreSQL converts timestamptz to a standard timezone
-    ;; when returning them, but it doesn't for timetz.
+         (for ([t+s some-timestamps])
+           (when (or (TESTFLAGS 'postgresql) (sql-timestamp? (car t+s)))
+             ;; Only postgresql supports +/-inf.0
+             (check-roundtrip c (car t+s))
+             (check-value/text c (car t+s) (cadr t+s)))))))
     (type-test-case '(timestamptz)
       (call-with-connection
        (lambda (c)
-         (check-roundtrip* c (make-sql-timestamp 1980 08 17 12 34 56 0 3600)
-                           check-timestamptz-equal?)
-         (check-roundtrip* c (make-sql-timestamp 1980 08 17 12 34 56 123456000 3600)
-                           check-timestamptz-equal?)
-         (check-roundtrip* c (make-sql-timestamp 1980 08 17 12 34 56 100000000 3600)
-                           check-timestamptz-equal?)
-         (check-roundtrip* c (make-sql-timestamp 1980 08 17 12 34 56 000001000 3600)
-                           check-timestamptz-equal?))))
+         (for ([t+s some-timestamptzs])
+           (check-roundtrip* c (car t+s) check-timestamptz-equal?)
+           (check-value/text* c (car t+s) (cadr t+s) check-timestamptz-equal? #f)))))
 
     (type-test-case '(interval)
       (call-with-connection
        (lambda (c)
-         (check-roundtrip c (sql-interval 0 0 3 4 5 6 0))
-         (check-roundtrip c (sql-interval 87 1 0 0 0 0 0))
-         (when (memq dbsys '(postgresql))
-           (check-roundtrip c (sql-interval 1 2 3 4 5 6 45000))))))
+         (for ([i+s some-intervals])
+           (when (or (memq dbsys '(postgresql))
+                     (sql-day-time-interval? i+s)
+                     (sql-year-month-interval? i+s))
+             (check-roundtrip c (car i+s))
+             (when (memq dbsys '(postgresql))
+               (check-value/text c (car i+s) (cadr i+s))))))))
 
     (type-test-case '(varbit bit)
       (call-with-connection
@@ -398,6 +471,67 @@
          (lambda (c)
            (check-roundtrip c (pg-circle (point 1 2) 45))))))
 
+    (when (TESTFLAGS 'postgresql 'pg92)
+      (type-test-case '(json)
+        (call-with-connection
+         (lambda (c)
+           (define some-jsexprs
+             (list #t #f 0 1 -2 pi "" "hello" "good\nbye" 'null
+                   (hasheq 'a 1 'b 2 'c 'null)
+                   (list #t #f 'null "a" "b")))
+           (for ([j some-jsexprs])
+             (check-roundtrip c j)))))
+      (type-test-case '(int4range)
+        (call-with-connection
+         (lambda (c)
+           (check-roundtrip c (pg-empty-range))
+           ;; for now, only test things in canonical form... (FIXME)
+           (check-roundtrip c (pg-range 0 #t 5 #f))
+           (check-roundtrip c (pg-range #f #f -57 #f))
+           (check-roundtrip c (pg-range 1234 #t #f #f)))))
+      (type-test-case '(int8range)
+        (call-with-connection
+         (lambda (c)
+           (check-roundtrip c (pg-empty-range))
+           ;; for now, only test things in canonical form... (FIXME)
+           (check-roundtrip c (pg-range 0 #t 5 #f))
+           (check-roundtrip c (pg-range #f #f -57 #f))
+           (check-roundtrip c (pg-range 1234 #t #f #f))
+           (check-roundtrip c (pg-range (expt 2 60) #t (expt 2 61) #f)))))
+      ;; FIXME: numrange
+      (type-test-case '(daterange)
+        (call-with-connection
+         (lambda (c)
+           (define d1 (car (first some-dates)))
+           (define d2 (car (second some-dates)))
+           (define d3 (car (third some-dates)))
+           (check-roundtrip c (pg-empty-range))
+           ;; for now, only test things in canonical form... (FIXME?)
+           (check-roundtrip c (pg-range d1 #t d3 #f))
+           (check-roundtrip c (pg-range #f #f d2 #f))
+           (check-roundtrip c (pg-range d3 #t #f #f)))))
+      (type-test-case '(tsrange)
+        (call-with-connection
+         (lambda (c)
+           (define ts1 (car (second some-timestamps)))
+           (define ts2 (car (first some-timestamps)))
+           (define ts3 (car (third some-timestamps)))
+           (check-roundtrip c (pg-empty-range))
+           (check-roundtrip c (pg-range ts1 #t ts2 #t))
+           (check-roundtrip c (pg-range ts1 #f ts3 #f))
+           (check-roundtrip c (pg-range ts2 #f ts3 #t)))))
+      (type-test-case '(tstzrange)
+        (call-with-connection
+         (lambda (c)
+           (define ts1 (car (second some-timestamptzs)))
+           (define ts2 (car (first some-timestamptzs)))
+           (define ts3 (car (third some-timestamptzs)))
+           (check-roundtrip c (pg-empty-range))
+           (check-roundtrip* c (pg-range ts1 #t ts2 #t) check-timestamptz-equal?)
+           (check-roundtrip* c (pg-range ts1 #f ts3 #f) check-timestamptz-equal?)
+           (check-roundtrip* c (pg-range ts2 #f ts3 #t) check-timestamptz-equal?)))))
+
+    ;; --- Arrays ---
     (type-test-case '(boolean-array)
       (call-with-connection
        (lambda (c)

@@ -1,7 +1,6 @@
 #lang racket/base
 (require racket/class
          racket/match
-         racket/vector
          file/md5
          openssl
          unstable/error
@@ -31,6 +30,7 @@
     (define inport #f)
     (define outport #f)
     (define process-id #f)
+    (define integer-datetimes? 'unknown)  ;; see connect:after-auth
 
     (inherit call-with-lock
              call-with-lock*
@@ -91,7 +91,7 @@
                        (lambda (e)
                          ;; Anything but exn:fail:sql (raised by recv-message) indicates
                          ;; a communication error.
-                         ;; FIXME: alternatively, have check-ready-for-query set an ok flag
+                         ;; Alternative: could have check-ready-for-query set a done-reading flag.
                          (unless (exn:fail:sql? e)
                            (disconnect* #f))
                          (raise e))])
@@ -148,6 +148,8 @@
                   (disconnect* #f)
                   (raise-misc-error fsym "client character encoding changed, disconnecting"
                                     '("new encoding" value) value))]
+               [(equal? name "integer_datetimes")
+                (set! integer-datetimes? (equal? value "on"))]
                [else (void)])]))
 
     ;; == Connection management
@@ -174,7 +176,9 @@
     ;; == System
 
     (define/public (get-dbsystem)
-      dbsystem)
+      (if integer-datetimes?
+          dbsystem/integer-datetimes
+          dbsystem/floating-point-datetimes))
 
     ;; ========================================
 
@@ -229,12 +233,36 @@
       (let ([r (recv-message 'postgresql-connect)])
         (match r
           [(struct ReadyForQuery (status))
-           (void)]
+           (connect:after-auth)]
           [(struct BackendKeyData (pid secret))
            (set! process-id pid)
            (connect:expect-ready-for-query)]
           [_
            (error/comm 'postgresql-connect "after authentication")])))
+
+    ;; connect:after-auth : -> void
+    (define/private (connect:after-auth)
+      (when (eq? integer-datetimes? 'unknown)
+        ;; According to http://www.postgresql.org/docs/8.4/static/libpq-status.html
+        ;; (see PQparameterStatus), versions of PostgreSQL before 8.0 do not send
+        ;; (or AFAICT even *have*) the "integer_datetimes" parameter on startup.
+        ;; Version 7.4.8 from Ubuntu 5.10 uses integer datetimes, no config var.
+        ;; Version 7.4.6 from Fedora Core 3 uses floating-point, no config var.
+        ;; So determine by trying query w/ integer; if wrong result, try float.
+        (dprintf "  ** testing datetime representation\n")
+        (let ([r (internal-query1 'postgresql-connect "select time '12:34:56'")])
+          (define (test-config)
+            (match (query1:process-result 'postgresql-connect r)
+              [(rows-result _ (list (vector (sql-time 12 34 56 0 #f)))) #t]
+              [_ #f]))
+          (set! integer-datetimes? #t)
+          (unless (test-config)
+            (set! integer-datetimes? #f)
+            (unless (test-config)
+              (error/internal 'postgresql-connect
+                              "unable to determine server datetime representation")))
+          (dprintf "  ** datetime representation = ~a\n"
+                   (if integer-datetimes? "integer" "floating-point")))))
 
     ;; ============================================================
 
@@ -374,9 +402,10 @@
       (match result
         [(vector 'rows field-dvecs rows)
          (let ([type-readers (query1:get-type-readers fsym field-dvecs)])
-           (rows-result (map field-dvec->field-info field-dvecs)
-                        (map (lambda (data) (bytes->row data type-readers))
-                             rows)))]
+           (parameterize ((use-integer-datetimes? integer-datetimes?))
+             (rows-result (map field-dvec->field-info field-dvecs)
+                          (map (lambda (data) (bytes->row data type-readers))
+                               rows))))]
         [(vector 'cursor field-dvecs stmt portal)
          (let ([pst (statement-binding-pst stmt)]
                [type-readers (query1:get-type-readers fsym field-dvecs)])
@@ -414,7 +443,8 @@
                               (when (unbox end-box)
                                 (cursor:close fsym pst portal))
                               rows)])))])
-            (and rows (map (lambda (data) (bytes->row data type-readers)) rows))))))
+            (parameterize ((use-integer-datetimes? integer-datetimes?))
+              (and rows (map (lambda (data) (bytes->row data type-readers)) rows)))))))
 
     (define/private (cursor:close fsym pst portal)
       (let ([close-on-exec? (send pst get-close-on-exec?)])
@@ -602,12 +632,6 @@
                 (error/comm 'postgresql-connect "after SSL request")))))
           ((no)
            (super attach-to-ports in out)))))))
-
-;; ========================================
-
-;; nosupport : string -> string
-(define (nosupport str)
-  (string-append "not supported: " str))
 
 ;; ========================================
 
