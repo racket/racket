@@ -5697,7 +5697,7 @@ static Scheme_Object *file_or_dir_permissions(int argc, Scheme_Object *argv[])
         scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
                          "file-or-directory-permissions: update failed due to"
                          " unsupported bit combination\n"
-                         "  path: %c\n"
+                         "  path: %s\n"
                          "  permission value: %d",
                          filename_for_error(argv[0]),
                          new_bits);
