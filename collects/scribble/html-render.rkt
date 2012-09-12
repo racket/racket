@@ -63,6 +63,8 @@
               (lambda (file path)
                 (cond [(bytes? file)
                        (make-inline (bytes->string/utf-8 file))]
+                      [(url? file)
+                       (make-ref (url->string file))]
                       [(not (eq? 'inline path))
                        (make-ref (or path (let-values ([(base name dir?)
                                                         (split-path file)])
@@ -671,7 +673,7 @@
                    ,title
                    ,(scribble-css-contents scribble-css (lookup-path scribble-css alt-paths))
                    ,@(map (lambda (style-file)
-                            (if (bytes? style-file)
+                            (if (or (bytes? style-file) (url? style-file))
                                 (scribble-css-contents style-file #f)
                                 (let ([p (lookup-path style-file alt-paths)])
                                   (unless p (install-file style-file))
@@ -687,7 +689,7 @@
                                   style-extra-files))
                    ,(scribble-js-contents script-file (lookup-path script-file alt-paths))
                    ,@(map (lambda (script-file)
-                            (if (bytes? script-file)
+                            (if (or (bytes? script-file) (url? script-file))
                                 (scribble-js-contents script-file #f)
                                 (let ([p (lookup-path script-file alt-paths)])
                                   (unless p (install-file script-file))

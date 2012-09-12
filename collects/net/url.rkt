@@ -1,5 +1,5 @@
 #lang racket/base
-(require racket/unit racket/port racket/string racket/contract
+(require racket/port racket/string racket/contract/base
          "url-connect.rkt"
          "url-structs.rkt"
          "uri-codec.rkt")
@@ -24,7 +24,7 @@
       ;; structs. since only the url-exception? predicate
       ;; was exported, we just add this in to the predicate
       ;; to preserve backwards compatibility
-      (and (exn:fail:contract:blame? x)
+      (and (exn:fail:contract? x)
            (regexp-match? #rx"^string->url:" (exn-message x)))))
 
 (define file-url-path-convention-type (make-parameter (system-path-convention-type)))

@@ -1,11 +1,13 @@
 #lang scribble/doc
-@(require scribble/manual "utils.rkt"
+@(require scribble/manual 
+          (except-in "utils.rkt" url)
           "struct-hierarchy.rkt" 
           (for-label scribble/manual-struct
                      file/convertible
                      setup/main-collects
                      scriblib/render-cond
-                     xml/xexpr))
+                     xml/xexpr
+                     net/url-structs))
 
 @title[#:tag "core"]{Structures And Processing}
 
@@ -1393,10 +1395,11 @@ script alternative to the element content.}
 
 @defstruct[css-addition ([path (or/c path-string? 
                                      (cons/c 'collects (listof bytes?))
+                                     url?
                                      bytes?)])]{
 
 Used as a @tech{style property} to supply a CSS file (if @racket[path]
-is a path, string, or list) or content (if @racket[path] is a byte
+is a path, string, or list), URL (if @racket[path] is a @racket[url]) or content (if @racket[path] is a byte
 string) to be referenced or included in the generated HTML. This
 property can be attached to any style, and all additions are collected
 to the top of the generated HTML page.
@@ -1407,6 +1410,7 @@ The @racket[path] field can be a result of
 
 @defstruct[js-addition ([path (or/c path-string? 
                                     (cons/c 'collects (listof bytes?))
+                                    url?
                                     bytes?)])]{
 
 Like @racket[css-addition], but for a Javascript file instead of a CSS file.}

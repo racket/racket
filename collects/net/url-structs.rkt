@@ -1,5 +1,5 @@
 #lang racket/base
-(require racket/contract racket/serialize)
+(require racket/contract/base racket/serialize)
 
 (define-serializable-struct url
   (scheme user host port path-absolute? path query fragment)
