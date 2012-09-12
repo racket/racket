@@ -261,7 +261,7 @@
       (cond 
        [(eq? conv 'unix) 
         (if (bytes=? bstr #"/")
-            (if (path? root)
+            (if (path-for-some-system? root)
                 root
                 (string->path root))
             (build-path root (bytes->path (subbytes (path->bytes c-p) 1) conv)))]
