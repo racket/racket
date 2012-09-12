@@ -234,17 +234,17 @@
                 ;; Non-recursive function -> macro
                 "Consider turning this function into a macro to force inlining."]))
 
-       (if (counts-as-a-missed-opt? log)
+       (if (counts-as-a-missed-opt? pruned-log)
            (missed-opt-log-entry
             kind
             (format "Missed Inlining ~a\n~a"
-                    (format-aggregation-string log) recommendation)
+                    (format-aggregation-string pruned-log) recommendation)
             stx located-stx pos provenance
             '() '()
-            (group-badness log))
+            (group-badness pruned-log))
            (opt-log-entry
             kind
-            (format "Inlining ~a" (format-aggregation-string log))
+            (format "Inlining ~a" (format-aggregation-string pruned-log))
             stx located-stx pos provenance))])))
 
 (define (group-badness group)
