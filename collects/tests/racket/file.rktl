@@ -1532,7 +1532,7 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that `in-directory' fails properly on filesystem errors
 
-(let ()
+(unless (eq? 'windows (system-type))
   (define tmp (build-path (build-path (find-system-path 'temp-dir))
                           (format "in-dir-tmp-dir~a" (random 1000))))
   (define sub (build-path tmp "sub"))
