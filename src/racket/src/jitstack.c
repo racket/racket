@@ -291,7 +291,15 @@ Scheme_Object *scheme_native_stack_trace(void)
       }
     }
 
-    return first;
+    if (last)
+      SCHEME_CDR(last) = tail;
+    else
+      first = tail;
+    
+    if (SCHEME_NULLP(first))
+      return NULL;
+    else
+      return first;
   }
 #endif
 
