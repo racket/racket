@@ -10,7 +10,7 @@
          flonum->bit-field bit-field->flonum
          flonum->ordinal ordinal->flonum
          flstep flnext flprev flonums-between
-         -max.0 -min.0 +min.0 +max.0 +epsilon.0
+         -max.0 -min.0 +min.0 +max.0 epsilon.0
          +min-normal.0 +max-subnormal.0 -min-normal.0 -max-subnormal.0 flsubnormal?
          flnext* flprev*
          flulp flulp-error relative-error
@@ -92,7 +92,7 @@
 (define +max.0 (flprev +inf.0))
 
 ;; The smallest flonum that can be added to 1.0 to get a result != 1.0
-(define +epsilon.0 (flulp 1.0))
+(define epsilon.0 (flulp 1.0))
 
 ;; ===================================================================================================
 ;; Subnormal numbers
@@ -104,16 +104,20 @@
 
 (: flsubnormal? (Float -> Boolean))
 (define (flsubnormal? x)
-  ((flabs x) . < . +min-normal.0))
+  (and ((flabs x) . < . +min-normal.0)
+       (not (= x 0.0))))
+
+;; ===================================================================================================
+;; Faster flnext and flprev
 
 (: flsubnormal-next* (Float -> Float))
 (define (flsubnormal-next* x)
-  (/ (+ (* x (flexpt 2.0 1022.0)) +epsilon.0)
+  (/ (+ (* x (flexpt 2.0 1022.0)) epsilon.0)
      (flexpt 2.0 1022.0)))
 
 (: flsubnormal-prev* (Float -> Float))
 (define (flsubnormal-prev* x)
-  (/ (- (* x (flexpt 2.0 1022.0)) +epsilon.0)
+  (/ (- (* x (flexpt 2.0 1022.0)) epsilon.0)
      (flexpt 2.0 1022.0)))
 
 (: flnext* (Float -> Float))
@@ -121,8 +125,8 @@
   (cond [(x . < . 0.0)  (- (flprev* (- x)))]
         [(= x 0.0)  +min.0]
         [(= x +inf.0)  +inf.0]
-        [else  (define next-x (+ x (* x (* 0.5 +epsilon.0))))
-               (cond [(= next-x x)  (+ x (* x +epsilon.0))]
+        [else  (define next-x (+ x (* x (* 0.5 epsilon.0))))
+               (cond [(= next-x x)  (+ x (* x epsilon.0))]
                      [else  next-x])]))
 
 (: flprev* (Float -> Float))
@@ -130,8 +134,8 @@
   (cond [(x . < . 0.0)  (- (flnext* (- x)))]
         [(= x 0.0)  -min.0]
         [(= x +inf.0)  +max.0]
-        [else  (define prev-x (- x (* x (* 0.5 +epsilon.0))))
-               (cond [(= prev-x x)  (- x (* x +epsilon.0))]
+        [else  (define prev-x (- x (* x (* 0.5 epsilon.0))))
+               (cond [(= prev-x x)  (- x (* x epsilon.0))]
                      [else  prev-x])]))
 
 ;; ===================================================================================================

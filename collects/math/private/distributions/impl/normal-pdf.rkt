@@ -10,7 +10,7 @@
 (begin-encourage-inline
   
   (: standard-flnormal-log-pdf (Float -> Float))
-  ;; For x small, relative error is less than +epsilon.0; stays under (* 2 +epsilon.0)
+  ;; For x small, relative error is less than epsilon.0; stays under (* 2 epsilon.0)
   (define (standard-flnormal-log-pdf x)
     (- (* -0.5 x x) logsqrt2pi.0))
   

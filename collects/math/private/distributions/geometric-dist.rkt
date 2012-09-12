@@ -18,44 +18,43 @@
 (define float-int-cutoff (expt 2 53))
 
 (: flgeometric-pdf (Float Float Any -> Float))
-(define (flgeometric-pdf p k log?)
-  (cond [(or (p . <= . 0.0) (p . >= . 1.0))
-         (cond [(= p 1.0)  (cond [(= k 0.0)  (if log? 0.0 1.0)]
+(define (flgeometric-pdf q k log?)
+  (cond [(or (q . <= . 0.0) (q . >= . 1.0))
+         (cond [(= q 1.0)  (cond [(= k 0.0)  (if log? 0.0 1.0)]
                                  [else  (if log? -inf.0 0.0)])]
                [else  +nan.0])]
         [(k . < . 0.0)  (if log? -inf.0 0.0)]
-        [else
-         (cond [log?  (+ (fllog p) (* k (fllog1p (- p))))]
-               [else  (* p (exp (fl (* k (fllog1p (- p))))))])]))
+        [(integer? k)  (cond [log?  (+ (fllog q) (* k (fllog1p (- q))))]
+                             [else  (* q (exp (fl (* k (fllog1p (- q))))))])]
+        [else  (if log? -inf.0 0.0)]))
 
 (: flgeometric-cdf (Float Float Any Any -> Float))
-(define (flgeometric-cdf p k log? 1-p?)
-  (cond [(or (p . <= . 0.0) (p . > . 1.0))  +nan.0]
+(define (flgeometric-cdf q k log? 1-p?)
+  (cond [(or (q . <= . 0.0) (q . > . 1.0))  +nan.0]
         [(k . < . 0.0)  (cond [1-p?  (if log? 0.0 1.0)]
                               [else  (if log? -inf.0 0.0)])]
-        [(p . = . 1.0)
-         (cond [1-p?  (if log? -inf.0 0.0)]
-               [else  (if log? 0.0 1.0)])]
+        [(q . = . 1.0)  (cond [1-p?  (if log? -inf.0 0.0)]
+                              [else  (if log? 0.0 1.0)])]
         [else
-         (define log-1-q (* (+ k 1.0) (fllog1p (- p))))
+         (define log-1-q (* (+ (floor k) 1.0) (fllog1p (- q))))
          (cond [1-p?  (if log? log-1-q (exp log-1-q))]
                [else  (if log? (fllog1- log-1-q) (- (flexpm1 log-1-q)))])]))
 
 (: flgeometric-inv-cdf (Float Float Any Any -> Float))
-(define (flgeometric-inv-cdf p q log? 1-p?)
-  (define log-1-p (fllog1p (- p)))
-  (: k (Float -> Float))
-  (define (k log-1-q)
-    (abs (max 0.0 (ceiling (/ (- log-1-q log-1-p) log-1-p)))))
-  (cond [(or (p . <= . 0.0) (p . > . 1.0))  +nan.0]
-        [(not (flprobability? q log?))  +nan.0]
-        [(p . = . 1.0)  0.0]
-        [1-p?  (if log? (k q) (k (fllog q)))]
-        [else  (if log? (k (fllog1- q)) (k (fllog1p (- q))))]))
+(define (flgeometric-inv-cdf q p log? 1-p?)
+  (cond [(or (q . <= . 0.0) (q . > . 1.0))  +nan.0]
+        [(not (flprobability? p log?))  +nan.0]
+        [(q . = . 1.0)  0.0]
+        [else
+         (define log-1-q (fllog1p (- q)))
+         (define log-1-p
+           (cond [1-p?  (if log? p (fllog p))]
+                 [else  (if log? (fllog1- p) (fllog1p (- p)))]))
+         (abs (max 0.0 (ceiling (/ (- log-1-p log-1-q) log-1-q))))]))
 
 (: flgeometric-random (Float -> Float))
-(define (flgeometric-random p)
-  (flgeometric-inv-cdf p (* 0.5 (random)) #f ((random) . > . 0.5)))
+(define (flgeometric-random q)
+  (flgeometric-inv-cdf q (* 0.5 (random)) #f ((random) . > . 0.5)))
 
 (begin-encourage-inline
   
@@ -64,17 +63,17 @@
   
   (: geometric-dist (case-> (-> Geometric-Distribution)
                             (Real -> Geometric-Distribution)))
-  (define (geometric-dist [p 0.5])
-    (let ([p  (fl p)])
+  (define (geometric-dist [q 0.5])
+    (let ([q  (fl q)])
       (define pdf (opt-lambda: ([k : Real] [log? : Any #f])
-                    (flgeometric-pdf p (fl k) log?)))
+                    (flgeometric-pdf q (fl k) log?)))
       (define cdf (opt-lambda: ([k : Real] [log? : Any #f] [1-p? : Any #f])
-                    (flgeometric-cdf p (fl k) log? 1-p?)))
-      (define inv-cdf (opt-lambda: ([q : Real] [log? : Any #f] [1-p? : Any #f])
-                        (flgeometric-inv-cdf p (fl q) log? 1-p?)))
-      (define (random) (flgeometric-random p))
+                    (flgeometric-cdf q (fl k) log? 1-p?)))
+      (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [1-p? : Any #f])
+                        (flgeometric-inv-cdf q (fl p) log? 1-p?)))
+      (define (random) (flgeometric-random q))
       (make-geometric-dist pdf cdf inv-cdf random
-                           0.0 +inf.0 (delay (flgeometric-inv-cdf p 0.5 #f #f))
-                           p)))
+                           0.0 +inf.0 (delay (flgeometric-inv-cdf q 0.5 #f #f))
+                           q)))
   
   )

@@ -818,21 +818,34 @@
 (define-bf-constant +inf.bf 2 (flonum->bigfloat +inf.0))
 (define-bf-constant +nan.bf 2 (flonum->bigfloat +nan.0))
 
-(define-bf-constant +1.bf 2 (flonum->bigfloat +1.0))
-(define-bf-constant +2.bf 2 (flonum->bigfloat +2.0))
-(define-bf-constant +3.bf 2 (flonum->bigfloat +3.0))
-(define-bf-constant +4.bf 3 (flonum->bigfloat +4.0))
-(define-bf-constant -1.bf 2 (flonum->bigfloat -1.0))
-(define-bf-constant -2.bf 2 (flonum->bigfloat -2.0))
-(define-bf-constant -3.bf 2 (flonum->bigfloat -3.0))
-(define-bf-constant -4.bf 3 (flonum->bigfloat -4.0))
+(define-bf-constant +1.bf 4 (flonum->bigfloat +1.0))
+(define-bf-constant +2.bf 4 (flonum->bigfloat +2.0))
+(define-bf-constant +3.bf 4 (flonum->bigfloat +3.0))
+(define-bf-constant +4.bf 4 (flonum->bigfloat +4.0))
+(define-bf-constant +5.bf 4 (flonum->bigfloat +5.0))
+(define-bf-constant +6.bf 4 (flonum->bigfloat +6.0))
+(define-bf-constant +7.bf 4 (flonum->bigfloat +7.0))
+(define-bf-constant +8.bf 4 (flonum->bigfloat +8.0))
+(define-bf-constant +9.bf 4 (flonum->bigfloat +9.0))
+(define-bf-constant +10.bf 4 (flonum->bigfloat +10.0))
 
-(define (+epsilon.bf)
+(define-bf-constant -1.bf 4 (flonum->bigfloat -1.0))
+(define-bf-constant -2.bf 4 (flonum->bigfloat -2.0))
+(define-bf-constant -3.bf 4 (flonum->bigfloat -3.0))
+(define-bf-constant -4.bf 4 (flonum->bigfloat -4.0))
+(define-bf-constant -5.bf 4 (flonum->bigfloat -5.0))
+(define-bf-constant -6.bf 4 (flonum->bigfloat -6.0))
+(define-bf-constant -7.bf 4 (flonum->bigfloat -7.0))
+(define-bf-constant -8.bf 4 (flonum->bigfloat -8.0))
+(define-bf-constant -9.bf 4 (flonum->bigfloat -9.0))
+(define-bf-constant -10.bf 4 (flonum->bigfloat -10.0))
+
+(define (epsilon.bf)
   (bfexpt (force +2.bf) (bf (- (bf-precision)))))
 
-(provide +epsilon.bf)
+(provide epsilon.bf)
 (begin-for-syntax
-  (set! 0ary-funs (cons #'+epsilon.bf 0ary-funs)))
+  (set! 0ary-funs (cons #'epsilon.bf 0ary-funs)))
 
 ;; ===================================================================================================
 ;; Extra functions

@@ -16,8 +16,8 @@
 (define (flasinh x)
   (cond [(x . < . 0.0)  (- (flasinh (- x)))]
         [(x . = . 0.0)  0.0]
-        [(x . >= . (flsqrt (flsqrt +epsilon.0)))
-         (cond [(x . > . (/ 1.0 (flsqrt +epsilon.0)))
+        [(x . >= . (flsqrt (flsqrt epsilon.0)))
+         (cond [(x . > . (/ 1.0 (flsqrt epsilon.0)))
                 ;; Laurent series in 1/x at 0+ order from -1 to 1
                 (+ (fllog (* x 2.0)) (/ 1.0 (* 4.0 x x)))]
                [(x . < . 0.5)
@@ -26,7 +26,7 @@
                [else
                 ;; Standard definition
                 (fllog (+ x (flsqrt (+ (* x x) 1.0))))])]
-        [(x . >= . (flsqrt +epsilon.0))
+        [(x . >= . (flsqrt epsilon.0))
          ;; Taylor series order 2
          (* x (+ 1.0 (* #i-1/6 x x)))]
         [else  x]))  ; Taylor series order 1
@@ -51,8 +51,8 @@
 (: flacosh (Float -> Float))
 (define (flacosh x)
   (cond [(x . < . 1.0)  +nan.0]
-        [((- x 1.0) . >= . (flsqrt +epsilon.0))
-         (cond [(x . > . (/ 1.0 (flsqrt +epsilon.0)))
+        [((- x 1.0) . >= . (flsqrt epsilon.0))
+         (cond [(x . > . (/ 1.0 (flsqrt epsilon.0)))
                 ;; Laurent series in 1/x at 0+ order from -1 to 0
                 (fllog (* x 2.0))]
                [(x . < . 1.5)
@@ -91,14 +91,14 @@
         [(x . = . 0.0)  0.0]
         [(x . > . 1.0)  +nan.0]
         [(x . = . 1.0)  +inf.0]
-        [(x . >= . (flsqrt (flsqrt +epsilon.0)))
+        [(x . >= . (flsqrt (flsqrt epsilon.0)))
          (cond [(x . < . 0.5)
                 ;; Standard definition, rearranged to preserve digits when x is near 0.0
                 (* 0.5 (- (fllog1p x) (fllog1p (- x))))]
                [else
                 ;; Standard definition
                 (* 0.5 (fllog (/ (+ 1.0 x) (- 1.0 x))))])]
-        [(x . >= . (flsqrt +epsilon.0))
+        [(x . >= . (flsqrt epsilon.0))
          ;; Taylor series order 2
          (+ x (* #i1/3 x x x))]
         [else  x]))  ; Taylor series order 1

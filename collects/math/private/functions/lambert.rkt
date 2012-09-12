@@ -33,7 +33,7 @@
            (define denom (* (+ y 1.0) exp-y))
            (define new-y (/ (+ (* y denom) (- x (* y exp-y)))
                             denom))
-           (cond [((abs (- new-y y)) . <= . (abs (* +epsilon.0 new-y)))  y]
+           (cond [((abs (- new-y y)) . <= . (abs (* epsilon.0 new-y)))  y]
                  [else  (loop new-y (+ n 1))])]
           [else  y])))
 
@@ -85,7 +85,7 @@
            (define denom (- (exp (+ (fllog (abs (+ y 1.0))) y))))
            (define new-dy (/ (+ (- x denom) exp-y) denom))
            (define new-y (+ y new-dy))
-           (cond [((abs (- new-y y)) . <= . (abs (* +epsilon.0 new-y)))  y]
+           (cond [((abs (- new-y y)) . <= . (abs (* epsilon.0 new-y)))  y]
                  [(and (n . > . 3) (not (= (flsgn new-dy) (flsgn dy))))
                   ;; If we detect oscillation, the true value is between new-y and y
                   (* 0.5 (+ new-y y))]

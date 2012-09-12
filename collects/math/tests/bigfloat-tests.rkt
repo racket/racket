@@ -61,19 +61,19 @@
 
 (check-= (bigfloat->rational (bfsqr (bf 22/7)))
          (/ (sqr 22) (sqr 7))
-         +epsilon.0)
+         epsilon.0)
 
 (check-= (bigfloat->flonum (bfsqrt (bf 2)))
          (sqrt 2)
-         +epsilon.0)
+         epsilon.0)
 
 (check-= (bigfloat->flonum (bf1/sqrt (bf 2)))
          (/ 1 (sqrt 2))
-         +epsilon.0)
+         epsilon.0)
 
 (check-= (bigfloat->flonum (bfcbrt (bf 2)))
          (flexpt 2.0 #i1/3)
-         +epsilon.0)
+         epsilon.0)
 
 ;; Check against flonum ops
 

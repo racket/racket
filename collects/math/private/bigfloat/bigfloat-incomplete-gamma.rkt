@@ -25,10 +25,10 @@
 (: bfgamma-lower-series (Bigfloat Bigfloat -> Bigfloat))
 ;; Computes the lower gamma function from its series
 (define (bfgamma-lower-series k x)
-  (define eps +epsilon.bf)
+  (define eps epsilon.bf)
   (bfcopy
    (parameterize ([bf-precision  (+ (bf-precision) 10)])
-     (define y (bfgamma-lower-iter k x +epsilon.bf))
+     (define y (bfgamma-lower-iter k x epsilon.bf))
      (define log-z (bf- (bf* k (bflog x)) (bf+ x (bflog k))))
      (let ([z  (cond [((bfabs log-z) . bf< . +1.bf)  (bfexp log-z)]
                      [else  (bf/ (bf* (bfexpt x k) (bfexp (bf- x))) k)])])
@@ -54,7 +54,7 @@
 (: bfgamma-upper-frac (Bigfloat Bigfloat -> Bigfloat))
 ;; Computes the upper gamma function using Legendre's continued fraction
 (define (bfgamma-upper-frac k x)
-  (define eps +epsilon.bf)
+  (define eps epsilon.bf)
   (bfcopy
    (parameterize ([bf-precision  (+ (bf-precision) 10)])
      (define y (bfgamma-upper-iter k x eps))

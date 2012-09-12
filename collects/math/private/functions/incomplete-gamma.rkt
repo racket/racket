@@ -120,7 +120,7 @@ This implementation extends those in the papers in three ways:
 (define (flgamma-regularized-normal k x log? upper?)
   (define l (/ x k))
   (define norm-x
-    (cond [(or (l . < . +epsilon.0) (l . > . (/ 1.0 +epsilon.0)))
+    (cond [(or (l . < . epsilon.0) (l . > . (/ 1.0 epsilon.0)))
            ;; Avoid under-/overflow in calculating norm-x by doing it in log space
            (define log-l (- (fllog x) (fllog k)))
            (define l-1 (flexpm1 log-l))
@@ -144,7 +144,7 @@ This implementation extends those in the papers in three ways:
                       [i  : Float  0.0])
     (define new-y (+ y dy))
     (cond [(or (not (rational? new-y))
-               ((abs dy) . <= . (abs (* +epsilon.0 new-y))))
+               ((abs dy) . <= . (abs (* epsilon.0 new-y))))
            new-y]
           [else
            (loop new-y (/ (* dy x) (+ 2.0 i k)) (+ i 1.0))])))
@@ -173,7 +173,7 @@ This implementation extends those in the papers in three ways:
                       (λ (i a) (* i (- k i)))
                       (- (+ x 1.0) k)
                       (λ (i b) (+ b 2.0))
-                      +epsilon.0))
+                      epsilon.0))
 
 (: flgamma-upper-frac (Float Float -> Float))
 (define (flgamma-upper-frac k x)
@@ -261,7 +261,7 @@ This implementation extends those in the papers in three ways:
 ;; Calculates the series part of Gautschi's algorithm
 (define (flgamma-gautschi-iter k x)
   (let loop ([p  (* k x)] [q  (+ k 1.0)] [r  (+ k 3.0)] [t  1.0] [v  1.0])
-    (cond [((abs t) . <= . (abs (* +epsilon.0 v)))  v]
+    (cond [((abs t) . <= . (abs (* epsilon.0 v)))  v]
           [else  (let* ([p  (+ p x)] [q  (+ q r)] [r  (+ r 2.0)] [t  (/ (* (- p) t) q)] [v  (+ v t)])
                    (loop p q r t v))])))
 
@@ -621,7 +621,7 @@ This implementation extends those in the papers in three ways:
                                 (cons fllog-gamma-upper-regularized
                                       flgamma-upper-regularized)))]
        [end  (in-list (list (flstep +min.0 41)
-                            +epsilon.0
+                            epsilon.0
                             1.0
                             10.0
                             200.0))])
@@ -648,8 +648,8 @@ This implementation extends those in the papers in three ways:
       (relative-error
        (flgamma-lower-regularized k x)
        (gamma-lower-regularized* k x))))
-  +min.0 +epsilon.0
-  +min.0 +epsilon.0))
+  +min.0 epsilon.0
+  +min.0 epsilon.0))
 
 (plot3d
  (contour-intervals3d
@@ -666,6 +666,6 @@ This implementation extends those in the papers in three ways:
       (relative-error
        (flgamma-lower-regularized k x)
        (gamma-lower-regularized* k x))))
-  +min.0 +epsilon.0
-  +min.0 +epsilon.0))
+  +min.0 epsilon.0
+  +min.0 epsilon.0))
 |#

@@ -15,7 +15,7 @@
 
 (: fllog-gamma-stirling (Float -> Float))
 ;; Computes log(Gamma(x)) using 5 terms from Stirling's series
-;; For x >= 143, relative error ε < +epsilon.0
+;; For x >= 143, relative error ε <= epsilon.0
 (define (fllog-gamma-stirling x)
   (let* ([x  (- x 1.0)]
          [log-x  (fllog x)])

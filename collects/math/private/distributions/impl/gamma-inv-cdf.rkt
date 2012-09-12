@@ -55,9 +55,9 @@ Used for starting points in Newton's method
     (define t (- (+ -0.5 (* (+ 4.67 (* 2.0 ch)) p1))
                  (/ (+ 6.73 (* ch (+ 13.32 (* 3.0 ch)))) p2)))
     (define new-ch (- ch (/ (- 1.0 (* (exp (+ a (* 0.5 ch))) p2 p1)) t)))
-    (cond [(or (= n 0) ((abs (- ch new-ch)) . <= . (abs (* 4.0 +epsilon.0 new-ch))))
+    (cond [(or (= n 0) ((abs (- ch new-ch)) . <= . (abs (* 4.0 epsilon.0 new-ch))))
            (* 0.5 new-ch)]
-          [((abs (- ch new-ch)) . <= . (abs (* 1000.0 +epsilon.0 new-ch)))
+          [((abs (- ch new-ch)) . <= . (abs (* 1000.0 epsilon.0 new-ch)))
            (loop new-ch (min 1 (- n 1)))]
           [else  (loop new-ch (- n 1))])))
 
@@ -109,7 +109,7 @@ Used for starting points in Newton's method
                           [else  (newton-lower-log-iter k log-p x)]))
       (define new-dx (- new-x x))
       ;(printf "~v ~v~n" x new-x)
-      (cond [(or ((abs (- x new-x)) . <= . (abs (* 4.0 +epsilon.0 new-x)))
+      (cond [(or ((abs (- x new-x)) . <= . (abs (* 4.0 epsilon.0 new-x)))
                  (c . >= . 100)
                  (not (rational? new-x)))
              (values new-x c)]

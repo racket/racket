@@ -38,7 +38,7 @@
 (define (flexpm1 x)
   (define ax (abs x))
   (cond [(ax . >= . 0.5)  (- (exp x) 1.0)]
-        [(ax . > . (* 0.5 +epsilon.0))  (flexpm1/poly x)]
+        [(ax . > . (* 0.5 epsilon.0))  (flexpm1/poly x)]
         [else  x]))
 
 (: expm1 (case-> (Zero -> Zero)

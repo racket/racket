@@ -354,8 +354,8 @@
       (define 4*e2 (matrix-scale 4 e2))
       (begin
         (list 'matrix-2d-rotation
-              (<= (matrix-norm (matrix- (matrix* (matrix-2d-rotation (/ pi.0 2)) e1) e2 )) +epsilon.0) 
-              (<= (matrix-norm (matrix- (matrix* (matrix-2d-rotation (/ pi.0 2)) e2) -e1)) +epsilon.0))
+              (<= (matrix-norm (matrix- (matrix* (matrix-2d-rotation (/ pi.0 2)) e1) e2 )) epsilon.0) 
+              (<= (matrix-norm (matrix- (matrix* (matrix-2d-rotation (/ pi.0 2)) e2) -e1)) epsilon.0))
         (list
          'matrix-2d-scaling
          (equal? (matrix* (matrix-2d-scaling 2 3) (matrix+ e1 e2)) (matrix+ 2*e1 3*e2)))

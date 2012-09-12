@@ -6,7 +6,7 @@
          typed/rackunit)
 
 (: ε (Parameterof Float))
-(define ε (make-parameter +epsilon.0))
+(define ε (make-parameter epsilon.0))
 
 (: relative-error<= : Float Float Float -> Boolean)
 (define (relative-error<= x correct epsilon)
@@ -15,7 +15,7 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; expm1
 
-(ε (* 2 +epsilon.0))
+(ε (* 2 epsilon.0))
 
 (check-= (flexpm1 1.)      1.71828182845904523536028747135 (ε))
 (check-= (flexpm1 1e-5)    0.000010000050000166667083 (ε))
@@ -62,7 +62,7 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; gamma
 
-(ε +epsilon.0)
+(ε epsilon.0)
 
 (check-equal? (flgamma 0.0) +nan.0)
 (check-equal? (flgamma 1.0) 1.0)
@@ -83,7 +83,7 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; hypot
 
-(ε (* 2 +epsilon.0))
+(ε (* 2 epsilon.0))
   
 (check-equal? (flhypot 0. 0.) 0.)
 (check-equal? (flhypot 3. 0.) 3.)
