@@ -1,9 +1,9 @@
 #lang racket/base
 
 (require racket/class racket/gui/base racket/match racket/list
-         unstable/syntax
+         unstable/syntax unstable/logging
          typed-racket/optimizer/logging
-         "logging.rkt" "mzc.rkt" "sandbox.rkt")
+         "mzc.rkt" "sandbox.rkt")
 
 (provide (struct-out report-entry)
          (struct-out sub-report-entry)
@@ -44,16 +44,26 @@
             (build-path dir file)
             #f)))
     (file-predicate path))
-  (define log '())
-  (with-intercepted-opt-logging
-   (lambda (l)
-     (set! log (cons l log)))
-   (lambda ()
-     (run-inside-optimization-coach-sandbox
-      this
-      (lambda ()
-        (void (compile (read-syntax (send this get-port-name) input)))))))
-  (filter right-file? (reverse log)))
+  (define TR-log  '())
+  (define mzc-log '())
+  (with-intercepted-logging
+      (lambda (l)
+        ;; From mzc, create a log-entry from the info.
+        (set! mzc-log (cons (mzc-opt-log-message->log-entry (vector-ref l 1))
+                            mzc-log)))
+    (lambda ()
+      (with-intercepted-logging
+          (lambda (l)
+            ;; From TR, use the log-entry struct provided.
+            (set! TR-log (cons (vector-ref l 2) TR-log)))
+        (lambda ()
+          (run-inside-optimization-coach-sandbox
+           this
+           (lambda ()
+             (void (compile (read-syntax (send this get-port-name) input))))))
+        'debug 'TR-optimizer))
+    'debug 'optimizer)
+  (filter right-file? (append (reverse TR-log) (reverse mzc-log))))
 
 
 ;; converts log-entry structs to report-entry structs for further
