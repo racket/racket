@@ -125,6 +125,31 @@ uintptr_t scheme_approx_sp()
   return p;
 }
 
+#ifdef _WIN64
+extern PRUNTIME_FUNCTION WINAPI RtlLookupFunctionEntry(ULONG64, ULONG64*, void*);
+extern PVOID WINAPI RtlVirtualUnwind(DWORD, DWORD64, DWORD64, PRUNTIME_FUNCTION,
+				     PCONTEXT, PVOID, PDWORD64, PVOID);
+#endif
+
+static void set_cache(void *p, Scheme_Object *last)
+{
+  int pos;
+
+  if (stack_cache_stack_pos >= (STACK_CACHE_SIZE - 1)) {
+    /* Make room on the stack */
+    void **z;
+    z = (void **)stack_cache_stack[stack_cache_stack_pos].stack_frame;
+    *z = stack_cache_stack[stack_cache_stack_pos].orig_return_address;
+    --stack_cache_stack_pos;
+  }
+
+  pos = (int)++stack_cache_stack_pos;
+  stack_cache_stack[pos].orig_return_address = ((void **)p)[RETURN_ADDRESS_OFFSET];
+  stack_cache_stack[pos].stack_frame = (void *)(((void **)p) + RETURN_ADDRESS_OFFSET);
+  stack_cache_stack[pos].cache = last;
+  ((void **)p)[RETURN_ADDRESS_OFFSET] = sjc.stack_cache_pop_code;
+}
+
 Scheme_Object *scheme_native_stack_trace(void)
 {
   void *p, *q;
@@ -188,6 +213,87 @@ Scheme_Object *scheme_native_stack_trace(void)
     halfway += stack_end;
 #endif
   }
+
+#ifdef _WIN64
+  {
+    CONTEXT ctx;
+    PRUNTIME_FUNCTION rf;
+    ULONG64 base, ef;
+    void *data, *cache_sp = NULL;
+
+    RtlCaptureContext(&ctx);
+    while (unsuccess < UNKNOWN_FRAME_LIMIT) {
+      name = find_symbol((uintptr_t)ctx.Rip);
+      if (name) {
+	/* Unwind manually */
+	uintptr_t *fp = (uintptr_t *)ctx.Rbp;
+	if (SCHEME_FALSEP(name) || SCHEME_VOIDP(name)) {
+	  /* "quick" call convention */
+	  if (SCHEME_VOIDP(name)) {
+	    /* JIT_LOCAL2 has the next return address */
+	    ctx.Rip = fp[JIT_LOCAL2 >> JIT_LOG_WORD_SIZE];
+	  } else {
+	    /* Push after local stack of return-address proc
+	       may have the next return address */
+	    ctx.Rip = fp[-(3 + LOCAL_FRAME_SIZE + 1)];
+	  }
+	  name = NULL;
+	} else {
+	  /* normal JIT function convention */
+
+	  cache_sp = (void *)fp;
+
+	  if (SCHEME_EOFP(name)) {
+	    /* JIT_LOCAL2 has the name to use */
+	    name = *(Scheme_Object **)fp[JIT_LOCAL2 >> JIT_LOG_WORD_SIZE];
+	  }
+
+	  ctx.Rsp = ctx.Rbp + (2 * sizeof(void*));
+# ifdef NEED_LOCAL4
+	  ctx.R14 = fp[-JIT_LOCAL4_OFFSET];
+# endif
+	  ctx.Rbp = fp[0];
+	  ctx.Rbx = fp[-1];
+	  ctx.Rsi = fp[-2];
+	  ctx.Rdi = fp[-3];
+	  ctx.Rip = fp[1];
+
+	  if (SCHEME_NULLP(name))
+	    name = NULL;
+	}
+      } else {
+	unsuccess++;
+	rf = RtlLookupFunctionEntry(ctx.Rip, &base, NULL);
+	if (rf) {
+	  RtlVirtualUnwind(0x0, base, ctx.Rip,
+			   rf, &ctx, &data, &ef, NULL);
+	} else {
+	  break;
+	}
+      }
+
+      if (name) {
+	name = scheme_make_pair(name, scheme_null);
+	if (last)
+	  SCHEME_CDR(last) = name;
+	else
+	  first = name;
+	last = name;
+      }
+
+      if (cache_sp) {
+	if (STK_COMP((uintptr_t)halfway, (uintptr_t)cache_sp)) {
+	  set_cache(cache_sp, last);
+	  halfway = stack_end;
+	  unsuccess = -100000; /* if we got halfway, no need to bail out later */
+	}
+	cache_sp = NULL;
+      }
+    }
+
+    return first;
+  }
+#endif
 
   while (unsuccess < UNKNOWN_FRAME_LIMIT) {
 #ifdef MZ_USE_DWARF_LIBUNWIND
@@ -295,26 +401,10 @@ Scheme_Object *scheme_native_stack_trace(void)
        it will use the return address from the stack. */
     if (STK_COMP((uintptr_t)halfway, (uintptr_t)p)
 	&& prev_had_name) {
-      int pos;
-
-      if (stack_cache_stack_pos >= (STACK_CACHE_SIZE - 1)) {
-	/* Make room on the stack */
-	void **z;
-	z = (void **)stack_cache_stack[stack_cache_stack_pos].stack_frame;
-	*z = stack_cache_stack[stack_cache_stack_pos].orig_return_address;
-	--stack_cache_stack_pos;
-      }
-
-      pos = ++stack_cache_stack_pos;
-      stack_cache_stack[pos].orig_return_address = ((void **)p)[RETURN_ADDRESS_OFFSET];
-      stack_cache_stack[pos].stack_frame = (void *)(((void **)p) + RETURN_ADDRESS_OFFSET);
-      stack_cache_stack[pos].cache = last;
-      ((void **)p)[RETURN_ADDRESS_OFFSET] = sjc.stack_cache_pop_code;
+      set_cache(p, last);
       if (!added_list_elem)
-        shift_cache_to_next = 1;
-
+	shift_cache_to_next = 1;
       halfway = stack_end;
-
       unsuccess = -100000; /* if we got halfway, no need to bail out later */
     }
 
