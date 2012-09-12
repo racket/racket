@@ -165,85 +165,89 @@
                                            (not (self-out-of-fuel? x)))
                                          g))]
                 #:when (not (null? group)))
-      (let/ec escape
-        (define (prune) (escape #f)) ; prune this entry from the logs
-        (match (car group) ; events are grouped, first element is representative
-          [(log-entry kind msg stx located-stx pos provenance)
-
-           ;; #f if no profiling info is available for this function
-           (define (pos->node pos)
-             (and profile
-                  (for/first ([p (in-list (profile-nodes profile))]
-                              #:when (equal? pos (node-pos p)))
-                    p)))
-           (define profile-entry (pos->node pos))
-
-           (define inside-hot-function?
-             (and profile (memq profile-entry hot-functions)))
-
-           ;; If we know which regions are hot, prune reports about cold
-           ;; regions. If we don't know, err on the side of showing more.
-           (when (and profile (not inside-hot-function?))
-             (prune))
-
-           ;; We consider that a function is a loop if it gets inlined in itself
-           ;; at least once.
-           ;; We treat loops specially, mostly to avoid spurious reports.
-           ;; For instance, if `f' is a loop, and gets inlined in `g' multiple
-           ;; times, it's likely to be unrolling. Same for out-of-fuels in `g'.
-           ;; Therefore, we don't want to report these as inlinings (or failed
-           ;; inlinings). If `g' has multiple call sites for `f', we lose
-           ;; precision, and may discard actual inlinings.
-           ;; However, we care about `f' being unrolled at least once in `g'.
-           ;; If we run out of fuel trying to inline `f' in `g' for the first
-           ;; time, we report. The reason for this is that it's possible to
-           ;; optimize better if `f''s body inside `g' calls `f' than if `g'
-           ;; calls `f' directly. For instance, `f' may be a loop involving
-           ;; floats, in which case having all calls to `f' originate from `f''s
-           ;; body (as opposed to `g') may make unboxing possible.
-           ;; Of course, we lose precision if `g' has multiple call sites to `f'.
-           (define is-a-loop?
-             (or (any-self-o-o-f? group) (> (n-unrollings group) 0)))
-           (define inlining-sites
-             (group-by equal? #:key (lambda (x)
-                                      (inlining-event-where-loc
-                                       (inliner-log-entry-inlining-event x)))
-                       group))
-
-           (define pruned-group
-             (if (not is-a-loop?)
-                 group
-                 ;; `f' is a loop. We ignore anything beyond the first inlining
-                 ;; in `g'.
-                 (apply
-                  append
-                  (for/list ([site (in-list inlining-sites)]
-                             #:when
-                             ;; If at least one inlining of `f' in `g', prune.
-                             (not (for/or ([evt (in-list site)])
-                                    (success? evt))))
-                    site))))
-
-           (define recommendation
-             (cond [is-a-loop?
-                    "Consider making this function smaller to encourage inlining."]
-                   [else
-                    ;; Non-recursive function -> macro
-                    "Consider turning this function into a macro to force inlining."]))
-
-           (if (counts-as-a-missed-opt? group)
-               (missed-opt-log-entry
-                kind
-                (format "Missed Inlining ~a\n~a"
-                        (format-aggregation-string group) recommendation)
-                stx located-stx pos provenance
-                '() '()
-                (group-badness group))
-               (opt-log-entry
-                kind
-                (format "Inlining ~a" (format-aggregation-string group))
-                stx located-stx pos provenance))]))))
+      (process-function group profile hot-functions)))
   (filter values new-inline-log-entries))
+
+;; Process the inlining logs corresponding to a single function.
+(define (process-function log profile hot-functions)
+  (let/ec escape
+    (define (prune) (escape #f)) ; prune this entry from the logs
+    (match (car log) ; events are grouped, first element is representative
+      [(log-entry kind msg stx located-stx pos provenance)
+
+       ;; #f if no profiling info is available for this function
+       (define (pos->node pos)
+         (and profile
+              (for/first ([p (in-list (profile-nodes profile))]
+                          #:when (equal? pos (node-pos p)))
+                p)))
+       (define profile-entry (pos->node pos))
+
+       (define inside-hot-function?
+         (and profile (memq profile-entry hot-functions)))
+
+       ;; If we know which regions are hot, prune reports about cold
+       ;; regions. If we don't know, err on the side of showing more.
+       (when (and profile (not inside-hot-function?))
+         (prune))
+
+       ;; We consider that a function is a loop if it gets inlined in itself
+       ;; at least once.
+       ;; We treat loops specially, mostly to avoid spurious reports.
+       ;; For instance, if `f' is a loop, and gets inlined in `g' multiple
+       ;; times, it's likely to be unrolling. Same for out-of-fuels in `g'.
+       ;; Therefore, we don't want to report these as inlinings (or failed
+       ;; inlinings). If `g' has multiple call sites for `f', we lose
+       ;; precision, and may discard actual inlinings.
+       ;; However, we care about `f' being unrolled at least once in `g'.
+       ;; If we run out of fuel trying to inline `f' in `g' for the first
+       ;; time, we report. The reason for this is that it's possible to
+       ;; optimize better if `f''s body inside `g' calls `f' than if `g'
+       ;; calls `f' directly. For instance, `f' may be a loop involving
+       ;; floats, in which case having all calls to `f' originate from `f''s
+       ;; body (as opposed to `g') may make unboxing possible.
+       ;; Of course, we lose precision if `g' has multiple call sites to `f'.
+       (define is-a-loop?
+         (or (any-self-o-o-f? log) (> (n-unrollings log) 0)))
+       (define inlining-sites
+         (group-by equal? #:key (lambda (x)
+                                  (inlining-event-where-loc
+                                   (inliner-log-entry-inlining-event x)))
+                   log))
+
+       (define pruned-log
+         (if (not is-a-loop?)
+             log
+             ;; `f' is a loop. We ignore anything beyond the first inlining
+             ;; in `g'.
+             (apply
+              append
+              (for/list ([site (in-list inlining-sites)]
+                         #:when
+                         ;; If at least one inlining of `f' in `g', prune.
+                         (not (for/or ([evt (in-list site)])
+                                (success? evt))))
+                site))))
+
+       (define recommendation
+         (cond [is-a-loop?
+                "Consider making this function smaller to encourage inlining."]
+               [else
+                ;; Non-recursive function -> macro
+                "Consider turning this function into a macro to force inlining."]))
+
+       (if (counts-as-a-missed-opt? log)
+           (missed-opt-log-entry
+            kind
+            (format "Missed Inlining ~a\n~a"
+                    (format-aggregation-string log) recommendation)
+            stx located-stx pos provenance
+            '() '()
+            (group-badness log))
+           (opt-log-entry
+            kind
+            (format "Inlining ~a" (format-aggregation-string log))
+            stx located-stx pos provenance))])))
 
 (define (group-badness group)
   (+ (n-failures group) (- (n-out-of-fuels group) (n-successes group))))
