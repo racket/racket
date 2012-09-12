@@ -27,13 +27,13 @@
 
 ;; profile is currently only used to refine the inlining logs
 (define (generate-report this profile)
+  (define-values (TR-log mzc-log) (generate-logs this))
   (log->report
-   (post-process-inline-log
-    (generate-log this)
-    profile)))
+   (append TR-log
+           (post-process-inline-log mzc-log profile))))
 
 
-(define (generate-log this)
+(define (generate-logs this)
   (define file-predicate (make-file-predicate this))
   (define input          (open-input-text-editor this))
   (port-count-lines! input)
@@ -51,13 +51,16 @@
   (with-intercepted-logging
       (lambda (l)
         ;; From mzc, create a log-entry from the info.
-        (set! mzc-log (cons (mzc-opt-log-message->log-entry (vector-ref l 1))
-                            mzc-log)))
+        (define entry (mzc-opt-log-message->log-entry (vector-ref l 1)))
+        (when (right-file? entry)
+          (set! mzc-log (cons entry mzc-log))))
     (lambda ()
       (with-intercepted-logging
           (lambda (l)
             ;; From TR, use the log-entry struct provided.
-            (set! TR-log (cons (vector-ref l 2) TR-log)))
+            (define entry (vector-ref l 2))
+            (when (right-file? entry)
+              (set! TR-log (cons entry TR-log))))
         (lambda ()
           (run-inside-optimization-coach-sandbox
            this
@@ -65,7 +68,7 @@
              (void (compile (read-syntax (send this get-port-name) input))))))
         'debug 'TR-optimizer))
     'debug 'optimizer)
-  (filter right-file? (append (reverse TR-log) (reverse mzc-log))))
+  (values (reverse TR-log) (reverse mzc-log)))
 
 
 ;; converts log-entry structs to report-entry structs for further

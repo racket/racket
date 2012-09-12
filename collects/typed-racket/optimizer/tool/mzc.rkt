@@ -156,12 +156,9 @@
 ;; Log messages produced by the inliner are very raw, unlike the TR logs,
 ;; which have gone through some aggregation. We do the aggregation here.
 (define (post-process-inline-log log profile)
-  (define-values (inliner-logs tr-logs)
-    (partition inliner-log-entry? log))
   (define hot-functions (and profile (prune-profile profile)))
   (define grouped-events
-    (group-by equal? #:key log-entry-pos ; right file, so that's enough
-              inliner-logs))
+    (group-by equal? #:key log-entry-pos log)) ; right file, so that's enough
   (define new-inline-log-entries
     (for*/list ([g     (in-list  grouped-events)]
                 [group (in-value (filter (lambda (x)
@@ -246,7 +243,7 @@
                 kind
                 (format "Inlining ~a" (format-aggregation-string group))
                 stx located-stx pos provenance))]))))
-  (append tr-logs (filter values new-inline-log-entries)))
+  (filter values new-inline-log-entries))
 
 (define (group-badness group)
   (+ (n-failures group) (- (n-out-of-fuels group) (n-successes group))))
