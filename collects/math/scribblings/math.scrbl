@@ -10,7 +10,7 @@
 @defmodule[math]
 
 The @racketmodname[math] library provides functions and data structures useful
-for working with integers, real numbers, and collections of such. These include
+for working with numbers and collections of numbers. These include
 @itemlist[
   @item{Additional floating-point functions}
   @item{Probability distributions}
@@ -30,8 +30,8 @@ please contact us or post to one of the
 to make suggestions or submit patches.
 
 @bold{This is a Typed Racket library.} A large portion of it can be used from
-untyped Racket, and we are working on making the rest available. Unavailable
-exports are noted @bold{in bold text}.
+untyped Racket, and we are working on making the rest available. Exports not usable
+in untyped Racket are noted @bold{in bold text}.
 
 @local-table-of-contents[]
 

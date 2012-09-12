@@ -86,9 +86,9 @@ we can get a better idea how well the approximation is doing using @racket[relat
       #:x-max 1.00002
       #:y-label "Relative error")
 ]
-We can infer from this plot that our Taylor series approximation is within rounding error
-(less than @racket[(* 0.5 epsilon.0)], about @racket[1.11e-16]) near @racket[1.0],
-but quickly becomes worse farther away.
+We can infer from this plot that our Taylor series approximation is has close to
+rounding error (no more than @racket[(* 0.5 epsilon.0)], about @racket[1.11e-16])
+near @racket[1.0], but quickly becomes worse farther away.
 
 To get a ground-truth function such as @racket[exp] to test against, either compute the
 outputs as precisely as possible using a slow algorithm, or compute the outputs using
@@ -97,6 +97,11 @@ high-precision @racket[Bigfloat]s.
 @subsection{Measuring Floating-Point Error}
 
 @defproc[(relative-error [x Real] [r Real]) Flonum]{
+TODO
+
+A flonum function with relative error no greater than @racket[(* 0.5 epsilon.0)]
+exhibits only rounding error; it is @italic{correct}. A flonum function with relative
+error no greater than a few epsilons is @italic{very good}.
 }
 
 @defproc[(flulp [x Flonum]) Flonum]{
@@ -113,6 +118,13 @@ high-precision @racket[Bigfloat]s.
               @defthing[+max.0 Flonum])]{
 The rational flonums with maximum and minimum magnitude.
 @examples[#:eval the-eval (list -max.0 +max.0 -min.0 +min.0)]
+}
+
+@defthing[epsilon.0 Flonum]{
+The difference between @racket[(flnext 1.0)] and @racket[1.0], or the smallest flonum
+that can be added to @racket[1.0] to yield a larger number.
+@examples[#:eval the-eval epsilon.0
+                 (* 0.5 epsilon.0)]
 }
 
 @subsection{Low-Level Flonum Operations}
