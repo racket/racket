@@ -220,12 +220,13 @@
              ;; in `g'.
              (apply
               append
-              (for/list ([site (in-list inlining-sites)]
-                         #:when
-                         ;; If at least one inlining of `f' in `g', prune.
-                         (not (for/or ([evt (in-list site)])
-                                (success? evt))))
-                site))))
+              (for/list ([site (in-list inlining-sites)])
+                ;; If at least one inlining of `f' in `g', ignore the rest.
+                (or (for/first ([evt (in-list site)] #:when (success? evt))
+                      (list evt))
+                    site)))))
+       (when (null? pruned-log)
+         (prune))
 
        (define recommendation
          (cond [is-a-loop?
