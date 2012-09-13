@@ -187,7 +187,7 @@ to accepted clients are unaffected.
 If the listener has already been closed, the @exnraise[exn:fail:network].
 
 The listener's port number may not become immediately available for
-new listeners (with the default @racket[reuse?] argument of
+new listeners (with the default @racket[_reuse?] argument of
 @racket[tcp-listen]). For further information, see Stevens's
 explanation of the @tt{TIME_WAIT} TCP state.}
 

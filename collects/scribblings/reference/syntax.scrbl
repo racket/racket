@@ -2375,7 +2375,7 @@ bound (at @tech{phase level} 1).}
 
 @note-lib-only[racket/require-syntax]
 
-@defform*[[(define-require-syntax id expr)
+@defform*[[(define-require-syntax id proc-expr)
            (define-require-syntax (id args ...) body ...+)]]{
 
 The first form is like @racket[define-syntax], but for a
@@ -2397,7 +2397,7 @@ expands to a definition of the first form where the @racket[expr] is a
 
 @note-lib-only[racket/provide-syntax]
 
-@defform*[[(define-provide-syntax id expr)
+@defform*[[(define-provide-syntax id proc-expr)
            (define-provide-syntax (id args ...) body ...+)]]{
 
 The first form is like @racket[define-syntax], but for a
