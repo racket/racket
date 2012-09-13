@@ -1121,7 +1121,11 @@
                                 url
                                 (combine-url/relative
                                  (string->url external-root-url)
-                                 (string-join (map path-element->string
+                                 (string-join (map (lambda (s)
+                                                     (case s
+                                                       [(up) ".."]
+                                                       [(same) "."]
+                                                       [else (path-element->string s)]))
                                                    (explode-path rel))
                                               "/"))
                                 [fragment
