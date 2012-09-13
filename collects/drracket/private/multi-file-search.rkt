@@ -358,212 +358,214 @@
   ;; thread: eventspace main thread
   ;; configures the search
   (define (configure-search)
-    (define dialog (make-object dialog% (string-constant mfs-configure-search)
-                     #f 500 #f #f #f '(resize-border)))
-    (define outer-files-panel (make-object vertical-panel% dialog '(border)))
-    (define outer-method-panel (make-object vertical-panel% dialog '(border)))
-    (define button-panel (make-object horizontal-panel% dialog))
-    (define files-label (make-object message% (string-constant mfs-files-section) outer-files-panel))
-    (define files-inset-outer-panel (make-object horizontal-panel% outer-files-panel))
-    (define files-inset-panel (make-object horizontal-panel% files-inset-outer-panel))
-    (define files-panel (make-object vertical-panel% files-inset-outer-panel))
-    (define method-label (make-object message% (string-constant mfs-search-section) outer-method-panel))
-    (define method-inset-outer-panel (make-object horizontal-panel% outer-method-panel))
-    (define method-inset-panel (make-object horizontal-panel% method-inset-outer-panel))
-    (define method-panel (make-object vertical-panel% method-inset-outer-panel))
-    
-    (define dir-panel (make-object horizontal-panel% files-panel))
-    (define dir-field (make-object text-field% (string-constant mfs-dir) dir-panel
-                        (λ (x y) (dir-field-callback))))
-    (define dir-button (make-object button% (string-constant browse...) dir-panel 
-                         (λ (x y) (dir-button-callback))))
-    
-    (define recur-check-box (make-object check-box% (string-constant mfs-recur-over-subdirectories) files-panel
-                              (λ (x y) (recur-check-box-callback))))
-    
-    (define filter-panel (make-object horizontal-panel% files-panel))
-    (define filter-check-box (make-object check-box% (string-constant mfs-regexp-filename-filter) filter-panel
-                               (λ (x y) (filter-check-box-callback))))
-    (define filter-text-field (make-object text-field% #f filter-panel 
-                                (λ (x y) (filter-text-field-callback))))
-    
-    (define methods-choice (make-object choice% #f (map search-type-label search-types) method-panel 
-                             (λ (x y) (methods-choice-callback))))
-    (define search-text-field (make-object text-field% (string-constant mfs-search-string) method-panel
-                                (λ (x y) (search-text-field-callback))))
-    (define active-method-panel (make-object panel:single% method-panel))
-    (define methods-check-boxess
-      (let ([pref (preferences:get 'drracket:multi-file-search:search-check-boxes)])
-        (map
-         (λ (search-type prefs-settings)
-           (let ([p (make-object vertical-panel% active-method-panel)]
-                 [params (search-type-params search-type)])
-             (send p set-alignment 'left 'center)
-             (map (λ (flag-pair prefs-setting)
-                    (let ([cb (make-object check-box% 
-                                (car flag-pair)
-                                p
-                                (λ (evt chk) (method-callback chk)))])
-                      (send cb set-value prefs-setting)
-                      cb))
-                  params
-                  (if (= (length params) (length prefs-settings))
-                      prefs-settings
-                      (map (λ (x) #f) params)))))
-         search-types
-         (if (= (length search-types) (length pref))
-             pref
-             (map (λ (x) '()) search-types)))))
-    (define-values (ok-button cancel-button)
-      (gui-utils:ok/cancel-buttons
-       button-panel
-       (λ (x y) (ok-button-callback))
-       (λ (x y) (cancel-button-callback))))
-    (define spacer (make-object grow-box-spacer-pane% button-panel))
-    
-    ;; initialized to a searcher during the ok button callback
-    ;; so the user can be informed of an error before the dialog
-    ;; closes.
-    (define searcher #f)
-    
-    ;; initialized to a regexp if the user wants to filter filenames,
-    ;; during the ok-button-callback, so errors can be signaled.
-    (define filter #f)
-    
-    ;; title for message box that signals error messages
-    (define message-box-title (string-constant mfs-drscheme-multi-file-search))
-    
-    (define (ok-button-callback)
-      (cond
-        [(with-handlers ([exn:fail:filesystem?
-                          (λ (x) #f)])
-           (directory-exists? (send dir-field get-value)))
-         (let ([_searcher
-                ((search-type-make-searcher (list-ref search-types (send methods-choice get-selection)))
-                 (map (λ (cb) (send cb get-value))
-                      (send (send active-method-panel active-child) get-children))
-                 (send search-text-field get-value))])
-           (if (string? _searcher)
-               (message-box message-box-title _searcher dialog)
-               (let ([regexp (with-handlers ([(λ (x) #t)
-                                              (λ (exn)
-                                                (format "~a" (exn-message exn)))])
-                               (and (send filter-check-box get-value)
-                                    (regexp (send filter-text-field get-value))))])
-                 (if (string? regexp)
-                     (message-box message-box-title regexp dialog)
-                     (begin (set! searcher _searcher)
-                            (set! filter regexp)
-                            (set! ok? #t)
-                            (send dialog show #f))))))]
-        [else
-         (message-box message-box-title
-                      (format (string-constant mfs-not-a-dir) (send dir-field get-value))
-                      dialog)]))
-    (define (cancel-button-callback)
-      (send dialog show #f))
-    
-    (define (method-callback chk)
-      (preferences:set
-       'drracket:multi-file-search:search-check-boxes
-       (let loop ([methods-check-boxess methods-check-boxess])
+    (keymap:call/text-keymap-initializer
+     (λ ()
+       (define dialog (make-object dialog% (string-constant mfs-configure-search)
+                        #f 500 #f #f #f '(resize-border)))
+       (define outer-files-panel (make-object vertical-panel% dialog '(border)))
+       (define outer-method-panel (make-object vertical-panel% dialog '(border)))
+       (define button-panel (make-object horizontal-panel% dialog))
+       (define files-label (make-object message% (string-constant mfs-files-section) outer-files-panel))
+       (define files-inset-outer-panel (make-object horizontal-panel% outer-files-panel))
+       (define files-inset-panel (make-object horizontal-panel% files-inset-outer-panel))
+       (define files-panel (make-object vertical-panel% files-inset-outer-panel))
+       (define method-label (make-object message% (string-constant mfs-search-section) outer-method-panel))
+       (define method-inset-outer-panel (make-object horizontal-panel% outer-method-panel))
+       (define method-inset-panel (make-object horizontal-panel% method-inset-outer-panel))
+       (define method-panel (make-object vertical-panel% method-inset-outer-panel))
+       
+       (define dir-panel (make-object horizontal-panel% files-panel))
+       (define dir-field (make-object text-field% (string-constant mfs-dir) dir-panel
+                           (λ (x y) (dir-field-callback))))
+       (define dir-button (make-object button% (string-constant browse...) dir-panel 
+                            (λ (x y) (dir-button-callback))))
+       
+       (define recur-check-box (make-object check-box% (string-constant mfs-recur-over-subdirectories) files-panel
+                                 (λ (x y) (recur-check-box-callback))))
+       
+       (define filter-panel (make-object horizontal-panel% files-panel))
+       (define filter-check-box (make-object check-box% (string-constant mfs-regexp-filename-filter) filter-panel
+                                  (λ (x y) (filter-check-box-callback))))
+       (define filter-text-field (make-object text-field% #f filter-panel 
+                                   (λ (x y) (filter-text-field-callback))))
+       
+       (define methods-choice (make-object choice% #f (map search-type-label search-types) method-panel 
+                                (λ (x y) (methods-choice-callback))))
+       (define search-text-field (make-object text-field% (string-constant mfs-search-string) method-panel
+                                   (λ (x y) (search-text-field-callback))))
+       (define active-method-panel (make-object panel:single% method-panel))
+       (define methods-check-boxess
+         (let ([pref (preferences:get 'drracket:multi-file-search:search-check-boxes)])
+           (map
+            (λ (search-type prefs-settings)
+              (let ([p (make-object vertical-panel% active-method-panel)]
+                    [params (search-type-params search-type)])
+                (send p set-alignment 'left 'center)
+                (map (λ (flag-pair prefs-setting)
+                       (let ([cb (make-object check-box% 
+                                   (car flag-pair)
+                                   p
+                                   (λ (evt chk) (method-callback chk)))])
+                         (send cb set-value prefs-setting)
+                         cb))
+                     params
+                     (if (= (length params) (length prefs-settings))
+                         prefs-settings
+                         (map (λ (x) #f) params)))))
+            search-types
+            (if (= (length search-types) (length pref))
+                pref
+                (map (λ (x) '()) search-types)))))
+       (define-values (ok-button cancel-button)
+         (gui-utils:ok/cancel-buttons
+          button-panel
+          (λ (x y) (ok-button-callback))
+          (λ (x y) (cancel-button-callback))))
+       (define spacer (make-object grow-box-spacer-pane% button-panel))
+       
+       ;; initialized to a searcher during the ok button callback
+       ;; so the user can be informed of an error before the dialog
+       ;; closes.
+       (define searcher #f)
+       
+       ;; initialized to a regexp if the user wants to filter filenames,
+       ;; during the ok-button-callback, so errors can be signaled.
+       (define filter #f)
+       
+       ;; title for message box that signals error messages
+       (define message-box-title (string-constant mfs-drscheme-multi-file-search))
+       
+       (define (ok-button-callback)
          (cond
-           [(null? methods-check-boxess) null]
+           [(with-handlers ([exn:fail:filesystem?
+                             (λ (x) #f)])
+              (directory-exists? (send dir-field get-value)))
+            (let ([_searcher
+                   ((search-type-make-searcher (list-ref search-types (send methods-choice get-selection)))
+                    (map (λ (cb) (send cb get-value))
+                         (send (send active-method-panel active-child) get-children))
+                    (send search-text-field get-value))])
+              (if (string? _searcher)
+                  (message-box message-box-title _searcher dialog)
+                  (let ([regexp (with-handlers ([(λ (x) #t)
+                                                 (λ (exn)
+                                                   (format "~a" (exn-message exn)))])
+                                  (and (send filter-check-box get-value)
+                                       (regexp (send filter-text-field get-value))))])
+                    (if (string? regexp)
+                        (message-box message-box-title regexp dialog)
+                        (begin (set! searcher _searcher)
+                               (set! filter regexp)
+                               (set! ok? #t)
+                               (send dialog show #f))))))]
            [else
-            (cons (let loop ([methods-check-boxes (car methods-check-boxess)])
-                    (cond
-                      [(null? methods-check-boxes) null]
-                      [else (cons (send (car methods-check-boxes) get-value)
-                                  (loop (cdr methods-check-boxes)))]))
-                  (loop (cdr methods-check-boxess)))]))))
-    
-    (define (dir-field-callback)
-      (let ([df (send dir-field get-value)])
-        (when (path-string? df)
-          (preferences:set 'drracket:multi-file-search:directory (string->path df)))))
-    
-    (define (filter-check-box-callback) 
-      (preferences:set 'drracket:multi-file-search:filter? (send filter-check-box get-value))
-      (send filter-text-field enable (send filter-check-box get-value)))
-    (define (filter-text-field-callback)
-      (preferences:set 'drracket:multi-file-search:filter-regexp (send filter-text-field get-value)))
-    
-    (define (recur-check-box-callback)
-      (preferences:set 'drracket:multi-file-search:recur? (send recur-check-box get-value)))
-    (define (methods-choice-callback)
-      (define which (send methods-choice get-selection))
-      (preferences:set 'drracket:multi-file-search:search-type which) 
-      (set-method which))
-    (define (set-method which)
-      (send active-method-panel active-child
-            (list-ref (send active-method-panel get-children)
-                      which)))
-    (define (search-text-field-callback)
-      (preferences:set 'drracket:multi-file-search:search-string (send search-text-field get-value)))
-    (define (dir-button-callback) 
-      (define old-d (string->path (send dir-field get-value)))
-      (define new-d (get-directory #f 
-                                   #f 
-                                   (and (directory-exists? old-d)
-                                        old-d)))
-      (when (and new-d
-                 (directory-exists? new-d))
-        (preferences:set 'drracket:multi-file-search:directory new-d)
-        (send dir-field set-value (path->string new-d))))
-    
-    (define (get-files)
-      (let ([dir (string->path (send dir-field get-value))])
-        (and (directory-exists? dir)
-             (if (send recur-check-box get-value)
-                 (build-recursive-file-list dir filter)
-                 (build-flat-file-list dir filter)))))
-    
-    (define ok? #f)
-    
-    (send button-panel set-alignment 'right 'center)
-    (send dir-panel stretchable-height #f)
-    (send outer-files-panel stretchable-height #f)
-    (send outer-files-panel set-alignment 'left 'center)
-    (send files-inset-panel min-width 20)
-    (send files-inset-panel stretchable-width #f)
-    (send files-panel set-alignment 'left 'center)
-    
-    (send recur-check-box set-value (preferences:get 'drracket:multi-file-search:recur?))
-    (send filter-check-box set-value (preferences:get 'drracket:multi-file-search:filter?))
-    (send search-text-field set-value (preferences:get 'drracket:multi-file-search:search-string))
-    (send filter-text-field set-value (preferences:get 'drracket:multi-file-search:filter-regexp))
-    (send dir-field set-value (path->string 
-                               (let ([p (preferences:get 'drracket:multi-file-search:directory)])
-                                 (if (not p)
-                                     (let ([p (car (filesystem-root-list))])
-                                       (preferences:set 'drracket:multi-file-search:directory p)
-                                       p)
-                                     p))))
-    
-    (send outer-method-panel stretchable-height #f)
-    (send outer-method-panel set-alignment 'left 'center)
-    (send method-inset-panel min-width 20)
-    (send method-inset-panel stretchable-width #f)
-    (send method-panel set-alignment 'left 'center)
-    (send filter-panel stretchable-height #f)
-    
-    (send methods-choice set-selection (preferences:get 'drracket:multi-file-search:search-type))
-    (set-method (preferences:get 'drracket:multi-file-search:search-type)) 
-        
-    (send search-text-field focus)
-    (let ([t (send search-text-field get-editor)])
-      (send t set-position 0 (send t last-position)))
-    (send dialog show #t)
-    
-    (and
-     ok?
-     (make-search-info
-      (send dir-field get-value)
-      (send recur-check-box get-value)
-      (and (send filter-check-box get-value)
-           (regexp (send filter-text-field get-value)))
-      searcher
-      (send search-text-field get-value))))
+            (message-box message-box-title
+                         (format (string-constant mfs-not-a-dir) (send dir-field get-value))
+                         dialog)]))
+       (define (cancel-button-callback)
+         (send dialog show #f))
+       
+       (define (method-callback chk)
+         (preferences:set
+          'drracket:multi-file-search:search-check-boxes
+          (let loop ([methods-check-boxess methods-check-boxess])
+            (cond
+              [(null? methods-check-boxess) null]
+              [else
+               (cons (let loop ([methods-check-boxes (car methods-check-boxess)])
+                       (cond
+                         [(null? methods-check-boxes) null]
+                         [else (cons (send (car methods-check-boxes) get-value)
+                                     (loop (cdr methods-check-boxes)))]))
+                     (loop (cdr methods-check-boxess)))]))))
+       
+       (define (dir-field-callback)
+         (let ([df (send dir-field get-value)])
+           (when (path-string? df)
+             (preferences:set 'drracket:multi-file-search:directory (string->path df)))))
+       
+       (define (filter-check-box-callback) 
+         (preferences:set 'drracket:multi-file-search:filter? (send filter-check-box get-value))
+         (send filter-text-field enable (send filter-check-box get-value)))
+       (define (filter-text-field-callback)
+         (preferences:set 'drracket:multi-file-search:filter-regexp (send filter-text-field get-value)))
+       
+       (define (recur-check-box-callback)
+         (preferences:set 'drracket:multi-file-search:recur? (send recur-check-box get-value)))
+       (define (methods-choice-callback)
+         (define which (send methods-choice get-selection))
+         (preferences:set 'drracket:multi-file-search:search-type which) 
+         (set-method which))
+       (define (set-method which)
+         (send active-method-panel active-child
+               (list-ref (send active-method-panel get-children)
+                         which)))
+       (define (search-text-field-callback)
+         (preferences:set 'drracket:multi-file-search:search-string (send search-text-field get-value)))
+       (define (dir-button-callback) 
+         (define old-d (string->path (send dir-field get-value)))
+         (define new-d (get-directory #f 
+                                      #f 
+                                      (and (directory-exists? old-d)
+                                           old-d)))
+         (when (and new-d
+                    (directory-exists? new-d))
+           (preferences:set 'drracket:multi-file-search:directory new-d)
+           (send dir-field set-value (path->string new-d))))
+       
+       (define (get-files)
+         (let ([dir (string->path (send dir-field get-value))])
+           (and (directory-exists? dir)
+                (if (send recur-check-box get-value)
+                    (build-recursive-file-list dir filter)
+                    (build-flat-file-list dir filter)))))
+       
+       (define ok? #f)
+       
+       (send button-panel set-alignment 'right 'center)
+       (send dir-panel stretchable-height #f)
+       (send outer-files-panel stretchable-height #f)
+       (send outer-files-panel set-alignment 'left 'center)
+       (send files-inset-panel min-width 20)
+       (send files-inset-panel stretchable-width #f)
+       (send files-panel set-alignment 'left 'center)
+       
+       (send recur-check-box set-value (preferences:get 'drracket:multi-file-search:recur?))
+       (send filter-check-box set-value (preferences:get 'drracket:multi-file-search:filter?))
+       (send search-text-field set-value (preferences:get 'drracket:multi-file-search:search-string))
+       (send filter-text-field set-value (preferences:get 'drracket:multi-file-search:filter-regexp))
+       (send dir-field set-value (path->string 
+                                  (let ([p (preferences:get 'drracket:multi-file-search:directory)])
+                                    (if (not p)
+                                        (let ([p (car (filesystem-root-list))])
+                                          (preferences:set 'drracket:multi-file-search:directory p)
+                                          p)
+                                        p))))
+       
+       (send outer-method-panel stretchable-height #f)
+       (send outer-method-panel set-alignment 'left 'center)
+       (send method-inset-panel min-width 20)
+       (send method-inset-panel stretchable-width #f)
+       (send method-panel set-alignment 'left 'center)
+       (send filter-panel stretchable-height #f)
+       
+       (send methods-choice set-selection (preferences:get 'drracket:multi-file-search:search-type))
+       (set-method (preferences:get 'drracket:multi-file-search:search-type)) 
+       
+       (send search-text-field focus)
+       (let ([t (send search-text-field get-editor)])
+         (send t set-position 0 (send t last-position)))
+       (send dialog show #t)
+       
+       (and
+        ok?
+        (make-search-info
+         (send dir-field get-value)
+         (send recur-check-box get-value)
+         (and (send filter-check-box get-value)
+              (regexp (send filter-text-field get-value)))
+         searcher
+         (send search-text-field get-value))))))
   
   
   ;; do-search : search-info text -> void
