@@ -71,7 +71,7 @@
                         name ; _what_ gets inlined
                         loc  ; (U #f (List path line col pos span))
                         where-name ; _where_ it gets inlined (enclosing fun)
-                        where-loc  ; (U #f (Line path line col))
+                        where-loc  ; (U #f (List path line col))
                         size ; size of the closure being inlined
                         threshold ; how big of a closure can we inline
                         ;; the last two use the same units
