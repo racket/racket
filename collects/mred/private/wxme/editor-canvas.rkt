@@ -8,7 +8,7 @@
          racket/snip/private/prefs
          racket/snip/private/private
          (only-in "cycle.rkt" popup-menu%)
-         (only-in "../helper.rkt" queue-window-callback)
+         (only-in "../kernel.rkt" queue-refresh-event)
          "wx.rkt")
 
 (provide editor-canvas%)
@@ -292,8 +292,8 @@
   
   (define/override (on-size)
     (unless noloop?
-      (queue-window-callback
-       this
+      (queue-refresh-event
+       (get-eventspace)
        (lambda ()
          (unless (and media
                       (send media get-printing))

@@ -30,6 +30,7 @@
          eventspace-handler-thread
          eventspace-event-evt
          queue-callback
+         queue-refresh-event
          middle-queue-key
          get-top-level-windows
          begin-busy-cursor
