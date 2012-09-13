@@ -126,9 +126,11 @@ uintptr_t scheme_approx_sp()
 }
 
 #ifdef _WIN64
+# ifndef UNWIND_HISTORY_TABLE_SIZE
 extern PRUNTIME_FUNCTION WINAPI RtlLookupFunctionEntry(ULONG64, ULONG64*, void*);
 extern PVOID WINAPI RtlVirtualUnwind(DWORD, DWORD64, DWORD64, PRUNTIME_FUNCTION,
 				     PCONTEXT, PVOID, PDWORD64, PVOID);
+# endif
 #endif
 
 static void set_cache(void *p, Scheme_Object *last)
