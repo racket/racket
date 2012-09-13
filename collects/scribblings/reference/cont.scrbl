@@ -69,7 +69,7 @@ a given thunk.}
 
 @defproc[(abort-current-continuation
           [prompt-tag any/c]
-          [v any/c] ...+) 
+          [v any/c] ...)
          any]{
 
 Resets the current continuation to that of the nearest prompt tagged
