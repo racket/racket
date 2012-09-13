@@ -229,7 +229,11 @@ Scheme_Object *scheme_native_stack_trace(void)
       if (name) {
 	/* Unwind manually */
 	uintptr_t *fp = (uintptr_t *)ctx.Rbp;
-	if (SCHEME_FALSEP(name) || SCHEME_VOIDP(name)) {
+        if (!(STK_COMP((uintptr_t)fp, stack_end)
+              && STK_COMP(stack_start, (uintptr_t)fp))) {
+          /* out-of-range frame pointer; give up */
+          break;
+        } else if (SCHEME_FALSEP(name) || SCHEME_VOIDP(name)) {
 	  /* "quick" call convention */
 	  if (SCHEME_VOIDP(name)) {
 	    /* JIT_LOCAL2 has the next return address */
