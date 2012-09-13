@@ -172,10 +172,14 @@
       [(log-entry kind msg stx located-stx pos provenance)
 
        ;; #f if no profiling info is available for this function
+       ;; takes in either a single pos number or a pair of numbers (line col)
        (define (pos->node pos)
          (and profile
               (for/first ([p (in-list (profile-nodes profile))]
-                          #:when (equal? pos (node-pos p)))
+                          #:when (if (pair? pos)
+                                     (and (equal? (car pos) (node-line p))
+                                          (equal? (cdr pos) (node-col  p)))
+                                     (equal? pos (node-pos p))))
                 p)))
        (define profile-entry (pos->node pos))
 
@@ -189,6 +193,17 @@
 
        ;; We consider that a function is a loop if it gets inlined in itself
        ;; at least once.
+       (define is-a-loop?
+         (or (any-self-o-o-f? log) (> (n-unrollings log) 0)))
+       ;; From now on, we ignore self-out-of-fuels.
+       (set! log (filter (lambda (l) (not (self-out-of-fuel? l))) log))
+
+       (define inlining-sites
+         (group-by equal? #:key (lambda (x)
+                                  (inlining-event-where-loc
+                                   (inliner-log-entry-inlining-event x)))
+                   log))
+
        ;; We treat loops specially, mostly to avoid spurious reports.
        ;; For instance, if `f' is a loop, and gets inlined in `g' multiple
        ;; times, it's likely to be unrolling. Same for out-of-fuels in `g'.
@@ -203,30 +218,48 @@
        ;; floats, in which case having all calls to `f' originate from `f''s
        ;; body (as opposed to `g') may make unboxing possible.
        ;; Of course, we lose precision if `g' has multiple call sites to `f'.
-       (define is-a-loop?
-         (or (any-self-o-o-f? log) (> (n-unrollings log) 0)))
-       ;; From now on, we ignore self-out-of-fuels.
-       (set! log (filter (lambda (l) (not (self-out-of-fuel? l))) log))
-       (define inlining-sites
-         (group-by equal? #:key (lambda (x)
-                                  (inlining-event-where-loc
-                                   (inliner-log-entry-inlining-event x)))
-                   log))
+       (set! inlining-sites
+             (if (not is-a-loop?)
+                 inlining-sites
+                 ;; `f' is a loop. We ignore anything beyond the first inlining
+                 ;; in `g'.
+                 (for/list ([site (in-list inlining-sites)])
+                   ;; If at least one inlining of `f' in `g', ignore the rest.
+                   (or (for/first ([evt (in-list site)] #:when (success? evt))
+                         (list evt))
+                       site))))
 
-       (define pruned-log
-         (if (not is-a-loop?)
-             log
-             ;; `f' is a loop. We ignore anything beyond the first inlining
-             ;; in `g'.
-             (apply
-              append
-              (for/list ([site (in-list inlining-sites)])
-                ;; If at least one inlining of `f' in `g', ignore the rest.
-                (or (for/first ([evt (in-list site)] #:when (success? evt))
-                      (list evt))
-                    site)))))
-       (when (null? pruned-log)
-         (prune))
+       ;; Some sites are especially interesting if we have profile data.
+       ;; If the function under consideration takes a large portion of the
+       ;; total time for a given call site, and is not inlined there, may
+       ;; be worth reporting.
+       ;; returns: `(,caller-profile-node . ,call-site-log-entries) OR #f
+       (define interesting-sites
+         (and profile-entry
+              (filter values
+                      (for/list ([site (in-list inlining-sites)]
+                                 ;; Not inlined enough at that call site.
+                                 #:when (counts-as-a-missed-opt? site))
+                        (match (inlining-event-where-loc
+                                (inliner-log-entry-inlining-event (car site)))
+                          [`(,caller-path ,caller-line ,caller-col)
+                           (define caller-node
+                             (pos->node (cons caller-line caller-col)))
+                           (define edge
+                             (for/first ([e (node-callers profile-entry)]
+                                         #:when (eq? (edge-caller e)
+                                                     caller-node))
+                               e))
+                           ;; Does this edge take a "large enough" proportion of
+                           ;; the caller's total time?
+                           (and edge caller-node
+                                (> (edge-caller-time edge)
+                                   (* (node-total caller-node) 0.5))
+                                (cons caller-node site))]
+                          [_ ; can't parse that, give up
+                           #f])))))
+
+       (define pruned-log (apply append inlining-sites))
 
        (define recommendation
          (cond [is-a-loop?
@@ -235,18 +268,43 @@
                 ;; Non-recursive function -> macro
                 "Consider turning this function into a macro to force inlining."]))
 
-       (if (counts-as-a-missed-opt? pruned-log)
-           (missed-opt-log-entry
-            kind
-            (format "Missed Inlining ~a\n~a"
-                    (format-aggregation-string pruned-log) recommendation)
-            stx located-stx pos provenance
-            '() '()
-            (group-badness pruned-log))
-           (opt-log-entry
-            kind
-            (format "Inlining ~a" (format-aggregation-string pruned-log))
-            stx located-stx pos provenance))])))
+       (cond [(and profile (not (null? interesting-sites)))
+              ;; Inlining was not satisfactory for some call sites where we
+              ;; accounted for a good portion of the caller's total time.
+              (missed-opt-log-entry
+               kind
+               (format "Missed Inlining ~a\n~a\n~a"
+                       (format-aggregation-string pruned-log)
+                       (format "Key call site~a: ~a"
+                               (if (> (length interesting-sites) 1) "s" "")
+                               (string-join
+                                (for/list ([site (in-list interesting-sites)])
+                                  (define node (car site))
+                                  (format "~a ~a:~a"
+                                          (node-id   node)
+                                          (node-line node)
+                                          (node-col  node)))
+                                ", "))
+                       recommendation)
+               stx located-stx pos provenance
+               '() '()
+               ;; only compute badness for the interesting sites
+               (group-badness (apply append (map cdr interesting-sites))))]
+             [(counts-as-a-missed-opt? pruned-log)
+              ;; Overall inlining ratio is not satisfactory.
+              (missed-opt-log-entry
+               kind
+               (format "Missed Inlining ~a\n~a"
+                       (format-aggregation-string pruned-log) recommendation)
+               stx located-stx pos provenance
+               '() '()
+               (group-badness pruned-log))]
+             [else
+              ;; Satisfactory.
+              (opt-log-entry
+               kind
+               (format "Inlining ~a" (format-aggregation-string pruned-log))
+               stx located-stx pos provenance)])])))
 
 (define (group-badness group)
   (+ (n-failures group) (- (n-out-of-fuels group) (n-successes group))))
