@@ -323,9 +323,10 @@ in the sequence.
   content of a directory, use the result of @racket[directory-list] as
   a sequence.}
 
-@defproc[(in-producer [producer procedure?] [stop any/c] [args any/c] ...)
+@defproc[(in-producer [producer procedure?] [stop any/c] [arg any/c] ...)
          sequence?]{
   Returns a sequence that contains values from sequential calls to
+  @racket[producer], providing all @racket[arg]s to every call to 
   @racket[producer].  A @racket[stop] value returned by
   @racket[producer] marks the end of the sequence (and the
   @racket[stop] value is not included in the sequence); @racket[stop]
