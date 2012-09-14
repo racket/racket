@@ -138,5 +138,27 @@
   (test-values '(1 2) g)
   (test-values '(1 2) g))
 
+(let ()
+  ;; Yield 1 value, using `in-generator' returned from a function:
+  (define (in-gen-1)
+    (in-generator #:arity 1
+                  (for ([i (in-range 4)])
+                    (yield i))))
+  (test '(0 1 2 3)
+        'gen-1
+        (for/list ([x (in-gen-1)])
+          x)))
+
+(let ()
+  ;; Yield 2 values, using `in-generator' returned from a function:
+  (define (in-gen-2)
+    (in-generator #:arity 2
+                  (for ([i (in-range 4)])
+                    (yield i 0))))
+  (test '((0 . 0) (1 . 0) (2 . 0) (3 . 0))
+        'gen-2
+        (for/list ([(x y) (in-gen-2)])
+          (cons x y))))
+  
 (report-errs)
 

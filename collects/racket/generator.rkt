@@ -138,20 +138,39 @@
 (define stop-value (gensym))
 
 (define-sequence-syntax in-generator
-  (syntax-rules ()
-    [(_ body0 body ...)
-     (in-producer (generator () body0 body ... stop-value) stop-value)])
   (lambda (stx)
     (syntax-case stx ()
-      [(() (_ body0 body ...))
-       #'[()
-          (in-producer (generator () body0 body ... stop-value) stop-value)]]
-      [((id ...) (_ body0 body ...))
-       (with-syntax ([(stops ...) (syntax-case #'((id stop-value) ...) ()
-                                    [((x v) ...) #'(v ...)])])
-       #'[(id ...)
-          (in-producer (generator () body0 body ... (values stops ...))
-                       (lambda xs (eq? (car xs) stop-value)))])])))
+      [(_ #:arity n body0 body ...)
+       (if (exact-nonnegative-integer? (syntax-e #'n))
+           #'(in-producer (generator () body0 body ... (vector->values (make-vector n stop-value)))
+                          (lambda xs (eq? (car xs) stop-value)))
+           (raise-syntax-error #f 
+                               "expected a literal exact nonnegative integer"
+                               stx
+                               #'n))]
+      [(_ body0 body ...)
+       #'(in-producer (generator () body0 body ... stop-value) stop-value)]))
+  (lambda (stx)
+    (let loop ([stx stx])
+      (syntax-case stx ()
+        [((id ...) (_ #:arity n body0 body ...))
+         (and (exact-integer? #'n)
+              (= (syntax-e #'n (length (syntax->list #'(id ...))))))
+         ;; arity matches, so drop it:
+         (loop #'[((id ...) (_ body0 body ...))])]
+        [(() (_ body0 body ...))
+         #'[()
+            (in-producer (generator () body0 body ... stop-value) stop-value)]]
+        [((id ...) (_ body0 body ...))
+         (with-syntax ([(stops ...) (syntax-case #'((id stop-value) ...) ()
+                                      [((x v) ...) #'(v ...)])])
+           #'[(id ...)
+              (in-producer (generator () body0 body ... (values stops ...))
+                           (lambda xs (eq? (car xs) stop-value)))])]
+        [((id ...) expr)
+         ;; arity mismatch or other syntax error; fall back to expression mode:
+         #'[(id ...) (values expr)]]))))
+        
 
 (define (sequence->generator sequence)
   (generator () (for ([i sequence]) (yield i))))
