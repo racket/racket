@@ -1,5 +1,6 @@
 #lang racket/base
-(require (for-syntax racket/base)
+(require (for-syntax racket/base
+                     syntax/for-body)
          racket/serialize
          racket/pretty
          racket/contract/base
@@ -332,10 +333,12 @@
 
 (define-syntax-rule (define-for for/fold/derived for/set set)
   (define-syntax (for/set stx)
-    (syntax-case stx ()
-      [(_ bindings . body)
-       (quasisyntax/loc stx
-         (for/fold/derived #,stx ([s (set)]) bindings (set-add s (let () . body))))])))
+    (...
+     (syntax-case stx ()
+       [(_ bindings . body)
+        (with-syntax ([((pre-body ...) post-body) (split-for-body stx #'body)])
+          (quasisyntax/loc stx
+            (for/fold/derived #,stx ([s (set)]) bindings pre-body ... (set-add s (let () . post-body)))))]))))
 
 (define-for for/fold/derived for/set set)
 (define-for for*/fold/derived for*/set set)

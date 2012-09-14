@@ -29,6 +29,7 @@
              for/hasheqv for*/hasheqv
 
              for/fold/derived for*/fold/derived
+             (for-syntax split-for-body)
 
              (rename *in-range in-range)
              (rename *in-naturals in-naturals)
@@ -1280,18 +1281,126 @@
       [(_ [orig-stx . _] . _)
        (raise-syntax-error #f "bad syntax" #'orig-stx)]))
 
+  (define-syntax (for/foldX/derived/break stx)
+    (syntax-case stx ()
+      [(_ [orig-stx nested? emit? ()] ([id init] ...) (clause ...) body ...)
+       (ormap (lambda (form)
+                (or (eq? (syntax-e form) '#:break)
+                    (eq? (syntax-e form) '#:final)))
+              (syntax->list #'(clause ... body ...)))
+       ;; Add an accumulator for short-circuiting
+       (with-syntax ([body
+                      (let loop ([bodys (syntax->list #'(body ...))] [accum null])
+                        (cond
+                         [(null? bodys)
+                          (if (null? accum)
+                              (raise-syntax-error #f "missing final body expression" #'orig-stx)
+                              #`(let-values ([(id ...) (let () #,@(reverse accum))])
+                                  (values stop-after? id ...)))]
+                         [(or (eq? '#:break (syntax-e (car bodys)))
+                              (eq? '#:final (syntax-e (car bodys))))
+                          (let ([break? (eq? '#:break (syntax-e (car bodys)))])
+                            (if (null? (cdr bodys))
+                                (raise-syntax-error #f 
+                                                    (format "missing expression after ~a" (syntax-e (car bodys)))
+                                                    #'orig-stx (car bodys))
+                                #`(let ()
+                                    #,@(reverse accum)
+                                    #,(if break?
+                                          #`(if #,(cadr bodys)
+                                                (values #t id ...)
+                                                (let () #,(loop (cddr bodys) null)))
+                                          #`(let ([stop-after? (or #,(cadr bodys) stop-after?)])
+                                              #,(loop (cddr bodys) null))))))]
+                         [else (loop (cdr bodys) (cons (car bodys) accum))]))]
+                     [(limited-for-clause ...)
+                      ;; If nested, wrap all binding clauses. Otherwise, wrap
+                      ;; only the first and the first after each keyword clause:
+                      (let loop ([fcs (syntax->list #'(clause ...))] [wrap? #t])
+                        (cond
+                         [(null? fcs) null]
+                         [(eq? '#:break (syntax-e (car fcs)))
+                          (when (null? (cdr fcs))
+                            (raise-syntax-error #f "no expression after #:break" #'orig-stx (car fcs)))
+                          (list* #'#:when #'#t
+                                 #`[stop? (*in-value #,(cadr fcs))]
+                                 #'#:when #'#t
+                                 #`[stop-after? (*in-value (or stop-after? stop?))]
+                                 #'#:unless #'stop?
+                                 (loop (cddr fcs) #t))]
+                         [(eq? '#:final (syntax-e (car fcs)))
+                          (when (null? (cdr fcs))
+                            (raise-syntax-error #f "no expression after #:break" #'orig-stx (car fcs)))
+                          (list* #'#:when #'#t
+                                 #`[stop-after? (*in-value (or #,(cadr fcs) stop-after?))]
+                                 #'#:when #'#t
+                                 (loop (cddr fcs) #t))]
+                         [(keyword? (syntax-e (car fcs)))
+                          (if (null? (cdr fcs))
+                              fcs
+                              (list* (car fcs) (cadr fcs) (loop (cddr fcs) #t)))]
+                         [(not wrap?)
+                          (cons (car fcs) (loop (cdr fcs) #f))]
+                         [else
+                          (define fc (car fcs))
+                          (define wrapped-fc
+                            (syntax-case fc ()
+                              [[ids rhs]
+                               (or (identifier? #'ids)
+                                   (let ([l (syntax->list #'ids)])
+                                     (and l (andmap identifier? l))))
+                               (syntax/loc fc [ids (stop-after
+                                                    rhs
+                                                    (lambda x stop-after?))])]
+                              [_ fc]))
+                          (cons wrapped-fc
+                                (loop (cdr fcs) (syntax-e #'nested?)))]))])
+         #'(let-values ([(stop? id ...) 
+                         (for/foldX/derived [orig-stx nested? emit? ()] ([stop-after? #f] [id init] ...) 
+                                            (limited-for-clause ...) 
+                                            body)])
+             (values id ...)))]
+      [(_ . rest)
+       #'(for/foldX/derived . rest)]))
+
   (define-syntax for/fold/derived
     (syntax-rules ()
       [(_ orig-stx . rest)
-       (for/foldX/derived [orig-stx #f #f ()] . rest)]))
+       (for/foldX/derived/break [orig-stx #f #f ()] . rest)]))
 
   (define-syntax for*/fold/derived
     (syntax-rules ()
       [(_ orig-stx . rest)
-       (for/foldX/derived [orig-stx #t #f ()] . rest)]))
+       (for/foldX/derived/break [orig-stx #t #f ()] . rest)]))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;  derived `for' syntax
+
+  (define-for-syntax (split-for-body stx body-stx)
+    (let ([lst (syntax->list body-stx)])
+      (if lst
+          (let loop ([exprs lst] [pre-kw null] [post-kw null])
+            (cond
+             [(null? exprs)
+              (if (null? post-kw)
+                  (raise-syntax-error #f
+                                      (format "missing body form after ~a clause" (syntax-e (cadr pre-kw)))
+                                      stx
+                                      (cadr pre-kw))
+                  (list (reverse pre-kw) (reverse post-kw)))]
+             [(memq (syntax-e (car exprs)) '(#:break #:final))
+              (if (pair? (cdr exprs))
+                  (loop (cddr exprs) 
+                        (append (list* (cadr exprs) (car exprs) post-kw)
+                                pre-kw)
+                        null)
+                  (raise-syntax-error #f
+                                      (format "missing expression after ~a" (syntax-e (car exprs)))
+                                      stx
+                                      (car exprs)))]
+             [else
+              (loop (cdr exprs) pre-kw (cons (car exprs) post-kw))]))
+          (raise-syntax-error #f "bad syntax" stx))))
 
   (define-for-syntax (for-variant-stx stx derived-id-stx fold-bind-stx wrap rhs-wrap combine)
     (with-syntax ([derived-id derived-id-stx]
@@ -1309,22 +1418,27 @@
                                      (andmap identifier? (or (syntax->list #'ids) '(#f))))
                                  (cons #`[ids #,(rhs-wrap #'rhs)]
                                        (loop (cdr bs)))]
-                                [#:when (cons (car bs)
-                                              (if (null? (cdr bs))
-                                                  null
-                                                  (cons (cadr bs) (loop (cddr bs)))))]
+                                [kw
+                                 (memq (syntax-e #'kw) '(#:when #:unless #:break #:final))
+                                 (cons (car bs)
+                                       (if (null? (cdr bs))
+                                           null
+                                           (cons (cadr bs) (loop (cddr bs)))))]
                                 [_
                                  ;; a syntax error; let the /derived form
                                  ;; handle it, and no need to wrap any more:
-                                 bs])))])
+                                 bs])))]
+                       [((middle-expr ...) (end-expr ...))
+                        (split-for-body stx #'(expr1 expr ...))])
            (quasisyntax/loc stx
              #,(wrap (quasisyntax/loc stx
                        (derived-id #,stx fold-bind (bind ...)
-                                   #,(combine (syntax/loc stx (let () expr1 expr ...))))))))]
+                                   middle-expr ...
+                                   #,(combine (syntax/loc stx (let () end-expr ...))))))))]
         ;; Let `derived-id' complain about the missing bindings and body expression:
         [(_ . rest)
          #`(derived-id #,stx fold-bind . rest)])))
-
+  
   (define-syntax define-syntax-via-derived
     (syntax-rules ()
       [(_ id derived-id fold-bind wrap rhs-wrap combine)
@@ -1372,7 +1486,8 @@
     (syntax-case stx ()
       [(_ (for-clause ...) body ...)
        (with-syntax ([orig-stx orig-stx]
-                     [for_/fold/derived for_/fold/derived-stx])
+                     [for_/fold/derived for_/fold/derived-stx]
+                     [((middle-body ...) (last-body ...)) (split-for-body stx #'(body ...))])
          (syntax/loc stx
            (let-values ([(vec i)
                          (for_/fold/derived
@@ -1380,10 +1495,11 @@
                           ([vec (make-vector 16)]
                            [i 0])
                           (for-clause ...) 
+                          middle-body ...
                           (let ([new-vec (if (eq? i (unsafe-vector-length vec))
                                              (grow-vector vec)
                                              vec)])
-                            (unsafe-vector-set! new-vec i (let () body ...))
+                            (unsafe-vector-set! new-vec i (let () last-body ...))
                             (values new-vec (unsafe-fx+ i 1))))])
              (shrink-vector vec i))))]
       [(_ #:length length-expr #:fill fill-expr (for-clause ...) body ...)
@@ -1415,21 +1531,23 @@
                               [_ fc]))
                           (cons wrapped-fc
                                 (loop (cdr fcs) wrap-all?))]))]
+                     [((middle-body ...) (last-body ...)) (split-for-body stx #'(body ...))]
                      [for_/vector for_/vector-stx]
                      [for_/fold/derived for_/fold/derived-stx])
-       (syntax/loc stx
-         (let ([len length-expr])
-           (unless (exact-nonnegative-integer? len)
-             (raise-argument-error 'for_/vector "exact-nonnegative-integer?" len))
-           (let ([v (make-vector len fill-expr)])
-             (unless (zero? len)
-               (for_/fold/derived
-                orig-stx 
-                ([i 0])
-                (limited-for-clause ...)
-                (vector-set! v i (let () body ...))
-                (add1 i)))
-             v))))]
+         (syntax/loc stx
+           (let ([len length-expr])
+             (unless (exact-nonnegative-integer? len)
+               (raise-argument-error 'for_/vector "exact-nonnegative-integer?" len))
+             (let ([v (make-vector len fill-expr)])
+               (unless (zero? len)
+                 (for_/fold/derived
+                  orig-stx 
+                  ([i 0])
+                  (limited-for-clause ...)
+                  middle-body ...
+                  (vector-set! v i (let () last-body ...))
+                  (add1 i)))
+               v))))]
       [(_ #:length length-expr (for-clause ...) body ...)
        (for_/vector #'(fv #:length length-expr #:fill 0 (for-clause ...) body ...) 
                     orig-stx for_/vector-stx for_/fold/derived-stx wrap-all?)]))

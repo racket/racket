@@ -1,6 +1,8 @@
 Version 5.3.0.24
 Added PLTCOMPILEDROOTS and --compiled/-R command-line flag
-Added `reroot-path'
+Added reroot-path
+Added #:break and #:final clauses to for forms
+syntax/for-body: added
 racket/set: added set-first and set-rest, sets are streams
 
 Version 5.3.0.23
