@@ -22,10 +22,15 @@
          make-platform-bitmap
          read-bitmap
          make-monochrome-bitmap
+         -bitmap-dc%
          (protect-out make-alternate-bitmap-kind
                       build-cairo-surface
                       quartz-bitmap%
-                      win32-no-hwnd-bitmap%))
+                      win32-no-hwnd-bitmap%
+                      install-bitmap-dc-class!))
+
+(define -bitmap-dc% #f)
+(define (install-bitmap-dc-class! v) (set! -bitmap-dc% v))
 
 ;; FIXME: there must be some way to abstract over all many of the
 ;; ARGB/RGBA/BGRA iterations.
@@ -285,6 +290,8 @@
 
     (define/public (get-bitmap-gl-context)
       #f)
+
+    (define/public (make-dc) (make-object -bitmap-dc% this))
 
     (define/public (load-file in
                               [kind 'unknown]

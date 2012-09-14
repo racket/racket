@@ -11,13 +11,13 @@
                                      (let ([w (send bm0 get-width)]
                                            [h (send bm0 get-height)])
                                        (let ([bm (make-bitmap w h)])
-                                         (let ([dc (make-object bitmap-dc% bm)])
+                                         (let ([dc (send bm make-dc)])
                                            (send dc draw-bitmap bm0 0 0)
                                            (send dc set-bitmap #f))
                                           bm)))]
 @interaction-eval[#:eval draw-eval (define (line-bitmap mode)
                                      (let* ([bm (make-bitmap 30 4)]
-                                            [dc (make-object bitmap-dc% bm)])
+                                            [dc (send bm make-dc)])
                                        (send dc set-smoothing mode)
                                        (send dc draw-line 0 2 30 2)
                                        (send dc set-bitmap #f)
