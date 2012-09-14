@@ -159,15 +159,16 @@
   (define hot-functions (and profile (prune-profile profile)))
   (define grouped-events
     (group-by equal? #:key log-entry-pos log)) ; right file, so that's enough
-  (define new-inline-log-entries
-    (for/list ([group (in-list grouped-events)])
-      (process-function group profile hot-functions)))
-  (filter values new-inline-log-entries))
+  (apply append
+         (for/list ([group (in-list grouped-events)])
+           (process-function group profile hot-functions))))
 
 ;; Process the inlining logs corresponding to a single function.
 (define (process-function log profile hot-functions)
+  (define produced-entries '())
   (let/ec escape
-    (define (prune) (escape #f)) ; prune this entry from the logs
+    ;; prune this entry from the logs, but return what we produced so far
+    (define (prune) (escape produced-entries))
     (match (car log) ; events are grouped, first element is representative
       [(log-entry kind msg stx located-stx pos provenance)
 
@@ -182,14 +183,6 @@
                                      (equal? pos (node-pos p))))
                 p)))
        (define profile-entry (pos->node pos))
-
-       (define inside-hot-function?
-         (and profile (memq profile-entry hot-functions)))
-
-       ;; If we know which regions are hot, prune reports about cold
-       ;; regions. If we don't know, err on the side of showing more.
-       (when (and profile (not inside-hot-function?))
-         (prune))
 
        ;; We consider that a function is a loop if it gets inlined in itself
        ;; at least once.
@@ -268,43 +261,58 @@
                 ;; Non-recursive function -> macro
                 "Consider turning this function into a macro to force inlining."]))
 
+       ;; Produce as many log entries as necessary.
+       (define (emit e) (set! produced-entries (cons e produced-entries)))
+       (define (emit-near-miss msg badness)
+         (emit (missed-opt-log-entry
+                kind
+                (format "Missed Inlining ~a\n~a~a"
+                        (format-aggregation-string pruned-log)
+                        (if msg (format "~a\n" msg) "")
+                        recommendation)
+                stx located-stx pos provenance
+                '() '()
+                badness)))
+       (define (emit-success)
+         (emit (opt-log-entry
+                kind
+                (format "Inlining ~a" (format-aggregation-string pruned-log))
+                stx located-stx pos provenance)))
+
+       (define inside-hot-function?
+         (and profile (memq profile-entry hot-functions)))
+
+       ;; If we know which regions are hot, prune reports about cold
+       ;; regions. If we don't know, err on the side of showing more.
+       ;; We don't want to prune earlier, since traversing cold functions can
+       ;; give us advice about hot functions.
+       (when (and profile (not inside-hot-function?))
+         (prune))
+
        (cond [(and profile (not (null? interesting-sites)))
               ;; Inlining was not satisfactory for some call sites where we
               ;; accounted for a good portion of the caller's total time.
-              (missed-opt-log-entry
-               kind
-               (format "Missed Inlining ~a\n~a\n~a"
-                       (format-aggregation-string pruned-log)
-                       (format "Key call site~a: ~a"
-                               (if (> (length interesting-sites) 1) "s" "")
-                               (string-join
-                                (for/list ([site (in-list interesting-sites)])
-                                  (define node (car site))
-                                  (format "~a ~a:~a"
-                                          (node-id   node)
-                                          (node-line node)
-                                          (node-col  node)))
-                                ", "))
-                       recommendation)
-               stx located-stx pos provenance
-               '() '()
+              (emit-near-miss
+               (format "Key call site~a: ~a"
+                       (if (> (length interesting-sites) 1) "s" "")
+                       (string-join
+                        (for/list ([site (in-list interesting-sites)])
+                          (define node (car site))
+                          (format "~a ~a:~a"
+                                  (node-id   node)
+                                  (node-line node)
+                                  (node-col  node)))
+                        ", "))
                ;; only compute badness for the interesting sites
                (group-badness (apply append (map cdr interesting-sites))))]
              [(counts-as-a-missed-opt? pruned-log)
               ;; Overall inlining ratio is not satisfactory.
-              (missed-opt-log-entry
-               kind
-               (format "Missed Inlining ~a\n~a"
-                       (format-aggregation-string pruned-log) recommendation)
-               stx located-stx pos provenance
-               '() '()
-               (group-badness pruned-log))]
+              (emit-near-miss #f (group-badness pruned-log))]
              [else
               ;; Satisfactory.
-              (opt-log-entry
-               kind
-               (format "Inlining ~a" (format-aggregation-string pruned-log))
-               stx located-stx pos provenance)])])))
+              (emit-success)])
+
+       produced-entries]))) ; return the list of new entries
 
 (define (group-badness group)
   (+ (n-failures group) (- (n-out-of-fuels group) (n-successes group))))
