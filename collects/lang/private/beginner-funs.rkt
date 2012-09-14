@@ -779,7 +779,7 @@
     }
     @defproc[(string=? [s string][t string][x string] ...) boolean?]{
     Determines whether all strings are equal, character for character.
-    @interaction[#:eval (bsl) (string-copy "hello")]
+    @interaction[#:eval (bsl) (string=? "hello" "world") (string=? "bye" "bye")]
     }
     @defproc[(string<? [s string][t string][x string] ...) boolean?]{
     Determines whether the strings are ordered in a lexicographically strictly increasing manner.
