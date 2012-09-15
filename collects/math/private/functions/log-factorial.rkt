@@ -23,7 +23,7 @@
                     (real->double-flonum (log (factorial n))))))
 
 ;; Computes log(Gamma(n+1)) using 5 terms from Stirling's series
-;; For n >= 142, relative error ε < +epsilon.0
+;; For n >= 142, relative error ε <= epsilon.0
 (: fllog-factorial/stirling5 (Natural -> Float))
 (define (fllog-factorial/stirling5 n)
   (let* ([x  (->fl n)]
@@ -35,7 +35,7 @@
          (* 1/x (+ (* #i-1/360 (* 1/x 1/x)) #i1/12))))))
 
 ;; Computes log(Gamma(n+1)) using 3 terms from Stirling's series
-;; For n >= 1e7, relative error ε < +epsilon.0
+;; For n >= 1e7, relative error ε <= epsilon.0
 (: fllog-factorial/stirling3 (Natural -> Float))
 (define (fllog-factorial/stirling3 n)
   (let* ([x  (->fl n)]

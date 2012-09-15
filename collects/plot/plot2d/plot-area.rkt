@@ -126,19 +126,19 @@
       (define area-x-max (- dc-x-size right))
       (define area-y-min top)
       (define area-y-max (- dc-y-size bottom))
-      (define area-per-view-x (/ (- area-x-max area-x-min) view-x-size))
-      (define area-per-view-y (/ (- area-y-max area-y-min) view-y-size))
+      (define area-x-size (- area-x-max area-x-min))
+      (define area-y-size (- area-y-max area-y-min))
       (if flonum-ok?
           (let-map
-           (area-x-min area-per-view-x x-min area-y-max y-min area-per-view-y) exact->inexact
+           (area-x-min area-y-max area-x-size area-y-size) exact->inexact
            (λ (v)
              (match-define (vector x y) v)
-             (vector (fl+ area-x-min (fl* (fl- x x-min) area-per-view-x))
-                     (fl- area-y-max (fl* (fl- y y-min) area-per-view-y)))))
+             (vector (fl+ area-x-min (fl* (fl/ (fl- x x-min) view-x-size) area-x-size))
+                     (fl- area-y-max (fl* (fl/ (fl- y y-min) view-y-size) area-y-size)))))
           (λ (v)
             (match-define (vector x y) v)
-            (vector (+ area-x-min (* (- x x-min) area-per-view-x))
-                    (- area-y-max (* (- y y-min) area-per-view-y))))))
+            (vector (+ area-x-min (* (/ (- x x-min) view-x-size) area-x-size))
+                    (- area-y-max (* (/ (- y y-min) view-y-size) area-y-size))))))
     
     (define init-top-margin
       (cond [(and (plot-decorations?) (plot-title))  (* 3/2 char-height)]

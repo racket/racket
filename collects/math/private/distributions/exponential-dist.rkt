@@ -1,20 +1,19 @@
 #lang typed/racket/base
 
-(require racket/flonum
-         racket/performance-hint
-         "../../types.rkt"
+(require racket/performance-hint
+         racket/promise
+         "../../flonum.rkt"
          "../functions/expm1.rkt"
          "../functions/log1p.rkt"
+         "../functions/log-arithmetic.rkt"
+         "dist-struct.rkt"
          "utils.rkt")
 
 (provide flexp-pdf
          flexp-cdf
          flexp-inv-cdf
          flexp-random
-         exp-pdf
-         exp-cdf
-         exp-inv-cdf
-         exp-random)
+         Exponential-Distribution exp-dist exp-dist? exp-dist-scale)
 
 (: flexp-pdf (Float Float Any -> Float))
 (define flexp-pdf
@@ -25,61 +24,41 @@
 (: flexp-cdf (Float Float Any Any -> Float))
 (define flexp-cdf
   (make-one-sided-scale-flcdf
-   (λ: ([x : Float] [log? : Any] [upper-tail? : Any])
-     (cond [upper-tail?
-            (cond [log?  (- x)]
-                  [else  (exp (- x))])]
-           [else
-            (cond [log?  (fllog1p (- (exp (- x))))]
-                  [else  (- (flexpm1 (- x)))])]))))
+   (λ: ([x : Float] [log? : Any] [1-p? : Any])
+     (cond [1-p?  (if log? (- x) (exp (- x)))]
+           [else  (if log? (fllog1- (- x)) (- (flexpm1 (- x))))]))))
 
 (: standard-flexp-inv-cdf (Float Any Any -> Float))
-(define (standard-flexp-inv-cdf q log? upper-tail?)
-  (cond [upper-tail?
-         (cond [log?  (- q)]
-               [else  (- (fllog q))])]
-        [else
-         (cond [log?  (- (fllog1p (- (exp q))))]
-               [else  (- (fllog1p (- q)))])]))
+(define (standard-flexp-inv-cdf q log? 1-p?)
+  (cond [1-p?  (if log? (- q) (- (fllog q)))]
+        [else  (if log? (- (fllog1- q)) (- (fllog1p (- q))))]))
 
 (: flexp-inv-cdf (Float Float Any Any -> Float))
 (define flexp-inv-cdf (make-one-sided-scale-flinv-cdf standard-flexp-inv-cdf))
 
 (: flexp-random (Float -> Float))
-(define flexp-random (make-one-sided-scale-flrandom standard-flexp-inv-cdf))
+(define (flexp-random s)
+  (* s (- (fllog (random)))))
+
+;; ===================================================================================================
+;; Distribution object
 
 (begin-encourage-inline
-  (: exp-pdf (case-> (-> Real-Density-Function)
-                     (Real -> Real-Density-Function)))
-  (define (exp-pdf [s 1.0])
-    (let ([s  (real->double-flonum s)])
-      (: pdf Real-Density-Function)
-      (define (pdf x [log? #f])
-        (flexp-pdf s (real->double-flonum x) log?))
-      pdf))
   
-  (: exp-cdf (case-> (-> Real-Distribution-Function)
-                     (Real -> Real-Distribution-Function)))
-  (define (exp-cdf [s 1.0])
-    (let ([s  (real->double-flonum s)])
-      (: cdf Real-Distribution-Function)
-      (define (cdf x [log? #f] [upper-tail? #f])
-        (flexp-cdf s (real->double-flonum x) log? upper-tail?))
-      cdf))
+  (define-distribution-type: exp-dist
+    Exponential-Distribution Real-Distribution ([scale : Float]))
   
-  (: exp-inv-cdf (case-> (-> Real-Distribution-Function)
-                         (Real -> Real-Distribution-Function)))
-  (define (exp-inv-cdf [s 1.0])
-    (let ([s  (real->double-flonum s)])
-      (: inv-cdf Real-Distribution-Function)
-      (define (inv-cdf q [log? #f] [upper-tail? #f])
-        (flexp-inv-cdf s (real->double-flonum q) log? upper-tail?))
-      inv-cdf))
+  (: exp-dist (case-> (-> Exponential-Distribution)
+                      (Real -> Exponential-Distribution)))
+  (define (exp-dist [s 1.0])
+    (let ([s  (fl s)])
+      (define pdf (opt-lambda: ([x : Real] [log? : Any #f])
+                    (flexp-pdf s (fl x) log?)))
+      (define cdf (opt-lambda: ([x : Real] [log? : Any #f] [1-p? : Any #f])
+                    (flexp-cdf s (fl x) log? 1-p?)))
+      (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [1-p? : Any #f])
+                        (flexp-inv-cdf s (fl p) log? 1-p?)))
+      (define (random) (flexp-random s))
+      (make-exp-dist pdf cdf inv-cdf random 0.0 +inf.0 (delay (* s (fllog 2.0))) s)))
   
-  (: exp-random (case-> (-> (-> Float))
-                        (Real -> (-> Float))))
-  (define (exp-random [s 1.0])
-    (let ([s  (real->double-flonum s)])
-      (λ () (flexp-random s))))
-  
-  )  ; begin-encourage-inline
+  )

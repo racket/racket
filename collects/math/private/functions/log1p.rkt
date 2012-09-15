@@ -14,7 +14,7 @@
   (define (fllog1p x)
     (define ax (abs x))
     (cond [(ax . >= . 1.0)  (fllog (+ 1.0 x))]
-          [(ax . >= . (* 0.5 +epsilon.0))
+          [(ax . >= . (* 0.5 epsilon.0))
            (define y (+ 1.0 x))
            (- (fllog y) (/ (- (- y 1.0) x) y))]
           [else  x]))

@@ -48,8 +48,7 @@ Approximations:
 (define (laurent-sum-0.00 x)
   (+ (/ 1.0 x)
      (- gamma.0)
-     (* x ((make-polyfun
-            Float
+     (* x ((make-flpolyfun
             (+0.989055995327972555395395651500634707939184
              -0.907479076080886289016560167356275114928611
              +0.981728086834400187336380294021850850360574
@@ -61,8 +60,7 @@ Approximations:
 (: taylor-sum-0.50 (Float -> Float))
 ;; Taylor expansion for 0.4 <= x <= 0.6
 (define (taylor-sum-0.50 x)
-  ((make-polyfun
-    Float
+  ((make-flpolyfun
     (+1.7724538509055160272981674833411451827976e0
      -3.4802309069132620269385951981443497500324e0
      +7.7900887212031263903372656425114121857627e0
@@ -94,8 +92,7 @@ Approximations:
 (: taylor-sum-0.75 (Float -> Float))
 ;; Taylor expansion for 0.6 <= x <= 0.9
 (define (taylor-sum-0.75 x)
-  ((make-polyfun
-    Float
+  ((make-flpolyfun
     (+1.2254167024651776451290983033628905268512e0
      -1.3306320586438753973158461714125306931800e0
      +2.2798715368921053860231453979712247015479e0
@@ -127,8 +124,7 @@ Approximations:
 (: taylor-sum-1.00 (Float -> Float))
 ;; Taylor expansion for 0.8 <= x <= 1.2
 (define (taylor-sum-1.00 x)
-  ((make-polyfun
-    Float
+  ((make-flpolyfun
     (+1.0
      -0.57721566490153286060651209008240243104216
      +0.98905599532797255539539565150063470793918
@@ -159,8 +155,7 @@ Approximations:
 (: taylor-sum-1.50 (Float -> Float))
 ;; Taylor expansion for 1.15 <= x <= 1.85
 (define (taylor-sum-1.50 x)
-  ((make-polyfun
-    Float
+  ((make-flpolyfun
     (+8.8622692545275801364908374167057259139877e-1
      +3.2338397448885013828869884268970307781332e-2
      +4.1481345368830116823003762311135634284890e-1
@@ -192,8 +187,7 @@ Approximations:
 ;; Lanczos polynomial for N=13 G=6.024680040776729583740234375
 ;; Max experimental error (with arbitary precision arithmetic) is 1.196214e-17
 (define lanczos-sum
-  (make-quotient-polyfun
-   Float
+  (make-quotient-flpolyfun
    (23531376880.41075968857200767445163675473
     42919803642.64909876895789904700198885093
     35711959237.35566804944018545154716670596
@@ -291,6 +285,8 @@ Approximations:
            (define xgh (+ x lanczos-g -0.5))
            (* y (/ (flexpt xgh (- x 0.5)) (exp xgh)))])))
 
+(define: flgamma-hash : (HashTable Float Float) (make-weak-hash))
+
 (: flgamma (Float -> Float))
 (define (flgamma x)
   (cond [(integer? x)  (flgamma-integer x)]
@@ -299,15 +295,19 @@ Approximations:
         ;; Limit as x -> -inf doesn't exist
         [(x . = . -inf.0)  +nan.0]
         [(eqv? x +nan.0)   +nan.0]
-        [(x . < . -170.0)  (flgamma-large-negative x)]
-        ;; If near a pole, use Laurent
-        [(and (x . < . 0.5)
-              (let ([dx  (- x (round x))])
-                (and (dx . > . -0.001) (dx . < . 0.01))))
-         (flgamma-laurent x)]
-        ;; If small, use Taylor
-        [(and (x . > . -4.5) (x . < . 4.5))  (flgamma-taylor x)]
-        [else  (flgamma-lanczos x)]))
+        [else
+         (hash-ref!
+          flgamma-hash x
+          (λ ()
+            (cond [(x . < . -170.0)  (flgamma-large-negative x)]
+                  ;; If near a pole, use Laurent
+                  [(and (x . < . 0.5)
+                        (let ([dx  (- x (round x))])
+                          (and (dx . > . -0.001) (dx . < . 0.01))))
+                   (flgamma-laurent x)]
+                  ;; If small, use Taylor
+                  [(and (x . > . -4.5) (x . < . 4.5))  (flgamma-taylor x)]
+                  [else  (flgamma-lanczos x)])))]))
 
 (: gamma (case-> (Nonpositive-Integer -> Nothing)
                  (Integer -> Positive-Integer)

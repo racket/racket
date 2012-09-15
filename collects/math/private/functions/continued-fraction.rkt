@@ -22,17 +22,20 @@
       (define next-n (+ (* a last-n) (* b n)))
       (define next-d (+ (* a last-d) (* b d)))
       (let-values ([(n d next-n next-d)
-                    (cond [(next-n . > . overflow)
+                    (cond [(or (next-n . > . overflow)
+                               (next-d . > . overflow))
                            (values (/ n overflow) (/ d overflow)
                                    (/ next-n overflow) (/ next-d overflow))]
-                          [(next-n . < . (/ 1.0 overflow))
+                          [(or (next-n . < . (/ 1.0 overflow))
+                               (next-d . < . (/ 1.0 overflow)))
                            (values (* n overflow) (* d overflow)
                                    (* next-n overflow) (* next-d overflow))]
                           [else
                            (values n d next-n next-d)])])
         (define next-x (/ next-n next-d))
         ;(printf "n = ~v  d = ~v  x = ~v~n" next-n next-d next-x)
-        (cond [((abs (- x next-x)) . <= . (* eps (abs next-x)))
+        (cond [(or ((abs (- x next-x)) . <= . (abs (* eps next-x)))
+                   (not (rational? next-x)))
                ;(printf "i = ~v~n" i)
                ;i
                next-x]

@@ -1,12 +1,12 @@
 #lang typed/racket/base
 
-(require (for-syntax racket/base syntax/parse))
+(require racket/flonum
+         (for-syntax racket/base syntax/parse))
 
-(provide make-polyfun
-         make-even-polyfun
-         make-odd-polyfun
-         make-quotient-polyfun
-         make-chebyshev-polyfun)
+(provide make-flpolyfun
+         make-even-flpolyfun
+         make-odd-flpolyfun
+         make-quotient-flpolyfun)
 
 (define-for-syntax (syntax-list-reverse stx-lst)
   (datum->syntax stx-lst (reverse (syntax->list stx-lst)) stx-lst))
@@ -16,64 +16,41 @@
     [(_ y z ())  (syntax/loc stx y)]
     [(_ y z (c0 c ...))
      (syntax/loc stx
-       (let ([y  (+ (* y z) c0)])
-         (horner-iter y z (c ...))))]))
+       (horner-iter (fl+ (fl* y z) c0) z (c ...)))]))
 
-(define-syntax (make-polyfun stx)
+(define-syntax (make-flpolyfun stx)
   (syntax-parse stx
-    [(_ T:expr (c0:expr c:expr ...))
+    [(_ (c0:expr c:expr ...))
      (with-syntax ([(c0 c ...)  (syntax-list-reverse #'(c0 c ...))])
        (syntax/loc stx
-         (λ: ([z : T])
-           (let ([y c0])
-             (horner-iter y z (c ...))))))]))
+         (λ: ([z : Float])
+           (horner-iter c0 z (c ...)))))]))
 
-(define-syntax (make-even-polyfun stx)
+(define-syntax (make-even-flpolyfun stx)
   (syntax-parse stx
-    [(_ T:expr (c0:expr c:expr ...))
+    [(_ (c0:expr c:expr ...))
      (syntax/loc stx
-       (λ: ([z : T])
-         ((make-polyfun T (c0 c ...)) (* z z))))]))
+       (λ: ([z : Float])
+         ((make-flpolyfun (c0 c ...)) (fl* z z))))]))
 
-(define-syntax (make-odd-polyfun stx)
+(define-syntax (make-odd-flpolyfun stx)
   (syntax-parse stx
-    [(_ T:expr (c0:expr c:expr ...))
+    [(_ (c0:expr c:expr ...))
      (syntax/loc stx
-       (λ: ([z : T])
-         (+ c0 (* z ((make-polyfun T (c ...)) (* z z))))))]))
+       (λ: ([z : Float])
+         (fl+ c0 (fl* z ((make-polyfun (c ...)) (fl* z z))))))]))
 
-(define-syntax (make-quotient-polyfun stx)
+(define-syntax (make-quotient-flpolyfun stx)
   (syntax-parse stx
-    [(_ T:expr (a:expr ...) (b:expr ...))
+    [(_ (a:expr ...) (b:expr ...))
      (with-syntax ([(a-rev ...)  (syntax-list-reverse #'(a ...))]
                    [(b-rev ...)  (syntax-list-reverse #'(b ...))])
        (syntax/loc stx
-         (λ: ([z : T])
-           (cond [((abs z) . <= . 1)  (/ ((make-polyfun T (a ...)) z)
-                                         ((make-polyfun T (b ...)) z))]
-                 [else  (let ([z  (/ 1 z)])
-                          (/ ((make-polyfun T (a-rev ...)) z)
-                             ((make-polyfun T (b-rev ...)) z)))]))))]))
-
-(define-syntax (chebyshev-iter stx)
-  (syntax-case stx ()
-    [(_ y y2 d dd ())  (syntax/loc stx d)]
-    [(_ y y2 d dd (c0))
-     (syntax/loc stx
-       (+ (* y d) (- (/ c0 2) dd)))]
-    [(_ y y2 d dd (c0 c ...))
-     (syntax/loc stx
-       (let-values ([(d dd)  (values (+ (* y2 d) (- c0 dd)) d)])
-         (chebyshev-iter y y2 d dd (c ...))))]))
-
-(define-syntax (make-chebyshev-polyfun stx)
-  (syntax-parse stx
-    [(_ T:expr lower:expr upper:expr (c0:expr c:expr ...))
-     (with-syntax ([(c0 c ...)  (syntax-list-reverse #'(c0 c ...))])
-       (syntax/loc stx
-         (λ: ([z : T])
-           (define y (/ (- (+ z z) (+ lower upper))
-                        (- upper lower)))
-           (define y2 (+ y y))
-           (let-values ([(d dd)  (values c0 (- c0 c0))])
-             (chebyshev-iter y y2 d dd (c ...))))))]))
+         (λ: ([z : Float])
+           (cond [((flabs z) . fl<= . 1.0)
+                  (fl/ ((make-flpolyfun (a ...)) z)
+                       ((make-flpolyfun (b ...)) z))]
+                 [else
+                  (let ([z  (fl/ 1.0 z)])
+                    (fl/ ((make-flpolyfun (a-rev ...)) z)
+                         ((make-flpolyfun (b-rev ...)) z)))]))))]))

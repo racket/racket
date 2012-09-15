@@ -5,9 +5,13 @@
          "bigfloat-log-arithmetic.rkt")
 
 (provide bfgamma-lower
-         bflog-gamma-lower
          bfgamma-upper
-         bflog-gamma-upper)
+         bfgamma-lower-regularized
+         bfgamma-upper-regularized
+         bflog-gamma-lower
+         bflog-gamma-upper
+         bflog-gamma-lower-regularized
+         bflog-gamma-upper-regularized)
 
 (: bfgamma-lower-iter (Bigfloat Bigfloat Bigfloat -> Bigfloat))
 (define (bfgamma-lower-iter k x eps)
@@ -21,10 +25,10 @@
 (: bfgamma-lower-series (Bigfloat Bigfloat -> Bigfloat))
 ;; Computes the lower gamma function from its series
 (define (bfgamma-lower-series k x)
-  (define eps +epsilon.bf)
+  (define eps epsilon.bf)
   (bfcopy
-   (parameterize ([bf-precision  (+ (bf-precision) 20)])
-     (define y (bfgamma-lower-iter k x +epsilon.bf))
+   (parameterize ([bf-precision  (+ (bf-precision) 10)])
+     (define y (bfgamma-lower-iter k x epsilon.bf))
      (define log-z (bf- (bf* k (bflog x)) (bf+ x (bflog k))))
      (let ([z  (cond [((bfabs log-z) . bf< . +1.bf)  (bfexp log-z)]
                      [else  (bf/ (bf* (bfexpt x k) (bfexp (bf- x))) k)])])
@@ -50,15 +54,15 @@
 (: bfgamma-upper-frac (Bigfloat Bigfloat -> Bigfloat))
 ;; Computes the upper gamma function using Legendre's continued fraction
 (define (bfgamma-upper-frac k x)
-  (define eps +epsilon.bf)
+  (define eps epsilon.bf)
   (bfcopy
-   (parameterize ([bf-precision  (+ (bf-precision) 20)])
+   (parameterize ([bf-precision  (+ (bf-precision) 10)])
      (define y (bfgamma-upper-iter k x eps))
      (define log-z (bf- (bf* k (bflog x)) x))
      (let ([z  (cond [((bfabs log-z) . bf< . +1.bf)  (bfexp log-z)]
                      [else  (bf* (bfexpt x k) (bfexp (bf- x)))])])
        (bf* y z)))))
-  
+
 (: bflog-gamma-upper-frac (Bigfloat Bigfloat -> Bigfloat))
 ;; Computes the log of the upper gamma function using Legendre's continued fraction
 (define (bflog-gamma-upper-frac k x)
@@ -101,3 +105,43 @@
         [(x . bf<  . +0.bf)  +nan.bf]
         [(use-lower? k x)  (bflog- (bflog-gamma k) (bflog-gamma-lower-series k x))]
         [else  (bflog-gamma-upper-frac k x)]))
+
+;; ===================================================================================================
+
+(: bflog-gamma-lower-regularized (Bigfloat Bigfloat -> Bigfloat))
+(define (bflog-gamma-lower-regularized k x)
+  (bfcopy
+   (parameterize ([bf-precision  (+ (bf-precision) 10)])
+     (cond [(use-lower? k x)
+            (bf- (bflog-gamma-lower-series k x) (bflog-gamma k))]
+           [else
+            (bflog1p (bf- (bfexp (bf- (bflog-gamma-upper-frac k x) (bflog-gamma k)))))]))))
+
+(: bflog-gamma-upper-regularized (Bigfloat Bigfloat -> Bigfloat))
+(define (bflog-gamma-upper-regularized k x)
+  (bfcopy
+   (parameterize ([bf-precision  (+ (bf-precision) 10)])
+     (cond [(use-lower? k x)
+            (bflog1p (bf- (bfexp (bf- (bflog-gamma-lower-series k x) (bflog-gamma k)))))]
+           [else
+            (bf- (bflog-gamma-upper-frac k x) (bflog-gamma k))]))))
+
+(: bfgamma-lower-regularized (Bigfloat Bigfloat -> Bigfloat))
+(define (bfgamma-lower-regularized k x)
+  (bfcopy
+   (parameterize ([bf-precision  (+ (bf-precision) 10)])
+     (cond [(use-lower? k x)
+            (bf/ (bfgamma-lower-series k x) (bfgamma k))]
+           [else
+            (define gam-k (bfgamma k))
+            (bf/ (bf- gam-k (bfgamma-upper-frac k x)) gam-k)]))))
+
+(: bfgamma-upper-regularized (Bigfloat Bigfloat -> Bigfloat))
+(define (bfgamma-upper-regularized k x)
+  (bfcopy
+   (parameterize ([bf-precision  (+ (bf-precision) 10)])
+     (cond [(use-lower? k x)
+            (define gam-k (bfgamma k))
+            (bf/ (bf- gam-k (bfgamma-lower-series k x)) gam-k)]
+           [else
+            (bf/ (bfgamma-upper-frac k x) (bfgamma k))]))))

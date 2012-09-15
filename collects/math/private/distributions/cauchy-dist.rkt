@@ -1,21 +1,19 @@
 #lang typed/racket/base
 
-(require racket/flonum
-         racket/performance-hint
-         "../../types.rkt"
+(require racket/performance-hint
+         racket/promise
+         "../../flonum.rkt"
          "../../constants.rkt"
          "../functions/expm1.rkt"
          "../functions/log1p.rkt"
+         "dist-struct.rkt"
          "utils.rkt")
 
 (provide flcauchy-pdf
          flcauchy-cdf
          flcauchy-inv-cdf
          flcauchy-random
-         cauchy-pdf
-         cauchy-cdf
-         cauchy-inv-cdf
-         cauchy-random)
+         Cauchy-Distribution cauchy-dist cauchy-dist? cauchy-dist-center cauchy-dist-scale)
 
 (: flcauchy-pdf (Float Float Float Any -> Float))
 (define flcauchy-pdf
@@ -61,47 +59,26 @@
 (: flcauchy-random (Float Float -> Float))
 (define flcauchy-random (make-symmetric-location-scale-flrandom standard-flcauchy-inv-cdf))
 
+;; ===================================================================================================
+;; Distribution object
+
 (begin-encourage-inline
   
-  (: cauchy-pdf (case-> (-> Real-Density-Function)
-                        (Real -> Real-Density-Function)
-                        (Real Real -> Real-Density-Function)))
-  (define (cauchy-pdf [x0 0.0] [s 1.0])
-    (let ([x0  (real->double-flonum x0)]
-          [s   (real->double-flonum s)])
-      (: pdf Real-Density-Function)
-      (define (pdf x [log? #f])
-        (flcauchy-pdf x0 s (real->double-flonum x) log?))
-      pdf))
+  (define-distribution-type: cauchy-dist
+    Cauchy-Distribution Real-Distribution ([center : Float] [scale : Float]))
+
+  (: cauchy-dist (case-> (-> Cauchy-Distribution)
+                         (Real -> Cauchy-Distribution)
+                         (Real Real -> Cauchy-Distribution)))
+  (define (cauchy-dist [c 0.0] [s 1.0])
+    (let ([c  (fl c)] [s   (fl s)])
+      (define pdf (opt-lambda: ([x : Real] [log? : Any #f])
+                    (flcauchy-pdf c s (fl x) log?)))
+      (define cdf (opt-lambda: ([x : Real] [log? : Any #f] [complement? : Any #f])
+                    (flcauchy-cdf c s (fl x) log? complement?)))
+      (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [complement? : Any #f])
+                        (flcauchy-inv-cdf c s (fl p) log? complement?)))
+      (define (random) (flcauchy-random c s))
+      (make-cauchy-dist pdf cdf inv-cdf random -inf.0 +inf.0 (delay c) c s)))
   
-  (: cauchy-cdf (case-> (-> Real-Distribution-Function)
-                        (Real -> Real-Distribution-Function)
-                        (Real Real -> Real-Distribution-Function)))
-  (define (cauchy-cdf [x0 0.0] [s 1.0])
-    (let ([x0  (real->double-flonum x0)]
-          [s   (real->double-flonum s)])
-      (: cdf Real-Distribution-Function)
-      (define (cdf x [log? #f] [upper-tail? #f])
-        (flcauchy-cdf x0 s (real->double-flonum x) log? upper-tail?))
-      cdf))
-  
-  (: cauchy-inv-cdf (case-> (-> Real-Distribution-Function)
-                            (Real -> Real-Distribution-Function)
-                            (Real Real -> Real-Distribution-Function)))
-  (define (cauchy-inv-cdf [x0 0.0] [s 1.0])
-    (let ([x0  (real->double-flonum x0)]
-          [s   (real->double-flonum s)])
-      (: inv-cdf Real-Distribution-Function)
-      (define (inv-cdf q [log? #f] [upper-tail? #f])
-        (flcauchy-inv-cdf x0 s (real->double-flonum q) log? upper-tail?))
-      inv-cdf))
-  
-  (: cauchy-random (case-> (-> (-> Float))
-                           (Real -> (-> Float))
-                           (Real Real -> (-> Float))))
-  (define (cauchy-random [x0 0.0] [s 1.0])
-    (let ([x0  (real->double-flonum x0)]
-          [s   (real->double-flonum s)])
-      (λ () (flcauchy-random x0 s))))
-  
-  )  ; begin-encourage-inline
+  )
