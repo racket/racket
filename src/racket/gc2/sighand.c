@@ -125,7 +125,11 @@ void fault_handler(int sn, siginfo_t *si, void *ctx)
 
 /* ========== FreeBSD/NetBSD/OpenBSD signal handler ========== */
 /*  As of 2007/06/29, this is a guess for NetBSD!  */
-#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined(__NetBSD__) || defined(__OpenBSD__)
+#if defined(__FreeBSD__) \
+ || defined(__FreeBSD_kernel__) \
+ || defined(__NetBSD__) \
+ || defined(__OpenBSD__) \
+ || defined(__DragonFly__)
 # include <signal.h>
 # include <sys/param.h>
 void fault_handler(int sn, siginfo_t *si, void *ctx)

@@ -787,9 +787,11 @@ fi
 AC_MSG_CHECKING($msg)
 AC_TRY_RUN(
 [  #include <wchar.h> ]
+[  #include <strings.h>]
    int main() {
      mbstate_t state;
 [    char *src = "X";]
+[    bzero(&state, sizeof(mbstate_t));]
 [    mbsrtowcs(0, &src, 0, &state);]
      return 0;
    }, mbsrtowcs=yes, mbsrtowcs=no, mbsrtowcs=no)
