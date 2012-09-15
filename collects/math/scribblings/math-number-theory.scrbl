@@ -428,4 +428,8 @@ Note: The function @racket[divisor-sum] is multiplicative.
                       (map bernoulli (range 9))]
 }
 
+@; ----------------------------------------
+@section[#:tag "quadratic-residues"]{Quadratic Residues}
+
+
 @(close-eval untyped-eval)
