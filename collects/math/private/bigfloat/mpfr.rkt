@@ -79,7 +79,6 @@
     [(_ name type) (get-mpfr-fun name type (make-not-available name))]
     [(_ name type fail-thunk) (get-ffi-obj name mpfr-lib type fail-thunk)]))
                   
-
 (define mpfr-free-cache (get-mpfr-fun 'mpfr_free_cache (_fun -> _void)))
 #;; This may be crashing Racket
 (define mpfr-shutdown (register-custodian-shutdown
@@ -1001,3 +1000,82 @@
 (begin-for-syntax
   (set! 0ary-funs (list* #'phi.bf #'epsilon.bf #'-max.bf #'-min.bf #'+min.bf #'+max.bf
                          0ary-funs)))
+
+;; ===================================================================================================
+;; Extra functions
+
+(define (random-bits bits)
+  (let loop ([bits bits] [acc 0])
+    (cond [(= 0 bits)  acc]
+          [else
+           (define new-bits (min 24 bits))
+           (loop (- bits new-bits)
+                 (bitwise-ior (random (arithmetic-shift 1 new-bits))
+                              (arithmetic-shift acc new-bits)))])))
+
+(define (bfrandom)
+  (define bits (bf-precision))
+  (bf (random-bits bits) (- bits)))
+
+(provide bfrandom)
+
+;; ===================================================================================================
+;; Number Theoretic Functions
+;; http://gmplib.org/manual/Number-Theoretic-Functions.html#Number-Theoretic-Functions
+
+(define mpz-probab-prime-p 
+  (get-gmp-fun '__gmpz_probab_prime_p  (_fun _mpz-pointer _int -> _int)))
+
+(define (probably-prime n [repetitions 10])
+  (case (mpz-probab-prime-p (integer->mpz n) repetitions)
+    [(0) 'composite]
+    [(1) 'probably-prime]
+    [(2) 'prime]))
+
+(define (prime? n)
+  (case (probably-prime n)
+    [(probably-prime prime) #t]
+    [else #f]))
+
+(define mpz-nextprime
+  (get-gmp-fun '__gmpz_nextprime  (_fun _mpz-pointer _mpz-pointer -> _void)))
+
+(define (next-prime op)
+  (define result (raw-mpz))
+  (mpz-nextprime result (integer->mpz op))
+  (begin0
+    (mpz->integer result)
+    (mpz-clear result)))
+
+(define mpz-invert
+  (get-gmp-fun '__gmpz_invert  (_fun _mpz-pointer _mpz-pointer _mpz-pointer -> _void)))
+
+(define (mod-inverse n modulus)
+  (define result (raw-mpz))
+  (mpz-invert result (integer->mpz n) (integer->mpz modulus))
+  (begin0
+    (mpz->integer result)
+    (mpz-clear result)))
+
+(define mpz-jacobi
+  (get-gmp-fun '__gmpz_jacobi  (_fun _mpz-pointer _mpz-pointer -> _int)))
+
+(define (jacobi a b)
+  (mpz-jacobi (integer->mpz a) (integer->mpz b)))
+
+(define mpz-legendre
+  (get-gmp-fun '__gmpz_legendre  (_fun _mpz-pointer _mpz-pointer -> _int)))
+
+(define (legendre a b)
+  (mpz-legendre (integer->mpz a) (integer->mpz b)))
+
+(define mpz-remove
+  (get-gmp-fun '__gmpz_remove  (_fun _mpz-pointer _mpz-pointer _mpz-pointer -> _int)))
+
+(define (remove-factor z f)
+  (define result (raw-mpz))
+  (define n (mpz-remove result (integer->mpz z) (integer->mpz f)))
+  (define z/f (mpz->integer result))
+  (mpz-clear result)
+  (values z/f n))
+
