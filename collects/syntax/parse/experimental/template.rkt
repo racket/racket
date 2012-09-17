@@ -70,7 +70,7 @@ A HeadTemplate (H) is one of:
                           #`(quote-syntax t)]
                          [else
                           (with-syntax ([props-guide props-guide])
-                            #`(substitute (quote-syntax t) 'props-guide '_ #f))])]
+                            #`(substitute (quote-syntax t) 'props-guide '_ '#()))])]
                   [else
                    (with-syntax ([guide guide]
                                  [props-guide props-guide]
