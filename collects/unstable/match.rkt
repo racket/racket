@@ -3,7 +3,8 @@
 (require racket/class
          racket/match
          (for-syntax racket/base)
-         (for-syntax syntax/parse))
+         (for-syntax syntax/parse
+                     syntax/parse/experimental/template))
 
 (provide match? as object)
 
@@ -13,6 +14,38 @@
 (define-match-expander as
   (syntax-rules ()
     [(as ([x e] ...) p ...) (and (app (lambda (y) e) x) ... p ...)]))
+
+;; Added by asumu
+;; Comprehensive `define` procedure form for match
+(provide define/match)
+
+(begin-for-syntax
+  (define-syntax-class function-header
+    (pattern ((~or header:function-header name:id) . args:args)
+             #:attr params
+             (template ((?@ . (?? header.params ()))
+                        . args.params))))
+
+  (define-syntax-class args
+    (pattern (arg:arg ...)
+             #:attr params #'(arg.name ...))
+    (pattern (arg:arg ... . rest:id)
+             #:attr params #'(arg.name ... rest)))
+
+  (define-splicing-syntax-class arg
+    #:attributes (name)
+    (pattern name:id)
+    (pattern [name:id default])
+    (pattern (~seq kw:keyword name:id))
+    (pattern (~seq kw:keyword [name:id default]))))
+
+(define-syntax (define/match stx)
+  (syntax-parse stx
+    [(_ ?header:function-header ?clause ...)
+     (template
+      (define ?header
+        (match* (?? ?header.params)
+          ?clause ...)))]))
 
 ;; Added by asumu
 ;; Match expander for objects from racket/class
