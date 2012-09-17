@@ -66,8 +66,12 @@
      (apply omnr args)]))
 
 (define (rel+mod->mod rel mod)
-  (define-values (base file dir?) (split-path (resolved-module-path-name rel)))
-  (path->mod (simplify-path (build-path base mod))))
+  (let* ([rel (resolved-module-path-name rel)]
+         [rel (if (pair? rel) (car rel) rel)])
+    (if (pair? mod)
+        #f  ;; give up on submodules for now; FIXME
+        (let-values ([(base file dir?) (split-path rel)])
+          (path->mod (simplify-path (build-path base mod)))))))
 
 (define (path->mod path)
   (cond [(for/or ([c (current-library-collection-paths)]) (path->mod* path c))
