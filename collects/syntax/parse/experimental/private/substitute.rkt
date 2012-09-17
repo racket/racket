@@ -103,7 +103,7 @@ A HeadGuide (HG) is one of:
        (let ([last-upto
               (for/fold ([last 1]) ([upto (in-list uptos)])
                 (unless (<= upto lenv*-len)
-                  (error 'template "internal error: upto is to big"))
+                  (error 'template "internal error: upto is too big"))
                 (unless (>= upto last)
                   (error 'template "internal error: uptos decreased: ~e" uptos))
                 upto)])
@@ -273,7 +273,7 @@ A HeadGuide (HG) is one of:
     (for ([v (in-vector lenv)])
       (unless (= len0 (length v))
         (raise-syntax-error 'template
-                            "incomplatible ellipsis match counts for template"
+                            "incompatible ellipsis match counts for template"
                             stx)))))
 
 ;; ----

@@ -147,7 +147,8 @@ instead of integers and integer vectors.
 |#
 
 (begin-for-syntax
- (struct pvar (sm dd) #:prefab))
+ (struct pvar (sm dd) #:prefab)
+ (define (pvar/dd=0? x) (and (pvar? x) (equal? (pvar-dd x) 0))))
 
 ;; ============================================================
 
@@ -347,8 +348,11 @@ instead of integers and integer vectors.
                       (parse-h #'head (+ depth nesting) esc?)]
                      [(tdrivers tguide tprops-guide)
                       (parse-t tail depth esc?)])
-          (unless (positive? (set-count hdrivers))
+          (when (set-empty? hdrivers)
             (wrong-syntax #'head "no pattern variables in term before ellipsis"))
+          (when (set-empty? (set-filter hdrivers pvar/dd=0?))
+            ;; FIXME: improve error message?
+            (wrong-syntax #'DOTS "too many ellipses in template"))
           (wrap-props t
                       (set-union hdrivers tdrivers)
                       ;; pre-guide hdrivers is (listof (setof pvar))

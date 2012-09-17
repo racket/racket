@@ -1,6 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base)
          rackunit
+         (only-in "setup.rkt" convert-syntax-error tcerr)
          racket/syntax
          syntax/parse
          syntax/parse/experimental/template)
@@ -11,8 +12,13 @@
   (syntax-case stx ()
     [(tc expr expected)
      #`(test-equal? (format "line ~s" #,(syntax-line stx))
-                    (syntax->datum expr)
+                    (syntax->datum (convert-syntax-error expr))
                     expected)]))
+
+(define-syntax (terx stx)
+  (syntax-case stx ()
+    [(terx expr err-rx ...)
+     #`(tcerr (format "line ~s" #,(syntax-line stx)) expr err-rx ...)]))
 
 ;; ----------------------------------------
 
@@ -152,3 +158,31 @@
     '((x abc-x) (y abc-y) (z abc-z)))
 (tc (template ((xx (join aa xx)) ...))
     '((x ax) (y by) (z cz)))
+
+
+;; ============================================================
+
+;; Error tests
+
+(terx (template (1 ...))
+      #rx"no pattern variables in term before ellipsis")
+
+(terx (template (uu ...))
+      #rx"too many ellipses in template")
+
+(terx (template aa)
+      #rx"pattern variable used at wrong ellipsis depth")
+
+(terx (template (?@))
+      #rx"illegal use")
+
+(terx (template ((?@ . uu)))
+      #rx"splicing template did not produce a syntax list")
+
+(define-template-metafunction (bad-mf stx) 123)
+
+(terx (template (bad-mf))
+      #rx"result of metafunction was not syntax")
+
+(terx (with-syntax ([(bb ...) #'(y z)]) (template ((aa bb) ...)))
+      #rx"incompatible ellipsis match counts")
