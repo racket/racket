@@ -527,13 +527,26 @@ the state transitions / contracts are:
                                'framework:display-line-numbers
                                (string-constant display-line-numbers)
                                values values)
-                   (unless (eq? (system-type) 'unix) 
-                     (make-check editor-panel 
-                                 'framework:print-output-mode 
-                                 (string-constant automatically-to-ps)
-                                 (λ (b) 
-                                   (if b 'postscript 'standard))
-                                 (λ (n) (eq? 'postscript n))))
+                   (define print-rb (new radio-box% 
+                                         [label (string-constant printing-mode)]
+                                         [parent editor-panel]
+                                         [choices (list (string-constant print-using-platform-specific-mode)
+                                                        (string-constant print-to-ps)
+                                                        (string-constant print-to-pdf))]
+                                         [callback
+                                          (λ (rb evt)
+                                            (preferences:set 'framework:print-output-mode
+                                                             (case (send print-rb get-selection)
+                                                               [(0) 'standard]
+                                                               [(1) 'postscript]
+                                                               [(2) 'pdf])))]))
+                   (define (update-print-rb what)
+                     (send print-rb set-selection (case what
+                                                    [(standard) 0]
+                                                    [(postscript) 1]
+                                                    [(pdf) 2])))
+                   (update-print-rb (preferences:get 'framework:print-output-mode))
+                   (preferences:add-callback 'framework:print-output-mode (λ (p v) (update-print-rb v)))
                    (general-panel-procs editor-panel))))])
       (add-general-checkbox-panel)))
   

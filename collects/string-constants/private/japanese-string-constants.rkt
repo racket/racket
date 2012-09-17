@@ -426,7 +426,6 @@ please adhere to these guidelines:
  (show-line-and-column-numbers "行番号と桁番号を表示する") ; used for popup menu; right click on line/column box in bottom of drs window
  (show-character-offsets "文字オフセットを表示する") ; used for popup menu; right click on line/column box in bottom of drs window
  (enable-keybindings-in-menus "メニューのキーバインドを有効にする")
- (automatically-to-ps "自動的に PostScript ファイルに印刷する")
  (command-as-meta "Command キーを Meta キーとして処理する") ;; macos/macos x only
  (reuse-existing-frames "新しいファイルを開くときに既存のフレームを再利用する")
  (default-fonts "既定のフォント")

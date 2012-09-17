@@ -228,7 +228,7 @@
 (preferences:set-default
  'framework:print-output-mode
  'standard
- (λ (x) (or (eq? x 'standard) (eq? x 'postscript))))
+ (λ (x) (or (eq? x 'standard) (eq? x 'postscript) (eq? x 'pdf))))
 
 (preferences:set-default 'framework:highlight-parens #t boolean?)
 (preferences:set-default 'framework:fixup-parens #t boolean?)

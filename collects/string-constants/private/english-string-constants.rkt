@@ -499,7 +499,10 @@ please adhere to these guidelines:
  (show-line-and-column-numbers "Show Line && Column Numbers") ; used for popup menu; right click on line/column box in bottom of drs window
  (show-character-offsets "Show Character Offsets") ; used for popup menu; right click on line/column box in bottom of drs window
  (enable-keybindings-in-menus "Enable keybindings in menus")
- (automatically-to-ps "Automatically print to PostScript file")
+ (printing-mode "Printing Mode")
+ (print-using-platform-specific-mode "Platform-specific printing")
+ (print-to-ps "Print to PostScript File")
+ (print-to-pdf "Print to PDF File")
  (command-as-meta "Treat command key as meta") ;; macos/macos x only
  (reuse-existing-frames "Reuse existing frames when opening new files")
  (default-fonts "Default Fonts")

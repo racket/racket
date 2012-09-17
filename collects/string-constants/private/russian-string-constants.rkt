@@ -431,7 +431,6 @@ please adhere to these guidelines:
  (show-line-and-column-numbers "Показывать номера строк и столбцов") ; used for popup menu; right click on line/column box in bottom of drs window
  (show-character-offsets "Показывать смещение символов") ; used for popup menu; right click on line/column box in bottom of drs window
  (enable-keybindings-in-menus "Разрешить сочетания клавиш в меню")
- (automatically-to-ps "Автоматически печатать в PostScript-файле")
  (command-as-meta "Считать командную клавишу мета-клавишей") ;; macos/macos x only
  (reuse-existing-frames "Использовать существующие окна при открытии новых файлов")
  (default-fonts "Шрифты по умолчанию")

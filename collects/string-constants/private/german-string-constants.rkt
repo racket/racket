@@ -396,7 +396,6 @@
  (show-line-and-column-numbers "Zeilen- && Spaltennummern anzeigen") ; used for popup menu; right click on line/column box in bottom of drs window
  (show-character-offsets "Zeichen-Offsets anzeigen") ; used for popup menu; right click on line/column box in bottom of drs window
  (enable-keybindings-in-menus "Tastenbelegung für Menüs")
- (automatically-to-ps "Automatisch in PostScript-Datei drucken")
  (command-as-meta "Command-Taste als Meta behandeln") ;; macos/macos x only
  (reuse-existing-frames "Existierende Fenster für neu geöffnete Dateien wiederverwenden")
  (default-fonts "Standard-Fonts")

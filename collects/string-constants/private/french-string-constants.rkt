@@ -485,7 +485,6 @@
   (show-line-and-column-numbers "Montrer les numéros de ligne et de colonne") ; used for popup menu; right click on line/column box in bottom of drs window
   (show-character-offsets "Montrer la distance depuis le début de l'éditeur") ; used for popup menu; right click on line/column box in bottom of drs window
   (enable-keybindings-in-menus "Raccourcis clavier dans les menus.")
-  (automatically-to-ps "Imprimer automatiquement dans un fichier postscript.")
   (command-as-meta "Utiliser la touche de commande comme touche meta") ;; macos/macos x only
   (reuse-existing-frames "Réutiliser les fenêtres existantes lors de l'ouverture de nouveaux fichiers")
   (default-fonts "Polices par défaut")
