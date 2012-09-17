@@ -4,7 +4,12 @@
 
 @title[#:style '(toc quiet)]{Widget Gallery}
 
-This section gives an overview of the main widgets available in the Racket Graphical Interface Toolkit and each image points to its full documentation.
+@; Note: Instructions for taking widget screenshots are avaiable at:
+@;   ./taking-screenshots/instructions
+
+This section shows the main widgets available in the Racket Graphical User
+Interface Toolkit. Each image is a link to the documentation of the relevant
+widget.
 
 @(showcase-widget button%
 (define button (new button%
