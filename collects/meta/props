@@ -804,6 +804,7 @@ path/s is either such a string or a list of them.
 "collects/meta/drdr" responsible (jay) drdr:command-line #f
 "collects/meta/drdr2" responsible (jay) drdr:command-line #f
 "collects/meta/images/mkheart.rkt" drdr:command-line #f
+"collects/meta/images/taking-screenshots/racket-widget.scm" drdr:command-line #f
 "collects/meta/props" responsible (eli jay) drdr:command-line (racket "-um" * "verify")
 "collects/meta/web" drdr:command-line #f
 "collects/mred" responsible (mflatt)

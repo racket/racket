@@ -5,7 +5,7 @@
 @title[#:style '(toc quiet)]{Widget Gallery}
 
 @; Note: Instructions for taking widget screenshots are avaiable at:
-@;   ./taking-screenshots/instructions
+@;   collects/meta/images/taking-screenshots/instructions
 
 This section shows the main widgets available in the Racket Graphical User
 Interface Toolkit. Each image is a link to the documentation of the relevant
