@@ -52,7 +52,8 @@ result value of @racket[rhs-expr], and continues matching each subsequent
   (define/match (head args)
     match*-clause ...)
   ([head id (head args)]
-   [args (arg ...)]
+   [args (code:line arg ...)
+         (code:line arg ... @#,racketparenfont{.} rest-id)]
    [arg arg-id
         [arg-id default-expr]
         (code:line keyword arg-id)
@@ -80,6 +81,14 @@ result value of @racket[rhs-expr], and continues matching each subsequent
       [(_ _) #f])
     ((f "ape") #:y '(5 2 3))
     ((f "dog"))
+
+    (define/match (g x y . rst)
+      [(0 0 '()) #t]
+      [(5 5 '(5 5)) #t]
+      [(_ _ _) #f])
+    (g 0 0)
+    (g 5 5 5 5)
+    (g 1 2)
   ]
 }
 
