@@ -222,35 +222,48 @@
                          (list evt))
                        site))))
 
-       ;; Some sites are especially interesting if we have profile data.
+       ;; Some callers are especially interesting if we have profile data.
        ;; If the function under consideration takes a large portion of the
-       ;; total time for a given call site, and is not inlined there, may
-       ;; be worth reporting.
-       ;; returns: `(,caller-profile-node . ,call-site-log-entries) OR #f
-       (define interesting-sites
+       ;; total time of a given caller, we consider this case interesting.
+       ;; This serves as a building block for more interesting patterns, such
+       ;; as `key-sites' below.
+       ;; returns: caller-profile-node OR #f
+       (define interesting-callers
          (and profile-entry
               (filter values
-                      (for/list ([site (in-list inlining-sites)]
-                                 ;; Not inlined enough at that call site.
-                                 #:when (counts-as-a-missed-opt? site))
+                      (for/list ([edge (node-callers profile-entry)])
+                        ;; Does this edge take a "large enough" proportion of
+                        ;; the caller's total time?
+                        (define caller-node (edge-caller edge))
+                        (and (> (edge-caller-time edge)
+                                (* (node-total caller-node) 0.5))
+                             caller-node)))))
+
+       ;; As above, but consed in front of the inlining info for that caller.
+       (define interesting-callers+sites
+         (and profile-entry
+              (filter values
+                      (for/list ([site (in-list inlining-sites)])
                         (match (inlining-event-where-loc
                                 (inliner-log-entry-inlining-event (car site)))
                           [`(,caller-path ,caller-line ,caller-col)
                            (define caller-node
                              (pos->node (cons caller-line caller-col)))
-                           (define edge
-                             (for/first ([e (node-callers profile-entry)]
-                                         #:when (eq? (edge-caller e)
-                                                     caller-node))
-                               e))
-                           ;; Does this edge take a "large enough" proportion of
-                           ;; the caller's total time?
-                           (and edge caller-node
-                                (> (edge-caller-time edge)
-                                   (* (node-total caller-node) 0.5))
+                           (and (memq caller-node interesting-callers)
                                 (cons caller-node site))]
                           [_ ; can't parse that, give up
                            #f])))))
+
+       ;; If the function under consideration takes a large portion of the
+       ;; total time for a given call site, and is not inlined there, we can
+       ;; recommend that the user take a closer look at that specific site.
+       ;; returns: `(,caller-profile-node . ,call-site-log-entries) OR #f
+       (define key-sites
+         (and profile-entry
+              (for/list ([site (in-list interesting-callers+sites)]
+                         ;; Not inlined enough at that call site.
+                         #:when (counts-as-a-missed-opt? (cdr site)))
+                site)))
 
        (define pruned-log (apply append inlining-sites))
 
@@ -289,14 +302,14 @@
        (when (and profile (not inside-hot-function?))
          (prune))
 
-       (cond [(and profile (not (null? interesting-sites)))
+       (cond [(and profile (not (null? key-sites)))
               ;; Inlining was not satisfactory for some call sites where we
               ;; accounted for a good portion of the caller's total time.
               (emit-near-miss
                (format "Key call site~a: ~a"
-                       (if (> (length interesting-sites) 1) "s" "")
+                       (if (> (length key-sites) 1) "s" "")
                        (string-join
-                        (for/list ([site (in-list interesting-sites)])
+                        (for/list ([site (in-list key-sites)])
                           (define node (car site))
                           (format "~a ~a:~a"
                                   (node-id   node)
@@ -304,7 +317,7 @@
                                   (node-col  node)))
                         ", "))
                ;; only compute badness for the interesting sites
-               (group-badness (apply append (map cdr interesting-sites))))]
+               (group-badness (apply append (map cdr key-sites))))]
              [(counts-as-a-missed-opt? pruned-log)
               ;; Overall inlining ratio is not satisfactory.
               (emit-near-miss #f (group-badness pruned-log))]
