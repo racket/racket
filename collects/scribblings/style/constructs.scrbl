@@ -25,26 +25,22 @@ headers from section headers.
 
 In addition to ``;'', we have two other mechanisms for commenting code:
  ``#|...|#'' for blocks and ``#;'' to comment out an expression.
-
-In rare cases there might be a more substantial piece of text or code, and
- in that case the block comment style can be more convenient than
- semicolons.  Another use of block comments is for code samples to be
- copied and pasted into a file.  Either way, block comments are not used
- for single-line comments.
-
-Expression comments---``#;''---apply to the following S-expression.  This
- makes them a useful tool for debugging.  They can even be composed in
- interesting ways with other comments, for example, ``#;#;'' will comment
- two expressions, and a line with just ``;#;'' gives you a single-character
- ``toggle'' for the expression that starts on the next line.  But on the
- flip side, lots tools don't process them properly---treating them instead
- as a ``#'' followed by a commented line.  For example, in DrRacket
- S-expression comments are ignored when it comes to syntax coloring, which
- makes it easy to miss them. In Emacs, the commented text is colored like a
- comment and treated as text, which makes it difficult to edit as code.
- The bottom line here is that ``#;'' comments are useful for debugging, but
- try to avoid leaving them in committed code.  If you really want to use
- ``#;'', clarify their use with a line comment (``;'').
+ @defterm{Block comments} are for those rare cases when an entire block of
+ definitions and/or expressions must be commented out at once.
+ @defterm{Expression comments}---``#;''---apply to the following
+ S-expression.  This makes them a useful tool for debugging.  They can even
+ be composed in interesting ways with other comments, for example, ``#;#;''
+ will comment two expressions, and a line with just ``;#;'' gives you a
+ single-character ``toggle'' for the expression that starts on the next
+ line.  But on the flip side, lots tools don't process them
+ properly---treating them instead as a ``#'' followed by a commented line.
+ For example, in DrRacket S-expression comments are ignored when it comes
+ to syntax coloring, which makes it easy to miss them. In Emacs, the
+ commented text is colored like a comment and treated as text, which makes
+ it difficult to edit as code.  The bottom line here is that ``#;''
+ comments are useful for debugging, but try to avoid leaving them in
+ committed code.  If you really want to use ``#;'', clarify their use with
+ a line comment (``;'').
 
 @; -----------------------------------------------------------------------------
 @section{Definitions}
