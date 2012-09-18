@@ -1,13 +1,28 @@
 #lang scribble/doc
-@(require "ss.rkt" (for-label slideshow/code racket/gui/base))
+@(require "ss.rkt" 
+          scribble/eval
+          (for-label slideshow/code
+                     racket/gui/base))
 
 @(define stx-obj
   (tech #:doc '(lib "scribblings/reference/reference.scrbl") "syntax object"))
 
+@(define ss-eval (make-base-eval))
+@(interaction-eval #:eval ss-eval 
+  (begin
+   (require slideshow/code-pict
+            slideshow/pict
+            (for-syntax racket/base))
+   (current-code-tt (lambda (s) (text s "monospace" 14)))
+   (define-code code typeset-code)))
+
 @title{Typesetting Racket Code}
 
-@defmodule[slideshow/code]{The @racket[slideshow/code] library
-provides utilities for typesetting Racket code as a pict.}
+@defmodule*[(slideshow/code-pict slideshow/code)]{
+The @racketmodname[slideshow/code-pict] library
+provides utilities for typesetting Racket code as a pict.
+The @racketmodname[slideshow/code] library initializes
+@racket[get-current-code-font-size] to @racket[current-font-size].}
 
 @defproc[(typeset-code [stx syntax?]) pict?]{
 
@@ -80,7 +95,9 @@ specially:
 @defform[(code datum ...)]{
 
 The macro form of @racket[typeset-code]. Within a @racket[datum],
-@racket[unsyntax] can be used to escape to an expression.
+@racket[unsyntax] can be used to escape to an expression, and
+identifiers bound as syntax to @tech{code transformer}s trigger
+transformations.
 
 For more information, see @racket[typeset-code] and
 @racket[define-code], since @racket[code] is defined as
@@ -103,12 +120,19 @@ Parameter for a one-argument procedure to turn a
   string into a pict, used to typeset text. The default is
 
 @racketblock[
-(lambda (s) (text s (current-code-font) (current-font-size)))
+(lambda (s) (text s (current-code-font) ((get-current-code-font-size))))
 ]
 
 This procedure is not used to typeset subscripts or other items that
 require font changes, where @racket[current-code-font] is used
 directly.}
+
+
+@defparam[get-current-code-font-size proc (-> exact-nonnegative-integer?)]{
+
+A parameter used to access the default font size. The
+@racketmodname[slideshow/code] library initializes this parameter to
+@racket[current-font-size].}
 
 
 @defparam[current-code-line-sep amt real?]{
@@ -244,7 +268,69 @@ the @racket[_expr] is evaluated and the result datum is spliced in
 place of the @racket[escape-id] form in @racket[_datum]. If the result
 is not a syntax object, it is given the source location of the
 @racket[escape-id] form. A pict value intected this way as a
-@racket[_datum] is rendered as itself.}
+@racket[_datum] is rendered as itself.
+
+If a @racket[_datum] contains @racket[(transform-id _datum ...)] or
+@racket[transform-id] for a @racket[transform-id] that is bound as syntax to a
+@tech{code transformer}, then the @racket[(transform-id _datum ...)]
+or @racket[transform-id] may be replaced with an escaped expression,
+depending on the @tech{code transformer}'s result.}
+
+@deftogether[(
+@defproc[(make-code-transformer [proc-or-stx (or/c (syntax? . -> . (or/c syntax? #f))
+                                                   syntax?)])
+         code-transformer?]
+@defthing[prop:code-transformer struct-type-property?]
+@defproc[(code-transformer? [v any/c]) boolean?]
+)]{
+
+Exported @racket[for-syntax] for creating @deftech{code transformers}.
+
+For @tech{code transformer} created with
+@racket[(make-code-transformer _proc)], @racket[proc] takes a syntax
+object representing the use of an identifier bound to the transformer,
+and it produces an expression whose value replaces the identifier use
+within a @racket[code] form or a form defined via
+@racket[define-code].  Like a macro transformer, a code transformer is
+triggered either by a use of the bound identifier in an
+``application'' position, in which case the transformer receives the
+entire ``application'' form, or the identifier by itself can also
+trigger the transformer. The @tech{code transformer}'s @racket[_proc]
+can return @racket[#f], in which case the use of the identifier is
+left untransformed; if the identifier was used in an ``application''
+position, the transformer @racket[_proc] will be called again for the
+identifier use by itself.
+
+A @tech{code transformer} produced by @racket[(make-code-transformer _stx)]
+is equivalent to 
+
+@racketblock[
+(make-code-transformer (lambda (use-stx) 
+                         (if (identifier? use-stx)
+                             _stx
+                             #f)))
+]
+
+A structure type with the @racket[prop:code-transformer] property
+implements a @tech{code transformer}. The property value must be a
+procedure of one argument, which receives the structure and returns a
+procedure that is like a @racket[_proc] passed to
+@racket[make-code-transformer], except that the property value takes
+the structure instance as an argument before the syntax object to
+transform.
+
+The @racket[code-transformer?] predicate returns @racket[#t] for a
+value produced by @racket[make-code-transformer] or for an instance of
+a structure type with the @racket[prop:code-transformer] property,
+@racket[#f] otherwise.
+
+@examples[
+#:eval ss-eval
+(let-syntax ([bag (make-code-transformer #'(code hat))]
+             [copy (make-code-transformer (syntax-rules ()
+                                           [(_ c) (code (* 2 c))]))])
+  (inset (frame (code ((copy cat) in the bag))) 2))
+]}
 
 
 @defform[(define-exec-code (pict-id runnable-id string-id)
@@ -294,3 +380,7 @@ The same as @racket[pict-last], provided for backward compatibility.}
 
 Mainly for backward compatibility: returns @racket[(if bl-pict
 (use-last pict (or (pict-last bl-pict) bl-pict)))].}
+
+@; ----------------------------------------
+
+@close-eval[ss-eval]
