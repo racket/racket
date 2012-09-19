@@ -63,6 +63,8 @@ Alt-q (or Meta-q) to end the slides. Here are more controls:
   (list "Left arrow, Backspace, Delete, or b" "previous slide")
   (list "g"                                   "last slide")
   (list "1"                                   "first slide")
+  (list "s"                                   "next slide with a different title/name")
+  (list "a"                                   "previous slide starting different title/name")
   (list "Alt-g, Cmd-g, or Meta-g"             "select a slide")
   (list "Alt-p, Cmd-p, or Meta-p"             "show/hide slide number")
   (list "Alt-c, Cmd-c, or Meta-c"             "show/hide commentary")
