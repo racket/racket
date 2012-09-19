@@ -1189,7 +1189,8 @@
            (queue-callback/res
             (λ ()
               (define defs (send drs get-definitions-text))
-              (define menu (send defs syncheck:build-popup-menu (rename-test-pos test) defs))
+              (define menu (make-object popup-menu%))
+              (send defs syncheck:build-popup-menu menu (rename-test-pos test) defs)
               (define item-name (format "Rename ~a" (rename-test-old-name test)))
               (define menu-item
                 (for/or ([x (in-list (send menu get-items))])
