@@ -35,43 +35,26 @@ A HeadTemplate (H) is one of:
   - (?@ . T)
 |#
 
-(define-syntax (template stx)
-  (parameterize ((current-syntax-context stx))
-    (syntax-case stx ()
-      [(template t)
-       #'(template t #:properties (paren-shape))]
-      [(template t #:properties (prop ...))
-       (andmap identifier? (syntax->list #'(prop ...)))
-       (let-values ([(guide deps props-guide)
-                     (parameterize ((retain-props (syntax->datum #'(prop ...))))
-                       (parse-template #'t))])
-         (let ([vars
-                (for/list ([dep (in-vector deps)])
-                  (cond [(pvar? dep)
-                         (let* ([sm (pvar-sm dep)]
-                                [valvar (syntax-mapping-valvar sm)]
-                                [attr (syntax-local-value valvar (lambda () #f))])
-                           (cond [(attribute-mapping? attr)
-                                  (attribute-mapping-var attr)]
-                                 [else valvar]))]
-                        [(template-metafunction? dep)
-                         (template-metafunction-var dep)]
-                        [else
-                         (error 'template
-                                "internal error: bad environment entry: ~e"
-                                dep)]))])
+(begin-for-syntax
+ (define (do-template ctx tstx)
+   (parameterize ((current-syntax-context ctx))
+     (let-values ([(guide deps props-guide) (parse-template tstx)])
+       (let ([vars
+              (for/list ([dep (in-vector deps)])
+                (cond [(pvar? dep) (pvar-var dep)]
+                      [(template-metafunction? dep)
+                       (template-metafunction-var dep)]
+                      [else
+                       (error 'template
+                              "internal error: bad environment entry: ~e"
+                              dep)]))])
+         (with-syntax ([t tstx])
            (syntax-arm
-            (cond [(equal? guide '1) ;; was (template pvar)
-                   (with-syntax ([var (car vars)])
-                     #'(if (syntax? var)
-                           var
-                           (error/not-stx (quote-syntax t) var)))]
-                  [(equal? guide '_) ;; constant
-                   (cond [(equal? props-guide '_) ;; no props
-                          #`(quote-syntax t)]
-                         [else
-                          (with-syntax ([props-guide props-guide])
-                            #`(substitute (quote-syntax t) 'props-guide '_ '#()))])]
+            (cond [(equal? guide '1)
+                   ;; was (template pvar), implies props-guide = '_
+                   (car vars)]
+                  [(and (equal? guide '_) (equal? props-guide '_))
+                   #'(quote-syntax t)]
                   [else
                    (with-syntax ([guide guide]
                                  [props-guide props-guide]
@@ -82,7 +65,17 @@ A HeadTemplate (H) is one of:
                      #'(substitute (quote-syntax t)
                                    'props-guide
                                    'guide
-                                   vars-vector))]))))])))
+                                   vars-vector))]))))))))
+
+(define-syntax (template stx)
+  (syntax-case stx ()
+    [(template t)
+     (do-template stx #'t)]
+    [(template t #:properties (prop ...))
+     (andmap identifier? (syntax->list #'(prop ...)))
+     (parameterize ((props-to-serialize (syntax->datum #'(prop ...)))
+                    (props-to-transfer (syntax->datum #'(prop ...))))
+       (do-template stx #'t))]))
 
 ;; substitute-table : hash[stx => translated-template]
 ;; Cache for closure-compiled templates. Key is just syntax of
@@ -118,7 +111,7 @@ A HeadTemplate (H) is one of:
 See private/substitute for definition of Guide (G) and HeadGuide (HG).
 
 A env-entry is one of
-  - (pvar syntax-mapping depth-delta)
+  - (pvar syntax-mapping attribute-mapping/#f depth-delta)
   - template-metafunction
 
 The depth-delta associated with a depth>0 pattern variable is the difference
@@ -148,7 +141,7 @@ instead of integers and integer vectors.
 |#
 
 (begin-for-syntax
- (struct pvar (sm dd) #:prefab))
+ (struct pvar (sm attr dd) #:prefab))
 
 ;; ============================================================
 
@@ -169,6 +162,22 @@ instead of integers and integer vectors.
 ;; ============================================================
 
 (begin-for-syntax
+
+ ;; props-to-serialize determines what properties are saved even when
+ ;; code is compiled.  (Unwritable values are dropped.)
+ ;; props-to-transfer determines what properties are transferred from
+ ;; template to stx constructed.
+ ;; If a property is in props-to-transfer but not props-to-serialize,
+ ;; compiling the module may have caused the property to disappear.
+ ;; If a property is in props-to-serialize but not props-to-transfer,
+ ;; it will show up only in constant subtrees.
+ ;; The behavior of 'syntax' is serialize '(), transfer '(paren-shape).
+
+ ;; props-to-serialize : (parameterof (listof symbol))
+ (define props-to-serialize (make-parameter '()))
+
+ ;; props-to-transfer : (parameterof (listof symbol))
+ (define props-to-transfer (make-parameter '(paren-shape)))
 
  ;; parse-template : stx -> (values guide (vectorof env-entry) guide)
  (define (parse-template t)
@@ -196,8 +205,12 @@ instead of integers and integer vectors.
              (hash-ref main-env x))))
      (match g
        ['_ '_]
-       [(cons g1 g2) (cons (loop g1 loop-env) (loop g2 loop-env))]
-       [(? pvar? pvar) (get-index pvar)]
+       [(cons g1 g2)
+        (cons (loop g1 loop-env) (loop g2 loop-env))]
+       [(? pvar? pvar)
+        (if (pvar-check? pvar)
+            (vector 'check (get-index pvar))
+            (get-index pvar))]
        [(vector 'dots head new-hdrivers/level nesting '#f tail)
         (let-values ([(sub-loop-env r-uptos)
                       (for/fold ([env (hash)] [r-uptos null])
@@ -253,25 +266,31 @@ instead of integers and integer vectors.
 
  ;; ----------------------------------------
 
- (define retain-props (make-parameter '(paren-shape)))
-
  (define (wrap-props stx env-set pre-guide props-guide)
-   (let ([prop-entries
+   (let ([saved-prop-values
           (if (syntax? stx)
-              (for/fold ([entries null]) ([prop (in-list (retain-props))])
+              (for/fold ([entries null]) ([prop (in-list (props-to-serialize))])
                 (let ([v (syntax-property stx prop)])
                   (if (and v (quotable? v))
                       (cons (cons prop v) entries)
                       entries)))
+              null)]
+         [copy-props
+          (if (syntax? stx)
+              (for/list ([prop (in-list (props-to-transfer))]
+                         #:when (syntax-property stx prop))
+                prop)
               null)])
-     (if (pair? prop-entries)
-         (values env-set
-                 (cond [(eq? pre-guide '_)
-                        ;; No need to copy props; already on constant.
-                        '_]
-                       [else (vector 'copy-props pre-guide (map car prop-entries))])
-                 (vector 'set-props props-guide prop-entries))
-         (values env-set pre-guide props-guide))))
+     (values env-set
+             (cond [(eq? pre-guide '_)
+                    ;; No need to copy props; already on constant
+                    '_]
+                   [(pair? copy-props)
+                    (vector 'copy-props pre-guide copy-props)]
+                   [else pre-guide])
+             (if (pair? saved-prop-values)
+                 (vector 'set-props props-guide saved-prop-values)
+                 props-guide))))
 
  (define (quotable? v)
    (or (null? v)
@@ -294,7 +313,7 @@ instead of integers and integer vectors.
  (define (list-guide . gs)
    (foldr cons-guide '_ gs))
 
- ;; parse-t : stx nat boolean -> (values (setof env-entry) pre-guide)
+ ;; parse-t : stx nat boolean -> (values (setof env-entry) pre-guide props-guide)
  (define (parse-t t depth esc?)
    (syntax-case t (?? ?@)
      [id
@@ -405,7 +424,7 @@ instead of integers and integer vectors.
      [const
       (wrap-props t (set) '_ '_)]))
 
- ;; parse-h : stx nat boolean -> (values (setof env-entry) boolean pre-head-guide)
+ ;; parse-h : stx nat boolean -> (values (setof env-entry) boolean pre-head-guide props-guide)
  (define (parse-h h depth esc?)
    (syntax-case h (?? ?@)
      [(?? t)
@@ -439,13 +458,15 @@ instead of integers and integer vectors.
  (define (lookup id depth)
    (let ([v (syntax-local-value id (lambda () #f))])
      (cond [(syntax-pattern-variable? v)
-            (let ([pvar-depth (syntax-mapping-depth v)])
+            (let* ([pvar-depth (syntax-mapping-depth v)]
+                   [attr (syntax-local-value (syntax-mapping-valvar v) (lambda () #f))]
+                   [attr (and (attribute-mapping? attr) attr)])
               (cond [(not depth) ;; not looking for pvars, only for metafuns
                      #f]
                     [(zero? pvar-depth)
-                     (pvar v #f)]
+                     (pvar v attr #f)]
                     [(>= depth pvar-depth)
-                     (pvar v (- depth pvar-depth))]
+                     (pvar v attr (- depth pvar-depth))]
                     [else
                      (wrong-syntax id
                                    (string-append "pattern variable used at wrong ellipsis depth "
@@ -454,10 +475,13 @@ instead of integers and integer vectors.
            [(template-metafunction? v)
             v]
            [else
-            ;; id is a literal; check that for all x s.t. id = x.y, x is not a pattern variable
+            ;; id is a literal; check that for all x s.t. id = x.y, x is not an attribute
             (for ([pfx (in-list (dotted-prefixes id))])
-              (when (syntax-pattern-variable? (syntax-local-value pfx (lambda () #f)))
-                (wrong-syntax id "undefined nested attribute of attribute `~a'" (syntax-e pfx))))
+              (let ([pfx-v (syntax-local-value pfx (lambda () #f))])
+                (when (and (syntax-pattern-variable? pfx-v)
+                           (let ([valvar (syntax-mapping-valvar pfx-v)])
+                             (attribute-mapping? (syntax-local-value valvar (lambda () #f)))))
+                  (wrong-syntax id "undefined nested attribute of attribute `~a'" (syntax-e pfx)))))
             #f])))
 
  (define (dotted-prefixes id)
@@ -474,8 +498,18 @@ instead of integers and integer vectors.
 
  (define ((pvar/dd<=? expected-dd) x)
    (match x
-     [(pvar sm dd) (and dd (<= dd expected-dd))]
+     [(pvar sm attr dd) (and dd (<= dd expected-dd))]
      [_ #f]))
+
+ (define (pvar-var x)
+   (match x
+     [(pvar sm '#f dd) (syntax-mapping-valvar sm)]
+     [(pvar sm attr dd) (attribute-mapping-var attr)]))
+
+ (define (pvar-check? x)
+   (match x
+     [(pvar sm '#f dd) #f]
+     [(pvar sm attr dd) (not (attribute-mapping-syntax? attr))]))
 
  (define (stx-drop n x)
    (cond [(zero? n) x]
