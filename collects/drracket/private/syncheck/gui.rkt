@@ -993,8 +993,6 @@ If the namespace does not, they are colored the unbound color.
                   ;; need to check this first so syncheck:clear-arrows will work
                   [(not arrow-records)
                    (values #f #f #f #f)]
-                  [(and popup-menu (send popup-menu get-popup-target))
-                   (values latent-pos latent-text latent-eles latent-tooltip)]
                   [(and x y)
                    (define-values (pos text) (get-pos/text-dc-location x y))
                    (define arrow-record (and text pos (hash-ref arrow-records text #f)))
@@ -1025,7 +1023,6 @@ If the namespace does not, they are colored the unbound color.
               
               (invalidate-bitmap-cache))
             
-            (define popup-menu #f)
             (define mouse-admin #f)  ; editor admin for the last mouse move
             (define mouse-x #f)      ; last known mouse position
             (define mouse-y #f)
