@@ -125,7 +125,9 @@
             (hash-set! htable a-k-id
                        (list salt k expiration-handler (add1 count))))
           (if (or (not (eq? salt a-salt))
-                  (not k))
+                  (not k)
+                  (and (custodian-box? k)
+                       (not (custodian-box-value k))))
               (raise (make-exn:fail:servlet-manager:no-continuation
                       (format "No continuation for id: ~a" a-k-id)
                       (current-continuation-marks)

@@ -107,7 +107,9 @@
             (increment-timer! k-timer
                               continuation-timer-length))
           (if (or (not (eq? salt a-salt))
-                  (not k))
+                  (not k)
+                  (and (custodian-box? k)
+                       (not (custodian-box-value k))))
               (raise (make-exn:fail:servlet-manager:no-continuation
                       (format "No continuation for id: ~a" a-k-id)
                       (current-continuation-marks)
