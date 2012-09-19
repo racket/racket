@@ -168,7 +168,7 @@
       (let ([scale (if (zero? (bitwise-and (PAGESETUPDLG-Flags page-setup)
                                            PSD_INTHOUSANDTHSOFINCHES))
                        ;; 100ths of mm
-                       (/ SCREEN-DPI (* 10.0 2.54))
+                       (/ SCREEN-DPI (* 1000.0 2.54))
                        ;; 1000ths of in
                        (/ SCREEN-DPI 1000.0))]
 	    [r (PAGESETUPDLG-rtMargin page-setup)]
