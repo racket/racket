@@ -192,7 +192,8 @@
             (syntax-case* stx-obj (#%plain-lambda case-lambda if begin begin0 let-values letrec-values set!
                                                   quote quote-syntax with-continuation-mark 
                                                   #%plain-app #%top #%plain-module-begin
-                                                  define-values define-syntaxes begin-for-syntax module
+                                                  define-values define-syntaxes begin-for-syntax 
+                                                  module module*
                                                   #%require #%provide #%expression)
               (λ (x y) (free-identifier=? x y level 0))
               [(#%plain-lambda args bodies ...)
@@ -312,6 +313,7 @@
                (begin
                  (annotate-raw-keyword stx-obj varrefs)
                  (for-each (lambda (e) (level-loop e (+ level 1))) (syntax->list (syntax (exp ...)))))]
+              
               [(module m-name lang (#%plain-module-begin bodies ...))
                (begin
                  (annotate-raw-keyword stx-obj varrefs)
@@ -320,6 +322,17 @@
                  
                  (hash-cons! requires (syntax->datum (syntax lang)) (syntax lang))
                  (for-each loop (syntax->list (syntax (bodies ...)))))]
+              [(module* m-name lang (#%plain-module-begin bodies ...))
+               (begin
+                 (annotate-raw-keyword stx-obj varrefs)
+                 
+                 (when (syntax-e #'lang)
+                   (hash-set! module-lang-requires (syntax lang) #t)
+                   ((annotate-require-open user-namespace user-directory) (syntax lang))
+                   (hash-cons! requires (syntax->datum (syntax lang)) (syntax lang)))
+                 
+                 (for-each loop (syntax->list (syntax (bodies ...)))))]
+              
               
               ; top level or module top level only:
               [(#%require require-specs ...)

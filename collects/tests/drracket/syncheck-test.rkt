@@ -50,7 +50,7 @@
   
   ;; tests : (listof test)
   (define tests
-    (list 
+    (list
      (build-test "12345"
                 '(("12345" constant)))
      (build-test "'abcdef"
@@ -988,6 +988,17 @@
                  (list '((82 83) (37 38))
                        '((61 63) (65 67))
                        '((6 12) (14 21) (40 43) (49 54) (74 80))))
+
+     (build-test "#lang racket/base\n(define red 1)\n(module+ test red)"
+                 '(("#lang racket/base\n(" default-color)
+                   ("define"               imported)
+                   (" "                    default-color)
+                   ("red"                  lexically-bound)
+                   (" 1)\n(module+ test "  default-color)
+                   ("red"                  imported)
+                   (")"                    default-color))
+                 '(((26 29) (47 50))
+                   ((6 17) (19 25))))
 
      (build-rename-test "(lambda (x) x)"
                         9
