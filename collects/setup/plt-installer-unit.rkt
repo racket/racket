@@ -38,9 +38,9 @@
                                      (stretchable-height #f)
                                      (alignment '(center center)))]
                      [kill-button (make-object button%
-				    (string-constant plt-installer-abort-installation)
-				    button-panel
-				    (lambda (b e) (kill)))]
+                                    (string-constant plt-installer-abort-installation)
+                                    button-panel
+                                    (lambda (b e) (kill)))]
                      [done (make-object button% (string-constant close) button-panel (lambda (b e) (done-callback)))]
                      [output (make-output-port
                               #f
@@ -102,9 +102,11 @@
                      (parameterize ([current-eventspace orig-eventspace])
                        (queue-callback
                         (lambda ()
+                          (fprintf output "\nInstallation complete.\n")
                           (set! completed-successfully? #t)
                           ((on-installer-run))
-                          (cleanup-thunk))))
+                          (cleanup-thunk)
+                          (custodian-shutdown-all installer-cust))))
                      
                      (send done enable #t)))))))))
       

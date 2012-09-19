@@ -13,6 +13,11 @@
     word-wrapping (this avoids some performance problems when very
     large values are rendered there)
 
+  . Adjust the Install .plt File dialog so that it cleans up after the
+    end of an installation (specifically, it shuts down the custodian
+    that was running the installation process), which also causes the 
+    Abort button to be disabled.
+
 ------------------------------
        Version 5.3
 ------------------------------
