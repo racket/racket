@@ -921,7 +921,7 @@ static Scheme_Object *link_toplevel(Scheme_Object **exprs, int which, Scheme_Env
     else
       return link_module_variable(home->module->modname,
 				  (Scheme_Object *)b->key,
-				  1, home->module->insp,
+				  1, home->access_insp,
 				  -1, home->mod_phase,
 				  env, 
                                   exprs, which,
@@ -5493,7 +5493,7 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
     scheme_check_unsafe_accessible((SCHEME_FALSEP(rp->uses_unsafe)
                                     ? (insp
                                        ? insp
-                                       : genv->insp)
+                                       : genv->access_insp)
                                     : rp->uses_unsafe),
                                    genv);
   }

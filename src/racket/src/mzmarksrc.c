@@ -881,7 +881,8 @@ namespace_val {
   gcMARK2(e->module, gc);
   gcMARK2(e->module_registry, gc);
   gcMARK2(e->module_pre_registry, gc);
-  gcMARK2(e->insp, gc);
+  gcMARK2(e->guard_insp, gc);
+  gcMARK2(e->access_insp, gc);
 
   gcMARK2(e->rename_set, gc);
   gcMARK2(e->temp_marked_names, gc);

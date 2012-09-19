@@ -3027,8 +3027,9 @@ struct Scheme_Env {
 
   Scheme_Module_Registry *module_registry;
   Scheme_Module_Registry *module_pre_registry; /* for expanding submodules */
-  Scheme_Object *insp; /* instantiation-time inspector, for granting
+  Scheme_Object *guard_insp; /* instantiation-time inspector, for granting
 			  protected access */
+  Scheme_Object *access_insp; /* for graining protected access */
 
   Scheme_Object *rename_set;
   Scheme_Hash_Table *temp_marked_names; /* used to correlate imports with re-exports */

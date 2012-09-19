@@ -766,7 +766,7 @@ void scheme_prepare_env_renames(Scheme_Env *env, int kind)
   if (!env->rename_set) {
     Scheme_Object *rns, *insp;
 
-    insp = env->insp;
+    insp = env->access_insp;
     if (!insp)
       insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
 
@@ -906,7 +906,8 @@ void scheme_prepare_exp_env(Scheme_Env *env)
     eenv->module = env->module;
     eenv->module_registry = env->module_registry;
     eenv->module_pre_registry = env->module_pre_registry;
-    eenv->insp = env->insp;
+    eenv->access_insp = env->access_insp;
+    eenv->guard_insp = env->guard_insp;
 
     modchain = SCHEME_VEC_ELS(env->modchain)[1];
     if (SCHEME_FALSEP(modchain)) {
@@ -948,7 +949,8 @@ void scheme_prepare_template_env(Scheme_Env *env)
     eenv->module = env->module;
     eenv->module_registry = env->module_registry;
     eenv->module_pre_registry = env->module_pre_registry;
-    eenv->insp = env->insp;
+    eenv->guard_insp = env->guard_insp;
+    eenv->access_insp = env->access_insp;
 
     modchain = SCHEME_VEC_ELS(env->modchain)[2];
     if (SCHEME_FALSEP(modchain)) {
@@ -989,7 +991,8 @@ void scheme_prepare_label_env(Scheme_Env *env)
     lenv->module = env->module;
     lenv->module_registry = env->module_registry;
     lenv->module_pre_registry = env->module_pre_registry;
-    lenv->insp = env->insp;
+    lenv->guard_insp = env->guard_insp;
+    lenv->access_insp = env->access_insp;
 
     modchain = scheme_make_vector(5, scheme_false);    
     prev_modules = scheme_make_hash_table(SCHEME_hash_ptr);
@@ -1022,7 +1025,8 @@ Scheme_Env *scheme_copy_module_env(Scheme_Env *menv, Scheme_Env *ns, Scheme_Obje
   menv2->module = menv->module;
   menv2->module_registry = ns->module_registry;
   menv2->module_pre_registry = ns->module_pre_registry;
-  menv2->insp = menv->insp;
+  menv2->guard_insp = menv->guard_insp;
+  menv2->access_insp = menv->access_insp;
 
   menv2->instance_env = menv2;
 
@@ -1764,7 +1768,7 @@ static Scheme_Object *do_variable_namespace(const char *who, int tl, int argc, S
                             "variable reference", 1, v,
                             NULL);
     }
-    return env->module->insp;
+    return env->access_insp;
   } else if (tl) {
     /* return env directly; need to set up  */
     if (!env->phase && env->module)
@@ -2437,7 +2441,7 @@ Scheme_Object *scheme_get_local_inspector()
   Scheme_Thread *p = scheme_current_thread;
 
   if (p->current_local_menv)
-    return p->current_local_menv->module->insp;
+    return p->current_local_menv->access_insp;
   else
     return scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
 }

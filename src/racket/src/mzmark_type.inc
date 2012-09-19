@@ -2193,7 +2193,8 @@ static int namespace_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(e->module, gc);
   gcMARK2(e->module_registry, gc);
   gcMARK2(e->module_pre_registry, gc);
-  gcMARK2(e->insp, gc);
+  gcMARK2(e->guard_insp, gc);
+  gcMARK2(e->access_insp, gc);
 
   gcMARK2(e->rename_set, gc);
   gcMARK2(e->temp_marked_names, gc);
@@ -2235,7 +2236,8 @@ static int namespace_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(e->module, gc);
   gcFIXUP2(e->module_registry, gc);
   gcFIXUP2(e->module_pre_registry, gc);
-  gcFIXUP2(e->insp, gc);
+  gcFIXUP2(e->guard_insp, gc);
+  gcFIXUP2(e->access_insp, gc);
 
   gcFIXUP2(e->rename_set, gc);
   gcFIXUP2(e->temp_marked_names, gc);

@@ -500,7 +500,8 @@ void scheme_finish_kernel(Scheme_Env *env)
     Scheme_Object *insp;
     insp = scheme_get_current_inspector();
 
-    env->insp = insp;
+    env->guard_insp = insp; /* nothing is protected, anyway */
+    env->access_insp = insp;
     kernel->insp = insp;
   }
 
@@ -1219,7 +1220,7 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
     if (protected) {
       Scheme_Object *insp;
       insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
-      if (scheme_module_protected_wrt(menv->insp, insp))
+      if (scheme_module_protected_wrt(menv->guard_insp, insp))
 	scheme_contract_error(errname,
                               "name is protected",
                               "name", 1, name, 
@@ -2191,9 +2192,9 @@ static Scheme_Object *namespace_unprotect_module(int argc, Scheme_Object *argv[]
                             NULL);
     }
 
-    if (!scheme_module_protected_wrt(menv2->insp, insp) && !menv2->attached) {
+    if (!scheme_module_protected_wrt(menv2->guard_insp, insp) && !menv2->attached) {
       code_insp = scheme_make_inspector(code_insp);
-      menv2->insp = code_insp;
+      menv2->guard_insp = code_insp;
     }
   }
 
@@ -2924,7 +2925,7 @@ void scheme_prep_namespace_rename(Scheme_Env *menv)
         for (i = SCHEME_VEC_SIZE(vec); i--; ) {
           rn_stx = SCHEME_VEC_ELS(vec)[i];
           rns = scheme_stx_to_rename(rn_stx);
-          rns = scheme_stx_shift_rename_set(rns, midx, m->self_modidx, m->insp);
+          rns = scheme_stx_shift_rename_set(rns, midx, m->self_modidx, menv->access_insp);
           rn_stx = scheme_rename_to_stx(rns);
           SCHEME_VEC_ELS(vec2)[i] = rn_stx;
         }
@@ -2983,7 +2984,7 @@ Scheme_Object *scheme_module_to_namespace(Scheme_Object *name, Scheme_Env *env)
   {
     Scheme_Object *insp;
     insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
-    if (scheme_module_protected_wrt(menv->insp, insp) || menv->attached) {
+    if (scheme_module_protected_wrt(menv->guard_insp, insp) || menv->attached) {
       scheme_contract_error("module->namespace",
                             "current code inspector cannot access namespace of module",
                             "module name", 1, name,
@@ -4211,9 +4212,9 @@ static void check_certified(Scheme_Object *stx,
   int need_cert = 1;
     
   if (need_cert && insp)
-    need_cert = scheme_module_protected_wrt(env->insp, insp);
+    need_cert = scheme_module_protected_wrt(env->guard_insp, insp);
   if (need_cert && rename_insp)
-    need_cert = scheme_module_protected_wrt(env->insp, rename_insp);
+    need_cert = scheme_module_protected_wrt(env->guard_insp, rename_insp);
 
   if (need_cert) {
     if (_would_complain) {
@@ -4322,7 +4323,7 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
                 && !memcmp(SCHEME_SYM_VAL(isym), SCHEME_SYM_VAL(symbol), SCHEME_SYM_LEN(isym)))) {
 	
           if ((position < pt->num_var_provides)
-              && scheme_module_protected_wrt(env->insp, prot_insp)) {
+              && scheme_module_protected_wrt(env->guard_insp, prot_insp)) {
             char *provide_protects;
 
             if ((env->mod_phase >= 0) && (env->mod_phase < env->module->num_phases))
@@ -4471,7 +4472,7 @@ void scheme_check_unsafe_accessible(Scheme_Object *insp, Scheme_Env *from_env)
     for (i = t->count; i--; ) {
       scheme_hash_tree_index(t, i, &k, &v);
       insp = k;
-      if (scheme_module_protected_wrt(unsafe_env->insp, insp)) {
+      if (scheme_module_protected_wrt(unsafe_env->guard_insp, insp)) {
         break;
       }
     }
@@ -4480,7 +4481,7 @@ void scheme_check_unsafe_accessible(Scheme_Object *insp, Scheme_Env *from_env)
       return;
   }
 
-  if (!insp || scheme_module_protected_wrt(unsafe_env->insp, insp)) {
+  if (!insp || scheme_module_protected_wrt(unsafe_env->guard_insp, insp)) {
     scheme_wrong_syntax("link", 
                         NULL, NULL, 
                         "attempt to access unsafe bindings from an untrusted context");
@@ -5083,8 +5084,9 @@ static Scheme_Env *instantiate_module(Scheme_Module *m, Scheme_Env *env, int res
         env2->module = m;
     }
 
+    menv->access_insp = m->insp;
     insp = scheme_make_inspector(m->insp);
-    menv->insp = insp;
+    menv->guard_insp = insp;
 
     /* These three should be set by various "finish"es, but
        we initialize them in case there's an error running a "finish". */
@@ -5212,7 +5214,7 @@ void *scheme_module_exprun_finish(Scheme_Env *menv, int at_phase)
 
   syntax = menv->syntax;
 
-  rhs_env = scheme_new_comp_env(menv, menv->module->insp, SCHEME_TOPLEVEL_FRAME);
+  rhs_env = scheme_new_comp_env(menv, menv->access_insp, SCHEME_TOPLEVEL_FRAME);
 
   cnt = SCHEME_VEC_SIZE(menv->module->bodies[at_phase]);
   for (i = 0; i < cnt; i++) {
@@ -5235,7 +5237,7 @@ void *scheme_module_exprun_finish(Scheme_Env *menv, int at_phase)
 
     eval_exptime(names, len, e, exp_env, rhs_env,
                  rp, let_depth, 1, (for_stx ? NULL : syntax), at_phase,
-                 scheme_false, menv->module->insp);
+                 scheme_false, menv->access_insp);
   }
 
   return NULL;
@@ -5544,7 +5546,7 @@ void *scheme_module_run_finish(Scheme_Env *menv, Scheme_Env *env)
   save_runstack = scheme_push_prefix(menv, m->prefix,
 				     m->me->src_modidx, menv->link_midx,
 				     0, menv->phase, NULL,
-                                     m->insp);
+                                     menv->access_insp);
 
   p = scheme_current_thread;
   save_phase_shift = p->current_phase_shift;
@@ -5692,8 +5694,9 @@ Scheme_Env *scheme_primitive_module(Scheme_Object *name, Scheme_Env *for_env)
 
   scheme_hash_set(for_env->module_registry->exports, m->modname, (Scheme_Object *)m->me);
 
+  env->access_insp = insp;
   insp = scheme_make_inspector(insp);
-  env->insp = insp;
+  env->guard_insp = insp;
 
   scheme_hash_set(for_env->module_registry->loaded, m->modname, (Scheme_Object *)m);
 
@@ -6221,7 +6224,7 @@ static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv,
   insp = scheme_get_param(config, MZCONFIG_CODE_INSPECTOR);
   
   if (old_menv) {
-    if (scheme_module_protected_wrt(old_menv->insp, insp) || old_menv->attached) {
+    if (scheme_module_protected_wrt(old_menv->guard_insp, insp) || old_menv->attached) {
       scheme_contract_error("module->namespace",
                             "current code inspector cannot re-declare module",
                             "module name", 1, m->modname,
@@ -6988,8 +6991,9 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
   {
     Scheme_Object *insp;
+    menv->access_insp = env->insp;
     insp = scheme_make_inspector(env->insp);
-    menv->insp = insp;
+    menv->guard_insp = insp;
   }
 
   scheme_prepare_exp_env(menv);
@@ -7703,7 +7707,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
   all_defs_out = scheme_make_hash_table_equal();
 
   rn_set = env->genv->rename_set;
-  post_ex_rn_set = scheme_make_module_rename_set(mzMOD_RENAME_MARKED, rn_set, env->genv->module->insp);
+  post_ex_rn_set = scheme_make_module_rename_set(mzMOD_RENAME_MARKED, rn_set, env->genv->access_insp);
 
   /* It's possible that #%module-begin expansion introduces
      marked identifiers for definitions. */
@@ -9075,9 +9079,9 @@ static Scheme_Object *expand_all_provides(Scheme_Object *form,
         penv = penv->exp_env;
       }
       if (rec[drec].comp)
-        pcenv = scheme_new_comp_env(penv, penv->insp, SCHEME_TOPLEVEL_FRAME);
+        pcenv = scheme_new_comp_env(penv, penv->access_insp, SCHEME_TOPLEVEL_FRAME);
       else
-        pcenv = scheme_new_expand_env(penv, penv->insp, SCHEME_TOPLEVEL_FRAME);
+        pcenv = scheme_new_expand_env(penv, penv->access_insp, SCHEME_TOPLEVEL_FRAME);
     } else {
       pcenv = cenv;
     }
