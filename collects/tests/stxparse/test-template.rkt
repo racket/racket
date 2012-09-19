@@ -108,6 +108,9 @@
     ;; compatible with syntax
     (syntax->datum #'(((uu aa yy) ...) ...)))
 
+(tc (template ((aa ... xx) ...))
+    '((a b c x) (a b c y) (a b c z)))
+
 ;; liberal depth rules with consecutive ellipses
 
 (tc (template ((aa yy) ... ...))
@@ -168,6 +171,9 @@
       #rx"no pattern variables in term before ellipsis")
 
 (terx (template (uu ...))
+      #rx"too many ellipses in template")
+
+(terx (template ((aa ... uu) ...))
       #rx"too many ellipses in template")
 
 (terx (template aa)

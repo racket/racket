@@ -3,6 +3,7 @@
                      racket/set
                      racket/syntax
                      syntax/parse/private/minimatch
+                     racket/private/stx ;; syntax/stx
                      racket/private/sc)
          syntax/parse/private/residual
          "private/substitute.rkt")
@@ -147,8 +148,7 @@ instead of integers and integer vectors.
 |#
 
 (begin-for-syntax
- (struct pvar (sm dd) #:prefab)
- (define (pvar/dd=0? x) (and (pvar? x) (equal? (pvar-dd x) 0))))
+ (struct pvar (sm dd) #:prefab))
 
 ;; ============================================================
 
@@ -350,9 +350,12 @@ instead of integers and integer vectors.
                       (parse-t tail depth esc?)])
           (when (set-empty? hdrivers)
             (wrong-syntax #'head "no pattern variables in term before ellipsis"))
-          (when (set-empty? (set-filter hdrivers pvar/dd=0?))
+          (when (set-empty? (set-filter hdrivers (pvar/dd<=? depth)))
             ;; FIXME: improve error message?
-            (wrong-syntax #'DOTS "too many ellipses in template"))
+            (let ([bad-dots
+                   ;; select the nestingth (last) ellipsis as the bad one
+                   (stx-car (stx-drop nesting t))])
+              (wrong-syntax bad-dots "too many ellipses in template")))
           (wrap-props t
                       (set-union hdrivers tdrivers)
                       ;; pre-guide hdrivers is (listof (setof pvar))
@@ -473,4 +476,8 @@ instead of integers and integer vectors.
    (match x
      [(pvar sm dd) (and dd (<= dd expected-dd))]
      [_ #f]))
+
+ (define (stx-drop n x)
+   (cond [(zero? n) x]
+         [else (stx-drop (sub1 n) (stx-cdr x))]))
  )
