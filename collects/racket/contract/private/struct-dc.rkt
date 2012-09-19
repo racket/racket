@@ -128,6 +128,25 @@
                    (list (dep-type subcontract)))
              ...]]))))
 
+(define (struct/dc-flat-first-order ctc)
+  (define struct-pred? (base-struct/dc-pred ctc))
+  (λ (v)
+    (and (struct-pred? v) 
+         (let loop ([subcs (base-struct/dc-subcontracts ctc)]
+                    [args '()])
+           (cond
+             [(null? subcs) #t]
+             [else
+              (define subc (car subcs)) 
+              (define val ((subcontract-ref subc) v))
+              (cond
+                [(indep? subc)
+                 (and ((flat-contract-predicate (indep-ctc subc)) val)
+                      (loop (cdr subcs) (cons val args)))]
+                [else
+                 (and ((flat-contract-predicate (apply (dep-dep-proc subc) args)) val)
+                      (loop (cdr subcs) (cons val args)))])])))))
+
 (define (struct/dc-first-order ctc)
   (base-struct/dc-pred ctc))
 
@@ -426,7 +445,7 @@
   (parameterize ([skip-projection-wrapper? #t])
     (build-flat-contract-property
      #:name struct/dc-name
-     #:first-order struct/dc-first-order
+     #:first-order struct/dc-flat-first-order
      #:projection struct/dc-proj
      #:stronger struct/dc-stronger?)))
 
@@ -456,15 +475,14 @@
     (cond
       [(indep? subcontract) (impersonator-contract? (indep-ctc subcontract))]
       [(dep? subcontract) (eq? '#:impersonator (dep-type subcontract))]))
-  ((cond
-     [(and (andmap flat-subcontract? subcontracts)
-           (not (ormap subcontract-mutable-field? subcontracts)))
-      make-flat-struct/dc]
-     [(ormap impersonator-subcontract? subcontracts)
-      make-impersonator-struct/dc]
-     [else
-      make-struct/dc])
-   subcontracts pred struct-name here name-info struct/c?))
+  (cond
+    [(and (andmap flat-subcontract? subcontracts)
+          (not (ormap subcontract-mutable-field? subcontracts)))
+     (make-flat-struct/dc subcontracts pred struct-name here name-info struct/c?)]
+    [(ormap impersonator-subcontract? subcontracts)
+     (make-impersonator-struct/dc subcontracts pred struct-name here name-info struct/c?)]
+    [else
+     (make-struct/dc subcontracts pred struct-name here name-info struct/c?)]))
    
 
 (define-for-syntax (get-struct-info id stx)
