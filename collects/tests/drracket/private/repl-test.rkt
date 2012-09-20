@@ -1015,6 +1015,37 @@ This produces an ACK message
     void
     void)
    
+   ;; this test case used to fail, but not by printing the wrong
+   ;; thing; instead the REPL just didn't return and Run didn't
+   ;; light up, etc.
+   (mktest
+    "(abort-current-continuation (default-continuation-prompt-tag))) 2"
+    (#rx"call-with-continuation-prompt: result arity mismatch"
+     #rx"call-with-continuation-prompt: result arity mismatch"
+     #rx"call-with-continuation-prompt: result arity mismatch"
+     #rx"call-with-continuation-prompt: result arity mismatch"
+     #rx"call-with-continuation-prompt: result arity mismatch"
+     #rx"call-with-continuation-prompt: result arity mismatch")
+    'interactions
+    #f)
+   
+   (mktest
+    (format "~s"
+            '(abort-current-continuation
+              (default-continuation-prompt-tag)
+              (λ ()
+                (abort-current-continuation
+                 (default-continuation-prompt-tag)))))
+    (#rx"call-with-continuation-prompt: result arity mismatch"
+     #rx"call-with-continuation-prompt: result arity mismatch"
+     #rx"call-with-continuation-prompt: result arity mismatch"
+     #rx"call-with-continuation-prompt: result arity mismatch"
+     #rx"call-with-continuation-prompt: result arity mismatch"
+     #rx"call-with-continuation-prompt: result arity mismatch")
+    'interactions
+    #f)
+
+   
    ))
 
 ;; these tests aren't used at the moment.
