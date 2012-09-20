@@ -717,7 +717,8 @@ A shorthand for nested @racket[stream-cons]es ending with
          stream?]{
   Returns a stream that contains all elements of each stream in the
   order they appear in the original streams.  The new stream is
-  constructed lazily.}
+  constructed lazily, while the last given stream is used in the tail of
+  the result.}
 
 @defproc[(stream-map [f procedure?]
                      [s stream?])

@@ -105,6 +105,7 @@
 (define (streams-append l)
   (cond
    [(null? l) empty-stream]
+   [(null? (cdr l)) (car l)]
    [(-stream-empty? (car l)) (streams-append (cdr l))]
    [else
     (make-do-stream (lambda () #f)
