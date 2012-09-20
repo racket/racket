@@ -90,9 +90,7 @@ This produces an ACK message
             "1"
             "1")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "\"a\""
            ("\"a\""
@@ -102,9 +100,7 @@ This produces an ACK message
             "\"a\""
             "\"a\"")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "1 2"
            ("1\n2"
@@ -114,9 +110,7 @@ This produces an ACK message
             "2"
             "2")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "\"a\" \"b\""
            ("\"a\"\n\"b\""
@@ -126,9 +120,7 @@ This produces an ACK message
             "\"b\""
             "\"b\"")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "("
            ("{stop-22x22.png} read: expected a `)' to close `('"
@@ -138,9 +130,7 @@ This produces an ACK message
             "{stop-22x22.png} read: expected a `)' to close `('"
             "{stop-22x22.png} repl-test-tmp3.rkt:1:0: read: expected a `)' to close `('")
            'definitions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "."
            ("{stop-22x22.png} read: illegal use of `.'"
@@ -150,9 +140,7 @@ This produces an ACK message
             "{stop-22x22.png} read: illegal use of `.'"
             "{stop-22x22.png} repl-test-tmp3.rkt:1:0: read: illegal use of `.'")
            'definitions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "(lambda ())"
            ("{stop-22x22.png} lambda: bad syntax in: (lambda ())"
@@ -162,9 +150,7 @@ This produces an ACK message
             "{stop-22x22.png} lambda: bad syntax in: (lambda ())"
             "{stop-22x22.png} repl-test-tmp3.rkt:1:0: lambda: bad syntax in: (lambda ())")
            'definitions
-           #f
-           void
-           void)
+           #f)
    
    ;; make sure only a single syntax error occurs when in nested begin situation
    (mktest "(begin (lambda ()) (lambda ()))"
@@ -175,9 +161,7 @@ This produces an ACK message
             "{stop-22x22.png} lambda: bad syntax in: (lambda ())"
             "{stop-22x22.png} repl-test-tmp3.rkt:1:7: lambda: bad syntax in: (lambda ())")
            'definitions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "xx"
            (#rx"{stop-multi.png} {stop-22x22.png} xx:.*cannot reference undefined identifier"
@@ -187,9 +171,7 @@ This produces an ACK message
             #rx"xx:.*cannot reference undefined identifier"
             #rx"xx:.*cannot reference undefined identifier")
            'definitions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "(raise 1)"
            ("uncaught exception: 1"
@@ -199,9 +181,7 @@ This produces an ACK message
             "uncaught exception: 1"
             "uncaught exception: 1")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "(raise #f)"
            ("uncaught exception: #f"
@@ -211,9 +191,7 @@ This produces an ACK message
             "uncaught exception: #f"
             "uncaught exception: #f")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "(values 1 2)"
            ("1\n2"
@@ -223,9 +201,7 @@ This produces an ACK message
             "1\n2"
             "1\n2")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "(list 1 2)"
            ("(1 2)"
@@ -235,9 +211,7 @@ This produces an ACK message
             "(1 2)"
             "(1 2)")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "(parameterize ([print-struct #t])(define-struct s (x) (make-inspector))(printf \"~s\\n\" (make-s 1)))"
            ("#(struct:s 1)"
@@ -247,9 +221,7 @@ This produces an ACK message
             "#(struct:s 1)"
             "#(struct:s 1)")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    ;; top-level semantics test
    (mktest "(define (f) (+ 1 1)) (define + -) (f)"
@@ -260,9 +232,7 @@ This produces an ACK message
             #rx"define-values:.*cannot change constant.*: \\+"
             #rx"define-values:.*cannot change constant.*: \\+")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "(begin (define-struct a ()) (define-struct (b a) ()))"
            (""
@@ -272,9 +242,7 @@ This produces an ACK message
             ""
             "")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "(begin (values) 1)"
            ("1"
@@ -284,9 +252,7 @@ This produces an ACK message
             "1"
             "1")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "(begin xx (printf \"hi\\n\"))"
            (#rx"{stop-multi.png} {stop-22x22.png} xx:.*cannot reference undefined identifier"
@@ -296,9 +262,7 @@ This produces an ACK message
             #rx"xx:.*cannot reference undefined identifier"
             #rx"xx:.*cannot reference undefined identifier")
            'definitions
-           #f
-           void
-           void)
+           #f)
    
    (mktest (string-append
             "(module m mzscheme (provide e) (define e #'1))\n"
@@ -313,9 +277,7 @@ This produces an ACK message
             #rx"{stop-22x22.png} [?]: literal data is not allowed.*no #%datum syntax transformer is bound in: 1"
             #rx"{stop-22x22.png} repl-test-tmp3.rkt:1:43: [?]: literal data is not allowed.*no #%datum syntax transformer is bound in: 1")
            'definitions
-           #f
-           void
-           void)
+           #f)
    
    
    ;; leading comment test
@@ -327,9 +289,7 @@ This produces an ACK message
             "1"
             "1")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "#!/bin/sh\nxx"
            (#rx"{stop-multi.png} {stop-22x22.png} xx:.*cannot reference undefined identifier"
@@ -339,9 +299,7 @@ This produces an ACK message
             #rx"xx:.*cannot reference undefined identifier"
             #rx"xx:.*cannot reference undefined identifier")
            'definitions
-           #f
-           void
-           void)
+           #f)
    
    ;; eval tests
    
@@ -353,9 +311,7 @@ This produces an ACK message
             "1\n2"
             "1\n2")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "    (eval '(list 1 2))"
            ("(1 2)"
@@ -365,9 +321,7 @@ This produces an ACK message
             "(1 2)"
             "(1 2)")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "    (eval '(lambda ()))"
            ("lambda: bad syntax in: (lambda ())"
@@ -377,9 +331,7 @@ This produces an ACK message
             "lambda: bad syntax in: (lambda ())"
             "lambda: bad syntax in: (lambda ())")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "    (read (open-input-string \".\"))"
            ("{stop-multi.png} read: illegal use of `.'"
@@ -389,9 +341,7 @@ This produces an ACK message
             "read: illegal use of `.'"
             "read: illegal use of `.'")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "    (eval 'x)"
            (#rx"{stop-multi.png} {stop-22x22.png} x:.*cannot reference undefined identifier"
@@ -401,9 +351,7 @@ This produces an ACK message
             #rx"x:.*cannot reference undefined identifier"
             #rx"x:.*cannot reference undefined identifier")
            'definitions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "(eval (box 1))"
            ("#&1"
@@ -413,9 +361,7 @@ This produces an ACK message
             "#&1"
             "#&1")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "(eval '(box 1))"
            ("#&1"
@@ -425,9 +371,7 @@ This produces an ACK message
             "#&1"
             "#&1")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    ; printer setup test
    (mktest "(expt 3 (void))"
@@ -438,9 +382,7 @@ This produces an ACK message
             #rx"expt: contract violation.*given: #<void>"
             #rx"expt: contract violation.*given: #<void>")
            'definitions
-           #f
-           void
-           void)
+           #f)
    
    ;; error in the middle
    (mktest "1 2 ( 3 4"
@@ -451,9 +393,7 @@ This produces an ACK message
             "{stop-22x22.png} read: expected a `)' to close `('"
             "{stop-22x22.png} repl-test-tmp3.rkt:1:4: read: expected a `)' to close `('")
            'definitions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "1 2 . 3 4"
            ("1\n2\n{stop-22x22.png} read: illegal use of `.'"
@@ -463,9 +403,7 @@ This produces an ACK message
             "{stop-22x22.png} read: illegal use of `.'"
             "{stop-22x22.png} repl-test-tmp3.rkt:1:4: read: illegal use of `.'")
            'definitions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "1 2 (lambda ()) 3 4"
            ("1\n2\n{stop-22x22.png} lambda: bad syntax in: (lambda ())"
@@ -475,9 +413,7 @@ This produces an ACK message
             "{stop-22x22.png} lambda: bad syntax in: (lambda ())"
             "{stop-22x22.png} repl-test-tmp3.rkt:1:4: lambda: bad syntax in: (lambda ())")
            'definitions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "1 2 x 3 4"
            (#rx"1\n2\n{stop-multi.png} {stop-22x22.png} x:.*cannot reference undefined identifier"
@@ -487,9 +423,7 @@ This produces an ACK message
             #rx".*cannot reference undefined identifier"
             #rx".*cannot reference undefined identifier")
            'definitions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "1 2 (raise 1) 3 4"
            ("1\n2\nuncaught exception: 1"
@@ -499,9 +433,7 @@ This produces an ACK message
             "uncaught exception: 1"
             "uncaught exception: 1")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "1 2 (raise #f) 3 4"
            ("1\n2\nuncaught exception: #f"
@@ -511,9 +443,7 @@ This produces an ACK message
             "uncaught exception: #f"
             "uncaught exception: #f")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "(require lang/htdp-beginner)\n(cond [1 2 3 4])"
            ("{stop-22x22.png} cond: expected a clause with a question and an answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4"
@@ -523,9 +453,7 @@ This produces an ACK message
             "{stop-22x22.png} cond: expected a clause with a question and an answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4"
             "{stop-22x22.png} repl-test-tmp3.rkt:2:7: cond: expected a clause with a question and an answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4")
            'definitions
-           #f
-           void
-           void)
+           #f)
    
    ;; error across separate files
    (mktest
@@ -555,9 +483,7 @@ This produces an ACK message
             "{stop-22x22.png} if: bad syntax in: if"
             "{stop-22x22.png} repl-test-tmp3.rkt:2:0: if: bad syntax in: if")
            'definitions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "(current-namespace (make-namespace 'empty))\nif"
            ("{stop-22x22.png} #%top-interaction: unbound identifier;\n also, no #%app syntax transformer is bound in: #%top-interaction"
@@ -567,9 +493,7 @@ This produces an ACK message
             "{stop-22x22.png} #%top-interaction: unbound identifier;\n also, no #%app syntax transformer is bound in: #%top-interaction"
             "{stop-22x22.png} repl-test-tmp3.rkt:2:0: #%top-interaction: unbound identifier;\n also, no #%app syntax transformer is bound in: #%top-interaction")
            'definitions
-           #f
-           void
-           void)
+           #f)
    
    ;; macro tests
    (mktest "(define-syntax (c stx) (syntax-case stx () [(_ p q r) (syntax (+ p q r))]))"
@@ -580,9 +504,7 @@ This produces an ACK message
             ""
             "")
            'interactions
-           #f
-           void
-           void)
+           #f)
 
    ;; error escape handler test
    (mktest
@@ -594,9 +516,7 @@ This produces an ACK message
      #rx"expt: contract violation.*given: #f\n15"
      #rx"expt: contract violation.*given: #f\n15")
     'definitions
-    #f
-    void
-    void)
+    #f)
    
    ; fraction snip test
    ;; this test depends on the state of the 'framework:fraction-snip-style preference
@@ -609,9 +529,7 @@ This produces an ACK message
             "{number 5/6 \"5/6\" mixed}"
             "{number 5/6 \"5/6\" mixed}")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    ;; should produce a syntax object with a turn-down triangle.
    (mktest "(write (list (syntax x)))" 
@@ -622,9 +540,7 @@ This produces an ACK message
             #rx"({embedded \".#<syntax:.*repl-test-tmp.rkt:1:21.*>\"})"
             #rx"({embedded \".#<syntax:.*repl-test-tmp3.rkt:1:21.*>\"})")
            'interactions
-           #f
-           void
-           void)
+           #f)
 
    ;; make sure syntax objects only go into good ports
    (mktest "(define-syntax (foo stx) (with-handlers ([exn:fail? (lambda (x) #'10)]) (syntax-local-value #'foot))) (foo)"
@@ -635,9 +551,7 @@ This produces an ACK message
             "10"
             "10")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    ;; make sure syntax objects don't go into bad ports
    (mktest "(parameterize ([current-output-port (open-output-string)]) (write #'1))"
@@ -648,9 +562,7 @@ This produces an ACK message
             ""
             "")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "(parameterize ([current-output-port (open-output-string)]) (fprintf (current-error-port) \"~e\" #'foot))"
            (#rx"#<syntax:.*repl-test-tmp.rkt:1:96.*>"
@@ -660,9 +572,7 @@ This produces an ACK message
             #rx"#<syntax:.*repl-test-tmp.rkt:1:96.*>"
             #rx"#<syntax:.*repl-test-tmp3.rkt:1:96.*>")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    
    (mktest "(write-special 1)"
@@ -673,9 +583,7 @@ This produces an ACK message
             "1#t"
             "1#t")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest
     ;; the begin/void combo is to make sure that no value printout
@@ -688,9 +596,7 @@ This produces an ACK message
      #rx"expt: contract violation.*given: #f"
      #rx"expt: contract violation.*given: #f")
     'definitions
-    #f
-    void
-    void)
+    #f)
    
    
    ;; breaking tests
@@ -702,9 +608,7 @@ This produces an ACK message
             #rx"user break"
             #rx"user break")
            'definitions
-           #t
-           void
-           void)
+           #t)
    
    (mktest "(let l()(l))"
            (#rx"user break"
@@ -714,9 +618,7 @@ This produces an ACK message
             #rx"user break"
             #rx"user break")
            'dont-care
-           #t
-           void
-           void)
+           #t)
    
    ;; continuation tests
    (mktest "(define k (call/cc (lambda (x) x)))\n(k 17)\nk"
@@ -727,9 +629,7 @@ This produces an ACK message
             "17"
             "17")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "(define v (vector (call/cc (lambda (x) x))))\n((vector-ref v 0) 2)\nv"
            ("#(2)"
@@ -739,9 +639,7 @@ This produces an ACK message
             "#(2)"
             "#(2)")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "(define v (vector (eval '(call/cc (lambda (x) x)))))\n((vector-ref v 0) 2)\nv"
            ("#(2)"
@@ -751,9 +649,7 @@ This produces an ACK message
             "#(2)"
             "#(2)")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "(define x 1)\n((λ (x y) y) (set! x (call/cc (lambda (x) x)))\n(x 3))"
            (#rx"{stop-multi.png} {stop-22x22.png} application:.*given: 3"
@@ -763,9 +659,7 @@ This produces an ACK message
             #rx"application:.*given: 3"
             #rx"application:.*given: 3")
            'definitions
-           #f
-           void
-           void)
+           #f)
    
    ;; top-level & continuation interaction test
    (mktest "(begin (define k (call/cc (λ (x) x)))\n(define x 'wrong))\n(set! x 'right)\n(k 1)\nx"
@@ -776,9 +670,7 @@ This produces an ACK message
             "right"
             "right")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest (format "~s"
                    '(call-with-continuation-prompt
@@ -796,9 +688,7 @@ This produces an ACK message
             "(1 2 3)"
             "(1 2 3)")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest "(new snip%)"
            ("{unknown snip: (object:snip% ...)}\n"
@@ -808,9 +698,7 @@ This produces an ACK message
             "{unknown snip: (object:snip% ...)}\n"
             "{unknown snip: (object:snip% ...)}\n")
            'interactions
-           #f 
-           void
-           void)
+           #f)
 
    ;; graphical lambda tests
    (mktest (list "((" '("Insert" "Insert λ") "(x) x) 1)")
@@ -821,9 +709,7 @@ This produces an ACK message
             "1"
             "1")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest (list "(" '("Insert" "Insert λ") "())")
            
@@ -834,9 +720,7 @@ This produces an ACK message
             "{stop-22x22.png} λ: bad syntax in: (λ ())"
             "{stop-22x22.png} repl-test-tmp3.rkt:1:0: λ: bad syntax in: (λ ())")
            'definitions
-           #f
-           void
-           void)
+           #f)
    
    ;; thread tests
    (mktest "(begin (thread (lambda () x)) (sleep 1/10))"
@@ -847,9 +731,7 @@ This produces an ACK message
             #rx"x:.*cannot reference undefined identifier"
             #rx"x:.*cannot reference undefined identifier")
            'definitions
-           #f
-           void
-           void)
+           #f)
    
    ;; brought down from above for comparison
    (mktest "xx"
@@ -860,9 +742,7 @@ This produces an ACK message
             #rx"xx:.*cannot reference undefined identifier"
             #rx"xx:.*cannot reference undefined identifier")
            'definitions
-           #f
-           void
-           void)
+           #f)
 
    ;; setup of the namespaces for pict printing (from slideshow)
 
@@ -874,9 +754,7 @@ This produces an ACK message
             "{pict-snip}"
             "{pict-snip}")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    ;; this test is kind of hokey in our current, module-based world
    ;; we get images instead of snips because the image conversion code
@@ -895,9 +773,7 @@ This produces an ACK message
             "{image}"
             "{image}")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest (to-strings
             '(let ([on (current-namespace)]
@@ -913,9 +789,7 @@ This produces an ACK message
             "{pict-snip}"
             "{pict-snip}")
            'interactions
-           #f
-           void
-           void)
+           #f)
 
    (mktest (string-append
             "(require mzlib/pretty)"
@@ -928,9 +802,7 @@ This produces an ACK message
             "(1 2 3)"
             "(1 2 3)")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest (format "~s\n~s"
                    `(require scheme/pretty)
@@ -942,9 +814,7 @@ This produces an ACK message
             "1/4"
             "1/4")
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest
     (string-append
@@ -965,9 +835,7 @@ This produces an ACK message
      "x in: (lambda ())"
      "x in: (lambda ())")
     'interactions
-    #f
-    void 
-    void)
+    #f)
   
    (mktest
     (format "~s" '(+ 1 (+ 1 (abort-current-continuation
@@ -978,9 +846,7 @@ This produces an ACK message
                                 (λ () 0)))))))
     ("0" "0" "0" "0" "0" "0")
     'interactions
-    #f
-    void
-    void)
+    #f)
    
    (mktest
     (format "~s ~s ~s" 
@@ -994,9 +860,7 @@ This produces an ACK message
             '2)
     ("1\n0" "0" "0" "1\n0" "0" "0")
     'interactions
-    #f
-    void
-    void)
+    #f)
    
    (mktest
     (format "~s" 
@@ -1011,9 +875,7 @@ This produces an ACK message
                2))
     ("0" "0" "0" "0" "0" "0")
     'interactions
-    #f
-    void
-    void)
+    #f)
    
    ;; this test case used to fail, but not by printing the wrong
    ;; thing; instead the REPL just didn't return and Run didn't
@@ -1060,9 +922,7 @@ This produces an ACK message
            "(a ())"
            #f #f #f
            'interactions
-           #f
-           void
-           void)
+           #f)
    
    (mktest
     '(("Insert" "Insert XML Box")
@@ -1072,9 +932,7 @@ This produces an ACK message
     #f
     'interactions
     #f
-    #f
-    void
-    void)
+    #f)
    
    (mktest
     '(("Insert" "Insert XML Box")
@@ -1086,9 +944,7 @@ This produces an ACK message
     #f
     'interactions
     #f
-    #f
-    void
-    void)
+    #f)
    
    (mktest
     '(("Insert" "Insert XML Box")
@@ -1100,9 +956,7 @@ This produces an ACK message
     #f
     'interactions
     #f
-    #f
-    void
-    void)
+    #f)
    
    (mktest
     '(("Insert" "Insert XML Box")
@@ -1114,9 +968,7 @@ This produces an ACK message
     #t
     'definitions
     #f
-    #f
-    void
-    void)))
+    #f)))
 
 (define backtrace-image-string "{stop-multi.png}")
 (define file-image-string "{stop-22x22.png}")
