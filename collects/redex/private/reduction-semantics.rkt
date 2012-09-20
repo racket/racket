@@ -546,14 +546,14 @@
                                            "malformed shortcut"
                                            stx shortcut)]))
                 shortcuts)
-            
-      (for-each (λ (rule)
-                  (syntax-case rule ()
-                    [(arrow . rst)
-                     (begin
-                       (set! all-top-levels (cons #'arrow all-top-levels))
-                       (table-cons! ht (syntax arrow) rule))]))
-                rules)
+      (for ([rule (in-list rules)]) 
+        (syntax-case rule ()
+          [(arrow . rst)
+           (begin
+             (unless (identifier? #'arrow)
+               (raise-syntax-error orig-name "expected a reduction relation arrow" stx #'arrow))
+             (set! all-top-levels (cons #'arrow all-top-levels))
+             (table-cons! ht (syntax arrow) rule))]))
       
       ;; signal a syntax error if there are shortcuts defined, but no rules that use them
       (unless (null? shortcuts)
