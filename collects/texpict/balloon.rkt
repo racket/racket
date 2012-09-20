@@ -1,15 +1,14 @@
-(module balloon mzscheme
+(module balloon racket/base
   (require "mrpict.rkt"
            "utils.rkt"
            racket/draw
            mzlib/class
-           mzlib/etc
            mzlib/math)
 
   (provide wrap-balloon pip-wrap-balloon
            place-balloon
            pin-balloon
-           (rename mk-balloon balloon)
+           (rename-out [mk-balloon balloon])
            make-balloon
            balloon?
            balloon-pict
@@ -136,22 +135,25 @@
   (define corner-size 32)
 
   (define wrap-balloon
-    (opt-lambda (p corner dx dy [color balloon-color][c-rad corner-size])
+    (lambda (p corner dx dy [color balloon-color] [c-rad corner-size] 
+               #:factor [factor 1])
       (let ([b (mk-balloon (+ (pict-width p) (* 2 c-rad))
 			   (+ (pict-height p) c-rad)
 			   c-rad
 			   corner dx dy
 			   color)])
 	(make-balloon
-	 (cc-superimpose
-	  (balloon-pict b)
-	  p)
-	 (balloon-point-x b)
-	 (balloon-point-y b)))))
+         (scale (cc-superimpose
+                 (balloon-pict b)
+                 p)
+                factor)
+	 (* factor (balloon-point-x b))
+	 (* factor (balloon-point-y b))))))
 
   (define pip-wrap-balloon
-    (opt-lambda (p corner dx dy [color balloon-color][c-rad corner-size])
-      (pin-balloon (wrap-balloon p corner dx dy color c-rad) (blank 0) 0 0)))
+    (lambda (p corner dx dy [color balloon-color] [c-rad corner-size]
+               #:factor [factor 1])
+      (pin-balloon (wrap-balloon p corner dx dy color c-rad) (blank 0) 0 0 #:factor factor)))
   
   (define (do-place-balloon flip-proc? balloon p to find-to)
     (let-values ([(x y) (if (and (number? to) 
