@@ -151,7 +151,7 @@ webdir="web"
 pretemplatedir="stubs/pre"
 # script for patching files with current version info
 versionpatcher="$scriptdir/versionpatch"
-# DrScheme test script
+# DrRacket test script
 drtestscript="$scriptdir/test-drracket.rkt"
 # bundling script
 bundlescript="$scriptdir/bundle"
