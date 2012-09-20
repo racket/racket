@@ -2389,13 +2389,16 @@ void scheme_wrong_return_arity(const char *where,
 			"%s%sresult arity mismatch;\n"
                         " expected number of values not received\n"
                         "  expected: %d\n"
-			"  received: %d" "%t\n"
+			"  received: %d\n"
+                        "%s%t%s"
                         "  values...:%t",
 			where ? where : "",
 			where ? ": " : "",
 			expected,
 			got,
+                        slen ? "  from: " : "",
 			s, slen,
+                        slen ? "\n" : "",
 			v, vlen);
 
   scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
