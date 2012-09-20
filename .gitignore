@@ -17,6 +17,9 @@
 # a common convenient place to set the PLTADDON directory to
 /add-on/
 
+# a common convenient place to set the PLTCOMPILEDROOTS directory to
+/compiled-root/
+
 # location for cached DrDr report files
 /house-calls/
 
