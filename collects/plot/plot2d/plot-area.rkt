@@ -105,11 +105,11 @@
           (if identity-transforms?
               (match-lambda
                 [(vector (? rational? x) (? rational? y))
-                 (vector (inexact->exact x) (inexact->exact y))]
+                 (vector (inexact->extended-exact x) (inexact->extended-exact y))]
                 [(vector x y)  (vector +nan.0 +nan.0)])
               (match-lambda
                 [(vector (? rational? x) (? rational? y))
-                 (vector (inexact->exact (fx x)) (inexact->exact (fy y)))]
+                 (vector (inexact->extended-exact (fx x)) (inexact->extended-exact (fy y)))]
                 [(vector x y)  (vector +nan.0 +nan.0)]))))
     
     (define view->dc #f)

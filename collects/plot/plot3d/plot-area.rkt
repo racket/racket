@@ -134,16 +134,16 @@
           (if identity-transforms?
               (match-lambda
                 [(vector (? rational? x) (? rational? y) (? rational? z))
-                 (vector (exact->inexact (/ (- (inexact->exact x) x-mid) x-size))
-                         (exact->inexact (/ (- (inexact->exact y) y-mid) y-size))
-                         (exact->inexact (/ (- (inexact->exact z) z-mid) z-size)))]
+                 (vector (exact->inexact (/ (- (inexact->extended-exact x) x-mid) x-size))
+                         (exact->inexact (/ (- (inexact->extended-exact y) y-mid) y-size))
+                         (exact->inexact (/ (- (inexact->extended-exact z) z-mid) z-size)))]
                 [(vector x y z)
                  (vector +nan.0 +nan.0 +nan.0)])
               (match-lambda
                 [(vector (? rational? x) (? rational? y) (? rational? z))
-                 (vector (exact->inexact (/ (- (inexact->exact (fx x)) x-mid) x-size))
-                         (exact->inexact (/ (- (inexact->exact (fy y)) y-mid) y-size))
-                         (exact->inexact (/ (- (inexact->exact (fz z)) z-mid) z-size)))]
+                 (vector (exact->inexact (/ (- (inexact->extended-exact (fx x)) x-mid) x-size))
+                         (exact->inexact (/ (- (inexact->extended-exact (fy y)) y-mid) y-size))
+                         (exact->inexact (/ (- (inexact->extended-exact (fz z)) z-mid) z-size)))]
                 [(vector x y z)
                  (vector +nan.0 +nan.0 +nan.0)]))))
     

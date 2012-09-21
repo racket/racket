@@ -3,7 +3,8 @@
 ;; Small library for clipping points, lines and polygons against axial planes.
 
 (require racket/match racket/list racket/unsafe/ops
-         "../common/utils.rkt")
+         "../common/utils.rkt"
+         "../common/math.rkt")
 
 (provide point-in-bounds? clip-line clip-polygon
          clip-polygon-x-min clip-polygon-x-max
@@ -22,21 +23,21 @@
 
 (define (clip-line-x start-in-bounds? x x1 y1 z1 x2 y2 z2)
   (let-map
-   (x x1 y1 z1 x2 y2 z2) inexact->exact
+   (x x1 y1 z1 x2 y2 z2) inexact->extended-exact
    (define t (/ (- x x1) (- x2 x1)))
    (cond [start-in-bounds?  (values x1 y1 z1 x (+ y1 (* t (- y2 y1))) (+ z1 (* t (- z2 z1))))]
          [else              (values x (+ y1 (* t (- y2 y1))) (+ z1 (* t (- z2 z1))) x2 y2 z2)])))
 
 (define (clip-line-y start-in-bounds? y x1 y1 z1 x2 y2 z2)
   (let-map
-   (y x1 y1 z1 x2 y2 z2) inexact->exact
+   (y x1 y1 z1 x2 y2 z2) inexact->extended-exact
    (define t (/ (- y y1) (- y2 y1)))
    (cond [start-in-bounds?  (values x1 y1 z1 (+ x1 (* t (- x2 x1))) y (+ z1 (* t (- z2 z1))))]
          [else              (values (+ x1 (* t (- x2 x1))) y (+ z1 (* t (- z2 z1))) x2 y2 z2)])))
 
 (define (clip-line-z start-in-bounds? z x1 y1 z1 x2 y2 z2)
   (let-map
-   (z x1 y1 z1 x2 y2 z2) inexact->exact
+   (z x1 y1 z1 x2 y2 z2) inexact->extended-exact
    (define t (/ (- z z1) (- z2 z1)))
    (cond [start-in-bounds?  (values x1 y1 z1 (+ x1 (* t (- x2 x1))) (+ y1 (* t (- y2 y1))) z)]
          [else              (values (+ x1 (* t (- x2 x1))) (+ y1 (* t (- y2 y1))) z x2 y2 z2)])))
