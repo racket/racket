@@ -144,7 +144,9 @@
           (let* ([r (resolve-module-path-index x path)]
                  [r (if (pair? r) (cadr r) r)])
             (if (and (path? r) 
-                     (not (equal? path r)))
+                     (not (equal? path r))
+                     (not (equal? path r))
+                     (not (equal? path (rkt->ss r))))
                 (hash-set ht (path->bytes r) #t)
                 ht))))
       (for*/fold ([ht new-ht]) ([non-star? (in-list '(#f #t))]
