@@ -1056,79 +1056,80 @@ If the namespace does not, they are colored the unbound color.
               (invalidate-bitmap-cache 0 0 'display-end 'display-end))
             
             (define/public (syncheck:build-popup-menu menu pos text)
-              (define arrow-record (hash-ref arrow-records text #f))
-              (when arrow-record
-                (define added-sep? #f)
-                (define (add-sep) 
-                  (unless added-sep? 
-                    (set! added-sep? #t)
-                    (new separator-menu-item% [parent menu])))
-                (define vec-ents (interval-map-ref arrow-record pos null))
-                (define start-selection (send text get-start-position))
-                (define end-selection (send text get-end-position))
-                (define arrows (filter arrow? vec-ents))
-                (define def-links (filter def-link? vec-ents))
-                (define var-arrows (filter var-arrow? arrows))
-                (define add-menus (append (map cdr (filter pair? vec-ents))
-                                          (filter procedure? vec-ents)))
-                (unless (null? arrows)
-                  (add-sep)
-                  (make-object menu-item%
-                    (string-constant cs-tack/untack-arrow)
-                    menu
-                    (λ (item evt) (tack/untack-callback arrows))))
-                (unless (null? def-links)
-                  (add-sep)
-                  (let ([def-link (car def-links)])
+              (when arrow-records
+                (define arrow-record (hash-ref arrow-records text #f))
+                (when arrow-record
+                  (define added-sep? #f)
+                  (define (add-sep) 
+                    (unless added-sep? 
+                      (set! added-sep? #t)
+                      (new separator-menu-item% [parent menu])))
+                  (define vec-ents (interval-map-ref arrow-record pos null))
+                  (define start-selection (send text get-start-position))
+                  (define end-selection (send text get-end-position))
+                  (define arrows (filter arrow? vec-ents))
+                  (define def-links (filter def-link? vec-ents))
+                  (define var-arrows (filter var-arrow? arrows))
+                  (define add-menus (append (map cdr (filter pair? vec-ents))
+                                            (filter procedure? vec-ents)))
+                  (unless (null? arrows)
+                    (add-sep)
                     (make-object menu-item%
-                      jump-to-definition
+                      (string-constant cs-tack/untack-arrow)
                       menu
-                      (λ (item evt)
-                        (jump-to-definition-callback def-link)))))
-                (unless (null? var-arrows)
-                  (add-sep)
-                  (make-object menu-item%
-                    jump-to-next-bound-occurrence
-                    menu
-                    (λ (item evt) (jump-to-next-callback pos text arrows)))
-                  (make-object menu-item%
-                    jump-to-binding
-                    menu
-                    (λ (item evt) (jump-to-binding-callback arrows))))
-                (unless (= start-selection end-selection)
-                  (add-sep)
-                  (define arrows-menu
-                    (make-object menu%
-                      "Arrows crossing selection"
-                      menu))
-                  (define (callback accept)
-                    (tack-crossing-arrows-callback
-                     arrow-record
-                     start-selection
-                     end-selection
-                     text
-                     accept))
-                  (make-object menu-item%
-                    "Tack arrows"
-                    arrows-menu
-                    (lambda (item evt)
-                      (callback
-                       '(lexical top-level imported))))
-                  (make-object menu-item%
-                    "Tack non-import arrows"
-                    arrows-menu
-                    (lambda (item evt)
-                      (callback
-                       '(lexical top-level))))
-                  (make-object menu-item%
-                    "Untack arrows"
-                    arrows-menu
-                    (lambda (item evt)
-                      (untack-crossing-arrows
+                      (λ (item evt) (tack/untack-callback arrows))))
+                  (unless (null? def-links)
+                    (add-sep)
+                    (let ([def-link (car def-links)])
+                      (make-object menu-item%
+                        jump-to-definition
+                        menu
+                        (λ (item evt)
+                          (jump-to-definition-callback def-link)))))
+                  (unless (null? var-arrows)
+                    (add-sep)
+                    (make-object menu-item%
+                      jump-to-next-bound-occurrence
+                      menu
+                      (λ (item evt) (jump-to-next-callback pos text arrows)))
+                    (make-object menu-item%
+                      jump-to-binding
+                      menu
+                      (λ (item evt) (jump-to-binding-callback arrows))))
+                  (unless (= start-selection end-selection)
+                    (add-sep)
+                    (define arrows-menu
+                      (make-object menu%
+                        "Arrows crossing selection"
+                        menu))
+                    (define (callback accept)
+                      (tack-crossing-arrows-callback
                        arrow-record
                        start-selection
-                       end-selection))))
-                (for-each (λ (f) (f menu)) add-menus)))
+                       end-selection
+                       text
+                       accept))
+                    (make-object menu-item%
+                      "Tack arrows"
+                      arrows-menu
+                      (lambda (item evt)
+                        (callback
+                         '(lexical top-level imported))))
+                    (make-object menu-item%
+                      "Tack non-import arrows"
+                      arrows-menu
+                      (lambda (item evt)
+                        (callback
+                         '(lexical top-level))))
+                    (make-object menu-item%
+                      "Untack arrows"
+                      arrows-menu
+                      (lambda (item evt)
+                        (untack-crossing-arrows
+                         arrow-record
+                         start-selection
+                         end-selection))))
+                  (for-each (λ (f) (f menu)) add-menus))))
                        
             (struct tooltip-spec (strings x y w h) #:transparent)
             
