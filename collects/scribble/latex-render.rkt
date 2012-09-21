@@ -729,6 +729,7 @@
                     [(ldquo) "{``}"]
                     [(rdquo) "{''}"]
                     [(rsquo) "{'}"]
+                    [(lsquo) "{`}"]
                     [(prime) "$'$"]
                     [(rarr) "$\\rightarrow$"]
                     [(larr) "$\\leftarrow$"]

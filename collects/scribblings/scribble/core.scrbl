@@ -137,7 +137,7 @@ A @deftech{block} is either a @techlink{table}, an
 
                    @item{A symbol content is either @racket['mdash],
                          @racket['ndash], @racket['ldquo],
-                         @racket['lsquo], @racket['rsquo], @racket['larr],
+                         @racket['lsquo], @racket['rdquo], @racket['rsquo], @racket['larr],
                          @racket['rarr], or @racket['prime]; it is
                          rendered as the corresponding HTML entity
                          (even for Latex output).}
