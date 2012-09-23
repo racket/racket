@@ -1,5 +1,6 @@
 #lang scribble/doc
 @(require scribble/manual scribble/bnf "utils.rkt"
+          slideshow/pict
           (for-label scriblib/figure scribble/base scribble/sigplan))
 
 @(define-syntax-rule (samplemod . text) (codeblock . text))
@@ -7,6 +8,10 @@
    (codeblock #:context #'a #:keep-lang-line? #f
      "#lang scribble/base" "\n" a . text))
 @(define (result . text) (apply nested #:style 'inset text))
+
+@(define sep @hspace[1])
+
+@(define sub*section subsection)
 
 @title[#:tag "getting-started"]{Getting Started}
 
@@ -223,11 +228,11 @@ lexically scoped.
 @; ----------------------------------------
 @section{More Functions}
 
-The @racketmodname[scribble/sigplan] and
-@racketmodname[scribble/manual] languages are supersets of the
-@racketmodname[scribble/base] language, which provides a collection of
-basic operations. Many of the operations are style variations that you
-can apply to text:
+The @racketmodname[scribble/base] language provides a collection of
+basic operations (and The @racketmodname[scribble/sigplan] and
+@racketmodname[scribble/manual] are supersets of
+@racketmodname[scribble/base]). Many of the operations are style
+variations that you can apply to text:
 
           @sample|{
             He's a @smaller{small mouse}. The glass is too
@@ -250,6 +255,8 @@ can also be nested within calls to @racket[title] or @racket[section]:
           @sample|{
             @section{@italic{Not} the Last Straw}
           }|
+
+@sub*section{Centering}
 
 The @racket[centered] operation centers a flow of text:
 
@@ -275,11 +282,14 @@ which renders as
            and see if anyone brings you more.
        }
 
+@sub*section{Margin Notes}
+
 The @racket[margin-note] operation is used in a similar way, but the
 rendered text is moved to the margins.
-
-@margin-note{If you use @racket[margin-note], then the content shows
+@margin-note*{If you use @racket[margin-note], then the content shows
              up over here.}
+
+@sub*section{Itemizations}
 
 The @racket[itemlist] operation creates a sequence of bulleted text,
 where the @racket[item] operation groups text to appear in a single
@@ -306,6 +316,29 @@ which renders as
                      @item{If you want to eat a cookie, 
                            you must bring your own straw.}]
          }
+
+@sub*section{Tables}
+
+The @racket[tabular] function takes a list of lists to organize into a
+two-dimensional table. By default, no spacing is added between columns,
+so supply a @racket[#:sep] argument to acts as a column separator.
+For example,
+
+   @sample|{
+     @tabular[#:sep @hspace[1]
+              (list (list @bold{Animal} @bold{Food})
+                    (list "mouse"       "cookie")
+                    (list "moose"       "muffin"))]
+   }|
+
+else
+
+   @result{
+     @tabular[#:sep @hspace[1]
+              (list (list @bold{Animal} @bold{Food})
+                    (list "mouse"       "cookie")
+                    (list "moose"       "muffin"))]
+   }
 
 @; ----------------------------------------
 @section{Text Mode vs. Racket Mode for Arguments}
@@ -496,6 +529,17 @@ like @racket[section] or @racket[italic] accepts content to typeset,
 it normally accepts an arbitrary number of arguments that together
 form the content.
 
+In addition to its role for command, a @litchar["@"] can be followed
+by @litchar{;} to start a @index['("Scribble"
+"comments")]{comment}. If the character after @litchar{;} is
+@litchar["{"], then the comment runs until a matching @litchar["}"],
+otherwise the comment runs until the end-of-line:
+
+@racketblock[
+ @#,BNF-seq[@litchar["@;{"] @nonterm{comment} @litchar["}"]]
+ @#,BNF-seq[@litchar["@;"]  @nonterm{line-comment}]
+]
+
 For more information on the syntax of @litchar["@"], see
 @secref["reader"]. The full syntax includes a few more details, such
 as brackets like @litchar["|{"]...@litchar["}|"] for text-mode
@@ -594,6 +638,30 @@ renders as
   @result{
       @verbatim|{@(number->string (+ 1 2))}|
   }
+
+
+@; ----------------------------------------
+@section[#:tag "pictures"]{Pictures}
+
+Any value that is convertable to an image can be used directly within
+a Scribble document. Functions from the @racketmodname[slideshow/pict]
+and @racketmodname[2htdp/image] libraries, for example, generate
+images. For example,
+
+@sample|{
+  @(require slideshow/pict)
+
+  This cookie has lost its chocolate chips: 
+  @(colorize (filled-ellipse 40 40) "beige").
+}|
+
+renders as
+
+ @result{
+   This cookie has lost its chocolate chips:
+   @(colorize (filled-ellipse 40 40) "beige").
+ }
+
 
 @; ----------------------------------------
 @section[#:tag "roadmap"]{Next Steps}

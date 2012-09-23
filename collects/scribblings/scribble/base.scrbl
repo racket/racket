@@ -240,12 +240,17 @@ Returns @racket[#t] if @racket[v] is an item produced by
 
 
 @defproc[(tabular [cells (listof (listof (or/c block? content? 'cont)))]
-                  [#:style style (or/c style? string? symbol? #f) #f]) 
+                  [#:style style (or/c style? string? symbol? #f) #f]
+                  [#:sep sep (or/c block? content? #f) #f])
          table?]{
 
 Creates a @tech{table} with the given content, which is supplies as a
 list of rows, where each row has a list of cells. The length of all
 rows must match.
+
+If @racket[sep] is not @racket[#f], it is inserted between every
+column in the table. Otherwise, the default style places no space
+between table columns.
 
 Use @racket['cont] as a cell to continue the content of the preceding
 cell in a row in the space that would otherwise be used for a new

@@ -502,6 +502,8 @@ The currently recognized @tech{style properties} are as follows:
 @defstruct[table ([style style?]
                   [blockss (listof (listof (or/c block? (one-of/c 'cont))))])]{
 
+See also the @racket[tabular] function.
+
 A @techlink{table} has, roughly, a list of list of blocks. A cell in
 the table can span multiple columns by using @racket['cont] instead of
 a block in the following columns (i.e., for all but the first in a set
