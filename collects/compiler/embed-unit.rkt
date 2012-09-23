@@ -658,41 +658,8 @@
              (hash-set! regs 
                         (namespace-module-registry (current-namespace))
                         (vector mapping-table library-table))
-             (letrec-values ([(embedded-resolver)
-                              (case-lambda 
-                               [(name from-namespace)
-                                ;; A notification
-                                (if from-namespace
-                                  ;; If the source namespace has a mapping for `name',
-                                  ;; then copy it to the current namespace.
-                                  (let-values ([(name) (if name (resolved-module-path-name name) #f)])
-                                    (let-values ([(src-vec) (hash-ref regs (namespace-module-registry from-namespace) #f)])
-                                      (let-values ([(a) (if src-vec
-                                                            (assq name (vector-ref src-vec 0))
-                                                            #f)])
-                                        (if a
-                                            (let-values ([(vec) (hash-ref regs (namespace-module-registry (current-namespace))
-                                                                          (lambda ()
-                                                                            (let-values ([(vec) (vector null null)])
-                                                                              (hash-set! regs (namespace-module-registry (current-namespace)) vec)
-                                                                              vec)))])
-                                              ;; add mapping:
-                                              (vector-set! vec 0 (cons a (vector-ref vec 0)))
-                                              ;; add library mappings:
-                                              (vector-set! vec 1 (append 
-                                                                  (letrec-values ([(loop)
-                                                                                   (lambda (l)
-                                                                                     (if (null? l)
-                                                                                         null
-                                                                                         (if (eq? (cdar l) name)
-                                                                                             (cons (car l) (loop (cdr l)))
-                                                                                             (loop (cdr l)))))])
-                                                                    (loop library-table))
-                                                                  (vector-ref vec 1))))
-                                            (void)))))
-                                  (void))
-                                (orig name from-namespace)]
-                               [(name rel-to stx load?)
+             (letrec-values ([(lookup)
+                              (lambda (name rel-to stx load? orig)
                                 (if (not (module-path? name))
                                     ;; Bad input
                                     (orig name rel-to stx load?)
@@ -867,7 +834,58 @@
                                                           ;; Have it:
                                                           (make-resolved-module-path (cdr a3))
                                                           ;; Let default handler try:
-                                                          (orig name rel-to stx load?))))))))))])])
+                                                          (orig name rel-to stx load?)))))))))))]
+                             [(embedded-resolver)
+                              (case-lambda 
+                               [(name from-namespace)
+                                ;; A notification
+                                (if from-namespace
+                                  ;; If the source namespace has a mapping for `name',
+                                  ;; then copy it to the current namespace.
+                                  (let-values ([(name) (if name (resolved-module-path-name name) #f)])
+                                    (let-values ([(src-vec) (hash-ref regs (namespace-module-registry from-namespace) #f)])
+                                      (let-values ([(a) (if src-vec
+                                                            (assq name (vector-ref src-vec 0))
+                                                            #f)])
+                                        (if a
+                                            (let-values ([(vec) (hash-ref regs (namespace-module-registry (current-namespace))
+                                                                          (lambda ()
+                                                                            (let-values ([(vec) (vector null null)])
+                                                                              (hash-set! regs (namespace-module-registry (current-namespace)) vec)
+                                                                              vec)))])
+                                              ;; add mapping:
+                                              (vector-set! vec 0 (cons a (vector-ref vec 0)))
+                                              ;; add library mappings:
+                                              (vector-set! vec 1 (append 
+                                                                  (letrec-values ([(loop)
+                                                                                   (lambda (l)
+                                                                                     (if (null? l)
+                                                                                         null
+                                                                                         (if (eq? (cdar l) name)
+                                                                                             (cons (car l) (loop (cdr l)))
+                                                                                             (loop (cdr l)))))])
+                                                                    (loop library-table))
+                                                                  (vector-ref vec 1))))
+                                            (void)))))
+                                  (void))
+                                (orig name from-namespace)]
+                               [(name rel-to stx load?)
+                                (lookup name rel-to stx load?
+                                        (lambda (name rel-to stx load?)
+                                          ;; For a submodule, if we have a mapping for the base name,
+                                          ;; then don't try the original handler.
+                                          (let-values ([(base)
+                                                        (if (pair? name)
+                                                            (if (eq? (car name) 'submod)
+                                                                (lookup (cadr name) rel-to stx load? (lambda (n r s l?) #f))
+                                                                #f)
+                                                            #f)])
+                                            (if base
+                                                ;; don't chain to `orig':
+                                                (make-resolved-module-path
+                                                 (list* 'submod (resolved-module-path-name base) (cddr name)))
+                                                ;; chain to `orig':
+                                                (orig name rel-to stx load?)))))])])
                (current-module-name-resolver embedded-resolver))))))
 
     (define (ss<->rkt path)
