@@ -30,12 +30,15 @@ A Guide (G) is one of:
   - (vector 'metafun integer G)
   - (vector 'copy-props G (listof symbol))
   - (vector 'set-props G (listof (cons symbol any)))
+  - (vector 'unsyntax VarRef)
+  - (vector 'relocate G)
 
 A HeadGuide (HG) is one of:
   - G
   - (vector 'app-opt H (vector-of integer))
   - (vector 'orelse-h H (vector-of integer) H)
   - (vector 'splice G)
+  - (vector 'unsyntax-splicing VarRef)
 
 An VarRef is one of
   - positive-exact-integer  ;; represents depth=0 pvar ref or metafun ref
@@ -47,6 +50,7 @@ An VarRef is one of
     [(vector 'app-opt g vars) #t]
     [(vector 'splice g) #t]
     [(vector 'orelse-h g1 vars g2) #t]
+    [(vector 'unsyntax-splicing var) #t]
     [_ #f]))
 
 ;; ============================================================
@@ -252,7 +256,22 @@ An VarRef is one of
      (let ([f1 (loop stx g1)])
        (lambda (env lenv)
          (for/fold ([v (f1 env lenv)]) ([entry (in-list props-alist)])
-           (syntax-property v (car entry) (cdr entry)))))]))
+           (syntax-property v (car entry) (cdr entry)))))]
+
+    [(vector 'unsyntax var)
+     (let ([f1 (loop stx var)])
+       (lambda (env lenv)
+         (restx stx (f1 env lenv))))]
+
+    [(vector 'relocate g1 var)
+     (let ([f1 (loop stx g1)])
+       (lambda (env lenv)
+         (let ([result (f1 env lenv)]
+               [loc (get var env lenv)])
+           (if (or (syntax-source loc)
+                   (syntax-position loc))
+               (datum->syntax result (syntax-e result) loc result)
+               result))))]))
 
 (define (translate-hg stx0 stx hg env-length lenv-mode)
   (define (loop stx g) (translate-g stx0 stx g env-length lenv-mode))
@@ -290,6 +309,17 @@ An VarRef is one of
                                  "splicing template did not produce a syntax list"
                                  stx))
            v*)))]
+
+    [(vector 'unsyntax-splicing index)
+     (check-var index env-length lenv-mode)
+     (lambda (env lenv)
+       (let* ([v (get index env lenv)]
+              [v* (stx->list v)])
+         (unless (list? v*)
+           (raise-syntax-error 'template
+                               "unsyntax-splicing expression did not produce a syntax list"
+                               stx))
+         v*))]
 
     [_
      (let ([f (loop stx hg)])

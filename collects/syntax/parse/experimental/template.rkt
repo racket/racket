@@ -8,6 +8,9 @@
          syntax/parse/private/residual
          "private/substitute.rkt")
 (provide template
+         template/loc
+         quasitemplate
+         quasitemplate/loc
          define-template-metafunction
          ??
          ?@)
@@ -27,55 +30,90 @@ A Template (T) is one of:
   - (?? T T)
   - #(T*)
   - #s(prefab-struct-key T*)
+  * (unquote expr)
 
 A HeadTemplate (H) is one of:
   - T
   - (?? H)
   - (?? H H)
   - (?@ . T)
+  * (unquote-splicing expr)
 |#
 
 (begin-for-syntax
- (define (do-template ctx tstx)
-   (parameterize ((current-syntax-context ctx))
-     (let-values ([(guide deps props-guide) (parse-template tstx)])
-       (let ([vars
-              (for/list ([dep (in-vector deps)])
-                (cond [(pvar? dep) (pvar-var dep)]
-                      [(template-metafunction? dep)
-                       (template-metafunction-var dep)]
-                      [else
-                       (error 'template
-                              "internal error: bad environment entry: ~e"
-                              dep)]))])
-         (with-syntax ([t tstx])
-           (syntax-arm
-            (cond [(equal? guide '1)
-                   ;; was (template pvar), implies props-guide = '_
-                   (car vars)]
-                  [(and (equal? guide '_) (equal? props-guide '_))
-                   #'(quote-syntax t)]
-                  [else
-                   (with-syntax ([guide guide]
-                                 [props-guide props-guide]
-                                 [vars-vector
-                                  (if (pair? vars)
-                                      #`(vector . #,vars)
-                                      #''#())])
-                     #'(substitute (quote-syntax t)
+ (define (do-template ctx tstx quasi? loc-id)
+   (parameterize ((current-syntax-context ctx)
+                  (quasi (and quasi? (box null))))
+     (let*-values ([(guide deps props-guide) (parse-template tstx loc-id)]
+                   [(vars)
+                    (for/list ([dep (in-vector deps)])
+                      (cond [(pvar? dep) (pvar-var dep)]
+                            [(template-metafunction? dep)
+                             (template-metafunction-var dep)]
+                            [else
+                             (error 'template
+                                    "internal error: bad environment entry: ~e"
+                                    dep)]))])
+       (with-syntax ([t tstx])
+         (syntax-arm
+          (cond [(equal? guide '1)
+                 ;; was (template pvar), implies props-guide = '_
+                 (car vars)]
+                [(and (equal? guide '_) (equal? props-guide '_))
+                 #'(quote-syntax t)]
+                [else
+                 (with-syntax ([guide guide]
+                               [props-guide props-guide]
+                               [vars-vector
+                                (if (pair? vars)
+                                    #`(vector . #,vars)
+                                    #''#())]
+                               [((un-var . un-form) ...)
+                                (if quasi? (reverse (unbox (quasi))) null)])
+                   #'(let ([un-var (handle-unsyntax un-form)] ...)
+                       (substitute (quote-syntax t)
                                    'props-guide
                                    'guide
-                                   vars-vector))]))))))))
+                                   vars-vector)))])))))))
 
 (define-syntax (template stx)
   (syntax-case stx ()
     [(template t)
-     (do-template stx #'t)]
+     (do-template stx #'t #f #f)]
     [(template t #:properties (prop ...))
      (andmap identifier? (syntax->list #'(prop ...)))
      (parameterize ((props-to-serialize (syntax->datum #'(prop ...)))
                     (props-to-transfer (syntax->datum #'(prop ...))))
-       (do-template stx #'t))]))
+       (do-template stx #'t #f #f))]))
+
+(define-syntax (quasitemplate stx)
+  (syntax-case stx ()
+    [(quasitemplate t)
+     (do-template stx #'t #t #f)]))
+
+(define-syntaxes (template/loc quasitemplate/loc)
+  ;; FIXME: better to replace unsyntax form, shrink template syntax constant
+  (let ([make-tx
+         (lambda (quasi?)
+           (lambda (stx)
+             (syntax-case stx ()
+               [(?/loc loc-expr t)
+                (syntax-arm
+                 (with-syntax ([main-expr (do-template stx #'t quasi? #'loc-stx)])
+                   #'(let ([loc-stx (handle-loc '?/loc loc-expr)])
+                       main-expr)))])))])
+    (values (make-tx #f) (make-tx #t))))
+
+(define (handle-loc who x)
+  (if (syntax? x)
+      x
+      (raise-argument-error who "syntax?" x)))
+
+;; FIXME: what lexical context should result of expr get if not syntax?
+(define-syntax handle-unsyntax
+  (syntax-rules (unsyntax unsyntax-splicing)
+    [(handle-syntax (unsyntax expr)) expr]
+    [(handle-syntax (unsyntax-splicing expr)) expr]))
 
 ;; substitute-table : hash[stx => translated-template]
 ;; Cache for closure-compiled templates. Key is just syntax of
@@ -179,14 +217,26 @@ instead of integers and integer vectors.
  ;; props-to-transfer : (parameterof (listof symbol))
  (define props-to-transfer (make-parameter '(paren-shape)))
 
- ;; parse-template : stx -> (values guide (vectorof env-entry) guide)
- (define (parse-template t)
-   (let-values ([(drivers pre-guide props-guide) (parse-t t 0 #f)])
-     (define main-env (set->env drivers (hash)))
-     (define guide (guide-resolve-env pre-guide main-env))
-     (values guide
-             (index-hash->vector main-env)
-             props-guide)))
+ ;; quasi : (parameterof (or/c #f (list^n (boxof QuasiPairs))))
+ ;; each list wrapper represents nested quasi wrapping
+ ;; QuasiPairs = (listof (cons/c identifier syntax))
+ (define quasi (make-parameter #f))
+
+ ;; parse-template : stx id/#f -> (values guide (vectorof env-entry) guide)
+ (define (parse-template t loc-id)
+   (let*-values ([(drivers pre-guide props-guide) (parse-t t 0 #f)]
+                 [(drivers pre-guide)
+                  (if loc-id
+                      (let* ([loc-sm (make-syntax-mapping 0 loc-id)]
+                             [loc-pvar (pvar loc-sm #f #f)])
+                        (values (set-union drivers (set loc-pvar))
+                                (relocate-guide pre-guide loc-pvar)))
+                      (values drivers pre-guide))])
+     (let* ([main-env (set->env drivers (hash))]
+            [guide (guide-resolve-env pre-guide main-env)])
+       (values guide
+               (index-hash->vector main-env)
+               props-guide))))
 
  ;; set->env : (setof env-entry) -> hash[env-entry => nat]
  (define (set->env drivers init-env)
@@ -261,8 +311,70 @@ instead of integers and integer vectors.
                   (get-index ee)))]
        [(vector 'splice g1)
         (vector 'splice (loop g1 loop-env))]
+       [(vector 'unsyntax var)
+        (vector 'unsyntax (get-index var))]
+       [(vector 'unsyntax-splicing var)
+        (vector 'unsyntax-splicing (get-index var))]
+       [(vector 'relocate g1 var)
+        (vector 'relocate (loop g1 loop-env) (get-index var))]
        [else (error 'template "internal error: bad pre-guide: ~e" g)]))
    (loop g0 '#hash()))
+
+ ;; ----------------------------------------
+
+ ;; relocate-gude : stx guide -> guide
+ (define (relocate-guide g0 loc-pvar)
+   (define (relocate g)
+     (vector 'relocate g loc-pvar))
+   (define (error/no-relocate)
+     (wrong-syntax #f "cannot apply syntax location to template"))
+   (define (loop g)
+     (match g
+       ['_
+        (relocate g)]
+       [(cons g1 g2)
+        (relocate g)]
+       [(? pvar? g)
+        g]
+       [(vector 'dots head new-hdrivers/level nesting '#f tail)
+        ;; Ideally, should error. For perfect backwards compatability,
+        ;; should relocate. But if there are zero iterations, that
+        ;; means we'd relocate tail (which might be bad). Making
+        ;; relocation depend on number of iterations would be
+        ;; complicated. So just ignore.
+        g]
+       [(vector 'escaped g1)
+        (vector 'escaped (loop g1))]
+       [(vector 'vector g1)
+        (relocate g)]
+       [(vector 'struct g1)
+        (relocate g)]
+       [(vector 'box g1)
+        (relocate g)]
+       [(vector 'copy-props g1 keys)
+        (vector 'copy-props (loop g1) keys)]
+       [(vector 'unsyntax var)
+        g]
+       ;; ----
+       [(vector 'app ghead gtail)
+        (match ghead
+          [(vector 'unsyntax-splicing _) g]
+          [_ (error/no-relocate)])]
+       ;; ----
+       [(vector 'orelse g1 drivers1 g2)
+        (error/no-relocate)]
+       [(vector 'orelse-h g1 drivers1 g2)
+        (error/no-relocate)]
+       [(vector 'metafun mf g1)
+        (error/no-relocate)]
+       [(vector 'app-opt g1 drivers1)
+        (error/no-relocate)]
+       [(vector 'splice g1)
+        (error/no-relocate)]
+       [(vector 'unsyntax-splicing var)
+        g]
+       [else (error 'template "internal error: bad guide for relocation: ~e" g0)]))
+   (loop g0))
 
  ;; ----------------------------------------
 
@@ -315,13 +427,16 @@ instead of integers and integer vectors.
 
  ;; parse-t : stx nat boolean -> (values (setof env-entry) pre-guide props-guide)
  (define (parse-t t depth esc?)
-   (syntax-case t (?? ?@)
+   (syntax-case t (?? ?@ unsyntax quasitemplate)
      [id
       (identifier? #'id)
-      (cond [(and (not esc?)
-                  (or (free-identifier=? #'id (quote-syntax ...))
-                      (free-identifier=? #'id (quote-syntax ??))
-                      (free-identifier=? #'id (quote-syntax ?@))))
+      (cond [(or (and (not esc?)
+                      (or (free-identifier=? #'id (quote-syntax ...))
+                          (free-identifier=? #'id (quote-syntax ??))
+                          (free-identifier=? #'id (quote-syntax ?@))))
+                 (and (quasi)
+                      (or (free-identifier=? #'id (quote-syntax unsyntax))
+                          (free-identifier=? #'id (quote-syntax unsyntax-splicing)))))
              (wrong-syntax #'id "illegal use")]
             [else
              (let ([pvar (lookup #'id depth)])
@@ -340,6 +455,31 @@ instead of integers and integer vectors.
         (values (set-union (set mf) drivers)
                 (vector 'metafun mf guide)
                 (cons-guide '_ props-guide)))]
+     [(unsyntax t1)
+      (quasi)
+      (let ([qval (quasi)])
+        (cond [(box? qval)
+               (with-syntax ([(tmp) (generate-temporaries #'(unsyntax-expr))])
+                 (set-box! qval (cons (cons #'tmp t) (unbox qval)))
+                 (let* ([fake-sm (make-syntax-mapping 0 #'tmp)]
+                        [fake-pvar (pvar fake-sm #f #f)])
+                   (values (set fake-pvar) (vector 'unsyntax fake-pvar) '_)))]
+              [else
+               (parameterize ((quasi (car qval)))
+                 (let-values ([(drivers guide props-guide) (parse-t #'t1 depth esc?)])
+                   (wrap-props t
+                               drivers
+                               (list-guide '_ guide)
+                               (list-guide '_ props-guide))))]))]
+     [(quasitemplate t1)
+      ;; quasitemplate escapes inner unsyntaxes
+      (quasi)
+      (parameterize ((quasi (list (quasi))))
+        (let-values ([(drivers guide props-guide) (parse-t #'t1 depth esc?)])
+          (wrap-props t
+                      drivers
+                      (list-guide '_ guide)
+                      (list-guide '_ props-guide))))]
      [(DOTS template)
       (and (not esc?)
            (identifier? #'DOTS) (free-identifier=? #'DOTS (quote-syntax ...)))
@@ -426,7 +566,7 @@ instead of integers and integer vectors.
 
  ;; parse-h : stx nat boolean -> (values (setof env-entry) boolean pre-head-guide props-guide)
  (define (parse-h h depth esc?)
-   (syntax-case h (?? ?@)
+   (syntax-case h (?? ?@ unsyntax-splicing)
      [(?? t)
       (not esc?)
       (let-values ([(drivers splice? guide props-guide)
@@ -447,6 +587,24 @@ instead of integers and integer vectors.
       (not esc?)
       (let-values ([(drivers guide props-guide) (parse-t #'t depth esc?)])
         (values drivers #t (vector 'splice guide) (cons-guide '_ props-guide)))]
+     [(unsyntax-splicing t1)
+      (quasi)
+      (let ([qval (quasi)])
+        (cond [(box? qval)
+               (with-syntax ([(tmp) (generate-temporaries #'(unsyntax-splicing-expr))])
+                 (set-box! qval (cons (cons #'tmp h) (unbox qval)))
+                 (let* ([fake-sm (make-syntax-mapping 0 #'tmp)]
+                        [fake-pvar (pvar fake-sm #f #f)])
+                   (values (set fake-pvar) #t (vector 'unsyntax-splicing fake-pvar) '_)))]
+              [else
+               (parameterize ((quasi (car qval)))
+                 (let*-values ([(drivers guide props-guide) (parse-t #'t1 depth esc?)]
+                               [(drivers guide props-guide)
+                                (wrap-props h
+                                            drivers
+                                            (list-guide '_ guide)
+                                            (list-guide '_ props-guide))])
+                   (values drivers #f guide props-guide)))]))]
      [t
       (let-values ([(drivers guide props-guide) (parse-t #'t depth esc?)])
         (values drivers #f guide props-guide))]))

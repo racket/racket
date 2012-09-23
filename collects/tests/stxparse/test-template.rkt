@@ -142,7 +142,6 @@
 
 ;; ----------------------------------------
 
-
 (define-template-metafunction (join stx)
   (syntax-parse stx
     [(join a:id b:id ...)
@@ -162,6 +161,18 @@
 (tc (template ((xx (join aa xx)) ...))
     '((x ax) (y by) (z cz)))
 
+;; ----------------------------------------
+
+(tc (quasitemplate (a #,'b))
+    '(a b))
+(tc (quasitemplate ((aa #,'0) ...))
+    '((a 0) (b 0) (c 0)))
+
+;; quasiquote-style nesting
+(tc (quasitemplate (#,1 (quasitemplate #,(+ 1 2))))
+    '(1 (quasitemplate (unsyntax (+ 1 2)))))
+(tc (quasitemplate (#,1 (quasitemplate #,#,(+ 1 2))))
+    '(1 (quasitemplate (unsyntax 3))))
 
 ;; ============================================================
 
@@ -192,3 +203,37 @@
 
 (terx (with-syntax ([(bb ...) #'(y z)]) (template ((aa bb) ...)))
       #rx"incompatible ellipsis match counts")
+
+;; ============================================================
+
+(define loc (datum->syntax #'here 'loc (list "I have a location!" #f #f 42 17)))
+
+(define-syntax-rule (tloc tform tmpl loc?)
+  (test-case (format "~s" '(loc tmpl))
+    (let ([result (convert-syntax-error (tform loc tmpl))])
+      (cond [loc?
+             (check-equal? (syntax-source result) (syntax-source loc))
+             (check-equal? (syntax-position result) (syntax-position loc))]
+            [else
+             (check-equal? (syntax-source result) (syntax-source (quote-syntax here)))]))))
+
+(tloc template/loc uu #f)
+(tloc template/loc lambda #t)
+(tloc template/loc (lambda (x) x) #t)
+(tloc template/loc (aa ... 1) #f)
+(terx (template/loc loc ((?@ aa ...) 2))
+      #rx"cannot apply syntax location to template")
+(terx (template/loc loc (?? 1 2))
+      #rx"cannot apply syntax location to template")
+
+(tloc quasitemplate/loc uu #f)
+(tloc quasitemplate/loc lambda #t)
+(tloc quasitemplate/loc (lambda (x) x) #t)
+(tloc quasitemplate/loc (aa ... 1) #f)
+(tloc quasitemplate/loc (#,'a) #t)
+(tloc quasitemplate/loc #,'a #f)
+(tloc quasitemplate/loc (#,@(list 1 2 3)) #f)
+(terx (quasitemplate/loc loc ((?@ aa ...) 2))
+      #rx"cannot apply syntax location to template")
+(terx (quasitemplate/loc loc (?? 1 2))
+      #rx"cannot apply syntax location to template")
