@@ -1067,7 +1067,9 @@
     (let-values ([(mzssl input?) (lookup 'ssl-abandon-port "(and/c ssl-port? output-port?)" p)])
       (when input?
 	(raise-argument-error 'ssl-abandon-port "(and/c ssl-port? output-port?)" p))
-      (set-mzssl-shutdown-on-close?! mzssl #f)))
+      (set-mzssl-shutdown-on-close?! mzssl #f)
+      ;; Call close-output-port to flush, shutdown, and decrement mzssl refcount.
+      (close-output-port p)))
   
   (define (ssl-peer-verified? p)
     (let-values ([(mzssl input?) (lookup 'ssl-peer-verified? "ssl-port?" p)])
