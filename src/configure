@@ -1341,7 +1341,7 @@ Optional Features:
   --enable-shared         create shared libraries
   --enable-dynlib         same as --enable-shared
   --enable-lt=<prog>      use <prog> instead of libtool; disable to use bundled
-  --enable-libffi         use installed libffi (enabled by default)
+  --enable-libffi         use installed libffi (enabled by default for Unix)
   --enable-sdk=<path>     use Mac OS X 10.4 SDK directory
   --enable-xonx           use Unix style (e.g., use Gtk) for Mac OS X
   --enable-libfw          install Mac OS X frameworks to /Library/Frameworks
@@ -2043,7 +2043,7 @@ fi
 if test "${enable_libffi+set}" = set; then
   enableval=$enable_libffi;
 else
-  enable_libffi=yes
+  enable_libffi=default
 fi
 
 
@@ -2322,6 +2322,7 @@ show_explicitly_enabled "${enable_orig}" "Original install tree"
 show_explicitly_disabled "${enable_jit}" JIT
 
 show_explicitly_disabled "${enable_foreign}" Foreign
+show_explicitly_enabled "${enable_libffi}" "Installed libffi"
 show_explicitly_disabled "${enable_libffi}" "Installed libffi"
 
 show_explicitly_enabled "${enable_places}" Places
@@ -5361,6 +5362,17 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
   fi
+fi
+
+if test "${enable_libffi}" = "default" ; then
+  case "$host_os" in
+  darwin*)
+        enable_libffi=no
+  ;;
+  *)
+        enable_libffi=yes
+  ;;
+  esac
 fi
 
 if test "${enable_libffi}" = "yes" ; then
