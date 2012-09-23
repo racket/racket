@@ -254,6 +254,7 @@
       (regexp-match #rx"^HTTP/[0-9]+[.][0-9]+ 3[0-9][0-9]" status))
     (cond
       [(and redirection-status-line? new-url (not (zero? redirections))) 
+       (close-input-port ip)
        (redirection-loop (- redirections 1) new-url)]
       [else
        (define-values (in-pipe out-pipe) (make-pipe))
