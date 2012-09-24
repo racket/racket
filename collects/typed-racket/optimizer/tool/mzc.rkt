@@ -236,23 +236,29 @@
                         ;; the caller's total time?
                         (define caller-node (edge-caller edge))
                         (and (> (edge-caller-time edge)
-                                (* (node-total caller-node) 0.5))
+                                (* (node-total caller-node) 0.3))
                              caller-node)))))
 
        ;; As above, but consed in front of the inlining info for that caller.
        (define interesting-callers+sites
          (and profile-entry
-              (filter values
-                      (for/list ([site (in-list inlining-sites)])
-                        (match (inlining-event-where-loc
-                                (inliner-log-entry-inlining-event (car site)))
-                          [`(,caller-path ,caller-line ,caller-col)
-                           (define caller-node
-                             (pos->node (cons caller-line caller-col)))
-                           (and (memq caller-node interesting-callers)
-                                (cons caller-node site))]
-                          [_ ; can't parse that, give up
-                           #f])))))
+              ;; Can't map over `inlining-sites', since we also consider
+              ;; callers that have no inlining reports at all.
+              (for/list ([caller (in-list interesting-callers)])
+                (cons caller
+                      ;; Find the relevant inlining site information.
+                      (or (for/or ([site (in-list inlining-sites)])
+                            (match (inlining-event-where-loc
+                                    (inliner-log-entry-inlining-event
+                                     (car site)))
+                              [`(,caller-path ,caller-line ,caller-col)
+                               (and (eq? caller
+                                         (pos->node (cons caller-line
+                                                          caller-col)))
+                                    site)]
+                              [_ ; can't parse that, give up
+                               #f]))
+                          '()))))) ; no inlining reports for that caller
 
        ;; If the function under consideration takes a large portion of the
        ;; total time for a given call site, and is not inlined there, we can
