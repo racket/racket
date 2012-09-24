@@ -440,6 +440,7 @@ please adhere to these guidelines:
  (install-plt-file-tab "File")
  (install-plt-filename "Filename:")
  (install-plt-url "URL:")
+ (install-plt-error-header "There was an error when checking the validity of the downloaded .plt file. Please check the url and try again.")
  
  ;; install plt file when opened in drscheme strings
  (install-plt-file "Install ~a or open for editing?")
