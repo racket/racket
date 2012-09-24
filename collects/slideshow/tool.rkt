@@ -14,7 +14,7 @@ pict snip :
 - test up-to-date? flag
 |#
 
-(module tool mzscheme
+(module tool racket/base
   (require drscheme/tool
            mred
            mzlib/class
@@ -76,16 +76,9 @@ pict snip :
           ;; only for use in the copy method and the read snipclass method
           (define/public (set-show-picts b) (set! show-picts? b))
           
-          ;; up-to-date? : boolean
-          ;; indicates if the recent shapes cache is up to date
-          (define up-to-date? #f)
-          
-          ;; only for use in the copy method and the read snipclass method
-          (define/public (set-up-to-date b) (set! up-to-date? b))
-          
-          ;; bitmap-table : hash-table[snip -o> bitmap]
+          ;; bitmap-table : hash[snip -o> bitmap]
           ;; maps from the true (Scheme) snip to its current bitmap
-          (define bitmap-table (make-hash-table))
+          (define bitmap-table (make-hasheq))
           
           ;; only for use in the copy method and the read snipclass method
           (define/public (set-bitmap-table bt) (set! bitmap-table bt))
@@ -97,12 +90,10 @@ pict snip :
             (let* ([cp (make-object pict-snip%)]
                    [ed (send cp get-editor)])
               (send (get-editor) copy-self-to ed)
-              (let ([bt (make-hash-table)])
-                (hash-table-for-each bitmap-table (lambda (k v) (hash-table-put! bt (send k copy) v)))
-                (send cp set-bitmap-table bt)
-                (send cp set-show-picts show-picts?)
-                (send cp set-up-to-date up-to-date?)
-                cp)))
+              (send cp set-show-picts show-picts?)
+              ;; initially, share the bitmap table:
+              (send cp set-bitmap-table bitmap-table)
+              cp))
           
           
           (define/override (get-menu)
@@ -114,7 +105,8 @@ pict snip :
                    menu
                    (lambda (x y)
                      (hide-picts)))]
-                [up-to-date?
+                [(and bitmap-table
+                      (positive? (hash-count bitmap-table)))
                  (make-object checkable-menu-item%
                    sc-show-picts
                    menu
@@ -129,22 +121,23 @@ pict snip :
               menu))
           
           (define/public (update-bitmap-table sub-snips sub-bitmaps)
-            (let ([hidden-table (make-hash-table)])
-              (let loop ([snip (send (get-editor) find-first-snip)])
+            (let ([hidden-table (make-hasheq)]
+                  [position-table (make-hasheq)])
+              (let loop ([snip (send (get-editor) find-first-snip)] [pos 0])
                 (cond
                   [snip
+                   (hash-set! position-table snip pos)
                    (when (is-a? snip image-snip/r%)
-                     (hash-table-put! hidden-table (send snip get-orig-snip) snip))
-                   (loop (send snip next))]
+                     (hash-set! hidden-table (send snip get-orig-snip) snip))
+                   (loop (send snip next) (add1 pos))]
                   [else (void)]))
               (for-each (lambda (snip bitmap) 
-                          (hash-table-put! bitmap-table snip bitmap)
-                          (let ([showing (hash-table-get hidden-table snip (lambda () #f))])
+                          (hash-set! bitmap-table (hash-ref position-table snip #f) bitmap)
+                          (let ([showing (hash-ref hidden-table snip (lambda () #f))])
                             (when showing
                               (send showing set-bitmap bitmap))))
                         sub-snips
-                        sub-bitmaps)
-              (set! up-to-date? #t)))
+                        sub-bitmaps)))
           
           (define/private (show-picts)
             (let ([pb (get-editor)])
@@ -152,13 +145,22 @@ pict snip :
               (send pb begin-edit-sequence)
               
               (set! system-insertion? #t)
-              (hash-table-for-each 
-               bitmap-table
-               (lambda (snip bitmap)
-                 (let ([bm-snip (make-object image-snip/r% bitmap snip)])
-                   (let-values ([(x y) (snip-location pb snip)])
-                     (send snip release-from-owner)
-                     (send pb insert bm-snip x y)))))
+              (let ([position-table (make-hasheq)])
+                (let loop ([snip (send (get-editor) find-first-snip)] [pos 0])
+                  (cond
+                   [snip
+                    (hash-set! position-table pos snip)
+                    (loop (send snip next) (add1 pos))]
+                   [else (void)]))
+                (hash-for-each 
+                 bitmap-table
+                 (lambda (pos bitmap)
+                   (let ([snip (hash-ref position-table pos #f)])
+                     (when snip
+                       (let ([bm-snip (make-object image-snip/r% bitmap snip)])
+                         (let-values ([(x y) (snip-location pb snip)])
+                           (send snip release-from-owner)
+                           (send pb insert bm-snip x y))))))))
               (set! system-insertion? #f)
               
               (send pb end-edit-sequence)))
@@ -213,14 +215,14 @@ pict snip :
           
           (define/override (write stream-out)
             (send stream-out put (if show-picts? 1 0))
-            (send stream-out put (if up-to-date? 1 0))
+            (send stream-out put 0)
             (send (get-editor) write-to-file stream-out))
           (define/override (make-snip) (new pict-snip%))
           
           (define system-insertion? #f)
           (define/public (inserted-snip)
             (unless system-insertion?
-              (set! up-to-date? #f)
+              (set-bitmap-table (make-hasheq))
               (when show-picts?
                 (hide-picts))))
           
@@ -237,16 +239,15 @@ pict snip :
                    [show-picts? (not (zero? (send stream-in get-exact)))]
                    [up-to-date? (not (zero? (send stream-in get-exact)))])
               (send editor read-from-file stream-in #f)
-              (send snip set-up-to-date up-to-date?)
               (send snip set-show-picts show-picts?)
-              (let ([bt (make-hash-table)])
+              (let ([bt (make-hasheq)])
                 (let loop ([snip (send editor find-first-snip)])
                   (cond
                     [(is-a? snip snip%)
                      (when (is-a? snip image-snip/r%)
                        (let ([orig (send snip get-orig-snip)]
                              [bm (send snip get-bitmap)])
-                         (hash-table-put! bt orig bm)))
+                         (hash-set! bt orig bm)))
                      (loop (send snip next))]
                     [else (void)]))
                 (send snip set-bitmap-table bt))
@@ -318,6 +319,15 @@ pict snip :
       
       (define (phase1) (void))
       (define (phase2) (void))
+
+      (define (pict-box-mixin %)
+        (class %
+          (inherit get-insert-menu)
+          (super-new)
+          (add-special-menu-item (get-insert-menu) this)))
+
+      (when (getenv "PLTPICTBOX")
+        (drscheme:get/extend:extend-unit-frame pict-box-mixin))
       
       (define orig-namespace (current-namespace))
       
