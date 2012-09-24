@@ -449,7 +449,13 @@
                                (subtypeof? subexpr -Real)))
                     (log-missed-optimization
                      "unexpected complex type"
-                     "This expression has a Complex type, despite all its arguments being reals. If you do not want or expect complex numbers as results, you may want to restrict the type of the arguments, which may have a beneficial impact on performance."
+                     (string-append
+                      "This expression has a Complex type, despite all its "
+                      "arguments being reals. If you do not want or expect "
+                      "complex numbers as results, you may want to restrict "
+                      "the type of the arguments or use float-specific "
+                      "operations (e.g. flsqrt), which may have a beneficial "
+                      "impact on performance.")
                      this-syntax))
            ;; We don't actually want to match.
            #:when #f
