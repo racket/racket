@@ -85,7 +85,7 @@
               vector-immutable vector)
   (pattern (~and form ((~or unsafe-struct-ref unsafe-struct*-ref) struct:expr index:expr))
     (match (single-value #'struct)
-      [(tc-result1: (and struct-t (app resolve (Struct: _ _ (list (fld: flds _ _) ...) _ _ _ _ _))))
+      [(tc-result1: (and struct-t (app resolve (Struct: _ _ (list (fld: flds _ _) ...) _ _ _))))
        (tc/hetero-ref #'index flds struct-t expected "struct")]
       [s-ty (tc/app-regular #'form expected)]))
   ;; vector-ref on het vectors
@@ -97,7 +97,7 @@
   ;; unsafe struct-set! 
   (pattern (~and form ((~or unsafe-struct-set! unsafe-struct*-set!) s:expr index:expr val:expr))
     (match (single-value #'s)
-      [(tc-result1: (and struct-t (app resolve (Struct: _ _ (list (fld: flds _ _) ...) _ _ _ _ _))))
+      [(tc-result1: (and struct-t (app resolve (Struct: _ _ (list (fld: flds _ _) ...) _ _ _))))
        (tc/hetero-set! #'index flds #'val struct-t expected "struct")]
       [s-ty (tc/app-regular #'form expected)]))
   ;; vector-set! on het vectors

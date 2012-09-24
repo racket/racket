@@ -220,19 +220,19 @@
   (define (in-hierarchy? s par)
     (define s-name
       (match s
-        [(Poly: _ (Struct: s-name _ _ _ _ _ _ _)) s-name]
-        [(Struct: s-name _ _ _ _ _ _ _) s-name]))
+        [(Poly: _ (Struct: s-name _ _ _ _ _)) s-name]
+        [(Struct: s-name _ _ _ _ _) s-name]))
     (define p-name
       (match par
-        [(Poly: _ (Struct: p-name _ _ _ _ _ _ _)) p-name]
-        [(Struct: p-name _ _ _ _ _ _ _) p-name]))
+        [(Poly: _ (Struct: p-name _ _ _ _ _)) p-name]
+        [(Struct: p-name _ _ _ _ _) p-name]))
     (or (free-identifier=? s-name p-name)
         (match s
           [(Poly: _ (? Struct? s*)) (in-hierarchy? s* par)]
-          [(Struct: _ (and (Name: _) p) _ _ _ _ _ _) (in-hierarchy? (resolve-once p) par)]
-          [(Struct: _ (? Struct? p) _ _ _ _ _ _) (in-hierarchy? p par)]
-          [(Struct: _ (Poly: _ p) _ _ _ _ _ _) (in-hierarchy? p par)]
-          [(Struct: _ #f _ _ _ _ _ _) #f]
+          [(Struct: _ (and (Name: _) p) _ _ _ _) (in-hierarchy? (resolve-once p) par)]
+          [(Struct: _ (? Struct? p) _ _ _ _) (in-hierarchy? p par)]
+          [(Struct: _ (Poly: _ p) _ _ _ _) (in-hierarchy? p par)]
+          [(Struct: _ #f _ _ _ _) #f]
           [_ (int-err "wtf is this? ~a" s)])))
   (not (or (in-hierarchy? s1 s2) (in-hierarchy? s2 s1))))
 
@@ -405,13 +405,13 @@
                    A0
                    (fail! s t))]
               ;; subtyping on immutable structs is covariant
-              [((Struct: nm _ flds proc _ _ _ _) (Struct: nm* _ flds* proc* _ _ _ _)) (=> nevermind)
+              [((Struct: nm _ flds proc _ _) (Struct: nm* _ flds* proc* _ _)) (=> nevermind)
                (unless (free-identifier=? nm nm*) (nevermind))
                (let ([A (cond [(and proc proc*) (subtype* proc proc*)]
                               [proc* (fail! proc proc*)]
                               [else A0])])
                  (subtype/flds* A flds flds*))]
-              [((Struct: nm _ _ _ _ _ _ _) (StructTop: (Struct: nm* _ _ _ _ _ _ _))) (=> nevermind)
+              [((Struct: nm _ _ _ _ _) (StructTop: (Struct: nm* _ _ _ _ _))) (=> nevermind)
                (unless (free-identifier=? nm nm*) (nevermind))
                A0]
               ;; Promises are covariant
@@ -433,7 +433,7 @@
               [((MPair: _ _) (MPairTop:)) A0]
               [((Hashtable: _ _) (HashtableTop:)) A0]
               ;; subtyping on structs follows the declared hierarchy
-              [((Struct: nm (? Type? parent) _ _ _ _ _ _) other)
+              [((Struct: nm (? Type? parent) _ _ _ _) other)
                ;(dprintf "subtype - hierarchy : ~a ~a ~a\n" nm parent other)
                (subtype* A0 parent other)]
               ;; subtyping on values is pointwise

@@ -223,7 +223,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                    (type->contract
                      typ
                      ;; must be a flat contract
-                     #:flat #t
+                     #:kind 'flat
                      ;; the value is not from the typed side
                      #:typed-side #f
                      (lambda () (tc-error/stx #'ty "Type ~a could not be converted to a predicate." typ)))

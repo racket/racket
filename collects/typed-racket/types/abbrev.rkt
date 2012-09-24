@@ -418,8 +418,8 @@
 (define (make-arr-dots dom rng dty dbound)
   (make-arr* dom rng #:drest (cons dty dbound)))
 
-(define (-struct name parent flds constructor [proc #f] [poly #f] [pred #'dummy] [cert values])
-  (make-Struct name parent flds proc poly pred cert constructor))
+(define (-struct name parent flds [proc #f] [poly #f] [pred #'dummy])
+  (make-Struct name parent flds proc poly pred))
 
 (define/cond-contract (-filter t i [p null])
      (c:->* (Type/c name-ref/c) ((listof PathElem?)) Filter/c)
