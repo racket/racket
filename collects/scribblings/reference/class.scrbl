@@ -202,7 +202,7 @@ superinterfaces specify inconsistent derivation requirements, the
   (interface () open close read-byte write-byte))
 (define directory-interface<%>
   (interface (file-interface<%>)
-    [file-list (-> (listof (is-a?/c file-interface<%>)))]
+    [file-list (->m (listof (is-a?/c file-interface<%>)))]
     parent-directory))
 ]}
 
