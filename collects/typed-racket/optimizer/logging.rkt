@@ -4,11 +4,12 @@
          unstable/syntax unstable/logging
          "../utils/tc-utils.rkt")
 
-(provide log-optimization log-missed-optimization
+(provide log-optimization log-missed-optimization log-optimization-info
          with-tr-logging-to-port
          (struct-out log-entry)
          (struct-out opt-log-entry)
-         (struct-out missed-opt-log-entry))
+         (struct-out missed-opt-log-entry)
+         (struct-out info-log-entry))
 
 ;;--------------------------------------------------------------------
 
@@ -67,6 +68,21 @@
 
 ;;--------------------------------------------------------------------
 
+;; Log information that is neither an optimization nor a missed optimization,
+;; but can come in handy, in combination with other information, to detect
+;; near misses.
+
+(struct info-log-entry log-entry () #:prefab)
+
+(define (log-optimization-info kind stx)
+  (when (anyone-listening?)
+    (emit-log-message
+     ;; no actual message, since it's not meant for user consumption
+     (info-log-entry kind "" stx (locate-stx stx) (syntax-position stx)
+                     'typed-racket))))
+
+;;--------------------------------------------------------------------
+
 (define (line+col->string stx)
   (let ([line (syntax-line stx)]
         [col  (syntax-column stx)])
@@ -108,7 +124,9 @@
                  (format-irritants (missed-opt-log-entry-irritants entry))
                  (if (> badness 1)
                      (format " (~a times)" badness)
-                     ""))]))
+                     ""))]
+        [(info-log-entry? entry)
+         (format "TR info: ~a" msg)]))
 
 ;;--------------------------------------------------------------------
 

@@ -76,6 +76,10 @@
 (define (log->report log)
   (define (log-entry->report-entry l)
     (match l
+      [(? info-log-entry? _)
+       ;; Info entries are only useful for log analysis, and should not be
+       ;; presented to users. Drop them.
+       #f]
       [(log-entry kind msg stx located-stx (? number? pos) provenance)
        (define start     (sub1 pos))
        (define end       (+ start (syntax-span stx)))
@@ -98,10 +102,10 @@
                ;; merge missed-opts hierarchically
                (for/fold ([res '()])
                    ([new (remove-duplicates log)])
-                 (cond [(opt-log-entry? new)
-                        (cons new res)] ; no merging for opts
-                       [(missed-opt-log-entry? new)
-                        (maybe-merge-with-parent new res)])))))
+                 (cond [(missed-opt-log-entry? new)
+                        (maybe-merge-with-parent new res)]
+                       [else
+                        (cons new res)]))))) ; no merging for opts and info
 
 ;;--------------------------------------------------------------------
 
