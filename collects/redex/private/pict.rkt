@@ -533,9 +533,11 @@
     (send ps-setup copy-from (current-ps-setup))
     (send ps-setup set-file filename)
     (send ps-setup set-mode 'file)
-    (define % (if (regexp-match #rx#"[.]pdf$" (path->bytes filename))
-                  pdf-dc%
-                  post-script-dc%))
+    (define is-pdf? 
+      (cond
+        [(path? filename) (regexp-match #rx#"[.]pdf$" (path->bytes filename))]
+        [else (regexp-match #rx"[.]pdf$" filename)]))
+    (define % (if is-pdf? pdf-dc% post-script-dc%))
     (parameterize ([current-ps-setup ps-setup])
       (make-object % #f #f))))
 
