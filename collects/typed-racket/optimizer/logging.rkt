@@ -53,8 +53,6 @@
         (irritants merged-irritants badness)
         #:prefab)
 
-;; Attempts to merge the incoming missed optimization with existing ones.
-;; Otherwise, adds the new one to the log.
 (define (log-missed-optimization kind msg stx [irritants '()])
   (when (anyone-listening?)
     (let (;; for convenience, if a single irritant is given, wrap it in a list
