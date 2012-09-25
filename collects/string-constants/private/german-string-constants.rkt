@@ -338,6 +338,7 @@
  (install-plt-file-tab "Datei")
  (install-plt-filename "Dateiname:")
  (install-plt-url "URL:")
+ (install-plt-error-header "Beim Überprüfen der heruntergeladenen .plt-Datei ist ein Fehler aufgetreten. Bitte überprüfen Sie die URL und versuchen Sie es noch einmal.")
   
  (install-plt-file "~a installieren oder editieren?")
  (install-plt-file/yes "Installieren")
@@ -396,6 +397,11 @@
  (show-line-and-column-numbers "Zeilen- && Spaltennummern anzeigen") ; used for popup menu; right click on line/column box in bottom of drs window
  (show-character-offsets "Zeichen-Offsets anzeigen") ; used for popup menu; right click on line/column box in bottom of drs window
  (enable-keybindings-in-menus "Tastenbelegung für Menüs")
+ (printing-mode "Druckmodus")
+ (print-using-platform-specific-mode "Plattformspezifisches Drucken")
+ (print-to-ps "Drucken in PostScript-Datei")
+ (print-to-pdf "Drucken in PDF-Datei")
+
  (command-as-meta "Command-Taste als Meta behandeln") ;; macos/macos x only
  (reuse-existing-frames "Existierende Fenster für neu geöffnete Dateien wiederverwenden")
  (default-fonts "Standard-Fonts")
