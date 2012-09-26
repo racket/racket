@@ -18,7 +18,7 @@
 /add-on/
 
 # a common convenient place to set the PLTCOMPILEDROOTS directory to
-/compiled-root/
+/zos/
 
 # location for cached DrDr report files
 /house-calls/
