@@ -321,56 +321,62 @@ Registers a finalizer procedure @racket[finalizer-proc] with the given
 @racket[obj], which can be any Racket (GC-able) object.  The finalizer
 is registered with a will executor; see
 @racket[make-will-executor]. The finalizer is invoked when
-@racket[obj] is about to be collected.  (The finalizer is invoked in a
-thread that is in charge of triggering these will executors.)
+@racket[obj] is about to be collected.
 See also @racket[register-custodian-shutdown].
+
+The finalizer is invoked in a thread that is in charge of triggering
+will executors for @racket[register-finalizer]. The given
+@racket[finalizer] procedure should generally not rely on the
+environment of the triggering thread, such as its output ports or
+custodians, except that relying on a default logger is reasonable.
 
 Finalizers are mostly intended to be used with cpointer objects (for
 freeing unused memory that is not under GC control), but it can be
 used with any Racket object---even ones that have nothing to do with
 foreign code.  Note, however, that the finalizer is registered for the
-@italic{Racket} object. If you intend to free a pointer object, then
-you must be careful to not register finalizers for two cpointers that
-point to the same address.  Also, be careful to not make the finalizer
-a closure that holds on to the object.
+@italic{Racket} object that represents the pointer. If you intend to
+free a pointer object, then you must be careful to not register
+finalizers for two cpointers that point to the same address.  Also, be
+careful to not make the finalizer a closure that holds on to the
+object.
 
 For example, suppose that you're dealing with a foreign function that returns a
 C string that you should free.  Here is an attempt at creating a suitable type:
 
 @racketblock[
-(define bytes/free
+(define @#,racketidfont{_sixteen-bytes/free}
   (make-ctype _pointer
               #f (code:comment @#,t{a Racket bytes can be used as a pointer})
               (lambda (x)
-                (let ([b (make-byte-string x)])
+                (let ([b (make-sized-byte-string x 16)])
                   (register-finalizer x free)
                   b))))
 ]
 
 The above code is wrong: the finalizer is registered for @racket[x],
-which is no longer needed once the byte string is created.  Changing
-this to register the finalizer for @racket[b] correct this problem,
-but then @racket[free] will be invoked on it instead of on @racket[x].
-In an attempt to fix this, we will be careful and print out a message
+which is no longer needed after the byte string is created.  Changing
+the example to register the finalizer for @racket[b] correct the problem,
+but then @racket[free] is invoked @racket[b] it instead of on @racket[x].
+In the process of fixing this problem, we might be careful and log a message
 for debugging:
 
 @racketblock[
-(define bytes/free
+(define @#,racketidfont{_sixteen-bytes/free}
   (make-ctype _pointer
               #f (code:comment @#,t{a Racket bytes can be used as a pointer})
               (lambda (x)
-                (let ([b (make-byte-string x)])
+                (let ([b (make-sized-byte-string x 16)])
                   (register-finalizer b
                     (lambda (ignored)
-                      (printf "Releasing ~s\n" b)
+                      (log-debug (format "Releasing ~s\n" b))
                       (free x)))
                   b))))
 ]
 
-but we never see any printout. The problem is that the finalizer is a
-closure that keeps a reference to @racket[b].  To fix this, you should
-use the input argument to the finalizer.  Simply changing
-@racket[ignored] to @racket[b] will solve this problem.  (Removing the
+Now, we never see any logged event. The problem is that the finalizer is a
+closure that keeps a reference to @racket[b]. Instead of referencing the
+value that is finalized, use the input argument to the finalizer; simply changing
+@racket[ignored] to @racket[b] above solves the problem.  (Removing the
 debugging message also avoids the problem, since the finalization
 procedure would then not close over @racket[b].)}
 

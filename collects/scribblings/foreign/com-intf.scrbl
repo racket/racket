@@ -21,7 +21,7 @@ FFI-based calls to COM object methods.}
 @section{Describing COM Interfaces}
 
 @defform/subs[(define-com-interface (_id _super-id)
-                ([method-id ctype-expr maybe-alloc-spec]))
+                ([method-id ctype-expr maybe-alloc-spec] ...))
               ([maybe-alloc-spec code:blank
                                  (code:line #:release-with-function function-id)
                                  (code:line #:release-with-method method-id)
