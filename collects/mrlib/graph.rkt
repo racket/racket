@@ -30,75 +30,66 @@
   
   (define-local-member-name get-parent-links)
   
-  (provide/contract (add-links
-                     (case->
-		      ((is-a?/c graph-snip<%>)
-		       (is-a?/c graph-snip<%>)
-		       . -> .
-		       void?)
-		      ((is-a?/c graph-snip<%>)
-		       (is-a?/c graph-snip<%>)
-		       (or/c #f (is-a?/c pen%))
-		       (or/c #f (is-a?/c pen%))
-		       (or/c #f (is-a?/c brush%))
-		       (or/c #f (is-a?/c brush%))
-		       . -> .
-		       void?)
-                      ((is-a?/c graph-snip<%>)
-		       (is-a?/c graph-snip<%>)
-		       (or/c #f (is-a?/c pen%))
-		       (or/c #f (is-a?/c pen%))
-		       (or/c #f (is-a?/c brush%))
-		       (or/c #f (is-a?/c brush%))
-                       (or/c #f string?)
-		       . -> .
-		       void?)
-                      ((is-a?/c graph-snip<%>)
-		       (is-a?/c graph-snip<%>)
-		       (or/c #f (is-a?/c pen%))
-		       (or/c #f (is-a?/c pen%))
-		       (or/c #f (is-a?/c brush%))
-		       (or/c #f (is-a?/c brush%))
-		       number?
-                       number?
-                       . -> .
-		       void?)
-                      ((is-a?/c graph-snip<%>)
-		       (is-a?/c graph-snip<%>)
-		       (or/c #f (is-a?/c pen%))
-		       (or/c #f (is-a?/c pen%))
-		       (or/c #f (is-a?/c brush%))
-		       (or/c #f (is-a?/c brush%))
-		       number?
-                       number?
-                       (or/c #f string?)
-                       . -> .
-		       void?)))
-                    (add-links/text-colors
-                     ((is-a?/c graph-snip<%>)
-		       (is-a?/c graph-snip<%>)
-		       (or/c #f (is-a?/c pen%))
-		       (or/c #f (is-a?/c pen%))
-		       (or/c #f (is-a?/c brush%))
-		       (or/c #f (is-a?/c brush%))
-                       (or/c #f (is-a?/c color%))
-                       (or/c #f (is-a?/c color%))
-		       number?
-                       number?
-                       (or/c #f string?)
-                       . -> .
-		       void?))
-                    (remove-links
-                     ((is-a?/c graph-snip<%>)
-                      (is-a?/c graph-snip<%>)
-                      . -> .
-                      void?))
-                    (set-link-label
-                     ((is-a?/c graph-snip<%>)
-                      (is-a?/c graph-snip<%>)
-                      (or/c #f string?)
-                      . -> .
-                      void?)))
+  (provide/contract
+   [add-links
+    (case->
+     (-> (is-a?/c graph-snip<%>) (is-a?/c graph-snip<%>) void?)
+     (-> (is-a?/c graph-snip<%>)
+         (is-a?/c graph-snip<%>)
+         (or/c #f (is-a?/c pen%))
+         (or/c #f (is-a?/c pen%))
+         (or/c #f (is-a?/c brush%))
+         (or/c #f (is-a?/c brush%))
+         void?)
+     (-> (is-a?/c graph-snip<%>)
+         (is-a?/c graph-snip<%>)
+         (or/c #f (is-a?/c pen%))
+         (or/c #f (is-a?/c pen%))
+         (or/c #f (is-a?/c brush%))
+         (or/c #f (is-a?/c brush%))
+         (or/c #f string?)
+         void?)
+     (-> (is-a?/c graph-snip<%>)
+         (is-a?/c graph-snip<%>)
+         (or/c #f (is-a?/c pen%))
+         (or/c #f (is-a?/c pen%))
+         (or/c #f (is-a?/c brush%))
+         (or/c #f (is-a?/c brush%))
+         number?
+         number?
+         void?)
+     (-> (is-a?/c graph-snip<%>)
+         (is-a?/c graph-snip<%>)
+         (or/c #f (is-a?/c pen%))
+         (or/c #f (is-a?/c pen%))
+         (or/c #f (is-a?/c brush%))
+         (or/c #f (is-a?/c brush%))
+         number?
+         number?
+         (or/c #f string?)
+         void?))]
+   [add-links/text-colors
+    (-> (is-a?/c graph-snip<%>)
+        (is-a?/c graph-snip<%>)
+        (or/c #f (is-a?/c pen%))
+        (or/c #f (is-a?/c pen%))
+        (or/c #f (is-a?/c brush%))
+        (or/c #f (is-a?/c brush%))
+        (or/c #f (is-a?/c color%))
+        (or/c #f (is-a?/c color%))
+        number?
+        number?
+        (or/c #f string?)
+        void?)]
+   [remove-links
+    (-> (is-a?/c graph-snip<%>)
+        (is-a?/c graph-snip<%>)
+        void?)]
+   [set-link-label
+    (-> (is-a?/c graph-snip<%>)
+        (is-a?/c graph-snip<%>)
+        (or/c #f string?)
+        void?)])
 
   (define self-offset 10)
   
