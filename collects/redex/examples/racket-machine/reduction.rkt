@@ -31,7 +31,7 @@
      undefined
      (clos x))
   (e ....
-     (self-app x e_0 e_1 ...))
+     (self-app x e e ...))
   (m n ?))
 
 (define procedure-rules
@@ -41,8 +41,8 @@
         ((clos x) S ((x ((clos n ((stack-ref n_0 S) ...) x_i))) (x_0 h_0) ...) T (i ...))
         (fresh x)
         "lam")
-   (--> (V S ((x_0 h_0) ...) T ((case-lam (lam n (n_0 ...) x_i) ...) i ...))
-        ((clos x) S ((x ((clos n ((stack-ref n_0 S) ...) x_i) ...)) (x_0 h_0) ...) T (i ...))
+   (--> (V S ((x_0 h_0) ...) T ((case-lam (lam n (n_0 ...) x_j) ...) i ...))
+        ((clos x) S ((x ((clos n ((stack-ref n_0 S) ...) x_j) ...)) (x_0 h_0) ...) T (i ...))
         (fresh x)
         "case-lam")
    (--> (V S ((x_0 h_0) ...) T ((let-rec ((name l_0 (lam n_0 (n_00 ...) y_0)) ...) e) i ...))
@@ -76,6 +76,10 @@
    (--> (V S H T ((reorder i_r (e_0 m_1) ... ((loc-noclr n) m_i) (e_i+1 m_i+1) (e_i+2 m_i+2) ...) i ...))
         (V S H T ((reorder i_r (e_0 m_1) ... (e_i+1 m_i+1) (e_i+2 m_i+2) ... ((loc-noclr n) m_i)) i ...))
         "reorder")
+   (--> (V S H T ((reorder (call n) (e_0 n_0) ... (e_n ?)) i ...))
+        (V S H T (,@(term (flatten ((framepush e_0 framepop (set n_0)) ...)))
+                  framepush e_n framepop (call n) i ...))
+        "finalize-app-is-last")
    (--> (V S H T ((reorder (call n) (e_0 n_0) ... (e_i ?) (e_i+1 n_i+1) ... (e_j n_j)) i ...))
         (V S H T (,@(term (flatten ((framepush e_0 framepop (set n_0)) ...)))
                   framepush e_i framepop (set n_j)
@@ -83,18 +87,10 @@
                   framepush e_j framepop
                   (swap n_j) (call n) i ...))
         "finalize-app-not-last")
-   (--> (V S H T ((reorder (call n) (e_0 n_0) ... (e_n ?)) i ...))
-        (V S H T (,@(term (flatten ((framepush e_0 framepop (set n_0)) ...)))
-                  framepush e_n framepop (call n) i ...))
-        "finalize-app-is-last")
    (--> (V S H T ((reorder (self-call x) (e_0 n_0) ...) i ...))
         (V S H T (,@(term (flatten ((framepush e_0 framepop (set n_0)) ...)))
                   (self-call x) i ...))
         "finalize-self-app")
-   (--> (V (u_0 ... u_i ... (u_j ... (u_k ... s))) H (name T ((x_0 e_0) ... (x_i e_i) (x_i+1 e_i+1) ...)) ((self-call x_i) i ...))
-        (V ((u_j ... (u_0 ... s))) H T (e_i i ...))
-        (side-condition (= (length (term (u_0 ...))) (length (term (u_k ...)))))
-        "self-call")
    (--> ((clos x_i) (u_1 ... u_n+1 ... (u_m ... (u_k ... s))) (name H ((x_0 h_0) ...
                                                                        (x_i ((clos n_0 (u_0 ...) y_0) ...
                                                                              (clos n_i (u_i ...) y_i) 
@@ -104,6 +100,10 @@
         (side-condition (not (memq (term n_i) (term (n_0 ...)))))
         (side-condition (= (term n_i) (length (term (u_1 ...)))))
         "call")
+   (--> (V (u_0 ... u_i ... (u_j ... (u_k ... s))) H (name T ((x_0 e_0) ... (x_i e_i) (x_i+1 e_i+1) ...)) ((self-call x_i) i ...))
+        (V ((u_j ... (u_0 ... s))) H T (e_i i ...))
+        (side-condition (= (length (term (u_0 ...))) (length (term (u_k ...)))))
+        "self-call")
    (--> (v S H T ((call n) i ...))
         error
         "non-closure"
@@ -152,7 +152,7 @@
    (--> (V S H T ((swap n) i ...))
         ((stack-ref n S) (stack-set V n S) H T (i ...))
         "swap")
-   (--> (V (u_0 ... (u_i ... (u_j ... s))) H T (framepop i ...))
+   (--> (V (u_0 ... (u_1 ... (u_2 ... s))) H T (framepop i ...))
         (V s H T (i ...))
         "framepop")
    (--> (V S H T (framepush i ...))
@@ -248,8 +248,8 @@
           (load’* ((e -) (e_0 -) ...) (x_0 ...)))])
 
 (define-metafunction loader
-  [(φ+ - n) -]
-  [(φ+ (n_p n_a x) n) (,(+ (term n) (term n_p)) n_a x)])
+  [(incφ - n) -]
+  [(incφ (n_p n_a x) n) (,(+ (term n) (term n_p)) n_a x)])
 
 (define-metafunction loader
   [(load-lam-rec (lam (τ_0 ...) (n_0 ... n_i n_i+1 ...) e) n_i (y ...))
@@ -297,14 +297,14 @@
   [(load’ (let-one e_r e_b) φ (y ...))
    ((let-one e_r* e_b*) (concat H_r H_b) (concat T_r T_b) (y_** ...))
    (where (e_r* H_r T_r (y_* ...)) (load’ e_r - (y ...)))
-   (where (e_b* H_b T_b (y_** ...)) (load’ e_b (φ+ φ 1) (y_* ...)))]
+   (where (e_b* H_b T_b (y_** ...)) (load’ e_b (incφ φ 1) (y_* ...)))]
   
   [(load’ (let-void n e) φ (y ...))
    ((let-void n e_*) H T (y_* ...))
-   (where (e_* H T (y_* ...)) (load’ e (φ+ φ n) (y ...)))]
+   (where (e_* H T (y_* ...)) (load’ e (incφ φ n) (y ...)))]
   [(load’ (let-void-box n e) φ (y ...))
    ((let-void-box n e_*) H T (y_* ...))
-   (where (e_* H T (y_* ...)) (load’ e (φ+ φ n) (y ...)))]
+   (where (e_* H T (y_* ...)) (load’ e (incφ φ n) (y ...)))]
   
   [(load’ (boxenv n e) φ (y ...))
    ((boxenv n e_*) H T (y_* ...))

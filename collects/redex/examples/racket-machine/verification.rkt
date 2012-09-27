@@ -199,7 +199,7 @@
    (where (ṽ ...) ((drop-noclr (stack-ref n_0 s)) ...))
    (where f (extract-self m (n_0 ...) (τ_0 ...) (ṽ ...)))
    (where (s_1 γ_1 η_1) (verify e (ṽ ... (arg τ_0) ...) n_d* #f () () f))]
-  [(lam-verified? any s m) #f])
+  [(lam-verified? l s m) #f])
 
 (define-metafunction verification
   [(extract-self ? (n_0 ...) (τ_0 ...) (ṽ_0 ...)) ∅]
@@ -329,9 +329,9 @@
 (define-metafunction verification
   trim : s s -> s
   [(trim invalid s) invalid]
-  [(trim (ṽ_f ...) (ṽ_t ...))
-   ,(take-right (term (ṽ_f ...)) 
-                (length (term (ṽ_t ...))))])
+  [(trim (ṽ_1 ... ṽ_2 ...) (ṽ_3 ...))
+   (ṽ_2 ...)
+   (side-condition (= (length (term (ṽ_2 ...))) (length (term (ṽ_3 ...)))))])
 
 (define-metafunction verification
   [(valid? invalid) #f]
