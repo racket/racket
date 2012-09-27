@@ -1,5 +1,10 @@
 #lang racket/base
 
+(define oprintf
+  (let ([op (current-output-port)])
+    (λ args
+      (apply fprintf op args))))
+
 (require mred
          racket/class
          syntax/moddep
@@ -913,14 +918,13 @@
     (define (kill-termination) (void))
     (define complete-program? #t)
 
-    (define stupid-internal-define-syntax1
-      ((drracket:eval:traverse-program/multiple
-        (preferences:get (drracket:language-configuration:get-settings-preferences-symbol))
-        init
-        kill-termination)
-       text/pos
-       iter
-       complete-program?))
+    ((drracket:eval:traverse-program/multiple
+      (preferences:get (drracket:language-configuration:get-settings-preferences-symbol))
+      init
+      kill-termination)
+     text/pos
+     iter
+     complete-program?)
     
     (semaphore-wait init-complete)
     (send-user-thread/eventspace user-thread user-custodian)
@@ -1044,19 +1048,24 @@
                (substring name 1 (string-length name))
                (build-path (or (current-load-relative-directory) 
                                (current-directory))
-                           name))))
+                           name))
+           #f))
         (add-module-code-connections base module-code))))
   
-  (define (build-module-filename str)
-    (let ([try (λ (ext)
-                 (let ([tst (bytes->path (bytes-append (path->bytes str) ext))])
-                   (and (file-exists? tst)
-                        tst)))])
-      (or (try #".rkt")
-          (try #".ss")
-          (try #".scm")
-          (try #"")
-          str)))
+  (define (build-module-filename pth remove-extension?)
+    (define (try ext)
+      (define tst (bytes->path (bytes-append 
+                                (if remove-extension?
+                                    (regexp-replace #rx"[.][^.]*$" (path->bytes pth) #"")
+                                    (path->bytes pth))
+                                ext)))
+      (and (file-exists? tst)
+           tst))
+    (or (try #".rkt")
+        (try #".ss")
+        (try #".scm")
+        (try #"")
+        pth))
   
   ;; add-filename-connections : string -> void
   (define (add-filename-connections filename)
@@ -1106,9 +1115,10 @@
   (define (extract-filenames direct-requires base)
     (define base-lib (get-lib-root base))
     (for*/list ([dr (in-list direct-requires)]
-                [path (in-value (and (module-path-index? dr)
-                                     (resolve-module-path-index dr base)))]
-                #:when (path? path))
+                [rkt-path (in-value (and (module-path-index? dr)
+                                         (resolve-module-path-index dr base)))]
+                #:when (path? rkt-path))
+      (define path (build-module-filename rkt-path #t))
       (make-req (simplify-path path) (get-key dr base-lib path))))
 
   (define (get-key dr requiring-libroot required)
