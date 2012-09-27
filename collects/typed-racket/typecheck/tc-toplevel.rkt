@@ -323,14 +323,15 @@
 
   (refine-struct-variance! parsed-structs)
 
-
-
   ;; register the bindings of the structs
-  (for-each register-parsed-struct-bindings! parsed-structs)
+  (define struct-bindings (map register-parsed-struct-bindings! parsed-structs))
   ;(printf "after resolving type aliases~n")
   ;(displayln "Starting pass1")
   ;; do pass 1, and collect the defintions
-  (define defs (apply append (filter list? (map tc-toplevel/pass1 forms))))
+  (define defs (apply append 
+                      (append
+                       struct-bindings
+                       (filter list? (map tc-toplevel/pass1 forms)))))
   ;(displayln "Finished pass1")
   ;; separate the definitions into structures we'll handle for provides
   (define def-tbl

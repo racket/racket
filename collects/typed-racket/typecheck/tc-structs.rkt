@@ -35,6 +35,28 @@
   (pattern (name:id par:id))
   (pattern name:id #:attr par #f))
 
+;; sty : Struct?
+;; names : Listof[Identifier]
+;; desc : struct-desc
+;; type-only : Boolean
+(struct parsed-struct (sty names desc struct-info type-only) #:transparent)
+
+;; type-name : Id
+;; struct-type : Id
+;; constructor : Id
+;; predicate : Id
+;; getters : Listof[Id]
+;; setters : Listof[Id] or #f
+(struct struct-names (type-name struct-type constructor predicate getters setters) #:transparent)
+
+;;struct-fields: holds all the relevant information about a struct type's types
+(struct struct-desc (parent-fields self-fields tvars mutable proc-ty) #:transparent)
+
+(define (struct-desc-all-fields fields)
+  (append (struct-desc-parent-fields fields) (struct-desc-self-fields fields)))
+(define (struct-desc-parent-count fields)
+  (length (struct-desc-parent-fields fields)))
+
 
 ;; TODO make this not return a list
 (define (names-of-struct stx)
@@ -74,7 +96,6 @@
           (values #'v.name #f #f))]))
 
 
-(struct struct-names (type-name struct-type constructor predicate getters setters) #:transparent)
 ;; generate struct names given type name, field names
 ;; and optional constructor name
 ;; all have syntax loc of name
@@ -90,15 +111,6 @@
     [(list sty maker pred getters/setters ...)
      (let-values ([(getters setters) (split getters/setters)])
        (struct-names nm sty (or maker* maker) pred getters setters))]))
-
-;;struct-fields: holds all the relevant information about a struct type's types
-(struct struct-desc (parent-fields self-fields tvars mutable proc-ty) #:transparent)
-(define (struct-desc-all-fields fields)
-  (append (struct-desc-parent-fields fields) (struct-desc-self-fields fields)))
-(define (struct-desc-parent-count fields)
-  (length (struct-desc-parent-fields fields)))
-
-
 
 ;; gets the fields of the parent type, if they exist
 ;; Option[Struct-Ty] -> Listof[Type]
@@ -137,8 +149,8 @@
 
 
 ;; Register the approriate types to the struct bindings.
-(define/cond-contract (register-struct-bindings! sty names desc)
-  (c-> Struct? struct-names? struct-desc? void?)
+(define/cond-contract (register-struct-bindings! sty names desc si)
+  (c-> Struct? struct-names? struct-desc? (or/c #f struct-info?) void?)
 
 
   (define tvars (struct-desc-tvars desc))
@@ -163,44 +175,53 @@
             (and (not mutable) (eq? variance Covariant))))))
 
   (define (poly-wrapper t) (make-Poly tvars t))
-  ;; the list of names w/ types
-  (register-type (struct-names-struct-type names) (make-StructType sty))
-  (register-type (struct-names-constructor names) (poly-wrapper (->* all-fields poly-base)))
-  (register-type (struct-names-predicate names)
-                 (make-pred-ty (if (not covariant?)
-                                   (make-StructTop sty)
-                                   (subst-all (make-simple-substitution
-                                                  tvars (map (const Univ) tvars)) poly-base))))
-
-  (for ([g (in-list (struct-names-getters names))]
-        [t (in-list self-fields)]
-        [i (in-naturals parent-count)])
-    (let* ([path (make-StructPE poly-base i)]
-           [func (poly-wrapper
-                   (if mutable
-                       (->* (list poly-base) t)
-                       (->acc (list poly-base) t (list path))))])
-      (add-struct-fn! g path #f)
-      (register-type g func)))
-  (when mutable
-    (for ([s (in-list (struct-names-setters names))]
-          [t (in-list self-fields)]
-          [i (in-naturals parent-count)])
-      (add-struct-fn! s (make-StructPE poly-base i) #t)
-      (register-type s (poly-wrapper (->* (list poly-base t) -Void))))))
-
-(struct parsed-struct (sty names desc type-only) #:transparent)
+  (define bindings
+    (list*
+     ;; the list of names w/ types
+     (cons (struct-names-struct-type names) (make-StructType sty))
+     (cons (struct-names-constructor names) (poly-wrapper (->* all-fields poly-base)))
+     (cons (struct-names-predicate names)
+           (make-pred-ty (if (not covariant?)
+                             (make-StructTop sty)
+                             (subst-all (make-simple-substitution
+                                         tvars (map (const Univ) tvars)) poly-base))))
+     (append
+      (for/list ([g (in-list (struct-names-getters names))]
+                 [t (in-list self-fields)]
+                 [i (in-naturals parent-count)])
+        (let* ([path (make-StructPE poly-base i)]
+               [func (poly-wrapper
+                      (if mutable
+                          (->* (list poly-base) t)
+                          (->acc (list poly-base) t (list path))))])
+          (add-struct-fn! g path #f)
+          (cons g func)))
+      (if mutable
+          (for/list ([s (in-list (struct-names-setters names))]
+                     [t (in-list self-fields)]
+                     [i (in-naturals parent-count)])
+            (add-struct-fn! s (make-StructPE poly-base i) #t)
+            (cons s (poly-wrapper (->* (list poly-base t) -Void))))
+          null))))
+  (cons
+   (and si (make-def-struct-stx-binding (struct-names-type-name names) si))
+   (for/list ([b bindings])
+    (define id (car b))
+    (define t (cdr b))
+    (register-type id t)
+    (make-def-binding id t))))
 
 (define (register-parsed-struct-sty! ps)
   (match ps
-    ((parsed-struct sty names desc type-only)
+    ((parsed-struct sty names desc si type-only)
      (register-sty! sty names desc))))
 
 (define (register-parsed-struct-bindings! ps)
   (match ps
-    ((parsed-struct sty names desc type-only)
-     (unless type-only
-       (register-struct-bindings! sty names desc)))))
+    ((parsed-struct sty names desc si type-only)
+     (if type-only
+         null
+         (register-struct-bindings! sty names desc si)))))
 
 (define (refine-struct-variance! parsed-structs)
   (define stys (map parsed-struct-sty parsed-structs))
@@ -264,7 +285,7 @@
                  (and proc-ty (parse-type proc-ty))))
   (define sty (mk/inner-struct-type names desc concrete-parent))
 
-  (parsed-struct sty names desc type-only))
+  (parsed-struct sty names desc (syntax-property nm/par 'struct-info) type-only))
 
 
 ;; register a struct type
@@ -285,7 +306,7 @@
   (define sty (mk/inner-struct-type names desc parent-type))
 
   (register-sty! sty names desc)
-  (register-struct-bindings! sty names desc)
+  (register-struct-bindings! sty names desc #f)
   (when kernel-maker
     (register-type kernel-maker (λ () (->* (struct-desc-all-fields desc) sty)))))
 
