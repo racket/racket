@@ -51,6 +51,11 @@
 
 (define struct-fn-table (make-free-id-table))
 
+(define struct-constructor-table (make-free-id-table))
+
+(define (add-struct-constructor! id) (dict-set! struct-constructor-table id #t))
+(define (struct-constructor? id) (dict-ref struct-constructor-table id #f))
+
 (define (add-struct-fn! id pe mut?) (dict-set! struct-fn-table id (list pe mut?)))
 
 (define-values (struct-accessor? struct-mutator?)
@@ -96,17 +101,19 @@
     (values (mk 'tautology) (mk 'contradiction) (mk 'neither))))
 
 (provide/cond-contract
- [add-typeof-expr (syntax? tc-results? . -> . any/c)]
+ [add-typeof-expr (syntax? tc-results? . -> . any)]
  [type-of (syntax? . -> . tc-results?)]
- [reset-type-table (-> any/c)]
- [add-struct-fn! (identifier? StructPE? boolean? . -> . any/c)]
+ [reset-type-table (-> any)]
+ [add-struct-fn! (identifier? StructPE? boolean? . -> . any)]
+ [add-struct-constructor! (identifier? . -> . any)]
+ [struct-constructor? (identifier? . -> . boolean?)]
  [struct-accessor? (identifier? . -> . (or/c #f StructPE?))]
  [struct-mutator? (identifier? . -> . (or/c #f StructPE?))]
  [struct-fn-idx (identifier? . -> . exact-integer?)]
  [make-struct-table-code (-> syntax?)]
- [add-tautology (syntax? . -> . any/c)]
- [add-contradiction (syntax? . -> . any/c)]
- [add-neither (syntax? . -> . any/c)]
+ [add-tautology (syntax? . -> . any)]
+ [add-contradiction (syntax? . -> . any)]
+ [add-neither (syntax? . -> . any)]
  [tautology? (syntax? . -> . boolean?)]
  [contradiction? (syntax? . -> . boolean?)]
  [neither? (syntax? . -> . boolean?)])

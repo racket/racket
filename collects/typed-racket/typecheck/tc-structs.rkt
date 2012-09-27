@@ -203,6 +203,7 @@
             (add-struct-fn! s (make-StructPE poly-base i) #t)
             (cons s (poly-wrapper (->* (list poly-base t) -Void))))
           null))))
+  (add-struct-constructor! (struct-names-constructor names))
   (cons
    (and si (make-def-struct-stx-binding (struct-names-type-name names) si))
    (for/list ([b bindings])
