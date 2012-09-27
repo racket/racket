@@ -175,6 +175,34 @@ marker is @racket["..."].
 
 @;{----------------------------------------}
 
+@defproc[(~e [v any/c] ...
+             [#:separator separator string? " "]
+             [#:width width (or/c exact-nonnegative-integer? #f) #f]
+             [#:max-width max-width (or/c exact-nonnegative-integer? +inf.0) (or width +inf.0)]
+             [#:min-width min-width exact-nonnegative-integer? (or width 0)]
+             [#:limit-marker limit-marker string? "..."]
+             [#:align align (or/c 'left 'center 'right) 'left]
+             [#:pad-string pad-string non-empty-string? " "]
+             [#:left-pad-string left-pad-string non-empty-string? pad-string]
+             [#:right-pad-string right-pad-string non-empty-string? pad-string])
+         string?]{
+
+Like @racket[~a], but each value is converted like @racket[(format
+"~e" v)], the default separator is @racket[" "], and the default limit
+marker is @racket["..."].
+
+@interaction[#:eval the-eval
+(~e "north")
+(~e 'south)
+(~e #"east")
+(~e #\w)
+(~e (list "red" 'green #"blue"))
+]
+
+}
+
+@;{----------------------------------------}
+
 @defproc[(~r   [x rational?]
                [#:sign sign
                        (or/c #f '+ '++ 'parens
