@@ -416,17 +416,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(_ (tname:id args:id ...) rest)
      (syntax/loc stx (define-type-alias tname (All (args ...) rest)))]))
 
-(define-syntax (define-typed-struct/exec stx)
-  (syntax-parse stx #:literals (:)
-    [(_ nm ((~describe "field specification" [fld:optionally-annotated-name]) ...) [proc : proc-ty])
-     (with-syntax*
-      ([proc* (syntax-property #'(ann proc : proc-ty) 'typechecker:with-type #t)]
-       [d-s (syntax-property (syntax/loc stx (define-struct nm (fld.name ...)
-                                               #:property prop:procedure proc*))
-                             'typechecker:ignore-some #t)]
-       [dtsi (internal (syntax/loc stx (define-typed-struct/exec-internal nm (fld ...) proc-ty)))])
-      #'(begin d-s dtsi))]))
-
 (define-syntax (with-handlers: stx)
   (syntax-parse stx
     [(_ ([pred? action] ...) . body)
@@ -439,7 +428,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                         'typechecker:with-handlers
                         #t))]))
 
-(define-syntax (dtsi* stx)
+(begin-for-syntax
   (define-syntax-class struct-name
     #:description "struct name (with optional super-struct name)"
     #:attributes (name super value)
@@ -447,17 +436,36 @@ This file defines two sorts of primitives. All of them are provided into any mod
              #:attr value (attribute name.value))
     (pattern (~var name (static struct-info? "struct name"))
              #:attr value (attribute name.value)
-             #:with super #f))
-  (syntax-parse stx
-    [(_ () nm:struct-name . rest)
-     (internal (quasisyntax/loc stx
-                 (define-typed-struct-internal
-                   #,(syntax-property #'nm 'struct-info (attribute nm.value)) . rest)))]
-    [(_ (vars:id ...) nm:struct-name . rest)
-     (internal (quasisyntax/loc stx
-                 (define-typed-struct-internal (vars ...)
-                   #,(syntax-property #'nm 'struct-info (attribute nm.value)) . rest)))]))
+             #:with super #f)))
 
+(define-syntax (define-typed-struct/exec stx)
+  (syntax-parse stx #:literals (:)
+    [(_ nm ((~describe "field specification" [fld:optionally-annotated-name]) ...) [proc : proc-ty])
+     (with-syntax*
+      ([proc* (syntax-property #'(ann proc : proc-ty) 'typechecker:with-type #t)]
+       [d-s (syntax-property (syntax/loc stx (define-struct nm (fld.name ...)
+                                               #:property prop:procedure proc*))
+                             'typechecker:ignore-some #t)]
+       [dtsi (quasisyntax/loc stx (dtsi/exec* () nm (fld ...) proc-ty))])
+      #'(begin d-s dtsi))]))
+
+(define-syntaxes (dtsi* dtsi/exec*)
+  (let ()
+    (define (mk internal-id)
+      (lambda (stx)
+        (syntax-parse stx
+          [(_ () nm:struct-name . rest)
+           (internal (quasisyntax/loc stx
+                       (#,internal-id
+                        #,(syntax-property #'nm 'struct-info (attribute nm.value)) . rest)))]
+          [(_ (vars:id ...) nm:struct-name . rest)
+           (internal (quasisyntax/loc stx
+                       (#,internal-id (vars ...)
+                                      #,(syntax-property #'nm 'struct-info (attribute nm.value)) . rest)))])))
+    (values (mk #'define-typed-struct-internal)
+            (mk #'define-typed-struct/exec-internal))))
+              
+  
 (define-syntaxes (define-typed-struct struct:)
   (let ()
     (define-syntax-class fld-spec
