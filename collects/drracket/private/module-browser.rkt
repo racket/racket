@@ -17,7 +17,8 @@
          racket/unit
          racket/async-channel
          setup/private/lib-roots
-         racket/port)
+         racket/port
+         "rectangle-intersect.rkt")
 
 (define-struct req (filename key))
 ;; type req = (make-req string[filename] (union symbol #f))
@@ -599,10 +600,8 @@
                (send dc set-brush search-result-background 'solid)]
               [lines-brush
                (send dc set-brush lines-brush)])
-            (when (and (or (<= left x right)
-                           (<= left (+ x snip-width) right))
-                       (or (<= top y bottom)
-                           (<= top (+ y snip-height) bottom)))
+            (when (rectangles-intersect? left top right bottom
+                                         x y (+ x snip-width) (+ y snip-height))
               (send dc draw-rectangle x y snip-width snip-height)
               (send dc set-text-foreground (send the-color-database find-color 
                                                  (if found-highlight?
