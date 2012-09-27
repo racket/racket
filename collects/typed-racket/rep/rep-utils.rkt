@@ -58,7 +58,7 @@
   ;; (construction prevents duplicates)
   (define (combiner f flds)
     (syntax-parse flds
-      [() #'#hasheq()]
+      [() #'empty-free-vars]
       [(e) #`(#,f e)]
       [(e ...) #`(combine-frees (list (#,f e) ...))]))
 
@@ -68,8 +68,8 @@
     (pattern (~seq f1:expr f2:expr))
     ;; [#:frees #f] pattern in e.g. def-type means no free vars or idxs.
     (pattern #f
-             #:with f1 #'#hasheq()
-             #:with f2 #'#hasheq())
+             #:with f1 #'empty-free-vars
+             #:with f2 #'empty-free-vars)
     ;; [#:frees (λ (f) ...)] should combine free variables or idxs accordingly
     ;; (given the respective accessor functions)
     (pattern e:expr

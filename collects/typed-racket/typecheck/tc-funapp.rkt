@@ -127,7 +127,7 @@
                        (and expected (tc-results->values expected))))
       t argtys expected)]
     ;; procedural structs
-    [((tc-result1: (and sty (Struct: _ _ _ (? Function? proc-ty) _ _ _ _))) _)
+    [((tc-result1: (and sty (Struct: _ _ _ (? Function? proc-ty) _ _))) _)
      (tc/funapp f-stx #`(#,(syntax/loc f-stx dummy) . #,args-stx) (ret proc-ty)
                 (cons ftype0 argtys) expected)]
     ;; parameters are functions too

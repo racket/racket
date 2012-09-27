@@ -21,14 +21,12 @@
 
 (def-filter TypeFilter ([t Type?] [p (listof PathElem?)] [v name-ref/c])
   [#:intern (list (Rep-seq t) (map Rep-seq p) (hash-name v))]
-  [#:frees (combine-frees (map free-vars* (cons t p)))
-           (combine-frees (map free-idxs* (cons t p)))]
+  [#:frees (λ (f) (combine-frees (map f (cons t p))))]
   [#:fold-rhs (*TypeFilter (type-rec-id t) (map pathelem-rec-id p) v)])
 
 (def-filter NotTypeFilter ([t Type?] [p (listof PathElem?)] [v name-ref/c])
   [#:intern (list (Rep-seq t) (map Rep-seq p) (hash-name v))]
-  [#:frees (combine-frees (map free-vars* (cons t p)))
-           (combine-frees (map free-idxs* (cons t p)))]
+  [#:frees (λ (f) (combine-frees (map f (cons t p))))]
   [#:fold-rhs (*NotTypeFilter (type-rec-id t) (map pathelem-rec-id p) v)])
 
 ;; implication
@@ -36,13 +34,11 @@
 
 (def-filter AndFilter ([fs (non-empty-listof Filter/c)])
   [#:fold-rhs (*AndFilter (map filter-rec-id fs))]
-  [#:frees (combine-frees (map free-vars* fs))
-           (combine-frees (map free-idxs* fs))])
+  [#:frees (λ (f) (combine-frees (map f fs)))])
 
 (def-filter OrFilter ([fs (non-empty-listof Filter/c)])
   [#:fold-rhs (*OrFilter (map filter-rec-id fs))]
-  [#:frees (combine-frees (map free-vars* fs))
-           (combine-frees (map free-idxs* fs))])
+  [#:frees (λ (f) (combine-frees (map f fs)))])
 
 (def-filter FilterSet (thn els)
   [#:contract (->i ([t any/c]
