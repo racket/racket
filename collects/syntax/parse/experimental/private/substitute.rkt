@@ -224,7 +224,7 @@ An VarRef is one of
            (parameterize ((current-template-metafunction-introducer mark))
              (let ([r (call-with-continuation-barrier (lambda () (mf (mark (old-mark v)))))])
                (unless (syntax? r)
-                 (raise-syntax-error 'template "result of metafunction was not syntax" stx))
+                 (raise-syntax-error #f "result of template metafunction was not syntax" stx))
                (restx stx (old-mark (mark r))))))))]
 
     [(vector 'vector g1)

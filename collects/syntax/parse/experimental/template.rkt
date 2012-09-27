@@ -508,7 +508,7 @@ instead of integers and integer vectors.
                      [(tdrivers tguide tprops-guide)
                       (parse-t tail depth esc?)])
           (when (set-empty? hdrivers)
-            (wrong-syntax #'head "no pattern variables in term before ellipsis"))
+            (wrong-syntax #'head "no pattern variables before ellipsis in template"))
           (when (set-empty? (set-filter hdrivers (pvar/dd<=? depth)))
             ;; FIXME: improve error message?
             (let ([bad-dots
@@ -626,10 +626,7 @@ instead of integers and integer vectors.
                     [(>= depth pvar-depth)
                      (pvar v attr (- depth pvar-depth))]
                     [else
-                     (wrong-syntax id
-                                   (string-append "pattern variable used at wrong ellipsis depth "
-                                                  "(expected at least ~s, used at ~s)")
-                                   pvar-depth depth)]))]
+                     (wrong-syntax id "missing ellipses with pattern variable in template")]))]
            [(template-metafunction? v)
             v]
            [else
