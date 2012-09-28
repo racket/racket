@@ -37,7 +37,8 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          "private/image-more.rkt"
          "private/img-err.rkt"
          (only-in lang/prim provide-primitive provide-primitives define-primitive)
-         htdp/error)
+         htdp/error
+         (for-syntax racket/base))
 
 (provide-primitives
          overlay
@@ -58,7 +59,7 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          above
          above/align
          
-	 crop
+         crop
          rotate
          flip-horizontal
          flip-vertical
@@ -112,8 +113,6 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          pen-cap?
          pen-join?
          real-valued-posn?
-         color-red color-blue color-green color-alpha color? color
-         pen-color pen-width pen-style pen-cap pen-join 
 
          image-width
          image-height
@@ -128,8 +127,7 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          underlay/pinhole
          
          make-color
-         make-pen pen
-         pen?
+         make-pen
          step-count?
          save-image
          save-svg-image
@@ -142,10 +140,41 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          empty-image)
 
 (define-primitive make-color build-color/make-color)
-(define-primitive color build-color/color)
+(define-primitive color build-color/color
+  (list #f
+        #'color #':color? 
+        (list #':color-alpha  #':color-blue #':color-green #':color-red)
+        (list #f #f #f #f)
+        #f))
 (define-primitive make-pen build-pen/make-pen)
-(define-primitive pen build-pen/pen)
+(define-primitive pen build-pen/pen
+  (list #f
+        #'pen #':pen? 
+        (list #':pen-join #':pen-cap #':pen-style #':pen-width #':pen-color)
+        (list #f #f #f #f #f)
+        #f))
+(provide color pen)
 
-#;
-(provide (rename-out [build-color make-color])
-         (rename-out [build-pen make-pen]))
+(define-primitive :color-red color-red)
+(define-primitive :color-blue color-blue)
+(define-primitive :color-green color-green)
+(define-primitive :color-alpha color-alpha)
+(define-primitive :color? color?)
+(define-primitive :pen-color pen-color)
+(define-primitive :pen-width pen-width)
+(define-primitive :pen-style pen-style)
+(define-primitive :pen-cap pen-cap)
+(define-primitive :pen-join pen-join)
+(define-primitive :pen? pen?)
+
+(provide (rename-out [:color-red color-red]
+                     [:color-blue color-blue]
+                     [:color-green color-green]
+                     [:color-alpha color-alpha]
+                     [:color? color?]
+                     [:pen-color pen-color]
+                     [:pen-width pen-width]
+                     [:pen-style pen-style]
+                     [:pen-cap pen-cap]
+                     [:pen-join pen-join]
+                     [:pen? pen?]))
