@@ -18,40 +18,50 @@
            first-order->higher-order)
 
   (define-syntax (define-primitive stx)
+    (define (go name implementation struct-info)
+      (with-syntax ([name name][implementation implementation])
+        (with-syntax ([impl #'(let ([name (lambda argv
+                                            (apply implementation argv))])
+                                name)])
+          #`(begin
+              ;; Make sure that `implementation' is bound:
+              (define-values () (begin (lambda () implementation) (values)))
+              ;; Bind `name':
+              (define-syntax name 
+                (#,(if struct-info
+                       #'fo:make-first-order+struct
+                       #'fo:make-first-order)
+                 (lambda (stx)
+                   (with-syntax ([tagged-impl (stepper-syntax-property
+                                               (stepper-syntax-property (quote-syntax impl) 'stepper-skip-completely #t)
+                                               'stepper-prim-name
+                                               (quote-syntax name))])
+                     (syntax-case stx ()
+                       [(_ . body)
+                        ;; HACK: we disable all checks if #%app is not beginner-app
+                        (not (module-identifier=? #'beginner-app (datum->syntax-object stx '#%app)))
+                        (syntax/loc stx (tagged-impl . body))]
+                       [_
+                        ;; HACK: see above
+                        (not (module-identifier=? #'beginner-app (datum->syntax-object stx '#%app)))
+                        (syntax/loc stx tagged-impl)]
+                       [(id . args)
+                        (syntax/loc stx (#%plain-app tagged-impl . args))]
+                       [_
+                        (raise-syntax-error
+                         #f
+                         "expected a function call, but there is no open parenthesis before this function"
+                         stx)])))
+                 ((syntax-local-certifier #t)
+                  #'impl)
+                 #,@(if struct-info
+                        (list struct-info)
+                        '())))))))
     (syntax-case stx ()
-      [(_ name implementation)
-       (with-syntax ([impl #'(let ([name (lambda argv
-                                           (apply implementation argv))])
-                               name)])
-	 #'(begin
-             ;; Make sure that `implementation' is bound:
-             (define-values () (begin (lambda () implementation) (values)))
-             ;; Bind `name':
-             (define-syntax name 
-               (fo:make-first-order
-                (lambda (stx)
-                  (with-syntax ([tagged-impl (stepper-syntax-property
-                                              (stepper-syntax-property (quote-syntax impl) 'stepper-skip-completely #t)
-                                              'stepper-prim-name
-                                              (quote-syntax name))])
-                    (syntax-case stx ()
-                      [(_ . body)
-                       ;; HACK: we disable all checks if #%app is not beginner-app
-                       (not (module-identifier=? #'beginner-app (datum->syntax-object stx '#%app)))
-                       (syntax/loc stx (tagged-impl . body))]
-                      [_
-                       ;; HACK: see above
-                       (not (module-identifier=? #'beginner-app (datum->syntax-object stx '#%app)))
-                       (syntax/loc stx tagged-impl)]
-                      [(id . args)
-                       (syntax/loc stx (#%plain-app tagged-impl . args))]
-                      [_
-                       (raise-syntax-error
-                        #f
-                        "expected a function call, but there is no open parenthesis before this function"
-                        stx)])))
-                ((syntax-local-certifier #t)
-                 #'impl)))))]))
+      [(_ name implementation) (go #'name #'implementation #f)]
+      [(_ name implementation inf)
+       (go #'name #'implementation #'inf)]))
+
 
   (define-syntax (define-higher-order-primitive stx)
     (define (is-proc-arg? arg)
