@@ -1194,3 +1194,20 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
 (define-syntax-rule (for*/flvector: e ...)
   (base-for/flvector: for*: e ...))
+
+
+(provide optimization-coach-profile)
+(require profile/sampler profile/analyzer profile/render-text)
+(require racket/serialize)
+(define-syntax (optimization-coach-profile stx)
+  (syntax-parse stx
+    [(_ body ...)
+     (ignore
+      #`(let ([sampler (create-sampler (current-thread) 0.005)])
+          body ...
+          (sampler 'stop)
+          (define samples (sampler 'get-snapshots))
+          (render (analyze-samples samples))
+          (with-output-to-file #,(string-append (path->string (syntax-source stx)) ".profile")
+            #:exists 'replace
+            (lambda () (write (serialize samples))))))]))
