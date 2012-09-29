@@ -999,20 +999,33 @@ If the namespace does not, they are colored the unbound color.
                    (define-values (pos text) (get-pos/text-dc-location x y))
                    (define arrow-record (and text pos (hash-ref arrow-records text #f)))
                    (define eles (and arrow-record (interval-map-ref arrow-record pos null)))
-                   (define tooltip (cond [(equal? latent-eles eles) latent-tooltip]
+                   (define we-focused-frame?
+                     (let ([f (get-top-level-focus-window)])
+                       (and f
+                            (eq? f
+                                 (let loop ([w (get-canvas)])
+                                   (cond
+                                     [(is-a? w top-level-window<%>)
+                                      w]
+                                     [(is-a? w area<%>)
+                                      (loop (send w get-parent))]
+                                     [else #f]))))))
+                   (define tooltip (cond [(not we-focused-frame?) #f]
+                                         [(equal? latent-eles eles) latent-tooltip]
                                          [else (get-tooltip eles)]))
                    (values pos text eles tooltip)]
                   [else
                    (values #f #f #f #f)]))
               (define text-changed? (not (eq? latent-text text)))
               (define eles-changed? (not (equal? latent-eles eles)))
+              (define tooltip-changed? (not (equal? latent-tooltip tooltip)))
               
               (set! latent-pos pos)
               (set! latent-text text)
               (set! latent-eles eles)
               (set! latent-tooltip tooltip)
               
-              (or text-changed? eles-changed?))
+              (or text-changed? eles-changed? tooltip-changed?))
             
             (define (update-drawn-arrows)
               (set! cursor-pos latent-pos)
