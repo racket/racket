@@ -299,7 +299,7 @@
                                             stx))
                              (cdr names))))
                     namess))
-              (list (make-import-source (datum->syntax #'simple mod-path) 0)))))]
+              (list (make-import-source (datum->syntax #'simple mod-path #'simple #'simple) 0)))))]
         [(id . rest)
          (identifier? #'id)
          (let ([t (syntax-local-value #'id (lambda () #f))])

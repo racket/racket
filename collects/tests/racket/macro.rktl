@@ -788,4 +788,22 @@
 
 ;; ----------------------------------------
 
+(let ()
+  (define stx
+    (expand #'(module m racket
+                (require (only-in racket/list first)))))
+  
+  (define r/ls
+    (syntax-case stx ()
+      [(_mod _m _racket
+             (_mod-begin (_req (_just-meta _0 (_rename rl1 . _whatever))
+                               (_only rl2))))
+       (list #'rl1 #'rl2)]))
+  
+  (test (list #f #t) map syntax-original? r/ls)
+  (test (list #f #t) map number? (map syntax-position r/ls)))
+
+
+;; ----------------------------------------
+
 (report-errs)
