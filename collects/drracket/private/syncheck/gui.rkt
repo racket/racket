@@ -324,7 +324,9 @@ If the namespace does not, they are colored the unbound color.
          (extra (basic super%))]
         [else
          (basic super%)]))
-    
+                          
+    (struct tooltip-spec (strings x y w h) #:transparent)
+            
     (define make-syncheck-text%
       (λ (super%)
         (let* ([cursor-arrow (make-object cursor% 'arrow)])
@@ -799,19 +801,19 @@ If the namespace does not, they are colored the unbound color.
             
             (define view-corner-hash (make-weak-hasheq))
             
-            (define (get-last-view-corner admin)
+            (define/private (get-last-view-corner admin)
               (hash-ref view-corner-hash admin (λ () (cons #f #f))))
             
-            (define (set-last-view-corner! admin corner)
+            (define/private (set-last-view-corner! admin corner)
               (hash-set! view-corner-hash admin corner))
             
-            (define (get-view-corner admin)
+            (define/private (get-view-corner admin)
               (define new-x (box #f))
               (define new-y (box #f))
               (send admin get-view new-x new-y #f #f)
               (cons (unbox new-x) (unbox new-y)))
             
-            (define (update-view-corner admin)
+            (define/private (update-view-corner admin)
               (define old-corner (get-last-view-corner admin))
               (define new-corner (get-view-corner admin))
               (define scrolled? (not (equal? old-corner new-corner)))
@@ -965,19 +967,19 @@ If the namespace does not, they are colored the unbound color.
             ;; this gives errors if constructed immediately
             (define arrow-draw-timer #f)
             ;; Starts or restarts a one-shot arrow draw timer
-            (define (start-arrow-draw-timer delay-ms)
+            (define/private (start-arrow-draw-timer delay-ms)
               (unless arrow-draw-timer
-                (set! arrow-draw-timer (make-object timer% maybe-update-drawn-arrows)))
+                (set! arrow-draw-timer (make-object timer% (λ () (maybe-update-drawn-arrows)))))
               (send arrow-draw-timer start delay-ms #t))
             
             ;; this will be set to a time in the future if arrows shouldn't be drawn until then
             (define arrow-draw-cooldown-time (current-milliseconds))
             ;; Starts an arrow draw cooldown
-            (define (start-arrow-draw-cooldown delay-ms)
+            (define/private (start-arrow-draw-cooldown delay-ms)
               (set! arrow-draw-cooldown-time (+ (current-milliseconds) delay-ms)))
             
             ;; The arrow-draw-timer proc
-            (define (maybe-update-drawn-arrows)
+            (define/private (maybe-update-drawn-arrows)
               (cond
                 [(arrow-draw-cooldown-time . > . (current-milliseconds))
                  ;; keep restarting the timer until we pass cooldown-time
@@ -987,7 +989,7 @@ If the namespace does not, they are colored the unbound color.
                  (update-drawn-arrows)]))
             
             ;; Given a mouse position, updates latent-* variables and tooltips
-            (define (update-latent-arrows x y)
+            (define/private (update-latent-arrows x y)
               (define-values (pos text eles tooltip)
                 (cond
                   ;; need to check this first so syncheck:clear-arrows will work
@@ -1130,11 +1132,9 @@ If the namespace does not, they are colored the unbound color.
                          start-selection
                          end-selection))))
                   (for-each (λ (f) (f menu)) add-menus))))
-                       
-            (struct tooltip-spec (strings x y w h) #:transparent)
             
             (define tooltip-frame #f)
-            (define (update-tooltip-frame)
+            (define/private (update-tooltip-frame)
               (unless tooltip-frame (set! tooltip-frame (new tooltip-frame%)))
               (match cursor-tooltip
                 [(tooltip-spec strings x y w h)
@@ -1177,7 +1177,7 @@ If the namespace does not, they are colored the unbound color.
             
             ;; Given an editor, returns the canvas that the mouse is currently over,
             ;; as opposed to the one with keyboard focus (which get-canvas usually returns)
-            (define (find-mouse-canvas ed)
+            (define/private (find-mouse-canvas ed)
               (define current-admin (send ed get-admin))
               (let/ec return
                 (for ([canvas  (in-list (send ed get-canvases))])
