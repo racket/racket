@@ -757,8 +757,8 @@
                    ("foldr"                                              imported-variable)
                    (")"                                                  default-color))
                  (list '((10 18) (20 27))
-                       '((28 51) (77 82) (83 88))
-                       '((52 75) (77 82) (83 88))))
+                       '((28 51) (83 88))
+                       '((52 75) (77 82))))
 
      (build-test "(module m mzscheme (require (prefix x: mzscheme)) x:+ +)"
                  '(("("                                                  default-color)
