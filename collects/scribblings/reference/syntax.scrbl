@@ -1105,7 +1105,8 @@ multiple symbolic names.}
                                (#,(racketidfont "prefix-all-except") prefix-id 
                                                                      raw-module-path id ...)
                                (#,(racketidfont "rename") raw-module-path local-id exported-id)]
-               [raw-module-path (#,(racketidfont "submod") raw-root-module-path id ...+)
+               [raw-module-path raw-root-module-path
+                                (#,(racketidfont "submod") raw-root-module-path id ...+)
                                 (#,(racketidfont "submod") "." id ...+)]
                [raw-root-module-path (#,(racketidfont "quote") id)
                                     rel-string
