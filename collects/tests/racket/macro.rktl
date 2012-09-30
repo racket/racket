@@ -800,8 +800,8 @@
                                (_only rl2))))
        (list #'rl1 #'rl2)]))
   
-  (test (list #f #t) map syntax-original? r/ls)
-  (test (list #f #t) map number? (map syntax-position r/ls)))
+  (test (list #t #t) map syntax-original? r/ls)
+  (test (list #t #t) map number? (map syntax-position r/ls)))
 
 
 ;; ----------------------------------------

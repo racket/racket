@@ -24,8 +24,10 @@
                 (raise-argument-error 'make-import "identifier?" i))
               (unless (symbol? s)
                 (raise-argument-error 'make-import "symbol?" s))
-              (unless (module-path? path)
-                (raise-argument-error 'make-import "module-path?" path))
+              (unless (or (module-path? path)
+                          (and (syntax? path)
+                               (module-path? (syntax->datum path))))
+                (raise-argument-error 'make-import "(or/c module-path? module-path-syntax?)" path))
               (unless (or (not mode)
                           (exact-integer? mode))
                 (raise-argument-error 'make-import "(or/c exact-integer? #f)" mode))
@@ -292,14 +294,19 @@
                                              name
                                              stx)
                                             name
-                                            mod-path
+                                            (if (equal? (syntax->datum #'simple) mod-path)
+                                                #'simple
+                                                mod-path)
                                             mode
                                             0
                                             mode
                                             stx))
                              (cdr names))))
                     namess))
-              (list (make-import-source (datum->syntax #'simple mod-path #'simple #'simple) 0)))))]
+              (list (make-import-source (if (equal? (syntax->datum #'simple) mod-path)
+                                            #'simple
+                                            (datum->syntax #'simple mod-path #'simple))
+                                        0)))))]
         [(id . rest)
          (identifier? #'id)
          (let ([t (syntax-local-value #'id (lambda () #f))])

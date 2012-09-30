@@ -4,6 +4,7 @@ Added reroot-path
 Added #:break and #:final clauses to for forms
 syntax/for-body: added
 racket/set: added set-first and set-rest, sets are streams
+racket/require-transformer: an import's module path can be syntax
 
 Version 5.3.0.23
 Changed make-log-receiver to accept a logger name as an
