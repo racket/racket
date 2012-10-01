@@ -1,7 +1,8 @@
 #lang racket/base
 (require slideshow/base slideshow/pict
          racket/contract/base racket/list racket/match
-         (for-syntax racket/base)
+         racket/stxparam
+         (for-syntax racket/base racket/list racket/set)
          "pict.rkt")
 (provide (all-from-out "pict.rkt"))
 
@@ -148,3 +149,42 @@
 
 (provide/contract
  [blank-line (-> pict?)])
+
+;; Revealing slides. Similar to staging slides, can probably be implemented
+;; in terms of staged slides.
+
+(provide reveal revealing-slide)
+
+(define-syntax-parameter reveal (lambda (stx) (raise-syntax-error 'reveal "reveal")))
+
+(define-for-syntax (find-reveals stx)
+  (syntax-case stx (reveal)
+    [(reveal n stuff ...)
+     (set-add (find-reveals #'(stuff ...)) (syntax-e #'n))]
+    [(x rest ...) (set-union (find-reveals #'x) (find-reveals #'(rest ...)))]
+    [else (set)]))
+
+(define-for-syntax (largest stuff)
+  (define all (sort (set->list stuff) >))
+  (if (null? all) -1 (first all)))
+   
+;; reveals elements one at a time but uses ghost so that the slide doesn't
+;; change its layout during each reveal.
+;; for each element you want to reveal wrap the element in a (reveal):
+;;   (reveal N element) 
+;;
+;; where N is the order of the reveal you want. 0 will be shown first, then 1, 2, ...
+(define-syntax (revealing-slide stx)
+  (syntax-case stx ()
+    [(_ stuff ...)
+     (let ()
+       (define max-reveals (largest (find-reveals stx)))
+       (define slides (for/list ([i (add1 max-reveals)])
+                        (with-syntax ([i i])
+                          (syntax (syntax-parameterize
+                                    ([reveal (syntax-rules ()
+                                               [(reveal n pict)
+                                                (show pict (>= i n))])])
+                                    (slide stuff ...))))))
+       (with-syntax ([(slides ...) slides])
+         #'(begin slides ...)))]))
