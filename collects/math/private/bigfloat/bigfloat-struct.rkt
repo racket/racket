@@ -62,27 +62,31 @@
 
 (: bf+ (Bigfloat * -> Bigfloat))
 (define (bf+ . xs)
-  (case (length xs)
-    [(0)   (force +0.bf)]
-    [(1)   (car xs)]
-    [(2)   (bfadd (car xs) (cadr xs))]
-    [else  (bfsum xs)]))
+  (cond [(null? xs)  (force 0.bf)]
+        [else
+         (define xs1 (cdr xs))
+         (cond [(null? xs1)  (car xs)]
+               [else
+                (define xs2 (cdr xs1))
+                (cond [(null? xs2)  (bfadd (car xs) (car xs1))]
+                      [else  (bfsum xs)])])]))
 
 (: bf- (Bigfloat Bigfloat * -> Bigfloat))
 (define (bf- x . xs)
   (cond [(null? xs)  (bfneg x)]
-        [else  (bfsub x (apply bf+ xs))]))
+        [(null? (cdr xs))  (bfsub x (car xs))]
+        [else  (bfneg (apply bf+ (bfneg x) xs))]))
 
 (: bf* (Bigfloat * -> Bigfloat))
 (define (bf* . xs)
-  (cond [(null? xs)  (force +1.bf)]
+  (cond [(null? xs)  (force 1.bf)]
         [else  (let loop ([x  (car xs)] [xs  (cdr xs)])
                  (cond [(null? xs)  x]
                        [else  (loop (bfmul x (car xs)) (cdr xs))]))]))
 
 (: bf/ (Bigfloat Bigfloat * -> Bigfloat))
 (define (bf/ x . xs)
-  (cond [(null? xs)  (bfdiv (force +1.bf) x)]
+  (cond [(null? xs)  (bfdiv (force 1.bf) x)]
         [else  (bfdiv x (apply bf* xs))]))
 
 (: bfmin (Bigfloat * -> Bigfloat))
