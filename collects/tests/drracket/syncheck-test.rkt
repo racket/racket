@@ -730,7 +730,7 @@
                   ("x:foldl"                          imported-variable)
                   (")"                                default-color))
                 (list '((10 18) (20 27))
-                      '((28 50) (52 59))))
+                      '((39 49) (52 59))))
 
      (build-test "(module m mzscheme (require (prefix x: mzlib/list) mzlib/list) x:foldl foldl)"
                 '(("("                                    default-color)
@@ -743,7 +743,7 @@
                   ("foldl"                                imported-variable)
                   (")"                                    default-color))
                 (list '((10 18) (20 27))
-                      '((28 50) (63 70))
+                      '((39 49) (63 70))
                       '((51 61) (71 76))))
 
      (build-test "(module m mzscheme (require (only mzlib/list foldr) (only mzlib/list foldl)) foldl foldr)"
@@ -757,8 +757,8 @@
                    ("foldr"                                              imported-variable)
                    (")"                                                  default-color))
                  (list '((10 18) (20 27))
-                       '((28 51) (83 88))
-                       '((52 75) (77 82))))
+                       '((34 44) (83 88))
+                       '((58 68) (77 82))))
 
      (build-test "(module m mzscheme (require (prefix x: mzscheme)) x:+ +)"
                  '(("("                                                  default-color)
@@ -771,8 +771,8 @@
                    ("+"                                                  imported-variable)
                    (")"                                                  default-color))
                  (list '((10 18) (20 27) (54 55))
-                       '((28 48) (50 53))))
-
+                       '((39 47) (50 53))))
+     
      (build-test "(module m mzscheme (require mzlib/etc) (rec f 1))"
                 '(("("                     default-color)
                   ("module"                imported-syntax)
