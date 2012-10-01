@@ -69,6 +69,7 @@
                                                         (define maybe-disambiguation
                                                           (resolve-get part ri `(autobib-disambiguation ,key)))
                                                         (case maybe-disambiguation
+                                                          [(#f) #f]
                                                           [(unambiguous) #f]
                                                           [else (make-link-element #f maybe-disambiguation `(autobib ,key))]))
                                                       ","))
