@@ -445,8 +445,8 @@
     [("-inf.bf" "-inf.0" "-inf.f")  (force -inf.bf)]
     [("-1.bf")  (force -1.bf)]
     [("-0.bf")  (force -0.bf)]
-    [("0.bf")  (force 0.bf)]
-    [("1.bf")  (force 1.bf)]
+    [( "0.bf")  (force  0.bf)]
+    [( "1.bf")  (force  1.bf)]
     [("+inf.bf" "+inf.0" "+inf.f")  (force +inf.bf)]
     [("+nan.bf" "+nan.0" "+nan.f")  (force +nan.bf)]
     [else
@@ -778,29 +778,7 @@
  [bfgte? 'mpfr_greaterequal_p])
 
 ;; ===================================================================================================
-;; 0-arity functions (variable-precision constants)
-
-(define-for-syntax 0ary-funs (list))
-(provide (for-syntax 0ary-funs))
-
-(define-syntax-rule (provide-0ary-fun name c-name)
-  (begin
-    (define cfun (get-mpfr-fun c-name (_fun _mpfr-pointer _rnd_t -> _int)))
-    (define (name)
-      (define y (new-mpfr (bf-precision)))
-      (cfun y (bf-rounding-mode))
-      y)
-    (provide name)
-    (begin-for-syntax (set! 0ary-funs (cons #'name 0ary-funs)))))
-
-(define-syntax-rule (provide-0ary-funs [name c-name] ...)
-  (begin (provide-0ary-fun name c-name) ...))
-
-(provide-0ary-funs
- [log2.bf 'mpfr_const_log2]
- [pi.bf 'mpfr_const_pi]
- [gamma.bf 'mpfr_const_euler]
- [catalan.bf 'mpfr_const_catalan])
+;; Constants and variable-precision constants (i.e. 0-ary functions)
 
 (define-for-syntax consts (list))
 (provide (for-syntax consts))
@@ -840,12 +818,45 @@
 (define-bf-constant -9.bf 4 (flonum->bigfloat -9.0))
 (define-bf-constant -10.bf 4 (flonum->bigfloat -10.0))
 
-(define (epsilon.bf)
-  (bfexpt (force 2.bf) (bf (- (bf-precision)))))
+(define-for-syntax 0ary-funs (list))
+(provide (for-syntax 0ary-funs))
 
-(provide epsilon.bf)
+(define-syntax-rule (provide-0ary-fun name c-name)
+  (begin
+    (define cfun (get-mpfr-fun c-name (_fun _mpfr-pointer _rnd_t -> _int)))
+    (define (name)
+      (let ([y  (new-mpfr (bf-precision))])
+        (cfun y (bf-rounding-mode))
+        y))
+    (provide name)
+    (begin-for-syntax (set! 0ary-funs (cons #'name 0ary-funs)))))
+
+(define-syntax-rule (provide-0ary-funs [name c-name] ...)
+  (begin (provide-0ary-fun name c-name) ...))
+
+(provide-0ary-funs
+ [log2.bf 'mpfr_const_log2]
+ [pi.bf 'mpfr_const_pi]
+ [gamma.bf 'mpfr_const_euler]
+ [catalan.bf 'mpfr_const_catalan])
+
+(define constant-hash (make-hash))
+
+(define (phi.bf)
+  (define p (bf-precision))
+  (hash-ref!
+   constant-hash (cons 'phi.bf p)
+   (λ () (bfcopy
+          (parameterize ([bf-precision (+ p 10)])
+            (bfdiv (bfadd (force 1.bf) (bfsqrt (force 5.bf))) (force 2.bf)))))))
+
+(define (epsilon.bf)
+  (define p (bf-precision))
+  (hash-ref! constant-hash (cons 'epsilon.bf p) (λ () (bfexpt (force 2.bf) (bf (- p))))))
+
+(provide phi.bf epsilon.bf)
 (begin-for-syntax
-  (set! 0ary-funs (cons #'epsilon.bf 0ary-funs)))
+  (set! 0ary-funs (list* #'phi.bf #'epsilon.bf 0ary-funs)))
 
 ;; ===================================================================================================
 ;; Extra functions
