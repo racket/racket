@@ -1,6 +1,6 @@
 #lang typed/racket/base
 
-(require "polyfun.rkt")
+(require "../../flonum.rkt")
 
 (provide lanczos-sum lanczos-g)
 

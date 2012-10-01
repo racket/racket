@@ -1,75 +1,83 @@
 #lang typed/racket/base
 
 (require "../../flonum.rkt"
-         "../../constants.rkt"
+         "../../base.rkt"
          "../exception.rkt"
          "log-gamma.rkt"
-         "lanczos.rkt"
-         "log1p.rkt")
+         "lanczos.rkt")
+
+(provide flbeta fllog-beta beta log-beta)
 
 (: fllog-beta-huge (Flonum Flonum -> Flonum))
 ;; For a,b > 8e307 (when the Lanczos approximation would overflow)
 ;; Assumes a >= b
 (define (fllog-beta-huge a b)
-  (cond [((/ a b) . > . 1e6)
-         (cond [(b . < . 1.0)
-                (- (fllog-gamma (+ b 2.0))
-                   (fllog (* b (flexpt a b)))
-                   (fllog1p b))]
+  (cond [((fl/ a b) . fl> . 1e6)
+         (cond [(b . fl< . 1.0)
+                (fl- (fl- (fllog-gamma (fl+ b 2.0))
+                          (fllog (fl* b (flexpt a b))))
+                     (fllog1p b))]
                [else
-                (- (fllog-gamma b)
-                   (* b (fllog a)))])]
+                (fl- (fllog-gamma b)
+                     (fl* b (fllog a)))])]
         [else
          ;; Stirling's approximation for when a ~ b
-         (+ (* a (fllog (/ (* a 0.5)
-                           (+ (* a 0.5) (* b 0.5)))))
-            (* b (fllog (/ (* b 0.5)
-                           (+ (* a 0.5) (* b 0.5)))))
-            (* -0.5 (- (+ (fllog a) (fllog b))
-                       (fllog (* 2.0 pi.0))
-                       (fllog 2.0)
-                       (fllog (+ (* a 0.5) (* b 0.5))))))]))
+         (define ab/2 (fl+ (fl* a 0.5) (fl* b 0.5)))
+         (fl+ (fl+ (fl* a (fllog (fl/ (fl* a 0.5) ab/2)))
+                   (fl* b (fllog (fl/ (fl* b 0.5) ab/2))))
+              (fl* -0.5 (fl- (fl- (fl- (fl+ (fllog a) (fllog b))
+                                       (fllog (fl* 2.0 pi)))
+                                  (fllog 2.0))
+                             (fllog ab/2))))]))
 
 (: fllog-beta-small (Flonum Flonum -> Flonum))
 ;; For a,b < 10
 ;; Assumes a >= b
 (define (fllog-beta-small a b)
-  (cond [(b . < . 1.0)
-         (- (fllog-gamma (+ b 2.0))
-            (+ (fllog b) (- (fllog-gamma (+ a b)) (fllog-gamma a)))
-            (fllog1p b))]
+  (cond [(b . fl< . 1.0)
+         (fl- (fl- (fllog-gamma (fl+ b 2.0))
+                   (fl+ (fllog b) (fl- (fllog-gamma (fl+ a b)) (fllog-gamma a))))
+              (fllog1p b))]
         [else
-         (+ (- (fllog-gamma a) (fllog-gamma (+ a b)))
-            (fllog-gamma b))]))
+         (fl+ (fl- (fllog-gamma a) (fllog-gamma (fl+ a b)))
+              (fllog-gamma b))]))
 
 (: fllog-beta-lanczos (Flonum Flonum -> Flonum))
 ;; Assumes a >= b
 (define (fllog-beta-lanczos a b)
-  (define x (+ a lanczos-g -0.5))
-  (define y (+ b lanczos-g -0.5))
-  (define z (+ y a))
-  (+ (* (- a b 0.5) (fllog1p (* -2.0 (/ b (- (* 2.0 (+ a b lanczos-g)) 1.0)))))
-     (* b (+ (fllog (/ x z)) (fllog (/ y z))))
-     (* 0.5 (- 1.0 (fllog y) (* 2.0 lanczos-g)))
-     (fllog (/ (* (lanczos-sum a) (lanczos-sum b))
-               (lanczos-sum (+ a b))))))
+  (define x (fl+ a (fl- lanczos-g 0.5)))
+  (define y (fl+ b (fl- lanczos-g 0.5)))
+  (define z (fl+ y a))
+  (fl+ (fl+ (fl+ (fl* (fl- (fl- a b) 0.5)
+                      (fllog1p (fl* -2.0 (fl/ b (fl- (fl* 2.0 (fl+ (fl+ a b) lanczos-g))
+                                                     1.0)))))
+                 (fl* b (fl+ (fllog (fl/ x z)) (fllog (fl/ y z)))))
+            (fl* 0.5 (fl- (fl- 1.0 (fllog y)) (fl* 2.0 lanczos-g))))
+       (fllog (fl/ (fl* (lanczos-sum a) (lanczos-sum b))
+                   (lanczos-sum (fl+ a b))))))
+
+(define: fllog-beta-hash : (HashTable (Pair Float Float) Float) (make-weak-hash))
 
 (: fllog-beta (Flonum Flonum -> Flonum))
 (define (fllog-beta a b)
-  (let ([a  (max a b)]
-        [b  (min a b)])
-    (cond [(or (a . < . 0.0) (b . < . 0.0))  +nan.0]
-          [(or (a . = . 0.0) (b . = . 0.0))  +inf.0]
-          [(and (a . < . +inf.0) (b . < . +inf.0))
-           (cond [(= a 1.0)  (- (fllog b))]
-                 [(= b 1.0)  (- (fllog a))]
-                 [(or (a . > . 8e307) (b . > . 8e307))  (fllog-beta-huge a b)]
-                 [(and (a . < . 10.0) (b . < . 10.0))  (fllog-beta-small a b)]
-                 [(b . < . 1.0)  (+ (fllog (+ a b))
-                                    (- (fllog-beta a (+ b 1.0))
-                                       (fllog b)))]
-                 [else  (fllog-beta-lanczos a b)])]
-          [(or (= a +inf.0) (= b +inf.0))  -inf.0]
+  (let ([a  (flmax a b)]
+        [b  (flmin a b)])
+    (cond [(or (a . fl< . 0.0) (b . fl< . 0.0))  +nan.0]
+          [(or (a . fl= . 0.0) (b . fl= . 0.0))  +inf.0]
+          [(and (a . fl< . +inf.0) (b . fl< . +inf.0))
+           (cond [(fl= a 1.0)  (- (fllog b))]
+                 [(fl= b 1.0)  (- (fllog a))]
+                 [else
+                  (hash-ref!
+                   fllog-beta-hash (cons a b)
+                   (λ ()
+                     (cond [(or (a . fl> . 8e307) (b . fl> . 8e307))  (fllog-beta-huge a b)]
+                           [(and (a . fl< . 10.0) (b . fl< . 10.0))  (fllog-beta-small a b)]
+                           [(b . fl< . 1.0)  (fl+ (fllog (fl+ a b))
+                                                  (fl- (fllog-beta a (fl+ b 1.0))
+                                                       (fllog b)))]
+                           [else  (fllog-beta-lanczos a b)])))])]
+          [(or (fl= a +inf.0) (fl= b +inf.0))  -inf.0]
           [else  +nan.0])))
 
 (: flbeta (Flonum Flonum -> Flonum))

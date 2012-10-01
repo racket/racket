@@ -3,7 +3,6 @@
 (require racket/performance-hint
          racket/promise
          "../../flonum.rkt"
-         "../functions/log-arithmetic.rkt"
          "dist-struct.rkt"
          "utils.rkt")
 
@@ -67,13 +66,13 @@
       (define log-p
         (cond [1-p?  (cond [(x . < . a)  0.0]
                            [(x . > . b)  -inf.0]
-                           [else  (min 0.0 (- (fllog- (dist-cdf x #t #t)
-                                                      (force log-P_x>b))
+                           [else  (min 0.0 (- (lg- (dist-cdf x #t #t)
+                                                   (force log-P_x>b))
                                               log-P_a<x<=b))])]
               [else  (cond [(x . < . a)  -inf.0]
                            [(x . > . b)  0.0]
-                           [else  (min 0.0 (- (fllog- (dist-cdf x #t #f)
-                                                      (force log-P_x<=a))
+                           [else  (min 0.0 (- (lg- (dist-cdf x #t #f)
+                                                   (force log-P_x<=a))
                                               log-P_a<x<=b))])]))
       (if log? log-p (exp log-p))))
   
@@ -86,13 +85,13 @@
          (define x
            (cond [1-p?  (cond [(= log-p 0.0)  a]
                               [(= log-p -inf.0)  b]
-                              [else  (dist-inv-cdf (fllog+ (+ log-p log-P_a<x<=b)
-                                                           (force log-P_x>b))
+                              [else  (dist-inv-cdf (lg+ (+ log-p log-P_a<x<=b)
+                                                        (force log-P_x>b))
                                                    #t #t)])]
                  [else  (cond [(= log-p 0.0)  b]
                               [(= log-p -inf.0)  a]
-                              [else  (dist-inv-cdf (fllog+ (+ log-p log-P_a<x<=b)
-                                                           (force log-P_x<=a))
+                              [else  (dist-inv-cdf (lg+ (+ log-p log-P_a<x<=b)
+                                                        (force log-P_x<=a))
                                                    #t #f)])]))
          (min b (max a x))])))
   

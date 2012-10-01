@@ -1,9 +1,6 @@
 #lang typed/racket/base
 
-(require racket/flonum
-         "../../flonum.rkt"
-         "log1p.rkt"
-         "sqrt1pm1.rkt")
+(require "../../flonum.rkt")
 
 (provide flasinh asinh
          flacosh acosh
@@ -14,34 +11,32 @@
 
 (: flasinh (Float -> Float))
 (define (flasinh x)
-  (cond [(x . < . 0.0)  (- (flasinh (- x)))]
-        [(x . = . 0.0)  0.0]
-        [(x . >= . (flsqrt (flsqrt epsilon.0)))
-         (cond [(x . > . (/ 1.0 (flsqrt epsilon.0)))
+  (cond [(x . fl< . 0.0)  (- (flasinh (- x)))]
+        [(x . fl= . 0.0)  0.0]
+        [(x . fl>= . (flsqrt (flsqrt epsilon.0)))
+         (cond [(x . fl> . (fl/ 1.0 (flsqrt epsilon.0)))
                 ;; Laurent series in 1/x at 0+ order from -1 to 1
-                (+ (fllog (* x 2.0)) (/ 1.0 (* 4.0 x x)))]
-               [(x . < . 0.5)
+                (fl+ (fllog (fl* x 2.0)) (fl/ 1.0 (fl* (fl* 4.0 x) x)))]
+               [(x . fl< . 0.5)
                 ;; Standard definition, rearranged to preserve digits
-                (fllog1p (+ x (flsqrt1pm1 (* x x))))]
+                (fllog1p (fl+ x (flsqrt1pm1 (fl* x x))))]
                [else
                 ;; Standard definition
-                (fllog (+ x (flsqrt (+ (* x x) 1.0))))])]
-        [(x . >= . (flsqrt epsilon.0))
+                (fllog (fl+ x (flsqrt (fl+ (fl* x x) 1.0))))])]
+        [(x . fl>= . (flsqrt epsilon.0))
          ;; Taylor series order 2
-         (* x (+ 1.0 (* #i-1/6 x x)))]
+         (fl* x (fl+ 1.0 (fl* (fl* #i-1/6 x) x)))]
         [else  x]))  ; Taylor series order 1
 
 (: asinh (case-> (Zero -> Zero)
                  (Float -> Float)
-                 (Single-Flonum -> Single-Flonum)
                  (Real -> Real)
                  (Float-Complex -> Float-Complex)
                  (Number -> Number)))
 (define (asinh x)
   (cond [(flonum? x)  (flasinh x)]
-        [(single-flonum? x)  (real->single-flonum (flasinh (real->double-flonum x)))]
         [(eqv? x 0)  0]
-        [(real? x)  (flasinh (real->double-flonum x))]
+        [(real? x)  (flasinh (fl x))]
         [(float-complex? x)  (log (+ x (sqrt (+ (* x x) 1.0))))]
         [else  (log (+ x (sqrt (+ (* x x) 1))))]))
 
@@ -50,35 +45,34 @@
 
 (: flacosh (Float -> Float))
 (define (flacosh x)
-  (cond [(x . < . 1.0)  +nan.0]
-        [((- x 1.0) . >= . (flsqrt epsilon.0))
-         (cond [(x . > . (/ 1.0 (flsqrt epsilon.0)))
+  (cond [(x . fl< . 1.0)  +nan.0]
+        [((fl- x 1.0) . fl>= . (flsqrt epsilon.0))
+         (cond [(x . fl> . (fl/ 1.0 (flsqrt epsilon.0)))
                 ;; Laurent series in 1/x at 0+ order from -1 to 0
-                (fllog (* x 2.0))]
-               [(x . < . 1.5)
+                (fllog (fl* x 2.0))]
+               [(x . fl< . 1.5)
                 ;; Standard definition, rearranged to preserve digits when x is near 1.0
-                (define y (- x 1.0))
-                (fllog1p (+ y (flsqrt (+ (* y y) (* 2.0 y)))))]
+                (define y (fl- x 1.0))
+                (fllog1p (fl+ y (flsqrt (fl+ (fl* y y) (fl* 2.0 y)))))]
                [else
                 ;; Standard definition
-                (fllog (+ x (flsqrt (- (* x x) 1.0))))])]
+                (fllog (fl+ x (flsqrt (fl- (fl* x x) 1.0))))])]
         [else
          ;; Taylor series order 2
-         (define y (- x 1.0))
-         (* (flsqrt (* 2.0 y))
-            (+ 1.0 (/ y -12.0) (/ (* 3.0 y y) 160.0)))]))
+         (define y (fl- x 1.0))
+         (fl* (flsqrt (fl* 2.0 y))
+              (fl+ (fl+ 1.0 (fl/ y -12.0))
+                   (fl/ (fl* (fl* 3.0 y) y) 160.0)))]))
 
 (: acosh (case-> (One -> Zero)
                  (Float -> Float)
-                 (Single-Flonum -> Single-Flonum)
                  (Real -> Number)
                  (Float-Complex -> Float-Complex)
                  (Number -> Number)))
 (define (acosh x)
   (cond [(flonum? x)  (flacosh x)]
-        [(single-flonum? x)  (real->single-flonum (flacosh (real->double-flonum x)))]
         [(eqv? x 1)  0]
-        [(and (real? x) (x . >= . 1))  (flacosh (real->double-flonum x))]
+        [(and (real? x) (x . >= . 1))  (flacosh (fl x))]
         [(float-complex? x)  (log (+ x (* (sqrt (+ x 1.0)) (sqrt (- x 1.0)))))]
         [else  (log (+ x (* (sqrt (+ x 1)) (sqrt (- x 1)))))]))
 
@@ -87,32 +81,30 @@
 
 (: flatanh (Float -> Float))
 (define (flatanh x)
-  (cond [(x . < . 0.0)  (- (flatanh (- x)))]
-        [(x . = . 0.0)  0.0]
-        [(x . > . 1.0)  +nan.0]
-        [(x . = . 1.0)  +inf.0]
-        [(x . >= . (flsqrt (flsqrt epsilon.0)))
-         (cond [(x . < . 0.5)
+  (cond [(x . fl< . 0.0)  (- (flatanh (- x)))]
+        [(x . fl= . 0.0)  0.0]
+        [(x . fl> . 1.0)  +nan.0]
+        [(x . fl= . 1.0)  +inf.0]
+        [(x . fl>= . (flsqrt (flsqrt epsilon.0)))
+         (cond [(x . fl< . 0.5)
                 ;; Standard definition, rearranged to preserve digits when x is near 0.0
-                (* 0.5 (- (fllog1p x) (fllog1p (- x))))]
+                (fl* 0.5 (fl- (fllog1p x) (fllog1p (- x))))]
                [else
                 ;; Standard definition
-                (* 0.5 (fllog (/ (+ 1.0 x) (- 1.0 x))))])]
-        [(x . >= . (flsqrt epsilon.0))
+                (fl* 0.5 (fllog (fl/ (fl+ 1.0 x) (fl- 1.0 x))))])]
+        [(x . fl>= . (flsqrt epsilon.0))
          ;; Taylor series order 2
-         (+ x (* #i1/3 x x x))]
+         (fl+ x (fl* (fl* (fl* #i1/3 x) x) x))]
         [else  x]))  ; Taylor series order 1
 
 (: atanh (case-> (Zero -> Zero)
                  (Float -> Float)
-                 (Single-Flonum -> Single-Flonum)
                  (Real -> Real)
                  (Float-Complex -> Float-Complex)
                  (Number -> Number)))
 (define (atanh x)
   (cond [(flonum? x)  (flatanh x)]
-        [(single-flonum? x)  (real->single-flonum (flatanh (real->double-flonum x)))]
         [(eqv? x 0)  0]
-        [(real? x)  (flatanh (real->double-flonum x))]
+        [(real? x)  (flatanh (fl x))]
         [(float-complex? x)  (* 0.5 (- (log (+ 1.0 x)) (log (- 1.0 x))))]
         [else  (* 1/2 (- (log (+ 1 x)) (log (- 1 x))))]))

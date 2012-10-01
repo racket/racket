@@ -2,7 +2,7 @@
 
 (require "bigfloat-struct.rkt")
 
-(provide bflog* bflog/ bflog+ bflog-)
+(provide bflog* bflog/ bflog+ bflog- bflog1-)
 
 (: bflog* (Bigfloat Bigfloat -> Bigfloat))
 (define (bflog* log-x log-y) (bf+ log-x log-y))
@@ -21,3 +21,8 @@
 (define (bflog- log-x log-y)
   (cond [(log-y . bf> . log-x)  +nan.bf]
         [else  (bf+ log-x (bflog1p (bf- (bfexp (bf- log-y log-x)))))]))
+
+(: bflog1- (Bigfloat -> Bigfloat))
+(define (bflog1- log-x)
+  (cond [(log-x . bf> . (bflog (bf 0.5)))  (bflog (bf- (bfexpm1 log-x)))]
+        [else  (bflog1p (bf- (bfexp log-x)))]))

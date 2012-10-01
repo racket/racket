@@ -3,8 +3,6 @@
 (require racket/performance-hint
          racket/promise
          "../../flonum.rkt"
-         "../functions/log1p.rkt"
-         "../functions/log-arithmetic.rkt"
          "dist-struct.rkt"
          "utils.rkt")
 
@@ -44,7 +42,7 @@
 (define (standard-fllogistic-inv-cdf q log?)
   (cond [log?
          (cond [(q . = . (fllog 1.0))  +inf.0]
-               [(q . > . (fllog 0.0))  (- q (fllog1- q))]
+               [(q . > . (fllog 0.0))  (- q (lg1- q))]
                [else  -inf.0])]
         [else
          (cond [(q . = . 1.0)  +inf.0]

@@ -1,7 +1,6 @@
 #lang typed/racket/base
 
 (require "../../../flonum.rkt"
-         "../../functions/log1p.rkt"
          "../../functions/gamma.rkt"
          "../../functions/log-gamma.rkt")
 

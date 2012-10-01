@@ -3,9 +3,6 @@
 (require racket/performance-hint
          racket/promise
          "../../flonum.rkt"
-         "../functions/expm1.rkt"
-         "../functions/log1p.rkt"
-         "../functions/log-arithmetic.rkt"
          "dist-struct.rkt"
          "utils.rkt")
 
@@ -26,12 +23,12 @@
   (make-one-sided-scale-flcdf
    (λ: ([x : Float] [log? : Any] [1-p? : Any])
      (cond [1-p?  (if log? (- x) (exp (- x)))]
-           [else  (if log? (fllog1- (- x)) (- (flexpm1 (- x))))]))))
+           [else  (if log? (lg1- (- x)) (- (flexpm1 (- x))))]))))
 
 (: standard-flexp-inv-cdf (Float Any Any -> Float))
 (define (standard-flexp-inv-cdf q log? 1-p?)
   (cond [1-p?  (if log? (- q) (- (fllog q)))]
-        [else  (if log? (- (fllog1- q)) (- (fllog1p (- q))))]))
+        [else  (if log? (- (lg1- q)) (- (fllog1p (- q))))]))
 
 (: flexp-inv-cdf (Float Float Any Any -> Float))
 (define flexp-inv-cdf (make-one-sided-scale-flinv-cdf standard-flexp-inv-cdf))

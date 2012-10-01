@@ -10,6 +10,7 @@
          "private/distributions/normal-dist.rkt"
          "private/distributions/delta-dist.rkt"
          "private/distributions/gamma-dist.rkt"
+         "private/distributions/beta-dist.rkt"
          "private/distributions/truncated-dist.rkt")
 
 (provide (all-from-out
@@ -23,4 +24,5 @@
           "private/distributions/normal-dist.rkt"
           "private/distributions/delta-dist.rkt"
           "private/distributions/gamma-dist.rkt"
+          "private/distributions/beta-dist.rkt"
           "private/distributions/truncated-dist.rkt"))

@@ -5,11 +5,11 @@
          racket/list
          racket/future
          (only-in racket/math exact-ceiling pi)
-         "fcvector.rkt"
+         "../../base.rkt"
+         "../../parameters.rkt"
          "../unsafe.rkt"
          "../exception.rkt"
-         "../../parameters.rkt"
-         "../../functions.rkt")
+         "fcvector.rkt")
 
 (provide fcvector-fft fcvector-fft!
          fcvector-inverse-fft fcvector-inverse-fft!)

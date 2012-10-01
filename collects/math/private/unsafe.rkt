@@ -15,7 +15,9 @@
 
 (define unsafe-fx* fx*)
 (define unsafe-fx+ fx+)
+(define unsafe-fx- fx-)
 (define unsafe-fxmodulo fxmodulo)
+(define unsafe-fxquotient fxquotient)
 (define unsafe-fx>= fx>=)
 (define unsafe-fx= fx=)
 (define unsafe-fx< fx<)

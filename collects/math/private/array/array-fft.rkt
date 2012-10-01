@@ -8,7 +8,7 @@
          "array-transform.rkt"
          "fcarray.rkt"
          "../../parameters.rkt"
-         "../../functions.rkt"
+         "../../base.rkt"
          "for-each.rkt"
          "utils.rkt")
 

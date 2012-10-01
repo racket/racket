@@ -1,11 +1,11 @@
 #lang typed/racket/base
 
-(require racket/flonum racket/fixnum
-         "factorial.rkt"
-         "../../constants.rkt"
+(require racket/fixnum
+         "../../flonum.rkt"
+         "../../base.rkt"
          "../vector/flvector.rkt"
-         "../utils.rkt"
-         "../exception.rkt")
+         "../exception.rkt"
+         "factorial.rkt")
 
 (provide fllog-factorial
          fllog-binomial
@@ -15,6 +15,8 @@
          log-binomial
          log-permutations
          log-multinomial)
+
+(define-predicate nonnegative-fixnum? Nonnegative-Fixnum)
 
 (define log-fact-table-size 171)
 (define log-fact-table
@@ -28,11 +30,10 @@
 (define (fllog-factorial/stirling5 n)
   (let* ([x  (->fl n)]
          [log-x  (fllog x)])
-    (+ (* x log-x)
-       (- x)
-       (* 0.5 (+ (fllog (* 2.0 pi.0)) log-x))
-       (let ([1/x  (/ 1.0 x)])
-         (* 1/x (+ (* #i-1/360 (* 1/x 1/x)) #i1/12))))))
+    (fl+ (fl+ (fl- (fl* x log-x) x)
+              (fl* 0.5 (fl+ (fllog (fl* 2.0 pi)) log-x)))
+         (let ([1/x  (fl/ 1.0 x)])
+           (fl* 1/x (fl+ (fl* #i-1/360 (fl* 1/x 1/x)) #i1/12))))))
 
 ;; Computes log(Gamma(n+1)) using 3 terms from Stirling's series
 ;; For n >= 1e7, relative error ε <= epsilon.0
@@ -40,9 +41,8 @@
 (define (fllog-factorial/stirling3 n)
   (let* ([x  (->fl n)]
          [log-x  (fllog x)])
-    (+ (* x log-x)
-       (- x)
-       (* 0.5 (+ (fllog (* 2.0 pi.0)) log-x)))))
+    (fl+ (fl- (* x log-x) x)
+         (fl* 0.5 (fl+ (fllog (fl* 2.0 pi)) log-x)))))
 
 (: fllog-factorial (Integer -> Float))
 (define (fllog-factorial n)
@@ -68,7 +68,9 @@
         [(zero? k)  0.0]
         [(k . > . n)  -inf.0]
         [(k . = . n)  0.0]
-        [else  (- (fllog-factorial n) (fllog-factorial k) (fllog-factorial (- n k)))]))
+        [else  (fl- (fl- (fllog-factorial n)
+                         (fllog-factorial k))
+                    (fllog-factorial (- n k)))]))
 
 (: log-binomial (case-> (Negative-Integer Integer -> Nothing)
                         (Integer Negative-Integer -> Nothing)
@@ -82,7 +84,9 @@
         [(zero? k)  0]
         [(k . > . n)  -inf.0]  ; also handles n = 0 case
         [(k . = . n)  0]
-        [else  (- (fllog-factorial n) (fllog-factorial k) (fllog-factorial (- n k)))]))
+        [else  (fl- (fl- (fllog-factorial n)
+                         (fllog-factorial k))
+                    (fllog-factorial (- n k)))]))
 
 (: fllog-permutations (Integer Integer -> Float))
 (define (fllog-permutations n k)
@@ -90,7 +94,7 @@
         [(not (nonnegative-fixnum? k))  +nan.0]
         [(zero? k)  0.0]
         [(k . > . n)  -inf.0]  ; also handles n = 0 case
-        [else  (- (fllog-factorial n) (fllog-factorial (- n k)))]))
+        [else  (fl- (fllog-factorial n) (fllog-factorial (- n k)))]))
 
 (: log-permutations (case-> (Negative-Integer Integer -> Nothing)
                             (Integer Negative-Integer -> Nothing)
@@ -104,7 +108,7 @@
         [(zero? k)  0]
         [(k . > . n)  -inf.0]  ; also handles n = 0 case
         [(= k n 1)  0]
-        [else  (- (fllog-factorial n) (fllog-factorial (- n k)))]))
+        [else  (fl- (fllog-factorial n) (fllog-factorial (- n k)))]))
 
 (: fllog-multinomial (Integer Integer * -> Float))
 (define (fllog-multinomial n . ks)

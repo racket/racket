@@ -1,12 +1,12 @@
 #lang typed/racket/base
 
-(require racket/math racket/flonum
-         "../number-theory/binomial.rkt"
+(require "../number-theory/binomial.rkt"
          "../unsafe.rkt"
-         "../exception.rkt"
-         "../utils.rkt")
+         "../exception.rkt")
 
 (provide factorial binomial permutations multinomial)
+
+(define-predicate nonnegative-fixnum? Nonnegative-Fixnum)
 
 ;; The number of factorials whose flonum representation is finite
 ;; Makes generating the flonum table in gamma.rkt fast
@@ -43,7 +43,6 @@
            (cond [(n-m . <= . 0)  n]
                  [else  (define 2m (unsafe-fx* m 2))
                         (* (loop n 2m) (loop n-m 2m))]))]))
-
 
 (: permutations (case-> (Negative-Integer Integer -> Nothing)
                         (Integer Negative-Integer -> Nothing)

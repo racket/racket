@@ -3,9 +3,6 @@
 (require racket/performance-hint
          racket/promise
          "../../flonum.rkt"
-         "../functions/expm1.rkt"
-         "../functions/log1p.rkt"
-         "../functions/log-arithmetic.rkt"
          "dist-struct.rkt"
          "utils.rkt")
 
@@ -38,7 +35,7 @@
         [else
          (define log-1-q (* (+ (floor k) 1.0) (fllog1p (- q))))
          (cond [1-p?  (if log? log-1-q (exp log-1-q))]
-               [else  (if log? (fllog1- log-1-q) (- (flexpm1 log-1-q)))])]))
+               [else  (if log? (lg1- log-1-q) (- (flexpm1 log-1-q)))])]))
 
 (: flgeometric-inv-cdf (Float Float Any Any -> Float))
 (define (flgeometric-inv-cdf q p log? 1-p?)
@@ -49,7 +46,7 @@
          (define log-1-q (fllog1p (- q)))
          (define log-1-p
            (cond [1-p?  (if log? p (fllog p))]
-                 [else  (if log? (fllog1- p) (fllog1p (- p)))]))
+                 [else  (if log? (lg1- p) (fllog1p (- p)))]))
          (abs (max 0.0 (ceiling (/ (- log-1-p log-1-q) log-1-q))))]))
 
 (: flgeometric-random (Float -> Float))

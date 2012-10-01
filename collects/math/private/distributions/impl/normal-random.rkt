@@ -1,15 +1,15 @@
 #lang typed/racket/base
 
 (require "../../../flonum.rkt"
-         "../../../constants.rkt")
+         "../../../base.rkt")
 
 (provide box-muller-transform standard-flnormal-random)
 
 (: box-muller-transform (Float Float -> Float))
 (define (box-muller-transform x y)
-  (cond [(and (= x 0.0) (= y 0.0))  0.0]
-        [else  (* (flsqrt (* -2.0 (fllog x)))
-                  (sin (* (* 2.0 pi.0) y)))]))
+  (cond [(and (fl= x 0.0) (fl= y 0.0))  0.0]
+        [else  (fl* (flsqrt (fl* -2.0 (fllog x)))
+                    (flsin (fl* (fl* 2.0 pi) y)))]))
 
 (: standard-flnormal-random (-> Float))
 ;; The Box-Muller method has an bad reputation, but undeservedly:

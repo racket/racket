@@ -3,9 +3,9 @@
 (require (for-syntax racket/base syntax/parse)
          racket/vector
          "../../flonum.rkt"
+         "../../base.rkt"
          "../../bigfloat.rkt"
-         "../../vector.rkt"
-         "../../constants.rkt"
+         "../vector/vector.rkt"
          "../unsafe.rkt")
 
 (provide chebyshev-poly chebyshev-poly? chebyshev-poly-min chebyshev-poly-max chebyshev-poly-coefs
@@ -85,10 +85,10 @@
                     (loop (- i 1) (unsafe-vector-ref cs (- i 1)) d dd))])))])))
 
 (define build-chebyshev-poly
-  (make-build-chebyshev-poly Real + - * / cos (λ (x) x) (λ () pi.0)))
+  (make-build-chebyshev-poly Real + - * / cos (λ (x) x) (λ () pi)))
 
 (define build-chebyshev-flpoly
-  (make-build-chebyshev-poly Float fl+ fl- fl* fl/ flcos ->fl (λ () pi.0)))
+  (make-build-chebyshev-poly Float fl+ fl- fl* fl/ flcos ->fl (λ () pi)))
 
 (define build-chebyshev-bfpoly
   (make-build-chebyshev-poly Bigfloat bf+ bf- bf* bf/ bfcos bf (λ () pi.bf)))

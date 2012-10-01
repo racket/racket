@@ -20,19 +20,15 @@ Approximations:
  * Gamma(x) ~ 0.0, non-integer x < 184
 |#
 
-(require racket/flonum racket/fixnum
+(require racket/fixnum
          (only-in racket/math exact-truncate)
-         "../../constants.rkt"
+         "../../flonum.rkt"
+         "../../base.rkt"
          "../vector/flvector.rkt"
-         "../utils.rkt"
          "factorial.rkt"
-         "polyfun.rkt"
          "lanczos.rkt")
 
-(provide gamma flgamma
-         +flgamma-max.0
-         +flgamma-min.0
-         -flgamma-min.0)
+(provide gamma flgamma)
 
 (define +flgamma-max.0 171.6243769563027)
 (define +flgamma-min.0 5.56268464626801e-309)
@@ -47,16 +43,16 @@ Approximations:
 (: laurent-sum-0.00 (Float -> Float))
 ;; Laurent expansion for -0.001 <= x <= 0.01
 (define (laurent-sum-0.00 x)
-  (+ (/ 1.0 x)
-     (- gamma.0)
-     (* x ((make-flpolyfun
-            (+0.989055995327972555395395651500634707939184
-             -0.907479076080886289016560167356275114928611
-             +0.981728086834400187336380294021850850360574
-             -0.981995068903145202104701413791374675517427
-             +0.993149114621276193153867253328658498037491
-             -0.996001760442431533970078419664566686735299))
-           x))))
+  (fl+ (fl+ (fl/ 1.0 x)
+            (- gamma.0))
+       (fl* x ((make-flpolyfun
+                (+0.989055995327972555395395651500634707939184
+                 -0.907479076080886289016560167356275114928611
+                 +0.981728086834400187336380294021850850360574
+                 -0.981995068903145202104701413791374675517427
+                 +0.993149114621276193153867253328658498037491
+                 -0.996001760442431533970078419664566686735299))
+               x))))
 
 (: taylor-sum-0.50 (Float -> Float))
 ;; Taylor expansion for 0.4 <= x <= 0.6
@@ -88,7 +84,7 @@ Approximations:
      -1.6777215999940596948659351797275861694373e7
      +3.3554431999960397928248461161824067545415e7
      -6.7108863999973598603821896375158511265925e7))
-   (- x 0.5)))
+   (fl- x 0.5)))
 
 (: taylor-sum-0.75 (Float -> Float))
 ;; Taylor expansion for 0.6 <= x <= 0.9
@@ -120,7 +116,7 @@ Approximations:
      -9.9662018287044384491125019062792037807204e2
      +1.3288269116133169880999542840071640880826e3
      -1.7717692161240780212684141496992227705508e3))
-   (- x 0.75)))
+   (fl- x 0.75)))
 
 (: taylor-sum-1.00 (Float -> Float))
 ;; Taylor expansion for 0.8 <= x <= 1.2
@@ -151,7 +147,7 @@ Approximations:
      +0.99999988079601916841665041840424924052652
      -0.99999994039712498374586288797675081784805
      +0.99999997019826758235557449619251141981337))
-   (- x 1.0)))
+   (fl- x 1.0)))
 
 (: taylor-sum-1.50 (Float -> Float))
 ;; Taylor expansion for 1.15 <= x <= 1.85
@@ -183,14 +179,14 @@ Approximations:
      -5.9402910632315351301225167218583393338649e-5
      +3.9602015464878783636172078334875896543825e-5
      -2.6401373662487025755188087547866875906025e-5))
-   (- x 1.5)))
+   (fl- x 1.5)))
 
 (: flgamma-integer (Float -> Float))
 ;; Computes Gamma(x) using factorial
 (define (flgamma-integer x)
-  (cond [(x . >= . 1.0)
-         (cond [(x . <= . flonum-fact-table-size)
-                (flvector-ref flonum-fact-table (- (fl->fx x) 1))]
+  (cond [(x . fl>= . 1.0)
+         (cond [(x . fl<= . flonum-fact-table-size)
+                (flvector-ref flonum-fact-table (fx- (fl->fx x) 1))]
                ;; 171! won't fit in a Float
                [else  +inf.0])]
         ;; Gamma(x) undefined for integer x <= 0; just need to determine which special to return
@@ -201,34 +197,34 @@ Approximations:
 (: flgamma-large-negative (Float -> Float))
 ;; Computes Gamma(x) for non-integer x < -170
 (define (flgamma-large-negative x)
-  (cond [(x . < . -184.0)
+  (cond [(x . fl< . -184.0)
          ;; Gamma(x) ~ 0.0 for non-integer x < -184; determine sign
          (if (even? (exact-truncate x)) -0.0 0.0)]
         [else
          ;; The standard argument reduction is horrible with -184 < x < -170
          ;; Fortunately, the doubling formula is great in this subdomain
-         (* (flgamma (* 0.5 x))
-            (flgamma (+ (* 0.5 x) 0.5))
-            (flexpt 2.0 (- x 1.0))
-            (/ 1.0 (flsqrt pi.0)))]))
+         (fl* (fl* (fl* (flgamma (fl* 0.5 x))
+                        (flgamma (fl+ (fl* 0.5 x) 0.5)))
+                   (flexpt 2.0 (fl- x 1.0)))
+              (fl/ 1.0 (flsqrt pi)))]))
 
 (: flgamma-taylor (Float -> Float))
 ;; Computes Gamma(x) using Taylor expansion
 ;; Error is ~ 0.0 when 0.5 <= x <= 1.5
 (define (flgamma-taylor x)
   (let loop ([x x] [y 1.0])
-    (cond [(x . > . 1.5)  (loop (- x 1.0) (* y (- x 1.0)))]
-          [(x . < . 0.5)  (loop (+ x 1.0) (/ y x))]
-          [(x . < . 0.6)  (* y (taylor-sum-0.50 x))]
-          [(x . < . 0.85)  (* y (taylor-sum-0.75 x))]
-          [(x . < . 1.175)  (* y (taylor-sum-1.00 x))]
-          [else  (* y (taylor-sum-1.50 x))])))
+    (cond [(x . fl> . 1.5)  (loop (fl- x 1.0) (fl* y (fl- x 1.0)))]
+          [(x . fl< . 0.5)  (loop (fl+ x 1.0) (fl/ y x))]
+          [(x . fl< . 0.6)  (fl* y (taylor-sum-0.50 x))]
+          [(x . fl< . 0.85)  (fl* y (taylor-sum-0.75 x))]
+          [(x . fl< . 1.175)  (fl* y (taylor-sum-1.00 x))]
+          [else  (fl* y (taylor-sum-1.50 x))])))
 
 (: flgamma-reduce-negative (Float Float -> (Values Float Float)))
 ;; Argument reduction with Gamma(x-1) = Gamma(x) / x; used when x is a small negative number
 (define (flgamma-reduce-negative x mx)
   (let loop ([x x] [y 1.0])
-    (cond [(x . <= . mx)  (loop (+ x 1.0) (/ y x))]
+    (cond [(x . fl<= . mx)  (loop (fl+ x 1.0) (fl/ y x))]
           [else  (values x y)])))
 
 (: flgamma-laurent (Float -> Float))
@@ -237,21 +233,21 @@ Approximations:
 (define (flgamma-laurent x)
   ;(printf "laurent ~v~n" x)
   (let-values ([(x y)  (flgamma-reduce-negative x -0.5)])
-    (* y (laurent-sum-0.00 x))))
+    (fl* y (laurent-sum-0.00 x))))
 
 (: flgamma-lanczos (Float -> Float))
 ;; Computes Gamma(x) using a Lanczos approximation
 (define (flgamma-lanczos x)
   ;(printf "lanczos ~v~n" x)
   (let*-values ([(x y)  (flgamma-reduce-negative x 0.0)]
-                [(y)    (* y (lanczos-sum x))])
-    (cond [(x . > . 140.0)
-           (define xgh (+ x lanczos-g -0.5))
-           (define hp (flexpt xgh (- (* x 0.5) 0.25)))
-           (* (* y (/ hp (exp xgh))) hp)]
+                [(y)    (fl* y (lanczos-sum x))])
+    (cond [(x . fl> . 140.0)
+           (define xgh (fl+ x (fl- lanczos-g 0.5)))
+           (define hp (flexpt xgh (fl- (fl* x 0.5) 0.25)))
+           (fl* (fl* y (fl/ hp (flexp xgh))) hp)]
           [else
-           (define xgh (+ x lanczos-g -0.5))
-           (* y (/ (flexpt xgh (- x 0.5)) (exp xgh)))])))
+           (define xgh (fl+ x (fl- lanczos-g 0.5)))
+           (fl* y (fl/ (flexpt xgh (fl- x 0.5)) (flexp xgh)))])))
 
 (define: flgamma-hash : (HashTable Float Float) (make-weak-hash))
 
@@ -259,22 +255,22 @@ Approximations:
 (define (flgamma x)
   (cond [(integer? x)  (flgamma-integer x)]
         ;; Lanczos produces +nan.0 for huge inputs; avoid
-        [(x . > . +flgamma-max.0)  +inf.0]
+        [(x . fl> . +flgamma-max.0)  +inf.0]
         ;; Limit as x -> -inf doesn't exist
-        [(x . = . -inf.0)  +nan.0]
+        [(x . fl= . -inf.0)  +nan.0]
         [(eqv? x +nan.0)   +nan.0]
         [else
          (hash-ref!
           flgamma-hash x
           (λ ()
-            (cond [(x . < . -170.0)  (flgamma-large-negative x)]
+            (cond [(x . fl< . -170.0)  (flgamma-large-negative x)]
                   ;; If near a pole, use Laurent
-                  [(and (x . < . 0.5)
-                        (let ([dx  (- x (round x))])
-                          (and (dx . > . -0.001) (dx . < . 0.01))))
+                  [(and (x . fl< . 0.5)
+                        (let ([dx  (fl- x (flround x))])
+                          (and (dx . fl> . -0.001) (dx . fl< . 0.01))))
                    (flgamma-laurent x)]
                   ;; If small, use Taylor
-                  [(and (x . > . -4.5) (x . < . 4.5))  (flgamma-taylor x)]
+                  [(and (x . fl> . -4.5) (x . fl< . 4.5))  (flgamma-taylor x)]
                   [else  (flgamma-lanczos x)])))]))
 
 (: gamma (case-> (Nonpositive-Integer -> Nothing)

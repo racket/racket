@@ -15,12 +15,9 @@ Used for starting points in Newton's method
 
 (require racket/fixnum
          "../../../flonum.rkt"
-         "../../functions/log1p.rkt"
-         "../../functions/log-arithmetic.rkt"
          "../../functions/gamma.rkt"
          "../../functions/log-gamma.rkt"
          "../../functions/incomplete-gamma.rkt"
-         "../../functions/lambert.rkt"
          "gamma-pdf.rkt"
          "normal-inv-cdf.rkt")
 
@@ -126,8 +123,8 @@ Used for starting points in Newton's method
 
 (: standard-flgamma-inv-log-cdf (Float Float Any -> Float))
 (define (standard-flgamma-inv-log-cdf k log-p 1-p?)
-  (let-values ([(log-p log-1-p)  (cond [1-p?  (values (fllog1- log-p) log-p)]
-                                       [else  (values log-p (fllog1- log-p))])])
+  (let-values ([(log-p log-1-p)  (cond [1-p?  (values (lg1- log-p) log-p)]
+                                       [else  (values log-p (lg1- log-p))])])
     (cond [(k . < . 0.0)  +nan.0]
           [(k . = . 0.0)  (if (log-p . = . -inf.0) 0.0 +inf.0)]
           [(k . > . 1e32)  (exp (log-z01 k log-p log-1-p 1-p?))]
@@ -148,8 +145,6 @@ Used for starting points in Newton's method
 
 (require 'defs plot
          "../../../flonum.rkt"
-         "../../functions/log1p.rkt"
-         "../../functions/log-arithmetic.rkt"
          "../../functions/gamma.rkt"
          "../../functions/log-gamma.rkt"
          "../../functions/incomplete-gamma.rkt"

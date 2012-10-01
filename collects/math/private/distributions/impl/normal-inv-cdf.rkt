@@ -10,7 +10,6 @@ fix up answers in the tricky spot between -20000 and -744
 |#
 
 (require "../../../flonum.rkt"
-         "../../functions/log-arithmetic.rkt"
          "normal-pdf.rkt"
          "normal-cdf.rkt")
 
@@ -129,12 +128,12 @@ fix up answers in the tricky spot between -20000 and -744
 (define (newton-log-iter log-p x)
   (define real-log-p (standard-flnormal-log-cdf x))
   (cond [(log-p . < . real-log-p)
-         (define dx (exp (fllog/ (fllog- real-log-p log-p)
-                                 (standard-flnormal-log-pdf x))))
+         (define dx (exp (lg/ (lg- real-log-p log-p)
+                              (standard-flnormal-log-pdf x))))
          (- x dx)]
         [else
-         (define dx (exp (fllog/ (fllog- log-p real-log-p)
-                                 (standard-flnormal-log-pdf x))))
+         (define dx (exp (lg/ (lg- log-p real-log-p)
+                              (standard-flnormal-log-pdf x))))
          (+ x dx)]))
 
 (: standard-flnormal-inv-log-cdf (Float -> Float))
@@ -147,7 +146,7 @@ fix up answers in the tricky spot between -20000 and -744
                 (define q (- (flexp log-p) 0.5))
                 (* q (R1 q))]
                [(log-p . >= . (fllog 0.5))
-                (define r (flsqrt (- (fllog1- log-p))))
+                (define r (flsqrt (- (lg1- log-p))))
                 (if (r . <= . 5.0) (R2 r) (R3 r))]
                [(log-p . < . -1e18)
                 (inv-log-cdf-huge log-p)]

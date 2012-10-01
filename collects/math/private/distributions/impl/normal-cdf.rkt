@@ -13,7 +13,6 @@ ACM Transactions on Mathematical Software, Vol. 19 (1993), pp. 22-32
 |#
 
 (require "../../../flonum.rkt"
-         "../../functions/log-arithmetic.rkt"
          "normal-utils.rkt")
 
 (provide standard-flnormal-log-cdf
@@ -22,8 +21,8 @@ ACM Transactions on Mathematical Software, Vol. 19 (1993), pp. 22-32
 (: R0 (Float Any -> Float))
 (define (R0 x log?)
   (cond [log?  (if (x . >= . 0.0)
-                   (fllog+ (fllog 0.5) (fllog/ (fllog x) logsqrt2pi.0))
-                   (fllog- (fllog 0.5) (fllog/ (fllog (- x)) logsqrt2pi.0)))]
+                   (lg+ (fllog 0.5) (lg/ (fllog x) logsqrt2pi.0))
+                   (lg- (fllog 0.5) (lg/ (fllog (- x)) logsqrt2pi.0)))]
         [else  (+ 0.5 (/ x sqrt2pi.0))]))
 
 (: R1 (Float Any -> Float))
@@ -40,8 +39,8 @@ ACM Transactions on Mathematical Software, Vol. 19 (1993), pp. 22-32
          [s  (+ (* s x^2) 1.0260932208618978205e4)]
          [s  (+ (* s x^2) 4.5507789335026729956e4)])
     (cond [log?  (if (x . >= . 0.0)
-                     (fllog+ (fllog 0.5) (fllog* (fllog x) (fllog/ (fllog r) (fllog s))))
-                     (fllog- (fllog 0.5) (fllog* (fllog (- x)) (fllog/ (fllog r) (fllog s)))))]
+                     (lg+ (fllog 0.5) (lg* (fllog x) (lg/ (fllog r) (fllog s))))
+                     (lg- (fllog 0.5) (lg* (fllog (- x)) (lg/ (fllog r) (fllog s)))))]
           [else  (+ 0.5 (* x (/ r s)))])))
 
 (: R2 (Float Any -> Float))
@@ -66,9 +65,9 @@ ACM Transactions on Mathematical Software, Vol. 19 (1993), pp. 22-32
          [s  (+ (* s y) 3.8912003286093271411e4)]
          [s  (+ (* s y) 1.9685429676859990727e4)])
     (cond [log?
-           (define q (fllog/ (fllog r) (fllog s)))
-           (define z (fllog* (* -0.5 y y) q))
-           (if (x . > . 0.0) (fllog- 0.0 z) z)]
+           (define q (lg/ (fllog r) (fllog s)))
+           (define z (lg* (* -0.5 y y) q))
+           (if (x . > . 0.0) (lg- 0.0 z) z)]
           [else
            (define q (/ r s))
            (define z (* (flexp-1/2*x^2 y) q))
@@ -90,10 +89,10 @@ ACM Transactions on Mathematical Software, Vol. 19 (1993), pp. 22-32
          [s  (+ (* s x^2) 3.78239633202758244e-3)]
          [s  (+ (* s x^2) 7.29751555083966205e-5)])
     (cond [log?  
-           (define q (fllog/ (fllog- -logsqrt2pi.0 (fllog* (fllog x^2) (fllog/ (fllog r) (fllog s))))
-                             (fllog (abs x))))
-           (define z (fllog* (* -0.5 x x) q))
-           (if (x . > . 0.0) (fllog- 0.0 z) z)]
+           (define q (lg/ (lg- -logsqrt2pi.0 (lg* (fllog x^2) (lg/ (fllog r) (fllog s))))
+                          (fllog (abs x))))
+           (define z (lg* (fl* (fl* -0.5 x) x) q))
+           (if (x . > . 0.0) (lg1- z) z)]
           [else
            (define q (/ (- 1/sqrt2pi.0 (* x^2 (/ r s)))
                         (abs x)))
