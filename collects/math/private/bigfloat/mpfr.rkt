@@ -257,7 +257,7 @@
 ;; Returns a cvector of limbs and the size of the limbs. The size is negated when n is negative.
 (define (integer->size+limbs n)
   ;; +1 because GMP expects the last limb to be 0
-  (define len (+ (ceiling (/ (integer-length n) gmp-limb-bits)) 1))
+  (define len (+ (ceiling (/ (integer-length (abs n)) gmp-limb-bits)) 1))
   (define limbs (make-cvector _limb_t len))
   (define an (abs n))
   (let loop ([i 0])

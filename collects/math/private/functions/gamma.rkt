@@ -275,13 +275,11 @@ Approximations:
 
 (: gamma (case-> (Nonpositive-Integer -> Nothing)
                  (Integer -> Positive-Integer)
-                 (Single-Flonum -> Single-Flonum)
                  (Float -> Float)
                  (Real -> Real)))
 (define (gamma x)
   (cond [(double-flonum? x)  (flgamma x)]
-        [(single-flonum? x)  (real->single-flonum (flgamma (real->double-flonum x)))]
-        [(integer? x)  (if (x . > . 0)
-                           (factorial (- x 1))
-                           (error 'gamma "undefined for nonpositive integers"))]
+        [(exact-integer? x)  (if (x . > . 0)
+                                 (factorial (- x 1))
+                                 (error 'gamma "undefined for nonpositive integers"))]
         [else  (flgamma (real->double-flonum x))]))
