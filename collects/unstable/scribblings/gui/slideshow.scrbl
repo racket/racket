@@ -157,6 +157,31 @@ perform a transformation.  The macros @racket[pict-if], @racket[pict-cond],
 which change naturally between stages.
 }
 
+@section{Revealing Slides}
+@defform[(reveal number expr ...)]{
+
+Expands to either @racket[(show expr ...)] or @racket[(hide expr ...)] if
+@racket[number] is greater than or equal to the current revealed slide within a
+@racket[revealing-slide].
+
+}
+
+@defform[(revealing-slide expr ...)]{
+
+Creates N slides where N is the maximum number given to a @racket[reveal]
+expression as the first argument. Each slide has the current reveal number
+incremented by one so progressive slides can reveal picts in that appear in
+arbitrary places.
+
+@racketblock[
+(revealing-slide
+  (hc-append (reveal 0 @t{I show up first})
+             (reveal 1 @t{I show up second}))
+  (reveal 1 @t{I also show up second}))
+]
+
+}
+
 @section{Miscellaneous Slide Utilities}
 
 @addition{Scott Owens}
