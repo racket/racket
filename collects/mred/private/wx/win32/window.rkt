@@ -575,28 +575,33 @@
   (define/public (try-nc-mouse w msg wParam lParam)
     (cond
      [(= msg WM_NCRBUTTONDOWN)
-      (do-mouse w msg #t 'right-down wParam lParam)]
+      (do-mouse w msg #t 'right-down wParam (lp-screen->client w lParam))]
      [(= msg WM_NCRBUTTONUP)
-      (do-mouse w msg #t 'right-up wParam lParam)]
+      (do-mouse w msg #t 'right-up wParam (lp-screen->client w lParam))]
      [(= msg WM_NCRBUTTONDBLCLK)
-      (do-mouse w msg #t 'right-down wParam lParam)]
+      (do-mouse w msg #t 'right-down wParam (lp-screen->client w lParam))]
      [(= msg WM_NCMBUTTONDOWN)
-      (do-mouse w msg #t 'middle-down wParam lParam)]
+      (do-mouse w msg #t 'middle-down wParam (lp-screen->client w lParam))]
      [(= msg WM_NCMBUTTONUP)
-      (do-mouse w msg #t 'middle-up wParam lParam)]
+      (do-mouse w msg #t 'middle-up wParam (lp-screen->client w lParam))]
      [(= msg WM_NCMBUTTONDBLCLK)
-      (do-mouse w msg #t 'middle-down wParam lParam)]
+      (do-mouse w msg #t 'middle-down wParam (lp-screen->client w lParam))]
      [(= msg WM_NCLBUTTONDOWN)
-      (do-mouse w msg #t 'left-down wParam lParam)]
+      (do-mouse w msg #t 'left-down wParam (lp-screen->client w lParam))]
      [(= msg WM_NCLBUTTONUP)
-      (do-mouse w msg #t 'left-up wParam lParam)]
+      (do-mouse w msg #t 'left-up wParam (lp-screen->client w lParam))]
      [(= msg WM_NCLBUTTONDBLCLK)
-      (do-mouse w msg #t 'left-down wParam lParam)]
+      (do-mouse w msg #t 'left-down wParam (lp-screen->client w lParam))]
      [(and (= msg WM_NCMOUSEMOVE)
            (not (= wParam HTVSCROLL))
            (not (= wParam HTHSCROLL)))
-      (do-mouse w msg #t 'motion wParam lParam)]
+      (do-mouse w msg #t 'motion wParam (lp-screen->client w lParam))]
      [else #f]))
+
+  (define/private (lp-screen->client w lParam)
+    (let ([p (make-POINT (LOWORD lParam) (HIWORD lParam))])
+      (ScreenToClient w p)
+      (MAKELPARAM (POINT-x p) (POINT-y p))))
 
   (define/private (do-mouse control-hwnd msg nc? type wParam lParam)
     (let ([x (LOWORD lParam)]
