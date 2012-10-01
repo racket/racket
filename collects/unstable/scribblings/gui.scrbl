@@ -13,3 +13,4 @@
 @include-section["gui/slideshow.scrbl"]
 @include-section["gui/pslide.scrbl"]
 @include-section["gui/snip.scrbl"]
+@include-section["gui/scribble.scrbl"]
