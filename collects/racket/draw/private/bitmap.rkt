@@ -302,7 +302,8 @@
       (set!-values (s b&w?) (do-load-bitmap in kind bg complain-on-failure?))
       (set! width (if s (cairo_image_surface_get_width s) 0))
       (set! height (if s (cairo_image_surface_get_height s) 0))
-      (set! shadow (make-bytes (* width height 4))))
+      (set! shadow (make-bytes (* width height 4)))
+      (and s #t))
 
     (define/private (do-load-bitmap in kind bg complain-on-failure?)
       (if (path-string? in)
