@@ -162,6 +162,7 @@
                (match-define `(,start ,end ,popup-fun) h)
                (or new-item
                    (and (<= start pos end)
+                        (new separator-menu-item% [parent menu])
                         (new menu-item%
                              [label "Show Optimization Info"]
                              [parent menu]
