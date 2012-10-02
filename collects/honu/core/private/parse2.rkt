@@ -397,7 +397,8 @@
           (define higher
             (case association
               [(left) >]
-              [(right) >=]))
+              [(right) >=]
+              [else (raise-syntax-error 'parse "invalid associativity. must be either 'left or 'right" association)]))
           (debug "precedence old ~a new ~a higher? ~a\n" precedence new-precedence (higher new-precedence precedence))
           (if (higher new-precedence precedence)
             (let-values ([(parsed unparsed)

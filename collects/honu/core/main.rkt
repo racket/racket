@@ -38,6 +38,8 @@
                                    [racket:read-line readLine]
                                    [honu-with-input-from-file withInputFromFile]
                                    [define-make-honu-operator operator]
+                                   [define-make-honu-binary-operator binary_operator]
+                                   [define-make-honu-unary-operator unary_operator]
                                    [honu-match match]
                                    [honu-with with]
                                    [literal:honu-where where]

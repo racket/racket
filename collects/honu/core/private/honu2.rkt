@@ -144,6 +144,24 @@
        (define out (racket-syntax (define-honu-operator/syntax name level association.result function.result)))
        (values out #'rest #t)])))
 
+(provide define-make-honu-binary-operator)
+(define-honu-syntax define-make-honu-binary-operator
+  (lambda (code)
+    (syntax-parse code
+      [(_ name:id level:number association:honu-expression function:honu-expression . rest)
+       (define out (racket-syntax
+                     (define-binary-operator name level association.result function.result)))
+       (values out #'rest #t)])))
+
+(provide define-make-honu-unary-operator)
+(define-honu-syntax define-make-honu-unary-operator
+  (lambda (code)
+    (syntax-parse code
+      [(_ name:id function:honu-expression . rest)
+       (define out (racket-syntax
+                     (define-unary-operator name function.result)))
+       (values out #'rest #t)])))
+
 ;; equals can have a compile time property that allows it to do something like set!
 ;; v.x could return a syntax object with a property that can be invoked by an equals
 ;; thing so that it can be rewritten to do the set! thing

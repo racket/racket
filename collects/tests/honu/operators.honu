@@ -9,3 +9,14 @@ operator gg 2 'left
   }
 
 3 gg 4 gg 5
+
+binary_operator b1 2 'left
+  function(left, right){
+    left + right * 2
+  }
+
+3 b1 8
+
+unary_operator u1 function(x){ x - 2 }
+
+2 + u1 u1 5

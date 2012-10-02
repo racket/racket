@@ -12,9 +12,9 @@
 (define-syntax (define-honu-operator/syntax stx)
   (syntax-parse stx
     [(_ name precedence associativity binary-function)
-     #'(define-syntax name (make-honu-operator precedence associativity binary-function #f))]
+     (syntax/loc stx (define-syntax name (make-honu-operator precedence associativity binary-function #f)))]
     [(_ name precedence associativity binary-function unary-function)
-     #'(define-syntax name (make-honu-operator precedence associativity binary-function unary-function))]))
+     (syntax/loc stx (define-syntax name (make-honu-operator precedence associativity binary-function unary-function)))]))
 
 (define-syntax (define-honu-fixture stx)
   (syntax-parse stx
@@ -27,19 +27,16 @@
                                  (lambda (left right)
                                    (with-syntax ([left left]
                                                  [right right])
-                                     (racket-syntax (operator left right))))
-                                 ;; unary
-                                 (lambda (argument)
-                                   (with-syntax ([argument (honu->racket argument)])
-                                     (racket-syntax (operator argument))))))
+                                     (racket-syntax (operator left right))))))
 
-(define-syntax-rule (define-unary-operator name precedence associativity operator)
-                      (define-honu-operator/syntax name precedence associativity
-                                                   #f
-                                                   ;; unary
-                                                   (lambda (argument)
-                                                     (with-syntax ([argument (honu->racket argument)])
-                                                       (racket-syntax (operator argument))))))
+(define-syntax-rule (define-unary-operator name operator)
+                    ;; precedence and associativity dont matter for unary 
+                    (define-honu-operator/syntax name 0 'left
+                                                 #f
+                                                 ;; unary
+                                                 (lambda (argument)
+                                                   (with-syntax ([argument (honu->racket argument)])
+                                                     (racket-syntax (operator argument))))))
 
 (define-honu-operator/syntax honu-flow 0.001 'left
   (lambda (left right)
@@ -114,7 +111,7 @@
                         (lambda (left right)
                           (for/list ([i (in-range left right)]) i)))
 
-(define-unary-operator honu-not 0.7 'left not)
+(define-unary-operator honu-not not)
 
 (define-binary-operator honu-== 1 'left equal?)
 (define-binary-operator honu-not-equal 1 'left (lambda (left right)
