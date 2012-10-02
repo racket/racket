@@ -8,7 +8,7 @@
                      racket/gui
                      racket/pretty
                      racket/contract
-		     mrlib/graph
+                     mrlib/graph
                      (only-in slideshow/pict pict? text dc-for-text-size text-style/c
                               vc-append)
                      redex))
@@ -2277,14 +2277,30 @@ sets @racket[dc-for-text-size] and the latter does not.
 }
 
 
-@defproc[(term->pict [lang compiled-lang?] [term any/c]) pict?]{
+@defform[(term->pict lang term)]{
  Produces a pict like @racket[render-term], but without
  adjusting @racket[dc-for-text-size].
 
+ The first argument is expected to be a @racket[compiled-language?] and
+ the second argument is expected to be a term (without the
+ @racket[term] wrapper). The formatting in the @racket[term] argument
+ is used to determine how the resulting pict will look.
+ 
  This function is primarily designed to be used with
  Slideshow or with other tools that combine picts together.
 }
 
+@defproc[(render-term/pretty-write [lang compiled-lang?] [term any] [filename path-string?] [#:width width #f]) void?]{
+  Like @racket[render-term], except that the @racket[term] argument is evaluated,
+  and expected to return a term. Then, @racket[pretty-write] is used
+  to determine where the line breaks go, using the @racket[width] argument
+  as a maximum width (via @racket[pretty-print-columns]).
+}
+
+@defproc[(term->pict/pretty-write [lang compiled-lang?] [term any] [filename (or/c path-string? #f)] [#:width width #f]) pict?]{
+  Like @racket[term->pict], but with the same change that
+  @racket[render-term/pretty-write] has from @racket[render-term].
+}
 
 @defproc[(render-language [lang compiled-lang?]
                           [file (or/c false/c path-string?) #f]
