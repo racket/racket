@@ -245,14 +245,7 @@
 (define-syntax racketgrammar
   (syntax-rules ()
     [(_ #:literals (lit ...) id clause ...)
-     (with-racket-variables
-      (lit ...)
-      ([non-term (id clause ...)])
-      (*racketgrammar '(lit ...)
-                      '(id clause ...)
-                      (lambda ()
-                        (list (list (racket id)
-                                    (racketblock0/form clause) ...)))))]
+     (racketgrammar* #:literals (lit ...) [id clause ...])]
     [(_ id clause ...) (racketgrammar #:literals () id clause ...)]))
 
 (define-syntax racketgrammar*
@@ -264,7 +257,8 @@
       (*racketgrammar '(lit ...)
                       '(id ... clause ... ...)
                       (lambda ()
-                        (list (list (racket id) (racketblock0/form clause) ...)
+                        (list (list (racket id)
+                                    (racketblock0/form clause) ...)
                               ...))))]
     [(_ [id clause ...] ...)
      (racketgrammar* #:literals () [id clause ...] ...)]))
