@@ -17,36 +17,36 @@
   (make-symmetric-location-scale-flpdf
    (λ: ([x : Float] [log? : Any])
      (cond [log?
-            (cond [(x . > . 40.0)  (- x)]
-                  [else  (- x (* 2.0 (fllog1p (exp x))))])]
+            (cond [(x . fl> . 40.0)  (- x)]
+                  [else  (fl- x (fl* 2.0 (fllog1p (exp x))))])]
            [else
-            (cond [(x . > . 40.0)  (exp (- x))]
-                  [else  (define exp-x (exp x))
-                         (define 1+exp-x (+ 1.0 exp-x))
-                         (/ exp-x 1+exp-x 1+exp-x)])]))))
+            (cond [(x . fl> . 40.0)  (flexp (- x))]
+                  [else  (define exp-x (flexp x))
+                         (define 1+exp-x (fl+ 1.0 exp-x))
+                         (fl/ (fl/ exp-x 1+exp-x) 1+exp-x)])]))))
 
 (: fllogistic-cdf (Float Float Float Any Any -> Float))
 (define fllogistic-cdf
   (make-symmetric-location-scale-flcdf
    (λ: ([x : Float] [log? : Any])
      (cond [log?
-            (cond [(x . > . 750.0)  0.0]
-                  [(x . < . -40.0)  x]
-                  [else  (- (fllog1p (exp (- x))))])]
+            (cond [(x . fl> . 750.0)  0.0]
+                  [(x . fl< . -40.0)  x]
+                  [else  (- (fllog1p (flexp (- x))))])]
            [else
-            (cond [(x . > . 40.0)  1.0]
-                  [(x . < . -40.0)  (exp x)]
-                  [else  (/ 1.0 (+ 1.0 (exp (- x))))])]))))
+            (cond [(x . fl> .  40.0)  1.0]
+                  [(x . fl< . -40.0)  (flexp x)]
+                  [else  (fl/ 1.0 (fl+ 1.0 (flexp (- x))))])]))))
 
 (: standard-fllogistic-inv-cdf (Float Any -> Float))
 (define (standard-fllogistic-inv-cdf q log?)
   (cond [log?
-         (cond [(q . = . (fllog 1.0))  +inf.0]
-               [(q . > . (fllog 0.0))  (- q (lg1- q))]
+         (cond [(q . fl= . (fllog 1.0))  +inf.0]
+               [(q . fl> . (fllog 0.0))  (fl- q (lg1- q))]
                [else  -inf.0])]
         [else
-         (cond [(q . = . 1.0)  +inf.0]
-               [(q . > . 0.0)  (- (fllog q) (fllog1p (- q)))]
+         (cond [(q . fl= . 1.0)  +inf.0]
+               [(q . fl> . 0.0)  (fl- (fllog q) (fllog1p (- q)))]
                [else  -inf.0])]))
 
 (: fllogistic-inv-cdf (Float Float Float Any Any -> Float))

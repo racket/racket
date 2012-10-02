@@ -20,9 +20,9 @@
 (define (flgamma-pdf k s x log?)
   ((make-one-sided-scale-flpdf
     (λ: ([x : Float] [log? : Any])
-      (cond [(k . <= . 0.0)  +nan.0]
+      (cond [(k . fl<= . 0.0)  +nan.0]
             ;; Outside of support:
-            [(= x 0.0)  (if log? -inf.0 0.0)]
+            [(fl= x 0.0)  (if log? -inf.0 0.0)]
             [log?  (standard-flgamma-log-pdf k x)]
             [else  (standard-flgamma-pdf k x)])))
    s x log?))
@@ -48,7 +48,7 @@
 
 (: flgamma-random (Float Float -> Float))
 (define (flgamma-random k s)
-  (* s (standard-flgamma-random k)))
+  (fl* s (standard-flgamma-random k)))
 
 (begin-encourage-inline
   

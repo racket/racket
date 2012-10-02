@@ -1,6 +1,7 @@
 #lang typed/racket/base
 
-(require "../../unsafe.rkt"
+(require "../../../flonum.rkt"
+         "../../unsafe.rkt"
          "../../exception.rkt")
 
 (provide Walker-Table make-walker-table walker-table-sample)
@@ -15,8 +16,8 @@
   (define ws (map (ann cdr ((Pair A Float) -> Float)) xws))
   (define total-weight (apply + ws))
   (define bin-weight (/ total-weight n))
-  (define small-xws (filter (λ: ([xw : (cons A Float)]) ((cdr xw) . < . bin-weight)) xws))
-  (define large-xws (filter (λ: ([xw : (cons A Float)]) ((cdr xw) . >= . bin-weight)) xws))
+  (define small-xws (filter (λ: ([xw : (cons A Float)]) ((cdr xw) . fl< . bin-weight)) xws))
+  (define large-xws (filter (λ: ([xw : (cons A Float)]) ((cdr xw) . fl>= . bin-weight)) xws))
   (vector->immutable-vector
    (list->vector
     (let: loop : (Listof (Walker-Entry A))
@@ -29,10 +30,10 @@
              (define small-w (cdr (car small-xws)))
              (define large-x (car (car large-xws)))
              (define large-w (cdr (car large-xws)))
-             (define underweight (- bin-weight small-w))
-             (define new-large-w (- large-w underweight))
+             (define underweight (fl- bin-weight small-w))
+             (define new-large-w (fl- large-w underweight))
              (cons (list (cons small-x small-w) (cons large-x underweight))
-                   (if (new-large-w . < . bin-weight)
+                   (if (new-large-w . fl< . bin-weight)
                        (loop (cons (cons large-x new-large-w) (cdr small-xws))
                              (cdr large-xws))
                        (loop (cdr small-xws)
@@ -54,8 +55,8 @@
                 (define xw2 (unsafe-car (unsafe-cdr xws)))
                 (define x2 (unsafe-car xw2))
                 (define w2 (unsafe-cdr xw2))
-                (define r (* (random) (+ w1 w2)))
-                (if (r . < . w1) x1 x2)])]))
+                (define r (fl* (random) (fl+ w1 w2)))
+                (if (r . fl< . w1) x1 x2)])]))
 
 #|
 (: sample/replace (All (A) ((Listof (Pair A Float)) Integer -> (Listof A))))

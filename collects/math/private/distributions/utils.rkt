@@ -43,58 +43,58 @@
 
 (define-syntax-rule (make-one-sided-scale-flpdf standard-flpdf)
   (λ: ([s : Float] [x : Float] [log? : Any])
-    (cond [(s . = . 0.0)  (fldelta-pdf 0.0 x log?)]
-          [(and (s . > . 0.0) (x . < . 0.0))  (if log? -inf.0 0.0)]
-          [(and (s . < . 0.0) (x . > . 0.0))  (if log? -inf.0 0.0)]
-          [else  (let ([q  (standard-flpdf (/ x s) log?)])
-                   (if log? (- q (fllog (abs s))) (/ q (abs s))))])))
+    (cond [(fl= s 0.0)  (fldelta-pdf 0.0 x log?)]
+          [(and (s . fl> . 0.0) (x . fl< . 0.0))  (if log? -inf.0 0.0)]
+          [(and (s . fl< . 0.0) (x . fl> . 0.0))  (if log? -inf.0 0.0)]
+          [else  (let ([q  (standard-flpdf (fl/ x s) log?)])
+                   (if log? (fl- q (fllog (flabs s))) (fl/ q (flabs s))))])))
 
 (define-syntax-rule (make-one-sided-scale-flcdf standard-flcdf)
   (λ: ([s : Float] [x : Float] [log? : Any] [1-p? : Any])
-    (cond [(s . = . 0.0)  (fldelta-cdf 0.0 x log? 1-p?)]
-          [(and (s . > . 0.0) (x . < . 0.0))
+    (cond [(fl= s 0.0)  (fldelta-cdf 0.0 x log? 1-p?)]
+          [(and (s . fl> . 0.0) (x . fl< . 0.0))
            (cond [1-p?  (if log? 0.0 1.0)]
                  [else  (if log? -inf.0 0.0)])]
-          [(and (s . < . 0.0) (x . > . 0.0))
+          [(and (s . fl< . 0.0) (x . fl> . 0.0))
            (cond [1-p?  (if log? -inf.0 0.0)]
                  [else  (if log? 0.0 1.0)])]
           [else
-           (standard-flcdf (/ x s) log? (if (s . > . 0.0) 1-p? (not 1-p?)))])))
+           (standard-flcdf (fl/ x s) log? (if (s . fl> . 0.0) 1-p? (not 1-p?)))])))
 
 (define-syntax-rule (make-one-sided-scale-flinv-cdf standard-flinv-cdf)
   (λ: ([s : Float] [q : Float] [log? : Any] [1-p? : Any])
-    (cond [(s . = . 0.0)  (fldelta-inv-cdf 0.0 q log? 1-p?)]
+    (cond [(fl= s 0.0)  (fldelta-inv-cdf 0.0 q log? 1-p?)]
           [(not (flprobability? q log?))  +nan.0]
-          [else  (* s (standard-flinv-cdf q log? 1-p?))])))
+          [else  (fl* s (standard-flinv-cdf q log? 1-p?))])))
 
 (define-syntax-rule (make-one-sided-scale-flrandom standard-flinv-cdf)
   (λ: ([s : Float])
-    (* s (standard-flinv-cdf (* 0.5 (random)) #f ((random) . > . 0.5)))))
+    (fl* s (standard-flinv-cdf (fl* 0.5 (random)) #f ((random) . fl> . 0.5)))))
 
 ;; ===================================================================================================
 ;; Location-scale family distributions (e.g. Cauchy, logistic, normal)
 
 (define-syntax-rule (make-symmetric-location-scale-flpdf standard-flpdf)
   (λ: ([c : Float] [s : Float] [x : Float] [log? : Any])
-    (cond [(s . = . 0.0)  (fldelta-pdf c x log?)]
-          [else  (let ([q  (standard-flpdf (abs (/ (- x c) s)) log?)])
-                   (if log? (- q (fllog (abs s))) (/ q (abs s))))])))
+    (cond [(fl= s 0.0)  (fldelta-pdf c x log?)]
+          [else  (let ([q  (standard-flpdf (flabs (fl/ (fl- x c) s)) log?)])
+                   (if log? (fl- q (fllog (flabs s))) (fl/ q (flabs s))))])))
 
 (define-syntax-rule (make-symmetric-location-scale-flcdf standard-flcdf)
   (λ: ([c : Float] [s : Float] [x : Float] [log? : Any] [1-p? : Any])
-    (cond [(s . = . 0.0)  (fldelta-cdf c x log? 1-p?)]
-          [else  (let ([x  (/ (- x c) s)])
+    (cond [(fl= s 0.0)  (fldelta-cdf c x log? 1-p?)]
+          [else  (let ([x  (fl/ (fl- x c) s)])
                    (standard-flcdf (if 1-p? (- x) x) log?))])))
 
 (define-syntax-rule (make-symmetric-location-scale-flinv-cdf standard-flinv-cdf)
   (λ: ([c : Float] [s : Float] [q : Float] [log? : Any] [1-p? : Any])
-    (cond [(s . = . 0.0)  (fldelta-inv-cdf c q log? 1-p?)]
+    (cond [(fl= s 0.0)  (fldelta-inv-cdf c q log? 1-p?)]
           [(not (flprobability? q log?))  +nan.0]
           [else  (let* ([x  (standard-flinv-cdf q log?)]
                         [x  (if 1-p? (- x) x)])
-                   (+ (* x s) c))])))
+                   (fl+ (fl* x s) c))])))
 
 (define-syntax-rule (make-symmetric-location-scale-flrandom standard-flinv-cdf)
   (λ: ([c : Float] [s : Float])
-    (define x (standard-flinv-cdf (* 0.5 (random)) #f))
-    (+ c (* s (if ((random) . > . 0.5) x (- x))))))
+    (define x (standard-flinv-cdf (fl* 0.5 (random)) #f))
+    (fl+ c (fl* s (if ((random) . fl> . 0.5) x (- x))))))

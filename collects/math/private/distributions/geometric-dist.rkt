@@ -16,42 +16,42 @@
 
 (: flgeometric-pdf (Float Float Any -> Float))
 (define (flgeometric-pdf q k log?)
-  (cond [(or (q . <= . 0.0) (q . >= . 1.0))
-         (cond [(= q 1.0)  (cond [(= k 0.0)  (if log? 0.0 1.0)]
-                                 [else  (if log? -inf.0 0.0)])]
+  (cond [(or (q . fl<= . 0.0) (q . fl>= . 1.0))
+         (cond [(fl= q 1.0)  (cond [(fl= k 0.0)  (if log? 0.0 1.0)]
+                                   [else  (if log? -inf.0 0.0)])]
                [else  +nan.0])]
-        [(k . < . 0.0)  (if log? -inf.0 0.0)]
-        [(integer? k)  (cond [log?  (+ (fllog q) (* k (fllog1p (- q))))]
-                             [else  (* q (exp (fl (* k (fllog1p (- q))))))])]
+        [(k . fl< . 0.0)  (if log? -inf.0 0.0)]
+        [(integer? k)  (cond [log?  (fl+ (fllog q) (fl* k (fllog1p (- q))))]
+                             [else  (fl* q (flexp (fl* k (fllog1p (- q)))))])]
         [else  (if log? -inf.0 0.0)]))
 
 (: flgeometric-cdf (Float Float Any Any -> Float))
 (define (flgeometric-cdf q k log? 1-p?)
-  (cond [(or (q . <= . 0.0) (q . > . 1.0))  +nan.0]
-        [(k . < . 0.0)  (cond [1-p?  (if log? 0.0 1.0)]
-                              [else  (if log? -inf.0 0.0)])]
-        [(q . = . 1.0)  (cond [1-p?  (if log? -inf.0 0.0)]
-                              [else  (if log? 0.0 1.0)])]
+  (cond [(or (q . fl<= . 0.0) (q . fl> . 1.0))  +nan.0]
+        [(k . fl< . 0.0)  (cond [1-p?  (if log? 0.0 1.0)]
+                                [else  (if log? -inf.0 0.0)])]
+        [(q . fl= . 1.0)  (cond [1-p?  (if log? -inf.0 0.0)]
+                                [else  (if log? 0.0 1.0)])]
         [else
-         (define log-1-q (* (+ (floor k) 1.0) (fllog1p (- q))))
+         (define log-1-q (fl* (fl+ (flfloor k) 1.0) (fllog1p (- q))))
          (cond [1-p?  (if log? log-1-q (exp log-1-q))]
                [else  (if log? (lg1- log-1-q) (- (flexpm1 log-1-q)))])]))
 
 (: flgeometric-inv-cdf (Float Float Any Any -> Float))
 (define (flgeometric-inv-cdf q p log? 1-p?)
-  (cond [(or (q . <= . 0.0) (q . > . 1.0))  +nan.0]
+  (cond [(or (q . fl<= . 0.0) (q . fl> . 1.0))  +nan.0]
         [(not (flprobability? p log?))  +nan.0]
-        [(q . = . 1.0)  0.0]
+        [(fl= q 1.0)  0.0]
         [else
          (define log-1-q (fllog1p (- q)))
          (define log-1-p
            (cond [1-p?  (if log? p (fllog p))]
                  [else  (if log? (lg1- p) (fllog1p (- p)))]))
-         (abs (max 0.0 (ceiling (/ (- log-1-p log-1-q) log-1-q))))]))
+         (flabs (flmax 0.0 (flceiling (fl/ (fl- log-1-p log-1-q) log-1-q))))]))
 
 (: flgeometric-random (Float -> Float))
 (define (flgeometric-random q)
-  (flgeometric-inv-cdf q (* 0.5 (random)) #f ((random) . > . 0.5)))
+  (flgeometric-inv-cdf q (fl* 0.5 (random)) #f ((random) . fl> . 0.5)))
 
 (begin-encourage-inline
   

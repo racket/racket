@@ -40,7 +40,7 @@
              [else  (unsafe-truncated-dist d a b)]))]))
 
 (define-syntax-rule (make-inv-cdf-random inv-cdf)
-  (λ () (inv-cdf (* 0.5 (random)) #f ((random) . > . 0.5))))
+  (λ () (inv-cdf (fl* 0.5 (random)) #f ((random) . fl> . 0.5))))
 
 (: unsafe-truncated-dist (Real-Distribution Float Float -> Truncated-Distribution))
 (define (unsafe-truncated-dist d a b)
@@ -54,27 +54,28 @@
   
   (: pdf Real-Density-Function)
   (define (pdf x [log? #f])
-    (define log-d
-      (cond [(x . < . a)  -inf.0]
-            [(x . > . b)  -inf.0]
-            [else  (- (dist-pdf x #t) log-P_a<x<=b)]))
-    (if log? log-d (exp log-d)))
+    (let ([x  (fl x)])
+      (define log-d
+        (cond [(x . fl< . a)  -inf.0]
+              [(x . fl> . b)  -inf.0]
+              [else  (fl- (dist-pdf x #t) log-P_a<x<=b)]))
+      (if log? log-d (flexp log-d))))
   
   (: cdf Real-Distribution-Function)
   (define (cdf x [log? #f] [1-p? #f])
     (let ([x  (fl x)])
       (define log-p
-        (cond [1-p?  (cond [(x . < . a)  0.0]
-                           [(x . > . b)  -inf.0]
-                           [else  (min 0.0 (- (lg- (dist-cdf x #t #t)
-                                                   (force log-P_x>b))
-                                              log-P_a<x<=b))])]
-              [else  (cond [(x . < . a)  -inf.0]
-                           [(x . > . b)  0.0]
-                           [else  (min 0.0 (- (lg- (dist-cdf x #t #f)
-                                                   (force log-P_x<=a))
-                                              log-P_a<x<=b))])]))
-      (if log? log-p (exp log-p))))
+        (cond [1-p?  (cond [(x . fl< . a)  0.0]
+                           [(x . fl> . b)  -inf.0]
+                           [else  (flmin 0.0 (fl- (lg- (dist-cdf x #t #t)
+                                                       (force log-P_x>b))
+                                                  log-P_a<x<=b))])]
+              [else  (cond [(x . fl< . a)  -inf.0]
+                           [(x . fl> . b)  0.0]
+                           [else  (flmin 0.0 (fl- (lg- (dist-cdf x #t #f)
+                                                       (force log-P_x<=a))
+                                                  log-P_a<x<=b))])]))
+      (if log? log-p (flexp log-p))))
   
   (: inv-cdf Real-Distribution-Function)
   (define (inv-cdf p [log? #f] [1-p? #f])
@@ -83,26 +84,26 @@
         [(not (flprobability? log-p #t))  +nan.0]
         [else
          (define x
-           (cond [1-p?  (cond [(= log-p 0.0)  a]
-                              [(= log-p -inf.0)  b]
-                              [else  (dist-inv-cdf (lg+ (+ log-p log-P_a<x<=b)
+           (cond [1-p?  (cond [(fl= log-p 0.0)  a]
+                              [(fl= log-p -inf.0)  b]
+                              [else  (dist-inv-cdf (lg+ (fl+ log-p log-P_a<x<=b)
                                                         (force log-P_x>b))
                                                    #t #t)])]
-                 [else  (cond [(= log-p 0.0)  b]
-                              [(= log-p -inf.0)  a]
-                              [else  (dist-inv-cdf (lg+ (+ log-p log-P_a<x<=b)
+                 [else  (cond [(fl= log-p 0.0)  b]
+                              [(fl= log-p -inf.0)  a]
+                              [else  (dist-inv-cdf (lg+ (fl+ log-p log-P_a<x<=b)
                                                         (force log-P_x<=a))
                                                    #t #f)])]))
          (min b (max a x))])))
   
   (: random (-> Float))
   (define random
-    (cond [(log-P_a<x<=b . < . (fllog #i1/3))
+    (cond [(log-P_a<x<=b . fl< . (- (fllog 3.0)))
            (make-inv-cdf-random inv-cdf)]
           [else
            (define (random)
              (define x (dist-random))
-             (cond [(and (a . <= . x) (x . <= . b))  x]
+             (cond [(and (a . fl<= . x) (x . fl<= . b))  x]
                    [else  (random)]))
            random]))
   

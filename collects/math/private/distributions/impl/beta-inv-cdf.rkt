@@ -72,12 +72,14 @@
 (: flbeta-inv-log-cdf-appx-asym (Flonum Flonum Flonum Flonum -> Flonum))
 (define (flbeta-inv-log-cdf-appx-asym a b log-p log-1-p)
   (define σ (flbeta-stddev a b))
-  (define log-p0 (- (log-const-numer a b (bound-estimate (fl- (fl/ a (fl+ a b)) (fl* 0.85 σ))))
-                    (fllog a)
-                    (fllog-beta a b)))
-  (define log-1-p1 (- (log-const-numer b a (bound-estimate (fl- (fl/ b (fl+ a b)) (fl* 0.85 σ))))
-                      (fllog b)
-                      (fllog-beta a b)))
+  (define log-p0
+    (fl- (fl- (log-const-numer a b (bound-estimate (fl- (fl/ a (fl+ a b)) (fl* 0.85 σ))))
+              (fllog a))
+         (fllog-beta a b)))
+  (define log-1-p1
+    (fl- (fl- (log-const-numer b a (bound-estimate (fl- (fl/ b (fl+ a b)) (fl* 0.85 σ))))
+              (fllog b))
+         (fllog-beta a b)))
   (cond [(log-p . fl< . log-p0)
          (flbeta-inv-log-cdf-appx-asym-0 a b log-p)]
         [(log-1-p . fl< . log-1-p1)

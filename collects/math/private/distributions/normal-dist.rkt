@@ -39,7 +39,7 @@
 
 (: flnormal-random (Float Float -> Float))
 (define (flnormal-random c s)
-  (+ c (* s (standard-flnormal-random))))
+  (fl+ c (fl* s (standard-flnormal-random))))
 
 ;; ===================================================================================================
 ;; Distribution object
