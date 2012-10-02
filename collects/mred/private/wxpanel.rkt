@@ -46,6 +46,7 @@
        [get-client-size (lambda (wb hb)
                           (when wb (set-box! wb width))
                           (when hb (set-box! hb height)))]
+       [skip-enter-leave-events (lambda (skip?) (void))]
        [set-size (lambda (x y w h) 
                    (unless (negative? x) (set! pos-x x))
                    (unless (negative? y) (set! pos-y y))

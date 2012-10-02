@@ -578,6 +578,10 @@
       ;; in atomic mode
       (void))
 
+    (define skip-enter-leave? #f)
+    (define/public (skip-enter-leave-events skip?)
+      (set! skip-enter-leave? skip?))
+
     (define block-all-mouse-events? #f)
     (define/public (block-mouse-events block?)
       (set! block-all-mouse-events? block?))

@@ -313,7 +313,10 @@
       (and
        wx
        (if (or (= type GDK_2BUTTON_PRESS)
-	       (= type GDK_3BUTTON_PRESS))
+	       (= type GDK_3BUTTON_PRESS)
+	       (and (or (= type GDK_ENTER_NOTIFY)
+			(= type GDK_LEAVE_NOTIFY))
+		    (send wx skip-enter-leave-events)))
 	   #t
            (let* ([modifiers (if motion?
                                  (GdkEventMotion-state event)
@@ -656,6 +659,12 @@
 
     (define/public (on-char e) (void))
     (define/public (on-event e) (void))
+
+    (define skip-enter-leave? #f)
+    (define/public skip-enter-leave-events 
+      (case-lambda
+       [(skip?) (set! skip-enter-leave? skip?)]
+       [else skip-enter-leave?]))
 
     (define/public (register-child child on?)
       (void))

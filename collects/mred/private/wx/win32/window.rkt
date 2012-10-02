@@ -674,6 +674,10 @@
                            (lambda () (dispatch-on-event e #t))
                            #t)))
 
+  (define skip-enter-leave? #f)
+  (define/public (skip-enter-leave-events skip?)
+    (set! skip-enter-leave? skip?))
+
   (define mouse-in? #f)
   (define/public (generate-mouse-ins in-window mk)
     (if mouse-in?
@@ -681,7 +685,8 @@
         (begin
           (set! mouse-in? #t)
           (let ([parent-cursor (generate-parent-mouse-ins mk)])
-            (handle-mouse-event (get-client-hwnd) 0 0 (mk 'enter))
+	    (unless skip-enter-leave?
+              (handle-mouse-event (get-client-hwnd) 0 0 (mk 'enter)))
             (let ([c (or cursor-handle parent-cursor)])
               (set! effective-cursor-handle c)
               c)))))
@@ -692,13 +697,14 @@
   (define/public (send-leaves mk)
     (when mouse-in?
       (set! mouse-in? #f)
-      (when mk
-        (let ([e (mk 'leave)])
-          (if (eq? (current-thread) 
-                   (eventspace-handler-thread eventspace))
-              (handle-mouse-event (get-client-hwnd) 0 0 e)
-              (queue-window-event this
-                                  (lambda () (dispatch-on-event/sync e))))))))
+      (unless skip-enter-leave?
+        (when mk
+          (let ([e (mk 'leave)])
+	    (if (eq? (current-thread) 
+		     (eventspace-handler-thread eventspace))
+		(handle-mouse-event (get-client-hwnd) 0 0 e)
+		(queue-window-event this
+				    (lambda () (dispatch-on-event/sync e)))))))))
 
   (define/public (send-child-leaves mk)
     #f)
