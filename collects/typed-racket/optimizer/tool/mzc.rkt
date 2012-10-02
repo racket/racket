@@ -143,7 +143,6 @@
 (define (post-process-inline-log log)
   (define-values (inliner-logs tr-logs)
     (partition inliner-log-entry? log))
-  (define any-self-o-o-f? (ormap self-out-of-fuel? inliner-logs))
   (define grouped-events
     (group-by equal? #:key log-entry-pos ; right file, so that's enough
               inliner-logs))
@@ -173,9 +172,9 @@
          ;; floats, in which case having all calls to `f' originate from `f''s
          ;; body (as opposed to `g') may make unboxing possible.
          ;; Of course, we lose precision if `g' has multiple call sites to `f'.
-         (define n-unrollings   (length (filter unrolling?   group)))
-         ;; TODO any-self-o-o-f? add too many false positives
-         (define is-a-loop?     (or #;any-self-o-o-f? (> n-unrollings 0)))
+         (define n-unrollings    (length (filter unrolling? group)))
+         (define any-self-o-o-f? (ormap self-out-of-fuel?   group))
+         (define is-a-loop?      (or any-self-o-o-f? (> n-unrollings 0)))
          (define inlining-sites
            (group-by equal? #:key (lambda (x)
                                     (inlining-event-where-loc
