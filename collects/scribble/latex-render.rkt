@@ -361,7 +361,7 @@
                   [(newline) 
                    (check-render)
                    (unless (suppress-newline-content)
-                     (printf "\\\\"))]
+                     (printf "\\hspace*{\\fill}\\\\"))]
                   [else (error 'latex-render
                                "unrecognzied style symbol: ~s" style)])]
                [(string? style-name)
