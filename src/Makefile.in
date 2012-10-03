@@ -190,6 +190,15 @@ install-no-both:
 install-gracket-both:
 	cd gracket; $(MAKE) install-both
 
+# Docs install ----------------------------------------
+
+# The "install" target already does this, but it does tons more too.
+install-html:
+	$(MAKE) install PLT_SETUP_OPTIONS="-nxiId $(PLT_SETUP_OPTIONS)"
+
+install-pdf:
+	$(MAKE) install PLT_SETUP_OPTIONS="-nxiId --doc-pdf $(docdir)/pdf $(PLT_SETUP_OPTIONS)"
+
 # Clean ----------------------------------------
 
 clean:
