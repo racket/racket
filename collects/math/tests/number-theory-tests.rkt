@@ -38,7 +38,6 @@
 
 ;"polygonal.rkt"
 (check-equal? (map triangle    '(0 1 2 3 4 5)) '(0 1 3  6 10 15))
-(check-equal? (map square      '(0 1 2 3 4 5)) '(0 1 4  9 16 25))
 (check-equal? (map pentagonal  '(0 1 2 3 4 5)) '(0 1 5 12 22 35))
 (check-equal? (map hexagonal   '(0 1 2 3 4 5)) '(0 1 6 15 28 45))
 (check-equal? (map heptagonal  '(0 1 2 3 4 5)) '(0 1 7 18 34 55))
@@ -232,11 +231,11 @@
 ;  (check-true (check-faster-integer-root a n)))
 
 ; "quadratic-residues.rkt"
-(check-equal? (legendre  2 5) -1)
-(check-equal? (legendre  3 5) -1)
-(check-equal? (legendre  5 5)  0)
-(check-equal? (legendre  7 5) -1)
-(check-equal? (legendre 11 5)  1)
+(check-equal? (quadratic-character  2 5) -1)
+(check-equal? (quadratic-character  3 5) -1)
+(check-equal? (quadratic-character  5 5)  0)
+(check-equal? (quadratic-character  7 5) -1)
+(check-equal? (quadratic-character 11 5)  1)
 
 (check-true  (quadratic-residue? 1 17))
 (check-true  (quadratic-residue? 2 17))

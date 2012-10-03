@@ -1,15 +1,15 @@
-#lang typed/racket
+#lang typed/racket/base
+
+(require "quadratic.rkt"
+         (only-in "number-theory.rkt" perfect-square)
+         "types.rkt")
+
 (provide triangle triangle?
-         square square?
+         square?
          pentagonal pentagonal?
          hexagonal hexagonal?
          heptagonal heptagonal?
          octagonal octagonal?)
-
-(define-predicate natural? Natural)
-
-(require "quadratic.rkt"
-         (only-in "number-theory.rkt" perfect-square))
 
 (: triangle : Natural -> Natural)
 (define (triangle n)
@@ -18,8 +18,6 @@
 (: triangle? : Natural -> Boolean)
 (define (triangle? n)
   (not (null? (quadratic-natural-solutions 1/2 1/2 (- n)))))
-
-(define square sqr)
 
 (: square? : Natural -> Boolean)
 (define (square? n)

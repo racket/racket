@@ -1,13 +1,8 @@
-#lang typed/racket
-(provide unit-group
-         order
-         orders
-         exists-primitive-root?
-         primitive-root?
-         primitive-root
-         primitive-roots)
-         
-(require (only-in "number-theory.rkt" 
+#lang typed/racket/base
+
+(require racket/list
+         "../exception.rkt"
+         (only-in "number-theory.rkt" 
                   coprime?
                   with-modulus
                   odd-prime-power?
@@ -16,6 +11,14 @@
                   prime?
                   odd-prime?
                   prime-power))
+
+(provide unit-group
+         order
+         orders
+         exists-primitive-root?
+         primitive-root?
+         primitive-root
+         primitive-roots)
 
 ; DEFINITION (Order)
 ;  If G is a finite group with identity element e,
@@ -34,7 +37,7 @@
 
 (: unit-group : Positive-Integer -> (Listof Natural))
 (define (unit-group n)
-  (when (= n 1) (raise-type-error 'unit-group "expected n>1, got ~a" n))    
+  (when (= n 1) (raise-argument-error 'unit-group "Integer > 1" n))
   ((inst filter Natural Boolean) 
    (λ: ([m : Natural]) (coprime? m n))
    (natural-interval 1 n)))
@@ -43,7 +46,7 @@
 (: order : Natural Natural -> Natural)
 (define (order g n)
   (if (not (coprime? g n))
-      (error "In (order g n) the g and n must me coprime")
+      (error 'order "expected coprime arguments; given ~e and ~e" g n)
       (with-modulus n
                     (let: loop : Natural
                       ([k : Natural 1] 
@@ -64,7 +67,7 @@
 #;
 (define (primitive-root? g n)
   (if (not (coprime? g n))
-      (error "In (primitive-root? g n) the g and n must me coprime")
+      (error 'primitive-root? "expected coprime arguments; given ~e and ~e" g n)
       (= (order g n) (phi n))))
 
 ; THEOREM (Existence of primitive roots)
@@ -73,10 +76,10 @@
 
 (: exists-primitive-root? : Natural -> Boolean)
 (define (exists-primitive-root? n)
-  (cond 
-    [(member n '(1 2 4)) #t]
-    [(odd? n)            (odd-prime-power? n)]
-    [else                (odd-prime-power? (quotient n 2))]))
+  (cond
+    [(or (= n 1) (= n 2) (= n 4))  #t]
+    [(odd? n)  (odd-prime-power? n)]
+    [else      (odd-prime-power? (quotient n 2))]))
 
 
 ; LEMMA
@@ -87,7 +90,7 @@
 (: primitive-root? : Natural Natural -> Boolean)
 (define (primitive-root? g n)
   (unless (coprime? g n)
-    (error "In (primitive-root? g n) the g and n must me coprime"))
+    (error 'primitive-root? "expected coprime arguments; given ~e and ~e" g n))
   (define phi-n (totient n))
   (with-modulus n
                 ((inst andmap Boolean Boolean Boolean)

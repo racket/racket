@@ -1,6 +1,9 @@
-#lang typed/racket
-(provide legendre quadratic-residue?)
-(require "number-theory.rkt")
+#lang typed/racket/base
+
+(require racket/list
+         "number-theory.rkt")
+
+(provide quadratic-character quadratic-residue?)
 
 ; DEFINITION (Quadratic residue)
 ;   a in Un is a quadratic residue,
@@ -8,8 +11,8 @@
 ;   The number s is called a squre root of a modulo n.
 
 ; p is prime
-(: legendre : Natural Natural -> Integer)
-(define (legendre a p)
+(: quadratic-character : Natural Natural -> Integer)
+(define (quadratic-character a p)
   (let ([l (with-modulus p (^ a (quotient (- p 1) 2)))])
     (if (<= 0 l 1) l -1)))
 
@@ -20,7 +23,7 @@
                      (rest ps)
                      ps)])
     (and (andmap (λ: ([p : Natural]) 
-                   (= (legendre a p) 1))
+                   (= (quadratic-character a p) 1))
                  odd-ps)
          (cond 
            [(divides? 8 n)  (= (modulo a 8) 1)]

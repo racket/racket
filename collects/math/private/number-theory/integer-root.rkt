@@ -1,10 +1,11 @@
-#lang typed/racket
-(provide faster-integer-root)
+#lang typed/racket/base
 
 (require/typed typed/racket
                [integer-sqrt/remainder (Natural -> (Values Natural Natural))])
 (require "types.rkt"
          "number-theory.rkt")
+
+(provide faster-integer-root)
 
 ; This is intended to become a more efficient implementation 
 ; of integer-root than the one "number-theory.rkt".
