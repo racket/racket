@@ -1,6 +1,7 @@
 #lang typed/racket/base
 
 (require racket/list
+         "../exception.rkt"
          "number-theory.rkt")
 
 (provide quadratic-character quadratic-residue?)
@@ -11,21 +12,26 @@
 ;   The number s is called a squre root of a modulo n.
 
 ; p is prime
-(: quadratic-character : Natural Natural -> Integer)
+(: quadratic-character : Integer Integer -> Integer)
 (define (quadratic-character a p)
-  (let ([l (with-modulus p (^ a (quotient (- p 1) 2)))])
-    (if (<= 0 l 1) l -1)))
+  (cond [(a . < . 0)  (raise-argument-error 'quadratic-character "Natural" 0 a p)]
+        [(p . <= . 0)  (raise-argument-error 'quadratic-character "Positive-Integer" 1 a p)]
+        [else  (let ([l (with-modulus p (^ a (quotient (- p 1) 2)))])
+                 (if (<= 0 l 1) l -1))]))
 
-(: quadratic-residue? : Natural Natural -> Boolean)
+(: quadratic-residue? : Integer Integer -> Boolean)
 (define (quadratic-residue? a n)
-  (let* ([ps     (prime-divisors n)]
-         [odd-ps (if (= (first ps) 2)
-                     (rest ps)
-                     ps)])
-    (and (andmap (λ: ([p : Natural]) 
-                   (= (quadratic-character a p) 1))
-                 odd-ps)
-         (cond 
-           [(divides? 8 n)  (= (modulo a 8) 1)]
-           [(divides? 4 n)  (= (modulo a 4) 1)]
-           [else            #t]))))
+  (cond [(a . < . 0)  (raise-argument-error 'quadratic-residue? "Natural" 0 a n)]
+        [(n . <= . 0)  (raise-argument-error 'quadratic-residue? "Positive-Integer" 1 a n)]
+        [else
+         (let* ([ps     (prime-divisors n)]
+                [odd-ps (if (= (first ps) 2)
+                            (rest ps)
+                            ps)])
+           (and (andmap (λ: ([p : Natural]) 
+                          (= (quadratic-character a p) 1))
+                        odd-ps)
+                (cond 
+                  [(divides? 8 n)  (= (modulo a 8) 1)]
+                  [(divides? 4 n)  (= (modulo a 4) 1)]
+                  [else            #t])))]))

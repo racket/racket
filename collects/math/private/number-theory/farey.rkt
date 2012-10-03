@@ -5,20 +5,16 @@
 
 (provide farey mediant)
 
-(: mediant : Q Q -> Q)
+(: mediant : Exact-Rational Exact-Rational -> Exact-Rational)
 (define (mediant x y)
   (/ (+ (numerator x) (numerator y))
      (+ (denominator x) (denominator y))))
 
-(: farey : Z -> (Listof Q))
+(: farey : Integer -> (Listof Exact-Rational))
 (define (farey n)
   (cond [(n . <= . 0)  (raise-argument-error 'farey "Positive-Integer" n)]
         [else
-         (let: loop : (Listof Q) ([a : Integer 1]
-                                  [b : Integer 1]
-                                  [c : Integer (sub1 n)]
-                                  [d : Integer n]
-                                  [fs : (Listof Q)  '()])
+         (let loop ([a 1] [b 1] [c (sub1 n)] [d n] [#{fs : (Listof Exact-Rational)} '()])
            (let ([fs  (cons (/ a b) fs)])
              (cond [(positive? a)
                     (define k (quotient (+ n b) d))
