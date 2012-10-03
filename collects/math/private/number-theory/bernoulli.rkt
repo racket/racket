@@ -8,8 +8,6 @@
 
 (provide bernoulli)
 
-(define-predicate exact-zero? Zero)
-
 ;; Number of globally memoized Bernoulli numbers
 (define num-global-bs 200)
 ;; Globally memoized numbers
@@ -30,7 +28,7 @@
   ;   - memoizes previous computations
   ;   - avoids an explicit call to compute the binomials
   (define: local-bs : (Vectorof Exact-Rational)
-    (make-vector (max 0 (- (max (+ n 1) 2) num-global-bs)) 0))
+    (make-vector (max 0 (- (+ n 1) num-global-bs)) 0))
   
   (: bs-ref! (Integer (-> Exact-Rational) -> Exact-Rational))
   (define (bs-ref! n thnk)

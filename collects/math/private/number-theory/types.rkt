@@ -2,7 +2,7 @@
 
 (provide N N+ Z Q Ns Zs Base-Exponent Factorization Prime
          cast
-         natural? naturals? Integer? integers?)
+         natural? naturals? Integer? integers? exact-zero?)
 
 ;;;
 ;;; Types and Predicates
@@ -32,3 +32,4 @@
 (define-predicate naturals? Ns)
 (define-predicate Integer?  Z)
 (define-predicate integers? Zs)
+(define-predicate exact-zero? Zero)

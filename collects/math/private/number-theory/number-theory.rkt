@@ -2,8 +2,7 @@
 
 (require/typed typed/racket
                [integer-sqrt/remainder (Natural -> (Values Natural Natural))])
-(require "list-operations.rkt"
-         "types.rkt")
+(require "types.rkt")
 
 (provide bezout
          bezout-binary
@@ -42,10 +41,6 @@
          odd-prime-power?
          as-power
          perfect-square
-
-         ; sum and product of lists:
-         list-sum
-         list-product
 
          ; number theoretic functions
          totient
@@ -257,11 +252,11 @@
 (: solve-chinese : Zs (Listof N+) -> N)
 (define (solve-chinese as ns)
   ; the ns should be coprime
-  (let* ([n  (list-product ns)]
+  (let* ([n  (apply * ns)]
          [cs (map (λ: ([ni : Z]) (quotient n ni)) ns)]
          [ds (map inverse cs ns)]
          [es (cast ds integers?)])
-    (cast (modulo (list-sum (map * as cs es)) n) natural?)))
+    (cast (modulo (apply + (map * as cs es)) n) natural?)))
 
 ;;;
 ;;; PRIMES
@@ -417,10 +412,8 @@
 
 (: nth-prime : N -> Prime)
 (define (nth-prime n)
-  (define: p : Prime 2)
-  (for ([m (in-range n)])
-    (set! p (next-prime p)))
-  p)
+  (for/fold: ([p : Prime  2]) ([m (in-range n)])
+    (next-prime p)))
 
 
 ;;;
@@ -744,8 +737,8 @@
 (: totient : N -> N)
 (define (totient n)
   (let ((ps (prime-divisors n)))
-    (assert (* (quotient n (list-product ps))
-               (list-product (map (λ: ([p : N]) (sub1 p)) ps)))
+    (assert (* (quotient n (apply * ps))
+               (apply * (map (λ: ([p : N]) (sub1 p)) ps)))
             natural?)))
 
 (: every : (All (A) (A -> Boolean) (Listof A) -> Boolean))
@@ -804,11 +797,10 @@
                            [else (let ([t (* p-to-k p-to-kn)])
                                    (loop (+ t sum) (+ n 1) t))]))))
                (cast
-                (list-product
-                 (map (cond [(= k 0) divisor-sum0]
-                            [(= k 1) divisor-sum1]
-                            [else    divisor-sumk])
-                      ps es))
+                (apply * (map (cond [(= k 0) divisor-sum0]
+                                    [(= k 1) divisor-sum1]
+                                    [else    divisor-sumk])
+                              ps es))
                 natural?))])))
 
 
