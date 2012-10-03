@@ -58,13 +58,14 @@
 (check-equal? (farey 5) '(0 1/5 1/4 1/3 2/5 1/2 3/5 2/3 3/4 4/5 1))
 (check-equal? (mediant 1/1 1/2) 2/3)
 
-; "fibonacci-lucas.rkt"
-(check-equal? ((inst map Natural Natural) fibonacci '(0 1 2 3 4 5 6 7))
-              '(0 1 1 2 3 5 8 13))
-(check-equal? ((inst map Natural Natural) lucas '(0 1 2 3 4 5 6 7))
-              '(1 3 4 7 11 18 29 47))
-(check-equal? ((inst map Natural Natural) (λ: ([x : Natural]) (fibonacci-mod x 7)) '(0 1 2 3 4 5 6 7))
-              ((inst map Natural Natural) (λ: ([x : Natural]) (modulo (fibonacci x) 7)) '(0 1 2 3 4 5 6 7)))
+; "fibonacci.rkt"
+(check-equal? (build-list 8 fibonacci) '(0 1 1 2 3 5 8 13))
+(check-equal? (build-list 8 (make-fibonacci 2 1)) '(2 1 3 4 7 11 18 29))
+(for*: ([a  (in-range -5 6)]
+        [b  (in-range -5 6)]
+        [mod  (in-range 1 8)])
+  (check-equal? (build-list 20 (λ: ([n : Integer]) ((make-fibonacci/mod a b) n mod)))
+                (build-list 20 (λ: ([n : Integer]) (modulo ((make-fibonacci a b) n) mod)))))
 
 ; "partitions.rkt"
 (check-equal? ((inst map Natural Integer) partitions '(0 1 2 3 4 5 6 7 8 9 10))
