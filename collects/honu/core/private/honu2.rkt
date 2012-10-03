@@ -148,18 +148,18 @@
 (define-honu-syntax define-make-honu-binary-operator
   (lambda (code)
     (syntax-parse code
-      [(_ name:id level:number association:honu-expression function:honu-expression . rest)
+      [(_ name:id level:honu-expression association:honu-expression function:honu-expression . rest)
        (define out (racket-syntax
-                     (define-binary-operator name level association.result function.result)))
+                     (define-binary-operator name level.result association.result function.result)))
        (values out #'rest #t)])))
 
 (provide define-make-honu-unary-operator)
 (define-honu-syntax define-make-honu-unary-operator
   (lambda (code)
     (syntax-parse code
-      [(_ name:id function:honu-expression . rest)
+      [(_ name:id level:honu-expression postfix?:honu-expression function:honu-expression . rest)
        (define out (racket-syntax
-                     (define-unary-operator name function.result)))
+                     (define-unary-operator name level.result postfix?.result function.result)))
        (values out #'rest #t)])))
 
 ;; equals can have a compile time property that allows it to do something like set!

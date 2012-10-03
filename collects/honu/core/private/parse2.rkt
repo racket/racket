@@ -390,10 +390,14 @@
           (define-values (output rest) (transformer current stream))
           (do-parse rest precedence left output)]
          [(honu-operator? #'head)
-          (define new-precedence (transformer:honu-operator-ref (syntax-local-value #'head) 0))
-          (define association (transformer:honu-operator-ref (syntax-local-value #'head) 1))
-          (define binary-transformer (transformer:honu-operator-ref (syntax-local-value #'head) 2))
-          (define unary-transformer (transformer:honu-operator-ref (syntax-local-value #'head) 3))
+          (define operator (syntax-local-value #'head))
+
+          (define new-precedence (transformer:operator-precedence operator))
+          (define association (transformer:operator-association operator))
+          (define binary-transformer (transformer:operator-binary-transformer operator))
+          (define unary-transformer (transformer:operator-unary-transformer operator))
+          (define postfix? (transformer:operator-postfix? operator))
+
           (define higher
             (case association
               [(left) >]
@@ -409,7 +413,10 @@
                                           (if current
                                             (if binary-transformer
                                               (binary-transformer (parse-all-expression current) right)
-                                              (error 'binary "cannot be used as a binary operator in ~a" #'head))
+                                              ;; use a unary transformer in postfix position
+                                              (if (and postfix? unary-transformer)
+                                                (unary-transformer current)
+                                                (error 'binary "cannot be used as a binary operator in ~a" #'head)))
                                             (if unary-transformer
                                               (unary-transformer right)
                                               (error 'unary "cannot be used as a unary operator in ~a" #'head))))
@@ -425,7 +432,13 @@
             ;; if we have a unary transformer then we have to keep parsing
             (if unary-transformer
               (if current
-                (values (left current) stream)
+                (if postfix?
+                  (do-parse #'(rest ...)
+                            precedence 
+                            left
+                            (unary-transformer current))
+                  (values (left current) stream))
+
                 (do-parse #'(rest ...) new-precedence
                                       (lambda (stuff)
                                         (define right (parse-all stuff))
