@@ -1,12 +1,14 @@
-#lang typed/racket
+#lang typed/racket/base
+
+(require "../vector/vector.rkt"
+         "../exception.rkt"
+         "types.rkt"
+         "factorial.rkt"
+         "binomial.rkt")
+
 (provide bernoulli)
 
-(require "factorial.rkt"
-         "binomial.rkt"
-         "../vector/vector.rkt")
-
-(define-predicate natural?         Natural)
-(define-predicate exact-zero?      Zero)
+(define-predicate exact-zero? Zero)
 
 ;; Number of globally memoized Bernoulli numbers
 (define num-global-bs 200)
@@ -16,11 +18,11 @@
 (vector-set! global-bs 0 1)
 (vector-set! global-bs 1 -1/2)
 
-(: bernoulli : Natural -> Exact-Rational)
+(: bernoulli* : Natural -> Exact-Rational)
 ;   compute the n'th Bernoulli number
 ;   <http://mathworld.wolfram.com/BernoulliNumber.html>
 ;   <http://en.wikipedia.org/wiki/Bernoulli_number>
-(define (bernoulli n)
+(define (bernoulli* n)
   ; Implementation note:
   ;   - uses Ramanujan's improvement of the standard recurrence relation
   ;     of the Bernoulli numbers:
@@ -76,3 +78,8 @@
               ;; n is even, so r can only be 0, 2 or 4
               [else  (error 'unreachable-code)])]))))
   (bern n))
+
+(: bernoulli (Integer -> Exact-Rational))
+(define (bernoulli n)
+  (cond [(n . < . 0)  (raise-argument-error 'bernoulli "Natural" n)]
+        [else  (bernoulli* n)]))

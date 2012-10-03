@@ -1,5 +1,6 @@
 #lang typed/racket
-(provide N N+ Z Ns Zs Base-Exponent Factorization Prime
+
+(provide N N+ Z Q Ns Zs Base-Exponent Factorization Prime
          cast
          natural? naturals? Integer? integers?)
 
@@ -10,6 +11,7 @@
 (define-type N  Natural)
 (define-type N+ Exact-Positive-Integer)
 (define-type Z  Integer)
+(define-type Q Exact-Rational)
 
 (define-type Ns (Listof N))
 (define-type Zs (Listof Z))
@@ -30,4 +32,3 @@
 (define-predicate naturals? Ns)
 (define-predicate Integer?  Z)
 (define-predicate integers? Zs)
-

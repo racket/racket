@@ -31,8 +31,7 @@
   (cond [(n . < . fact-table-size)  (vector-ref fact-table n)]
         [else  (* n (factorial-simple (- n 1)))]))
 
-(: factorial (case-> (Negative-Integer -> Nothing)
-                     (Integer -> Positive-Integer)))
+(: factorial (Integer -> Positive-Integer))
 (define (factorial n)
   (cond [(not (nonnegative-fixnum? n))  (raise-argument-error 'factorial "Nonnegative-Fixnum" n)]
         [(n . < . simple-cutoff)  (factorial-simple n)]
@@ -44,9 +43,7 @@
                  [else  (define 2m (unsafe-fx* m 2))
                         (* (loop n 2m) (loop n-m 2m))]))]))
 
-(: permutations (case-> (Negative-Integer Integer -> Nothing)
-                        (Integer Negative-Integer -> Nothing)
-                        (Integer Integer -> Natural)))
+(: permutations (Integer Integer -> Natural))
 (define (permutations n k)
   (cond [(not (nonnegative-fixnum? n))
          (raise-argument-error 'permutations "Nonnegative-Fixnum" 0 n k)]

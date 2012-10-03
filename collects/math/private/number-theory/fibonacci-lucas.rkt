@@ -1,4 +1,5 @@
 #lang typed/racket
+
 (provide fibonacci 
          fibonacci-mod
          lucas)
@@ -13,11 +14,12 @@
                 (+ (* p p) (* q q))
                 (+ (* 2 p q) (* q q))
                 (quotient count 2))]
-    [else (generator (+ (* b q) (* a q) (* a p))
-                     (+ (* b p) (* a q))
-                     p
-                     q
-                     (- count 1))]))
+    [else
+     (generator (+ (* b q) (* a q) (* a p))
+                (+ (* b p) (* a q))
+                p
+                q
+                (- count 1))]))
 
 (: fibonacci : Natural -> Natural)
 (define (fibonacci n)
@@ -39,9 +41,10 @@
                   (remainder (+ (* p p) (* q q)) mod)
                   (remainder (+ (* 2 p q) (* q q)) mod)
                   (quotient count 2))]
-          [else (generator (remainder (+ (* b q) (* a q) (* a p)) mod)
-                           (remainder (+ (* b p) (* a q)) mod)
-                           p
-                           q
-                           (- count 1))]))
+      [else
+       (generator (remainder (+ (* b q) (* a q) (* a p)) mod)
+                  (remainder (+ (* b p) (* a q)) mod)
+                  p
+                  q
+                  (- count 1))]))
   (generator 1 0 0 1 n))
