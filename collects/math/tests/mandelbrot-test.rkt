@@ -1,6 +1,7 @@
 #lang typed/racket
 
-(require math/array
+(require typed/racket/base
+         math/array
          typed/rackunit)
 
 (: mandelbrot (Float Integer -> (Array Integer)))
@@ -37,7 +38,7 @@
                       [1 1 1 1 1 2 2 2 3 6 20 3 2 1 1]
                       [1 1 1 1 1 1 2 2 2 3 2 2 1 1 1]
                       [0 1 1 1 1 1 1 1 1 1 1 1 1 1 1]]))
-#;
+
 (begin
   (require images/flomap)
   

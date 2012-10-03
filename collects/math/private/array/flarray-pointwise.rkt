@@ -1,94 +1,48 @@
 #lang typed/racket/base
 
 (require racket/flonum
-         racket/list
-         (for-syntax racket/base
-                     syntax/parse
-                     "../syntax-utils.rkt")
-         "../unsafe.rkt"
+         (for-syntax racket/base)
          "../vector/flvector.rkt"
          "array-struct.rkt"
          "array-broadcast.rkt"
          "array-pointwise.rkt"
-         "array-syntax.rkt"
          "mutable-array.rkt"
-         "utils.rkt"
-         "for-each.rkt")
+         "flarray-struct.rkt"
+         "utils.rkt")
 
-(provide FlArray
-         unsafe-flarray
-         (rename-out [flarray/syntax flarray])
-         array->flarray
-         flarray-data
-         ;; Mapping
-         inline-flarray-map
-         flarray-map
-         ;; Pointwise operations
-         flarray-scale
-         flarray-round
-         flarray-floor
-         flarray-ceiling
-         flarray-truncate
-         flarray-abs
-         flarray-sqr
-         flarray-sqrt
-         flarray-log
-         flarray-exp
-         flarray-sin
-         flarray-cos
-         flarray-tan
-         flarray-asin
-         flarray-acos
-         flarray-atan
-         flarray+
-         flarray*
-         flarray-
-         flarray/
-         flarray-expt
-         flarray-min
-         flarray-max
-         flarray=
-         flarray<
-         flarray<=
-         flarray>
-         flarray>=)
-
-;; ===================================================================================================
-;; Struct type and other basics
-
-(struct: (A) flarray Settable-Array ([data : FlVector])
-  #:property prop:custom-write (λ (arr port mode) ((array-custom-printer) arr 'flarray port mode)))
-
-(define-type FlArray (flarray Float))
-
-(: unsafe-flarray (Indexes FlVector -> FlArray))
-(define (unsafe-flarray ds vs)
-  (define proc (make-unsafe-array-proc ds (λ (j) (unsafe-flvector-ref vs j))))
-  (define set-proc (make-unsafe-array-set-proc Float ds (λ (j v) (unsafe-flvector-set! vs j v))))
-  (flarray ds 0 #t proc set-proc vs))
-
-(: unsafe-vector->flarray (Indexes (Vectorof Real) -> FlArray))
-(define (unsafe-vector->flarray ds vs)
-  (define size (vector-length vs))
-  (define xs
-    (build-flvector size (λ: ([j : Index]) (real->double-flonum (unsafe-vector-ref vs j)))))
-  (unsafe-flarray ds xs))
-
-(define-syntax (flarray/syntax stx)
-  (syntax-parse stx
-    [(_ e:expr)
-     (syntax/loc stx (array/syntax flarray (inst vector Real) unsafe-vector->flarray e))]
-    [_:id  (raise-syntax-error 'flarray "not allowed as an expression" stx)]))
-
-(: array->flarray ((Array Real) -> FlArray))
-(define (array->flarray arr)
-  (define ds (array-shape arr))
-  (define size (array-size arr))
-  (define proc (unsafe-array-proc arr))
-  (define vs (make-flvector size))
-  (for-each-array+data-index ds (λ (js j) (unsafe-flvector-set!
-                                           vs j (real->double-flonum (proc js)))))
-  (unsafe-flarray ds vs))
+(provide
+ ;; Mapping
+ inline-flarray-map
+ flarray-map
+ ;; Pointwise operations
+ flarray-scale
+ flarray-round
+ flarray-floor
+ flarray-ceiling
+ flarray-truncate
+ flarray-abs
+ flarray-sqr
+ flarray-sqrt
+ flarray-log
+ flarray-exp
+ flarray-sin
+ flarray-cos
+ flarray-tan
+ flarray-asin
+ flarray-acos
+ flarray-atan
+ flarray+
+ flarray*
+ flarray-
+ flarray/
+ flarray-expt
+ flarray-min
+ flarray-max
+ flarray=
+ flarray<
+ flarray<=
+ flarray>
+ flarray>=)
 
 ;; ===================================================================================================
 ;; Mapping
@@ -99,7 +53,7 @@
     [(_ f arr-expr)
      (syntax/loc stx
        (let: ([arr : FlArray  arr-expr])
-         (unsafe-flarray (array-shape arr) (unsafe-flvector-map f (flarray-data arr)))))]
+         (unsafe-flarray (array-shape arr) (flvector-map f (flarray-data arr)))))]
     [(_ f arr-expr arr-exprs ...)
      (with-syntax ([(arrs ...)   (generate-temporaries #'(arr-exprs ...))]
                    [(dss ...)    (generate-temporaries #'(arr-exprs ...))]
@@ -111,7 +65,7 @@
            (define dss (array-shape arrs)) ...
            (cond [(and (equal? ds dss) ...)
                   (unsafe-flarray
-                   ds (unsafe-flvector-map f (flarray-data arr) (flarray-data arrs) ...))]
+                   ds (flvector-map f (flarray-data arr) (flarray-data arrs) ...))]
                  [else
                   (define new-ds (array-shape-broadcast (list ds dss ...)))
                   (define proc  (unsafe-array-proc (array-broadcast arr new-ds)))
@@ -132,21 +86,17 @@
     [([f : (Float Float * -> Float)] [arr : FlArray] . [arrs : FlArray *])
      (define ds (array-shape arr))
      (define dss (map (λ: ([arr : FlArray]) (array-shape arr)) arrs))
-     (cond [(apply all-equal? ds dss)
-            (unsafe-flarray ds (apply flvector-map f (flarray-data arr)
-                                      (map (λ: ([arr : FlArray]) (flarray-data arr)) arrs)))]
-           [else
-            (define new-ds (array-shape-broadcast (list* ds dss)))
-            (let: ([arr : (Array Float)  (array-broadcast arr new-ds)]
-                   [arrs : (Listof (Array Float))
-                         (map (λ: ([arr : FlArray]) (array-broadcast arr new-ds)) arrs)])
-              (define proc  (unsafe-array-proc arr))
-              (define procs (map (λ: ([arr : (Array Float)]) (unsafe-array-proc arr)) arrs))
-              (array->flarray
-               (unsafe-build-array new-ds (λ: ([js : Indexes])
-                                            (apply f (proc js)
-                                                   (map (λ: ([proc : (Indexes -> Float)]) (proc js))
-                                                        procs))))))])]))
+     (define new-ds (array-shape-broadcast (list* ds dss)))
+     (let: ([arr : (Array Float)  (array-broadcast arr new-ds)]
+            [arrs : (Listof (Array Float))
+                  (map (λ: ([arr : FlArray]) (array-broadcast arr new-ds)) arrs)])
+       (define proc  (unsafe-array-proc arr))
+       (define procs (map (λ: ([arr : (Array Float)]) (unsafe-array-proc arr)) arrs))
+       (array->flarray
+        (unsafe-build-array new-ds (λ: ([js : Indexes])
+                                     (apply f (proc js)
+                                            (map (λ: ([proc : (Indexes -> Float)]) (proc js))
+                                                 procs))))))]))
 
 ;; ===================================================================================================
 ;; Pointwise operations

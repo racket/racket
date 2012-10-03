@@ -1,14 +1,14 @@
 #lang typed/racket/base
 
-(require "../unsafe.rkt"
+(require "../../parameters.rkt"
+         "../../base.rkt"
+         "../../flonum.rkt"
+         "../unsafe.rkt"
          "../exception.rkt"
-         "../vector/fcvector.rkt"
-         "../vector/fcvector-fft.rkt"
+         "../vector/vector-fft.rkt"
+         "fcarray-struct.rkt"
          "array-struct.rkt"
          "array-transform.rkt"
-         "fcarray.rkt"
-         "../../parameters.rkt"
-         "../../base.rkt"
          "for-each.rkt"
          "utils.rkt")
 
@@ -29,15 +29,18 @@
     [(not (index? k))
      (raise-argument-error 'fcarray-last-axis-fft "FCArray with at least one axis" arr)]
     [else
-     (define vs (fcarray-data arr))
+     (define xs (fcarray-real-data arr))
+     (define ys (fcarray-imag-data arr))
      (define dk (unsafe-vector-ref ds k))
-     (define: new-vs : FCVector (make-fcvector (array-size arr)))
+     (define n (array-size arr))
+     (define new-xs (make-flvector n))
+     (define new-ys (make-flvector n))
      (for-each-array+data-index
       (unsafe-vector-remove ds k)
       (λ (js j)
         (define old-j (unsafe-fx* j dk))
-        (fcvector-fft! vs old-j (unsafe-fx+ old-j dk) new-vs old-j)))
-     (unsafe-fcarray ds new-vs)]))
+        (flvector-fft! xs ys old-j (unsafe-fx+ old-j dk) new-xs new-ys old-j)))
+     (unsafe-fcarray ds new-xs new-ys)]))
 
 (: array-axis-fft ((Array Number) Integer -> (Array Float-Complex)))
 (define (array-axis-fft arr k)

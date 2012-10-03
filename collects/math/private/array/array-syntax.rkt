@@ -1,10 +1,6 @@
-#lang typed/racket/base
+#lang racket/base
 
-(require (for-syntax racket/base
-                     syntax/parse
-                     racket/list)
-         "../unsafe.rkt"
-         "utils.rkt")
+(require (for-syntax racket/base))
 
 (provide array/syntax)
 
@@ -13,8 +9,8 @@
 
 (define-for-syntax (syntax-list-shape e-stx)
   (define lst (syntax->list e-stx))
-  (cond [(or (not lst) (not (square-bracket? e-stx)))  empty]
-        [(empty? lst)  (list 0)]
+  (cond [(or (not lst) (not (square-bracket? e-stx)))  null]
+        [(null? lst)  (list 0)]
         [else
          (define d (length lst))
          (define ds (syntax-list-shape (car lst)))
@@ -28,7 +24,7 @@
 
 (define-for-syntax (syntax-list-flatten e-stx)
   (reverse
-   (let loop ([e-stx e-stx] [acc empty])
+   (let loop ([e-stx e-stx] [acc null])
      (define lst (syntax->list e-stx))
      (cond [(and lst (square-bracket? e-stx))
             (for/fold ([acc acc]) ([lst  (in-list lst)])
