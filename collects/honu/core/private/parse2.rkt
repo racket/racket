@@ -25,7 +25,6 @@
 ;; phase -1
 (require (for-template racket/base
                        racket/splicing
-                       (only-in "literals.rkt" %racket)
                        "compile.rkt"
                        "syntax.rkt"
                        "extra.rkt"))
@@ -507,13 +506,10 @@
                           colon (~seq variable:id honu-equal list:honu-expression (~optional honu-comma)) ...
                           (~seq honu-where where:honu-expression (~optional honu-comma)) ...)
                          (define filter (if (attribute where)
-                                          (with-syntax ([(where.result ...) (map honu->racket (syntax->list #'(where.result ...)))])
-                                            #'((#:when where.result) ...))
+                                          #'((#:when where.result) ...)
                                           #'()))
                          (define comprehension
-                           (with-syntax ([((filter ...) ...) filter]
-                                         [(list.result ...) (map honu->racket (syntax->list #'(list.result ...)))]
-                                         [work.result (honu->racket #'work.result)])
+                           (with-syntax ([((filter ...) ...) filter])
                              (racket-syntax (for/list ([variable list.result]
                                                        ...
                                                        filter ... ...)

@@ -11,24 +11,6 @@
 
 (provide (all-defined-out))
 
-(define (honu->racket forms)
-  (define-literal-set literals (%racket))
-  forms
-  #;
-  (syntax-parse forms #:literal-sets (literals)
-    #:literals ([literal-syntax syntax])
-    [(%racket x) #'x
-    #;
-     (honu->racket #'x)]
-    [(literal-syntax form) #'#'form]
-    [(form ...)
-     (datum->syntax forms
-                    (map honu->racket (syntax->list #'(form ...)))
-                    forms
-                    forms)]
-    [x #'x]
-    [() forms]))
-
 (define (strip-stops code)
   (define-syntax-class stopper #:literal-sets (cruft)
     #;

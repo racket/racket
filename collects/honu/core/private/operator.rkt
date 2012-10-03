@@ -49,7 +49,7 @@
                                                  #f
                                                  ;; unary
                                                  (lambda (argument)
-                                                   (with-syntax ([argument (honu->racket argument)])
+                                                   (with-syntax ([argument argument])
                                                      (racket-syntax (operator argument))))
                                                  postfix?))
 
@@ -62,8 +62,8 @@
 (begin-for-syntax
   (define-syntax-rule (mutator change)
                       (lambda (left right)
-                        (with-syntax ([left (honu->racket left)]
-                                      [right (change left (honu->racket right))])
+                        (with-syntax ([left left]
+                                      [right (change left right)])
                           (racket-syntax (set! left right))))))
 
 ;; Traditional assignment operator
