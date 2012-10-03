@@ -1,5 +1,5 @@
 #lang racket/base
-(require (except-in "../utils/utils.rkt" infer)
+(require (except-in "../utils/utils.rkt" infer) racket/unsafe/ops
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
          (types utils resolve base-abbrev numeric-tower substitute)
@@ -17,7 +17,6 @@
 
 ;; exn representing failure of subtyping
 ;; s,t both types
-
 (define-struct (exn:subtype exn:fail) (s t))
 
 ;; subtyping failure - masked before it gets to the user program
@@ -28,7 +27,7 @@
 ;; data structures for remembering things on recursive calls
 (define (empty-set) '())
 
-(define current-seen (make-parameter (empty-set) #;pair?))
+(define current-seen (make-parameter (empty-set)))
 
 (define (seen-before s t) (cons (Type-seq s) (Type-seq t)))
 (define (remember s t A) (cons (seen-before s t) A))
@@ -42,38 +41,28 @@
 (define (cached? s t)
   (hash-ref subtype-cache (cons (Type-seq s) (Type-seq t)) #f))
 
+(define-syntax-rule (handle-failure e)
+  (with-handlers ([exn:subtype? (λ (_) #f)])
+    e))
+
 ;; is s a subtype of t?
 ;; type type -> boolean
 (define/cond-contract (subtype s t)
   (c:-> (c:or/c Type/c Values?) (c:or/c Type/c Values?) boolean?)
-  (define k (cons (Type-seq s) (Type-seq t)))
-  (define lookup? (hash-ref subtype-cache k 'no))
-  (if (eq? 'no lookup?)
-      (let ([result (with-handlers
-                        ([exn:subtype? (lambda _ #f)])
-                      (and (subtype* (current-seen) s t) #t))])
-        (hash-set! subtype-cache k result)
-        result)
-      lookup?))
+  (define k (cons (unsafe-struct-ref s 0) (unsafe-struct-ref t 0)))
+  (define (new-val) 
+    (define result (handle-failure (and (subtype* (current-seen) s t) #t)))
+    (printf "subtype cache miss ~a ~a\n" s t)
+    result)
+  (hash-ref! subtype-cache k new-val))
 
 ;; are all the s's subtypes of all the t's?
 ;; [type] [type] -> boolean
-(define (subtypes s t)
-  (with-handlers
-      ([exn:subtype? (lambda _ #f)])
-    (subtypes* (current-seen) s t)))
+(define (subtypes s t) (handle-failure (subtypes* (current-seen) s t)))
 
 ;; subtyping under constraint set, but produces boolean result instead of raising exn
 ;; List[(cons Number Number)] type type -> maybe[List[(cons Number Number)]]
-(define (subtype*/no-fail A s t)
-  (with-handlers
-      ([exn:subtype? (lambda _ #f)])
-    (subtype* A s t)))
-
-;; type type -> (does not return)
-;; subtying fails
-#;
-(define (fail! s t) (raise (make-exn:subtype "subtyping failed" (current-continuation-marks) s t)))
+(define (subtype*/no-fail A s t) (handle-failure (subtype* A s t)))
 
 ;; check subtyping for two lists of types
 ;; List[(cons Number Number)] listof[type] listof[type] -> List[(cons Number Number)]

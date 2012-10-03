@@ -5,7 +5,7 @@
          "utils.rkt"
          syntax/parse racket/match 
          syntax/parse/experimental/reflect
-         (typecheck signatures check-below tc-funapp)
+         (typecheck signatures check-below tc-funapp tc-app-helper)
          (types utils abbrev)
          (rep type-rep filter-rep object-rep rep-utils)
          (for-template racket/base))
@@ -58,23 +58,19 @@
 
 
 (define (tc/app-regular form expected)
-  (syntax-parse form
+  (syntax-case form ()
     [(f . args)
-     (let* ([f-ty (single-value #'f)])
+     (let* ([f-ty (single-value #'f)]
+            [args* (syntax->list #'args)])
        (match f-ty
          [(tc-result1:
            (and t (Function:
-                   (list (and a (arr: (? (lambda (d)
-                                           (= (length d)
-                                              (length (syntax->list #'args))))
-                                         dom)
+                   (list (and a (arr: (? (λ (d) (= (length d) (length args*))) dom)
                                       (Values: (list (Result: v (FilterSet: (Top:) (Top:)) (Empty:))))
                                       #f #f (list (Keyword: _ _ #f) ...)))))))
-          ;(printf "f dom: ~a ~a\n" (syntax->datum #'f) dom)
-          (let ([arg-tys (map (lambda (a t) (tc-expr/check a (ret t)))
-                              (syntax->list #'args)
-                              dom)])
-            (tc/funapp #'f #'args f-ty arg-tys expected))]
+          (for ([a (in-list args*)] [t (in-list dom)])
+            (tc-expr/check a (ret t)))
+          (ret v)]
          [_
           (let ([arg-tys (map single-value (syntax->list #'args))])
             (tc/funapp #'f #'args f-ty arg-tys expected))]))]))
