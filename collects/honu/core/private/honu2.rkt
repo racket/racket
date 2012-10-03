@@ -12,6 +12,7 @@
                   honu-in
                   honu-in-lines
                   honu-prefix
+                  postfix
                   semicolon
                   honu-comma
                   define-literal)
@@ -156,10 +157,15 @@
 (provide define-make-honu-unary-operator)
 (define-honu-syntax define-make-honu-unary-operator
   (lambda (code)
-    (syntax-parse code
-      [(_ name:id level:honu-expression postfix?:honu-expression function:honu-expression . rest)
-       (define out (racket-syntax
-                     (define-unary-operator name level.result postfix?.result function.result)))
+    (syntax-parse code #:literals (postfix)
+      [(_ name:id level:honu-expression
+          (~optional (~and postfix postfix?)
+                     #:defaults ([postfix? #f]))
+          function:honu-expression . rest)
+       (define out
+         (with-syntax ([postfix? (if (attribute postfix?) #t #f)])
+           (racket-syntax
+             (define-unary-operator name level.result postfix? function.result))))
        (values out #'rest #t)])))
 
 ;; equals can have a compile time property that allows it to do something like set!

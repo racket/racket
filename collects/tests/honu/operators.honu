@@ -17,12 +17,12 @@ binary_operator b1 2 'left
 
 3 b1 8
 
-unary_operator u1 4 true function(x){ x - 2 }
+unary_operator u1 4 function(x){ x - 2 }
 
 2 + u1 u1 5
 
-unary_operator u2 5 true function(x){ x + 8 }
-unary_operator u3 5 true function(x){ x * 2 };
+unary_operator u2 5 postfix function(x){ x + 8 }
+unary_operator u3 5 postfix function(x){ x * 2 };
 
 7 u3;
 u2 7 u3;

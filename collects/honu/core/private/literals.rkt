@@ -34,6 +34,7 @@
                 honu-$
                 ;; FIXME: in-lines should probably not be here
                 honu-in-lines
+                postfix
                 %racket)
 
 (define-syntax-rule (define-literal+set set literal ...)

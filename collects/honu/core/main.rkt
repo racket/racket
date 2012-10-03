@@ -76,6 +76,7 @@
                                    [honu-equal =]
                                    [honu-+= +=] [honu--= -=]
                                    [honu-*= *=] [honu-/= /=]
+                                   [literal:postfix postfix]
                                    [literal:honu-prefix prefix]
                                    [literal:honu-then then]
                                    [literal:colon %colon]
