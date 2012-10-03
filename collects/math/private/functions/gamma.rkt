@@ -24,8 +24,8 @@ Approximations:
          (only-in racket/math exact-truncate)
          "../../flonum.rkt"
          "../../base.rkt"
+         "../number-theory/factorial.rkt"
          "../vector/flvector.rkt"
-         "factorial.rkt"
          "lanczos.rkt")
 
 (provide gamma flgamma)
@@ -38,7 +38,7 @@ Approximations:
 (define flonum-fact-table-size 171.0)
 (define flonum-fact-table
   (build-flvector (fl->fx flonum-fact-table-size)
-                  (compose real->double-flonum factorial)))
+                  (compose fl factorial)))
 
 (: laurent-sum-0.00 (Float -> Float))
 ;; Laurent expansion for -0.001 <= x <= 0.01

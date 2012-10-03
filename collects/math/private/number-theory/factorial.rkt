@@ -1,10 +1,9 @@
 #lang typed/racket/base
 
-(require "../number-theory/binomial.rkt"
-         "../unsafe.rkt"
+(require "../unsafe.rkt"
          "../exception.rkt")
 
-(provide factorial binomial permutations multinomial)
+(provide factorial permutations multinomial)
 
 (define-predicate nonnegative-fixnum? Nonnegative-Fixnum)
 
@@ -24,6 +23,7 @@
            (build-list (- fact-table-size 1) add1)))))
 
 (: simple-cutoff Positive-Fixnum)
+;; The point at which it seems to be faster to use a more complicated recurrence
 (define simple-cutoff 244)
 
 (: factorial-simple (Nonnegative-Fixnum -> Positive-Integer))

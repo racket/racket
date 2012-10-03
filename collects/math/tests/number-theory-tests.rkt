@@ -75,10 +75,6 @@
 (check-equal? (map bernoulli '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18))
               '(1 -1/2 1/6 0 -1/30 0 1/42 0 -1/30 0 5/66 0 -691/2730 0 7/6 0 -3617/510 0 43867/798))
 
-; "bernoulli-via-tangent.rkt"
-(check-equal? (map bernoulli/tangent '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18))
-              '(1 -1/2 1/6 0 -1/30 0 1/42 0 -1/30 0 5/66 0 -691/2730 0 7/6 0 -3617/510 0 43867/798))
-
 ; "tangent-number.rkt"
 (require typed/rackunit)
 (check-equal? (map tangent-number '(1 3 5 7 9 11 13)) '(1 2 16 272 7936 353792 22368256))

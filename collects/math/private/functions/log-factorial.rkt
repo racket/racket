@@ -3,9 +3,9 @@
 (require racket/fixnum
          "../../flonum.rkt"
          "../../base.rkt"
+         "../number-theory/factorial.rkt"
          "../vector/flvector.rkt"
-         "../exception.rkt"
-         "factorial.rkt")
+         "../exception.rkt")
 
 (provide fllog-factorial
          fllog-binomial
