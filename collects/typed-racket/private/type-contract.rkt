@@ -78,7 +78,7 @@
 (define chaperone-sym 'chaperone)
 (define flat-sym 'flat)
 
-(define (contract-kind-max . args)
+(define (contract-kind-max i . args)
   (define (contract-kind-max2 x y)
     (cond
       ((equal? flat-sym x) y)
@@ -86,11 +86,11 @@
       ((equal? chaperone-sym x) y)
       ((equal? chaperone-sym y) x)
       (else impersonator-sym)))
-  (for/fold ((acc flat-sym)) ((v args))
+  (for/fold ((acc i)) ((v args))
     (contract-kind-max2 v acc)))
 
 
-(define (contract-kind-min . args)
+(define (contract-kind-min i . args)
   (define (contract-kind-min2 x y)
     (cond
       ((equal? flat-sym x) x)
@@ -98,7 +98,7 @@
       ((equal? chaperone-sym x) x)
       ((equal? chaperone-sym y) y)
       (else impersonator-sym)))
-  (for/fold ((acc flat-sym)) ((v args))
+  (for/fold ((acc i)) ((v args))
     (contract-kind-min2 v acc)))
 
 
