@@ -1544,6 +1544,16 @@
   (delete-directory sub)
   (delete-directory/files tmp))
 
+(let ()
+  (define tmp (build-path (build-path (find-system-path 'temp-dir))
+                          (format "in-dir-tmp-dir~a" (random 1000))))
+  (define sub (build-path tmp "sub"))
+  (make-directory* tmp)
+  (make-directory* sub)
+  (test (list sub) 'in-directory (for/list ([v (in-directory tmp)]) v))
+  (delete-directory sub)
+  (delete-directory/files tmp))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

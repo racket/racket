@@ -1970,10 +1970,12 @@
                          (call-with-continuation-prompt
                           (lambda ()
                             (define (reply v)
-                              (let/cc k
+                              (call/cc 
+                               (lambda (k)
                                 (abort-current-continuation
                                  in-directory-tag
-                                 (lambda () (cons (lambda () v) k)))))
+                                 (lambda () (cons (lambda () v) k))))
+                               in-directory-tag))
                             (let loop ([dir (path->complete-path (or dir (current-directory)))]
                                        [prefix dir])
                               (for ([i (in-list (directory-list dir))])
