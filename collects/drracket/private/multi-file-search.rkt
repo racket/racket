@@ -4,6 +4,7 @@
            mred
            racket/file
            racket/path
+           racket/list
            mzlib/thread
            mzlib/async-channel
            string-constants
@@ -375,8 +376,15 @@
        (define method-panel (make-object vertical-panel% method-inset-outer-panel))
        
        (define dir-panel (make-object horizontal-panel% files-panel))
-       (define dir-field (make-object text-field% (string-constant mfs-dir) dir-panel
-                           (λ (x y) (dir-field-callback))))
+       (define dir-field 
+         (new combo-field%
+              [parent dir-panel] 
+              [label (string-constant mfs-dir)] 
+              [choices (preferences:get 'drracket:multi-file-search:directories)]
+              [stretchable-width #t] 
+              [stretchable-height #f]
+              [callback (λ (x y) (dir-field-callback))]))
+
        (define dir-button (make-object button% (string-constant browse...) dir-panel 
                             (λ (x y) (dir-button-callback))))
        
@@ -440,6 +448,13 @@
            [(with-handlers ([exn:fail:filesystem?
                              (λ (x) #f)])
               (directory-exists? (send dir-field get-value)))
+            
+            (let ([df (send dir-field get-value)])
+              (when (path-string? df)
+                (define new-l (cons df (remove df (preferences:get 'drracket:multi-file-search:directories))))
+                (preferences:set 'drracket:multi-file-search:directories
+                                 (take new-l (min (length new-l) 10)))))
+            
             (let ([_searcher
                    ((search-type-make-searcher (list-ref search-types (send methods-choice get-selection)))
                     (map (λ (cb) (send cb get-value))
@@ -482,7 +497,7 @@
        (define (dir-field-callback)
          (let ([df (send dir-field get-value)])
            (when (path-string? df)
-             (preferences:set 'drracket:multi-file-search:directory (string->path df)))))
+             (preferences:set 'drracket:multi-file-search:directory df))))
        
        (define (filter-check-box-callback) 
          (preferences:set 'drracket:multi-file-search:filter? (send filter-check-box get-value))
@@ -510,8 +525,9 @@
                                            old-d)))
          (when (and new-d
                     (directory-exists? new-d))
-           (preferences:set 'drracket:multi-file-search:directory new-d)
-           (send dir-field set-value (path->string new-d))))
+           (define str (path->string new-d))
+           (preferences:set 'drracket:multi-file-search:directory str)
+           (send dir-field set-value str)))
        
        (define (get-files)
          (let ([dir (string->path (send dir-field get-value))])
@@ -534,13 +550,11 @@
        (send filter-check-box set-value (preferences:get 'drracket:multi-file-search:filter?))
        (send search-text-field set-value (preferences:get 'drracket:multi-file-search:search-string))
        (send filter-text-field set-value (preferences:get 'drracket:multi-file-search:filter-regexp))
-       (send dir-field set-value (path->string 
-                                  (let ([p (preferences:get 'drracket:multi-file-search:directory)])
-                                    (if (not p)
-                                        (let ([p (car (filesystem-root-list))])
-                                          (preferences:set 'drracket:multi-file-search:directory p)
-                                          p)
-                                        p))))
+       (send dir-field set-value (let ([p (preferences:get 'drracket:multi-file-search:directory)])
+                                   (or p
+                                       (let ([p (path->string (car (filesystem-root-list)))])
+                                         (preferences:set 'drracket:multi-file-search:directory p)
+                                         p))))
        
        (send outer-method-panel stretchable-height #f)
        (send outer-method-panel set-alignment 'left 'center)
