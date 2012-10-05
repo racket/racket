@@ -15,7 +15,11 @@
           texpict-common-setup^)
 
       (define show-pict
-        (λ (p [w #f] [h #f])
+        (λ (p [w #f] 
+              [h #f] 
+              #:frame-style [frame-style '()]
+              #:frame-x [frame-x #f]
+              #:frame-y [frame-y #f])
           (define the-pict p)
           (define pict-drawer (make-pict-drawer the-pict))
           (define no-redraw? #f)
@@ -51,7 +55,11 @@
                                    0)])
                       (pict-drawer dc xo yo)))))
               (super-instantiate ())))
-          (define f (make-object pict-frame% "MrPict"))
+          (define f (new pict-frame% 
+                         [label "MrPict"] 
+                         [style frame-style] 
+                         [x frame-x]
+                         [y frame-y]))
           (define c (make-object pict-canvas% f))
           (send (send c get-dc) set-smoothing 'aligned)
           (send f set-pict p)

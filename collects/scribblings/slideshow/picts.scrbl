@@ -1161,13 +1161,20 @@ repeated calls to @racket[draw-pict].}
 
 @defproc[(show-pict [pict pict?]
                     [w (or/c #f exact-nonnegative-integer?) #f] 
-                    [h (or/c #f exact-nonnegative-integer?) #f])
+                    [h (or/c #f exact-nonnegative-integer?) #f] 
+                    [#:frame-x frame-x (or/c (integer-in -10000 10000) #f)] 
+                    [#:frame-y frame-y (or/c (integer-in -10000 10000) #f)] 
+                    [#:frame-style frame-style (listof (or/c 'no-resize-border 'no-caption
+                                                             'no-system-menu 'hide-menu-bar
+                                                             'toolbar-button 'float 'metal))])
          void?]{
 
 Opens a frame that displays @racket[pict].  The frame adds one method,
 @racket[set-pict], which takes a pict to display. The optional
 @racket[w] and @racket[h] arguments specify a minimum size for the
-frame's drawing area.}
+frame's drawing area, and the @racket[frame-x], @racket[frame-y], 
+and @racket[frame-style] keyword arguments behave in the same manner as @racket[x], 
+@racket[y], and @racket[style] arguments for the @racket[frame%].}
 
 @defparam[current-expected-text-scale scales (list real? real?)]{
 
