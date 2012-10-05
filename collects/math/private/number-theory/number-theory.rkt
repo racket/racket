@@ -1,10 +1,13 @@
 #lang typed/racket
 
-(require/typed typed/racket
-               [integer-sqrt/remainder (Natural -> (Values Natural Natural))])
-(require "divisibility.rkt"
+(require "../functions/random.rkt"
+         "../exception.rkt"
+         "divisibility.rkt"
          "modular-arithmetic.rkt"
          "types.rkt")
+
+(require/typed typed/racket
+               [integer-sqrt/remainder (Natural -> (Values Natural Natural))])
 
 (provide solve-chinese
          
@@ -47,7 +50,8 @@
 ;;;
 
 (define prime-strong-pseudo-certainty 1/10000000)
-(define prime-strong-pseudo-trials (integer-length (assert (/ 1 prime-strong-pseudo-certainty) integer?)))
+(define prime-strong-pseudo-trials
+  (integer-length (assert (/ 1 prime-strong-pseudo-certainty) integer?)))
 
 (define *SMALL-PRIME-LIMIT* 1000000)
 ; (define *SMALL-PRIME-LIMIT* 1000) ; use 1000 for coverage testing
@@ -84,7 +88,6 @@
         [(not (divides? p n)) 0]
         [else                 (assert (find-start p 1) natural?)]))
 
-
 (: max-dividing-power-naive : Z Z -> N)
 (define (max-dividing-power-naive p n)
   ; sames as max-dividing-power but using naive algorithm
@@ -96,38 +99,6 @@
   (if (= p 1)
       (error 'max-dividing-power "No maximal power of 1 exists")
       (assert (loop 1 0) natural?)))
-
-;;;
-;;; Random Integers
-;;;
-
-; Note: (random k) requires k in interval from 1 to 4294967087.
-
-(: integer-log2 : N -> Z)
-(define (integer-log2 n)
-  (if (zero? n)
-      (error 'integer-log2 "argument must be positive, got ~a" n)
-      (assert (inexact->exact (ceiling (/ (log n) (log 2)))) integer?)))
-
-(: big-random : N -> N)
-(define (big-random n)
-  ;;  return random integer in the interval [0;n[
-  (let ([l 30])
-    (let ([bits-needed (integer-log2 n)]
-          [M           (expt 2 l)])
-      (let loop ([blocks (quotient bits-needed l)]
-                 [r      (random (assert (inexact->exact (expt 2 (remainder bits-needed l))) integer?))])
-        (if (= blocks 0)
-            (assert (remainder r n) natural?)
-            (loop (- blocks 1) (+ (* r M) (random M))))))))
-
-(define random-integer big-random)
-
-(: random-integer-in-interval : Z Z -> Z)
-(define (random-integer-in-interval from to)
-  ; return random integer in the half-open
-  ; interval [from;to)
-  (+ from (random-integer (assert (- to from) natural?))))
 
 ; THEOREM (The Chinese Remainder Theorem)
 ;   Let n1,...,nk be positive integers with gcd(ni,nj)=1 whenever i<>j,
@@ -162,12 +133,12 @@
 ;   'composite            (with at least probability 1/2)  if n is a composite non-Carmichael number
 ;   a proper divisor of n (with at least probability 1/2)  if n is a Carmichael number
 ; [MCA, p.509 - Algorithm 18.5]
-(: prime-strong-pseudo-single? : Natural -> (U 'probably-prime 'composite N))
+(: prime-strong-pseudo-single? : Integer -> (U 'probably-prime 'composite N))
 (define (prime-strong-pseudo-single? n)
   (cond
-    [(or (zero? n) (< n 4)) (error 'prime-strong-pseudo-single? "n must be 4 or greater, got ~a" n)]
-    [else    
-     (define a (random-integer-in-interval 2 (- n 1)))
+    [(n . <= . 0)  (raise-argument-error 'prime-strong-pseudo-single? "Positive-Integer" n)]
+    [(n . >= . 4)
+     (define a (random-integer 2 (- n 1)))
      (define g (gcd a n))
      (cond
        [(> g 1) g] ; factor found
@@ -191,7 +162,9 @@
                             (if (or (= g 1) (= g n))
                                 'probably-prime
                                 g))
-                          'composite)))])]))])]))
+                          'composite)))])]))])]
+    [(= n 1)  'composite]
+    [else  'probably-prime]))
 
 (define-type Strong-Test-Result         (U 'very-probably-prime 'composite N))
 
@@ -346,7 +319,7 @@
 ; OUTPUT  Either a proper divisor of n or #f
 (: pollard : N -> (U N False))
 (define (pollard n)
-  (let ([x0 (big-random n)])
+  (let ([x0 (random-natural n)])
     (do ([xi x0 (remainder (+ (* xi xi) 1) n)]
          [yi x0 (remainder (+ (sqr (+ (* yi yi) 1)) 1) n)]
          [i  0  (add1 i)]
@@ -522,7 +495,7 @@
       [(eq? y 1) x]
       [(eq? y 2) (integer-sqrt x)]
       [(not (integer? y))
-       (error 'integer-root "internal error - (used to return 1 here - why?) todo: remove this error after testing")]
+       (error 'integer-root "internal error (used to return 1 here - why?) remove after testing")]
       [else
        (define length (integer-length x))
        ;; (expt 2 (- length l 1)) <= x < (expt 2 length)
@@ -699,7 +672,7 @@
     (check-equal? (max-dividing-power-naive 3 27) 3)
     (check-equal? (max-dividing-power-naive 3 (* 27 2)) 3)
     
-    (check-true   (<= 4 (random-integer-in-interval 4 5) 4))
+    (check-true   (<= 4 (random-integer 4 5) 4))
     
     (check-false (prime-fermat? 0))
     (check-false (prime-fermat? 1))
@@ -721,5 +694,6 @@
     (check-equal? (prime-strong-pseudo-single? 5)   'probably-prime)
     (check-equal? (prime-strong-pseudo-single? 7)   'probably-prime)
     (check-equal? (prime-strong-pseudo-single? 11)  'probably-prime)
-    (check-true   (member? (prime-strong-pseudo-single? 561) (cons 'probably-prime (divisors 561)))) ; Carmichael number
+    ;; Carmichael number:
+    (check-true   (member? (prime-strong-pseudo-single? 561) (cons 'probably-prime (divisors 561))))
     )

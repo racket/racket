@@ -1,6 +1,7 @@
 #lang typed/racket/base
 
 (require (only-in "mpfr.rkt" 1ary-funs 1ary-preds 1ary2-funs 2ary-funs)
+         "../functions/random.rkt"
          "utils.rkt")
 
 (define-type Rounding-Mode (U 'nearest 'zero 'up 'down))
@@ -53,8 +54,7 @@
  [bfjn  (Integer Bigfloat -> Bigfloat)]
  [bfyn  (Integer Bigfloat -> Bigfloat)]
  [bfshift  (Bigfloat Integer -> Bigfloat)]
- [bflog-gamma/sign  (Bigfloat -> (Values Bigfloat (U -1 1)))]
- [bfrandom  (-> Bigfloat)])
+ [bflog-gamma/sign  (Bigfloat -> (Values Bigfloat (U -1 1)))])
 
 (req/prov-uniform-collection "mpfr.rkt" 1ary-funs (Bigfloat -> Bigfloat))
 (req/prov-uniform-collection "mpfr.rkt" 1ary-preds (Bigfloat -> Boolean))
@@ -121,6 +121,11 @@
 (define-nary-pred bf>  bfgt?)
 (define-nary-pred bf>= bfgte?)
 
+(: bfrandom (-> Bigfloat))
+(define (bfrandom)
+  (define bits (bf-precision))
+  (bf (random-bits bits) (- bits)))
+
 (provide
  ;; Parameters
  bf-rounding-mode
@@ -166,4 +171,5 @@
  bf<
  bf<=
  bf>
- bf>=)
+ bf>=
+ bfrandom)

@@ -3,12 +3,14 @@
 (require racket/flonum
          (except-in racket/math sinh cosh tanh)
          "private/functions/hyperbolic.rkt"
-         "private/functions/inverse-hyperbolic.rkt")
+         "private/functions/inverse-hyperbolic.rkt"
+         "private/functions/random.rkt")
 
 (provide (all-from-out
           racket/math
           "private/functions/hyperbolic.rkt"
-          "private/functions/inverse-hyperbolic.rkt"))
+          "private/functions/inverse-hyperbolic.rkt"
+          "private/functions/random.rkt"))
 
 (provide power-of-two?
          phi.0
