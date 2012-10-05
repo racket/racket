@@ -740,7 +740,8 @@ otherwise.
 
 @declare-exporting[redex/reduction-semantics redex]
 
-@defform/subs[#:literals (--> fresh side-condition where with) 
+@defform/subs[#:literals (--> fresh side-condition side-condition/hidden
+                          where where/hidden judgment-holds with)
               (reduction-relation language domain base-arrow
                                   reduction-case ...
                                   shortcuts)
@@ -1459,7 +1460,7 @@ then it is used to compare the expected and actual results.
 @defform/subs[(test--> rel-expr option ... e1-expr e2-expr ...)
               ([option (code:line #:equiv pred-expr)])
               #:contracts ([rel-expr reduction-relation?]
-                           [pred-expr (--> any/c any/c anyc)]
+                           [pred-expr (--> any/c any/c any/c)]
                            [e1-expr any/c]
                            [e2-expr any/c])]{
 
@@ -1907,7 +1908,7 @@ exploring reduction sequences.
                  [#:filter term-filter (-> any/c (or/c #f string?) any/c) (λ (x y) #t)]
                  [#:x-spacing x-spacing number? 15]
                  [#:y-spacing y-spacing number? 15]
-                 [#:layout layout (-> (listof term-node?) void) void]
+                 [#:layout layout (-> (listof term-node?) void?) void]
                  [#:edge-labels? edge-labels? boolean? #t]
                  [#:edge-label-font edge-label-font (or/c #f (is-a?/c font%)) #f]
                  [#:graph-pasteboard-mixin graph-pasteboard-mixin (make-mixin-contract graph-pasteboard<%>) values])
@@ -2022,7 +2023,7 @@ inserted into the editor by this library have a
                                               (λ (x) (<= 0 (length x) 6)))))
                               '()]
                     [#:filter term-filter (-> any/c (or/c #f string?) any/c) (λ (x y) #t)]
-                    [#:layout layout (-> (listof term-node?) void) void]
+                    [#:layout layout (-> (listof term-node?) void?) void]
                     [#:x-spacing x-spacing number? 15]
                     [#:y-spacing y-spacing number? 15]
                     [#:edge-labels? edge-labels? boolean? #t]
@@ -2092,7 +2093,7 @@ Note that this function does not return all terms that
 reduce to this one -- only those that are currently in the
 graph.
 }
-@defproc[(term-node-labels [tn term-node]) (listof (or/c false/c string?))]{
+@defproc[(term-node-labels [tn term-node?]) (listof (or/c false/c string?))]{
 
 Returns a list of the names of the reductions that led to
 the given node, in the same order as the result of
@@ -2133,13 +2134,13 @@ Returns the expression in this node.
 Sets the position of @racket[tn] in the graph to (@racket[x],@racket[y]). 
 }
 
-@defproc[(term-node-x [tn term-node?]) real]{
+@defproc[(term-node-x [tn term-node?]) real?]{
 Returns the @tt{x} coordinate of @racket[tn] in the window.
 }
-@defproc[(term-node-y [tn term-node?]) real]{
+@defproc[(term-node-y [tn term-node?]) real?]{
 Returns the @tt{y} coordinate of @racket[tn] in the window.
 }
-@defproc[(term-node-width [tn term-node?]) real]{
+@defproc[(term-node-width [tn term-node?]) real?]{
 Returns the width of @racket[tn] in the window.
 }
 @defproc[(term-node-height [tn term-node?]) real?]{
@@ -2290,14 +2291,14 @@ sets @racket[dc-for-text-size] and the latter does not.
  Slideshow or with other tools that combine picts together.
 }
 
-@defproc[(render-term/pretty-write [lang compiled-lang?] [term any] [filename path-string?] [#:width width #f]) void?]{
+@defproc[(render-term/pretty-write [lang compiled-lang?] [term any/c] [filename path-string?] [#:width width #f]) void?]{
   Like @racket[render-term], except that the @racket[term] argument is evaluated,
   and expected to return a term. Then, @racket[pretty-write] is used
   to determine where the line breaks go, using the @racket[width] argument
   as a maximum width (via @racket[pretty-print-columns]).
 }
 
-@defproc[(term->pict/pretty-write [lang compiled-lang?] [term any] [filename (or/c path-string? #f)] [#:width width #f]) pict?]{
+@defproc[(term->pict/pretty-write [lang compiled-lang?] [term any/c] [filename (or/c path-string? #f)] [#:width width #f]) pict?]{
   Like @racket[term->pict], but with the same change that
   @racket[render-term/pretty-write] has from @racket[render-term].
 }
