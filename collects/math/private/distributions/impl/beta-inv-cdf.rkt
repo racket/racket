@@ -282,7 +282,7 @@
   
   (define x0 (flbeta-inv-cdf a b p))
   (define p0 (flbeta-lower-regularized a b x0))
-  (define err0 (flrelative-error p0 p))
+  (define err0 (relative-error p0 p))
   (when (err0 . > . threshold)
     (define p-prev (flbeta-lower-regularized a b (flprev x0)))
     (define p-next (flbeta-lower-regularized a b (flnext x0)))
@@ -293,7 +293,7 @@
   
   (define x1 (flbeta-inv-log-cdf a b log-p))
   (define log-p1 (fllog-beta-lower-regularized a b x1))
-  (define err1 (flrelative-error log-p1 log-p))
+  (define err1 (relative-error log-p1 log-p))
   (when (err1 . > . threshold)
     (define log-p-prev (fllog-beta-lower-regularized a b (flprev x1)))
     (define log-p-next (fllog-beta-lower-regularized a b (flnext x1)))

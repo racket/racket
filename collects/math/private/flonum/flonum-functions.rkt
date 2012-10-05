@@ -11,7 +11,7 @@
          (rename-out [real->double-flonum fl])
          flsubnormal?
          flnext* flprev*
-         flulp-error flrelative-error
+         flulp-error
          float-complex? (rename-out [inline-number->float-complex number->float-complex])
          find-least-flonum
          fleven? flodd? flsgn flhypot fllog/base
@@ -70,20 +70,6 @@
         [else  (flabs (real->double-flonum
                        (/ (- (inexact->exact x) (inexact->exact r))
                           (inexact->exact (flulp x)))))]))
-
-(: flrelative-error (Flonum Real -> Flonum))
-(define (flrelative-error x r)
-  (cond [(eqv? r +nan.0)  (if (eqv? x +nan.0) 0.0 +nan.0)]
-        [(= r +inf.0)     (if (fl= x +inf.0)  0.0 +inf.0)]
-        [(= r -inf.0)     (if (fl= x -inf.0)  0.0 +inf.0)]
-        [(zero? r)        (if (zero? x)       0.0 +inf.0)]
-        [(eqv? x +nan.0)  +nan.0]
-        [(fl= x +inf.0)   +inf.0]
-        [(fl= x -inf.0)   +inf.0]
-        [(zero? x)        +inf.0]
-        [else  (let ([x  (inexact->exact x)]
-                     [r  (inexact->exact r)])
-                 (flabs (real->double-flonum (/ (- x r) r))))]))
 
 ;; ===================================================================================================
 ;; Types, conversion
