@@ -1826,6 +1826,17 @@
 			(error "cannot handle combination of `any ...' and lcid/retval")
 			(length scheme-types))
 		    base-count))
+  (build-method-arguments-from-desc count
+				    (lambda (i)
+				      (and func-desc 
+					   (or (not last-is-repeat-any?)
+					       (i . < . (sub1 base-count)))
+					   (elem-desc-ref func-desc i)))
+				    scheme-types
+				    inv-kind
+				    args))
+
+(define (build-method-arguments-from-desc count get-elem-desc scheme-types inv-kind args)
   (define vars (if (zero? count)
                    #f
                    (malloc count _VARIANTARG 'raw)))
@@ -1843,10 +1854,7 @@
       (VariantInit var)
       (scheme-to-variant! var 
 			  a 
-			  (and func-desc 
-			       (or (not last-is-repeat-any?)
-				   (i . < . (sub1 base-count)))
-			       (elem-desc-ref func-desc i)) 
+			  (get-elem-desc i)
 			  scheme-type)))
   (define disp-params (cast (malloc _DISPPARAMS 'raw)
 			    _pointer
@@ -1866,6 +1874,16 @@
           (cons (lambda () (free disp-params)) (unbox cleanup))
           (unbox commit)))
 
+(define (build-method-arguments-using-var-desc var-desc scheme-types inv-kind args)
+  (build-method-arguments-from-desc (if (= inv-kind INVOKE_PROPERTYPUT)
+					1
+					0)
+				    (lambda (i)
+				      (VARDESC-elemdescVar var-desc))
+				    scheme-types
+				    inv-kind
+				    args))
+
 (define (variant-to-scheme var #:mode [mode '(out)])
   (define _t (to-ctype (vt-to-scheme-type (VARIANT-vt var)) #:mode mode))
   (if _t
@@ -1883,9 +1901,9 @@
                                                 scheme-types
                                                 inv-kind args)]
    [else
-    (error "unimplemented") ; FIXME?
-    '(build-method-arguments-using-var-desc (mx-com-type-desc-desc type-desc)
-                                            inv-kind args)]))
+    (build-method-arguments-using-var-desc (mx-com-type-desc-desc type-desc)
+					   scheme-types
+					   inv-kind args)]))
 
 (define (find-memid who obj name)
   (define-values (r memid)
