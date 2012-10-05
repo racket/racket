@@ -644,14 +644,7 @@
        (when mref
          (set-com-impl-mref! impl #f)
 	 (unregister-custodian-shutdown impl mref)))
-     ;; Although reference counting should let us release in any
-     ;; order, comments in the MysterX source suggest that the
-     ;; order matters, so release type descriptions first and
-     ;; the main impl last.
-     (when (positive? (hash-count (com-impl-types impl)))
-       (for ([td (in-hash-values (com-impl-types impl))])
-	 (release-type-desc td))
-       (set-com-impl-types! impl (make-hash)))
+     (release-type-types (com-impl-type-info impl))
      (define (bye! sel st!)
        (when (sel impl)
          (Release (sel impl))
@@ -668,6 +661,17 @@
            set-com-impl-dispatch!)
      (bye! com-impl-unknown
            set-com-impl-unknown!))))
+
+(define (release-type-types type-info)
+  (when type-info
+    (let ([type (type-info-type type-info)])
+      (set-type-ref-count! type (sub1 (type-ref-count type)))
+      (when (zero? (type-ref-count type))
+        (when (positive? (hash-count (type-types type)))
+          (for ([td (in-hash-values (type-types type))])
+  	    (release-type-desc td))
+          (set-type-types! type (make-hash)))
+        (hash-remove! types type-info)))))
 
 (define (release-type-desc td)
   ;; call in atomic mode
@@ -731,6 +735,28 @@
         (set-com-impl-dispatch! (com-object-impl obj) dispatch)
         dispatch)))
 
+(struct type (type-info [types #:mutable]
+			scheme-types
+			[ref-count #:mutable]))
+(define types (make-weak-hash))
+
+(define (intern-type-info type-info)
+  ;; called in atomic mode
+  (let ([ti-e (hash-ref types type-info #f)])
+    (if ti-e
+	(let* ([t (ephemeron-value ti-e)]
+	       [ti (type-type-info t)])
+	  (set-type-ref-count! t (add1 (type-ref-count t)))
+	  (Release type-info)
+	  (AddRef ti)
+	  t)
+	(let ([t (type type-info (make-hash) (make-hash) 1)])
+	  (hash-set! types type-info (make-ephemeron type-info t))
+	  t))))
+
+(define (type-info-type type-info)
+  (ephemeron-value (hash-ref types type-info)))
+
 (define (type-info-from-com-object obj [exn? #t])
   (or (com-object-type-info obj)
       (let ([dispatch (com-object-get-dispatch obj)])
@@ -740,13 +766,18 @@
                 (error "COM object does not expose type information")
                 #f)
             (let ([type-info (GetTypeInfo
-                              dispatch
-                              0
-                              LOCALE_SYSTEM_DEFAULT)])
-              (unless type-info
-                (error "Error getting COM type information"))
-              (set-com-impl-type-info! (com-object-impl obj) type-info)
-              type-info)))))
+			      dispatch
+			      0
+			      LOCALE_SYSTEM_DEFAULT)])
+	      (unless type-info
+		(error "Error getting COM type information"))
+	      (let* ([type (intern-type-info type-info)]
+		     [type-info (type-type-info type)]
+		     [impl (com-object-impl obj)])
+		(set-com-impl-type-info! impl type-info)
+		(set-com-impl-types! impl (type-types type))
+		(set-com-impl-scheme-types! impl (type-scheme-types type))
+		type-info))))))
 
 (define (com-object-type obj)
   (check-com-obj 'com-object-type obj)
@@ -971,7 +1002,8 @@
              [(string=? ti-name name)
               var-desc]
              [else
-              (ReleaseVarDesc type-info var-desc)])))
+              (ReleaseVarDesc type-info var-desc)
+	      #f])))
      ;; search in inherited interfaces
      (for/or ([i (in-range (TYPEATTR-cImplTypes type-attr))])
        (define ref-type (GetRefTypeOfImplType type-info i))
@@ -1052,7 +1084,7 @@
                (event-type-info-from-com-object obj)]
               [else
                (type-info-from-com-object obj exn?)])])
-        (and type-info
+	(and type-info
              (let ([mx-type-desc (type-desc-from-type-info name inv-kind type-info)])
                (when mx-type-desc
                  (hash-set! (com-object-types obj) (cons name inv-kind) mx-type-desc))
@@ -1249,9 +1281,11 @@
 (define (do-get-method-type who obj name inv-kind internal?)
   (call-as-atomic
    (lambda ()
-     (or (hash-ref (com-object-scheme-types obj) (cons name inv-kind) #f)
+     (or (and (com-object? obj)
+	      (hash-ref (com-object-scheme-types obj) (cons name inv-kind) #f))
 	 (let ([t (get-uncached-method-type who obj name inv-kind internal?)])
-	   (hash-set! (com-object-scheme-types obj) (cons name inv-kind) t)
+	   (when (com-object? obj)
+	     (hash-set! (com-object-scheme-types obj) (cons name inv-kind) t))
 	   t)))))
 
 (define (get-uncached-method-type who obj name inv-kind internal?)
