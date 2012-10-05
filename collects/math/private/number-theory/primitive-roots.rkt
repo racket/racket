@@ -86,7 +86,7 @@
         [else
          (define phi-n (totient n))
          (with-modulus n (andmap (λ: ([x : Boolean]) x)
-                                 (map (λ: ([q : Natural]) (not (= (^ g (quotient phi-n q)) 1)))
+                                 (map (λ: ([q : Natural]) (not (= (expt g (quotient phi-n q)) 1)))
                                       (prime-divisors phi-n))))]))
 
 ; primitive-root : N -> Un
@@ -100,7 +100,7 @@
          (define (primitive-root? g)
            (with-modulus n (andmap (lambda (x) x)
                                    (map (lambda (q)
-                                          (not (= (^ g (/ phi-n q)) 1)))
+                                          (not (= (expt g (/ phi-n q)) 1)))
                                         qs))))
          (let loop ([g 1])
            (cond
@@ -125,7 +125,7 @@
            (define (primitive-root? g)
              (with-modulus n (andmap (λ: ([x : Boolean]) x)
                                      (map (λ: ([q : Natural])
-                                            (not (= (^ g (quotient phi-n q)) 1)))
+                                            (not (= (expt g (quotient phi-n q)) 1)))
                                           qs))))
            (let: loop : (Listof Natural)
              ([g     : Natural          1] 
@@ -162,12 +162,10 @@
          (define qs    (prime-divisors phi-n))
          (: primitive-root? : Natural -> Boolean)
          (define (primitive-root? g)
-           (with-modulus n
-                         ((inst andmap Boolean Boolean Boolean)
-                          (λ: ([x : Boolean]) x)
-                          (map (λ: ([q : Natural])
-                                 (not (= (^ g (quotient phi-n q)) 1)))
-                               qs))))
+           (with-modulus n (andmap (λ: ([x : Boolean]) x)
+                                   (map (λ: ([q : Natural])
+                                          (not (= (expt g (quotient phi-n q)) 1)))
+                                        qs))))
          (let: loop : (U Natural False)
            ([g : Natural 1])
            (cond

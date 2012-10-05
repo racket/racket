@@ -219,27 +219,28 @@
 (define-syntax (with-modulus stx)
   (syntax-case stx ()
     [(with-modulus e form ...)
-     (with-syntax ([+   (datum->syntax (syntax with-modulus) '+)]
-                   [-   (datum->syntax (syntax with-modulus) '-)]
-                   [*   (datum->syntax (syntax with-modulus) '*)]
-                   [^   (datum->syntax (syntax with-modulus) '^)]
-                   [mod (datum->syntax (syntax with-modulus) 'mod)]
-                   [inv (datum->syntax (syntax with-modulus) 'inv)])
-       (syntax (let* ([n e]
-                      [mod    (λ: ([x : Integer]) (modulo x n))]
-                      [inv    (λ: ([x : Integer]) (inverse x n))]
-                      [+      (λ: ([x : Integer] [y : Integer]) (mod (+ x y)))]
-                      [-      (λ: ([x : Integer] [y : Integer]) (mod (- x y)))]
-                      [*      (λ: ([x : Integer] [y : Integer]) (mod (* x y)))]
-                      [square (λ: ([x : Integer]) (* x x))]
-                      [^      (letrec: ([^ : (Integer Integer -> Integer)
-                                           (λ (a b)
-                                             (cond
-                                               [(= b 0)   1]
-                                               [(even? b) (square (^ a (quotient b 2)))]
-                                               [else      (* a (^ a (sub1 b)))]))])
-                                ^)])
-                 form ...)))]))
+     (with-syntax ([+     (datum->syntax #'with-modulus '+)]
+                   [-     (datum->syntax #'with-modulus '-)]
+                   [*     (datum->syntax #'with-modulus '*)]
+                   [expt  (datum->syntax #'with-modulus 'expt)]
+                   [mod   (datum->syntax #'with-modulus 'mod)]
+                   [inv   (datum->syntax #'with-modulus 'inv)])
+       (syntax/loc stx
+       (let* ([n e]
+              [mod   (λ: ([x : Integer]) (modulo x n))]
+              [inv   (λ: ([x : Integer]) (inverse x n))]
+              [+     (λ: ([x : Integer] [y : Integer]) (mod (+ x y)))]
+              [-     (λ: ([x : Integer] [y : Integer]) (mod (- x y)))]
+              [*     (λ: ([x : Integer] [y : Integer]) (mod (* x y)))]
+              [sqr   (λ: ([x : Integer]) (* x x))]
+              [expt  (letrec: ([expt : (Integer Integer -> Integer)
+                                 (λ (a b)
+                                   (cond
+                                     [(= b 0)   1]
+                                     [(even? b) (sqr (expt a (quotient b 2)))]
+                                     [else      (* a (expt a (sub1 b)))]))])
+                       expt)])
+         form ...)))]))
 
 ; THEOREM (The Chinese Remainder Theorem)
 ;   Let n1,...,nk be positive integers with gcd(ni,nj)=1 whenever i<>j,
@@ -289,7 +290,7 @@
           (cond 
             [(even? m) (loop (add1 ν) (quotient m 2))]
             [else ; 4. for i=1,...,ν do bi <- b_{i-1}^2 rem N
-             (define b (with-modulus n (^ a m)))
+             (define b (with-modulus n (expt a m)))
              (cond 
                [(= b 1) 'probably-prime]
                [else    

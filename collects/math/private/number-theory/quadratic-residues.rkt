@@ -16,7 +16,7 @@
 (define (quadratic-character a p)
   (cond [(a . < . 0)  (raise-argument-error 'quadratic-character "Natural" 0 a p)]
         [(p . <= . 0)  (raise-argument-error 'quadratic-character "Positive-Integer" 1 a p)]
-        [else  (let ([l (with-modulus p (^ a (quotient (- p 1) 2)))])
+        [else  (let ([l (with-modulus p (expt a (quotient (- p 1) 2)))])
                  (if (<= 0 l 1) l -1))]))
 
 (: quadratic-residue? : Integer Integer -> Boolean)
