@@ -2,17 +2,11 @@
 
 (require/typed typed/racket
                [integer-sqrt/remainder (Natural -> (Values Natural Natural))])
-(require "types.rkt")
+(require "divisibility.rkt"
+         "modular-arithmetic.rkt"
+         "types.rkt")
 
-(provide bezout
-         bezout-binary
-         coprime?
-         divides?
-         gcd
-         pairwise-coprime?
-         inverse
-         with-modulus
-         solve-chinese
+(provide solve-chinese
          
          ; primes
          nth-prime
@@ -61,63 +55,6 @@
 (define *SMALL-FACORIZATION-LIMIT* *SMALL-PRIME-LIMIT*)
 ; Determines whether to use naive factorization or Pollards rho method.
 
-
-;;;
-;;; DIVISIBILITY
-;;;
-
-(: divides? : Z Z -> Boolean)
-; For b<>0:  ( a divides b <=> exists k s.t. a*k=b )
-(define (divides? a b)
-  (= (remainder b a) 0))
-
-; THEOREM (Bezout's identity)
-;  If a and b are integers (not both zero), then
-;  there exists integers u and v such that
-;    gcd(a,b) = au + bv
-;  Note: u and v are not unique
-
-; (bezout-binary a b) = (list u v)   <=>   gcd(a,b) = au + bv
-(: bezout-binary : Z Z -> (List Z Z))
-(define (bezout-binary a b)
-  (: loop : Z Z Z Z Z Z -> (List Z Z))
-  (define (loop a b ua va ub vb)  ; a>=b>0 , a = ua*a+ub*b,  b = ub*a+ub*b
-    (let ([r (remainder a b)]
-          [q (quotient a b)])
-      (if (= r 0)
-          (list ub vb)
-          (loop b r ub vb (- ua (* q ub)) (- va (* q vb))))))
-  (if (> a b)
-      (loop a b 1 0 0 1)
-      (loop b a 0 1 1 0)))
-
-; (bezout a b c ...) -> (list u v w ...)    <=>  gcd(a,b,c,...) = au + bv + cw + ...
-(: bezout : Z Z * -> Zs)
-(define (bezout a . bs)
-  (cond
-    [(empty? bs)        (list 1)]
-    [(empty? (cdr bs))  (bezout-binary a (car bs))]
-    [else    
-     (let ([uvs (apply bezout bs)]
-           [st  (bezout-binary (apply gcd bs) a)])
-       (let ([s (first st)]
-             [t (second st)])
-         (cons t (map (lambda: ([u : Integer]) (* s u))
-                      uvs))))]))
-
-; DEF (Coprime, relatively prime)
-;  Two or more integers are called coprime, if their greatest common divisor is 1.
-;     a, b and c coprime <=> gcd(a,b,c)=1
-
-(: coprime? : Z Z * -> Boolean)
-(define (coprime? a . bs)
-  (= 1 (apply gcd (cons a bs))))
-
-(: pairwise-coprime? : Z Z * -> Boolean)
-(define (pairwise-coprime? a . bs)
-  (or (null? bs)
-      (and (andmap (λ: ([b : Integer]) (coprime? a b)) bs)
-           (apply pairwise-coprime? bs))))
 
 ;;;
 ;;; Powers
@@ -192,56 +129,6 @@
   ; interval [from;to)
   (+ from (random-integer (assert (- to from) natural?))))
 
-
-;;;
-;;; MODULAR ARITHMETIC
-;;;
-
-; THEOREM
-;  If gcd(a,n)=1 then there exist b such that
-;    ab=1 mod n
-;  The number b is called an inverse of a modulo n.
-
-(: inverse : Z Z -> (U Z False))
-;   return b, where a*b=1 mod n and b in {0,...,n-1}
-(define (inverse a n)
-  (if (coprime? a n)
-      (modulo (first (bezout-binary a n)) n)
-      #f))
-
-; Within a (with-modulus n form1 ...) the return values of
-; the arithmetival operations +, -, * and ^ are automatically
-; reduced modulo n. Furthermore (mod x)=(modulo x n) and
-; (inv x)=(inverse x n).
-
-; Example: (with-modulus 3 (^ 2 4)) ==> 1
-
-(define-syntax (with-modulus stx)
-  (syntax-case stx ()
-    [(with-modulus e form ...)
-     (with-syntax ([+     (datum->syntax #'with-modulus '+)]
-                   [-     (datum->syntax #'with-modulus '-)]
-                   [*     (datum->syntax #'with-modulus '*)]
-                   [expt  (datum->syntax #'with-modulus 'expt)]
-                   [mod   (datum->syntax #'with-modulus 'mod)]
-                   [inv   (datum->syntax #'with-modulus 'inv)])
-       (syntax/loc stx
-       (let* ([n e]
-              [mod   (λ: ([x : Integer]) (modulo x n))]
-              [inv   (λ: ([x : Integer]) (inverse x n))]
-              [+     (λ: ([x : Integer] [y : Integer]) (mod (+ x y)))]
-              [-     (λ: ([x : Integer] [y : Integer]) (mod (- x y)))]
-              [*     (λ: ([x : Integer] [y : Integer]) (mod (* x y)))]
-              [sqr   (λ: ([x : Integer]) (* x x))]
-              [expt  (letrec: ([expt : (Integer Integer -> Integer)
-                                 (λ (a b)
-                                   (cond
-                                     [(= b 0)   1]
-                                     [(even? b) (sqr (expt a (quotient b 2)))]
-                                     [else      (* a (expt a (sub1 b)))]))])
-                       expt)])
-         form ...)))]))
-
 ; THEOREM (The Chinese Remainder Theorem)
 ;   Let n1,...,nk be positive integers with gcd(ni,nj)=1 whenever i<>j,
 ;   and let a1,...,ak be any integers. Then the solutions to
@@ -255,7 +142,7 @@
   ; the ns should be coprime
   (let* ([n  (apply * ns)]
          [cs (map (λ: ([ni : Z]) (quotient n ni)) ns)]
-         [ds (map inverse cs ns)]
+         [ds (map modular-inverse cs ns)]
          [es (cast ds integers?)])
     (cast (modulo (apply + (map * as cs es)) n) natural?)))
 
@@ -278,7 +165,7 @@
 (: prime-strong-pseudo-single? : Natural -> (U 'probably-prime 'composite N))
 (define (prime-strong-pseudo-single? n)
   (cond
-    [(< n 4) (error 'prime-strong-pseudo-single? "n must be 4 or greater, got ~a" n)]
+    [(or (zero? n) (< n 4)) (error 'prime-strong-pseudo-single? "n must be 4 or greater, got ~a" n)]
     [else    
      (define a (random-integer-in-interval 2 (- n 1)))
      (define g (gcd a n))
@@ -290,14 +177,14 @@
           (cond 
             [(even? m) (loop (add1 ν) (quotient m 2))]
             [else ; 4. for i=1,...,ν do bi <- b_{i-1}^2 rem N
-             (define b (with-modulus n (expt a m)))
+             (define b (modular-expt a m n))
              (cond 
                [(= b 1) 'probably-prime]
                [else    
                 (let loop ([i 0] [b b] [b-old b])
                   (if (and (< i ν) (not (= b 1)))
                       (loop (add1 i)
-                            (with-modulus n (* b b))
+                            (modulo (* b b) n)
                             b)
                       (if (= b 1)
                           (let ([g (gcd (+ b-old 1) n)])

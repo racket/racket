@@ -2,9 +2,9 @@
 
 (require racket/list
          "../exception.rkt"
+         "divisibility.rkt"
+         "modular-arithmetic.rkt"
          (only-in "number-theory.rkt" 
-                  coprime?
-                  with-modulus
                   odd-prime-power?
                   totient
                   prime-divisors
@@ -41,9 +41,11 @@
         [(n . <= . 0)  (raise-argument-error 'order "Positive-Integer" 1 g n)]
         [(not (coprime? g n))  (error 'order "expected coprime arguments; given ~e and ~e" g n)]
         [else
-         (let: loop : Positive-Integer ([k : Positive-Integer 1] 
-                                        [a : Natural g])
-           (if (with-modulus n (= a 1)) k (loop (+ k 1) (with-modulus n (* a g)))))]))
+         (parameterize ([current-modulus n])
+           (let: loop : Positive-Integer ([k : Positive-Integer 1] 
+                                          [a : Natural g])
+             (cond [(mod= a 1)  k]
+                   [else  (loop (+ k 1) (mod* a g))])))]))
 
 (: orders : Integer -> (Listof Positive-Integer))
 (define (orders n)
@@ -85,9 +87,10 @@
          (error 'primitive-root? "expected coprime arguments; given ~e and ~e" g n)]
         [else
          (define phi-n (totient n))
-         (with-modulus n (andmap (λ: ([x : Boolean]) x)
-                                 (map (λ: ([q : Natural]) (not (= (expt g (quotient phi-n q)) 1)))
-                                      (prime-divisors phi-n))))]))
+         (parameterize ([current-modulus  n])
+           (andmap (λ: ([x : Boolean]) x)
+                   (map (λ: ([q : Natural]) (not (mod= (modexpt g (quotient phi-n q)) 1)))
+                        (prime-divisors phi-n))))]))
 
 ; primitive-root : N -> Un
 ;  return primitive root of n if one exists,
@@ -123,10 +126,11 @@
                 [qs    (prime-divisors phi-n)])
            (: primitive-root? : Natural -> Boolean)
            (define (primitive-root? g)
-             (with-modulus n (andmap (λ: ([x : Boolean]) x)
-                                     (map (λ: ([q : Natural])
-                                            (not (= (expt g (quotient phi-n q)) 1)))
-                                          qs))))
+             (parameterize ([current-modulus  n])
+               (andmap (λ: ([x : Boolean]) x)
+                       (map (λ: ([q : Natural])
+                              (not (mod= (modexpt g (quotient phi-n q)) 1)))
+                            qs))))
            (let: loop : (Listof Natural)
              ([g     : Natural          1] 
               [roots : (Listof Natural) empty])
@@ -162,10 +166,11 @@
          (define qs    (prime-divisors phi-n))
          (: primitive-root? : Natural -> Boolean)
          (define (primitive-root? g)
-           (with-modulus n (andmap (λ: ([x : Boolean]) x)
-                                   (map (λ: ([q : Natural])
-                                          (not (= (expt g (quotient phi-n q)) 1)))
-                                        qs))))
+           (parameterize ([current-modulus  n])
+             (andmap (λ: ([x : Boolean]) x)
+                     (map (λ: ([q : Natural])
+                            (not (mod= (modexpt g (quotient phi-n q)) 1)))
+                          qs))))
          (let: loop : (U Natural False)
            ([g : Natural 1])
            (cond

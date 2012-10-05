@@ -105,7 +105,7 @@
   (not (not (member x xs))))
 
 (check-equal? ; 2*12-1*20 = 4 = gcd(12,20)
- (list-dot '(12 20) (bezout-binary 12 20)) (gcd 12 20))
+ (list-dot '(12 20) (bezout 12 20)) (gcd 12 20))
 (check-equal? (list-dot '(12 20) (bezout 12 20)) (gcd 12 20))
 (check-equal? (list-dot '(20 16) (bezout 20 16)) (gcd 20 16))
 (check-equal? (list-dot '(12 20 16) (bezout 12 20 16)) (gcd 12 20 16))
@@ -119,11 +119,10 @@
 (check-true  (coprime? 6 10 15))
 (: check-inverse : Natural -> Boolean)
 (define (check-inverse n)
-  (define m (inverse n 20))
-  (cond [(and (coprime? n 20) m)         
-         (= (remainder (* n m) 20) 1)]
-        [else (not m)]))
-(check-true (andmap check-inverse (build-list 20 (λ: ([x : Natural]) x))))
+  (define m (and (coprime? n 20) (modular-inverse n 20)))
+  (cond [m  (= (remainder (* n m) 20) 1)]
+        [else  #t]))
+(check-true (andmap check-inverse (build-list 20 (λ: ([x : Natural]) (+ x 1)))))
 
 (check-equal? (solve-chinese '(2 3 2) '(3 5 7)) 23)
 
@@ -219,17 +218,6 @@
       [n : Natural (in-range 2 5)])
   (check-true (check-integer-root a n)))
 
-; "integer-root.rkt"
-;(: check-faster-integer-root : Natural Natural -> Boolean)
-;(define (check-faster-integer-root a n)
-;  (define r (faster-integer-root a n))
-;  (unless (and (<= (expt a n) a) (<= (expt (+ a 1)) n))
-;    (displayln (list 'check-faster-integer-root 'a a 'n n)))
-;  (and (<= (expt r n) a) (<= (expt (+ r 1)) n)))
-;(for:([a : Natural (in-range (expt 10 9) (+ (expt 10 9) 10000))]
-;      [n : Natural (in-range 2 5)])
-;  (check-true (check-faster-integer-root a n)))
-
 ; "quadratic-residues.rkt"
 (check-equal? (quadratic-character  2 5) -1)
 (check-equal? (quadratic-character  3 5) -1)
@@ -253,5 +241,3 @@
 (check-false (quadratic-residue? 11 17))
 (check-false (quadratic-residue? 12 17))
 (check-false (quadratic-residue? 14 17))
-
-

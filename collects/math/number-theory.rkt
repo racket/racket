@@ -1,6 +1,8 @@
 #lang typed/racket/base
 
-(require "private/number-theory/number-theory.rkt"
+(require "private/number-theory/divisibility.rkt"
+         "private/number-theory/modular-arithmetic.rkt"
+         "private/number-theory/number-theory.rkt"
          "private/number-theory/factorial.rkt"
          "private/number-theory/bernoulli.rkt"
          "private/number-theory/binomial.rkt"
@@ -13,9 +15,11 @@
          "private/number-theory/quadratic.rkt"
          "private/number-theory/quadratic-residues.rkt"
          "private/number-theory/tangent-number.rkt"
-         "private/number-theory/integer-root.rkt")
+         "private/number-theory/number-theory-syntax.rkt")
 
 (provide (all-from-out
+          "private/number-theory/divisibility.rkt"
+          "private/number-theory/modular-arithmetic.rkt"
           "private/number-theory/number-theory.rkt"
           "private/number-theory/factorial.rkt"
           "private/number-theory/bernoulli.rkt"
@@ -29,4 +33,4 @@
           "private/number-theory/quadratic.rkt"
           "private/number-theory/quadratic-residues.rkt"
           "private/number-theory/tangent-number.rkt"
-          "private/number-theory/integer-root.rkt"))
+          "private/number-theory/number-theory-syntax.rkt"))
