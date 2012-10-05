@@ -182,11 +182,10 @@
         [(or (App: _ _ _) (Name: _)) (t->c (resolve-once ty))]
         ;; any/c doesn't provide protection in positive position
         [(Univ:)
-         (if from-typed? 
-             (begin
-               (set-impersonator!)
-               #'any-wrap/c)
-               #'any/c)]
+         (cond [from-typed? 
+                (set-chaperone!)
+                #'any-wrap/c]
+               [else #'any/c])]
         ;; we special-case lists:
         [(Mu: var (Union: (list (Value: '()) (Pair: elem-ty (F: var)))))
          (if (and (not from-typed?) (type-equal? elem-ty t:Univ))
@@ -293,7 +292,7 @@
          (match-let ([(Mu-name: n-nm _) ty])
            (with-syntax ([(n*) (generate-temporaries (list n-nm))])
              (parameterize ([vars (cons (list n #'n*) (vars))]
-                            [current-contract-kind flat-sym])
+                            [current-contract-kind (contract-kind-min kind chaperone-sym)])
                (define ctc (t->c b))
                #`(letrec ([n* (recursive-contract
                                 #,ctc
@@ -329,7 +328,8 @@
                   (with-syntax* ([rec (generate-temporary 'rec)])
                     (define required-recursive-kind
                        (contract-kind-min kind (if mut? impersonator-sym chaperone-sym)))
-                    (parameterize ((current-contract-kind flat-sym))
+                    ;(printf "kind: ~a mut-k: ~a req-rec-kind: ~a\n" kind (if mut? impersonator-sym chaperone-sym) required-recursive-kind)
+                    (parameterize ((current-contract-kind (contract-kind-min kind chaperone-sym)))
                       (let ((fld-ctc (t->c fty #:seen (cons (cons ty #'rec) structs-seen)
                                            #:kind required-recursive-kind)))
                         #`(let ((rec (recursive-contract struct-ctc #,(contract-kind->keyword (current-contract-kind)))))

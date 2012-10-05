@@ -2,44 +2,72 @@
 
 (require racket/match racket/contract/base racket/contract/combinator)
 
-(define-struct any-wrap (val)
-  #:property prop:custom-write
-  (lambda (v p write?)
-    (fprintf p "#<Typed Value: ~a>" (any-wrap-val v))))
-
 (define undef (letrec ([x x]) x))
 
-(define (traverse wrap?)
+(define (traverse b)
+  (define (fail v)
+    (raise-blame-error (blame-swap b) v "Attempted to use a higher-order value passed as `Any`"))
+
   (define (t v)
+    (define (wrap-struct s)
+      (define (extract-functions struct-type)
+        (define-values (sym init auto ref set! imms par skip?)
+          (struct-type-info type))
+        (when skip? (fail s)) ;; "Opaque struct type!")
+        (define-values (fun/chap-list _)
+          (for/fold ([res null]
+                     [imms imms])
+              ([n (in-range (+ init auto))])
+            (if (and (pair? imms) (= (car imms) n))
+                ;; field is immutable
+                (values 
+                 (list* (make-struct-field-accessor ref n)
+                        (lambda (s v) (t v))
+                        res)
+                 (cdr imms))
+                ;; field is mutable
+                (values
+                 (list* (make-struct-field-accessor ref n)
+                        (lambda (s v) (t v))
+                        (make-struct-field-mutator set! n)
+                        (lambda (s v) (fail s))
+                        res)
+                 imms))))
+        (cond
+          [par (cons fun/chap-list (extract-functions par))]
+          [else fun/chap-list]))
+      (define-values (type skipped?) (struct-info s))
+      (when skipped? (fail s));  "Opaque struct type!"
+      (apply chaperone-struct s (extract-functions type)))
+
     (match v
-      [(? (lambda (e) (and (any-wrap? e) (not wrap?)))) (any-wrap-val v)]
       [(? (lambda (e)
             (or (number? e) (string? e) (char? e) (symbol? e)
                 (null? e) (regexp? e) (eq? undef e)
                 (keyword? e) (bytes? e) (boolean? e) (void? e))))
        v]
       [(cons x y) (cons (t x) (t y))]
-      [(and (? immutable?) (? vector?)) 
-       (for/vector #:length (vector-length v)
-         ([i (in-vector v)]) (t i))]
-      [(and (? immutable?) (box v)) (box (t v))]
-      [(and (? immutable?) (? hash? v))
-       ((cond [(hash-eq? v) make-immutable-hasheq]
-              [(hash-eqv? v) make-immutable-hasheqv]
-              [else make-immutable-hash])
-        (for/list ([(k v) (in-hash v)])
-          (cons (t k) (t v))))]
-      #; ;; need to check immutablity
-      [(? prefab-struct-key)
-       (let* ([k (prefab-struct-key v)]
-              [vals (struct->vector v)])
-         (apply make-prefab-struct k (for/list ([i (in-vector vals 1)]) i)))]
-      [_ (if wrap? (make-any-wrap v) v)]))
+      [(? vector?) (chaperone-vector v
+                                     (lambda (v i e) (t e))
+                                     (lambda (v i e) (fail v)))]
+      [(? box?) (chaperone-box v
+                               (lambda (v e) (t e))
+                               (lambda (v e) (fail v)))]
+      [(? hash?) (chaperone-hash v
+                                 (lambda (h k) (values k (lambda (h k v) (t v)))) ;; ref
+                                 (lambda (h k n) (if (immutable? v) (values k n) (fail v))) ;; set
+                                 (lambda (h v) v) ;; remove
+                                 (lambda (h k) (t k)))] ;; key
+      [(? evt?) (chaperone-evt v (lambda (e) (values e t)))]
+      [(? struct?) (wrap-struct v)]
+      [(? procedure?) (chaperone-procedure v (lambda _ (fail v)))]
+      [_ (fail v)]))
   t)
 
 (define any-wrap/c
-  (make-contract
+  (make-chaperone-contract
    #:name 'Any
-   #:projection (compose traverse blame-original?)))
+   #:first-order (lambda (x) #t)
+   #:projection traverse))
 
 (provide any-wrap/c)

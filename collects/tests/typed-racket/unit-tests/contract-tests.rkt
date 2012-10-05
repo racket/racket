@@ -20,7 +20,7 @@
   (test-suite "Contract Tests"
               (t (-Number . -> . -Number))
               (t (-Promise -Number))
-              (t/fail (-set Univ)) 
+              (t (-set Univ)) 
               ))
 
 (define-go contract-tests)

@@ -52,7 +52,7 @@
   (define k (cons (unsafe-struct-ref s 0) (unsafe-struct-ref t 0)))
   (define (new-val) 
     (define result (handle-failure (and (subtype* (current-seen) s t) #t)))
-    (printf "subtype cache miss ~a ~a\n" s t)
+    ;(printf "subtype cache miss ~a ~a\n" s t)
     result)
   (hash-ref! subtype-cache k new-val))
 

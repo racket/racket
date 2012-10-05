@@ -213,6 +213,7 @@
     [(Name: stx) (fp "~a" (syntax-e stx))]
     [(app has-name? (? values name))
      (fp "~a" name)]
+    [(StructType: (Struct: nm _ _ _ _ _)) (fp "(StructType ~a)" (syntax-e nm))]
     [(StructTop: (Struct: nm _ _ _ _ _)) (fp "(Struct ~a)" (syntax-e nm))]
     [(BoxTop:) (fp "Box")]
     [(ChannelTop:) (fp "Channel")]
