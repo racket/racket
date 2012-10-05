@@ -100,8 +100,11 @@
                                 (open-input-string
                                   @T{ 1 [2,3] "four" }))])
           je)
-        =>
-        '(1 (2 3) "four")
+        => '(1 (2 3) "four")
+        (string->jsexpr "]") =error> "read-json:"
+        (string->jsexpr "foo") =error> "read-json:"
+        (string->jsexpr "") => eof
+        (string->jsexpr " \t\r\n") => eof
         ))
 
 (test do (pred-tests)
