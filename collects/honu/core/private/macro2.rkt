@@ -5,6 +5,7 @@
                      syntax/stx
                      racket/set
                      racket/syntax
+                     "template.rkt"
                      "literals.rkt"
                      (prefix-in phase1: "parse2.rkt")
                      "debug.rkt"
@@ -217,11 +218,12 @@
                #'rest
                #t)])))
 
+#|
 ;; FIXME: we shouldn't need this definition here
 (define-syntax (as-honu-syntax stx)
   (syntax-parse stx
     [(_ form)
-     (define compressed (phase0:compress-dollars #'form))
+     (define compressed (compress-dollars #'form))
      (with-syntax ([stuff* (datum->syntax #'form (syntax->list compressed)
                                           #'form #'form)])
        (syntax #'stuff*))]))
@@ -234,6 +236,7 @@
        (with-syntax ([stuff* (datum->syntax #'form (syntax->list compressed)
                                             #'form #'form)])
          (syntax #'stuff*))])))
+|#
 
 (provide honu-syntax)
 ;; Do any honu-specific expansion here
@@ -243,7 +246,7 @@
       #;
       [(_ (#%parens single) . rest)
        (define context #'single)
-       (define compressed (phase0:compress-dollars #'single))
+       (define compressed (compress-dollars #'single))
        (values
          (with-syntax ([stuff* (datum->syntax context compressed context context)])
            (phase1:racket-syntax #'stuff*))
@@ -251,7 +254,7 @@
          #f)]
       [(_ (#%parens stuff ...) . rest)
        (define context (stx-car #'(stuff ...)))
-       (define compressed (phase0:compress-dollars #'(stuff ...)))
+       (define compressed (compress-dollars #'(stuff ...)))
        (values
          (with-syntax ([stuff* (datum->syntax context
                                               (syntax->list compressed)

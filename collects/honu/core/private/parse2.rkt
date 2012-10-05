@@ -8,6 +8,8 @@
          "literals.rkt"
          "debug.rkt"
          "compile.rkt"
+         "template.rkt"
+         "utils.rkt"
          racket/list
          (prefix-in transformer: "transformer.rkt")
          (prefix-in fixture: "fixture.rkt")
@@ -25,7 +27,7 @@
 ;; phase -1
 (require (for-template racket/base
                        racket/splicing
-                       "compile.rkt"
+                       ;; "compile.rkt"
                        "syntax.rkt"
                        "extra.rkt"))
 
