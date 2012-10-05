@@ -60,7 +60,11 @@
                                  (lambda (h k) (t k)))] ;; key
       [(? evt?) (chaperone-evt v (lambda (e) (values e t)))]
       [(? struct?) (wrap-struct v)]
-      [(? procedure?) (chaperone-procedure v (lambda _ (fail v)))]
+      [(? procedure?) 
+       (if (procedure-arity-includes? v 0)
+           (chaperone-procedure v (case-lambda [() (values)]
+                                               [_ (fail v)]))
+           (chaperone-procedure v (lambda args (fail v))))]
       [_ (fail v)]))
   t)
 
