@@ -6,7 +6,7 @@
 
 The @racketmodname[scribble/srcdoc] and
 @racketmodname[scribble/extract] libraries support writing
-documentation within the documentation code along with an export
+documentation within the documented code along with an export
 contract, similar to using @as-index{JavaDoc}. With this approach, a
 single contract specification is used both for the run-time contract
 and the documentation of an exported binding.
