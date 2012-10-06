@@ -3397,7 +3397,6 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
                        "  wrapper: %V\n"
                        "  received: %V",
                        what,
-                       what,
                        SCHEME_CAR(px->redirects),
                        post);
 
