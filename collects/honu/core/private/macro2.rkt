@@ -449,3 +449,13 @@
                      (make name))))
                #'rest
                #f)])))
+
+;; like begin-for-syntax
+(provide honu-phase)
+(define-honu-syntax honu-phase
+  (lambda (code)
+    (syntax-parse code #:literal-sets (cruft)
+      [(_ (#%braces body ...) . rest)
+       (define out
+         (phase1:racket-syntax (begin-for-syntax (parse-stuff body ...))))
+       (values out #'rest #t)])))
