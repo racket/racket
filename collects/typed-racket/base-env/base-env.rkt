@@ -942,6 +942,8 @@
 [make-weak-custom-hash (->opt (-> Univ Univ Univ) (-> Univ -Nat) [(-> Univ -Nat)] Univ)]
 
 ;Section 3.14 (Sequences and Streams)
+[in-directory (-> (-seq -Path))]
+
 [sequence? (make-pred-ty (-seq Univ))]
 [stop-before (-poly (a) ((-seq a) (a . -> . Univ) . -> . (-seq a)))]
 [stop-after (-poly (a) ((-seq a) (a . -> . Univ) . -> . (-seq a)))]
