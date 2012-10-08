@@ -401,7 +401,8 @@
                      (Real -> Real)))
 (define (log-gamma x)
   (cond [(flonum? x)  (fllog-gamma x)]
+        [(single-flonum? x)  (fllog-gamma (fl x))]
         [(integer? x)  (if (x . > . 0)
                            (log-factorial (- x 1))
                            (error 'log-gamma "undefined for nonpositive integers"))]
-        [else  (fllog-gamma (real->double-flonum x))]))
+        [else  (fllog-gamma (fl x))]))
