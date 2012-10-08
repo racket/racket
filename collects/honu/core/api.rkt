@@ -10,4 +10,5 @@
          define-literal
          (for-syntax racket-syntax
                      honu-expression
+                     honu-body
                      parse-all))

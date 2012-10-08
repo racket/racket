@@ -1,0 +1,15 @@
+#lang honu
+
+require "xml.rkt";
+
+// var x = xml <foo>hello world!!</foo>
+
+// var x = xml <foo> </foo>
+var x = xml <foo> tuna {var z = 9; 1 + z} </foo>
+var y = xml <foo> <bar> {1 + 1} </bar> </foo>
+
+xml_to_string(x)
+xml_to_string(y)
+
+xml_to_string(xml <html><body> hello world! <b>foo</b> <b>bar</b> </body></html>)
+xml_to_string(xml <what>{"{hi}"}</what>)
