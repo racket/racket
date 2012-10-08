@@ -109,14 +109,19 @@
             ;; creating a sanbox can fail in strange ways so we just
             ;; swallow the failures so as to not wreck DrRacket
             (with-handlers ((exn:fail? (λ (x) 
-                                         (log-error (exn-message x))
+                                         (log-error (format "DrRacket:module-language:sandbox exn: ~a" (exn-message x)))
                                          (for ([x (in-list (continuation-mark-set->context
                                                             (exn-continuation-marks x)))])
                                            (log-error (format "  ~s" x))))))
               (set! sandbox (make-evaluator 'racket/base))))))
       
       (define/override (first-opened settings)
-        (define ns (with-handlers ((exn:fail? (lambda (x) #f)))
+        (define ns (with-handlers ((exn:fail? (lambda (x) 
+                                                (log-error (format "DrRacket:module-language.rkt:first-opened exn: ~a" (exn-message x)))
+                                                (for ([x (in-list (continuation-mark-set->context
+                                                                   (exn-continuation-marks x)))])
+                                                  (log-error (format "  ~s" x)))
+                                                #f)))
                      ;; get-ns can fail in all kinds of strange ways;
                      ;; just give up if it does, since an error here
                      ;; means drracket won't start up.
