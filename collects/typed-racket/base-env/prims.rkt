@@ -101,18 +101,15 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (define-syntax-class (struct-clause legacy)
     ;#:literals (struct)
     #:attributes (nm (body 1) (constructor-parts 1))
-    (pattern [struct nm:opt-parent (body ...) (~var constructor (opt-constructor legacy #'nm.nm))]
-             #:fail-unless (eq? 'struct (syntax-e #'struct)) #f
+    (pattern [(~or (~datum struct) #:struct) nm:opt-parent (body ...) (~var constructor (opt-constructor legacy #'nm.nm))]
              #:with (constructor-parts ...) #'constructor.value))
 
   (define-syntax-class opaque-clause
     ;#:literals (opaque)
     #:attributes (ty pred opt)
-    (pattern [opaque ty:id pred:id]
-             #:fail-unless (eq? 'opaque (syntax-e #'opaque)) #f
+    (pattern [(~or (~datum opaque) #:opaque) ty:id pred:id]
              #:with opt #'())
-    (pattern [opaque ty:id pred:id #:name-exists]
-             #:fail-unless (eq? 'opaque (syntax-e #'opaque)) #f
+    (pattern [(~or (~datum opaque) #:opaque) opaque ty:id pred:id #:name-exists]
              #:with opt #'(#:name-exists)))
 
   (define-syntax-class (clause legacy lib)
