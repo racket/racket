@@ -18,7 +18,10 @@
          syntax/location
          setup/path-to-relative
          (only-in setup/dirs find-doc-dir)
-         "utils.rkt")
+         "utils.rkt"
+         (for-syntax racket/base)
+         (for-syntax racket/runtime-path)
+         (for-syntax compiler/cm-accomplice))
 
 (provide make-search)
 
@@ -28,6 +31,16 @@
 ;; then hop over to the search page (the search page can do it itself, but it's
 ;; to heavy to load twice).
 (define-runtime-path search-context-page "search-context.html")
+
+;;; FIXME: Making make-search.zo depend on these files is a HACK!
+;; The point is to make sure the latest versions get installed;
+;; ideally we could just inform scribble/raco that they need
+;; installing, and they would just do that when appropriate.
+(begin-for-syntax
+  (define-runtime-path search-script "search.js")
+  (define-runtime-path search-context-page "search-context.html")
+  (register-external-file search-script)
+  (register-external-file search-context-page))
 
 (define (quote-string val)
   (define (hex4 ch)
