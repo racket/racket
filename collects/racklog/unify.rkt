@@ -427,9 +427,18 @@
      [(? atom? y) (eqv? x y)])]))
 
 (define (unify t1 t2)
+  (define iu (inner-unify t1 t2))
+  (λ (fk)
+    (define-values (cleanup k)
+      (iu fk))
+    k))
+
+(define (inner-unify t1 t2)
   (lambda (fk)
+    (define (cleanup s)
+      (for-each unbind-ref! s))
     (define (cleanup-n-fail s)
-      (for-each unbind-ref! s)
+      (cleanup s)
       (fk 'fail))
     (define (unify1 t1 t2 s)
       (cond [(eqv? t1 t2) s]
@@ -490,8 +499,10 @@
             [else
              (cleanup-n-fail s)]))
     (define s (unify1 t1 t2 empty))
-    (lambda (d)
-      (cleanup-n-fail s))))
+    (values
+     (λ () (cleanup s))
+     (lambda (d)
+       (cleanup-n-fail s)))))
 
 (define-syntax-rule (or* x f ...)
   (or (f x) ...))

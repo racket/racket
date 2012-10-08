@@ -791,18 +791,12 @@ string_to_unreadable_symbol_prim (int argc, Scheme_Object *argv[])
   return scheme_intern_exact_parallel_symbol(bs, blen);
 }
 
-static Scheme_Object *
-symbol_to_string_prim (int argc, Scheme_Object *argv[])
+Scheme_Object *scheme_symbol_to_string(Scheme_Object *sym)
 {
-  Scheme_Object *sym, *str;
+  Scheme_Object *str;
   GC_CAN_IGNORE unsigned char *s;
   GC_CAN_IGNORE mzchar *s2;
   intptr_t len, i;
-
-  sym = argv[0];
-
-  if (!SCHEME_SYMBOLP(sym))
-    scheme_wrong_contract("symbol->string", "symbol?", 0, argc, argv);
 
   s = (unsigned char *)SCHEME_SYM_VAL(sym);
   len = SCHEME_SYM_LEN(sym);
@@ -827,6 +821,20 @@ symbol_to_string_prim (int argc, Scheme_Object *argv[])
                                                 SCHEME_SYM_LEN(sym));
   }
 }
+
+static Scheme_Object *
+symbol_to_string_prim (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *sym;
+
+  sym = argv[0];
+
+  if (!SCHEME_SYMBOLP(sym))
+    scheme_wrong_contract("symbol->string", "symbol?", 0, argc, argv);
+
+  return scheme_symbol_to_string(sym);
+}
+
 
 static Scheme_Object *
 keyword_p_prim (int argc, Scheme_Object *argv[])

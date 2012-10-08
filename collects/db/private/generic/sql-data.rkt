@@ -120,7 +120,7 @@
           [else
            (cond [(eq? default no-arg)
                   (error 'sql-day-time-interval->sql-time
-                         "cannot convert interval to time: ~e" x)]
+                         "cannot convert given interval to time: ~e" x)]
                  [(procedure? default) (default)]
                  [else default])])))
 
@@ -155,9 +155,7 @@ byte. (Because that's PostgreSQL's binary format.) For example:
 (define (check-index fsym b index)
   (let ([len (sql-bits-length b)])
     (unless (< index len)
-      (if (zero? len)
-          (error fsym "index ~e out of range for empty sql-bits" index)
-          (error fsym "index ~e out of range: [0, ~a]" index (+ len -1))))))
+      (raise-range-error fsym "sql-bits" "" index b 0 (sub1 len)))))
 
 (define (sql-bits-ref b i)
   (check-index 'sql-bits-ref b i)

@@ -73,6 +73,7 @@ struct Optimize_Info
   int *transitive_use_len;
 
   Scheme_Object *context; /* for logging */
+  Scheme_Logger *logger;
 };
 
 static char *get_closure_flonum_map(Scheme_Closure_Data *data, int arg_n, int *ok);
@@ -192,10 +193,10 @@ static void note_match(int actual, int expected, Optimize_Info *warn_info)
     return;
 
   if (actual != expected) {
-    scheme_log(NULL,
+    scheme_log(warn_info->logger,
                SCHEME_LOG_WARNING,
                0,
-               "warning%s: optimizer detects %d values produced when %d expected",
+               "warning%s: %d values produced when %d expected",
                scheme_optimize_context_to_string(warn_info->context),
                actual, expected);
   }
@@ -649,7 +650,7 @@ static Scheme_Object *try_optimize_fold(Scheme_Object *f, Scheme_Object *o, Opti
       break;
     }
 
-    return scheme_try_apply(f, args, info->context);
+    return scheme_try_apply(f, args, info);
   }
 
   return NULL;
@@ -845,7 +846,7 @@ static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data,
         l = cons(val, l);
       }
       l = cons(scheme_list_proc, l);
-      val = scheme_make_application(l);
+      val = scheme_make_application(l, info);
     } else if (app)
       val = app->args[i + 1];
     else if (app3)
@@ -1089,10 +1090,10 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 	if (le) {
 	  LOG_INLINE(fprintf(stderr, "Inline %d[%d]<=%d@%d %d %s\n", sz, is_leaf, threshold, info->inline_fuel,
                              single_use, scheme_write_to_string(data->name ? data->name : scheme_false, NULL)));
-	  scheme_log(NULL,
+	  scheme_log(info->logger,
 		     SCHEME_LOG_DEBUG,
 		     0,
-		     "mzc optimizer: inlining: involving: %s%s size: %d threshold: %d",
+		     "inlining: involving: %s%s size: %d threshold: %d",
 		     scheme_write_to_string(data->name ? data->name : scheme_false, NULL),
 		     scheme_optimize_context_to_string(info->context),
 		     sz,
@@ -1104,10 +1105,10 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
           return le;
 	} else {
           LOG_INLINE(fprintf(stderr, "No inline %s\n", scheme_write_to_string(data->name ? data->name : scheme_false, NULL)));
-	  scheme_log(NULL,
+	  scheme_log(info->logger,
 		     SCHEME_LOG_DEBUG,
 		     0,
-		     "mzc optimizer: no inlining: involving: %s%s size: %d threshold: %d",
+		     "no inlining: involving: %s%s size: %d threshold: %d",
 		     scheme_write_to_string(data->name ? data->name : scheme_false, NULL),
 		     scheme_optimize_context_to_string(info->context),
 		     sz,
@@ -1117,10 +1118,10 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
         LOG_INLINE(fprintf(stderr, "No fuel %s %d[%d]>%d@%d %d\n", scheme_write_to_string(data->name ? data->name : scheme_false, NULL),
                            sz, is_leaf, threshold,
                            info->inline_fuel, info->use_psize));
-	scheme_log(NULL,
+	scheme_log(info->logger,
 		   SCHEME_LOG_DEBUG,
 		   0,
-		   "mzc optimizer: no inlining, out of fuel: involving: %s%s size: %d threshold: %d",
+		   "no inlining, out of fuel: involving: %s%s size: %d threshold: %d",
 		   scheme_write_to_string(data->name ? data->name : scheme_false, NULL),
 		   scheme_optimize_context_to_string(info->context),
 		   sz,
@@ -1161,7 +1162,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
     const char *pname, *context;
     pname = scheme_get_proc_name(bad_app, &len, 0);
     context = scheme_optimize_context_to_string(info->context);
-    scheme_log(NULL,
+    scheme_log(info->logger,
                SCHEME_LOG_WARNING,
                0,
                "warning%s: optimizer detects procedure incorrectly applied to %d arguments%s%s",
@@ -1327,6 +1328,16 @@ char *scheme_optimize_context_to_string(Scheme_Object *context)
     return all;
   } else
     return "";
+}
+
+char *scheme_optimize_info_context(Optimize_Info *info)
+{
+  return scheme_optimize_context_to_string(info->context);
+}
+
+Scheme_Logger *scheme_optimize_info_logger(Optimize_Info *info)
+{
+  return info->logger;
 }
 
 static void reset_rator(Scheme_Object *app, Scheme_Object *a)
@@ -1592,7 +1603,7 @@ static Scheme_Object *finish_optimize_app(Scheme_Object *o, Optimize_Info *info,
   }
 }
 
-static Scheme_Object *direct_apply(Scheme_Object *expr, Scheme_Object *rator, Scheme_Object *last_rand)
+static Scheme_Object *direct_apply(Scheme_Object *expr, Scheme_Object *rator, Scheme_Object *last_rand, Optimize_Info *info)
 {
   if (SAME_OBJ(rator, scheme_apply_proc)) {
     switch(SCHEME_TYPE(last_rand)) {
@@ -1658,7 +1669,7 @@ static Scheme_Object *direct_apply(Scheme_Object *expr, Scheme_Object *rator, Sc
         break;
       }
 
-      return scheme_make_application(l);
+      return scheme_make_application(l, info);
     }
   }
 
@@ -1674,7 +1685,7 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
   app = (Scheme_App_Rec *)o;
 
   /* Check for (apply ... (list ...)) early: */
-  le = direct_apply((Scheme_Object *)app, app->args[0], app->args[app->num_args]);
+  le = direct_apply((Scheme_Object *)app, app->args[0], app->args[app->num_args], info);
   if (le) return scheme_optimize_expr(le, info, context);
 
   le = check_app_let_rator(o, app->args[0], info, app->num_args, context);
@@ -1705,7 +1716,7 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
   }
 
   /* Check for (apply ... (list ...)) after some optimizations: */
-  le = direct_apply((Scheme_Object *)app, app->args[0], app->args[app->num_args]);
+  le = direct_apply((Scheme_Object *)app, app->args[0], app->args[app->num_args], info);
   if (le) return finish_optimize_app(le, info, context, rator_flags);
 
   /* Convert (hash-ref '#hash... key (lambda () literal))
@@ -1985,7 +1996,7 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
   app = (Scheme_App3_Rec *)o;
 
   /* Check for (apply ... (list ...)) early: */
-  le = direct_apply((Scheme_Object *)app, app->rator, app->rand2);
+  le = direct_apply((Scheme_Object *)app, app->rator, app->rand2, info);
   if (le) return scheme_optimize_expr(le, info, context);
 
   le = check_app_let_rator(o, app->rator, info, 2, context);
@@ -2024,7 +2035,7 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
   app->rand2 = le;
 
   /* Check for (apply ... (list ...)) after some optimizations: */
-  le = direct_apply((Scheme_Object *)app, app->rator, app->rand2);
+  le = direct_apply((Scheme_Object *)app, app->rator, app->rand2, info);
   if (le) return finish_optimize_app(le, info, context, rator_flags);
 
   return finish_optimize_application3(app, info, context, rator_flags);
@@ -2890,9 +2901,10 @@ static Scheme_Object *do_define_syntaxes_optimize(Scheme_Object *data, Optimize_
 
   val = SCHEME_VEC_ELS(data)[3];
 
-  einfo = scheme_optimize_info_create(info->cp);
+  einfo = scheme_optimize_info_create(info->cp, 0);
   if (info->inline_fuel < 0)
     einfo->inline_fuel = -1;
+  einfo->logger = info->logger;
 
   val = scheme_optimize_expr(val, einfo, 0);
 
@@ -2914,9 +2926,10 @@ static Scheme_Object *begin_for_syntax_optimize(Scheme_Object *data, Optimize_In
   l = SCHEME_VEC_ELS(data)[2];
 
   while (!SCHEME_NULLP(l)) {
-    einfo = scheme_optimize_info_create(info->cp);
+    einfo = scheme_optimize_info_create(info->cp, 0);
     if (info->inline_fuel < 0)
       einfo->inline_fuel = -1;
+    einfo->logger = info->logger;
     
     a = SCHEME_CAR(l);
     a = scheme_optimize_expr(a, einfo, 0);
@@ -5472,7 +5485,7 @@ Scheme_Object *optimize_shift(Scheme_Object *expr, int delta, int after_depth)
 /*                 compile-time env for optimization                      */
 /*========================================================================*/
 
-Optimize_Info *scheme_optimize_info_create(Comp_Prefix *cp)
+Optimize_Info *scheme_optimize_info_create(Comp_Prefix *cp, int get_logger)
 {
   Optimize_Info *info;
 
@@ -5482,6 +5495,13 @@ Optimize_Info *scheme_optimize_info_create(Comp_Prefix *cp)
 #endif
   info->inline_fuel = 32;
   info->cp = cp;
+
+  if (get_logger) {
+    Scheme_Logger *logger;
+    logger = (Scheme_Logger *)scheme_get_param(scheme_current_config(), MZCONFIG_LOGGER);
+    logger = scheme_make_logger(logger, scheme_intern_symbol("optimizer"));
+    info->logger = logger;
+  }
 
   return info;
 }
@@ -6026,7 +6046,7 @@ static Optimize_Info *optimize_info_add_frame(Optimize_Info *info, int orig, int
 {
   Optimize_Info *naya;
 
-  naya = scheme_optimize_info_create(info->cp);
+  naya = scheme_optimize_info_create(info->cp, 0);
   naya->flags = (short)flags;
   naya->next = info;
   naya->original_frame = orig;
@@ -6038,6 +6058,7 @@ static Optimize_Info *optimize_info_add_frame(Optimize_Info *info, int orig, int
   naya->context = info->context;
   naya->vclock = info->vclock;
   naya->use_psize = info->use_psize;
+  naya->logger = info->logger;
 
   return naya;
 }

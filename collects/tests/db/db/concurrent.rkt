@@ -6,9 +6,17 @@
 (import database^ config^)
 (export test^)
 
-(define (test-concurrency workers)
+(define (test-concurrency workers [threads? #t] [concurrent? #t])
+  ;; if threads?, use threads, else use thunks
+  ;; if serialize?, run threads one at a time, else run all at once
   (unless (ANYFLAGS 'isora 'isdb2)
-    (test-case (format "lots of threads (~s)" workers)
+    (test-case (format "lots of ~a (~s)"
+                       (cond [(and threads? concurrent?)
+                              "concurrent threads"]
+                             [threads?
+                              "serialized threads"]
+                             [else "sequential work"])
+                       workers)
       (call-with-connection
        (lambda (c)
          (query-exec c "create temporary table play_numbers (n integer)")
@@ -17,14 +25,20 @@
          (let ([exns null])
            (parameterize ((uncaught-exception-handler
                            (lambda (e) (set! exns (cons e exns)) ((error-escape-handler)))))
-             (for-each thread-wait
-                       (map thread
-                            (map (mk-worker c 100) (build-list workers add1)))))
+             (let* ([workers (for/list ([i (in-range workers)]) (mk-worker c 100 i))]
+                    [tasks (for/list ([worker (in-list workers)])
+                             (cond [(and threads? concurrent?)
+                                    (let ([thd (thread worker)])
+                                      (lambda () (thread-wait thd)))]
+                                   [threads?
+                                    (lambda () (thread-wait (thread worker)))]
+                                   [else worker]))])
+               (for ([task (in-list tasks)]) (task))))
            (when (pair? exns)
              (raise (make-exn (string-append "exception in thread: " (exn-message (car exns)))
                               (exn-continuation-marks (car exns)))))))))))
 
-(define (((mk-worker c iterations) tid))
+(define ((mk-worker c iterations tid))
   (define insert-pst
     (prepare c (sql "insert into play_numbers (n) values ($1)")))
   (define (insert x) (query-exec c insert-pst x))
@@ -109,5 +123,7 @@
     ;; Tests whether connections are properly locked.
     (test-concurrency 1)
     (test-concurrency 2)
-    (test-concurrency 20)
+    (test-concurrency 20 #t #t)
+    (test-concurrency 20 #t #f)
+    (test-concurrency 20 #f #f)
     (kill-safe-test #t)))

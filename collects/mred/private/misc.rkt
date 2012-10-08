@@ -41,7 +41,7 @@
 
   (define (sleep/yield secs)
     (unless (and (real? secs) (not (negative? secs)))
-      (raise-type-error 'sleep/yield "non-negative real number" secs))
+      (raise-argument-error 'sleep/yield "(>=/c 0.0)" secs))
     (let ([evt (alarm-evt (+ (current-inexact-milliseconds)
                              (* secs 1000)))])
       ;; First, allow at least some events to be handled even if 
@@ -126,8 +126,8 @@
             (follow))))))
 
   (define (play-sound f async?)
-    (unless (or (path? f) (string? f))
-      (raise-type-error 'play-sound "string-or-path" f))
+    (unless (path-string? f)
+      (raise-argument-error 'play-sound "path-string?" f))
     (unless (file-exists? f)
       (error 'play-sound "file not found: ~e" f))
     ((if (eq? (system-type) 'unix) (force unix-play-command) wx:play-sound)

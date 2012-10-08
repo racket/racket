@@ -241,7 +241,8 @@ its order within a given module). Then, expressions and definitions
 are evaluated in order as they appear within the module. Each
 evaluation of an expression or definition is wrapped with a
 continuation prompt (see @racket[call-with-continuation-prompt]) for
-the default continuation and using the default prompt handler.
+the default continuation and using a prompt handler that re-aborts
+and propagates its argument to the next enclosing prompt.
 
 Accessing a @tech{module-level variable} before it is defined signals
 a run-time error, just like accessing an undefined global variable.
@@ -1104,7 +1105,8 @@ multiple symbolic names.}
                                (#,(racketidfont "prefix-all-except") prefix-id 
                                                                      raw-module-path id ...)
                                (#,(racketidfont "rename") raw-module-path local-id exported-id)]
-               [raw-module-path (#,(racketidfont "submod") raw-root-module-path id ...+)
+               [raw-module-path raw-root-module-path
+                                (#,(racketidfont "submod") raw-root-module-path id ...+)
                                 (#,(racketidfont "submod") "." id ...+)]
                [raw-root-module-path (#,(racketidfont "quote") id)
                                     rel-string
@@ -2374,7 +2376,7 @@ bound (at @tech{phase level} 1).}
 
 @note-lib-only[racket/require-syntax]
 
-@defform*[[(define-require-syntax id expr)
+@defform*[[(define-require-syntax id proc-expr)
            (define-require-syntax (id args ...) body ...+)]]{
 
 The first form is like @racket[define-syntax], but for a
@@ -2396,7 +2398,7 @@ expands to a definition of the first form where the @racket[expr] is a
 
 @note-lib-only[racket/provide-syntax]
 
-@defform*[[(define-provide-syntax id expr)
+@defform*[[(define-provide-syntax id proc-expr)
            (define-provide-syntax (id args ...) body ...+)]]{
 
 The first form is like @racket[define-syntax], but for a

@@ -1,15 +1,33 @@
-(module lang-core mzscheme
-  (require-for-syntax frtime/struct mzlib/list)
-  (require mzlib/list
-           frtime/core/frp
-           (only srfi/43/vector-lib vector-any)
-           (only frtime/lang-ext lift new-cell switch ==> changes deep-value-now)
-           (only mzlib/etc build-vector rec build-list opt-lambda identity))
+(module lang-core racket
+  (require (for-syntax (only-in frtime/struct build-struct-names build-struct-generation build-struct-expand-info)
+                      (only-in racket/base foldl)
+                      (only-in racket/list empty)))
+  (require (only-in racket/list cons? first second rest empty empty?)
+           (only-in racket/base vector-ref build-vector build-list)
+           (only-in racket/function identity)
+           (only-in frtime/core/frp super-lift undefined undefined? behavior? do-in-manager-after do-in-manager proc->signal set-signal-thunk! register unregister iq-enqueue value-now/no-copy
+                 signal? signal-depth signal:switching? signal-value value-now signal:compound? signal:compound-content signal:switching-current signal:switching-trigger set-cell!)
+           (only-in frtime/lang-ext lift new-cell switch ==> changes deep-value-now))
+  
+  #| (VECTOR-ANY <pred?> <vector>) -> value
+  ;;;   Apply PRED? to each element in VECTOR ...; if PRED?
+  ;;;   should ever return a true value, immediately stop and return that
+  ;;;   value; otherwise, when the vector runs out, return #f.
+  ;;;   The iteration and order of application of PRED? across elements
+  ;;;   is of the vectors is strictly left-to-right. Definition of this function taken from srfi/43/vector-lib. |#
+  (define vector-any
+    (letrec ((loop1 (lambda (pred? vec i len)
+                      (and (not (= i len))
+                           (or (pred? (vector-ref vec i))
+                               (loop1 pred? vec (add1 i) len))))))
+      (lambda (pred? vec)
+        (loop1 pred? vec 0 (vector-length vec)))))
   
   ;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Fundamental Macros ;;
   ;;;;;;;;;;;;;;;;;;;;;;;;
-    
+  
+  
   (define-syntax frp:letrec
     (syntax-rules ()
       [(_ ([id val] ...) expr ...)
@@ -44,7 +62,7 @@
   
   (define (frp:copy-list lst)
     (frp:if (null? lst)
-            ()
+            '()
             (frp:cons (frp:car lst) (frp:copy-list (frp:cdr lst)))))
   
   (define-syntax frp:let-values
@@ -52,7 +70,7 @@
       [(_ ([vars expr] ...) body0 body1 ...)
        (let-values ([vars (split-multiple expr)] ...)
          body0 body1 ...)]))
-
+  
   (define-for-syntax (get-rest-arg arglist-stx)
     (syntax-case arglist-stx ()
       [var
@@ -69,8 +87,8 @@
        (let ([the-rest-arg (get-rest-arg #'bindings)])
          (if the-rest-arg
              #`(bindings
-                 (let ([#,the-rest-arg (frp:copy-list #,the-rest-arg)])
-                   body0 body1 ...))
+                (let ([#,the-rest-arg (frp:copy-list #,the-rest-arg)])
+                  body0 body1 ...))
              #'(bindings body0 body1 ...)))]))
   
   (define-syntax (frp:lambda stx)
@@ -88,7 +106,7 @@
              new-clause ...))]))
   
   (define any-nested-reactivity?
-    (opt-lambda (obj [mem empty])
+    (lambda (obj [mem empty])
       (with-handlers ((exn:fail?
                        (lambda (e)
                          (eprintf
@@ -115,9 +133,9 @@
     (cond
       [(assq obj table) => second]
       [(behavior? obj)
-       (case (hash-table-get deps obj 'absent)
-         [(absent) (hash-table-put! deps obj 'new)]
-         [(old)    (hash-table-put! deps obj 'alive)]
+       (case (hash-ref deps obj 'absent)
+         [(absent) (hash-set! deps obj 'new)]
+         [(old)    (hash-set! deps obj 'alive)]
          [(new)    (void)])
        (deep-value-now/update-deps (signal-value obj) deps
                                    (cons (list obj (signal-value obj)) table))]
@@ -160,9 +178,9 @@
   (define (public-dvn obj)
     (do-in-manager-after
      (deep-value-now obj empty)))
-
+  
   (define any-spinal-reactivity?
-    (opt-lambda (lst [mem empty])
+    (lambda (lst [mem empty])
       (cond
         [(memq lst mem) #f]
         [(behavior? lst) #t]
@@ -172,9 +190,9 @@
   (define (deep-cdr-value-now/update-deps obj deps table)
     (cond
       [(behavior? obj)
-       (case (hash-table-get deps obj 'absent)
-         [(absent) (hash-table-put! deps obj 'new)]
-         [(old)    (hash-table-put! deps obj 'alive)]
+       (case (hash-ref deps obj 'absent)
+         [(absent) (hash-set! deps obj 'new)]
+         [(old)    (hash-set! deps obj 'alive)]
          [(new)    (void)])
        (deep-cdr-value-now/update-deps (signal-value obj) deps table)]
       [(cons? obj)
@@ -187,20 +205,20 @@
         (let ([rtn (proc->signal void)])
           (set-signal-thunk!
            rtn
-           (let ([deps (make-hash-table)])
+           (let ([deps (make-hasheq)])
              (lambda ()
                (begin0
                  (deep-cdr-value-now/update-deps obj deps empty)
-                 (hash-table-for-each
+                 (hash-for-each
                   deps
                   (lambda (k v)
                     (case v
-                      [(new)   (hash-table-put! deps k 'old)
+                      [(new)   (hash-set! deps k 'old)
                                (register rtn k)
                                (do-in-manager
                                 (iq-enqueue rtn))]
-                      [(alive) (hash-table-put! deps k 'old)]
-                      [(old)   (hash-table-remove! deps k)
+                      [(alive) (hash-set! deps k 'old)]
+                      [(old)   (hash-remove! deps k)
                                (unregister rtn k)])))))))
           (do-in-manager
            (iq-enqueue rtn))
@@ -211,18 +229,18 @@
     (let ([rtn (proc->signal void)])
       (set-signal-thunk!
        rtn
-       (let ([deps (make-hash-table)])
+       (let ([deps (make-hasheq)])
          (lambda ()
            (begin0
              (deep-value-now/update-deps obj deps empty)
-             (hash-table-for-each
+             (hash-for-each
               deps
               (lambda (k v)
                 (case v
-                  [(new)   (hash-table-put! deps k 'old)
+                  [(new)   (hash-set! deps k 'old)
                            (register rtn k)]
-                  [(alive) (hash-table-put! deps k 'old)]
-                  [(old)   (hash-table-remove! deps k)
+                  [(alive) (hash-set! deps k 'old)]
+                  [(old)   (hash-remove! deps k)
                            (unregister rtn k)])))))))
       (do-in-manager
        (iq-enqueue rtn))
@@ -232,7 +250,7 @@
     (let ([rtn (proc->signal void)])
       (set-signal-thunk!
        rtn
-       (let ([deps (make-hash-table)])
+       (let ([deps (make-hasheq)])
          (lambda ()
            (begin0
              (let/ec esc
@@ -240,23 +258,23 @@
                  (proc (lambda (obj)
                          (if (behavior? obj)
                              (begin
-                               (case (hash-table-get deps obj 'absent)
-                                 [(absent) (hash-table-put! deps obj 'new)
+                               (case (hash-ref deps obj 'absent)
+                                 [(absent) (hash-set! deps obj 'new)
                                            (let ([o-depth (signal-depth rtn)])
                                              (register rtn obj)
                                              (when (> (signal-depth rtn) o-depth)
                                                (iq-enqueue rtn)
                                                (esc #f)))]
-                                 [(old)    (hash-table-put! deps obj 'alive)]
+                                 [(old)    (hash-set! deps obj 'alive)]
                                  [(new)    (void)])
                                (value-now obj))
                              obj)));)
-                 (hash-table-for-each
+                 (hash-for-each
                   deps
                   (lambda (k v)
                     (case v
-                      [(new alive) (hash-table-put! deps k 'old)]
-                      [(old)   (hash-table-remove! deps k)
+                      [(new alive) (hash-set! deps k 'old)]
+                      [(old)   (hash-remove! deps k)
                                (unregister rtn k)])))))))))
       (iq-enqueue rtn)
       rtn))
@@ -282,15 +300,15 @@
                                   (lambda (_)
                                     (loop (unbox (signal:switching-current v))))
                                   (signal:switching-trigger v))]
-	  [(undefined? v) undefined]
+          [(undefined? v) undefined]
           [else (acc v)]))))
-    
+  
   (define frp:car
     (make-accessor car))
   
   (define frp:cdr
     (make-accessor cdr))
- 
+  
   (define frp:pair? (lambda (arg) (if (signal:compound? arg)
                                       (pair? (signal:compound-content arg))
                                       (lift #t pair? arg))))
@@ -311,10 +329,10 @@
          [(empty? lst) (ef)]
          [else (error "list-match: expected a list, got ~a" lst)]))
      lst))
-    
+  
   (define frp:append
     (case-lambda
-      [() ()]
+      [() '()]
       [(lst) lst]
       [(lst1 lst2 . lsts)
        (list-match lst1
@@ -408,22 +426,22 @@
       [(_ s (field ...))
        #'(frp:define-struct (s #f) (field ...) (current-inspector))]))
   
- (define (find pred lst)
+  (define (find pred lst)
     (cond
       [(empty? lst) #f]
       [(pred (first lst)) (first lst)]
       [else (find pred (rest lst))]))
- 
   
- (define (ensure-no-signal-args val name)
-    (if (procedure? val)
+  
+  (define (ensure-no-signal-args val name)
+    (when (procedure? val)
         (lambda args
           (cond
             [(find signal? args)
              =>
              (lambda (v)
                (raise-type-error name "non-signal"
-                               (format "#<signal: ~a>" (signal-value v))))]
+                                 (format "#<signal: ~a>" (signal-value v))))]
             [else (apply val args)]))))
   
   
@@ -444,7 +462,7 @@
                 (with-syntax ([(fun-name ...) (syntax ids)]
                               [(tmp-name ...)
                                (map (lambda (id)
-                                      (datum->syntax-object stx (syntax-object->datum id)))
+                                      (datum->syntax stx (syntax->datum id)))
                                     (generate-temporaries (syntax ids)))])
                   (syntax
                    (begin
@@ -452,12 +470,12 @@
                      (define (tmp-name . args)
                        (apply lift #t fun-name args))
                      ...
-                     (provide (rename tmp-name fun-name) ...))))]
+                     (provide (rename-out [tmp-name fun-name]) ...))))]
                [(lifted:nonstrict . ids)
                 (with-syntax ([(fun-name ...) (syntax ids)]
                               [(tmp-name ...)
                                (map (lambda (id)
-                                      (datum->syntax-object stx (syntax-object->datum id)))
+                                      (datum->syntax stx (syntax->datum id)))
                                     (generate-temporaries (syntax ids)))])
                   (syntax
                    (begin
@@ -465,7 +483,7 @@
                      (define (tmp-name . args)
                        (apply lift #f fun-name args))
                      ...
-                     (provide (rename tmp-name fun-name) ...))))]
+                     (provide (rename-out [tmp-name fun-name]) ...))))]
                [provide-spec
                 (syntax (begin clause ... (provide provide-spec)))])]))
         (syntax (begin))
@@ -474,7 +492,7 @@
   (define-syntax (frp:require stx)
     (define (generate-temporaries/loc st ids)
       (map (lambda (id)
-             (datum->syntax-object stx (syntax-object->datum id)))
+             (datum->syntax stx (syntax->datum id)))
            (generate-temporaries ids)))
     (syntax-case stx ()
       [(_ . clauses)
@@ -488,7 +506,7 @@
                               [(tmp-name ...) (generate-temporaries/loc stx #'ids)])
                   #'(begin
                       clause ...
-                      (require (rename module tmp-name fun-name) ...)
+                      (require (rename-in module [fun-name tmp-name]) ...)
                       (define (fun-name . args)
                         (apply lift #f tmp-name args))
                       ...))]
@@ -497,25 +515,25 @@
                               [(tmp-name ...) (generate-temporaries/loc stx #'ids)])
                   #'(begin
                       clause ...
-                      (require (rename module tmp-name fun-name) ...)
+                      (require (rename-in module [fun-name tmp-name]) ...)
                       (define (fun-name . args)
                         (apply lift #t tmp-name args))
                       ...))]
                [(as-is:unchecked module id ...)
-                (syntax (begin clause ... (require (rename module id id) ...)))]
+                (syntax (begin clause ... (require (rename-in module [id id]) ...)))]
                [(as-is module . ids)
                 (with-syntax ([(fun-name ...) (syntax ids)]
                               [(tmp-name ...) (generate-temporaries/loc stx #'ids)])
                   #'(begin
                       clause ...
-                      (require (rename module tmp-name fun-name) ...)
+                      (require (rename-in module [fun-name tmp-name]) ...)
                       (define fun-name (ensure-no-signal-args tmp-name 'fun-name))
                       ...))]
                [require-spec
                 #'(begin clause ... (require require-spec))])]))
         #'(begin)
         (syntax->list #'clauses))]))
-       
+  
   
   
   
@@ -526,32 +544,40 @@
            #%plain-module-begin
            #%module-begin
            #%top-interaction
+           only-in
+           except-in
+           rename-in
+           all-from-out
+           all-defined-out
+           except-out
+           
            raise-reactivity
-           raise-list-for-apply
-           (rename public-dvn deep-value-now)
+           raise-list-for-apply 
            any-nested-reactivity?
            compound-lift
            list-match
-           (rename frp:if if)
-           (rename frp:lambda lambda)
-           (rename frp:case-lambda case-lambda)
-           (rename frp:letrec letrec)
-           (rename frp:cons cons)
-           (rename frp:car car)
-           (rename frp:cdr cdr)
-           (rename frp:list list)
-           (rename frp:list? list?)
-           (rename frp:list* list*)
-           (rename frp:null? null?)
-           (rename frp:pair? pair?)
-           (rename frp:append append)
-           (rename frp:vector vector)
-           (rename frp:vector-ref vector-ref)
-           (rename frp:make-struct-type make-struct-type)
-           (rename frp:make-struct-field-accessor make-struct-field-accessor)
-           (rename frp:make-struct-field-mutator make-struct-field-mutator)
-           (rename frp:define-struct define-struct)
-           (rename frp:provide provide)
-           (rename frp:require require)
            frp:copy-list
-           frp:->boolean))
+           frp:->boolean
+           
+           (rename-out [public-dvn deep-value-now])
+           (rename-out [frp:if if])
+           (rename-out [frp:lambda lambda])
+           (rename-out [frp:case-lambda case-lambda])
+           (rename-out [frp:letrec letrec])
+           (rename-out [frp:cons cons])
+           (rename-out [frp:car car])
+           (rename-out [frp:cdr cdr])
+           (rename-out [frp:list list])
+           (rename-out [frp:list? list?])
+           (rename-out [frp:list* list*])
+           (rename-out [frp:null? null?])
+           (rename-out [frp:pair? pair?])
+           (rename-out [frp:append append])
+           (rename-out [frp:vector vector])
+           (rename-out [frp:vector-ref vector-ref])
+           (rename-out [frp:make-struct-type make-struct-type])
+           (rename-out [frp:make-struct-field-accessor make-struct-field-accessor])
+           (rename-out [frp:make-struct-field-mutator make-struct-field-mutator])
+           (rename-out [frp:define-struct define-struct])
+           (rename-out [frp:provide provide])
+           (rename-out [frp:require require])))

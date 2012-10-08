@@ -2591,6 +2591,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
             || (kind == SCHEME_PRIM_STRUCT_TYPE_CONSTR)
             || (kind == SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER)
             || (kind == SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER)
+            || (kind == SCHEME_PRIM_STRUCT_TYPE_BROKEN_INDEXED_SETTER)
             || (kind == SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER)
             || (kind == SCHEME_PRIM_STRUCT_TYPE_PRED)) {
 	  print_named(obj, "struct-procedure", 

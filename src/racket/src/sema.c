@@ -649,6 +649,22 @@ int scheme_wait_semas_chs(int n, Scheme_Object **o, int just_try, Syncing *synci
   } else {
     int start_pos;
 
+#if 0
+    /* Use the "immutable" flag bit on a semaphore to check for
+       inconsistent use in atomic and non-atomic modes, which
+       can lead to an attempt to suspend in atomic mode. */
+    if ((n == 1) && SCHEME_SEMAP(o[0])) {
+      if (!do_atomic) {
+        SCHEME_SET_IMMUTABLE(o[0]);
+      } else if (SCHEME_IMMUTABLEP(o[0])) {
+        if (!on_atomic_timeout
+            || (do_atomic > atomic_timeout_atomic_level)) {
+          scheme_signal_error("using a seaphore in both atomic and non-atomic mode");
+        }
+      }
+    }
+#endif
+
     if (n > 1) {
       if (syncing)
 	start_pos = syncing->start_pos;

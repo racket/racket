@@ -213,7 +213,8 @@
     [(Name: stx) (fp "~a" (syntax-e stx))]
     [(app has-name? (? values name))
      (fp "~a" name)]
-    [(StructTop: (Struct: nm _ _ _ _ _ _ _)) (fp "(Struct ~a)" (syntax-e nm))]
+    [(StructType: (Struct: nm _ _ _ _ _)) (fp "(StructType ~a)" (syntax-e nm))]
+    [(StructTop: (Struct: nm _ _ _ _ _)) (fp "(Struct ~a)" (syntax-e nm))]
     [(BoxTop:) (fp "Box")]
     [(ChannelTop:) (fp "Channel")]
     [(ThreadCellTop:) (fp "ThreadCell")]
@@ -237,7 +238,7 @@
      (fp "~a" (cons 'List (tuple-elems t)))]
     [(Base: n cnt _ _ _) (fp "~s" n)]
     [(Opaque: pred _) (fp "(Opaque ~a)" (syntax->datum pred))]
-    [(Struct: nm       par (list (fld: t _ _) ...)       proc _ _ _ _)
+    [(Struct: nm       par (list (fld: t _ _) ...)       proc _ _)
      (fp "#(struct:~a ~a" nm t)
      (when proc
        (fp " ~a" proc))
@@ -328,22 +329,16 @@
      #'(begin
          (require racket/pretty)
          (require mzlib/pconvert)
-         
+
          (define (converter v basic sub)
            (define (gen-constructor sym)
              (string->symbol (string-append "make-" (substring (symbol->string sym) 7))))
            (match v
-             [(? (lambda (e) (or (Filter? e)
-                                 (Object? e)
-                                 (PathElem? e)))
-                 (app (lambda (v) (vector->list (struct->vector v)))
-                      (list-rest tag seq fv fi stx vals)))
-              `(,(gen-constructor tag) ,@(map sub vals))]
-             [(? Type?
-                 (app (lambda (v) (vector->list (struct->vector v))) (list-rest tag seq fv fi stx key vals)))
-              `(,(gen-constructor tag) ,@(map sub vals))]
+             [(? Rep? rep)
+              `(,(gen-constructor (car (vector->list (struct->vector rep))))
+                ,@(map sub (Rep-values rep)))]
              [_ (basic v)]))
-         
+
          (define (debug-printer v port write?)
            ((if write? pretty-write pretty-print)
             (parameterize ((current-print-convert-hook converter))

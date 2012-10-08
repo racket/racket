@@ -20,6 +20,10 @@
    (blank (or w (pict-width pict))
           (or h (pict-height pict)))))
 
+(provide colorize/alpha)
+(define (colorize/alpha pict r g b a)
+  (colorize pict (make-object color% r g b a)))
+
 (define (color c p) (colorize p c))
 
 (define color/c

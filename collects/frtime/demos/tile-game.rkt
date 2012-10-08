@@ -2,7 +2,7 @@
 #lang frtime
 (require frtime/animation
          frtime/gui
-         mzlib/class)
+         racket/class)
 
 (define-struct tile (row col num color))
 (define-struct state (tiles blank-row blank-col))

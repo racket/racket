@@ -9441,7 +9441,41 @@
       (define v (make-s 3))
       (let ([v* (contract (struct/c s alpha) v 'pos 'neg)])
         (set-s-a! v* 4))))
-
+  
+  (test/spec-passed/result
+   'struct/c14
+   '(let ()
+      (struct heap (v))
+      (struct heap-node heap ())
+      
+      (heap-v (contract (struct/c heap-node number?) 
+                        (heap-node 11)
+                        'pos
+                        'neg)))
+   11)
+  
+  (test/spec-passed/result
+   'struct/c15
+   '(let ()
+      (struct a (x))
+      (struct b a (y))
+      (struct c b (z))
+      (struct d c (w))
+      
+      (b-y (contract (struct/c d number? number? number? number?) 
+                     (d 11 22 33 44)
+                     'pos
+                     'neg)))
+   22)
+  
+  (test/spec-passed/result
+   'struct/c16
+   '(let ()
+      (struct doll (contents))
+      (list ((flat-contract-predicate (struct/c doll 'center)) (doll 'center))
+            ((flat-contract-predicate (struct/c doll 'center)) (doll 'not-center-center))))
+   '(#t #f))
+  
 
 ;
 ;
@@ -10164,7 +10198,71 @@
                 (s (λ (x) x) 1)
                 'pos
                 'neg)))
+  
+  (test/spec-passed/result
+   'struct/dc-new43
+   '(let ()
+      (struct a (x))
+      (struct b a (y))
+      (struct c b (z))
+      (struct d c (w))
+      
+      (b-y (contract (struct/dc d 
+                                [(x #:parent a) boolean?]
+                                [(y #:parent b) char?]
+                                [(z #:parent c) number?]
+                                [w string?])
+                     (d #t #\a 3 "x")
+                     'pos
+                     'neg)))
+   #\a)
+  
+  (test/spec-passed/result
+   'struct/dc-new44
+   '(let ()
+      (struct a (x))
+      (struct b a (y))
+      (struct c b (z))
+      (struct d c (w))
+      
+      (b-y (contract (struct/dc d 
+                                [(x #:parent a) (w) boolean?]
+                                [(y #:parent b) ((x #:parent a)) char?]
+                                [(z #:parent c) number?]
+                                [w string?])
+                     (d #t #\a 3 "x")
+                     'pos
+                     'neg)))
+   #\a)
 
+  (test/spec-passed/result
+   'struct/dc-pred1
+   '(let ()
+      (struct s (a b))
+      (define p? (flat-contract-predicate (struct/dc s [a number?] [b (a) #:flat (<=/c a)])))
+      (list (p? (s 2 1))
+            (p? (s 1 2))))
+   '(#t #f))
+  
+  (test/spec-passed/result
+   'struct/dc-pred2
+   '(let ()
+      (struct s (a b c))
+      (define p? (flat-contract-predicate (struct/dc s 
+                                                     [a number?]
+                                                     [b boolean?]
+                                                     [c (a b)
+                                                        #:flat
+                                                        (if (and (= a 1) b)
+                                                            any/c
+                                                            none/c)])))
+      
+      (list (p? (s 1 #t 'whatever))
+            (p? (s 11 #f 'whatver))))
+   '(#t #f))
+
+
+  
   (contract-error-test
    'struct/dc-imp-nondep-runtime-error
    #'(let ()
@@ -10304,6 +10402,20 @@
    'recursive-contract9
    '(letrec ([ctc (or/c number? (hash/c (recursive-contract ctc #:chaperone) number?))])
       (make-hash (list (cons (make-hash (list (cons 3 4))) 5)))))
+  
+  (test/pos-blame
+   'recursive-contract10
+   '(let ()
+      (struct doll (contents))
+      (letrec ([doll-ctc (recursive-contract (or/c 'center (struct/c doll doll-ctc)) #:flat)])
+        (contract doll-ctc (doll 3) 'pos 'neg))))
+  
+  (test/pos-blame
+   'recursive-contract11
+   '(let ()
+      (struct doll (contents))
+      (letrec ([doll-ctc2 (or/c 'center (struct/c doll (recursive-contract doll-ctc2 #:flat)))])
+        (contract doll-ctc2 (doll 4) 'pos 'neg))))
 
 
 

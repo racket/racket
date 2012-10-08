@@ -95,6 +95,16 @@
         (string->jsexpr @T{ " \b\n\r\f\t\\\"\/ " }) => " \b\n\r\f\t\\\"/ "
         (string->jsexpr @T{ "\uD834\uDD1E" }) => "\U1D11E"
         (string->jsexpr @T{ "\ud834\udd1e" }) => "\U1d11e"
+        ;; EOF detection
+        (for/list ([je (in-port read-json
+                                (open-input-string
+                                  @T{ 1 [2,3] "four" }))])
+          je)
+        => '(1 (2 3) "four")
+        (string->jsexpr "]") =error> "read-json:"
+        (string->jsexpr "foo") =error> "read-json:"
+        (string->jsexpr "") => eof
+        (string->jsexpr " \t\r\n") => eof
         ))
 
 (test do (pred-tests)

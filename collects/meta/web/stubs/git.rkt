@@ -981,7 +981,7 @@
      grant read permissions to everyone, and write permissions to user1, create
      a file with:
      @pre|{R @all
-           RW user1}|
+           RW user1 user2}|
      and then run the setperms commands with this as its input:
      @pre{ssh pltgit setperms $user/foo < the-file}
      You can also just run the @cmd{setperms} command and type in the

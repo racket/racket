@@ -11,9 +11,9 @@
          classify-odbc-sql)
 
 (define odbc-dbsystem%
-  (class* object% (dbsystem<%>)
+  (class* dbsystem-base% (dbsystem<%>)
     (define/public (get-short-name) 'odbc)
-    (define/public (get-known-types) supported-types)
+    (define/override (get-type-list) type-list)
     (define/public (has-support? x) #f)
 
     (define/public (get-parameter-handlers param-typeids)
@@ -81,7 +81,7 @@
 (define-syntax-rule
   (defchecks get-check [(typeid name pred ...) ...] [(*typeid *name *fun) ...])
   (define get-check
-    (let ([name (mk-check typeid (lambda (z) (or (pred z) ...)))] ...
+    (let ([name (mk-check typeid (lambda (z) (or (pred z) ...)) #:contract-parts '(pred ...))] ...
           [*name *fun] ...)
       (lambda (x)
         (case x
@@ -91,13 +91,16 @@
            (lambda (fsym index param)
              (error/unsupported-type fsym x))))))))
 
-(define (mk-check typeid pred)
-  (lambda (fsym index param)
+(define (mk-check typeid pred #:contract-parts [ctc-parts #f])
+  (lambda (fsym param)
     (unless (pred param)
-      (error/no-convert fsym "ODBC" (typeid->type typeid) param))
+      (error/no-convert fsym "ODBC" (typeid->type typeid) param
+                        #:contract (cond [(= (length ctc-parts) 1)
+                                          (car ctc-parts)]
+                                         [else (cons 'or/c ctc-parts)])))
     param))
 
-(define (check-numeric fsym index param)
+(define (check-numeric fsym param)
   (define (bad note)
     (error/no-convert fsym "ODBC" "numeric" param note))
   (unless (rational? param) (bad ""))
@@ -138,52 +141,50 @@
 
 ;; ----
 
-(define-type-table (supported-types
-                    type-alias->type
+(define-type-table (type-list
                     typeid->type
-                    type->typeid
                     describe-typeid)
 
-  (0  unknown        ()           #t)
-  (1  character      (char)       #t)
-  (2  numeric        ()           #t)
-  (3  decimal        ()           #t)
-  (4  integer        (int)        #t)
-  (5  smallint       ()           #t)
-  (6  float          ()           #t)
-  (7  real           ()           #t)
-  (8  double         ()           #t)
-  (9  datetime       ()           #t)
-  (12 varchar        ()           #t)
-  (91 date           ()           #t)
-  (92 time           ()           #t)
-  (93 timestamp      ()           #t)
-  (-1 longvarchar    ()           #t)
-  (-2 binary         ()           #t)
-  (-3 varbinary      ()           #t)
-  (-4 longvarbinary  ()           #t)
-  (-5 bigint         ()           #t)
-  (-6 tinyint        ()           #t)
-  (-7 bit1           ()           #t) ;; not bit(n), always single bit
-  (-8 wchar          ()           #t)
-  (-9 wvarchar       ()           #t)
-  (-10 wlongvarchar  ()           #t)
+  (0  unknown        0)
+  (1  character      0)
+  (2  numeric        0)
+  (3  decimal        0)
+  (4  integer        0)
+  (5  smallint       0)
+  (6  float          0)
+  (7  real           0)
+  (8  double         0)
+  (9  datetime       0)
+  (12 varchar        0)
+  (91 date           0)
+  (92 time           0)
+  (93 timestamp      0)
+  (-1 longvarchar    0)
+  (-2 binary         0)
+  (-3 varbinary      0)
+  (-4 longvarbinary  0)
+  (-5 bigint         0)
+  (-6 tinyint        0)
+  (-7 bit1           0) ;; not bit(n), always single bit
+  (-8 wchar          0)
+  (-9 wvarchar       0)
+  (-10 wlongvarchar  0)
 
   ;; Unsupported types
 
-  (101 interval-year          () #f)
-  (102 interval-month         () #f)
-  (103 interval-day           () #f)
-  (104 interval-hour          () #f)
-  (105 interval-minute        () #f)
-  (106 interval-second        () #f)
-  (107 interval-year-month    () #f)
-  (108 interval-day-hour      () #f)
-  (109 interval-day-minute    () #f)
-  (110 interval-day-second    () #f)
-  (111 interval-hour-minute   () #f)
-  (112 interval-hour-second   () #f)
-  (113 interval-minute-second () #f))
+  (101 interval-year          #f)
+  (102 interval-month         #f)
+  (103 interval-day           #f)
+  (104 interval-hour          #f)
+  (105 interval-minute        #f)
+  (106 interval-second        #f)
+  (107 interval-year-month    #f)
+  (108 interval-day-hour      #f)
+  (109 interval-day-minute    #f)
+  (110 interval-day-second    #f)
+  (111 interval-hour-minute   #f)
+  (112 interval-hour-second   #f)
+  (113 interval-minute-second #f))
 
 (define (supported-typeid? x)
   (case x

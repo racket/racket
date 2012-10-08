@@ -413,6 +413,74 @@ list, and also works with multiple-valued sequences:
 ]
 
 
+@section{Breaking an Iteration}
+
+An even more complete syntax of @racket[for] is
+
+@specform/subs[
+(for (clause ...)
+  body-or-break ... body)
+([clause [id sequence-expr]
+         (code:line #:when boolean-expr)
+         (code:line #:unless boolean-expr)
+         break]
+ [body-or-break body break]
+ [break  (code:line #:break boolean-expr)
+         (code:line #:final boolean-expr)])
+]{}
+
+That is, a @racket[#:break] or @racket[#:final] clause can
+be included among the binding clauses and body of the iteration. Among
+the binding clauses, @racket[#:break] is like @racket[#:unless]
+but when its @racket[_boolean-expr] is true, all sequences within the
+@racket[for] are stopped. Among the @racket[_body]s,
+@racket[#:break] has the same effect on sequences when its
+@racket[_boolean-expr] is true, and it also prevents later
+@racket[_body]s from evaluation in the current iteration.
+
+For example, while using @racket[#:when] between clauses effectively
+skips later sequences as well as the body,
+
+@interaction[
+(for ([book '("Guide" "Story" "Reference")]
+      #:unless (equal? book "Story")
+      [chapter '("Intro" "Details" "Conclusion")])
+  (printf "~a ~a\n" book chapter))
+]
+
+using @racket[#:break] causes the entire @racket[for] iteration
+to terminate:
+
+@interaction[
+(for ([book '("Guide" "Story" "Reference")]
+      #:break (equal? book "Story")
+      [chapter '("Intro" "Details" "Conclusion")])
+  (printf "~a ~a\n" book chapter))
+(for* ([book '("Guide" "Story" "Reference")]
+       [chapter '("Intro" "Details" "Conclusion")])
+  #:break (and (equal? book "Story")
+               (equal? chapter "Conclusion"))
+  (printf "~a ~a\n" book chapter))
+]
+
+A @racket[#:final] clause is similar to @racket[#:break],
+but it does not immediately terminate the iteration. Instead, it
+allows at most one more element to be drawn for each sequence and at
+most one more evaluation of the @racket[_body]s.
+
+
+@interaction[
+(for* ([book '("Guide" "Story" "Reference")]
+       [chapter '("Intro" "Details" "Conclusion")])
+  #:final (and (equal? book "Story")
+               (equal? chapter "Conclusion"))
+  (printf "~a ~a\n" book chapter))
+(for ([book '("Guide" "Story" "Reference")]
+      #:final (equal? book "Story")
+      [chapter '("Intro" "Details" "Conclusion")])
+  (printf "~a ~a\n" book chapter))
+]
+
 @section[#:tag "for-performance"]{Iteration Performance}
 
 Ideally, a @racket[for] iteration should run as fast as a loop that

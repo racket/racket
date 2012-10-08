@@ -160,7 +160,7 @@
 
   (define (find-graphical-system-path what)
     (unless (memq what '(init-file x-display))
-      (raise-type-error 'find-graphical-system-path "'init-file or 'x-display" what))
+      (raise-argument-error 'find-graphical-system-path "(or/c 'init-file 'x-display)" what))
     (or (wx:find-graphical-system-path what)
         (case what
           [(init-file)

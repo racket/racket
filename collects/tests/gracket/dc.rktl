@@ -620,4 +620,9 @@
 
 ;; ----------------------------------------
 
+(let ([bm (make-object bitmap% 1 1)])
+  (test #t 'load-file (send bm load-file (collection-file-path "sk.jpg" "icons"))))
+
+;; ----------------------------------------
+
 (report-errs)

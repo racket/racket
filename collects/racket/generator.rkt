@@ -52,7 +52,7 @@
                [(v) ((current-yielder) v)]
                [vs  (apply (current-yielder) vs)]))
 
-(define yield-tag (make-continuation-prompt-tag))
+(define yield-tag (make-continuation-prompt-tag 'yield))
 
 (define-syntax (generator stx)
   (syntax-case stx ()
@@ -84,20 +84,28 @@
 
 (define (create-generator start)
   (let ([state 'fresh])
+    (define (yielder . vs)
+      (set! state 'suspended)
+      (call/cc (lambda (k)
+                 (set! cont k)
+                 (apply abort-current-continuation yield-tag vs))
+               yield-tag))
     (define (cont . init-formals)
-      (define (yielder . vs)
-        (set! state 'suspended)
-        (shift-at yield-tag k (set! cont k) (apply values vs)))
       (set! state 'running)
-      (reset-at yield-tag
-        (parameterize ([current-yielder yielder])
-          (call-with-values
-              (lambda ()
-                (apply start init-formals))
-              ;; get here only on at the end of the generator
-              (lambda rs
-                (set! cont (lambda () (set! state 'done) (apply values rs)))
-                (cont))))))
+      (call-with-values
+          (lambda ()
+            (apply start init-formals))
+        ;; get here only on at the end of the generator
+        (lambda rs
+          (set! cont (lambda () (set! state 'done) (apply values rs)))
+          (cont))))
+    (define (call-cont vs)
+      (call-with-continuation-prompt
+       (lambda ()
+         (parameterize ([current-yielder yielder])
+           (apply cont vs)))
+       yield-tag
+       values))
     (define (err [what "send a value to"])
       (raise-arguments-error 'generator 
                              (format "cannot ~a a ~a generator" what state)
@@ -106,15 +114,15 @@
       (case-lambda
         [()  (if (eq? state 'running)
                (err "call")
-               (begin (set! state 'running) (cont)))]
+               (begin (set! state 'running) (call-cont null)))]
         ;; yield-tag means return the state (see `generator-state' below)
         [(x) (cond [(eq? x yield-tag) state]
                    [(memq state '(suspended running fresh))
                     (set! state 'running)
-                    (cont x)]
+                    (call-cont (list x))]
                    [else (err)])]
         [xs  (if (memq state '(suspended running fresh))
-               (begin (set! state 'running) (apply cont xs))
+               (begin (set! state 'running) (call-cont xs))
                (err))]))
     (define self (make-generator generator))
     self))
@@ -138,20 +146,39 @@
 (define stop-value (gensym))
 
 (define-sequence-syntax in-generator
-  (syntax-rules ()
-    [(_ body0 body ...)
-     (in-producer (generator () body0 body ... stop-value) stop-value)])
   (lambda (stx)
     (syntax-case stx ()
-      [(() (_ body0 body ...))
-       #'[()
-          (in-producer (generator () body0 body ... stop-value) stop-value)]]
-      [((id ...) (_ body0 body ...))
-       (with-syntax ([(stops ...) (syntax-case #'((id stop-value) ...) ()
-                                    [((x v) ...) #'(v ...)])])
-       #'[(id ...)
-          (in-producer (generator () body0 body ... (values stops ...))
-                       (lambda xs (eq? (car xs) stop-value)))])])))
+      [(_ #:arity n body0 body ...)
+       (if (exact-nonnegative-integer? (syntax-e #'n))
+           #'(in-producer (generator () body0 body ... (vector->values (make-vector n stop-value)))
+                          (lambda xs (eq? (car xs) stop-value)))
+           (raise-syntax-error #f 
+                               "expected a literal exact nonnegative integer"
+                               stx
+                               #'n))]
+      [(_ body0 body ...)
+       #'(in-producer (generator () body0 body ... stop-value) stop-value)]))
+  (lambda (stx)
+    (let loop ([stx stx])
+      (syntax-case stx ()
+        [((id ...) (_ #:arity n body0 body ...))
+         (and (exact-integer? #'n)
+              (= (syntax-e #'n (length (syntax->list #'(id ...))))))
+         ;; arity matches, so drop it:
+         (loop #'[((id ...) (_ body0 body ...))])]
+        [(() (_ body0 body ...))
+         #'[()
+            (in-producer (generator () body0 body ... stop-value) stop-value)]]
+        [((id ...) (_ body0 body ...))
+         (with-syntax ([(stops ...) (syntax-case #'((id stop-value) ...) ()
+                                      [((x v) ...) #'(v ...)])])
+           #'[(id ...)
+              (in-producer (generator () body0 body ... (values stops ...))
+                           (lambda xs (eq? (car xs) stop-value)))])]
+        [((id ...) expr)
+         ;; arity mismatch or other syntax error; fall back to expression mode:
+         #'[(id ...) (values expr)]]))))
+        
 
 (define (sequence->generator sequence)
   (generator () (for ([i sequence]) (yield i))))

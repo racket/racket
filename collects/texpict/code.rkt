@@ -9,7 +9,10 @@
            (for-syntax racket/base)
            (only-in mzscheme make-namespace))
 
-  (provide define-code code^ code-params^ code@)
+  (provide define-code code^ code-params^ code@
+           (for-syntax prop:code-transformer
+                       code-transformer?
+                       make-code-transformer))
 
   (define (to-code-pict p extension)
     (use-last* p extension))
@@ -60,6 +63,46 @@
      [(sep a . rest)
       (code-vl-append sep a (apply code-vl-append sep rest))]))
 
+  (begin-for-syntax
+   (define-values (prop:code-transformer code-transformer? code-transformer-ref)
+     (make-struct-type-property 'code-transformer
+                                (lambda (proc info)
+                                  (unless (and (procedure? proc)
+                                               (procedure-arity-includes? proc 2))
+                                    (raise-argument-error 'guard-for-code-transformer
+                                                          "(procedure-arity-includes/c 2)"
+                                                          proc))
+                                  proc)))
+
+   (define make-code-transformer
+     (let ()
+       (define-struct code-transformer (proc)
+         #:property prop:code-transformer (lambda (r stx)
+                                            (let ([proc (code-transformer-proc r)])
+                                              (if (syntax? proc)
+                                                  (if (identifier? stx)
+                                                      proc
+                                                      #f) ; => render normally
+                                                  (proc stx)))))
+       (lambda (proc)
+         (unless (or (syntax? proc)
+                     (and (procedure? proc)
+                          (procedure-arity-includes? proc 1)))
+           (raise-argument-error 'make-code-transformer
+                                 "(or/c syntax? (procedure-arity-includes/c 1))"
+                                 proc))
+         (make-code-transformer proc))))
+   
+   (define (transform id stx uncode-stx recur default)
+     (define r (syntax-local-value id (lambda () #f)))
+     (define t ((code-transformer-ref r) r stx))
+     (if t
+         (recur (datum->syntax stx
+                               (list uncode-stx t)
+                               stx
+                               stx))
+         (default stx))))
+
   (define-syntax (define-code stx)
     (syntax-case stx ()
       [(_ code typeset-code uncode)
@@ -68,21 +111,32 @@
 	   (define (stx->loc-s-expr v)
 	     (cond
 	      [(syntax? v)
-	       (let ([mk `(datum->syntax
-			   #f
-			   ,(syntax-case v (uncode)
-			      [(uncode e) #'e]
-			      [else (stx->loc-s-expr (syntax-e v))])
-			   (list 'code
-				 ,(syntax-line v)
-				 ,(syntax-column v)
-				 ,(syntax-position v)
-				 ,(syntax-span v)))])
-		 (let ([prop (syntax-property v 'paren-shape)])
-		   (if prop
-		       `(syntax-property ,mk 'paren-shape ,prop)
-		       mk)))]
-	      [(pair? v) `(cons ,(stx->loc-s-expr (car v))
+               (define (default v)
+                 (let ([mk `(datum->syntax
+                             #f
+                             ,(syntax-case v (uncode)
+                                [(uncode e) #'e]
+                                 [_ (stx->loc-s-expr (syntax-e v))])
+                              (list 'code
+                                    ,(syntax-line v)
+                                    ,(syntax-column v)
+                                    ,(syntax-position v)
+                                    ,(syntax-span v)))])
+                   (let ([prop (syntax-property v 'paren-shape)])
+                     (if prop
+                         `(syntax-property ,mk 'paren-shape ,prop)
+                         mk))))
+               (syntax-case v ()
+                 [(id e (... ...))
+                  (and (identifier? #'id)
+                       (code-transformer? (syntax-local-value #'id (lambda () #f))))
+                  (transform #'id v (quote-syntax uncode) stx->loc-s-expr default)]
+                 [id
+                  (and (identifier? #'id)
+                       (code-transformer? (syntax-local-value #'id (lambda () #f))))
+                  (transform #'id v (quote-syntax uncode) stx->loc-s-expr default)]
+                 [_ (default v)])]
+              [(pair? v) `(cons ,(stx->loc-s-expr (car v))
 				,(stx->loc-s-expr (cdr v)))]
 	      [(vector? v) `(vector ,@(map
 				       stx->loc-s-expr

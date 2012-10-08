@@ -122,9 +122,11 @@
                     (lambda (top-level hide-panel?)
                       (set! mid-panel (make-object wx-vertical-panel% #f this top-level null #f))
                       (send mid-panel skip-subwindow-events? #t)
+		      (send mid-panel skip-enter-leave-events #t)
                       (send (send mid-panel area-parent) add-child mid-panel)
                       (set! wx-panel (make-object wx-vertical-panel% #f this mid-panel null #f))
                       (send wx-panel skip-subwindow-events? #t)
+		      (send wx-panel skip-enter-leave-events #t)
                       (send (send wx-panel area-parent) add-child wx-panel)
                       (send top-level set-container wx-panel)
                       (when hide-panel?
@@ -323,11 +325,11 @@
 
 (define (check-top-level-parent/false who p)
   (unless (or (not p) (is-a? p frame%) (is-a? p dialog%))
-    (raise-type-error (who->name who) "frame% or dialog% object or #f" p)))
+    (raise-argument-error (who->name who) "(or/c (is-a?/c frame%) (is-a?/c dialog%) #f)" p)))
 
 (define (check-frame-parent/false who p)
   (unless (or (not p) (is-a? p frame%))
-    (raise-type-error (who->name who) "frame% object or #f" p)))
+    (raise-argument-error (who->name who) "(or/c (is-a?/c frame%) #f)" p)))
 
 (define root-menu-frame
   (and (current-eventspace-has-menu-root?)

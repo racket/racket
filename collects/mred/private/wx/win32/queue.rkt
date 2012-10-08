@@ -154,6 +154,6 @@
                                           (wrap-evt (system-idle-evt)
                                                     (lambda (v) #f))
                                           boundary-tasks-ready-evt)))
-                (pre-event-sync #t))
+                (atomically (pre-event-sync #t)))
               (as-entry dispatch-all-ready)
               (loop)))))

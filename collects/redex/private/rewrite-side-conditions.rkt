@@ -40,6 +40,7 @@
         (if (and par (not (eq? chd par))) (recur par (hash-ref sets par #f)) chd)))
     
     (define last-contexts (make-hasheq))
+    (define last-stx (make-hasheq)) ;; used for syntax error reporting
     (define assignments #hasheq())
     (define (record-binder pat-stx under)
       (define pat-sym (syntax->datum pat-stx))
@@ -47,11 +48,25 @@
             (if (null? under)
                 assignments
                 (let ([last (hash-ref last-contexts pat-sym #f)])
-                  (if last
-                      (foldl (λ (cur last asgns) (union cur last asgns)) assignments under last)
-                      (begin
-                        (hash-set! last-contexts pat-sym under)
-                        assignments))))))
+                  (hash-set! last-stx pat-sym (cons pat-stx (hash-ref last-stx pat-sym '())))
+                  (cond
+                    [last
+                     (unless (equal? (length last) (length under))
+                       (define stxs (hash-ref last-stx pat-sym))
+                       (raise-syntax-error what
+                                           (format "found ~a under ~a ellips~as in one place and ~a ellips~as in another"
+                                                   pat-sym
+                                                   (length last)
+                                                   (if (= 1 (length last)) "i" "e")
+                                                   (length under)
+                                                   (if (= 1 (length under)) "i" "e"))
+                                           orig-stx
+                                           (car stxs)
+                                           (cdr stxs)))
+                     (foldl (λ (cur last asgns) (union cur last asgns)) assignments under last)]
+                    [else
+                     (hash-set! last-contexts pat-sym under)
+                     assignments])))))
 
     (define ellipsis-number 0)
     

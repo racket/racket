@@ -54,7 +54,8 @@
        (syntax-case stx ()
          [(for*/fXvector (for-clause ...) body ...)
           (with-syntax ([orig-stx orig-stx]
-                        [for_/fold/derived for_/fold/derived-stx])
+                        [for_/fold/derived for_/fold/derived-stx]
+                        [((middle-body ...) (last-body ...)) (split-for-body stx #'(body ...))])
             (syntax/loc stx
               (let-values ([(vec i)
                             (for_/fold/derived
@@ -62,10 +63,11 @@
                              ([vec (make-fXvector 16)]
                               [i 0])
                              (for-clause ...) 
+                             middle-body ...
                              (let ([new-vec (if (eq? i (unsafe-fXvector-length vec))
                                                 (grow-fXvector vec)
                                                 vec)])
-                               (unsafe-fXvector-set! new-vec i (let () body ...))
+                               (unsafe-fXvector-set! new-vec i (let () last-body ...))
                                (values new-vec (unsafe-fx+ i 1))))])
                 (shrink-fXvector vec i))))]
          [(for*/fXvector #:length length-expr #:fill fill-expr (for-clause ...) body ...)
@@ -93,10 +95,11 @@
                                   (syntax/loc fc [ids (stop-after
                                                        rhs
                                                        (lambda x
-                                                         (= i len)))])]
+                                                         (unsafe-fx= i len)))])]
                                  [_ fc]))
                              (cons wrapped-fc
                                    (loop (cdr fcs) wrap-all?))]))]
+                        [((middle-body ...) (last-body ...)) (split-for-body stx #'(body ...))]
                         [for_/fXvector for_/fXvector-stx]
                         [for_/fold/derived for_/fold/derived-stx])
             (syntax/loc stx
@@ -110,7 +113,8 @@
                        orig-stx 
                        ([i 0])
                        (limited-for-clause ...)
-                       (fXvector-set! v i (let () body ...))
+                       middle-body ...
+                       (fXvector-set! v i (let () last-body ...))
                        (add1 i)))
                     v)))))]
       [(_ #:length length-expr (for-clause ...) body ...)

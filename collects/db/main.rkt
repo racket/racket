@@ -1,6 +1,5 @@
 #lang racket/base
-(require (for-syntax racket/base)
-         unstable/lazy-require
+(require unstable/lazy-require
          racket/contract/base
          "base.rkt")
 (provide (all-from-out "base.rkt"))

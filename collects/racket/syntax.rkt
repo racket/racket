@@ -81,7 +81,12 @@
 (define (record-disappeared-uses ids)
   (let ([uses (current-recorded-disappeared-uses)])
     (when uses
-      (current-recorded-disappeared-uses (append ids uses)))))
+      (current-recorded-disappeared-uses 
+       (append
+        (if (syntax-transforming?)
+            (map syntax-local-introduce ids)
+            ids)
+        uses)))))
 
 
 ;; == Identifier formatting ==

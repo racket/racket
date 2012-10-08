@@ -1,6 +1,8 @@
 #lang scribble/doc
 @(require "common.rkt")
 
+@centered{@image[#:suffixes @list[".png"]]{image/slider}}
+
 @defclass/title[slider% object% (control<%>)]{
 
 A @racket[slider] object is a panel item with a handle that the user can

@@ -4,8 +4,12 @@
 @title[#:tag "pipeports"]{Pipes}
 
 A Racket @deftech{pipe} is internal to Racket, and not related to
-OS-level pipes (which are @tech{file-stream ports}) for communicating
-between different processes.
+OS-level pipes for communicating between different
+processes.@margin-note*{OS-level pipes may be created by
+@racket[subprocess], opening an existing named file on a Unix
+filesystem, or starting Racket with pipes for its original input,
+output, or error port. Such pipes are @tech{file-stream ports},
+unlike the pipes produced by @racket[make-pipe].}
 
 @defproc[(make-pipe [limit exact-positive-integer? #f]
                     [input-name any/c 'pipe]

@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require "../utils/utils.rkt"
-         (rename-in (types subtype abbrev remove-intersect union utils filter-ops)
+         (rename-in (types subtype abbrev union utils filter-ops)
                     [-> -->]
                     [->* -->*]
                     [one-of/c -one-of/c])

@@ -1,5 +1,5 @@
 #lang racket/base
-(require (except-in "../utils/utils.rkt" infer)
+(require (except-in "../utils/utils.rkt" infer) racket/unsafe/ops
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
          (types utils resolve base-abbrev numeric-tower substitute)
@@ -17,7 +17,6 @@
 
 ;; exn representing failure of subtyping
 ;; s,t both types
-
 (define-struct (exn:subtype exn:fail) (s t))
 
 ;; subtyping failure - masked before it gets to the user program
@@ -28,7 +27,7 @@
 ;; data structures for remembering things on recursive calls
 (define (empty-set) '())
 
-(define current-seen (make-parameter (empty-set) #;pair?))
+(define current-seen (make-parameter (empty-set)))
 
 (define (seen-before s t) (cons (Type-seq s) (Type-seq t)))
 (define (remember s t A) (cons (seen-before s t) A))
@@ -42,38 +41,28 @@
 (define (cached? s t)
   (hash-ref subtype-cache (cons (Type-seq s) (Type-seq t)) #f))
 
+(define-syntax-rule (handle-failure e)
+  (with-handlers ([exn:subtype? (λ (_) #f)])
+    e))
+
 ;; is s a subtype of t?
 ;; type type -> boolean
 (define/cond-contract (subtype s t)
   (c:-> (c:or/c Type/c Values?) (c:or/c Type/c Values?) boolean?)
-  (define k (cons (Type-seq s) (Type-seq t)))
-  (define lookup? (hash-ref subtype-cache k 'no))
-  (if (eq? 'no lookup?)
-      (let ([result (with-handlers
-                        ([exn:subtype? (lambda _ #f)])
-                      (and (subtype* (current-seen) s t) #t))])
-        (hash-set! subtype-cache k result)
-        result)
-      lookup?))
+  (define k (cons (unsafe-struct-ref s 0) (unsafe-struct-ref t 0)))
+  (define (new-val) 
+    (define result (handle-failure (and (subtype* (current-seen) s t) #t)))
+    ;(printf "subtype cache miss ~a ~a\n" s t)
+    result)
+  (hash-ref! subtype-cache k new-val))
 
 ;; are all the s's subtypes of all the t's?
 ;; [type] [type] -> boolean
-(define (subtypes s t)
-  (with-handlers
-      ([exn:subtype? (lambda _ #f)])
-    (subtypes* (current-seen) s t)))
+(define (subtypes s t) (handle-failure (subtypes* (current-seen) s t)))
 
 ;; subtyping under constraint set, but produces boolean result instead of raising exn
 ;; List[(cons Number Number)] type type -> maybe[List[(cons Number Number)]]
-(define (subtype*/no-fail A s t)
-  (with-handlers
-      ([exn:subtype? (lambda _ #f)])
-    (subtype* A s t)))
-
-;; type type -> (does not return)
-;; subtying fails
-#;
-(define (fail! s t) (raise (make-exn:subtype "subtyping failed" (current-continuation-marks) s t)))
+(define (subtype*/no-fail A s t) (handle-failure (subtype* A s t)))
 
 ;; check subtyping for two lists of types
 ;; List[(cons Number Number)] listof[type] listof[type] -> List[(cons Number Number)]
@@ -195,7 +184,7 @@
     [(list (and a1 (arr: dom1 rng1 #f #f '())) (arr: dom rng #f #f '()) ...)
      (cond
        [(null? dom) (make-arr dom1 rng1 #f #f '())]
-       [(not (apply = (length dom1) (map length dom))) #f]
+       [(not (apply = 1 (length dom1) (map length dom))) #f]
        [(not (for/and ([rng2 (in-list rng)]) (type-equal? rng1 rng2)))
         #f]
        [else (make-arr (apply map Un (cons dom1 dom)) rng1 #f #f '())])]
@@ -220,19 +209,19 @@
   (define (in-hierarchy? s par)
     (define s-name
       (match s
-        [(Poly: _ (Struct: s-name _ _ _ _ _ _ _)) s-name]
-        [(Struct: s-name _ _ _ _ _ _ _) s-name]))
+        [(Poly: _ (Struct: s-name _ _ _ _ _)) s-name]
+        [(Struct: s-name _ _ _ _ _) s-name]))
     (define p-name
       (match par
-        [(Poly: _ (Struct: p-name _ _ _ _ _ _ _)) p-name]
-        [(Struct: p-name _ _ _ _ _ _ _) p-name]))
+        [(Poly: _ (Struct: p-name _ _ _ _ _)) p-name]
+        [(Struct: p-name _ _ _ _ _) p-name]))
     (or (free-identifier=? s-name p-name)
         (match s
           [(Poly: _ (? Struct? s*)) (in-hierarchy? s* par)]
-          [(Struct: _ (and (Name: _) p) _ _ _ _ _ _) (in-hierarchy? (resolve-once p) par)]
-          [(Struct: _ (? Struct? p) _ _ _ _ _ _) (in-hierarchy? p par)]
-          [(Struct: _ (Poly: _ p) _ _ _ _ _ _) (in-hierarchy? p par)]
-          [(Struct: _ #f _ _ _ _ _ _) #f]
+          [(Struct: _ (and (Name: _) p) _ _ _ _) (in-hierarchy? (resolve-once p) par)]
+          [(Struct: _ (? Struct? p) _ _ _ _) (in-hierarchy? p par)]
+          [(Struct: _ (Poly: _ p) _ _ _ _) (in-hierarchy? p par)]
+          [(Struct: _ #f _ _ _ _) #f]
           [_ (int-err "wtf is this? ~a" s)])))
   (not (or (in-hierarchy? s1 s2) (in-hierarchy? s2 s1))))
 
@@ -310,10 +299,11 @@
                (subtype* A0 -Nat t*)]
               [((Hashtable: k v) (Sequence: (list k* v*)))
                (subtypes* A0 (list k v) (list k* v*))]
-              ;; special-case for case-lambda/union
+              ;; special-case for case-lambda/union with only one argument              
               [((Function: arr1) (Function: (list arr2)))
                (when (null? arr1) (fail! s t))
-               (or (arr-subtype*/no-fail A0 (combine-arrs arr1) arr2)
+               (define comb (combine-arrs arr1))
+               (or (and comb (arr-subtype*/no-fail A0 comb arr2))
                    (supertype-of-one/arr A0 arr2 arr1)
                    (fail! s t))]
               ;; case-lambda
@@ -404,13 +394,13 @@
                    A0
                    (fail! s t))]
               ;; subtyping on immutable structs is covariant
-              [((Struct: nm _ flds proc _ _ _ _) (Struct: nm* _ flds* proc* _ _ _ _)) (=> nevermind)
+              [((Struct: nm _ flds proc _ _) (Struct: nm* _ flds* proc* _ _)) (=> nevermind)
                (unless (free-identifier=? nm nm*) (nevermind))
                (let ([A (cond [(and proc proc*) (subtype* proc proc*)]
                               [proc* (fail! proc proc*)]
                               [else A0])])
                  (subtype/flds* A flds flds*))]
-              [((Struct: nm _ _ _ _ _ _ _) (StructTop: (Struct: nm* _ _ _ _ _ _ _))) (=> nevermind)
+              [((Struct: nm _ _ _ _ _) (StructTop: (Struct: nm* _ _ _ _ _))) (=> nevermind)
                (unless (free-identifier=? nm nm*) (nevermind))
                A0]
               ;; Promises are covariant
@@ -432,7 +422,7 @@
               [((MPair: _ _) (MPairTop:)) A0]
               [((Hashtable: _ _) (HashtableTop:)) A0]
               ;; subtyping on structs follows the declared hierarchy
-              [((Struct: nm (? Type? parent) _ _ _ _ _ _) other)
+              [((Struct: nm (? Type? parent) _ _ _ _) other)
                ;(dprintf "subtype - hierarchy : ~a ~a ~a\n" nm parent other)
                (subtype* A0 parent other)]
               ;; subtyping on values is pointwise

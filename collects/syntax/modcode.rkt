@@ -11,7 +11,9 @@
 
   (provide/contract
    [get-module-code (->* (path?)
-                         (#:submodule-path
+                         (#:roots
+                          (listof (or/c path? 'same))
+                          #:submodule-path
                           (listof symbol?)
                           #:sub-path 
                           (and/c path-string? relative-path?)
@@ -79,6 +81,7 @@
   (define-struct (exn:get-module-code exn:fail) (path))
 
   (define (get-module-code path
+                           #:roots [roots (current-compiled-file-roots)]
                            #:submodule-path [submodule-path '()]
                            #:sub-path [sub-path0 "compiled"]
                            #:compile [compile0 compile]
@@ -112,6 +115,20 @@
                                        orig-path
                                        (build-path base alt-file)))]
                   [(base) (if (eq? base 'relative) 'same base)])
+      (define (build-found-path base . args)
+        (cond
+         [(or (equal? roots '(same)) (null? roots))
+          (apply build-path base args)]
+         [else
+          (let ([reroot-path* (lambda (base root)
+                                (cond
+                                 [(eq? root 'same) base]
+                                 [(relative-path? root) (build-path base root)]
+                                 [else (reroot-path base root)]))])
+            (or (for/or ([root (in-list (if (null? (cdr roots)) null roots))])
+                  (define p (apply build-path (reroot-path* base root) args))
+                  (and (file-exists? p) p))
+                (apply build-path (reroot-path* base (car roots)) args)))]))
       (let* ([main-path-d (file-or-directory-modify-seconds orig-path #f (lambda () #f))]
              [alt-path-d (and alt-path
                               (not main-path-d)
@@ -121,13 +138,13 @@
              [path (if alt-path-d alt-path main-path)]
              [try-alt? (and alt-file (not alt-path-d) (not main-path-d))]
              [get-so (lambda (file)
-                       (build-path
+                       (build-found-path
                         base sub-path "native"
                         (system-library-subpath)
                         (path-add-suffix file (system-type 'so-suffix))))]
-             [zo (build-path base sub-path (path-add-suffix file #".zo"))]
+             [zo (build-found-path base sub-path (path-add-suffix file #".zo"))]
              [alt-zo (and try-alt?
-                          (build-path base sub-path (path-add-suffix alt-file #".zo")))]
+                          (build-found-path base sub-path (path-add-suffix alt-file #".zo")))]
              [so (get-so file)]
              [alt-so (and try-alt? (get-so alt-file))]
              [with-dir (lambda (t)
@@ -156,6 +173,7 @@
           ;; Use .zo, if it's new enough
           [(or (eq? prefer 'zo)
                (and (not prefer)
+                    (pair? roots)
                     (or (date>=? zo path-d)
                         (and try-alt?
                              (date>=? alt-zo path-d)))))
@@ -172,6 +190,7 @@
           [(and (null? submodule-path)
                 (or (eq? prefer 'so)
                     (and (not prefer)
+                         (pair? roots)
                          (or (date>=? so path-d)
                              (and try-alt?
                                   (date>=? alt-so path-d))))))

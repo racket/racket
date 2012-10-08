@@ -229,6 +229,10 @@
 		  [(#\b #\backspace #\rubout prior)
 		   (prev)
 		   #t]
+                  [(#\s)
+                   (next-title add1 #f)]
+                  [(#\a)
+                   (next-title sub1 #t)]
 		  [(#\g)
 		   (stop-transition)
 		   (send f set-blank-cursor #f)
@@ -354,6 +358,27 @@
             (if (pair? current-transitions)
 		(stop-transition)
                 (change-slide 1)))
+
+          (define/public (next-title d1 far-end?)
+            ;; skip to next slide that has a different title
+            (stop-transition)
+            (define current-title (sliderec-title (talk-list-ref current-page)))
+            (change-slide
+             (- (let loop ([pos (d1 current-page)])
+                  (cond
+                   [(negative? pos) 0]
+                   [(= pos slide-count) (sub1 slide-count)]
+                   [(equal? current-title (sliderec-title (talk-list-ref pos))) (loop (d1 pos))]
+                   [far-end?
+                    (define new-title (sliderec-title (talk-list-ref pos)))
+                    (let loop ([prev-pos pos] [pos (d1 pos)])
+                      (cond
+                       [(negative? pos) 0]
+                       [(= pos slide-count) (sub1 slide-count)]
+                       [(equal? new-title (sliderec-title (talk-list-ref pos))) (loop pos (d1 pos))]
+                       [else prev-pos]))]
+                   [else pos]))
+                current-page)))
 
 	  (define/public (slide-changed pos)
 	    (when (or (= pos current-page)

@@ -126,7 +126,7 @@ Defines each @racket[protocol-id] to the protocol (a value with FFI type
                 maybe-mixins
                 maybe-protocols
                 [field-id ...]
-                method)
+                method ...)
               ([maybe-mixins code:blank
                              (code:line #:mixins (mixin-expr ...))]
                [maybe-protocols code:blank
@@ -187,7 +187,7 @@ space for each @racket[field-id] within the instance is deallocated.
            maybe-mixins
            maybe-protocols
            [field-id ...]
-           method)]{
+           method ...)]{
 
 Like @racket[define-objc-class], but defines a mixin to be combined
 with other method definitions through either

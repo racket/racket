@@ -1231,7 +1231,7 @@ void scheme_jit_register_sub_func(mz_jit_state *jitter, void *code, Scheme_Objec
 
 void scheme_jit_register_helper_func(mz_jit_state *jitter, void *code)
 {
-#ifdef MZ_USE_DWARF_LIBUNWIND
+#if defined(MZ_USE_DWARF_LIBUNWIND) || defined(_WIN64)
   /* Null indicates that there's no function name to report, but the
      stack should be unwound manually using the JJIT-generated convention. */
   scheme_jit_register_sub_func(jitter, code, scheme_null);

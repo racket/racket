@@ -834,7 +834,7 @@ At this point, we @emph{can} read and write the blog to disk. So let's do it.
 First, we'll add to the model a path pointing to where the blog resides on
 disk:
 
-@defstruct*[blog ([home string?] [posts (listof post?)]) #:mutable]
+@defstruct*[blog ([home string?] [posts (listof post?)]) #:mutable #:prefab]
 
 Notice that we will need to convert the path into a string. Why didn't we just
 make the blog structure contain paths? Answer: They can't be used with

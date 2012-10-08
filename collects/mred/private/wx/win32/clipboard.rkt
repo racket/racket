@@ -35,6 +35,7 @@
 
 (define DIB_RGB_COLORS      0)
 (define SRCCOPY             #x00CC0020)
+(define BI_BITFIELDS        3)
 
 (define-cstruct _BITMAPINFOHEADER
   ([biSize _DWORD]
@@ -233,7 +234,10 @@
                (ReleaseDC #f screen-hdc)
                (StretchDIBits hdc 0 0 w h
                               0 0 w h
-                              (ptr-add bmi (+ (BITMAPINFOHEADER-biSize bmi) psize))
+                              (ptr-add bmi (+ (BITMAPINFOHEADER-biSize bmi) psize
+					      (if (= (BITMAPINFOHEADER-biCompression bmi) BI_BITFIELDS)
+						  12
+						  0)))
                               bmi DIB_RGB_COLORS SRCCOPY)
                (SelectObject hdc old-hbitmap)
                (GlobalUnlock bits)

@@ -879,4 +879,23 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(test 5
+      'm->n
+      (parameterize ([current-namespace (make-base-namespace)])
+        (eval '(module m racket/base (define x 5) (provide (protect-out x))))
+        (eval '(module n racket/base (require 'm)))
+        (eval '(require 'n))
+        (parameterize ([current-namespace (module->namespace ''n)])
+          (eval 'x))))
+
+(test #t
+      'ffi/unsafe->n
+      (parameterize ([current-namespace (make-base-namespace)])
+        (eval '(module n racket/base (require ffi/unsafe)))
+        (eval '(require 'n))
+        (parameterize ([current-namespace (module->namespace ''n)])
+          (eval '(procedure? ptr-set!)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

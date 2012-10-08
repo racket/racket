@@ -18,7 +18,7 @@
 
 @author["Paul Graunke and Jay McCarthy"]
 
-@defmodule[xml]
+@defmodule[xml #:use-sources (xml/private/xexpr-core)]
 
 The @racketmodname[xml] library provides functions for parsing and
 generating XML. XML can be represented as an instance of the
@@ -178,6 +178,16 @@ and a @racket[_misc] is an instance of the @racket[comment] or
  A contract that is like @racket[xexpr?] except produces a better error
  message when the value is not an @tech{X-expression}.
 }
+
+@; ----------------------------------------------------------------------
+
+@section{X-expression Predicate and Contract}
+
+@defmodule[xml/xexpr]
+
+The @racketmodname[xml/xexpr] library provides just @racket[xexpr/c],
+@racket[xexpr?], @racket[correct-xexpr?], and @racket[validate-xexpr]
+from @racketmodname[xml] with minimal dependencies.
 
 @; ----------------------------------------------------------------------
 

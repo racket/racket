@@ -3,6 +3,7 @@
          scribble/core
          scribble/base
          scribble/sigplan
+         scribble/latex-prefix
          racket/list
          "../private/defaults.rkt"
          (for-syntax scheme/base))
@@ -66,8 +67,9 @@ Read here for more:
     (add-sigplan-styles 
      (add-defaults doc
                    (string->bytes/utf-8
-                    (format "\\documentclass~a{sigplanconf}\n~a~a"
+                    (format "\\documentclass~a{sigplanconf}\n~a~a~a"
                             options
+                            unicode-encoding-packages
                             (if times? 
                                 "\\usepackage{times}\n"
                                 "")

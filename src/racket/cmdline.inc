@@ -384,6 +384,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
             }
           }
         } else {
+          scheme_clear_escape();
 	  exit_val = 1;
 	  p->error_buf = save;
 	  break;
@@ -444,6 +445,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
             e = SCHEME_CDR(e);
           }
 	} else {
+          scheme_clear_escape();
 	  exit_val = 1;
 	  p->error_buf = save;
 	  break;
@@ -473,6 +475,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
 	scheme_apply_multi_with_prompt(f, 0, NULL);
       }
     } else {
+      scheme_clear_escape();
       exit_val = 1;
     }
     p->error_buf = save;
@@ -503,6 +506,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
       repl(fa->global_env, fa);
       exit_val = 0;
     } else {
+      scheme_clear_escape();
       exit_val = 1;
 #ifndef NO_YIELD_BEFORE_EXIT
       fa->a->add_yield = 0;
@@ -524,6 +528,8 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
       yh = scheme_get_param(scheme_current_config(), MZCONFIG_EXE_YIELD_HANDLER);
       yha[0] = scheme_make_integer(exit_val);
       scheme_apply(yh, 1, yha);
+    } else {
+      scheme_clear_escape();
     }
     p->error_buf = save;
   }
@@ -548,38 +554,93 @@ static Scheme_Object *reverse_path_list(Scheme_Object *l, int rel_to_cwd)
   return r;
 }   
 
-static int get_log_level(char *prog, char *real_switch, const char *envvar, const char *what, char *str)
-{
-  if (!strcmp(str, "none"))
-    return 0;
-  else if (!strcmp(str, "fatal"))
-    return SCHEME_LOG_FATAL;
-  else if (!strcmp(str, "error"))
-    return SCHEME_LOG_ERROR;
-  else if (!strcmp(str, "warning"))
-    return SCHEME_LOG_WARNING;
-  else if (!strcmp(str, "info"))
-    return SCHEME_LOG_INFO;
-  else if (!strcmp(str, "debug"))
-    return SCHEME_LOG_DEBUG;
+#ifndef MZ_XFORM
+# define GC_CAN_IGNORE /**/
+#endif
 
-  PRINTF("%s: %s level %s%s%s must be one of the following:\n"
-         "  none fatal error warning info or debug\n"
-         " given: %s\n",
-         prog, what, 
-         real_switch ? "after " : "in ",
-         real_switch ? real_switch : envvar,
-         real_switch ? " switch" : " envrionment variable",
-         str);
-  return -1;
+static Scheme_Object *get_log_level(char *prog, char *real_switch, const char *envvar, const char *what, GC_CAN_IGNORE char *str)
+{
+  int k, len, default_lvl = -1;
+  Scheme_Object *l, *last = NULL;
+  GC_CAN_IGNORE char *s, *orig_str = str;
+
+  l =  scheme_make_null();
+
+  while (1) {
+    if (!*str) {
+      if (default_lvl == -1) default_lvl = 0;
+      if (last)
+        SCHEME_CDR(last) = scheme_make_integer(default_lvl);
+      else
+        l = scheme_make_integer(default_lvl);
+      return l;
+    }
+
+    if (!strncmp(str, "none", 4)) {
+      k = 0;
+      len = 4;
+    } else if (!strncmp(str, "fatal", 5)) {
+      k = SCHEME_LOG_FATAL;
+      len = 5;
+    } else if (!strncmp(str, "error", 5)) {
+      k = SCHEME_LOG_ERROR;
+      len = 5;
+    } else if (!strncmp(str, "warning", 7)) {
+      k = SCHEME_LOG_WARNING;
+      len = 7;
+    } else if (!strncmp(str, "info", 4)) {
+      k = SCHEME_LOG_INFO;
+      len = 4;
+    } else if (!strncmp(str, "debug", 5)) {
+      k  = SCHEME_LOG_DEBUG;
+      len = 5;
+    } else 
+      k = -1;
+
+    str += len;
+
+    if (k != -1) {
+      if (*str == '@') {
+        str++;
+        for (s = str; *s && *s != ' '; s++) {
+        }
+        l = scheme_make_pair(scheme_make_sized_byte_string(str, s - str, 1), l);
+        if (!last) last = l;
+        l = scheme_make_pair(scheme_make_integer(k), l);
+        str = s;
+      } else if ((*str == ' ') || !*str) {
+        if (default_lvl == -1)
+          default_lvl = k;
+        else
+          k = -1;
+      } else
+        k = -1;
+      if (*str) str++;
+    }
+
+    if (k == -1) {
+      PRINTF("%s: %s <levels> %s%s%s must be one of the following\n"
+             " <level>s:\n"
+             "   none fatal error warning info debug\n"
+             " or up to one such <level> in space-separated sequence of\n"
+             "   <level>@<name>\n"
+             " given: %s\n",
+             prog, what, 
+             real_switch ? "after " : "in ",
+             real_switch ? real_switch : envvar,
+             real_switch ? " switch" : " environment variable",
+             orig_str);
+      return NULL;
+    }
+  }
 }
 
-static int get_arg_log_level(char *prog, char *real_switch, const char *what, int argc, char **argv)
+static Scheme_Object *get_arg_log_level(char *prog, char *real_switch, const char *what, int argc, char **argv)
 {
   if (argc < 2) {
     PRINTF("%s: missing %s level after %s switch\n", 
            prog, what, real_switch);
-    return -1;
+    return NULL;
   }
 
   return get_log_level(prog, real_switch, NULL, what, argv[1]);
@@ -623,6 +684,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
   Scheme_Object *sch_argv;
   int skip_coll_dirs = 0;
   Scheme_Object *collects_path = NULL, *collects_extra = NULL, *addon_dir = NULL;
+  char *compiled_paths = NULL;
   Scheme_Object *links_file = NULL;
 #ifndef NO_FILE_SYSTEM_UTILS
   Scheme_Object *collects_paths_l, *collects_paths_r;
@@ -652,7 +714,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
   int was_config_flag = 0, saw_nc_flag = 0;
   int no_compiled = 0;
   int init_ns = 0, no_init_ns = 0;
-  int syslog_level = -1, stderr_level = -1;
+  Scheme_Object *syslog_level = NULL, *stderr_level = NULL;
   FinishArgs *fa;
   FinishArgsAtoms *fa_a;
 
@@ -897,6 +959,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
       argv[0] = "-X";
     else if (!strcmp("--search", argv[0]))
       argv[0] = "-S";
+    else if (!strcmp("--compiled", argv[0]))
+      argv[0] = "-R";
     else if (!strcmp("--addon", argv[0]))
       argv[0] = "-A";
     else if (!strcmp("--links", argv[0]))
@@ -950,6 +1014,17 @@ static int run_from_cmd_line(int argc, char *_argv[],
             collects_path = scheme_make_false();
           } else
             collects_path = check_make_path(prog, real_switch, argv[0]);
+          was_config_flag = 1;
+	  break;
+        case 'R':
+          if (argc < 2) {
+	    PRINTF("%s: missing path after %s switch\n", 
+		   prog, real_switch);
+	    goto show_need_help;
+	  }
+	  argv++;
+	  --argc;
+	  compiled_paths = argv[0];
           was_config_flag = 1;
 	  break;
 	case 'A':
@@ -1177,7 +1252,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 #endif
         case 'W':
           stderr_level = get_arg_log_level(prog, real_switch, "stderr", argc, argv);
-          if (stderr_level < 0)
+          if (!stderr_level)
             goto show_need_help;
           --argc;
           argv++;
@@ -1185,7 +1260,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
           break;
 	case 'L':
           syslog_level = get_arg_log_level(prog, real_switch, "syslog", argc, argv);
-          if (syslog_level < 0)
+          if (!syslog_level)
             goto show_need_help;
           --argc;
           argv++;
@@ -1257,14 +1332,14 @@ static int run_from_cmd_line(int argc, char *_argv[],
 #endif /* DONT_PARSE_COMMAND_LINE */
 
 #ifdef GETENV_FUNCTION
-  if (syslog_level < 0) {
+  if (!syslog_level) {
     char *s;
     s = getenv("PLTSYSLOG");
     if (s) {
       syslog_level = get_log_level(prog, NULL, "PLTSYSLOG", "syslog", s);
     }
   }
-  if (stderr_level < 0) {
+  if (!stderr_level) {
     char *s;
     s = getenv("PLTSTDERR");
     if (s) {
@@ -1276,7 +1351,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
   }
 #endif
 
-  scheme_set_logging(syslog_level, stderr_level);
+  scheme_set_logging_spec(syslog_level, stderr_level);
   
 #ifndef NO_FILE_SYSTEM_UTILS
   /* Setup path for "collects" collection directory: */
@@ -1334,6 +1409,15 @@ static int run_from_cmd_line(int argc, char *_argv[],
     scheme_set_compiled_file_paths(scheme_make_null());
 
 #ifndef NO_FILE_SYSTEM_UTILS
+  /* Setup compiled-file search path: */
+# ifdef GETENV_FUNCTION
+  if (!compiled_paths) {
+    compiled_paths = getenv("PLTCOMPILEDROOTS");
+  }
+# endif
+#endif /* NO_FILE_SYSTEM_UTILS */
+
+#ifndef NO_FILE_SYSTEM_UTILS
   /* Setup path for "addon" directory: */
 # ifdef GETENV_FUNCTION
   if (!addon_dir) {
@@ -1375,6 +1459,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
 #ifndef NO_FILE_SYSTEM_UTILS
   if (!skip_coll_dirs)
     scheme_init_collection_paths_post(global_env, collects_paths_l, collects_paths_r);
+  if (compiled_paths)
+    scheme_init_compiled_roots(global_env, compiled_paths);
 #endif
 
   scheme_seal_parameters();
@@ -1458,6 +1544,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	 "  -X <dir>, --collects <dir> : Main collects at <dir> (or \"\" disables all)\n"
 	 "  -S <dir>, --search <dir> : More collects at <dir> (after main collects)\n"
 	 "  -A <dir>, --addon <dir> : Addon directory at <dir>\n"
+         "  -R <paths>, --compiled <paths> : Set compiled-file search roots to <paths>\n"
 	 "  -C <file>, --links <file> : User-specific collection links at <file>\n"
 	 "  -U, --no-user-path : Ignore user-specific collects, etc.\n"
 	 "  -N <file>, --name <file> : Sets `(find-system-path 'run-file)' to <file>\n"
@@ -1471,8 +1558,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
 # endif
          "  -d, --no-delay: Disable on-demand loading of syntax and code\n"
 	 "  -b, --binary : Read stdin and write stdout/stderr in binary mode\n"
-	 "  -W <level>, --warn <level> : Set stderr logging to <level>\n"
-	 "  -L <level>, --syslog <level> : Set syslog logging to <level>\n"
+	 "  -W <levels>, --warn <levels> : Set stderr logging to <levels>\n"
+	 "  -L <levels>, --syslog <levels> : Set syslog logging to <levels>\n"
 	 " Meta options:\n"
 	 "  -- : No argument following this switch is used as a switch\n"
 	 "  -h, --help : Show this information and exits, ignoring other options\n"

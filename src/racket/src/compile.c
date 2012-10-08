@@ -3568,7 +3568,7 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
 
   a = scheme_compile_expr_lift_to_let(a, eenv, &mrec, 0);
 
-  oi = scheme_optimize_info_create(eenv->prefix);
+  oi = scheme_optimize_info_create(eenv->prefix, 1);
   if (!(rec[drec].comp_flags & COMP_CAN_INLINE))
     scheme_optimize_info_never_inline(oi);
   a = scheme_optimize_expr(a, oi, 0);
@@ -4004,7 +4004,7 @@ int scheme_get_eval_type(Scheme_Object *obj)
     return SCHEME_EVAL_GENERAL;
 }    
 
-Scheme_Object *scheme_try_apply(Scheme_Object *f, Scheme_Object *args, Scheme_Object *context)
+Scheme_Object *scheme_try_apply(Scheme_Object *f, Scheme_Object *args, Optimize_Info *info)
      /* Apply `f' to `args' and ignore failues --- used for constant
         folding attempts */
 {
@@ -4013,7 +4013,7 @@ Scheme_Object *scheme_try_apply(Scheme_Object *f, Scheme_Object *args, Scheme_Ob
   mz_jmp_buf *savebuf, newbuf;
 
   scheme_current_thread->reading_delayed = NULL;
-  scheme_current_thread->constant_folding = (context ? context : scheme_true);
+  scheme_current_thread->constant_folding = (info ? info : (Optimize_Info *)scheme_false);
   savebuf = scheme_current_thread->error_buf;
   scheme_current_thread->error_buf = &newbuf;
 
@@ -4048,7 +4048,7 @@ static int foldable_body(Scheme_Object *f)
   return (SCHEME_TYPE(d->code) > _scheme_values_types_);
 }
 
-Scheme_Object *scheme_make_application(Scheme_Object *v)
+Scheme_Object *scheme_make_application(Scheme_Object *v, Optimize_Info *info)
 {
   Scheme_Object *o;
   int i, nv;
@@ -4080,7 +4080,7 @@ Scheme_Object *scheme_make_application(Scheme_Object *v)
                 == SCHEME_PRIM_OPT_FOLDING))
 	|| (SAME_TYPE(SCHEME_TYPE(f), scheme_closure_type)
 	    && (foldable_body(f)))) {
-      f = scheme_try_apply(f, SCHEME_CDR(v), scheme_false);
+      f = scheme_try_apply(f, SCHEME_CDR(v), info);
       
       if (f)
 	return f;
@@ -4246,7 +4246,7 @@ static Scheme_Object *compile_application(Scheme_Object *form, Scheme_Comp_Env *
   scheme_compile_rec_done_local(rec, drec);
   form = scheme_inner_compile_list(form, scheme_no_defines(env), rec, drec, 1);
 
-  result = scheme_make_application(form);
+  result = scheme_make_application(form, NULL);
   
   return result;
 }

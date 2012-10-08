@@ -9,7 +9,9 @@
          (for-syntax racket/base syntax/parse))
 
 ;; Ugly hack - should use units
-(lazy-require ("../types/union.rkt" (Un)))
+(lazy-require
+  ("../types/union.rkt" (Un))
+  ("../types/resolve.rkt" (resolve-app)))
 
 (define name-table (make-weak-hasheq))
 
@@ -52,9 +54,10 @@
 
 ;; free type variables
 ;; n is a Name
-(def-type F ([n symbol?]) [#:frees (make-immutable-hasheq (list (cons n Covariant))) #hasheq()] [#:fold-rhs #:base])
+(def-type F ([n symbol?]) [#:frees (single-free-var n) empty-free-vars] [#:fold-rhs #:base])
 
 ;; id is an Identifier
+;; This will always resolve to a struct
 (def-type Name ([id identifier?]) [#:intern (hash-id id)] [#:frees #f] [#:fold-rhs #:base])
 
 ;; rator is a type
@@ -62,36 +65,15 @@
 ;; stx is the syntax of the pair of parens
 (def-type App ([rator Type/c] [rands (listof Type/c)] [stx (or/c #f syntax?)])
   [#:intern (cons (Rep-seq rator) (map Rep-seq rands))]
-  [#:frees (λ (f) (combine-frees (map f (cons rator rands))))]
+  [#:frees (λ (f)
+              (match rator 
+                ((Name: n)
+                 (instantiate-frees n (map f rands)))
+                (else (f (resolve-app rator rands stx)))))]
+
   [#:fold-rhs (*App (type-rec-id rator)
                     (map type-rec-id rands)
                     stx)])
-
-(define (get-variances t num-rands)
-  (match t
-    [(Name: v) (error 'fail)]
-    [(Poly: n scope)
-     (let ([t (free-idxs* scope)])
-       (for/list ([i (in-range n)])
-         (hash-ref t i)))]
-    [(PolyDots: n scope)
-     (let ([t (free-idxs* scope)]
-           [base-count (sub1 n)]
-           [extras (max 0 (- n num-rands))])
-       (append
-        ;; variances of the fixed arguments
-        (for/list ([i (in-range base-count)])
-          (hash-ref t i))
-        ;; variance of the dotted arguments
-        (for/list ([i (in-range extras)])
-          (hash-ref t n))))]))
-
-(define (apply-variance v tbl)
-  (match v
-    [(== Constant) (make-constant tbl)]
-    [(== Covariant) tbl]
-    [(== Invariant) (make-invariant tbl)]
-    [(== Contravariant) (flip-variances tbl)]))
 
 ;; left and right are Types
 (def-type Pair ([left Type/c] [right Type/c]) [#:key 'pair])
@@ -99,10 +81,10 @@
 ;; dotted list -- after expansion, becomes normal Pair-based list type
 (def-type ListDots ([dty Type/c] [dbound (or/c symbol? natural-number/c)])
   [#:frees (if (symbol? dbound)
-               (hash-remove (free-vars* dty) dbound)
+               (free-vars-remove (free-vars* dty) dbound)
                (free-vars* dty))
            (if (symbol? dbound)
-               (combine-frees (list (make-immutable-hasheq (list (cons dbound Covariant))) (free-idxs* dty)))
+               (combine-frees (list (single-free-var dbound) (free-idxs* dty)))
                (free-idxs* dty))]
   [#:fold-rhs (*ListDots (type-rec-id dty) dbound)])
 
@@ -232,10 +214,10 @@
 
 (def-type ValuesDots ([rs (listof Result?)] [dty Type/c] [dbound (or/c symbol? natural-number/c)])
   [#:frees (if (symbol? dbound)
-               (hash-remove (combine-frees (map free-vars* (cons dty rs))) dbound)
+               (free-vars-remove (combine-frees (map free-vars* (cons dty rs))) dbound)
                (combine-frees (map free-vars* (cons dty rs))))
            (if (symbol? dbound)
-               (combine-frees (cons (make-immutable-hasheq (list (cons dbound Covariant)))
+               (combine-frees (cons (single-free-var dbound) 
                                     (map free-idxs* (cons dty rs))))
                (combine-frees (map free-idxs* (cons dty rs))))]
   [#:fold-rhs (*ValuesDots (map type-rec-id rs) (type-rec-id dty) dbound)])
@@ -256,7 +238,7 @@
                                  dom))
                     (match drest
                       [(cons t (? symbol? bnd))
-                       (list (hash-remove (flip-variances (free-vars* t)) bnd))]
+                       (list (free-vars-remove (flip-variances (free-vars* t)) bnd))]
                       [(cons t _)
                        (list (flip-variances (free-vars* t)))]
                       [_ null])
@@ -268,7 +250,7 @@
                                  dom))
                     (match drest
                       [(cons t (? symbol? bnd))
-                       (list (make-immutable-hasheq (list (cons bnd Contravariant)))
+                       (list (single-free-var bnd Contravariant)
                              (flip-variances (free-idxs* t)))]
                       [(cons t _)
                        (list (flip-variances (free-idxs* t)))]
@@ -301,22 +283,20 @@
 ;; parent : Struct
 ;; flds : Listof[fld]
 ;; proc : Function Type
-;; poly? : is this a polymorphic type?
+;; poly? : is this type polymorphicly variant
+;;         If not, then the predicate is enough for higher order checks
 ;; pred-id : identifier for the predicate of the struct
 ;; cert : syntax certifier for pred-id
 ;; acc-ids : names of the accessors
 ;; maker-id : name of the constructor
 (def-type Struct ([name identifier?]
-                  [parent (or/c #f Struct? Name?)]
+                  [parent (or/c #f Struct?)]
                   [flds (listof fld?)]
                   [proc (or/c #f Function?)]
-                  [poly? (or/c #f (listof symbol?))]
-                  [pred-id identifier?]
-                  [cert procedure?]
-                  [maker-id identifier?])
+                  [poly? boolean?]
+                  [pred-id identifier?])
   [#:intern (list (hash-id name)
                   (hash-id pred-id)
-                  (hash-id maker-id)
                   (and parent (Rep-seq parent))
                   (map Rep-seq flds)
                   (and proc (Rep-seq proc)))]
@@ -328,9 +308,7 @@
                        (map type-rec-id flds)
                        (and proc (type-rec-id proc))
                        poly?
-                       pred-id
-                       cert
-                       maker-id)]
+                       pred-id)]
   [#:key 'struct])
 
 ;; A structure type descriptor

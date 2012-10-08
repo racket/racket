@@ -105,9 +105,13 @@
 			(and (after?/p p1) (not (after?/p p2))))
 		      (let () expr0 expr ...))
 		    (if (and condensing condense?)
-			(last-pair steps)
+                        (begin
+                          (skip-slides (sub1 (length steps)))
+                          (last-pair steps))
 			(if condense?
-			    (filter (lambda (id)
-				      (not (regexp-match #rx"~$" (symbol->string id))))
-				    steps)
+                            (let ([l (filter (lambda (id)
+                                               (not (regexp-match #rx"~$" (symbol->string id))))
+                                             steps)])
+                              (skip-slides (- (length steps) (length l)))
+                              l)
 			    steps))))))])))

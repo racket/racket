@@ -37,6 +37,7 @@
          in-domain?
          caching-enabled?
          make-coverage
+         coverage?
          check-redudancy)
 
 (provide (rename-out [test-match redex-match])

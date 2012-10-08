@@ -3,8 +3,12 @@
           scribble/eval
           scribble/struct
           racket/sandbox
+          racket/runtime-path
           "config.rkt"
           (for-label db db/util/testing racket/dict web-server/lang/web))
+
+@(define-runtime-path log-file "log-for-using-db.rktd")
+@(define the-eval (make-pg-eval log-file #f))
 
 @title[#:tag "using-db"]{Using Database Connections}
 
@@ -38,6 +42,8 @@ configuration (see @secref{creating-connections} for other connection examples):
 ]
 
 Use @racket[query-exec] method to execute a SQL statement for effect.
+
+@;{ Keep these examples in sync with config.rkt }
 
 @interaction[#:eval the-eval
 (query-exec pgc
@@ -448,3 +454,6 @@ web-server
 By using a virtual connection backed by a connection pool, a servlet
 can achieve simplicity, isolation, and performance all at the same
 time.
+
+
+@(close-eval the-eval)

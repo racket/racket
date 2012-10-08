@@ -29,6 +29,11 @@
                    (list (make-check-expect-failure "1" "2" 3 2)))
   
   (unless dmda?
+    (test-expression (format "~s" '(check-error (first 212) "first: expects a non-empty list; given: 212"))
+                     "The test passed!"
+                     #:repl-expected "Both tests passed!"))
+  
+  (unless dmda?
     (test-expression "(check-expect (car 0) 2)"
                      "car: expects a pair, given 0"
                      #:check-failures-expected
@@ -244,7 +249,7 @@
   (let* ([drs (test:get-active-top-level-window)]
          [interactions (send drs get-interactions-text)])
     (clear-definitions drs)
-    (type-in-definitions drs expression)
+    (insert-in-definitions drs expression)
     (do-execute drs)
     (let ([got (fetch-output/should-be-tested drs)])
       (unless (string=? result got)
@@ -377,10 +382,10 @@
          [definitions-text (queue-callback/res (λ () (send drs get-definitions-text)))]
          [handle-definition-insertion
           (lambda (item)
-	    (type-in-definitions drs item))]
+	    (insert-in-definitions drs item))]
          [handle-interaction-insertion
           (lambda (item)
-	    (type-in-interactions drs item))]
+	    (insert-in-interactions drs item))]
          [check-expectation
           (lambda (expected got)
             (cond

@@ -6,28 +6,20 @@
          unstable/syntax racket/match unstable/match racket/list racket/string
          unstable/list)
 
-(provide log-message-from-mzc-opt?
-         mzc-opt-log-message->log-entry
+(provide mzc-opt-log-message->log-entry
          post-process-inline-log)
 
 
 ;;; Low-level log parsing. Goes from strings to log-entry structs.
 
-(define mzc-optimizer-regexp "^mzc optimizer: ")
 (define success-regexp       "inlining: ")
 (define failure-regexp       "no inlining: ")
 (define out-of-fuel-regexp   "no inlining, out of fuel: ")
 (define any-inlining-event-regexp
-  (string-append mzc-optimizer-regexp
-                 "("
-                 (string-join (list success-regexp
-                                    failure-regexp
-                                    out-of-fuel-regexp)
-                              "|")
-                 ")"))
-
-(define (log-message-from-mzc-opt? l)
-  (regexp-match mzc-optimizer-regexp l))
+  (format "^optimizer: (~a)" (string-join (list success-regexp
+                                                failure-regexp
+                                                out-of-fuel-regexp)
+                                          "|")))
 
 
 (struct inliner-log-entry log-entry (inlining-event) #:prefab)
@@ -69,7 +61,7 @@
     ;; maybe full path info: path, line, col, name
     ;; path allows `:' as the second character (and first, but not a problem)
     ;; to support absolute windows paths (e.g. C:\...)
-    "( in: (([^ :]?[^ ]?[^ :]+):([^ :]+):([^ :]+): )?([^ ]+))?"
+    "( in: (([^ :]?[^ ]?[^:]+):([^ :]+):([^ :]+): )?([^ ]+))?"
     ;; maybe module info, useless to us (at least for now)
     "( in module: [^ ]+)?")
    " size: ([^ ]+) threshold: ([^ ]+)"
@@ -151,7 +143,6 @@
 (define (post-process-inline-log log)
   (define-values (inliner-logs tr-logs)
     (partition inliner-log-entry? log))
-  (define any-self-o-o-f? (ormap self-out-of-fuel? inliner-logs))
   (define grouped-events
     (group-by equal? #:key log-entry-pos ; right file, so that's enough
               inliner-logs))
@@ -181,9 +172,9 @@
          ;; floats, in which case having all calls to `f' originate from `f''s
          ;; body (as opposed to `g') may make unboxing possible.
          ;; Of course, we lose precision if `g' has multiple call sites to `f'.
-         (define n-unrollings   (length (filter unrolling?   group)))
-         ;; TODO any-self-o-o-f? add too many false positives
-         (define is-a-loop?     (or #;any-self-o-o-f? (> n-unrollings 0)))
+         (define n-unrollings    (length (filter unrolling? group)))
+         (define any-self-o-o-f? (ormap self-out-of-fuel?   group))
+         (define is-a-loop?      (or any-self-o-o-f? (> n-unrollings 0)))
          (define inlining-sites
            (group-by equal? #:key (lambda (x)
                                     (inlining-event-where-loc
@@ -263,8 +254,8 @@
   (define (parse l) (regexp-match inlining-event-regexp l))
 
   ;; Windows path
-  (check-equal? (parse "mzc optimizer: no inlining, out of fuel: involving: #(.../private/map.rkt:22:14 #<path:C:\\Users\\bernardip\\Documents\\Local\\RacketPortable\\App\\Racket\\collects\\racket\\private\\map.rkt> 22 14 620 335 #t) in: C:\\Users\\bernardip\\Documents\\Scheme\\fotografia.rkt:23:0: prova2 in module: 'anonymous-module size: 55 threshold: 8")
-                '("mzc optimizer: no inlining, out of fuel: involving: #(.../private/map.rkt:22:14 #<path:C:\\Users\\bernardip\\Documents\\Local\\RacketPortable\\App\\Racket\\collects\\racket\\private\\map.rkt> 22 14 620 335 #t) in: C:\\Users\\bernardip\\Documents\\Scheme\\fotografia.rkt:23:0: prova2 in module: 'anonymous-module size: 55 threshold: 8"
+  (check-equal? (parse "optimizer: no inlining, out of fuel: involving: #(.../private/map.rkt:22:14 #<path:C:\\Users\\bernardip\\Documents\\Local\\RacketPortable\\App\\Racket\\collects\\racket\\private\\map.rkt> 22 14 620 335 #t) in: C:\\Users\\bernardip\\Documents\\Scheme\\fotografia.rkt:23:0: prova2 in module: 'anonymous-module size: 55 threshold: 8")
+                '("optimizer: no inlining, out of fuel: involving: #(.../private/map.rkt:22:14 #<path:C:\\Users\\bernardip\\Documents\\Local\\RacketPortable\\App\\Racket\\collects\\racket\\private\\map.rkt> 22 14 620 335 #t) in: C:\\Users\\bernardip\\Documents\\Scheme\\fotografia.rkt:23:0: prova2 in module: 'anonymous-module size: 55 threshold: 8"
                   "no inlining, out of fuel: "
                   "#(.../private/map.rkt:22:14 #<path:C:\\Users\\bernardip\\Documents\\Local\\RacketPortable\\App\\Racket\\collects\\racket\\private\\map.rkt> 22 14 620 335 #t)"
                   ".../private/map.rkt:22:14"
@@ -286,8 +277,8 @@
                   "55"
                   "8"))
 
-  (check-equal? (parse "mzc optimizer: no inlining, out of fuel: involving: #(sqr #<path:/home/stamourv/src/plt/collects/racket/math.rkt> 35 2 838 93 #f) in: /home/stamourv/src/examples/example-shapes.rkt:41:0: inC in module: 'example-shapes size: 21 threshold: 6")
-                '("mzc optimizer: no inlining, out of fuel: involving: #(sqr #<path:/home/stamourv/src/plt/collects/racket/math.rkt> 35 2 838 93 #f) in: /home/stamourv/src/examples/example-shapes.rkt:41:0: inC in module: 'example-shapes size: 21 threshold: 6"
+  (check-equal? (parse "optimizer: no inlining, out of fuel: involving: #(sqr #<path:/home/stamourv/src/plt/collects/racket/math.rkt> 35 2 838 93 #f) in: /home/stamourv/src/examples/example-shapes.rkt:41:0: inC in module: 'example-shapes size: 21 threshold: 6")
+                '("optimizer: no inlining, out of fuel: involving: #(sqr #<path:/home/stamourv/src/plt/collects/racket/math.rkt> 35 2 838 93 #f) in: /home/stamourv/src/examples/example-shapes.rkt:41:0: inC in module: 'example-shapes size: 21 threshold: 6"
                   "no inlining, out of fuel: "
                   "#(sqr #<path:/home/stamourv/src/plt/collects/racket/math.rkt> 35 2 838 93 #f)"
                   "sqr"
@@ -309,8 +300,8 @@
                   "21"
                   "6"))
 
-  (check-equal? (parse "mzc optimizer: inlining: involving: #(inC #<path:/home/stamourv/src/examples/example-shapes.rkt> 41 0 993 165 #f) in: /home/stamourv/src/examples/example-shapes.rkt:27:0: in in module: 'example-shapes size: 41 threshold: 128")
-                '("mzc optimizer: inlining: involving: #(inC #<path:/home/stamourv/src/examples/example-shapes.rkt> 41 0 993 165 #f) in: /home/stamourv/src/examples/example-shapes.rkt:27:0: in in module: 'example-shapes size: 41 threshold: 128"
+  (check-equal? (parse "optimizer: inlining: involving: #(inC #<path:/home/stamourv/src/examples/example-shapes.rkt> 41 0 993 165 #f) in: /home/stamourv/src/examples/example-shapes.rkt:27:0: in in module: 'example-shapes size: 41 threshold: 128")
+                '("optimizer: inlining: involving: #(inC #<path:/home/stamourv/src/examples/example-shapes.rkt> 41 0 993 165 #f) in: /home/stamourv/src/examples/example-shapes.rkt:27:0: in in module: 'example-shapes size: 41 threshold: 128"
                   "inlining: "
                   "#(inC #<path:/home/stamourv/src/examples/example-shapes.rkt> 41 0 993 165 #f)"
                   "inC"
@@ -330,4 +321,26 @@
                   "in"
                   " in module: 'example-shapes"
                   "41"
-                  "128")))
+                  "128"))
+  (check-equal? (parse "optimizer: no inlining, out of fuel: involving: #(sqr #<path:/Applications/Racket v5.3/collects/racket/math.rkt> 35 2 838 93 #f) in: /Users/user/Desktop/Optimization Coach/example-shapes.rkt:41:0: inC in module: 'anonymous-module size: 21 threshold: 6")
+                '("optimizer: no inlining, out of fuel: involving: #(sqr #<path:/Applications/Racket v5.3/collects/racket/math.rkt> 35 2 838 93 #f) in: /Users/user/Desktop/Optimization Coach/example-shapes.rkt:41:0: inC in module: 'anonymous-module size: 21 threshold: 6"
+                  "no inlining, out of fuel: "
+                  "#(sqr #<path:/Applications/Racket v5.3/collects/racket/math.rkt> 35 2 838 93 #f)"
+                  "sqr"
+                  "#<path:/Applications/Racket v5.3/collects/racket/math.rkt>"
+                  "/Applications/Racket v5.3/collects/racket/math.rkt"
+                  #f
+                  "35"
+                  "2"
+                  "838"
+                  "93"
+                  #f
+                  " in: /Users/user/Desktop/Optimization Coach/example-shapes.rkt:41:0: inC"
+                  "/Users/user/Desktop/Optimization Coach/example-shapes.rkt:41:0: "
+                  "/Users/user/Desktop/Optimization Coach/example-shapes.rkt"
+                  "41"
+                  "0"
+                  "inC"
+                  " in module: 'anonymous-module"
+                  "21"
+                  "6")))

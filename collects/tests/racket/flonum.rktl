@@ -31,6 +31,12 @@
 (test (flvector 1.0 2.0 3.0 -10.0 -10.0)
       'for/flvector-fill
       (for/flvector #:length 5 #:fill -10.0 ([i 3]) (+ i 1.0)))
+(test (flvector 1.0 2.0 3.0 0.0 0.0)
+      'for/flvector-fill
+      (for/flvector #:length 5 ([i 5]) #:break (= i 3) (+ i 1.0)))
+(test (flvector 1.0 2.0 3.0 4.0 0.0)
+      'for/flvector-fill
+      (for/flvector #:length 5 ([i 5]) #:final (= i 3) (+ i 1.0)))
 
 ;; for*/flvector test
 (let ((flv (flvector 0.0 0.0 0.0 0.0 1.0 2.0 0.0 2.0 4.0))

@@ -38,7 +38,8 @@
             [else (raise-type-error to-rel-name "path, string, or bytes"
                                     path0)]))
     (let loop ([path (explode-path path1)] [root (force exploded-root)])
-      (cond [(null? root) (cons tag (map (lambda (pe) (datum-intern-literal (path-element->bytes pe)))
+      (cond [(not root) path0]
+            [(null? root) (cons tag (map (lambda (pe) (datum-intern-literal (path-element->bytes pe)))
                                          path))]
             ;; Note: in some cases this returns the input path as is, which
             ;; could be a byte string -- it should be possible to return

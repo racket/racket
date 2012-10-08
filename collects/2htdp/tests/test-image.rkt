@@ -57,7 +57,8 @@
          file/convertible
          (only-in lang/imageeq image=?)
          (prefix-in 1: htdp/image)
-         (only-in lang/htdp-advanced equal~?))
+         (only-in lang/htdp-advanced equal~?)
+         racket/match)
 
 (require (for-syntax racket/base))
 (define-syntax (test stx)
@@ -2062,6 +2063,26 @@
        (rectangle 100 10 'solid 'red)
        0 0 "center" "center"
        (rectangle 10 100 'solid 'blue)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;  make sure color and pen structs cooperate with racket
+;;  struct operations (not just teaching langs)
+;;
+
+(test (struct-copy color (color 0 0 0) [red 2])
+      =>
+      (color 2 0 0))
+
+(test (struct-copy pen (pen "red" 1 "solid" "round" "round") [color "blue"])
+      =>
+      (pen "blue" 1 "solid" "round" "round"))
+
+(test (match (color 1 2 3)
+        [(color r g b a) (list r g b)]
+        [_ #f])
+      =>
+      (list 1 2 3))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

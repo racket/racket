@@ -169,6 +169,7 @@
          (values vbox-gtk panel-gtk))))
     (gtk_widget_show vbox-gtk)
     (gtk_widget_show panel-gtk)
+    (connect-key-and-mouse gtk)
 
     (unless is-dialog?
       (gtk_window_set_icon_list gtk (cdr (force icon-pixbufs+glist))))

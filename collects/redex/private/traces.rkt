@@ -391,7 +391,7 @@
   ;; produces a list whose length matches defaults but
   (define (fill-out l defaults)
     (let loop ([l l]
-               [default defaults])
+               [defaults defaults])
       (cond
         [(null? l) defaults]
         [else 

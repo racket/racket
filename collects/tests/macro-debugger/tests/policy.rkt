@@ -38,7 +38,7 @@
 
       ;; Other racket/* forms
       (test-base scheme:match #f)
-      (test-base scheme:unit #t)
+      (test-base scheme:unit #f)
       (test-base scheme:class #f)
 
       ;; Unbound names

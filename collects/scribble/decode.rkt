@@ -105,7 +105,7 @@
 
 
 (define (decode-string s)
-  (define pattern #rx"(---|--|``|''|')")
+  (define pattern #rx"(---|--|``|''|'|`)")
   (let loop ([start 0])
     (cond
      [(regexp-match-positions pattern s start)
@@ -117,7 +117,8 @@
                    [(string=? the-match "--") 'ndash]
                    [(string=? the-match "``") 'ldquo]
                    [(string=? the-match "''") 'rdquo]
-                   [(string=? the-match "'") 'rsquo])
+                   [(string=? the-match "'") 'rsquo]
+                   [(string=? the-match "`") 'lsquo])
                   (loop (cdar m))))]
      ;; Common case: nothing to decode, so don't copy strings.
      ;; Assume that the input is already interned.

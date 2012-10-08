@@ -937,6 +937,7 @@
         (set! f (* 2 f)))))
   (let* ([factory-derived (send (new derived%) factory)])
     (test 4 'factory-derived-f (get-field f factory-derived))
+    (test 4 dynamic-get-field 'f factory-derived)
     (send factory-derived double)
     (test 8 'factory-derived-f-doubled (get-field f factory-derived))))
 
@@ -1299,7 +1300,9 @@
   (test 12 'set-field!3 (begin (set-field! f o 12)
                                (get-field f o)))
   (test 14 'set-field!4 (begin (set-field! g o 14)
-                               (get-field g o))))
+                               (get-field g o)))
+  (test 18 'set-field!5 (begin (dynamic-set-field! 'g o 18)
+                               (dynamic-get-field 'g o))))
 
 (syntax-test #'(field-bound?))
 (syntax-test #'(field-bound? a))

@@ -1,6 +1,8 @@
 #lang scribble/doc
 @(require "common.rkt")
 
+@centered{@image[#:suffixes @list[".png"]]{image/gauge}}
+
 @defclass/title[gauge% object% (control<%>)]{
 
 A gauge is a horizontal or vertical bar for displaying the output
@@ -47,26 +49,26 @@ The @racket[style] list must include either @racket['horizontal],
 }
 
 @defmethod[(get-range)
-           (integer-in 1 10000)]{
+           (integer-in 1 1000000)]{
 Returns the range (maximum value) of the gauge.
 
 }
 
 @defmethod[(get-value)
-           (integer-in 0 10000)]{
+           (integer-in 0 1000000)]{
 
 Returns the gauge's current value.
 
 }
 
-@defmethod[(set-range [range (integer-in 1 10000)])
+@defmethod[(set-range [range (integer-in 1 1000000)])
            void?]{
 
 Sets the range (maximum value) of the gauge.
 
 }
 
-@defmethod[(set-value [pos (integer-in 0 10000)])
+@defmethod[(set-value [pos (integer-in 0 1000000)])
            void?]{
 
 Sets the gauge's current value. If the specified value is larger than

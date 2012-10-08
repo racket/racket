@@ -184,7 +184,7 @@
       (graphical-read-eval-print-loop esp (not esp))]
      [(esp override-ports?)
       (unless (or (not esp) (wx:eventspace? esp))
-	(raise-type-error 'graphical-read-eval-print-loop "eventspace or #f" esp))
+	(raise-argument-error 'graphical-read-eval-print-loop "(or/c eventspace? #f)" esp))
       (-graphical-read-eval-print-loop esp override-ports?)]))
 
   (define (textual-read-eval-print-loop)

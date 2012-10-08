@@ -440,6 +440,7 @@ please adhere to these guidelines:
  (install-plt-file-tab "File")
  (install-plt-filename "Filename:")
  (install-plt-url "URL:")
+ (install-plt-error-header "There was an error when checking the validity of the downloaded .plt file. Please check the url and try again.")
  
  ;; install plt file when opened in drscheme strings
  (install-plt-file "Install ~a or open for editing?")
@@ -499,7 +500,10 @@ please adhere to these guidelines:
  (show-line-and-column-numbers "Show Line && Column Numbers") ; used for popup menu; right click on line/column box in bottom of drs window
  (show-character-offsets "Show Character Offsets") ; used for popup menu; right click on line/column box in bottom of drs window
  (enable-keybindings-in-menus "Enable keybindings in menus")
- (automatically-to-ps "Automatically print to PostScript file")
+ (printing-mode "Printing Mode")
+ (print-using-platform-specific-mode "Platform-specific printing")
+ (print-to-ps "Print to PostScript File")
+ (print-to-pdf "Print to PDF File")
  (command-as-meta "Treat command key as meta") ;; macos/macos x only
  (reuse-existing-frames "Reuse existing frames when opening new files")
  (default-fonts "Default Fonts")

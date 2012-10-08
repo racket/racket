@@ -893,7 +893,10 @@ Returns @racket[#t] if @racket[v] has the
 
 @defstruct[import ([local-id identifier?]
                    [src-sym symbol?]
-                   [src-mod-path module-path?]
+                   [src-mod-path (or/c module-path? 
+                                       (and/c syntax?
+                                              (lambda (stx) 
+                                                (module-path? (syntax->datum stx)))))]
                    [mode (or/c exact-integer? #f)]
                    [req-mode (or/c exact-integer? #f)]
                    [orig-mode (or/c exact-integer? #f)]

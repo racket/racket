@@ -13,6 +13,23 @@ renamed to start @cpp{racket_}.
 
 @; ----------------------------------------------------------------------
 
+@section{Building Racket from Source}
+
+The normal Racket distribution includes @filepath{.rkt} sources for
+collection-based libraries. After modifying library files, run
+@exec{raco setup} (see @secref[#:doc '(lib
+"scribblings/raco/raco.scrbl") "setup"]) to rebuild installed
+libraries.
+
+The normal Racket distribution does not include the C sources for
+Racket's run-time system. To build Racket from scratch, download a
+source distribution, or get the latest from the @tt{git} repository at
+@url{https://github.com/plt/racket}. Detailed build instructions are
+in the @filepath{README} file in the top-level @filepath{src}
+directory.
+
+@; ----------------------------------------------------------------------
+
 @section{CGC versus 3m}
 
 Before mixing any C code with Racket, first decide whether to use the

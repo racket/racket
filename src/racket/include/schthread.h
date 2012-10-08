@@ -273,6 +273,8 @@ typedef struct Thread_Local_Variables {
   struct gmp_tmp_stack gmp_tmp_xxx_;
   struct gmp_tmp_stack *gmp_tmp_current_;
   struct Scheme_Logger *scheme_main_logger_;
+  struct Scheme_Logger *scheme_gc_logger_;
+  struct Scheme_Logger *scheme_future_logger_;
   int intdef_counter_;
   int builtin_ref_counter_;
   int env_uid_counter_;
@@ -620,6 +622,8 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define gmp_tmp_xxx XOA (scheme_get_thread_local_variables()->gmp_tmp_xxx_)
 #define gmp_tmp_current XOA (scheme_get_thread_local_variables()->gmp_tmp_current_)
 #define scheme_main_logger XOA (scheme_get_thread_local_variables()->scheme_main_logger_)
+#define scheme_gc_logger XOA (scheme_get_thread_local_variables()->scheme_gc_logger_)
+#define scheme_future_logger XOA (scheme_get_thread_local_variables()->scheme_future_logger_)
 #define intdef_counter XOA (scheme_get_thread_local_variables()->intdef_counter_)
 #define builtin_ref_counter XOA (scheme_get_thread_local_variables()->builtin_ref_counter_)
 #define env_uid_counter XOA (scheme_get_thread_local_variables()->env_uid_counter_)

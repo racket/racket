@@ -1,7 +1,8 @@
 #lang deinprogramm/DMdA
 
 (require syntax/docprovide "DMdA-deflam.rkt")
-(provide #%app #%top (rename-out (DMdA-module-begin #%module-begin)) #%datum #%top-interaction require lib planet
+(provide #%app #%top (rename-out (DMdA-module-begin #%module-begin)) #%datum #%top-interaction 
+	 require lib planet provide
          let let* letrec lambda define
 	 cond if else begin and or set! quote
          define-record-procedures define-record-procedures-2 

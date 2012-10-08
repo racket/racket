@@ -267,6 +267,13 @@ flags:
         the @Flag{S}/@DFlag{dir} flag is supplied multiple times, the
         search order is as supplied.}
 
+  @item{@FlagFirst{R} @nonterm{paths} or @DFlagFirst{compiled}
+        @nonterm{paths} : Sets the initial value of the
+        @racket[current-compiled-file-roots] parameter, overriding
+        any @envvar{PLTCOMPILEDROOTS} setting. The @nonterm{paths}
+        argument is parsed in the same way as @envvar{PLTCOMPILEDROOTS}
+        (see @racket[current-compiled-file-roots]).}
+
   @item{@FlagFirst{A} @nonterm{dir} or @DFlagFirst{addon}
         @nonterm{dir} : Sets the directory that is returned by
         @racket[(find-system-path 'addon-dir)].}
@@ -306,14 +313,14 @@ flags:
         ports. This flag currently has no effect, because binary mode
         is always used.}
 
-  @item{@FlagFirst{W} @nonterm{level} or @DFlagFirst{warn}
-        @nonterm{level} : Sets the logging level for writing events to
+  @item{@FlagFirst{W} @nonterm{levels} or @DFlagFirst{warn}
+        @nonterm{levels} : Sets the logging level for writing events to
         the original error port. The possible @nonterm{level} values
         are the same as for the @envvar{PLTSTDERR} environment
         variable. See @secref["logging"] for more information.}
 
-  @item{@FlagFirst{L} @nonterm{level} or @DFlagFirst{syslog}
-        @nonterm{level} : Sets the logging level for writing events to
+  @item{@FlagFirst{L} @nonterm{levels} or @DFlagFirst{syslog}
+        @nonterm{levels} : Sets the logging level for writing events to
         the system log. The possible @nonterm{level} values
         are the same as for the @envvar{PLTSYSLOG} environment
         variable. See @secref["logging"] for more information.}

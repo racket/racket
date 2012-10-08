@@ -4,17 +4,17 @@
 ;; perform optimization of FrTime functions.  The rest of the language 
 ;; (i.e. all the functions needed to actually write FrTime programs) is 
 ;; provided by the frtime-opt-lang module, which is automatically imported.
-(module frtime-opt mzscheme
-  (provide (rename my-module-begin #%module-begin)
+(module frtime-opt racket
+  (provide (rename-out [my-module-begin #%module-begin])
            #%app #%top #%datum optimize-expr optimize-module dont-optimize)
   
-  (require-for-syntax frtime/opt/lowered-equivs)
-  (require-for-syntax (only srfi/1 lset-union lset-difference every))
-  (require-for-syntax mzlib/list)
-  (require (only frtime/core/frp super-lift undefined undefined?))
-  (require (rename frtime/lang-ext frtime:lift lift)
-           (rename frtime/lang-core frtime:if if)
-           (only frtime/lang-core frp:copy-list))
+  (require (for-syntax frtime/opt/lowered-equivs)
+           (for-syntax (only-in srfi/1 lset-union lset-difference every))
+           (for-syntax racket/list))
+  (require (only-in frtime/core/frp super-lift undefined undefined?))
+  (require (rename-in (except-in frtime/lang-ext undefined undefined? deep-value-now) [lift frtime:lift])
+           (rename-in frtime/lang-core [if frtime:if])
+           (only-in frtime/lang-core frp:copy-list))
 ;  (require mzlib/unit mzlib/unitsig)
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -30,18 +30,18 @@
   (define-for-syntax (safe-module-identifier=? id1 id2)
     (and (identifier? id1)
          (identifier? id2)
-         (module-identifier=? id1 id2)))
+         (free-identifier=? id1 id2)))
   
   ;; Convert a syntax-object to a datum and back again.  This replaces all
   ;; the context information.  It's necessary to get generated require 
   ;; statements to work, for some reason.
   ;; See http://list.cs.brown.edu/pipermail/plt-scheme/2006-July/014163.html
   (define-for-syntax (so->d->so ref-stx stx)
-    (datum->syntax-object ref-stx (syntax-object->datum stx)))
+    (datum->syntax ref-stx (syntax->datum stx)))
   
   ;; Convert a syntactic module reference to a module-path-index
   (define-for-syntax (module-stx-to-path-index mod-stx)
-    (let ([mod (syntax-object->datum mod-stx)])
+    (let ([mod (syntax->datum mod-stx)])
       (if (symbol? mod) 
           mod
           (module-path-index-join mod #f))))
@@ -49,7 +49,7 @@
   ;; Convert a syntactic module reference to a module-path (this is 
   ;; subtly different from a module-path-index)
   (define-for-syntax (module-stx-to-path mod-stx)
-    (syntax-object->datum mod-stx))
+    (syntax->datum mod-stx))
   
   ;; Does the given module export the given id?
   (define-for-syntax (module-exports-id? mod-stx id-stx)
@@ -73,7 +73,7 @@
                                   (lambda (id) (not (module-provide-protected? mod-path-index id)))
                                   all-symbols)]
                [exported-ids (map
-                              (lambda (symbol) (datum->syntax-object ref-stx symbol))
+                              (lambda (symbol) (datum->syntax ref-stx symbol))
                               exported-symbols)])
           exported-ids))))
   
@@ -81,7 +81,7 @@
   ;; The variables are projected before evaluating the expression,
   ;; and the result is then injected into the dataflow graph as a
   ;; single node.
-  (require (only frtime/core/frp proc->signal value-now))
+  (require (only-in frtime/core/frp proc->signal value-now))
   (define-syntax (dip stx)
     (syntax-case stx (begin)
       ;; special case: don't dip lone identifiers
@@ -259,7 +259,7 @@
                (or (free-identifier=? #'LIFTED #'lifted)
                    (free-identifier=? #'LIFTED #'lifted:nonstrict)))
           (let* ([lowered-equiv-id (make-lowered-equiv-id #'ID)]
-                 [strict? (datum->syntax-object #'MOD (free-identifier=? #'LIFTED #'lifted))])
+                 [strict? (datum->syntax #'MOD (free-identifier=? #'LIFTED #'lifted))])
             #`(begin
                 (require #,(so->d->so #'MOD #`(rename MOD #,lowered-equiv-id ID)))
                 (define (ID . args) (apply frtime:lift #,strict? #,lowered-equiv-id args))
@@ -325,7 +325,7 @@
   (define-for-syntax (union-id-lists . id-lists)
     (foldl (lambda (l1 l2)
              (lset-union bound-identifier=? l1 l2))
-           ()
+           '()
            id-lists))
   (define-for-syntax (diff-id-lists id-list1 id-list2)
     (lset-difference bound-identifier=? id-list1 id-list2))
@@ -343,7 +343,7 @@
        (append (extract-args #'ID)
                (extract-args #'REST))]
       [()
-       ()]
+       '()]
       [ELSE
        (raise-syntax-error #f "doesn't look like an arg list" stx)]))
   
@@ -368,15 +368,15 @@
     (syntax-case stx ()
       [ID
        (and (identifier? #'ID)
-            (module-identifier=? old-id #'ID))
+            (free-identifier=? old-id #'ID))
        new-id]
       [(X . Y)
-       (datum->syntax-object 
+       (datum->syntax 
         stx
         (cons (replace-id #'X old-id new-id)
               (replace-id #'Y old-id new-id)))]
       [()
-       ()]
+       '()]
       [ELSE
        stx]))
 
@@ -385,7 +385,7 @@
     (syntax-case stx ()
       [ID
        (and (identifier? #'ID)
-            (module-identifier=? id #'ID))
+            (free-identifier=? id #'ID))
        #t]
       [(X . Y)
        (or (refers-to-id? #'X id)
@@ -414,8 +414,8 @@
 
       [(BEGIN EXPR ...)
        (and (identifier? #'BEGIN)
-            (or (module-identifier=? #'BEGIN #'begin)
-                (module-identifier=? #'BEGIN #'begin0)))
+            (or (free-identifier=? #'BEGIN #'begin)
+                (free-identifier=? #'BEGIN #'begin0)))
        (let* ([optimized-exprs (map (lambda (expr)
                                       (recursively-optimize-expr expr equiv-map #f))
                                     (syntax->list #'(EXPR ...)))]
@@ -483,7 +483,7 @@
                 LOOP_) ARG ...)
        (and (identifier? #'LOOP)
             (identifier? #'LOOP_)
-            (module-identifier=? #'LOOP #'LOOP_))
+            (free-identifier=? #'LOOP #'LOOP_))
        (let* ([optimized-args (map (lambda (e)
                                      (recursively-optimize-expr e equiv-map #f))
                                    (syntax->list #'(ARG ...)))]
@@ -524,8 +524,8 @@
        
       [(LET-VALUES ((VARS VALS) ...) EXPR ...)
        (and (identifier? #'LET-VALUES)
-            (or (module-identifier=? #'LET-VALUES #'let-values)
-                (module-identifier=? #'LET-VALUES #'letrec-values)))
+            (or (free-identifier=? #'LET-VALUES #'let-values)
+                (free-identifier=? #'LET-VALUES #'letrec-values)))
        (let* ([bindings (syntax->list #'(VARS ...))]
               [flattened-bindings (apply append (map syntax->list bindings))]
               [body #`(begin EXPR ...)]
@@ -643,7 +643,7 @@
 
       [ELSE
        (raise-syntax-error #f
-                           (format "recursively-lower-expr: unrecognized syntax: ~a" (syntax-object->datum stx))
+                           (format "recursively-lower-expr: unrecognized syntax: ~a" (syntax->datum stx))
                            stx)]))
   
   ;; Optimize a single expression.  Raises exn:fail:syntax if the optimized version

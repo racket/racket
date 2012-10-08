@@ -5586,6 +5586,14 @@ static Scheme_Object *compare_bool(int argc, Scheme_Object *argv[])
   return gen_compare("regexp-match?", 2, argc, argv, 0, 0, 0);
 }
 
+int scheme_regexp_match_p(Scheme_Object *regexp, Scheme_Object *target)
+{
+  Scheme_Object *a[2];
+  a[0] = regexp;
+  a[1] = target;
+  return SCHEME_TRUEP(compare_bool(2, a));
+}
+
 static Scheme_Object *compare_peek(int argc, Scheme_Object *argv[])
 {
   return gen_compare("regexp-match-peek", 0, argc, argv, 1, 0, 0);

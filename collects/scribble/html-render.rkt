@@ -63,6 +63,8 @@
               (lambda (file path)
                 (cond [(bytes? file)
                        (make-inline (bytes->string/utf-8 file))]
+                      [(url? file)
+                       (make-ref (url->string file))]
                       [(not (eq? 'inline path))
                        (make-ref (or path (let-values ([(base name dir?)
                                                         (split-path file)])
@@ -664,14 +666,14 @@
                  (copy-port in (current-output-port)))))
           (parameterize ([xml:empty-tag-shorthand xml:html-empty-tags])
             (xml:write-xexpr
-              `(html ()
+              `(html ,(style->attribs (part-style d))
                  (head ()
                    (meta ([http-equiv "content-type"]
                           [content "text-html; charset=utf-8"]))
                    ,title
                    ,(scribble-css-contents scribble-css (lookup-path scribble-css alt-paths))
                    ,@(map (lambda (style-file)
-                            (if (bytes? style-file)
+                            (if (or (bytes? style-file) (url? style-file))
                                 (scribble-css-contents style-file #f)
                                 (let ([p (lookup-path style-file alt-paths)])
                                   (unless p (install-file style-file))
@@ -686,7 +688,23 @@
                                   (list style-file)
                                   style-extra-files))
                    ,(scribble-js-contents script-file (lookup-path script-file alt-paths))
-                   ,(xml:comment "[if IE 6]><style type=\"text/css\">.SIEHidden { overflow: hidden; }</style><![endif]"))
+                   ,@(map (lambda (script-file)
+                            (if (or (bytes? script-file) (url? script-file))
+                                (scribble-js-contents script-file #f)
+                                (let ([p (lookup-path script-file alt-paths)])
+                                  (unless p (install-file script-file))
+                                  (scribble-js-contents script-file p))))
+                          (extract-part-style-files
+                           d
+                           ri
+                           'css
+                           (lambda (p) (part-whole-page? p ri))
+                           js-addition?
+                           js-addition-path))
+                   ,(xml:comment "[if IE 6]><style type=\"text/css\">.SIEHidden { overflow: hidden; }</style><![endif]")
+                   ,@(for/list ([p (style-properties (part-style d))]
+                                #:when (head-extra? p))
+                       (head-extra-xexpr p)))
                  (body ([id ,(or (extract-part-body-id d ri)
                                  "scribble-racket-lang-org")])
                    ,@(render-toc-view d ri)
@@ -1103,7 +1121,11 @@
                                 url
                                 (combine-url/relative
                                  (string->url external-root-url)
-                                 (string-join (map path-element->string
+                                 (string-join (map (lambda (s)
+                                                     (case s
+                                                       [(up) ".."]
+                                                       [(same) "."]
+                                                       [else (path-element->string s)]))
                                                    (explode-path rel))
                                               "/"))
                                 [fragment

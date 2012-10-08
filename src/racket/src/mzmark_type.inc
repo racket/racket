@@ -1565,6 +1565,7 @@ static int input_port_SIZE(void *p, struct NewGC *gc) {
 static int input_port_MARK(void *p, struct NewGC *gc) {
   Scheme_Input_Port *ip = (Scheme_Input_Port *)p;
   
+  gcMARK2(ip->p.position_redirect, gc);
   gcMARK2(ip->sub_type, gc);
   gcMARK2(ip->port_data, gc);
   gcMARK2(ip->name, gc);
@@ -1591,6 +1592,7 @@ static int input_port_MARK(void *p, struct NewGC *gc) {
 static int input_port_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Input_Port *ip = (Scheme_Input_Port *)p;
   
+  gcFIXUP2(ip->p.position_redirect, gc);
   gcFIXUP2(ip->sub_type, gc);
   gcFIXUP2(ip->port_data, gc);
   gcFIXUP2(ip->name, gc);
@@ -1626,6 +1628,7 @@ static int output_port_SIZE(void *p, struct NewGC *gc) {
 static int output_port_MARK(void *p, struct NewGC *gc) {
   Scheme_Output_Port *op = (Scheme_Output_Port *)p;
 
+  gcMARK2(op->p.position_redirect, gc);
   gcMARK2(op->sub_type, gc);
   gcMARK2(op->port_data, gc);
   gcMARK2(op->name, gc);
@@ -1643,6 +1646,7 @@ static int output_port_MARK(void *p, struct NewGC *gc) {
 static int output_port_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Output_Port *op = (Scheme_Output_Port *)p;
 
+  gcFIXUP2(op->p.position_redirect, gc);
   gcFIXUP2(op->sub_type, gc);
   gcFIXUP2(op->port_data, gc);
   gcFIXUP2(op->name, gc);
@@ -2189,7 +2193,8 @@ static int namespace_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(e->module, gc);
   gcMARK2(e->module_registry, gc);
   gcMARK2(e->module_pre_registry, gc);
-  gcMARK2(e->insp, gc);
+  gcMARK2(e->guard_insp, gc);
+  gcMARK2(e->access_insp, gc);
 
   gcMARK2(e->rename_set, gc);
   gcMARK2(e->temp_marked_names, gc);
@@ -2231,7 +2236,8 @@ static int namespace_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(e->module, gc);
   gcFIXUP2(e->module_registry, gc);
   gcFIXUP2(e->module_pre_registry, gc);
-  gcFIXUP2(e->insp, gc);
+  gcFIXUP2(e->guard_insp, gc);
+  gcFIXUP2(e->access_insp, gc);
 
   gcFIXUP2(e->rename_set, gc);
   gcFIXUP2(e->temp_marked_names, gc);
@@ -2912,8 +2918,10 @@ static int mark_logger_MARK(void *p, struct NewGC *gc) {
   Scheme_Logger *l = (Scheme_Logger *)p;
   gcMARK2(l->name, gc);
   gcMARK2(l->parent, gc);
-  gcMARK2(l->readers, gc);
   gcMARK2(l->timestamp, gc);
+  gcMARK2(l->syslog_level, gc);
+  gcMARK2(l->stderr_level, gc);
+  gcMARK2(l->readers, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Logger));
 }
@@ -2922,8 +2930,10 @@ static int mark_logger_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Logger *l = (Scheme_Logger *)p;
   gcFIXUP2(l->name, gc);
   gcFIXUP2(l->parent, gc);
-  gcFIXUP2(l->readers, gc);
   gcFIXUP2(l->timestamp, gc);
+  gcFIXUP2(l->syslog_level, gc);
+  gcFIXUP2(l->stderr_level, gc);
+  gcFIXUP2(l->readers, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Logger));
 }
@@ -2939,6 +2949,7 @@ static int mark_log_reader_SIZE(void *p, struct NewGC *gc) {
 
 static int mark_log_reader_MARK(void *p, struct NewGC *gc) {
   Scheme_Log_Reader *lr = (Scheme_Log_Reader *)p;
+  gcMARK2(lr->level, gc);
   gcMARK2(lr->sema, gc);
   gcMARK2(lr->head, gc);
   gcMARK2(lr->tail, gc);
@@ -2948,6 +2959,7 @@ static int mark_log_reader_MARK(void *p, struct NewGC *gc) {
 
 static int mark_log_reader_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Log_Reader *lr = (Scheme_Log_Reader *)p;
+  gcFIXUP2(lr->level, gc);
   gcFIXUP2(lr->sema, gc);
   gcFIXUP2(lr->head, gc);
   gcFIXUP2(lr->tail, gc);

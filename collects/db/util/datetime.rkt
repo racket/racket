@@ -11,11 +11,7 @@
     [(struct sql-time (hour minute second nanosecond tz))
      (srfi:make-date nanosecond second minute hour 0 0 0 (or tz 0))]
     [(struct sql-timestamp (year month day hour minute second nanosecond tz))
-     (srfi:make-date nanosecond second minute hour day month year (or tz 0))]
-    [else
-     (raise-type-error 'sql-datetime->srfi-date
-                       "sql-date, sql-time, or sql-timestamp"
-                       datetime)]))
+     (srfi:make-date nanosecond second minute hour day month year (or tz 0))]))
 
 (define (srfi-date->sql-date date)
   (make-sql-date (srfi:date-year date)

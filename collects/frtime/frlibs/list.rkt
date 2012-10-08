@@ -1,9 +1,16 @@
 (module list frtime/frtime-lang-only
   
-  (require (lifted mzlib/list sort
-                   fifth sixth seventh eighth
-                   last-pair)
-           (rename mzlib/list empty empty))
+  (require 
+   (lifted (only-in racket/base sort) sort)
+   
+   (lifted (only-in racket/list fifth) 
+           fifth)
+   (lifted (only-in racket/list sixth) sixth)
+   (lifted (only-in racket/list seventh) seventh)
+   (lifted (only-in racket/list eighth) eighth)
+   (lifted (only-in racket/list last-pair) last-pair)
+  
+           (rename-in (except-in racket/list first rest second third fourth empty? cons? fifth sixth seventh eighth last-pair) [empty empty]))
 
   (define first car)
   (define rest cdr)
@@ -19,7 +26,7 @@
                    [(item list equal?)
                     (let loop ([list list])
                       (cond
-                        [(null? list) ()]
+                        [(null? list) '()]
                         [(equal? item (car list)) (cdr list)]
                         [else (cons (car list)
                                     (loop (cdr list)))]))])])
@@ -162,4 +169,4 @@
   
   (define (cons? x) (pair? x))
   
-  (provide (all-defined) empty))
+  (provide (all-defined-out) empty))

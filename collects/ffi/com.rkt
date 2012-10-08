@@ -3,6 +3,7 @@
 
 (provide guid? iid? clsid?
          string->guid string->iid string->clsid
+         guid->string
          guid=?
 
          progid->clsid clsid->progid

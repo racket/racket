@@ -550,17 +550,15 @@
                            (λ (x) (and (pair? x)
                                        (number? (car x))
                                        (number? (cdr x)))))
+  (drr:set-default 'drracket:multi-file-search:directories 
+                   '()
+                   (lambda (x) (and (list? x) (andmap string? x))))
   (drr:set-default 'drracket:multi-file-search:directory 
                            ;; The default is #f because
                            ;; filesystem-root-list is expensive under Windows
                            #f 
-                           (lambda (x) (or (not x) (path? x))))
-  (preferences:set-un/marshall 
-   'drracket:multi-file-search:directory
-   (λ (v) (and v (path->string v)))
-   (λ (p) (if (path-string? p)
-              (string->path p)
-              #f)))
+                           (lambda (x) (or (not x) (string? x))))
+
   
   (drr:set-default 'drracket:large-letters-font #f (λ (x)
                                                        (or (and (pair? x)

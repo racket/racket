@@ -5,12 +5,13 @@
          "global-env.rkt"
          "type-name-env.rkt"
          "type-alias-env.rkt"
-         (rep type-rep object-rep filter-rep rep-utils)
+         "mvar-env.rkt"
+         (rep type-rep object-rep filter-rep rep-utils free-variance)
          (for-template (rep type-rep object-rep filter-rep)
                        (types union abbrev)
                        racket/shared racket/base)
          (types abbrev)
-         racket/syntax
+         racket/syntax racket/dict
          mzlib/pconvert racket/match)
 
 (define (initialize-type-name-env initial-type-names)
@@ -27,11 +28,10 @@
     [(Base: n cnt pred marshaled _) marshaled]
     [(Name: stx) `(make-Name (quote-syntax ,stx))]
     [(fld: t acc mut) `(make-fld ,(sub t) (quote-syntax ,acc) ,mut)]
-    [(Struct: name parent flds proc poly? pred-id cert maker-id)
+    [(Struct: name parent flds proc poly? pred-id)
      `(make-Struct (quote-syntax ,name) ,(sub parent)
                    ,(sub flds) ,(sub proc) ,(sub poly?)
-                   (quote-syntax ,pred-id) (syntax-local-certifier)
-                   (quote-syntax ,maker-id))]
+                   (quote-syntax ,pred-id))]
     [(App: rator rands stx) `(make-App ,(sub rator) ,(sub rands) (quote-syntax ,stx))]
     [(Opaque: pred cert) `(make-Opaque (quote-syntax ,pred) (syntax-local-certifier))]
     [(Refinement: parent pred cert) `(make-Refinement ,(sub parent)
@@ -55,14 +55,9 @@
      `(make-Path ,(sub p) ,(if (identifier? i)
                                `(quote-syntax ,i)
                                i))]
-    [(? (lambda (e) (or (Filter? e)
-                        (Object? e)
-                        (PathElem? e)))
-        (app (lambda (v) (vector->list (struct->vector v))) (list-rest tag seq fv fi stx vals)))
-     `(,(gen-constructor tag) ,@(map sub vals))]
-    [(? Type?
-        (app (lambda (v) (vector->list (struct->vector v))) (list-rest tag seq fv fi stx key vals)))
-     `(,(gen-constructor tag) ,@(map sub vals))]
+    [(? Rep? rep)
+     `(,(gen-constructor (car (vector->list (struct->vector rep))))
+       ,@(map sub (Rep-values rep)))]
     [_ (basic v)]))
 
 (define (bound-in-this-module id)
@@ -81,6 +76,17 @@
                  (show-sharing #f)
                  (booleans-as-true/false #f))
     #`(begin #,@(filter values (type-name-env-map f)))))
+
+(define (tvariance-env-init-code)
+  (define (f id var)
+    (if (bound-in-this-module id)
+        #`(register-type-variance! #'#,id (list #,@(map variance->binding var)))
+        #f))
+  (parameterize ((current-print-convert-hook converter)
+                 (show-sharing #f)
+                 (booleans-as-true/false #f))
+    #`(begin #,@(filter values (type-variance-env-map f)))))
+
 
 (define (talias-env-init-code)
   (define (f id ty)
@@ -101,6 +107,12 @@
                  (show-sharing #f)
                  (booleans-as-true/false #f))
     #`(begin #,@(filter values (type-env-map f)))))
+
+(define (mvar-env-init-code mvar-env)
+  (define (f id v)
+    (and v (bound-in-this-module id)
+         #`(register-mutated-var #'#,id)))
+  #`(begin #,@(filter values (dict-map mvar-env f))))
 
 
 

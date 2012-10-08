@@ -46,7 +46,7 @@ Converts @racket[v] from a value matching @racket[from-type] to a
 value matching @racket[to-type], where @racket[(ctype-sizeof from-type)]
 matches @racket[(ctype-sizeof to-type)].
 
-The conversion is equivalent to
+The conversion is roughly equivalent to
 
 @racketblock[
   (let ([p (malloc from-type)])
@@ -54,24 +54,18 @@ The conversion is equivalent to
     (ptr-ref p to-type))
 ]
 
-Beware of potential pitfalls with @racket[cast]:
+If @racket[v] is a cpointer, @racket[(cpointer-gcable?  v)] is true,
+and @racket[from-type] and @racket[to-type] are both based on
+@racket[_pointer] or @racket[_gcpointer], then @racket[from-type] is
+implicitly converted with @racket[_gcable] to ensure that the result
+cpointer is treated as referring to memory that is managed by the
+garbage collector.
 
-@itemlist[
-
- @item{If @racket[v] is a pointer that refers to memory that is
-       managed by the garbage collector, @racket[from-type] and
-       @racket[to-type] normally should be based on
-       @racket[_gcpointer], not @racket[_pointer]; see also
-       @racket[_gcable].}
-
- @item{If @racket[v] is a pointer with an offset component (e.g., from
-       @racket[ptr-add]), the offset is folded into the pointer base
-       for the result. Consequently, @racket[cast] generally should
-       not be used on a source pointer that refers to memory that is
-       managed by the garbage collector and that has an offset, unless
-       the memory is specially allocated to allow interior pointers.}
-
-]}
+If @racket[v] is a pointer with an offset component (e.g., from
+@racket[ptr-add]), @racket[(cpointer-gcable? v)] is true, and the
+result is a cpointer, then the result pointer has the same offset
+component as @racket[v]. If @racket[(cpointer-gcable? v)] is false,
+then any offset is folded into the pointer base for the result.}
 
 
 @defproc[(cblock->list [cblock any/c] [type ctype?] [length exact-nonnegative-integer?])

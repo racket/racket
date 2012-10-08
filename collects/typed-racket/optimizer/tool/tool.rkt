@@ -162,6 +162,7 @@
                (match-define `(,start ,end ,popup-fun) h)
                (or new-item
                    (and (<= start pos end)
+                        (new separator-menu-item% [parent menu])
                         (new menu-item%
                              [label "Show Optimization Info"]
                              [parent menu]
@@ -242,7 +243,9 @@
                [value #f]))) ; will be updated in `show-optimization-coach'
 
       (define/public (show-optimization-coach)
-        (cond [panel (send (get-area-container) add-child panel)]
+        (define area-container (get-area-container))
+        (cond [panel (or (memq panel (send area-container get-children))
+                         (send area-container add-child panel))]
               [else  (create-panel)])
         ;; update check-boxes
         (define filters (send (get-definitions-text) get-filters))

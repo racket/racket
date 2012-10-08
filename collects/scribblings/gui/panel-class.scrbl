@@ -1,6 +1,8 @@
 #lang scribble/doc
 @(require "common.rkt")
 
+@centered{@image[#:suffixes @list[".png"]]{image/panel}}
+
 @defclass/title[panel% object% (area-container-window<%> subwindow<%>)]{
 
 A panel is a both a container and a containee window. It serves mainly

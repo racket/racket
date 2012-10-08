@@ -1,14 +1,17 @@
 #lang racket/base
-(require (for-syntax racket/base)
+(require (for-syntax racket/base
+                     syntax/for-body)
          racket/serialize
          racket/pretty
          racket/contract/base
-         racket/contract/combinator)
+         racket/contract/combinator
+         (only-in "private/for.rkt" prop:stream))
 
 (provide set seteq seteqv
          set? set-eq? set-eqv? set-equal?
          set-empty? set-count
          set-member? set-add set-remove
+         set-first set-rest
          set-union set-intersect set-subtract set-symmetric-difference
          subset? proper-subset?
          set-map set-for-each 
@@ -84,7 +87,10 @@
                                 (=? (set-ht set1) (set-ht set2)))
                               (lambda (set hc) (add1 (hc (set-ht set))))
                               (lambda (set hc) (add1 (hc (set-ht set)))))
-  #:property prop:sequence (lambda (v) (*in-set v)))
+  #:property prop:sequence (lambda (v) (*in-set v))
+  #:property prop:stream (vector (lambda (s) (set-empty? s))
+                                 (lambda (s) (set-first s))
+                                 (lambda (s) (set-rest s))))
 
 ;; Not currently exporting this because I'm not sure whether this is the right semantics
 ;; for it yet, but it follows most closely the semantics of the old set/c implementation
@@ -265,6 +271,20 @@
 (define (proper-subset? one two)
   (subset* 'proper-subset? one two #t))
 
+(define (set-first set)
+  (unless (set? set) (raise-argument-error 'set-first "set?" set))
+  (define ht (set-ht set))
+  (if (zero? (hash-count ht))
+      (raise-arguments-error 'set-first "given set is empty")
+      (hash-iterate-key ht (hash-iterate-first ht))))
+
+(define (set-rest set)
+  (unless (set? set) (raise-argument-error 'set-rest "set?" set))
+  (define ht (set-ht set))
+  (if (zero? (hash-count ht))
+      (raise-arguments-error 'set-rest "given set is empty")
+      (make-set (hash-remove ht (hash-iterate-key ht (hash-iterate-first ht))))))
+
 (define (set-map set proc)
   (unless (set? set) (raise-argument-error 'set-map "set?" 0 set proc))
   (unless (and (procedure? proc)
@@ -313,10 +333,12 @@
 
 (define-syntax-rule (define-for for/fold/derived for/set set)
   (define-syntax (for/set stx)
-    (syntax-case stx ()
-      [(_ bindings . body)
-       (quasisyntax/loc stx
-         (for/fold/derived #,stx ([s (set)]) bindings (set-add s (let () . body))))])))
+    (...
+     (syntax-case stx ()
+       [(_ bindings . body)
+        (with-syntax ([((pre-body ...) post-body) (split-for-body stx #'body)])
+          (quasisyntax/loc stx
+            (for/fold/derived #,stx ([s (set)]) bindings pre-body ... (set-add s (let () . post-body)))))]))))
 
 (define-for for/fold/derived for/set set)
 (define-for for*/fold/derived for*/set set)

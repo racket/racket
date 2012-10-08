@@ -3,6 +3,16 @@
 (require redex/reduction-semantics)
 (require "grammar.rkt" "verification.rkt")
 
+;; trim test cases: just test length-related stuff
+;; the contents of the stack itself may be completely bogus
+(test-equal (term (trim invalid ())) (term invalid))
+(test-equal (term (trim (uninit imm box imm-nc box-nc not) (uninit imm box imm-nc box-nc not)))
+            (term (uninit imm box imm-nc box-nc not)))
+(test-equal (term (trim (uninit imm box imm-nc box-nc not) (imm-nc box-nc not)))
+            (term (imm-nc box-nc not)))
+(test-equal (term (trim (uninit imm box imm-nc box-nc not) ()))
+            (term ()))
+
 ;; localrefs
 (test-predicate
  (negate bytecode-ok?)

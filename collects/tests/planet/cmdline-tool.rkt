@@ -13,11 +13,11 @@ using 'system' to call out to the tool and then reading its results, etc.
 
 (define debug? #f)
 
-(define planet-bin-path
+(define raco-bin-path
   (simplify-path (build-path (collection-path "racket") 'up 'up  
                              (if (eq? (system-type) 'windows)
-                                 "planet.exe"
-                                 (build-path "bin" "planet")))))
+                                 "raco.exe"
+                                 (build-path "bin" "raco")))))
 
 (define test-connection-spec '("planet" "test-connection.plt" "1" "0"))
 (define test-connection.plt-cache
@@ -32,7 +32,7 @@ using 'system' to call out to the tool and then reading its results, etc.
     (parameterize ([current-input-port (open-input-string "")]
                    [current-output-port sp]
                    [current-error-port sp])
-      (apply system* planet-bin-path args))
+      (apply system* raco-bin-path "planet" args))
     (when debug? (display (get-output-string sp)))
     (get-output-string sp)))
 

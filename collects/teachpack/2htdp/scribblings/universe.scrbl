@@ -1364,7 +1364,9 @@ in parallel:
 (racketblock
 > (apply launch-many-worlds/proc 
          (build-list (random 10)
-                     (lambda (i) (main (number->string i)))))
+                     (lambda (i)
+                       (lambda ()
+                         (main (number->string i))))))
 0
 9
 1

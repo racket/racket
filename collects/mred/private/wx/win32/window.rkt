@@ -575,28 +575,33 @@
   (define/public (try-nc-mouse w msg wParam lParam)
     (cond
      [(= msg WM_NCRBUTTONDOWN)
-      (do-mouse w msg #t 'right-down wParam lParam)]
+      (do-mouse w msg #t 'right-down wParam (lp-screen->client w lParam))]
      [(= msg WM_NCRBUTTONUP)
-      (do-mouse w msg #t 'right-up wParam lParam)]
+      (do-mouse w msg #t 'right-up wParam (lp-screen->client w lParam))]
      [(= msg WM_NCRBUTTONDBLCLK)
-      (do-mouse w msg #t 'right-down wParam lParam)]
+      (do-mouse w msg #t 'right-down wParam (lp-screen->client w lParam))]
      [(= msg WM_NCMBUTTONDOWN)
-      (do-mouse w msg #t 'middle-down wParam lParam)]
+      (do-mouse w msg #t 'middle-down wParam (lp-screen->client w lParam))]
      [(= msg WM_NCMBUTTONUP)
-      (do-mouse w msg #t 'middle-up wParam lParam)]
+      (do-mouse w msg #t 'middle-up wParam (lp-screen->client w lParam))]
      [(= msg WM_NCMBUTTONDBLCLK)
-      (do-mouse w msg #t 'middle-down wParam lParam)]
+      (do-mouse w msg #t 'middle-down wParam (lp-screen->client w lParam))]
      [(= msg WM_NCLBUTTONDOWN)
-      (do-mouse w msg #t 'left-down wParam lParam)]
+      (do-mouse w msg #t 'left-down wParam (lp-screen->client w lParam))]
      [(= msg WM_NCLBUTTONUP)
-      (do-mouse w msg #t 'left-up wParam lParam)]
+      (do-mouse w msg #t 'left-up wParam (lp-screen->client w lParam))]
      [(= msg WM_NCLBUTTONDBLCLK)
-      (do-mouse w msg #t 'left-down wParam lParam)]
+      (do-mouse w msg #t 'left-down wParam (lp-screen->client w lParam))]
      [(and (= msg WM_NCMOUSEMOVE)
            (not (= wParam HTVSCROLL))
            (not (= wParam HTHSCROLL)))
-      (do-mouse w msg #t 'motion wParam lParam)]
+      (do-mouse w msg #t 'motion wParam (lp-screen->client w lParam))]
      [else #f]))
+
+  (define/private (lp-screen->client w lParam)
+    (let ([p (make-POINT (LOWORD lParam) (HIWORD lParam))])
+      (ScreenToClient w p)
+      (MAKELPARAM (POINT-x p) (POINT-y p))))
 
   (define/private (do-mouse control-hwnd msg nc? type wParam lParam)
     (let ([x (LOWORD lParam)]
@@ -669,6 +674,10 @@
                            (lambda () (dispatch-on-event e #t))
                            #t)))
 
+  (define skip-enter-leave? #f)
+  (define/public (skip-enter-leave-events skip?)
+    (set! skip-enter-leave? skip?))
+
   (define mouse-in? #f)
   (define/public (generate-mouse-ins in-window mk)
     (if mouse-in?
@@ -676,7 +685,8 @@
         (begin
           (set! mouse-in? #t)
           (let ([parent-cursor (generate-parent-mouse-ins mk)])
-            (handle-mouse-event (get-client-hwnd) 0 0 (mk 'enter))
+	    (unless skip-enter-leave?
+              (handle-mouse-event (get-client-hwnd) 0 0 (mk 'enter)))
             (let ([c (or cursor-handle parent-cursor)])
               (set! effective-cursor-handle c)
               c)))))
@@ -687,13 +697,14 @@
   (define/public (send-leaves mk)
     (when mouse-in?
       (set! mouse-in? #f)
-      (when mk
-        (let ([e (mk 'leave)])
-          (if (eq? (current-thread) 
-                   (eventspace-handler-thread eventspace))
-              (handle-mouse-event (get-client-hwnd) 0 0 e)
-              (queue-window-event this
-                                  (lambda () (dispatch-on-event/sync e))))))))
+      (unless skip-enter-leave?
+        (when mk
+          (let ([e (mk 'leave)])
+	    (if (eq? (current-thread) 
+		     (eventspace-handler-thread eventspace))
+		(handle-mouse-event (get-client-hwnd) 0 0 e)
+		(queue-window-event this
+				    (lambda () (dispatch-on-event/sync e)))))))))
 
   (define/public (send-child-leaves mk)
     #f)

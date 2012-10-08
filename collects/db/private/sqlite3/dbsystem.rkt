@@ -6,9 +6,9 @@
          classify-sl-sql)
 
 (define sqlite3-dbsystem%
-  (class* object% (dbsystem<%>)
+  (class* dbsystem-base% (dbsystem<%>)
     (define/public (get-short-name) 'sqlite3)
-    (define/public (get-known-types) '(any))
+    (define/override (get-type-list) '((any 0)))
     (define/public (has-support? x) #f)
 
     (define/public (get-parameter-handlers param-typeids)
@@ -32,7 +32,7 @@
 
 ;; ========================================
 
-(define (check-param fsym index param)
+(define (check-param fsym param)
   (unless (or (real? param)
               (string? param)
               (bytes? param))

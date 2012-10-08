@@ -4,6 +4,7 @@
          ffi/unsafe/atomic
          "interfaces.rkt")
 (provide define-type-table
+         dbsystem-base%
          locking%
          debugging%
          transactions%
@@ -20,35 +21,41 @@
 
 ;; Defining type tables
 
-(define-syntax-rule (define-type-table (supported-types
-                                        type-alias->type
+(define-syntax-rule (define-type-table (type-list
                                         typeid->type
-                                        type->typeid
                                         describe-typeid)
-                      (typeid type (alias ...) supported?) ...)
+                      (typeid type since-version) ...)
+  ;; since-version is #f is this library does not support it,
+  ;; *DBMS* version number of introduction (0 for "virtually forever")
   (begin
-    (define all-types '((type supported?) ...))
-    (define supported-types
-      (sort (map car (filter cadr all-types))
-            string<?
-            #:key symbol->string
-            #:cache-keys? #t))
-    (define (type-alias->type x)
-      (case x
-        ((alias ...) 'type) ...
-        (else x)))
+    (define type-list '((type since-version) ...))
     (define (typeid->type x)
       (case x
         ((typeid) 'type) ...
         (else #f)))
-    (define (type->typeid x)
-      (case x
-        ((type) 'typeid) ...
-        (else #f)))
     (define (describe-typeid x)
       (let ([t (typeid->type x)]
-            [ok? (case x ((typeid) supported?) ... (else #f))])
+            [ok? (case x ((typeid) (and since-version #t)) ... (else #f))])
         (list ok? t x)))))
+
+;; ----------------------------------------
+
+(define dbsystem-base%
+  (class object%
+    (super-new)
+    (define/public (get-known-types version)
+      (let* ([all-types (get-type-list)]
+             [supported-types
+              (filter (lambda (type+version)
+                        (let ([since-version (cadr type+version)])
+                          (and since-version
+                               (>= version since-version))))
+                      all-types)])
+        (sort (map car supported-types)
+              string<?
+              #:key symbol->string
+              #:cache-keys? #t)))
+    (define/public (get-type-list) null)))
 
 ;; ----------------------------------------
 
@@ -72,8 +79,7 @@
 (define (guess-socket-path/paths function paths)
   (or (for/or ([path (in-list paths)])
         (and (file-exists? path) path))
-      (error function
-             "could not find socket path")))
+      (error function "could not find socket path")))
 
 ;; ----------------------------------------
 
@@ -254,7 +260,7 @@
     ;; check-valid-tx-status : symbol -> void
     (define/public (check-valid-tx-status fsym)
       (when (eq? tx-status 'invalid)
-        (uerror fsym "current transaction is invalid")))
+        (error fsym "current transaction is invalid")))
 
     ;; ----
 
@@ -300,7 +306,7 @@
                  (set! tx-stack (list (cons #f cwt?)))]
                 [else ;; in transaction
                  (unless (eq? isolation #f)
-                   (error fsym "invalid isolation level for nested transaction: ~e" isolation))
+                   (error/invalid-nested-isolation fsym isolation))
                  (let ([savepoint (start-transaction* fsym 'nested)])
                    (set! tx-stack (cons (cons savepoint cwt?) tx-stack)))])))
       (void))
@@ -384,13 +390,13 @@
        - implicit-commit now allowed
       |#
 
-      (define (no! why)
-        (error fsym "~a not allowed~a"
-               (or (statement-type->string stmt-type)
-                   (case stmt-type
-                     ((implicit-commit) "statement with implicit commit")
-                     (else "unknown")))
-               (or why "")))
+      (define (no! tx-state)
+        (error/tx-bad-stmt fsym
+                           (or (statement-type->string stmt-type)
+                               (case stmt-type
+                                 ((implicit-commit) "statement with implicit commit")
+                                 (else #f)))
+                           tx-state))
 
       (case (transaction-nesting)
         ((#f)
@@ -400,12 +406,12 @@
         ((top-level nested)
          (case stmt-type
            ((start)
-            (no! " within transaction"))
+            (no! "within transaction"))
            ((commit rollback
              savepoint prepare-transaction
              release-savepoint rollback-savepoint
              implicit-commit)
-            (no! " within managed transaction"))
+            (no! "within managed transaction"))
            (else (void))))))
 
     (super-new)))

@@ -727,7 +727,8 @@ menu items in the @onscreen{Racket} menu.
 A module browser window contains a square for each
   module. The squares are colored based on the number of
   lines of code in the module. If a module has more lines of
-  code, it gets a darker color.
+  code, it gets a darker color. If a module is red, it means
+  that DrRacket did not find a source file for it.
   
   In addition, for each normal import, a blue line drawn is
   from the module to the importing module. Similarly, purple

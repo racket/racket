@@ -1,5 +1,5 @@
 (module reactive frtime/lang-utils
-  (require "lang-ext.rkt"
+  (require (except-in "lang-ext.rkt" undefined undefined?)
            "frp-snip.rkt"
            frtime/frlibs/list
            frtime/frlibs/etc
@@ -18,8 +18,8 @@
           (pred v))))
   
   (provide value-nowable? behaviorof
-           (all-from frtime/frlibs/list)
-           (all-from frtime/frlibs/etc)
-           (all-from frtime/lang-utils)
-           (all-from-except "lang-ext.rkt" lift)
-           (all-from "frp-snip.rkt")))
+           (all-from-out frtime/frlibs/list)
+           (all-from-out frtime/frlibs/etc)
+           (all-from-out frtime/lang-utils)
+           (except-out (all-from-out "lang-ext.rkt") lift)
+           (all-from-out "frp-snip.rkt")))

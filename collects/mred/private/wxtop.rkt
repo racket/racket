@@ -32,7 +32,7 @@
   (define get-display-size
     (lambda ([full-screen? #f] #:monitor [monitor 0])
       (unless (exact-nonnegative-integer? monitor)
-	(raise-type-error 'get-display-size "exact non-negative integer" monitor))
+	(raise-argument-error 'get-display-size "exact-nonnegative-integer?" monitor))
       (let/ec esc
         (let ([xb (box 0)]
               [yb (box 0)])
@@ -43,7 +43,7 @@
   (define get-display-left-top-inset
     (lambda ([advisory? #f] #:monitor [monitor 0])
       (unless (exact-nonnegative-integer? monitor)
-	(raise-type-error 'get-display-left-top-inset "exact non-negative integer" monitor))
+	(raise-argument-error 'get-display-left-top-inset "exact-nonnegative-integer?" monitor))
       (let/ec esc
         (let ([xb (box 0)]
               [yb (box 0)])

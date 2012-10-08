@@ -8,6 +8,8 @@
          "literals.rkt"
          "debug.rkt"
          "compile.rkt"
+         "template.rkt"
+         "utils.rkt"
          racket/list
          (prefix-in transformer: "transformer.rkt")
          (prefix-in fixture: "fixture.rkt")
@@ -25,8 +27,7 @@
 ;; phase -1
 (require (for-template racket/base
                        racket/splicing
-                       (only-in "literals.rkt" %racket)
-                       "compile.rkt"
+                       ;; "compile.rkt"
                        "syntax.rkt"
                        "extra.rkt"))
 
@@ -390,14 +391,19 @@
           (define-values (output rest) (transformer current stream))
           (do-parse rest precedence left output)]
          [(honu-operator? #'head)
-          (define new-precedence (transformer:honu-operator-ref (syntax-local-value #'head) 0))
-          (define association (transformer:honu-operator-ref (syntax-local-value #'head) 1))
-          (define binary-transformer (transformer:honu-operator-ref (syntax-local-value #'head) 2))
-          (define unary-transformer (transformer:honu-operator-ref (syntax-local-value #'head) 3))
+          (define operator (syntax-local-value #'head))
+
+          (define new-precedence (transformer:operator-precedence operator))
+          (define association (transformer:operator-association operator))
+          (define binary-transformer (transformer:operator-binary-transformer operator))
+          (define unary-transformer (transformer:operator-unary-transformer operator))
+          (define postfix? (transformer:operator-postfix? operator))
+
           (define higher
             (case association
               [(left) >]
-              [(right) >=]))
+              [(right) >=]
+              [else (raise-syntax-error 'parse "invalid associativity. must be either 'left or 'right" association)]))
           (debug "precedence old ~a new ~a higher? ~a\n" precedence new-precedence (higher new-precedence precedence))
           (if (higher new-precedence precedence)
             (let-values ([(parsed unparsed)
@@ -408,7 +414,10 @@
                                           (if current
                                             (if binary-transformer
                                               (binary-transformer (parse-all-expression current) right)
-                                              (error 'binary "cannot be used as a binary operator in ~a" #'head))
+                                              ;; use a unary transformer in postfix position
+                                              (if (and postfix? unary-transformer)
+                                                (unary-transformer current)
+                                                (error 'binary "cannot be used as a binary operator in ~a" #'head)))
                                             (if unary-transformer
                                               (unary-transformer right)
                                               (error 'unary "cannot be used as a unary operator in ~a" #'head))))
@@ -424,7 +433,13 @@
             ;; if we have a unary transformer then we have to keep parsing
             (if unary-transformer
               (if current
-                (values (left current) stream)
+                (if postfix?
+                  (do-parse #'(rest ...)
+                            precedence 
+                            left
+                            (unary-transformer current))
+                  (values (left current) stream))
+
                 (do-parse #'(rest ...) new-precedence
                                       (lambda (stuff)
                                         (define right (parse-all stuff))
@@ -493,13 +508,10 @@
                           colon (~seq variable:id honu-equal list:honu-expression (~optional honu-comma)) ...
                           (~seq honu-where where:honu-expression (~optional honu-comma)) ...)
                          (define filter (if (attribute where)
-                                          (with-syntax ([(where.result ...) (map honu->racket (syntax->list #'(where.result ...)))])
-                                            #'((#:when where.result) ...))
+                                          #'((#:when where.result) ...)
                                           #'()))
                          (define comprehension
-                           (with-syntax ([((filter ...) ...) filter]
-                                         [(list.result ...) (map honu->racket (syntax->list #'(list.result ...)))]
-                                         [work.result (honu->racket #'work.result)])
+                           (with-syntax ([((filter ...) ...) filter])
                              (racket-syntax (for/list ([variable list.result]
                                                        ...
                                                        filter ... ...)

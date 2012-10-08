@@ -44,7 +44,7 @@ AC_ARG_ENABLE(shared,  [  --enable-shared         create shared libraries])
 AC_ARG_ENABLE(dynlib,  [  --enable-dynlib         same as --enable-shared])
 AC_ARG_ENABLE(lt,      [  --enable-lt=<prog>      use <prog> instead of libtool; disable to use bundled], LIBTOOLPROG="$enableval", enable_lt=default)
 
-AC_ARG_ENABLE(libffi,  [  --enable-libffi         use installed libffi (enabled by default)], , enable_libffi=yes)
+AC_ARG_ENABLE(libffi,  [  --enable-libffi         use installed libffi (enabled by default for Unix)], , enable_libffi=default)
 
 AC_ARG_ENABLE(sdk,     [  --enable-sdk=<path>     use Mac OS X 10.4 SDK directory])
 AC_ARG_ENABLE(xonx,    [  --enable-xonx           use Unix style (e.g., use Gtk) for Mac OS X])
@@ -255,6 +255,7 @@ show_explicitly_enabled "${enable_orig}" "Original install tree"
 show_explicitly_disabled "${enable_jit}" JIT
 
 show_explicitly_disabled "${enable_foreign}" Foreign
+show_explicitly_enabled "${enable_libffi}" "Installed libffi"
 show_explicitly_disabled "${enable_libffi}" "Installed libffi"
 
 show_explicitly_enabled "${enable_places}" Places
@@ -787,9 +788,11 @@ fi
 AC_MSG_CHECKING($msg)
 AC_TRY_RUN(
 [  #include <wchar.h> ]
+[  #include <strings.h>]
    int main() {
      mbstate_t state;
 [    char *src = "X";]
+[    bzero(&state, sizeof(mbstate_t));]
 [    mbsrtowcs(0, &src, 0, &state);]
      return 0;
    }, mbsrtowcs=yes, mbsrtowcs=no, mbsrtowcs=no)
@@ -856,6 +859,17 @@ if test "${try_kqueue_syscall}" = "yes" ; then
   if test "${use_kqueue}" = "yes" ; then
      AC_DEFINE(HAVE_KQUEUE_SYSCALL,1,[Have kqueue])
   fi
+fi
+
+if test "${enable_libffi}" = "default" ; then
+  case "$host_os" in
+  darwin*)
+        enable_libffi=no
+  ;;
+  *)
+        enable_libffi=yes
+  ;;
+  esac
 fi
 
 if test "${enable_libffi}" = "yes" ; then

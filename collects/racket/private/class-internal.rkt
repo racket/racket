@@ -40,6 +40,7 @@
            send send/apply send/keyword-apply send* send+ dynamic-send
            class-field-accessor class-field-mutator with-method
            get-field set-field! field-bound? field-names
+           dynamic-get-field dynamic-set-field!
            private* public*  pubment*
            override* overment*
            augride* augment*
@@ -4432,6 +4433,9 @@ An example
       stx #'name)]))
 
 (define (set-field!/proc id obj val)
+  (do-set-field! 'set-field! id obj val))
+
+(define (do-set-field! who id obj val)
   (unless (object? obj)
     (raise-argument-error 'set-field!
                           "object?"
@@ -4446,6 +4450,10 @@ An example
                     "field name" (as-write id)
                     "object" obj))))
 
+(define (dynamic-set-field! id obj val)
+  (unless (symbol? id) (raise-argument-error 'dynamic-get-field "symbol?" id))
+  (do-set-field! 'dynamic-set-field! id obj val))
+
 (define-syntax (get-field stx)
   (syntax-case stx ()
     [(_ name obj)
@@ -4458,8 +4466,11 @@ An example
       stx (syntax name))]))
 
 (define (get-field/proc id obj)
+  (do-get-field 'get-field id obj))
+
+(define (do-get-field who id obj)
   (unless (object? obj)
-    (raise-argument-error 'get-field
+    (raise-argument-error who
                           "object?"
                           obj))
   (let* ([cls (object-ref obj)]
@@ -4467,10 +4478,14 @@ An example
           [fi (hash-ref field-ht id #f)])
      (if fi
          ((field-info-external-ref fi) obj)
-         (obj-error 'get-field
+         (obj-error who
                     "given object does not have the requested field"
                     "field name" (as-write id)
                     "object" obj))))
+
+(define (dynamic-get-field id obj)
+  (unless (symbol? id) (raise-argument-error 'dynamic-get-field "symbol?" id))
+  (do-get-field 'dynamic-get-field id obj))
 
 (define-syntax (field-bound? stx)
   (syntax-case stx ()
@@ -5179,6 +5194,7 @@ An example
          object% object? object=? externalizable<%> printable<%> writable<%> equal<%>
          new make-object instantiate
          get-field set-field! field-bound? field-names
+         dynamic-get-field dynamic-set-field!
          send send/apply send/keyword-apply send* send+ dynamic-send
          class-field-accessor class-field-mutator with-method
          private* public*  pubment*

@@ -63,4 +63,26 @@
                           }
                           foo(5)
                           }
-             10))
+             10)
+
+  (check-equal? @honu{
+                  unary_operator u1 4 function(x){ x * 2}
+                  u1 8
+                }
+
+                (* 8 2))
+
+  (check-equal? @honu{
+                  unary_operator u1 4 function(x){ x * 2}
+                  2 + u1 8 * 3
+                }
+
+                (+ 2 (* 3 (* 8 2))))
+
+  (check-equal? @honu{
+                  binary_operator b1 4 'left function(left, right){ left + right * 2}
+                  2 b1 4
+                }
+
+                (+ 2 (* 2 4)))
+  )

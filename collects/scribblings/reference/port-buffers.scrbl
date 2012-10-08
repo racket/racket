@@ -73,7 +73,7 @@ accordingly. If the port does not support setting the mode, the
 
 If @racket[mode] is not provided, the current mode is returned, or
 @racket[#f] is returned if the mode cannot be determined. If
-@racket[file-stream-port] is an input port and @racket[mode] is
+@racket[port] is an input port and @racket[mode] is
 @racket['line], the @exnraise[exn:fail:contract].}
 
 @defproc*[([(file-position [port port?]) exact-nonnegative-integer?]
@@ -112,3 +112,9 @@ is the same as the old position). However, although input and output
 ports produced by @racket[open-input-output-file] share the file
 position, setting the position via one port does not flush the other
 port's buffer.}
+
+@defproc[(file-position* [port port?]) (or/c exact-nonnegative-integer? #f)]{
+
+Like @racket[file-position] on a single argument, but returns
+@racket[#f] if the position is not known.}
+

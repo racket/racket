@@ -323,9 +323,10 @@ in the sequence.
   content of a directory, use the result of @racket[directory-list] as
   a sequence.}
 
-@defproc[(in-producer [producer procedure?] [stop any/c] [args any/c] ...)
+@defproc[(in-producer [producer procedure?] [stop any/c] [arg any/c] ...)
          sequence?]{
   Returns a sequence that contains values from sequential calls to
+  @racket[producer], providing all @racket[arg]s to every call to 
   @racket[producer].  A @racket[stop] value returned by
   @racket[producer] marks the end of the sequence (and the
   @racket[stop] value is not included in the sequence); @racket[stop]
@@ -635,7 +636,7 @@ in the sequence.
 @; ======================================================================
 @section[#:tag "streams"]{Streams}
 
-A @deftech{stream} is a kind of sequence that supports functional
+A @deftech{stream} is a kind of @tech{sequence} that supports functional
 iteration via @racket[stream-first] and @racket[stream-rest]. The
 @racket[stream-cons] form constructs a lazy stream, but plain lists
 can be used as stream, and functions such as @racket[in-range] and
@@ -716,7 +717,8 @@ A shorthand for nested @racket[stream-cons]es ending with
          stream?]{
   Returns a stream that contains all elements of each stream in the
   order they appear in the original streams.  The new stream is
-  constructed lazily.}
+  constructed lazily, while the last given stream is used in the tail of
+  the result.}
 
 @defproc[(stream-map [f procedure?]
                      [s stream?])
@@ -907,10 +909,13 @@ values from the generator.
     (welcome)
     (welcome)]}
 
-@defform[(in-generator body ...+)]{
+@defform/subs[(in-generator maybe-arity body ...+)
+              ([maybe-arity code:blank 
+                            (code:line #:arity arity-k)])]{
 Produces a @tech{sequence} that encapsulates the @tech{generator} formed by
   @racket[(generator () body ...+)]. The values produced by the
-  generator form the elements of the sequence.
+  generator form the elements of the sequence, except for the last value 
+  produced by the generator (i.e., the values produced by returning).
 
   @examples[#:eval generator-eval
     (for/list ([i (in-generator
@@ -920,21 +925,34 @@ Produces a @tech{sequence} that encapsulates the @tech{generator} formed by
                         (loop (cdr x)))))])
       i)]
 
-  To use an existing generator as a sequence, use @racket[in-producer]
-  with a stop-value known for the generator.
+If @racket[in-generator] is used immediately with a @racket[for] (or
+ @racket[for/list], etc.) binding's right-hand side, then its result
+ arity (i.e., the number of values in each element of the sequence)
+ can be inferred. Otherwise, if the generator produces multiple values
+ for each element, its arity should be declared with an
+ @racket[#:arity arity-k] clause; the @racket[arity-k] must be a
+ literal, exact, non-negative integer.
 
-  @examples[#:eval generator-eval
+  To use an existing generator as a sequence, use @racket[in-producer]
+  with a stop-value known for the generator:
+
+  @interaction[#:eval generator-eval
+    (define abc-generator (generator ()
+                           (for ([x '(a b c)])
+                              (yield x))))
+    (for/list ([i (in-producer abc-generator (void))])
+      i)
     (define my-stop-value (gensym))
     (define my-generator (generator ()
-                           (let loop ([x '(a b c)])
+                           (let loop ([x (list 'a (void) 'c)])
                              (if (null? x)
                                  my-stop-value
                                  (begin
                                    (yield (car x))
                                    (loop (cdr x)))))))
-
     (for/list ([i (in-producer my-generator my-stop-value)])
       i)]}
+
 
 @defproc[(generator-state [g generator?]) symbol?]{
   Returns a symbol that describes the state of the generator.

@@ -1585,9 +1585,31 @@ static Scheme_Object *foreign_set_cpointer_tag_bang(int argc, Scheme_Object *arg
   Scheme_Object *cp;
   cp = unwrap_cpointer_property(argv[0]);
   if (!SCHEME_CPTRP(cp))
-    scheme_wrong_contract(MYNAME, "propert-cpointer?", 0, argc, argv);
+    scheme_wrong_contract(MYNAME, "proper-cpointer?", 0, argc, argv);
   SCHEME_CPTR_TYPE(cp) = argv[1];
   return scheme_void;
+}
+#undef MYNAME
+
+#define MYNAME "cpointer-gcable?"
+static Scheme_Object *foreign_cpointer_gcable_p(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *cp;
+  cp = unwrap_cpointer_property(argv[0]);
+  if (SCHEME_CPTRP(cp)) {
+    return ((SCHEME_CPTR_FLAGS(cp) & 0x1)
+            ? scheme_false
+            : scheme_true);
+  } else if (SCHEME_FALSEP(cp)
+             || SCHEME_FFIOBJP(cp)
+             || SCHEME_FFICALLBACKP(cp))
+    return scheme_false;
+  else if (SCHEME_BYTE_STRINGP(cp))
+    return scheme_true;
+  else {
+    scheme_wrong_contract(MYNAME, "cpointer?", 0, argc, argv);
+    return NULL;
+  }
 }
 #undef MYNAME
 
@@ -3819,6 +3841,8 @@ void scheme_init_foreign(Scheme_Env *env)
     scheme_make_prim_w_arity(foreign_cpointer_tag, "cpointer-tag", 1, 1), menv);
   scheme_add_global("set-cpointer-tag!",
     scheme_make_prim_w_arity(foreign_set_cpointer_tag_bang, "set-cpointer-tag!", 2, 2), menv);
+  scheme_add_global("cpointer-gcable?",
+    scheme_make_prim_w_arity(foreign_cpointer_gcable_p, "cpointer-gcable?", 1, 1), menv);
   scheme_add_global("ctype-sizeof",
     scheme_make_prim_w_arity(foreign_ctype_sizeof, "ctype-sizeof", 1, 1), menv);
   scheme_add_global("ctype-alignof",
@@ -4142,6 +4166,8 @@ void scheme_init_foreign(Scheme_Env *env)
    scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "cpointer-tag", 1, 1), menv);
   scheme_add_global("set-cpointer-tag!",
    scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "set-cpointer-tag!", 2, 2), menv);
+  scheme_add_global("cpointer-gcable?",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "cpointer-gcable?", 1, 1), menv);
   scheme_add_global("ctype-sizeof",
    scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ctype-sizeof", 1, 1), menv);
   scheme_add_global("ctype-alignof",

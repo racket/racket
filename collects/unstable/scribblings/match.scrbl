@@ -49,6 +49,50 @@ result value of @racket[rhs-expr], and continues matching each subsequent
 @addition[@author+email["Asumu Takikawa" "asumu@racket-lang.org"]]
 
 @defform/subs[
+  (define/match (head args)
+    match*-clause ...)
+  ([head id (head args)]
+   [args (code:line arg ...)
+         (code:line arg ... @#,racketparenfont{.} rest-id)]
+   [arg arg-id
+        [arg-id default-expr]
+        (code:line keyword arg-id)
+        (code:line keyword [arg-id default-expr])]
+   [match*-clause [(pat ...+) body ...+]
+                  [(pat ...+) (=> id) body ...+]])
+]{
+  Binds @racket[id] to a procedure that is defined by pattern matching
+  clauses using @racket[match*]. Each clause takes a sequence of
+  patterns that correspond to the arguments in the function header.
+  The arguments are ordered as they appear in the function header for
+  matching purposes.
+
+  The function header may contain optional or keyword arguments, or
+  may be in curried form.
+
+  @defexamples[#:eval the-eval
+    (define/match (fact n)
+      [(0) 1]
+      [(n) (* n (fact (sub1 n)))])
+    (fact 5)
+
+    (define/match ((f x) #:y [y '(1 2 3)])
+      [((regexp #rx"p+") `(,a 2 3)) a]
+      [(_ _) #f])
+    ((f "ape") #:y '(5 2 3))
+    ((f "dog"))
+
+    (define/match (g x y . rst)
+      [(0 0 '()) #t]
+      [(5 5 '(5 5)) #t]
+      [(_ _ _) #f])
+    (g 0 0)
+    (g 5 5 5 5)
+    (g 1 2)
+  ]
+}
+
+@defform/subs[
   #:literals (field)
   (object maybe-class field-clause ...)
   ([maybe-class

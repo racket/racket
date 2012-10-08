@@ -1,8 +1,9 @@
 (module simple frtime
   
   (require "fred.rkt"
-           mzlib/class
-           (rename mred frame% frame%))
+           racket/class
+           (rename-in mred [frame% frame%])
+           (for-syntax racket/base))
   
   (define widget (lambda (x) x))
   (define value-b (lambda (x) (send x get-value-b)))
@@ -48,6 +49,6 @@
 
 
   
-  (provide (all-defined)
-           (all-from "fred.rkt")
-           (all-from mzlib/class)))
+  (provide (all-defined-out)
+           (all-from-out "fred.rkt")
+           (all-from-out racket/class)))

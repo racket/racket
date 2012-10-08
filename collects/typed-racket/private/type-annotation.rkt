@@ -3,7 +3,7 @@
 (require "../utils/utils.rkt"
 	 (rep type-rep)
 	 (utils tc-utils)
-	 (env global-env)
+	 (env global-env mvar-env)
          (except-in (types subtype union resolve utils generalize))
          (private parse-type)
          (contract-req)

@@ -26,7 +26,6 @@
 (provide dc-mixin
          dc-backend<%>
          default-dc-backend%
-         install-bitmap-dc-class!
          do-set-pen!
          do-set-brush!)
 
@@ -44,9 +43,6 @@
       (or (send the-color-database find-color c)
           black)
       (color->immutable-color c)))
-
-(define -bitmap-dc% #f)
-(define (install-bitmap-dc-class! v) (set! -bitmap-dc% v))
 
 ;; dc-backend : interface
 ;;

@@ -31,7 +31,7 @@ The @racket[call/prompt] binding is an alias for @racket[call-with-continuation-
 
 @defproc[(abort/cc
           [prompt-tag any/c]
-          [v any/c] ...+)
+          [v any/c] ...)
          any]{
 The @racket[abort/cc] binding is an alias for @racket[abort-current-continuation].
 }

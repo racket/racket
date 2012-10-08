@@ -3,6 +3,7 @@
          racket/draw
          racket/class
          racket/match
+         racket/pretty
          (only-in racket/list drop-right last partition)
          
          texpict/mrpict
@@ -15,11 +16,19 @@
          "matcher.rkt"
          "arrow.rkt"
          "core-layout.rkt")
+(require (prefix-in lw/ct: "loc-wrapper-ct.rkt")
+         (prefix-in lw/rt: "loc-wrapper-rt.rkt"))
+
 (require (for-syntax racket/base
                      "term-fn.rkt"))
 
 (provide render-term 
          term->pict
+         
+         render-term/pretty-write
+         term->pict/pretty-write
+         
+         to-lw/stx
          
          language->pict
          render-language
@@ -533,9 +542,11 @@
     (send ps-setup copy-from (current-ps-setup))
     (send ps-setup set-file filename)
     (send ps-setup set-mode 'file)
-    (define % (if (regexp-match #rx#"[.]pdf$" (path->bytes filename))
-                  pdf-dc%
-                  post-script-dc%))
+    (define is-pdf? 
+      (cond
+        [(path? filename) (regexp-match #rx#"[.]pdf$" (path->bytes filename))]
+        [else (regexp-match #rx"[.]pdf$" filename)]))
+    (define % (if is-pdf? pdf-dc% post-script-dc%))
     (parameterize ([current-ps-setup ps-setup])
       (make-object % #f #f))))
 
@@ -1129,7 +1140,7 @@
                            '#,(judgment-form-rule-names jf)
                            #,(judgment-form-lang jf))
    'disappeared-use
-   form-name))
+   (syntax-local-introduce form-name)))
 
 (define-syntax (render-judgment-form stx)
   (syntax-case stx ()
@@ -1184,3 +1195,24 @@
         (do-term->pict lang lw))))
 
 (define (do-term->pict lang lw) (lw->pict (language-nts lang) lw))
+
+(define (render-term/pretty-write lang term [filename #f] #:width [width (pretty-print-columns)])
+  (if filename
+      (save-as-ps/pdf (λ () (term->pict/pretty-write lang term #:width width)) filename)
+      (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
+        (term->pict/pretty-write lang term #:width width))))
+
+(define (term->pict/pretty-write lang term #:width [width (pretty-print-columns)])
+  (define-values (in out) (make-pipe))
+  (thread (λ ()
+            (parameterize ([pretty-print-columns width])
+              (pretty-write term out))
+            (close-output-port out)))
+  (port-count-lines! in)
+  (lw->pict lang (to-lw/stx (read-syntax #f in))))
+
+(define (to-lw/stx stx)
+  (lw/rt:add-spans/interp-lws 
+   (syntax->datum 
+    (lw/ct:to-lw/proc stx #f))))
+

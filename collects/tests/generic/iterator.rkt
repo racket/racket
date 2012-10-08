@@ -33,7 +33,8 @@
 
 (define-generics (iterator gen:iterator prop:iterator iterator?
                            #:defined-table dummy
-                           #:prop-defined-already? iterator-accessor)
+                           #:prop-defined-already? iterator-accessor
+                           #:define-contract #f)
   (iterator-first     iterator)
   (iterator-rest      iterator)
   (iterator-continue? iterator))

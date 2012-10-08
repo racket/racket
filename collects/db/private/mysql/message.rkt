@@ -7,7 +7,6 @@ Based on protocol documentation here:
 (require racket/match
          racket/port
          "../generic/sql-data.rkt"
-         "../generic/sql-convert.rkt"
          "../generic/interfaces.rkt"
          "../../util/private/geometry.rkt")
 (provide write-packet
@@ -403,8 +402,9 @@ computed string on the server can be. See also:
          [inp (open-input-bytes bs)])
     (let-values ([(msg-num msg) (parse-packet/1 num in inp expect len field-dvecs)])
       (when (and (not (port-closed? inp)) (port-has-bytes? inp))
-        (error/internal 'parse-packet "bytes left over after parsing ~s; bytes were: ~s" 
-                        msg (io:read-bytes-to-eof inp)))
+        (error/internal* 'parse-packet "bytes left over after parsing packet"
+                         '("packet" value) msg
+                         '("leftover" value) (io:read-bytes-to-eof inp)))
       (close-input-port inp)
       (values num msg))))
 
@@ -640,9 +640,8 @@ computed string on the server can be. See also:
                          sql-null
                          (read-binary-datum in* field-dvec))))
       (when (port-has-bytes? in*)
-        (error/internal 'parse-binary-row-data-packet
-                        "bytes left over; bytes were: ~s"
-                        (io:read-bytes-to-eof in*)))
+        (error/internal* 'parse-binary-row-data-packet "bytes left over after parsing packet"
+                         '("leftover" value) (io:read-bytes-to-eof in*)))
       (close-input-port in*)
       (values msg-num* (make-binary-row-data-packet field-v)))))
 
@@ -738,11 +737,30 @@ computed string on the server can be. See also:
                       #:srid? #t))
 
     ((decimal)
-     (error/internal 'get-param "unimplemented decimal type: ~s" type))
+     (error/internal* 'get-result "unimplemented decimal type" "type" type))
     ((enum set)
-     (error/internal 'get-result "unimplemented type: ~s" type))
+     (error/internal 'get-result "unimplemented type" "type" type))
     (else
-     (error/internal 'get-result "unknown type: ~s" type))))
+     (error/internal 'get-result "unknown type" "type" type))))
+
+(define (parse-decimal s)
+  (cond [(equal? s "NaN") +nan.0]
+        [(regexp-match #rx"^-?([0-9]*)$" s)
+         ;; big integer
+         => (lambda (m)
+              (string->number s))]
+        [(regexp-match #rx"^-?([0-9]*)\\.([0-9]*)$" s)
+         => (lambda (m)
+              (+ (string->number (cadr m))
+                 (parse-exact-fraction (caddr m))))]
+        [else
+         (error/internal* 'parse-decimal "cannot parse as decimal"
+                          '("string" value) s)]))
+
+(define (parse-exact-fraction s)
+  ;; eg: (parse-exact-fraction "12") = 12/100
+  (/ (string->number s)
+     (expt 10 (string-length s))))
 
 (define (supported-result-typeid? typeid)
   (case typeid
@@ -776,7 +794,8 @@ computed string on the server can be. See also:
         [(geometry2d? param)
          'geometry]
         [else
-         (error/internal 'choose-param-type "bad parameter value: ~e" param)]))
+         (error/internal* 'choose-param-type "bad parameter value"
+                          '("value" value) param)]))
 
 (define (write-binary-datum out type param)
   (case type
@@ -836,7 +855,7 @@ computed string on the server can be. See also:
   (let ([val (assq key table)])
     (if val
         (cdr val)
-        (error/internal function "not found: ~s" key))))
+        (error/internal* function "not found" '("key" value) key))))
 
 (define (encode-flags flags table function)
   (apply bitwise-ior
@@ -986,7 +1005,7 @@ computed string on the server can be. See also:
 (define (encode-charset charset)
   (case charset
     ((utf8-general-ci) 33)
-    (else (error/internal 'encode-charset "unknown charset: ~e" charset))))
+    (else (error/internal* 'encode-charset "unknown charset" "charset" charset))))
 (define (decode-charset n)
   (case n
     ((33) 'utf8-general-ci)

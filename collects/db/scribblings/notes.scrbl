@@ -67,6 +67,41 @@ PostgreSQL 9.1, this authentication method has been renamed
 @tt{peer}). The @tt{gss}, @tt{sspi}, @tt{krb5}, @tt{pam}, and
 @tt{ldap} methods are not supported.
 
+@section[#:tag "postgresql-timestamp-tz"]{PostgreSQL Timestamps and Time Zones}
+
+PostgreSQL's @tt{timestamp with time zone} type is inconsistent with
+the SQL standard (probably), inconsistent with @tt{time with time
+zone}, and potentially confusing to PostgreSQL newcomers.
+
+A @tt{time with time zone} is essentially a @tt{time} structure with
+an additional field storing a time zone offset. In contrast, a
+@tt{timestamp with time zone} has no fields beyond those of
+@tt{timestamp}. Rather, it indicates that its datetime fields should
+be interpreted as a UTC time. Thus it represents an absolute point in
+time, unlike @tt{timestamp without time zone}, which represents local
+date and time in some unknown time zone (possibly---hopefully---known
+the the database designer, but unknown to PostgreSQL).
+
+When a @tt{timestamp with time zone} is created from a source without
+time zone information, the session's @tt{TIME ZONE} setting is used to
+adjust the source to UTC time. When the source contains time zone
+information, it is used to adjust the timestamp to UTC time. In either
+case, the time zone information is @emph{discarded} and only the UTC
+timestamp is stored. When a @tt{timestamp with time zone} is rendered
+as text, it is first adjusted to the time zone specified by the
+@tt{TIME ZONE} setting (or by
+@hyperlink["http://www.postgresql.org/docs/8.0/static/functions-datetime.html#FUNCTIONS-DATETIME-ZONECONVERT"]{@tt{AT
+TIME ZONE}}) and that offset is included in the rendered text.
+
+This library receives timestamps in binary format, so the time zone
+adjustment is not applied, nor is the session's @tt{TIME ZONE} offset
+included; thus all @racket[sql-timestamp] values in a query result
+have a @racket[tz] field of @racket[0] (for @tt{timestamp with time
+zone}) or @racket[#f] (for @tt{timestamp without time
+zone}). (Previous versions of this library sent and received
+timestamps as text, so they received timestamps with adjusted time
+zones.)
+
 
 @section{MySQL Authentication}
 

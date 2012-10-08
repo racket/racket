@@ -340,7 +340,7 @@
       (unless (and (list? chcs) (pair? chcs)
                    (or (andmap label-string? chcs)
                        (andmap (lambda (x) (is-a? x wx:bitmap%)) chcs)))
-        (raise-type-error (who->name cwho) "non-empty list of strings (up to 200 characters) or bitmap% objects" chcs))
+        (raise-argument-error (who->name cwho) "(or/c (non-empty-listof label-string?) (non-empty-listof (is-a?/c bitmap%)))" chcs))
       (check-container-parent cwho parent)
       (check-callback cwho callback)
       (check-orientation cwho style)
@@ -355,7 +355,8 @@
          `(method radio-box% ,method) n)
         (when n
           (unless (< n (length chcs))
-            (raise-mismatch-error (who->name `(method radio-box% ,method)) "no such button: " n))))])
+            (raise-arguments-error (who->name `(method radio-box% ,method)) "no such button" 
+                                   "index" n))))])
     (override*
      [enable (entry-point
               (case-lambda
@@ -398,11 +399,7 @@
            (let ([cwho '(constructor radio-box)])
              (check-container-ready cwho parent)
              (when selection
-               (unless (< selection (length choices))
-                 (raise-mismatch-error (who->name cwho)
-                                       (format "initial selection is too large, given only ~a choices: "
-                                               (length choices))
-                                       selection)))))
+               (check-list-control-selection cwho choices selection))))
          label parent callback #f)
         [font font]
         [enabled enabled]
@@ -440,15 +437,16 @@
       (check-style cwho '(vertical horizontal) '(plain vertical-label horizontal-label deleted) style)
       (check-font cwho font)
       (unless (<= minv maxv)
-        (raise-mismatch-error (who->name cwho)
-                              (format "minumum value: ~e is greater than maximum value: " minv)
-                              maxv))
+        (raise-arguments-error (who->name cwho)
+                               "minumum value is greater than maximum value"
+                               "minimum" minv
+                               "maximum" maxv))
       (unless (<= minv init-value maxv)
-        (raise-mismatch-error (who->name cwho)
-                              (format "minumum value: ~e and maximum value: ~e do no bound initial value: "
-                                      minv
-                                      maxv)
-                              init-value)))
+        (raise-arguments-error (who->name cwho)
+                               "range error;\n initial value is not between minumum value and maximum value inclusive"
+                               "initial value" init-value
+                               "minimum" minv
+                               "maximum" maxv)))
     (define wx #f)
     (public*
      [get-value (entry-point (lambda () (send wx get-value)))]
@@ -456,10 +454,11 @@
                  (lambda (v)
                    (check-slider-integer '(method slider% set-value) v)
                    (unless (<= minv v maxv)
-                     (raise-mismatch-error (who->name '(method slider% set-value))
-                                           (format "slider's range is ~a to ~a; cannot set the value to: "
-                                                   minv maxv)
-                                           v))
+                     (raise-arguments-error (who->name '(method slider% set-value))
+                                            "out of range;\n given value is not between minimum and maximum values"
+                                            "given" v
+                                            "minimum" minv
+                                            "maximum" maxv))
                    (send wx set-value v)))])
     (as-entry
      (lambda ()
@@ -512,10 +511,10 @@
                  (lambda (v)
                    (check-range-integer '(method gauge% set-value) v)
                    (when (> v (send wx get-range))
-                     (raise-mismatch-error (who->name '(method gauge% set-value))
-                                           (format "gauge's range is 0 to ~a; cannot set the value to: "
-                                                   (send wx get-range))
-                                           v))
+                     (raise-arguments-error (who->name '(method gauge% set-value))
+                                            "out of range;\n given value is not between 0 and maximum value"
+                                            "given" v
+                                            "maximum" (send wx get-range)))
                    (send wx set-value v)))]
      [get-range (entry-point (lambda () (send wx get-range)))]
      [set-range (entry-point
@@ -595,8 +594,9 @@
                               (let ([pos (do-find-string s)])
                                 (if pos
                                     (send wx set-selection pos)
-                                    (raise-mismatch-error (who->name '(method list-control<%> set-string-selection))
-                                                          "no item matching the given string: " s)))))]
+                                    (raise-arguments-error (who->name '(method list-control<%> set-string-selection))
+                                                           "no item matching the given string" 
+                                                           "given" s)))))]
      [find-string (entry-point (lambda (x)
                                  (check-label-string '(method list-control<%> find-string) x)
                                  (do-find-string x)))]
@@ -629,12 +629,13 @@
         (check-non-negative-integer `(method list-control<%> ,method) n)
         (let ([m (send wx number)])
           (unless (< n m)
-            (raise-mismatch-error (who->name `(method list-control<%> ,method))
-                                  (if (zero? m)
-                                      "control has no items; given index: "
-                                      (format "control has only ~a items, indexed 0 to ~a; given out-of-range index: "
-                                              m (sub1 m)))
-                                  n))))])
+            (raise-range-error (who->name `(method list-control<%> ,method))
+                               "control" "item "
+                               n
+                               this
+                               0
+                               (sub1 m)
+                               #f))))])
     (as-entry
      (lambda ()
        (super-make-object (lambda () (set! wx (mk-wx)) wx) mismatches label parent callback #f)))
@@ -644,16 +645,16 @@
 (define (check-list-control-args cwho label choices parent callback)
   (check-label-string/false cwho label)
   (unless (and (list? choices) (andmap label-string? choices))
-    (raise-type-error (who->name cwho) "list of strings (up to 200 characters)" choices))
+    (raise-argument-error (who->name cwho) "(listof label-string?)" choices))
   (check-container-parent cwho parent)
   (check-callback cwho callback))
 
 (define (check-list-control-selection cwho choices selection)
   (unless (< selection (length choices))
-    (raise-mismatch-error (who->name cwho)
-                          (format "initial selection is too large, given only ~a choices: "
-                                  (length choices))
-                          selection)))
+    (raise-arguments-error (who->name cwho)
+                           "given initial selection is too large"
+                           "given" selection
+                           "choice count" (length choices))))
 
 (define choice%
   (class basic-list-control%
@@ -725,34 +726,36 @@
       (unless (and (list? columns)
                    (not (null? columns))
                    (andmap label-string? columns))
-        (raise-type-error (who->name cwho) "non-empty list of strings (up to 200 characters)" columns))
+        (raise-argument-error (who->name cwho) "(non-empty-listof label-string?)" columns))
       (when column-order
         (check-column-order cwho column-order (length columns))))
     (private*
      [check-column-order
       (lambda (cwho column-order count)
         (unless (and (list? column-order)
-                     (andmap exact-integer? column-order)
-                     (equal? (sort column-order <)
-                             (for/list ([i (in-range (length column-order))]) i)))
-          (raise-type-error (who->name cwho)
-                            "#f or list of distinct exact integers from 0 to one less than the list length"
-                            column-order))
+                     (andmap exact-nonnegative-integer? column-order))
+          (raise-argument-error (who->name cwho)
+                                "(listof exact-nonnegative-integer?)"
+                                column-order))
+        (unless (equal? (sort column-order <)
+                        (for/list ([i (in-range (length column-order))]) i))
+          (raise-arguments-error (who->name cwho)
+                                 "bad column-order list;\n not a permutation of integers from 0 to one less than the list length"
+                                 "list" column-order))
         (unless (= (length column-order) count)
-          (raise-mismatch-error (who->name cwho)
-                                (format "column count ~a does not match length of column-order list: "
-                                        count)
-                                column-order)))]
+          (raise-arguments-error (who->name cwho)
+                                 "column count does not match length of column-order list"
+                                 "count" count
+                                 "list" column-order)))]
      [check-column-number
       (lambda (who i)
         (unless (exact-nonnegative-integer? i)
-          (raise-type-error (who->name who) "exact nonnegative integer" i))
+          (raise-argument-error (who->name who) "exact-nonnegative-integer?" i))
         (unless (i . < . num-columns)
-          (raise-mismatch-error (who->name who)
-                                (format
-                                 "index is too large for ~a-column list box: "
-                                 num-columns)
-                                i)))])
+          (raise-arguments-error (who->name who)
+                                 "given column index is too large"
+                                 "given" i
+                                 "column count" num-columns)))])
     (define column-labels (map string->immutable-string columns))
     (define num-columns (length columns))
     (define variable-columns? (memq 'variable-columns style))
@@ -790,17 +793,15 @@
                            (check-dimension who min-size)
                            (check-dimension who max-size)
                            (unless (<= min-size w)
-                             (raise-mismatch-error (who->name who)
-                                                   (format
-                                                    "size ~a is less than mininum size: "
-                                                    w)
-                                                   min-size))
+                             (raise-arguments-error (who->name who)
+                                                    "given size is less than mininum size"
+                                                    "given" w
+                                                    "minimum" min-size))
                            (unless (>= max-size w)
-                             (raise-mismatch-error (who->name who)
-                                                   (format
-                                                    "size ~a is less than maximum size: "
-                                                    w)
-                                                   max-size)))
+                             (raise-arguments-error (who->name who)
+                                                    "given size is greater than maximum size"
+                                                    "given" w
+                                                    "maximum" max-size)))
                          (send wx set-column-size i w min-size max-size))]
      [get-column-width (lambda (i)
                          (check-column-number '(method list-box% get-column-width) i)
@@ -809,14 +810,16 @@
                       (let ([who '(method list-box% delete-column)])
                         (check-column-number who i)
                         (unless variable-columns?
-                          (raise-mismatch-error
+                          (raise-arguments-error
                            (who->name who)
-                           "list box without 'variable-columns style cannot delete column: "
-                           i))
+                           "cannot delete column;\n list box was created without 'variable-columns style"
+                           "column" i
+                           "list box" this))
                         (unless (num-columns . > . 1)
-                          (raise-mismatch-error (who->name who)
-                                                "cannot delete only column: "
-                                                i)))
+                          (raise-arguments-error (who->name who)
+                                                 "cannot delete column;\n list box has only one column"
+                                                 "column" i
+                                                 "list box" this)))
                       (as-entry
                        (lambda ()
                          (set! num-columns (sub1 num-columns))
@@ -829,10 +832,11 @@
                       (let ([who '(method list-box% append-column)])
                         (check-label-string who label)
                         (unless variable-columns?
-                          (raise-mismatch-error
+                          (raise-arguments-error
                            (who->name who)
-                           "list box without 'variable-columns style cannot add column: "
-                           label)))
+                           "cannot add column;\n list box created without 'variable-columns style"
+                           "list box" this
+                           "new column" label)))
                       (as-entry
                        (lambda ()
                          (set! num-columns (add1 num-columns))
@@ -851,22 +855,20 @@
      [set (entry-point (lambda (l . more)
                          (let ([cwho '(method list-box% set)])
                            (unless (= num-columns (+ 1 (length more)))
-                             (raise-mismatch-error (who->name cwho)
-                                                   (format
-                                                    "column count ~a doesn't match number of arguments: "
-                                                    num-columns)
-                                                   (add1 (length more))))
+                             (raise-arguments-error (who->name cwho)
+                                                    "column count doesn't match argument count"
+                                                    "column count" num-columns
+                                                    "argument count" (add1 (length more))))
                            (for ([l (in-list (cons l more))])
                              (unless (and (list? l) (andmap label-string? l))
-                               (raise-type-error (who->name cwho)
-                                                 "list of strings (up to 200 characters)" l)))
+                               (raise-argument-error (who->name cwho) "(listof label-string?)" l)))
                            (for ([more-l (in-list more)])
                              (unless (= (length more-l) (length l))
-                               (raise-mismatch-error
+                               (raise-arguments-error
                                 (who->name cwho)
-                                (format "first list length ~a does not match length of later argument: "
-                                        (length l))
-                                more-l))))
+                                "first list length does not match length of later argument"
+                                "first list length" (length l)
+                                "larger argument length" (length more-l)))))
                          (send this -set-list-strings l)
                          (send wx set l . more)))]
      [set-string (entry-point
@@ -875,13 +877,15 @@
                       (check-non-negative-integer cwho n) ; int error before string
                       (check-label-string cwho d) ; string error before range mismatch
                       (unless (exact-nonnegative-integer? col)
-                        (raise-type-error (who->name cwho) "exact nonnegative integer" col))
+                        (raise-argument-error (who->name cwho) "exact-nonnegative-integer?" col))
                       (unless (< -1 col num-columns)
-                        (raise-mismatch-error (who->name cwho)
-                                              (format
-                                               "column number is not in the list box's allowed range [0, ~a]: "
-                                               (sub1 num-columns))
-                                              col)))
+                        (raise-range-error (who->name cwho)
+                                           "list box" "column "
+                                           col
+                                           this
+                                           0
+                                           (sub1 num-columns)
+                                           #f)))
                     (check-item 'set-string n)
                     (send this -set-list-string n d)
                     (send wx set-string n d col)))]
@@ -902,12 +906,13 @@
          (check-non-negative-integer `(method list-box% ,method) n)
          (let ([m (send wx number)])
            (unless (< n m)
-             (raise-mismatch-error (who->name `(method list-box% ,method))
-                                   (if (zero? m)
-                                       "list has no items; given index: "
-                                       (format "list has only ~a items, indexed 0 to ~a; given out-of-range index: "
-                                               m (sub1 m)))
-                                   n)))))])
+             (raise-range-error (who->name `(method list-box% ,method))
+                                "list box" "item "
+                                n
+                                this
+                                0
+                                (sub1 m)
+                                #f)))))])
     (super-new
      [mk-wx
       (lambda ()

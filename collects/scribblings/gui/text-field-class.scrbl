@@ -1,6 +1,8 @@
 #lang scribble/doc
 @(require "common.rkt")
 
+@centered{@image[#:suffixes @list[".png"]]{image/text-field}}
+
 @defclass/title[text-field% object% (control<%>)]{
 
 A @racket[text-field%] object is an editable text field with an

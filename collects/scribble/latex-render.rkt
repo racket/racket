@@ -157,19 +157,20 @@
                                        ((length number) . > . 3)))])
               (printf "\n\n\\~a~a~a"
                       (case (+ (length number) (or (render-part-depth) 0))
-                        [(0 1) "sectionNewpage\n\n\\section"]
-                        [(2) "subsection"]
-                        [(3) "subsubsection"]
-                        [else "subsubsection"])
+                        [(0 1) "sectionNewpage\n\n\\Ssection"]
+                        [(2) "Ssubsection"]
+                        [(3) "Ssubsubsection"]
+                        [(4) "Ssubsubsubsection"]
+                        [else "Ssubsubsubsubsection"])
                       (if (and (part-style? d 'hidden) (not no-number?))
                           "hidden" "")
-                      (if no-number? "*" ""))
+                      (if no-number? "star" ""))
               (when (not (or (part-style? d 'hidden) no-number?))
-                (printf "[")
+                (printf "{")
                 (parameterize ([disable-images #t]
                                [escape-brackets #t])
                   (render-content (part-title-content d) d ri))
-                (printf "]")))
+                (printf "}")))
             (printf "{")
             (render-content (part-title-content d) d ri)
             (printf "}")
@@ -360,7 +361,7 @@
                   [(newline) 
                    (check-render)
                    (unless (suppress-newline-content)
-                     (printf "\\\\"))]
+                     (printf "\\hspace*{\\fill}\\\\"))]
                   [else (error 'latex-render
                                "unrecognzied style symbol: ~s" style)])]
                [(string? style-name)
@@ -728,6 +729,7 @@
                     [(ldquo) "{``}"]
                     [(rdquo) "{''}"]
                     [(rsquo) "{'}"]
+                    [(lsquo) "{`}"]
                     [(prime) "$'$"]
                     [(rarr) "$\\rightarrow$"]
                     [(larr) "$\\leftarrow$"]
@@ -784,6 +786,11 @@
                      [(#\uDF) "{\\ss}"]
                      [else
                       (if ((char->integer c) . > . 127)
+                          ;; latex-prefix.rkt enables utf8 input, but this does not work for
+                          ;; all the characters below (e.g. ∞). Some parts of the table
+                          ;; below are therefore necessary, but some parts probably are not.
+                          ;; Which parts are necessary may depend on the latex version,
+                          ;; though, so we keep this table around to avoid regressions.
                           (case c
                             [(#\u2011) "\\mbox{-}"] ; non-breaking hyphen
                             [(#\uB0) "$^{\\circ}$"] ; degree

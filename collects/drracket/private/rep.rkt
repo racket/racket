@@ -1113,9 +1113,29 @@ TODO
                              (parameterize ([pretty-print-columns pretty-print-width])
                                (for ([x (in-list results)])
                                  ((current-print) x)))
-                             (loop)])))))))
+                             (loop)])))))
+                   (default-continuation-prompt-tag)
+                   (letrec ([me
+                             (λ args
+                               (cond
+                                 [(and (pair? args)
+                                       (null? (cdr args))
+                                       (procedure? (car args))
+                                       (procedure-arity-includes? (car args) 0))
+                                  (call-with-continuation-prompt (car args) 
+                                                                 (default-continuation-prompt-tag)
+                                                                 me)]
+                                 [else
+                                  (call-with-continuation-prompt
+                                   (λ ()
+                                     (call-with-continuation-prompt
+                                      (λ ()
+                                        (apply
+                                         abort-current-continuation 
+                                         (default-continuation-prompt-tag)
+                                         args)))))]))])
+                     me)))
                 list))
-             
              (parameterize ([pretty-print-columns pretty-print-width])
                (for ([x (in-list last-results)])
                  ((current-print) x)))

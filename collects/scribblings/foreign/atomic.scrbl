@@ -54,3 +54,8 @@ in which case the call never returns.
 When used not in the dynamic extent of @racket[call-as-atomic],
 @racket[call-as-nonatomic] raises @racket[exn:fail:contract].}
 
+
+@defproc[(in-atomic-mode?) boolean?]{
+
+Returns @racket[#t] if Racket context switches are disables,
+@racket[#f] otherwise.}

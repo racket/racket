@@ -45,62 +45,68 @@
     (when p
       (let ([wx (mred->wx p)])
 	(unless wx
-	  (raise-mismatch-error (who->name cwho)
-				"container is not yet fully initialized: " 
-				p)))))
+	  (raise-arguments-error (who->name cwho)
+                                 "container is not yet fully initialized" 
+                                 "container" p)))))
 
   (define (check-instance who class class-name false-ok? v)
     (unless (or (and false-ok? (not v)) (is-a? v class))
-      (raise-type-error (who->name who) (format "~a object~a" class-name (if false-ok? " or #f" "")) v)))
+      (raise-argument-error (who->name who) 
+                            (let ([c (format "(is-a?/c ~a)" class-name)])
+                              (if false-ok?
+                                  (format "(or/c ~a #f)" c)
+                                  c))
+                            v)))
 
   (define (check-string/false who str)
     (unless (or (not str) (string? str))
-      (raise-type-error (who->name who) "string or #f" str)))
+      (raise-argument-error (who->name who) "(or/c string? #f)" str)))
 
   (define (check-path who str)
     (unless (path-string? str)
-      (raise-type-error (who->name who) "path or string" str)))
+      (raise-argument-error (who->name who) "path-string?" str)))
 
   (define (check-path/false who str)
     (unless (or (not str) (path-string? str))
-      (raise-type-error (who->name who) "path, string, or #f" str)))
+      (raise-argument-error (who->name who) "(or/c path-string? #f)" str)))
 
   (define (check-string who str)
     (unless (string? str)
-      (raise-type-error (who->name who) "string" str)))
+      (raise-argument-error (who->name who) "string?" str)))
 
   (define (check-label-string who str)
     (unless (label-string? str)
-      (raise-type-error (who->name who) "string (up to 200 characters)" str)))
+      (raise-argument-error (who->name who) "label-string?" str)))
 
   (define (check-label-string/false who str)
     (unless (or (not str) (label-string? str))
-      (raise-type-error (who->name who) "string  (up to 200 characters) or #f" str)))
+      (raise-argument-error (who->name who) "(or/c label-string? #f)" str)))
 
   (define (check-char/false who c)
     (unless (or (not c) (char? c))
-      (raise-type-error (who->name who) "character or #f" c)))
+      (raise-argument-error (who->name who) "(or/c char? #f)" c)))
 
   (define (check-callback who callback)
     (unless (and (procedure? callback)
 		 (procedure-arity-includes? callback 2))
-      (raise-type-error (who->name who) "procedure of arity 2" callback)))
+      (raise-argument-error (who->name who) "(procedure-arity-includes/c 2)" callback)))
 
   (define (check-callback1 who callback)
     (unless (and (procedure? callback)
 		 (procedure-arity-includes? callback 1))
-      (raise-type-error (who->name who) "procedure of arity 1" callback)))
+      (raise-argument-error (who->name who) "(procedure-arity-includes/c 2)" callback)))
 
   (define (check-bounded-integer min max false-ok?)
     (lambda (who range)
       (unless (or (and false-ok? (not range))
 		  (and (integer? range) (exact? range) (<= min range max)))
-	(raise-type-error (who->name who) 
-			  (format "exact integer in [~a, ~a]~a"
-				  min max
-				  (if false-ok? " or #f" ""))
-			  range))))
-
+	(raise-argument-error (who->name who) 
+                              (let ([i (format "(integer-in ~a ~a)" min max)])
+                                (if false-ok?
+                                    (format "(or/c ~a #f)" i)
+                                    i))
+                              range))))
+  
   (define check-range-integer (check-bounded-integer 0 10000 #f))
 
   (define check-slider-integer (check-bounded-integer -10000 10000 #f))
@@ -116,24 +122,24 @@
 	       (not (and (integer? wheel-step)
 			 (exact? wheel-step)
 			 (<= 1 wheel-step 10000))))
-      (raise-type-error (who->name cwho)
-			"#f or exact integer in [1,10000]"
-			wheel-step)))
+      (raise-argument-error (who->name cwho)
+                            "(or/c #f (integer-in 1 10000))"
+                            wheel-step)))
 
   (define (check-fraction who x)
     (unless (and (real? x) (<= 0.0 x 1.0))
-      (raise-type-error (who->name who) 
-			"real number in [0.0, 1.0]"
-			x)))
+      (raise-argument-error (who->name who) 
+                            "(real-in 0.0 1.0)"
+                            x)))
 
   (define (-check-non-negative-integer who i false-ok?)
     (when (or i (not false-ok?))
       (unless (and (integer? i) (exact? i) (not (negative? i)))
-	(raise-type-error (who->name who) 
-			  (if false-ok?
-			      "non-negative exact integer or #f" 
-			      "non-negative exact integer" )
-			  i))))
+	(raise-argument-error (who->name who) 
+                              (if false-ok?
+                                  "(or/c exact-nonnegative-integer? #f)" 
+                                  "exact-nonnegative-integer?")
+                              i))))
 
   (define (check-non-negative-integer who i)
     (-check-non-negative-integer who i #f))
@@ -146,7 +152,7 @@
 
   (define (check-label-string-or-bitmap who label)
     (unless (or (label-string? label) (is-a? label wx:bitmap%))
-      (raise-type-error (who->name who) "string (up to 200 characters) or bitmap% object" label)))
+      (raise-argument-error (who->name who)  "(or/c label-string? (is-a?/c bitmap%))" label)))
 
   (define (check-label-string-or-bitmap-or-both who label)
     (unless (or (label-string? label) (is-a? label wx:bitmap%)
@@ -155,54 +161,62 @@
                      (is-a? (car label) wx:bitmap%)
                      (label-string? (cadr label))
                      (memq (caddr label) '(left right top bottom))))
-      (raise-type-error (who->name who) 
-                        (string-append
-                         "string (up to 200 characters), bitmap% object, or list of bitmap%, "
-                         "string, and image-placement symbol ('left, 'right, 'top, or 'bottom)")
-                        label)))
+      (raise-argument-error (who->name who) 
+                            (string-append
+                             "(or/c label-string?\n"
+                             "      (is-a?/c bitmap%)\n"
+                             "      (list/c (is-a?/c bitmap%)\n"
+                             "              string\n"
+                             "              (or/c 'left 'right 'top 'bottom)))")
+                            label)))
 
   (define (check-label-string-or-bitmap/false who label)
     (unless (or (not label) (label-string? label) (is-a? label wx:bitmap%))
-      (raise-type-error (who->name who) "string (up to 200 characters), bitmap% object, or #f" label)))
+      (raise-argument-error (who->name who) "(or/c label-string? (is-a?/c bitmap%) #f)" label)))
 
   (define (check-label-string/bitmap/iconsym who label)
     (unless (or (label-string? label) (is-a? label wx:bitmap%)
 		(memq label '(app caution stop)))
-      (raise-type-error (who->name who) "string (up to 200 characters), bitmap% object, or icon symbol" label)))
+      (raise-argument-error (who->name who) "(or/c label-string? (is-a?/c bitmap%) 'app 'caution 'stop)" label)))
 
   (define (check-font who f)
     (unless (or (eq? f no-val) (f . is-a? . wx:font%))
-      (raise-type-error (who->name who) "font% object" f)))
+      (raise-argument-error (who->name who) "(is-a?/c font%)" f)))
 
   (define (check-style who reqd other-allowed style)
     (unless (and (list? style) (andmap symbol? style))
-      (raise-type-error (who->name who) "list of style symbols" style))
+      (raise-argument-error (who->name who) "(listof symbol?)" style))
     (when reqd
-      (letrec ([or-together (lambda (l)
-			      (if (= (length l) 2)
-				  (format "~a or ~a" (car l) (cadr l))
-				  (let loop ([l l])
-				    (if (null? (cdr l))
-					(format "or ~a" (car l))
-					(format "~a, ~a" (car l) (loop (cdr l)))))))])
-	(unless (ormap (lambda (i) (memq i reqd)) style)
-	  (raise-type-error (who->name who)
-			    (format "style list, missing ~a"
-				    (if (= (length reqd) 1)
-					(car reqd)
-					(string-append
-					 "one of "
-					 (or-together reqd))))
-			    style))))
+      (unless (ormap (lambda (i) (memq i reqd)) style)
+        (letrec ([or-together (lambda (l)
+                                (if (= (length l) 2)
+                                    (format "~e or ~e" (car l) (cadr l))
+                                    (let loop ([l l])
+                                      (if (null? (cdr l))
+                                          (format "or ~e" (car l))
+                                          (format "~e, ~a" (car l) (loop (cdr l)))))))])
+          (raise-arguments-error (who->name who)
+                                 (string-append
+                                  "missing a required option in given style list\n"
+                                  "  must include: " (or-together reqd))
+                                 "given" style))))
     (if (and (not reqd) (null? other-allowed))
 	(unless (null? style)
-	  (raise-type-error (who->name who) "empty style list" style))
+	  (raise-arguments-error (who->name who) 
+                                 "empty style list required" 
+                                 "given" style))
 	(let* ([l (append (or reqd null) other-allowed)]
 	       [bad (ormap (lambda (x) (if (memq x l) #f x)) style)])
 	  (when bad
-	    (raise-type-error (who->name who) (format "style list, ~e not allowed" bad) style))
+	    (raise-arguments-error (who->name who) 
+                                   "invalid symbol in given style list"
+                                   "invalid symbol" bad
+                                   "given" style))
 	  (let loop ([l style])
 	    (unless (null? l)
 	      (when (memq (car l) (cdr l))
-		(raise-type-error (who->name who) (format "style list, ~e allowed only once" (car l)) style))
+		(raise-arguments-error (who->name who) 
+                                       "duplicate style in given style list"
+                                       "duplicate" (car l)
+                                       "given" style))
 	      (loop (cdr l))))))))

@@ -1,7 +1,8 @@
 #lang racket/base
 ;; written by ryanc
 (require (for-syntax racket/base
-                     unstable/wrapc)
+                     unstable/wrapc
+                     syntax/for-body)
          racket/contract/base
          racket/dict
          racket/vector)
@@ -158,22 +159,26 @@
 (define-syntax (for/gvector stx)
   (syntax-case stx ()
     [(_ (clause ...) . body)
-     (quasisyntax/loc stx
-       (let ([gv (make-gvector)])
-         (for/fold/derived #,stx () (clause ...)
-           (call-with-values (lambda () . body)
-             (lambda args (apply gvector-add! gv args) (values))))
-         gv))]))
+     (with-syntax ([((pre-body ...) post-body) (split-for-body stx #'body)])
+       (quasisyntax/loc stx
+         (let ([gv (make-gvector)])
+           (for/fold/derived #,stx () (clause ...)
+            pre-body ...
+            (call-with-values (lambda () . post-body)
+              (lambda args (apply gvector-add! gv args) (values))))
+           gv)))]))
 
 (define-syntax (for*/gvector stx)
   (syntax-case stx ()
     [(_ (clause ...) . body)
-     (quasisyntax/loc stx
-       (let ([gv (make-gvector)])
-         (for*/fold/derived #,stx () (clause ...)
-           (call-with-values (lambda () . body)
-             (lambda args (apply gvector-add! gv args) (values))))
-         gv))]))
+     (with-syntax ([((pre-body ...) post-body) (split-for-body stx #'body)])
+       (quasisyntax/loc stx
+         (let ([gv (make-gvector)])
+           (for*/fold/derived #,stx () (clause ...)
+            pre-body ...
+            (call-with-values (lambda () . post-body)
+              (lambda args (apply gvector-add! gv args) (values))))
+           gv)))]))
 
 (struct gvector (vec n)
   #:mutable

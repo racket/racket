@@ -28,6 +28,8 @@ makes just a few special text conversions:
 
  @item{@litchar{'}: converted to @racket['rsquo], which is a fancy apostrophe: '}
 
+ @item{@litchar{`}: converted to @racket['lsquo], which is a fancy quote: `}
+
 ]
 
 Some functions @deftech{decode} a sequence of @racket[_pre-flow] or

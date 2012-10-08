@@ -1,6 +1,8 @@
 #lang scribble/doc
 @(require "common.rkt")
 
+@centered{@image[#:suffixes @list[".png"]]{image/choice}}
+
 @defclass/title[choice% object% (list-control<%>)]{
 
 A choice item allows the user to select one string item from a pop-up

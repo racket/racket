@@ -340,7 +340,7 @@
                                    0))])
           (cond
             [(and after-next-lw (null? to-wrap))
-             (list* next-lw (loop after-next-lw next-line next-column))]
+             (cons next-lw (loop after-next-lw next-line next-column))]
             [(and (not after-next-lw) (null? to-wrap))
              '()]
             [else
@@ -443,10 +443,9 @@
                   (set! gobbled-lines (+ gobbled-lines lines-to-end))]
                  [else 
                   ;; insert a bunch of blank lines
-                  (for-each 
-                   (λ (i) 
-                     (set! lines (cons (make-line (+ (- current-line gobbled-lines) i) '()) lines)))
-                   (build-list (- lines-to-end 1) add1))])
+                  (for/list ([i (in-range 1 lines-to-end)])
+                    (define new-line (make-line (+ (- current-line gobbled-lines) i) '()))
+                    (set! lines (cons new-line lines)))])
            
            
            (set! tokens (cons (make-spacer-token 0 (- col initial-column))

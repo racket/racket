@@ -159,6 +159,7 @@ READ_ONLY Scheme_Object *scheme_display_proc;
 READ_ONLY Scheme_Object *scheme_print_proc;
 
 SHARED_OK Scheme_Object *initial_compiled_file_paths;
+SHARED_OK Scheme_Object *initial_compiled_file_roots;
 
 THREAD_LOCAL_DECL(static Scheme_Object *dummy_input_port);
 THREAD_LOCAL_DECL(static Scheme_Object *dummy_output_port);
@@ -314,6 +315,7 @@ scheme_init_port_fun(Scheme_Env *env)
   GLOBAL_NONCM_PRIM("port-print-handler",             port_print_handler,             1, 2, env);
   GLOBAL_NONCM_PRIM("flush-output",                   flush_output,                   0, 1, env);
   GLOBAL_NONCM_PRIM("file-position",                  scheme_file_position,           1, 2, env);
+  GLOBAL_NONCM_PRIM("file-position*",                 scheme_file_position_star,      1, 1, env);
   GLOBAL_NONCM_PRIM("file-stream-buffer-mode",        scheme_file_buffer,             1, 2, env);
   GLOBAL_NONCM_PRIM("port-try-file-lock?",            scheme_file_try_lock,           2, 2, env);
   GLOBAL_NONCM_PRIM("port-file-unlock",               scheme_file_unlock,             1, 1, env);
@@ -345,6 +347,10 @@ void scheme_init_port_fun_config(void)
     scheme_set_root_param(MZCONFIG_USE_COMPILED_KIND, initial_compiled_file_paths);
   else
     scheme_set_root_param(MZCONFIG_USE_COMPILED_KIND, scheme_make_pair(scheme_make_path("compiled"), scheme_null));
+  if (initial_compiled_file_roots)
+    scheme_set_root_param(MZCONFIG_USE_COMPILED_ROOTS, initial_compiled_file_roots);
+  else
+    scheme_set_root_param(MZCONFIG_USE_COMPILED_ROOTS, scheme_make_pair(scheme_intern_symbol("same"), scheme_null));
   scheme_set_root_param(MZCONFIG_USE_USER_PATHS, (scheme_ignore_user_paths ? scheme_false : scheme_true));
   scheme_set_root_param(MZCONFIG_USE_LINK_PATHS, (scheme_ignore_link_paths ? scheme_false : scheme_true));
 
@@ -368,6 +374,13 @@ void scheme_set_compiled_file_paths(Scheme_Object *list)
   if (!initial_compiled_file_paths)
     REGISTER_SO(initial_compiled_file_paths);
   initial_compiled_file_paths = list;
+}
+
+void scheme_set_compiled_file_roots(Scheme_Object *list)
+{
+  if (!initial_compiled_file_roots)
+    REGISTER_SO(initial_compiled_file_roots);
+  initial_compiled_file_roots = list;
 }
 
 /*========================================================================*/
@@ -895,6 +908,20 @@ user_get_or_peek_bytes(Scheme_Input_Port *port,
   intptr_t r;
   Scheme_Cont_Frame_Data cframe;
 
+  if (peek)
+    fun = uip->peek_proc;
+  else
+    fun = uip->read_proc;
+
+  if (SCHEME_INPUT_PORTP(fun)) {
+    return scheme_redirect_get_or_peek_bytes(port,
+                                             scheme_input_port_record(fun),
+                                             buffer, offset, size,
+                                             nonblock,
+                                             peek, peek_skip,
+                                             unless, sinfo);
+  }
+
   val = uip->peeked;
   if (val) {
     /* Leftover from a read-based peek used to implement `char-ready?'
@@ -913,11 +940,6 @@ user_get_or_peek_bytes(Scheme_Input_Port *port,
 
   if (unless && SCHEME_PAIRP(unless))
     unless = SCHEME_CDR(unless);
-
-  if (peek)
-    fun = uip->peek_proc;
-  else
-    fun = uip->read_proc;
 
   while (1) {
     int nb;
@@ -971,7 +993,7 @@ user_get_or_peek_bytes(Scheme_Input_Port *port,
 
     /* Call the read/peek function: */
     val = scheme_apply(fun, peek ? 3 : 1, a);
-
+    
     if ((size <= MAX_USER_INPUT_REUSE_SIZE)
 	&& (SCHEME_INTP(val) || SCHEME_EOFP(val) || SCHEME_PROCP(val))) {
       uip->reuse_str = bstr;
@@ -1375,7 +1397,15 @@ user_write_bytes(Scheme_Output_Port *port, const char *str, intptr_t offset, int
   int n, re_enable_break;
   Scheme_Cont_Frame_Data cframe;
 
-  if (enable_break)
+  if (SCHEME_OUTPUT_PORTP(uop->write_proc)) {
+    return scheme_redirect_write_bytes(scheme_output_port_record(uop->write_proc),
+                                       str, offset, len, 
+                                       rarely_block, enable_break);
+  }
+
+  if (rarely_block)
+    re_enable_break = 0;
+  else if (enable_break)
     re_enable_break = 1;
   else
     re_enable_break = scheme_can_break(scheme_current_thread);
@@ -1512,7 +1542,16 @@ user_write_special (Scheme_Output_Port *port, Scheme_Object *v, int nonblock)
   int re_enable_break;
   Scheme_Cont_Frame_Data cframe;
 
-  re_enable_break = scheme_can_break(scheme_current_thread);
+  if (SCHEME_OUTPUT_PORTP(uop->write_special_proc)) {
+    return scheme_redirect_write_special(scheme_output_port_record(uop->write_special_proc),
+                                         v,
+                                         nonblock);
+  }
+
+  if (nonblock)
+    re_enable_break = 0;
+  else
+    re_enable_break = scheme_can_break(scheme_current_thread);
 
   a[0] = v;
   a[1] = (nonblock ? scheme_true : scheme_false);
@@ -2223,9 +2262,18 @@ make_input_port(int argc, Scheme_Object *argv[])
   Scheme_Input_Port *ip;
   User_Input_Port *uip;
   Scheme_Object *name;
+  int read_port, peek_port;
 
-  scheme_check_proc_arity("make-input-port", 1, 1, argc, argv); /* read */
-  scheme_check_proc_arity2("make-input-port", 3, 2, argc, argv, 1); /* peek */
+  read_port = SCHEME_INPUT_PORTP(argv[1]);
+  if (!read_port
+      && !scheme_check_proc_arity(NULL, 1, 1, argc, argv)) { /* read */
+    scheme_wrong_contract("make-input-port", "(or/c (procedure-arity-includes/c 1) input-port?)", 1, argc, argv);
+  }
+  peek_port = SCHEME_INPUT_PORTP(argv[2]);
+  if (!peek_port
+      && !scheme_check_proc_arity2(NULL, 3, 2, argc, argv, 1)) { /* peek */
+    scheme_wrong_contract("make-input-port", "(or/c (procedure-arity-includes/c 3) input-port?)", 2, argc, argv);
+  }
   scheme_check_proc_arity("make-input-port", 0, 3, argc, argv); /* close */
   if (argc > 4)
     scheme_check_proc_arity2("make-input-port", 0, 4, argc, argv, 1); /* progress-evt */
@@ -2235,18 +2283,33 @@ make_input_port(int argc, Scheme_Object *argv[])
     scheme_check_proc_arity2("make-input-port", 0, 6, argc, argv, 1); /* location */
   if (argc > 7)
     scheme_check_proc_arity("make-input-port", 0, 7, argc, argv); /* count-lines! */
-  if (argc > 8) { /* buffer-mode */
+  if (argc > 8) { /* position */
     if (!((SCHEME_INTP(argv[8]) && SCHEME_INT_VAL(argv[8]) > 0)
-	  || (SCHEME_BIGNUMP(argv[8]) && SCHEME_BIGPOS(argv[8]))))
-      scheme_wrong_contract("make-input-port", "exact-positive-integer?", 8, argc, argv);
+	  || (SCHEME_BIGNUMP(argv[8]) && SCHEME_BIGPOS(argv[8]))
+          || SCHEME_FALSEP(argv[8])
+          || scheme_check_proc_arity(NULL, 0, 8, argc, argv)
+          || SCHEME_INPUT_PORTP(argv[8])
+          || SCHEME_OUTPUT_PORTP(argv[8])))
+      scheme_wrong_contract("make-input-port", "(or/c exact-positive-integer? port? #f (-> (or/c exact-positive-integer? #f)))", 8, argc, argv);
   }
-  if (argc > 9) {
+  if (argc > 9) { /* buffer-mode */
     if (SCHEME_TRUEP(argv[9])
 	&& !scheme_check_proc_arity(NULL, 0, 9, argc, argv)
 	&& !scheme_check_proc_arity(NULL, 1, 9, argc, argv))
       scheme_wrong_contract("make-input-port", "(case-> (-> any)  (any/c . -> . any))", 9, argc, argv);
   }
   name = argv[0];
+
+  /* Shortcut ports for read & peek must be consistent: */
+  if (!!read_port != !!peek_port) {
+    scheme_contract_error("make-input-port",
+                          (read_port
+                           ? "read argument is an input port, but peek argument is not a port"
+                           : "read argument is not an input port, but peek argument is a port"),
+                          "read argument", 1, argv[1],
+                          "peek argument", 1, argv[2],
+                          NULL);
+  }
 
   /* It makes no sense to supply progress-evt without peek: */
   if ((argc > 5) && SCHEME_FALSEP(argv[2]) && !SCHEME_FALSEP(argv[4]))
@@ -2316,8 +2379,12 @@ make_input_port(int argc, Scheme_Object *argv[])
   if (argc > 8) {
     if (SCHEME_INTP(argv[8]))
       ip->p.position = (SCHEME_INT_VAL(argv[8]) - 1);
-    else
+    else if (SCHEME_FALSEP(argv[8]) || SCHEME_BIGNUMP(argv[8]))
       ip->p.position = -1;
+    else {
+      ip->p.position = 0;
+      ip->p.position_redirect = argv[8];
+    }
   }
 
   if (uip->buffer_mode_proc)
@@ -2339,10 +2406,22 @@ make_output_port (int argc, Scheme_Object *argv[])
   if (!scheme_is_evt(argv[1])) {
     scheme_wrong_contract("make-output-port", "evt?", 1, argc, argv);
   }
-  scheme_check_proc_arity("make-output-port", 5, 2, argc, argv); /* write */
+  if (!SCHEME_OUTPUT_PORTP(argv[2])
+      && !scheme_check_proc_arity(NULL, 5, 2, argc, argv)) { /* write */
+    scheme_wrong_contract("make-output-port", 
+                          "(or/c (procedure-arity-includes/c 5) output-port?)", 
+                          2, argc, argv);
+  }
   scheme_check_proc_arity("make-output-port", 0, 3, argc, argv); /* close */
-  if (argc > 4)
-    scheme_check_proc_arity2("make-output-port", 3, 4, argc, argv, 1); /* write-special */
+  if (argc > 4) {
+    if (!SCHEME_FALSEP(argv[4])
+        && !SCHEME_OUTPUT_PORTP(argv[2])
+        && !scheme_check_proc_arity(NULL, 3, 4, argc, argv)) { /* write-special */
+      scheme_wrong_contract("make-output-port", 
+                            "(or/c (procedure-arity-includes/c 3) output-port?)", 
+                            4, argc, argv);
+    }
+  }
   if (argc > 5)
   scheme_check_proc_arity2("make-output-port", 3, 5, argc, argv, 1); /* write-evt */
   if (argc > 6)
@@ -2353,8 +2432,12 @@ make_output_port (int argc, Scheme_Object *argv[])
     scheme_check_proc_arity("make-output-port", 0, 8, argc, argv); /* count-lines! */
   if (argc > 9) {
     if (!((SCHEME_INTP(argv[9]) && SCHEME_INT_VAL(argv[9]) > 0)
-	  || (SCHEME_BIGNUMP(argv[9]) && SCHEME_BIGPOS(argv[9]))))
-      scheme_wrong_contract("make-output-port", "positive-exact-integer?", 9, argc, argv);
+	  || (SCHEME_BIGNUMP(argv[9]) && SCHEME_BIGPOS(argv[9]))
+          || SCHEME_FALSEP(argv[9])
+          || scheme_check_proc_arity(NULL, 0, 9, argc, argv)
+          || SCHEME_INPUT_PORTP(argv[9])
+          || SCHEME_OUTPUT_PORTP(argv[9])))
+      scheme_wrong_contract("make-output-port", "(or/c exact-positive-integer? port? #f (-> (or/c exact-positive-integer? #f)))", 9, argc, argv);
   }
   if (argc > 10) { /* buffer-mode */
     if (SCHEME_TRUEP(argv[10])
@@ -2432,12 +2515,16 @@ make_output_port (int argc, Scheme_Object *argv[])
     scheme_set_port_location_fun((Scheme_Port *)op, user_output_location);
   if (uop->count_lines_proc)
     scheme_set_port_count_lines_fun((Scheme_Port *)op, user_output_count_lines);
-
+  
   if (argc > 9) {
     if (SCHEME_INTP(argv[9]))
       op->p.position = (SCHEME_INT_VAL(argv[9]) - 1);
-    else
+    else if (SCHEME_FALSEP(argv[9]) && !SCHEME_BIGNUMP(argv[9]))
       op->p.position = -1;
+    else {
+      op->p.position = 0;
+      op->p.position_redirect = argv[9];
+    }
   }
 
   if (uop->buffer_mode_proc)

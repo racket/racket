@@ -1,10 +1,13 @@
 #lang scribble/doc
-@(require scribble/manual "utils.rkt"
+@(require scribble/manual 
+          (except-in "utils.rkt" url)
           "struct-hierarchy.rkt" 
           (for-label scribble/manual-struct
                      file/convertible
                      setup/main-collects
-                     scriblib/render-cond))
+                     scriblib/render-cond
+                     xml/xexpr
+                     net/url-structs))
 
 @title[#:tag "core"]{Structures And Processing}
 
@@ -134,7 +137,7 @@ A @deftech{block} is either a @techlink{table}, an
 
                    @item{A symbol content is either @racket['mdash],
                          @racket['ndash], @racket['ldquo],
-                         @racket['lsquo], @racket['rsquo], @racket['larr],
+                         @racket['lsquo], @racket['rdquo], @racket['rsquo], @racket['larr],
                          @racket['rarr], or @racket['prime]; it is
                          rendered as the corresponding HTML entity
                          (even for Latex output).}
@@ -407,12 +410,20 @@ The recognized @tech{style properties} are as follows:
        @racket[""] to suppress a date in an output document.}
 
   @item{@racket[body-id] structure --- Generated HTML uses the given
-        string @tt{id} attribute of the @tt{body} tag; this style can
+        string @tt{id} attribute of the @tt{<body>} tag; this style can
         be set separately for parts that start different HTML pages,
         otherwise it is effectively inherited by sub-parts; the
         default is @racket["scribble-racket-lang.org"], but
         @exec{setup-plt} installs @racket["doc-racket-lang.org"] as the
         @tt{id} for any document that it builds.}
+
+ @item{@racket[attributes] structure --- Provides additional HTML
+       attributes for the @tt{<html>} tag when the part corresponds to
+       its own HTML page.}
+
+ @item{@racket[head-extra] structure --- Provides additional HTML
+       content for the @tt{<head>} tag when the part corresponds to
+       its own HTML page.}
 
 ]
 
@@ -490,6 +501,8 @@ The currently recognized @tech{style properties} are as follows:
 
 @defstruct[table ([style style?]
                   [blockss (listof (listof (or/c block? (one-of/c 'cont))))])]{
+
+See also the @racket[tabular] function.
 
 A @techlink{table} has, roughly, a list of list of blocks. A cell in
 the table can span multiple columns by using @racket['cont] instead of
@@ -1384,16 +1397,25 @@ script alternative to the element content.}
 
 @defstruct[css-addition ([path (or/c path-string? 
                                      (cons/c 'collects (listof bytes?))
+                                     url?
                                      bytes?)])]{
 
 Used as a @tech{style property} to supply a CSS file (if @racket[path]
-is a path, string, or list) or content (if @racket[path] is a byte
+is a path, string, or list), URL (if @racket[path] is a @racket[url]) or content (if @racket[path] is a byte
 string) to be referenced or included in the generated HTML. This
 property can be attached to any style, and all additions are collected
 to the top of the generated HTML page.
 
 The @racket[path] field can be a result of
 @racket[path->main-collects-relative].}
+
+
+@defstruct[js-addition ([path (or/c path-string? 
+                                    (cons/c 'collects (listof bytes?))
+                                    url?
+                                    bytes?)])]{
+
+Like @racket[css-addition], but for a Javascript file instead of a CSS file.}
 
 
 @defstruct[body-id ([value string?])]{
@@ -1413,6 +1435,11 @@ Like @racket[latex-defaults], but use for the
 @exec{scribble} command-line tool's @DFlag{html} and
 @DFlag{htmls} modes.}
 
+
+@defstruct[head-extra ([xexpr xexpr/c])]{
+
+For a @racket[part] that corresponds to an HTML page, adds content to
+the @tt{<head>} tag.}
 
 @; ----------------------------------------
 
@@ -1456,7 +1483,9 @@ be a result of @racket[path->main-collects-relative].
 Languages (used with @hash-lang[]) like
 @racketmodname[scribble/manual] and @racketmodname[scribble/sigplan]
 add this property to a document to specify appropriate files for Latex
-rendering.}
+rendering.
+
+See also @racketmodname[scribble/latex-prefix].}
 
 
 @defstruct[latex-auto-extra-files ([paths (listof (or/c path-string? 

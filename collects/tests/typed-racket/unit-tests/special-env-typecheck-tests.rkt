@@ -17,7 +17,7 @@
          racket/file racket/port
          (for-syntax syntax/kerncase syntax/parse racket/syntax
                      (types abbrev numeric-tower utils)
-                     (utils mutated-vars)
+                     (utils mutated-vars) (env mvar-env)
                      (utils tc-utils) (typecheck typechecker))
          typed-racket/base-env/prims
          typed-racket/base-env/base-types
@@ -34,8 +34,8 @@
      (quasisyntax/loc stx
        (check-tc-result-equal? (format "~a ~a" #,(syntax-line stx) 'a)
                                #,(let ([ex (local-expand #'a 'expression null)])
-                                   (parameterize ([mutated-vars (find-mutated-vars ex)])
-                                     (tc-expr ex))) 
+	                           (find-mutated-vars ex mvar-env)
+                                   (tc-expr ex))
                                #,(syntax-local-eval #'b)))]))
 
 (define (typecheck-special-tests)

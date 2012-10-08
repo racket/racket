@@ -3,6 +3,7 @@
 (require racket/contract/base)
 
 (define level/c (or/c 'fatal 'error 'warning 'info 'debug))
+(define log-spec/c (listof (or/c symbol? #f)))
 (define log-message/c (vector/c level/c string? any/c))
 
 ;; helper used below
@@ -33,8 +34,8 @@
                   [done? #:mutable]))
 
 ;; [level] -> listener
-(define (start-recording #:level [level 'debug])
-  (let* ([receiver     (make-log-receiver (current-logger) level)]
+(define (start-recording . log-spec)
+  (let* ([receiver     (apply make-log-receiver (current-logger) log-spec)]
          [stop-chan    (make-channel)]
          [cur-listener (listener stop-chan #f '() #f)]
          [t (receiver-thread
@@ -56,45 +57,38 @@
   (reverse (listener-rev-messages cur-listener)))
 
 (provide/contract
- [start-recording (->* () (#:level level/c) listener?)]
+ [start-recording (->* () #:rest log-spec/c listener?)]
  [stop-recording  (-> listener? (listof log-message/c))])
 
 
-(define (with-intercepted-logging interceptor proc #:level [level 'debug])
+(define (with-intercepted-logging interceptor proc . log-spec)
   (let* ([orig-logger (current-logger)]
-         ;; the new logger is unrelated to the original, to avoid getting
-         ;; messages sent to it that didn't originate from proc
-         [logger      (make-logger)]
-         [receiver    (make-log-receiver logger level)]
+         ;; We use a local logger to avoid getting messages that didn't
+         ;; originate from proc. Since it's a child of the original logger,
+         ;; the rest of the program still sees the log entries.
+         [logger      (make-logger #f orig-logger)]
+         [receiver    (apply make-log-receiver logger log-spec)]
          [stop-chan   (make-channel)]
-         [t (receiver-thread
-             receiver stop-chan
-             (lambda (l)
-               ;; we want to send l to the original logger, so that
-               ;; the rest of the system can see it too.
-               (log-message orig-logger
-                            (vector-ref l 0)  ; level
-                            (vector-ref l 1)  ; message
-                            (vector-ref l 2)) ; data
-               (interceptor l)))])
+         [t           (receiver-thread receiver stop-chan interceptor)])
     (begin0
         (parameterize ([current-logger logger])
           (proc))
       (channel-put stop-chan 'stop) ; stop the receiver thread
       (thread-wait t))))
 
-(define (with-logging-to-port port proc #:level [level 'debug])
-  (with-intercepted-logging
-   (lambda (l) (displayln (vector-ref l 1) ; actual message
-                          port))
-   proc #:level level))
+(define (with-logging-to-port port proc . log-spec)
+  (apply with-intercepted-logging
+         (lambda (l) (displayln (vector-ref l 1) ; actual message
+                                port))
+         proc
+         log-spec))
 
 (provide/contract [with-intercepted-logging
                    (->* ((-> log-message/c any)
                          (-> any))
-                        (#:level level/c)
+                        #:rest log-spec/c
                         any)]
                   [with-logging-to-port
                    (->* (output-port? (-> any))
-                        (#:level level/c)
+                        #:rest log-spec/c
                         any)])

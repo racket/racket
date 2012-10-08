@@ -55,20 +55,32 @@
     (make-output-port
      (object-name p)
      p
+     p ; `write' just redirects to `p'
+     ;; Here's the slow way to redirect:
+     #;
      (lambda (s start end nonblock? breakable?)
-       (let ([v ((if nonblock? 
-                     write-bytes-avail*
-                     (if breakable?
-                         write-bytes-avail/enable-break
-                         write-bytes-avail))
-                 s p start end)])
-         (if (and (zero? v) (not (= start end)))
-             (wrap-evt p (lambda (x) #f))
-             v)))
+       (if (= start end)
+           (parameterize-break
+            breakable?
+            (flush-output p)
+            0)
+           (let ([v (if nonblock? 
+                        (write-bytes-avail* s p start end)
+                        (if breakable?
+                            (parameterize-break
+                             #t
+                             (write-bytes s p start end))
+                            (write-bytes s p start end)))])
+             (if (and (zero? v) (not (= start end)))
+                 (wrap-evt p (lambda (x) #f))
+                 v))))
      (lambda ()
        (when close?
          (close-output-port p)))
      (and (port-writes-special? p)
+          p ; `write-special' just redirects to `p'
+          ;; Here's the slow way to redirect:
+          #;
           (lambda (special nonblock? breakable?)
             ((if nonblock? 
                  write-special-avail*
@@ -87,7 +99,15 @@
             (write-special-evt spec p)))
      location-proc
      count-lines!-proc
-     pos)))
+     (let ([delta (- pos (or (file-position* p) pos))])
+       (if (= delta 1)
+           p
+           (lambda ()
+             (define v (file-position* p))
+             (and v (+ delta v)))))
+     (case-lambda
+      [(mode) (file-stream-buffer-mode p mode)]
+      [() (file-stream-buffer-mode p)]))))
 
 (define (copy-port src dest . dests)
   (unless (input-port? src)
