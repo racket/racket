@@ -1,26 +1,24 @@
 #lang typed/racket/base
 
 (require "base.rkt"
+         "flonum.rkt"
+         "bigfloat.rkt"
          "special-functions.rkt"
          "distributions.rkt"
          "statistics.rkt"
-         "flonum.rkt"
-         "bigfloat.rkt"
-         "array.rkt"
-         "matrix.rkt"
+         "number-theory.rkt"
          "vector.rkt"
-         "polynomial.rkt"
-         "number-theory.rkt")
+         "array.rkt"
+         "matrix.rkt")
 
 (provide (all-from-out
           "base.rkt"
+          "flonum.rkt"
+          "bigfloat.rkt"
           "special-functions.rkt"
           "distributions.rkt"
           "statistics.rkt"
-          "flonum.rkt"
-          "bigfloat.rkt"
-          "array.rkt"
-          "matrix.rkt"
+          "number-theory.rkt"
           "vector.rkt"
-          "polynomial.rkt"
-          "number-theory.rkt"))
+          "array.rkt"
+          "matrix.rkt"))
