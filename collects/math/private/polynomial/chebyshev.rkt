@@ -76,7 +76,7 @@
          (define y2 (num* y 2.num))
          (let: loop : A ([i : Nonnegative-Fixnum  i]
                          [c : A  c]
-                         [d : A  c]
+                         [d : A  0.num]
                          [dd : A  0.num])
            (cond [(zero? i)  (num+ (num* y d) (num- (num/ c 2.num) dd))]
                  [else
@@ -123,6 +123,6 @@
            (define y (fl/ (fl- (fl+ z z) (fl+ lower upper))
                           (fl- upper lower)))
            (define y2 (fl+ y y))
-           (let ([d   c0]
-                 [dd  (fl- c0 c0)])
+           (let ([d   0.0]
+                 [dd  0.0])
              (chebyshev-iter y y2 d dd (c ...))))))]))
