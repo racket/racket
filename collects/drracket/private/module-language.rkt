@@ -125,6 +125,7 @@
       
       (define/private (get-ns str)
         (define ev (make-evaluator 'racket/base))
+        (ev `(current-inspector ,(current-inspector)))
         (ev `(parameterize ([read-accept-reader #t])
                (define stx (read-syntax "here" (open-input-string ,str)))
                (define modname
