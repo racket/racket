@@ -2,6 +2,10 @@
 
 (require typed/private/utils)
 
+(dt Frame% (Class ()
+                  ([label String])
+                  ([show (Any -> Void)])))
+
 (dt Bitmap% (Class (Real Real Boolean)
                    ()
                    ([get-width (-> Integer)]
@@ -68,11 +72,12 @@
 		  [get-text (Integer (U Integer 'eof) -> String)]
 		  [insert (String Number Number -> Void)])))
 
-(dt Button% (Class () () ()))
+(dt Button% (Rec B% (Class (String (Instance Frame%) (B% Any -> Any)) () ())))
 (dt Event% (Class () () ()))
 
 (require/typed/provide
- scheme/gui
+ racket/gui
+ [frame% Frame%]
  [button% Button%]
  [event% Event%]
  [the-font-list (Instance Font-List%)]
@@ -88,6 +93,7 @@
  [bitmap% Bitmap%]
  [color% Color%]
  [snip% Snip%]
+ [message-box (String String -> (U 'ok 'cancel 'yes 'no))]
  [open-input-text-editor
   ((Instance Text%) Integer (U 'end Integer) ((Instance Snip%) -> (Instance Snip%)) (Instance Text%) Boolean -> Input-Port)])
 
