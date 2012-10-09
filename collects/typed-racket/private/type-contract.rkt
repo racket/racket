@@ -299,6 +299,8 @@
                                 #,(contract-kind->keyword (current-contract-kind)))])
                    n*))))]
         [(Value: #f) #'false/c]
+        [(Instance: (? Mu? t))
+         (t->c (make-Instance (resolve-once t)))]
         [(Instance: (Class: _ _ (list (list name fcn) ...)))
          (set-impersonator!)
          (with-syntax ([(fcn-cnts ...) (for/list ([f fcn]) (t->c/fun f #:method #t))]
