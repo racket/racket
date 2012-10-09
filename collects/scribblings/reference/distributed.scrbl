@@ -188,7 +188,7 @@ Spawns a new remote node at @racket[hostname] and returns a @racket[remote-node%
            [#:racket-path racket-path string-path? (racket-path)]
            [#:ssh-bin-path ssh-path string-path? (ssh-bin-path)]
            [#:distributed-launch-path launcher-path string-path? (path->string distributed-launch-path)]
-           [#:use-current-ports use-current-ports #t])  (is-a?/c remote-node%)]{
+           [#:use-current-ports use-current-ports boolean? #t])  (is-a?/c remote-node%)]{
 
 Like @racket[spawn-remote-racket-node], but the @racket[current-output-port] and @racket[current-error-port]
 are used as the standard ports for the spawned process instead of new pipe ports.}
