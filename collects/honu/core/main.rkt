@@ -24,6 +24,7 @@
                                    [honu-function function]
                                    [honu-function fun]
                                    [honu-var var]
+                                   [honu-syntax-var syntax_var]
                                    [honu-== ==]
                                    [honu-not-equal !=]
                                    [honu--> %arrow]
