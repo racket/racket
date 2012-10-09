@@ -258,6 +258,20 @@ cell. A @racket['cont] must not appear as the first cell in a row.
 
 The @racket[style] argument is handled the same as @racket[para].}
 
+Examples:
+@codeblock[#:keep-lang-line? #f]|{
+#lang scribble/manual
+@tabular[#:sep @hspace[1]
+         (list (list "soup" "gazpacho")
+               (list "soup" "tonjiru"))]
+
+@tabular[#:style 'boxed
+         (list (list @bold{recipe}   @bold{vegetable})
+               (list "caldo verde"   "kale")
+               (list "kinpira gobō"  "burdock")
+               (list "makizushi"     'cont))]
+}|
+
 @defproc[(verbatim [#:indent indent exact-nonnegative-integer? 0] [str string?] ...+)
          block?]{
 
