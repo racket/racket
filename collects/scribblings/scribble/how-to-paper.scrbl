@@ -141,7 +141,7 @@ directory as @filepath{mouse.scrbl}. In @filepath{milk.scrbl}, put
             That ``squeak'' was the mouse asking for milk...
           }|
 
-and in @filepath{straw.scbl}, put
+and in @filepath{straw.scrbl}, put
 
          @samplemod|{
             #lang scribble/base
