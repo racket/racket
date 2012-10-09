@@ -179,7 +179,7 @@
 ;; Error tests
 
 (terx (template (1 ...))
-      #rx"no pattern variables in term before ellipsis")
+      #rx"no pattern variables before ellipsis in template")
 
 (terx (template (uu ...))
       #rx"too many ellipses in template")
@@ -188,7 +188,7 @@
       #rx"too many ellipses in template")
 
 (terx (template aa)
-      #rx"pattern variable used at wrong ellipsis depth")
+      #rx"missing ellipses with pattern variable in template")
 
 (terx (template (?@))
       #rx"illegal use")
@@ -199,7 +199,7 @@
 (define-template-metafunction (bad-mf stx) 123)
 
 (terx (template (bad-mf))
-      #rx"result of metafunction was not syntax")
+      #rx"result of template metafunction was not syntax")
 
 (terx (with-syntax ([(bb ...) #'(y z)]) (template ((aa bb) ...)))
       #rx"incompatible ellipsis match counts")
