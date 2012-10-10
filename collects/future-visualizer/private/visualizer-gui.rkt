@@ -223,7 +223,7 @@
                                                                                  y 
                                                                                  (graph-layout-nodes creation-tree-layout))) 
                                                      (if (not hovered-graph-node) #t hovered-graph-node)]))]
-                                 #;[click-handler (λ (x y vregion)
+                                 [click-handler (λ (x y vregion)
                                                   (define fid (find-fid-for-coords 
                                                                x y (graph-layout-nodes creation-tree-layout)
                                                                vregion))
