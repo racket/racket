@@ -178,7 +178,7 @@
                                                    [else 
                                                     (set! hover-seg seg) 
                                                     (post-event listener-table 'segment-hover timeline-panel seg) 
-                                                    seg])))]
+                                                    (if (not seg) #t seg)])))]
                               [click-handler (λ (x y vregion) 
                                                (let ([seg (find-seg-for-coords x y timeline-mouse-index)]) 
                                                  (set! tacked-seg seg)  
@@ -222,7 +222,7 @@
                                                            (find-node-for-coords x 
                                                                                  y 
                                                                                  (graph-layout-nodes creation-tree-layout))) 
-                                                     hovered-graph-node]))]
+                                                     (if (not hovered-graph-node) #t hovered-graph-node)]))]
                                  #;[click-handler (λ (x y vregion)
                                                   (define fid (find-fid-for-coords 
                                                                x y (graph-layout-nodes creation-tree-layout)
