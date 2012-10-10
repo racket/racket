@@ -42,7 +42,7 @@
     enter-list exit-list
     enter-check exit-check
     local-post exit-local exit-local/expr
-    local-bind enter-bind exit-bind
+    local-bind enter-bind exit-bind exit-local-bind
     local-value-result local-value-binding
     phase-up module-body
     renames-lambda
@@ -173,8 +173,9 @@
      (#:args e1 rs next)
      [(enter-macro ! macro-pre-transform (? LocalActions)
                    macro-post-transform ! exit-macro)
-      (make mrule e1 (and next (wderiv-e2 next)) rs $2
-            $3 $4 $5 $6 $7 next)])
+      (let ([e2 (and next (wderiv-e2 next))])
+        (make mrule e1 e2 rs $2
+              $3 $4 (and $5 (car $5)) $6 $7 next))])
 
     ;; Keyword resolution
     (Resolves
@@ -202,9 +203,9 @@
       (make local-lift-require (car $1) (cadr $1) (cddr $1))]
      [(lift-provide)
       (make local-lift-provide $1)]
-     [(local-bind ! rename-list next)
+     [(local-bind ! rename-list exit-local-bind)
       (make local-bind $1 $2 $3 #f)]
-     [(local-bind rename-list (? BindSyntaxes) next)
+     [(local-bind rename-list (? BindSyntaxes) exit-local-bind)
       (make local-bind $1 #f $2 $3)]
      [(track-origin)
       (make track-origin (car $1) (cdr $1))]
@@ -224,6 +225,10 @@
                 before null after #f mafter
                 (make p:stop mafter mafter null #f))
           #f after #f))]
+     [(local-mess)
+      ;; Represents subsequence of event stream incoherent due to
+      ;; jump (eg, macro catches exn raised from within local-expand).
+      (make local-mess $1)]
      ;; -- Not really local actions, but can occur during evaluation
      ;; called 'expand' (not 'local-expand') within transformer
      [(start (? EE)) #f]

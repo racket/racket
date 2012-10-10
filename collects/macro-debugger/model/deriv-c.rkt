@@ -47,6 +47,7 @@
 (define-struct track-origin (before after) #:transparent)
 (define-struct local-remark (contents) #:transparent)
   ;; contents : (listof (U string syntax))
+(define-struct local-mess (events) #:transparent)
 
 ;; A PrimDeriv is one of
 (define-struct (prule base) () #:transparent)

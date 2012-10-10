@@ -1,6 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base)
          racket/match
+         racket/format
          syntax/stx
          "../util/eomap.rkt"
          "deriv-util.rkt"
@@ -505,7 +506,17 @@
         ]]
     [(struct local-remark (contents))
      (R [#:reductions (list (walk/talk 'remark contents))])]
-
+    [(struct local-mess (events))
+     ;; FIXME: While it is not generally possible to parse tokens as one or more
+     ;; interrupted derivations (possibly interleaved with successful derivs),
+     ;; it should be possible to recover *some* information and display it.
+     (R [#:reductions
+         (let ([texts
+                (list (~a "Some expansion history has been lost due to a jump "
+                          "within expansion.")
+                      (~a "For example, a macro may have caught an "
+                          "exception coming from within a call to `local-expand'."))])
+           (list (walk/talk 'remark texts)))])]
     [#f
      (R)]))
 

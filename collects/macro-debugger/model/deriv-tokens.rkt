@@ -15,6 +15,7 @@
    EOF                  ; .
    enter-bind           ; .
    exit-bind            ; .
+   exit-local-bind      ; .
    IMPOSSIBLE           ; useful for error-handling clauses that have no
                         ; NoError counterpart
    top-non-begin        ; .
@@ -26,7 +27,7 @@
    resolve              ; identifier
    enter-macro          ; syntax
    macro-pre-transform  ; syntax
-   macro-post-transform ; syntax
+   macro-post-transform ; (cons syntax syntax)
    exit-macro           ; syntax
    enter-prim           ; syntax
    exit-prim            ; syntax
@@ -73,6 +74,7 @@
    local-value          ; identifier
    local-value-result   ; boolean
    local-value-binding  ; result of identifier-binding; added by trace.rkt, not expander
+   local-mess           ; (listof event)
    ))
 
 (define-tokens renames-tokens
@@ -113,6 +115,7 @@
     (#f  local-remark            ,token-local-remark)
     (#f  local-artificial-step   ,token-local-artificial-step)
     (#f  local-value-binding     ,token-local-value-binding)
+    (#f  local-mess              ,token-local-mess)
 
     ;; Standard signals
     (0   visit                   ,token-visit)
@@ -198,6 +201,7 @@
     (157 prepare-env)
     (158 prim-submodule)
     (159 prim-submodule*)
+    (160 exit-local-bind)
     ))
 
 (define (signal->symbol sig)
