@@ -136,16 +136,18 @@
   
   ;Build up items in the hierlist 
   (define block-node (send hlist-ctl new-list)) 
-  (send (send block-node get-editor) insert "Blocks" 0)
+  (send (send block-node get-editor) insert (format "Blocks (~a)" (trace-num-blocks the-trace)) 0)
   (for ([prim (in-list (sort (hash-keys (trace-block-counts the-trace)) > #:key (λ (x) (hash-ref (trace-block-counts the-trace) x))))]) 
     (define item (send block-node new-item)) 
     (send (send item get-editor) insert (format "~a (~a)" prim (hash-ref (trace-block-counts the-trace) prim))))
+  (send block-node open)
   
   (define sync-node (send hlist-ctl new-list)) 
-  (send (send sync-node get-editor) insert "Syncs" 0) 
+  (send (send sync-node get-editor) insert (format "Syncs (~a)" (trace-num-syncs the-trace)) 0) 
   (for ([prim (in-list (sort (hash-keys (trace-sync-counts the-trace)) > #:key (λ (x) (hash-ref (trace-sync-counts the-trace) x))))]) 
     (define item (send sync-node new-item)) 
     (send (send item get-editor) insert (format "~a (~a)" prim (hash-ref (trace-sync-counts the-trace) prim))))
+  (send sync-node open)
   
   (define right-panel (new panel:vertical-dragable% 
                           [parent main-panel] 
