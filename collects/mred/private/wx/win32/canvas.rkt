@@ -90,7 +90,8 @@
               is-auto-scroll? is-disabled-scroll?
               get-virtual-width get-virtual-height
               reset-auto-scroll
-              refresh-for-autoscroll)
+              refresh-for-autoscroll
+	      try-mouse)
 
      (define hscroll? (or (memq 'hscroll style)
                           (memq 'auto-hscroll style)))
@@ -238,7 +239,10 @@
         [else (super wndproc w msg wParam lParam default)]))
      
      (define/override (wndproc-for-ctlproc w msg wParam lParam default)
-       (default w msg wParam lParam))
+       ;; act on clicks for a combo field:
+       (if (try-mouse w msg wParam lParam)
+	   0
+	   (default w msg wParam lParam)))
      
      (define dc (new dc% [canvas this] [transparent? (memq 'transparent style)]))
      (send dc start-backing-retained)
