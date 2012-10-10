@@ -173,7 +173,7 @@
   (let* ([lens (for/list ([e (in-list vs)] [i (in-naturals)])
                  (if (vector? e)
                    (unsafe-vector-length e)
-                   (raise-argument-error 'vector-append "vector?" e i)))]
+                   (apply raise-argument-error 'vector-append "vector?" i vs)))]
          [new-v (make-vector (apply + lens))])
     (let loop ([start 0] [lens lens] [vs vs])
       (when (pair? lens)
