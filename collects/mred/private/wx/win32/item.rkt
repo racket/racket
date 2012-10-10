@@ -20,7 +20,6 @@
   (class %
     (inherit on-set-focus
              on-kill-focus
-             try-mouse
              wndproc)
 
     (init-field [callback void])
