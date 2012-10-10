@@ -184,7 +184,8 @@
                           (syntax (syntax-parameterize
                                     ([reveal (syntax-rules ()
                                                [(reveal n pict)
-                                                (show pict (>= i n))])])
+                                                (show pict (>= i n))]
+                                               [(reveal n) (>= i n)])])
                                     (slide stuff ...))))))
        (with-syntax ([(slides ...) slides])
          #'(begin slides ...)))]))
