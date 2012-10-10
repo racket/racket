@@ -340,6 +340,8 @@
   (when (null? log-output) 
     (error 'build-trace "Empty timeline in log-output"))
   (define-values (fst last) (first-and-last-fevents log-output))
+  (when (and (not fst) (not last)) ;If the log has no future events (only GC's) no timeline
+    (error 'build-trace "Empty timeline in log-output"))
   (define start-time (future-event-time fst)) 
   (define end-time (future-event-time last))
   (define data (organize-output log-output start-time end-time))

@@ -97,7 +97,7 @@
   (values (min screen-w DEF-WINDOW-WIDTH) 
           (min screen-h DEF-WINDOW-HEIGHT)))
 
-(define COMFORTABLE-TL-LEN 10000)
+(define COMFORTABLE-TL-LEN 5000)
 
 (define (show-visualizer #:timeline [timeline #f]) 
   (define the-tl (if timeline timeline (timeline-events)))
