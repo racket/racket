@@ -77,7 +77,7 @@
       (add-flags '((all-users #t)))]
      [("--mode") mode "Select a compilation mode"
       (add-flags `((compile-mode ,mode)))]
-     [("--doc-pdf") dir "Write doc PDF to <dir>"
+     [("--doc-pdf") dir "Build doc PDFs, write to <dir>"
       (add-flags `((doc-pdf-dest ,dir)))]
      [("-l") => (lambda (flag . collections)
                   (check-collections short-name collections)
