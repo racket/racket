@@ -52,7 +52,7 @@
   (check-equal? (length in-vr) 5))
 
 ;Trace compilation tests
-(let* ([future-log (list (indexed-future-event 0 (future-event 0 0 'create 0 #f 0)) 
+(let* ([future-log (list (indexed-future-event 0 (future-event #f 0 'create 0 #f 0)) 
                          (indexed-future-event 1 (future-event 0 1 'start-work 1 #f #f)) 
                          (indexed-future-event 2 (future-event 0 1 'end-work 2 #f #f)) 
                          (indexed-future-event 3 (future-event 0 0 'complete 3 #f #f)))] 

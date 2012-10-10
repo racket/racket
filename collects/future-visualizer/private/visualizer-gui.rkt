@@ -22,10 +22,9 @@
           [(equal? (process-timeline-proc-id tl) 'gc) 
            (values 0 (frame-info-adjusted-height frameinfo))] 
           [else 
-           (define midy (calc-row-mid-y (process-timeline-proc-index tl) 
-                                        (process-timeline-proc-id tl) 
+           (define midy (calc-row-mid-y (process-timeline-proc-index tl)
                                         (frame-info-row-height frameinfo) 
-                                        (length (trace-proc-timelines tr)))) 
+                                        tr)) 
            (values (floor (- midy (/ MIN-SEG-WIDTH 2))) 
                    (floor (+ midy (/ MIN-SEG-WIDTH 2))))]))
         (interval-map-set! ym 
@@ -98,10 +97,19 @@
   (values (min screen-w DEF-WINDOW-WIDTH) 
           (min screen-h DEF-WINDOW-HEIGHT)))
 
+(define COMFORTABLE-TL-LEN 10000)
+
 (define (show-visualizer #:timeline [timeline #f]) 
-  (define the-tl (if timeline timeline (timeline-events))) 
+  (define the-tl (if timeline timeline (timeline-events)))
+  (printf "trace length: ~a\n" (length the-tl))
   (when (empty? the-tl) 
     (error 'show-visualizer "No future log messages found."))
+  (when (> (length the-tl) COMFORTABLE-TL-LEN)
+    (log-warning (format 
+                  "show-visualizer: truncating log to ~a, dropped ~a messages"
+                  COMFORTABLE-TL-LEN
+                  (- (length the-tl) COMFORTABLE-TL-LEN)))
+    (set! the-tl (take the-tl COMFORTABLE-TL-LEN)))
   (define the-trace (build-trace the-tl))  
   (define-values (winw winh) (get-window-size))
   ;The event segment we are currently mousing over

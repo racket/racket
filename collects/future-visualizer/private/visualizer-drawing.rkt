@@ -152,17 +152,15 @@
                               x))) 
   (- (- w (- max-x-extent w)) MIN-SEG-WIDTH))
 
-;;calc-row-mid-y : uint (or uint symbol) uint uint -> uint
-(define (calc-row-mid-y proc-index proc-id row-height num-tls)
+;;calc-row-mid-y : uint uint trace -> uint
+(define (calc-row-mid-y proc-index row-height tr)
   (define PADDING 2)
-  ;GC events span the entire height of the execution timeline
-  (cond
-    [(symbol? proc-id) 0] 
-    [else 
-     (floor (- (+ (* (- proc-index 1) 
-                     row-height) 
-                  (/ row-height 2)) 
-               PADDING))]))
+  (floor (- (+ (* (if (> (trace-num-gcs tr) 0) 
+                      (- proc-index 1) 
+                      proc-index)
+                  row-height) 
+               (/ row-height 2)) 
+            PADDING)))
 
 ;Gets the center of a circle with (xleft, ytop) as the top-left coordinate.
 ;;calc-center : uint uint uint -> (values uint uint)
@@ -351,7 +349,6 @@
       (define last-right-edge (if is-gc-evt? 
                                   largest-x 
                                   (vector-ref last-right-edges (event-proc-index evt))))
-      #;(define last-right-edge (vector-ref last-right-edges (event-proc-index evt)))
       (define wanted-offset (+ delta (* DEFAULT-TIMELINE-WIDTH
                                         (inexact->exact 
                                          (/ (- (event-start-time evt) (trace-start-time tr))
@@ -367,7 +364,7 @@
                      [else MIN-SEG-WIDTH]))
       (define seg (segment evt 
                            (round offset) 
-                           (- (calc-row-mid-y (event-proc-index evt) (event-proc-id evt) TIMELINE-ROW-HEIGHT num-tls) radius)
+                           (- (calc-row-mid-y (event-proc-index evt) TIMELINE-ROW-HEIGHT tr) radius)
                            segw
                            segh 
                            (get-event-color (event-type evt)) 
@@ -451,17 +448,13 @@
             0 
             0
             (for/fold ([pct base]) ([tl (in-list (filter (λ (tline) 
-                                                           (cond 
-                                                             [(equal? (process-timeline-proc-id tline) 'gc) #f] 
-                                                             [else 
-                                                              (define midy (calc-row-mid-y (process-timeline-proc-index tline) 
-                                                                                           (process-timeline-proc-id tline)
-                                                                                           (frame-info-row-height finfo) 
-                                                                                           num-tls))
-                                                              (define topy (- midy (frame-info-row-height finfo))) 
-                                                              (define boty (+ midy (frame-info-row-height finfo))) 
-                                                              (or (in-viewable-region-vert? vregion topy) 
-                                                                  (in-viewable-region-vert? vregion boty))]))                                                           
+                                                           (define midy (calc-row-mid-y (process-timeline-proc-index tline)
+                                                                                        (frame-info-row-height finfo) 
+                                                                                        tr))
+                                                           (define topy (- midy (frame-info-row-height finfo))) 
+                                                           (define boty (+ midy (frame-info-row-height finfo))) 
+                                                           (or (in-viewable-region-vert? vregion topy) 
+                                                               (in-viewable-region-vert? vregion boty)))                                                           
                                                          (trace-proc-timelines tr)))])
               (let* ([line-coords (list-ref (frame-info-process-line-coords finfo) 
                                            (process-timeline-proc-index tl))]
@@ -480,7 +473,7 @@
                                (- line-end vregion-start)] 
                               [else vregion-end])]
                      [index (process-timeline-proc-index tl)]
-                     [proc-name (if (= 1 index) 
+                     [proc-name (if (zero? index) 
                                     "Thread 0 (Runtime Thread)" 
                                     (format "Thread ~a" (process-timeline-proc-id tl)))]
                      [proc-title (text-block-pict proc-name 
@@ -494,15 +487,14 @@
                                      (- (* index (frame-info-row-height finfo)) (viewable-region-y vregion)) 
                                      (colorize (hline (viewable-region-width vregion) 1) (timeline-baseline-color))) 
                                  (at 0  
-                                     (+ (+ (- (* (sub1 index) (frame-info-row-height finfo)) (viewable-region-y vregion)) 
+                                     (+ (+ (- (* index (frame-info-row-height finfo)) (viewable-region-y vregion)) 
                                            (- (frame-info-row-height finfo) (pict-height proc-title))) 
                                         1) 
                                      proc-title) 
                                  (at start-x 
-                                     (- (calc-row-mid-y index 
-                                                        (process-timeline-proc-id tl) 
+                                     (- (calc-row-mid-y index  
                                                         (frame-info-row-height finfo) 
-                                                        num-tls)
+                                                        tr)
                                         (viewable-region-y vregion))
                                      (colorize (hline (- end-x start-x) 1) 
                                                (timeline-event-baseline-color))))))))
