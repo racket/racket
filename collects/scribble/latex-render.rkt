@@ -753,8 +753,8 @@
           (let ([len (string-length s)])
             (let loop ([i 0])
               (unless (= i len)
-                (let ([c (string-ref s i)])
-                  (display
+                (display
+                 (let char-loop ([c (string-ref s i)])
                    (case c
                      [(#\\) (if (rendering-tt)
                                 "{\\char`\\\\}"
@@ -942,52 +942,10 @@
                             [(#\☺) "$\\smiley$"]
                             [(#\☻) "$\\blacksmiley$"]
                             [(#\☹) "$\\frownie$"]
-                            [(#\à) "\\`{a}"]
-                            [(#\À) "\\`{A}"]
-                            [(#\á) "\\'{a}"]
-                            [(#\â) "\\^{a}"]
-                            [(#\Â) "\\^{A}"]
-                            [(#\Á) "\\'{A}"]
-                            [(#\ç) "\\c{c}"]
-                            [(#\Ç) "\\c{C}"]
-                            [(#\è) "\\`{e}"]
-                            [(#\È) "\\`{E}"]
-                            [(#\é) "\\'{e}"]
-                            [(#\É) "\\'{E}"]
-                            [(#\ê) "\\^{e}"]
-                            [(#\Ê) "\\^{E}"]
-                            [(#\í) "\\'{i}"]
-                            [(#\Í) "\\'{I}"]
-                            [(#\î) "\\^{i}"]
-                            [(#\Î) "\\^{I}"]
-                            [(#\ô) "\\^{o}"]
-                            [(#\Ô) "\\^{O}"]
-                            [(#\û) "\\^{u}"]
-                            [(#\Û) "\\^{U}"]
-                            [(#\ā) "\\={a}"]
-                            [(#\ē) "\\={e}"]
-                            [(#\ī) "\\={i}"]
-                            [(#\ō) "\\={o}"]
-                            [(#\ū) "\\={u}"]
-                            [(#\Ā) "\\={A}"]
-                            [(#\Ē) "\\={E}"]
-                            [(#\Ī) "\\={I}"]
-                            [(#\Ō) "\\={O}"]
-                            [(#\Ū) "\\={U}"]
-                            [(#\ä) "\\\"a"]
-                            [(#\Ä) "\\\"A"]
-                            [(#\ü) "\\\"u"]
-                            [(#\Ü) "\\\"U"]
-                            [(#\ö) "\\\"o"]
-                            [(#\Ö) "\\\"O"]
                             [(#\ø) "{\\o}"]
                             [(#\Ø) "{\\O}"]
                             [(#\ł) "{\\l}"]
                             [(#\Ł) "{\\L}"]
-                            [(#\ř) "{\\v r}"]
-                            [(#\Ř) "{\\v R}"]
-                            [(#\š) "{\\v s}"]
-                            [(#\Š) "{\\v S}"]
                             [(#\uA7) "{\\S}"]
                             [(#\〚) "$[\\![$"]
                             [(#\〛) "$]\\!]$"]
@@ -1007,7 +965,34 @@
                             [(#\u2079) "$^9$"]
                             [(#\u207a) "$^+$"]
                             [(#\u207b) "$^-$"]
-                            [else c])
+                            [else
+                             ;; Detect characters that can be formed with combining characters
+                             ;; and translate them to Latex combinations:
+                             (define s (string-normalize-nfd (string c)))
+                             (define len (string-length s))
+                             (cond
+                              [(len . > . 1)
+                               (define combiner (case (string-ref s (sub1 len))
+                                                  [(#\u300) "\\`{~a}"]
+                                                  [(#\u301) "\\'{~a}"]
+                                                  [(#\u302) "\\^{~a}"]
+                                                  [(#\u303) "\\~~{~a}"]
+                                                  [(#\u304) "\\={~a}"]
+                                                  [(#\u306) "\\u{~a}"]
+                                                  [(#\u307) "\\.{~a}"]
+                                                  [(#\u308) "\\\"{~a}"]
+                                                  [(#\u30a) "\\r{~a}"]
+                                                  [(#\u30b) "\\H{~a}"]
+                                                  [(#\u30c) "\\v{~a}"]
+                                                  [(#\u327) "\\c{~a}"]
+                                                  [(#\u328) "\\k{~a}"]
+                                                  [else #f]))
+                               (define base (string-normalize-nfc (substring s 0 (sub1 len))))
+                               (if (and combiner
+                                        (= 1 (string-length base)))
+                                   (format combiner (char-loop (string-ref base 0)))
+                                   c)]
+                              [else c])])
                           c)])))
                 (loop (add1 i)))))))
 
