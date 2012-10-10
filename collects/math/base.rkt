@@ -4,7 +4,8 @@
          (except-in racket/math sinh cosh tanh)
          "private/functions/hyperbolic.rkt"
          "private/functions/inverse-hyperbolic.rkt"
-         "private/functions/random.rkt")
+         "private/functions/random.rkt"
+         "private/flonum/flonum-sum.rkt")
 
 (provide (all-from-out
           racket/math
@@ -18,7 +19,8 @@
          catalan.0
          power-of-two?
          absolute-error
-         relative-error)
+         relative-error
+         sum)
 
 (define phi.0 (real->double-flonum #e1.61803398874989484820458683436563811772))
 (define euler.0 (real->double-flonum #e2.718281828459045235360287471352662497759))
@@ -59,3 +61,22 @@
          (cond [(or (single-flonum? x) (single-flonum? r))  (real->single-flonum e)]
                [(or (flonum? x) (flonum? r))  (real->double-flonum e)]
                [else  e])]))
+
+(: sum (Real * -> Real))
+(define (sum . xs)
+  (let loop ([xs xs]
+             [#{r : Exact-Rational}  0]
+             [#{fs : (Listof Flonum)}  null])
+    (cond [(null? xs)
+           (cond [(null? fs)  r]
+                 [(zero? r)  (apply flsum fs)]
+                 [else
+                  (define hi (real->double-flonum r))
+                  (define lo (real->double-flonum (- r (inexact->exact hi))))
+                  (apply flsum hi lo fs)])]
+          [else
+           (let ([x  (car xs)]
+                 [xs  (cdr xs)])
+             (cond [(double-flonum? x)  (loop xs r (cons x fs))]
+                   [(single-flonum? x)  (loop xs r (cons (real->double-flonum x) fs))]
+                   [else  (loop xs (+ x r) fs)]))])))

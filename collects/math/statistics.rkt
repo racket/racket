@@ -1,11 +1,10 @@
 #lang typed/racket/base
 
-;; running statistics using random-access list?
-;; accumulate requested expected values lazily
-;; allow weighted samples
-;; median and other quantiles
+(require "private/statistics/expected-value.rkt"
+         "private/statistics/correlation.rkt"
+         "private/statistics/quantiles.rkt")
 
-;; covariance matrix
-;; correlation matrix
-;; autocorrelation
-;; monte carlo error
+(provide (all-from-out
+          "private/statistics/expected-value.rkt"
+          "private/statistics/correlation.rkt"
+          "private/statistics/quantiles.rkt"))
