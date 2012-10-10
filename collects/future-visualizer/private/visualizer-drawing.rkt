@@ -381,13 +381,15 @@
       (values (cons seg segs)
               new-delta
               (max largest-x (+ offset segw) #;last-right-edge))))
+  (for ([s (in-list sgs)]) 
+    (printf "seg x: ~a, seg y: ~a\n" (segment-x s) (segment-y s)))
   (values sgs x-extent))
 
 ;;calc-segments : trace uint uint -> (values frame-info (listof segment))
 (define (calc-segments tr) 
   (define evts (trace-all-events tr))
   (define timeToPixModifier (/ DEFAULT-TIMELINE-WIDTH (- (trace-end-time tr) (trace-start-time tr))))
-  (define max-y (* TIMELINE-ROW-HEIGHT (sub1 (length (trace-proc-timelines tr)))))
+  (define max-y (* TIMELINE-ROW-HEIGHT (length (trace-proc-timelines tr))))
   (define-values (segments x) 
     (build-seg-layout timeToPixModifier evts tr max-y))
   (define ordered-segs (reverse segments))
