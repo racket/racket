@@ -233,19 +233,19 @@ please adhere to these guidelines:
   (sc-f2-to-un/lock "f2 to (un)lock")
   
  ;; the online check syntax status messages (mouse over the bottom right of drracket's window to see the messages during online expansion's various phases)
- (online-expansion-running "Online expansion running")
+ (online-expansion-running "Speculative expansion running")
  (online-expansion-only-raw-text-files-supported "Only pure text files supported")
- (online-expansion-abnormal-termination "Online expansion terminated abnormally")
- (online-expansion-finished-successfully "Online expansion finished successfully")
+ (online-expansion-abnormal-termination "Speculative expansion terminated abnormally")
+ (online-expansion-finished-successfully "Speculative expansion finished successfully")
   
  (jump-to-error "Jump to Error")
- (online-expansion-is-disabled "Online expansion is disabled")
+ (online-expansion-is-disabled "Speculative expansion is disabled")
  ;; these next two show up in the bar along the bottom of the drracket window
- (online-expansion-pending "Online expansion pending ...")
- (online-expansion-finished "Online expansion finished") ;; note: there may still be errors in this case
+ (online-expansion-pending "Speculative expansion pending ...")
+ (online-expansion-finished "Speculative expansion finished") ;; note: there may still be errors in this case
   
  ;; the online expansion preferences pane
- (online-expansion "Online expansion") ;; title of prefs pane
+ (online-expansion "Speculative expansion") ;; title of prefs pane
  ; the different kinds of errors
  (online-expansion-show-read-errors-as "Show read-level errors")
  (online-expansion-show-variable-errors-as "Show unbound identifier errors")
