@@ -273,7 +273,7 @@
                            [init-value CREATE-GRAPH-DEFAULT-ZOOM]
                            [style '(horizontal plain)]
                            [callback on-zoom]))
-  (define bottom-panel (new horizontal-panel% 
+  (define bottom-panel (new panel:horizontal-dragable% 
                             [parent right-panel] 
                             [style '(border)] 
                             [stretchable-height #t]))
@@ -281,25 +281,20 @@
   (define left-container (new horizontal-panel% 
                               [parent bottom-panel] 
                               [style '(border)] 
-                              [stretchable-height #t])) 
-  (define mid-container (new horizontal-panel% 
-                             [parent bottom-panel] 
-                             [stretchable-height #t])) 
+                              [stretchable-height #t] 
+                              [stretchable-width #t])) 
   (define right-container (new horizontal-panel% 
-                               [parent bottom-panel] 
-                               [stretchable-height #t]))
+                             [parent bottom-panel] 
+                             [stretchable-height #t]
+                             [stretchable-width #t])) 
   (define left-bot-header (section-header left-container "Execution Statistics" 'vertical))
   (define left-bot-panel (new vertical-panel% 
                               [parent left-container]  
                               [stretchable-height #t])) 
-  (define mid-bot-header (section-header mid-container "Event Details" 'vertical))
-  (define mid-bot-panel (new vertical-panel% 
-                            [parent mid-container]
-                            [stretchable-height #t])) 
-  (define right-bot-header (section-header right-container "Log Viewer" 'vertical))
+  (define right-bot-header (section-header right-container "Event Details" 'vertical))
   (define right-bot-panel (new vertical-panel% 
-                               [parent right-container]
-                               [stretchable-height #t]))
+                            [parent right-container]
+                            [stretchable-height #t]))
   
   (bold-label left-bot-panel "Program Statistics") 
   (define runtime-label (label left-bot-panel 
@@ -314,19 +309,19 @@
                            (format "GC's: ~a" (trace-num-gcs the-trace))))
                                
   ;Selected-event-specific labels   
-  (define hover-label (mt-bold-label mid-bot-panel))
-  (define hover-time-label (mt-label mid-bot-panel)) 
-  (define hover-fid-label (mt-label mid-bot-panel)) 
-  (define hover-pid-label (mt-label mid-bot-panel))
-  (define hover-data-label1 (mt-label mid-bot-panel))
-  (define hover-data-label2 (mt-label mid-bot-panel))
+  (define hover-label (mt-bold-label right-bot-panel))
+  (define hover-time-label (mt-label right-bot-panel)) 
+  (define hover-fid-label (mt-label right-bot-panel)) 
+  (define hover-pid-label (mt-label right-bot-panel))
+  (define hover-data-label1 (mt-label right-bot-panel))
+  (define hover-data-label2 (mt-label right-bot-panel))
   
-  (define tacked-label (mt-bold-label mid-bot-panel)) 
-  (define tacked-time-lbl (mt-label mid-bot-panel)) 
-  (define tacked-fid-lbl (mt-label mid-bot-panel)) 
-  (define tacked-pid-lbl (mt-label mid-bot-panel)) 
-  (define tacked-data-lbl (mt-label mid-bot-panel))
-  (define tacked-data-lbl2 (mt-label mid-bot-panel))
+  (define tacked-label (mt-bold-label right-bot-panel)) 
+  (define tacked-time-lbl (mt-label right-bot-panel)) 
+  (define tacked-fid-lbl (mt-label right-bot-panel)) 
+  (define tacked-pid-lbl (mt-label right-bot-panel)) 
+  (define tacked-data-lbl (mt-label right-bot-panel))
+  (define tacked-data-lbl2 (mt-label right-bot-panel))
   
   (define (update-event-details-panel seg) 
     (display-evt-details hover-seg 
@@ -363,9 +358,9 @@
   (add-receiver listener-table 'future-selected timeline-panel on-future-selected)
   (add-receiver listener-table 'segment-hover creategraph-panel on-segment-hover) 
   (add-receiver listener-table 'segment-click creategraph-panel on-segment-click)
-  (add-receiver listener-table 'segment-click mid-bot-panel update-event-details-panel) 
-  (add-receiver listener-table 'segment-hover mid-bot-panel update-event-details-panel)
-  (add-receiver listener-table 'segment-unclick mid-bot-panel update-event-details-panel)
+  (add-receiver listener-table 'segment-click right-bot-panel update-event-details-panel) 
+  (add-receiver listener-table 'segment-hover right-bot-panel update-event-details-panel)
+  (add-receiver listener-table 'segment-unclick right-bot-panel update-event-details-panel)
   (add-receiver listener-table 'segment-unclick creategraph-panel on-segment-unclick)
   
   ;Additional menus/items 
@@ -386,5 +381,6 @@
   
   (send main-panel set-percentages '(1/5 4/5))
   (send right-panel set-percentages '(3/4 1/4))
+  (send bottom-panel set-percentages '(1/2 1/2))
  
   (send f show #t))
