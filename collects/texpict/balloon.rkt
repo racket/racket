@@ -153,7 +153,7 @@
   (define pip-wrap-balloon
     (lambda (p corner dx dy [color balloon-color] [c-rad corner-size]
                #:factor [factor 1])
-      (pin-balloon (wrap-balloon p corner dx dy color c-rad) (blank 0) 0 0 #:factor factor)))
+      (pin-balloon (wrap-balloon p corner dx dy color c-rad #:factor factor) (blank 0) 0 0)))
   
   (define (do-place-balloon flip-proc? balloon p to find-to)
     (let-values ([(x y) (if (and (number? to) 
