@@ -304,7 +304,9 @@
    (indexed-future-event 4 (future-event 1 1 'end-work 15.0 #f 0)))) 
 (let ([tr (build-trace gc-log1)]) 
   (check-true (not (findf gc-event? (trace-all-events tr)))) 
-  (check-equal? (trace-num-gcs tr) 0))
+  (check-equal? (trace-num-gcs tr) 0)
+  (check-equal? (process-timeline-proc-id (trace-gc-timeline tr)) 'gc) 
+  (check-equal? (length (process-timeline-events (trace-gc-timeline tr))) 0))
 
 (define gc-log2 
   (list 
@@ -315,6 +317,8 @@
    (indexed-future-event 4 (future-event 1 1 'end-work 21.0 #f 0)))) 
 (let ([tr (build-trace gc-log2)]) 
   (check-equal? (length (filter gc-event? (trace-all-events tr))) 1) 
+  (check-equal? (process-timeline-proc-id (trace-gc-timeline tr)) 'gc)
+  (check-equal? (length (process-timeline-events (trace-gc-timeline tr))) 1)
   (check-equal? (trace-num-gcs tr) 1))
 
 (define gc-log3 
@@ -328,11 +332,18 @@
 (let-values ([(tr finfo segs ticks) (compile-trace-data gc-log3)]) 
   (check-equal? (length (filter gc-event? (trace-all-events tr))) 2) 
   (check-equal? (trace-num-gcs tr) 2) 
+  (check-equal? (length (trace-proc-timelines tr)) 2)
+  (check-equal? (process-timeline-proc-id (trace-gc-timeline tr)) 'gc)
+  (check-equal? (length (process-timeline-events (trace-gc-timeline tr))) 2)
   (let ([gc-segs (filter (λ (s) (gc-event? (segment-event s))) segs)]) 
     (check-equal? (length gc-segs) 2) 
     (for ([gs (in-list gc-segs)]) 
       (check-true (= (segment-height gs) (frame-info-adjusted-height finfo))) 
       (check-true (> (segment-width gs) 10)))))
+
+(check-true (work-event? (future-event #f 0 'start-work 1.0 #f 0))) 
+(check-true (work-event? (future-event #f 0 'start-0-work 2.0 #f 0))) 
+(check-false (work-event? (future-event #f 0 'end-work 1.0 #f 0)))
 
 ;Graph drawing tests 
 (let* ([nodea (drawable-node (node 'a '()) 5 5 10 0 0 '() 10)]

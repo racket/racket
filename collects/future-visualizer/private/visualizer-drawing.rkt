@@ -294,25 +294,32 @@
 
 ;;Set pixel widths of segments with variable widths, e.g. 
 ;;work and GC events
-;;adjust-variable-width-segs! : (listof segment) -> void
-(define (adjust-variable-width-segs! segs) 
+;;adjust-variable-width-segs! : (listof segment) uint -> void
+(define (adjust-variable-width-segs! segs max-x) 
   (cond 
     [(empty? segs) void]
     [else 
      (define cur (car segs)) 
      (case (event-type (segment-event cur)) 
        [(start-work start-0-work) 
+        (define next-seg (segment-next-proc-seg cur))
+        ;Because we are truncating logs after they reach a certain size, 
+        ;next-seg could be #f (where before it was safe to assume that a work segment 
+        ;was always followed by another segment).
+        (define x-end (if next-seg 
+                          (segment-x next-seg) 
+                          max-x))
         (set-segment-width! cur (max MIN-SEG-WIDTH 
-                                     (- (segment-x (segment-next-proc-seg cur)) (segment-x cur)))) 
-        (adjust-variable-width-segs! (cdr segs))]
+                                     (- x-end (segment-x cur)))) 
+        (adjust-variable-width-segs! (cdr segs) max-x)]
        [(gc) 
         (cond 
           [(empty? (cdr segs)) void] 
           [else 
            (set-segment-width! cur (max MIN-SEG-WIDTH 
                                         (- (segment-x (car (cdr segs))) (segment-x cur)))) 
-           (adjust-variable-width-segs! (cdr segs))])] 
-       [else (adjust-variable-width-segs! (cdr segs))])]))
+           (adjust-variable-width-segs! (cdr segs) max-x)])] 
+       [else (adjust-variable-width-segs! (cdr segs) max-x)])]))
 
 ;;connect-segments! : (listof segment) -> void
 (define (connect-segments! segs) 
@@ -381,8 +388,6 @@
       (values (cons seg segs)
               new-delta
               (max largest-x (+ offset segw) #;last-right-edge))))
-  (for ([s (in-list sgs)]) 
-    (printf "seg x: ~a, seg y: ~a\n" (segment-x s) (segment-y s)))
   (values sgs x-extent))
 
 ;;calc-segments : trace uint uint -> (values frame-info (listof segment))
@@ -392,11 +397,11 @@
   (define max-y (* TIMELINE-ROW-HEIGHT (length (trace-proc-timelines tr))))
   (define-values (segments x) 
     (build-seg-layout timeToPixModifier evts tr max-y))
+  (define max-x (+ MIN-SEG-WIDTH (round x)))
   (define ordered-segs (reverse segments))
   (connect-segments! ordered-segs)
-  (adjust-variable-width-segs! ordered-segs)
+  (adjust-variable-width-segs! ordered-segs max-x)
   (define ticks (calc-ticks ordered-segs timeToPixModifier tr))
-  (define max-x (+ MIN-SEG-WIDTH (round x)))
   (values (frame-info max-x 
                       max-y
                       TIMELINE-ROW-HEIGHT 

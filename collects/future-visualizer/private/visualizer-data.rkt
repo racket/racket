@@ -32,6 +32,7 @@
          synchronization-event? 
          runtime-synchronization-event? 
          gc-event?
+         work-event?
          final-event? 
          relative-time 
          event-or-gc-time
@@ -64,7 +65,7 @@
                end-time ;Absolute end time
                proc-timelines ;(listof process-timeline)
                future-timelines ;Hash of (future id --o--> (listof event)) 
-               gc-timeline ;(listof event), where each event is a GC
+               gc-timeline ;process-timeline where proc-id == 'gc, and each event is a GC
                all-events ;(listof event)
                real-time ;Total amount of time for the trace (in ms)
                num-futures ;Number of futures created
@@ -166,6 +167,12 @@
 (define (synchronization-event? evt) 
   (case (what evt) 
     [(block sync) #t] 
+    [else #f]))
+
+;;work-event : (or event indexed-future-event future-event) -> bool
+(define (work-event? evt) 
+  (case (what evt) 
+    [(start-work start-0-work) #t] 
     [else #f]))
 
 ;;runtime-thread-evt? : (or event indexed-future-event future-event) -> bool
@@ -428,7 +435,7 @@
                     (build-creation-graph future-tl-hash)))
   (connect-event-chains! tr) 
   (connect-target-fid-events! tr)
-  tr)
+  tr)    
 
 ;;build-rtcall-hash : (listof event) -> (values (blocking_prim -o-> count) (sync_prim -o-> count) (fid -o-> rtcall-info)
 (define (build-rtcall-hashes evts) 
