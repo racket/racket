@@ -147,7 +147,8 @@
                                        (not (in-float-layer? s)))
                               #'e]
                              [_ #f]))))
-                      (when (not (null? extra-precision-subexprs))
+                      (when (and (not (null? extra-precision-subexprs))
+                                 (subtypeof? this-syntax -InexactReal))
                         (log-missed-optimization
                          "exact ops inside float expr"
                          "This expression has a Float type, but the highlighted subexpression(s) use exact arithmetic. The extra precision of the exact arithmetic will be lost. Using Float types in these subexpression(s) may result in performance gains without significant precision loss."

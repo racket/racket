@@ -10,15 +10,12 @@ TR missed opt: precision-loss.rkt 48:8 (* 3/4 2/3) -- all args float-arg-expr, r
 TR opt: precision-loss.rkt 49:3 (car (list (* 2.0 (ann (* 3/4 2/3) Real)))) -- pair
 TR missed opt: precision-loss.rkt 49:26 (* 3/4 2/3) -- all args float-arg-expr, result not Float -- caused by: 49:29 3/4, 49:33 2/3
 TR missed opt: precision-loss.rkt 49:14 (* 2.0 (ann (* 3/4 2/3) Real)) -- all args float-arg-expr, result not Float -- caused by: 49:26 (* 3/4 2/3)
-TR missed opt: precision-loss.rkt 49:14 (* 2.0 (ann (* 3/4 2/3) Real)) -- exact ops inside float expr -- caused by: 49:26 (* 3/4 2/3)
 TR missed opt: precision-loss.rkt 49:26 (* 3/4 2/3) -- all args float-arg-expr, result not Float -- caused by: 49:29 3/4, 49:33 2/3
 TR missed opt: precision-loss.rkt 48:0 (* (ann (* 3/4 2/3) Real) (car (list (* 2.0 (ann (* 3/4 2/3) Real)))) 2.0) -- all args float-arg-expr, result not Float -- caused by: 48:8 (* 3/4 2/3), 49:3 (car (list (* 2.0 (ann (* 3/4 2/3) Real))))
-TR missed opt: precision-loss.rkt 48:0 (* (ann (* 3/4 2/3) Real) (car (list (* 2.0 (ann (* 3/4 2/3) Real)))) 2.0) -- exact ops inside float expr -- caused by: 48:8 (* 3/4 2/3)
 TR missed opt: precision-loss.rkt 48:8 (* 3/4 2/3) -- all args float-arg-expr, result not Float -- caused by: 48:11 3/4, 48:15 2/3
 TR opt: precision-loss.rkt 49:3 (car (list (* 2.0 (ann (* 3/4 2/3) Real)))) -- pair
 TR missed opt: precision-loss.rkt 49:26 (* 3/4 2/3) -- all args float-arg-expr, result not Float -- caused by: 49:29 3/4, 49:33 2/3
 TR missed opt: precision-loss.rkt 49:14 (* 2.0 (ann (* 3/4 2/3) Real)) -- all args float-arg-expr, result not Float -- caused by: 49:26 (* 3/4 2/3)
-TR missed opt: precision-loss.rkt 49:14 (* 2.0 (ann (* 3/4 2/3) Real)) -- exact ops inside float expr -- caused by: 49:26 (* 3/4 2/3)
 TR missed opt: precision-loss.rkt 49:26 (* 3/4 2/3) -- all args float-arg-expr, result not Float -- caused by: 49:29 3/4, 49:33 2/3
 2.5
 2.75
@@ -26,6 +23,9 @@ TR missed opt: precision-loss.rkt 49:26 (* 3/4 2/3) -- all args float-arg-expr, 
 2.5
 1.0
 )
+
+
+
 
 
 #lang typed/racket
