@@ -3,15 +3,21 @@
          racket/class
          racket/match
          racket/draw
+         file/convertible
          wxme
          (prefix-in r: racket/base))
 
 (provide pict-snip% snip-class reader)
 
+(define convertible<%>
+  (interface* () ([prop:convertible (lambda (v r d)
+                                      (send v convert r d))])
+              convert))
+
 ;; this snip is created on the user's space,
 ;; but its callbacks are invoked on DrRacket's.
 (define pict-snip%
-  (class snip%
+  (class* snip% (convertible<%>)
     (init-field w h d a recorded-datum)
     (define/override (get-extent dc x y [wb #f] [hb #f] [descent #f] [space #f] [lspace #f] [rspace #f])
       (set-box/f lspace 0)
@@ -39,7 +45,30 @@
       (send f put (bytes-length bytes) bytes))
     (super-new)
     (inherit set-snipclass)
-    (set-snipclass snip-class)))
+    (set-snipclass snip-class)
+
+    (define/public (convert r d)
+      (case r
+        [(png-bytes)
+         (define bm (make-bitmap w h))
+         (define dc (send bm make-dc))
+         (draw dc 0 0 0 0 w h 0 0 #f)
+         (define b (open-output-bytes))
+         (send bm save-file b 'png)
+         (get-output-bytes b)]
+        [(pdf-bytes)
+         (define b (open-output-bytes))
+         (define dc (new pdf-dc% 
+                         [interactive #f]
+                         [width w] [height h]
+                         [output b]))
+         (send dc start-doc "pict")
+         (send dc start-page)
+         (draw dc 0 0 0 0 w h 0 0 #f)
+         (send dc end-page)
+         (send dc end-doc)
+         (get-output-bytes b)]
+        [else d]))))
 
 (define (set-box/f b v) (when (box? b) (set-box! b v)))
 
