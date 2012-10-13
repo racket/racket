@@ -134,7 +134,7 @@
                [e (make-link-element "indexlink" e tag)]
                [e (send renderer render-content e sec ri)])
           (match e ; should always render to a single `a'
-            [`((a ([href ,href] [class "indexlink"] [pltdoc ,_]) . ,body))
+            [`((a ([href ,href] [class "indexlink"] [data-pltdoc ,_]) . ,body))
              (cond [(and (part-index-desc? desc)
                          (regexp-match #rx"(?:^|/)([^/]+)/index\\.html$" href))
                     => (lambda (man) (hash-set! manual-refs (cadr man) idx))])

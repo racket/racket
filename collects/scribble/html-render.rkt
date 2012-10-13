@@ -420,7 +420,7 @@
                [class ,(if (or (eq? t d) (and show-mine? (memq t toc-chain)))
                          "tocviewselflink"
                          "tocviewlink")]
-               [pltdoc "x"])
+               [data-pltdoc "x"])
               ,@(render-content (or (part-title-content t) '("???")) d ri)))
          (format-number (collected-info-number (part-collected-info t ri))
                         '(nbsp))))
@@ -610,7 +610,7 @@
                                                     [(part? p) "tocsubseclink"]
                                                     [any-parts? "tocsubnonseclink"]
                                                     [else "tocsublink"])]
-                                              [pltdoc "x"])
+                                              [data-pltdoc "x"])
                                              ,@(render-content
                                                 (if (part? p)
                                                     (or (part-title-content p)
@@ -813,7 +813,7 @@
                                url))
           (make-attributes
            `([title . ,(if title* (string-append label " to " title*) label)]
-             [pltdoc . "x"]
+             [data-pltdoc . "x"]
              ,@more)))))
       (define top-link
         (titled-url
@@ -1150,7 +1150,7 @@
                          ;; Normal link:
                          (dest->url dest)]))
                      ,@(attribs)
-                     [pltdoc "x"]]
+                     [data-pltdoc "x"]]
                     ,@(if (empty-content? (element-content e))
                           (render-content (strip-aux (dest-title dest)) part ri)
                           (render-content (element-content e) part ri))))
