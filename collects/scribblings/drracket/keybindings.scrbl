@@ -180,7 +180,7 @@ selected.
 @itemize[
   @keybinding["f1"]{Search in the documentation for the words near the insertion point}
   @keybinding["f2"]{Reveal the blue box for the identifier at the insertion point (requires
-                    online check syntax to be enabled, or normal check syntax to have been
+                    background check syntax to be enabled, or normal check syntax to have been
                     run).}
 ]
 
