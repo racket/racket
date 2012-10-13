@@ -50,7 +50,8 @@
     (define/public (convert r d)
       (case r
         [(png-bytes)
-         (define bm (make-bitmap w h))
+         (define bm (make-bitmap (inexact->exact (ceiling w))
+                                 (inexact->exact (ceiling h))))
          (define dc (send bm make-dc))
          (draw dc 0 0 0 0 w h 0 0 #f)
          (define b (open-output-bytes))
