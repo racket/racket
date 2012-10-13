@@ -138,19 +138,19 @@
   (sc-f2-to-un/lock "f2 um zu (ent)blockieren")
 
  ;; the online check syntax status messages (mouse over the bottom right of drracket's window to see the messages during online expansion's various phases)
- (online-expansion-running "Spekulative Expansion läuft")
+ (online-expansion-running "Hintergrund-Expansion läuft")
  (online-expansion-only-raw-text-files-supported "Nur reine Text-Dateien sind unterstützt")
- (online-expansion-abnormal-termination "Spekulative Expansion unglücklich abgebrochen")
- (online-expansion-finished-successfully "Spekulative Expansion erfolgreich abgeschlossen")
+ (online-expansion-abnormal-termination "Hintergrund-Expansion unglücklich abgebrochen")
+ (online-expansion-finished-successfully "Hintergrund-Expansion erfolgreich abgeschlossen")
 
  (jump-to-error "Zum Fehler springen")
- (online-expansion-is-disabled "Spekulative Expansion ist deaktiviert")
+ (online-expansion-is-disabled "Hintergrund-Expansion ist deaktiviert")
  ;; these next two show up in the bar along the bottom of the drracket window
- (online-expansion-pending "Spekulative Expansion läuft ...")
- (online-expansion-finished "Spekulative Expansion fertig") ;; note: there may still be errors in this case
+ (online-expansion-pending "Hintergrund-Expansion läuft ...")
+ (online-expansion-finished "Hintergrund-Expansion fertig") ;; note: there may still be errors in this case
  
  ;; the online expansion preferences pane
- (online-expansion "Spekulative Expansion") ;; title of prefs pane
+ (online-expansion "Hintergrund-Expansion") ;; title of prefs pane
  ; the different kinds of errors
  (online-expansion-show-read-errors-as "Reader-Fehler anzeigen")
  (online-expansion-show-variable-errors-as "Ungebundene Bezeichner anzeigen")
