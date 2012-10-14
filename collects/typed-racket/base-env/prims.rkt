@@ -406,6 +406,12 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(let: . rest)
      (syntax/loc stx (let-internal: . rest))]))
 
+(define-syntax (plet: stx)
+  (syntax-parse stx #:literals (:)
+    [(_ (A:id ...) ([bn:optionally-annotated-name e] ...) . body)
+     (syntax/loc stx
+       ((plambda: (A ...) (bn ...) . body) e ...))]))
+
 (define-syntax (define-type-alias stx)
   (syntax-parse stx
     [(_ tname:id rest)
