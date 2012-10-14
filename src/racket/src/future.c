@@ -3021,8 +3021,9 @@ Scheme_Object *scheme_rtcall_make_fsemaphore(Scheme_Object *ready)
   future->source_of_request = "[make_fsemaphore]";
   future->source_type = FSRC_OTHER;
 
-  /* conservative check for when creation can succeed atomically: */
-  if (SCHEME_INT_VAL(ready) 
+  /* conservative check for when creation can succeed atomically 
+     (because it won't raise an error): */
+  if (SCHEME_INTP(ready) 
       && (SCHEME_INT_VAL(ready) >= 0)
       && (SCHEME_INT_VAL(ready) < 1024))
     is_atomic = 1;
