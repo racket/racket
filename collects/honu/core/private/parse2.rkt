@@ -133,7 +133,7 @@
                           ;; FIXME: don't strip all stops, just comma
                           (parse (strip-stops rest))])
               (loop (if parsed
-                      (cons parsed used)
+                      (cons (parse-all-expression parsed) used)
                       used)
                     unparsed))])))))
 

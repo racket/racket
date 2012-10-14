@@ -8,6 +8,7 @@
  [read-xml (() (input-port?) . ->* . document?)]
  [read-xml/document (() (input-port?) . ->* . document?)]
  [read-xml/element (() (input-port?) . ->* . element?)]
+ [xml-count-bytes (parameter/c boolean?)]
  [read-comments (parameter/c boolean?)]
  [collapse-whitespace (parameter/c boolean?)]
  [exn:xml? (any/c . -> . boolean?)])
@@ -20,6 +21,7 @@
 
 ;; Token ::= Contents | Start-tag | End-tag | Eof
 
+(define xml-count-bytes (make-parameter #f))
 (define read-comments (make-parameter #f))
 (define collapse-whitespace (make-parameter #f))
 
@@ -462,7 +464,8 @@
 ; This function predates port-count-lines! and port-next-location.
 ; Otherwise I would have used those directly at the call sites.
 (define (positionify in)
-  (port-count-lines! in)
+  (unless (xml-count-bytes)
+    (port-count-lines! in))
   (values
    in
    (lambda ()

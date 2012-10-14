@@ -850,6 +850,16 @@ We should also test deep continuations.
                                    (unless (regexp-match #rx"expected number of values not received" (exn-message exn))
                                      (raise exn)))])
         (touch f))))
+
+  ;; check list-refs
+  (let ()
+    (define l (build-list 100000 add1))
+    (check-equal?
+     (map touch
+          (for/list ([i 10])
+            (func (lambda () (list-ref l 50000)))))
+     (for/list ([i 10]) 50001)))
+    
   )
 
 (run-tests future)

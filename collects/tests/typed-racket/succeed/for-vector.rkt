@@ -3,7 +3,7 @@
 (require (for-syntax syntax/parse)
          racket/unsafe/ops
          typed/rackunit
-         math/private/exception)
+         racket/flonum)
 
 (check-equal? (for/vector: #:length 4 ([i  (in-range 4)]) : Float
                 (real->double-flonum i))
@@ -154,78 +154,82 @@
 ;; ===================================================================================================
 ;; for/flvector:
 
-(check-equal? (for/flvector: #:length 4 ([i  (in-range 4)])
+(define-syntax-rule (test-flvector a b) ; for some reason, check-equal? doesn't work below
+  (unless (equal? a b)
+    (error "bad")))
+
+(test-flvector (for/flvector: #:length 4 ([i  (in-range 4)])
                 (real->double-flonum i))
               (flvector 0.0 1.0 2.0 3.0))
 
-(check-equal? (for/flvector: #:length 4 ([i  (in-range 0)])
+(test-flvector (for/flvector: #:length 4 ([i  (in-range 0)])
                 (real->double-flonum i))
               (flvector 0.0 0.0 0.0 0.0))
 
-(check-equal? (for/flvector: #:length 4 ()
+(test-flvector (for/flvector: #:length 4 ()
                 1.2)
               (flvector 1.2 0.0 0.0 0.0))
 
-(check-equal? (for/flvector: #:length 4 ([i  (in-range 2)])
+(test-flvector (for/flvector: #:length 4 ([i  (in-range 2)])
                 (real->double-flonum i))
               (flvector 0.0 1.0 0.0 0.0))
 
-(check-equal? (for/flvector: #:length 4 ([i  (in-range 5)])
+(test-flvector (for/flvector: #:length 4 ([i  (in-range 5)])
                 (real->double-flonum i))
               (flvector 0.0 1.0 2.0 3.0))
 
-(check-equal? (for/flvector: #:length 0 ([i  (in-range 5)])
+(test-flvector (for/flvector: #:length 0 ([i  (in-range 5)])
                 (real->double-flonum i))
               (flvector))
 
-(check-equal? (for/flvector: ([i  (in-range 4)])
+(test-flvector (for/flvector: ([i  (in-range 4)])
                 (real->double-flonum i))
               (flvector 0.0 1.0 2.0 3.0))
 
-(check-equal? (for/flvector: () 1.2)
+(test-flvector (for/flvector: () 1.2)
               (flvector 1.2))
 
-(check-equal? (for/flvector: ([i  (in-range 0)])
+(test-flvector (for/flvector: ([i  (in-range 0)])
                 (real->double-flonum i))
               (flvector))
 
-(check-equal? (for/flvector: #:length 4 ([x  (in-range 2)]
+(test-flvector (for/flvector: #:length 4 ([x  (in-range 2)]
                                          #:when #t
                                          [y  (in-range 2)])
                 (real->double-flonum (+ x y)))
               (flvector 0.0 1.0 1.0 2.0))
 
-(check-equal? (for/flvector: #:length 4 ([x  (in-range 0)]
+(test-flvector (for/flvector: #:length 4 ([x  (in-range 0)]
                                          #:when #t
                                          [y  (in-range 2)])
                 (real->double-flonum (+ x y)))
               (flvector 0.0 0.0 0.0 0.0))
 
-(check-equal? (for/flvector: #:length 4 ([x  (in-range 2)]
+(test-flvector (for/flvector: #:length 4 ([x  (in-range 2)]
                                          #:when #t
                                          [y  (in-range 1)])
                 (real->double-flonum (+ x y)))
               (flvector 0.0 1.0 0.0 0.0))
 
-(check-equal? (for/flvector: #:length 4 ([x  (in-range 2)]
+(test-flvector (for/flvector: #:length 4 ([x  (in-range 2)]
                                          #:when #t
                                          [y  (in-range 3)])
                 (real->double-flonum (+ x y)))
               (flvector 0.0 1.0 2.0 1.0))
 
-(check-equal? (for/flvector: #:length 0 ([x  (in-range 2)]
+(test-flvector (for/flvector: #:length 0 ([x  (in-range 2)]
                                          #:when #t
                                          [y  (in-range 3)])
                 (real->double-flonum (+ x y)))
               (flvector))
 
-(check-equal? (for/flvector: ([x  (in-range 2)]
+(test-flvector (for/flvector: ([x  (in-range 2)]
                               #:when #t
                               [y  (in-range 2)])
                 (real->double-flonum (+ x y)))
               (flvector 0.0 1.0 1.0 2.0))
 
-(check-equal? (for/flvector: ([x  (in-range 0)]
+(test-flvector (for/flvector: ([x  (in-range 0)]
                               #:when #t
                               [y  (in-range 2)])
                 (real->double-flonum (+ x y)))
@@ -234,72 +238,72 @@
 ;; ===================================================================================================
 ;; for*/flvector:
 
-(check-equal? (for*/flvector: #:length 4 ([i  (in-range 4)])
+(test-flvector (for*/flvector: #:length 4 ([i  (in-range 4)])
                 (real->double-flonum i))
               (flvector 0.0 1.0 2.0 3.0))
 
-(check-equal? (for*/flvector: #:length 4 ([i  (in-range 0)])
+(test-flvector (for*/flvector: #:length 4 ([i  (in-range 0)])
                 (real->double-flonum i))
               (flvector 0.0 0.0 0.0 0.0))
 
-(check-equal? (for*/flvector: #:length 4 ()
+(test-flvector (for*/flvector: #:length 4 ()
                 1.2)
               (flvector 1.2 0.0 0.0 0.0))
 
-(check-equal? (for*/flvector: #:length 4 ([i  (in-range 2)])
+(test-flvector (for*/flvector: #:length 4 ([i  (in-range 2)])
                 (real->double-flonum i))
               (flvector 0.0 1.0 0.0 0.0))
 
-(check-equal? (for*/flvector: #:length 4 ([i  (in-range 5)])
+(test-flvector (for*/flvector: #:length 4 ([i  (in-range 5)])
                 (real->double-flonum i))
               (flvector 0.0 1.0 2.0 3.0))
 
-(check-equal? (for*/flvector: #:length 0 ([i  (in-range 5)])
+(test-flvector (for*/flvector: #:length 0 ([i  (in-range 5)])
                 (real->double-flonum i))
               (flvector))
 
-(check-equal? (for*/flvector: ([i  (in-range 4)])
+(test-flvector (for*/flvector: ([i  (in-range 4)])
                 (real->double-flonum i))
               (flvector 0.0 1.0 2.0 3.0))
 
-(check-equal? (for*/flvector: () 1.2)
+(test-flvector (for*/flvector: () 1.2)
               (flvector 1.2))
 
-(check-equal? (for*/flvector: ([i  (in-range 0)])
+(test-flvector (for*/flvector: ([i  (in-range 0)])
                 (real->double-flonum i))
               (flvector))
 
-(check-equal? (for*/flvector: #:length 4 ([x  (in-range 2)]
+(test-flvector (for*/flvector: #:length 4 ([x  (in-range 2)]
                                           [y  (in-range 2)])
                 (real->double-flonum (+ x y)))
               (flvector 0.0 1.0 1.0 2.0))
 
-(check-equal? (for*/flvector: #:length 4 ([x  (in-range 0)]
+(test-flvector (for*/flvector: #:length 4 ([x  (in-range 0)]
                                           [y  (in-range 2)])
                 (real->double-flonum (+ x y)))
               (flvector 0.0 0.0 0.0 0.0))
 
-(check-equal? (for*/flvector: #:length 4 ([x  (in-range 2)]
+(test-flvector (for*/flvector: #:length 4 ([x  (in-range 2)]
                                           [y  (in-range 1)])
                 (real->double-flonum (+ x y)))
               (flvector 0.0 1.0 0.0 0.0))
 
-(check-equal? (for*/flvector: #:length 4 ([x  (in-range 2)]
+(test-flvector (for*/flvector: #:length 4 ([x  (in-range 2)]
                                           [y  (in-range 3)])
                 (real->double-flonum (+ x y)))
               (flvector 0.0 1.0 2.0 1.0))
 
-(check-equal? (for*/flvector: #:length 0 ([x  (in-range 2)]
+(test-flvector (for*/flvector: #:length 0 ([x  (in-range 2)]
                                           [y  (in-range 3)])
                 (real->double-flonum (+ x y)))
               (flvector))
 
-(check-equal? (for*/flvector: ([x  (in-range 2)]
+(test-flvector (for*/flvector: ([x  (in-range 2)]
                                [y  (in-range 2)])
                 (real->double-flonum (+ x y)))
               (flvector 0.0 1.0 1.0 2.0))
 
-(check-equal? (for*/flvector: ([x  (in-range 0)]
+(test-flvector (for*/flvector: ([x  (in-range 0)]
                                [y  (in-range 2)])
                 (real->double-flonum (+ x y)))
               (flvector))

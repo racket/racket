@@ -26,7 +26,6 @@
 
 (provide ssh-bin-path
          racket-path
-         distributed-launch-path
 
          DEFAULT-ROUTER-PORT
 
@@ -1403,7 +1402,7 @@
                             #:initial-message [initial-message #f]
                             #:racket-path [racketpath (racket-path)]
                             #:ssh-bin-path [sshpath (ssh-bin-path)]
-                            #:distributed-launch-path [distributedlaunchpath (->writeable-module-path distributed-launch-path)]
+                            #:distributed-launch-path [distributedlaunchpath #f]
                             #:restart-on-exit [restart-on-exit #f]
                             #:named [named #f]
                             #:thunk [thunk #f])
@@ -1422,7 +1421,7 @@
                             #:initial-message [initial-message #f]
                             #:racket-path [racketpath (racket-path)]
                             #:ssh-bin-path [sshpath (ssh-bin-path)]
-                            #:distributed-launch-path [distributedlaunchpath (->writeable-module-path distributed-launch-path)]
+                            #:distributed-launch-path [distributedlaunchpath #f]
                             #:restart-on-exit [restart-on-exit #f]
                             #:named [named #f]
                             #:thunk [thunk #f])
@@ -1439,7 +1438,7 @@
                             #:initial-message [initial-message #f]
                             #:racket-path [racketpath (racket-path)]
                             #:ssh-bin-path [sshpath (ssh-bin-path)]
-                            #:distributed-launch-path [distributedlaunchpath (->writeable-module-path distributed-launch-path)]
+                            #:distributed-launch-path [distributedlaunchpath #f]
                             #:restart-on-exit [restart-on-exit #f])
   (define node (spawn-remote-racket-node host
                             #:listen-port listen-port
@@ -1467,18 +1466,20 @@
 (define (spawn-remote-racket-node host #:listen-port [listen-port DEFAULT-ROUTER-PORT]
                                        #:racket-path [racketpath (racket-path)]
                                        #:ssh-bin-path [sshpath (ssh-bin-path)]
-                                       #:distributed-launch-path [distributedlaunchpath (->writeable-module-path distributed-launch-path)]
+                                       #:distributed-launch-path [distributedlaunchpath #f]
                                        #:use-current-ports [use-current-ports #f])
   (new remote-node%
        [host-name host]
        [listen-port listen-port]
-       [cmdline-list (list sshpath host racketpath "-tm" distributedlaunchpath "spawn" (->string listen-port))]
+       [cmdline-list (if distributedlaunchpath
+                       (list sshpath host racketpath "-tm" distributedlaunchpath "spawn" (->string listen-port))
+                       (list sshpath host racketpath "-lm racket/place/distributed/launch spawn" (->string listen-port)))]
        [use-current-ports use-current-ports]))
 
 (define (create-place-node host #:listen-port [listen-port DEFAULT-ROUTER-PORT]
                                        #:racket-path [racketpath (racket-path)]
                                        #:ssh-bin-path [sshpath (ssh-bin-path)]
-                                       #:distributed-launch-path [distributedlaunchpath (->writeable-module-path distributed-launch-path)]
+                                       #:distributed-launch-path [distributedlaunchpath #f]
                                        #:use-current-ports [use-current-ports #t])
   (spawn-remote-racket-node host
                             #:listen-port listen-port
@@ -1508,6 +1509,7 @@
 (define-syntax-rule (after-seconds _seconds _body ...)
   (new after-seconds% [seconds _seconds] [thunk (lambda () _body ...)]))
 
+;; -> node name -> 
 (define (connect-to-named-place node name)
   (send node remote-connect name))
 
@@ -1668,7 +1670,7 @@
 (define (spawn-node-at host #:listen-port [listen-port DEFAULT-ROUTER-PORT]
                             #:racket-path [racketpath (racket-path)]
                             #:ssh-bin-path [sshpath (ssh-bin-path)]
-                            #:distributed-launch-path [distributedlaunchpath (->writeable-module-path distributed-launch-path)])
+                            #:distributed-launch-path [distributedlaunchpath #f])
 
   (define ch (make-channel))
   (thread

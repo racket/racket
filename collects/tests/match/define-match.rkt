@@ -1,7 +1,6 @@
 #lang racket/base
 
-(require rackunit
-         unstable/match)
+(require rackunit racket/match)
 
 (define/match ((curried x) y)
   [((? number? x) y) (+ x y)]
@@ -41,3 +40,18 @@
 (check-false (f))
 (check-false (f 2))
 (check-false (f 2 4 5))
+
+(require (prefix-in legacy: mzlib/match))
+(legacy:define/match (fact-2 n)
+  [(0) 1]
+  [(n) (* n (fact (sub1 n)))])
+
+(check-equal? (fact-2 0) 1)
+(check-equal? (fact-2 5) 120)
+
+(legacy:define/match (list-fun lst)
+  [((1 2 3)) #t]
+  [((_ _ _ )) #f])
+
+(check-equal? (list-fun '(1 2 3)) #t)
+(check-equal? (list-fun '(4 5 6)) #f)

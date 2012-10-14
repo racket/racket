@@ -64,8 +64,8 @@
 (define location/c
   (or/c location? symbol? false/c))
 (provide/contract
- (struct location ([line exact-nonnegative-integer?]
-                   [char exact-nonnegative-integer?]
+ (struct location ([line (or/c false/c exact-nonnegative-integer?)]
+                   [char (or/c false/c exact-nonnegative-integer?)]
                    [offset exact-nonnegative-integer?]))
  [location/c contract?]
  (struct source ([start location/c]

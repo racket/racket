@@ -43,6 +43,11 @@
     [(_ args ...)
      #'((tech (racketvarfont "term")) args ...)]
     [x (identifier? #'x) #'(tech (racketvarfont "term"))]))
+@(define-syntax (tttterm-no-unquote stx)
+   (syntax-case stx ()
+    [(_ args ...)
+     #'((tech (racketvarfont "term-without-unquote") #:key "term") args ...)]
+    [x (identifier? #'x) #'(tech (racketvarfont "term-without-unquote") #:key "term")]))
 
 @(define-syntax (tterm stx)
    (syntax-case stx ()
@@ -1139,12 +1144,12 @@ and @racket[#f] otherwise.
 
 @defform/subs[#:literals (I O where where/hidden side-condition side-condition/hidden etc.)
              (define-judgment-form language
-               option ...
+               mode-spec
+               contract-spec
                rule rule ...)
-             ([option mode-spec
-                      contract-spec]
-              [mode-spec (code:line #:mode (form-id pos-use ...))]
-              [contract-spec (code:line #:contract (form-id @#,ttpattern ...))]
+             ([mode-spec (code:line #:mode (form-id pos-use ...))]
+              [contract-spec (code:line) 
+                             (code:line #:contract (form-id @#,ttpattern ...))]
               [pos-use I
                        O]
               [rule [premise
@@ -1157,10 +1162,10 @@ and @racket[#f] otherwise.
                      rule-name]]
               [conclusion (form-id pat/term ...)]
               [premise (code:line (judgment-form-id pat/term ...) maybe-ellipsis)
-                       (where @#,ttpattern @#,tttterm)
-                       (where/hidden @#,ttpattern @#,tttterm)
-                       (side-condition @#,tttterm)
-                       (side-condition/hidden @#,tttterm)]
+                       (where @#,ttpattern @#,tttterm-no-unquote)
+                       (where/hidden @#,ttpattern @#,tttterm-no-unquote)
+                       (side-condition @#,tttterm-no-unquote)
+                       (side-condition/hidden @#,tttterm-no-unquote)]
               [rule-name (code:line)
                          string
                          non-ellipsis-non-hypens-var]
@@ -1231,7 +1236,8 @@ to compute all pairs with a given sum.
        (judgment-holds (sumr n_1 n_2 (s (s z))) (n_1 n_2))]
 
 A rule's @racket[where] and @racket[where/hidden] premises behave as in 
-@racket[reduction-relation] and @racket[define-metafunction].
+@racket[reduction-relation] and @racket[define-metafunction] except the term
+cannot use unquotes.
 @examples[
 #:eval redex-eval
        (define-judgment-form nats
@@ -1259,9 +1265,11 @@ A rule's @racket[where] and @racket[where/hidden] premises behave as in
 
 A rule's @racket[side-condition] and @racket[side-condition/hidden] premises are similar
 to those in @racket[reduction-relation] and @racket[define-metafunction], except that
-they do not implicitly unquote their right-hand sides. In other words, a premise
-of the form @racket[(side-condition exp)] is equivalent to the premise
-@racket[(where #t exp)], except it does not typeset with the ``#t = '', as that would.
+they do not implicitly unquote their right-hand sides. In other words, a premise 
+of the form @racket[(side-condition term)] is equivalent to the premise 
+@racket[(where #t term)], except it does not typeset with the ``#t = '', as that would. 
+Also, the term on the right-hand side cannot use unquotes so it is often convenient to 
+define a metafunction for these side-conditions.
 
 A literal ellipsis may follow a judgment premise when a template in one of the
 judgment's input positions contains a pattern variable bound at ellipsis-depth

@@ -988,6 +988,12 @@ If the namespace does not, they are colored the unbound color.
                 [else
                  (update-drawn-arrows)]))
             
+            (define tooltips-enabled? #f)
+            (define/public (enable-tooltips x?)
+              (set! tooltips-enabled? x?)
+              (when (update-latent-arrows mouse-x mouse-y)
+                (start-arrow-draw-timer syncheck-arrow-delay)))
+            
             ;; Given a mouse position, updates latent-* variables and tooltips
             (define/private (update-latent-arrows x y)
               (define-values (pos text eles tooltip)
@@ -999,19 +1005,9 @@ If the namespace does not, they are colored the unbound color.
                    (define-values (pos text) (get-pos/text-dc-location x y))
                    (define arrow-record (and text pos (hash-ref arrow-records text #f)))
                    (define eles (and arrow-record (interval-map-ref arrow-record pos null)))
-                   (define we-focused-frame?
-                     (let ([f (get-top-level-focus-window)])
-                       (and f
-                            (eq? f
-                                 (let loop ([w (get-canvas)])
-                                   (cond
-                                     [(is-a? w top-level-window<%>)
-                                      w]
-                                     [(is-a? w area<%>)
-                                      (loop (send w get-parent))]
-                                     [else #f]))))))
-                   (define tooltip (cond [(not we-focused-frame?) #f]
-                                         [(equal? latent-eles eles) latent-tooltip]
+                   (define tooltip (cond [(not tooltips-enabled?) #f]
+                                         [(and (equal? latent-eles eles) latent-tooltip)
+                                          latent-tooltip]
                                          [else (get-tooltip eles)]))
                    (values pos text eles tooltip)]
                   [else
@@ -1027,7 +1023,7 @@ If the namespace does not, they are colored the unbound color.
               
               (or text-changed? eles-changed? tooltip-changed?))
             
-            (define (update-drawn-arrows)
+            (define/private (update-drawn-arrows)
               (set! cursor-pos latent-pos)
               (set! cursor-text latent-text)
               (set! cursor-eles latent-eles)
@@ -1505,6 +1501,8 @@ If the namespace does not, they are colored the unbound color.
         
         (define/augment (on-tab-change old-tab new-tab)
           (inner (void) on-tab-change old-tab new-tab)
+          (send (send old-tab get-defs) enable-tooltips #f)
+          (send (send new-tab get-defs) enable-tooltips #t)
           (send (send old-tab get-defs) syncheck:update-drawn-arrows)
           (send (send new-tab get-defs) syncheck:update-drawn-arrows)
           (if (send new-tab get-error-report-visible?)
@@ -1512,6 +1510,12 @@ If the namespace does not, they are colored the unbound color.
               (hide-error-report))
           (send report-error-canvas set-editor (send new-tab get-error-report-text))
           (update-button-visibility/tab new-tab))
+        
+        (define/override (on-activate active?)
+          (define defs (send (get-current-tab) get-defs))
+          (send defs enable-tooltips active?)
+          (send defs syncheck:update-drawn-arrows)
+          (super on-activate active?))
         
         (define/private (update-button-visibility/tab tab)
           (update-button-visibility/settings (send (send tab get-defs) get-next-settings)))

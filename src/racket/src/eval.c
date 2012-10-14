@@ -5420,7 +5420,7 @@ local_eval(int argc, Scheme_Object **argv)
   if (!((void **)SCHEME_PTR1_VAL(argv[2]))[2])
     ((void **)SCHEME_PTR1_VAL(argv[2]))[2] = stx_env;
 
-  SCHEME_EXPAND_OBSERVE_NEXT(observer);
+  SCHEME_EXPAND_OBSERVE_EXIT_LOCAL_BIND(observer);
 
   return scheme_void;
 }

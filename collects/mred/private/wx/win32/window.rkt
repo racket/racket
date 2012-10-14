@@ -64,8 +64,6 @@
 (define-shell32 DragAcceptFiles (_wfun _HWND _BOOL -> _void))
 
 (define _HDROP _pointer)
-(define-shell32 DragQueryPoint (_wfun _HDROP (p : (_ptr o _POINT)) -> (r : _BOOL)
-                                      -> (if r p (failed 'DragQueryPoint))))
 (define-shell32 DragQueryFileW (_wfun _HDROP _UINT _pointer _UINT -> _UINT))
 (define-shell32 DragFinish (_wfun _HDROP -> _void))
 
@@ -438,7 +436,6 @@
 
   (define/private (handle-drop-files wParam)
     (let* ([hdrop (cast wParam _WPARAM _HDROP)]
-           [pt (DragQueryPoint hdrop)]
            [count (DragQueryFileW hdrop #xFFFFFFFF #f 0)])
       (for ([i (in-range count)])
         (let* ([len (DragQueryFileW hdrop i #f 0)]

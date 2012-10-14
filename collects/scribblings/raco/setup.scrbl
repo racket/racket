@@ -812,7 +812,7 @@ Imports @racket[mred^] and exports @racket[setup:plt-installer^]. }
           false/c)]{
 
    Accepts a path to a directory. If it finds either a well-formed
-   an @filepath{info.rkt} file or an @filepath{info.rkt} file (with
+   an @filepath{info.rkt} file or an @filepath{info.ss} file (with
    preference for the @filepath{info.rkt} file), 
    it returns an info procedure that accepts either one
    or two arguments. The first argument to the info procedure is

@@ -223,4 +223,17 @@
                           (define-values (y) 2))))])
         (check-pred deriv? d)
         (check-pred ok-node? d)))
+
+    ;; Added 10/11/2012 based on bug from mflatt,shriram
+    (test-case "recover from jump"
+      (let ([d (trace '(module m racket/base
+                         (require (for-syntax racket/base))
+                         (define-syntax (convert-error stx)
+                           (syntax-case stx ()
+                             [(convert-error expr)
+                              (with-handlers ([exn? (lambda (e) #'(quote error))])
+                                (local-expand #'expr 'expression null))]))
+                         (convert-error (lambda))))])
+        (check-pred deriv? d)
+        (check-pred ok-node? d)))
     ))

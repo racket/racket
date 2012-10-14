@@ -2498,6 +2498,7 @@ static int common8_5(mz_jit_state *jitter, void *_data)
   for (i = 0; i < 2; i++) {
     void *code;
     GC_CAN_IGNORE jit_insn *refslow, *refloop, *refdone, *ref, *refr;
+    GC_CAN_IGNORE jit_insn *refmaybedone, *refresume;
 
     code = jit_get_ip().ptr;
     if (i == 0)
@@ -2542,24 +2543,38 @@ static int common8_5(mz_jit_state *jitter, void *_data)
 
     mz_patch_branch(ref);
 
-    /* Handle simple cases: small fixnum index */
+    /* Handle simple cases: non-negative fixnum index */
     jit_rshi_l(JIT_R1, JIT_R1, 1);
     (void)jit_blti_l(refslow, JIT_R1, 0);
-    (void)jit_bgti_l(refslow, JIT_R1, 10000);
     
     refloop = _jit.x.pc;
     if (i == 0) {
-      refdone = jit_beqi_l(jit_forward(), JIT_R1, 0);
-    } else
-      refdone = NULL;
+      refmaybedone = jit_bmci_l(jit_forward(), JIT_R1, 0xFFF);
+      refresume = _jit.x.pc;
+    } else {
+      refmaybedone = NULL;
+      refresume = NULL;
+    }
     (void)jit_bmsi_l(refslow, JIT_R0, 0x1);
     (void)mz_bnei_t(refslow, JIT_R0, scheme_pair_type, JIT_R2);
     if (i == 1) {
-      refdone = jit_beqi_l(jit_forward(), JIT_R1, 0);
+      refmaybedone = jit_bmci_l(jit_forward(), JIT_R1, 0xFFF);
+      refresume = _jit.x.pc;
     }
     jit_subi_l(JIT_R1, JIT_R1, 1);
     jit_ldxi_p(JIT_R0, JIT_R0, (intptr_t)&SCHEME_CDR(0x0));
     (void)jit_jmpi(refloop);
+
+    mz_patch_branch(refmaybedone);
+    refdone = jit_beqi_l(jit_forward(), JIT_R1, 0);
+#ifdef FUEL_AUTODECEREMENTS
+    /* not zero yet, so check for thread swap or other pause */ 
+    (void)mz_tl_ldi_i(JIT_R2, tl_scheme_fuel_counter);
+    (void)jit_blei_i(refslow, JIT_R2, 0);
+    (void)jit_jmpi(refresume); /* return to fast path */
+#else
+    (void)jit_jmpi(refslow); /* no free registers to decrement fuel, so give up */
+#endif
 
     mz_patch_branch(refdone);
     if (i == 1) {

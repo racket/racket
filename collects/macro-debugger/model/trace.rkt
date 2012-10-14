@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/promise
+         racket/list
          syntax/modcode
          syntax/modresolve
          parser-tools/lex
@@ -76,20 +77,58 @@
 ;; expand/events : stx (stx -> stx) -> stx/exn (list-of event)
 (define (expand/events sexpr expander)
   (define events null)
+  ;; Problem: jumps within expansion (eg, macro catches error thrown from within
+  ;; call to 'local-expand') can result in ill-formed event stream.
+  ;; In general, not possible to detect jump endpoints, but we can at least isolate
+  ;; the bad parts by watching for mismatched bracketing events
+  ;; (eg, macro-{pre,post}-transform).
+  (define counter 0)        ;; = (length events)
+  (define macro-stack null) ;; (listof (cons (U stx 'local-bind) nat))
   (define (add! x y)
+    (set! counter (add1 counter))
     (set! events (cons (cons (signal->symbol x) y) events)))
   (define add!/check
     (let ([limit (trace-macro-limit)]
           [handler (trace-limit-handler)]
-          [counter 0]
+          [limit-counter 0]
           [last-local-value-id #f])
       (lambda (x y)
         (add! x y)
         (case x
           ((8) ;; enter-macro
-           (set! counter (add1 counter))
-           (when (>= counter limit)
-             (set! limit (handler counter))))
+           (set! limit-counter (add1 limit-counter))
+           (when (>= limit-counter limit)
+             (set! limit (handler limit-counter))))
+          ((21) ;; macro-pre-transform
+           (let ([rec (cons y counter)])
+             (set! macro-stack (cons rec macro-stack))))
+          ((22) ;; macro-post-transform
+           (cond [(and (pair? macro-stack)
+                       (eq? (car (car macro-stack)) (cdr y)))
+                  (set! macro-stack (cdr macro-stack))]
+                 [else ;; Jumped!
+                  (let loop ([ms macro-stack])
+                    (let ([top (car ms)])
+                      (cond [(eq? (car top) (cdr y))
+                             (let* ([reset-to (cdr top)]
+                                    [len (- counter reset-to 1)]
+                                    [pfx (take (cdr events) len)]
+                                    [sfx (drop (cdr events) len)])
+                               (set! macro-stack (cdr ms))
+                               (set! events sfx)
+                               (set! counter (cdr top))
+                               (add! 'local-mess (reverse pfx))
+                               (add! 'macro-post-transform y))]
+                            [else (loop (cdr ms))])))]))
+          ((143) ;; local-bind
+           (let ([rec (cons 'local-bind counter)])
+             (set! macro-stack (cons rec macro-stack))))
+          ((160) ;; exit-local-bind
+           (let ([top (car macro-stack)])
+             (cond [(eq? (car top) 'local-bind)
+                    (set! macro-stack (cdr macro-stack))]
+                   [else ;; Jumped!
+                    (error 'trace "internal error: cannot handle catch within bind")])))
           ((153) ;; local-value
            (set! last-local-value-id y))
           ((154) ;; local-value-result
@@ -106,7 +145,6 @@
       (add! 'EOF #f)
       (values result
               (reverse events)))))
-
 
 (require syntax/stx
          syntax/kerncase)

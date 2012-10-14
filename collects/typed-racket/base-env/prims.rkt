@@ -53,7 +53,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
           "../types/utils.rkt"
           "for-clauses.rkt")
          "../types/numeric-predicates.rkt"
-         racket/unsafe/ops)
+         racket/unsafe/ops
+         racket/vector)
 (provide index?) ; useful for assert, and racket doesn't have it
 
 (begin-for-syntax 
@@ -102,18 +103,15 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (define-syntax-class (struct-clause legacy)
     ;#:literals (struct)
     #:attributes (nm (body 1) (constructor-parts 1))
-    (pattern [struct nm:opt-parent (body ...) (~var constructor (opt-constructor legacy #'nm.nm))]
-             #:fail-unless (eq? 'struct (syntax-e #'struct)) #f
+    (pattern [(~or (~datum struct) #:struct) nm:opt-parent (body ...) (~var constructor (opt-constructor legacy #'nm.nm))]
              #:with (constructor-parts ...) #'constructor.value))
 
   (define-syntax-class opaque-clause
     ;#:literals (opaque)
     #:attributes (ty pred opt)
-    (pattern [opaque ty:id pred:id]
-             #:fail-unless (eq? 'opaque (syntax-e #'opaque)) #f
+    (pattern [(~or (~datum opaque) #:opaque) ty:id pred:id]
              #:with opt #'())
-    (pattern [opaque ty:id pred:id #:name-exists]
-             #:fail-unless (eq? 'opaque (syntax-e #'opaque)) #f
+    (pattern [(~or (~datum opaque) #:opaque) opaque ty:id pred:id #:name-exists]
              #:with opt #'(#:name-exists)))
 
   (define-syntax-class (clause legacy lib)
@@ -1096,7 +1094,10 @@ This file defines two sorts of primitives. All of them are provided into any mod
            (let: ([x : Float  (let () body ...)])
              (cond [(unsafe-fx= i n)  (define new-n (unsafe-fx* 2 n))
                                       (define new-xs (make-flvector new-n x))
-                                      (unsafe-flvector-copy! new-xs 0 xs 0 n)
+                                      (let: loop : Void ([i : Nonnegative-Fixnum 0])
+                                        (when (i . unsafe-fx< . n)
+                                          (unsafe-flvector-set! new-xs i (unsafe-flvector-ref xs i))
+                                          (loop (unsafe-fx+ i 1))))
                                       (set! n new-n)
                                       (set! xs new-xs)]
                    [else  (unsafe-flvector-set! xs i x)]))

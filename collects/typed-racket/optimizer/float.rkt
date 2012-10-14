@@ -40,6 +40,11 @@
   (pattern e:expr
            #:when (subtypeof? #'e -Flonum)
            #:with opt ((optimize) #'e)))
+(define-syntax-class single-float-expr
+  #:commit
+  (pattern e:expr
+           #:when (subtypeof? #'e -SingleFlonum)
+           #:with opt ((optimize) #'e)))
 (define-syntax-class int-expr
   #:commit
   (pattern e:expr
@@ -147,7 +152,8 @@
                                        (not (in-float-layer? s)))
                               #'e]
                              [_ #f]))))
-                      (when (not (null? extra-precision-subexprs))
+                      (when (and (not (null? extra-precision-subexprs))
+                                 (subtypeof? this-syntax -InexactReal))
                         (log-missed-optimization
                          "exact ops inside float expr"
                          "This expression has a Float type, but the highlighted subexpression(s) use exact arithmetic. The extra precision of the exact arithmetic will be lost. Using Float types in these subexpression(s) may result in performance gains without significant precision loss."
@@ -187,15 +193,28 @@
                   #'(let ([tmp f.opt]) (unsafe-fl* tmp tmp))))
 
   ;; we can optimize exact->inexact if we know we're giving it an Integer
-  (pattern (#%plain-app (~and op (~literal exact->inexact)) n:int-expr)
+  (pattern (#%plain-app (~and op (~or (~literal exact->inexact)
+                                      (~literal real->double-flonum)))
+                        n:int-expr)
            #:with opt
            (begin (log-optimization "int to float" float-opt-msg this-syntax)
                   (add-disappeared-use #'op)
                   #'(->fl n.opt)))
   ;; we can get rid of it altogether if we're giving it a float
-  (pattern (#%plain-app (~and op (~literal exact->inexact)) f:float-expr)
+  (pattern (#%plain-app (~and op (~or (~literal exact->inexact)
+                                      (~literal real->double-flonum)))
+                        f:float-expr)
            #:with opt
            (begin (log-optimization "float to float" float-opt-msg this-syntax)
+                  (add-disappeared-use #'op)
+                  #'f.opt))
+  ;; same for single-flonums
+  (pattern (#%plain-app (~and op (~or (~literal exact->inexact)
+                                      (~literal real->single-flonum)))
+                        f:single-float-expr)
+           #:with opt
+           (begin (log-optimization "single-float to single-float"
+                                    float-opt-msg this-syntax)
                   (add-disappeared-use #'op)
                   #'f.opt))
 
