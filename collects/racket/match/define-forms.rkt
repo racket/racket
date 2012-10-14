@@ -5,23 +5,47 @@
                      (only-in racket/list append* remove-duplicates)
                      unstable/sequence
                      syntax/parse
+                     syntax/parse/experimental/template
                      (only-in racket/match/patterns bound-vars)
                      (only-in racket/match/gen-match go go/one)))
 
 (provide define-forms)
+
+;; syntax classes for `define/match`
+(begin-for-syntax
+  (define-syntax-class function-header
+    (pattern ((~or header:function-header name:id) . args:args)
+             #:attr params
+             (template ((?@ . (?? header.params ()))
+                        . args.params))))
+
+  (define-syntax-class args
+    (pattern (arg:arg ...)
+             #:attr params #'(arg.name ...))
+    (pattern (arg:arg ... . rest:id)
+             #:attr params #'(arg.name ... rest)))
+
+  (define-splicing-syntax-class arg
+    #:attributes (name)
+    (pattern name:id)
+    (pattern [name:id default])
+    (pattern (~seq kw:keyword name:id))
+    (pattern (~seq kw:keyword [name:id default]))))
 
 (define-syntax-rule (define-forms parse-id
                       match match* match-lambda match-lambda*
 		      match-lambda** match-let match-let*
                       match-let-values match-let*-values
 		      match-define match-define-values match-letrec
-		      match/values match/derived match*/derived)
+		      match/values match/derived match*/derived
+                      define/match)
   (...
    (begin
      (provide match match* match-lambda match-lambda* match-lambda**
 	      match-let match-let* match-let-values match-let*-values
               match-define match-define-values match-letrec
-	      match/values match/derived match*/derived match-define-values)
+	      match/values match/derived match*/derived match-define-values
+              define/match)
      (define-syntax (match* stx)
        (syntax-parse stx
          [(_ es . clauses)
@@ -144,4 +168,12 @@
             (quasisyntax/loc stx
               (define-values #,bound-vars-list
                 (match/values rhs
-                  [(pats ...) (values . #,bound-vars-list)]))))])))))
+                  [(pats ...) (values . #,bound-vars-list)]))))]))
+
+     (define-syntax (define/match stx)
+       (syntax-parse stx
+         [(_ ?header:function-header ?clause ...)
+          (template
+           (define ?header
+             (match* (?? ?header.params)
+               ?clause ...)))])))))
