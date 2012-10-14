@@ -121,14 +121,62 @@
           [(Function: (list (top-arr:))) #'procedure?]
           [(Function: arrs)
            (set-chaperone!)
-           (let ()
+           ;; Try to generate a single `->*' contract if possible.
+           ;; This allows contracts to be generated for functions with both optional and keyword args.
+           ;; (and don't otherwise require full `case->')
+           (define conv (match-lambda [(Keyword: kw kty _) (list kw (t->c/neg kty))]))
+           (define (partition-kws kws) (partition (match-lambda [(Keyword: _ _ mand?) mand?]) kws))
+           (define (process-dom dom*)  (if method? (cons #'any/c dom*) dom*))
+           (define (process-rngs rngs*)
+             (match rngs*
+               [(list r) r]
+               [_ #`(values #,@rngs*)]))
+           (cond
+            ;; To generate a single `->*', everything must be the same for all arrs, except for positional
+            ;; arguments which only need to be monotonically increasing.
+            ;; TODO sufficient condition, but may not be necessary
+            [(and
+              (> (length arrs) 1)
+              ;; Keyword args, range and rest specs all the same.
+              (let ([xs (map (match-lambda [(arr: _ rng rest-spec _ kws) (list rng rest-spec kws)]) arrs)])
+                (foldl equal? (first xs) (rest xs)))
+              ;; Positionals are monotonically increasing.
+              (let-values ([(_ ok?)
+                            (for/fold ([positionals '()]
+                                       [ok-so-far?  #t])
+                                ([arr (in-list arrs)])
+                              (match arr
+                                [(arr: dom _ _ _ _)
+                                 (values dom
+                                         (and ok-so-far?
+                                              (>= (length dom) (length positionals))
+                                              (equal? positionals (take dom (length positionals)))))]))])
+                ok?))
+             (match* ((first arrs) (last arrs))
+               [((arr: first-dom (Values: (list (Result: rngs (FilterSet: (Top:) (Top:)) (Empty:)) ...)) rst #f kws)
+                 (arr: last-dom _ _ _ _)) ; all but dom is the same for all
+                (with-syntax
+                    ([(dom* ...)
+                      ;; Mandatory arguments are positionals of the first arr
+                      ;; (smallest set, since postitionals are monotonically increasing)
+                      ;; and mandatory kw args.
+                      (let*-values ([(mand-kws opt-kws) (partition-kws kws)])
+                        (process-dom (append (map t->c/neg first-dom)
+                                             (append-map conv mand-kws))))]
+                     [(opt-dom* ...)
+                      (let-values ([(mand-kws opt-kws) (partition-kws kws)])
+                        (append (map t->c/neg (drop last-dom (length first-dom)))
+                                (append-map conv opt-kws)))]
+                     [rng* (process-rngs (map t->c rngs))]
+                     [(rst-spec ...) (if rst #'(#:rest (listof #,(t->c/neg rest))) #'())])
+                  #'((dom* ...) (opt-dom* ...) rst-spec ... . ->* . rng*))])]
+            [else
              (define ((f [case-> #f]) a)
                (define-values (dom* opt-dom* rngs* rst)
                  (match a
                    ;; functions with no filters or objects
                    [(arr: dom (Values: (list (Result: rngs (FilterSet: (Top:) (Top:)) (Empty:)) ...)) rst #f kws)
-                    (let-values ([(mand-kws opt-kws) (partition (match-lambda [(Keyword: _ _ mand?) mand?]) kws)]
-                                 [(conv) (match-lambda [(Keyword: kw kty _) (list kw (t->c/neg kty))])])
+                    (let-values ([(mand-kws opt-kws) (partition-kws kws)])
                       (values (append (map t->c/neg dom) (append-map conv mand-kws))
                               (append-map conv opt-kws)
                               (map t->c rngs)
@@ -143,21 +191,19 @@
                         (exit (fail)))]
                    [_ (exit (fail))]))
                (with-syntax*
-                   ([(dom* ...) (if method? (cons #'any/c dom*) dom*)]
-                    [(opt-dom* ...) opt-dom*]
-                    [rng* (match rngs*
-                            [(list r) r]
-                            [_ #`(values #,@rngs*)])]
-                    [rst* rst]
-                    [(rst-spec ...) (if rst #'(#:rest (listof rst*)) #'())])
-                 ;; Garr, I hate case->!
-                 (if (and (pair? (syntax-e #'(opt-dom* ...))) case->)
-                     (exit (fail))
-                     (if (or rst (pair? (syntax-e #'(opt-dom* ...))))
-                         (if case->
-                             #'(dom* ... rst-spec ... . -> . rng*)
-                             #'((dom* ...) (opt-dom* ...) rst-spec ... . ->* . rng*))
-                         #'(dom* ... . -> . rng*)))))
+                ([(dom* ...)     (process-dom dom*)]
+                 [(opt-dom* ...) opt-dom*]
+                 [rng*           (process-rngs rngs*)]
+                 [rst*           rst]
+                 [(rst-spec ...) (if rst #'(#:rest (listof rst*)) #'())])
+                ;; Garr, I hate case->!
+                (if (and (pair? (syntax-e #'(opt-dom* ...))) case->)
+                    (exit (fail))
+                    (if (or rst (pair? (syntax-e #'(opt-dom* ...))))
+                        (if case->
+                            #'(dom* ... rst-spec ... . -> . rng*)
+                            #'((dom* ...) (opt-dom* ...) rst-spec ... . ->* . rng*))
+                        #'(dom* ... . -> . rng*)))))
              (unless (no-duplicates (for/list ([t arrs])
                                       (match t
                                         [(arr: dom _ _ _ _) (length dom)]
@@ -166,7 +212,7 @@
                (exit (fail)))
              (match (map (f (not (= 1 (length arrs)))) arrs)
                [(list e) e]
-               [l #`(case-> #,@l)]))]
+               [l #`(case-> #,@l)])])]
           [_ (int-err "not a function" f)]))
 
       ;; Helpers for contract requirements
