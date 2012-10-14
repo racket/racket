@@ -621,7 +621,7 @@ int scheme_is_simple(Scheme_Object *obj, int depth, int just_markless, mz_jit_st
     break;
 
   case scheme_application_type:
-    if (scheme_inlined_nary_prim(((Scheme_App_Rec *)obj)->args[0], obj)
+    if (scheme_inlined_nary_prim(((Scheme_App_Rec *)obj)->args[0], obj, jitter)
         && !SAME_OBJ(((Scheme_App_Rec *)obj)->args[0], scheme_values_func))
       return 1;
     if (just_markless) {

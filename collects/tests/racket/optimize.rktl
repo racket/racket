@@ -2196,4 +2196,28 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(module check-tail-call-by-jit-for-struct-predicate racket/base
+  (provide go)
+
+  (struct s (x))
+  
+  (define f #f)
+  (set! f (lambda (v)
+            (if (zero? v)
+                (let ([vec (make-vector 6)])
+                  (vector-set-performance-stats! vec (current-thread))
+                  (vector-ref vec 3))
+                (s? (sub1 v)))))
+  
+  (void (f 5)) ; JIT decides that `s?' is a struct predicate
+  (set! s? f) ; break the JIT's optimistic assumption
+  
+  (define (go)
+    (define size (f 500000)) ; make sure that this still leads to a tail loop
+    (size . < . 80000)))
+
+(test #t (dynamic-require ''check-tail-call-by-jit-for-struct-predicate 'go))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

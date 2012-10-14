@@ -819,6 +819,8 @@ Scheme_Object *scheme_extract_struct_procedure(Scheme_Object *obj, int num_rands
 Scheme_Object *scheme_proc_struct_name_source(Scheme_Object *a);
 Scheme_Object *scheme_object_name(Scheme_Object *a);
 
+int scheme_is_simple_struct_type(Scheme_Struct_Type *stype);
+
 Scheme_Object *scheme_is_writable_struct(Scheme_Object *s);
 Scheme_Object *scheme_print_attribute_ref(Scheme_Object *s);
 

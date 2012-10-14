@@ -2265,7 +2265,7 @@ make_simple_struct_instance(int argc, Scheme_Object **args, Scheme_Object *prim)
   return (Scheme_Object *)inst;
 }
 
-static int is_simple_struct_type(Scheme_Struct_Type *stype)
+int scheme_is_simple_struct_type(Scheme_Struct_Type *stype)
 {
   int p;
 
@@ -3771,7 +3771,7 @@ make_struct_proc(Scheme_Struct_Type *struct_type,
 
   if (proc_type == SCHEME_CONSTR) {
     int simple;
-    simple = is_simple_struct_type(struct_type);
+    simple = scheme_is_simple_struct_type(struct_type);
     a[0] = (Scheme_Object *)struct_type;
     p = scheme_make_folding_prim_closure((simple 
 					  ? make_simple_struct_instance

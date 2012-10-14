@@ -1356,7 +1356,7 @@ static int common3(mz_jit_state *jitter, void *_data)
 }
 
 static int gen_struct_slow(mz_jit_state *jitter, int kind, int ok_proc, 
-                           int for_branch, int multi_ok,
+                           int for_branch, int is_tail, int multi_ok,
                            GC_CAN_IGNORE jit_insn **_bref5,
                            GC_CAN_IGNORE jit_insn **_bref6)
 {
@@ -1376,7 +1376,10 @@ static int gen_struct_slow(mz_jit_state *jitter, int kind, int ok_proc,
     jit_pusharg_p(JIT_RUNSTACK);
     jit_pusharg_i(JIT_V1);
     jit_pusharg_p(JIT_R0);
-    if (multi_ok) {
+    if (is_tail) {
+      scheme_generate_finish_tail_apply(jitter);
+      CHECK_LIMIT();
+    } else if (multi_ok) {
       (void)mz_finish_lwe(ts__scheme_apply_multi_from_native, refrts);
     } else {
       (void)mz_finish_lwe(ts__scheme_apply_from_native, refrts);
@@ -1560,25 +1563,28 @@ static int common4(mz_jit_state *jitter, void *_data)
     __END_TINY_JUMPS__(1);
   }
 
-  /* *** struct_{pred,get,set}[_branch]_code *** */
+  /* *** struct_{pred,get,set}[_branch,_multi,_tail]_code *** */
   /* R0 is (potential) struct proc, R1 is (potential) struct. */
   /* In branch mode, V1 is target address for false branch. */
   /* In set mode, V1 is value to install.                   */
-  for (ii = 0; ii < 2; ii++) {
-    for (i = 0; i < 4; i++) {
+  for (ii = 0; ii < 3; ii++) { /* single, multi, or tail */
+    for (i = 0; i < 4; i++) { /* pred, pred_branch, get, or set */
       void *code;
       int kind, for_branch;
       GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *refslow, *refslow2, *bref1, *bref2, *refretry;
       GC_CAN_IGNORE jit_insn *bref3, *bref4, *bref5, *bref6, *bref8, *ref9;
 
       if ((ii == 1) && (i == 1)) continue; /* no multi variant of pred branch */
+      if ((ii == 2) && (i == 1)) continue; /* no tail variant of pred branch */
 
       code = jit_get_ip().ptr;
 
       if (!i) {
 	kind = 1;
 	for_branch = 0;
-        if (ii == 1) 
+        if (ii == 2) 
+          sjc.struct_pred_tail_code = jit_get_ip().ptr;
+        else if (ii == 1) 
           sjc.struct_pred_multi_code = jit_get_ip().ptr;
         else
           sjc.struct_pred_code = jit_get_ip().ptr;
@@ -1591,14 +1597,18 @@ static int common4(mz_jit_state *jitter, void *_data)
       } else if (i == 2) {
 	kind = 2;
 	for_branch = 0;
-        if (ii == 1) 
+        if (ii == 2) 
+          sjc.struct_get_tail_code = jit_get_ip().ptr;
+        else if (ii == 1) 
           sjc.struct_get_multi_code = jit_get_ip().ptr;
         else
           sjc.struct_get_code = jit_get_ip().ptr;
       } else {
 	kind = 3;
 	for_branch = 0;
-        if (ii == 1) 
+        if (ii == 2) 
+          sjc.struct_set_tail_code = jit_get_ip().ptr;
+        else if (ii == 1) 
           sjc.struct_set_multi_code = jit_get_ip().ptr;
         else
           sjc.struct_set_code = jit_get_ip().ptr;
@@ -1615,13 +1625,13 @@ static int common4(mz_jit_state *jitter, void *_data)
 
       /* Slow path: non-struct proc. */
       refslow = _jit.x.pc;
-      gen_struct_slow(jitter, kind, 0, for_branch, ii == 1, &bref5, &bref6);
+      gen_struct_slow(jitter, kind, 0, for_branch, ii == 2, ii == 1, &bref5, &bref6);
       CHECK_LIMIT();
 
       if ((kind == 2) || (kind == 3)) {
         /* Slow path: argument type is bad for a getter/setter. */
         refslow2 = _jit.x.pc;
-        gen_struct_slow(jitter, kind, 1, 0, 0, NULL, NULL);
+        gen_struct_slow(jitter, kind, 1, 0, 0, 0, NULL, NULL);
         CHECK_LIMIT();
       } else
         refslow2 = refslow;
@@ -1773,28 +1783,34 @@ static int common4b(mz_jit_state *jitter, void *_data)
 {
   int i, ii;
 
-  /* *** struct_prop_{pred,get[_defl]}_[multi_]code *** */
+  /* *** struct_prop_{pred,get[_defl]}_[multi_,tail_]code *** */
   /* R0 is (potential) struct-prop proc, R1 is (potential) struct.
      If defl_, V1 is second argument for default value. */
   for (i = 0; i < 3; i++) {
-    for (ii = 0; ii < 2; ii++) {
+    for (ii = 0; ii < 3; ii++) { /* single, multi, or tail */
       void *code;
       GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *refno, *refslow, *refloop, *refrts;
 
       code = jit_get_ip().ptr;
       
       if (i == 0) {
-        if (ii == 1) 
+        if (ii == 2) 
+          sjc.struct_prop_get_tail_code = code;
+        else if (ii == 1) 
           sjc.struct_prop_get_multi_code = code;
         else
           sjc.struct_prop_get_code = code;
       } else if (i == 1) {
-        if (ii == 1) 
+        if (ii == 2) 
+          sjc.struct_prop_get_defl_tail_code = code;
+        else if (ii == 1) 
           sjc.struct_prop_get_defl_multi_code = code;
         else
           sjc.struct_prop_get_defl_code = code;
       } else if (i == 2) {
-        if (ii == 1) 
+        if (ii == 2) 
+          sjc.struct_prop_pred_tail_code = code;
+        else if (ii == 1) 
           sjc.struct_prop_pred_multi_code = code;
         else
           sjc.struct_prop_pred_code = code;
@@ -1826,7 +1842,10 @@ static int common4b(mz_jit_state *jitter, void *_data)
       jit_pusharg_p(JIT_RUNSTACK);
       jit_pusharg_i(JIT_V1);
       jit_pusharg_p(JIT_R0);
-      if (ii == 1) {
+      if (ii == 2) {
+        scheme_generate_finish_tail_apply(jitter);
+        CHECK_LIMIT();
+      } else if (ii == 1) {
         (void)mz_finish_lwe(ts__scheme_apply_multi_from_native, refrts);
       } else {
         (void)mz_finish_lwe(ts__scheme_apply_from_native, refrts);

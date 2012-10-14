@@ -250,13 +250,13 @@ struct scheme_jit_common_record {
   void *on_demand_jit_arity_code, *in_progress_on_demand_jit_arity_code;
   void *get_stack_pointer_code;
   void *stack_cache_pop_code;
-  void *struct_pred_code, *struct_pred_multi_code;
+  void *struct_pred_code, *struct_pred_tail_code, *struct_pred_multi_code;
   void *struct_pred_branch_code;
-  void *struct_get_code, *struct_get_multi_code;
-  void *struct_set_code, *struct_set_multi_code;
-  void *struct_prop_get_code, *struct_prop_get_multi_code;
-  void *struct_prop_get_defl_code, *struct_prop_get_defl_multi_code;
-  void *struct_prop_pred_code, *struct_prop_pred_multi_code;
+  void *struct_get_code, *struct_get_tail_code, *struct_get_multi_code;
+  void *struct_set_code, *struct_set_tail_code, *struct_set_multi_code;
+  void *struct_prop_get_code, *struct_prop_get_tail_code, *struct_prop_get_multi_code;
+  void *struct_prop_get_defl_code, *struct_prop_get_defl_tail_code, *struct_prop_get_defl_multi_code;
+  void *struct_prop_pred_code, *struct_prop_pred_tail_code, *struct_prop_pred_multi_code;
   void *struct_proc_extract_code;
   void *bad_app_vals_target;
   void *app_values_slow_code, *app_values_multi_slow_code, *app_values_tail_slow_code;
@@ -1170,7 +1170,7 @@ int scheme_mz_try_runstack_pop(mz_jit_state *jitter, int n);
 
 int scheme_inlined_unary_prim(Scheme_Object *o, Scheme_Object *_app, mz_jit_state *jitter);
 int scheme_inlined_binary_prim(Scheme_Object *o, Scheme_Object *_app, mz_jit_state *jitter);
-int scheme_inlined_nary_prim(Scheme_Object *o, Scheme_Object *_app);
+int scheme_inlined_nary_prim(Scheme_Object *o, Scheme_Object *_app, mz_jit_state *jitter);
 int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, int is_tail, int multi_ok, 
 				  Branch_Info *for_branch, int branch_short, int need_sync, int result_ignored);
 int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, int is_tail, int multi_ok, 
@@ -1232,6 +1232,7 @@ int scheme_generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
 int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs, 
 				  int multi_ok, int nontail_self, int pop_and_jump, int is_inlined, int unboxed_args);
 int scheme_generate_finish_tail_call(mz_jit_state *jitter, int direct_native);
+int scheme_generate_finish_tail_apply(mz_jit_state *jitter);
 void scheme_jit_register_sub_func(mz_jit_state *jitter, void *code, Scheme_Object *protocol);
 void scheme_jit_register_helper_func(mz_jit_state *jitter, void *code);
 #ifdef MZ_USE_FUTURES
@@ -1383,3 +1384,16 @@ Scheme_Object *scheme_jit_continuation_apply_install(Apply_LWC_Args *args);
 #define CMP_EVENP  4
 /*  odd? */
 #define CMP_ODDP  -4
+
+/**********************************************************************/
+
+#define INLINE_STRUCT_PROC_PRED 1
+#define INLINE_STRUCT_PROC_GET  2
+#define INLINE_STRUCT_PROC_SET  3
+#define INLINE_STRUCT_PROC_PROP_GET 4
+#define INLINE_STRUCT_PROC_PROP_GET_W_DEFAULT 5
+#define INLINE_STRUCT_PROC_PROP_PRED 6
+#define INLINE_STRUCT_PROC_CONSTR 7
+
+
+
