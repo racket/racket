@@ -33,9 +33,9 @@
                                             c1)
                                        (and (file-exists? c2)
                                             c2)))))
-                 
+                 (define aspell? (regexp-match? #rx"aspell" (path->string asp)))
                  (when asp
-                   (set! aspell-proc (process* asp "-a"))
+                   (set! aspell-proc (apply process* asp "-a" (if aspell? '("--encoding=utf-8") '())))
                    (define line (read-line (list-ref aspell-proc 0)))
                    (log-info (format "framework: started speller: ~a" line))
                    
