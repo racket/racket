@@ -1624,7 +1624,7 @@
              (map binop (list -NonNegReal -NonPosReal -Real)))]
 [expt
  (from-cases (-> -One -Rat -One)
-             (map (lambda (t) (-> t -Zero t)) all-int-types) ; will error if negative
+             (map (lambda (t) (-> t -Zero -One)) all-number-types) ; will error if negative
              (-PosInt -Nat . -> . -PosInt)
              (-Nat -Nat . -> . -Nat)
              (-Int -Nat . -> . -Int)
@@ -1648,7 +1648,6 @@
              (-InexactReal (Un -NegInt -PosInt) . -> . -InexactReal)
              (-Real (Un -NegInt -PosInt) . -> . -Real)
              (-InexactReal -InexactReal . -> . (Un -InexactReal -InexactComplex))
-             (-ExactNumber -ExactNumber . -> . -ExactNumber)
              (-FloatComplex (Un -InexactComplex -InexactReal) . -> . -FloatComplex)
              (-SingleFlonumComplex (Un -SingleFlonum -SingleFlonumComplex) . -> . -SingleFlonumComplex)
              ((Un -InexactReal -InexactComplex) -InexactComplex . -> . -InexactComplex)
