@@ -669,7 +669,7 @@
               `(html ,(style->attribs (part-style d))
                  (head ()
                    (meta ([http-equiv "content-type"]
-                          [content "text-html; charset=utf-8"]))
+                          [content "text/html; charset=utf-8"]))
                    ,title
                    ,(scribble-css-contents scribble-css (lookup-path scribble-css alt-paths))
                    ,@(map (lambda (style-file)
