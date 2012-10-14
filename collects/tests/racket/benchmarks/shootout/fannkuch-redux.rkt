@@ -15,22 +15,30 @@
         [count (make-vector n)])
     (let loop ([flips 0]
                [perms 0]
-               [r n])
+               [r n]
+               [checksum 0]
+               [even-parity? #t])
       (for ([i (in-range r)])
         (vector-set! count i (add1 i)))
-      (let ((flips2 (max (count-flips pi tmp) flips)))
+      (let* ((next-flips (count-flips pi tmp))
+             (flips2 (max next-flips flips))
+             (next-checksum (+ checksum (if even-parity? next-flips (- next-flips)))))
         (let loop2 ([r 1])
           (if (= r n)
-              flips2
+              (values flips2 next-checksum)
               (let ((perm0 (vector-ref pi 0)))
                 (for ([i (in-range r)])
                   (vector-set! pi i (vector-ref pi (add1 i))))
                 (vector-set! pi r perm0)
                 (vector-set! count r (sub1 (vector-ref count r)))
                 (cond
-                 [(<= (vector-ref count r) 0)
-                  (loop2 (add1 r))]
-                 [else (loop flips2 (add1 perms) r)]))))))))
+                  [(<= (vector-ref count r) 0)
+                   (loop2 (add1 r))]
+                  [else (loop flips2 
+                              (add1 perms)
+                              r 
+                              next-checksum
+                              (not even-parity?))]))))))))
 
 (define (count-flips pi rho)
   (vector-copy! rho 0 pi)
@@ -54,6 +62,9 @@
     (vector-set! v j t)))
 
 (command-line #:args (n)
-              (printf "Pfannkuchen(~a) = ~a\n" 
+              (define-values (answer checksum)
+                (fannkuch (string->number n)))
+              (printf "~a\nPfannkuchen(~a) = ~a\n" 
+                      checksum
                       n 
-                      (fannkuch (string->number n))))
+                      answer))
