@@ -67,6 +67,11 @@ result of @racket[_loop] (and thus the result of the entire
               [(even? (car lst)) (loop (cons (car lst) accum) (cdr lst))]
               [else              (loop accum (cdr lst))])))
     (filter-even-loop (list 1 2 3 4))]}
+@defform[(plet: (a ...) ([v : t e] ...) . body)]{
+A polymorphic version of @racket[let:], abstracted over the type variables
+@racket[a]. The type variables @racket[a] are bound in both the types
+of the formal, and in any type expressions in the @racket[body].
+Does not support the looping form of let.}
 
 @deftogether[[
 @defform[(letrec: ([v : t e] ...) . body)]
