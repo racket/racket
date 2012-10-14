@@ -1,7 +1,7 @@
 #lang typed/racket/base
 
-(require racket/flonum
-         (for-syntax racket/base syntax/parse))
+(require (for-syntax racket/base syntax/parse)
+         "flonum-functions.rkt")
 
 (provide make-flpolyfun
          make-even-flpolyfun

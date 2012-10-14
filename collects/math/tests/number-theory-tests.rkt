@@ -36,13 +36,8 @@
         [else (= (length (unit-group n)) (order r n))]))
 (check-true   (andmap find-and-check-root '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 78125)))
 
-; "list-operations.rkt"
-(check-equal? (list-sum '(1 2 3 4)) 10)
-(check-equal? (list-product '(2 3 5)) 30)
-
 ;"polygonal.rkt"
 (check-equal? (map triangle    '(0 1 2 3 4 5)) '(0 1 3  6 10 15))
-(check-equal? (map square      '(0 1 2 3 4 5)) '(0 1 4  9 16 25))
 (check-equal? (map pentagonal  '(0 1 2 3 4 5)) '(0 1 5 12 22 35))
 (check-equal? (map hexagonal   '(0 1 2 3 4 5)) '(0 1 6 15 28 45))
 (check-equal? (map heptagonal  '(0 1 2 3 4 5)) '(0 1 7 18 34 55))
@@ -58,25 +53,22 @@
 (check-equal? (farey 5) '(0 1/5 1/4 1/3 2/5 1/2 3/5 2/3 3/4 4/5 1))
 (check-equal? (mediant 1/1 1/2) 2/3)
 
-; "fibonacci-lucas.rkt"
-(check-equal? ((inst map Natural Natural) fibonacci '(0 1 2 3 4 5 6 7))
-              '(0 1 1 2 3 5 8 13))
-(check-equal? ((inst map Natural Natural) lucas '(0 1 2 3 4 5 6 7))
-              '(1 3 4 7 11 18 29 47))
-(check-equal? ((inst map Natural Natural) (λ: ([x : Natural]) (fibonacci-mod x 7)) '(0 1 2 3 4 5 6 7))
-              ((inst map Natural Natural) (λ: ([x : Natural]) (modulo (fibonacci x) 7)) '(0 1 2 3 4 5 6 7)))
+; "fibonacci.rkt"
+(check-equal? (build-list 8 fibonacci) '(0 1 1 2 3 5 8 13))
+(check-equal? (build-list 8 (make-fibonacci 2 1)) '(2 1 3 4 7 11 18 29))
+(for*: ([a  (in-range -5 6)]
+        [b  (in-range -5 6)]
+        [mod  (in-range 1 8)])
+  (check-equal? (build-list 20 (λ: ([n : Integer]) ((make-fibonacci/mod a b) n mod)))
+                (build-list 20 (λ: ([n : Integer]) (modulo ((make-fibonacci a b) n) mod)))))
 
 ; "partitions.rkt"
-(check-equal? ((inst map Natural Integer) partitions '(0 1 2 3 4 5 6 7 8 9 10))
+(check-equal? (map partition-count '(0 1 2 3 4 5 6 7 8 9 10))
               '(1 1 2 3 5 7 11 15 22 30 42))
 
 
 ; "bernoulli.rkt"
 (check-equal? (map bernoulli '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18))
-              '(1 -1/2 1/6 0 -1/30 0 1/42 0 -1/30 0 5/66 0 -691/2730 0 7/6 0 -3617/510 0 43867/798))
-
-; "bernoulli-via-tangent.rkt"
-(check-equal? (map bernoulli/tangent '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18))
               '(1 -1/2 1/6 0 -1/30 0 1/42 0 -1/30 0 5/66 0 -691/2730 0 7/6 0 -3617/510 0 43867/798))
 
 ; "tangent-number.rkt"
@@ -113,7 +105,7 @@
   (not (not (member x xs))))
 
 (check-equal? ; 2*12-1*20 = 4 = gcd(12,20)
- (list-dot '(12 20) (bezout-binary 12 20)) (gcd 12 20))
+ (list-dot '(12 20) (bezout 12 20)) (gcd 12 20))
 (check-equal? (list-dot '(12 20) (bezout 12 20)) (gcd 12 20))
 (check-equal? (list-dot '(20 16) (bezout 20 16)) (gcd 20 16))
 (check-equal? (list-dot '(12 20 16) (bezout 12 20 16)) (gcd 12 20 16))
@@ -127,11 +119,10 @@
 (check-true  (coprime? 6 10 15))
 (: check-inverse : Natural -> Boolean)
 (define (check-inverse n)
-  (define m (inverse n 20))
-  (cond [(and (coprime? n 20) m)         
-         (= (remainder (* n m) 20) 1)]
-        [else (not m)]))
-(check-true (andmap check-inverse (build-list 20 (λ: ([x : Natural]) x))))
+  (define m (and (coprime? n 20) (modular-inverse n 20)))
+  (cond [m  (= (remainder (* n m) 20) 1)]
+        [else  #t]))
+(check-true (andmap check-inverse (build-list 20 (λ: ([x : Natural]) (+ x 1)))))
 
 (check-equal? (solve-chinese '(2 3 2) '(3 5 7)) 23)
 
@@ -227,23 +218,12 @@
       [n : Natural (in-range 2 5)])
   (check-true (check-integer-root a n)))
 
-; "integer-root.rkt"
-;(: check-faster-integer-root : Natural Natural -> Boolean)
-;(define (check-faster-integer-root a n)
-;  (define r (faster-integer-root a n))
-;  (unless (and (<= (expt a n) a) (<= (expt (+ a 1)) n))
-;    (displayln (list 'check-faster-integer-root 'a a 'n n)))
-;  (and (<= (expt r n) a) (<= (expt (+ r 1)) n)))
-;(for:([a : Natural (in-range (expt 10 9) (+ (expt 10 9) 10000))]
-;      [n : Natural (in-range 2 5)])
-;  (check-true (check-faster-integer-root a n)))
-
 ; "quadratic-residues.rkt"
-(check-equal? (legendre  2 5) -1)
-(check-equal? (legendre  3 5) -1)
-(check-equal? (legendre  5 5)  0)
-(check-equal? (legendre  7 5) -1)
-(check-equal? (legendre 11 5)  1)
+(check-equal? (quadratic-character  2 5) -1)
+(check-equal? (quadratic-character  3 5) -1)
+(check-equal? (quadratic-character  5 5)  0)
+(check-equal? (quadratic-character  7 5) -1)
+(check-equal? (quadratic-character 11 5)  1)
 
 (check-true  (quadratic-residue? 1 17))
 (check-true  (quadratic-residue? 2 17))
@@ -261,5 +241,3 @@
 (check-false (quadratic-residue? 11 17))
 (check-false (quadratic-residue? 12 17))
 (check-false (quadratic-residue? 14 17))
-
-

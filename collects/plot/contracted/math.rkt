@@ -7,7 +7,7 @@
          ;; Flonums
          flblend flsum fldistance (activate-contract-out flonum-ok-for-range?)
          ;; Reals
-         maybe-inexact->exact
+         inexact->extended-exact maybe-inexact->exact
          min* max* blend atan2 sum real-modulo distance
          floor-log/base ceiling-log/base
          polar->cartesian 3d-polar->3d-cartesian

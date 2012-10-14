@@ -1,44 +1,47 @@
 #lang typed/racket
 
-(require racket/flonum
-         "../../flonum.rkt")
+(require "../../flonum.rkt")
 
-(provide continued-fraction)
+(provide continued-fraction continued-fraction-parts)
 
 ;; overflow = a power of 2 near sqrt(+max.0)
-(define overflow (flexpt 2.0 (floor (/ (fllog (flsqrt +max.0)) (fllog 2.0)))))
+(define overflow (flexpt 2.0 (flfloor (fl/ (fllog (flsqrt +max.0)) (fllog 2.0)))))
 
 (define-syntax-rule (continued-fraction a-init a-fun b-init b-fun eps-expr)
-  (let: ([eps : Float  eps-expr])
-    (let: loop : Float ([i : Float 0.0]
-                        [a : Float a-init]
-                        [b : Float b-init]
-                        [last-n : Float 1.0]
-                        [last-d : Float 0.0]
-                        [n : Float 0.0]
-                        [d : Float 1.0]
-                        [x : Float 0.0])
+  (let-values ([(n d)  (continued-fraction-parts a-init a-fun b-init b-fun eps-expr)])
+    (fl/ n d)))
+
+(define-syntax-rule (continued-fraction-parts a-init a-fun b-init b-fun eps-expr)
+  (let: ([eps : Flonum  eps-expr])
+    (let: loop : (Values Flonum Flonum) ([i : Flonum 0.0]
+                                         [a : Flonum a-init]
+                                         [b : Flonum b-init]
+                                         [last-n : Flonum 1.0]
+                                         [last-d : Flonum 0.0]
+                                         [n : Flonum 0.0]
+                                         [d : Flonum 1.0]
+                                         [x : Flonum 0.0])
       ;(printf "a = ~v  b = ~v~n" a b)
-      (define next-n (+ (* a last-n) (* b n)))
-      (define next-d (+ (* a last-d) (* b d)))
+      (define next-n (fl+ (fl* a last-n) (fl* b n)))
+      (define next-d (fl+ (fl* a last-d) (fl* b d)))
       (let-values ([(n d next-n next-d)
-                    (cond [(or (next-n . > . overflow)
-                               (next-d . > . overflow))
-                           (values (/ n overflow) (/ d overflow)
-                                   (/ next-n overflow) (/ next-d overflow))]
-                          [(or (next-n . < . (/ 1.0 overflow))
-                               (next-d . < . (/ 1.0 overflow)))
-                           (values (* n overflow) (* d overflow)
-                                   (* next-n overflow) (* next-d overflow))]
+                    (cond [(or (next-n . fl> . overflow)
+                               (next-d . fl> . overflow))
+                           (values (fl/ n overflow) (fl/ d overflow)
+                                   (fl/ next-n overflow) (fl/ next-d overflow))]
+                          [(or (next-n . < . (fl/ 1.0 overflow))
+                               (next-d . < . (fl/ 1.0 overflow)))
+                           (values (fl* n overflow) (fl* d overflow)
+                                   (fl* next-n overflow) (fl* next-d overflow))]
                           [else
                            (values n d next-n next-d)])])
-        (define next-x (/ next-n next-d))
+        (define next-x (fl/ next-n next-d))
         ;(printf "n = ~v  d = ~v  x = ~v~n" next-n next-d next-x)
-        (cond [(or ((abs (- x next-x)) . <= . (abs (* eps next-x)))
+        (cond [(or ((flabs (fl- x next-x)) . fl<= . (flabs (fl* eps next-x)))
                    (not (rational? next-x)))
                ;(printf "i = ~v~n" i)
                ;i
-               next-x]
+               (values next-n next-d)]
               [else
-               (let ([i  (+ i 1.0)])
+               (let ([i  (fl+ i 1.0)])
                  (loop i (a-fun i a) (b-fun i b) n d next-n next-d next-x))])))))

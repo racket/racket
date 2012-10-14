@@ -3,9 +3,9 @@
 (require (for-syntax racket/base syntax/parse)
          racket/vector
          "../../flonum.rkt"
+         "../../base.rkt"
          "../../bigfloat.rkt"
-         "../../vector.rkt"
-         "../../constants.rkt"
+         "../vector/vector.rkt"
          "../unsafe.rkt")
 
 (provide chebyshev-poly chebyshev-poly? chebyshev-poly-min chebyshev-poly-max chebyshev-poly-coefs
@@ -76,7 +76,7 @@
          (define y2 (num* y 2.num))
          (let: loop : A ([i : Nonnegative-Fixnum  i]
                          [c : A  c]
-                         [d : A  c]
+                         [d : A  0.num]
                          [dd : A  0.num])
            (cond [(zero? i)  (num+ (num* y d) (num- (num/ c 2.num) dd))]
                  [else
@@ -85,10 +85,10 @@
                     (loop (- i 1) (unsafe-vector-ref cs (- i 1)) d dd))])))])))
 
 (define build-chebyshev-poly
-  (make-build-chebyshev-poly Real + - * / cos (λ (x) x) (λ () pi.0)))
+  (make-build-chebyshev-poly Real + - * / cos (λ (x) x) (λ () pi)))
 
 (define build-chebyshev-flpoly
-  (make-build-chebyshev-poly Float fl+ fl- fl* fl/ flcos ->fl (λ () pi.0)))
+  (make-build-chebyshev-poly Float fl+ fl- fl* fl/ flcos ->fl (λ () pi)))
 
 (define build-chebyshev-bfpoly
   (make-build-chebyshev-poly Bigfloat bf+ bf- bf* bf/ bfcos bf (λ () pi.bf)))
@@ -123,6 +123,6 @@
            (define y (fl/ (fl- (fl+ z z) (fl+ lower upper))
                           (fl- upper lower)))
            (define y2 (fl+ y y))
-           (let ([d   c0]
-                 [dd  (fl- c0 c0)])
+           (let ([d   0.0]
+                 [dd  0.0])
              (chebyshev-iter y y2 d dd (c ...))))))]))

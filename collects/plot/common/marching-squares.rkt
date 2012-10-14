@@ -169,7 +169,7 @@ above.
         [(= z z1 z2 z3 z4)  empty]
         [else
          (let-map
-          (z z1 z2 z3 z4) inexact->exact
+          (z z1 z2 z3 z4) inexact->extended-exact
           (define z-min (min z z1 z2 z3 z4))
           (define z-max (max z z1 z2 z3 z4))
           (define z-scale (- z-max z-min))
@@ -614,7 +614,7 @@ above.
                                             (vector xb yb z3) (vector xa yb z4)))]
         [else
          (let-map
-          (za zb z1 z2 z3 z4) inexact->exact
+          (za zb z1 z2 z3 z4) inexact->extended-exact
           (define z-min (min za zb z1 z2 z3 z4))
           (define z-max (max za zb z1 z2 z3 z4))
           (define z-scale (- z-max z-min))
@@ -632,4 +632,4 @@ above.
                            (match-define (vector u v z) uv)
                            (vector (unsolve-t xa xb u)
                                    (unsolve-t ya yb v)
-                                   (+ z-min (* (inexact->exact z) z-scale))))])))]))
+                                   (+ z-min (* (inexact->extended-exact z) z-scale))))])))]))

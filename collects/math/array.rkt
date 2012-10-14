@@ -15,8 +15,10 @@
          "private/array/array-comprehension.rkt"
          "private/array/array-sequence.rkt"
          "private/array/mutable-array.rkt"
-         "private/array/flarray.rkt"
-         "private/array/fcarray.rkt"
+         "private/array/flarray-struct.rkt"
+         "private/array/flarray-pointwise.rkt"
+         "private/array/fcarray-struct.rkt"
+         "private/array/fcarray-pointwise.rkt"
          "private/array/array-parallel.rkt"
          )
 
@@ -38,8 +40,10 @@
           "private/array/array-comprehension.rkt"
           "private/array/array-sequence.rkt"
           "private/array/mutable-array.rkt"
-          "private/array/flarray.rkt"
-          "private/array/fcarray.rkt"
+          "private/array/flarray-struct.rkt"
+          "private/array/flarray-pointwise.rkt"
+          "private/array/fcarray-struct.rkt"
+          "private/array/fcarray-pointwise.rkt"
           "private/array/array-parallel.rkt"
           )
          ;; from utils.rkt

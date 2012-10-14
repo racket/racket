@@ -1,9 +1,7 @@
 #lang typed/racket/base
 
 (require "../../flonum.rkt"
-         "../polynomial/chebyshev.rkt"
-         "log1p.rkt"
-         "polyfun.rkt")
+         "../polynomial/chebyshev.rkt")
 
 (provide fllog1pmx)
 
@@ -31,11 +29,12 @@
 
 (: fllog1pmx-taylor-0 (Float -> Float))
 (define (fllog1pmx-taylor-0 x)
-  (* x x ((make-flpolyfun
-           (#i-1/2 #i1/3 #i-1/4 #i1/5 #i-1/6 #i1/7 #i-1/8 #i1/9 #i-1/10 #i1/11
-            #i-1/12 #i1/13 #i-1/14 #i1/15 #i-1/16 #i1/17 #i-1/18 #i1/19 #i-1/20 #i1/21
-            #i-1/22 #i1/23 #i-1/24 #i1/25 #i-1/26))
-          x)))
+  (fl* (fl* x x)
+       ((make-flpolyfun
+         (#i-1/2 #i1/3 #i-1/4 #i1/5 #i-1/6 #i1/7 #i-1/8 #i1/9 #i-1/10 #i1/11
+                 #i-1/12 #i1/13 #i-1/14 #i1/15 #i-1/16 #i1/17 #i-1/18 #i1/19 #i-1/20 #i1/21
+                 #i-1/22 #i1/23 #i-1/24 #i1/25 #i-1/26))
+        x)))
 
 (define fllog1pmx-0.25-0.5
   (inline-chebyshev-flpoly-fun
@@ -57,22 +56,22 @@
 
 (: fllog1pmx-big (Float -> Float))
 (define (fllog1pmx-big x)
-  (cond [((abs x) . < . 1.0)  
-         (define y (+ x 1.0))
-         (- (- (fllog y) x) (/ (- (- y 1.0) x) y))]
+  (cond [((flabs x) . fl< . 1.0)  
+         (define y (fl+ x 1.0))
+         (fl- (fl- (fllog y) x) (fl/ (fl- (fl- y 1.0) x) y))]
         [else
-         (- (fllog1p x) x)]))
+         (fl- (fllog1p x) x)]))
 
 (: fllog1pmx (Float -> Float))
 (define (fllog1pmx x)
-  (cond [(x . < . 0.0)
-         (cond [(x . > . -0.25)  (fllog1pmx-taylor-0 x)]
-               [(x . > . -0.50)  (fllog1pmx-neg-0.25-0.5 x)]
-               [(x . > . -1.00)  (fllog1pmx-big x)]
-               [(x . = . -1.00)  -inf.0]
+  (cond [(x . fl< . 0.0)
+         (cond [(x . fl> . -0.25)  (fllog1pmx-taylor-0 x)]
+               [(x . fl> . -0.50)  (fllog1pmx-neg-0.25-0.5 x)]
+               [(x . fl> . -1.00)  (fllog1pmx-big x)]
+               [(x . fl= . -1.00)  -inf.0]
                [else  +nan.0])]
-        [(x . > . 0.0)
-         (cond [(x . < . 0.25)  (fllog1pmx-taylor-0 x)]
-               [(x . < . 0.50)  (fllog1pmx-0.25-0.5 x)]
+        [(x . fl> . 0.0)
+         (cond [(x . fl< . 0.25)  (fllog1pmx-taylor-0 x)]
+               [(x . fl< . 0.50)  (fllog1pmx-0.25-0.5 x)]
                [else  (fllog1pmx-big x)])]
         [else  0.0]))

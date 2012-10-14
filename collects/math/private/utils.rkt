@@ -1,8 +1,5 @@
 #lang typed/racket/base
 
-(require racket/flonum
-         "unsafe.rkt")
+(require)
 
 (provide (all-defined-out))
-
-(define-predicate nonnegative-fixnum? Nonnegative-Fixnum)

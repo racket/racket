@@ -1,26 +1,40 @@
-#lang typed/racket
-(provide partitions)
+#lang typed/racket/base
 
-(define-predicate natural? Natural)
+(require racket/flonum
+         "../../base.rkt"
+         "../vector/vector.rkt"
+         "types.rkt")
 
-(define memo ((inst make-hasheqv Natural Natural)))
+(provide partition-count)
 
-(: partitions : Integer -> Natural)
+(define num-global-ps 200)
+(: global-ps (Vectorof Natural))
+(define global-ps (make-vector num-global-ps 0))
+(vector-set! global-ps 0 1)
+
+(: partition-count : Integer -> Natural)
 ; http://en.wikipedia.org/wiki/Partition_(number_theory)
-(define (partitions n)
-  (cond
-    [(< n 0) 0]
-    [(= n 0) 1]
-    [else  
-     (define m ((inst hash-ref Natural Natural False) memo n (λ () #f)))
-     (cond
-       [m m]
-       [else
-        (define: sum : Integer 0)
-        (for: ([k : Integer (in-range 1 (add1 (inexact->exact (floor (assert (/ (+ 1.0 (sqrt (+ 1.0 (* 24.0 n)))) 6.0) real?)))))])
-          (set! sum (+ sum (* (if (odd? k) 1 -1)
-                              (+ (partitions (- n (quotient (* k (- (* 3 k) 1)) 2)))
-                                 (partitions (- n (quotient (* k (+ (* 3 k) 1)) 2))))))))
-        (hash-set! memo n (assert sum natural?))
-        (assert sum natural?)])]))
-
+(define (partition-count n)
+  (define: local-ps : (Vectorof Natural)
+    (make-vector (max 0 (- (+ n 1) num-global-ps)) 0))
+  
+  (: ps-ref! (Integer (-> Natural) -> Natural))
+  (define (ps-ref! n thnk)
+    (cond [(n . < . num-global-ps)
+           (vector-ref! global-ps n thnk exact-zero?)]
+          [else
+           (vector-ref! local-ps (- n num-global-ps) thnk exact-zero?)]))
+  
+  (let: loop : Natural ([n : Integer  n])
+    (cond [(< n 0)  0]
+          [(= n 0)  1]
+          [else
+           (ps-ref!
+            n (λ ()
+                (define m (/ (+ 1.0 (flsqrt (+ 1.0 (* 24.0 n)))) 6.0))
+                (assert
+                 (for/fold: ([sum : Integer  0]) ([k  (in-range 1 (add1 (exact-floor m)))])
+                   (+ sum (* (if (odd? k) 1 -1)
+                             (+ (loop (- n (quotient (* k (- (* 3 k) 1)) 2)))
+                                (loop (- n (quotient (* k (+ (* 3 k) 1)) 2)))))))
+                 natural?)))])))

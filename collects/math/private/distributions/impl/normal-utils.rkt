@@ -1,6 +1,7 @@
 #lang typed/racket/base
 
-(require racket/performance-hint)
+(require racket/performance-hint
+         "../../../flonum.rkt")
 
 (provide (all-defined-out))
 
@@ -30,7 +31,7 @@
   (: flexp-1/2*x^2 (Float -> Float))
   (define (flexp-1/2*x^2 x)
     (define trunc-x (truncate x))
-    (* (exp (* -0.5 trunc-x trunc-x))
-       (exp (* -0.5 (- x trunc-x) (+ x trunc-x)))))
+    (fl* (flexp (fl* (fl* -0.5 trunc-x) trunc-x))
+         (flexp (fl* (fl* -0.5 (fl- x trunc-x)) (fl+ x trunc-x)))))
   
   )  ; begin-encourage-inline

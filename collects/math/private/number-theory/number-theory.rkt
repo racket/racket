@@ -1,19 +1,15 @@
 #lang typed/racket
 
-(require/typed typed/racket
-               [integer-sqrt/remainder (Natural -> (Values Natural Natural))])
-(require "list-operations.rkt"
+(require "../functions/random.rkt"
+         "../exception.rkt"
+         "divisibility.rkt"
+         "modular-arithmetic.rkt"
          "types.rkt")
 
-(provide bezout
-         bezout-binary
-         coprime?
-         divides?
-         gcd
-         pairwise-coprime?
-         inverse
-         with-modulus
-         solve-chinese
+(require/typed typed/racket
+               [integer-sqrt/remainder (Natural -> (Values Natural Natural))])
+
+(provide solve-chinese
          
          ; primes
          nth-prime
@@ -43,10 +39,6 @@
          as-power
          perfect-square
 
-         ; sum and product of lists:
-         list-sum
-         list-product
-
          ; number theoretic functions
          totient
          moebius-mu
@@ -58,7 +50,8 @@
 ;;;
 
 (define prime-strong-pseudo-certainty 1/10000000)
-(define prime-strong-pseudo-trials (integer-length (assert (/ 1 prime-strong-pseudo-certainty) integer?)))
+(define prime-strong-pseudo-trials
+  (integer-length (assert (/ 1 prime-strong-pseudo-certainty) integer?)))
 
 (define *SMALL-PRIME-LIMIT* 1000000)
 ; (define *SMALL-PRIME-LIMIT* 1000) ; use 1000 for coverage testing
@@ -66,63 +59,6 @@
 (define *SMALL-FACORIZATION-LIMIT* *SMALL-PRIME-LIMIT*)
 ; Determines whether to use naive factorization or Pollards rho method.
 
-
-;;;
-;;; DIVISIBILITY
-;;;
-
-(: divides? : Z Z -> Boolean)
-; For b<>0:  ( a divides b <=> exists k s.t. a*k=b )
-(define (divides? a b)
-  (= (remainder b a) 0))
-
-; THEOREM (Bezout's identity)
-;  If a and b are integers (not both zero), then
-;  there exists integers u and v such that
-;    gcd(a,b) = au + bv
-;  Note: u and v are not unique
-
-; (bezout-binary a b) = (list u v)   <=>   gcd(a,b) = au + bv
-(: bezout-binary : Z Z -> (List Z Z))
-(define (bezout-binary a b)
-  (: loop : Z Z Z Z Z Z -> (List Z Z))
-  (define (loop a b ua va ub vb)  ; a>=b>0 , a = ua*a+ub*b,  b = ub*a+ub*b
-    (let ([r (remainder a b)]
-          [q (quotient a b)])
-      (if (= r 0)
-          (list ub vb)
-          (loop b r ub vb (- ua (* q ub)) (- va (* q vb))))))
-  (if (> a b)
-      (loop a b 1 0 0 1)
-      (loop b a 0 1 1 0)))
-
-; (bezout a b c ...) -> (list u v w ...)    <=>  gcd(a,b,c,...) = au + bv + cw + ...
-(: bezout : Z Z * -> Zs)
-(define (bezout a . bs)
-  (cond
-    [(empty? bs)        (list 1)]
-    [(empty? (cdr bs))  (bezout-binary a (car bs))]
-    [else    
-     (let ([uvs (apply bezout bs)]
-           [st  (bezout-binary (apply gcd bs) a)])
-       (let ([s (first st)]
-             [t (second st)])
-         (cons t (map (lambda: ([u : Integer]) (* s u))
-                      uvs))))]))
-
-; DEF (Coprime, relatively prime)
-;  Two or more integers are called coprime, if their greatest common divisor is 1.
-;     a, b and c coprime <=> gcd(a,b,c)=1
-
-(: coprime? : Z Z * -> Boolean)
-(define (coprime? a . bs)
-  (= 1 (apply gcd (cons a bs))))
-
-(: pairwise-coprime? : Z Z * -> Boolean)
-(define (pairwise-coprime? a . bs)
-  (or (null? bs)
-      (and (andmap (λ: ([b : Integer]) (coprime? a b)) bs)
-           (apply pairwise-coprime? bs))))
 
 ;;;
 ;;; Powers
@@ -152,7 +88,6 @@
         [(not (divides? p n)) 0]
         [else                 (assert (find-start p 1) natural?)]))
 
-
 (: max-dividing-power-naive : Z Z -> N)
 (define (max-dividing-power-naive p n)
   ; sames as max-dividing-power but using naive algorithm
@@ -165,87 +100,6 @@
       (error 'max-dividing-power "No maximal power of 1 exists")
       (assert (loop 1 0) natural?)))
 
-;;;
-;;; Random Integers
-;;;
-
-; Note: (random k) requires k in interval from 1 to 4294967087.
-
-(: integer-log2 : N -> Z)
-(define (integer-log2 n)
-  (if (zero? n)
-      (error 'integer-log2 "argument must be positive, got ~a" n)
-      (assert (inexact->exact (ceiling (/ (log n) (log 2)))) integer?)))
-
-(: big-random : N -> N)
-(define (big-random n)
-  ;;  return random integer in the interval [0;n[
-  (let ([l 30])
-    (let ([bits-needed (integer-log2 n)]
-          [M           (expt 2 l)])
-      (let loop ([blocks (quotient bits-needed l)]
-                 [r      (random (assert (inexact->exact (expt 2 (remainder bits-needed l))) integer?))])
-        (if (= blocks 0)
-            (assert (remainder r n) natural?)
-            (loop (- blocks 1) (+ (* r M) (random M))))))))
-
-(define random-integer big-random)
-
-(: random-integer-in-interval : Z Z -> Z)
-(define (random-integer-in-interval from to)
-  ; return random integer in the half-open
-  ; interval [from;to)
-  (+ from (random-integer (assert (- to from) natural?))))
-
-
-;;;
-;;; MODULAR ARITHMETIC
-;;;
-
-; THEOREM
-;  If gcd(a,n)=1 then there exist b such that
-;    ab=1 mod n
-;  The number b is called an inverse of a modulo n.
-
-(: inverse : Z Z -> (U Z False))
-;   return b, where a*b=1 mod n and b in {0,...,n-1}
-(define (inverse a n)
-  (if (coprime? a n)
-      (modulo (first (bezout-binary a n)) n)
-      #f))
-
-; Within a (with-modulus n form1 ...) the return values of
-; the arithmetival operations +, -, * and ^ are automatically
-; reduced modulo n. Furthermore (mod x)=(modulo x n) and
-; (inv x)=(inverse x n).
-
-; Example: (with-modulus 3 (^ 2 4)) ==> 1
-
-(define-syntax (with-modulus stx)
-  (syntax-case stx ()
-    [(with-modulus e form ...)
-     (with-syntax ([+   (datum->syntax (syntax with-modulus) '+)]
-                   [-   (datum->syntax (syntax with-modulus) '-)]
-                   [*   (datum->syntax (syntax with-modulus) '*)]
-                   [^   (datum->syntax (syntax with-modulus) '^)]
-                   [mod (datum->syntax (syntax with-modulus) 'mod)]
-                   [inv (datum->syntax (syntax with-modulus) 'inv)])
-       (syntax (let* ([n e]
-                      [mod    (λ: ([x : Integer]) (modulo x n))]
-                      [inv    (λ: ([x : Integer]) (inverse x n))]
-                      [+      (λ: ([x : Integer] [y : Integer]) (mod (+ x y)))]
-                      [-      (λ: ([x : Integer] [y : Integer]) (mod (- x y)))]
-                      [*      (λ: ([x : Integer] [y : Integer]) (mod (* x y)))]
-                      [square (λ: ([x : Integer]) (* x x))]
-                      [^      (letrec: ([^ : (Integer Integer -> Integer)
-                                           (λ (a b)
-                                             (cond
-                                               [(= b 0)   1]
-                                               [(even? b) (square (^ a (quotient b 2)))]
-                                               [else      (* a (^ a (sub1 b)))]))])
-                                ^)])
-                 form ...)))]))
-
 ; THEOREM (The Chinese Remainder Theorem)
 ;   Let n1,...,nk be positive integers with gcd(ni,nj)=1 whenever i<>j,
 ;   and let a1,...,ak be any integers. Then the solutions to
@@ -257,11 +111,11 @@
 (: solve-chinese : Zs (Listof N+) -> N)
 (define (solve-chinese as ns)
   ; the ns should be coprime
-  (let* ([n  (list-product ns)]
+  (let* ([n  (apply * ns)]
          [cs (map (λ: ([ni : Z]) (quotient n ni)) ns)]
-         [ds (map inverse cs ns)]
+         [ds (map modular-inverse cs ns)]
          [es (cast ds integers?)])
-    (cast (modulo (list-sum (map * as cs es)) n) natural?)))
+    (cast (modulo (apply + (map * as cs es)) n) natural?)))
 
 ;;;
 ;;; PRIMES
@@ -279,12 +133,12 @@
 ;   'composite            (with at least probability 1/2)  if n is a composite non-Carmichael number
 ;   a proper divisor of n (with at least probability 1/2)  if n is a Carmichael number
 ; [MCA, p.509 - Algorithm 18.5]
-(: prime-strong-pseudo-single? : Natural -> (U 'probably-prime 'composite N))
+(: prime-strong-pseudo-single? : Integer -> (U 'probably-prime 'composite N))
 (define (prime-strong-pseudo-single? n)
   (cond
-    [(< n 4) (error 'prime-strong-pseudo-single? "n must be 4 or greater, got ~a" n)]
-    [else    
-     (define a (random-integer-in-interval 2 (- n 1)))
+    [(n . <= . 0)  (raise-argument-error 'prime-strong-pseudo-single? "Positive-Integer" n)]
+    [(n . >= . 4)
+     (define a (random-integer 2 (- n 1)))
      (define g (gcd a n))
      (cond
        [(> g 1) g] ; factor found
@@ -294,21 +148,23 @@
           (cond 
             [(even? m) (loop (add1 ν) (quotient m 2))]
             [else ; 4. for i=1,...,ν do bi <- b_{i-1}^2 rem N
-             (define b (with-modulus n (^ a m)))
+             (define b (modular-expt a m n))
              (cond 
                [(= b 1) 'probably-prime]
                [else    
                 (let loop ([i 0] [b b] [b-old b])
                   (if (and (< i ν) (not (= b 1)))
                       (loop (add1 i)
-                            (with-modulus n (* b b))
+                            (modulo (* b b) n)
                             b)
                       (if (= b 1)
                           (let ([g (gcd (+ b-old 1) n)])
                             (if (or (= g 1) (= g n))
                                 'probably-prime
                                 g))
-                          'composite)))])]))])]))
+                          'composite)))])]))])]
+    [(= n 1)  'composite]
+    [else  'probably-prime]))
 
 (define-type Strong-Test-Result         (U 'very-probably-prime 'composite N))
 
@@ -417,10 +273,8 @@
 
 (: nth-prime : N -> Prime)
 (define (nth-prime n)
-  (define: p : Prime 2)
-  (for ([m (in-range n)])
-    (set! p (next-prime p)))
-  p)
+  (for/fold: ([p : Prime  2]) ([m (in-range n)])
+    (next-prime p)))
 
 
 ;;;
@@ -465,7 +319,7 @@
 ; OUTPUT  Either a proper divisor of n or #f
 (: pollard : N -> (U N False))
 (define (pollard n)
-  (let ([x0 (big-random n)])
+  (let ([x0 (random-natural n)])
     (do ([xi x0 (remainder (+ (* xi xi) 1) n)]
          [yi x0 (remainder (+ (sqr (+ (* yi yi) 1)) 1) n)]
          [i  0  (add1 i)]
@@ -641,7 +495,7 @@
       [(eq? y 1) x]
       [(eq? y 2) (integer-sqrt x)]
       [(not (integer? y))
-       (error 'integer-root "internal error - (used to return 1 here - why?) todo: remove this error after testing")]
+       (error 'integer-root "internal error (used to return 1 here - why?) remove after testing")]
       [else
        (define length (integer-length x))
        ;; (expt 2 (- length l 1)) <= x < (expt 2 length)
@@ -744,8 +598,8 @@
 (: totient : N -> N)
 (define (totient n)
   (let ((ps (prime-divisors n)))
-    (assert (* (quotient n (list-product ps))
-               (list-product (map (λ: ([p : N]) (sub1 p)) ps)))
+    (assert (* (quotient n (apply * ps))
+               (apply * (map (λ: ([p : N]) (sub1 p)) ps)))
             natural?)))
 
 (: every : (All (A) (A -> Boolean) (Listof A) -> Boolean))
@@ -804,11 +658,10 @@
                            [else (let ([t (* p-to-k p-to-kn)])
                                    (loop (+ t sum) (+ n 1) t))]))))
                (cast
-                (list-product
-                 (map (cond [(= k 0) divisor-sum0]
-                            [(= k 1) divisor-sum1]
-                            [else    divisor-sumk])
-                      ps es))
+                (apply * (map (cond [(= k 0) divisor-sum0]
+                                    [(= k 1) divisor-sum1]
+                                    [else    divisor-sumk])
+                              ps es))
                 natural?))])))
 
 
@@ -819,7 +672,7 @@
     (check-equal? (max-dividing-power-naive 3 27) 3)
     (check-equal? (max-dividing-power-naive 3 (* 27 2)) 3)
     
-    (check-true   (<= 4 (random-integer-in-interval 4 5) 4))
+    (check-true   (<= 4 (random-integer 4 5) 4))
     
     (check-false (prime-fermat? 0))
     (check-false (prime-fermat? 1))
@@ -841,5 +694,6 @@
     (check-equal? (prime-strong-pseudo-single? 5)   'probably-prime)
     (check-equal? (prime-strong-pseudo-single? 7)   'probably-prime)
     (check-equal? (prime-strong-pseudo-single? 11)  'probably-prime)
-    (check-true   (member? (prime-strong-pseudo-single? 561) (cons 'probably-prime (divisors 561)))) ; Carmichael number
+    ;; Carmichael number:
+    (check-true   (member? (prime-strong-pseudo-single? 561) (cons 'probably-prime (divisors 561))))
     )

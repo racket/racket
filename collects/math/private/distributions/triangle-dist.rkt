@@ -17,67 +17,67 @@
 (: unsafe-fltriangle-pdf (Float Float Float Float Any -> Float))
 (define (unsafe-fltriangle-pdf a b c x log?)
   (define p
-    (cond [(x . < . a)  0.0]
-          [(x . < . c)  (/ (* 2.0 (- x a))
-                           (* (- b a) (- c a)))]
-          [(x . < . b)  (/ (* 2.0 (- b x))
-                           (* (- b a) (- b c)))]
+    (cond [(x . fl< . a)  0.0]
+          [(x . fl< . c)  (fl/ (fl* 2.0 (fl- x a))
+                               (fl* (fl- b a) (fl- c a)))]
+          [(x . fl< . b)  (fl/ (fl* 2.0 (fl- b x))
+                               (fl* (fl- b a) (fl- b c)))]
           [else  0.0]))
   (if log? (fllog p) p))
 
 (: unsafe-fltriangle-cdf (Float Float Float Float Any Any -> Float))
 (define (unsafe-fltriangle-cdf a b c x log? 1-p?)
   (define q
-    (cond [(x . < . a)  0.0]
-          [(x . < . c)  (define x-a (- x a))
-                        (/ (* x-a x-a)
-                           (* (- b a) (- c a)))]
-          [(x . < . b)  (define b-x (- b x))
-                        (- 1.0 (/ (* b-x b-x)
-                                  (* (- b a) (- b c))))]
+    (cond [(x . fl< . a)  0.0]
+          [(x . fl< . c)  (define x-a (fl- x a))
+                          (fl/ (fl* x-a x-a)
+                               (fl* (fl- b a) (fl- c a)))]
+          [(x . fl< . b)  (define b-x (fl- b x))
+                          (fl- 1.0 (fl/ (fl* b-x b-x)
+                                        (fl* (fl- b a) (fl- b c))))]
           [else  1.0]))
-  (cond [1-p?  (if log? (fllog (- 1.0 q)) (- 1.0 q))]
+  (cond [1-p?  (if log? (fllog (fl- 1.0 q)) (fl- 1.0 q))]
         [else  (if log? (fllog q) q)]))
 
 (: unsafe-fltriangle-inv-cdf (Float Float Float Float Any Any -> Float))
 (define (unsafe-fltriangle-inv-cdf a b c q log? 1-p?)
-  (let ([q  (cond [1-p?  (if log? (- 1.0 (exp q)) (- 1.0 q))]
-                  [else  (if log? (exp q) q)])])
-    (cond [(q . < . 0.0)  +nan.0]
-          [(q . = . 0.0)  a]
-          [(q . < . (/ (- c a) (- b a)))
+  (let ([q  (cond [1-p?  (if log? (fl- 1.0 (flexp q)) (fl- 1.0 q))]
+                  [else  (if log? (flexp q) q)])])
+    (cond [(q . fl< . 0.0)  +nan.0]
+          [(q . fl= . 0.0)  a]
+          [(q . fl< . (fl/ (fl- c a) (fl- b a)))
            ;; a < x < c
-           (+ a (flsqrt (* (- c a) (- b a) q)))]
-          [(q . < . 1.0)
+           (fl+ a (flsqrt (fl* (fl* (fl- c a) (fl- b a)) q)))]
+          [(q . fl< . 1.0)
            ;; c < x < b
-           (- b (flsqrt (* (- b c) (- b a) (- 1.0 q))))]
-          [(q . = . 1.0)  b]
+           (fl- b (flsqrt (fl* (fl* (fl- b c) (fl- b a)) (fl- 1.0 q))))]
+          [(q . fl= . 1.0)  b]
           [else  +nan.0])))
 
 (: unsafe-fltriangle-random (Float Float Float -> Float))
 (define (unsafe-fltriangle-random a b c)
-  (unsafe-fltriangle-inv-cdf a b c (* 0.5 (random)) #f ((random) . > . 0.5)))
+  (unsafe-fltriangle-inv-cdf a b c (fl* 0.5 (random)) #f ((random) . fl> . 0.5)))
 
 (begin-encourage-inline
   
   (: fltriangle-pdf (Float Float Float Float Any -> Float))
   (define (fltriangle-pdf a b c x log?)
-    (let-values ([(a c b)  (inline-sort < a b c)])
+    (let-values ([(a c b)  (inline-sort fl< a b c)])
       (unsafe-fltriangle-pdf a b c x log?)))
   
   (: fltriangle-cdf (Float Float Float Float Any Any -> Float))
   (define (fltriangle-cdf a b c x log? 1-p?)
-    (let-values ([(a c b)  (inline-sort < a b c)])
+    (let-values ([(a c b)  (inline-sort fl< a b c)])
       (unsafe-fltriangle-cdf a b c x log? 1-p?)))
   
   (: fltriangle-inv-cdf (Float Float Float Float Any Any -> Float))
   (define (fltriangle-inv-cdf a b c x log? 1-p?)
-    (let-values ([(a c b)  (inline-sort < a b c)])
+    (let-values ([(a c b)  (inline-sort fl< a b c)])
       (unsafe-fltriangle-inv-cdf a b c x log? 1-p?)))
   
   (: fltriangle-random (Float Float Float -> Float))
   (define (fltriangle-random a b c)
-    (let-values ([(a c b)  (inline-sort < a b c)])
+    (let-values ([(a c b)  (inline-sort fl< a b c)])
       (unsafe-fltriangle-random a b c)))
   
   )
@@ -96,7 +96,7 @@
                            (Real Real Real -> Triangular-Distribution)))
   (define (triangle-dist [a 0.0] [b 1.0] [c (* 0.5 (+ a b))])
     (let ([a  (fl a)] [b  (fl b)] [c  (fl c)])
-      (let-values ([(a c b)  (inline-sort < a c b)])
+      (let-values ([(a c b)  (inline-sort fl< a c b)])
         (define pdf (opt-lambda: ([x : Real] [log? : Any #f])
                       (unsafe-fltriangle-pdf a b c (fl x) log?)))
         (define cdf (opt-lambda: ([x : Real] [log? : Any #f] [1-p? : Any #f])

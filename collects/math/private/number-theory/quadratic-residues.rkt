@@ -1,6 +1,12 @@
-#lang typed/racket
-(provide legendre quadratic-residue?)
-(require "number-theory.rkt")
+#lang typed/racket/base
+
+(require racket/list
+         "../exception.rkt"
+         "divisibility.rkt"
+         "modular-arithmetic.rkt"
+         "number-theory.rkt")
+
+(provide quadratic-character quadratic-residue?)
 
 ; DEFINITION (Quadratic residue)
 ;   a in Un is a quadratic residue,
@@ -8,21 +14,26 @@
 ;   The number s is called a squre root of a modulo n.
 
 ; p is prime
-(: legendre : Natural Natural -> Integer)
-(define (legendre a p)
-  (let ([l (with-modulus p (^ a (quotient (- p 1) 2)))])
-    (if (<= 0 l 1) l -1)))
+(: quadratic-character : Integer Integer -> Integer)
+(define (quadratic-character a p)
+  (cond [(a . < . 0)  (raise-argument-error 'quadratic-character "Natural" 0 a p)]
+        [(p . <= . 0)  (raise-argument-error 'quadratic-character "Positive-Integer" 1 a p)]
+        [else  (let ([l  (modular-expt a (quotient (- p 1) 2) p)])
+                 (if (<= 0 l 1) l -1))]))
 
-(: quadratic-residue? : Natural Natural -> Boolean)
+(: quadratic-residue? : Integer Integer -> Boolean)
 (define (quadratic-residue? a n)
-  (let* ([ps     (prime-divisors n)]
-         [odd-ps (if (= (first ps) 2)
-                     (rest ps)
-                     ps)])
-    (and (andmap (λ: ([p : Natural]) 
-                   (= (legendre a p) 1))
-                 odd-ps)
-         (cond 
-           [(divides? 8 n)  (= (modulo a 8) 1)]
-           [(divides? 4 n)  (= (modulo a 4) 1)]
-           [else            #t]))))
+  (cond [(a . < . 0)  (raise-argument-error 'quadratic-residue? "Natural" 0 a n)]
+        [(n . <= . 0)  (raise-argument-error 'quadratic-residue? "Positive-Integer" 1 a n)]
+        [else
+         (let* ([ps     (prime-divisors n)]
+                [odd-ps (if (= (first ps) 2)
+                            (rest ps)
+                            ps)])
+           (and (andmap (λ: ([p : Natural]) 
+                          (= (quadratic-character a p) 1))
+                        odd-ps)
+                (cond 
+                  [(divides? 8 n)  (= (modulo a 8) 1)]
+                  [(divides? 4 n)  (= (modulo a 4) 1)]
+                  [else            #t])))]))

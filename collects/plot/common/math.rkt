@@ -44,8 +44,8 @@
 (defproc (flonum-ok-for-range? [x-min rational?] [x-max rational?]
                                [size exact-positive-integer?]) boolean?
   (let/ec return
-    (let ([x-min  (inexact->exact (min x-min x-max))]
-          [x-max  (inexact->exact (max x-min x-max))])
+    (let ([x-min  (inexact->extended-exact (min x-min x-max))]
+          [x-max  (inexact->extended-exact (max x-min x-max))])
       (define step-size (/ (- x-max x-min) size))
       
       (define inexact-x-min (exact->inexact x-min))
@@ -60,12 +60,16 @@
       (define inexact-x-min-next (flnext inexact-x-min))
       (unless (rational? inexact-x-min-next) (return #f))
       
-      (define max-diff (- x-max (inexact->exact inexact-x-max-prev)))
-      (define min-diff (- (inexact->exact inexact-x-min-next) x-min))
+      (define max-diff (- x-max (inexact->extended-exact inexact-x-max-prev)))
+      (define min-diff (- (inexact->extended-exact inexact-x-min-next) x-min))
       (and (max-diff . < . step-size) (min-diff . < . step-size)))))
 
 ;; ===================================================================================================
 ;; Reals
+
+(defproc (inexact->extended-exact [x real?]) real?
+  (cond [(real? x)  (if (rational? x) (inexact->exact x) x)]
+        [else  (raise-type-error 'inexact->extended-exact "real" x)]))
 
 (defproc (maybe-inexact->exact [x (or/c rational? #f)]) (or/c rational? #f)
   (cond [x  (unless (rational? x)
@@ -161,8 +165,8 @@
 (defproc (floor-log/base [b (and/c exact-integer? (>=/c 2))] [x (>/c 0)]) exact-integer?
   (cond [(not (and (exact-integer? b) (b . >= . 2)))
          (raise-type-error 'floor-log/base "exact integer >= 2" 0 b x)]
-        [(not (and (real? x) (x . > . 0)))
-         (raise-type-error 'floor-log/base "real > 0" 1 b x)]
+        [(not (and (rational? x) (x . > . 0)))
+         (raise-type-error 'floor-log/base "rational > 0" 1 b x)]
         [else
          (define q (inexact->exact x))
          (define m (floor (/ (exact∘log q) (inexact->exact (log b)))))
@@ -173,7 +177,8 @@
                               [else  m])]))]))
 
 (defproc (ceiling-log/base [b (and/c exact-integer? (>=/c 2))] [x (>/c 0)]) exact-integer?
-  (- (floor-log/base b (/ (inexact->exact x)))))
+  (cond [(rational? x)  (- (floor-log/base b (/ (inexact->exact x))))]
+        [else  (raise-type-error 'ceiling-log/base "rational > 0" 1 b x)]))
 
 (defproc (polar->cartesian [θ real?] [r real?]) (vector/c real? real?)
   (cond [(not (real? θ))  (raise-type-error 'polar->cartesian "real number" 0 θ r)]
@@ -503,8 +508,8 @@
 
 (defproc (ivl-inexact->exact [i ivl?]) ivl?
   (match-define (ivl a b) i)
-  (ivl (and a (if (nan? a) a (inexact->exact a)))
-       (and b (if (nan? b) b (inexact->exact b)))))
+  (ivl (and a (inexact->extended-exact a))
+       (and b (inexact->extended-exact b))))
 
 (defproc (ivl-contains? [i ivl?] [x real?]) boolean?
   (match-define (ivl a b) i)

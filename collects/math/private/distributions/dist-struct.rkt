@@ -2,8 +2,7 @@
 
 (require racket/performance-hint
          racket/promise
-         "../../flonum.rkt"
-         "../functions/log-arithmetic.rkt")
+         "../../flonum.rkt")
 
 (provide
  ;; Real-valued distributions
@@ -64,30 +63,30 @@
                           (Real-Distribution Real Real Any Any -> Float)))
 (define (real-dist-prob d a b [log? #f] [1-p? #f])
   (let ([a  (fl a)] [b  (fl b)])
-    (let ([a  (min a b)] [b  (max a b)])
+    (let ([a  (flmin a b)] [b  (flmax a b)])
       (define c (real-dist-median d))
       (define cdf (real-dist-cdf d))
       (define log-p
-        (min (cond [1-p?  (fllog+ (cdf a #t #f) (cdf b #t #t))]
-                   [(b . <= . c)
+        (min (cond [1-p?  (lg+ (cdf a #t #f) (cdf b #t #t))]
+                   [(b . fl<= . c)
                     (define log-P_x<=a (cdf a #t #f))
                     (define log-P_x<=b (cdf b #t #f))
-                    (cond [(log-P_x<=b . < . log-P_x<=a)  -inf.0]
-                          [else  (fllog- log-P_x<=b log-P_x<=a)])]
-                   [(a . >= . c)
+                    (cond [(log-P_x<=b . fl< . log-P_x<=a)  -inf.0]
+                          [else  (lg- log-P_x<=b log-P_x<=a)])]
+                   [(a . fl>= . c)
                     (define log-P_x>a (cdf a #t #t))
                     (define log-P_x>b (cdf b #t #t))
-                    (cond [(log-P_x>a . < . log-P_x>b)  -inf.0]
-                          [else  (fllog- log-P_x>a log-P_x>b)])]
+                    (cond [(log-P_x>a . fl< . log-P_x>b)  -inf.0]
+                          [else  (lg- log-P_x>a log-P_x>b)])]
                    [else
                     (define log-P_x<=a (cdf a #t #f))
                     (define log-P_x>b (cdf b #t #t))
                     (define log-P_a<x<=0.5
-                      (cond [((fllog 0.5) . < . log-P_x<=a)  -inf.0]
-                            [else  (fllog- (fllog 0.5) log-P_x<=a)]))
+                      (cond [((fllog 0.5) . fl< . log-P_x<=a)  -inf.0]
+                            [else  (lg- (fllog 0.5) log-P_x<=a)]))
                     (define log-P_0.5<x<=b
-                      (cond [((fllog 0.5) . < . log-P_x>b)  -inf.0]
-                            [else  (fllog- (fllog 0.5) log-P_x>b)]))
-                    (fllog+ log-P_a<x<=0.5 log-P_0.5<x<=b)])
+                      (cond [((fllog 0.5) . fl< . log-P_x>b)  -inf.0]
+                            [else  (lg- (fllog 0.5) log-P_x>b)]))
+                    (lg+ log-P_a<x<=0.5 log-P_0.5<x<=b)])
              0.0))
-      (if log? log-p (exp log-p)))))
+      (if log? log-p (flexp log-p)))))

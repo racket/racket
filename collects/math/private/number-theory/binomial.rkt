@@ -1,22 +1,29 @@
-#lang typed/racket
+#lang typed/racket/base
+
+(require "../exception.rkt"
+         "types.rkt")
+
 (provide binomial)
 
-(define-predicate natural? Natural)
-
-(: binomial : Natural Natural -> Natural)
-(define (binomial n k)
+(: binomial* : Natural Natural -> Natural)
+(define (binomial* n k)
   ;  compute the binomial coeffecient n choose k
   ;  http://www.gnu.org/software/gmp/manual/html_node/Binomial-Coefficients-Algorithm.html
-  (cond
-    [(= k 0)       1]    
-    [(= k 1)       n]
-    [(> k n)       0]
-    [(= k 2)       (assert (quotient (* n (- n 1)) 2) natural?)]
-    [(> k (/ n 2)) (binomial n (assert (- n k) natural?))]
-    [else          (assert (* (+ n (- k) 1)
-                              (let ()
-                                (define: prod : Exact-Rational 1)
-                                (for: ([i : Natural (in-range 2 (+ k 1))])
-                                  (set! prod (* prod (/ (+ n (- k) i) i))))
-                                prod))
-                           natural?)]))
+  (assert
+   (let: loop : Exact-Rational ([n : Exact-Rational  n] [k : Exact-Rational  k])
+     (cond
+       [(= k 0)       1]    
+       [(= k 1)       n]
+       [(> k n)       0]
+       [(= k 2)       (/ (* n (- n 1)) 2)]
+       [(> k (/ n 2)) (loop n (- n k))]
+       [else          (* (+ n (- k) 1)
+                         (for/fold: ([prod : Exact-Rational  1]) ([i  (in-range 2 (+ k 1))])
+                           (* prod (/ (+ n (- k) i) i))))]))
+   natural?))
+
+(: binomial (Integer Integer -> Natural))
+(define (binomial n k)
+  (cond [(n . < . 0)  (raise-argument-error 'binomial "Natural" 0 n k)]
+        [(k . < . 0)  (raise-argument-error 'binomial "Natural" 1 n k)]
+        [else  (binomial* n k)]))

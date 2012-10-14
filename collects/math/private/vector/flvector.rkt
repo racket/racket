@@ -4,15 +4,14 @@
          racket/string
          (for-syntax racket/base syntax/parse)
          "../unsafe.rkt"
-         "../exception.rkt")
+         "../exception.rkt"
+         "flvector-syntax.rkt")
 
 (provide
+ (all-from-out "flvector-syntax.rkt")
  ;; Construction
- (rename-out [inline-build-flvector  build-flvector])
  unsafe-flvector-copy!
  flvector-copy!
- (rename-out [inline-flvector-map  flvector-map])
- unsafe-flvector-map
  ;; Loops
  for/flvector:
  for*/flvector:
@@ -52,28 +51,6 @@
  flvector>=)
 
 ;; ===================================================================================================
-;; build-flvector
-
-(define-syntax (inline-build-flvector stx)
-  (syntax-case stx ()
-    [(_ size f)
-     (syntax/loc stx
-       (let: ([n : Integer  size])
-         (define xs (make-flvector n))
-         (with-asserts ([n index?])
-           (let: loop : FlVector ([i : Nonnegative-Fixnum  0])
-             (cond [(i . < . n)  (unsafe-flvector-set! xs i ((ann f (Index -> Float)) i))
-                                 (loop (+ i 1))]
-                   [else  xs])))))]
-    [(_ e ...)  (syntax/loc stx (build-flvector e ...))]
-    [_  (syntax/loc stx build-flvector)]))
-
-(: build-flvector (Integer (Index -> Float) -> FlVector))
-(define (build-flvector size f)
-  (cond [(index? size)  (inline-build-flvector size f)]
-        [else  (raise-argument-error 'build-flvector "Index" 0 size f)]))
-
-;; ===================================================================================================
 ;; flvector-copy
 
 (: unsafe-flvector-copy! (FlVector Integer FlVector Integer Integer -> Void))
@@ -110,66 +87,6 @@
             (error 'flvector-copy! "not enough room in target vector")]
            [else
             (unsafe-flvector-copy! dest dest-start src src-start src-end)])]))
-
-;; ===================================================================================================
-;; flvector-map
-
-(define-syntax (unsafe-flvector-map stx)
-  (syntax-case stx ()
-    [(_ f xs-expr)
-     (syntax/loc stx
-       (let: ([xs : FlVector  xs-expr])
-         (define n (flvector-length xs))
-         (inline-build-flvector
-          n (λ: ([i : Index]) ((ann f (Float -> Float))
-                               (unsafe-flvector-ref xs i))))))]
-    [(_ f xs-expr xss-expr ...)
-     (with-syntax ([(xs xss ...)  (generate-temporaries #'(xs-expr xss-expr ...))]
-                   [(Floats ...)  (build-list (length (syntax->list #'(xss-expr ...)))
-                                              (λ _ #'Float))])
-       (syntax/loc stx
-         (let: ([xs : FlVector  xs-expr] [xss : FlVector  xss-expr] ...)
-           (define n (flvector-length xs))
-           (inline-build-flvector
-            n (λ: ([i : Index])
-                ((ann f (Float Floats ... -> Float))
-                 (unsafe-flvector-ref xs i) (unsafe-flvector-ref xss i) ...))))))]
-    [(_ e ...)  (syntax/loc stx (flvector-map e ...))]
-    [_  (syntax/loc stx flvector-map)]))
-
-(define-syntax (inline-flvector-map stx)
-  (syntax-case stx ()
-    [(_ f xs-expr)  (syntax/loc stx (unsafe-flvector-map f xs-expr))]
-    [(_ f xs-expr xss-expr ...)
-     (with-syntax ([(xs xss ...)  (generate-temporaries #'(xs-expr xss-expr ...))]
-                   [(n ns ...)    (generate-temporaries #'(xs-expr xss-expr ...))])
-       (syntax/loc stx
-         (let: ([xs : FlVector  xs-expr] [xss : FlVector  xss-expr] ...)
-           (define n (flvector-length xs))
-           (define ns (flvector-length xss)) ...
-           (unless (= n ns ...)
-             (error 'inline-flvector-map "flvectors must be the same length; given lengths ~a"
-                    (string-join (list (number->string n) (number->string ns) ...) ", ")))
-           (unsafe-flvector-map f xs-expr xss-expr ...))))]
-    [(_ e ...)  (syntax/loc stx (flvector-map e ...))]
-    [_  (syntax/loc stx flvector-map)]))
-
-(: flvector-map (case-> ((Float -> Float) FlVector -> FlVector)
-                        ((Float Float * -> Float) FlVector FlVector * -> FlVector)))
-(define flvector-map
-  (case-lambda:
-    [([f : (Float -> Float)] [xs : FlVector])
-     (inline-flvector-map f xs)]
-    [([f : (Float Float * -> Float)] [xs : FlVector] . [yss : FlVector *])
-     (define n (flvector-length xs))
-     (define ns (map flvector-length yss))
-     (unless (or (null? ns) (apply = n ns))
-       (error 'flvector-map "flvectors must be the same length; given lengths ~a"
-              (string-join (list* (number->string n) (map number->string ns)) ", ")))
-     (inline-build-flvector
-      n (λ: ([i : Index])
-          (apply f (unsafe-flvector-ref xs i)
-                 (map (λ: ([zs : FlVector]) (unsafe-flvector-ref zs i)) yss))))])) 
 
 ;; ===================================================================================================
 ;; Loops
@@ -249,15 +166,15 @@
 ;; ===================================================================================================
 ;; Pointwise operations
 
-(define-syntax (inline-flvector-lift1 stx)
+(define-syntax (lift1 stx)
   (syntax-case stx ()
-    [(_ f)  (syntax/loc stx (λ (arr) (inline-flvector-map f arr)))]))
+    [(_ f)  (syntax/loc stx (λ (arr) (flvector-map f arr)))]))
 
-(define-syntax (inline-flvector-lift2 stx)
+(define-syntax (lift2 stx)
   (syntax-case stx ()
-    [(_ f)  (syntax/loc stx (λ (arr1 arr2) (inline-flvector-map f arr1 arr2)))]))
+    [(_ f)  (syntax/loc stx (λ (arr1 arr2) (flvector-map f arr1 arr2)))]))
 
-(define-syntax-rule (inline-flvector-lift-compare name comp)
+(define-syntax-rule (lift-comparison name comp)
   (λ (xs1 xs2)
     (define n1 (flvector-length xs1))
     (define n2 (flvector-length xs2))
@@ -268,7 +185,7 @@
                 (unsafe-flvector-ref xs2 j))))))
 
 (: flvector-scale (FlVector Float -> FlVector))
-(define (flvector-scale arr y) (inline-flvector-map (λ (x) (* x y)) arr))
+(define (flvector-scale arr y) (flvector-map (λ (x) (fl* x y)) arr))
 
 (: flvector-round    (FlVector -> FlVector))
 (: flvector-floor    (FlVector -> FlVector))
@@ -302,41 +219,41 @@
 (: flvector>  (FlVector FlVector -> (Vectorof Boolean)))
 (: flvector>= (FlVector FlVector -> (Vectorof Boolean)))
 
-(define flvector-round    (inline-flvector-lift1 flround))
-(define flvector-floor    (inline-flvector-lift1 flfloor))
-(define flvector-ceiling  (inline-flvector-lift1 flceiling))
-(define flvector-truncate (inline-flvector-lift1 fltruncate))
-(define flvector-abs  (inline-flvector-lift1 flabs))
-(define flvector-sqr  (inline-flvector-lift1 (λ: ([x : Float]) (* x x))))
-(define flvector-sqrt (inline-flvector-lift1 flsqrt))
-(define flvector-log  (inline-flvector-lift1 fllog))
-(define flvector-exp  (inline-flvector-lift1 flexp))
-(define flvector-sin  (inline-flvector-lift1 flsin))
-(define flvector-cos  (inline-flvector-lift1 flcos))
-(define flvector-tan  (inline-flvector-lift1 fltan))
-(define flvector-asin (inline-flvector-lift1 flasin))
-(define flvector-acos (inline-flvector-lift1 flacos))
-(define flvector-atan (inline-flvector-lift1 flatan))
+(define flvector-round    (lift1 flround))
+(define flvector-floor    (lift1 flfloor))
+(define flvector-ceiling  (lift1 flceiling))
+(define flvector-truncate (lift1 fltruncate))
+(define flvector-abs  (lift1 flabs))
+(define flvector-sqr  (lift1 (λ: ([x : Float]) (fl* x x))))
+(define flvector-sqrt (lift1 flsqrt))
+(define flvector-log  (lift1 fllog))
+(define flvector-exp  (lift1 flexp))
+(define flvector-sin  (lift1 flsin))
+(define flvector-cos  (lift1 flcos))
+(define flvector-tan  (lift1 fltan))
+(define flvector-asin (lift1 flasin))
+(define flvector-acos (lift1 flacos))
+(define flvector-atan (lift1 flatan))
 
-(define flvector+ (inline-flvector-lift2 fl+))
-(define flvector* (inline-flvector-lift2 fl*))
+(define flvector+ (lift2 fl+))
+(define flvector* (lift2 fl*))
 
 (define flvector-
   (case-lambda
-    [(arr)  (inline-flvector-map (λ: ([x : Float]) (fl- 0.0 x)) arr)]
-    [(arr1 arr2)  (inline-flvector-map fl- arr1 arr2)]))
+    [(arr)  (flvector-map (λ: ([x : Float]) (fl- 0.0 x)) arr)]
+    [(arr1 arr2)  (flvector-map fl- arr1 arr2)]))
 
 (define flvector/
   (case-lambda
-    [(arr)  (inline-flvector-map (λ: ([x : Float]) (/ 1.0 x)) arr)]
-    [(arr1 arr2)  (inline-flvector-map fl/ arr1 arr2)]))
+    [(arr)  (flvector-map (λ: ([x : Float]) (fl/ 1.0 x)) arr)]
+    [(arr1 arr2)  (flvector-map fl/ arr1 arr2)]))
 
-(define flvector-expt (inline-flvector-lift2 flexpt))
-(define flvector-min  (inline-flvector-lift2 flmin))
-(define flvector-max  (inline-flvector-lift2 flmax))
+(define flvector-expt (lift2 flexpt))
+(define flvector-min  (lift2 flmin))
+(define flvector-max  (lift2 flmax))
 
-(define flvector=  (inline-flvector-lift-compare 'flvector=  fl=))
-(define flvector<  (inline-flvector-lift-compare 'flvector<  fl<))
-(define flvector<= (inline-flvector-lift-compare 'flvector<= fl<=))
-(define flvector>  (inline-flvector-lift-compare 'flvector>  fl>))
-(define flvector>= (inline-flvector-lift-compare 'flvector>= fl>=))
+(define flvector=  (lift-comparison 'flvector=  fl=))
+(define flvector<  (lift-comparison 'flvector<  fl<))
+(define flvector<= (lift-comparison 'flvector<= fl<=))
+(define flvector>  (lift-comparison 'flvector>  fl>))
+(define flvector>= (lift-comparison 'flvector>= fl>=))

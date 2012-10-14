@@ -587,7 +587,7 @@
                                  [(negative? x)  negative-format-list]
                                  [else           zero-format-list]))
        (define unit-x (/ (abs x) unit))
-       (define whole (inexact->exact (floor unit-x)))
+       (define whole (inexact->extended-exact (floor unit-x)))
        (define frac (- unit-x whole))
        (string-append*
         (apply-formatter formatter format-list
@@ -606,7 +606,8 @@
 ;; Fractions
 
 (define (format-fraction x)
-  (cond [(inexact? x)  (format-fraction (inexact->exact x))]
+  (cond [(not (rational? x))  (format "~a" x)]
+        [(inexact? x)  (format-fraction (inexact->exact x))]
         [(x . < . 0)  (format "-~a" (format-fraction (- x)))]
         [(x . = . 0)  "0"]
         [(x . < . 1)  (format "~a/~a" (numerator x) (denominator x))]
@@ -626,7 +627,7 @@
     (define digits (digits-for-range x-min x-max base (ceiling-log/base base 1000)))
     (define fracs (remove-duplicates (map (λ (d) (* (/ base d) (expt base (- digits)))) divisors)))
     (for/list ([t  (in-list ts)])
-      (define x (inexact->exact (pre-tick-value t)))
+      (define x (inexact->extended-exact (pre-tick-value t)))
       (define xs
         (for/list ([frac  (in-list fracs)])
           (* frac (round (/ x frac)))))
@@ -702,11 +703,11 @@
 
 (defproc (pre-tick-inexact->exact [t pre-tick?]) pre-tick?
   (match-define (pre-tick x major?) t)
-  (pre-tick (inexact->exact x) major?))
+  (pre-tick (inexact->extended-exact x) major?))
 
 (defproc (tick-inexact->exact [t tick?]) tick?
   (match-define (tick x major? label) t)
-  (tick (inexact->exact x) major? label))
+  (tick (inexact->extended-exact x) major? label))
 
 (defproc (contour-ticks [z-ticks ticks?] [z-min real?] [z-max real?]
                         [levels (or/c 'auto exact-positive-integer? (listof real?))]

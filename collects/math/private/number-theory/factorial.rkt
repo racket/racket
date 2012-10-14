@@ -1,12 +1,11 @@
 #lang typed/racket/base
 
-(require racket/math racket/flonum
-         "../number-theory/binomial.rkt"
-         "../unsafe.rkt"
-         "../exception.rkt"
-         "../utils.rkt")
+(require "../unsafe.rkt"
+         "../exception.rkt")
 
-(provide factorial binomial permutations multinomial)
+(provide factorial permutations multinomial)
+
+(define-predicate nonnegative-fixnum? Nonnegative-Fixnum)
 
 ;; The number of factorials whose flonum representation is finite
 ;; Makes generating the flonum table in gamma.rkt fast
@@ -24,6 +23,7 @@
            (build-list (- fact-table-size 1) add1)))))
 
 (: simple-cutoff Positive-Fixnum)
+;; The point at which it seems to be faster to use a more complicated recurrence
 (define simple-cutoff 244)
 
 (: factorial-simple (Nonnegative-Fixnum -> Positive-Integer))
@@ -31,8 +31,7 @@
   (cond [(n . < . fact-table-size)  (vector-ref fact-table n)]
         [else  (* n (factorial-simple (- n 1)))]))
 
-(: factorial (case-> (Negative-Integer -> Nothing)
-                     (Integer -> Positive-Integer)))
+(: factorial (Integer -> Positive-Integer))
 (define (factorial n)
   (cond [(not (nonnegative-fixnum? n))  (raise-argument-error 'factorial "Nonnegative-Fixnum" n)]
         [(n . < . simple-cutoff)  (factorial-simple n)]
@@ -44,10 +43,7 @@
                  [else  (define 2m (unsafe-fx* m 2))
                         (* (loop n 2m) (loop n-m 2m))]))]))
 
-
-(: permutations (case-> (Negative-Integer Integer -> Nothing)
-                        (Integer Negative-Integer -> Nothing)
-                        (Integer Integer -> Natural)))
+(: permutations (Integer Integer -> Natural))
 (define (permutations n k)
   (cond [(not (nonnegative-fixnum? n))
          (raise-argument-error 'permutations "Nonnegative-Fixnum" 0 n k)]

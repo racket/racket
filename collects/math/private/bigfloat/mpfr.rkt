@@ -257,7 +257,7 @@
 ;; Returns a cvector of limbs and the size of the limbs. The size is negated when n is negative.
 (define (integer->size+limbs n)
   ;; +1 because GMP expects the last limb to be 0
-  (define len (+ (ceiling (/ (integer-length n) gmp-limb-bits)) 1))
+  (define len (+ (ceiling (/ (integer-length (abs n)) gmp-limb-bits)) 1))
   (define limbs (make-cvector _limb_t len))
   (define an (abs n))
   (let loop ([i 0])
@@ -445,8 +445,8 @@
     [("-inf.bf" "-inf.0" "-inf.f")  (force -inf.bf)]
     [("-1.bf")  (force -1.bf)]
     [("-0.bf")  (force -0.bf)]
-    [("+0.bf")  (force +0.bf)]
-    [("+1.bf")  (force +1.bf)]
+    [( "0.bf")  (force  0.bf)]
+    [( "1.bf")  (force  1.bf)]
     [("+inf.bf" "+inf.0" "+inf.f")  (force +inf.bf)]
     [("+nan.bf" "+nan.0" "+nan.f")  (force +nan.bf)]
     [else
@@ -456,7 +456,7 @@
 
 (define (bigfloat-custom-write x port mode)
   (write-string
-   (cond [(bfzero? x)  (if (= 0 (bigfloat-sign x)) "+0.bf" "-0.bf")]
+   (cond [(bfzero? x)  (if (= 0 (bigfloat-sign x)) "0.bf" "-0.bf")]
          [(bfrational? x)
           (define str (bigfloat->string x))
           (cond [(regexp-match #rx"\\.|e" str)
@@ -561,7 +561,7 @@
 
 (define (bfsgn x)
   (cond [(bfzero? x)  x]
-        [(= 0 (mpfr-signbit x))  (force +1.bf)]
+        [(= 0 (mpfr-signbit x))  (force 1.bf)]
         [else  (force -1.bf)]))
 
 (define (bfround x)
@@ -675,10 +675,10 @@
  [bfzero? 'mpfr_zero_p])
 
 (define (bfpositive? x)
-  (bfgt? x (force +0.bf)))
+  (bfgt? x (force 0.bf)))
 
 (define (bfnegative? x)
-  (bflt? x (force +0.bf)))
+  (bflt? x (force 0.bf)))
 
 (define (bfeven? x)
   (and (bfinteger? x) (even? (bigfloat->integer x))))
@@ -778,29 +778,7 @@
  [bfgte? 'mpfr_greaterequal_p])
 
 ;; ===================================================================================================
-;; 0-arity functions (variable-precision constants)
-
-(define-for-syntax 0ary-funs (list))
-(provide (for-syntax 0ary-funs))
-
-(define-syntax-rule (provide-0ary-fun name c-name)
-  (begin
-    (define cfun (get-mpfr-fun c-name (_fun _mpfr-pointer _rnd_t -> _int)))
-    (define (name)
-      (define y (new-mpfr (bf-precision)))
-      (cfun y (bf-rounding-mode))
-      y)
-    (provide name)
-    (begin-for-syntax (set! 0ary-funs (cons #'name 0ary-funs)))))
-
-(define-syntax-rule (provide-0ary-funs [name c-name] ...)
-  (begin (provide-0ary-fun name c-name) ...))
-
-(provide-0ary-funs
- [log2.bf 'mpfr_const_log2]
- [pi.bf 'mpfr_const_pi]
- [gamma.bf 'mpfr_const_euler]
- [catalan.bf 'mpfr_const_catalan])
+;; Constants and variable-precision constants (i.e. 0-ary functions)
 
 (define-for-syntax consts (list))
 (provide (for-syntax consts))
@@ -814,20 +792,20 @@
 
 (define-bf-constant -inf.bf 2 (flonum->bigfloat -inf.0))
 (define-bf-constant -0.bf   2 (flonum->bigfloat -0.0))
-(define-bf-constant +0.bf   2 (flonum->bigfloat +0.0))
+(define-bf-constant  0.bf   2 (flonum->bigfloat  0.0))
 (define-bf-constant +inf.bf 2 (flonum->bigfloat +inf.0))
 (define-bf-constant +nan.bf 2 (flonum->bigfloat +nan.0))
 
-(define-bf-constant +1.bf 4 (flonum->bigfloat +1.0))
-(define-bf-constant +2.bf 4 (flonum->bigfloat +2.0))
-(define-bf-constant +3.bf 4 (flonum->bigfloat +3.0))
-(define-bf-constant +4.bf 4 (flonum->bigfloat +4.0))
-(define-bf-constant +5.bf 4 (flonum->bigfloat +5.0))
-(define-bf-constant +6.bf 4 (flonum->bigfloat +6.0))
-(define-bf-constant +7.bf 4 (flonum->bigfloat +7.0))
-(define-bf-constant +8.bf 4 (flonum->bigfloat +8.0))
-(define-bf-constant +9.bf 4 (flonum->bigfloat +9.0))
-(define-bf-constant +10.bf 4 (flonum->bigfloat +10.0))
+(define-bf-constant 1.bf 4 (flonum->bigfloat 1.0))
+(define-bf-constant 2.bf 4 (flonum->bigfloat 2.0))
+(define-bf-constant 3.bf 4 (flonum->bigfloat 3.0))
+(define-bf-constant 4.bf 4 (flonum->bigfloat 4.0))
+(define-bf-constant 5.bf 4 (flonum->bigfloat 5.0))
+(define-bf-constant 6.bf 4 (flonum->bigfloat 6.0))
+(define-bf-constant 7.bf 4 (flonum->bigfloat 7.0))
+(define-bf-constant 8.bf 4 (flonum->bigfloat 8.0))
+(define-bf-constant 9.bf 4 (flonum->bigfloat 9.0))
+(define-bf-constant 10.bf 4 (flonum->bigfloat 10.0))
 
 (define-bf-constant -1.bf 4 (flonum->bigfloat -1.0))
 (define-bf-constant -2.bf 4 (flonum->bigfloat -2.0))
@@ -840,10 +818,43 @@
 (define-bf-constant -9.bf 4 (flonum->bigfloat -9.0))
 (define-bf-constant -10.bf 4 (flonum->bigfloat -10.0))
 
-(define (epsilon.bf)
-  (bfexpt (force +2.bf) (bf (- (bf-precision)))))
+(define-for-syntax 0ary-funs (list))
+(provide (for-syntax 0ary-funs))
 
-(provide epsilon.bf)
+(define-syntax-rule (provide-0ary-fun name c-name)
+  (begin
+    (define cfun (get-mpfr-fun c-name (_fun _mpfr-pointer _rnd_t -> _int)))
+    (define (name)
+      (let ([y  (new-mpfr (bf-precision))])
+        (cfun y (bf-rounding-mode))
+        y))
+    (provide name)
+    (begin-for-syntax (set! 0ary-funs (cons #'name 0ary-funs)))))
+
+(define-syntax-rule (provide-0ary-funs [name c-name] ...)
+  (begin (provide-0ary-fun name c-name) ...))
+
+(provide-0ary-funs
+ [log2.bf 'mpfr_const_log2]
+ [pi.bf 'mpfr_const_pi]
+ [gamma.bf 'mpfr_const_euler]
+ [catalan.bf 'mpfr_const_catalan])
+
+(define constant-hash (make-hash))
+
+(define (phi.bf)
+  (define p (bf-precision))
+  (hash-ref!
+   constant-hash (cons 'phi.bf p)
+   (λ () (bfcopy
+          (parameterize ([bf-precision (+ p 10)])
+            (bfdiv (bfadd (force 1.bf) (bfsqrt (force 5.bf))) (force 2.bf)))))))
+
+(define (epsilon.bf)
+  (define p (bf-precision))
+  (hash-ref! constant-hash (cons 'epsilon.bf p) (λ () (bfexpt (force 2.bf) (bf (- p))))))
+
+(provide phi.bf epsilon.bf)
 (begin-for-syntax
   (set! 0ary-funs (cons #'epsilon.bf 0ary-funs)))
 
@@ -924,6 +935,3 @@
   (define z/f (mpz->integer result))
   (mpz-clear result)
   (values z/f n))
-
-
-

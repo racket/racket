@@ -3,9 +3,6 @@
 (require racket/performance-hint
          racket/promise
          "../../flonum.rkt"
-         "../functions/expm1.rkt"
-         "../functions/log1p.rkt"
-         "../functions/log-arithmetic.rkt"
          "dist-struct.rkt"
          "utils.rkt")
 
@@ -19,26 +16,26 @@
 (define flexp-pdf
   (make-one-sided-scale-flpdf
    (λ: ([x : Float] [log? : Any])
-     (if log? (- x) (exp (- x))))))
+     (if log? (- x) (flexp (- x))))))
 
 (: flexp-cdf (Float Float Any Any -> Float))
 (define flexp-cdf
   (make-one-sided-scale-flcdf
    (λ: ([x : Float] [log? : Any] [1-p? : Any])
-     (cond [1-p?  (if log? (- x) (exp (- x)))]
-           [else  (if log? (fllog1- (- x)) (- (flexpm1 (- x))))]))))
+     (cond [1-p?  (if log? (- x) (flexp (- x)))]
+           [else  (if log? (lg1- (- x)) (- (flexpm1 (- x))))]))))
 
 (: standard-flexp-inv-cdf (Float Any Any -> Float))
 (define (standard-flexp-inv-cdf q log? 1-p?)
   (cond [1-p?  (if log? (- q) (- (fllog q)))]
-        [else  (if log? (- (fllog1- q)) (- (fllog1p (- q))))]))
+        [else  (if log? (- (lg1- q)) (- (fllog1p (- q))))]))
 
 (: flexp-inv-cdf (Float Float Any Any -> Float))
 (define flexp-inv-cdf (make-one-sided-scale-flinv-cdf standard-flexp-inv-cdf))
 
 (: flexp-random (Float -> Float))
 (define (flexp-random s)
-  (* s (- (fllog (random)))))
+  (fl* s (- (fllog (random)))))
 
 ;; ===================================================================================================
 ;; Distribution object
@@ -59,6 +56,6 @@
       (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [1-p? : Any #f])
                         (flexp-inv-cdf s (fl p) log? 1-p?)))
       (define (random) (flexp-random s))
-      (make-exp-dist pdf cdf inv-cdf random 0.0 +inf.0 (delay (* s (fllog 2.0))) s)))
+      (make-exp-dist pdf cdf inv-cdf random 0.0 +inf.0 (delay (fl* s (fllog 2.0))) s)))
   
   )

@@ -1,8 +1,6 @@
 #lang typed/racket/base
 
-(require racket/flonum
-         "../../flonum.rkt"
-         "expm1.rkt")
+(require "../../flonum.rkt")
 
 (provide sinh flsinh
          cosh flcosh
@@ -28,32 +26,30 @@ log(+max) <= x <= +max.0    sinh(x) ~ exp(x) / 2 = (exp(x/2) / 2) * exp(x/2)
 
 (: flsinh (Float -> Float))
 (define (flsinh x)
-  (cond [(x . < . 0.0)  (- (flsinh (- x)))]
-        [(x . < . (expt 2.0 -28))  x]
-        [(x . < . 1.0)
+  (cond [(x . fl< . 0.0)  (- (flsinh (- x)))]
+        [(x . fl< . (flexpt 2.0 -28.0))  x]
+        [(x . fl< . 1.0)
          (define y (flexpm1 x))
-         (* 0.5 (- (* 2.0 y) (/ (* y y) (+ y 1.0))))]
-        [(x . < . 22.0)
+         (fl* 0.5 (fl- (fl* 2.0 y) (fl/ (fl* y y) (fl+ y 1.0))))]
+        [(x . fl< . 22.0)
          (define y (flexpm1 x))
-         (* 0.5 (+ y (/ y (+ y 1.0))))]
-        [(x . < . (fllog +max.0))
-         (* 0.5 (flexp x))]
+         (fl* 0.5 (fl+ y (fl/ y (fl+ y 1.0))))]
+        [(x . fl< . (fllog +max.0))
+         (fl* 0.5 (flexp x))]
         [else
-         (define y (flexp (* 0.5 x)))
-         (* 0.5 y y)]))
+         (define y (flexp (fl* 0.5 x)))
+         (fl* (fl* 0.5 y) y)]))
 
 (: sinh (case-> (Zero -> Zero)
                 (Float -> Float)
-                (Single-Flonum -> Single-Flonum)
                 (Real -> Real)
                 (Float-Complex -> Float-Complex)
                 (Number -> Number)))
 (define (sinh x)
   (cond [(real? x)
          (cond [(flonum? x)  (flsinh x)]
-               [(single-flonum? x)  (real->single-flonum (flsinh (real->double-flonum x)))]
                [(eqv? x 0)  0]
-               [else  (flsinh (real->double-flonum x))])]
+               [else  (flsinh (fl x))])]
         [else
          (cond [(float-complex? x)  (* 0.0-1.0i (sin (* 0.0+1.0i x)))]
                [else  (* -i (sin (* +i x)))])]))
@@ -78,32 +74,30 @@ log(+max.0) <= x <= +max.0    cosh(x) ~ exp(x) / 2 = (exp(x/2) / 2) * exp(x/2)
 
 (: flcosh (Float -> Float))
 (define (flcosh x)
-  (let ([x  (abs x)])
-    (cond [(x . < . (expt 2.0 -26))  1.0]
-          [(x . < . (* 0.5 (fllog 2.0)))
+  (let ([x  (flabs x)])
+    (cond [(x . fl< . (flexpt 2.0 -26.0))  1.0]
+          [(x . fl< . (fl* 0.5 (fllog 2.0)))
            (define t (flexpm1 x))
-           (+ 1.0 (/ (* t t) (* 2.0 (+ 1.0 t))))]
-         [(x . < . 22.0)
+           (fl+ 1.0 (fl/ (fl* t t) (fl* 2.0 (fl+ 1.0 t))))]
+         [(x . fl< . 22.0)
            (define t (flexp x))
-           (+ (* 0.5 t) (/ 0.5 t))]
-         [(x . < . (fllog +max.0))
-          (* 0.5 (flexp x))]
+           (fl+ (fl* 0.5 t) (fl/ 0.5 t))]
+         [(x . fl< . (fllog +max.0))
+          (fl* 0.5 (flexp x))]
          [else
-          (define w (flexp (* 0.5 x)))
-          (* 0.5 w w)])))
+          (define w (flexp (fl* 0.5 x)))
+          (fl* (fl* 0.5 w) w)])))
 
 (: cosh (case-> (Zero -> One)
                 (Float -> Float)
-                (Single-Flonum -> Single-Flonum)
                 (Real -> Real)
                 (Float-Complex -> Float-Complex)
                 (Number -> Number)))
 (define (cosh x)
   (cond [(real? x)
          (cond [(flonum? x)  (flcosh x)]
-               [(single-flonum? x)  (real->single-flonum (flcosh (real->double-flonum x)))]
                [(eqv? x 0)  1]
-               [else  (flcosh (real->double-flonum x))])]
+               [else  (flcosh (fl x))])]
         [else
          (cond [(float-complex? x)  (cos (* 0.0+1.0i x))]
                [else  (cos (* 0+i x))])]))
@@ -128,30 +122,28 @@ Domain               Computation
 
 (: fltanh (Float -> Float))
 (define (fltanh x)
-  (cond [(x . < . 0.0)  (- (fltanh (- x)))]
-        [(x . < . (expt 2.0 -55))
-         (* x (+ 1.0 x))]
-        [(x . < . 1.0)
-         (define t (flexpm1 (* -2.0 x)))
-         (- (/ t (+ 2.0 t)))]
-        [(x . < . 22.0)
-         (define t (flexpm1 (* 2.0 x)))
-         (- 1.0 (/ 2.0 (+ 2.0 t)))]
-        [(x . <= . +inf.0)  1.0]
+  (cond [(x . fl< . 0.0)  (- (fltanh (- x)))]
+        [(x . fl< . (flexpt 2.0 -55.0))
+         (fl* x (fl+ 1.0 x))]
+        [(x . fl< . 1.0)
+         (define t (flexpm1 (fl* -2.0 x)))
+         (- (fl/ t (fl+ 2.0 t)))]
+        [(x . fl< . 22.0)
+         (define t (flexpm1 (fl* 2.0 x)))
+         (fl- 1.0 (fl/ 2.0 (fl+ 2.0 t)))]
+        [(x . fl<= . +inf.0)  1.0]
         [else  +nan.0]))
 
 (: tanh (case-> (Zero -> Zero)
                 (Float -> Float)
-                (Single-Flonum -> Single-Flonum)
                 (Real -> Real)
                 (Float-Complex -> Float-Complex)
                 (Number -> Number)))
 (define (tanh x)
   (cond [(real? x)
          (cond [(flonum? x)  (fltanh x)]
-               [(single-flonum? x)  (real->single-flonum (fltanh (real->double-flonum x)))]
                [(eqv? x 0)  0]
-               [else  (fltanh (real->double-flonum x))])]
+               [else  (fltanh (fl x))])]
         [else
          (cond [(float-complex? x)  (* 0.0-1.0i (tan (* 0.0+1.0i x)))]
                [else  (* 0-i (tan (* 0+i x)))])]))
