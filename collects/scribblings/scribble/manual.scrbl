@@ -273,7 +273,7 @@ A few other escapes are recognized symbolically:
        @RACKET[(unsyntax (foo "..."))].)
        }
 
- @item{@indexed-racket[code:blank] typesets as a blank space.}
+ @item{@as-index[@racketidfont{code:blank}] typesets as a blank space.}
 
  @item{@racket[(#,(indexed-racket code:hilite) _datum)] typesets like
        @racket[_datum], but with a background highlight.}
