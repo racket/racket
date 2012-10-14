@@ -14,6 +14,15 @@
 
 @(define untyped-eval (make-untyped-math-eval))
 
+@(define math-style tt)
+
+@(define math-eval 
+   (parameterize ([sandbox-output 'string]
+                  [sandbox-error-output 'string])
+     (make-evaluator 'racket)))
+@;(interaction-eval #:eval math-eval (require math))
+
+
 @title[#:tag "number-theory" #:style '(toc)]{Number Theory}
 @(author-jens-axel)
 
@@ -76,7 +85,7 @@
   @; http://en.wikipedia.org/wiki/Pairwise_coprime
 }  
 
-@defproc[(inverse [a Integer] [n Integer]) natural?]{
+@defproc[(modular-inverse [a Integer] [n Integer]) natural?]{
   Returns the inverse of @racket[a] module @racket[n],
   if @racket[a] and @racket[n] are coprime,
   otherwise @racket[#f] is returned.
@@ -86,12 +95,12 @@
   such that @racket[ab=1 mod n].
   
   The number 3 is an inverse to 2 modulo 5.
-  @interaction[#:eval untyped-eval
-                      (inverse 2 5)
-                      (modulo (* 2 3) 5)]
+  @interaction[(require math)
+               (modular-inverse 2 5)
+               (modulo (* 2 3) 5)]
   The number 0 has no inverse modulo 5.
-  @interaction[#:eval untyped-eval
-                      (inverse 0 5)]
+  @interaction[(require math)
+               (modular-inverse 0 5)]
   @; http://en.wikipedia.org/wiki/Modular_multiplicative_inverse
 }  
 
@@ -422,14 +431,80 @@ Note: The function @racket[divisor-sum] is multiplicative.
 @defproc[(bernoulli [n Natural]) exact-rational?]{
   Returns the @racket[n]th Bernoulli number.
   Definition:
-  @racket[http://en.wikipedia.org/wiki/Bernoulli_number].
+  @url{http://en.wikipedia.org/wiki/Bernoulli_number}.
 
   @interaction[#:eval untyped-eval
                       (map bernoulli (range 9))]
 }
 
+@defproc[(eulerian-number [n Natural] [k Natural]) natural?]{
+  Returns the Eulerian number @math-style{<n,k>}.
+  Definition:
+  @url{http://mathworld.wolfram.com/EulerianNumber.html}.
+
+  @interaction[(require math racket)
+               (eulerian-number 5 2)]
+}
+
+
+@defproc[(fibonacci [n Natural]) natural?]{
+  Returns the @racket[n]th Fibonacci number.
+  Definition:
+  @url{http://en.wikipedia.org/wiki/Fibonacci_number}.
+
+  The ten first Fibonacci numbers.
+  @interaction[(require math racket)
+               (map fibonacci (range 10))]
+}
+
+@defproc[(fibonacci/mod [n Natural] [m Natural]) natural?]{
+  Returns the @racket[n]th Fibonacci number modulo @racket[m].
+
+  The ten first Fibonacci numbers modulo 5.
+  @interaction[(require math racket)
+               (map (λ (n) (fibonacci/mod n 5)) (range 10))]
+}
+
 @; ----------------------------------------
 @section[#:tag "quadratic-residues"]{Quadratic Residues}
 
+
+@; ----------------------------------------
+@section[#:tag "combinatorics"]{Combinatorics}
+
+@defproc[(factorial [n Natural]) natural?]{
+  Returns the factorial of @racket[n].
+  The factorial of @racket[n] is the 
+  number @math-style{n!=n*(n-1)*(n-2)*...*1}.
+  @interaction[(require math racket)
+               (factorial 3)
+               (factorial 0)]
+}
+
+@defproc[(binomial [n Natural] [k Natural]) natural?]{
+  Returns @racket[n] choose @racket[k].
+  The binomial coeffecient is given by 
+  @math-style{C(n,k)=n!/(n!(n-k)!)}.
+  @interaction[(require math racket)
+               (binomial 5 3)]
+}
+
+@defproc[(permutations [n Natural] [k Natural]) natural?]{
+  Returns the number of @racket[k]-permutations of @racket[n].
+  That is the number of sequences of length @racket[k] where the 
+  elements are drawn from a set with @racket[n] elements.
+  @math-style{P(n,k)=n!/(n-k)!}.
+  @interaction[(require math racket)
+               (permutations 5 3)]
+}
+
+@defproc[(multinomial [n Natural] [ks (Listof Natural)]) natural?]{
+  Returns the multinomial coeffecient.
+  The expression @racket[(multinomial n (list k0 k1 ...))] 
+  returns the number @math-style{n! / (k0! * k1! * ...)}.
+
+  @interaction[(require math racket)
+               (multinomial 5 3 2)]
+}
 
 @(close-eval untyped-eval)
