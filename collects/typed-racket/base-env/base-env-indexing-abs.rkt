@@ -325,6 +325,10 @@
    [real->decimal-string (-Real [index-type] . ->opt .  -String)]
 
 
+   [raise-argument-error
+    (cl->*
+     [-> Sym -String Univ (Un)]
+     [->* (list Sym -String index-type) Univ (Un)])]
    [raise-type-error
     (cl->*
      [-> Sym -String Univ (Un)]
