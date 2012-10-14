@@ -23,7 +23,7 @@ vice-versa.
 @; ======================================================================
 @section[#:tag "sequences"]{Sequences}
 
-@(define stream-evaluator
+@(define sequence-evaluator
    (let ([evaluator (make-base-eval)])
      (evaluator '(require racket/generic))
      (evaluator '(require racket/list))
@@ -86,7 +86,7 @@ For example, unrolled linked lists (represented as a list of vectors)
 themeselves do not fit the stream abstraction, but have index-based iterators
 that can be represented as streams:
 
-@examples[#:eval stream-evaluator
+@examples[#:eval sequence-evaluator
   (struct unrolled-list-iterator (idx lst)
     #:methods gen:stream
     [(define (stream-empty? iter)
@@ -147,7 +147,14 @@ in the sequence.
 
 @defproc[(sequence? [v any/c]) boolean?]{
   Returns @racket[#t] if @racket[v] can be used as a @tech{sequence},
-  @racket[#f] otherwise.}
+  @racket[#f] otherwise.
+@interaction[#:eval sequence-evaluator
+		    (sequence? 42)
+		    (sequence? '(a b c))
+		    (sequence? "word")
+		    (sequence? #\x)
+		    ]
+}
 
 @defproc*[([(in-range [end number?]) stream?]
            [(in-range [start number?] [end number?] [step number? 1]) stream?])]{
@@ -158,23 +165,54 @@ in the sequence.
   previous element.  The sequence stops before an element that would be
   greater or equal to @racket[end] if @racket[step] is non-negative, or
   less or equal to @racket[end] if @racket[step] is negative.
-  @speed[in-range "number"]}
+  @speed[in-range "number"]
+
+Example: gaussian sum:
+@interaction[#:eval sequence-evaluator
+             (for/sum ([x (in-range 10)]) x)]
+
+
+Example: sum of even numbers:
+@interaction[#:eval sequence-evaluator
+             (for/sum ([x (in-range 0 100 2)]) x)]
+}
+
 
 @defproc[(in-naturals [start exact-nonnegative-integer? 0]) stream?]{
   Returns an infinite sequence  (that is also a @tech{stream}) of exact integers starting with
   @racket[start], where each element is one more than the preceding
-  element.  @speed[in-naturals "integer"]}
+  element.  @speed[in-naturals "integer"]
+
+@interaction[#:eval sequence-evaluator
+             (for/list ([k (in-naturals)]
+                        [x (in-range 10)])
+	       (list k x))]
+}
+
 
 @defproc[(in-list [lst list?]) stream?]{
   Returns a sequence (that is also a @tech{stream}) that is equivalent 
   to using @racket[lst] directly as a sequence.
   @info-on-seq["pairs" "lists"]
-  @speed[in-list "list"]}
+  @speed[in-list "list"]
+
+@interaction[#:eval sequence-evaluator
+             (for/list ([x (in-list '(3 1 4))])
+               `(,x ,(* x x)))
+             ]
+}
 
 @defproc[(in-mlist [mlst mlist?]) sequence?]{
   Returns a sequence equivalent to @racket[mlst].
   @info-on-seq["mpairs" "mutable lists"]
-  @speed[in-mlist "mutable list"]}
+  @speed[in-mlist "mutable list"]
+
+@interaction[#:eval sequence-evaluator
+             (for/list ([x (in-mlist (mcons "RACKET" (mcons "LANG" '())))])
+	       (string-length x))
+]
+
+}
 
 @defproc[(in-vector [vec vector?]
                     [start exact-nonnegative-integer? 0]
@@ -203,7 +241,16 @@ in the sequence.
   if @racket[start] is more than @racket[stop] and @racket[step] is
   positive, then the @exnraise[exn:fail:contract:mismatch].
 
-  @speed[in-vector "vector"]}
+  @speed[in-vector "vector"]
+
+@interaction[#:eval sequence-evaluator
+             (define (histogram vector-of-words)
+               (define a-hash (hash))
+               (for ([word (in-vector vector-of-words)])
+                 (hash-set! a-hash word (add1 (hash-ref a-hash word 0))))
+               a-hash)
+             (histogram #("hello" "world" "hello" "sunshine"))]
+}
 
 @defproc[(in-string [str string?]
                     [start exact-nonnegative-integer? 0]
@@ -218,7 +265,16 @@ in the sequence.
   The optional arguments @racket[start], @racket[stop], and
   @racket[step] are as in @racket[in-vector].
 
-  @speed[in-string "string"]}
+  @speed[in-string "string"]
+
+@interaction[#:eval sequence-evaluator
+	     (define (line-count str)
+               (for/sum ([ch (in-string str)])
+                 (if (char=? #\newline ch) 1 0)))
+             (line-count "this string\nhas\nthree \nnewlines")
+]
+
+}
 
 @defproc[(in-bytes [bstr bytes?]
                    [start exact-nonnegative-integer? 0]
@@ -233,7 +289,17 @@ in the sequence.
   The optional arguments @racket[start], @racket[stop], and
   @racket[step] are as in @racket[in-vector].
 
-  @speed[in-bytes "byte string"]}
+  @speed[in-bytes "byte string"]
+
+
+@interaction[#:eval sequence-evaluator
+	     (define (has-eof? bs)
+               (for/or ([ch (in-bytes bs)])
+                 (= ch 0)))
+             (has-eof? #"this byte string has an \0embedded zero byte")
+             (has-eof? #"this byte string does not")
+]
+}
 
 @defproc[(in-port [r (input-port? . -> . any/c) read]
                   [in input-port? (current-input-port)])
@@ -792,7 +858,7 @@ A shorthand for nested @racket[stream-cons]es ending with
   @item{@racket[stream-rest] : accepts one argument}
 ]
 
-@examples[#:eval stream-evaluator
+@examples[#:eval sequence-evaluator
   (define-struct list-stream (v)
     #:methods gen:stream
     [(define (stream-empty? stream)
