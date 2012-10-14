@@ -1,5 +1,7 @@
 #lang racket/base
 
+(require racket/unsafe/ops)
+
 ;; fannkuch benchmark for The Computer Language Shootout
 ;; Written by Dima Dorfman, 2004
 ;; Slightly improved by Sven Hartrumpf, 2005-2006
@@ -19,23 +21,23 @@
                [checksum 0]
                [even-parity? #t])
       (for ([i (in-range r)])
-        (vector-set! count i (add1 i)))
+        (unsafe-vector-set! count i (unsafe-fx+ 1 i)))
       (let* ((next-flips (count-flips pi tmp))
              (flips2 (max next-flips flips))
-             (next-checksum (+ checksum (if even-parity? next-flips (- next-flips)))))
+             (next-checksum (unsafe-fx+ checksum (if even-parity? next-flips (unsafe-fx- 0 next-flips)))))
         (let loop2 ([r 1])
-          (if (= r n)
+          (if (unsafe-fx= r n)
               (values flips2 next-checksum)
-              (let ((perm0 (vector-ref pi 0)))
+              (let ((perm0 (unsafe-vector-ref pi 0)))
                 (for ([i (in-range r)])
-                  (vector-set! pi i (vector-ref pi (add1 i))))
-                (vector-set! pi r perm0)
-                (vector-set! count r (sub1 (vector-ref count r)))
+                  (unsafe-vector-set! pi i (unsafe-vector-ref pi (unsafe-fx+ 1 i))))
+                (unsafe-vector-set! pi r perm0)
+                (unsafe-vector-set! count r (unsafe-fx- (unsafe-vector-ref count r) 1))
                 (cond
-                  [(<= (vector-ref count r) 0)
-                   (loop2 (add1 r))]
+                  [(<= (unsafe-vector-ref count r) 0)
+                   (loop2 (unsafe-fx+ 1 r))]
                   [else (loop flips2 
-                              (add1 perms)
+                              (unsafe-fx+ 1 perms)
                               r 
                               next-checksum
                               (not even-parity?))]))))))))
@@ -43,23 +45,23 @@
 (define (count-flips pi rho)
   (vector-copy! rho 0 pi)
   (let loop ([i 0])
-    (if (= (vector-ref rho 0) 0)
+    (if (unsafe-fx= (unsafe-vector-ref rho 0) 0)
         i
         (begin
-          (vector-reverse-slice! rho 0 (add1 (vector-ref rho 0)))
-          (loop (add1 i))))))
+          (vector-reverse-slice! rho 0 (unsafe-fx+ 1 (unsafe-vector-ref rho 0)))
+          (loop (unsafe-fx+ 1 i))))))
 
 (define (vector-reverse-slice! v i j)
   (let loop ([i i]
-             [j (sub1 j)])
-    (when (> j i)
+             [j (unsafe-fx- j 1)])
+    (when (unsafe-fx> j i)
       (vector-swap! v i j)
-      (loop (add1 i) (sub1 j)))))
+      (loop (unsafe-fx+ 1 i) (unsafe-fx- j 1)))))
 
-(define (vector-swap! v i j)
-  (let ((t (vector-ref v i)))
-    (vector-set! v i (vector-ref v j))
-    (vector-set! v j t)))
+(define-syntax-rule (vector-swap! v i j)
+  (let ((t (unsafe-vector-ref v i)))
+    (unsafe-vector-set! v i (unsafe-vector-ref v j))
+    (unsafe-vector-set! v j t)))
 
 (command-line #:args (n)
               (define-values (answer checksum)
