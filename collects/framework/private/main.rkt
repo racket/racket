@@ -29,6 +29,8 @@
 ;; used to time how long it takes to set a preference; the value is not actually used.
 (preferences:set-default 'drracket:prefs-debug #f (λ (x) #t))
 
+(preferences:set-default 'framework:spell-check-on? #f boolean?)
+
 (preferences:set-default 'framework:always-use-platform-specific-linefeed-convention #f boolean?)
 
 (preferences:set-default 'framework:overwrite-mode-keybindings #f boolean?)

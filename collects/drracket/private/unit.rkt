@@ -3628,6 +3628,23 @@ module browser threading seems wrong.
       
       (define/override (edit-menu:between-find-and-preferences edit-menu)
         (super edit-menu:between-find-and-preferences edit-menu)
+        (new menu:can-restore-checkable-menu-item%
+             [label (string-constant spell-check-string-constants)]
+             [shortcut #\c]
+             [shortcut-prefix (cons 'shift (get-default-shortcut-prefix))]
+             [parent edit-menu]
+             [demand-callback
+              (λ (item)
+                (define ed (get-edit-target-object))
+                (define on? (and ed (is-a? ed color:text<%>)))
+                (send item enable ed)
+                (send item check (and on? (send ed get-spell-check-strings))))]
+             [callback
+              (λ (item evt)
+                (define ed (get-edit-target-object))
+                (define old-val (send ed get-spell-check-strings))
+                (preferences:set 'framework:spell-check-on? (not old-val))
+                (send ed set-spell-check-strings (not old-val)))])
         (new menu:can-restore-menu-item%
              [label (string-constant complete-word)]
              [shortcut #\/]

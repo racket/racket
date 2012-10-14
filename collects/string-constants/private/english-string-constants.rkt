@@ -1681,5 +1681,9 @@ please adhere to these guidelines:
   (interactions-window-label "interactions")
   (hide-defs/ints-label "Hide Definitions/Interactions Labels") ;; popup menu
   (show-defs/ints-label "Show definitions/interactions labels") ;; preferences checkbox
+
+  ;; menu item in the 'edit' menu; applies to editors with programs in them
+  ;; (technically, editors that implement color:text<%>)
+  (spell-check-string-constants "Spell Check String Constants")
   
   )

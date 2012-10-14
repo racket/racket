@@ -14,7 +14,8 @@ added get-regions
          syntax-color/default-lexer
          string-constants
          "../preferences.rkt"
-         "sig.rkt")
+         "sig.rkt"
+         "aspell.rkt")
 
 (import [prefix icon: framework:icon^]
         [prefix mode: framework:mode^]
@@ -60,7 +61,10 @@ added get-regions
     backward-containing-sexp
     forward-match
     insert-close-paren
-    classify-position))
+    classify-position
+    
+    set-spell-check-strings
+    get-spell-check-strings))
 
 (define text-mixin
   (mixin (text:basic<%>) (-text<%>)
@@ -221,6 +225,15 @@ added get-regions
     ;; ---------------------- Preferences -------------------------------
     (define should-color? #t)
     (define token-sym->style #f)
+    (define spell-check-strings? (preferences:get 'framework:spell-check-on?))
+    
+    (define/public (get-spell-check-strings) spell-check-strings?)
+    (define/public (set-spell-check-strings s) 
+      (define new-val (and s #t))
+      (unless (eq? new-val spell-check-strings?)
+        (set! spell-check-strings? s)
+        (reset-tokens)
+        (start-colorer token-sym->style get-token pairs)))
     
     ;; ---------------------- Multi-threading ---------------------------
     ;; A list of thunks that color the buffer
@@ -234,7 +247,7 @@ added get-regions
     (inherit change-style begin-edit-sequence end-edit-sequence highlight-range
              get-style-list in-edit-sequence? get-start-position get-end-position
              local-edit-sequence? get-styles-fixed has-focus?
-             get-fixed-style)
+             get-fixed-style get-text)
     
     (define lexers-all-valid? #t)
     (define/private (update-lexer-state-observers)
@@ -319,15 +332,8 @@ added get-regions
           (set-lexer-state-current-lexer-mode! ls new-lexer-mode)
           (sync-invalid ls)
           (when (and should-color? (should-color-type? type) (not frozen?))
-            (set! colors
-                  (cons
-                   (let* ([style-name (token-sym->style type)]
-                          (color (send (get-style-list) find-named-style style-name))
-                          (sp (+ in-start-pos (sub1 new-token-start)))
-                          (ep (+ in-start-pos (sub1 new-token-end))))
-                     (λ ()
-                       (change-style color sp ep #f)))
-                   colors)))
+            (set! colors (cons (do-coloring type in-start-pos new-token-start new-token-end)
+                               colors)))
           ;; Using the non-spec version takes 3 times as long as the spec
           ;; version.  In other words, the new greatly outweighs the tree
           ;; operations.
@@ -351,6 +357,37 @@ added get-regions
             [else
              (enable-suspend #t)
              (re-tokenize ls in in-start-pos new-lexer-mode enable-suspend)]))))
+
+    (define/private (do-coloring type in-start-pos new-token-start new-token-end)
+      (define sp (+ in-start-pos (sub1 new-token-start)))
+      (define ep (+ in-start-pos (sub1 new-token-end)))
+      (define style-name (token-sym->style type))
+      (define color (send (get-style-list) find-named-style style-name))
+      (cond
+        [(and spell-check-strings? (eq? type 'string))
+         (define misspelled-color (send (get-style-list) find-named-style "Standard"))
+         (define strs (regexp-split #rx"\n" (get-text sp ep)))
+         (λ ()
+           (let loop ([strs strs]
+                      [pos sp])
+             (unless (null? strs)
+               (define str (car strs))
+               (let loop ([spellos (query-aspell str)]
+                          [lp 0])
+                 (cond
+                   [(null? spellos) 
+                    (change-style color (+ sp lp) (+ sp (string-length str)) #f)]
+                   [else
+                    (define err (car spellos))
+                    (define err-start (list-ref err 0))
+                    (define err-len (list-ref err 1))
+                    
+                    (change-style color (+ pos lp) (+ pos err-start) #f)
+                    (change-style misspelled-color (+ pos err-start) (+ pos err-start err-len) #f)
+                    (loop (cdr spellos) (+ err-start err-len))]))
+               (loop (cdr strs)
+                     (+ pos (string-length str) 1)))))]
+        [else (λ () (change-style color sp ep #f))]))
     
     (define/private (show-tree t)
       (printf "Tree:\n")

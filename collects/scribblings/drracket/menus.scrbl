@@ -171,6 +171,10 @@ case-sensitive and case-insensitive search.}
 
 ]}
 
+@item{@defmenuitem{Spell Check String Constants} Uses @tt{aspell}
+       or @tt{ispell} to look for unknown words in string constants
+       (things that would otherwise be colored green).}
+
 @item{@defmenuitem{Complete Word} Completes the word at the
 insertion point, using the manuals as a source of completions.}
 
