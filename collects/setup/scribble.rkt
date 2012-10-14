@@ -245,7 +245,7 @@
                          (not (memq 'no-depend-on (doc-flags (info-doc i)))))
                 (set! added? #t)
                 (hash-set! deps i #t))))
-          ;; Add defeinite dependencies based on referenced keys
+          ;; Add definite dependencies based on referenced keys
           (let ([not-found
                  (lambda (k)
                    (unless (or (memq 'depends-all (doc-flags (info-doc info)))
