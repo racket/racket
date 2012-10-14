@@ -340,7 +340,7 @@
    [raise-arguments-error
     (->* (list Sym -String) Univ (Un))]
    [raise-range-error
-    (->opt Sym -String -String index-type Univ index-type index-type [index-type] (Un))]
+    (-> Sym -String -String index-type Univ index-type index-type (Un index-type (-val #f)) (Un))]
 
    ))
 
