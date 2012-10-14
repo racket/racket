@@ -1,4 +1,6 @@
-#lang typed/racket/base
+#lang racket/base
+
+(require "private/syntax.rkt")
 
 (require "private/array/array-struct.rkt"
          "private/array/array-constructors.rkt"

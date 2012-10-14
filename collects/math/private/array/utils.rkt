@@ -210,12 +210,6 @@
            (loop (unsafe-cdr perm) (+ i 1))]
           [else  (values new-ds new-perm)])))
 
-(define-syntax (plet: stx)
-  (syntax-case stx (:)
-    [(_ (A ...) ([x : T  e] ...) body ...)
-     (syntax/loc stx
-       ((plambda: (A ...) ([x : T] ...) body ...) e ...))]))
-
 (: make-thread-local-indexes (Integer -> (-> Indexes)))
 (define (make-thread-local-indexes dims)
   (let: ([val : (Thread-Cellof (U #f Indexes)) (make-thread-cell #f)])
