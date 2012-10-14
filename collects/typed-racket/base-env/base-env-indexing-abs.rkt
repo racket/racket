@@ -333,6 +333,14 @@
     (cl->*
      [-> Sym -String Univ (Un)]
      [->* (list Sym -String index-type) Univ (Un)])]
+   [raise-result-error
+    (cl->*
+     [->* (list Sym -String Univ) Univ (Un)]
+     [->* (list Sym -String index-type Univ) Univ (Un)])]
+   [raise-arguments-error
+    (->* (list Sym -String) Univ (Un))]
+   [raise-range-error
+    (->opt Sym -String -String index-type Univ index-type index-type [index-type] (Un))]
 
    ))
 
