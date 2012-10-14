@@ -1139,12 +1139,12 @@ and @racket[#f] otherwise.
 
 @defform/subs[#:literals (I O where where/hidden side-condition side-condition/hidden etc.)
              (define-judgment-form language
-               option ...
+               mode-spec
+               contract-spec
                rule rule ...)
-             ([option mode-spec
-                      contract-spec]
-              [mode-spec (code:line #:mode (form-id pos-use ...))]
-              [contract-spec (code:line #:contract (form-id @#,ttpattern ...))]
+             ([mode-spec (code:line #:mode (form-id pos-use ...))]
+              [contract-spec (code:line) 
+                             (code:line #:contract (form-id @#,ttpattern ...))]
               [pos-use I
                        O]
               [rule [premise
