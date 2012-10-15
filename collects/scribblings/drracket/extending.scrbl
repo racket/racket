@@ -176,10 +176,6 @@ Several environment variables can affect DrRacket's behavior:
         set, DrRacket will print out that it is set, and will print
         when the index is started loading and when it finishes loading.}
 
- @item{@indexed-envvar{PLTDRBACKGROUNDCOMPILELOG} : When this environment
-        variable is set, DrRacket adds logging messages that show the
-        status of its background expansion process.}
- 
  @item{@indexed-envvar{PLTDREASTERSECONDS} : When this environment variable
         is set, DrRacket pretends that the result of @racket[current-seconds]
         is actually this environment variable's value, for the purposes
