@@ -122,16 +122,13 @@ static int check_val_struct_prim(Scheme_Object *p, int arity)
 {
   if (p && SCHEME_PRIMP(p)) {
     int t = (((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK);
-    if (t == SCHEME_PRIM_STRUCT_TYPE_CONSTR) {
-#if 0
-      /* not yet ready... */
+    if (t == SCHEME_PRIM_STRUCT_TYPE_SIMPLE_CONSTR) {
       Scheme_Struct_Type *t;
       t = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(p)[0];
-      if ((arity == t->num_islots) 
-          && scheme_is_simple_struct_type(t)) {
+      if ((arity == t->num_islots)
+          && (arity < 100)) {
         return INLINE_STRUCT_PROC_CONSTR;
       }
-#endif
       return 0;
     } else if (arity == 1) {
       if (t == SCHEME_PRIM_STRUCT_TYPE_PRED)
@@ -444,13 +441,7 @@ static int generate_inlined_struct_op(int kind, mz_jit_state *jitter,
       (void)jit_calli(sjc.struct_prop_pred_code);
     }
   } else if (kind == INLINE_STRUCT_PROC_CONSTR) {
-    return 0;
-#if 0
-    if (!rand2)
-      (void)jit_calli(sjc.struct_constr_unary_code);
-    else
-      (void)jit_calli(sjc.struct_constr_binary_code);
-#endif
+    scheme_generate_struct_alloc(jitter, rand2 ? 2 : 1, 0, 0, is_tail, multi_ok);
   } else {
     scheme_signal_error("internal error: unknown struct-op mode");
   }
@@ -458,21 +449,309 @@ static int generate_inlined_struct_op(int kind, mz_jit_state *jitter,
   return 1;
 }
 
+#ifdef CAN_INLINE_ALLOC
+static int inline_struct_alloc(mz_jit_state *jitter, int c, int inline_slow)
+{
+  return scheme_inline_alloc(jitter, 
+                             sizeof(Scheme_Structure) + ((c - mzFLEX_DELTA) * sizeof(Scheme_Object*)), 
+                             scheme_structure_type, 
+                             0, 1, 0, inline_slow);
+}
+#endif
+
+static Scheme_Object *alloc_structure(Scheme_Object *_stype, int argc) 
+#ifdef MZ_USE_FUTURES
+  XFORM_SKIP_PROC
+#endif
+{
+  Scheme_Struct_Type *stype = (Scheme_Struct_Type *)_stype;
+  Scheme_Structure *inst;
+  Scheme_Object **args;
+  int i;
+
+#ifdef MZ_USE_FUTURES
+  jit_future_storage[0] = stype;
+#endif
+
+  inst = (Scheme_Structure *)
+    scheme_malloc_tagged(sizeof(Scheme_Structure) 
+			 + ((argc - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
+
+#ifdef MZ_USE_FUTURES
+  stype = (Scheme_Struct_Type *)jit_future_storage[0];
+
+  if (!inst) {
+    /* Must be in a future thread */
+    inst = scheme_rtcall_allocate_structure(argc, stype);
+  } else
+#endif
+    inst->stype = stype;
+
+  inst->so.type = scheme_structure_type;
+
+  args = MZ_RUNSTACK;
+  for (i = 0; i < argc; i++) {
+    inst->slots[i] = args[i];
+  }
+  
+  return (Scheme_Object *)inst;
+}
+
+Scheme_Structure *scheme_jit_allocate_structure(int argc, Scheme_Struct_Type *stype)
+{
+  Scheme_Structure *inst;
+
+  inst = (Scheme_Structure *)
+    scheme_malloc_tagged(sizeof(Scheme_Structure) 
+			 + ((argc - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
+  inst->stype = stype;
+
+  return inst;
+}
+
 static int generate_inlined_nary_struct_op(int kind, mz_jit_state *jitter, 
                                            Scheme_Object *rator, Scheme_App_Rec *app,
                                            Branch_Info *for_branch, int branch_short, 
-                                           int multi_ok)
+                                           int is_tail, int multi_ok)
 /* de-sync'd ok; for branch, sync'd before */
 {
-#if 1
-  scheme_signal_error("shouldn't get here, yet"); /* REMOVEME */
-#else
   /* generate code to evaluate the arguments */
-  scheme_generate_app(app, NULL, app->num_args, jitter, 0, 0, 2);
+  scheme_generate_app(app, NULL, app->num_args, jitter, 0, 0, 1);
   CHECK_LIMIT();
   mz_rs_sync();
+
+  jit_movr_l(JIT_R0, JIT_V1); /* move rator to R0 */
+
+  /* arguments are now on the runstack, rator is in R0 */
+  scheme_generate_struct_alloc(jitter, app->num_args, 0, 0, is_tail, multi_ok);
+
+  CHECK_LIMIT();
+
+  if (!is_tail && app->num_args) {
+    mz_rs_inc(app->num_args);
+    mz_runstack_popped(jitter, app->num_args);
+  }
+
+  return 1;
+}
+
+int scheme_generate_struct_alloc(mz_jit_state *jitter, int num_args, 
+                                 int inline_slow, int pop_and_jump,
+                                 int is_tail, int multi_ok)
+/* Rator is in R0.
+   For unary case, R1 is argument.
+   For binary case, R1 is first argument, V1 is second argument.
+   For nary case, args on are on runstack.
+   If num_args is -1, nary and R1 has the count.*/
+{
+  GC_CAN_IGNORE jit_insn *ref, *refslow, *refrts, *refdone;
+  int always_slow = 0;
+
+#ifndef CAN_INLINE_ALLOC
+  if (!inline_slow)
+    always_slow = 1;
 #endif
-  return 0;
+
+  if (pop_and_jump) {
+    mz_prolog(JIT_R2);
+  }
+
+  __START_SHORT_JUMPS__(1);
+
+  if (!always_slow) {
+    ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
+    CHECK_LIMIT();
+  }
+
+  /* Slow path: non-struct-prop proc, or argument type is
+     bad for a getter. */
+  refslow = _jit.x.pc;
+  if (inline_slow) {
+    if (num_args == 1) {
+      jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+      CHECK_RUNSTACK_OVERFLOW();
+      JIT_UPDATE_THREAD_RSPTR();
+      jit_str_p(JIT_RUNSTACK, JIT_R1);
+      jit_movi_i(JIT_V1, 1);
+      num_args = 1;
+    } else if (num_args == 2) {
+      jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
+      CHECK_RUNSTACK_OVERFLOW();
+      JIT_UPDATE_THREAD_RSPTR();
+      jit_str_p(JIT_RUNSTACK, JIT_R1);
+      jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_V1);
+      jit_movi_i(JIT_V1, 2);
+      num_args = 2;
+    } else {
+      JIT_UPDATE_THREAD_RSPTR();
+      if (num_args == -1)
+        jit_movr_i(JIT_V1, JIT_R1);
+      else
+        jit_movi_i(JIT_V1, num_args);
+      num_args = -1;
+    }
+    CHECK_LIMIT();
+    jit_prepare(3);
+    jit_pusharg_p(JIT_RUNSTACK);
+    jit_pusharg_i(JIT_V1);
+    jit_pusharg_p(JIT_R0);
+    if (is_tail) {
+      scheme_generate_finish_tail_apply(jitter);
+    } else if (multi_ok) {
+      scheme_generate_finish_multi_apply(jitter);
+    } else {
+      scheme_generate_finish_apply(jitter);
+    }
+    CHECK_LIMIT();
+    jit_retval(JIT_R0);
+    VALIDATE_RESULT(JIT_R0);
+    if ((num_args == 1) || (num_args == 2)) {
+      jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(num_args));
+      JIT_UPDATE_THREAD_RSPTR();
+    }
+  } else {    
+    if (num_args == 1) {
+      if (is_tail)
+        (void)jit_calli(sjc.struct_constr_unary_tail_code);
+      else if (multi_ok)
+        (void)jit_calli(sjc.struct_constr_unary_multi_code);
+      else
+        (void)jit_calli(sjc.struct_constr_unary_code);
+    } else if (num_args == 2) {
+      if (is_tail)
+        (void)jit_calli(sjc.struct_constr_binary_tail_code);
+      else if (multi_ok)
+        (void)jit_calli(sjc.struct_constr_binary_multi_code);
+      else
+        (void)jit_calli(sjc.struct_constr_binary_code);
+    } else {
+      if (num_args != -1) {
+        jit_movi_l(JIT_R1, num_args);        
+      }
+      if (is_tail)
+        (void)jit_calli(sjc.struct_constr_nary_tail_code);
+      else if (multi_ok)
+        (void)jit_calli(sjc.struct_constr_nary_multi_code);
+      else
+        (void)jit_calli(sjc.struct_constr_nary_code);
+    }
+  }
+  
+  if (pop_and_jump) {
+    mz_epilog(JIT_V1);
+    refdone = NULL;
+  } else if (!always_slow) {
+    __END_SHORT_JUMPS__(1);
+    refdone = jit_jmpi(jit_forward());
+    __START_SHORT_JUMPS__(1);
+  }
+  CHECK_LIMIT();
+
+  if (always_slow) {
+    __END_SHORT_JUMPS__(1);
+    return 1;
+  }
+
+  /* Continue trying fast path: check proc */
+  mz_patch_branch(ref);
+  (void)mz_bnei_t(refslow, JIT_R0, scheme_prim_type, JIT_R2);
+  jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Primitive_Proc *)0x0)->pp.flags);
+  (void)jit_bmci_i(refslow, JIT_R2, SCHEME_PRIM_STRUCT_TYPE_SIMPLE_CONSTR);
+  CHECK_LIMIT();
+
+  jit_ldxi_p(JIT_R2, JIT_R0, &(SCHEME_PRIM_CLOSURE_ELS(0x0)[0]));
+  /* R2 now has the Scheme_Struct_Type* */
+
+  if (num_args != 2) {
+    /* V1 is available */
+    jit_ldxi_i(JIT_V1, JIT_R2, &((Scheme_Struct_Type *)0x0)->num_slots);
+    if (num_args == -1)
+      (void)jit_bner_i(refslow, JIT_V1, JIT_R1);
+    else
+      (void)jit_bnei_i(refslow, JIT_V1, num_args);
+  } else {
+    /* No registers available, so we'll have to re-extract to R2 */
+    jit_ldxi_i(JIT_R2, JIT_R2, &((Scheme_Struct_Type *)0x0)->num_slots);
+    (void)jit_bnei_i(refslow, JIT_R2, num_args);
+    jit_ldxi_p(JIT_R2, JIT_R0, &(SCHEME_PRIM_CLOSURE_ELS(0x0)[0]));
+  }
+
+  CHECK_LIMIT();
+
+  /* It's a simple constructor expecting the given arguments. */
+
+  __END_SHORT_JUMPS__(1);
+
+  if ((num_args == 1) || (num_args == 2)) {
+    if (num_args == 2) {
+      /* save second argument on runstack */
+      jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+      jit_str_p(JIT_RUNSTACK, JIT_V1);
+    }
+#ifdef CAN_INLINE_ALLOC
+    jit_movr_p(JIT_R0, JIT_R2);
+    inline_struct_alloc(jitter, num_args, inline_slow);
+    /* allocation result is in V1 */
+    jit_stxi_p((intptr_t)&((Scheme_Structure *)0x0)->stype + OBJHEAD_SIZE, JIT_V1, JIT_R0);
+    jit_stxi_p((intptr_t)&(((Scheme_Structure *)0x0)->slots[0]) + OBJHEAD_SIZE, JIT_V1, JIT_R1);
+    if (num_args == 2) {
+      /* second argument was saved on runstack */
+      jit_ldr_p(JIT_R1, JIT_RUNSTACK);
+      jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+      jit_stxi_p((intptr_t)&(((Scheme_Structure *)0x0)->slots[1]) + OBJHEAD_SIZE, JIT_V1, JIT_R1);
+    }
+    jit_addi_p(JIT_R0, JIT_V1, OBJHEAD_SIZE);
+#else
+    jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+    CHECK_RUNSTACK_OVERFLOW();
+    JIT_UPDATE_THREAD_RSPTR();
+    jit_str_p(JIT_RUNSTACK, JIT_R1);
+    jit_movi_i(JIT_V1, num_args);
+    jit_prepare(2);
+    jit_pusharg_i(JIT_V1);
+    jit_pusharg_p(JIT_R2);
+    (void)mz_finish_lwe(alloc_structure, refrts);
+    jit_retval(JIT_R0);
+    jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(num_args));
+    JIT_UPDATE_THREAD_RSPTR();
+#endif
+  } else if (num_args == -1) {
+    JIT_UPDATE_THREAD_RSPTR();
+    jit_prepare(2);
+    jit_pusharg_i(JIT_R1);
+    jit_pusharg_p(JIT_R2);
+    (void)mz_finish_lwe(alloc_structure, refrts);
+    jit_retval(JIT_R0);
+  } else {
+#ifdef CAN_INLINE_ALLOC
+    int i;
+    jit_movr_p(JIT_R0, JIT_R2);
+    inline_struct_alloc(jitter, num_args, inline_slow);
+    /* allocation result is in V1 */
+    jit_stxi_p((intptr_t)&((Scheme_Structure *)0x0)->stype + OBJHEAD_SIZE, JIT_V1, JIT_R0);
+    for (i = 0; i < num_args; i++) {
+      jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(i));
+      jit_stxi_p((intptr_t)&(((Scheme_Structure *)0x0)->slots[0]) + OBJHEAD_SIZE + WORDS_TO_BYTES(i), JIT_V1, JIT_R1);
+    }
+    jit_addi_p(JIT_R0, JIT_V1, OBJHEAD_SIZE);
+#else
+    JIT_UPDATE_THREAD_RSPTR();
+    jit_movi_l(JIT_R1, num_args);
+    jit_prepare(2);
+    jit_pusharg_i(JIT_R1);
+    jit_pusharg_p(JIT_R2);
+    (void)mz_finish_lwe(alloc_structure, refrts);
+    jit_retval(JIT_R0);
+#endif
+  }
+  
+  if (pop_and_jump) {
+    mz_epilog(JIT_V1);
+  } else {
+    mz_patch_ucbranch(refdone);
+  }
+
+  return 1;
 }
 
 static int is_cXr_prim(const char *name) 
@@ -2849,7 +3128,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
     int k;
     k = inlineable_struct_prim(rator, jitter, app->num_args, app->num_args);
     if (k) {
-      generate_inlined_nary_struct_op(k, jitter, rator, app, for_branch, branch_short, multi_ok);
+      generate_inlined_nary_struct_op(k, jitter, rator, app, for_branch, branch_short, is_tail, multi_ok);
       scheme_direct_call_count++;
       return 1;
     }

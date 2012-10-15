@@ -240,11 +240,12 @@ typedef struct fsemaphore_t {
 #define SIG_ALLOC              2
 #define SIG_ALLOC_MARK_SEGMENT 3
 #define SIG_ALLOC_VALUES       4
-#define SIG_MAKE_FSEMAPHORE    5
-#define SIG_FUTURE             6
-#define SIG_WRONG_TYPE_EXN     7
-#define SIG_TAIL_APPLY         8
-#define SIG_APPLY_AFRESH       9
+#define SIG_ALLOC_STRUCT       5
+#define SIG_MAKE_FSEMAPHORE    6
+#define SIG_FUTURE             7
+#define SIG_WRONG_TYPE_EXN     8
+#define SIG_TAIL_APPLY         9
+#define SIG_APPLY_AFRESH       10
 
 # include "jit_ts_protos.h"
 
@@ -254,6 +255,7 @@ extern Scheme_Object **scheme_rtcall_on_demand(Scheme_Object **argv);
 extern uintptr_t scheme_rtcall_alloc(void);
 extern void scheme_rtcall_new_mark_segment(Scheme_Thread *p);
 extern void scheme_rtcall_allocate_values(int count, Scheme_Thread *t);
+extern Scheme_Structure *scheme_rtcall_allocate_structure(int argc, Scheme_Struct_Type *stype);
 extern Scheme_Object *scheme_rtcall_make_fsemaphore(Scheme_Object *ready);
 extern Scheme_Object *scheme_rtcall_make_future(Scheme_Object *proc);
 extern Scheme_Object *scheme_rtcall_tail_apply(Scheme_Object *rator, int argc, Scheme_Object **argv);

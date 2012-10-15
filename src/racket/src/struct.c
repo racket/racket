@@ -3069,7 +3069,8 @@ struct_constr_p(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *v = argv[0];
   if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
-  return (STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_CONSTR)
+  return ((STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_CONSTR)
+           || STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_SIMPLE_CONSTR))
 	  ? scheme_true : scheme_false);
 }
 
@@ -3781,7 +3782,9 @@ make_struct_proc(Scheme_Struct_Type *struct_type,
 					 struct_type->num_islots,
 					 struct_type->num_islots,
 					 0);
-    flags |= SCHEME_PRIM_STRUCT_TYPE_CONSTR;
+    flags |= (simple
+              ? SCHEME_PRIM_STRUCT_TYPE_SIMPLE_CONSTR
+              : SCHEME_PRIM_STRUCT_TYPE_CONSTR);
   } else if (proc_type == SCHEME_PRED) {
     a[0] = (Scheme_Object *)struct_type;
     p = scheme_make_folding_prim_closure(struct_pred,

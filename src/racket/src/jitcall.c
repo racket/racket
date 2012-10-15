@@ -515,10 +515,24 @@ int scheme_generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
   return 1;
 }
 
+int scheme_generate_finish_apply(mz_jit_state *jitter)
+{
+  GC_CAN_IGNORE jit_insn *refr;
+  (void)mz_finish_lwe(ts__scheme_apply_from_native, refr);
+  return 1;
+}
+
 int scheme_generate_finish_tail_apply(mz_jit_state *jitter)
 {
   GC_CAN_IGNORE jit_insn *refr;
   (void)mz_finish_lwe(_scheme_tail_apply_from_native, refr);
+  return 1;
+}
+
+int scheme_generate_finish_multi_apply(mz_jit_state *jitter)
+{
+  GC_CAN_IGNORE jit_insn *refr;
+  (void)mz_finish_lwe(ts__scheme_apply_multi_from_native, refr);
   return 1;
 }
 

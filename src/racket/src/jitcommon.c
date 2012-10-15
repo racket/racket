@@ -175,7 +175,6 @@ static void chaperone_set_mark()
 }
 
 #define JITCOMMON_TS_PROCS
-#define JIT_APPLY_TS_PROCS
 #include "jit_ts.c"
 
 #ifdef MZ_USE_FUTURES
@@ -761,7 +760,7 @@ static int common2(mz_jit_state *jitter, void *_data)
   jit_pusharg_p(JIT_R2);
   jit_pusharg_i(JIT_R1);
   jit_pusharg_p(JIT_R0);
-  (void)mz_finish_lwe(ts__scheme_apply_multi_from_native, ref);
+  scheme_generate_finish_multi_apply(jitter);
   CHECK_LIMIT();
   mz_pop_threadlocal();
   mz_pop_locals();
@@ -1378,12 +1377,12 @@ static int gen_struct_slow(mz_jit_state *jitter, int kind, int ok_proc,
     jit_pusharg_p(JIT_R0);
     if (is_tail) {
       scheme_generate_finish_tail_apply(jitter);
-      CHECK_LIMIT();
     } else if (multi_ok) {
-      (void)mz_finish_lwe(ts__scheme_apply_multi_from_native, refrts);
+      scheme_generate_finish_multi_apply(jitter);
     } else {
-      (void)mz_finish_lwe(ts__scheme_apply_from_native, refrts);
+      scheme_generate_finish_apply(jitter);
     }
+    CHECK_LIMIT();
   } else {
     /* The proc is a setter or getter, but the argument is
        bad or chaperoned. We can take a shortcut by using
@@ -1789,7 +1788,7 @@ static int common4b(mz_jit_state *jitter, void *_data)
   for (i = 0; i < 3; i++) {
     for (ii = 0; ii < 3; ii++) { /* single, multi, or tail */
       void *code;
-      GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *refno, *refslow, *refloop, *refrts;
+      GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *refno, *refslow, *refloop;
 
       code = jit_get_ip().ptr;
       
@@ -1844,12 +1843,12 @@ static int common4b(mz_jit_state *jitter, void *_data)
       jit_pusharg_p(JIT_R0);
       if (ii == 2) {
         scheme_generate_finish_tail_apply(jitter);
-        CHECK_LIMIT();
       } else if (ii == 1) {
-        (void)mz_finish_lwe(ts__scheme_apply_multi_from_native, refrts);
+        scheme_generate_finish_multi_apply(jitter);
       } else {
-        (void)mz_finish_lwe(ts__scheme_apply_from_native, refrts);
+        scheme_generate_finish_apply(jitter);
       }
+      CHECK_LIMIT();
       jit_retval(JIT_R0);
       VALIDATE_RESULT(JIT_R0);
       if (i == 1) {
@@ -1948,6 +1947,61 @@ static int common4b(mz_jit_state *jitter, void *_data)
       mz_epilog(JIT_V1);
 
       __END_SHORT_JUMPS__(1);
+
+      scheme_jit_register_sub_func(jitter, code, scheme_false);
+    }
+  }
+
+  return 1;
+}
+
+static int common4c(mz_jit_state *jitter, void *_data)
+{
+  int i, ii;
+
+  /* We can't use this code if inline alloc isn't supported, but make it
+     compiled in that mode, anyway. */
+
+  /* *** struct_constr_{unary,binary,nary}_[multi_,tail_]code *** */
+  /* For unary case, rator is in R0, R1 is argument.
+     For binary case, rator is in R0, R1 is first argument, V1 is second argument.
+     For nary case, rator in R0, args on are on runstack, R1 has the count. */
+  for (i = 0; i < 3; i++) { /* unary, binary, or nary */
+    for (ii = 0; ii < 3; ii++) { /* single, multi, or tail */
+      void *code;
+      int num_args;
+
+      code = jit_get_ip().ptr;
+      
+      if (i == 0) {
+        if (ii == 2) 
+          sjc.struct_constr_unary_tail_code = code;
+        else if (ii == 1) 
+          sjc.struct_constr_unary_multi_code = code;
+        else
+          sjc.struct_constr_unary_code = code;
+        num_args = 1;
+      } else if (i == 1) {
+        if (ii == 2) 
+          sjc.struct_constr_binary_tail_code = code;
+        else if (ii == 1) 
+          sjc.struct_constr_binary_multi_code = code;
+        else
+          sjc.struct_constr_binary_code = code;
+        num_args = 2;
+      } else if (i == 2) {
+        if (ii == 2) 
+          sjc.struct_constr_nary_tail_code = code;
+        else if (ii == 1) 
+          sjc.struct_constr_nary_multi_code = code;
+        else
+          sjc.struct_constr_nary_code = code;
+        num_args =-1;
+      }
+    
+      scheme_generate_struct_alloc(jitter, num_args, 1, 1, ii == 2, ii == 1);
+
+      CHECK_LIMIT();
 
       scheme_jit_register_sub_func(jitter, code, scheme_false);
     }
@@ -2792,6 +2846,7 @@ int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
   if (!common3(jitter, _data)) return 0;
   if (!common4(jitter, _data)) return 0;
   if (!common4b(jitter, _data)) return 0;
+  if (!common4c(jitter, _data)) return 0;
   if (!common5(jitter, _data)) return 0;
   if (!common6(jitter, _data)) return 0;
   if (!common7(jitter, _data)) return 0;
