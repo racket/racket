@@ -62,6 +62,7 @@ added get-regions
     forward-match
     insert-close-paren
     classify-position
+    get-token-range
     
     set-spell-check-strings
     get-spell-check-strings))
