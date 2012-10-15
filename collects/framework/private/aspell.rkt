@@ -4,12 +4,26 @@
          racket/contract)
 
 (provide/contract
- [query-aspell (-> (and/c string? (not/c #rx"[\n]")) (listof (list/c number? number?)))])
+ [query-aspell (-> (and/c string? (not/c #rx"[\n]")) (listof (list/c number? number?)))]
+ [find-aspell-binary-path (-> (or/c path? #f))])
 
 (define aspell-candidate-paths
   '("/usr/bin" 
     "/usr/local/bin"
     "/bin"))
+
+(define (find-aspell-binary-path)
+  (define aspell (if (eq? (system-type) 'windows) "aspell.exe" "aspell"))
+  (define ispell (if (eq? (system-type) 'windows) "ispell.exe" "ispell"))
+  (or (find-executable-path aspell)
+      (find-executable-path ispell)
+      (for/or ([cp aspell-candidate-paths])
+        (define c1 (build-path cp aspell))
+        (define c2 (build-path cp ispell))
+        (or (and (file-exists? c1)
+                 c1)
+            (and (file-exists? c2)
+                 c2)))))
 
 (define aspell-req-chan (make-channel))
 (define aspell-thread #f)
@@ -24,17 +38,9 @@
              (define (fire-up-aspell)
                (unless already-attempted-aspell?
                  (set! already-attempted-aspell? #t)
-                 (define asp (or (find-executable-path "aspell")
-                                 (find-executable-path "ispell")
-                                 (for/or ([cp aspell-candidate-paths])
-                                   (define c1 (build-path cp "aspell"))
-                                   (define c2 (build-path cp "ispell"))
-                                   (or (and (file-exists? c1)
-                                            c1)
-                                       (and (file-exists? c2)
-                                            c2)))))
-                 (define aspell? (regexp-match? #rx"aspell" (path->string asp)))
+                 (define asp (find-aspell-binary-path))
                  (when asp
+                   (define aspell? (regexp-match? #rx"aspell" (path->string asp)))
                    (set! aspell-proc (apply process* asp "-a" (if aspell? '("--encoding=utf-8") '())))
                    (define line (read-line (list-ref aspell-proc 0)))
                    (log-info (format "framework: started speller: ~a" line))

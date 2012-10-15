@@ -1686,4 +1686,5 @@ please adhere to these guidelines:
   ;; (technically, editors that implement color:text<%>)
   (spell-check-string-constants "Spell Check String Constants")
   (misspelled-text-color "Misspelled Text Color") ;; in the preferences dialog  
+  (cannot-find-ispell-or-aspell-path "Cannot find the aspell or ispell binary")
   )

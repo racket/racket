@@ -42,7 +42,9 @@ module browser threading seems wrong.
          mred
          (prefix-in mred: mred)
          
-         mzlib/date)
+         mzlib/date
+         
+         framework/private/aspell)
 
 (provide unit@)
 
@@ -3641,10 +3643,16 @@ module browser threading seems wrong.
                 (send item check (and on? (send ed get-spell-check-strings))))]
              [callback
               (λ (item evt)
-                (define ed (get-edit-target-object))
-                (define old-val (send ed get-spell-check-strings))
-                (preferences:set 'framework:spell-check-on? (not old-val))
-                (send ed set-spell-check-strings (not old-val)))])
+                (define asp (find-aspell-binary-path))
+                (cond
+                 [asp
+                  (define ed (get-edit-target-object))
+                  (define old-val (send ed get-spell-check-strings))
+                  (preferences:set 'framework:spell-check-on? (not old-val))
+                  (send ed set-spell-check-strings (not old-val))]
+                 [else
+                  (message-box (string-constant drscheme)
+                               (string-constant cannot-find-ispell-or-aspell-path))]))])
         (new menu:can-restore-menu-item%
              [label (string-constant complete-word)]
              [shortcut #\/]
