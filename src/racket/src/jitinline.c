@@ -561,7 +561,8 @@ int scheme_generate_struct_alloc(mz_jit_state *jitter, int num_args,
   if (!always_slow) {
     ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
     CHECK_LIMIT();
-  }
+  } else
+    ref = NULL;
 
   /* Slow path: non-struct-prop proc, or argument type is
      bad for a getter. */
@@ -644,7 +645,8 @@ int scheme_generate_struct_alloc(mz_jit_state *jitter, int num_args,
     __END_SHORT_JUMPS__(1);
     refdone = jit_jmpi(jit_forward());
     __START_SHORT_JUMPS__(1);
-  }
+  } else
+    refdone = NULL;
   CHECK_LIMIT();
 
   if (always_slow) {
