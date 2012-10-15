@@ -236,8 +236,8 @@ added get-regions
         (start-colorer token-sym->style get-token pairs)))
     
     ;; ---------------------- Multi-threading ---------------------------
-    ;; A list of thunks that color the buffer
-    (define colors null)
+    ;; A list of (vector style number number) that indicate how to color the buffer
+    (define colorings null)
     ;; The coroutine object for tokenizing the buffer
     (define tok-cor #f)
     ;; The editor revision when tok-cor was created
@@ -274,7 +274,7 @@ added get-regions
       (update-lexer-state-observers)
       (set! restart-callback #f)
       (set! force-recolor-after-freeze #f)
-      (set! colors null)
+      (set! colorings null)
       (when tok-cor
         (coroutine-kill tok-cor))
       (set! tok-cor #f)
@@ -282,10 +282,9 @@ added get-regions
     
     ;; Actually color the buffer.
     (define/private (color)
-      (unless (null? colors)
-        ((car colors))
-        (set! colors (cdr colors))
-        (color)))
+      (for ([clr (in-list colorings)])
+        (change-style (vector-ref clr 0) (vector-ref clr 1) (vector-ref clr 2) #f))
+      (set! colorings '()))
     
     ;; Discard extra tokens at the first of invalid-tokens
     (define/private (sync-invalid ls)
@@ -332,8 +331,7 @@ added get-regions
           (set-lexer-state-current-lexer-mode! ls new-lexer-mode)
           (sync-invalid ls)
           (when (and should-color? (should-color-type? type) (not frozen?))
-            (set! colors (cons (do-coloring type in-start-pos new-token-start new-token-end)
-                               colors)))
+            (add-colorings type in-start-pos new-token-start new-token-end))
           ;; Using the non-spec version takes 3 times as long as the spec
           ;; version.  In other words, the new greatly outweighs the tree
           ;; operations.
@@ -358,7 +356,7 @@ added get-regions
              (enable-suspend #t)
              (re-tokenize ls in in-start-pos new-lexer-mode enable-suspend)]))))
 
-    (define/private (do-coloring type in-start-pos new-token-start new-token-end)
+    (define/private (add-colorings type in-start-pos new-token-start new-token-end)
       (define sp (+ in-start-pos (sub1 new-token-start)))
       (define ep (+ in-start-pos (sub1 new-token-end)))
       (define style-name (token-sym->style type))
@@ -367,27 +365,28 @@ added get-regions
         [(and spell-check-strings? (eq? type 'string))
          (define misspelled-color (send (get-style-list) find-named-style "Standard"))
          (define strs (regexp-split #rx"\n" (get-text sp ep)))
-         (λ ()
-           (let loop ([strs strs]
-                      [pos sp])
-             (unless (null? strs)
-               (define str (car strs))
-               (let loop ([spellos (query-aspell str)]
-                          [lp 0])
-                 (cond
-                   [(null? spellos) 
-                    (change-style color (+ sp lp) (+ sp (string-length str)) #f)]
-                   [else
-                    (define err (car spellos))
-                    (define err-start (list-ref err 0))
-                    (define err-len (list-ref err 1))
-                    
-                    (change-style color (+ pos lp) (+ pos err-start) #f)
-                    (change-style misspelled-color (+ pos err-start) (+ pos err-start err-len) #f)
-                    (loop (cdr spellos) (+ err-start err-len))]))
-               (loop (cdr strs)
-                     (+ pos (string-length str) 1)))))]
-        [else (λ () (change-style color sp ep #f))]))
+         (let loop ([strs strs]
+                    [pos sp])
+           (unless (null? strs)
+             (define str (car strs))
+             (let loop ([spellos (query-aspell str)]
+                        [lp 0])
+               (cond
+                 [(null? spellos) 
+                  (set! colorings (cons (vector color (+ sp lp) (+ sp (string-length str)))
+                                        colorings))]
+                 [else
+                  (define err (car spellos))
+                  (define err-start (list-ref err 0))
+                  (define err-len (list-ref err 1))
+                  (set! colorings (list* (vector color (+ pos lp) (+ pos err-start))
+                                         (vector misspelled-color (+ pos err-start) (+ pos err-start err-len))
+                                         colorings))
+                  (loop (cdr spellos) (+ err-start err-len))]))
+             (loop (cdr strs)
+                   (+ pos (string-length str) 1))))]
+        [else
+         (set! colorings (cons (vector color sp ep) colorings))]))
     
     (define/private (show-tree t)
       (printf "Tree:\n")

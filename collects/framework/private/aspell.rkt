@@ -68,8 +68,11 @@
                 (handle-evt
                  aspell-req-chan
                  (match-lambda
-                   [(list line resp-chan)
+                   [(list line resp-chan nack-evt)
                     (unless aspell-proc (fire-up-aspell))
+                    (define (send-resp resp)
+                      (sync (channel-put-evt resp-chan resp)
+                            nack-evt))
                     (cond
                       [aspell-proc
                        (define stdout (list-ref aspell-proc 0))
@@ -88,9 +91,9 @@
                             (define l (read-line stdout))
                             (cond
                               [(eof-object? l) 
-                               (channel-put resp-chan '())
+                               (send-resp '())
                                (shutdown-aspell "got eof from process")]
-                              [(equal? l "") (channel-put resp-chan (reverse resp))]
+                              [(equal? l "") (send-resp (reverse resp))]
                               [(regexp-match #rx"^[*]" l) (loop resp)]
                               [(regexp-match #rx"^[&] ([^ ]*) [0-9]+ ([0-9]+)" l) 
                                =>
@@ -107,17 +110,19 @@
                                  (define word-start (- (string->number (list-ref m 2)) 1))
                                  (loop (cons (list word-start word-len) resp)))]
                               [else
-                               (channel-put resp-chan '())
+                               (send-resp '())
                                (shutdown-aspell (format "could not parse aspell output line: ~s" l))])]
                            [else
-                            (channel-put resp-chan '())
+                            (send-resp '())
                             (shutdown-aspell "interaction timed out")]))]
-                      [else (channel-put resp-chan '())])
+                      [else (send-resp '())])
                     (loop)])))))))))
 
 (define (query-aspell line)
   (start-aspell-thread)
-  (define resp (make-channel))
-  (channel-put aspell-req-chan (list line resp))
-  (channel-get resp))
-  
+  (sync
+   (nack-guard-evt
+    (λ (nack-evt)
+      (define resp (make-channel))
+      (channel-put aspell-req-chan (list line resp nack-evt))
+      resp))))
