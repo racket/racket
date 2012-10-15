@@ -12,7 +12,8 @@
         [prefix editor: framework:editor^]
         [prefix color-prefs: framework:color-prefs^]
         [prefix racket: framework:racket^]
-        [prefix early-init: framework:early-init^])
+        [prefix early-init: framework:early-init^]
+        [prefix color: framework:color^])
 (export framework:main^)
 (init-depend framework:preferences^ framework:exit^ framework:editor^
              framework:color-prefs^ framework:racket^ framework:early-init^)
@@ -371,10 +372,34 @@
                             (editor:set-default-font-color v)))
 (editor:set-default-font-color (preferences:get 'framework:default-text-color))
 
+(color-prefs:set-default/color-scheme 'framework:misspelled-text-color "black" "white")
+
 (color-prefs:set-default/color-scheme 'framework:delegatee-overview-color
                                       "light blue"
                                       (make-object color% 62 67 155))
 
+ 
+(let ([delta (make-object style-delta%)]
+      [style (send (editor:get-standard-style-list) find-named-style color:misspelled-text-color-style-name)])
+  (if style
+      (send style set-delta delta)
+      (send (editor:get-standard-style-list) new-named-style color:misspelled-text-color-style-name
+            (send (editor:get-standard-style-list) find-or-create-style
+                  (send (editor:get-standard-style-list) find-named-style "Standard")
+                  delta))))
+(let ([update-style-list
+       (λ (v)
+         (define sl (editor:get-standard-style-list))
+         (define style (send sl find-named-style color:misspelled-text-color-style-name))
+         (define delta (new style-delta%))
+         (send style get-delta delta)
+         (send delta set-delta-foreground v)
+         (send style set-delta delta))])
+  (preferences:add-callback
+   'framework:misspelled-text-color
+   (λ (p v) (update-style-list v)))
+  (update-style-list 
+   (preferences:get 'framework:misspelled-text-color)))
 
 ;; groups
 

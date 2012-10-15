@@ -1685,5 +1685,5 @@ please adhere to these guidelines:
   ;; menu item in the 'edit' menu; applies to editors with programs in them
   ;; (technically, editors that implement color:text<%>)
   (spell-check-string-constants "Spell Check String Constants")
-  
+  (misspelled-text-color "Misspelled Text Color") ;; in the preferences dialog  
   )

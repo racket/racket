@@ -363,28 +363,32 @@ added get-regions
       (define color (send (get-style-list) find-named-style style-name))
       (cond
         [(and spell-check-strings? (eq? type 'string))
-         (define misspelled-color (send (get-style-list) find-named-style "Standard"))
-         (define strs (regexp-split #rx"\n" (get-text sp ep)))
-         (let loop ([strs strs]
-                    [pos sp])
-           (unless (null? strs)
-             (define str (car strs))
-             (let loop ([spellos (query-aspell str)]
-                        [lp 0])
-               (cond
-                 [(null? spellos) 
-                  (set! colorings (cons (vector color (+ sp lp) (+ sp (string-length str)))
-                                        colorings))]
-                 [else
-                  (define err (car spellos))
-                  (define err-start (list-ref err 0))
-                  (define err-len (list-ref err 1))
-                  (set! colorings (list* (vector color (+ pos lp) (+ pos err-start))
-                                         (vector misspelled-color (+ pos err-start) (+ pos err-start err-len))
-                                         colorings))
-                  (loop (cdr spellos) (+ err-start err-len))]))
-             (loop (cdr strs)
-                   (+ pos (string-length str) 1))))]
+         (define misspelled-color (send (get-style-list) find-named-style misspelled-text-color-style-name))
+         (cond
+           [misspelled-color
+            (define strs (regexp-split #rx"\n" (get-text sp ep)))
+            (let loop ([strs strs]
+                       [pos sp])
+              (unless (null? strs)
+                (define str (car strs))
+                (let loop ([spellos (query-aspell str)]
+                           [lp 0])
+                  (cond
+                    [(null? spellos) 
+                     (set! colorings (cons (vector color (+ sp lp) (+ sp (string-length str)))
+                                           colorings))]
+                    [else
+                     (define err (car spellos))
+                     (define err-start (list-ref err 0))
+                     (define err-len (list-ref err 1))
+                     (set! colorings (list* (vector color (+ pos lp) (+ pos err-start))
+                                            (vector misspelled-color (+ pos err-start) (+ pos err-start err-len))
+                                            colorings))
+                     (loop (cdr spellos) (+ err-start err-len))]))
+                (loop (cdr strs)
+                      (+ pos (string-length str) 1))))]
+           [else
+            (set! colorings (cons (vector color sp ep) colorings))])]
         [else
          (set! colorings (cons (vector color sp ep) colorings))]))
     
@@ -1141,3 +1145,5 @@ added get-regions
     (super-new)))
 
 (define text-mode% (text-mode-mixin mode:surrogate-text%))
+
+(define misspelled-text-color-style-name "Misspelled Text")
