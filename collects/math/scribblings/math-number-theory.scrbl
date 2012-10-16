@@ -633,4 +633,85 @@ Returns a list of all natural solutions to the equation @math-style{a x^2 + b x 
                (quadratic-natural-solutions 1 0 -2)]  
 }
 
+
+
+@; ----------------------------------------
+@section[#:tag "primitive_roots"]{The group Zn and Primitive Roots}
+
+The numbers @math-style{0, 1, ..., n-1} with addition and multiplication
+modulo @racket[n] is a ring called @math-style{Zn}. 
+
+The group of units in @math-style{Zn} with respect to multiplication 
+modulo @racket[n] is called @math-style{Un}.
+
+The order of an element @math-style{x} in @math-style{Un} 
+is the least @math-style{k>0} such that @math-style{x^k=1 mod n}.
+
+A generator the group @math-style{Un} is called a @emph{primitive root} modolo @racket[n].
+Note that @math-style{g} is a primitive root if and only if @math-style{order(g)=phi(n)},
+where @math-style{phi} is Eulers totient. A group with a generator is called @emph{cyclic}.
+
+
+@defproc[(unit-group [n Natrual]) (listof Natural)]{
+Returns a list of all elements of @math-style{Un}, the unit group modulo @racket[n].
+  @interaction[(require math)
+               (unit-group 5)
+               (unit-group 6)]  
+}
+
+@defproc[(order [x Natural] [n Natural]) natural?]{
+Returns the order of @racket[x] in the group @math-style{Un}.
+Note: @racket[x] is in @math-style{Un} if and only if @racket[(gcd x n)] is 1.
+  @interaction[(require math)
+               (order 2 5)
+               (order 2 6)]  
+}
+
+@defproc[(orders [n Natural]) (listof natural?)]{
+Returns a list @racket[(list (order x0) (order x1) ...)] where
+@racket[x0], @racket[x1], ... are the elements of @math-style{Un}.
+  @interaction[(require math racket)
+               (orders 5)
+               (map (curryr order 5) (unit-group 5))]
+}
+
+@defproc[(primitive-root? [x Natural] [n Natural]) boolean?]{
+Returns @racket[#t] if the element @racket[x] in @math-style{Un} is a primitive root modulo @racket[n],
+otherwise @racket[#f] is returned. An error is signaled if @racket[x] is not a member of @math-style{Un}.       
+  @interaction[(require math)
+               (primitive-root? 1 5)
+               (primitive-root? 2 5)
+               (primitive-root? 5 5)]
+}
+
+@defproc[(exists-primitive-root? [n Natural]) boolean?]{
+Returns @racket[#t] if the group @math-style{Un} has a primitive root (i.e. it is cyclic),
+otherwise @racket[#f] is returned.        
+In other words, @racket[#t] is returned if @racket[n] is one of 
+@math-style{1, 2, 4, p^e, 2*p^e} where @math-style{p} is an odd prime,
+and @racket[#f] otherwise.
+  @interaction[(require math)               
+               (exists-primitive-root? 5)
+               (exists-primitive-root? 6)
+               (exists-primitive-root? 12)]  
+}
+
+@defproc[(primitive-root [n Natural]) (Union natural? #f)]{
+Returns a primitive root of @math-style{Un} if one exists,
+otherwise @racket[#f] is returned.
+  @interaction[(require math)
+               (primitive-root 5)
+               (primitive-root 6)]
+}
+
+@defproc[(primitive-roots [n Natural]) (Listof natural?)]{
+Returns a list of all primitive roots of @math-style{Un}.
+  @interaction[(require math)
+               (primitive-roots 3)
+               (primitive-roots 5)
+               (primitive-roots 6)]
+}
+
+
 @(close-eval untyped-eval)
+
