@@ -347,6 +347,22 @@ match the pattern, using the language @racket[lang]. The
 procedures accepts a single expression and if the expresion
 matches, it returns a list of match structures describing the
 matches. If the match fails, the procedure returns @racket[#f].
+
+@examples[#:eval 
+          redex-eval
+          (define-language nums
+            (AE number
+                (+ AE AE)))
+          (redex-match nums
+                       (+ AE_1 AE_2)
+                       (term (+ (+ 1 2) 3)))
+          (redex-match nums
+                       (+ AE_1 (+ AE_2 AE_3))
+                       (term (+ (+ 1 2) 3)))
+          (redex-match nums
+                       (+ AE_1 AE_1)
+                       (term (+ (+ 1 2) 3)))]
+
 }
 
 @defform*[[(redex-match? lang @#,ttpattern any)
@@ -354,6 +370,19 @@ matches. If the match fails, the procedure returns @racket[#f].
           
 Like @racket[redex-match], except it returns only a boolean
 indicating if the match was successful.
+
+@examples[#:eval 
+          redex-eval
+          (define-language nums
+            (AE number
+                (+ AE AE)))
+          (redex-match? nums
+                        (+ AE_1 AE_2)
+                        (term (+ (+ 1 2) 3)))
+          (redex-match? nums
+                        (+ AE_1 AE_1)
+                        (term (+ (+ 1 2) 3)))]
+
 }
 
 @defproc[(match? [val any/c]) boolean?]{
@@ -2744,7 +2773,7 @@ single reduction relation.
 When reduction rules, a metafunction, or a grammar contains
 unquoted Racket code or side-conditions, they are rendered
 with a pink background as a guide to help find them and
-provide alternative typesettings for them. In general, a
+provide an alternative typesetting for them. In general, a
 good goal for a PLT Redex program that you intend to typeset
 is to only include such things when they correspond to
 standard mathematical operations, and the Racket code is an
