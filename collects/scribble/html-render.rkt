@@ -96,8 +96,8 @@
 
 ;; HTML anchors should be case-insensitively unique. To make them
 ;;  distinct, add a "." in front of capital letters.  Also clean up
-;;  characters that give browers trouble (i.e., the ones that are not
-;;  allowed as-in in URI codecs) by using "~" followed by a hex
+;;  characters that give browsers trouble (i.e., the ones that are not
+;;  allowed as-is in URI components) by using "~" followed by a hex
 ;;  encoding.  (The idea is that the result is still readable, so the
 ;;  link can be used as a rough indication of where you'll get to.)
 (define (anchor-name v)
@@ -152,8 +152,8 @@
                     a))
           a))))
 
-;; combine a 'class attribute from both cl and al
-;;  if cl starts with one
+;; combine a 'class attribute from both `cl' and `al'
+;;  if `cl' starts with one
 (define (combine-class cl al)
   (cond
    [(and (pair? cl)
@@ -223,8 +223,8 @@
     (inherit-field prefix-file style-file style-extra-files)
 
     (init-field [alt-paths null]
-                ;; up-path is either a link "up", or #t which uses
-                ;; goes to start page (using cookies to get to the
+                ;; `up-path' is either a link "up", or #t which goes
+                ;; to the start page (using cookies to get to the
                 ;; user start page). If it's a path, then it's also
                 ;; used for the "top" link on the page.
                 [up-path #f]
