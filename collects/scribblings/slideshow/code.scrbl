@@ -104,6 +104,14 @@ For more information, see @racket[typeset-code] and
 
 @racketblock[
 (define-code code typeset-code)
+]
+
+@defexamples[#:eval ss-eval #:escape potato
+  (code (+ 1 2))
+  (code (+ 1 #,(+ 1 1)))
+  (code (+ 1 #,(frame (code 2))))
+  (define-syntax two (make-code-transformer #'(code 2)))
+  (code (+ 1 two))
 ]}
 
 
