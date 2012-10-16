@@ -1406,7 +1406,7 @@
            [(rang) '(8250)]
            [else (list i)])]
         [else 
-         (log-error (format "Unreocgnized element in content: ~e" i))
+         (log-error (format "Unrecognized element in content: ~e" i))
          (list (format "~s" i))]))
     
     (define/private (ascii-ize s)
