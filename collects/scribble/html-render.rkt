@@ -1397,13 +1397,36 @@
              (ascii-ize i)))]
         [(symbol? i)
          (case i
-           [(mdash) '(8212 (wbr))] ;; <wbr> encourages breaking after rather than before
-           ;; use "single left/right-pointing angle quotation mark"
-           ;; -- it's not a correct choice, but works best for now
-           ;;    (see the "Fonts with proper angle brackets"
-           ;;    discussion on the mailing list from June 2008)
-           [(lang) '(8249)]
-           [(rang) '(8250)]
+           [(mdash) '(#x2014 (wbr))] ;; <wbr> encourages breaking after rather than before
+
+           ;; FIXME: blatant violation of HTML 4 *and* HTML 5 specs!
+           ;; Happened because of the thread:
+           ;;   <http://lists.racket-lang.org/users/archive/2008-June/025126.html>
+           ;; ("Fonts with proper angle brackets")
+           ;;
+           ;; Do we still need this?  See test page at <http://jsbin.com/okizeb/3>.
+
+           [(lang) '(#x2039)] ; SINGLE LEFT-POINTING ANGLE QUOTATION MARK
+           [(rang) '(#x203a)] ; SINGLE RIGHT-POINTING ANGLE QUOTATION MARK
+
+           ;; Background:
+           ;;
+           ;; HTML 4 says (in HTMLsymbol.dtd):
+           ;;
+           ;; <!ENTITY lang     CDATA "&#9001;" -- left-pointing angle bracket = bra,
+           ;;                                      U+2329 ISOtech -->
+           ;; <!-- lang is NOT the same character as U+003C 'less than'
+           ;;      or U+2039 'single left-pointing angle quotation mark' -->
+           ;; <!ENTITY rang     CDATA "&#9002;" -- right-pointing angle bracket = ket,
+           ;;                                      U+232A ISOtech -->
+           ;; <!-- rang is NOT the same character as U+003E 'greater than'
+           ;;      or U+203A 'single right-pointing angle quotation mark' -->
+           ;;
+           ;; HTML 5 says (in <https://github.com/w3c/html/raw/4b354c25cdc7025fef9f561bbc98fee2d9d241c1/entities.json>, dated 2012-10-12):
+           ;;
+           ;;   "&lang;": { "codepoints": [10216], "characters": "\u27E8" },
+           ;;   "&rang;": { "codepoints": [10217], "characters": "\u27E9" },
+
            [else (list i)])]
         [else 
          (log-error (format "Unrecognized element in content: ~e" i))
