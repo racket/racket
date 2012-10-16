@@ -20,7 +20,7 @@
    (parameterize ([sandbox-output 'string]
                   [sandbox-error-output 'string])
      (make-evaluator 'racket)))
-@;(interaction-eval #:eval math-eval (require math))
+;(interaction-eval #:eval math-eval (require racket math))
 
 
 @title[#:tag "number-theory" #:style '(toc)]{Number Theory}
@@ -446,7 +446,6 @@ Note: The function @racket[divisor-sum] is multiplicative.
                (eulerian-number 5 2)]
 }
 
-
 @defproc[(fibonacci [n Natural]) natural?]{
   Returns the @racket[n]th Fibonacci number.
   Definition:
@@ -505,6 +504,51 @@ Note: The function @racket[divisor-sum] is multiplicative.
 
   @interaction[(require math racket)
                (multinomial 5 3 2)]
+}
+
+
+
+@defproc[(partition-count [n Natural]) natural?]{
+  Returns the number of partitions of @racket[n].
+  A partition of a positive integer @racket[n] is a way 
+  of writing @racket[n] as a sum of positive integers.
+  The number 3 has the partitions @math-style{1+1+1, 1+2, 3}.
+  See @url{http://en.wikipedia.org/wiki/Partition_(number_theory)}.
+  @interaction[(require math racket)
+               (partition-count 3)
+               (partition-count 4)]
+}
+
+
+@; ----------------------------------------
+@section[#:tag "special_numbers"]{Special Numbers}
+
+@subsection{Polygonal Numbers}
+
+@defproc[(triangle? [n Natural]) boolean?]{}
+@defproc[(square? [n Natural]) boolean?]{}
+@defproc[(pentagonal? [n Natural]) boolean?]{}
+@defproc[(hexagonal? [n Natural]) boolean?]{}
+@defproc[(heptagonal? [n Natural]) boolean?]{}
+@defproc[(octagonal? [n Natural]) boolean?]{
+The functions 
+@racket[triangle?], @racket[square?], @racket[pentagonal?],
+@racket[hexagonal?],@racket[heptagonal?] and @racket[octagonal?] 
+checks whether the input is a polygonal number of the types
+triangle, square, pentagonal, hexagonal, heptagonal and octogonal 
+respectively.
+}
+
+@defproc[(triangle [n Natural]) natural?]{}
+@defproc[(sqr [n Natural]) natural?]{}
+@defproc[(pentagonal [n Natural]) natural?]{}
+@defproc[(hexagonal [n Natural]) natural?]{}
+@defproc[(heptagonal [n Natural]) natural?]{}
+@defproc[(octagonal [n Natural]) natural?]{
+The functions @racket[triangle], @racket[sqr], @racket[pentagonal],
+@racket[hexagonal],@racket[heptagonal] and @racket[octagonal] 
+return the @racket[n]th polygonal number of the corresponding
+type of polygonal number.
 }
 
 @(close-eval untyped-eval)
