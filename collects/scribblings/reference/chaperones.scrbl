@@ -333,6 +333,7 @@ or override impersonator-property values of @racket[hash].}
 @defproc[(impersonate-prompt-tag [prompt-tag continuation-prompt-tag?]
                                  [handle-proc procedure?]
                                  [abort-proc procedure?]
+                                 [callcc-guard-proc procedure? values]
                                  [prop impersonator-property?]
                                  [prop-val any] ... ...)
           (and/c continuation-prompt-tag? impersonator?)]{
@@ -348,6 +349,14 @@ values, which will be passed to the handler.
 The @racket[abort-proc] must accept the values passed to
 @racket[abort-current-continuation]; it must produce replacement
 values, which are aborted to the appropriate prompt.
+
+The @racket[callcc-guard-proc] must accept the values produced by
+@racket[call-with-continuation-prompt] in the case that a
+non-composable continuation is applied to replace the continuation
+that is delimited by the prompt, but only if
+@racket[abort-current-continuation] is not later used to abort the
+continuation delimited by the prompt (in which case
+@racket[abort-proc] is used).
 
 Pairs of @racket[prop] and @racket[prop-val] (the number of arguments
 to @racket[impersonate-prompt-tag] must be odd) add impersonator properties
@@ -604,14 +613,17 @@ or override impersonator-property values of @racket[evt].}
 @defproc[(chaperone-prompt-tag [prompt-tag continuation-prompt-tag?]
                                [handle-proc procedure?]
                                [abort-proc procedure?]
+                               [callcc-guard-proc procedure? values]
                                [prop impersonator-property?]
                                [prop-val any] ... ...)
           (and/c continuation-prompt-tag? chaperone?)]{
 
 Like @racket[impersonate-prompt-tag], but produces a chaperoned value.
 The @racket[handle-proc] procedure must produce the same values or
-chaperones of the original values, and @racket[abort-proc] must produce
-the same values or chaperones of the values that it is given.
+chaperones of the original values, @racket[abort-proc] must produce
+the same values or chaperones of the values that it is given, and
+@racket[callcc-guard--proc] must produce
+the same values or chaperones of the original result values.
 
 @examples[
   (define bad-chaperone

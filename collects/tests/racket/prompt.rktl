@@ -242,6 +242,48 @@
         imp-tag)))
   imp-tag)
 
+(let ()
+  (define abort-k
+    (call-with-continuation-prompt
+     (lambda ()
+       (call/cc (lambda (k) k)))))
+
+  (test
+   "sx"
+   call-with-continuation-prompt
+   (lambda ()
+     (+ 1 (abort-k "s")))
+   (impersonate-prompt-tag (default-continuation-prompt-tag)
+                           values
+                           values
+                           (lambda (s) (string-append s "x"))))
+
+  (test-values
+   '("st" "")
+   (lambda ()
+     (call-with-continuation-prompt
+      (lambda ()
+        (+ 1 (abort-k "s" "t")))
+      (impersonate-prompt-tag (default-continuation-prompt-tag)
+                              values
+                              values
+                              (lambda (s t) (values (string-append s t) ""))))))
+
+  (let ([v (vector 1)])
+    (test
+     #t
+     chaperone-of?
+     (call-with-continuation-prompt
+      (lambda ()
+        (+ 1 (abort-k v)))
+      (chaperone-prompt-tag (default-continuation-prompt-tag)
+                            values
+                            values
+                            (lambda (v) (chaperone-vector v 
+                                                          (lambda (x i v) v)
+                                                          (lambda (x i v) v)))))
+     v)))
+
 ;;----------------------------------------
 
 (report-errs)

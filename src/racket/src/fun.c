@@ -5745,6 +5745,7 @@ Scheme_Object *do_chaperone_prompt_tag (const char *name, int is_impersonator, i
   Scheme_Object *val = argv[0];
   Scheme_Object *redirects;
   Scheme_Hash_Tree *props;
+  int ppos;
 
   if (SCHEME_CHAPERONEP(val))
     val = SCHEME_CHAPERONE_VAL(val);
@@ -5757,9 +5758,19 @@ Scheme_Object *do_chaperone_prompt_tag (const char *name, int is_impersonator, i
   if (!SCHEME_PROCP(argv[2]))
     scheme_wrong_contract(name, "procedure?", 2, argc, argv);
 
-  redirects = scheme_make_pair(argv[1], argv[2]);
+  redirects = argv[2];
 
-  props = scheme_parse_chaperone_props(name, 3, argc, argv);
+  if ((argc > 3) && !SCHEME_CHAPERONEP(argv[3])) {
+    if (!SCHEME_PROCP(argv[3]))
+      scheme_wrong_contract(name, "(or/c procedure? impersonator-property?)", 3, argc, argv);
+    redirects = scheme_make_pair(redirects, argv[3]);
+    ppos = 4;
+  } else
+    ppos = 3;
+    
+  redirects = scheme_make_pair(argv[1], redirects);
+
+  props = scheme_parse_chaperone_props(name, ppos, argc, argv);
 
   px = MALLOC_ONE_TAGGED(Scheme_Chaperone);
   px->iso.so.type = scheme_chaperone_type;
@@ -6188,7 +6199,7 @@ static void prompt_unwind_one_dw(Scheme_Object *prompt_tag)
     prompt_unwind_dw(prompt_tag);
 }
 
-static Scheme_Object **chaperone_do_control(const char *name, int is_prompt, Scheme_Object *obj,
+static Scheme_Object **chaperone_do_control(const char *name, int mode, Scheme_Object *obj,
                                             int argc, Scheme_Object **argv)
 {
   Scheme_Chaperone *px;
@@ -6204,39 +6215,51 @@ static Scheme_Object **chaperone_do_control(const char *name, int is_prompt, Sch
       px = (Scheme_Chaperone *)obj;
       obj = px->prev;
 
-      if (is_prompt)
+      if (!mode)
         proc = SCHEME_CAR(px->redirects);
-      else
+      else {
         proc = SCHEME_CDR(px->redirects);
-
-      v = _scheme_apply_multi(proc, argc, argv);
-
-      if (v == SCHEME_MULTIPLE_VALUES) {
-        GC_CAN_IGNORE Scheme_Thread *p = scheme_current_thread;
-        if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
-          p->values_buffer = NULL;
-        num_args = p->ku.multiple.count;
-        vals = p->ku.multiple.array;
-      } else {
-        num_args = 1;
-        vals = MALLOC_N(Scheme_Object *, 1);
-        vals[0] = v;
+        if (mode == 1) {
+          if (SCHEME_PAIRP(proc))
+            proc = SCHEME_CAR(proc);
+        } else {
+          if (SCHEME_PAIRP(proc))
+            proc = SCHEME_CDR(proc);
+          else
+            proc = NULL;
+        }
       }
 
-      /*
-       * All kinds of proxies should return the same number of results
-       * as the number of aborted values
-       */
-      if (num_args == 1 && num_args != argc)
-        scheme_wrong_return_arity(name, argc, 1, (Scheme_Object **)(vals[0]), "use of redirecting procedure");
-      else if (num_args != argc)
-        scheme_wrong_return_arity(name, argc, num_args, vals, "use of redirecting procedure");
+      if (proc) {
+        v = _scheme_apply_multi(proc, argc, argv);
 
-      if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR)) {
-        for (i = 0; i < argc; i++) {
-          if (!scheme_chaperone_of(vals[i], argv[i]))
-            scheme_wrong_chaperoned(name, "value", argv[i], vals[i]);
-          argv[i] = vals[i];
+        if (v == SCHEME_MULTIPLE_VALUES) {
+          GC_CAN_IGNORE Scheme_Thread *p = scheme_current_thread;
+          if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
+            p->values_buffer = NULL;
+          num_args = p->ku.multiple.count;
+          vals = p->ku.multiple.array;
+        } else {
+          num_args = 1;
+          vals = MALLOC_N(Scheme_Object *, 1);
+          vals[0] = v;
+        }
+
+        /*
+         * All kinds of proxies should return the same number of results
+         * as the number of aborted values
+         */
+        if (num_args == 1 && num_args != argc)
+          scheme_wrong_return_arity(name, argc, 1, (Scheme_Object **)(vals[0]), "use of redirecting procedure");
+        else if (num_args != argc)
+          scheme_wrong_return_arity(name, argc, num_args, vals, "use of redirecting procedure");
+
+        if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR)) {
+          for (i = 0; i < argc; i++) {
+            if (!scheme_chaperone_of(vals[i], argv[i]))
+              scheme_wrong_chaperoned(name, "value", argv[i], vals[i]);
+            argv[i] = vals[i];
+          }
         }
       }
     }
@@ -6245,12 +6268,17 @@ static Scheme_Object **chaperone_do_control(const char *name, int is_prompt, Sch
 
 static Scheme_Object **chaperone_do_prompt_handler(Scheme_Object *obj, int argc, Scheme_Object **argv)
 {
-    return chaperone_do_control("call-with-continuation-prompt", 1, obj, argc, argv);
+    return chaperone_do_control("call-with-continuation-prompt", 0, obj, argc, argv);
 }
 
 static Scheme_Object **chaperone_do_abort(Scheme_Object *obj, int argc, Scheme_Object **argv)
 {
-    return chaperone_do_control("abort-current-continuation", 0, obj, argc, argv);
+    return chaperone_do_control("abort-current-continuation", 1, obj, argc, argv);
+}
+
+static Scheme_Object **chaperone_do_cc_guard(Scheme_Object *obj, int argc, Scheme_Object **argv)
+{
+    return chaperone_do_control("call-with-continuation-prompt", 2, obj, argc, argv);
 }
 
 static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
@@ -6265,7 +6293,8 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
   Scheme_Cont_Frame_Data cframe;
   Scheme_Dynamic_Wind *prompt_dw;
   int cc_count = scheme_cont_capture_count;
-  int is_chaperoned = 0;
+  Scheme_Object *chaperone = NULL;
+  int needs_cc_guard = 0;
 
   argc = in_argc - 3;
   if (argc <= 0) {
@@ -6288,7 +6317,7 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
     if (!SCHEME_PROMPT_TAGP(in_argv[1])) {
       if (SCHEME_NP_CHAPERONEP(in_argv[1])
           && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(in_argv[1]))) {
-        is_chaperoned = 1;
+        chaperone = in_argv[1];
         prompt_tag = SCHEME_CHAPERONE_VAL(in_argv[1]);
       } else {
         scheme_wrong_contract("call-with-continuation-prompt", "continuation-prompt-tag?",
@@ -6437,6 +6466,9 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
            delivered a value. */
 
         if (!v) {
+          prompt->needs_cc_guard = 0;
+          needs_cc_guard = 0; /* cancel any pending check */
+
           argc = p->cjs.num_vals;
 
           if (argc == 1) {
@@ -6445,15 +6477,15 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
           } else
             argv = (Scheme_Object **)p->cjs.val;
 
+          reset_cjs(&p->cjs);
+
           /*
            * If the prompt tag is proxied, run the intercession function
            * and call the handler on its results
            */
-          if (is_chaperoned) {
-            argv = chaperone_do_prompt_handler(in_argv[1], argc, argv);
+          if (chaperone) {
+            argv = chaperone_do_prompt_handler(chaperone, argc, argv);
           }
-
-          reset_cjs(&p->cjs);
 
           if (SAME_OBJ(handler, scheme_values_func)) {
             v = scheme_values(argc, argv);
@@ -6499,6 +6531,9 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
 
     scheme_pop_continuation_frame(&cframe);
 
+    if (prompt->needs_cc_guard)
+      needs_cc_guard = 1;
+
     if (cc_count == scheme_cont_capture_count) {
       if (!available_regular_prompt) {
         memset(prompt, 0, sizeof(Scheme_Prompt));
@@ -6526,6 +6561,23 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
 
   if (handler) {
     return _scheme_tail_apply(handler, argc, argv);
+  } else if (needs_cc_guard && chaperone) {
+    if (v == SCHEME_MULTIPLE_VALUES) {
+      GC_CAN_IGNORE Scheme_Thread *p = scheme_current_thread;
+      if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
+        p->values_buffer = NULL;
+      argc = p->ku.multiple.count;
+      argv = p->ku.multiple.array;
+    } else {
+      a[0] = v;
+      argv = a;
+      argc = 1;
+    }
+    argv = chaperone_do_cc_guard(chaperone, argc, argv);
+    if (argc == 1)
+      return argv[0];
+    else
+      return scheme_values(argc, argv);
   } else
     return v;
 }

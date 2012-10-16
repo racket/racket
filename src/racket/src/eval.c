@@ -1590,6 +1590,9 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
 
     scheme_continuation_application_count++;
 
+    if (prompt)
+      prompt->needs_cc_guard = 1;
+
     if (!prompt) {
       /* Invoke the continuation directly. If there's no prompt,
          then the prompt's job is taken by the pseudo-prompt
