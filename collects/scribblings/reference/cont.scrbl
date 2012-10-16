@@ -3,6 +3,8 @@
 
 @title[#:tag "cont"]{Continuations}
 
+@guideintro["conts"]{continuations}
+
 See @secref["cont-model"] and @secref["prompt-model"] for general
 information about continuations. Racket's support for prompts and
 composable continuations most closely resembles Dorai Sitaram's
