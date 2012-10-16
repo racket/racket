@@ -20,7 +20,7 @@
    (parameterize ([sandbox-output 'string]
                   [sandbox-error-output 'string])
      (make-evaluator 'racket)))
-;(interaction-eval #:eval math-eval (require racket math))
+@;(interaction-eval #:eval math-eval (require racket math))
 
 
 @title[#:tag "number-theory" #:style '(toc)]{Number Theory}
@@ -59,10 +59,6 @@
   @; http://en.wikipedia.org/wiki/B%C3%A9zout's_identity
 }
   
-@defproc[(bezout-binary [a Integer] [b Integer]) (Listof Integer)]{
-  Same as @racket[bezout] but restricted to two arguments.
-}
-
 @defproc[(coprime? [a Integer] [b Integer] ...) boolean?]{
   Returns @racket[#t] if the integers @racket[a],@racket[b],... are coprime.
 
@@ -126,6 +122,35 @@
                       (solve-chinese '(2 3 2) '(3 5 7))]
   
   @; http://en.wikipedia.org/wiki/Chinese_remainder_theorem
+}
+
+@defproc[(quadratic-residue? [a natural?] [n natural?]) boolean?]{
+Returns @racket[#t] if @racket[a] is a quadratic residue modulo @racket[n],        
+otherwise @racket[#f] is returned. 
+
+A number @racket[a] is a quadratic residue modulo @racket[n], if there
+exists a number @racket[x] such that @math-style{x^2=a mod n}.
+  @interaction[(require math)
+               (quadratic-residue? 0 4)
+               (quadratic-residue? 1 4)
+               (quadratic-residue? 2 4)
+               (quadratic-residue? 3 4)]
+}
+
+@defproc[(quadratic-character [a natural?] [p prime?]) (union -1 1)]{
+Returns the values of the quadratic character modulo the prime @racket[p].                                                               
+That is, for a non-zero @racket[a] the number @racket[1] is returned when 
+@racket[a] is a quadratic residue,
+and @racket[-1] is returned when @racket[a] is a non-residue. 
+If @racket[a] is zero, then @racket[0] is returned.
+        
+This function is also known as the @emph{Legendre Symbol}.
+
+  @interaction[(require math)
+               (quadratic-character 0 4)
+               (quadratic-character 1 4)
+               (quadratic-character 2 4)
+               (quadratic-character 3 4)]
 }
 
 
@@ -448,8 +473,9 @@ Note: The function @racket[divisor-sum] is multiplicative.
 
 @defproc[(fibonacci [n Natural]) natural?]{
   Returns the @racket[n]th Fibonacci number.
-  Definition:
-  @url{http://en.wikipedia.org/wiki/Fibonacci_number}.
+  See 
+  @url{http://en.wikipedia.org/wiki/Fibonacci_number}
+  for a definition.
 
   The ten first Fibonacci numbers.
   @interaction[(require math racket)
@@ -469,14 +495,20 @@ Returns a list of the numbers in the @racket[n]th Farey sequence.
 The @racket[n]th Farey sequence is the sequence of all 
 completely reduced rational numbers from 0 to 1 which denominators
 are less than or equal to @racket[n].
-  @interaction[(require math racket)
+  @interaction[(require math)
                (farey 1)
                (farey 2)
                (farey 3)]
 }
 
-@; ----------------------------------------
-@section[#:tag "quadratic-residues"]{Quadratic Residues}
+@defproc[(tangent-number [n integer?]) integer?]{
+Returns the @racket[n]th tangent number.
+See @url{http://mathworld.wolfram.com/TangentNumber.html} for a definition.
+  @interaction[(require math)
+               (tangent-number 1)
+               (tangent-number 2)
+               (tangent-number 3)]
+}
 
 
 @; ----------------------------------------
@@ -563,6 +595,8 @@ type of polygonal number.
 }
 
 
+@; ----------------------------------------
+
 @section[#:tag "fractions"]{Fractions}
 @defproc[(mediant [x Rational] [y Rational]) rational?]{
 Computes the @racket[mediant] of the numbers @racket[x] and @racket[y].
@@ -572,5 +606,31 @@ lowest term is the number @math-style{(p+r)/(q+s)}.
                (mediant 1/2 5/6)]
 }
 
-@(close-eval untyped-eval)
 
+
+@; ----------------------------------------
+@section[#:tag "quadratics"]{The Quadratic Equation}
+
+@defproc[(quadratic-solutions [a Real] [b Real] [c Real]) (listof Real)]{
+Returns a list of all real solutions to the equation @math-style{a x^2 + b x +c = 0}.
+  @interaction[(require math)
+               (quadratic-solutions 1 0 -1)
+               (quadratic-solutions 1 2 1)
+               (quadratic-solutions 1 0 1)]  
+}
+
+@defproc[(quadratic-integer-solutions [a Real] [b Real] [c Real]) (listof Integer)]{
+Returns a list of all integer solutions to the equation @math-style{a x^2 + b x +c = 0}.
+  @interaction[(require math)
+               (quadratic-integer-solutions 1 0 -1)
+               (quadratic-integer-solutions 1 0 -2)]  
+}
+
+@defproc[(quadratic-natural-solutions [a Real] [b Real] [c Real]) (listof Natural)]{
+Returns a list of all natural solutions to the equation @math-style{a x^2 + b x +c = 0}.
+  @interaction[(require math)
+               (quadratic-natural-solutions 1 0 -1)
+               (quadratic-natural-solutions 1 0 -2)]  
+}
+
+@(close-eval untyped-eval)
