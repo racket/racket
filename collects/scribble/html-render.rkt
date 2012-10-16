@@ -871,7 +871,7 @@
                  next-content)))))
       (define navbar
         `(div ([class ,(if top? "navsettop" "navsetbottom")])
-           ,navleft ,navright nbsp)) ; need nbsp to make the navset bg visible
+           ,navleft ,sep-element ,navright nbsp)) ; need nbsp to make the navset bg visible
       (if (include-navigation?)
           (list navbar)
           null))
