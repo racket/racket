@@ -464,6 +464,17 @@ Note: The function @racket[divisor-sum] is multiplicative.
                (map (λ (n) (fibonacci/mod n 5)) (range 10))]
 }
 
+@defproc[(farey [n Natural]) (listof rational?)]{
+Returns a list of the numbers in the @racket[n]th Farey sequence.
+The @racket[n]th Farey sequence is the sequence of all 
+completely reduced rational numbers from 0 to 1 which denominators
+are less than or equal to @racket[n].
+  @interaction[(require math racket)
+               (farey 1)
+               (farey 2)
+               (farey 3)]
+}
+
 @; ----------------------------------------
 @section[#:tag "quadratic-residues"]{Quadratic Residues}
 
@@ -551,4 +562,15 @@ return the @racket[n]th polygonal number of the corresponding
 type of polygonal number.
 }
 
+
+@section[#:tag "fractions"]{Fractions}
+@defproc[(mediant [x Rational] [y Rational]) rational?]{
+Computes the @racket[mediant] of the numbers @racket[x] and @racket[y].
+The mediant of two fractions @math-style{p/q} and @math-style{r/s} in their
+lowest term is the number @math-style{(p+r)/(q+s)}.
+  @interaction[(require math)
+               (mediant 1/2 5/6)]
+}
+
 @(close-eval untyped-eval)
+
