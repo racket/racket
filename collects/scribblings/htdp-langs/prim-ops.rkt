@@ -324,12 +324,12 @@
 
 
   @defform*[#:id [check-error check-error-id]
-            [(check-error expression match-expression)
+            [(check-error expression expected-error-message)
              (#,check-error-elem expression)]]{
 
    Checks that the @racket[expression] reports an error,
    where the error messages matches the
-   value of @racket[matchexpression], if it is present.}
+   value of @racket[expected-error-message], if it is present.}
 
 
   @defform*[#:id [check-member-of check-member-of-id]
