@@ -284,6 +284,91 @@
                                                           (lambda (x i v) v)))))
      v)))
 
+(let ()
+  (define abort-k/y
+  (call-with-continuation-prompt
+   (lambda ()
+     (call/cc (lambda (k) k)
+              (impersonate-prompt-tag (default-continuation-prompt-tag)
+                                      values
+                                      values
+                                      values
+                                      (lambda (proc)
+                                        (lambda (v) (string-append v "y"))))))))
+
+  (test
+   "sy"
+   call-with-continuation-prompt
+   (lambda ()
+     (+ 1 (abort-k/y "s")))))
+
+(let ()
+  (define really-abort-k
+    (call-with-continuation-prompt
+     (lambda ()
+       (call/cc (lambda (k) (abort-current-continuation
+                             (default-continuation-prompt-tag)
+                             (lambda () k))))
+       (abort-current-continuation
+        (default-continuation-prompt-tag)
+        (lambda () "a")))))
+  
+  (test
+   "a"
+   call-with-continuation-prompt
+   (lambda ()
+     (+ 1 (really-abort-k "s")))
+   (impersonate-prompt-tag (default-continuation-prompt-tag)
+                           values
+                           values
+                           (lambda (s) (string-append s "x")))))
+
+;; ----------------------------------------
+;; Check that when a continuation includes a continuation
+;; application, that a captured requirement to apply a
+;; contiuation-result guard (as added by an impersonator) is not
+;; influenced by canceling the guard in a different use of the
+;; continuation.
+
+(let ()
+  (define other-tag
+    (make-continuation-prompt-tag))
+
+  (define other-k #f)
+
+  (define wacky-abort-k
+    (call-with-continuation-prompt
+     (lambda ()
+       (define r
+         (call/cc (lambda (k) (abort-current-continuation
+                               (default-continuation-prompt-tag)
+                               (lambda () k)))))
+       (when (call/cc (lambda (k)
+                        (set! other-k k)
+                        #t)
+                      other-tag)
+         (abort-current-continuation
+          (default-continuation-prompt-tag)
+          (lambda () "a")))
+       r)))
+
+  (test
+   "sx"
+   call-with-continuation-prompt
+   (lambda ()
+     (define str
+       (call-with-continuation-prompt
+        (lambda ()
+          (+ 1 (wacky-abort-k "s")))
+        (impersonate-prompt-tag (default-continuation-prompt-tag)
+                                values
+                                values
+                                (lambda (s) (string-append s "x")))))
+     (if (equal? str "a")
+         (other-k #f)
+         str))
+   other-tag))
+
 ;;----------------------------------------
 
 (report-errs)

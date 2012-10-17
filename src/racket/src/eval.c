@@ -1379,9 +1379,14 @@ static Scheme_Prompt *lookup_cont_prompt(Scheme_Cont *c,
                                          const char *msg)
 {
   Scheme_Prompt *prompt;
+  Scheme_Object *pt;
 
-  prompt = scheme_get_prompt(SCHEME_PTR_VAL(c->prompt_tag), _prompt_mc, _prompt_pos);
-  if (!prompt && !SAME_OBJ(scheme_default_prompt_tag, c->prompt_tag)) {
+  pt = c->prompt_tag;
+  if (SCHEME_NP_CHAPERONEP(pt))
+    pt = SCHEME_CHAPERONE_VAL(pt);
+
+  prompt = scheme_get_prompt(SCHEME_PTR_VAL(pt), _prompt_mc, _prompt_pos);
+  if (!prompt && !SAME_OBJ(scheme_default_prompt_tag, pt)) {
     scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION, msg);
   }
 
@@ -1446,6 +1451,7 @@ static int exec_dyn_wind_posts(Scheme_Dynamic_Wind *common, Scheme_Cont *c, int 
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Dynamic_Wind *dw;
   int old_cac = scheme_continuation_application_count;
+  Scheme_Object *pt;
 
   *_common = common;
 
@@ -1481,7 +1487,11 @@ static int exec_dyn_wind_posts(Scheme_Dynamic_Wind *common, Scheme_Cont *c, int 
       if (scheme_continuation_application_count != old_cac) {
         old_cac = scheme_continuation_application_count;
         
-        common = intersect_dw(p->dw, c->dw, c->prompt_tag, c->has_prompt_dw, &common_depth);
+        pt = c->prompt_tag;
+        if (SCHEME_NP_CHAPERONEP(pt))
+          pt = SCHEME_CHAPERONE_VAL(pt);
+
+        common = intersect_dw(p->dw, c->dw, pt, c->has_prompt_dw, &common_depth);
         *_common = common;
       }
     } else
@@ -1544,6 +1554,7 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
     /* Aborting (Scheme-style) continuation. */
     int orig_cac = scheme_continuation_application_count;
     Scheme_Overflow *thread_end_oflow;
+    Scheme_Object *pt;
 
     scheme_about_to_move_C_stack();
 
@@ -1552,10 +1563,14 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
 
     p->suspend_break++; /* restored at call/cc destination */
 
+    pt = c->prompt_tag;
+    if (SCHEME_NP_CHAPERONEP(pt))
+      pt = SCHEME_CHAPERONE_VAL(pt);
+
     /* Find `common', the intersection of dynamic-wind chain for 
        the current continuation and the given continuation, looking
        no further back in the current continuation than a prompt. */
-    common = intersect_dw(p->dw, c->dw, c->prompt_tag, c->has_prompt_dw, &common_depth);
+    common = intersect_dw(p->dw, c->dw, pt, c->has_prompt_dw, &common_depth);
 
     /* For dynamic-winds after `common' in this
        continuation, execute the post-thunks */
@@ -1590,9 +1605,6 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
 
     scheme_continuation_application_count++;
 
-    if (prompt)
-      prompt->needs_cc_guard = 1;
-
     if (!prompt) {
       /* Invoke the continuation directly. If there's no prompt,
          then the prompt's job is taken by the pseudo-prompt
@@ -1617,7 +1629,7 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
                && !prompt_mc) {
       /* The current prompt is the same as the one in place when
          capturing the continuation, so we can jump directly. */
-      scheme_drop_prompt_meta_continuations(c->prompt_tag);
+      scheme_drop_prompt_meta_continuations(pt);
       c->shortcut_prompt = prompt;
       if ((!prompt->boundary_overflow_id && !p->overflow)
           || (prompt->boundary_overflow_id
@@ -1685,12 +1697,12 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
         if (p->meta_continuation->pseudo)
           scheme_signal_error("internal error: trying to jump to a prompt in a meta-cont"
                               " that starts with a pseudo prompt");
-        scheme_drop_prompt_meta_continuations(c->prompt_tag);
+        scheme_drop_prompt_meta_continuations(pt);
         scheme_longjmp(*prompt->prompt_buf, 1);
       } else {
         /* Need to unwind overflows to get to the prompt. */
         Scheme_Overflow *overflow;
-        scheme_drop_prompt_meta_continuations(c->prompt_tag);
+        scheme_drop_prompt_meta_continuations(pt);
         overflow = p->overflow;
         while (overflow->prev
                && (!overflow->prev->id

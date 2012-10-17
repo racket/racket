@@ -333,7 +333,8 @@ or override impersonator-property values of @racket[hash].}
 @defproc[(impersonate-prompt-tag [prompt-tag continuation-prompt-tag?]
                                  [handle-proc procedure?]
                                  [abort-proc procedure?]
-                                 [callcc-guard-proc procedure? values]
+                                 [cc-guard-proc procedure? values]
+                                 [callcc-impersonate-proc (procedure? . -> . procedure?) (lambda (p) p)]
                                  [prop impersonator-property?]
                                  [prop-val any] ... ...)
           (and/c continuation-prompt-tag? impersonator?)]{
@@ -350,13 +351,29 @@ The @racket[abort-proc] must accept the values passed to
 @racket[abort-current-continuation]; it must produce replacement
 values, which are aborted to the appropriate prompt.
 
-The @racket[callcc-guard-proc] must accept the values produced by
+The @racket[cc-guard-proc] must accept the values produced by
 @racket[call-with-continuation-prompt] in the case that a
 non-composable continuation is applied to replace the continuation
 that is delimited by the prompt, but only if
 @racket[abort-current-continuation] is not later used to abort the
 continuation delimited by the prompt (in which case
 @racket[abort-proc] is used).
+
+The @racket[callcc-impersonate-proc] must accept a procedure that
+guards the result of a continuation captured by
+@racket[call-with-current-continuation] with the impersonated prompt
+tag. The @racket[callcc-impersonate-proc] is applied (under a
+@tech{continuation barrier}) when the captured continuation is applied
+to refine a guard function (initially @racket[values]) that is
+specific to the delimiting prompt; this prompt-specific guard is
+ultimately composed with any @racket[cc-guard-proc] that is in effect
+at the delimiting prompt, and it is not used in the same case that a
+@racket[cc-guard-proc] is not used (i.e., when
+@racket[abort-current-continuation] is used to abort to the
+prompt). In the special case where the delimiting prompt at
+application time is a thread's built-in initial prompt,
+@racket[callcc-impersonate-proc] is ignored (partly on the grounds
+that the initial prompt's result is ignored).
 
 Pairs of @racket[prop] and @racket[prop-val] (the number of arguments
 to @racket[impersonate-prompt-tag] must be odd) add impersonator properties
@@ -613,7 +630,8 @@ or override impersonator-property values of @racket[evt].}
 @defproc[(chaperone-prompt-tag [prompt-tag continuation-prompt-tag?]
                                [handle-proc procedure?]
                                [abort-proc procedure?]
-                               [callcc-guard-proc procedure? values]
+                               [cc-guard-proc procedure? values]
+                               [callcc-chaperone-proc (procedure? . -> . procedure?) (lambda (p) p)]
                                [prop impersonator-property?]
                                [prop-val any] ... ...)
           (and/c continuation-prompt-tag? chaperone?)]{
@@ -622,8 +640,10 @@ Like @racket[impersonate-prompt-tag], but produces a chaperoned value.
 The @racket[handle-proc] procedure must produce the same values or
 chaperones of the original values, @racket[abort-proc] must produce
 the same values or chaperones of the values that it is given, and
-@racket[callcc-guard--proc] must produce
-the same values or chaperones of the original result values.
+@racket[cc-guard-proc] must produce the same values or chaperones of
+the original result values, and @racket[callcc-chaperone-proc] must
+procedure a procedure that is a chaperone or the same as the given
+procedure.
 
 @examples[
   (define bad-chaperone

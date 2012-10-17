@@ -102,6 +102,7 @@ ROSYM static Scheme_Object *none_symbol;
 ROSYM static Scheme_Object *is_method_symbol;
 ROSYM static Scheme_Object *cont_key; /* uninterned */
 ROSYM static Scheme_Object *barrier_prompt_key; /* uninterned */
+ROSYM static Scheme_Object *prompt_cc_guard_key; /* uninterned */
 READ_ONLY static Scheme_Prompt *original_default_prompt; /* for escapes, represents the implicit initial prompt */
 READ_ONLY static Scheme_Object *call_with_prompt_proc;
 READ_ONLY static Scheme_Object *abort_continuation_proc;
@@ -186,10 +187,19 @@ static Scheme_Object *current_prompt_read(int, Scheme_Object **);
 static Scheme_Object *current_read(int, Scheme_Object **);
 static Scheme_Object *current_get_read_input_port(int, Scheme_Object **);
 
+
+static Scheme_Object *chaperone_wrap_cc_guard(Scheme_Object *obj, Scheme_Object *proc);
+static Scheme_Object *do_cc_guard(Scheme_Object *v, Scheme_Object *cc_guard, Scheme_Object *chaperone);
+
 static Scheme_Object *
 scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key, 
                                      Scheme_Object *prompt_tag, Scheme_Meta_Continuation **_meta,
                                      MZ_MARK_POS_TYPE *_vpos);
+static Scheme_Object *get_set_cont_mark_by_pos(Scheme_Object *key,
+                                               Scheme_Thread *p,
+                                               Scheme_Meta_Continuation *mc,
+                                               MZ_MARK_POS_TYPE mpos,
+                                               Scheme_Object *val);
 
 static Scheme_Object *jump_to_alt_continuation();
 static void reset_cjs(Scheme_Continuation_Jump_State *a);
@@ -633,10 +643,12 @@ scheme_init_fun (Scheme_Env *env)
   REGISTER_SO(scheme_inferred_name_symbol);
   REGISTER_SO(cont_key);
   REGISTER_SO(barrier_prompt_key);
+  REGISTER_SO(prompt_cc_guard_key);
   is_method_symbol = scheme_intern_symbol("method-arity-error");
   scheme_inferred_name_symbol = scheme_intern_symbol("inferred-name");
   cont_key = scheme_make_symbol("k"); /* uninterned */
   barrier_prompt_key = scheme_make_symbol("bar"); /* uninterned */
+  prompt_cc_guard_key = scheme_make_symbol("cc"); /* uninterned */
 
   REGISTER_SO(scheme_default_prompt_tag);
   {
@@ -1124,7 +1136,6 @@ void *scheme_top_level_do_worker(void *(*k)(void), int eb, int new_thread, Schem
 #ifdef MZ_PRECISE_GC
   void *external_stack;
 #endif
-
 
   if (scheme_active_but_sleeping)
     scheme_wake_up();
@@ -4784,14 +4795,11 @@ call_cc (int argc, Scheme_Object *argv[])
   scheme_check_proc_arity("call-with-current-continuation", 1,
 			  0, argc, argv);
   if (argc > 1) {
-    if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(argv[1]))) {
-      if (SCHEME_NP_CHAPERONEP(argv[1])
-          && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(argv[1])))
-        argv[1] = SCHEME_CHAPERONE_VAL(argv[1]);
-      else
-        scheme_wrong_contract("call-with-current-continuation", "continuation-prompt-tag?",
-                          1, argc, argv);
-    }
+    if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(argv[1]))
+        && !((SCHEME_NP_CHAPERONEP(argv[1])
+              && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(argv[1])))))
+      scheme_wrong_contract("call-with-current-continuation", "continuation-prompt-tag?",
+                            1, argc, argv);
   }
 
   /* Trampoline to internal_call_cc. This trampoline ensures that
@@ -4800,7 +4808,7 @@ call_cc (int argc, Scheme_Object *argv[])
 }
 
 static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int composable,
-                                      Scheme_Object *prompt_tag,
+                                      Scheme_Object *prompt_tag, Scheme_Object *pt,
                                       Scheme_Cont *sub_cont, Scheme_Prompt *prompt,
                                       Scheme_Meta_Continuation *prompt_cont, 
                                       Scheme_Prompt *effective_barrier_prompt
@@ -4831,7 +4839,7 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
   else if (prompt) {
     Scheme_Dynamic_Wind *dw;
     if (p->dw) {
-      dw = clone_dyn_wind(p->dw, prompt_tag, -1, -1, NULL, 0, composable);
+      dw = clone_dyn_wind(p->dw, pt, -1, -1, NULL, 0, composable);
       cont->dw = dw;
       cont->next_meta = p->next_meta;
     } else
@@ -4856,7 +4864,7 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
   } else if (prompt) {
     Scheme_Meta_Continuation *mc;
     Scheme_Object *id;
-    mc = clone_meta_cont(p->meta_continuation, prompt_tag, -1, prompt_cont, prompt, NULL, composable);
+    mc = clone_meta_cont(p->meta_continuation, pt, -1, prompt_cont, prompt, NULL, composable);
     cont->meta_continuation = mc;
     if (!prompt_cont) {
       /* Remember the prompt id, so we can maybe take a shortcut on 
@@ -5334,7 +5342,7 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
 static Scheme_Object *
 internal_call_cc (int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *ret, * volatile prompt_tag;
+  Scheme_Object *ret, * volatile pt, * prompt_tag;
   Scheme_Cont * volatile cont;
   Scheme_Cont *sub_cont;
   Scheme_Meta_Continuation *prompt_cont, *barrier_cont;
@@ -5350,10 +5358,15 @@ internal_call_cc (int argc, Scheme_Object *argv[])
   else
     prompt_tag = scheme_default_prompt_tag;
 
+  if (SCHEME_NP_CHAPERONEP(prompt_tag))
+    pt = SCHEME_CHAPERONE_VAL(prompt_tag);
+  else
+    pt = prompt_tag;
+
   composable = (argc > 2);
 
-  prompt = scheme_get_prompt(SCHEME_PTR_VAL(prompt_tag), &prompt_cont, &prompt_pos);
-  if (!prompt && !SAME_OBJ(scheme_default_prompt_tag, prompt_tag)) {
+  prompt = scheme_get_prompt(SCHEME_PTR_VAL(pt), &prompt_cont, &prompt_pos);
+  if (!prompt && !SAME_OBJ(scheme_default_prompt_tag, pt)) {
     scheme_contract_error((composable
                            ? "call-with-composable-continuation"
                            : "call-with-current-continuation"), 
@@ -5470,7 +5483,7 @@ internal_call_cc (int argc, Scheme_Object *argv[])
     return _scheme_tail_apply(argv[0], 1, argv2);
   }
 
-  cont = grab_continuation(p, 0, composable, prompt_tag, sub_cont, 
+  cont = grab_continuation(p, 0, composable, prompt_tag, pt, sub_cont, 
                            prompt, prompt_cont, effective_barrier_prompt);
 
   scheme_zero_unneeded_rands(p);
@@ -5570,7 +5583,7 @@ internal_call_cc (int argc, Scheme_Object *argv[])
     cont->empty_to_next_mc = 0;
 
     restore_continuation(cont, p, 0, result, resume, empty_to_next_mc, 
-                         prompt_tag, sub_cont, 
+                         pt, sub_cont, 
                          common_dw, common_next_meta, shortcut_prompt,
                          !!resume, 1, 
                          use_next_cont, extra_marks);
@@ -5593,6 +5606,24 @@ internal_call_cc (int argc, Scheme_Object *argv[])
         acting_barrier_prompt->is_barrier = 0;
       }
       p->acting_barrier_prompt = acting_barrier_prompt;
+    }
+
+    {
+      Scheme_Meta_Continuation *mc;
+      MZ_MARK_POS_TYPE pos;
+      Scheme_Object *cc_guard;
+
+      prompt = scheme_get_prompt(SCHEME_PTR_VAL(pt), &mc, &pos);
+      if (prompt && (prompt->has_chaperone || SCHEME_NP_CHAPERONEP(cont->prompt_tag))) {
+        cc_guard = get_set_cont_mark_by_pos(prompt_cc_guard_key, p, mc, pos, NULL);
+        
+        if (SCHEME_FALSEP(cc_guard))
+          cc_guard = scheme_values_func;
+        if (SCHEME_NP_CHAPERONEP(cont->prompt_tag))  
+          cc_guard = chaperone_wrap_cc_guard(cont->prompt_tag, cc_guard);
+        
+        get_set_cont_mark_by_pos(prompt_cc_guard_key, p, mc, pos, cc_guard);
+      }
     }
     
     return result;
@@ -5758,15 +5789,22 @@ Scheme_Object *do_chaperone_prompt_tag (const char *name, int is_impersonator, i
   if (!SCHEME_PROCP(argv[2]))
     scheme_wrong_contract(name, "procedure?", 2, argc, argv);
 
-  redirects = argv[2];
-
   if ((argc > 3) && !SCHEME_CHAPERONEP(argv[3])) {
     if (!SCHEME_PROCP(argv[3]))
       scheme_wrong_contract(name, "(or/c procedure? impersonator-property?)", 3, argc, argv);
-    redirects = scheme_make_pair(redirects, argv[3]);
-    ppos = 4;
-  } else
+    redirects = argv[3];
+    if ((argc > 4) && !SCHEME_CHAPERONEP(argv[4])) {
+      if (!scheme_check_proc_arity(NULL, 1, 4, argc, argv))
+        scheme_wrong_contract(name, "(or/c (procedure-arity-includes/c 1) impersonator-property?)", 4, argc, argv);
+      redirects = scheme_make_pair(redirects, argv[4]);
+      ppos = 5;
+    } else
+      ppos = 4;
+    redirects = scheme_make_pair(argv[1], redirects);
+  } else {
     ppos = 3;
+    redirects = argv[2];
+  }
     
   redirects = scheme_make_pair(argv[1], redirects);
 
@@ -5998,7 +6036,7 @@ static Scheme_Object *compose_continuation(Scheme_Cont *cont, int exec_chain,
 
   /* Grab a continuation so that we capture the current Scheme stack,
      etc.: */
-  saved = grab_continuation(p, 1, 0, NULL, NULL, NULL, NULL, NULL);
+  saved = grab_continuation(p, 1, 0, NULL, NULL, NULL, NULL, NULL, NULL);
 
   if (p->meta_prompt)
     saved->prompt_stack_start = p->meta_prompt->stack_boundary;
@@ -6199,39 +6237,56 @@ static void prompt_unwind_one_dw(Scheme_Object *prompt_tag)
     prompt_unwind_dw(prompt_tag);
 }
 
-static Scheme_Object **chaperone_do_control(const char *name, int mode, Scheme_Object *obj,
+static Scheme_Object **chaperone_do_control(const char *name, int mode, 
+                                            Scheme_Object *init_guard, Scheme_Object *obj,
                                             int argc, Scheme_Object **argv)
 {
   Scheme_Chaperone *px;
-  Scheme_Object **vals = NULL;
+  Scheme_Object **vals = argv;
   Scheme_Object *v;
   Scheme_Object *proc;
   int i, num_args;
 
   while (1) {
-    if (SCHEME_PROMPT_TAGP(obj)) {
-      return vals;
-    } else {
-      px = (Scheme_Chaperone *)obj;
-      obj = px->prev;
+    if (init_guard || !SCHEME_PROMPT_TAGP(obj)) {
+      if (init_guard) {
+        proc = init_guard;
+        if (SAME_OBJ(NULL, scheme_values_func))
+          proc = NULL;
+      } else {
+        px = (Scheme_Chaperone *)obj;
+        obj = px->prev;
 
-      if (!mode)
-        proc = SCHEME_CAR(px->redirects);
-      else {
-        proc = SCHEME_CDR(px->redirects);
-        if (mode == 1) {
-          if (SCHEME_PAIRP(proc))
-            proc = SCHEME_CAR(proc);
-        } else {
-          if (SCHEME_PAIRP(proc))
-            proc = SCHEME_CDR(proc);
-          else
-            proc = NULL;
+        if (!mode)
+          proc = SCHEME_CAR(px->redirects);
+        else {
+          proc = SCHEME_CDR(px->redirects);
+          if (mode == 1) {
+            if (SCHEME_PAIRP(proc))
+              proc = SCHEME_CAR(proc);
+          } else {
+            if (SCHEME_PAIRP(proc)) {
+              proc = SCHEME_CDR(proc);
+              if (mode == 2) {
+                if (SCHEME_PAIRP(proc))
+                  proc = SCHEME_CAR(proc);
+              } else {
+                if (SCHEME_PAIRP(proc))
+                  proc = SCHEME_CDR(proc);
+                else
+                  proc = NULL;
+              }
+            } else
+              proc = NULL;
+          }
         }
       }
 
       if (proc) {
-        v = _scheme_apply_multi(proc, argc, argv);
+        if (mode == 3)
+          v = scheme_apply(proc, argc, argv); /* with barrier */
+        else
+          v = _scheme_apply_multi(proc, argc, argv);
 
         if (v == SCHEME_MULTIPLE_VALUES) {
           GC_CAN_IGNORE Scheme_Thread *p = scheme_current_thread;
@@ -6254,31 +6309,81 @@ static Scheme_Object **chaperone_do_control(const char *name, int mode, Scheme_O
         else if (num_args != argc)
           scheme_wrong_return_arity(name, argc, num_args, vals, "use of redirecting procedure");
 
-        if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR)) {
-          for (i = 0; i < argc; i++) {
-            if (!scheme_chaperone_of(vals[i], argv[i]))
-              scheme_wrong_chaperoned(name, "value", argv[i], vals[i]);
-            argv[i] = vals[i];
+        if (mode == 3) {
+          if (!scheme_check_proc_arity(NULL, 1, 0, argc, vals)) {
+            scheme_wrong_type("call/cc guard-wrapping function", "(procedure-arity-includes/c 2)", 0, -1, vals);
           }
         }
+
+        if (!init_guard) {
+          if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR)) {
+            for (i = 0; i < argc; i++) {
+              if (!scheme_chaperone_of(vals[i], argv[i]))
+                scheme_wrong_chaperoned(name, "value", argv[i], vals[i]);
+            }
+          }
+        }
+
+        argv = vals;
       }
+
+      init_guard = NULL;
+    } else {
+      return vals;
     }
   }
 }
 
 static Scheme_Object **chaperone_do_prompt_handler(Scheme_Object *obj, int argc, Scheme_Object **argv)
 {
-    return chaperone_do_control("call-with-continuation-prompt", 0, obj, argc, argv);
+  return chaperone_do_control("call-with-continuation-prompt", 0, NULL, obj, argc, argv);
 }
 
 static Scheme_Object **chaperone_do_abort(Scheme_Object *obj, int argc, Scheme_Object **argv)
 {
-    return chaperone_do_control("abort-current-continuation", 1, obj, argc, argv);
+  return chaperone_do_control("abort-current-continuation", 1, NULL, obj, argc, argv);
 }
 
-static Scheme_Object **chaperone_do_cc_guard(Scheme_Object *obj, int argc, Scheme_Object **argv)
+static Scheme_Object **chaperone_do_cc_guard(Scheme_Object *cc_guard, Scheme_Object *obj, int argc, Scheme_Object **argv)
 {
-    return chaperone_do_control("call-with-continuation-prompt", 2, obj, argc, argv);
+  return chaperone_do_control("call-with-continuation-prompt", 2, cc_guard, obj, argc, argv);
+}
+
+static Scheme_Object *chaperone_wrap_cc_guard(Scheme_Object *obj, Scheme_Object *proc)
+{
+  Scheme_Object *a[1], **a2;
+
+  a[0] = proc;
+  a2 = chaperone_do_control("call-with-current-continuation", 3, NULL, obj, 1, a);
+
+  return a2[0];
+}
+
+static Scheme_Object *do_cc_guard(Scheme_Object *v, Scheme_Object *cc_guard, Scheme_Object *chaperone)
+{
+  int argc;
+  Scheme_Object **argv, *a[1];
+
+  if (v == SCHEME_MULTIPLE_VALUES) {
+    GC_CAN_IGNORE Scheme_Thread *p = scheme_current_thread;
+    if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
+      p->values_buffer = NULL;
+    argc = p->ku.multiple.count;
+    argv = p->ku.multiple.array;
+  } else {
+    a[0] = v;
+    argv = a;
+    argc = 1;
+  }
+  
+  if (!chaperone) chaperone = scheme_default_prompt_tag;
+
+  argv = chaperone_do_cc_guard(cc_guard, chaperone, argc, argv);
+
+  if (argc == 1)
+    return argv[0];
+  else
+    return scheme_values(argc, argv);
 }
 
 static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
@@ -6293,8 +6398,7 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
   Scheme_Cont_Frame_Data cframe;
   Scheme_Dynamic_Wind *prompt_dw;
   int cc_count = scheme_cont_capture_count;
-  Scheme_Object *chaperone = NULL;
-  int needs_cc_guard = 0;
+  Scheme_Object *chaperone = NULL, *cc_guard = scheme_false;
 
   argc = in_argc - 3;
   if (argc <= 0) {
@@ -6352,7 +6456,18 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
 
     prompt->tag = prompt_tag;
 
+    /* An abuse of the continuation-mark stack: to keep track of
+       chaperoning guards on a continuation result, we mutate a mark
+       that is keyed on prompt_cc_mark_key and that sits next to the
+       prompt mark. This is an abuse, because marks are not supposed
+       to be mutable, but we do that to keep the mark setting attached
+       to a continuation (given that continuation marks are copied out
+       and in for a saved and restored continuation). We don't run
+       afoul of caching, which depends on immuatbility of marks,
+       because we access the mark only by get_set_cont_mark_by_pos(). */
+
     scheme_push_continuation_frame(&cframe);
+    scheme_set_cont_mark(prompt_cc_guard_key, cc_guard); /* see "abuse" note above */
     scheme_set_cont_mark(SCHEME_PTR_VAL(prompt_tag), (Scheme_Object *)prompt);
 
     /* Note: prompt save marks after the one corresponding to itself,
@@ -6388,6 +6503,8 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
 
     p->next_meta = 0;
     p->dw = prompt_dw;
+    if (chaperone)
+      prompt->has_chaperone = 1;
 
     v = scheme_apply_for_prompt(prompt, prompt_tag, proc, argc, argv);
 
@@ -6466,8 +6583,8 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
            delivered a value. */
 
         if (!v) {
-          prompt->needs_cc_guard = 0;
-          needs_cc_guard = 0; /* cancel any pending check */
+          /* cancel any pending cc_guard: */
+          get_set_cont_mark_by_pos(prompt_cc_guard_key, p, NULL, MZ_CONT_MARK_POS, scheme_false);
 
           argc = p->cjs.num_vals;
 
@@ -6529,10 +6646,10 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
       argv = NULL;
     }
 
-    scheme_pop_continuation_frame(&cframe);
+    cc_guard = get_set_cont_mark_by_pos(prompt_cc_guard_key, p, NULL, MZ_CONT_MARK_POS, NULL);
+    if (SCHEME_FALSEP(cc_guard)) cc_guard = NULL;
 
-    if (prompt->needs_cc_guard)
-      needs_cc_guard = 1;
+    scheme_pop_continuation_frame(&cframe);
 
     if (cc_count == scheme_cont_capture_count) {
       if (!available_regular_prompt) {
@@ -6561,23 +6678,13 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
 
   if (handler) {
     return _scheme_tail_apply(handler, argc, argv);
-  } else if (needs_cc_guard && chaperone) {
-    if (v == SCHEME_MULTIPLE_VALUES) {
-      GC_CAN_IGNORE Scheme_Thread *p = scheme_current_thread;
-      if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
-        p->values_buffer = NULL;
-      argc = p->ku.multiple.count;
-      argv = p->ku.multiple.array;
-    } else {
-      a[0] = v;
-      argv = a;
-      argc = 1;
-    }
-    argv = chaperone_do_cc_guard(chaperone, argc, argv);
-    if (argc == 1)
-      return argv[0];
+  } else if (cc_guard) {
+    if (SAME_OBJ(cc_guard, scheme_values_func))
+      cc_guard = NULL;
+    if (cc_guard || chaperone)
+      return do_cc_guard(v, cc_guard, chaperone);
     else
-      return scheme_values(argc, argv);
+      return v;
   } else
     return v;
 }
@@ -6836,17 +6943,17 @@ static Scheme_Object *do_call_with_control (int argc, Scheme_Object *argv[], int
 
   scheme_check_proc_arity("call-with-composable-continuation", 1, 0, argc, argv);
   if (argc > 1) {
-    if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(argv[1]))) {
-      if (SCHEME_NP_CHAPERONEP(argv[1])
-          && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(argv[1])))
-        prompt_tag = SCHEME_CHAPERONE_VAL(argv[1]);
+    prompt_tag = argv[1];
+    if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(prompt_tag))) {
+      if (SCHEME_NP_CHAPERONEP(prompt_tag)
+          && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(prompt_tag)))
+        prompt_tag = SCHEME_CHAPERONE_VAL(prompt_tag);
       else {
         scheme_wrong_contract("call-with-composable-continuation", "continuation-prompt-tag?",
                           1, argc, argv);
         return NULL;
       }
-    } else
-      prompt_tag = argv[1];
+    } 
   } else
     prompt_tag = scheme_default_prompt_tag;
 
@@ -6873,6 +6980,18 @@ Scheme_Object *scheme_call_with_composable_no_dws (Scheme_Object *proc, Scheme_O
   a[1] = pt;
 
   return do_call_with_control(2, a, 1);
+}
+
+static Scheme_Cont_Mark *copy_cm_shared_on_write(Scheme_Meta_Continuation *mc)
+{
+  Scheme_Cont_Mark *cp;
+
+  cp = MALLOC_N(Scheme_Cont_Mark, mc->cont_mark_total);
+  memcpy(cp, mc->cont_mark_stack_copied, mc->cont_mark_total * sizeof(Scheme_Cont_Mark));
+  mc->cont_mark_stack_copied = cp;
+  mc->cm_shared = 0;
+
+  return cp;
 }
 
 static Scheme_Object *continuation_marks(Scheme_Thread *p,
@@ -7034,14 +7153,8 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
         pr->pos = find[pos].pos;
         pr->next = NULL;
         if (mc) {
-          if (mc->cm_shared) {
-            Scheme_Cont_Mark *cp;
-            cp = MALLOC_N(Scheme_Cont_Mark, mc->cont_mark_total);
-            memcpy(cp, mc->cont_mark_stack_copied, mc->cont_mark_total * sizeof(Scheme_Cont_Mark));
-            mc->cont_mark_stack_copied = cp;
-            find = cp;
-            mc->cm_shared = 0;
-          }
+          if (mc->cm_shared)
+            find = copy_cm_shared_on_write(mc);
           mc->cm_caches = 1;
         }
         cache = find[pos].cache;
@@ -7776,6 +7889,69 @@ scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key
     return scheme_current_thread->init_break_cell;
   }
   
+  return NULL;
+}
+
+static Scheme_Object *get_set_cont_mark_by_pos(Scheme_Object *key,
+                                               Scheme_Thread *p,
+                                               Scheme_Meta_Continuation *mc,
+                                               MZ_MARK_POS_TYPE mpos,
+                                               Scheme_Object *val)
+{
+  intptr_t findpos, bottom, startpos;
+  intptr_t pos;
+  int down_delta = 0;
+  Scheme_Cont_Mark *seg;
+
+  if (mc) {
+    startpos = mc->cont_mark_total;
+    bottom = 0;
+  } else {
+    startpos = (intptr_t)MZ_CONT_MARK_STACK;
+    if (!p->cont_mark_stack_segments)
+      findpos = 0;
+    bottom = p->cont_mark_stack_bottom;
+  }
+  
+  findpos = startpos;
+
+  /* binary search: */
+  while (bottom < startpos) {
+    findpos = ((bottom + startpos) / 2) - down_delta;
+
+    if (mc) {
+      seg = mc->cont_mark_stack_copied;
+      pos = findpos;
+    } else {
+      seg = p->cont_mark_stack_segments[findpos >> SCHEME_LOG_MARK_SEGMENT_SIZE];
+      pos = findpos & SCHEME_MARK_SEGMENT_MASK;
+    }
+
+    if (seg[pos].pos == mpos) {
+      if (SAME_OBJ(seg[pos].key, key)) {
+        if (!val)
+          return seg[pos].val;
+        
+        if (mc && mc->cm_shared)
+          seg = copy_cm_shared_on_write(mc);
+        
+        seg[pos].val = val;
+        
+        return scheme_void;
+      } else if (findpos > bottom) {
+        down_delta++;
+      } else {
+        bottom = (findpos + down_delta) + 1;
+        down_delta = 0;
+      }
+    } else if (seg[pos].pos < mpos) {
+      bottom = findpos + 1;
+    } else {
+      startpos = findpos;
+    }
+  }
+
+  scheme_signal_error("get_set_cont_mark_by_pos: key not found");
   return NULL;
 }
 

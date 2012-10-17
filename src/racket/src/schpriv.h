@@ -1647,7 +1647,7 @@ typedef struct Scheme_Meta_Continuation {
 
 typedef struct Scheme_Prompt {
   Scheme_Object so;
-  char is_barrier, needs_cc_guard;
+  char is_barrier, has_chaperone;
   Scheme_Object *tag;
   Scheme_Object *id;                  /* created as needed; allows direct-jump optimization for cont app */
   void *stack_boundary;               /* where to stop copying the C stack */
