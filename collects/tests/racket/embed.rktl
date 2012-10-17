@@ -473,9 +473,9 @@
                                                       "planet")))
 
 (define (try-planet)
-  (system* planet "link" "racket-tester" "p1.plt" "1" "0"
+  (system* raco "planet" "link" "racket-tester" "p1.plt" "1" "0"
            (path->string (collection-path "tests" "racket" "embed-planet-1")))
-  (system* planet "link" "racket-tester" "p2.plt" "2" "2"
+  (system* raco "planet" "link" "racket-tester" "p2.plt" "2" "2"
            (path->string (collection-path "tests" "racket" "embed-planet-2")))
 
   (let ([go (lambda (path expected)
@@ -508,8 +508,8 @@
 
     (void))
   
-  (system* planet "unlink" "racket-tester" "p1.plt" "1" "0")
-  (system* planet "unlink" "racket-tester" "p2.plt" "2" "2"))
+  (system* raco "planet" "unlink" "racket-tester" "p1.plt" "1" "0")
+  (system* raco "planet" "unlink" "racket-tester" "p2.plt" "2" "2"))
 
 ;; ----------------------------------------
 
