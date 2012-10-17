@@ -3,9 +3,6 @@
 (require (for-syntax racket/base
                      syntax/parse)
          typed/racket/base
-         "../unsafe.rkt"
-         "../vector/vector.rkt"
-         "array-struct.rkt"
          "mutable-array.rkt"
          "utils.rkt")
 

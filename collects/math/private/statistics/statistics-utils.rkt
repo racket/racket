@@ -1,8 +1,7 @@
 #lang typed/racket/base
 
 (require racket/sequence
-         "../../flonum.rkt"
-         "../vector/vector.rkt")
+         "../../flonum.rkt")
 
 (provide (all-defined-out))
 

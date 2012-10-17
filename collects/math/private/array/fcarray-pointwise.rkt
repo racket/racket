@@ -1,22 +1,16 @@
 #lang typed/racket/base
 
-(require racket/list
-         racket/vector
-         racket/fixnum
+(require racket/fixnum
          (only-in racket/math conjugate)
-         (for-syntax racket/base syntax/parse)
+         (for-syntax racket/base)
          "../../flonum.rkt"
-         "../vector/vector.rkt"
-         "../vector/flvector.rkt"
          "../unsafe.rkt"
          "array-struct.rkt"
          "array-broadcast.rkt"
          "array-pointwise.rkt"
-         "mutable-array.rkt"
          "flarray-struct.rkt"
          "fcarray-struct.rkt"
-         "utils.rkt"
-         "for-each.rkt")
+         "utils.rkt")
 
 (provide
  ;; Mapping
