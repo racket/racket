@@ -7,7 +7,7 @@
          "flonum-bits.rkt")
 
 (provide (all-from-out racket/flonum)
-         (rename-out [real->double-flonum fl])
+         fl
          flsubnormal?
          flnext* flprev*
          flulp-error
@@ -15,6 +15,19 @@
          find-least-flonum
          fleven? flodd? flsgn flhypot fllog/base
          flprobability?)
+
+(module syntax-defs racket/base
+  (require (for-syntax racket/base)
+           racket/flonum)
+  (provide fl)
+  (define-syntax (fl stx)
+    ;; can't use a rename transformer: get error:
+    ;; "unsealed local-definition or module context found in syntax object"
+    (syntax-case stx ()
+      [(_ . args)  (syntax/loc stx (real->double-flonum . args))]
+      [_  (syntax/loc stx real->double-flonum)])))
+
+(require 'syntax-defs)
 
 (begin-encourage-inline
   
