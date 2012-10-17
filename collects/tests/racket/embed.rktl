@@ -288,6 +288,14 @@
 	     (path->string (build-path (collection-path "tests" "racket") "embed-me16.rkt")))
     (try-exe (mk-dest mred?) "This is 16.\n" mred?)
 
+    ;; raco exe on a module with a `main' submodule+
+    (system* raco
+             "exe"
+	     "-o" (path->string (mk-dest mred?))
+	     (if mred? "--gui" "--")
+	     (path->string (build-path (collection-path "tests" "racket") "embed-me20.rkt")))
+    (try-exe (mk-dest mred?) "This is 20.\n" mred?)
+
     ;;raco exe --launcher
     (system* raco
              "exe"
