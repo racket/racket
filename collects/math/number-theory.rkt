@@ -1,11 +1,11 @@
-#lang typed/racket/base
+#lang racket/base
 
-(require "private/number-theory/divisibility.rkt"
+(require typed/untyped-utils
+         "private/number-theory/divisibility.rkt"
          "private/number-theory/modular-arithmetic.rkt"
          "private/number-theory/number-theory.rkt"
-         "private/number-theory/factorial.rkt"
+         (except-in "private/number-theory/factorial.rkt" factorial permutations)
          "private/number-theory/bernoulli.rkt"
-         "private/number-theory/binomial.rkt"
          "private/number-theory/eulerian-number.rkt"
          "private/number-theory/farey.rkt"
          "private/number-theory/fibonacci.rkt"
@@ -17,13 +17,21 @@
          "private/number-theory/tangent-number.rkt"
          "private/number-theory/number-theory-syntax.rkt")
 
+(require/untyped-contract
+ "private/number-theory/factorial.rkt"
+ [factorial  (Integer -> Positive-Integer)]
+ [permutations  (Integer Integer -> Natural)])
+
+(require/untyped-contract
+ "private/number-theory/binomial.rkt"
+ [binomial  (Integer Integer -> Natural)])
+
 (provide (all-from-out
           "private/number-theory/divisibility.rkt"
           "private/number-theory/modular-arithmetic.rkt"
           "private/number-theory/number-theory.rkt"
           "private/number-theory/factorial.rkt"
           "private/number-theory/bernoulli.rkt"
-          "private/number-theory/binomial.rkt"
           "private/number-theory/eulerian-number.rkt"
           "private/number-theory/farey.rkt"
           "private/number-theory/fibonacci.rkt"
@@ -33,4 +41,6 @@
           "private/number-theory/quadratic.rkt"
           "private/number-theory/quadratic-residues.rkt"
           "private/number-theory/tangent-number.rkt"
-          "private/number-theory/number-theory-syntax.rkt"))
+          "private/number-theory/number-theory-syntax.rkt")
+         factorial permutations
+         binomial)

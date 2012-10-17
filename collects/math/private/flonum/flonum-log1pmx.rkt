@@ -1,6 +1,8 @@
 #lang typed/racket/base
 
-(require "../../flonum.rkt"
+(require "flonum-functions.rkt"
+         "flonum-polyfun.rkt"
+         "flonum-log.rkt"
          "../polynomial/chebyshev.rkt")
 
 (provide fllog1pmx)

@@ -2,10 +2,9 @@
 
 (require (for-syntax racket/base syntax/parse)
          racket/vector
-         "../../flonum.rkt"
          "../../base.rkt"
          "../../bigfloat.rkt"
-         "../vector/vector.rkt"
+         "../flonum/flonum-functions.rkt"
          "../unsafe.rkt")
 
 (provide chebyshev-poly chebyshev-poly? chebyshev-poly-min chebyshev-poly-max chebyshev-poly-coefs

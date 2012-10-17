@@ -10,7 +10,6 @@ otherwise
 |#
 
 (require racket/fixnum
-         "../exception.rkt"
          "../unsafe.rkt"
          "statistics-utils.rkt")
 

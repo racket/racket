@@ -117,27 +117,34 @@
 (: fcarray-map
    (case-> ((-> Float-Complex) -> FCArray)
            ((Float-Complex -> Float-Complex) FCArray -> FCArray)
-           ((Float-Complex Float-Complex * -> Float-Complex) FCArray FCArray * -> FCArray)))
+           ((Float-Complex Float-Complex Float-Complex * -> Float-Complex) FCArray FCArray FCArray *
+                                                                           -> FCArray)))
 (define fcarray-map
   (case-lambda:
     [([f : (-> Float-Complex)])
      (inline-fcarray-map f)]
     [([f : (Float-Complex -> Float-Complex)] [arr : FCArray])
      (inline-fcarray-map f arr)]
-    [([f : (Float-Complex Float-Complex * -> Float-Complex)] [arr : FCArray] . [arrs : FCArray *])
-     (define ds (array-shape arr))
-     (define dss (map (λ: ([arr : FCArray]) (array-shape arr)) arrs))
+    [([f : (Float-Complex Float-Complex -> Float-Complex)] [arr0 : FCArray] [arr1 : FCArray])
+     (inline-fcarray-map f arr0 arr1)]
+    [([f : (Float-Complex Float-Complex Float-Complex * -> Float-Complex)]
+      [arr0 : FCArray] [arr1 : FCArray] . [arrs : FCArray *])
+     (define ds (array-shape arr0))
+     (define dss (map (λ: ([arr : FCArray]) (array-shape arr)) (cons arr1 arrs)))
      (define new-ds (array-shape-broadcast (list* ds dss)))
-     (let: ([arr : (Array Float-Complex)  (array-broadcast arr new-ds)]
+     (let: ([arr0 : (Array Float-Complex)  (array-broadcast arr0 new-ds)]
+            [arr1 : (Array Float-Complex)  (array-broadcast arr1 new-ds)]
             [arrs : (Listof (Array Float-Complex))
                   (map (λ: ([arr : FCArray]) (array-broadcast arr new-ds)) arrs)])
-       (define proc  (unsafe-array-proc arr))
+       (define proc0 (unsafe-array-proc arr0))
+       (define proc1 (unsafe-array-proc arr1))
        (define procs (map (λ: ([arr : (Array Float-Complex)]) (unsafe-array-proc arr)) arrs))
        (array->fcarray
         (unsafe-build-array
          new-ds (λ: ([js : Indexes])
-                  (apply f (proc js) (map (λ: ([proc : (Indexes -> Float-Complex)]) (proc js))
-                                          procs))))))]))
+                  (apply f (proc0 js) (proc1 js)
+                         (map (λ: ([proc : (Indexes -> Float-Complex)]) (proc js))
+                              procs))))))]))
 
 ;; ===================================================================================================
 ;; Pointwise operations

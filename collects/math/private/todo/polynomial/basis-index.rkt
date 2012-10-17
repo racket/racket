@@ -2,8 +2,7 @@
 
 (require racket/fixnum
          racket/list
-         "../unsafe.rkt"
-         "../exception.rkt")
+         "../unsafe.rkt")
 
 (provide Basis-Index
          integer->basis-index

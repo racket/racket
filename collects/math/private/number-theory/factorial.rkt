@@ -1,7 +1,6 @@
 #lang typed/racket/base
 
-(require "../unsafe.rkt"
-         "../exception.rkt")
+(require "../unsafe.rkt")
 
 (provide factorial permutations multinomial)
 
@@ -31,9 +30,14 @@
   (cond [(n . < . fact-table-size)  (vector-ref fact-table n)]
         [else  (* n (factorial-simple (- n 1)))]))
 
-(: factorial (Integer -> Positive-Integer))
+(: factorial (case-> (Zero -> One)
+                     (One -> One)
+                     (Integer -> Positive-Integer)))
 (define (factorial n)
-  (cond [(not (nonnegative-fixnum? n))  (raise-argument-error 'factorial "Nonnegative-Fixnum" n)]
+  (cond [(negative? n)  (raise-argument-error 'factorial "Natural" n)]
+        [(not (fixnum? n))  (raise-argument-error 'factorial "Nonnegative-Fixnum" n)]
+        [(eqv? n 0)  1]
+        [(eqv? n 1)  1]
         [(n . < . simple-cutoff)  (factorial-simple n)]
         [else
          (let: loop : Positive-Integer ([n : Positive-Fixnum  n]
@@ -43,23 +47,21 @@
                  [else  (define 2m (unsafe-fx* m 2))
                         (* (loop n 2m) (loop n-m 2m))]))]))
 
-(: permutations (Integer Integer -> Natural))
+(: permutations (case-> (Integer Zero -> One)
+                        (One One -> One)
+                        (Integer Integer -> Natural)))
 (define (permutations n k)
-  (cond [(not (nonnegative-fixnum? n))
-         (raise-argument-error 'permutations "Nonnegative-Fixnum" 0 n k)]
-        [(not (nonnegative-fixnum? k))
-         (raise-argument-error 'permutations "Nonnegative-Fixnum" 1 n k)]
+  (cond [(negative? n)  (raise-argument-error 'permutations "Natural" 0 n k)]
+        [(negative? k)  (raise-argument-error 'permutations "Natural" 1 n k)]
         [(zero? k)  1]
-        [(k . > . n)  0]  ; also handles n = 0 case
-        [else  (define m (/ (factorial n) (factorial (- n k))))
-               (with-asserts ([m  exact-nonnegative-integer?]) m)]))
+        [(k . > . n)  0]
+        [else  (assert (/ (factorial n) (factorial (- n k)))
+                       exact-nonnegative-integer?)]))
 
 (: multinomial (Integer Integer * -> Natural))
 (define (multinomial n . ks)
-  (cond [(not (nonnegative-fixnum? n))
-         (raise-argument-error 'multinomial "Nonnegative-Fixnum" 0 n ks)]
-        [(not (andmap nonnegative-fixnum? ks))
-         (raise-argument-error 'multinomial "(Listof Nonnegative-Fixnum)" 1 n ks)]
+  (cond [(negative? n)  (raise-argument-error 'multinomial "Natural" 0 n ks)]
+        [(ormap negative? ks)  (raise-argument-error 'multinomial "(Listof Natural)" 1 n ks)]
         [(not (= n (apply + ks)))  0]
-        [else  (define m (apply / (factorial n) (map factorial ks)))
-               (with-asserts ([m  exact-nonnegative-integer?]) m)]))
+        [else  (assert (apply / (factorial n) (map factorial ks))
+                       exact-nonnegative-integer?)]))

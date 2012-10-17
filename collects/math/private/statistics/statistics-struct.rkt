@@ -2,7 +2,6 @@
 
 (require racket/match
          "../../flonum.rkt"
-         "../exception.rkt"
          "statistics-utils.rkt")
 
 (provide (struct-out statistics)

@@ -1,11 +1,15 @@
 #lang racket/base
 
 (require (for-syntax racket/base)
+         typed/untyped-utils
          typed-racket/base-env/prims
          racket/unsafe/ops
-         "../syntax.rkt"
-         (prefix-in math: "../exception.rkt")
-         "array-struct.rkt")
+         "array-struct.rkt"
+         (except-in "typed-array-sequence.rkt" in-array-indexes))
+
+(require/untyped-contract
+ "typed-array-sequence.rkt"
+ [in-array-indexes  ((Vectorof Integer) -> (Sequenceof (Vectorof Index)))])
 
 (provide (rename-out [in-array-clause  in-array]
                      [in-array-indexes-clause  in-array-indexes]
@@ -13,17 +17,6 @@
          in-array-axis
          array->array-list
          array-list->array)
-
-(require (except-in "utils.rkt" check-array-shape)
-         (except-in "typed-array-sequence.rkt" in-array-indexes))
-
-(require/untyped-contract
- "utils.rkt"
- [check-array-shape  ((Vectorof Integer) (-> Nothing) -> (Vectorof Index))])
-
-(require/untyped-contract
- "typed-array-sequence.rkt"
- [in-array-indexes  ((Vectorof Integer) -> (Sequenceof (Vectorof Index)))])
 
 (define-sequence-syntax in-array-clause
   (λ () #'in-array)
@@ -43,7 +36,7 @@
                       (define: js : Indexes (make-vector dims 0))
                       (values ds size dims js proc)]
                      [else
-                      (math:raise-argument-error 'in-array "Array" arr)]))])
+                      (raise-argument-error 'in-array "Array" arr)]))])
            (void)
            ([j 0])
            (unsafe-fx< j size)
@@ -65,7 +58,7 @@
            ([(ds size dims js)
              (let*: ([ds : User-Indexes  ds-expr]
                      [ds : Indexes  (check-array-shape
-                                     ds (λ () (math:raise-argument-error 'in-array-indexes "Indexes"
+                                     ds (λ () (raise-argument-error 'in-array-indexes "Indexes"
                                                                          ds)))])
                (define dims (vector-length ds))
                (define size (array-shape-size ds))

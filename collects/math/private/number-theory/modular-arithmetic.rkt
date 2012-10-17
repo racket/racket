@@ -2,8 +2,7 @@
 
 (require racket/performance-hint
          racket/flonum
-         "divisibility.rkt"
-         "../exception.rkt")
+         "divisibility.rkt")
 
 (provide modular-inverse
          modular-expt

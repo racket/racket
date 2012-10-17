@@ -25,27 +25,27 @@
 
 (: list->matrix : (Listof* Number) -> (Matrix Number))
 (define (list->matrix rows)
-  (list->array rows number?))
+  (list*->array rows number?))
 
 (: fllist->matrix : (Listof* Flonum) -> (Matrix Flonum))
 (define (fllist->matrix rows)
-  (list->array rows flonum? ))
+  (list*->array rows flonum? ))
 
 (: matrix->list : (All (A) (Matrix A) -> (Listof* A)))
 (define (matrix->list a)
-  (array->list a))
+  (array->list* a))
 
 (: vector->matrix : (Vectorof* Number) -> (Matrix Number))
 (define (vector->matrix rows)
-  (vector->array rows number? ))
+  (vector*->array rows number? ))
 
 (: flvector->matrix : (Vectorof* Flonum) -> (Matrix Flonum))
 (define (flvector->matrix rows)
-  (vector->array rows flonum? ))
+  (vector*->array rows flonum? ))
 
 (: matrix->vector : (All (A) (Matrix A) -> (Vectorof* A)))
 (define (matrix->vector a)
-  (array->vector a))
+  (array->vector* a))
 
 (: submatrix : (Matrix Number) (Sequenceof Index) (Sequenceof Index) -> (Matrix Number))
 (define (submatrix a row-range col-range)

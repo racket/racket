@@ -1,7 +1,6 @@
 #lang typed/racket/base
 
-(require racket/fixnum
-         "../exception.rkt")
+(require racket/fixnum)
 
 (provide random-bits random-natural random-integer)
 

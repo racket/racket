@@ -274,12 +274,13 @@ Approximations:
                   [else  (flgamma-lanczos x)])))]))
 
 (: gamma (case-> (Nonpositive-Integer -> Nothing)
+                 (One -> One)
                  (Integer -> Positive-Integer)
                  (Float -> Float)
-                 (Real -> Real)))
+                 (Real -> (U Positive-Integer Flonum))))
 (define (gamma x)
   (cond [(double-flonum? x)  (flgamma x)]
         [(exact-integer? x)  (if (x . > . 0)
                                  (factorial (- x 1))
                                  (error 'gamma "undefined for nonpositive integers"))]
-        [else  (flgamma (real->double-flonum x))]))
+        [else  (flgamma (fl x))]))

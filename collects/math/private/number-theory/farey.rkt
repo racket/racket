@@ -1,7 +1,6 @@
 #lang typed/racket/base
 
-(require "../exception.rkt"
-         "types.rkt")
+(require "types.rkt")
 
 (provide farey mediant)
 

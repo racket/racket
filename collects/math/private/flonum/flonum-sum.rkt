@@ -1,7 +1,7 @@
 #lang typed/racket/base
 
 ;; Computes sums without incurring rounding error more than once
-;; See (flsum 1.0 1e-16 1e-16) vs. (+ 1.0 1e-16 1e-16)
+;; See (flsum '(1.0 1e-16 1e-16)) vs. (+ 1.0 1e-16 1e-16)
 
 #|
 Algorithm adapted from:
@@ -15,8 +15,8 @@ Discrete & Computational Geometry, 1996, vol 18, pp 305--363.
 
 (provide flsum)
 
-(: flsum (Flonum * -> Flonum))
-(define (flsum . xs)
+(: flsum ((Listof Flonum) -> Flonum))
+(define (flsum xs)
   (define ys (make-flvector (length xs)))
   (define num-ys
     (for/fold: ([num-ys : Nonnegative-Fixnum  0]) ([x  (in-list xs)])

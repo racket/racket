@@ -2,7 +2,7 @@
 
 (require "../../flonum.rkt"
          "../../base.rkt"
-         "../exception.rkt"
+         "gamma.rkt"
          "log-gamma.rkt"
          "lanczos.rkt")
 
@@ -84,20 +84,34 @@
 (define (flbeta a b)
   (exp (fllog-beta a b)))
 
-(: log-beta (Real Real -> Flonum))
+(: log-beta (case-> (Nonpositive-Exact-Rational Real -> Nothing)
+                    (Real Nonpositive-Exact-Rational -> Nothing)
+                    (One One -> Zero)
+                    (Flonum Flonum -> Flonum)
+                    (Real Real -> (U Zero Flonum))))
 (define (log-beta a b)
   (cond [(and (exact? a) (a . <= . 0))
          (raise-argument-error 'log-beta "positive Real" 0 a b)]
         [(and (exact? b) (b . <= . 0))
          (raise-argument-error 'log-beta "positive Real" 1 a b)]
+        [(eqv? a 1)
+         (if (eqv? b 1) 0 (fllog-beta (fl a) (fl b)))]
         [else
          (fllog-beta (fl a) (fl b))]))
 
-(: beta (Real Real -> Flonum))
+(: beta (case-> (Nonpositive-Exact-Rational Real -> Nothing)
+                (Real Nonpositive-Exact-Rational -> Nothing)
+                (Positive-Integer Positive-Integer -> Exact-Rational)
+                (Flonum Flonum -> Flonum)
+                (Real Real -> (U Exact-Rational Flonum))))
 (define (beta a b)
   (cond [(and (exact? a) (a . <= . 0))
          (raise-argument-error 'beta "positive Real" 0 a b)]
         [(and (exact? b) (b . <= . 0))
          (raise-argument-error 'beta "positive Real" 1 a b)]
+        [(exact-integer? a)
+         (if (exact-integer? b)
+             (/ (* (gamma a) (gamma b)) (gamma (+ a b)))
+             (flbeta (fl a) (fl b)))]
         [else
          (flbeta (fl a) (fl b))]))

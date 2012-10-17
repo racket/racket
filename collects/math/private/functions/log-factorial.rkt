@@ -4,8 +4,7 @@
          "../../flonum.rkt"
          "../../base.rkt"
          "../number-theory/factorial.rkt"
-         "../vector/flvector.rkt"
-         "../exception.rkt")
+         "../vector/flvector.rkt")
 
 (provide fllog-factorial
          fllog-binomial
@@ -52,8 +51,7 @@
         [(n . < . #e1e306)  (fllog-factorial/stirling3 n)]
         [else  +inf.0]))
 
-(: log-factorial (case-> (Negative-Integer -> Nothing)
-                         (Zero -> Zero)
+(: log-factorial (case-> (Zero -> Zero)
                          (One -> Zero)
                          (Integer -> (U Zero Float))))
 (define (log-factorial n)
@@ -63,8 +61,8 @@
 
 (: fllog-binomial (Integer Integer -> Float))
 (define (fllog-binomial n k)
-  (cond [(not (nonnegative-fixnum? n))  +nan.0]
-        [(not (nonnegative-fixnum? k))  +nan.0]
+  (cond [(n . < . 0)  +nan.0]
+        [(k . < . 0)  +nan.0]
         [(zero? k)  0.0]
         [(k . > . n)  -inf.0]
         [(k . = . n)  0.0]
@@ -72,58 +70,49 @@
                          (fllog-factorial k))
                     (fllog-factorial (- n k)))]))
 
-(: log-binomial (case-> (Negative-Integer Integer -> Nothing)
-                        (Integer Negative-Integer -> Nothing)
-                        (Integer Zero -> Zero)
-                        (Integer Integer -> Real)))
+(: log-binomial (case-> (Integer Zero -> Zero)
+                        (One One -> Zero)
+                        (Integer Integer -> (U Zero Flonum))))
 (define (log-binomial n k)
-  (cond [(not (nonnegative-fixnum? n))
-         (raise-argument-error 'log-binomial "Nonnegative-Fixnum" 0 n k)]
-        [(not (nonnegative-fixnum? k))
-         (raise-argument-error 'log-binomial "Nonnegative-Fixnum" 1 n k)]
+  (cond [(n . < . 0)  (raise-argument-error 'log-binomial "Natural" 0 n k)]
+        [(k . < . 0)  (raise-argument-error 'log-binomial "Natural" 1 n k)]
         [(zero? k)  0]
         [(k . > . n)  -inf.0]  ; also handles n = 0 case
         [(k . = . n)  0]
-        [else  (fl- (fl- (fllog-factorial n)
-                         (fllog-factorial k))
-                    (fllog-factorial (- n k)))]))
+        [(eqv? n 1)  (if (eqv? k 1) 0 (fllog-binomial n k))]
+        [else  (fllog-binomial n k)]))
 
 (: fllog-permutations (Integer Integer -> Float))
 (define (fllog-permutations n k)
-  (cond [(not (nonnegative-fixnum? n))  +nan.0]
-        [(not (nonnegative-fixnum? k))  +nan.0]
+  (cond [(n . < . 0)  +nan.0]
+        [(k . < . 0)  +nan.0]
         [(zero? k)  0.0]
         [(k . > . n)  -inf.0]  ; also handles n = 0 case
         [else  (fl- (fllog-factorial n) (fllog-factorial (- n k)))]))
 
-(: log-permutations (case-> (Negative-Integer Integer -> Nothing)
-                            (Integer Negative-Integer -> Nothing)
-                            (Integer Zero -> Zero)
-                            (Integer Integer -> Real)))
+(: log-permutations (case-> (Integer Zero -> Zero)
+                            (One One -> Zero)
+                            (Integer Integer -> (U Zero Flonum))))
 (define (log-permutations n k)
-  (cond [(not (nonnegative-fixnum? n))
-         (raise-argument-error 'log-permutations "Nonnegative-Fixnum" 0 n k)]
-        [(not (nonnegative-fixnum? k))
-         (raise-argument-error 'log-permutations "Nonnegative-Fixnum" 1 n k)]
+  (cond [(n . < . 0)  (raise-argument-error 'log-permutations "Natural" 0 n k)]
+        [(k . < . 0)  (raise-argument-error 'log-permutations "Natural" 1 n k)]
         [(zero? k)  0]
         [(k . > . n)  -inf.0]  ; also handles n = 0 case
-        [(= k n 1)  0]
-        [else  (fl- (fllog-factorial n) (fllog-factorial (- n k)))]))
+        [(eqv? n 1)  (if (eqv? k 1) 0 (fllog-permutations n k))]
+        [else  (fllog-permutations n k)]))
 
 (: fllog-multinomial (Integer Integer * -> Float))
 (define (fllog-multinomial n . ks)
-  (cond [(not (nonnegative-fixnum? n))  +nan.0]
-        [(not (andmap nonnegative-fixnum? ks))  +nan.0]
+  (cond [(n . < . 0)  +nan.0]
+        [(ormap negative? ks)  +nan.0]
         [(not (= n (apply + ks)))  -inf.0]
-        [(ormap (λ: ([k : Nonnegative-Fixnum]) (= n k)) ks)  0.0]
+        [(ormap (λ: ([k : Integer]) (= n k)) ks)  0.0]
         [else  (apply - (fllog-factorial n) (map fllog-factorial ks))]))
 
-(: log-multinomial (Integer Integer * -> Real))
+(: log-multinomial (Integer Integer * -> (U Zero Flonum)))
 (define (log-multinomial n . ks)
-  (cond [(not (nonnegative-fixnum? n))
-         (raise-argument-error 'log-multinomial "Nonnegative-Fixnum" 0 n ks)]
-        [(not (andmap nonnegative-fixnum? ks))
-         (raise-argument-error 'log-multinomial "(Listof Nonnegative-Fixnum)" 1 n ks)]
+  (cond [(n . < . 0)  (raise-argument-error 'log-multinomial "Natural" 0 n ks)]
+        [(ormap negative? ks)  (raise-argument-error 'log-multinomial "Natural" 1 n ks)]
         [(not (= n (apply + ks)))  -inf.0]
-        [(ormap (λ: ([k : Nonnegative-Fixnum]) (= n k)) ks)  0]
+        [(ormap (λ: ([k : Integer]) (= n k)) ks)  0]
         [else  (apply - (fllog-factorial n) (map fllog-factorial ks))]))

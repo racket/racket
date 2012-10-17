@@ -1,7 +1,6 @@
 #lang typed/racket/base
 
 (require "../unsafe.rkt"
-         "../exception.rkt"
          "array-struct.rkt"
          "utils.rkt")
 

@@ -13,7 +13,8 @@ IEEE Transactions on Communications, 2000, vol 48, pp 529--532
          "../polynomial/chebyshev.rkt"
          "continued-fraction.rkt")
 
-(provide flerf flerfc*expsqr flerfc)
+(provide flerf flerfc*expsqr flerfc
+         erf erfc)
 
 ;; ===================================================================================================
 ;; erf
@@ -190,3 +191,21 @@ IEEE Transactions on Communications, 2000, vol 48, pp 529--532
         [(x . fl> . 1.0)  (fl* (flerfc*expsqr-series x) (flgauss x))]
         [(x . fl>= . -erfc-max.0)  (flerfc-normal x)]
         [else  2.0]))
+
+;; ===================================================================================================
+
+(: erf (case-> (Zero -> Zero)
+               (Flonum -> Flonum)
+               (Real -> Real)))
+(define (erf x)
+  (cond [(flonum? x)  (flerf x)]
+        [(eqv? x 0)  x]
+        [else  (flerf (fl x))]))
+
+(: erfc (case-> (Zero -> One)
+                (Flonum -> Flonum)
+                (Real -> Real)))
+(define (erfc x)
+  (cond [(flonum? x)  (flerfc x)]
+        [(eqv? x 0)  1]
+        [else  (flerfc (fl x))]))

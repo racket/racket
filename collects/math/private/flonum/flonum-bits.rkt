@@ -1,8 +1,7 @@
 #lang typed/racket/base
 
 (require racket/flonum
-         racket/performance-hint
-         "../exception.rkt")
+         racket/performance-hint)
 
 (provide flonum->bit-field bit-field->flonum
          flonum->ordinal ordinal->flonum

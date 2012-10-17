@@ -4,7 +4,6 @@
          "../../base.rkt"
          "../../flonum.rkt"
          "../unsafe.rkt"
-         "../exception.rkt"
          "../vector/vector-fft.rkt"
          "fcarray-struct.rkt"
          "array-struct.rkt"

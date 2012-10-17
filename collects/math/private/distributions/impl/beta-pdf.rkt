@@ -19,6 +19,6 @@
         [(or (x . fl< . 0.0) (x . fl> . 1.0))
          -inf.0]
         [else
-         (flsum (fl* (fl- a 1.0) (fllog x))
-                (fl* (fl- b 1.0) (fllog1p (- x)))
-                (fl- 0.0 (fllog-beta a b)))]))
+         (flsum (list (fl* (fl- a 1.0) (fllog x))
+                      (fl* (fl- b 1.0) (fllog1p (- x)))
+                      (fl- 0.0 (fllog-beta a b))))]))

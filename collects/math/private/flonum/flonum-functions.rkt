@@ -3,7 +3,6 @@
 (require racket/flonum
          racket/performance-hint
          (for-syntax racket/base)
-         "../exception.rkt"
          "flonum-constants.rkt"
          "flonum-bits.rkt")
 

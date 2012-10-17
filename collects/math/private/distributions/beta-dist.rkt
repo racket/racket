@@ -29,10 +29,8 @@
                                 [else  (if log? -inf.0 0.0)])]
         [(x . fl> . 1.0)  (cond [1-p?  (if log? -inf.0 0.0)]
                                 [else  (if log? 0.0 1.0)])]
-        [1-p?  (cond [log?  (fllog-beta-upper-regularized a b x)]
-                     [else  (flbeta-upper-regularized a b x)])]
-        [else  (cond [log?  (fllog-beta-lower-regularized a b x)]
-                     [else  (flbeta-lower-regularized a b x)])]))
+        [log?  (fllog-beta-inc a b x 1-p? #t)]
+        [else  (flbeta-inc a b x 1-p? #t)]))
 
 (: flbeta-random (Flonum Flonum -> Flonum))
 (define (flbeta-random a b)

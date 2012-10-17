@@ -1,8 +1,7 @@
 #lang typed/racket/base
 
 (require "../../../flonum.rkt"
-         "../../unsafe.rkt"
-         "../../exception.rkt")
+         "../../unsafe.rkt")
 
 (provide Walker-Table make-walker-table walker-table-sample)
 

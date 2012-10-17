@@ -2,9 +2,7 @@
 
 (require racket/vector
          "../unsafe.rkt"
-         "../exception.rkt"
          "array-struct.rkt"
-         "array-constructors.rkt"
          "array-transform.rkt"
          "array-broadcast.rkt"
          "utils.rkt")

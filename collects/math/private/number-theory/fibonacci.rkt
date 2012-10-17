@@ -1,7 +1,5 @@
 #lang typed/racket/base
 
-(require "../exception.rkt")
-
 (provide make-fibonacci
          fibonacci
          make-fibonacci/mod

@@ -8,12 +8,11 @@
 
 (define -lambert-max.0 (- (flexp -1.0)))
 
-(: lambert-upper-appx+ (Float -> Float))
+(: lambert-upper-appx+ (Flonum -> Flonum))
 (define (lambert-upper-appx+ x)
   (cond [(x . fl<= . 3.0)  (define z (fl+ x 1.04))
                            (define z^2 (fl* z z))
-                           (define z^4 (fl* z^2 z^2))
-                           (fl* (fl* 0.607 (flsqrt x)) (fl- 1.0 (fl/ 1.0 z^4)))]
+                           (fl* (fl* 0.607 (flsqrt x)) (fl- 1.0 (fl/ 1.0 (fl* z^2 z^2))))]
         [else  (define L1 (fllog x))
                (define L2 (fllog L1))
                (fl+ (fl+ (fl- L1 L2) (fl/ L2 L1))
@@ -39,14 +38,16 @@
                  [else  (loop new-y (fx+ n 1))])]
           [else  y])))
 
-(: fllambert (Float -> Float))
+(: fllambert (Flonum -> Flonum))
 (define (fllambert x)
-  (cond [(x . fl<= . -lambert-max.0)  (if (fl= x -lambert-max.0) -1.0 +nan.0)]
-        [(x . fl> . 0.0)
+  (cond [(x . fl> . 0.0)
          (cond [(x . fl> . 1e308)  (lambert-upper-appx+ x)]
                [else  (lambert-upper-newton x (lambert-upper-appx+ x))])]
-        [(x . fl< . 0.0)  (lambert-upper-newton x (lambert-upper-appx- x))]
-        [else  0.0]))
+        [(x . fl< . 0.0)
+         (cond [(x . fl> . -lambert-max.0)  (lambert-upper-newton x (lambert-upper-appx- x))]
+               [(x . fl< . -lambert-max.0)  +nan.0]
+               [else  -1.0])]
+        [else  x]))
 
 ;; ===================================================================================================
 
@@ -103,18 +104,21 @@
 
 ;; ===================================================================================================
 
-(: lambert (case-> (Flonum -> Flonum)
-                   (Zero -> Zero)
+(: lambert (case-> (Zero -> Zero)
+                   (Flonum -> Flonum)
                    (Real -> Real)))
 (define (lambert x)
   (cond [(flonum? x)  (fllambert x)]
+        [(single-flonum? x)  (fllambert (fl x))]
         [(zero? x)  x]
+        [(x . < . -lambert-max.0)
+         (raise-argument-error 'lambert "Real >= (- (exp -1))" x)]
         [else  (fllambert (fl x))]))
 
-(: lambert- (case-> (Flonum -> Flonum)
-                    (Zero -> Zero)
-                    (Real -> Real)))
+(: lambert- (Real -> Real))
 (define (lambert- x)
   (cond [(flonum? x)  (fllambert- x)]
-        [(zero? x)  x]
+        [(single-flonum? x)  (fllambert- (fl x))]
+        [(or (x . < . -lambert-max.0) (x . >= . 0))
+         (raise-argument-error 'lambert- "Negative-Real >= (- (exp -1))" x)]
         [else  (fllambert- (fl x))]))

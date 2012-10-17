@@ -4,7 +4,6 @@
          racket/list
          "../../base.rkt"
          "../../flonum.rkt"
-         "../exception.rkt"
          "expected-values.rkt"
          "statistics-utils.rkt")
 
@@ -22,13 +21,13 @@
                  (check-lengths! name "value sequences" xs ys (length xs) (length ys))
                  (values (map (λ: ([x : Real] [y : Real] [w : Real]) (* w (- x mx) (- y my)))
                               xs ys ws)
-                         (max 0 (apply sum ws))))]
+                         (max 0 (sum ws))))]
           [else  (let ([xs  (sequence->list xs)]
                        [ys  (sequence->list ys)])
                    (check-lengths! name "value sequences" xs ys (length xs) (length ys))
                    (values (map (λ: ([x : Real] [y : Real]) (* (- x mx) (- y my))) xs ys)
                            (length xs)))]))
-  (define m2 (/ (apply sum zs) n))
+  (define m2 (/ (sum zs) n))
   (adjust-covariance m2 n bias))
 
 (: covariance/means (Correlation/Means-Fun Real))

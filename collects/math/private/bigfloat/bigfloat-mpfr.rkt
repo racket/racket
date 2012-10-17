@@ -1,7 +1,7 @@
 #lang typed/racket/base
 
 (require (only-in "mpfr.rkt" 1ary-funs 1ary-preds 1ary2-funs 2ary-funs)
-         "../functions/random.rkt"
+         "../base/base-random.rkt"
          "utils.rkt")
 
 (define-type Rounding-Mode (U 'nearest 'zero 'up 'down))

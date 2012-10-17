@@ -21,10 +21,10 @@ ACM Transactions on Mathematical Software, 1992, vol 18, no 3, pp 360--373.
          "continued-fraction.rkt"
          "lanczos.rkt")
 
-(provide flbeta-lower-regularized
-         flbeta-upper-regularized
-         fllog-beta-lower-regularized
-         fllog-beta-upper-regularized)
+(provide fllog-beta-inc
+         flbeta-inc
+         log-beta-inc
+         beta-inc)
 
 (: hypergeom-fac (Flonum Flonum Flonum -> Flonum))
 ;; Returns the adjustment to the hypergeometric series coefficient at n = 20
@@ -79,7 +79,7 @@ ACM Transactions on Mathematical Software, 1992, vol 18, no 3, pp 360--373.
 
 (: flbeta-regularized-const-beta (Flonum Flonum Flonum Flonum Any -> Flonum))
 (define (flbeta-regularized-const-beta a b log-x log-y log?)
-  (define log-t (flsum (* a log-x) (* b log-y) (- (fllog-beta a b))))
+  (define log-t (flsum (list (* a log-x) (* b log-y) (- (fllog-beta a b)))))
   (if log? log-t (flexp log-t)))
 
 (: flbeta-regularized-const-lanczos (Flonum Flonum Flonum Flonum Flonum Flonum Any
@@ -91,14 +91,14 @@ ACM Transactions on Mathematical Software, 1992, vol 18, no 3, pp 360--373.
   (define c+g (fl+ (fl+ a b) g))
   (define log-t0  ;; = (log (/ (* x c+g) a+g))
     (let ([t0  (fl/ (fl* x c+g) a+g)])
-      (cond [(t0 . fl<= . +max-subnormal.0)  (flsum log-x (fllog c+g) (- (fllog a+g)))]
+      (cond [(t0 . fl<= . +max-subnormal.0)  (flsum (list log-x (fllog c+g) (- (fllog a+g))))]
             [(t0 . fl<= . 0.75)  (fllog t0)]
             [else  (define x-rem (fl- (fl- 1.0 x) y))
                    (define-values (c0 c1) (fl*/error c+g x))
                    (fllog1p (fl/ (fl+ (- c0 a+g) (fl+ (fl* c+g x-rem) c1)) a+g))])))
   (define log-t1  ;; = (log (/ (* y c+g) b+g))
     (let ([t1  (fl/ (fl* y c+g) b+g)])
-      (cond [(t1 . fl<= . +max-subnormal.0)  (flsum log-y (fllog c+g) (- (fllog b+g)))]
+      (cond [(t1 . fl<= . +max-subnormal.0)  (flsum (list log-y (fllog c+g) (- (fllog b+g))))]
             [(t1 . fl<= . 0.75)  (fllog t1)]
             [else  (define y-rem (fl- (fl- 1.0 y) x))
                    (define-values (c0 c1) (fl*/error c+g y))
@@ -106,9 +106,9 @@ ACM Transactions on Mathematical Software, 1992, vol 18, no 3, pp 360--373.
   (define log-t2
     (let ([t2  (fl/ (fl* a+g b+g) c+g)])
       (cond [(and (t2 . fl> . +max-subnormal.0) (t2 . fl< . +inf.0))  (fl* 0.5 (fllog t2))]
-            [else  (fl* 0.5 (flsum (fllog a+g) (fllog b+g) (- (fllog c+g))))])))
+            [else  (fl* 0.5 (flsum (list (fllog a+g) (fllog b+g) (- (fllog c+g)))))])))
   (define t4 (fl/ (fl/ (lanczos-sum (fl+ a b)) (lanczos-sum a)) (lanczos-sum b)))
-  (define log-t (flsum (fl* a log-t0) (fl* b log-t1) log-t2 g (fllog t4)))
+  (define log-t (flsum (list (fl* a log-t0) (fl* b log-t1) log-t2 g (fllog t4))))
   (if log? log-t (flexp log-t)))
 
 (: flbeta-regularized-const (Flonum Flonum Flonum Flonum Flonum Flonum Any -> Flonum))
@@ -162,9 +162,9 @@ ACM Transactions on Mathematical Software, 1992, vol 18, no 3, pp 360--373.
                            3.0
                            (fl- i 1.0))])
                (loop (fl+ z new-dz) new-dz (fl+ n 1.0) i))])))
-  (cond [log?  (flsum (flbeta-regularized-const a b x y log-x log-y #t)
-                      (- (fllog a))
-                      (fllog1p z))]
+  (cond [log?  (flsum (list (flbeta-regularized-const a b x y log-x log-y #t)
+                            (- (fllog a))
+                            (fllog1p z)))]
         [else  (define c (flbeta-regularized-const a b x y log-x log-y #f))
                (fl/ (fl+ c (fl* z c)) a)]))
 
@@ -227,18 +227,31 @@ ACM Transactions on Mathematical Software, 1992, vol 18, no 3, pp 360--373.
 ;; ===================================================================================================
 ;; User-facing functions
 
-(: flbeta-lower-regularized (Flonum Flonum Flonum -> Flonum))
-(define (flbeta-lower-regularized a b x)
-  (flbeta-regularized a b x #f #f))
+(: fllog-beta-inc (Flonum Flonum Flonum Any Any -> Flonum))
+(define (fllog-beta-inc a b x upper? regularized?)
+  (define z (flbeta-regularized a b x #t upper?))
+  (cond [regularized?  z]
+        [else  (fl+ z (fllog-beta a b))]))
 
-(: flbeta-upper-regularized (Flonum Flonum Flonum -> Flonum))
-(define (flbeta-upper-regularized a b x)
-  (flbeta-regularized a b x #f #t))
+(: flbeta-inc (Flonum Flonum Flonum Any Any -> Flonum))
+(define (flbeta-inc a b x upper? regularized?)
+  (define z (flbeta-regularized a b x #f upper?))
+  (cond [regularized?  z]
+        [else  (fl* z (flbeta a b))]))
 
-(: fllog-beta-lower-regularized (Flonum Flonum Flonum -> Flonum))
-(define (fllog-beta-lower-regularized a b x)
-  (flbeta-regularized a b x #t #f))
+(define-syntax-rule (define-incomplete-beta-wrapper name flname)
+  (begin
+    (: name (case-> (Real Real Real -> Float)
+                    (Real Real Real Any -> Float)
+                    (Real Real Real Any Any -> Float)))
+    (define (name a b x [upper? #f] [regularized? #f])
+      (cond [(and (exact? a) (a . < . 0))
+             (raise-argument-error 'name "Nonnegative-Real" 0 a b x)]
+            [(and (exact? b) (b . < . 0))
+             (raise-argument-error 'name "Nonnegative-Real" 1 a b x)]
+            [(and (exact? x) (or (x . < . 0) (x . > . 1)))
+             (raise-argument-error 'name "Nonnegative-Real <= 1" 2 a b x)]
+            [else  (flname (fl a) (fl b) (fl x) upper? regularized?)]))))
 
-(: fllog-beta-upper-regularized (Flonum Flonum Flonum -> Flonum))
-(define (fllog-beta-upper-regularized a b x)
-  (flbeta-regularized a b x #t #t))
+(define-incomplete-beta-wrapper beta-inc flbeta-inc)
+(define-incomplete-beta-wrapper log-beta-inc fllog-beta-inc)

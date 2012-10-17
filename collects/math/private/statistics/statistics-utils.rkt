@@ -2,8 +2,7 @@
 
 (require racket/sequence
          "../../flonum.rkt"
-         "../vector/vector.rkt"
-         "../exception.rkt")
+         "../vector/vector.rkt")
 
 (provide (all-defined-out))
 

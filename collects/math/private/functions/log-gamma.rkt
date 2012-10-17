@@ -397,8 +397,9 @@
                   [else  (fllog-gamma-large-positive x)])))]))
 
 (: log-gamma (case-> (Nonpositive-Integer -> Nothing)
-                     (Float -> Float)
-                     (Real -> Real)))
+                     (One -> Zero)
+                     (Flonum -> Flonum)
+                     (Real -> (U Zero Flonum))))
 (define (log-gamma x)
   (cond [(flonum? x)  (fllog-gamma x)]
         [(single-flonum? x)  (fllog-gamma (fl x))]

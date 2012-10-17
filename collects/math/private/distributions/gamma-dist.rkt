@@ -31,12 +31,8 @@
 (define (flgamma-cdf k s x log? 1-p?)
   ((make-one-sided-scale-flcdf
     (λ: ([x : Float] [log? : Any] [1-p? : Any])
-      (cond [1-p?
-             (cond [log?  (fllog-gamma-upper-regularized k x)]
-                   [else  (flgamma-upper-regularized k x)])]
-            [else
-             (cond [log?  (fllog-gamma-lower-regularized k x)]
-                   [else  (flgamma-lower-regularized k x)])])))
+      (cond [log?  (fllog-gamma-inc k x 1-p? #t)]
+            [else  (flgamma-inc k x 1-p? #t)])))
    s x log? 1-p?))
 
 (: flgamma-inv-cdf (Float Float Float Any Any -> Float))

@@ -27,12 +27,7 @@
 
 (module ensures racket/base
   (require racket/flonum
-           "exception.rkt"
-           (except-in typed/racket/base
-                      raise-arguments-error
-                      raise-argument-error
-                      raise-result-error
-                      raise-range-error))
+           typed/racket/base)
   
   (provide (all-defined-out))
 
@@ -48,19 +43,6 @@
     (let: ([f : T  f-expr])
       (if (procedure? f) f (raise-argument-error name "Procedure" f))))
   
-  (define-syntax-rule (ensure-float-complex name z-expr)
-    (let*: ([z : Float-Complex  z-expr]
-            [x : Flonum  (if (number? z)
-                             (let: ([x : Flonum  (real-part z)])
-                               (if (flonum? x) x #f))
-                             #f)]
-            [y : Flonum  (if x
-                             (let: ([y : Flonum  (imag-part z)])
-                               (if (flonum? y) y #f))
-                             #f)])
-      (values x (if y y (raise-argument-error name "Float-Complex" z)))))
-  
   )
 
 (require 'ensures)
-

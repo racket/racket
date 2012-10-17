@@ -7,7 +7,6 @@
          "../../base.rkt"
          "../../parameters.rkt"
          "../unsafe.rkt"
-         "../exception.rkt"
          "flvector.rkt"
          "vector.rkt")
 

@@ -3,7 +3,6 @@
 (require racket/sequence
          racket/fixnum
          "../../base.rkt"
-         "../exception.rkt"
          "quickselect.rkt"
          "statistics-utils.rkt")
 
@@ -28,7 +27,7 @@
                           (if (lt? (car xw1) (car xw2)) #t #f))))
            (let ([xs  (map (inst car A Nonnegative-Real) xws)]
                  [ws  (map (inst cdr A Nonnegative-Real) xws)])
-             (define total-w (apply sum ws))
+             (define total-w (sum ws))
              (cond [(zero? total-w)
                     (raise-argument-error 'quantile "weights with positive sum" 3 p lt? xs ws)]
                    [else
@@ -68,13 +67,13 @@
   (define-values (axs n)
     (cond [ws  (let-values ([(xs ws)  (sequences->weighted-samples name xs ws)])
                  (values (map (λ: ([x : Real] [w : Real]) (* w (abs (- x m)))) xs ws)
-                         (max 0 (apply sum ws))))]
+                         (max 0 (sum ws))))]
           [else  (let ([xs  (sequence->list xs)])
                    (values (map (λ: ([x : Real]) (abs (- x m))) xs)
                            (length xs)))]))
   (cond [(zero? n)  +nan.0]
         [else
-         (max 0 (/ (apply sum axs) n))]))
+         (max 0 (/ (sum axs) n))]))
 
 (: absolute-deviation/median
    (case-> (Real (Sequenceof Real) -> Nonnegative-Real)

@@ -1,7 +1,6 @@
 #lang typed/racket/base
 
 (require "../vector/vector.rkt"
-         "../exception.rkt"
          "types.rkt"
          "factorial.rkt"
          "binomial.rkt")
