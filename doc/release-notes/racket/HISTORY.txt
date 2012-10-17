@@ -1,12 +1,4 @@
-Version 5.3.0.24
-Added PLTCOMPILEDROOTS and --compiled/-R command-line flag
-Added reroot-path
-Added #:break and #:final clauses to for forms
-syntax/for-body: added
-racket/set: added set-first and set-rest, sets are streams
-racket/require-transformer: an import's module path can be syntax
-
-Version 5.3.0.23
+Version 5.3.1, October 2012
 Changed make-log-receiver to accept a logger name as an
  event filter
 Addded define-logger
@@ -14,23 +6,23 @@ Changed -W, -L, PLTSTDERR, and PLTSYSLOG to support log
  filters of the form "<level> <name>=<level> ..."
 Changed log-error, etc., to support format mode
 Added racket/format, which is re-exported by racket
-
-Version 5.3.0.22
-Changed a thread's initial prompt to use the default handler
- (instead of accepting and ignoring abort arguments)
-ffi/unsafe: added cpointer-gcable?
-racket/class: added dynamic-get-field and dynamic-set-field!
-
-Version 5.3.0.20
+Added #:break and #:final clauses to for forms
 Added exn:break:hang-up and exn:break:terminate, added
  extra argument to break-thread and place-break, and
  redirect SIGTERM and SIGHUP as breaks
 Add #:fill option to for/vector, for*/vector, for/flvector,
  for*/flvector, for/fxvector, and for*/fxvector
-
-Version 5.3.0.16
+Added PLTCOMPILEDROOTS and --compiled/-R command-line flag
+Added reroot-path
+Changed a thread's initial prompt to use the default handler
+ (instead of accepting and ignoring abort arguments)
+ffi/unsafe: added cpointer-gcable?
+racket/class: added dynamic-get-field and dynamic-set-field!
+racket/set: added set-first and set-rest, sets are streams
+racket/require-transformer: an import's module path can be syntax
 scribble/base: add items/c
 scribble/decode: add spliceof
+syntax/for-body: added
 
 Version 5.3, August 2012
 Added submodules, including module*
