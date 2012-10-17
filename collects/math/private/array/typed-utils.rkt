@@ -29,10 +29,10 @@
   (: vector-copy-all (All (A) ((Vectorof A) -> (Vectorof A))))
   (define (vector-copy-all js) ((inst vector->supertype-vector A A) js))
   
-  (: array-shape-size (Indexes -> Nonnegative-Integer))
+  (: array-shape-size (Indexes -> Natural))
   (define (array-shape-size ds)
     (define dims (vector-length ds))
-    (let loop ([#{i : Nonnegative-Fixnum} 0] [#{n : Nonnegative-Integer} 1])
+    (let loop ([#{i : Nonnegative-Fixnum} 0] [#{n : Natural} 1])
       (cond [(i . < . dims)  (define d (unsafe-vector-ref ds i))
                              (loop (+ i 1) (* n d))]
             [else  n])))
@@ -145,7 +145,7 @@
         (loop i+1))))
   dst-vec)
 
-(: port-next-column (Output-Port -> Nonnegative-Integer))
+(: port-next-column (Output-Port -> Natural))
 ;; Helper to avoid the annoying #f column value
 (define (port-next-column port)
   (define-values (_line col _pos) (port-next-location port))

@@ -128,7 +128,7 @@
                (if (jk . < . dk)
                    (cond [(pred? (proc jk))  (loop (+ jk 1) (unsafe-fx+ acc 1))]
                          [else  (loop (+ jk 1) acc)])
-                   (with-asserts ([acc index?]) acc)))))))
+                   (assert acc index?)))))))
 
 (: array-all-count (All (A) ((Array A) (A -> Any) -> Index)))
 (define (array-all-count arr pred?)
@@ -136,8 +136,7 @@
   (define proc (unsafe-array-proc arr))
   (define ds (array-shape arr))
   (for-each-array-index ds (λ (js) (when (pred? (proc js)) (set-box! i (unsafe-fx+ (unbox i) 1)))))
-  (define j (unbox i))
-  (with-asserts ([j index?]) j))
+  (assert (unbox i) index?))
 
 ;; ===================================================================================================
 ;; Short-cutting andmap

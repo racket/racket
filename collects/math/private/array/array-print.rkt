@@ -53,8 +53,7 @@
         [(one-line)  (write-string " " port)]
         [else  (case layout
                  [(compact)  (write-string "\n" port)]
-                 [else  (with-asserts ([cols integer?])
-                          (pretty-print-newline port cols))])
+                 [else  (pretty-print-newline port (assert cols integer?))])
                (write-string (make-string (+ col indent) #\space) port)]))
     ;; Print the constructor name
     (print-prefix port)
@@ -102,9 +101,8 @@
               port
               (max 0 (- cols 1))  ; width: make sure there's room for the closing delimiter
               (λ ()  ; failure thunk
-                (with-asserts ([tport output-port?])  ; TR thinks it may be Undefined
-                  ;; Reset accumulated graph state
-                  (tentative-pretty-print-port-cancel tport))
+                ;; Reset accumulated graph state
+                (tentative-pretty-print-port-cancel (assert tport output-port?))
                 ;; Compact layout failed, so print in multi-line layout
                 (return (print-all port 'multi-line)))))
            ;; Try printing in compact layout

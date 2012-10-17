@@ -26,8 +26,7 @@
   (let ([ds  (check-array-shape
               ds (λ () (raise-argument-error 'index-array "(Vectorof Index)" ds)))])
     (unsafe-build-array ds (λ: ([js : Indexes])
-                             (define j (unsafe-array-index->value-index ds js))
-                             (with-asserts ([j index?]) j)))))
+                             (assert (unsafe-array-index->value-index ds js) index?)))))
 
 (: indexes-array (User-Indexes -> (Array Indexes)))
 (define (indexes-array ds)

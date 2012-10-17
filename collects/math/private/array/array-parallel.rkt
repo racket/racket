@@ -51,8 +51,7 @@
        (define: vs : (Vectorof A) (make-vector size (proc (first jss))))
        (define stops
          (for/list: : (Listof Index) ([i  (in-range num-futures)])
-           (define s (quotient (* (+ i 1) size) num-futures))
-           (with-asserts ([s index?]) s)))
+           (assert (quotient (* (+ i 1) size) num-futures) index?)))
        (define futures
          (for/list: : (Listof (Futureof Void)) ([start  (in-list stops)]
                                                 [end  (in-list (rest stops))]

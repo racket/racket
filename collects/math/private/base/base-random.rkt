@@ -12,16 +12,15 @@
 (define (random-bits bits)
   (cond [(bits . <= . 0)  (raise-argument-error 'random-bits "Positive-Integer" bits)]
         [else
-         (define max-blocks (quotient bits block-bits))
-         (with-asserts ([max-blocks  index?])
-           (define rem-bits (remainder bits block-bits))
-           (let: loop : Natural ([blocks : Nonnegative-Fixnum  0]
-                                 [r : Natural  (random (fxlshift 1 rem-bits))])
-             (cond [(blocks . fx< . max-blocks)
-                    (loop (fx+ blocks 1)
-                          (bitwise-ior (arithmetic-shift r block-bits)
-                                       (random block-size)))]
-                   [else  r])))]))
+         (define max-blocks (assert (quotient bits block-bits) index?))
+         (define rem-bits (remainder bits block-bits))
+         (let: loop : Natural ([blocks : Nonnegative-Fixnum  0]
+                               [r : Natural  (random (fxlshift 1 rem-bits))])
+           (cond [(blocks . fx< . max-blocks)
+                  (loop (fx+ blocks 1)
+                        (bitwise-ior (arithmetic-shift r block-bits)
+                                     (random block-size)))]
+                 [else  r]))]))
 
 (define random-max 4294967087)
 (define bias-bits (* 2 block-bits))
