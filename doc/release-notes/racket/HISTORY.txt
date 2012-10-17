@@ -1,3 +1,7 @@
+Version 5.3.1.1
+Added arguments to impersonate-prompt-tag and chaperone-prompt-tag
+ to support interposition on non-composable continuation results
+
 Version 5.3.1, October 2012
 Changed make-log-receiver to accept a logger name as an
  event filter
