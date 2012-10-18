@@ -321,7 +321,7 @@
 
 (htdp-err/rt-test (string-ith "hell" 4)
                   (exn-type-and-msg exn:fail:contract?
-                                    "string-ith: expected an exact integer in [0, length of the given string] for the second argument, but received 4"))
+                                    "string-ith: expected an exact integer in [0, 4) (i.e., less than the length of the given string) for the second argument, but received 4"))
 
 (htdp-err/rt-test (string-ith 10 4)
                   (exn-type-and-msg exn:fail:contract?
