@@ -4,7 +4,8 @@
 /* Monospace: */
 .RktIn, .RktRdr, .RktPn, .RktMeta,
 .RktMod, .RktKw, .RktVar, .RktSym,
-.RktRes, .RktOut, .RktCmt, .RktVal {
+.RktRes, .RktOut, .RktCmt, .RktVal,
+.RktBlk {
   font-family: monospace;
   white-space: inherit;
 }

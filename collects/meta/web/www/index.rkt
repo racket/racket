@@ -7,7 +7,8 @@
 
 (struct example (code desc))
 
-(define ((example-with-help . help) code desc) (example code (list desc help)))
+(define ((example-with-help . help) code desc)
+  (example code (list desc help)))
 (define generic-example
   @example-with-help{
     @p{To run the example, install Racket, start DrRacket, paste the example
@@ -37,7 +38,7 @@
 (define (elemcode . strs) (apply tt strs))
 
 (define examples
-  @; --- Each example here should at most 7 lines long ---------------
+  @; --- Each example here should be at most 7 lines long ------------
   (list
    @; Candidates for initial example: --------------------------------
    (list
@@ -310,7 +311,7 @@
 (define (slideshow-panel l1 l2)
   (define l (append l1 l2))
   (define button-ids+labels '())
-  ;; this separator is shown in non-CSS browsers (eg, textual ones)
+  ;; this separator is shown in non-CSS browsers (e.g., textual ones)
   (define invisible-separator @div[style: "display: none;"]{@br{}@hr{}})
   (define (button txt tip id onclick)
     (set! button-ids+labels (cons (cons id txt) button-ids+labels))

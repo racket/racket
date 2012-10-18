@@ -113,7 +113,7 @@
                          ;; note: root=#f means an external link, but in this
                          ;; case this is the bugs link, so *keep* it and later
                          ;; use it on the bugs page
-                         [pltdoc . "x"])))))
+                         [data-pltdoc . "x"])))))
              (define (elt style)
                (make-toc-element
                 #f null (list (hyperlink dest #:style (onclick style) text))))
