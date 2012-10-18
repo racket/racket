@@ -45,8 +45,10 @@
            
            (module untyped-module racket/base
              (require typed/untyped-utils
-                      (rename-in from-module-spec [name typed-name] ...)
-                      (rename-in (submod ".." typed-module) [untyped-name untyped2-name] ...))
+                      (rename-in (only-in from-module-spec name ...)
+                                 [name typed-name] ...)
+                      (rename-in (only-in (submod ".." typed-module) untyped-name ...)
+                                 [untyped-name untyped2-name] ...))
              (provide macro-name ...)
              (define-typed/untyped-identifier macro-name typed-name untyped2-name) ...)
            
