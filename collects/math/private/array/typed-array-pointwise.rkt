@@ -1,46 +1,18 @@
 #lang typed/racket/base
 
-(require racket/performance-hint
-         (only-in racket/math conjugate sqr)
+(require (only-in racket/math conjugate)
          (for-syntax racket/base)
-         "../unsafe.rkt"
          "array-struct.rkt"
-         "array-constructors.rkt"
          "array-broadcast.rkt"
-         "for-each.rkt"
-         "utils.rkt")
+         "utils.rkt"
+         (only-in "untyped-array-pointwise.rkt" inline-array-map))
 
 (provide (all-defined-out))
 
-;; ===================================================================================================
-;; Mapping
-
-(define-syntax (inline-array-map stx)
-  (syntax-case stx ()
-    [(_ f)  (syntax/loc stx (make-array #() (f)))]
-    [(_ f arr-expr)
-     (syntax/loc stx
-       (let ([arr arr-expr])
-         (define ds (array-shape arr))
-         (define proc (unsafe-array-proc arr))
-         (unsafe-build-array ds (λ: ([js : Indexes]) (f (proc js))))))]
-    [(_ f arr-expr arr-exprs ...)
-     (with-syntax ([(arrs ...)   (generate-temporaries #'(arr-exprs ...))]
-                   [(procs ...)  (generate-temporaries #'(arr-exprs ...))])
-       (syntax/loc stx
-         (let ([arr  arr-expr]
-               [arrs arr-exprs] ...)
-           (define ds (array-shape-broadcast (list (array-shape arr) (array-shape arrs) ...)))
-           (let ([arr   (array-broadcast arr ds)]
-                 [arrs  (array-broadcast arrs ds)] ...)
-             (define proc  (unsafe-array-proc arr))
-             (define procs (unsafe-array-proc arrs)) ...
-             (unsafe-build-array ds (λ: ([js : Indexes]) (f (proc js) (procs js) ...)))))))]))
-
 (: array-map (All (R A B T ...)
-                  (case-> ((-> R) -> (Array R))
-                          ((A -> R) (Array A) -> (Array R))
-                          ((A B T ... T -> R) (Array A) (Array B) (Array T) ... T -> (Array R)))))
+                    (case-> ((-> R) -> (Array R))
+                            ((A -> R) (Array A) -> (Array R))
+                            ((A B T ... T -> R) (Array A) (Array B) (Array T) ... T -> (Array R)))))
 (define array-map
   (case-lambda:
     [([f : (-> R)])
@@ -213,7 +185,7 @@
 
 (: array-not ((Array Any) -> (Array Boolean)))
 (: array-and (All (A B) ((Array A) (Array B) -> (Array (U B #f)))))
-(: array-or  (All (A B) ((Array A) (Array B) -> (Array (U A B)))))
+(: array-or  (All (A) ((Array A) (Array A) -> (Array A))))
 (: array-if  (All (A) ((Array Any) (Array A) (Array A) -> (Array A))))
 
 (declare-case-types
@@ -340,9 +312,9 @@ array-number-exp.
 (define array>= (array-lift2 >=))
 
 (define array-not (array-lift1 not))
-(define array-or  (array-lift2 or))
 (define array-and (array-lift2 and))
 (define array-if  (array-lift3 if))
+(define array-or  (array-lift2 or))
 
 (define array-inexact->exact (array-lift1 inexact->exact))
 (define array-exact->inexact (array-lift1 exact->inexact))

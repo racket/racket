@@ -11,6 +11,12 @@
  "typed-array-struct.rkt"
  [build-array  (All (A) ((Vectorof Integer) ((Vectorof Index) -> A) -> (Array A)))])
 
+(define-syntax array? (make-rename-transformer #'Array?))
+(define-syntax array-shape (make-rename-transformer #'Array-shape))
+(define-syntax array-size (make-rename-transformer #'Array-size))
+(define-syntax array-strict? (make-rename-transformer #'Array-strict?))
+(define-syntax unsafe-array-proc (make-rename-transformer #'Array-unsafe-proc))
+
 (provide
  ;; Array
  Array

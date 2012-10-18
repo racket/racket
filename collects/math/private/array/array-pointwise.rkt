@@ -1,19 +1,26 @@
 #lang racket/base
 
 (require typed/untyped-utils
-         (only-in "typed-array-pointwise.rkt"
-                  array-map
-                  array-sqrt
-                  array-log
-                  array<
-                  array<=
-                  array>
-                  array>=
-                  array=
-                  array-not
-                  array-and
-                  array-or
-                  array-if))
+         (rename-in
+          (only-in "typed-array-pointwise.rkt"
+                   array-map
+                   array-sqrt
+                   array-log
+                   array<
+                   array<=
+                   array>
+                   array>=
+                   array=
+                   array-not
+                   array-and
+                   array-or
+                   array-if)
+          [array-map typed:array-map])
+         (rename-in "untyped-array-pointwise.rkt"
+                    [array-map  untyped:array-map]))
+
+(define-typed/untyped-identifier array-map
+  typed:array-map untyped:array-map)
 
 (require/untyped-contract
  (begin (require "array-struct.rkt"))
@@ -54,7 +61,7 @@
 
 (provide
  ;; Mapping
- ;inline-array-map
+ inline-array-map
  array-map
  ;; Lifted operators
  array-scale

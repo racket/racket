@@ -13,11 +13,11 @@
 
 (: array-lift-comparison (All (A) ((A A -> Boolean) -> ((Array A) (Array A) -> Boolean))))
 (define ((array-lift-comparison comp) arr brr)
-  (define ds (array-shape arr))
-  (and (equal? ds (array-shape brr))
+  (define ds (Array-shape arr))
+  (and (equal? ds (Array-shape brr))
        (let/ec: return : Boolean
-         (define f (unsafe-array-proc arr))
-         (define g (unsafe-array-proc brr))
+         (define f (Array-unsafe-proc arr))
+         (define g (Array-unsafe-proc brr))
          (for-each-array-index ds (λ (js) (unless (comp (f js) (g js))
                                             (return #f))))
          #t)))
@@ -28,8 +28,8 @@
 
 (: array-hash-code (All (A) ((Array A) (Any -> Integer) -> Integer)))
 (define (array-hash-code arr recur-hash-code)
-  (define ds (array-shape arr))
-  (define f (unsafe-array-proc arr))
+  (define ds (Array-shape arr))
+  (define f (Array-unsafe-proc arr))
   (define h 0)
   (for-each-array-index ds (λ (js) (set! h (bitwise-xor h (recur-hash-code (f js))))))
   (bitwise-xor h (recur-hash-code ds)))
@@ -47,18 +47,15 @@
                                size ds)]))]
         [else  (values (vector->immutable-vector ds) size strict? proc)]))
 
-(struct: (A) Array ([shape : Indexes] [size : Index] [strict? : Boolean] [proc : (Indexes -> A)])
+(struct: (A) Array ([shape : Indexes]
+                    [size : Index]
+                    [strict? : Boolean]
+                    [unsafe-proc : (Indexes -> A)])
   #:guard array-guard
   #:property prop:custom-print-quotable 'never
   #:property prop:custom-write (λ (arr port mode) ((array-custom-printer) arr 'array port mode))
   #:property prop:equal+hash (list array-recur-equal? array-hash-code array-hash-code)
   )
-
-(define array? Array?)
-(define array-shape Array-shape)
-(define array-size Array-size)
-(define array-strict? Array-strict?)
-(define unsafe-array-proc Array-proc)
 
 (define-syntax-rule (make-unsafe-array-proc ds ref)
   (λ: ([js : Indexes])
@@ -66,7 +63,7 @@
 
 (: array-dims (All (A) ((Array A) -> Index)))
 (begin-encourage-inline
-  (define (array-dims arr) (vector-length (array-shape arr))))
+  (define (array-dims arr) (vector-length (Array-shape arr))))
 
 (: build-array (All (A) (User-Indexes (Indexes -> A) -> (Array A))))
 (define (build-array ds proc)
@@ -88,8 +85,8 @@
 
 (: array-lazy (All (A) ((Array A) -> (Array A))))
 (define (array-lazy arr)
-  (define ds (array-shape arr))
-  (define proc (unsafe-array-proc arr))
+  (define ds (Array-shape arr))
+  (define proc (Array-unsafe-proc arr))
   (define: vs : (Vectorof (Promise A))
     (inline-build-array-data
      ds (λ (js j)
@@ -122,8 +119,8 @@
 (: print-array-fields (All (A) ((Array A) Symbol Output-Port (U #t #f 0 1) -> Any)))
 ;; Mimicks the default custom printer for transparent struct values
 (define (print-array-fields arr name port mode)
-  (define ds (array-shape arr))
-  (define proc (unsafe-array-proc arr))
+  (define ds (Array-shape arr))
+  (define proc (Array-unsafe-proc arr))
   
   (define col (port-next-column port))
   (define cols (pretty-print-columns))
