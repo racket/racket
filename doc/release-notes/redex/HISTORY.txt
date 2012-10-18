@@ -6,6 +6,10 @@ v5.3.1
 
   * added judgment-form-cases
 
+  * adjust define-judgment-form typesetting so that it uses
+    the line breaks in a premise to determine how to line
+    break the typeset version
+
 v5.3
 
   * added the amb tutorial.
