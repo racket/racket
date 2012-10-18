@@ -231,7 +231,7 @@
                         (cairo_image_surface_get_width s)
                         (cairo_image_surface_get_height s)
                         b&w?
-                        alpha?
+                        (and alpha? (not b&w?))
                         s
                         mask-bm)
                 (values #f 0 0 #f #f #f #f))))]
@@ -546,9 +546,9 @@
                         (let ([src (+ (* j row-width) (* (* bi 8) 4))])
                           (for/fold ([v 0]) ([k (in-range 8)])
                             (if ((+ (* 8 bi) k) . < . width)
-                                (if (zero? (bytes-ref data (+ src (* 4 k))))
-                                    v
-                                    (bitwise-ior v (unsafe-fxrshift 128 k)))
+                                (if (zero? (bytes-ref data (+ src 3 (* 4 k))))
+                                    (bitwise-ior v (unsafe-fxrshift 128 k))
+                                    v)
                                 v)))))))
                  (let ([w (create-png-writer out width height #t #f)])
                    (write-png w rows)
