@@ -6253,6 +6253,7 @@ static Scheme_Object **chaperone_do_control(const char *name, int mode,
         proc = init_guard;
         if (SAME_OBJ(NULL, scheme_values_func))
           proc = NULL;
+        px = NULL;
       } else {
         px = (Scheme_Chaperone *)obj;
         obj = px->prev;
