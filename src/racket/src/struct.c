@@ -3831,10 +3831,18 @@ make_struct_proc(Scheme_Struct_Type *struct_type,
 					   2 + need_pos, 2 + need_pos, 0);
       if (need_pos)
 	flags |= SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER;
-      else if (struct_type->immutables && struct_type->immutables[field_num])
-	flags |= SCHEME_PRIM_STRUCT_TYPE_BROKEN_INDEXED_SETTER;
-      else
-	flags |= SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER;
+      else {
+        flags |= SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER;
+
+        if (struct_type->immutables) {
+          if (struct_type->name_pos)
+            field_num -= struct_type->parent_types[struct_type->name_pos - 1]->num_slots;
+          if (struct_type->immutables[field_num]) {
+            flags -= SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER;
+            flags |= SCHEME_PRIM_STRUCT_TYPE_BROKEN_INDEXED_SETTER;
+          }
+        }
+      }
       /* See note above:
 	 if (need_pos) struct_type->mutator = p; */
     }
