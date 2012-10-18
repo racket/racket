@@ -100,19 +100,19 @@
    'windows-menu
    (lambda (x)
      (equal? x (append windows-menu-prefix (list "first" "test"))))
-   (lambda ()
+   (λ ()
      (queue-sexp-to-mred
       '(let ([frame (make-object frame:basic% "test")])
          (send frame show #t)))
      (wait-for-frame "test")
      (queue-sexp-to-mred
-      '(begin0 (map (lambda (x)
-                      (and (is-a? x labelled-menu-item<%>) (send x get-label)))
-                    (send (car* (send (send (get-top-level-focus-window)
-                                            get-menu-bar)
-                                      get-items))
-                          get-items))
-               (send (get-top-level-focus-window) close)))))
+      '(let ([mb (send (get-top-level-focus-window) get-menu-bar)])
+         (send mb on-demand)
+         (define labels
+           (for/list ([x (send (car* (send mb get-items)) get-items)])
+             (and (is-a? x labelled-menu-item<%>) (send x get-label))))
+         (send (get-top-level-focus-window) close)
+         labels))))
   
   (test
    'windows-menu-unshown
@@ -125,13 +125,13 @@
          (send frame1 show #t)))
      (wait-for-frame "test")
      (queue-sexp-to-mred
-      '(begin0 (map (lambda (x)
-                      (and (is-a? x labelled-menu-item<%>) (send x get-label)))
-                    (send (car* (send (send (get-top-level-focus-window)
-                                            get-menu-bar)
-                                      get-items))
-                          get-items))
-               (send (get-top-level-focus-window) close)))))
+      '(let ([mb (send (get-top-level-focus-window) get-menu-bar)])
+         (send mb on-demand)
+         (define items
+           (for/list ([x (send (car* (send mb get-items)) get-items)])
+             (and (is-a? x labelled-menu-item<%>) (send x get-label))))
+         (send (get-top-level-focus-window) close)
+         items))))
   
   (test
    'windows-menu-sorted1
@@ -148,10 +148,11 @@
      (wait-for-frame "bbb")
      (queue-sexp-to-mred
       `(let ([frames (send (group:get-the-frame-group) get-frames)])
+         (define mb (send (car* frames) get-menu-bar))
+         (send mb on-demand)
          (begin0 (map (lambda (x)
                         (and (is-a? x labelled-menu-item<%>) (send x get-label)))
-                      (send (car* (send (send (car* frames) get-menu-bar)
-                                        get-items))
+                      (send (car* (send mb get-items))
                             get-items))
                  (for-each (lambda (x)
                              (unless (equal? (send x get-label) "first")
@@ -173,13 +174,13 @@
      (wait-for-frame "aaa")
      (queue-sexp-to-mred
       `(let ([frames (send (group:get-the-frame-group) get-frames)])
+         (define mb (send (car* frames) get-menu-bar))
+         (send mb on-demand)
          (begin0 (map (lambda (x)
                         (and (is-a? x labelled-menu-item<%>) (send x get-label)))
-                      (send (car* (send (send (car* frames) get-menu-bar)
-                                        get-items))
+                      (send (car* (send mb get-items))
                             get-items))
                  (for-each (lambda (x)
                              (unless (equal? (send x get-label) "first")
                                (send x close)))
-                           frames))))))
-  )
+                           frames)))))))
