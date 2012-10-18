@@ -2,21 +2,25 @@
        Version 5.3.1
 ------------------------------
 
-  . Enable online check syntax by default (it has been 
-    available in the last two releases, but was disabled
-    by default)
+  . Enable online check syntax by default (it has been
+    available in the last two releases, but was disabled by
+    default)
 
-  . Check Syntax now shows the blue boxes from the 
+  . Check Syntax now shows the blue boxes from the
     documentation in the definitions window
 
-  . Change the "Variables" pane of the debugger so that it does not do
-    word-wrapping (this avoids some performance problems when very
-    large values are rendered there)
+  . Add a spell checker for string constants; use
+    <menukey>-shift-c to turn it off or on
 
-  . Adjust the Install .plt File dialog so that it cleans up after the
-    end of an installation (specifically, it shuts down the custodian
-    that was running the installation process), which also causes the 
-    Abort button to be disabled.
+  . Change the "Variables" pane of the debugger so that it
+    does not do word-wrapping (this avoids some performance
+    problems when very large values are rendered there)
+
+  . Adjust the Install .plt File dialog so that it cleans up
+    after the end of an installation (specifically, it shuts
+    down the custodian that was running the installation
+    process), which also causes the Abort button to be
+    disabled.
 
 ------------------------------
        Version 5.3
