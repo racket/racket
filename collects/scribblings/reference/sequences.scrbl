@@ -81,7 +81,7 @@ be defined to be a stream (e.g., a structure containing the index of a
 vector).
 
 For example, unrolled linked lists (represented as a list of vectors)
-themeselves do not fit the stream abstraction, but have index-based
+themselves do not fit the stream abstraction, but have index-based
 iterators that can be represented as streams:
 
 @examples[#:eval sequence-evaluator
