@@ -27,7 +27,6 @@
 ;; the user has added. Also, any 'provide' expressions are stripped out.
 
 (define (expand-teaching-program port reader language-module teachpacks [module-name '#%htdp] [enable-testing? #t])
-  
   (define state 'init)
   ;; state : 'init => 'require => 'done-or-exn
 
@@ -67,7 +66,8 @@
                                       #`(define #,(datum->syntax #f 'test~object) (namespace-variable-value 'test~object))
                                       'test-call #t)))
                               '())
-                        ,@body-exps)))))]
+                        ,@body-exps)
+             (vector (object-name port) #f #f #f #f)))))]
       [(require)
        (set! state 'done-or-exn)
        (stepper-skip
@@ -121,9 +121,10 @@
      (with-syntax ([(rewritten-bodies ...) 
                     (filter not-provide?
                             (syntax->list (syntax (bodies ...))))])
-       #`(module name lang
+       (syntax/loc stx
+         (module name lang
            (#%plain-module-begin 
-            rewritten-bodies ...)))]
+            rewritten-bodies ...))))]
     [else
      (raise-syntax-error 'htdp-languages "internal error .1")]))
 
