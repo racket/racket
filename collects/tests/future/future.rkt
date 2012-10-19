@@ -905,8 +905,9 @@ We should also test deep continuations.
     (map touch fs))
   
   ;Only test for non-blocking when actually running parallel futures
-  (when (eq? func future)
-    (check-false (blocks? (void (test-even-odd)))))
+  (if (and (eq? func future) (futures-enabled?))
+    (check-false (blocks? (void (test-even-odd))))
+    (void (test-even-odd)))
   
   ;Make sure we don't crash in error cases for odd?/even?
   (let ([fa (func (λ () 

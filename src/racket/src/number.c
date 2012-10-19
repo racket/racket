@@ -1488,16 +1488,20 @@ scheme_inexact_p (int argc, Scheme_Object *argv[])
   return (v ? scheme_true : scheme_false);
 }
 
+#ifdef MZ_USE_FUTURES
 Scheme_Object *odd_p_error(int argc, Scheme_Object *argv[])
 {
   NEED_INTEGER(odd?);
 
   ESCAPED_BEFORE_HERE;
 }
+#endif
 
 Scheme_Object *
 scheme_odd_p (int argc, Scheme_Object *argv[])
+#ifdef MZ_USE_FUTURES
   XFORM_SKIP_PROC
+#endif
 {
   Scheme_Object *v = argv[0];
 
@@ -1513,23 +1517,33 @@ scheme_odd_p (int argc, Scheme_Object *argv[])
     return (fmod(d, 2.0) == 0.0) ? scheme_false : scheme_true;
   }
 
+#ifdef MZ_USE_FUTURES
   /* Otherwise, bail to the unsafe (error) path: */
   if (scheme_use_rtcall)
     return scheme_rtcall_iS_s("[odd?]", SIG_iS_s, odd_p_error, argc, argv);
   else
     return odd_p_error(argc, argv);
+#else
+  NEED_INTEGER(odd?);
+
+  ESCAPED_BEFORE_HERE;
+#endif
 }
 
+#ifdef MZ_USE_FUTURES
 Scheme_Object *even_p_error(int argc, Scheme_Object *argv[])
 {
   NEED_INTEGER(even?);
 
   ESCAPED_BEFORE_HERE;
 }
+#endif
 
 Scheme_Object *
 scheme_even_p (int argc, Scheme_Object *argv[])
+#ifdef MZ_USE_FUTURES
   XFORM_SKIP_PROC
+#endif
 {
   Scheme_Object *v = argv[0];
 
@@ -1545,11 +1559,17 @@ scheme_even_p (int argc, Scheme_Object *argv[])
     return (fmod(d, 2.0) == 0.0) ? scheme_true : scheme_false;
   }
 
+#ifdef MZ_USE_FUTURES
   /* Otherwise, bail to the unsafe (error) path: */
   if (scheme_use_rtcall)
     return scheme_rtcall_iS_s("[even?]", SIG_iS_s, even_p_error, argc, argv);
   else
     return even_p_error(argc, argv);
+#else
+  NEED_INTEGER(even?);
+
+  ESCAPED_BEFORE_HERE;
+#endif
 }
 
 static Scheme_Object *bin_lcm (Scheme_Object *n1, Scheme_Object *n2);
