@@ -4166,6 +4166,58 @@
         pt
         (λ (x y) (values x y)))))
 
+  (test/spec-passed
+   'prompt-tag/c-call/cc-1
+   '(let* ([pt (contract (prompt-tag/c string?
+                                       #:call/cc string?)
+                         (make-continuation-prompt-tag)
+                         'pos
+                         'neg)]
+           [abort-k (call-with-continuation-prompt
+                     (λ () (call/cc (λ (k) k) pt))
+                     pt)])
+      (call-with-continuation-prompt
+       (λ () (abort-k "ok"))
+       pt
+       (λ (s) (string-append s "post")))))
+
+  (test/spec-passed
+   'prompt-tag/c-call/cc-2
+   '(let* ([pt (contract (prompt-tag/c string?
+                                       #:call/cc (values string? integer?))
+                         (make-continuation-prompt-tag)
+                         'pos
+                         'neg)]
+           [abort-k (call-with-continuation-prompt
+                     (λ () (call/cc (λ (k) k) pt))
+                     pt)])
+      (call-with-continuation-prompt
+       (λ () (abort-k "ok" 5))
+       pt
+       (λ (s n) (string-append s "post")))))
+
+  (test/neg-blame
+   'prompt-tag/c-call/cc-2
+   '(letrec ([pt (make-continuation-prompt-tag)]
+             [do-test (λ ()
+                         (+ 1
+                            (call-with-continuation-prompt
+                             (lambda ()
+                               (+ 1 (abort-k 1)))
+                             pt)))]
+             [cpt (contract (prompt-tag/c #:call/cc number?)
+                            pt
+                            'pos
+                            'neg)]
+             [abort-k (call-with-continuation-prompt
+                       (λ ()
+                          (let ([v (call/cc (lambda (k) k) cpt)])
+                            (if (procedure? v)
+                                v
+                                (format "~a" v))))
+                       pt)])
+      (do-test)))
+
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
   ;;  continuation-mark-key/c
