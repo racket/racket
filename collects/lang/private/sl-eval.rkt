@@ -1,6 +1,10 @@
 #lang racket
 
-(require teachpack/2htdp/scribblings/img-eval racket/sandbox  mzlib/pconvert file/convertible scribble/eval)
+(require teachpack/2htdp/scribblings/img-eval
+         racket/sandbox
+         mzlib/pconvert
+         file/convertible
+         scribble/eval)
 
 (provide
  ;; syntax: 
