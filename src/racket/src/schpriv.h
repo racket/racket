@@ -2052,6 +2052,7 @@ int scheme_bin_lt_eq(const Scheme_Object *n1, const Scheme_Object *n2);
 Scheme_Object *scheme_sub1(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_add1(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_odd_p(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_even_p(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_expt(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_modulo(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_sqrt(int argc, Scheme_Object *argv[]);

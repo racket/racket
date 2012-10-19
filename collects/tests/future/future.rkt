@@ -2,7 +2,14 @@
 
 (require scheme/future 
          scheme/list 
-         rackunit)
+         rackunit
+         (only-in future-visualizer/trace trace-futures) 
+         (only-in future-visualizer/private/visualizer-data runtime-block-event?))
+
+;Test whether a futures program hits any barricades
+(define-syntax-rule (blocks? e ...) 
+  (let ([log (trace-futures e ...)])
+    (> (length (filter runtime-block-event? log)) 0)))
 
 #|Need to add expressions which raise exceptions inside a 
 future thunk which can be caught at the touch site 
@@ -859,6 +866,62 @@ We should also test deep continuations.
           (for/list ([i 10])
             (func (lambda () (list-ref l 50000)))))
      (for/list ([i 10]) 50001)))
+  
+  ;Basic odd?/even? tests
+  (let ([fa (func (λ () 
+                      (and (odd? 33) (odd? 103.0))))] 
+        [fb (func (λ ()
+                      (or (odd? 32) (odd? 102.0))))]
+        [fc (func (λ () 
+                      (and (even? 32) (even? 32.0))))] 
+        [fd (func (λ () 
+                      (or (even? 33) (even? 103.0))))]) 
+    (sleep 0.2) 
+    (check-true (touch fa)) 
+    (check-false (touch fb)) 
+    (check-true (touch fc)) 
+    (check-false (touch fd)))
+  
+  ;Stress test for odd?/even?
+  (define N 1000)
+  (define MAX 1000)
+  (define (rnd x) 
+    (case (random 3) 
+      [(0)
+       (define n (random MAX)) 
+       (case (random 2) 
+         [(0) (- 0 n)] ;negative
+         [(1) n])] ;positive
+      [(1) ;float
+       (+ (random MAX) .0)]
+      [(2) ;bignum
+       (expt 2 (+ (random MAX) 65))]))
+  
+  (define (test-even-odd)
+    (define ns (build-list N rnd))
+    (define fs (for/list ([n (in-list ns)]) 
+                 (func (λ () 
+                           (or (odd? n) (even? n))))))
+    (map touch fs))
+  
+  ;Only test for non-blocking when actually running parallel futures
+  (when (eq? func future)
+    (check-false (blocks? (void (test-even-odd)))))
+  
+  ;Make sure we don't crash in error cases for odd?/even?
+  (let ([fa (func (λ () 
+                      (even? 43.33)))]
+        [fb (func (λ () 
+                      (odd? 7.0+3.2i)))] 
+        [fc (func (λ () 
+                      (even? -inf.0)))]
+        [fd (func (λ () 
+                      (odd? +inf.0)))])
+    (sleep 0.2) 
+    (check-exn exn:fail:contract? (λ () (touch fa)))
+    (check-exn exn:fail:contract? (λ () (touch fb)))
+    (check-exn exn:fail:contract? (λ () (touch fc)))
+    (check-exn exn:fail:contract? (λ () (touch fd))))
     
   )
 

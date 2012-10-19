@@ -31,6 +31,7 @@
          jitcompile-event? 
          synchronization-event? 
          runtime-synchronization-event? 
+         runtime-block-event?
          gc-event?
          work-event?
          final-event? 
@@ -183,8 +184,8 @@
 (define (runtime-synchronization-event? evt) 
   (and (synchronization-event? evt) (= (process-id evt) RT-THREAD-ID)))
 
-;;runtime-block-evt? : (or event indexed-future-event future-event) -> bool
-(define (runtime-block-evt? evt) 
+;;runtime-block-event? : (or event indexed-future-event future-event) -> bool
+(define (runtime-block-event? evt) 
   (and (runtime-thread-evt? evt) (equal? (what evt) 'block))) 
 
 ;;runtime-sync-evt? : (or event indexed-future-event future-event) -> bool
@@ -443,7 +444,7 @@
   (define sync-hash (make-hash)) 
   (define rt-hash (make-hash)) 
   (for ([evt (in-list (filter runtime-synchronization-event? evts))])
-    (define isblock (runtime-block-evt? evt))
+    (define isblock (runtime-block-event? evt))
     (define ophash (if isblock block-hash sync-hash))
     (hash-update! ophash 
                   (event-prim-name evt) 

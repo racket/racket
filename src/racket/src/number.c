@@ -38,6 +38,8 @@
 #include <float.h>
 #endif
 
+#include "jit_ts_protos.h"
+
 #ifdef USE_SINGLE_FLOATS_AS_DEFAULT
 # ifndef MZ_USE_SINGLE_FLOATS
 #  undef USE_SINGLE_FLOATS_AS_DEFAULT
@@ -68,7 +70,7 @@ static Scheme_Object *single_flonum_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *real_to_single_flonum (int argc, Scheme_Object *argv[]);
 static Scheme_Object *real_to_double_flonum (int argc, Scheme_Object *argv[]);
 static Scheme_Object *exact_p (int argc, Scheme_Object *argv[]);
-static Scheme_Object *even_p (int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_even_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *bitwise_or (int argc, Scheme_Object *argv[]);
 static Scheme_Object *bitwise_xor (int argc, Scheme_Object *argv[]);
 static Scheme_Object *bitwise_not (int argc, Scheme_Object *argv[]);
@@ -410,7 +412,7 @@ scheme_init_number (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("odd?", p, env);
   
-  p = scheme_make_folding_prim(even_p, "even?", 1, 1, 1);
+  p = scheme_make_folding_prim(scheme_even_p, "even?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("even?", p, env);
 
@@ -1486,9 +1488,16 @@ scheme_inexact_p (int argc, Scheme_Object *argv[])
   return (v ? scheme_true : scheme_false);
 }
 
+Scheme_Object *odd_p_error(int argc, Scheme_Object *argv[])
+{
+  NEED_INTEGER(odd?);
+
+  ESCAPED_BEFORE_HERE;
+}
 
 Scheme_Object *
 scheme_odd_p (int argc, Scheme_Object *argv[])
+  XFORM_SKIP_PROC
 {
   Scheme_Object *v = argv[0];
 
@@ -1504,13 +1513,23 @@ scheme_odd_p (int argc, Scheme_Object *argv[])
     return (fmod(d, 2.0) == 0.0) ? scheme_false : scheme_true;
   }
 
-  NEED_INTEGER(odd?);
+  /* Otherwise, bail to the unsafe (error) path: */
+  if (scheme_use_rtcall)
+    return scheme_rtcall_iS_s("[odd?]", SIG_iS_s, odd_p_error, argc, argv);
+  else
+    return odd_p_error(argc, argv);
+}
+
+Scheme_Object *even_p_error(int argc, Scheme_Object *argv[])
+{
+  NEED_INTEGER(even?);
 
   ESCAPED_BEFORE_HERE;
 }
 
-static Scheme_Object *
-even_p (int argc, Scheme_Object *argv[])
+Scheme_Object *
+scheme_even_p (int argc, Scheme_Object *argv[])
+  XFORM_SKIP_PROC
 {
   Scheme_Object *v = argv[0];
 
@@ -1526,9 +1545,11 @@ even_p (int argc, Scheme_Object *argv[])
     return (fmod(d, 2.0) == 0.0) ? scheme_true : scheme_false;
   }
 
-  NEED_INTEGER(even?);
-
-  ESCAPED_BEFORE_HERE;
+  /* Otherwise, bail to the unsafe (error) path: */
+  if (scheme_use_rtcall)
+    return scheme_rtcall_iS_s("[even?]", SIG_iS_s, even_p_error, argc, argv);
+  else
+    return even_p_error(argc, argv);
 }
 
 static Scheme_Object *bin_lcm (Scheme_Object *n1, Scheme_Object *n2);

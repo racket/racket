@@ -2778,6 +2778,18 @@ static void future_do_runtimecall(Scheme_Future_Thread_State *fts,
   /* Fetch the future descriptor for this thread */
   future = fts->thread->current_ft;
 
+  if (!for_overflow) {
+    /* Check if this prim in fact does have a 
+        safe C version */
+    if (func == scheme_even_p || func == scheme_odd_p) {
+      prim_iS_s f = (prim_iS_s)func;
+      Scheme_Object *ret;
+      ret = f(future->arg_i0, future->arg_S1);
+      future->retval_s = ret;
+      return;
+    }
+  }
+
   /* Check whether we are in slow-path trace mode */ 
   if (fts->is_runtime_thread) { 
     /* On runtime thread - must be slow-path tracing */ 
