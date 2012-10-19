@@ -1,3 +1,9 @@
+v5.3.2
+
+  * added random-generation based on define-judgment-form
+    (which allows Redex to more effectively generate things
+     like well-typed terms)
+
 v5.3.1
 
   * added optional #:lang keyword to term
