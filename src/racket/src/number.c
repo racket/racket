@@ -1497,9 +1497,7 @@ Scheme_Object *odd_p_error(int argc, Scheme_Object *argv[])
 
 Scheme_Object *
 scheme_odd_p (int argc, Scheme_Object *argv[])
-#ifdef MZ_USE_FUTURES
   XFORM_SKIP_PROC
-#endif
 {
   Scheme_Object *v = argv[0];
 
@@ -1533,9 +1531,7 @@ Scheme_Object *even_p_error(int argc, Scheme_Object *argv[])
 
 Scheme_Object *
 scheme_even_p (int argc, Scheme_Object *argv[])
-#ifdef MZ_USE_FUTURES
   XFORM_SKIP_PROC
-#endif
 {
   Scheme_Object *v = argv[0];
 
