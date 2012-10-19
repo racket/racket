@@ -32,6 +32,9 @@
          synchronization-event? 
          runtime-synchronization-event? 
          runtime-block-event?
+         worker-block-event?
+         runtime-sync-event? 
+         worker-sync-event?
          gc-event?
          work-event?
          final-event? 
@@ -105,9 +108,9 @@
                proc-id 
                proc-index ;The id of the process in which this event occurred
                future-id 
-               user-data
+               [user-data #:mutable]
                type 
-               prim-name
+               [prim-name #:mutable]
                timeline-position ;The event's position among all events occurring in its process (sorted by time)
                [prev-proc-event #:mutable] 
                [next-proc-event #:mutable]
@@ -115,6 +118,9 @@
                [next-future-event #:mutable]
                [next-targ-future-event #:mutable] 
                [prev-targ-future-event #:mutable]
+               ;If the event is a block on a future thread, pointer to the corresponding 
+               ;event indicating block handled on runtime thread
+               [block-handled-event #:mutable] 
                [segment #:mutable]) #:transparent)
 
 ;;event-has-duration? : event -> bool
@@ -178,7 +184,8 @@
 
 ;;runtime-thread-evt? : (or event indexed-future-event future-event) -> bool
 (define (runtime-thread-evt? evt) 
-  (= (process-id evt) RT-THREAD-ID))
+  (define pid (process-id evt))
+  (and (number? pid) (= (process-id evt) RT-THREAD-ID)))
 
 ;;runtime-synchronization-event? : (or event indexed-future-event future-event) -> bool
 (define (runtime-synchronization-event? evt) 
@@ -188,9 +195,17 @@
 (define (runtime-block-event? evt) 
   (and (runtime-thread-evt? evt) (equal? (what evt) 'block))) 
 
+;;worker-block-event? : (or event indexed-future-event future-event) -> bool
+(define (worker-block-event? evt) 
+  (and (not (runtime-thread-evt? evt)) (equal? (what evt) 'block)))
+
 ;;runtime-sync-evt? : (or event indexed-future-event future-event) -> bool
-(define (runtime-sync-evt? evt) 
+(define (runtime-sync-event? evt) 
   (and (runtime-thread-evt? evt) (equal? (what evt) 'sync)))
+
+;;worker-sync-evt? : (or event indexed-future-event future-event) -> bool
+(define (worker-sync-event? evt) 
+  (and (not (runtime-sync-event? evt)) (equal? (what evt) 'sync)))
 
 ;;gc-event? : (or event indexed-future-event future-event) -> bool
 (define (gc-event? evt) 
@@ -341,7 +356,7 @@
                                  (future-event-what evt) 
                                  (future-event-prim-name evt)
                                  pos 
-                                 #f #f #f #f #f #f #f))))))
+                                 #f #f #f #f #f #f #f #f))))))
     
 ;;build-trace : (listof indexed-future-event) -> trace
 (define (build-trace log-output) 
@@ -403,7 +418,7 @@
                                                  'gc 
                                                  #f 
                                                  (event-pos-description i ngcs) 
-                                                 #f #f #f #f #f #f #f))))
+                                                 #f #f #f #f #f #f #f #f))))
   (define all-evts (sort (flatten (append (process-timeline-events gc-timeline) 
                                           (for/list ([tl (in-list tls)]) (process-timeline-events tl)))) 
                          #:key event-index 
@@ -468,21 +483,32 @@
 (define (connect-event-chains! trace) 
   (for ([tl (in-list (trace-proc-timelines trace))]) 
     (let loop ([evts (process-timeline-events tl)])
-      (if (or (null? evts) (null? (cdr evts))) 
-          void 
-          (begin 
-            (set-event-prev-proc-event! (car (cdr evts)) (car evts))
-            (set-event-next-proc-event! (car evts) (car (cdr evts)))
-            (loop (cdr evts)))))) 
+      (cond 
+        [(or (null? evts) (null? (cdr evts))) void]
+        [else
+         (set-event-prev-proc-event! (car (cdr evts)) (car evts))
+         (set-event-next-proc-event! (car evts) (car (cdr evts)))
+         (loop (cdr evts))])))
   (for ([fid (in-list (hash-keys (trace-future-timelines trace)))]) 
-    (let ([events (hash-ref (trace-future-timelines trace) fid)])
-      (let loop ([evts events]) 
-        (if (or (null? evts) (null? (cdr evts))) 
-            void 
-            (begin 
-              (set-event-prev-future-event! (car (cdr evts)) (car evts))
-              (set-event-next-future-event! (car evts) (car (cdr evts))) 
-              (loop (cdr evts))))))))
+    (let loop ([evts (hash-ref (trace-future-timelines trace) fid)]
+               [last-fthread-block #f])
+      (cond 
+        [(or (null? evts) (null? (cdr evts))) void]
+        [else
+         (define curevt (car evts)) 
+         (define nextevt (car (cdr evts)))
+         (set-event-prev-future-event! nextevt curevt)
+         (set-event-next-future-event! curevt nextevt)
+         (cond 
+           [(and last-fthread-block (or (runtime-sync-event? curevt) (runtime-block-event? curevt)))
+            (set-event-block-handled-event! last-fthread-block curevt)
+            (set-event-prim-name! last-fthread-block (event-prim-name curevt))
+            (set-event-user-data! last-fthread-block (event-user-data curevt))
+            (loop (cdr evts) #f)] 
+           [(or (worker-block-event? curevt) (worker-sync-event? curevt)) 
+            (loop (cdr evts) curevt)] 
+           [else 
+            (loop (cdr evts) last-fthread-block)])]))))
 
 ;;connect-target-fid-events! : trace -> void
 (define (connect-target-fid-events! trace)

@@ -623,10 +623,20 @@
 (define (draw-arrows base-pct vregion seg)
   (let ([fst (get-seg-previous-to-vregion vregion seg)])
     (let loop ([pct base-pct]
-               [cur-seg fst])
+               [cur-seg fst]
+               [event-scope #f])
         (if (not cur-seg)
             pct
             (let ([next (segment-next-future-seg cur-seg)])
+              (define cur-evt (segment-event cur-seg))
+              ;(define next-evt (segment-event next))
+              (define in-rtcall-scope 
+                (cond 
+                  [(and (symbol? event-scope) (or (runtime-block-event? cur-evt)
+                                                  (runtime-sync-event? cur-evt))) #f]
+                  [(worker-sync-event? cur-evt) 'sync] 
+                  [(worker-block-event? cur-evt) 'block] 
+                  [else event-scope]))
               (let* ([next-targ (segment-next-targ-future-seg cur-seg)]
                      [prev-targ (segment-prev-targ-future-seg cur-seg)]
                      [ftl-arrows (if (not next)
@@ -635,7 +645,10 @@
                                                       cur-seg
                                                       next
                                                       pct
-                                                      (event-connection-line-color)
+                                                      (case in-rtcall-scope 
+                                                        [(block) (get-event-color 'block)]
+                                                        [(sync) (get-event-color 'sync)]
+                                                        [else (event-connection-line-color)])
                                                       #:width 2))]
                      [prev-targ-arr (if (not prev-targ)
                                         ftl-arrows
@@ -657,7 +670,7 @@
                                                          #:style 'dot))])
                 (if (and next
                          ((seg-in-vregion vregion) next))
-                    (loop next-targ-arr next)
+                    (loop next-targ-arr next in-rtcall-scope)
                     next-targ-arr)))))))
 
 ;Draws the pict that is layered on top of the exec. timeline canvas

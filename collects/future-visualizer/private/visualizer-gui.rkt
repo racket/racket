@@ -68,14 +68,20 @@
            (send data-label1 set-label (format "Duration: ~a" (get-time-string (- (event-end-time evt) 
                                                                                   (event-start-time evt)))))] 
           [(block sync) 
-           (if (= (event-proc-id evt) RT-THREAD-ID) 
+           (if (event-prim-name evt) 
              (send data-label1 set-label (format "Primitive: ~a" (symbol->string (event-prim-name evt)))) 
              (send data-label1 set-label ""))
-           (define label2-txt (cond 
-                                [(touch-event? evt) (format "Touching future ~a" (event-user-data evt))]
-                                [(allocation-event? evt) (format "Size: ~a" (event-user-data evt))] 
-                                [(jitcompile-event? evt) (format "Jitting: ~a" (event-user-data evt))] 
-                                [else ""]))
+           (define label2-txt 
+             (cond 
+               ;If the log was unexpectedly truncated, some worker blocks/syncs may not have been linked 
+               ;with their runtime counterparts -- check to make sure prim-name is present
+               [(event-prim-name evt)
+                (cond  
+                  [(touch-event? evt) (format "Touching future ~a" (event-user-data evt))]
+                  [(allocation-event? evt) (format "Size: ~a" (event-user-data evt))] 
+                  [(jitcompile-event? evt) (format "Jitting: ~a" (event-user-data evt))] 
+                  [else ""])] 
+               [else ""]))
            (send data-label2 set-label label2-txt)] 
           [(create) 
            (send data-label1 set-label (format "Creating future ~a" (event-user-data evt)))] 
