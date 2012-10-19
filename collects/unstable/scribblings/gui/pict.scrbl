@@ -544,4 +544,38 @@ Creates an arch.
 ]
 }
 
+@section{Additional combinators}
+
+@addition{Asumu Takikawa}
+
+@defproc[(backdrop [pict pict?] [#:color color color/c "white"]) pict?]{
+Adds a background highlighted with @racket[color] to
+@racket[pict].
+
+@examples[#:eval the-eval
+  (backdrop (circle 20) #:color "whitesmoke")
+  (backdrop (text "broccoli rabé") #:color "PaleGreen")
+]}
+
+@defproc[(cross-out [pict pict?]
+                    [#:width width real? 1]
+                    [#:style style
+                     (or/c 'transparent 'solid 'xor
+                           'hilite 'dot 'long-dash 'short-dash
+                           'dot-dash 'xor-dot 'xor-long-dash
+                           'xor-short-dash 'xor-dot-dash)
+                     'solid]
+                    [#:color color color/c "black"])
+                    pict?]{
+  Crosses out @racket[pict] with two diagonal lines drawn with
+  the given line @racket[width] and with the line @racket[style].
+  The lines are colored with @racket[color].
+
+@examples[#:eval the-eval
+  (cross-out (circle 20))
+  (cross-out (rectangle 30 20) #:width 2 #:style 'long-dash)
+  (cross-out (text "rapini") #:width 3 #:color "red")
+]}
+
 @(close-eval the-eval)
+
