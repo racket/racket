@@ -73,7 +73,7 @@
                           [(? symbol?) (string->symbol (format "_~a" tl))]
                           [(struct global-bucket (name)) 
                            (string->symbol (format "_~a" name))]
-                          [(struct module-variable (modidx sym pos phase))
+                          [(struct module-variable (modidx sym pos phase constantness))
                            (if (and (module-path-index? modidx)
                                     (let-values ([(n b) (module-path-index-split modidx)])
                                       (and (not n) (not b))))

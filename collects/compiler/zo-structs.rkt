@@ -43,7 +43,8 @@
 (define-form-struct module-variable ([modidx module-path-index?] 
                                      [sym symbol?] 
                                      [pos exact-integer?] 
-                                     [phase exact-nonnegative-integer?]))
+                                     [phase exact-nonnegative-integer?]
+                                     [constantness (or/c #f 'constant 'fixed)]))
 
 ;; Syntax object
 (define ((alist/c k? v?) l)
