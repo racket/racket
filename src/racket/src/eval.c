@@ -787,7 +787,8 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
 					   int pos, int mod_phase,
 					   Scheme_Env *env, 
                                            Scheme_Object **exprs, int which,
-                                           char *import_map)
+                                           char *import_map,
+                                           int flags)
 {
   Scheme_Object *modname;
   Scheme_Env *menv;
@@ -840,20 +841,41 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
 
   bkt = scheme_global_bucket(varname, menv);
   if (!self) {
+    const char *bad_reason = NULL;
+
     if (!bkt->val) {
+      bad_reason = "uninitialized";
+    } else if (flags) {
+      if (flags & SCHEME_MODVAR_CONST) {
+        /* The fact that the link target is consistent is a fine
+           sanity check, but the check is not good enough for the JIT
+           to rely on it. To be useful for the JIT, we'd have to make
+           sure that every link goes to the same value. Since we can't
+           currently guarantee that, all the JIT assumes is that the
+           value is "fixed". */
+        if (!(((Scheme_Bucket_With_Flags *)bkt)->flags & GLOB_IS_CONSISTENT))
+          bad_reason = "not constant across all instantiations";
+      } else {
+        if (!(((Scheme_Bucket_With_Flags *)bkt)->flags & GLOB_IS_IMMUTATED))
+          bad_reason = "not constant";
+      }
+    }
+
+    if (bad_reason) {
       scheme_wrong_syntax("link", NULL, varname,
                           "bad variable linkage;\n"
-                          " reference to a variable that is uninitialized\n"
+                          " reference to a variable that is %s\n"
                           "  reference phase level: %d\n"
                           "  variable module: %D\n"
                           "  variable phase: %d\n"
                           "  reference in module: %D",
+                          bad_reason,
                           env->phase,
                           modname,
                           mod_phase,
                           env->module ? env->module->modsrc : scheme_false);
     }
-    
+
     if (!(((Scheme_Bucket_With_Flags *)bkt)->flags & (GLOB_IS_IMMUTATED | GLOB_IS_LINKED)))
       ((Scheme_Bucket_With_Flags *)bkt)->flags |= GLOB_IS_LINKED;
   }
@@ -909,7 +931,8 @@ static Scheme_Object *link_toplevel(Scheme_Object **exprs, int which, Scheme_Env
                                 -1, mod_phase,
                                 env, 
                                 NULL, 0,
-                                import_map);
+                                import_map,
+                                0);
   } else if (SAME_TYPE(SCHEME_TYPE(expr), scheme_variable_type)) {
     Scheme_Bucket *b = (Scheme_Bucket *)expr;
     Scheme_Env *home;
@@ -925,7 +948,7 @@ static Scheme_Object *link_toplevel(Scheme_Object **exprs, int which, Scheme_Env
 				  -1, home->mod_phase,
 				  env, 
                                   exprs, which,
-                                  import_map);
+                                  import_map, 0);
   } else {
     Module_Variable *mv = (Module_Variable *)expr;
 
@@ -939,7 +962,8 @@ static Scheme_Object *link_toplevel(Scheme_Object **exprs, int which, Scheme_Env
 				mv->pos, mv->mod_phase,
 				env,
                                 exprs, which,
-                                import_map);
+                                import_map, 
+                                SCHEME_MODVAR_FLAGS(mv) & 0x3);
   }
 }
 
@@ -1924,7 +1948,8 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
         int flags = GLOB_IS_IMMUTATED;
         if (SCHEME_PROCP(vals_expr) 
             || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_unclosed_procedure_type)
-            || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_case_lambda_sequence_type))
+            || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_case_lambda_sequence_type)
+            || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_inline_variant_type))
           flags |= GLOB_IS_CONSISTENT;
         ((Scheme_Bucket_With_Flags *)b)->flags |= flags;
       }
@@ -2401,6 +2426,10 @@ void scheme_delay_load_closure(Scheme_Closure_Data *data)
                               (SCHEME_TRUEP(SCHEME_VEC_ELS(vinfo)[8])
                                ? (void *)SCHEME_VEC_ELS(vinfo)[8]
                                : NULL),
+                              (SCHEME_TRUEP(SCHEME_VEC_ELS(vinfo)[9])
+                               ? (mzshort *)(SCHEME_VEC_ELS(vinfo)[9])
+                               : NULL),
+                              SCHEME_INT_VAL(SCHEME_VEC_ELS(vinfo)[10]),
                               SCHEME_INT_VAL(SCHEME_VEC_ELS(vinfo)[6]),
                               (SCHEME_TRUEP(SCHEME_VEC_ELS(vinfo)[7])
                                ? (Scheme_Hash_Tree *)SCHEME_VEC_ELS(vinfo)[7]
@@ -3999,6 +4028,7 @@ static void *compile_k(void)
                              top->prefix->num_toplevels,
                              top->prefix->num_stxes,
                              top->prefix->num_lifts,
+                             NULL,
                              NULL,
                              0);
       }

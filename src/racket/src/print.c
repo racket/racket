@@ -2885,10 +2885,10 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       if (idx) {
         print_symtab_ref(pp, idx);
       } else {
-	Module_Variable *mv;
+	Module_Variable *mv = (Module_Variable *)obj;
+        int flags = SCHEME_MODVAR_FLAGS(mv);
 
 	print_compact(pp, CPT_MODULE_VAR);
-	mv = (Module_Variable *)obj;
         if (SAME_TYPE(SCHEME_TYPE(mv->modidx), scheme_resolved_module_path_type)
             && SCHEME_SYMBOLP(SCHEME_PTR_VAL(mv->modidx))) {
           print(SCHEME_PTR_VAL(mv->modidx), notdisplay, 1, ht, mt, pp);
@@ -2896,6 +2896,9 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
           print(mv->modidx, notdisplay, 1, ht, mt, pp);
         }
 	print(mv->sym, notdisplay, 1, ht, mt, pp);
+        if (flags & 0x3) {
+          print_compact_number(pp, -3-(flags&0x3));
+        }
         if (((Module_Variable *)obj)->mod_phase) {
           print_compact_number(pp, -2);
           print_compact_number(pp, mv->mod_phase);

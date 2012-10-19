@@ -72,12 +72,19 @@ structures that are produced by @racket[zo-parse] and consumed by
             ([modidx module-path-index?]
              [sym symbol?]
              [pos exact-integer?]
-             [phase exact-nonnegative-integer?])]{
+             [phase exact-nonnegative-integer?]
+             [constantness (or/c #f 'constant 'fixed)])]{
   Represents a top-level variable, and used only in a @racket[prefix].
   The @racket[pos] may record the variable's offset within its module,
   or it can be @racket[-1] if the variable is always located by name.
   The @racket[phase] indicates the phase level of the definition within
-  its module.}
+  its module. The @racket[constantness] field is either @racket['constant]
+  to indicate that
+  variable's value is always the same for every instantiation of its module,
+  @racket['fixed] to indicate 
+  that it doesn't change within a particular instantiation of the module,
+  or @racket[#f] to indicate that the variable's value
+ can change even for one particular instantiation of its module.}
 
 
 @defstruct+[(stx zo) ([encoded wrapped?])]{

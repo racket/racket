@@ -2346,21 +2346,6 @@ typedef struct Scheme_Object *
 
 typedef struct CPort Mz_CPort;
 
-typedef mzshort **Validate_TLS;
-struct Validate_Clearing;
-
-typedef void (*Scheme_Syntax_Validater)(Scheme_Object *data, Mz_CPort *port, 
-                                        char *stack, Validate_TLS tls,
-					int depth, int letlimit, int delta,
-					int num_toplevels, int num_stxes, int num_lifts, 
-                                        void *tl_use_map, int result_ignored,
-                                        struct Validate_Clearing *vc, int tailpos,
-                                        Scheme_Hash_Tree *procs);
-
-typedef struct Scheme_Object *(*Scheme_Syntax_Executer)(struct Scheme_Object *data);
-
-typedef struct Scheme_Object *(*Scheme_Syntax_Jitter)(struct Scheme_Object *data);
-
 typedef struct Scheme_Closure_Data
 {
   Scheme_Inclhash_Object iso; /* keyex used for flags */
@@ -2883,6 +2868,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
                           Optimize_Info *warn_info, int deeper_than, int no_id);
 int scheme_might_invoke_call_cc(Scheme_Object *value);
 int scheme_is_liftable(Scheme_Object *o, int bind_count, int fuel, int as_rator);
+int scheme_is_functional_primitive(Scheme_Object *rator, int num_args, int expected_vals);
 
 int scheme_is_env_variable_boxed(Scheme_Comp_Env *env, int which);
 
@@ -2922,23 +2908,16 @@ Scheme_Env *scheme_environment_from_dummy(Scheme_Object *dummy);
 void scheme_validate_code(Mz_CPort *port, Scheme_Object *code,
                           int depth,
 			  int num_toplevels, int num_stxes, int num_lifts, void *tl_use_map,
+                          Scheme_Object **toplevels,
                           int code_vec);
-void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr, 
-			  char *stack, Validate_TLS tls,
-                          int depth, int letlimit, int delta,
-			  int num_toplevels, int num_stxes, int num_lifts, void *tl_use_map,
-                          Scheme_Object *app_rator, int proc_with_refs_ok, 
-                          int result_ignored, struct Validate_Clearing *vc, 
-                          int tailpos, int need_flonum, Scheme_Hash_Tree *procs);
 
-int scheme_validate_rator_wants_box(Scheme_Object *app_rator, int pos,
-                                    int hope,
-                                    Validate_TLS tls,
-                                    int num_toplevels, int num_stxes, int num_lifts, void *tl_use_map);
+typedef mzshort **Validate_TLS;
+struct Validate_Clearing;
 
 void scheme_validate_closure(Mz_CPort *port, Scheme_Object *expr, 
-                             char *new_stack, Validate_TLS tls,
+                             char *closure_stack, Validate_TLS tls,
                              int num_toplevels, int num_stxes, int num_lifts, void *tl_use_map,
+                             mzshort *tl_state, mzshort tl_timestamp,
                              int self_pos_in_closure, Scheme_Hash_Tree *procs);
 
 #define TRACK_ILL_FORMED_CATCH_LINES 1

@@ -603,10 +603,14 @@
         (out-byte CPT_FALSE out)]
        [(? void?)
         (out-byte CPT_VOID out)]
-       [(struct module-variable (modidx sym pos phase))
+       [(struct module-variable (modidx sym pos phase constantness))
         (out-byte CPT_MODULE_VAR out)
         (out-anything modidx out)
         (out-anything sym out)
+        (case constantness
+          [(constant) (out-number -4 out)]
+          [(fixed) (out-number -5 out)]
+          [else (void)])
         (unless (zero? phase)
           (out-number -2 out)
           (out-number phase out))

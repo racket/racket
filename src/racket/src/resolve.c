@@ -2239,7 +2239,7 @@ static Scheme_Object *
 module_expr_resolve(Scheme_Object *data, Resolve_Info *old_rslv)
 {
   Scheme_Module *m = (Scheme_Module *)data;
-  Scheme_Object *b, *lift_vec;
+  Scheme_Object *b, *lift_vec, *body = scheme_null;
   Resolve_Prefix *rp;
   Resolve_Info *rslv;
   int i, cnt;
@@ -2264,18 +2264,26 @@ module_expr_resolve(Scheme_Object *data, Resolve_Info *old_rslv)
   for (i = 0; i < cnt; i++) {
     Scheme_Object *e;
     e = scheme_resolve_expr(SCHEME_VEC_ELS(m->bodies[0])[i], rslv);
-    SCHEME_VEC_ELS(m->bodies[0])[i] = e;
+    
+    /* add lift just before the expression that introduced it;
+       this ordering is needed for bytecode validation of
+       constantness for top-level references */
+    lift_vec = rslv->lifts;
+    if (!SCHEME_NULLP(SCHEME_VEC_ELS(lift_vec)[0])) {
+      body = scheme_append(SCHEME_VEC_ELS(lift_vec)[0], body);
+      SCHEME_VEC_ELS(lift_vec)[0] = scheme_null;
+    }
+
+    body = scheme_make_pair(e, body);
   }
 
   m->max_let_depth = rslv->max_let_depth;
 
   lift_vec = rslv->lifts;
-  if (!SCHEME_NULLP(SCHEME_VEC_ELS(lift_vec)[0])) {
-    b = scheme_append(SCHEME_VEC_ELS(lift_vec)[0], scheme_vector_to_list(m->bodies[0]));
-    b = scheme_list_to_vector(b);
-    m->bodies[0] = b;
-  }
   rp->num_lifts = SCHEME_INT_VAL(SCHEME_VEC_ELS(lift_vec)[1]);
+
+  body = scheme_list_to_vector(scheme_reverse(body));
+  m->bodies[0] = body;
 
   rp = scheme_remap_prefix(rp, rslv);
 

@@ -1,3 +1,6 @@
+Version 5.3.1.2
+compiler/zo-structs: added a constantness field to module-variable
+
 Version 5.3.1.1
 Added arguments to impersonate-prompt-tag and chaperone-prompt-tag
  to support interposition on non-composable continuation results

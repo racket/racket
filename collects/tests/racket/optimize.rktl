@@ -6,7 +6,8 @@
 (require racket/flonum
          racket/fixnum
          racket/unsafe/ops
-         compiler/zo-parse)
+         compiler/zo-parse
+         compiler/zo-marshal)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2219,5 +2220,65 @@
 (test #t (dynamic-require ''check-tail-call-by-jit-for-struct-predicate 'go))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test bytecode validator's checking of constantness
+
+(let ()
+  (define c1
+    '(module c1 racket/base
+       (void ((if (zero? (random 1))
+                  (lambda (f) (displayln (f)))
+                  #f)
+              (lambda ()
+                ;; This access of i should raise an exception:
+                i)))
+       (define i (random 1))))
+
+  (define o (open-output-bytes))
+
+  (parameterize ([current-namespace (make-base-namespace)])
+    (write (compile c1) o))
+
+  (define m (zo-parse (open-input-bytes (get-output-bytes o))))
+
+  (define o2 (open-output-bytes))
+
+  ;; construct bytecode that is broken by claiming that `i' is constant
+  ;; in the too-early reference:
+  (void
+   (write-bytes
+    (zo-marshal
+     (match m
+       [(compilation-top max-let-depth prefix code)
+        (compilation-top max-let-depth prefix 
+                         (let ([body (mod-body code)])
+                           (struct-copy mod code [body
+                                                  (match body 
+                                                    [(list a b)
+                                                     (list (match a
+                                                             [(application rator (list rand))
+                                                              (application 
+                                                               rator
+                                                               (list
+                                                                (match rand
+                                                                  [(application rator (list rand))
+                                                                   (application
+                                                                    rator
+                                                                    (list
+                                                                     (struct-copy 
+                                                                      lam rand
+                                                                      [body
+                                                                       (match (lam-body rand)
+                                                                         [(toplevel depth pos const? ready?)
+                                                                          (toplevel depth pos #t #t)])])))])))])
+                                                           b)])])))]))
+    o2))
+
+  ;; validator should reject this at read or eval time (depending on how lazy validation is):
+  (err/rt-test (parameterize ([current-namespace (make-base-namespace)]
+                              [read-accept-compiled #t])
+                 (eval (read (open-input-bytes (get-output-bytes o2)))))
+               exn:fail:read?))
+  
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

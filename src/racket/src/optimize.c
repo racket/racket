@@ -202,6 +202,24 @@ static void note_match(int actual, int expected, Optimize_Info *warn_info)
   }
 }
 
+int scheme_is_functional_primitive(Scheme_Object *rator, int num_args, int expected_vals)
+/* return 2 => results are a constant when arguments are constants */
+{
+  if (SCHEME_PRIMP(rator)
+      && (SCHEME_PRIM_PROC_FLAGS(rator) & (SCHEME_PRIM_IS_OMITABLE | SCHEME_PRIM_IS_UNSAFE_NONMUTATING))
+      && (num_args >= ((Scheme_Primitive_Proc *)rator)->mina)
+      && (num_args <= ((Scheme_Primitive_Proc *)rator)->mu.maxa)
+      && ((expected_vals < 0) 
+          || ((expected_vals == 1) && !(SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_MULTI_RESULT))
+          || (SAME_OBJ(scheme_values_func, rator)
+              && (expected_vals == num_args)))) {
+    if (SAME_OBJ(scheme_values_func, rator))
+      return 2;
+    return 1;
+  } else
+    return 0;
+}
+
 int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
                           Optimize_Info *warn_info, int deeper_than, int no_id)
      /* Checks whether the bytecode `o' returns `vals' values with no
@@ -373,13 +391,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
     }
 
     if (SCHEME_PRIMP(app->args[0])) {
-      if ((SCHEME_PRIM_PROC_FLAGS(app->args[0]) & (SCHEME_PRIM_IS_OMITABLE | SCHEME_PRIM_IS_UNSAFE_NONMUTATING))
-          && (app->num_args >= ((Scheme_Primitive_Proc *)app->args[0])->mina)
-          && (app->num_args <= ((Scheme_Primitive_Proc *)app->args[0])->mu.maxa)
-          && ((vals < 0) 
-              || ((vals == 1) && !(SCHEME_PRIM_PROC_FLAGS(app->args[0]) & SCHEME_PRIM_IS_MULTI_RESULT))
-              || (SAME_OBJ(scheme_values_func, app->args[0])
-                  && (vals == app->num_args)))) {
+      if (scheme_is_functional_primitive(app->args[0], app->num_args, vals)) {
         int i;
         for (i = app->num_args; i--; ) {
           if (!scheme_omittable_expr(app->args[i + 1], 1, fuel - 1, resolved, warn_info,
@@ -400,12 +412,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
   if (vtype == scheme_application2_type) {
     Scheme_App2_Rec *app = (Scheme_App2_Rec *)o;
     if (SCHEME_PRIMP(app->rator)) {
-      if ((SCHEME_PRIM_PROC_FLAGS(app->rator) & (SCHEME_PRIM_IS_OMITABLE | SCHEME_PRIM_IS_UNSAFE_NONMUTATING))
-          && (1 >= ((Scheme_Primitive_Proc *)app->rator)->mina)
-          && (1 <= ((Scheme_Primitive_Proc *)app->rator)->mu.maxa)
-          && ((vals < 0) 
-              || ((vals == 1) && !(SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_MULTI_RESULT))
-              || ((vals == 1) && SAME_OBJ(scheme_values_func, app->rator)))) {
+      if (scheme_is_functional_primitive(app->rator, 1, vals)) {
         if (scheme_omittable_expr(app->rand, 1, fuel - 1, resolved, warn_info,
                                   deeper_than + (resolved ? 1 : 0), 0))
           return 1;
@@ -420,12 +427,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
   if (vtype == scheme_application3_type) {
     Scheme_App3_Rec *app = (Scheme_App3_Rec *)o;
     if (SCHEME_PRIMP(app->rator)) {
-      if ((SCHEME_PRIM_PROC_FLAGS(app->rator) & (SCHEME_PRIM_IS_OMITABLE | SCHEME_PRIM_IS_UNSAFE_NONMUTATING))
-          && (2 >= ((Scheme_Primitive_Proc *)app->rator)->mina)
-          && (2 <= ((Scheme_Primitive_Proc *)app->rator)->mu.maxa)
-          && ((vals < 0) 
-              || ((vals == 1) && !(SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_MULTI_RESULT))
-              || ((vals == 2) && SAME_OBJ(scheme_values_func, app->rator)))) {
+      if (scheme_is_functional_primitive(app->rator, 2, vals)) {
         if (scheme_omittable_expr(app->rand1, 1, fuel - 1, resolved, warn_info,
                                   deeper_than + (resolved ? 2 : 0), 0)
             && scheme_omittable_expr(app->rand2, 1, fuel - 1, resolved, warn_info,
@@ -1800,7 +1802,7 @@ static Scheme_Object *lookup_constant_proc(Optimize_Info *info, Scheme_Object *r
     c = SCHEME_BOX_VAL(c);
 
     while (SAME_TYPE(SCHEME_TYPE(c), scheme_compiled_let_void_type)) {
-      /* This must be (let ([x <proc>]) <proc>); see scheme_is_statically_proc() */
+      /* This must be (let ([x <omittable>]) <proc>); see scheme_is_statically_proc() */
       Scheme_Let_Header *lh = (Scheme_Let_Header *)c;
       Scheme_Compiled_Let_Value *lv = (Scheme_Compiled_Let_Value *)lh->body;
       c = lv->body;
@@ -3095,7 +3097,7 @@ int scheme_is_statically_proc(Scheme_Object *value, Optimize_Info *info)
     else if (SAME_TYPE(SCHEME_TYPE(value), scheme_case_lambda_sequence_type)) {
       return 1;
     } else if (SAME_TYPE(SCHEME_TYPE(value), scheme_compiled_let_void_type)) {
-      /* Look for (let ([x <proc>]) <proc>), which is generated for optional arguments. */
+      /* Look for (let ([x <omittable>]) <proc>), which is generated for optional arguments. */
       Scheme_Let_Header *lh = (Scheme_Let_Header *)value;
       if (lh->num_clauses == 1) {
         Scheme_Compiled_Let_Value *lv = (Scheme_Compiled_Let_Value *)lh->body;
