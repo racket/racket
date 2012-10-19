@@ -171,7 +171,7 @@ exec racket "$0" "$@"
     (default: skip links) > @i{.}
     Installing links in "@|testdir|/bin"...
       drracket, gracket skipped (non-link exists), gracket-text, mred, @;
-      mred-text, mzc, mzpp, mzscheme, mztext, pdf-slatex, planet, plt-games, @;
+      mred-text, mzc, mzpp, mzscheme, mztext, pdf-slatex, plt-games, @;
       plt-help, plt-r5rs, plt-r6rs, plt-web-server, racket, raco, scribble, @;
       setup-plt, slatex, slideshow, swindle
       done.
@@ -184,9 +184,9 @@ exec racket "$0" "$@"
     README, bin/, collects/, doc/, include/, lib/, man/
     sh> @i{LS bin}
     @s|{drracket@, gracket, gracket-text@, mred@, mred-text@, mzc@, mzpp@,
-        mzscheme@, mztext@, pdf-slatex@, planet@, plt-games@, plt-help@,
-        plt-r5rs@, plt-r6rs@, plt-web-server@, racket@, raco@, scribble@,
-        setup-plt@, slatex@, slideshow@, swindle@}|
+        mzscheme@, mztext@, pdf-slatex@, plt-games@, plt-help@, plt-r5rs@,
+        plt-r6rs@, plt-web-server@, racket@, raco@, scribble@, setup-plt@,
+        slatex@, slideshow@, swindle@}|
     sh> @i{LS -l bin/ra*}
     lrwxrwxrwx. @... bin/racket -> @|testdir|/R/bin/racket*
     lrwxrwxrwx. @... bin/raco -> @|testdir|/R/bin/raco*
@@ -304,9 +304,9 @@ exec racket "$0" "$@"
     bin/, include/, lib/, share/
     sh> @i{LS bin}
     drracket*, gracket*, gracket-text*, mred*, mred-text*, mzc*, mzpp*,
-    mzscheme*, mztext*, pdf-slatex*, planet*, plt-games*, plt-help*,
-    plt-r5rs*, plt-r6rs*, plt-web-server*, racket*, racket-uninstall*,
-    raco*, scribble*, setup-plt*, slatex*, slideshow*, swindle*
+    mzscheme*, mztext*, pdf-slatex*, plt-games*, plt-help*, plt-r5rs*,
+    plt-r6rs*, plt-web-server*, racket*, racket-uninstall*, raco*,
+    scribble*, setup-plt*, slatex*, slideshow*, swindle*
     sh> @i{LS include && LS lib && LS share}
     racket@|N|/
     racket@|N|/
