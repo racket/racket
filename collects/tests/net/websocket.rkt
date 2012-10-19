@@ -67,31 +67,27 @@
    => #"fQJ,fN/4F4!~K~MH"
 
    (local [(define (test-echo-server)
-             (define conn #f)
              (define r (number->string (random 1000)))
-             (define shutdown! #f)
-             (define p #f)
              (define confirm (make-async-channel))
-             (test (set! shutdown!
-                         (ws-serve #:port 0
-                                   #:confirmation-channel confirm
-                                   (λ (wsc _)
-                                     (let loop ()
-                                       (define m (ws-recv wsc))
-                                       (unless (eof-object? m)
-                                         (ws-send! wsc m)
-                                         (loop))))))
-                   shutdown!
-                   (set! p (async-channel-get confirm))
-                   p
-                   (set! conn (ws-connect (string->url (format "ws://localhost:~a" p))))
-                   conn
-                   (ws-send! conn r)
-                   (ws-recv conn) => r
-                   (ws-send! conn "a")
-                   (ws-recv conn) => "a"
-                   (ws-close! conn)
-                   (shutdown!)))]
+             (define shutdown!
+               (ws-serve #:port 0
+                         #:confirmation-channel confirm
+                         (λ (wsc _)
+                           (let loop ()
+                             (define m (ws-recv wsc))
+                             (unless (eof-object? m)
+                               (ws-send! wsc m)
+                               (loop))))))             
+             (define p (async-channel-get confirm))
+             (define conn
+               (ws-connect (string->url (format "ws://localhost:~a" p))))
+             (when conn
+               (test (ws-send! conn r)
+                     (ws-recv conn) => r
+                     (ws-send! conn "a")
+                     (ws-recv conn) => "a"
+                     (ws-close! conn)))
+             (test (shutdown!)))]
      (test #:failure-prefix "old"
            (parameterize ([framing-mode 'old]) (test-echo-server))
            #:failure-prefix "new"
