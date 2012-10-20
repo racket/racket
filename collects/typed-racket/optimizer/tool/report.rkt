@@ -29,7 +29,7 @@
 (define (generate-report this profile)
   (define-values (TR-log mzc-log) (generate-logs this))
   (log->report
-   (append TR-log
+   (append (prune-cold-TR-failures TR-log profile)
            (post-process-inline-log mzc-log profile TR-log))))
 
 
@@ -213,3 +213,28 @@
         [(prev l) ; no overlap, just add to the list
          (values (cons l new-report) l)])))
   new-report)
+
+;;--------------------------------------------------------------------
+
+(require "profiling.rkt")
+(define (prune-cold-TR-failures TR-log profile)
+  (define hot-functions (and profile (prune-profile profile)))
+
+  ;; #f if no profiling info is available for this function
+  ;; takes in either a single pos number or a pair of numbers (line col)
+  (define (pos->node pos)
+    (and profile
+         pos
+         (for/first ([p (in-list (profile-nodes profile))]
+                     #:when (let* ([from (node-pos p)]
+                                   [span (node-span p)])
+                              (and from span
+                                   (<= from pos (+ from span)))))
+           p)))
+
+  (define (in-hot-function? l)
+    (or (not profile) ; keep everything if we don't have profile info
+        (opt-log-entry? l) ; don't prune successes
+        (memq (pos->node (log-entry-pos l)) hot-functions)))
+
+  (filter in-hot-function? TR-log))
