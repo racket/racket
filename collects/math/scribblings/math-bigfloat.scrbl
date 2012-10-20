@@ -91,56 +91,52 @@ that conforming implementations must correctly round the results of all operatio
 Roughly speaking, results can't be more than half a bit off, where the bit in
 question is the least significant in the significand.
 
-Of course, implementations that don't adhere to the standard may not be so accurate,
-and implementations that @italic{claim} to adhere to the standard may not, either.
-
-You can use @racketmodname[math/bigfloat] to verify the floating-point implementation
-on your CPU. For example, on my old laptop, evaluating @(racket (exp 400)) results in
-@(racket 5.221469689764346e+173). Note the last four decimal digits in the significand:
-@(racket 4346). But the answer should be
+Of course, implementations don't always adhere to standards. For example, on my old
+laptop, evaluating @(racket (exp 400)) results in @(racket 5.221469689764346e+173).
+Note the last four decimal digits in the significand: @(racket 4346). But they should be @racket[4144]:
 @interaction[#:eval untyped-eval
                     (bf-precision 53)
                     (eval:alts
                      (bigfloat->flonum (bfexp (bf 400)))
                      (eval:result @racketresultfont{5.221469689764144e+173}))]
-So the last four decimal digits should be @(racket 4144). On the other hand, my new
-laptop computes @(racket 5.221469689764144e+173) as it should.
+My new laptop computes @(racket 5.221469689764144e+173) as it should.
 
 @italic{Reason:} To control rounding of the least significant bit.
 
 IEEE 754 provides for different rounding modes for the smallest bit of
-a flonum approximation, such as round to even and round toward zero. But there
-isn't a portable way to set the rounding mode!
+a flonum result, such as round to even and round toward zero. We might use
+this to implement interval arithmetic correctly, by rounding lower bounds
+downward and the upper bounds upward. But there isn't a portable way to set the
+rounding mode!
 
-On the other hand, MPFR allows the rounding mode to be set before any operation,
-and @racketmodname[math/bigfloat] exposes this capability using the parameter
+MPFR allows the rounding mode to be set before any operation, and
+@racketmodname[math/bigfloat] exposes this capability using the parameter
 @racket[bf-rounding-mode].
 
 @bold{When shouldn't I use @racketmodname[math/bigfloat]?}
 
-When you need speed. Bigfloat functions can be hundreds to thousands of times slower
+When you need raw speed. Bigfloat functions can be hundreds to thousands of times slower
 than flonum functions.
 
 That's not to say that they're @italic{inefficient}. For example, @(racket bflog)
 implements the algorithm with the best known asymptotic complexity. It just doesn't
-run directly on hardware, and it can't take certain fixed-precision-only shortcuts.
+run directly on hardware, and it can't take fixed-precision-only shortcuts.
+
+@bold{Why are there junk digits on the end of @racket[(bf 1.1)]?}
+
+That's approximately the value of the flonum @racket[1.1]. Use @code{(bf #e1.1)} or
+@code{(bf "1.1")} to make the junk go away. In general, you should prefer to convert
+exact rationals and strings to bigfloats.
 
 @bold{Why is the last digit of @racket[pi.bf] not rounded correctly?}
 
 All the @italic{bits} but the last is exact, and the last bit is correctly rounded.
 This doesn't guarantee that the last digit will be.
 
-A decimal digit represents, at most, log(10)/log(2) bits, which is about 3.3.
-Because the decimal/bit boundary never lines up except at the decimal point,
-the last decimal digit of any bigfloat must represent fewer than 3.3 bits. So the
-last digit of a bigfloat's decimal string is more often wrong than not, but it's
-the last bit that counts.
-
-@bold{Why are there junk digits on the end of @racket[(bf 1.1)]?}
-
-That's approximately the value of the flonum @racket[1.1]. Prefixing @racket[1.1] with @tt{#e}
-will make it a rational, equivalent to @racket[(bf 11/10)], making most of the junk go away.
-In general, you should prefer to convert exact rationals and strings to bigfloats.
+A decimal digit represents at most log(10)/log(2) ≈ 3.3 bits. This is an irrational
+number, so the decimal/bit boundary never lines up except at the decimal point.
+Thus, the last decimal digit of any bigfloat must represent fewer than 3.3 bits,
+so it's wrong more often than not. But it's the last @italic{bit} that counts.
 
 @section{Bigfloat Type and Accessors}
 
@@ -235,7 +231,7 @@ The one-argument variant converts a string or real @racket[x] to a bigfloat.
                      (eval:result
                       ""
                       ""
-                      "bf: expected well-formed decimal number; given \"not a number\""))
+                      "bf: expected a well-formed decimal number; given \"not a number\""))
                     (eval:alts
                      (bf "15e200000000")
                      (eval:result
@@ -244,9 +240,10 @@ The one-argument variant converts a string or real @racket[x] to a bigfloat.
 In the last example, the result of @racket[(bf "15e200000000")] is displayed as a
 string conversion because the exact rational number would be very large.
 
-Converting from flonum literals is generally a bad idea because flonums have only
-53 bits precision. Prefix decimal numbers you pass to @racket[bf] with @tt{#e} to
-turn them into exact rational literals, or surround them with quotes to pass a string.
+@margin-note{* It can be a good idea if you're testing a flonum implementation of a function
+             against a bigfloat implementation.}
+Converting from flonum literals is usually a bad idea* because flonums have only
+53 bits precision. Prefer to pass exact rationals and strings to @racket[bf].
 
 The two-argument variant converts a signed significand @racket[sig] and a power of
 2 @racket[exp] to a bigfloat. Generally, @racket[(bf sig exp) = (bf (* sig (expt 2 exp)))],
@@ -375,10 +372,10 @@ for bigfloats.
 
 Rounding is to the nearest integer, with ties broken by rounding to even.
 @examples[#:eval untyped-eval
-                 (eval:alts (bfround (bf 1.5)) (eval:result @racketresultfont{(bf 2}))
-                 (eval:alts (bfround (bf 2.5)) (eval:result @racketresultfont{(bf 2}))
-                 (eval:alts (bfround (bf -1.5)) (eval:result @racketresultfont{(bf -2}))
-                 (eval:alts (bfround (bf -2.5)) (eval:result @racketresultfont{(bf -2}))]
+                 (eval:alts (bfround (bf 1.5)) (eval:result @racketresultfont{(bf 2)}))
+                 (eval:alts (bfround (bf 2.5)) (eval:result @racketresultfont{(bf 2)}))
+                 (eval:alts (bfround (bf -1.5)) (eval:result @racketresultfont{(bf -2)}))
+                 (eval:alts (bfround (bf -2.5)) (eval:result @racketresultfont{(bf -2)}))]
 }
 
 @defproc[(bffrac [x Bigfloat]) Bigfloat]{
