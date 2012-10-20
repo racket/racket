@@ -34,7 +34,7 @@
      (quasisyntax/loc stx
        (check-tc-result-equal? (format "~a ~a" #,(syntax-line stx) 'a)
                                #,(let ([ex (local-expand #'a 'expression null)])
-	                           (find-mutated-vars ex mvar-env)
+                                   (find-mutated-vars ex mvar-env)
                                    (tc-expr ex))
                                #,(syntax-local-eval #'b)))]))
 

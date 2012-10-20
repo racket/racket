@@ -9,6 +9,7 @@
          (env type-alias-env)
          (utils tc-utils)
          (rep type-rep)
+         (typecheck renamer)
          (types utils))
 
 (provide register-type-name

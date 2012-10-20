@@ -545,22 +545,24 @@ This file defines two sorts of primitives. All of them are provided into any mod
      (lambda (stx)
        (syntax-parse stx
          [(_ vars:maybe-type-vars nm:struct-name (fs:fld-spec ...) . opts)
-          (let ([mutable (mutable? #'opts)])
+          (let ([mutable (mutable? #'opts)]
+                [cname (datum->syntax #'nm.name (format-symbol "make-~a" (syntax-e #'nm.name)))])
             (with-syntax ([d-s (syntax-property (syntax/loc stx (define-struct nm (fs.fld ...) . opts))
                                                 'typechecker:ignore #t)]
-                          [dtsi (quasisyntax/loc stx (dtsi* (vars.vars ...) nm (fs ...) #,@mutable))])
+                          [dtsi (quasisyntax/loc stx (dtsi* (vars.vars ...) nm (fs ...)
+                                                            #:maker #,cname
+                                                            #,@mutable))])
               #'(begin d-s dtsi)))]))
      (lambda (stx)
        (syntax-parse stx
          [(_ vars:maybe-type-vars nm:struct-name/new (fs:fld-spec ...) . opts)
-          (let ([mutable (mutable? #'opts)]
-                [cname (datum->syntax #f (format-symbol "make-~a" (syntax-e #'nm.name)))])
+          (let ([mutable (mutable? #'opts)])
             (with-syntax ([d-s (syntax-property (quasisyntax/loc stx
                                                   (struct #,@(attribute nm.new-spec) (fs.fld ...)
-                                                          #:extra-constructor-name #,cname
                                                           . opts))
                                                 'typechecker:ignore #t)]
-                          [dtsi (quasisyntax/loc stx (dtsi* (vars.vars ...) nm.old-spec (fs ...) #:maker #,cname #,@mutable))])
+                          [dtsi (quasisyntax/loc stx (dtsi* (vars.vars ...) nm.old-spec (fs ...)
+                                                            #,@mutable))])
               #'(begin d-s dtsi)))])))))
 
 

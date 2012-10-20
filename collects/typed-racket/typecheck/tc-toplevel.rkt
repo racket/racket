@@ -55,7 +55,7 @@
            #:attr name #'nm.nm
            #:attr mutable (attribute fields.mutable)
            #:attr type-only (attribute fields.type-only)
-           #:attr maker (attribute fields.maker)))
+           #:attr maker (or (attribute fields.maker) #'nm.nm)))
 
 (define (parse-define-struct-internal form)
   (parameterize ([current-orig-stx form])
@@ -337,7 +337,16 @@
   (define def-tbl
     (for/fold ([h (make-immutable-free-id-table)])
       ([def (in-list defs)])
-      (dict-set h (binding-name def) def)))
+      (define (plain-stx-binding? def)
+        (and (def-stx-binding? def) (not (def-struct-stx-binding? def))))
+      (define (merge-def-bindings other-def)
+        (cond
+          ((not other-def) def)
+          ((plain-stx-binding? def) other-def)
+          ((plain-stx-binding? other-def) def)
+          (else
+            (int-err "Two conflicting definitions: ~a ~a" def other-def))))
+      (dict-update h (binding-name def) merge-def-bindings #f)))
   ;; typecheck the expressions and the rhss of defintions
   ;(displayln "Starting pass2")
   (for-each tc-toplevel/pass2 forms)
