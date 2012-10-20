@@ -1582,4 +1582,9 @@
   (hide-defs/ints-label "Definitionen/Interaktionen-Beschriftung ausblenden") ;; popup menu
   (show-defs/ints-label "Definitionen/Interaktionen-Beschriftung einblenden") ;; preferences checkbox
 
+  ;; menu item in the 'edit' menu; applies to editors with programs in them
+  ;; (technically, editors that implement color:text<%>)
+  (spell-check-string-constants "String-Konstanten korrekturlesen")
+  (misspelled-text-color "Rechtschreibfehler in Textfarbe") ;; in the preferences dialog  
+  (cannot-find-ispell-or-aspell-path "aspell- bzw. ispell-Programm nicht gefunden")
  )
