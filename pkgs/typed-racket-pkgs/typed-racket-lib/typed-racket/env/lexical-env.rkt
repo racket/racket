@@ -14,6 +14,7 @@
          (env type-env-structs global-env mvar-env)
          (utils tc-utils)
          (only-in (rep type-rep) Type/c)
+         (typecheck renamer)
          (except-in (types utils abbrev kw-types) -> ->* one-of/c))
 
 (provide lexical-env with-lexical-env with-lexical-env/extend
@@ -41,6 +42,12 @@
 (define (lookup-type/lexical i [env (lexical-env)] #:fail [fail #f])
   (lookup env i (λ (i) (lookup-type i (λ () 
                                         (cond 
+                                          [(syntax-property i 'constructor-for)
+                                           => (λ (prop)
+                                                (define orig (un-rename prop))
+                                                (define t (lookup-type/lexical orig env))
+                                                (register-type i t)
+                                                t)]
                                           [(syntax-procedure-alias-property i) 
                                            => (λ (prop)
                                                 (define orig (car (flatten prop)))

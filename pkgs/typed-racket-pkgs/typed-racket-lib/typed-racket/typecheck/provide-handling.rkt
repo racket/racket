@@ -30,6 +30,12 @@
 ;; defs: defines in this module
 ;; provs: provides in this module
 ;; pos-blame-id: a #%variable-reference for the module
+
+;; The first returned value is a syntax object of definitions that defines the
+;; contracted versions of the provided identifiers, and the corresponding
+;; provides.
+;;
+;; The second value is a list of two element lists, which are type name aliases.
 (define (generate-prov defs provs pos-blame-id)
   ;; maps ids defined in this module to an identifier which is the possibly-contracted version of the key
   (define mapping (make-free-id-table))
@@ -59,42 +65,55 @@
       [(dict-ref defs internal-id #f)
        =>
        (match-lambda
-         [(def-binding _ (app (λ (ty) (type->contract ty (λ () #f))) cnt))
-          (mk-value-triple internal-id new-id cnt)]
-         [(def-struct-stx-binding _ (? struct-info? si))
-          (mk-struct-syntax-triple internal-id new-id si)]
+         [(def-binding _ ty)
+          (mk-value-triple internal-id new-id ty)]
+         [(def-struct-stx-binding _ (? struct-info? si) constr-type)
+          (mk-struct-syntax-triple internal-id new-id si constr-type)]
          [(def-stx-binding _)
           (mk-syntax-triple internal-id new-id)])]
       ;; otherwise, not defined in this module, not our problem
       [else (values #'(begin) internal-id null)]))
 
-  ;; mk-struct-syntax-triple : identifier? identifier? struct-info? -> triple/c
-  (define (mk-struct-syntax-triple internal-id new-id si)
+  ;; mk-struct-syntax-triple : identifier? identifier? struct-info? Type/c -> triple/c
+  (define (mk-struct-syntax-triple internal-id new-id si constr-type)
     (define type-is-constructor? #t) ;Conservative estimate (provide/contract does the same)
     (match-define (list type-desc constr pred (list accs ...) muts super) (extract-struct-info si))
-    (define-values (defns new-ids aliases) 
-      (map/values 3 
+    (define-values (defns new-ids aliases)
+      (map/values 3
                   (lambda (e) (if (identifier? e)
                                   (mk e)
                                   (values #'(begin) e null)))
-                  (list* type-desc constr pred super accs)))
-    (define/with-syntax (type-desc* constr* pred* super* accs* ...) 
-      (for/list ([i (in-list new-ids)]) (if (identifier? i) #`(syntax #,i) i)))
+                  (list* type-desc pred super accs)))
+    (define-values (constr-defn constr-new-id constr-aliases)
+      (cond
+       [(not (identifier? constr))
+        (values #'(begin) #f null)]
+       [(free-identifier=? constr internal-id)
+        (mk-value-triple constr (generate-temporary constr) constr-type)]
+       [else
+        (mk constr)]))
+
+    (define/with-syntax (constr* type-desc* pred* super* accs* ...)
+      (for/list ([i (in-list (cons constr-new-id new-ids))])
+        (and (identifier? i) #`(quote-syntax #,i))))
+
     (with-syntax* ([id internal-id]
                    [export-id new-id]
-                   [untyped-id (freshen-id #'id)])
+                   [protected-id (freshen-id #'id)])
       (values
         #`(begin
+            #,constr-defn
             #,@defns
-            (define-syntax untyped-id
-              (let ((info (list type-desc* constr* pred* (list accs* ...)
+            (define-syntax protected-id
+              (let ((info (list type-desc* (syntax export-id) pred* (list accs* ...)
                                 (list #,@(map (lambda (x) #'#f) accs)) super*)))
                 #,(if type-is-constructor?
                       #'(make-struct-info-self-ctor constr* info)
                       #'info)))
-            (def-export export-id id untyped-id))
+            (def-export export-id protected-id protected-id))
         new-id
-        (cons (list #'export-id internal-id) (apply append aliases)))))
+        (cons (list #'export-id internal-id)
+              (apply append constr-aliases aliases)))))
 
 
   ;; mk-syntax-triple : identifier? identifier? -> triple/c
@@ -112,16 +131,18 @@
        (list (list #'export-id #'id)))))
 
   ;; mk-value-triple : identifier? identifier? (or/c syntax? #f) -> triple/c
-  (define (mk-value-triple internal-id new-id cnt)
+  (define (mk-value-triple internal-id new-id ty)
+    (define contract (type->contract ty (λ () #f)))
+
     (with-syntax* ([id internal-id]
                    [untyped-id (freshen-id #'id)]
                    [export-id new-id])
       (define/with-syntax definitions
-        (if cnt
+        (if contract
             (with-syntax* ([module-source pos-blame-id]
                            [the-contract (generate-temporary 'generated-contract)])
               #`(begin
-                  (define the-contract #,cnt)
+                  (define the-contract #,contract)
                   (define-syntax untyped-id
                     (make-provide/contract-transformer
                      (quote-syntax the-contract)

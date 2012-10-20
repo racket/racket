@@ -95,10 +95,10 @@
       (if (null? l)
           (values (reverse getters) (reverse setters))
           (loop (cddr l) (cons (car l) getters) (cons (cadr l) setters)))))
-  (match (build-struct-names nm flds #f #f nm)
+  (match (build-struct-names nm flds #f #f nm #:constructor-name maker*)
     [(list sty maker pred getters/setters ...)
      (let-values ([(getters setters) (split getters/setters)])
-       (struct-names nm sty (or maker* maker) pred getters setters))]))
+       (struct-names nm sty maker pred getters setters))]))
 
 ;; gets the fields of the parent type, if they exist
 ;; Option[Struct-Ty] -> Listof[Type]
@@ -166,13 +166,12 @@
   (define bindings
     (list*
      ;; the list of names w/ types
-     (cons (struct-names-struct-type names) (make-StructType sty))
-     (cons (struct-names-constructor names) (poly-wrapper (->* all-fields poly-base)))
-     (cons (struct-names-predicate names)
-           (make-pred-ty (if (not covariant?)
-                             (make-StructTop sty)
-                             (subst-all (make-simple-substitution
-                                         tvars (map (const Univ) tvars)) poly-base))))
+     (make-def-binding (struct-names-struct-type names) (make-StructType sty))
+     (make-def-binding (struct-names-predicate names)
+                       (make-pred-ty (if (not covariant?)
+                                         (make-StructTop sty)
+                                         (subst-all (make-simple-substitution
+                                                     tvars (map (const Univ) tvars)) poly-base))))
      (append
       (for/list ([g (in-list (struct-names-getters names))]
                  [t (in-list self-fields)]
@@ -183,28 +182,31 @@
                           (->* (list poly-base) t)
                           (->acc (list poly-base) t (list path))))])
           (add-struct-fn! g path #f)
-          (cons g func)))
+          (make-def-binding g func)))
       (if mutable
           (for/list ([s (in-list (struct-names-setters names))]
                      [t (in-list self-fields)]
                      [i (in-naturals parent-count)])
             (add-struct-fn! s (make-StructPE poly-base i) #t)
-            (cons s (poly-wrapper (->* (list poly-base t) -Void))))
+            (make-def-binding s (poly-wrapper (->* (list poly-base t) -Void))))
           null))))
 
   (add-struct-constructor! (struct-names-constructor names))
 
-  (define def-bindings
-    (for/list ([b (in-list bindings)])
-        (define id (car b))
-        (define t (cdr b))
-        (register-type id t)
-        (make-def-binding id t)))
-  (if si
-    (cons
-      (make-def-struct-stx-binding (struct-names-type-name names) si)
-      def-bindings)
-    def-bindings))
+  (define constructor-binding
+     (make-def-binding (struct-names-constructor names) (poly-wrapper (->* all-fields poly-base))))
+
+  (for ([b (cons constructor-binding bindings)])
+    (register-type (binding-name b) (def-binding-ty b)))
+
+  (append
+    (if (free-identifier=? (struct-names-type-name names)
+                           (struct-names-constructor names))
+      null
+      (list constructor-binding))
+   (cons
+     (make-def-struct-stx-binding (struct-names-type-name names) si (def-binding-ty constructor-binding))
+     bindings)))
 
 (define (register-parsed-struct-sty! ps)
   (match ps
