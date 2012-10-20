@@ -4,7 +4,8 @@
          future-visualizer/private/visualizer-data 
          (for-syntax racket/base 
                      future-visualizer/private/visualizer-data)
-         (only-in future-visualizer/trace trace-futures)) 
+         (only-in future-visualizer/trace trace-futures)
+         "vtrace3.rkt") 
 
 #|
 
@@ -38,6 +39,17 @@ Invariants:
                             (indexed-future-event-index e) 
                             (event-or-gc-time (indexed-future-event-fevent e)) 
                             i)))))]))
+
+;Each future timeline's events sorted in time order?
+(define (check-future-timeline-ordering tr)
+  (define ftls (hash-values (trace-future-timelines tr)))
+  (for ([ftl (in-list ftls)])
+    (let loop ([evts ftl]) 
+      (cond 
+        [(null? (cdr evts)) void]
+        [else 
+         (check-true (<= (event-start-time (car evts)) (event-start-time (car (cdr evts)))))
+         (loop (cdr evts))]))))
 
 (cond 
   [(futures-enabled?)
@@ -101,7 +113,10 @@ Invariants:
      (define blocks (filter worker-block-event? (trace-all-events tr)))
      (for ([b (in-list blocks)])
        (check-true (event? (event-block-handled-event b))) 
-       (check-true (symbol? (event-prim-name b)))))]
+       (check-true (symbol? (event-prim-name b)))))
+   
+   (let ([tr (build-trace vtrace-3)]) 
+     (check-future-timeline-ordering tr))]
   [else 
    (define l (trace-futures (let ([f (future (λ () (printf "hello\n")))]) 
                               (sleep 0.1) 

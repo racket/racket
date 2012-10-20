@@ -146,6 +146,24 @@
     (send (send item get-editor) insert (format "~a (~a)" prim (hash-ref (trace-sync-counts the-trace) prim))))
   (send sync-node open)
   
+  (define gc-node (send hlist-ctl new-list))
+  (define gc-time (for/fold ([gc-time 0.0]) ([gc (in-list (process-timeline-events (trace-gc-timeline the-trace)))])
+                    (define item (send gc-node new-item))
+                    (define len-ms (- (event-end-time gc) (event-start-time gc)))
+                    (send (send item get-editor) insert (format "~a: ~a - ~a (~a ms)" 
+                                                                (case (event-user-data gc) 
+                                                                  [(major) "Major"]
+                                                                  [(minor) "Minor"])
+                                                                (relative-time the-trace (event-start-time gc))
+                                                                (relative-time the-trace (event-end-time gc))
+                                                                len-ms))
+                    (+ gc-time len-ms)))
+  (send (send gc-node get-editor) insert (format "GC's (~a total, ~a ms)" 
+                                                   (trace-num-gcs the-trace)
+                                                   gc-time) 
+        0)
+  (send gc-node open)
+  
   (define right-panel (new panel:vertical-dragable% 
                           [parent main-panel] 
                           [stretchable-width #t]))

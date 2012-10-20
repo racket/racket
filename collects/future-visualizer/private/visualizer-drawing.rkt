@@ -154,13 +154,13 @@
 
 ;;calc-row-mid-y : uint uint trace -> uint
 (define (calc-row-mid-y proc-index row-height tr)
-  (define PADDING 2)
-  (floor (- (+ (* (if (> (trace-num-gcs tr) 0)
-                      (- proc-index 1)
-                      proc-index)
-                  row-height)
-               (/ row-height 2))
-            PADDING)))
+  (case proc-index 
+    [(gc) 0]
+    [else
+     (define PADDING 2)
+     (floor (- (+ (* proc-index row-height)
+                  (/ row-height 2))
+               PADDING))]))
 
 ;Gets the center of a circle with (xleft, ytop) as the top-left coordinate.
 ;;calc-center : uint uint uint -> (values uint uint)
@@ -375,7 +375,8 @@
                            #f
                            #f))
       (set-event-segment! evt seg)
-      (vector-set! last-right-edges (event-proc-index evt) (+ offset segw))
+      (when (not is-gc-evt?)
+        (vector-set! last-right-edges (event-proc-index evt) (+ offset segw)))
       (values (cons seg segs)
               new-delta
               (max largest-x (+ offset segw) #;last-right-edge))))

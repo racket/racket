@@ -399,7 +399,7 @@
           gc-evts)])))
   (define ngcs (length gcs))
   ;If we have any GC events, the 0th element of 'data' contains them; 
-  ;don't buid a timeline for it in the usual manner
+  ;don't build a timeline for it in the usual manner
   (define tls (build-timelines (if (zero? ngcs) data (vector-drop data 1))))
   (define gc-timeline (process-timeline 'gc 
                                         'gc
@@ -412,19 +412,20 @@
                                                  (event-or-gc-time gc) 
                                                  (gc-info-end-real-time gc) 
                                                  'gc
-                                                 i 
+                                                 'gc
                                                  #f 
-                                                 #f 
+                                                 (if (gc-info-major? gc) 'major 'minor)
                                                  'gc 
                                                  #f 
                                                  (event-pos-description i ngcs) 
                                                  #f #f #f #f #f #f #f #f))))
-  (define all-evts (sort (flatten (append (process-timeline-events gc-timeline) 
-                                          (for/list ([tl (in-list tls)]) (process-timeline-events tl)))) 
-                         #:key event-index 
+  (define all-evts (sort (append (flatten (for/list ([tl (in-list tls)]) (process-timeline-events tl)))
+                                 (process-timeline-events gc-timeline))
+                         #:key event-index
                          <))
+  (define non-gc-evts (filter (λ (e) (not (gc-event? e))) all-evts))
   (define future-tl-hash (let ([h (make-hash)]) 
-                 (for ([evt (in-list all-evts)]) 
+                 (for ([evt (in-list non-gc-evts)]) 
                    (let* ([fid (event-future-id evt)]
                           [existing (hash-ref h fid '())]) 
                      (hash-set! h fid (cons evt existing))))
@@ -451,7 +452,7 @@
                     (build-creation-graph future-tl-hash)))
   (connect-event-chains! tr) 
   (connect-target-fid-events! tr)
-  tr)    
+  tr)
 
 ;;build-rtcall-hash : (listof event) -> (values (blocking_prim -o-> count) (sync_prim -o-> count) (fid -o-> rtcall-info)
 (define (build-rtcall-hashes evts) 

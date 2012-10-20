@@ -15,6 +15,11 @@
           segs 
           (frame-info-timeline-ticks finfo)))
 
+(define (check-in-bounds? segs finfo) 
+  (for ([s (in-list segs)]) 
+    (check-false (negative? (segment-y s)))
+    (check-true (< (segment-y s) (frame-info-adjusted-height finfo)))))
+
 ;Display tests 
 (let ([vr (viewable-region 3 3 500 500)]) 
   (for ([i (in-range 4 503)]) 
@@ -103,7 +108,8 @@
                          (indexed-future-event 2 (future-event 0 1 'end-work 2 #f #f)) 
                          (indexed-future-event 3 (future-event 0 0 'complete 3 #f #f)))] 
        [trace (build-trace future-log)]) 
-  (let-values ([(finfo segments) (calc-segments trace)]) 
+  (let-values ([(finfo segments) (calc-segments trace)])
+    (check-in-bounds? segments finfo)
     (check-equal? (length segments) 4) 
     (check-equal? (length (filter (λ (s) (segment-next-future-seg s)) segments)) 2) 
     (check-equal? (length (filter (λ (s) (segment-next-targ-future-seg s)) segments)) 1) 
@@ -116,6 +122,7 @@
                          (indexed-future-event 3 (future-event 42 0 'complete 1.2 #f #f)))] 
        [tr (build-trace future-log)])
   (define-values (finfo segs) (calc-segments tr))
+  (check-in-bounds? segs finfo)
   (define ticks (frame-info-timeline-ticks finfo))
   (check-equal? (length ticks) 11))
 
@@ -171,7 +178,8 @@
                          (indexed-future-event 8 (future-event 42 1 'end-work 1.42 #f #f)) 
                          (indexed-future-event 9 (future-event 42 0 'result 1.43 #f #f)))] 
        [tr (build-trace future-log)]) 
-  (define-values (finfo segs) (calc-segments tr)) 
+  (define-values (finfo segs) (calc-segments tr))
+  (check-in-bounds? segs finfo)
   (define ticks (frame-info-timeline-ticks finfo))
   (check-seg-layout tr segs ticks))
 
@@ -216,7 +224,7 @@
   (segment (event index
                   real-start-time 
                   real-end-time 
-                  0 0 0 0 0 0 0 0 0 0 0 0 0 #f)  
+                  0 0 0 0 0 0 0 0 0 0 0 0 0 #f #f)  
            0 0 0 0 #f #f #f #f #f #f #f #f #f))
                    
 
@@ -329,7 +337,8 @@
    (indexed-future-event 3 (gc-info #f 0 0 0 0 0 0 0 15.0 19.5)) 
    (indexed-future-event 4 (future-event 1 1 'complete 20.0 #f 0)) 
    (indexed-future-event 5 (future-event 1 1 'end-work 21.0 #f 0)))) 
-(let-values ([(tr finfo segs ticks) (compile-trace-data gc-log3)]) 
+(let-values ([(tr finfo segs ticks) (compile-trace-data gc-log3)])
+  (check-in-bounds? segs finfo)
   (check-equal? (length (filter gc-event? (trace-all-events tr))) 2) 
   (check-equal? (trace-num-gcs tr) 2) 
   (check-equal? (length (trace-proc-timelines tr)) 2)
@@ -339,7 +348,8 @@
     (check-equal? (length gc-segs) 2) 
     (for ([gs (in-list gc-segs)]) 
       (check-true (= (segment-height gs) (frame-info-adjusted-height finfo))) 
-      (check-true (> (segment-width gs) 10)))))
+      (check-true (> (segment-width gs) 10))
+      (check-true (= (segment-y gs) 0)))))
 
 (check-true (work-event? (future-event #f 0 'start-work 1.0 #f 0))) 
 (check-true (work-event? (future-event #f 0 'start-0-work 2.0 #f 0))) 
