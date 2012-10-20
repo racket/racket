@@ -207,20 +207,27 @@
                         [(binding-constraint ...) binding-constraints])
             #`(begin
                 (void #,(defined-check judgment-proc "judgment form" #:external #'form-name))
-                (for/fold ([outputs '()]) ([sub-output #,call])
-                  (define mtchs
-                    (match-pattern (compile-pattern #,lang `#,output-pattern #t) sub-output))
-                  (if mtchs
-                      (for/fold ([outputs outputs]) ([mtch mtchs])
-                        (let ([temp (lookup-binding (mtch-bindings mtch) 'output-name)] ...)
-                          (define mtch-outputs
-                            (and binding-constraint ...
-                                 (term-let ([output-name/ellipsis temp] ...) 
-                                           #,rest-body)))
-                          (if mtch-outputs
-                              (append mtch-outputs outputs)
-                              outputs)))
-                      outputs)))))]))))
+                (judgment-form-bind-withs/proc
+                 #,lang
+                 `#,output-pattern
+                 #,call
+                 (λ (bindings)
+                   (let ([temp (lookup-binding bindings 'output-name)] ...)
+                     (and binding-constraint ...
+                          (term-let ([output-name/ellipsis temp] ...) 
+                                    #,rest-body))))))))]))))
+
+(define (judgment-form-bind-withs/proc lang output-pattern call-output do-something)
+  (let ([compiled-pattern (compile-pattern lang output-pattern #t)])
+    (for/fold ([outputs '()]) ([sub-output call-output])
+      (define mtchs (match-pattern compiled-pattern sub-output))
+      (if mtchs
+          (for/fold ([outputs outputs]) ([mtch mtchs])
+            (define mtch-outputs (do-something (mtch-bindings mtch)))
+            (if mtch-outputs
+                (append mtch-outputs outputs)
+                outputs))
+          outputs))))
 
 (define (combine-where-results/flatten mtchs result)
   (and mtchs
@@ -249,20 +256,21 @@
         (define spacers
           (for/fold ([s '()]) ([m mode])
             (case m [(I) s] [(O) (cons '_ s)])))
-        (define (assemble inputs outputs)
-          (let loop ([ms mode] [is inputs] [os outputs])
-            (if (null? ms)
-                '()
-                (case (car ms)
-                  [(I) (cons (car is) (loop (cdr ms) (cdr is) os))]
-                  [(O) (cons (car os) (loop (cdr ms) is (cdr os)))]))))
         (define (wrapped . _)
           (set! outputs (form-proc form-proc input))
           (for/list ([output outputs])
-            (cons form-name (assemble input output))))
-        (apply trace-call form-name wrapped (assemble input spacers))
+            (cons form-name (assemble mode input output))))
+        (apply trace-call form-name wrapped (assemble mode input spacers))
         outputs)
       (form-proc form-proc input)))
+
+(define (assemble mode inputs outputs)
+  (let loop ([ms mode] [is inputs] [os outputs])
+    (if (null? ms)
+        '()
+        (case (car ms)
+          [(I) (cons (car is) (loop (cdr ms) (cdr is) os))]
+          [(O) (cons (car os) (loop (cdr ms) is (cdr os)))]))))
 
 (define (verify-name-ok orig-name the-name)
   (unless (symbol? the-name)
