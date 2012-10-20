@@ -124,7 +124,7 @@ static void print_vector(Scheme_Object *vec, int notdisplay, int compact,
 static void print_char(Scheme_Object *chobj, int notdisplay, PrintParams *pp);
 static char *print_to_string(Scheme_Object *obj, intptr_t * volatile len, int write,
 			     Scheme_Object *port, intptr_t maxl, 
-                             Scheme_Object *qq_depth);
+                             Scheme_Object *qq_depth, int *_release_to_quick);
 
 static void custom_write_struct(Scheme_Object *s, Scheme_Hash_Table *ht, 
                                 Scheme_Marshal_Tables *mt,
@@ -384,7 +384,7 @@ static void *print_to_string_k(void)
   p->ku.k.p2 = NULL;
   p->ku.k.p3 = NULL;
 
-  return (void *)print_to_string(obj, len, iswrite, NULL, maxl, qq_depth);
+  return (void *)print_to_string(obj, len, iswrite, NULL, maxl, qq_depth, NULL);
 }
 
 char *scheme_write_to_string_w_max(Scheme_Object *obj, intptr_t *len, intptr_t maxl)
@@ -956,7 +956,7 @@ static char *
 print_to_string(Scheme_Object *obj, 
 		intptr_t * volatile len, int write,
 		Scheme_Object *port, intptr_t maxl,
-                Scheme_Object *qq_depth)
+                Scheme_Object *qq_depth, int *_release_to_quick)
 {
   Scheme_Hash_Table *ht;
   Scheme_Hash_Table *uq_ht;
@@ -1111,8 +1111,14 @@ print_to_string(Scheme_Object *obj,
 
   params.inspector = NULL;
 
-  if (port && !quick_print_buffer)
-    quick_print_buffer = ca;
+  if (_release_to_quick) {
+    *_release_to_quick = 0;
+    if (params.print_buffer != ca) {
+      if (!quick_print_buffer)
+        quick_print_buffer = ca;
+    } else
+      *_release_to_quick = 1;
+  }
 
   return params.print_buffer;
 }
@@ -1124,6 +1130,7 @@ print_to_port(char *name, Scheme_Object *obj, Scheme_Object *port, int notdispla
   Scheme_Output_Port *op;
   char *str;
   intptr_t len;
+  int rel;
   
   op = scheme_output_port_record(port);
   if (op->closed)
@@ -1131,9 +1138,12 @@ print_to_port(char *name, Scheme_Object *obj, Scheme_Object *port, int notdispla
                      "  port: %V", 
                      name, port);
 
-  str = print_to_string(obj, &len, notdisplay, port, maxl, qq_depth);
+  str = print_to_string(obj, &len, notdisplay, port, maxl, qq_depth, &rel);
 
   scheme_write_byte_string(str, len, port);
+
+  if (rel && !quick_print_buffer)
+    quick_print_buffer = str;
 }
 
 static void print_this_string(PrintParams *pp, const char *str, int offset, int autolen)
@@ -2850,10 +2860,13 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
         if (pp->print_syntax) {
           intptr_t slen;
           char *str;
+          int rel;
           print_utf8_string(pp, " ", 0, 1);
           str = print_to_string(scheme_syntax_to_datum((Scheme_Object *)stx, 0, NULL),
-                                &slen, 1, NULL, pp->print_syntax, NULL);
+                                &slen, 1, NULL, pp->print_syntax, NULL, &rel);
           print_utf8_string(pp, str, 0, slen);
+          if (rel && !quick_print_buffer)
+            quick_print_buffer = str;
         }
         print_utf8_string(pp, ">", 0, 1);
       } else {
