@@ -258,4 +258,36 @@
            #:with opt
            (begin (log-optimization "float sub1" float-opt-msg this-syntax)
                   (add-disappeared-use #'op)
-                  #'(unsafe-fl- n.opt 1.0))))
+                  #'(unsafe-fl- n.opt 1.0)))
+
+  ;; warn about (potentially) exact real arithmetic, in general
+  (pattern (#%plain-app (~var op (float-op binary-float-ops))
+                        n ...)
+           #:when (and (subtypeof? this-syntax -Real)
+                       (not (subtypeof? this-syntax -Flonum))
+                       (not (subtypeof? this-syntax -Int)))
+           #:with opt
+           (begin (log-optimization-info "exact real arith"
+                                         this-syntax)
+                  this-syntax)) ; no change
+  (pattern (#%plain-app (~var op (float-op binary-float-comps))
+                        n ...)
+           ;; can't look at return type, since it's always bool
+           #:when (for/and ([arg (syntax->list #'(n ...))])
+                    (and (subtypeof? arg -Real)
+                         (not (subtypeof? arg -Flonum))
+                         (not (subtypeof? arg -Int))))
+           #:with opt
+           (begin (log-optimization-info "exact real arith"
+                                         this-syntax)
+                  this-syntax)) ; no change
+  (pattern (#%plain-app (~var op (float-op unary-float-ops))
+                        n ...)
+           #:when (and (subtypeof? this-syntax -Real)
+                       (not (subtypeof? this-syntax -Flonum))
+                       (not (subtypeof? this-syntax -Int)))
+           #:with opt
+           (begin (log-optimization-info "exact real arith"
+                                         this-syntax)
+                  this-syntax)) ; no change
+  )

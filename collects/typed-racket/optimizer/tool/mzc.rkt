@@ -406,6 +406,23 @@
              '() '()
              20)))) ;; TODO have actual badness
 
+  (when inside-hot-function?
+    (for ([TR-entry (in-list TR-log)]
+          #:when (info-log-entry? TR-entry)
+          #:when (equal? (log-entry-kind TR-entry) "exact real arith")
+          #:when (pos-inside-us? (log-entry-pos TR-entry)))
+      (emit (missed-opt-log-entry
+             "" ; kind not used at this point
+             (string-append
+              "This expression may use exact rational arithmetic, which is inefficient. "
+              "You can avoid this by using operations that don't return fractional "
+              ;; TODO don't hard-code `quotient', show the right one depending on the operation
+              "results, such as `quotient', or using floating-point numbers.")
+             (log-entry-located-stx TR-entry) (log-entry-located-stx TR-entry)
+             (log-entry-pos TR-entry) 'typed-racket
+             '() '()
+             20)))) ;; TODO have actual badness
+
   produced-entries)
 
 (define (group-badness group)
