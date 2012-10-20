@@ -9,15 +9,13 @@
           scribble/base
           scribble/manual
           racket/sandbox
-          racket/math)
+          racket/math
+          "utils.rkt")
 
-@(define math-eval 
-   (parameterize ([sandbox-output 'string]
-                  [sandbox-error-output 'string])
-     (make-evaluator 'racket)))
-@;(interaction-eval #:eval math-eval (require math))
+@(define untyped-eval (make-untyped-math-eval))
 
 @title[#:tag "number-theory" #:style '(toc)]{Number Theory}
+@(author-jens-axel)
 
 @local-table-of-contents[]
 
@@ -32,8 +30,9 @@
    means there exists an integer @racket[k] such that m*k=n.
 
    Test whether 2 divides 9:
-   @interaction[(require math)
-                (divides? 2 9)]
+   @interaction[#:eval untyped-eval
+                       (require math)
+                       (divides? 2 9)]
    
    @; http://en.wikipedia.org/wiki/Divisor
 }   
@@ -45,9 +44,9 @@
   = @racket[au + bv + cw + ...]
 
   The greatest common divisor of 6 and 15 is 3.
-  @interaction[(require math)
-                (bezout 6 15)
-                (+ (* -2 6) (* 1 15))]
+  @interaction[#:eval untyped-eval
+                      (bezout 6 15)
+                      (+ (* -2 6) (* 1 15))]
   @; http://en.wikipedia.org/wiki/B%C3%A9zout's_identity
 }
   
@@ -62,8 +61,8 @@
   if their greatest common divisor is 1.
 
   The numbers 2, 6, and, 15 are coprime.
-  @interaction[(require math)
-               (coprime? 2 6 15)]
+  @interaction[#:eval untyped-eval
+                      (coprime? 2 6 15)]
   @; http://en.wikipedia.org/wiki/Coprime
 }  
 
@@ -72,8 +71,8 @@
   Returns @racket[#t] if the integers @racket[a],@racket[b],... are pairwise coprime.
 
   The numbers 2, 6, and, 15 are not pairwise coprime, since 2 and 6 share the factor 3.
-  @interaction[(require math)
-               (pairwise-coprime? 2 6 15)]
+  @interaction[#:eval untyped-eval
+                      (pairwise-coprime? 2 6 15)]
   @; http://en.wikipedia.org/wiki/Pairwise_coprime
 }  
 
@@ -87,12 +86,12 @@
   such that @racket[ab=1 mod n].
   
   The number 3 is an inverse to 2 modulo 5.
-  @interaction[(require math)
-               (inverse 2 5)
-               (modulo (* 2 3) 5)]
+  @interaction[#:eval untyped-eval
+                      (inverse 2 5)
+                      (modulo (* 2 3) 5)]
   The number 0 has no inverse modulo 5.
-  @interaction[(require math)
-               (inverse 0 5)]
+  @interaction[#:eval untyped-eval
+                      (inverse 0 5)]
   @; http://en.wikipedia.org/wiki/Modular_multiplicative_inverse
 }  
 
@@ -114,8 +113,8 @@
   What is the least number @racket[x] that when divided by 3 leaves 
   a remainder of 2, when divided by 5 leaves a remainder of 3, and 
   when divided by 7 leaves a remainder of 2? 
-  @interaction[(require math)
-               (solve-chinese '(2 3 2) '(3 5 7))]
+  @interaction[#:eval untyped-eval
+                      (solve-chinese '(2 3 2) '(3 5 7))]
   
   @; http://en.wikipedia.org/wiki/Chinese_remainder_theorem
 }
@@ -133,36 +132,37 @@ Note: An integer @racket[z] is considered a prime, if the only
 positive divisors of @racket[z] are @racket[1] and @racket[|z|].
 
 The positive primes below 20 are:
-  @interaction[(require math racket/list)
-               (filter prime? (range 1 21))]
+  @interaction[#:eval untyped-eval
+                      (require racket/list)
+                      (filter prime? (range 1 21))]
 The corresponding negative primes are:
-  @interaction[(require math racket/list)
-               (filter prime? (range 1 -21 -1))]
+  @interaction[#:eval untyped-eval
+                      (filter prime? (range 1 -21 -1))]
 }
 
 @defproc[(odd-prime? [z Integer]) boolean?]{
 Returns @racket[#t] if @racket[z] is a odd prime,
 @racket[#f] otherwise.
 
-@interaction[(require math)
-             (odd-prime? 2)
-             (odd-prime? 3)]
+@interaction[#:eval untyped-eval
+                    (odd-prime? 2)
+                    (odd-prime? 3)]
 }
 
 @defproc[(nth-prime [n Natural]) natural?]{
 Returns the n'th positive prime. 
-@interaction[(require math)
-             (nth-prime 0)
-             (nth-prime 1)
-             (nth-prime 2)]
+@interaction[#:eval untyped-eval
+                    (nth-prime 0)
+                    (nth-prime 1)
+                    (nth-prime 2)]
 }
 
 @defproc[(next-prime [z Integer]) prime?]{
 Returns the first prime larger than @racket[z].
 
-@interaction[(require math)
-             (untyped-next-prime 4)
-             (untyped-next-prime 5)]
+@interaction[#:eval untyped-eval
+                    (untyped-next-prime 4)
+                    (untyped-next-prime 5)]
 
 TODO: Figure out how to export next-prime even though
 TR can't make contract automatically.
@@ -171,9 +171,9 @@ TR can't make contract automatically.
 @defproc[(prev-prime [z Integer]) prime?]{
 Returns the first prime smaller than @racket[z].
 
-@interaction[(require math)
-             (untyped-prev-prime 4)
-             (untyped-prev-prime 5)]
+@interaction[#:eval untyped-eval
+                    (untyped-prev-prime 4)
+                    (untyped-prev-prime 5)]
 
 TODO: Figure out how to export prev-prime even though
 TR can't make contract automatically.
@@ -182,15 +182,15 @@ TR can't make contract automatically.
 @defproc[(next-primes [z Integer] [n Natural]) (Listof prime?)]{
 Returns list of the next @racket[n] primes larger than @racket[z].
 
-@interaction[(require math)
-             (next-primes 2 4)]
+@interaction[#:eval untyped-eval
+                    (next-primes 2 4)]
 }
 
 @defproc[(prev-primes [z Integer] [n Natural]) (Listof prime?)]{
 Returns list of the next @racket[n] primes smaller than @racket[z].
 
-@interaction[(require math)
-             (prev-primes 13 4)]
+@interaction[#:eval untyped-eval
+                    (prev-primes 13 4)]
 }
 
 @defproc[(factorize [n Natural]) (Listof (List prime? natural?))]{
@@ -199,8 +199,8 @@ The factorization consists of a list of corresponding
 primes and exponents. The primes will be in ascending order.
 
 The prime factorization of 600 = 2^3 * 3^1 * 5^2:
-@interaction[(require math)
-             (factorize 600)]
+@interaction[#:eval untyped-eval
+                    (factorize 600)]
 }
 
 @defproc[(defactorize [f (Listof (List prime? natural?))]) natural?]{
@@ -208,35 +208,35 @@ Returns the natural number, whose factorization is given
 by @racket[f]. The factorization @racket[f] is represented
 as described in @racket[factorize].
 
-@interaction[(require math)
-             (defactorize '((2 3) (3 1) (5 2)))]
+@interaction[#:eval untyped-eval
+                    (defactorize '((2 3) (3 1) (5 2)))]
 }
 
 @defproc[(divisors [z Integer]) (Listof Natural)]{
 Returns a list of all positive divisors of the integer @racket[z].
 The divisors appear in ascending order.                                                       
                                                        
- @interaction[(require math)
-              (divisors 120)
-              (divisors -120)]
+ @interaction[#:eval untyped-eval
+                     (divisors 120)
+                     (divisors -120)]
 }
 
 @defproc[(prime-divisors [z Integer]) (Listof Natural)]{
 Returns a list of all positive prime divisors of the integer 
 @racket[z]. The divisors appear in ascending order.                                                       
                                                        
- @interaction[(require math)
-              (prime-divisors 120)]
+ @interaction[#:eval untyped-eval
+                     (prime-divisors 120)]
 }
 
 @defproc[(prime-exponents [z Integer]) (Listof Natural)]{
 Returns a list of the exponents of in a factorization of the integer
 @racket[z].                                                       
                                                        
- @interaction[(require math)
-              (define z (* 2 2 2 3 5 5))
-              (prime-divisors z)
-              (prime-exponents z)]
+ @interaction[#:eval untyped-eval
+                     (define z (* 2 2 2 3 5 5))
+                     (prime-divisors z)
+                     (prime-exponents z)]
 }
 
 @; ----------------------------------------
@@ -248,9 +248,9 @@ Returns the @racket[m]'th integer root of @racket[n].
 This is the largest number @racket[r] such that 
 @racket[r^m<=n].
             
- @interaction[(require math)
-              (integer-root (expt 3 4) 4)
-              (integer-root (+ (expt 3 4) 1) 4)]
+ @interaction[#:eval untyped-eval
+                     (integer-root (expt 3 4) 4)
+                     (integer-root (+ (expt 3 4) 1) 4)]
 }
  
 @defproc[(integer-root/remainder [n Natural] [m Natural]) 
@@ -258,9 +258,9 @@ This is the largest number @racket[r] such that
 Returns two values. The first, @racket[r], is the @racket[m]'th 
 integer root of @racket[n]. The second is @racket[n-r^m].
             
- @interaction[(require math)
-              (integer-root/remainder (expt 3 4) 4)
-              (integer-root/remainder (+ (expt 3 4) 1) 4)]
+ @interaction[#:eval untyped-eval
+                     (integer-root/remainder (expt 3 4) 4)
+                     (integer-root/remainder (+ (expt 3 4) 1) 4)]
 }
 
  
@@ -274,9 +274,9 @@ base @racket[a] that divides @racket[b].
 That is, @racket[a^n] divides @racket[b] but @racket[a^(n+1)] does not divide
 @racket[b].
             
- @interaction[(require math)
-              (max-dividing-power 3 (expt 3 4))
-              (max-dividing-power 3 5)]
+ @interaction[#:eval untyped-eval
+                     (max-dividing-power 3 (expt 3 4))
+                     (max-dividing-power 3 5)]
 }
 
 @defproc[(perfect-power [m Integer]) 
@@ -285,9 +285,9 @@ If @racket[m] is a perfect power, a list with two elements
 @racket[b] and @racket[n] such that @racket[b^n = m] 
 is returned, otherwise @racket[#f] is returned.
             
- @interaction[(require math)
-              (perfect-power (expt 3 4))
-              (perfect-power (+ (expt 3 4) 1))]
+ @interaction[#:eval untyped-eval
+                     (perfect-power (expt 3 4))
+                     (perfect-power (+ (expt 3 4) 1))]
 }
  
  
@@ -295,9 +295,9 @@ is returned, otherwise @racket[#f] is returned.
 Returns @racket[#t] if @racket[m] is a perfect power,
 otherwise @racket[#f].        
 
-  @interaction[(require math)
-              (perfect-power? (expt 3 4))
-              (perfect-power? (+ (expt 3 4) 1))]
+  @interaction[#:eval untyped-eval
+                      (perfect-power? (expt 3 4))
+                      (perfect-power? (+ (expt 3 4) 1))]
 }
 
  
@@ -308,30 +308,30 @@ where @racket[p] is prime, then a list with the
 prime and the exponent is returned, otherwise
 @racket[#f] is returned.
 
-  @interaction[(require math)
-              (prime-power (expt 3 4))
-              (prime-power (expt 6 4))]
+  @interaction[#:eval untyped-eval
+                      (prime-power (expt 3 4))
+                      (prime-power (expt 6 4))]
 }
 
 @defproc[(prime-power? [m Natural]) boolean?]{
 Returns @racket[#t] if @racket[m] is a prime power,
 otherwise @racket[#f].
 
-  @interaction[(require math)
-              (prime-power? (expt 3 4))
-              (prime-power? (expt 6 4))
-              (prime-power? 1)
-              (prime-power? 0)]
+  @interaction[#:eval untyped-eval
+                      (prime-power? (expt 3 4))
+                      (prime-power? (expt 6 4))
+                      (prime-power? 1)
+                      (prime-power? 0)]
 }
 
 @defproc[(odd-prime-power? [m Natural]) boolean?]{
 Returns @racket[#t] if @racket[m] is a power of an odd prime,
 otherwise @racket[#f].
 
-  @interaction[(require math)
-              (odd-prime-power? (expt 2 4))
-              (odd-prime-power? (expt 3 4))
-              (odd-prime-power? (expt 15 4))]
+  @interaction[#:eval untyped-eval
+                      (odd-prime-power? (expt 2 4))
+                      (odd-prime-power? (expt 3 4))
+                      (odd-prime-power? (expt 15 4))]
 }
 
 @defproc[(as-power [m Positive-Integer]) 
@@ -339,11 +339,11 @@ otherwise @racket[#f].
 Returns two values @racket[b] and @racket[n]
 such that @racket[m=b^r] and @racket[n] is maximal.
                                      
-  @interaction[(require math)
-              (as-power (* (expt 2 4) (expt 3 4)))
-              (expt 6 4)
-              (* (expt 2 4) (expt 3 4))
-              (as-power (* (expt 2 4) (expt 3 5)))]
+  @interaction[#:eval untyped-eval
+                      (as-power (* (expt 2 4) (expt 3 4)))
+                      (expt 6 4)
+                      (* (expt 2 4) (expt 3 4))
+                      (as-power (* (expt 2 4) (expt 3 5)))]
 }
 
 @defproc[(perfect-square [m Natural]) 
@@ -351,9 +351,9 @@ such that @racket[m=b^r] and @racket[n] is maximal.
 Returns @racket[sqrt(m)] if @racket[m] is perfect 
 square, otherwise @racket[#f].        
 
-@interaction[(require math)
-              (perfect-square 9)
-              (perfect-square 10)]
+@interaction[#:eval untyped-eval
+                    (perfect-square 9)
+                    (perfect-square 10)]
 }
 
 @; ----------------------------------------
@@ -374,9 +374,9 @@ This function is known as Eulers totient or phi function.
 
 Note: The function @racket[totient] is multiplicative.
 
-@interaction[(require math racket)
-              (totient 9)
-              (length (filter (curry coprime? 9) (range 10)))]
+@interaction[#:eval untyped-eval
+                    (totient 9)
+                    (length (filter (curry coprime? 9) (range 10)))]
 
 @; http://en.wikipedia.org/wiki/Euler%27s_totient_function
 }
@@ -393,10 +393,10 @@ Returns:
  
 Note: The function @racket[moebius-mu] is multiplicative.
 
-@interaction[(require math racket)
-              (moebius-mu (* 2 3 5))
-              (moebius-mu (* 2 3 5 7))
-              (moebius-mu (* 2 2 3 5 7))]
+@interaction[#:eval untyped-eval
+                    (moebius-mu (* 2 3 5))
+                    (moebius-mu (* 2 3 5 7))
+                    (moebius-mu (* 2 2 3 5 7))]
 
 @; http://en.wikipedia.org/wiki/M%C3%B6bius_function
 }
@@ -408,9 +408,9 @@ all divisors of @racket[n].
 
 Note: The function @racket[divisor-sum] is multiplicative.
 
-@interaction[(require math racket)              
-              (divisor-sum 12 2)
-              (apply + (map sqr (divisors 12)))]
+@interaction[#:eval untyped-eval         
+                    (divisor-sum 12 2)
+                    (apply + (map sqr (divisors 12)))]
 
 @; http://en.wikipedia.org/wiki/Divisor_function
 }
@@ -424,6 +424,8 @@ Note: The function @racket[divisor-sum] is multiplicative.
   Definition:
   @racket[http://en.wikipedia.org/wiki/Bernoulli_number].
 
-  @interaction[(require math racket)
-             (map bernoulli (range 9))]
+  @interaction[#:eval untyped-eval
+                      (map bernoulli (range 9))]
 }
+
+@(close-eval untyped-eval)

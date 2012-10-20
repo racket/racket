@@ -1,23 +1,22 @@
 #lang scribble/manual
 
-@(define (neil-email) "ntoronto@racket-lang.org")
-@(define (jens-axel-email) "jensaxel@soegaard.net")
+@(require "utils.rkt")
 
 @title[#:tag "top"]{Math Library}
-@author{@(author+email "Neil Toronto" (neil-email))}
-@author{@(author+email "Jens Axel Søgaard" (jens-axel-email))}
+@(author-neil)
+@(author-jens-axel)
 
 @defmodule[math]
 
 The @racketmodname[math] library provides functions and data structures useful
 for working with numbers and collections of numbers. These include
 @itemlist[
-  @item{Additional floating-point functions}
-  @item{Probability distributions}
-  @item{Number-theoretic functions}
-  @item{Polynomials}
-  @item{Intervals}
+  @item{Additional constants and elementary functions}
+  @item{Special functions}
   @item{@racket[Bigfloat]s, or arbitrary-precision floating-point numbers}
+  @item{Probability distributions}
+  @item{Statistical functions}
+  @item{Number-theoretic functions}
   @item{@racket[Array]s for storing and transforming large rectangular data sets}
   @item{Linear algebra functions}
 ]
@@ -29,11 +28,13 @@ please contact us or post to one of the
 @hyperlink["http://racket-lang.org/community.html"]{mailing lists}
 to make suggestions or submit patches.
 
-@bold{This is a Typed Racket library.} A large portion of it can be used from
-untyped Racket, and we are working on making the rest available. Exports not usable
-in untyped Racket are noted @bold{in bold text}.
+@bold{This is a Typed Racket library.} It is most efficient to use it in Typed
+Racket, so that contracts are checked statically. However, almost all of it can
+be used in untyped Racket. Exceptions and performance warnings are in @bold{bold text}.
 
 @local-table-of-contents[]
 
-@include-section["number-theory.scrbl"]
-@include-section["flonum.scrbl"]
+@include-section["math-base.scrbl"]
+@include-section["math-flonum.scrbl"]
+@include-section["math-bigfloat.scrbl"]
+@include-section["math-number-theory.scrbl"]

@@ -5,7 +5,7 @@
          "flonum-constants.rkt"
          "flonum-exp.rkt")
 
-(provide fllog1p lg* lg/ lg1+ lg+ lg1- lg- fllog-quotient)
+(provide fllog1p lg1+ lg+ lg1- lg- fllog-quotient)
 
 (begin-encourage-inline
   
@@ -18,12 +18,6 @@
            (define y (fl+ 1.0 x))
            (fl- (fllog y) (fl/ (fl- (fl- y 1.0) x) y))]
           [else  x]))
-  
-  (: lg* (Float Float -> Float))
-  (define (lg* log-x log-y) (fl+ log-x log-y))
-  
-  (: lg/ (Float Float -> Float))
-  (define (lg/ log-x log-y) (fl- log-x log-y))
   
   (: lg1+ (Float -> Float))
   (define (lg1+ log-x)

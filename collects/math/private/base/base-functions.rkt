@@ -5,21 +5,11 @@
          "../flonum/flonum-functions.rkt"
          "../flonum/flonum-more-functions.rkt")
 
-(provide phi.0
-         euler.0
-         gamma.0
-         catalan.0
-         power-of-two?
+(provide power-of-two?
          absolute-error
          relative-error
          sum
-         sinh cosh tanh
          asinh acosh atanh)
-
-(define phi.0 (fl #e1.61803398874989484820458683436563811772))
-(define euler.0 (fl #e2.718281828459045235360287471352662497759))
-(define gamma.0 (fl #e0.5772156649015328606065120900824024310432))
-(define catalan.0 (fl #e0.9159655941772190150546035149323841107734))
 
 ;; Returns #t if x is an integer power of 2
 (: power-of-two? (Real -> Boolean))
@@ -71,45 +61,6 @@
              (cond [(double-flonum? x)  (loop xs r (cons x fs))]
                    [(single-flonum? x)  (loop xs r (cons (fl x) fs))]
                    [else  (loop xs (+ x r) fs)]))])))
-
-;; ===================================================================================================
-;; Hyperbolic
-
-(: sinh (case-> (Zero -> Zero)
-                (Float -> Float)
-                (Real -> Real)
-                (Float-Complex -> Float-Complex)
-                (Number -> Number)))
-(define (sinh x)
-  (cond [(real? x)  (cond [(flonum? x)  (flsinh x)]
-                          [(eqv? x 0)  0]
-                          [else  (flsinh (fl x))])]
-        [else  (cond [(float-complex? x)  (* 0.0-1.0i (sin (* 0.0+1.0i x)))]
-                     [else  (* -i (sin (* +i x)))])]))
-
-(: cosh (case-> (Zero -> One)
-                (Float -> Float)
-                (Real -> Real)
-                (Float-Complex -> Float-Complex)
-                (Number -> Number)))
-(define (cosh x)
-  (cond [(real? x)  (cond [(flonum? x)  (flcosh x)]
-                          [(eqv? x 0)  1]
-                          [else  (flcosh (fl x))])]
-        [else  (cond [(float-complex? x)  (cos (* 0.0+1.0i x))]
-                     [else  (cos (* 0+i x))])]))
-
-(: tanh (case-> (Zero -> Zero)
-                (Float -> Float)
-                (Real -> Real)
-                (Float-Complex -> Float-Complex)
-                (Number -> Number)))
-(define (tanh x)
-  (cond [(real? x)  (cond [(flonum? x)  (fltanh x)]
-                          [(eqv? x 0)  0]
-                          [else  (fltanh (fl x))])]
-        [else  (cond [(float-complex? x)  (* 0.0-1.0i (tan (* 0.0+1.0i x)))]
-                     [else  (* 0-i (tan (* 0+i x)))])]))
 
 ;; ===================================================================================================
 ;; Inverse hyperbolic

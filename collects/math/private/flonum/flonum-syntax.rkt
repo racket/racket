@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require racket/flonum)
+(require (for-syntax racket/base)
+         racket/flonum)
 
 (provide flsplit
          fast-mono-fl+/error fast-fl+/error fl+/error
