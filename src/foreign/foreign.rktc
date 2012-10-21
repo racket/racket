@@ -2411,7 +2411,7 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
 #ifdef MZ_USE_PLACES
   int           orig_place = SCHEME_TRUEP(SCHEME_VEC_ELS(data)[7]);
 #endif
-  int           nargs   = cif->nargs;
+  int           nargs /* = cif->nargs, after checking cif */;
   /* When the foreign function is called, we need an array (ivals) of nargs
    * ForeignAny objects to store the actual C values that are created, and we
    * need another array (avalues) for the pointers to these values (this is
@@ -2438,6 +2438,13 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
   if (orig_place && (scheme_current_place_id == 0))
     orig_place = 0;
 #endif
+  if (!cif) {
+    scheme_signal_error("ffi-call: foreign-function reference was already finalized%s%s",
+                        name ? "\n  name: " : "",
+                        name ? name : "");
+    return NULL;
+  }
+  nargs =  cif->nargs;
   if ((nargs <= MAX_QUICK_ARGS)) {
     ivals   = stack_ivals;
     avalues = stack_avalues;
@@ -2507,8 +2514,9 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
 }
 
 /* see below */
-void free_fficall_data(void *ignored, void *p)
+void free_fficall_data(void *data, void *p)
 {
+  SCHEME_VEC_ELS(data)[4] = NULL;
   free(((ffi_cif*)p)->arg_types);
   free(p);
 }
