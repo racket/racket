@@ -107,12 +107,12 @@
          #:initial-connection-timeout [initial-connection-timeout 60])
   (define shutdowns
     (map (match-lambda
-           [(list-rest listen-ip ports)
+           [(list-rest listen-ip port)
             (serve #:dispatch dispatch
                    #:confirmation-channel confirmation-channel
                    #:connection-close? connection-close?
                    #:tcp@ tcp@
-                   #:ports ports
+                   #:port port
                    #:listen-ip listen-ip
                    #:max-waiting max-waiting
                    #:initial-connection-timeout initial-connection-timeout)])
