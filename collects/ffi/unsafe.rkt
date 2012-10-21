@@ -1702,6 +1702,7 @@
                                        (cweh
                                         (lambda (exn)
                                           (log-message logger
+                                                       'error
                                                        (if (exn? exn)
                                                            (exn-message exn)
                                                            (format "~s" exn))
