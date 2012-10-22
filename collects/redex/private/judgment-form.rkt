@@ -31,7 +31,7 @@
 (define-struct metafunc-extra-where (lhs rhs))
 (define-struct metafunc-extra-fresh (vars))
 
-(define-for-syntax (judgment-form-id? stx) 
+(define-for-syntax (judgment-form-id? stx)
   (and (identifier? stx)
        (judgment-form? (syntax-local-value stx (λ () #f)))))
 
@@ -196,7 +196,7 @@
                        (let ([input (quasisyntax/loc premise (term/nts #,input-template #,lang-nts))])
                          (define (make-traced input)
                            (quasisyntax/loc premise
-                             (call-judgment-form 'form-name #,judgment-proc '#,mode #,input)))
+                             (call-judgment-form 'form-name #,judgment-proc '#,mode #,input #,(if jf-results-id #''() #f))))
                          (if under-ellipsis?
                              #`(repeated-premise-outputs #,input (λ (x) #,(make-traced #'x)))
                              (make-traced input)))])
@@ -213,10 +213,10 @@
                  #,call
                  #,under-ellipsis?
                  #,jf-results-id
-                 (λ (bindings #,@(if jf-results-id (list jf-results-id) '()))
+                 (λ (bindings #,(if jf-results-id jf-results-id '_ignored))
                    (let ([temp (lookup-binding bindings 'output-name)] ...)
                      (and binding-constraint ...
-                          (term-let ([output-name/ellipsis temp] ...) 
+                          (term-let ([output-name/ellipsis temp] ...)
                                     #,rest-body))))))))]))))
 
 (define (judgment-form-bind-withs/proc lang output-pattern output under-ellipsis? old-maps do-something)
@@ -231,12 +231,11 @@
       (define mtchs (match-pattern compiled-pattern term))
       (if mtchs
           (for/fold ([outputs outputs]) ([mtch (in-list mtchs)])
-            (define mtch-outputs (if old-maps
-                                     (do-something (mtch-bindings mtch) 
-                                                   (if under-ellipsis?
-                                                       (append (reverse sub-tree) old-maps)
-                                                       (cons sub-tree old-maps)))
-                                     (do-something (mtch-bindings mtch))))
+            (define mtch-outputs (do-something (mtch-bindings mtch) 
+                                               (and old-maps
+                                                    (if under-ellipsis?
+                                                        (append (reverse sub-tree) old-maps)
+                                                        (cons sub-tree old-maps)))))
             (if mtch-outputs
                 (append mtch-outputs outputs)
                 outputs))
@@ -262,7 +261,7 @@
             (for*/list ([o output] [os (repeated-premise-outputs (cdr inputs) premise)])
               (cons o os))))))
 
-(define (call-judgment-form form-name form-proc mode input)
+(define (call-judgment-form form-name form-proc mode input derivation-init)
   (define traced (current-traced-metafunctions))
   (define vecs
     (if (or (eq? 'all traced) (memq form-name traced))
@@ -271,15 +270,16 @@
             (for/fold ([s '()]) ([m mode])
               (case m [(I) s] [(O) (cons '_ s)])))
           (define (wrapped . _)
-            (set! outputs (form-proc form-proc input))
+            (set! outputs (form-proc form-proc input derivation-init))
             (for/list ([output outputs])
               (cons form-name (assemble mode input (vector-ref output 1)))))
           (apply trace-call form-name wrapped (assemble mode input spacers))
           outputs)
-        (form-proc form-proc input)))
+        (form-proc form-proc input derivation-init)))
   (for/list ([v (in-list vecs)])
-    (vector (derivation (cons form-name (assemble mode input (vector-ref v 1)))
-                        (reverse (vector-ref v 0)))
+    (define subs (vector-ref v 0))
+    (vector (and subs (derivation (cons form-name (assemble mode input (vector-ref v 1)))
+                                  (reverse subs)))
             (vector-ref v 1))))
 (struct derivation (term subs) 
   #:transparent
@@ -588,87 +588,88 @@
      #'(#%expression (judgment-holds/derivation build-derivations #t jf-expr any))]))
 
 (define-for-syntax (do-compile-judgment-form-proc name mode-stx clauses contracts nts orig stx syn-error-name)
-  (define mode (cdr (syntax->datum mode-stx)))
-  (define-values (input-contracts output-contracts)
-    (if contracts
-        (let-values ([(ins outs) (split-by-mode contracts mode)])
-          (values ins outs))
-        (values #f #f)))
-  (define (compile-clause clause)
-    (syntax-case clause ()
-      [((_ . conc-pats) . prems)
-       (let-values ([(input-pats output-pats) (split-by-mode (syntax->list #'conc-pats) mode)])
-         (with-syntax ([(lhs (names ...) (names/ellipses ...)) (rewrite-side-conditions/check-errs nts syn-error-name #t input-pats)]
-                       [(jf-derivation-id) (generate-temporaries '(jf-derivation-id))])
-           (define (contracts-compilation ctcs)
-             (and ctcs
-                  (with-syntax ([(ctc ...) ctcs])
-                    #`(list (compile-pattern lang `ctc #f) ...))))
-           (define body
-             (parameterize ([judgment-form-pending-expansion
-                             (cons name
-                                   (struct-copy judgment-form (lookup-judgment-form-id name)
-                                                [proc #'recur]))])
-               (bind-withs syn-error-name '() #'lang nts (syntax->list #'prems) 
-                           'flatten #`(list (vector jf-derivation-id (term/nts (#,@output-pats) #,nts)))
-                           (syntax->list #'(names ...))
-                           (syntax->list #'(names/ellipses ...))
-                           #f
-                           #'jf-derivation-id)))
-           (with-syntax ([(compiled-lhs compiled-input-ctcs compiled-output-ctcs)
-                          (generate-temporaries '(compiled-lhs compiled-input-ctcs compiled-output-ctcs))])
-             
-             #`(
-                ;; pieces of a 'let' expression to be combined: first some bindings
-                ([jf-derivation-id '()]
-                 [compiled-lhs (compile-pattern lang `lhs #t)]
-                 #,@(if (contracts-compilation input-contracts) 
-                        (list #`[compiled-input-ctcs #,(contracts-compilation input-contracts)])
-                        (list))
-                 #,@(if (contracts-compilation output-contracts)
-                        (list #`[compiled-output-ctcs #,(contracts-compilation output-contracts)])
-                        (list)))
-                ;; and then the body of the let, but expected to be behind a (λ (input) ...).
-                (begin
-                  #,@(if (contracts-compilation input-contracts)
-                         (list #`(check-judgment-form-contract '#,name input compiled-input-ctcs 'I '#,mode))
-                         (list))
-                  (combine-judgment-rhses
-                   compiled-lhs
-                   input
-                   (λ (bnds)
-                     (term-let ([names/ellipses (lookup-binding bnds 'names)] ...)
-                               #,body))
-                   #,(if (contracts-compilation output-contracts)
-                         #`(λ (output)
-                             (check-judgment-form-contract '#,name output compiled-output-ctcs 'O '#,mode))
-                         #`void)))))))]))
+  (with-syntax ([(init-jf-derivation-id) (generate-temporaries '(init-jf-derivation-id))])
+    (define mode (cdr (syntax->datum mode-stx)))
+    (define-values (input-contracts output-contracts)
+      (if contracts
+          (let-values ([(ins outs) (split-by-mode contracts mode)])
+            (values ins outs))
+          (values #f #f)))
+    (define (compile-clause clause)
+      (syntax-case clause ()
+        [((_ . conc-pats) . prems)
+         (let-values ([(input-pats output-pats) (split-by-mode (syntax->list #'conc-pats) mode)])
+           (with-syntax ([(lhs (names ...) (names/ellipses ...)) (rewrite-side-conditions/check-errs nts syn-error-name #t input-pats)]
+                         [(jf-derivation-id) (generate-temporaries '(jf-derivation-id))])
+             (define (contracts-compilation ctcs)
+               (and ctcs
+                    (with-syntax ([(ctc ...) ctcs])
+                      #`(list (compile-pattern lang `ctc #f) ...))))
+             (define body
+               (parameterize ([judgment-form-pending-expansion
+                               (cons name
+                                     (struct-copy judgment-form (lookup-judgment-form-id name)
+                                                  [proc #'recur]))])
+                 (bind-withs syn-error-name '() #'lang nts (syntax->list #'prems) 
+                             'flatten #`(list (vector jf-derivation-id (term/nts (#,@output-pats) #,nts)))
+                             (syntax->list #'(names ...))
+                             (syntax->list #'(names/ellipses ...))
+                             #f
+                             #'jf-derivation-id)))
+             (with-syntax ([(compiled-lhs compiled-input-ctcs compiled-output-ctcs)
+                            (generate-temporaries '(compiled-lhs compiled-input-ctcs compiled-output-ctcs))])
+               
+               #`(
+                  ;; pieces of a 'let' expression to be combined: first some bindings
+                  ([compiled-lhs (compile-pattern lang `lhs #t)]
+                   #,@(if (contracts-compilation input-contracts) 
+                          (list #`[compiled-input-ctcs #,(contracts-compilation input-contracts)])
+                          (list))
+                   #,@(if (contracts-compilation output-contracts)
+                          (list #`[compiled-output-ctcs #,(contracts-compilation output-contracts)])
+                          (list)))
+                  ;; and then the body of the let, but expected to be behind a (λ (input) ...).
+                  (let ([jf-derivation-id init-jf-derivation-id])
+                    (begin
+                      #,@(if (contracts-compilation input-contracts)
+                             (list #`(check-judgment-form-contract '#,name input compiled-input-ctcs 'I '#,mode))
+                             (list))
+                      (combine-judgment-rhses
+                       compiled-lhs
+                       input
+                       (λ (bnds)
+                         (term-let ([names/ellipses (lookup-binding bnds 'names)] ...)
+                                   #,body))
+                       #,(if (contracts-compilation output-contracts)
+                             #`(λ (output)
+                                 (check-judgment-form-contract '#,name output compiled-output-ctcs 'O '#,mode))
+                             #`void))))))))]))
   
-  (when (identifier? orig)
-    (define orig-mode (judgment-form-mode (lookup-judgment-form-id orig)))
-    (unless (equal? mode orig-mode)
-      (raise-syntax-error syn-error-name
-                          (format 
-                           "mode for extended judgment form does not match original mode; got ~s for the original and ~s for the extension"
-                           `(,(syntax-e orig) ,@orig-mode)
-                           `(,(syntax-e name) ,@mode))
-                          stx
-                          mode-stx)))
-  
-  (with-syntax ([(((clause-proc-binding ...) clause-proc-body) ...) (map compile-clause clauses)])
-    (with-syntax ([(clause-proc-body-backwards ...) (reverse (syntax->list #'(clause-proc-body ...)))])
-      (if (identifier? orig)
-          (with-syntax ([orig-mk (judgment-form-mk-proc (lookup-judgment-form-id orig))])
+    (when (identifier? orig)
+      (define orig-mode (judgment-form-mode (lookup-judgment-form-id orig)))
+      (unless (equal? mode orig-mode)
+        (raise-syntax-error syn-error-name
+                            (format 
+                             "mode for extended judgment form does not match original mode; got ~s for the original and ~s for the extension"
+                             `(,(syntax-e orig) ,@orig-mode)
+                             `(,(syntax-e name) ,@mode))
+                            stx
+                            mode-stx)))
+    
+    (with-syntax ([(((clause-proc-binding ...) clause-proc-body) ...) (map compile-clause clauses)])
+      (with-syntax ([(clause-proc-body-backwards ...) (reverse (syntax->list #'(clause-proc-body ...)))])
+        (if (identifier? orig)
+            (with-syntax ([orig-mk (judgment-form-mk-proc (lookup-judgment-form-id orig))])
+              #`(λ (lang)
+                  (let (clause-proc-binding ... ...)
+                    (let ([prev (orig-mk lang)])
+                      (λ (recur input init-jf-derivation-id)
+                       (append (prev recur input init-jf-derivation-id)
+                               clause-proc-body-backwards ...))))))
             #`(λ (lang)
                 (let (clause-proc-binding ... ...)
-                  (let ([prev (orig-mk lang)])
-                    (λ (recur input)
-                      (append (prev recur input)
-                              clause-proc-body-backwards ...))))))
-          #`(λ (lang)
-              (let (clause-proc-binding ... ...)
-                (λ (recur input)
-                  (append clause-proc-body-backwards ...))))))))
+                  (λ (recur input init-jf-derivation-id)
+                    (append clause-proc-body-backwards ...)))))))))
 
 (define (combine-judgment-rhses compiled-lhs input rhs check-output)
   (define mtchs (match-pattern compiled-lhs input))
