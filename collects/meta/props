@@ -1010,7 +1010,6 @@ path/s is either such a string or a list of them.
 "collects/tests/data" responsible (ryanc)
 "collects/tests/datalog" responsible (jay)
 "collects/tests/db" responsible (ryanc)
-"collects/tests/db/programs/sl-gc-crash.rkt" drdr:command-line #f
 "collects/tests/db/programs/web-test.rkt" drdr:command-line #f
 "collects/tests/deinprogramm" responsible (sperber)
 "collects/tests/drracket" responsible (robby) drdr:random #t
