@@ -726,7 +726,8 @@
                                         (term #,to #:lang #,lang)))
                           (syntax->list #'(names ...))
                           (syntax->list #'(names/ellipses ...))
-                          #t))
+                          #t
+                          #f))
             (define test-case-body-code
               ;; this contains some redundant code
               (bind-withs orig-name
@@ -738,7 +739,8 @@
                           #'#t
                           (syntax->list #'(names ...))
                           (syntax->list #'(names/ellipses ...))
-                          #t))
+                          #t
+                          #f))
             (with-syntax ([(lhs-w/extras (w/extras-names ...) (w/extras-names/ellipses ...))
                            (rw-sc #`(side-condition #,from #,test-case-body-code))]
                           [lhs-source (format "~a:~a:~a"
@@ -1232,7 +1234,8 @@
                                     #`(list (term #,rhs #:lang lang))
                                     (syntax->list names) 
                                     (syntax->list names/ellipses)
-                                    #t))
+                                    #t
+                                    #f))
                                  (syntax->list #'((stuff ...) ...))
                                  (syntax->list #'(rhs ...))
                                  (syntax->list #'(lhs-names ...))
@@ -1246,7 +1249,8 @@
                                     #`#t
                                     (syntax->list names)
                                     (syntax->list names/ellipses)
-                                    #t))
+                                    #t
+                                    #f))
                                  (syntax->list #'((stuff ...) ...))
                                  (syntax->list #'(rhs ...))
                                  (syntax->list #'(lhs-names ...))

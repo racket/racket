@@ -35,6 +35,8 @@
          define-judgment-form
          define-extended-judgment-form
          judgment-holds
+         build-derivations
+         (struct-out derivation)
          in-domain?
          caching-enabled?
          make-coverage

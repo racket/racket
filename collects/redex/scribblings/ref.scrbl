@@ -1386,6 +1386,20 @@ each satisfying assignment of pattern variables.
 See @racket[define-judgment-form] for examples.
 }
 
+@defform[(build-derivations judgment)]{
+  Constructs all of the @racket[derivation] trees
+  for @racket[judgment]. 
+  
+@examples[
+#:eval redex-eval
+       (build-derivations (even (s (s z))))]
+}
+
+@defstruct[derivation ([term any/c] [subs (listof derivation?)])]{
+  Represents a derivation from a judgment form. See also
+  @racket[build-derivations].
+}
+                                                            
 @defidform[I]{
 Recognized specially within @racket[define-judgment-form], the @racket[I] keyword
 is an error elsewhere.
