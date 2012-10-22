@@ -1,5 +1,6 @@
 #lang racket
 (require redex)
+(provide λv red typeof)
 
 (define-language λv
   (e (e e ...) (if0 e e e) (+ e e) x v)
