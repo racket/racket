@@ -1,6 +1,10 @@
 Stepper
 -------
 
+Changes for 5.3.1:
+
+Addded external interface, for third-party stepper developers.
+
 Changes for 5.3:
 
 Minor bug fixes.
