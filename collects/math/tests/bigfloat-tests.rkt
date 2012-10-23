@@ -2,7 +2,6 @@
 
 (require math/bigfloat
          math/flonum
-         racket/flonum
          typed/rackunit)
 
 ;; ---------------------------------------------------------------------------------------------------

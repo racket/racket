@@ -1,7 +1,5 @@
 #lang racket/base
 
-(require "private/syntax.rkt")
-
 (require "private/array/array-struct.rkt"
          "private/array/array-constructors.rkt"
          "private/array/array-pointwise.rkt"

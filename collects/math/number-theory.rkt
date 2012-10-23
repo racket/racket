@@ -14,8 +14,7 @@
          "private/number-theory/primitive-roots.rkt"
          "private/number-theory/quadratic.rkt"
          "private/number-theory/quadratic-residues.rkt"
-         "private/number-theory/tangent-number.rkt"
-         "private/number-theory/number-theory-syntax.rkt")
+         "private/number-theory/tangent-number.rkt")
 
 (require/untyped-contract
  "private/number-theory/factorial.rkt"
@@ -40,7 +39,6 @@
           "private/number-theory/primitive-roots.rkt"
           "private/number-theory/quadratic.rkt"
           "private/number-theory/quadratic-residues.rkt"
-          "private/number-theory/tangent-number.rkt"
-          "private/number-theory/number-theory-syntax.rkt")
+          "private/number-theory/tangent-number.rkt")
          factorial permutations
          binomial)

@@ -2,7 +2,6 @@
 
 (require racket/performance-hint
          "../unsafe.rkt"
-         "../syntax.rkt"
          "array-struct.rkt"
          "array-indexing.rkt"
          "utils.rkt"

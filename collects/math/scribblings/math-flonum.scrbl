@@ -178,7 +178,7 @@ While this example may seem contrived, it is very common, when computing the den
 of a @italic{vector} of data, for the product of the densities to be too small to represent directly.
 
 In log space, exponentiation becomes multiplication, multiplication becomes addition, and
-addition becomes tricky. See @racket[lg+] for a solution.
+addition becomes tricky. See @racket[lg+] and @racket[lgsum] for solutions.
 
 @deftogether[(@defproc[(lg* [logx Flonum] [logy Flonum]) Flonum]
               @defproc[(lg/ [logx Flonum] [logy Flonum]) Flonum]
@@ -190,6 +190,10 @@ Equivalent to @racket[(fl+ logx logy)], @racket[(fl- logx logy)] and @racket[(fl
               @defproc[(lg- [logx Flonum] [logy Flonum]) Flonum])]{
 Like @racket[(fllog (+ (flexp logx) (flexp logy)))] and @racket[(fllog (- (flexp logx) (flexp logy)))],
 respectively, but more accurate and less prone to overflow and underflow.
+}
+
+@defproc[(lgsum [logxs (Listof Flonum)]) Flonum]{
+Like folding @racket[lg+] over @racket[logxs], but more accurate. Analogous to @racket[flsum].
 }
 
 @deftogether[(@defproc[(lg1+ [logx Flonum]) Flonum]

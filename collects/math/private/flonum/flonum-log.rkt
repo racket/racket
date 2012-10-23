@@ -3,9 +3,10 @@
 (require racket/performance-hint
          "flonum-functions.rkt"
          "flonum-constants.rkt"
-         "flonum-exp.rkt")
+         "flonum-exp.rkt"
+         "flonum-sum.rkt")
 
-(provide fllog1p lg1+ lg+ lg1- lg- fllog-quotient)
+(provide fllog1p lg1+ lg+ lg1- lg- lgsum fllog-quotient)
 
 (begin-encourage-inline
   
@@ -40,6 +41,36 @@
   (define (lg- log-x log-y)
     (cond [(log-y . fl> . log-x)  +nan.0]
           [else  (fl+ log-x (lg1- (fl- log-y log-x)))]))
+  
+  (: flmax* ((Listof Flonum) -> Flonum))
+  (define (flmax* xs)
+    (let loop ([xs xs] [mx -inf.0])
+      (if (null? xs) mx (loop (cdr xs) (flmax mx (car xs))))))
+  
+  (: lgsum ((Listof Flonum) -> Flonum))
+  (define (lgsum log-xs)
+    (if (null? log-xs)
+        0.0
+        (let ([log-x0  (car log-xs)]
+              [log-xs  (cdr log-xs)])
+          (if (null? log-xs)
+              log-x0
+              (let ([log-x1  (car log-xs)]
+                    [log-xs  (cdr log-xs)])
+                (if (null? log-xs)
+                    (lg+ log-x0 log-x1)
+                    (let ([max-log-x  (flmax (flmax log-x0 log-x1) (flmax* log-xs))])
+                      (if (fl= max-log-x -inf.0)
+                          -inf.0
+                          (let ([s  (flsum
+                                     (list* -1.0  ; for the max element; faster than removing it
+                                            (flexp (- log-x0 max-log-x))
+                                            (flexp (- log-x1 max-log-x))
+                                            (map (λ: ([log-x : Flonum]) (flexp (- log-x max-log-x)))
+                                                 log-xs)))])
+                            ;; Yes, we subtract 1.0 and then add 1.0 before taking the log; this
+                            ;; helps with precision a bit when s is near zero
+                            (+ max-log-x (fllog1p s)))))))))))
   
   (: fllog-quotient (Flonum Flonum -> Flonum))
   ;; Computes (fllog (/ x y)) in a way that reduces error and avoids under-/overflow
