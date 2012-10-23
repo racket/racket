@@ -613,13 +613,36 @@
       (test #f semaphore-try-wait? s)
       (test #f semaphore-try-wait? s2))))
 
+(struct ftcp-listener (sema sr sw cr cw)
+        #:property prop:evt
+        (λ (l) 
+          (handle-evt (semaphore-peek-evt (ftcp-listener-sema l))
+                      (λ (_)
+                        l))))
+(define (ftcp-listen _0 _1 _2)
+  (define-values (cr sw) (make-pipe 4098))
+  (define-values (sr cw) (make-pipe 4098))
+  (ftcp-listener (make-semaphore 0) sr sw cr cw))
+(define (ftcp-addresses l _1)
+  (values #f l #f #f))
+(define (ftcp-connect h l)
+  (semaphore-post (ftcp-listener-sema l))
+  (values (ftcp-listener-cr l)
+          (ftcp-listener-cw l)))
+(define (ftcp-accept l)
+  (semaphore-wait (ftcp-listener-sema l))
+  (values (ftcp-listener-sr l)
+          (ftcp-listener-sw l)))
+(define (ftcp-close l)
+  (void))
+
 (define (listen-port x)
-  (let-values ([(la lp pa pp) (tcp-addresses x #t)])
+  (let-values ([(la lp pa pp) (ftcp-addresses x #t)])
     lp))
 
 (let ([s (make-semaphore)]
       [s-t (make-semaphore)]
-	    [l (tcp-listen 0 5 #t)])
+	    [l (ftcp-listen 0 5 #t)])
   (let ([t (thread
 	    (lambda ()
 	      (sync s-t)))]
@@ -668,11 +691,11 @@
 
       (set! t (thread (lambda () (semaphore-wait (make-semaphore)))))
 
-      (let-values ([(cr cw) (tcp-connect "localhost" portnum)])
+      (let-values ([(cr cw) (ftcp-connect "localhost" portnum)])
 	(test l sync s t l r)
 	(test l sync s t l r)
 
-	(let-values ([(sr sw) (tcp-accept l)])
+	(let-values ([(sr sw) (ftcp-accept l)])
 	  (try-all-blocked)
 
 	  (close-output-port w)
@@ -720,7 +743,7 @@
 
 	  (close-output-port cw)
 	  (test sr sync s t l sr))))
-    (tcp-close l)))
+    (ftcp-close l)))
 
 ;; Test limited pipe output waiting:
 (let-values ([(r w) (make-pipe 5000)])
