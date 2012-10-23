@@ -728,6 +728,7 @@ int scheme_generate_struct_alloc(mz_jit_state *jitter, int num_args,
 #ifdef CAN_INLINE_ALLOC
     int i;
     jit_movr_p(JIT_R0, JIT_R2);
+    jit_movi_p(JIT_R1, 0); /* clear register that might get saved as a pointer */
     inline_struct_alloc(jitter, num_args, inline_slow);
     /* allocation result is in V1 */
     jit_stxi_p((intptr_t)&((Scheme_Structure *)0x0)->stype + OBJHEAD_SIZE, JIT_V1, JIT_R0);
