@@ -229,6 +229,15 @@ second-to-last, etc.)}
 Deletes the history string at the @racket[idx] position.  The position
 is specified in the same way as the argument for @racket[history-get].}
 
+@defproc[(history-save [filename string?]) void?]{
+
+Save history to file @racket[filename]. The file is replaced if
+ it already exists}
+
+@defproc[(history-load [filename string?]) void?]{
+
+Load history from file @racket[filename].}
+
 
 @defproc[(set-completion-function! [proc ((or/c string? bytes?)
                                           . -> . (listof (or/c string? bytes?)))]
