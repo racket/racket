@@ -886,15 +886,6 @@
     (send ed get-snip-location snip br #f #t)
     (unbox br)))
 
-;; find-snip-height : editor snip -> number
-(define (find-snip-height ed snip)
-  (let ([bt (box 0)]
-        [bb (box 0)])
-    (send ed get-snip-location snip #f bt #f)
-    (send ed get-snip-location snip #f bb #t)
-    (- (unbox bb)
-       (unbox bt))))
-
 (provide traces
          traces/ps
          term-node?
