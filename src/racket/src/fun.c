@@ -5800,7 +5800,7 @@ Scheme_Object *do_chaperone_prompt_tag (const char *name, int is_impersonator, i
       ppos = 5;
     } else
       ppos = 4;
-    redirects = scheme_make_pair(argv[1], redirects);
+    redirects = scheme_make_pair(argv[2], redirects);
   } else {
     ppos = 3;
     redirects = argv[2];
