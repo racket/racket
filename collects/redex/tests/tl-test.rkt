@@ -2341,14 +2341,14 @@
       
       (define-judgment-form L
         #:mode (J2 I O)
-        [--------
+        [--------  "one"
          (J2 1 1)]
-        [--------
+        [--------  two
          (J2 1 2)])
       
       (test (build-derivations (J2 1 any))
-            (list (derivation '(J2 1 1) '())
-                  (derivation '(J2 1 2) '())))
+            (list (derivation '(J2 1 1) "one" '())
+                  (derivation '(J2 1 2) "two" '())))
       
       
       
@@ -2365,16 +2365,17 @@
       
       (test (build-derivations (K (()) any))
             (list (derivation '(K (()) (z))
-                              (list (derivation '(K () z)
-                                                '())))))
+			      #f
+                              (list (derivation '(K () z) #f '())))))
       
       (test
        (build-derivations (K (() ()) any))
        (list (derivation 
               '(K (() ()) (z z))
+	      #f
               (list
-               (derivation '(K () z) '())
-               (derivation '(K () z) '())))))
+               (derivation '(K () z) #f '())
+               (derivation '(K () z) #f '())))))
       
       (define-judgment-form L
         #:contract (J any any)
@@ -2382,8 +2383,8 @@
         [--------
          (J () z)]
         [(J any_1 N)  (J any_2 N)
-                      ----------------------------
-                      (J (any_1 any_2) (s N))]
+         ----------------------------
+         (J (any_1 any_2) (s N))]
         [(J any N)
          ---------------
          (J (any) (s N))])
@@ -2392,17 +2393,22 @@
              (J ((()) (())) N))
             (list (derivation
                    '(J ((()) (())) (s (s z)))
+		   #f
                    (list (derivation 
                           '(J (()) (s z))
+			  #f
                           (list
                            (derivation
                             '(J () z)
+			    #F
                             '())))
                          (derivation 
                           '(J (()) (s z))
+			  #f
                           (list
                            (derivation
                             '(J () z)
+			    #f
                             '())))))))
       
       (define-judgment-form L
@@ -2414,12 +2420,15 @@
       (test (build-derivations (J3 (()) N))
             (list (derivation
                    '(J3 (()) (s z))
+		   #f
                    (list
                     (derivation
                      '(J (()) (s z))
+		     #f
                      (list 
                       (derivation 
                        '(J () z)
+		       #f
                        '()))))))))
 
     

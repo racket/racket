@@ -1395,9 +1395,15 @@ See @racket[define-judgment-form] for examples.
        (build-derivations (even (s (s z))))]
 }
 
-@defstruct[derivation ([term any/c] [subs (listof derivation?)])]{
-  Represents a derivation from a judgment form. See also
-  @racket[build-derivations].
+@defstruct[derivation ([term any/c] [name (or/c string? #f)] [subs (listof derivation?)])]{
+  Represents a derivation from a judgment form. 
+
+  The @racket[term] field holds an s-expression based rendering of the
+  conclusion of the derivation, the @racket[name] field holds the name
+  of the clause with @racket[term] as the conclusion, and
+  @racket[subs] contains the sub-derivations.
+
+  See also @racket[build-derivations].
 }
                                                             
 @defidform[I]{

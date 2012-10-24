@@ -26,6 +26,20 @@
 (require
  (for-template "term.rkt"))
 
+(struct derivation (term name subs) 
+  #:transparent
+  #:guard (λ (term name subs struct-name)
+            (unless (or (not name) (string? name))
+              (raise-argument-error struct-name "(or/c string? #f)" 1 term name subs))
+            (unless (and (list? subs)
+                         (andmap derivation? subs))
+              (raise-argument-error struct-name "derivation?" 2 term name subs))
+            (values term name subs)))
+
+;; structs that hold intermediate results when building a derivation
+(struct derivation-subs-acc (subs-so-far this-output) #:transparent)
+(struct derivation-with-output-only (output name subs) #:transparent)
+
 ;; Intermediate structures recording clause "extras" for typesetting.
 (define-struct metafunc-extra-side-cond (expr))
 (define-struct metafunc-extra-where (lhs rhs))
@@ -223,11 +237,11 @@
   (let ([compiled-pattern (compile-pattern lang output-pattern #t)])
     (for/fold ([outputs '()]) ([sub-output (in-list output)])
       (define sub-tree (if under-ellipsis?
-                           (map (λ (x) (vector-ref x 0)) sub-output)
-                           (vector-ref sub-output 0)))
+                           (map derivation-subs-acc-subs-so-far sub-output)
+                           (derivation-subs-acc-subs-so-far sub-output)))
       (define term (if under-ellipsis?
-                       (map (λ (x) (vector-ref x 1)) sub-output)
-                       (vector-ref sub-output 1)))
+                       (map derivation-subs-acc-this-output sub-output)
+                       (derivation-subs-acc-this-output sub-output)))
       (define mtchs (match-pattern compiled-pattern term))
       (if mtchs
           (for/fold ([outputs outputs]) ([mtch (in-list mtchs)])
@@ -271,24 +285,20 @@
               (case m [(I) s] [(O) (cons '_ s)])))
           (define (wrapped . _)
             (set! outputs (form-proc form-proc input derivation-init))
-            (for/list ([output outputs])
-              (cons form-name (assemble mode input (vector-ref output 1)))))
+            (for/list ([output (in-list outputs)])
+              (cons form-name (assemble mode input (derivation-with-output-only-output output)))))
           (apply trace-call form-name wrapped (assemble mode input spacers))
           outputs)
         (form-proc form-proc input derivation-init)))
   (for/list ([v (in-list vecs)])
-    (define subs (vector-ref v 0))
-    (vector (and subs (derivation (cons form-name (assemble mode input (vector-ref v 1)))
-                                  (reverse subs)))
-            (vector-ref v 1))))
-(struct derivation (term subs) 
-  #:transparent
-  #:guard (λ (term subs name)
-            (unless (and (list? subs)
-                         (andmap derivation? subs))
-              (error name "expected the second (subs) field to be a list of derivation?s, got: ~e"
-                     subs))
-            (values term subs)))
+    (define subs (derivation-with-output-only-subs v))
+    (define rulename (derivation-with-output-only-name v))
+    (define this-output (derivation-with-output-only-output v))
+    (derivation-subs-acc 
+     (and subs (derivation (cons form-name (assemble mode input this-output))
+                           rulename
+                           (reverse subs)))
+     this-output)))
 
 (define (assemble mode inputs outputs)
   (let loop ([ms mode] [is inputs] [os outputs])
@@ -388,7 +398,7 @@
                          #'mk-judgment-form-proc #'#,lang #'judgment-form-lws
                          '#,rule-names #'judgment-runtime-gen-clauses #'mk-judgment-gen-clauses))
         (define mk-judgment-form-proc
-          (compile-judgment-form-proc #,judgment-form-name #,mode #,lang #,clauses #,position-contracts #,orig #,stx #,syn-err-name))
+          (compile-judgment-form-proc #,judgment-form-name #,mode #,lang #,clauses #,rule-names #,position-contracts #,orig #,stx #,syn-err-name))
         (define judgment-form-runtime-proc (mk-judgment-form-proc #,lang))
         (define judgment-form-lws
           (compiled-judgment-form-lws #,clauses))
@@ -587,7 +597,7 @@
     [(_  jf-expr)
      #'(#%expression (judgment-holds/derivation build-derivations #t jf-expr any))]))
 
-(define-for-syntax (do-compile-judgment-form-proc name mode-stx clauses contracts nts orig stx syn-error-name)
+(define-for-syntax (do-compile-judgment-form-proc name mode-stx clauses rule-names contracts nts orig stx syn-error-name)
   (with-syntax ([(init-jf-derivation-id) (generate-temporaries '(init-jf-derivation-id))])
     (define mode (cdr (syntax->datum mode-stx)))
     (define-values (input-contracts output-contracts)
@@ -595,7 +605,7 @@
           (let-values ([(ins outs) (split-by-mode contracts mode)])
             (values ins outs))
           (values #f #f)))
-    (define (compile-clause clause)
+    (define (compile-clause clause clause-name)
       (syntax-case clause ()
         [((_ . conc-pats) . prems)
          (let-values ([(input-pats output-pats) (split-by-mode (syntax->list #'conc-pats) mode)])
@@ -611,7 +621,9 @@
                                      (struct-copy judgment-form (lookup-judgment-form-id name)
                                                   [proc #'recur]))])
                  (bind-withs syn-error-name '() #'lang nts (syntax->list #'prems) 
-                             'flatten #`(list (vector jf-derivation-id (term/nts (#,@output-pats) #,nts)))
+                             'flatten #`(list (derivation-with-output-only (term/nts (#,@output-pats) #,nts)
+                                                                           #,clause-name
+                                                                           jf-derivation-id))
                              (syntax->list #'(names ...))
                              (syntax->list #'(names/ellipses ...))
                              #f
@@ -656,7 +668,7 @@
                             stx
                             mode-stx)))
     
-    (with-syntax ([(((clause-proc-binding ...) clause-proc-body) ...) (map compile-clause clauses)])
+    (with-syntax ([(((clause-proc-binding ...) clause-proc-body) ...) (map compile-clause clauses rule-names)])
       (with-syntax ([(clause-proc-body-backwards ...) (reverse (syntax->list #'(clause-proc-body ...)))])
         (if (identifier? orig)
             (with-syntax ([orig-mk (judgment-form-mk-proc (lookup-judgment-form-id orig))])
@@ -699,7 +711,7 @@
 
 (define (check-judgment-form-contract form-name term+trees contracts mode modes)
   (define terms (if (eq? mode 'O)
-                    (vector-ref term+trees 1)
+                    (derivation-with-output-only-output term+trees)
                     term+trees))
   (define description
     (case mode
@@ -879,9 +891,10 @@
 
 (define-syntax (compile-judgment-form-proc stx)
   (syntax-case stx ()
-    [(_ judgment-form-name mode-arg lang clauses ctcs orig full-def syn-err-name)
+    [(_ judgment-form-name mode-arg lang clauses rule-names ctcs orig full-def syn-err-name)
      (let ([nts (definition-nts #'lang #'full-def (syntax-e #'syn-err-name))]
            [clauses (syntax->list #'clauses)]
+	   [rule-names (syntax->datum #'rule-names)]
            [syn-err-name (syntax-e #'syn-err-name)])
        (mode-check (cdr (syntax->datum #'mode-arg)) clauses nts syn-err-name stx)
        (define contracts (syntax-case #'ctcs ()
@@ -895,6 +908,7 @@
        (do-compile-judgment-form-proc #'judgment-form-name
                                       #'mode-arg
                                       clauses
+				      rule-names
                                       contracts
                                       nts
                                       #'orig
