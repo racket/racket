@@ -25,7 +25,9 @@
          "rep.rkt"
          "eval-helpers.rkt"
          "local-member-names.rkt"
-         "rectangle-intersect.rkt")
+         "rectangle-intersect.rkt"
+         
+         framework/private/logging-timer)
 
 (define-runtime-path expanding-place.rkt "expanding-place.rkt")
 
@@ -1316,7 +1318,7 @@
       
       (define compilation-out-of-date? #f)
       
-      (define tmr (new timer% [notify-callback (lambda () (send-off))]))
+      (define tmr (new logging-timer% [notify-callback (lambda () (send-off))]))
       
       (define cb-proc (λ (sym new-val) 
                         (when new-val
@@ -1783,7 +1785,7 @@
       (define lang-wants-big-defs/ints-labels? #f)
 
       (define recently-typed-timer 
-        (new timer%
+        (new logging-timer%
              [notify-callback
               (λ ()
                 (update-recently-typed #f)

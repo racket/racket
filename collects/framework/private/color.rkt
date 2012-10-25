@@ -15,7 +15,8 @@ added get-regions
          string-constants
          "../preferences.rkt"
          "sig.rkt"
-         "aspell.rkt")
+         "aspell.rkt"
+         framework/private/logging-timer)
 
 (import [prefix icon: framework:icon^]
         [prefix mode: framework:mode^]
@@ -519,7 +520,7 @@ added get-regions
                               exn))
                            (set! tok-cor #f))))
           #;(printf "begin lexing\n")
-          (when (coroutine-run 10 tok-cor)
+          (when (log-timeline "colorer coroutine" (coroutine-run 10 tok-cor))
             (for-each (lambda (ls)
                         (set-lexer-state-up-to-date?! ls #t))
                       lexer-states)
