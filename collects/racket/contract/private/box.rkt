@@ -78,7 +78,7 @@
               [neg-elem-proj ((contract-projection elem-ctc) (blame-swap blame))])
           (λ (val)
             (check-box/c ctc val blame)
-            (if (immutable? val)
+            (if (and (immutable? val) (not (chaperone? val)))
                 (box-immutable (pos-elem-proj (unbox val)))
                 (box-wrapper val
                              (λ (b v) (pos-elem-proj v))
