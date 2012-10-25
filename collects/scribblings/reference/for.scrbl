@@ -364,6 +364,8 @@ source for all syntax errors.
                (values (+ n (* d k)) (* k 10)))])
            n))]))
 
+@code:comment{If we misuse for/digits, we can get good error reporting}
+@code:comment{because the use of orig-datum allows for source correlation:}
 (for/digits
     [a (in-list '(1 2 3))]
     [b (in-list '(4 5 6))]
@@ -373,6 +375,24 @@ source for all syntax errors.
     ([a (in-list '(1 2 3))]
      [b (in-list '(2 4 6))])
   (+ a b))
+
+
+@code:comment{Another example: compute the max during iteration:}
+(define-syntax (for/max stx)
+  (syntax-case stx ()
+     [(_ clauses . defs+exprs)
+      (with-syntax ([original stx])
+        #'(for/fold/derived original
+                            ([current-max -inf.0])
+                            clauses
+            (define maybe-new-max
+              (let () . defs+exprs))
+            (if (> maybe-new-max current-max)
+                maybe-new-max
+                current-max)))]))
+(for/max ([n '(3.14159 2.71828 1.61803)]
+          [s '(-1      1       1)])
+  (* n s))
 ]
 }
 
