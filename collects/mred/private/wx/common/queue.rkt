@@ -438,12 +438,23 @@
 
 (define event-dispatch-handler (make-parameter really-dispatch-event))
 
+(define event-logger (make-logger 'gui-event (current-logger)))
+;; start? : boolean -- indicates if this is a start of an event being handled or not
+;; msec : start time if start? is #t, delta from start to end if start? is #f
+;; name : (or/c #f symbol?)
+(struct gui-event (start? msec name) #:prefab)
+
 (define (handle-event thunk e)
   (call-with-continuation-prompt ; to delimit continuations
    (lambda ()
      (call-with-continuation-prompt ; to delimit search for dispatch-event-key
       (lambda ()
         ;; communicate the thunk to `really-dispatch-event':
+        (define before (current-inexact-milliseconds))
+        (when (log-level? event-logger 'debug)
+          (log-message event-logger 'debug 
+                       "starting to handle an event"
+                       (gui-event #t before (object-name thunk))))
         (let ([b (box thunk)])
           ;; use the event-dispatch handler:
           (with-continuation-mark dispatch-event-key b
@@ -452,7 +463,13 @@
           ;; to the original one, then do so now:
           (when (unbox b)
             (set-box! b #f)
-            (thunk))))
+            (thunk)))
+        (define after (current-inexact-milliseconds))
+        (when (log-level? event-logger 'debug)
+          (log-message event-logger 'debug 
+                       (format "handled an event: ~a msec"  
+                               (- after before))
+                       (gui-event #f (- after before) (object-name thunk)))))
       dispatch-event-prompt))))
 
 (define yield
