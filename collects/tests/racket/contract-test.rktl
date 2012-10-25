@@ -4503,8 +4503,53 @@
    'make-flat-contract-bad-6
    '(chaperone-contract? proj:prime-list/c)
    #t)
+  
 
-
+;; Adding tests for using vector/box/hash contracts with already chaperoned values
+  
+  (test/no-error
+   '(let ([v (chaperone-vector (vector-immutable 1)
+                               (λ (vec i v) v)
+                               (λ (vec i v) v))])
+      (contract (vectorof any/c) v 'pos 'neg)))
+  
+  (test/no-error
+   '(let ([v (chaperone-vector (vector-immutable 1)
+                               (λ (vec i v) v)
+                               (λ (vec i v) v))])
+      (contract (vector/c any/c) v 'pos 'neg)))
+  
+  (test/no-error
+   '(let ([v (chaperone-box (box-immutable 1)
+                            (λ (box v) v)
+                            (λ (box v) v))])
+      (contract (box/c any/c) v 'pos 'neg)))
+  
+  (test/no-error
+   '(let ([v (chaperone-hash (make-immutable-hash (list (cons 1 2)))
+                             (λ (hash k) (values k (λ (h k v) v)))
+                             (λ (hash k v) (values k v))
+                             (λ (hash k) k)
+                             (λ (hash k) k))])
+      (contract (hash/c any/c any/c) v 'pos 'neg)))
+  
+  (test/no-error
+   '(let ([v (chaperone-hash (make-immutable-hasheq (list (cons 1 2)))
+                             (λ (hash k) (values k (λ (h k v) v)))
+                             (λ (hash k v) (values k v))
+                             (λ (hash k) k)
+                             (λ (hash k) k))])
+      (contract (hash/c any/c any/c) v 'pos 'neg)))
+  
+  (test/no-error
+   '(let ([v (chaperone-hash (make-immutable-hasheqv (list (cons 1 2)))
+                             (λ (hash k) (values k (λ (h k v) v)))
+                             (λ (hash k v) (values k v))
+                             (λ (hash k) k)
+                             (λ (hash k) k))])
+      (contract (hash/c any/c any/c) v 'pos 'neg)))
+  
+  
 ;
 ;
 ;
