@@ -3,7 +3,8 @@
            racket/list
            racket/math
            racket/gui/base
-	   (for-syntax racket/base)
+           racket/match
+           (for-syntax racket/base)
            racket/contract)
   
   (provide graph-snip<%>
@@ -401,57 +402,58 @@
       ;; invalidate-to-children/parents : snip dc -> void
       ;; invalidates the region containing this snip and
       ;; all of its children and parents.
-      (inherit invalidate-bitmap-cache)
       (define/private (invalidate-to-children/parents snip dc)
         (when (is-a? snip graph-snip<%>)
+          (unless (eq? last-dc dc)
+            (define-values (w h a s) (send dc get-text-extent "Label" #f #f 0)) 
+            (set! last-dc dc)
+            (set! text-height h))
           (let* ([parents-and-children (append (get-all-parents snip)
                                                (get-all-children snip))]
-                 [rects (eliminate-redundancies (get-rectangles snip parents-and-children))]
+                 [rects (get-rectangles snip parents-and-children)]
                  [or/c (or/c-rects rects)]
-                 [text-height (call-with-values 
-                               (λ () (send dc get-text-extent "Label" #f #f 0))
-                               (λ (w h a s) h))]
                  [invalidate-rect
                   (lambda (rect)
-                    (invalidate-bitmap-cache (- (rect-left rect) text-height)
-                                             (- (rect-top rect)  text-height)
-                                             (+ (- (rect-right rect)
-                                                   (rect-left rect))
-                                                text-height)
-                                             (+ (- (rect-bottom rect)
-                                                   (rect-top rect))
-                                                   text-height)))])
+                    (save-rectangle-to-invalidate
+                     (- (rect-left rect) text-height)
+                     (- (rect-top rect)  text-height)
+                     (+ (- (rect-right rect)
+                           (rect-left rect))
+                        text-height)
+                     (+ (- (rect-bottom rect)
+                           (rect-top rect))
+                        text-height)))])
             (cond
               [(< (rect-area or/c)
                   (apply + (map (lambda (x) (rect-area x)) rects)))
                (invalidate-rect or/c)]
               [else
                (for-each invalidate-rect rects)]))))
+      (inherit invalidate-bitmap-cache)
+      (define text-height #f)
+      (define last-dc #f)
       
-      ;; (listof rect) -> (listof rect)
-      (define/private (eliminate-redundancies rects)
-        (let loop ([rects rects]
-                   [acc null])
-          (cond
-            [(null? rects) acc]
-            [else (let ([r (car rects)])
-                    (cond
-                      [(or (ormap (lambda (other-rect) (rect-included-in? r other-rect))
-                                  (cdr rects))
-                           (ormap (lambda (other-rect) (rect-included-in? r other-rect))
-                                  acc))
-                       (loop (cdr rects)
-                             acc)]
-                      [else 
-                       (loop (cdr rects) 
-                             (cons r acc))]))])))
+      (define pending-invalidate-rectangle #f)
+      (define pending-invalidate-rectangle-timer #f)
+      (define/private (run-pending-invalidate-rectangle)
+        (define the-pending-invalidate-rectangle pending-invalidate-rectangle)
+        (set! pending-invalidate-rectangle #f)
+        (invalidate-bitmap-cache . the-pending-invalidate-rectangle))
       
-      ;; rect-included-in? : rect rect -> boolean
-      (define/private (rect-included-in? r1 r2)
-        (and ((rect-left r1) . >= . (rect-left r2))
-             ((rect-top r1) . >= . (rect-top r2))
-             ((rect-right r1) . <= . (rect-right r2))
-             ((rect-bottom r1) . <= . (rect-bottom r2))))
+      (define/private (save-rectangle-to-invalidate l t r b)
+        (unless pending-invalidate-rectangle-timer
+          (set! pending-invalidate-rectangle-timer 
+                (new timer% [notify-callback
+                             (λ () (run-pending-invalidate-rectangle))])))
+        (cond
+          [pending-invalidate-rectangle
+           (match pending-invalidate-rectangle
+             [(list l2 t2 r2 b2)
+              (set! pending-invalidate-rectangle 
+                    (list (min l l2) (min t t2) (max r r2) (max b b2)))])]
+          [else
+           (set! pending-invalidate-rectangle (list l t r b))])
+        (send pending-invalidate-rectangle-timer start 20 #t))
 
       ;; get-rectangles : snip (listof snip) -> rect
       ;; computes the rectangles that need to be invalidated for connecting 
@@ -519,7 +521,7 @@
           (let ([old-font (send dc get-font)])
             (when edge-label-font
               (send dc set-font edge-label-font))
-            (draw-edges dc left top right bottom dx dy)
+            (unless pending-invalidate-rectangle (draw-edges dc left top right bottom dx dy))
             (when edge-label-font
               (send dc set-font old-font))))
         (super on-paint before? dc left top right bottom dx dy draw-caret))
