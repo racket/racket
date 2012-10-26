@@ -1582,6 +1582,7 @@ If the namespace does not, they are colored the unbound color.
             (send (send defs-text get-tab) add-bkg-running-color 'syncheck "orchid" cs-syncheck-running)
             (send defs-text syncheck:init-arrows)
             (let loop ([val val]
+                       [start-time (current-inexact-milliseconds)]
                        [i 0])
               (cond
                 [(null? val)
@@ -1589,15 +1590,17 @@ If the namespace does not, they are colored the unbound color.
                  (send defs-text syncheck:update-drawn-arrows)
                  (send (send defs-text get-tab) remove-bkg-running-color 'syncheck)
                  (set-syncheck-running-mode #f)]
-                [(= i 500)
+                [(and (i . > . 0)  ;; check i just in case things are really strange
+                      (20 . <= . (- (current-inexact-milliseconds) start-time)))
                  (queue-callback
                   (λ ()
                     (when (unbox bx)
-                      (log-timeline "continuing replay-compile-comp-trace" (loop val 0))))
+                      (log-timeline "continuing replay-compile-comp-trace"
+                                    (loop val (current-inexact-milliseconds) 0))))
                   #f)]
                 [else
                  (process-trace-element defs-text (car val))
-                 (loop (cdr val) (+ i 1))]))))
+                 (loop (cdr val) start-time (+ i 1))]))))
         
         (define/private (process-trace-element defs-text x)
           ;; using 'defs-text' all the time is wrong in the case of embedded editors,
