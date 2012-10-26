@@ -2102,17 +2102,6 @@ mark_struct_type_val {
                        * sizeof(Scheme_Struct_Type *))));
 }
 
-mark_struct_proc_info {
- mark:
-  Struct_Proc_Info *i = (Struct_Proc_Info *)p;
-
-  gcMARK2(i->struct_type, gc);
-  gcMARK2(i->func_name, gc);
-
- size:
-  gcBYTES_TO_WORDS(sizeof(Struct_Proc_Info));
-}
-
 mark_struct_property {
  mark:
   Scheme_Struct_Property *i = (Scheme_Struct_Property *)p;

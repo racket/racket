@@ -1370,12 +1370,17 @@ static Scheme_Object *guard_property(Scheme_Object *prop, Scheme_Object *v, Sche
 
 static int extract_accessor_offset(Scheme_Object *acc)
 {
-  Struct_Proc_Info *i = (Struct_Proc_Info *)SCHEME_PRIM_CLOSURE_ELS(acc)[0];
+  Scheme_Struct_Type *st = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(acc)[0];
 
-  if (i->struct_type->name_pos)
-    return i->struct_type->parent_types[i->struct_type->name_pos - 1]->num_slots;
+  if (st->name_pos)
+    return st->parent_types[st->name_pos - 1]->num_slots;
   else
     return 0;
+}
+
+static char *extract_field_proc_name(Scheme_Object *prim)
+{
+  return (char *)SCHEME_PRIM_CLOSURE_ELS(prim)[2];
 }
 
 typedef int (*Check_Val_Proc)(Scheme_Object *);
@@ -2304,16 +2309,17 @@ static Scheme_Object *struct_pred(int argc, Scheme_Object **args, Scheme_Object 
   return scheme_false;
 }
 
-static int parse_pos(const char *who, Struct_Proc_Info *i, Scheme_Object **args, int argc)
+static int parse_pos(const char *who, Scheme_Object *prim, Scheme_Object **args, int argc)
 {
   int pos;
+  Scheme_Struct_Type *st = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(prim)[0];
 
   if (!SCHEME_INTP(args[1]) || (SCHEME_INT_VAL(args[1]) < 0)) {
     if (SCHEME_BIGNUMP(args[1]) && SCHEME_BIGPOS(args[1])) {
       pos = 32769; /* greater than max field count */
     } else {
       if (!who)
-	who = i->func_name;
+	who = extract_field_proc_name(prim);
       scheme_wrong_contract(who, 
                             "exact-nonnegative-integer?", 
                             1, argc, args);
@@ -2322,20 +2328,20 @@ static int parse_pos(const char *who, Struct_Proc_Info *i, Scheme_Object **args,
   } else
     pos = SCHEME_INT_VAL(args[1]);
   
-  if ((pos < i->struct_type->num_slots)
-      && i->struct_type->name_pos)
-    pos += i->struct_type->parent_types[i->struct_type->name_pos - 1]->num_slots;
+  if ((pos < st->num_slots)
+      && st->name_pos)
+    pos += st->parent_types[st->name_pos - 1]->num_slots;
   
-  if (pos >= i->struct_type->num_slots) {
+  if (pos >= st->num_slots) {
     int sc;
 
     if (!who)
-      who = i->func_name;
+      who = extract_field_proc_name(prim);
 
-    sc = (i->struct_type->name_pos
-	  ? (i->struct_type->num_slots
-	     - i->struct_type->parent_types[i->struct_type->name_pos - 1]->num_slots)
-	  : i->struct_type->num_slots);
+    sc = (st->name_pos
+	  ? (st->num_slots
+	     - st->parent_types[st->name_pos - 1]->num_slots)
+	  : st->num_slots);
 
     scheme_contract_error(who,
                           "index too large",
@@ -2354,29 +2360,29 @@ Scheme_Object *scheme_struct_getter(int argc, Scheme_Object **args, Scheme_Objec
 {
   Scheme_Structure *inst;
   int pos;
-  Struct_Proc_Info *i = (Struct_Proc_Info *)SCHEME_PRIM_CLOSURE_ELS(prim)[0];
+  Scheme_Struct_Type *st = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(prim)[0];
 
   inst = (Scheme_Structure *)args[0];
   if (SCHEME_CHAPERONEP(((Scheme_Object *)inst)))
     inst = (Scheme_Structure *)SCHEME_CHAPERONE_VAL((Scheme_Object *)inst);
 
   if (!SCHEME_STRUCTP(((Scheme_Object *)inst))) {
-    scheme_wrong_contract(i->func_name, 
-                          pred_name_string(i->struct_type->name), 
+    scheme_wrong_contract(extract_field_proc_name(prim), 
+                          pred_name_string(st->name), 
                           0, argc, args);
     return NULL;
-  } else if (!STRUCT_TYPEP(i->struct_type, inst)) {
-    wrong_struct_type(i->func_name, 
-		      i->struct_type->name, 
+  } else if (!STRUCT_TYPEP(st, inst)) {
+    wrong_struct_type(extract_field_proc_name(prim), 
+		      st->name, 
 		      SCHEME_STRUCT_NAME_SYM(inst), 
 		      0, argc, args);
     return NULL;
   }
   
   if (argc == 2)
-    pos = parse_pos(NULL, i, args, argc);
+    pos = parse_pos(NULL, prim, args, argc);
   else
-    pos = i->field;
+    pos = SCHEME_INT_VAL(SCHEME_PRIM_CLOSURE_ELS(prim)[1]);
 
   if (SAME_OBJ((Scheme_Object *)inst, args[0]))
     return inst->slots[pos];
@@ -2389,44 +2395,43 @@ Scheme_Object *scheme_struct_setter(int argc, Scheme_Object **args, Scheme_Objec
   Scheme_Structure *inst;
   int pos;
   Scheme_Object *v;
-  Struct_Proc_Info *i = (Struct_Proc_Info *)SCHEME_PRIM_CLOSURE_ELS(prim)[0];
+  Scheme_Struct_Type *st = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(prim)[0];
 
   inst = (Scheme_Structure *)args[0];
   if (SCHEME_CHAPERONEP(((Scheme_Object *)inst)))
     inst = (Scheme_Structure *)SCHEME_CHAPERONE_VAL((Scheme_Object *)inst);
 
   if (!SCHEME_STRUCTP(((Scheme_Object *)inst))) {
-    scheme_wrong_contract(i->func_name, 
-                          pred_name_string(i->struct_type->name), 
+    scheme_wrong_contract(extract_field_proc_name(prim),
+                          pred_name_string(st->name), 
                           0, argc, args);
     return NULL;
   }
 	
-  if (!STRUCT_TYPEP(i->struct_type, inst)) {
-    wrong_struct_type(i->func_name, 
-		      i->struct_type->name, 
+  if (!STRUCT_TYPEP(st, inst)) {
+    wrong_struct_type(extract_field_proc_name(prim),
+		      st->name, 
 		      SCHEME_STRUCT_NAME_SYM(inst),
 		      0, argc, args);
     return NULL;
   }
 	
   if (argc == 3) {
-    pos = parse_pos(NULL, i, args, argc);
+    pos = parse_pos(NULL, prim, args, argc);
     v = args[2];
   } else {
-    pos = i->field;
+    pos = SCHEME_INT_VAL(SCHEME_PRIM_CLOSURE_ELS(prim)[1]);
     v = args[1];
   }
 
-  if (i->struct_type->immutables) {
-    Scheme_Struct_Type *t = i->struct_type;
+  if (st->immutables) {
     int p = pos;
 
-    if (t->name_pos)
-      p -= t->parent_types[t->name_pos - 1]->num_slots;
+    if (st->name_pos)
+      p -= st->parent_types[st->name_pos - 1]->num_slots;
     
-    if (t->immutables[p]) {
-      scheme_contract_error(i->func_name, 
+    if (st->immutables[p]) {
+      scheme_contract_error(extract_field_proc_name(prim),
                             "cannot modify value of immutable field in structure", 
                             "structure", 1, args[0],
                             "field index", 1, scheme_make_integer(pos),
@@ -3104,12 +3109,12 @@ chaperone_prop_getter_p(int argc, Scheme_Object *argv[])
 static Scheme_Object *make_struct_field_xxor(const char *who, int getter,
 					      int argc, Scheme_Object *argv[])
 {
-  Struct_Proc_Info *i;
   int pos;  
   char *name;
   const char *fieldstr;
   char digitbuf[20];
   int fieldstrlen;
+  Scheme_Struct_Type *st;
 
   /* We don't allow chaperones on the getter or setter procedure, because we
      can't preserve them in the generated procedure. */
@@ -3124,9 +3129,7 @@ static Scheme_Object *make_struct_field_xxor(const char *who, int getter,
     return NULL;
   }
 
-  i = (Struct_Proc_Info *)SCHEME_PRIM_CLOSURE_ELS(argv[0])[0];
-
-  pos = parse_pos(who, i, argv, argc);
+  pos = parse_pos(who, argv[0], argv, argc);
   
   if (argc > 2) {
     if (SCHEME_FALSEP(argv[2])) {
@@ -3146,20 +3149,22 @@ static Scheme_Object *make_struct_field_xxor(const char *who, int getter,
     fieldstrlen = strlen(fieldstr);
   }
 
+  st = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(argv[0])[0];
+
   if (!fieldstr) {
     if (getter)
       name = "accessor";
     else
       name = "mutator";
   } else if (getter) {
-    name = (char *)GET_NAME((char *)i->struct_type->name, -1,
+    name = (char *)GET_NAME((char *)st->name, -1,
 			    fieldstr, fieldstrlen, 0);
   } else {
-    name = (char *)SET_NAME((char *)i->struct_type->name, -1,
+    name = (char *)SET_NAME((char *)st->name, -1,
 			    fieldstr, fieldstrlen, 0);
   }
 
-  return make_struct_proc(i->struct_type, 
+  return make_struct_proc(st, 
 			  name, 
 			  (getter ? SCHEME_GETTER : SCHEME_SETTER), pos);
 }
@@ -3774,7 +3779,7 @@ make_struct_proc(Scheme_Struct_Type *struct_type,
 		 char *func_name, 
 		 Scheme_ProcT proc_type, int field_num)
 {
-  Scheme_Object *p, *a[1];
+  Scheme_Object *p, *a[3];
   short flags = 0;
 
   if (proc_type == SCHEME_CONSTR) {
@@ -3800,16 +3805,7 @@ make_struct_proc(Scheme_Struct_Type *struct_type,
 					 1, 1, 1);
     flags |= SCHEME_PRIM_STRUCT_TYPE_PRED;
   } else {
-    Struct_Proc_Info *i;
     int need_pos;
-
-    i = MALLOC_ONE_RT(Struct_Proc_Info);
-#ifdef MZTAG_REQUIRED
-    i->type = scheme_rt_struct_proc_info;
-#endif
-    i->struct_type = struct_type;
-    i->func_name = func_name;
-    i->field = field_num;
 
     if ((proc_type == SCHEME_GEN_GETTER)
 	|| (proc_type == SCHEME_GEN_SETTER))
@@ -3817,11 +3813,13 @@ make_struct_proc(Scheme_Struct_Type *struct_type,
     else
       need_pos = 0;
 
-    a[0] = (Scheme_Object *)i;
+    a[0] = (Scheme_Object *)struct_type;
+    a[1] = scheme_make_integer(field_num);
+    a[2] = (Scheme_Object *)func_name;
 
     if ((proc_type == SCHEME_GETTER) || (proc_type == SCHEME_GEN_GETTER)) {
       p = scheme_make_folding_prim_closure(scheme_struct_getter,
-					   1, a,
+					   3, a,
 					   func_name,
 					   1 + need_pos, 1 + need_pos, 0);
       if (need_pos)
@@ -3833,7 +3831,7 @@ make_struct_proc(Scheme_Struct_Type *struct_type,
 	 if (need_pos) struct_type->accessor = p; */
     } else {
       p = scheme_make_folding_prim_closure(scheme_struct_setter,
-					   1, a,
+					   3, a,
 					   func_name,
 					   2 + need_pos, 2 + need_pos, 0);
       if (need_pos)
@@ -3870,15 +3868,17 @@ Scheme_Object *scheme_rename_struct_proc(Scheme_Object *p, Scheme_Object *sym)
       
     if (is_getter || is_setter) {
       const char *func_name;
-      Struct_Proc_Info *i;
+      Scheme_Struct_Type *st;
+      int field_pos;
       
       func_name = scheme_symbol_name(sym);
+
+      st = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(p)[0];
+      field_pos = SCHEME_INT_VAL(SCHEME_PRIM_CLOSURE_ELS(p)[1]);
       
-      i = (Struct_Proc_Info *)SCHEME_PRIM_CLOSURE_ELS(p)[0];
-      
-      return make_struct_proc(i->struct_type, (char *)func_name, 
+      return make_struct_proc(st, (char *)func_name, 
                               is_getter ? SCHEME_GETTER : SCHEME_SETTER,
-                              i->field);
+                              field_pos);
     }
   }
 
@@ -5205,14 +5205,14 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
 /* (chaperone-struct v mutator/selector redirect-proc ...) */
 {
   Scheme_Chaperone *px;
-  Scheme_Struct_Type *stype;
+  Scheme_Struct_Type *stype, *st;
   Scheme_Object *val = argv[0], *proc;
   Scheme_Object *redirects, *prop, *si_chaperone = scheme_false;
-  Struct_Proc_Info *pi;
   Scheme_Object *a[1], *inspector, *getter_positions = scheme_null;
   int i, offset, arity, non_applicable_op, repeat_op;
   const char *kind;
   Scheme_Hash_Tree *props = NULL, *red_props = NULL, *setter_positions = NULL;
+  intptr_t field_pos;
 
   if (argc == 1) return argv[0];
 
@@ -5276,12 +5276,14 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
                               "struct-info procedure supplied a second time",
                               "procedure", 1, a[0],
                               NULL);
-      pi = NULL;
+      st = NULL;
+      field_pos = 0;
       prop = NULL;
       arity = 2;
     } else if (offset == -1) {
       prop = SCHEME_PRIM_CLOSURE_ELS(proc)[0];
-      pi = NULL;
+      st = NULL;
+      field_pos = 0;
 
       if (is_impersonator
           && !((Scheme_Struct_Property *)prop)->can_impersonate)
@@ -5303,22 +5305,23 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
         arity = 2;
       }
     } else {
-      pi = (Struct_Proc_Info *)((Scheme_Primitive_Closure *)proc)->val[0];
+      st = (Scheme_Struct_Type *)((Scheme_Primitive_Closure *)proc)->val[0];
+      field_pos = SCHEME_INT_VAL(((Scheme_Primitive_Closure *)proc)->val[1]);
       prop = NULL;
     
-      if (!SCHEME_STRUCTP(val) || !scheme_is_struct_instance((Scheme_Object *)pi->struct_type, val))
+      if (!SCHEME_STRUCTP(val) || !scheme_is_struct_instance((Scheme_Object *)st, val))
         non_applicable_op = 1;
-      else if (SCHEME_TRUEP(SCHEME_VEC_ELS(redirects)[PRE_REDIRECTS + offset + pi->field]))
+      else if (SCHEME_TRUEP(SCHEME_VEC_ELS(redirects)[PRE_REDIRECTS + offset + field_pos]))
         repeat_op = 1;
       else {
         if (is_impersonator) {
-          intptr_t field_pos;
-          field_pos = pi->field - (pi->struct_type->name_pos 
-                                   ? pi->struct_type->parent_types[pi->struct_type->name_pos - 1]->num_slots 
-                                   : 0);
+          intptr_t loc_field_pos;
+          loc_field_pos = field_pos - (st->name_pos 
+                                       ? st->parent_types[st->name_pos - 1]->num_slots 
+                                       : 0);
           /* Must not be an immutable field. */
           if (stype->immutables) {
-            if (stype->immutables[field_pos])
+            if (stype->immutables[loc_field_pos])
               scheme_contract_error(name,
                                     "cannot replace operation for an immutable field",
                                     "operation kind", 0, kind,
@@ -5329,15 +5332,15 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
             /* impersonating a getter is allowed only if the structure type is
                transparent or if the setter is also impersonated (which would prove
                that the code creating the impersonator has suitable access). */
-            if (!scheme_inspector_sees_part(argv[0], inspector, pi->field)) {
-              getter_positions = scheme_make_pair(scheme_make_pair(scheme_make_integer(pi->field), a[0]),
+            if (!scheme_inspector_sees_part(argv[0], inspector, field_pos)) {
+              getter_positions = scheme_make_pair(scheme_make_pair(scheme_make_integer(field_pos), a[0]),
                                                   getter_positions);
             }
           } else {
-            if (!scheme_inspector_sees_part(argv[0], inspector, pi->field)) {
+            if (!scheme_inspector_sees_part(argv[0], inspector, field_pos)) {
               if (!setter_positions)
                 setter_positions = scheme_make_hash_tree(0);
-              setter_positions = scheme_hash_tree_set(setter_positions, scheme_make_integer(pi->field), scheme_true);
+              setter_positions = scheme_hash_tree_set(setter_positions, scheme_make_integer(field_pos), scheme_true);
             }
           }
         }
@@ -5384,8 +5387,8 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
 
     if (prop)
       red_props = scheme_hash_tree_set(red_props, prop, proc);
-    else if (pi)
-      SCHEME_VEC_ELS(redirects)[PRE_REDIRECTS + offset + pi->field] = proc;
+    else if (st)
+      SCHEME_VEC_ELS(redirects)[PRE_REDIRECTS + offset + field_pos] = proc;
     else
       si_chaperone = proc;
   }
@@ -5549,8 +5552,6 @@ static void register_traversers(void)
   GC_REG_TRAV(scheme_handle_evt_type, mark_wrapped_evt);
   GC_REG_TRAV(scheme_nack_guard_evt_type, mark_nack_guard_evt);
   GC_REG_TRAV(scheme_poll_evt_type, mark_nack_guard_evt);
-
-  GC_REG_TRAV(scheme_rt_struct_proc_info, mark_struct_proc_info);
 
   GC_REG_TRAV(scheme_chaperone_type, mark_chaperone);
   GC_REG_TRAV(scheme_proc_chaperone_type, mark_chaperone);

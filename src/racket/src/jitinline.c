@@ -396,7 +396,7 @@ static int generate_inlined_struct_op(int kind, mz_jit_state *jitter,
   /* R0 is [potential] predicate/getter/setting, R1 is struct. 
      V1 is value for setting. */
 
-  if ((kind == INLINE_STRUCT_PROC_PRED) /* REMOVEME */
+  if ((kind == INLINE_STRUCT_PROC_PRED)
       || (kind == INLINE_STRUCT_PROC_GET)
       || (kind == INLINE_STRUCT_PROC_SET)) {
     inline_rator = extract_struct_constant(jitter, rator);
@@ -489,13 +489,11 @@ static int generate_inlined_struct_op(int kind, mz_jit_state *jitter,
   if (inline_rator) {
     int pos, tpos, jkind;
 
-    inline_rator = ((Scheme_Primitive_Closure *)inline_rator)->val[0];
+    tpos = ((Scheme_Struct_Type *)((Scheme_Primitive_Closure *)inline_rator)->val[0])->name_pos;
     if (kind == INLINE_STRUCT_PROC_PRED) {
       pos = 0;
-      tpos = ((Scheme_Struct_Type *)inline_rator)->name_pos;
     } else {
-      pos = ((Struct_Proc_Info *)inline_rator)->field;
-      tpos = ((Struct_Proc_Info *)inline_rator)->struct_type->name_pos;
+      pos = SCHEME_INT_VAL(((Scheme_Primitive_Closure *)inline_rator)->val[1]);
     }
 
     if (ref) {

@@ -153,35 +153,6 @@ static int mark_struct_type_val_FIXUP(void *p, struct NewGC *gc) {
 #define mark_struct_type_val_IS_CONST_SIZE 0
 
 
-static int mark_struct_proc_info_SIZE(void *p, struct NewGC *gc) {
-  return
-  gcBYTES_TO_WORDS(sizeof(Struct_Proc_Info));
-}
-
-static int mark_struct_proc_info_MARK(void *p, struct NewGC *gc) {
-  Struct_Proc_Info *i = (Struct_Proc_Info *)p;
-
-  gcMARK2(i->struct_type, gc);
-  gcMARK2(i->func_name, gc);
-
-  return
-  gcBYTES_TO_WORDS(sizeof(Struct_Proc_Info));
-}
-
-static int mark_struct_proc_info_FIXUP(void *p, struct NewGC *gc) {
-  Struct_Proc_Info *i = (Struct_Proc_Info *)p;
-
-  gcFIXUP2(i->struct_type, gc);
-  gcFIXUP2(i->func_name, gc);
-
-  return
-  gcBYTES_TO_WORDS(sizeof(Struct_Proc_Info));
-}
-
-#define mark_struct_proc_info_IS_ATOMIC 0
-#define mark_struct_proc_info_IS_CONST_SIZE 1
-
-
 static int mark_struct_property_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Struct_Property));

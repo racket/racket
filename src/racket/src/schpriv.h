@@ -791,13 +791,6 @@ typedef struct Scheme_Serialized_Structure
 } Scheme_Serialized_Structure;
 #endif
 
-typedef struct Struct_Proc_Info {
-  MZTAG_IF_REQUIRED
-  Scheme_Struct_Type *struct_type;
-  char *func_name;
-  mzshort field;
-} Struct_Proc_Info;
-
 #define SCHEME_STRUCT_TYPE(o) (((Scheme_Structure *)o)->stype)
 
 #define SCHEME_STRUCT_NUM_SLOTS(o) (SCHEME_STRUCT_TYPE(o)->num_slots)

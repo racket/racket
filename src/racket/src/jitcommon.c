@@ -1494,9 +1494,6 @@ int scheme_generate_struct_op(mz_jit_state *jitter, int kind, int for_branch,
     jit_ldxi_p(JIT_R2, JIT_R1, &((Scheme_Structure *)0x0)->stype);
     if (type_pos < 0) {
       jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Primitive_Closure *)0x0)->val);
-      if (kind >= 2) {
-        jit_ldxi_p(JIT_V1, JIT_V1, &((Struct_Proc_Info *)0x0)->struct_type);
-      }
     }
     CHECK_LIMIT();
 
@@ -1547,9 +1544,6 @@ int scheme_generate_struct_op(mz_jit_state *jitter, int kind, int for_branch,
 
   /* (Re-)load target type into V1: */
   jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Primitive_Closure *)0x0)->val);
-  if (kind >= 2) {
-    jit_ldxi_p(JIT_V1, JIT_V1, &((Struct_Proc_Info *)0x0)->struct_type);
-  }
 
   if (kind == 1) {
     bref4 = jit_bner_p(jit_forward(), JIT_R2, JIT_V1);
@@ -1616,8 +1610,8 @@ int scheme_generate_struct_op(mz_jit_state *jitter, int kind, int for_branch,
     }
     /* Extract field */
     if (field_pos < 0) {
-      jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Primitive_Closure *)0x0)->val);
-      jit_ldxi_i(JIT_V1, JIT_V1, &((Struct_Proc_Info *)0x0)->field);
+      jit_ldxi_p(JIT_V1, JIT_R0, &(((Scheme_Primitive_Closure *)0x0)->val[1]));
+      jit_rshi_ul(JIT_V1, JIT_V1, 1);
       jit_lshi_ul(JIT_V1, JIT_V1, JIT_LOG_WORD_SIZE);
       jit_addi_p(JIT_V1, JIT_V1, &((Scheme_Structure *)0x0)->slots);
     } else {
