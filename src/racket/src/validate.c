@@ -363,6 +363,8 @@ static int define_values_validate(Scheme_Object *data, Mz_CPort *port,
                          tl_state, tl_timestamp,
                          NULL, !!only_var, 0, vc, 0, 0, NULL,
                          size-1);
+  if (scheme_is_simple_make_struct_type(val, size-1, 1, 1))
+    result = 2;
 
   flags = SCHEME_TOPLEVEL_READY;
   if (result == 2) {
@@ -1412,7 +1414,10 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
         check_self_call_valid(app->args[0], port, vc, delta, stack);
 
       if (result) {
-        r = scheme_is_functional_primitive(app->args[0], app->num_args, expected_results);
+        if (scheme_is_simple_make_struct_type((Scheme_Object *)app, expected_results, 1, 1))
+          r = 2;
+        else
+          r = scheme_is_functional_primitive(app->args[0], app->num_args, expected_results);
         result = validate_join(result, r);
       }
     }

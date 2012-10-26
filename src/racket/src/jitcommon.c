@@ -101,19 +101,23 @@ static Scheme_Object *vector_check_chaperone_of(Scheme_Object *o, Scheme_Object 
   return o;
 }
 
-static int save_struct_temp(mz_jit_state *jitter)
+static int save_struct_temp(mz_jit_state *jitter, int reg)
 {
 #ifdef MZ_USE_JIT_PPC
-  jit_movr_p(JIT_V(3), JIT_V1);
+  jit_movr_p(JIT_V(3), reg);
 #endif
 #ifdef MZ_USE_JIT_I386
 # ifdef X86_ALIGN_STACK
-  mz_set_local_p(JIT_V1, JIT_LOCAL3);
+  mz_set_local_p(reg, JIT_LOCAL3);
 # else
-  jit_pushr_p(JIT_V1);
+  jit_pushr_p(reg);
 # endif
 #endif
   return 1;
+}
+
+int scheme_save_struct_temp(mz_jit_state *jitter, int reg) {
+  return save_struct_temp(jitter, reg);
 }
 
 static int restore_struct_temp(mz_jit_state *jitter, int reg)
@@ -129,6 +133,10 @@ static int restore_struct_temp(mz_jit_state *jitter, int reg)
 # endif
 #endif
   return 1;
+}
+
+int scheme_restore_struct_temp(mz_jit_state *jitter, int reg) {
+  return restore_struct_temp(jitter, reg);
 }
 
 static void allocate_values(int count, Scheme_Thread *p)
@@ -1418,6 +1426,227 @@ static int gen_struct_slow(mz_jit_state *jitter, int kind, int ok_proc,
   return 1;
 }
 
+int scheme_generate_struct_op(mz_jit_state *jitter, int kind, int for_branch,
+                              Branch_Info *branch_info, int branch_short, 
+                              int result_ignored,
+                              int check_proc, int check_arg_fixnum,
+                              int type_pos, int field_pos, 
+                              int pop_and_jump,
+                              GC_CAN_IGNORE jit_insn *refslow, GC_CAN_IGNORE jit_insn *refslow2,
+                              GC_CAN_IGNORE jit_insn *bref_false, GC_CAN_IGNORE jit_insn *bref_true)
+/* kind: pred (1), get (2), or set (3) 
+   R0 is (potential) struct proc, R1 is (potential) struct.
+   In set mode, value to install is saved as a temp. */
+{
+  GC_CAN_IGNORE jit_insn *ref2, *ref3, *bref1, *bref2, *refretry;
+  GC_CAN_IGNORE jit_insn *bref3, *bref4, *bref8, *ref9, *refdone;
+
+  __START_SHORT_JUMPS__(branch_short);
+
+  if (check_proc) {
+    (void)mz_bnei_t(refslow, JIT_R0, scheme_prim_type, JIT_R2);
+    jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Primitive_Proc *)0x0)->pp.flags);
+    jit_andi_i(JIT_R2, JIT_R2, SCHEME_PRIM_OTHER_TYPE_MASK);
+    (void)jit_bnei_i(refslow, JIT_R2, ((kind == 3)
+                                       ? SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER
+                                       : ((kind == 1) 
+                                          ? SCHEME_PRIM_STRUCT_TYPE_PRED
+                                          : SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER)));
+  }
+
+  CHECK_LIMIT();
+  /* Check argument: */
+  if (kind == 1) {
+    bref1 = jit_bmsi_ul(jit_forward(), JIT_R1, 0x1);
+    refretry = _jit.x.pc;
+    jit_ldxi_s(JIT_R2, JIT_R1, &((Scheme_Object *)0x0)->type);
+    __START_INNER_TINY__(1);
+    ref2 = jit_beqi_i(jit_forward(), JIT_R2, scheme_structure_type);
+    ref3 = jit_beqi_i(jit_forward(), JIT_R2, scheme_proc_struct_type);
+    ref9 = jit_beqi_i(jit_forward(), JIT_R2, scheme_chaperone_type);
+    __END_INNER_TINY__(1);
+    bref2 = jit_bnei_i(jit_forward(), JIT_R2, scheme_proc_chaperone_type);
+    CHECK_LIMIT();
+    __START_INNER_TINY__(1);
+    mz_patch_branch(ref9);
+    jit_ldxi_p(JIT_R1, JIT_R1, &SCHEME_CHAPERONE_VAL(0x0));
+    (void)jit_jmpi(refretry);
+    mz_patch_branch(ref3);
+    __END_INNER_TINY__(1);
+  } else {
+    if (check_arg_fixnum) {
+      (void)jit_bmsi_ul(refslow2, JIT_R1, 0x1);
+    }
+    jit_ldxi_s(JIT_R2, JIT_R1, &((Scheme_Object *)0x0)->type);
+    __START_INNER_TINY__(1);
+    ref2 = jit_beqi_i(jit_forward(), JIT_R2, scheme_structure_type);
+    __END_INNER_TINY__(1);
+    (void)jit_bnei_i(refslow2, JIT_R2, scheme_proc_struct_type);
+    bref1 = bref2 = NULL;
+  }
+  __START_INNER_TINY__(1);
+  mz_patch_branch(ref2);
+  __END_INNER_TINY__(1);
+  CHECK_LIMIT();
+
+  if (type_pos != 0) {
+    /* Put argument struct type in R2, target struct type in V1 */
+    jit_ldxi_p(JIT_R2, JIT_R1, &((Scheme_Structure *)0x0)->stype);
+    if (type_pos < 0) {
+      jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Primitive_Closure *)0x0)->val);
+      if (kind >= 2) {
+        jit_ldxi_p(JIT_V1, JIT_V1, &((Struct_Proc_Info *)0x0)->struct_type);
+      }
+    }
+    CHECK_LIMIT();
+
+    if (type_pos < 0) {
+      /* common case: types are the same */
+      if (kind >= 2) {
+        __START_INNER_TINY__(1);
+        bref8 = jit_beqr_p(jit_forward(), JIT_R2, JIT_V1);
+        __END_INNER_TINY__(1);
+      } else
+        bref8 = NULL;
+    } else
+      bref8 = NULL;
+
+    jit_ldxi_i(JIT_R2, JIT_R2, &((Scheme_Struct_Type *)0x0)->name_pos);
+    if (type_pos < 0) {
+      jit_ldxi_i(JIT_V1, JIT_V1, &((Scheme_Struct_Type *)0x0)->name_pos);
+      /* Now R2 is argument depth, V1 is target depth */
+      if (kind == 1) {
+        bref3 = jit_bltr_i(jit_forward(), JIT_R2, JIT_V1);
+      } else {
+        (void)jit_bltr_i(refslow2, JIT_R2, JIT_V1);
+        bref3 = NULL;
+      }
+    } else {
+      if (type_pos != 0) {
+        (void)jit_blti_i(refslow2, JIT_R2, type_pos);
+      }
+      bref3 = NULL;
+    }
+    CHECK_LIMIT();
+    /* Lookup argument type at target type depth, put it in R2: */
+    if (type_pos < 0) {
+      jit_lshi_ul(JIT_R2, JIT_V1, JIT_LOG_WORD_SIZE);
+      jit_addi_p(JIT_R2, JIT_R2, &((Scheme_Struct_Type *)0x0)->parent_types);
+    }
+  } else {
+    bref3 = NULL;
+    bref8 = NULL;
+  }
+  jit_ldxi_p(JIT_V1, JIT_R1, &((Scheme_Structure *)0x0)->stype);
+  if (type_pos < 0) {
+    jit_ldxr_p(JIT_R2, JIT_V1, JIT_R2);
+  } else {
+    jit_ldxi_p(JIT_R2, JIT_V1, (type_pos << JIT_LOG_WORD_SIZE) + (intptr_t)&(((Scheme_Struct_Type *)0x0)->parent_types));
+  }
+  CHECK_LIMIT();
+
+  /* (Re-)load target type into V1: */
+  jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Primitive_Closure *)0x0)->val);
+  if (kind >= 2) {
+    jit_ldxi_p(JIT_V1, JIT_V1, &((Struct_Proc_Info *)0x0)->struct_type);
+  }
+
+  if (kind == 1) {
+    bref4 = jit_bner_p(jit_forward(), JIT_R2, JIT_V1);
+
+    /* True branch: */
+    if (!for_branch) {
+      (void)jit_movi_p(JIT_R0, scheme_true);
+    } else if (branch_info) {
+      scheme_branch_for_true(jitter, branch_info);
+    } else {
+      mz_patch_ucbranch(bref_true);
+#ifdef MZ_USE_JIT_I386
+# ifndef X86_ALIGN_STACK
+      jit_popr_p(JIT_V1);
+# endif
+#endif
+    }
+    if (pop_and_jump)
+      mz_epilog(JIT_V1);
+    else if (!for_branch) {
+      __START_INNER_TINY__(1);
+      refdone = jit_jmpi(jit_forward());
+      __END_INNER_TINY__(1);
+    }
+
+    /* False branch: */
+    if (branch_info) {
+      scheme_add_branch_false(branch_info, bref1);
+      scheme_add_branch_false(branch_info, bref2);
+      if (bref3)
+        scheme_add_branch_false(branch_info, bref3);
+      scheme_add_branch_false(branch_info, bref4);
+    } else {
+      mz_patch_branch(bref1);
+      mz_patch_branch(bref2);
+      if (bref3)
+        mz_patch_branch(bref3);
+      mz_patch_branch(bref4);
+      if (for_branch) {
+        mz_patch_branch(bref_false);
+        if (pop_and_jump) {
+          restore_struct_temp(jitter, JIT_V1);
+          mz_epilog_without_jmp();
+        }
+        jit_jmpr(JIT_V1);
+      } else {
+        (void)jit_movi_p(JIT_R0, scheme_false);
+        if (pop_and_jump)
+          mz_epilog(JIT_V1);
+      }
+      if (!pop_and_jump) {
+        __START_INNER_TINY__(1);
+        mz_patch_ucbranch(refdone);
+        __END_INNER_TINY__(1);
+      }
+    }
+  } else {
+    (void)jit_bner_p(refslow2, JIT_R2, JIT_V1);
+    bref4 = NULL;
+    if (bref8) {
+      __START_INNER_TINY__(1);
+      mz_patch_branch(bref8);
+      __END_INNER_TINY__(1);
+    }
+    /* Extract field */
+    if (field_pos < 0) {
+      jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Primitive_Closure *)0x0)->val);
+      jit_ldxi_i(JIT_V1, JIT_V1, &((Struct_Proc_Info *)0x0)->field);
+      jit_lshi_ul(JIT_V1, JIT_V1, JIT_LOG_WORD_SIZE);
+      jit_addi_p(JIT_V1, JIT_V1, &((Scheme_Structure *)0x0)->slots);
+    } else {
+      field_pos = (field_pos << JIT_LOG_WORD_SIZE) + (uintptr_t)&((Scheme_Structure *)0x0)->slots;
+    }
+    if (kind == 3) {
+      restore_struct_temp(jitter, JIT_R0);
+      if (field_pos < 0)
+        jit_stxr_p(JIT_V1, JIT_R1, JIT_R0);
+      else
+        jit_stxi_p(field_pos, JIT_R1, JIT_R0);
+      if (!result_ignored)
+        (void)jit_movi_p(JIT_R0, scheme_void);
+    } else {
+      if (field_pos < 0)
+        jit_ldxr_p(JIT_R0, JIT_R1, JIT_V1);
+      else
+        jit_ldxi_p(JIT_R0, JIT_R1, field_pos);
+    }
+    if (pop_and_jump)
+      mz_epilog(JIT_V1);
+  }
+  CHECK_LIMIT();
+      
+  __END_SHORT_JUMPS__(branch_short);
+
+  return 1;
+}
+
 static int common4(mz_jit_state *jitter, void *_data)
 {
   int i, ii, iii;
@@ -1570,8 +1799,8 @@ static int common4(mz_jit_state *jitter, void *_data)
     for (i = 0; i < 4; i++) { /* pred, pred_branch, get, or set */
       void *code;
       int kind, for_branch;
-      GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *refslow, *refslow2, *bref1, *bref2, *refretry;
-      GC_CAN_IGNORE jit_insn *bref3, *bref4, *bref5, *bref6, *bref8, *ref9;
+      GC_CAN_IGNORE jit_insn *ref, *refslow, *refslow2;
+      GC_CAN_IGNORE jit_insn *bref5, *bref6;
 
       if ((ii == 1) && (i == 1)) continue; /* no multi variant of pred branch */
       if ((ii == 2) && (i == 1)) continue; /* no tail variant of pred branch */
@@ -1592,7 +1821,7 @@ static int common4(mz_jit_state *jitter, void *_data)
 	for_branch = 1;
         sjc.struct_pred_branch_code = jit_get_ip().ptr;
 	/* Save target address for false branch: */
-        save_struct_temp(jitter);
+        save_struct_temp(jitter, JIT_V1);
       } else if (i == 2) {
 	kind = 2;
 	for_branch = 0;
@@ -1612,7 +1841,7 @@ static int common4(mz_jit_state *jitter, void *_data)
         else
           sjc.struct_set_code = jit_get_ip().ptr;
         /* Save value to install: */
-        save_struct_temp(jitter);
+        save_struct_temp(jitter, JIT_V1);
       }
 
       mz_prolog(JIT_V1);
@@ -1637,139 +1866,12 @@ static int common4(mz_jit_state *jitter, void *_data)
 
       /* Continue trying fast path: check proc */
       mz_patch_branch(ref);
-      (void)mz_bnei_t(refslow, JIT_R0, scheme_prim_type, JIT_R2);
-      jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Primitive_Proc *)0x0)->pp.flags);
-      jit_andi_i(JIT_R2, JIT_R2, SCHEME_PRIM_OTHER_TYPE_MASK);
-      (void)jit_bnei_i(refslow, JIT_R2, ((kind == 3)
-                                         ? SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER
-                                         : ((kind == 1) 
-                                            ? SCHEME_PRIM_STRUCT_TYPE_PRED
-                                            : SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER)));
-      CHECK_LIMIT();
-      /* Check argument: */
-      if (kind == 1) {
-	bref1 = jit_bmsi_ul(jit_forward(), JIT_R1, 0x1);
-        refretry = _jit.x.pc;
-	jit_ldxi_s(JIT_R2, JIT_R1, &((Scheme_Object *)0x0)->type);
-        __START_INNER_TINY__(1);
-	ref2 = jit_beqi_i(jit_forward(), JIT_R2, scheme_structure_type);
-        ref3 = jit_beqi_i(jit_forward(), JIT_R2, scheme_proc_struct_type);
-	ref9 = jit_beqi_i(jit_forward(), JIT_R2, scheme_chaperone_type);
-        __END_INNER_TINY__(1);
-	bref2 = jit_bnei_i(jit_forward(), JIT_R2, scheme_proc_chaperone_type);
-        CHECK_LIMIT();
-        __START_INNER_TINY__(1);
-        mz_patch_branch(ref9);
-        jit_ldxi_p(JIT_R1, JIT_R1, &SCHEME_CHAPERONE_VAL(0x0));
-        (void)jit_jmpi(refretry);
-        mz_patch_branch(ref3);
-        __END_INNER_TINY__(1);
-      } else {
-	(void)jit_bmsi_ul(refslow2, JIT_R1, 0x1);
-	jit_ldxi_s(JIT_R2, JIT_R1, &((Scheme_Object *)0x0)->type);
-        __START_INNER_TINY__(1);
-	ref2 = jit_beqi_i(jit_forward(), JIT_R2, scheme_structure_type);
-        __END_INNER_TINY__(1);
-	(void)jit_bnei_i(refslow2, JIT_R2, scheme_proc_struct_type);
-	bref1 = bref2 = NULL;
-      }
-      __START_INNER_TINY__(1);
-      mz_patch_branch(ref2);
-      __END_INNER_TINY__(1);
-      CHECK_LIMIT();
-
-      /* Put argument struct type in R2, target struct type in V1 */
-      jit_ldxi_p(JIT_R2, JIT_R1, &((Scheme_Structure *)0x0)->stype);
-      jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Primitive_Closure *)0x0)->val);
-      if (kind >= 2) {
-	jit_ldxi_p(JIT_V1, JIT_V1, &((Struct_Proc_Info *)0x0)->struct_type);
-      }
-      CHECK_LIMIT();
-
-      /* common case: types are the same */
-      if (kind >= 2) {
-        __START_INNER_TINY__(1);
-        bref8 = jit_beqr_p(jit_forward(), JIT_R2, JIT_V1);
-        __END_INNER_TINY__(1);
-      } else
-        bref8 = NULL;
-
-      jit_ldxi_i(JIT_R2, JIT_R2, &((Scheme_Struct_Type *)0x0)->name_pos);
-      jit_ldxi_i(JIT_V1, JIT_V1, &((Scheme_Struct_Type *)0x0)->name_pos);
-      /* Now R2 is argument depth, V1 is target depth */
-      if (kind == 1) {
-	bref3 = jit_bltr_i(jit_forward(), JIT_R2, JIT_V1);
-      } else {
-	(void)jit_bltr_i(refslow2, JIT_R2, JIT_V1);
-	bref3 = NULL;
-      }
-      CHECK_LIMIT();
-      /* Lookup argument type at target type depth, put it in R2: */
-      jit_lshi_ul(JIT_R2, JIT_V1, JIT_LOG_WORD_SIZE);
-      jit_addi_p(JIT_R2, JIT_R2, &((Scheme_Struct_Type *)0x0)->parent_types);
-      jit_ldxi_p(JIT_V1, JIT_R1, &((Scheme_Structure *)0x0)->stype);
-      jit_ldxr_p(JIT_R2, JIT_V1, JIT_R2);
-      CHECK_LIMIT();
-
-      /* Re-load target type into V1: */
-      jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Primitive_Closure *)0x0)->val);
-      if (kind >= 2) {
-	jit_ldxi_p(JIT_V1, JIT_V1, &((Struct_Proc_Info *)0x0)->struct_type);
-      }
-
-      if (kind == 1) {
-	bref4 = jit_bner_p(jit_forward(), JIT_R2, JIT_V1);
-
-	/* True branch: */
-	if (!for_branch) {
-	  (void)jit_movi_p(JIT_R0, scheme_true);
-	} else {
-	  mz_patch_ucbranch(bref6);
-#ifdef MZ_USE_JIT_I386
-# ifndef X86_ALIGN_STACK
-	  jit_popr_p(JIT_V1);
-# endif
-#endif
-	}
-	mz_epilog(JIT_V1);
-
-	/* False branch: */
-	mz_patch_branch(bref1);
-	mz_patch_branch(bref2);
-	mz_patch_branch(bref3);
-	mz_patch_branch(bref4);
-	if (for_branch) {
-	  mz_patch_branch(bref5);
-          restore_struct_temp(jitter, JIT_V1);
-	  mz_epilog_without_jmp();
-	  jit_jmpr(JIT_V1);
-	} else {
-	  (void)jit_movi_p(JIT_R0, scheme_false);
-	  mz_epilog(JIT_V1);
-	}
-      } else {
-	(void)jit_bner_p(refslow2, JIT_R2, JIT_V1);
-	bref4 = NULL;
-        __START_INNER_TINY__(1);
-        mz_patch_branch(bref8);
-        __END_INNER_TINY__(1);
-	/* Extract field */
-	jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Primitive_Closure *)0x0)->val);
-	jit_ldxi_i(JIT_V1, JIT_V1, &((Struct_Proc_Info *)0x0)->field);
-	jit_lshi_ul(JIT_V1, JIT_V1, JIT_LOG_WORD_SIZE);
-	jit_addi_p(JIT_V1, JIT_V1, &((Scheme_Structure *)0x0)->slots);
-        if (kind == 3) {
-          restore_struct_temp(jitter, JIT_R0);
-          jit_stxr_p(JIT_V1, JIT_R1, JIT_R0);
-          (void)jit_movi_p(JIT_R0, scheme_void);
-        } else {
-          jit_ldxr_p(JIT_R0, JIT_R1, JIT_V1);
-        }
-	mz_epilog(JIT_V1);
-      }
-      CHECK_LIMIT();
-      
       __END_SHORT_JUMPS__(1);
+
+      scheme_generate_struct_op(jitter, kind, for_branch, NULL, 1, 0,
+                                1, 1, -1, -1,
+                                1, refslow, refslow2, bref5, bref6);
+      CHECK_LIMIT();
 
       scheme_jit_register_sub_func(jitter, code, scheme_false);
     }

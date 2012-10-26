@@ -1266,6 +1266,17 @@ void scheme_jit_release_native_code(void *fnlized, void *p);
 int scheme_do_generate_common(mz_jit_state *jitter, void *_data);
 int scheme_do_generate_more_common(mz_jit_state *jitter, void *_data);
 
+int scheme_save_struct_temp(mz_jit_state *jitter, int reg);
+int scheme_restore_struct_temp(mz_jit_state *jitter, int reg);
+int scheme_generate_struct_op(mz_jit_state *jitter, int kind, int for_branch,
+                              Branch_Info *branch_info, int branch_short,
+                              int result_ignored,
+                              int check_proc, int check_arg_fixnum,
+                              int type_pos, int field_pos, 
+                              int pop_and_jump,
+                              jit_insn *refslow, jit_insn *refslow2,
+                              jit_insn *bref_false, jit_insn *bref_true);
+
 /**********************************************************************/
 /*                               jit                                  */
 /**********************************************************************/

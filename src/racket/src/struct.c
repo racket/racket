@@ -36,6 +36,8 @@ READ_ONLY Scheme_Object *scheme_equal_property;
 READ_ONLY Scheme_Object *scheme_no_arity_property;
 READ_ONLY Scheme_Object *scheme_impersonator_of_property;
 READ_ONLY Scheme_Object *scheme_make_struct_type_proc;
+READ_ONLY Scheme_Object *scheme_make_struct_field_accessor_proc;
+READ_ONLY Scheme_Object *scheme_make_struct_field_mutator_proc;
 READ_ONLY Scheme_Object *scheme_current_inspector_proc;
 READ_ONLY Scheme_Object *scheme_recur_symbol;
 READ_ONLY Scheme_Object *scheme_display_symbol;
@@ -553,15 +555,20 @@ scheme_init_struct (Scheme_Env *env)
 						      3, 3),
 			    env);
 
+  REGISTER_SO(scheme_make_struct_field_accessor_proc);
+  scheme_make_struct_field_accessor_proc = scheme_make_prim_w_arity(make_struct_field_accessor,
+                                                                    "make-struct-field-accessor",
+                                                                    2, 3);
   scheme_add_global_constant("make-struct-field-accessor",
-			     scheme_make_prim_w_arity(make_struct_field_accessor,
-						      "make-struct-field-accessor",
-						      2, 3),
+                             scheme_make_struct_field_accessor_proc,
 			     env);
+
+  REGISTER_SO(scheme_make_struct_field_mutator_proc);
+  scheme_make_struct_field_mutator_proc = scheme_make_prim_w_arity(make_struct_field_mutator,
+                                                                   "make-struct-field-mutator",
+                                                                   2, 3);
   scheme_add_global_constant("make-struct-field-mutator",
-			     scheme_make_prim_w_arity(make_struct_field_mutator,
-						      "make-struct-field-mutator",
-						      2, 3),
+			     scheme_make_struct_field_mutator_proc,
 			     env);
 
   scheme_add_global_constant("wrap-evt",

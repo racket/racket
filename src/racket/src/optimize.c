@@ -149,59 +149,6 @@ void scheme_init_optimize()
 /*                                  utils                                 */
 /*========================================================================*/
 
-static int is_current_inspector_call(Scheme_Object *a)
-{
-  if (SAME_TYPE(SCHEME_TYPE(a), scheme_application_type)) {
-    Scheme_App_Rec *app = (Scheme_App_Rec *)a;
-    if (!app->num_args
-        && SAME_OBJ(app->args[0], scheme_current_inspector_proc))
-      return 1;
-  }
-  return 0;
-}
-
-static int is_proc_spec_proc(Scheme_Object *p)
-{
-  Scheme_Type vtype;
-
-  if (SCHEME_PROCP(p)) {
-    p = scheme_get_or_check_arity(p, -1);
-    if (SCHEME_INTP(p)) {
-      return (SCHEME_INT_VAL(p) >= 1);
-    } else if (SCHEME_STRUCTP(p)
-               && scheme_is_struct_instance(scheme_arity_at_least, p)) {
-      p = ((Scheme_Structure *)p)->slots[0];
-      if (SCHEME_INTP(p))
-        return (SCHEME_INT_VAL(p) >= 1);
-    }
-    return 0;
-  }
-
-  vtype = SCHEME_TYPE(p);
-
-  if (vtype == scheme_unclosed_procedure_type) {
-    if (((Scheme_Closure_Data *)p)->num_params >= 1)
-      return 1;
-  }
-
-  return 0;
-}
-
-static void note_match(int actual, int expected, Optimize_Info *warn_info)
-{
-  if (!warn_info || (expected == -1))
-    return;
-
-  if (actual != expected) {
-    scheme_log(warn_info->logger,
-               SCHEME_LOG_WARNING,
-               0,
-               "warning%s: %d values produced when %d expected",
-               scheme_optimize_context_to_string(warn_info->context),
-               actual, expected);
-  }
-}
-
 int scheme_is_functional_primitive(Scheme_Object *rator, int num_args, int expected_vals)
 /* return 2 => results are a constant when arguments are constants */
 {
@@ -218,6 +165,21 @@ int scheme_is_functional_primitive(Scheme_Object *rator, int num_args, int expec
     return 1;
   } else
     return 0;
+}
+
+static void note_match(int actual, int expected, Optimize_Info *warn_info)
+{
+  if (!warn_info || (expected == -1))
+    return;
+
+  if (actual != expected) {
+    scheme_log(warn_info->logger,
+               SCHEME_LOG_WARNING,
+               0,
+               "warning%s: %d values produced when %d expected",
+               scheme_optimize_context_to_string(warn_info->context),
+               actual, expected);
+  }
 }
 
 int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
@@ -358,33 +320,16 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
   }
 
   if (vtype == scheme_application_type) {
-    /* Look for multiple values, or for `make-struct-type'.
-       (The latter is especially useful to Honu.) */
     Scheme_App_Rec *app = (Scheme_App_Rec *)o;
-    if ((app->num_args >= 4) && (app->num_args <= 10)
+    
+    if ((app->num_args >= 4) && (app->num_args <= 11)
         && SAME_OBJ(scheme_make_struct_type_proc, app->args[0])) {
       note_match(5, vals, warn_info);
-      if ((vals == 5) || (vals < 0)) {
-        /* Look for (make-struct-type sym #f non-neg-int non-neg-int [omitable null]) */
-        if (SCHEME_SYMBOLP(app->args[1])
-            && SCHEME_FALSEP(app->args[2])
-            && SCHEME_INTP(app->args[3])
-            && (SCHEME_INT_VAL(app->args[3]) >= 0)
-            && SCHEME_INTP(app->args[4])
-            && (SCHEME_INT_VAL(app->args[4]) >= 0)
-            && ((app->num_args < 5)
-                || scheme_omittable_expr(app->args[5], 1, fuel - 1, resolved, warn_info,
-                                         deeper_than + (resolved ? app->num_args : 0), 0))
-            && ((app->num_args < 6)
-                || SCHEME_NULLP(app->args[6]))
-            && ((app->num_args < 7)
-                || SCHEME_FALSEP(app->args[7])
-                || is_current_inspector_call(app->args[7]))
-            && ((app->num_args < 8)
-                || SCHEME_FALSEP(app->args[8])
-                || is_proc_spec_proc(app->args[8]))
-            && ((app->num_args < 9)
-                || SCHEME_NULLP(app->args[9]))) {
+      if (scheme_is_simple_make_struct_type(o, vals, resolved, 0)) {
+        if ((app->num_args < 5)
+            /* auto-field value: */
+            || scheme_omittable_expr(app->args[5], 1, fuel - 1, resolved, warn_info,
+                                     deeper_than + (resolved ? app->num_args : 0), 0)) {
           return 1;
         }
       }
@@ -440,6 +385,216 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
       }
     }
     return 0;
+  }
+
+  return 0;
+}
+
+static int is_current_inspector_call(Scheme_Object *a)
+{
+  if (SAME_TYPE(SCHEME_TYPE(a), scheme_application_type)) {
+    Scheme_App_Rec *app = (Scheme_App_Rec *)a;
+    if (!app->num_args
+        && SAME_OBJ(app->args[0], scheme_current_inspector_proc))
+      return 1;
+  }
+  return 0;
+}
+
+static int is_proc_spec_proc(Scheme_Object *p)
+{
+  Scheme_Type vtype;
+
+  if (SCHEME_PROCP(p)) {
+    p = scheme_get_or_check_arity(p, -1);
+    if (SCHEME_INTP(p)) {
+      return (SCHEME_INT_VAL(p) >= 1);
+    } else if (SCHEME_STRUCTP(p)
+               && scheme_is_struct_instance(scheme_arity_at_least, p)) {
+      p = ((Scheme_Structure *)p)->slots[0];
+      if (SCHEME_INTP(p))
+        return (SCHEME_INT_VAL(p) >= 1);
+    }
+    return 0;
+  }
+
+  vtype = SCHEME_TYPE(p);
+
+  if (vtype == scheme_unclosed_procedure_type) {
+    if (((Scheme_Closure_Data *)p)->num_params >= 1)
+      return 1;
+  }
+
+  return 0;
+}
+
+static int is_local_ref(Scheme_Object *e, int p, int r)
+{
+  return (SAME_TYPE(SCHEME_TYPE(e), scheme_local_type)
+          && (SCHEME_LOCAL_POS(e) >= p)
+          && (SCHEME_LOCAL_POS(e) < (p + r)));
+}
+
+static int is_int_list(Scheme_Object *o, int up_to)
+{
+  if (SCHEME_PAIRP(o)) {
+    char *s, quick[8];
+    Scheme_Object *e;
+    if (up_to <= 8)
+      s = quick;
+    else
+      s = (char *)scheme_malloc_atomic(up_to);
+    memset(s, 0, up_to);
+    while (SCHEME_PAIRP(o)) {
+      e = SCHEME_CAR(o);
+      o = SCHEME_CDR(o);
+      if (!SCHEME_INTP(e)
+          || (SCHEME_INT_VAL(e) < 0)
+          || (SCHEME_INT_VAL(e) > up_to)
+          || s[SCHEME_INT_VAL(e)])
+        return 0;
+      s[SCHEME_INT_VAL(e)] = 1;
+    }
+  }
+
+  return SCHEME_NULLP(o);
+}
+
+static int is_values_with_accessors_and_mutators(Scheme_Object *e, int vals, int resolved)
+{
+  if (SAME_TYPE(SCHEME_TYPE(e), scheme_application_type)) {
+    Scheme_App_Rec *app = (Scheme_App_Rec *)e;
+    int delta = (resolved ? app->num_args : 0);
+    if (SAME_OBJ(app->args[0], scheme_values_func)
+        && (app->num_args == vals)) {
+      int i;
+      for (i = app->num_args; i > 0; i--) {
+        if (is_local_ref(app->args[1], delta, 5)) {
+          /* ok */
+        } else if (SAME_TYPE(SCHEME_TYPE(app->args[i]), scheme_application3_type)) {
+          Scheme_App3_Rec *app3 = (Scheme_App3_Rec *)app->args[i];
+          int delta2 = delta + (resolved ? 2 : 0);
+          if (SAME_OBJ(app3->rator, scheme_make_struct_field_accessor_proc)) {
+            if (!is_local_ref(app3->rand1, delta2+3, 1)
+                && SCHEME_SYMBOLP(app3->rand2))
+              break;
+          } else if (SAME_OBJ(app3->rator, scheme_make_struct_field_mutator_proc)) {
+            if (!is_local_ref(app3->rand1, delta2+4, 1)
+                && SCHEME_SYMBOLP(app3->rand2))
+              break;
+          } else
+            break;
+        }
+      }
+      if (i <= 0)
+        return 1;
+    }
+  }
+
+  return 0;
+}
+
+static Scheme_Object *skip_clears(Scheme_Object *body)
+{
+  if (SAME_TYPE(SCHEME_TYPE(body), scheme_sequence_type)) {
+    Scheme_Sequence *seq = (Scheme_Sequence *)body;
+    int i;
+    for (i = seq->count - 1; i--; ) {
+      if (!SAME_TYPE(SCHEME_TYPE(seq->array[i]), scheme_local_type))
+        break;
+    }
+    if (i < 0)
+      return seq->array[seq->count-1];
+  }
+  return body;
+}
+
+int scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int resolved, int check_auto)
+/* Checks whether it's a `make-struct-type' call that certainly succeeds 
+   (i.e., no exception) --- pending a check of argument 5 if !check_auto */
+{
+  if (SAME_TYPE(SCHEME_TYPE(e), scheme_application_type)) {
+    if ((vals == 5) || (vals < 0)) {
+      Scheme_App_Rec *app = (Scheme_App_Rec *)e;
+
+      if ((app->num_args >= 4) && (app->num_args <= 11)
+          && SAME_OBJ(scheme_make_struct_type_proc, app->args[0])) {
+        if (SCHEME_SYMBOLP(app->args[1])
+            && SCHEME_FALSEP(app->args[2]) /* super = #f */
+            && SCHEME_INTP(app->args[3])
+            && (SCHEME_INT_VAL(app->args[3]) >= 0)
+            && SCHEME_INTP(app->args[4])
+            && (SCHEME_INT_VAL(app->args[4]) >= 0)
+            && ((app->num_args < 5)
+                /* auto-field value: */
+                || !check_auto
+                || scheme_omittable_expr(app->args[5], 1, 3, resolved, NULL, -1, 0))
+            && ((app->num_args < 6)
+                /* no properties: */
+                || SCHEME_NULLP(app->args[6]))
+            && ((app->num_args < 7)
+                /* inspector: */
+                || SCHEME_FALSEP(app->args[7])
+                || is_current_inspector_call(app->args[7]))
+            && ((app->num_args < 8)
+                /* propcedure property: */
+                || SCHEME_FALSEP(app->args[8])
+                || is_proc_spec_proc(app->args[8]))
+            && ((app->num_args < 9)
+                /* immutables: */
+                || is_int_list(app->args[9],
+                               SCHEME_INT_VAL(app->args[3])))
+            && ((app->num_args < 10)
+                /* guard: */
+                || SCHEME_FALSEP(app->args[10]))
+            && ((app->num_args < 11)
+                /* constructor name: */
+                || SCHEME_FALSEP(app->args[11])
+                || SCHEME_SYMBOLP(app->args[11]))) {
+          return 1;
+        }
+      }
+    }
+  }
+
+  if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_let_void_type)) {
+    /* check for (let-values ([(: mk ? ref- set-!) (make-struct-type ...)]) (values ...))
+       as generated by the expansion of `struct' */
+    Scheme_Let_Header *lh = (Scheme_Let_Header *)e;
+    if ((lh->count == 5) && (lh->num_clauses == 1)) {
+      if (SAME_TYPE(SCHEME_TYPE(lh->body), scheme_compiled_let_value_type)) {
+        Scheme_Compiled_Let_Value *lv = (Scheme_Compiled_Let_Value *)lh->body;
+        if (SAME_TYPE(SCHEME_TYPE(lv->value), scheme_application_type)
+            && scheme_is_simple_make_struct_type(lv->value, 5, resolved, check_auto)) {
+          /* We have (let-values ([... (make-struct-type)]) ....), so make sure body
+             just uses `make-struct-field-{accessor,mutator}'. */
+          if (is_values_with_accessors_and_mutators(lv->body, vals, resolved))
+            return 1;
+        }
+      }
+    }
+  }
+
+  if (SAME_TYPE(SCHEME_TYPE(e), scheme_let_void_type)) {
+    /* same thing, but in resolved form */
+    Scheme_Let_Void *lvd = (Scheme_Let_Void *)e;
+    if (lvd->count == 5) {
+      if (SAME_TYPE(SCHEME_TYPE(lvd->body), scheme_let_value_type)) {
+        Scheme_Let_Value *lv = (Scheme_Let_Value *)lvd->body;
+        if ((lv->position == 0) && (lv->count == 5)) {
+          Scheme_Object *e2;
+          e2 = skip_clears(lv->value);
+          if (SAME_TYPE(SCHEME_TYPE(e2), scheme_application_type)
+              && scheme_is_simple_make_struct_type(e2, 5, resolved, check_auto)) {
+            /* We have (let-values ([... (make-struct-type)]) ....), so make sure body
+               just uses `make-struct-field-{accessor,mutator}'. */
+            e2 = skip_clears(lv->body);
+            if (is_values_with_accessors_and_mutators(e2, vals, resolved))
+              return 1;
+          }
+        }
+      }
+    }
   }
 
   return 0;
@@ -4550,21 +4705,19 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
           e = SCHEME_VEC_ELS(e)[1];
 
           n = scheme_list_length(vars);
-          if (n == 1) {
-            if (IS_COMPILED_PROC(e)) {
-              Scheme_Toplevel *tl;
+          if ((n == 1) && IS_COMPILED_PROC(e))  {
+            Scheme_Toplevel *tl;
 
-              tl = (Scheme_Toplevel *)SCHEME_CAR(vars);
-
-              if (!(SCHEME_TOPLEVEL_FLAGS(tl) & SCHEME_TOPLEVEL_MUTATED)) {
-                int pos;
-                if (!consts)
-                  consts = scheme_make_hash_table(SCHEME_hash_ptr);
-                pos = tl->position;
-                scheme_hash_set(consts,
-                                scheme_make_integer(pos),
-                                estimate_closure_size(e));
-              }
+            tl = (Scheme_Toplevel *)SCHEME_CAR(vars);
+            
+            if (!(SCHEME_TOPLEVEL_FLAGS(tl) & SCHEME_TOPLEVEL_MUTATED)) {
+              int pos;
+              if (!consts)
+                consts = scheme_make_hash_table(SCHEME_hash_ptr);
+              pos = tl->position;
+              scheme_hash_set(consts,
+                              scheme_make_integer(pos),
+                              estimate_closure_size(e));
             }
           }
         }
@@ -4625,56 +4778,60 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
             cnst = 1;
             sproc = 1;
           }
+        } else if (scheme_is_simple_make_struct_type(e, n, 0, 1)) {
+          cnst = 1;
         }
 
 	if (cnst) {
 	  Scheme_Toplevel *tl;
+          while (n--) {
+            tl = (Scheme_Toplevel *)SCHEME_CAR(vars);
+            vars  = SCHEME_CDR(vars);
 
-	  tl = (Scheme_Toplevel *)SCHEME_CAR(vars);
+            if (!(SCHEME_TOPLEVEL_FLAGS(tl) & SCHEME_TOPLEVEL_MUTATED)) {
+              Scheme_Object *e2;
 
-	  if (!(SCHEME_TOPLEVEL_FLAGS(tl) & SCHEME_TOPLEVEL_MUTATED)) {
-	    Scheme_Object *e2;
-
-            if (sproc) {
-              e2 = scheme_make_noninline_proc(e);
-            } else if (IS_COMPILED_PROC(e)) {
-	      e2 = optimize_clone(1, e, info, 0, 0);
-              if (e2) {
-                Scheme_Object *pr;
-                pr = scheme_make_raw_pair(scheme_make_raw_pair(e2, e), NULL);
-                if (cl_last)
-                  SCHEME_CDR(cl_last) = pr;
-                else
-                  cl_first = pr;
-                cl_last = pr;
-              } else
+              if (sproc) {
                 e2 = scheme_make_noninline_proc(e);
-	    } else {
-	      e2 = e;
-	    }
+              } else if (IS_COMPILED_PROC(e)) {
+                e2 = optimize_clone(1, e, info, 0, 0);
+                if (e2) {
+                  Scheme_Object *pr;
+                  pr = scheme_make_raw_pair(scheme_make_raw_pair(e2, e), NULL);
+                  if (cl_last)
+                    SCHEME_CDR(cl_last) = pr;
+                  else
+                    cl_first = pr;
+                  cl_last = pr;
+                } else
+                  e2 = scheme_make_noninline_proc(e);
+              } else {
+                e2 = e;
+              }
 
-	    if (e2) {
-	      int pos;
-	      if (!consts)
-		consts = scheme_make_hash_table(SCHEME_hash_ptr);
-	      pos = tl->position;
-	      scheme_hash_set(consts, scheme_make_integer(pos), e2);
-              if (!re_consts)
-                re_consts = scheme_make_hash_table(SCHEME_hash_ptr);
-              scheme_hash_set(re_consts, scheme_make_integer(i_m),
-                              scheme_make_integer(pos));
-	    } else {
-	      /* At least mark it as fixed */
+              if (e2) {
+                int pos;
+                if (!consts)
+                  consts = scheme_make_hash_table(SCHEME_hash_ptr);
+                pos = tl->position;
+                scheme_hash_set(consts, scheme_make_integer(pos), e2);
+                if (!re_consts)
+                  re_consts = scheme_make_hash_table(SCHEME_hash_ptr);
+                scheme_hash_set(re_consts, scheme_make_integer(i_m),
+                                scheme_make_integer(pos));
+              } else {
+                /* At least mark it as fixed */
               
-	      if (!fixed_table) {
-		fixed_table = scheme_make_hash_table(SCHEME_hash_ptr);
-		if (!consts)
-		  consts = scheme_make_hash_table(SCHEME_hash_ptr);
-		scheme_hash_set(consts, scheme_false, (Scheme_Object *)fixed_table);
-	      }
-	      scheme_hash_set(fixed_table, scheme_make_integer(tl->position), scheme_true);
-	    }
-	  }
+                if (!fixed_table) {
+                  fixed_table = scheme_make_hash_table(SCHEME_hash_ptr);
+                  if (!consts)
+                    consts = scheme_make_hash_table(SCHEME_hash_ptr);
+                  scheme_hash_set(consts, scheme_false, (Scheme_Object *)fixed_table);
+                }
+                scheme_hash_set(fixed_table, scheme_make_integer(tl->position), scheme_true);
+              }
+            }
+          }
 	} else {
 	  /* The binding is not inlinable/propagatable, but unless it's
 	     set!ed, it is constant after evaluating the definition. We

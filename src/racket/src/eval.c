@@ -1889,10 +1889,15 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
     
     g = scheme_current_thread->ku.multiple.count;
     if (i == g) {
+      int is_st;
+
       values = scheme_current_thread->ku.multiple.array;
       scheme_current_thread->ku.multiple.array = NULL;
       if (SAME_OBJ(values, scheme_current_thread->values_buffer))
 	scheme_current_thread->values_buffer = NULL;
+
+      is_st = scheme_is_simple_make_struct_type(vals_expr, g, 1, 1);
+      
       for (i = 0; i < g; i++) {
         var = SCHEME_VEC_ELS(vec)[i+delta];
 	if (dm_env) {
@@ -1913,7 +1918,10 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
 	  scheme_shadow(scheme_get_bucket_home(b), (Scheme_Object *)b->key, 1);
 
 	  if (SCHEME_TOPLEVEL_FLAGS(var) & SCHEME_TOPLEVEL_SEAL) {
-            ((Scheme_Bucket_With_Flags *)b)->flags |= GLOB_IS_IMMUTATED;
+            if (is_st)
+              ((Scheme_Bucket_With_Flags *)b)->flags |= (GLOB_IS_IMMUTATED | GLOB_IS_CONSISTENT);
+            else
+              ((Scheme_Bucket_With_Flags *)b)->flags |= GLOB_IS_IMMUTATED;
 	  }
 	}
       }

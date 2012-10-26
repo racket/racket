@@ -371,6 +371,8 @@ extern Scheme_Object *scheme_hash_ref_proc;
 extern Scheme_Object *scheme_box_proc;
 extern Scheme_Object *scheme_call_with_values_proc;
 extern Scheme_Object *scheme_make_struct_type_proc;
+extern Scheme_Object *scheme_make_struct_field_accessor_proc;
+extern Scheme_Object *scheme_make_struct_field_mutator_proc;
 extern Scheme_Object *scheme_current_inspector_proc;
 extern Scheme_Object *scheme_varref_const_p_proc;
 
@@ -2869,6 +2871,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
 int scheme_might_invoke_call_cc(Scheme_Object *value);
 int scheme_is_liftable(Scheme_Object *o, int bind_count, int fuel, int as_rator);
 int scheme_is_functional_primitive(Scheme_Object *rator, int num_args, int expected_vals);
+int scheme_is_simple_make_struct_type(Scheme_Object *app, int vals, int resolved, int check_auto);
 
 int scheme_is_env_variable_boxed(Scheme_Comp_Env *env, int which);
 
