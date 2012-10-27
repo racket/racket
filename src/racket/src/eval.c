@@ -1896,7 +1896,13 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
       if (SAME_OBJ(values, scheme_current_thread->values_buffer))
 	scheme_current_thread->values_buffer = NULL;
 
-      is_st = scheme_is_simple_make_struct_type(vals_expr, g, 1, 1);
+      if (dm_env)
+        is_st = 0;
+      else
+        is_st = !!scheme_is_simple_make_struct_type(vals_expr, g, 1, 1, 
+                                                    NULL, NULL, NULL, NULL,
+                                                    NULL, NULL, MZ_RUNSTACK, 0, 
+                                                    NULL, NULL, 5);
       
       for (i = 0; i < g; i++) {
         var = SCHEME_VEC_ELS(vec)[i+delta];

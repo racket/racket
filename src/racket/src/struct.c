@@ -38,6 +38,7 @@ READ_ONLY Scheme_Object *scheme_impersonator_of_property;
 READ_ONLY Scheme_Object *scheme_make_struct_type_proc;
 READ_ONLY Scheme_Object *scheme_make_struct_field_accessor_proc;
 READ_ONLY Scheme_Object *scheme_make_struct_field_mutator_proc;
+READ_ONLY Scheme_Object *scheme_struct_type_p_proc;
 READ_ONLY Scheme_Object *scheme_current_inspector_proc;
 READ_ONLY Scheme_Object *scheme_recur_symbol;
 READ_ONLY Scheme_Object *scheme_display_symbol;
@@ -607,11 +608,13 @@ scheme_init_struct (Scheme_Env *env)
 						      "struct?",
 						      1, 1, 1),
 			     env);
-  scheme_add_global_constant("struct-type?",
-			     scheme_make_folding_prim(struct_type_p,
-						     "struct-type?",
-						     1, 1, 1),
-			    env);
+
+  REGISTER_SO(scheme_struct_type_p_proc);
+  scheme_struct_type_p_proc = scheme_make_folding_prim(struct_type_p,
+                                                       "struct-type?",
+                                                       1, 1, 1);
+  scheme_add_global_constant("struct-type?", scheme_struct_type_p_proc, env);
+
   scheme_add_global_constant("struct-type-property?",
 			     scheme_make_folding_prim(struct_type_property_p,
 						     "struct-type-property?",

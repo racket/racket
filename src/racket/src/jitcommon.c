@@ -1520,9 +1520,14 @@ int scheme_generate_struct_op(mz_jit_state *jitter, int kind, int for_branch,
       }
     } else {
       if (type_pos != 0) {
-        (void)jit_blti_i(refslow2, JIT_R2, type_pos);
-      }
-      bref3 = NULL;
+        if (kind == 1) {
+          bref3 = jit_blti_i(jit_forward(), JIT_R2, type_pos);
+        } else {
+          (void)jit_blti_i(refslow2, JIT_R2, type_pos);
+          bref3 = NULL;
+        }
+      } else
+        bref3 = NULL;
     }
     CHECK_LIMIT();
     /* Lookup argument type at target type depth, put it in R2: */

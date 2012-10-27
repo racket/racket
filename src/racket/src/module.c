@@ -4121,7 +4121,7 @@ static void setup_accessible_table(Scheme_Module *m)
           for (i = 0; i < cnt; i++) {
             form = SCHEME_VEC_ELS(m->bodies[0])[i];
             if (SAME_TYPE(SCHEME_TYPE(form), scheme_define_values_type)) {
-              int checked_st = 0, is_st = 0;
+              int checked_st = 0, is_st = 0, st_count = 0, st_icount = 0;
               for (k = SCHEME_VEC_SIZE(form); k-- > 1; ) {
                 tl = SCHEME_VEC_ELS(form)[k];
                 if (SCHEME_TOPLEVEL_FLAGS(tl) & SCHEME_TOPLEVEL_SEAL) {
@@ -4154,13 +4154,17 @@ static void setup_accessible_table(Scheme_Module *m)
                           }
                         } else {
                           if (!checked_st) {
-                            is_st = scheme_is_simple_make_struct_type(SCHEME_VEC_ELS(form)[0],
-                                                                      SCHEME_VEC_SIZE(form)-1,
-                                                                      1, 1);
+                            is_st = !!scheme_is_simple_make_struct_type(SCHEME_VEC_ELS(form)[0],
+                                                                        SCHEME_VEC_SIZE(form)-1,
+                                                                        1, 1, NULL, &st_count, &st_icount, 
+                                                                        NULL,
+                                                                        NULL, NULL, NULL, 0,
+                                                                        m->prefix->toplevels, ht,
+                                                                        5);
                             checked_st = 1;
                           }
                           if (is_st)
-                            v = scheme_make_pair(v, scheme_constant_key);
+                            v = scheme_make_pair(v, scheme_make_struct_proc_shape(k-1, st_count, st_icount));
                         }
                         scheme_hash_set(ht, tl, v);
                       }
@@ -9002,7 +9006,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
     Scheme_Object *prev = NULL, *next;
     for (p = first; !SCHEME_NULLP(p); p = next) {
       next = SCHEME_CDR(p);
-      if (scheme_omittable_expr(SCHEME_CAR(p), -1, -1, 0, NULL, -1, 0)) {
+      if (scheme_omittable_expr(SCHEME_CAR(p), -1, -1, 0, NULL, NULL, -1, 0)) {
 	if (prev)
 	  SCHEME_CDR(prev) = next;
 	else

@@ -1682,6 +1682,154 @@
               (hash-ref '#hash((x . y)) x add1))
            #f)
 
+;; Check elimination of ignored structure predicate
+;; and constructor applications:
+
+(test-comp '(module m racket/base
+              (define-values (struct:a a a? a-ref a-set!)
+                (make-struct-type 'a #f 2 0))
+              (begin0
+               (a? (a-ref (a 1 2) 1))
+               a?
+               a
+               a-ref
+               (a? 7)
+               (a 1 2)
+               5))
+           '(module m racket/base
+              (define-values (struct:a a a? a-ref a-set!)
+                (make-struct-type 'a #f 2 0))
+              (begin0
+               (a? (a-ref (a 1 2) 1))
+               5)))
+
+(test-comp '(module m racket/base
+              (define-values (struct:a a a? a-x a-y)
+                (let-values ([(struct:a a a? a-ref a-set!)
+                              (make-struct-type 'a #f 2 0)])
+                  (values struct:a a a?
+                          (make-struct-field-accessor a-ref 0)
+                          (make-struct-field-accessor a-ref 1))))
+              (begin0
+               (a? (a-x (a 1 2)))
+               a?
+               a
+               a-x
+               (a? 7)
+               (a 1 2)
+               5))
+           '(module m racket/base
+              (define-values (struct:a a a? a-x a-y)
+                (let-values ([(struct:a a a? a-ref a-set!)
+                              (make-struct-type 'a #f 2 0)])
+                  (values struct:a a a?
+                          (make-struct-field-accessor a-ref 0)
+                          (make-struct-field-accessor a-ref 1))))
+              (begin0
+               (a? (a-x (a 1 2)))
+               5)))
+
+(test-comp '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes)
+              (begin0
+               (a? (a-x (a 1 2)))
+               a?
+               a
+               a-x
+               (a? 7)
+               (a 1 2)
+               5))
+           '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes)
+              (begin0
+               (a? (a-x (a 1 2)))
+               5)))
+
+(test-comp '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes #:prefab)
+              (begin0
+               (a? (a-x (a 1 2)))
+               a?
+               a
+               a-x
+               (a? 7)
+               (a 1 2)
+               5))
+           '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes #:prefab)
+              (begin0
+               (a? (a-x (a 1 2)))
+               5)))
+
+(test-comp '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes #:mutable)
+              (begin0
+               (a? (set-a-x! (a 1 2) 5))
+               a?
+               a
+               a-x
+               set-a-x!
+               (a? 7)
+               (a 1 2)
+               5))
+           '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes #:mutable)
+              (begin0
+               (a? (set-a-x! (a 1 2) 5))
+               5)))
+
+(test-comp '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes)
+              (struct b (z) #:super struct:a #:omit-define-syntaxes)
+              (begin0
+               (list (a? (a-x (a 1 2)))
+                     (b? (b-z (b 1 2 3))))
+               a?
+               a
+               a-x
+               (a? 7)
+               (a 1 2)
+               b?
+               b
+               b-z
+               (b 1 2 3)
+               5))
+           '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes)
+              (struct b (z) #:super struct:a #:omit-define-syntaxes)
+              (begin0
+               (list (a? (a-x (a 1 2)))
+                     (b? (b-z (b 1 2 3))))
+               5)))
+
+(module struct-a-for-optimize racket/base
+  (provide (struct-out a)
+           (struct-out b))
+  (struct a (x y))
+  (struct b a (z)))
+
+(test-comp '(module m racket/base
+              (require 'struct-a-for-optimize)
+              (begin0
+               (list (a? (a-x (a 1 2)))
+                     (b? (b-z (b 1 2 3))))
+               a?
+               a
+               a-x
+               (a? 7)
+               (a 1 2)
+               b?
+               b
+               b-z
+               (b 1 2 3)
+               5))
+           '(module m racket/base
+              (require 'struct-a-for-optimize)
+              (begin0
+               (list (a? (a-x (a 1 2)))
+                     (b? (b-z (b 1 2 3))))
+               5)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check bytecode verification of lifted functions
 

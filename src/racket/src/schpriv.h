@@ -373,6 +373,7 @@ extern Scheme_Object *scheme_call_with_values_proc;
 extern Scheme_Object *scheme_make_struct_type_proc;
 extern Scheme_Object *scheme_make_struct_field_accessor_proc;
 extern Scheme_Object *scheme_make_struct_field_mutator_proc;
+extern Scheme_Object *scheme_struct_type_p_proc;
 extern Scheme_Object *scheme_current_inspector_proc;
 extern Scheme_Object *scheme_varref_const_p_proc;
 
@@ -2860,11 +2861,28 @@ int scheme_used_app_only(Scheme_Comp_Env *env, int which);
 int scheme_used_ever(Scheme_Comp_Env *env, int which);
 
 int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
-                          Optimize_Info *warn_info, int deeper_than, int no_id);
+                          Optimize_Info *opt_info, Optimize_Info *warn_info, int deeper_than, int no_id);
 int scheme_might_invoke_call_cc(Scheme_Object *value);
 int scheme_is_liftable(Scheme_Object *o, int bind_count, int fuel, int as_rator);
 int scheme_is_functional_primitive(Scheme_Object *rator, int num_args, int expected_vals);
-int scheme_is_simple_make_struct_type(Scheme_Object *app, int vals, int resolved, int check_auto);
+Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *app, int vals, int resolved, 
+                                                 int check_auto, int *_auto_e_depth, 
+                                                 int *_field_count, int *_init_field_count, 
+                                                 int *_uses_super,
+                                                 Scheme_Hash_Table *top_level_consts, 
+                                                 Scheme_Hash_Table *top_level_table,
+                                                 Scheme_Object **runstack, int rs_delta,
+                                                 Scheme_Object **symbols, Scheme_Hash_Table *symbol_table,
+                                                 int fuel);
+
+Scheme_Object *scheme_make_struct_proc_shape(int k, int field_count, int init_field_count);
+#define STRUCT_PROC_SHAPE_STRUCT  0
+#define STRUCT_PROC_SHAPE_PRED    1
+#define STRUCT_PROC_SHAPE_OTHER   2
+#define STRUCT_PROC_SHAPE_CONSTR  3
+#define STRUCT_PROC_SHAPE_MASK    0x7
+#define STRUCT_PROC_SHAPE_SHIFT   3
+#define SCHEME_PROC_SHAPE_MODE(obj) (((Scheme_Small_Object *)(obj))->u.int_val)
 
 int scheme_is_env_variable_boxed(Scheme_Comp_Env *env, int which);
 

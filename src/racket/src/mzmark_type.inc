@@ -248,6 +248,25 @@ static int small_object_FIXUP(void *p, struct NewGC *gc) {
 #define small_object_IS_CONST_SIZE 1
 
 
+static int small_atomic_obj_SIZE(void *p, struct NewGC *gc) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Small_Object));
+}
+
+static int small_atomic_obj_MARK(void *p, struct NewGC *gc) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Small_Object));
+}
+
+static int small_atomic_obj_FIXUP(void *p, struct NewGC *gc) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Small_Object));
+}
+
+#define small_atomic_obj_IS_ATOMIC 1
+#define small_atomic_obj_IS_CONST_SIZE 1
+
+
 static int app_rec_SIZE(void *p, struct NewGC *gc) {
   Scheme_App_Rec *r = (Scheme_App_Rec *)p;
 
@@ -1189,25 +1208,6 @@ static int escaping_cont_proc_FIXUP(void *p, struct NewGC *gc) {
 
 #define escaping_cont_proc_IS_ATOMIC 0
 #define escaping_cont_proc_IS_CONST_SIZE 1
-
-
-static int char_obj_SIZE(void *p, struct NewGC *gc) {
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Small_Object));
-}
-
-static int char_obj_MARK(void *p, struct NewGC *gc) {
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Small_Object));
-}
-
-static int char_obj_FIXUP(void *p, struct NewGC *gc) {
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Small_Object));
-}
-
-#define char_obj_IS_ATOMIC 1
-#define char_obj_IS_CONST_SIZE 1
 
 
 static int bignum_obj_SIZE(void *p, struct NewGC *gc) {
