@@ -1566,12 +1566,15 @@ int scheme_generate_struct_op(mz_jit_state *jitter, int kind, int for_branch,
 # endif
 #endif
     }
-    if (pop_and_jump)
+    if (pop_and_jump) {
       mz_epilog(JIT_V1);
-    else if (!for_branch) {
+      refdone = NULL;
+    } else if (!for_branch) {
       __START_INNER_TINY__(1);
       refdone = jit_jmpi(jit_forward());
       __END_INNER_TINY__(1);
+    } else {
+      refdone = NULL;
     }
 
     /* False branch: */
