@@ -1153,9 +1153,10 @@ please adhere to these guidelines:
  (experimental-languages "Experimental Languages")
   (initial-language-category "Initial language")
   (no-language-chosen "No language chosen")
- 
+ (other-languages "Other Languages")
+  
   (module-language-name "Determine language from source")
- (module-language-one-line-summary "Reads the #lang line to specify the actual language")
+ (module-language-one-line-summary "The #lang line specifies the actual language")
   (module-language-auto-text "Automatic #lang line") ;; shows up in the details section of the module language
    
   ;; for the upper portion of the language dialog

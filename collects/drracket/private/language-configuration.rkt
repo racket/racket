@@ -17,7 +17,7 @@
   (define original-output (current-output-port))
   (define (oprintf . args) (apply fprintf original-output args))
   
-  (define-values (sc-use-language-in-source sc-choose-a-language mouse-event-uses-shortcut-prefix?)
+  (define-values (sc-use-language-in-source sc-use-teaching-language sc-choose-a-language mouse-event-uses-shortcut-prefix?)
     (let* ([shortcut-prefix (get-default-shortcut-prefix)]
            [menukey-string 
             (apply string-append
@@ -40,8 +40,10 @@
                 shortcut-prefix))
     (values (string-append (string-constant use-language-in-source)
                            (format " (~aU)" menukey-string))
-            (string-append (string-constant choose-a-language)
-                           (format " (~aC)" menukey-string))
+            (string-append (string-constant teaching-languages)
+                           (format " (~aT)" menukey-string))
+            (string-append (string-constant other-languages)
+                           (format " (~aO)" menukey-string))
             mouse-event-uses-shortcut-prefix?)))
   
   (define sc-lang-in-source-discussion (string-constant lang-in-source-discussion))
@@ -257,7 +259,7 @@
           (add-welcome dialog welcome-before-panel welcome-after-panel))
         
         (send dialog stretchable-width #f)
-        (send dialog stretchable-height #t)
+        (send dialog stretchable-height #f)
         
         (unless parent
           (send dialog center 'both))
@@ -276,8 +278,8 @@
     ;; if re-center is a dialog, when the show details button is clicked, the dialog is recenterd.
     (define fill-language-dialog
       (λ (parent show-details-parent language-settings-to-show
-                          [re-center #f]
-                          [ok-handler void]) ; en/disable button, execute it
+                 [re-center #f]
+                 [ok-handler void]) ; en/disable button, execute it
         
         (define-values (language-to-show settings-to-show)
           (let ([request-lang-to-show (language-settings-language language-settings-to-show)])
@@ -376,9 +378,13 @@
               (cond
                 [(and i (is-a? i hieritem-language<%>))
                  (define pos (send (send i get-language) get-language-position))
-                 (preferences:set 'drracket:language-dialog:hierlist-default pos)
-                 (set! most-recent-languages-hier-list-selection pos)
-                 (something-selected i)]
+                 (if (eq? this teaching-languages-hier-list)
+                     (preferences:set 'drracket:language-dialog:teaching-hierlist-default pos)
+                     (preferences:set 'drracket:language-dialog:hierlist-default pos))
+                 (if (eq? this teaching-languages-hier-list)
+                     (set! most-recent-teaching-languages-hier-list-selection pos)
+                     (set! most-recent-languages-hier-list-selection pos))
+                 (something-selected this i)]
                 [else
                  (non-language-selected)]))
             ;; this is used only because we set `on-click-always'
@@ -388,7 +394,7 @@
             ;; double-click selects a language
             (define/override (on-double-select i)
               (when (and i (is-a? i hieritem-language<%>))
-                (something-selected i)
+                (something-selected this i)
                 (ok-handler 'execute)))
             (super-new [parent parent])
             ;; do this so we can expand/collapse languages on a single click
@@ -396,9 +402,12 @@
             (on-click-always #t)
             (allow-deselect #t)))
         
-        (define outermost-panel (new horizontal-pane% [parent parent]))
+        (define outermost-panel (new horizontal-panel% 
+                                     [parent parent]
+                                     [alignment '(left top)]))
         (define languages-choice-panel (new vertical-panel%
                                             [parent outermost-panel]
+                                            [stretchable-height #f]
                                             [alignment '(left top)]))
         
         (define use-language-in-source-rb
@@ -411,7 +420,8 @@
                   (use-language-in-source-rb-callback))]))
         (define (use-language-in-source-rb-callback)
           (module-language-selected)
-          (send use-chosen-language-rb set-selection #f))
+          (send use-chosen-language-rb set-selection #f)
+          (send use-teaching-language-rb set-selection #f))
         (define in-source-discussion-panel (new horizontal-panel% 
                                                 [parent languages-choice-panel]
                                                 [stretchable-height #f]))
@@ -421,6 +431,39 @@
                                                  [min-width 32]))
         (define in-source-discussion-editor-canvas (add-discussion in-source-discussion-panel))
         (define most-recent-languages-hier-list-selection (preferences:get 'drracket:language-dialog:hierlist-default))
+        (define most-recent-teaching-languages-hier-list-selection (preferences:get 'drracket:language-dialog:teaching-hierlist-default))
+        
+        (define use-teaching-language-rb
+          (new radio-box% 
+               [label #f]
+               [choices (list sc-use-teaching-language)]
+               [parent languages-choice-panel]
+               [callback
+                (λ (rb evt)
+                  (use-teaching-language-rb-callback))]))
+        (define (use-teaching-language-rb-callback)
+          (when most-recent-teaching-languages-hier-list-selection
+            (select-a-language-in-hierlist teaching-languages-hier-list
+                                           (cdr most-recent-teaching-languages-hier-list-selection)))
+          (send use-chosen-language-rb set-selection #f)
+          (send use-language-in-source-rb set-selection #f)
+          (send use-teaching-language-rb set-selection 0)
+          (send other-languages-hier-list select #f)
+          (send teaching-languages-hier-list focus))
+        
+        (define teaching-languages-hier-list-panel
+          (new horizontal-panel% [parent languages-choice-panel] [stretchable-height #f]))
+        (define teaching-languages-hier-list-spacer
+          (new horizontal-panel% 
+               [parent teaching-languages-hier-list-panel]
+               [stretchable-width #f]
+               [min-width 16]))
+        
+        (define teaching-languages-hier-list 
+          (new selectable-hierlist% 
+               [parent teaching-languages-hier-list-panel]
+               [style '(no-border no-hscroll auto-vscroll transparent)]))
+        
         (define use-chosen-language-rb
           (new radio-box%
                [label #f]
@@ -430,19 +473,35 @@
                 (λ (this-rb evt)
                   (use-chosen-language-rb-callback))]))
         (define (use-chosen-language-rb-callback)
+          (when (member ellipsis-spacer-panel (send languages-hier-list-panel get-children))
+            (send languages-hier-list-panel change-children
+                  (λ (l)
+                    (list languages-hier-list-spacer other-languages-hier-list))))
           (when most-recent-languages-hier-list-selection
-            (select-a-language-in-hierlist most-recent-languages-hier-list-selection))
+            (select-a-language-in-hierlist other-languages-hier-list
+                                           most-recent-languages-hier-list-selection))
           (send use-language-in-source-rb set-selection #f)
-          (send languages-hier-list focus))
-        (define languages-hier-list-panel (new horizontal-panel% [parent languages-choice-panel]))
+          (send use-teaching-language-rb set-selection #f)
+          (send teaching-languages-hier-list select #f)
+          (send other-languages-hier-list focus))
+        
+        (define languages-hier-list-panel (new horizontal-panel% 
+                                               [parent languages-choice-panel] 
+                                               [stretchable-height #f]))
+        (define ellipsis-spacer-panel (new horizontal-panel% 
+                                           [parent languages-hier-list-panel]
+                                           [stretchable-width #f]
+                                           [min-width 32]))
+        (define ellipsis-message (new message% [label "..."] [parent languages-hier-list-panel]))
+        
         (define languages-hier-list-spacer (new horizontal-panel% 
                                                 [parent languages-hier-list-panel]
                                                 [stretchable-width #f]
                                                 [min-width 16]))
         
-        (define languages-hier-list (new selectable-hierlist% 
-                                         [parent languages-hier-list-panel]
-                                         [style '(no-border no-hscroll auto-vscroll transparent)]))
+        (define other-languages-hier-list (new selectable-hierlist% 
+                                               [parent languages-hier-list-panel]
+                                               [style '(no-border no-hscroll auto-vscroll transparent)]))
         (define details-outer-panel (make-object vertical-pane% outermost-panel))
         (define details/manual-parent-panel (make-object vertical-panel% details-outer-panel))
         (define details-panel (make-object panel:single% details/manual-parent-panel))
@@ -493,9 +552,11 @@
         
         (define (module-language-selected)
           ;; need to deselect things in the languages-hier-list at this point.
-          (send languages-hier-list select #f)
-          (send use-chosen-language-rb set-selection #f)
+          (send other-languages-hier-list select #f)
+          (send teaching-languages-hier-list select #f)
           (send use-language-in-source-rb set-selection 0)
+          (send use-chosen-language-rb set-selection #f)
+          (send use-teaching-language-rb set-selection #f)
           (ok-handler 'enable)
           (send details-button enable #t)
           (update-gui-based-on-selected-language module-language*language
@@ -504,12 +565,14 @@
         
         ;; no-language-selected : -> void
         ;; updates the GUI for the situation where no language at all selected, and
-        ;; and thus neither of the radio buttons should be selected. 
+        ;; and thus none of the radio buttons should be selected. 
         ;; this generally happens when there is no preference setting for the language
         ;; (ie the user has just started drracket for the first time)
         (define (no-language-selected)
           (non-language-selected)
-          (send use-chosen-language-rb set-selection #f))
+          (send use-language-in-source-rb set-selection #f)
+          (send use-chosen-language-rb set-selection #f)
+          (send use-teaching-language-rb set-selection #f))
         
         (define module-language*language 'module-language*-not-yet-set)
         (define module-language*get-language-details-panel 'module-language*-not-yet-set)
@@ -519,8 +582,6 @@
         ;; updates the GUI and selected-language and get/set-selected-language-settings
         ;; for when some non-language is selected in the hierlist
         (define (non-language-selected)
-          (send use-chosen-language-rb set-selection 0)
-          (send use-language-in-source-rb set-selection #f)
           (send revert-to-defaults-button enable #f)
           (send details-panel active-child no-details-panel)
           (send one-line-summary-message set-label "")
@@ -530,10 +591,18 @@
           (send details-button enable #f))
         
         ;; something-selected : item -> void
-        (define (something-selected item)
-          (send use-chosen-language-rb set-selection 0)
+        (define (something-selected hierlist item)
           (send use-language-in-source-rb set-selection #f)
-          (ok-handler 'enable)                
+          (cond
+            [(eq? hierlist other-languages-hier-list)
+             (send use-teaching-language-rb set-selection #f)
+             (send use-chosen-language-rb set-selection 0)
+             (send teaching-languages-hier-list select #f)]
+            [else 
+             (send use-teaching-language-rb set-selection 0)
+             (send use-chosen-language-rb set-selection #f)
+             (send other-languages-hier-list select #f)])
+          (ok-handler 'enable)
           (send details-button enable #t)
           (send item selected))
         
@@ -546,34 +615,38 @@
         ;; when `language' matches language-to-show, update the settings
         ;;   panel to match language-to-show, otherwise set to defaults.
         (define (add-language-to-dialog language)
-          (let ([positions (send language get-language-position)]
-                [numbers (send language get-language-numbers)])
+          (define positions (send language get-language-position))
+          (define numbers (send language get-language-numbers))
+          (define teaching-language? (and (pair? positions)
+                                          (equal? (car positions)
+                                                  (string-constant teaching-languages))))
+          
+          ;; don't show the initial language ...
+          (unless (equal? positions initial-language-position)
+            (unless (and (list? positions)
+                         (list? numbers)
+                         (pair? positions)
+                         (pair? numbers)
+                         (andmap number? numbers)
+                         (andmap string? positions)
+                         (= (length positions) (length numbers))
+                         ((length numbers) . >= . 1))
+              (error 'drracket:language
+                     (string-append
+                      "languages position and numbers must be lists of strings and numbers,"
+                      " respectively, must have the same length, and must each contain at"
+                      " least one element, got: ~e ~e")
+                     positions numbers))
             
-            ;; don't show the initial language ...
-            (unless (equal? positions initial-language-position)
-              (unless (and (list? positions)
-                           (list? numbers)
-                           (pair? positions)
-                           (pair? numbers)
-                           (andmap number? numbers)
-                           (andmap string? positions)
-                           (= (length positions) (length numbers))
-                           ((length numbers) . >= . 1))
+            (when (null? (cdr positions))
+              (unless (equal? positions (list (string-constant module-language-name)))
                 (error 'drracket:language
-                       (string-append
-                        "languages position and numbers must be lists of strings and numbers,"
-                        " respectively, must have the same length, and must each contain at"
-                        " least one element, got: ~e ~e")
-                       positions numbers))
-              
-              (when (null? (cdr positions))
-                (unless (equal? positions (list (string-constant module-language-name)))
-                  (error 'drracket:language
-                         "Only the module language may be at the top level. Other languages must have at least two levels")))
-              
-              (send languages-hier-list clear-fringe-cache)
-              
-              #|
+                       "Only the module language may be at the top level. Other languages must have at least two levels")))
+            
+            (send other-languages-hier-list clear-fringe-cache)
+            (send teaching-languages-hier-list clear-fringe-cache)
+            
+            #|
               
               inline the first level of the tree into just items in the hierlist
               keep track of the starting (see call to sort method below) by
@@ -581,67 +654,72 @@
               what the sorting number is for its level above (in the second-number mixin)
               
               |#
-              
-              (let add-sub-language ([ht languages-table]
-                                     [hier-list languages-hier-list]
-                                     [positions positions]
-                                     [numbers numbers]
-                                     [first? #t]
-                                     [second-number #f]) ;; only non-#f during the second iteration in which case it is the first iterations number
-                (cond
-                  [(null? (cdr positions))
-                   (let* ([language-details-panel #f]
-                          [real-get/set-settings 
-                           (case-lambda
-                             [() 
-                              (cond
-                                [(and language-to-show 
-                                      settings-to-show
-                                      (equal? (send language-to-show get-language-position)
-                                              (send language get-language-position)))
-                                 settings-to-show]
-                                [else
-                                 (send language default-settings)])]
-                             [(x) (void)])]
-                          [get-language-details-panel (lambda () language-details-panel)]
-                          [get/set-settings (lambda x (apply real-get/set-settings x))]
-                          [position (car positions)]
-                          [number (car numbers)])
-                     
-                     (set! construct-details
-                           (let ([old construct-details])
-                             (lambda ()
-                               (old)
-                               (let-values ([(language-details-panel-real get/set-settings)
-                                             (make-details-panel language)])
-                                 (set! language-details-panel language-details-panel-real)
-                                 (set! real-get/set-settings get/set-settings))
-                               
-                               (let-values ([(vis-lang vis-settings)
-                                             (cond
-                                               [(and (not selected-language)
-                                                     (eq? language-to-show language))
-                                                (values language-to-show settings-to-show)]
-                                               [(eq? selected-language language)
-                                                (values language 
-                                                        (if (eq? language language-to-show)
-                                                            settings-to-show
-                                                            (send language default-settings)))]
-                                               [else (values #f #f)])])
-                                 (cond
-                                   [(and vis-lang
-                                         (equal? (send vis-lang get-language-position)
-                                                 (send language get-language-position)))
-                                    (get/set-settings vis-settings)
-                                    (send details-panel active-child language-details-panel)]
-                                   [else
-                                    (get/set-settings (send language default-settings))])))))
-                     
-                     (cond
-                       [(equal? positions (list (string-constant module-language-name)))
-                        (set! module-language*language language)
-                        (set! module-language*get-language-details-panel get-language-details-panel)
-                        (set! module-language*get/set-settings get/set-settings)]
+            (let add-sub-language ([ht languages-table]
+                                   [hier-list (if teaching-language?
+                                                  teaching-languages-hier-list
+                                                  other-languages-hier-list)]
+                                   [positions (if teaching-language?
+                                                  (cdr positions)
+                                                  positions)]
+                                   [numbers (if teaching-language?
+                                                (cdr numbers)
+                                                numbers)]
+                                   [first? #t]
+                                   [second-number #f]) ;; only non-#f during the second iteration in which case it is the first iterations number
+              (cond
+                [(null? (cdr positions))
+                 (let* ([language-details-panel #f]
+                        [real-get/set-settings 
+                         (case-lambda
+                           [() 
+                            (cond
+                              [(and language-to-show 
+                                    settings-to-show
+                                    (equal? (send language-to-show get-language-position)
+                                            (send language get-language-position)))
+                               settings-to-show]
+                              [else
+                               (send language default-settings)])]
+                           [(x) (void)])]
+                        [get-language-details-panel (lambda () language-details-panel)]
+                        [get/set-settings (lambda x (apply real-get/set-settings x))]
+                        [position (car positions)]
+                        [number (car numbers)])
+                   
+                   (set! construct-details
+                         (let ([old construct-details])
+                           (lambda ()
+                             (old)
+                             (let-values ([(language-details-panel-real get/set-settings)
+                                           (make-details-panel language)])
+                               (set! language-details-panel language-details-panel-real)
+                               (set! real-get/set-settings get/set-settings))
+                             
+                             (let-values ([(vis-lang vis-settings)
+                                           (cond
+                                             [(and (not selected-language)
+                                                   (eq? language-to-show language))
+                                              (values language-to-show settings-to-show)]
+                                             [(eq? selected-language language)
+                                              (values language 
+                                                      (if (eq? language language-to-show)
+                                                          settings-to-show
+                                                          (send language default-settings)))]
+                                             [else (values #f #f)])])
+                               (cond
+                                 [(and vis-lang
+                                       (equal? (send vis-lang get-language-position)
+                                               (send language get-language-position)))
+                                  (get/set-settings vis-settings)
+                                  (send details-panel active-child language-details-panel)]
+                                 [else
+                                  (get/set-settings (send language default-settings))])))))
+                   
+                   (cond
+                     [(equal? positions (list (string-constant module-language-name)))
+                      (set! module-language*language language)
+                      (set! module-language*get-language-details-panel get-language-details-panel)
+                      (set! module-language*get/set-settings get/set-settings)]
                      [else
                       (let* ([mixin (compose
                                      number-mixin
@@ -671,61 +749,62 @@
                                    (send language get-style-delta)
                                    0
                                    (send text last-position))])))]))]
-                  [else (let* ([position (car positions)]
-                               [number (car numbers)]
-                               [sub-ht/sub-hier-list
-                                (hash-ref
-                                 ht
-                                 (string->symbol position)
-                                 (λ ()
-                                   (if first?
-                                       (let* ([item (send hier-list new-item number-mixin)]
-                                              [x (list (make-hasheq) hier-list item)])
-                                         (hash-set! ht (string->symbol position) x)
-                                         (send item set-number number)
-                                         (send item set-allow-selection #f)
-                                         (let* ([editor (send item get-editor)]
-                                                [pos (send editor last-position)])
-                                           (send editor insert "\n")
-                                           (send editor insert position)
-                                           (send editor change-style small-size-delta pos (+ pos 1))
-                                           (send editor change-style section-style-delta 
-                                                 (+ pos 1) (send editor last-position)))
-                                         x)
-                                       (let* ([new-list (send hier-list new-list
-                                                              (if second-number
-                                                                  (compose second-number-mixin number-mixin)
-                                                                  number-mixin))]
-                                              [x (list (make-hasheq) new-list #f)])
-                                         (send new-list set-number number)
-                                         (when second-number
-                                           (send new-list set-second-number second-number))
-                                         (send new-list set-allow-selection #t)
-                                         (send new-list open)
-                                         (send (send new-list get-editor) insert position)
-                                         (hash-set! ht (string->symbol position) x)
-                                         x))))])
-                          (cond
-                            [first? 
-                             (unless (= number (send (caddr sub-ht/sub-hier-list) get-number))
-                               (error 'add-language "language ~s; expected number for ~e to be ~e, got ~e"
-                                      (send language get-language-name)
-                                      position
-                                      (send (caddr sub-ht/sub-hier-list) get-number)
-                                      number))]
-                            [else
-                             (unless (= number (send (cadr sub-ht/sub-hier-list) get-number))
-                               (error 'add-language "language ~s; expected number for ~e to be ~e, got ~e"
-                                      (send language get-language-name)
-                                      position
-                                      (send (cadr sub-ht/sub-hier-list) get-number)
-                                      number))])
-                          (add-sub-language (car sub-ht/sub-hier-list)
-                                            (cadr sub-ht/sub-hier-list)
-                                            (cdr positions)
-                                            (cdr numbers)
-                                            #f
-                                            (if first? number #f)))])))))
+                [else
+                 (let* ([position (car positions)]
+                        [number (car numbers)]
+                        [sub-ht/sub-hier-list
+                         (hash-ref
+                          ht
+                          (string->symbol position)
+                          (λ ()
+                            (if first?
+                                (let* ([item (send hier-list new-item number-mixin)]
+                                       [x (list (make-hasheq) hier-list item)])
+                                  (hash-set! ht (string->symbol position) x)
+                                  (send item set-number number)
+                                  (send item set-allow-selection #f)
+                                  (let* ([editor (send item get-editor)]
+                                         [pos (send editor last-position)])
+                                    (send editor insert "\n")
+                                    (send editor insert position)
+                                    (send editor change-style small-size-delta pos (+ pos 1))
+                                    (send editor change-style section-style-delta 
+                                          (+ pos 1) (send editor last-position)))
+                                  x)
+                                (let* ([new-list (send hier-list new-list
+                                                       (if second-number
+                                                           (compose second-number-mixin number-mixin)
+                                                           number-mixin))]
+                                       [x (list (make-hasheq) new-list #f)])
+                                  (send new-list set-number number)
+                                  (when second-number
+                                    (send new-list set-second-number second-number))
+                                  (send new-list set-allow-selection #t)
+                                  (send new-list open)
+                                  (send (send new-list get-editor) insert position)
+                                  (hash-set! ht (string->symbol position) x)
+                                  x))))])
+                   (cond
+                     [first? 
+                      (unless (= number (send (caddr sub-ht/sub-hier-list) get-number))
+                        (error 'add-language "language ~s; expected number for ~e to be ~e, got ~e"
+                               (send language get-language-name)
+                               position
+                               (send (caddr sub-ht/sub-hier-list) get-number)
+                               number))]
+                     [else
+                      (unless (= number (send (cadr sub-ht/sub-hier-list) get-number))
+                        (error 'add-language "language ~s; expected number for ~e to be ~e, got ~e"
+                               (send language get-language-name)
+                               position
+                               (send (cadr sub-ht/sub-hier-list) get-number)
+                               number))])
+                   (add-sub-language (car sub-ht/sub-hier-list)
+                                     (cadr sub-ht/sub-hier-list)
+                                     (cdr positions)
+                                     (cdr numbers)
+                                     #f
+                                     (if first? number #f)))]))))
         
         (define number<%>
           (interface ()
@@ -779,35 +858,59 @@
                (send item close)
                (close-children item)]
               [else (void)]))
-          (close-children languages-hier-list))
+          (close-children other-languages-hier-list)
+          (close-children teaching-languages-hier-list))
         
         ;; open-current-language : -> void
         ;; opens the tabs that lead to the current language
         ;; and selects the current language
         (define (open-current-language)
+          
+          ;; set the initial selection in the hierlists
+          (let ([hier-default (preferences:get 'drracket:language-dialog:hierlist-default)])
+            (when hier-default
+              (select-a-language-in-hierlist other-languages-hier-list hier-default)))
+          (let ([hier-default (preferences:get 'drracket:language-dialog:teaching-hierlist-default)])
+            (when hier-default
+              (select-a-language-in-hierlist teaching-languages-hier-list (cdr hier-default))))
+          
+          (send languages-hier-list-panel change-children
+              (λ (l)
+                (list ellipsis-spacer-panel ellipsis-message)))
+          
           (cond
             [(not (and language-to-show settings-to-show))
              (no-language-selected)]
             [(is-a? language-to-show drracket:module-language:module-language<%>)
-             (let ([hier-default (preferences:get 'drracket:language-dialog:hierlist-default)])
-               (when hier-default
-                 (select-a-language-in-hierlist hier-default)))
              ;; the above changes the radio button selections, so do it before calling module-language-selected
              (module-language-selected)]
             [else
-             (send languages-hier-list focus) ;; only focus when the module language isn't selected
-             (send use-chosen-language-rb set-selection 0)
-             (send use-language-in-source-rb set-selection #f)
-             (select-a-language-in-hierlist (send language-to-show get-language-position))]))
+             (define position (send language-to-show get-language-position))
+             (cond
+               [(and (pair? position)
+                     (equal? (car position) 
+                             (string-constant teaching-languages)))
+                (select-a-language-in-hierlist teaching-languages-hier-list (cdr position))
+                (send use-teaching-language-rb set-selection 0)
+                (send use-chosen-language-rb set-selection #f)
+                (send teaching-languages-hier-list focus)]
+               [else
+                (send languages-hier-list-panel change-children
+                      (λ (l)
+                        (list languages-hier-list-spacer other-languages-hier-list)))
+                (select-a-language-in-hierlist other-languages-hier-list position)
+                (send use-teaching-language-rb set-selection #f)
+                (send use-chosen-language-rb set-selection 0)
+                (send other-languages-hier-list focus)])
+             (send use-language-in-source-rb set-selection #f)]))
         
-        (define (select-a-language-in-hierlist language-position)
+        (define (select-a-language-in-hierlist hier-list language-position)
           (cond
             [(null? (cdr language-position))
              ;; nothing to open here
-             (send (car (send languages-hier-list get-items)) select #t)
-             (void)]
+             (send (car (send hier-list get-items)) select #t)]
             [else
-             (let loop ([hi languages-hier-list]
+             (let loop ([hi hier-list]
                         
                         ;; skip the first position, since it is flattened into the dialog
                         [first-pos (cadr language-position)]
@@ -819,8 +922,6 @@
                               (send hi get-items))])
                  (cond
                    [(null? matching-children) 
-                    ;; just give up here. probably this means that a bad preference was saved 
-                    ;; and we're being called from the module-language case in 'open-current-language'
                     (void)]
                    [else
                     (let ([child (car matching-children)])
@@ -828,8 +929,9 @@
                         [(null? position)
                          (send child select #t)]
                         [else
-                         (send child open)
-                         (loop child (car position) (cdr position))]))])))]))
+                         (when (is-a? child hierarchical-list-compound-item<%>) ;; test can fail when prefs are bad
+                           (send child open)
+                           (loop child (car position) (cdr position)))]))])))]))
         
         ;; docs-callback : -> void
         (define (docs-callback)
@@ -901,46 +1003,47 @@
         
         (send revert-to-defaults-outer-panel stretchable-width #f)
         (send revert-to-defaults-outer-panel stretchable-height #f)
-        (send outermost-panel set-alignment 'center 'center)
         
         (for-each add-language-to-dialog languages)
-        (send languages-hier-list sort 
-              (λ (x y)
-                (cond
-                  [(and (x . is-a? . second-number<%>)
-                        (y . is-a? . second-number<%>))
-                   (cond
-                     [(= (send x get-second-number)
-                         (send y get-second-number))
-                      (< (send x get-number) (send y get-number))]
-                     [else
-                      (< (send x get-second-number)
-                         (send y get-second-number))])]
-                  [(and (x . is-a? . number<%>)
-                        (y . is-a? . second-number<%>))
-                   (cond
-                     [(= (send x get-number)
-                         (send y get-second-number))
-                      #t]
-                     [else
-                      (< (send x get-number)
-                         (send y get-second-number))])]
-                  [(and (x . is-a? . second-number<%>)
-                        (y . is-a? . number<%>))
-                   (cond
-                     [(= (send x get-second-number)
-                         (send y get-number))
-                      #f]
-                     [else (< (send x get-second-number)
-                              (send y get-number))])]
-                  [(and (x . is-a? . number<%>)
-                        (y . is-a? . number<%>))
-                   (< (send x get-number) (send y get-number))]
-                  [else #f])))
+        (define (hier-list-sort-predicate x y)
+          (cond
+            [(and (x . is-a? . second-number<%>)
+                  (y . is-a? . second-number<%>))
+             (cond
+               [(= (send x get-second-number)
+                   (send y get-second-number))
+                (< (send x get-number) (send y get-number))]
+               [else
+                (< (send x get-second-number)
+                   (send y get-second-number))])]
+            [(and (x . is-a? . number<%>)
+                  (y . is-a? . second-number<%>))
+             (cond
+               [(= (send x get-number)
+                   (send y get-second-number))
+                #t]
+               [else
+                (< (send x get-number)
+                   (send y get-second-number))])]
+            [(and (x . is-a? . second-number<%>)
+                  (y . is-a? . number<%>))
+             (cond
+               [(= (send x get-second-number)
+                   (send y get-number))
+                #f]
+               [else (< (send x get-second-number)
+                        (send y get-number))])]
+            [(and (x . is-a? . number<%>)
+                  (y . is-a? . number<%>))
+             (< (send x get-number) (send y get-number))]
+            [else #f]))
+        (send other-languages-hier-list sort hier-list-sort-predicate)
+        (send teaching-languages-hier-list sort hier-list-sort-predicate)
         
         ;; remove the newline at the front of the first inlined category (if there)
         ;; it won't be there if the module language is at the top.
-        (let ([t (send (car (send languages-hier-list get-items)) get-editor)])
+        (for ([hier-list (in-list (list other-languages-hier-list teaching-languages-hier-list))])
+          (define t (send (car (send hier-list get-items)) get-editor))
           (when (equal? "\n" (send t get-text 0 1))
             (send t delete 0 1)))
         
@@ -949,15 +1052,21 @@
               (λ (l)
                 (list details-panel)))
         
-        (send languages-hier-list stretchable-width #t)
-        (send languages-hier-list stretchable-height #t)
-        (send languages-hier-list accept-tab-focus #t)
-        (send languages-hier-list allow-tab-exit #t)
+        (define (config-hier-list hier-list) 
+          (send hier-list stretchable-width #t)
+          (send hier-list stretchable-height #t)
+          (send hier-list accept-tab-focus #t)
+          (send hier-list allow-tab-exit #t))
+        (config-hier-list other-languages-hier-list)
+        (config-hier-list teaching-languages-hier-list)
         (send parent reflow-container)
         (close-all-languages)
         (open-current-language)
-        (send languages-hier-list min-client-width (text-width (send languages-hier-list get-editor)))
-        (send languages-hier-list min-client-height (text-height (send languages-hier-list get-editor)))
+        (define (set-min-sizes hier-list)
+          (send hier-list min-client-width (text-width (send hier-list get-editor)))
+          (send hier-list min-client-height (text-height (send hier-list get-editor))))
+        (set-min-sizes other-languages-hier-list)
+        (set-min-sizes teaching-languages-hier-list)
         (when details-shown?
           (do-construct-details))
         (update-show/hide-details)
@@ -979,7 +1088,14 @@
                          (use-language-in-source-rb-callback)
                          #t)
                   #f)]
-             [(#\c)
+             [(#\t)
+              (if (mouse-event-uses-shortcut-prefix? evt)
+                  (begin 
+                    (send use-teaching-language-rb set-selection 0)
+                    (use-teaching-language-rb-callback)
+                    #t)
+                  #f)]
+             [(#\o)
               (if (mouse-event-uses-shortcut-prefix? evt)
                   (begin 
                     (send use-chosen-language-rb set-selection 0)
@@ -1178,7 +1294,7 @@
               #f
               #f
               #t)
-        (+ 10 ;; upper bound on some platform specific space I don't know how to get.
+        (+ 16 ;; upper bound on some space I don't know how to get.
            (floor (inexact->exact (unbox y-box))))))
     
 
