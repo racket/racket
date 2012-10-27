@@ -72,6 +72,12 @@
     in a GUI, and the color to use. The colors are used to show the nesting
     structure in the parens.})
  
+ (thing-doc
+  color:misspelled-text-color-style-name
+  string?
+  @{The name of the style used to color misspelled words. See also 
+    @method[color:text<%> get-spell-check-strings].})
+ 
  (proc-doc/names
   text:range? (-> any/c boolean?) (arg)
   @{Determines if @racket[arg] is an instance of the @tt{range} struct.})
