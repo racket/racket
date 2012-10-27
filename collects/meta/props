@@ -1184,6 +1184,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/benchmarks/rx/auto.rkt" drdr:command-line (racket * "racket" "simple") drdr:timeout 600
 "collects/tests/racket/benchmarks/shootout/ackermann.rkt" drdr:command-line (racket * "10")
 "collects/tests/racket/benchmarks/shootout/auto.rkt" drdr:command-line (racket * "hello")
+"collects/tests/racket/benchmarks/shootout/binarytrees-normal.rkt" drdr:command-line (racket * "10")
 "collects/tests/racket/benchmarks/shootout/binarytrees-places.rkt" drdr:command-line (racket * "10")
 "collects/tests/racket/benchmarks/shootout/binarytrees.rkt" drdr:command-line (racket * "10")
 "collects/tests/racket/benchmarks/shootout/chameneos.rkt" drdr:command-line (racket * "10")
