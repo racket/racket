@@ -937,6 +937,7 @@
       ;; colors : (or/c #f (listof string?) 'parens)
       (define colors #f)
       (define tooltip-labels #f)
+      (define/public (get-online-expansion-colors) colors)
       
       (super-new)
       
