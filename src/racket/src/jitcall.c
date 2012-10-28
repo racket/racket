@@ -1591,7 +1591,9 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
   int i, offset, need_safety = 0, apply_to_list = 0;
   int direct_prim = 0, need_non_tail = 0, direct_native = 0, direct_self = 0, nontail_self = 0;
   Scheme_Native_Closure *inline_direct_native = NULL;
+#ifdef USE_FLONUM_UNBOXING
   Scheme_Closure_Data *direct_data = NULL;
+#endif
   int direct_flostack_offset = 0, unboxed_non_tail_args = 0;
   jit_direct_arg *inline_direct_args = NULL;
   int proc_already_in_place = 0;
@@ -1700,13 +1702,15 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
               if (is_tail) {
                 if (nc->code->max_let_depth > jitter->max_tail_depth)
                   jitter->max_tail_depth = nc->code->max_let_depth;
-                
-                direct_data = data; /* for flonum handling */
-                
-                inline_direct_native = nc;
+                inline_direct_native = nc;                
+#ifdef USE_FLONUM_UNBOXING
+                direct_data = data;
+#endif                
               } else {
                 if (num_rands < MAX_SHARED_CALL_RANDS) {
+#ifdef USE_FLONUM_UNBOXING
                   direct_data = data;
+#endif
                   unboxed_non_tail_args = 1;
                 }
               }
@@ -1830,8 +1834,10 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
   }
   /* not sync'd...*/
   
+#ifdef USE_FLONUM_UNBOXING
   if (direct_self && is_tail)
     direct_data = jitter->self_data;
+#endif
 
   for (i = 0; i < num_rands; i++) {
     PAUSE_JIT_DATA();
@@ -2016,11 +2022,14 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
       }
     } else {
       int mo = (multi_ok ? 1 : 0);
+#ifdef USE_FLONUM_UNBOXING
       void *unboxed_code;
+#endif
 
       if (unboxed_non_tail_args && !direct_flostack_offset)
         unboxed_non_tail_args = 0;
 
+#ifdef USE_FLONUM_UNBOXING
       if (unboxed_non_tail_args) {
         if (!sjc.shared_non_tail_code[4][num_rands][mo]) {
           scheme_ensure_retry_available(jitter, multi_ok);
@@ -2030,6 +2039,7 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
         unboxed_code = sjc.shared_non_tail_code[4][num_rands][mo];
       } else
         unboxed_code = NULL;
+#endif
 
       if (!sjc.shared_non_tail_code[dp][num_rands][mo]) {
         scheme_ensure_retry_available(jitter, multi_ok);
