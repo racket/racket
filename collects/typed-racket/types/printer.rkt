@@ -36,10 +36,16 @@
 ;; does t have a type name associated with it currently?
 ;; has-name : Type -> Maybe[Symbol]
 (define (has-name? t)
-  (and print-aliases
-       (for/first ([(n t*) (in-pairs (in-list (force (current-type-names))))]
-                   #:when (and (Type? t*) (type-equal? t t*)))
-         n)))
+  (cond 
+   [print-aliases
+    (define candidates 
+      (for/list ([(n t*) (in-pairs (in-list (force (current-type-names))))]
+		 #:when (and (Type? t*) (type-equal? t t*)))
+	 n))
+    (if (null? candidates)
+	#f
+	(car (sort candidates string>? #:key symbol->string)))]
+   [else #f]))
 
 (define (print-filter c port write?)
   (define (fp . args) (apply fprintf port args))
