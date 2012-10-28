@@ -1722,6 +1722,17 @@
          '(4 2))
         (list '8))
   
+  (test (with-handlers ((exn:fail? exn-message))
+          (apply-reduction-relation
+           (context-closure 
+            (reduction-relation
+             empty-language #:domain #f
+             (--> #f #f))
+            empty-language hole)
+           #t)
+          "exn not raised")
+        #rx"^reduction-relation:")
+  
   (test (apply-reduction-relation
          (context-closure 
           (context-closure 
