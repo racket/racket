@@ -67,3 +67,21 @@
 
 (test-case "heap random dense"
   (rand-test 20 100 50 100))
+
+(test-equal? "in-heap"
+  (for/list ([x (in-heap (mkheap))]) x)
+  '(2 4 6 8 10))
+(test-equal? "post in-heap count"
+   (let* ([h (mkheap)]
+          [lst (for/list ([x (in-heap h)]) x)])
+     (heap-count h))
+   (heap-count (mkheap)))
+(test-equal? "in-heap/consume!"
+  (for/list ([x (in-heap/consume! (mkheap))]) x)
+  '(2 4 6 8 10))
+(test-equal? "post in-heap/consume! count"
+   (let* ([h (mkheap)]
+          [lst (for/list ([x (in-heap/consume! h)]) x)])
+     (heap-count h))
+   0)
+         

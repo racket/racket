@@ -78,3 +78,34 @@ Makes a copy of heap @racket[h].
 
 Sorts vector @racket[v] using the comparison function @racket[<=?].
 }
+
+
+
+@defproc[(in-heap/consume! [heap heap?]) sequence?]{
+Returns a sequence equivalent to @racket[heap], maintaining the heap's ordering. 
+The heap is consumed in the process. Equivalent to repeated calling 
+@racket[heap-min], then @racket[heap-remove-min!].
+
+  @examples[#:eval the-eval
+            (define h (make-heap <=))
+            (heap-add-all! h '(50 40 10 20 30))
+            
+            (for ([x (in-heap/consume! h)])
+              (displayln x))
+                            
+            (heap-count h)]
+}
+@defproc[(in-heap [heap heap?]) sequence?]{
+Returns a sequence equivalent to @racket[heap], maintaining the heap's ordering.
+Equivalent to @racket[in-heap/consume!] except the heap is copied first.
+
+  @examples[#:eval the-eval
+            (define h (make-heap <=))
+            (heap-add-all! h '(50 40 10 20 30))
+            
+            (for ([x (in-heap h)])
+              (displayln x))
+                            
+            (heap-count h)]
+}
+
