@@ -6,7 +6,9 @@
 
 (define (traverse b)
   (define (fail v)
-    (raise-blame-error (blame-swap b) v "Attempted to use a higher-order value passed as `Any` in untyped code"))
+    (raise-blame-error 
+     (blame-swap b) v 
+     "Attempted to use a higher-order value passed as `Any` in untyped code"))
 
   (define (t v)
     (define (wrap-struct s)
