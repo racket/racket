@@ -649,7 +649,6 @@ path/s is either such a string or a list of them.
 "collects/2htdp/tests/record-stop-when.rkt" drdr:command-line (gracket *)
 "collects/2htdp/tests/record.rkt" drdr:command-line (gracket *)
 "collects/2htdp/tests/release.rkt" drdr:command-line (gracket *)
-"collects/2htdp/tests/stop.rkt" drdr:command-line (gracket *)
 "collects/2htdp/tests/test-image.rkt" responsible (robby)
 "collects/2htdp/tests/ufo-rename.rkt" drdr:command-line (gracket *)
 "collects/2htdp/tests/universe-receive.rkt" drdr:command-line (raco "make" *)
