@@ -896,8 +896,8 @@ path/s is either such a string or a list of them.
 "collects/redex/examples/church.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/combinators.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/compatible-closure.rkt" drdr:command-line (mzc *)
-"collects/redex/examples/delim-cont/randomized-tests-test.rkt" drdr:timeout 240 drdr:random #t
-"collects/redex/examples/delim-cont/randomized-tests.rkt" drdr:command-line (racket * "--rules" "2250" "--size" "3") drdr:timeout 240 drdr:random #t
+"collects/redex/examples/delim-cont/randomized-tests-test.rkt" drdr:timeout 240
+"collects/redex/examples/delim-cont/randomized-tests.rkt" drdr:command-line (racket * "--rules" "2250" "--size" "3") drdr:timeout 240
 "collects/redex/examples/delim-cont/test.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/letrec.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/list-machine/slides.rkt" drdr:command-line (raco "make" *)
@@ -1005,7 +1005,7 @@ path/s is either such a string or a list of them.
 "collects/tests/compiler/regression.rkt" responsible (mflatt)
 "collects/tests/compiler/test" drdr:command-line (raco "test" "-r" "--" *)
 "collects/tests/compiler/zo-test-worker.rkt" drdr:command-line #f
-"collects/tests/compiler/zo-test.rkt" drdr:command-line (racket * "-I" "-S" "-t" "60" "-v" "-R") drdr:random #t
+"collects/tests/compiler/zo-test.rkt" drdr:command-line (racket * "-I" "-S" "-t" "60" "-v" "-R")
 "collects/tests/data" responsible (ryanc)
 "collects/tests/datalog" responsible (jay)
 "collects/tests/db" responsible (ryanc)
@@ -1063,7 +1063,7 @@ path/s is either such a string or a list of them.
 "collects/tests/framework/text.rkt" drdr:command-line (mzc "-k" *)
 "collects/tests/frtime" responsible (gcooper jay)
 "collects/tests/future" responsible (jamesswaine mflatt robby)
-"collects/tests/future/future.rkt" drdr:timeout 200
+"collects/tests/future/future.rkt" drdr:timeout 200 drdr:random #t
 "collects/tests/future/random-future.rkt" drdr:timeout 480
 "collects/tests/generic" responsible (asumu stamourv)
 "collects/tests/gracket" responsible (mflatt)
@@ -1073,12 +1073,12 @@ path/s is either such a string or a list of them.
 "collects/tests/gracket/flush-stress.rkt" drdr:command-line #f
 "collects/tests/gracket/item.rkt" drdr:command-line (mzc *)
 "collects/tests/gracket/mem.rkt" drdr:command-line #f
-"collects/tests/gracket/paramz.rktl" drdr:command-line (gracket "-f" *)
+"collects/tests/gracket/paramz.rktl" drdr:command-line (gracket "-f" *) drdr:random #t
 "collects/tests/gracket/png.rktl" drdr:command-line #f
 "collects/tests/gracket/showkey.rkt" drdr:command-line #f
 "collects/tests/gracket/text-scale.rktl" drdr:command-line #f
 "collects/tests/gracket/unflushed-circle.rkt" drdr:command-line #f
-"collects/tests/gracket/windowing.rktl" drdr:command-line (gracket "-f" *)
+"collects/tests/gracket/windowing.rktl" drdr:command-line (gracket "-f" *) drdr:random #t
 "collects/tests/gracket/wxme-doc-random.rkt" drdr:command-line (mzc *)
 "collects/tests/gracket/wxme-random.rkt" drdr:command-line #f
 "collects/tests/honu" responsible (rafkind)
@@ -1364,7 +1364,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/pconvert.rktl" drdr:command-line #f
 "collects/tests/racket/place" responsible (tewk)
 "collects/tests/racket/place-chan-rand-help.rkt" responsible (tewk)
-"collects/tests/racket/place-chan-rand.rkt" responsible (tewk) drdr:random #t
+"collects/tests/racket/place-chan-rand.rkt" responsible (tewk)
 "collects/tests/racket/place-channel-fd.rkt" responsible (tewk)
 "collects/tests/racket/place-channel-fd2.rkt" responsible (tewk)
 "collects/tests/racket/place-channel-ffi.rkt" responsible (tewk)
@@ -1388,7 +1388,6 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/stress/dict.rkt" drdr:timeout 180
 "collects/tests/racket/stress/fuzz.rkt" responsible (samth mflatt) drdr:command-line (racket * "-c") drdr:timeout 300 drdr:random #t
 "collects/tests/racket/stress/module-stack.rkt" drdr:timeout 180
-"collects/tests/racket/subprocess.rktl" drdr:random #t
 "collects/tests/racket/sync.rktl" drdr:command-line #f
 "collects/tests/racket/syntax.rktl" drdr:command-line #f
 "collects/tests/racket/thread.rktl" drdr:command-line #f
