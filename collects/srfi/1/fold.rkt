@@ -54,7 +54,7 @@
   (check-arg procedure? p 'unfold-right)
   (check-arg procedure? f 'unfold-right)
   (check-arg procedure? g 'unfold-right)
-  (let lp ((seed seed) (ans maybe-tail))
+  (let lp ((seed seed) (ans (if (pair? maybe-tail) (car maybe-tail) '())))
     (if (p seed) ans
         (lp (g seed)
             (cons (f seed) ans)))))
@@ -249,3 +249,9 @@
         (recur (cdr lis))))))
 
 ;;; fold.rkt ends here
+
+(module+ test
+  (define (test a b)
+    (unless (equal? a b) (error 'test "failed: ~e vs. ~e" a b)))
+  (test (unfold-right null? car cdr '(2 3) '(4 5))
+        '(3 2 4 5)))
