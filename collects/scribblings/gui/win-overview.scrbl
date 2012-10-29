@@ -957,15 +957,13 @@ The GUI system logs the timing of when events are handled and how
 long they take to be handled. Each event that involves a callback
 into Racket code has two events logged, both of which use
 the @racket[gui-event] struct:
-@racketblock[(struct gui-event (start? msec name) #:prefab)]
-The @racket[start?] field is a boolean indicating if this
-event is logging the time when an event is starting to be handled,
-or when it finishes. In the case that @racket[start?] is @racket[#t],
-the @racket[msec] field is the result of
-@racket[current-inexact-milliseconds]; when @racket[start?] is @racket[#f],
-then the @racket[msec] field is the number of milliseconds that the
-event handling took (the difference between @racket[current-inexact-milliseconds]'s
-results before and after the handling). The @racket[name] field is
+@racketblock[(struct gui-event (start end name) #:prefab)]
+The @racket[_start] field is the result of @racket[(current-inexact-milliseconds)]
+when the event handling starts. The @racket[_end] field is 
+@racket[#f] for the log message when the event handling starts,
+and the result of @racket[(current-inexact-milliseconds)] when
+it finishes for the log message when an event finishes.
+The @racket[_name] field is
 the name of the function that handled the event; in the case of a
 @racket[queue-callback]-based event, it is the name of the thunk passed to
 @racket[queue-callback].

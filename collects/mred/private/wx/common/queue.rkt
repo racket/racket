@@ -442,7 +442,7 @@
 ;; start? : boolean -- indicates if this is a start of an event being handled or not
 ;; msec : start time if start? is #t, delta from start to end if start? is #f
 ;; name : (or/c #f symbol?)
-(struct gui-event (start? msec name) #:prefab)
+(struct gui-event (start end name) #:prefab)
 
 (define (handle-event thunk e)
   (call-with-continuation-prompt ; to delimit continuations
@@ -454,7 +454,7 @@
         (when (log-level? event-logger 'debug)
           (log-message event-logger 'debug 
                        "starting to handle an event"
-                       (gui-event #t before (object-name thunk))))
+                       (gui-event before #f (object-name thunk))))
         (let ([b (box thunk)])
           ;; use the event-dispatch handler:
           (with-continuation-mark dispatch-event-key b
@@ -469,7 +469,7 @@
           (log-message event-logger 'debug 
                        (format "handled an event: ~a msec"  
                                (- after before))
-                       (gui-event #f (- after before) (object-name thunk)))))
+                       (gui-event before after (object-name thunk)))))
       dispatch-event-prompt))))
 
 (define yield
