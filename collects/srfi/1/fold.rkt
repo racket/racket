@@ -249,9 +249,3 @@
         (recur (cdr lis))))))
 
 ;;; fold.rkt ends here
-
-(module+ test
-  (define (test a b)
-    (unless (equal? a b) (error 'test "failed: ~e vs. ~e" a b)))
-  (test (unfold-right null? car cdr '(2 3) '(4 5))
-        '(3 2 4 5)))
