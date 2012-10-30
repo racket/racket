@@ -1484,8 +1484,8 @@
 ;;racket/udp
 
 [udp-open-socket (->opt [(-opt -String) (-opt -String)] -UDP-Socket)]
-[udp-bind! (-> -UDP-Socket (-opt -String) -PosInt)]
-[udp-connect! (-> -UDP-Socket (-opt -String) -PosInt)]
+[udp-bind! (-> -UDP-Socket (-opt -String) -Nat -Void)]
+[udp-connect! (-> -UDP-Socket (-opt -String) (-opt -Nat) -Void)]
 
 [udp-send-to (->opt -UDP-Socket -String -Nat -Bytes [-Nat -Nat] -Void)]
 [udp-send (->opt -UDP-Socket -Bytes [-Nat -Nat] -Void)]
