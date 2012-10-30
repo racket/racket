@@ -6,17 +6,15 @@ added reset-regions
 added get-regions
 |#
 
-(require mzlib/class
-         mzlib/thread
-         mred
+(require racket/class
+         racket/gui/base
          syntax-color/token-tree
          syntax-color/paren-tree
          syntax-color/default-lexer
          string-constants
          "../preferences.rkt"
          "sig.rkt"
-         "aspell.rkt"
-         framework/private/logging-timer)
+         "aspell.rkt")
 
 (import [prefix icon: framework:icon^]
         [prefix mode: framework:mode^]
@@ -238,11 +236,9 @@ added get-regions
         (start-colorer token-sym->style get-token pairs)))
     
     ;; ---------------------- Multi-threading ---------------------------
-    ;; A list of (vector style number number) that indicate how to color the buffer
-    (define colorings null)
-    ;; The coroutine object for tokenizing the buffer
-    (define tok-cor #f)
-    ;; The editor revision when tok-cor was created
+    ;; If there is some incomplete coloring waiting to happen
+    (define colorer-pending? #f)
+    ;; The editor revision when the last coloring was started
     (define rev #f)
     
     
@@ -276,17 +272,8 @@ added get-regions
       (update-lexer-state-observers)
       (set! restart-callback #f)
       (set! force-recolor-after-freeze #f)
-      (set! colorings null)
-      (when tok-cor
-        (coroutine-kill tok-cor))
-      (set! tok-cor #f)
+      (set! colorer-pending? #f)
       (set! rev #f))
-    
-    ;; Actually color the buffer.
-    (define/private (color)
-      (for ([clr (in-list colorings)])
-        (change-style (vector-ref clr 0) (vector-ref clr 1) (vector-ref clr 2) #f))
-      (set! colorings '()))
     
     ;; Discard extra tokens at the first of invalid-tokens
     (define/private (sync-invalid ls)
@@ -303,60 +290,91 @@ added get-regions
             (set-lexer-state-invalid-tokens-mode! ls mode))
           (sync-invalid ls))))
     
-    (define/private (re-tokenize ls in in-start-pos in-lexer-mode enable-suspend)
-      (enable-suspend #f)
-      ;(define-values (_line1 _col1 pos-before) (port-next-location in))
-      (define-values (lexeme type data new-token-start new-token-end backup-delta new-lexer-mode) 
-        (get-token in in-start-pos in-lexer-mode))
-      ;(define-values (_line2 _col2 pos-after) (port-next-location in))
-      (enable-suspend #t)
-      (unless (eq? 'eof type)
-        (unless (exact-nonnegative-integer? new-token-start)
-          (error 'color:text<%> "expected an exact nonnegative integer for the token start, got ~e" new-token-start))
-        (unless (exact-nonnegative-integer? new-token-end)
-          (error 'color:text<%> "expected an exact nonnegative integer for the token end, got ~e" new-token-end))
-        (unless (exact-nonnegative-integer? backup-delta)
-          (error 'color:text<%> "expected an exact nonnegative integer for the backup delta, got ~e" backup-delta))
-        (unless (0 . < . (- new-token-end new-token-start))
-          (error 'color:text<%> "expected the distance between the start and end position for each token to be positive, but start was ~e and end was ~e" new-token-start new-token-end))
-        (enable-suspend #f)
-        #; (printf "~s at ~a to ~a\n" lexeme (+ in-start-pos (sub1 new-token-start))
-                   (+ in-start-pos (sub1 new-token-end)))
-        (let ((len (- new-token-end new-token-start)))
-          #;
-          (unless (= len (- pos-after pos-before))
-            ;; this check requires the two calls to port-next-location to be also uncommented
-            ;; when this check fails, bad things can happen non-deterministically later on
-            (eprintf "pos changed bad ; len ~s pos-before ~s pos-after ~s (token ~s mode ~s)\n" 
-                     len pos-before pos-after lexeme new-lexer-mode))
-          (set-lexer-state-current-pos! ls (+ len (lexer-state-current-pos ls)))
-          (set-lexer-state-current-lexer-mode! ls new-lexer-mode)
-          (sync-invalid ls)
-          (when (and should-color? (should-color-type? type) (not frozen?))
-            (add-colorings type in-start-pos new-token-start new-token-end))
-          ;; Using the non-spec version takes 3 times as long as the spec
-          ;; version.  In other words, the new greatly outweighs the tree
-          ;; operations.
-          ;;(insert-last! tokens (new token-tree% (length len) (data type)))
-          (insert-last-spec! (lexer-state-tokens ls) len (make-data type new-lexer-mode backup-delta))
-          #; (show-tree (lexer-state-tokens ls))
-          (send (lexer-state-parens ls) add-token data len)
-          (cond
-            [(and (not (send (lexer-state-invalid-tokens ls) is-empty?))
-                  (= (lexer-state-invalid-tokens-start ls)
-                     (lexer-state-current-pos ls))
-                  (equal? new-lexer-mode 
-                          (lexer-state-invalid-tokens-mode ls)))
-             (send (lexer-state-invalid-tokens ls) search-max!)
-             (send (lexer-state-parens ls) merge-tree
-                   (send (lexer-state-invalid-tokens ls) get-root-end-position))
-             (insert-last! (lexer-state-tokens ls)
-                           (lexer-state-invalid-tokens ls))
-             (set-lexer-state-invalid-tokens-start! ls +inf.0)
-             (enable-suspend #t)]
-            [else
-             (enable-suspend #t)
-             (re-tokenize ls in in-start-pos new-lexer-mode enable-suspend)]))))
+    (define/private (start-re-tokenize start-time)
+      (set! re-tokenize-lses lexer-states)
+      (re-tokenize-move-to-next-ls start-time))
+    
+    (define/private (re-tokenize-move-to-next-ls start-time)
+      (cond
+        [(null? re-tokenize-lses) 
+         ;; done: return #t
+         #t]
+        [else
+         (set! re-tokenize-ls-argument (car re-tokenize-lses))
+         (set! re-tokenize-lses (cdr re-tokenize-lses))
+         (set! re-tokenize-in-start-pos (lexer-state-current-pos re-tokenize-ls-argument))
+         (set! re-tokenize-lexer-mode-argument (lexer-state-current-lexer-mode re-tokenize-ls-argument))
+         (set! re-tokenize-in-argument
+               (open-input-text-editor this 
+                                       (lexer-state-current-pos re-tokenize-ls-argument)
+                                       (lexer-state-end-pos re-tokenize-ls-argument)
+                                       (λ (x) #f)))
+         (port-count-lines! re-tokenize-in-argument)
+         (continue-re-tokenize start-time #t)]))
+    
+    (define re-tokenize-lses #f)
+    (define re-tokenize-ls-argument #f)
+    (define re-tokenize-in-argument #f)
+    (define re-tokenize-in-start-pos #f)
+    (define re-tokenize-lexer-mode-argument #f)
+    (define/private (continue-re-tokenize start-time did-something?)
+      (cond
+        [(and did-something? ((+ start-time 20) . <= . (current-inexact-milliseconds)))
+         #f]
+        [else
+         ;(define-values (_line1 _col1 pos-before) (port-next-location in))
+         (define-values (lexeme type data new-token-start new-token-end backup-delta new-lexer-mode) 
+           (get-token re-tokenize-in-argument re-tokenize-in-start-pos re-tokenize-lexer-mode-argument))
+         ;(define-values (_line2 _col2 pos-after) (port-next-location in))
+         (cond
+           [(eq? 'eof type) 
+            (re-tokenize-move-to-next-ls start-time)]
+           [else
+            (unless (exact-nonnegative-integer? new-token-start)
+              (error 'color:text<%> "expected an exact nonnegative integer for the token start, got ~e" new-token-start))
+            (unless (exact-nonnegative-integer? new-token-end)
+              (error 'color:text<%> "expected an exact nonnegative integer for the token end, got ~e" new-token-end))
+            (unless (exact-nonnegative-integer? backup-delta)
+              (error 'color:text<%> "expected an exact nonnegative integer for the backup delta, got ~e" backup-delta))
+            (unless (0 . < . (- new-token-end new-token-start))
+              (error 'color:text<%> "expected the distance between the start and end position for each token to be positive, but start was ~e and end was ~e" new-token-start new-token-end))
+            #; (printf "~s at ~a to ~a\n" lexeme (+ in-start-pos (sub1 new-token-start))
+                       (+ in-start-pos (sub1 new-token-end)))
+            (let ((len (- new-token-end new-token-start)))
+              #;
+              (unless (= len (- pos-after pos-before))
+                ;; this check requires the two calls to port-next-location to be also uncommented
+                ;; when this check fails, bad things can happen non-deterministically later on
+                (eprintf "pos changed bad ; len ~s pos-before ~s pos-after ~s (token ~s mode ~s)\n" 
+                         len pos-before pos-after lexeme new-lexer-mode))
+              (set-lexer-state-current-pos! re-tokenize-ls-argument (+ len (lexer-state-current-pos re-tokenize-ls-argument)))
+              (set-lexer-state-current-lexer-mode! re-tokenize-ls-argument new-lexer-mode)
+              (sync-invalid re-tokenize-ls-argument)
+              (when (and should-color? (should-color-type? type) (not frozen?))
+                (add-colorings type re-tokenize-in-start-pos new-token-start new-token-end))
+              ;; Using the non-spec version takes 3 times as long as the spec
+              ;; version.  In other words, the new greatly outweighs the tree
+              ;; operations.
+              ;;(insert-last! tokens (new token-tree% (length len) (data type)))
+              (insert-last-spec! (lexer-state-tokens re-tokenize-ls-argument) len (make-data type new-lexer-mode backup-delta))
+              #; (show-tree (lexer-state-tokens ls))
+              (send (lexer-state-parens re-tokenize-ls-argument) add-token data len)
+              (cond
+                [(and (not (send (lexer-state-invalid-tokens re-tokenize-ls-argument) is-empty?))
+                      (= (lexer-state-invalid-tokens-start re-tokenize-ls-argument)
+                         (lexer-state-current-pos re-tokenize-ls-argument))
+                      (equal? new-lexer-mode 
+                              (lexer-state-invalid-tokens-mode re-tokenize-ls-argument)))
+                 (send (lexer-state-invalid-tokens re-tokenize-ls-argument) search-max!)
+                 (send (lexer-state-parens re-tokenize-ls-argument) merge-tree
+                       (send (lexer-state-invalid-tokens re-tokenize-ls-argument) get-root-end-position))
+                 (insert-last! (lexer-state-tokens re-tokenize-ls-argument)
+                               (lexer-state-invalid-tokens re-tokenize-ls-argument))
+                 (set-lexer-state-invalid-tokens-start! re-tokenize-ls-argument +inf.0)
+                 (re-tokenize-move-to-next-ls start-time)]
+                [else
+                 (set! re-tokenize-lexer-mode-argument new-lexer-mode)
+                 (continue-re-tokenize start-time #t)]))])]))
 
     (define/private (add-colorings type in-start-pos new-token-start new-token-end)
       (define sp (+ in-start-pos (sub1 new-token-start)))
@@ -377,22 +395,23 @@ added get-regions
                            [lp 0])
                   (cond
                     [(null? spellos) 
-                     (set! colorings (cons (vector color (+ sp lp) (+ sp (string-length str)))
-                                           colorings))]
+                     (add-coloring color (+ sp lp) (+ sp (string-length str)))]
                     [else
                      (define err (car spellos))
                      (define err-start (list-ref err 0))
                      (define err-len (list-ref err 1))
-                     (set! colorings (list* (vector color (+ pos lp) (+ pos err-start))
-                                            (vector misspelled-color (+ pos err-start) (+ pos err-start err-len))
-                                            colorings))
+                     (add-coloring misspelled-color (+ pos err-start) (+ pos err-start err-len))
+                     (add-coloring color (+ pos lp) (+ pos err-start))
                      (loop (cdr spellos) (+ err-start err-len))]))
                 (loop (cdr strs)
                       (+ pos (string-length str) 1))))]
            [else
-            (set! colorings (cons (vector color sp ep) colorings))])]
+            (add-coloring color sp ep)])]
         [else
-         (set! colorings (cons (vector color sp ep) colorings))]))
+         (add-coloring color sp ep)]))
+    
+    (define/private (add-coloring color sp ep) 
+      (change-style color sp ep #f))
     
     (define/private (show-tree t)
       (printf "Tree:\n")
@@ -487,52 +506,24 @@ added get-regions
     
     (define/private (colorer-driver)
       (unless (andmap lexer-state-up-to-date? lexer-states)
-        #;(printf "revision ~a\n" (get-revision-number))
-        (unless (and tok-cor (= rev (get-revision-number)))
-          (when tok-cor
-            (coroutine-kill tok-cor))
-          #;(printf "new coroutine\n")
-          (set! tok-cor
-                (coroutine
-                 (λ (enable-suspend)
-                   (parameterize ((port-count-lines-enabled #t))
-                     (for-each
-                      (lambda (ls)
-                        (re-tokenize ls
-                                     (begin
-                                       (enable-suspend #f)
-                                       (begin0
-                                         (open-input-text-editor this 
-                                                                 (lexer-state-current-pos ls)
-                                                                 (lexer-state-end-pos ls)
-                                                                 (λ (x) #f))
-                                         (enable-suspend #t)))
-                                     (lexer-state-current-pos ls)
-                                     (lexer-state-current-lexer-mode ls)
-                                     enable-suspend))
-                      lexer-states)))))
-          (set! rev (get-revision-number)))
-        (with-handlers ((exn:fail?
-                         (λ (exn)
-                           (parameterize ((print-struct #t))
-                             ((error-display-handler) 
-                              (format "exception in colorer thread: ~s" exn)
-                              exn))
-                           (set! tok-cor #f))))
-          #;(printf "begin lexing\n")
-          (when (log-timeline "colorer coroutine" (coroutine-run 10 tok-cor))
-            (for-each (lambda (ls)
-                        (set-lexer-state-up-to-date?! ls #t))
-                      lexer-states)
-            (update-lexer-state-observers)))
-        #;(printf "end lexing\n")
-        #;(printf "begin coloring\n")
-        ;; This edit sequence needs to happen even when colors is null
-        ;; for the paren highlighter.
         (begin-edit-sequence #f #f)
-        (color)
-        (end-edit-sequence)
-        #;(printf "end coloring\n")))
+        (define finished?
+          (cond
+            [(and colorer-pending? (= rev (get-revision-number)))
+             (continue-re-tokenize (current-inexact-milliseconds) #f)]
+            [else
+             (set! rev (get-revision-number))
+             (start-re-tokenize (current-inexact-milliseconds))]))
+        (cond
+          [finished?
+           (set! colorer-pending? #f)
+           (for-each (lambda (ls)
+                       (set-lexer-state-up-to-date?! ls #t))
+                     lexer-states)
+           (update-lexer-state-observers)]
+          [else
+           (set! colorer-pending? #t)])
+        (end-edit-sequence)))
     
     (define/private (colorer-callback)
       (cond
