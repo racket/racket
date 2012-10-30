@@ -157,7 +157,10 @@ static Scheme_Object *ts__scheme_tail_apply_from_native(Scheme_Object *rator, in
     /* try thread-local allocation: */
     Scheme_Object **a;
 #ifdef MZ_PRECISE_GC
-    a = MALLOC_N(Scheme_Object *, argc);
+    if (scheme_future_is_runtime_thread())
+      a = NULL;
+    else
+      a = MALLOC_N(Scheme_Object *, argc);
 #else
     a = NULL; /* future-local allocation is not supported */
 #endif

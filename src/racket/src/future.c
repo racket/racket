@@ -582,6 +582,12 @@ void scheme_init_futures_per_place()
   futures_init();
 }
 
+static Scheme_Object *set_fts_thread(Scheme_Object *ignored)
+{
+  scheme_future_thread_state->thread = scheme_current_thread;
+  return ignored;
+}
+
 void futures_init(void)
 {
   Scheme_Future_State *fs;
@@ -607,7 +613,8 @@ void futures_init(void)
   rt_fts->is_runtime_thread = 1;
   rt_fts->gen0_size = 1;
   scheme_future_thread_state = rt_fts;
-  rt_fts->thread = scheme_current_thread;
+  scheme_add_swap_callback(set_fts_thread, scheme_false);
+  set_fts_thread(scheme_false);
 
   REGISTER_SO(fs->future_queue);
   REGISTER_SO(fs->future_queue_end);
@@ -955,6 +962,12 @@ void scheme_future_check_custodians()
 {
   scheme_future_block_until_gc();
   scheme_future_continue_after_gc();
+}
+
+int scheme_future_is_runtime_thread()
+{
+  Scheme_Future_Thread_State *fts = scheme_future_thread_state;
+  return fts->is_runtime_thread;
 }
 
 /**********************************************************************/
@@ -1420,8 +1433,7 @@ static void run_would_be_future(future_t *ft)
   fts = scheme_future_thread_state;
   
   /* Setup the future thread state */
-  fts->thread = p;
-  fts->thread->futures_slow_path_tracing++;
+  p->futures_slow_path_tracing++;
   scheme_use_rtcall++;
 
   savebuf = p->error_buf;
@@ -1435,7 +1447,7 @@ static void run_would_be_future(future_t *ft)
   }
 
   scheme_use_rtcall--;
-  fts->thread->futures_slow_path_tracing--;
+  p->futures_slow_path_tracing--;
   ft->in_tracing_mode = 0;
 
   p->error_buf = savebuf;
@@ -3590,7 +3602,7 @@ static void do_invoke_rtcall(Scheme_Future_State *fs, future_t *future)
           retval = _scheme_apply(arg_s0, future->arg_i0, arg_S0);
 
         future->retval_s = retval;
-        send_special_result(future, retval);        
+        send_special_result(future, retval);     
 
         break;
       }

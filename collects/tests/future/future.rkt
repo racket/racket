@@ -635,7 +635,7 @@ We should also test deep continuations.
                        (fsemaphore-wait m)))] 
          [f2 (func (λ () 
                        (let* ([lst '()]
-                              [retval (let loop ([index 10000] [l lst]) 
+                              [retval (let loop ([index 100000] [l lst]) 
                                         (cond 
                                           [(zero? index) l] 
                                           [else 
