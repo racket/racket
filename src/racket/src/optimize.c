@@ -755,10 +755,10 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
             int super_count = (super_count_plus_one 
                                ? (super_count_plus_one - 1)
                                : 0);
-            _stinfo->field_count = SCHEME_INT_VAL(app->args[3]) + super_count;
-            _stinfo->init_field_count = (SCHEME_INT_VAL(app->args[3]) 
-                                         + SCHEME_INT_VAL(app->args[4])
-                                         + super_count);
+            _stinfo->init_field_count = SCHEME_INT_VAL(app->args[3]) + super_count;
+            _stinfo->field_count = (SCHEME_INT_VAL(app->args[3]) 
+                                    + SCHEME_INT_VAL(app->args[4])
+                                    + super_count);
             _stinfo->uses_super = (super_count_plus_one ? 1 : 0);
             _stinfo->normal_ops = 1;
             _stinfo->indexed_ops = 0;

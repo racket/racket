@@ -897,5 +897,19 @@
           (eval '(procedure? ptr-set!)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; check link checking and a constructor with auto fields:
+
+(module a-with-auto-field racket/base
+  (provide make-region)
+  (define-values (struct:region make-region region? region-get region-set!)
+    (make-struct-type 'region #f 6 6 #f)))
+
+(module use-a-with-auto-field racket/base
+  (require 'a-with-auto-field)
+  (void (make-region 1 2 3 4 5 6)))
+
+(require 'use-a-with-auto-field)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
