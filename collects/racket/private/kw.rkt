@@ -997,7 +997,7 @@
                        (log-message
                         l
                         'warning
-                        (format "~aexpanson detects ~a for: ~a"
+                        (format "~aexpansion detects ~a for: ~a"
                                 (let ([s (syntax-source stx)]
                                       [l (syntax-line stx)]
                                       [c (syntax-column stx)]

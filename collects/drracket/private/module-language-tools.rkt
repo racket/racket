@@ -8,7 +8,8 @@
          racket/class
          racket/gui/base
          "drsig.rkt"
-         "local-member-names.rkt")
+         "local-member-names.rkt"
+         framework/private/logging-timer)
 
 (define op (current-output-port))
 (define (oprintf . args) (apply fprintf op args))
@@ -136,7 +137,7 @@
                             (<= start hash-lang-last-location))
                     
                     (unless timer
-                      (set! timer (new timer% 
+                      (set! timer (new logging-timer% 
                                        [notify-callback
                                         (λ () 
                                           (when in-module-language?

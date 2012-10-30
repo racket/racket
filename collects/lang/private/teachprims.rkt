@@ -482,11 +482,11 @@ namespace.
 
 (define-teach beginner string-ith
   (lambda (s n)
-    (define f "exact integer in [0, length of the given string]")
     (cerr 'string-ith (string? s) "string" s "first")
     (cerr 'string-ith (and (number? n) (integer? n) (>= n 0)) NAT n "second")
-    (let ([l (string-length s)]) 
-      (cerr 'string-ith (< n l) f n "second"))
+    (define l (string-length s))
+    (define f (format "exact integer in [0, ~a) (i.e., less than the length of the given string)" l))
+    (cerr 'string-ith (< n l) f n "second")
     (string (string-ref s n))))
 
 ;; -----------------------------------------------------------------------------

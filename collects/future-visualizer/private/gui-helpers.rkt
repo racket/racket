@@ -15,15 +15,15 @@
          post-event)
 
 (define bold-system-font
-  (send the-font-list find-or-create-font	 	
-        (send normal-control-font get-point-size)	 
-        (send normal-control-font get-family)	 
-        (send normal-control-font get-style)	 
+  (send the-font-list find-or-create-font
+        (send normal-control-font get-point-size)
+        (send normal-control-font get-family)
+        (send normal-control-font get-style)
         'bold))
 
-(define (label p str) 
-  (new message% [parent p] 
-       [label str] 
+(define (label p str)
+  (new message% [parent p]
+       [label str]
        [stretchable-width #t]))
 
 (define (mt-label p) 
@@ -77,30 +77,23 @@
     c))
 
 ;Events
-;receiver : any 
+;receiver : any
 ;handler : (any -> void)
 (struct event-target (receiver handler) #:transparent)
 
 (define (make-listener-table) (make-hash))
 
-(define (add-receiver table evt-name object handler) 
-  (hash-update! table 
-                evt-name 
-                (λ (old) 
-                  (cons (event-target object handler) old)) 
+(define (add-receiver table evt-name object handler)
+  (hash-update! table
+                evt-name
+                (λ (old)
+                  (cons (event-target object handler) old))
                 (list (event-target object handler))))
 
-(define (post-event table name sender arg) 
-    (let ([targets (hash-ref table name)]) 
-      (for ([target (in-list targets)]) 
-        (let ([receiver (event-target-receiver target)] 
-              [handler (event-target-handler target)]) 
-          (unless (eq? receiver sender) 
+(define (post-event table name sender arg)
+    (let ([targets (hash-ref table name)])
+      (for ([target (in-list targets)])
+        (let ([receiver (event-target-receiver target)]
+              [handler (event-target-handler target)])
+          (unless (eq? receiver sender)
             (handler arg))))))
-                                  
-    
-    
-    
-    
-    
-    

@@ -1722,6 +1722,17 @@
          '(4 2))
         (list '8))
   
+  (test (with-handlers ((exn:fail? exn-message))
+          (apply-reduction-relation
+           (context-closure 
+            (reduction-relation
+             empty-language #:domain #f
+             (--> #f #f))
+            empty-language hole)
+           #t)
+          "exn not raised")
+        #rx"^reduction-relation:")
+  
   (test (apply-reduction-relation
          (context-closure 
           (context-closure 
@@ -2335,6 +2346,101 @@
       (test (judgment-holds (J1 1 any) any) '(1))
       (test (judgment-holds (J2 1 any) any) '(1))
       (test (judgment-holds (J2 4 any) any) '(4)))
+    
+    (let ()
+      (define-language L (N ::= z (s N) (t N)))
+      
+      (define-judgment-form L
+        #:mode (J2 I O)
+        [--------  "one"
+         (J2 1 1)]
+        [--------  two
+         (J2 1 2)])
+      
+      (test (build-derivations (J2 1 any))
+            (list (derivation '(J2 1 1) "one" '())
+                  (derivation '(J2 1 2) "two" '())))
+      
+      
+      
+      (define-judgment-form L
+        #:contract (K any any)
+        #:mode (K I O)
+        [-----------
+         (K () z)]
+        [(K any_1 N) ...
+         ---------------------------
+         (K (any_1 ...) (N ...))])
+      
+      
+      
+      (test (build-derivations (K (()) any))
+            (list (derivation '(K (()) (z))
+			      #f
+                              (list (derivation '(K () z) #f '())))))
+      
+      (test
+       (build-derivations (K (() ()) any))
+       (list (derivation 
+              '(K (() ()) (z z))
+	      #f
+              (list
+               (derivation '(K () z) #f '())
+               (derivation '(K () z) #f '())))))
+      
+      (define-judgment-form L
+        #:contract (J any any)
+        #:mode (J I O)
+        [--------
+         (J () z)]
+        [(J any_1 N)  (J any_2 N)
+         ----------------------------
+         (J (any_1 any_2) (s N))]
+        [(J any N)
+         ---------------
+         (J (any) (s N))])
+      
+      (test (build-derivations 
+             (J ((()) (())) N))
+            (list (derivation
+                   '(J ((()) (())) (s (s z)))
+		   #f
+                   (list (derivation 
+                          '(J (()) (s z))
+			  #f
+                          (list
+                           (derivation
+                            '(J () z)
+			    #F
+                            '())))
+                         (derivation 
+                          '(J (()) (s z))
+			  #f
+                          (list
+                           (derivation
+                            '(J () z)
+			    #f
+                            '())))))))
+      
+      (define-judgment-form L
+        #:mode (J3 I O)
+        [(J any_1 any_2)
+         ------------
+         (J3 any_1 any_2)])
+      
+      (test (build-derivations (J3 (()) N))
+            (list (derivation
+                   '(J3 (()) (s z))
+		   #f
+                   (list
+                    (derivation
+                     '(J (()) (s z))
+		     #f
+                     (list 
+                      (derivation 
+                       '(J () z)
+		       #f
+                       '()))))))))
 
     
     (parameterize ([current-namespace (make-base-namespace)])

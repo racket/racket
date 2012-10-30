@@ -33,21 +33,17 @@
                                     (x y width height) 
                                     (implies (or x y width height) 
                                              (and x y width height)) 
-                                    [p pict?])])) 
+                                    [p pict?])]))
 
-(define-syntax-rule (visualize-futures e ...) 
-  (begin (start-future-tracing!) 
-         (begin0 (begin e ...) 
-                 (stop-future-tracing!)
-                 (show-visualizer))))
+(define-syntax-rule (visualize-futures e ...)
+  (begin (start-future-tracing!)
+         (begin0 (begin e ...)
+           (stop-future-tracing!)
+           (show-visualizer))))
 
 ;;visualize-futures-thunk : (-> any/c) -> any/c
 (define (visualize-futures-thunk thunk) 
-  (start-future-tracing!) 
-  (begin0 
-    (thunk) 
+  (start-future-tracing!)
+  (begin0 (thunk)
     (stop-future-tracing!)
     (show-visualizer)))
-                  
-                  
-                                           

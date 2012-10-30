@@ -70,29 +70,33 @@ In a placer function's arguments:
 ;; In second return value, one pict per 'next occurrence.
 ;; FIXME: avoid applying ghost to previously ghosted pict?
 (define (ppict-add/internal who base parts)
-  (unless (ppict? base) (error who "missing placer"))
-  (let ([placer (ppict-placer base)]
-        [base-pict (ppict-pict base)]
-        [elem-chunks
-         ;; (listof (listof pict?))
-         ;;   length is N+1, where N is number of 'next in chunk
-         ;;   ghosted before visible
-         (let elab ([chunk parts])
-           (cond [(and (pair? chunk) (eq? 'next (car chunk)))
-                  (let ([elab-rest (elab (cdr chunk))])
-                    (cons (map ghost* (car elab-rest)) elab-rest))]
-                 [(and (pair? chunk) (not (eq? 'next (car chunk))))
-                  (for/list ([elem-chunk (in-list (elab (cdr chunk)))])
-                    (cons (car chunk) elem-chunk))]
-                 [(null? chunk) (list null)]))])
-    (let out-loop ([chunks elem-chunks] [rpicts null])
-      (cond [(null? (cdr chunks))
-             (values (send placer place base-pict (car chunks))
-                     (reverse rpicts))]
-            [else
-             (out-loop (cdr chunks)
-                       (cons (send placer place base-pict (car chunks))
-                             rpicts))]))))
+  (cond [(for/and ([part (in-list parts)]) (eq? part 'next))
+         ;; Special case; don't need a ppict
+         (values base (make-list (length parts) base))]
+        [else
+         (unless (ppict? base) (error who "missing placer"))
+         (let ([placer (ppict-placer base)]
+               [base-pict (ppict-pict base)]
+               [elem-chunks
+                ;; (listof (listof pict?))
+                ;;   length is N+1, where N is number of 'next in chunk
+                ;;   ghosted before visible
+                (let elab ([chunk parts])
+                  (cond [(and (pair? chunk) (eq? 'next (car chunk)))
+                         (let ([elab-rest (elab (cdr chunk))])
+                           (cons (map ghost* (car elab-rest)) elab-rest))]
+                        [(and (pair? chunk) (not (eq? 'next (car chunk))))
+                         (for/list ([elem-chunk (in-list (elab (cdr chunk)))])
+                           (cons (car chunk) elem-chunk))]
+                        [(null? chunk) (list null)]))])
+           (let out-loop ([chunks elem-chunks] [rpicts null])
+             (cond [(null? (cdr chunks))
+                    (values (send placer place base-pict (car chunks))
+                            (reverse rpicts))]
+                   [else
+                    (out-loop (cdr chunks)
+                              (cons (send placer place base-pict (car chunks))
+                                    rpicts))])))]))
 
 ;; ----
 

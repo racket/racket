@@ -206,7 +206,7 @@
              (let loop ()
                (let ([stmt (sqlite3_next_stmt db #f)])
                  (when stmt
-                   (HANDLE 'disconnect (sqlite3_finalize stmt))
+                   (sqlite3_finalize stmt)
                    (loop))))
              (HANDLE 'disconnect (sqlite3_close db))
              (void))))))
@@ -225,7 +225,7 @@
          (let ([stmt (send pst get-handle)])
            (send pst set-handle #f)
            (when (and stmt -db)
-             (HANDLE fsym (sqlite3_finalize stmt)))
+             (sqlite3_finalize stmt))
            (void)))))
 
     ;; Internal query
@@ -316,7 +316,14 @@
     ;; ----
 
     (super-new)
-    (register-finalizer this (lambda (obj) (send obj disconnect)))))
+    (register-finalizer this
+                        (lambda (obj)
+                          ;; Keep a reference to the class to keep all FFI callout objects
+                          ;; (eg, sqlite3_close) used by its methods from being finalized.
+                          (let ([dont-gc this%])
+                            (send obj disconnect)
+                            ;; Dummy result to prevent reference from being optimized away
+                            dont-gc)))))
 
 ;; ----------------------------------------
 

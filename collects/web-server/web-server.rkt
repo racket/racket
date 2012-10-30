@@ -85,14 +85,15 @@
          #:initial-connection-timeout [initial-connection-timeout 60])
   (define shutdowns
     (map (lambda (port)
-           (serve #:dispatch dispatch
-                  #:confirmation-channel confirmation-channel
-                  #:connection-close? connection-close?
-                  #:tcp@ tcp@
-                  #:port port
-                  #:listen-ip listen-ip
-                  #:max-waiting max-waiting
-                  #:initial-connection-timeout initial-connection-timeout))
+           (serve 
+            #:dispatch dispatch
+            #:confirmation-channel confirmation-channel
+            #:connection-close? connection-close?
+            #:tcp@ tcp@
+            #:port port
+            #:listen-ip listen-ip
+            #:max-waiting max-waiting
+            #:initial-connection-timeout initial-connection-timeout))
          ports))
   (lambda ()
     (for-each apply shutdowns)))
@@ -108,14 +109,15 @@
   (define shutdowns
     (map (match-lambda
            [(list-rest listen-ip ports)
-            (serve #:dispatch dispatch
-                   #:confirmation-channel confirmation-channel
-                   #:connection-close? connection-close?
-                   #:tcp@ tcp@
-                   #:ports ports
-                   #:listen-ip listen-ip
-                   #:max-waiting max-waiting
-                   #:initial-connection-timeout initial-connection-timeout)])
+            (serve/ports
+             #:dispatch dispatch
+             #:confirmation-channel confirmation-channel
+             #:connection-close? connection-close?
+             #:tcp@ tcp@
+             #:ports ports
+             #:listen-ip listen-ip
+             #:max-waiting max-waiting
+             #:initial-connection-timeout initial-connection-timeout)])
          ips+ports))
   (lambda ()
     (for-each apply shutdowns)))

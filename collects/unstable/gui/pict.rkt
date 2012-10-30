@@ -404,6 +404,56 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+;;  Other pict combinators
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The following were added by asumu
+(provide (contract-out
+          [backdrop (->* (pict?) (#:color color/c) pict?)]
+          [cross-out (->* (pict?)
+                          (#:width real?
+                           #:style (or/c 'transparent 'solid 'xor
+                                         'hilite 'dot 'long-dash 'short-dash
+                                         'dot-dash 'xor-dot 'xor-long-dash
+                                         'xor-short-dash 'xor-dot-dash)
+                           #:color color/c)
+                          pict?)]))
+
+;; backdrop
+;; adds a background highlighted with the given color
+(define (backdrop pict #:color [color "white"])
+  (pin-under
+   pict 0 0
+   (colorize (filled-rectangle
+              (pict-width pict)
+              (pict-height pict))
+             color)))
+
+;; cross-out
+;; crosses out the pict with two lines of the given color
+(define (cross-out pict
+                   #:width [width 1]
+                   #:style [style 'solid]
+                   #:color [color "black"])
+  (cc-superimpose
+   pict
+   (dc (λ (dc dx dy)
+         (define old-pen (send dc get-pen))
+         (send dc set-pen
+               (new pen% [width width] [style style] [color color]))
+         (send dc draw-line
+               dx dy
+               (+ dx (pict-width pict)) (+ dy (pict-height pict)))
+         (send dc draw-line
+               (+ dx (pict-width pict)) dy
+               dx (+ dy (pict-height pict)))
+         (send dc set-pen old-pen))
+       (pict-width pict)
+       (pict-height pict))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;;  Tagged picts
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

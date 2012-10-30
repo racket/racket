@@ -6,7 +6,8 @@
 (require racket/flonum
          racket/fixnum
          racket/unsafe/ops
-         compiler/zo-parse)
+         compiler/zo-parse
+         compiler/zo-marshal)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1681,6 +1682,154 @@
               (hash-ref '#hash((x . y)) x add1))
            #f)
 
+;; Check elimination of ignored structure predicate
+;; and constructor applications:
+
+(test-comp '(module m racket/base
+              (define-values (struct:a a a? a-ref a-set!)
+                (make-struct-type 'a #f 2 0))
+              (begin0
+               (a? (a-ref (a 1 2) 1))
+               a?
+               a
+               a-ref
+               (a? 7)
+               (a 1 2)
+               5))
+           '(module m racket/base
+              (define-values (struct:a a a? a-ref a-set!)
+                (make-struct-type 'a #f 2 0))
+              (begin0
+               (a? (a-ref (a 1 2) 1))
+               5)))
+
+(test-comp '(module m racket/base
+              (define-values (struct:a a a? a-x a-y)
+                (let-values ([(struct:a a a? a-ref a-set!)
+                              (make-struct-type 'a #f 2 0)])
+                  (values struct:a a a?
+                          (make-struct-field-accessor a-ref 0)
+                          (make-struct-field-accessor a-ref 1))))
+              (begin0
+               (a? (a-x (a 1 2)))
+               a?
+               a
+               a-x
+               (a? 7)
+               (a 1 2)
+               5))
+           '(module m racket/base
+              (define-values (struct:a a a? a-x a-y)
+                (let-values ([(struct:a a a? a-ref a-set!)
+                              (make-struct-type 'a #f 2 0)])
+                  (values struct:a a a?
+                          (make-struct-field-accessor a-ref 0)
+                          (make-struct-field-accessor a-ref 1))))
+              (begin0
+               (a? (a-x (a 1 2)))
+               5)))
+
+(test-comp '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes)
+              (begin0
+               (a? (a-x (a 1 2)))
+               a?
+               a
+               a-x
+               (a? 7)
+               (a 1 2)
+               5))
+           '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes)
+              (begin0
+               (a? (a-x (a 1 2)))
+               5)))
+
+(test-comp '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes #:prefab)
+              (begin0
+               (a? (a-x (a 1 2)))
+               a?
+               a
+               a-x
+               (a? 7)
+               (a 1 2)
+               5))
+           '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes #:prefab)
+              (begin0
+               (a? (a-x (a 1 2)))
+               5)))
+
+(test-comp '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes #:mutable)
+              (begin0
+               (a? (set-a-x! (a 1 2) 5))
+               a?
+               a
+               a-x
+               set-a-x!
+               (a? 7)
+               (a 1 2)
+               5))
+           '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes #:mutable)
+              (begin0
+               (a? (set-a-x! (a 1 2) 5))
+               5)))
+
+(test-comp '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes)
+              (struct b (z) #:super struct:a #:omit-define-syntaxes)
+              (begin0
+               (list (a? (a-x (a 1 2)))
+                     (b? (b-z (b 1 2 3))))
+               a?
+               a
+               a-x
+               (a? 7)
+               (a 1 2)
+               b?
+               b
+               b-z
+               (b 1 2 3)
+               5))
+           '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes)
+              (struct b (z) #:super struct:a #:omit-define-syntaxes)
+              (begin0
+               (list (a? (a-x (a 1 2)))
+                     (b? (b-z (b 1 2 3))))
+               5)))
+
+(module struct-a-for-optimize racket/base
+  (provide (struct-out a)
+           (struct-out b))
+  (struct a (x y))
+  (struct b a (z)))
+
+(test-comp '(module m racket/base
+              (require 'struct-a-for-optimize)
+              (begin0
+               (list (a? (a-x (a 1 2)))
+                     (b? (b-z (b 1 2 3))))
+               a?
+               a
+               a-x
+               (a? 7)
+               (a 1 2)
+               b?
+               b
+               b-z
+               (b 1 2 3)
+               5))
+           '(module m racket/base
+              (require 'struct-a-for-optimize)
+              (begin0
+               (list (a? (a-x (a 1 2)))
+                     (b? (b-z (b 1 2 3))))
+               5)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check bytecode verification of lifted functions
 
@@ -2195,5 +2344,89 @@
         10))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(module check-tail-call-by-jit-for-struct-predicate racket/base
+  (provide go)
+
+  (struct s (x))
+  
+  (define f #f)
+  (set! f (lambda (v)
+            (if (zero? v)
+                (let ([vec (make-vector 6)])
+                  (vector-set-performance-stats! vec (current-thread))
+                  (vector-ref vec 3))
+                (s? (sub1 v)))))
+  
+  (void (f 5)) ; JIT decides that `s?' is a struct predicate
+  (set! s? f) ; break the JIT's optimistic assumption
+  
+  (define (go)
+    (define size (f 500000)) ; make sure that this still leads to a tail loop
+    (size . < . 80000)))
+
+(test #t (dynamic-require ''check-tail-call-by-jit-for-struct-predicate 'go))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test bytecode validator's checking of constantness
+
+(let ()
+  (define c1
+    '(module c1 racket/base
+       (void ((if (zero? (random 1))
+                  (lambda (f) (displayln (f)))
+                  #f)
+              (lambda ()
+                ;; This access of i should raise an exception:
+                i)))
+       (define i (random 1))))
+
+  (define o (open-output-bytes))
+
+  (parameterize ([current-namespace (make-base-namespace)])
+    (write (compile c1) o))
+
+  (define m (zo-parse (open-input-bytes (get-output-bytes o))))
+
+  (define o2 (open-output-bytes))
+
+  ;; construct bytecode that is broken by claiming that `i' is constant
+  ;; in the too-early reference:
+  (void
+   (write-bytes
+    (zo-marshal
+     (match m
+       [(compilation-top max-let-depth prefix code)
+        (compilation-top max-let-depth prefix 
+                         (let ([body (mod-body code)])
+                           (struct-copy mod code [body
+                                                  (match body 
+                                                    [(list a b)
+                                                     (list (match a
+                                                             [(application rator (list rand))
+                                                              (application 
+                                                               rator
+                                                               (list
+                                                                (match rand
+                                                                  [(application rator (list rand))
+                                                                   (application
+                                                                    rator
+                                                                    (list
+                                                                     (struct-copy 
+                                                                      lam rand
+                                                                      [body
+                                                                       (match (lam-body rand)
+                                                                         [(toplevel depth pos const? ready?)
+                                                                          (toplevel depth pos #t #t)])])))])))])
+                                                           b)])])))]))
+    o2))
+
+  ;; validator should reject this at read or eval time (depending on how lazy validation is):
+  (err/rt-test (parameterize ([current-namespace (make-base-namespace)]
+                              [read-accept-compiled #t])
+                 (eval (read (open-input-bytes (get-output-bytes o2)))))
+               exn:fail:read?))
+  
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

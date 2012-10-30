@@ -4,7 +4,8 @@
          future-visualizer/private/visualizer-data 
          (for-syntax racket/base 
                      future-visualizer/private/visualizer-data)
-         (only-in future-visualizer/trace trace-futures)) 
+         (only-in future-visualizer/trace trace-futures)
+         "vtrace3.rkt") 
 
 #|
 
@@ -38,6 +39,17 @@ Invariants:
                             (indexed-future-event-index e) 
                             (event-or-gc-time (indexed-future-event-fevent e)) 
                             i)))))]))
+
+;Each future timeline's events sorted in time order?
+(define (check-future-timeline-ordering tr)
+  (define ftls (hash-values (trace-future-timelines tr)))
+  (for ([ftl (in-list ftls)])
+    (let loop ([evts ftl]) 
+      (cond 
+        [(null? (cdr evts)) void]
+        [else 
+         (check-true (<= (event-start-time (car evts)) (event-start-time (car (cdr evts)))))
+         (loop (cdr evts))]))))
 
 (cond 
   [(futures-enabled?)
@@ -89,7 +101,22 @@ Invariants:
    (check-false (proc-id-or-gc<? 0 'gc)) 
    (check-false (proc-id-or-gc<? 'gc 'gc)) 
    (check-true (proc-id-or-gc<? 0 1)) 
-   (check-false (proc-id-or-gc<? 1 0))]   
+   (check-false (proc-id-or-gc<? 1 0))
+   
+   (let* ([future-log (list (indexed-future-event 0 (future-event #f 0 'create 0 #f 0)) 
+                            (indexed-future-event 1 (future-event 0 1 'start-work 1 #f #f)) 
+                            (indexed-future-event 2 (future-event 0 1 'block 2 #f #f))
+                            (indexed-future-event 3 (future-event 0 1 'end-work 3 #f #f))
+                            (indexed-future-event 4 (future-event 0 0 'block 4 'printf #f))
+                            (indexed-future-event 5 (future-event 0 0 'complete 3 #f #f)))]) 
+     (define tr (build-trace future-log)) 
+     (define blocks (filter worker-block-event? (trace-all-events tr)))
+     (for ([b (in-list blocks)])
+       (check-true (event? (event-block-handled-event b))) 
+       (check-true (symbol? (event-prim-name b)))))
+   
+   (let ([tr (build-trace vtrace-3)]) 
+     (check-future-timeline-ordering tr))]
   [else 
    (define l (trace-futures (let ([f (future (λ () (printf "hello\n")))]) 
                               (sleep 0.1) 

@@ -54,14 +54,24 @@
      (let ([typ (if maker?
                     ((map fld-t (Struct-flds (lookup-type-name (Name-id typ)))) #f . t:->* . typ)
                     typ)])
-       (with-syntax ([cnt (type->contract
-                           typ
-                           ;; this is for a `require/typed', so the value is not from the typed side
-                           #:typed-side #f
-                           #:kind kind
-                           (lambda () (tc-error/stx prop "Type ~a could not be converted to a contract." typ)))])
-         (quasisyntax/loc stx (define-values (n) (recursive-contract cnt #,(contract-kind->keyword kind))))))]
-    [_ (int-err "should never happen - not a define-values: ~a" (syntax->datum stx))]))
+         (with-syntax ([cnt (type->contract
+                             typ
+                             ;; this is for a `require/typed', so the value is not from the typed side
+                             #:typed-side #f
+                             #:kind kind
+                             (λ () 
+                               (tc-error/stx 
+                                prop 
+				"Type ~a could not be converted to a contract."
+				typ)))])
+           (quasisyntax/loc 
+	    stx
+	    (define-values (n) 
+	      (recursive-contract 
+	       cnt
+	       #,(contract-kind->keyword kind))))))]
+    [_ (int-err "should never happen - not a define-values: ~a"
+		(syntax->datum stx))]))
 
 (define (change-contract-fixups forms)
   (map (lambda (e)
@@ -89,7 +99,6 @@
   (for/fold ((acc i)) ((v args))
     (contract-kind-max2 v acc)))
 
-
 (define (contract-kind-min i . args)
   (define (contract-kind-min2 x y)
     (cond
@@ -106,7 +115,7 @@
   (string->keyword (symbol->string sym)))
 
 (define (type->contract ty fail #:out [out? #f] #:typed-side [from-typed? #t] #:kind [kind 'impersonator])
-  (define vars (make-parameter '()))
+  (define vars (make-parameter '()))  
   (define current-contract-kind (make-parameter flat-sym))
   (define (increase-current-contract-kind! kind)
     (current-contract-kind (contract-kind-max (current-contract-kind) kind)))
@@ -138,7 +147,9 @@
             [(and
               (> (length arrs) 1)
               ;; Keyword args, range and rest specs all the same.
-              (let ([xs (map (match-lambda [(arr: _ rng rest-spec _ kws) (list rng rest-spec kws)]) arrs)])
+              (let ([xs (map (match-lambda [(arr: _ rng rest-spec _ kws)
+					    (list rng rest-spec kws)])
+			     arrs)])
                 (foldl equal? (first xs) (rest xs)))
               ;; Positionals are monotonically increasing.
               (let-values ([(_ ok?)
@@ -338,11 +349,13 @@
          (match-let ([(Mu-name: n-nm _) ty])
            (with-syntax ([(n*) (generate-temporaries (list n-nm))])
              (parameterize ([vars (cons (list n #'n*) (vars))]
-                            [current-contract-kind (contract-kind-min kind chaperone-sym)])
+                            [current-contract-kind
+			     (contract-kind-min kind chaperone-sym)])
                (define ctc (t->c b))
                #`(letrec ([n* (recursive-contract
                                 #,ctc
-                                #,(contract-kind->keyword (current-contract-kind)))])
+                                #,(contract-kind->keyword
+				   (current-contract-kind)))])
                    n*))))]
         [(Value: #f) #'false/c]
         [(Instance: (? Mu? t))
@@ -389,7 +402,9 @@
          #`(syntax/c #,(t->c t #:kind flat-sym))]
         [(Value: v) #`(flat-named-contract #,(format "~a" v) (lambda (x) (equal? x '#,v)))]
         ;; TODO Is this sound?
-        [(Param: in out) #`(parameter/c #,(t->c out))]
+	[(Param: in out) 
+	 (set-impersonator!)
+	 #`(parameter/c #,(t->c out))]
         [(Hashtable: k v)
          (when (equal? kind flat-sym) (exit (fail)))
          #`(hash/c #,(t->c k #:kind chaperone-sym) #,(t->c v) #:immutable 'dont-care)]

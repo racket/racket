@@ -58,7 +58,10 @@
 
 (define-sqlite sqlite3_finalize
   (_fun _sqlite3_statement
-        -> _int))
+        -> _int
+        ;; sqlite3_finalize returns error code of last stmt execution,
+        ;; not of finalization; so just ignore
+        -> (void)))
 
 (define-sqlite sqlite3_bind_parameter_count
   (_fun _sqlite3_statement

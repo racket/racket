@@ -4166,6 +4166,58 @@
         pt
         (λ (x y) (values x y)))))
 
+  (test/spec-passed
+   'prompt-tag/c-call/cc-1
+   '(let* ([pt (contract (prompt-tag/c string?
+                                       #:call/cc string?)
+                         (make-continuation-prompt-tag)
+                         'pos
+                         'neg)]
+           [abort-k (call-with-continuation-prompt
+                     (λ () (call/cc (λ (k) k) pt))
+                     pt)])
+      (call-with-continuation-prompt
+       (λ () (abort-k "ok"))
+       pt
+       (λ (s) (string-append s "post")))))
+
+  (test/spec-passed
+   'prompt-tag/c-call/cc-2
+   '(let* ([pt (contract (prompt-tag/c string?
+                                       #:call/cc (values string? integer?))
+                         (make-continuation-prompt-tag)
+                         'pos
+                         'neg)]
+           [abort-k (call-with-continuation-prompt
+                     (λ () (call/cc (λ (k) k) pt))
+                     pt)])
+      (call-with-continuation-prompt
+       (λ () (abort-k "ok" 5))
+       pt
+       (λ (s n) (string-append s "post")))))
+
+  (test/neg-blame
+   'prompt-tag/c-call/cc-2
+   '(letrec ([pt (make-continuation-prompt-tag)]
+             [do-test (λ ()
+                         (+ 1
+                            (call-with-continuation-prompt
+                             (lambda ()
+                               (+ 1 (abort-k 1)))
+                             pt)))]
+             [cpt (contract (prompt-tag/c #:call/cc number?)
+                            pt
+                            'pos
+                            'neg)]
+             [abort-k (call-with-continuation-prompt
+                       (λ ()
+                          (let ([v (call/cc (lambda (k) k) cpt)])
+                            (if (procedure? v)
+                                v
+                                (format "~a" v))))
+                       pt)])
+      (do-test)))
+
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
   ;;  continuation-mark-key/c
@@ -4503,8 +4555,53 @@
    'make-flat-contract-bad-6
    '(chaperone-contract? proj:prime-list/c)
    #t)
+  
 
-
+;; Adding tests for using vector/box/hash contracts with already chaperoned values
+  
+  (test/no-error
+   '(let ([v (chaperone-vector (vector-immutable 1)
+                               (λ (vec i v) v)
+                               (λ (vec i v) v))])
+      (contract (vectorof any/c) v 'pos 'neg)))
+  
+  (test/no-error
+   '(let ([v (chaperone-vector (vector-immutable 1)
+                               (λ (vec i v) v)
+                               (λ (vec i v) v))])
+      (contract (vector/c any/c) v 'pos 'neg)))
+  
+  (test/no-error
+   '(let ([v (chaperone-box (box-immutable 1)
+                            (λ (box v) v)
+                            (λ (box v) v))])
+      (contract (box/c any/c) v 'pos 'neg)))
+  
+  (test/no-error
+   '(let ([v (chaperone-hash (make-immutable-hash (list (cons 1 2)))
+                             (λ (hash k) (values k (λ (h k v) v)))
+                             (λ (hash k v) (values k v))
+                             (λ (hash k) k)
+                             (λ (hash k) k))])
+      (contract (hash/c any/c any/c) v 'pos 'neg)))
+  
+  (test/no-error
+   '(let ([v (chaperone-hash (make-immutable-hasheq (list (cons 1 2)))
+                             (λ (hash k) (values k (λ (h k v) v)))
+                             (λ (hash k v) (values k v))
+                             (λ (hash k) k)
+                             (λ (hash k) k))])
+      (contract (hash/c any/c any/c) v 'pos 'neg)))
+  
+  (test/no-error
+   '(let ([v (chaperone-hash (make-immutable-hasheqv (list (cons 1 2)))
+                             (λ (hash k) (values k (λ (h k v) v)))
+                             (λ (hash k v) (values k v))
+                             (λ (hash k) k)
+                             (λ (hash k) k))])
+      (contract (hash/c any/c any/c) v 'pos 'neg)))
+  
+  
 ;
 ;
 ;

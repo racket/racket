@@ -288,6 +288,14 @@
 	     (path->string (build-path (collection-path "tests" "racket") "embed-me16.rkt")))
     (try-exe (mk-dest mred?) "This is 16.\n" mred?)
 
+    ;; raco exe on a module with a `main' submodule+
+    (system* raco
+             "exe"
+	     "-o" (path->string (mk-dest mred?))
+	     (if mred? "--gui" "--")
+	     (path->string (build-path (collection-path "tests" "racket") "embed-me20.rkt")))
+    (try-exe (mk-dest mred?) "This is 20.\n" mred?)
+
     ;;raco exe --launcher
     (system* raco
              "exe"
@@ -473,9 +481,9 @@
                                                       "planet")))
 
 (define (try-planet)
-  (system* planet "link" "racket-tester" "p1.plt" "1" "0"
+  (system* raco "planet" "link" "racket-tester" "p1.plt" "1" "0"
            (path->string (collection-path "tests" "racket" "embed-planet-1")))
-  (system* planet "link" "racket-tester" "p2.plt" "2" "2"
+  (system* raco "planet" "link" "racket-tester" "p2.plt" "2" "2"
            (path->string (collection-path "tests" "racket" "embed-planet-2")))
 
   (let ([go (lambda (path expected)
@@ -508,8 +516,8 @@
 
     (void))
   
-  (system* planet "unlink" "racket-tester" "p1.plt" "1" "0")
-  (system* planet "unlink" "racket-tester" "p2.plt" "2" "2"))
+  (system* raco "planet" "unlink" "racket-tester" "p1.plt" "1" "0")
+  (system* raco "planet" "unlink" "racket-tester" "p2.plt" "2" "2"))
 
 ;; ----------------------------------------
 

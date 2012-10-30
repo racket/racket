@@ -4,6 +4,7 @@
 (provide make-term-fn
          term-fn?
          term-fn-get-id
+         term-fn-get-info
          (struct-out term-id)
          
          (struct-out judgment-form)
@@ -12,13 +13,28 @@
          defined-term-id?
          defined-check
          not-expression-context
+         
+         metafunc-proc-pict-info
+         metafunc-proc-lang
+         metafunc-proc-multi-arg?
+         metafunc-proc-name
+         metafunc-proc-in-dom?
+         metafunc-proc-dom-pat
+         metafunc-proc-cases
+         metafunc-proc-relation?
+         metafunc-proc-gen-clauses
+         metafunc-proc-lhs-pats
+         metafunc-proc?
+         make-metafunc-proc
+         
          make-language-id
          language-id-nts
          pattern-symbols)
 
 (define-values (struct-type make-term-fn term-fn? term-fn-get term-fn-set!) 
-  (make-struct-type 'term-fn #f 1 0))
+  (make-struct-type 'term-fn #f 2 0))
 (define term-fn-get-id (make-struct-field-accessor term-fn-get 0))
+(define term-fn-get-info (make-struct-field-accessor term-fn-get 1))
 
 (define-struct term-id (id depth))
 
@@ -27,7 +43,8 @@
        (cond [(syntax-local-value stx (λ () #f)) => p?]
              [else #f])))
 
-(define-struct judgment-form (name mode proc mk-proc lang lws rule-names))
+(define-struct judgment-form (name mode proc mk-proc lang lws rule-names gen-clauses mk-gen-clauses)
+  #:transparent)
 
 (define-struct defined-term (value))
 (define (defined-term-id? stx)
@@ -56,3 +73,16 @@
 
 (define pattern-symbols '(any number natural integer real string variable 
                               variable-not-otherwise-mentioned hole symbol))
+
+(define-values (struct:metafunc-proc make-metafunc-proc metafunc-proc? metafunc-proc-ref metafunc-proc-set!)
+  (make-struct-type 'metafunc-proc #f 11 0 #f null (current-inspector) 0))
+(define metafunc-proc-pict-info (make-struct-field-accessor metafunc-proc-ref 1))
+(define metafunc-proc-lang (make-struct-field-accessor metafunc-proc-ref 2))
+(define metafunc-proc-multi-arg? (make-struct-field-accessor metafunc-proc-ref 3))
+(define metafunc-proc-name (make-struct-field-accessor metafunc-proc-ref 4))
+(define metafunc-proc-in-dom? (make-struct-field-accessor metafunc-proc-ref 5))
+(define metafunc-proc-dom-pat (make-struct-field-accessor metafunc-proc-ref 6))
+(define metafunc-proc-cases (make-struct-field-accessor metafunc-proc-ref 7))
+(define metafunc-proc-relation? (make-struct-field-accessor metafunc-proc-ref 8))
+(define metafunc-proc-gen-clauses (make-struct-field-accessor metafunc-proc-ref 9))
+(define metafunc-proc-lhs-pats (make-struct-field-accessor metafunc-proc-ref 10))

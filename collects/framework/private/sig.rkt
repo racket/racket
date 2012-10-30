@@ -400,7 +400,8 @@
      text-mode-mixin
      text-mode%))
   (define-signature color^ extends color-class^
-    (get-parenthesis-colors-table))
+    (get-parenthesis-colors-table
+     misspelled-text-color-style-name))
   
   (define-signature color-prefs-class^
     ())

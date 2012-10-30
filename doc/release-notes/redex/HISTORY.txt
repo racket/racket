@@ -1,3 +1,9 @@
+v5.3.2
+
+  * added random-generation based on define-judgment-form
+    (which allows Redex to more effectively generate things
+     like well-typed terms)
+
 v5.3.1
 
   * added optional #:lang keyword to term
@@ -5,6 +11,10 @@ v5.3.1
   * added the ability to name clauses to define-judgment-form
 
   * added judgment-form-cases
+
+  * adjust define-judgment-form typesetting so that it uses
+    the line breaks in a premise to determine how to line
+    break the typeset version
 
 v5.3
 

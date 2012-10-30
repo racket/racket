@@ -100,42 +100,48 @@
     (method-in-interface? 'get-execute-button (object-interface frame)))
   
   (define (wait-for-drracket-frame [print-message? #f])
-    (let ([wait-for-drracket-frame-pred
-           (lambda ()
-             (let ([active (fw:test:get-active-top-level-window)])
-               (if (and active
-                        (drracket-frame? active))
-                   active
-                   #f)))])
+    (define (wait-for-drracket-frame-pred)
+      (define active (fw:test:get-active-top-level-window))
+      (if (and active
+               (drracket-frame? active))
+          active
+          #f))
+    (define drr-fr
       (or (wait-for-drracket-frame-pred)
           (begin
             (when print-message?
               (printf "Select DrRacket frame\n"))
-            (poll-until wait-for-drracket-frame-pred)))))
+            (poll-until wait-for-drracket-frame-pred))))
+    (when drr-fr
+      (wait-for-events-in-frame-eventspace drr-fr))
+    drr-fr)
   
   ;; wait-for-new-frame : frame [(listof eventspace) = null] -> frame
   ;; returns the newly opened frame, waiting until old-frame
   ;; is no longer frontmost. Optionally checks other eventspaces
   ;; waits until the new frame has a focus'd window, too. 
-  (define wait-for-new-frame
-    (case-lambda
-     [(old-frame) (wait-for-new-frame old-frame null)]
-     [(old-frame extra-eventspaces)
-      (wait-for-new-frame old-frame extra-eventspaces 10)]
-     [(old-frame extra-eventspaces timeout)
-      (let ([wait-for-new-frame-pred
-	     (lambda ()
-	       (let ([active (or (fw:test:get-active-top-level-window)
-                                 (ormap
-				  (lambda (eventspace)
-                                    (parameterize ([current-eventspace eventspace])
-                                      (fw:test:get-active-top-level-window)))
-				  extra-eventspaces))])
-		 (if (and active
-                          (not (eq? active old-frame)))
-		     active
-		     #f)))])
-	(poll-until wait-for-new-frame-pred timeout))]))
+  (define (wait-for-new-frame old-frame [extra-eventspaces '()] [timeout 10])
+    (define (wait-for-new-frame-pred)
+      (define active (or (fw:test:get-active-top-level-window)
+                         (for/or ([eventspace (in-list extra-eventspaces)]) 
+                           (parameterize ([current-eventspace eventspace])
+                             (fw:test:get-active-top-level-window)))))
+      (if (and active
+               (not (eq? active old-frame)))
+          active
+          #f))
+    (define fr (poll-until wait-for-new-frame-pred timeout))
+    (when fr (wait-for-events-in-frame-eventspace fr))
+    (sleep 1)
+    fr)
+  
+  (define (wait-for-events-in-frame-eventspace fr)
+    (define sema (make-semaphore 0))
+    (parameterize ([current-eventspace (send fr get-eventspace)])
+      (queue-callback
+       (λ () (semaphore-post sema))
+       #f))
+    (semaphore-wait sema))
 
   ;; wait-for-computation : frame -> void
   ;; waits until the drracket frame finishes some computation.
@@ -377,8 +383,9 @@
                                            child)))
                                   (send list-item get-items))])
               (when (null? which)
-                (error 'set-language-level! "couldn't find language: ~e, no match at ~e"
-                       in-language-spec name))
+                (error 'set-language-level! "couldn't find language: ~e, no match at ~e, poss: ~s"
+                       in-language-spec name (map (λ (child) (send (send child get-editor) get-text))
+                                                  (send list-item get-items))))
               (unless (= 1 (length which))
                 (error 'set-language-level! "couldn't find language: ~e, double match ~e"
                        in-language-spec name))

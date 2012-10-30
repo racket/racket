@@ -48,7 +48,8 @@ If the namespace does not, they are colored the unbound color.
          "traversals.rkt"
          "annotate.rkt"
          "../tooltip.rkt"
-         "blueboxes-gui.rkt")
+         "blueboxes-gui.rkt"
+         framework/private/logging-timer)
 (provide tool@)
 
 (define orig-output-port (current-output-port))
@@ -969,7 +970,7 @@ If the namespace does not, they are colored the unbound color.
             ;; Starts or restarts a one-shot arrow draw timer
             (define/private (start-arrow-draw-timer delay-ms)
               (unless arrow-draw-timer
-                (set! arrow-draw-timer (make-object timer% (λ () (maybe-update-drawn-arrows)))))
+                (set! arrow-draw-timer (make-object logging-timer% (λ () (maybe-update-drawn-arrows)))))
               (send arrow-draw-timer start delay-ms #t))
             
             ;; this will be set to a time in the future if arrows shouldn't be drawn until then
@@ -1581,6 +1582,7 @@ If the namespace does not, they are colored the unbound color.
             (send (send defs-text get-tab) add-bkg-running-color 'syncheck "orchid" cs-syncheck-running)
             (send defs-text syncheck:init-arrows)
             (let loop ([val val]
+                       [start-time (current-inexact-milliseconds)]
                        [i 0])
               (cond
                 [(null? val)
@@ -1588,15 +1590,17 @@ If the namespace does not, they are colored the unbound color.
                  (send defs-text syncheck:update-drawn-arrows)
                  (send (send defs-text get-tab) remove-bkg-running-color 'syncheck)
                  (set-syncheck-running-mode #f)]
-                [(= i 500)
+                [(and (i . > . 0)  ;; check i just in case things are really strange
+                      (20 . <= . (- (current-inexact-milliseconds) start-time)))
                  (queue-callback
                   (λ ()
                     (when (unbox bx)
-                      (loop val 0)))
+                      (log-timeline "continuing replay-compile-comp-trace"
+                                    (loop val (current-inexact-milliseconds) 0))))
                   #f)]
                 [else
                  (process-trace-element defs-text (car val))
-                 (loop (cdr val) (+ i 1))]))))
+                 (loop (cdr val) start-time (+ i 1))]))))
         
         (define/private (process-trace-element defs-text x)
           ;; using 'defs-text' all the time is wrong in the case of embedded editors,
@@ -2066,9 +2070,12 @@ If the namespace does not, they are colored the unbound color.
     (drracket:module-language-tools:add-online-expansion-handler
      online-comp.rkt
      'go
-     (λ (defs-text val) (send (send (send defs-text get-canvas) get-top-level-window)
-                              replay-compile-comp-trace
-                              defs-text 
-                              val)))))
+     (λ (defs-text val) 
+       (log-timeline
+        "replace-compile-comp-trace"
+        (send (send (send defs-text get-canvas) get-top-level-window)
+              replay-compile-comp-trace
+              defs-text 
+              val))))))
 
 (define-runtime-path online-comp.rkt "online-comp.rkt")

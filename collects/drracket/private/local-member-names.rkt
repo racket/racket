@@ -24,3 +24,8 @@
 ;; defined in module-language.rkt
 (define-local-member-name
   set-lang-wants-big-defs/ints-labels?)
+
+;; used by the test suite to tell when the
+;; online check syntax has finished
+(define-local-member-name
+  get-online-expansion-colors)

@@ -222,12 +222,7 @@
         [#:learn (list #'?var)])]
 
     [(Wrap p:provide (e1 e2 rs ?1 inners ?2))
-     (let ([wrapped-inners
-            (for/list ([inner (in-list inners)])
-              (match inner
-                [(Wrap deriv (e1 e2))
-                 (make local-expansion e1 e2
-                       #f e1 inner #f e2 #f)]))])
+     (let ([wrapped-inners (map expr->local-action inners)])
        (R [! ?1]
           [#:pattern ?form]
           [#:pass1]
@@ -668,7 +663,9 @@
         [#:do (DEBUG (printf "** module begin pass 2\n"))]
         [ModulePass ?forms pass2]
         ;; ignore pass3 for now: only provides
-        )]))
+        [#:new-local-context
+         [#:pattern ?form]
+         [LocalActions ?form (map expr->local-action (or pass3 null))]])]))
 
 ;; ModulePass : (list-of MBRule) -> RST
 (define (ModulePass mbrules)
@@ -795,6 +792,12 @@
   (newline (current-error-port))
   (when #f
     (apply error sym args)))
+
+(define (expr->local-action d)
+  (match d
+    [(Wrap deriv (e1 e2))
+     (make local-expansion e1 e2
+           #f e1 d #f e2 #f)]))
 
 ;; opaque-table
 ;; Weakly remembers assoc between opaque values and

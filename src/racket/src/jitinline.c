@@ -121,22 +121,29 @@ static int generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_
 static int check_val_struct_prim(Scheme_Object *p, int arity)
 {
   if (p && SCHEME_PRIMP(p)) {
-    if (arity == 1) {
-      int t = (((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK);
+    int t = (((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK);
+    if (t == SCHEME_PRIM_STRUCT_TYPE_SIMPLE_CONSTR) {
+      Scheme_Struct_Type *t;
+      t = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(p)[0];
+      if ((arity == t->num_islots)
+          && (arity < 100)) {
+        return INLINE_STRUCT_PROC_CONSTR;
+      }
+      return 0;
+    } else if (arity == 1) {
       if (t == SCHEME_PRIM_STRUCT_TYPE_PRED)
-        return 1;
+        return INLINE_STRUCT_PROC_PRED;
       if (t == SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER)
-        return 2;
+        return INLINE_STRUCT_PROC_GET;
       else if (t == SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER)
-        return 4;
+        return INLINE_STRUCT_PROC_PROP_GET;
       else if (t == SCHEME_PRIM_STRUCT_TYPE_STRUCT_PROP_PRED)
-        return 6;
+        return INLINE_STRUCT_PROC_PROP_PRED;
     } else if (arity == 2) {
-      int t = (((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK);
       if (t == SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER)
-        return 3;
+        return INLINE_STRUCT_PROC_SET;
       else if (t == SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER)
-        return 5;
+        return INLINE_STRUCT_PROC_PROP_GET_W_DEFAULT;
     }
   }
   return 0;
@@ -178,12 +185,15 @@ int scheme_inlined_binary_prim(Scheme_Object *o, Scheme_Object *_app, mz_jit_sta
           || inlineable_struct_prim(o, jitter, 2, 2));
 }
 
-int scheme_inlined_nary_prim(Scheme_Object *o, Scheme_Object *_app)
+int scheme_inlined_nary_prim(Scheme_Object *o, Scheme_Object *_app, mz_jit_state *jitter)
 {
-  return (SCHEME_PRIMP(o)
-          && (SCHEME_PRIM_PROC_FLAGS(o) & SCHEME_PRIM_IS_NARY_INLINED)
-          && (((Scheme_App_Rec *)_app)->num_args >= ((Scheme_Primitive_Proc *)o)->mina)
-          && (((Scheme_App_Rec *)_app)->num_args <= ((Scheme_Primitive_Proc *)o)->mu.maxa));
+  int n = ((Scheme_App_Rec *)_app)->num_args;
+
+  return ((SCHEME_PRIMP(o)
+           && (SCHEME_PRIM_PROC_FLAGS(o) & SCHEME_PRIM_IS_NARY_INLINED)
+           && (n >= ((Scheme_Primitive_Proc *)o)->mina)
+           && (n <= ((Scheme_Primitive_Proc *)o)->mu.maxa))
+          || inlineable_struct_prim(o, jitter, n, n));
 }
 
 static int generate_inlined_constant_test(mz_jit_state *jitter, Scheme_App2_Rec *app,
@@ -342,12 +352,27 @@ static int generate_inlined_type_test(mz_jit_state *jitter, Scheme_App2_Rec *app
   return 1;
 }
 
+static Scheme_Object *extract_struct_constant(mz_jit_state *jitter, Scheme_Object *rator)
+{
+  if (SAME_TYPE(SCHEME_TYPE(rator), scheme_toplevel_type)
+      && (SCHEME_TOPLEVEL_FLAGS(rator) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_CONST) {
+    rator = scheme_extract_global(rator, jitter->nc, 1);
+    if (rator)
+      return ((Scheme_Bucket *)rator)->val;
+  }
+
+  return NULL;
+}
+
 static int generate_inlined_struct_op(int kind, mz_jit_state *jitter, 
 				      Scheme_Object *rator, Scheme_Object *rand, Scheme_Object *rand2,
 				      Branch_Info *for_branch, int branch_short, 
-                                      int multi_ok)
+                                      int is_tail, int multi_ok, int result_ignored)
 /* de-sync'd ok; for branch, sync'd before */
 {
+  GC_CAN_IGNORE jit_insn *ref, *ref2, *refslow;
+  Scheme_Object *inline_rator;
+
   LOG_IT(("inlined struct op\n"));
 
   if (!rand2) {
@@ -371,55 +396,442 @@ static int generate_inlined_struct_op(int kind, mz_jit_state *jitter,
   /* R0 is [potential] predicate/getter/setting, R1 is struct. 
      V1 is value for setting. */
 
+  if ((kind == INLINE_STRUCT_PROC_PRED)
+      || (kind == INLINE_STRUCT_PROC_GET)
+      || (kind == INLINE_STRUCT_PROC_SET)) {
+    inline_rator = extract_struct_constant(jitter, rator);
+    if (inline_rator && (kind != INLINE_STRUCT_PROC_PRED)) {
+      __START_SHORT_JUMPS__(1);
+      ref = jit_bmci_ul(jit_forward(), JIT_R1, 0x1);
+      refslow = _jit.x.pc;
+      if (kind == INLINE_STRUCT_PROC_SET)
+        scheme_restore_struct_temp(jitter, JIT_V1);
+      __END_SHORT_JUMPS__(1);
+    } else {
+      ref = NULL;
+      refslow = NULL;
+    }
+  } else {
+    inline_rator = NULL;
+    ref = NULL;
+    refslow = NULL;
+  }
+    
   if (for_branch) {
     scheme_prepare_branch_jump(jitter, for_branch);
     CHECK_LIMIT();
-    __START_SHORT_JUMPS__(for_branch->branch_short);
-    scheme_add_branch_false_movi(for_branch, jit_patchable_movi_p(JIT_V1, jit_forward()));
-    __END_SHORT_JUMPS__(for_branch->branch_short);
-    (void)jit_calli(sjc.struct_pred_branch_code);
-    __START_SHORT_JUMPS__(for_branch->branch_short);
-    scheme_branch_for_true(jitter, for_branch);
-    __END_SHORT_JUMPS__(for_branch->branch_short);
-    CHECK_LIMIT();
-  } else if (kind == 1) {
-    if (multi_ok) {
-      (void)jit_calli(sjc.struct_pred_multi_code);
-    } else {
-      (void)jit_calli(sjc.struct_pred_code);
+    if (!inline_rator) {
+      __START_SHORT_JUMPS__(for_branch->branch_short);
+      scheme_add_branch_false_movi(for_branch, jit_patchable_movi_p(JIT_V1, jit_forward()));
+      __END_SHORT_JUMPS__(for_branch->branch_short);
+      (void)jit_calli(sjc.struct_pred_branch_code);
+      __START_SHORT_JUMPS__(for_branch->branch_short);
+      scheme_branch_for_true(jitter, for_branch);
+      __END_SHORT_JUMPS__(for_branch->branch_short);
+      CHECK_LIMIT();
     }
-  } else if (kind == 2) {
-    if (multi_ok) {
+  } else if (kind == INLINE_STRUCT_PROC_PRED) {
+    if (!inline_rator) {
+      if (is_tail) {
+        (void)jit_calli(sjc.struct_pred_tail_code);
+      } else if (multi_ok) {
+        (void)jit_calli(sjc.struct_pred_multi_code);
+      } else {
+        (void)jit_calli(sjc.struct_pred_code);
+      }
+    }
+  } else if (kind == INLINE_STRUCT_PROC_GET) {
+    if (is_tail) {
+      (void)jit_calli(sjc.struct_get_tail_code);
+    } else if (multi_ok) {
       (void)jit_calli(sjc.struct_get_multi_code);
     } else {
       (void)jit_calli(sjc.struct_get_code);
     }
-  } else if (kind == 3) {
-    if (multi_ok) {
+  } else if (kind == INLINE_STRUCT_PROC_SET) {
+    if (is_tail) {
+      (void)jit_calli(sjc.struct_set_tail_code);
+    } else if (multi_ok) {
       (void)jit_calli(sjc.struct_set_multi_code);
     } else {
       (void)jit_calli(sjc.struct_set_code);
     }
-  } else if (kind == 4) {
-    if (multi_ok) {
+  } else if (kind == INLINE_STRUCT_PROC_PROP_GET) {
+    if (is_tail) {
+      (void)jit_calli(sjc.struct_prop_get_tail_code);
+    } else if (multi_ok) {
       (void)jit_calli(sjc.struct_prop_get_multi_code);
     } else {
       (void)jit_calli(sjc.struct_prop_get_code);
     }
-  } else if (kind == 5) {
-    if (multi_ok) {
+  } else if (kind == INLINE_STRUCT_PROC_PROP_GET_W_DEFAULT) {
+    if (is_tail) {
+      (void)jit_calli(sjc.struct_prop_get_defl_tail_code);
+    } else if (multi_ok) {
       (void)jit_calli(sjc.struct_prop_get_defl_multi_code);
     } else {
       (void)jit_calli(sjc.struct_prop_get_defl_code);
     }
-  } else if (kind == 6) {
-    if (multi_ok) {
+  } else if (kind == INLINE_STRUCT_PROC_PROP_PRED) {
+    if (is_tail) {
+      (void)jit_calli(sjc.struct_prop_pred_tail_code);
+    } else if (multi_ok) {
       (void)jit_calli(sjc.struct_prop_pred_multi_code);
     } else {
       (void)jit_calli(sjc.struct_prop_pred_code);
     }
+  } else if (kind == INLINE_STRUCT_PROC_CONSTR) {
+    scheme_generate_struct_alloc(jitter, rand2 ? 2 : 1, 0, 0, is_tail, multi_ok);
   } else {
     scheme_signal_error("internal error: unknown struct-op mode");
+  }
+
+  if (inline_rator) {
+    int pos, tpos, jkind;
+
+    tpos = ((Scheme_Struct_Type *)((Scheme_Primitive_Closure *)inline_rator)->val[0])->name_pos;
+    if (kind == INLINE_STRUCT_PROC_PRED) {
+      pos = 0;
+    } else {
+      pos = SCHEME_INT_VAL(((Scheme_Primitive_Closure *)inline_rator)->val[1]);
+    }
+
+    if (ref) {
+      __START_SHORT_JUMPS__(1);
+      ref2 = jit_jmpi(jit_forward());
+      mz_patch_ucbranch(ref);
+      __END_SHORT_JUMPS__(1);
+    } else
+      ref2 = NULL;
+
+    if (kind == INLINE_STRUCT_PROC_GET)
+      jkind = 2;
+    else if (kind == INLINE_STRUCT_PROC_SET) {
+      scheme_save_struct_temp(jitter, JIT_V1);
+      jkind = 3;
+    } else
+      jkind = 1;
+    
+    scheme_generate_struct_op(jitter, jkind, !!for_branch, 
+                              for_branch, branch_short,
+                              result_ignored,
+                              0, 0,
+                              tpos, pos, 
+                              0, refslow, refslow, NULL, NULL);
+
+    if (ref2) {
+      __START_SHORT_JUMPS__(1);
+      mz_patch_ucbranch(ref2);
+      __END_SHORT_JUMPS__(1);
+    }
+  }
+
+  return 1;
+}
+
+#ifdef CAN_INLINE_ALLOC
+static int inline_struct_alloc(mz_jit_state *jitter, int c, int inline_slow)
+{
+  return scheme_inline_alloc(jitter, 
+                             sizeof(Scheme_Structure) + ((c - mzFLEX_DELTA) * sizeof(Scheme_Object*)), 
+                             scheme_structure_type, 
+                             0, 1, 0, inline_slow);
+}
+#endif
+
+static Scheme_Object *alloc_structure(Scheme_Object *_stype, int argc) 
+#ifdef MZ_USE_FUTURES
+  XFORM_SKIP_PROC
+#endif
+{
+  Scheme_Struct_Type *stype = (Scheme_Struct_Type *)_stype;
+  Scheme_Structure *inst;
+  Scheme_Object **args;
+  int i;
+
+#ifdef MZ_USE_FUTURES
+  jit_future_storage[0] = stype;
+#endif
+
+  inst = (Scheme_Structure *)
+    scheme_malloc_tagged(sizeof(Scheme_Structure) 
+			 + ((argc - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
+
+#ifdef MZ_USE_FUTURES
+  stype = (Scheme_Struct_Type *)jit_future_storage[0];
+
+  if (!inst) {
+    /* Must be in a future thread */
+    inst = scheme_rtcall_allocate_structure(argc, stype);
+  } else
+#endif
+    inst->stype = stype;
+
+  inst->so.type = scheme_structure_type;
+
+  args = MZ_RUNSTACK;
+  for (i = 0; i < argc; i++) {
+    inst->slots[i] = args[i];
+  }
+  
+  return (Scheme_Object *)inst;
+}
+
+Scheme_Structure *scheme_jit_allocate_structure(int argc, Scheme_Struct_Type *stype)
+{
+  Scheme_Structure *inst;
+
+  inst = (Scheme_Structure *)
+    scheme_malloc_tagged(sizeof(Scheme_Structure) 
+			 + ((argc - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
+  inst->stype = stype;
+
+  return inst;
+}
+
+static int generate_inlined_nary_struct_op(int kind, mz_jit_state *jitter, 
+                                           Scheme_Object *rator, Scheme_App_Rec *app,
+                                           Branch_Info *for_branch, int branch_short, 
+                                           int is_tail, int multi_ok)
+/* de-sync'd ok; for branch, sync'd before */
+{
+  /* generate code to evaluate the arguments */
+  scheme_generate_app(app, NULL, app->num_args, jitter, 0, 0, 1);
+  CHECK_LIMIT();
+  mz_rs_sync();
+
+  jit_movr_l(JIT_R0, JIT_V1); /* move rator to R0 */
+
+  /* arguments are now on the runstack, rator is in R0 */
+  scheme_generate_struct_alloc(jitter, app->num_args, 0, 0, is_tail, multi_ok);
+
+  CHECK_LIMIT();
+
+  if (!is_tail && app->num_args) {
+    mz_rs_inc(app->num_args);
+    mz_runstack_popped(jitter, app->num_args);
+  }
+
+  return 1;
+}
+
+int scheme_generate_struct_alloc(mz_jit_state *jitter, int num_args, 
+                                 int inline_slow, int pop_and_jump,
+                                 int is_tail, int multi_ok)
+/* Rator is in R0.
+   For unary case, R1 is argument.
+   For binary case, R1 is first argument, V1 is second argument.
+   For nary case, args on are on runstack.
+   If num_args is -1, nary and R1 has the count.*/
+{
+  GC_CAN_IGNORE jit_insn *ref, *refslow, *refrts, *refdone;
+  int always_slow = 0;
+
+#ifndef CAN_INLINE_ALLOC
+  if (!inline_slow)
+    always_slow = 1;
+#endif
+
+  if (pop_and_jump) {
+    mz_prolog(JIT_R2);
+  }
+
+  __START_SHORT_JUMPS__(1);
+
+  if (!always_slow) {
+    ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
+    CHECK_LIMIT();
+  } else
+    ref = NULL;
+
+  /* Slow path: non-struct-prop proc, or argument type is
+     bad for a getter. */
+  refslow = _jit.x.pc;
+  if (inline_slow) {
+    if (num_args == 1) {
+      jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+      CHECK_RUNSTACK_OVERFLOW();
+      JIT_UPDATE_THREAD_RSPTR();
+      jit_str_p(JIT_RUNSTACK, JIT_R1);
+      jit_movi_i(JIT_V1, 1);
+      num_args = 1;
+    } else if (num_args == 2) {
+      jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
+      CHECK_RUNSTACK_OVERFLOW();
+      JIT_UPDATE_THREAD_RSPTR();
+      jit_str_p(JIT_RUNSTACK, JIT_R1);
+      jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_V1);
+      jit_movi_i(JIT_V1, 2);
+      num_args = 2;
+    } else {
+      JIT_UPDATE_THREAD_RSPTR();
+      if (num_args == -1)
+        jit_movr_i(JIT_V1, JIT_R1);
+      else
+        jit_movi_i(JIT_V1, num_args);
+      num_args = -1;
+    }
+    CHECK_LIMIT();
+    jit_prepare(3);
+    jit_pusharg_p(JIT_RUNSTACK);
+    jit_pusharg_i(JIT_V1);
+    jit_pusharg_p(JIT_R0);
+    if (is_tail) {
+      scheme_generate_finish_tail_apply(jitter);
+    } else if (multi_ok) {
+      scheme_generate_finish_multi_apply(jitter);
+    } else {
+      scheme_generate_finish_apply(jitter);
+    }
+    CHECK_LIMIT();
+    jit_retval(JIT_R0);
+    VALIDATE_RESULT(JIT_R0);
+    if ((num_args == 1) || (num_args == 2)) {
+      jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(num_args));
+      JIT_UPDATE_THREAD_RSPTR();
+    }
+  } else {    
+    if (num_args == 1) {
+      if (is_tail)
+        (void)jit_calli(sjc.struct_constr_unary_tail_code);
+      else if (multi_ok)
+        (void)jit_calli(sjc.struct_constr_unary_multi_code);
+      else
+        (void)jit_calli(sjc.struct_constr_unary_code);
+    } else if (num_args == 2) {
+      if (is_tail)
+        (void)jit_calli(sjc.struct_constr_binary_tail_code);
+      else if (multi_ok)
+        (void)jit_calli(sjc.struct_constr_binary_multi_code);
+      else
+        (void)jit_calli(sjc.struct_constr_binary_code);
+    } else {
+      if (num_args != -1) {
+        jit_movi_l(JIT_R1, num_args);        
+      }
+      if (is_tail)
+        (void)jit_calli(sjc.struct_constr_nary_tail_code);
+      else if (multi_ok)
+        (void)jit_calli(sjc.struct_constr_nary_multi_code);
+      else
+        (void)jit_calli(sjc.struct_constr_nary_code);
+    }
+  }
+  
+  if (pop_and_jump) {
+    mz_epilog(JIT_V1);
+    refdone = NULL;
+  } else if (!always_slow) {
+    __END_SHORT_JUMPS__(1);
+    refdone = jit_jmpi(jit_forward());
+    __START_SHORT_JUMPS__(1);
+  } else
+    refdone = NULL;
+  CHECK_LIMIT();
+
+  if (always_slow) {
+    __END_SHORT_JUMPS__(1);
+    return 1;
+  }
+
+  /* Continue trying fast path: check proc */
+  mz_patch_branch(ref);
+  (void)mz_bnei_t(refslow, JIT_R0, scheme_prim_type, JIT_R2);
+  jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Primitive_Proc *)0x0)->pp.flags);
+  (void)jit_bmci_i(refslow, JIT_R2, SCHEME_PRIM_STRUCT_TYPE_SIMPLE_CONSTR);
+  CHECK_LIMIT();
+
+  jit_ldxi_p(JIT_R2, JIT_R0, &(SCHEME_PRIM_CLOSURE_ELS(0x0)[0]));
+  /* R2 now has the Scheme_Struct_Type* */
+
+  if (num_args != 2) {
+    /* V1 is available */
+    jit_ldxi_i(JIT_V1, JIT_R2, &((Scheme_Struct_Type *)0x0)->num_slots);
+    if (num_args == -1)
+      (void)jit_bner_i(refslow, JIT_V1, JIT_R1);
+    else
+      (void)jit_bnei_i(refslow, JIT_V1, num_args);
+  } else {
+    /* No registers available, so we'll have to re-extract to R2 */
+    jit_ldxi_i(JIT_R2, JIT_R2, &((Scheme_Struct_Type *)0x0)->num_slots);
+    (void)jit_bnei_i(refslow, JIT_R2, num_args);
+    jit_ldxi_p(JIT_R2, JIT_R0, &(SCHEME_PRIM_CLOSURE_ELS(0x0)[0]));
+  }
+
+  CHECK_LIMIT();
+
+  /* It's a simple constructor expecting the given arguments. */
+
+  __END_SHORT_JUMPS__(1);
+
+  if ((num_args == 1) || (num_args == 2)) {
+    if (num_args == 2) {
+      /* save second argument on runstack */
+      jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+      jit_str_p(JIT_RUNSTACK, JIT_V1);
+    }
+#ifdef CAN_INLINE_ALLOC
+    jit_movr_p(JIT_R0, JIT_R2);
+    inline_struct_alloc(jitter, num_args, inline_slow);
+    /* allocation result is in V1 */
+    jit_stxi_p((intptr_t)&((Scheme_Structure *)0x0)->stype + OBJHEAD_SIZE, JIT_V1, JIT_R0);
+    jit_stxi_p((intptr_t)&(((Scheme_Structure *)0x0)->slots[0]) + OBJHEAD_SIZE, JIT_V1, JIT_R1);
+    if (num_args == 2) {
+      /* second argument was saved on runstack */
+      jit_ldr_p(JIT_R1, JIT_RUNSTACK);
+      jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+      jit_stxi_p((intptr_t)&(((Scheme_Structure *)0x0)->slots[1]) + OBJHEAD_SIZE, JIT_V1, JIT_R1);
+    }
+    jit_addi_p(JIT_R0, JIT_V1, OBJHEAD_SIZE);
+#else
+    jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+    CHECK_RUNSTACK_OVERFLOW();
+    JIT_UPDATE_THREAD_RSPTR();
+    jit_str_p(JIT_RUNSTACK, JIT_R1);
+    jit_movi_i(JIT_V1, num_args);
+    jit_prepare(2);
+    jit_pusharg_i(JIT_V1);
+    jit_pusharg_p(JIT_R2);
+    (void)mz_finish_lwe(alloc_structure, refrts);
+    jit_retval(JIT_R0);
+    jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(num_args));
+    JIT_UPDATE_THREAD_RSPTR();
+#endif
+  } else if (num_args == -1) {
+    JIT_UPDATE_THREAD_RSPTR();
+    jit_prepare(2);
+    jit_pusharg_i(JIT_R1);
+    jit_pusharg_p(JIT_R2);
+    (void)mz_finish_lwe(alloc_structure, refrts);
+    jit_retval(JIT_R0);
+  } else {
+#ifdef CAN_INLINE_ALLOC
+    int i;
+    jit_movr_p(JIT_R0, JIT_R2);
+    jit_movi_p(JIT_R1, 0); /* clear register that might get saved as a pointer */
+    inline_struct_alloc(jitter, num_args, inline_slow);
+    /* allocation result is in V1 */
+    jit_stxi_p((intptr_t)&((Scheme_Structure *)0x0)->stype + OBJHEAD_SIZE, JIT_V1, JIT_R0);
+    for (i = 0; i < num_args; i++) {
+      jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(i));
+      jit_stxi_p((intptr_t)&(((Scheme_Structure *)0x0)->slots[0]) + OBJHEAD_SIZE + WORDS_TO_BYTES(i), JIT_V1, JIT_R1);
+    }
+    jit_addi_p(JIT_R0, JIT_V1, OBJHEAD_SIZE);
+#else
+    JIT_UPDATE_THREAD_RSPTR();
+    jit_movi_l(JIT_R1, num_args);
+    jit_prepare(2);
+    jit_pusharg_i(JIT_R1);
+    jit_pusharg_p(JIT_R2);
+    (void)mz_finish_lwe(alloc_structure, refrts);
+    jit_retval(JIT_R0);
+#endif
+  }
+  
+  if (pop_and_jump) {
+    mz_epilog(JIT_V1);
+  } else {
+    mz_patch_ucbranch(refdone);
   }
 
   return 1;
@@ -503,12 +915,18 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
   {
     int k;
     k = inlineable_struct_prim(rator, jitter, 1, 1);
-    if (k == 1) {
-      generate_inlined_struct_op(1, jitter, rator, app->rand, NULL, for_branch, branch_short, multi_ok);
+    if (k == INLINE_STRUCT_PROC_PRED) {
+      generate_inlined_struct_op(1, jitter, rator, app->rand, NULL, for_branch, branch_short, is_tail, multi_ok,
+                                 result_ignored);
       scheme_direct_call_count++;
       return 1;
-    } else if (((k == 2) || (k == 4) || (k == 6)) && !for_branch) {
-      generate_inlined_struct_op(k, jitter, rator, app->rand, NULL, for_branch, branch_short, multi_ok);
+    } else if (((k == INLINE_STRUCT_PROC_GET) 
+                || (k == INLINE_STRUCT_PROC_PROP_GET) 
+                || (k == INLINE_STRUCT_PROC_PROP_PRED)
+                || (k == INLINE_STRUCT_PROC_CONSTR))
+               && !for_branch) {
+      generate_inlined_struct_op(k, jitter, rator, app->rand, NULL, for_branch, branch_short, is_tail, multi_ok,
+                                 result_ignored);
       scheme_direct_call_count++;
       return 1;
     }
@@ -1730,7 +2148,8 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     int k;
     k = inlineable_struct_prim(rator, jitter, 2, 2);
     if (k) {
-      generate_inlined_struct_op(k, jitter, rator, app->rand1, app->rand2, for_branch, branch_short, multi_ok);
+      generate_inlined_struct_op(k, jitter, rator, app->rand1, app->rand2, for_branch, branch_short, is_tail, multi_ok,
+                                 result_ignored);
       scheme_direct_call_count++;
       return 1;
     }
@@ -2790,7 +3209,17 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 /* de-sync's; for branch, sync'd before */
 {
   Scheme_Object *rator = app->args[0];
-  
+ 
+  if (!for_branch) {
+    int k;
+    k = inlineable_struct_prim(rator, jitter, app->num_args, app->num_args);
+    if (k) {
+      generate_inlined_nary_struct_op(k, jitter, rator, app, for_branch, branch_short, is_tail, multi_ok);
+      scheme_direct_call_count++;
+      return 1;
+    }
+  }
+ 
   if (!SCHEME_PRIMP(rator))
     return 0;
 

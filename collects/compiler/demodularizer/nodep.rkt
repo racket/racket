@@ -118,7 +118,7 @@
      (define new-prefix prefix)
      ; Cache all the mpi paths
      (for-each (match-lambda
-                 [(and mv (struct module-variable (modidx sym pos phase)))
+                 [(and mv (struct module-variable (modidx sym pos phase constantness)))
                   (mpi->path! modidx)]
                  [tl
                   (void)])

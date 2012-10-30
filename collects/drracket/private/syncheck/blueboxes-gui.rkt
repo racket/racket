@@ -8,7 +8,8 @@
          setup/dirs
          images/icons/misc
          "../rectangle-intersect.rkt"
-         string-constants)
+         string-constants
+         framework/private/logging-timer)
 (provide docs-text-mixin
          docs-editor-canvas-mixin
          syncheck:add-docs-range
@@ -376,7 +377,7 @@
         [else
          (super on-event evt)]))
     
-    (define timer (new timer%
+    (define timer (new logging-timer%
                        [notify-callback
                         (λ () 
                           (set! timer-running? #f)

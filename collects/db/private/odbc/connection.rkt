@@ -656,7 +656,14 @@
                         #:on-notice add-notice!)))
 
     (super-new)
-    (register-finalizer this (lambda (obj) (send obj disconnect)))))
+    (register-finalizer this
+                        (lambda (obj)
+                          ;; Keep a reference to the class to keep all FFI callout objects
+                          ;; (eg, SQLDisconnect) used by its methods from being finalized.
+                          (let ([dont-gc this%])
+                            (send obj disconnect)
+                            ;; Dummy result to prevent reference from being optimized away
+                            dont-gc)))))
 
 ;; ----------------------------------------
 

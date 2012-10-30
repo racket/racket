@@ -4705,6 +4705,11 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
           mod = scheme_intern_resolved_module_path(mod);
 	mv->modidx = mod;
 	mv->sym = var;
+        if (pos < -3) {
+          pos = -(pos + 3);
+          SCHEME_MODVAR_FLAGS(mv) = pos;
+          pos = read_compact_number(port);
+        }
         if (pos == -2) {
           pos = read_compact_number(port);
           mv->mod_phase = pos;
@@ -5365,6 +5370,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
                              top->prefix->num_toplevels,
                              top->prefix->num_stxes,
                              top->prefix->num_lifts,
+                             NULL,
                              NULL,
                              0);
         /* If no exception, the resulting code is ok. */

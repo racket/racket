@@ -624,5 +624,46 @@
   (test #t 'load-file (send bm load-file (collection-file-path "sk.jpg" "icons"))))
 
 ;; ----------------------------------------
+;; Check save & load of monochrome PNG:
+
+(let ()
+  (define N 5)
+
+  (define bm (make-object bitmap% N N #t #f))
+  (define dc (make-object bitmap-dc% bm))
+  
+  (send dc draw-rectangle 2 2 (- N 2) (- N 2))
+  
+  (define-values (i o) (make-pipe))
+  (send bm save-file o 'png)
+  (close-output-port o)
+  
+  (define bm2 (make-object bitmap% 10 10))
+  (send bm2 load-file i 'png)
+
+  (define-values (i2 o2) (make-pipe))
+  (send bm save-file o2 'png)
+  (close-output-port o2)
+
+  (define bm3 (read-bitmap i2))
+  
+  (define s1 (make-bytes (* N N 4)))
+  (define s2 (make-bytes (* N N 4)))
+  (define s3 (make-bytes (* N N 4)))
+  
+  (send bm get-argb-pixels 0 0 N N s1)
+  (send bm2 get-argb-pixels 0 0 N N s2)
+  (send bm3 get-argb-pixels 0 0 N N s3)
+  
+  (test #t 'same (equal? s1 s2))
+  (test #t 'same (equal? s1 s3))
+  (test 1 'mono (send bm2 get-depth))
+  (test 1 'mono (send bm3 get-depth))
+  (test #f 'b&w (send bm2 is-color?))
+  (test #f 'b&w (send bm3 is-color?))
+  (test #f 'no-alpha (send bm2 has-alpha-channel?))
+  (test #f 'no-alpha (send bm3 has-alpha-channel?)))
+
+;; ----------------------------------------
 
 (report-errs)

@@ -22,10 +22,9 @@
           [(equal? (process-timeline-proc-id tl) 'gc) 
            (values 0 (frame-info-adjusted-height frameinfo))] 
           [else 
-           (define midy (calc-row-mid-y (process-timeline-proc-index tl) 
-                                        (process-timeline-proc-id tl) 
+           (define midy (calc-row-mid-y (process-timeline-proc-index tl)
                                         (frame-info-row-height frameinfo) 
-                                        (length (trace-proc-timelines tr)))) 
+                                        tr)) 
            (values (floor (- midy (/ MIN-SEG-WIDTH 2))) 
                    (floor (+ midy (/ MIN-SEG-WIDTH 2))))]))
         (interval-map-set! ym 
@@ -69,14 +68,20 @@
            (send data-label1 set-label (format "Duration: ~a" (get-time-string (- (event-end-time evt) 
                                                                                   (event-start-time evt)))))] 
           [(block sync) 
-           (if (= (event-proc-id evt) RT-THREAD-ID) 
+           (if (event-prim-name evt) 
              (send data-label1 set-label (format "Primitive: ~a" (symbol->string (event-prim-name evt)))) 
              (send data-label1 set-label ""))
-           (define label2-txt (cond 
-                                [(touch-event? evt) (format "Touching future ~a" (event-user-data evt))]
-                                [(allocation-event? evt) (format "Size: ~a" (event-user-data evt))] 
-                                [(jitcompile-event? evt) (format "Jitting: ~a" (event-user-data evt))] 
-                                [else ""]))
+           (define label2-txt 
+             (cond 
+               ;If the log was unexpectedly truncated, some worker blocks/syncs may not have been linked 
+               ;with their runtime counterparts -- check to make sure prim-name is present
+               [(event-prim-name evt)
+                (cond  
+                  [(touch-event? evt) (format "Touching future ~a" (event-user-data evt))]
+                  [(allocation-event? evt) (format "Size: ~a" (event-user-data evt))] 
+                  [(jitcompile-event? evt) (format "Jitting: ~a" (event-user-data evt))] 
+                  [else ""])] 
+               [else ""]))
            (send data-label2 set-label label2-txt)] 
           [(create) 
            (send data-label1 set-label (format "Creating future ~a" (event-user-data evt)))] 
@@ -99,7 +104,7 @@
           (min screen-h DEF-WINDOW-HEIGHT)))
 
 (define (show-visualizer #:timeline [timeline #f]) 
-  (define the-tl (if timeline timeline (timeline-events))) 
+  (define the-tl (if timeline timeline (timeline-events)))
   (when (empty? the-tl) 
     (error 'show-visualizer "No future log messages found."))
   (define the-trace (build-trace the-tl))  
@@ -128,16 +133,36 @@
   
   ;Build up items in the hierlist 
   (define block-node (send hlist-ctl new-list)) 
-  (send (send block-node get-editor) insert "Blocks" 0)
+  (send (send block-node get-editor) insert (format "Blocks (~a)" (trace-num-blocks the-trace)) 0)
   (for ([prim (in-list (sort (hash-keys (trace-block-counts the-trace)) > #:key (λ (x) (hash-ref (trace-block-counts the-trace) x))))]) 
     (define item (send block-node new-item)) 
     (send (send item get-editor) insert (format "~a (~a)" prim (hash-ref (trace-block-counts the-trace) prim))))
+  (send block-node open)
   
   (define sync-node (send hlist-ctl new-list)) 
-  (send (send sync-node get-editor) insert "Syncs" 0) 
+  (send (send sync-node get-editor) insert (format "Syncs (~a)" (trace-num-syncs the-trace)) 0) 
   (for ([prim (in-list (sort (hash-keys (trace-sync-counts the-trace)) > #:key (λ (x) (hash-ref (trace-sync-counts the-trace) x))))]) 
     (define item (send sync-node new-item)) 
     (send (send item get-editor) insert (format "~a (~a)" prim (hash-ref (trace-sync-counts the-trace) prim))))
+  (send sync-node open)
+  
+  (define gc-node (send hlist-ctl new-list))
+  (define gc-time (for/fold ([gc-time 0.0]) ([gc (in-list (process-timeline-events (trace-gc-timeline the-trace)))])
+                    (define item (send gc-node new-item))
+                    (define len-ms (- (event-end-time gc) (event-start-time gc)))
+                    (send (send item get-editor) insert (format "~a: ~a - ~a (~a ms)" 
+                                                                (case (event-user-data gc) 
+                                                                  [(major) "Major"]
+                                                                  [(minor) "Minor"])
+                                                                (relative-time the-trace (event-start-time gc))
+                                                                (relative-time the-trace (event-end-time gc))
+                                                                len-ms))
+                    (+ gc-time len-ms)))
+  (send (send gc-node get-editor) insert (format "GC's (~a total, ~a ms)" 
+                                                   (trace-num-gcs the-trace)
+                                                   gc-time) 
+        0)
+  (send gc-node open)
   
   (define right-panel (new panel:vertical-dragable% 
                           [parent main-panel] 
@@ -170,7 +195,7 @@
                                                    [else 
                                                     (set! hover-seg seg) 
                                                     (post-event listener-table 'segment-hover timeline-panel seg) 
-                                                    seg])))]
+                                                    (if (not seg) #t seg)])))]
                               [click-handler (λ (x y vregion) 
                                                (let ([seg (find-seg-for-coords x y timeline-mouse-index)]) 
                                                  (set! tacked-seg seg)  
@@ -214,8 +239,8 @@
                                                            (find-node-for-coords x 
                                                                                  y 
                                                                                  (graph-layout-nodes creation-tree-layout))) 
-                                                     hovered-graph-node]))]
-                                 #;[click-handler (λ (x y vregion)
+                                                     (if (not hovered-graph-node) #t hovered-graph-node)]))]
+                                 [click-handler (λ (x y vregion)
                                                   (define fid (find-fid-for-coords 
                                                                x y (graph-layout-nodes creation-tree-layout)
                                                                vregion))
@@ -265,7 +290,7 @@
                            [init-value CREATE-GRAPH-DEFAULT-ZOOM]
                            [style '(horizontal plain)]
                            [callback on-zoom]))
-  (define bottom-panel (new horizontal-panel% 
+  (define bottom-panel (new panel:horizontal-dragable% 
                             [parent right-panel] 
                             [style '(border)] 
                             [stretchable-height #t]))
@@ -273,25 +298,20 @@
   (define left-container (new horizontal-panel% 
                               [parent bottom-panel] 
                               [style '(border)] 
-                              [stretchable-height #t])) 
-  (define mid-container (new horizontal-panel% 
-                             [parent bottom-panel] 
-                             [stretchable-height #t])) 
+                              [stretchable-height #t] 
+                              [stretchable-width #t])) 
   (define right-container (new horizontal-panel% 
-                               [parent bottom-panel] 
-                               [stretchable-height #t]))
+                             [parent bottom-panel] 
+                             [stretchable-height #t]
+                             [stretchable-width #t])) 
   (define left-bot-header (section-header left-container "Execution Statistics" 'vertical))
   (define left-bot-panel (new vertical-panel% 
                               [parent left-container]  
                               [stretchable-height #t])) 
-  (define mid-bot-header (section-header mid-container "Event Details" 'vertical))
-  (define mid-bot-panel (new vertical-panel% 
-                            [parent mid-container]
-                            [stretchable-height #t])) 
-  (define right-bot-header (section-header right-container "Log Viewer" 'vertical))
+  (define right-bot-header (section-header right-container "Event Details" 'vertical))
   (define right-bot-panel (new vertical-panel% 
-                               [parent right-container]
-                               [stretchable-height #t]))
+                            [parent right-container]
+                            [stretchable-height #t]))
   
   (bold-label left-bot-panel "Program Statistics") 
   (define runtime-label (label left-bot-panel 
@@ -306,19 +326,19 @@
                            (format "GC's: ~a" (trace-num-gcs the-trace))))
                                
   ;Selected-event-specific labels   
-  (define hover-label (mt-bold-label mid-bot-panel))
-  (define hover-time-label (mt-label mid-bot-panel)) 
-  (define hover-fid-label (mt-label mid-bot-panel)) 
-  (define hover-pid-label (mt-label mid-bot-panel))
-  (define hover-data-label1 (mt-label mid-bot-panel))
-  (define hover-data-label2 (mt-label mid-bot-panel))
+  (define hover-label (mt-bold-label right-bot-panel))
+  (define hover-time-label (mt-label right-bot-panel)) 
+  (define hover-fid-label (mt-label right-bot-panel)) 
+  (define hover-pid-label (mt-label right-bot-panel))
+  (define hover-data-label1 (mt-label right-bot-panel))
+  (define hover-data-label2 (mt-label right-bot-panel))
   
-  (define tacked-label (mt-bold-label mid-bot-panel)) 
-  (define tacked-time-lbl (mt-label mid-bot-panel)) 
-  (define tacked-fid-lbl (mt-label mid-bot-panel)) 
-  (define tacked-pid-lbl (mt-label mid-bot-panel)) 
-  (define tacked-data-lbl (mt-label mid-bot-panel))
-  (define tacked-data-lbl2 (mt-label mid-bot-panel))
+  (define tacked-label (mt-bold-label right-bot-panel)) 
+  (define tacked-time-lbl (mt-label right-bot-panel)) 
+  (define tacked-fid-lbl (mt-label right-bot-panel)) 
+  (define tacked-pid-lbl (mt-label right-bot-panel)) 
+  (define tacked-data-lbl (mt-label right-bot-panel))
+  (define tacked-data-lbl2 (mt-label right-bot-panel))
   
   (define (update-event-details-panel seg) 
     (display-evt-details hover-seg 
@@ -355,9 +375,9 @@
   (add-receiver listener-table 'future-selected timeline-panel on-future-selected)
   (add-receiver listener-table 'segment-hover creategraph-panel on-segment-hover) 
   (add-receiver listener-table 'segment-click creategraph-panel on-segment-click)
-  (add-receiver listener-table 'segment-click mid-bot-panel update-event-details-panel) 
-  (add-receiver listener-table 'segment-hover mid-bot-panel update-event-details-panel)
-  (add-receiver listener-table 'segment-unclick mid-bot-panel update-event-details-panel)
+  (add-receiver listener-table 'segment-click right-bot-panel update-event-details-panel) 
+  (add-receiver listener-table 'segment-hover right-bot-panel update-event-details-panel)
+  (add-receiver listener-table 'segment-unclick right-bot-panel update-event-details-panel)
   (add-receiver listener-table 'segment-unclick creategraph-panel on-segment-unclick)
   
   ;Additional menus/items 
@@ -378,5 +398,6 @@
   
   (send main-panel set-percentages '(1/5 4/5))
   (send right-panel set-percentages '(3/4 1/4))
+  (send bottom-panel set-percentages '(1/2 1/2))
  
   (send f show #t))

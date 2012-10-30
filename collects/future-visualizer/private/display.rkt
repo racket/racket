@@ -109,7 +109,7 @@
 (define (header-backcolor) "slategray")
 (define (timeline-event-baseline-color) "gray")
 (define (event-connection-line-color) "orchid")
-(define (event-target-future-line-color) "orange")
+(define (event-target-future-line-color) "blue")
 (define (creation-line-color) "green") 
 (define (touch-line-color) "red")
 (define (timeline-tick-color) "gray")

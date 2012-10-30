@@ -25,7 +25,9 @@
          "rep.rkt"
          "eval-helpers.rkt"
          "local-member-names.rkt"
-         "rectangle-intersect.rkt")
+         "rectangle-intersect.rkt"
+         
+         framework/private/logging-timer)
 
 (define-runtime-path expanding-place.rkt "expanding-place.rkt")
 
@@ -145,29 +147,31 @@
       
       (inherit get-language-name)
       (define/public (get-users-language-name defs-text)
-        (let* ([defs-port (open-input-text-editor defs-text)]
-               [read-successfully?
-                (with-handlers ((exn:fail? (λ (x) #f)))
-                  (read-language defs-port (λ () #f))
-                  #t)])
-          (cond
-            [read-successfully?
-             (let* ([str (send defs-text get-text 0 (file-position defs-port))]
-                    [pos (regexp-match-positions #rx"#(?:!|lang )" str)])
-               (cond
-                 [(not pos)
-                  (get-language-name)]
-                 [else
-                  ;; newlines can break things (ie the language text won't 
-                  ;; be in the right place in the interactions window, which
-                  ;; at least makes the test suites unhappy), so get rid of 
-                  ;; them from the name. Otherwise, if there is some weird formatting,
-                  ;; so be it.
-                  (regexp-replace* #rx"[\r\n]+"
-                                   (substring str (cdr (car pos)) (string-length str))
-                                   " ")]))]
-            [else
-             (get-language-name)])))
+        (define defs-port (open-input-text-editor defs-text))
+        (port-count-lines! defs-port)
+        (define read-successfully?
+          (with-handlers ((exn:fail? (λ (x) #f)))
+            (read-language defs-port (λ () #f))
+            #t))
+        (cond
+          [read-successfully?
+           (define-values (_line _col port-pos) (port-next-location defs-port))
+           (define str (send defs-text get-text 0 (- port-pos 1)))
+           (define pos (regexp-match-positions #rx"#(?:!|lang )" str))
+           (cond
+             [(not pos)
+              (get-language-name)]
+             [else
+              ;; newlines can break things (ie the language text won't 
+              ;; be in the right place in the interactions window, which
+              ;; at least makes the test suites unhappy), so get rid of 
+              ;; them from the name. Otherwise, if there is some weird formatting,
+              ;; so be it.
+              (regexp-replace* #rx"[\r\n]+"
+                               (substring str (cdr (car pos)) (string-length str))
+                               " ")])]
+          [else
+           (get-language-name)]))
                 
       (define/override (use-namespace-require/copy?) #f)
       
@@ -933,6 +937,7 @@
       ;; colors : (or/c #f (listof string?) 'parens)
       (define colors #f)
       (define tooltip-labels #f)
+      (define/public (get-online-expansion-colors) colors)
       
       (super-new)
       
@@ -1314,7 +1319,7 @@
       
       (define compilation-out-of-date? #f)
       
-      (define tmr (new timer% [notify-callback (lambda () (send-off))]))
+      (define tmr (new logging-timer% [notify-callback (lambda () (send-off))]))
       
       (define cb-proc (λ (sym new-val) 
                         (when new-val
@@ -1781,7 +1786,7 @@
       (define lang-wants-big-defs/ints-labels? #f)
 
       (define recently-typed-timer 
-        (new timer%
+        (new logging-timer%
              [notify-callback
               (λ ()
                 (update-recently-typed #f)

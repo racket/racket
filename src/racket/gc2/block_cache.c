@@ -37,6 +37,7 @@ typedef struct block_desc {
   intptr_t totalcnt;
   intptr_t freecnt;
   struct block_group *group;
+  int in_queue;
 } block_desc;
 
 typedef struct block_group {
@@ -358,6 +359,10 @@ static void block_cache_queue_protect_range(BlockCache* bc, void *p, size_t len,
              find_addr_in_bd(&bc->non_atomic.free, p, "non_atomic freeblock"));
       assert(*src_block != (char*)~0x0);
 #endif
+      {
+        block_desc *b = (block_desc *)*src_block;
+        b->in_queue = 1;
+      }
       return;
       break;
     default:
@@ -374,10 +379,16 @@ static void block_cache_flush_protect_ranges(BlockCache* bc, int writeable) {
   block_group *bg = &bc->non_atomic;
   block_desc *b;
   gclist_each_item(b, &bg->full, block_desc*, gclist) {
-    page_range_add(bc->page_range, b->block, b->size, writeable);
+    if (b->in_queue) {
+      b->in_queue = 0;
+      page_range_add(bc->page_range, b->block, b->size, writeable);
+    }
   }
   gclist_each_item(b, &bg->free, block_desc*, gclist) {
-    page_range_add(bc->page_range, b->block, b->size, writeable);
+    if (b->in_queue) {
+      b->in_queue = 0;
+      page_range_add(bc->page_range, b->block, b->size, writeable);
+    }
   }
 
   page_range_flush(bc->page_range, writeable);

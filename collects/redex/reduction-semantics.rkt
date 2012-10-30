@@ -6,7 +6,8 @@
          "private/matcher.rkt"
          "private/term.rkt"
          "private/rg.rkt"
-         "private/error.rkt")
+         "private/error.rkt"
+         "private/generate-term.rkt")
 
 (provide exn:fail:redex?) ;; from error.rkt
 
@@ -34,6 +35,8 @@
          define-judgment-form
          define-extended-judgment-form
          judgment-holds
+         build-derivations
+         (struct-out derivation)
          in-domain?
          caching-enabled?
          make-coverage

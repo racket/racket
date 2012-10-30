@@ -73,58 +73,67 @@ turns into this:
 |#
 
 (define-syntax (match-a-pattern stx)
+  (define (check-pats pats allow-else?)
+    (let ()
+      (define should-be-pats
+        (append '(`any
+                  `number
+                  `string
+                  `natural
+                  `integer
+                  `real
+                  `variable
+                  `(variable-except ,var ...)
+                  `(variable-prefix ,var)
+                  `variable-not-otherwise-mentioned
+                  `hole
+                  `(nt ,var)
+                  `(name ,var ,pat)
+                  `(mismatch-name ,var ,pat)
+                  `(in-hole ,pat ,pat) ;; context, then contractum
+                  `(hide-hole ,pat)
+                  `(side-condition ,pat ,condition ,srcloc-expr)
+                  `(cross ,var)
+                  `(list ,lpat ...)
+                  (? (compose not pair?))) ;; pattern for literals (numbers, strings, prefabs, etc etc etc)
+                (if allow-else?
+                    (list 'else)
+                    (list))))
+      (for ([pat (in-list pats)])
+        (when (null? should-be-pats)
+          (raise-syntax-error 'match-a-pattern "too many patterns" stx pat))
+        (define should-be (car should-be-pats))
+        (set! should-be-pats (cdr should-be-pats))
+        (define pats-match?
+          (let loop ([pat (syntax->datum pat)]
+                     [should-be should-be])
+            (cond
+              [(and (null? pat) (null? should-be)) #t]
+              [(and (pair? pat) (pair? should-be))
+               (cond
+                 [(eq? (car should-be) 'unquote)
+                  (eq? (car pat) 'unquote)]
+                 [else
+                  (and (loop (car pat) (car should-be))
+                       (loop (cdr pat) (cdr should-be)))])]
+              [else (equal? pat should-be)])))
+        (unless pats-match?
+          (raise-syntax-error 'match-a-pattern
+                              (format "expected pattern ~s" 
+                                      should-be)
+                              stx
+                              pat)))
+      (unless (null? should-be-pats)
+        (raise-syntax-error 'match-a-pattern 
+                            (format "did not find pattern ~s"
+                                    (car should-be-pats))
+                            stx))))
   (syntax-case stx ()
+    [(_ #:allow-else to-match [pats rhs ...] ...)
+     (let ()
+       (check-pats (syntax->list #'(pats ...)) #t)
+       #'(match to-match [pats rhs ...] ...))]
     [(_ to-match [pats rhs ...] ...)
      (let ()
-       (define should-be-pats
-         '(`any
-           `number
-           `string
-           `natural
-           `integer
-           `real
-           `variable
-           `(variable-except ,var ...)
-           `(variable-prefix ,var)
-           `variable-not-otherwise-mentioned
-           `hole
-           `(nt ,var)
-           `(name ,var ,pat)
-           `(mismatch-name ,var ,pat)
-           `(in-hole ,pat ,pat) ;; context, then contractum
-           `(hide-hole ,pat)
-           `(side-condition ,pat ,condition ,srcloc-expr)
-           `(cross ,var)
-           `(list ,lpat ...)
-           (? (compose not pair?)) ;; pattern for literals (numbers, strings, prefabs, etc etc etc)
-           ))  
-       (for ([pat (in-list (syntax->list #'(pats ...)))])
-         (when (null? should-be-pats)
-           (raise-syntax-error 'match-a-pattern "too many patterns" stx pat))
-         (define should-be (car should-be-pats))
-         (set! should-be-pats (cdr should-be-pats))
-         (define pats-match?
-           (let loop ([pat (syntax->datum pat)]
-                      [should-be should-be])
-             (cond
-               [(and (null? pat) (null? should-be)) #t]
-               [(and (pair? pat) (pair? should-be))
-                (cond
-                  [(eq? (car should-be) 'unquote)
-                   (eq? (car pat) 'unquote)]
-                  [else
-                   (and (loop (car pat) (car should-be))
-                        (loop (cdr pat) (cdr should-be)))])]
-               [else (equal? pat should-be)])))
-         (unless pats-match?
-           (raise-syntax-error 'match-a-pattern
-                               (format "expected pattern ~s" 
-                                       should-be)
-                               stx
-                               pat)))
-       (unless (null? should-be-pats)
-         (raise-syntax-error 'match-a-pattern 
-                             (format "did not find pattern ~s"
-                                     (car should-be-pats))
-                             stx))
+       (check-pats (syntax->list #'(pats ...)) #f)
        #'(match to-match [pats rhs ...] ...))]))

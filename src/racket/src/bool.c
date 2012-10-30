@@ -401,9 +401,9 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     return cmp;
 
   if (eql->for_chaperone 
-           && SCHEME_CHAPERONEP(obj1)
-           && (!(SCHEME_CHAPERONE_FLAGS((Scheme_Chaperone *)obj1) & SCHEME_CHAPERONE_IS_IMPERSONATOR)
-               || (eql->for_chaperone > 1))) {
+      && SCHEME_CHAPERONEP(obj1)
+      && (!(SCHEME_CHAPERONE_FLAGS((Scheme_Chaperone *)obj1) & SCHEME_CHAPERONE_IS_IMPERSONATOR)
+          || (eql->for_chaperone > 1))) {
     obj1 = ((Scheme_Chaperone *)obj1)->prev;
     goto top;
   }
@@ -527,16 +527,12 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
       if (procs2) obj2 = procs2;
       goto top;
     } else {
-      if (eql->for_chaperone) {
-        procs1 = NULL;
-      } else {
-        procs1 = scheme_struct_type_property_ref(scheme_equal_property, (Scheme_Object *)st1);
-        if (procs1 && (st1 != st2)) {
-          procs2 = scheme_struct_type_property_ref(scheme_equal_property, (Scheme_Object *)st2);
-          if (!procs2
-              || !SAME_OBJ(SCHEME_VEC_ELS(procs1)[0], SCHEME_VEC_ELS(procs2)[0]))
-            procs1 = NULL;
-        }
+      procs1 = scheme_struct_type_property_ref(scheme_equal_property, (Scheme_Object *)st1);
+      if (procs1 && (st1 != st2)) {
+        procs2 = scheme_struct_type_property_ref(scheme_equal_property, (Scheme_Object *)st2);
+        if (!procs2
+            || !SAME_OBJ(SCHEME_VEC_ELS(procs1)[0], SCHEME_VEC_ELS(procs2)[0]))
+          procs1 = NULL;
       }
 
       if (procs1) {

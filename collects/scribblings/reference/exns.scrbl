@@ -3,6 +3,8 @@
 
 @title[#:tag "exns"]{Exceptions}
 
+@guideintro["exns"]{exceptions}
+
 See @secref["exn-model"] for information on the Racket exception
 model. It is based on a proposal by Friedman, Haynes, and Dybvig
 @cite["Friedman95"].

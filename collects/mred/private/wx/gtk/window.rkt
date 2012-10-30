@@ -35,6 +35,7 @@
 
               connect-focus
               connect-key-and-mouse
+	      connect-enter-and-leave
               do-button-event
 
               (struct-out GtkRequisition) _GtkRequisition-pointer
@@ -293,6 +294,10 @@
     (let ([wx (gtk->wx gtk)]) (when wx (send wx leave-window)))
     (do-button-event gtk event #f #t)))
 
+(define (connect-enter-and-leave gtk)
+  (connect-enter gtk)
+  (connect-leave gtk))
+
 (define (connect-key-and-mouse gtk [skip-press? #f])
   (connect-key-press gtk)
   (connect-key-release gtk)
@@ -300,8 +305,7 @@
   (connect-button-press gtk)
   (unless skip-press? (connect-button-release gtk))
   (connect-pointer-motion gtk)
-  (connect-enter gtk)
-  (connect-leave gtk))
+  (connect-enter-and-leave gtk))
 
 (define (do-button-event gtk event motion? crossing?)
   (let ([type (if motion?

@@ -89,6 +89,12 @@ small_object {
   gcBYTES_TO_WORDS(sizeof(Scheme_Small_Object));
 }
 
+small_atomic_obj {
+ mark:
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Small_Object));
+}
+
 app_rec {
   Scheme_App_Rec *r = (Scheme_App_Rec *)p;
 
@@ -465,12 +471,6 @@ escaping_cont_proc {
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Escaping_Cont));
-}
-
-char_obj {
- mark:
- size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Small_Object));
 }
 
 bignum_obj {
@@ -2100,17 +2100,6 @@ mark_struct_type_val {
   gcBYTES_TO_WORDS((sizeof(Scheme_Struct_Type)
 		    + ((t->name_pos + 1 - mzFLEX_DELTA) 
                        * sizeof(Scheme_Struct_Type *))));
-}
-
-mark_struct_proc_info {
- mark:
-  Struct_Proc_Info *i = (Struct_Proc_Info *)p;
-
-  gcMARK2(i->struct_type, gc);
-  gcMARK2(i->func_name, gc);
-
- size:
-  gcBYTES_TO_WORDS(sizeof(Struct_Proc_Info));
 }
 
 mark_struct_property {

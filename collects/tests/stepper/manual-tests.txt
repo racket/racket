@@ -7,10 +7,9 @@ Make sure that you get a warning when you change the underlying program, and a
 warning when the program window disappears.
 
 Try stepping backward and forward through programs with correct and erroneous
-(syntax errors, runtime errors) executions.
+(syntax errors, runtime errors) executions, incl. jumping to end.
 
 Try programs which print snips (print-convert-test.ss)
 
 try programs that contain test cases; make sure that the popups behave sensibly.
 
-Try jumping to the end on a program with an error.

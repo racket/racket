@@ -269,8 +269,12 @@
             (set! user-custodian (current-custodian)))
 
           (define (uncaught-exception-raised) ;; =user=
-            ;; formerly shut down user custodian
-            (void))
+            (set! normal-termination? #t)
+            (parameterize ([current-eventspace drs-eventspace])
+              (queue-callback
+               (λ ()
+                  (cleanup)
+                  (custodian-shutdown-all user-custodian)))))
           (define (show-error-report/tab) ;; =drs=
             (send the-tab turn-on-error-report)
             (send (send the-tab get-error-report-text) scroll-to-position 0)
@@ -294,7 +298,6 @@
               (parameterize ([current-eventspace drs-eventspace])
                 (queue-callback
                  (λ ()
-                    (send the-tab syncheck:clear-highlighting)
                     (cleanup)
                     (custodian-shutdown-all user-custodian))))))
 
