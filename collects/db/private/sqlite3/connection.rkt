@@ -206,7 +206,7 @@
              (let loop ()
                (let ([stmt (sqlite3_next_stmt db #f)])
                  (when stmt
-                   (HANDLE 'disconnect (sqlite3_finalize stmt))
+                   (sqlite3_finalize stmt)
                    (loop))))
              (HANDLE 'disconnect (sqlite3_close db))
              (void))))))
@@ -225,7 +225,7 @@
          (let ([stmt (send pst get-handle)])
            (send pst set-handle #f)
            (when (and stmt -db)
-             (HANDLE fsym (sqlite3_finalize stmt)))
+             (sqlite3_finalize stmt))
            (void)))))
 
     ;; Internal query
