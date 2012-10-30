@@ -3,11 +3,8 @@
 @(require scribble/eval
           racket/sandbox
           (for-label racket/base
-                     math/base
-                     math/flonum
-                     math/bigfloat
-                     (only-in typed/racket/base Flonum Real Boolean Any Listof Integer)
-                     plot)
+                     math plot
+                     (only-in typed/racket/base Flonum Real Boolean Any Listof Integer))
           "utils.rkt")
 
 @(define untyped-eval (make-untyped-math-eval))
@@ -95,6 +92,19 @@ of @racket[y], respectively.
 These functions are as robust and accurate as their corresponding inverses.
 }
 
+@deftogether[(@defproc[(fllog-factorial [n Integer]) Flonum]
+              @defproc[(fllog-binomial [n Integer] [k Integer]) Flonum]
+              @defproc[(fllog-permutations [n Integer] [k Integer]) Flonum]
+              @defproc[(fllog-multinomial [n Integer] [k Integer] ...) Flonum])]{
+Like @racket[(fl (log (factorial n)))], @racket[(fl (log (binomial n k)))],
+@racket[(fl (log (permutations n k)))] and @racket[(fl (log (multinomial n k ...)))]
+respectively, but computed in nearly constant time. Also, these return @racket[+nan.0] when given
+negative arguments.
+
+For @racket[factorial]-like functions that return sensible values for non-integers, see
+@racket[gamma] and @racket[log-gamma].
+}
+
 @deftogether[(@defproc[(fllog1p [x Flonum]) Flonum]
               @defproc[(flexpm1 [x Flonum]) Flonum])]{
 Like @racket[(fllog (+ 1.0 x))] and @racket[(- (flexp x) 1.0)], but accurate when
@@ -137,6 +147,32 @@ of @racket[fllog1p], which avoids the error-prone subtraction:
 @interaction[#:eval untyped-eval (flexp (* 1e20 (fllog1p (- 1e-20))))]
 }
 
+@defproc[(make-flexp/base [x Real]) (Flonum -> Flonum)]{
+Equivalent to @racket[(λ (y) (flexpt x y))] when @racket[x] is a flonum, but much more
+accurate for large @racket[y] when @racket[x] cannot be exactly represented
+by a flonum.
+
+Suppose we want to compute π@superscript{@racket[y]}, where @racket[y] is a flonum.
+If we use @racket[flexpt] with an @italic{approximation} of the irrational base π,
+the error is low near zero, but grows with distance from the origin:
+@interaction[#:eval untyped-eval
+                    (eval:alts (bf-precision 128)
+                               (eval:result ""))
+                    (eval:alts (define y 150.0)
+                               (eval:result ""))
+                    (eval:alts (define pi^y (bigfloat->rational (bfexpt pi.bf (bf y))))
+                               (eval:result ""))
+                    (eval:alts (flulp-error (flexpt pi y) pi^y)
+                               (eval:result @racketresultfont{43.12619934359266}))]
+Using @racket[make-flexp/base], the error is near rounding error everywhere:
+@interaction[#:eval untyped-eval
+                    (eval:alts (define flexppi (make-flexp/base (bigfloat->rational pi.bf)))
+                               (eval:result ""))
+                    (eval:alts (flulp-error (flexppi y) pi^y)
+                               (eval:result @racketresultfont{0.8738006564073412}))]
+This example is used in the implementations of @racket[zeta] and @racket[psi].
+}
+
 @defproc[(flsqrt1pm1 [x Flonum]) Flonum]{
 Like @racket[(- (flsqrt (+ 1.0 x)) 1.0)], but accurate when @racket[x] is small.
 }
@@ -155,6 +191,22 @@ Like @racket[(flexp (- (* x x)))], but accurate when @racket[x] is large.
 
 @defproc[(flexp1p [x Flonum]) Flonum]{
 Like @racket[(flexp (+ 1.0 x))], but accurate when @racket[x] is near a power of 2.
+}
+
+@deftogether[(@defproc[(flsinpix [x Flonum]) Flonum]
+              @defproc[(flcospix [x Flonum]) Flonum]
+              @defproc[(fltanpix [x Flonum]) Flonum])]{
+Like @racket[(flsin (* pi x))], @racket[(flcos (* pi x))] and @racket[(fltan (* pi x))], respectively,
+but accurate near roots and singularities. When @racket[x = (+ n 0.5)] for some integer @racket[n],
+@racket[(fltanpix x) = +nan.0].
+}
+
+@deftogether[(@defproc[(flcscpix [x Flonum]) Flonum]
+              @defproc[(flsecpix [x Flonum]) Flonum]
+              @defproc[(flcotpix [x Flonum]) Flonum])]{
+Like @racket[(/ 1.0 (flsinpix x))], @racket[(/ 1.0 (flcospix x))] and @racket[(/ 1.0 (fltanpix x))],
+respectively, but the first two return @racket[+nan.0] at singularities and @racket[flcotpix] avoids
+a double reciprocal.
 }
 
 @section{Log-Space Arithmetic}
@@ -190,6 +242,28 @@ Equivalent to @racket[(fl+ logx logy)], @racket[(fl- logx logy)] and @racket[(fl
               @defproc[(lg- [logx Flonum] [logy Flonum]) Flonum])]{
 Like @racket[(fllog (+ (flexp logx) (flexp logy)))] and @racket[(fllog (- (flexp logx) (flexp logy)))],
 respectively, but more accurate and less prone to overflow and underflow.
+     
+When @racket[logy > logx], @racket[lg-] returns @racket[+nan.0]. Both functions correctly treat
+@racket[-inf.0] as log-space @racket[0.0].
+
+To add more than two log-space numbers with the same guarantees, use @racket[lgsum].
+
+@examples[#:eval untyped-eval
+                 (lg+ (fllog 0.5) (fllog 0.2))
+                 (flexp (lg+ (fllog 0.5) (fllog 0.2)))
+                 (lg- (fllog 0.5) (fllog 0.2))
+                 (flexp (lg- (fllog 0.5) (fllog 0.2)))
+                 (lg- (fllog 0.2) (fllog 0.5))]
+
+Though more accurate than a naive implementation, both functions are prone to @tech{catastrophic
+cancellation} in regions where they output a value close to @racket[0.0] (or log-space @racket[1.0]).
+While these outputs have high relative error, their absolute error is very low, and when
+exponentiated, nearly have just rounding error. Further, catastrophic cancellation is unavoidable
+when @racket[logx] and @racket[logy] themselves have error, which is by far the common case.
+
+These are, of course, excuses---but for floating-point research generally. There are currently no
+reasonably fast algorithms for computing @racket[lg+] and @racket[lg-] with low relative error.
+For now, if you need that kind of accuracy, use @racketmodname[math/bigfloat].
 }
 
 @defproc[(lgsum [logxs (Listof Flonum)]) Flonum]{
@@ -214,7 +288,7 @@ When @racket[log?] is @racket[#t], returns @racket[#t] when @racket[(<= -inf.0 x
 @section{Debugging Flonum Functions}
 
 The following functions and constants are useful in authoring and debugging flonum functions
-that must be stable and accurate on the largest possible domain.
+that must be accurate on the largest possible domain.
 
 Suppose we approximate @racket[flexp] using its Taylor series centered at @racket[1.0], truncated
 after three terms (a second-order polynomial):
@@ -261,11 +335,14 @@ the magnitude of the least significant bit in @racket[x].
 
 @defproc[(flulp-error [x Flonum] [r Real]) Flonum]{
 Returns the absolute number of @tech{ulps} difference between @racket[x] and @racket[r].
-Non-rational values such as @racket[+inf.0] are handled specially.
+
+For non-rational arguments such as @racket[+nan.0], @racket[flulp-error] returns @racket[0.0]
+if @racket[(eqv? x r)]; otherwise it returns @racket[+inf.0].
 
 A flonum function with maximum error @racket[0.5] ulps exhibits only rounding error;
 it is @italic{correct}. A flonum function with maximum error no greater than a few ulps
-is @italic{accurate}.
+is @italic{accurate}. Most moderately complicated flonum functions, when implemented
+directly, seem to have over a hundred thousand ulps maximum error.
 
 @examples[#:eval untyped-eval
                  (flulp-error 0.5 1/2)
@@ -273,13 +350,16 @@ is @italic{accurate}.
                  (flulp-error +inf.0 +inf.0)
                  (flulp-error +inf.0 +nan.0)
                  (flulp-error 1e-20 0.0)
-                 (flulp-error (- 1.0 (fl 4999999/5000000)) 1/50000)]
+                 (flulp-error (- 1.0 (fl 4999999/5000000)) 1/5000000)]
+@margin-note*{* You can make an exception when the result is to be exponentiated.
+              If @racket[x] has small @racket[absolute-error], then @racket[(exp x)]
+              has small @racket[relative-error] and small @racket[flulp-error].}
 The last example subtracts two nearby flonums, the second of which had already been
 rounded, resulting in horrendous error. This is an example of @deftech{catastrophic
-cancellation}. Avoid subtracting nearby flonums whenever possible.
+cancellation}. Avoid subtracting nearby flonums whenever possible.*
 
-See @racket[relative-error] for a way to measure approximation error when the
-approximation is not represented by a flonum.
+See @racket[relative-error] for a similar way to measure approximation error when the
+approximation is not necessarily represented by a flonum.
 }
 
 @subsection{Flonum Constants}
@@ -309,10 +389,10 @@ For example, the following function uses it to stop Newton's method to compute s
                      (+ y dy)
                      (loop (+ y dy)))))]
 When @racket[((abs dy) . <= . (abs (* 0.5 epsilon.0 y)))], adding @racket[dy] to @racket[y]
-no longer results in a different flonum. The value @racket[0.5] can be changed to allow
+rarely results in a different flonum. The value @racket[0.5] can be changed to allow
 looser approximations. This is a good idea when the approximation does not have to be
 as close as possible (e.g. it is only a starting point for another approximation method),
-or when the computation of @racket[dy] is known to be unstable.
+or when the computation of @racket[dy] is known to be inaccurate.
 
 Approximation error is often understood in terms of relative error in epsilons.
 Number of epsilons relative error roughly corresponds with error in ulps, except

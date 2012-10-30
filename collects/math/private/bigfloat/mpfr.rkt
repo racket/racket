@@ -579,14 +579,14 @@
  [bfeint 'mpfr_eint]
  [bfli2 'mpfr_li2]
  [bfgamma 'mpfr_gamma]
- [bfdigamma 'mpfr_digamma]
+ [bfpsi0 'mpfr_digamma]
  [bfzeta 'mpfr_zeta]
  [bferf 'mpfr_erf]
  [bferfc 'mpfr_erfc]
- [bfj0 'mpfr_j0]
- [bfj1 'mpfr_j1]
- [bfy0 'mpfr_y0]
- [bfy1 'mpfr_y1]
+ [bfbesj0 'mpfr_j0]
+ [bfbesj1 'mpfr_j1]
+ [bfbesy0 'mpfr_y0]
+ [bfbesy1 'mpfr_y1]
  [bfrint 'mpfr_rint]
  [bffrac 'mpfr_frac]
  [bfcopy 'mpfr_set])
@@ -767,14 +767,14 @@
 (define mpfr-jn (get-mpfr-fun 'mpfr_jn (_fun _mpfr-pointer _long _mpfr-pointer _rnd_t -> _int)))
 (define mpfr-yn (get-mpfr-fun 'mpfr_yn (_fun _mpfr-pointer _long _mpfr-pointer _rnd_t -> _int)))
 
-(define (bfjn n x)
-  (unless (fixnum? n) (raise-argument-error 'bfjn "Fixnum" 0 n x))
+(define (bfbesj n x)
+  (unless (fixnum? n) (raise-argument-error 'bfbesj "Fixnum" 0 n x))
   (define y (new-mpfr (bf-precision)))
   (mpfr-jn y n x (bf-rounding-mode))
   y)
 
-(define (bfyn n x)
-  (unless (fixnum? n) (raise-argument-error 'bfyn "Fixnum" 0 n x))
+(define (bfbesy n x)
+  (unless (fixnum? n) (raise-argument-error 'bfbesy "Fixnum" 0 n x))
   (define y (new-mpfr (bf-precision)))
   (mpfr-yn y n x (bf-rounding-mode))
   y)
@@ -856,7 +856,7 @@
                   (cond [(and (i . > . 0) (i . > . (infinite-ordinal p)))  (force +inf.bf)]
                         [else  (ordinal->bigfloat i)])]))]))
 
-(provide bfjn bfyn bfroot
+(provide bfbesj bfbesy bfroot
          bigfloat->ordinal ordinal->bigfloat bigfloats-between bfshift bfstep bfprev bfnext)
 
 ;; ===================================================================================================

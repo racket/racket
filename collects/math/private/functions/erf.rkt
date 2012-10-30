@@ -80,9 +80,10 @@ IEEE Transactions on Communications, 2000, vol 48, pp 529--532
 (: flerfc*expsqr-series (Flonum -> Flonum))
 ;; Good for x > 5.0
 (define (flerfc*expsqr-series x)
-  (define h (cond [(x . fl> . 5.4)  0.5]
-                  [(x . fl> . 4.0)  0.25]
-                  [else  0.125]))
+  (define h (cond [(x . fl< . 5.4)  0.25]
+                  [(x . fl< . 8.0)  0.4]
+                  [(x . fl< . 16.0)  0.5]
+                  [else  0.51]))
   (define h^2 (* h h))
   (define z
     (fl+ (fl/ (fl/ 1.0 x) x)
@@ -163,6 +164,10 @@ IEEE Transactions on Communications, 2000, vol 48, pp 529--532
     1.262499691092374606344446613363361460578e-15
     -5.240060859272093179585053345170003668439e-17)))
 
+(: flerfc*expsqr-normal (Flonum -> Flonum))
+(define (flerfc*expsqr-normal x)
+  (fl* (flexpsqr x) (fl* 2.0 (standard-flnormal-cdf (- (fl* x (flsqrt 2.0)))))))
+
 (: flerfc*expsqr (Flonum -> Flonum))
 (define (flerfc*expsqr x)
   (cond [(x . fl> . 1e8)    (flerfc*expsqr-huge x)]
@@ -171,7 +176,7 @@ IEEE Transactions on Communications, 2000, vol 48, pp 529--532
         [(x . fl> . 3.0)    (flerfc*expsqr-3-5 x)]
         [(x . fl> . 1.0)    (flerfc*expsqr-1-3 x)]
         [(x . fl> . 0.5)    (flerfc*expsqr-0.5-1 x)]
-        [(x . fl> . -27.0)  (fl* (flerfc x) (flexpsqr x))]
+        [(x . fl> . -27.0)  (flerfc*expsqr-normal x)]
         [else  +inf.0]))
 
 ;; ===================================================================================================
@@ -180,23 +185,22 @@ IEEE Transactions on Communications, 2000, vol 48, pp 529--532
 (define -erfc-max.0 -5.8635847487551676)
 (define +erfc-max.0 27.226017111108362)
 
-(: flerfc-normal (Flonum -> Flonum))
-;; For x < 0.5, relative error is <= epsilon
-(define (flerfc-normal x)
-  (fl* 2.0 (standard-flnormal-cdf (- (fl* x (flsqrt 2.0))))))
-
 (: flerfc (Flonum -> Flonum))
 (define (flerfc x)
-  (cond [(x . fl> . +erfc-max.0)  0.0]
-        [(x . fl> . 1.0)  (fl* (flerfc*expsqr-series x) (flgauss x))]
-        [(x . fl>= . -erfc-max.0)  (flerfc-normal x)]
-        [else  2.0]))
+  (cond [(x . fl< . 0.0)
+         (cond [(x . fl< . -erfc-max.0)  2.0]
+               [else  (- 2.0 (flerfc (- x)))])]
+        [(x . fl> . 0.0)
+         (cond [(x . fl> . +erfc-max.0)  0.0]
+               [else  (fl* (flerfc*expsqr x) (flgauss x))])]
+        [(x . fl= . 0.0)  1.0]
+        [else  +nan.0]))
 
 ;; ===================================================================================================
 
 (: erf (case-> (Zero -> Zero)
                (Flonum -> Flonum)
-               (Real -> Real)))
+               (Real -> (U Zero Flonum))))
 (define (erf x)
   (cond [(flonum? x)  (flerf x)]
         [(eqv? x 0)  x]
@@ -204,7 +208,7 @@ IEEE Transactions on Communications, 2000, vol 48, pp 529--532
 
 (: erfc (case-> (Zero -> One)
                 (Flonum -> Flonum)
-                (Real -> Real)))
+                (Real -> (U One Flonum))))
 (define (erfc x)
   (cond [(flonum? x)  (flerfc x)]
         [(eqv? x 0)  1]

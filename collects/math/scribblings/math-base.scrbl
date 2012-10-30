@@ -3,9 +3,7 @@
 @(require scribble/eval
           racket/sandbox
           (for-label racket/base
-                     math/base
-                     math/flonum
-                     math/bigfloat
+                     math
                      (only-in typed/racket/base Real Boolean Integer Natural Number Listof
                               Positive-Flonum))
           "utils.rkt")
@@ -19,6 +17,11 @@
 
 For convenience, @racketmodname[math/base] re-exports @racketmodname[racket/math]
 as well as providing the values document below.
+
+In general, the functions provided by @racketmodname[math/base] are @deftech{elementary}
+functions, or those functions that can be defined in terms of a finite number of
+arithmetic operations, logarithms, exponentials, trigonometric functions, and constants.
+For others, see @racketmodname[math/special-functions].
 
 @section{Constants}
 
@@ -92,8 +95,8 @@ are chosen by @racket[(random-bits (bf-precision))].
 @section{Measuring Error}
 
 @defproc[(absolute-error [x Real] [r Real]) Real]{
-Generally computes @racket[(abs (- x r))] using exact rationals, but handles non-rational
-values such as @racket[+inf.0] specially.
+Usually computes @racket[(abs (- x r))] using exact rationals, but handles non-rational
+reals such as @racket[+inf.0] specially.
 
 @examples[#:eval untyped-eval
                  (absolute-error 1/2 1/2)
@@ -101,23 +104,16 @@ values such as @racket[+inf.0] specially.
                  (absolute-error +inf.0 +inf.0)
                  (absolute-error +inf.0 +nan.0)
                  (absolute-error 1e-20 0.0)
-                 (absolute-error (- 1.0 (fl 4999999/5000000)) 1/50000)]
+                 (absolute-error (- 1.0 (fl 4999999/5000000)) 1/5000000)]
 }
 
 @defproc[(relative-error [x Real] [r Real]) Real]{
-Measures how close an approximation @racket[x] is to a correct value @racket[r],
+Measures how close an approximation @racket[x] is to the correct value @racket[r],
 relative to the magnitude of @racket[r].
 
-This function generally computes @racket[(abs (/ (- x r) r))] using exact rationals,
-but handles non-rational values such as @racket[+inf.0] specially and avoids dividing
-by zero.
-
-@margin-note*{This is not strictly true when the function's output is subnormal, because
-              subnormal flonums are considerably less dense than normal flonums. The
-              correct way to measure a subnormal flonum's error is to use @racket[flulp-error].}
-Roughly, a flonum function with maximum relative error @racket[(* 0.5 epsilon.0)], or about
-@racket[1e-16], exhibits only rounding error; it is @italic{correct}. A flonum
-function with maximum relative error no greater than a few epsilons is @italic{accurate}.
+This function usually computes @racket[(abs (/ (- x r) r))] using exact rationals,
+but handles non-rational reals such as @racket[+inf.0] specially, as well as
+@racket[r = 0].
 
 @examples[#:eval untyped-eval
                  (relative-error 1/2 1/2)
@@ -125,7 +121,11 @@ function with maximum relative error no greater than a few epsilons is @italic{a
                  (relative-error +inf.0 +inf.0)
                  (relative-error +inf.0 +nan.0)
                  (relative-error 1e-20 0.0)
-                 (relative-error (- 1.0 (fl 4999999/5000000)) 1/50000)]
+                 (relative-error (- 1.0 (fl 4999999/5000000)) 1/5000000)]
+In the last two examples, relative error is high because the result is near zero. (Compare
+the same examples with @racket[absolute-error].) Because flonums are particularly dense
+near zero, this makes relative error better than absolute error for measuring the error
+in a flonum approximation. An even better one is error in @tech{ulps}; see @racket[flulp-error].
 }
 
 @(close-eval untyped-eval)

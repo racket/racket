@@ -245,10 +245,10 @@ ACM Transactions on Mathematical Software, 1992, vol 18, no 3, pp 360--373.
                     (Real Real Real Any -> Float)
                     (Real Real Real Any Any -> Float)))
     (define (name a b x [upper? #f] [regularized? #f])
-      (cond [(and (exact? a) (a . < . 0))
-             (raise-argument-error 'name "Nonnegative-Real" 0 a b x)]
-            [(and (exact? b) (b . < . 0))
-             (raise-argument-error 'name "Nonnegative-Real" 1 a b x)]
+      (cond [(and (exact? a) (a . <= . 0))
+             (raise-argument-error 'name "Positive-Real" 0 a b x)]
+            [(and (exact? b) (b . <= . 0))
+             (raise-argument-error 'name "Positive-Real" 1 a b x)]
             [(and (exact? x) (or (x . < . 0) (x . > . 1)))
              (raise-argument-error 'name "Nonnegative-Real <= 1" 2 a b x)]
             [else  (flname (fl a) (fl b) (fl x) upper? regularized?)]))))

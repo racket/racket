@@ -3,9 +3,8 @@
 (require (only-in racket/math exact-truncate)
          "../../flonum.rkt"
          "../../base.rkt"
-         "log-factorial.rkt"
-         "gamma.rkt"
-         "sinpx.rkt")
+         "log-gamma-zeros.rkt"
+         "gamma.rkt")
 
 (provide fllog-gamma log-gamma
          +fllog-gamma-max.0)
@@ -350,7 +349,8 @@
 
 (: fllog-gamma-large-negative (Float -> Float))
 (define (fllog-gamma-large-negative x)
-  (cond [(x . fl< . -170.0)  (fl- (log-pi-minus-log-sinpx x) (fllog-gamma (- x)))]
+  (cond [(x . fl< . -170.0)  (fl- (fl- (fllog pi) (fllog (flabs (fl* x (flsinpix x)))))
+                                  (fllog-gamma (- x)))]
         [else  (fllog (flabs (flgamma x)))]))
 
 (: fllog-gamma-small-positive (Float -> Float))
@@ -391,19 +391,23 @@
          (hash-ref!
           fllog-gamma-hash x
           (λ ()
-            (cond [(x . fl< . -5.5)  (fllog-gamma-large-negative x)]
-                  [(x . fl< . 0.0)  (fllog-gamma-small-negative x)]
+            (cond [(x . fl< . 0.0)
+                   (define y (fllog-gamma-special-negative x))
+                   (cond [(not (fl= y 0.0))  y]
+                         [(x . fl< . -5.5)  (fllog-gamma-large-negative x)]
+                         [else  (fllog-gamma-small-negative x)])]
                   [(x . fl< . 4.5)  (fllog-gamma-small-positive x)]
                   [else  (fllog-gamma-large-positive x)])))]))
 
-(: log-gamma (case-> (Nonpositive-Integer -> Nothing)
-                     (One -> Zero)
+(: log-gamma (case-> (One -> Zero)
                      (Flonum -> Flonum)
                      (Real -> (U Zero Flonum))))
 (define (log-gamma x)
   (cond [(flonum? x)  (fllog-gamma x)]
         [(single-flonum? x)  (fllog-gamma (fl x))]
-        [(integer? x)  (if (x . > . 0)
-                           (log-factorial (- x 1))
-                           (error 'log-gamma "undefined for nonpositive integers"))]
+        [(integer? x)
+         (cond [(x . <= . 0)
+                (raise-argument-error 'log-gamma "Real, not Zero or Negative-Integer" x)]
+               [(eqv? x 1)  0]
+               [else  (fllog-factorial (- x 1))])]
         [else  (fllog-gamma (fl x))]))

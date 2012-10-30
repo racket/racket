@@ -3,9 +3,7 @@
 @(require scribble/eval
           racket/sandbox
           (for-label racket/base
-                     math/flonum
-                     math/base
-                     math/bigfloat
+                     math
                      (only-in typed/racket/base
                               Flonum Real Boolean Integer Exact-Rational Exact-Positive-Integer
                               Any U Listof String False Values Path-String))
@@ -549,8 +547,7 @@ Return the exponential of @racket[x] in base @italic{e}, 2 and 10.
 @deftogether[(@defproc[(bflog1p [x Bigfloat]) Bigfloat]
               @defproc[(bfexpm1 [x Bigfloat]) Bigfloat])]{
 Like @racket[(bflog (bf+ 1.bf x))] and @racket[(bf- (bfexp x) 1.bf)], but correct
-when @racket[x] is near zero. See @racket[fllog1p] and @racket[flexpm1] for a discussion
-and examples.
+when @racket[x] is near zero. See @racket[fllog1p] for motivation and examples.
 }
 
 @defproc[(bfexpt [x Bigfloat] [y Bigfloat]) Bigfloat]{
@@ -608,11 +605,11 @@ a generalization of the factorial function.
 @deftogether[(@defproc[(bflog-gamma [x Bigfloat]) Bigfloat]
               @defproc[(bflog-gamma/sign [x Bigfloat]) (Values Bigfloat (U -1 1))])]{
 Computes the @hyperlink["http://mathworld.wolfram.com/LogGammaFunction.html"]{log-gamma function},
-or the real part of the log of the gamma function. @racket[bflog-gamma/sign] additionally
+or the log of the absolute value of the gamma function. @racket[bflog-gamma/sign] additionally
 returns the sign of @racket[(bfgamma x)].
 }
 
-@defproc[(bfdigamma [x Bigfloat]) Bigfloat]{
+@defproc[(bfpsi0 [x Bigfloat]) Bigfloat]{
 Computes the @hyperlink["http://en.wikipedia.org/wiki/Digamma_function"]{digamma function},
 the logarithmic derivative of the gamma function.
 }
@@ -628,21 +625,21 @@ Returns the dilogarithm of @racket[x], or the
 }
 
 @defproc[(bfzeta [x Bigfloat]) Bigfloat]{
-Computes the @hyperlink["http://en.wikipedia.org/wiki/Riemann_zeta_function"]{Reimann zeta function}.
+Computes the @hyperlink["http://en.wikipedia.org/wiki/Riemann_zeta_function"]{Riemann zeta function}.
 }
 
 @deftogether[(@defproc[(bferf [x Bigfloat]) Bigfloat]
               @defproc[(bferfc [x Bigfloat]) Bigfloat])]{
-Compute the @hyperlink["http://en.wikipedia.org/wiki/Error_function"]{error function} and
-complementary error function, respectively.
+Compute the @hyperlink["http://en.wikipedia.org/wiki/Error_function"]{error function and
+complementary error function}, respectively.
 }
 
-@deftogether[(@defproc[(bfj0 [x Bigfloat]) Bigfloat]
-              @defproc[(bfj1 [x Bigfloat]) Bigfloat]
-              @defproc[(bfjn [n Integer] [x Bigfloat]) Bigfloat]
-              @defproc[(bfy0 [x Bigfloat]) Bigfloat]
-              @defproc[(bfy1 [x Bigfloat]) Bigfloat]
-              @defproc[(bfyn [n Integer] [x Bigfloat]) Bigfloat])]{
+@deftogether[(@defproc[(bfbesj0 [x Bigfloat]) Bigfloat]
+              @defproc[(bfbesj1 [x Bigfloat]) Bigfloat]
+              @defproc[(bfbesj [n Integer] [x Bigfloat]) Bigfloat]
+              @defproc[(bfbesy0 [x Bigfloat]) Bigfloat]
+              @defproc[(bfbesy1 [x Bigfloat]) Bigfloat]
+              @defproc[(bfbesy [n Integer] [x Bigfloat]) Bigfloat])]{
 These compute @hyperlink["http://en.wikipedia.org/wiki/Bessel_function"]{Bessel functions}.
 
 A ``@racket[j]'' in the name indicates that a function computes a Bessel function of the

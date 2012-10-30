@@ -7,7 +7,8 @@
 
 (provide flsqrt1pm1
          flsinh flcosh fltanh
-         flasinh flacosh flatanh)
+         flasinh flacosh flatanh
+         make-flexp/base)
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; sqrt(1+x)-1
@@ -176,3 +177,16 @@ Domain               Computation
          (fl* 0.5 (fllog (fl/ (fl+ 1.0 x) (fl- 1.0 x))))]
         [(x . fl= . 1.0)  +inf.0]
         [else  +nan.0]))
+
+;; ---------------------------------------------------------------------------------------------------
+;; Exponential with possibly rational base
+
+(: make-flexp/base (Positive-Exact-Rational -> (Flonum -> Flonum)))
+(define (make-flexp/base b)
+  (define b-hi (fl b))
+  (define b-lo (fl (- (/ (inexact->exact b-hi) b) 1)))
+  (cond [(fl= b-lo 0.0)  (λ: ([x : Flonum]) (flexpt b-hi x))]
+        [else
+         (λ: ([x : Flonum])
+           (fl/ (flexpt b-hi x)
+                (flexp (fl* x (fllog1p b-lo)))))]))

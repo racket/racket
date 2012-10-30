@@ -1,6 +1,7 @@
 #lang typed/racket/base
 
 (require racket/flonum
+         (only-in racket/math pi)
          racket/performance-hint
          (for-syntax racket/base)
          "flonum-constants.rkt"
@@ -14,7 +15,8 @@
          float-complex? (rename-out [inline-number->float-complex number->float-complex])
          find-least-flonum
          fleven? flodd? flsgn flhypot fllog/base
-         flprobability?)
+         flprobability?
+         flsinpix flcospix fltanpix flcscpix flsecpix flcotpix)
 
 (module syntax-defs racket/base
   (require (for-syntax racket/base)
@@ -186,3 +188,68 @@
           [else  (and (p . fl>= . 0.0) (p . fl<= . 1.0))]))
   
   )  ; begin-encourage-inline
+
+(: flsinpix (Flonum -> Flonum))
+;; Computes sin(pi*x) accurately; i.e. error <= 2 ulps but almost always <= 1 ulp
+(define (flsinpix x)
+  (cond [(fl= x 0.0)  x]
+        [(and (x . fl> . -inf.0) (x . fl< . +inf.0))
+         (let*-values
+             ([(x s)  (if (x . fl< . 0.0) (values (- x) -1.0) (values x 1.0))]
+              [(x)    (fl- x (fl* 2.0 (fltruncate (fl* 0.5 x))))]
+              [(x s)  (if (x . fl> . 1.0) (values (fl- x 1.0) (fl* s -1.0)) (values x s))]
+              [(x)    (if (x . fl> . 0.5) (fl- 1.0 x) x)])
+           (fl* s (flsin (fl* pi x))))]
+        [else  +nan.0]))
+
+(: flcospix (Flonum -> Flonum))
+;; Computes cos(pi*x) accurately; i.e. error <= 1 ulps
+(define (flcospix x)
+  (cond [(and (x . fl> . -inf.0) (x . fl< . +inf.0))
+         (let*-values
+             ([(x)  (flabs x)]
+              [(x)  (fl- x (fl* 2.0 (fltruncate (fl* 0.5 x))))]
+              [(x)  (if (x . fl> . 1.0) (fl- 2.0 x) x)]
+              [(x s)  (if (x . fl> . 0.5) (values (fl- 1.0 x) -1.0) (values x 1.0))])
+           (cond [(x . fl> . 0.25)  (fl* (fl* s -1.0) (flsin (fl* pi (fl- x 0.5))))]
+                 [else  (fl* s (flcos (fl* pi x)))]))]
+        [else  +nan.0]))
+
+(: fltanpix (Flonum -> Flonum))
+;; Computes tan(pi*x) accurately; i.e. error <= 2 ulps but almost always <= 1 ulp
+(define (fltanpix x)
+  (cond [(fl= x 0.0)  x]
+        [(and (x . fl> . -inf.0) (x . fl< . +inf.0))
+         (let*-values 
+             ([(x s)  (if (x . fl< . 0.0) (values (- x) -1.0) (values x 1.0))]
+              [(x)    (fl- x (fltruncate x))]
+              [(x s)  (if (x . fl> . 0.5) (values (fl- 1.0 x) (fl* s -1.0)) (values x s))])
+           (cond [(x . fl= . 0.5)  +nan.0]
+                 [(x . fl> . 0.25)  (fl/ s (fltan (fl* pi (fl- 0.5 x))))]
+                 [else  (fl* s (fltan (fl* pi x)))]))]
+        [else  +nan.0]))
+
+(: flcscpix (Flonum -> Flonum))
+(define (flcscpix x)
+  (cond [(and (not (zero? x)) (integer? x))  +nan.0]
+        [else  (/ 1.0 (flsinpix x))]))
+
+(: flsecpix (Flonum -> Flonum))
+(define (flsecpix x)
+  (cond [(and (x . fl> . 0.0) (integer? (fl- x 0.5)))  +nan.0]
+        [(and (x . fl< . 0.0) (integer? (fl+ x 0.5)))  +nan.0]
+        [else  (/ 1.0 (flcospix x))]))
+
+(: flcotpix (Flonum -> Flonum))
+;; Computes 1/tan(pi*x) accurately; i.e. error <= 2 ulps but almost always <= 1 ulp
+(define (flcotpix x)
+  (cond [(fl= x 0.0)  (fl/ 1.0 x)]
+        [(and (x . fl> . -inf.0) (x . fl< . +inf.0))
+         (let*-values 
+             ([(x s)  (if (x . fl< . 0.0) (values (- x) -1.0) (values x 1.0))]
+              [(x)    (fl- x (fltruncate x))]
+              [(x s)  (if (x . fl> . 0.5) (values (fl- 1.0 x) (fl* s -1.0)) (values x s))])
+           (cond [(x . fl= . 0.0)  +nan.0]
+                 [(x . fl< . 0.25)  (fl/ s (fltan (fl* pi x)))]
+                 [else  (fl* s (fltan (fl* pi (fl- 0.5 x))))]))]
+        [else  +nan.0]))

@@ -508,8 +508,8 @@ This implementation extends those in the papers in three ways:
                     (Real Real Any -> Float)
                     (Real Real Any Any -> Float)))
     (define (name k x [upper? #f] [regularized? #f])
-      (cond [(and (exact? k) (k . < . 0))
-             (raise-argument-error 'name "Nonnegative-Real" 0 k x)]
+      (cond [(and (exact? k) (k . <= . 0))
+             (raise-argument-error 'name "Positive-Real" 0 k x)]
             [(and (exact? x) (x . < . 0))
              (raise-argument-error 'name "Nonnegative-Real" 1 k x)]
             [else  (flname (fl k) (fl x) upper? regularized?)]))))

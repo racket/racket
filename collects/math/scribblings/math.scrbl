@@ -36,5 +36,6 @@ be used in untyped Racket. Exceptions and performance warnings are in @bold{bold
 
 @include-section["math-base.scrbl"]
 @include-section["math-flonum.scrbl"]
-@include-section["math-bigfloat.scrbl"]
+@include-section["math-special-functions.scrbl"]
 @include-section["math-number-theory.scrbl"]
+@include-section["math-bigfloat.scrbl"]

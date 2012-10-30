@@ -84,9 +84,7 @@
 (define (flbeta a b)
   (exp (fllog-beta a b)))
 
-(: log-beta (case-> (Nonpositive-Exact-Rational Real -> Nothing)
-                    (Real Nonpositive-Exact-Rational -> Nothing)
-                    (One One -> Zero)
+(: log-beta (case-> (One One -> Zero)
                     (Flonum Flonum -> Flonum)
                     (Real Real -> (U Zero Flonum))))
 (define (log-beta a b)
@@ -99,9 +97,7 @@
         [else
          (fllog-beta (fl a) (fl b))]))
 
-(: beta (case-> (Nonpositive-Exact-Rational Real -> Nothing)
-                (Real Nonpositive-Exact-Rational -> Nothing)
-                (Positive-Integer Positive-Integer -> Exact-Rational)
+(: beta (case-> (Positive-Integer Positive-Integer -> Exact-Rational)
                 (Flonum Flonum -> Flonum)
                 (Real Real -> (U Exact-Rational Flonum))))
 (define (beta a b)

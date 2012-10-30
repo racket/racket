@@ -56,8 +56,8 @@
  [bfgte?  (Bigfloat Bigfloat -> Boolean)]
  ;; Functions with non-uniform types
  [bffactorial  (Integer -> Bigfloat)]
- [bfjn  (Integer Bigfloat -> Bigfloat)]
- [bfyn  (Integer Bigfloat -> Bigfloat)]
+ [bfbesj  (Integer Bigfloat -> Bigfloat)]
+ [bfbesy  (Integer Bigfloat -> Bigfloat)]
  [bfroot  (Bigfloat Integer -> Bigfloat)]
  [bfshift  (Bigfloat Integer -> Bigfloat)]
  [bigfloat->ordinal  (Bigfloat -> Integer)]
@@ -172,8 +172,8 @@
  bf
  ;; Functions with non-uniform types
  bffactorial
- bfjn
- bfyn
+ bfbesj
+ bfbesy
  bfshift
  bflog-gamma/sign
  bfrandom

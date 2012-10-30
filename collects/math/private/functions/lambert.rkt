@@ -106,7 +106,7 @@
 
 (: lambert (case-> (Zero -> Zero)
                    (Flonum -> Flonum)
-                   (Real -> Real)))
+                   (Real -> (U Zero Flonum))))
 (define (lambert x)
   (cond [(flonum? x)  (fllambert x)]
         [(single-flonum? x)  (fllambert (fl x))]
@@ -115,7 +115,7 @@
          (raise-argument-error 'lambert "Real >= (- (exp -1))" x)]
         [else  (fllambert (fl x))]))
 
-(: lambert- (Real -> Real))
+(: lambert- (Real -> Flonum))
 (define (lambert- x)
   (cond [(flonum? x)  (fllambert- x)]
         [(single-flonum? x)  (fllambert- (fl x))]
