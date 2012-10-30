@@ -79,7 +79,7 @@ creates pattern variable definitions for the pattern variables of
 (define/with-syntax (px ...) #'(a b c))
 (define/with-syntax (tmp ...) (generate-temporaries #'(px ...)))
 #'([tmp px] ...)
-(define-pattern-variable name #'Alice)
+(define/with-syntax name #'Alice)
 #'(hello name)
 ]
 }
