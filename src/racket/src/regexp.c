@@ -5088,13 +5088,6 @@ static Scheme_Object *do_make_regexp(const char *who, int is_byte, int pcre, int
 						  1);
     ((regexp *)re)->source = src;
   }
-
-  {
-    Scheme_Object *b;
-    b = scheme_get_param(scheme_current_config(), MZCONFIG_USE_JIT);
-    if (SCHEME_TRUEP(b))
-      ((regexp *)re)->flags |= REGEXP_JIT;
-  }
   
   return re;
 }

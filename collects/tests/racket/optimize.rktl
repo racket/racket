@@ -1808,6 +1808,11 @@
   (struct a (x y))
   (struct b a (z)))
 
+(module struct-c-for-optimize racket/base
+  (require 'struct-a-for-optimize)
+  (provide (struct-out c))
+  (struct c a (q)))
+
 (test-comp '(module m racket/base
               (require 'struct-a-for-optimize)
               (begin0
@@ -1828,6 +1833,21 @@
               (begin0
                (list (a? (a-x (a 1 2)))
                      (b? (b-z (b 1 2 3))))
+               5)))
+
+(test-comp '(module m racket/base
+              (require 'struct-c-for-optimize)
+              (begin0
+               (list (c? (c-q (c 1 2 3))))
+               c?
+               c
+               c-q
+               (c 1 2 3)
+               5))
+           '(module m racket/base
+              (require 'struct-c-for-optimize)
+              (begin0
+               (list (c? (c-q (c 1 2 3))))
                5)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

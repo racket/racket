@@ -469,14 +469,9 @@ Scheme_Object *scheme_extract_global(Scheme_Object *o, Scheme_Native_Closure *nc
   pos = SCHEME_TOPLEVEL_POS(o);
 
   if (local_only) {
-    /* Usually, we look for local bindings only, because module caching means
-       that JIT-generated code can be linked to different other modules that
-       may have different bindings, even though we expect them binding to be
-       consistent. */
-    if (pos < globs->num_toplevels) {
-      if (globs->import_map[pos >> 3] & (1 << (pos & 7)))
-        return NULL;
-    }
+    /* Look for local bindings when the JIT depends on information that is not
+       validated across module boundaries. */
+    scheme_signal_error("internal error: import map not available");
   }
 
   return globs->a[pos];
@@ -506,6 +501,23 @@ Scheme_Object *scheme_extract_closure_local(Scheme_Object *obj, mz_jit_state *ji
   return NULL;
 }
 
+int scheme_native_closure_preserves_marks(Scheme_Object *p)
+{
+  Scheme_Native_Closure_Data *ndata = ((Scheme_Native_Closure *)p)->code;
+
+  if (ndata->closure_size >= 0) { /* not case-lambda */
+    if (lambda_has_been_jitted(ndata)) {
+      if (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(ndata) & NATIVE_PRESERVES_MARKS)
+        return 1;
+    } else {
+      if (SCHEME_CLOSURE_DATA_FLAGS(ndata->u2.orig_code) & CLOS_PRESERVES_MARKS)
+        return 1;
+    }
+  }
+
+  return 0;
+}
+
 int scheme_is_noncm(Scheme_Object *a, mz_jit_state *jitter, int depth, int stack_start)
 {
   if (SCHEME_PRIMP(a)) {
@@ -525,20 +537,12 @@ int scheme_is_noncm(Scheme_Object *a, mz_jit_state *jitter, int depth, int stack
       && SAME_TYPE(SCHEME_TYPE(a), scheme_toplevel_type)
       && ((SCHEME_TOPLEVEL_FLAGS(a) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_CONST)) {
     Scheme_Object *p;
-    p = scheme_extract_global(a, jitter->nc, 1);
+    p = scheme_extract_global(a, jitter->nc, 0);
     if (p) {
       p = ((Scheme_Bucket *)p)->val;
       if (p && SAME_TYPE(SCHEME_TYPE(p), scheme_native_closure_type)) {
-        Scheme_Native_Closure_Data *ndata = ((Scheme_Native_Closure *)p)->code;
-        if (ndata->closure_size >= 0) { /* not case-lambda */
-          if (lambda_has_been_jitted(ndata)) {
-            if (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(ndata) & NATIVE_PRESERVES_MARKS)
-              return 1;
-          } else {
-            if (SCHEME_CLOSURE_DATA_FLAGS(ndata->u2.orig_code) & CLOS_PRESERVES_MARKS)
-              return 1;
-          }
-        }
+        if (scheme_native_closure_preserves_marks(p))
+          return 1;
       }
     }
   }
@@ -747,7 +751,7 @@ static int is_a_procedure(Scheme_Object *v, mz_jit_state *jitter)
       if (jitter->nc) {
 	Scheme_Object *p;
         
-	p = scheme_extract_global(v, jitter->nc, 1);
+	p = scheme_extract_global(v, jitter->nc, 0);
         if (p) {
           p = ((Scheme_Bucket *)p)->val;
           return SAME_TYPE(SCHEME_TYPE(p), scheme_native_closure_type);
@@ -3930,7 +3934,7 @@ int scheme_native_arity_check(Scheme_Object *closure, int argc)
   return sjc.check_arity_code(closure, argc + 1, 0 EXTRA_NATIVE_ARGUMENT);
 }
 
-Scheme_Object *scheme_get_native_arity(Scheme_Object *closure)
+Scheme_Object *scheme_get_native_arity(Scheme_Object *closure, int mode)
 {
   int cnt;
 
@@ -3951,7 +3955,11 @@ Scheme_Object *scheme_get_native_arity(Scheme_Object *closure)
 	has_rest = 1;
       } else 
 	has_rest = 0;
-      a = scheme_make_arity(v, has_rest ? -1 : v);
+      if (mode == -3) {
+        if (has_rest) v = -(v+1);
+        a = scheme_make_integer(v);
+      } else
+        a = scheme_make_arity(v, has_rest ? -1 : v);
       l = scheme_make_pair(a, l);
     }
     if (is_method)

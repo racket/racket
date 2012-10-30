@@ -25,7 +25,19 @@ Many forms in the decompiled code, such as @racket[module],
  variables imported from other modules are prefixed with @litchar{_},
  which helps expose the difference between uses of local variables
  versus other variables. Variables imported from other modules,
- moreover, have a suffix that indicates the source module.
+ moreover, have a suffix starting with @litchar["@"] that indicates
+ the source module. Finally, imported variables with constantness
+ have a midfix: 
+ @litchar{:c} to indicate constant shape across all instantiations, 
+ @litchar{:f} to indicate a fixed value after initialization, 
+ @litchar{:p} to indicate a procedure,
+ @litchar{:P} to indicate a procedure that preserves continuation
+  marks on return, 
+ @litchar{:t} to indicate a structure type,
+ @litchar{:mk} to indicate a structure constructor,
+ @litchar{:?} to indicate a structure predicate,
+ @litchar{:ref} to indicate a structure accessor, or
+ @litchar{:set!} to indicate a structure mutator.
 
  Non-local variables are always accessed indirectly though an implicit
  @racketidfont{#%globals} or @racketidfont{#%modvars} variable that

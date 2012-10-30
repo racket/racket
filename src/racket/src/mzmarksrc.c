@@ -20,6 +20,7 @@ module_var {
   gcMARK2(mv->modidx, gc);
   gcMARK2(mv->sym, gc);
   gcMARK2(mv->insp, gc);
+  gcMARK2(mv->shape, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Module_Variable));
@@ -949,7 +950,6 @@ prefix_val {
   int i;
   for (i = pf->num_slots; i--; )
     gcMARK2(pf->a[i], gc);
-  gcMARK2(pf->import_map, gc);
  size:
   gcBYTES_TO_WORDS((sizeof(Scheme_Prefix) 
 		    + ((pf->num_slots-mzFLEX_DELTA) * sizeof(Scheme_Object *))

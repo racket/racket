@@ -356,7 +356,7 @@ static Scheme_Object *extract_struct_constant(mz_jit_state *jitter, Scheme_Objec
 {
   if (SAME_TYPE(SCHEME_TYPE(rator), scheme_toplevel_type)
       && (SCHEME_TOPLEVEL_FLAGS(rator) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_CONST) {
-    rator = scheme_extract_global(rator, jitter->nc, 1);
+    rator = scheme_extract_global(rator, jitter->nc, 0);
     if (rator)
       return ((Scheme_Bucket *)rator)->val;
   }

@@ -925,7 +925,8 @@ static Scheme_Local *get_frame_loc(Scheme_Comp_Env *frame,
 
 Scheme_Object *scheme_hash_module_variable(Scheme_Env *env, Scheme_Object *modidx, 
 					   Scheme_Object *stxsym, Scheme_Object *insp,
-					   int pos, intptr_t mod_phase, int is_constant)
+					   int pos, intptr_t mod_phase, int is_constant,
+                                           Scheme_Object *shape)
 /* is_constant == 2 => constant over all instantiations and phases */
 {
   Scheme_Object *val;
@@ -961,6 +962,7 @@ Scheme_Object *scheme_hash_module_variable(Scheme_Env *env, Scheme_Object *modid
       mv->insp = insp;
       mv->pos = pos;
       mv->mod_phase = (int)mod_phase;
+      mv->shape = shape;
 
       if (is_constant > 1)
         SCHEME_MODVAR_FLAGS(mv) |= SCHEME_MODVAR_CONST;
@@ -1669,6 +1671,11 @@ static void check_taint(Scheme_Object *find_id)
                         "cannot use identifier tainted by macro transformation");
 }
 
+static Scheme_Object *intern_struct_proc_shape(int shape) {
+  char buf[20];
+  sprintf(buf, "struct%d", shape);
+  return scheme_intern_symbol(buf);
+}
 
 /*********************************************************************/
 /* 
@@ -1703,7 +1710,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   int j = 0, p = 0, modpos, skip_stops = 0, module_self_reference = 0, is_constant;
   Scheme_Bucket *b;
   Scheme_Object *val, *modidx, *modname, *src_find_id, *find_global_id, *mod_defn_phase;
-  Scheme_Object *find_id_sym = NULL, *rename_insp = NULL, *mod_constant = NULL;
+  Scheme_Object *find_id_sym = NULL, *rename_insp = NULL, *mod_constant = NULL, *shape;
   Scheme_Env *genv;
   intptr_t phase;
 
@@ -1987,7 +1994,8 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
         check_taint(src_find_id);
 	return scheme_hash_module_variable(genv, genv->module->self_modidx, find_id, 
 					   genv->module->insp,
-					   -1, genv->mod_phase, 0);
+					   -1, genv->mod_phase, 0,
+                                           NULL);
       }
     } else
       return NULL;
@@ -1995,19 +2003,25 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 
   check_taint(src_find_id);
 
+  shape = NULL;
   if (mod_constant) {
     if (SAME_OBJ(mod_constant, scheme_constant_key))
       is_constant = 2;
     else if (SAME_OBJ(mod_constant, scheme_fixed_key))
       is_constant = 1;
-    else if (SAME_TYPE(SCHEME_TYPE(mod_constant), scheme_struct_proc_shape_type)) {
+    else if (SAME_TYPE(SCHEME_TYPE(mod_constant), scheme_proc_shape_type)) {
+      is_constant = 2;
+      shape = SCHEME_PTR_VAL(mod_constant);
+    } else if (SAME_TYPE(SCHEME_TYPE(mod_constant), scheme_struct_proc_shape_type)) {
       if (_inline_variant)
         *_inline_variant = mod_constant;
       is_constant = 2;
+      shape = intern_struct_proc_shape(SCHEME_PROC_SHAPE_MODE(mod_constant));
     } else if (SAME_TYPE(SCHEME_TYPE(mod_constant), scheme_inline_variant_type)) {
       if (_inline_variant)
         *_inline_variant = mod_constant;
       is_constant = 2;
+      shape = scheme_get_or_check_procedure_shape(mod_constant, NULL);
     } else {
       if (flags & SCHEME_ELIM_CONST) 
         return mod_constant;
@@ -2028,7 +2042,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     return scheme_hash_module_variable(env->genv, modidx, find_id, 
 				       (rename_insp ? rename_insp : genv->module->insp),
 				       modpos, SCHEME_INT_VAL(mod_defn_phase),
-                                       is_constant);
+                                       is_constant, shape);
   }
 
   if (!modname 
@@ -2039,7 +2053,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     return scheme_hash_module_variable(env->genv, genv->module->self_modidx, find_global_id, 
 				       genv->module->insp,
 				       modpos, genv->mod_phase,
-                                       is_constant);
+                                       is_constant, shape);
   }
 
   b = scheme_bucket_from_table(genv->toplevel, (char *)find_global_id);

@@ -2909,10 +2909,11 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
           print(mv->modidx, notdisplay, 1, ht, mt, pp);
         }
 	print(mv->sym, notdisplay, 1, ht, mt, pp);
+        print(mv->shape ? mv->shape : scheme_false, notdisplay, 1, ht, mt, pp);
         if (flags & 0x3) {
           print_compact_number(pp, -3-(flags&0x3));
         }
-        if (((Module_Variable *)obj)->mod_phase) {
+        if (mv->mod_phase) {
           print_compact_number(pp, -2);
           print_compact_number(pp, mv->mod_phase);
         }

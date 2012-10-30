@@ -122,6 +122,19 @@ static void noclear_stack_push(struct Validate_Clearing *vc, int pos)
   vc->ncstackpos += 1;
 }
 
+
+static void add_struct_mapping(Scheme_Hash_Table **_st_ht, int pos, int field_count)
+{
+  if (!*_st_ht) {
+    Scheme_Hash_Table *ht;
+    ht = scheme_make_hash_table_eqv();
+    *_st_ht = ht;
+  }
+  scheme_hash_set(*_st_ht, 
+                  scheme_make_integer(pos),
+                  scheme_make_integer(field_count));
+}
+
 void scheme_validate_code(Mz_CPort *port, Scheme_Object *code,
                           int depth, 
                           int num_toplevels, int num_stxes, int num_lifts, void *tl_use_map,
@@ -155,9 +168,14 @@ void scheme_validate_code(Mz_CPort *port, Scheme_Object *code,
     for (i = 0; i < num_toplevels; i++) {
       if (SAME_TYPE(SCHEME_TYPE(toplevels[i]), scheme_module_variable_type)) {
         int mv_flags = SCHEME_MODVAR_FLAGS(toplevels[i]);
-        if (mv_flags & SCHEME_MODVAR_CONST)
+        if (mv_flags & SCHEME_MODVAR_CONST) {
+          intptr_t k;
           tl_state[i] = SCHEME_TOPLEVEL_CONST;
-        else if (mv_flags & SCHEME_MODVAR_FIXED)
+          if (scheme_decode_struct_shape(((Module_Variable *)toplevels[i])->shape, &k)) {
+            if ((k & STRUCT_PROC_SHAPE_MASK) == STRUCT_PROC_SHAPE_STRUCT)
+              add_struct_mapping(&st_ht, i, k >> STRUCT_PROC_SHAPE_SHIFT);
+          }
+        } else if (mv_flags & SCHEME_MODVAR_FIXED)
           tl_state[i] = SCHEME_TOPLEVEL_FIXED;
         else
           tl_state[i] = SCHEME_TOPLEVEL_READY;
@@ -258,7 +276,8 @@ static int define_values_validate(Scheme_Object *data, Mz_CPort *port,
                                   Scheme_Hash_Tree *procs,
                                   Scheme_Hash_Table **_st_ht)
 {
-  int i, size, flags, result, is_struct, field_count, field_icount, uses_super;
+  int i, size, flags, result, is_struct;
+  Simple_Stuct_Type_Info stinfo;
   Scheme_Object *val, *only_var;
 
   val = SCHEME_VEC_ELS(data)[0];
@@ -361,8 +380,7 @@ static int define_values_validate(Scheme_Object *data, Mz_CPort *port,
   }
 
   if (scheme_is_simple_make_struct_type(val, size-1, 1, 1, NULL,
-                                        &field_count, &field_icount, 
-                                        &uses_super,
+                                        &stinfo,
                                         NULL, (_st_ht ? *_st_ht : NULL), 
                                         NULL, 0, NULL, NULL, 5)) {
     /* This set of bindings is constant across invocations, but
@@ -371,30 +389,22 @@ static int define_values_validate(Scheme_Object *data, Mz_CPort *port,
     is_struct = 1;
   } else {
     is_struct = 0;
-    uses_super = 0;
-    field_count = 0;
-    field_icount = 0;
   }
 
   result = validate_expr(port, val, stack, tls, 
                          depth, letlimit, delta, 
                          num_toplevels, num_stxes, num_lifts, tl_use_map,
-                         tl_state, tl_timestamp + (uses_super ? 1 : 0),
+                         tl_state, tl_timestamp + (stinfo.uses_super ? 1 : 0),
                          NULL, !!only_var, 0, vc, 0, 0, NULL,
                          size-1, NULL);
 
   if (is_struct) {
-    if (_st_ht && (field_count == field_icount)) {
+    if (_st_ht && (stinfo.field_count == stinfo.init_field_count)) {
       /* record `struct:' binding as constant across invocations,
          so that it can be recognized for sub-struct declarations */
-      if (!*_st_ht) {
-        Scheme_Hash_Table *ht;
-        ht = scheme_make_hash_table_eqv();
-        *_st_ht = ht;
-      }
-      scheme_hash_set(*_st_ht, 
-                      scheme_make_integer(SCHEME_TOPLEVEL_POS(SCHEME_VEC_ELS(data)[1])),
-                      scheme_make_integer(field_count));
+      add_struct_mapping(_st_ht, 
+                         SCHEME_TOPLEVEL_POS(SCHEME_VEC_ELS(data)[1]),
+                         stinfo.field_count);
     }
     /* In any case, treat the bindings as constant */
     result = 2;

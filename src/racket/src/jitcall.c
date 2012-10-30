@@ -1652,7 +1652,7 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
             && ((SCHEME_TOPLEVEL_FLAGS(rator) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_CONST)) {
           Scheme_Object *p;
 
-          p = scheme_extract_global(rator, jitter->nc, 1);
+          p = scheme_extract_global(rator, jitter->nc, 0);
           if (p) {
             p = ((Scheme_Bucket *)p)->val;
             if (can_direct_native(p, num_rands, &extract_case)) {

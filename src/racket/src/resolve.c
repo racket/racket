@@ -2505,7 +2505,7 @@ Resolve_Prefix *scheme_resolve_prefix(int phase, Comp_Prefix *cp, int simplify)
             m = ((Module_Variable *)m)->sym;
           }
         }
-	tls[SCHEME_TOPLEVEL_POS(ht->vals[i])] = m;
+        tls[SCHEME_TOPLEVEL_POS(ht->vals[i])] = m;
       }
     }
   }

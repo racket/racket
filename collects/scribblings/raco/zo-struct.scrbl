@@ -73,19 +73,43 @@ structures that are produced by @racket[zo-parse] and consumed by
              [sym symbol?]
              [pos exact-integer?]
              [phase exact-nonnegative-integer?]
-             [constantness (or/c #f 'constant 'fixed)])]{
+             [constantness (or/c #f 'constant 'fixed 
+                                 function-shape? struct-shape?)])]{
   Represents a top-level variable, and used only in a @racket[prefix].
   The @racket[pos] may record the variable's offset within its module,
   or it can be @racket[-1] if the variable is always located by name.
   The @racket[phase] indicates the phase level of the definition within
-  its module. The @racket[constantness] field is either @racket['constant]
+  its module. The @racket[constantness] field is either @racket['constant],
+  a @racket[function-shape] value, or a @racket[struct-shape] value
   to indicate that
-  variable's value is always the same for every instantiation of its module,
+  variable's value is always the same for every instantiation of its module;
   @racket['fixed] to indicate 
-  that it doesn't change within a particular instantiation of the module,
+  that it doesn't change within a particular instantiation of the module;
   or @racket[#f] to indicate that the variable's value
- can change even for one particular instantiation of its module.}
+  can change even for one particular instantiation of its module.}
 
+@defstruct+[function-shape
+            ([arity procedure-arity?]
+             [preserves-marks? boolean?])]{
+
+Represents the shape of an expected import, which should be a function
+having the arity specified by @racket[arity]. The
+@racket[preserves-marks?]  field is true if calling the function is
+expected to leave continuation marks unchanged by the time it
+returns.}
+
+@deftogether[(
+@defstruct+[struct-shape ()]
+@defstruct+[(struct-type-shape struct-shape) ([field-count exact-nonnegative-integer?])]
+@defstruct+[(constructor-shape struct-shape) ([arity exact-nonnegative-integer?])]
+@defstruct+[(predicate-shape struct-shape) ()]
+@defstruct+[(accessor-shape struct-shape) ([field-count exact-nonnegative-integer?])]
+@defstruct+[(mutator-shape struct-shape) ([field-count exact-nonnegative-integer?])]
+@defstruct+[(struct-other-shape struct-shape) ()]
+)]{
+
+Represents the shape of an expected import as a structure-type
+binding, constructor, etc.}
 
 @defstruct+[(stx zo) ([encoded wrapped?])]{
   Wraps a syntax object in a @racket[prefix].}

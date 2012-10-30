@@ -118,8 +118,6 @@ static Scheme_Object *optimize_shift(Scheme_Object *obj, int delta, int after_de
 
 static int compiled_proc_body_size(Scheme_Object *o, int less_args);
 
-READ_ONLY static Scheme_Object *struct_proc_shape_other;
-
 typedef struct Scheme_Once_Used {
   Scheme_Object so;
   Scheme_Object *expr;
@@ -145,9 +143,6 @@ void scheme_init_optimize()
 #ifdef MZ_PRECISE_GC
   register_traversers();
 #endif
-
-  REGISTER_SO(struct_proc_shape_other);
-  struct_proc_shape_other = scheme_make_struct_proc_shape(3, 0, 0);
 }
 
 /*========================================================================*/
@@ -433,7 +428,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
     Scheme_Object *auto_e;
     int auto_e_depth;
     auto_e = scheme_is_simple_make_struct_type(o, vals, resolved, 0, &auto_e_depth, 
-                                               NULL, NULL, NULL,
+                                               NULL,
                                                (opt_info ? opt_info->top_level_consts : NULL),
                                                NULL, NULL, 0, NULL, NULL,
                                                5);
@@ -447,12 +442,13 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
   return 0;
 }
 
-static int is_current_inspector_call(Scheme_Object *a)
+static int is_inspector_call(Scheme_Object *a)
 {
   if (SAME_TYPE(SCHEME_TYPE(a), scheme_application_type)) {
     Scheme_App_Rec *app = (Scheme_App_Rec *)a;
     if (!app->num_args
-        && SAME_OBJ(app->args[0], scheme_current_inspector_proc))
+        && (SAME_OBJ(app->args[0], scheme_current_inspector_proc)
+            || SAME_OBJ(app->args[0], scheme_make_inspector_proc)))
       return 1;
   }
   return 0;
@@ -535,7 +531,8 @@ static int ok_proc_creator_args(Scheme_Object *rator, Scheme_Object *rand1, Sche
   return 0;
 }
 
-static int is_values_with_accessors_and_mutators(Scheme_Object *e, int vals, int resolved, int field_count)
+static int is_values_with_accessors_and_mutators(Scheme_Object *e, int vals, int resolved, 
+                                                 Simple_Stuct_Type_Info *_stinfo)
 {
   if (SAME_TYPE(SCHEME_TYPE(e), scheme_application_type)) {
     Scheme_App_Rec *app = (Scheme_App_Rec *)e;
@@ -546,30 +543,47 @@ static int is_values_with_accessors_and_mutators(Scheme_Object *e, int vals, int
         && is_local_ref(app->args[1], delta, 1)
         && is_local_ref(app->args[2], delta+1, 1)
         && is_local_ref(app->args[3], delta+2, 1)) {
-      int i;
+      int i, num_gets = 0, num_sets = 0, normal_ops = 1;
       for (i = app->num_args; i > 3; i--) {
         if (is_local_ref(app->args[i], delta, 5)) {
-          /* ok */
-        } else if (SAME_TYPE(SCHEME_TYPE(app->args[i]), scheme_application_type)) {
+          normal_ops = 0;
+        } else if (SAME_TYPE(SCHEME_TYPE(app->args[i]), scheme_application_type)
+                   && _stinfo->normal_ops && !_stinfo->indexed_ops) {
           Scheme_App_Rec *app3 = (Scheme_App_Rec *)app->args[i];
           int delta2 = delta + (resolved ? app3->num_args : 0);
           if (app3->num_args == 3) {
             if (!ok_proc_creator_args(app3->args[0], app3->args[1], app3->args[2], app3->args[3],
-                                      delta2, field_count))
+                                      delta2, _stinfo->field_count))
               break;
+            if (SAME_OBJ(app3->args[0], scheme_make_struct_field_mutator_proc)) {
+              if (num_gets) normal_ops = 0;
+              num_sets++;
+            } else
+              num_gets++;
           } else
             break;
-        } else if (SAME_TYPE(SCHEME_TYPE(app->args[i]), scheme_application3_type)) {
+        } else if (SAME_TYPE(SCHEME_TYPE(app->args[i]), scheme_application3_type)
+                   && _stinfo->normal_ops && !_stinfo->indexed_ops) {
           Scheme_App3_Rec *app3 = (Scheme_App3_Rec *)app->args[i];
           int delta2 = delta + (resolved ? 2 : 0);
           if (!ok_proc_creator_args(app3->rator, app3->rand1, app3->rand2, NULL,
-                                    delta2, field_count))
+                                    delta2, _stinfo->field_count))
             break;
+          if (SAME_OBJ(app3->rator, scheme_make_struct_field_mutator_proc)) {
+            if (num_gets) normal_ops = 0;
+            num_sets++;
+          } else
+            num_gets++;
         } else
           break;
       }
-      if (i <= 3)
+      if (i <= 3) {
+        _stinfo->normal_ops = normal_ops;
+        _stinfo->indexed_ops = 1;
+        _stinfo->num_gets = num_gets;
+        _stinfo->num_sets = num_sets;
         return 1;
+      }
     }
   }
 
@@ -637,14 +651,20 @@ static int is_constant_super(Scheme_Object *arg,
       name = symbols[pos];
       if (SCHEME_SYMBOLP(name)) {
         v = scheme_hash_get(symbol_table, name);
-        if (v && SCHEME_PAIRP(v)) {
-          v = SCHEME_CDR(v);
-          if (v && SAME_TYPE(SCHEME_TYPE(v), scheme_struct_proc_shape_type)) {
-            int mode = (SCHEME_PROC_SHAPE_MODE(v) & STRUCT_PROC_SHAPE_MASK);
-            int field_count = (SCHEME_PROC_SHAPE_MODE(v) >> STRUCT_PROC_SHAPE_SHIFT);
+        if (v && SCHEME_VECTORP(v) && (SCHEME_VEC_SIZE(v) == 3)) {
+          v = SCHEME_VEC_ELS(v)[1];
+          if (v && SCHEME_INTP(v)) {
+            int mode = (SCHEME_INT_VAL(v) & STRUCT_PROC_SHAPE_MASK);
+            int field_count = (SCHEME_INT_VAL(v) >> STRUCT_PROC_SHAPE_SHIFT);
             if (mode == STRUCT_PROC_SHAPE_STRUCT)
               return field_count + 1;
           }
+        }
+      } else if (SAME_TYPE(SCHEME_TYPE(name), scheme_module_variable_type)) {
+        intptr_t k;
+        if (scheme_decode_struct_shape(((Module_Variable *)name)->shape, &k)) {
+          if ((k & STRUCT_PROC_SHAPE_MASK) == STRUCT_PROC_SHAPE_STRUCT)
+            return (k >> STRUCT_PROC_SHAPE_SHIFT) + 1;
         }
       }
     }
@@ -663,8 +683,7 @@ static int is_constant_super(Scheme_Object *arg,
 Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int resolved, 
                                                  int check_auto, 
                                                  GC_CAN_IGNORE int *_auto_e_depth, 
-                                                 int *_field_count, int *_init_field_count,
-                                                 int *_uses_super,
+                                                 Simple_Stuct_Type_Info *_stinfo,
                                                  Scheme_Hash_Table *top_level_consts, 
                                                  Scheme_Hash_Table *top_level_table,
                                                  Scheme_Object **runstack, int rs_delta,
@@ -714,7 +733,7 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
                 || (SCHEME_SYMBOLP(app->args[7])
                     && !strcmp("prefab", SCHEME_SYM_VAL(app->args[7]))
                     && !SCHEME_SYM_WEIRDP(app->args[7]))
-                || is_current_inspector_call(app->args[7]))
+                || is_inspector_call(app->args[7]))
             && ((app->num_args < 8)
                 /* propcedure property: */
                 || SCHEME_FALSEP(app->args[8])
@@ -730,19 +749,22 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
                 /* constructor name: */
                 || SCHEME_FALSEP(app->args[11])
                 || SCHEME_SYMBOLP(app->args[11]))) {
-          int super_count = (super_count_plus_one 
-                             ? (super_count_plus_one - 1)
-                             : 0);
           if (_auto_e_depth)
             *_auto_e_depth = (resolved ? app->num_args : 0);
-          if (_field_count)
-            *_field_count = SCHEME_INT_VAL(app->args[3]) + super_count;
-          if (_init_field_count)
-            *_init_field_count = (SCHEME_INT_VAL(app->args[3]) 
-                                  + SCHEME_INT_VAL(app->args[4])
-                                  + super_count);
-          if (_uses_super)
-            *_uses_super = (super_count_plus_one ? 1 : 0);
+          if (_stinfo) {
+            int super_count = (super_count_plus_one 
+                               ? (super_count_plus_one - 1)
+                               : 0);
+            _stinfo->field_count = SCHEME_INT_VAL(app->args[3]) + super_count;
+            _stinfo->init_field_count = (SCHEME_INT_VAL(app->args[3]) 
+                                         + SCHEME_INT_VAL(app->args[4])
+                                         + super_count);
+            _stinfo->uses_super = (super_count_plus_one ? 1 : 0);
+            _stinfo->normal_ops = 1;
+            _stinfo->indexed_ops = 0;
+            _stinfo->num_gets = 1;
+            _stinfo->num_sets = 1;
+          }
           return ((app->num_args < 5) ? scheme_true : app->args[5]);
         }
       }
@@ -758,13 +780,13 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
         Scheme_Compiled_Let_Value *lv = (Scheme_Compiled_Let_Value *)lh->body;
         if (SAME_TYPE(SCHEME_TYPE(lv->value), scheme_application_type)) {
           Scheme_Object *auto_e;
-          int ifc;
+          Simple_Stuct_Type_Info stinfo;
           int lh_delta = ((SCHEME_LET_FLAGS(lh) & (SCHEME_LET_RECURSIVE | SCHEME_LET_STAR))
                           ? lh->count
                           : 0);
+          if (!_stinfo) _stinfo = &stinfo;
           auto_e = scheme_is_simple_make_struct_type(lv->value, 5, resolved, check_auto, 
-                                                     _auto_e_depth, _field_count, &ifc, 
-                                                     _uses_super,
+                                                     _auto_e_depth, _stinfo, 
                                                      top_level_consts, top_level_table, 
                                                      runstack, rs_delta + lh_delta,
                                                      symbols, symbol_table,
@@ -772,10 +794,9 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
           if (auto_e) {
             /* We have (let-values ([... (make-struct-type)]) ....), so make sure body
                just uses `make-struct-field-{accessor,mutator}'. */
-            if (is_values_with_accessors_and_mutators(lv->body, vals, resolved, ifc)) {
+            if (is_values_with_accessors_and_mutators(lv->body, vals, resolved, _stinfo)) {
               if (_auto_e_depth && lh_delta)
                 *_auto_e_depth += lh_delta;
-              if (_init_field_count) *_init_field_count = ifc;
               return auto_e;
             }
           }
@@ -795,10 +816,10 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
           e2 = skip_clears(lv->value);
           if (SAME_TYPE(SCHEME_TYPE(e2), scheme_application_type)) {
             Scheme_Object *auto_e;
-            int ifc;
+            Simple_Stuct_Type_Info stinfo;
+            if (!_stinfo) _stinfo = &stinfo;
             auto_e = scheme_is_simple_make_struct_type(e2, 5, resolved, check_auto,
-                                                       _auto_e_depth, _field_count, &ifc,
-                                                       _uses_super,
+                                                       _auto_e_depth, _stinfo,
                                                        top_level_consts, top_level_table,
                                                        runstack, rs_delta + lvd->count,
                                                        symbols, symbol_table,
@@ -807,9 +828,8 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
               /* We have (let-values ([... (make-struct-type)]) ....), so make sure body
                  just uses `make-struct-field-{accessor,mutator}'. */
               e2 = skip_clears(lv->body);
-              if (is_values_with_accessors_and_mutators(e2, vals, resolved, ifc)) {
+              if (is_values_with_accessors_and_mutators(e2, vals, resolved, _stinfo)) {
                 if (_auto_e_depth) *_auto_e_depth += lvd->count;
-                if (_init_field_count) *_init_field_count = ifc;
                 return auto_e;
               }
             }
@@ -822,28 +842,36 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
   return NULL;
 }
 
-Scheme_Object *scheme_make_struct_proc_shape(int k, int field_count, int init_field_count)
+intptr_t scheme_get_struct_proc_shape(int k, Simple_Stuct_Type_Info *stinfo)
 {
-  Scheme_Object *ps;
-
   switch (k) {
   case 0:
-    if (field_count == init_field_count)
-      k = STRUCT_PROC_SHAPE_STRUCT | (field_count << STRUCT_PROC_SHAPE_SHIFT);
+    if (stinfo->field_count == stinfo->init_field_count)
+      return STRUCT_PROC_SHAPE_STRUCT | (stinfo->field_count << STRUCT_PROC_SHAPE_SHIFT);
     else
-      k = STRUCT_PROC_SHAPE_OTHER;
+      return STRUCT_PROC_SHAPE_OTHER;
     break;
   case 1:
-    k = STRUCT_PROC_SHAPE_CONSTR | (init_field_count << STRUCT_PROC_SHAPE_SHIFT);
+    return STRUCT_PROC_SHAPE_CONSTR | (stinfo->init_field_count << STRUCT_PROC_SHAPE_SHIFT);
     break;
   case 2:
-    k = STRUCT_PROC_SHAPE_PRED;
+    return STRUCT_PROC_SHAPE_PRED;
     break;
   default:
-    if (struct_proc_shape_other)
-      return struct_proc_shape_other;
-    k = STRUCT_PROC_SHAPE_OTHER;
+    if (stinfo && stinfo->normal_ops && stinfo->indexed_ops) {
+      if (k - 3 < stinfo->num_gets)
+        return STRUCT_PROC_SHAPE_GETTER | (stinfo->field_count << STRUCT_PROC_SHAPE_SHIFT);
+      else
+        return STRUCT_PROC_SHAPE_SETTER | (stinfo->field_count << STRUCT_PROC_SHAPE_SHIFT);
+    }
   }
+
+  return STRUCT_PROC_SHAPE_OTHER;
+}
+
+Scheme_Object *scheme_make_struct_proc_shape(intptr_t k)
+{
+  Scheme_Object *ps;
 
   ps = scheme_malloc_small_atomic_tagged(sizeof(Scheme_Small_Object));
   ps->type = scheme_struct_proc_shape_type;
@@ -5062,7 +5090,8 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 	 (including raising an exception), then continue the group of
 	 simultaneous definitions: */
       if (SAME_TYPE(SCHEME_TYPE(e), scheme_define_values_type))  {
-	int n, cnst = 0, sproc = 0, sstruct = 0, field_count = 0, init_field_count = 0;
+	int n, cnst = 0, sproc = 0, sstruct = 0;
+        Simple_Stuct_Type_Info stinfo;
 
 	vars = SCHEME_VEC_ELS(e)[0];
 	e = SCHEME_VEC_ELS(e)[1];
@@ -5084,7 +5113,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
             sproc = 1;
           }
         } else if (scheme_is_simple_make_struct_type(e, n, 0, 1, NULL, 
-                                                     &field_count, &init_field_count, NULL,
+                                                     &stinfo,
                                                      info->top_level_consts, 
                                                      NULL, NULL, 0, NULL, NULL,
                                                      5)) {
@@ -5103,7 +5132,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
               Scheme_Object *e2;
 
               if (sstruct) {
-                e2 = scheme_make_struct_proc_shape(i, field_count, init_field_count);
+                e2 = scheme_make_struct_proc_shape(scheme_get_struct_proc_shape(i, &stinfo));
               } else if (sproc) {
                 e2 = scheme_make_noninline_proc(e);
               } else if (IS_COMPILED_PROC(e)) {

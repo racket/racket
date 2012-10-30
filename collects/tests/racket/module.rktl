@@ -875,7 +875,7 @@
   ;; Triger JIT generation with constant function as `a':
   (go a-s)
   ;; Check that we don't crash when trying to use a different `a':
-  (err/rt-test (go am-s)))
+  (err/rt-test (go am-s) exn:fail?))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
