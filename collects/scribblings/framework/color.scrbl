@@ -154,6 +154,17 @@
 
     Sets the currently active regions to be @racket[regions].
   }
+  
+  @defmethod[(get-spell-check-strings) boolean?]{
+    Returns @racket[#t] if the colorer will attempt to
+    spell-check string constants.
+  }
+  
+  @defmethod[(set-spell-check-strings [b? boolean?]) void?]{
+    If called with @racket[#t], tell the colorer to spell-check
+    string constants. Otherwise, disable spell-checking of constants.
+  }
+  
   @defmethod*[(((get-regions) (listof (list/c number? (or/c (quote end) number?)))))]{
     This returns the list of regions that are currently being colored in the
     editor.
