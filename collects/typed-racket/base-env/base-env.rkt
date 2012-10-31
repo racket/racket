@@ -2048,9 +2048,7 @@
         (cl->* 
          (->opt (-opt -Cont-Mark-Set) (make-Continuation-Mark-Key a) [b -Prompt-Tag]
                 (Un a b))
-         (->opt (-opt -Cont-Mark-Set) Univ [Univ -Prompt-Tag] Univ)))
- #;
- (->opt (-opt -Cont-Mark-Set) Univ [Univ -Prompt-Tag] Univ)]
+         (->opt (-opt -Cont-Mark-Set) Univ [Univ -Prompt-Tag] Univ)))]
 [call-with-immediate-continuation-mark (-poly (a) (->opt Univ (-> Univ a) [Univ] a))]
 [continuation-mark-set? (make-pred-ty -Cont-Mark-Set)]
 [make-continuation-mark-key (-poly (a) (->opt [-Symbol] (make-Continuation-Mark-Key a)))]
