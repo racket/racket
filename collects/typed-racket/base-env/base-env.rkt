@@ -37,6 +37,7 @@
           make-Ephemeron
           make-CustodianBox
           make-HeterogenousVector
+          make-Continuation-Mark-Key
           make-ListDots))
 
 ;Section 9.2
@@ -2031,11 +2032,28 @@
 ;continuation-marks needs type for continuations as other possible first argument
 [continuation-marks (->opt (Un (-val #f) -Thread) [-Prompt-Tag] -Cont-Mark-Set)]
 [current-continuation-marks (->opt [-Prompt-Tag]  -Cont-Mark-Set)]
-[continuation-mark-set->list (->opt -Cont-Mark-Set Univ [-Prompt-Tag] (-lst Univ))]
-[continuation-mark-set->list* (->opt -Cont-Mark-Set (-lst Univ) [Univ -Prompt-Tag] (-lst (-vec Univ)))]
-[continuation-mark-set-first (->opt (-opt -Cont-Mark-Set) Univ [Univ -Prompt-Tag] Univ)]
+[continuation-mark-set->list 
+ (-poly (a)
+        (cl->* 
+         (->opt -Cont-Mark-Set (make-Continuation-Mark-Key a) [-Prompt-Tag] (-lst a))
+         (->opt -Cont-Mark-Set Univ [-Prompt-Tag] (-lst Univ))))]
+[continuation-mark-set->list* 
+ (-poly (a b)
+        (cl->* 
+         (->opt -Cont-Mark-Set (-lst (make-Continuation-Mark-Key a)) [b -Prompt-Tag]
+                (-lst (-vec (Un a b))))
+         (->opt -Cont-Mark-Set (-lst Univ) [Univ -Prompt-Tag] (-lst (-vec Univ)))))]
+[continuation-mark-set-first 
+ (-poly (a b)
+        (cl->* 
+         (->opt (-opt -Cont-Mark-Set) (make-Continuation-Mark-Key a) [b -Prompt-Tag]
+                (Un a b))
+         (->opt (-opt -Cont-Mark-Set) Univ [Univ -Prompt-Tag] Univ)))
+ #;
+ (->opt (-opt -Cont-Mark-Set) Univ [Univ -Prompt-Tag] Univ)]
 [call-with-immediate-continuation-mark (-poly (a) (->opt Univ (-> Univ a) [Univ] a))]
 [continuation-mark-set? (make-pred-ty -Cont-Mark-Set)]
+[make-continuation-mark-key (-poly (a) (->opt [-Symbol] (make-Continuation-Mark-Key a)))]
 [continuation-mark-set->context (-> -Cont-Mark-Set (-lst (-pair (-opt Sym) Univ)))] ;TODO add srcloc
 
 

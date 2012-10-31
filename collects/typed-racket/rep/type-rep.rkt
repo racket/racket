@@ -410,6 +410,20 @@
 
 (def-type Future ([t Type/c]) [#:key 'future])
 
+;; body: the type of the body
+;; handler: the type of the prompt handler
+;;   prompts with this tag will return a union of `body` 
+;;   and the codomains of `handler`
+(def-type Prompt-Tag ([body Type/c] [handler Function?])
+  [#:key 'prompt-tag]
+  [#:frees (λ (f) (combine-frees (make-invariant (f body))
+                                 (make-invariant (f handler))))])
+
+;; value: the type of allowable values
+(def-type Continuation-Mark-Key ([value Type/c])  
+  [#:frees (λ (f) (make-invariant (f value)))]
+  [#:key 'continuation-mark-key])
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; remove-dups: List[Type] -> List[Type]
