@@ -11,32 +11,41 @@
 
 (define-syntax (define-distribution-type: stx)
   (syntax-case stx ()
-    [(_ name type-name parent-type-name ([arg-names arg-opts ...] ...))
+    [(_ (type-name T ...) (parent-type-name In Out)
+        (A B) name ([arg-names arg-opts ...] ...))
      (let ([arg-name-lst  (syntax->list #'(arg-names ...))])
-       (with-syntax ([hidden-type-name  (datum->syntax #f (syntax->datum #'type-name))]
-                     [(hidden-proc-names ...)  (map (λ (arg-name)
-                                                      (format-id #f "~a-~a" #'type-name arg-name))
-                                                    arg-name-lst)]
-                     [hidden-pred-name  (format-id #f "~a?" #'type-name)]
-                     [make-name  (format-id #'name "make-~a" #'name)]
-                     [(proc-names ...)  (map (λ (arg-name) (format-id #'name "~a-~a" #'name arg-name))
-                                             arg-name-lst)]
-                     [pred-name  (format-id #'name "~a?" #'name)]
-                     [format-str
-                      (string-append "(~a "
-                                     (string-join (build-list (length arg-name-lst) (λ _ "~a")))
-                                     ")")])
+       (with-syntax* ([internal-type-name  (format-id #'type-name "~a-Struct" #'type-name)]
+                      [(internal-proc-names ...)  (map (λ (arg-name)
+                                                         (format-id #'type-name
+                                                                    "~a-~a"
+                                                                    #'internal-type-name
+                                                                    arg-name))
+                                                       arg-name-lst)]
+                      [internal-pred-name  (format-id #'type-name "~a?" #'internal-type-name)]
+                      [make-name  (format-id #'name "make-~a" #'name)]
+                      [(proc-names ...)  (map (λ (arg-name)
+                                                (format-id #'name "~a-~a" #'name arg-name))
+                                              arg-name-lst)]
+                      [pred-name  (format-id #'name "~a?" #'name)]
+                      [format-str
+                       (string-append "(~a "
+                                      (string-join (build-list (length arg-name-lst) (λ _ "~v")))
+                                      ")")])
          (syntax/loc stx
            (begin
-             (struct: hidden-type-name parent-type-name ([arg-names arg-opts ...] ...)
+             (struct: (A B) internal-type-name parent-type-name ([arg-names arg-opts ...] ...)
                #:property prop:custom-print-quotable 'never
                #:property prop:custom-write
                (λ (v port write?)
                  (fprintf port format-str 'name (proc-names v) ...)))
-             (define-type type-name hidden-type-name)
-             (define proc-names hidden-proc-names) ...
-             (define make-name hidden-type-name)
-             (define pred-name hidden-pred-name)))))]))
+             (define-type (type-name T ...) (internal-type-name In Out))
+             (define proc-names internal-proc-names) ...
+             (define make-name internal-type-name)
+             (define pred-name internal-pred-name)))))]
+    [(_ type-name (parent-type-name In Out) name ([arg-names arg-opts ...] ...))
+     (syntax/loc stx
+       (define-distribution-type: (type-name) (parent-type-name In Out)
+         (A B) name ([arg-names arg-opts ...] ...)))]))
 
 ;; ===================================================================================================
 ;; One-sided scale family distributions (e.g. exponential)

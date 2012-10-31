@@ -14,7 +14,7 @@
          flnormal-cdf
          flnormal-inv-cdf
          flnormal-random
-         Normal-Distribution normal-dist normal-dist? normal-dist-mean normal-dist-stddev)
+         Normal-Dist normal-dist normal-dist? normal-dist-mean normal-dist-stddev)
 
 (: flnormal-pdf (Float Float Float Any -> Float))
 (define flnormal-pdf
@@ -46,12 +46,12 @@
 
 (begin-encourage-inline
   
-  (define-distribution-type: normal-dist
-    Normal-Distribution Real-Distribution ([mean : Float] [stddev : Float]))
+  (define-distribution-type: Normal-Dist (Ordered-Dist Real Flonum)
+    normal-dist ([mean : Float] [stddev : Float]))
   
-  (: normal-dist (case-> (-> Normal-Distribution)
-                         (Real -> Normal-Distribution)
-                         (Real Real -> Normal-Distribution)))
+  (: normal-dist (case-> (-> Normal-Dist)
+                         (Real -> Normal-Dist)
+                         (Real Real -> Normal-Dist)))
   (define (normal-dist [c 0.0] [s 1.0])
     (let ([c  (fl c)] [s   (fl s)])
       (define pdf (opt-lambda: ([x : Real] [log? : Any #f])
@@ -61,6 +61,6 @@
       (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [1-p? : Any #f])
                         (flnormal-inv-cdf c s (fl p) log? 1-p?)))
       (define (random) (flnormal-random c s))
-      (make-normal-dist pdf cdf inv-cdf random -inf.0 +inf.0 (delay c) c s)))
+      (make-normal-dist pdf random cdf inv-cdf -inf.0 +inf.0 (delay c) c s)))
   
   )

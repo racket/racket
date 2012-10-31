@@ -1,7 +1,9 @@
 #lang typed/racket/base
 
 (require racket/sequence
-         "../../flonum.rkt")
+         racket/list
+         "../../flonum.rkt"
+         "../../base.rkt")
 
 (provide (all-defined-out))
 
@@ -41,6 +43,42 @@
             [else  (raise-argument-error name "(Sequenceof Nonnegative-Real)" 1 x-seq w-seq)])))
   (check-lengths! name "values and weights" xs ws (length xs) (length ws))
   (values xs ws))
+
+(define nonnegative? (λ: ([x : Real]) (not (negative? x))))
+
+(: find-near-pow2 (Nonnegative-Real -> Nonnegative-Exact-Rational))
+(define (find-near-pow2 x)
+  (expt 2 (max -1073 (min 1023 (exact-round (/ (log x) (fllog 2.0)))))))
+
+(: sequences->normalized-weighted-samples
+   (All (A) (Symbol (Sequenceof A) (Sequenceof Real)
+                    -> (Values (Listof A) (Listof Positive-Flonum)))))
+(define (sequences->normalized-weighted-samples name xs ws)
+  (let-values ([(xs ws)  (sequences->weighted-samples name xs ws)])
+    (when (empty? xs) (raise-argument-error name "nonempty (Sequenceof A)" 0 xs ws))
+    (define max-w (find-near-pow2 (assert (apply max ws) nonnegative?)))
+    (let ([ws  (map (λ: ([w : Nonnegative-Real]) (/ w max-w)) ws)])
+      (define total-w (sum ws))
+      (let loop ([xs  xs]
+                 [ws  ws]
+                 [#{new-xs : (Listof A)}  empty]
+                 [#{new-ws : (Listof Positive-Flonum)}  empty])
+        (cond [(or (empty? xs) (empty? ws))  (values (reverse new-xs) (reverse new-ws))]
+              [else
+               (define w (fl (/ (first ws) total-w)))
+               (cond [(w . > . 0.0)
+                      (loop (rest xs) (rest ws) (cons (first xs) new-xs) (cons w new-ws))]
+                     [else
+                      (loop (rest xs) (rest ws) new-xs new-ws)])])))))
+
+(: sequence->normalized-weighted-samples
+   (All (A) (Symbol (Sequenceof A) -> (Values (Listof A) (Listof Positive-Flonum)))))
+(define (sequence->normalized-weighted-samples name xs)
+  (let ([xs  (sequence->list xs)])
+    (when (empty? xs) (raise-argument-error name "nonempty (Sequenceof A)" xs))
+    (define n (length xs))
+    (define w (assert (fl/ 1.0 (fl n)) positive?))
+    (values xs (build-list n (λ (i) w)))))
 
 (: sequence->vector (All (A) ((Sequenceof A) -> (Vectorof A))))
 (define (sequence->vector vs)

@@ -14,7 +14,7 @@
          flgamma-cdf
          flgamma-inv-cdf
          flgamma-random
-         Gamma-Distribution gamma-dist gamma-dist? gamma-dist-shape gamma-dist-scale)
+         Gamma-Dist gamma-dist gamma-dist? gamma-dist-shape gamma-dist-scale)
 
 (: flgamma-pdf (Float Float Float Any -> Float))
 (define (flgamma-pdf k s x log?)
@@ -48,12 +48,12 @@
 
 (begin-encourage-inline
   
-  (define-distribution-type: gamma-dist
-    Gamma-Distribution Real-Distribution ([shape : Float] [scale : Float]))
+  (define-distribution-type: Gamma-Dist (Ordered-Dist Real Flonum)
+    gamma-dist ([shape : Float] [scale : Float]))
   
-  (: gamma-dist (case-> (-> Gamma-Distribution)
-                        (Real -> Gamma-Distribution)
-                        (Real Real -> Gamma-Distribution)))
+  (: gamma-dist (case-> (-> Gamma-Dist)
+                        (Real -> Gamma-Dist)
+                        (Real Real -> Gamma-Dist)))
   (define (gamma-dist [k 1.0] [s 1.0])
     (let ([k  (fl k)] [s  (fl s)])
       (define pdf (opt-lambda: ([x : Real] [log? : Any #f])
@@ -63,7 +63,7 @@
       (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [1-p? : Any #f])
                         (flgamma-inv-cdf k s (fl p) log? 1-p?)))
       (define (random) (flgamma-random k s))
-      (make-gamma-dist pdf cdf inv-cdf random
+      (make-gamma-dist pdf random cdf inv-cdf
                        0.0 +inf.0 (delay (flgamma-inv-cdf k s 0.5 #f #f))
                        k s)))
   

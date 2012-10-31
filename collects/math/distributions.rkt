@@ -1,4 +1,4 @@
-#lang typed/racket/base
+#lang racket/base
 
 (require "private/distributions/dist-struct.rkt"
          "private/distributions/uniform-dist.rkt"
@@ -11,7 +11,8 @@
          "private/distributions/delta-dist.rkt"
          "private/distributions/gamma-dist.rkt"
          "private/distributions/beta-dist.rkt"
-         "private/distributions/truncated-dist.rkt")
+         "private/distributions/truncated-dist.rkt"
+         "private/distributions/discrete-dist.rkt")
 
 (provide (all-from-out
           "private/distributions/dist-struct.rkt"
@@ -25,4 +26,5 @@
           "private/distributions/delta-dist.rkt"
           "private/distributions/gamma-dist.rkt"
           "private/distributions/beta-dist.rkt"
-          "private/distributions/truncated-dist.rkt"))
+          "private/distributions/truncated-dist.rkt"
+          "private/distributions/discrete-dist.rkt"))

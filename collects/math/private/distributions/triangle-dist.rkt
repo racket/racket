@@ -12,7 +12,7 @@
          fltriangle-cdf
          fltriangle-inv-cdf
          fltriangle-random
-         Triangular-Distribution triangle-dist triangle-dist?
+         Triangular-Dist triangle-dist triangle-dist?
          triangle-dist-min triangle-dist-max triangle-dist-center)
 
 (: flsort3 (Flonum Flonum Flonum -> (Values Flonum Flonum Flonum)))
@@ -92,13 +92,13 @@
 
 (begin-encourage-inline
   
-  (define-distribution-type: triangle-dist
-    Triangular-Distribution Real-Distribution ([min : Float] [max : Float] [center : Float]))
+  (define-distribution-type: Triangular-Dist (Ordered-Dist Real Flonum)
+    triangle-dist ([min : Float] [max : Float] [center : Float]))
   
-  (: triangle-dist (case-> (-> Triangular-Distribution)
-                           (Real -> Triangular-Distribution)
-                           (Real Real -> Triangular-Distribution)
-                           (Real Real Real -> Triangular-Distribution)))
+  (: triangle-dist (case-> (-> Triangular-Dist)
+                           (Real -> Triangular-Dist)
+                           (Real Real -> Triangular-Dist)
+                           (Real Real Real -> Triangular-Dist)))
   (define (triangle-dist [a 0.0] [b 1.0] [c (* 0.5 (+ a b))])
     (let ([a  (fl a)] [b  (fl b)] [c  (fl c)])
       (let-values ([(a c b)  (flsort3 a b c)])
@@ -109,7 +109,7 @@
         (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [1-p? : Any #f])
                           (unsafe-fltriangle-inv-cdf a b c (fl p) log? 1-p?)))
         (define (random) (unsafe-fltriangle-random a b c))
-        (make-triangle-dist pdf cdf inv-cdf random
+        (make-triangle-dist pdf random cdf inv-cdf
                             a b (delay (unsafe-fltriangle-inv-cdf a b c 0.5 #f #f))
                             a b c))))
   

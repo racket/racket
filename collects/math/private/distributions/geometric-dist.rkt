@@ -10,7 +10,7 @@
          flgeometric-cdf
          flgeometric-inv-cdf
          flgeometric-random
-         Geometric-Distribution geometric-dist geometric-dist? geometric-dist-prob)
+         Geometric-Dist geometric-dist geometric-dist? geometric-dist-prob)
 
 (define float-int-cutoff (expt 2 53))
 
@@ -55,11 +55,11 @@
 
 (begin-encourage-inline
   
-  (define-distribution-type: geometric-dist
-    Geometric-Distribution Real-Distribution ([prob : Float]))
+  (define-distribution-type: Geometric-Dist (Ordered-Dist Real Flonum)
+    geometric-dist ([prob : Float]))
   
-  (: geometric-dist (case-> (-> Geometric-Distribution)
-                            (Real -> Geometric-Distribution)))
+  (: geometric-dist (case-> (-> Geometric-Dist)
+                            (Real -> Geometric-Dist)))
   (define (geometric-dist [q 0.5])
     (let ([q  (fl q)])
       (define pdf (opt-lambda: ([k : Real] [log? : Any #f])
@@ -69,7 +69,7 @@
       (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [1-p? : Any #f])
                         (flgeometric-inv-cdf q (fl p) log? 1-p?)))
       (define (random) (flgeometric-random q))
-      (make-geometric-dist pdf cdf inv-cdf random
+      (make-geometric-dist pdf random cdf inv-cdf
                            0.0 +inf.0 (delay (flgeometric-inv-cdf q 0.5 #f #f))
                            q)))
   
