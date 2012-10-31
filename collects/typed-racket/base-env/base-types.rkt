@@ -170,3 +170,4 @@
 [Thread-Cellof (-poly (a) (-thread-cell a))]
 [Custodian-Boxof (-poly (a) (make-CustodianBox a))]
 
+[Continuation-Mark-Key (-poly (a) (make-Continuation-Mark-Key a))]

@@ -279,7 +279,8 @@
          (fp "(Parameterof ~a)" in)
          (fp "(Parameterof ~a ~a)" in out))]
     [(Hashtable: k v) (fp "(HashTable ~a ~a)" k v)]
-
+    [(Continuation-Mark-Key: rhs)
+     (fp "(Continuation-Mark-Key ~a)" rhs)]
     #;[(Poly-unsafe: n b) (fp "(unsafe-poly ~a ~a ~a)" (Type-seq c) n b)]
     [(Poly-names: names body)
      #;(eprintf "POLY SEQ: ~a\n" (Type-seq body))
