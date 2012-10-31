@@ -1638,5 +1638,27 @@
    (eval '(extract f f2 f2 #t))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check interaction of marks, `rename-out', and `free-identifier=?' 
+
+(module check-free-eq-with-rename racket/base
+  (require (for-syntax racket/base))
+  (provide (rename-out [prefix:quote quote])
+           check)
+  (define-syntax (check stx)
+    (syntax-case stx ()
+      [(_ id) #`#,(free-identifier=? #'id #'prefix:quote)]))
+  (define-syntax-rule (prefix:quote x) (quote x)))
+
+(module use-rename-checker racket/base
+  (define-syntax-rule (body)
+    (begin
+      (provide v)
+      (require 'check-free-eq-with-rename)
+      (define v (check quote))))
+  (body))
+
+(test #t dynamic-require ''use-rename-checker 'v)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
