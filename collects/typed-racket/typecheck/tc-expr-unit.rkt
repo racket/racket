@@ -14,9 +14,9 @@
          (env lexical-env type-env-structs tvar-env index-env)
          racket/private/class-internal
          (except-in syntax/parse id)
-         unstable/function #;unstable/debug
+         unstable/function #;unstable/debug         
          (only-in srfi/1 split-at)
-         (for-template "internal-forms.rkt"))
+         (for-template "internal-forms.rkt" (only-in '#%paramz [parameterization-key pz:pk])))
 
 (require (for-template racket/base racket/private/class-internal))
 
@@ -323,12 +323,27 @@
          (ret -Variable-Reference)]
         ;; identifiers
         [x:identifier
-           (check-below (tc-id #'x) expected)]
+         (check-below (tc-id #'x) expected)]
         ;; w-c-m
         [(with-continuation-mark e1 e2 e3)
-         (begin (tc-expr/check/type #'e1 Univ)
-                (tc-expr/check/type #'e2 Univ)
-                (tc-expr/check #'e3 expected))]
+         (define key-t (single-value #'e1))
+         (match key-t
+           [(tc-result1: (Continuation-Mark-Key: rhs))
+            (tc-expr/check/type #'e2 rhs)
+            (tc-expr/check #'e3 expected)]
+           [(? (λ _ (and (identifier? #'e1)
+                         (free-identifier=? #'pz:pk #'e1))))
+            (tc-expr/check/type #'e2 Univ)
+            (tc-expr/check #'e3 expected)]
+           [(tc-result1: key-t)
+            ;(check-below key-t -Symbol)
+            ;; FIXME -- would need to protect `e2` with any-wrap/c contract
+            ;; instead, just fail
+            
+            ;(tc-expr/check/type #'e2 Univ)
+            ;(tc-expr/check #'e3 expected)
+            (tc-error/expr "with-continuation-mark requires a continuation-mark-key, but got ~a" key-t
+                           #:return expected)])]
         ;; application
         [(#%plain-app . _) (tc/app/check form expected)]
         ;; #%expression
@@ -417,9 +432,19 @@
       [(quote-syntax datum) (ret (-Syntax (tc-literal #'datum)) true-filter)]
       ;; w-c-m
       [(with-continuation-mark e1 e2 e3)
-       (begin (tc-expr/check/type #'e1 Univ)
-              (tc-expr/check/type #'e2 Univ)
-              (tc-expr #'e3))]
+       (define key-t (single-value #'e1))
+       (match key-t
+         [(tc-result1: (Continuation-Mark-Key: rhs))
+          (tc-expr/check/type #'e2 rhs)
+          (tc-expr #'e3)]
+         [(? (λ _ (and (identifier? #'e1)
+                       (free-identifier=? #'pz:pk #'e1))))
+          (tc-expr/check/type #'e2 Univ)
+          (tc-expr #'e3)]
+         [(tc-result1: key-t)
+          ;; see comments in the /check variant
+          (tc-error/expr "with-continuation-mark requires a continuation-mark-key, but got ~a" key-t
+                         #:return (ret (Un)))])]
       ;; lambda
       [(#%plain-lambda formals . body)
        (tc/lambda form #'(formals) #'(body))]
