@@ -1606,26 +1606,26 @@ If the namespace does not, they are colored the unbound color.
           ;; using 'defs-text' all the time is wrong in the case of embedded editors,
           ;; but they already don't work and we've arranged for them to not appear here ....
           (match x
-            [`(syncheck:add-arrow ,start-text ,start-pos-left ,start-pos-right
-                                  ,end-text ,end-pos-left ,end-pos-right
-                                  ,actual? ,level)
+            [`#(syncheck:add-arrow ,start-pos-left ,start-pos-right
+                                   ,end-pos-left ,end-pos-right
+                                   ,actual? ,level)
              (send defs-text syncheck:add-arrow
                    defs-text start-pos-left start-pos-right
                    defs-text end-pos-left end-pos-right 
                    actual? level)]
-            [`(syncheck:add-tail-arrow ,from-text ,from-pos ,to-text ,to-pos)
+            [`#(syncheck:add-tail-arrow ,from-pos ,to-pos)
              (send defs-text syncheck:add-tail-arrow defs-text from-pos defs-text to-pos)]
-            [`(syncheck:add-mouse-over-status ,text ,pos-left ,pos-right ,str)
+            [`#(syncheck:add-mouse-over-status ,pos-left ,pos-right ,str)
              (send defs-text syncheck:add-mouse-over-status defs-text pos-left pos-right str)]
-            [`(syncheck:add-background-color ,text ,color ,start ,fin)
+            [`#(syncheck:add-background-color ,color ,start ,fin)
              (send defs-text syncheck:add-background-color defs-text color start fin)]
-            [`(syncheck:add-jump-to-definition ,text ,start ,end ,id ,filename)
+            [`#(syncheck:add-jump-to-definition ,start ,end ,id ,filename)
              (send defs-text syncheck:add-jump-to-definition defs-text start end id filename)]
-            [`(syncheck:add-require-open-menu ,text ,start-pos ,end-pos ,file)
+            [`#(syncheck:add-require-open-menu ,start-pos ,end-pos ,file)
              (send defs-text syncheck:add-require-open-menu defs-text start-pos end-pos file)]
-            [`(syncheck:add-docs-menu ,text ,start-pos ,end-pos ,key ,the-label ,path ,definition-tag ,tag)
+            [`#(syncheck:add-docs-menu,start-pos ,end-pos ,key ,the-label ,path ,definition-tag ,tag)
              (send defs-text syncheck:add-docs-menu defs-text start-pos end-pos key the-label path definition-tag tag)]
-            [`(syncheck:add-rename-menu ,id-as-sym ,to-be-renamed/poss ,name-dup-pc ,name-dup-id)
+            [`#(syncheck:add-rename-menu ,id-as-sym ,to-be-renamed/poss ,name-dup-pc ,name-dup-id)
              (define other-side-dead? #f)
              (define (name-dup? name) 
                (cond
@@ -1643,7 +1643,7 @@ If the namespace does not, they are colored the unbound color.
                      #f])]))
              (define to-be-renamed/poss/fixed
                (for/list ([lst (in-list to-be-renamed/poss)])
-                 (list defs-text (list-ref lst 1) (list-ref lst 2))))
+                 (list defs-text (list-ref lst 0) (list-ref lst 1))))
              (send defs-text syncheck:add-rename-menu id-as-sym to-be-renamed/poss/fixed 
                    name-dup?)]))
         

@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/class
          racket/place
+         (for-syntax racket/base)
          "../../private/eval-helpers.rkt"
          "traversals.rkt"
          "local-member-names.rkt"
@@ -34,26 +35,35 @@
     (define/override (syncheck:find-source-object stx)
       (and (equal? src (syntax-source stx))
            src))
-    (define-syntax-rule
-      (log name)
-      (define/override (name . args)
-        (set! trace (cons (cons 'name args) trace))))
+    
+    ;; send over the non _ variables in the message to the main drracket place
+    (define-syntax (log stx)
+      (syntax-case stx ()
+        [(_ name args ...)
+         (with-syntax ([(wanted-args ...)
+                        (filter (λ (x) (not (regexp-match #rx"^_" (symbol->string (syntax-e x)))))
+                                (syntax->list #'(args ...)))])
+           #'(define/override (name args ...)
+               (add-to-trace (vector 'name wanted-args ...))))]))
 
-    ; (log syncheck:color-range) ;; we don't want log these as they are too distracting to keep popping up
-    (log syncheck:add-mouse-over-status)
-    (log syncheck:add-arrow)
-    (log syncheck:add-tail-arrow)
-    (log syncheck:add-background-color)
-    (log syncheck:add-require-open-menu)
-    (log syncheck:add-docs-menu)
-    (log syncheck:add-jump-to-definition)
+    (log syncheck:add-arrow
+         _start-text start-pos-left start-pos-right
+         _end-text end-pos-left end-pos-right
+         actual? level)
+    (log syncheck:add-tail-arrow _from-text from-pos _to-text to-pos)
+    (log syncheck:add-mouse-over-status _text pos-left pos-right str)
+    (log syncheck:add-background-color _text color start fin)
+    (log syncheck:add-jump-to-definition _text start end id filename)
+    (log syncheck:add-require-open-menu _text start-pos end-pos file)
+    (log syncheck:add-docs-menu _text start-pos end-pos key the-label path definition-tag tag)
     (define/override (syncheck:add-rename-menu id-as-sym to-be-renamed/poss dup-name?)
       (define id (hash-count table))
       (hash-set! table id dup-name?)
-      (set! trace (cons (list 'syncheck:add-rename-menu id-as-sym to-be-renamed/poss remote id)
-                        trace)))
+      (add-to-trace (vector 'syncheck:add-rename-menu id-as-sym (map cdr to-be-renamed/poss) remote id)))
     
     (define/public (get-trace) (reverse trace))
+    (define/private (add-to-trace thing) 
+      (set! trace (cons thing trace)))
     (super-new)))
 
 (define (go expanded path the-source orig-cust)
