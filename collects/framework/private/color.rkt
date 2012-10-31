@@ -320,8 +320,10 @@ added get-regions
     (define re-tokenize-lexer-mode-argument #f)
     (define/private (continue-re-tokenize start-time did-something?)
       (cond
-        [(or (not (= rev (get-revision-number)))
-             (and did-something? ((+ start-time 20) . <= . (current-inexact-milliseconds))))
+        [(not (= rev (get-revision-number)))
+         (c-log "revision number changed unexpectedly")
+         #f]
+        [(and did-something? ((+ start-time 20) . <= . (current-inexact-milliseconds)))
          #f]
         [else
          ;(define-values (_line1 _col1 pos-before) (port-next-location in))
@@ -509,19 +511,22 @@ added get-regions
     (define/private (colorer-driver)
       (unless (andmap lexer-state-up-to-date? lexer-states)
         (begin-edit-sequence #f #f)
+        (c-log "starting to color")
         (define finished?
           (cond
             [(and colorer-pending? (= rev (get-revision-number)))
              (continue-re-tokenize (current-inexact-milliseconds) #f)]
             [else
              (start-re-tokenize (current-inexact-milliseconds))]))
+        (c-log (format "coloring stopped ~a" (if finished? "because it finished" "with more to do")))
         (cond
           [finished?
            (set! colorer-pending? #f)
            (for-each (lambda (ls)
                        (set-lexer-state-up-to-date?! ls #t))
                      lexer-states)
-           (update-lexer-state-observers)]
+           (update-lexer-state-observers)
+           (c-log "updated observers")]
           [else
            (set! colorer-pending? #t)])
         (end-edit-sequence)))
@@ -1141,3 +1146,9 @@ added get-regions
 (define text-mode% (text-mode-mixin mode:surrogate-text%))
 
 (define misspelled-text-color-style-name "Misspelled Text")
+
+(define logger (make-logger 'framework/colorer (current-logger)))
+(define-syntax-rule
+  (c-log exp)
+  (when (log-level? logger 'debug)
+    (log-message logger 'debug exp (current-inexact-milliseconds))))
