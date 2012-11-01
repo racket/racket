@@ -212,3 +212,7 @@ This module provides a macro for non-deterministic finite automata with epsilon 
 }
 
 @include-section["re.scrbl"]
+
+
+
+@close-eval[our-eval]

@@ -58,3 +58,8 @@ Like @racket[collapse-module-path], but the input is a @techlink[#:doc
 refman]{module path index}; in this case, the
 @racket[rel-to-module-path-v] base is used where the module path index
 contains the ``self'' index.}
+
+
+
+
+@close-eval[evaluator]

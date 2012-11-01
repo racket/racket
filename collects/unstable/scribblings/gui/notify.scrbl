@@ -153,3 +153,7 @@ Returns a list of @racket[checkable-menu-item%] controls tied to
 @racket[notify-box] to its label and invokes @racket[notify-box]'s
 listeners.
 }
+
+
+
+@close-eval[the-eval]

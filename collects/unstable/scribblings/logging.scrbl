@@ -86,3 +86,7 @@ will then return a list of the log messages that have been reported.
 (log-warning "2")
 (stop-recording l)
 ]}
+
+
+
+@close-eval[the-eval]

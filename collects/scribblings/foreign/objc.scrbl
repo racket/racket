@@ -342,3 +342,8 @@ imported using @racket[objc-unsafe!].}
 Analogous to @racket[(unsafe!)], makes unsafe bindings of
 @racketmodname[ffi/unsafe/objc] available in the importing
 module.}
+
+
+
+
+@close-eval[objc-eval]

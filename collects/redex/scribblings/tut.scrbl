@@ -1122,3 +1122,7 @@ Typeset @racket[types]. Use a compound rewriter so a use of @racket[(type Γ e t
 is rendered as @racketblock[Γ ⊢ e : t]
 
 @generate-bibliography[]
+
+
+
+@close-eval[amb-eval]

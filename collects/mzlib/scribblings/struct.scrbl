@@ -66,3 +66,7 @@ Builds a function that accepts a structure type instance (matching
 @racket[struct-id]) and provides a vector of the fields of the
 structure type instance.}
 
+
+
+
+@close-eval[struct-eval]

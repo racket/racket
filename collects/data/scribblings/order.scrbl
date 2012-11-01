@@ -251,3 +251,6 @@ a single execution of a program:
 (datum-order (make-fish 'alewife) (make-fowl 'dodo))
 ]
 }
+
+
+@close-eval[the-eval]

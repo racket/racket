@@ -109,3 +109,4 @@ Equivalent to @racket[in-heap/consume!] except the heap is copied first.
             (heap-count h)]
 }
 
+@close-eval[the-eval]

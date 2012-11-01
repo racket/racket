@@ -167,3 +167,5 @@ Implementations of @racket[dict-iterate-first],
 Returns @racket[#t] if @racket[v] represents a position in an
 interval-map, @racket[#f] otherwise.
 }
+
+@close-eval[the-eval]

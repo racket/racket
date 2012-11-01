@@ -131,3 +131,7 @@ Typed Racket also attempts to detect more than one error in the module.
 (string-append "a string" (add1 "not a number"))
 ]
 }
+
+
+
+@close-eval[the-eval]

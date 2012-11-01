@@ -64,3 +64,7 @@ When attached to a struct type, automatically generates a printer using
 (write (point3 3 4 5))
 ]
 }
+
+
+
+@close-eval[the-eval]
