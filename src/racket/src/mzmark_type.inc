@@ -1417,21 +1417,21 @@ static int symbol_obj_SIZE(void *p, struct NewGC *gc) {
   Scheme_Symbol *s = (Scheme_Symbol *)p;
 
   return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Symbol) + s->len - 3);
+  gcBYTES_TO_WORDS(sizeof(Scheme_Symbol) + s->len + 1 - mzFLEX4_DELTA);
 }
 
 static int symbol_obj_MARK(void *p, struct NewGC *gc) {
   Scheme_Symbol *s = (Scheme_Symbol *)p;
 
   return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Symbol) + s->len - 3);
+  gcBYTES_TO_WORDS(sizeof(Scheme_Symbol) + s->len + 1 - mzFLEX4_DELTA);
 }
 
 static int symbol_obj_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Symbol *s = (Scheme_Symbol *)p;
 
   return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Symbol) + s->len - 3);
+  gcBYTES_TO_WORDS(sizeof(Scheme_Symbol) + s->len + 1 - mzFLEX4_DELTA);
 }
 
 #define symbol_obj_IS_ATOMIC 1

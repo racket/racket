@@ -551,7 +551,7 @@ symbol_obj {
 
  mark:
  size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Symbol) + s->len - 3);
+  gcBYTES_TO_WORDS(sizeof(Scheme_Symbol) + s->len + 1 - mzFLEX4_DELTA);
 }
 
 cons_cell {

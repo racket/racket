@@ -356,7 +356,7 @@ make_a_symbol(const char *name, uintptr_t len, int kind)
 {
   Scheme_Symbol *sym;
 
-  sym = (Scheme_Symbol *)scheme_malloc_atomic_tagged(sizeof(Scheme_Symbol) + len - 3);
+  sym = (Scheme_Symbol *)scheme_malloc_atomic_tagged(sizeof(Scheme_Symbol) + len + 1 - mzFLEX4_DELTA);
 
   sym->iso.so.type = scheme_symbol_type;
   MZ_OPT_HASH_KEY(&sym->iso) = kind;
