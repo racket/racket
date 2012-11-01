@@ -4313,6 +4313,7 @@ void scheme_init_exn(Scheme_Env *env)
     if (exn_table[i].count) {
       Scheme_Object **values;
 
+      scheme_force_struct_type_info((Scheme_Struct_Type *)exn_table[i].type);
       values = scheme_make_struct_values(exn_table[i].type,
 					 exn_table[i].names,
 					 exn_table[i].count,

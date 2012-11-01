@@ -2643,18 +2643,8 @@ static Scheme_Object *check_type_and_inspector(const char *who, int always, int 
   return insp;
 }
 
-static void get_struct_type_info(int argc, Scheme_Object *argv[], Scheme_Object **a, int always)
+void scheme_force_struct_type_info(Scheme_Struct_Type *stype)
 {
-  Scheme_Struct_Type *stype, *parent;
-  Scheme_Object *insp, *ims;
-  int p, cnt;
-
-  insp = check_type_and_inspector("struct-type-info", always, argc, argv);
-  if (SCHEME_NP_CHAPERONEP(argv[0]))
-    stype = (Scheme_Struct_Type *)SCHEME_CHAPERONE_VAL(argv[0]);
-  else
-    stype = (Scheme_Struct_Type *)argv[0];
-
   /* Make sure generic accessor and mutator are created: */
   if (!stype->accessor) {
     Scheme_Object *p;
@@ -2667,6 +2657,21 @@ static void get_struct_type_info(int argc, Scheme_Object *argv[], Scheme_Object 
     p = make_struct_proc(stype, fn, SCHEME_GEN_SETTER, 0);
     stype->mutator = p;
   }
+}
+
+static void get_struct_type_info(int argc, Scheme_Object *argv[], Scheme_Object **a, int always)
+{
+  Scheme_Struct_Type *stype, *parent;
+  Scheme_Object *insp, *ims;
+  int p, cnt;
+
+  insp = check_type_and_inspector("struct-type-info", always, argc, argv);
+  if (SCHEME_NP_CHAPERONEP(argv[0]))
+    stype = (Scheme_Struct_Type *)SCHEME_CHAPERONE_VAL(argv[0]);
+  else
+    stype = (Scheme_Struct_Type *)argv[0];
+
+  scheme_force_struct_type_info(stype);
 
   if (stype->name_pos)
     parent = stype->parent_types[stype->name_pos - 1];

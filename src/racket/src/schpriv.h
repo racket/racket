@@ -850,6 +850,8 @@ Scheme_Object *scheme_make_serialized_struct_instance(Scheme_Object *s, int num_
 Scheme_Object *scheme_struct_getter(int argc, Scheme_Object **args, Scheme_Object *prim);
 Scheme_Object *scheme_struct_setter(int argc, Scheme_Object **args, Scheme_Object *prim);
 
+void scheme_force_struct_type_info(Scheme_Struct_Type *stype);
+
 Scheme_Object *scheme_extract_checked_procedure(int argc, Scheme_Object **argv);
 
 Scheme_Object *scheme_rename_struct_proc(Scheme_Object *p, Scheme_Object *sym);
