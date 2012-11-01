@@ -185,3 +185,6 @@ Imports nothing, exports @racket[uri-codec^].}
 @defsignature[uri-codec^ ()]{}
 
 Includes everything exported by the @racketmodname[net/uri-codec] module.
+
+
+@close-eval[uri-codec-eval]

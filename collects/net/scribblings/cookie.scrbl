@@ -187,3 +187,7 @@ Imports nothing, exports @racket[cookie^].}
 @defsignature[cookie^ ()]{}
 
 Includes everything exported by the @racketmodname[net/cookie] module.
+
+
+
+@close-eval[cookie-eval]
