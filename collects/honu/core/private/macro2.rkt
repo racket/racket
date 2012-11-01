@@ -7,6 +7,7 @@
                      racket/syntax
                      "template.rkt"
                      "literals.rkt"
+                     "syntax.rkt"
                      (prefix-in phase1: "parse2.rkt")
                      "debug.rkt"
                      (prefix-in phase1: "compile.rkt")
@@ -333,43 +334,6 @@
          (syntax #'stuff*))])))
 |#
 
-(provide honu-syntax)
-;; Do any honu-specific expansion here
-(define-honu-syntax honu-syntax
-  (lambda (code)
-    (syntax-parse code #:literal-sets (cruft)
-      #;
-      [(_ (#%parens single) . rest)
-       (define context #'single)
-       (define compressed (compress-dollars #'single))
-       (values
-         (with-syntax ([stuff* (datum->syntax context compressed context context)])
-           (phase1:racket-syntax #'stuff*))
-         #'rest
-         #f)]
-      [(_ (#%parens stuff ...) . rest)
-       (define context (stx-car #'(stuff ...)))
-       (define compressed (compress-dollars #'(stuff ...)))
-       (values
-         (with-syntax ([stuff* (datum->syntax context
-                                              (syntax->list compressed)
-                                              context context)])
-           ;; (debug "Stuff is ~a\n" (syntax->datum #'stuff*))
-           ;; (debug "Stuff syntaxed is ~a\n" (syntax->datum #'#'stuff*))
-
-           ;; stuff* will be expanded when this syntax is returned because
-           ;; the whole thing will be
-           ;;   (remove-repeats #'((repeat$ 1) (repeat$ 2)))
-           ;; so remove-repeats will be executed later
-           (phase1:racket-syntax
-             (remove-repeats #'stuff*))
-
-           #;
-           (with-syntax ([(out ...) #'stuff*])
-             (phase1:racket-syntax #'stuff*)))
-         #; #'(%racket-expression (parse-stuff stuff ...))
-         #'rest
-         #f)])))
 
 ;; combine syntax objects
 ;; #'(a b) + #'(c d) = #'(a b c d)
@@ -406,7 +370,7 @@
 (begin-for-syntax
   (define-syntax (generate-pattern stx)
     (syntax-parse stx
-      [(_ name literals original-pattern maybe-out)
+      [(_ name literals (pattern-stx out-stx) ...)
 
       (define (make-syntax-class-pattern honu-pattern maybe-out)
         (define variables (find-pattern-variables honu-pattern))
@@ -428,19 +392,23 @@
                       [((withs ...) ...) (set->list withs)]
                       [(result-with ...) (if (syntax-e maybe-out)
                                            (with-syntax ([(out ...) maybe-out])
-                                             #'(#:with result (out ...)))
+                                             #'(#:with result (parse-stuff honu-syntax (#%parens out ...))))
                                            #'(#:with result #'()))])
           #'[pattern (~seq new-pattern ...)
                      withs ... ...
                      result-with ...
                      ]))
 
-      (define pattern-stuff (make-syntax-class-pattern #'original-pattern #'maybe-out))
+      (define pattern-stuff
+        (for/list ([pattern (syntax->list #'(pattern-stx ...))]
+                   [out (syntax->list #'(out-stx ...))])
+          (printf "Pattern ~a\n" pattern)
+          (make-syntax-class-pattern pattern out)))
 
       #;
       (debug "With bindings ~a\n" withs)
       (with-syntax ([(literal ...) #'literals]
-                    [(new-pattern ...) (list pattern-stuff)])
+                    [(new-pattern ...) pattern-stuff])
         #;
         (debug "Result with ~a\n" (syntax->datum #'(quote-syntax (result-with ...))))
         (define output
@@ -468,21 +436,23 @@
   (lambda (code)
     (syntax-parse code #:literal-sets (cruft)
       [(_ name (#%parens literal ...)
-          (#%braces pattern ...)
-          (~optional (#%braces out ...))
+          (~seq (#%braces original-pattern ...)
+                (~optional (~seq honu-comma maybe-out)
+                           #:defaults ([maybe-out #'#f])))
+          ...
           . rest)
-       (values (with-syntax ([out* (attribute out)])
-                 (phase1:racket-syntax
-                   (splicing-let-syntax
-                     ([make (lambda (stx)
-                              (syntax-parse stx
-                                [(_ new-name)
-                                 (syntax-local-introduce
-                                 (generate-pattern name
-                                                   (literal ...)
-                                                   (pattern ...)
-                                                   out*))]))])
-                     (make name))))
+       (values
+         (phase1:racket-syntax
+           (splicing-let-syntax
+             ([make (lambda (stx)
+                      (syntax-parse stx
+                        [(_ new-name)
+                         (syntax-local-introduce
+                           (generate-pattern name
+                                             (literal ...)
+                                             ((original-pattern ...) maybe-out)
+                                             ...))]))])
+             (make name)))
                #'rest
                #f)])))
 
