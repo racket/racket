@@ -588,7 +588,7 @@ Returns the path to the ssh binary on the local system in string form.
 ]
 
 @defproc[(racket-path) path?]{
-Returns the path to the currently executing racket binary on the local system.
+Returns the path to the currently executing Racket binary on the local system.
 }
 
 @defproc[(build-distributed-launch-path [collects-path path-string?]) string?]{
@@ -667,7 +667,7 @@ The @racket[dest] parameter should be a list of remote-hostname and remote-port.
 
 @defproc[(start-message-router/thread [#:listen-port listen-port port-no? DEFAULT-ROUTER-PORT]
                                       [#:nodes nodes list? null]) (values thread? channel?)]{
-Starts a message router in a racket thread connected to @racket[nodes], listening on port @racket[listen-port], and 
+Starts a message router in a Racket thread connected to @racket[nodes], listening on port @racket[listen-port], and 
 returns a @racket[channel?] connection to the message router.
 }
 
