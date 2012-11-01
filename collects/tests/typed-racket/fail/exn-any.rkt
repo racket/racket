@@ -1,3 +1,5 @@
+#;
+(exn-pred "Any")
 #lang racket/load
 
 (module m typed/racket
