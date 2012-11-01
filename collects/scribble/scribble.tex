@@ -11,8 +11,7 @@
 \usepackage[htt]{hyphenat}
 \usepackage[usenames,dvipsnames]{color}
 \hypersetup{bookmarks=true,bookmarksopen=true,bookmarksnumbered=true}
-\usepackage{tocstyle}
-\usetocstyle{standard}
+\IfFileExists{tocstyle.sty}{\usepackage{tocstyle}\usetocstyle{standard}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Configuration that is especially meant to be overridden:
