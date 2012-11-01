@@ -465,3 +465,30 @@
        (define out
          (phase1:racket-syntax (begin-for-syntax (parse-stuff body ...))))
        (values out #'rest #t)])))
+
+;; not sure this is useful but it lets you write racket syntax expressions
+;; from inside honu. the main issue is all the bindings available
+;; are honu bindings so things like (+ 1 x) wont work.
+(provide honu-racket)
+(define-honu-syntax honu-racket
+  (lambda (code)
+    (define (remove-cruft stx)
+      (syntax-parse stx #:literal-sets (cruft)
+        [(#%parens inside ...)
+         (remove-cruft #'(inside ...))]
+        [(#%braces inside ...)
+         (remove-cruft #'(inside ...))]
+        [(#%brackets inside ...)
+         (remove-cruft #'(inside ...))]
+        [(head rest ...)
+         (with-syntax ([head* (remove-cruft #'head)]
+                       [(rest* ...) (remove-cruft #'(rest ...))])
+           #'(head* rest* ...))]
+        [x #'x]))
+
+    (syntax-parse code #:literal-sets (cruft)
+      [(_ (#%parens stx ...) . rest)
+       (define out
+         (with-syntax ([(stx* ...) (remove-cruft #'(stx ...))])
+           (phase1:racket-syntax (phase0:racket-syntax (stx* ...)))))
+       (values out #'rest #t)])))

@@ -36,6 +36,7 @@
                                    [honu-while while]
                                    [honu-macro macro]
                                    [honu-phase phase]
+                                   [honu-racket racket]
                                    [honu-primitive-macro primitive_macro]
                                    [honu-pattern pattern]
                                    [racket:read-line readLine]
