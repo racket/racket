@@ -86,6 +86,12 @@ Encodes a string according to the rules in @cite["RFC3986"] for the userinfo fie
 @defproc[(uri-userinfo-decode [str string?]) string?]{
 Decodes a string according to the rules in @cite["RFC3986"] for the userinfo field.
 }
+@defproc[(uri-unreserved-encode [str string?]) string?]{
+Encodes a string according to the rules in @cite["RFC3986"](section 2.3) for the unreserved characters.
+}
+@defproc[(uri-unreserved-decode [str string?]) string?]{
+Decodes a string according to the rules in @cite["RFC3986"](section 2.3) for the unreserved characters.
+}
 
 
 @defproc[(form-urlencoded-encode [str string?]) string?]{
