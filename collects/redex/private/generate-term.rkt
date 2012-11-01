@@ -341,12 +341,19 @@
               (let ([body-code 
                      (λ (res size)
                        #`(generate-mf-pat language (jf/mf-id . args) #,res #,size))])
-                (syntax-case #'rest ()
-                  [(res) 
+                (syntax-case #'rest (=)
+                  [(= res) 
                    #`(λ (size) 
-                       #,(body-code #'size))]
-                  [(res size)
+                       #,(body-code #'res #'size))]
+                  [(= res size)
                    (body-code #'res #'size)]
+                  [(x . y)
+                   (or (not (identifier? #'x))
+                       (not (free-identifier=? #'= #'x)))
+                   (raise-syntax-error 'generate-term
+                                       "expected to find ="
+                                       stx
+                                       #'x)]
                   [whatever
                    (signal-error #'whatever)]))))]
        [(judgment-form-id? #'jf/mf-id)

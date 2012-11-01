@@ -1322,15 +1322,13 @@
 
   (test (generate-term nats
                        #:satisfying
-                       (sum z z)
-                       n
+                       (sum z z) = n
                        5)
         '((sum z z) = z))
 
   (test (generate-term nats
                        #:satisfying
-                       (sum (s z) (s z))
-                       n
+                       (sum (s z) (s z)) = n
                        5)
         '((sum (s z) (s z)) = (s (s z)))))
 

@@ -8,9 +8,8 @@
 ;; This file makes some small changes to the system in
 ;; typing-rules.rkt (in the same directory) to allow generation
 ;; of terms that satisfy the "typeof" judgment-form.  Specifically,
-;; since this kind of random generation doesn't yet support ellipses,
-;; they have to be eliminated form the judgment-form and the
-;; metafunctions it depends on.
+;; since generation doesn't yet support ellipses, they have to be
+;; eliminated from the judgment-form and the metafunctions it depends on.
 
 (define-language STLC
   (e (λ (x τ) e)
@@ -77,12 +76,20 @@
                  (typeof () e τ)
                  5))
 
-(define (random-terms n)
+(define (random-typed-terms n)
+  (define gen-one (redex-generator STLC (typeof () e τ) 5))
   (for/list ([_ n])
-    (match (random-typed-term)
-      [`(typeof () ,e ,t)
-       (define types (judgment-holds (typeof () ,e τ) τ))
-       (unless (= 1 (length types))
-         (error 'typeof "non-unique types: ~s in ~s\n" types e))
-       (test-equal (car types) t)
-       e])))
+    (extract-term-from-derivation 
+     (gen-one))))
+
+(define (extract-term-from-derivation t)
+  (match t
+    [`(typeof () ,e ,t)
+     ;; test to make sure the generator
+     ;; generated something that the 
+     ;; judgment form actually accepts
+     (define types (judgment-holds (typeof () ,e τ) τ))
+     (unless (= 1 (length types))
+       (error 'typeof "non-unique types: ~s in ~s\n" types e))
+     (test-equal (car types) t)
+     e]))

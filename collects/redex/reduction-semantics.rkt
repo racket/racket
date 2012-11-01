@@ -64,6 +64,7 @@
          generate-term
          check-metafunction
          check-reduction-relation
+         redex-generator
          exn:fail:redex:generation-failure?
          (struct-out exn:fail:redex:test)
          (struct-out counterexample))
