@@ -821,10 +821,14 @@ Scheme_Object *scheme_make_pair(Scheme_Object *car, Scheme_Object *cdr)
 Scheme_Object *scheme_make_mutable_pair(Scheme_Object *car, Scheme_Object *cdr)
 {
   Scheme_Object *cons;
+#ifdef MZ_PRECISE_GC
+  cons = GC_malloc_pair(car, cdr);
+#else
   cons = scheme_alloc_object();
-  cons->type = scheme_mutable_pair_type;
   SCHEME_CAR(cons) = car;
   SCHEME_CDR(cons) = cdr;
+#endif
+  cons->type = scheme_mutable_pair_type;
   return cons;
 }
 
@@ -836,10 +840,15 @@ Scheme_Object *scheme_make_raw_pair(Scheme_Object *car, Scheme_Object *cdr)
      tools expect pairs to always contain tagged values. A raw pair
      contains arbitrary pointers. */
 
+#ifdef MZ_PRECISE_GC
+  cons = GC_malloc_pair(car, cdr);
+#else
   cons = scheme_alloc_object();
-  cons->type = scheme_raw_pair_type;
   SCHEME_CAR(cons) = car;
   SCHEME_CDR(cons) = cdr;
+#endif
+
+  cons->type = scheme_raw_pair_type;
   return cons;
 }
 
