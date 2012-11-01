@@ -394,10 +394,11 @@
                                            (with-syntax ([(out ...) maybe-out])
                                              #'(#:with result (parse-stuff honu-syntax (#%parens out ...))))
                                            #'(#:with result #'()))])
-          #'[pattern (~seq new-pattern ...)
-                     withs ... ...
-                     result-with ...
-                     ]))
+          (syntax/loc honu-pattern
+                      [pattern (~seq new-pattern ...)
+                               withs ... ...
+                               result-with ...
+                               ])))
 
       (define pattern-stuff
         (for/list ([pattern (syntax->list #'(pattern-stx ...))]
