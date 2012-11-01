@@ -241,7 +241,7 @@
   (test-equal (judgment-holds (typeof ([x_2 int] ([x_1 (int → int)] •)) (x_1 5) int))
               #t)
   
-  (for ([_ 500])
+  (for ([_ 100])
     (define term (generate-term STLC #:satisfying (typeof Γ e τ) 6))
     (match term
       [`(typeof ,g ,e ,t)
@@ -258,6 +258,17 @@
        (test-equal tp `(,t))]
       [#f
        (void)]))
+  
+  (define g (redex-generator STLC (typeof • e τ) 5))
+  (define terms (filter values (for/list ([_ 400]) (g))))
+  (test-equal (length terms)
+              (length (remove-duplicates terms)))
+  (map (match-lambda
+         [`(typeof ,g ,e ,t)
+          (define tp (judgment-holds (typeof ,g ,e τ) τ))
+          (test-equal tp `(,t))])
+       terms)
+  (void)
   )
 
 (let ()
@@ -267,17 +278,17 @@
     (n number))
   
   (define-metafunction l
-    filter : n e -> e
-    [(filter n •)
+    fltr : n e -> e
+    [(fltr n •)
      •]
-    [(filter n (n e))
-     (filter n e)]
-    [(filter n (n_0 e))
-     (n_0 (filter n e))])
+    [(fltr n (n e))
+     (fltr n e)]
+    [(fltr n (n_0 e))
+     (n_0 (fltr n e))])
   
   (define-judgment-form l
     #:mode (filtered I I O)
-    [(filtered e n (filter n e))])
+    [(filtered e n (fltr n e))])
   
   (test-equal (generate-term l #:satisfying (filtered (1 (2 (3 (4 •)))) 3 (1 (2 (4 •)))) +inf.0)
               '(filtered (1 (2 (3 (4 •)))) 3 (1 (2 (4 •)))))
@@ -294,12 +305,23 @@
        (void)]))
   
   (for ([_ 50])
-    (define t (generate-term l #:satisfying (filter n e) e_1 5))
+    (define t (generate-term l #:satisfying (fltr n e) e_1 5))
     (match t
-      [`((filter ,n ,e) = ,e1)
-       (test-equal (term (filter ,n ,e)) e1)]
+      [`((fltr ,n ,e) = ,e1)
+       (test-equal (term (fltr ,n ,e)) e1)]
       [#f
        (void)]))
+  
+  (define g (redex-generator l (fltr n e_1) = e_2 5))
+  (define terms (filter values (for/list ([_ 50]) (g))))
+  (test-equal (length terms)
+              (length (remove-duplicates terms)))
+  (map (match-lambda
+         [`((fltr ,n ,e) = ,e1)
+          (test-equal (term (fltr ,n ,e)) e1)])
+       terms)
+  (void)
+
   )
 
 (let ()

@@ -353,9 +353,9 @@
         (syntax-case #'rest ()
           [() 
            #`(λ (size) 
-               (generate-jf-pat (jf/mf-id . args) size))]
+               (generate-jf-pat language (jf/mf-id . args) size))]
           [(size)
-           #'(generate-jf-pat (jf/mf-id . args) size)]
+           #'(generate-jf-pat language (jf/mf-id . args) size)]
           [(x . y) (raise-syntax-error 'generate-term 
                                        "#:satisfying does not yet support additional keyword arguments"
                                        stx #'x)])]
@@ -405,24 +405,67 @@
   (syntax-case stx ()
     [(g-m-p lang-id (mf-name . lhs-pats) rhs-pat size)
      #`(parameterize ([unsupported-pat-err-name 'generate-term])
-        ((get-mf-generator lang-id (mf-name . lhs-pats) rhs-pat size)))]))
+        ((make-redex-generator lang-id (mf-name . lhs-pats) = rhs-pat size)))]))
 
 (define-syntax (generate-jf-pat stx)
   (syntax-case stx ()
-    [(g-p (jf-name . pat-raw) size)
+    [(g-j-p lang-id (jf-name . pat-raw) size)
      #`(parameterize ([unsupported-pat-err-name 'generate-term])
-         ((get-jf-generator (jf-name . pat-raw) size)))]))
+         ((make-redex-generator lang-id (jf-name . pat-raw) size)))]))
 
-(define-syntax (get-jf-generator stx)
+(define-syntax (redex-generator stx)
   (syntax-case stx ()
-    [(g-j-g (jf-name . pat-raw) size)
-     (let* ([j-f (lookup-judgment-form-id #'jf-name)]
-            [lang (judgment-form-lang j-f)]
-            [clauses (judgment-form-gen-clauses j-f)]
-            [nts (definition-nts lang stx 'generate-term)])
-       (with-syntax ([(pat (names ...) (names/ellipses ...))
-                      (rewrite-side-conditions/check-errs nts 'generate-term #t #'pat-raw)])
-         #`(make-jf-gen/proc 'jf-name #,clauses #,lang 'pat size)))]))
+    [(form-name args ...)
+     #`(#%expression (make-redex-generator args ...))]))
+
+(define-syntax (make-redex-generator stx)
+  (syntax-case stx ()
+    [(_ lang-id (jf/mf-id . args) . rest)
+     (cond
+       [(judgment-form-id? #'jf/mf-id)
+        (syntax-case #'rest ()
+          [(size)
+           (let* ([j-f (lookup-judgment-form-id #'jf/mf-id)]
+                  [clauses (judgment-form-gen-clauses j-f)]
+                  [nts (definition-nts #'lang-id stx 'redex-generator)])
+             (with-syntax ([(pat (names ...) (names/ellipses ...))
+                            (rewrite-side-conditions/check-errs nts 'redex-generator #t #'args)])
+               #`(make-jf-gen/proc 'jf/mf-id #,clauses lang-id 'pat size)))]
+          [_
+           (raise-syntax-error 'redex-generator 
+                               "expected an integer depth bound"
+                               stx
+                               #'rest)])]
+       [(metafunc #'jf/mf-id)
+        (syntax-case #'rest ()
+          [(= res size)
+           (and (identifier? #'=)
+                (equal? '= (syntax->datum #'=)))
+           (let ()
+             (define mf (syntax-local-value #'jf/mf-id (λ () #f)))
+             (define nts (definition-nts #'lang-id stx 'redex-generator))
+             (with-syntax ([(lhs-pat (lhs-names ...) (lhs-names/ellipses ...))
+                            (rewrite-side-conditions/check-errs nts (syntax-e #'g-m-p) #t #'args)]
+                           [(rhs-pat (rhs-names ...) (rhs-names/ellipses ...))
+                            (rewrite-side-conditions/check-errs nts (syntax-e #'g-m-p) #t #'res)]
+                           [mf-id (term-fn-get-id mf)])
+               #`(make-mf-gen/proc 'mf-id mf-id lang-id 'lhs-pat 'rhs-pat size)))]
+          [_
+           (raise-syntax-error 'redex-generator 
+                               "expected \"=\" followed by a result pattern and an integer depth bound"
+                               stx
+                               #'rest)])]
+       [else
+        (raise-syntax-error 'redex-generator
+                            "expected either a metafunction or a judgment-form identifier"
+                            stx
+                            #'jf/mf-id)])]
+    [(_ not-lang-id . rest)
+     (not (identifier? #'not-lang-id))
+     (raise-syntax-error 'redex-generator
+                            "expected an identifier in the language position"
+                            stx
+                            #'not-lang-id)]))
 
 (define (make-jf-gen/proc jf-id mk-clauses lang pat size)
   (define gen (search/next (mk-clauses) pat size lang))
@@ -436,21 +479,6 @@
   (λ ()
     (parameterize ([current-logger generation-logger])
       (termify (gen)))))
-
-(define-syntax (get-mf-generator stx)
-  (syntax-case stx ()
-    [(g-m-g lang-id (mf-name . lhs-pats) rhs-pat size)
-     (let ()
-       (define mf (syntax-local-value #'mf-name (λ () #f)))
-       (unless (term-fn? mf)
-         (raise-syntax-error 'generate-mf-pat "expected an identifier bound to a metafunction" stx #'mf-name))
-       (define nts (language-id-nts #'lang-id (syntax-e #'g-m-p)))
-       (with-syntax ([(lhs-pat (lhs-names ...) (lhs-names/ellipses ...))
-                      (rewrite-side-conditions/check-errs nts (syntax-e #'g-m-p) #t #'lhs-pats)]
-                     [(rhs-pat (rhs-names ...) (rhs-names/ellipses ...))
-                      (rewrite-side-conditions/check-errs nts (syntax-e #'g-m-p) #t #'rhs-pat)]
-                     [mf-id (term-fn-get-id mf)])
-         #`(make-mf-gen/proc 'mf-id mf-id lang-id 'lhs-pat 'rhs-pat size)))]))
 
 (define (make-mf-gen/proc fn metafunc-proc lang lhs-pat rhs-pat size)
   (define gen (search/next ((metafunc-proc-gen-clauses metafunc-proc))
@@ -480,7 +508,6 @@
          get-most-recent-trace
          update-gen-trace!
          exn:fail:redex:generation-failure?
-         get-jf-generator
-         get-mf-generator
+         redex-generator
          (struct-out counterexample)
          (struct-out exn:fail:redex:test))

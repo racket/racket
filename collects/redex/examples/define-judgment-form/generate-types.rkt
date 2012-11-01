@@ -3,10 +3,12 @@
 (require redex/pict
          redex/reduction-semantics)
 
+(provide (all-defined-out))
+
 ;; This file makes some small changes to the system in
 ;; typing-rules.rkt (in the same directory) to allow generation
 ;; of terms that satisfy the "typeof" judgment-form.  Specifically,
-;; since gerenation of this type doesn't yet support ellipses,
+;; since this kind of random generation doesn't yet support ellipses,
 ;; they have to be eliminated form the judgment-form and the
 ;; metafunctions it depends on.
 
@@ -75,7 +77,7 @@
                  (typeof () e τ)
                  5))
 
-(define (test-some-terms n)
+(define (random-terms n)
   (for/list ([_ n])
     (match (random-typed-term)
       [`(typeof () ,e ,t)
@@ -84,5 +86,3 @@
          (error 'typeof "non-unique types: ~s in ~s\n" types e))
        (test-equal (car types) t)
        e])))
-
-(test-some-terms 15)

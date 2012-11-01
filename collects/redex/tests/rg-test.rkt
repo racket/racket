@@ -1301,13 +1301,13 @@
      -------------------------
      (sum (s n_1) n_2 n_3)])
 
-  (test (generate-term L
+  (test (generate-term nats
                        #:satisfying
                        (sum z z n)
                        5)
         '(sum z z z))
 
-  (test (generate-term L
+  (test (generate-term nats
                        #:satisfying
                        (sum (s z) (s z) n)
                        5)
