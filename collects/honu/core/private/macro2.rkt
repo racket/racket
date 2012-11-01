@@ -402,7 +402,6 @@
       (define pattern-stuff
         (for/list ([pattern (syntax->list #'(pattern-stx ...))]
                    [out (syntax->list #'(out-stx ...))])
-          (printf "Pattern ~a\n" pattern)
           (make-syntax-class-pattern pattern out)))
 
       #;
