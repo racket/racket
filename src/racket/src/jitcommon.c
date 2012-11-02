@@ -605,6 +605,7 @@ static int common2(mz_jit_state *jitter, void *_data)
     int argc, j;
     void *code;
     for (j = 0; j < 2; j++) {
+      CHECK_LIMIT();
       code = jit_get_ip().ptr;
       if (!i) {
 	if (!j)
@@ -1463,6 +1464,7 @@ int scheme_generate_struct_op(mz_jit_state *jitter, int kind, int for_branch,
     __START_INNER_TINY__(1);
     ref2 = jit_beqi_i(jit_forward(), JIT_R2, scheme_structure_type);
     ref3 = jit_beqi_i(jit_forward(), JIT_R2, scheme_proc_struct_type);
+    CHECK_LIMIT();
     ref9 = jit_beqi_i(jit_forward(), JIT_R2, scheme_chaperone_type);
     __END_INNER_TINY__(1);
     bref2 = jit_bnei_i(jit_forward(), JIT_R2, scheme_proc_chaperone_type);
@@ -1576,6 +1578,7 @@ int scheme_generate_struct_op(mz_jit_state *jitter, int kind, int for_branch,
     } else {
       refdone = NULL;
     }
+    CHECK_LIMIT();
 
     /* False branch: */
     if (branch_info) {
@@ -2101,7 +2104,8 @@ static int common4c(mz_jit_state *jitter, void *_data)
         else
           sjc.struct_constr_nary_code = code;
         num_args =-1;
-      }
+      } else
+        num_args = 0;
     
       scheme_generate_struct_alloc(jitter, num_args, 1, 1, ii == 2, ii == 1);
 

@@ -407,6 +407,7 @@ static int generate_inlined_struct_op(int kind, mz_jit_state *jitter,
       if (kind == INLINE_STRUCT_PROC_SET)
         scheme_restore_struct_temp(jitter, JIT_V1);
       __END_SHORT_JUMPS__(1);
+      CHECK_LIMIT();
     } else {
       ref = NULL;
       refslow = NULL;
@@ -482,6 +483,7 @@ static int generate_inlined_struct_op(int kind, mz_jit_state *jitter,
     }
   } else if (kind == INLINE_STRUCT_PROC_CONSTR) {
     scheme_generate_struct_alloc(jitter, rand2 ? 2 : 1, 0, 0, is_tail, multi_ok);
+    CHECK_LIMIT();
   } else {
     scheme_signal_error("internal error: unknown struct-op mode");
   }
@@ -511,13 +513,15 @@ static int generate_inlined_struct_op(int kind, mz_jit_state *jitter,
       jkind = 3;
     } else
       jkind = 1;
-    
+
+    CHECK_LIMIT();
     scheme_generate_struct_op(jitter, jkind, !!for_branch, 
                               for_branch, branch_short,
                               result_ignored,
                               0, 0,
                               tpos, pos, 
                               0, refslow, refslow, NULL, NULL);
+    CHECK_LIMIT();
 
     if (ref2) {
       __START_SHORT_JUMPS__(1);
@@ -808,13 +812,14 @@ int scheme_generate_struct_alloc(mz_jit_state *jitter, int num_args,
 #ifdef CAN_INLINE_ALLOC
     int i;
     jit_movr_p(JIT_R0, JIT_R2);
-    jit_movi_p(JIT_R1, 0); /* clear register that might get saved as a pointer */
+    (void)jit_movi_p(JIT_R1, 0); /* clear register that might get saved as a pointer */
     inline_struct_alloc(jitter, num_args, inline_slow);
     /* allocation result is in V1 */
     jit_stxi_p((intptr_t)&((Scheme_Structure *)0x0)->stype + OBJHEAD_SIZE, JIT_V1, JIT_R0);
     for (i = 0; i < num_args; i++) {
       jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(i));
       jit_stxi_p((intptr_t)&(((Scheme_Structure *)0x0)->slots[0]) + OBJHEAD_SIZE + WORDS_TO_BYTES(i), JIT_V1, JIT_R1);
+      CHECK_LIMIT();
     }
     jit_addi_p(JIT_R0, JIT_V1, OBJHEAD_SIZE);
 #else
@@ -827,6 +832,7 @@ int scheme_generate_struct_alloc(mz_jit_state *jitter, int num_args,
     jit_retval(JIT_R0);
 #endif
   }
+  CHECK_LIMIT();
   
   if (pop_and_jump) {
     mz_epilog(JIT_V1);
@@ -853,7 +859,7 @@ static int generate_inlined_constant_varref_test(mz_jit_state *jitter, Scheme_Ob
   int pos;
 
   if (SCHEME_VARREF_FLAGS(obj) & 0x1) {
-    jit_movi_p(JIT_R0, scheme_true);
+    (void)jit_movi_p(JIT_R0, scheme_true);
     return 1;
   }
 
@@ -3329,11 +3335,11 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       scheme_add_branch_false(for_branch, reffalse);
       __END_SHORT_JUMPS__(branch_short);
     } else {
-      jit_movi_p(JIT_R0, scheme_true);
+      (void)jit_movi_p(JIT_R0, scheme_true);
       reftrue = jit_jmpi(jit_forward());
         
       mz_patch_branch(reffalse);
-      jit_movi_p(JIT_R0, scheme_false);
+      (void)jit_movi_p(JIT_R0, scheme_false);
         
       mz_patch_branch(reftrue);
       __END_TINY_JUMPS__(1);

@@ -1113,15 +1113,15 @@ static void emit_indentation(mz_jit_state *jitter)
 #endif
 
 #define PAST_LIMIT() ((uintptr_t)jit_get_ip().ptr > (uintptr_t)jitter->limit)
-#define CHECK_LIMIT() if (PAST_LIMIT()) return past_limit(jitter);
+#define CHECK_LIMIT() if (PAST_LIMIT()) return past_limit(jitter, __FILE__, __LINE__);
 #if 1
-# define past_limit(j) 0
+# define past_limit(j, f, l) 0
 #else
-static int past_limit(mz_jit_state *jitter)
+static int past_limit(mz_jit_state *jitter, const char *file, int line)
 {
   if (((uintptr_t)jit_get_ip().ptr > (uintptr_t)jitter->limit + JIT_BUFFER_PAD_SIZE)
       || (jitter->retain_start)) {
-    printf("way past\n"); abort();
+    printf("way past %s %d\n", file, line); abort();
   }
   return 0;
 }

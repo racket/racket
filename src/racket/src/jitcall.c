@@ -988,7 +988,7 @@ int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
 #endif
   if (unboxed_args) {
     /* no slow path here; return NULL to box arguments fall back to generic */
-    jit_movi_p(JIT_R0, NULL);
+    (void)jit_movi_p(JIT_R0, NULL);
     if (pop_and_jump) {
       mz_epilog(JIT_V1);
     }
