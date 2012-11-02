@@ -465,6 +465,6 @@
 (define (menu-or-bar-parent who p)
   (unless (or (is-a? p internal-menu<%>) (is-a? p menu-bar%))
     (unless (is-a? p menu-item-container<%>)
-      (raise-arguments-error (constructor-name who) "(is-a?/c menu-item-container<%>)" p))
+      (raise-argument-error (constructor-name who) "(is-a?/c menu-item-container<%>)" p))
     (raise-arguments-error (who->name who) "invalid parent;\n given parent is not an instance of a built-in menu item container class"
                            "given parent" p)))
