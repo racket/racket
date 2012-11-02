@@ -415,9 +415,9 @@
 ;;   prompts with this tag will return a union of `body` 
 ;;   and the codomains of `handler`
 (def-type Prompt-Tag ([body Type/c] [handler Function?])
-  [#:key 'prompt-tag]
-  [#:frees (λ (f) (combine-frees (make-invariant (f body))
-                                 (make-invariant (f handler))))])
+  [#:frees (λ (f) (combine-frees (list (make-invariant (f body))
+                                       (make-invariant (f handler)))))]
+  [#:key 'prompt-tag])
 
 ;; value: the type of allowable values
 (def-type Continuation-Mark-Key ([value Type/c])  
