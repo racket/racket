@@ -919,6 +919,7 @@ static Scheme_Object *link_toplevel(Scheme_Object **exprs, int which, Scheme_Env
         modname = env->module->modname;
         mod_phase = env->mod_phase;
       }
+      shape = NULL;
     } else if (SCHEME_PAIRP(expr)) {
       varname = SCHEME_CAR(expr);
       modname = SCHEME_CDR(expr);
@@ -926,6 +927,7 @@ static Scheme_Object *link_toplevel(Scheme_Object **exprs, int which, Scheme_Env
         mod_phase = SCHEME_INT_VAL(SCHEME_CDR(modname));
         modname = SCHEME_CAR(modname);
       }
+      shape = NULL;
     } else {
       modname = SCHEME_VEC_ELS(expr)[0];
       varname = SCHEME_VEC_ELS(expr)[1];
