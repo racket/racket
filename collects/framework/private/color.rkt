@@ -320,9 +320,6 @@ added get-regions
     (define re-tokenize-lexer-mode-argument #f)
     (define/private (continue-re-tokenize start-time did-something?)
       (cond
-        [(not (= rev (get-revision-number)))
-         (c-log "revision number changed unexpectedly")
-         #f]
         [(and did-something? ((+ start-time 20) . <= . (current-inexact-milliseconds)))
          #f]
         [else

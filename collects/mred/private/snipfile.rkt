@@ -91,15 +91,17 @@
                      void))))
             ;; General case, which handles non-text context:
             (with-method ([gsp (text get-snip-position)]
-                          [grn (text get-revision-number)])
+                          [grn (text get-revision-number)]
+                          [fs (text find-snip)])
               (let-values ([(pipe-r pipe-w) (make-pipe)])
                 (let* ([get-text-generic (generic wx:snip% get-text)]
                        [get-count-generic (generic wx:snip% get-count)]
                        [next-generic (generic wx:snip% next)]
                        [revision (grn)]
                        [next? #f]
+                       [snip-end-position (+ (gsp snip) (send-generic snip get-count-generic))]
                        [update-str-to-snip
-                        (lambda (to-str)
+                        (lambda (skip to-str)
                           (if snip
                               (let ([snip-start (gsp snip)])
                                 (cond
@@ -109,8 +111,9 @@
                                    0]
                                   [(is-a? snip wx:string-snip%)
                                    (set! next? #t)
-                                   (let ([c (min (send-generic snip get-count-generic) (- end snip-start))])
-                                     (write-string (send-generic snip get-text-generic 0 c) pipe-w)
+                                   (let ([c (min (- (send-generic snip get-count-generic) skip)
+                                                 (- end snip-start))])
+                                     (write-string (send-generic snip get-text-generic skip c) pipe-w)
                                      (read-bytes-avail!* to-str pipe-r))]
                                   [else
                                    (set! next? #f)
@@ -120,13 +123,18 @@
                                 0)))]
                        [next-snip
                         (lambda (to-str)
-                          (unless (= revision (grn))
-                            (raise-arguments-error 
-                             'text-input-port 
-                             "editor has changed since port was opened"
-                             "editor" text))
-                          (set! snip (send-generic snip next-generic))
-                          (update-str-to-snip to-str))]
+                          (cond
+                            [(= revision (grn))
+                             (set! snip (send-generic snip next-generic))
+                             (set! snip-end-position (and snip (+ (gsp snip) (send-generic snip get-count-generic))))
+                             (update-str-to-snip 0 to-str)]
+                            [else
+                             (set! revision (grn))
+                             (define old-snip-end-position snip-end-position)
+                             (set! snip (fs snip-end-position 'after-or-none))
+                             (define snip-start-position (and snip (gsp snip)))
+                             (set! snip-end-position (and snip (+ snip-start-position (send-generic snip get-count-generic))))
+                             (update-str-to-snip (if snip (- old-snip-end-position snip-start-position) 0) to-str)]))]
                        [read-chars (lambda (to-str)
                                      (cond
                                        [next?
@@ -171,7 +179,7 @@
                                      (- end snip-start))])
                         (set! next? #t)
                         (display (send-generic snip get-text-generic skip c) pipe-w))
-                      (update-str-to-snip empty-string))
+                      (update-str-to-snip 0 empty-string))
                   port)))))))
 
   (define (jump-to-submodule in-port expected-module k)
