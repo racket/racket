@@ -391,7 +391,12 @@
         (with-syntax ([(new-pattern ...) (convert-pattern honu-pattern mapping)]
                       [((withs ...) ...) (set->list withs)]
                       [(result-with ...) (if (syntax-e maybe-out)
-                                           (with-syntax ([(out ...) maybe-out])
+                                           (with-syntax ([(out ...)
+                                                          (syntax-parse maybe-out
+                                                            #:literal-sets (cruft)
+                                                            [(#%braces what ...)
+                                                             #'(what ...)])
+                                                            ])
                                              #'(#:with result (parse-stuff honu-syntax (#%parens out ...))))
                                            #'(#:with result #'()))])
           (syntax/loc honu-pattern
@@ -423,10 +428,11 @@
                       new-pattern ...
 
                       #;
-                      [pattern (~seq new-pattern ...)
-                               withs ... ...
-                               result-with ...
-                               ])))))
+                      [pattern x #:when (begin
+                                          (debug "All patterns failed for ~a\n" 'name)
+                                          #f)]
+
+                      )))))
         (debug "Output is ~a\n" (pretty-syntax output))
         output)])))
 
