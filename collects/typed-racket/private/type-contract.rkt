@@ -1,5 +1,7 @@
 #lang racket/base
 
+;; Contract generation for Typed Racket
+
 (provide type->contract define/fixup-contract? change-contract-fixups)
 
 (require
@@ -337,6 +339,9 @@
          #`(promise/c #,(t->c t))]
         [(Opaque: p? cert)
          #`(flat-named-contract (quote #,(syntax-e p?)) #,(cert p?))]
+        [(Continuation-Mark-Key: t)
+         (set-chaperone!)
+         #`(continuation-mark-key/c #,(t->c t))]
         ;; TODO
         [(F: v) (cond [(assoc v (vars)) => second]
                       [else (int-err "unknown var: ~a" v)])]
