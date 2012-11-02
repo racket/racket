@@ -7889,6 +7889,9 @@ scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key
 	}
       }
 
+      if (key_arg != key && val != NULL)
+        val = scheme_chaperone_do_continuation_mark("continuation-mark-set-first", 1, key_arg, val);
+
       pos = startpos - findpos;
       if (pos > 16) {
         pos >>= 1;
@@ -7931,8 +7934,6 @@ scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key
           } else
             cht = NULL;
 
-          if (key_arg != key)
-            val = scheme_chaperone_do_continuation_mark("continuation-mark-set-first", 1, key_arg, val);
           if (!cache || !SCHEME_VECTORP(cache)) {
             /* No cache so far, so map one key */
             cache = scheme_make_vector(4, NULL);

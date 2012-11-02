@@ -4350,6 +4350,25 @@
       (with-continuation-mark mark (lambda (x) (+ x 1))
         (do-mark mark))))
 
+  (test/pos-blame
+   'continuation-mark-key/c-ho-10
+   '(let* ([mark (make-continuation-mark-key)]
+           [ctc-mark (contract (continuation-mark-key/c number?)
+                               mark
+                               'pos
+                               'neg)])
+      (with-continuation-mark mark "not a number"
+        (+ 1 (continuation-mark-set-first #f ctc-mark)))))
+
+  (test/spec-passed
+   'continuation-mark-key/c-ho-11
+   '(let* ([mark (make-continuation-mark-key)]
+           [ctc-mark (contract (continuation-mark-key/c number?)
+                               mark
+                               'pos
+                               'neg)])
+      (continuation-mark-set-first #f ctc-mark)))
+
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
   ;;  make-contract
