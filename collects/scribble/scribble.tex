@@ -11,7 +11,8 @@
 \usepackage[htt]{hyphenat}
 \usepackage[usenames,dvipsnames]{color}
 \hypersetup{bookmarks=true,bookmarksopen=true,bookmarksnumbered=true}
-\IfFileExists{tocstyle.sty}{\usepackage{tocstyle}\usetocstyle{standard}}
+\IfFileExists{tocstyle.sty}{\usepackage{tocstyle}\usetocstyle{standard}}{}
+\IfFileExists{CJK.sty}{\usepackage{CJK}}{}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Configuration that is especially meant to be overridden:
