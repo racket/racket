@@ -10,7 +10,7 @@ A @racket[menu-item<%>] object is an element within a @racket[menu%],
  @racket[menu-item<%>] object.
 
 A menu item is either a @racket[separator-menu-item%] object (merely
- a separator), of a @racket[labelled-menu-item<%>] object; the latter
+ a separator), or a @racket[labelled-menu-item<%>] object; the latter
  is more specifically an instance of either @racket[menu-item%] (a
  plain menu item), @racket[checkable-menu-item%] (a checkable menu
  item), or @racket[menu%] (a submenu).
