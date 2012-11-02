@@ -1299,10 +1299,10 @@
 (let ([try-equiv
        (lambda (extras)
          (lambda (a b)
-           (test-comp `(module m racket
+           (test-comp `(module m racket/base
                          (define (f x)
                            (apply x ,@extras ,a)))
-                      `(module m racket
+                      `(module m racket/base
                          (define (f x)
                            (x ,@extras ,@b))))))])
   (map (lambda (try-equiv)
@@ -1321,7 +1321,7 @@
         (try-equiv '(0))
         (try-equiv '(0 1)))))
          
-(test-comp '(module m mzscheme
+(test-comp '(module m racket/base
               (define (q x)
                 ;; Single-use bindings should be inlined always:
                 (let* ([a (lambda (x) (+ x 10))]
@@ -1336,7 +1336,7 @@
                        [j (lambda (x) (+ 1 (i x)))]
                        [k (lambda (x) (+ 1 (j x)))])
                   (k x))))
-           '(module m mzscheme
+           '(module m racket/base
               (define (q x)
                 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ x 10))))))))))))))
 
