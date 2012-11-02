@@ -47,7 +47,7 @@ static void *print_out_pointer(const char *prefix, void *p,
 
   page = pagemap_find_page(GC_instance->page_maps, p);
   if (!page || (trace_page_type(page) == TRACE_PAGE_BAD)) {
-    GCPRINT(GCOUTF, "%s%s %p %p\n", prefix, trace_source_kind(*_kind), p);
+    GCPRINT(GCOUTF, "%s%s %p\n", prefix, trace_source_kind(*_kind), p);
     return NULL;
   }
   p = trace_pointer_start(page, p);

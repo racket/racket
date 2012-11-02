@@ -351,6 +351,10 @@ inline static void check_used_against_max(NewGC *gc, size_t len)
   page_count = size_to_apage_count(len);
   gc->used_pages += page_count;
 
+#if MZ_GC_BACKTRACE
+  if (gc->dumping_avoid_collection) return;
+#endif
+
   if(gc->in_unsafe_allocation_mode) {
     if(gc->used_pages > gc->max_pages_in_heap)
       gc->unsafe_allocation_abort(gc);
@@ -3412,6 +3416,12 @@ static void *trace_pointer_start(mpage *page, void *p) {
 const char *trace_source_kind(int kind)
 {
   switch (kind) {
+  case PAGE_TAGGED: return "_TAGGED";
+  case PAGE_ATOMIC: return "_ATOMIC";
+  case PAGE_ARRAY: return "_ARRAY";
+  case PAGE_TARRAY: return "_TARRAY";
+  case PAGE_PAIR: return "_PAIR";
+  case PAGE_BIG: return "_BIG";
   case BT_STACK: return "STACK";
   case BT_ROOT: return "ROOT";
   case BT_FINALIZER: return "FINALIZER";
