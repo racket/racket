@@ -38,6 +38,7 @@
           make-CustodianBox
           make-HeterogeneousVector
           make-Continuation-Mark-Key
+          make-Prompt-Tag
           make-ListDots))
 
 ;Section 9.2
@@ -592,6 +593,7 @@
                    (-> (->... '() (a a) b)
                        (make-ListDots a 'a)
                        (-values (list (-pair b (-val '())) -Nat -Nat -Nat)))))]
+
 
 [call/cc (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
 [call/ec (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
@@ -2023,9 +2025,22 @@
 [call-with-continuation-barrier (-poly (a) (-> (-> a) a))]
 [continuation-prompt-available? (-> -Prompt-Tag B)]
 
-[make-continuation-prompt-tag (->opt [Sym] -Prompt-Tag)]
-[default-continuation-prompt-tag (-> -Prompt-Tag)]
-[continuation-prompt-tag? (make-pred-ty -Prompt-Tag)]
+[call-with-continuation-prompt
+ (-polydots (a b d c)
+   (cl->*
+    (-> (-> b) (make-Prompt-Tag b (->... '() (c c) d)) (->... '() (c c) d)
+        (Un b d))
+    (-> (-> b) Univ)))]
+[abort-current-continuation
+ (-polydots (a b d e c)
+   (->... (list (make-Prompt-Tag b (->... '() (c c) d))) (c c) e))]
+[call-with-composable-continuation
+ (-polydots (b c a)
+   (cl->*
+    (-> (->... '() (a a) b) (make-Prompt-Tag b c) (make-ValuesDots '() a 'a))))]
+[make-continuation-prompt-tag (-poly (a b) (->opt [Sym] (make-Prompt-Tag a b)))]
+[default-continuation-prompt-tag (-> (make-Prompt-Tag Univ (-> ManyUniv Univ)))]
+;[continuation-prompt-tag? (make-pred-ty -Prompt-Tag)]
 [dynamic-wind (-poly (a) (-> (-> ManyUniv) (-> a) (-> ManyUniv) a))]
 
 ;Section 9.5 (Continuation Marks)

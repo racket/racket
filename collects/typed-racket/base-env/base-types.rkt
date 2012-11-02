@@ -143,7 +143,6 @@
 [Place-Channel -Place-Channel]
 [Place -Place]
 [Will-Executor -Will-Executor]
-[Prompt-Tag -Prompt-Tag]
 
 
 [Listof -Listof]
@@ -171,3 +170,4 @@
 [Custodian-Boxof (-poly (a) (make-CustodianBox a))]
 
 [Continuation-Mark-Key (-poly (a) (make-Continuation-Mark-Key a))]
+[Prompt-Tag (-poly (a b) (make-Prompt-Tag a b))]
