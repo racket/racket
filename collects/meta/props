@@ -693,6 +693,7 @@ path/s is either such a string or a list of them.
 "collects/drracket/main.rkt" drdr:command-line (mzc *)
 "collects/drracket/private/dock-icon.rkt" drdr:command-line (raco "make" *)
 "collects/drracket/private/drracket-normal.rkt" drdr:command-line (mzc *)
+"collects/drracket/private/follow-log.rkt" drdr:command-line (mzc *)
 "collects/drracket/private/launcher-mred-bootstrap.rkt" drdr:command-line (mzc *)
 "collects/drracket/private/launcher-mz-bootstrap.rkt" drdr:command-line (mzc *)
 "collects/drracket/private/stick-figures.rkt" drdr:command-line (mzc *)
