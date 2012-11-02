@@ -1939,13 +1939,14 @@ static void copy_backtrace_source(mpage *to_page, void *to_ptr,
   to_page->backtrace[to_delta+1] = from_page->backtrace[from_delta+1];
 }
 
-static void *get_backtrace(mpage *page, void *ptr)
+static void *get_backtrace(mpage *page, void *ptr, int *kind)
 /* ptr is after objhead */
 {
   uintptr_t delta;
 
   if (!page->backtrace) {
     /* This shouldn't happen, but fail more gracefully if it does. */
+    *kind = -1;
     return NULL;
   }
 
@@ -1957,6 +1958,8 @@ static void *get_backtrace(mpage *page, void *ptr)
   }
 
   delta = PPTR(ptr) - PPTR(page->addr);
+  *kind = ((intptr_t *)page->backtrace)[delta];
+
   return page->backtrace[delta - 1];
 }
 
@@ -3406,6 +3409,17 @@ static void *trace_pointer_start(mpage *page, void *p) {
 # define TRACE_PAGE_BAD PAGE_TYPES
 # define trace_page_is_big(page) (page)->size_class
 # define trace_backpointer get_backtrace
+const char *trace_source_kind(int kind)
+{
+  switch (kind) {
+  case BT_STACK: return "STACK";
+  case BT_ROOT: return "ROOT";
+  case BT_FINALIZER: return "FINALIZER";
+  case BT_WEAKLINK: return "WEAK-LINK";
+  case BT_IMMOBILE: return "IMMOBILE";
+  default: return "???";
+  }
+}
 # include "backtrace.c"
 #else
 # define reset_object_traces() /* */
@@ -4773,8 +4787,9 @@ static GC_print_tagged_value_proc stack_print_tagged_value;
 
 static void dump_stack_pos(void *a) 
 {
+  int kind = 0;
   GCPRINT(GCOUTF, " @%p: ", a);
-  print_out_pointer("", *(void **)a, stack_get_type_name, stack_print_tagged_value);
+  print_out_pointer("", *(void **)a, stack_get_type_name, stack_print_tagged_value, &kind);
 }
 
 # define GC_X_variable_stack GC_do_dump_variable_stack
