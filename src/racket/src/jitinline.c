@@ -3318,7 +3318,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 
     /* This is the actual CAS: */
 #ifdef MZ_USE_FUTURES
-    if (scheme_is_multiprocessor(0)) {
+    if (scheme_is_multithreaded(0)) {
       jit_lock_cmpxchgr_l(JIT_R1, JIT_V1); /* implicitly uses JIT_R0 */
       reffalse = (JNEm(jit_forward(), 0,0,0), _jit.x.pc);
     } else

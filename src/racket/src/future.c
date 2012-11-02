@@ -156,7 +156,7 @@ static Scheme_Object *processor_count(int argc, Scheme_Object *argv[])
   return scheme_make_integer(1);
 }
 
-int scheme_is_multiprocessor(int now)
+int scheme_is_multithreaded(int now)
 {
   return 0;
 }
@@ -2195,17 +2195,14 @@ static void init_cpucount(void)
 #endif
 }
 
-int scheme_is_multiprocessor(int now)
+int scheme_is_multithreaded(int now)
 {
-  if (cpucount > 1) {
-    if (!now) 
-      return 1;
-    else {
-      Scheme_Future_State *fs = scheme_future_state;
-      return (fs && fs->future_threads_created);
-    }
-  } else
-    return 0;
+  if (!now)
+    return 1;
+  else {
+    Scheme_Future_State *fs = scheme_future_state;
+    return (fs && fs->future_threads_created);
+  }
 }
 
 Scheme_Object *processor_count(int argc, Scheme_Object *argv[])

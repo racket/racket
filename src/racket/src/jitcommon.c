@@ -2530,7 +2530,7 @@ static int common7(mz_jit_state *jitter, void *_data)
 
     jit_ldxi_s(JIT_R2, JIT_R1, &MZ_OPT_HASH_KEY(&((Scheme_Stx *)0x0)->iso));
 #ifdef MZ_USE_FUTURES
-    if (scheme_is_multiprocessor(0)) {
+    if (scheme_is_multithreaded(0)) {
       /* Need an atomic update in case another thread is setting
          a hash code on the target pair. */
       ref5 = jit_bmsi_i(jit_forward(), JIT_R2, PAIR_IS_LIST);
@@ -2567,7 +2567,7 @@ static int common7(mz_jit_state *jitter, void *_data)
     jit_ldxi_s(JIT_R2, JIT_R1, &MZ_OPT_HASH_KEY(&((Scheme_Stx *)0x0)->iso));
 #ifdef MZ_USE_FUTURES
     /* As above: */
-    if (scheme_is_multiprocessor(0)) {
+    if (scheme_is_multithreaded(0)) {
       ref5 = jit_bmsi_i(jit_forward(), JIT_R2, PAIR_IS_NON_LIST);
       jit_movr_i(JIT_R0, JIT_R2);
       jit_ori_i(JIT_R2, JIT_R2, PAIR_IS_NON_LIST);
