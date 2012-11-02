@@ -4596,9 +4596,12 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master, Log
 
   TIME_STEP("finalized2");
 
-  if(gc->gc_full)
-  if (premaster_or_place_gc(gc) || switching_master)
-    do_heap_compact(gc);
+#if MZ_GC_BACKTRACE
+  if (0) 
+#endif
+    if(gc->gc_full)
+      if (premaster_or_place_gc(gc) || switching_master)
+        do_heap_compact(gc);
   TIME_STEP("compacted");
 
   /* do some cleanup structures that either change state based on the
