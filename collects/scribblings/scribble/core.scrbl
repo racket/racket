@@ -400,7 +400,12 @@ The recognized @tech{style properties} are as follows:
        not @racket[""] may be used when rendering a document; at a
        minimum, a non-@racket[""] version is rendered when it is
        attached to a part representing the whole document. The default
-       version for a document is @racket[(version)].}
+       version for a document is @racket[(version)]. In rendered form,
+       the version is normally prefixed with the word ``Version,'' but
+       this formatting can be controlled by overriding
+       @tt{.version:before} and/or @tt{.versionNoNav:before} in CSS
+       for HTML rendering or by redefining the @tt{\SVersionBefore}
+       macro for Latex rendering (see @secref["config"]).}
 
  @item{@racket[document-date] structure --- A date for the part,
        normally used on a document's main part for for Latex
