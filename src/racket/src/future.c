@@ -1425,12 +1425,10 @@ static void run_would_be_future(future_t *ft)
   mz_jmp_buf newbuf, *savebuf;
   Scheme_Thread *p;
   Scheme_Future_State *fs;
-  Scheme_Future_Thread_State *fts;
   int aborted = 0;
   
   p = scheme_current_thread;
   fs = scheme_future_state;
-  fts = scheme_future_thread_state;
   
   /* Setup the future thread state */
   p->futures_slow_path_tracing++;
