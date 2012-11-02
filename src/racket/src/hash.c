@@ -61,8 +61,6 @@ static void register_traversers(void);
    running in a future and setting flags on pairs. */
 SHARED_OK static uintptr_t keygen;
 
-XFORM_NONGCING extern int scheme_is_multiprocessor();
-
 XFORM_NONGCING static MZ_INLINE
 uintptr_t PTR_TO_LONG(Scheme_Object *o)
 {
@@ -92,7 +90,7 @@ uintptr_t PTR_TO_LONG(Scheme_Object *o)
 #endif
     if (!v) v = 0x1AD0;
 #ifdef MZ_USE_FUTURES
-    if (SCHEME_PAIRP(o) && scheme_is_multiprocessor(1)) {
+    if (SCHEME_PAIRP(o) && scheme_is_multithreaded(1)) {
       /* Use CAS to avoid losing a hash code due to a conflict with
          JIT-generated `list?' test, which itself uses CAS to set "is
          a list" or "not a list" flags on pairs. */

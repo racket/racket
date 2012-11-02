@@ -303,7 +303,7 @@ void scheme_free_dynamic_extensions(void);
 void scheme_free_all_code(void);
 void scheme_free_ghbn_data(void);
 
-XFORM_NONGCING int scheme_is_multiprocessor(int now);
+XFORM_NONGCING int scheme_is_multithreaded(int now);
 
 /* Type readers & writers for compiled code data */
 typedef Scheme_Object *(*Scheme_Type_Reader)(Scheme_Object *list);
