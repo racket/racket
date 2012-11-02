@@ -281,6 +281,8 @@
     [(Hashtable: k v) (fp "(HashTable ~a ~a)" k v)]
     [(Continuation-Mark-Key: rhs)
      (fp "(Continuation-Mark-Key ~a)" rhs)]
+    [(Prompt-Tag: body handler)
+     (fp "(Prompt-Tag ~a ~a)" body handler)]
     #;[(Poly-unsafe: n b) (fp "(unsafe-poly ~a ~a ~a)" (Type-seq c) n b)]
     [(Poly-names: names body)
      #;(eprintf "POLY SEQ: ~a\n" (Type-seq body))
