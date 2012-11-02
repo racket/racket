@@ -2045,7 +2045,8 @@
          (->opt -Cont-Mark-Set (-lst Univ) [Univ -Prompt-Tag] (-lst (-vec Univ)))))]
 [continuation-mark-set-first 
  (-poly (a b)
-        (cl->* 
+        (cl->*
+         (-> (-opt -Cont-Mark-Set) (make-Continuation-Mark-Key a) (-opt a))
          (->opt (-opt -Cont-Mark-Set) (make-Continuation-Mark-Key a) [b -Prompt-Tag]
                 (Un a b))
          (->opt (-opt -Cont-Mark-Set) Univ [Univ -Prompt-Tag] Univ)))]
