@@ -1,3 +1,7 @@
+5.3.1
+- Revised handling of `Any` exported to untyped code
+- Added `cast`
+- Correctly compute variance of polymorphic type application
 5.3
 - Keyword and optional arguments
 - Faster startup
