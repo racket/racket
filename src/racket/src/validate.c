@@ -1212,7 +1212,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       *_2st_ht = *_st_ht;
     }
     
-    args = MALLOC_N_ATOMIC(int, 11);
+    args = MALLOC_N_ATOMIC(int, 12);
 
     p->ku.k.p1 = (void *)port;
     p->ku.k.p2 = (void *)expr;
@@ -1232,7 +1232,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
     args[10] = tl_timestamp;
     args[11] = expected_results;
 
-    pr = MALLOC_N(void*, 6);
+    pr = MALLOC_N(void*, 7);
     pr[0] = (void *)args;
     pr[1] = (void *)app_rator;
     pr[2] = (void *)tls;
