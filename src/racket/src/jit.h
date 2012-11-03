@@ -210,9 +210,13 @@ struct scheme_jit_common_record {
 
 #define MAX_SHARED_CALL_RANDS 25
   void *shared_tail_code[4][MAX_SHARED_CALL_RANDS];
-  void *shared_non_tail_code[5][MAX_SHARED_CALL_RANDS][2];
-  void *shared_non_tail_retry_code[2];
-  void *shared_non_tail_argc_code[2];
+# define SHARED_SINGLE_VALUE_CASE 0
+# define SHARED_MULTI_OK_CASE 1
+# define SHARED_RESULT_IGNORED_CASE 2
+# define SHARED_NUM_NONTAIL_CASES 3
+  void *shared_non_tail_code[5][MAX_SHARED_CALL_RANDS][SHARED_NUM_NONTAIL_CASES];
+  void *shared_non_tail_retry_code[SHARED_NUM_NONTAIL_CASES];
+  void *shared_non_tail_argc_code[SHARED_NUM_NONTAIL_CASES];
   void *shared_tail_argc_code;
 
 #define MAX_SHARED_ARITY_CHECK 25
@@ -1228,15 +1232,17 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 
 typedef struct jit_direct_arg jit_direct_arg;
 
-void *scheme_generate_shared_call(int num_rands, mz_jit_state *old_jitter, int multi_ok, int is_tail, 
-				  int direct_prim, int direct_native, int nontail_self, int unboxed_args);
-void scheme_ensure_retry_available(mz_jit_state *jitter, int multi_ok);
+void *scheme_generate_shared_call(int num_rands, mz_jit_state *old_jitter, int multi_ok, int result_ignored, 
+                                  int is_tail, int direct_prim, int direct_native, int nontail_self, int unboxed_args);
+void scheme_ensure_retry_available(mz_jit_state *jitter, int multi_ok, int result_ignored);
 int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_rands, 
-			mz_jit_state *jitter, int is_tail, int multi_ok, int no_call);
+			mz_jit_state *jitter, int is_tail, int multi_ok, int ignored_result,
+                        int no_call);
 int scheme_generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs, 
                               int is_inline, Scheme_Native_Closure *direct_to_code, jit_direct_arg *direct_arg);
 int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs, 
-				  int multi_ok, int nontail_self, int pop_and_jump, int is_inlined, int unboxed_args);
+				  int multi_ok, int result_ignored, int nontail_self, int pop_and_jump, 
+                                  int is_inlined, int unboxed_args);
 int scheme_generate_finish_tail_call(mz_jit_state *jitter, int direct_native);
 int scheme_generate_finish_apply(mz_jit_state *jitter);
 int scheme_generate_finish_multi_apply(mz_jit_state *jitter);

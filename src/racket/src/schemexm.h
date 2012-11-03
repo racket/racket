@@ -196,6 +196,7 @@
 #define scheme_set_tail_buffer_size (scheme_extension_table->scheme_set_tail_buffer_size)
 #define scheme_force_value (scheme_extension_table->scheme_force_value)
 #define scheme_force_one_value (scheme_extension_table->scheme_force_one_value)
+#define scheme_ignore_result (scheme_extension_table->scheme_ignore_result)
 #define scheme_set_cont_mark (scheme_extension_table->scheme_set_cont_mark)
 #define scheme_push_continuation_frame (scheme_extension_table->scheme_push_continuation_frame)
 #define scheme_pop_continuation_frame (scheme_extension_table->scheme_pop_continuation_frame)

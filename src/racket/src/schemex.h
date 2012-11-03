@@ -278,6 +278,7 @@ Scheme_Object *(*scheme_tail_eval_expr)(Scheme_Object *obj);
 void (*scheme_set_tail_buffer_size)(int s);
 Scheme_Object *(*scheme_force_value)(Scheme_Object *);
 Scheme_Object *(*scheme_force_one_value)(Scheme_Object *);
+void (*scheme_ignore_result)(Scheme_Object *);
 MZ_MARK_STACK_TYPE (*scheme_set_cont_mark)(Scheme_Object *key, Scheme_Object *val);
 void (*scheme_push_continuation_frame)(Scheme_Cont_Frame_Data *);
 void (*scheme_pop_continuation_frame)(Scheme_Cont_Frame_Data *);

@@ -383,7 +383,7 @@ static int generate_inlined_struct_op(int kind, mz_jit_state *jitter,
     args[0] = rator;
     args[1] = rand;
     args[2] = rand2;
-    scheme_generate_app(NULL, args, 2, jitter, 0, 0, 1); /* sync'd below */
+    scheme_generate_app(NULL, args, 2, jitter, 0, 0, 0, 1); /* sync'd below */
     CHECK_LIMIT();
     jit_movr_p(JIT_R0, JIT_V1);
     mz_rs_ldr(JIT_R1);
@@ -600,7 +600,7 @@ static int generate_inlined_nary_struct_op(int kind, mz_jit_state *jitter,
 /* de-sync'd ok; for branch, sync'd before */
 {
   /* generate code to evaluate the arguments */
-  scheme_generate_app(app, NULL, app->num_args, jitter, 0, 0, 1);
+  scheme_generate_app(app, NULL, app->num_args, jitter, 0, 0, 0, 1);
   CHECK_LIMIT();
   mz_rs_sync();
 
@@ -3165,7 +3165,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       args[1] = app->rand1;
       args[2] = app->rand2;
 
-      scheme_generate_app(NULL, args, 2, jitter, 0, 0, 2);
+      scheme_generate_app(NULL, args, 2, jitter, 0, 0, 0, 2);
 
       CHECK_LIMIT();
       mz_rs_sync();
@@ -3271,7 +3271,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
     }
 
     /* generate code to evaluate the arguments */
-    scheme_generate_app(app, NULL, 3, jitter, 0, 0, 2);
+    scheme_generate_app(app, NULL, 3, jitter, 0, 0, 0, 2);
     CHECK_LIMIT();
     mz_rs_sync();
 
@@ -3680,7 +3680,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       } else {
         got_two = 1;
         mz_runstack_skipped(jitter, 1);
-        scheme_generate_app(app, NULL, 2, jitter, 0, 0, 2);
+        scheme_generate_app(app, NULL, 2, jitter, 0, 0, 0, 2);
       }
 
       if (scheme_can_unbox_inline(app->args[3], 5, JIT_FPR_NUM-1, 1))
@@ -3737,7 +3737,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       star = IS_NAMED_PRIM(rator, "list*");
 
       if (c)
-        scheme_generate_app(app, NULL, c, jitter, 0, 0, 2);
+        scheme_generate_app(app, NULL, c, jitter, 0, 0, 0, 2);
       CHECK_LIMIT();
       mz_rs_sync();
 
@@ -3775,7 +3775,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       if (!multi_ok) return 0;
 
       if (c) {
-        scheme_generate_app(app, NULL, c, jitter, 0, 0, 2);
+        scheme_generate_app(app, NULL, c, jitter, 0, 0, 0, 2);
         CHECK_LIMIT();
         mz_rs_sync();
 
@@ -3812,7 +3812,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
     } else if (IS_NAMED_PRIM(rator, "max")) {
       return scheme_generate_nary_arith(jitter, app, ARITH_MAX, 0, NULL, 1);
     } else if (IS_NAMED_PRIM(rator, "checked-procedure-check-and-extract")) {
-      scheme_generate_app(app, NULL, 5, jitter, 0, 0, 2);  /* sync'd below */
+      scheme_generate_app(app, NULL, 5, jitter, 0, 0, 0, 2);  /* sync'd below */
       CHECK_LIMIT();
       mz_rs_sync();
 
@@ -3893,7 +3893,7 @@ static int generate_vector_alloc(mz_jit_state *jitter, Scheme_Object *rator,
   } else {
     c = app->num_args;
     if (c)
-      scheme_generate_app(app, NULL, c, jitter, 0, 0, 2);  /* sync'd below */
+      scheme_generate_app(app, NULL, c, jitter, 0, 0, 0, 2);  /* sync'd below */
   }
   CHECK_LIMIT();
 

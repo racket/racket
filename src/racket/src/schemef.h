@@ -361,6 +361,8 @@ MZ_EXTERN void scheme_set_tail_buffer_size(int s);
 MZ_EXTERN Scheme_Object *scheme_force_value(Scheme_Object *);
 MZ_EXTERN Scheme_Object *scheme_force_one_value(Scheme_Object *);
 
+XFORM_NONGCING MZ_EXTERN void scheme_ignore_result(Scheme_Object *);
+
 MZ_EXTERN MZ_MARK_STACK_TYPE scheme_set_cont_mark(Scheme_Object *key, Scheme_Object *val);
 MZ_EXTERN void scheme_push_continuation_frame(Scheme_Cont_Frame_Data *);
 MZ_EXTERN void scheme_pop_continuation_frame(Scheme_Cont_Frame_Data *);

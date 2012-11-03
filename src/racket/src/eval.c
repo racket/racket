@@ -371,6 +371,18 @@ void scheme_init_eval_places()
 #endif
 }
 
+XFORM_NONGCING static void ignore_result(Scheme_Object *v)
+{
+  if (SAME_OBJ(v, SCHEME_MULTIPLE_VALUES)) {
+    scheme_current_thread->ku.multiple.array = NULL;
+  }
+}
+
+void scheme_ignore_result(Scheme_Object *v)
+{
+  ignore_result(v);
+}
+
 /*========================================================================*/
 /*                   C stack and Scheme stack handling                    */
 /*========================================================================*/
@@ -1903,9 +1915,9 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
       int is_st;
 
       values = scheme_current_thread->ku.multiple.array;
-      scheme_current_thread->ku.multiple.array = NULL;
       if (SAME_OBJ(values, scheme_current_thread->values_buffer))
 	scheme_current_thread->values_buffer = NULL;
+      scheme_current_thread->ku.multiple.array = NULL;
 
       if (dm_env)
         is_st = 0;
@@ -1946,10 +1958,10 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
 	scheme_pop_prefix(save_runstack);
 	
       return scheme_void;
+    } else {
+      if (SAME_OBJ(scheme_current_thread->ku.multiple.array, scheme_current_thread->values_buffer))
+        scheme_current_thread->values_buffer = NULL;
     }
-
-    if (SAME_OBJ(scheme_current_thread->ku.multiple.array, scheme_current_thread->values_buffer))
-      scheme_current_thread->values_buffer = NULL;
   } else if (SCHEME_VEC_SIZE(vec) == delta + 1) { /* => single var */
     var = SCHEME_VEC_ELS(vec)[delta];
     if (dm_env) {
@@ -2096,6 +2108,7 @@ static Scheme_Object *apply_values_execute(Scheme_Object *data)
   v = _scheme_eval_linked_expr_multi(SCHEME_PTR2_VAL(data));
   if (SAME_OBJ(v, SCHEME_MULTIPLE_VALUES)) {
     Scheme_Thread *p = scheme_current_thread;
+    Scheme_Object **rands;
     int num_rands = p->ku.multiple.count;
 
     if (num_rands > p->tail_buffer_size) {
@@ -2103,7 +2116,9 @@ static Scheme_Object *apply_values_execute(Scheme_Object *data)
       if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
         p->values_buffer = NULL;
     }
-    return scheme_tail_apply(f, num_rands, p->ku.multiple.array);
+    rands = p->ku.multiple.array;
+    p->ku.multiple.array = NULL;
+    return scheme_tail_apply(f, num_rands, rands);
   } else {
     Scheme_Object *a[1];
     a[0] = v;
@@ -2223,7 +2238,7 @@ static Scheme_Object *begin0_execute(Scheme_Object *obj)
 
   apos = 1;
   while (i--) {
-    (void)_scheme_eval_linked_expr_multi(((Scheme_Sequence *)obj)->array[apos++]);
+    ignore_result(_scheme_eval_linked_expr_multi(((Scheme_Sequence *)obj)->array[apos++]));
   }
 
   if (mv) {
@@ -2247,7 +2262,7 @@ static Scheme_Object *splice_execute(Scheme_Object *data)
     int i, cnt = seq->count - 1;
     
     for (i = 0; i < cnt; i++) {
-      (void)_scheme_call_with_prompt_multi(splice_one_expr, seq->array[i]);
+      ignore_result(_scheme_call_with_prompt_multi(splice_one_expr, seq->array[i]));
     }
     
     return _scheme_eval_linked_expr_multi(seq->array[cnt]);
@@ -2327,7 +2342,7 @@ do_define_syntaxes_execute(Scheme_Object *form, Scheme_Env *dm_env)
       save_runstack = scheme_push_prefix(dm_env->exp_env, rp, NULL, NULL, 1, 1, NULL, scheme_false);
 
       while (!SCHEME_NULLP(form)) {
-        (void)scheme_eval_linked_expr_multi_with_dynamic_state(SCHEME_CAR(form), &dyn_state);
+        ignore_result(scheme_eval_linked_expr_multi_with_dynamic_state(SCHEME_CAR(form), &dyn_state));
         form = SCHEME_CDR(form);
       }
       
@@ -3407,7 +3422,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	  
 	  UPDATE_THREAD_RSPTR();
 	  for (i = 0; i < cnt; i++) {
-	    (void)_scheme_eval_linked_expr_multi_wp(((Scheme_Sequence *)obj)->array[i], p);
+	    ignore_result(_scheme_eval_linked_expr_multi_wp(((Scheme_Sequence *)obj)->array[i], p));
 	  }
 
 	  obj = ((Scheme_Sequence *)obj)->array[cnt];
@@ -5192,6 +5207,7 @@ static Scheme_Object *do_eval_string_all(Scheme_Object *port, const char *str, S
           if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
             p->values_buffer = NULL;
           a = p->ku.multiple.array;
+          p->ku.multiple.array = NULL;
           cnt = p->ku.multiple.count;
         } else {
           _a[0] = result;

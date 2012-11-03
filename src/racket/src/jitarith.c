@@ -1920,7 +1920,7 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
   }
 
   if (stack_c)
-    scheme_generate_app(app, alt_args, stack_c, jitter, 0, 0, 2);
+    scheme_generate_app(app, alt_args, stack_c, jitter, 0, 0, 0, 2);
   CHECK_LIMIT();
   mz_rs_sync();
 

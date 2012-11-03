@@ -3402,7 +3402,8 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     GC_CAN_IGNORE Scheme_Thread *p = scheme_current_thread;
     c = p->ku.multiple.count;
     argv2 = p->ku.multiple.array;
-    if (SAME_OBJ(p->ku.multiple.array, p->values_buffer)) {
+    p->ku.multiple.array = NULL;
+    if (SAME_OBJ(argv2, p->values_buffer)) {
       if (c <= MAX_QUICK_CHAP_ARGV) {
         for (i = 0; i < c; i++) {
           a2[i] = argv2[i];
@@ -3544,6 +3545,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
         p->values_buffer = NULL;
       c = p->ku.multiple.count;
       argv = p->ku.multiple.array;
+      p->ku.multiple.array = NULL;
     } else {
       c = 1;
       a[0] = v;
@@ -3575,6 +3577,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
         p->values_buffer = NULL;
       argc = p->ku.multiple.count;
       argv2 = p->ku.multiple.array;
+      p->ku.multiple.array = NULL;
     } else {
       argc = 1;
       a2[0] = v;
@@ -3713,9 +3716,9 @@ static Scheme_Object *call_with_values(int argc, Scheme_Object *argv[])
     Scheme_Object **a;
     if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
       p->values_buffer = NULL;
-    /* Beware: the fields overlap! */
     n = p->ku.multiple.count;
     a = p->ku.multiple.array;
+    p->ku.multiple.array = NULL;
     p->ku.apply.tail_num_rands = n;
     p->ku.apply.tail_rands = a;
   } else {
@@ -5110,6 +5113,7 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
     mc = p->ku.multiple.count;
     if (SAME_OBJ(mv, p->values_buffer))
       p->values_buffer = NULL;
+    p->ku.multiple.array = NULL;
   } else {
     mv = NULL;
     mc = 0;
@@ -6394,6 +6398,7 @@ static Scheme_Object **chaperone_do_control(const char *name, int mode,
             p->values_buffer = NULL;
           num_args = p->ku.multiple.count;
           vals = p->ku.multiple.array;
+          p->ku.multiple.array = NULL;
         } else {
           num_args = 1;
           vals = MALLOC_N(Scheme_Object *, 1);
@@ -6470,6 +6475,7 @@ static Scheme_Object *do_cc_guard(Scheme_Object *v, Scheme_Object *cc_guard, Sch
       p->values_buffer = NULL;
     argc = p->ku.multiple.count;
     argv = p->ku.multiple.array;
+    p->ku.multiple.array = NULL;
   } else {
     a[0] = v;
     argv = a;
@@ -8591,7 +8597,7 @@ static void pre_post_dyn_wind(Scheme_Object *prepost)
   scheme_push_break_enable(&cframe, 0, 0);
 
   /* Here's the main call: */
-  (void)_scheme_apply_multi(prepost, 0, NULL);
+  scheme_ignore_result(_scheme_apply_multi(prepost, 0, NULL));
 
   scheme_pop_break_enable(&cframe, 0);
 
@@ -9441,10 +9447,12 @@ static Scheme_Object *time_apply(int argc, Scheme_Object *argv[])
 
   if (v == SCHEME_MULTIPLE_VALUES) {
     Scheme_Thread *cp = scheme_current_thread;
+    Scheme_Object **args;
     if (SAME_OBJ(cp->ku.multiple.array, cp->values_buffer))
       cp->values_buffer = NULL;
-    v = scheme_build_list(cp->ku.multiple.count,
-			  cp->ku.multiple.array);
+    args = cp->ku.multiple.array;
+    cp->ku.multiple.array = NULL;
+    v = scheme_build_list(cp->ku.multiple.count, args);
   } else
     v = scheme_make_pair(v, scheme_null);
 

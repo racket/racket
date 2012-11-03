@@ -196,6 +196,7 @@
   scheme_extension_table->scheme_set_tail_buffer_size = scheme_set_tail_buffer_size;
   scheme_extension_table->scheme_force_value = scheme_force_value;
   scheme_extension_table->scheme_force_one_value = scheme_force_one_value;
+  scheme_extension_table->scheme_ignore_result = scheme_ignore_result;
   scheme_extension_table->scheme_set_cont_mark = scheme_set_cont_mark;
   scheme_extension_table->scheme_push_continuation_frame = scheme_push_continuation_frame;
   scheme_extension_table->scheme_pop_continuation_frame = scheme_pop_continuation_frame;

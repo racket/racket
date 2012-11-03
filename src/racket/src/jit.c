@@ -2276,9 +2276,13 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       (void)jit_jmpi(refloop);
       CHECK_LIMIT();
       mz_patch_branch(ref3);
+      /* clear array pointer and re-laod argc: */
       (void)mz_tl_ldi_p(JIT_R0, tl_scheme_current_thread);
+      (void)jit_movi_p(JIT_R1, NULL);
+      jit_stxi_l(&((Scheme_Thread *)0x0)->ku.multiple.array, JIT_R0, JIT_R1);
       jit_ldxi_l(JIT_R0, JIT_R0, &((Scheme_Thread *)0x0)->ku.multiple.count);
-          
+      CHECK_LIMIT();
+
       /* Perform call --------------------- */
       /* Function is in V1, argc in R0, args on RUNSTACK */
       mz_patch_ucbranch(ref2);
@@ -2286,16 +2290,18 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 
       if (is_tail) {
         if (!sjc.shared_tail_argc_code) {
-          sjc.shared_tail_argc_code = scheme_generate_shared_call(-1, jitter, 1, 1, 0, 0, 0, 0);
+          sjc.shared_tail_argc_code = scheme_generate_shared_call(-1, jitter, 1, 0, 1, 0, 0, 0, 0);
         }
         mz_set_local_p(JIT_R0, JIT_LOCAL2);
         (void)jit_jmpi(sjc.shared_tail_argc_code);
       } else {
-        int mo = multi_ok ? 1 : 0;
+        int mo = (multi_ok 
+                  ? (result_ignored ? SHARED_RESULT_IGNORED_CASE : SHARED_MULTI_OK_CASE) 
+                  : SHARED_SINGLE_VALUE_CASE);
         void *code;
         if (!sjc.shared_non_tail_argc_code[mo]) {
-          scheme_ensure_retry_available(jitter, multi_ok);
-          code = scheme_generate_shared_call(-2, jitter, multi_ok, 0, 0, 0, 0, 0);
+          scheme_ensure_retry_available(jitter, multi_ok, result_ignored);
+          code = scheme_generate_shared_call(-2, jitter, multi_ok, result_ignored, 0, 0, 0, 0, 0);
           sjc.shared_non_tail_argc_code[mo] = code;
         }
         code = sjc.shared_non_tail_argc_code[mo];
@@ -2438,7 +2444,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 	return r;
       }
 
-      r = scheme_generate_app(app, NULL, app->num_args, jitter, is_tail, multi_ok, 0);
+      r = scheme_generate_app(app, NULL, app->num_args, jitter, is_tail, multi_ok, result_ignored, 0);
 
       CHECK_LIMIT();
       if (target != JIT_R0)
@@ -2468,7 +2474,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       args[0] = app->rator;
       args[1] = app->rand;
       
-      r = scheme_generate_app(NULL, args, 1, jitter, is_tail, multi_ok, 0);
+      r = scheme_generate_app(NULL, args, 1, jitter, is_tail, multi_ok, result_ignored, 0);
 
       CHECK_LIMIT();
       if (target != JIT_R0)
@@ -2499,7 +2505,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       args[1] = app->rand1;
       args[2] = app->rand2;
 
-      r = scheme_generate_app(NULL, args, 2, jitter, is_tail, multi_ok, 0);
+      r = scheme_generate_app(NULL, args, 2, jitter, is_tail, multi_ok, result_ignored, 0);
 
       CHECK_LIMIT();
       if (target != JIT_R0)
@@ -2601,9 +2607,9 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 	/* Did we get multiple results? If not, go to error: */
 	ref = jit_bnei_p(jit_forward(), JIT_R0, SCHEME_MULTIPLE_VALUES);
 	/* Load count and result array: */
-	mz_tl_ldi_p(JIT_R2, tl_scheme_current_thread);
-	jit_ldxi_l(JIT_R1, JIT_R2, &((Scheme_Thread *)0x0)->ku.multiple.count);
-	jit_ldxi_p(JIT_R2, JIT_R2, &((Scheme_Thread *)0x0)->ku.multiple.array);
+	mz_tl_ldi_p(JIT_V1, tl_scheme_current_thread);
+        jit_ldxi_p(JIT_R2, JIT_V1, &((Scheme_Thread *)0x0)->ku.multiple.array);
+	jit_ldxi_l(JIT_R1, JIT_V1, &((Scheme_Thread *)0x0)->ku.multiple.count);
 	CHECK_LIMIT();
 	/* If we got the expected count, jump to installing values: */
 	ref2 = jit_beqi_i(jit_forward(), JIT_R1, lv->count);
@@ -2630,9 +2636,11 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 	(void)mz_finish_lwe(ts_lexical_binding_wrong_return_arity, ref);
 	CHECK_LIMIT();
 
-	/* Continue with expected values; R2 has value array: */
+	/* Continue with expected values; R2 has values and V1 has thread pointer: */
         mz_patch_branch(ref2);
 	__END_SHORT_JUMPS__(1);
+        (void)jit_movi_p(JIT_R0, NULL);
+        jit_stxi_p(&((Scheme_Thread *)0x0)->ku.multiple.array, JIT_V1, JIT_R0);
 	for (i = 0; i < lv->count; i++) {
 	  jit_ldxi_p(JIT_R1, JIT_R2, WORDS_TO_BYTES(i));
 	  if (ab) {

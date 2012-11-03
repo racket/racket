@@ -5536,7 +5536,9 @@ static Scheme_Object *body_one_expr(void *prefix_plus_expr, int argc, Scheme_Obj
   v = _scheme_eval_linked_expr_multi(SCHEME_CDR((Scheme_Object *)prefix_plus_expr));
   scheme_suspend_prefix(saved_runstack);
 
-  return v;
+  scheme_ignore_result(v);
+
+  return scheme_void;
 }
 
 static int needs_prompt(Scheme_Object *e)
@@ -5632,7 +5634,7 @@ void *scheme_module_run_finish(Scheme_Env *menv, Scheme_Env *env)
                                              scheme_make_raw_pair(save_prefix, body));
         scheme_resume_prefix(save_prefix);
       } else
-        (void)_scheme_eval_linked_expr_multi(body);
+        scheme_ignore_result(_scheme_eval_linked_expr_multi(body));
     }
 
     if (scheme_module_demand_hook) {
