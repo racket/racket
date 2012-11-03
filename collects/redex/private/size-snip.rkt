@@ -14,9 +14,7 @@
          pretty-print-parameters
          initial-char-width
          resizing-pasteboard-mixin
-         get-user-char-width
-         find-snip-height
-         find-snip-width)
+         get-user-char-width)
 
 (define initial-char-width (make-parameter 30))
 
@@ -93,11 +91,6 @@
     (inherit get-admin)
     (define/public (get-expr) expr)
     (define/public (get-char-width) char-width)
-    (define/public (set-char-width cw) 
-      (unless (equal? char-width cw)
-        (set! char-width cw)
-        (format-expr)
-        (on-width-changed char-width)))
     
     (define/override (resize w h)
       (super resize w h)
@@ -194,21 +187,3 @@
         (editor:standard-style-list-mixin
          text:basic%))))))))
 
-
-
-;; find-snip-height : editor snip -> number
-(define (find-snip-height ed snip)
-  (let ([bt (box 0)]
-        [bb (box 0)])
-    (send ed get-snip-location snip #f bt #f)
-    (send ed get-snip-location snip #f bb #t)
-    (- (unbox bb)
-       (unbox bt))))
-
-(define (find-snip-width ed snip)
-  (let ([br (box 0)]
-        [bl (box 0)])
-    (send ed get-snip-location snip br #f #t)
-    (send ed get-snip-location snip bl #f #f)
-    (- (unbox br)
-       (unbox bl))))
