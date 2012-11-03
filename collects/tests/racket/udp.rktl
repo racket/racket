@@ -184,7 +184,7 @@
 (let ()
   (define (q)
     (define s (udp-open-socket #f #f))
-    (udp-bind! s #f 5999)
+    (udp-bind! s "127.0.0.1" 5999)
     s)
   
   (define s (q))
