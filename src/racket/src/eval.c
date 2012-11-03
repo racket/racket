@@ -1628,6 +1628,8 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
     else {
       GC_CAN_IGNORE Scheme_Object *vals;
       vals = scheme_values(num_rands, (Scheme_Object **)value);
+      if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
+        p->values_buffer = NULL;
       c->value = vals;
     }
 

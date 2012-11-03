@@ -6615,6 +6615,11 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
 
     p = scheme_current_thread;
 
+    if (v == SCHEME_MULTIPLE_VALUES) {
+      if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
+        p->values_buffer = NULL;
+    }
+
     restore_from_prompt(prompt);
 
     p->suspend_break = 0;
@@ -6639,6 +6644,10 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
         
           if (v) {
             /* Got a result: */
+            if (v == SCHEME_MULTIPLE_VALUES) {
+              if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
+                p->values_buffer = NULL;
+            }
             prompt_unwind_one_dw(prompt_tag);
             handler = NULL;
           } else {
@@ -6706,6 +6715,10 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
 
           if (SAME_OBJ(handler, scheme_values_func)) {
             v = scheme_values(argc, argv);
+            if (v == SCHEME_MULTIPLE_VALUES) {
+              if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
+                p->values_buffer = NULL;
+            }
             handler = NULL;
           } else if (SCHEME_FALSEP(handler)) {
             if (argc == 1) {

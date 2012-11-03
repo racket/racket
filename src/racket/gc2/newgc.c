@@ -1282,12 +1282,29 @@ inline static uintptr_t allocate_slowpath(NewGC *gc, size_t allocate_size, uintp
   return newptr;
 }
 
+static void check_allocation_time_invariants()
+{
+#if 0
+  Scheme_Thread *p = scheme_current_thread;
+  if (p) {
+    if (p->values_buffer) { 
+      memset(p->values_buffer, 0, sizeof(Scheme_Object*) * p->values_buffer_size);
+    }
+    if (p->tail_buffer && (p->tail_buffer != p->runstack_tmp_keep)) {
+      memset(p->tail_buffer, 0, sizeof(Scheme_Object*) * p->tail_buffer_size);
+    }
+  }
+#endif
+}
+
 inline static void *allocate(const size_t request_size, const int type)
 {
   size_t allocate_size;
   uintptr_t newptr;
 
   if(request_size == 0) return (void *) zero_sized;
+
+  check_allocation_time_invariants();
 
   allocate_size = COMPUTE_ALLOC_SIZE_FOR_OBJECT_SIZE(request_size);
   if(allocate_size > MAX_OBJECT_SIZE)  return allocate_big(request_size, type);
@@ -1340,6 +1357,8 @@ inline static void *fast_malloc_one_small_tagged(size_t request_size, int dirty)
   uintptr_t newptr;
   const size_t allocate_size = COMPUTE_ALLOC_SIZE_FOR_OBJECT_SIZE(request_size);
 
+  check_allocation_time_invariants();
+
   newptr = GC_gen0_alloc_page_ptr + allocate_size;
 
   if(OVERFLOWS_GEN0(newptr)) {
@@ -1372,6 +1391,8 @@ void *GC_malloc_pair(void *car, void *cdr)
   uintptr_t newptr;
   void *pair;
   const size_t allocate_size = PAIR_SIZE_IN_BYTES;
+
+  check_allocation_time_invariants();
 
   newptr = GC_gen0_alloc_page_ptr + allocate_size;
 
