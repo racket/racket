@@ -32,7 +32,7 @@
     (run-fully-specified-tests)
     
     #|
-    (set-language-level! (list "How to Design Programs" "Beginning Student with List Abbreviations"))
+    (set-language-level! (list "Beginning Student with List Abbreviations"))
     (run-string-test "(define (f x) (* x 2))\n(+ 1 (f (+ 1 1)))")
     (run-string-test "(sqrt 2)")
     (run-string-test "(car)")
@@ -42,12 +42,12 @@
     )
  
   (define (run-fully-specified-tests)
-    (set-language-level! (list "How to Design Programs" "Beginning Student"))
+    (set-language-level! (list "Beginning Student"))
     (beginner-tests/no-list)
     (test-transcript '(cons 1 (cons 2 (list 3 4 5)))
                      '(cons 1 (cons 2 (cons 3 (cons 4 (cons 5 empty))))))
     
-    (set-language-level! (list "How to Design Programs" "Beginning Student with List Abbreviations"))
+    (set-language-level! (list "Beginning Student with List Abbreviations"))
     (beginner-tests/no-list)
     (test-transcript '(cons 1 (cons 2 (list 3 4 5)))
                      '(cons 1 (list 2 3 4 5))

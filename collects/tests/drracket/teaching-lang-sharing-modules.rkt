@@ -36,7 +36,7 @@ Of course, other (similar) things can go wrong, too.
    (λ ()
      (putenv "PLTDRHTDPNOCOMPILED" "yes")
      (define drs-frame (wait-for-drracket-frame))
-     (set-language-level! '("How to Design Programs" "Beginning Student"))
+     (set-language-level! '("Beginning Student"))
      (clear-definitions drs-frame)
      (for ([exp (in-list things-to-try)])
        (insert-in-definitions drs-frame (format "~s\n" exp)))

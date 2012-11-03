@@ -364,7 +364,7 @@ the settings above should match r5rs
 ;                  ;;;;;                                      
 
 (define (beginner)
-  (parameterize ([language (list "How to Design Programs" #rx"Beginning Student(;|$)")])
+  (parameterize ([language (list #rx"Beginning Student(;|$)")])
     (check-top-of-repl)
     (generic-settings #t)
     (generic-output #f #f #f #f)
@@ -514,8 +514,7 @@ the settings above should match r5rs
 
 
 (define (beginner/abbrev)
-  (parameterize ([language (list "How to Design Programs" 
-                                 #rx"Beginning Student with List Abbreviations(;|$)")])
+  (parameterize ([language (list #rx"Beginning Student with List Abbreviations(;|$)")])
     (check-top-of-repl)
     
     (generic-settings #t)
@@ -665,7 +664,7 @@ the settings above should match r5rs
 
 
 (define (intermediate)
-  (parameterize ([language (list "How to Design Programs" #rx"Intermediate Student(;|$)")])
+  (parameterize ([language (list #rx"Intermediate Student(;|$)")])
     (check-top-of-repl)
     
     (generic-settings #t)
@@ -812,8 +811,7 @@ the settings above should match r5rs
 
 
 (define (intermediate/lambda)
-  (parameterize ([language (list "How to Design Programs" 
-                                 #rx"Intermediate Student with lambda(;|$)")])
+  (parameterize ([language (list #rx"Intermediate Student with lambda(;|$)")])
     (check-top-of-repl)
     
     (generic-settings #t)
@@ -955,7 +953,7 @@ the settings above should match r5rs
 
 
 (define (advanced)
-  (parameterize ([language (list "How to Design Programs" #rx"Advanced Student(;|$)")])
+  (parameterize ([language (list #rx"Advanced Student(;|$)")])
     (check-top-of-repl)
     
     (generic-settings #t)
