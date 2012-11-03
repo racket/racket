@@ -136,7 +136,7 @@ heap's order. The heap is not modified.
 @defproc[(heap-copy [h heap?]) heap?]{
 
 Makes a copy of heap @racket[h].
-
+@examples[#:eval the-eval
 (define word-heap (make-heap string<=?))
 (heap-add! word-heap "pile" "mound" "agglomerate" "cumulation")
 (define a-copy (heap-copy word-heap))
