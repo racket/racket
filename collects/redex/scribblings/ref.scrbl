@@ -2162,6 +2162,36 @@ Like @racket[stepper], this function opens a stepper window, but it
 seeds it with the reduction-sequence supplied in @racket[seed].
 }
 
+@defproc[(show-derivations [derivations (cons/c derivation? (listof derivation?))]
+                           [#:pp pp
+                                 (or/c (any -> string)
+                                       (any output-port number (is-a?/c text%) -> void))
+                                 default-pretty-printer]
+                           [#:racket-colors? racket-colors? boolean? #f]
+                           [#:init-derivation init-derivation exact-nonnegative-integer? 0])
+         any]{
+  Opens a window to show @racket[derivations]. 
+                         
+  The @racket[pp] and @racket[racket-colors?] arguments are like those to @racket[traces].
+  
+  The initial derivation shown in the window is chosen by @racket[init-derivation], used
+  as an index into @racket[derivations].
+}
+
+@defproc[(derivations/ps [derivation derivation?]
+                         [filename path-string?]
+                         [#:pp pp
+                               (or/c (any -> string)
+                                     (any output-port number (is-a?/c text%) -> void))
+                               default-pretty-printer]
+                         [#:racket-colors? racket-colors? boolean? #f]
+                         [#:post-process post-process (-> (is-a?/c pasteboard%) any)])
+         void?]{
+                
+  Like @racket[show-derivations], except it prints a single
+  derivation in PostScript to @racket[filename].
+}
+
 @defproc[(term-node-children [tn term-node?]) (listof term-node?)]{
 
 Returns a list of the children (ie, terms that this term
@@ -2172,6 +2202,7 @@ term reduces to -- only those that are currently in the
 graph.
 }
 
+               
 @defproc[(term-node-parents [tn term-node?]) (listof term-node?)]{
 
 Returns a list of the parents (ie, terms that reduced to the
