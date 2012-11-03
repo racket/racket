@@ -29,7 +29,8 @@
 (define (generate-report this profile)
   (define-values (TR-log mzc-log) (generate-logs this))
   (log->report
-   (append (prune-cold-TR-failures TR-log profile)
+   (append (prune-cold-TR-failures TR-log profile
+                                   (and profile (profile-total-time profile)))
            (post-process-inline-log mzc-log profile TR-log))))
 
 
@@ -217,7 +218,7 @@
 ;;--------------------------------------------------------------------
 
 (require "profiling.rkt")
-(define (prune-cold-TR-failures TR-log profile)
+(define (prune-cold-TR-failures TR-log profile total-time)
   (define hot-functions (and profile (prune-profile profile)))
 
   ;; #f if no profiling info is available for this function
@@ -232,9 +233,23 @@
                                    (<= from pos (+ from span)))))
            p)))
 
-  (define (in-hot-function? l)
-    (or (not profile) ; keep everything if we don't have profile info
-        (opt-log-entry? l) ; don't prune successes
-        (memq (pos->node (log-entry-pos l)) hot-functions)))
-
-  (filter in-hot-function? TR-log))
+  (if (not profile)
+      TR-log ; keep everything if we don't have profile info
+      (for/list ([l (in-list TR-log)]
+                 #:when (or (opt-log-entry? l) ; don't prune successes
+                            ;; in hot function?
+                            (memq (pos->node (log-entry-pos l)) hot-functions)))
+        (define profile-entry (memq (pos->node (log-entry-pos l)) hot-functions))
+        (define badness-multiplier
+          (if profile-entry
+              (/ (node-self (car profile-entry)) total-time)
+              1))
+        (match l
+          [(missed-opt-log-entry kind msg stx located-stx pos provenance
+                                 irritants merged-irritants badness)
+           (missed-opt-log-entry kind msg stx located-stx pos provenance
+                                 irritants merged-irritants
+                                 ;; uses ceiling to never go down to 0
+                                 ;; both badness and badness-multiplier are non-0
+                                 (ceiling (* badness badness-multiplier)))]
+          [_ l])))) ; keep as is

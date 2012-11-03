@@ -163,14 +163,16 @@
    append
    (append
     (for/list ([group (in-list grouped-events)])
-      (process-function group profile hot-functions TR-log))
+      (process-function group profile hot-functions
+                        (and profile (profile-total-time profile))))
     (if profile
         (for/list ([node (in-list (profile-nodes profile))])
-          (process-profile-node node grouped-events hot-functions TR-log))
+          (process-profile-node node grouped-events hot-functions TR-log
+                                (profile-total-time profile)))
         '()))))
 
 ;; Process the inlining logs corresponding to a single function.
-(define (process-function log profile hot-functions TR-log)
+(define (process-function log profile hot-functions total-time)
   (define produced-entries '())
   (let/ec escape
     ;; prune this entry from the logs, but return what we produced so far
@@ -189,6 +191,11 @@
                                      (equal? pos (node-pos p))))
                 p)))
        (define profile-entry (pos->node pos))
+
+       (define badness-multiplier
+         (if profile-entry
+             (/ (node-self profile-entry) total-time)
+             1))
 
        ;; We consider that a function is a loop if it gets inlined in itself
        ;; at least once.
@@ -297,7 +304,9 @@
                         recommendation)
                 stx located-stx pos provenance
                 '() '()
-                badness)))
+                ;; uses ceiling to never go down to 0
+                ;; both badness and badness-multiplier are non-0
+                (ceiling (* badness badness-multiplier)))))
        (define (emit-success)
          (emit (opt-log-entry
                 kind
@@ -359,8 +368,8 @@
 
        produced-entries]))) ; return the list of new entries
 
-(define (process-profile-node profile-entry grouped-events hot-functions TR-log)
-
+(define (process-profile-node profile-entry grouped-events hot-functions TR-log
+                              total-time)
   (define produced-entries '())
   (define (emit e) (set! produced-entries (cons e produced-entries)))
 
@@ -370,6 +379,14 @@
     (define our-pos  (node-pos  profile-entry))
     (define our-span (node-span profile-entry))
     (and pos our-pos our-span (<= our-pos pos (+ our-pos our-span))))
+
+  (define badness-multiplier (/ (node-self profile-entry) total-time))
+  ;; base values below are arbitrary
+  ;; uses ceiling to never go down to 0
+  ;; both badness and badness-multiplier are non-0
+  (define parameter-access-badness    (ceiling (* 20 badness-multiplier)))
+  (define struct-construction-badness (ceiling (* 20 badness-multiplier)))
+  (define exact-real-arith-badness    (ceiling (* 20 badness-multiplier)))
 
   (when inside-hot-function?
     (for ([TR-entry (in-list TR-log)]
@@ -386,7 +403,7 @@
              (log-entry-located-stx TR-entry) (log-entry-located-stx TR-entry)
              (log-entry-pos TR-entry) 'typed-racket
              '() '()
-             20)))) ;; TODO have actual badness
+             parameter-access-badness))))
 
   (when inside-hot-function?
     (for ([TR-entry (in-list TR-log)]
@@ -404,7 +421,7 @@
              (log-entry-located-stx TR-entry) (log-entry-located-stx TR-entry)
              (log-entry-pos TR-entry) 'typed-racket
              '() '()
-             20)))) ;; TODO have actual badness
+             struct-construction-badness))))
 
   (when inside-hot-function?
     (for ([TR-entry (in-list TR-log)]
@@ -421,7 +438,7 @@
              (log-entry-located-stx TR-entry) (log-entry-located-stx TR-entry)
              (log-entry-pos TR-entry) 'typed-racket
              '() '()
-             20)))) ;; TODO have actual badness
+             exact-real-arith-badness))))
 
   produced-entries)
 
