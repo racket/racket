@@ -29,6 +29,7 @@
 (define herefigure-style  (make-style "Herefigure" figure-style-extras))
 (define figureinside-style (make-style "FigureInside" figure-style-extras))
 (define legend-style (make-style "Legend" figure-style-extras))
+(define figure-target-style (make-style "FigureTarget" figure-style-extras))
 
 (define centertext-style (make-style "Centertext" figure-style-extras))
 (define figure-style (make-style "Figure" figure-style-extras))
@@ -52,7 +53,7 @@
    figure-style 
    (list
      (make-nested-flow content-style (list (make-nested-flow figureinside-style (decode-flow content))))
-     (make-paragraph centertext-style (list (make-element legend-style (list (Figure-target tag) ": " caption)))))))
+     (make-paragraph centertext-style (list (make-element legend-style (list (make-element figure-target-style (list (Figure-target tag) ": ")) caption)))))))
 
 (define (*figure style tag caption content)
   (make-nested-flow
@@ -65,7 +66,7 @@
       (list
        (make-paragraph
         plain
-        (list (make-element legend-style (list (Figure-target tag) ": " caption))))))))))
+        (list (make-element legend-style (list (make-element figure-target-style (list (Figure-target tag) ": ")) caption))))))))))
 
 (define (figure* tag caption . content)
   (*figure centerfiguremulti-style tag caption content))
