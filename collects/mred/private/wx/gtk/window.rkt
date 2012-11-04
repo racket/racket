@@ -345,35 +345,39 @@
                            [(1) 'left-up]
                            [(3) 'right-up]
                            [else 'middle-up])])]
-		 [m (new mouse-event%
-			 [event-type type]
-			 [left-down (case type
-				      [(left-down) #t]
-				      [(left-up) #f]
-				      [else (bit? modifiers GDK_BUTTON1_MASK)])]
-			 [middle-down (case type
-					[(middle-down) #t]
-					[(middle-up) #f]
-					[else (bit? modifiers GDK_BUTTON2_MASK)])]
-			 [right-down (case type
-				       [(right-down) #t]
-				       [(right-up) #f]
-				       [else (bit? modifiers GDK_BUTTON3_MASK)])]
-			 [x (->long ((if motion? 
-					 GdkEventMotion-x 
-					 (if crossing? GdkEventCrossing-x GdkEventButton-x))
-				     event))]
-			 [y (->long ((if motion? GdkEventMotion-y 
-					 (if crossing? GdkEventCrossing-y GdkEventButton-y))
-				     event))]
-			 [shift-down (bit? modifiers GDK_SHIFT_MASK)]
-			 [control-down (bit? modifiers GDK_CONTROL_MASK)]
-			 [meta-down (bit? modifiers GDK_META_MASK)]
-			 [alt-down (bit? modifiers GDK_MOD1_MASK)]
-			 [time-stamp ((if motion? GdkEventMotion-time 
-					  (if crossing? GdkEventCrossing-time GdkEventButton-time))
-				      event)]
-			 [caps-down (bit? modifiers GDK_LOCK_MASK)])])
+		 [m (let-values ([(x y) (send wx
+                                              adjust-event-position
+                                              (->long ((if motion? 
+                                                           GdkEventMotion-x 
+                                                           (if crossing? GdkEventCrossing-x GdkEventButton-x))
+                                                       event))
+                                              (->long ((if motion? GdkEventMotion-y 
+                                                           (if crossing? GdkEventCrossing-y GdkEventButton-y))
+                                                       event)))])
+                      (new mouse-event%
+                           [event-type type]
+                           [left-down (case type
+                                        [(left-down) #t]
+                                        [(left-up) #f]
+                                        [else (bit? modifiers GDK_BUTTON1_MASK)])]
+                           [middle-down (case type
+                                          [(middle-down) #t]
+                                          [(middle-up) #f]
+                                          [else (bit? modifiers GDK_BUTTON2_MASK)])]
+                           [right-down (case type
+                                         [(right-down) #t]
+                                         [(right-up) #f]
+                                         [else (bit? modifiers GDK_BUTTON3_MASK)])]
+                           [x x]
+                           [y y]
+                           [shift-down (bit? modifiers GDK_SHIFT_MASK)]
+                           [control-down (bit? modifiers GDK_CONTROL_MASK)]
+                           [meta-down (bit? modifiers GDK_META_MASK)]
+                           [alt-down (bit? modifiers GDK_MOD1_MASK)]
+                           [time-stamp ((if motion? GdkEventMotion-time 
+                                            (if crossing? GdkEventCrossing-time GdkEventButton-time))
+                                        event)]
+                           [caps-down (bit? modifiers GDK_LOCK_MASK)]))])
 	     (if (send wx handles-events? gtk)
 		 (begin
 		   (queue-window-event wx (lambda ()
@@ -697,16 +701,33 @@
     (define/public (refresh-all-children) (void))
 
     (define/public (screen-to-client x y)
+      (internal-screen-to-client x y))
+    (define/public (internal-screen-to-client x y)
       (let ([xb (box 0)]
             [yb (box 0)])
-        (client-to-screen xb yb)
+        (internal-client-to-screen xb yb)
         (set-box! x (- (unbox x) (unbox xb)))
         (set-box! y (- (unbox y) (unbox yb)))))
     (define/public (client-to-screen x y)
+      (internal-client-to-screen x y))
+    (define/public (internal-client-to-screen x y)
       (let-values ([(dx dy) (get-client-delta)])
-        (send parent client-to-screen x y)
+        (send parent internal-client-to-screen x y)
         (set-box! x (+ (unbox x) save-x dx))
         (set-box! y (+ (unbox y) save-y dy))))
+
+    (define event-position-wrt-wx #f)
+    (define/public (set-event-positions-wrt wx)
+      (set! event-position-wrt-wx wx))
+    
+    (define/public (adjust-event-position x y)
+      (if event-position-wrt-wx
+          (let ([xb (box x)]
+                [yb (box y)])
+            (internal-client-to-screen xb yb)
+            (send event-position-wrt-wx internal-screen-to-client xb yb)
+            (values (unbox xb) (unbox yb)))
+          (values x y)))
 
     (define/public (get-client-delta)
       (values 0 0))

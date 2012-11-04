@@ -412,12 +412,29 @@
 
   (define/public (on-resized) (void))
 
+  (define event-position-wrt-wx #f)
+  (define/public (set-event-positions-wrt wx)
+    (set! event-position-wrt-wx wx))
+
+  (define/private (adjust-event-position x y)
+    (if event-position-wrt-wx
+        (let ([xb (box x)]
+              [yb (box y)])
+          (internal-client-to-screen xb yb)
+          (send event-position-wrt-wx internal-screen-to-client xb yb)
+          (values (unbox xb) (unbox yb)))
+        (values x y)))
+
   (define/public (screen-to-client x y)
+    (internal-screen-to-client x y))
+  (define/public (internal-screen-to-client x y)
     (let ([p (make-POINT (unbox x) (unbox y))])
       (ScreenToClient (get-client-hwnd) p)
       (set-box! x (POINT-x p))
       (set-box! y (POINT-y p))))
   (define/public (client-to-screen x y)
+    (internal-client-to-screen x y))
+  (define/public (internal-client-to-screen x y)
     (let ([p (make-POINT (unbox x) (unbox y))])
       (ClientToScreen (get-client-hwnd) p)
       (set-box! x (POINT-x p))
@@ -607,6 +624,7 @@
           [bit? (lambda (v b) (not (zero? (bitwise-and v b))))])
       (let ([make-e 
              (lambda (type)
+               (define-values (mx my) (adjust-event-position x y))
                (new mouse-event%
                     [event-type type]
                     [left-down (case type
@@ -621,8 +639,8 @@
                                   [(right-down) #t]
                                   [(right-up) #f]
                                   [else (bit? flags MK_RBUTTON)])]
-                    [x x]
-                    [y y]
+                    [x mx]
+                    [y my]
                     [shift-down (bit? flags MK_SHIFT)]
                     [control-down (bit? flags MK_CONTROL)]
                     [meta-down #f]

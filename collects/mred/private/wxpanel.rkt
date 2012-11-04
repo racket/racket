@@ -54,6 +54,7 @@
                    (unless (negative? h) (set! height h)))]
        [get-x (lambda () pos-x)]
        [get-y (lambda () pos-y)]
+       [set-event-positions-wrt (lambda (c) (void))]
        [get-width (lambda () width)]
        [get-height (lambda () height)]
        [adopt-child (lambda (c) (send (get-parent) adopt-child c))])

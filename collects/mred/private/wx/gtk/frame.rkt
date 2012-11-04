@@ -424,7 +424,7 @@
     (define/override (call-pre-on-char w e)
       (pre-on-char w e))
 
-    (define/override (client-to-screen x y)
+    (define/override (internal-client-to-screen x y)
       (gtk_window_set_gravity gtk GDK_GRAVITY_STATIC)
       (let-values ([(dx dy) (gtk_window_get_position gtk)]
                    [(cdx cdy) (get-client-delta)])

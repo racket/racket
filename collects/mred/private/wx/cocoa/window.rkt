@@ -604,6 +604,10 @@
                (- y (client-y-offset))))))
     (define/public (client-y-offset) 0)
 
+    (define event-position-wrt-wx #f)
+    (define/public (set-event-positions-wrt wx)
+      (set! event-position-wrt-wx wx))
+
     (define/public (is-view?) #t)
     (define/public (window-point-to-view pos)
       (let ([pos (if (is-view?)
@@ -611,8 +615,17 @@
                            convertPoint: #:type _NSPoint pos
                            fromView: #f)
                      pos)])
-        (values (NSPoint-x pos)
-                (flip-client (NSPoint-y pos)))))
+        (define x (NSPoint-x pos))
+        (define y (flip-client (NSPoint-y pos)))
+        (cond
+         [event-position-wrt-wx
+          (define xb (box (->long x)))
+          (define yb (box (->long y)))
+          (internal-client-to-screen xb yb)
+          (send event-position-wrt-wx internal-screen-to-client xb yb)
+          (values (unbox xb) (unbox yb))]
+         [else (values x y)])))
+                
 
     (define/public (get-x)
       (->long (NSPoint-x (NSRect-origin (get-frame)))))
@@ -799,6 +812,8 @@
     (define/public (refresh-all-children) (void))
 
     (define/public (screen-to-client xb yb)
+      (internal-screen-to-client xb yb))
+    (define/public (internal-screen-to-client xb yb)
       (let ([p (tell #:type _NSPoint (get-cocoa-content) 
                      convertPoint: #:type _NSPoint
                      (tell #:type _NSPoint (get-cocoa-window)
@@ -810,6 +825,8 @@
         (set-box! yb (inexact->exact (floor (flip-client (NSPoint-y p)))))))
 
     (define/public (client-to-screen xb yb [flip-y? #t])
+      (internal-client-to-screen xb yb flip-y?))
+    (define/public (internal-client-to-screen xb yb [flip-y? #t])
       (let* ([p (tell #:type _NSPoint (get-cocoa-window)
                       convertBaseToScreen:
                       #:type _NSPoint
