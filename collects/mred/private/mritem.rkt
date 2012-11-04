@@ -600,7 +600,10 @@
      [find-string (entry-point (lambda (x)
                                  (check-label-string '(method list-control<%> find-string) x)
                                  (do-find-string x)))]
-
+     [delete (entry-point (lambda (n)
+                            (check-item 'delete n)
+                            (send this -delete-list-item n)
+                            (send wx delete n)))]
      [-append-list-string (lambda (i)
                             (set! content (append content (list i))))]
      [-set-list-string (lambda (i s)
@@ -842,11 +845,7 @@
                          (set! num-columns (add1 num-columns))
                          (set! column-labels (append column-labels (list label)))
                          (send wx append-column label))))]
-
-     [delete (entry-point (lambda (n)
-                            (check-item 'delete n)
-                            (send this -delete-list-item n)
-                            (send wx delete n)))]
+     
      [get-data (entry-point (lambda (n) (check-item 'get-data n) (send wx get-data n)))]
      [get-label-font (lambda () (send wx get-label-font))]
      [get-selections (entry-point (lambda () (send wx get-selections)))]

@@ -157,16 +157,6 @@ style. The new column is logically the last column, and it is initially
 displayed as the last column.}
 
 
-@defmethod[(delete [n exact-nonnegative-integer?])
-           void?]{
-
-Deletes the item indexed by @racket[n]. @|lbnumnote| If @racket[n] is equal
- to or larger than the number of items in the control, @|MismatchExn|.
-
-Selected items that are not deleted remain selected, and no other
- items are selected.}
-
-
 @defmethod[(delete-column [n exact-nonnegative-integer?])
            void?]{
 

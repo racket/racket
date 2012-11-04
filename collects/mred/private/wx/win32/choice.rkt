@@ -102,13 +102,13 @@
        (SendMessageW hwnd CB_RESETCONTENT 0 0)
        (set! num-choices 0)))
 
-
     (public [append* append])
     (define (append* str)
       (atomically
        (SendMessageW/str hwnd CB_ADDSTRING 0 str)
        (set! num-choices (add1 num-choices))
-       (when (= 1 num-choices) (set-selection 0))))))
+       (when (= 1 num-choices) (set-selection 0))))
 
-
-
+    (define/public (delete i)
+      (set! num-choices (sub1 num-choices))
+      (void (SendMessageW hwnd CB_DELETESTRING i 0)))))

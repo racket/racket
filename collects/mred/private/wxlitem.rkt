@@ -113,7 +113,8 @@
        (get-selection)
        (number)
        (clear)
-       (append lbl))
+       (append lbl)
+       (delete i))
 
       (stretchable-in-y #f)
       (stretchable-in-x #f)))
