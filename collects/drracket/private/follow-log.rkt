@@ -18,6 +18,7 @@ log message was reported.
 
 |#
 
+
 (define lr (make-log-receiver (current-logger)
                               'debug 'racket/engine
                               'debug 'GC
@@ -27,31 +28,46 @@ log message was reported.
 
 (define top-n-events 50)
 (define drop-gc? #t)
+(define start-right-away? #f)
 
 (define done-chan (make-channel))
+(define start-chan (make-channel))
 (void 
  (thread
   (λ ()
-    (let loop ([events '()])
-      (sync
-       (handle-evt
-        lr
-        (λ (info)
-          (loop (cons info events))))
-       (handle-evt
-        done-chan
-        (λ (resp-chan)
-          (channel-put resp-chan events))))))))
+    (let loop () 
+      (sync start-chan)
+      (let loop ([events '()])
+        (sync
+         (handle-evt
+          lr
+          (λ (info)
+            (loop (cons info events))))
+         (handle-evt
+          done-chan
+          (λ (resp-chan)
+            (channel-put resp-chan events)))))
+      (loop)))))
 
-(define f (parameterize ([current-eventspace (make-eventspace)])
+(define controller-frame-eventspace (make-eventspace))
+(define f (parameterize ([current-eventspace controller-frame-eventspace])
             (new frame% [label ""])))
-(define b (new button% [label "Done"] [parent f]
+(define sb (new button% [label "Start"] [parent f]
                [callback
                 (λ (_1 _2)
-                  (define resp (make-channel))
-                  (channel-put done-chan resp)
-                  (show-results (channel-get resp))
-                  (exit))]))
+                  (sb-callback))]))
+(define db (new button% [label "Stop && Dump"] [parent f] [enabled #f]
+                [callback
+                 (λ (_1 _2)
+                   (define resp (make-channel))
+                   (channel-put done-chan resp)
+                   (show-results (channel-get resp))
+                   (send db enable #f)
+                   (send sb enable #t))]))
+(define (sb-callback)
+  (send sb enable #f)
+  (send db enable #t)
+  (channel-put start-chan #t))
 (send f show #t)
 
 (struct gui-event (start end name) #:prefab)
@@ -117,7 +133,12 @@ log message was reported.
     [(timeline-info? (vector-ref x 2))
      (timeline-info-milliseconds (vector-ref x 2))]         
     [else
-     (eprintf "unk: ~s\n" x)
+     (unless (regexp-match #rx"^GC: 0:MST @" (vector-ref x 1))
+       (eprintf "unk: ~s\n" x))
      0]))
 
+
+(when start-right-away?
+  (parameterize ([current-eventspace controller-frame-eventspace])
+    (queue-callback sb-callback)))
 (dynamic-require 'drracket #f)
