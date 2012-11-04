@@ -475,6 +475,10 @@
     (tri 3 '/ (lambda () 30) 5 2 void)
     (tri 12 '/ (lambda () 30) 5 1/2 void)
     (bin-exact (/ 1.1 2.3) 'fl/ 1.1 2.3 #t)
+    (bin 4/3 '/ 4 3)
+    (bin -4/3 '/ 4 -3)
+    (bin -4/3 '/ -4 3)
+    (bin 4/3 '/ -4 -3)
 
     (bin-int 3 'quotient 10 3)
     (bin-int -3 'quotient 10 -3)
