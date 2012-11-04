@@ -3,11 +3,33 @@
 (require (for-syntax racket/base
                      racket/syntax
                      racket/string)
+         racket/performance-hint
          "../../flonum.rkt"
          "impl/delta-dist.rkt"
          "dist-struct.rkt")
 
 (provide (all-defined-out))
+
+(begin-encourage-inline
+  
+  (: flprobability (Flonum Any Any -> Flonum))
+  (define (flprobability p log? 1-p?)
+    (cond [1-p?  (if log? (fllog1p (- p)) (- 1.0 p))]
+          [else  (if log? (fllog p) p)]))
+  
+  (: flprobability-zero? (Flonum Any Any -> Boolean))
+  (define (flprobability-zero? p log? 1-p?)
+    (cond [1-p?  (if log? (fl= p 0.0) (fl= p 1.0))]
+          [else  (if log? (fl= p -inf.0) (fl= p 0.0))]))
+  
+  (: flprobability-one? (Flonum Any Any -> Boolean))
+  (define (flprobability-one? p log? 1-p?)
+    (cond [1-p?  (if log? (fl= p -inf.0) (fl= p 0.0))]
+          [else  (if log? (fl= p 0.0) (fl= p 1.0))]))
+  
+  )
+
+;; ===================================================================================================
 
 (define-syntax (define-distribution-type: stx)
   (syntax-case stx ()

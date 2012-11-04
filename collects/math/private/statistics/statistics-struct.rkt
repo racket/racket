@@ -9,6 +9,7 @@
          update-statistics
          sequence->statistics
          statistics-range
+         statistics-mean
          statistics-variance
          statistics-stddev
          statistics-skewness

@@ -18,33 +18,37 @@
 
 (: flgamma-pdf (Float Float Float Any -> Float))
 (define (flgamma-pdf k s x log?)
-  ((make-one-sided-scale-flpdf
-    (λ: ([x : Float] [log? : Any])
-      (cond [(k . fl<= . 0.0)  +nan.0]
-            ;; Outside of support:
-            [(fl= x 0.0)  (if log? -inf.0 0.0)]
-            [log?  (standard-flgamma-log-pdf k x)]
-            [else  (standard-flgamma-pdf k x)])))
-   s x log?))
+  (cond [(k . fl< . 0.0)  +nan.0]
+        [else
+         ((make-one-sided-scale-flpdf
+           (λ: ([x : Float] [log? : Any])
+             (cond [log?  (standard-flgamma-log-pdf k x)]
+                   [else  (standard-flgamma-pdf k x)])))
+          s x log?)]))
 
 (: flgamma-cdf (Float Float Float Any Any -> Float))
 (define (flgamma-cdf k s x log? 1-p?)
-  ((make-one-sided-scale-flcdf
-    (λ: ([x : Float] [log? : Any] [1-p? : Any])
-      (cond [log?  (fllog-gamma-inc k x 1-p? #t)]
-            [else  (flgamma-inc k x 1-p? #t)])))
-   s x log? 1-p?))
+  (cond [(k . fl< . 0.0)  +nan.0]
+        [else
+         ((make-one-sided-scale-flcdf
+           (λ: ([x : Float] [log? : Any] [1-p? : Any])
+             (cond [log?  (fllog-gamma-inc k x 1-p? #t)]
+                   [else  (flgamma-inc k x 1-p? #t)])))
+          s x log? 1-p?)]))
 
 (: flgamma-inv-cdf (Float Float Float Any Any -> Float))
 (define (flgamma-inv-cdf k s p log? 1-p?)
-  ((make-one-sided-scale-flinv-cdf
-    (λ: ([p : Float] [log? : Any] [1-p? : Any])
-      (standard-flgamma-inv-cdf k p log? 1-p?)))
-   s p log? 1-p?))
+  (cond [(k . fl< . 0.0)  +nan.0]
+        [else
+         ((make-one-sided-scale-flinv-cdf
+           (λ: ([p : Float] [log? : Any] [1-p? : Any])
+             (standard-flgamma-inv-cdf k p log? 1-p?)))
+          s p log? 1-p?)]))
 
 (: flgamma-random (Float Float -> Float))
 (define (flgamma-random k s)
-  (fl* s (standard-flgamma-random k)))
+  (cond [(k . fl< . 0.0)  +nan.0]
+        [else  (fl* s (standard-flgamma-random k))]))
 
 (begin-encourage-inline
   

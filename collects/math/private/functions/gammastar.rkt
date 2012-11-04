@@ -1,5 +1,17 @@
 #lang typed/racket/base
 
+#|
+(fllog-gamma x) = (+ (fllog-gamma* x)
+                     (- x)
+                     (* -0.5 (fllog x))
+                     (fllog (fl* sqrt2pi (flexpt x x))))
+
+(flgamma x) = (* (flgamma* x)
+                 (flexp (- x))
+                 (/ 1.0 (flsqrt x))
+                 (fl* sqrt2pi (flexpt x x)))
+|#
+
 (require "../../flonum.rkt"
          "../polynomial/chebyshev.rkt"
          "gamma.rkt")

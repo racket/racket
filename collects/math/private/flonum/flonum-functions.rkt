@@ -13,7 +13,6 @@
          flnext* flprev*
          flulp-error
          float-complex? (rename-out [inline-number->float-complex number->float-complex])
-         find-least-flonum
          fleven? flodd? flsgn flhypot fllog/base
          flprobability?
          flsinpix flcospix fltanpix flcscpix flsecpix flcotpix)
@@ -101,42 +100,6 @@
 
 (: number->float-complex (Number -> Float-Complex))
 (define (number->float-complex z) (inline-number->float-complex z))
-
-;; ===================================================================================================
-;; Search
-
-(define +inf-ordinal (flonum->ordinal +inf.0))
-
-(: find-least-flonum (case-> ((Flonum -> Any) Flonum -> (U Flonum #f))
-                             ((Flonum -> Any) Flonum Flonum -> (U Flonum #f))))
-
-(define find-least-flonum
-  (case-lambda
-    [(pred? x-start)
-     (when (eqv? +nan.0 x-start)
-       (raise-argument-error 'find-least-flonum "non-NaN Flonum" 1 pred? x-start))
-     (let loop ([n-end  (flonum->ordinal x-start)] [step 1])
-       (define x-end (ordinal->flonum n-end))
-       (cond [(pred? x-end)  (find-least-flonum pred? x-start x-end)]
-             [(fl= x-end +inf.0)  #f]
-             [else  (loop (min +inf-ordinal (+ n-end step)) (* step 2))]))]
-    [(pred? x-start x-end)
-     (when (eqv? x-start +nan.0)
-       (raise-argument-error 'find-least-flonum "non-NaN Flonum" 1 pred? x-start x-end))
-     (when (eqv? x-end +nan.0)
-       (raise-argument-error 'find-least-flonum "non-NaN Flonum" 2 pred? x-start x-end))
-     (cond [(pred? x-start)  x-start]
-           [(not (pred? x-end))  #f]
-           [else
-            (let loop ([n-start  (flonum->ordinal x-start)] [n-end  (flonum->ordinal x-end)])
-              (cond [(= n-start n-end)  (define x (ordinal->flonum n-end))
-                                        (if (pred? x) x #f)]
-                    [else
-                     (define n-mid (quotient (+ n-start n-end) 2))
-                     (cond [(pred? (ordinal->flonum n-mid))
-                            (loop n-start n-mid)]
-                           [else
-                            (loop (+ n-mid 1) n-end)])]))])]))
 
 ;; ===================================================================================================
 ;; More floating-point functions
