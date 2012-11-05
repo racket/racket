@@ -58,7 +58,7 @@
 (define-struct: xxx5 ([y : Number] [z : xxx4]))
 (define-struct: (A) xxx6 ([y : A] [z : xxx4]))
 xxx6-y
-(with-continuation-mark 1 1 1)
+(with-continuation-mark ((inst make-continuation-mark-key Integer)) 1 1)
 'foo
 '(foo foo foo)
 (define-type-alias NNN Number)
