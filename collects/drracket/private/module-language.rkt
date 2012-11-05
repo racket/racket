@@ -1315,7 +1315,8 @@
       (inherit last-position find-first-snip get-top-level-window get-filename
                get-tab get-canvas invalidate-bitmap-cache 
                set-position get-start-position get-end-position
-               highlight-range dc-location-to-editor-location)
+               highlight-range dc-location-to-editor-location
+               begin-edit-sequence end-edit-sequence)
       
       (define compilation-out-of-date? #f)
       
@@ -1507,6 +1508,7 @@
         (reset-frame-expand-error #f))
       
       (define/private (show-error-in-margin res)
+        (begin-edit-sequence #f #f)
         (define tlw (send (get-tab) get-frame))
         (send (get-tab) show-bkg-running 'nothing #f)
         (set! error/status-message-str (vector-ref res 1))
@@ -1521,7 +1523,8 @@
         (set-error-ranges-from-online-error-ranges (vector-ref res 2))
         (invalidate-online-error-ranges)
         (set! error/status-message-hidden? #f)
-        (update-frame-expand-error))
+        (update-frame-expand-error)
+        (end-edit-sequence))
       
       (define/private (show-error-as-highlighted-regions res)
         (define tlw (send (get-tab) get-frame))
@@ -1556,6 +1559,7 @@
         (send (send (get-tab) get-ints) set-error-ranges srclocs))
       
       (define/private (clear-old-error)
+        (begin-edit-sequence #f #f)
         (for ([cleanup-thunk (in-list online-highlighted-errors)])
           (cleanup-thunk))
         (for ([an-error-range (in-list online-error-ranges)])
@@ -1563,7 +1567,8 @@
             ((error-range-clear-highlight an-error-range))
             (set-error-range-clear-highlight! an-error-range #f)))
         (invalidate-online-error-ranges)
-        (set-online-error-ranges '()))
+        (set-online-error-ranges '())        
+        (end-edit-sequence))
       
       (define/private (invalidate-online-error-ranges)
         (when (get-admin)
@@ -1814,7 +1819,8 @@
           (update-recently-typed #t)
           (set! fade-amount 0)
           (send recently-typed-timer stop)
-          (send recently-typed-timer start 10000 #t))
+          (when lang-wants-big-defs/ints-labels?
+            (send recently-typed-timer start 10000 #t)))
         (super on-char evt))
       
       (define/private (update-recently-typed nv)
@@ -1829,7 +1835,8 @@
             [else (preferences:get 'drracket:defs/ints-labels)]))
         (unless (equal? new-inside? inside?)
           (set! inside? new-inside?)
-          (invalidate-bitmap-cache 0 0 'display-end 'display-end))
+          (when lang-wants-big-defs/ints-labels?
+            (invalidate-bitmap-cache 0 0 'display-end 'display-end)))
         (cond
           [(and lang-wants-big-defs/ints-labels?
                 (preferences:get 'drracket:defs/ints-labels)

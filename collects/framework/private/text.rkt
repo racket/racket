@@ -3855,7 +3855,9 @@ designates the character that triggers autocompletion
 ;; draws line numbers on the left hand side of a text% object
 (define line-numbers-mixin
   (mixin ((class->interface text%) editor:standard-style-list<%>) (line-numbers<%>)
-    (inherit get-visible-line-range
+    (inherit begin-edit-sequence
+             end-edit-sequence
+             get-visible-line-range
              get-visible-position-range
              last-line
              line-location
@@ -4194,6 +4196,7 @@ designates the character that triggers autocompletion
       (when (showing-line-numbers?)
         (define dc (get-dc))
         (when dc
+          (begin-edit-sequence #f #f)
           (define bx (box 0))
           (define by (box 0))
           (define tw (text-width dc (number-space+1)))
@@ -4209,7 +4212,8 @@ designates the character that triggers autocompletion
                                        tw
                                        th)
               (unless (= line (last-line))
-                (loop (+ line 1))))))))
+                (loop (+ line 1)))))
+          (end-edit-sequence))))
     
     (super-new)
     (setup-padding)))
