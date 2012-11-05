@@ -510,8 +510,7 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
       || SCHEME_MUTABLE_PAIRP(obj)
       || (pp->print_box && SCHEME_CHAPERONE_BOXP(obj))
       || SCHEME_CHAPERONE_VECTORP(obj)
-      || ((SAME_TYPE(t, scheme_structure_type)
-	   || SAME_TYPE(t, scheme_proc_struct_type))
+      || (SCHEME_CHAPERONE_STRUCTP(obj)
           && ((pp->print_struct 
 	       && PRINTABLE_STRUCT(obj, pp))
 	      || scheme_is_writable_struct(obj)))
@@ -566,8 +565,7 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
       if ((for_write < 3) && res)
 	return res;
     }
-  } else if (SAME_TYPE(t, scheme_structure_type)
-	     || SAME_TYPE(t, scheme_proc_struct_type)) {
+  } else if (SCHEME_CHAPERONE_STRUCTP(obj)) {
     if (scheme_is_writable_struct(obj)) {
       if (pp->print_unreadable) {
         res = check_cycles(writable_struct_subs(obj, for_write, pp), for_write, ht, pp);
@@ -589,7 +587,12 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
         res = 0;
     } else {
       /* got here => printable */
-      int i = SCHEME_STRUCT_NUM_SLOTS(obj);
+      int i;
+
+      if (SCHEME_CHAPERONEP(obj))
+        i = SCHEME_STRUCT_NUM_SLOTS(SCHEME_CHAPERONE_VAL(obj));
+      else
+        i = SCHEME_STRUCT_NUM_SLOTS(obj);
 
       if ((for_write >= 3) && !SCHEME_PREFABP(obj))
         res = 0x1;
@@ -597,7 +600,11 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
         res = 0;
       while (i--) {
 	if (scheme_inspector_sees_part(obj, pp->inspector, i)) {
-	  res2 = check_cycles(((Scheme_Structure *)obj)->slots[i], for_write, ht, pp);
+          if (SCHEME_CHAPERONEP(obj))
+            val = scheme_struct_ref(obj, i);
+          else
+            val = ((Scheme_Structure *)obj)->slots[i];
+	  res2 = check_cycles(val, for_write, ht, pp);
           res |= res2;
           if ((for_write < 3) && res)
             return res;
@@ -867,7 +874,12 @@ static void setup_graph_table(Scheme_Object *obj, int for_write, Scheme_Hash_Tab
 	setup_graph_table(obj, for_write, ht, counter, pp);
       }
     } else {
-      int i = SCHEME_STRUCT_NUM_SLOTS(obj);
+      int i;
+
+      if (SCHEME_CHAPERONEP(obj))
+        i = SCHEME_STRUCT_NUM_SLOTS(SCHEME_CHAPERONE_VAL(obj));
+      else
+        i = SCHEME_STRUCT_NUM_SLOTS(obj);
 
       while (i--) {
 	if (scheme_inspector_sees_part(obj, pp->inspector, i))
