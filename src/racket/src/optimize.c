@@ -3318,7 +3318,7 @@ case_lambda_shift(Scheme_Object *data, int delta, int after_depth)
 static Scheme_Object *
 begin0_optimize(Scheme_Object *obj, Optimize_Info *info, int context)
 {
-  int i, count, drop = 0, prev_size;
+  int i, count, drop = 0, prev_size, single_result = 0;
   Scheme_Sequence *s = (Scheme_Sequence *)obj;
   Scheme_Object *le;
 
@@ -3332,6 +3332,9 @@ begin0_optimize(Scheme_Object *obj, Optimize_Info *info, int context)
                               (!i
                                ? scheme_optimize_result_context(context)
                                : 0));
+
+    if (!i)
+      single_result = info->single_result;
 
     /* Inlining and constant propagation can expose
        omittable expressions. */
@@ -3367,8 +3370,8 @@ begin0_optimize(Scheme_Object *obj, Optimize_Info *info, int context)
     obj = (Scheme_Object *)s2;
   }
 
-  /* Optimization of expression 0 has already set single_result */
   info->preserves_marks = 1;
+  info->single_result = single_result;
 
   info->size += 1;
 

@@ -2450,6 +2450,17 @@
                               [read-accept-compiled #t])
                  (eval (read (open-input-bytes (get-output-bytes o2)))))
                exn:fail:read?))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; make sure `begin0' propertly propagates "multiple results" flags
+
+(test '(1 2 3) (lambda ()
+                 (call-with-values
+                     (lambda () (begin0
+                                 (values 1 2 3)
+                                 (newline)))
+                   list)))
+
   
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
