@@ -1819,7 +1819,8 @@
           (update-recently-typed #t)
           (set! fade-amount 0)
           (send recently-typed-timer stop)
-          (when lang-wants-big-defs/ints-labels?
+          (when (and lang-wants-big-defs/ints-labels?
+                     (preferences:get 'drracket:defs/ints-labels))
             (send recently-typed-timer start 10000 #t)))
         (super on-char evt))
       
