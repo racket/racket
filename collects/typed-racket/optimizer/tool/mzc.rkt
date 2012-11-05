@@ -301,14 +301,34 @@
        (define inside-hot-function?
          (and profile (memq profile-entry hot-functions)))
 
+       (define (pos-inside-us? pos)
+         (define our-pos  (syntax-position located-stx))
+         (define our-span (syntax-span     located-stx))
+         (and pos our-pos our-span (<= our-pos pos (+ our-pos our-span))))
+       (define (inside-us? h)
+         (pos-inside-us? (node-pos h)))
+       ;; To catch hot curried functions.
+       ;; Turns out to be useful for the ray tracer, but increases false
+       ;; positives for functions with hot loops inside that otherwise are
+       ;; uninteresting wrt inlining.
+       (define really-hot-anonymous-function-inside-us?
+         (and hot-functions
+              ;; list is sorted in increasing order of time
+              (ormap (lambda (x) (and (inside-us? x)
+                                      (not (node-id x)))) ; anonymous
+                     ;; TODO try dropping 3/4
+                     (drop hot-functions (quotient (length hot-functions) 2)))))
+
        ;; If we know which regions are hot, prune reports about cold
        ;; regions. If we don't know, err on the side of showing more.
        ;; We don't want to prune earlier, since traversing cold functions can
        ;; give us advice about hot functions.
-       (when (and profile (not inside-hot-function?))
+       (when (and profile
+                  (not inside-hot-function?)
+                  (not really-hot-anonymous-function-inside-us?))
          (prune))
 
-       (cond [(and profile (not (null? key-sites)))
+       (cond [(and profile-entry (not (null? key-sites)))
               ;; Inlining was not satisfactory for some call sites where we
               ;; accounted for a good portion of the caller's total time.
               (emit-near-miss
