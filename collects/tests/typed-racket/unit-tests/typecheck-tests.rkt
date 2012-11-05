@@ -1351,7 +1351,9 @@
               #:ret (ret B (-FS -top -bot)))
 
         ;Continuation Prompt Tags ang Continuation Mark Sets
-        (tc-e (default-continuation-prompt-tag) -Prompt-Tag)
+        ;; TODO: supporting default-continuation-prompt-tag means we need to
+        ;;       specially handle abort-current-continuation in the type system
+        ;(tc-e (default-continuation-prompt-tag) -Prompt-Tag)
         (tc-e (let: ((pt : Prompt-Tag (make-continuation-prompt-tag)))
                    (continuation-marks #f pt)) -Cont-Mark-Set)
         (tc-e (let: ((set : Continuation-Mark-Set (current-continuation-marks)))
