@@ -1,12 +1,13 @@
 #lang scribble/doc
 @(require "ss.rkt" "pict-diagram.rkt"
           scribble/eval
+          slideshow/face slideshow/pict
           (for-label racket/gui slideshow/code slideshow/flash slideshow/face
                      slideshow/balloon slideshow/pict-convert))
 
 @(define ss-eval (make-base-eval))
 @(ss-eval '(require slideshow/pict racket/math racket/class racket/draw
-                    racket/list))
+                    racket/list slideshow/balloon slideshow/flash))
 
 @title[#:style 'toc]{Making Pictures}
 
@@ -883,7 +884,12 @@ pict with the same shape and location.}
                 [color (or/c string? (is-a?/c color%)) "gray"])
          pict?]{
 
-Creates a fluffy cloud.}
+Creates a fluffy cloud.
+
+@examples[#:eval ss-eval
+  (cloud 100 75)
+  (cloud 100 75 "lavenderblush")
+]}
 
 @defproc[(file-icon [w real?]
                     [h real?] 
@@ -894,7 +900,12 @@ Creates a fluffy cloud.}
 Creates a Mac-like file icon, optionally shaded. If @racket[color] is
 not a string or @racket[color%] object, it is treated as a boolean, in
 which case true means @racket["gray"] and false means
-@racket["white"].}
+@racket["white"].
+
+@examples[#:eval ss-eval
+  (file-icon 50 60 "bisque")
+  (file-icon 50 60 "honeydew" #t)
+]}
 
 @defproc[(standard-fish [w real?]
                         [h real?] 
@@ -910,7 +921,14 @@ If @racket[eye-color] is @racket[#f], no eye is drawn.
 The @racket[open-mouth] argument can be either @racket[#f] (mouth
 closed), @racket[#t] (mouth fully open), or a number: @racket[0.0] is
 closed, @racket[1.0] is fully open, and numbers in between are
-partially open.}
+partially open.
+
+@examples[#:eval ss-eval
+  (standard-fish 100 50)
+  (standard-fish 100 50 #:direction 'right #:color "chocolate")
+  (standard-fish 100 50 #:eye-color "saddlebrown" #:color "salmon")
+  (standard-fish 100 50 #:open-mouth #t #:color "olive")
+]}
 
 @defproc[(jack-o-lantern [size real?]
                          [pumpkin-color (or/c string? (is-a?/c color%)) "orange"] 
@@ -918,7 +936,12 @@ partially open.}
          pict?]{
 
 Creates a jack-o-lantern; use the same pumpkin and face color to get a
-plain pumpkin. The @racket[size] determines the width.}
+plain pumpkin. The @racket[size] determines the width.
+
+@examples[#:eval ss-eval
+  (jack-o-lantern 100)
+  (jack-o-lantern 100 "cadet blue" "khaki")
+]}
 
 @defproc[(angel-wing [w real?]
                      [h real?] 
@@ -926,7 +949,12 @@ plain pumpkin. The @racket[size] determines the width.}
          pict?]{
 
 Creates an angel wing, left or right, or any size.  The color and pen
-width for drawing the wing outline is the current one.}
+width for drawing the wing outline is the current one.
+
+@examples[#:eval ss-eval
+  (angel-wing 100 40 #f)
+  (angel-wing 100 40 #t)
+]}
 
 @defproc[(desktop-machine [scale real?]
                           [style (listof symbol?) null])
@@ -946,6 +974,12 @@ The @racket[style] can include any of the following:
  @item{@racket['devil] --- like @racket['binary], and also give the machine 
                            horns and a tail}
 
+]
+
+@examples[#:eval ss-eval
+  (desktop-machine 1)
+  (desktop-machine 1 '(devil plt))
+  (desktop-machine 1 '(plt binary))
 ]}
                
 @defproc[(thermometer [#:height-% height-% (between/c 0 1) 1]
@@ -973,8 +1007,12 @@ The @racket[style] can include any of the following:
   
   Finally, some number of ticks are drawn, basd on the @racket[ticks] argument.
   
-  
-}
+@examples[#:eval ss-eval
+  (thermometer #:stem-height 90
+               #:bottom-circle-diameter 40
+               #:top-circle-diameter 20
+               #:mercury-inset 4)
+]}
 
 @; ----------------------------------------
 
@@ -1047,7 +1085,19 @@ to the location specified by either @racket[x] and @racket[y]
 its arguments like @racket[lt-find].
 
 The resulting pict has the same @tech{bounding box}, descent, and ascent as
-@racket[base], even if the balloon extends beyond the bounding box.}
+@racket[base], even if the balloon extends beyond the bounding box.
+
+@examples[#:eval ss-eval
+  (define a-pict (standard-fish 70 40))
+  (pin-balloon (balloon 40 30 5 'se 5 5)
+               (cc-superimpose (blank 300 150) a-pict)
+               a-pict
+               lc-find)
+  (pin-balloon (wrap-balloon (text "Hello!") 'sw -5 3)
+               (cc-superimpose (blank 300 150) a-pict)
+               a-pict
+               rt-find)
+]}
 
 
 @defproc[(balloon [w real?]
@@ -1087,6 +1137,9 @@ library.}
 
 Orange.}
 
+@; helper for the next defproc
+@(define (small-face mood) (scale (face mood) 0.25))
+
 @defproc[(face [mood symbol?]
                [color (or/c string (is-a?/c color%)) default-face-color])
          pict?]{
@@ -1095,22 +1148,33 @@ Returns a pict for a pre-configured face with the given base
 color. The built-in configurations, selected by mood-symbol, are as
 follows:
 
-@itemize[
-
-    @item{@racket['unhappy] --- @racket[(face* 'none 'plain #t default-face-color 6)]}
-    @item{@racket['sortof-unhappy] --- @racket[(face* 'worried 'grimace #t default-face-color 6)]}
-    @item{@racket['sortof-happy] --- @racket[(face* 'worried 'medium #f default-face-color 6)]}
-    @item{@racket['happy] --- @racket[(face* 'none 'plain #f default-face-color 6)]}
-    @item{@racket['happier] --- @racket[(face* 'none 'large #f default-face-color 3)]}
-    @item{@racket['embarrassed] --- @racket[(face* 'worried 'medium #f default-face-color 3)]}
-    @item{@racket['badly-embarrassed] --- @racket[(face* 'worried 'medium #t default-face-color 3)]}
-    @item{@racket['unhappier] --- @racket[(face* 'normal 'large #t default-face-color 3)]}
-    @item{@racket['happiest] --- @racket[(face* 'normal 'huge #f default-face-color 0 -3)]}
-    @item{@racket['unhappiest] --- @racket[(face* 'normal 'huge #t default-face-color 0 -3)]}
-    @item{@racket['mad] --- @racket[(face* 'angry 'grimace #t default-face-color 0)]}
-    @item{@racket['mean] --- @racket[(face* 'angry 'narrow #f default-face-color 0)]}
-    @item{@racket['surprised] --- @racket[(face* 'worried 'oh #t default-face-color -4 -3 2)]}
-
+@tabular[#:sep @hspace[2]
+  (list (list @para{@racket['unhappy] --- @racket[(face* 'none 'plain #t default-face-color 6)]}
+              @(small-face 'unhappy))
+        (list @para{@racket['sortof-unhappy] --- @racket[(small-face* 'worried 'grimace #t default-face-color 6)]}
+              @(small-face 'sortof-unhappy))
+        (list @para{@racket['sortof-happy] --- @racket[(small-face* 'worried 'medium #f default-face-color 6)]}
+                    @(small-face 'sortof-happy))
+        (list @para{@racket['happy] --- @racket[(small-face* 'none 'plain #f default-face-color 6)]}
+                    @(small-face 'happy))
+        (list @para{@racket['happier] --- @racket[(small-face* 'none 'large #f default-face-color 3)]}
+                    @(small-face 'happier))
+        (list @para{@racket['embarrassed] --- @racket[(small-face* 'worried 'medium #f default-face-color 3)]}
+                    @(small-face 'embarrassed))
+        (list @para{@racket['badly-embarrassed] --- @racket[(small-face* 'worried 'medium #t default-face-color 3)]}
+                    @(small-face 'badly-embarrassed))
+        (list @para{@racket['unhappier] --- @racket[(small-face* 'normal 'large #t default-face-color 3)]}
+                    @(small-face 'unhappier))
+        (list @para{@racket['happiest] --- @racket[(small-face* 'normal 'huge #f default-face-color 0 -3)]}
+                    @(small-face 'happiest))
+        (list @para{@racket['unhappiest] --- @racket[(small-face* 'normal 'huge #t default-face-color 0 -3)]}
+                    @(small-face 'unhappiest))
+        (list @para{@racket['mad] --- @racket[(small-face* 'angry 'grimace #t default-face-color 0)]}
+                    @(small-face 'mad))
+        (list @para{@racket['mean] --- @racket[(small-face* 'angry 'narrow #f default-face-color 0)]}
+                    @(small-face 'mean))
+        (list @para{@racket['surprised] --- @racket[(small-face* 'worried 'oh #t default-face-color -4 -3 2)]}
+                    @(small-face 'surprised)))
 ]}
 
 @defproc[(face* [eyebrow-kind (or/c 'none 'normal 'worried 'angry)]
@@ -1196,7 +1260,12 @@ spikes are compared to the bounding oval.
 The @racket[rotation] argument specifies an angle in radians for
 counter-clockwise rotation.
 
-The flash is drawn in the default color.}
+The flash is drawn in the default color.
+
+@examples[#:eval ss-eval
+  (filled-flash 100 50)
+  (filled-flash 100 50 8 0.25 (/ pi 2))
+]}
 
 @defproc[(outline-flash [width real?]
                         [height real?]
@@ -1205,7 +1274,12 @@ The flash is drawn in the default color.}
                         [rotation real? 0])
          pict?]{
 
-Like @racket[filled-flash], but drawing only the outline.}
+Like @racket[filled-flash], but drawing only the outline.
+
+@examples[#:eval ss-eval
+  (outline-flash 100 50)
+  (outline-flash 100 50 8 0.25 (/ pi 2))
+]}
 
 @; ------------------------------------------------------------------------
 
