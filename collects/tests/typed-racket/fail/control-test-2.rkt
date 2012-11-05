@@ -29,6 +29,6 @@
      tag))
 
   (call-f
-   (λ (tag) ((make-abort-k tag) "bad"))))
+   (λ (tag) ((make-abort-k tag) 'bad))))
 
 (require 'untyped)
