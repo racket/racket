@@ -463,7 +463,7 @@ exec racket -qu "$0" ${1+"$@"}
                 run-exe
                 extract-bigloo-times
                 clean-up-bin
-                (append '(cpstak nucleic2 takr2)
+                (append '(ctak cpstak nucleic2 takr2)
                         racket-specific-progs))
      (make-impl 'gambit
                 void
@@ -521,7 +521,9 @@ exec racket -qu "$0" ${1+"$@"}
   (define obsolete-impls '(racket3m racketcgc racket-j racketcgc-j racketcgc-tl mzc mz-old))
 
   (define benchmarks
-    '(conform
+    '(collatz
+      collatz-q
+      conform
       cpstak
       ctak
       deriv

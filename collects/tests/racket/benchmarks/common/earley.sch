@@ -664,4 +664,4 @@
     (let ((x (p (vector->list (make-vector k 'a)))))
       (length (parse->trees x 's 0 k)))))
 
-(time (test 12))
+(time (test 14))
