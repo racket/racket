@@ -144,7 +144,6 @@
                (conjoin  compiled-expression? (negate compiled-module-expression?))
              #'-Compiled-Non-Module-Expression))
 (define -Compiled-Expression (Un -Compiled-Module-Expression -Compiled-Non-Module-Expression))
-(define -Prompt-Tag (make-Base 'Prompt-Tag #'continuation-prompt-tag? continuation-prompt-tag? #'-Prompt-Tag))
 (define -Cont-Mark-Set (make-Base 'Continuation-Mark-Set #'continuation-mark-set? continuation-mark-set? #'-Cont-Mark-Set))
 (define -Path (make-Base 'Path #'path? path? #'-Path))
 (define -OtherSystemPath (make-Base 'OtherSystemPath

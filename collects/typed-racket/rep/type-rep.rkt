@@ -323,6 +323,9 @@
 (def-type MPairTop () [#:fold-rhs #:base] [#:key 'mpair])
 (def-type StructTop ([name Struct?]) [#:key 'struct])
 (def-type ThreadCellTop () [#:fold-rhs #:base] [#:key 'thread-cell])
+(def-type Prompt-TagTop () [#:fold-rhs #:base] [#:key 'prompt-tag])
+(def-type Continuation-Mark-KeyTop ()
+  [#:fold-rhs #:base] [#:key 'continuation-mark-key])
 
 ;; v : Racket Value
 (def-type Value (v) [#:frees #f] [#:fold-rhs #:base] [#:key (cond [(number? v) 'number]
