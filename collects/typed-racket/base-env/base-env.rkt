@@ -597,11 +597,6 @@
                        (-values (list (-pair b (-val '())) -Nat -Nat -Nat)))))]
 
 
-[call/cc (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
-[call/ec (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
-[call-with-current-continuation (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
-[call-with-escape-continuation (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
-
 [struct->vector (Univ . -> . (-vec Univ))]
 [unsafe-struct-ref top-func]
 [unsafe-struct*-ref top-func]
@@ -2023,10 +2018,6 @@
 [stx-list? (-> (-Syntax Univ) -Boolean)]
 
 ;Section 9.4 (Continuations)
-
-[call-with-continuation-barrier (-poly (a) (-> (-> a) a))]
-[continuation-prompt-available? (-> (make-Prompt-TagTop) B)]
-
 [call-with-continuation-prompt
  (-polydots (a b d c)
    (cl->*
@@ -2036,12 +2027,20 @@
 [abort-current-continuation
  (-polydots (a b d e c)
    (->... (list (make-Prompt-Tag b (->... '() (c c) d))) (c c) e))]
+[make-continuation-prompt-tag (-poly (a b) (->opt [Sym] (make-Prompt-Tag a b)))]
+;; TODO: requires special handling of abort-current-continuation
+;[default-continuation-prompt-tag (-> (make-Prompt-Tag Univ (-> ManyUniv Univ)))]
+[call-with-current-continuation (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
+[call/cc (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
 [call-with-composable-continuation
  (-polydots (b c a)
    (cl->*
     (-> (->... '() (a a) b) (make-Prompt-Tag b c) (make-ValuesDots '() a 'a))))]
-[make-continuation-prompt-tag (-poly (a b) (->opt [Sym] (make-Prompt-Tag a b)))]
-;[default-continuation-prompt-tag (-> (make-Prompt-Tag Univ (-> ManyUniv Univ)))]
+[call-with-escape-continuation (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
+[call/ec (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
+[call-with-continuation-barrier (-poly (a) (-> (-> a) a))]
+[continuation-prompt-available? (-> (make-Prompt-TagTop) B)]
+;; TODO?: continuation? is missing
 [continuation-prompt-tag? (make-pred-ty (make-Prompt-TagTop))]
 [dynamic-wind (-poly (a) (-> (-> ManyUniv) (-> a) (-> ManyUniv) a))]
 
