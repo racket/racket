@@ -226,6 +226,8 @@
     [(ThreadCellTop:) (fp "ThreadCell")]
     [(VectorTop:) (fp "Vector")]
     [(MPairTop:) (fp "MPair")]
+    [(Prompt-TagTop:) (fp "Prompt-Tag")]
+    [(Continuation-Mark-KeyTop:) (fp "Continuation-Mark-Key")]
     [(App: rator rands stx)
      (fp "~a" (list* rator rands))]
     ;; special cases for lists
