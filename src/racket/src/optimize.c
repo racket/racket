@@ -3559,6 +3559,33 @@ int scheme_compiled_propagate_ok(Scheme_Object *value, Optimize_Info *info)
     sz = closure_body_size((Scheme_Closure_Data *)value, 1, info, NULL);
     if ((sz >= 0) && (sz <= MAX_PROC_INLINE_SIZE))
       return 1;
+   else {
+     Scheme_Closure_Data *data = (Scheme_Closure_Data *)value;
+     if (sz < 0)
+       scheme_log(info->logger,
+		  SCHEME_LOG_DEBUG,
+		  0,
+		  /* actual cause: contains non-copyable body elements that prevent inlining */
+		  /* TODO have OC recognize this as a separate event instead of reusing failure */
+		  "no inlining: involving: %s%s size: %d threshold: %d",
+		  scheme_write_to_string(data->name ? data->name : scheme_false, NULL),
+		  scheme_optimize_context_to_string(info->context),
+		  sz,
+		  0); /* TODO no sensible threshold here */
+     else
+       scheme_log(info->logger,
+		  SCHEME_LOG_DEBUG,
+		  0,
+		  /* actual cause: too big for an inlining candidate */
+		  /* TODO have OC recognize this as a separate event instead of reusing OOF */
+		  "no inlining, out of fuel: involving: %s%s size: %d threshold: %d",
+		  scheme_write_to_string(data->name ? data->name : scheme_false, NULL),
+		  scheme_optimize_context_to_string(info->context),
+		  sz,
+		  0); /* TODO no sensible threshold here */
+     return 0;
+   }
+
   }
 
   if (SAME_TYPE(scheme_case_lambda_sequence_type, SCHEME_TYPE(value))) {
