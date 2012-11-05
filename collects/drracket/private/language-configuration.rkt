@@ -1,5 +1,5 @@
 #lang racket/base
-  (require (prefix-in : mred/mred) ;; ensure that this module is always loaded since it is shared below for pretty big
+(require (prefix-in : mred/mred) ;; ensure that this module is always loaded since it is shared below for pretty big
            racket/unit
            mrlib/hierlist
            racket/class
@@ -11,7 +11,11 @@
            string-constants
            framework
            setup/getinfo
+           setup/xref
+           scribble/xref
+           net/url
            syntax/toplevel
+           browser/external
            (only-in mzlib/struct make-->vector))
   
   (define original-output (current-output-port))
@@ -38,16 +42,14 @@
                     [(shift) (send evt get-shiftdown)]
                     [(option) (send evt get-alt-down)]))
                 shortcut-prefix))
-    (values (string-append (string-constant use-language-in-source)
-                           (format " (~aU)" menukey-string))
+    (values (string-append (string-constant the-racket-language)
+                           (format " (~aR)" menukey-string))
             (string-append (string-constant teaching-languages)
                            (format " (~aT)" menukey-string))
             (string-append (string-constant other-languages)
                            (format " (~aO)" menukey-string))
             mouse-event-uses-shortcut-prefix?)))
   
-  (define sc-lang-in-source-discussion (string-constant lang-in-source-discussion))
-
   (provide language-configuration@)
   
   (define-unit language-configuration@
@@ -1105,55 +1107,86 @@
              [else #f])))))
     
     (define (add-discussion p)
-      (let* ([t (new text:standard-style-list%)]
-             [c (new editor-canvas%
+      (define t (new (text:hide-caret/selection-mixin text:standard-style-list%)))
+      (define c (new editor-canvas%
                      [stretchable-width #t]
                      [horizontal-inset 0]
                      [vertical-inset 0]
                      [parent p]
                      [style '(no-border no-vscroll no-hscroll transparent)]
-                     [editor t])])
-        (send t set-styles-sticky #f)
-        (send t set-autowrap-bitmap #f)
-        (let* ([size-sd (make-object style-delta% 'change-size (send normal-control-font get-point-size))]
-               [do-insert
-                (λ (str tt-style?)
-                  (let ([before (send t last-position)])
-                    (send t insert str before before)
-                    (cond
-                      [tt-style?
-                       (send t change-style 
-                             (send (send t get-style-list) find-named-style "Standard")
-                             before (send t last-position))]
-                      [else
-                       (send t change-style 
-                             (send (send t get-style-list) basic-style)
-                             before (send t last-position))])
-                    (send t change-style size-sd before (send t last-position))))])
-          (when (send normal-control-font get-size-in-pixels)
-            (send size-sd set-size-in-pixels-on #t))
-          (let loop ([strs (regexp-split #rx"#lang" sc-lang-in-source-discussion)])
-            (do-insert (car strs) #f)
-            (unless (null? (cdr strs))
-              (do-insert "#lang" #t)
-              (loop (cdr strs)))))
-        (send t hide-caret #t)
-        
-        (send t auto-wrap #t)
-        (send t lock #t)
-        (send c accept-tab-focus #f)
-        (send c allow-tab-exit #t)
-        c))
+                     [editor t]))
+      (send t set-styles-sticky #f)
+      (send t set-autowrap-bitmap #f)
+      (define size-sd (make-object style-delta% 'change-size (send normal-control-font get-point-size)))
+      (define (do-insert str tt-style?)
+        (define before (send t last-position))
+        (send t insert str before before)
+        (cond
+          [tt-style?
+           (send t change-style 
+                 (send (send t get-style-list) find-named-style "Standard")
+                 before (send t last-position))]
+          [else
+           (send t change-style 
+                 (send (send t get-style-list) basic-style)
+                 before (send t last-position))])
+        (send t change-style size-sd before (send t last-position)))
+      (when (send normal-control-font get-size-in-pixels)
+        (send size-sd set-size-in-pixels-on #t))
+      (let loop ([strs (regexp-split #rx"#lang" (string-constant racket-language-discussion))])
+        (do-insert (car strs) #f)
+        (unless (null? (cdr strs))
+          (do-insert "#lang" #t)
+          (loop (cdr strs))))
+      
+      (define xref-chan (make-channel))
+      (thread
+       (λ ()
+         (define xref (load-collections-xref))
+         (let loop ()
+           (channel-put xref-chan xref)
+           (loop))))
+      
+      (for ([lang (in-list '(racket typed/racket scribble/base))])
+        (do-insert (format "  #lang ~a" lang) #t)
+        (do-insert "  [" #f)
+        (define before (send t last-position))
+        (do-insert "docs" #f)
+        (define after (send t last-position))
+        (do-insert "]\n" #f)
+        (send t set-clickback before after 
+              (λ (t start end)
+                (define-values (path tag) (xref-tag->path+anchor (channel-get xref-chan) `(mod-path ,(symbol->string lang))))
+                (define url (path->url path))
+                (define url2 (if tag
+                                 (make-url (url-scheme url)
+                                           (url-user url)
+                                           (url-host url)
+                                           (url-port url)
+                                           (url-path-absolute? url)
+                                           (url-path url)
+                                           (url-query url)
+                                           tag)
+                                 url))
+                (send-url (url->string url2)))))
+      
+      (define kmp (send t set-keymap (keymap:get-editor)))
+      
+      (send t hide-caret #t)
+      (send t auto-wrap #t)
+      (send t lock #t)
+      (send c accept-tab-focus #f)
+      (send c allow-tab-exit #t)
+      c)
     
     (define (size-discussion-canvas canvas)
-      (let ([t (send canvas get-editor)])
-        
-        (let ([by (box 0)])
-          (send t position-location 
-                (send t line-end-position (send t last-line))
-                #f
-                by)
-          (send canvas min-height (+ (ceiling (inexact->exact (unbox by))) 24)))))
+      (define t (send canvas get-editor))
+      (define by (box 0))
+      (send t position-location 
+            (send t line-end-position (send t last-line))
+            #f
+            by)
+      (send canvas min-height (+ (ceiling (inexact->exact (unbox by))) 24)))
     
     (define section-style-delta (make-object style-delta% 'change-bold))
     (send section-style-delta set-delta-foreground "medium blue")
