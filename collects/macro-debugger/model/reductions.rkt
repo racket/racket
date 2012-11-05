@@ -721,12 +721,14 @@
           [#:set-syntax (append stxs old-forms)]
           [ModulePass ?forms rest]])]
     [(cons (Wrap mod:lift-end (stxs)) rest)
-     (R [#:pattern ?forms]
-        [#:when (pair? stxs)
-                [#:left-foot null]
-                [#:set-syntax (append stxs #'?forms)]
-                [#:step 'splice-module-lifts stxs]]
-        [ModulePass ?forms rest])]
+     ;; In pass2, stxs contains a mixture of terms and kind-tagged terms (pairs)
+     (let ([stxs (map (lambda (e) (if (pair? e) (car e) e)) stxs)])
+       (R [#:pattern ?forms]
+          [#:when (pair? stxs)
+                  [#:left-foot null]
+                  [#:set-syntax (append stxs #'?forms)]
+                  [#:step 'splice-module-lifts stxs]]
+          [ModulePass ?forms rest]))]
     [(cons (Wrap mod:skip ()) rest)
      (R [#:pattern (?firstS . ?rest)]
         [ModulePass ?rest rest])]
