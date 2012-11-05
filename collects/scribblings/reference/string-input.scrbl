@@ -154,10 +154,9 @@ Like @racket[read-string], but reads bytes and produces a byte string.}
 
 @examples[#:eval si-eval
 (let ([ip (open-input-bytes 
-                  (bytes 14 
+                  (bytes 6 
                          115 101 99 114 101
-                         116 58 32 235 185
-                         132 235 176 128))])
+                         116))])
   (define length (read-byte ip))
   (bytes->string/utf-8 (read-bytes length ip)))
 ]
