@@ -4218,6 +4218,15 @@
                        pt)])
       (do-test)))
 
+  (test/spec-passed/result
+   'prompt-tag/c-has-contract
+   '(let ([pt (contract (prompt-tag/c string? number?)
+                        (make-continuation-prompt-tag)
+                        'pos
+                        'neg)])
+      (has-contract? pt))
+   #t)
+
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
   ;;  continuation-mark-key/c
@@ -4368,6 +4377,16 @@
                                'pos
                                'neg)])
       (continuation-mark-set-first #f ctc-mark)))
+
+  (test/spec-passed/result
+   'continuation-mark-key/c-has-contract
+   '(let* ([mark (make-continuation-mark-key)]
+           [ctc-mark (contract (continuation-mark-key/c number?)
+                               mark
+                               'pos
+                               'neg)])
+      (has-contract? ctc-mark))
+   #t)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
