@@ -9013,6 +9013,19 @@
       (with-contract region
         #:result integer?
         (send (new c2%) m 3))))
+  
+  (contract-error-test
+   'interface-method-name-1
+   #'(begin
+       (eval '(module imn-bug scheme/base
+                (require scheme/class)
+                (define i<%> (interface () [m (->m integer? integer?)]))
+                (define c% (class* object% (i<%>) (super-new) (define/public (m x) x)))
+                (send (new c%) m "foo")))
+       (eval '(require 'imn-bug)))
+   (λ (x)
+     (and (exn:fail:contract:blame? x)
+          (regexp-match #rx"m: contract violation" (exn-message x)))))
 
 ;
 ;
