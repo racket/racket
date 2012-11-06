@@ -1,6 +1,7 @@
-#lang racket 
+#lang racket/base
 
-(require mred/mred mzlib/etc htdp/error)
+(require racket/list racket/function racket/gui
+         mzlib/etc htdp/error)
 
 (provide
  ;; (launch-many-worlds e1 ... e2)

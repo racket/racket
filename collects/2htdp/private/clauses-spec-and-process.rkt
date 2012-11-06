@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; provides functions for specifying the shape of big-bang and universe clauses:
@@ -12,9 +12,14 @@
          ->args
          contains-clause?)
 
-(require 
- (for-syntax syntax/parse)
- (for-template "clauses-spec-aux.rkt" racket (rename-in lang/prim (first-order->higher-order f2h))))
+(require racket/function
+         racket/list
+         racket/bool
+         (only-in racket/unit except) ; used only as a keyword...?
+         (for-syntax racket/base syntax/parse)
+         (for-template "clauses-spec-aux.rkt"
+                       racket
+                       (rename-in lang/prim (first-order->higher-order f2h))))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; specifying the shape of clauses 

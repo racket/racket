@@ -1,6 +1,10 @@
-#lang racket
+#lang racket/base
 
-(require htdp/error)
+(require racket/class
+         racket/list
+         racket/bool
+         racket/match
+         htdp/error)
 
 (provide (all-defined-out))
 
