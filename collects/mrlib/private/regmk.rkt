@@ -1,6 +1,9 @@
-#lang racket
+#lang racket/base
+
+(require (for-syntax racket/base))
+
 (provide define-struct/reg-mk
-         id->constructor 
+         id->constructor
          (struct-out point)
          (struct-out bb))
 

@@ -1,7 +1,7 @@
-#lang racket
+#lang racket/base
 
 ;;;
-;;; <time.ss> ---- SRFI 19 Time Data Types and Procedures port to PLT Scheme
+;;; <time.ss> ---- SRFI 19 Time Data Types and Procedures port to Racket
 ;;; Time-stamp: <2004-07-21 12:57:06 solsona>
 ;;;
 ;;; Usually, I would add a copyright notice, and the announce that
@@ -60,7 +60,7 @@
 ;; -- Multiple helper procedures. TM:xxx procedures are meant to be
 ;; internal.
 
-(require scheme/serialize
+(require racket/serialize
          srfi/8/receive
          srfi/29
          srfi/optional)
@@ -77,12 +77,12 @@
          ;; Time arithmetic
          time-difference time-difference! add-duration add-duration! subtract-duration subtract-duration!
          ;; Date object and accessors
-         ;; date structure is provided by core PLT Scheme, we just extended tu support miliseconds:
+         ;; date structure is provided by core Racket, we just extended tu support miliseconds:
          srfi:make-date srfi:date?
          deserialize-info:tm:date-v0
          date-nanosecond srfi:date-second srfi:date-minute srfi:date-hour srfi:date-day srfi:date-month
          srfi:date-year date-zone-offset
-         ;; This are not part of the date structure (as they are in the original PLT Scheme's date)
+         ;; This are not part of the date structure (as they are in the original Racket's date)
          srfi:date-year-day srfi:date-week-day date-week-number
          
          ;; The following procedures work with this modified version.
@@ -643,7 +643,7 @@
                     (tm:set-date-year!        d1 (srfi:date-year   d0))
                     (tm:set-date-zone-offset! d1 (date-zone-offset d0))))))))
 
-;; PLT Scheme date structure has the following:
+;; Racket's date structure has the following:
 ;;   * second : 0 to 61 (60 and 61 are for unusual leap-seconds)
 ;;   * minute : 0 to 59
 ;;   * hour : 0 to 23

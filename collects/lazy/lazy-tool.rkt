@@ -1,16 +1,17 @@
-#lang racket
+#lang racket/base
 
-(require string-constants
+(require racket/unit
+         racket/class
+         string-constants
          drracket/tool
          lang/stepper-language-interface)
 
 (provide tool@)
 
 (define tool@
-  (unit 
+  (unit
     (import drracket:tool^)
     (export drracket:tool-exports^)
-
 
     (define (stepper-settings-language %)
       (if (implementation? % stepper-language<%>)
@@ -50,13 +51,12 @@
 ;      (equal? (drracket:language:simple-settings->vector s)
 ;              (drracket:language:simple-settings->vector (default-settings))))
         (super-new)))
-    
-      
+
     (define (phase1) (void))
-    
+
     ;; phase2 : -> void
     (define (phase2)
-      
+
       (define lazy-language%
         (stepper-settings-language
          ((drracket:language:get-default-mixin)
@@ -64,7 +64,7 @@
            (module-based-language-extension
             (drracket:language:simple-module-based-language->module-based-language-mixin
              drracket:language:simple-module-based-language%))))))
-      
+
       (drracket:language-configuration:add-language
        (instantiate lazy-language% ()
          (one-line-summary "Lazy Racket")

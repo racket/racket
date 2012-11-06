@@ -1,8 +1,9 @@
-#lang racket
+#lang racket/base
 
 (provide (all-defined-out))
 
-(require (for-syntax syntax/define
+(require (for-syntax racket/base
+                     syntax/define
                      "transformer.rkt"))
 
 #|

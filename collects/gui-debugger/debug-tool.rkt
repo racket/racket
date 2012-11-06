@@ -1,14 +1,14 @@
-#lang racket
+#lang racket/base
 
 ;; DrRacket's debugging tool
 
-(require mzlib/etc
-         mzlib/list
-         mzlib/class
-         mzlib/unit
-         mzlib/contract
-         mred
-         mzlib/match
+(require racket/function
+         racket/list
+         racket/class
+         racket/unit
+         racket/contract
+         racket/match
+         racket/gui
          drscheme/tool
          "marks.rkt"
          mrlib/switchable-button
@@ -20,7 +20,8 @@
          string-constants
          lang/debugger-language-interface
          images/compile-time
-         (for-syntax racket/class
+         (for-syntax racket/base
+                     racket/class
                      racket/draw
                      images/icons/arrow
                      images/icons/control
@@ -112,7 +113,7 @@
     ;; (<form>)                   => (<form>)
     ;; (<form> <arg1> ... <argn>) => (<form> ...)
     (define trim-expr-str
-      (opt-lambda (str [len 10])
+      (lambda (str [len 10])
         (let* ([strlen (string-length str)]
                [starts-with-paren (and (> strlen 0)
                                        (char=? (string-ref str 0) #\())]
@@ -157,7 +158,7 @@
         [else v]))
     
     (define filename->defs
-      (opt-lambda (source [default #f])
+      (lambda (source [default #f])
         (let/ec k
           (cond
             [(is-a? source editor<%>) source]
@@ -985,7 +986,7 @@
                           (rest frames))))))
 
         (define/public suspend-gui
-          (opt-lambda (frames status [switch-tabs? #f] [already-stopped? #f])
+          (lambda (frames status [switch-tabs? #f] [already-stopped? #f])
             (let ([top-of-stack? (zero? (get-frame-num))]
                   [status-message (send (get-frame) get-status-message)])
               (set! want-suspend-on-break? #f)
@@ -1052,7 +1053,7 @@
         
         (define/public suspend
           ;; ==called from user thread==
-          (opt-lambda (break-handler frames [status #f])
+          (lambda (break-handler frames [status #f])
             ;; suspend-sema ensures that we allow only one suspended thread
             ;;  at a time
             (cond
