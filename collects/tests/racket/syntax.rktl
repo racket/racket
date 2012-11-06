@@ -315,6 +315,16 @@
 			[else #f])))
 (error-test #'(cond [(values 1 2) 8]) arity?)
 (error-test #'(case (values 1 2) [(a) 8]) arity?)
+(syntax-test #'(case 1 []) #rx"ill-formed clause")
+(syntax-test #'(case 1 [(y) 5] []) #rx"ill-formed clause")
+(syntax-test #'(case 1 [x]) #rx"not a datum sequence")
+(syntax-test #'(case 1 [(y) 5] [x]) #rx"not a datum sequence")
+(syntax-test #'(case 1 [(y) 5] [x x]) #rx"not a datum sequence")
+(syntax-test #'(case 1 [x x]) #rx"not a datum sequence")
+(syntax-test #'(case 1 [(x)]) #rx"missing expression after datum sequence")
+(syntax-test #'(case 1 [(y) 5] [(x)]) #rx"missing expression after datum sequence")
+(syntax-test #'(case 1 [(x) . 8]) #rx"illegal use of `.'")
+(syntax-test #'(case 1 [(x) 10] . 9) #rx"illegal use of `.'")
 
 ;; test larger `case' dispatches to trigger for binary-search
 ;; and hash-table-based dispatch:
@@ -1626,6 +1636,28 @@
    free-identifier=?
    f-id
    (eval '(extract f f2 f2 #t))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check interaction of marks, `rename-out', and `free-identifier=?' 
+
+(module check-free-eq-with-rename racket/base
+  (require (for-syntax racket/base))
+  (provide (rename-out [prefix:quote quote])
+           check)
+  (define-syntax (check stx)
+    (syntax-case stx ()
+      [(_ id) #`#,(free-identifier=? #'id #'prefix:quote)]))
+  (define-syntax-rule (prefix:quote x) (quote x)))
+
+(module use-rename-checker racket/base
+  (define-syntax-rule (body)
+    (begin
+      (provide v)
+      (require 'check-free-eq-with-rename)
+      (define v (check quote))))
+  (body))
+
+(test #t dynamic-require ''use-rename-checker 'v)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

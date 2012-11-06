@@ -68,6 +68,8 @@
     (tellv (get-cocoa)
            insertItemWithTitle: #:type _NSString lbl 
            atIndex: #:type _NSInteger (number)))
+  (define/public (delete i)
+    (tellv (get-cocoa) removeItemAtIndex: #:type _NSInteger i))
 
   (define/override (maybe-register-as-child parent on?)
     (register-as-child parent on?)))

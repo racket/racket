@@ -1,3 +1,3 @@
-#cs(module elevator mzscheme
-  (require htdp/elevator)
-  (provide (all-from htdp/elevator)))
+#lang racket/base
+(require htdp/elevator)
+(provide (all-from-out htdp/elevator))

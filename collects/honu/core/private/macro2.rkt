@@ -7,11 +7,11 @@
                      racket/syntax
                      "template.rkt"
                      "literals.rkt"
+                     "syntax.rkt"
                      (prefix-in phase1: "parse2.rkt")
                      "debug.rkt"
                      (prefix-in phase1: "compile.rkt")
                      "util.rkt"
-                     (prefix-in syntax: syntax/parse/private/residual-ct)
                      racket/base)
          (for-meta 2 syntax/parse
                      racket/base
@@ -28,6 +28,9 @@
          "literals.rkt"
          "syntax.rkt"
          "debug.rkt"
+
+         (for-meta 0 "template.rkt" syntax/stx)
+
          (for-meta -1 "literals.rkt" "compile.rkt" "parse2.rkt" "parse-helper.rkt")
          #;
          (for-syntax "honu-typed-scheme.rkt")
@@ -37,13 +40,29 @@
   (require syntax/parse
            "literals.rkt"
            "debug.rkt"
+           "util.rkt"
+           (prefix-in syntax: syntax/parse/private/residual-ct)
            racket/syntax
            racket/set
+           racket/match
+           (for-syntax syntax/parse
+                       racket/base
+                       racket/syntax)
            (for-template racket/base
                          syntax/parse))
 
     (provide (all-defined-out))
     (struct pattern-variable [name original depth class] #:transparent)
+
+    ;; given the name of an object and some fields this macro defines
+    ;; name.field for each of the fields
+    (define-syntax (define-struct-fields stx)
+      (syntax-parse stx
+        [(_ name type (field ...))
+         (with-syntax ([(field* ...)
+                        (for/list ([field (syntax->list #'(field ...))])
+                          (format-id field "~a.~a" (syntax-e #'name) (syntax-e field)))])
+           #'(match-define (struct type (field* ...)) name))]))
 
     ;; makes a syntax object with the right number of nested ellipses patterns
     (define (pattern-variable->syntax variable)
@@ -126,6 +145,83 @@
     (define variables (find (reverse-syntax original-pattern)))
     (debug 2 "Found variables ~a\n" variables)
     (for/list ([x variables]) x))
+
+  ;; variable is the original pattern variable, like 'foo'
+  ;; and new-name is the new generated name, 'temp1'
+  ;; we want to bind all the attributes from temp1 to foo, so if temp1 has
+  ;;   temp1_a
+  ;;   temp1_b ...
+  ;;
+  ;; we want to bind
+  ;;   foo_a temp_a
+  ;;   (foo_b ...) (temp_b ...)
+  (define (bind-attributes variable new-name)
+    (debug "Syntax class of ~a is ~a at ~a\n"
+           (pattern-variable-class variable)
+           (syntax-local-value (pattern-variable-class variable) (lambda () #f))
+           (syntax-local-phase-level))
+    (define attributes
+      (let ([syntax-class (syntax-local-value (pattern-variable-class variable))])
+        (for/list ([attribute (syntax:stxclass-attrs syntax-class)])
+          (pattern-variable (syntax:attr-name attribute)
+                            (pattern-variable-original variable)
+                            (+ (pattern-variable-depth variable)
+                               (syntax:attr-depth attribute))
+                            #f))))
+
+    (define (mirror-attribute attribute)
+      (debug "Mirror attribute ~a\n" attribute)
+      (define-struct-fields attribute pattern-variable
+                            (name original depth class))
+      ;; create a new pattern variable with a syntax object that uses
+      ;; the given lexical context and whose name is prefix_suffix
+      (define (create lexical prefix suffix)
+        (pattern-variable->syntax
+          (pattern-variable (format-id lexical "~a_~a" prefix suffix)
+                            attribute.original attribute.depth attribute.class)))
+      (define-struct-fields variable pattern-variable
+                            (name original depth class))
+      (debug "Bind attributes ~a ~a\n" variable.name attribute.name)
+      (with-syntax ([bind-attribute
+                      #;
+                      (create name (syntax-e name) name)
+                      (pattern-variable->syntax
+                        (pattern-variable (format-id variable.name "~a_~a"
+                                                     (syntax-e variable.name)
+                                                     attribute.name)
+                                          attribute.original
+                                          attribute.depth
+                                          attribute.class))]
+                    [new-attribute 
+                      #;
+                      (create new-name new-name name)
+                      (pattern-variable->syntax
+                        (pattern-variable
+                          (format-id new-name "~a_~a"
+                                     new-name
+                                     attribute.name)
+                          attribute.original attribute.depth #f))])
+        (debug "Bind ~a to ~a\n" #'bind-attribute #'new-attribute)
+        #'(#:with bind-attribute #'new-attribute)))
+
+    (for/set ([attribute attributes])
+             (mirror-attribute attribute)))
+
+  ;; returns a set of #:with clauses for syntax-parse that
+  ;; bind all the old variables and their attributes to some new names
+  ;; taking care of ellipses depth
+  (define (pattern-variables+attributes variables use)
+    (for/union ([old variables]
+                [new use])
+               (define-struct-fields old pattern-variable (name original depth class))
+               (with-syntax ([old-syntax (pattern-variable->syntax old)]
+                             [new.result (pattern-variable->syntax
+                                           (pattern-variable (format-id new "~a_result" new)
+                                                             old.original
+                                                             old.depth
+                                                             old.class))])
+                 (set-union (set #'(#:with old-syntax #'new.result))
+                            (bind-attributes old new)))))
   )
 
 (require (for-meta 2 (submod "." analysis)))
@@ -238,34 +334,6 @@
          (syntax #'stuff*))])))
 |#
 
-(provide honu-syntax)
-;; Do any honu-specific expansion here
-(define-honu-syntax honu-syntax
-  (lambda (code)
-    (syntax-parse code #:literal-sets (cruft)
-      #;
-      [(_ (#%parens single) . rest)
-       (define context #'single)
-       (define compressed (compress-dollars #'single))
-       (values
-         (with-syntax ([stuff* (datum->syntax context compressed context context)])
-           (phase1:racket-syntax #'stuff*))
-         #'rest
-         #f)]
-      [(_ (#%parens stuff ...) . rest)
-       (define context (stx-car #'(stuff ...)))
-       (define compressed (compress-dollars #'(stuff ...)))
-       (values
-         (with-syntax ([stuff* (datum->syntax context
-                                              (syntax->list compressed)
-                                              context context)])
-           ;; (debug "Stuff is ~a\n" (syntax->datum #'stuff*))
-           ;; (debug "Stuff syntaxed is ~a\n" (syntax->datum #'#'stuff*))
-           (with-syntax ([(out ...) #'stuff*])
-             (phase1:racket-syntax #'stuff*)))
-         #; #'(%racket-expression (parse-stuff stuff ...))
-         #'rest
-         #f)])))
 
 ;; combine syntax objects
 ;; #'(a b) + #'(c d) = #'(a b c d)
@@ -301,128 +369,64 @@
 
 (begin-for-syntax
   (define-syntax (generate-pattern stx)
-
-    ;; given the name of an object and some fields this macro defines
-    ;; name.field for each of the fields
-    (define-syntax (define-struct-fields stx)
-      (syntax-parse stx
-        [(_ name type (field ...))
-         (with-syntax ([(field* ...)
-                        (for/list ([field (syntax->list #'(field ...))])
-                          (format-id field "~a.~a" (syntax-e #'name) (syntax-e field)))])
-           #'(match-define (struct type (field* ...)) name))]))
-
     (syntax-parse stx
-      [(_ name literals original-pattern maybe-out)
-      (define variables (find-pattern-variables #'original-pattern))
-      (define use (generate-temporaries variables))
-      (define mapping (make-hash))
-      (for ([old variables]
-            [new use])
-        (debug "Update mapping ~a to ~a\n" (syntax-e (pattern-variable-name old)) new)
-        (hash-set! mapping
-                   (syntax-e (pattern-variable-name old))
-                   (pattern-variable new
-                                     (pattern-variable-original old)
-                                     (pattern-variable-depth old)
-                                     (pattern-variable-class old))))
+      [(_ name literals (pattern-stx out-stx) ...)
 
-      ;; variable is the original pattern variable, like 'foo'
-      ;; and new-name is the new generated name, 'temp1'
-      ;; we want to bind all the attributes from temp1 to foo, so if temp1 has
-      ;;   temp1_a
-      ;;   temp1_b ...
-      ;;
-      ;; we want to bind
-      ;;   foo_a temp_a
-      ;;   (foo_b ...) (temp_b ...)
-      (define (bind-attributes variable new-name)
-        (debug "Syntax class of ~a is ~a at ~a\n"
-               (pattern-variable-class variable)
-               (syntax-local-value (pattern-variable-class variable) (lambda () #f))
-               (syntax-local-phase-level))
-        (define attributes
-          (let ([syntax-class (syntax-local-value (pattern-variable-class variable))])
-            (for/list ([attribute (syntax:stxclass-attrs syntax-class)])
-              (pattern-variable (syntax:attr-name attribute)
-                                (pattern-variable-original variable)
-                                (+ (pattern-variable-depth variable)
-                                   (syntax:attr-depth attribute))
-                                #f))))
+      (define (make-syntax-class-pattern honu-pattern maybe-out)
+        (define variables (find-pattern-variables honu-pattern))
+        (define use (generate-temporaries variables))
+        (define mapping (make-hash))
+        (for ([old variables]
+              [new use])
+          (debug "Update mapping ~a to ~a\n" (syntax-e (pattern-variable-name old)) new)
+          (hash-set! mapping
+                     (syntax-e (pattern-variable-name old))
+                     (pattern-variable new
+                                       (pattern-variable-original old)
+                                       (pattern-variable-depth old)
+                                       (pattern-variable-class old))))
 
-        (define (mirror-attribute attribute)
-          (debug "Mirror attribute ~a\n" attribute)
-          ;; create a new pattern variable with a syntax object that uses
-          ;; the given lexical context and whose name is prefix_suffix
-          (define-struct-fields attribute pattern-variable
-                                (name original depth class))
-          (define (create lexical prefix suffix)
-            (pattern-variable->syntax
-              (pattern-variable (format-id lexical "~a_~a" prefix suffix)
-                                attribute.original attribute.depth attribute.class)))
-          (define-struct-fields variable pattern-variable
-                                (name original depth class))
-          (debug "Bind attributes ~a ~a\n" variable.name attribute.name)
-          (with-syntax ([bind-attribute
-                          #;
-                          (create name (syntax-e name) name)
-                          (pattern-variable->syntax
-                              (pattern-variable (format-id variable.name "~a_~a"
-                                                           (syntax-e variable.name)
-                                                           attribute.name)
-                                                attribute.original
-                                                attribute.depth
-                                                attribute.class))]
-                        [new-attribute 
-                          #;
-                          (create new-name new-name name)
-                          (pattern-variable->syntax
-                                         (pattern-variable
-                                           (format-id new-name "~a_~a"
-                                                      new-name
-                                                      attribute.name)
-                                           attribute.original attribute.depth #f))])
-            (debug "Bind ~a to ~a\n" #'bind-attribute #'new-attribute)
-            #'(#:with bind-attribute #'new-attribute)))
+        (define withs (pattern-variables+attributes variables use))
 
-        (for/set ([attribute attributes])
-          (mirror-attribute attribute)))
+        (with-syntax ([(new-pattern ...) (convert-pattern honu-pattern mapping)]
+                      [((withs ...) ...) (set->list withs)]
+                      [(result-with ...) (if (syntax-e maybe-out)
+                                           (with-syntax ([(out ...) maybe-out])
+                                             #'(#:with result (parse-stuff honu-syntax (#%parens out ...))))
+                                           #'(#:with result #'()))])
+          (syntax/loc honu-pattern
+                      [pattern (~seq new-pattern ...)
+                               withs ... ...
+                               result-with ...
+                               ])))
 
-      (define withs
-        (for/union ([old variables]
-                    [new use])
-          (define-struct-fields old pattern-variable (name original depth class))
-          (with-syntax ([old-syntax (pattern-variable->syntax old)]
-                        [new.result (pattern-variable->syntax
-                                      (pattern-variable (format-id new "~a_result" new)
-                                                        old.original
-                                                        old.depth
-                                                        old.class))])
-            (set-union (set #'(#:with old-syntax #'new.result))
-                       (bind-attributes old new)))))
+      (define pattern-stuff
+        (for/list ([pattern (syntax->list #'(pattern-stx ...))]
+                   [out (syntax->list #'(out-stx ...))])
+          (make-syntax-class-pattern pattern out)))
 
+      #;
       (debug "With bindings ~a\n" withs)
       (with-syntax ([(literal ...) #'literals]
-                    [(new-pattern ...) (convert-pattern #'original-pattern mapping)]
-                    [((withs ...) ...) (set->list withs)]
-                    [(result-with ...) (if (syntax-e #'maybe-out)
-                                         (with-syntax ([(out ...) #'maybe-out])
-                                           #'(#:with result (out ...)))
-                                         #'(#:with result #'()))])
+                    [(new-pattern ...) pattern-stuff])
+        #;
         (debug "Result with ~a\n" (syntax->datum #'(quote-syntax (result-with ...))))
         (define output
           #'(quote-syntax
               (begin
-                ;; define at phase1 so we can use it
+                ;; define at phase1 so we can use it in a macro
                 (begin-for-syntax
                   (define-literal-set local-literals (literal ...))
                   (define-splicing-syntax-class name
-                                                #:literal-sets ([cruft #:at name]
-                                                                [local-literals #:at name])
-                                                [pattern (~seq new-pattern ...)
-                                                         withs ... ...
-                                                         result-with ...
-                                                         ])))))
+                      #:literal-sets ([cruft #:at name]
+                                      [local-literals #:at name])
+                      new-pattern ...
+
+                      #;
+                      [pattern (~seq new-pattern ...)
+                               withs ... ...
+                               result-with ...
+                               ])))))
         (debug "Output is ~a\n" (pretty-syntax output))
         output)])))
 
@@ -432,21 +436,23 @@
   (lambda (code)
     (syntax-parse code #:literal-sets (cruft)
       [(_ name (#%parens literal ...)
-          (#%braces pattern ...)
-          (~optional (#%braces out ...))
+          (~seq (#%braces original-pattern ...)
+                (~optional (~seq honu-comma maybe-out)
+                           #:defaults ([maybe-out #'#f])))
+          ...
           . rest)
-       (values (with-syntax ([out* (attribute out)])
-                 (phase1:racket-syntax
-                   (splicing-let-syntax
-                     ([make (lambda (stx)
-                              (syntax-parse stx
-                                [(_ new-name)
-                                 (syntax-local-introduce
-                                 (generate-pattern name
-                                                   (literal ...)
-                                                   (pattern ...)
-                                                   out*))]))])
-                     (make name))))
+       (values
+         (phase1:racket-syntax
+           (splicing-let-syntax
+             ([make (lambda (stx)
+                      (syntax-parse stx
+                        [(_ new-name)
+                         (syntax-local-introduce
+                           (generate-pattern name
+                                             (literal ...)
+                                             ((original-pattern ...) maybe-out)
+                                             ...))]))])
+             (make name)))
                #'rest
                #f)])))
 
@@ -458,4 +464,31 @@
       [(_ (#%braces body ...) . rest)
        (define out
          (phase1:racket-syntax (begin-for-syntax (parse-stuff body ...))))
+       (values out #'rest #t)])))
+
+;; not sure this is useful but it lets you write racket syntax expressions
+;; from inside honu. the main issue is all the bindings available
+;; are honu bindings so things like (+ 1 x) wont work.
+(provide honu-racket)
+(define-honu-syntax honu-racket
+  (lambda (code)
+    (define (remove-cruft stx)
+      (syntax-parse stx #:literal-sets (cruft)
+        [(#%parens inside ...)
+         (remove-cruft #'(inside ...))]
+        [(#%braces inside ...)
+         (remove-cruft #'(inside ...))]
+        [(#%brackets inside ...)
+         (remove-cruft #'(inside ...))]
+        [(head rest ...)
+         (with-syntax ([head* (remove-cruft #'head)]
+                       [(rest* ...) (remove-cruft #'(rest ...))])
+           #'(head* rest* ...))]
+        [x #'x]))
+
+    (syntax-parse code #:literal-sets (cruft)
+      [(_ (#%parens stx ...) . rest)
+       (define out
+         (with-syntax ([(stx* ...) (remove-cruft #'(stx ...))])
+           (phase1:racket-syntax (phase0:racket-syntax (stx* ...)))))
        (values out #'rest #t)])))

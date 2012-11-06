@@ -1556,13 +1556,11 @@
     (when (<= 0 p (sub1 (length actual-content)))
       (set! actual-content (gone actual-content p))
       (set! actual-user-data (gone actual-user-data p))))
-  (define db (if list?
-		 (make-object button%
-			      "Delete" cdp
-			      (lambda (b e)
-				(let ([p (send c get-selection)])
-				  (delete p))))
-		 null))
+  (define db (make-object button%
+                          "Delete" cdp
+                          (lambda (b e)
+                            (let ([p (send c get-selection)])
+                              (delete p)))))
   (define dab (if list?
 		  (make-object button%
 			       "Delete Above" cdp

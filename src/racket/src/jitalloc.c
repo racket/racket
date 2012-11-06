@@ -35,6 +35,7 @@
 #ifdef CAN_INLINE_ALLOC
 THREAD_LOCAL_DECL(extern uintptr_t GC_gen0_alloc_page_ptr);
 intptr_t GC_initial_word(int sizeb);
+intptr_t GC_pair_initial_word(int sizeb);
 intptr_t GC_array_initial_word(int sizeb);
 intptr_t GC_compute_alloc_size(intptr_t sizeb);
 
@@ -153,7 +154,12 @@ int scheme_inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int immut
 
   /* GC header: */
   if (ty >= 0) {
-    a_word = GC_initial_word(amt);
+    if ((ty == scheme_pair_type)
+        || (ty == scheme_mutable_pair_type)
+        || (ty == scheme_raw_pair_type))
+      a_word = GC_pair_initial_word(amt);
+    else
+      a_word = GC_initial_word(amt);
     jit_movi_l(JIT_R2, a_word);
     jit_str_l(JIT_V1, JIT_R2);
     

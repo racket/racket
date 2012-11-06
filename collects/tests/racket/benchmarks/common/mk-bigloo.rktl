@@ -11,7 +11,7 @@
     (newline))
   #:exists 'truncate/replace)
 
-(when (system (format "bigloo -static-bigloo -w -o ~a -copt -m32 -call/cc -copt -O3 -copt -fomit-frame-pointer -O6 ~a.scm"
+(when (system (format "bigloo -static-bigloo -w -o ~a -call/cc -copt -O3 -copt -fomit-frame-pointer -O6 ~a.scm"
                       name name))
   (delete-file (format "~a.scm" name))
   (delete-file (format "~a.o" name)))

@@ -856,6 +856,7 @@
         [(module-var)
          (let ([mod (read-compact cp)]
                [var (read-compact cp)]
+               [shape (read-compact cp)]
                [pos (read-compact-number cp)])
            (let-values ([(flags mod-phase pos)
                          (let loop ([pos pos])
@@ -869,6 +870,33 @@
                             [else (values 0 0 pos)]))])
              (make-module-variable mod var pos mod-phase
                                    (cond
+                                    [shape
+                                     (cond
+                                      [(number? shape) 
+                                       (define n (arithmetic-shift shape -1))
+                                       (make-function-shape (if (negative? n)
+                                                                (make-arity-at-least (sub1 (- n)))
+                                                                n)
+                                                            (odd? shape))]
+                                      [(and (symbol? shape)
+                                            (regexp-match? #rx"^struct" (symbol->string shape)))
+                                       (define n (string->number (substring (symbol->string shape) 6)))
+                                       (case (bitwise-and n #x7)
+                                         [(0) (make-struct-type-shape (arithmetic-shift n -3))]
+                                         [(1) (make-constructor-shape (arithmetic-shift n -3))]
+                                         [(2) (make-predicate-shape)]
+                                         [(3) (make-accessor-shape (arithmetic-shift n -3))]
+                                         [(4) (make-mutator-shape (arithmetic-shift n -3))]
+                                         [else (make-struct-other-shape)])]
+                                      [else
+                                       ;; parse symbol as ":"-separated sequence of arities
+                                       (make-function-shape
+                                        (for/list ([s (regexp-split #rx":" (symbol->string shape))])
+                                          (define i (string->number s))
+                                          (if (negative? i)
+                                              (make-arity-at-least (sub1 (- i)))
+                                              i))
+                                        #f)])]
                                     [(not (zero? (bitwise-and #x1 flags))) 'constant]
                                     [(not (zero? (bitwise-and #x2 flags))) 'fixed]
                                     [else #f]))))]

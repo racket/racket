@@ -316,7 +316,10 @@
             (do-parse #'(parsed ... rest ...)
                       precedence left current)
             ;; (debug "Remove repeats from ~a\n" #'parsed)
-            (define re-parse (remove-repeats #'parsed)
+            (define re-parse
+              #'parsed
+              #;
+              (remove-repeats #'parsed)
               #;
               (with-syntax ([(x ...) #'parsed])
                 (debug "Properties on parsed ~a\n" (syntax-property-symbol-keys #'parsed))

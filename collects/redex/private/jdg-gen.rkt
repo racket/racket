@@ -84,7 +84,7 @@
   (set! sym-index 0)
   (define rhs-term (pat->term/term-e rhs term-e eqs lang))
   (define lhs-term (pat->term/term-e lhs term-e eqs lang))
-  (disunify* lhs-term rhs-term (make-hash) lang))
+  (not (equal? rhs-term lhs-term)))
   
 (define (pat->term/term-e t term-e actual-e lang)
   (call/ec
@@ -100,7 +100,7 @@
          [`(cstr  (,nts ...) ,pat)
           (recur pat)]
          [`(list ,ps ...)
-          `(list ,@(for/list ([p ps]) (recur p)))]
+          (for/list ([p ps]) (recur p))]
          [`(nt ,_)
           (fail (not-ground))]
          [`(,stuff ...) ;; here it's a fully instanatiated list

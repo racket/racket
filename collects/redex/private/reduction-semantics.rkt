@@ -202,7 +202,16 @@
       (reduction-relation-make-procs red))
      (reduction-relation-rule-names red)
      (reduction-relation-lws red)
-     `any)))
+     (let ([orig-pat (reduction-relation-domain-pat red)])
+       (cond
+         [(equal? orig-pat `any)
+          ;; special case for backwards compatibility:
+          ;; if there was no #:domain argument, then we
+          ;; probably should let the compatible closure also
+          ;; not have a domain
+          `any]
+         [else
+          `(in-hole ,pat ,orig-pat)])))))
 
 (define (apply-reduction-relation/tagged p v)
   (let loop ([procs (reduction-relation-procs p)]
@@ -941,7 +950,9 @@
      (reverse (apply append (map reduction-relation-make-procs lst)))
      (map car (sort (hash-map name-ht list) < #:key cadr))
      (apply append (map reduction-relation-lws lst)) 
-     (reverse (apply append (map reduction-relation-procs lst))))))
+     (reverse (apply append (map reduction-relation-procs lst)))
+     ;; not clear what the contract is here.
+     `any)))
 
 (define (do-node-match lhs-frm-id lhs-to-id pat rhs-proc child-make-proc rhs-from)
   (define (subst from to in)

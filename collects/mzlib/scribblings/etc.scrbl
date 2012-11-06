@@ -269,3 +269,7 @@ no filename is available, the result is @racket[#f].}
 Creates a new hash-table providing the quoted flags (if any) to
 @racket[make-hash-table], and then mapping each key to the
 corresponding values.}
+
+
+
+@close-eval[etc-eval]

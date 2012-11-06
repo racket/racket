@@ -178,3 +178,17 @@
   (test w sync w))
 (test #t evt? (udp-receive!-evt udp1 us1))
 (test #t evt? (udp-send-to-evt udp1 "127.0.0.1" port #"here's more"))
+
+
+;; check that error-repoting doesn't crash:
+(let ()
+  (define (q)
+    (define s (udp-open-socket #f #f))
+    (udp-bind! s "127.0.0.1" 5999)
+    s)
+  
+  (define s (q))
+  (err/rt-test (q) exn:fail:network?)
+  (udp-close s))
+
+

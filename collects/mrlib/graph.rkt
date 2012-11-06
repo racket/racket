@@ -3,7 +3,8 @@
            racket/list
            racket/math
            racket/gui/base
-	   (for-syntax racket/base)
+           racket/match
+           (for-syntax racket/base)
            racket/contract)
   
   (provide graph-snip<%>
@@ -377,7 +378,7 @@
           (let ([old-currently-overs currently-overs])
             (set! currently-overs new-currently-overs)
             
-	    (on-mouse-over-snips currently-overs)
+            (on-mouse-over-snips currently-overs)
             (for-each 
              (lambda (old-currently-over)
                (invalidate-to-children/parents old-currently-over dc))
@@ -386,9 +387,8 @@
              (lambda (new-currently-over)
                (invalidate-to-children/parents new-currently-over dc))
              new-currently-overs))))
-
-      (define/public (on-mouse-over-snips snips)
-	(void))
+      
+      (define/public (on-mouse-over-snips snips) (void))
         
       ;; set-equal : (listof snip) (listof snip) -> boolean
       ;; typically lists will be small (length 1),
@@ -401,57 +401,42 @@
       ;; invalidate-to-children/parents : snip dc -> void
       ;; invalidates the region containing this snip and
       ;; all of its children and parents.
-      (inherit invalidate-bitmap-cache)
       (define/private (invalidate-to-children/parents snip dc)
         (when (is-a? snip graph-snip<%>)
-          (let* ([parents-and-children (append (get-all-parents snip)
-                                               (get-all-children snip))]
-                 [rects (eliminate-redundancies (get-rectangles snip parents-and-children))]
-                 [or/c (or/c-rects rects)]
-                 [text-height (call-with-values 
-                               (λ () (send dc get-text-extent "Label" #f #f 0))
-                               (λ (w h a s) h))]
-                 [invalidate-rect
-                  (lambda (rect)
-                    (invalidate-bitmap-cache (- (rect-left rect) text-height)
-                                             (- (rect-top rect)  text-height)
-                                             (+ (- (rect-right rect)
-                                                   (rect-left rect))
-                                                text-height)
-                                             (+ (- (rect-bottom rect)
-                                                   (rect-top rect))
-                                                   text-height)))])
-            (cond
-              [(< (rect-area or/c)
-                  (apply + (map (lambda (x) (rect-area x)) rects)))
-               (invalidate-rect or/c)]
-              [else
-               (for-each invalidate-rect rects)]))))
+          (define-values (_1 text-height _2 _3) (send dc get-text-extent "Label" #f #f 0))
+          (define parents-and-children (append (get-all-parents snip)
+                                               (get-all-children snip)))
+          (define rects (get-rectangles snip parents-and-children))
+          (for ([rect (in-list rects)])
+            (save-rectangle-to-invalidate
+             (- (rect-left rect) text-height)
+             (- (rect-top rect)  text-height)
+             (+ (rect-right rect) text-height)
+             (+ (rect-bottom rect) text-height)))))
       
-      ;; (listof rect) -> (listof rect)
-      (define/private (eliminate-redundancies rects)
-        (let loop ([rects rects]
-                   [acc null])
-          (cond
-            [(null? rects) acc]
-            [else (let ([r (car rects)])
-                    (cond
-                      [(or (ormap (lambda (other-rect) (rect-included-in? r other-rect))
-                                  (cdr rects))
-                           (ormap (lambda (other-rect) (rect-included-in? r other-rect))
-                                  acc))
-                       (loop (cdr rects)
-                             acc)]
-                      [else 
-                       (loop (cdr rects) 
-                             (cons r acc))]))])))
+      (define pending-invalidate-rectangle #f)
+      (define pending-invalidate-rectangle-timer #f)
+      (inherit invalidate-bitmap-cache)
+      (define/private (run-pending-invalidate-rectangle)
+        (define the-pending-invalidate-rectangle pending-invalidate-rectangle)
+        (set! pending-invalidate-rectangle #f)
+        (invalidate-bitmap-cache . the-pending-invalidate-rectangle))
       
-      ;; rect-included-in? : rect rect -> boolean
-      (define/private (rect-included-in? r1 r2)
-        (and ((rect-left r1) . >= . (rect-left r2))
-             ((rect-top r1) . >= . (rect-top r2))
-             ((rect-right r1) . <= . (rect-right r2))
-             ((rect-bottom r1) . <= . (rect-bottom r2))))
+      (define/private (save-rectangle-to-invalidate l t r b)
+        (unless pending-invalidate-rectangle-timer
+          (set! pending-invalidate-rectangle-timer 
+                (new timer% [notify-callback
+                             (λ () (run-pending-invalidate-rectangle))])))
+        (add-to-pending-indvalidate-rectangle l t r b)
+        (send pending-invalidate-rectangle-timer start 20 #t))
+      
+      (define/private (add-to-pending-indvalidate-rectangle l t r b)
+        (set! pending-invalidate-rectangle
+              (match pending-invalidate-rectangle
+                [(list l2 t2 r2 b2)
+                 (list (min l l2) (min t t2) (max r r2) (max b b2))]
+                [#f
+                 (list l t r b)])))
 
       ;; get-rectangles : snip (listof snip) -> rect
       ;; computes the rectangles that need to be invalidated for connecting 
@@ -519,7 +504,11 @@
           (let ([old-font (send dc get-font)])
             (when edge-label-font
               (send dc set-font edge-label-font))
-            (draw-edges dc left top right bottom dx dy)
+            (cond
+              [pending-invalidate-rectangle
+               (add-to-pending-indvalidate-rectangle left top right bottom)]
+              [else
+               (draw-edges dc left top right bottom dx dy)])
             (when edge-label-font
               (send dc set-font old-font))))
         (super on-paint before? dc left top right bottom dx dy draw-caret))

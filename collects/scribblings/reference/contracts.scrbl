@@ -520,7 +520,12 @@ to the input.  The result will be a copy for immutable hash tables, and either a
 }
 
 
-@defproc[(prompt-tag/c [contract contract?] ...) contract?]{
+@defform/subs[#:literals (values)
+  (prompt-tag/c contract ... maybe-call/cc)
+  ([maybe-call/cc (code:line)
+                  (code:line #:call/cc contract)
+                  (code:line #:call/cc (values contract ...))])
+   #:contracts ([contract contract?])]{
 Takes any number of contracts and returns a contract that recognizes
 continuation prompt tags and will check any aborts or prompt handlers that
 use the contracted prompt tag.
@@ -532,6 +537,10 @@ call to @racket[call-with-continuation-prompt].
 If all of the @racket[contract]s are chaperone contracts, the resulting
 contract will also be a @tech{chaperone} contract. Otherwise, the contract is
 an @tech{impersonator} contract.
+
+If @racket[maybe-call/cc] is provided, then the provided contracts
+are used to check the return values from a continuation captured with
+@racket[call-with-current-continuation].
 
 @examples[#:eval (contract-eval)
   (define/contract tag
@@ -2328,3 +2337,6 @@ do not have corresponding generators (for example, not all predicates have
 generators) or because there is not enough fuel. In either case, the
 thunk @racket[fail] is invoked.
 }
+
+
+

@@ -371,6 +371,18 @@ void scheme_init_eval_places()
 #endif
 }
 
+XFORM_NONGCING static void ignore_result(Scheme_Object *v)
+{
+  if (SAME_OBJ(v, SCHEME_MULTIPLE_VALUES)) {
+    scheme_current_thread->ku.multiple.array = NULL;
+  }
+}
+
+void scheme_ignore_result(Scheme_Object *v)
+{
+  ignore_result(v);
+}
+
 /*========================================================================*/
 /*                   C stack and Scheme stack handling                    */
 /*========================================================================*/
@@ -787,8 +799,7 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
 					   int pos, int mod_phase,
 					   Scheme_Env *env, 
                                            Scheme_Object **exprs, int which,
-                                           char *import_map,
-                                           int flags)
+                                           int flags, Scheme_Object *shape)
 {
   Scheme_Object *modname;
   Scheme_Env *menv;
@@ -831,11 +842,20 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
     if (self) {
       exprs[which] = varname;
     } else {
-      Scheme_Object *v = modname;
-      if (mod_phase != 0)
-        v = scheme_make_pair(v, scheme_make_integer(mod_phase));
-      v = scheme_make_pair(varname, v);
-      exprs[which] = v;
+      if (flags & SCHEME_MODVAR_CONST) {
+        Scheme_Object *v;
+        v = scheme_make_vector((mod_phase != 0) ? 4 : 3, modname);
+        SCHEME_VEC_ELS(v)[1] = varname;
+        SCHEME_VEC_ELS(v)[2] = (shape ? shape : scheme_false);
+        if (mod_phase != 0)
+          SCHEME_VEC_ELS(v)[3] = scheme_make_integer(mod_phase);
+      } else {
+        Scheme_Object *v = modname;
+        if (mod_phase != 0)
+          v = scheme_make_pair(v, scheme_make_integer(mod_phase));
+        v = scheme_make_pair(varname, v);
+        exprs[which] = v;
+      }
     }
   }
 
@@ -844,17 +864,15 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
     const char *bad_reason = NULL;
 
     if (!bkt->val) {
-      bad_reason = "uninitialized";
+      bad_reason = "is uninitialized";
     } else if (flags) {
       if (flags & SCHEME_MODVAR_CONST) {
-        /* The fact that the link target is consistent is a fine
-           sanity check, but the check is not good enough for the JIT
-           to rely on it. To be useful for the JIT, we'd have to make
-           sure that every link goes to the same value. Since we can't
-           currently guarantee that, all the JIT assumes is that the
-           value is "fixed". */
         if (!(((Scheme_Bucket_With_Flags *)bkt)->flags & GLOB_IS_CONSISTENT))
-          bad_reason = "not constant across all instantiations";
+          bad_reason = "is not a procedure or structure-type constant across all instantiations";
+        else if (shape && SCHEME_TRUEP(shape)) {
+          if (!scheme_get_or_check_procedure_shape(bkt->val, shape))
+            bad_reason = "has the wrong procedure or structure-type shape";
+        }
       } else {
         if (!(((Scheme_Bucket_With_Flags *)bkt)->flags & GLOB_IS_IMMUTATED))
           bad_reason = "not constant";
@@ -864,7 +882,7 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
     if (bad_reason) {
       scheme_wrong_syntax("link", NULL, varname,
                           "bad variable linkage;\n"
-                          " reference to a variable that is %s\n"
+                          " reference to a variable that %s\n"
                           "  reference phase level: %d\n"
                           "  variable module: %D\n"
                           "  variable phase: %d\n"
@@ -880,17 +898,13 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
       ((Scheme_Bucket_With_Flags *)bkt)->flags |= GLOB_IS_LINKED;
   }
 
-  if (!self && !(import_map[which >> 3] & (1 << (which & 0x7))))
-    import_map[which >> 3] |= (1 << (which & 0x7));
-  
   return (Scheme_Object *)bkt;
 }
 
 static Scheme_Object *link_toplevel(Scheme_Object **exprs, int which, Scheme_Env *env,
                                     Scheme_Object *src_modidx, 
                                     Scheme_Object *dest_modidx,
-                                    Scheme_Object *insp,
-                                    char *import_map)
+                                    Scheme_Object *insp)
 {
   Scheme_Object *expr = exprs[which];
 
@@ -903,10 +917,10 @@ static Scheme_Object *link_toplevel(Scheme_Object **exprs, int which, Scheme_Env
       ((Scheme_Bucket_With_Home *)b)->home_link = (Scheme_Object *)env;
     }
     return (Scheme_Object *)b;
-  } else if (SCHEME_PAIRP(expr) || SCHEME_SYMBOLP(expr)) {
-    /* Simplified module reference */
-    Scheme_Object *modname, *varname;
-    int mod_phase = 0;
+  } else if (SCHEME_PAIRP(expr) || SCHEME_SYMBOLP(expr) || SCHEME_VECTORP(expr)) {
+    /* Simplified module reference (as installed by link_module_variable) */
+    Scheme_Object *modname, *varname, *shape;
+    int mod_phase = 0, flags = 0;
     if (SCHEME_SYMBOLP(expr)) {
       if (!env->module) {
         /* compiled as a module variable, but instantiated in a non-module
@@ -917,13 +931,22 @@ static Scheme_Object *link_toplevel(Scheme_Object **exprs, int which, Scheme_Env
         modname = env->module->modname;
         mod_phase = env->mod_phase;
       }
-    } else {
+      shape = NULL;
+    } else if (SCHEME_PAIRP(expr)) {
       varname = SCHEME_CAR(expr);
       modname = SCHEME_CDR(expr);
       if (SCHEME_PAIRP(modname)) {
         mod_phase = SCHEME_INT_VAL(SCHEME_CDR(modname));
         modname = SCHEME_CAR(modname);
-      } 
+      }
+      shape = NULL;
+    } else {
+      modname = SCHEME_VEC_ELS(expr)[0];
+      varname = SCHEME_VEC_ELS(expr)[1];
+      flags = SCHEME_MODVAR_CONST;
+      shape = SCHEME_VEC_ELS(expr)[2];
+      if (SCHEME_VEC_SIZE(expr) > 3)
+        mod_phase = SCHEME_INT_VAL(SCHEME_VEC_ELS(expr)[3]);
     }
     return link_module_variable(modname,
                                 varname,
@@ -931,8 +954,7 @@ static Scheme_Object *link_toplevel(Scheme_Object **exprs, int which, Scheme_Env
                                 -1, mod_phase,
                                 env, 
                                 NULL, 0,
-                                import_map,
-                                0);
+                                flags, shape);
   } else if (SAME_TYPE(SCHEME_TYPE(expr), scheme_variable_type)) {
     Scheme_Bucket *b = (Scheme_Bucket *)expr;
     Scheme_Env *home;
@@ -948,7 +970,7 @@ static Scheme_Object *link_toplevel(Scheme_Object **exprs, int which, Scheme_Env
 				  -1, home->mod_phase,
 				  env, 
                                   exprs, which,
-                                  import_map, 0);
+                                  0, NULL);
   } else {
     Module_Variable *mv = (Module_Variable *)expr;
 
@@ -962,8 +984,7 @@ static Scheme_Object *link_toplevel(Scheme_Object **exprs, int which, Scheme_Env
 				mv->pos, mv->mod_phase,
 				env,
                                 exprs, which,
-                                import_map, 
-                                SCHEME_MODVAR_FLAGS(mv) & 0x3);
+                                SCHEME_MODVAR_FLAGS(mv) & 0x3, mv->shape);
   }
 }
 
@@ -1619,6 +1640,8 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
     else {
       GC_CAN_IGNORE Scheme_Object *vals;
       vals = scheme_values(num_rands, (Scheme_Object **)value);
+      if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
+        p->values_buffer = NULL;
       c->value = vals;
     }
 
@@ -1889,10 +1912,21 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
     
     g = scheme_current_thread->ku.multiple.count;
     if (i == g) {
+      int is_st;
+
       values = scheme_current_thread->ku.multiple.array;
-      scheme_current_thread->ku.multiple.array = NULL;
       if (SAME_OBJ(values, scheme_current_thread->values_buffer))
 	scheme_current_thread->values_buffer = NULL;
+      scheme_current_thread->ku.multiple.array = NULL;
+
+      if (dm_env)
+        is_st = 0;
+      else
+        is_st = !!scheme_is_simple_make_struct_type(vals_expr, g, 1, 1, 
+                                                    NULL, NULL,
+                                                    NULL, NULL, MZ_RUNSTACK, 0, 
+                                                    NULL, NULL, 5);
+      
       for (i = 0; i < g; i++) {
         var = SCHEME_VEC_ELS(vec)[i+delta];
 	if (dm_env) {
@@ -1913,7 +1947,10 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
 	  scheme_shadow(scheme_get_bucket_home(b), (Scheme_Object *)b->key, 1);
 
 	  if (SCHEME_TOPLEVEL_FLAGS(var) & SCHEME_TOPLEVEL_SEAL) {
-            ((Scheme_Bucket_With_Flags *)b)->flags |= GLOB_IS_IMMUTATED;
+            if (is_st)
+              ((Scheme_Bucket_With_Flags *)b)->flags |= (GLOB_IS_IMMUTATED | GLOB_IS_CONSISTENT);
+            else
+              ((Scheme_Bucket_With_Flags *)b)->flags |= GLOB_IS_IMMUTATED;
 	  }
 	}
       }
@@ -1921,10 +1958,10 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
 	scheme_pop_prefix(save_runstack);
 	
       return scheme_void;
+    } else {
+      if (SAME_OBJ(scheme_current_thread->ku.multiple.array, scheme_current_thread->values_buffer))
+        scheme_current_thread->values_buffer = NULL;
     }
-
-    if (SAME_OBJ(scheme_current_thread->ku.multiple.array, scheme_current_thread->values_buffer))
-      scheme_current_thread->values_buffer = NULL;
   } else if (SCHEME_VEC_SIZE(vec) == delta + 1) { /* => single var */
     var = SCHEME_VEC_ELS(vec)[delta];
     if (dm_env) {
@@ -2071,6 +2108,7 @@ static Scheme_Object *apply_values_execute(Scheme_Object *data)
   v = _scheme_eval_linked_expr_multi(SCHEME_PTR2_VAL(data));
   if (SAME_OBJ(v, SCHEME_MULTIPLE_VALUES)) {
     Scheme_Thread *p = scheme_current_thread;
+    Scheme_Object **rands;
     int num_rands = p->ku.multiple.count;
 
     if (num_rands > p->tail_buffer_size) {
@@ -2078,7 +2116,9 @@ static Scheme_Object *apply_values_execute(Scheme_Object *data)
       if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
         p->values_buffer = NULL;
     }
-    return scheme_tail_apply(f, num_rands, p->ku.multiple.array);
+    rands = p->ku.multiple.array;
+    p->ku.multiple.array = NULL;
+    return scheme_tail_apply(f, num_rands, rands);
   } else {
     Scheme_Object *a[1];
     a[0] = v;
@@ -2198,7 +2238,7 @@ static Scheme_Object *begin0_execute(Scheme_Object *obj)
 
   apos = 1;
   while (i--) {
-    (void)_scheme_eval_linked_expr_multi(((Scheme_Sequence *)obj)->array[apos++]);
+    ignore_result(_scheme_eval_linked_expr_multi(((Scheme_Sequence *)obj)->array[apos++]));
   }
 
   if (mv) {
@@ -2222,7 +2262,7 @@ static Scheme_Object *splice_execute(Scheme_Object *data)
     int i, cnt = seq->count - 1;
     
     for (i = 0; i < cnt; i++) {
-      (void)_scheme_call_with_prompt_multi(splice_one_expr, seq->array[i]);
+      ignore_result(_scheme_call_with_prompt_multi(splice_one_expr, seq->array[i]));
     }
     
     return _scheme_eval_linked_expr_multi(seq->array[cnt]);
@@ -2302,7 +2342,7 @@ do_define_syntaxes_execute(Scheme_Object *form, Scheme_Env *dm_env)
       save_runstack = scheme_push_prefix(dm_env->exp_env, rp, NULL, NULL, 1, 1, NULL, scheme_false);
 
       while (!SCHEME_NULLP(form)) {
-        (void)scheme_eval_linked_expr_multi_with_dynamic_state(SCHEME_CAR(form), &dyn_state);
+        ignore_result(scheme_eval_linked_expr_multi_with_dynamic_state(SCHEME_CAR(form), &dyn_state));
         form = SCHEME_CDR(form);
       }
       
@@ -3382,7 +3422,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	  
 	  UPDATE_THREAD_RSPTR();
 	  for (i = 0; i < cnt; i++) {
-	    (void)_scheme_eval_linked_expr_multi_wp(((Scheme_Sequence *)obj)->array[i], p);
+	    ignore_result(_scheme_eval_linked_expr_multi_wp(((Scheme_Sequence *)obj)->array[i], p));
 	  }
 
 	  obj = ((Scheme_Sequence *)obj)->array[cnt];
@@ -5167,6 +5207,7 @@ static Scheme_Object *do_eval_string_all(Scheme_Object *port, const char *str, S
           if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
             p->values_buffer = NULL;
           a = p->ku.multiple.array;
+          p->ku.multiple.array = NULL;
           cnt = p->ku.multiple.count;
         } else {
           _a[0] = result;
@@ -5481,7 +5522,10 @@ Scheme_Object *scheme_eval_clone(Scheme_Object *expr)
      reduce the overhead of cross-module references. */
   switch (SCHEME_TYPE(expr)) {
   case scheme_module_type:
-    return scheme_module_eval_clone(expr);
+    if (scheme_startup_use_jit)
+      return scheme_module_jit(expr);
+    else
+      return scheme_module_eval_clone(expr);
     break;
   case scheme_define_syntaxes_type:
   case scheme_begin_for_syntax_type:
@@ -5529,8 +5573,7 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
 {
   Scheme_Object **rs_save, **rs, *v;
   Scheme_Prefix *pf;
-  char *import_map;
-  int i, j, tl_map_len, import_map_len;
+  int i, j, tl_map_len;
 
   rs_save = rs = MZ_RUNSTACK;
 
@@ -5551,13 +5594,6 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
     i += rp->num_lifts;
 
     tl_map_len = ((rp->num_toplevels + rp->num_lifts) + 31) / 32;
-    import_map_len = (rp->num_toplevels + 7) / 8;
-
-    if (import_map_len) {
-      import_map = GC_malloc_atomic(import_map_len);
-      memset(import_map, 0, import_map_len);
-    } else
-      import_map = NULL;
 
     pf = scheme_malloc_tagged(sizeof(Scheme_Prefix) 
                               + ((i-mzFLEX_DELTA) * sizeof(Scheme_Object *))
@@ -5566,7 +5602,6 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
     pf->num_slots = i;
     pf->num_toplevels = rp->num_toplevels;
     pf->num_stxes = rp->num_stxes;
-    pf->import_map = import_map;
     --rs;
     MZ_RUNSTACK = rs;
     rs[0] = (Scheme_Object *)pf;
@@ -5574,7 +5609,7 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
     for (i = 0; i < rp->num_toplevels; i++) {
       v = rp->toplevels[i];
       if (genv || SCHEME_FALSEP(v))
-	v = link_toplevel(rp->toplevels, i, genv ? genv : dummy_env, src_modidx, now_modidx, insp, import_map);
+	v = link_toplevel(rp->toplevels, i, genv ? genv : dummy_env, src_modidx, now_modidx, insp);
       pf->a[i] = v;
     }
 

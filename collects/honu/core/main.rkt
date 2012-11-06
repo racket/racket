@@ -9,6 +9,7 @@
                        "private/macro2.rkt"
                        "private/class.rkt"
                        "private/operator.rkt"
+                       "private/syntax.rkt"
                        (prefix-in literal: "private/literals.rkt")
                        (prefix-in syntax-parse: syntax/parse)
                        (prefix-in racket: racket/base)
@@ -35,6 +36,7 @@
                                    [honu-while while]
                                    [honu-macro macro]
                                    [honu-phase phase]
+                                   [honu-racket racket]
                                    [honu-primitive-macro primitive_macro]
                                    [honu-pattern pattern]
                                    [racket:read-line readLine]

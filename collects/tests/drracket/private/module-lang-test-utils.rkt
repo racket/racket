@@ -89,7 +89,7 @@
                    (or (test-interactions test) 'no-interactions)
                    after-execute-output)
           (k (void)))
-        (type-in-interactions drs ints)
+        (insert-in-interactions drs ints)
         ;; set to be the paragraph right after the insertion.
         (set! output-start-paragraph
               (queue-callback/res

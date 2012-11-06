@@ -337,7 +337,7 @@
            
            [mouse-popup-menu 
             (λ (edit event)
-              (when (send event button-down?)
+              (when (send event button-up?)
                 (let ([a (send edit get-admin)])
                   (when a
                     (let ([m (make-object popup-menu%)])

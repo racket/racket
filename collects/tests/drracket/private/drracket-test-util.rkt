@@ -100,42 +100,48 @@
     (method-in-interface? 'get-execute-button (object-interface frame)))
   
   (define (wait-for-drracket-frame [print-message? #f])
-    (let ([wait-for-drracket-frame-pred
-           (lambda ()
-             (let ([active (fw:test:get-active-top-level-window)])
-               (if (and active
-                        (drracket-frame? active))
-                   active
-                   #f)))])
+    (define (wait-for-drracket-frame-pred)
+      (define active (fw:test:get-active-top-level-window))
+      (if (and active
+               (drracket-frame? active))
+          active
+          #f))
+    (define drr-fr
       (or (wait-for-drracket-frame-pred)
           (begin
             (when print-message?
               (printf "Select DrRacket frame\n"))
-            (poll-until wait-for-drracket-frame-pred)))))
+            (poll-until wait-for-drracket-frame-pred))))
+    (when drr-fr
+      (wait-for-events-in-frame-eventspace drr-fr))
+    drr-fr)
   
   ;; wait-for-new-frame : frame [(listof eventspace) = null] -> frame
   ;; returns the newly opened frame, waiting until old-frame
   ;; is no longer frontmost. Optionally checks other eventspaces
   ;; waits until the new frame has a focus'd window, too. 
-  (define wait-for-new-frame
-    (case-lambda
-     [(old-frame) (wait-for-new-frame old-frame null)]
-     [(old-frame extra-eventspaces)
-      (wait-for-new-frame old-frame extra-eventspaces 10)]
-     [(old-frame extra-eventspaces timeout)
-      (let ([wait-for-new-frame-pred
-	     (lambda ()
-	       (let ([active (or (fw:test:get-active-top-level-window)
-                                 (ormap
-				  (lambda (eventspace)
-                                    (parameterize ([current-eventspace eventspace])
-                                      (fw:test:get-active-top-level-window)))
-				  extra-eventspaces))])
-		 (if (and active
-                          (not (eq? active old-frame)))
-		     active
-		     #f)))])
-	(poll-until wait-for-new-frame-pred timeout))]))
+  (define (wait-for-new-frame old-frame [extra-eventspaces '()] [timeout 10])
+    (define (wait-for-new-frame-pred)
+      (define active (or (fw:test:get-active-top-level-window)
+                         (for/or ([eventspace (in-list extra-eventspaces)]) 
+                           (parameterize ([current-eventspace eventspace])
+                             (fw:test:get-active-top-level-window)))))
+      (if (and active
+               (not (eq? active old-frame)))
+          active
+          #f))
+    (define fr (poll-until wait-for-new-frame-pred timeout))
+    (when fr (wait-for-events-in-frame-eventspace fr))
+    (sleep 1)
+    fr)
+  
+  (define (wait-for-events-in-frame-eventspace fr)
+    (define sema (make-semaphore 0))
+    (parameterize ([current-eventspace (send fr get-eventspace)])
+      (queue-callback
+       (λ () (semaphore-post sema))
+       #f))
+    (semaphore-wait sema))
 
   ;; wait-for-computation : frame -> void
   ;; waits until the drracket frame finishes some computation.
@@ -347,21 +353,25 @@
       (not-on-eventspace-handler-thread 'set-language-level!)
       (let ([drs-frame (fw:test:get-active-top-level-window)])
         (fw:test:menu-select "Language" "Choose Language...")
-        (let* ([language-dialog (wait-for-new-frame drs-frame)]
-               [language-choice (find-labelled-window #f hierarchical-list% (fw:test:get-active-top-level-window))]
-               [b1 (box 0)]
-               [b2 (box 0)]
-               [click-on-snip
-                (lambda (snip)
-                  (let* ([editor (send (send snip get-admin) get-editor)]
-                         [between-threshold (send editor get-between-threshold)])
-                    (send editor get-snip-location snip b1 b2)
-                    (let-values ([(gx gy) (send editor editor-location-to-dc-location
-                                                (unbox b1)
-                                                (unbox b2))])
-                      (let ([x (inexact->exact (floor (+ gx between-threshold 1)))]
-                            [y (inexact->exact (floor (+ gy between-threshold 1)))])
-                        (fw:test:mouse-click 'left x y)))))])
+        (define language-dialog (wait-for-new-frame drs-frame))
+        (fw:test:set-radio-box-item! #rx"Other Languages")
+        (define language-choices (find-labelled-windows #f hierarchical-list% (fw:test:get-active-top-level-window)))
+        (define b1 (box 0))
+        (define b2 (box 0))
+        (define (click-on-snip snip)
+          (let* ([editor (send (send snip get-admin) get-editor)]
+                 [between-threshold (send editor get-between-threshold)])
+            (send editor get-snip-location snip b1 b2)
+            (let-values ([(gx gy) (send editor editor-location-to-dc-location
+                                        (unbox b1)
+                                        (unbox b2))])
+              (let ([x (inexact->exact (floor (+ gx between-threshold 1)))]
+                    [y (inexact->exact (floor (+ gy between-threshold 1)))])
+                (fw:test:mouse-click 'left x y)))))
+          
+        (define found-language? #f)
+          
+        (for ([language-choice (in-list language-choices)])
           (send language-choice focus)
           (let loop ([list-item language-choice]
                      [language-spec in-language-spec])
@@ -376,40 +386,43 @@
                                       (and matches
                                            child)))
                                   (send list-item get-items))])
-              (when (null? which)
-                (error 'set-language-level! "couldn't find language: ~e, no match at ~e"
-                       in-language-spec name))
-              (unless (= 1 (length which))
-                (error 'set-language-level! "couldn't find language: ~e, double match ~e"
-                       in-language-spec name))
-              (let ([next-item (car which)])
-                (cond
-                  [(null? (cdr language-spec))
-                   (when (is-a? next-item hierarchical-list-compound-item<%>)
-                     (error 'set-language-level! "expected no more languages after ~e, but still are, input ~e"
-                            name in-language-spec))
-                   (click-on-snip (send next-item get-clickable-snip))]
-                  [else
-                   (unless (is-a? next-item hierarchical-list-compound-item<%>)
-                     (error 'set-language-level! "expected more languages after ~e, but got to end, input ~e"
-                            name in-language-spec))
-                   (unless (send next-item is-open?)
-                     (click-on-snip (send next-item get-arrow-snip)))
-                   (loop next-item (cdr language-spec))]))))
-          
-          (with-handlers ([exn:fail? (lambda (x) (void))])
-            (fw:test:button-push "Show Details"))
-          
-          (fw:test:button-push "Revert to Language Defaults")
-          
-          (when close-dialog?
-            (fw:test:button-push "OK")
-            (let ([new-frame (wait-for-new-frame language-dialog)])
-              (unless (eq? new-frame drs-frame)
-                (error 'set-language-level! 
-                       "didn't get drracket frame back, got: ~s (drs-frame ~s)\n"
-                       new-frame
-                       drs-frame)))))))) 
+              (unless (null? which)
+                (unless (= 1 (length which))
+                  (error 'set-language-level! "couldn't find language: ~e, double match ~e"
+                         in-language-spec name))
+                (let ([next-item (car which)])
+                  (cond
+                    [(null? (cdr language-spec))
+                     (when (is-a? next-item hierarchical-list-compound-item<%>)
+                       (error 'set-language-level! "expected no more languages after ~e, but still are, input ~e"
+                              name in-language-spec))
+                     (set! found-language? #t)
+                     (click-on-snip (send next-item get-clickable-snip))]
+                    [else
+                     (unless (is-a? next-item hierarchical-list-compound-item<%>)
+                       (error 'set-language-level! "expected more languages after ~e, but got to end, input ~e"
+                              name in-language-spec))
+                     (unless (send next-item is-open?)
+                       (click-on-snip (send next-item get-arrow-snip)))
+                     (loop next-item (cdr language-spec))]))))))
+        
+        (unless found-language?
+          (error 'set-language-level! "couldn't find language: ~e" in-language-spec))
+        
+        (with-handlers ([exn:fail? (lambda (x) (void))])
+          (fw:test:button-push "Show Details"))
+        
+        (fw:test:button-push "Revert to Language Defaults")
+        
+        (when close-dialog?
+          (fw:test:button-push "OK")
+          (let ([new-frame (wait-for-new-frame language-dialog)])
+            (unless (eq? new-frame drs-frame)
+              (error 'set-language-level! 
+                     "didn't get drracket frame back, got: ~s (drs-frame ~s)\n"
+                     new-frame
+                     drs-frame)))))))
+  
   (define (set-module-language! [close-dialog? #t])
     (not-on-eventspace-handler-thread 'set-module-language!)
     (let ([drs-frame (fw:test:get-active-top-level-window)])

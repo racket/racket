@@ -10,6 +10,20 @@ An @deftech{engine} is an abstraction that models processes that
 can be preempted by a timer or other external trigger. They are
 inspired by the work of Haynes and Friedman @cite["Haynes84"].
 
+Engines log their behavior via a logger with the name 
+@racket['racket/engine]. The logger is created when the module
+is instantiated and uses the result of @racket[(current-logger)]
+as its parent. The library adds logs a @racket['debug] level
+message: when @racket[engine-run]
+is called, when the engine timeout expires, and when the engine is
+stopped (either because it terminated or it reached a safe point to
+stop). Each log message holds a value of the struct:
+@racketblock[(struct engine-info (msec name) #:prefab)]
+where the @racket[_msec] field holds the result of 
+@racket[(current-inexact-milliseconds)] at the moment of logging,
+and the @racket[_name] field holds the name of the procedure
+passed to @racket[engine].
+
 @defproc[(engine [proc ((any/c . -> . void?) . -> . any/c)])
          engine?]{
 

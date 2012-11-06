@@ -100,9 +100,7 @@ override the default @racket[equal?] definition through the
                            [immutables (listof exact-nonnegative-integer?)
                                        null]
                            [guard (or/c procedure? #f) #f]
-                           [constructor-name (or/c symbol? #f) #f]
-                           [generate (-> contract? (-> int? any/c))]
-                           [exercise (-> contract? (-> int? any/c any/c))])
+                           [constructor-name (or/c symbol? #f) #f])
           (values struct-type?
                   struct-constructor-procedure?
                   struct-predicate-procedure?
@@ -175,14 +173,6 @@ values produced by the subtype's guard procedure become the first
 If @racket[constructor-name] is not @racket[#f], it is used as the
 name of the generated @tech{constructor} procedure as returned by
 @racket[object-name] or in the printed form of the constructor value.
-
-The @racket[generate] argument is used to define a new generator for
-this structure type, which can be used to create random instances of
-the structure type. For more information see @racket[contract-generate].
-
-The @racket[exercise] argument allows you to define a function to verify
-that a given value is an instance of your contract. This will also be used
-for random generation.
 
 The result of @racket[make-struct-type] is five values:
 

@@ -25,7 +25,7 @@ vice-versa.
 
 @(define sequence-evaluator
    (let ([evaluator (make-base-eval)])
-     (evaluator '(require racket/generic racket/list racket/stream))
+     (evaluator '(require racket/generic racket/list racket/stream racket/sequence))
      evaluator))
 
 @guideintro["sequences"]{sequences}
@@ -699,6 +699,17 @@ each element in the sequence.
 
   If @racket[s] is a @tech{stream}, then the result is also a
   @tech{stream}.
+
+  @examples[#:eval sequence-evaluator
+    (let* ([all-reds (in-cycle '("red"))]
+           [red-and-blues (sequence-add-between all-reds "blue")])
+      (for/list ([n (in-range 10)]
+                 [elt red-and-blues])
+        elt))
+
+    (for ([text (sequence-add-between '("veni" "vidi" "duci") ", ")])
+      (display text))
+    ]
 }
 
 @; ======================================================================

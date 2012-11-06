@@ -1,4 +1,6 @@
-#lang racket
+#lang racket/base
+
+(require racket/contract)
 
 (provide/contract
  ;; like the unix debugging facility

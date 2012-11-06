@@ -104,7 +104,7 @@
                                   (apply raise-blame-error blame val args)))
            (λ (val)
              (check val raise-blame #f)
-             (if (immutable? val)
+             (if (and (immutable? val) (not (chaperone? val)))
                  (apply vector-immutable
                         (for/list ([e (in-vector val)])
                           (elem-pos-proj e)))
@@ -249,7 +249,7 @@
                                   (blame-add-context blame (format "the ~a element of" (n->th i)) #:swap? #t)))])
            (λ (val)
              (check-vector/c ctc val blame)
-             (if (immutable? val)
+             (if (and (immutable? val) (not (chaperone? val)))
                  (apply vector-immutable
                         (for/list ([e (in-vector val)]
                                    [i (in-naturals)])

@@ -70,38 +70,63 @@
   (values pch cch))
 
 (define (deep-copy x)
+  (define ht (make-hasheq))
+  (define (record v new-v)
+    (hash-set! ht v new-v)
+    new-v)
+  (define (with-placeholder o mk)
+    (define ph (make-placeholder #f))
+    (hash-set! ht o ph)
+    (define new-o (mk))
+    (placeholder-set! ph new-o)
+    new-o)
   (define (dcw o)
     (cond
       [(ormap (lambda (x) (x o)) (list number? char? boolean? null? void? string? symbol? TH-place-channel?)) o]
+      [(hash-ref ht o #f)
+       => values]
       [(cond
-        [(path? o) (path->bytes o)]
-        [(bytes? o) (if (pl-place-shared? o) o (bytes-copy o))]
-        [(fxvector? o) (if (pl-place-shared? o) o (fxvector-copy o))]
-        [(flvector? o) (if (pl-place-shared? o) o (flvector-copy o))]
+        [(path-for-some-system? o) o]
+        [(bytes? o) (if (pl-place-shared? o) o (record o (bytes-copy o)))]
+        [(fxvector? o) (if (pl-place-shared? o) o (record o (fxvector-copy o)))]
+        [(flvector? o) (if (pl-place-shared? o) o (record o (flvector-copy o)))]
         [else #f])
         => values]
       [(TH-place? o) (dcw (TH-place-ch o))]
-      [(pair? o) (cons (dcw (car o)) (dcw (cdr o)))]
-      [(vector? o) (vector-map! dcw (vector-copy o))]
-      [(hash-equal? o)
-       (for/fold ([nh (hash)]) ([p (in-hash-pairs o)])
-         (hash-set nh (dcw (car p)) (dcw (cdr p))))]
-      [(hash-eq? o)
-       (for/fold ([nh (hasheq)]) ([p (in-hash-pairs o)])
-         (hash-set nh (dcw (car p)) (dcw (cdr p))))]
-      [(hash-eqv? o)
-       (for/fold ([nh (hasheqv)]) ([p (in-hash-pairs o)])
-         (hash-set nh (dcw (car p)) (dcw (cdr p))))]
-      [(struct? o)
-        (define key (prefab-struct-key o))
-        (when (not key)
-          (error "Must be a prefab struct"))
-        (apply make-prefab-struct
-               key
-               (map dcw (cdr (vector->list (struct->vector o)))))]
+      [(pair? o) 
+       (with-placeholder
+        o
+        (lambda ()
+          (cons (dcw (car o)) (dcw (cdr o)))))]
+      [(vector? o) 
+       (vector-map! dcw (record o (vector-copy o)))]
+      [(hash? o) 
+       (with-placeholder
+        o
+        (lambda ()
+          (cond
+           [(hash-equal? o)
+            (for/fold ([nh (hash)]) ([p (in-hash-pairs o)])
+              (hash-set nh (dcw (car p)) (dcw (cdr p))))]
+           [(hash-eq? o)
+            (for/fold ([nh (hasheq)]) ([p (in-hash-pairs o)])
+              (hash-set nh (dcw (car p)) (dcw (cdr p))))]
+           [else ; (hash-eqv? o)
+            (for/fold ([nh (hasheqv)]) ([p (in-hash-pairs o)])
+              (hash-set nh (dcw (car p)) (dcw (cdr p))))])))]
+      [(and (struct? o)
+            (prefab-struct-key o))
+       =>
+       (lambda (key)
+         (with-placeholder
+          o
+          (lambda ()
+            (apply make-prefab-struct
+                   key
+                   (map dcw (cdr (vector->list (struct->vector o))))))))]
       [else (raise-mismatch-error 'place-channel-put "cannot transmit a message containing value: " o)]))
 
-  (dcw x))
+  (make-reader-graph (dcw x)))
 
 
 (define (th-place-channel-put pl msg)

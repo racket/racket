@@ -1,8 +1,10 @@
-(module gui mzscheme
-  (require mred
-           mzlib/class
-           mzlib/etc)
-  (provide find-labelled-window whitespace-string=?)
+#lang racket/base
+
+  (require racket/gui/base
+           racket/class)
+  (provide find-labelled-window 
+           find-labelled-windows
+           whitespace-string=?)
   
   ;; whitespace-string=? : string string -> boolean
   ;; determines if two strings are equal, up to their whitespace.
@@ -60,59 +62,64 @@
         [else #f])))
   
   ;; whitespace-string=? tests
-  '(map (lambda (x) (apply equal? x))
-        (list (list #t (whitespace-string=? "a" "a"))
-              (list #f (whitespace-string=? "a" "A"))
-              (list #f (whitespace-string=? "a" " "))
-              (list #f (whitespace-string=? " " "A"))
-              (list #t (whitespace-string=? " " " "))
-              (list #t (whitespace-string=? " " "  "))
-              (list #t (whitespace-string=? "  " "  "))
-              (list #t (whitespace-string=? "  " " "))
-              (list #t (whitespace-string=? "a a" "a a"))
-              (list #t (whitespace-string=? "a a" "a  a"))
-              (list #t (whitespace-string=? "a  a" "a a"))
-              (list #t (whitespace-string=? " a" "a"))
-              (list #t (whitespace-string=? "a" " a"))
-              (list #t (whitespace-string=? "a " "a"))
-              (list #t (whitespace-string=? "a" "a "))))
+  (module+ test
+    (require rackunit)
+    (check-equal? #t (whitespace-string=? "a" "a"))
+    (check-equal? #f (whitespace-string=? "a" "A"))
+    (check-equal? #f (whitespace-string=? "a" " "))
+    (check-equal? #f (whitespace-string=? " " "A"))
+    (check-equal? #t (whitespace-string=? " " " "))
+    (check-equal? #t (whitespace-string=? " " "  "))
+    (check-equal? #t (whitespace-string=? "  " "  "))
+    (check-equal? #t (whitespace-string=? "  " " "))
+    (check-equal? #t (whitespace-string=? "a a" "a a"))
+    (check-equal? #t (whitespace-string=? "a a" "a  a"))
+    (check-equal? #t (whitespace-string=? "a  a" "a a"))
+    (check-equal? #t (whitespace-string=? " a" "a"))
+    (check-equal? #t (whitespace-string=? "a" " a"))
+    (check-equal? #t (whitespace-string=? "a " "a"))
+    (check-equal? #t (whitespace-string=? "a" "a ")))
 
   ;;; find-labelled-window : (union ((union #f string) -> window<%>)
   ;;;                               ((union #f string) (union #f class) -> window<%>)
   ;;;                               ((union #f string) (union class #f) area-container<%> -> window<%>))
   ;;;;  may call error, if no control with the label is found
-  (define find-labelled-window
-    (opt-lambda (label 
-                 [class #f] 
-                 [window (get-top-level-focus-window)] 
-                 [failure (lambda ()
-                            (error 'find-labelled-window "no window labelled ~e in ~e~a"
-                                   label
-                                   window 
-                                   (if class
-                                       (format " matching class ~e" class)
-                                       "")))])
-      (unless (or (not label)
-                  (string? label))
-	(error 'find-labelled-window "first argument must be a string or #f, got ~e; other args: ~e ~e"
-	       label class window))
-      (unless (or (class? class)
-		  (not class))
-	(error 'find-labelled-window "second argument must be a class or #f, got ~e; other args: ~e ~e"
-	       class label window))
-      (unless (is-a? window area-container<%>)
-	(error 'find-labelled-window "third argument must be a area-container<%>, got ~e; other args: ~e ~e"
-	       window label class))
-      (let ([ans
-	     (let loop ([window window])
-	       (cond
-                 [(and (or (not class)
-                           (is-a? window class))
-                       (let ([win-label (and (is-a? window window<%>)
-                                             (send window get-label))])
-                         (equal? label win-label)))
-                  window]
-                 [(is-a? window area-container<%>) (ormap loop (send window get-children))]
-                 [else #f]))])
-	(or ans
-	    (failure))))))
+  (define (find-labelled-window label 
+                                [class #f]
+                                [window (get-top-level-focus-window)]
+                                [failure (λ ()
+                                           (error 'find-labelled-window "no window labelled ~e in ~e~a"
+                                                  label
+                                                  window 
+                                                  (if class
+                                                      (format " matching class ~e" class)
+                                                      "")))])
+    (define windows (find-labelled-windows label class window))
+    (cond
+      [(null? windows) (failure)]
+      [else (car windows)]))
+ 
+  (define (find-labelled-windows label [class #f] [window (get-top-level-focus-window)])
+    (unless (or (not label)
+                (string? label))
+      (error 'find-labelled-windows "first argument must be a string or #f, got ~e; other args: ~e ~e"
+             label class window))
+    (unless (or (class? class)
+                (not class))
+      (error 'find-labelled-windows "second argument must be a class or #f, got ~e; other args: ~e ~e"
+             class label window))
+    (unless (is-a? window area-container<%>)
+      (error 'find-labelled-windows "third argument must be a area-container<%>, got ~e; other args: ~e ~e"
+             window label class))
+    (let loop ([window window])
+      (cond
+        [(and (or (not class)
+                  (is-a? window class))
+              (let ([win-label (and (is-a? window window<%>)
+                                    (send window get-label))])
+                (equal? label win-label)))
+         (list window)]
+        [(is-a? window area-container<%>) (apply append (map loop (send window get-children)))]
+        [else '()])))
+  
+  

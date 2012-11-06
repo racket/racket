@@ -2052,6 +2052,43 @@ See @racket[prop:equal+hash] for more information on equality
 comparisons and hash codes. The @racket[equal<%>] interface is
 implemented with @racket[interface*] and @racket[prop:equal+hash].}
 
+Example:
+@codeblock|{
+#lang racket
+
+;; Case insensitive words:
+(define ci-word% 
+  (class* object% (equal<%>)
+    
+    ;; Initialization
+    (init-field word)
+    (super-new)
+        
+    ;; We define equality to ignore case:
+    (define/public (equal-to? other recur)
+      (string-ci=? word (get-field word other)))
+
+    ;; The hash codes need to be insensitive to casing as well.
+    ;; We'll just downcase the word and get its hash code.
+    (define/public (equal-hash-code-of hash-code)
+      (hash-code (string-downcase word)))
+    
+    (define/public (equal-secondary-hash-code-of hash-code)
+      (hash-code (string-downcase word)))))
+
+;; We can create a hash with a single word:
+(define h (make-hash))
+(hash-set! h (new ci-word% [word "inconceivable!"]) 'value)
+
+;; Lookup into the hash should be case-insensitive, so that
+;; both of these should return 'value.
+(hash-ref h (new ci-word% [word "inconceivable!"]))
+(hash-ref h (new ci-word% [word "INCONCEIVABLE!"]))
+
+;; Comparison fails if we use a non-ci-word%:
+(hash-ref h "inconceivable!" 'i-dont-think-it-means-what-you-think-it-means)
+}|
+
 @; ------------------------------------------------------------------------
 
 @section[#:tag "objectserialize"]{Object Serialization}

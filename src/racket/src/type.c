@@ -594,7 +594,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_escaping_cont_type, escaping_cont_proc);
   GC_REG_TRAV(scheme_rt_cont_jmp, cont_jmp_proc);
 
-  GC_REG_TRAV(scheme_char_type, char_obj);
+  GC_REG_TRAV(scheme_char_type, small_atomic_obj);
   GC_REG_TRAV(scheme_integer_type, bad_trav);
   GC_REG_TRAV(scheme_bignum_type, bignum_obj);
   GC_REG_TRAV(scheme_rational_type, rational_obj);
@@ -611,7 +611,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_place_dead_type, small_object);
 #endif
   GC_REG_TRAV(scheme_keyword_type, symbol_obj);
-  GC_REG_TRAV(scheme_null_type, char_obj); /* small */
+  GC_REG_TRAV(scheme_null_type, small_atomic_obj);
   GC_REG_TRAV(scheme_pair_type, cons_cell);
   GC_REG_TRAV(scheme_mutable_pair_type, cons_cell);
   GC_REG_TRAV(scheme_raw_pair_type, cons_cell);
@@ -624,10 +624,10 @@ void scheme_register_traversers(void)
 
   GC_REG_TRAV(scheme_input_port_type, input_port);
   GC_REG_TRAV(scheme_output_port_type, output_port);
-  GC_REG_TRAV(scheme_eof_type, char_obj); /* small */
-  GC_REG_TRAV(scheme_true_type, char_obj); /* small */
-  GC_REG_TRAV(scheme_false_type, char_obj); /* small */
-  GC_REG_TRAV(scheme_void_type, char_obj);  /* small */
+  GC_REG_TRAV(scheme_eof_type, small_atomic_obj);
+  GC_REG_TRAV(scheme_true_type, small_atomic_obj);
+  GC_REG_TRAV(scheme_false_type, small_atomic_obj);
+  GC_REG_TRAV(scheme_void_type, small_atomic_obj); 
   GC_REG_TRAV(scheme_syntax_compiler_type, syntax_compiler);
   GC_REG_TRAV(scheme_macro_type, small_object);
   GC_REG_TRAV(scheme_box_type, small_object);
@@ -654,7 +654,7 @@ void scheme_register_traversers(void)
 
   GC_REG_TRAV(scheme_eval_waiting_type, bad_trav);
   GC_REG_TRAV(scheme_tail_call_waiting_type, bad_trav);
-  GC_REG_TRAV(scheme_undefined_type, char_obj); /* small */
+  GC_REG_TRAV(scheme_undefined_type, small_atomic_obj);
   GC_REG_TRAV(scheme_placeholder_type, small_object);
   GC_REG_TRAV(scheme_table_placeholder_type, iptr_obj);
 
@@ -673,9 +673,9 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_security_guard_type, guard_val);
 
   GC_REG_TRAV(scheme_nack_evt_type, twoptr_obj);
-  GC_REG_TRAV(scheme_always_evt_type, char_obj);
-  GC_REG_TRAV(scheme_never_evt_type, char_obj);
-  GC_REG_TRAV(scheme_thread_recv_evt_type, char_obj);
+  GC_REG_TRAV(scheme_always_evt_type, small_atomic_obj);
+  GC_REG_TRAV(scheme_never_evt_type, small_atomic_obj);
+  GC_REG_TRAV(scheme_thread_recv_evt_type, small_atomic_obj);
   GC_REG_TRAV(scheme_port_closed_evt_type, small_object);
 
   GC_REG_TRAV(scheme_inspector_type, mark_inspector);
@@ -709,6 +709,9 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_rib_delimiter_type, small_object);
   GC_REG_TRAV(scheme_noninline_proc_type, small_object);
   GC_REG_TRAV(scheme_prune_context_type, small_object);
+
+  GC_REG_TRAV(scheme_proc_shape_type, small_object);
+  GC_REG_TRAV(scheme_struct_proc_shape_type, small_atomic_obj);
 }
 
 END_XFORM_SKIP;

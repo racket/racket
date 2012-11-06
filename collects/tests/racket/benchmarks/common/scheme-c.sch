@@ -361,6 +361,13 @@
                  (set! *env* (cons *env* (cons x (cons y (cons z def)))))
                  (a)))))
 
+;- -- evaluator ---
+
+(define (evaluate expr)
+  ((compile (list 'lambda '() expr))))
+
+(define *env* '(dummy)) ; current environment
+
 ;- -- global variable definition ---
 
 (define (define-global var val)
@@ -379,13 +386,6 @@
 (define-global '-     -)
 
 ;- -- to evaluate an expression we compile it and then call the result ---
-
-(define (evaluate expr)
-  ((compile (list 'lambda '() expr))))
-
-(define *env* '(dummy)) ; current environment
-
-
 
 (evaluate '(define 'fib
              (lambda (x)

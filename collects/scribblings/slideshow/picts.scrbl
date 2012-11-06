@@ -1,7 +1,12 @@
 #lang scribble/doc
 @(require "ss.rkt" "pict-diagram.rkt"
+          scribble/eval
           (for-label racket/gui slideshow/code slideshow/flash slideshow/face
                      slideshow/balloon slideshow/pict-convert))
+
+@(define ss-eval (make-base-eval))
+@(ss-eval '(require slideshow/pict racket/math racket/class racket/draw
+                    racket/list))
 
 @title[#:style 'toc]{Making Pictures}
 
@@ -133,12 +138,32 @@ of the resulting pict's @tech{bounding box}.  In the three-argument case, the
 descent is @math{0} and the ascent is @racket[h] for the bounding
 box; in the five-argument case, @racket[a] and @racket[d] are used
 as the bounding box's ascent and descent.
-  
+
 When the rendering procedure is called, the current pen and brush will
 be solid and in the pict's color (and linewidth), and the scale and
 offset of the drawing context will be set. The text mode will be transparent, but
 the font and text colors are not guaranteed to be anything in
-particular.}
+particular.
+
+@examples[#:eval ss-eval
+  (dc (λ (dc dx dy)
+        (define old-brush (send dc get-brush))
+        (define old-pen (send dc get-pen))
+        (send dc set-brush
+          (new brush% [style 'fdiagonal-hatch]
+                      [color "darkslategray"]))
+        (send dc set-pen
+          (new pen% [width 3] [color "slategray"]))
+        (define path (new dc-path%))
+        (send path move-to 0 0)
+        (send path line-to 50 0)
+        (send path line-to 25 50)
+        (send path close)
+        (send dc draw-path path dx dy)
+        (send dc set-brush old-brush)
+        (send dc set-pen old-pen))
+    50 50)
+]}
 
 
 @defproc*[([(blank [size real? 0]) pict?]
@@ -151,12 +176,16 @@ value used for both the width and height of the resulting pict's
 @tech{bounding box}. In the one- and two-argument
 case, the ascent and descent are @math{0} for the resulting pict's
 bounding box; in the three-argument case, the height is computed by
-adding the given ascent and descent.}
+adding the given ascent and descent.
+
+@examples[#:eval ss-eval
+  (blank 50)
+]}
 
 
 @defproc[(text [content string?]
                [style text-style/c null]
-               [size (integer-in 1 1024) 12] 
+               [size (integer-in 1 1024) 12]
                [angle real? 0])
          pict?]{
 
@@ -211,15 +240,26 @@ The given @racket[size] is in pixels, but it is ignored if a
 The @racket[angle] is in radians, and positive values rotate
 counter-clockwise. For a non-zero @racket[angle], the resulting
 pict's @tech{bounding box} covers the rotated text, and the descent is zero
-and the ascent is the height.}
+and the ascent is the height.
+
+@examples[#:eval ss-eval
+  (text "tom collins")
+  (text "g & t" (cons 'bold 'roman))
+  (text "martini" null 13 (/ pi 2))
+]}
 
 
-@defproc*[([(hline [w real?] [h real?] 
+@defproc*[([(hline [w real?] [h real?]
                    [#:segment seg-length (or/c #f real?) #f]) pict?]
-           [(vline [w real?] [h real?] 
+           [(vline [w real?] [h real?]
                    [#:segment seg-length (or/c #f real?) #f]) pict?])]{
 
-Straight lines, centered within their @tech{bounding box}es.}
+Straight lines, centered within their @tech{bounding box}es.
+
+@examples[#:eval ss-eval
+  (hline 40 5)
+  (vline 5 40 #:segment 5)
+]}
 
 
 @defproc[(frame [pict pict?]
@@ -229,7 +269,13 @@ Straight lines, centered within their @tech{bounding box}es.}
           pict?]{
 
 Frames a given pict. If the color or line width are provided, the
-override settings supplied by the context.}
+override settings supplied by the context.
+
+@examples[#:eval ss-eval
+  (frame (circle 30))
+  (frame (circle 30) #:segment 5)
+  (frame (circle 30) #:color "chartreuse" #:line-width 3)
+]}
 
 @defproc*[([(ellipse [w real?] [h real?]) pict?]
            [(circle [diameter real?]) pict?]
@@ -240,11 +286,17 @@ Unfilled and filled ellipses.
 
 If @racket[draw-border?] is @racket[#f], then the pen is set to be transparent
 before drawing the ellipse.
-}
+
+@examples[#:eval ss-eval
+  (ellipse 40 30)
+  (circle 30)
+  (filled-ellipse 30 40)
+  (disk 30)
+]}
 
 @defproc*[([(rectangle [w real?] [h real?]) pict?]
            [(filled-rectangle [w real?]
-                              [h real?] 
+                              [h real?]
                               [#:draw-border? draw-border? any/c #t])
             pict?])]{
 
@@ -252,7 +304,11 @@ Unfilled and filled rectangles.
 
 If @racket[draw-border?] is @racket[#f], then the pen is set to be transparent
 before drawing the rectangle.
-}
+
+@examples[#:eval ss-eval
+  (rectangle 50 50)
+  (filled-rectangle 50 80)
+]}
 
 @defproc*[([(rounded-rectangle [w real?] [h real?] 
                                [corner-radius real? -0.25]
@@ -279,9 +335,13 @@ rotated, in radians.
 
 If @racket[draw-border?] is @racket[#f], then the pen is set to be transparent
 before drawing the rectangle.
-}
 
-@defproc[(bitmap [img (or/c path-string? 
+@examples[#:eval ss-eval
+  (rounded-rectangle 40 40 -0.3 #:angle (/ pi 4))
+  (filled-rounded-rectangle 50 40)
+]}
+
+@defproc[(bitmap [img (or/c path-string?
                             (is-a?/c bitmap%)
                             (is-a?/c image-snip%))])
          pict]{
@@ -300,7 +360,13 @@ is not valid, or if the @racket[bitmap-draft-mode] parameter is set to
 
 Creates an arrow or arrowhead in the specific direction within a
 @racket[size] by @racket[size] pict. Points on the arrow may extend
-slightly beyond the @tech{bounding box}.}
+slightly beyond the @tech{bounding box}.
+
+@examples[#:eval ss-eval
+  (arrow 30 0)
+  (arrow 30 (/ pi 2))
+  (arrowhead 30 0)
+]}
 
 
 @defproc*[([(pip-line [dx real?] [dy real?] [size real?]) pict?]
@@ -404,7 +470,28 @@ apply to the added line.
 
 When the @racket[hide-arrowhead?] argument is a true value, then space
 for an arrowhead is kept around the line, but the arrowhead itself is
-not drawn.}
+not drawn.
+
+@defexamples[#:eval ss-eval
+  (define pict-a (rectangle 40 40))
+  (define pict-b (circle 40))
+  (define combined (hc-append 200 pict-a pict-b))
+  (pin-line combined
+            pict-a cc-find
+            pict-b cc-find)
+  (pin-arrow-line 30 combined
+                  pict-a rc-find
+                  pict-b lc-find
+                  #:line-width 3
+                  #:style 'long-dash
+                  #:color "medium goldenrod")
+  (pin-arrows-line 30 combined
+                   pict-a rc-find
+                   pict-b lc-find
+                   #:start-angle (/ pi 11)
+                   #:end-angle (- (/ pi 11))
+                   #:solid? #f)
+]}
 
 
 @defthing[text-style/c contract?]{
@@ -445,7 +532,24 @@ similarly, the ascent of the result corresponds to the highest
 ascent-specified baseline. If at least one @racket[pict] is supplied,
 then the last element (as reported by @racket[pict-last]) for the
 result is @racket[(or (pict-last pict) pict)] for the using last
-supplied @racket[pict].}
+supplied @racket[pict].
+
+@defexamples[#:eval ss-eval
+  (define combiners (list vl-append vc-append vr-append
+                          ht-append htl-append hc-append
+                          hbl-append hb-append))
+  (define names (list "vl-append" "vc-append" "vr-append"
+                      "ht-append" "htl-append" "hc-append"
+                      "hbl-append" "hb-append"))
+  (define pict-a (colorize (filled-rectangle 60 30) "tomato"))
+  (define pict-b (colorize (disk 45) "cornflower blue"))
+  (define picts
+    (for/list ([combiner combiners] [name names])
+      (list (text name null 15)
+            (combiner pict-a pict-b))))
+  (take picts 4)
+  (drop picts 4)
+]}
 
 @defproc*[([(lt-superimpose [pict pict?] ...) pict?]
            [(ltl-superimpose [pict pict?] ...) pict?]
@@ -473,12 +577,36 @@ similarly, the ascent of the result corresponds to the highest
 ascent-specified baseline. The last element (as reported by
 @racket[pict-last]) for the result is the lowest, right-most among the
 last-element picts of the @racket[pict] arguments, as determined by
-comparing the last-element bottom-right corners.}
+comparing the last-element bottom-right corners.
+
+@defexamples[#:eval ss-eval
+  (define combiners (list lt-superimpose  ltl-superimpose lc-superimpose
+                          lbl-superimpose lb-superimpose  ct-superimpose
+                          ctl-superimpose cc-superimpose  cbl-superimpose
+                          cb-superimpose  rt-superimpose  rtl-superimpose
+                          rc-superimpose  rbl-superimpose rb-superimpose))
+  (define names (list "lt-superimpose"  "ltl-superimpose" "lc-superimpose"
+                      "lbl-superimpose" "lb-superimpose"  "ct-superimpose"
+                      "ctl-superimpose" "cc-superimpose"  "cbl-superimpose"
+                      "cb-superimpose"  "rt-superimpose"  "rtl-superimpose"
+                      "rc-superimpose"  "rbl-superimpose" "rb-superimpose"))
+  (define pict-a (colorize (filled-rectangle 60 30) "tomato"))
+  (define pict-b (colorize (disk 45) "cornflower blue"))
+  (define picts
+    (for/list ([combiner combiners] [name names])
+      (list (text name null 15)
+            (combiner pict-a pict-b))))
+  (take picts 3)
+  (take (drop picts 3) 3)
+  (take (drop picts 6) 3)
+  (take (drop picts 9) 3)
+  (take (drop picts 12) 3)
+]}
 
 
 @defproc*[([(pin-over [base pict?] [dx real?] [dy real?] [pict pict?])
             pict?]
-           [(pin-over [base pict?] 
+           [(pin-over [base pict?]
                       [find-pict pict-path?]
                       [find (pict? pict-path? . -> . (values real? real?))]
                       [pict pict?])
@@ -1224,3 +1352,5 @@ and @racket[#f] otherwise.
 @defproc[(pict-convert [v pict-convertible?]) pict?]{
   Requests a data conversion from @racket[v] to a pict.
 }
+
+@(close-eval ss-eval)

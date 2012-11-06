@@ -59,7 +59,7 @@
   (define wx-label-panel%
     (class wx-control-horizontal-panel% 
       (init proxy parent label style font halign valign)
-      (inherit area-parent skip-enter-leave-events)
+      (inherit area-parent skip-enter-leave-events set-event-positions-wrt)
       (define c #f)
 
       (define/override (enable on?) (if c (send c enable on?) (void)))
@@ -77,9 +77,21 @@
       (define/public (set-label s) (when l (send l set-label s)))
       (define/public (get-label) (and l (send l get-label)))
 
+      (define/override (client-to-screen x y)
+        (if c
+            (send c client-to-screen x y)
+            (super client-to-screen x y)))
+      (define/override (screen-to-client x y)
+        (if c
+            (send c screen-to-client x y)
+            (super screen-to-client x y)))
+
       (define/public (get-p) p)
       (define/public (set-c v sx? sy?) 
         (set! c v)
+        (set-event-positions-wrt c)
+        (when l (send l set-event-positions-wrt c))
+        (when p (send p set-event-positions-wrt c))
         (send c stretchable-in-x sx?)
         (send c stretchable-in-y sy?)
         (send c skip-subwindow-events? #t))))
@@ -113,7 +125,8 @@
        (get-selection)
        (number)
        (clear)
-       (append lbl))
+       (append lbl)
+       (delete i))
 
       (stretchable-in-y #f)
       (stretchable-in-x #f)))

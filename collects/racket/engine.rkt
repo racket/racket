@@ -13,7 +13,7 @@
 
 ;; An X-engine-object is
 ;; (make-engine-object thread semaphore channel channel X)
-(define-struct engine-object (worker can-stop-lock done-ch ex-ch result)
+(define-struct engine-object (worker can-stop-lock done-ch ex-ch result name)
   #:mutable)
 
 ;; engine : ((bool ->) -> X) -> X-engine-object
@@ -46,16 +46,18 @@
                           (let ([v (f enable-stop)])
                             (enable-stop #t)
                             (channel-put done-ch v)))))])
-    (begin0 (make-engine-object tid can-stop-lock done-ch ex-ch #f)
+    (begin0 (make-engine-object tid can-stop-lock done-ch ex-ch #f 
+                                (and (object-name f)
+                                     (symbol->string (object-name f))))
       (thread-suspend tid)
       (semaphore-post proceed-sema))))
 
 ;; engine : real-number X-engine-object -> bool
 (define (engine-run timeout w)
+  (log "engine-run called" w)
   (if (engine-object-worker w)
     (let ([can-stop-lock (engine-object-can-stop-lock w)]
           [worker (engine-object-worker w)])
-      #;(printf "2. starting engine\n")
       (thread-resume worker)
       (dynamic-wind
         void
@@ -65,25 +67,27 @@
                                           timeout
                                           (alarm-evt (+ timeout (current-inexact-milliseconds))))
                                       (lambda (x)
-                                        #;(printf "2. alarm-evt\n")
+                                        (log "alarm woke up, waiting to suspend engine" w)
                                         (semaphore-wait can-stop-lock)
+                                        (log "suspending engine" w)
                                         (thread-suspend worker)
                                         (semaphore-post can-stop-lock)
                                         #f))
                             (wrap-evt (engine-object-done-ch w)
                                       (lambda (res)
-                                        #;(printf "2. engine-done-evt\n")
+                                        (log "engine done" w)
                                         (set-engine-object-result! w res)
                                         (engine-kill w)
                                         #t))
                             (wrap-evt (engine-object-ex-ch w)
                                       (lambda (exn)
-                                        #;(printf "2. ex-evt\n")
+                                        (log "engine raised exn" w)
                                         (engine-kill w)
                                         (raise exn))))))
         ;; In case we escape through a break:
         (lambda ()
           (when (thread-running? worker)
+            (log "engine escape via break" w)
             (semaphore-wait can-stop-lock)
             (thread-suspend worker)
             (semaphore-post can-stop-lock)))))
@@ -104,3 +108,19 @@
 
 (define (engine? x)
   (engine-object? x))
+
+(define engine-logger (make-logger 'racket/engine (current-logger)))
+(define-syntax-rule
+  (log msg w)
+  (when (log-level? engine-logger 'debug)
+    (do-log msg w)))
+(define (do-log msg w)
+  (define name (engine-object-name w))
+  (log-message engine-logger 'debug 
+               (if name
+                   (string-append "racket/engine: " name ": " msg)
+                   (string-append "racket/engine: " msg))
+               (engine-info (current-inexact-milliseconds)
+                            name)))
+(struct engine-info (msec name) #:prefab)
+

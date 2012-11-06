@@ -6,13 +6,15 @@
 
 (define (traverse b)
   (define (fail v)
-    (raise-blame-error (blame-swap b) v "Attempted to use a higher-order value passed as `Any`"))
+    (raise-blame-error 
+     (blame-swap b) v 
+     "Attempted to use a higher-order value passed as `Any` in untyped code"))
 
   (define (t v)
     (define (wrap-struct s)
       (define (extract-functions struct-type)
         (define-values (sym init auto ref set! imms par skip?)
-          (struct-type-info type))
+          (struct-type-info struct-type))
         (when skip? (fail s)) ;; "Opaque struct type!")
         (define-values (fun/chap-list _)
           (for/fold ([res null]
@@ -34,7 +36,7 @@
                         res)
                  imms))))
         (cond
-          [par (cons fun/chap-list (extract-functions par))]
+          [par (append fun/chap-list (extract-functions par))]
           [else fun/chap-list]))
       (define-values (type skipped?) (struct-info s))
       (when skipped? (fail s));  "Opaque struct type!"
@@ -43,10 +45,24 @@
     (match v
       [(? (lambda (e)
             (or (number? e) (string? e) (char? e) (symbol? e)
-                (null? e) (regexp? e) (eq? undef e)
-                (keyword? e) (bytes? e) (boolean? e) (void? e))))
+                (null? e) (regexp? e) (eq? undef e) (path? e)
+		(regexp? e) (keyword? e) (bytes? e) (boolean? e) (void? e))))
        v]
       [(cons x y) (cons (t x) (t y))]
+      [(? vector? (? immutable?))
+       ;; fixme -- should have an immutable for/vector
+       (vector->immutable-vector
+	(for/vector #:length (vector-length v)
+		    ([i (in-vector v)]) (t i)))]
+      [(? box? (? immutable?)) (box-immutable (t (unbox v)))]
+      ;; fixme -- handling keys
+      ;; [(? hasheq? (? immutable?))
+      ;;  (for/hasheq ([(k v) (in-hash v)]) (values k v))]
+      ;; [(? hasheqv? (? immutable?))
+      ;;  (for/hasheqv ([(k v) (in-hash v)]) (values k v))]
+      
+      [(? hash? (? immutable?))
+       (for/hash ([(k v) (in-hash v)]) (values (t k) (t v)))]
       [(? vector?) (chaperone-vector v
                                      (lambda (v i e) (t e))
                                      (lambda (v i e) (fail v)))]

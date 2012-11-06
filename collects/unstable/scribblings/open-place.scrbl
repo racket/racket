@@ -19,3 +19,7 @@ variables, which are automatically sent to the newly-created @tech[#:doc '(lib "
 Note that these variables must have values accepted by
 @racket[place-message-allowed?], otherwise an @racket[exn:fail:contract] exception is raised.
 }
+
+
+
+@close-eval[the-eval]

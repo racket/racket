@@ -105,7 +105,7 @@
 ;                  ;;;;;                                      
 
 (define (beginner)
-  (parameterize ([language (list "How to Design Programs" #rx"Beginning Student(;|$)")])
+  (parameterize ([language (list #rx"Beginning Student(;|$)")])
     (prepare-for-test-expression)
     (common-test-engine #f)))
 
@@ -127,8 +127,7 @@
 
 
 (define (beginner/abbrev)
-  (parameterize ([language (list "How to Design Programs" 
-                                 #rx"Beginning Student with List Abbreviations(;|$)")])
+  (parameterize ([language (list #rx"Beginning Student with List Abbreviations(;|$)")])
     (prepare-for-test-expression)
     (common-test-engine #f)))
 
@@ -150,7 +149,7 @@
 
 
 (define (intermediate)
-  (parameterize ([language (list "How to Design Programs" #rx"Intermediate Student(;|$)")])
+  (parameterize ([language (list #rx"Intermediate Student(;|$)")])
     (prepare-for-test-expression)
     (common-test-engine #f)))
 
@@ -172,8 +171,7 @@
 
 
 (define (intermediate/lambda)
-  (parameterize ([language (list "How to Design Programs" 
-                                 #rx"Intermediate Student with lambda(;|$)")])
+  (parameterize ([language (list #rx"Intermediate Student with lambda(;|$)")])
     (prepare-for-test-expression)
     (common-test-engine #f)))
 
@@ -196,32 +194,32 @@
 
 
 (define (advanced)
-  (parameterize ([language (list "How to Design Programs" #rx"Advanced Student(;|$)")])
+  (parameterize ([language (list #rx"Advanced Student(;|$)")])
     (prepare-for-test-expression)
     (common-test-engine #f)
     (common-signatures-*sl)))
 
 
 (define (DMdA-beginner)
-  (parameterize ([language (list "DeinProgramm" #rx"Die Macht der Abstraktion - Anfänger(;|$)")])
+  (parameterize ([language (list #rx"Die Macht der Abstraktion - Anfänger(;|$)")])
     (prepare-for-test-expression)
     (common-test-engine #t)
     (common-signatures-DMdA)))
 
 (define (DMdA-vanilla)
-  (parameterize ([language (list "DeinProgramm" #rx"Die Macht der Abstraktion(;|$)")])
+  (parameterize ([language (list #rx"Die Macht der Abstraktion(;|$)")])
     (prepare-for-test-expression)
     (common-test-engine #t)
     (common-signatures-DMdA)))
 
 (define (DMdA-assignments)
-  (parameterize ([language (list "DeinProgramm" #rx"Die Macht der Abstraktion mit Zuweisungen(;|$)")])
+  (parameterize ([language (list #rx"Die Macht der Abstraktion mit Zuweisungen(;|$)")])
     (prepare-for-test-expression)
     (common-test-engine #t)
     (common-signatures-DMdA)))
 
 (define (DMdA-advanced)
-  (parameterize ([language (list "DeinProgramm" #rx"Die Macht der Abstraktion - fortgeschritten(;|$)")])
+  (parameterize ([language (list #rx"Die Macht der Abstraktion - fortgeschritten(;|$)")])
     (prepare-for-test-expression)
     (common-test-engine #t)
     (common-signatures-DMdA)))
@@ -487,13 +485,13 @@
 (define (test-disabling-tests)
   (define drs (wait-for-drracket-frame))
   
-  (parameterize ([language (list "How to Design Programs" #rx"Beginning Student(;|$)")]) 
+  (parameterize ([language (list #rx"Beginning Student(;|$)")]) 
     (prepare-for-test-expression)
     (test:menu-select "Racket" "Disable Tests")
     (test-expression "(check-expect 1 2)" "Tests disabled.")
     (test:menu-select "Racket" "Enable Tests"))
   
-  (parameterize ([language (list "DeinProgramm" #rx"Die Macht der Abstraktion - Anfänger(;|$)")])
+  (parameterize ([language (list #rx"Die Macht der Abstraktion - Anfänger(;|$)")])
     (prepare-for-test-expression)
     (test:menu-select "Racket" "Disable Tests")
     (test-expression "(check-expect 1 2)" "Tests disabled.")

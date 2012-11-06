@@ -3032,7 +3032,7 @@ void scheme_add_swap_callback(Scheme_Closure_Func f, Scheme_Object *data)
   Scheme_Object *p;
 
   p = scheme_make_raw_pair((Scheme_Object *)f, data);
-  thread_swap_callbacks = scheme_make_pair(p, thread_swap_callbacks);
+  thread_swap_callbacks = scheme_make_raw_pair(p, thread_swap_callbacks);
 }
 
 void scheme_add_swap_out_callback(Scheme_Closure_Func f, Scheme_Object *data)

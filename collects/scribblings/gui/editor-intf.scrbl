@@ -1,5 +1,9 @@
 #lang scribble/doc
-@(require "common.rkt")
+@(require "common.rkt"
+          scribble/eval)
+
+@(define editor-eval (make-base-eval))
+@(editor-eval '(require racket/class))
 
 @definterface/title[editor<%> ()]{
 
@@ -206,7 +210,52 @@ See also @method[editor<%> refresh-delayed?] and @method[editor<%>
 
 If the @racket[undoable?] flag is @racket[#f], then the changes made
  in the sequence cannot be reversed through the @method[editor<%>
- undo] method. This flag is only effective for the outermost
+ undo] method. To accomplish this, the editor just does not add
+ entries to the undo log when in an edit sequence where the
+ @racket[undoable?] flag is @racket[#f]. So, for example, if an
+ @litchar{a} is inserted into the editor and then a @litchar{b}
+ is inserted, and then an un-undoable edit-sequence begins,
+ and the @litchar{a} is colored red, and then the edit-sequence ends,
+ then an undo will remove the @litchar{b}, leaving the @litchar{a}
+ colored red.
+ 
+ This behavior also means that editors can get confused. Consider
+ this program:
+ @examples[#:eval 
+           editor-eval
+           (eval:alts (define t (new text%))
+                      ;; this is a pretty horrible hack, but 
+                      ;; the sequence of calls below behaves 
+                      ;; the way they are predicted to as of
+                      ;; the moment of this commit
+                      (define t 
+                        (new (class object%
+                               (define/public (set-max-undo-history x) (void))
+                               (define/public (insert . args) (void))
+                               (define/public (begin-edit-sequence a b) (void))
+                               (define/public (end-edit-sequence) (void))
+                               (define/public (undo) (void))
+                               (define first? #t)
+                               (define/public (get-text)
+                                 (cond
+                                   [first?
+                                    (set! first? #f)
+                                    "cab"]
+                                   [else "cb"]))
+                               (super-new)))))
+           (send t set-max-undo-history 'forever)
+           (send t insert "a")
+           (send t insert "b")
+           (send t begin-edit-sequence #f #f)
+           (send t insert "c" 0 0)
+           (send t end-edit-sequence)
+           (send t get-text)
+           (send t undo)
+           (send t get-text)]
+ You might hope that the undo would remove the @litchar{b}, but it removes
+ the @litchar{a}.
+      
+ The @racket[undoable?] flag is only effective for the outermost
  @method[editor<%> begin-edit-sequence] when nested sequences are
  used. Note that, for a @racket[text%] object, the character-inserting
  version of @method[text% insert] interferes with sequence-based undo

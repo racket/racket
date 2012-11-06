@@ -203,19 +203,6 @@ GC2_EXTERN void *GC_malloc_pair(void *car, void *cdr);
    The main potential advantage is that `car' and `cdr' don't
    have to be retained by the callee in the case of a GC. */
 
-GC2_EXTERN void *GC_malloc_one_xtagged(size_t);
-/* 
-   Alloc an item, initially zeroed. Rather than having a specific tag,
-   all objects allocated this way are marked/fixedup via the function
-   in GC_mark_xtagged and GC_fixup_xtagged. Racket sets
-   GC_{mark,fixup}_xtagged. */
-
-GC2_EXTERN void (*GC_mark_xtagged)(void *obj);
-GC2_EXTERN void (*GC_fixup_xtagged)(void *obj);
-/* 
-  Mark and fixup functions for memory allocated with
-  GC_malloc_one_xtagged(). */
-
 GC2_EXTERN void *GC_malloc_array_tagged(size_t);
 /* 
    Alloc an array of tagged items. Racket sets the tag in the first

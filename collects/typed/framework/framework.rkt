@@ -9,28 +9,13 @@
                                                      ()
                                                      ([get-font (-> (Instance Font%))]))))])))
 
-(dt Racket:Text% (Class ()
-                        ()
-                        ([begin-edit-sequence (-> Void)]
-                         [end-edit-sequence (-> Void)]
-                         [lock (Boolean -> Void)]
-                         [last-position (-> Number)]
-                         [last-paragraph (-> Exact-Nonnegative-Integer)]
-                         [delete (Number Number -> Void)]
-                         [auto-wrap (Any -> Void)]
-                         [paragraph-end-position (Number -> Natural)]
-                         [paragraph-start-position (Number -> Natural)]
-                         [get-start-position (-> Number)]
-                         [get-end-position (-> Number)]
-                         [insert (String Number Number -> Void)])))
-
 (require/typed/provide
  framework/framework
  [preferences:set-default (Symbol Sexp (Any -> Boolean) -> Void)]
  [preferences:set (Symbol Sexp -> Void)]
  [editor:get-standard-style-list
   (-> (Instance Style-List%))]
- [racket:text% Racket:Text%]
+ [racket:text% Text:Basic%]
  [gui-utils:ok/cancel-buttons
   ((Instance Horizontal-Panel%)
    ((Instance Button%) (Instance Event%) -> Void)

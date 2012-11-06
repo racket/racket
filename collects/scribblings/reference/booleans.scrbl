@@ -307,3 +307,7 @@ Returns @racket[(not v)].}
             (xor #f #f)]
 
 }
+
+
+
+@close-eval[bool-eval]

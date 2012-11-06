@@ -13,10 +13,10 @@
   
   (define (section->language section)
     (cond
-      [(section . <= . 12) '("How to Design Programs" "Beginning Student")]
-      [(section . <= . 19) '("How to Design Programs" "Intermediate Student")]
-      [(section . <= . 29) '("How to Design Programs" "Intermediate Student with lambda")]
-      [else '("How to Design Programs" "Advanced Student")]))
+      [(section . <= . 12) '("Beginning Student")]
+      [(section . <= . 19) '("Intermediate Student")]
+      [(section . <= . 29) '("Intermediate Student with lambda")]
+      [else '("Advanced Student")]))
 
   (define default-toc-entry '(#f ()))
   

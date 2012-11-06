@@ -2991,7 +2991,7 @@ An example
                   ;; value server) is taking responsibility for any interface-contracted
                   ;; methods)
                   (define info (replace-ictc-blame (cadr entry) #f (blame-positive blame)))
-                  (vector-set! methods i (concretize-ictc-method (car entry) info)))))
+                  (vector-set! methods i (concretize-ictc-method m (car entry) info)))))
             ;; Now apply projections
             (for ([m (in-list ctc-methods)]
                   [c (in-list (class/c-method-contracts ctc))])
@@ -3975,21 +3975,21 @@ An example
                (define entry (vector-ref meths index))
                (define meth (car entry))
                (define ictc-infos (replace-ictc-blame (cadr entry) #f blame))
-               (define wrapped-meth (concretize-ictc-method meth ictc-infos))
+               (define wrapped-meth (concretize-ictc-method m meth ictc-infos))
                (vector-set! meths index wrapped-meth)))
 
            (hash-set! (class-ictc-classes cls) blame c)
            c)]))
 
-;; method info -> method
+;; name method info -> method
 ;; appropriately wraps the method with interface contracts
-(define (concretize-ictc-method meth info)
+(define (concretize-ictc-method m meth info)
   (for/fold ([meth meth])
             ([info (in-list info)])
     (define ctc (car info))
     (define pos-blame (caddr info))
     (define neg-blame (cadddr info))
-    (contract ctc meth pos-blame neg-blame)))
+    (contract ctc meth pos-blame neg-blame m #f)))
 
 (define (do-make-object blame class by-pos-args named-args)
   (unless (class? class)

@@ -92,21 +92,12 @@ void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *d
     m = find_page(p);
 
     if (tagged) {
-      if (m->type != MTYPE_TAGGED) {
+      if ((m->type != MTYPE_TAGGED)
+          || (m->type != MTYPE_PAIR)) {
         GCPRINT(GCOUTF, "Not tagged: %lx (%d)\n", 
             (intptr_t)p, m->type);
         CRASH(4);
       }
-    } else {
-      if (m->type != MTYPE_XTAGGED) {
-        GCPRINT(GCOUTF, "Not xtagged: %lx (%d)\n", 
-            (intptr_t)p, m->type);
-        CRASH(5);
-      }
-      if (m->flags & MFLAG_BIGBLOCK)
-        fnl->size = m->u.size;
-      else
-        fnl->size = ((intptr_t *)p)[-1];
     }
   }
 #endif

@@ -54,7 +54,7 @@
   (check-arg procedure? p 'unfold-right)
   (check-arg procedure? f 'unfold-right)
   (check-arg procedure? g 'unfold-right)
-  (let lp ((seed seed) (ans maybe-tail))
+  (let lp ((seed seed) (ans (if (pair? maybe-tail) (car maybe-tail) '())))
     (if (p seed) ans
         (lp (g seed)
             (cons (f seed) ans)))))

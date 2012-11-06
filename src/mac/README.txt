@@ -11,8 +11,13 @@ Get these packages (or newer, if compatible):
  pango-1.29.5.tar.gz     [PowerPC: pango-1.28.0.tar.gz]
  libjpeg62 (maybe in binary form)
 
- PSMTabBarControl, probably from "maccode.googlecode.com",
-                   and handled differently
+ PSMTabBarControl, probably from
+                      https://github.com/dorianj/PSMTabBarControl
+                      [PowerPC: maccode.googlecode.com]
+                   and handled differently; note that the version
+                   at from maccode has a bug on dealloc() and
+                   uses methods that are now deprecated
+
 
 Patches:
  cairo/src/cairo-path-fixed.c:1295: [from Cairo repo, 3/18/11]
@@ -36,7 +41,7 @@ Patches:
      apply "coretext.patch" (64-bit only)
  gettext/gettext-tools/gnulib-lib/stpncpy.c:28: may need to comment out
      // # define __stpncpy stpncpy
- PSMTabBarControl/PSMTabBarControl.m:216: change to
+ PowerPC: PSMTabBarControl/PSMTabBarControl.m:216: change to
      // copy _cells because removing a cell
      // can modify the array (which is not allowed)
      NSArray *copyOfCells = [NSArray arrayWithArray: _cells];
@@ -72,7 +77,8 @@ Configures (where <dest> is some temporary area):
 
 XCode:
  Build PSMTabBarControl. You only need the Framework target, and
- in Release mode.
+ in Release mode (which is "Build for Archiving" in Xcode 4.5).
+ Use `ditto' to reduce the framework to one architecture.
 
 Install:
   racket install-libs.rkt <dest>/lib

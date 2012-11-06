@@ -757,7 +757,28 @@ If @racket[#:id [src-id dest-id-expr]] is supplied, then
 @racket[dest-id-expr] produces the identifier to be documented in
 place of @racket[src-id]. This split between @racket[src-id] and
 @racket[dest-id-expr] roles is useful for functional abstraction of
-@racket[defproc].}
+@racket[defproc].
+
+Examples:
+@codeblock[#:keep-lang-line? #f]|{
+#lang scribble/manual
+@defproc[(make-sandwich [ingredients (listof ingredient?)])
+         sandwich?]{
+  Returns a sandwich given the right ingredients.
+}
+
+@defproc[#:kind "sandwich-maker"
+         (make-reuben [ingredient sauerkraut?] ...
+                      [#:veggie? veggie? any/c #f])
+         sandwich?]{
+  Produces a reuben given some number of @racket[ingredient]s.
+
+  If @racket[veggie?] is @racket[#f], produces a standard
+  reuben with corned beef. Otherwise, produces a vegetable
+  reuben.
+}
+}|
+}
 
 @defform[(defproc* maybe-kind maybe-id
                    ([prototype
@@ -765,16 +786,29 @@ place of @racket[src-id]. This split between @racket[src-id] and
                    pre-flow ...)]{
 
 Like @racket[defproc], but for multiple cases with the same
-@racket[id]. 
+@racket[id].
 
 When an @racket[id] has multiple calling cases, they must be defined
 with a single @racket[defproc*], so that a single definition point
 exists for the @racket[id]. However, multiple distinct @racket[id]s
 can also be defined by a single @racket[defproc*], for the case that
-it's best to document a related group of procedures at once.}
+it's best to document a related group of procedures at once.
+
+Examples:
+@codeblock[#:keep-lang-line? #f]|{
+#lang scribble/manual
+@defproc[((make-pb&j)
+          (make-pb&j [jelly jelly?]))
+         sandwich?]{
+  Returns a peanut butter and jelly sandwich. If @racket[jelly]
+  is provided, then it is used instead of the standard (grape)
+  jelly.
+}
+}|
+}
 
 
-@defform/subs[(defform maybe-kind maybe-id maybe-literals form-datum 
+@defform/subs[(defform maybe-kind maybe-id maybe-literals form-datum
                 maybe-contracts
                 pre-flow ...)
               ([maybe-kind code:blank
@@ -831,14 +865,48 @@ auxiliary grammar specified using @racket[defform/subs].
 
 The typesetting of @racket[form-datum], @racket[subform-datum], and
 @racket[contract-expr-datum] preserves the source layout, like
-@racket[racketblock].}
+@racket[racketblock].
 
-@defform[(defform* maybe-kind maybe-id maybe-literals [form-datum ...+] 
+Examples:
+@codeblock[#:keep-lang-line? #f]|{
+#lang scribble/manual
+@defform[(sandwich-promise sandwich-expr)
+         #:contracts ([sandwich-expr sandwich?])]{
+  Returns a promise to construct a sandwich. When forced, the promise
+  will produce the result of @racket[sandwich-expr].
+}
+
+@defform[#:literals (sandwich mixins)
+         (sandwich-promise* [sandwich sandwich-expr]
+                            [mixins ingredient-expr ...])
+         #:contracts ([sandwich-expr sandwich?]
+                      [ingreient-expr ingredient?])]{
+  Returns a promise to construct a sandwich. When forced, the promise
+  will produce the result of @racket[sandwich-expr]. Each result of
+  the @racket[ingredient-expr]s will be mixed into the resulting
+  sandwich.
+}
+}|
+}
+
+@defform[(defform* maybe-kind maybe-id maybe-literals [form-datum ...+]
            maybe-contracts
            pre-flow ...)]{
 
 Like @racket[defform], but for multiple forms using the same
-@racket[_id].}
+@racket[_id].
+
+Examples:
+@codeblock[#:keep-lang-line? #f]|{
+#lang scribble/manual
+@defform*[((call-with-current-sandwich expr)
+           (call-with-current-sandwich expr sandwich-handler-expr))]{
+  Runs @racket[expr] and passes it the value of the current
+  sandwich. If @racket[sandwich-handler-expr] is provided, its result
+  is invoked when the current sandwich is eaten.
+}
+}|
+}
 
 @defform[(defform/subs maybe-kind maybe-id maybe-literals form-datum
            ([nonterm-id clause-datum ...+] ...)
@@ -849,7 +917,22 @@ Like @racket[defform], but including an auxiliary grammar of
 non-terminals shown with the @racket[_id] form. Each
 @racket[nonterm-id] is specified as being any of the corresponding
 @racket[clause-datum]s, where the formatting of each
-@racket[clause-datum] is preserved.}
+@racket[clause-datum] is preserved.
+
+Examples:
+@codeblock[#:keep-lang-line? #f]|{
+#lang scribble/manual
+@defform/subs[(sandwich-factory maybe-name factory-component ...)
+              [(maybe-name (code:line)
+                           name)
+               (factory-component (code:line #:protein protein-expr)
+                                  [vegetable vegetable-expr])]]{
+  Constructs a sandwich factory. If @racket[maybe-name] is provided,
+  the factory will be named. Each of the @racket[factory-component]
+  clauses adds an additional ingredient to the sandwich pipeline.
+}
+}|
+}
 
 
 @defform[(defform*/subs maybe-kind maybe-id maybe-literals [form-datum ...+]
@@ -935,7 +1018,17 @@ Like @racket[specspecsubform], but with a grammar like
 Like @racket[defproc], but for a parameter. The
 @racket[contract-expr-datum] serves as both the result contract on the
 parameter and the contract on values supplied for the parameter. The
-@racket[arg-id] refers to the parameter argument in the latter case.}
+@racket[arg-id] refers to the parameter argument in the latter case.
+
+Examples:
+@codeblock[#:keep-lang-line? #f]|{
+#lang scribble/manual
+@defparam[current-sandwich sandwich sandwich?]{
+  A parameter that defines the current sandwich for operations that
+  involve eating a sandwich.
+}
+}|
+}
 
 @defform[(defboolparam id arg-id pre-flow ...)]{
 
@@ -950,7 +1043,16 @@ Like @racket[defproc], but for a non-procedure binding.
 
 If @racket[#:kind kind-string-expr] is supplied as
 @racket[maybe-kind], it is used in the same way as for
-@racket[defproc], but the default kind is @racket["value"].}
+@racket[defproc], but the default kind is @racket["value"].
+
+Examples:
+@codeblock[#:keep-lang-line? #f]|{
+#lang scribble/manual
+@defthing[moldy-sandwich sandwich?]
+  Don't eat this. Provided for backwards compatibility.
+}
+}|
+}
 
 
 @deftogether[(
@@ -974,7 +1076,18 @@ If @racket[#:kind kind-string-expr] is supplied as
 
 Similar to @racket[defform] or @racket[defproc], but for a structure
 definition. The @racket[defstruct*] form corresponds to @racket[struct],
-while @racket[defstruct] corresponds to @racket[define-struct].}
+while @racket[defstruct] corresponds to @racket[define-struct].
+
+Examples:
+@codeblock[#:keep-lang-line? #f]|{
+#lang scribble/manual
+@defstruct[sandwich ([protein ingredient?] [sauce ingredient?])]{
+  A strucure type for sandwiches. Sandwiches are a pan-human foodstuff
+  composed of a partially-enclosing bread material and various
+  ingredients.
+}
+}|
+}
 
 
 @defform[(deftogether [def-expr ...] pre-flow ...)]{
@@ -984,7 +1097,18 @@ single definition box. Each @racket[def-expr] should produce a
 definition point via @racket[defproc], @racket[defform], etc. Each
 @racket[def-expr] should have an empty @racket[pre-flow]; the
 @tech{decode}d @racket[pre-flow] sequence for the @racket[deftogether]
-form documents the collected bindings.}
+form documents the collected bindings.
+
+Examples:
+@codeblock[#:keep-lang-line? #f]|{
+#lang scribble/manual
+@deftogether[(@defthing[test-sandwich-1 sandwich?]
+              @defthing[test-sandwich-2 sandwich?])]{
+  Two high-quality sandwiches. These are provided for convenience
+  in writing test cases
+}
+}|
+}
 
 
 @defform/subs[(racketgrammar maybe-literals id clause-datum ...+)

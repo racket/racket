@@ -567,3 +567,7 @@ module path and the module paths of its immediate dependents.
 (get-dependencies 'openssl #:exclude (list 'racket))
 ]
 }
+
+
+
+@close-eval[the-eval]

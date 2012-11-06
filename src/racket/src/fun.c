@@ -1918,14 +1918,18 @@ Scheme_Object *scheme_syntax_taint_rearm(Scheme_Object *stx, Scheme_Object *from
 /*                                   arity                                */
 /*========================================================================*/
 
-Scheme_Object *scheme_make_arity(mzshort mina, mzshort maxa)
+static Scheme_Object *make_arity(mzshort mina, mzshort maxa, int mode)
 {
   if (mina == maxa)
     return scheme_make_integer(mina);
   else if (maxa == -1) {
-    Scheme_Object *p[1];
-    p[0] = scheme_make_integer(mina);
-    return scheme_make_struct_instance(scheme_arity_at_least, 1, p);
+    if (mode == -3) {
+      return scheme_make_integer(-(mina+1));
+    } else {
+      Scheme_Object *p[1];
+      p[0] = scheme_make_integer(mina);
+      return scheme_make_struct_instance(scheme_arity_at_least, 1, p);
+    }
   } else {
     int i;
     Scheme_Object *l = scheme_null;
@@ -1938,13 +1942,18 @@ Scheme_Object *scheme_make_arity(mzshort mina, mzshort maxa)
   }
 }
 
-static Scheme_Object *clone_arity(Scheme_Object *a, int delta)
+Scheme_Object *scheme_make_arity(mzshort mina, mzshort maxa)
+{
+  return make_arity(mina, maxa, -1);
+}
+
+static Scheme_Object *clone_arity(Scheme_Object *a, int delta, int mode)
 {
   if (SCHEME_PAIRP(a)) {
     Scheme_Object *m, *l;
     m = scheme_copy_list(a);
     for (l = m; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
-      a = clone_arity(SCHEME_CAR(l), delta);
+      a = clone_arity(SCHEME_CAR(l), delta, mode);
       SCHEME_CAR(l) = a;
     }
     return m;
@@ -1953,8 +1962,12 @@ static Scheme_Object *clone_arity(Scheme_Object *a, int delta)
     a = scheme_struct_ref(a, 0);
     if (delta)
       a = scheme_bin_minus(a, scheme_make_integer(delta));
-    p[0] = a;
-    return scheme_make_struct_instance(scheme_arity_at_least, 1, p);
+    if (mode == -3) {
+      return scheme_make_integer(-(SCHEME_INT_VAL(a)+1));
+    } else {
+      p[0] = a;
+      return scheme_make_struct_instance(scheme_arity_at_least, 1, p);
+    }
   } else if (SCHEME_NULLP(a))
     return a;
   else if (delta)
@@ -1965,7 +1978,8 @@ static Scheme_Object *clone_arity(Scheme_Object *a, int delta)
 
 static Scheme_Object *get_or_check_arity(Scheme_Object *p, intptr_t a, Scheme_Object *bign, int inc_ok)
 /* a == -1 => get arity
-   a == -2 => check for allowing bignum */
+   a == -2 => check for allowing bignum
+   a == -3 => like -1, but alternate representation using negative numbers for arity-at-least  */
 {
   Scheme_Type type;
   mzshort mina, maxa;
@@ -1995,20 +2009,25 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, intptr_t a, Scheme_Ob
   } else if (type == scheme_cont_type || type == scheme_escaping_cont_type) {
     mina = 0;
     maxa = -1;
-  } else if (type == scheme_case_closure_type) {
+  } else if ((type == scheme_case_closure_type)
+             || (type == scheme_case_lambda_sequence_type)) {
     Scheme_Case_Lambda *seq;
     Scheme_Closure_Data *data;
     int i;
     Scheme_Object *first, *last = NULL, *v;
 
-    if (a == -1)
+    if ((a == -1) || (a == -3))
       first = scheme_null;
     else
       first = scheme_false;
 
     seq = (Scheme_Case_Lambda *)p;
     for (i = 0; i < seq->count; i++) {
-      data = SCHEME_COMPILED_CLOS_CODE(seq->array[i]);
+      v = seq->array[i];
+      if (SAME_TYPE(SCHEME_TYPE(v), scheme_unclosed_procedure_type))
+        data = (Scheme_Closure_Data *)v;
+      else
+        data = SCHEME_COMPILED_CLOS_CODE(v);
       mina = maxa = data->num_params;
       if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST) {
 	if (mina)
@@ -2028,7 +2047,7 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, intptr_t a, Scheme_Ob
 	  if (maxa > 0)
 	    maxa -= drop;
 
-	  v = scheme_make_pair(scheme_make_arity(mina, maxa), scheme_null);
+	  v = scheme_make_pair(make_arity(mina, maxa, a), scheme_null);
 	  if (!last)
 	    first = v;
 	  else
@@ -2052,8 +2071,8 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, intptr_t a, Scheme_Ob
         if (drop)
           bign = scheme_bin_plus(bign, scheme_make_integer(drop));
       }
-      if (a == -1)
-        return clone_arity(((Scheme_Structure *)p)->slots[1], drop);
+      if ((a == -1) || (a == -3))
+        return clone_arity(((Scheme_Structure *)p)->slots[1], drop, a);
       else {
         /* Check arity (or for varargs) */
         Scheme_Object *v;
@@ -2089,7 +2108,7 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, intptr_t a, Scheme_Ob
     } else {
       p = scheme_extract_struct_procedure(p, -1, NULL, &is_method);
       if (!SCHEME_PROCP(p)) {
-        if (a == -1)
+        if ((a == -1) || (a == -3))
           return scheme_null;
         else
           return scheme_false;
@@ -2104,7 +2123,7 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, intptr_t a, Scheme_Ob
     if (a < 0) {
       Scheme_Object *pa;
 
-      pa = scheme_get_native_arity(p);
+      pa = scheme_get_native_arity(p, a);
 
       if (SCHEME_BOXP(pa)) {
 	/* Is a method; pa already corrects for it */
@@ -2152,35 +2171,35 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, intptr_t a, Scheme_Ob
 	  if (drop) {
 	    /* Need to adjust elements (e.g., because this
 	       procedure is a struct's apply handler) */
-	    Scheme_Object *first = scheme_null, *last = NULL, *a;
+	    Scheme_Object *first = scheme_null, *last = NULL, *ae;
 	    int v;
 	    while (SCHEME_PAIRP(pa)) {
-	      a = SCHEME_CAR(pa);
-	      if (SCHEME_INTP(a)) {
-		v = SCHEME_INT_VAL(a);
+	      ae = SCHEME_CAR(pa);
+	      if (SCHEME_INTP(ae)) {
+		v = SCHEME_INT_VAL(ae);
 		if (v < drop)
-		  a = NULL;
+		  ae = NULL;
 		else {
 		  v -= drop;
-		  a = scheme_make_integer(v);
+		  ae = scheme_make_integer(v);
 		}
 	      } else {
 		/* arity-at-least */
-		a = ((Scheme_Structure *)a)->slots[0];
-		v = SCHEME_INT_VAL(a);
+		ae = ((Scheme_Structure *)ae)->slots[0];
+		v = SCHEME_INT_VAL(ae);
 		if (v >= drop) {
-		  a = scheme_make_arity(v - drop, -1);
+		  ae = make_arity(v - drop, -1, a);
 		} else {
-		  a = scheme_make_arity(0, -1);
+		  ae = make_arity(0, -1, a);
 		}
 	      }
-	      if (a) {
-		a = scheme_make_pair(a, scheme_null);
+	      if (ae) {
+		ae = scheme_make_pair(ae, scheme_null);
 		if (last)
-		  SCHEME_CDR(last) = a;
+		  SCHEME_CDR(last) = ae;
 		else
-		  first = a;
-		last = a;
+		  first = ae;
+		last = ae;
 	      }
 	      pa = SCHEME_CDR(pa);
 	    }
@@ -2203,7 +2222,11 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, intptr_t a, Scheme_Ob
   } else {
     Scheme_Closure_Data *data;
 
-    data = SCHEME_COMPILED_CLOS_CODE(p);
+    if (type == scheme_unclosed_procedure_type) 
+      data = (Scheme_Closure_Data *)p;
+    else
+      data = SCHEME_COMPILED_CLOS_CODE(p);
+
     mina = maxa = data->num_params;
     if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST) {
       if (mina)
@@ -2215,12 +2238,12 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, intptr_t a, Scheme_Ob
   if (cases) {
     int count = cases_count, i;
 
-    if (a == -1) {
-      Scheme_Object *arity, *a, *last = NULL;
+    if ((a == -1) || (a == -3)) {
+      Scheme_Object *arity, *ae, *last = NULL;
 
       arity = scheme_alloc_list(count);
 
-      for (i = 0, a = arity; i < count; i++) {
+      for (i = 0, ae = arity; i < count; i++) {
 	Scheme_Object *av;
 	int mn, mx;
 	mn = cases[2 * i];
@@ -2231,16 +2254,16 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, intptr_t a, Scheme_Ob
 	  if (mx > 0)
 	    mx -= drop;
 
-	  av = scheme_make_arity(mn, mx);
+	  av = make_arity(mn, mx, a);
 
-	  SCHEME_CAR(a) = av;
-	  last = a;
-	  a = SCHEME_CDR(a);
+	  SCHEME_CAR(ae) = av;
+	  last = ae;
+	  ae = SCHEME_CDR(ae);
 	}
       }
 
       /* If drop > 0, might have found no matches */
-      if (!SCHEME_NULLP(a)) {
+      if (!SCHEME_NULLP(ae)) {
 	if (last)
 	  SCHEME_CDR(last) = scheme_null;
 	else
@@ -2272,7 +2295,7 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, intptr_t a, Scheme_Ob
     return scheme_false;
   }
 
-  if (a == -1) {
+  if ((a == -1) || (a == -3)) {
     if (mina < drop)
       return scheme_null;
     else
@@ -2280,7 +2303,7 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, intptr_t a, Scheme_Ob
     if (maxa > 0)
       maxa -= drop;
 
-    return scheme_make_arity(mina, maxa);
+    return make_arity(mina, maxa, a);
   }
 
   if (a == -2)
@@ -2355,6 +2378,82 @@ int scheme_check_proc_arity(const char *where, int a,
 			    int which, int argc, Scheme_Object **argv)
 {
   return scheme_check_proc_arity2(where, a, which, argc, argv, 0);
+}
+
+int scheme_closure_preserves_marks(Scheme_Object *p)
+{
+  Scheme_Type type = SCHEME_TYPE(p);
+  Scheme_Closure_Data *data;
+
+  if (type == scheme_native_closure_type)
+    return scheme_native_closure_preserves_marks(p);
+  else if (type == scheme_closure_type) {
+    data = SCHEME_COMPILED_CLOS_CODE(p);
+  } else if (type == scheme_unclosed_procedure_type) {
+    data = (Scheme_Closure_Data *)p;
+  } else
+    return 0;
+
+  if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_PRESERVES_MARKS)
+    return 1;
+
+  return 0;
+}
+
+Scheme_Object *scheme_get_or_check_procedure_shape(Scheme_Object *e, Scheme_Object *expected)
+/* result is interned --- a symbol or fixnum */
+{
+  Scheme_Object *p;
+
+  if (expected 
+      && SCHEME_SYMBOLP(expected) 
+      && SCHEME_SYM_VAL(expected)[0] == 's') {
+    return (scheme_check_structure_shape(e, expected)
+            ? expected
+            : NULL);
+  }
+
+  if (SAME_TYPE(SCHEME_TYPE(e), scheme_inline_variant_type))
+    e = SCHEME_VEC_ELS(e)[1];
+
+  p = scheme_get_or_check_arity(e, -3);
+
+  if (SCHEME_PAIRP(p)) {
+    /* encode as a symbol */
+    int sz = 32, c = 0;
+    char *b, *naya;
+    b = (char *)scheme_malloc_atomic(sz);
+
+    while (SCHEME_PAIRP(p)) {
+      if (sz - c < 10) {
+        sz *= 2;
+        naya = (char *)scheme_malloc_atomic(sz);
+        memcpy(naya, b, c);
+        b = naya;
+      }
+      if (c)
+        b[c++] = ':';
+      c += sprintf(b XFORM_OK_PLUS c, "%" PRIdPTR, SCHEME_INT_VAL(SCHEME_CAR(p)));
+      
+      p = SCHEME_CDR(p);
+    }
+    b[c] = c;
+    p = scheme_intern_exact_symbol(b, c);
+  } else {
+    /* Integer encoding, but shift to use low bit to indicate whether
+       it preserves marks, which is useful information for the JIT. */
+    intptr_t i = SCHEME_INT_VAL(p);
+    i <<= 1;
+    if (scheme_closure_preserves_marks(e)) {
+      i |= 0x1;
+    }
+    p = scheme_make_integer(i);
+  }
+
+  if (expected && !SAME_OBJ(expected, p))
+    return NULL;
+
+  return p;
 }
 
 /*========================================================================*/
@@ -2934,7 +3033,7 @@ static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[])
      lists that include arity-at-least records. */
 
   orig = get_or_check_arity(argv[0], -1, NULL, 1);
-  aty = clone_arity(argv[1], 0);
+  aty = clone_arity(argv[1], 0, -1);
 
   if (!is_subarity(aty, orig)) {
     scheme_contract_error("procedure-reduce-arity",
@@ -3303,7 +3402,8 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     GC_CAN_IGNORE Scheme_Thread *p = scheme_current_thread;
     c = p->ku.multiple.count;
     argv2 = p->ku.multiple.array;
-    if (SAME_OBJ(p->ku.multiple.array, p->values_buffer)) {
+    p->ku.multiple.array = NULL;
+    if (SAME_OBJ(argv2, p->values_buffer)) {
       if (c <= MAX_QUICK_CHAP_ARGV) {
         for (i = 0; i < c; i++) {
           a2[i] = argv2[i];
@@ -3445,6 +3545,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
         p->values_buffer = NULL;
       c = p->ku.multiple.count;
       argv = p->ku.multiple.array;
+      p->ku.multiple.array = NULL;
     } else {
       c = 1;
       a[0] = v;
@@ -3476,6 +3577,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
         p->values_buffer = NULL;
       argc = p->ku.multiple.count;
       argv2 = p->ku.multiple.array;
+      p->ku.multiple.array = NULL;
     } else {
       argc = 1;
       a2[0] = v;
@@ -3614,9 +3716,9 @@ static Scheme_Object *call_with_values(int argc, Scheme_Object *argv[])
     Scheme_Object **a;
     if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
       p->values_buffer = NULL;
-    /* Beware: the fields overlap! */
     n = p->ku.multiple.count;
     a = p->ku.multiple.array;
+    p->ku.multiple.array = NULL;
     p->ku.apply.tail_num_rands = n;
     p->ku.apply.tail_rands = a;
   } else {
@@ -5011,6 +5113,7 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
     mc = p->ku.multiple.count;
     if (SAME_OBJ(mv, p->values_buffer))
       p->values_buffer = NULL;
+    p->ku.multiple.array = NULL;
   } else {
     mv = NULL;
     mc = 0;
@@ -5800,7 +5903,7 @@ Scheme_Object *do_chaperone_prompt_tag (const char *name, int is_impersonator, i
       ppos = 5;
     } else
       ppos = 4;
-    redirects = scheme_make_pair(argv[1], redirects);
+    redirects = scheme_make_pair(argv[2], redirects);
   } else {
     ppos = 3;
     redirects = argv[2];
@@ -6295,6 +6398,7 @@ static Scheme_Object **chaperone_do_control(const char *name, int mode,
             p->values_buffer = NULL;
           num_args = p->ku.multiple.count;
           vals = p->ku.multiple.array;
+          p->ku.multiple.array = NULL;
         } else {
           num_args = 1;
           vals = MALLOC_N(Scheme_Object *, 1);
@@ -6371,6 +6475,7 @@ static Scheme_Object *do_cc_guard(Scheme_Object *v, Scheme_Object *cc_guard, Sch
       p->values_buffer = NULL;
     argc = p->ku.multiple.count;
     argv = p->ku.multiple.array;
+    p->ku.multiple.array = NULL;
   } else {
     a[0] = v;
     argv = a;
@@ -6516,6 +6621,11 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
 
     p = scheme_current_thread;
 
+    if (v == SCHEME_MULTIPLE_VALUES) {
+      if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
+        p->values_buffer = NULL;
+    }
+
     restore_from_prompt(prompt);
 
     p->suspend_break = 0;
@@ -6540,6 +6650,10 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
         
           if (v) {
             /* Got a result: */
+            if (v == SCHEME_MULTIPLE_VALUES) {
+              if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
+                p->values_buffer = NULL;
+            }
             prompt_unwind_one_dw(prompt_tag);
             handler = NULL;
           } else {
@@ -6607,6 +6721,10 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
 
           if (SAME_OBJ(handler, scheme_values_func)) {
             v = scheme_values(argc, argv);
+            if (v == SCHEME_MULTIPLE_VALUES) {
+              if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
+                p->values_buffer = NULL;
+            }
             handler = NULL;
           } else if (SCHEME_FALSEP(handler)) {
             if (argc == 1) {
@@ -7790,6 +7908,9 @@ scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key
 	}
       }
 
+      if (key_arg != key && val != NULL)
+        val = scheme_chaperone_do_continuation_mark("continuation-mark-set-first", 1, key_arg, val);
+
       pos = startpos - findpos;
       if (pos > 16) {
         pos >>= 1;
@@ -7832,8 +7953,6 @@ scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key
           } else
             cht = NULL;
 
-          if (key_arg != key)
-            val = scheme_chaperone_do_continuation_mark("continuation-mark-set-first", 1, key_arg, val);
           if (!cache || !SCHEME_VECTORP(cache)) {
             /* No cache so far, so map one key */
             cache = scheme_make_vector(4, NULL);
@@ -8478,7 +8597,7 @@ static void pre_post_dyn_wind(Scheme_Object *prepost)
   scheme_push_break_enable(&cframe, 0, 0);
 
   /* Here's the main call: */
-  (void)_scheme_apply_multi(prepost, 0, NULL);
+  scheme_ignore_result(_scheme_apply_multi(prepost, 0, NULL));
 
   scheme_pop_break_enable(&cframe, 0);
 
@@ -9328,10 +9447,12 @@ static Scheme_Object *time_apply(int argc, Scheme_Object *argv[])
 
   if (v == SCHEME_MULTIPLE_VALUES) {
     Scheme_Thread *cp = scheme_current_thread;
+    Scheme_Object **args;
     if (SAME_OBJ(cp->ku.multiple.array, cp->values_buffer))
       cp->values_buffer = NULL;
-    v = scheme_build_list(cp->ku.multiple.count,
-			  cp->ku.multiple.array);
+    args = cp->ku.multiple.array;
+    cp->ku.multiple.array = NULL;
+    v = scheme_build_list(cp->ku.multiple.count, args);
   } else
     v = scheme_make_pair(v, scheme_null);
 

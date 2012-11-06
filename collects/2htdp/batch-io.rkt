@@ -1,7 +1,12 @@
-#lang racket
+#lang racket/base
 
-(require (for-syntax syntax/parse)
-         srfi/13 htdp/error
+(require racket/function
+         racket/file
+         racket/string
+         racket/local
+         (for-syntax racket/base
+                     syntax/parse)
+         htdp/error
          (rename-in lang/prim (first-order->higher-order f2h))
          "private/csv/csv.rkt")
 
@@ -163,10 +168,13 @@
 ;; split : String [Regexp] -> [Listof String]
 ;; splits a string into a list of substrings using the given delimiter
 ;; (white space by default)
+;;ELI: This shouldn't be needed now, it can use `string-split' as is
+;; (also, the trimming doesn't make sense if the pattern is not a
+;; space--?)
 (define (split str [ptn #rx"[ ]+"])
-  (regexp-split ptn (string-trim-both str)))
+  (regexp-split ptn (string-trim str)))
 
 ;; split-lines : String -> Listof[String]
 ;; splits a string with newlines into a list of lines
 (define (split-lines str)
-  (map string-trim-both (split str "\r*\n")))
+  (map string-trim (split str "\r*\n")))

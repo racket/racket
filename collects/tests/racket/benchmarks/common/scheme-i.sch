@@ -109,6 +109,11 @@
   (lambda (x y . z)
     (int a (cons (cons b x) (cons (cons c y) (cons (cons d z) env))))))
 
+;- -- evaluator ---
+
+(define (evaluate expr)
+  (interpret expr))
+
 ;- -- global variable definition ---
 
 (define (define-global var val)
@@ -129,10 +134,6 @@
 (define-global '-     -)
 
 ;- -- to evaluate an expression we call the interpreter ---
-
-(define (evaluate expr)
-  (interpret expr))
-
 
 (evaluate '(define 'fib
              (lambda (x)

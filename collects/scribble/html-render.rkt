@@ -890,7 +890,7 @@
                       (list (make-element (if (include-navigation?)
                                               "version"
                                               "versionNoNav")
-                                          (list "Version: " v)))
+                                          v))
                       d
                       ri))))))
 
@@ -1597,7 +1597,7 @@
                    (list name)))))))
 
 (define in-plt?
-  (let ([roots (map explode (list (find-doc-dir) (find-collects-dir)))])
+  (let ([roots (map explode (filter values (list (find-doc-dir) (find-collects-dir))))])
     (lambda (path)
       (ormap (lambda (root)
                (let loop ([path  path] [root root])

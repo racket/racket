@@ -1,3 +1,3 @@
-(module world mzscheme
-  (provide (all-from htdp/world))
-  (require htdp/world))
+#lang racket/base
+(require htdp/world)
+(provide (all-from-out htdp/world))

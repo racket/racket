@@ -1,9 +1,9 @@
-#lang racket
+#lang racket/base
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; provides functions for specifying the shape of big-bang and universe clauses:
 
-(provide function-with-arity expr-with-check except err)
+(provide function-with-arity expr-with-check err)
 
 ;; ... and for checking and processing them 
 
@@ -12,9 +12,13 @@
          ->args
          contains-clause?)
 
-(require 
- (for-syntax syntax/parse)
- (for-template "clauses-spec-aux.rkt" racket (rename-in lang/prim (first-order->higher-order f2h))))
+(require racket/function
+         racket/list
+         racket/bool
+         (for-syntax racket/base syntax/parse)
+         (for-template "clauses-spec-aux.rkt"
+                       racket
+                       (rename-in lang/prim (first-order->higher-order f2h))))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; specifying the shape of clauses 
@@ -28,15 +32,15 @@
              [(_ x) #`(check> #,tag x)]
              [_ (err tag p msg)])))]))
 
-(define-syntax function-with-arity 
-  (syntax-rules (except)
+(define-syntax function-with-arity
+  (syntax-rules ()
     [(_ arity)
      (lambda (tag)
        (lambda (p)
          (syntax-case p ()
            [(_ x) #`(proc> #,tag (f2h x) arity)]
            [_ (err tag p)])))]
-    [(_ arity except extra ...)
+    [(_ arity #:except extra ...)
      (lambda (tag)
        (lambda (p)
          (syntax-case p ()

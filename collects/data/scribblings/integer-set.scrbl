@@ -151,3 +151,6 @@ Returns the number of integers in the given integer set.}
 
 Returns true if every integer in @racket[x] is also in
 @racket[y], otherwise @racket[#f].}
+
+
+@close-eval[the-eval]

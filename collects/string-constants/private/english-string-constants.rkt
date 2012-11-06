@@ -1153,16 +1153,20 @@ please adhere to these guidelines:
  (experimental-languages "Experimental Languages")
   (initial-language-category "Initial language")
   (no-language-chosen "No language chosen")
- 
+ (other-languages "Other Languages")
+  
   (module-language-name "Determine language from source")
- (module-language-one-line-summary "Reads the #lang line to specify the actual language")
+ (module-language-one-line-summary "The #lang line specifies the actual language")
   (module-language-auto-text "Automatic #lang line") ;; shows up in the details section of the module language
    
   ;; for the upper portion of the language dialog
-  (use-language-in-source "Use the language declared in the source")
+  (the-racket-language "The Racket Language")
   (choose-a-language "Choose a language")
-  (lang-in-source-discussion
-   "The #lang line at the start of a program declares its language. This is the default and preferred mode for DrRacket.")
+  (racket-language-discussion
+   "Start your program with #lang to specify the desired dialect. For example:\n\n")
+  
+  ;; for the 'new drracket user' dialog
+  (use-language-in-source "Use the language declared in the source")
   
   ;;; from the `not a language language' used initially in drscheme.
   (must-choose-language "DrRacket cannot process programs until you choose a programming language.")

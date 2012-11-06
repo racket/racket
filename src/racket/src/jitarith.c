@@ -1125,11 +1125,6 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
       CHECK_LIMIT();
       /* sync'd in three branches below */
 
-      if (arith == ARITH_DIV) {
-        if (rand2 || (v != 1) || reversed)
-          has_fixnum_fast = 0;
-      }
-
       /* rand2 in R0, and rand in R1 unless it's simple */
 
       if (simple_rand || simple_rand2) {
@@ -1299,7 +1294,7 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 
     if (!unsafe_fl) {
       if (arith) {
-        if (((arith == ARITH_QUOT) || (arith == ARITH_REM) || (arith == ARITH_MOD)) && !rand2) {
+        if (((arith == ARITH_DIV) || (arith == ARITH_QUOT) || (arith == ARITH_REM) || (arith == ARITH_MOD)) && !rand2) {
           (void)jit_movi_p(JIT_R1, scheme_make_integer(v));
           rand2 = scheme_true;
           reversed = !reversed;
@@ -1338,54 +1333,58 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
             else
               (void)jit_bomulr_l(refslow, JIT_V1, JIT_R2);
             jit_ori_ul(JIT_R0, JIT_V1, 0x1);
-          } else if (arith == ARITH_DIV) {
-            if (has_fixnum_fast) {
-              /* No fast path for fixnum division, yet */
-              (void)jit_jmpi(refslow);
-            }
-          } else if ((arith == ARITH_QUOT) || (arith == ARITH_REM) || (arith == ARITH_MOD)) {
-            jit_rshi_l(JIT_V1, JIT_R0, 0x1);
-            jit_rshi_l(JIT_R2, JIT_R1, 0x1);
+          } else if ((arith == ARITH_DIV) || (arith == ARITH_QUOT) || (arith == ARITH_REM) || (arith == ARITH_MOD)) {
             if (reversed) {
-              if (!unsafe_fx || overflow_refslow)
-                (void)jit_beqi_l(refslow, JIT_R2, 0);
-              if (arith == ARITH_MOD) {
-                generate_modulo_setup(jitter, branch_short, JIT_V1, JIT_R2);
-                CHECK_LIMIT();
-              }
-              if (arith == ARITH_QUOT)
-                jit_divr_l(JIT_R0, JIT_V1, JIT_R2);
-              else
-                jit_modr_l(JIT_R0, JIT_V1, JIT_R2);
+              jit_rshi_l(JIT_V1, JIT_R0, 0x1);
+              jit_rshi_l(JIT_R2, JIT_R1, 0x1);
             } else {
-              if (!unsafe_fx || overflow_refslow)
-                (void)jit_beqi_l(refslow, JIT_V1, 0);
-              if (arith == ARITH_MOD) {
-                generate_modulo_setup(jitter, branch_short, JIT_R2, JIT_V1);
-                CHECK_LIMIT();
-              }
-              if (arith == ARITH_QUOT)
-                jit_divr_l(JIT_R0, JIT_R2, JIT_V1);
-              else
-                jit_modr_l(JIT_R0, JIT_R2, JIT_V1);
+              jit_rshi_l(JIT_R2, JIT_R0, 0x1);
+              jit_rshi_l(JIT_V1, JIT_R1, 0x1);
             }
+            if (!unsafe_fx || overflow_refslow)
+              (void)jit_beqi_l(refslow, JIT_R2, 0);
+
             if (arith == ARITH_MOD) {
+              generate_modulo_setup(jitter, branch_short, JIT_V1, JIT_R2);
+              CHECK_LIMIT();
+            }
+            if ((arith == ARITH_DIV) || (arith == ARITH_QUOT))
+              jit_divr_l(JIT_R0, JIT_V1, JIT_R2);
+            else
+              jit_modr_l(JIT_R0, JIT_V1, JIT_R2);
+
+            if (arith == ARITH_DIV) {
+              GC_CAN_IGNORE jit_insn *refx;
+              if (reversed)
+                jit_mulr_l(JIT_R2, JIT_R0, JIT_R2);
+              else
+                jit_mulr_l(JIT_V1, JIT_R0, JIT_V1);
+              __START_INNER_TINY__(branch_short);
+              refx = jit_beqr_l(jit_forward(), JIT_R2, JIT_V1);
+              __END_INNER_TINY__(branch_short);
+              /* restore R0 argument: */
+              if (reversed)
+                jit_lshi_l(JIT_R0, JIT_V1, 1);
+              else
+                jit_lshi_l(JIT_R0, JIT_R2, 1);
+              jit_ori_l(JIT_R0, JIT_R0, 0x1);
+              (void)jit_jmpi(refslow);
+              __START_INNER_TINY__(branch_short);
+              mz_patch_branch(refx);
+              __END_INNER_TINY__(branch_short);
+            } else if (arith == ARITH_MOD) {
               GC_CAN_IGNORE jit_insn *refx, *refy;
               __START_INNER_TINY__(branch_short);
               refy = jit_beqi_l(jit_forward(), JIT_R0, 0);
               refx = jit_bmci_l(jit_forward(), JIT_R1, 0x1);
-              if (reversed)
-                jit_subr_l(JIT_R0, JIT_R2, JIT_R0);
-              else
-                jit_subr_l(JIT_R0, JIT_V1, JIT_R0);
+              jit_subr_l(JIT_R0, JIT_R2, JIT_R0);
               mz_patch_branch(refx);
               refx = jit_bmci_l(jit_forward(), JIT_R1, 0x2);
               jit_negr_l(JIT_R0, JIT_R0);
               mz_patch_branch(refx);
               mz_patch_branch(refy);
               __END_INNER_TINY__(branch_short);
-            }
-            if (arith == ARITH_QUOT) {
+            } else if (arith == ARITH_QUOT) {
               /* watch out for negation of most negative fixnum,
                  which is a positive number too big for a fixnum */
               if (!unsafe_fx || overflow_refslow) {
@@ -1550,16 +1549,6 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
                 (void)jit_bomulr_l(refslow, JIT_V1, JIT_R2);
               }
               jit_ori_ul(JIT_R0, JIT_V1, 0x1);
-            }
-          } else if (arith == ARITH_DIV) {
-            if ((v == 1) && !reversed) {
-              /* R0 already is the answer */
-            } else {
-              if (has_fixnum_fast) {
-                /* No general fast path for fixnum division, yet */
-                (void)jit_movi_p(JIT_R1, scheme_make_integer(v));
-                (void)jit_jmpi(refslow);
-              }
             }
           } else {
             if (arith == ARITH_AND) {
@@ -1877,12 +1866,9 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
 # define mzSET_USE_FL(x) /* empty */
 #endif
 
-  if (arith == ARITH_DIV) {
-    /* can't inline fixnum '/' */
-    use_fx = 0;
-  } else if ((arith == ARITH_AND)
-             || (arith == ARITH_IOR)
-             || (arith == ARITH_XOR)) {
+  if ((arith == ARITH_AND)
+      || (arith == ARITH_IOR)
+      || (arith == ARITH_XOR)) {
     /* bitwise operators are fixnum, only */
     mzSET_USE_FL(use_fl = 0);
   }
@@ -1920,7 +1906,7 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
   }
 
   if (stack_c)
-    scheme_generate_app(app, alt_args, stack_c, jitter, 0, 0, 2);
+    scheme_generate_app(app, alt_args, stack_c, jitter, 0, 0, 0, 2);
   CHECK_LIMIT();
   mz_rs_sync();
 
