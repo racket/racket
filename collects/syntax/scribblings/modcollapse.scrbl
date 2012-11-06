@@ -60,6 +60,4 @@ refman]{module path index}; in this case, the
 contains the ``self'' index.}
 
 
-
-
 @close-eval[evaluator]

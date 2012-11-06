@@ -3100,7 +3100,4 @@ column-span of the new lw is always zero.
 }
 
 
-
-
-
 @close-eval[redex-eval]

@@ -67,6 +67,4 @@ Builds a function that accepts a structure type instance (matching
 structure type instance.}
 
 
-
-
 @close-eval[struct-eval]

@@ -95,5 +95,4 @@ running @racket[read-eval-print]. In addition, @racket[current-exit]
 is set to escape from the call to @racket[new-cafe].}
 
 
-
 @close-eval[compat-eval]

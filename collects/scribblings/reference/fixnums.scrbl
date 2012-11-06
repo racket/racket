@@ -202,6 +202,4 @@ allocated in the @tech{shared memory space}.
 @mz-examples[#:eval flfx-eval (make-shared-fxvector 4 3)]}
 
 
-
-
 @close-eval[flfx-eval]

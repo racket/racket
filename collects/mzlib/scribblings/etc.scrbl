@@ -271,5 +271,4 @@ Creates a new hash-table providing the quoted flags (if any) to
 corresponding values.}
 
 
-
 @close-eval[etc-eval]

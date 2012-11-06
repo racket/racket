@@ -1,7 +1,7 @@
 #lang scribble/manual
 
 @begin[(require (for-label (only-meta-in 0 typed/racket)) scribble/eval
-		"../utils.rkt" (only-in "quick.scrbl" typed-mod))]
+                "../utils.rkt" (only-in "quick.scrbl" typed-mod))]
 
 @(define the-eval (make-base-eval))
 @(the-eval '(require typed/racket))
@@ -131,7 +131,6 @@ Typed Racket also attempts to detect more than one error in the module.
 (string-append "a string" (add1 "not a number"))
 ]
 }
-
 
 
 @close-eval[the-eval]
