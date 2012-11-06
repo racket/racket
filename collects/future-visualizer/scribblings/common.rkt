@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 
 (require (for-label racket/base)
          scribble/manual

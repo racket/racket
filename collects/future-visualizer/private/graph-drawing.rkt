@@ -1,13 +1,17 @@
-#lang racket
-(require rackunit 
+#lang racket/base
+
+(require racket/list
+         racket/contract
+         ;; rackunit
          "constants.rkt")
-(provide (struct-out point) 
-         (struct-out node) 
-         (struct-out drawable-node) 
-         (struct-out graph-layout) 
+
+(provide (struct-out point)
+         (struct-out node)
+         (struct-out drawable-node)
+         (struct-out graph-layout)
          (struct-out attributed-node)
          draw-tree
-         drawable-node-center 
+         drawable-node-center
          build-attr-tree)
 
 (define-struct/contract point ([x integer?] [y integer?]) #:transparent)
