@@ -1,5 +1,8 @@
-#lang racket
-(require "match.rkt"
+#lang racket/base
+
+(require racket/bool
+         racket/match
+         "match.rkt"
          "contract.rkt"
          #;"sema-mailbox.rkt"
          "mailbox.rkt")

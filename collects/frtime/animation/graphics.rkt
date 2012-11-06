@@ -1,4 +1,5 @@
-#lang racket
+#lang racket/base
+
 (require racket/unit
          mred/mred-sig
          mred

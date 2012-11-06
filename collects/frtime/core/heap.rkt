@@ -1,5 +1,9 @@
-#lang racket
-(require "dv.rkt"
+#lang racket/base
+
+(require racket/bool
+         racket/match
+         racket/contract
+         "dv.rkt"
          "contract.rkt")
 
 (define-struct t (sorter equality data))
