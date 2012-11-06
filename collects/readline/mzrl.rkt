@@ -1,9 +1,9 @@
 #lang scheme/base
 
-(require mzlib/foreign (only-in '#%foreign ffi-obj)) (unsafe!)
+(require racket/file mzlib/foreign (only-in '#%foreign ffi-obj)) (unsafe!)
 (provide readline readline-bytes
          add-history add-history-bytes
-         history-length history-get history-delete
+         history-length history-get history-delete history-load history-save
          set-completion-function!)
 
 ;; libtermcap needed on some platforms
@@ -49,6 +49,22 @@
 (define history-base
   (let ([hb (ffi-obj #"history_base" libreadline)])
     (lambda () (ptr-ref hb _int))))
+
+;; history-load : string? -> void
+(define (history-load filename)
+  (when (file-exists? filename)
+    (for-each (lambda (line)
+                (add-history line))
+              (file->lines filename))))
+
+;; history-save : string? -> void
+(define (history-save filename)
+  (with-output-to-file filename #:exists 'replace
+    (lambda ()
+      (for ([index (in-range (history-length))])
+        (displayln (history-get index))))))
+
+
 
 ;; The history library has this great feature: *some* function consume
 ;; an index that is relative to history_base, and *some* get a plain
