@@ -1,10 +1,10 @@
-#lang racket
+#lang racket/base
 
-(require racket/draw unstable/parameter-group
+(require racket/class racket/draw unstable/parameter-group
          racket/contract unstable/latent-contract unstable/latent-contract/defthing
          "../private/flomap.rkt"
          "../private/deep-flomap.rkt"
-         (for-syntax syntax/parse))
+         (for-syntax racket/base syntax/parse))
 
 (provide light-metal-icon-color
          metal-icon-color

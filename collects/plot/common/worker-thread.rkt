@@ -1,6 +1,6 @@
-#lang racket
+#lang racket/base
 
-(require racket/async-channel)
+(require racket/bool racket/match racket/async-channel)
 
 (provide make-worker-thread worker-thread? worker-thread-working? worker-thread-waiting?
          worker-thread-put worker-thread-try-put
