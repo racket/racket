@@ -1029,7 +1029,7 @@ path/s is either such a string or a list of them.
 "collects/tests/drracket/repl-test-misc.rkt" drdr:command-line (gracket *)
 "collects/tests/drracket/repl-test-raw.rkt" drdr:command-line (gracket *) drdr:timeout 300
 "collects/tests/drracket/snip/collapsed.rkt" drdr:command-line (racket "-l" "racket/gui/base" "-t" *)
-"collects/tests/drracket/snip/run-all.rkt" drdr:timeout 400
+"collects/tests/drracket/snip/run-all.rkt" drdr:timeout 500
 "collects/tests/drracket/snips.rkt" drdr:command-line (gracket *)
 "collects/tests/drracket/syncheck-test.rkt" drdr:command-line (gracket *) drdr:timeout 200
 "collects/tests/drracket/teaching-lang-coverage.rkt" responsible (robby matthias) drdr:command-line (gracket *)
