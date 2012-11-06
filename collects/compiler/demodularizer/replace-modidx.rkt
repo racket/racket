@@ -1,6 +1,10 @@
-#lang racket
-(require unstable/struct
+#lang racket/base
+
+(require racket/match
+         racket/vector
+         unstable/struct
          "util.rkt")
+
 (provide replace-modidx)
 
 (define (replace-modidx expr self-modidx)

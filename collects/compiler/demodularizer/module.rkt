@@ -1,5 +1,9 @@
-#lang racket
-(require compiler/zo-parse
+#lang racket/base
+
+(require racket/list
+         racket/match
+         racket/contract
+         compiler/zo-parse
          "util.rkt")
 
 (define (->module-path-index s)
