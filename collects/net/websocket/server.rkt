@@ -1,12 +1,16 @@
-#lang racket
-(require web-server/private/dispatch-server-unit
+#lang racket/base
+
+(require racket/list
+         racket/unit
+         racket/contract
+         unstable/contract
+         web-server/private/dispatch-server-unit
          web-server/private/dispatch-server-sig
          web-server/private/connection-manager
          web-server/http/response
          web-server/http/request
          web-server/http/request-structs
          racket/async-channel
-         unstable/contract
          net/tcp-sig
          (prefix-in raw: net/tcp-unit)
          net/websocket/conn
