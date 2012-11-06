@@ -1,6 +1,6 @@
-#lang racket
+#lang racket/base
 
-(require mred mzlib/class "marks.rkt")
+(require racket/gui racket/class "marks.rkt")
 
 (provide display-break-stuff)
 
@@ -63,5 +63,3 @@
                              returned-value-list)
   (add-sel break-number mark-set break-kind returned-value-list)
   (send f show #t))
-  
-  

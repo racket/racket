@@ -1,6 +1,6 @@
-#lang racket
- 
-(require mred
+#lang racket/base
+
+(require racket/gui
          (prefix-in f: framework)
          racket/pretty
          "syntax-property.rkt"

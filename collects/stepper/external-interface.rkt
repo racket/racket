@@ -1,6 +1,7 @@
-#lang racket
+#lang racket/base
 
-(require "private/annotate.rkt"
+(require racket/contract
+         "private/annotate.rkt"
          "private/marks.rkt")
 
 ;; an external interface for the stepper.

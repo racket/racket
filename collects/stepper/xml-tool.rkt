@@ -1,9 +1,10 @@
-#lang racket
+#lang racket/base
 
 (require "private/xml-snip-helpers.rkt"
          "private/find-tag.rkt"
          "private/xml-sig.rkt"
-         mred
+         racket/unit
+         racket/gui
          framework
          drracket/tool
          xml/xml

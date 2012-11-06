@@ -1,6 +1,8 @@
-#lang racket
+#lang racket/base
 
 (require (prefix-in kernel: syntax/kerncase)
+         racket/match
+         racket/contract
          "shared.rkt"
          "syntax-property.rkt"
          (for-syntax racket/base))
