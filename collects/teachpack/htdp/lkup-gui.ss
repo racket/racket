@@ -1,3 +1,3 @@
-#cs(module lkup-gui mzscheme
-  (require htdp/lkup-gui)
-  (provide (all-from htdp/lkup-gui)))
+#lang racket/base
+(require htdp/lkup-gui)
+(provide (all-from-out htdp/lkup-gui))

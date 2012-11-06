@@ -1,3 +1,3 @@
-#cs(module arrow-gui mzscheme
-  (require htdp/arrow-gui)
-  (provide (all-from htdp/arrow-gui)))
+#lang racket/base
+(require htdp/arrow-gui)
+(provide (all-from-out htdp/arrow-gui))
