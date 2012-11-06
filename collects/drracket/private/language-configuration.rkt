@@ -475,10 +475,7 @@
                 (λ (this-rb evt)
                   (use-chosen-language-rb-callback))]))
         (define (use-chosen-language-rb-callback)
-          (when (member ellipsis-spacer-panel (send languages-hier-list-panel get-children))
-            (send languages-hier-list-panel change-children
-                  (λ (l)
-                    (list languages-hier-list-spacer other-languages-hier-list))))
+          (show-other-languages)
           (when most-recent-languages-hier-list-selection
             (select-a-language-in-hierlist other-languages-hier-list
                                            most-recent-languages-hier-list-selection))
@@ -486,6 +483,11 @@
           (send use-teaching-language-rb set-selection #f)
           (send teaching-languages-hier-list select #f)
           (send other-languages-hier-list focus))
+        (define (show-other-languages)
+          (when (member ellipsis-spacer-panel (send languages-hier-list-panel get-children))
+            (send languages-hier-list-panel change-children
+                  (λ (l)
+                    (list languages-hier-list-spacer other-languages-hier-list)))))
         
         (define languages-hier-list-panel (new horizontal-panel% 
                                                [parent languages-choice-panel] 
@@ -494,7 +496,24 @@
                                            [parent languages-hier-list-panel]
                                            [stretchable-width #f]
                                            [min-width 32]))
-        (define ellipsis-message (new message% [label "..."] [parent languages-hier-list-panel]))
+        (define ellipsis-message (new (class canvas%
+                                        (define/override (on-paint)
+                                          (define dc (get-dc))
+                                          (send dc set-font normal-control-font)
+                                          (send dc draw-text "..." 0 0))
+                                        (define/override (on-event evt)
+                                          (when (send evt button-up?)
+                                            (show-other-languages)))
+                                        (inherit get-dc min-width min-height)
+                                        (super-new [style '(transparent)]
+                                                   [parent languages-hier-list-panel]
+                                                   [stretchable-width #f]
+                                                   [stretchable-height #t])
+                                        (let ()
+                                          (define dc (get-dc))
+                                          (define-values (w h _1 _2) (send dc get-text-extent "..." normal-control-font))
+                                          (min-width (inexact->exact (ceiling w)))
+                                          (min-height (inexact->exact (ceiling h)))))))
         
         (define languages-hier-list-spacer (new horizontal-panel% 
                                                 [parent languages-hier-list-panel]
