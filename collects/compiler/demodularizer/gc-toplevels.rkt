@@ -1,5 +1,10 @@
-#lang racket
-(require compiler/zo-parse
+#lang racket/base
+
+(require racket/match
+         racket/list
+         racket/dict
+         racket/contract
+         compiler/zo-parse
          "util.rkt")
 
 ; XXX Use efficient set structure
@@ -150,21 +155,20 @@
         (match (dict-ref g n)
           [(struct refs (n-tls n-stxs))
            (hash-set! visited? n #t)
-           (local
-             [(define-values (new-tls1 new-stxs1)
-                (for/fold ([new-tls tls]
-                           [new-stxs stxs])
-                  ([tl (in-list n-tls)])
-                  (visit-tl tl new-tls new-stxs)))
-              (define new-stxs2
-                (for/fold ([new-stxs new-stxs1])
-                  ([stx (in-list n-stxs)])
-                  (define this-stx (visit-stx stx))
-                  (if this-stx
-                      (list* this-stx new-stxs)
-                      new-stxs)))]          
-             (values (list* n new-tls1)
-                     new-stxs2))])))
+           (define-values (new-tls1 new-stxs1)
+             (for/fold ([new-tls tls]
+                        [new-stxs stxs])
+                       ([tl (in-list n-tls)])
+               (visit-tl tl new-tls new-stxs)))
+           (define new-stxs2
+             (for/fold ([new-stxs new-stxs1])
+                       ([stx (in-list n-stxs)])
+               (define this-stx (visit-stx stx))
+               (if this-stx
+                   (list* this-stx new-stxs)
+                   new-stxs)))
+           (values (list* n new-tls1)
+                   new-stxs2)])))
   (define stx-visited? (make-hasheq))
   (define (visit-stx n)
     (if (hash-has-key? stx-visited? n)
