@@ -1,5 +1,10 @@
-#lang racket
-(require racket/gui/base
+#lang racket/base
+
+(require racket/list
+         racket/class
+         racket/match
+         racket/pretty
+         racket/gui/base
          framework/private/logging-timer)
 
 #|
