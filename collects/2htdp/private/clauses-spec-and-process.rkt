@@ -3,7 +3,7 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; provides functions for specifying the shape of big-bang and universe clauses:
 
-(provide function-with-arity expr-with-check except err)
+(provide function-with-arity expr-with-check err)
 
 ;; ... and for checking and processing them 
 
@@ -15,7 +15,6 @@
 (require racket/function
          racket/list
          racket/bool
-         (only-in racket/unit except) ; used only as a keyword...?
          (for-syntax racket/base syntax/parse)
          (for-template "clauses-spec-aux.rkt"
                        racket
@@ -33,15 +32,15 @@
              [(_ x) #`(check> #,tag x)]
              [_ (err tag p msg)])))]))
 
-(define-syntax function-with-arity 
-  (syntax-rules (except)
+(define-syntax function-with-arity
+  (syntax-rules ()
     [(_ arity)
      (lambda (tag)
        (lambda (p)
          (syntax-case p ()
            [(_ x) #`(proc> #,tag (f2h x) arity)]
            [_ (err tag p)])))]
-    [(_ arity except extra ...)
+    [(_ arity #:except extra ...)
      (lambda (tag)
        (lambda (p)
          (syntax-case p ()
