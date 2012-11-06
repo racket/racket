@@ -290,7 +290,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (sha1-hash-bytes (get-output-bytes p))))
 
 (define (sha1 in)
-  (format "~x" (sha1-input in)))
+  (bytes->hex-string (hash-value->bytes (sha1-input in))))
 
 (define (sha1-bytes in)
   (hash-value->bytes (sha1-input in)))
