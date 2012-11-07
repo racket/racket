@@ -243,7 +243,7 @@
                                                       (let ([mask (cvt mask)])
                                                         (build-ico exe-ico 
                                                                    (if has-alpha?
-                                                                       image
+                                                                       (cvt image)
                                                                        (mask->alpha (cvt image) mask))
                                                                    mask
                                                                    #t)))))))))])
