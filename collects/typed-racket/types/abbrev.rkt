@@ -18,7 +18,7 @@
          (except-in racket/contract/base ->* -> one-of/c)
          (prefix-in c: racket/contract/base)
          (for-syntax racket/base syntax/parse racket/list)
-         (for-template racket/base racket/contract/base racket/promise racket/tcp racket/flonum racket/udp)
+         (for-template racket/base racket/contract/base racket/promise racket/tcp racket/flonum racket/udp '#%place)
          racket/pretty racket/udp
          ;; for base type predicates
          racket/promise racket/tcp racket/flonum)
