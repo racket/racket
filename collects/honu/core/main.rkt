@@ -63,6 +63,7 @@
                                    [honu-> >] [honu-< <]
                                    [honu->= >=]
                                    [honu-<= <=]
+                                   [honu-=> =>]
                                    ;; [honu-equal =]
                                    ;; [honu-assignment :=]
                                    [honu-map map]
