@@ -60,7 +60,8 @@
             [prefix drracket:app: drracket:app^]
             [prefix drracket:tools: drracket:tools^]
             [prefix drracket:help-desk: drracket:help-desk^]
-            [prefix drracket:module-language: drracket:module-language/int^])
+            [prefix drracket:module-language: drracket:module-language/int^]
+            [prefix drracket: drracket:interface^])
     (export drracket:language-configuration/internal^)
     
     ;; settings-preferences-symbol : symbol
@@ -246,7 +247,9 @@
                                 button-panel
                                 language-settings-to-show
                                 #f
-                                ok-handler))
+                                ok-handler
+                                (and (is-a? parent drracket:unit:frame<%>)
+                                     (send parent get-definitions-text))))
         
         ;; create ok/cancel buttons
         (make-object horizontal-pane% button-panel)
@@ -281,7 +284,8 @@
     (define fill-language-dialog
       (λ (parent show-details-parent language-settings-to-show
                  [re-center #f]
-                 [ok-handler void]) ; en/disable button, execute it
+                 [ok-handler void]
+                 [definitions-text #f]) ; en/disable button, execute it
         
         (define-values (language-to-show settings-to-show)
           (let ([request-lang-to-show (language-settings-language language-settings-to-show)])
@@ -431,7 +435,7 @@
                                                  [parent in-source-discussion-panel]
                                                  [stretchable-width #f]
                                                  [min-width 32]))
-        (define in-source-discussion-editor-canvas (add-discussion in-source-discussion-panel))
+        (define in-source-discussion-editor-canvas (add-discussion in-source-discussion-panel definitions-text))
         (define most-recent-languages-hier-list-selection (preferences:get 'drracket:language-dialog:hierlist-default))
         (define most-recent-teaching-languages-hier-list-selection (preferences:get 'drracket:language-dialog:teaching-hierlist-default))
         
@@ -1125,7 +1129,7 @@
                   #f)]
              [else #f])))))
     
-    (define (add-discussion p)
+    (define (add-discussion p definitions-text)
       (define t (new (text:hide-caret/selection-mixin text:standard-style-list%)))
       (define c (new editor-canvas%
                      [stretchable-width #t]
@@ -1166,14 +1170,77 @@
            (channel-put xref-chan xref)
            (loop))))
       
-      (for ([lang (in-list '(racket typed/racket scribble/base))])
-        (do-insert (format "  #lang ~a" lang) #t)
+      (define spacer-snips '())
+      (define spacer-poses '())
+      
+      (for ([lang (in-list '(racket racket/base typed/racket scribble/base))])
+        (define the-lang-line (format "#lang ~a" lang))
+        (do-insert "  " #t)
+        (define before-lang (send t last-position))
+        (do-insert the-lang-line #t)
+        (define after-lang (send t last-position))
+        (define spacer (new spacer-snip%))
+        (define spacer-pos (send t last-position))
+        (set! spacer-snips (cons spacer spacer-snips))
+        (set! spacer-poses (cons spacer-pos spacer-poses))
+        (send t insert spacer spacer-pos spacer-pos)
         (do-insert "  [" #f)
-        (define before (send t last-position))
+        (define before-docs (send t last-position))
         (do-insert "docs" #f)
-        (define after (send t last-position))
+        (define after-docs (send t last-position))
         (do-insert "]\n" #f)
-        (send t set-clickback before after 
+        (send t set-clickback before-lang after-lang
+              (λ (t start end)
+                (define-values (current-line-start current-line-end) 
+                  (if definitions-text
+                      (find-language-position definitions-text)
+                      (values #f #f)))
+                (define existing-lang-line (and current-line-start
+                                                (send definitions-text get-text current-line-start current-line-end)))
+                (case (message-box/custom
+                       (string-constant drscheme)
+                       (string-append
+                        (string-constant racket-dialect-in-buffer-message)
+                        (cond
+                          [(and existing-lang-line
+                                (equal? existing-lang-line the-lang-line))
+                           ""]
+                          [existing-lang-line
+                           (string-append 
+                            "\n\n"
+                            (format (string-constant racket-dialect-replace-#lang-line) 
+                                    existing-lang-line
+                                    the-lang-line))]
+                          [else
+                           (string-append 
+                            "\n\n"
+                            (format (string-constant racket-dialect-add-new-#lang-line) the-lang-line))]))
+                       (cond
+                         [(and existing-lang-line
+                               (equal? existing-lang-line the-lang-line))
+                          (string-constant ok)]
+                         [existing-lang-line
+                          (string-constant replace-#lang-line)]
+                         [else
+                          (string-constant add-#lang-line)])
+                       (and (not (equal? existing-lang-line the-lang-line))
+                            (string-constant cancel))
+                       #f #f
+                       '(default=1))
+                  [(1) 
+                   (cond
+                     [current-line-start
+                      (send definitions-text begin-edit-sequence)
+                      (send definitions-text delete current-line-start current-line-end)
+                      (send definitions-text insert the-lang-line current-line-start current-line-start)
+                      (send definitions-text end-edit-sequence)]
+                     [else
+                      (send definitions-text begin-edit-sequence)
+                      (send definitions-text insert "\n" 0 0)
+                      (send definitions-text insert the-lang-line 0 0)
+                      (send definitions-text end-edit-sequence)])]
+                  [else (void)])))
+        (send t set-clickback before-docs after-docs 
               (λ (t start end)
                 (define-values (path tag) (xref-tag->path+anchor (channel-get xref-chan) `(mod-path ,(symbol->string lang))))
                 (define url (path->url path))
@@ -1189,14 +1256,64 @@
                                  url))
                 (send-url (url->string url2)))))
       
+      (do-insert (string-constant racket-language-discussion-end) #f)
+      
       (define kmp (send t set-keymap (keymap:get-editor)))
+      
+      (send (send c get-parent) reflow-container)
+      
+      (define xb (box 0))
+      (define max-spacer-pos
+        (for/fold ([m 0]) ([spacer-pos (in-list spacer-poses)])
+          (send t position-location spacer-pos xb #f)
+          (max m (unbox xb))))
+      (for ([spacer-pos (in-list spacer-poses)]
+            [spacer-snip (in-list spacer-snips)])
+        (send t position-location spacer-pos xb #f)
+        (send spacer-snip set-width (- max-spacer-pos (unbox xb))))
       
       (send t hide-caret #t)
       (send t auto-wrap #t)
       (send t lock #t)
       (send c accept-tab-focus #f)
       (send c allow-tab-exit #t)
+
       c)
+    
+    (define (find-language-position definitions-text)
+      (define prt (open-input-text-editor definitions-text))
+      (port-count-lines! prt)
+      (define l (with-handlers ((exn:fail? (λ (x) #f)))
+                  (read-language prt)))
+      (cond
+        [l
+         (define-values (line col pos) (port-next-location prt))
+         (define hash-lang-start (send definitions-text find-string "#lang" 'backward pos 0 #f))
+         (if hash-lang-start
+             (values hash-lang-start (- pos 1))
+             (values #f #f))]
+        [else
+         (values #f #f)]))
+    
+    (define spacer-snip%
+      (class snip%
+        (inherit get-admin)
+        (define width 0)
+        (define/public (set-width w) 
+          (set! width w)
+          (define admin (get-admin))
+          (when admin 
+            (send admin resized this #t)))
+        (define/override (get-text [start 0] [end 'eof] [flattened? #f] [force-cr? #f])
+          "")
+        (define/override (get-extent dc x y wb hb db ab lb sp)
+          (super get-extent dc x y wb hb db ab lb sp)
+          (when (box? wb) (set-box! wb width)))
+        (super-new)))
+    (define spacer-sc (new snip-class%))
+    (send spacer-sc set-classname "drracket:spacer-snipclass")
+    (send spacer-sc set-version 0)
+    (send (get-the-snip-class-list) add spacer-sc)
     
     (define (size-discussion-canvas canvas)
       (define t (send canvas get-editor))

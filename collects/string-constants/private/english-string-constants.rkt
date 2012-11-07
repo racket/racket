@@ -1162,8 +1162,27 @@ please adhere to these guidelines:
   ;; for the upper portion of the language dialog
   (the-racket-language "The Racket Language")
   (choose-a-language "Choose a language")
-  (racket-language-discussion
-   "Start your program with #lang to specify the desired dialect. For example:\n\n")
+  
+  ;; the next two string constants appear in the
+  ;; language dialog with a list
+  ;; of example languages appearing between them
+  (racket-language-discussion "Start your program with #lang to specify the desired dialect. For example:\n\n")
+  (racket-language-discussion-end "\n... and many more")
+  
+  ;; the next three string constants are put into a message-box dialog
+  ;; that appears when the user clicks on the example #lang languages
+  ;; in the language dialog. The first one always appears and then either
+  ;; the second or the third appears. The second one has the clicked
+  ;; on #lang line placed into the ~a, and third one has the 
+  ;; current #lang line in the first ~a and the clicked on in the second one.
+  ;; The two comments are separated by a blank line.
+  (racket-dialect-in-buffer-message "Racket dialects are generally chosen by editing the buffer directly, not by selecting these entries in the language dialog.")
+  (racket-dialect-add-new-#lang-line "That said, shall I add “~a” to the beginning of the definitions window?")
+  (racket-dialect-replace-#lang-line "That said, I see you have “~a” in your file; shall I replace it with “~a”?")
+  
+  ;; in the dialog containing the above strings, one of these is a button that appears
+  (add-#lang-line "Add #lang line")
+  (replace-#lang-line "Replace #lang line")
   
   ;; for the 'new drracket user' dialog
   (use-language-in-source "Use the language declared in the source")
