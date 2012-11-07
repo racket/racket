@@ -343,7 +343,20 @@
                   (not really-hot-anonymous-function-inside-us?))
          (prune))
 
-       (cond [(and profile-entry (not (null? key-sites)))
+       (cond [(and profile
+                   (counts-as-a-missed-opt? pruned-log)
+                   is-a-loop?
+                   ;; loops are hard to act upon, only report in extreme cases
+                   (< (group-badness pruned-log) 50))
+              (prune)]
+             [(and profile
+                   (counts-as-a-missed-opt? pruned-log)
+                   (not is-a-loop?)
+                   (not really-hot-anonymous-function-inside-us?)
+                   ;; needs to have enough failures to report
+                   (< (group-badness pruned-log) 6))
+              (prune)]
+             [(and profile-entry (not (null? key-sites)))
               ;; Inlining was not satisfactory for some call sites where we
               ;; accounted for a good portion of the caller's total time.
               (emit-near-miss
