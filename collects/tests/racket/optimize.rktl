@@ -1447,6 +1447,63 @@
   (test-bin 'eq?)
   (test-bin 'eqv?))
 
+(let ([test-use-unsafe
+       (lambda (pred op unsafe-op)
+         (test-comp `(module m racket/base
+                       (require racket/unsafe/ops)
+                       (define (f x)
+                         (if (,pred x)
+                             (,op x)
+                             (cdr x))))
+                    `(module m racket/base
+                       (require racket/unsafe/ops)
+                       (define (f x)
+                         (if (,pred x)
+                             (,unsafe-op x)
+                             (cdr x)))))
+         (test-comp `(module m racket/base
+                       (require racket/unsafe/ops)
+                       (define (f x)
+                         (list (,op x) (,op x))))
+                    `(module m racket/base
+                       (require racket/unsafe/ops)
+                       (define (f x)
+                         (list (,op x) (,unsafe-op x)))))
+         (test-comp `(module m racket/base
+                       (require racket/unsafe/ops)
+                       (define (f x)
+                         (if (and (,pred x)
+                                  (zero? (random 2)))
+                             (,op x)
+                             (cdr x))))
+                    `(module m racket/base
+                       (require racket/unsafe/ops)
+                       (define (f x)
+                         (if (and (,pred x)
+                                  (zero? (random 2)))
+                             (,unsafe-op x)
+                             (cdr x))))))])
+  (test-use-unsafe 'pair? 'car 'unsafe-car)
+  (test-use-unsafe 'pair? 'cdr 'unsafe-cdr)
+  (test-use-unsafe 'mpair? 'mcar 'unsafe-mcar)
+  (test-use-unsafe 'mpair? 'mcdr 'unsafe-mcdr)
+  (test-use-unsafe 'box? 'unbox 'unsafe-unbox))
+
+(test-comp `(module m racket/base
+              (require racket/unsafe/ops)
+              (define (f x)
+                (thread (lambda () (set! x 5)))
+                (if (pair? x)
+                    (car x)
+                    (cdr x))))
+           `(module m racket/base
+              (require racket/unsafe/ops)
+              (define (f x)
+                (thread (lambda () (set! x 5)))
+                (if (pair? x)
+                    (unsafe-car x)
+                    (cdr x))))
+           #f)
 
 ;; + fold to fixnum overflow, fx+ doesn't
 (test-comp `(module m racket/base

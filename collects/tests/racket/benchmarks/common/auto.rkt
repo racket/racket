@@ -353,6 +353,10 @@ exec racket -qu "$0" ${1+"$@"}
                                sort1))
   (define racket-specific-progs '(nucleic3 ray))
 
+  ;; could put `mutable-pair-progs' on next line, but they're
+  ;; run as R5RS-module program
+  (define racket-skip-progs null)
+
   (define impls
     (list
      (make-impl 'racket
@@ -362,7 +366,7 @@ exec racket -qu "$0" ${1+"$@"}
                   (system (format "racket -u ~a.rkt" bm)))
                 extract-racket-times
                 clean-up-zo
-                mutable-pair-progs)
+                racket-skip-progs)
      (make-impl 'mz-old
                 void
                 mk-mz-old
@@ -370,7 +374,7 @@ exec racket -qu "$0" ${1+"$@"}
                   (system (format "mz-old -u ~a.rkt" bm)))
                 extract-racket-times
                 clean-up-zo
-                mutable-pair-progs)
+                racket-skip-progs)
      (make-impl 'racketcgc
                 void
                 mk-racket
@@ -378,7 +382,7 @@ exec racket -qu "$0" ${1+"$@"}
                   (system (format "racketcgc -u ~a.rkt" bm)))
                 extract-racket-times
                 clean-up-zo
-                mutable-pair-progs)
+                racket-skip-progs)
      (make-impl 'racket3m
                 void
                 mk-racket
@@ -386,7 +390,7 @@ exec racket -qu "$0" ${1+"$@"}
                   (system (format "racket3m -u ~a.rkt" bm)))
                 extract-racket-times
                 clean-up-zo
-                mutable-pair-progs)
+                racket-skip-progs)
      (make-impl 'plt-r5rs
                 void
                 mk-plt-r5rs
@@ -405,7 +409,7 @@ exec racket -qu "$0" ${1+"$@"}
                 extract-racket-times
                 clean-up-extension
                 (append '(takr takr2)
-                        mutable-pair-progs))
+                        racket-skip-progs))
      (make-impl 'racket-j
                 void
                 mk-racket
@@ -413,7 +417,7 @@ exec racket -qu "$0" ${1+"$@"}
                   (system (format "racket -jqu ~a.rkt" bm)))
                 extract-racket-times
                 clean-up-zo
-                mutable-pair-progs)
+                racket-skip-progs)
      (make-impl 'racketcgc-j
                 void
                 mk-racket
@@ -421,7 +425,7 @@ exec racket -qu "$0" ${1+"$@"}
                   (system (format "racketcgc -jqu ~a.rkt" bm)))
                 extract-racket-times
                 clean-up-zo
-                mutable-pair-progs)
+                racket-skip-progs)
      (make-impl 'racketcgc-tl
                 void
                 mk-racket-tl
@@ -430,7 +434,7 @@ exec racket -qu "$0" ${1+"$@"}
                 extract-racket-times
                 clean-up-zo
                 (append '(nucleic2)
-                        mutable-pair-progs))
+                        racket-skip-progs))
      (make-impl 'typed-racket-non-optimizing
                 void
                 mk-typed-racket-non-optimizing

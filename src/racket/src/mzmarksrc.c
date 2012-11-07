@@ -1310,6 +1310,7 @@ mark_optimize_info {
   gcMARK2(i->transitive_use_len, gc);
   gcMARK2(i->context, gc);
   gcMARK2(i->logger, gc);
+  gcMARK2(i->types, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Optimize_Info));

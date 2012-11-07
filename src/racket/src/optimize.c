@@ -74,6 +74,7 @@ struct Optimize_Info
 
   Scheme_Object *context; /* for logging */
   Scheme_Logger *logger;
+  Scheme_Hash_Tree *types; /* maps position (from this frame) to predicate */
 };
 
 static char *get_closure_flonum_map(Scheme_Closure_Data *data, int arg_n, int *ok);
@@ -91,6 +92,8 @@ static Scheme_Object *optimize_info_lookup(Optimize_Info *info, int pos, int *cl
                                            int once_used_ok, int context, int *potential_size, int *_mutated);
 static Scheme_Object *optimize_info_mutated_lookup(Optimize_Info *info, int pos, int *is_mutated);
 static void optimize_info_used_top(Optimize_Info *info);
+static Scheme_Object *optimize_get_predicate(int pos, Optimize_Info *info);
+static void add_type(Optimize_Info *info, int pos, Scheme_Object *pred);
 
 static void optimize_mutated(Optimize_Info *info, int pos);
 static void optimize_produces_flonum(Optimize_Info *info, int pos);
@@ -2251,6 +2254,28 @@ static Scheme_Object *lookup_constant_proc(Optimize_Info *info, Scheme_Object *r
   return NULL;
 }
 
+static void check_known2(Optimize_Info *info, Scheme_App2_Rec *app, const char *who, 
+                         Scheme_Object *expect_pred, Scheme_Object *unsafe)
+/* Replace the rator with an unsafe version if we know that it's ok. Alternatively,
+   the rator implies a check, so add type information for subsequent expressions. */
+{
+  if (IS_NAMED_PRIM(app->rator, who)) {
+    if (SAME_TYPE(SCHEME_TYPE(app->rand), scheme_local_type)) {
+      Scheme_Object *pred;
+      int pos = SCHEME_LOCAL_POS(app->rand);
+      
+      if (optimize_is_mutated(info, pos))
+        return;
+      
+      pred = optimize_get_predicate(pos, info);
+      if (pred && SAME_OBJ(pred, expect_pred))
+        app->rator = unsafe;
+      else
+        add_type(info, pos, expect_pred);
+    }
+  }
+}
+
 static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *info, int context)
 {
   Scheme_App2_Rec *app;
@@ -2413,6 +2438,14 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
           }
         }
       }
+    } else {
+      check_known2(info, app, "car", scheme_pair_p_proc, scheme_unsafe_car_proc);
+      check_known2(info, app, "cdr", scheme_pair_p_proc, scheme_unsafe_cdr_proc);
+      check_known2(info, app, "mcar", scheme_mpair_p_proc, scheme_unsafe_mcar_proc);
+      check_known2(info, app, "mcdr", scheme_mpair_p_proc, scheme_unsafe_mcdr_proc);
+      /* It's not clear that these are useful, since a chaperone check is needed anyway: */
+      check_known2(info, app, "unbox", scheme_box_p_proc, scheme_unsafe_unbox_proc);
+      check_known2(info, app, "vector-length", scheme_vector_p_proc, scheme_unsafe_vector_length_proc);
     }
 
     if (alt) {
@@ -2849,10 +2882,55 @@ static int equivalent_exprs(Scheme_Object *a, Scheme_Object *b)
   return 0;
 }
 
+static void add_type(Optimize_Info *info, int pos, Scheme_Object *pred)
+{
+  Scheme_Hash_Tree *new_types;
+  new_types = info->types;
+  if (!new_types)
+    new_types = scheme_make_hash_tree(0);
+  new_types = scheme_hash_tree_set(new_types,
+                                   scheme_make_integer(pos),
+                                   pred);
+  info->types = new_types;
+}
+
+static int relevant_predicate(Scheme_Object *pred)
+{
+  return (SAME_OBJ(pred, scheme_pair_p_proc)
+          || SAME_OBJ(pred, scheme_mpair_p_proc)
+          || SAME_OBJ(pred, scheme_box_p_proc)
+          || SAME_OBJ(pred, scheme_vector_p_proc));
+}
+
+static void add_types(Scheme_Object *t, Optimize_Info *info, int fuel)
+{
+  if (fuel < 0)
+    return;
+
+  if (SAME_TYPE(SCHEME_TYPE(t), scheme_application2_type)) {
+    Scheme_App2_Rec *app = (Scheme_App2_Rec *)t;
+    if (SCHEME_PRIMP(app->rator)
+        && SAME_TYPE(SCHEME_TYPE(app->rand), scheme_local_type)
+        && relevant_predicate(app->rator)) {
+      /* Looks like a predicate on a local variable. Record that the
+         predicate succeeded, which may allow conversion of safe
+         operations to unsafe operations. */
+      add_type(info, SCHEME_LOCAL_POS(app->rand), app->rator);
+    }
+  } else if (SAME_TYPE(SCHEME_TYPE(t), scheme_branch_type)) {
+    Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)t;
+    if (SCHEME_FALSEP(b->fbranch)) {
+      add_types(b->test, info, fuel-1);
+      add_types(b->tbranch, info, fuel-1);
+    }
+  }
+}
+
 static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int context)
 {
   Scheme_Branch_Rec *b;
   Scheme_Object *t, *tb, *fb;
+  Scheme_Hash_Tree *old_types;
   int preserves_marks = 1, single_result = 1;
 
   b = (Scheme_Branch_Rec *)o;
@@ -2907,6 +2985,9 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
     return scheme_optimize_expr(tb, info, scheme_optimize_tail_context(context));
   }
 
+  old_types = info->types;
+  add_types(t, info, 5);
+
   tb = scheme_optimize_expr(tb, info, scheme_optimize_tail_context(context));
 
   if (!info->preserves_marks)
@@ -2917,6 +2998,8 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
     single_result = 0;
   else if (info->single_result < 0)
     single_result = -1;
+
+  info->types = old_types;
 
   fb = scheme_optimize_expr(fb, info, scheme_optimize_tail_context(context));
 
@@ -6347,7 +6430,7 @@ static int optimize_is_used(Optimize_Info *info, int pos)
 static int check_use(Optimize_Info *info, int pos, int flag)
 /* pos is in new-frame counts */
 {
-  while (1) {
+  while (info) {
     if (pos < info->new_frame)
       break;
     pos -= info->new_frame;
@@ -6554,6 +6637,25 @@ static int optimize_info_is_ready(Optimize_Info *info, int pos)
 static Scheme_Object *optimize_info_mutated_lookup(Optimize_Info *info, int pos, int *is_mutated)
 {
   return do_optimize_info_lookup(info, pos, 0, NULL, NULL, NULL, 0, 0, NULL, 0, is_mutated, 1);
+}
+
+Scheme_Object *optimize_get_predicate(int pos, Optimize_Info *info)
+{
+  Scheme_Object *pred;
+
+  while (info) {
+    if (info->types) {
+      pred = scheme_hash_tree_get(info->types, scheme_make_integer(pos));
+      if (pred)
+        return pred;
+    }
+    pos -= info->new_frame;
+    if (pos < 0)
+      return NULL;
+      info = info->next;
+  }
+
+  return NULL;
 }
 
 static Optimize_Info *optimize_info_add_frame(Optimize_Info *info, int orig, int current, int flags)
