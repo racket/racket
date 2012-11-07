@@ -120,60 +120,61 @@
  [write-xexpr (->* (xexpr/c) (output-port?) void)] )
 
 (define (write-xexpr x [out (current-output-port)])
-  (cond
-    ; Element
-    [(cons? x)
-     (define name (car x))
-     (define-values (attrs content)
-       (if (and (pair? (cdr x))
-                (or (null? (cadr x))
-                    (and (pair? (cadr x)) (pair? (caadr x)))))
-           (values (cadr x) (cddr x))
-           (values null (cdr x))))
-     ; Write opening tag
-     (display "<" out)
-     (display name out)
-     ; Write attributes
-     (for ([att (in-list attrs)])
-       (display " " out)
-       (display (car att) out)
-       (display "=" out)
-       (display "\"" out)
-       (display (escape (cadr att) escape-attribute-table) out)
-       (display "\"" out))
-     ; Write end of opening tag
-     (if (and (null? content)
-              (let ([short (empty-tag-shorthand)])
-                (case short
-                  [(always) #t]
-                  [(never) #f]
-                  [else (memq (lowercase-symbol name) short)])))
-         (display " />" out)
-         (begin
-           (display ">" out)
-           ; Write body
-           (for ([xe (in-list content)])
-             (write-xexpr xe out))
-           ; Write closing tag
-           (display "</" out)
-           (display name out)
-           (display ">" out)))]
-    ; PCData
-    [(string? x)
-     (display (escape x escape-table) out)]
-    ; Entities
-    [(symbol? x)
-     (display "&" out)
-     (display x out)
-     (display ";" out)]
-    [(valid-char? x)
-     (display "&#" out)
-     (display x out)
-     (display ";" out)]
-    ; Embedded XML
-    [(cdata? x)
-     (write-xml-cdata x 0 void out)]
-    [(comment? x)
-     (write-xml-comment x 0 void out)]
-    [(p-i? x)
-     (write-xml-p-i x 0 void out)]))
+  (let loop ([x x])
+    (cond
+      ; Element
+      [(cons? x)
+       (define name (car x))
+       (define-values (attrs content)
+         (if (and (pair? (cdr x))
+                  (or (null? (cadr x))
+                      (and (pair? (cadr x)) (pair? (caadr x)))))
+             (values (cadr x) (cddr x))
+             (values null (cdr x))))
+       ; Write opening tag
+       (display "<" out)
+       (display name out)
+       ; Write attributes
+       (for ([att (in-list attrs)])
+         (display " " out)
+         (display (car att) out)
+         (display "=" out)
+         (display "\"" out)
+         (display (escape (cadr att) escape-attribute-table) out)
+         (display "\"" out))
+       ; Write end of opening tag
+       (if (and (null? content)
+                (let ([short (empty-tag-shorthand)])
+                  (case short
+                    [(always) #t]
+                    [(never) #f]
+                    [else (memq (lowercase-symbol name) short)])))
+           (display " />" out)
+           (begin
+             (display ">" out)
+             ; Write body
+             (for ([xe (in-list content)])
+               (loop xe))
+             ; Write closing tag
+             (display "</" out)
+             (display name out)
+             (display ">" out)))]
+      ; PCData
+      [(string? x)
+       (display (escape x escape-table) out)]
+      ; Entities
+      [(symbol? x)
+       (display "&" out)
+       (display x out)
+       (display ";" out)]
+      [(valid-char? x)
+       (display "&#" out)
+       (display x out)
+       (display ";" out)]
+      ; Embedded XML
+      [(cdata? x)
+       (write-xml-cdata x 0 void out)]
+      [(comment? x)
+       (write-xml-comment x 0 void out)]
+      [(p-i? x)
+       (write-xml-p-i x 0 void out)])))
