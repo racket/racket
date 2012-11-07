@@ -2021,6 +2021,7 @@
 [call-with-continuation-prompt
  (-polydots (a b d c)
    (cl->*
+    (-> (-> b) (make-Prompt-Tag b (-> (-> d) d)) (Un b d))
     (-> (-> b) (make-Prompt-Tag b (->... '() (c c) d)) (->... '() (c c) d)
         (Un b d))
     (-> (-> b) Univ)))]

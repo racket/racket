@@ -20,3 +20,12 @@
              pt2)))
  pt2
  (λ: ([f : (Integer -> Integer)]) (f 5)))
+
+;; Test the default handler
+(: pt3 (Prompt-Tag Integer ((-> Integer) -> Integer)))
+(define pt3 (make-continuation-prompt-tag))
+
+(+ 2
+   (call-with-continuation-prompt
+    (λ () (+ 1 (abort-current-continuation pt3 (λ () 5))))
+    pt3))
