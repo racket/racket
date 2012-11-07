@@ -6,7 +6,8 @@
 (provide flsplit
          fast-mono-fl+/error fast-fl+/error fl+/error
          fast-mono-fl-/error fast-fl-/error fl-/error
-         fast-fl*/error fl*/error)
+         fast-fl*/error fl*/error
+         fast-fl//error)
 
 ;(: flsplit (Flonum -> (Values Flonum Flonum)))
 ;; Splits a flonum into a two flonums `hi' and `lo' with 26 bits precision each, such that
@@ -62,6 +63,14 @@
                                (fl* a-lo b-hi))
                           (fl* a-hi b-lo)))))))
 
+;(: fast-fl//error (Flonum Flonum -> (Values Flonum Flonum)))
+;; Returns a/b and its rounding error
+(define-syntax-rule (fast-fl//error a-expr b-expr)
+  (let ([a a-expr] [b b-expr])
+    (define q-hi (fl/ a b))
+    (define-values (q0 q1) (fast-fl*/error q-hi b))
+    (values q-hi (fl/ (fl+ (- q1) (fl- a q0)) b))))
+  
 #;; If we had a fused multiply-add:
 (define (fast-fl*/error a b)
   (let ([p  (* a b)])

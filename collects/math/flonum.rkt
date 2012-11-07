@@ -9,6 +9,7 @@
          "private/flonum/flonum-log.rkt"
          "private/flonum/flonum-sum.rkt"
          "private/flonum/flonum-more-functions.rkt"
+         "private/flonum/flonum-factorial.rkt"
          "private/flonum/flonum-log1pmx.rkt"
          "private/flonum/flonum-polyfun.rkt"
          "private/flonum/flonum-syntax.rkt")
@@ -22,6 +23,7 @@
           "private/flonum/flonum-log.rkt"
           "private/flonum/flonum-sum.rkt"
           "private/flonum/flonum-more-functions.rkt"
+          "private/flonum/flonum-factorial.rkt"
           "private/flonum/flonum-log1pmx.rkt"
           "private/flonum/flonum-polyfun.rkt"
           "private/flonum/flonum-syntax.rkt")

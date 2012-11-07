@@ -6,8 +6,8 @@
 (require "../../../flonum.rkt"
          "../../../base.rkt"
          "../../functions/gamma.rkt"
-         "../../functions/gammastar.rkt"
          "../../functions/log-gamma.rkt"
+         "../../functions/stirling-error.rkt"
          "../normal-dist.rkt")
 
 (provide flpoisson-pdf flpoisson-log-pdf)
@@ -56,30 +56,30 @@
         [(and (l . fl< . 700.0) (k . fl> . 1.0) (k . fl< . 100.0))
          (fl/ (fl/ (fl* (flexpt l k) (flexp (- l))) (flgamma k)) k)]
         [(k . fl<= . 1.0)
-         ;; Using gamma* works great here
-         (define-values (l-k-hi l-k-lo) (fast-fl-/error l k))
-         (fl/ (* (flexp (- l-k-hi))
+         ;; Using Stirling error works great here
+         (define-values (l-k l-k-lo) (fast-fl-/error l k))
+         (fl/ (* (flexp (- l-k))
                  (flexpt l k)
                  (flexpt k (- k))
                  (flexp (- l-k-lo))
                  (/ 1.0 (flsqrt (fl* 2.0 pi))))
-              (fl* (flgamma* k) (flsqrt k)))]
+              (fl* (flexp-stirling k) (flsqrt k)))]
         ;; When l > 1e21, the normal approximation has *lower* relative error than the algorithm
         ;; below. It *does not* have *low* relative error! It's about 2e9...
         ;; The normal approximation is perfect starting around 4.2e34, which is incidentally the
         ;; same time that 48 standard deviations from `l' becomes its floating-point neighbor.
         [(l . fl>= . 1e21)  (flnormal-pdf l (flsqrt l) k #f)]
         [else
-         (define-values (l-k-hi l-k-lo) (fast-fl-/error l k))
-         (define l/k (assert (/ (inexact->exact l) (inexact->exact k)) positive?))
+         (define-values (l-k l-k-lo) (fast-fl-/error l k))
+         (define-values (l/k l/k-lo) (fast-fl//error l k))
          (define div (get-div l k))
          (define y
-           (fl* (flexpt (fl* ((make-flexp/base l/k) (fl/ k div))
-                             (flexp (fl/ (- l-k-hi) div)))
+           (fl* (flexpt (fl* (flexpt+ l/k l/k-lo (fl/ k div))
+                             (flexp (fl/ (- l-k) div)))
                         div)
                 (flexp (- l-k-lo))))
          (fl/ (fl* y (fl/ 1.0 (flsqrt (fl* 2.0 pi))))
-              (fl* (flgamma* k) (flsqrt k)))]))
+              (fl* (flexp-stirling k) (flsqrt k)))]))
 
 (: fllog-gamma1p-taylor-0 (Flonum -> Flonum))
 ;; Good for k < 0.005
@@ -122,10 +122,10 @@
          (- (fl* k (fl+ 1.0 (fllog (fl/ l k)))) (fllog k) l)]
         [else
          ;; Log version of the above; relative error here also climbs with distance from 0
-         (define-values (l-k-hi l-k-lo) (fast-fl-/error l k))
-         (define l/k (assert (/ (inexact->exact l) (inexact->exact k)) positive?))
+         (define-values (l-k l-k-lo) (fast-fl-/error l k))
+         (define-values (l/k l/k-lo) (fast-fl//error l k))
          (define div (get-div l k))
-         (- (fl* div (fllog (fl* ((make-flexp/base l/k) (fl/ k div))
-                                 (flexp (fl/ (- l-k-hi) div)))))
-            (fllog-gamma* k)
+         (- (fl* div (fllog (fl* (flexpt+ l/k l/k-lo (fl/ k div))
+                                 (flexp (fl/ (- l-k) div)))))
+            (flstirling k)
             (fllog (* (flsqrt k) (flsqrt (fl* 2.0 pi)) (flexp l-k-lo))))]))

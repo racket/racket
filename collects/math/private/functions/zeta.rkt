@@ -13,7 +13,7 @@ P. Borwein. An Efficient Algorithm for the Riemann Zeta Function.
          "../number-theory/bernoulli.rkt"
          "../polynomial/chebyshev.rkt"
          "gamma.rkt"
-         "gammastar.rkt")
+         "stirling-error.rkt")
 
 (provide fleta flzeta
          eta zeta)
@@ -126,7 +126,7 @@ P. Borwein. An Efficient Algorithm for the Riemann Zeta Function.
                [(s . fl< . -171.0)
                 (define f (make-flexp/base (/ (* euler.64 pi.64) (inexact->exact (- s)))))
                 (* (/ 4.0 pi)
-                   (flgamma* (- s))
+                   (flexp-stirling (- s))
                    (flsqrt (/ pi (* -0.5 s)))
                    (f (* 0.5 s))
                    (* s 0.5 (flsinpix (* s 0.5)))
@@ -162,7 +162,7 @@ P. Borwein. An Efficient Algorithm for the Riemann Zeta Function.
         [(and (s . fl> . -266.5) (s . fl< . 0.0))  ; s < 0 keeps TR happy
          (define f (make-flexp/base (/ (* euler.64 pi.64) (inexact->exact (- s)))))
          (* (/ 4.0 pi)
-            (flgamma* (- s))
+            (flexp-stirling (- s))
             (flsqrt (/ pi (* -0.5 s)))
             (f (* 0.5 s))
             (* s 0.5 (flsinpix (* s 0.5)))

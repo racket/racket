@@ -28,8 +28,8 @@ This implementation extends those in the papers in three ways:
          "../distributions/impl/normal-cdf.rkt"
          "continued-fraction.rkt"
          "gamma.rkt"
-         "gammastar.rkt"
-         "log-gamma.rkt")
+         "log-gamma.rkt"
+         "stirling-error.rkt")
 
 (provide fllog-gamma-inc
          flgamma-inc
@@ -348,7 +348,7 @@ This implementation extends those in the papers in three ways:
 (: R (Float Float -> Float))
 (define (R k n)
   (fl/ (fl* (R-sum k n) (flexp (fl* (fl* (fl* -0.5 k) n) n)))
-       (fl* (flsqrt (fl* (fl* 2.0 pi) k)) (flgamma* k))))
+       (fl* (flsqrt (fl* (fl* 2.0 pi) k)) (flexp-stirling k))))
 
 (: R-log (Float Float -> (Values Float Float)))
 ;; Log-space version of `R' above
@@ -358,7 +358,7 @@ This implementation extends those in the papers in three ways:
    (fl- (fl- (fl- (fl+ (fllog (abs sum)) (fl* (fl* (fl* -0.5 k) n) n))
                   (fl* 0.5 (fllog k)))
              (fl* 0.5 (fllog (fl* 2.0 pi))))
-        (fllog-gamma* k))
+        (flstirling k))
    (flsgn sum)))
 
 (: flgamma-regularized-temme (Float Float Any -> Float))

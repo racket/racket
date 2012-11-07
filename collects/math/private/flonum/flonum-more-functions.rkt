@@ -1,14 +1,16 @@
 #lang typed/racket/base
 
-(require "flonum-functions.rkt"
+(require racket/performance-hint
+         "flonum-functions.rkt"
          "flonum-constants.rkt"
          "flonum-exp.rkt"
-         "flonum-log.rkt")
+         "flonum-log.rkt"
+         "flonum-syntax.rkt")
 
 (provide flsqrt1pm1
          flsinh flcosh fltanh
          flasinh flacosh flatanh
-         make-flexp/base)
+         make-flexp/base flexpt+ flexpt1p)
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; sqrt(1+x)-1
@@ -23,97 +25,74 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; Hyperbolic sine
 
-#|
-sinh(x) = (exp(x) - exp(-x)) / 2
-        = (exp(2*x) - 1) / (2*exp(x))
-        = -i * sin(i*x)
-
-Domain                      Computation
-
--max.0 <= x <= 0            sinh(x) = -sinh(-x)
-0 <= x <= 2^-26             sinh(x) ~ x
-2^-26 <= x <= 18.5          sinh(x) = (exp(2*x) - 1) / (2*exp(x))
-18.5 <= x <= log(+max.0)    sinh(x) ~ exp(x) / 2
-log(+max) <= x <= +max.0    sinh(x) ~ exp(x) / 2 = (exp(x/2) / 2) * exp(x/2)
-|#
-
 (: flsinh (Float -> Float))
 (define (flsinh x)
-  (cond [(x . fl< . 0.0)  (- (flsinh (- x)))]
-        [(x . fl< . (flexpt 2.0 -26.0))  x]
+  (cond [(x . fl< . 0.0)
+         ;; Odd function
+         (- (flsinh (- x)))]
+        [(x . fl< . (flexpt 2.0 -26.0))
+         ;; sinh(x) ~ x
+         x]
         [(x . fl< . 18.5)
+         ;; sinh(x) = (exp(2*x) - 1) / (2*exp(x))
          (define y (flexpm1 x))
          (fl* 0.5 (fl+ y (fl/ y (fl+ y 1.0))))]
         [(x . fl< . (fllog +max.0))
+         ;; sinh(x) ~ exp(x) / 2
          (fl* 0.5 (flexp x))]
         [else
+         ;; sinh(x) ~ exp(x) / 2 = (exp(x/2) / 2) * exp(x/2)
          (define y (flexp (fl* 0.5 x)))
          (fl* (fl* 0.5 y) y)]))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Hyperbolic cosine
 
-#|
-cosh(x) = (exp(x) + exp(-x)) / 2
-        = (exp(2*x) + 1) / (2*exp(x))
-        = cos(i*x)
-
-Domain                        Computation
-
--max.0 <= x <= 0              cosh(x) = cosh(-x)
-0 <= x <= 2^-26               cosh(x) ~ 1
-2^-26 <= x <= log(2)/2        cosh(x) = 1 + (exp(x) - 1)^2 / (2*exp(x))
-log(2)/2 <= x <= 18.5         cosh(x) = (exp(x) + 1/exp(x)) / 2
-18.5 <= x <= log(+max.0)      cosh(x) ~ exp(x) / 2
-log(+max.0) <= x <= +max.0    cosh(x) ~ exp(x) / 2 = (exp(x/2) / 2) * exp(x/2)
-|#
-
 (: flcosh (Float -> Float))
 (define (flcosh x)
+  ;; cosh(x) = cosh(-x)
   (let ([x  (flabs x)])
-    (cond [(x . fl< . (flexpt 2.0 -26.0))  1.0]
+    (cond [(x . fl< . (flexpt 2.0 -26.0))
+           ;; cosh(x) ~ 1
+           1.0]
           [(x . fl< . (fl* 0.5 (fllog 2.0)))
+           ;; cosh(x) = 1 + (exp(x) - 1)^2 / (2*exp(x))
            (define y (flexpm1 x))
            (fl+ 1.0 (fl/ (fl* y y) (fl* 2.0 (fl+ 1.0 y))))]
-         [(x . fl< . 18.5)
+          [(x . fl< . 18.5)
+           ;; cosh(x) = (exp(x) + 1/exp(x)) / 2
            (define y (flexp x))
            (fl+ (fl* 0.5 y) (fl/ 0.5 y))]
-         [(x . fl< . (fllog +max.0))
-          (fl* 0.5 (flexp x))]
-         [else
-          (define y (flexp (fl* 0.5 x)))
-          (fl* (fl* 0.5 y) y)])))
+          [(x . fl< . (fllog +max.0))
+           ;; cosh(x) ~ exp(x) / 2
+           (fl* 0.5 (flexp x))]
+          [else
+           ;; cosh(x) ~ exp(x) / 2 = (exp(x/2) / 2) * exp(x/2)
+           (define y (flexp (fl* 0.5 x)))
+           (fl* (fl* 0.5 y) y)])))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Hyperbolic tangent
 
-#|
-tanh(x) = sinh(x) / cosh(x)
-        = (exp(x) - exp(-x)) / (exp(x) + exp(-x))
-        = (exp(2*x) - 1) / (exp(2*x) + 1)
-        = -i * tan(i*x)
-
-Domain               Computation
-
--max.0 <= x <= 0     tanh(x) = -tanh(-x)
-0 <= x <= 1e-16      tanh(x) ~ x + x^2
-1e-16 <= x <= 0.5    tanh(x) = (exp(2*x) - 1) / (exp(2*x) + 1)
-0.5 <= x <= 19.5     tanh(x) = (exp(2*x) - 1) / (exp(2*x) + 1)
-19.5 <= x <= +max.0  tanh(x) ~ 1
-|#
-
 (: fltanh (Float -> Float))
 (define (fltanh x)
-  (cond [(x . fl< . 0.0)  (- (fltanh (- x)))]
+  (cond [(x . fl< . 0.0)
+         ;; tanh(x) = -tanh(-x)
+         (- (fltanh (- x)))]
         [(x . fl< . 1e-16)
+         ;; tanh(x) ~ x + x^2
          (fl* x (fl+ 1.0 x))]
         [(x . fl< . 0.5)
+         ;; tanh(x) = (exp(2*x) - 1) / (exp(2*x) + 1)
          (define y (flexpm1 (fl* -2.0 x)))
          (- (fl/ y (fl+ 2.0 y)))]
         [(x . fl< . 19.5)
+         ;; tanh(x) = (exp(2*x) - 1) / (exp(2*x) + 1)
          (define y (flexp (fl* 2.0 x)))
          (fl/ (fl- y 1.0) (fl+ y 1.0))]
-        [(x . fl<= . +inf.0)  1.0]
+        [(x . fl<= . +inf.0)
+         ;; tanh(x) ~ 1
+         1.0]
         [else  +nan.0]))
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -179,14 +158,32 @@ Domain               Computation
         [else  +nan.0]))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; Exponential with possibly rational base
+;; Exponential with high-precision bases
 
-(: make-flexp/base (Positive-Exact-Rational -> (Flonum -> Flonum)))
-(define (make-flexp/base b)
-  (define b-hi (fl b))
-  (define b-lo (fl (- (/ (inexact->exact b-hi) b) 1)))
-  (cond [(fl= b-lo 0.0)  (λ: ([x : Flonum]) (flexpt b-hi x))]
-        [else
-         (λ: ([x : Flonum])
-           (fl/ (flexpt b-hi x)
-                (flexp (fl* x (fllog1p b-lo)))))]))
+(begin-encourage-inline
+  
+  (: make-flexp/base (Positive-Exact-Rational -> (Flonum -> Flonum)))
+  (define (make-flexp/base b)
+    (define b-hi (fl b))
+    (define b-lo (fl (- (/ (inexact->exact b-hi) b) 1)))
+    (cond [(fl= b-lo 0.0)  (λ: ([x : Flonum]) (flexpt b-hi x))]
+          [else
+           (λ: ([x : Flonum])
+             (fl/ (flexpt b-hi x)
+                  (flexp (fl* x (fllog1p b-lo)))))]))
+
+  (: flexpt+ (Flonum Flonum Flonum -> Flonum))
+  (define (flexpt+ a b y)
+    (define-values (x-hi x-lo) (fast-fl+/error a b))
+    (fl/ (flexpt x-hi y)
+         (flexp (fl* y (fllog1p (- (/ x-lo x-hi)))))))
+  
+  (: flexpt1p (Flonum Flonum -> Flonum))
+  (define (flexpt1p x y)
+    (cond [(and (x . > . -0.5) (x . < . +inf.0))
+           (define-values (a-hi a-lo) (fast-fl+/error 1.0 x))
+           (fl/ (flexpt a-hi y)
+                (flexp (fl* y (fllog1p (- (/ a-lo a-hi))))))]
+          [else  (flexpt (+ 1.0 x) y)]))
+  
+  )  ; begin-encourage-inline

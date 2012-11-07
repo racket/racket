@@ -6,8 +6,7 @@
          "log-gamma-zeros.rkt"
          "gamma.rkt")
 
-(provide fllog-gamma log-gamma
-         +fllog-gamma-max.0)
+(provide fllog-gamma log-gamma)
 
 (define +fllog-gamma-max.0 2.5563481638716906e+305)
 
@@ -345,7 +344,7 @@
 (: fllog-gamma-integer (Float -> Float))
 (define (fllog-gamma-integer x)
   (cond [(x . fl<= . 0.0)  +inf.0]
-        [else  (fllog-factorial (- (exact-truncate x) 1))]))
+        [else  (fllog-factorial (fl- x 1.0))]))
 
 (: fllog-gamma-large-negative (Float -> Float))
 (define (fllog-gamma-large-negative x)
@@ -409,5 +408,5 @@
          (cond [(x . <= . 0)
                 (raise-argument-error 'log-gamma "Real, not Zero or Negative-Integer" x)]
                [(eqv? x 1)  0]
-               [else  (fllog-factorial (- x 1))])]
+               [else  (fllog-factorial (fl (- x 1)))])]
         [else  (fllog-gamma (fl x))]))
