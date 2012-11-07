@@ -11,6 +11,6 @@
     (let ([exports (syntax-local-module-exports (syntax->datum #'module-name))])
       #`(quote #,(cdaddr exports)))]))
 
-(test (exports-of 'ex)
+(test (sort (exports-of 'ex) string-ci<? #:key symbol->string)
       =>
-      '(Type set-Variant-field! make-Variant Variant? Variant-field Variant Type?))
+      '(make-Variant set-Variant-field! Type Type? Variant Variant-field Variant?))
