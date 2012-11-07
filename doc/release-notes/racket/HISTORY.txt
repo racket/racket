@@ -1,3 +1,6 @@
+Version 5.3.1.5
+racket/gui: added get-current-mouse-state
+
 Version 5.3.1.2
 compiler/zo-structs: added a constantness field to module-variable
 

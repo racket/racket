@@ -43,6 +43,7 @@
   get-highlight-text-color
   check-for-break)
  flush-display
+ get-current-mouse-state
  fill-private-color
  play-sound
  location->window
@@ -116,3 +117,26 @@
 (define (check-for-break) #f)
 
 (define (needs-grow-box-spacer?) #f)
+
+(define-user32 GetCursorPos (_wfun (p : (_ptr o _POINT)) -> (r : _BOOL)
+                                   -> (if r
+                                          p
+                                          (failed 'GetCursorPos))))
+(define-user32 GetAsyncKeyState (_wfun _int -> _SHORT))
+(define-user32 GetSystemMetrics (_wfun _int -> _int))
+(define SM_SWAPBUTTON 23)
+(define (get-current-mouse-state)
+  (define p (GetCursorPos))
+  (define (maybe vk sym)
+    (if (negative? (GetAsyncKeyState vk))
+        (list sym)
+        null))
+  (define swapped? (not (zero? (GetSystemMetrics SM_SWAPBUTTON))))
+  (values (make-object point% (POINT-x p) (POINT-y p))
+          (append
+           (maybe (if swapped? VK_RBUTTON VK_LBUTTON) 'left)
+           (maybe (if swapped? VK_LBUTTON VK_RBUTTON) 'right)
+           (maybe VK_LSHIFT 'shift)
+           (maybe VK_CONTROL 'control)
+           (maybe VK_MENU 'alt)
+           (maybe VK_CAPITAL 'caps))))

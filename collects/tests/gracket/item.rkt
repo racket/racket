@@ -2289,6 +2289,30 @@
 	    '(arrow bullseye cross hand ibeam watch blank size-n/s size-e/w size-ne/sw size-nw/se))
   (send f show #t))
 
+;----------------------------------------------------------------------
+
+(define (mouse)
+  (define f (new frame% 
+                 [label "Mouse"]
+                 [width 300]
+                 [height 200]))
+  (define m (new message%
+                 [parent f]
+                 [label ""]
+                 [stretchable-width #t]))
+  (send f show #t)
+  (thread (lambda ()
+            (let loop ()
+              (when (send f is-shown?)
+                (sleep 0.1)
+                (define-values (pos keys) (get-current-mouse-state))
+                (queue-callback
+                 (lambda () (send m set-label
+                                  (format "~a,~a ~a" 
+                                          (send pos get-x)
+                                          (send pos get-y)
+                                          keys))))
+                (loop))))))
 
 ;----------------------------------------------------------------------
 
@@ -2369,6 +2393,8 @@
 (make-object button% "Message Boxes" crp (lambda (b e) (message-boxes #f)))
 (make-object vertical-pane% crp) ; filler
 (make-object button% "Cursors" crp (lambda (b e) (cursors)))
+(make-object vertical-pane% crp) ; filler
+(make-object button% "Mouse" crp (lambda (b e) (mouse)))
 (make-object vertical-pane% crp) ; filler
 (make-object button% "Make Radiobox Frame" crp (lambda (b e) (radiobox-frame)))
 (define cp (make-object horizontal-pane% ap))
