@@ -16,12 +16,17 @@ This file defines two sorts of primitives. All of them are provided into any mod
    in order to protect the declarations, they are wrapped in `#%app void' so that local-expand of the module body
    will not expand them on the first pass of the macro expander (when the stop list is ignored)
 
+3. contracted versions of built-in racket values such as parameters and prompt tags
+   that are defined in "base-contracted.rkt"
+
 |#
 
 
 (provide (except-out (all-defined-out) dtsi* dtsi/exec* let-internal: define-for-variants define-for*-variants 
                      with-handlers: for/annotation for*/annotation define-for/sum:-variants base-for/flvector: base-for/vector
                      -lambda -define)
+         ;; provide the contracted bindings as primitives
+         (all-from-out "base-contracted.rkt")
          :
          (rename-out [define-typed-struct define-struct:]
                      [lambda: λ:]
@@ -37,6 +42,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
          "colon.rkt"
          "../typecheck/internal-forms.rkt"
          (rename-in racket/contract/base [-> c->] [case-> c:case->])
+         ;; contracted bindings to replace built-in ones
+         (except-in "base-contracted.rkt" initialize-contracted)
          "base-types.rkt"
          "base-types-extra.rkt"
          racket/flonum ; for for/flvector and for*/flvector

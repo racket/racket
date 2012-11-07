@@ -1,6 +1,8 @@
 #lang typed-racket/minimal
 
-(providing (libs (except racket/base #%module-begin #%top-interaction with-handlers define λ lambda define-struct for for*))
+(providing (libs (except racket/base #%module-begin #%top-interaction
+                         with-handlers default-continuation-prompt-tag
+                         define λ lambda define-struct for for*))
 	   (basics #%module-begin #%top-interaction))
 
 (require typed-racket/base-env/extra-procs
