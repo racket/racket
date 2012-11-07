@@ -1179,6 +1179,7 @@ please adhere to these guidelines:
   (racket-dialect-in-buffer-message "Racket dialects are generally chosen by editing the buffer directly, not by selecting these entries in the language dialog.")
   (racket-dialect-add-new-#lang-line "That said, shall I add “~a” to the beginning of the definitions window?")
   (racket-dialect-replace-#lang-line "That said, I see you have “~a” in your file; shall I replace it with “~a”?")
+  (racket-dialect-already-same-#lang-line "I see you already have “~a” in your file, however; so you should be all set to start programming!")
   
   ;; in the dialog containing the above strings, one of these is a button that appears
   (add-#lang-line "Add #lang line")
