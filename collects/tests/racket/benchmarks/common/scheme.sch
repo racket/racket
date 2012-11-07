@@ -1071,7 +1071,7 @@
 
 (let ((input (with-input-from-file "input.txt" read)))
   (time
-   (let loop ((n 3000) (v 0))
+   (let loop ((n 30000) (v 0))
      (if (zero? n)
          v
          (loop (- n 1) (scheme-eval (if input expr1 '(+ 1 2))))))))

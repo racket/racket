@@ -62,7 +62,7 @@
 ;;; call:  (destructive 600 50)
 
 (let ((input (with-input-from-file "input.txt" read)))
-  (time (let loop ((n 10) (v 0))
+  (time (let loop ((n 100) (v 0))
           (if (zero? n)
               'v
               (loop (- n 1)

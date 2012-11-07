@@ -612,7 +612,7 @@
 ;(go)
 ;(exit)
 
-(time (let loop ((n 10))
+(time (let loop ((n 100))
         (if (zero? n)
             'done
             (begin
