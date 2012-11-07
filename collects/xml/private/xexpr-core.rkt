@@ -11,7 +11,7 @@
   [xexpr/c contract?]
   [xexpr? (any/c . -> . boolean?)]
   [validate-xexpr (any/c . -> . (one-of/c #t))]
-  [correct-xexpr? (any/c (-> any/c) (exn:invalid-xexpr? . -> . any/c) . -> . any/c)])
+  [rename correct-xexpr/k? correct-xexpr? (any/c (-> any/c) (exn:invalid-xexpr? . -> . any/c) . -> . any/c)])
  (struct-out exn:invalid-xexpr))
 
 ;; Xexpr ::= String
@@ -31,10 +31,14 @@
         comment? p-i? cdata? pcdata?))
 
 (define (xexpr? x)
-  (correct-xexpr? x (lambda () #t) (lambda (exn) #f)))
+  (not (incorrect-xexpr? x)))
 
 (define (validate-xexpr x)
-  (correct-xexpr? x (lambda () #t) (lambda (exn) (raise exn))))
+  (define maybe-exn (incorrect-xexpr? x))
+  (if maybe-exn
+      (raise maybe-exn)
+      #t))
+
 
 (define xexpr/c 
   (make-flat-contract
@@ -59,89 +63,109 @@
 
 (define-struct (exn:invalid-xexpr exn:fail) (code))
 
-;; correct-xexpr? : any (-> a) (exn -> a) -> a
-(define (correct-xexpr? x true false)
+
+
+;; correct-xexpr/k? : any (-> a) (exn -> a) -> a
+(define (correct-xexpr/k? x true-k false-k)
+  (define maybe-exn (incorrect-xexpr? x))
+  (if maybe-exn
+      (false-k maybe-exn)
+      (true-k)))
+
+
+;; incorrect-xexpr?: any -> (or/c #f exn:invalid-xexpr)
+(define (incorrect-xexpr? x)
   (cond
-    ((string? x) (true))
-    ((symbol? x) (true))
-    ((valid-char? x) (true))
-    ((comment? x) (true))
-    ((p-i? x) (true))
-    ((cdata? x) (true))
-    ((pcdata? x) (true))
-    ((list? x)
-     (or (null? x)
-         (if (symbol? (car x))
-             (if (has-attribute? x)
-                 (and (attribute-pairs? (cadr x) true false)
-                      (andmap (lambda (part)
-                                (correct-xexpr? part true false))
-                              (cddr x))
-                      (true))
-                 (andmap (lambda (part)
-                           (correct-xexpr? part true false))
-                         (cdr x)))
-             (false (make-exn:invalid-xexpr
-                     (format
-                      "Expected a symbol as the element name, given ~s"
-                      (car x))
-                     (current-continuation-marks)
-                     x)))))
-    [(permissive-xexprs) (true)]
-    (else (false
-           (make-exn:invalid-xexpr
-            (format (string-append
-                     "Expected a string, symbol, valid numeric entity, comment, "
-                     "processing instruction, or list, given ~s")
-                    x)
-            (current-continuation-marks)
-            x)))))
+    ((string? x) #f)
+    ((symbol? x) #f)
+    ((valid-char? x) #f)
+    ((comment? x) #f)
+    ((p-i? x) #f)
+    ((cdata? x) #f)
+    ((pcdata? x) #f)
+    ((list? x)     
+     (cond [(null? x) 
+            (make-exn:invalid-xexpr
+             "Expected a symbol as the element name, but none given"
+             (current-continuation-marks)
+             x)]
+           [else
+            (if (symbol? (car x))
+                (cond [(has-attribute? x)
+                       (define maybe-exn (erroneous-attribute-pairs? (cadr x)))
+                       (cond [maybe-exn maybe-exn]
+                             [else
+                              (ormap
+                               incorrect-xexpr?
+                               (cddr x))])]
+                      
+                      [else 
+                       (ormap incorrect-xexpr?
+                              (cdr x))])
+                (make-exn:invalid-xexpr
+                 (format
+                  "Expected a symbol as the element name, given ~s"
+                  (car x))
+                 (current-continuation-marks)
+                 x))]))
+    [(permissive-xexprs) #f]
+    [else (make-exn:invalid-xexpr
+           (format (string-append
+                    "Expected a string, symbol, valid numeric entity, comment, "
+                    "processing instruction, or list, given ~s")
+                   x)
+           (current-continuation-marks)
+           x)]))
 
 ;; has-attribute? : List -> Boolean
 ;; True if the Xexpr provided has an attribute list.
 (define (has-attribute? x)
   (and (> (length x) 1)
        (list? (cadr x))
-       (andmap (lambda (attr)
-                 (pair? attr))
-               (cadr x))))
+       (for/and ([attr (in-list (cadr x))])
+         (pair? attr))))
 
-;; attribute-pairs? : List (-> a) (exn -> a) -> a
-;; True if the list is a list of pairs.
-(define (attribute-pairs? attrs true false)
-  (if (null? attrs)
-      (true)
-      (let ((attr (car attrs)))
-        (if (pair? attr)
-            (and (attribute-symbol-string? attr true false)
-                 (attribute-pairs? (cdr attrs) true false )
-                 (true))
-            (false
-             (make-exn:invalid-xexpr
-              (format "Expected an attribute pair, given ~s" attr)
-              (current-continuation-marks)
-              attr))))))
 
-;; attribute-symbol-string? : List (-> a) (exn -> a) -> a
-;; True if the list is a list of String,Symbol pairs.
-(define (attribute-symbol-string? attr true false)
+;; erroneous-attribute-pairs? : List -> (or/c #f exn:invalid-xexpr)
+;; Returns exn:invalid-expr if the list is not a list of attribute pairs.
+(define (erroneous-attribute-pairs? attrs)
+  (cond [(null? attrs)
+         #f]
+        [else
+         (define attr (car attrs))
+         (cond [(pair? attr)
+                (define maybe-exn (erroneous-attribute-symbol-string? attr))
+                (cond
+                  [maybe-exn maybe-exn]
+                  [else
+                   (erroneous-attribute-pairs? (cdr attrs))])]
+               [else
+                (make-exn:invalid-xexpr
+                 (format "Expected an attribute pair, given ~s" attr)
+                 (current-continuation-marks)
+                 attr)])]))
+
+
+;; erroneous-attribute-symbol-string? : List -> (or/c #f exn:invalid-xexpr)
+;; Returns exn:invalid-expr if the list is not a (String, Symbol) pair.
+(define (erroneous-attribute-symbol-string? attr)
   (if (symbol? (car attr))
       (if (pair? (cdr attr))
           (if (or (string? (cadr attr))
                   (permissive-xexprs))
-              (true)
-              (false (make-exn:invalid-xexpr
-                      (format "Expected an attribute value string, given ~v" (cadr attr))
-                      (current-continuation-marks)
-                      (cadr attr))))
-          (false (make-exn:invalid-xexpr
-                  (format "Expected an attribute value string for attribute ~s, given nothing" attr)
-                  (current-continuation-marks)
-                  attr)))
-      (false (make-exn:invalid-xexpr
-              (format "Expected an attribute symbol, given ~s" (car attr))
-              (current-continuation-marks)
-              (cadr attr)))))
+              #f
+              (make-exn:invalid-xexpr
+               (format "Expected an attribute value string, given ~v" (cadr attr))
+               (current-continuation-marks)
+               (cadr attr)))
+          (make-exn:invalid-xexpr
+           (format "Expected an attribute value string for attribute ~s, given nothing" attr)
+           (current-continuation-marks)
+           attr))
+      (make-exn:invalid-xexpr
+       (format "Expected an attribute symbol, given ~s" (car attr))
+       (current-continuation-marks)
+       (cadr attr))))
 
 ;; ; end xexpr? helpers
 ;; ;; ;; ;; ;; ;; ;; ;;

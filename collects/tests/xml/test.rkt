@@ -123,6 +123,7 @@ END
      (test-xexpr? 'nbsp)
      (test-xexpr? 10)
      (test-not-xexpr? 0)
+     (test-not-xexpr? '(a ((b)) c))
      (test-xexpr? (make-cdata #f #f "unquoted <b>"))
      (test-xexpr? (make-comment "Comment!"))
      (test-xexpr? (make-pcdata #f #f "quoted <b>"))
@@ -130,7 +131,8 @@ END
      (test-not-xexpr? (list 'a (list (list 'href)) "content"))
      
      (test-not-xexpr? +)
-     (test-not-xexpr? #f))
+     (test-not-xexpr? #f)
+     (test-not-xexpr? '()))
     
     (test-not-false "xexpr/c" (contract? xexpr/c))
     
@@ -639,6 +641,17 @@ END
          (test-validate-xexpr/exn '(a ([href foo]) bar) 'foo)
          (test-validate-xexpr/exn '("foo" bar) '("foo" bar))))
       
+      (test-suite
+       "correct-xexpr?"
+       (parameterize ([permissive-xexprs #f])
+         (test-equal? "null is not an xexpr"
+                      (correct-xexpr? '() (lambda () 'no) (lambda (exn) 'yes))
+                      'yes)
+         (test-true "malformed xexpr"
+                      (correct-xexpr? '(a ((b)) c) 
+                                      (lambda () #f)
+                                      (lambda (exn) #t)))))
+
       ; XXX correct-xexpr?
       
       (test-suite
