@@ -13,6 +13,7 @@
          "private/distributions/truncated-dist.rkt"
          "private/distributions/geometric-dist.rkt"
          "private/distributions/binomial-dist.rkt"
+         "private/distributions/bernoulli-dist.rkt"
          "private/distributions/poisson-dist.rkt"
          "private/distributions/discrete-dist.rkt")
 
@@ -30,5 +31,6 @@
           "private/distributions/truncated-dist.rkt"
           "private/distributions/geometric-dist.rkt"
           "private/distributions/binomial-dist.rkt"
+          "private/distributions/bernoulli-dist.rkt"
           "private/distributions/poisson-dist.rkt"
           "private/distributions/discrete-dist.rkt"))
