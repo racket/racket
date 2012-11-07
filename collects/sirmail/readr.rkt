@@ -11,9 +11,9 @@
 
 (module readr mzscheme
   (require mzlib/unit
-	   mzlib/class
+           mzlib/class
            mzlib/file
-	   mred/mred-sig
+           mred/mred-sig
            framework
            mzlib/process)
 
@@ -27,11 +27,11 @@
   (require "pref.rkt")
 
   (require net/imap-sig
-	   net/smtp-sig
-	   net/head-sig
-	   net/base64-sig
-	   net/mime-sig
-	   net/qp-sig
+           net/smtp-sig
+           net/head-sig
+           net/base64-sig
+           net/mime-sig
+           net/qp-sig
            browser/htmltext)
 
   (require mrlib/hierlist/hierlist-sig)
@@ -2197,7 +2197,7 @@
       
       (define re:date
 	(regexp
-	 "([0-9]*)[ 	]+([A-Za-z]+)[ 	]+([0-9]+)[ 	]+([0-9][0-9]):([0-9][0-9]):([0-9][0-9])"))
+	 "([0-9]*)[ \t]+([A-Za-z]+)[ \t]+([0-9]+)[ \t]+([0-9][0-9]):([0-9][0-9]):([0-9][0-9])"))
       
       ;; using the tz seems to require a date->seconds -- too expensive.
       (define (date-cmp aid bid a b)

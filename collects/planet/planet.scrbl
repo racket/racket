@@ -151,8 +151,8 @@ run @tt{raco planet show}. You should see output like this
 packages have been updated since this was written):
 @verbatim{
 Normally-installed packages:
-  cce	scheme.plt	4 1
-  plai	plai.plt	1 1
+  cce   scheme.plt      4 1
+  plai  plai.plt        1 1
 }}
 ]
 

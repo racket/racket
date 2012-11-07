@@ -61,12 +61,12 @@
  (bug-report-field-docs-installed "Installierte Dokumentation")
  (bug-report-field-collections "Collections")
  (bug-report-field-links "Links")  ;; from 'raco link'
- (bug-report-field-human-language "Interaktionssprache")	;
+ (bug-report-field-human-language "Interaktionssprache") ;
  (bug-report-field-memory-use "Speicherverbrauch")
  (bug-report-field-version "Version")
  (bug-report-synthesized-information "Generierte Information")  ;; dialog title
- (bug-report-show-synthesized-info "Generierte Informationen anzeigen")	; (an)zeigen
- (bug-report-submit "Abschicken")	
+ (bug-report-show-synthesized-info "Generierte Informationen anzeigen") ; (an)zeigen
+ (bug-report-submit "Abschicken")
  (close-and-save-bug-report "Schließen && Speichern") ;; button in bug report dialog, next to cancel and bug-report-submit
  (bug-report-submit-menu-item "Bug-Report abschicken...") ;; in Help Menu (drs & help desk)
  (saved-bug-reports-menu-item "Gepeicherte Bug-Reports") ;; in Help Menu, submenu title

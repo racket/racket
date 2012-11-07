@@ -287,7 +287,7 @@
 	   [else (let-values ([(s l) (search-h dh dv 1 0)])
 		   (if s
 		       (values s l)
-		       (best-of-two 	 
+		       (best-of-two
 			(lambda ()
 			  (best-of-two (lambda () (find-slope dh (add1 dv) max-slope-num h-within (sub1 v-within)))
 				       (lambda () (find-slope dh (sub1 dv) max-slope-num h-within (sub1 v-within)))))
@@ -318,7 +318,7 @@
 			 [c (if (procedure? (draw-bezier-lines))
 				((draw-bezier-lines) (get-len))
 				#f)])
-		    `((qbezier ,c ,x1 ,y1 ,(quotient (+ x1 x2) 2) ,(quotient (+ y1 y2) 2) ,x2 ,y2)))	      
+		    `((qbezier ,c ,x1 ,y1 ,(quotient (+ x1 x2) 2) ,(quotient (+ y1 y2) 2) ,x2 ,y2)))
 		  (let* ([dh (- x2 x1)]
 			 [dv (- y2 y1)]
 			 [s

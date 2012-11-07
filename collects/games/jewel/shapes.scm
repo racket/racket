@@ -247,7 +247,7 @@
     (glVertex3f  sizex (- bsizey)  sizez);
     (glVertex3f (- sizex) (- bsizey)  sizez);
 
-;	setmaterial(blue);
+;       setmaterial(blue);
 
     (glNormal3f  0.0  sizey  sizez);
     (glVertex3f  (- sizex)  bsizey  sizez);
@@ -323,7 +323,7 @@
 
     (glEnd);
 
-;	setmaterial(red);
+;       setmaterial(red);
     (glBegin GL_TRIANGLES);
 
     (glNormal3f sizex sizey sizez);

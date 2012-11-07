@@ -61,8 +61,8 @@
        debugger-language<%>
        (lambda (superclass)
          (class* superclass (debugger-language<%>)
-                 (public debugger:supported?)
-      	   (define (debugger:supported?) #t)
+           (public debugger:supported?)
+           (define (debugger:supported?) #t)
                  (super-instantiate ())))))
     (define phase2 void)
     
@@ -1392,8 +1392,8 @@
                (bitmap debug-bitmap)
                (alternate-bitmap small-debug-bitmap)
                (parent (new vertical-pane%
-      		      [parent (get-button-panel)]
-      		      [alignment '(center center)]))
+                            [parent (get-button-panel)]
+                            [alignment '(center center)]))
                (callback (λ (button) (debug-callback)))))
         (inherit register-toolbar-button)
         (register-toolbar-button debug-button #:number 60)

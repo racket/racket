@@ -193,7 +193,7 @@
    (define-values/invoke-unit/sig model^
      model-unit #f config^)
    (let ([c (let ([canonicalize (make-canonicalize)])
-	      (lambda (b who)		
+	      (lambda (b who)
 		(canon-test 4 canonicalize b who 
 			    fold-board board-ref move empty-board
 			    yellow-pieces red-pieces piece-color piece-size other

@@ -106,7 +106,7 @@ representing the desired HTML. An @xexpr is defined as
    (flat-rec-contract
     xexpr
     (or/c string?
-    	  (cons/c symbol? (listof xexpr))
+          (cons/c symbol? (listof xexpr))
           (cons/c symbol?
                   (cons/c (listof (list/c symbol? string?))
                           (listof xexpr))))))]

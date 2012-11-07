@@ -6,14 +6,14 @@
 ;;; this code is under the LGPL licence.  Nevertheless, I only did the
 ;;; port to PLT Scheme, the original comment follows:
 
-; 			Checking of a LAND* special form
+;                       Checking of a LAND* special form
 ;
 ; LAND* is a generalized AND: it evaluates a sequence of forms one after another
 ; till the first one that yields #f; the non-#f result of a form can be bound
 ; to a fresh variable and used in the subsequent forms.
 ;
 ; When an ordinary AND is formed of _proper_ boolean expressions:
-;	(AND E1 E2 ...)
+;       (AND E1 E2 ...)
 ; expression E2, if it gets to be evaluated, knows that E1 has returned non-#f.
 ; Moreover, E2 knows exactly what the result of E1 was - #t - so E2 can use
 ; this knowledge to its advantage. If E1 however is an _extended_
@@ -27,22 +27,22 @@
 ; their work.
 ;
 ; Syntax:
-; 	LAND* (CLAWS) BODY
+;       LAND* (CLAWS) BODY
 ;
 ; where CLAWS is a list of expressions or bindings: 
-;	CLAWS ::= '() | (cons CLAW CLAWS)
+;       CLAWS ::= '() | (cons CLAW CLAWS)
 ; Every element of the CLAWS list, a CLAW, must be one of the following:
-;	(VARIABLE EXPRESSION)
+;       (VARIABLE EXPRESSION)
 ; or
-;	(EXPRESSION)
+;       (EXPRESSION)
 ; or
-;	BOUND-VARIABLE
+;       BOUND-VARIABLE
 ; These CLAWS are evaluated in the strict left-to-right order. For each
 ; CLAW, the EXPRESSION part is evaluated first (or BOUND-VARIABLE is looked up).
 ; If the result is #f, LAND* immediately returns #f, thus disregarding the rest
 ; of the CLAWS and the BODY. If the EXPRESSION evaluates to not-#f, and
 ; the CLAW is of the form
-;	(VARIABLE EXPRESSION)
+;       (VARIABLE EXPRESSION)
 ; the EXPRESSION's value is bound to a freshly made VARIABLE. The VARIABLE is
 ; available for _the rest_ of the CLAWS, and the BODY. As usual, all
 ; VARIABLEs must be unique (like in let*).
@@ -52,8 +52,8 @@
 ; Denotation semantics:
 ;
 ; Eval[ (LAND* (CLAW1 ...) BODY), Env] =
-;	EvalClaw[ CLAW1, Env ] andalso 
-;		Eval[ (LAND* ( ...) BODY), ExtClawEnv[ CLAW1, Env]]
+;       EvalClaw[ CLAW1, Env ] andalso 
+;               Eval[ (LAND* ( ...) BODY), ExtClawEnv[ CLAW1, Env]]
 ;
 ; Eval[ (LAND* (CLAW) ), Env] = EvalClaw[ CLAW, Env ]
 ; Eval[ (LAND* () FORM1 ...), Env] = Eval[ (BEGIN FORM1 ...), Env ]
@@ -66,8 +66,8 @@
 ; ExtClawEnv[ BOUND-VARIABLE, Env ] = Env
 ; ExtClawEnv[ (EXPRESSION), Env ] = EnvAfterEval[ EXPRESSION, Env ]
 ; ExtClawEnv[ (VARIABLE EXPRESSION), Env ] = 
-;	ExtendEnv[ EnvAfterEval[ EXPRESSION, Env ],
-;		   VARIABLE boundto Eval[ EXPRESSION, Env ]]
+;       ExtendEnv[ EnvAfterEval[ EXPRESSION, Env ],
+;                  VARIABLE boundto Eval[ EXPRESSION, Env ]]
 ;
 ;
 ; If one has a Scheme interpreter written in Prolog/ML/Haskell, he can
@@ -78,10 +78,10 @@
 ; The following LAND* macro will convert a LAND* expression into a "tree" of
 ; AND and LET expressions. For example,
 ; (LAND* ((my-list (compute-list)) ((not (null? my-list))))
-;	(do-something my-list))
+;       (do-something my-list))
 ; is transformed into
 ; (and (let ((my-list (compute-list)))
-;	(and my-list  (not (null? my-list)) (begin (do-something my-list)))))
+;       (and my-list  (not (null? my-list)) (begin (do-something my-list)))))
 ;
 ; I must admit the LAND* macro is written in a pathetic anti-functional style.
 ; To my excuse, the macro's goal is a syntactic transformation of source
@@ -95,23 +95,23 @@
 ;      (if new-root (set! root new-root)))
 ; could be elegantly re-written as
 ;   (land* ((new-root (node:dispatch-on-key root key ...)))
-;		(set! root new-root))
+;               (set! root new-root))
 ;
 ; A very common application of land* is looking up a value
 ; associated with a given key in an assoc list, returning #f in case of a
 ; look-up failure:
 ;
-;		; Standard implementation
+;               ; Standard implementation
 ; (define (look-up key alist)
 ;   (let ((found-assoc (assq key alist)))
-;	(and found-assoc (cdr found-assoc))))
+;       (and found-assoc (cdr found-assoc))))
 ;
-; 		; A more elegant solution
+;               ; A more elegant solution
 ; (define (look-up key alist)
 ;   (cdr (or (assq key alist) '(#f . #f))))
 ;
-; 		; An implementation which is just as graceful as the latter
-;		; and just as efficient as the former:
+;               ; An implementation which is just as graceful as the latter
+;               ; and just as efficient as the former:
 ; (define (look-up key alist)
 ;   (land* ((x (assq key alist))) (cdr x)))
 ;
@@ -128,7 +128,7 @@
 ;
 ; (or
 ;  (land* ((c (read-char)) ((not (eof-object? c))))
-;	(string-set! some-str i c) (++! i))
+;       (string-set! some-str i c) (++! i))
 ;  (begin (do-process-eof)))
 ;
 ; Another concept LAND* is reminiscent of is programming with guards:
@@ -162,17 +162,17 @@
       ;; (and-let* ((x y)))
       [(_ ((id val)))
        (unless (identifier? (syntax id))
-	       (raise-syntax-error #f "expected an identifier" stx (syntax id)))
+               (raise-syntax-error #f "expected an identifier" stx (syntax id)))
        (syntax val)]
 
       ;; (and-let* ((x y)) body)
       [(_ ((id val) more ...) . body)
        (unless (identifier? (syntax id))
-	 (raise-syntax-error #f "expected an identifier" stx (syntax id)))
+         (raise-syntax-error #f "expected an identifier" stx (syntax id)))
        (syntax (let ((id val))
-		 (if id
-		     (and-let* (more ...) . body)
-		     #f)))]   
+                 (if id
+                     (and-let* (more ...) . body)
+                     #f)))]
       
       [(_ ((exp))) (syntax exp)]
       
@@ -183,18 +183,18 @@
 
       [(_ (exp) . body)
        (syntax (if exp
-		   (begin . body)
-		   #f))]
+                   (begin . body)
+                   #f))]
 
       [(_ ((exp) more ...) . body)
        (syntax (if exp
-		   (and-let* (more ...) . body)
-		   #f))]
+                   (and-let* (more ...) . body)
+                   #f))]
 
       [(_ (exp more ...) . body)
        (syntax (if exp
-      	      (and-let* (more ...) . body)
-      	      #f))]
+                   (and-let* (more ...) . body)
+                   #f))]
       
       [(_ () . body) (syntax (begin . body))]
       ))

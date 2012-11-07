@@ -1,13 +1,13 @@
 #lang racket/base
 (require ffi/unsafe
-	 ffi/winapi)
+         ffi/winapi)
 
 (provide
  (protect-out _wfun
               
-              _WORD 	
-              _DWORD 	
-              _UDWORD 	
+              _WORD
+              _DWORD
+              _UDWORD
               _ATOM
               _WPARAM
               _LPARAM
@@ -95,35 +95,35 @@
 
 (define _permanent-string/utf-16
   (make-ctype _pointer
-	      (lambda (s)
-		(and s                     
-		     (let ([v (malloc _gcpointer)])
-		       (ptr-set! v _string/utf-16 s)
-		       (let ([p (ptr-ref v _gcpointer)])
-			 (let ([len (+ 1 (utf-16-length s))])
-			   (let ([c (malloc len _uint16 'raw)])
-			     (memcpy c p len _uint16)
-			     c))))))
-	      (lambda (p) p)))
+              (lambda (s)
+                (and s
+                     (let ([v (malloc _gcpointer)])
+                       (ptr-set! v _string/utf-16 s)
+                       (let ([p (ptr-ref v _gcpointer)])
+                         (let ([len (+ 1 (utf-16-length s))])
+                           (let ([c (malloc len _uint16 'raw)])
+                             (memcpy c p len _uint16)
+                             c))))))
+              (lambda (p) p)))
 
 (define _LONG _long)
 (define _ULONG _ulong)
 (define _SHORT _short)
 
 (define-cstruct _POINT ([x _LONG]
-			[y _LONG]))
+                        [y _LONG]))
 
 (define-cstruct _RECT ([left _LONG]
-		       [top _LONG]
-		       [right _LONG]
-		       [bottom _LONG]))
+                       [top _LONG]
+                       [right _LONG]
+                       [bottom _LONG]))
 
 (define-cstruct _MSG ([hwnd _HWND]
-		      [message _UINT]
-		      [wParam _WPARAM]
-		      [lParam _LPARAM]
-		      [time _DWORD]
-		      [pt _POINT]))
+                      [message _UINT]
+                      [wParam _WPARAM]
+                      [lParam _LPARAM]
+                      [time _DWORD]
+                      [pt _POINT]))
 
 (define (short v)
   (if (zero? (bitwise-and #x8000 v))

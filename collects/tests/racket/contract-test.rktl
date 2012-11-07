@@ -11999,7 +11999,7 @@ so that propagation occurs.
   (test-name '(->* (integer?) #:pre ... integer?)
 			  (->* (integer?) () #:pre (= 1 2) integer?))
   (test-name '(->* (integer?) integer? #:post ...)
-		 	  (->* (integer?) () integer? #:post #f))
+			  (->* (integer?) () integer? #:post #f))
   (test-name '(->* (integer?) #:pre ... integer? #:post ...)
 			  (->* (integer?) () #:pre (= 1 2) integer? #:post #f))
 

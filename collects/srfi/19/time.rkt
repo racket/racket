@@ -166,8 +166,8 @@
 ;;   a different epoch is used.
 
 (define tm:nano (expt 10 9))
-(define tm:sid  86400)		; seconds in a day
-(define tm:sihd 43200)		; seconds in a half day
+(define tm:sid  86400)          ; seconds in a day
+(define tm:sihd 43200)          ; seconds in a half day
 (define tm:tai-epoch-in-jd 4881175/2) ; julian day number for 'the epoch'
 
 ;; A Very simple Error system for the time procedures
@@ -1341,9 +1341,9 @@
            (accum-int port (+ (* accum 10) (tm:char->int (read-char port)))
                       (+ nchars 1)))
           (padding-ok
-           (read-char port)		; consume padding
+           (read-char port)             ; consume padding
            (accum-int port accum (+ nchars 1)))
-          (else			; padding where it shouldn't be
+          (else                 ; padding where it shouldn't be
            (tm:time-error 'string->date 'bad-date-template-string 
                           "Non-numeric characters in integer read.")))))
     (accum-int port 0 0)))

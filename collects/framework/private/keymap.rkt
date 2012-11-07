@@ -739,7 +739,7 @@
                                            (send edit on-char event)
                                            (loop (sub1 n)))))
                                      (λ ()
-                                       (send edit end-edit-sequence)))))))			       
+                                       (send edit end-edit-sequence)))))))
                         #t))
                 (send km set-break-sequence-callback done)
                 #t))]
@@ -823,7 +823,7 @@
             (λ (edit event)
               (when building-macro
                 (set! current-macro (reverse building-macro))
-                (set! build-protect? #f)		    
+                (set! build-protect? #f)
                 (send build-macro-km break-sequence))
               #t)]
            [delete-key

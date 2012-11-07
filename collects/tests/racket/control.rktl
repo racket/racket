@@ -19,17 +19,17 @@
      (test expect 'expr expr)]))
 
 ;-----------------------------------------------------------------------
-;			Shift tests
+;                       Shift tests
 
 (ctest (+ 10 (reset (+ 2 (shift k (+ 100 (k (k 3)))))))
       117)
 
 (ctest (* 10 (reset (* 2 (shift g (reset 
-				   (* 5 (shift f (+ (f 1) 1))))))))
+                                   (* 5 (shift f (+ (f 1) 1))))))))
       60)
 
 (ctest (let ((f (lambda (x) (shift k (k (k x))))))
-	   (+ 1 (reset (+ 10 (f 100)))))
+         (+ 1 (reset (+ 10 (f 100)))))
       121)
 
 (ctest (reset
@@ -44,10 +44,10 @@
 (define traverse
   (lambda (xs)
     (letrec ((visit
-	       (lambda (xs)
-		 (if (null? xs)
-		   '()
-		   (visit (shift k
+               (lambda (xs)
+                 (if (null? xs)
+                   '()
+                   (visit (shift k
                                  (cons (car xs)
                                        (k (cdr xs)))))))))
       (reset
@@ -57,7 +57,7 @@
       '(1 2 3 4 5))
 
 ;-----------------------------------------------------------------------
-;			Control tests
+;                       Control tests
 ; Example from Sitaram, Felleisen
 
 (define (abort v) (control k v))
@@ -71,10 +71,10 @@
 (define traverse
   (lambda (xs)
     (letrec ((visit
-	       (lambda (xs)
-		 (if (null? xs)
-		   '()
-		   (visit (control k
+               (lambda (xs)
+                 (if (null? xs)
+                   '()
+                   (visit (control k
                                    (cons (car xs) 
                                          (k (cdr xs)))))))))
       (prompt
@@ -103,7 +103,7 @@
       #t)
 
 ;------------------------------------------------------------------------
-;			shift0/control0 tests
+;                       shift0/control0 tests
 
 (ctest (+ 10 (prompt0 (+ 2 (control k (+ 100 (k (k 3)))))))
       117)

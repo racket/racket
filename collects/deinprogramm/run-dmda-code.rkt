@@ -41,7 +41,7 @@
 		   (close-input-port p)
 		   (open-input-text-editor t 0 'end values filename))]
 		[else p])])
-	(port-count-lines! p)		; in case it's new
+	(port-count-lines! p)           ; in case it's new
 	(values p filename))))
 
   (define (open-input-graphical-file/fixed filename)

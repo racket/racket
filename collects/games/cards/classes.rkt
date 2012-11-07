@@ -123,8 +123,8 @@
       (public*
         [only-front-selected
          (lambda ()
- 	   (let loop ([s (find-next-selected-snip #f)][ok (find-first-snip)])
-	     (when s
+           (let loop ([s (find-next-selected-snip #f)][ok (find-first-snip)])
+             (when s
                (if (eq? s ok)
                    (loop (find-next-selected-snip s)
                          (send ok next))

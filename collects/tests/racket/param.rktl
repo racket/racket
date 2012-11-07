@@ -348,7 +348,7 @@
 		      '(load "tmp5")
 		      exn:fail?
 		      (list "bad setting" zero-arg-proc one-arg-proc))
-		(list current-eval	
+		(list current-eval
 		      (list (current-eval) erroring-eval)
 		      '(begin 
 			 (set! erroring-set? #t) 

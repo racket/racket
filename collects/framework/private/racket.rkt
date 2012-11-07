@@ -538,7 +538,7 @@
                   #f)]
              [last-para (and last
                              (position-paragraph last))])
-        (letrec	
+        (letrec
             ([find-offset
               (λ (start-pos)
                 (define tab-char? #f)

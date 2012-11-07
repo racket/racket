@@ -40,6 +40,6 @@
                stretchable-width #t))
             options)
   
-  (make-object grow-box-spacer-pane% frame)	  
+  (make-object grow-box-spacer-pane% frame)
   
   (send frame show #t))

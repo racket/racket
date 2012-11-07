@@ -108,7 +108,7 @@ Matthew
 ;; world manipulation functions: 
 ;; =============================
 (provide      ;; forall(World):
- big-bang	;; Number Number Number World [Boolean] -> true
+ big-bang     ;; Number Number Number World [Boolean] -> true
  )
 
 (provide-higher-order-primitive
@@ -849,7 +849,7 @@ Matthew
        (define y (- (send e get-y) INSET))
        (define m (mouse-event->symbol e))
        (when (and (<= 0 x WIDTH) (<= 0 y HEIGHT))
-	 (with-handlers ([exn:break? break-handler][exn? exn-handler])
+         (with-handlers ([exn:break? break-handler][exn? exn-handler])
            (let ([new-world (f the-world x y m)])
              (unless (equal? new-world the-world)
                (set! the-world new-world)

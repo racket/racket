@@ -471,9 +471,9 @@ TODO
       (define/public (get-context) context)
       
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-      ;;;				           ;;;
+      ;;;                                          ;;;
       ;;;            User -> Kernel                ;;;
-      ;;;				           ;;;
+      ;;;                                          ;;;
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       
       ;; =User= (probably doesn't matter)
@@ -774,8 +774,8 @@ TODO
         (unless inserting-prompt?
           (reset-highlighting))
         (when (and prompt-position 
-		   (ormap (λ (start) (< start prompt-position))
-			  starts))
+                   (ormap (λ (start) (< start prompt-position))
+                          starts))
           (set! prompt-position (get-unread-start-point))
           (reset-regions (append (all-but-last (get-regions))
                                  (list (list prompt-position 'end))))))

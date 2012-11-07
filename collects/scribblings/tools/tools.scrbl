@@ -786,15 +786,15 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
                 (super-new)
                 (define/override (syncheck:find-source-object stx)
                   stx)
-                (define/override (syncheck:add-arrow start-source-obj	 
-                                                     start-left	 
-                                                     start-right	 
-                                                     end-source-obj	 
-                                                     end-left	 
-                                                     end-right	 
-                                                     actual?	 
+                (define/override (syncheck:add-arrow start-source-obj
+                                                     start-left
+                                                     start-right
+                                                     end-source-obj
+                                                     end-left
+                                                     end-right
+                                                     actual?
                                                      phase-level)
-                  (set! arrows 
+                  (set! arrows
                         (cons (list start-source-obj end-source-obj)
                               arrows)))
                 (define arrows '())

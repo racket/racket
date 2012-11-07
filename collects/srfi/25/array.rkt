@@ -650,7 +650,7 @@
 	(array:index-set! in k 0))
       (let* ((n0 (proc in))
 	     (n (array:index-length n0)))
-	(let ((arr (make-array (shape 0 (+ m 1) 0 n))))	; (*)
+	(let ((arr (make-array (shape 0 (+ m 1) 0 n)))) ; (*)
 	  (do ((k 0 (+ k 1)))
 	      ((= k n))
 	    (array-set! arr 0 k (array:index-ref n0 k))) ; (**)

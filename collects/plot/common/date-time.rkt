@@ -102,39 +102,39 @@
 #|
 Supported format specifiers:
 
-~a	locale's abbreviated weekday name (Sun...Sat)
-~A	locale's full weekday name (Sunday...Saturday)
-~b	locale's abbreviate month name (Jan...Dec)
-~B	locale's full month day (January...December)
-~d	day of month, zero padded (01...31)
-~D	date (mm/dd/yy)
-~e	day of month, blank padded ( 1...31)
-~h	same as ~b
-~H	hour, zero padded, 24-hour clock (00...23)
-~I	hour, zero padded, 12-hour clock (01...12)
-~j	day of year, zero padded
-~k	hour, blank padded, 24-hour clock (00...23)
-~l	hour, blank padded, 12-hour clock (01...12)
-~m	month, zero padded (01...12)
-~M	minute, zero padded (00...59)
-~N	nanosecond, zero padded
-~p	locale's AM or PM
-~r	time, 12 hour clock, same as "~I:~M:~S ~p"
-~S	second, zero padded (00...60)
-~f	seconds+fractional seconds, using locale's decimal separator (e.g. 5.2).
-~s	number of full seconds since "the epoch" (in UTC)
-~T	time, 24 hour clock, same as "~H:~M:~S"
-~U	week number of year with Sunday as first day of week (00...53)
-~V	week number of year with Monday as first day of week (01...52)
-~w	day of week (0...6)
-~W	week number of year with Monday as first day of week (01...52)
-~x	week number of year with Monday as first day of week (00...53)
-~X	locale's date representation, for example: "07/31/00"
-~y	last two digits of year (00...99)
-~Y	year
-~1	ISO-8601 year-month-day format
-~3	ISO-8601 hour-minute-second format
-~5	ISO-8601 year-month-day-hour-minute-second format
+~a  locale's abbreviated weekday name (Sun...Sat)
+~A  locale's full weekday name (Sunday...Saturday)
+~b  locale's abbreviate month name (Jan...Dec)
+~B  locale's full month day (January...December)
+~d  day of month, zero padded (01...31)
+~D  date (mm/dd/yy)
+~e  day of month, blank padded ( 1...31)
+~h  same as ~b
+~H  hour, zero padded, 24-hour clock (00...23)
+~I  hour, zero padded, 12-hour clock (01...12)
+~j  day of year, zero padded
+~k  hour, blank padded, 24-hour clock (00...23)
+~l  hour, blank padded, 12-hour clock (01...12)
+~m  month, zero padded (01...12)
+~M  minute, zero padded (00...59)
+~N  nanosecond, zero padded
+~p  locale's AM or PM
+~r  time, 12 hour clock, same as "~I:~M:~S ~p"
+~S  second, zero padded (00...60)
+~f  seconds+fractional seconds, using locale's decimal separator (e.g. 5.2).
+~s  number of full seconds since "the epoch" (in UTC)
+~T  time, 24 hour clock, same as "~H:~M:~S"
+~U  week number of year with Sunday as first day of week (00...53)
+~V  week number of year with Monday as first day of week (01...52)
+~w  day of week (0...6)
+~W  week number of year with Monday as first day of week (01...52)
+~x  week number of year with Monday as first day of week (00...53)
+~X  locale's date representation, for example: "07/31/00"
+~y  last two digits of year (00...99)
+~Y  year
+~1  ISO-8601 year-month-day format
+~3  ISO-8601 hour-minute-second format
+~5  ISO-8601 year-month-day-hour-minute-second format
 |#
 
 (define (plot-date-formatter x-min x-max)
@@ -155,19 +155,19 @@ Supported format specifiers:
 #|
 Supported format specifiers:
 
-~d	day
-~H	hour, zero padded, 24-hour clock (00...23)
-~I	hour, zero padded, 12-hour clock (01...12)
-~k	hour, blank padded, 24-hour clock ( 0...23)
-~l	hour, blank padded, 12-hour clock ( 1...12)
-~p	locale's AM or PM
-~M	minute, zero padded (00...59)
-~S	second, zero padded (00...60)
-~f	seconds+fractional seconds, using locale's decimal separator (e.g. 5.2).
-~s	second, formatted (nanoseconds, etc.)
-~r	time, 12 hour clock, same as "~I:~M:~S ~p"
-~T	time, 24 hour clock, same as "~H:~M:~S"
-~3	ISO-8601 hour-minute-second format
+~d  day
+~H  hour, zero padded, 24-hour clock (00...23)
+~I  hour, zero padded, 12-hour clock (01...12)
+~k  hour, blank padded, 24-hour clock ( 0...23)
+~l  hour, blank padded, 12-hour clock ( 1...12)
+~p  locale's AM or PM
+~M  minute, zero padded (00...59)
+~S  second, zero padded (00...60)
+~f  seconds+fractional seconds, using locale's decimal separator (e.g. 5.2).
+~s  second, formatted (nanoseconds, etc.)
+~r  time, 12 hour clock, same as "~I:~M:~S ~p"
+~T  time, 24 hour clock, same as "~H:~M:~S"
+~3  ISO-8601 hour-minute-second format
 |#
 
 (define (plot-time-formatter x-min x-max)

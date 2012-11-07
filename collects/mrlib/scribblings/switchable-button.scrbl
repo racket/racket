@@ -15,7 +15,7 @@
   @defconstructor/auto-super[([label string?]
                               [callback (-> (is-a?/c switchable-button%) any/c)]
                               [bitmap (is-a?/c bitmap%)]
-                              [alternate-bitmap (is-a?/c bitmap%) bitmap]	
+                              [alternate-bitmap (is-a?/c bitmap%) bitmap]
                               [vertical-tight? boolean? #f])]{
     The @racket[callback] is called when the button
     is pressed. The @racket[string] and @racket[bitmap] are

@@ -45,7 +45,7 @@
 @(define-for-syntax (loc stx)
    (let ([src (syntax-source stx)])
      (if (path? src)
-         (path->relative-string/library	src)
+         (path->relative-string/library src)
          #f)))
 @(define-syntax (interaction/test stx)
    (syntax-case stx ()

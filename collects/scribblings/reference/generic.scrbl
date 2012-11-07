@@ -4,8 +4,8 @@
 @title[#:tag "struct-generics"]{Generic Interfaces}
 @; @author[@author+email["Eli Barzilay" "eli@racket-lang.org"]
 @;         @author+email["Jay McCarthy" "jay@racket-lang.org"]
-@; 	@author+email["Vincent St-Amour" "stamourv@racket-lang.org"]
-@; 	@author+email["Asumu Takikawa" "asumu@racket-lang.org"]]
+@;         @author+email["Vincent St-Amour" "stamourv@racket-lang.org"]
+@;         @author+email["Asumu Takikawa" "asumu@racket-lang.org"]]
 
 @defmodule[racket/generic]
 

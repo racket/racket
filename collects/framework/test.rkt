@@ -321,7 +321,7 @@
            [else
             (update-control ctrl)
             (send ctrl command event)
-            (void)]))))))	     
+            (void)]))))))
 
 ;;
 ;; BUTTON

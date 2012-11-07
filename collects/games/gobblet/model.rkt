@@ -445,7 +445,7 @@
 	    (let ([v (if who
 			 (compact-board board who)
 			 board)])
-	      ;; Find canonical mapping.	      
+	      ;; Find canonical mapping.
 	      (hash-table-get 
                memory v
                (lambda ()
