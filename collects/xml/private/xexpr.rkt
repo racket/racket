@@ -120,6 +120,7 @@
  [write-xexpr (->* (xexpr/c) (output-port?) void)] )
 
 (define (write-xexpr x [out (current-output-port)])
+  (define short (empty-tag-shorthand))
   (let loop ([x x])
     (cond
       ; Element
@@ -144,11 +145,10 @@
          (display "\"" out))
        ; Write end of opening tag
        (if (and (null? content)
-                (let ([short (empty-tag-shorthand)])
-                  (case short
+                (case short
                     [(always) #t]
                     [(never) #f]
-                    [else (memq (lowercase-symbol name) short)])))
+                    [else (memq (lowercase-symbol name) short)]))
            (display " />" out)
            (begin
              (display ">" out)
