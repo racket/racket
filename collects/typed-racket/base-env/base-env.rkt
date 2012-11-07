@@ -2028,8 +2028,7 @@
  (-polydots (a b d e c)
    (->... (list (make-Prompt-Tag b (->... '() (c c) d))) (c c) e))]
 [make-continuation-prompt-tag (-poly (a b) (->opt [Sym] (make-Prompt-Tag a b)))]
-;; TODO: requires special handling of abort-current-continuation
-;[default-continuation-prompt-tag (-> (make-Prompt-Tag Univ (-> ManyUniv Univ)))]
+;; default-continuation-prompt-tag is defined in "base-contracted.rkt"
 [call-with-current-continuation (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
 [call/cc (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
 [call-with-composable-continuation

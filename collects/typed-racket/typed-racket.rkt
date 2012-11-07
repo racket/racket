@@ -28,6 +28,8 @@
     (do-time "Finshed base-env-numeric")
     ((dynamic-require 'typed-racket/base-env/base-special-env 'initialize-special))
     (do-time "Finished base-special-env")
+    ((dynamic-require 'typed-racket/base-env/base-contracted 'initialize-contracted))
+    (do-time "Finished base-contracted")
     (dynamic-require '(submod typed-racket/base-env/base-types #%type-decl) #f)
     (do-time "Finished base-types")
     (set! initialized #t))
