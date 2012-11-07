@@ -796,9 +796,14 @@
              [ec (new position-canvas%
                       [parent panel]
                       [button-up
-                       (λ ()
-                         (collect-garbage)
-                         (update-memory-text))]
+                       (λ (evt)
+                         (cond
+                           [(or (send evt get-alt-down)
+                                (send evt get-control-down))
+                            (dynamic-require 'framework/private/follow-log #f)]
+                           [else
+                            (collect-garbage)
+                            (update-memory-text)]))]
                       [init-width "99.99 MB"])])
         (set! memory-canvases (cons ec memory-canvases))
         (update-memory-text)
@@ -890,6 +895,7 @@
     (inherit min-client-height min-client-width get-dc get-client-size refresh)
     (init init-width)
     (init-field [button-up #f])
+    (init-field [char-typed void])
     (define str "")
     (define/public (set-str _str)
       (set! str _str)
@@ -913,7 +919,11 @@
           (let-values ([(cw ch) (get-client-size)])
             (when (and (<= (send evt get-x) cw)
                        (<= (send evt get-y) ch))
-              (button-up))))))
+              (if (procedure-arity-includes? button-up 1)
+                  (button-up evt)
+                  (button-up)))))))
+    (define/override (on-char evt)
+      (char-typed evt))
     (super-new (style '(transparent no-focus)))
     (let ([dc (get-dc)])
       (let-values ([(_1 th _2 _3) (send dc get-text-extent str)])
