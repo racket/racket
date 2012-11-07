@@ -141,7 +141,7 @@
          (display (car att) out)
          (display "=" out)
          (display "\"" out)
-         (display (escape (cadr att) escape-attribute-table) out)
+         (display/escape (cadr att) escape-attribute-table out)
          (display "\"" out))
        ; Write end of opening tag
        (if (and (null? content)
@@ -161,7 +161,7 @@
              (display ">" out)))]
       ; PCData
       [(string? x)
-       (display (escape x escape-table) out)]
+       (display/escape x escape-table out)]
       ; Entities
       [(symbol? x)
        (display "&" out)

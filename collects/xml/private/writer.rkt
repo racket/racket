@@ -168,7 +168,15 @@
 (define (escape x table)
   (regexp-replace* table x replace-escaped))
 
+(define (display/escape x table out)
+  (cond [(regexp-match table x)
+         (display (escape x table) out)]
+        [else
+         (display x out)]))
+
+
 (provide escape
+         display/escape
          escape-table
          escape-attribute-table
          lowercase-symbol
