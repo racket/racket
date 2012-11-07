@@ -135,8 +135,12 @@
      (display name out)
      ; Write attributes
      (for ([att (in-list attrs)])
-       (fprintf out " ~a=\"~a\"" (car att)
-                (escape (cadr att) escape-attribute-table)))
+       (display " " out)
+       (display (car att) out)
+       (display "=" out)
+       (display "\"" out)
+       (display (escape (cadr att) escape-attribute-table) out)
+       (display "\"" out))
      ; Write end of opening tag
      (if (and (null? content)
               (let ([short (empty-tag-shorthand)])
@@ -159,9 +163,13 @@
      (display (escape x escape-table) out)]
     ; Entities
     [(symbol? x)
-     (fprintf out "&~a;" x)]
+     (display "&" out)
+     (display x out)
+     (display ";" out)]
     [(valid-char? x)
-     (fprintf out "&#~a;" x)]
+     (display "&#" out)
+     (display x out)
+     (display ";" out)]
     ; Embedded XML
     [(cdata? x)
      (write-xml-cdata x 0 void out)]
