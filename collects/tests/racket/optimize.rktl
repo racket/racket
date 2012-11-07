@@ -1912,6 +1912,39 @@
                5)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check splitting of definitions
+(test-comp `(module m racket/base
+              (define-values (x y) (values 1 2)))
+           `(module m racket/base
+              (define x 1)
+              (define y 2)))
+(test-comp `(module m racket/base
+              (define-values (x y z w) (values 1 2 4 5)))
+           `(module m racket/base
+              (define x 1)
+              (define y 2)
+              (define z 4)
+              (define w 5)))
+(test-comp `(module m racket/base
+              (define-values (x y)
+                (let ([x (lambda (x) x)]
+                      [y (lambda (x y) y)])
+                  (values x y))))
+           `(module m racket/base
+              (define x (lambda (x) x))
+              (define y (lambda (x y) y))))
+(test-comp `(module m racket/base
+              (define-values (x y z)
+                (let ([x (lambda (x) x)]
+                      [y (lambda (x y) y)]
+                      [z (lambda (x y z) z)])
+                  (values x y z))))
+           `(module m racket/base
+              (define x (lambda (x) x))
+              (define y (lambda (x y) y))
+              (define z (lambda (x y z) z))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check bytecode verification of lifted functions
 
 (let ([check

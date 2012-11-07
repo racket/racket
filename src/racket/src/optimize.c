@@ -5079,6 +5079,115 @@ static int is_general_compiled_proc(Scheme_Object *e, Optimize_Info *info)
   return 0;
 }
 
+void install_definition(Scheme_Object *vec, int pos, Scheme_Object *var, Scheme_Object *rhs)
+{
+  Scheme_Object *def;
+
+  var = scheme_make_pair(var, scheme_null);
+  def = scheme_make_vector(2, NULL);
+  SCHEME_VEC_ELS(def)[0] = var;
+  SCHEME_VEC_ELS(def)[1] = rhs;
+  def->type = scheme_define_values_type;
+
+  SCHEME_VEC_ELS(vec)[pos] = def;
+}
+
+int split_define_values(Scheme_Object *e, int n, Scheme_Object *vars, Scheme_Object *vec, int offset)
+{
+  if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_let_void_type)) {
+    /* This is a tedious case to recognize the pattern
+         (let ([x rhs] ...) (values x ...))
+       which might be the result of expansion that involved a local
+       macro to define the `x's */
+    Scheme_Let_Header *lh = (Scheme_Let_Header *)e;
+    if ((lh->count == n) && (lh->num_clauses == n)
+        && !(SCHEME_LET_FLAGS(lh) & (SCHEME_LET_RECURSIVE | SCHEME_LET_STAR))) {
+      Scheme_Object *body = lh->body;
+      int i;
+      for (i = 0; i < n; i++) {
+        if (SAME_TYPE(SCHEME_TYPE(body), scheme_compiled_let_value_type)) {
+          Scheme_Compiled_Let_Value *lv = (Scheme_Compiled_Let_Value *)body;
+          if (lv->count == 1) {
+            if (!scheme_omittable_expr(lv->value, 1, 5, 0, NULL, NULL, n, 0))
+              return 0;
+            body = lv->body;
+          } else
+            return 0;
+        } else
+          return 0;
+      }
+      if ((n == 2) && SAME_TYPE(SCHEME_TYPE(body), scheme_application3_type)) {
+        Scheme_App3_Rec *app = (Scheme_App3_Rec *)body;
+        if (SAME_OBJ(app->rator, scheme_values_func)
+            && SAME_TYPE(SCHEME_TYPE(app->rand1), scheme_local_type)
+            && (SCHEME_LOCAL_POS(app->rand1) == 0)
+            && SAME_TYPE(SCHEME_TYPE(app->rand2), scheme_local_type)
+            && (SCHEME_LOCAL_POS(app->rand2) == 1)) {
+          if (vars) {
+            Scheme_Compiled_Let_Value *lv = (Scheme_Compiled_Let_Value *)lh->body;
+            install_definition(vec, offset, SCHEME_CAR(vars), lv->value);
+            vars = SCHEME_CDR(vars);
+            lv = (Scheme_Compiled_Let_Value *)lv->body;
+            install_definition(vec, offset+1, SCHEME_CAR(vars), lv->value);
+          }
+          return 1;
+        }
+      } else if (SAME_TYPE(SCHEME_TYPE(body), scheme_application_type)
+                 && ((Scheme_App_Rec *)body)->num_args == n) {
+        Scheme_App_Rec *app = (Scheme_App_Rec *)body;
+        if (SAME_OBJ(app->args[0], scheme_values_func)) {
+          for (i = 0; i < n; i++) {
+            if (!SAME_TYPE(SCHEME_TYPE(app->args[i+1]), scheme_local_type)
+                || SCHEME_LOCAL_POS(app->args[i+1]) != i)
+              return 0;
+          }
+          if (vars) {
+            body = lh->body;
+            for (i = 0; i < n; i++) {
+              Scheme_Compiled_Let_Value *lv = (Scheme_Compiled_Let_Value *)body;
+              install_definition(vec, offset+i, SCHEME_CAR(vars), lv->value);
+              vars = SCHEME_CDR(vars);
+              body = lv->body;
+            }
+          }
+          return 1;
+        }
+      }
+    }    
+  } else if ((n == 2) && SAME_TYPE(SCHEME_TYPE(e), scheme_application3_type)) {
+    Scheme_App3_Rec *app = (Scheme_App3_Rec *)e;
+    if (SAME_OBJ(app->rator, scheme_values_func)
+        && scheme_omittable_expr(app->rand1, 1, 5, 0, NULL, NULL, 0, 0)
+        && scheme_omittable_expr(app->rand2, 1, 5, 0, NULL, NULL, 0, 0)) {
+      if (vars) {
+        install_definition(vec, offset, SCHEME_CAR(vars), app->rand1);
+        vars = SCHEME_CDR(vars);
+        install_definition(vec, offset+1, SCHEME_CAR(vars), app->rand2);
+      }
+      return 1;
+    }
+  } else if (SAME_TYPE(SCHEME_TYPE(e), scheme_application_type)
+             && ((Scheme_App_Rec *)e)->num_args == n) {
+    Scheme_App_Rec *app = (Scheme_App_Rec *)e;
+    if (SAME_OBJ(app->args[0], scheme_values_func)) {
+      int i;
+      for (i = 0; i < n; i++) {
+        if (!scheme_omittable_expr(app->args[i+1], 1, 5, 0, NULL, NULL, 0, 0))
+          return 0;
+      }
+      if (vars) {
+        for (i = 0; i < n; i++) {
+          install_definition(vec, offset+i, SCHEME_CAR(vars), app->args[i+1]);
+          vars = SCHEME_CDR(vars);
+        }
+      }
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
 static Scheme_Object *
 module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 {
@@ -5103,6 +5212,49 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
   info->cp = m->comp_prefix;
 
   cnt = SCHEME_VEC_SIZE(m->bodies[0]);
+
+  /* First, flatten `(define-values (x ...) (values e ...))'
+     to `(define (x) e) ...' when possible. */
+  {
+    int inc = 0;
+    for (i_m = 0; i_m < cnt; i_m++) {
+      e = SCHEME_VEC_ELS(m->bodies[0])[i_m];
+      if (SAME_TYPE(SCHEME_TYPE(e), scheme_define_values_type))  {
+        int n;
+        vars = SCHEME_VEC_ELS(e)[0];
+        n = scheme_list_length(vars);
+        if (n > 1) {
+          e = SCHEME_VEC_ELS(e)[1];
+          if (split_define_values(e, n, NULL, NULL, 0))
+            inc += (n - 1);
+        }
+      }
+    }
+
+    if (inc > 0) {
+      Scheme_Object *new_vec;
+      int j = 0;
+      new_vec = scheme_make_vector(cnt+inc, NULL);
+      for (i_m = 0; i_m < cnt; i_m++) {
+        e = SCHEME_VEC_ELS(m->bodies[0])[i_m];
+        if (SAME_TYPE(SCHEME_TYPE(e), scheme_define_values_type)) {
+          int n;
+          vars = SCHEME_VEC_ELS(e)[0];
+          n = scheme_list_length(vars);
+          if (n > 1) {
+            if (split_define_values(SCHEME_VEC_ELS(e)[1], n, vars, new_vec, j)) {
+              j += n;
+            } else
+              SCHEME_VEC_ELS(new_vec)[j++] = e;
+          } else
+            SCHEME_VEC_ELS(new_vec)[j++] = e;
+        } else
+          SCHEME_VEC_ELS(new_vec)[j++] = e;
+      }
+      cnt += inc;
+      m->bodies[0] = new_vec;
+    }
+  }
 
   if (OPT_ESTIMATE_FUTURE_SIZES) {
     if (info->enforce_const) {
