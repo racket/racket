@@ -1,6 +1,7 @@
-#lang racket
+#lang racket/base
 
 (require teachpack/2htdp/scribblings/img-eval
+         racket/pretty
          racket/sandbox
          mzlib/pconvert
          file/convertible

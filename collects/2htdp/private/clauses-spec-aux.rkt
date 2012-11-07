@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; provides constants and functions for specifying the shape of clauses in big-bang and universe 
@@ -6,7 +6,7 @@
 (provide nat> nat? proc> bool> num> ip> string> symbol> string-or-symbol> any> K False True)
 
 (require htdp/error "check-aux.rkt")
-                             
+
 (define (K w . r) w)
 (define (False w) #f)
 (define (True w) #t)
