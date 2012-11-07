@@ -80,6 +80,21 @@
 (define (history-delete idx)
   (history-free (history-remove idx)))
 
+;; history-load : string? -> void
+(define (history-load filename)
+  (when (file-exists? filename)
+    (with-input-from-file filename
+      (lambda ()
+        (for ([line (in-lines)])
+          (add-history line))))))
+
+;; history-save : string? -> void
+(define (history-save filename)
+  (with-output-to-file filename #:exists 'replace
+      (lambda ()
+        (for ([index (in-range (history-length))])
+          (displayln (history-get index))))))
+
 ;; Simple completion: use this with a (string -> (list-of string)) function
 ;; that returns the completions for a given string (can be used with other
 ;; input string types too, depending on the `type' argument).  Use #f to remove
