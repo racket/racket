@@ -435,7 +435,7 @@
                                                  [parent in-source-discussion-panel]
                                                  [stretchable-width #f]
                                                  [min-width 32]))
-        (define in-source-discussion-editor-canvas (add-discussion in-source-discussion-panel definitions-text))
+        (define in-source-discussion-editor-canvas (add-discussion in-source-discussion-panel definitions-text use-language-in-source-rb-callback))
         (define most-recent-languages-hier-list-selection (preferences:get 'drracket:language-dialog:hierlist-default))
         (define most-recent-teaching-languages-hier-list-selection (preferences:get 'drracket:language-dialog:teaching-hierlist-default))
         
@@ -1129,7 +1129,7 @@
                   #f)]
              [else #f])))))
     
-    (define (add-discussion p definitions-text)
+    (define (add-discussion p definitions-text use-language-in-source-rb-callback)
       (define t (new (text:hide-caret/selection-mixin text:standard-style-list%)))
       (define c (new editor-canvas%
                      [stretchable-width #t]
@@ -1191,6 +1191,7 @@
         (do-insert "]\n" #f)
         (send t set-clickback before-lang after-lang
               (λ (t start end)
+                (use-language-in-source-rb-callback)
                 (define-values (current-line-start current-line-end) 
                   (if definitions-text
                       (find-language-position definitions-text)
@@ -1201,20 +1202,18 @@
                        (string-constant drscheme)
                        (string-append
                         (string-constant racket-dialect-in-buffer-message)
+                        "\n\n"
                         (cond
                           [(and existing-lang-line
                                 (equal? existing-lang-line the-lang-line))
-                           ""]
+                           (format (string-constant racket-dialect-already-same-#lang-line) 
+                                   existing-lang-line)]
                           [existing-lang-line
-                           (string-append 
-                            "\n\n"
-                            (format (string-constant racket-dialect-replace-#lang-line) 
-                                    existing-lang-line
-                                    the-lang-line))]
+                           (format (string-constant racket-dialect-replace-#lang-line) 
+                                   existing-lang-line
+                                   the-lang-line)]
                           [else
-                           (string-append 
-                            "\n\n"
-                            (format (string-constant racket-dialect-add-new-#lang-line) the-lang-line))]))
+                           (format (string-constant racket-dialect-add-new-#lang-line) the-lang-line)]))
                        (cond
                          [(and existing-lang-line
                                (equal? existing-lang-line the-lang-line))
