@@ -53,10 +53,10 @@
   (or/c 'base 'top 'center 'bottom))
 
 (define tab-snip-filetype/c
-  (one-of/c 'unknown 'unknown/mask 'unknown/alpha
-            'gif 'gif/mask 'gif/alpha
-            'jpeg 'png 'png/mask 'png/alpha
-            'xbm 'xpm 'bmp 'pict))
+  (or/c 'unknown 'unknown/mask 'unknown/alpha
+        'gif 'gif/mask 'gif/alpha
+        'jpeg 'png 'png/mask 'png/alpha
+        'xbm 'xpm 'bmp 'pict))
 
 (define style-delta%/c
   (class/c
@@ -150,9 +150,9 @@
 
 ;; snip% utils
 (define snip%-edit-operation/c
-  (one-of/c 'undo 'redo 'clear 'cut
-            'copy 'paste 'kill 'select-all
-            'insert-text-box 'insert-pasteboard-box 'insert-image))
+  (or/c 'undo 'redo 'clear 'cut
+        'copy 'paste 'kill 'select-all
+        'insert-text-box 'insert-pasteboard-box 'insert-image))
 
 ;; snip% methods
 (define snip%-adjust-cursor/c
@@ -185,7 +185,9 @@
        real?
        real?
        real?
-       (one-of/c 'no-caret 'show-inactive-caret 'show-caret)
+       (or/c 'no-caret 'show-inactive-caret 'show-caret
+             (cons/c exact-nonnegative-integer?
+                     exact-nonnegative-integer?))
        void?))
 
 (define snip%-other-equal-to?/c
@@ -520,12 +522,12 @@
          (>=/c 0)
          (>=/c 0)
          any/c)
-        ((one-of/c 'start 'end 'none))
+        ((or/c 'start 'end 'none))
         boolean?))
 
 (define snip-admin%-set-caret-owner/c
   (->m (is-a?/c snip%)
-       (one-of/c 'immediate 'display 'global)
+       (or/c 'immediate 'display 'global)
        void?))
 
 (define snip-admin%-update-cursor/c
