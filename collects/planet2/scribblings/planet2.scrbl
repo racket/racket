@@ -417,7 +417,9 @@ dependencies for the Planet 2 compatibility package.
 
 We do not intend to improve this compatibility system much more over
 time, because it is simply a stop-gap as developers port their
-packages to Planet 2.
+packages to Planet 2. Additionally, the existence of this is not meant
+to imply that we will be removing Planet 1 from existence in the near
+future.
 
 @section{FAQ}
 
@@ -537,7 +539,12 @@ out of beta when these are completed.
 
 @itemlist[
 
-@item{It has not been tested on Windows or Mac OS X.}
+@item{It has not been tested on Windows or Mac OS X. If you would like
+to test it, please run @exec{racket
+collects/tests/planet2/test.rkt}. It is recommended that you run this
+with the environment variable @envvar{PLT_PLANET2_DONTSETUP} set to
+@litchar{1}. (The tests that require @exec{raco setup} to run
+explicitly ignore the environment of the test script.)}
 
 @item{The official PNS will divide packages into three
 categories: @reponame{planet}, @reponame{solar-system}, and @reponame{galaxy}. The definitions
@@ -629,6 +636,17 @@ they should be run to DrDr. This is currently done via the
 @filepath{meta/props} script for things in the core. We should
 generalize this script to a @filepath{meta/props.d} directory so that
 packages can install DrDr metadata to it.}
+
+@item{We hope that this package system will encourage more incremental
+improvements to pieces of Racket. In particular, it would be wonderful
+to have a very thorough @filepath{data} collection of different
+data-structures. However, our existing setup for Scribble would force
+each new data structue to have a different top-level documentation
+manual, rather than extending the documentation of the existing
+@filepath{data} collection. Similar issues will exist for the
+@filepath{net} and @filepath{file} collections. We should design a way
+to have such "documentation plugins" in Scribble and support
+similar "plugin" systems elsewhere in the code-base.}
 
 @item{Packages can contain any kinds of files, including bytecode and
 documentation, which would reduce the time required to install a
