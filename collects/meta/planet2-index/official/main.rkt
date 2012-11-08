@@ -537,21 +537,7 @@
                  `(input ([name "name"]
                           [type "text"]
                           [value ,(or pkg-name "")]))
-                 `(span ,pkg-name
-                        (br)
-                        (span ([class "tooltip"])
-                              (a ([href "javascript:0;"]) 
-                               "(install instructions)")
-                              (span
-                               "Install this package with:" (br) (br)
-                               (tt "raco pkg install " ,pkg-name) (br) (br)
-                               "or, by evaluating:" (br)
-                               (pre
-                                ,(format "~a\n~a\n~a\n"
-                                         "#lang racket"
-                                         "(require planet2)"
-                                         (format "(install \"~a\")"
-                                                 pkg-name)))))))))
+                 pkg-name)))
          (tr
           (td "Author")
           (td (a ([href ,(main-url page/search
@@ -578,14 +564,14 @@
           (td "Last Checked")
           (td ,(format-time (package-ref* i 'last-checked #f))))
          (tr
+          (td "Last Edit")
+          (td ,(format-time (package-ref* i 'last-edit #f))))
+         (tr
           (td "Description")
           (td ,(if edit-details
                  `(textarea ([name "description"])
                             ,(package-ref* i 'description ""))
                  (package-ref i 'description))))
-         (tr
-          (td "Last Edit")
-          (td ,(format-time (package-ref* i 'last-edit #f))))
          (tr
           (td "Tags")
           (td
@@ -605,7 +591,17 @@
       `(div
         ([class "package"])
         (form ([action ,(embed/url form-handler)] [method "post"])
-              ,the-table))))))
+              ,the-table)
+        (div ([class "install"])
+             "Install this package with:" (br) (br)
+             (tt "raco pkg install " ,pkg-name) (br) (br)
+             "or, by evaluating:" (br)
+             (pre
+              ,(format "~a\n~a\n~a\n"
+                       "#lang racket"
+                       "(require planet2)"
+                       (format "(install \"~a\")"
+                               pkg-name)))))))))
 
 (define (page/manage/update req)
   (update-checksums
