@@ -35,13 +35,15 @@ log message was reported.
 (define drop-gc? #t)
 (define start-right-away? #f)
 
-(define done-chan (make-channel))
-(define start-chan (make-channel))
+(define log-done-chan (make-channel))
+(define bt-done-chan (make-channel))
+
+(define start-log-chan (make-channel))
 (void 
  (thread
   (λ ()
     (let loop () 
-      (sync start-chan)
+      (sync start-log-chan)
       (let loop ([events '()])
         (sync
          (handle-evt
@@ -49,31 +51,103 @@ log message was reported.
           (λ (info)
             (loop (cons info events))))
          (handle-evt
-          done-chan
+          log-done-chan
           (λ (resp-chan)
             (channel-put resp-chan events)))))
+      (loop)))))
+
+(define thread-to-watch (current-thread))
+(let ([win (get-top-level-windows)])
+  (unless (null? win)
+    (define fr-thd (eventspace-handler-thread (send (car win) get-eventspace)))
+    (unless (eq? thread-to-watch fr-thd)
+      (eprintf "WARNING: current-thread and eventspace thread aren't the same thread\n"))))
+(define start-bt-chan (make-channel))
+(void 
+ (thread
+  (λ ()
+    (let loop () 
+      (sync start-bt-chan)
+      (let loop ([marks '()])
+        (sync
+         (handle-evt
+          (alarm-evt (+ (current-inexact-milliseconds) 10))
+          (λ (_)
+            (loop (cons (continuation-marks thread-to-watch)
+                        marks))))
+         (handle-evt
+          bt-done-chan
+          (λ (resp-chan)
+            (define stacks (map continuation-mark-set->context marks))
+            (channel-put resp-chan stacks)))))
       (loop)))))
 
 (define controller-frame-eventspace (make-eventspace))
 (define f (parameterize ([current-eventspace controller-frame-eventspace])
             (new frame% [label "Log Follower"])))
-(define sb (new button% [label "Start"] [parent f]
+(define sb (new button% [label "Start Following Log"] [parent f]
                [callback
                 (λ (_1 _2)
                   (sb-callback))]))
+(define sb2 (new button% [label "Start Collecting Backtraces"] [parent f]
+                 [callback
+                  (λ (_1 _2)
+                    (start-bt-callback))]))
 (define db (new button% [label "Stop && Dump"] [parent f] [enabled #f]
                 [callback
                  (λ (_1 _2)
-                   (define resp (make-channel))
-                   (channel-put done-chan resp)
-                   (show-results (channel-get resp))
-                   (send db enable #f)
-                   (send sb enable #t))]))
+                   (cond
+                     [following-log?
+                      (define resp (make-channel))
+                      (channel-put log-done-chan resp)
+                      (show-results (channel-get resp))
+                      (send db enable #f)
+                      (send sb enable #t)
+                      (send sb2 enable #t)
+                      (set! following-log? #f)]
+                     [following-bt?
+                      (define resp (make-channel))
+                      (channel-put bt-done-chan resp)
+                      (define stacks (channel-get resp))
+                      (show-bt-results stacks)
+                      (send db enable #f)
+                      (send sb enable #t)
+                      (send sb2 enable #t)
+                      (set! following-bt? #f)]))]))
+
+(define following-log? #f)
+(define following-bt? #f)
+
 (define (sb-callback)
+  (set! following-log? #t)
   (send sb enable #f)
+  (send sb2 enable #f)
   (send db enable #t)
-  (channel-put start-chan #t))
+  (channel-put start-log-chan #t))
+
+(define (start-bt-callback)
+  (set! following-bt? #t)
+  (send sb enable #f)
+  (send sb2 enable #f)
+  (send db enable #t)
+  (channel-put start-bt-chan #t))
+
 (send f show #t)
+
+(define (show-bt-results stacks)
+  (define top-frame (make-hash))
+  (for ([stack (in-list stacks)])
+    (unless (null? stack)
+      (define k (car stack))
+      (hash-set! top-frame k (cons stack (hash-ref top-frame k '())))))
+  (define sorted (sort (hash-map top-frame (λ (x y) y)) > #:key length))
+  (printf "top 10: ~s\n" (map length (take sorted (min (length sorted) 10))))
+  (define most-popular (cadr sorted))
+  (for ([x (in-range 10)])
+    (printf "---- next stack\n")
+    (pretty-print (list-ref most-popular (random (length most-popular))))
+    (printf "\n"))
+  (void))
 
 (struct gui-event (start end name) #:prefab)
 
