@@ -375,11 +375,7 @@ similar to the name of the package. For example, @pkgname{libgtk1}
 should provide a collection named @filepath{libgtk}. Exceptions
 include extensions to existing collection, such as new data-structures
 for the @filepath{data} collection, DrRacket tools, new games for PLT
-Games, etc. But see the next bullet as well.}
-
-@item{Packages should make use of general collections, such as
-@filepath{tests} and @filepath{typed}, rather than including their own
-sub-collections for tests, typed interfaces, documentation, etc.}
+Games, etc.}
 
 @item{Packages are not allowed to start with @pkgname{plt},
 @pkgname{racket}, or @pkgname{planet} without special approval from
