@@ -15,22 +15,6 @@
 
 (define xexpr-drop-empty-attributes (make-parameter #f))
 
-; : (a -> bool) tst -> bool
-; To check if l is a (listof p?)
-; Don't use (and (list? l) (andmap p? l)) because l may be improper.
-(define (listof? p? l)
-  (let listof-p? ([l l])
-    (or (null? l)
-        (and (cons? l) (p? (car l)) (listof-p? (cdr l))))))
-
-; : tst -> bool
-(define (xexpr-attribute? b)
-  (and (pair? b)
-       (symbol? (car b))
-       (pair? (cdr b))
-       (string? (cadr b))
-       (null? (cddr b))))
-
 ;; xml->xexpr : Content -> Xexpr
 (define (xml->xexpr x)
   (let* ([non-dropping-combine
