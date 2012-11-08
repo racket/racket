@@ -133,44 +133,43 @@
              (values (cadr x) (cddr x))
              (values null (cdr x))))
        ; Write opening tag
-       (display "<" out)
+       (write-string "<" out)
        (display name out)
        ; Write attributes
        (for ([att (in-list attrs)])
-         (display " " out)
+         (write-string " " out)
          (display (car att) out)
-         (display "=" out)
-         (display "\"" out)
-         (display/escape (cadr att) escape-attribute-table out)
-         (display "\"" out))
+         (write-string "=\"" out)
+         (write-string/escape (cadr att) escape-attribute-table out)
+         (write-string "\"" out))
        ; Write end of opening tag
        (if (and (null? content)
                 (case short
                     [(always) #t]
                     [(never) #f]
                     [else (memq (lowercase-symbol name) short)]))
-           (display " />" out)
+           (write-string " />" out)
            (begin
-             (display ">" out)
+             (write-string ">" out)
              ; Write body
              (for ([xe (in-list content)])
                (loop xe))
              ; Write closing tag
-             (display "</" out)
+             (write-string "</" out)
              (display name out)
-             (display ">" out)))]
+             (write-string ">" out)))]
       ; PCData
       [(string? x)
-       (display/escape x escape-table out)]
+       (write-string/escape x escape-table out)]
       ; Entities
       [(symbol? x)
-       (display "&" out)
+       (write-string "&" out)
        (display x out)
-       (display ";" out)]
+       (write-string ";" out)]
       [(valid-char? x)
-       (display "&#" out)
+       (write-string "&#" out)
        (display x out)
-       (display ";" out)]
+       (write-string ";" out)]
       ; Embedded XML
       [(cdata? x)
        (write-xml-cdata x 0 void out)]
