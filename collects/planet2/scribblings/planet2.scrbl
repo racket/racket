@@ -280,7 +280,7 @@ Then initialize the Git repository locally and do your first push:
 @commandline{git add *}
 @commandline{git commit -m "First commit"}
 @commandline{git remote add origin https://github.com/<username>/<package-name>.git}
-@commandline{git push origin master}
+@commandline{git push -u origin master}
 
 Now, publish your package source as:
 
