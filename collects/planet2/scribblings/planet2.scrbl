@@ -255,6 +255,10 @@ file:
 @commandline{cd <package-name>}
 @commandline{echo "((dependency))" > METADATA.rktd}
 
+This metadata file is not necessary if you have no dependencies, but
+you may wish to create it to simplify adding dependencies in the
+future.
+
 Next, inside this directory, create directories for the collections
 and modules that your package will provide. For example,
 the developer of @pkgname{tic-tac-toe} might do:
