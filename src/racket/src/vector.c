@@ -51,7 +51,6 @@ static Scheme_Object *impersonate_vector(int argc, Scheme_Object **argv);
 
 static Scheme_Object *unsafe_vector_len (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_vector_ref (int argc, Scheme_Object *argv[]);
-static Scheme_Object *unsafe_vector_ref_star (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_vector_set (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_vector_star_len (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_vector_star_ref (int argc, Scheme_Object *argv[]);
