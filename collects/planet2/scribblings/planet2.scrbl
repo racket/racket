@@ -600,9 +600,12 @@ resolver that searches for providers of modules on the configured
 @tech{package name services}. For example, if a module requires
 @filepath{data/matrix.rkt}, and it is not available, then the PNS will
 be consulted to discover what packages provide it. @emph{Only packages
-in @reponame{solar-system} or @reponame{planet} will be returned.}
+in @reponame{solar-system} or @reponame{planet} will be
+returned.} (This category restriction ensures that the package to
+install is unique.)
+
 Users can configure their systems to then automatically install the
-package provide is has the appropriate category (i.e., some users may
+package provided is has the appropriate category (i.e., some users may
 wish to automatically install @reponame{planet} packages but not
 @reponame{solar-system} packages, while others may not want to install
 any.)
