@@ -278,6 +278,15 @@
       `(p "Email addresses may not contain / on Planet2:"
           (tt ,email)))))
 
+  (when (string=? "" email)
+    (send/back
+     (template
+      log-req
+      #:breadcrumb
+      (list "Login" "Account Registration Error")
+      `(p "Email addresses must not be empty::"
+          (tt ,email)))))
+
   (define password-path (build-path users-path email))
 
   (cond
@@ -301,7 +310,10 @@
          `(p "An email has been sent to "
              (tt ,email)
              ", please click the link it contains to register and log in."))))
-     (display-to-file (salty passwd) password-path)
+
+     (when (not (file-exists? password-path))
+       (display-to-file (salty passwd) password-path))
+
      (authenticated!)]
     [(not (bytes=? (string->bytes/utf-8 (salty passwd))
                    (file->bytes password-path)))
