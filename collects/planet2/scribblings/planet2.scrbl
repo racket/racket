@@ -86,8 +86,8 @@ bound to the source and @racket['checksum] bound to the
 checksum. Typically, the source will be a remote URL string.
 
 PLT supports two @tech{package name services}, which are enabled by
-default: @filepath{https://plt-etc.cs.byu.edu:9004} for new Planet 2
-packages and @filepath{https://plt-etc.cs.byu.edu:9003} for
+default: @filepath{https://plt-etc.byu.edu:9004} for new Planet 2
+packages and @filepath{https://plt-etc.byu.edu:9003} for
 automatically generated Planet 2 packages for old Planet 1
 packages. Anyone may host their own @tech{package name service}. The
 source for the PLT-hosted servers is in the
