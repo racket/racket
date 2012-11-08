@@ -592,16 +592,18 @@
         ([class "package"])
         (form ([action ,(embed/url form-handler)] [method "post"])
               ,the-table)
-        (div ([class "install"])
-             "Install this package with:" (br) (br)
-             (tt "raco pkg install " ,pkg-name) (br) (br)
-             "or, by evaluating:" (br)
-             (pre
-              ,(format "~a\n~a\n~a\n"
-                       "#lang racket"
-                       "(require planet2)"
-                       (format "(install \"~a\")"
-                               pkg-name)))))))))
+        ,(if pkg-name
+           `(div ([class "install"])
+                 "Install this package with:" (br) (br)
+                 (tt "raco pkg install " ,pkg-name) (br) (br)
+                 "or, by evaluating:" (br)
+                 (pre
+                  ,(format "~a\n~a\n~a\n"
+                           "#lang racket"
+                           "(require planet2)"
+                           (format "(install \"~a\")"
+                                   pkg-name))))
+           ""))))))
 
 (define (page/manage/update req)
   (update-checksums
