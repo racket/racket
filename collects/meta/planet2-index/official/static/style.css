@@ -1,0 +1,148 @@
+html {
+    overflow-y: scroll;
+}
+
+a img {
+    border: 0;
+}
+
+body {
+    color: black;
+    background-color: white;
+    font-family: Optima, Arial, Verdana, Helvetica, sans-serif;
+    margin: 0px;
+    padding: 0px;
+}
+
+.breadcrumb {
+    padding-left: 1em;
+    padding-right: 1em;
+    background: #FFCC66;
+    font-size: 120%;
+    font-weight: bold;
+}
+
+.breadcrumb a,span.not-this {
+    color: black;
+    text-decoration: none;
+    font-weight: normal;
+}
+
+.breadcrumb a:hover {
+    color: blue;
+    text-decoration: underline;
+}
+
+#logout {
+    float: right;
+}
+
+.content {
+    margin-left: auto;
+    margin-right: auto;
+    width: 95%;
+}
+
+table.packages {
+    width: 100%;
+}
+
+table.packages thead tr {
+    background: #FFCC66;
+}
+
+table.packages tbody tr:nth-child(2n) {
+    background: #F5F5DC;
+}
+
+.recent td:nth-child(1):before {
+    content: "*";
+    color: red;
+}
+
+#menu {
+    text-align: center;
+    width: 100%;
+    margin-top: 1em;
+    margin-bottom: 1em;
+}
+
+.menu_option {
+    margin-right: 4em;
+}
+
+.package {
+    margin-top: 1em;
+    margin-bottom: 1em;
+    width: 100%;
+    text-align: center;
+}
+
+.package table {
+    width: 70%;
+    margin-left: 15%;
+    margin-right: 15%;
+    border: 1px dotted;
+}
+.package table tr {
+    width: 100%;
+}
+.package table td {
+    vertical-align: top;
+    height: 2em;
+}
+.package table tr:nth-child(3) td {
+    height: 2.5em;
+}
+.package table tr:nth-child(7) td {
+    height: 3.5em;
+}
+.package table td:nth-child(1) {
+    text-align: right;
+    font-weight: bold;
+    width: 15%;
+}
+.package table td:nth-child(2) {
+    text-align: left;
+}
+.package table td.submit {
+    text-align: center;
+}
+.package input {
+    width: 100%;
+}
+.package textarea {
+    width: 100%;
+    height: 4em;
+}
+
+#footer {
+    width: 95%;
+    text-align: right;
+    background: #F5F5DC;
+    padding-right: 3em;
+}
+
+span.tooltip {
+    position: relative;
+}
+
+span.tooltip > a + span {
+    display: none;
+}
+
+span.tooltip > a:hover {
+    font-size: 99%;
+    font-color: #000000;
+}
+
+span.tooltip > a:hover + span {
+    display: block;
+    position: absolute;
+    margin-top: 10px;
+    margin-left: -10px;
+    width: 250px; padding: 5px;
+    z-index: 100;
+    background: #F5F5DC;
+    text-align: left;
+}

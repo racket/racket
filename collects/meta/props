@@ -806,6 +806,9 @@ path/s is either such a string or a list of them.
 "collects/meta/drdr2" responsible (jay) drdr:command-line #f
 "collects/meta/images/mkheart.rkt" drdr:command-line #f
 "collects/meta/images/taking-screenshots/racket-widget.scm" drdr:command-line #f
+"collects/meta/planet2-index" responsible (jay)
+"collects/meta/planet2-index/official/main.rkt" drdr:command-line (raco "test" *)
+"collects/meta/planet2-index/planet-compat/main.rkt" drdr:command-line (raco "test" *)
 "collects/meta/props" responsible (eli jay) drdr:command-line (racket "-um" * "verify")
 "collects/meta/web" drdr:command-line #f
 "collects/mred" responsible (mflatt)
@@ -858,6 +861,7 @@ path/s is either such a string or a list of them.
 "collects/picturing-programs" responsible (sbloch)
 "collects/plai" responsible (jay)
 "collects/planet" responsible (robby)
+"collects/planet2" responsible (jay)
 "collects/plot" responsible (ntoronto)
 "collects/plot/scribblings/plot.scrbl" drdr:timeout 180
 "collects/plot/tests/extreme-bounds-tests.rkt" drdr:timeout 150
@@ -1146,6 +1150,8 @@ path/s is either such a string or a list of them.
 "collects/tests/planet/test-docs-complete.rkt" drdr:command-line (raco "make" *)
 "collects/tests/planet/thread-safe-resolver.rkt" drdr:command-line (raco "make" *) drdr:timeout 1000
 "collects/tests/planet/version.rkt" drdr:command-line (raco "make" *)
+"collects/tests/planet2" responsible (jay) drdr:command-line (mzc *)
+"collects/tests/planet2/test-pkgs" drdr:command-line #f
 "collects/tests/profile" responsible (eli)
 "collects/tests/r6rs" responsible (mflatt)
 "collects/tests/racket" responsible (mflatt)
