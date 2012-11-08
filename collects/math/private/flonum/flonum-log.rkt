@@ -5,9 +5,10 @@
          "flonum-functions.rkt"
          "flonum-constants.rkt"
          "flonum-exp.rkt"
-         "flonum-sum.rkt")
+         "flonum-sum.rkt"
+         "flonum-syntax.rkt")
 
-(provide fllog1p
+(provide fllog1p fllog+
          lg1+ lg+ lg1- lg- lgsum
          fllog-quotient)
 
@@ -22,6 +23,20 @@
            (define y (fl+ 1.0 x))
            (fl- (fllog y) (fl/ (fl- (fl- y 1.0) x) y))]
           [else  x]))
+  
+  (: fllog+ (Flonum Flonum -> Flonum))
+  ;; Computes log(a+b) in a way that is accurate for a+b near 1.0
+  (define (fllog+ a b)
+    (define a+b (+ a b))
+    (cond [((flabs (- a+b 1.0)) . < . (fllog 2.0))
+           ;; a+b is too close to 1.0, so compute in higher precision
+           (define-values (a+b a+b-lo) (fast-fl+/error a b))
+           (- (fllog a+b) (fllog1p (- (/ a+b-lo a+b))))]
+          [(a+b . = . +inf.0)
+           ;; a+b overflowed, so reduce the arguments
+           (+ (fllog 2.0) (fllog (+ (* 0.5 a) (* 0.5 b))))]
+          [else
+           (fllog a+b)]))
   
   (: lg1+ (Float -> Float))
   (define (lg1+ log-x)

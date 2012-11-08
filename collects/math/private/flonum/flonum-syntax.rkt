@@ -14,10 +14,13 @@
 ;; |hi| >= |lo| and hi + lo = a. (The extra sign bit accounts for the missing bit.)
 (define-syntax-rule (flsplit a-expr)
   (let ([a a-expr])
-    (let* ([c  (fl* 134217729.0 a)]  ; 134217729 = (expt 2 (ceiling (/ 53 2)))
+    (define s (if ((flabs a) . < . 1e300) 1.0 (flexpt 2.0 52.0)))
+    (let* ([a  (fl/ a s)]
+           [c  (fl* a (+ 1.0 (flexpt 2.0 27.0)))]
            [a-hi  (fl- c (fl- c a))]
            [a-lo  (fl- a a-hi)])
-      (values a-hi a-lo))))
+      (values (fl* a-hi s)
+              (fl* a-lo s)))))
 
 ;(: fast-mono-fl+/error (Flonum Flonum -> (Values Flonum Flonum)))
 ;; Returns a+b and its rounding error
