@@ -85,12 +85,12 @@ with a @racket[read]-able hash table with the keys: @racket['source]
 bound to the source and @racket['checksum] bound to the
 checksum. Typically, the source will be a remote URL string.
 
-The Racket maintainers supports two @tech{package name services},
-which are enabled by default: @filepath{https://plt-etc.byu.edu:9004}
-for new Planet 2 packages and @filepath{https://plt-etc.byu.edu:9003}
-for automatically generated Planet 2 packages for old Planet 1
+PLT supports two @tech{package name services}, which are enabled by
+default: @filepath{https://plt-etc.byu.edu:9004} for new Planet 2
+packages and @filepath{https://plt-etc.byu.edu:9003} for
+automatically generated Planet 2 packages for old Planet 1
 packages. Anyone may host their own @tech{package name service}. The
-source for the Racket-hosted servers is in the
+source for the PLT-hosted servers is in the
 @racket[(build-path (find-collects-dir) "meta" "planet2-index")]
 directory.
 
@@ -383,14 +383,13 @@ Games, etc.}
 
 @item{Packages are not allowed to start with @pkgname{plt},
 @pkgname{racket}, or @pkgname{planet} without special approval from
-Planet 2 curation.}
+PLT curation.}
 
 ]
 
 @section{Planet 1 Compatibility}
 
-The Racket maintainers run a Planet 1 compatibility @tech{package name
-service} at
+PLT maintains a Planet 1 compatibility @tech{package name service} at
 @link["https://plt-etc.byu.edu:9003/"]{https://plt-etc.byu.edu:9003/}. This
 PNS is included by default in the Planet search path.
 
@@ -564,7 +563,7 @@ responsive about fixing regressions against changes in Racket, etc.}
 
  ]
 
-This categories will be curated by the Racket maintainers.
+This categories will be curated by PLT.
 
 Our goal is for all packages to be in the @reponame{solar-system}, with
 the @reponame{galaxy} as a temporary place while the curators work with the
@@ -583,12 +582,12 @@ the case that older packages have preference. (For example,
 package used by both @pkgname{tic-tac-toe} and
 @pkgname{factory-optimize}.)
 
-In contrast, the @reponame{planet} category will be a special category
-that authors may apply for. Admission requires a code audit and
-implies a "stamp of approval" from the Racket maintainers. In the
-future, packages in this category will have more benefits, such as
-automatic regression testing on DrDr, testing during releases,
-provided binaries, and advertisement during installation.
+In contrast, the @reponame{planet} category will be a special category that
+authors may apply for. Admission requires a code audit and implies
+a "stamp of approval" from PLT. In the future, packages in this
+category will have more benefits, such as automatic regression testing
+on DrDr, testing during releases, provided binaries, and advertisement
+during installation.
 
 The Planet 1 compatibility packages will also be included in
 the @reponame{solar-system} category, automatically. 
@@ -659,16 +658,16 @@ these included are painful to maintain and unreliable given users with
 different versions of Racket installed.
 
 One solution is to have a separate place where such "binary" packages
-are available. For example, the Racket maintainers could run a PNS for
-every Racket version, i.e.,
-@filepath{https://binaries.racket-lang.org/5.3.1.4}, that would
-contain the binaries for all the packages in the @reponame{planet}
-category. Thus, when you install package @pkgname{tic-tac-toe} you
-could also install the binary version from the appropriate PNS.
+are available. For example, PLT could run a PNS for every Racket
+version, i.e., @filepath{https://binaries.racket-lang.org/5.3.1.4},
+that would contain the binaries for all the packages in the
+@reponame{planet} category. Thus, when you install package
+@pkgname{tic-tac-toe} you could also install the binary version from
+the appropriate PNS.
 
-There are obvious problems with this... it could be expensive for the
-Racket maintainers in terms of space and time... Racket compilation is
-not necessarily deterministic or platform-independent.
+There are obvious problems with this... it could be expensive for PLT
+in terms of space and time... Racket compilation is not necessarily
+deterministic or platform-independent.
 
 This problem requires more thought.}
 
