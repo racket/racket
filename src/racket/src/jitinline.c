@@ -1393,8 +1393,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
         (void)jit_ldxi_l(JIT_R0, JIT_R0, &SCHEME_VEC_SIZE(0x0));
       else
         (void)jit_ldxi_l(JIT_R0, JIT_R0, &SCHEME_FLVEC_SIZE(0x0));
-      jit_lshi_l(JIT_R0, JIT_R0, 1);
-      jit_ori_l(JIT_R0, JIT_R0, 0x1);
+      jit_fixnum_l(JIT_R0, JIT_R0);
             
       return 1;
     } else if (IS_NAMED_PRIM(rator, "unsafe-string-length")
@@ -1412,8 +1411,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
         (void)jit_ldxi_l(JIT_R0, JIT_R0, &SCHEME_CHAR_STRLEN_VAL(0x0));
       else
         (void)jit_ldxi_l(JIT_R0, JIT_R0, &SCHEME_BYTE_STRLEN_VAL(0x0));
-      jit_lshi_l(JIT_R0, JIT_R0, 1);
-      jit_ori_l(JIT_R0, JIT_R0, 0x1);
+      jit_fixnum_l(JIT_R0, JIT_R0);
       
       return 1;
     } else if (IS_NAMED_PRIM(rator, "unbox")) {
@@ -1995,8 +1993,7 @@ static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int 
 
     reffail = _jit.x.pc;
     if (int_ready) {
-      jit_lshi_ul(JIT_R1, JIT_R1, 1);
-      jit_ori_l(JIT_R1, JIT_R1, 0x1);
+      jit_fixnum_l(JIT_R1, JIT_R1);
     }
     if (set) {
       if (for_struct)
@@ -2721,8 +2718,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
             jit_ldxi_p(JIT_R0, JIT_R0, &SCHEME_CHAR_STR_VAL((Scheme_Object *)0x0));
             jit_ldxr_c(JIT_R0, JIT_R0, JIT_R1);
             jit_extr_uc_ul(JIT_R0, JIT_R0);
-	    jit_lshi_l(JIT_R0, JIT_R0, 0x1);
-	    jit_ori_l(JIT_R0, JIT_R0, 0x1);
+            jit_fixnum_l(JIT_R0, JIT_R0);
             CHECK_LIMIT();
           } else {
             (void)jit_calli(sjc.bytes_ref_check_index_code);
@@ -2776,8 +2772,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
             jit_ldxi_p(JIT_R0, JIT_R0, &SCHEME_CHAR_STR_VAL((Scheme_Object *)0x0));
             jit_ldxr_c(JIT_R0, JIT_R0, JIT_V1);
             jit_extr_uc_ul(JIT_R0, JIT_R0);
-	    jit_lshi_l(JIT_R0, JIT_R0, 0x1);
-	    jit_ori_l(JIT_R0, JIT_R0, 0x1);
+            jit_fixnum_l(JIT_R0, JIT_R0);
           } else {
             (void)jit_calli(sjc.bytes_ref_code);
           }
@@ -2844,8 +2839,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       else
         jit_ldxr_s(JIT_R0, JIT_R0, JIT_R1);
 
-      jit_lshi_l(JIT_R0, JIT_R0, 0x1);
-      jit_ori_l(JIT_R0, JIT_R0, 0x1);
+      jit_fixnum_l(JIT_R0, JIT_R0);
 
       return 1;
     } else if (IS_NAMED_PRIM(rator, "list-ref")

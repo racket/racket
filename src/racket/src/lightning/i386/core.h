@@ -353,6 +353,8 @@ struct jit_local_state {
 #define jit_rshr_l(d, r1, r2)	jit_replace((r1), (r2), _ECX, 				jit_qop_ ((d), (r1), SARQrr(_CL,  (d)) ))
 #define jit_rshr_ul(d, r1, r2)	jit_replace((r1), (r2), _ECX, 				jit_qop_ ((d), (r1), SHRQrr(_CL,  (d)) ))
 
+#define jit_leai_l(d, rs, is, js)  LEAQmr((is), 0, (rs), 1 << (js), (d))
+
 /* Stack */
 #define jit_pushi_i(is)		PUSHLi(is)
 #define jit_pushr_i(rs)		PUSHLr(rs)

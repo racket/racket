@@ -590,8 +590,7 @@ static int generate_double_arith(mz_jit_state *jitter, Scheme_Object *rator,
             jit_roundr_d_l_fppop(JIT_R1, fpr2); /* slow path won't be needed */
 #endif
         }
-        jit_lshi_l(JIT_R0, JIT_R1, 1);
-        jit_ori_l(JIT_R0, JIT_R0, 0x1);
+        jit_fixnum_l(JIT_R0, JIT_R1);
         no_alloc = 1;
         break;
       case ARITH_SQRT:
@@ -1363,11 +1362,11 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
               refx = jit_beqr_l(jit_forward(), JIT_R2, JIT_V1);
               __END_INNER_TINY__(branch_short);
               /* restore R0 argument: */
-              if (reversed)
-                jit_lshi_l(JIT_R0, JIT_V1, 1);
-              else
-                jit_lshi_l(JIT_R0, JIT_R2, 1);
-              jit_ori_l(JIT_R0, JIT_R0, 0x1);
+              if (reversed) {
+                jit_fixnum_l(JIT_R0, JIT_V1);
+              } else {
+                jit_fixnum_l(JIT_R0, JIT_R2);
+              }
               (void)jit_jmpi(refslow);
               __START_INNER_TINY__(branch_short);
               mz_patch_branch(refx);
@@ -1404,8 +1403,7 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
                 __END_INNER_TINY__(branch_short);
               }
             }
-            jit_lshi_l(JIT_R0, JIT_R0, 1);
-            jit_ori_l(JIT_R0, JIT_R0, 0x1);
+            jit_fixnum_l(JIT_R0, JIT_R0);
           } else if (arith == ARITH_AND) {
             /* and */
             jit_andr_ul(JIT_R0, JIT_R1, JIT_R0);

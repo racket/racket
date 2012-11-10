@@ -1432,8 +1432,7 @@ static int generate_non_tail_with_branch(Scheme_Object *obj, mz_jit_state *jitte
         using_local1 = 2;
       } else {
         /* mark stack is an integer... turn it into a pointer */
-        jit_lshi_l(JIT_R2, JIT_R2, 0x1);
-        jit_ori_l(JIT_R2, JIT_R2, 0x1);
+        jit_fixnum_l(JIT_R2, JIT_R2);
         mz_pushr_p(JIT_R2); /* no sync */
 # ifdef MZ_USE_LWC
         /* For lighweight continuations, we need to be able to recognize
@@ -2047,8 +2046,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
           mz_tl_ldi_p(JIT_R0, tl_scheme_current_thread);
           CHECK_LIMIT();
           jit_ldxi_l(JIT_V1, JIT_R0, &((Scheme_Thread *)0x0)->ku.multiple.count);
-          jit_lshi_l(JIT_V1, JIT_V1, 0x1);
-          jit_ori_l(JIT_V1, JIT_V1, 0x1);
+          jit_fixnum_l(JIT_V1, JIT_V1);
           mz_pushr_p(JIT_V1); /* sync'd below */
           jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Thread *)0x0)->ku.multiple.array);
           mz_pushr_p(JIT_V1); /* sync'd below */

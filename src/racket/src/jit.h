@@ -914,6 +914,13 @@ static jit_insn *fp_tmpr;
 # define mz_bnei_p(a, v, i) jit_bnei_p(a, v, i)
 #endif
 
+#ifdef jit_leai_l
+# define jit_fixnum_l(JIT_Rdest, JIT_Rsrc) jit_leai_l(JIT_Rdest, JIT_Rsrc, 1, 1)
+#else
+# define jit_fixnum_l(JIT_Rdest, JIT_Rsrc) (jit_lshi_l(JIT_Rdest, JIT_Rsrc, 1), \
+                                            jit_ori_l(JIT_Rdest, JIT_Rdest, 0x1))
+#endif
+
 /* 
  About short-jump mode:
    

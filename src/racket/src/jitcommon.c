@@ -720,8 +720,7 @@ static int common2(mz_jit_state *jitter, void *_data)
   jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
   CHECK_RUNSTACK_OVERFLOW();
   jit_str_p(JIT_RUNSTACK, JIT_R0);
-  jit_lshi_ul(JIT_R1, JIT_R1, 0x1);
-  jit_ori_ul(JIT_R1, JIT_R1, 0x1);
+  jit_fixnum_l(JIT_R1, JIT_R1);
   CHECK_LIMIT();
   jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R1);
   JIT_UPDATE_THREAD_RSPTR();
@@ -1150,8 +1149,7 @@ static int common3(mz_jit_state *jitter, void *_data)
           if (i)
             jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R1);
           else {
-            jit_lshi_ul(JIT_R2, JIT_R1, 0x1);
-            jit_ori_ul(JIT_R2, JIT_R2, 0x1);
+            jit_fixnum_l(JIT_R2, JIT_R1);
             jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R2);
           }
         }
@@ -1164,8 +1162,7 @@ static int common3(mz_jit_state *jitter, void *_data)
         if (ii != -1) {
           /* in chaperone mode, we already saved original and index on runstack */
           if (!i) {
-            jit_lshi_ul(JIT_R1, JIT_R1, 1);
-            jit_ori_ul(JIT_R1, JIT_R1, 0x1);
+            jit_fixnum_l(JIT_R1, JIT_R1);
           }
           jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
           CHECK_RUNSTACK_OVERFLOW();
@@ -1296,8 +1293,7 @@ static int common3(mz_jit_state *jitter, void *_data)
 	    jit_ldxi_p(JIT_R0, JIT_R0, offset);
 	    jit_ldxr_c(JIT_R0, JIT_R0, JIT_V1);
 	    jit_extr_uc_ul(JIT_R0, JIT_R0);
-	    jit_lshi_l(JIT_R0, JIT_R0, 0x1);
-	    jit_ori_l(JIT_R0, JIT_R0, 0x1);
+            jit_fixnum_l(JIT_R0, JIT_R0);
 	    break;
 	  }
 
@@ -2642,8 +2638,7 @@ static int common8(mz_jit_state *jitter, void *_data)
     /* Return result: */
     mz_patch_branch(ref2);
     __END_SHORT_JUMPS__(1);
-    jit_lshi_l(JIT_R0, JIT_R1, 1);
-    jit_ori_l(JIT_R0, JIT_R0, 1);
+    jit_fixnum_l(JIT_R0, JIT_R1);
     ref1 = _jit.x.pc;
     mz_epilog(JIT_R2);
 
