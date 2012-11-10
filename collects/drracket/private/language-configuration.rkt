@@ -8,6 +8,7 @@
            racket/list
            racket/gui/base
            "drsig.rkt"
+           "tooltip.rkt"
            string-constants
            framework
            setup/getinfo
@@ -92,7 +93,9 @@
         (for-each
          (λ (i<%>)
            (unless (is-a? language i<%>)
-             (error 'drracket:language:add-language "expected language ~e to implement ~e, forgot to use `drracket:language:get-default-mixin'?" language i<%>)))
+             (error 'drracket:language:add-language
+                    "expected language ~e to implement ~e, forgot to use `drracket:language:get-default-mixin'?"
+                    language i<%>)))
          (drracket:language:get-language-extensions))
         
         (ensure-no-duplicate-numbers language languages)
@@ -308,7 +311,9 @@
           (class hierarchical-list%
             (init parent)
             
-            (inherit get-selected)
+            (inherit get-selected
+                     client->screen
+                     get-editor)
             (define/override (on-char evt)
               (let ([code (send evt get-key-code)])
                 (case code
@@ -402,6 +407,108 @@
               (when (and i (is-a? i hieritem-language<%>))
                 (something-selected this i)
                 (ok-handler 'execute)))
+            
+            (define tooltip-timer 
+              (new timer%
+                   [notify-callback (λ () (show-tooltip))]))
+            (define tooltip-frame #f)
+            (define hieritem-language-to-show-in-tooltip #f)
+            (define hieritem-tooltip-x #f)
+            (define hieritem-tooltip-y #f)
+            (define hieritem-tooltip-w #f)
+            (define hieritem-tooltip-h #f)
+            (define/override (on-event evt)
+              (super on-event evt)
+              (cond
+                [(or (send evt entering?)
+                     (send evt moving?))
+                 (define-values (ex ey) (send (get-editor) dc-location-to-editor-location
+                                              (send evt get-x) 
+                                              (send evt get-y)))
+                 (set!-values (hieritem-language-to-show-in-tooltip
+                               hieritem-tooltip-x
+                               hieritem-tooltip-y
+                               hieritem-tooltip-w
+                               hieritem-tooltip-h)
+                              (find-snip ex ey))
+                 (when tooltip-frame (send tooltip-frame show #f))
+                 (send tooltip-timer stop)
+                 (when hieritem-language-to-show-in-tooltip (send tooltip-timer start 200 #t))]
+                [(send evt leaving?)
+                 (set! hieritem-language-to-show-in-tooltip #f)
+                 (send tooltip-timer stop)]))
+            (define bl (box 0))
+            (define bt (box 0))
+            (define br (box 0))
+            (define bb (box 0))
+            (define/private (find-snip x y)
+              (let loop ([snip (send (get-editor) find-first-snip)]
+                         [editor (get-editor)]
+                         [x x]
+                         [y y])
+                (cond
+                  [(not snip) (values #f #f #f #f #f)]
+                  [else 
+                   (send editor get-snip-location snip bl bt #f)
+                   (send editor get-snip-location snip br bb #t)
+                   (cond
+                     [(and (is-a? snip hierarchical-item-snip%)
+                           (is-a? (send snip get-item) hieritem-language<%>)
+                           (<= (unbox bl) x (unbox br))
+                           (<= (unbox bt) y (unbox bb)))
+                      (define w (- (unbox br) (unbox bl)))
+                      (define h (- (unbox bb) (unbox bt)))
+                      (send editor local-to-global bl bt)
+                      (define-values (x y) (client->screen
+                                            (inexact->exact (round (unbox bl)))
+                                            (inexact->exact (round (unbox bt)))))
+                      (values (send snip get-item)
+                              x y
+                              (inexact->exact (round w))
+                              (inexact->exact (round h)))]
+                     [(is-a? snip editor-snip%)
+                      (define-values (es ex ey ew eh)
+                        (loop (send (send snip get-editor) find-first-snip)
+                              (send snip get-editor)
+                              (- x (unbox bl))
+                              (- y (unbox bt))))
+                      (if es
+                          (values es ex ey ew eh)
+                          (loop (send snip next) editor x y))]
+                     [else
+                      (loop (send snip next) editor x y)])])))
+            (define/private (show-tooltip)
+              (when hieritem-language-to-show-in-tooltip
+                (define msg (send (send hieritem-language-to-show-in-tooltip get-language)
+                                  get-one-line-summary))
+                (when msg
+                  (unless tooltip-frame
+                    (set! tooltip-frame (new tooltip-frame%
+                                             [frame-to-track
+                                              (let loop ([w this])
+                                                (cond
+                                                  [(is-a? w top-level-window<%>)
+                                                   w]
+                                                  [(is-a? w area<%>)
+                                                   (loop (send w get-parent))]
+                                                  [else #f]))])))
+                  (send tooltip-frame set-tooltip (list msg))
+                  (send tooltip-frame show-over 
+                        (+ hieritem-tooltip-x hieritem-tooltip-w 4)
+                        
+                        ;; why do I have to subtract here...?
+                        ;; that's definitely wrong. Something else
+                        ;; must be wrong earlier to get these bad
+                        ;; coordinates
+                        (- hieritem-tooltip-y hieritem-tooltip-h)
+                        
+                        0 
+                        0))))
+                 
+            (define/public (hide-tooltip)
+              (when tooltip-frame
+                (send tooltip-frame show #f)))
+            
             (super-new [parent parent])
             ;; do this so we can expand/collapse languages on a single click
             (inherit on-click-always allow-deselect)
@@ -416,11 +523,16 @@
                                             [stretchable-height #f]
                                             [alignment '(left top)]))
         
+        (define the-racket-language-panel (new vertical-panel%
+                                               [parent languages-choice-panel]
+                                               [alignment '(left top)]
+                                               [stretchable-height #f]))
+        
         (define use-language-in-source-rb
           (new radio-box% 
                [label #f]
                [choices (list sc-use-language-in-source)]
-               [parent languages-choice-panel]
+               [parent the-racket-language-panel]
                [callback
                 (λ (rb evt)
                   (use-language-in-source-rb-callback))]))
@@ -429,15 +541,18 @@
           (send use-chosen-language-rb set-selection #f)
           (send use-teaching-language-rb set-selection #f))
         (define in-source-discussion-panel (new horizontal-panel% 
-                                                [parent languages-choice-panel]
+                                                [parent the-racket-language-panel]
                                                 [stretchable-height #f]))
         (define in-source-discussion-spacer (new horizontal-panel% 
                                                  [parent in-source-discussion-panel]
                                                  [stretchable-width #f]
                                                  [min-width 32]))
-        (define in-source-discussion-editor-canvas (add-discussion in-source-discussion-panel definitions-text use-language-in-source-rb-callback))
-        (define most-recent-languages-hier-list-selection (preferences:get 'drracket:language-dialog:hierlist-default))
-        (define most-recent-teaching-languages-hier-list-selection (preferences:get 'drracket:language-dialog:teaching-hierlist-default))
+        (define in-source-discussion-editor-canvas 
+          (add-discussion in-source-discussion-panel definitions-text use-language-in-source-rb-callback))
+        (define most-recent-languages-hier-list-selection
+          (preferences:get 'drracket:language-dialog:hierlist-default))
+        (define most-recent-teaching-languages-hier-list-selection 
+          (preferences:get 'drracket:language-dialog:teaching-hierlist-default))
         
         (define use-teaching-language-rb
           (new radio-box% 
@@ -531,11 +646,6 @@
         (define details/manual-parent-panel (make-object vertical-panel% details-outer-panel))
         (define details-panel (make-object panel:single% details/manual-parent-panel))
         
-        (define one-line-summary-message (instantiate message% ()
-                                           (parent parent)
-                                           (label "")
-                                           (stretchable-width #t)))
-        
         (define no-details-panel (make-object vertical-panel% details-panel))
         
         (define languages-table (make-hasheq))
@@ -570,7 +680,6 @@
           (let ([ldp (get-language-details-panel)])
             (when ldp
               (send details-panel active-child ldp)))
-          (send one-line-summary-message set-label (send language get-one-line-summary))
           (send revert-to-defaults-button enable #t)
           (set! get/set-selected-language-settings get/set-settings)
           (set! selected-language language))
@@ -609,7 +718,6 @@
         (define (non-language-selected)
           (send revert-to-defaults-button enable #f)
           (send details-panel active-child no-details-panel)
-          (send one-line-summary-message set-label "")
           (set! get/set-selected-language-settings #f)
           (set! selected-language #f)
           (ok-handler 'disable)
@@ -1308,7 +1416,9 @@
         (define/override (get-extent dc x y wb hb db ab lb sp)
           (super get-extent dc x y wb hb db ab lb sp)
           (when (box? wb) (set-box! wb width)))
-        (super-new)))
+        (super-new)
+        (inherit set-snipclass)
+        (set-snipclass spacer-sc)))
     (define spacer-sc (new snip-class%))
     (send spacer-sc set-classname "drracket:spacer-snipclass")
     (send spacer-sc set-version 0)

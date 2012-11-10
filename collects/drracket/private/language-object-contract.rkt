@@ -54,7 +54,7 @@
                  (get-language-numbers (-> (cons/c number? (listof number?))))
                  (get-language-position (-> (cons/c string? (listof string?))))
                  (get-language-url (-> (or/c false/c string?)))
-                 (get-one-line-summary (-> string?))
+                 (get-one-line-summary (-> (or/c #f string?)))
                  (get-comment-character (-> (values string? char?)))
                  (get-style-delta 
                   (-> (or/c false/c

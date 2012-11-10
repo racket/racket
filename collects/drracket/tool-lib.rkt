@@ -1156,7 +1156,8 @@ all of the names in the tools library, for use defining keybindings
  
  (proc-doc/names
   drracket:language-configuration:add-language
-  ((and/c (is-a?/c drracket:language:language<%>) drracket:language:object/c)
+  ((and/c (is-a?/c drracket:language:language<%>)
+          drracket:language:object/c)
    . -> . void?)
   (language)
   
@@ -1176,7 +1177,8 @@ all of the names in the tools library, for use defining keybindings
  
  (proc-doc/names
   drracket:language-configuration:language-settings
-  ((or/c (is-a?/c drracket:language:language<%>) drracket:language:object/c)
+  ((or/c (is-a?/c drracket:language:language<%>)
+         drracket:language:object/c)
    any/c
    . -> .
    drracket:language-configuration:language-settings?)
@@ -1216,7 +1218,8 @@ all of the names in the tools library, for use defining keybindings
   drracket:language-configuration:language-settings-language
   (drracket:language-configuration:language-settings?
    . -> .
-   (or/c (is-a?/c drracket:language:language<%>) drracket:language:object/c))
+   (or/c (is-a?/c drracket:language:language<%>) 
+         drracket:language:object/c))
   (ls)
   
   @{Extracts the language field of a language-settings.})
@@ -1249,7 +1252,8 @@ all of the names in the tools library, for use defining keybindings
     If unsure of a default, the currently set language
     in the user's preferences can be obtained via:
     @racketblock[
-      (preferences:get (drracket:language-configuration:get-settings-preferences-symbol))]
+      (preferences:get 
+       (drracket:language-configuration:get-settings-preferences-symbol))]
     
     The @racket[parent] argument is used as the parent
     to the dialog.
