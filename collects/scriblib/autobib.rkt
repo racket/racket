@@ -242,7 +242,8 @@
               [(date<? b a) #f]
               [else (string-ci<? (auto-bib-key a) (auto-bib-key b))]))))
   (define (ambiguous? a b)
-    (and (string-ci=? (extract-bib-key a) (extract-bib-key b))
+    (and (string-ci=? (author-element-cite (extract-bib-author a))
+                      (author-element-cite (extract-bib-author b)))
          (auto-bib-date a)
          (auto-bib-date b)
          (date=? a b)))
