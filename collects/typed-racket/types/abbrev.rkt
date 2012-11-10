@@ -214,7 +214,7 @@
 (define -Special-Comment
   (make-Base 'Special-Comment #'special-comment? special-comment? #'-Special-Comment))
 
-(define -Custodian (make-Base 'Custodian #'custodian? custodian? #'Custodian))
+(define -Custodian (make-Base 'Custodian #'custodian? custodian? #'-Custodian))
 
 (define -Parameterization (make-Base 'Parameterization #'parameterization? parameterization? #'-Parameterization))
 
