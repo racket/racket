@@ -1054,17 +1054,41 @@
  (initial-language-category "Sprache am Anfang")
  (no-language-chosen "Keine Sprache ausgewählt")
 
+ (other-languages "Andere Sprachen")
+
  (module-language-name "Sprache aus Quelltext ermitteln")
- (module-language-one-line-summary "List die #lang-Zeile, um die tatsächliche Sprache zu ermitteln.")
+ (module-language-one-line-summary "Die #lang-Zeile spezifiziert die tatsächliche Sprache.")
   
  (module-language-auto-text "Automatisch Zeile mit #lang") ;; shows up in the details section of the module language
 
  ;; for the upper portion of the language dialog
- (use-language-in-source "Im Quelltext angegebene Sprache benutzen")
+ (the-racket-language "Die Sprache Racket")
  (choose-a-language "Sprache auswählen")
- (lang-in-source-discussion
- "Die Zeile mit \"#lang\" am Anfang eines Programms legt die Sprache fest. Das ist der präferierte Standard-Modus von DrRacket.")
- 
+
+ ;; the next two string constants appear in the
+ ;; language dialog with a list
+ ;; of example languages appearing between them
+ (racket-language-discussion "Am Anfang des Programms spezifiziert #lang den gewünschten Dialekt. Zum Beispiel:\n\n")
+ (racket-language-discussion-end "\n... und viele weitere")
+
+ ;; the next three string constants are put into a message-box dialog
+ ;; that appears when the user clicks on the example #lang languages
+ ;; in the language dialog. The first one always appears and then either
+ ;; the second or the third appears. The second one has the clicked
+ ;; on #lang line placed into the ~a, and third one has the 
+ ;; current #lang line in the first ~a and the clicked on in the second one.
+ ;; The two comments are separated by a blank line.
+ (racket-dialect-in-buffer-message "Racket-Dialekte werden normalerweise im Editor ausgewählt, nicht durch Auswahl eines Eintrags im Sprachendialog.")
+ (racket-dialect-add-new-#lang-line "Soll ich also “~a” am Anfang der Definitionen einfügen?")
+ (racket-dialect-replace-#lang-line "Ich sehe auch ein “~a” im Code; durch “~a” ersetzen?")
+ (racket-dialect-already-same-#lang-line "Es ist allerdings schon “~a” im Code; es ist also alles bereit fürs Programmieren!")
+
+ ;; in the dialog containing the above strings, one of these is a button that appears
+ (add-#lang-line "#lang-Zeile hinzufügen")
+ (replace-#lang-line "#lang-Zeile ersetzen")
+
+ ;; for the 'new drracket user' dialog
+ (use-language-in-source "Sprache, die im Code spezifiziert ist, benutzen")
 
   ;;; from the `not a language language' used initially in drscheme.
  (must-choose-language "DrRacket kann keine Programme verarbeiten, bis Sie eine Sprache auswählen.")
