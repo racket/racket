@@ -7,7 +7,8 @@
      visible to the GC.
 
   3) Immediate operands must be 32-bit values on x86_64, except with
-     jit_movi, jit_sti, jit_ldi, jit_bXi, jit_calli, and jit_finishi.
+     jit_movi, jit_sti, jit_ldi, jit_bXi, jit_calli (in default-long
+     mode), and jit_finishi.
 
   4) Function calls are limited to 3 arguments (i.e., jit_prepare()
      must never be called with a number greater than 3). This limit
@@ -101,7 +102,16 @@ END_XFORM_ARITH;
 #define LOG_MZCHAR_SIZE 2
 
 #if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_X86_64)
+/* Both PPC and x86_64 need long jumps, sometimes */
 # define NEED_LONG_JUMPS
+#endif
+#if defined(MZ_USE_JIT_PPC)
+/* For PPC, long jumps may be needed even within a JIT-generated block */
+# define NEED_LONG_BRANCHES
+#endif
+#if defined(MZ_USE_JIT_X86_64)
+/* For x86_64, long jumps are needed only if we start allocating far away */
+# define SET_DEFAULT_LONG_JUMPS
 #endif
 /* Tiny jumps seem worthwhile for x86, but they don't seem to help for x86_64: */
 #if defined(MZ_USE_JIT_I386) && !defined(MZ_USE_JIT_X86_64)
@@ -865,7 +875,7 @@ static jit_insn *fp_tmpr;
 
 #ifdef NEED_LONG_JUMPS
 # define __START_SHORT_JUMPS__(cond) if (cond) { _jitl.long_jumps = 0; }
-# define __END_SHORT_JUMPS__(cond) if (cond) { _jitl.long_jumps= 1; }
+# define __END_SHORT_JUMPS__(cond) if (cond) { _jitl.long_jumps = LONG_JUMPS_DEFAULT(_jitl); }
 #else
 # define __START_SHORT_JUMPS__(cond) /* empty */
 # define __END_SHORT_JUMPS__(cond) /* empty */
@@ -922,7 +932,19 @@ static jit_insn *fp_tmpr;
    Tiny-jump mode is like short-jump mode, but the offset must be
    within +/- 2^7. Favor tiny jumps over short jumps when possible.
 
-   All mz_finish() and jit_calli() are implicitly long jumps.
+   On x86_64, short is the default, since "short" is pretty long.
+   Short mode is never needed for jumps within a single allocated
+   block (on the assumption that a single block of code can never get
+   that long). Default-long mode must be enabled if allocated code
+   blocks can be far apart.
+
+   A jit_calli() is "medium": for x86_64, it is short unless
+   default-long mode is enabled; otherwise, it is always
+   long.
+
+   All mz_finish() are long jumps. This is true even in default-short
+   jump mode on x86_64, since the target is likely to be C code that
+   is not necessarily close to JIT-allocate code.
 */
 
 /* A lightweight continuation is one that contains only frames from

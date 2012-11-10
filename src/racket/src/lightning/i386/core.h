@@ -52,7 +52,8 @@
 
 struct jit_local_state {
 #ifdef JIT_X86_64
-  int   long_jumps;
+  int   long_jumps, long_jumps_default;
+# define LONG_JUMPS_DEFAULT(jitl) (jitl.long_jumps_default)
   int   nextarg_geti;
 #else
   int	framesize;
@@ -432,8 +433,8 @@ struct jit_local_state {
 # define jit_normal_pushonlyarg_i(rs) (_jitl.argpushes--, MOVQrr(rs, jit_arg_reg_order[0]))
 # define jit_save_argstate(curstate)	curstate = _jitl.argpushes;
 # define jit_restore_argstate(curstate)	_jitl.argpushes = curstate;
-# define jit_finish(sub)        (jit_shift_args(), (void)jit_calli((sub)), jit_restore_locals())
-# define jit_normal_finish(sub) jit_calli((sub))
+# define jit_finish(sub)        (jit_shift_args(), (void)jit_long_calli((sub)), jit_restore_locals())
+# define jit_normal_finish(sub) jit_long_calli((sub))
 # define jit_return_pop_insn_len() 0
 # define jit_finishr(reg)	((jit_reg_is_arg((reg)) ? MOVQrr(reg, JIT_REXTMP) : (void)0), \
                                  jit_shift_args(), \
@@ -604,7 +605,13 @@ static const int const jit_arg_reg_order[] = { _EDI, _ESI, _EDX, _ECX };
 #define jit_bmci_l(label, rs, is) jit_bmci_i(label, rs, is)
 
 #define jit_jmpi(label)		(JMPm( ((uintptr_t) (label)),	0, 0, 0), _jit.x.pc)
-#define jit_calli(label)	(CALLm( ((uintptr_t) (label)),	0, 0, 0), _jit.x.pc)
+#define jit_long_calli(label)	(CALLm( ((uintptr_t) (label)),	0, 0, 0), _jit.x.pc)
+#define jit_short_calli(label)	(CALLmL( ((uintptr_t) (label)),	0, 0, 0), _jit.x.pc)
+#ifdef JIT_X86_64
+# define jit_calli(label)	(_jitl.long_jumps_default ? jit_long_calli(label) : jit_short_calli(label))
+#else
+# define jit_calli(label)	jit_long_calli(label)
+#endif
 #define jit_callr(reg)		(CALLsr(reg))
 #define jit_jmpr(reg)		JMPsr(reg)
 

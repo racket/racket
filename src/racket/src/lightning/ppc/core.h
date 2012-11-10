@@ -43,6 +43,7 @@ struct jit_local_state {
    int	nextarg_getd;  /* The FP args are picked up from FPR1 -> FPR10 */
    int  nbArgs;        /* Number of arguments for the prolog */
    int long_jumps;    /* 1 => patch or leave room for long jumps */
+#  define LONG_JUMPS_DEFAULT(jitl) 1
 };
 
 #define JIT_SP			1

@@ -861,7 +861,7 @@ int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     }
 #ifdef MZ_USE_JIT_I386
     mz_patch_ucbranch(refr);
-    (void)jit_calli(refxr);
+    (void)jit_short_calli(refxr);
 #else
     jit_patch_movi(refr, (_jit.x.pc));
 #endif

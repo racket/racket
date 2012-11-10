@@ -321,7 +321,7 @@ int scheme_jit_check_closure_flonum_bit(Scheme_Closure_Data *data, int pos, int 
 }
 #endif
 
-#ifdef NEED_LONG_JUMPS
+#ifdef NEED_LONG_BRANCHES
 static int is_short(Scheme_Object *obj, int fuel)
 {
   Scheme_Type t;
@@ -1589,14 +1589,17 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
   int pushed_marks;
   int nsrs, nsrs1, g1, g2, amt, need_sync, flostack, flostack_pos;
   int else_is_empty = 0, i, can_chain_branch, chain_true, chain_false, old_self_pos;
-#ifdef NEED_LONG_JUMPS
+#ifdef NEED_LONG_BRANCHES
   int then_short_ok, else_short_ok;
 #else
   int then_short_ok = 1;
+# ifdef NEED_LONG_JUMPS
+  int else_short_ok = 1;
+# endif
 #endif
   START_JIT_DATA();
 
-#ifdef NEED_LONG_JUMPS
+#ifdef NEED_LONG_BRANCHES
   /* It's possible that the code for a then
      or else branch will be so large that we might
      need a long jump. Conservatively analyze the
@@ -1626,12 +1629,12 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
 
   if (can_chain_branch && chain_true)
     for_this_branch.true_needs_jump = 1;
-#ifdef NEED_LONG_JUMPS
+#ifdef NEED_LONG_BRANCHES
   if (can_chain_branch && (chain_true || chain_false)
       && !for_branch->branch_short)
     then_short_ok = 0;
-  for_this_branch.branch_short = then_short_ok;
 #endif
+  for_this_branch.branch_short = then_short_ok;
   
   LOG_IT(("if...\n"));
 
