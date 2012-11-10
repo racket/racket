@@ -303,7 +303,7 @@ void scheme_free_dynamic_extensions(void);
 void scheme_free_all_code(void);
 void scheme_free_ghbn_data(void);
 
-XFORM_NONGCING int scheme_is_multiprocessor(int now);
+XFORM_NONGCING int scheme_is_multithreaded(int now);
 
 /* Type readers & writers for compiled code data */
 typedef Scheme_Object *(*Scheme_Type_Reader)(Scheme_Object *list);
@@ -359,19 +359,33 @@ extern Scheme_Object *scheme_values_func;
 extern Scheme_Object *scheme_procedure_p_proc;
 extern Scheme_Object *scheme_procedure_arity_includes_proc;
 extern Scheme_Object *scheme_void_proc;
+extern Scheme_Object *scheme_pair_p_proc;
+extern Scheme_Object *scheme_mpair_p_proc;
+extern Scheme_Object *scheme_unsafe_car_proc;
+extern Scheme_Object *scheme_unsafe_cdr_proc;
+extern Scheme_Object *scheme_unsafe_mcar_proc;
+extern Scheme_Object *scheme_unsafe_mcdr_proc;
+extern Scheme_Object *scheme_unsafe_unbox_proc;
 extern Scheme_Object *scheme_cons_proc;
 extern Scheme_Object *scheme_mcons_proc;
 extern Scheme_Object *scheme_list_proc;
 extern Scheme_Object *scheme_list_star_proc;
 extern Scheme_Object *scheme_vector_proc;
+extern Scheme_Object *scheme_vector_p_proc;
 extern Scheme_Object *scheme_vector_immutable_proc;
 extern Scheme_Object *scheme_vector_ref_proc;
 extern Scheme_Object *scheme_vector_set_proc;
+extern Scheme_Object *scheme_unsafe_vector_length_proc;
 extern Scheme_Object *scheme_hash_ref_proc;
+extern Scheme_Object *scheme_box_p_proc;
 extern Scheme_Object *scheme_box_proc;
 extern Scheme_Object *scheme_call_with_values_proc;
 extern Scheme_Object *scheme_make_struct_type_proc;
+extern Scheme_Object *scheme_make_struct_field_accessor_proc;
+extern Scheme_Object *scheme_make_struct_field_mutator_proc;
+extern Scheme_Object *scheme_struct_type_p_proc;
 extern Scheme_Object *scheme_current_inspector_proc;
+extern Scheme_Object *scheme_make_inspector_proc;
 extern Scheme_Object *scheme_varref_const_p_proc;
 
 extern Scheme_Object *scheme_define_values_syntax, *scheme_define_syntaxes_syntax;
@@ -789,13 +803,6 @@ typedef struct Scheme_Serialized_Structure
 } Scheme_Serialized_Structure;
 #endif
 
-typedef struct Struct_Proc_Info {
-  MZTAG_IF_REQUIRED
-  Scheme_Struct_Type *struct_type;
-  char *func_name;
-  mzshort field;
-} Struct_Proc_Info;
-
 #define SCHEME_STRUCT_TYPE(o) (((Scheme_Structure *)o)->stype)
 
 #define SCHEME_STRUCT_NUM_SLOTS(o) (SCHEME_STRUCT_TYPE(o)->num_slots)
@@ -852,6 +859,8 @@ Scheme_Object *scheme_make_serialized_struct_instance(Scheme_Object *s, int num_
 
 Scheme_Object *scheme_struct_getter(int argc, Scheme_Object **args, Scheme_Object *prim);
 Scheme_Object *scheme_struct_setter(int argc, Scheme_Object **args, Scheme_Object *prim);
+
+void scheme_force_struct_type_info(Scheme_Struct_Type *stype);
 
 Scheme_Object *scheme_extract_checked_procedure(int argc, Scheme_Object **argv);
 
@@ -2139,7 +2148,6 @@ typedef struct Scheme_Prefix
   Scheme_Object so; /* scheme_prefix_type */
   int num_slots, num_toplevels, num_stxes;
   struct Scheme_Prefix *next_final; /* for special GC handling */
-  char *import_map; /* bitmap indicating which toplevels are imported */
   Scheme_Object *a[mzFLEX_ARRAY_DECL]; /* array of objects */
   /* followed by an array of `int's for tl_map uses */
 } Scheme_Prefix;
@@ -2865,10 +2873,43 @@ int scheme_used_app_only(Scheme_Comp_Env *env, int which);
 int scheme_used_ever(Scheme_Comp_Env *env, int which);
 
 int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
-                          Optimize_Info *warn_info, int deeper_than, int no_id);
+                          Optimize_Info *opt_info, Optimize_Info *warn_info, int deeper_than, int no_id);
 int scheme_might_invoke_call_cc(Scheme_Object *value);
 int scheme_is_liftable(Scheme_Object *o, int bind_count, int fuel, int as_rator);
 int scheme_is_functional_primitive(Scheme_Object *rator, int num_args, int expected_vals);
+
+typedef struct {
+  int uses_super;
+  int field_count, init_field_count;
+  int normal_ops, indexed_ops, num_gets, num_sets;
+} Simple_Stuct_Type_Info;
+
+Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *app, int vals, int resolved, 
+                                                 int check_auto, int *_auto_e_depth, 
+                                                 Simple_Stuct_Type_Info *_stinfo,
+                                                 Scheme_Hash_Table *top_level_consts, 
+                                                 Scheme_Hash_Table *top_level_table,
+                                                 Scheme_Object **runstack, int rs_delta,
+                                                 Scheme_Object **symbols, Scheme_Hash_Table *symbol_table,
+                                                 int fuel);
+
+intptr_t scheme_get_struct_proc_shape(int k, Simple_Stuct_Type_Info *sinfo);
+Scheme_Object *scheme_make_struct_proc_shape(intptr_t k);
+#define STRUCT_PROC_SHAPE_STRUCT  0
+#define STRUCT_PROC_SHAPE_CONSTR  1
+#define STRUCT_PROC_SHAPE_PRED    2
+#define STRUCT_PROC_SHAPE_GETTER  3
+#define STRUCT_PROC_SHAPE_SETTER  4
+#define STRUCT_PROC_SHAPE_OTHER   5
+#define STRUCT_PROC_SHAPE_MASK    0xF
+#define STRUCT_PROC_SHAPE_SHIFT   4
+#define SCHEME_PROC_SHAPE_MODE(obj) (((Scheme_Small_Object *)(obj))->u.int_val)
+
+Scheme_Object *scheme_get_or_check_procedure_shape(Scheme_Object *e, Scheme_Object *expected);
+int scheme_check_structure_shape(Scheme_Object *e, Scheme_Object *expected);
+int scheme_decode_struct_shape(Scheme_Object *shape, intptr_t *_v);
+int scheme_closure_preserves_marks(Scheme_Object *p);
+int scheme_native_closure_preserves_marks(Scheme_Object *p);
 
 int scheme_is_env_variable_boxed(Scheme_Comp_Env *env, int which);
 
@@ -3179,6 +3220,7 @@ typedef struct Module_Variable {
   Scheme_Object *modidx;
   Scheme_Object *sym;
   Scheme_Object *insp; /* for checking protected/unexported access */
+  Scheme_Object *shape; /* NULL or a symbol encoding "type" information */
   int pos, mod_phase;
 } Module_Variable;
 
@@ -3257,7 +3299,8 @@ int scheme_resolved_module_path_value_matches(Scheme_Object *rmp, Scheme_Object 
 
 Scheme_Object *scheme_hash_module_variable(Scheme_Env *env, Scheme_Object *modidx, 
 					   Scheme_Object *stxsym, Scheme_Object *insp,
-					   int pos, intptr_t mod_phase, int is_constant);
+					   int pos, intptr_t mod_phase, int is_constant,
+                                           Scheme_Object *shape);
 
 
 Scheme_Env *scheme_get_kernel_env();
@@ -3395,7 +3438,7 @@ Scheme_Object *scheme_get_stack_trace(Scheme_Object *mark_set);
 
 Scheme_Object *scheme_get_or_check_arity(Scheme_Object *p, intptr_t a);
 int scheme_native_arity_check(Scheme_Object *closure, int argc);
-Scheme_Object *scheme_get_native_arity(Scheme_Object *closure);
+Scheme_Object *scheme_get_native_arity(Scheme_Object *closure, int mode);
 
 struct Scheme_Logger {
   Scheme_Object so;

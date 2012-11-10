@@ -324,6 +324,28 @@
                            (lambda (s) (string-append s "x")))))
 
 ;; ----------------------------------------
+;; check that cc proc doesn't break abort proc
+
+(let ()
+  (define l null)
+
+  (define cpt
+    (chaperone-prompt-tag
+     (make-continuation-prompt-tag)
+     (λ (x) (set! l (cons "ho" l)) x)
+     (λ (x) (set! l (cons "hi" l)) x)
+     ;; commented out intentionally, see below
+     (λ (x) x)))
+  
+  (call-with-continuation-prompt
+   (λ ()
+      (abort-current-continuation cpt 5))
+   cpt
+   (λ (x) (+ 1 x)))
+
+  (test '("ho" "hi") values l))
+
+;; ----------------------------------------
 ;; Check that when a continuation includes a continuation
 ;; application, that a captured requirement to apply a
 ;; contiuation-result guard (as added by an impersonator) is not

@@ -434,7 +434,6 @@ TODO
                insert
                insert-before
                insert-between
-               invalidate-bitmap-cache
                is-locked?
                last-position
                line-location
@@ -472,9 +471,9 @@ TODO
       (define/public (get-context) context)
       
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-      ;;;				           ;;;
+      ;;;                                          ;;;
       ;;;            User -> Kernel                ;;;
-      ;;;				           ;;;
+      ;;;                                          ;;;
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       
       ;; =User= (probably doesn't matter)
@@ -775,8 +774,8 @@ TODO
         (unless inserting-prompt?
           (reset-highlighting))
         (when (and prompt-position 
-		   (ormap (λ (start) (< start prompt-position))
-			  starts))
+                   (ormap (λ (start) (< start prompt-position))
+                          starts))
           (set! prompt-position (get-unread-start-point))
           (reset-regions (append (all-but-last (get-regions))
                                  (list (list prompt-position 'end))))))
@@ -1265,6 +1264,7 @@ TODO
                  
                  (thread
                   (λ ()
+                    (struct gui-event (start? msec name) #:prefab)
                     ;; forward system events the user's logger, and record any
                     ;; events that happen on the user's logger to show in the GUI
                     (let ([sys-evt (make-log-receiver drracket:init:system-logger 'debug)]
@@ -1274,16 +1274,18 @@ TODO
                          (handle-evt
                           sys-evt
                           (λ (logged)
-                            (log-message user-logger 
-                                         (vector-ref logged 0)
-                                         (vector-ref logged 1)
-                                         (vector-ref logged 2))
+                            (unless (gui-event? (vector-ref logged 2))
+                              (log-message user-logger 
+                                           (vector-ref logged 0)
+                                           (vector-ref logged 1)
+                                           (vector-ref logged 2)))
                             (loop)))
                          (handle-evt
                           user-evt
                           (λ (vec)
-                            (parameterize ([current-eventspace drracket:init:system-eventspace])
-                              (queue-callback (λ () (new-log-message vec))))
+                            (unless (gui-event? (vector-ref vec 2))
+                              (parameterize ([current-eventspace drracket:init:system-eventspace])
+                                (queue-callback (λ () (new-log-message vec)))))
                             (loop))))))))
                  
                  (initialize-parameters snip-classes)

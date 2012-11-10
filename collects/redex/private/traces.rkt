@@ -291,7 +291,10 @@
                       (init-value (initial-font-size))
                       (max-value 127)
                       (parent bottom-panel)
-                      (callback (lambda (slider evt) (set-font-size (send slider get-value))))))
+                      (callback (lambda (slider evt) 
+                                  (send graph-pb begin-edit-sequence)
+                                  (set-font-size (send slider get-value))
+                                  (send graph-pb end-edit-sequence)))))
   (define lower-panel (instantiate horizontal-panel% ()
                         (parent bottom-panel)
                         (stretchable-height #f)))
@@ -883,17 +886,9 @@
     (send ed get-snip-location snip br #f #t)
     (unbox br)))
 
-;; find-snip-height : editor snip -> number
-(define (find-snip-height ed snip)
-  (let ([bt (box 0)]
-        [bb (box 0)])
-    (send ed get-snip-location snip #f bt #f)
-    (send ed get-snip-location snip #f bb #t)
-    (- (unbox bb)
-       (unbox bt))))
-
 (provide traces
          traces/ps
+         print-to-ps
          term-node?
          term-node-parents
          term-node-children

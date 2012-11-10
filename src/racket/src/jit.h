@@ -210,9 +210,13 @@ struct scheme_jit_common_record {
 
 #define MAX_SHARED_CALL_RANDS 25
   void *shared_tail_code[4][MAX_SHARED_CALL_RANDS];
-  void *shared_non_tail_code[5][MAX_SHARED_CALL_RANDS][2];
-  void *shared_non_tail_retry_code[2];
-  void *shared_non_tail_argc_code[2];
+# define SHARED_SINGLE_VALUE_CASE 0
+# define SHARED_MULTI_OK_CASE 1
+# define SHARED_RESULT_IGNORED_CASE 2
+# define SHARED_NUM_NONTAIL_CASES 3
+  void *shared_non_tail_code[5][MAX_SHARED_CALL_RANDS][SHARED_NUM_NONTAIL_CASES];
+  void *shared_non_tail_retry_code[SHARED_NUM_NONTAIL_CASES];
+  void *shared_non_tail_argc_code[SHARED_NUM_NONTAIL_CASES];
   void *shared_tail_argc_code;
 
 #define MAX_SHARED_ARITY_CHECK 25
@@ -1113,15 +1117,15 @@ static void emit_indentation(mz_jit_state *jitter)
 #endif
 
 #define PAST_LIMIT() ((uintptr_t)jit_get_ip().ptr > (uintptr_t)jitter->limit)
-#define CHECK_LIMIT() if (PAST_LIMIT()) return past_limit(jitter);
+#define CHECK_LIMIT() if (PAST_LIMIT()) return past_limit(jitter, __FILE__, __LINE__);
 #if 1
-# define past_limit(j) 0
+# define past_limit(j, f, l) 0
 #else
-static int past_limit(mz_jit_state *jitter)
+static int past_limit(mz_jit_state *jitter, const char *file, int line)
 {
   if (((uintptr_t)jit_get_ip().ptr > (uintptr_t)jitter->limit + JIT_BUFFER_PAD_SIZE)
       || (jitter->retain_start)) {
-    printf("way past\n"); abort();
+    printf("way past %s %d\n", file, line); abort();
   }
   return 0;
 }
@@ -1228,15 +1232,17 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 
 typedef struct jit_direct_arg jit_direct_arg;
 
-void *scheme_generate_shared_call(int num_rands, mz_jit_state *old_jitter, int multi_ok, int is_tail, 
-				  int direct_prim, int direct_native, int nontail_self, int unboxed_args);
-void scheme_ensure_retry_available(mz_jit_state *jitter, int multi_ok);
+void *scheme_generate_shared_call(int num_rands, mz_jit_state *old_jitter, int multi_ok, int result_ignored, 
+                                  int is_tail, int direct_prim, int direct_native, int nontail_self, int unboxed_args);
+void scheme_ensure_retry_available(mz_jit_state *jitter, int multi_ok, int result_ignored);
 int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_rands, 
-			mz_jit_state *jitter, int is_tail, int multi_ok, int no_call);
+			mz_jit_state *jitter, int is_tail, int multi_ok, int ignored_result,
+                        int no_call);
 int scheme_generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs, 
                               int is_inline, Scheme_Native_Closure *direct_to_code, jit_direct_arg *direct_arg);
 int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs, 
-				  int multi_ok, int nontail_self, int pop_and_jump, int is_inlined, int unboxed_args);
+				  int multi_ok, int result_ignored, int nontail_self, int pop_and_jump, 
+                                  int is_inlined, int unboxed_args);
 int scheme_generate_finish_tail_call(mz_jit_state *jitter, int direct_native);
 int scheme_generate_finish_apply(mz_jit_state *jitter);
 int scheme_generate_finish_multi_apply(mz_jit_state *jitter);
@@ -1265,6 +1271,17 @@ void scheme_jit_release_native_code(void *fnlized, void *p);
 
 int scheme_do_generate_common(mz_jit_state *jitter, void *_data);
 int scheme_do_generate_more_common(mz_jit_state *jitter, void *_data);
+
+int scheme_save_struct_temp(mz_jit_state *jitter, int reg);
+int scheme_restore_struct_temp(mz_jit_state *jitter, int reg);
+int scheme_generate_struct_op(mz_jit_state *jitter, int kind, int for_branch,
+                              Branch_Info *branch_info, int branch_short,
+                              int result_ignored,
+                              int check_proc, int check_arg_fixnum,
+                              int type_pos, int field_pos, 
+                              int pop_and_jump,
+                              jit_insn *refslow, jit_insn *refslow2,
+                              jit_insn *bref_false, jit_insn *bref_true);
 
 /**********************************************************************/
 /*                               jit                                  */

@@ -268,3 +268,8 @@
 (tc (~r 3735928559 #:base '(up 16) #:precision 6 #:notation 'exponential)
     ;; note rounding!
     "D.EADBEF×16^+07")
+
+(tc (~r 33.99508664763296 #:precision 1 #:min-width 5)
+    " 33.1")
+(tc (~r 33.99508664763296 #:precision 2 #:min-width 7)
+    "   33.1")

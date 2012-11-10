@@ -1,5 +1,9 @@
-#lang racket
-(require compiler/zo-parse
+#lang racket/base
+
+(require racket/list
+         racket/match
+         racket/contract
+         compiler/zo-parse
          "util.rkt"
          "mpi.rkt"
          "nodep.rkt"
@@ -156,12 +160,12 @@
                     (cond
                       [(mod-lift-start . <= . n)
                        ; This is a lift
-                       (local [(define which-lift (- n mod-lift-start))
-                               (define lift-tl (+ top-lift-start lift-offset which-lift))]
-                         (when (lift-tl . >= . max-toplevel)
-                           (error 'merge-module "[~S] lift error: orig(~a) which(~a) max(~a) lifts(~a) now(~a)" 
-                                  name n which-lift num-mod-toplevels mod-num-lifts lift-tl))
-                         lift-tl)]
+                       (define which-lift (- n mod-lift-start))
+                       (define lift-tl (+ top-lift-start lift-offset which-lift))
+                       (when (lift-tl . >= . max-toplevel)
+                         (error 'merge-module "[~S] lift error: orig(~a) which(~a) max(~a) lifts(~a) now(~a)" 
+                                name n which-lift num-mod-toplevels mod-num-lifts lift-tl))
+                       lift-tl]
                       [else
                        (list-ref toplevel-remap n)]))
                   (lambda (n)

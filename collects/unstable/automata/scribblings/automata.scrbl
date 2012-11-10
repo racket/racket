@@ -36,12 +36,12 @@ Each of the subsequent macros compile to instances of the machines provided by t
          boolean?]{
  Returns @racket[#t] if @racket[m] ends in an accepting state after consuming every element of @racket[i].
 }
-                  
+
 @defproc[(machine-accepts?/prefix-closed [m machine?] [i (listof any/c)])
          boolean?]{
  Returns @racket[#t] if @racket[m] stays in an accepting state during the consumption of every element of @racket[i].
 }
-                  
+
 @defthing[machine-null machine?]{
  A machine that is never accepting.
 }
@@ -63,28 +63,28 @@ Each of the subsequent macros compile to instances of the machines provided by t
          machine?]{
  A machine that simulates the Kleene star of @racket[m]. @racket[m] may be invoked many times.
 }
-                  
+
 @defproc[(machine-union [m0 machine?] [m1 machine?])
          machine?]{
  A machine that simulates the union of @racket[m0] and @racket[m1].
 }
-                  
+
 @defproc[(machine-intersect [m0 machine?] [m1 machine?])
          machine?]{
  A machine that simulates the intersection of @racket[m0] and @racket[m1].
 }
-                  
+
 @defproc[(machine-seq [m0 machine?] [m1 machine?])
          machine?]{
  A machine that simulates the sequencing of @racket[m0] and @racket[m1]. @racket[m1] may be invoked many times.
 }
-                  
+
 @defproc[(machine-seq* [m0 machine?] [make-m1 (-> machine?)])
          machine?]{
  A machine that simulates the sequencing of @racket[m0] and @racket[(make-m1)].
  @racket[(make-m1)] may be invoked many times.
 }
-                  
+
 
 @section[#:tag "dfa"]{Deterministic Finite Automata}
 
@@ -212,3 +212,6 @@ This module provides a macro for non-deterministic finite automata with epsilon 
 }
 
 @include-section["re.scrbl"]
+
+
+@close-eval[our-eval]

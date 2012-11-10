@@ -1,3 +1,3 @@
-#cs(module graphing mzscheme
-  (require htdp/graphing)
-  (provide (all-from htdp/graphing)))
+#lang racket/base
+(require htdp/graphing)
+(provide (all-from-out htdp/graphing))

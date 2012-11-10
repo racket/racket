@@ -91,6 +91,12 @@ Racket software includes or extends the following copyrighted material:
 }
 
 @copyright{
+  PSMTabBarControl
+  John Pannell, Robert Payne, Adam Strzelecki, Dorian Johnson
+  https://github.com/dorianj/PSMTabBarControl
+}
+
+@copyright{
   Clanbomber icon and Stop icons
   Everaldo Coelho
   http://www.everaldo.com/

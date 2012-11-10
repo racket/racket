@@ -617,6 +617,7 @@
 (define CB_SETCURSEL #x014E)
 (define CB_GETCURSEL #x0147)
 (define CB_ADDSTRING #x0143)
+(define CB_DELETESTRING #x0144)
 (define CB_RESETCONTENT #x014B)
 
 (define CBN_SELENDOK 9)

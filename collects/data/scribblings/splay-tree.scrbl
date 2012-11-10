@@ -174,3 +174,6 @@ splay-tree, @racket[#f] otherwise.
 Returns an association list with the keys and values of @racket[s], in
 order.
 }
+
+
+@close-eval[the-eval]

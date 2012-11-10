@@ -38,13 +38,26 @@
     [(_ id . rest)
      (define-form-struct* id (id zo) . rest)]))
 
+(define-form-struct function-shape ([arity procedure-arity?]
+                                    [preserves-marks? boolean?]))
+
+(define-form-struct struct-shape ())
+(define-form-struct (constructor-shape struct-shape) ([arity exact-nonnegative-integer?]))
+(define-form-struct (predicate-shape struct-shape) ())
+(define-form-struct (accessor-shape struct-shape) ([field-count exact-nonnegative-integer?]))
+(define-form-struct (mutator-shape struct-shape) ([field-count exact-nonnegative-integer?]))
+(define-form-struct (struct-type-shape struct-shape) ([field-count exact-nonnegative-integer?]))
+(define-form-struct (struct-other-shape struct-shape) ())
+
 ;; In toplevels of resove prefix:
 (define-form-struct global-bucket ([name symbol?])) ; top-level binding
 (define-form-struct module-variable ([modidx module-path-index?] 
                                      [sym symbol?] 
                                      [pos exact-integer?] 
                                      [phase exact-nonnegative-integer?]
-                                     [constantness (or/c #f 'constant 'fixed)]))
+                                     [constantness (or/c #f 'constant 'fixed 
+                                                         function-shape? 
+                                                         struct-shape?)]))
 
 ;; Syntax object
 (define ((alist/c k? v?) l)

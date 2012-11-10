@@ -20,8 +20,8 @@
   (provide (all-from-out "image.rkt"))
   
   (provide      ;; forall(World):
-   big-bang	;; Number Number Number World -> true 
-   end-of-time	;; String u Symbol -> World
+   big-bang     ;; Number Number Number World -> true
+   end-of-time  ;; String u Symbol -> World
    )
   
   (provide-higher-order-primitive

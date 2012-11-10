@@ -3,33 +3,33 @@
 
 rectangle: a list of lists of equal length
 
-files: 
- mrlib/matrix-snip.ss     : the image snips for matrix 
+files:
+ mrlib/matrix-snip.ss     : the image snips for matrix
 
- 			    works with matrices that implement matrix<%>
-			    i.e., support a ->rectangle method
+                            works with matrices that implement matrix<%>
+                            i.e., support a ->rectangle method
 
-			    it writes out a matrix as a rectangle and 
-			    reconstructs it as a rectangle 
+                            it writes out a matrix as a rectangle and
+                            reconstructs it as a rectangle
 
-			    the function visible-matrix may therefore yield a
-			    rectangle or a matrix representation proper
+                            the function visible-matrix may therefore yield a
+                            rectangle or a matrix representation proper
 
- drscheme/private/eval.ss : requires matrix-snip to share at module level 
+ drscheme/private/eval.ss : requires matrix-snip to share at module level
 
  htdp/matrix.ss           : uses snips to present matrices, requires matrix-snip
  htdp/matrix-invisible.ss : make matrices invisible
 
- 			  * they are created from two mutually recursive units: 
-			  * matrix-unit and a 'rendering' unit 
+                          * they are created from two mutually recursive units:
+                          * matrix-unit and a 'rendering' unit
 
- htdp/matrix-sig.ss	  : the functions that matrix-unit.ss provides 
- 			    and that matrix-render.ss needs 
+ htdp/matrix-sig.ss       : the functions that matrix-unit.ss provides
+                            and that matrix-render.ss needs
 
- htdp/matrix-render-sig.ss: the functions that matrix-unit expects from the 
- 			    rendering unit
+ htdp/matrix-render-sig.ss: the functions that matrix-unit expects from the
+                            rendering unit
 
- htdp/matrix-unit.ss 	  : the matrix functionality 
+ htdp/matrix-unit.ss      : the matrix functionality
 
- htdp/tests/matrix-test.ss: a textual test 
- htdp/tests/matrix-client.ss a test with embedded images 
+ htdp/tests/matrix-test.ss: a textual test
+ htdp/tests/matrix-client.ss a test with embedded images

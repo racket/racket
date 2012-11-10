@@ -6,11 +6,11 @@
           touch
           processor-count
           current-future
-          fsemaphore? 
-          make-fsemaphore 
-          fsemaphore-count 	
-          fsemaphore-post 
-          fsemaphore-wait 
+          fsemaphore?
+          make-fsemaphore
+          fsemaphore-count
+          fsemaphore-post
+          fsemaphore-wait
           fsemaphore-try-wait?
           would-be-future
           futures-enabled?)

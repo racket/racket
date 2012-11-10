@@ -93,8 +93,8 @@
    [method_count _int] ; 1
    [method _objc_method]))
 
-(define CLS_CLASS		#x1)
-(define CLS_META		#x2)
+(define CLS_CLASS               #x1)
+(define CLS_META                #x2)
 
 (define (strcpy s)
   (let* ([n (cast s _string _bytes)]

@@ -1,4 +1,5 @@
-#lang racket
+#lang racket/base
+
 (require racket/unit)
 
 (provide graphics^ graphics:posn-less^ graphics:posn^)

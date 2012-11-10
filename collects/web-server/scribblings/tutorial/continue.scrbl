@@ -106,7 +106,7 @@ representing the desired HTML. An @xexpr is defined as
    (flat-rec-contract
     xexpr
     (or/c string?
-    	  (cons/c symbol? (listof xexpr))
+          (cons/c symbol? (listof xexpr))
           (cons/c symbol?
                   (cons/c (listof (list/c symbol? string?))
                           (listof xexpr))))))]
@@ -661,10 +661,10 @@ following content:
 web-server/insta
 (define (start request)
   (response/xexpr
-   '(html (head (title "Testing"))
-          (link ((rel "stylesheet")
-                 (href "/test-static.css")
-                 (type "text/css")))
+   '(html (head (title "Testing")
+                (link ((rel "stylesheet")
+                       (href "/test-static.css")
+                       (type "text/css"))))          
           (body (h1 "Testing")
                 (h2 "This is a header")
                 (p "This is " (span ((class "hot")) "hot") ".")))))
@@ -1255,7 +1255,7 @@ For example, @racket[input-string] is itself a library
 @racket[title] to that string.
 
 @racket[input-string] is rendered as @racketresult[`(input ([type "text"] [name
-,_fresh_name]))], so @racket[(formlet-dispay
+,_fresh_name]))], so @racket[(formlet-display
 new-post-formlet)] is rendered as:
 @racketresultblock[
 (list '(input ([type "text"] [name "input_0"]))

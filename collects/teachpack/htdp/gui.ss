@@ -1,3 +1,3 @@
-#cs(module gui mzscheme
-  (require htdp/gui)
-  (provide (all-from htdp/gui)))
+#lang racket/base
+(require htdp/gui)
+(provide (all-from-out htdp/gui))

@@ -304,6 +304,62 @@
     (test #f 'peek-t (peek-byte-or-special i 0))
     (test 49 'read-1 (peek-byte-or-special i 1))))
 
+(let ()
+  (define t (new text%))
+  (send t insert "aa\nbb\ncc\ndd\nee\nff\n")
+  (send t insert (make-object image-snip%
+                   (collection-file-path "recycle.png" "icons")))
+  
+  (define p (open-input-text-editor t))
+  
+  (define rev-at-start (send t get-revision-number))
+  (define line1 (read-line p))
+  
+  (define sl (send t get-style-list))
+  (define d (make-object style-delta% 'change-bold))
+  (define s (send sl find-or-create-style (send sl basic-style) d))
+  (send t change-style s 6 7)
+  
+  (define rev-after-cs (send t get-revision-number))
+  (define line2 (read-line p))
+  
+  (test #t 'revision-changed (> rev-after-cs rev-at-start))
+  (test "aa" 'revision-changed-line1 line1)
+  (test "bb" 'revision-changed-line1 line2))
+
+(let ()
+  (define t (new text%))
+  (send t insert "abcd\n")
+  (send t insert (make-object image-snip%
+                   (collection-file-path "recycle.png" "icons")))
+  
+  (define (count-snips)
+    (let loop ([s (send t find-first-snip)])
+      (cond
+        [s (+ 1 (loop (send s next)))]
+        [else 0])))
+  
+  (send t split-snip 1)
+  (define before-snip-count (count-snips))
+  (define rev-at-start (send t get-revision-number))
+  
+  (define p (open-input-text-editor t))
+  
+  (define char1 (read-char p))
+  
+  (define s (send (send t get-style-list) basic-style))
+  (send t change-style s 0 4)
+  (define after-snip-count (count-snips))
+  (define rev-after-cs (send t get-revision-number))
+  
+  (define chars (string (read-char p) (read-char p) (read-char p)))
+  
+  (test 4     'snips-joined1 before-snip-count)
+  (test 3     'snips-joined2 after-snip-count)
+  (test #t     'snips-joined3 (> rev-after-cs rev-at-start))
+  (test #\a    'snips-joined4 char1)
+  (test "bcd" 'snips-joined5 chars))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                            Snips and Streams                               ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -324,6 +380,7 @@
                 [decimal-prefix decimal-prefix])])
         snip))
     (super-instantiate ())))
+
 
 (define snip-class (make-object (mk-number-snip-class% #t)))
 (send snip-class set-classname (format "~s" `(lib "number-snip.ss" "drscheme" "private")))

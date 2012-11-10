@@ -469,14 +469,9 @@ Scheme_Object *scheme_extract_global(Scheme_Object *o, Scheme_Native_Closure *nc
   pos = SCHEME_TOPLEVEL_POS(o);
 
   if (local_only) {
-    /* Usually, we look for local bindings only, because module caching means
-       that JIT-generated code can be linked to different other modules that
-       may have different bindings, even though we expect them binding to be
-       consistent. */
-    if (pos < globs->num_toplevels) {
-      if (globs->import_map[pos >> 3] & (1 << (pos & 7)))
-        return NULL;
-    }
+    /* Look for local bindings when the JIT depends on information that is not
+       validated across module boundaries. */
+    scheme_signal_error("internal error: import map not available");
   }
 
   return globs->a[pos];
@@ -506,6 +501,23 @@ Scheme_Object *scheme_extract_closure_local(Scheme_Object *obj, mz_jit_state *ji
   return NULL;
 }
 
+int scheme_native_closure_preserves_marks(Scheme_Object *p)
+{
+  Scheme_Native_Closure_Data *ndata = ((Scheme_Native_Closure *)p)->code;
+
+  if (ndata->closure_size >= 0) { /* not case-lambda */
+    if (lambda_has_been_jitted(ndata)) {
+      if (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(ndata) & NATIVE_PRESERVES_MARKS)
+        return 1;
+    } else {
+      if (SCHEME_CLOSURE_DATA_FLAGS(ndata->u2.orig_code) & CLOS_PRESERVES_MARKS)
+        return 1;
+    }
+  }
+
+  return 0;
+}
+
 int scheme_is_noncm(Scheme_Object *a, mz_jit_state *jitter, int depth, int stack_start)
 {
   if (SCHEME_PRIMP(a)) {
@@ -525,20 +537,12 @@ int scheme_is_noncm(Scheme_Object *a, mz_jit_state *jitter, int depth, int stack
       && SAME_TYPE(SCHEME_TYPE(a), scheme_toplevel_type)
       && ((SCHEME_TOPLEVEL_FLAGS(a) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_CONST)) {
     Scheme_Object *p;
-    p = scheme_extract_global(a, jitter->nc, 1);
+    p = scheme_extract_global(a, jitter->nc, 0);
     if (p) {
       p = ((Scheme_Bucket *)p)->val;
       if (p && SAME_TYPE(SCHEME_TYPE(p), scheme_native_closure_type)) {
-        Scheme_Native_Closure_Data *ndata = ((Scheme_Native_Closure *)p)->code;
-        if (ndata->closure_size >= 0) { /* not case-lambda */
-          if (lambda_has_been_jitted(ndata)) {
-            if (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(ndata) & NATIVE_PRESERVES_MARKS)
-              return 1;
-          } else {
-            if (SCHEME_CLOSURE_DATA_FLAGS(ndata->u2.orig_code) & CLOS_PRESERVES_MARKS)
-              return 1;
-          }
-        }
+        if (scheme_native_closure_preserves_marks(p))
+          return 1;
       }
     }
   }
@@ -747,7 +751,7 @@ static int is_a_procedure(Scheme_Object *v, mz_jit_state *jitter)
       if (jitter->nc) {
 	Scheme_Object *p;
         
-	p = scheme_extract_global(v, jitter->nc, 1);
+	p = scheme_extract_global(v, jitter->nc, 0);
         if (p) {
           p = ((Scheme_Bucket *)p)->val;
           return SAME_TYPE(SCHEME_TYPE(p), scheme_native_closure_type);
@@ -2272,9 +2276,13 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       (void)jit_jmpi(refloop);
       CHECK_LIMIT();
       mz_patch_branch(ref3);
+      /* clear array pointer and re-laod argc: */
       (void)mz_tl_ldi_p(JIT_R0, tl_scheme_current_thread);
+      (void)jit_movi_p(JIT_R1, NULL);
+      jit_stxi_l(&((Scheme_Thread *)0x0)->ku.multiple.array, JIT_R0, JIT_R1);
       jit_ldxi_l(JIT_R0, JIT_R0, &((Scheme_Thread *)0x0)->ku.multiple.count);
-          
+      CHECK_LIMIT();
+
       /* Perform call --------------------- */
       /* Function is in V1, argc in R0, args on RUNSTACK */
       mz_patch_ucbranch(ref2);
@@ -2282,16 +2290,18 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 
       if (is_tail) {
         if (!sjc.shared_tail_argc_code) {
-          sjc.shared_tail_argc_code = scheme_generate_shared_call(-1, jitter, 1, 1, 0, 0, 0, 0);
+          sjc.shared_tail_argc_code = scheme_generate_shared_call(-1, jitter, 1, 0, 1, 0, 0, 0, 0);
         }
         mz_set_local_p(JIT_R0, JIT_LOCAL2);
         (void)jit_jmpi(sjc.shared_tail_argc_code);
       } else {
-        int mo = multi_ok ? 1 : 0;
+        int mo = (multi_ok 
+                  ? (result_ignored ? SHARED_RESULT_IGNORED_CASE : SHARED_MULTI_OK_CASE) 
+                  : SHARED_SINGLE_VALUE_CASE);
         void *code;
         if (!sjc.shared_non_tail_argc_code[mo]) {
-          scheme_ensure_retry_available(jitter, multi_ok);
-          code = scheme_generate_shared_call(-2, jitter, multi_ok, 0, 0, 0, 0, 0);
+          scheme_ensure_retry_available(jitter, multi_ok, result_ignored);
+          code = scheme_generate_shared_call(-2, jitter, multi_ok, result_ignored, 0, 0, 0, 0, 0);
           sjc.shared_non_tail_argc_code[mo] = code;
         }
         code = sjc.shared_non_tail_argc_code[mo];
@@ -2434,7 +2444,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 	return r;
       }
 
-      r = scheme_generate_app(app, NULL, app->num_args, jitter, is_tail, multi_ok, 0);
+      r = scheme_generate_app(app, NULL, app->num_args, jitter, is_tail, multi_ok, result_ignored, 0);
 
       CHECK_LIMIT();
       if (target != JIT_R0)
@@ -2464,7 +2474,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       args[0] = app->rator;
       args[1] = app->rand;
       
-      r = scheme_generate_app(NULL, args, 1, jitter, is_tail, multi_ok, 0);
+      r = scheme_generate_app(NULL, args, 1, jitter, is_tail, multi_ok, result_ignored, 0);
 
       CHECK_LIMIT();
       if (target != JIT_R0)
@@ -2495,7 +2505,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       args[1] = app->rand1;
       args[2] = app->rand2;
 
-      r = scheme_generate_app(NULL, args, 2, jitter, is_tail, multi_ok, 0);
+      r = scheme_generate_app(NULL, args, 2, jitter, is_tail, multi_ok, result_ignored, 0);
 
       CHECK_LIMIT();
       if (target != JIT_R0)
@@ -2597,9 +2607,9 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 	/* Did we get multiple results? If not, go to error: */
 	ref = jit_bnei_p(jit_forward(), JIT_R0, SCHEME_MULTIPLE_VALUES);
 	/* Load count and result array: */
-	mz_tl_ldi_p(JIT_R2, tl_scheme_current_thread);
-	jit_ldxi_l(JIT_R1, JIT_R2, &((Scheme_Thread *)0x0)->ku.multiple.count);
-	jit_ldxi_p(JIT_R2, JIT_R2, &((Scheme_Thread *)0x0)->ku.multiple.array);
+	mz_tl_ldi_p(JIT_V1, tl_scheme_current_thread);
+        jit_ldxi_p(JIT_R2, JIT_V1, &((Scheme_Thread *)0x0)->ku.multiple.array);
+	jit_ldxi_l(JIT_R1, JIT_V1, &((Scheme_Thread *)0x0)->ku.multiple.count);
 	CHECK_LIMIT();
 	/* If we got the expected count, jump to installing values: */
 	ref2 = jit_beqi_i(jit_forward(), JIT_R1, lv->count);
@@ -2626,9 +2636,11 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 	(void)mz_finish_lwe(ts_lexical_binding_wrong_return_arity, ref);
 	CHECK_LIMIT();
 
-	/* Continue with expected values; R2 has value array: */
+	/* Continue with expected values; R2 has values and V1 has thread pointer: */
         mz_patch_branch(ref2);
 	__END_SHORT_JUMPS__(1);
+        (void)jit_movi_p(JIT_R0, NULL);
+        jit_stxi_p(&((Scheme_Thread *)0x0)->ku.multiple.array, JIT_V1, JIT_R0);
 	for (i = 0; i < lv->count; i++) {
 	  jit_ldxi_p(JIT_R1, JIT_R2, WORDS_TO_BYTES(i));
 	  if (ab) {
@@ -3930,7 +3942,7 @@ int scheme_native_arity_check(Scheme_Object *closure, int argc)
   return sjc.check_arity_code(closure, argc + 1, 0 EXTRA_NATIVE_ARGUMENT);
 }
 
-Scheme_Object *scheme_get_native_arity(Scheme_Object *closure)
+Scheme_Object *scheme_get_native_arity(Scheme_Object *closure, int mode)
 {
   int cnt;
 
@@ -3951,7 +3963,11 @@ Scheme_Object *scheme_get_native_arity(Scheme_Object *closure)
 	has_rest = 1;
       } else 
 	has_rest = 0;
-      a = scheme_make_arity(v, has_rest ? -1 : v);
+      if (mode == -3) {
+        if (has_rest) v = -(v+1);
+        a = scheme_make_integer(v);
+      } else
+        a = scheme_make_arity(v, has_rest ? -1 : v);
       l = scheme_make_pair(a, l);
     }
     if (is_method)

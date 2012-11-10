@@ -1,5 +1,8 @@
-#lang racket
-(require file/md5)
+#lang racket/base
+
+(require racket/list
+         racket/contract
+         file/md5)
 
 (define RANGE 100000)
 

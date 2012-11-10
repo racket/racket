@@ -28,12 +28,20 @@
 
 /* read only globals */
 READ_ONLY Scheme_Object scheme_null[1];
+READ_ONLY Scheme_Object *scheme_pair_p_proc;
+READ_ONLY Scheme_Object *scheme_mpair_p_proc;
 READ_ONLY Scheme_Object *scheme_cons_proc;
 READ_ONLY Scheme_Object *scheme_mcons_proc;
 READ_ONLY Scheme_Object *scheme_list_proc;
 READ_ONLY Scheme_Object *scheme_list_star_proc;
 READ_ONLY Scheme_Object *scheme_box_proc;
+READ_ONLY Scheme_Object *scheme_box_p_proc;
 READ_ONLY Scheme_Object *scheme_hash_ref_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_car_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_cdr_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_mcar_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_mcdr_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_unbox_proc;
 /* read only locals */
 ROSYM static Scheme_Object *weak_symbol;
 ROSYM static Scheme_Object *equal_symbol;
@@ -177,15 +185,19 @@ scheme_init_list (Scheme_Env *env)
 
   scheme_add_global_constant ("null", scheme_null, env);
 
+  REGISTER_SO(scheme_pair_p_proc);
   p = scheme_make_folding_prim(pair_p_prim, "pair?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
                                 | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant ("pair?", p, env);
+  scheme_pair_p_proc = p;
 
+  REGISTER_SO(scheme_mpair_p_proc);
   p = scheme_make_folding_prim(mpair_p_prim, "mpair?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
                                 | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant ("mpair?", p, env);
+  scheme_mpair_p_proc = p;
 
   REGISTER_SO(scheme_cons_proc);
   p = scheme_make_immed_prim(cons_prim, "cons", 2, 2);
@@ -436,10 +448,12 @@ scheme_init_list (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_OMITABLE;
   scheme_add_global_constant("box-immutable", p, env);
   
+  REGISTER_SO(scheme_box_p_proc);
   p = scheme_make_folding_prim(box_p, BOXP, 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
                                 | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant(BOXP, p, env);
+  scheme_box_p_proc = p;
 
   p = scheme_make_noncm_prim(unbox, UNBOX, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;  
@@ -738,15 +752,19 @@ scheme_init_unsafe_list (Scheme_Env *env)
   
   scheme_null->type = scheme_null_type;
 
+  REGISTER_SO(scheme_unsafe_car_proc);
   p = scheme_make_folding_prim(unsafe_car, "unsafe-car", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant ("unsafe-car", p, env);
+  scheme_unsafe_car_proc = p;
 
+  REGISTER_SO(scheme_unsafe_cdr_proc);
   p = scheme_make_folding_prim(unsafe_cdr, "unsafe-cdr", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant ("unsafe-cdr", p, env);
+  scheme_unsafe_cdr_proc = p;
 
   p = scheme_make_folding_prim(unsafe_list_ref, "unsafe-list-ref", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
@@ -758,17 +776,21 @@ scheme_init_unsafe_list (Scheme_Env *env)
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant ("unsafe-list-tail", p, env);
 
+  REGISTER_SO(scheme_unsafe_mcar_proc);
   p = scheme_make_immed_prim(unsafe_mcar, "unsafe-mcar", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
                                 | SCHEME_PRIM_IS_UNSAFE_OMITABLE
                                 | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant ("unsafe-mcar", p, env);
+  scheme_unsafe_mcar_proc = p;
 
+  REGISTER_SO(scheme_unsafe_mcdr_proc);
   p = scheme_make_immed_prim(unsafe_mcdr, "unsafe-mcdr", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
                                 | SCHEME_PRIM_IS_UNSAFE_OMITABLE
                                 | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant ("unsafe-mcdr", p, env);
+  scheme_unsafe_mcdr_proc = p;
 
   p = scheme_make_immed_prim(unsafe_set_mcar, "unsafe-set-mcar!", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
@@ -778,11 +800,13 @@ scheme_init_unsafe_list (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant ("unsafe-set-mcdr!", p, env);
   
+  REGISTER_SO(scheme_unsafe_unbox_proc);
   p = scheme_make_immed_prim(unsafe_unbox, "unsafe-unbox", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
                                 | SCHEME_PRIM_IS_UNSAFE_OMITABLE
                                 | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("unsafe-unbox", p, env);
+  scheme_unsafe_unbox_proc = p;
 
   p = scheme_make_immed_prim(unsafe_unbox_star, "unsafe-unbox*", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
@@ -821,10 +845,14 @@ Scheme_Object *scheme_make_pair(Scheme_Object *car, Scheme_Object *cdr)
 Scheme_Object *scheme_make_mutable_pair(Scheme_Object *car, Scheme_Object *cdr)
 {
   Scheme_Object *cons;
+#ifdef MZ_PRECISE_GC
+  cons = GC_malloc_pair(car, cdr);
+#else
   cons = scheme_alloc_object();
-  cons->type = scheme_mutable_pair_type;
   SCHEME_CAR(cons) = car;
   SCHEME_CDR(cons) = cdr;
+#endif
+  cons->type = scheme_mutable_pair_type;
   return cons;
 }
 
@@ -836,10 +864,15 @@ Scheme_Object *scheme_make_raw_pair(Scheme_Object *car, Scheme_Object *cdr)
      tools expect pairs to always contain tagged values. A raw pair
      contains arbitrary pointers. */
 
+#ifdef MZ_PRECISE_GC
+  cons = GC_malloc_pair(car, cdr);
+#else
   cons = scheme_alloc_object();
-  cons->type = scheme_raw_pair_type;
   SCHEME_CAR(cons) = car;
   SCHEME_CDR(cons) = cdr;
+#endif
+
+  cons->type = scheme_raw_pair_type;
   return cons;
 }
 

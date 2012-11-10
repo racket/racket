@@ -1,5 +1,7 @@
-#lang racket
-(require "contract.rkt")
+#lang racket/base
+
+(require racket/match
+         "contract.rkt")
 
 (define-struct dv (vec-length next-avail-pos vec) #:mutable)
 

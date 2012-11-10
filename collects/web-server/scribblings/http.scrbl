@@ -265,9 +265,83 @@ transmission that the server @bold{will not catch}.}
       `(html (head (title "Cookie Example"))
              (body (h1 "You're cookie'd!"))))))
  ]
+}
 
- @warning{When using cookies, make sure you follow the advice of the @link["http://cookies.lcs.mit.edu/"]{MIT Cookie Eaters},
-          or you will be susceptible to dangerous attacks.}
+@; ------------------------------------------------------------
+@section[#:tag "id-cookie"]{Authenticated Cookies}
+
+@(require (for-label web-server/http/id-cookie))
+@defmodule[web-server/http/id-cookie]{
+
+Cookies are useful for storing information of user's browsers and
+particularly useful for storing identifying information for
+authentication, sessions, etc. However, there are inherent
+difficulties when using cookies as authenticators, because cookie data
+is fully controlled by the user, and thus cannot be trusted.
+
+This module provides functions for creating and verifying
+authenticated cookies that are intrinsically timestamped. It is based
+on the algorithm proposed by the
+@link["http://cookies.lcs.mit.edu/"]{MIT Cookie Eaters}: if you store
+the data @racket[_data] at thime @racket[_authored-seconds], then the
+user will receive @litchar{digest&authored-seconds&data}, where
+@racket[_digest] is an HMAC-SHA1 digest of @racket[_authored-seconds]
+and @racket[_data], using an arbitrary secret key. When you receive a
+cookie, it will reverify this digest and check that the cookie's
+@racket[_authored-seconds] is not after a timeout period, and only
+then return the cookie data to the program.
+
+The interface represents the secret key as a byte string. The best way
+to generate this is by using random bytes from something like OpenSSL
+or
+@tt{/dev/random}. @link["http://www.madboa.com/geek/openssl/#random-generate"]{This
+FAQ} lists a few options. A convenient purely Racket-based option is
+available (@racket[make-secret-salt/file]), but it will not have as
+good entropy, if you care about that sort of thing.
+
+ @defproc[(make-id-cookie
+           [name cookie-name?]
+           [secret-salt bytes?]
+           [value cookie-value?])
+          cookie?]{
+  Generates an authenticated cookie named @racket[name] containing @racket[value], signed with @racket[secret-salt].
+ }
+
+ @defproc[(request-id-cookie
+           [name cookie-name?]
+           [secret-salt bytes?]
+           [request request?]
+           [#:timeout timeout +inf.0])
+          (or/c false/c cookie-value?)]{
+  Extracts the first authenticated cookie named @racket[name] that was previously signed with @racket[secret-salt] before @racket[timeout] from @racket[request]. If no valid cookie is available, returns @racket[#f].
+ }
+
+ @defproc[(logout-id-cookie
+           [name cookie-name?])
+          cookie?]{
+  Generates a cookie named @racket[name] that is not validly authenticated.
+
+  This will cause non-malicious browsers to overwrite a previously set
+cookie. If you use authenticated cookies for login information, you
+could send this to cause a "logout". However, malicious browsers do
+not need to respect such an overwrite. Therefore, this is not an
+effective way to implement timeouts or protect users on
+public (i.e. possibly compromised) computers. The only way to securely
+logout on the compromised computer is to have server-side state
+keeping track of which cookies (sessions, etc.) are invalid. Depending
+on your application, it may be better to track live sessions or dead
+sessions, or never set cookies to begin with and just use
+continuations, which you can revoke with @racket[send/finish].
+ }
+
+ @defproc[(make-secret-salt/file
+            [secret-salt-path path-string?])
+           bytes?]{
+
+  Extracts the bytes from @racket[secret-salt-path]. If
+@racket[secret-salt-path] does not exist, then it is created and
+initialized with 128 random bytes.
+ }
 }
 
 @; ------------------------------------------------------------

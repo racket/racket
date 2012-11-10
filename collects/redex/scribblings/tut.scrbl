@@ -45,7 +45,7 @@
 @(define-for-syntax (loc stx)
    (let ([src (syntax-source stx)])
      (if (path? src)
-         (path->relative-string/library	src)
+         (path->relative-string/library src)
          #f)))
 @(define-syntax (interaction/test stx)
    (syntax-case stx ()
@@ -1122,3 +1122,6 @@ Typeset @racket[types]. Use a compound rewriter so a use of @racket[(type Γ e t
 is rendered as @racketblock[Γ ⊢ e : t]
 
 @generate-bibliography[]
+
+
+@close-eval[amb-eval]

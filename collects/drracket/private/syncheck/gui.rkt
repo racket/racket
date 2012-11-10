@@ -48,7 +48,8 @@ If the namespace does not, they are colored the unbound color.
          "traversals.rkt"
          "annotate.rkt"
          "../tooltip.rkt"
-         "blueboxes-gui.rkt")
+         "blueboxes-gui.rkt"
+         framework/private/logging-timer)
 (provide tool@)
 
 (define orig-output-port (current-output-port))
@@ -969,7 +970,7 @@ If the namespace does not, they are colored the unbound color.
             ;; Starts or restarts a one-shot arrow draw timer
             (define/private (start-arrow-draw-timer delay-ms)
               (unless arrow-draw-timer
-                (set! arrow-draw-timer (make-object timer% (λ () (maybe-update-drawn-arrows)))))
+                (set! arrow-draw-timer (make-object logging-timer% (λ () (maybe-update-drawn-arrows)))))
               (send arrow-draw-timer start delay-ms #t))
             
             ;; this will be set to a time in the future if arrows shouldn't be drawn until then
@@ -1581,6 +1582,7 @@ If the namespace does not, they are colored the unbound color.
             (send (send defs-text get-tab) add-bkg-running-color 'syncheck "orchid" cs-syncheck-running)
             (send defs-text syncheck:init-arrows)
             (let loop ([val val]
+                       [start-time (current-inexact-milliseconds)]
                        [i 0])
               (cond
                 [(null? val)
@@ -1588,40 +1590,42 @@ If the namespace does not, they are colored the unbound color.
                  (send defs-text syncheck:update-drawn-arrows)
                  (send (send defs-text get-tab) remove-bkg-running-color 'syncheck)
                  (set-syncheck-running-mode #f)]
-                [(= i 500)
+                [(and (i . > . 0)  ;; check i just in case things are really strange
+                      (20 . <= . (- (current-inexact-milliseconds) start-time)))
                  (queue-callback
                   (λ ()
                     (when (unbox bx)
-                      (loop val 0)))
+                      (log-timeline "continuing replay-compile-comp-trace"
+                                    (loop val (current-inexact-milliseconds) 0))))
                   #f)]
                 [else
                  (process-trace-element defs-text (car val))
-                 (loop (cdr val) (+ i 1))]))))
+                 (loop (cdr val) start-time (+ i 1))]))))
         
         (define/private (process-trace-element defs-text x)
           ;; using 'defs-text' all the time is wrong in the case of embedded editors,
           ;; but they already don't work and we've arranged for them to not appear here ....
           (match x
-            [`(syncheck:add-arrow ,start-text ,start-pos-left ,start-pos-right
-                                  ,end-text ,end-pos-left ,end-pos-right
-                                  ,actual? ,level)
+            [`#(syncheck:add-arrow ,start-pos-left ,start-pos-right
+                                   ,end-pos-left ,end-pos-right
+                                   ,actual? ,level)
              (send defs-text syncheck:add-arrow
                    defs-text start-pos-left start-pos-right
                    defs-text end-pos-left end-pos-right 
                    actual? level)]
-            [`(syncheck:add-tail-arrow ,from-text ,from-pos ,to-text ,to-pos)
+            [`#(syncheck:add-tail-arrow ,from-pos ,to-pos)
              (send defs-text syncheck:add-tail-arrow defs-text from-pos defs-text to-pos)]
-            [`(syncheck:add-mouse-over-status ,text ,pos-left ,pos-right ,str)
+            [`#(syncheck:add-mouse-over-status ,pos-left ,pos-right ,str)
              (send defs-text syncheck:add-mouse-over-status defs-text pos-left pos-right str)]
-            [`(syncheck:add-background-color ,text ,color ,start ,fin)
+            [`#(syncheck:add-background-color ,color ,start ,fin)
              (send defs-text syncheck:add-background-color defs-text color start fin)]
-            [`(syncheck:add-jump-to-definition ,text ,start ,end ,id ,filename)
+            [`#(syncheck:add-jump-to-definition ,start ,end ,id ,filename)
              (send defs-text syncheck:add-jump-to-definition defs-text start end id filename)]
-            [`(syncheck:add-require-open-menu ,text ,start-pos ,end-pos ,file)
+            [`#(syncheck:add-require-open-menu ,start-pos ,end-pos ,file)
              (send defs-text syncheck:add-require-open-menu defs-text start-pos end-pos file)]
-            [`(syncheck:add-docs-menu ,text ,start-pos ,end-pos ,key ,the-label ,path ,definition-tag ,tag)
+            [`#(syncheck:add-docs-menu,start-pos ,end-pos ,key ,the-label ,path ,definition-tag ,tag)
              (send defs-text syncheck:add-docs-menu defs-text start-pos end-pos key the-label path definition-tag tag)]
-            [`(syncheck:add-rename-menu ,id-as-sym ,to-be-renamed/poss ,name-dup-pc ,name-dup-id)
+            [`#(syncheck:add-rename-menu ,id-as-sym ,to-be-renamed/poss ,name-dup-pc ,name-dup-id)
              (define other-side-dead? #f)
              (define (name-dup? name) 
                (cond
@@ -1639,7 +1643,7 @@ If the namespace does not, they are colored the unbound color.
                      #f])]))
              (define to-be-renamed/poss/fixed
                (for/list ([lst (in-list to-be-renamed/poss)])
-                 (list defs-text (list-ref lst 1) (list-ref lst 2))))
+                 (list defs-text (list-ref lst 0) (list-ref lst 1))))
              (send defs-text syncheck:add-rename-menu id-as-sym to-be-renamed/poss/fixed 
                    name-dup?)]))
         
@@ -2066,9 +2070,12 @@ If the namespace does not, they are colored the unbound color.
     (drracket:module-language-tools:add-online-expansion-handler
      online-comp.rkt
      'go
-     (λ (defs-text val) (send (send (send defs-text get-canvas) get-top-level-window)
-                              replay-compile-comp-trace
-                              defs-text 
-                              val)))))
+     (λ (defs-text val) 
+       (log-timeline
+        "replace-compile-comp-trace"
+        (send (send (send defs-text get-canvas) get-top-level-window)
+              replay-compile-comp-trace
+              defs-text 
+              val))))))
 
 (define-runtime-path online-comp.rkt "online-comp.rkt")

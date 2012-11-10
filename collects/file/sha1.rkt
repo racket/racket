@@ -269,7 +269,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (define (hash-value->bytes int)
   (let* ((len (vector-length hash-as-bytes-masks))
- 	 (bv (make-bytes len 0)))
+         (bv (make-bytes len 0)))
      (do ((i 0 (+ i 1)))
          ((>= i len) bv)
        (bytes-set!

@@ -1,3 +1,3 @@
-#cs(module docs mzscheme
-  (require htdp/docs)
-  (provide (all-from htdp/docs)))
+#lang racket/base
+(require htdp/docs)
+(provide (all-from-out htdp/docs))

@@ -158,12 +158,12 @@
    "3"))
 
 (define (good-tests)
-  (set-language-level! '("How to Design Programs" "Beginning Student"))
+  (set-language-level! '("Beginning Student"))
   (do-execute drs-frame)
   (generic-tests))
 
 (define (bad-tests)
-  (set-language-level! '("How to Design Programs" "Beginning Student"))
+  (set-language-level! '("Beginning Student"))
   
   (test-bad/execute-teachpack
    "undefined-id"
@@ -218,7 +218,7 @@
                                   (directory-list dir)))
                       paths))]
          [teachpack-dir (normalize-path (collection-path "teachpack"))])
-    (set-language-level! '("How to Design Programs" "Advanced Student"))
+    (set-language-level! '("Advanced Student"))
     (do-execute drs-frame)
     (test-teachpacks (list (build-path teachpack-dir "2htdp")
                            (build-path teachpack-dir "htdp")))))

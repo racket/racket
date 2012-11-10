@@ -96,7 +96,7 @@
                                               (object-name this-lang)))])
            (unless same-last-time?
              (set! last-lang this-lang)
-             (set-language-level! (list #rx"How to Design Programs" this-lang))))
+             (set-language-level! (list this-lang))))
          
          (clear-definitions drr-frame)
          (insert-in-definitions drr-frame (test-program t))

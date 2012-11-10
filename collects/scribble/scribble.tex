@@ -11,6 +11,8 @@
 \usepackage[htt]{hyphenat}
 \usepackage[usenames,dvipsnames]{color}
 \hypersetup{bookmarks=true,bookmarksopen=true,bookmarksnumbered=true}
+\IfFileExists{tocstyle.sty}{\usepackage{tocstyle}\usetocstyle{standard}}{}
+\IfFileExists{CJK.sty}{\usepackage{CJK}}{}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Configuration that is especially meant to be overridden:
@@ -139,12 +141,13 @@
 \newenvironment{refcolumnleft}{\begin{refcolumn}}{\end{refcolumn}}
 
 % Macros used by `title' and `author':
-\newcommand{\titleAndVersionAndAuthors}[3]{\title{#1\\{\normalsize Version #2}}\author{#3}\maketitle}
-\newcommand{\titleAndVersionAndEmptyAuthors}[3]{\title{#1\\{\normalsize Version #2}}#3\maketitle}
+\newcommand{\titleAndVersionAndAuthors}[3]{\title{#1\\{\normalsize \SVersionBefore{}#2}}\author{#3}\maketitle}
+\newcommand{\titleAndVersionAndEmptyAuthors}[3]{\title{#1\\{\normalsize \SVersionBefore{}#2}}#3\maketitle}
 \newcommand{\titleAndEmptyVersionAndAuthors}[3]{\title{#1}\author{#3}\maketitle}
 \newcommand{\titleAndEmptyVersionAndEmptyAuthors}[3]{\title{#1}\maketitle}
 \newcommand{\SAuthor}[1]{#1}
 \newcommand{\SAuthorSep}[1]{\qquad}
+\newcommand{\SVersionBefore}[1]{Version }
 
 % Useful for some styles, such as sigalternate:
 \newcommand{\SNumberOfAuthors}[1]{}

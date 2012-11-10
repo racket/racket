@@ -73,7 +73,7 @@
                      (lambda (seed) (* seed 2))
                      (lambda (seed) (* seed 3))
                      (lambda (seed) (* seed 5))
-                     1)
+                     '(1))
        (list 1)))
 
      (test-case
@@ -82,8 +82,17 @@
        (unfold-right (lambda (seed) (= seed 729))
                      (lambda (seed) (* seed 2))
                      (lambda (seed) (* seed 3))
-                     1
                      1)
+       '(486 162 54 18 6 2)))
+
+     (test-case
+      "unfold-right:normal-case-opt-arg"
+      (check-equal?
+       (unfold-right (lambda (seed) (= seed 729))
+                     (lambda (seed) (* seed 2))
+                     (lambda (seed) (* seed 3))
+                     1
+                     '(1))
        '(486 162 54 18 6 2 1)))
 
      ;; FOLD

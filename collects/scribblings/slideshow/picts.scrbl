@@ -1,7 +1,13 @@
 #lang scribble/doc
 @(require "ss.rkt" "pict-diagram.rkt"
+          scribble/eval
+          slideshow/face slideshow/pict
           (for-label racket/gui slideshow/code slideshow/flash slideshow/face
                      slideshow/balloon slideshow/pict-convert))
+
+@(define ss-eval (make-base-eval))
+@(ss-eval '(require slideshow/pict racket/math racket/class racket/draw
+                    racket/list slideshow/balloon slideshow/flash))
 
 @title[#:style 'toc]{Making Pictures}
 
@@ -133,12 +139,32 @@ of the resulting pict's @tech{bounding box}.  In the three-argument case, the
 descent is @math{0} and the ascent is @racket[h] for the bounding
 box; in the five-argument case, @racket[a] and @racket[d] are used
 as the bounding box's ascent and descent.
-  
+
 When the rendering procedure is called, the current pen and brush will
 be solid and in the pict's color (and linewidth), and the scale and
 offset of the drawing context will be set. The text mode will be transparent, but
 the font and text colors are not guaranteed to be anything in
-particular.}
+particular.
+
+@examples[#:eval ss-eval
+  (dc (λ (dc dx dy)
+        (define old-brush (send dc get-brush))
+        (define old-pen (send dc get-pen))
+        (send dc set-brush
+          (new brush% [style 'fdiagonal-hatch]
+                      [color "darkslategray"]))
+        (send dc set-pen
+          (new pen% [width 3] [color "slategray"]))
+        (define path (new dc-path%))
+        (send path move-to 0 0)
+        (send path line-to 50 0)
+        (send path line-to 25 50)
+        (send path close)
+        (send dc draw-path path dx dy)
+        (send dc set-brush old-brush)
+        (send dc set-pen old-pen))
+    50 50)
+]}
 
 
 @defproc*[([(blank [size real? 0]) pict?]
@@ -151,12 +177,16 @@ value used for both the width and height of the resulting pict's
 @tech{bounding box}. In the one- and two-argument
 case, the ascent and descent are @math{0} for the resulting pict's
 bounding box; in the three-argument case, the height is computed by
-adding the given ascent and descent.}
+adding the given ascent and descent.
+
+@examples[#:eval ss-eval
+  (blank 50)
+]}
 
 
 @defproc[(text [content string?]
                [style text-style/c null]
-               [size (integer-in 1 1024) 12] 
+               [size (integer-in 1 1024) 12]
                [angle real? 0])
          pict?]{
 
@@ -211,15 +241,26 @@ The given @racket[size] is in pixels, but it is ignored if a
 The @racket[angle] is in radians, and positive values rotate
 counter-clockwise. For a non-zero @racket[angle], the resulting
 pict's @tech{bounding box} covers the rotated text, and the descent is zero
-and the ascent is the height.}
+and the ascent is the height.
+
+@examples[#:eval ss-eval
+  (text "tom collins")
+  (text "g & t" (cons 'bold 'roman))
+  (text "martini" null 13 (/ pi 2))
+]}
 
 
-@defproc*[([(hline [w real?] [h real?] 
+@defproc*[([(hline [w real?] [h real?]
                    [#:segment seg-length (or/c #f real?) #f]) pict?]
-           [(vline [w real?] [h real?] 
+           [(vline [w real?] [h real?]
                    [#:segment seg-length (or/c #f real?) #f]) pict?])]{
 
-Straight lines, centered within their @tech{bounding box}es.}
+Straight lines, centered within their @tech{bounding box}es.
+
+@examples[#:eval ss-eval
+  (hline 40 5)
+  (vline 5 40 #:segment 5)
+]}
 
 
 @defproc[(frame [pict pict?]
@@ -229,7 +270,13 @@ Straight lines, centered within their @tech{bounding box}es.}
           pict?]{
 
 Frames a given pict. If the color or line width are provided, the
-override settings supplied by the context.}
+override settings supplied by the context.
+
+@examples[#:eval ss-eval
+  (frame (circle 30))
+  (frame (circle 30) #:segment 5)
+  (frame (circle 30) #:color "chartreuse" #:line-width 3)
+]}
 
 @defproc*[([(ellipse [w real?] [h real?]) pict?]
            [(circle [diameter real?]) pict?]
@@ -240,11 +287,17 @@ Unfilled and filled ellipses.
 
 If @racket[draw-border?] is @racket[#f], then the pen is set to be transparent
 before drawing the ellipse.
-}
+
+@examples[#:eval ss-eval
+  (ellipse 40 30)
+  (circle 30)
+  (filled-ellipse 30 40)
+  (disk 30)
+]}
 
 @defproc*[([(rectangle [w real?] [h real?]) pict?]
            [(filled-rectangle [w real?]
-                              [h real?] 
+                              [h real?]
                               [#:draw-border? draw-border? any/c #t])
             pict?])]{
 
@@ -252,7 +305,11 @@ Unfilled and filled rectangles.
 
 If @racket[draw-border?] is @racket[#f], then the pen is set to be transparent
 before drawing the rectangle.
-}
+
+@examples[#:eval ss-eval
+  (rectangle 50 50)
+  (filled-rectangle 50 80)
+]}
 
 @defproc*[([(rounded-rectangle [w real?] [h real?] 
                                [corner-radius real? -0.25]
@@ -279,9 +336,13 @@ rotated, in radians.
 
 If @racket[draw-border?] is @racket[#f], then the pen is set to be transparent
 before drawing the rectangle.
-}
 
-@defproc[(bitmap [img (or/c path-string? 
+@examples[#:eval ss-eval
+  (rounded-rectangle 40 40 -0.3 #:angle (/ pi 4))
+  (filled-rounded-rectangle 50 40)
+]}
+
+@defproc[(bitmap [img (or/c path-string?
                             (is-a?/c bitmap%)
                             (is-a?/c image-snip%))])
          pict]{
@@ -300,7 +361,13 @@ is not valid, or if the @racket[bitmap-draft-mode] parameter is set to
 
 Creates an arrow or arrowhead in the specific direction within a
 @racket[size] by @racket[size] pict. Points on the arrow may extend
-slightly beyond the @tech{bounding box}.}
+slightly beyond the @tech{bounding box}.
+
+@examples[#:eval ss-eval
+  (arrow 30 0)
+  (arrow 30 (/ pi 2))
+  (arrowhead 30 0)
+]}
 
 
 @defproc*[([(pip-line [dx real?] [dy real?] [size real?]) pict?]
@@ -404,7 +471,28 @@ apply to the added line.
 
 When the @racket[hide-arrowhead?] argument is a true value, then space
 for an arrowhead is kept around the line, but the arrowhead itself is
-not drawn.}
+not drawn.
+
+@defexamples[#:eval ss-eval
+  (define pict-a (rectangle 40 40))
+  (define pict-b (circle 40))
+  (define combined (hc-append 200 pict-a pict-b))
+  (pin-line combined
+            pict-a cc-find
+            pict-b cc-find)
+  (pin-arrow-line 30 combined
+                  pict-a rc-find
+                  pict-b lc-find
+                  #:line-width 3
+                  #:style 'long-dash
+                  #:color "medium goldenrod")
+  (pin-arrows-line 30 combined
+                   pict-a rc-find
+                   pict-b lc-find
+                   #:start-angle (/ pi 11)
+                   #:end-angle (- (/ pi 11))
+                   #:solid? #f)
+]}
 
 
 @defthing[text-style/c contract?]{
@@ -445,7 +533,24 @@ similarly, the ascent of the result corresponds to the highest
 ascent-specified baseline. If at least one @racket[pict] is supplied,
 then the last element (as reported by @racket[pict-last]) for the
 result is @racket[(or (pict-last pict) pict)] for the using last
-supplied @racket[pict].}
+supplied @racket[pict].
+
+@defexamples[#:eval ss-eval
+  (define combiners (list vl-append vc-append vr-append
+                          ht-append htl-append hc-append
+                          hbl-append hb-append))
+  (define names (list "vl-append" "vc-append" "vr-append"
+                      "ht-append" "htl-append" "hc-append"
+                      "hbl-append" "hb-append"))
+  (define pict-a (colorize (filled-rectangle 60 30) "tomato"))
+  (define pict-b (colorize (disk 45) "cornflower blue"))
+  (define picts
+    (for/list ([combiner combiners] [name names])
+      (list (text name null 15)
+            (combiner pict-a pict-b))))
+  (take picts 4)
+  (drop picts 4)
+]}
 
 @defproc*[([(lt-superimpose [pict pict?] ...) pict?]
            [(ltl-superimpose [pict pict?] ...) pict?]
@@ -473,12 +578,36 @@ similarly, the ascent of the result corresponds to the highest
 ascent-specified baseline. The last element (as reported by
 @racket[pict-last]) for the result is the lowest, right-most among the
 last-element picts of the @racket[pict] arguments, as determined by
-comparing the last-element bottom-right corners.}
+comparing the last-element bottom-right corners.
+
+@defexamples[#:eval ss-eval
+  (define combiners (list lt-superimpose  ltl-superimpose lc-superimpose
+                          lbl-superimpose lb-superimpose  ct-superimpose
+                          ctl-superimpose cc-superimpose  cbl-superimpose
+                          cb-superimpose  rt-superimpose  rtl-superimpose
+                          rc-superimpose  rbl-superimpose rb-superimpose))
+  (define names (list "lt-superimpose"  "ltl-superimpose" "lc-superimpose"
+                      "lbl-superimpose" "lb-superimpose"  "ct-superimpose"
+                      "ctl-superimpose" "cc-superimpose"  "cbl-superimpose"
+                      "cb-superimpose"  "rt-superimpose"  "rtl-superimpose"
+                      "rc-superimpose"  "rbl-superimpose" "rb-superimpose"))
+  (define pict-a (colorize (filled-rectangle 60 30) "tomato"))
+  (define pict-b (colorize (disk 45) "cornflower blue"))
+  (define picts
+    (for/list ([combiner combiners] [name names])
+      (list (text name null 15)
+            (combiner pict-a pict-b))))
+  (take picts 3)
+  (take (drop picts 3) 3)
+  (take (drop picts 6) 3)
+  (take (drop picts 9) 3)
+  (take (drop picts 12) 3)
+]}
 
 
 @defproc*[([(pin-over [base pict?] [dx real?] [dy real?] [pict pict?])
             pict?]
-           [(pin-over [base pict?] 
+           [(pin-over [base pict?]
                       [find-pict pict-path?]
                       [find (pict? pict-path? . -> . (values real? real?))]
                       [pict pict?])
@@ -755,7 +884,12 @@ pict with the same shape and location.}
                 [color (or/c string? (is-a?/c color%)) "gray"])
          pict?]{
 
-Creates a fluffy cloud.}
+Creates a fluffy cloud.
+
+@examples[#:eval ss-eval
+  (cloud 100 75)
+  (cloud 100 75 "lavenderblush")
+]}
 
 @defproc[(file-icon [w real?]
                     [h real?] 
@@ -766,7 +900,12 @@ Creates a fluffy cloud.}
 Creates a Mac-like file icon, optionally shaded. If @racket[color] is
 not a string or @racket[color%] object, it is treated as a boolean, in
 which case true means @racket["gray"] and false means
-@racket["white"].}
+@racket["white"].
+
+@examples[#:eval ss-eval
+  (file-icon 50 60 "bisque")
+  (file-icon 50 60 "honeydew" #t)
+]}
 
 @defproc[(standard-fish [w real?]
                         [h real?] 
@@ -782,7 +921,14 @@ If @racket[eye-color] is @racket[#f], no eye is drawn.
 The @racket[open-mouth] argument can be either @racket[#f] (mouth
 closed), @racket[#t] (mouth fully open), or a number: @racket[0.0] is
 closed, @racket[1.0] is fully open, and numbers in between are
-partially open.}
+partially open.
+
+@examples[#:eval ss-eval
+  (standard-fish 100 50)
+  (standard-fish 100 50 #:direction 'right #:color "chocolate")
+  (standard-fish 100 50 #:eye-color "saddlebrown" #:color "salmon")
+  (standard-fish 100 50 #:open-mouth #t #:color "olive")
+]}
 
 @defproc[(jack-o-lantern [size real?]
                          [pumpkin-color (or/c string? (is-a?/c color%)) "orange"] 
@@ -790,7 +936,12 @@ partially open.}
          pict?]{
 
 Creates a jack-o-lantern; use the same pumpkin and face color to get a
-plain pumpkin. The @racket[size] determines the width.}
+plain pumpkin. The @racket[size] determines the width.
+
+@examples[#:eval ss-eval
+  (jack-o-lantern 100)
+  (jack-o-lantern 100 "cadet blue" "khaki")
+]}
 
 @defproc[(angel-wing [w real?]
                      [h real?] 
@@ -798,7 +949,12 @@ plain pumpkin. The @racket[size] determines the width.}
          pict?]{
 
 Creates an angel wing, left or right, or any size.  The color and pen
-width for drawing the wing outline is the current one.}
+width for drawing the wing outline is the current one.
+
+@examples[#:eval ss-eval
+  (angel-wing 100 40 #f)
+  (angel-wing 100 40 #t)
+]}
 
 @defproc[(desktop-machine [scale real?]
                           [style (listof symbol?) null])
@@ -818,6 +974,12 @@ The @racket[style] can include any of the following:
  @item{@racket['devil] --- like @racket['binary], and also give the machine 
                            horns and a tail}
 
+]
+
+@examples[#:eval ss-eval
+  (desktop-machine 1)
+  (desktop-machine 1 '(devil plt))
+  (desktop-machine 1 '(plt binary))
 ]}
                
 @defproc[(thermometer [#:height-% height-% (between/c 0 1) 1]
@@ -845,8 +1007,12 @@ The @racket[style] can include any of the following:
   
   Finally, some number of ticks are drawn, basd on the @racket[ticks] argument.
   
-  
-}
+@examples[#:eval ss-eval
+  (thermometer #:stem-height 90
+               #:bottom-circle-diameter 40
+               #:top-circle-diameter 20
+               #:mercury-inset 4)
+]}
 
 @; ----------------------------------------
 
@@ -919,7 +1085,19 @@ to the location specified by either @racket[x] and @racket[y]
 its arguments like @racket[lt-find].
 
 The resulting pict has the same @tech{bounding box}, descent, and ascent as
-@racket[base], even if the balloon extends beyond the bounding box.}
+@racket[base], even if the balloon extends beyond the bounding box.
+
+@examples[#:eval ss-eval
+  (define a-pict (standard-fish 70 40))
+  (pin-balloon (balloon 40 30 5 'se 5 5)
+               (cc-superimpose (blank 300 150) a-pict)
+               a-pict
+               lc-find)
+  (pin-balloon (wrap-balloon (text "Hello!") 'sw -5 3)
+               (cc-superimpose (blank 300 150) a-pict)
+               a-pict
+               rt-find)
+]}
 
 
 @defproc[(balloon [w real?]
@@ -959,6 +1137,9 @@ library.}
 
 Orange.}
 
+@; helper for the next defproc
+@(define (small-face mood) (scale (face mood) 0.25))
+
 @defproc[(face [mood symbol?]
                [color (or/c string (is-a?/c color%)) default-face-color])
          pict?]{
@@ -967,22 +1148,33 @@ Returns a pict for a pre-configured face with the given base
 color. The built-in configurations, selected by mood-symbol, are as
 follows:
 
-@itemize[
-
-    @item{@racket['unhappy] --- @racket[(face* 'none 'plain #t default-face-color 6)]}
-    @item{@racket['sortof-unhappy] --- @racket[(face* 'worried 'grimace #t default-face-color 6)]}
-    @item{@racket['sortof-happy] --- @racket[(face* 'worried 'medium #f default-face-color 6)]}
-    @item{@racket['happy] --- @racket[(face* 'none 'plain #f default-face-color 6)]}
-    @item{@racket['happier] --- @racket[(face* 'none 'large #f default-face-color 3)]}
-    @item{@racket['embarrassed] --- @racket[(face* 'worried 'medium #f default-face-color 3)]}
-    @item{@racket['badly-embarrassed] --- @racket[(face* 'worried 'medium #t default-face-color 3)]}
-    @item{@racket['unhappier] --- @racket[(face* 'normal 'large #t default-face-color 3)]}
-    @item{@racket['happiest] --- @racket[(face* 'normal 'huge #f default-face-color 0 -3)]}
-    @item{@racket['unhappiest] --- @racket[(face* 'normal 'huge #t default-face-color 0 -3)]}
-    @item{@racket['mad] --- @racket[(face* 'angry 'grimace #t default-face-color 0)]}
-    @item{@racket['mean] --- @racket[(face* 'angry 'narrow #f default-face-color 0)]}
-    @item{@racket['surprised] --- @racket[(face* 'worried 'oh #t default-face-color -4 -3 2)]}
-
+@tabular[#:sep @hspace[2]
+  (list (list @para{@racket['unhappy] --- @racket[(face* 'none 'plain #t default-face-color 6)]}
+              @(small-face 'unhappy))
+        (list @para{@racket['sortof-unhappy] --- @racket[(small-face* 'worried 'grimace #t default-face-color 6)]}
+              @(small-face 'sortof-unhappy))
+        (list @para{@racket['sortof-happy] --- @racket[(small-face* 'worried 'medium #f default-face-color 6)]}
+                    @(small-face 'sortof-happy))
+        (list @para{@racket['happy] --- @racket[(small-face* 'none 'plain #f default-face-color 6)]}
+                    @(small-face 'happy))
+        (list @para{@racket['happier] --- @racket[(small-face* 'none 'large #f default-face-color 3)]}
+                    @(small-face 'happier))
+        (list @para{@racket['embarrassed] --- @racket[(small-face* 'worried 'medium #f default-face-color 3)]}
+                    @(small-face 'embarrassed))
+        (list @para{@racket['badly-embarrassed] --- @racket[(small-face* 'worried 'medium #t default-face-color 3)]}
+                    @(small-face 'badly-embarrassed))
+        (list @para{@racket['unhappier] --- @racket[(small-face* 'normal 'large #t default-face-color 3)]}
+                    @(small-face 'unhappier))
+        (list @para{@racket['happiest] --- @racket[(small-face* 'normal 'huge #f default-face-color 0 -3)]}
+                    @(small-face 'happiest))
+        (list @para{@racket['unhappiest] --- @racket[(small-face* 'normal 'huge #t default-face-color 0 -3)]}
+                    @(small-face 'unhappiest))
+        (list @para{@racket['mad] --- @racket[(small-face* 'angry 'grimace #t default-face-color 0)]}
+                    @(small-face 'mad))
+        (list @para{@racket['mean] --- @racket[(small-face* 'angry 'narrow #f default-face-color 0)]}
+                    @(small-face 'mean))
+        (list @para{@racket['surprised] --- @racket[(small-face* 'worried 'oh #t default-face-color -4 -3 2)]}
+                    @(small-face 'surprised)))
 ]}
 
 @defproc[(face* [eyebrow-kind (or/c 'none 'normal 'worried 'angry)]
@@ -1068,7 +1260,12 @@ spikes are compared to the bounding oval.
 The @racket[rotation] argument specifies an angle in radians for
 counter-clockwise rotation.
 
-The flash is drawn in the default color.}
+The flash is drawn in the default color.
+
+@examples[#:eval ss-eval
+  (filled-flash 100 50)
+  (filled-flash 100 50 8 0.25 (/ pi 2))
+]}
 
 @defproc[(outline-flash [width real?]
                         [height real?]
@@ -1077,7 +1274,12 @@ The flash is drawn in the default color.}
                         [rotation real? 0])
          pict?]{
 
-Like @racket[filled-flash], but drawing only the outline.}
+Like @racket[filled-flash], but drawing only the outline.
+
+@examples[#:eval ss-eval
+  (outline-flash 100 50)
+  (outline-flash 100 50 8 0.25 (/ pi 2))
+]}
 
 @; ------------------------------------------------------------------------
 
@@ -1224,3 +1426,5 @@ and @racket[#f] otherwise.
 @defproc[(pict-convert [v pict-convertible?]) pict?]{
   Requests a data conversion from @racket[v] to a pict.
 }
+
+@(close-eval ss-eval)

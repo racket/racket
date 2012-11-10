@@ -38,3 +38,6 @@ Returns the algebraic stepper logo.
 Returns the macro stepper logo.
 @examples[#:eval logos-eval (macro-stepper-logo)]
 }
+
+
+@close-eval[logos-eval]

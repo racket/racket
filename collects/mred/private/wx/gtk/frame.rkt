@@ -22,7 +22,8 @@
               display-origin
               display-size
 	      display-count
-              location->window))
+              location->window
+              get-current-mouse-state))
 
 ;; ----------------------------------------
 
@@ -57,6 +58,13 @@
 (define-gtk gtk_window_resize (_fun _GtkWidget _int _int -> _void))
 
 (define-gdk gdk_window_set_cursor (_fun _GdkWindow _pointer -> _void))
+(define-gdk gdk_screen_get_root_window (_fun _GdkScreen -> _GdkWindow))
+(define-gdk gdk_window_get_pointer (_fun _GdkWindow 
+                                         (x : (_ptr o _int))
+                                         (y : (_ptr o _int))
+                                         (mods : (_ptr o _uint))
+                                         -> _GdkWindow
+                                         -> (values x y mods)))
 
 (define-gtk gtk_window_iconify (_fun _GtkWindow -> _void))
 (define-gtk gtk_window_deiconify (_fun _GtkWindow -> _void))
@@ -169,7 +177,7 @@
          (values vbox-gtk panel-gtk))))
     (gtk_widget_show vbox-gtk)
     (gtk_widget_show panel-gtk)
-    (connect-key-and-mouse gtk)
+    (connect-enter-and-leave gtk)
 
     (unless is-dialog?
       (gtk_window_set_icon_list gtk (cdr (force icon-pixbufs+glist))))
@@ -424,7 +432,7 @@
     (define/override (call-pre-on-char w e)
       (pre-on-char w e))
 
-    (define/override (client-to-screen x y)
+    (define/override (internal-client-to-screen x y)
       (gtk_window_set_gravity gtk GDK_GRAVITY_STATIC)
       (let-values ([(dx dy) (gtk_window_get_position gtk)]
                    [(cdx cdy) (get-client-delta)])
@@ -543,3 +551,24 @@
                  [fh (send f get-height)])
              (<= fy y (+ fy fh)))
            f))))
+
+;; ----------------------------------------
+
+(define (get-current-mouse-state)
+  (define-values (x y mods) (gdk_window_get_pointer
+                             (gdk_screen_get_root_window
+                              (gdk_screen_get_default))))
+  (define (maybe mask sym)
+    (if (zero? (bitwise-and mods mask))
+        null
+        (list sym)))
+  (values (make-object point% x y)
+          (append
+           (maybe GDK_BUTTON1_MASK 'left)
+           (maybe GDK_BUTTON2_MASK 'middle)
+           (maybe GDK_BUTTON3_MASK 'right)
+           (maybe GDK_SHIFT_MASK 'shift)
+           (maybe GDK_LOCK_MASK 'caps)
+           (maybe GDK_CONTROL_MASK 'control)
+           (maybe GDK_MOD1_MASK 'alt)
+           (maybe GDK_META_MASK 'meta))))

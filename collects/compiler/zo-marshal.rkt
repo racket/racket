@@ -604,13 +604,51 @@
        [(? void?)
         (out-byte CPT_VOID out)]
        [(struct module-variable (modidx sym pos phase constantness))
+        (define (to-sym n) (string->symbol (format "struct~a" n)))
         (out-byte CPT_MODULE_VAR out)
         (out-anything modidx out)
         (out-anything sym out)
+        (out-anything (cond
+                       [(function-shape? constantness)
+                        (let ([a (function-shape-arity constantness)])
+                          (cond
+                           [(arity-at-least? a) 
+                            (bitwise-ior (arithmetic-shift (- (add1 (arity-at-least-value a))) 1)
+                                         (if (function-shape-preserves-marks? constantness) 1 0))]
+                           [(list? a)
+                            (string->symbol (apply
+                                             string-append
+                                             (add-between
+                                              (for/list ([a (in-list a)])
+                                                (define n (if (arity-at-least? a)
+                                                              (- (add1 (arity-at-least-value a)))
+                                                              a))
+                                                (number->string n))
+                                              ":")))]
+                           [else 
+                            (bitwise-ior (arithmetic-shift a 1) 
+                                         (if (function-shape-preserves-marks? constantness) 1 0))]))]
+                       [(struct-type-shape? constantness)
+                        (to-sym (arithmetic-shift (struct-type-shape-field-count constantness)
+                                                  4))]
+                       [(constructor-shape? constantness)
+                        (to-sym (bitwise-ior 1 (arithmetic-shift (constructor-shape-arity constantness)
+                                                                 4)))]
+                       [(predicate-shape? constantness) (to-sym 2)]
+                       [(accessor-shape? constantness)
+                        (to-sym (bitwise-ior 3 (arithmetic-shift (accessor-shape-field-count constantness)
+                                                                 4)))]
+                       [(mutator-shape? constantness)
+                        (to-sym (bitwise-ior 4 (arithmetic-shift (mutator-shape-field-count constantness)
+                                                                 4)))]
+                       [(struct-other-shape? constantness)
+                        (to-sym 5)]
+                       [else #f])
+                      out)
         (case constantness
-          [(constant) (out-number -4 out)]
+          [(#f) (void)]
           [(fixed) (out-number -5 out)]
-          [else (void)])
+          [else (out-number -4 out)])
         (unless (zero? phase)
           (out-number -2 out)
           (out-number phase out))

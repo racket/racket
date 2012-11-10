@@ -16,11 +16,25 @@
 
 (define-syntax (define-generics stx) ; allows out-of-order / optional kw args
   (syntax-case stx () ; can't use syntax-parse, since it depends on us
+    [(_ name (generic . generics-args) ... #:defaults defaults)
+     #'(define-generics name
+         #:defined-table defined-table
+         (generic . generics-args) ...
+         #:defaults defaults)]
+    [(_ name #:defined-table defined-table (generic . generics-args) ...)
+     #'(define-generics name
+         #:defined-table defined-table
+         (generic . generics-args) ...
+         #:defaults ())]
     [(_ name (generic . generics-args) ...)
-     #'(define-generics name #:defined-table defined-table
-         (generic . generics-args) ...)]
-    [(_ name #:defined-table defined-table
-        (generic . generics-args) ...)
+     #'(define-generics name
+         #:defined-table defined-table
+         (generic . generics-args) ...
+         #:defaults ())]
+    [(_ name
+       #:defined-table defined-table
+       (generic . generics-args) ...
+       #:defaults defaults)
      (local [(define name-str (symbol->string (syntax-e #'name)))
              (define (id . strs)
                (datum->syntax
@@ -29,6 +43,7 @@
                     [gen:name (id "gen:" name-str)])
        #'(define-generics/pre (name gen:name prop:name name?
                                     #:defined-table defined-table
+                                    #:defaults defaults
                                     ;; the following are not public
                                     #:prop-defined-already? #f
                                     #:define-contract define-generics-contract)

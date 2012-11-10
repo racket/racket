@@ -1,3 +1,3 @@
-#cs(module guess mzscheme
-  (require htdp/guess)
-  (provide (all-from htdp/guess)))
+#lang racket/base
+(require htdp/guess)
+(provide (all-from-out htdp/guess))

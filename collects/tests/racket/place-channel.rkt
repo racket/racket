@@ -89,6 +89,8 @@
       (make-immutable-hash l1)
       (make-immutable-hasheq l2)
       (make-immutable-hasheqv l3)
+      (bytes->path x 'unix)
+      (bytes->path x 'windows)
       )))
 
 (define (channel-test-basic-types-master sender ch)
@@ -115,6 +117,8 @@
     ((make-hash l1) (make-immutable-hash l1))
     ((make-hasheq l2) (make-immutable-hasheq l2))
     ((make-hasheqv l3) (make-immutable-hasheqv l3))
+    (#"/tmp/unix" (bytes->path #"/tmp/unix" 'unix))
+    (#"C:\\Windows" (bytes->path #"C:\\Windows" 'windows))
     ))
 
 (define-place (place-worker ch)

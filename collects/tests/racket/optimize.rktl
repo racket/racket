@@ -475,6 +475,10 @@
     (tri 3 '/ (lambda () 30) 5 2 void)
     (tri 12 '/ (lambda () 30) 5 1/2 void)
     (bin-exact (/ 1.1 2.3) 'fl/ 1.1 2.3 #t)
+    (bin 4/3 '/ 4 3)
+    (bin -4/3 '/ 4 -3)
+    (bin -4/3 '/ -4 3)
+    (bin 4/3 '/ -4 -3)
 
     (bin-int 3 'quotient 10 3)
     (bin-int -3 'quotient 10 -3)
@@ -1299,10 +1303,10 @@
 (let ([try-equiv
        (lambda (extras)
          (lambda (a b)
-           (test-comp `(module m racket
+           (test-comp `(module m racket/base
                          (define (f x)
                            (apply x ,@extras ,a)))
-                      `(module m racket
+                      `(module m racket/base
                          (define (f x)
                            (x ,@extras ,@b))))))])
   (map (lambda (try-equiv)
@@ -1321,7 +1325,7 @@
         (try-equiv '(0))
         (try-equiv '(0 1)))))
          
-(test-comp '(module m mzscheme
+(test-comp '(module m racket/base
               (define (q x)
                 ;; Single-use bindings should be inlined always:
                 (let* ([a (lambda (x) (+ x 10))]
@@ -1336,7 +1340,7 @@
                        [j (lambda (x) (+ 1 (i x)))]
                        [k (lambda (x) (+ 1 (j x)))])
                   (k x))))
-           '(module m mzscheme
+           '(module m racket/base
               (define (q x)
                 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ x 10))))))))))))))
 
@@ -1443,6 +1447,63 @@
   (test-bin 'eq?)
   (test-bin 'eqv?))
 
+(let ([test-use-unsafe
+       (lambda (pred op unsafe-op)
+         (test-comp `(module m racket/base
+                       (require racket/unsafe/ops)
+                       (define (f x)
+                         (if (,pred x)
+                             (,op x)
+                             (cdr x))))
+                    `(module m racket/base
+                       (require racket/unsafe/ops)
+                       (define (f x)
+                         (if (,pred x)
+                             (,unsafe-op x)
+                             (cdr x)))))
+         (test-comp `(module m racket/base
+                       (require racket/unsafe/ops)
+                       (define (f x)
+                         (list (,op x) (,op x))))
+                    `(module m racket/base
+                       (require racket/unsafe/ops)
+                       (define (f x)
+                         (list (,op x) (,unsafe-op x)))))
+         (test-comp `(module m racket/base
+                       (require racket/unsafe/ops)
+                       (define (f x)
+                         (if (and (,pred x)
+                                  (zero? (random 2)))
+                             (,op x)
+                             (cdr x))))
+                    `(module m racket/base
+                       (require racket/unsafe/ops)
+                       (define (f x)
+                         (if (and (,pred x)
+                                  (zero? (random 2)))
+                             (,unsafe-op x)
+                             (cdr x))))))])
+  (test-use-unsafe 'pair? 'car 'unsafe-car)
+  (test-use-unsafe 'pair? 'cdr 'unsafe-cdr)
+  (test-use-unsafe 'mpair? 'mcar 'unsafe-mcar)
+  (test-use-unsafe 'mpair? 'mcdr 'unsafe-mcdr)
+  (test-use-unsafe 'box? 'unbox 'unsafe-unbox))
+
+(test-comp `(module m racket/base
+              (require racket/unsafe/ops)
+              (define (f x)
+                (thread (lambda () (set! x 5)))
+                (if (pair? x)
+                    (car x)
+                    (cdr x))))
+           `(module m racket/base
+              (require racket/unsafe/ops)
+              (define (f x)
+                (thread (lambda () (set! x 5)))
+                (if (pair? x)
+                    (unsafe-car x)
+                    (cdr x))))
+           #f)
 
 ;; + fold to fixnum overflow, fx+ doesn't
 (test-comp `(module m racket/base
@@ -1681,6 +1742,207 @@
            '(lambda (x)
               (hash-ref '#hash((x . y)) x add1))
            #f)
+
+;; Check elimination of ignored structure predicate
+;; and constructor applications:
+
+(test-comp '(module m racket/base
+              (define-values (struct:a a a? a-ref a-set!)
+                (make-struct-type 'a #f 2 0))
+              (begin0
+               (a? (a-ref (a 1 2) 1))
+               a?
+               a
+               a-ref
+               (a? 7)
+               (a 1 2)
+               5))
+           '(module m racket/base
+              (define-values (struct:a a a? a-ref a-set!)
+                (make-struct-type 'a #f 2 0))
+              (begin0
+               (a? (a-ref (a 1 2) 1))
+               5)))
+
+(test-comp '(module m racket/base
+              (define-values (struct:a a a? a-x a-y)
+                (let-values ([(struct:a a a? a-ref a-set!)
+                              (make-struct-type 'a #f 2 0)])
+                  (values struct:a a a?
+                          (make-struct-field-accessor a-ref 0)
+                          (make-struct-field-accessor a-ref 1))))
+              (begin0
+               (a? (a-x (a 1 2)))
+               a?
+               a
+               a-x
+               (a? 7)
+               (a 1 2)
+               5))
+           '(module m racket/base
+              (define-values (struct:a a a? a-x a-y)
+                (let-values ([(struct:a a a? a-ref a-set!)
+                              (make-struct-type 'a #f 2 0)])
+                  (values struct:a a a?
+                          (make-struct-field-accessor a-ref 0)
+                          (make-struct-field-accessor a-ref 1))))
+              (begin0
+               (a? (a-x (a 1 2)))
+               5)))
+
+(test-comp '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes)
+              (begin0
+               (a? (a-x (a 1 2)))
+               a?
+               a
+               a-x
+               (a? 7)
+               (a 1 2)
+               5))
+           '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes)
+              (begin0
+               (a? (a-x (a 1 2)))
+               5)))
+
+(test-comp '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes #:prefab)
+              (begin0
+               (a? (a-x (a 1 2)))
+               a?
+               a
+               a-x
+               (a? 7)
+               (a 1 2)
+               5))
+           '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes #:prefab)
+              (begin0
+               (a? (a-x (a 1 2)))
+               5)))
+
+(test-comp '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes #:mutable)
+              (begin0
+               (a? (set-a-x! (a 1 2) 5))
+               a?
+               a
+               a-x
+               set-a-x!
+               (a? 7)
+               (a 1 2)
+               5))
+           '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes #:mutable)
+              (begin0
+               (a? (set-a-x! (a 1 2) 5))
+               5)))
+
+(test-comp '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes)
+              (struct b (z) #:super struct:a #:omit-define-syntaxes)
+              (begin0
+               (list (a? (a-x (a 1 2)))
+                     (b? (b-z (b 1 2 3))))
+               a?
+               a
+               a-x
+               (a? 7)
+               (a 1 2)
+               b?
+               b
+               b-z
+               (b 1 2 3)
+               5))
+           '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes)
+              (struct b (z) #:super struct:a #:omit-define-syntaxes)
+              (begin0
+               (list (a? (a-x (a 1 2)))
+                     (b? (b-z (b 1 2 3))))
+               5)))
+
+(module struct-a-for-optimize racket/base
+  (provide (struct-out a)
+           (struct-out b))
+  (struct a (x y))
+  (struct b a (z)))
+
+(module struct-c-for-optimize racket/base
+  (require 'struct-a-for-optimize)
+  (provide (struct-out c))
+  (struct c a (q)))
+
+(test-comp '(module m racket/base
+              (require 'struct-a-for-optimize)
+              (begin0
+               (list (a? (a-x (a 1 2)))
+                     (b? (b-z (b 1 2 3))))
+               a?
+               a
+               a-x
+               (a? 7)
+               (a 1 2)
+               b?
+               b
+               b-z
+               (b 1 2 3)
+               5))
+           '(module m racket/base
+              (require 'struct-a-for-optimize)
+              (begin0
+               (list (a? (a-x (a 1 2)))
+                     (b? (b-z (b 1 2 3))))
+               5)))
+
+(test-comp '(module m racket/base
+              (require 'struct-c-for-optimize)
+              (begin0
+               (list (c? (c-q (c 1 2 3))))
+               c?
+               c
+               c-q
+               (c 1 2 3)
+               5))
+           '(module m racket/base
+              (require 'struct-c-for-optimize)
+              (begin0
+               (list (c? (c-q (c 1 2 3))))
+               5)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check splitting of definitions
+(test-comp `(module m racket/base
+              (define-values (x y) (values 1 2)))
+           `(module m racket/base
+              (define x 1)
+              (define y 2)))
+(test-comp `(module m racket/base
+              (define-values (x y z w) (values 1 2 4 5)))
+           `(module m racket/base
+              (define x 1)
+              (define y 2)
+              (define z 4)
+              (define w 5)))
+(test-comp `(module m racket/base
+              (define-values (x y)
+                (let ([x (lambda (x) x)]
+                      [y (lambda (x y) y)])
+                  (values x y))))
+           `(module m racket/base
+              (define x (lambda (x) x))
+              (define y (lambda (x y) y))))
+(test-comp `(module m racket/base
+              (define-values (x y z)
+                (let ([x (lambda (x) x)]
+                      [y (lambda (x y) y)]
+                      [z (lambda (x y z) z)])
+                  (values x y z))))
+           `(module m racket/base
+              (define x (lambda (x) x))
+              (define y (lambda (x y) y))
+              (define z (lambda (x y z) z))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check bytecode verification of lifted functions
@@ -2278,6 +2540,17 @@
                               [read-accept-compiled #t])
                  (eval (read (open-input-bytes (get-output-bytes o2)))))
                exn:fail:read?))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; make sure `begin0' propertly propagates "multiple results" flags
+
+(test '(1 2 3) (lambda ()
+                 (call-with-values
+                     (lambda () (begin0
+                                 (values 1 2 3)
+                                 (newline)))
+                   list)))
+
   
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

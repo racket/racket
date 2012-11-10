@@ -1,5 +1,9 @@
-#lang racket
-(require "contract.rkt"
+#lang racket/base
+
+(require racket/bool
+         racket/list
+         racket/match
+         "contract.rkt"
          "match.rkt"
          racket/async-channel)
 

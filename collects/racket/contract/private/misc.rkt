@@ -957,34 +957,56 @@
 (define/final-prop none/c (make-none/c 'none/c))
 
 ;; prompt-tag/c
-(define/subexpression-pos-prop (prompt-tag/c . ctc-args)
-  (define ctcs
-    (map (λ (ctc-arg)
-           (coerce-contract 'prompt-tag/c ctc-arg))
-         ctc-args))
-  (cond [(andmap chaperone-contract? ctcs)
-         (chaperone-prompt-tag/c ctcs)]
+(define-syntax prompt-tag/c
+  (syntax-rules (values)
+    [(_ ?ctc ... #:call/cc (values ?call/cc ...))
+     (-prompt-tag/c (list ?ctc ...) (list ?call/cc ...))]
+    [(_ ?ctc ... #:call/cc ?call/cc)
+     (-prompt-tag/c (list ?ctc ...) (list ?call/cc))]
+    [(_ ?ctc ...) (-prompt-tag/c (list ?ctc ...) (list))]))
+
+;; procedural part of the contract
+;; takes two lists of contracts (abort & call/cc contracts)
+(define/subexpression-pos-prop (-prompt-tag/c ctc-args call/ccs)
+  (define ctcs (coerce-contracts 'prompt-tag/c ctc-args))
+  (define call/cc-ctcs (coerce-contracts 'prompt-tag/c call/ccs))
+  (cond [(and (andmap chaperone-contract? ctcs)
+              (andmap chaperone-contract? call/cc-ctcs))
+         (chaperone-prompt-tag/c ctcs call/cc-ctcs)]
         [else
-         (impersonator-prompt-tag/c ctcs)]))
+         (impersonator-prompt-tag/c ctcs call/cc-ctcs)]))
 
 (define (prompt-tag/c-name ctc)
   (apply build-compound-type-name
-         (cons 'prompt-tag/c (base-prompt-tag/c-ctcs ctc))))
+         (append (list 'prompt-tag/c) (base-prompt-tag/c-ctcs ctc)
+                 (list '#:call/cc) (base-prompt-tag/c-call/ccs ctc))))
 
-(define ((prompt-tag/c-proj proxy) ctc)
+;; build a projection for prompt tags
+(define ((prompt-tag/c-proj chaperone?) ctc)
+  (define proxy (if chaperone? chaperone-prompt-tag impersonate-prompt-tag))
+  (define proc-proxy (if chaperone? chaperone-procedure impersonate-procedure))
   (define ho-projs
     (map contract-projection (base-prompt-tag/c-ctcs ctc)))
+  (define call/cc-projs
+    (map contract-projection (base-prompt-tag/c-call/ccs ctc)))
   (λ (blame)
-    (define proj1
+    (define (make-proj projs swap?)
       (λ vs
-        (define vs2 (for/list ([proj ho-projs] [v vs])
-                      ((proj blame) v)))
-        (apply values vs2)))
-    (define proj2
-      (λ vs
-        (define vs2 (for/list ([proj ho-projs] [v vs])
-                      ((proj (blame-swap blame)) v)))
-        (apply values vs2)))
+         (define vs2 (for/list ([proj projs] [v vs])
+                       ((proj (if swap? (blame-swap blame) blame)) v)))
+         (apply values vs2)))
+    ;; prompt/abort projections
+    (define proj1 (make-proj ho-projs #f))
+    (define proj2 (make-proj ho-projs #t))
+    ;; call/cc projections
+    (define call/cc-guard (make-proj call/cc-projs #f))
+    (define call/cc-proxy
+      (λ (f)
+        (proc-proxy
+         f
+         (λ args
+           (apply values (make-proj call/cc-projs #t) args)))))
+    ;; now do the actual wrapping
     (λ (val)
       (unless (contract-first-order-passes? ctc val)
         (raise-blame-error
@@ -992,7 +1014,8 @@
          '(expected: "~s" given: "~e")
          (contract-name ctc)
          val))
-      (proxy val proj1 proj2))))
+      (proxy val proj1 proj2 call/cc-guard call/cc-proxy
+             impersonator-prop:contracted ctc))))
 
 (define ((prompt-tag/c-first-order ctc) v)
   (continuation-prompt-tag? v))
@@ -1001,14 +1024,18 @@
   (and (base-prompt-tag/c? that)
        (andmap (λ (this that) (contract-stronger? this that))
                (base-prompt-tag/c-ctcs this)
-               (base-prompt-tag/c-ctcs that))))
+               (base-prompt-tag/c-ctcs that))
+       (andmap (λ (this that) (contract-stronger? this that))
+               (base-prompt-tag/c-call/ccs this)
+               (base-prompt-tag/c-call/ccs that))))
 
-(define-struct base-prompt-tag/c (ctcs))
+;; (listof contract) (listof contract)
+(define-struct base-prompt-tag/c (ctcs call/ccs))
 
 (define-struct (chaperone-prompt-tag/c base-prompt-tag/c) ()
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
-   #:projection (prompt-tag/c-proj chaperone-prompt-tag)
+   #:projection (prompt-tag/c-proj #t)
    #:first-order prompt-tag/c-first-order
    #:stronger prompt-tag/c-stronger?
    #:name prompt-tag/c-name))
@@ -1016,7 +1043,7 @@
 (define-struct (impersonator-prompt-tag/c base-prompt-tag/c) ()
   #:property prop:contract
   (build-contract-property
-   #:projection (prompt-tag/c-proj impersonate-prompt-tag)
+   #:projection (prompt-tag/c-proj #f)
    #:first-order prompt-tag/c-first-order
    #:stronger prompt-tag/c-stronger?
    #:name prompt-tag/c-name))
@@ -1048,7 +1075,8 @@
          '(expected: "~s" given: "~e")
          (contract-name ctc)
          val))
-      (proxy val proj1 proj2))))
+      (proxy val proj1 proj2
+             impersonator-prop:contracted ctc))))
 
 (define ((continuation-mark-key/c-first-order ctc) v)
   (continuation-mark-key? v))

@@ -25,7 +25,8 @@
   (define (series dc steps start-c end-c f pen? brush?)
     (color-series dc steps #e0.5 start-c end-c f pen? brush?))
     
-  (define (mk-balloon w h corner-radius spike-pos dx dy color)
+  (define (mk-balloon w h corner-radius spike-pos dx dy
+                      [color balloon-color])
     (let ([dw (if (< corner-radius 1)
                   (* corner-radius w)
                   corner-radius)]

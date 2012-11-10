@@ -1,7 +1,7 @@
 #lang racket
 (require racket/file
          racket/runtime-path
-         (planet jaymccarthy/job-queue)
+         "job-queue.rkt"
          "metadata.rkt"
          "run-collect.rkt"
          "cache.rkt"
@@ -165,8 +165,8 @@
           thunk
           (λ ()
             ;; Close the output ports
-            #;(close-input-port stdout)
-            #;(close-input-port stderr)
+            ;;(close-input-port stdout)
+            ;;(close-input-port stderr)
 
             ;; Kill the guard
             (kill-thread waiter)
@@ -200,8 +200,7 @@
     (path->string (build-path trunk-dir "bin" "gracket")))
   (define collects-pth
     (build-path trunk-dir "collects"))
-  ;; XXX Use a single GUI thread so that other non-GUI apps can run in parallel
-  (define gui-lock (make-semaphore 1))
+  (define gui-workers (make-job-queue 1))
   (define test-workers (make-job-queue (number-of-cpus)))
   (define (test-directory dir-pth upper-sema)
     (define dir-log (build-path (trunk->log dir-pth) ".index.test"))
@@ -224,6 +223,7 @@
          (define directory? (directory-exists? pth))
          (cond
            [directory?
+            ;; XXX do this in parallel?
             (test-directory pth dir-sema)]
            [else
             (define log-pth (trunk->log pth))
@@ -236,40 +236,46 @@
                      (current-subprocess-timeout-seconds)))
                (define pth-cmd/general
                  (path-command-line pth))
-               (define pth-cmd
+               (define-values
+                 (pth-cmd the-queue)
                  (match pth-cmd/general
                    [#f
-                    #f]
+                    (values #f #f)]
                    [(list-rest (or 'mzscheme 'racket) rst)
-                    (lambda (k)
-                      (k (list* racket-path rst)))]
+                    (values
+                     (lambda (k)
+                       (k (list* racket-path rst)))
+                     test-workers)]
                    [(list-rest 'mzc rst)
-                    (lambda (k) (k (list* mzc-path rst)))]
+                    (values
+                     (lambda (k) (k (list* mzc-path rst)))
+                     test-workers)]
                    [(list-rest 'raco rst)
-                    (lambda (k) (k (list* raco-path rst)))]
+                    (values
+                     (lambda (k) (k (list* raco-path rst)))
+                     test-workers)]
                    [(list-rest (or 'mred 'mred-text
                                    'gracket 'gracket-text)
                                rst)
-                    (if (on-unix?)
-                      (lambda (k)
-                        (call-with-semaphore
-                         gui-lock
-                         (λ ()
-                           (k
-                            (list* gracket-path
-                                   "-display"
-                                   (format
-                                    ":~a"
-                                    (cpu->child
-                                     (current-worker)))
-                                   rst)))))
-                      #f)]
+                    (values
+                     (if (on-unix?)
+                       (lambda (k)
+                         (k
+                          (list* gracket-path
+                                 "-display"
+                                 (format
+                                  ":~a"
+                                  (cpu->child
+                                   (current-worker)))
+                                 rst)))
+                       #f)
+                     gui-workers)]
                    [_
-                    #f]))
+                    (values #f #f)]))
                (cond
                  [pth-cmd
                   (submit-job!
-                   test-workers
+                   the-queue
                    (lambda ()
                      (dynamic-wind
                          void
@@ -331,7 +337,8 @@
     (notify! "All testing scheduled... waiting for completion")
     (semaphore-wait top-sema))
   (notify! "Stopping testing")
-  (stop-job-queue! test-workers))
+  (stop-job-queue! test-workers)
+  (stop-job-queue! gui-workers))
 
 (define (recur-many i r f)
   (if (zero? i)
@@ -409,10 +416,6 @@
                         (list "-d" (format ":~a" i)
                               "--sm-disable"
                               "--no-composite")
-                        #;empty
-                        #;(list "-display"
-                              (format ":~a" i)
-                              "-rc" "/home/pltdrdr/.fluxbox/init")
                         inner)))))
 
                  (start-x-server

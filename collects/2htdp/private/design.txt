@@ -1,17 +1,15 @@
+Files for constructing universe.rkt:
 
-Files for constructing universe.rkt: 
+ world.rkt              the old world
+                        world%  = (clock-mixin ...) -- the basic world
+                        aworld% = (class world% ...) -- the world with recording
 
- world.rkt              the old world 
- 		         world%  = (clock-mixin ...) -- the basic world 
-		         aworld% = (class world% ...) -- the world with recording
-
- universe.rkt	        the universe server 
- 		        universe% = (clock-mixin ...) -- the basic universe
+ universe.rkt           the universe server
+                        universe% = (clock-mixin ...) -- the basic universe
 
  timer.rkt              the clock-mixin
 
- check-aux.rkt          common primitives 
- image.rkt              the world image functions 
- clauses-spec-and-process.rkt syntactic auxiliaries 
- clauses-spec-aux.rkt        auxiliaries to the syntactic auxiliaries 
-
+ check-aux.rkt          common primitives
+ image.rkt              the world image functions
+ clauses-spec-and-process.rkt syntactic auxiliaries
+ clauses-spec-aux.rkt        auxiliaries to the syntactic auxiliaries

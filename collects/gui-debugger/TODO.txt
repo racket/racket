@@ -1,7 +1,7 @@
 - Stack navigation from REPL
 - Automated tests
-- Trace by function name 
- 
+- Trace by function name
+
 CHANGES TO MAKE-----------------------------------------------------------------------------
 Ability to add named anchors into code using Special menu in DRS -- use those anchors as tracepoints.
 
@@ -10,8 +10,8 @@ Demo monitoring DrRacket for Robby?
 Bind Stop button to kill-all.
 
 On the whole, I like the tool, although it'd be nice to have either
- 	(a) an interactive pointy-clicky interface rather than figuring
- 		out line/column co-ordinates, or
+        (a) an interactive pointy-clicky interface rather than figuring
+                out line/column co-ordinates, or
 
 
 Re-direct, or at least prefix, program output from the client so that it can be distinguished from the script

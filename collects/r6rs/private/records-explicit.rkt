@@ -99,13 +99,13 @@
   (define-syntax define-record-type
     (syntax-rules ()
       ((define-record-type (?record-name ?constructor-name ?predicate-name)
-	 ?clause ...)
+         ?clause ...)
        (define-record-type-1
-	 ((record-name ?record-name)		; prop alist
-	  (constructor-name ?constructor-name)
-	  (predicate-name ?predicate-name))
-	 ()				; fields
-	 ?clause ...))))
+         ((record-name ?record-name)            ; prop alist
+          (constructor-name ?constructor-name)
+          (predicate-name ?predicate-name))
+         ()                             ; fields
+         ?clause ...))))
 
   (define-syntax define-record-type-1
     (syntax-rules (parent parent-rtd protocol sealed nongenerative opaque fields mutable immutable)

@@ -997,11 +997,12 @@ See match-a-pattern.rkt for more details
     (error 'convert-matcher 
            "not a unary proc: ~s" 
            boolean-based-matcher))
-  (λ (exp hole-info)
+  (define (match-boolean-to-record-converter exp hole-info)
     (and (boolean-based-matcher exp)
          (list (make-mtch empty-bindings
                           (build-flat-context exp)
-                          none)))))
+                          none))))
+  match-boolean-to-record-converter)
 
 ;; match-named-pat : symbol <compiled-pattern> -> <compiled-pattern>
 (define (match-named-pat name match-pat mismatch-bind?)

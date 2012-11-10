@@ -35,6 +35,8 @@
          define-judgment-form
          define-extended-judgment-form
          judgment-holds
+         build-derivations
+         (struct-out derivation)
          in-domain?
          caching-enabled?
          make-coverage
@@ -62,6 +64,7 @@
          generate-term
          check-metafunction
          check-reduction-relation
+         redex-generator
          exn:fail:redex:generation-failure?
          (struct-out exn:fail:redex:test)
          (struct-out counterexample))

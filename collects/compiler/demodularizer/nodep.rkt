@@ -1,5 +1,9 @@
-#lang racket
-(require compiler/zo-parse
+#lang racket/base
+
+(require racket/list
+         racket/match
+         racket/contract
+         compiler/zo-parse
          "util.rkt"
          "mpi.rkt"
          racket/set)
@@ -92,7 +96,8 @@
 
 (define (nodep-form form phase)
   (if (mod? form)
-      (local [(define-values (modvar-rewrite lang-info mods) (nodep-module form phase))]
+      (let-values ([(modvar-rewrite lang-info mods)
+                    (nodep-module form phase)])
         (values modvar-rewrite lang-info (make-splice mods)))
       (error 'nodep-form "Doesn't support non mod forms")))
 

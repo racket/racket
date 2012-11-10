@@ -1,7 +1,7 @@
 #lang racket/base
 (require ffi/unsafe
          ffi/unsafe/define
-	 ffi/winapi)
+         ffi/winapi)
 (provide (protect-out (all-defined-out)))
 
 ;; Win32 type and structure declarations.
@@ -25,14 +25,14 @@
   #:default-make-fail make-not-available)
 
 ;; for functions that use the Windows stdcall ABI:
-(define-syntax-rule (_wfun type ...) 
+(define-syntax-rule (_wfun type ...)
   (_fun #:abi winapi type ...))
 
 ;; for functions that return HRESULTs
 (define-syntax _hfun
   (syntax-rules (->)
     [(_ type ... -> who res)
-     (_wfun type ... 
+     (_wfun type ...
             -> (r : _HRESULT)
             -> (if (positive? r)
                    (windows-error (format "~a: failed" 'who) r)
@@ -108,7 +108,7 @@
 (define _VVAL (_union _double
                       _intptr
                       ;; etc.
-		      (_array _pointer 2)
+                      (_array _pointer 2)
                       ))
 
 (define-cstruct _VARIANT ([vt _VARTYPE]
@@ -179,7 +179,7 @@
                           raw-scode))
         (define len (FormatMessageW FORMAT_MESSAGE_FROM_SYSTEM #f scode 0 buf (quotient size 2)))
         (if (positive? len)
-            (error (format "~a (~x; ~a)" str scode (regexp-replace #rx"[\r\n]+$" 
+            (error (format "~a (~x; ~a)" str scode (regexp-replace #rx"[\r\n]+$"
                                                                    (cast buf _pointer _string/utf-16)
                                                                    "")))
             (error (format "~a (~x)" str scode))))))
@@ -222,18 +222,18 @@
 
 (define FUNC_VIRTUAL 0)
 (define FUNC_PUREVIRTUAL 1)
-(define FUNC_NONVIRTUAL	2)
+(define FUNC_NONVIRTUAL 2)
 (define FUNC_STATIC 3)
 (define FUNC_DISPATCH 4)
 
-(define	PARAMFLAG_NONE 0)
-(define	PARAMFLAG_FIN #x1)
-(define	PARAMFLAG_FOUT #x2)
-(define	PARAMFLAG_FLCID	#x4)
-(define	PARAMFLAG_FRETVAL #x8)
-(define	PARAMFLAG_FOPT #x10)
-(define	PARAMFLAG_FHASDEFAULT #x20)
-(define	PARAMFLAG_FHASCUSTDATA #x40)
+(define PARAMFLAG_NONE 0)
+(define PARAMFLAG_FIN #x1)
+(define PARAMFLAG_FOUT #x2)
+(define PARAMFLAG_FLCID #x4)
+(define PARAMFLAG_FRETVAL #x8)
+(define PARAMFLAG_FOPT #x10)
+(define PARAMFLAG_FHASDEFAULT #x20)
+(define PARAMFLAG_FHASCUSTDATA #x40)
 
 (define VT_EMPTY 0)
 (define VT_NULL 1)
@@ -288,7 +288,7 @@
 (define VT_ILLEGALMASKED #xfff)
 (define VT_TYPEMASK #xfff)
 
-(define	DISPID_PROPERTYPUT -3)
+(define DISPID_PROPERTYPUT -3)
 
 (define DISP_E_PARAMNOTFOUND #x80020004)
 (define DISP_E_EXCEPTION #x80020009)
@@ -307,13 +307,13 @@
              (set-GUID-s2! guid (bitwise-and #xFFFF (arithmetic-shift n (* -8 8))))
              (set-GUID-c! guid (for/list ([i (in-range 8)])
                                  (bitwise-and #xFF (arithmetic-shift n (* (- -7 i)))))))))
- 
+
 (define-ole StringFromIID(_hfun _GUID-pointer (p : (_ptr o _pointer))
                                 -> StringFromIID p))
 
 
 (define (string->guid s [stay-put? #f])
-  (define guid 
+  (define guid
     (if stay-put?
         (cast (malloc _GUID 'atomic-interior) _pointer (_gcable _GUID-pointer))
         (make-GUID 0 0 0 (list 0 0 0 0 0 0 0 0))))
@@ -354,30 +354,30 @@
 
 (define _SAFEARRAY-pointer (_cpointer 'SAFEARRAY))
 
-(define-oleaut SafeArrayCreate (_wfun _VARTYPE 
-				      _UINT
-				      (dims : (_list i _SAFEARRAYBOUND))
-				      -> _SAFEARRAY-pointer))
+(define-oleaut SafeArrayCreate (_wfun _VARTYPE
+                                      _UINT
+                                      (dims : (_list i _SAFEARRAYBOUND))
+                                      -> _SAFEARRAY-pointer))
 (define-oleaut SafeArrayDestroy (_hfun _SAFEARRAY-pointer
-				       -> SafeArrayDestroy (void)))
+                                       -> SafeArrayDestroy (void)))
 (define-oleaut SafeArrayGetVartype (_hfun _SAFEARRAY-pointer
-					  (vt : (_ptr o _VARTYPE))
-					  -> SafeArrayGetVartype vt))
+                                          (vt : (_ptr o _VARTYPE))
+                                          -> SafeArrayGetVartype vt))
 (define-oleaut SafeArrayGetLBound (_hfun _SAFEARRAY-pointer
-					 _UINT
-					 (v : (_ptr o _LONG))
-					 -> SafeArrayGetLBound v))
+                                         _UINT
+                                         (v : (_ptr o _LONG))
+                                         -> SafeArrayGetLBound v))
 (define-oleaut SafeArrayGetUBound (_hfun _SAFEARRAY-pointer
-					 _UINT
-					 (v : (_ptr o _LONG))
-					 -> SafeArrayGetUBound v))
+                                         _UINT
+                                         (v : (_ptr o _LONG))
+                                         -> SafeArrayGetUBound v))
 (define-oleaut SafeArrayPutElement (_hfun _SAFEARRAY-pointer
-					  (_list i _LONG)
-					  _pointer
-					  -> SafeArrayPutElement (void)))
+                                          (_list i _LONG)
+                                          _pointer
+                                          -> SafeArrayPutElement (void)))
 (define-oleaut SafeArrayGetElement (_hfun _SAFEARRAY-pointer
-					  (_list i _LONG)
-					  _pointer
-					  -> SafeArrayGetElement (void)))
+                                          (_list i _LONG)
+                                          _pointer
+                                          -> SafeArrayGetElement (void)))
 (define-oleaut SafeArrayGetDim (_wfun _SAFEARRAY-pointer
-				      -> _UINT))
+                                      -> _UINT))

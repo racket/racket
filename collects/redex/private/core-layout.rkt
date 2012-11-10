@@ -3,6 +3,7 @@
 (require "loc-wrapper.rkt"
          "matcher.rkt"
          "reduction-semantics.rkt"
+         "underscore-allowed.rkt"
          
          texpict/utils
          texpict/mrpict
@@ -702,7 +703,7 @@
               (list (non-terminal->token col span nt)
                     (make-pict-token (+ col span) 0 sub+sup)))])]
       [(or (memq atom all-nts)
-           (memq atom '(number variable variable-except variable-not-otherwise-mentioned)))
+           (memq atom underscore-allowed))
        (list (non-terminal->token col span (symbol->string atom)))]
       [(symbol? atom)
        (list (or (rewrite-atomic col span atom literal-style)

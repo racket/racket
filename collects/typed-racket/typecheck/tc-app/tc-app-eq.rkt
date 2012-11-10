@@ -40,7 +40,7 @@
 ;; identifier expr expr -> tc-results
 (define (tc/eq comparator v1 v2)
   (define (eq?-able e) (or (boolean? e) (keyword? e) (symbol? e) (eof-object? e)))
-  (define (eqv?-able e) (or (eq?-able e) (number? e)))
+  (define (eqv?-able e) (or (eq?-able e) (number? e) (char? e)))
   (define (equal?-able e) #t)
   (define (ok? val)
     (define-syntax-rule (alt nm pred ...)

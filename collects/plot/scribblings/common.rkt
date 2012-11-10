@@ -38,3 +38,6 @@
                                  [plot3d-bitmap  plot3d])
                       plot/utils)))
     eval))
+
+(define (close-plot-eval)
+  (close-eval plot-eval))

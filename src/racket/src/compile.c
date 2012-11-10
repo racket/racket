@@ -756,7 +756,8 @@ defn_targets_syntax (Scheme_Object *var, Scheme_Comp_Env *env, Scheme_Compile_In
       /* Create a module variable reference, so that idx is preserved: */
       bucket = scheme_hash_module_variable(env->genv, env->genv->module->self_modidx, 
 					   name, env->genv->module->insp, 
-					   -1, env->genv->mod_phase, 0);
+					   -1, env->genv->mod_phase, 0,
+                                           NULL);
     }
     /* Get indirection through the prefix: */
     bucket = scheme_register_toplevel_in_prefix(bucket, env, rec, drec, 0, NULL);
@@ -2923,7 +2924,7 @@ Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
       total++;
     } else if (opt 
 	       && (((opt > 0) && !last) || ((opt < 0) && !first))
-	       && scheme_omittable_expr(v, -1, -1, 0, NULL, -1, 0)) {
+	       && scheme_omittable_expr(v, -1, -1, 0, NULL, NULL, -1, 0)) {
       /* A value that is not the result. We'll drop it. */
       total++;
     } else {
@@ -2951,7 +2952,7 @@ Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
       /* can't optimize away a begin0 at read time; it's too late, since the
          return is combined with EXPD_BEGIN0 */
       addconst = 1;
-    } else if ((opt < 0) && !scheme_omittable_expr(SCHEME_CAR(seq), 1, -1, 0, NULL, -1, 0)) {
+    } else if ((opt < 0) && !scheme_omittable_expr(SCHEME_CAR(seq), 1, -1, 0, NULL, NULL, -1, 0)) {
       /* We can't optimize (begin0 expr cont) to expr because
 	 exp is not in tail position in the original (so we'd mess
 	 up continuation marks). */
@@ -2983,7 +2984,7 @@ Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
     } else if (opt 
 	       && (((opt > 0) && (k < total))
 		   || ((opt < 0) && k))
-	       && scheme_omittable_expr(v, -1, -1, 0, NULL, -1, 0)) {
+	       && scheme_omittable_expr(v, -1, -1, 0, NULL, NULL, -1, 0)) {
       /* Value not the result. Do nothing. */
     } else
       o->array[i++] = v;
@@ -3483,7 +3484,7 @@ static Scheme_Object *eval_letmacro_rhs(Scheme_Object *a, Scheme_Comp_Env *rhs_e
 
   save_runstack = scheme_push_prefix(NULL, rp, NULL, NULL, phase, phase, rhs_env->genv, NULL);
 
-  if (scheme_omittable_expr(a, 1, -1, 0, NULL, -1, 0)) {
+  if (scheme_omittable_expr(a, 1, -1, 0, NULL, NULL, -1, 0)) {
     /* short cut */
     a = _scheme_eval_linked_expr_multi(a);
   } else {
@@ -5269,7 +5270,8 @@ top_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, 
        preserved within the module. */
     c = scheme_hash_module_variable(env->genv, env->genv->module->self_modidx, 
 				    c, env->genv->module->insp,
-				    -1, env->genv->mod_phase, 0);
+				    -1, env->genv->mod_phase, 0,
+                                    NULL);
   } else {
     c = (Scheme_Object *)scheme_global_bucket(c, env->genv);
   }

@@ -78,9 +78,12 @@
      (set! ignore-clicked? #t)
      (gtk_combo_box_set_active gtk i)
      (set! ignore-clicked? #f)))
+
   (define/public (get-selection)
     (gtk_combo_box_get_active gtk))
+
   (define/public (number) count)
+
   (define/public (clear)
     (atomically
      (set! ignore-clicked? #t)
@@ -88,6 +91,7 @@
        (gtk_combo_box_remove_text gtk 0))
      (set! count 0)
      (set! ignore-clicked? #f)))
+
   (public [-append append])
   (define (-append l)
     (atomically
@@ -96,5 +100,7 @@
      (gtk_combo_box_append_text gtk l)
      (when (= count 1)
        (set-selection 0))
-     (set! ignore-clicked? #f))))
+     (set! ignore-clicked? #f)))
 
+  (define/public (delete i)
+    (gtk_combo_box_remove_text gtk i)))

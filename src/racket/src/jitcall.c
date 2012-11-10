@@ -157,7 +157,10 @@ static Scheme_Object *ts__scheme_tail_apply_from_native(Scheme_Object *rator, in
     /* try thread-local allocation: */
     Scheme_Object **a;
 #ifdef MZ_PRECISE_GC
-    a = MALLOC_N(Scheme_Object *, argc);
+    if (scheme_future_is_runtime_thread())
+      a = NULL;
+    else
+      a = MALLOC_N(Scheme_Object *, argc);
 #else
     a = NULL; /* future-local allocation is not supported */
 #endif
@@ -601,7 +604,8 @@ static int generate_direct_prim_non_tail_call(mz_jit_state *jitter, int num_rand
   return 1;
 }
 
-static int generate_retry_call(mz_jit_state *jitter, int num_rands, int multi_ok, GC_CAN_IGNORE jit_insn *reftop)
+static int generate_retry_call(mz_jit_state *jitter, int num_rands, int multi_ok, int result_ignored, 
+                               GC_CAN_IGNORE jit_insn *reftop)
   /* If num_rands < 0, original argc is in V1, and we should
      pop argc arguments off runstack before pushing more.
      This function is called with short jumps enabled. */
@@ -609,7 +613,10 @@ static int generate_retry_call(mz_jit_state *jitter, int num_rands, int multi_ok
   GC_CAN_IGNORE jit_insn *ref, *ref2, *refloop;
 
   if (!reftop) {
-    reftop = sjc.shared_non_tail_retry_code[multi_ok ? 1 : 0];
+    int mo = (multi_ok 
+              ? (result_ignored ? SHARED_RESULT_IGNORED_CASE : SHARED_MULTI_OK_CASE) 
+              : SHARED_SINGLE_VALUE_CASE);
+    reftop = sjc.shared_non_tail_retry_code[mo];
   }
 
   /* Get new argc: */
@@ -634,7 +641,7 @@ static int generate_retry_call(mz_jit_state *jitter, int num_rands, int multi_ok
 
   /* Copy arguments to runstack, then jump to reftop. */
   jit_ldxi_l(JIT_R2, JIT_R1, &((Scheme_Thread *)0x0)->ku.apply.tail_num_rands);
-  jit_ldxi_l(JIT_V1, JIT_R1, &((Scheme_Thread *)0x0)->ku.apply.tail_rands);
+  jit_ldxi_p(JIT_V1, JIT_R1, &((Scheme_Thread *)0x0)->ku.apply.tail_rands);
   jit_lshi_l(JIT_R2, JIT_R2, JIT_LOG_WORD_SIZE);
   CHECK_LIMIT();
   refloop = _jit.x.pc;
@@ -645,10 +652,15 @@ static int generate_retry_call(mz_jit_state *jitter, int num_rands, int multi_ok
   (void)jit_jmpi(refloop);
   CHECK_LIMIT();
 
+  /* Clear tail-call arguments pointer: */
+  (void)jit_movi_p(JIT_V1, NULL);
+  jit_stxi_p(&((Scheme_Thread *)0x0)->ku.apply.tail_rands, JIT_R1, JIT_V1);
+  CHECK_LIMIT();
+
   /* R1 is still the thread. 
      Put procedure and argc in place, then jump to apply: */
   mz_patch_branch(ref2);
-  jit_ldxi_l(JIT_V1, JIT_R1, &((Scheme_Thread *)0x0)->ku.apply.tail_rator);
+  jit_ldxi_p(JIT_V1, JIT_R1, &((Scheme_Thread *)0x0)->ku.apply.tail_rator);
   jit_ldxi_l(JIT_R0, JIT_R1, &((Scheme_Thread *)0x0)->ku.apply.tail_num_rands);
   __END_SHORT_JUMPS__(1);
   (void)jit_jmpi(reftop);
@@ -687,9 +699,28 @@ static int generate_clear_slow_previous_args(mz_jit_state *jitter)
   return 1;
 }
 
+static int generate_ignored_result_check(mz_jit_state *jitter)
+{
+  /* if multiple results, need to clear ignored result in thread */
+  GC_CAN_IGNORE jit_insn *refm;
+
+  __START_INNER_TINY__(1);
+
+  refm = jit_bnei_p(jit_forward(), JIT_R0, SCHEME_MULTIPLE_VALUES);
+  mz_tl_ldi_p(JIT_R1, tl_scheme_current_thread);
+  (void)jit_movi_p(JIT_R0, NULL);
+  jit_stxi_p(&((Scheme_Thread *)0x0)->ku.multiple.array, JIT_R1, JIT_R0);
+  (void)jit_movi_p(JIT_R0, scheme_void);
+  mz_patch_branch(refm);
+
+  __END_INNER_TINY__(1);
+
+  return 1;
+}
+
 int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs, 
-				  int multi_ok, int nontail_self, int pop_and_jump, int is_inlined,
-                                  int unboxed_args)
+				  int multi_ok, int result_ignored, int nontail_self, int pop_and_jump, 
+                                  int is_inlined, int unboxed_args)
 {
   /* Non-tail call.
      Proc is in V1, args are at RUNSTACK.
@@ -873,7 +904,7 @@ int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
   CHECK_LIMIT();
   if (pop_and_jump) {
     /* Expects argc in V1 if num_rands < 0: */
-    generate_retry_call(jitter, num_rands, multi_ok, reftop);
+    generate_retry_call(jitter, num_rands, multi_ok, result_ignored, reftop);
   }
   CHECK_LIMIT();
   if (need_set_rs) {
@@ -936,7 +967,7 @@ int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     CHECK_LIMIT();
     if (pop_and_jump) {
       /* Expects argc in V1 if num_rands < 0: */
-      generate_retry_call(jitter, num_rands, multi_ok, reftop);
+      generate_retry_call(jitter, num_rands, multi_ok, result_ignored, reftop);
     }
     CHECK_LIMIT();
     if (num_rands < 0) {
@@ -985,7 +1016,7 @@ int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
 #endif
   if (unboxed_args) {
     /* no slow path here; return NULL to box arguments fall back to generic */
-    jit_movi_p(JIT_R0, NULL);
+    (void)jit_movi_p(JIT_R0, NULL);
     if (pop_and_jump) {
       mz_epilog(JIT_V1);
     }
@@ -1020,6 +1051,10 @@ int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
   mz_patch_branch(ref6);
   if (!direct_native) {
     mz_patch_branch(ref10);
+    if (result_ignored) {
+      generate_ignored_result_check(jitter);
+      CHECK_LIMIT();
+    }
   }
   /* Note: same return code is above for faster common-case return */
   if (num_rands < 0) { 
@@ -1234,6 +1269,7 @@ typedef struct {
   int num_rands;
   mz_jit_state *old_jitter;
   int multi_ok;
+  int result_ignored;
   int is_tail;
   int direct_prim, direct_native, nontail_self, unboxed_args;
 } Generate_Call_Data;
@@ -1292,7 +1328,8 @@ static int do_generate_shared_call(mz_jit_state *jitter, void *_data)
       ok = generate_direct_prim_non_tail_call(jitter, data->num_rands, data->multi_ok, 1);
     else
       ok = scheme_generate_non_tail_call(jitter, data->num_rands, data->direct_native, 1, 
-                                         data->multi_ok, data->nontail_self, 1, 0, data->unboxed_args);
+                                         data->multi_ok, data->result_ignored, data->nontail_self, 
+                                         1, 0, data->unboxed_args);
 
     scheme_jit_register_sub_func(jitter, code, scheme_false);
 
@@ -1300,14 +1337,16 @@ static int do_generate_shared_call(mz_jit_state *jitter, void *_data)
   }
 }
 
-void *scheme_generate_shared_call(int num_rands, mz_jit_state *old_jitter, int multi_ok, int is_tail, 
-				  int direct_prim, int direct_native, int nontail_self, int unboxed_args)
+void *scheme_generate_shared_call(int num_rands, mz_jit_state *old_jitter, int multi_ok, int result_ignored, 
+                                  int is_tail, int direct_prim, int direct_native, int nontail_self, 
+                                  int unboxed_args)
 {
   Generate_Call_Data data;
 
   data.num_rands = num_rands;
   data.old_jitter = old_jitter;
   data.multi_ok = multi_ok;
+  data.result_ignored = result_ignored;
   data.is_tail = is_tail;
   data.direct_prim = direct_prim;
   data.direct_native = direct_native;
@@ -1317,12 +1356,14 @@ void *scheme_generate_shared_call(int num_rands, mz_jit_state *old_jitter, int m
   return scheme_generate_one(old_jitter, do_generate_shared_call, &data, 0, NULL, NULL);
 }
 
-void scheme_ensure_retry_available(mz_jit_state *jitter, int multi_ok)
+void scheme_ensure_retry_available(mz_jit_state *jitter, int multi_ok, int result_ignored)
 {
-  int mo = multi_ok ? 1 : 0;
+  int mo = (multi_ok 
+            ? (result_ignored ? SHARED_RESULT_IGNORED_CASE : SHARED_MULTI_OK_CASE) 
+            : SHARED_SINGLE_VALUE_CASE);
   if (!sjc.shared_non_tail_retry_code[mo]) {
     void *code;
-    code = scheme_generate_shared_call(-1, jitter, multi_ok, 0, 0, 0, 0, 0);
+    code = scheme_generate_shared_call(-1, jitter, multi_ok, result_ignored, 0, 0, 0, 0, 0);
     sjc.shared_non_tail_retry_code[mo] = code;
   }
 }
@@ -1583,7 +1624,8 @@ static int generate_call_path_with_unboxes(mz_jit_state *jitter, int direct_flos
 #endif
 
 int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_rands, 
-			mz_jit_state *jitter, int is_tail, int multi_ok, int no_call)
+			mz_jit_state *jitter, int is_tail, int multi_ok, int result_ignored, 
+                        int no_call)
 /* de-sync'd ok 
    If no_call is 2, then rator is not necssarily evaluated. 
    If no_call is 1, then rator is left in V1 and arguments are on runstack. */
@@ -1591,7 +1633,9 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
   int i, offset, need_safety = 0, apply_to_list = 0;
   int direct_prim = 0, need_non_tail = 0, direct_native = 0, direct_self = 0, nontail_self = 0;
   Scheme_Native_Closure *inline_direct_native = NULL;
+#ifdef USE_FLONUM_UNBOXING
   Scheme_Closure_Data *direct_data = NULL;
+#endif
   int direct_flostack_offset = 0, unboxed_non_tail_args = 0;
   jit_direct_arg *inline_direct_args = NULL;
   int proc_already_in_place = 0;
@@ -1619,6 +1663,8 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
       if ((num_rands >= 2) && SAME_OBJ(rator, scheme_apply_proc))
         apply_to_list = 1;
     }
+    if (!(((Scheme_Primitive_Proc *)rator)->pp.flags & SCHEME_PRIM_IS_MULTI_RESULT))
+      result_ignored = 0; /* don't need to check for multiple values to ignore */
   } else {
     Scheme_Type t;
     t = SCHEME_TYPE(rator);
@@ -1650,7 +1696,7 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
             && ((SCHEME_TOPLEVEL_FLAGS(rator) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_CONST)) {
           Scheme_Object *p;
 
-          p = scheme_extract_global(rator, jitter->nc, 1);
+          p = scheme_extract_global(rator, jitter->nc, 0);
           if (p) {
             p = ((Scheme_Bucket *)p)->val;
             if (can_direct_native(p, num_rands, &extract_case)) {
@@ -1700,13 +1746,15 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
               if (is_tail) {
                 if (nc->code->max_let_depth > jitter->max_tail_depth)
                   jitter->max_tail_depth = nc->code->max_let_depth;
-                
-                direct_data = data; /* for flonum handling */
-                
-                inline_direct_native = nc;
+                inline_direct_native = nc;                
+#ifdef USE_FLONUM_UNBOXING
+                direct_data = data;
+#endif                
               } else {
                 if (num_rands < MAX_SHARED_CALL_RANDS) {
+#ifdef USE_FLONUM_UNBOXING
                   direct_data = data;
+#endif
                   unboxed_non_tail_args = 1;
                 }
               }
@@ -1830,8 +1878,10 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
   }
   /* not sync'd...*/
   
+#ifdef USE_FLONUM_UNBOXING
   if (direct_self && is_tail)
     direct_data = jitter->self_data;
+#endif
 
   for (i = 0; i < num_rands; i++) {
     PAUSE_JIT_DATA();
@@ -1961,7 +2011,7 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
           generate_nontail_self_setup(jitter);
         }
 	scheme_generate_non_tail_call(jitter, num_rands, direct_native, jitter->need_set_rs, 
-                                      multi_ok, nontail_self, 0, 1, 0);
+                                      multi_ok, result_ignored, nontail_self, 0, 1, 0);
       }
     }
   } else {
@@ -1972,7 +2022,8 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
 
     if (is_tail) {
       if (!sjc.shared_tail_code[dp][num_rands]) {
-	code = scheme_generate_shared_call(num_rands, jitter, multi_ok, is_tail, direct_prim, direct_native, 0, 0);
+	code = scheme_generate_shared_call(num_rands, jitter, multi_ok, result_ignored, is_tail, 
+                                           direct_prim, direct_native, 0, 0);
 	sjc.shared_tail_code[dp][num_rands] = code;
       }
       code = sjc.shared_tail_code[dp][num_rands];
@@ -2015,25 +2066,33 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
         }
       }
     } else {
-      int mo = (multi_ok ? 1 : 0);
+      int mo = (multi_ok 
+                ? (result_ignored ? SHARED_RESULT_IGNORED_CASE : SHARED_MULTI_OK_CASE) 
+                : SHARED_SINGLE_VALUE_CASE);
+#ifdef USE_FLONUM_UNBOXING
       void *unboxed_code;
+#endif
 
       if (unboxed_non_tail_args && !direct_flostack_offset)
         unboxed_non_tail_args = 0;
 
+#ifdef USE_FLONUM_UNBOXING
       if (unboxed_non_tail_args) {
         if (!sjc.shared_non_tail_code[4][num_rands][mo]) {
-          scheme_ensure_retry_available(jitter, multi_ok);
-          code = scheme_generate_shared_call(num_rands, jitter, multi_ok, is_tail, direct_prim, direct_native, nontail_self, 1);
+          scheme_ensure_retry_available(jitter, multi_ok, result_ignored);
+          code = scheme_generate_shared_call(num_rands, jitter, multi_ok, result_ignored, is_tail, 
+                                             direct_prim, direct_native, nontail_self, 1);
           sjc.shared_non_tail_code[4][num_rands][mo] = code;
         }
         unboxed_code = sjc.shared_non_tail_code[4][num_rands][mo];
       } else
         unboxed_code = NULL;
+#endif
 
       if (!sjc.shared_non_tail_code[dp][num_rands][mo]) {
-        scheme_ensure_retry_available(jitter, multi_ok);
-	code = scheme_generate_shared_call(num_rands, jitter, multi_ok, is_tail, direct_prim, direct_native, nontail_self, 0);
+        scheme_ensure_retry_available(jitter, multi_ok, result_ignored);
+	code = scheme_generate_shared_call(num_rands, jitter, multi_ok, result_ignored, is_tail, 
+                                           direct_prim, direct_native, nontail_self, 0);
 	sjc.shared_non_tail_code[dp][num_rands][mo] = code;
       }
       LOG_IT(("<-non-tail %d %d %d\n", dp, num_rands, mo));

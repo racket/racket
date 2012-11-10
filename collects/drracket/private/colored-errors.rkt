@@ -1,12 +1,17 @@
-#lang racket
+#lang racket/base
 
-(define-syntax (test stx) #'(begin)) ;; TODO: convert my test into DrRacket's test framework
-(require ; gmarceau/test
- parser-tools/lex
+(require (for-syntax racket/base)
+         racket/list
+         racket/string
+         racket/contract
+         racket/match
+         parser-tools/lex
          (prefix-in : parser-tools/lex-sre)
          (rename-in srfi/26 [cut //])
          (only-in srfi/1 break)
          unstable/contract)
+
+(define-syntax (test stx) #'(begin)) ;; TODO: convert my test into DrRacket's test framework
 
 ;; An error message has many fragments. The fragments will be concatenated
 ;; before being presented to the user. Some fragment are simply string.

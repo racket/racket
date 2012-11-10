@@ -103,9 +103,7 @@ Racket allocates the following kinds of memory objects:
    objects, the mark and fixup operations might be applied to all of
    them.)
 
- * Xtagged - The object is somehow tagged, but not with a leading
-   `short'. Racket provides a single mark and fixup operation (no
-   size operation) for all xtagged objects.
+ * Pair - specialization of Tagged to pairs.
 
  * Interior Array - Like array objects, but pointers to the object can
    reference its interior, rather than just the start of the object,
@@ -210,8 +208,9 @@ This function installs a finalizer to be queued for invocation when
 `p' would otherwise be collected. All ready finalizers should be
 called at the end of a collection. (A finalization can trigger calls
 back to the collector, but such a collection will not run more
-finalizers.) The `p' argument must point to the beginning of a tagged
-(if `tagged' is 1) or xtagged (if `tagged' is 0) object.
+finalizers.) The `p' argument must normally point to the beginning of
+a tagged (including atomic or pair) object; that is, `tagged' is
+currently required to be non-zero.
 
 The `level' argument refers to an ordering of finalizers. It can be 1,
 2, or 3. During a collection, level 1 finalizers are queued first,

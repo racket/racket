@@ -15,22 +15,6 @@
 
 (define xexpr-drop-empty-attributes (make-parameter #f))
 
-; : (a -> bool) tst -> bool
-; To check if l is a (listof p?)
-; Don't use (and (list? l) (andmap p? l)) because l may be improper.
-(define (listof? p? l)
-  (let listof-p? ([l l])
-    (or (null? l)
-        (and (cons? l) (p? (car l)) (listof-p? (cdr l))))))
-
-; : tst -> bool
-(define (xexpr-attribute? b)
-  (and (pair? b)
-       (symbol? (car b))
-       (pair? (cdr b))
-       (string? (cadr b))
-       (null? (cddr b))))
-
 ;; xml->xexpr : Content -> Xexpr
 (define (xml->xexpr x)
   (let* ([non-dropping-combine
@@ -120,52 +104,60 @@
  [write-xexpr (->* (xexpr/c) (output-port?) void)] )
 
 (define (write-xexpr x [out (current-output-port)])
-  (cond
-    ; Element
-    [(cons? x)
-     (define name (car x))
-     (define-values (attrs content)
-       (if (and (pair? (cdr x))
-                (or (null? (cadr x))
-                    (and (pair? (cadr x)) (pair? (caadr x)))))
-           (values (cadr x) (cddr x))
-           (values null (cdr x))))
-     ; Write opening tag
-     (display "<" out)
-     (display name out)
-     ; Write attributes
-     (for ([att (in-list attrs)])
-       (fprintf out " ~a=\"~a\"" (car att)
-                (escape (cadr att) escape-attribute-table)))
-     ; Write end of opening tag
-     (if (and (null? content)
-              (let ([short (empty-tag-shorthand)])
+  (define short (empty-tag-shorthand))
+  (let loop ([x x])
+    (cond
+      ; Element
+      [(cons? x)
+       (define name (car x))
+       (define-values (attrs content)
+         (if (and (pair? (cdr x))
+                  (or (null? (cadr x))
+                      (and (pair? (cadr x)) (pair? (caadr x)))))
+             (values (cadr x) (cddr x))
+             (values null (cdr x))))
+       ; Write opening tag
+       (write-string "<" out)
+       (display name out)
+       ; Write attributes
+       (for ([att (in-list attrs)])
+         (write-string " " out)
+         (display (car att) out)
+         (write-string "=\"" out)
+         (write-string/escape (cadr att) escape-attribute-table out)
+         (write-string "\"" out))
+       ; Write end of opening tag
+       (if (and (null? content)
                 (case short
-                  [(always) #t]
-                  [(never) #f]
-                  [else (memq (lowercase-symbol name) short)])))
-         (display " />" out)
-         (begin
-           (display ">" out)
-           ; Write body
-           (for ([xe (in-list content)])
-             (write-xexpr xe out))
-           ; Write closing tag
-           (display "</" out)
-           (display name out)
-           (display ">" out)))]
-    ; PCData
-    [(string? x)
-     (display (escape x escape-table) out)]
-    ; Entities
-    [(symbol? x)
-     (fprintf out "&~a;" x)]
-    [(valid-char? x)
-     (fprintf out "&#~a;" x)]
-    ; Embedded XML
-    [(cdata? x)
-     (write-xml-cdata x 0 void out)]
-    [(comment? x)
-     (write-xml-comment x 0 void out)]
-    [(p-i? x)
-     (write-xml-p-i x 0 void out)]))
+                    [(always) #t]
+                    [(never) #f]
+                    [else (memq (lowercase-symbol name) short)]))
+           (write-string " />" out)
+           (begin
+             (write-string ">" out)
+             ; Write body
+             (for ([xe (in-list content)])
+               (loop xe))
+             ; Write closing tag
+             (write-string "</" out)
+             (display name out)
+             (write-string ">" out)))]
+      ; PCData
+      [(string? x)
+       (write-string/escape x escape-table out)]
+      ; Entities
+      [(symbol? x)
+       (write-string "&" out)
+       (display x out)
+       (write-string ";" out)]
+      [(valid-char? x)
+       (write-string "&#" out)
+       (display x out)
+       (write-string ";" out)]
+      ; Embedded XML
+      [(cdata? x)
+       (write-xml-cdata x 0 void out)]
+      [(comment? x)
+       (write-xml-comment x 0 void out)]
+      [(p-i? x)
+       (write-xml-p-i x 0 void out)])))

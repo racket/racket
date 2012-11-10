@@ -1,9 +1,13 @@
-#lang racket
+#lang racket/base
+
+(require (except-in racket/base compile)
+         racket/function
+         racket/match)
 (require (except-in redex make-bind plug))
 (require "match.rkt")
 (require racket/set)
 (require profile)
-(require (only-in "../../private/matcher.rkt" 
+(require (only-in "../../private/matcher.rkt"
                   make-bindings
                   make-bind
                   make-mtch

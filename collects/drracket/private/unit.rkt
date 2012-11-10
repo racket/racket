@@ -44,7 +44,8 @@ module browser threading seems wrong.
          
          mzlib/date
          
-         framework/private/aspell)
+         framework/private/aspell
+         framework/private/logging-timer)
 
 (provide unit@)
 
@@ -4544,7 +4545,7 @@ module browser threading seems wrong.
       (define num-running-frames (vector-length running-frames))
       (define is-running? #f)
       (define frame 0)
-      (define timer (make-object timer% (λ () (refresh) (yield)) #f))
+      (define timer (make-object logging-timer% (λ () (refresh) (yield)) #f))
       
       (define/public (set-running r?)
         (cond [r?    (unless is-running? (set! frame 4))

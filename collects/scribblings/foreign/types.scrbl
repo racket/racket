@@ -485,6 +485,11 @@ For @tech{callouts} to foreign functions with the generated type:
        that values managed by the Racket garbage collector might be
        moved in memory by the garbage collector.}
 
+ @item{A @tech{callout} object is finalized internally. Beware
+       of trying to use a @tech{callout} object that is reachable
+       only from a finalized object, since the two objects
+       might be finalized in either order.}
+
 ]
 
 For @tech{callbacks} to Racket functions with the generated type:

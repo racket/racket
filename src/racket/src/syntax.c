@@ -4549,7 +4549,12 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
               if (SCHEME_FALSEP(bdg))
                 bdg = get_old_module_env(a);
             }
-            result = search_shared_pes(mrn->shared_pes, glob_id, a, bdg, NULL, 1, 0, NULL);
+            rename = search_shared_pes(mrn->shared_pes, glob_id, a, bdg, NULL, 1, 0, NULL);
+            if (rename) {
+              if (mrn->kind == mzMOD_RENAME_MARKED)
+                skip_other_mods = 1;
+              result = rename;
+            }
 	  } else {
 	    /* match; set result: */
 	    if (mrn->kind == mzMOD_RENAME_MARKED)

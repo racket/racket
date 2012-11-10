@@ -83,7 +83,7 @@
   (define-syntax define-tokens (make-define-tokens #f))
   (define-syntax define-empty-tokens (make-define-tokens #t))
 
-  (define-struct position (offset line col))
-  (define-struct position-token (token start-pos end-pos))
+  (define-struct position (offset line col) #f)
+  (define-struct position-token (token start-pos end-pos) #f)
   )
 

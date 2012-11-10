@@ -169,7 +169,7 @@
         (define neg-rng-proj (rng-proc (blame-add-context blame "the values of" #:swap? #t)))
         (λ (val)
           (check-hash/c ctc val blame)
-          (if (immutable? val)
+          (if (and (immutable? val) (not (chaperone? val)))
               (let ([hash-maker
                      (cond
                        [(hash-equal? val) make-immutable-hash]

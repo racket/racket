@@ -25,126 +25,134 @@
                   #:lock-while-reading? [lock-while-reading? #f])
       ;; Check arguments:
       (unless (text . is-a? . text%)
-	(raise-argument-error 'open-input-text-editor "(is-a?/c text%)" text))
+        (raise-argument-error 'open-input-text-editor "(is-a?/c text%)" text))
       (check-non-negative-integer 'open-input-text-editor start)
       (unless (or (eq? end 'end)
-		  (and (integer? end) (exact? end) (not (negative? end))))
-	(raise-argument-error 'open-input-text-editor "(or/c exact-nonnegative-integer? 'end)" end))
+                  (and (integer? end) (exact? end) (not (negative? end))))
+        (raise-argument-error 'open-input-text-editor "(or/c exact-nonnegative-integer? 'end)" end))
       (let ([last (send text last-position)])
-	(when (start . > . last)
+        (when (start . > . last)
           (raise-range-error 'open-input-text-editor "editor" "starting "
                              start text 0 last #f))
-	(unless (eq? end 'end)
-	  (unless (<= start end last)
+        (unless (eq? end 'end)
+          (unless (<= start end last)
             (raise-range-error 'open-input-text-editor "editor" "ending "
                                end text start last 0))))
       (let ([end (if (eq? end 'end) (send text last-position) end)]
-	    [snip (send text find-snip start 'after-or-none)])
-	;; If the region is small enough, and if the editor contains
-	;; only string snips, then it's probably better to move
-	;; all of the text into a string port:
-	(if (or (not snip)
-		(and (is-a? snip wx:string-snip%)
-		     (let ([s (send text find-next-non-string-snip snip)])
-		       (or (not s)
-			   ((send text get-snip-position s) . >= . end)))))
-	    (if (or expect-to-read-all?
-		    ((- end start) . < . 4096))
-		;; It's all text, and it's short enough: just read it into a string
-		(open-input-string (send text get-text start end) port-name)
-		;; It's all text, so the reading process is simple:
+            [snip (send text find-snip start 'after-or-none)])
+        ;; If the region is small enough, and if the editor contains
+        ;; only string snips, then it's probably better to move
+        ;; all of the text into a string port:
+        (if (or (not snip)
+                (and (is-a? snip wx:string-snip%)
+                     (let ([s (send text find-next-non-string-snip snip)])
+                       (or (not s)
+                           ((send text get-snip-position s) . >= . end)))))
+            (if (or expect-to-read-all?
+                    ((- end start) . < . 4096))
+                ;; It's all text, and it's short enough: just read it into a string
+                (open-input-string (send text get-text start end) port-name)
+                ;; It's all text, so the reading process is simple:
                 (let ([start start])
                   (when lock-while-reading?
                     (send text begin-edit-sequence)
                     (send text lock #t))
                   (let-values ([(pipe-r pipe-w) (make-pipe)])
-		    (make-input-port/read-to-peek
+                    (make-input-port/read-to-peek
                      port-name
-		     (lambda (s)
-		       (let ([v (read-bytes-avail!* s pipe-r)])
-			 (if (eq? v 0)
-			     (let ([n (min 4096 (- end start))])
-			       (if (zero? n)
-				   (begin
+                     (lambda (s)
+                       (let ([v (read-bytes-avail!* s pipe-r)])
+                         (if (eq? v 0)
+                             (let ([n (min 4096 (- end start))])
+                               (if (zero? n)
+                                   (begin
                                      (close-output-port pipe-w)
-				     (when lock-while-reading?
+                                     (when lock-while-reading?
                                        (set! lock-while-reading? #f)
                                        (send text lock #f)
                                        (send text end-edit-sequence))
                                      eof)
-				   (begin
-				     (write-string (send text get-text start (+ start n)) pipe-w)
-				     (set! start (+ start n))
-				     (let ([ans (read-bytes-avail!* s pipe-r)])
+                                   (begin
+                                     (write-string (send text get-text start (+ start n)) pipe-w)
+                                     (set! start (+ start n))
+                                     (let ([ans (read-bytes-avail!* s pipe-r)])
                                        (when lock-while-reading?
                                          (when (eof-object? ans)
                                            (set! lock-while-reading? #f)
                                            (send text lock #f)
                                            (send text edit-edit-sequence)))
                                        ans))))
-			     v)))
+                             v)))
                      (lambda (s skip general-peek)
-		       (let ([v (peek-bytes-avail!* s skip #f pipe-r)])
-			 (if (eq? v 0)
-			     (general-peek s skip)
-			     v)))
-		     void))))
-	    ;; General case, which handles non-text context:
-	    (with-method ([gsp (text get-snip-position)]
-			  [grn (text get-revision-number)])
-	      (let-values ([(pipe-r pipe-w) (make-pipe)])
-		(let* ([get-text-generic (generic wx:snip% get-text)]
-		       [get-count-generic (generic wx:snip% get-count)]
-		       [next-generic (generic wx:snip% next)]
-		       [revision (grn)]
-		       [next? #f]
-		       [update-str-to-snip
-			(lambda (to-str)
-			  (if snip
-			      (let ([snip-start (gsp snip)])
-				(cond
-				 [(snip-start . >= . end)
-				  (set! snip #f)
-				  (set! next? #f)
-				  0]
-				 [(is-a? snip wx:string-snip%)
-				  (set! next? #t)
-				  (let ([c (min (send-generic snip get-count-generic) (- end snip-start))])
-				    (write-string (send-generic snip get-text-generic 0 c) pipe-w)
-				    (read-bytes-avail!* to-str pipe-r))]
-				 [else
-				  (set! next? #f)
-				  0]))
-			      (begin
-				(set! next? #f)
-				0)))]
-		       [next-snip
-			(lambda (to-str)
-			  (unless (= revision (grn))
-			    (raise-arguments-error 
-			     'text-input-port 
-			     "editor has changed since port was opened"
-			     "editor" text))
-			  (set! snip (send-generic snip next-generic))
-			  (update-str-to-snip to-str))]
-		       [read-chars (lambda (to-str)
-				     (cond
-				      [next?
-				       (next-snip to-str)]
-				      [snip
-				       (let ([the-snip (snip-filter snip)])
-					 (next-snip empty-string)
-					 (lambda (file line col ppos)
-					   (if (is-a? the-snip wx:snip%)
-					       (if (is-a? the-snip wx:readable-snip<%>)
-						   (send the-snip read-special file line col ppos)
-						   (send the-snip copy))
-					       the-snip)))]
-				      [else eof]))]
-		       [close (lambda () (void))]
-		       [port (make-input-port/read-to-peek
-			      port-name
-			      (lambda (s)
+                       (let ([v (peek-bytes-avail!* s skip #f pipe-r)])
+                         (if (eq? v 0)
+                             (general-peek s skip)
+                             v)))
+                     void))))
+            ;; General case, which handles non-text context:
+            (with-method ([gsp (text get-snip-position)]
+                          [grn (text get-revision-number)]
+                          [fs (text find-snip)])
+              (let-values ([(pipe-r pipe-w) (make-pipe)])
+                (let* ([get-text-generic (generic wx:snip% get-text)]
+                       [get-count-generic (generic wx:snip% get-count)]
+                       [next-generic (generic wx:snip% next)]
+                       [revision (grn)]
+                       [next? #f]
+                       [snip-end-position (+ (gsp snip) (send-generic snip get-count-generic))]
+                       [update-str-to-snip
+                        (lambda (skip to-str)
+                          (if snip
+                              (let ([snip-start (gsp snip)])
+                                (cond
+                                  [(snip-start . >= . end)
+                                   (set! snip #f)
+                                   (set! next? #f)
+                                   0]
+                                  [(is-a? snip wx:string-snip%)
+                                   (set! next? #t)
+                                   (let ([c (min (- (send-generic snip get-count-generic) skip)
+                                                 (- end snip-start))])
+                                     (write-string (send-generic snip get-text-generic skip c) pipe-w)
+                                     (read-bytes-avail!* to-str pipe-r))]
+                                  [else
+                                   (set! next? #f)
+                                   0]))
+                              (begin
+                                (set! next? #f)
+                                0)))]
+                       [next-snip
+                        (lambda (to-str)
+                          (cond
+                            [(= revision (grn))
+                             (set! snip (send-generic snip next-generic))
+                             (set! snip-end-position (and snip (+ (gsp snip) (send-generic snip get-count-generic))))
+                             (update-str-to-snip 0 to-str)]
+                            [else
+                             (set! revision (grn))
+                             (define old-snip-end-position snip-end-position)
+                             (set! snip (fs snip-end-position 'after-or-none))
+                             (define snip-start-position (and snip (gsp snip)))
+                             (set! snip-end-position (and snip (+ snip-start-position (send-generic snip get-count-generic))))
+                             (update-str-to-snip (if snip (- old-snip-end-position snip-start-position) 0) to-str)]))]
+                       [read-chars (lambda (to-str)
+                                     (cond
+                                       [next?
+                                        (next-snip to-str)]
+                                       [snip
+                                        (let ([the-snip (snip-filter snip)])
+                                          (next-snip empty-string)
+                                          (lambda (file line col ppos)
+                                            (if (is-a? the-snip wx:snip%)
+                                                (if (is-a? the-snip wx:readable-snip<%>)
+                                                    (send the-snip read-special file line col ppos)
+                                                    (send the-snip copy))
+                                                the-snip)))]
+                                       [else eof]))]
+                       [close (lambda () (void))]
+                       [port (make-input-port/read-to-peek
+                              port-name
+                              (lambda (s)
                                 (let* ([v (read-bytes-avail!* s pipe-r)]
                                        [res (if (eq? v 0) (read-chars s) v)])
                                   (when (eof-object? res)
@@ -154,25 +162,25 @@
                                       (send text end-edit-sequence)))
                                   res))
                               (lambda (s skip general-peek)
-				(let ([v (peek-bytes-avail!* s skip #f pipe-r)])
-				  (if (eq? v 0)
-				      (general-peek s skip)
-				      v)))
-			      close)])
-		  (when lock-while-reading? 
+                                (let ([v (peek-bytes-avail!* s skip #f pipe-r)])
+                                  (if (eq? v 0)
+                                      (general-peek s skip)
+                                      v)))
+                              close)])
+                  (when lock-while-reading? 
                     (send text begin-edit-sequence)
                     (send text lock #t))
                   (if (is-a? snip wx:string-snip%)
-		      ;; Special handling for initial snip string in
-		      ;; case it starts too early:
-		      (let* ([snip-start (gsp snip)]
-			     [skip (- start snip-start)]
-			     [c (min (- (send-generic snip get-count-generic) skip)
-				     (- end snip-start))])
-			(set! next? #t)
-			(display (send-generic snip get-text-generic skip c) pipe-w))
-		      (update-str-to-snip empty-string))
-		  port)))))))
+                      ;; Special handling for initial snip string in
+                      ;; case it starts too early:
+                      (let* ([snip-start (gsp snip)]
+                             [skip (- start snip-start)]
+                             [c (min (- (send-generic snip get-count-generic) skip)
+                                     (- end snip-start))])
+                        (set! next? #t)
+                        (display (send-generic snip get-text-generic skip c) pipe-w))
+                      (update-str-to-snip 0 empty-string))
+                  port)))))))
 
   (define (jump-to-submodule in-port expected-module k)
     (let ([header (bytes-append #"^#~"

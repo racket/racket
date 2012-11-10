@@ -74,6 +74,7 @@ struct Optimize_Info
 
   Scheme_Object *context; /* for logging */
   Scheme_Logger *logger;
+  Scheme_Hash_Tree *types; /* maps position (from this frame) to predicate */
 };
 
 static char *get_closure_flonum_map(Scheme_Closure_Data *data, int arg_n, int *ok);
@@ -91,6 +92,8 @@ static Scheme_Object *optimize_info_lookup(Optimize_Info *info, int pos, int *cl
                                            int once_used_ok, int context, int *potential_size, int *_mutated);
 static Scheme_Object *optimize_info_mutated_lookup(Optimize_Info *info, int pos, int *is_mutated);
 static void optimize_info_used_top(Optimize_Info *info);
+static Scheme_Object *optimize_get_predicate(int pos, Optimize_Info *info);
+static void add_type(Optimize_Info *info, int pos, Scheme_Object *pred);
 
 static void optimize_mutated(Optimize_Info *info, int pos);
 static void optimize_produces_flonum(Optimize_Info *info, int pos);
@@ -149,39 +152,60 @@ void scheme_init_optimize()
 /*                                  utils                                 */
 /*========================================================================*/
 
-static int is_current_inspector_call(Scheme_Object *a)
+int scheme_is_functional_primitive(Scheme_Object *rator, int num_args, int expected_vals)
+/* return 2 => results are a constant when arguments are constants */
 {
-  if (SAME_TYPE(SCHEME_TYPE(a), scheme_application_type)) {
-    Scheme_App_Rec *app = (Scheme_App_Rec *)a;
-    if (!app->num_args
-        && SAME_OBJ(app->args[0], scheme_current_inspector_proc))
-      return 1;
-  }
-  return 0;
+  if (SCHEME_PRIMP(rator)
+      && (SCHEME_PRIM_PROC_FLAGS(rator) & (SCHEME_PRIM_IS_OMITABLE | SCHEME_PRIM_IS_UNSAFE_NONMUTATING))
+      && (num_args >= ((Scheme_Primitive_Proc *)rator)->mina)
+      && (num_args <= ((Scheme_Primitive_Proc *)rator)->mu.maxa)
+      && ((expected_vals < 0) 
+          || ((expected_vals == 1) && !(SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_MULTI_RESULT))
+          || (SAME_OBJ(scheme_values_func, rator)
+              && (expected_vals == num_args)))) {
+    if (SAME_OBJ(scheme_values_func, rator))
+      return 2;
+    return 1;
+  } else
+    return 0;
 }
 
-static int is_proc_spec_proc(Scheme_Object *p)
+static Scheme_Object *get_struct_proc_shape(Scheme_Object *rator, Optimize_Info *info)
 {
-  Scheme_Type vtype;
+  Scheme_Object *c;
 
-  if (SCHEME_PROCP(p)) {
-    p = scheme_get_or_check_arity(p, -1);
-    if (SCHEME_INTP(p)) {
-      return (SCHEME_INT_VAL(p) >= 1);
-    } else if (SCHEME_STRUCTP(p)
-               && scheme_is_struct_instance(scheme_arity_at_least, p)) {
-      p = ((Scheme_Structure *)p)->slots[0];
-      if (SCHEME_INTP(p))
-        return (SCHEME_INT_VAL(p) >= 1);
+  if (info
+      && (info->top_level_consts || info->cp->inline_variants)
+      && SAME_TYPE(SCHEME_TYPE(rator), scheme_compiled_toplevel_type)) {
+    int pos;
+    pos = SCHEME_TOPLEVEL_POS(rator);
+    c = NULL;
+    if (info->top_level_consts)
+      c = scheme_hash_get(info->top_level_consts, scheme_make_integer(pos));
+    if (!c && info->cp->inline_variants)
+      c = scheme_hash_get(info->cp->inline_variants, scheme_make_integer(pos));
+    if (c && SAME_TYPE(SCHEME_TYPE(c), scheme_struct_proc_shape_type)) {
+      return c;
     }
-    return 0;
   }
 
-  vtype = SCHEME_TYPE(p);
+  return NULL;
+}
 
-  if (vtype == scheme_unclosed_procedure_type) {
-    if (((Scheme_Closure_Data *)p)->num_params >= 1)
-      return 1;
+int scheme_is_struct_functional(Scheme_Object *rator, int num_args, Optimize_Info *info, int vals)
+{
+  Scheme_Object *c;
+
+  if ((vals == 1) || (vals == -1)) {
+    c = get_struct_proc_shape(rator, info);
+    if (c) {
+      int mode = (SCHEME_PROC_SHAPE_MODE(c) & STRUCT_PROC_SHAPE_MASK);
+      int field_count = (SCHEME_PROC_SHAPE_MODE(c) >> STRUCT_PROC_SHAPE_SHIFT);
+      if (((num_args == 1) && (mode == STRUCT_PROC_SHAPE_PRED))
+          || ((num_args == field_count) && (mode == STRUCT_PROC_SHAPE_CONSTR))) {
+        return 1;
+      }
+    }
   }
 
   return 0;
@@ -202,26 +226,8 @@ static void note_match(int actual, int expected, Optimize_Info *warn_info)
   }
 }
 
-int scheme_is_functional_primitive(Scheme_Object *rator, int num_args, int expected_vals)
-/* return 2 => results are a constant when arguments are constants */
-{
-  if (SCHEME_PRIMP(rator)
-      && (SCHEME_PRIM_PROC_FLAGS(rator) & (SCHEME_PRIM_IS_OMITABLE | SCHEME_PRIM_IS_UNSAFE_NONMUTATING))
-      && (num_args >= ((Scheme_Primitive_Proc *)rator)->mina)
-      && (num_args <= ((Scheme_Primitive_Proc *)rator)->mu.maxa)
-      && ((expected_vals < 0) 
-          || ((expected_vals == 1) && !(SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_MULTI_RESULT))
-          || (SAME_OBJ(scheme_values_func, rator)
-              && (expected_vals == num_args)))) {
-    if (SAME_OBJ(scheme_values_func, rator))
-      return 2;
-    return 1;
-  } else
-    return 0;
-}
-
 int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
-                          Optimize_Info *warn_info, int deeper_than, int no_id)
+                          Optimize_Info *opt_info, Optimize_Info *warn_info, int deeper_than, int no_id)
      /* Checks whether the bytecode `o' returns `vals' values with no
         side-effects and without pushing and using continuation marks.
         -1 for vals means that any return count is ok.
@@ -296,9 +302,9 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
   if (vtype == scheme_branch_type) {
     Scheme_Branch_Rec *b;
     b = (Scheme_Branch_Rec *)o;
-    return (scheme_omittable_expr(b->test, 1, fuel - 1, resolved, warn_info, deeper_than, 0)
-	    && scheme_omittable_expr(b->tbranch, vals, fuel - 1, resolved, warn_info, deeper_than, no_id)
-	    && scheme_omittable_expr(b->fbranch, vals, fuel - 1, resolved, warn_info, deeper_than, no_id));
+    return (scheme_omittable_expr(b->test, 1, fuel - 1, resolved, opt_info, warn_info, deeper_than, 0)
+	    && scheme_omittable_expr(b->tbranch, vals, fuel - 1, resolved, opt_info, warn_info, deeper_than, no_id)
+	    && scheme_omittable_expr(b->fbranch, vals, fuel - 1, resolved, opt_info, warn_info, deeper_than, no_id));
   }
 
 #if 0
@@ -306,15 +312,15 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
      a let_value_type! */
   if (vtype == scheme_let_value_type) {
     Scheme_Let_Value *lv = (Scheme_Let_Value *)o;
-    return (scheme_omittable_expr(lv->value, lv->count, fuel - 1, resolved, warn_info, deeper_than, no_id)
-	    && scheme_omittable_expr(lv->body, vals, fuel - 1, resolved, warn_info, deeper_than, no_id));
+    return (scheme_omittable_expr(lv->value, lv->count, fuel - 1, resolved, opt_info, warn_info, deeper_than, no_id)
+	    && scheme_omittable_expr(lv->body, vals, fuel - 1, resolved, opt_info, warn_info, deeper_than, no_id));
   }
 #endif
 
   if (vtype == scheme_let_one_type) {
     Scheme_Let_One *lo = (Scheme_Let_One *)o;
-    return (scheme_omittable_expr(lo->value, 1, fuel - 1, resolved, warn_info, deeper_than + 1, 0)
-	    && scheme_omittable_expr(lo->body, vals, fuel - 1, resolved, warn_info, deeper_than + 1, no_id));
+    return (scheme_omittable_expr(lo->value, 1, fuel - 1, resolved, opt_info, warn_info, deeper_than + 1, 0)
+	    && scheme_omittable_expr(lo->body, vals, fuel - 1, resolved, opt_info, warn_info, deeper_than + 1, no_id));
   }
 
   if (vtype == scheme_let_void_type) {
@@ -324,7 +330,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
       Scheme_Let_Value *lv2 = (Scheme_Let_Value *)lv->body;
       if ((lv2->count == 1)
           && (lv2->position == 0)
-          && scheme_omittable_expr(lv2->value, 1, fuel - 1, resolved, warn_info,
+          && scheme_omittable_expr(lv2->value, 1, fuel - 1, resolved, opt_info, warn_info,
                                    deeper_than + 1 + lv->count,
                                    0)) {
         o = lv2->body;
@@ -343,7 +349,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
     if ((lh->count == 1) && (lh->num_clauses == 1)) {
       if (SAME_TYPE(SCHEME_TYPE(lh->body), scheme_compiled_let_value_type)) {
         Scheme_Compiled_Let_Value *lv = (Scheme_Compiled_Let_Value *)lh->body;
-        if (scheme_omittable_expr(lv->value, 1, fuel - 1, resolved, warn_info, deeper_than + 1, 0)) {
+        if (scheme_omittable_expr(lv->value, 1, fuel - 1, resolved, opt_info, warn_info, deeper_than + 1, 0)) {
           o = lv->body;
           deeper_than++;
           goto try_again;
@@ -358,48 +364,24 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
   }
 
   if (vtype == scheme_application_type) {
-    /* Look for multiple values, or for `make-struct-type'.
-       (The latter is especially useful to Honu.) */
     Scheme_App_Rec *app = (Scheme_App_Rec *)o;
-    if ((app->num_args >= 4) && (app->num_args <= 10)
+    
+    if ((app->num_args >= 4) && (app->num_args <= 11)
         && SAME_OBJ(scheme_make_struct_type_proc, app->args[0])) {
       note_match(5, vals, warn_info);
-      if ((vals == 5) || (vals < 0)) {
-        /* Look for (make-struct-type sym #f non-neg-int non-neg-int [omitable null]) */
-        if (SCHEME_SYMBOLP(app->args[1])
-            && SCHEME_FALSEP(app->args[2])
-            && SCHEME_INTP(app->args[3])
-            && (SCHEME_INT_VAL(app->args[3]) >= 0)
-            && SCHEME_INTP(app->args[4])
-            && (SCHEME_INT_VAL(app->args[4]) >= 0)
-            && ((app->num_args < 5)
-                || scheme_omittable_expr(app->args[5], 1, fuel - 1, resolved, warn_info,
-                                         deeper_than + (resolved ? app->num_args : 0), 0))
-            && ((app->num_args < 6)
-                || SCHEME_NULLP(app->args[6]))
-            && ((app->num_args < 7)
-                || SCHEME_FALSEP(app->args[7])
-                || is_current_inspector_call(app->args[7]))
-            && ((app->num_args < 8)
-                || SCHEME_FALSEP(app->args[8])
-                || is_proc_spec_proc(app->args[8]))
-            && ((app->num_args < 9)
-                || SCHEME_NULLP(app->args[9]))) {
-          return 1;
-        }
-      }
     }
-
-    if (SCHEME_PRIMP(app->args[0])) {
-      if (scheme_is_functional_primitive(app->args[0], app->num_args, vals)) {
-        int i;
-        for (i = app->num_args; i--; ) {
-          if (!scheme_omittable_expr(app->args[i + 1], 1, fuel - 1, resolved, warn_info,
-                                     deeper_than + (resolved ? app->num_args : 0), 0))
-            return 0;
-        }
-        return 1;
-      } else if (!(SCHEME_PRIM_PROC_FLAGS(app->args[0]) & SCHEME_PRIM_IS_MULTI_RESULT)) {
+    
+    if (scheme_is_functional_primitive(app->args[0], app->num_args, vals)
+        || scheme_is_struct_functional(app->args[0], app->num_args, opt_info, vals)) {
+      int i;
+      for (i = app->num_args; i--; ) {
+        if (!scheme_omittable_expr(app->args[i + 1], 1, fuel - 1, resolved, opt_info, warn_info,
+                                   deeper_than + (resolved ? app->num_args : 0), 0))
+          return 0;
+      }
+      return 1;
+    } else if (SCHEME_PRIMP(app->args[0])) {
+      if (!(SCHEME_PRIM_PROC_FLAGS(app->args[0]) & SCHEME_PRIM_IS_MULTI_RESULT)) {
         note_match(1, vals, warn_info);
       } else if (SAME_OBJ(scheme_values_func, app->args[0])) {
         note_match(app->num_args, vals, warn_info);
@@ -411,13 +393,14 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
 
   if (vtype == scheme_application2_type) {
     Scheme_App2_Rec *app = (Scheme_App2_Rec *)o;
-    if (SCHEME_PRIMP(app->rator)) {
-      if (scheme_is_functional_primitive(app->rator, 1, vals)) {
-        if (scheme_omittable_expr(app->rand, 1, fuel - 1, resolved, warn_info,
-                                  deeper_than + (resolved ? 1 : 0), 0))
-          return 1;
-      } else if (!(SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_MULTI_RESULT)
-                 || SAME_OBJ(scheme_values_func, app->rator)) {
+    if (scheme_is_functional_primitive(app->rator, 1, vals)
+        || scheme_is_struct_functional(app->rator, 1, opt_info, vals)) {
+      if (scheme_omittable_expr(app->rand, 1, fuel - 1, resolved, opt_info, warn_info,
+                                deeper_than + (resolved ? 1 : 0), 0))
+        return 1;
+    } else if (SCHEME_PRIMP(app->rator)) {
+      if (!(SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_MULTI_RESULT)
+          || SAME_OBJ(scheme_values_func, app->rator)) {
         note_match(1, vals, warn_info);
       }
     }
@@ -426,14 +409,15 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
 
   if (vtype == scheme_application3_type) {
     Scheme_App3_Rec *app = (Scheme_App3_Rec *)o;
-    if (SCHEME_PRIMP(app->rator)) {
-      if (scheme_is_functional_primitive(app->rator, 2, vals)) {
-        if (scheme_omittable_expr(app->rand1, 1, fuel - 1, resolved, warn_info,
-                                  deeper_than + (resolved ? 2 : 0), 0)
-            && scheme_omittable_expr(app->rand2, 1, fuel - 1, resolved, warn_info,
-                                     deeper_than + (resolved ? 2 : 0), 0))
-          return 1;
-      } else if (!(SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_MULTI_RESULT)) {
+    if (scheme_is_functional_primitive(app->rator, 2, vals)
+        || scheme_is_struct_functional(app->rator, 2, opt_info, vals)) {
+      if (scheme_omittable_expr(app->rand1, 1, fuel - 1, resolved, opt_info, warn_info,
+                                deeper_than + (resolved ? 2 : 0), 0)
+          && scheme_omittable_expr(app->rand2, 1, fuel - 1, resolved, opt_info, warn_info,
+                                   deeper_than + (resolved ? 2 : 0), 0))
+        return 1;
+    } else if (SCHEME_PRIMP(app->rator)) {
+      if (!(SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_MULTI_RESULT)) {
         note_match(1, vals, warn_info);
       } else if (SAME_OBJ(scheme_values_func, app->rator)) {
         note_match(2, vals, warn_info);
@@ -442,7 +426,461 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
     return 0;
   }
 
+  /* check for struct-type declaration: */
+  {
+    Scheme_Object *auto_e;
+    int auto_e_depth;
+    auto_e = scheme_is_simple_make_struct_type(o, vals, resolved, 0, &auto_e_depth, 
+                                               NULL,
+                                               (opt_info ? opt_info->top_level_consts : NULL),
+                                               NULL, NULL, 0, NULL, NULL,
+                                               5);
+    if (auto_e) {
+      if (scheme_omittable_expr(auto_e, 1, fuel - 1, resolved, opt_info, warn_info,
+                                deeper_than + auto_e_depth, 0))
+        return 1;
+    }
+  }
+
   return 0;
+}
+
+static int is_inspector_call(Scheme_Object *a)
+{
+  if (SAME_TYPE(SCHEME_TYPE(a), scheme_application_type)) {
+    Scheme_App_Rec *app = (Scheme_App_Rec *)a;
+    if (!app->num_args
+        && (SAME_OBJ(app->args[0], scheme_current_inspector_proc)
+            || SAME_OBJ(app->args[0], scheme_make_inspector_proc)))
+      return 1;
+  }
+  return 0;
+}
+
+static int is_proc_spec_proc(Scheme_Object *p)
+{
+  Scheme_Type vtype;
+
+  if (SCHEME_PROCP(p)) {
+    p = scheme_get_or_check_arity(p, -1);
+    if (SCHEME_INTP(p)) {
+      return (SCHEME_INT_VAL(p) >= 1);
+    } else if (SCHEME_STRUCTP(p)
+               && scheme_is_struct_instance(scheme_arity_at_least, p)) {
+      p = ((Scheme_Structure *)p)->slots[0];
+      if (SCHEME_INTP(p))
+        return (SCHEME_INT_VAL(p) >= 1);
+    }
+    return 0;
+  }
+
+  vtype = SCHEME_TYPE(p);
+
+  if (vtype == scheme_unclosed_procedure_type) {
+    if (((Scheme_Closure_Data *)p)->num_params >= 1)
+      return 1;
+  }
+
+  return 0;
+}
+
+static int is_local_ref(Scheme_Object *e, int p, int r)
+{
+  return (SAME_TYPE(SCHEME_TYPE(e), scheme_local_type)
+          && (SCHEME_LOCAL_POS(e) >= p)
+          && (SCHEME_LOCAL_POS(e) < (p + r)));
+}
+
+static int is_int_list(Scheme_Object *o, int up_to)
+{
+  if (SCHEME_PAIRP(o)) {
+    char *s, quick[8];
+    Scheme_Object *e;
+    if (up_to <= 8)
+      s = quick;
+    else
+      s = (char *)scheme_malloc_atomic(up_to);
+    memset(s, 0, up_to);
+    while (SCHEME_PAIRP(o)) {
+      e = SCHEME_CAR(o);
+      o = SCHEME_CDR(o);
+      if (!SCHEME_INTP(e)
+          || (SCHEME_INT_VAL(e) < 0)
+          || (SCHEME_INT_VAL(e) > up_to)
+          || s[SCHEME_INT_VAL(e)])
+        return 0;
+      s[SCHEME_INT_VAL(e)] = 1;
+    }
+  }
+
+  return SCHEME_NULLP(o);
+}
+
+static int ok_proc_creator_args(Scheme_Object *rator, Scheme_Object *rand1, Scheme_Object *rand2, Scheme_Object *rand3,
+                                int delta2, int field_count)
+{
+  if ((SAME_OBJ(rator, scheme_make_struct_field_accessor_proc)
+       && is_local_ref(rand1, delta2+3, 1))
+      || (SAME_OBJ(rator, scheme_make_struct_field_mutator_proc)
+          && is_local_ref(rand1, delta2+4, 1))) {
+    if (SCHEME_INTP(rand2)
+        && (SCHEME_INT_VAL(rand2) >= 0)
+        && (SCHEME_INT_VAL(rand2) < field_count)
+        && (!rand3 || SCHEME_SYMBOLP(rand3))) {
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
+static int is_values_with_accessors_and_mutators(Scheme_Object *e, int vals, int resolved, 
+                                                 Simple_Stuct_Type_Info *_stinfo)
+{
+  if (SAME_TYPE(SCHEME_TYPE(e), scheme_application_type)) {
+    Scheme_App_Rec *app = (Scheme_App_Rec *)e;
+    int delta = (resolved ? app->num_args : 0);
+    if (SAME_OBJ(app->args[0], scheme_values_func)
+        && (app->num_args == vals)
+        && (app->num_args >= 3)
+        && is_local_ref(app->args[1], delta, 1)
+        && is_local_ref(app->args[2], delta+1, 1)
+        && is_local_ref(app->args[3], delta+2, 1)) {
+      int i, num_gets = 0, num_sets = 0, normal_ops = 1;
+      for (i = app->num_args; i > 3; i--) {
+        if (is_local_ref(app->args[i], delta, 5)) {
+          normal_ops = 0;
+        } else if (SAME_TYPE(SCHEME_TYPE(app->args[i]), scheme_application_type)
+                   && _stinfo->normal_ops && !_stinfo->indexed_ops) {
+          Scheme_App_Rec *app3 = (Scheme_App_Rec *)app->args[i];
+          int delta2 = delta + (resolved ? app3->num_args : 0);
+          if (app3->num_args == 3) {
+            if (!ok_proc_creator_args(app3->args[0], app3->args[1], app3->args[2], app3->args[3],
+                                      delta2, _stinfo->field_count))
+              break;
+            if (SAME_OBJ(app3->args[0], scheme_make_struct_field_mutator_proc)) {
+              if (num_gets) normal_ops = 0;
+              num_sets++;
+            } else
+              num_gets++;
+          } else
+            break;
+        } else if (SAME_TYPE(SCHEME_TYPE(app->args[i]), scheme_application3_type)
+                   && _stinfo->normal_ops && !_stinfo->indexed_ops) {
+          Scheme_App3_Rec *app3 = (Scheme_App3_Rec *)app->args[i];
+          int delta2 = delta + (resolved ? 2 : 0);
+          if (!ok_proc_creator_args(app3->rator, app3->rand1, app3->rand2, NULL,
+                                    delta2, _stinfo->field_count))
+            break;
+          if (SAME_OBJ(app3->rator, scheme_make_struct_field_mutator_proc)) {
+            if (num_gets) normal_ops = 0;
+            num_sets++;
+          } else
+            num_gets++;
+        } else
+          break;
+      }
+      if (i <= 3) {
+        _stinfo->normal_ops = normal_ops;
+        _stinfo->indexed_ops = 1;
+        _stinfo->num_gets = num_gets;
+        _stinfo->num_sets = num_sets;
+        return 1;
+      }
+    }
+  }
+
+  return 0;
+}
+
+static Scheme_Object *skip_clears(Scheme_Object *body)
+{
+  if (SAME_TYPE(SCHEME_TYPE(body), scheme_sequence_type)) {
+    Scheme_Sequence *seq = (Scheme_Sequence *)body;
+    int i;
+    for (i = seq->count - 1; i--; ) {
+      if (!SAME_TYPE(SCHEME_TYPE(seq->array[i]), scheme_local_type))
+        break;
+    }
+    if (i < 0)
+      return seq->array[seq->count-1];
+  }
+  return body;
+}
+
+static int is_constant_super(Scheme_Object *arg, 
+                             Scheme_Hash_Table *top_level_consts, 
+                             Scheme_Hash_Table *top_level_table,
+                             Scheme_Object **runstack, int rs_delta,
+                             Scheme_Object **symbols, Scheme_Hash_Table *symbol_table)
+{
+  int pos;
+  Scheme_Object *v;
+
+  if (SAME_TYPE(SCHEME_TYPE(arg), scheme_compiled_toplevel_type)) {
+    pos = SCHEME_TOPLEVEL_POS(arg);
+    if (top_level_consts) {
+      /* This is optimize mode */
+      v = scheme_hash_get(top_level_consts, scheme_make_integer(pos));
+      if (v && SAME_TYPE(SCHEME_TYPE(v), scheme_struct_proc_shape_type)) {
+        int mode = (SCHEME_PROC_SHAPE_MODE(v) & STRUCT_PROC_SHAPE_MASK);
+        int field_count = (SCHEME_PROC_SHAPE_MODE(v) >> STRUCT_PROC_SHAPE_SHIFT);
+        if (mode == STRUCT_PROC_SHAPE_STRUCT)
+          return field_count + 1;
+      }
+    }
+  } else if (SAME_TYPE(SCHEME_TYPE(arg), scheme_toplevel_type)) {
+    pos = SCHEME_TOPLEVEL_POS(arg);
+    if (runstack) {
+      /* This is eval mode; conceptually, this code belongs in 
+         define_execute_with_dynamic_state() */
+      Scheme_Bucket *b;
+      Scheme_Prefix *toplevels;
+      toplevels = (Scheme_Prefix *)runstack[SCHEME_TOPLEVEL_DEPTH(arg) - rs_delta];
+      b = (Scheme_Bucket *)toplevels->a[pos];
+      if (b->val) {
+        if (SCHEME_STRUCT_TYPEP(b->val)
+            && (((Scheme_Bucket_With_Flags *)b)->flags & GLOB_IS_CONSISTENT)) {
+          Scheme_Struct_Type *st = (Scheme_Struct_Type *)b->val;
+          if (st->num_slots == st->num_islots)
+            return st->num_slots + 1;
+        }
+      }
+    }
+    if (symbols) {
+      /* This is module-export mode; conceptually, this code belongs in 
+         setup_accessible_table() */
+      Scheme_Object *name;
+      name = symbols[pos];
+      if (SCHEME_SYMBOLP(name)) {
+        v = scheme_hash_get(symbol_table, name);
+        if (v && SCHEME_VECTORP(v) && (SCHEME_VEC_SIZE(v) == 3)) {
+          v = SCHEME_VEC_ELS(v)[1];
+          if (v && SCHEME_INTP(v)) {
+            int mode = (SCHEME_INT_VAL(v) & STRUCT_PROC_SHAPE_MASK);
+            int field_count = (SCHEME_INT_VAL(v) >> STRUCT_PROC_SHAPE_SHIFT);
+            if (mode == STRUCT_PROC_SHAPE_STRUCT)
+              return field_count + 1;
+          }
+        }
+      } else if (SAME_TYPE(SCHEME_TYPE(name), scheme_module_variable_type)) {
+        intptr_t k;
+        if (scheme_decode_struct_shape(((Module_Variable *)name)->shape, &k)) {
+          if ((k & STRUCT_PROC_SHAPE_MASK) == STRUCT_PROC_SHAPE_STRUCT)
+            return (k >> STRUCT_PROC_SHAPE_SHIFT) + 1;
+        }
+      }
+    }
+    if (top_level_table) {
+      /* This is validate mode; conceptually, this code belongs in 
+         define_values_validate() */
+      v = scheme_hash_get(top_level_table, scheme_make_integer(pos));
+      if (v)
+        return SCHEME_INT_VAL(v) + 1;
+    }
+  }
+
+  return 0;
+}
+
+Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int resolved, 
+                                                 int check_auto, 
+                                                 GC_CAN_IGNORE int *_auto_e_depth, 
+                                                 Simple_Stuct_Type_Info *_stinfo,
+                                                 Scheme_Hash_Table *top_level_consts, 
+                                                 Scheme_Hash_Table *top_level_table,
+                                                 Scheme_Object **runstack, int rs_delta,
+                                                 Scheme_Object **symbols, Scheme_Hash_Table *symbol_table,
+                                                 int fuel)
+/* Checks whether it's a `make-struct-type' call that certainly succeeds 
+   (i.e., no exception) --- pending a check of the auto-value argument if !check_auto.
+   The result is the auto-value argument or scheme_true if it's simple, NULL if not. 
+   The first result is a struct type, the second a constructor, and the thrd a predicate;
+   the rest are an unspecified mixture of selectors and mutators. */
+{
+  if (!fuel) return NULL;
+
+  if (SAME_TYPE(SCHEME_TYPE(e), scheme_application_type)) {
+    if ((vals == 5) || (vals < 0)) {
+      Scheme_App_Rec *app = (Scheme_App_Rec *)e;
+
+      if ((app->num_args >= 4) && (app->num_args <= 11)
+          && SAME_OBJ(scheme_make_struct_type_proc, app->args[0])) {
+        int super_count_plus_one;
+
+        if (!SCHEME_FALSEP(app->args[2]))
+          super_count_plus_one = is_constant_super(app->args[2], 
+                                                   top_level_consts, top_level_table, runstack,
+                                                   rs_delta + app->num_args,
+                                                   symbols, symbol_table);
+        else
+          super_count_plus_one = 0;
+
+        if (SCHEME_SYMBOLP(app->args[1])
+            && (SCHEME_FALSEP(app->args[2]) /* super */
+                || super_count_plus_one)
+            && SCHEME_INTP(app->args[3])
+            && (SCHEME_INT_VAL(app->args[3]) >= 0)
+            && SCHEME_INTP(app->args[4])
+            && (SCHEME_INT_VAL(app->args[4]) >= 0)
+            && ((app->num_args < 5)
+                /* auto-field value: */
+                || !check_auto
+                || scheme_omittable_expr(app->args[5], 1, 3, resolved, NULL, NULL, -1, 0))
+            && ((app->num_args < 6)
+                /* no properties: */
+                || SCHEME_NULLP(app->args[6]))
+            && ((app->num_args < 7)
+                /* inspector: */
+                || SCHEME_FALSEP(app->args[7])
+                || (SCHEME_SYMBOLP(app->args[7])
+                    && !strcmp("prefab", SCHEME_SYM_VAL(app->args[7]))
+                    && !SCHEME_SYM_WEIRDP(app->args[7]))
+                || is_inspector_call(app->args[7]))
+            && ((app->num_args < 8)
+                /* propcedure property: */
+                || SCHEME_FALSEP(app->args[8])
+                || is_proc_spec_proc(app->args[8]))
+            && ((app->num_args < 9)
+                /* immutables: */
+                || is_int_list(app->args[9],
+                               SCHEME_INT_VAL(app->args[3])))
+            && ((app->num_args < 10)
+                /* guard: */
+                || SCHEME_FALSEP(app->args[10]))
+            && ((app->num_args < 11)
+                /* constructor name: */
+                || SCHEME_FALSEP(app->args[11])
+                || SCHEME_SYMBOLP(app->args[11]))) {
+          if (_auto_e_depth)
+            *_auto_e_depth = (resolved ? app->num_args : 0);
+          if (_stinfo) {
+            int super_count = (super_count_plus_one 
+                               ? (super_count_plus_one - 1)
+                               : 0);
+            _stinfo->init_field_count = SCHEME_INT_VAL(app->args[3]) + super_count;
+            _stinfo->field_count = (SCHEME_INT_VAL(app->args[3]) 
+                                    + SCHEME_INT_VAL(app->args[4])
+                                    + super_count);
+            _stinfo->uses_super = (super_count_plus_one ? 1 : 0);
+            _stinfo->normal_ops = 1;
+            _stinfo->indexed_ops = 0;
+            _stinfo->num_gets = 1;
+            _stinfo->num_sets = 1;
+          }
+          return ((app->num_args < 5) ? scheme_true : app->args[5]);
+        }
+      }
+    }
+  }
+
+  if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_let_void_type)) {
+    /* check for (let-values ([(: mk ? ref- set-!) (make-struct-type ...)]) (values ...))
+       as generated by the expansion of `struct' */
+    Scheme_Let_Header *lh = (Scheme_Let_Header *)e;
+    if ((lh->count == 5) && (lh->num_clauses == 1)) {
+      if (SAME_TYPE(SCHEME_TYPE(lh->body), scheme_compiled_let_value_type)) {
+        Scheme_Compiled_Let_Value *lv = (Scheme_Compiled_Let_Value *)lh->body;
+        if (SAME_TYPE(SCHEME_TYPE(lv->value), scheme_application_type)) {
+          Scheme_Object *auto_e;
+          Simple_Stuct_Type_Info stinfo;
+          int lh_delta = ((SCHEME_LET_FLAGS(lh) & (SCHEME_LET_RECURSIVE | SCHEME_LET_STAR))
+                          ? lh->count
+                          : 0);
+          if (!_stinfo) _stinfo = &stinfo;
+          auto_e = scheme_is_simple_make_struct_type(lv->value, 5, resolved, check_auto, 
+                                                     _auto_e_depth, _stinfo, 
+                                                     top_level_consts, top_level_table, 
+                                                     runstack, rs_delta + lh_delta,
+                                                     symbols, symbol_table,
+                                                     fuel-1);
+          if (auto_e) {
+            /* We have (let-values ([... (make-struct-type)]) ....), so make sure body
+               just uses `make-struct-field-{accessor,mutator}'. */
+            if (is_values_with_accessors_and_mutators(lv->body, vals, resolved, _stinfo)) {
+              if (_auto_e_depth && lh_delta)
+                *_auto_e_depth += lh_delta;
+              return auto_e;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (SAME_TYPE(SCHEME_TYPE(e), scheme_let_void_type)) {
+    /* same thing, but in resolved form */
+    Scheme_Let_Void *lvd = (Scheme_Let_Void *)e;
+    if (lvd->count == 5) {
+      if (SAME_TYPE(SCHEME_TYPE(lvd->body), scheme_let_value_type)) {
+        Scheme_Let_Value *lv = (Scheme_Let_Value *)lvd->body;
+        if ((lv->position == 0) && (lv->count == 5)) {
+          Scheme_Object *e2;
+          e2 = skip_clears(lv->value);
+          if (SAME_TYPE(SCHEME_TYPE(e2), scheme_application_type)) {
+            Scheme_Object *auto_e;
+            Simple_Stuct_Type_Info stinfo;
+            if (!_stinfo) _stinfo = &stinfo;
+            auto_e = scheme_is_simple_make_struct_type(e2, 5, resolved, check_auto,
+                                                       _auto_e_depth, _stinfo,
+                                                       top_level_consts, top_level_table,
+                                                       runstack, rs_delta + lvd->count,
+                                                       symbols, symbol_table,
+                                                       fuel-1);
+            if (auto_e) {
+              /* We have (let-values ([... (make-struct-type)]) ....), so make sure body
+                 just uses `make-struct-field-{accessor,mutator}'. */
+              e2 = skip_clears(lv->body);
+              if (is_values_with_accessors_and_mutators(e2, vals, resolved, _stinfo)) {
+                if (_auto_e_depth) *_auto_e_depth += lvd->count;
+                return auto_e;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return NULL;
+}
+
+intptr_t scheme_get_struct_proc_shape(int k, Simple_Stuct_Type_Info *stinfo)
+{
+  switch (k) {
+  case 0:
+    if (stinfo->field_count == stinfo->init_field_count)
+      return STRUCT_PROC_SHAPE_STRUCT | (stinfo->field_count << STRUCT_PROC_SHAPE_SHIFT);
+    else
+      return STRUCT_PROC_SHAPE_OTHER;
+    break;
+  case 1:
+    return STRUCT_PROC_SHAPE_CONSTR | (stinfo->init_field_count << STRUCT_PROC_SHAPE_SHIFT);
+    break;
+  case 2:
+    return STRUCT_PROC_SHAPE_PRED;
+    break;
+  default:
+    if (stinfo && stinfo->normal_ops && stinfo->indexed_ops) {
+      if (k - 3 < stinfo->num_gets)
+        return STRUCT_PROC_SHAPE_GETTER | (stinfo->field_count << STRUCT_PROC_SHAPE_SHIFT);
+      else
+        return STRUCT_PROC_SHAPE_SETTER | (stinfo->field_count << STRUCT_PROC_SHAPE_SHIFT);
+    }
+  }
+
+  return STRUCT_PROC_SHAPE_OTHER;
+}
+
+Scheme_Object *scheme_make_struct_proc_shape(intptr_t k)
+{
+  Scheme_Object *ps;
+
+  ps = scheme_malloc_small_atomic_tagged(sizeof(Scheme_Small_Object));
+  ps->type = scheme_struct_proc_shape_type;
+  SCHEME_PROC_SHAPE_MODE(ps) = k;
+
+  return ps;
 }
 
 static int single_valued_noncm_expression(Scheme_Object *expr, int fuel)
@@ -1816,6 +2254,28 @@ static Scheme_Object *lookup_constant_proc(Optimize_Info *info, Scheme_Object *r
   return NULL;
 }
 
+static void check_known2(Optimize_Info *info, Scheme_App2_Rec *app, const char *who, 
+                         Scheme_Object *expect_pred, Scheme_Object *unsafe)
+/* Replace the rator with an unsafe version if we know that it's ok. Alternatively,
+   the rator implies a check, so add type information for subsequent expressions. */
+{
+  if (IS_NAMED_PRIM(app->rator, who)) {
+    if (SAME_TYPE(SCHEME_TYPE(app->rand), scheme_local_type)) {
+      Scheme_Object *pred;
+      int pos = SCHEME_LOCAL_POS(app->rand);
+      
+      if (optimize_is_mutated(info, pos))
+        return;
+      
+      pred = optimize_get_predicate(pos, info);
+      if (pred && SAME_OBJ(pred, expect_pred))
+        app->rator = unsafe;
+      else
+        add_type(info, pos, expect_pred);
+    }
+  }
+}
+
 static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *info, int context)
 {
   Scheme_App2_Rec *app;
@@ -1884,9 +2344,17 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
     }
   }
 
+  if (SAME_OBJ(scheme_struct_type_p_proc, app->rator)) {
+    Scheme_Object *c;
+    c = get_struct_proc_shape(app->rand, info);
+    if (c && ((SCHEME_PROC_SHAPE_MODE(c) & STRUCT_PROC_SHAPE_MASK)
+              == STRUCT_PROC_SHAPE_STRUCT))
+      return scheme_true;
+  }
+
   if ((SAME_OBJ(scheme_values_func, app->rator)
        || SAME_OBJ(scheme_list_star_proc, app->rator))
-      && (scheme_omittable_expr(app->rand, 1, -1, 0, info, -1, 0)
+      && (scheme_omittable_expr(app->rand, 1, -1, 0, info, info, -1, 0)
           || single_valued_noncm_expression(app->rand, 5))) {
     info->preserves_marks = 1;
     info->single_result = 1;
@@ -1928,13 +2396,13 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
       if (SAME_OBJ(scheme_list_proc, app2->rator)) {
         if (IS_NAMED_PRIM(app->rator, "car")) {
           /* (car (list X)) */
-          if (scheme_omittable_expr(app2->rand, 1, 5, 0, NULL, -1, 0)
+          if (scheme_omittable_expr(app2->rand, 1, 5, 0, info, NULL, -1, 0)
               || single_valued_noncm_expression(app2->rand, 5)) {
             alt = app2->rand;
           }
         } else if (IS_NAMED_PRIM(app->rator, "cdr")) {
           /* (cdr (list X)) */
-          if (scheme_omittable_expr(app2->rand, 1, 5, 0, NULL, -1, 0))
+          if (scheme_omittable_expr(app2->rand, 1, 5, 0, info, NULL, -1, 0))
             alt = scheme_null;
         }
       }
@@ -1945,31 +2413,39 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
             || SAME_OBJ(scheme_list_proc, app3->rator)
             || SAME_OBJ(scheme_list_star_proc, app3->rator)) {
           /* (car ({cons|list|list*} X Y)) */
-          if ((scheme_omittable_expr(app3->rand1, 1, 5, 0, NULL, -1, 0)
+          if ((scheme_omittable_expr(app3->rand1, 1, 5, 0, info, NULL, -1, 0)
                || single_valued_noncm_expression(app3->rand1, 5))
-              && scheme_omittable_expr(app3->rand2, 1, 5, 0, NULL, -1, 0)) {
+              && scheme_omittable_expr(app3->rand2, 1, 5, 0, info, NULL, -1, 0)) {
             alt = app3->rand1;
           }
         }
       } else if (IS_NAMED_PRIM(app->rator, "cdr")) {
         /* (cdr (cons X Y)) */
         if (SAME_OBJ(scheme_cons_proc, app3->rator)) {
-          if ((scheme_omittable_expr(app3->rand2, 1, 5, 0, NULL, -1, 0)
+          if ((scheme_omittable_expr(app3->rand2, 1, 5, 0, info, NULL, -1, 0)
                || single_valued_noncm_expression(app3->rand2, 5))
-              && scheme_omittable_expr(app3->rand1, 1, 5, 0, NULL, -1, 0)) {
+              && scheme_omittable_expr(app3->rand1, 1, 5, 0, info, NULL, -1, 0)) {
             alt = app3->rand2;
           }
         }
       } else if (IS_NAMED_PRIM(app->rator, "cadr")) {
         if (SAME_OBJ(scheme_list_proc, app3->rator)) {
           /* (cadr (list X Y)) */
-          if ((scheme_omittable_expr(app3->rand2, 1, 5, 0, NULL, -1, 0)
+          if ((scheme_omittable_expr(app3->rand2, 1, 5, 0, info, NULL, -1, 0)
                || single_valued_noncm_expression(app3->rand2, 5))
-              && scheme_omittable_expr(app3->rand1, 1, 5, 0, NULL, -1, 0)) {
+              && scheme_omittable_expr(app3->rand1, 1, 5, 0, info, NULL, -1, 0)) {
             alt = app3->rand2;
           }
         }
       }
+    } else {
+      check_known2(info, app, "car", scheme_pair_p_proc, scheme_unsafe_car_proc);
+      check_known2(info, app, "cdr", scheme_pair_p_proc, scheme_unsafe_cdr_proc);
+      check_known2(info, app, "mcar", scheme_mpair_p_proc, scheme_unsafe_mcar_proc);
+      check_known2(info, app, "mcdr", scheme_mpair_p_proc, scheme_unsafe_mcdr_proc);
+      /* It's not clear that these are useful, since a chaperone check is needed anyway: */
+      check_known2(info, app, "unbox", scheme_box_p_proc, scheme_unsafe_unbox_proc);
+      check_known2(info, app, "vector-length", scheme_vector_p_proc, scheme_unsafe_vector_length_proc);
     }
 
     if (alt) {
@@ -2317,7 +2793,7 @@ static Scheme_Object *optimize_sequence(Scheme_Object *o, Optimize_Info *info, i
     /* Inlining and constant propagation can expose
        omittable expressions. */
     if ((i + 1 != count)
-	&& scheme_omittable_expr(le, -1, -1, 0, NULL, -1, 0)) {
+	&& scheme_omittable_expr(le, -1, -1, 0, info, NULL, -1, 0)) {
       drop++;
       info->size = prev_size;
       s->array[i] = NULL;
@@ -2406,10 +2882,55 @@ static int equivalent_exprs(Scheme_Object *a, Scheme_Object *b)
   return 0;
 }
 
+static void add_type(Optimize_Info *info, int pos, Scheme_Object *pred)
+{
+  Scheme_Hash_Tree *new_types;
+  new_types = info->types;
+  if (!new_types)
+    new_types = scheme_make_hash_tree(0);
+  new_types = scheme_hash_tree_set(new_types,
+                                   scheme_make_integer(pos),
+                                   pred);
+  info->types = new_types;
+}
+
+static int relevant_predicate(Scheme_Object *pred)
+{
+  return (SAME_OBJ(pred, scheme_pair_p_proc)
+          || SAME_OBJ(pred, scheme_mpair_p_proc)
+          || SAME_OBJ(pred, scheme_box_p_proc)
+          || SAME_OBJ(pred, scheme_vector_p_proc));
+}
+
+static void add_types(Scheme_Object *t, Optimize_Info *info, int fuel)
+{
+  if (fuel < 0)
+    return;
+
+  if (SAME_TYPE(SCHEME_TYPE(t), scheme_application2_type)) {
+    Scheme_App2_Rec *app = (Scheme_App2_Rec *)t;
+    if (SCHEME_PRIMP(app->rator)
+        && SAME_TYPE(SCHEME_TYPE(app->rand), scheme_local_type)
+        && relevant_predicate(app->rator)) {
+      /* Looks like a predicate on a local variable. Record that the
+         predicate succeeded, which may allow conversion of safe
+         operations to unsafe operations. */
+      add_type(info, SCHEME_LOCAL_POS(app->rand), app->rator);
+    }
+  } else if (SAME_TYPE(SCHEME_TYPE(t), scheme_branch_type)) {
+    Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)t;
+    if (SCHEME_FALSEP(b->fbranch)) {
+      add_types(b->test, info, fuel-1);
+      add_types(b->tbranch, info, fuel-1);
+    }
+  }
+}
+
 static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int context)
 {
   Scheme_Branch_Rec *b;
   Scheme_Object *t, *tb, *fb;
+  Scheme_Hash_Tree *old_types;
   int preserves_marks = 1, single_result = 1;
 
   b = (Scheme_Branch_Rec *)o;
@@ -2464,6 +2985,9 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
     return scheme_optimize_expr(tb, info, scheme_optimize_tail_context(context));
   }
 
+  old_types = info->types;
+  add_types(t, info, 5);
+
   tb = scheme_optimize_expr(tb, info, scheme_optimize_tail_context(context));
 
   if (!info->preserves_marks)
@@ -2474,6 +2998,8 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
     single_result = 0;
   else if (info->single_result < 0)
     single_result = -1;
+
+  info->types = old_types;
 
   fb = scheme_optimize_expr(fb, info, scheme_optimize_tail_context(context));
 
@@ -2500,7 +3026,7 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
   }
 
   /* Try optimize: (if <omitable-expr> v v) => v */
-  if (scheme_omittable_expr(t, 1, 20, 0, NULL, -1, 0)
+  if (scheme_omittable_expr(t, 1, 20, 0, info, NULL, -1, 0)
       && equivalent_exprs(tb, fb)) {
     info->size -= 2; /* could be more precise */
     return tb;
@@ -2542,7 +3068,7 @@ static int omittable_key(Scheme_Object *k, Optimize_Info *info)
 {
   /* A key is not omittable if it might refer to a chaperoned/impersonated
      continuation mark key, so that's why we pass 1 for `no_id': */
-  return scheme_omittable_expr(k, 1, 20, 0, info, -1, 1);
+  return scheme_omittable_expr(k, 1, 20, 0, info, info, -1, 1);
 }
 
 static Scheme_Object *optimize_wcm(Scheme_Object *o, Optimize_Info *info, int context)
@@ -2557,8 +3083,8 @@ static Scheme_Object *optimize_wcm(Scheme_Object *o, Optimize_Info *info, int co
   b = scheme_optimize_expr(wcm->body, info, scheme_optimize_tail_context(context));
 
   if (omittable_key(k, info)
-      && scheme_omittable_expr(v, 1, 20, 0, info, -1, 0)
-      && scheme_omittable_expr(b, -1, 20, 0, info, -1, 0))
+      && scheme_omittable_expr(v, 1, 20, 0, info, info, -1, 0)
+      && scheme_omittable_expr(b, -1, 20, 0, info, info, -1, 0))
     return b;
 
   /* info->single_result is already set */
@@ -2875,21 +3401,60 @@ case_lambda_shift(Scheme_Object *data, int delta, int after_depth)
 static Scheme_Object *
 begin0_optimize(Scheme_Object *obj, Optimize_Info *info, int context)
 {
-  int i, count;
+  int i, count, drop = 0, prev_size, single_result = 0;
+  Scheme_Sequence *s = (Scheme_Sequence *)obj;
+  Scheme_Object *le;
 
-  count = ((Scheme_Sequence *)obj)->count;
+  count = s->count;
 
   for (i = 0; i < count; i++) {
-    Scheme_Object *le;
-    le = scheme_optimize_expr(((Scheme_Sequence *)obj)->array[i], info,
+    prev_size = info->size;
+
+    le = scheme_optimize_expr(s->array[i], 
+                              info,
                               (!i
                                ? scheme_optimize_result_context(context)
                                : 0));
-    ((Scheme_Sequence *)obj)->array[i] = le;
+
+    if (!i)
+      single_result = info->single_result;
+
+    /* Inlining and constant propagation can expose
+       omittable expressions. */
+    if (i && scheme_omittable_expr(le, -1, -1, 0, info, NULL, -1, 0)) {
+      drop++;
+      info->size = prev_size;
+      s->array[i] = NULL;
+    } else {
+      s->array[i] = le;
+    }
   }
 
-  /* Optimization of expression 0 has already set single_result */
+  if (drop) {
+    Scheme_Sequence *s2;
+    int j = 0;
+
+    if ((s->count - drop) == 1) {
+      /* can't drop down to 1 expression */
+      s->array[s->count-1] = scheme_false;
+      --drop;
+    }
+
+    s2 = scheme_malloc_sequence(s->count - drop);
+    s2->so.type = s->so.type;
+    s2->count = s->count - drop;
+
+    for (i = 0; i < s->count; i++) {
+      if (s->array[i]) {
+	s2->array[j++] = s->array[i];
+      }
+    }
+
+    obj = (Scheme_Object *)s2;
+  }
+
   info->preserves_marks = 1;
+  info->single_result = single_result;
 
   info->size += 1;
 
@@ -3081,6 +3646,9 @@ int scheme_compiled_propagate_ok(Scheme_Object *value, Optimize_Info *info)
       pos = SCHEME_TOPLEVEL_POS(value);
       value = scheme_hash_get(info->top_level_consts, scheme_make_integer(pos));
       value = no_potential_size(value);
+      if (SAME_OBJ(value, scheme_constant_key)
+          || (value && SAME_TYPE(SCHEME_TYPE(value), scheme_struct_proc_shape_type)))
+        return 0;
       if (value)
         return 1;
     }
@@ -3101,7 +3669,7 @@ int scheme_is_statically_proc(Scheme_Object *value, Optimize_Info *info)
       Scheme_Let_Header *lh = (Scheme_Let_Header *)value;
       if (lh->num_clauses == 1) {
         Scheme_Compiled_Let_Value *lv = (Scheme_Compiled_Let_Value *)lh->body;
-        if (scheme_omittable_expr(lv->value, lv->count, 20, 0, NULL, -1, 0)) {
+        if (scheme_omittable_expr(lv->value, lv->count, 20, 0, info, NULL, -1, 0)) {
           value = lv->body;
           info = NULL;
         } else
@@ -3664,7 +4232,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
     if ((pre_body->count != 1)
         && is_values_apply(value, pre_body->count)
         && ((!is_rec && no_mutable_bindings(pre_body))
-            || scheme_omittable_expr(value, pre_body->count, -1, 0, info,
+            || scheme_omittable_expr(value, pre_body->count, -1, 0, info, info,
                                      (is_rec
                                       ? (pre_body->position + pre_body->count)
                                       : -1),
@@ -4047,7 +4615,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
     }
 
     if (!used
-        && (scheme_omittable_expr(pre_body->value, pre_body->count, -1, 0, info, -1, 0)
+        && (scheme_omittable_expr(pre_body->value, pre_body->count, -1, 0, info, info, -1, 0)
             || ((pre_body->count == 1)
                 && first_once_used
                 && (first_once_used->pos == pos)
@@ -4475,7 +5043,7 @@ static Scheme_Object *is_cross_module_inline_candidiate(Scheme_Object *e, Optimi
   return NULL;
 }
 
-static int is_general_compiled_proc(Scheme_Object *e)
+static int is_general_compiled_proc(Scheme_Object *e, Optimize_Info *info)
 {
   /* recognize (begin <omitable>* <proc>) */
   if (SCHEME_TYPE(e) == scheme_sequence_type) {
@@ -4483,7 +5051,7 @@ static int is_general_compiled_proc(Scheme_Object *e)
     if (seq->count > 0) {
       int i;
       for (i = seq->count - 1; i--; ) {
-        if (!scheme_omittable_expr(seq->array[i], -1, 20, 0, NULL, -1, 0))
+        if (!scheme_omittable_expr(seq->array[i], -1, 20, 0, info, NULL, -1, 0))
           return 0;
       }
     }
@@ -4507,6 +5075,115 @@ static int is_general_compiled_proc(Scheme_Object *e)
 
   if (IS_COMPILED_PROC(e))
     return 1;
+
+  return 0;
+}
+
+void install_definition(Scheme_Object *vec, int pos, Scheme_Object *var, Scheme_Object *rhs)
+{
+  Scheme_Object *def;
+
+  var = scheme_make_pair(var, scheme_null);
+  def = scheme_make_vector(2, NULL);
+  SCHEME_VEC_ELS(def)[0] = var;
+  SCHEME_VEC_ELS(def)[1] = rhs;
+  def->type = scheme_define_values_type;
+
+  SCHEME_VEC_ELS(vec)[pos] = def;
+}
+
+int split_define_values(Scheme_Object *e, int n, Scheme_Object *vars, Scheme_Object *vec, int offset)
+{
+  if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_let_void_type)) {
+    /* This is a tedious case to recognize the pattern
+         (let ([x rhs] ...) (values x ...))
+       which might be the result of expansion that involved a local
+       macro to define the `x's */
+    Scheme_Let_Header *lh = (Scheme_Let_Header *)e;
+    if ((lh->count == n) && (lh->num_clauses == n)
+        && !(SCHEME_LET_FLAGS(lh) & (SCHEME_LET_RECURSIVE | SCHEME_LET_STAR))) {
+      Scheme_Object *body = lh->body;
+      int i;
+      for (i = 0; i < n; i++) {
+        if (SAME_TYPE(SCHEME_TYPE(body), scheme_compiled_let_value_type)) {
+          Scheme_Compiled_Let_Value *lv = (Scheme_Compiled_Let_Value *)body;
+          if (lv->count == 1) {
+            if (!scheme_omittable_expr(lv->value, 1, 5, 0, NULL, NULL, n, 0))
+              return 0;
+            body = lv->body;
+          } else
+            return 0;
+        } else
+          return 0;
+      }
+      if ((n == 2) && SAME_TYPE(SCHEME_TYPE(body), scheme_application3_type)) {
+        Scheme_App3_Rec *app = (Scheme_App3_Rec *)body;
+        if (SAME_OBJ(app->rator, scheme_values_func)
+            && SAME_TYPE(SCHEME_TYPE(app->rand1), scheme_local_type)
+            && (SCHEME_LOCAL_POS(app->rand1) == 0)
+            && SAME_TYPE(SCHEME_TYPE(app->rand2), scheme_local_type)
+            && (SCHEME_LOCAL_POS(app->rand2) == 1)) {
+          if (vars) {
+            Scheme_Compiled_Let_Value *lv = (Scheme_Compiled_Let_Value *)lh->body;
+            install_definition(vec, offset, SCHEME_CAR(vars), lv->value);
+            vars = SCHEME_CDR(vars);
+            lv = (Scheme_Compiled_Let_Value *)lv->body;
+            install_definition(vec, offset+1, SCHEME_CAR(vars), lv->value);
+          }
+          return 1;
+        }
+      } else if (SAME_TYPE(SCHEME_TYPE(body), scheme_application_type)
+                 && ((Scheme_App_Rec *)body)->num_args == n) {
+        Scheme_App_Rec *app = (Scheme_App_Rec *)body;
+        if (SAME_OBJ(app->args[0], scheme_values_func)) {
+          for (i = 0; i < n; i++) {
+            if (!SAME_TYPE(SCHEME_TYPE(app->args[i+1]), scheme_local_type)
+                || SCHEME_LOCAL_POS(app->args[i+1]) != i)
+              return 0;
+          }
+          if (vars) {
+            body = lh->body;
+            for (i = 0; i < n; i++) {
+              Scheme_Compiled_Let_Value *lv = (Scheme_Compiled_Let_Value *)body;
+              install_definition(vec, offset+i, SCHEME_CAR(vars), lv->value);
+              vars = SCHEME_CDR(vars);
+              body = lv->body;
+            }
+          }
+          return 1;
+        }
+      }
+    }    
+  } else if ((n == 2) && SAME_TYPE(SCHEME_TYPE(e), scheme_application3_type)) {
+    Scheme_App3_Rec *app = (Scheme_App3_Rec *)e;
+    if (SAME_OBJ(app->rator, scheme_values_func)
+        && scheme_omittable_expr(app->rand1, 1, 5, 0, NULL, NULL, 0, 0)
+        && scheme_omittable_expr(app->rand2, 1, 5, 0, NULL, NULL, 0, 0)) {
+      if (vars) {
+        install_definition(vec, offset, SCHEME_CAR(vars), app->rand1);
+        vars = SCHEME_CDR(vars);
+        install_definition(vec, offset+1, SCHEME_CAR(vars), app->rand2);
+      }
+      return 1;
+    }
+  } else if (SAME_TYPE(SCHEME_TYPE(e), scheme_application_type)
+             && ((Scheme_App_Rec *)e)->num_args == n) {
+    Scheme_App_Rec *app = (Scheme_App_Rec *)e;
+    if (SAME_OBJ(app->args[0], scheme_values_func)) {
+      int i;
+      for (i = 0; i < n; i++) {
+        if (!scheme_omittable_expr(app->args[i+1], 1, 5, 0, NULL, NULL, 0, 0))
+          return 0;
+      }
+      if (vars) {
+        for (i = 0; i < n; i++) {
+          install_definition(vec, offset+i, SCHEME_CAR(vars), app->args[i+1]);
+          vars = SCHEME_CDR(vars);
+        }
+      }
+      return 1;
+    }
+  }
 
   return 0;
 }
@@ -4536,6 +5213,49 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 
   cnt = SCHEME_VEC_SIZE(m->bodies[0]);
 
+  /* First, flatten `(define-values (x ...) (values e ...))'
+     to `(define (x) e) ...' when possible. */
+  {
+    int inc = 0;
+    for (i_m = 0; i_m < cnt; i_m++) {
+      e = SCHEME_VEC_ELS(m->bodies[0])[i_m];
+      if (SAME_TYPE(SCHEME_TYPE(e), scheme_define_values_type))  {
+        int n;
+        vars = SCHEME_VEC_ELS(e)[0];
+        n = scheme_list_length(vars);
+        if (n > 1) {
+          e = SCHEME_VEC_ELS(e)[1];
+          if (split_define_values(e, n, NULL, NULL, 0))
+            inc += (n - 1);
+        }
+      }
+    }
+
+    if (inc > 0) {
+      Scheme_Object *new_vec;
+      int j = 0;
+      new_vec = scheme_make_vector(cnt+inc, NULL);
+      for (i_m = 0; i_m < cnt; i_m++) {
+        e = SCHEME_VEC_ELS(m->bodies[0])[i_m];
+        if (SAME_TYPE(SCHEME_TYPE(e), scheme_define_values_type)) {
+          int n;
+          vars = SCHEME_VEC_ELS(e)[0];
+          n = scheme_list_length(vars);
+          if (n > 1) {
+            if (split_define_values(SCHEME_VEC_ELS(e)[1], n, vars, new_vec, j)) {
+              j += n;
+            } else
+              SCHEME_VEC_ELS(new_vec)[j++] = e;
+          } else
+            SCHEME_VEC_ELS(new_vec)[j++] = e;
+        } else
+          SCHEME_VEC_ELS(new_vec)[j++] = e;
+      }
+      cnt += inc;
+      m->bodies[0] = new_vec;
+    }
+  }
+
   if (OPT_ESTIMATE_FUTURE_SIZES) {
     if (info->enforce_const) {
       /* For each identifier bound to a procedure, register an initial
@@ -4550,21 +5270,19 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
           e = SCHEME_VEC_ELS(e)[1];
 
           n = scheme_list_length(vars);
-          if (n == 1) {
-            if (IS_COMPILED_PROC(e)) {
-              Scheme_Toplevel *tl;
+          if ((n == 1) && IS_COMPILED_PROC(e))  {
+            Scheme_Toplevel *tl;
 
-              tl = (Scheme_Toplevel *)SCHEME_CAR(vars);
-
-              if (!(SCHEME_TOPLEVEL_FLAGS(tl) & SCHEME_TOPLEVEL_MUTATED)) {
-                int pos;
-                if (!consts)
-                  consts = scheme_make_hash_table(SCHEME_hash_ptr);
-                pos = tl->position;
-                scheme_hash_set(consts,
-                                scheme_make_integer(pos),
-                                estimate_closure_size(e));
-              }
+            tl = (Scheme_Toplevel *)SCHEME_CAR(vars);
+            
+            if (!(SCHEME_TOPLEVEL_FLAGS(tl) & SCHEME_TOPLEVEL_MUTATED)) {
+              int pos;
+              if (!consts)
+                consts = scheme_make_hash_table(SCHEME_hash_ptr);
+              pos = tl->position;
+              scheme_hash_set(consts,
+                              scheme_make_integer(pos),
+                              estimate_closure_size(e));
             }
           }
         }
@@ -4586,7 +5304,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
       if (SAME_TYPE(SCHEME_TYPE(e), scheme_define_values_type)) {
         Scheme_Object *e2;
         e2 = SCHEME_VEC_ELS(e)[1];
-        if (is_general_compiled_proc(e2))
+        if (is_general_compiled_proc(e2, info))
           is_proc_def = 1;
       }
     }
@@ -4610,13 +5328,20 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 	 (including raising an exception), then continue the group of
 	 simultaneous definitions: */
       if (SAME_TYPE(SCHEME_TYPE(e), scheme_define_values_type))  {
-	int n, cnst = 0, sproc = 0;
+	int n, cnst = 0, sproc = 0, sstruct = 0;
+        Simple_Stuct_Type_Info stinfo;
 
 	vars = SCHEME_VEC_ELS(e)[0];
 	e = SCHEME_VEC_ELS(e)[1];
 
 	n = scheme_list_length(vars);
-	cont = scheme_omittable_expr(e, n, -1, 0, info, -1, 0);
+	cont = scheme_omittable_expr(e, n, -1, 0, 
+                                     /* no `info' here, because the decision
+                                        of omittable should not depend on
+                                        information that's only available at
+                                        optimization time: */
+                                     NULL, 
+                                     info, -1, 0);
 
         if (n == 1) {
           if (scheme_compiled_propagate_ok(e, info))
@@ -4625,56 +5350,78 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
             cnst = 1;
             sproc = 1;
           }
+        } else if (scheme_is_simple_make_struct_type(e, n, 0, 1, NULL, 
+                                                     &stinfo,
+                                                     info->top_level_consts, 
+                                                     NULL, NULL, 0, NULL, NULL,
+                                                     5)) {
+          sstruct = 1;
+          cnst = 1;
         }
 
 	if (cnst) {
 	  Scheme_Toplevel *tl;
+          int i;
+          for (i = 0; i < n; i++) {
+            tl = (Scheme_Toplevel *)SCHEME_CAR(vars);
+            vars  = SCHEME_CDR(vars);
 
-	  tl = (Scheme_Toplevel *)SCHEME_CAR(vars);
+            if (!(SCHEME_TOPLEVEL_FLAGS(tl) & SCHEME_TOPLEVEL_MUTATED)) {
+              Scheme_Object *e2;
 
-	  if (!(SCHEME_TOPLEVEL_FLAGS(tl) & SCHEME_TOPLEVEL_MUTATED)) {
-	    Scheme_Object *e2;
-
-            if (sproc) {
-              e2 = scheme_make_noninline_proc(e);
-            } else if (IS_COMPILED_PROC(e)) {
-	      e2 = optimize_clone(1, e, info, 0, 0);
-              if (e2) {
-                Scheme_Object *pr;
-                pr = scheme_make_raw_pair(scheme_make_raw_pair(e2, e), NULL);
-                if (cl_last)
-                  SCHEME_CDR(cl_last) = pr;
-                else
-                  cl_first = pr;
-                cl_last = pr;
-              } else
+              if (sstruct) {
+                e2 = scheme_make_struct_proc_shape(scheme_get_struct_proc_shape(i, &stinfo));
+              } else if (sproc) {
                 e2 = scheme_make_noninline_proc(e);
-	    } else {
-	      e2 = e;
-	    }
+              } else if (IS_COMPILED_PROC(e)) {
+                e2 = optimize_clone(1, e, info, 0, 0);
+                if (e2) {
+                  Scheme_Object *pr;
+                  pr = scheme_make_raw_pair(scheme_make_raw_pair(e2, e), NULL);
+                  if (cl_last)
+                    SCHEME_CDR(cl_last) = pr;
+                  else
+                    cl_first = pr;
+                  cl_last = pr;
+                } else
+                  e2 = scheme_make_noninline_proc(e);
+              } else {
+                e2 = e;
+              }
 
-	    if (e2) {
-	      int pos;
-	      if (!consts)
-		consts = scheme_make_hash_table(SCHEME_hash_ptr);
-	      pos = tl->position;
-	      scheme_hash_set(consts, scheme_make_integer(pos), e2);
-              if (!re_consts)
-                re_consts = scheme_make_hash_table(SCHEME_hash_ptr);
-              scheme_hash_set(re_consts, scheme_make_integer(i_m),
-                              scheme_make_integer(pos));
-	    } else {
-	      /* At least mark it as fixed */
-              
-	      if (!fixed_table) {
-		fixed_table = scheme_make_hash_table(SCHEME_hash_ptr);
-		if (!consts)
-		  consts = scheme_make_hash_table(SCHEME_hash_ptr);
-		scheme_hash_set(consts, scheme_false, (Scheme_Object *)fixed_table);
-	      }
-	      scheme_hash_set(fixed_table, scheme_make_integer(tl->position), scheme_true);
-	    }
-	  }
+              if (e2) {
+                int pos;
+                pos = tl->position;
+                if (sstruct) {
+                  /* Add directly to `info->top_level_consts' for use
+                     by sub-struct declarations in the same set */
+                  if (!info->top_level_consts) {
+                    Scheme_Hash_Table *tlc;
+                    tlc = scheme_make_hash_table(SCHEME_hash_ptr);
+                    info->top_level_consts = tlc;
+                  }
+                  scheme_hash_set(info->top_level_consts, scheme_make_integer(pos), e2);
+                } else {
+                  if (!consts)
+                    consts = scheme_make_hash_table(SCHEME_hash_ptr);
+                  scheme_hash_set(consts, scheme_make_integer(pos), e2);
+                  if (!re_consts)
+                    re_consts = scheme_make_hash_table(SCHEME_hash_ptr);
+                  scheme_hash_set(re_consts, scheme_make_integer(i_m),
+                                  scheme_make_integer(pos));
+                }
+              } else {
+                /* At least mark it as fixed */
+                if (!fixed_table) {
+                  fixed_table = scheme_make_hash_table(SCHEME_hash_ptr);
+                  if (!consts)
+                    consts = scheme_make_hash_table(SCHEME_hash_ptr);
+                  scheme_hash_set(consts, scheme_false, (Scheme_Object *)fixed_table);
+                }
+                scheme_hash_set(fixed_table, scheme_make_integer(tl->position), scheme_true);
+              }
+            }
+          }
 	} else {
 	  /* The binding is not inlinable/propagatable, but unless it's
 	     set!ed, it is constant after evaluating the definition. We
@@ -4694,7 +5441,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 	  }
 	}
       } else {
-	cont = scheme_omittable_expr(e, -1, -1, 0, NULL, -1, 0);
+	cont = scheme_omittable_expr(e, -1, -1, 0, NULL, NULL, -1, 0);
       }
       if (i_m + 1 == cnt)
 	cont = 0;
@@ -4868,7 +5615,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
     for (i_m = 0; i_m < cnt; i_m++) {
       /* Optimize this expression: */
       e = SCHEME_VEC_ELS(m->bodies[0])[i_m];
-      if (scheme_omittable_expr(e, -1, -1, 0, NULL, -1, 0)) {
+      if (scheme_omittable_expr(e, -1, -1, 0, info, NULL, -1, 0)) {
         can_omit++;
       }
     }
@@ -4879,7 +5626,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
       for (i_m = 0; i_m < cnt; i_m++) {
         /* Optimize this expression: */
         e = SCHEME_VEC_ELS(m->bodies[0])[i_m];
-        if (!scheme_omittable_expr(e, -1, -1, 0, NULL, -1, 0)) {
+        if (!scheme_omittable_expr(e, -1, -1, 0, info, NULL, -1, 0)) {
           SCHEME_VEC_ELS(vec)[j++] = e;
         }
       }
@@ -5835,7 +6582,7 @@ static int optimize_is_used(Optimize_Info *info, int pos)
 static int check_use(Optimize_Info *info, int pos, int flag)
 /* pos is in new-frame counts */
 {
-  while (1) {
+  while (info) {
     if (pos < info->new_frame)
       break;
     pos -= info->new_frame;
@@ -6042,6 +6789,25 @@ static int optimize_info_is_ready(Optimize_Info *info, int pos)
 static Scheme_Object *optimize_info_mutated_lookup(Optimize_Info *info, int pos, int *is_mutated)
 {
   return do_optimize_info_lookup(info, pos, 0, NULL, NULL, NULL, 0, 0, NULL, 0, is_mutated, 1);
+}
+
+Scheme_Object *optimize_get_predicate(int pos, Optimize_Info *info)
+{
+  Scheme_Object *pred;
+
+  while (info) {
+    if (info->types) {
+      pred = scheme_hash_tree_get(info->types, scheme_make_integer(pos));
+      if (pred)
+        return pred;
+    }
+    pos -= info->new_frame;
+    if (pos < 0)
+      return NULL;
+      info = info->next;
+  }
+
+  return NULL;
 }
 
 static Optimize_Info *optimize_info_add_frame(Optimize_Info *info, int orig, int current, int flags)

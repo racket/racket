@@ -1,8 +1,8 @@
-#lang racket
+#lang racket/base
 
 (require xml/xml
          syntax/readerr
-         mred
+         racket/gui
          "syntax-property.rkt")
 
 (provide xml-read-special

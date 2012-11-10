@@ -1,5 +1,5 @@
-#lang racket
-(require racket/system)
+#lang racket/base
+(require racket/path racket/system)
 
 (define from (vector-ref (current-command-line-arguments) 0))
 (define to

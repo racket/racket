@@ -111,7 +111,7 @@
  (cs-view-docs "~a 문서 보기")
  (cs-view-docs-from "~a 에서 온 ~a")  ;; a completed version of the line above (cs-view-docs) is put into the first ~a and a list of modules (separated by commas) is put into the second ~a. Use check syntax and right-click on a documented variable (eg, 'require') to see this in use
   
- (cs-lexical-variable "lexical 변수")	;확인하기
+ (cs-lexical-variable "lexical 변수") ;확인하기
  (cs-set!d-variable "set!’d 변수")
  (cs-imported-variable "imported 변수")
 
@@ -216,7 +216,7 @@
  (plt:hd:feeling-lucky "느낌이 옴")
  (plt:hd:home "도움말 홈") 
  ; next 3 are popup menu choices in help desk search frame
- (plt:hd:search-for-keyword "키워드 입력")	;확인하기. entry?
+ (plt:hd:search-for-keyword "키워드 입력") ;확인하기. entry?
  (plt:hd:search-for-keyword-or-index "키워드 또는 목차 입력")
  (plt:hd:search-for-keyword-or-index-or-text "키워드, 목차, 텍스트 입력")
  (plt:hd:exact-match "정확하게 일치")

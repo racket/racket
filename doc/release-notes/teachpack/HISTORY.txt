@@ -1,233 +1,236 @@
-------------------------------------------------------------------------
-Version 5.2.1				  [Thu Jan 19 11:36:19 EST 2012]
+Version 5.3.1                             [Wed Oct 31 14:52:48 EDT 2012]
 
-* added: universe.rkt now comes with a game-pad simulation option 
-  A game-pad is a special-purpose key handler plus an icon that 
-  maps out the legal key strokes. 
+* bug fixes
+
+------------------------------------------------------------------------
+Version 5.2.1                             [Thu Jan 19 11:36:19 EST 2012]
+
+* added: universe.rkt now comes with a game-pad simulation option
+  A game-pad is a special-purpose key handler plus an icon that
+  maps out the legal key strokes.
 
 * fixed
   -- wheel-left and wheel-right events work properly as key events now
-  -- on-receive doesn't have to exist for universe/world interactions 
-  -- name clause accepts strings and symbols 
-  -- doc typos 
+  -- on-receive doesn't have to exist for universe/world interactions
+  -- name clause accepts strings and symbols
+  -- doc typos
 
 ------------------------------------------------------------------------
-Version 5.2				  [Tue Oct 18 12:34:16 EDT 2011]
+Version 5.2                               [Tue Oct 18 12:34:16 EDT 2011]
 
-* bug fixes in 2htdp/universe 
-* also, on-release now works without presence of an on-key clause 
+* bug fixes in 2htdp/universe
+* also, on-release now works without presence of an on-key clause
 
 ------------------------------------------------------------------------
-Version 5.1.2				  [Fri Jul 22 15:27:37 EDT 2011]
+Version 5.1.2                             [Fri Jul 22 15:27:37 EDT 2011]
 
-* The error messages of the image and universe teachpacks have been 
-  revised substantially. They will be improved again next release. 
+* The error messages of the image and universe teachpacks have been
+  revised substantially. They will be improved again next release.
 
-* 5.1.3: the on-tick clause now takes a max number of ticks 
-  
+* 5.1.3: the on-tick clause now takes a max number of ticks
+
 ------------------------------------------------------------------------
-Version 5.1.1				  [Tue Apr 26 22:38:44 EDT 2011]
+Version 5.1.1                             [Tue Apr 26 22:38:44 EDT 2011]
 
-* bug fix in registration process for universe 
-  implies incompatibility of protocols between 5.1 programs and 
+* bug fix in registration process for universe
+  implies incompatibility of protocols between 5.1 programs and
   predecessors
 
 ------------------------------------------------------------------------
-Version 5.1				  [Tue Feb  8 13:05:17 EST 2011]
+Version 5.1                               [Tue Feb  8 13:05:17 EST 2011]
 
-* to-draw (old name: on-draw) is now required for big-bang expressions 
-* bug fixes in world, image, etc 
+* to-draw (old name: on-draw) is now required for big-bang expressions
+* bug fixes in world, image, etc
 
 ------------------------------------------------------------------------
-Version 5.0.2.  			  [Wed Oct 27 18:30:26 EDT 2010]
+Version 5.0.2.                            [Wed Oct 27 18:30:26 EDT 2010]
 
-* fixed stepper-universe interaction (on my side) 
-* record? allows specification of a directory 
-* small bug fixes 
-* small doc fixes 
+* fixed stepper-universe interaction (on my side)
+* record? allows specification of a directory
+* small bug fixes
+* small doc fixes
 
 * batch-io is now in shape to be used (somewhat) in 2e
 
-* robby added pinholes to his image teachpack 
+* robby added pinholes to his image teachpack
 
 ------------------------------------------------------------------------
-Version 5.0.1.  			  [Tue Jul 20 20:52:09 EDT 2010]
+Version 5.0.1.                            [Tue Jul 20 20:52:09 EDT 2010]
 
-* typos in documentation 
+* typos in documentation
 
 ------------------------------------------------------------------------
 
-Version 5.0				  [Fri May 28 13:43:21 EDT 2010]
+Version 5.0                               [Fri May 28 13:43:21 EDT 2010]
 
 * added to-draw to universe to prepare the switch to the new terminoloy
 
 ------------------------------------------------------------------------
-Version 4.2.5				  [Fri Mar 26 10:02:11 EDT 2010]
+Version 4.2.5                             [Fri Mar 26 10:02:11 EDT 2010]
 
-* "release" is no longer a key event; use "release" handler instead 
+* "release" is no longer a key event; use "release" handler instead
 
 ------------------------------------------------------------------------
-Version 4.2.4				  [Thu Jan 28 12:02:01 EST 2010]
+Version 4.2.4                             [Thu Jan 28 12:02:01 EST 2010]
 
 * separated 2htdp/universe from htdp/image
-* 2htdp/universe contains some stupid hacks to improve performance 
-  -- to be changed with Matthew's advice  
-* error modified 
-* added a bunch of primitives for JPR 
-* fixed some other bugs 
+* 2htdp/universe contains some stupid hacks to improve performance
+  -- to be changed with Matthew's advice
+* error modified
+* added a bunch of primitives for JPR
+* fixed some other bugs
 
 ------------------------------------------------------------------------
-Version 4.2.3				  [Sun Nov 22 19:25:01 EST 2009]
+Version 4.2.3                             [Sun Nov 22 19:25:01 EST 2009]
 
-* bug fixes in universe 
+* bug fixes in universe
 * 2htdp/image (first draft)
 
 ------------------------------------------------------------------------
-Version 4.2.2				  [Sat Aug 29 15:44:41 EDT 2009]
+Version 4.2.2                             [Sat Aug 29 15:44:41 EDT 2009]
 
-* universe API: 
-  -- added a (state Boolean) option for world and server programs 
-  to display their actual state in a separate window 
-  -- added a mechanism for displaying a final scene 
-  when the world is about to come to an end 
+* universe API:
+  -- added a (state Boolean) option for world and server programs
+  to display their actual state in a separate window
+  -- added a mechanism for displaying a final scene
+  when the world is about to come to an end
 
 ------------------------------------------------------------------------
-Version 4.2.1				  [Wed Jul 22 11:15:54 EDT 2009]
+Version 4.2.1                             [Wed Jul 22 11:15:54 EDT 2009]
 
 * universe API: added launch-many-worlds, fixed numerous small bugs
   concerning symbol and char elimination
 
 ------------------------------------------------------------------------
-Version 4.2				  [Thu May 21 08:51:15 EDT 2009]
+Version 4.2                               [Thu May 21 08:51:15 EDT 2009]
 
 * the universe API has changed. It no longer uses chars or symbols
-  for the callbacks but one-letter strings, except for arrow keys 
-  and special events, which are arbitrarily long strings. 
+  for the callbacks but one-letter strings, except for arrow keys
+  and special events, which are arbitrarily long strings.
 
 ------------------------------------------------------------------------
-Version 4.1.5   			  [Sat Feb 14 20:12:23 EST 2009]
+Version 4.1.5                             [Sat Feb 14 20:12:23 EST 2009]
 
 * the universe teachpack exports iworld, not world now
 
 ------------------------------------------------------------------------
-Version 4.1.4				  [Sun Jan 18 21:18:34 EST 2009]
+Version 4.1.4                             [Sun Jan 18 21:18:34 EST 2009]
 
-* introduces 2htdp/universe 
+* introduces 2htdp/universe
 * small bug fixes in world.ss
 
 ------------------------------------------------------------------------
-Version 4.1.3				  [Wed Nov 19 10:20:41 EST 2008]
+Version 4.1.3                             [Wed Nov 19 10:20:41 EST 2008]
 
-tiny bug fixes 
+tiny bug fixes
 
 ------------------------------------------------------------------------
-Version 4.1.2				  [Sat Oct 25 10:31:05 EDT 2008]
+Version 4.1.2                             [Sat Oct 25 10:31:05 EDT 2008]
 
 nothing new to report
 
 ------------------------------------------------------------------------
-Version 4.1.1				  [Tue Sep 30 10:17:26 EDT 2008]
+Version 4.1.1                             [Tue Sep 30 10:17:26 EDT 2008]
 
 * world.ss: big-bang can now be re-run after the world has stopped
 
 ------------------------------------------------------------------------
-Version 4.1				  [Sun Aug 10 12:56:58 EDT 2008]
+Version 4.1                               [Sun Aug 10 12:56:58 EDT 2008]
 
-* world docs include line to HtDP/2e Prologue 
+* world docs include line to HtDP/2e Prologue
 
 ------------------------------------------------------------------------
-Version 4.0.1				  [Fri Jun 20 10:35:32 EDT 2008]
+Version 4.0.1                             [Fri Jun 20 10:35:32 EDT 2008]
 
 * world.ss: replaced 'end-of-world' with a hook called 'stop-when'
 
 ------------------------------------------------------------------------
-VERSION 4.0				  [Thu May  8 11:03:30 EDT 2008]
+VERSION 4.0                               [Thu May  8 11:03:30 EDT 2008]
 
 * small bug fixes in world
 
 * added matrix.ss (requires a write up)
 
-
 ------------------------------------------------------------------------
-VERSION 371				  [Tue Aug  7 17:49:47 EDT 2007]
+VERSION 371                               [Tue Aug  7 17:49:47 EDT 2007]
 
 * changed world.ss so that it exports both add-line from image.ss and
-  scene+image. 
+  scene+image.
 
 ------------------------------------------------------------------------
-VERSION 370				  [Mon May  7 09:54:19 EDT 2007]
+VERSION 370                               [Mon May  7 09:54:19 EDT 2007]
 
-* Added testing.ss teachpack. 
+* Added testing.ss teachpack.
 
 * The world.ss teachpack now has a IMAGE capturing functionality, including
-  animated GIFs. It also supports simple simulations now. 
+  animated GIFs. It also supports simple simulations now.
 
 * The world.ss and image.ss support real numbers for sizes and coordinates
-  now. 
+  now.
 
-* The ProfessorJ wizard doesn't support templates for now. 
+* The ProfessorJ wizard doesn't support templates for now.
 
 ------------------------------------------------------------------------
-VERSION 360				  [Tue Nov  7 12:45:48 EST 2006]
+VERSION 360                               [Tue Nov  7 12:45:48 EST 2006]
 
- * The world.ss teachpack has now callback hooks for mouse clicks. 
+ * The world.ss teachpack has now callback hooks for mouse clicks.
 
- * The image.ss teachpack now includes a star primitive. 
+ * The image.ss teachpack now includes a star primitive.
 
  * Fixed bugs in world.ss, graphing.ss, image.ss
 
 ------------------------------------------------------------------------
-VERSION 351				  [Tue Jul 18 14:11:29 EDT 2006]
+VERSION 351                               [Tue Jul 18 14:11:29 EDT 2006]
 
- * The libraries for ProfessorJ are now organized as four packages: 
-   draw, idraw, geometry, and colors. 
+ * The libraries for ProfessorJ are now organized as four packages:
+   draw, idraw, geometry, and colors.
 
  * Fixed small problems with master.ss and image.ss teachpacks and their
-   docs. 
+   docs.
 
 ------------------------------------------------------------------------
-VERSION 350				  [Fri Jun 16 20:37:38 EDT 2006]
+VERSION 350                               [Fri Jun 16 20:37:38 EDT 2006]
 
- * The draw package (ProfJ) spawns a new Canvas per new Canvas. 
+ * The draw package (ProfJ) spawns a new Canvas per new Canvas.
    The implementation of draw.ss has changed for that, though the visible
-   interface should remain the same. 
-   
- * The idraw package provides imperative versions of World and Canvas. 
+   interface should remain the same.
 
- * Small bugs in world.ss and image.ss fixed. 
+ * The idraw package provides imperative versions of World and Canvas.
+
+ * Small bugs in world.ss and image.ss fixed.
 
  * servlet.ss and servlet2.ss are still missing. Expect their arrival
-   for 351. 
+   for 351.
 
 ------------------------------------------------------------------------
-VERSION 300				  [Mon Dec 12 15:59:02 EST 2005]
+VERSION 300                               [Mon Dec 12 15:59:02 EST 2005]
 
- * The world.ss teachpack has changed. It no longer supports 
-   (update ... produce ...) but instead provides a function 
-   on-redraw. 
+ * The world.ss teachpack has changed. It no longer supports
+   (update ... produce ...) but instead provides a function
+   on-redraw.
 
  * servlet.ss and servlet2.ss are still missing. Expect their arrival
-   for 301. 
+   for 301.
 
 ------------------------------------------------------------------------
-VERSION 299.200				  [Tue Aug  2 17:37:24 EDT 2005]
+VERSION 299.200                           [Tue Aug  2 17:37:24 EDT 2005]
 
  * servlet.ss and servlet2.ss are still missing. Expect their arrival
-   for 300. 
+   for 300.
 
  * draw.ss in the HtDCH teachpack collection has radically changed. See
-   the doc.txt file for the new arrangement. 
+   the doc.txt file for the new arrangement.
 
 ------------------------------------------------------------------------
-VERSION 209				  [Fri Dec 17 10:19:52 EST 2004]
+VERSION 209                               [Fri Dec 17 10:19:52 EST 2004]
 
  * fixed small bugs in image.ss and world.ss concerning colors and the
-   location of pinholes 
+   location of pinholes
 
  * The interface of the draw teachpack (package) for ProfessorJ has
    changed. A World now supports draw and erase methods. The onTick and
    onKeyEvent methods call erase on the current world, create the next
-   world, and then call draw on the new world. 
+   world, and then call draw on the new world.
 
 ------------------------------------------------------------------------
 VERSION 208p1
@@ -236,12 +239,12 @@ VERSION 208p1
   relative to the pinhole. Misc image.ss docs improvements.
 
 ------------------------------------------------------------------------
-VERSION 208				  [Fri Jul 30 10:07:21 EDT 2004]
+VERSION 208                               [Fri Jul 30 10:07:21 EDT 2004]
 
 * image.ss introduces images as algebraic values. Students can create basic
   images such as rectangles, circles, and they can compose them via an
   overlay function. There are also primitives for finding one picture in
-  another one and so on. Testing with drawing is now feasible. 
+  another one and so on. Testing with drawing is now feasible.
 
 * world.ss enriches image.ss with animation functions. Like draw.ss, it
   comes with big-bang, on-key-event, on-tick, end-of-time for creating a
@@ -249,67 +252,66 @@ VERSION 208				  [Fri Jul 30 10:07:21 EDT 2004]
   ending time. It also comes with a mechanism for display movies. It does
   *not* yet provide primitives for dealing with mouse clicks.
 
-  The performance problems from the TS! workshops have been eliminated. 
+  The performance problems from the TS! workshops have been eliminated.
 
 ------------------------------------------------------------------------
-VERSION 207  			          [Fri May 14 12:52:43 EDT 2004]
+VERSION 207                               [Fri May 14 12:52:43 EDT 2004]
 
 * draw.ss now comes with functional callbacks for maintaining a visual
-  world: big-bang, on-key-event, on-tick, end-of-time 
+  world: big-bang, on-key-event, on-tick, end-of-time
 
-* draw also comes now as a ProfessorJ implementation in the htdch 
+* draw also comes now as a ProfessorJ implementation in the htdch
   collects directory. This is an experimental teachpack. Docs are available
   via doc.txt. Experiences with students may change this teachpack
-  significantly. 
- 
-------------------------------------------------------------------------
-VERSION 203  			          [Thu Dec  5 09:10:40 EST 2002]
-
-* added get-key-event to draw.ss 
+  significantly.
 
 ------------------------------------------------------------------------
-VERSION 201  			          [Wed Jul 24 22:44:19 EDT 2002]
+VERSION 203                               [Thu Dec  5 09:10:40 EST 2002]
 
-* added servlet.ss and servlet2.ss 
+* added get-key-event to draw.ss
+
+------------------------------------------------------------------------
+VERSION 201                               [Wed Jul 24 22:44:19 EDT 2002]
+
+* added servlet.ss and servlet2.ss
 
 * all exported functions are primitive operators or higher order primitives
   this improves error reporting behavior in the Beginner languages (before
   higher-order functions are introduced)
 
-* removed: 
-  pingp-play.ss   
-  pingp.ss        
-  protect-play.ss 
-  rectangle.ss    
-  these teachpacks aren't mentioned in htdp, and aren't used for any 
+* removed:
+  pingp-play.ss
+  pingp.ss
+  protect-play.ss
+  rectangle.ss
+  these teachpacks aren't mentioned in htdp, and aren't used for any
   of the additional exercises
 
 ------------------------------------------------------------------------
-VERSION 200alpha1			  [Wed Nov 21 13:07:43 EST 2001]
+VERSION 200alpha1                         [Wed Nov 21 13:07:43 EST 2001]
 
-* Robby converted to modules 
+* Robby converted to modules
 
-* Fixed bug in convert.ss 
+* Fixed bug in convert.ss
 
 ------------------------------------------------------------------------
-VERSION 103				  []
+VERSION 103                               []
 
 * modified draw.ss interface so that colors are symbols
-  use 'red instead of RED 
+  use 'red instead of RED
 
 ------------------------------------------------------------------------
-VERSION 102				  [Thu Jun 22 18:22:48 CDT 2000]
+VERSION 102                               [Thu Jun 22 18:22:48 CDT 2000]
 
 * Added "convert.ss" to teachpacks/htdp
 
 * Fixed error messages for some arity tests
 
-* Fixed documentation 
+* Fixed documentation
 
 ------------------------------------------------------------------------
 
-VERSION 101				  [Tue Oct 26 22:28:38 CDT 1999]
-
+VERSION 101                               [Tue Oct 26 22:28:38 CDT 1999]
 
 * TERMINOLOGY: We decided to eliminate the terminology "teaching
   library", because it is easily confused with a plain library. As of
@@ -326,23 +328,23 @@ VERSION 101				  [Tue Oct 26 22:28:38 CDT 1999]
     PLTHOME is the location of the PLT software
 
   The htdp subdirectory contains those files that matter to students who
-  use HtDP. 
+  use HtDP.
 
 * CHANGES in individual teachpacks: The most important and most visible
   change in the teachpack support concerns
 
-    hangman.ss 
+    hangman.ss
 
   It now provides two GUI interfaces: (1) hangman for three-letter words
   and (2) hangman-list for words of arbitrary length. See the teachpack
-  documentation for details. 
+  documentation for details.
 
-  The teachpack 
+  The teachpack
 
     master.ss
 
   now exports the procedure _master_, which is exactly like the procedure
-  _repl_ in the old master-lib.ss library. 
+  _repl_ in the old master-lib.ss library.
 
   The corresponding exercises in HtDP have been rewritten and are posted
   on the HtDP Web site.
@@ -350,14 +352,14 @@ VERSION 101				  [Tue Oct 26 22:28:38 CDT 1999]
 * REMINDER: The *purpose* of teachpacks is to supplement student programs
   with code that is beyond the teaching languages (Beginner, Intermediate,
   Advanced). For example, to enable students to play hangman, we supply a
-  teachpack that 
-    - implements the random choosing of a word 
-    - maintains the state variable of how many guesses have gone wrong 
-    - manages the GUI. 
+  teachpack that
+    - implements the random choosing of a word
+    - maintains the state variable of how many guesses have gone wrong
+    - manages the GUI.
   All these tasks are beyond students in the third week and/or impose
-  nothing memorization of currently useless knowledge on students. 
+  nothing memorization of currently useless knowledge on students.
 
-  A teachpack is a signed unit that imports the interface:   
+  A teachpack is a signed unit that imports the interface:
 
     plt:userspace^
 
@@ -373,20 +375,20 @@ graphics library. In order to use the graphics library in your
 teachpacks, use a compound unit and link in graphics directly. For example:
 
   (require-library "graphics.ss" "graphics")
-  
+
   (define-signature my-teachpack^ (four))
-  
+
   (define my-teachpack
     (unit/sig my-teachpack^
-      
-      (import plt:userspace^ 
+
+      (import plt:userspace^
               graphics^)
-      
+
       '...
-      
+
       (define four 4)))
-  
-  (compound-unit/sig 
+
+  (compound-unit/sig
    (import [P : plt:userspace^])
    (link [G : graphics^ ((require-library "graphicr.ss" "graphics")
                          (P : mzlib:file^)

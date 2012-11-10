@@ -2,7 +2,7 @@
 
 var => = 0
 
-pattern match_pattern (){ [element:expression_list]} { [ $ element_each_result , $ ...]}
+pattern match_pattern (){ [element:expression_list]}, { [ $ element_each_result , $ ...]}
 
 pattern match_clause (| =>){ | pattern:match_pattern => out:expression , }
 

@@ -20,6 +20,7 @@ module_var {
   gcMARK2(mv->modidx, gc);
   gcMARK2(mv->sym, gc);
   gcMARK2(mv->insp, gc);
+  gcMARK2(mv->shape, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Module_Variable));
@@ -85,6 +86,12 @@ small_object {
  mark:
   gcMARK2(((Scheme_Small_Object *)p)->u.ptr_value, gc);
 
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Small_Object));
+}
+
+small_atomic_obj {
+ mark:
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Small_Object));
 }
@@ -467,12 +474,6 @@ escaping_cont_proc {
   gcBYTES_TO_WORDS(sizeof(Scheme_Escaping_Cont));
 }
 
-char_obj {
- mark:
- size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Small_Object));
-}
-
 bignum_obj {
   Scheme_Bignum *b = (Scheme_Bignum *)p;
 
@@ -550,7 +551,7 @@ symbol_obj {
 
  mark:
  size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Symbol) + s->len - 3);
+  gcBYTES_TO_WORDS(sizeof(Scheme_Symbol) + s->len + 1 - mzFLEX4_DELTA);
 }
 
 cons_cell {
@@ -949,7 +950,6 @@ prefix_val {
   int i;
   for (i = pf->num_slots; i--; )
     gcMARK2(pf->a[i], gc);
-  gcMARK2(pf->import_map, gc);
  size:
   gcBYTES_TO_WORDS((sizeof(Scheme_Prefix) 
 		    + ((pf->num_slots-mzFLEX_DELTA) * sizeof(Scheme_Object *))
@@ -1310,6 +1310,7 @@ mark_optimize_info {
   gcMARK2(i->transitive_use_len, gc);
   gcMARK2(i->context, gc);
   gcMARK2(i->logger, gc);
+  gcMARK2(i->types, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Optimize_Info));
@@ -2100,17 +2101,6 @@ mark_struct_type_val {
   gcBYTES_TO_WORDS((sizeof(Scheme_Struct_Type)
 		    + ((t->name_pos + 1 - mzFLEX_DELTA) 
                        * sizeof(Scheme_Struct_Type *))));
-}
-
-mark_struct_proc_info {
- mark:
-  Struct_Proc_Info *i = (Struct_Proc_Info *)p;
-
-  gcMARK2(i->struct_type, gc);
-  gcMARK2(i->func_name, gc);
-
- size:
-  gcBYTES_TO_WORDS(sizeof(Struct_Proc_Info));
 }
 
 mark_struct_property {

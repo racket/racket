@@ -1,14 +1,14 @@
-#lang racket
+#lang racket/base
 
 (require lang/private/teachprims
-         (for-syntax lang/private/rewrite-error-message)
-         scheme/class
-         scheme/match
-	 lang/private/continuation-mark-key         
+         (for-syntax racket/base
+                     lang/private/rewrite-error-message)
+         racket/class
+         racket/match
+         lang/private/continuation-mark-key
          lang/private/rewrite-error-message
-         (only-in scheme/base for memf findf)
          "test-engine.rkt"
-	 "test-info.scm")
+         "test-info.scm")
 
 (require (for-syntax stepper/private/syntax-property))
 
@@ -72,7 +72,7 @@
       #`(define #,bogus-name
           #,(stepper-syntax-property
              #`(let ([test-engine (namespace-variable-value
-				   'test~object #f builder (current-namespace))])
+                                   'test~object #f builder (current-namespace))])
                  (when test-engine
                    (insert-test test-engine
                                 (lambda ()

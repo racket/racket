@@ -15,34 +15,35 @@
 
 (define files-to-open (command-line #:args filenames filenames))
 
-(define the-date (seconds->date
-                  (let ([ssec (getenv "PLTDREASTERSECONDS")])
-                    (if ssec
-                        (string->number ssec)
-                        (current-seconds)))))
+(define startup-date 
+  (seconds->date
+   (let ([ssec (getenv "PLTDREASTERSECONDS")])
+     (if ssec
+         (string->number ssec)
+         (current-seconds)))))
 
 ;; updates the command-line-arguments with only the files
 ;; to open. See also main.rkt.
 (current-command-line-arguments (apply vector files-to-open))
 
-(define (currently-the-weekend?)
-  (define dow (date-week-day the-date))
+(define (weekend-date? date)
+  (define dow (date-week-day date))
   (or (= dow 6) (= dow 0)))
 
-(define (valentines-day?)
-  (and (= 2 (date-month the-date))
-       (= 14 (date-day the-date))))
+(define (valentines-date? date)
+  (and (= 2 (date-month date))
+       (= 14 (date-day date))))
 
-(define (current-icon-state)
+(define (icon-state date)
   (cond
-    [(valentines-day?) 'valentines]
-    [(currently-the-weekend?) 'weekend]
+    [(valentines-date? date) 'valentines]
+    [(weekend-date? date) 'weekend]
     [else 'normal]))
 
 (define-values (texas-independence-day? prince-kuhio-day? kamehameha-day? halloween?)
-  (let* ([month (date-month the-date)]
-         [day (date-day the-date)]
-         [dow (date-week-day the-date)])
+  (let* ([month (date-month startup-date)]
+         [day (date-day startup-date)]
+         [dow (date-week-day startup-date)])
     (values (and (= 3 month) (= 2 day))
             (and (= 3 month) (= 26 day))
             (and (= 6 month) (= 11 day))
@@ -119,7 +120,7 @@
 
 (define the-bitmap-spec
   (cond
-    [(valentines-day?)
+    [(valentines-date? startup-date)
      valentines-days-spec]
     [(or prince-kuhio-day? kamehameha-day?)
      (set-splash-progress-bar?! #f)
@@ -131,7 +132,7 @@
      (collection-file-path "texas-plt-bw.gif" "icons")]
     [halloween?
      (collection-file-path "PLT-pumpkin.png" "icons")]
-    [(currently-the-weekend?)
+    [(weekend-date? startup-date)
      weekend-bitmap-spec]
     [else normal-bitmap-spec]))
 
@@ -139,7 +140,7 @@
 (set-splash-char-observer drracket-splash-char-observer)
 
 (when (eq? (system-type) 'macosx)
-  (define initial-state (current-icon-state))
+  (define initial-state (icon-state startup-date))
   (define weekend-bitmap (if (equal? the-bitmap-spec weekend-bitmap-spec)
                              the-splash-bitmap
                              #f))
@@ -167,7 +168,7 @@
     (λ ()
       (let loop ([last-state initial-state])
         (sleep 10)
-        (define next-state (current-icon-state))
+        (define next-state (icon-state (seconds->date (current-seconds))))
         (unless (equal? last-state next-state)
           (set-icon next-state))
         (loop next-state))))))

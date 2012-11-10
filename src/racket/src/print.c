@@ -124,7 +124,7 @@ static void print_vector(Scheme_Object *vec, int notdisplay, int compact,
 static void print_char(Scheme_Object *chobj, int notdisplay, PrintParams *pp);
 static char *print_to_string(Scheme_Object *obj, intptr_t * volatile len, int write,
 			     Scheme_Object *port, intptr_t maxl, 
-                             Scheme_Object *qq_depth);
+                             Scheme_Object *qq_depth, int *_release_to_quick);
 
 static void custom_write_struct(Scheme_Object *s, Scheme_Hash_Table *ht, 
                                 Scheme_Marshal_Tables *mt,
@@ -384,7 +384,7 @@ static void *print_to_string_k(void)
   p->ku.k.p2 = NULL;
   p->ku.k.p3 = NULL;
 
-  return (void *)print_to_string(obj, len, iswrite, NULL, maxl, qq_depth);
+  return (void *)print_to_string(obj, len, iswrite, NULL, maxl, qq_depth, NULL);
 }
 
 char *scheme_write_to_string_w_max(Scheme_Object *obj, intptr_t *len, intptr_t maxl)
@@ -510,8 +510,7 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
       || SCHEME_MUTABLE_PAIRP(obj)
       || (pp->print_box && SCHEME_CHAPERONE_BOXP(obj))
       || SCHEME_CHAPERONE_VECTORP(obj)
-      || ((SAME_TYPE(t, scheme_structure_type)
-	   || SAME_TYPE(t, scheme_proc_struct_type))
+      || (SCHEME_CHAPERONE_STRUCTP(obj)
           && ((pp->print_struct 
 	       && PRINTABLE_STRUCT(obj, pp))
 	      || scheme_is_writable_struct(obj)))
@@ -566,8 +565,7 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
       if ((for_write < 3) && res)
 	return res;
     }
-  } else if (SAME_TYPE(t, scheme_structure_type)
-	     || SAME_TYPE(t, scheme_proc_struct_type)) {
+  } else if (SCHEME_CHAPERONE_STRUCTP(obj)) {
     if (scheme_is_writable_struct(obj)) {
       if (pp->print_unreadable) {
         res = check_cycles(writable_struct_subs(obj, for_write, pp), for_write, ht, pp);
@@ -589,7 +587,12 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
         res = 0;
     } else {
       /* got here => printable */
-      int i = SCHEME_STRUCT_NUM_SLOTS(obj);
+      int i;
+
+      if (SCHEME_CHAPERONEP(obj))
+        i = SCHEME_STRUCT_NUM_SLOTS(SCHEME_CHAPERONE_VAL(obj));
+      else
+        i = SCHEME_STRUCT_NUM_SLOTS(obj);
 
       if ((for_write >= 3) && !SCHEME_PREFABP(obj))
         res = 0x1;
@@ -597,7 +600,11 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
         res = 0;
       while (i--) {
 	if (scheme_inspector_sees_part(obj, pp->inspector, i)) {
-	  res2 = check_cycles(((Scheme_Structure *)obj)->slots[i], for_write, ht, pp);
+          if (SCHEME_CHAPERONEP(obj))
+            val = scheme_struct_ref(obj, i);
+          else
+            val = ((Scheme_Structure *)obj)->slots[i];
+	  res2 = check_cycles(val, for_write, ht, pp);
           res |= res2;
           if ((for_write < 3) && res)
             return res;
@@ -867,7 +874,12 @@ static void setup_graph_table(Scheme_Object *obj, int for_write, Scheme_Hash_Tab
 	setup_graph_table(obj, for_write, ht, counter, pp);
       }
     } else {
-      int i = SCHEME_STRUCT_NUM_SLOTS(obj);
+      int i;
+
+      if (SCHEME_CHAPERONEP(obj))
+        i = SCHEME_STRUCT_NUM_SLOTS(SCHEME_CHAPERONE_VAL(obj));
+      else
+        i = SCHEME_STRUCT_NUM_SLOTS(obj);
 
       while (i--) {
 	if (scheme_inspector_sees_part(obj, pp->inspector, i))
@@ -956,7 +968,7 @@ static char *
 print_to_string(Scheme_Object *obj, 
 		intptr_t * volatile len, int write,
 		Scheme_Object *port, intptr_t maxl,
-                Scheme_Object *qq_depth)
+                Scheme_Object *qq_depth, int *_release_to_quick)
 {
   Scheme_Hash_Table *ht;
   Scheme_Hash_Table *uq_ht;
@@ -1111,8 +1123,14 @@ print_to_string(Scheme_Object *obj,
 
   params.inspector = NULL;
 
-  if (port && !quick_print_buffer)
-    quick_print_buffer = ca;
+  if (_release_to_quick) {
+    *_release_to_quick = 0;
+    if (params.print_buffer != ca) {
+      if (!quick_print_buffer)
+        quick_print_buffer = ca;
+    } else
+      *_release_to_quick = 1;
+  }
 
   return params.print_buffer;
 }
@@ -1124,6 +1142,7 @@ print_to_port(char *name, Scheme_Object *obj, Scheme_Object *port, int notdispla
   Scheme_Output_Port *op;
   char *str;
   intptr_t len;
+  int rel;
   
   op = scheme_output_port_record(port);
   if (op->closed)
@@ -1131,9 +1150,12 @@ print_to_port(char *name, Scheme_Object *obj, Scheme_Object *port, int notdispla
                      "  port: %V", 
                      name, port);
 
-  str = print_to_string(obj, &len, notdisplay, port, maxl, qq_depth);
+  str = print_to_string(obj, &len, notdisplay, port, maxl, qq_depth, &rel);
 
   scheme_write_byte_string(str, len, port);
+
+  if (rel && !quick_print_buffer)
+    quick_print_buffer = str;
 }
 
 static void print_this_string(PrintParams *pp, const char *str, int offset, int autolen)
@@ -2850,10 +2872,13 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
         if (pp->print_syntax) {
           intptr_t slen;
           char *str;
+          int rel;
           print_utf8_string(pp, " ", 0, 1);
           str = print_to_string(scheme_syntax_to_datum((Scheme_Object *)stx, 0, NULL),
-                                &slen, 1, NULL, pp->print_syntax, NULL);
+                                &slen, 1, NULL, pp->print_syntax, NULL, &rel);
           print_utf8_string(pp, str, 0, slen);
+          if (rel && !quick_print_buffer)
+            quick_print_buffer = str;
         }
         print_utf8_string(pp, ">", 0, 1);
       } else {
@@ -2896,10 +2921,11 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
           print(mv->modidx, notdisplay, 1, ht, mt, pp);
         }
 	print(mv->sym, notdisplay, 1, ht, mt, pp);
+        print(mv->shape ? mv->shape : scheme_false, notdisplay, 1, ht, mt, pp);
         if (flags & 0x3) {
           print_compact_number(pp, -3-(flags&0x3));
         }
-        if (((Module_Variable *)obj)->mod_phase) {
+        if (mv->mod_phase) {
           print_compact_number(pp, -2);
           print_compact_number(pp, mv->mod_phase);
         }

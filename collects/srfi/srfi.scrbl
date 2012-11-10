@@ -152,6 +152,7 @@ functions.
  (reduce #f "reduce")
  (reduce-right #f "reduce-right")
  (unfold #f "unfold")
+ (unfold-right #f "unfold-right")
  (map #f "map")
  (for-each #f "srfi-1.html")
  (append-map #f "append-map")

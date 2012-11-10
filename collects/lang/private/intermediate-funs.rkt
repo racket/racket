@@ -173,7 +173,7 @@
 		  (apply max a-list)
 		  ]
     }
-    @defproc[(compose [f (X -> Y)] [g (Y -> Z)]) (X -> Z)]{
+    @defproc[(compose [f (Y -> Z)] [g (X -> Y)]) (X -> Z)]{
     Composes a sequence of procedures into a single procedure:
     @codeblock{(compose f g) = (lambda (x) (f (g x)))}
     @interaction[#:eval (isl)

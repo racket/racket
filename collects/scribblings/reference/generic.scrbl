@@ -4,10 +4,11 @@
 @title[#:tag "struct-generics"]{Generic Interfaces}
 @; @author[@author+email["Eli Barzilay" "eli@racket-lang.org"]
 @;         @author+email["Jay McCarthy" "jay@racket-lang.org"]
-@; 	@author+email["Vincent St-Amour" "stamourv@racket-lang.org"]
-@; 	@author+email["Asumu Takikawa" "asumu@racket-lang.org"]]
+@;         @author+email["Vincent St-Amour" "stamourv@racket-lang.org"]
+@;         @author+email["Asumu Takikawa" "asumu@racket-lang.org"]]
 
 @defmodule[racket/generic]
+
 
 A @deftech{generic interface} allows per-type methods to be
 associated with generic functions. Generic functions are defined
@@ -17,14 +18,19 @@ a structure type are defined using the @racket[#:methods] keyword
 
 @defform/subs[(define-generics id [#:defined-table defined-table-id]
                 [method-id . kw-formals*]
-                ...)
+                ...
+                maybe-defaults)
               ([kw-formals* (arg* ...)
                             (arg* ...+ . rest-id)
                             rest-id]
                [arg* arg-id
                      [arg-id]
                      (code:line keyword arg-id)
-                     (code:line keyword [arg-id])])]{
+                     (code:line keyword [arg-id])]
+               [maybe-defaults (code:line)
+                               (code:line #:defaults ([pred?
+                                                       method-impl ...]
+                                                      ...))])]{
 
 Defines 
 
@@ -59,7 +65,13 @@ immutable @tech{hash table} that maps symbols corresponding to method
 names to booleans representing whether or not that method is
 implemented by the instance. This table is intended for use by
 higher-level APIs to adapt their behavior depending on method
-availability.}
+availability.
+
+When @racket[maybe-defaults] is provided, each generic function
+uses @racket[pred?]s to dispatch to the given default implementations,
+@racket[method-impl]s, before dispatching to the generic method table.
+The syntax of the @racket[method-impl]s is the same as the methods
+provided for the @racket[#:methods] keyword for @racket[struct].}
 
 The @racket[id]@racketidfont{/c} combinator is intended to be used to
 contract the range of a constructor procedure for a struct type that

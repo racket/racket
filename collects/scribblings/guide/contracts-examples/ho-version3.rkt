@@ -18,8 +18,8 @@
           (r (f lov)
              (lambda (r)
                (define f@r (f r))
-               (and (for/and ((v lov)) (>= f@r (f v)))		   
-                    (eq? (first (memf (lambda (v) (= (f v) f@r)) lov)) 
+               (and (for/and ((v lov)) (>= f@r (f v)))
+                    (eq? (first (memf (lambda (v) (= (f v) f@r)) lov))
                          r)))))])))
 
 (module b racket/base

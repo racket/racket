@@ -1,5 +1,6 @@
 #lang racket
 (require redex)
+(provide λv red typeof)
 
 (define-language λv
   (e (e e ...) (if0 e e e) (+ e e) x v)
@@ -73,7 +74,6 @@
 (define-judgment-form λv
   #:mode (typeof I I O)
   #:contract (typeof G e t)
-  [(typeof G 1234 num)]
   [(typeof G number num)]
   [(typeof G (+ e_1 e_2) num)
    (typeof G e_1 num)

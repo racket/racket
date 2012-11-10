@@ -268,6 +268,7 @@ void scheme_future_continue_after_gc();
 void scheme_check_future_work();
 void scheme_future_gc_pause();
 void scheme_future_check_custodians();
+int scheme_future_is_runtime_thread();
 
 #endif /* MZ_USE_FUTURES */
 

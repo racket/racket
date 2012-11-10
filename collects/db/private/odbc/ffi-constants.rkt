@@ -24,7 +24,7 @@
 
 (define SQL_ATTR_ODBC_VERSION   200)
 (define SQL_OV_ODBC2              2)
-(define	SQL_OV_ODBC3              3)
+(define SQL_OV_ODBC3              3)
 
 (define SQL_SUCCESS               0)
 (define SQL_SUCCESS_WITH_INFO     1)

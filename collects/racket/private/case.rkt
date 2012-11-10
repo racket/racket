@@ -32,18 +32,45 @@
                              (case/dispatch   tmp [(k ...) e1 e2 ...] ... [else x1 x2 ...]))))]
       
       ;; Error cases
-      [(_ v (bad e1 e2 ...) . rest)
-       (raise-syntax-error 
-        #f
-        "bad syntax (not a datum sequence)"
-        stx
-        (syntax bad))]
-      [(_ v clause . rest)
-       (raise-syntax-error
-        #f
-        "bad syntax (missing expression after datum sequence)"
-        stx
-        (syntax clause))]
+      [(_ v clause ...)
+       (let loop ([clauses (syntax->list #'(clause ...))])
+         (unless (null? clauses)
+           (let ([clause (car clauses)])
+             (syntax-case clause ()
+               [((_ ...) _ _ ...)
+                (loop (cdr clauses))]
+               [((_ ...) . _)
+                (syntax-case clause ()
+                  [(_)
+                   (raise-syntax-error
+                    #f
+                    "bad syntax (missing expression after datum sequence)"
+                    stx
+                    clause)]
+                  [(_ . _)
+                   (raise-syntax-error
+                    #f
+                    "bad syntax (illegal use of `.' in clause)"
+                    stx
+                    clause)]
+                  [_
+                   (raise-syntax-error 
+                    #f
+                    "bad syntax (ill-formed clause)"
+                    stx
+                    clause)])]
+               [(bad . _)
+                (raise-syntax-error 
+                 #f
+                 "bad syntax (not a datum sequence)"
+                 stx
+                 (syntax bad))]
+               [_
+                (raise-syntax-error 
+                 #f
+                 "bad syntax (ill-formed clause)"
+                 stx
+                 (syntax bad))]))))]
       [(_ . v)
        (not (null? (syntax-e (syntax v))))
        (raise-syntax-error 

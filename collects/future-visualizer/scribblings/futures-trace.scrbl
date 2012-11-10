@@ -1,5 +1,7 @@
 #lang scribble/doc 
-@(require "common.rkt" (for-label racket/future future-visualizer/trace)) 
+@(require "common.rkt" 
+          (for-label racket/future 
+                     future-visualizer/trace)) 
 
 @title[#:tag "futures-trace"]{Futures Tracing} 
 
@@ -63,10 +65,11 @@ the execution of parallel programs written using @racket[future].
 }
   
 @defstruct[indexed-future-event ([index exact-nonnegative-integer?] 
-                                 [event (or future-event? gc-info?)])]{
+                                 [event any])]{
   Represents an individual log message in a program trace.  In addition to 
   future events, the tracing code also records garbage collection events; hence 
-  the @racket[event] field may contain either a @racket[future-event] or @racket[gc-info], 
+  the @racket[event] field may contain either a @racket[future-event] or gc-info 
+  @(tech "prefab" #:doc '(lib "scribblings/reference/reference.scrbl")) struct (see @refsecref["garbagecollection"]), 
   where the latter describes a GC operation.  Because multiple 
   @racket[future-event] structures may contain identical timestamps, the 
   @racket[index] field ranks them in the order in which they were recorded 
@@ -82,19 +85,3 @@ the execution of parallel programs written using @racket[future].
                         #:prefab]{
  Represents a future event as logged by the run-time system. See
 @refsecref["future-logging"] for more information.}
-  
-@defstruct[gc-info ([major? boolean?] 
-                    [pre-used integer?] 
-                    [pre-admin integer?] 
-                    [code-page-total integer?] 
-                    [post-used integer?] 
-                    [post-admin integer?] 
-                    [start-time integer?] 
-                    [end-time integer?] 
-                    [start-real-time real?] 
-                    [end-real-time real?]) 
-                   #:prefab]{
-  Represents a garbage collection.  The only fields used by the visualizer 
-  are @racket[start-real-time] and @racket[end-real-time], which are inexact 
-  numbers representing time in the same way as @racket[current-inexact-milliseconds].
-}

@@ -56,15 +56,15 @@
   ;; it may specify a clock-tick rate
   [on-tick DEFAULT #'#f
            (function-with-arity
-            1 
-            except
-            [(_ f rate) 
-             #'(list 
+            1
+            #:except
+            [(_ f rate)
+             #'(list
                 (proc> 'on-tick (f2h f) 1)
                 (num> 'on-tick rate (lambda (x) (and (real? x) (positive? x)))
                       "positive number" "rate"))]
             [(_ f rate limit)
-             #'(list 
+             #'(list
                 (proc> 'on-tick (f2h f) 1)
                 (num> 'on-tick rate (lambda (x) (and (real? x) (positive? x)))
                       "positive number" "rate")
@@ -82,11 +82,11 @@
   ;; on-draw must specify a rendering function; 
   ;;   it may specify dimensions
   [on-draw to-draw DEFAULT #'#f
-           (function-with-arity 
-            1 
-            except
+           (function-with-arity
+            1
+            #:except
             [(_ f width height)
-             #'(list (proc> 'to-draw (f2h f) 1) 
+             #'(list (proc> 'to-draw (f2h f) 1)
                      (nat> 'to-draw width "width")
                      (nat> 'to-draw height "height"))])]
   ;; World Nat Nat MouseEvent -> World 
@@ -107,9 +107,9 @@
   ;; World -> Boolean 
   ;; -- stop-when must specify a predicate; it may specify a rendering function
   [stop-when DEFAULT #'False
-             (function-with-arity 
+             (function-with-arity
               1
-              except
+              #:except
               [(_ stop? last-picture)
                #'(list (proc> 'stop-when (f2h stop?) 1)
                        (proc> 'stop-when (f2h last-picture) 1))])]

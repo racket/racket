@@ -64,6 +64,7 @@
    display-origin
    display-count
    flush-display
+   get-current-mouse-state
    fill-private-color
    cancel-quit
    get-control-font-face

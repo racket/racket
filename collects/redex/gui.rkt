@@ -9,6 +9,8 @@
          "private/matcher.rkt"
          "private/reduction-semantics.rkt"
          "private/size-snip.rkt"
+         "private/show-derivations.rkt"
+         "private/judgment-form.rkt"
          mrlib/graph
          racket/contract
          racket/class
@@ -61,6 +63,17 @@
                   #:graph-pasteboard-mixin (make-mixin-contract graph-pasteboard<%>)
                   #:post-process (-> (is-a?/c graph-pasteboard<%>) any/c))
                  any)]
+ 
+ [show-derivations (->* ((cons/c derivation? (listof derivation?)))
+                        (#:pp pp-contract
+                         #:racket-colors? boolean?
+                         #:init-derivation exact-nonnegative-integer?)
+                        any)]
+ [derivation/ps (->* (derivation? path-string?)
+                     (#:pp pp-contract
+                      #:racket-colors? boolean?
+                      #:post-process (-> (is-a?/c pasteboard%) any))
+                     any)]
  
  [term-node? (-> any/c boolean?)]
  [term-node-parents (-> term-node? (listof term-node?))]

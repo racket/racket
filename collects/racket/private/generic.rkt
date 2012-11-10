@@ -2,7 +2,8 @@
 (require racket/local
          (for-syntax racket/base
                      racket/local
-                     racket/syntax)
+                     racket/syntax
+                     syntax/stx)
          (only-in "define-struct.rkt" define/generic))
 
 (define-for-syntax (keyword-stx? v)
@@ -20,6 +21,10 @@
     ;; the method header's self argument.
     [(_ (header name prop:name name?
                 #:defined-table defined-table
+                #:defaults
+                ([pred? impl ...]
+                 ;; TODO fallthrough?
+                 ...)
                 ;; are we being passed an existing struct property? If so,
                 ;; this kw arg is bound to the struct property accessor, and
                 ;; we don't define the struct property
@@ -36,13 +41,32 @@
           (identifier? #'name?)
           (identifier? #'defined-table)
           (let ([generics (syntax->list #'(generic ...))])
-            (and (list? generics) (andmap identifier? generics))))
-     (let* ([idxs (for/list ([i (in-naturals 0)]
-                             [_ (syntax->list #'(generic ...))])
-                    i)]
+            (and (list? generics)
+                 (andmap identifier? generics))))
+     (let* ([generics (syntax->list #'(generic ...))]
             [name-str (symbol->string (syntax-e #'name?))]
-            [generics (syntax->list #'(generic ...))]
-            [prop-defined-already? (syntax-e #'defined-already?)])
+            [idxs (for/list ([i (in-naturals 0)]
+                             [_ generics])
+                    i)]
+            [prop-defined-already? (syntax-e #'defined-already?)]
+            ;; syntax introducers for each default implementation set
+            ;; these connect the default method definitions to the
+            ;; appropriate dispatch reference in the generic function body
+            [pred-introducers (map (λ (_) (make-syntax-introducer))
+                                   (syntax->list #'(pred? ...)))]
+            ;; mark each set of default methods for a default set and
+            ;; then flatten all of the default definitions
+            [method-impl-list
+             (apply append
+              (map syntax->list
+                   (for/list ([introducer pred-introducers]
+                              [meths (syntax->list #'((impl ...) ...))])
+                     (introducer meths))))]
+            ;; mark each generic function name for a default set
+            [marked-generics
+             (for/list ([generic generics])
+               (for/list ([introducer pred-introducers])
+                 (introducer generic)))])
        (with-syntax ([name-str name-str]
                      [how-many-generics (length idxs)]
                      [(generic-arity-coerce ...) (generate-temporaries #'(generic ...))]
@@ -100,7 +124,10 @@
                      [get-generics
                       (if prop-defined-already?
                           #'defined-already?
-                          (generate-temporary 'get-generics))])
+                          (generate-temporary 'get-generics))]
+                     ;; for each generic method, builds a cond clause to do the
+                     ;; predicate dispatch found in method-impl-list
+                     [((cond-impl ...) ...) marked-generics])
          #`(begin
              (define-syntax name (list #'prop:name #'generic ...))
              ; XXX optimize no kws or opts
@@ -114,25 +141,30 @@
              #,@(if prop-defined-already?
                     '() ; we don't need to define it
                     (list
-                     #'(define-values (prop:name name? get-generics)
-                         (make-struct-type-property
-                          'name
-                          (lambda (generic-vector si)
-                            (unless (vector? generic-vector)
-                              (error 'name
-                                     "bad generics table, expecting a vector, got ~e"
-                                     generic-vector))
-                            (unless (= (vector-length generic-vector)
-                                       how-many-generics)
-                              (error 'name
-                                     "bad generics table, expecting a vector of length ~e, got ~e"
-                                     how-many-generics
-                                     (vector-length generic-vector)))
-                            (vector (let ([mthd-generic (vector-ref generic-vector generic-idx)])
-                                      (and mthd-generic
-                                           (generic-arity-coerce mthd-generic)))
-                                    ...))
-                          null #t))))
+                     #'(begin
+                         (define-values (prop:name -name? get-generics)
+                           (make-struct-type-property
+                            'name
+                            (lambda (generic-vector si)
+                              (unless (vector? generic-vector)
+                                (error 'name
+                                       "bad generics table, expecting a vector, got ~e"
+                                       generic-vector))
+                              (unless (= (vector-length generic-vector)
+                                         how-many-generics)
+                                (error 'name
+                                       "bad generics table, expecting a vector of length ~e, got ~e"
+                                       how-many-generics
+                                       (vector-length generic-vector)))
+                              (vector (let ([mthd-generic (vector-ref generic-vector generic-idx)])
+                                        (and mthd-generic
+                                             (generic-arity-coerce mthd-generic)))
+                                      ...))
+                            null #t))
+                         ;; overrides the interface predicate so that any of the default
+                         ;; types also answer #t
+                         (define (name? x)
+                           (or (-name? x) (pred? x) ...)))))
              ;; Hash table mapping method name symbols to
              ;; whether the given method is implemented
              (define (defined-table this)
@@ -147,6 +179,8 @@
                              (generic generic-idx) ...))
                     ;; don't define a contract when given #f
                     '())
+             ;; Define default implementations
+             #,@method-impl-list
              ;; Define generic functions
              (define generic
                (generic-arity-coerce
@@ -162,11 +196,16 @@
                  ; XXX (non-this ... this . rst)
                  (lambda given-args
                    (define this (list-ref given-args generic-this-idx))
-                   (if (name? this)
-                       (let ([m (vector-ref (get-generics this) generic-idx)])
-                         (if m
-                             (apply m given-args)
-                             (error 'generic "not implemented for ~e" this)))
-                       (raise-argument-error 'generic name-str this))))))
+                   (cond
+                    ;; default cases
+                    [(pred? this) (apply cond-impl given-args)]
+                    ...
+                    ;; Fallthrough
+                    [(name? this)
+                     (let ([m (vector-ref (get-generics this) generic-idx)])
+                       (if m
+                           (apply m given-args)
+                           (error 'generic "not implemented for ~e" this)))]
+                    [else (raise-argument-error 'generic name-str this)])))))
              ...)))]))
 

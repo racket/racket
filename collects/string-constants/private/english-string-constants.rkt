@@ -1153,16 +1153,40 @@ please adhere to these guidelines:
  (experimental-languages "Experimental Languages")
   (initial-language-category "Initial language")
   (no-language-chosen "No language chosen")
- 
+ (other-languages "Other Languages")
+  
   (module-language-name "Determine language from source")
- (module-language-one-line-summary "Reads the #lang line to specify the actual language")
+ (module-language-one-line-summary "The #lang line specifies the actual language")
   (module-language-auto-text "Automatic #lang line") ;; shows up in the details section of the module language
    
   ;; for the upper portion of the language dialog
-  (use-language-in-source "Use the language declared in the source")
+  (the-racket-language "The Racket Language")
   (choose-a-language "Choose a language")
-  (lang-in-source-discussion
-   "The #lang line at the start of a program declares its language. This is the default and preferred mode for DrRacket.")
+  
+  ;; the next two string constants appear in the
+  ;; language dialog with a list
+  ;; of example languages appearing between them
+  (racket-language-discussion "Start your program with #lang to specify the desired dialect. For example:\n\n")
+  (racket-language-discussion-end "\n... and many more")
+  
+  ;; the next three string constants are put into a message-box dialog
+  ;; that appears when the user clicks on the example #lang languages
+  ;; in the language dialog. The first one always appears and then either
+  ;; the second or the third appears. The second one has the clicked
+  ;; on #lang line placed into the ~a, and third one has the 
+  ;; current #lang line in the first ~a and the clicked on in the second one.
+  ;; The two comments are separated by a blank line.
+  (racket-dialect-in-buffer-message "Racket dialects are generally chosen by editing the buffer directly, not by selecting these entries in the language dialog.")
+  (racket-dialect-add-new-#lang-line "That said, shall I add “~a” to the beginning of the definitions window?")
+  (racket-dialect-replace-#lang-line "That said, I see you have “~a” in your file; shall I replace it with “~a”?")
+  (racket-dialect-already-same-#lang-line "I see you already have “~a” in your file, however; so you should be all set to start programming!")
+  
+  ;; in the dialog containing the above strings, one of these is a button that appears
+  (add-#lang-line "Add #lang line")
+  (replace-#lang-line "Replace #lang line")
+  
+  ;; for the 'new drracket user' dialog
+  (use-language-in-source "Use the language declared in the source")
   
   ;;; from the `not a language language' used initially in drscheme.
   (must-choose-language "DrRacket cannot process programs until you choose a programming language.")

@@ -8,15 +8,15 @@
 #|
 
  +------------------------------------------------------------------+
- | from: text text text text text text				    |
- | from*: text text text text text text				    |
- | ...								    |
- | ...								    |
+ | from: text text text text text text                              |
+ | from*: text text text text text text                             |
+ | ...                                                              |
+ | ...                                                              |
  +------------------------------------------------------------------+
- | to: text text text text text text				    |
- | *: text text text text text text				    |
- | to2: text blah text[]					    |
- | ...								    |
+ | to: text text text text text text                                |
+ | *: text text text text text text                                 |
+ | to2: text blah text[]                                            |
+ | ...                                                              |
  +------------------------------------------------------------------+
 
  Convention: the names of participants may not contain ":". 
@@ -88,11 +88,11 @@
 ;; World -> Scene 
 ;; render the world as a scene 
 (define (render w)
-  (local ((define fr (line*-render (world-from w)))
+  (local [(define fr (line*-render (world-from w)))
           (define t1 (line*-render (world-to w)))
           (define last-to-line
-	    (line-render-cursor (world-todraft w) (world-mmdraft w)))
-          (define tt (image-stack t1 last-to-line)))
+            (line-render-cursor (world-todraft w) (world-mmdraft w)))
+          (define tt (image-stack t1 last-to-line))]
     (place-image fr 1 1 (place-image tt 1 MID MT))))
 
 ;; -----------------------------------------------------------------------------
@@ -355,7 +355,7 @@
               [(too-wide? to-new mm) (send to "" from* to*)]
               [else (world-todraft! w to-new)]))]
          ; [(and (boolean? to) (string? mm)) (error 'react "can't happen")]
-         [else				; (and (string? to) (string? mm))
+         [else                          ; (and (string? to) (string? mm))
           ;; the key belongs into the message text 
           (local ((define new-mm (string-append mm key)))
             (cond
@@ -483,7 +483,7 @@
             (on-receive receive)
             (check-with world?)
             (name n)
-	    (state true)
+            (state true)
             (register LOCALHOST)))
 
 (define (run* _)

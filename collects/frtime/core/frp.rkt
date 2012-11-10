@@ -1,5 +1,10 @@
-#lang racket
-(require "contract.rkt"
+#lang racket/base
+
+(require racket/function
+         racket/list
+         racket/match
+         racket/contract
+         "contract.rkt"
          "erl.rkt"
          "heap.rkt")
 

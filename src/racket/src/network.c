@@ -3225,7 +3225,8 @@ static Scheme_Object *udp_bind_or_connect(const char *name, int argc, Scheme_Obj
                          "  port number: %d\n"
                          "  system error: %E", 
                          name, 
-                         port, address ? address : "#f", 
+                         address ? address : "#f", 
+                         port, 
                          SOCK_ERRNO());
         return NULL;
       }
@@ -3257,7 +3258,8 @@ static Scheme_Object *udp_bind_or_connect(const char *name, int argc, Scheme_Obj
                          "  port number: %d\n"
                          "  system error: %E",
                          name, 
-                         port, address ? address : "#f", 
+                         address ? address : "#f", 
+                         port, 
                          SOCK_ERRNO());
         return NULL;
       }

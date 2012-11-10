@@ -28,9 +28,11 @@
 
 /* globals */
 READ_ONLY Scheme_Object *scheme_vector_proc;
+READ_ONLY Scheme_Object *scheme_vector_p_proc;
 READ_ONLY Scheme_Object *scheme_vector_immutable_proc;
 READ_ONLY Scheme_Object *scheme_vector_ref_proc;
 READ_ONLY Scheme_Object *scheme_vector_set_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_vector_length_proc;
 
 /* locals */
 static Scheme_Object *vector_p (int argc, Scheme_Object *argv[]);
@@ -49,6 +51,7 @@ static Scheme_Object *impersonate_vector(int argc, Scheme_Object **argv);
 
 static Scheme_Object *unsafe_vector_len (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_vector_ref (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_vector_ref_star (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_vector_set (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_vector_star_len (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_vector_star_ref (int argc, Scheme_Object *argv[]);
@@ -69,10 +72,12 @@ scheme_init_vector (Scheme_Env *env)
 {
   Scheme_Object *p;
 
+  REGISTER_SO(scheme_vector_p_proc);
   p = scheme_make_folding_prim(vector_p, "vector?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
                                 | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("vector?", p, env);
+  scheme_vector_p_proc = p;
 
   scheme_add_global_constant("make-vector", 
 			     scheme_make_immed_prim(make_vector, 
@@ -167,10 +172,12 @@ scheme_init_unsafe_vector (Scheme_Env *env)
 {
   Scheme_Object *p;
 
+  REGISTER_SO(scheme_unsafe_vector_length_proc);
   p = scheme_make_immed_prim(unsafe_vector_len, "unsafe-vector-length", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-vector-length", p, env);
+  scheme_unsafe_vector_length_proc = p;
 
   p = scheme_make_immed_prim(unsafe_vector_star_len, "unsafe-vector*-length", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
