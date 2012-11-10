@@ -1889,16 +1889,6 @@
               (send dc set-font defs/ints-font)))))
       (super-new)))
   
-  (define (rectangles-intersect? l1 t1 r1 b1 l2 t2 r2 b2)
-    (or (point-in-rectangle? l1 t1 l2 t2 r2 b2)
-        (point-in-rectangle? r1 t1 l2 t2 r2 b2)
-        (point-in-rectangle? l1 b1 l2 t2 r2 b2)
-        (point-in-rectangle? r1 b1 l2 t2 r2 b2)))
-  
-  (define (point-in-rectangle? x y l t r b)
-    (and (<= l x r)
-         (<= t y b)))
-  
   (define bx (box 0))
   (define by (box 0))
   (define bw (box 0))
