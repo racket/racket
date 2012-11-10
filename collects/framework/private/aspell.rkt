@@ -1,11 +1,14 @@
 #lang racket/base
 (require racket/system
          racket/match
-         racket/contract)
+         racket/contract
+         racket/port
+         string-constants)
 
 (provide/contract
  [query-aspell (-> (and/c string? (not/c #rx"[\n]")) (listof (list/c number? number?)))]
- [find-aspell-binary-path (-> (or/c path? #f))])
+ [find-aspell-binary-path (-> (or/c path? #f))]
+ [aspell-problematic? (-> (or/c string? #f))])
 
 (define aspell-candidate-paths
   '("/usr/bin" 
@@ -25,6 +28,41 @@
             (and (file-exists? c2)
                  c2)))))
 
+(define (start-aspell asp)
+  (define aspell? (regexp-match? #rx"aspell" (path->string asp)))
+  (apply process* asp "-a" (if aspell? '("--encoding=utf-8") '())))
+
+(define (aspell-problematic?)
+  (define asp (find-aspell-binary-path))
+  (cond
+    [(not asp)
+     (string-constant cannot-find-ispell-or-aspell-path)]
+    [else
+     (define proc-lst (start-aspell asp))
+     (define stdout (list-ref proc-lst 0))
+     (define stderr (list-ref proc-lst 3))
+     (close-output-port (list-ref proc-lst 1)) ;; close stdin
+     (close-input-port stdout)
+     (define sp (open-output-string))
+     (copy-port stderr sp)
+     (define errmsg (get-output-string sp))
+     (close-input-port stderr)
+     (cond
+       [(not (equal? errmsg ""))
+        (string-append
+         (format (string-constant spell-program-wrote-to-stderr-on-startup) asp)
+         "\n\n"
+         errmsg)]
+       [else #f])]))
+
+(define asp-logger (make-logger 'framework/aspell (current-logger)))
+(define-syntax-rule 
+  (asp-log arg)
+  (when (log-level? asp-logger 'debug)
+    (asp-log/proc arg)))
+(define (asp-log/proc arg)
+  (log-message asp-logger 'debug arg (current-continuation-marks)))
+
 (define aspell-req-chan (make-channel))
 (define aspell-thread #f)
 (define (start-aspell-thread)
@@ -40,12 +78,13 @@
                  (set! already-attempted-aspell? #t)
                  (define asp (find-aspell-binary-path))
                  (when asp
-                   (define aspell? (regexp-match? #rx"aspell" (path->string asp)))
-                   (set! aspell-proc (apply process* asp "-a" (if aspell? '("--encoding=utf-8") '())))
-                   (define line (read-line (list-ref aspell-proc 0)))
-                   (log-info (format "framework: started speller: ~a" line))
+                   (set! aspell-proc (start-aspell asp))
+                   (define line (with-handlers ((exn:fail? exn-message))
+                                  (read-line (list-ref aspell-proc 0))))
+                   (asp-log (format "framework: started speller: ~a" line))
                    
-                   (when (regexp-match #rx"[Aa]spell" line)
+                   (when (and (string? line)
+                              (regexp-match #rx"[Aa]spell" line))
                      ;; put aspell in "terse" mode 
                      (display "!\n" (list-ref aspell-proc 1))
                      (flush-output (list-ref aspell-proc 1)))
@@ -57,11 +96,11 @@
                         (define l (with-handlers ((exn:fail? void))
                                     (read-line stderr)))
                         (when (string? l)
-                          (log-warning (format "aspell-proc stderr: ~a" l))
+                          (asp-log (format "aspell-proc stderr: ~a" l))
                           (loop))))))))
              
              (define (shutdown-aspell why)
-               (log-warning (format "aspell.rkt: shutdown connection to aspell: ~a" why))
+               (asp-log (format "aspell.rkt: shutdown connection to aspell: ~a" why))
                (define proc (list-ref aspell-proc 4))
                (close-input-port (list-ref aspell-proc 0))
                (close-output-port (list-ref aspell-proc 1))
@@ -94,7 +133,12 @@
                          (define check-on-aspell (sync/timeout .5 stdout))
                          (cond
                            [check-on-aspell
-                            (define l (read-line stdout))
+                            (define l (with-handlers ((exn:fail? (λ (x)
+                                                                   (asp-log
+                                                                    (format "error reading stdout of aspell process: ~a"
+                                                                            (exn-message x)))
+                                                                   eof)))
+                                        (read-line stdout)))
                             (cond
                               [(eof-object? l) 
                                (send-resp '())

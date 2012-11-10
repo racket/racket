@@ -1711,4 +1711,7 @@ please adhere to these guidelines:
   (spell-check-string-constants "Spell Check String Constants")
   (misspelled-text-color "Misspelled Text Color") ;; in the preferences dialog  
   (cannot-find-ispell-or-aspell-path "Cannot find the aspell or ispell binary")
+  ; puts the path to the spell program in the ~a and then the error message
+  ; is put following this string (with a blank line in between)
+  (spell-program-wrote-to-stderr-on-startup "The spell program (~a) printed an error message:")
   )
