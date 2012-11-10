@@ -894,8 +894,9 @@ module browser threading seems wrong.
           
           (inherit invalidate-bitmap-cache)
           (define/public (set-error-arrows arrows)
-            (set! error-arrows arrows)
-            (invalidate-bitmap-cache))
+            (unless (eq? arrows error-arrows)
+              (set! error-arrows arrows)
+              (invalidate-bitmap-cache)))
           
           (define error-arrows #f)
           
