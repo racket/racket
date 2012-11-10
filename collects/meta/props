@@ -1164,6 +1164,8 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/benchmarks/common/typed" responsible (stamourv samth)
 "collects/tests/racket/benchmarks/common/typed/cpstak.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/typed/ctak.rktl" drdr:command-line #f
+"collects/tests/racket/benchmarks/common/typed/collatz.rktl" drdr:command-line #f
+"collects/tests/racket/benchmarks/common/typed/collatz-q.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/typed/dderiv.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/typed/deriv.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/typed/div.rktl" drdr:command-line #f
