@@ -165,7 +165,7 @@
                         c))
                  (raise
                   (make-exn:get-module-code
-                   (format "get-module-code: cannot find submodule: ~e" submodule-path)
+                   (format "get-module-code: cannot find submodule: ~e" sm-path)
                    (current-continuation-marks)
                    #f)))
              (cdr sm-path))]))

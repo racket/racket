@@ -227,6 +227,7 @@
   (one-mz-test "embed-me17.rkt" "This is 17.\n" #f)
   (one-mz-test "embed-me18.rkt" "This is 18.\n" #f)
   (one-mz-test "embed-me19.rkt" "This is 19.\n" #f)
+  (one-mz-test "embed-me21.rkt" "This is 21.\n" #f)
 
   ;; Try unicode expr and cmdline:
   (prepare dest "unicode")
