@@ -158,6 +158,12 @@
                       #'orig-stx
                       id)))
                  ids)
+       (let ([phase (sub1 (variable-reference->phase (#%variable-reference)))])
+         (unless (zero? phase)
+           (log-warning "warning: ~a: at phase level ~a: ~e"
+                        (syntax-e (syntax-case #'orig-stx () [(id . _) #'id]))
+                        phase
+                        #'orig-stx)))
        #`(begin
            (define-values (id ...)
              (let-values ([(id ...) expr])
