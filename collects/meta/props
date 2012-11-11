@@ -694,7 +694,6 @@ path/s is either such a string or a list of them.
 "collects/drracket/main.rkt" drdr:command-line (mzc *)
 "collects/drracket/private/dock-icon.rkt" drdr:command-line (raco "make" *)
 "collects/drracket/private/drracket-normal.rkt" drdr:command-line (mzc *)
-"collects/drracket/private/follow-log.rkt" drdr:command-line (mzc *)
 "collects/drracket/private/launcher-mred-bootstrap.rkt" drdr:command-line (mzc *)
 "collects/drracket/private/launcher-mz-bootstrap.rkt" drdr:command-line (mzc *)
 "collects/drracket/private/stick-figures.rkt" drdr:command-line (mzc *)
@@ -729,6 +728,7 @@ path/s is either such a string or a list of them.
 "collects/ffi/unsafe/objc.rkt" responsible (mflatt) drdr:command-line (mzc *)
 "collects/file" responsible (mflatt)
 "collects/framework" responsible (robby)
+"collects/framework/private/follow-log.rkt" drdr:command-line (mzc *)
 "collects/frtime" responsible (jay gcooper)
 "collects/frtime/animation.rkt" drdr:command-line (mzc *)
 "collects/frtime/demos/analog-clock.rkt" drdr:command-line (mzc *)
@@ -1163,10 +1163,10 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/benchmarks/common/mk-chicken.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/mk-gambit.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/typed" responsible (stamourv samth)
+"collects/tests/racket/benchmarks/common/typed/collatz-q.rktl" drdr:command-line #f
+"collects/tests/racket/benchmarks/common/typed/collatz.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/typed/cpstak.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/typed/ctak.rktl" drdr:command-line #f
-"collects/tests/racket/benchmarks/common/typed/collatz.rktl" drdr:command-line #f
-"collects/tests/racket/benchmarks/common/typed/collatz-q.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/typed/dderiv.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/typed/deriv.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/typed/div.rktl" drdr:command-line #f
