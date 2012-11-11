@@ -418,7 +418,8 @@ path/s is either such a string or a list of them.
       (cond [(not path) ""]
             [(directory-exists? path) (string-append path "/")]
             [(file-exists? path) #f]
-            [else (path-error path "Missing file/directory")]))
+            [else (path-error path "Missing file/directory")
+                  #f]))
     (define others (if path/ (uncovered-subs path/ (map Tree-name subs)) '()))
     (unless (assq 'responsible all-props)
       (define (bad p) (path-error p "no responsible"))
