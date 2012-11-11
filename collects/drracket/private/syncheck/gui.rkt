@@ -1438,6 +1438,7 @@ If the namespace does not, they are colored the unbound color.
       (mixin (drracket:unit:tab<%>) ()
         (inherit is-current-tab? get-defs get-frame)
         
+        (define report-error-text-has-something? #f)
         (define report-error-text (new (fw:text:ports-mixin fw:racket:text%)))
         (define error-report-visible? #f)
         (send report-error-text auto-wrap #t)
@@ -1447,7 +1448,13 @@ If the namespace does not, they are colored the unbound color.
         (define/public (get-error-report-text) report-error-text)
         (define/public (get-error-report-visible?) error-report-visible?)
         (define/public (turn-on-error-report) (set! error-report-visible? #t))
-        (define/public (turn-off-error-report) (set! error-report-visible? #f))
+        (define/public (turn-off-error-report) 
+          (when error-report-visible?
+            (send report-error-text clear-output-ports)
+            (send report-error-text lock #f)
+            (send report-error-text delete/io 0 (send report-error-text last-position))
+            (send report-error-text lock #t)
+            (set! error-report-visible? #f)))
         (define/augment (clear-annotations)
           (inner (void) clear-annotations)
           (syncheck:clear-error-message)
@@ -1457,18 +1464,13 @@ If the namespace does not, they are colored the unbound color.
           ;; this code is also run by syncheck:clear-arrows, which
           ;; used to be called here (indirectly by syncheck:clear-highlighting)
           (send (get-defs) syncheck:clear-coloring))
-        
+
         (define/public (syncheck:clear-error-message)
-          (send report-error-text clear-output-ports)
-          (send report-error-text lock #f)
-          (send report-error-text delete/io 0 (send report-error-text last-position))
-          (send report-error-text lock #t)
-          (when error-report-visible?
-            (cond
-              [(is-current-tab?)
-               (send (get-frame) hide-error-report)]
-              [else
-               (set! error-report-visible? #f)])))
+          (define old-error-report-visible? error-report-visible?)
+          (turn-off-error-report)
+          (when old-error-report-visible?
+            (when (is-current-tab?)
+              (send (get-frame) hide-error-report))))
         
         (define/public (syncheck:clear-highlighting)
           (let ([definitions (get-defs)])
