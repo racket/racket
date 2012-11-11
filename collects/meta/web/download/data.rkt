@@ -66,14 +66,15 @@
      "http://mirror.informatik.uni-tuebingen.de/mirror/racket/"
      "Marcus Crestani"
      "crestani@informatik.uni-tuebingen.de"]
-    ["Turkey, Istanbul (Bilgi University)"
-     "http://russell.cs.bilgi.edu.tr/racket-installers/"
-     "Onur Gungor"
-     "onurgu@cs.bilgi.edu.tr"]
     ["Belgium (Infogroep, Vrije Universiteit Brussel)"
      "http://racket.infogroep.be/"
      "Infogroep"
      "research@infogroep.be"]
+    #;
+    ["Turkey, Istanbul (Bilgi University)"
+     "http://russell.cs.bilgi.edu.tr/racket-installers/"
+     "Onur Gungor"
+     "onurgu@cs.bilgi.edu.tr"]
     #;
     ["Austria (Vienna University of Technology)"
      "http://gd.tuwien.ac.at/languages/scheme/plt/"
