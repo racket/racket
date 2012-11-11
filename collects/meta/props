@@ -359,7 +359,7 @@ path/s is either such a string or a list of them.
 
 (define (verify)
   (define errors 0)
-  (define (path-error path fmt . more)
+  (define (path-warning path fmt . more)
     (when (= 0 errors) (newline))
     (set! errors (add1 errors))
     (printf "  ~a: ~a\n" (or path "<ROOT>") (apply format fmt more)))
@@ -391,8 +391,8 @@ path/s is either such a string or a list of them.
               (define rest  (cdr values))
               (define same? (andmap (λ (v) (equal? value v)) rest))
               (when (and same? (pair? rest) (null? others))
-                (path-error (string-append path/ "...")
-                            "all ~s sub-properties are ~s" pname value)
+                (path-warning (string-append path/ "...")
+                              "all ~s sub-properties are ~s" pname value)
                 ;; Printing the others is usually too verbose.
                 ;; (define rx (regexp (string-append "^" (regexp-quote path/))))
                 ;; (define os (map (λ (o) (regexp-replace rx o "")) others))
@@ -407,22 +407,23 @@ path/s is either such a string or a list of them.
     (define props (Tree-props tree))
     (define all-props (append props base-props))
     (define subs (Tree-subs tree))
-    (when (eq? '|| name) (path-error base-path "empty name (trailing slash?)"))
+    (when (eq? '|| name)
+      (path-warning base-path "empty name (trailing slash?)"))
     (unless (equal? (reverse (Tree-subs tree)) (Tree-subs/sorted tree))
-      (path-error path "unsorted sub-paths"))
+      (path-warning path "unsorted sub-paths"))
     (when (and (Tree-in-db? tree) (null? props))
-      (path-error path "no properties"))
+      (path-warning path "no properties"))
     (for ([p (in-list props)] #:when (member p base-props))
-      (path-error path "redundant property: ~s := ~s" (car p) (cdr p)))
+      (path-warning path "redundant property: ~s := ~s" (car p) (cdr p)))
     (define path/ ; #f for a file, "" for the root
       (cond [(not path) ""]
             [(directory-exists? path) (string-append path "/")]
             [(file-exists? path) #f]
-            [else (path-error path "Missing file/directory")
+            [else (path-warning path "Missing file/directory")
                   #f]))
     (define others (if path/ (uncovered-subs path/ (map Tree-name subs)) '()))
     (unless (assq 'responsible all-props)
-      (define (bad p) (path-error p "no responsible"))
+      (define (bad p) (path-warning p "no responsible"))
       (if path/ (for-each bad others) (bad path)))
     (if path/
       (let* ([rs (for/list ([sub (in-list subs)]) (loop sub path/ all-props))]
