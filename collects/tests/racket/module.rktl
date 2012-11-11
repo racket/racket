@@ -911,5 +911,22 @@
 (require 'use-a-with-auto-field)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; check that `require' inside `beging-for-syntax' sets up the right phase dependency
+
+(let ([o (open-output-bytes)])
+  (parameterize ([current-output-port o]
+                 [current-namespace (make-base-namespace)])
+    (eval
+     '(module m racket/base
+        (printf "~s\n" (variable-reference->phase (#%variable-reference)))))
+    (eval
+     '(module n racket/base
+        (require (for-syntax racket/base))
+        (begin-for-syntax
+         (require 'm))))
+    (eval '(require 'n)))
+  (test #"1\n1\n" get-output-bytes o))
+  
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

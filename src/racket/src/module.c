@@ -4691,8 +4691,8 @@ static int indent = 0;
 static void show(const char *what, Scheme_Env *menv, int v1, int v2, int ph, int base_phase)
 {
   if (menv->phase > 3) return;
-  if (0 || SCHEME_SYMBOLP(SCHEME_PTR_VAL(menv->module->modname)))
-    if (0 || SCHEME_SYM_VAL(SCHEME_PTR_VAL(menv->module->modname))[0] != '#') {
+  if (1 || SCHEME_SYMBOLP(SCHEME_PTR_VAL(menv->module->modname)))
+    if (1 || SCHEME_SYM_VAL(SCHEME_PTR_VAL(menv->module->modname))[0] != '#') {
       int i;
       for (i = 0; i < indent; i++) {
         fprintf(stderr, " ");
@@ -11788,19 +11788,29 @@ void parse_requires(Scheme_Object *form, int at_phase,
                    start ? eval_exp : 0, start ? eval_run : 0, 
                    main_env->phase, scheme_null, 0);
 
+      x_just_mode = just_mode;
+      x_mode = mode;
+      if (at_phase) {
+        if (x_mode && SCHEME_TRUEP(x_mode)) {
+          x_mode = scheme_bin_plus(x_mode, scheme_make_integer(at_phase));
+        }
+        /* x_just_mode refers to the mode at export, which doesn't shift 
+           by phase context at import */
+      }
+
       /* Add name to require list, if it's not there: */
       if (main_env->module) {
         Scheme_Object *reqs;
-        if (SAME_OBJ(mode, scheme_make_integer(0))) {
+        if (SAME_OBJ(x_mode, scheme_make_integer(0))) {
           reqs = add_req(scheme_make_pair(idx, scheme_null), main_env->module->requires);
           main_env->module->requires = reqs;
-        } else if (SAME_OBJ(mode, scheme_make_integer(1))) {
+        } else if (SAME_OBJ(x_mode, scheme_make_integer(1))) {
           reqs = add_req(scheme_make_pair(idx, scheme_null), main_env->module->et_requires);
           main_env->module->et_requires = reqs;
-        } else if (SAME_OBJ(mode, scheme_make_integer(-1))) {
+        } else if (SAME_OBJ(x_mode, scheme_make_integer(-1))) {
           reqs = add_req(scheme_make_pair(idx, scheme_null), main_env->module->tt_requires);
           main_env->module->tt_requires = reqs;
-        } else if (SAME_OBJ(mode, scheme_false)) {
+        } else if (SAME_OBJ(x_mode, scheme_false)) {
           reqs = add_req(scheme_make_pair(idx, scheme_null), main_env->module->dt_requires);
           main_env->module->dt_requires = reqs;
         } else {
@@ -11810,22 +11820,12 @@ void parse_requires(Scheme_Object *form, int at_phase,
             oht = scheme_make_hash_table_equal();
             main_env->module->other_requires = oht;
           }
-          reqs = scheme_hash_get(oht, mode);
+          reqs = scheme_hash_get(oht, x_mode);
           if (!reqs)
             reqs = scheme_null;
           reqs = add_req(scheme_make_pair(idx, scheme_null), reqs);
-          scheme_hash_set(oht, mode, reqs);
+          scheme_hash_set(oht, x_mode, reqs);
         }
-      }
-
-      x_just_mode = just_mode;
-      x_mode = mode;
-      if (at_phase) {
-        if (x_mode && SCHEME_TRUEP(x_mode)) {
-          x_mode = scheme_bin_plus(x_mode, scheme_make_integer(at_phase));
-        }
-        /* x_just_mode refers to the mode at export, which doesn't shift 
-           by phase context at import */
       }
 
       add_single_require(m->me, x_just_mode, x_mode, idx, rename_env,
