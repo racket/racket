@@ -6,8 +6,11 @@
                      unstable/sequence
                      syntax/parse
                      syntax/parse/experimental/template
-                     (only-in racket/match/patterns bound-vars)
-                     (only-in racket/match/gen-match go go/one)))
+                     unstable/lazy-require))
+
+(begin-for-syntax
+ (lazy-require [racket/match/patterns (bound-vars)]
+               [racket/match/gen-match (go parse-id go/one)]))
 
 (provide define-forms)
 
