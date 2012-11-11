@@ -285,14 +285,20 @@
     (define bw (box 0))
     (define bh (box 0))
     
-    (define docs-im (make-interval-map))
+    (define docs-im #f)
     (define/public (syncheck:reset-docs-im)
-      (set! docs-im (make-interval-map)))
+      (set! docs-im #f)) 
+    (define (get/start-docs-im) 
+      (cond 
+        [docs-im docs-im]
+        [else
+         (set! docs-im (make-interval-map))
+         docs-im]))
     (define/public (syncheck:add-docs-range start end tag visit-docs-url) 
       ;; the +1 to end is effectively assuming that there
       ;; are no abutting identifiers with documentation
       (define rng (list start (+ end 1) tag visit-docs-url))
-      (interval-map-set! docs-im start (+ end 1) rng))
+      (interval-map-set! (get/start-docs-im) start (+ end 1) rng))
     
     (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
       (super on-paint before? dc left top right bottom dx dy draw-caret)
@@ -413,7 +419,7 @@
       (define/private (update-the-strs/maybe-invalidate before after)
         (define sp (get-start-position))
         (when (= sp (get-end-position))
-          (define tag+rng (interval-map-ref docs-im sp #f))
+          (define tag+rng (interval-map-ref (get/start-docs-im) sp #f))
           (when tag+rng
             (define ir-start (list-ref tag+rng 0))
             (define ir-end (list-ref tag+rng 1))
@@ -429,23 +435,25 @@
               (after)))))
     
     (define/augment (on-insert where len)
-      (clear-im-range where len)
-      (interval-map-expand! docs-im where (+ where len))
-      (possibly-clobber-strs where len #f)
-      (when the-strs-id-start
-        (when (<= where the-strs-id-start)
-          (set! the-strs-id-start (+ the-strs-id-start len))
-          (set! the-strs-id-end (+ the-strs-id-end len))))
+      (when docs-im
+        (clear-im-range where len)
+        (interval-map-expand! docs-im where (+ where len))
+        (possibly-clobber-strs where len #f)
+        (when the-strs-id-start
+          (when (<= where the-strs-id-start)
+            (set! the-strs-id-start (+ the-strs-id-start len))
+            (set! the-strs-id-end (+ the-strs-id-end len)))))
       (inner (void) on-insert where len))
     
     (define/augment (on-delete where len)
-      (clear-im-range where len)
-      (interval-map-contract! docs-im where (+ where len))
-      (possibly-clobber-strs where len #t)
-      (when the-strs-id-start
-        (when (<= where the-strs-id-start)
-          (set! the-strs-id-start (- the-strs-id-start len))
-          (set! the-strs-id-end (- the-strs-id-end len))))
+      (when docs-im
+        (clear-im-range where len)
+        (interval-map-contract! docs-im where (+ where len))
+        (possibly-clobber-strs where len #t)
+        (when the-strs-id-start
+          (when (<= where the-strs-id-start)
+            (set! the-strs-id-start (- the-strs-id-start len))
+            (set! the-strs-id-end (- the-strs-id-end len)))))
       (inner (void) on-delete where len))
     
     (define/private (possibly-clobber-strs where len delete?)
@@ -464,13 +472,14 @@
           (end-edit-sequence))))
 
     (define/private (clear-im-range where len)
-      (for ([x (in-range len)])
-        (define tag+rng (interval-map-ref docs-im (+ where x) #f))
-        (when tag+rng
-          (interval-map-remove! 
-           docs-im 
-           (list-ref tag+rng 0)
-           (list-ref tag+rng 1)))))
+      (when docs-im
+        (for ([x (in-range len)])
+          (define tag+rng (interval-map-ref docs-im (+ where x) #f))
+          (when tag+rng
+            (interval-map-remove! 
+             docs-im 
+             (list-ref tag+rng 0)
+             (list-ref tag+rng 1))))))
     
     (define/private (in-blue-box? evt)
       (cond
