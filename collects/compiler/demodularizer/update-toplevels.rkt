@@ -1,5 +1,8 @@
-#lang racket
-(require compiler/zo-structs
+#lang racket/base
+
+(require racket/match
+         racket/contract
+         compiler/zo-structs
          "util.rkt")
 
 (define (update-toplevels toplevel-updater topsyntax-updater topsyntax-new-midpt)

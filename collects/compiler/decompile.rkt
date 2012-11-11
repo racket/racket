@@ -78,7 +78,20 @@
                                     (let-values ([(n b) (module-path-index-split modidx)])
                                       (and (not n) (not b))))
                                (string->symbol (format "_~a" sym))
-                               (string->symbol (format "_~s@~s~a" sym (mpi->string modidx) 
+                               (string->symbol (format "_~s~a@~s~a" 
+                                                       sym 
+                                                       (match constantness
+                                                         ['constant ":c"]
+                                                         ['fixed ":f"]
+                                                         [(function-shape a pm?) 
+                                                          (if pm? ":P" ":p")]
+                                                         [(struct-type-shape c) ":t"]
+                                                         [(constructor-shape a) ":mk"]
+                                                         [(predicate-shape) ":?"]
+                                                         [(accessor-shape c) ":ref"]
+                                                         [(mutator-shape c) ":set!"]
+                                                         [else ""])
+                                                       (mpi->string modidx) 
                                                        (if (zero? phase)
                                                            ""
                                                            (format "/~a" phase)))))]

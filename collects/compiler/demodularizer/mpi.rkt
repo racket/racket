@@ -1,5 +1,7 @@
-#lang racket
-(require syntax/modresolve)
+#lang racket/base
+
+(require racket/contract
+         syntax/modresolve)
 
 (define current-module-path (make-parameter #f))
 
