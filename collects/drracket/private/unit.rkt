@@ -2918,38 +2918,39 @@ module browser threading seems wrong.
       ;; to be the nth tab. Also updates the GUI to show the new tab
       (inherit begin-container-sequence end-container-sequence)
       (define/private (change-to-tab tab)
-        (let ([old-delegate (send definitions-text get-delegate)]
-              [old-tab current-tab])
-          (save-visible-tab-regions)
-          (set! current-tab tab)
-          (set! definitions-text (send current-tab get-defs))
-          (set! interactions-text (send current-tab get-ints))
-          
-          
-          (begin-container-sequence)
-          (for-each (λ (defs-canvas) (send defs-canvas set-editor definitions-text #f))
-                    definitions-canvases)
-          (for-each (λ (ints-canvas) (send ints-canvas set-editor interactions-text #f))
-                    interactions-canvases)
-          
-          (update-save-message)
-          (update-save-button)
-          (language-changed)
-          
-          (send definitions-text update-frame-filename)
-          (send definitions-text set-delegate old-delegate)
-          (update-running (send current-tab is-running?))
-          (on-tab-change old-tab current-tab)
-          (send tab update-log)
-          (send tab update-planet-status)
-          (send tab update-execute-warning-gui)
-          (restore-visible-tab-regions)
-          (for-each (λ (defs-canvas) (send defs-canvas refresh))
-                    definitions-canvases)
-          (for-each (λ (ints-canvas) (send ints-canvas refresh))
-                    interactions-canvases)
-          (set-color-status! (send definitions-text is-lexer-valid?))
-          (end-container-sequence)))
+        (unless (eq? current-tab tab)
+          (let ([old-delegate (send definitions-text get-delegate)]
+                [old-tab current-tab])
+            (save-visible-tab-regions)
+            (set! current-tab tab)
+            (set! definitions-text (send current-tab get-defs))
+            (set! interactions-text (send current-tab get-ints))
+            
+            
+            (begin-container-sequence)
+            (for-each (λ (defs-canvas) (send defs-canvas set-editor definitions-text #f))
+                      definitions-canvases)
+            (for-each (λ (ints-canvas) (send ints-canvas set-editor interactions-text #f))
+                      interactions-canvases)
+            
+            (update-save-message)
+            (update-save-button)
+            (language-changed)
+            
+            (send definitions-text update-frame-filename)
+            (send definitions-text set-delegate old-delegate)
+            (update-running (send current-tab is-running?))
+            (on-tab-change old-tab current-tab)
+            (send tab update-log)
+            (send tab update-planet-status)
+            (send tab update-execute-warning-gui)
+            (restore-visible-tab-regions)
+            (for-each (λ (defs-canvas) (send defs-canvas refresh))
+                      definitions-canvases)
+            (for-each (λ (ints-canvas) (send ints-canvas refresh))
+                      interactions-canvases)
+            (set-color-status! (send definitions-text is-lexer-valid?))
+            (end-container-sequence))))
       
       (define/pubment (on-tab-change from-tab to-tab)
         (let ([old-enabled (send from-tab get-enabled)]
