@@ -528,7 +528,8 @@ directory.
 
 Logs a message (see @racket[log-message]) at level @racket['info]. The
 message data is a @racketidfont{file-dependency} prefab structure type
-with one field whose value is @racket[file].
+with two fields; the first field's value is @racket[file] and the second
+field's value is @racket[#f] (to indicate a non-module dependency).
 
 A compilation manager implemented by @racketmodname[compiler/cm] looks
 for such messages to register an external dependency. The compilation
@@ -539,6 +540,17 @@ compilation manager will know to recompile the module.
 
 The @racket[include] macro, for example, calls this procedure with the
 path of an included file as it expands an @racket[include] form.}
+
+@defproc[(register-external-module [file (and path? complete-path?)]) void?]{
+
+Like @racket[register-external-file], but logs a message with a
+@racketidfont{file-dependency} prefab structure type whose second
+field is @racket[#t].
+
+A compilation manager implemented by @racketmodname[compiler/cm]
+recognizes the message to register a dependency on a
+module (which implies a dependency on all of that module's
+dependencies, etc.).}
 
 @; ----------------------------------------------------------------------
 
