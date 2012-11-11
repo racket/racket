@@ -116,11 +116,14 @@
 (define sep (bytes-ref (path->bytes (simplify-path "/")) 0)) ; '\' on windows
 
 (define (simplify-path* path)
-  (if (symbol? path)
-      #f
-      (simple-form-path (cond [(bytes? path) (bytes->path path)]
-                              [(string? path) (string->path path)]
-                              [else path]))))
+  (cond
+   [(symbol? path) #f]
+   [(and (pair? path) (eq? 'submod (car path)))
+    (simplify-path* (cadr path))]
+   [else
+    (simple-form-path (cond [(bytes? path) (bytes->path path)]
+                            [(string? path) (string->path path)]
+                            [else path]))]))
 
 ;; 'read-bytecode is special, it's higher than 'read, but not lower than
 ;; 'delete.
