@@ -5,7 +5,7 @@
          racket/match
          racket/pretty
          racket/gui/base
-         framework/private/logging-timer)
+#;         framework/private/logging-timer)
 
 #|
 
@@ -32,8 +32,10 @@ log message was reported.
                               'debug 'timeline))
 
 (define top-n-events 50)
-(define drop-gc? #t)
-(define start-right-away? #f)
+(define drop-gc? #f)
+(define start-right-away? #t) ;; only applies if the 'main' module is loaded
+(define show-hist? #f)
+(define script-drr? #t)
 
 (define log-done-chan (make-channel))
 (define bt-done-chan (make-channel))
@@ -96,24 +98,26 @@ log message was reported.
 (define db (new button% [label "Stop && Dump"] [parent f] [enabled #f]
                 [callback
                  (λ (_1 _2)
-                   (cond
-                     [following-log?
-                      (define resp (make-channel))
-                      (channel-put log-done-chan resp)
-                      (show-results (channel-get resp))
-                      (send db enable #f)
-                      (send sb enable #t)
-                      (send sb2 enable #t)
-                      (set! following-log? #f)]
-                     [following-bt?
-                      (define resp (make-channel))
-                      (channel-put bt-done-chan resp)
-                      (define stacks (channel-get resp))
-                      (show-bt-results stacks)
-                      (send db enable #f)
-                      (send sb enable #t)
-                      (send sb2 enable #t)
-                      (set! following-bt? #f)]))]))
+                   (stop-and-dump))]))
+(define (stop-and-dump)
+  (cond
+    [following-log?
+     (define resp (make-channel))
+     (channel-put log-done-chan resp)
+     (show-results (channel-get resp))
+     (send db enable #f)
+     (send sb enable #t)
+     (send sb2 enable #t)
+     (set! following-log? #f)]
+    [following-bt?
+     (define resp (make-channel))
+     (channel-put bt-done-chan resp)
+     (define stacks (channel-get resp))
+     (show-bt-results stacks)
+     (send db enable #f)
+     (send sb enable #t)
+     (send sb2 enable #t)
+     (set! following-bt? #f)]))
 
 (define following-log? #f)
 (define following-bt? #f)
@@ -157,42 +161,65 @@ log message was reported.
                                (and (gui-event? i)
                                     (number? (gui-event-end i))))
                              evts))
-  (define interesting-gui-events
-    (take (sort gui-events > #:key (λ (x) 
-                                     (define i (vector-ref x 2))
-                                     (- (gui-event-end i)
-                                        (gui-event-start i))))
-          top-n-events))
-    
-  (define with-other-events
-    (for/list ([gui-evt (in-list interesting-gui-events)])
-      (match (vector-ref gui-evt 2)
-        [(gui-event start end name)
-         (define in-the-middle
-           (append (map (λ (x) (list (list 'δ (- (get-start-time x) start)) x))
-                        (sort
-                         (filter (λ (x) (and (not (gui-event? (vector-ref x 2)))
-                                             (<= start (get-start-time x) end)))
-                                 evts)
-                         <
-                         #:key get-start-time))
-                   (list (list (list 'δ (- end start)) 'end-of-gui-event))))
-         (list* (- end start)
-                gui-evt
-                in-the-middle)])))
   
-  (define (has-a-gc-event? x)
-    (define in-the-middle (cddr x))
-    (ormap (λ (x) 
-             (and (vector? (list-ref x 1))
-                  (gc-info? (vector-ref (list-ref x 1) 2))))
-           in-the-middle))
-  
-  (pretty-print
-   (if drop-gc?
-       (filter (λ (x) (not (has-a-gc-event? x)))
-               with-other-events)
-       with-other-events)))
+  (cond
+    [show-hist?
+     
+     (define bucket-size 2) ;; in milliseconds
+     (define (δ->bucket δ)
+       (* bucket-size
+          (inexact->exact (round (* δ (/ 1.0 bucket-size))))))
+     
+     (define buckets (make-hash))
+     (for ([vec (in-list gui-events)])
+       (define gui-event (vector-ref vec 2))
+       (define bucket (δ->bucket
+                       (- (gui-event-end gui-event)
+                          (gui-event-start gui-event))))
+       (hash-set! buckets bucket (+ (hash-ref buckets bucket 0) 1)))
+     (pretty-print
+      (sort (hash-map buckets vector)
+            <
+            #:key (λ (x) (vector-ref x 0))))]
+    [else
+     
+     
+     (define interesting-gui-events
+       (take (sort gui-events > #:key (λ (x) 
+                                        (define i (vector-ref x 2))
+                                        (- (gui-event-end i)
+                                           (gui-event-start i))))
+             top-n-events))
+     
+     (define with-other-events
+       (for/list ([gui-evt (in-list interesting-gui-events)])
+         (match (vector-ref gui-evt 2)
+           [(gui-event start end name)
+            (define in-the-middle
+              (append (map (λ (x) (list (list 'δ (- (get-start-time x) start)) x))
+                           (sort
+                            (filter (λ (x) (and (not (gui-event? (vector-ref x 2)))
+                                                (<= start (get-start-time x) end)))
+                                    evts)
+                            <
+                            #:key get-start-time))
+                      (list (list (list 'δ (- end start)) 'end-of-gui-event))))
+            (list* (- end start)
+                   gui-evt
+                   in-the-middle)])))
+     
+     (define (has-a-gc-event? x)
+       (define in-the-middle (cddr x))
+       (ormap (λ (x) 
+                (and (vector? (list-ref x 1))
+                     (gc-info? (vector-ref (list-ref x 1) 2))))
+              in-the-middle))
+     
+     (pretty-print
+      (if drop-gc?
+          (filter (λ (x) (not (has-a-gc-event? x)))
+                  with-other-events)
+          with-other-events))]))
 
 (struct gc-info (major? pre-amount pre-admin-amount code-amount
                         post-amount post-admin-amount
@@ -209,6 +236,7 @@ log message was reported.
      (engine-info-msec (vector-ref x 2))]
     [(regexp-match #rx"framework" (vector-ref x 1))
      (vector-ref x 2)]
+#;
     [(timeline-info? (vector-ref x 2))
      (timeline-info-milliseconds (vector-ref x 2))]         
     [else
@@ -216,10 +244,85 @@ log message was reported.
        (eprintf "unk: ~s\n" x))
      0]))
 
+(define drr-eventspace (current-eventspace))
+(require (file "/Users/robby/git/plt/collects/tests/drracket/private/drracket-test-util.rkt")
+         framework/test)
 
+(test:use-focus-table #t)
+
+;; running on controller-frame-eventspace handler thread
+(define (run-drracket-script)
+  (test:use-focus-table #t)
+  (test:current-get-eventspaces (λ () (list drr-eventspace)))
+  (define drr (wait-for-drracket-frame))
+  
+  (define (wait-until something)
+    (define chan (make-channel))
+    (let loop ()
+      (sleep 1)
+      (parameterize ([current-eventspace drr-eventspace])
+        (queue-callback
+         (λ () 
+           (channel-put chan (something)))))
+      (unless (channel-get chan)
+        (loop))))
+  
+  (define (online-syncheck-done)
+    (define-values (colors labels) (send (send drr get-current-tab) get-bkg-running))
+    (equal? colors '("forestgreen")))
+  
+  (define (syntax-coloring-done)
+    (send (send drr get-definitions-text) is-lexer-valid?))
+  
+  (sync
+   (thread
+    (λ ()
+      (current-eventspace drr-eventspace)
+      (test:current-get-eventspaces (λ () (list drr-eventspace)))
+      (test:use-focus-table #t)
+      (test:menu-select "View" "Hide Interactions")
+      
+      
+      (define s (make-semaphore))
+      (parameterize ([current-eventspace drr-eventspace])
+        (queue-callback
+         (λ () 
+           (define defs (send drr get-definitions-text))
+           (send defs load-file (collection-file-path "class-internal.rkt" "racket" "private"))
+           (send defs set-position 395)
+           (send (send defs get-canvas) focus)
+           (semaphore-post s)))
+        #f)
+      (semaphore-wait s)
+
+      ;(wait-until online-syncheck-done)
+      
+      (for ([x (in-range 10)])
+        
+        (let ([s "fdjafjdklafjkdalsfjdaklfjdkaslfdjafjdklafjkdalsfjdaklfjdkasl"])
+          (for ([c (in-string s)])
+            (test:keystroke c))
+          (for ([c (in-string s)])
+            (test:keystroke #\backspace)))
+        
+        (test:keystroke #\")
+        (test:keystroke #\a)
+        (wait-until syntax-coloring-done)
+        (test:keystroke #\backspace)
+        (test:keystroke #\backspace)
+        (wait-until online-syncheck-done)) 
+      (sleep 10)))) ;; let everything finish
+  
+  (stop-and-dump)
+  (exit))
+    
 (module+ main
   (when start-right-away?
     (parameterize ([current-eventspace controller-frame-eventspace])
       (queue-callback sb-callback)))
-  (dynamic-require 'drracket #f))
-
+  (dynamic-require 'drracket #f)
+  (when script-drr?
+    (parameterize ([current-eventspace controller-frame-eventspace])
+      (queue-callback
+       (λ () 
+         (run-drracket-script))))))
