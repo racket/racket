@@ -427,15 +427,20 @@ void *scheme_jit_get_threadlocal_table();
 # ifdef JIT_X86_64
 #  define JIT_R10 JIT_R(10)
 #  define JIT_R14 JIT_R(14)
-#  define mz_tl_addr(reg, addr) LEAQmQr((addr), (JIT_R14), 0, 0, (reg))
-#  define mz_tl_addr_tmp(tmp_reg, addr) (mz_tl_addr(JIT_R10, addr))
+#  define mz_tl_addr(reg, addr) (void)0
+#  define mz_tl_addr_tmp(tmp_reg, addr) (void)0
 #  define mz_tl_addr_untmp(tmp_reg) (void)0
 #  define mz_tl_tmp_reg(tmp_reg) JIT_R10
-#  define _mz_tl_str_p(addr, tmp_reg, reg) jit_str_p(tmp_reg, reg)
-#  define _mz_tl_str_l(addr, tmp_reg, reg) jit_str_l(tmp_reg, reg)
-#  define _mz_tl_str_i(addr, tmp_reg, reg) jit_str_i(tmp_reg, reg)
-#  define mz_tl_addr_tmp_i(tmp_reg, addr) (jit_movr_l(JIT_R10, tmp_reg), mz_tl_addr(tmp_reg, addr))
-#  define mz_tl_addr_untmp_i(tmp_reg) jit_movr_l(tmp_reg, JIT_R10)
+#  define _mz_tl_str_p(addr, tmp_reg, reg) jit_stxi_p(addr, JIT_R14, reg)
+#  define _mz_tl_str_l(addr, tmp_reg, reg) jit_stxi_l(addr, JIT_R14, reg)
+#  define _mz_tl_str_i(addr, tmp_reg, reg) jit_stxi_i(addr, JIT_R14, reg)
+#  define mz_tl_ldr_p(reg, addr) jit_ldxi_p(reg, JIT_R14, addr)
+#  define mz_tl_ldr_l(reg, addr) jit_ldxi_l(reg, JIT_R14, addr)
+#  define mz_tl_ldr_i(reg, addr) jit_ldxi_i(reg, JIT_R14, addr)
+#  define mz_tl_str_d_fppop(tmp_reg, reg, addr) jit_stxi_d_fppop(addr, JIT_R14, reg)
+#  define mz_tl_ldr_d_fppush(reg, tmp_reg, addr) jit_ldxi_d_fppush(reg, JIT_R14, addr)
+#  define mz_tl_addr_tmp_i(tmp_reg, addr) (void)0
+#  define mz_tl_addr_untmp_i(tmp_reg) (void)0
 #  define mz_tl_tmp_reg_i(tmp_reg) tmp_reg
 # else
 #  define THREAD_LOCAL_USES_JIT_V2
@@ -459,17 +464,22 @@ void *scheme_jit_get_threadlocal_table();
 #  define mz_tl_addr_tmp_i(tmp_reg, addr) mz_tl_addr_tmp(tmp_reg, addr)
 #  define mz_tl_addr_untmp_i(tmp_reg) mz_tl_addr_untmp(tmp_reg)
 #  define mz_tl_tmp_reg_i(tmp_reg) mz_tl_tmp_reg(tmp_reg)
+#  define mz_tl_ldr_p(reg, addr) jit_ldr_p(reg, reg)
+#  define mz_tl_ldr_l(reg, addr) jit_ldr_l(reg, reg)
+#  define mz_tl_ldr_i(reg, addr) jit_ldr_i(reg, reg)
+#  define mz_tl_str_d_fppop(tmp_reg, reg, addr) jit_str_d_fppop(tmp_reg, reg)
+#  define mz_tl_ldr_d_fppush(reg, tmp_reg, addr) jit_ldr_d_fppush(reg, tmp_reg)
 # endif
 
 /* A given tmp_reg doesn't have to be unused; it just has to be distinct from other arguments. */
 # define mz_tl_sti_p(addr, reg, tmp_reg) (mz_tl_addr_tmp(tmp_reg, addr), _mz_tl_str_p(addr, mz_tl_tmp_reg(tmp_reg), reg), mz_tl_addr_untmp(tmp_reg))
 # define mz_tl_sti_l(addr, reg, tmp_reg) (mz_tl_addr_tmp(tmp_reg, addr), _mz_tl_str_l(addr, mz_tl_tmp_reg(tmp_reg), reg), mz_tl_addr_untmp(tmp_reg))
 # define mz_tl_sti_i(addr, reg, tmp_reg) (mz_tl_addr_tmp_i(tmp_reg, addr), _mz_tl_str_i(addr, mz_tl_tmp_reg_i(tmp_reg), reg), mz_tl_addr_untmp_i(tmp_reg))
-# define mz_tl_ldi_p(reg, addr) (mz_tl_addr(reg, addr), jit_ldr_p(reg, reg))
-# define mz_tl_ldi_l(reg, addr) (mz_tl_addr(reg, addr), jit_ldr_l(reg, reg))
-# define mz_tl_ldi_i(reg, addr) (mz_tl_addr(reg, addr), jit_ldr_i(reg, reg))
-# define mz_tl_sti_d_fppop(addr, reg, tmp_reg) (mz_tl_addr(tmp_reg, addr), jit_str_d_fppop(tmp_reg, reg))
-# define mz_tl_ldi_d_fppush(reg, addr, tmp_reg) (mz_tl_addr(tmp_reg, addr), jit_ldr_d_fppush(reg, tmp_reg))
+# define mz_tl_ldi_p(reg, addr) (mz_tl_addr(reg, addr), mz_tl_ldr_p(reg, addr))
+# define mz_tl_ldi_l(reg, addr) (mz_tl_addr(reg, addr), mz_tl_ldr_l(reg, addr))
+# define mz_tl_ldi_i(reg, addr) (mz_tl_addr(reg, addr), mz_tl_ldr_i(reg, addr))
+# define mz_tl_sti_d_fppop(addr, reg, tmp_reg) (mz_tl_addr(tmp_reg, addr), mz_tl_str_d_fppop(tmp_reg, reg, addr))
+# define mz_tl_ldi_d_fppush(reg, addr, tmp_reg) (mz_tl_addr(tmp_reg, addr), mz_tl_ldr_d_fppush(reg, tmp_reg, addr))
 #else
 # define mz_tl_sti_p(addr, reg, tmp_reg) jit_sti_p(addr, reg)
 # define mz_tl_sti_l(addr, reg, tmp_reg) jit_sti_l(addr, reg)

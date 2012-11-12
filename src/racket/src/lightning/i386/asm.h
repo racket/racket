@@ -696,7 +696,9 @@ typedef _uc		jit_insn;
 
 #define MOVLrr(RS, RD)			_O_Mrm		(0x89		,_b11,_r4(RS),_r4(RD)				)
 #define MOVLmr(MD, MB, MI, MS, RD)	_O_r_X		(0x8b		     ,_r4(RD)		,MD,MB,MI,MS		)
+#define MOVLmQr(MD, MB, MI, MS, RD)	_qOd_r_X	(0x8b		     ,_r8(RD)		,MD,MB,MI,MS		)
 #define MOVLrm(RS, MD, MB, MI, MS)	_O_r_X		(0x89		     ,_r4(RS)		,MD,MB,MI,MS		)
+#define MOVLQrm(RS, MD, MB, MI, MS)	_qOd_r_X        (0x89		     ,_r8(RS)		,MD,MB,MI,MS		)
 #define MOVLir(IM,  R)			_Or_L		(0xb8,_r4(R)						,IM	)
 #define MOVLim(IM, MD, MB, MI, MS)	_O_X_L		(0xc7					,MD,MB,MI,MS	,IM	)
 
