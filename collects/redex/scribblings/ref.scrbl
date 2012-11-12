@@ -2178,14 +2178,14 @@ seeds it with the reduction-sequence supplied in @racket[seed].
   as an index into @racket[derivations].
 }
 
-@defproc[(derivations/ps [derivation derivation?]
-                         [filename path-string?]
-                         [#:pp pp
-                               (or/c (any -> string)
-                                     (any output-port number (is-a?/c text%) -> void))
-                               default-pretty-printer]
-                         [#:racket-colors? racket-colors? boolean? #f]
-                         [#:post-process post-process (-> (is-a?/c pasteboard%) any)])
+@defproc[(derivation/ps [derivation derivation?]
+                        [filename path-string?]
+                        [#:pp pp
+                              (or/c (any -> string)
+                                    (any output-port number (is-a?/c text%) -> void))
+                              default-pretty-printer]
+                        [#:racket-colors? racket-colors? boolean? #f]
+                        [#:post-process post-process (-> (is-a?/c pasteboard%) any)])
          void?]{
                 
   Like @racket[show-derivations], except it prints a single

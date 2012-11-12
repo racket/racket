@@ -938,6 +938,7 @@ path/s is either such a string or a list of them.
 "collects/redex/tests/run-tests.rkt" drdr:command-line (racket * "--examples" "--no-bitmap-gui") drdr:timeout 360
 "collects/redex/tests/stepper-test.rkt" drdr:command-line (mzc *)
 "collects/redex/tests/term-test.rkt" drdr:command-line (mzc *)
+"collects/redex/tests/test-docs-complete.rkt" drdr:command-line (raco "make" *)
 "collects/redex/tests/tl-test.rkt" drdr:command-line (mzc *)
 "collects/repo-time-stamp" responsible (eli)
 "collects/rnrs" responsible (mflatt)
