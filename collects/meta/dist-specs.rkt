@@ -554,6 +554,7 @@ plt-extras :+= (package: "slatex")
 
 ;; -------------------- planet
 mz-extras :+= (package: "planet")
+mz-extras :+= (package: "planet2")
 
 ;; -------------------- mrlib
 mr-extras :+= (- (+ (package: "mrlib/")
