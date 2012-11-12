@@ -1421,8 +1421,8 @@ static int generate_non_tail_with_branch(Scheme_Object *obj, mz_jit_state *jitte
       LOG_IT(("non-tail\n"));
       if (mark_pos_ends)
 	scheme_generate_non_tail_mark_pos_prefix(jitter);
-      mz_tl_ldi_p(JIT_R2, tl_scheme_current_cont_mark_stack);
       if (!jitter->local1_busy) {
+        mz_tl_ldi_p(JIT_R2, tl_scheme_current_cont_mark_stack);
         using_local1 = 1;
         jitter->local1_busy = save_pushed_marks + 1;
         mz_set_local_p(JIT_R2, JIT_LOCAL1);
@@ -1431,6 +1431,7 @@ static int generate_non_tail_with_branch(Scheme_Object *obj, mz_jit_state *jitte
            have been pushed */
         using_local1 = 2;
       } else {
+        mz_tl_ldi_p(JIT_R2, tl_scheme_current_cont_mark_stack);
         /* mark stack is an integer... turn it into a pointer */
         jit_fixnum_l(JIT_R2, JIT_R2);
         mz_pushr_p(JIT_R2); /* no sync */
