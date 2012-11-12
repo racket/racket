@@ -60,7 +60,7 @@
                       (file->string "test-pkgs/pkg-a-second.plt.CHECKSUM")
                       'source
                       "http://localhost:9999/pkg-a-second.plt"))
-   $ "raco pkg update" =exit> 0
+   $ "raco pkg update -a" =exit> 0
    $ "racket -e '(require pkg-a)'" =exit> 43
    $ "raco pkg remove pkg-b"
    $ "raco pkg show" =stdout> #rx"Package\\(auto\\?\\)    Checksum                                    Source\npkg-a\\*            [a-f0-9]+    \\(pns pkg-a\\)\n"

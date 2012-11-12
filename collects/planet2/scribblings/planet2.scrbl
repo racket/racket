@@ -157,8 +157,7 @@ sub-sub-commands:
 
 
 @item{@exec{update pkg ...} -- Checks the list of packages for
-@tech{package updates}. If no packages are given, checks every
-installed package. If an update is found, but it cannot be
+@tech{package updates}. If an update is found, but it cannot be
 installed (e.g. it is conflicted with another installed package), then
 this command fails atomically. It accepts the following options:
 
@@ -167,6 +166,8 @@ this command fails atomically. It accepts the following options:
  @item{@DFlag{installation} -- Same as for @exec{install}.}
  @item{@Flag{i} -- Same as for @exec{install}.}
  @item{@DFlag{deps} @exec{dep-behavior} -- Same as for @exec{install}.}
+ @item{@DFlag{all} -- Update all packages, if no packages are given in the argument list.}
+ @item{@Flag{a} -- Alias for @DFlag{all}.}
  @item{@DFlag{update-deps} -- Checks the named packages, and their dependencies (transitively) for updates.}
  ]
 }

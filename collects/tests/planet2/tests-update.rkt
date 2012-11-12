@@ -69,11 +69,11 @@
                      "http://localhost:9999/update-test/planet2-test1.zip"
                      "planet2-test1"
                      $ "raco pkg install test-pkgs/planet2-test2.zip"
-                     $ "raco pkg update" =exit> 0 =stdout> "No updates available\n"
+                     $ "raco pkg update -a" =exit> 0 =stdout> "No updates available\n"
                      $ "racket -e '(require planet2-test1/update)'" =exit> 42
                      $ "cp -f test-pkgs/planet2-test1-v2.zip test-pkgs/update-test/planet2-test1.zip"
                      $ "cp -f test-pkgs/planet2-test1-v2.zip.CHECKSUM test-pkgs/update-test/planet2-test1.zip.CHECKSUM"
-                     $ "raco pkg update" =exit> 0
+                     $ "raco pkg update -a" =exit> 0
                      $ "racket -e '(require planet2-test1/update)'" =exit> 43
                      $ "raco pkg remove planet2-test2")
     (finally

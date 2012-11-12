@@ -667,11 +667,12 @@
   (dict-ref meta 'dependency empty))
 
 (define (update-packages in-pkgs
+                         #:all? [all? #f]
                          #:dep-behavior [dep-behavior #f]
                          #:deps? [deps? #f])
   (define pkgs
     (cond
-      [(empty? in-pkgs)
+      [(and all? (empty? in-pkgs))
        (filter update-is-possible? (hash-keys (read-pkg-db)))]
       [deps?
        (append-map
@@ -791,6 +792,7 @@
   [update-packages
    (->* ((listof string?))
         (#:dep-behavior dep-behavior/c
+                        #:all? boolean?
                         #:deps? boolean?)
         void)]
   [remove-packages

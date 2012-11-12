@@ -38,6 +38,7 @@
   "Update packages"
   [#:bool dont-setup () "Don't run 'raco setup' after changing packages (generally not a good idea)"]
   [#:bool installation ("-i") "Operate on the installation-wide package database"]
+  [#:bool all ("-a") "Update all packages (if no packages are given on the command line)"]
   [(#:sym #f) deps ()
    ("Specify the behavior for dependencies."
     "Options are: fail, force, search-ask, search-auto."
@@ -50,6 +51,7 @@
   (parameterize ([current-install-system-wide? installation])
     (with-package-lock
      (update-packages pkgs
+                      #:all? all
                       #:dep-behavior deps
                       #:deps? update-deps)
      (setup dont-setup)))]
