@@ -424,21 +424,26 @@
 
 ;; entry-matches : string | regexp -> radio-box -> boolean
 (define (entry-matches name)
-  (λ (rb)
-    (let loop ([n (send rb get-number)])
-      (cond
-        [(zero? n) #f]
-        [else
-         (let ([itm (send rb get-item-label (- n 1))]
-               [pln-itm (send rb get-item-plain-label (- n 1))])
-           (or (cond
-                 [(string? name)
-                  (or (equal? name itm)
-                      (equal? name pln-itm))]
-                 [(regexp? name)
-                  (or (regexp-match name itm)
-                      (regexp-match name pln-itm))])
-               (loop (- n 1))))]))))
+  (procedure-rename
+   (λ (rb)
+     (let loop ([n (send rb get-number)])
+       (cond
+         [(zero? n) #f]
+         [else
+          (let ([itm (send rb get-item-label (- n 1))]
+                [pln-itm (send rb get-item-plain-label (- n 1))])
+            (or (cond
+                  [(string? name)
+                   (or (equal? name itm)
+                       (equal? name pln-itm))]
+                  [(regexp? name)
+                   (or (regexp-match name itm)
+                       (regexp-match name pln-itm))])
+                (loop (- n 1))))])))
+   (string->symbol
+    (if (regexp? name)
+        (object-name name)
+        name))))
 
 ;;; CHOICE 
 
