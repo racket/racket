@@ -1301,7 +1301,7 @@ Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_F
 	f = m->closers[i];
 	data = m->data[i];
 
-	if (!cf && (SAME_TYPE(SCHEME_TYPE(o), scheme_thread_hop_type))) {
+	if (o && !cf && (SAME_TYPE(SCHEME_TYPE(o), scheme_thread_hop_type))) {
 	  /* We've added an indirection and made it weak. See mr_hop note above. */
 	  is_thread = 1;
 	  the_thread = (Scheme_Thread *)WEAKIFIED(((Scheme_Thread_Custodian_Hop *)o)->p);
