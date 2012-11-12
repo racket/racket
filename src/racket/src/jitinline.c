@@ -1794,7 +1794,8 @@ static int generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_
                              int order_matters, int skipped)
 /* de-sync's rs.
    Results go into R0 and R1. If !order_matters, and if only the
-   second is simple, then the arguments will be in reverse order. */
+   second is simple, then the arguments will be in reverse order. 
+   Return is 1 if thr arguments are in order, -1 if reversed. */
 {
   int simple1, simple2, direction = 1;
   
@@ -2989,13 +2990,14 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       return 1;
     } else if (IS_NAMED_PRIM(rator, "cons")
                || IS_NAMED_PRIM(rator, "list*")) {
+      int dir;
       LOG_IT(("inlined cons\n"));
 
-      generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+      dir = generate_two_args(app->rand1, app->rand2, jitter, 0, 2);
       CHECK_LIMIT();
       mz_rs_sync();
 
-      return scheme_generate_cons_alloc(jitter, 0, 0);
+      return scheme_generate_cons_alloc(jitter, dir == -1, 0);
     } else if (IS_NAMED_PRIM(rator, "mcons")) {
       LOG_IT(("inlined mcons\n"));
 
