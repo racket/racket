@@ -129,7 +129,13 @@ sub-sub-commands:
 
 @itemlist[
 
-@item{@exec{install pkg ...} -- Installs the list of packages. It accepts the following options:
+@item{@exec{install pkg ...} -- Installs the list of @tech{package
+sources}. The first feasible interpretation of each string as a
+package source is used. For example, local files are preferred to
+local directories which are preferred to remote URLs, etc. (This is
+only relevant when you have a directory with the same name as a
+package you intend to install from a @tech{package name service}.)  It
+accepts the following options:
 
  @itemlist[
 
