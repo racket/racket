@@ -107,8 +107,10 @@ double *scheme_mz_retain_double(mz_jit_state *jitter, double d)
 #endif
 
 #ifdef SET_DEFAULT_LONG_JUMPS
-static int check_long_mode(uintptr_t low, uintptr_t high) 
+static int check_long_mode(uintptr_t low, uintptr_t size) 
 {
+  uintptr_t high = low + size;
+
   if (default_long_jumps)
     return 1;
   
@@ -257,7 +259,7 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
       /* In the case that we start allocating so much that the address
          moves beyond the 32-bit half where code normally resides,
          then switch over to long-jump mode. */
-      if (check_long_mode((uintptr_t)buffer, (uintptr_t)(buffer+size))) {
+      if (check_long_mode((uintptr_t)buffer, size)) {
         /* start over */
         known_size = 0;
         use_long_jumps = 1;
@@ -310,7 +312,7 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
     /* Check again after generate, because we may have
        generated new code blocks along the way. */
     if (!use_long_jumps) {
-      if (check_long_mode((uintptr_t)buffer, (uintptr_t)(buffer+size))) {
+      if (check_long_mode((uintptr_t)buffer, size)) {
         /* start over */
         known_size = 0;
         use_long_jumps = 1;
