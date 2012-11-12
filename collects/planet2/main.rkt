@@ -85,9 +85,11 @@
      (config-cmd set key+vals)))]
  [create
   "Bundle a new package"
-  [(#:str "plt") format ()
+  [(#:str #f) format ()
    ("Select the format of the package to be created."
     "Options are: tgz, zip, plt")]
   [#:bool manifest () "Creates a manifest file for a directory, rather than an archive"]
   #:args (maybe-dir)
+  (unless (or manifest format)
+    (error 'planet2 "You must specify an archive format."))
   (create-cmd (if manifest "MANIFEST" format) maybe-dir)])

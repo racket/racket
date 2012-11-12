@@ -27,11 +27,11 @@
 (pkg-tests
  (shelly-case
   "create packages"
-  $ "raco pkg create test-pkgs/pkg-b-first"
-  $ "raco pkg create test-pkgs/pkg-b-second"
-  $ "raco pkg create test-pkgs/pkg-a-first"
-  $ "raco pkg create test-pkgs/pkg-a-second"
-  $ "raco pkg create test-pkgs/pkg-a-third")
+  $ "raco pkg create --format plt test-pkgs/pkg-b-first"
+  $ "raco pkg create --format plt test-pkgs/pkg-b-second"
+  $ "raco pkg create --format plt test-pkgs/pkg-a-first"
+  $ "raco pkg create --format plt test-pkgs/pkg-a-second"
+  $ "raco pkg create --format plt test-pkgs/pkg-a-third")
 
  (with-fake-root
   (shelly-case

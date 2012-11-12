@@ -208,7 +208,7 @@ this command fails atomically. It accepts the following options:
 @item{@exec{create package-directory} -- Bundles a package. It accepts the following options:
 
  @itemlist[
- @item{@DFlag{format str} -- Specifies the archive format. The options are: @exec{tgz}, @exec{zip}, and @exec{plt} (default.)}
+ @item{@DFlag{format str} -- Specifies the archive format. The options are: @exec{tgz}, @exec{zip}, and @exec{plt}. This must be specified if @DFlag{manifest} is not present.}
  @item{@DFlag{manifest} -- Creates a manifest file for a directory, rather than an archive.}
  ]
 }

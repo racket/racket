@@ -24,6 +24,8 @@
     $ "raco pkg create --format tgz test-pkgs/does-not-exist" =exit> 1
     $ "test -f test-pkgs/does-not-exist.tgz" =exit> 1)
 
+   $ "raco pkg create planet2-test1" =exit> 1
+
    (define-syntax-rule (shelly-create pkg fmt)
      (shelly-case
       (format "create format ~a" fmt)
