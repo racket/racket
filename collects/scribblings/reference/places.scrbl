@@ -141,14 +141,15 @@ are simulated using @racket[thread].}
  @racket[start-proc] returns, then the place terminates with the
  @tech{completion value} @racket[0].
 
- In the created place, the @racket[current-input-port] parameter 
- is set to an empty input port, while the values of the
+ In the created place, the @racket[current-input-port] parameter is
+ set to an empty input port, while the values of the
  @racket[current-output-port] and @racket[current-error-port]
- parameters are connected to the current ports in the creating
- place. If the output ports are @tech{file-stream ports}, then the
- connected ports in the places share the underlying stream, otherwise
- a @tech{thread} in the creating place pumps bytes to the current
- ports in the creating place.
+ parameters are connected to the current ports in the creating place.
+ If the output ports in the creating place are @tech{file-stream
+ ports}, then the connected ports in the created place share the
+ underlying streams, otherwise a @tech{thread} in the creating place
+ pumps bytes from the created place's ports to the current ports in the
+ creating place.
 
  The @racket[module-path] argument must not be a module path of the
  form @racket[(#,(racket quote) _sym)] unless the module is predefined (see
