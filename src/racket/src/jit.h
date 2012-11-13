@@ -1218,17 +1218,20 @@ int scheme_inlined_unary_prim(Scheme_Object *o, Scheme_Object *_app, mz_jit_stat
 int scheme_inlined_binary_prim(Scheme_Object *o, Scheme_Object *_app, mz_jit_state *jitter);
 int scheme_inlined_nary_prim(Scheme_Object *o, Scheme_Object *_app, mz_jit_state *jitter);
 int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, int is_tail, int multi_ok, 
-				  Branch_Info *for_branch, int branch_short, int need_sync, int result_ignored);
+				  Branch_Info *for_branch, int branch_short, int need_sync, int result_ignored,
+                                  int dest);
 int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, int is_tail, int multi_ok, 
-				   Branch_Info *for_branch, int branch_short, int need_sync, int result_ignored);
+				   Branch_Info *for_branch, int branch_short, int need_sync, int result_ignored,
+                                   int dest);
 int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int is_tail, int multi_ok, 
-                                 Branch_Info *for_branch, int branch_short, int result_ignored);
+                                 Branch_Info *for_branch, int branch_short, int result_ignored,
+                                 int dest);
 int scheme_generate_inlined_test(mz_jit_state *jitter, Scheme_Object *obj, int branch_short, 
                                  Branch_Info *for_branch, int need_sync);
-int scheme_generate_cons_alloc(mz_jit_state *jitter, int rev, int inline_retry);
+int scheme_generate_cons_alloc(mz_jit_state *jitter, int rev, int inline_retry, int dest);
 int scheme_generate_struct_alloc(mz_jit_state *jitter, int num_args, 
                                  int inline_slow, int pop_and_jump,
-                                 int is_tail, int multi_ok);
+                                 int is_tail, int multi_ok, int dest);
 
 /**********************************************************************/
 /*                             jitalloc                               */
@@ -1258,12 +1261,14 @@ int scheme_can_unbox_directly(Scheme_Object *obj);
 int scheme_generate_unboxing(mz_jit_state *jitter, int target);
 int scheme_generate_pop_unboxed(mz_jit_state *jitter);
 int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
-                               int arith, int cmp, Branch_Info *for_branch, int branch_short);
-int scheme_generate_alloc_double(mz_jit_state *jitter, int inline_retry);
+                               int arith, int cmp, Branch_Info *for_branch, int branch_short,
+                               int dest);
+int scheme_generate_alloc_double(mz_jit_state *jitter, int inline_retry, int dest);
 int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Object *rand, Scheme_Object *rand2, 
 			  int orig_args, int arith, int cmp, int v, 
                           Branch_Info *for_branch, int branch_short,
-                          int unsafe_fx, int unsafe_fl, GC_CAN_IGNORE jit_insn *overflow_refslow);
+                          int unsafe_fx, int unsafe_fl, GC_CAN_IGNORE jit_insn *overflow_refslow,
+                          int dest);
 
 /**********************************************************************/
 /*                              jitcall                               */

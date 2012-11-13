@@ -599,8 +599,9 @@ static int common2(mz_jit_state *jitter, void *_data)
   GC_CAN_IGNORE jit_insn *ref, *ref2;
 
   /* *** call_original_unary_arith_code *** */
-  /* R0 is arg, R2 is code pointer, V1 is return address (for false);
-     if for branch, LOCAL2 is target address for true */
+  /* R0 is arg, R2 is code pointer;
+     if for branch, V1 is return address for false,
+     LOCAL2 is target address for true */
   for (i = 0; i < 3; i++) {
     int argc, j;
     void *code;
@@ -626,6 +627,9 @@ static int common2(mz_jit_state *jitter, void *_data)
 	  sjc.call_original_binary_rev_arith_for_branch_code = code;
 	argc = 2;
       }
+      if (!j) {
+        mz_prolog(JIT_V1);
+      }
       jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(argc));
       CHECK_RUNSTACK_OVERFLOW();
       if (i == 2) {
@@ -638,10 +642,6 @@ static int common2(mz_jit_state *jitter, void *_data)
 	jit_str_p(JIT_RUNSTACK, JIT_R0);
       }
       jit_movi_i(JIT_R1, argc);
-      if (!j) {
-        /* For stack-trace reporting, stuff return address into LOCAL2 */
-        mz_set_local_p(JIT_V1, JIT_LOCAL2);
-      }
       JIT_UPDATE_THREAD_RSPTR();
       mz_prepare_direct_prim(2);
       {
@@ -656,7 +656,7 @@ static int common2(mz_jit_state *jitter, void *_data)
       jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(argc));
       JIT_UPDATE_THREAD_RSPTR();
       if (!j) {
-	jit_jmpr(JIT_V1);
+        mz_epilog(JIT_V1);
       } else {
 	/* In for_branch mode, V1 is target for false, LOCAL2 is target for true */
 	mz_get_local_p(JIT_R1, JIT_LOCAL2);
@@ -669,7 +669,10 @@ static int common2(mz_jit_state *jitter, void *_data)
       }
       CHECK_LIMIT();
 
-      scheme_jit_register_sub_func(jitter, code, scheme_void);
+      if (!j)
+        scheme_jit_register_sub_func(jitter, code, scheme_false);
+      else
+        scheme_jit_register_sub_func(jitter, code, scheme_void);
     }
   }
 
@@ -1682,7 +1685,7 @@ static int common4(mz_jit_state *jitter, void *_data)
       jit_movi_i(JIT_R1, 3);
       if (i == 2) {
         /* need to box flonum */
-        scheme_generate_alloc_double(jitter, 1);
+        scheme_generate_alloc_double(jitter, 1, JIT_R0);
         jit_stxi_p(WORDS_TO_BYTES(2), JIT_RUNSTACK, JIT_R0);
       }
     }
@@ -2103,7 +2106,7 @@ static int common4c(mz_jit_state *jitter, void *_data)
       } else
         num_args = 0;
     
-      scheme_generate_struct_alloc(jitter, num_args, 1, 1, ii == 2, ii == 1);
+      scheme_generate_struct_alloc(jitter, num_args, 1, 1, ii == 2, ii == 1, JIT_R0);
 
       CHECK_LIMIT();
 
@@ -2165,7 +2168,7 @@ static int common5(mz_jit_state *jitter, void *_data)
     jit_ldxr_p(JIT_R1, JIT_RUNSTACK, JIT_R2);
     mz_set_local_p(JIT_R2, JIT_LOCAL3);
 
-    scheme_generate_cons_alloc(jitter, 1, 1);
+    scheme_generate_cons_alloc(jitter, 1, 1, JIT_R0);
     CHECK_LIMIT();
 
     mz_get_local_p(JIT_R2, JIT_LOCAL3);
@@ -2190,7 +2193,7 @@ static int common5(mz_jit_state *jitter, void *_data)
 
     jit_movr_p(JIT_R1, JIT_FP);
     jit_ldxr_d_fppush(JIT_FPR0, JIT_R1, JIT_R0);
-    scheme_generate_alloc_double(jitter, 1);
+    scheme_generate_alloc_double(jitter, 1, JIT_R0);
     CHECK_LIMIT();
     
     mz_epilog(JIT_R2);
@@ -2209,7 +2212,7 @@ static int common5(mz_jit_state *jitter, void *_data)
     jit_movr_d(JIT_FPR0, JIT_FPR2);
 #endif
 
-    scheme_generate_alloc_double(jitter, 1);
+    scheme_generate_alloc_double(jitter, 1, JIT_R0);
     CHECK_LIMIT();
     
     mz_epilog(JIT_R2);
@@ -2281,7 +2284,7 @@ static int common5(mz_jit_state *jitter, void *_data)
         jit_stxi_p(WORDS_TO_BYTES(a1), JIT_RUNSTACK, JIT_V1);
 
       if (i != 0) {
-        scheme_generate_alloc_double(jitter, 1);
+        scheme_generate_alloc_double(jitter, 1, JIT_R0);
         CHECK_LIMIT();
         if (i == 1) {
           jit_ldxi_p(JIT_V1, JIT_RUNSTACK, WORDS_TO_BYTES(a0));

@@ -231,7 +231,7 @@ struct jit_local_state {
 #define jit_movi_i(d, is)		MOVEIri((d), (is))
 #define jit_movi_p(d, is)		(LISri((d), _HI((is))),ORIrri((d),(d),_LO((is))),_jit.x.pc)
 
-#define jit_movr_i(d, rs)		MRrr((d), (rs))
+#define jit_movr_i(d, rs)		(((d) == (rs)) ? 0 : MRrr((d), (rs)))
 #define jit_muli_i(d, rs, is)		jit_chk_ims  ((is), MULLIrri((d), (rs), (is)), MULLWrrr((d), (rs), JIT_AUX))
 #define jit_muli_ui(d, rs, is)		jit_chk_imu15((is), MULLIrri((d), (rs), (is)), MULLWrrr((d), (rs), JIT_AUX))
 #define jit_mulr_i(d, s1, s2)				    MULLWrrr((d), (s1), (s2))

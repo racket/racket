@@ -225,6 +225,7 @@
   (test-bin 8 'unsafe-list-ref (cons 5 (cons 8 9)) 1)
   (test-bin 9 'unsafe-list-ref (cons 5 (cons 8 (cons 9 10))) 2)
   (test-bin (cons 5 9) 'unsafe-list-tail (cons 5 9) 0)
+  (test-bin 3 'unsafe-list-tail 3 0)
   (test-bin 9 'unsafe-list-tail (cons 5 9) 1)
   (test-bin 8 'unsafe-list-tail (cons 5 (cons 9 8)) 2)
 

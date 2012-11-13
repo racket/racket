@@ -1856,6 +1856,30 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
   }
 #endif
 
+#ifdef TEST_ALTERNATE_TARGET_REGISTER
+# define IS_SKIP_TYPE(t) 0
+  if ((target == JIT_R0)
+      && !is_tail
+      && !for_branch
+      && !jitter->unbox
+      && !IS_SKIP_TYPE(SCHEME_TYPE(obj))
+      && !SAME_TYPE(SCHEME_TYPE(obj), scheme_toplevel_type)
+      && !SAME_TYPE(SCHEME_TYPE(obj), scheme_local_type)
+      && !SAME_TYPE(SCHEME_TYPE(obj), scheme_local_unbox_type)
+      && (SCHEME_TYPE(obj) < _scheme_values_types_)) {
+    scheme_generate(obj, jitter, is_tail, wcm_may_replace, multi_ok, JIT_R1, for_branch);
+    CHECK_LIMIT();
+    jit_movr_p(JIT_R0, JIT_R1);
+    return 1;
+  } else if ((target == JIT_R1)
+             && IS_SKIP_TYPE(SCHEME_TYPE(obj))) {
+    scheme_generate(obj, jitter, is_tail, wcm_may_replace, multi_ok, JIT_R0, for_branch);
+    CHECK_LIMIT();
+    jit_movr_p(JIT_R1, JIT_R0);
+    return 1;
+  }
+#endif
+
   orig_target = target;
   result_ignored = (target < 0);
   if (target < 0) target = JIT_R0;
@@ -2437,11 +2461,9 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 
       LOG_IT(("app %d\n", app->num_args));
 
-      r = scheme_generate_inlined_nary(jitter, app, is_tail, multi_ok, NULL, 1, result_ignored);
+      r = scheme_generate_inlined_nary(jitter, app, is_tail, multi_ok, NULL, 1, result_ignored, target);
       CHECK_LIMIT();
       if (r) {
-        if (target != JIT_R0)
-          jit_movr_p(target, JIT_R0);
         if (for_branch) finish_branch(jitter, target, for_branch);
 	return r;
       }
@@ -2462,11 +2484,9 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       Scheme_Object *args[2];
       int r;
 
-      r = scheme_generate_inlined_unary(jitter, app, is_tail, multi_ok, NULL, 1, 0, result_ignored);
+      r = scheme_generate_inlined_unary(jitter, app, is_tail, multi_ok, NULL, 1, 0, result_ignored, target);
       CHECK_LIMIT();
       if (r) {
-        if (target != JIT_R0)
-          jit_movr_p(target, JIT_R0);
         if (for_branch) finish_branch(jitter, target, for_branch);
 	return r;
       }
@@ -2492,11 +2512,9 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       Scheme_Object *args[3];
       int r;
 
-      r = scheme_generate_inlined_binary(jitter, app, is_tail, multi_ok, NULL, 1, 0, result_ignored);
+      r = scheme_generate_inlined_binary(jitter, app, is_tail, multi_ok, NULL, 1, 0, result_ignored, target);
       CHECK_LIMIT();
       if (r) {
-        if (target != JIT_R0)
-          jit_movr_p(target, JIT_R0);
         if (for_branch) finish_branch(jitter, target, for_branch);
 	return r;
       }
