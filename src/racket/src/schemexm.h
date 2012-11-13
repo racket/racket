@@ -319,6 +319,7 @@
 #define scheme_prim_is_method (scheme_extension_table->scheme_prim_is_method)
 #define scheme_make_pair (scheme_extension_table->scheme_make_pair)
 #define scheme_make_mutable_pair (scheme_extension_table->scheme_make_mutable_pair)
+#define scheme_make_list_pair (scheme_extension_table->scheme_make_list_pair)
 #define scheme_make_raw_pair (scheme_extension_table->scheme_make_raw_pair)
 #define scheme_make_byte_string (scheme_extension_table->scheme_make_byte_string)
 #define scheme_make_sized_byte_string (scheme_extension_table->scheme_make_sized_byte_string)

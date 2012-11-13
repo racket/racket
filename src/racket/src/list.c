@@ -37,6 +37,7 @@ READ_ONLY Scheme_Object *scheme_list_star_proc;
 READ_ONLY Scheme_Object *scheme_box_proc;
 READ_ONLY Scheme_Object *scheme_box_p_proc;
 READ_ONLY Scheme_Object *scheme_hash_ref_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_cons_list_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_car_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_cdr_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_mcar_proc;
@@ -155,6 +156,7 @@ static Scheme_Object *make_hasheq_placeholder(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_hasheqv_placeholder(int argc, Scheme_Object *argv[]);
 static Scheme_Object *table_placeholder_p(int argc, Scheme_Object *argv[]);
 
+static Scheme_Object *unsafe_cons_list (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_car (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_cdr (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_list_ref (int argc, Scheme_Object *argv[]);
@@ -752,6 +754,13 @@ scheme_init_unsafe_list (Scheme_Env *env)
   
   scheme_null->type = scheme_null_type;
 
+  REGISTER_SO(scheme_unsafe_cons_list_proc);
+  p = scheme_make_immed_prim(unsafe_cons_list, "unsafe-cons-list", 2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_OMITABLE);
+  scheme_add_global_constant ("unsafe-cons-list", p, env);
+  scheme_unsafe_cons_list_proc = p;
+
   REGISTER_SO(scheme_unsafe_car_proc);
   p = scheme_make_folding_prim(unsafe_car, "unsafe-car", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
@@ -842,6 +851,14 @@ Scheme_Object *scheme_make_pair(Scheme_Object *car, Scheme_Object *cdr)
 #endif
 }
 
+Scheme_Object *scheme_make_list_pair(Scheme_Object *car, Scheme_Object *cdr)
+{
+  GC_CAN_IGNORE Scheme_Object *r;
+  r = scheme_make_pair(car, cdr);
+  SCHEME_PAIR_FLAGS(r) |= PAIR_IS_LIST;
+  return r;
+}
+
 Scheme_Object *scheme_make_mutable_pair(Scheme_Object *car, Scheme_Object *cdr)
 {
   Scheme_Object *cons;
@@ -877,6 +894,7 @@ Scheme_Object *scheme_make_raw_pair(Scheme_Object *car, Scheme_Object *cdr)
 }
 
 # define cons(car, cdr) scheme_make_pair(car, cdr)
+# define lcons(car, cdr) scheme_make_list_pair(car, cdr)
 
 Scheme_Object *scheme_build_list(int size, Scheme_Object **argv)
 {
@@ -884,7 +902,7 @@ Scheme_Object *scheme_build_list(int size, Scheme_Object **argv)
   int i;
 
   for (i = size; i--; ) {
-    pair = cons(argv[i], pair);
+    pair = lcons(argv[i], pair);
   }
 
   return pair;
@@ -900,12 +918,12 @@ Scheme_Object *scheme_build_list_offset(int size, Scheme_Object **argv, int delt
     /* clearing mode: */
     size = -size;
     for (i = size; i-- > delta; ) {
-      pair = cons(argv[i], pair);
+      pair = lcons(argv[i], pair);
       argv[i] = NULL;
     }
   } else {
     for (i = size; i-- > delta; ) {
-      pair = cons(argv[i], pair);
+      pair = lcons(argv[i], pair);
     }
   }
 
@@ -918,7 +936,7 @@ Scheme_Object *scheme_alloc_list(int size)
   int i;
 
   for (i = size; i--; ) {
-    pair = cons(scheme_false, pair);
+    pair = lcons(scheme_false, pair);
   }
 
   return pair;
@@ -968,7 +986,7 @@ scheme_named_map_1(char *name, Scheme_Object *(*fun)(Scheme_Object*, Scheme_Obje
     Scheme_Object *v;
     v = SCHEME_STX_CAR(lst);
     v = fun(v, form);
-    pr = cons(v, scheme_null);
+    pr = lcons(v, scheme_null);
     if (last)
       SCHEME_CDR(last) = pr;
     else
@@ -1168,10 +1186,18 @@ int scheme_is_list(Scheme_Object *obj1)
   }
 
   /* Propagate info further up the chain. */
-  /* We could have a race with JIT-generated code, but the worst
-     should be that we lose a flag setting (dangerous in principle,
-     but not in practice). */
+#ifdef MZ_USE_FUTURES
+  {
+    short orig_flags = flags & (~PAIR_FLAG_MASK);
+    while (!mzrt_cas16(&SCHEME_PAIR_FLAGS(obj2), orig_flags, flags)) {
+      orig_flags = SCHEME_PAIR_FLAGS(obj2);
+      flags = orig_flags | (flags & PAIR_FLAG_MASK);
+    }
+  }
+#else
+  /* no fuel check, so flags could not have changed */
   SCHEME_PAIR_FLAGS(obj2) |= (flags & PAIR_FLAG_MASK);
+#endif
 
   return (flags & PAIR_IS_LIST);
 }
@@ -1187,7 +1213,7 @@ list_p_prim (int argc, Scheme_Object *argv[])
 #define NORMAL_LIST_INIT() l = scheme_null
 #define STAR_LIST_INIT() --argc; l = argv[argc]
 
-#define LIST_BODY(INIT)                          \
+#define LIST_BODY(INIT, cons)                    \
   int i;                                         \
   GC_CAN_IGNORE Scheme_Object *l;                \
   INIT;                                          \
@@ -1199,13 +1225,13 @@ list_p_prim (int argc, Scheme_Object *argv[])
 static Scheme_Object *
 list_prim (int argc, Scheme_Object *argv[])
 {
-  LIST_BODY(NORMAL_LIST_INIT());
+  LIST_BODY(NORMAL_LIST_INIT(), lcons);
 }
 
 static Scheme_Object *
 list_star_prim (int argc, Scheme_Object *argv[])
 {
-  LIST_BODY(STAR_LIST_INIT());
+  LIST_BODY(STAR_LIST_INIT(), cons);
 }
 
 static Scheme_Object *
@@ -1313,7 +1339,7 @@ reverse_prim (int argc, Scheme_Object *argv[])
   while (!SCHEME_NULLP (lst)) {
     if (!SCHEME_PAIRP(lst))
       scheme_wrong_contract("reverse", "list?", 0, argc, argv);
-    last = cons(SCHEME_CAR (lst), last);
+    last = lcons(SCHEME_CAR (lst), last);
     lst = SCHEME_CDR (lst);
 
     SCHEME_USE_FUEL(1);
@@ -2498,7 +2524,7 @@ static Scheme_Object *do_map_hash_table(int argc,
           p[1] = v;
           if (keep) {
             v = _scheme_apply(f, 2, p);
-            v = cons(v, scheme_null);
+            v = lcons(v, scheme_null);
             if (last)
               SCHEME_CDR(last) = v;
             else
@@ -2530,7 +2556,7 @@ static Scheme_Object *do_map_hash_table(int argc,
           p[1] = v;
           if (keep) {
             v = _scheme_apply(f, 2, p);
-            v = cons(v, scheme_null);
+            v = lcons(v, scheme_null);
             if (last)
               SCHEME_CDR(last) = v;
             else
@@ -2562,7 +2588,7 @@ static Scheme_Object *do_map_hash_table(int argc,
         p[1] = iv;
         if (keep) {
           v = _scheme_apply(f, 2, p);
-          v = cons(v, scheme_null);
+          v = lcons(v, scheme_null);
           if (last)
             SCHEME_CDR(last) = v;
           else
@@ -3558,6 +3584,12 @@ void scheme_init_ephemerons(void)
 /************************************************************/
 /*                        unsafe                            */
 /************************************************************/
+
+static Scheme_Object *unsafe_cons_list(int argc, Scheme_Object *argv[])
+{
+  return lcons(argv[0], argv[1]);
+}
+
 
 static Scheme_Object *unsafe_car (int argc, Scheme_Object *argv[])
 {

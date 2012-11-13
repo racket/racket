@@ -361,6 +361,7 @@ extern Scheme_Object *scheme_procedure_arity_includes_proc;
 extern Scheme_Object *scheme_void_proc;
 extern Scheme_Object *scheme_pair_p_proc;
 extern Scheme_Object *scheme_mpair_p_proc;
+extern Scheme_Object *scheme_unsafe_cons_list_proc;
 extern Scheme_Object *scheme_unsafe_car_proc;
 extern Scheme_Object *scheme_unsafe_cdr_proc;
 extern Scheme_Object *scheme_unsafe_mcar_proc;

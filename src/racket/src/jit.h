@@ -1228,7 +1228,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
                                  int dest);
 int scheme_generate_inlined_test(mz_jit_state *jitter, Scheme_Object *obj, int branch_short, 
                                  Branch_Info *for_branch, int need_sync);
-int scheme_generate_cons_alloc(mz_jit_state *jitter, int rev, int inline_retry, int dest);
+int scheme_generate_cons_alloc(mz_jit_state *jitter, int rev, int inline_retry, int known_list, int dest);
 int scheme_generate_struct_alloc(mz_jit_state *jitter, int num_args, 
                                  int inline_slow, int pop_and_jump,
                                  int is_tail, int multi_ok, int dest);
@@ -1238,7 +1238,7 @@ int scheme_generate_struct_alloc(mz_jit_state *jitter, int num_args,
 /**********************************************************************/
 
 #ifdef CAN_INLINE_ALLOC
-int scheme_inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int immut,
+int scheme_inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int flags,
 			int keep_r0_r1, int keep_fpr1, int inline_retry);
 int scheme_generate_alloc_retry(mz_jit_state *jitter, int i);
 #else

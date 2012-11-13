@@ -2168,7 +2168,7 @@ static int common5(mz_jit_state *jitter, void *_data)
     jit_ldxr_p(JIT_R1, JIT_RUNSTACK, JIT_R2);
     mz_set_local_p(JIT_R2, JIT_LOCAL3);
 
-    scheme_generate_cons_alloc(jitter, 1, 1, JIT_R0);
+    scheme_generate_cons_alloc(jitter, 1, 1, !i, JIT_R0);
     CHECK_LIMIT();
 
     mz_get_local_p(JIT_R2, JIT_LOCAL3);

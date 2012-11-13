@@ -945,6 +945,7 @@ static int is_movable_prim(Scheme_Object *rator, int n, int cross_lambda)
          return values that contain all arguments: */
       && (SAME_OBJ(scheme_list_proc, rator)
           || (SAME_OBJ(scheme_cons_proc, rator) && (n == 2))
+          || (SAME_OBJ(scheme_unsafe_cons_list_proc, rator) && (n == 2))
           || SAME_OBJ(scheme_list_star_proc, rator)
           || SAME_OBJ(scheme_vector_proc, rator)
           || SAME_OBJ(scheme_vector_immutable_proc, rator)
@@ -2410,6 +2411,7 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
       Scheme_App3_Rec *app3 = (Scheme_App3_Rec *)rand;
       if (IS_NAMED_PRIM(app->rator, "car")) {
         if (SAME_OBJ(scheme_cons_proc, app3->rator)
+            || SAME_OBJ(scheme_unsafe_cons_list_proc, app3->rator)
             || SAME_OBJ(scheme_list_proc, app3->rator)
             || SAME_OBJ(scheme_list_star_proc, app3->rator)) {
           /* (car ({cons|list|list*} X Y)) */
@@ -2421,7 +2423,8 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
         }
       } else if (IS_NAMED_PRIM(app->rator, "cdr")) {
         /* (cdr (cons X Y)) */
-        if (SAME_OBJ(scheme_cons_proc, app3->rator)) {
+        if (SAME_OBJ(scheme_cons_proc, app3->rator)
+            || SAME_OBJ(scheme_unsafe_cons_list_proc, app3->rator)) {
           if ((scheme_omittable_expr(app3->rand2, 1, 5, 0, info, NULL, -1, 0)
                || single_valued_noncm_expression(app3->rand2, 5))
               && scheme_omittable_expr(app3->rand1, 1, 5, 0, info, NULL, -1, 0)) {

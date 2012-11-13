@@ -568,6 +568,7 @@ MZ_EXTERN void scheme_prim_is_method(Scheme_Object *o);
 
 MZ_EXTERN Scheme_Object *scheme_make_pair(Scheme_Object *car, Scheme_Object *cdr);
 MZ_EXTERN Scheme_Object *scheme_make_mutable_pair(Scheme_Object *car, Scheme_Object *cdr);
+MZ_EXTERN Scheme_Object *scheme_make_list_pair(Scheme_Object *car, Scheme_Object *cdr);
 
 MZ_EXTERN Scheme_Object *scheme_make_raw_pair(Scheme_Object *, Scheme_Object *);
 

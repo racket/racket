@@ -1053,7 +1053,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     scheme_generate_arith(jitter, rator, app->rand, NULL, 1, 0, CMP_ODDP, 0, for_branch, branch_short, 0, 0, NULL, dest);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "list?")) {
-    GC_CAN_IGNORE jit_insn *ref0, *ref1, *ref3, *ref4;
+    GC_CAN_IGNORE jit_insn *ref0, *ref1, *ref3, *ref4, *ref6;
 
     mz_runstack_skipped(jitter, 1);
     
@@ -1077,11 +1077,16 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     ref4 = jit_bnei_p(jit_forward(), JIT_R1, scheme_pair_type);
     CHECK_LIMIT();
 
+    /* We have a pair. Optimistically check for PAIR_IS_LIST: */
+    jit_ldxi_s(JIT_R2, JIT_R0, &MZ_OPT_HASH_KEY(&((Scheme_Stx *)0x0)->iso));
+    ref6 = jit_bmsi_ul(jit_forward(), JIT_R2, PAIR_IS_LIST);
+
     if (for_branch) {
       ref0 = jit_patchable_movi_p(JIT_V1, jit_forward());
       (void)jit_calli(sjc.list_p_branch_code);
 
       mz_patch_branch(ref3);
+      mz_patch_branch(ref6);
 
       scheme_add_branch_false_movi(for_branch, ref0);
       scheme_add_branch_false(for_branch, ref1);
@@ -1100,6 +1105,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       ref1 = jit_jmpi(jit_forward());
       
       mz_patch_branch(ref3);
+      mz_patch_branch(ref6);
       (void)jit_movi_p(dest, scheme_true);
 
       mz_patch_ucbranch(ref5);
@@ -1721,7 +1727,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       mz_rs_sync();
       mz_runstack_unskipped(jitter, 1);
       (void)jit_movi_p(JIT_R1, &scheme_null);
-      return scheme_generate_cons_alloc(jitter, 0, 0, dest);
+      return scheme_generate_cons_alloc(jitter, 0, 0, 1, dest);
     } else if (IS_NAMED_PRIM(rator, "box")) {
       mz_runstack_skipped(jitter, 1);
       scheme_generate_non_tail(app->rand, jitter, 0, 1, 0);
@@ -3023,14 +3029,28 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       return 1;
     } else if (IS_NAMED_PRIM(rator, "cons")
                || IS_NAMED_PRIM(rator, "list*")) {
-      int dir;
+      int dir, known_list;
       LOG_IT(("inlined cons\n"));
 
       dir = generate_two_args(app->rand1, app->rand2, jitter, 0, 2);
       CHECK_LIMIT();
       mz_rs_sync();
+      
+      if (scheme_is_list(app->rand2))
+        known_list = 1;
+      else
+        known_list = 2;
 
-      return scheme_generate_cons_alloc(jitter, dir == -1, 0, dest);
+      return scheme_generate_cons_alloc(jitter, dir == -1, 0, known_list, dest);
+    } else if (IS_NAMED_PRIM(rator, "unsafe-cons-list")) {
+      int dir;
+      LOG_IT(("inlined unsafe-cons-list\n"));
+
+      dir = generate_two_args(app->rand1, app->rand2, jitter, 0, 2);
+      CHECK_LIMIT();
+      mz_rs_sync();
+
+      return scheme_generate_cons_alloc(jitter, dir == -1, 0, 1, dest);
     } else if (IS_NAMED_PRIM(rator, "mcons")) {
       LOG_IT(("inlined mcons\n"));
 
@@ -3074,7 +3094,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       CHECK_LIMIT();
       mz_rs_sync();
 
-      scheme_generate_cons_alloc(jitter, 1, 0, JIT_R0);
+      scheme_generate_cons_alloc(jitter, 1, 0, 1, JIT_R0);
       CHECK_LIMIT();
 
       jit_ldr_p(JIT_R1, JIT_RUNSTACK);
@@ -3082,7 +3102,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       mz_runstack_popped(jitter, 1);
       CHECK_LIMIT();
       
-      return scheme_generate_cons_alloc(jitter, 1, 0, dest);
+      return scheme_generate_cons_alloc(jitter, 1, 0, 1, dest);
     } else if (IS_NAMED_PRIM(rator, "vector-immutable")
                || IS_NAMED_PRIM(rator, "vector")) {
       return generate_vector_alloc(jitter, rator, NULL, NULL, app, dest);
@@ -3780,28 +3800,50 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       CHECK_LIMIT();
       mz_rs_sync();
 
+      if (c <= 4) {
+        /* fully inline a small list */
+        int i, c2 = c, known_list;
+        if (star) {
+          c2--;
+          mz_rs_ldxi(JIT_R1, c2);
+          known_list = scheme_is_list(app->args[c2]);
+        } else {
+          known_list = 1;
+          if (c)
+            (void)jit_movi_p(JIT_R1, scheme_null);
+          else
+            (void)jit_movi_p(dest, scheme_null);
+        }
+
+        for (i = c2; i--; ) {
+          mz_rs_ldxi(JIT_R0, i);
+          scheme_generate_cons_alloc(jitter, 0, 0, known_list, (i > 0) ? JIT_R1 : dest);
+          CHECK_LIMIT();
+        }
+      } else {
 #ifdef CAN_INLINE_ALLOC
-      jit_movi_l(JIT_R2, c);
-      if (star)
-        (void)jit_calli(sjc.make_list_star_code);
-      else
-        (void)jit_calli(sjc.make_list_code);
-      jit_movr_p(dest, JIT_R0);
-#else
-      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
-      jit_movi_l(JIT_R0, c);
-      mz_prepare(2);
-      jit_pusharg_l(JIT_R0);
-      jit_pusharg_p(JIT_RUNSTACK);
-      {
-        GC_CAN_IGNORE jit_insn *refr;
+        jit_movi_l(JIT_R2, c);
         if (star)
-          (void)mz_finish_lwe(ts_scheme_jit_make_list_star, refr);
+          (void)jit_calli(sjc.make_list_star_code);
         else
-          (void)mz_finish_lwe(ts_scheme_jit_make_list, refr);
-      }
-      jit_retval(dest);
+          (void)jit_calli(sjc.make_list_code);
+        jit_movr_p(dest, JIT_R0);
+#else
+        JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+        jit_movi_l(JIT_R0, c);
+        mz_prepare(2);
+        jit_pusharg_l(JIT_R0);
+        jit_pusharg_p(JIT_RUNSTACK);
+        {
+          GC_CAN_IGNORE jit_insn *refr;
+          if (star)
+            (void)mz_finish_lwe(ts_scheme_jit_make_list_star, refr);
+          else
+            (void)mz_finish_lwe(ts_scheme_jit_make_list, refr);
+        }
+        jit_retval(dest);
 #endif
+      }
 
       if (c) {
         mz_rs_inc(c); /* no sync */
@@ -3877,12 +3919,13 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
   return 0;
 }
 
-int scheme_generate_cons_alloc(mz_jit_state *jitter, int rev, int inline_retry, int dest)
+int scheme_generate_cons_alloc(mz_jit_state *jitter, int rev, int inline_retry, int known_list, int dest)
 /* Args must be in R0 (car) and R1 (cdr); uses R2 and V1 as temporaries */
 {
 #ifdef CAN_INLINE_ALLOC
   /* Inlined alloc */
-  scheme_inline_alloc(jitter, sizeof(Scheme_Simple_Object), scheme_pair_type, 0, 1, 0, inline_retry);
+  scheme_inline_alloc(jitter, sizeof(Scheme_Simple_Object), scheme_pair_type, 0, 1, 
+                      known_list ? PAIR_IS_LIST : 0, inline_retry);
   CHECK_LIMIT();
   
   if (rev) {

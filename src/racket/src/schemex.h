@@ -454,6 +454,7 @@ Scheme_Object *(*scheme_make_closed_prim_w_everything)(Scheme_Closed_Prim *fun,
 void (*scheme_prim_is_method)(Scheme_Object *o);
 Scheme_Object *(*scheme_make_pair)(Scheme_Object *car, Scheme_Object *cdr);
 Scheme_Object *(*scheme_make_mutable_pair)(Scheme_Object *car, Scheme_Object *cdr);
+Scheme_Object *(*scheme_make_list_pair)(Scheme_Object *car, Scheme_Object *cdr);
 Scheme_Object *(*scheme_make_raw_pair)(Scheme_Object *, Scheme_Object *);
 Scheme_Object *(*scheme_make_byte_string)(const char *chars);
 Scheme_Object *(*scheme_make_sized_byte_string)(char *chars, intptr_t len, int copy);
