@@ -60,22 +60,8 @@
 
          ;; Old Design Pattern 1 API
          ;; not documented
-         dcg-get-cg
-         dcg-send
-         dcg-send-type
-         dcg-recv
-         dcg-kill
-
-         dcg-send-new-dchannel
-         dcg-spawn-remote-dplace
-
-         dchannel-put
-         dchannel-get
-
-         launch-config
          startup-config
          (struct-out node-config)
-         (struct-out dcg)
 
          ;v3 api
          build-distributed-launch-path
@@ -207,15 +193,20 @@
     (log-message l severity (format "~a ~a" (date->string (current-date) #t) msg) #f)))
 
 ;node configuration
-(struct node-config (node-name node-port proc-count ssh-path racket-path distributed-path mod-path func-name conf-path conf-name) #:prefab)
-;distributed communication group
-(struct dcg (ch id n))
+(struct node-config (node-name 
+                     node-port
+                     proc-count
+                     ssh-path
+                     racket-path
+                     distributed-path
+                     mod-path
+                     func-name
+                     conf-path
+                     conf-name) #:prefab)
 ;distributed communication group message
 (struct dcgm (type src dest msg) #:prefab)
 
-(struct dchannel (ch) #:prefab)
-
-;dcg types
+;dcgm types
 (define DCGM-TYPE-NORMAL               0)
 (define DCGM-TYPE-DIE                  1)
 (define DCGM-TYPE-NEW-DCHANNEL         2)
@@ -236,53 +227,10 @@
 (define DCGM-CONTROL-NEW-PLACE       101)
 (define DCGM-CONTROL-NEW-CONNECTION  102)
 
-
-(define (dchannel-put ch msg)
-  (unless (or (dchannel? ch) (place-channel? ch))
-    (raise-mismatch-error 'dchannel-get "expected dchannel?, got " ch))
-  (if (dchannel? ch)
-    (place-channel-put (dchannel-ch ch) msg)
-    (place-channel-put ch msg)))
-
-(define (dchannel-get ch)
-  (unless (or (dchannel? ch) (place-channel? ch))
-    (raise-mismatch-error 'dchannel-get "expected dchannel?, got " ch))
-  (if (dchannel? ch)
-    (place-channel-get (dchannel-ch ch))
-    (place-channel-get ch)))
-
-(define (dcg-send-type c type dest msg)
-  (place-channel-put (dcg-ch c) (dcgm type (dcg-id c) dest msg)))
-
-(define (dcg-send c dest msg)
-  (dcg-send-type c DCGM-TYPE-NORMAL dest msg))
-
-(define (dcg-get-cg ch) (apply dcg ch (place-channel-get ch)))
-
-(define (dcg-kill c dest)
-  (place-channel-put (dcg-ch c) (dcgm DCGM-TYPE-DIE (dcg-id c) dest "DIE")))
-
-(define (dcg-send-new-dchannel c dest)
-  (define-values (e1 e2) (place-channel))
-  (dcg-send-type c DCGM-TYPE-NEW-DCHANNEL dest (dchannel e2))
-  (dchannel e1))
-
 (define (send-new-place-channel-to-named-dest ch src-id dest-list)
   (define-values (e1 e2) (place-channel))
   (place-channel-put ch (dcgm DCGM-NEW-PLACE-CHANNEL (list 'new-place-channel src-id) dest-list e2))
   e1)
-
-
-;; Contract: start-node-router : VectorOf[ (or/c place-channel socket-connection)] -> (void)
-;; Purpose: Forward messages between channels and build new point-to-point subchannels
-;; Example:
-(define (dcg-spawn-remote-dplace c hostname modpath funcname #:listen-port [listen-port 6432])
-  (define-values (e1 e2) (place-channel))
-  (dcg-send-type c DCGM-TYPE-SPAWN-REMOTE-PROCESS (list hostname listen-port modpath funcname) e2)
-  e1)
-
-(define (dcg-recv c)
-  (dcgm-msg (place-channel-get (dcg-ch c))))
 
 (define-syntax-rule (reduce-sum seq item body ...)
   (for/fold ([sum 0]) ([item seq]) (+ sum (begin body ...))))
@@ -420,7 +368,7 @@
       (define/public (register nes)
         (cons
           (wrap-evt
-            (if (dchannel? pch) (dchannel-ch pch) pch)
+            pch
             (lambda (e)
               (match e
                 [(dcgm #;8 (== DCGM-TYPE-LOG-TO-PARENT) _ _ (list severity msg))
@@ -1086,7 +1034,7 @@
                                             (cond
                                               [k
                                                (lambda (e)
-                                                 (call-in-message-router(lambda ()
+                                                 (call-in-message-router (lambda ()
                                                    (begin0
                                                      (k e)
                                                      (set! k #f)))))]
@@ -1523,75 +1471,6 @@
 
 (define (log-message severity msg)
   (dcgm DCGM-TYPE-LOG-TO-PARENT -1 -1 (list severity msg)))
-
-
-
-
-;; Contract: node-config -> (void)
-;;
-;; Purpose: use ssh to launch remote nodes of distributed places
-;;
-;; Example:
-(define (launch-config config)
-  ;FIXME kill safety
-  (define nodes
-    (for/list ([c config]
-               [i (in-naturals)])
-      (list
-        (call-with-values
-          (lambda ()
-            (match-define (node-config node-name node-port _ ssh-path racket-path distributed-path mod-path func-name config-path conf-name) c)
-            (subprocess #f #f #f (ssh-bin-path) node-name racket-path "-tm"
-                        distributed-launch-path
-                        "launch"
-                        config-path
-                        (symbol->string conf-name)
-                        (number->string i)))
-          list)
-        c)))
-
-  (define bb (make-bytes 4096))
-  (define handlers
-    (let ()
-      (define (mkhandler port config)
-        (let ()
-          (define self
-            (wrap-evt port
-              (lambda (x)
-                (define bbl (read-bytes-avail!* bb x))
-                (define (print-out x)
-                  (log-debug (format "~a:~a:~a ~a" (node-config-node-name config) (node-config-node-port config) bbl x))
-                  (flush-output))
-                (cond [(eof-object? bbl)
-                       (print-out "EOF")
-                       (set! handlers (remove self handlers))]
-                      [else
-                       (print-out (subbytes bb 0 bbl))]))))
-          self))
-
-        (for/fold ([r null]) ([n nodes])
-          (list* (mkhandler (second (first n)) (second n))
-                 (mkhandler (fourth (first n)) (second n))
-                 r))))
-  (define normal-finish #f)
-  (dynamic-wind
-    (lambda () (void))
-    (lambda ()
-      (let loop ()
-        (apply sync/enable-break handlers)
-        (unless (null? handlers)
-          (loop)))
-      (set! normal-finish #t))
-    (lambda ()
-      (unless normal-finish
-        (for ([n nodes])
-          (log-debug (format "Killing ~a" n))
-          (define out (third (first n)))
-          (with-handlers ([exn:fail? (lambda (e) (log-debug (format "Error sending Ctrl-C: ~a" e)))])
-            (write-byte 3 out)
-            (flush-output out)
-            (sleep))
-          (subprocess-kill (first (first n)) #f))))))
 
 ;;
 ;; API Version 3
