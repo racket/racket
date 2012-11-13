@@ -285,6 +285,11 @@ struct jit_local_state {
 #define jit_ldr_uc(rd, rs)		jit_ldxr_uc((rd), 0, (rs))	      
 #define jit_ldr_us(rd, rs)		jit_ldxr_us((rd), 0, (rs))	      
 
+#define jit_stir_l(rd, is) (jit_movi_l(JIT_AUX, (intptr_t)(is)), jit_str_l(rd, JIT_AUX))
+#define jit_stixi_l(id, rd, is) (jit_movi_l(JIT_AUX, is), jit_stxi_l(id, rd, JIT_AUX))
+#define jit_stir_p(rd, is) jit_stir_l(rd, is)
+#define jit_stixi_p(id, rd, is) jit_stixi_l(id, rd, is) 
+
 /* e.g.
  *	0x01234567	_HA << 16 = 0x01230000	_LA = 0x00004567 _HA << 16 + LA = 0x01234567
  * 	0x89abcdef	_HA << 16 = 0x89ac0000  _LA = 0xffffcdef _HA << 16 + LA = 0x89abcdef

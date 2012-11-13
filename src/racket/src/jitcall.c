@@ -653,8 +653,7 @@ static int generate_retry_call(mz_jit_state *jitter, int num_rands, int multi_ok
   CHECK_LIMIT();
 
   /* Clear tail-call arguments pointer: */
-  (void)jit_movi_p(JIT_V1, NULL);
-  jit_stxi_p(&((Scheme_Thread *)0x0)->ku.apply.tail_rands, JIT_R1, JIT_V1);
+  jit_stixi_p(&((Scheme_Thread *)0x0)->ku.apply.tail_rands, JIT_R1, NULL);
   CHECK_LIMIT();
 
   /* R1 is still the thread. 
@@ -708,8 +707,7 @@ static int generate_ignored_result_check(mz_jit_state *jitter)
 
   refm = jit_bnei_p(jit_forward(), JIT_R0, SCHEME_MULTIPLE_VALUES);
   mz_tl_ldi_p(JIT_R1, tl_scheme_current_thread);
-  (void)jit_movi_p(JIT_R0, NULL);
-  jit_stxi_p(&((Scheme_Thread *)0x0)->ku.multiple.array, JIT_R1, JIT_R0);
+  jit_stixi_p(&((Scheme_Thread *)0x0)->ku.multiple.array, JIT_R1, NULL);
   (void)jit_movi_p(JIT_R0, scheme_void);
   mz_patch_branch(refm);
 

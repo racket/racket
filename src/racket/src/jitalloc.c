@@ -160,18 +160,15 @@ int scheme_inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int immut
       a_word = GC_pair_initial_word(amt);
     else
       a_word = GC_initial_word(amt);
-    jit_movi_l(JIT_R2, a_word);
-    jit_str_l(JIT_V1, JIT_R2);
+    jit_stir_l(JIT_V1, a_word);
     
     /* Scheme_Object header: */
     a_word = initial_tag_word(ty, immut);
-    jit_movi_l(JIT_R2, a_word);
-    jit_stxi_l(sizeof(intptr_t), JIT_V1, JIT_R2);
+    jit_stixi_l(sizeof(intptr_t), JIT_V1, a_word);
   } else {
     /* an array of pointers */
     a_word = GC_array_initial_word(amt);
-    jit_movi_l(JIT_R2, a_word);
-    jit_str_l(JIT_V1, JIT_R2);
+    jit_stir_l(JIT_V1, a_word);
   }
 
   CHECK_LIMIT();

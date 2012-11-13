@@ -3827,9 +3827,8 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
         mz_runstack_popped(jitter, c);
       } else {
         mz_tl_ldi_p(JIT_R2, tl_scheme_current_thread);
-        jit_movi_l(JIT_R0, 0);
-        jit_stxi_l(((int)&((Scheme_Thread *)0x0)->ku.multiple.count), JIT_R2, JIT_R0);
-        jit_stxi_p(((int)&((Scheme_Thread *)0x0)->ku.multiple.array), JIT_R2, JIT_R0);
+        jit_stixi_l(((int)&((Scheme_Thread *)0x0)->ku.multiple.count), JIT_R2, 0);
+        jit_stixi_p(((int)&((Scheme_Thread *)0x0)->ku.multiple.array), JIT_R2, NULL);
         (void)jit_movi_p(dest, SCHEME_MULTIPLE_VALUES);
       }
 
