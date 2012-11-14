@@ -2551,7 +2551,27 @@
                                  (newline)))
                    list)))
 
-  
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure compiler isn't too agressive for the validator
+;;  in terms of typed arguments:
+
+(let ([m '(module m racket/base
+            (require racket/flonum)
+            (define (f x)
+              (letrec ([z (if x (other 1) 'none)]
+                       [collect (lambda (x)
+                                  (lambda (n)
+                                    (list '(1 2 3)
+                                          (fl+ n x))))]
+                       [a (collect 0.0)]
+                       [other 6])
+                (values a z))))])
+  (define o (open-output-bytes))
+  (write (compile m) o)
+  (parameterize ([read-accept-compiled #t])
+    ;; too-aggressive compilation produces a validator failure here
+    (read (open-input-bytes (get-output-bytes o)))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

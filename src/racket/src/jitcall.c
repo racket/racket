@@ -1178,13 +1178,13 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
                 ? alt_rands[i+1+args_already_in_place] 
                 : app->args[i+1+args_already_in_place]);
         if (!SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)
-            || (SCHEME_GET_LOCAL_FLAGS(rand) == SCHEME_LOCAL_FLONUM)) {
+            || (SCHEME_GET_LOCAL_TYPE(rand) == SCHEME_LOCAL_TYPE_FLONUM)) {
           int aoffset = JIT_FRAME_FLONUM_OFFSET - (arg_tmp_offset * sizeof(double));
           GC_CAN_IGNORE jit_insn *iref;
           if (i != num_rands - 1)
             mz_pushr_p(JIT_R0);
           if (SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)) {
-            /* assert: SCHEME_GET_LOCAL_FLAGS(rand) == SCHEME_LOCAL_FLONUM */
+            /* assert: SCHEME_GET_LOCAL_TYPE(rand) == SCHEME_LOCAL_TYPE_FLONUM */
             /* have to check for an existing box */
             if (i != num_rands - 1)
               mz_rs_ldxi(JIT_R0, i+1);
@@ -1450,7 +1450,7 @@ static jit_direct_arg *check_special_direct_args(Scheme_App_Rec *app, Scheme_Obj
          ? alt_rands[i+1+args_already_in_place] 
          : app->args[i+1+args_already_in_place]);
     if (SAME_TYPE(SCHEME_TYPE(v), scheme_local_type)
-        && !SCHEME_GET_LOCAL_FLAGS(v)) {
+        && !SCHEME_GET_LOCAL_TYPE(v)) {
       pos = SCHEME_LOCAL_POS(v);
       for (j = 0; j < n; j++) {
         if (reg_to_pos[j] == pos)
@@ -1859,7 +1859,7 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
              : app->args[1+args_already_in_place]);
       t = SCHEME_TYPE(arg);
       if ((num_rands == 1) && ((SAME_TYPE(scheme_local_type, t)
-                                && ((SCHEME_GET_LOCAL_FLAGS(arg) != SCHEME_LOCAL_FLONUM)))
+                                && ((SCHEME_GET_LOCAL_TYPE(arg) != SCHEME_LOCAL_TYPE_FLONUM)))
 			       || (t >= _scheme_values_types_))) {
 	/* App of something complex to a local variable. We
 	   can move the proc directly to V1. */

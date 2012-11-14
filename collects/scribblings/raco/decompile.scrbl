@@ -110,18 +110,11 @@ Many forms in the decompiled code, such as @racket[module],
  @racketmodname[racket/flonum] and @racketmodname[racket/unsafe/ops]
  are always inlined, so @racketidfont{#%in} is not shown for them.}
 
-@item{Some applications of flonum operations from @racketmodname[racket/flonum] 
- and @racketmodname[racket/unsafe/ops] are annotated with
- @racketidfont{#%flonum}, indicating a place where the JIT compiler
- might avoid allocation for intermediate flonum results. A single
- @racketidfont{#%flonum} by itself is not useful, but a
- @racketidfont{#%flonum} operation that consumes a
- @racketidfont{#%flonum} or @racketidfont{#%from-flonum} argument
- indicates a potential performance improvement. A
- @racketidfont{#%from-flonum} wraps an identifier that is bound by
- @racket[let] with a @racketidfont{#%as-flonum} around its value,
- which indicates a local binding that can avoid boxing (when used as
- an argument to an operation that can work with unboxed values).}
+@item{Function arguments and local bindings that are known to have a
+ particular type have names that embed the known type. For example, an
+ argument might have a name that starts @racketidfont{argflonum} or a
+ local binding might have a name that starts @racketidfont{flonum} to
+ indicate a flonum value.}
 
 @item{A @racketidfont{#%decode-syntax} form corresponds to a syntax
  object.}

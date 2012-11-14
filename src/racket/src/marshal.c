@@ -708,14 +708,12 @@ static Scheme_Object *write_compiled_closure(Scheme_Object *obj)
 
   svec_size = data->closure_size;
   if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
-    svec_size += ((2 * (data->num_params + data->closure_size)) + BITS_PER_MZSHORT - 1) / BITS_PER_MZSHORT;
+    svec_size += ((CLOS_TYPE_BITS_PER_ARG * (data->num_params + data->closure_size)) + BITS_PER_MZSHORT - 1) / BITS_PER_MZSHORT;
     {
       int k, mv;
       for (k = data->num_params + data->closure_size; --k; ) {
-        mv = ((data->closure_map[data->closure_size + ((2 * k) / BITS_PER_MZSHORT)]
-               >> ((2 * k) %  BITS_PER_MZSHORT))
-              & 0x3);
-        if (mv == 0x3)
+        mv = scheme_boxmap_get(data->closure_map, k, data->closure_size);
+        if (mv > (CLOS_TYPE_TYPE_OFFSET + SCHEME_MAX_LOCAL_TYPE))
           scheme_signal_error("internal error: inconsistent closure/argument type");
       }
     }

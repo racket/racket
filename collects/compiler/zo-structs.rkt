@@ -146,17 +146,20 @@
                                 [flags (listof (or/c 'preserves-marks 'is-method 'single-result
                                                      'only-rest-arg-not-used 'sfs-clear-rest-args))]
                                 [num-params exact-nonnegative-integer?]
-                                [param-types (listof (or/c 'val 'ref 'flonum))]
+                                [param-types (listof (or/c 'val 'ref 'flonum 'fixnum))]
                                 [rest? boolean?]
                                 [closure-map (vectorof exact-nonnegative-integer?)]
-                                [closure-types (listof (or/c 'val/ref 'flonum))]
+                                [closure-types (listof (or/c 'val/ref 'flonum 'fixnum))]
                                 [toplevel-map (or/c #f (set/c exact-nonnegative-integer?))]
                                 [max-let-depth exact-nonnegative-integer?]
                                 [body (or/c expr? seq? any/c)])) ; `lambda'
 (define-form-struct (closure expr) ([code lam?] [gen-id symbol?])) ; a static closure (nothing to close over)
 (define-form-struct (case-lam expr) ([name (or/c symbol? vector? empty?)] [clauses (listof (or/c lam? closure?))]))
 
-(define-form-struct (let-one expr) ([rhs (or/c expr? seq? any/c)] [body (or/c expr? seq? any/c)] [flonum? boolean?] [unused? boolean?])) ; pushes one value onto stack
+(define-form-struct (let-one expr) ([rhs (or/c expr? seq? any/c)]  ; pushes one value onto stack
+                                    [body (or/c expr? seq? any/c)] 
+                                    [type (or/c #f 'flonum 'fixnum)]
+                                    [unused? boolean?]))
 (define-form-struct (let-void expr) ([count exact-nonnegative-integer?] [boxes? boolean?] [body (or/c expr? seq? any/c)])) ; create new stack slots
 (define-form-struct (install-value expr) ([count exact-nonnegative-integer?] 
                                           [pos exact-nonnegative-integer?] 
@@ -166,7 +169,11 @@
 (define-form-struct (let-rec expr) ([procs (listof lam?)] [body (or/c expr? seq? any/c)])) ; put `letrec'-bound closures into existing stack slots
 (define-form-struct (boxenv expr) ([pos exact-nonnegative-integer?] [body (or/c expr? seq? any/c)])) ; box existing stack element
 
-(define-form-struct (localref expr) ([unbox? boolean?] [pos exact-nonnegative-integer?] [clear? boolean?] [other-clears? boolean?] [flonum? boolean?])) ; access local via stack
+(define-form-struct (localref expr) ([unbox? boolean?] 
+                                     [pos exact-nonnegative-integer?] 
+                                     [clear? boolean?] 
+                                     [other-clears? boolean?] 
+                                     [type (or/c #f 'flonum 'fixnum)])) ; access local via stack
 
 
 (define-form-struct (topsyntax expr) ([depth exact-nonnegative-integer?] [pos exact-nonnegative-integer?] [midpt exact-nonnegative-integer?])) ; access syntax object via prefix array (which is on stack)

@@ -1087,6 +1087,11 @@ static void emit_indentation(mz_jit_state *jitter)
 
 /**********************************************************************/
 
+/* Does boxing a type require registers, possibly GC, etc.? */
+#define JIT_TYPE_NEEDS_BOXING(t) ((t) == SCHEME_LOCAL_TYPE_FLONUM)
+
+/**********************************************************************/
+
 #ifdef MZ_USE_FUTURES
 # define mz_prepare_direct_prim(n) mz_prepare(n)
 # define mz_finishr_direct_prim(reg, proc, refr) (jit_pusharg_p(reg), (void)mz_finish_lwe(proc, refr))

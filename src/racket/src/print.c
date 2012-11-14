@@ -3021,12 +3021,14 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 
       if (SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_UNUSED)
         print_compact(pp, CPT_LET_ONE_UNUSED);
-      else if (SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_FLONUM)
-        print_compact(pp, CPT_LET_ONE_FLONUM);
+      else if (SCHEME_LET_ONE_TYPE(lo))
+        print_compact(pp, CPT_LET_ONE_TYPED);
       else
         print_compact(pp, CPT_LET_ONE);
       print(scheme_protect_quote(lo->value), notdisplay, 1, NULL, mt, pp);
       closed = print(scheme_protect_quote(lo->body), notdisplay, 1, NULL, mt, pp);
+      if (SCHEME_LET_ONE_TYPE(lo))
+        print_compact_number(pp, SCHEME_LET_ONE_TYPE(lo));
     }
   else if (compact && SAME_TYPE(SCHEME_TYPE(obj), scheme_branch_type))
     {

@@ -124,7 +124,7 @@ static int is_unboxing_immediate(Scheme_Object *obj, int unsafely)
   t = SCHEME_TYPE(obj);
   switch (t) {
   case scheme_local_type:
-    if (SCHEME_LOCAL_FLAGS(obj) == SCHEME_LOCAL_FLONUM)
+    if (SCHEME_GET_LOCAL_TYPE(obj) == SCHEME_LOCAL_TYPE_FLONUM)
       return 1;
     return unsafely;
   case scheme_toplevel_type:
@@ -1086,7 +1086,7 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
         simple_rand = (scheme_ok_to_move_local(rand)
                        || SCHEME_INTP(rand));
         simple_rand2 = (SAME_TYPE(SCHEME_TYPE(rand2), scheme_local_type)
-                        && (SCHEME_GET_LOCAL_FLAGS(rand2) != SCHEME_LOCAL_FLONUM));
+                        && (SCHEME_GET_LOCAL_TYPE(rand2) != SCHEME_LOCAL_TYPE_FLONUM));
         if (simple_rand && simple_rand2) {
           if (mz_CURRENT_REG_STATUS_VALID()
               && (jitter->r0_status >= 0)

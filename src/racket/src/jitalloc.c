@@ -100,16 +100,21 @@ static intptr_t read_first_word(void *sp)
   return foo;
 }
 
-static intptr_t initial_tag_word(Scheme_Type tag, int immut)
+static intptr_t initial_tag_word(Scheme_Type tag, int flags)
 {
   GC_CAN_IGNORE Scheme_Small_Object sp;
   memset(&sp, 0, sizeof(Scheme_Small_Object));
   sp.iso.so.type = tag;
-  if (immut) SCHEME_SET_IMMUTABLE(&sp);
+  if (flags) {
+    if (tag == scheme_pair_type)
+      SCHEME_PAIR_FLAGS(&sp) |= flags;
+    else
+      SCHEME_SET_IMMUTABLE(&sp);
+  }
   return read_first_word((void *)&sp);
 }
 
-int scheme_inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int immut,
+int scheme_inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int flags,
 			int keep_r0_r1, int keep_fpr1, int inline_retry)
 /* Puts allocated result at JIT_V1; first word is GC tag.
    Uses JIT_R2 as temporary. The allocated memory is "dirty" (i.e., not 0ed).
@@ -163,7 +168,7 @@ int scheme_inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int immut
     jit_stir_l(JIT_V1, a_word);
     
     /* Scheme_Object header: */
-    a_word = initial_tag_word(ty, immut);
+    a_word = initial_tag_word(ty, flags);
     jit_stixi_l(sizeof(intptr_t), JIT_V1, a_word);
   } else {
     /* an array of pointers */

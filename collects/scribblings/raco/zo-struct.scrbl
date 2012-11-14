@@ -270,7 +270,7 @@ binding, constructor, etc.}
              [flags (listof (or/c 'preserves-marks 'is-method 'single-result 
                                   'only-rest-arg-not-used 'sfs-clear-rest-args))]
              [num-params exact-nonnegative-integer?]
-             [param-types (listof (or/c 'val 'ref 'flonum))]
+             [param-types (listof (or/c 'val 'ref 'flonum 'fixnum))]
              [rest? boolean?]
              [closure-map (vectorof exact-nonnegative-integer?)]
              [closure-types (listof (or/c 'val/ref 'flonum))]
@@ -339,13 +339,13 @@ binding, constructor, etc.}
 @defstruct+[(let-one expr)
             ([rhs (or/c expr? seq? any/c)]
              [body (or/c expr? seq? any/c)]
-             [flonum? boolean?]
+             [type (or/c #f 'flonum 'fixnum)]
              [unused? boolean?])]{
   Pushes an uninitialized slot onto the stack, evaluates @racket[rhs]
   and puts its value into the slot, and then runs @racket[body].  If
-  @racket[flonum?] is @racket[#t], then @racket[rhs] must produce a
-  flonum, and the slot must be accessed by @racket[localref]s that
-  expect a flonum.  If @racket[unused?] is @racket[#t], then the slot
+  @racket[type] is not @racket[#f], then @racket[rhs] must produce a
+  value of the corresponding type, and the slot must be accessed by @racket[localref]s that
+  expect the type.  If @racket[unused?] is @racket[#t], then the slot
   must not be used, and the value of @racket[rhs] is not actually pushed
   onto the stack (but @racket[rhs] is constrained to produce a single
   value).
@@ -402,7 +402,7 @@ binding, constructor, etc.}
              [pos exact-nonnegative-integer?]
              [clear? boolean?]
              [other-clears? boolean?]
-             [flonum? boolean?])]{
+             [type (or/c #f 'flonum 'fixnum)])]{
   Represents a local-variable reference; it accesses the value in the
   stack slot after the first @racket[pos] slots.  If @racket[unbox?]  is
   @racket[#t], the stack slot contains a box, and a value is extracted
@@ -410,8 +410,8 @@ binding, constructor, etc.}
   is obtained, the stack slot is cleared (to avoid retaining a reference
   that can prevent reclamation of the value as garbage).  If
   @racket[other-clears?] is @racket[#t], then some later reference to
-  the same stack slot may clear after reading.  If @racket[flonum?] is
-  @racket[#t], the slot holds to a flonum value.}
+  the same stack slot may clear after reading.  If @racket[type] is
+  not @racket[#f], the slot is known to hold a specific type of value.}
 
 @defstruct+[(toplevel expr)
             ([depth exact-nonnegative-integer?]

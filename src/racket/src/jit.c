@@ -311,10 +311,10 @@ Scheme_Object *scheme_apply_lightweight_continuation_stack(Scheme_Current_LWC *l
 #ifdef USE_FLONUM_UNBOXING
 int scheme_jit_check_closure_flonum_bit(Scheme_Closure_Data *data, int pos, int delta)
 {
-  int bit;
+  int ct;
   pos += delta;
-  bit = ((mzshort)2 << ((2 * pos) & (BITS_PER_MZSHORT - 1)));
-  if (data->closure_map[data->closure_size + ((2 * pos) / BITS_PER_MZSHORT)] & bit)
+  ct = scheme_boxmap_get(data->closure_map, pos, data->closure_size);
+  if (ct == (CLOS_TYPE_TYPE_OFFSET + SCHEME_LOCAL_TYPE_FLONUM))
     return 1;
   else
     return 0;
@@ -443,7 +443,7 @@ static int no_sync_change(Scheme_Object *obj, int fuel)
       return no_sync_change(branch->fbranch, fuel);
     }
   case scheme_local_type:
-    if (SCHEME_GET_LOCAL_FLAGS(obj) == SCHEME_LOCAL_FLONUM)
+    if (JIT_TYPE_NEEDS_BOXING(SCHEME_GET_LOCAL_TYPE(obj)))
       return 0;
     else
       return fuel - 1;
@@ -716,7 +716,7 @@ int scheme_is_non_gc(Scheme_Object *obj, int depth)
     break;
 
   case scheme_local_type:
-    if (SCHEME_GET_LOCAL_FLAGS(obj) == SCHEME_LOCAL_FLONUM)
+    if (JIT_TYPE_NEEDS_BOXING(SCHEME_GET_LOCAL_TYPE(obj)))
       return 0;
     return 1;
     break;
@@ -765,18 +765,22 @@ static int is_a_procedure(Scheme_Object *v, mz_jit_state *jitter)
 
 int scheme_ok_to_move_local(Scheme_Object *obj)
 {
-  if (SAME_TYPE(SCHEME_TYPE(obj), scheme_local_type)
-      && !SCHEME_GET_LOCAL_FLAGS(obj)) {
-    return 1;
-  } else
-    return 0;
+  if (SAME_TYPE(SCHEME_TYPE(obj), scheme_local_type)) {
+    int flags = SCHEME_GET_LOCAL_FLAGS(obj);
+    if (!flags
+        || ((flags > SCHEME_LOCAL_TYPE_OFFSET)
+            && !JIT_TYPE_NEEDS_BOXING(flags - SCHEME_LOCAL_TYPE_OFFSET)))
+      return 1;
+  }
+  
+  return 0;
 }
 
 int scheme_ok_to_delay_local(Scheme_Object *obj)
 {
   if (SAME_TYPE(SCHEME_TYPE(obj), scheme_local_type)
-      /* We can delay if the clears flag is set: */
-      && (SCHEME_GET_LOCAL_FLAGS(obj) <= 1)) {
+      /* We can delay if the clears flag is set and no type: */
+      && (SCHEME_GET_LOCAL_FLAGS(obj) <= SCHEME_LOCAL_CLEAR_ON_READ)) {
     return 1;
   } else
     return 0;
@@ -827,7 +831,7 @@ static int expression_avoids_clearing_local(Scheme_Object *wrt, int pos, int fue
     return 1;
   else if (SAME_TYPE(t, scheme_local_type))
     return ((SCHEME_LOCAL_POS(wrt) != pos)
-            || !(SCHEME_GET_LOCAL_FLAGS(wrt) & SCHEME_LOCAL_CLEAR_ON_READ));
+            || !(SCHEME_GET_LOCAL_FLAGS(wrt) == SCHEME_LOCAL_CLEAR_ON_READ));
   else if (SAME_TYPE(t, scheme_toplevel_type))
     return 1;
   else if (t == scheme_application2_type) {
@@ -858,9 +862,9 @@ int scheme_is_relatively_constant_and_avoids_r1_maybe_fp(Scheme_Object *obj, Sch
 
   t = SCHEME_TYPE(obj);
   if (SAME_TYPE(t, scheme_local_type)) {
-    /* Must have clearing, other-clears, or flonum flag set,
+    /* Must have clearing, other-clears, or type flag set,
        otherwise is_constant_and_avoids_r1() would have returned 1. */
-    if (SCHEME_GET_LOCAL_FLAGS(obj) == SCHEME_LOCAL_FLONUM)
+    if (SCHEME_GET_LOCAL_TYPE(obj) == SCHEME_LOCAL_TYPE_FLONUM)
       return fp_ok;
     else if (expression_avoids_clearing_local(wrt, SCHEME_LOCAL_POS(obj), 3))
       /* different local vars, sp order doesn't matter */
@@ -884,9 +888,10 @@ int scheme_needs_only_target_register(Scheme_Object *obj, int and_can_reorder)
 
   t = SCHEME_TYPE(obj);
   if (SAME_TYPE(t, scheme_local_type)) {
-    if (and_can_reorder && SCHEME_GET_LOCAL_FLAGS(obj))
+    int flags = SCHEME_GET_LOCAL_FLAGS(obj);
+    if (and_can_reorder && (flags && (flags <= SCHEME_LOCAL_OTHER_CLEARS)))
       return 0;
-    if (SCHEME_GET_LOCAL_FLAGS(obj) == SCHEME_LOCAL_FLONUM)
+    if (JIT_TYPE_NEEDS_BOXING(flags - SCHEME_LOCAL_TYPE_OFFSET))
       return 0;
     return 1;
   } else 
@@ -1929,11 +1934,11 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
   case scheme_local_type:
     {
       /* Other parts of the JIT rely on this code modifying only the target register,
-         unless the flag is SCHEME_LOCAL_FLONUM */
+         unless the type is SCHEME_FLONUM_TYPE */
       int pos, flonum;
       START_JIT_DATA();
 #ifdef USE_FLONUM_UNBOXING
-      flonum = (SCHEME_GET_LOCAL_FLAGS(obj) == SCHEME_LOCAL_FLONUM);
+      flonum = (SCHEME_GET_LOCAL_TYPE(obj) == SCHEME_LOCAL_TYPE_FLONUM);
 #else
       flonum = 0;
 #endif
@@ -2826,7 +2831,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       mz_runstack_skipped(jitter, 1);
 
 #ifdef USE_FLONUM_UNBOXING
-      flonum = SCHEME_LET_EVAL_TYPE(lv) & LET_ONE_FLONUM;
+      flonum = (SCHEME_LET_ONE_TYPE(lv) == SCHEME_LOCAL_TYPE_FLONUM);
 #else
       flonum = 0;
 #endif

@@ -725,7 +725,7 @@
         (out-marshaled set-bang-type-num
                        (cons undef-ok? (cons id rhs))
                        out)]
-       [(struct localref (unbox? offset clear? other-clears? flonum?))
+       [(struct localref (unbox? offset clear? other-clears? type))
         (if (and (not clear?) (not other-clears?) (not flonum?)
                  (offset . < . (- CPT_SMALL_LOCAL_END CPT_SMALL_LOCAL_START)))
             (out-byte (+ (if unbox?
@@ -735,17 +735,16 @@
                       out)
             (begin
               (out-byte (if unbox? CPT_LOCAL_UNBOX CPT_LOCAL) out)
-              (if (not (or clear? other-clears? flonum?))
+              (if (not (or clear? other-clears? type))
                   (out-number offset out)
                   (begin
                     (out-number (- (add1 offset)) out)
-                    (out-number (if clear?
-                                    #x1
-                                    (if other-clears? 
-                                        #x2
-                                        (if flonum?
-                                            #x3
-                                            0)))
+                    (out-number (cond
+                                 [clear? 1]
+                                 [other-clears? 2]
+                                 [else (+ 2 (case type
+                                              [(flonum) 1]
+                                              [(fixnum) 2]))])
                                 out)))))]
        [(? lam?)
         (out-lam v out)]

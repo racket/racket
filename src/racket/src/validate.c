@@ -41,7 +41,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
                          mzshort *tl_state, mzshort tl_timestamp,
                          Scheme_Object *app_rator, int proc_with_refs_ok, 
                          int result_ignored, struct Validate_Clearing *vc, 
-                         int tailpos, int need_flonum, Scheme_Hash_Tree *procs,
+                         int tailpos, int need_local_type, Scheme_Hash_Tree *procs,
                          int expected_results,
                          Scheme_Hash_Table **_st_ht);
 static int validate_rator_wants_box(Scheme_Object *app_rator, int pos,
@@ -67,7 +67,7 @@ void scheme_init_validate()
 #define VALID_TOPLEVELS 4
 #define VALID_VAL_NOCLEAR 5
 #define VALID_BOX_NOCLEAR 6
-#define VALID_FLONUM 7
+#define VALID_TYPED 7
 
 typedef struct Validate_Clearing {
   MZTAG_IF_REQUIRED
@@ -342,8 +342,9 @@ static int define_values_validate(Scheme_Object *data, Mz_CPort *port,
           new_a[0] = -sz;
           new_a[sz+1] = !!(SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST);
           for (i = 0; i < sz; i++) {
-            int bit = ((mzshort)1 << ((2 * i) & (BITS_PER_MZSHORT - 1)));
-            if (data->closure_map[data->closure_size + ((2 * i) / BITS_PER_MZSHORT)] & bit)
+            int ct;
+            ct = scheme_boxmap_get(data->closure_map, i, data->closure_size);
+            if (ct == CLOS_TYPE_BOXED)
               new_a[i + 1] = 1;
             else
               new_a[i + 1] = 0;
@@ -852,8 +853,9 @@ int validate_rator_wants_box(Scheme_Object *app_rator, int pos,
 
   if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
     if (pos < data->num_params) {
-      int bit = ((mzshort)1 << ((2 * pos) & (BITS_PER_MZSHORT - 1)));
-      if (data->closure_map[data->closure_size + ((2 * pos) / BITS_PER_MZSHORT)] & bit)
+      int ct;
+      ct = scheme_boxmap_get(data->closure_map, pos, data->closure_size);
+      if (ct == CLOS_TYPE_BOXED)
         return 1;
     }
   }
@@ -990,12 +992,13 @@ static void validate_unclosed_procedure(Mz_CPort *port, Scheme_Object *expr,
     cnt = data->num_params;
     base = sz - cnt;
     for (i = 0; i < cnt; i++) {
-      int bit = ((mzshort)1 << ((2 * i) & (BITS_PER_MZSHORT - 1)));
-      if (map[data->closure_size + ((2 * i) / BITS_PER_MZSHORT)] & bit) {
+      int ct;
+      ct = scheme_boxmap_get(map, i, data->closure_size);
+      if (ct == CLOS_TYPE_BOXED) {
         vld = VALID_BOX;
         typed_arg = 1;
-      } else if (map[data->closure_size + ((2 * i) / BITS_PER_MZSHORT)] & (bit << 1)) {
-        vld = VALID_FLONUM;
+      } else if (ct) {
+        vld = (VALID_TYPED + (ct - CLOS_TYPE_TYPE_OFFSET));
         typed_arg = 1;
       } else
         vld = VALID_VAL;
@@ -1024,13 +1027,14 @@ static void validate_unclosed_procedure(Mz_CPort *port, Scheme_Object *expr,
 
     if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
       int pos = data->num_params + i;
-      int bit = ((mzshort)2 << ((2 * pos) & (BITS_PER_MZSHORT - 1)));
-      if (map[data->closure_size + ((2 * pos) / BITS_PER_MZSHORT)] & bit) {
-        if (vld != VALID_FLONUM)
+      int ct;
+      ct = scheme_boxmap_get(map, pos, data->closure_size);
+      if (ct > CLOS_TYPE_TYPE_OFFSET) {
+        if (vld != (VALID_TYPED + (ct - CLOS_TYPE_TYPE_OFFSET)))
           vld = VALID_NOT;
-      } else if (vld == VALID_FLONUM)
+      } else if (vld > VALID_TYPED)
         vld = VALID_NOT;
-    } else if (vld == VALID_FLONUM)
+    } else if (vld > VALID_TYPED)
       vld = VALID_NOT;
 
     closure_stack[i + base] = vld;
@@ -1151,15 +1155,15 @@ static void top_level_require_validate(Scheme_Object *data, Mz_CPort *port,
 {
 }
 
-static void no_flo(int need_flonum, Mz_CPort *port)
+static void no_typed(int need_local_type, Mz_CPort *port)
 {
-  if (need_flonum) scheme_ill_formed_code(port);
+  if (need_local_type) scheme_ill_formed_code(port);
 }
 
-static void check_flo(Scheme_Object *expr, int need_flonum, Mz_CPort *port)
+static void check_typed(Scheme_Object *expr, int need_local_type, Mz_CPort *port)
 {
-  if (need_flonum) {
-    if (!scheme_expr_produces_flonum(expr))
+  if (need_local_type) {
+    if (scheme_expr_produces_local_type(expr) != need_local_type)
       scheme_ill_formed_code(port);
   }
 }
@@ -1187,7 +1191,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
                          Scheme_Object *app_rator, int proc_with_refs_ok,
                          int result_ignored,
                          struct Validate_Clearing *vc, int tailpos,
-                         int need_flonum, Scheme_Hash_Tree *procs,
+                         int need_local_type, Scheme_Hash_Tree *procs,
                          int expected_results,
                          Scheme_Hash_Table **_st_ht)
 /* result is 1 if result is `expected_results' values with no
@@ -1228,7 +1232,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
     args[6] = proc_with_refs_ok;
     args[7] = result_ignored;
     args[8] = tailpos;
-    args[9] = need_flonum;
+    args[9] = need_local_type;
     args[10] = tl_timestamp;
     args[11] = expected_results;
 
@@ -1276,7 +1280,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       int p = SCHEME_TOPLEVEL_POS(expr);
       int flags = (SCHEME_TOPLEVEL_FLAGS(expr) & SCHEME_TOPLEVEL_FLAGS_MASK);
 
-      no_flo(need_flonum, port);
+      no_typed(need_local_type, port);
 
       if ((c < 0) || (p < 0) || (d < 0) || (d >= depth)
 	  || (stack[d] != VALID_TOPLEVELS) 
@@ -1364,21 +1368,23 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
     {
       int q = SCHEME_LOCAL_POS(expr);
       int p = q + delta;
+      int ct;
 
       if ((q < 0) || (p >= depth) || (p < 0))
 	scheme_ill_formed_code(port);
 
-      if (SCHEME_GET_LOCAL_FLAGS(expr) != SCHEME_LOCAL_FLONUM)
-        no_flo(need_flonum, port);
+      ct = SCHEME_GET_LOCAL_TYPE(expr);
+      if (!ct)
+        no_typed(need_local_type, port);
       
-      if (SCHEME_GET_LOCAL_FLAGS(expr) == SCHEME_LOCAL_FLONUM) {
-        if (stack[p] != VALID_FLONUM)
+      if (ct) {
+        if (stack[p] != (VALID_TYPED + ct))
           scheme_ill_formed_code(port);
       } else if ((stack[p] != VALID_VAL) && (stack[p] != VALID_VAL_NOCLEAR)) {
         if (result_ignored && ((stack[p] == VALID_BOX) 
                                || (stack[p] == VALID_BOX_NOCLEAR)
-                               || (stack[p] == VALID_FLONUM))) {
-          /* ok to look up and ignore box or flonum */
+                               || (stack[p] >= VALID_TYPED))) {
+          /* ok to look up and ignore box or typed */
         } else if ((proc_with_refs_ok >= 2) 
                    && ((stack[p] == VALID_BOX) || (stack[p] == VALID_BOX_NOCLEAR))
                    && validate_rator_wants_box(app_rator, proc_with_refs_ok - 2, 1,
@@ -1422,7 +1428,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       int q = SCHEME_LOCAL_POS(expr);
       int p = q + delta;
 
-      no_flo(need_flonum, port);
+      no_typed(need_local_type, port);
 
       if ((q < 0) || (p >= depth) || (p < 0)
           || ((stack[p] != VALID_BOX)
@@ -1451,7 +1457,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       Scheme_App_Rec *app = (Scheme_App_Rec *)expr;
       int i, n, r;
 
-      check_flo(expr, need_flonum, port);
+      check_typed(expr, need_local_type, port);
 
       n = app->num_args + 1;
 
@@ -1482,7 +1488,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       Scheme_App2_Rec *app = (Scheme_App2_Rec *)expr;
       int r;
 
-      check_flo(expr, need_flonum, port);
+      check_typed(expr, need_local_type, port);
       
       delta -= 1;
       if (delta < 0)
@@ -1514,7 +1520,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       Scheme_App3_Rec *app = (Scheme_App3_Rec *)expr;
       int r;
 
-      check_flo(expr, need_flonum, port);
+      check_typed(expr, need_local_type, port);
       
       delta -= 2;
       if (delta < 0)
@@ -1554,7 +1560,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       int cnt;
       int i, r;
 
-      no_flo(need_flonum, port);
+      no_typed(need_local_type, port);
       
       cnt = seq->count;
 	  
@@ -1575,7 +1581,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       Scheme_Branch_Rec *b;
       int vc_pos, vc_ncpos, r;
 
-      no_flo(need_flonum, port);
+      no_typed(need_local_type, port);
 
       b = (Scheme_Branch_Rec *)expr;
       r = validate_expr(port, b->test, stack, tls, depth, letlimit, delta, 
@@ -1633,7 +1639,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)expr;
       int r;
 
-      no_flo(need_flonum, port);
+      no_typed(need_local_type, port);
       
       r = validate_expr(port, wcm->key, stack, tls, depth, letlimit, delta, 
                         num_toplevels, num_stxes, num_lifts, tl_use_map,
@@ -1658,7 +1664,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       int p = qs->midpoint;
       int d = c + delta;
 
-      no_flo(need_flonum, port);
+      no_typed(need_local_type, port);
 
       if ((c < 0) || (p < 0) || (d < 0) || (d >= depth)
 	  || (stack[d] != VALID_TOPLEVELS) 
@@ -1671,7 +1677,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
     break;
   case scheme_unclosed_procedure_type:
     {
-      no_flo(need_flonum, port);
+      no_typed(need_local_type, port);
       validate_unclosed_procedure(port, expr, stack, tls, depth, delta, 
                                   num_toplevels, num_stxes, num_lifts, tl_use_map,
                                   tl_state, tl_timestamp,
@@ -1794,7 +1800,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       r = validate_expr(port, lo->value, stack, tls, depth, letlimit, delta, 
                         num_toplevels, num_stxes, num_lifts, tl_use_map,
                         tl_state, tl_timestamp,
-                        NULL, 0, 0, vc, 0, SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_FLONUM, procs,
+                        NULL, 0, 0, vc, 0, SCHEME_LET_ONE_TYPE(lo), procs,
                         1, NULL);
       result = validate_join_seq(r, result);
 
@@ -1805,8 +1811,8 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       
       if (SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_UNUSED) {
         stack[delta] = VALID_NOT;
-      } else if (SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_FLONUM) {
-        stack[delta] = VALID_FLONUM;
+      } else if (SCHEME_LET_ONE_TYPE(lo)) {
+        stack[delta] = (VALID_TYPED + SCHEME_LET_ONE_TYPE(lo));
         /* FIXME: need to check that lo->value produces a flonum */
       } else
         stack[delta] = VALID_VAL;
@@ -1817,7 +1823,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
     break;
 
   case scheme_define_values_type:
-    no_flo(need_flonum, port);
+    no_typed(need_local_type, port);
     result = validate_join_seq(result,
                                define_values_validate(expr, port, stack, tls, depth, letlimit, delta, 
                                                       num_toplevels, num_stxes, num_lifts, tl_use_map, 
@@ -1826,21 +1832,21 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
                                                       _st_ht));
     break;
   case scheme_define_syntaxes_type:
-    no_flo(need_flonum, port);
+    no_typed(need_local_type, port);
     define_syntaxes_validate(expr, port, stack, tls, depth, letlimit, delta, 
                              num_toplevels, num_stxes, num_lifts, tl_use_map, 
                              tl_state, tl_timestamp,
                              result_ignored, vc, tailpos, procs);
     break;
   case scheme_begin_for_syntax_type:
-    no_flo(need_flonum, port);
+    no_typed(need_local_type, port);
     begin_for_syntaxes_validate(expr, port, stack, tls, depth, letlimit, delta, 
                                 num_toplevels, num_stxes, num_lifts, tl_use_map, 
                                 tl_state, tl_timestamp,
                                 result_ignored, vc, tailpos, procs);
     break;
   case scheme_set_bang_type:
-    no_flo(need_flonum, port);
+    no_typed(need_local_type, port);
     result = validate_join_seq(result,
                                set_validate(expr, port, stack, tls, depth, letlimit, delta, 
                                             num_toplevels, num_stxes, num_lifts, tl_use_map, 
@@ -1848,7 +1854,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
                                             result_ignored, vc, tailpos, procs));
     break;
   case scheme_boxenv_type:
-    no_flo(need_flonum, port);
+    no_typed(need_local_type, port);
     result = validate_join_seq(result,
                                bangboxenv_validate(expr, port, stack, tls, depth, letlimit, delta, 
                                                    num_toplevels, num_stxes, num_lifts, tl_use_map, 
@@ -1856,7 +1862,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
                                                    result_ignored, vc, tailpos, procs, expected_results));
     break;
   case scheme_begin0_sequence_type:
-    no_flo(need_flonum, port);
+    no_typed(need_local_type, port);
     result = validate_join_seq(result,
                                begin0_validate(expr, port, stack, tls, depth, letlimit, delta, 
                                                num_toplevels, num_stxes, num_lifts, tl_use_map, 
@@ -1864,14 +1870,14 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
                                                result_ignored, vc, tailpos, procs, expected_results));
     break;
   case scheme_require_form_type:
-    no_flo(need_flonum, port);
+    no_typed(need_local_type, port);
     top_level_require_validate(expr, port, stack, tls, depth, letlimit, delta, 
                                num_toplevels, num_stxes, num_lifts, tl_use_map, 
                                tl_state, tl_timestamp,
                                result_ignored, vc, tailpos, procs);
     break;
   case scheme_varref_form_type:
-    no_flo(need_flonum, port);
+    no_typed(need_local_type, port);
     ref_validate(expr, port, stack, tls, depth, letlimit, delta, 
                  num_toplevels, num_stxes, num_lifts, tl_use_map, 
                  tl_state, tl_timestamp,
@@ -1879,7 +1885,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
     result = validate_join_const(result, expected_results);
     break;
   case scheme_apply_values_type:
-    no_flo(need_flonum, port);
+    no_typed(need_local_type, port);
     apply_values_validate(expr, port, stack, tls, depth, letlimit, delta, 
                           num_toplevels, num_stxes, num_lifts, tl_use_map, 
                           tl_state, tl_timestamp,
@@ -1887,7 +1893,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
     result = validate_join(0, result);
     break;
   case scheme_case_lambda_sequence_type:
-    no_flo(need_flonum, port);
+    no_typed(need_local_type, port);
     case_lambda_validate(expr, port, stack, tls, depth, letlimit, delta, 
                          num_toplevels, num_stxes, num_lifts, tl_use_map, 
                          tl_state, tl_timestamp,
@@ -1895,7 +1901,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
     result = validate_join_const(result, expected_results);
     break;
   case scheme_module_type:
-    no_flo(need_flonum, port);
+    no_typed(need_local_type, port);
     module_validate(expr, port, stack, tls, depth, letlimit, delta, 
                     num_toplevels, num_stxes, num_lifts, tl_use_map, 
                     tl_state, tl_timestamp,
@@ -1903,7 +1909,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
     result = validate_join(0, result);
     break;
   case scheme_inline_variant_type:
-    no_flo(need_flonum, port);
+    no_typed(need_local_type, port);
     inline_variant_validate(expr, port, stack, tls, depth, letlimit, delta, 
                             num_toplevels, num_stxes, num_lifts, tl_use_map, 
                             tl_state, tl_timestamp,
@@ -1913,11 +1919,11 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
   default:
     /* All values are definitely ok, except pre-closed closures. 
        Such a closure can refer back to itself, so we use a flag
-       to track cycles. Also check need_flonum. */
+       to track cycles. Also check need_local_type. */
     result = validate_join_const(result, expected_results);
     if (SAME_TYPE(type, scheme_closure_type)) {
       Scheme_Closure_Data *data;
-      no_flo(need_flonum, port);
+      no_typed(need_local_type, port);
       expr = (Scheme_Object *)SCHEME_COMPILED_CLOS_CODE(expr);
       data = (Scheme_Closure_Data *)expr;        
       if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_VALIDATED) {
@@ -1937,9 +1943,9 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
                       tl_state, tl_timestamp,
                       NULL, 0, 0, vc, 0, 0, procs, 1, NULL);
       }
-    } else if (need_flonum) {
+    } else if (need_local_type) {
       if (!SCHEME_FLOATP(expr))
-        no_flo(need_flonum, port);
+        no_typed(need_local_type, port);
     }
     break;
   }

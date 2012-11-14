@@ -855,16 +855,8 @@ Scheme_Object *scheme_make_local(Scheme_Type type, int pos, int flags)
   k = type - scheme_local_type;
   
   /* Helper for reading bytecode: make sure flags is a valid value */
-  switch (flags) {
-  case 0:
-  case SCHEME_LOCAL_CLEAR_ON_READ:
-  case SCHEME_LOCAL_OTHER_CLEARS:
-  case SCHEME_LOCAL_FLONUM:
-    break;
-  default:
-    flags  = SCHEME_LOCAL_OTHER_CLEARS;
-    break;
-  }
+  if ((flags < 0) || (flags > (SCHEME_MAX_LOCAL_TYPE + SCHEME_LOCAL_TYPE_OFFSET)))
+    flags = SCHEME_LOCAL_OTHER_CLEARS;
 
   if (pos < MAX_CONST_LOCAL_POS) {
     return scheme_local[pos][k][flags];

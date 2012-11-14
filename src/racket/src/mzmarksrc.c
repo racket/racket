@@ -1383,7 +1383,7 @@ mark_closure_info {
   
   gcMARK2(i->local_flags, gc);
   gcMARK2(i->base_closure_map, gc);
-  gcMARK2(i->flonum_map, gc);
+  gcMARK2(i->local_type_map, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Closure_Info));

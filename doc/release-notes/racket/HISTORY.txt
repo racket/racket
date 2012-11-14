@@ -1,3 +1,7 @@
+Version 5.3.1.7
+compiler/zo-structs: generalize flonum? field to type
+ field in localref, let-one, and fun 
+
 Version 5.3.1.6
 racket/unsafe/ops: added unsafe-cons-list
 
