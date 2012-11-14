@@ -9,12 +9,15 @@
     (for ([s (in-range (- (string-length dna) len) -1 -1)])
       (string-copy! seq 0 dna s (+ s len))
       (let ([key (string->symbol seq)])
-        (let ([cnt (hash-ref table key 0)])
-          (hash-set! table key (add1 cnt)))))
+        (let ([b (or (hash-ref table key #f)
+                     (let ([b (box 0)])
+                       (hash-set! table key b)
+                       b))])
+          (set-box! b (add1 (unbox b))))))
     table))
 
 (define (write-freqs table)
-  (let* ([content (hash-map table cons)]
+  (let* ([content (hash-map table (lambda (k v) (cons k (unbox v))))]
          [total (exact->inexact (apply + (map cdr content)))])
     (for ([a (sort content > #:key cdr)])
       (printf "~a ~a\n" 
@@ -23,7 +26,7 @@
 
 (define (write-one-freq table key)
   (let ([cnt (hash-ref table key 0)])
-    (printf "~a\t~a\n" cnt key)))
+    (printf "~a\t~a\n" (unbox cnt) key)))
 
 (define dna
   (let ([in (current-input-port)])
