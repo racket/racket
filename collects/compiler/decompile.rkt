@@ -330,16 +330,14 @@
     [(struct assign (id rhs undef-ok?))
      `(set! ,(decompile-expr id globs stack closed)
             ,(decompile-expr rhs globs stack closed))]
-    [(struct localref (unbox? offset clear? other-clears? flonum?))
+    [(struct localref (unbox? offset clear? other-clears? type))
      (let ([id (list-ref/protect stack offset 'localref)])
        (let ([e (if unbox?
                     `(#%unbox ,id)
                     id)])
          (if clear?
              `(#%sfs-clear ,e)
-             (if flonum?
-                 `(#%from-flonum ,e)
-                 e))))]
+             e)))]
     [(? lam?)
      `(lambda . ,(decompile-lam expr globs stack closed))]
     [(struct case-lam (name lams))
@@ -347,13 +345,10 @@
        ,@(map (lambda (lam)
                 (decompile-lam lam globs stack closed))
               lams))]
-    [(struct let-one (rhs body flonum? unused?))
+    [(struct let-one (rhs body type unused?))
      (let ([id (or (extract-id rhs)
-                   (gensym (if unused? 'unused 'local)))])
-       `(let ([,id ,(let ([v (decompile-expr rhs globs (cons id stack) closed)])
-                      (if flonum?
-                          (list '#%as-flonum v)
-                          v))])
+                   (gensym (or type (if unused? 'unused 'local))))])
+       `(let ([,id ,(decompile-expr rhs globs (cons id stack) closed)])
           ,(decompile-expr body globs (cons id stack) closed)))]
     [(struct let-void (count boxes? body))
      (let ([ids (make-vector count #f)])
@@ -428,7 +423,10 @@
      (let ([vars (for/list ([i (in-range num-params)]
                             [type (in-list arg-types)])
                    (gensym (format "~a~a-" 
-                                   (case type [(ref) "argbox"] [(flonum) "argfl"] [else "arg"])
+                                   (case type 
+                                     [(ref) "argbox"] 
+                                     [(val) "arg"]
+                                     [else (format "arg~a" type)])
                                    i)))]
            [rest-vars (if rest? (list (gensym 'rest)) null)]
            [captures (map (lambda (v)
@@ -444,8 +442,8 @@
          ,@(if (null? captures)
                null
                `('(captures: ,@(map (lambda (c t)
-                                      (if (eq? t 'flonum)
-                                          `(flonum ,c)
+                                      (if t
+                                          `(,t ,c)
                                           c))
                                     captures
                                     closure-types)
@@ -465,70 +463,10 @@
                           closed)))]))
 
 (define (annotate-inline a)
-  (if (and (symbol? (car a))
-           (case (length a)
-             [(2) (memq (car a) '(not null? pair? mpair? symbol?
-                                      syntax? char? boolean?
-                                      number? real? exact-integer?
-                                      fixnum? inexact-real?
-                                      procedure? vector? box? string? bytes? eof-object?
-                                      zero? negative? exact-nonnegative-integer?  
-                                      exact-positive-integer?
-                                      car cdr caar cadr cdar cddr
-                                      mcar mcdr unbox vector-length syntax-e
-                                      add1 sub1 - abs bitwise-not
-                                      list list* vector vector-immutable box))]
-             [(3) (memq (car a) '(eq? = <= < >= >
-                                      bitwise-bit-set? char=?
-                                      + - * / quotient remainder min max bitwise-and bitwise-ior bitwise-xor
-                                      arithmetic-shift vector-ref string-ref bytes-ref
-                                      set-mcar! set-mcdr! cons mcons set-box!
-                                      list list* vector vector-immutable))]
-             [(4) (memq (car a) '(vector-set! string-set! bytes-set!
-                                              list list* vector vector-immutable
-                                              + - * / min max bitwise-and bitwise-ior bitwise-xor))]
-             [else (memq (car a) '(list list* vector vector-immutable
-                                        + - * / min max bitwise-and bitwise-ior bitwise-xor))]))
-      (cons '#%in a)
-      a))
+  a)
 
 (define (annotate-unboxed args a)
-  (define (unboxable? e s)
-    (cond
-     [(localref? e) #t]
-     [(toplevel? e) #t]
-     [(eq? '#%flonum (car s)) #t]
-     [(not (expr? e)) #t]
-     [else #f]))
-  (if (and (symbol? (car a))
-           (case (length a)
-             [(2) (memq (car a) '(flabs flsqrt ->fl
-                                        unsafe-flabs
-                                        unsafe-flsqrt
-                                        unsafe-fx->fl
-                                        flsin flcos fltan
-                                        flasin flacos flatan
-                                        flexp fllog
-                                        flfloor flceiling flround fltruncate
-                                        flmin flmax
-                                        unsafe-flmin unsafe-flmax))]
-             [(3) (memq (car a) '(fl+ fl- fl* fl/
-                                      fl< fl> fl<= fl>= fl=
-                                      flvector-ref
-                                      unsafe-fl+ unsafe-fl- unsafe-fl* unsafe-fl/
-                                      unsafe-fl< unsafe-fl>
-                                      unsafe-fl=
-                                      unsafe-fl<= unsafe-fl>=
-                                      unsafe-flvector-ref
-                                      unsafe-f64vector-ref))]
-             
-             [(4) (memq (car a) '(flvector-set!
-                                  unsafe-flvector-set!
-                                  unsafe-f64vector-set!))]
-             [else #f])
-           (andmap unboxable? args (cdr a)))
-      (cons '#%flonum a)
-      a))
+  a)
 
 ;; ----------------------------------------
 

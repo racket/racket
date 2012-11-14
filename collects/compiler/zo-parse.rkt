@@ -88,6 +88,7 @@
   (define CLOS_IS_METHOD 16)
   (define CLOS_SINGLE_RESULT 32)
   (define BITS_PER_MZSHORT 32)
+  (define BITS_PER_ARG 4)
   (match v
     [`(,flags ,num-params ,max-let-depth ,tl-map ,name ,v . ,rest)
      (let ([rest? (positive? (bitwise-and flags CLOS_HAS_REST))])
@@ -95,31 +96,32 @@
                       (if (zero? (bitwise-and flags CLOS_HAS_REF_ARGS))
                           (values (vector-length v) v rest)
                           (values v (car rest) (cdr rest)))]
-                     [(check-bit) (lambda (i)
+                     [(get-flags) (lambda (i)
                                     (if (zero? (bitwise-and flags CLOS_HAS_REF_ARGS))
                                         0
                                         (let ([byte (vector-ref closed-over
-                                                                (+ closure-size (quotient (* 2 i) BITS_PER_MZSHORT)))])
-                                          (+ (if (bitwise-bit-set? byte (remainder (* 2 i) BITS_PER_MZSHORT))
-                                                 1
-                                                 0)
-                                             (if (bitwise-bit-set? byte (add1 (remainder (* 2 i) BITS_PER_MZSHORT)))
-                                                 2
-                                                 0)))))]
+                                                                (+ closure-size (quotient (* BITS_PER_ARG i) BITS_PER_MZSHORT)))])
+                                          (bitwise-and (arithmetic-shift byte (- (remainder (* BITS_PER_ARG i) BITS_PER_MZSHORT)))
+                                                       (sub1 (arithmetic-shift 1 BITS_PER_ARG))))))]
+                     [(num->type) (lambda (n)
+                                    (case n
+                                      [(2) 'flonum]
+                                      [(3) 'fixnum]
+                                      [else (error "invaid type flag")]))]
                      [(arg-types) (let ([num-params ((if rest? sub1 values) num-params)])
                                     (for/list ([i (in-range num-params)]) 
-                                      (case (check-bit i)
+                                      (define v (get-flags i))
+                                      (case v
                                         [(0) 'val]
                                         [(1) 'ref]
-                                        [(2) 'flonum]
-                                        [else (error "both 'ref and 'flonum argument?")])))]
+                                        [else (num->type v)])))]
                      [(closure-types) (for/list ([i (in-range closure-size)]
                                                  [j (in-naturals num-params)])
-                                        (case (check-bit j)
+                                        (define v (get-flags j))
+                                        (case v
                                           [(0) 'val/ref]
                                           [(1) (error "invalid 'ref closure variable")]
-                                          [(2) 'flonum]
-                                          [else (error "both 'ref and 'flonum closure var?")]))])
+                                          [else (num->type v)]))])
          (make-lam name
                    (append
                     (if (zero? (bitwise-and flags flags CLOS_PRESERVES_MARKS)) null '(preserves-marks))
@@ -467,7 +469,7 @@
     [16 vector]
     [17 hash-table]
     [18 stx]
-    [19 let-one-flonum]
+    [19 let-one-typed]
     [20 marshalled]
     [21 quote]
     [22 reference]
@@ -550,14 +552,21 @@
          [reader (get-reader type)])
     (reader l)))
 
+(define SCHEME_LOCAL_TYPE_FLONUM 1)
+(define SCHEME_LOCAL_TYPE_FIXNUM 2)
+
 (define (make-local unbox? pos flags)
-  (define SCHEME_LOCAL_CLEAR_ON_READ #x01)
-  (define SCHEME_LOCAL_OTHER_CLEARS #x02)
-  (define SCHEME_LOCAL_FLONUM #x03)
+  (define SCHEME_LOCAL_CLEAR_ON_READ 1)
+  (define SCHEME_LOCAL_OTHER_CLEARS 2)
+  (define SCHEME_LOCAL_TYPE_OFFSET 2)
   (make-localref unbox? pos 
                  (= flags SCHEME_LOCAL_CLEAR_ON_READ)
                  (= flags SCHEME_LOCAL_OTHER_CLEARS)
-                 (= flags SCHEME_LOCAL_FLONUM)))
+                 (let ([t (- flags SCHEME_LOCAL_TYPE_OFFSET)])
+                   (cond
+                    [(= t SCHEME_LOCAL_TYPE_FLONUM) 'flonum]
+                    [(= t SCHEME_LOCAL_TYPE_FIXNUM) 'fixnum]
+                    [else #f]))))
 
 (define (a . << . b)
   (arithmetic-shift a b))
@@ -841,9 +850,13 @@
                      (if ppr null (read-compact cp)))
                (read-compact-list l ppr cp))
              (loop l ppr)))]
-        [(let-one let-one-flonum let-one-unused)
+        [(let-one let-one-typed let-one-unused)
          (make-let-one (read-compact cp) (read-compact cp)
-                       (eq? cpt-tag 'let-one-flonum)
+                       (and (eq? cpt-tag 'let-one-typed)
+                            (case (read-compact-number cp)
+                              [(1) 'flonum]
+                              [(2) 'fixnum]
+                              [else #f]))
                        (eq? cpt-tag 'let-one-unused))]
         [(branch)
          (make-branch (read-compact cp) (read-compact cp) (read-compact cp))]
