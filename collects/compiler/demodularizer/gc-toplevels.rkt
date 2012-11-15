@@ -138,7 +138,7 @@
        (build-graph! lhs args-expr)]
       [(and f (struct primval (id)))
        (void)]
-      [(and f (struct localref (unbox? pos clear? other-clears? flonum?)))
+      [(and f (struct localref (unbox? pos clear? other-clears? type)))
        (void)]
       [(and v (not (? form?)))
        (void)]))
@@ -223,8 +223,8 @@
       [(and cl (struct case-lam (name clauses)))
        (struct-copy case-lam cl
                     [clauses (map update clauses)])]
-      [(struct let-one (rhs body flonum? unused?))
-       (make-let-one (update rhs) (update body) flonum? unused?)] ; Q: is flonum? okay here?
+      [(struct let-one (rhs body type unused?))
+       (make-let-one (update rhs) (update body) type unused?)]
       [(and f (struct let-void (count boxes? body)))
        (struct-copy let-void f
                     [body (update body)])]
@@ -271,7 +271,7 @@
         (update args-expr))]
       [(and f (struct primval (id)))
        f]
-      [(and f (struct localref (unbox? pos clear? other-clears? flonum?)))
+      [(and f (struct localref (unbox? pos clear? other-clears? type)))
        f]
       [(and v (not (? form?)))
        v]
