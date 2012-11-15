@@ -2081,7 +2081,8 @@ int scheme_expr_produces_local_type(Scheme_Object *expr)
     default:
       if (SCHEME_FLOATP(expr))
         return SCHEME_LOCAL_TYPE_FLONUM;
-      if (SCHEME_INTP(expr))
+      if (SCHEME_INTP(expr) 
+          && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(expr)))
         return SCHEME_LOCAL_TYPE_FIXNUM;
       return 0;
     }

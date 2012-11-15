@@ -1283,6 +1283,8 @@ typedef struct {
    Fixnum unboxing is always fine, since it's easy to box. */
 #define ALWAYS_PREFER_UNBOX_TYPE(ty) ((ty) == SCHEME_LOCAL_TYPE_FIXNUM)
 
+#define IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(v) (((v) >= -1073741824) && ((v) <= 1073741823))
+
 typedef struct Scheme_Local {
   Scheme_Inclhash_Object iso; /* keyex used for flags and type info (and can't be hashed) */
   mzshort position;
