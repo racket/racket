@@ -119,6 +119,21 @@
 (define-check (check-roundtrip c value)
   (check-roundtrip* c value check-equal?))
 
+;; FIXME: change to testing flag?
+(define (temp-table-ok?)
+  (ANYFLAGS 'postgresql 'mysql))
+
+(define (setup-temp-table c type)
+  (query-exec c (format "create temporary table testing_temp_table (v ~a)" type)))
+
+(define (check-roundtrip*/table c value check-equal?)
+  (query-exec c "delete from testing_temp_table")
+  (query-exec c (sql "insert into testing_temp_table (v) values ($1)") value)
+  (check-equal? (query-value c "select v from testing_temp_table") value))
+
+(define-check (check-roundtrip/table c value)
+  (check-roundtrip*/table c value check-equal?))
+
 (define (check-value/text* c val text check-val-equal? check-text-equal?)
   (cond [(ANYFLAGS 'postgresql)
          (let* ([tname (pg-type-name (current-type))]
@@ -183,6 +198,9 @@
 (define-check (check-=any c elt lst in?)
   (check-equal? (query-value c (format "select ~a = any ($1)" elt) (list->pg-array lst))
                 in?))
+
+(define-check (check-trim-string=? a b)
+  (check-equal? (string-trim a) (string-trim b)))
 
 (define some-dates
   `((,(sql-date 1776 07 04) "1776-07-04")
@@ -380,6 +398,15 @@
                            (build-list 800
                                        (lambda (n)
                                          (integer->char (add1 n))))))))))
+
+    (type-test-case '(character)
+      (call-with-connection
+       (lambda (c)
+         (when (temp-table-ok?)
+           (setup-temp-table c "char(5)")
+           (check-roundtrip*/table c "" check-trim-string=?)
+           (check-roundtrip*/table c "abc" check-trim-string=?)
+           (check-roundtrip*/table c "abcde" check-trim-string=?)))))
 
     (type-test-case '(date)
       (call-with-connection
