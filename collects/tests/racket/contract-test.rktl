@@ -11977,6 +11977,13 @@ so that propagation occurs.
   (test-name 'char? (flat-contract char?))
   (test-name 'any/c any/c)
 
+  (test-name 'mumble (let ([frotz/c integer?]
+                           [bazzle/c boolean?])
+                       (flat-named-contract 'mumble
+                                            (and/c frotz/c
+                                                   (not/c bazzle/c)))))
+
+  
   (test-name '(-> integer? integer?) (-> integer? integer?))
   (test-name '(-> integer? any) (-> integer? any))
   (test-name '(-> integer? (values boolean? char?)) (-> integer? (values boolean? char?)))
