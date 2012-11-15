@@ -102,8 +102,8 @@ static intptr_t read_first_word(void *sp)
 
 static intptr_t initial_tag_word(Scheme_Type tag, int flags)
 {
-  GC_CAN_IGNORE Scheme_Small_Object sp;
-  memset(&sp, 0, sizeof(Scheme_Small_Object));
+  GC_CAN_IGNORE Scheme_Simple_Object sp;
+  memset(&sp, 0, sizeof(Scheme_Simple_Object));
   sp.iso.so.type = tag;
   if (flags) {
     if (tag == scheme_pair_type)
