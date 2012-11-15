@@ -5,7 +5,7 @@
          racket/match
          racket/pretty
          racket/gui/base
-#;         framework/private/logging-timer)
+         framework/private/logging-timer)
 
 #|
 
@@ -34,8 +34,10 @@ log message was reported.
 (define top-n-events 50)
 (define drop-gc? #f)
 (define start-right-away? #t) ;; only applies if the 'main' module is loaded
-(define show-hist? #f)
+(define show-hist? #t)
 (define script-drr? #t)
+(define interesting-range-start 24)
+(define interesting-range-end 30)
 
 (define log-done-chan (make-channel))
 (define bt-done-chan (make-channel))
@@ -155,6 +157,31 @@ log message was reported.
 
 (struct gui-event (start end name) #:prefab)
 
+(define (print-gui-event-hist gui-events)
+  (print-hist 
+   (for/list ([gui-event (in-list gui-events)])
+     (gui-event->delta gui-event))))
+
+(define (print-hist nums)
+  (define bucket-size 2) ;; in milliseconds
+  (define (δ->bucket δ)
+    (* bucket-size
+       (inexact->exact (round (* δ (/ 1.0 bucket-size))))))
+  
+  (define buckets (make-hash))
+  (for ([num (in-list nums)])
+    (define bucket (δ->bucket num))
+    (hash-set! buckets bucket (+ (hash-ref buckets bucket 0) 1)))
+  (pretty-print
+   (sort (hash-map buckets vector)
+         <
+         #:key (λ (x) (vector-ref x 0)))))
+
+(define (gui-event->delta x)
+    (define i (vector-ref x 2))
+    (- (gui-event-end i)
+       (gui-event-start i)))
+
 (define (show-results evts)
   (define gui-events (filter (λ (x) 
                                (define i (vector-ref x 2))
@@ -164,31 +191,41 @@ log message was reported.
   
   (cond
     [show-hist?
+     (define gc-starts+ends
+       (filter 
+        values
+        (for/list ([evt (in-list evts)])
+          (cond
+            [(gc-info? (vector-ref evt 2))
+             (cons (gc-info-start-time (vector-ref evt 2))
+                   (gc-info-end-time (vector-ref evt 2)))]
+            [else #f]))))
+
+     (printf "gc deltas\n")
+     (print-hist (map (λ (x) (- (cdr x) (car x))) gc-starts+ends))
      
-     (define bucket-size 2) ;; in milliseconds
-     (define (δ->bucket δ)
-       (* bucket-size
-          (inexact->exact (round (* δ (/ 1.0 bucket-size))))))
+     (define (has-a-gc? evt-vec)
+       (define evt (vector-ref evt-vec 2))
+       (for/or ([gc-start+end (in-list gc-starts+ends)])
+         (<= (gui-event-start evt) 
+             (car gc-start+end)
+             (gui-event-end evt))))
      
-     (define buckets (make-hash))
-     (for ([vec (in-list gui-events)])
-       (define gui-event (vector-ref vec 2))
-       (define bucket (δ->bucket
-                       (- (gui-event-end gui-event)
-                          (gui-event-start gui-event))))
-       (hash-set! buckets bucket (+ (hash-ref buckets bucket 0) 1)))
-     (pretty-print
-      (sort (hash-map buckets vector)
-            <
-            #:key (λ (x) (vector-ref x 0))))]
+     (define-values (has-gc-events no-gc-events)
+       (partition has-a-gc? gui-events))
+     (printf "\nwith gc\n")
+     (print-gui-event-hist has-gc-events)
+     (printf "\nwithout gc\n")
+     (print-gui-event-hist no-gc-events)]
     [else
-     
-     
      (define interesting-gui-events
-       (take (sort gui-events > #:key (λ (x) 
-                                        (define i (vector-ref x 2))
-                                        (- (gui-event-end i)
-                                           (gui-event-start i))))
+       (take (sort (filter (λ (x)
+                             (<= interesting-range-start 
+                                 (gui-event->delta x)
+                                 interesting-range-end))
+                           gui-events)
+                   >
+                   #:key gui-event->delta)
              top-n-events))
      
      (define with-other-events
@@ -236,7 +273,6 @@ log message was reported.
      (engine-info-msec (vector-ref x 2))]
     [(regexp-match #rx"framework" (vector-ref x 1))
      (vector-ref x 2)]
-#;
     [(timeline-info? (vector-ref x 2))
      (timeline-info-milliseconds (vector-ref x 2))]         
     [else
@@ -245,7 +281,7 @@ log message was reported.
      0]))
 
 (define drr-eventspace (current-eventspace))
-(require (file "/Users/robby/git/plt/collects/tests/drracket/private/drracket-test-util.rkt")
+(require tests/drracket/private/drracket-test-util
          framework/test)
 
 (test:use-focus-table #t)
@@ -281,7 +317,7 @@ log message was reported.
       (test:current-get-eventspaces (λ () (list drr-eventspace)))
       (test:use-focus-table #t)
       (test:menu-select "View" "Hide Interactions")
-      
+      (test:menu-select "Edit" "Find")
       
       (define s (make-semaphore))
       (parameterize ([current-eventspace drr-eventspace])
@@ -289,7 +325,8 @@ log message was reported.
          (λ () 
            (define defs (send drr get-definitions-text))
            (send defs load-file (collection-file-path "class-internal.rkt" "racket" "private"))
-           (send defs set-position 395)
+           (define open-quote-pos (send defs find-string "\""))
+           (when open-quote-pos (send defs set-position open-quote-pos))
            (send (send defs get-canvas) focus)
            (semaphore-post s)))
         #f)
@@ -297,21 +334,24 @@ log message was reported.
 
       ;(wait-until online-syncheck-done)
       
-      (for ([x (in-range 10)])
+      (for ([x (in-range 20)])
         
+        #;
         (let ([s "fdjafjdklafjkdalsfjdaklfjdkaslfdjafjdklafjkdalsfjdaklfjdkasl"])
           (for ([c (in-string s)])
             (test:keystroke c))
           (for ([c (in-string s)])
             (test:keystroke #\backspace)))
         
-        (test:keystroke #\")
-        (test:keystroke #\a)
-        (wait-until syntax-coloring-done)
-        (test:keystroke #\backspace)
-        (test:keystroke #\backspace)
-        (wait-until online-syncheck-done)) 
-      (sleep 10)))) ;; let everything finish
+        (begin
+          (test:keystroke #\")
+          (test:keystroke #\a)
+          (wait-until syntax-coloring-done)
+          (test:keystroke #\backspace)
+          (test:keystroke #\backspace)
+          (wait-until syntax-coloring-done))
+        ) 
+      '(sleep 10)))) ;; let everything finish
   
   (stop-and-dump)
   (exit))
