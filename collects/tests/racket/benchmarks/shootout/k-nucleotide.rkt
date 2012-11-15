@@ -25,7 +25,7 @@
               (real->decimal-string (* 100 (/ (cdr a) total)) 3)))))
 
 (define (write-one-freq table key)
-  (let ([cnt (hash-ref table key 0)])
+  (let ([cnt (hash-ref table key (box 0))])
     (printf "~a\t~a\n" (unbox cnt) key)))
 
 (define dna
