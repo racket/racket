@@ -2573,5 +2573,14 @@
     (read (open-input-bytes (get-output-bytes o)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; check error checking of JITted `continuation-mark-set-first'
+
+(err/rt-test (let ([f #f])
+               (set! f (lambda ()
+                         (continuation-mark-set-first 5 #f)))
+               (f)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 (report-errs)

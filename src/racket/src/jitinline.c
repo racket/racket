@@ -56,6 +56,15 @@ static Scheme_Object *extract_one_cc_mark_to_tag(Scheme_Object *mark_set,
 {
   /* wrapper on scheme_extract_one_cc_mark_to_tag() to convert NULL to false */
   Scheme_Object *r;
+
+  if (mark_set && !SAME_TYPE(SCHEME_TYPE(mark_set), scheme_cont_mark_set_type)) {
+    Scheme_Object *a[2];
+    a[0] = mark_set;
+    a[1] = key;
+    scheme_wrong_contract("continuation-mark-set-first", "(or/c continuation-mark-set? #f)", 0, 2, a);
+    return NULL;
+  }
+
   r = scheme_extract_one_cc_mark_to_tag(mark_set, key, prompt_tag);
   if (!r) return scheme_false;
   return r;
