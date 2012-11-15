@@ -317,7 +317,7 @@
   CPT_VECTOR
   CPT_HASH_TABLE
   CPT_STX
-  CPT_LET_ONE_FLONUM
+  CPT_LET_ONE_TYPED
   CPT_MARSHALLED
   CPT_QUOTE
   CPT_REFERENCE
@@ -370,6 +370,7 @@
 (define CLOS_SINGLE_RESULT 32)
 
 (define BITS_PER_MZSHORT 32)
+(define BITS_PER_ARG 4)
 
 (define (int->bytes x)
   (integer->integer-bytes x
@@ -579,6 +580,12 @@
      (with-continuation-mark 'zo (typeof v)
        (begin0 (begin body ...) (void)))]))
 
+(define (type->index type)
+  (case type
+    [(flonum) 1]
+    [(fixnum) 2]
+    [else (error 'type->index "unknown type: ~e" type)]))
+
 (define (out-anything v out)
   (with-type-trace v
   (out-shared 
@@ -742,9 +749,7 @@
                     (out-number (cond
                                  [clear? 1]
                                  [other-clears? 2]
-                                 [else (+ 2 (case type
-                                              [(flonum) 1]
-                                              [(fixnum) 2]))])
+                                 [else (+ 2 (type->index type))])
                                 out)))))]
        [(? lam?)
         (out-lam v out)]
@@ -753,14 +758,16 @@
                        (cons (or name null)
                              lams)
                        out)]
-       [(struct let-one (rhs body flonum? unused?))
+       [(struct let-one (rhs body type unused?))
         (out-byte (cond
-                    [flonum? CPT_LET_ONE_FLONUM]
+                    [type CPT_LET_ONE_TYPED]
                     [unused? CPT_LET_ONE_UNUSED]
                     [else CPT_LET_ONE])
                   out)
         (out-anything (protect-quote rhs) out)
-        (out-anything (protect-quote body) out)]
+        (out-anything (protect-quote body) out)
+        (when type
+          (out-number (type->index type) out))]
        [(struct let-void (count boxes? body))
         (out-marshaled let-void-type-num
                        (list*
@@ -1099,8 +1106,8 @@
   (match expr
     [(struct lam (name flags num-params param-types rest? closure-map closure-types toplevel-map max-let-depth body))
      (let* ([l (protect-quote body)]
-            [any-refs? (or (ormap (lambda (t) (memq t '(ref flonum))) param-types)
-                           (ormap (lambda (t) (memq t '(flonum))) closure-types))]
+            [any-refs? (or (not (andmap (lambda (t) (eq? t 'val)) param-types))
+                           (not (andmap (lambda (t) (eq? t 'val/ref)) closure-types)))]
             [num-all-params (if (and rest? (not (memq 'only-rest-arg-not-used flags)))
                                 (add1 num-params)
                                 num-params)]
@@ -1109,22 +1116,26 @@
                                         (append
                                          (vector->list closure-map)
                                          (let* ([v (make-vector (ceiling 
-                                                                 (/ (* 2 (+ num-params (vector-length closure-map)))
+                                                                 (/ (* BITS_PER_ARG (+ num-params (vector-length closure-map)))
                                                                     BITS_PER_MZSHORT)))]
                                                 [set-bit! (lambda (i bit)
-                                                            (let ([pos (quotient (* 2 i) BITS_PER_MZSHORT)])
+                                                            (let ([pos (quotient (* BITS_PER_ARG i) BITS_PER_MZSHORT)])
                                                               (vector-set! v pos
                                                                            (bitwise-ior (vector-ref v pos)
                                                                                         (arithmetic-shift 
                                                                                          bit
-                                                                                         (modulo (* 2 i) BITS_PER_MZSHORT))))))])
+                                                                                         (modulo (* BITS_PER_ARG i) BITS_PER_MZSHORT))))))])
                                            (for ([t (in-list param-types)]
                                                  [i (in-naturals)])
-                                             (when (eq? t 'ref) (set-bit! i 1))
-                                             (when (eq? t 'flonum) (set-bit! i 2)))
+                                             (case t
+                                               [(val) (void)]
+                                               [(ref) (set-bit! i 1)]
+                                               [else (set-bit! i (+ 1 (type->index t)))]))
                                            (for ([t (in-list closure-types)]
                                                  [i (in-naturals num-all-params)])
-                                             (when (eq? t 'flonum) (set-bit! i 2)))
+                                             (case t
+                                               [(val/ref) (void)]
+                                               [else (set-bit! i (+ 1 (type->index t)))]))
                                            (vector->list v))))
                                        closure-map))
                      l)]
