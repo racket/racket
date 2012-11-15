@@ -1,4 +1,4 @@
-#lang scheme/unit
+#lang racket/unit
 
 (require htdp/matrix-sig
          htdp/matrix-render-sig
@@ -215,9 +215,30 @@
                        
                        [(>= j* j) (matrix-ref M (+ i* 1) (+ j* 1))])]))))
 
+#| from bug report 13264:
+
+I have two problems with matrix-set!. 
+
+1. When I enable matrix-set! 
+
+ (require htdp/matrix)
+ (define M (build-matrix 2 3 (λ (i j) (* (expt 2 i) (expt 3 j)))))
+ (matrix-set! M 1 2 'a)
+ (eq? (matrix-ref M 1 2) 'a)
+ (equal? M (build-matrix 2 3 (λ (i j) (* (expt 2 i) (expt 3 j)))))
+
+I get the results 'true' and 'true' -- the second one should NOT be true but false. 
+
+Because I can't change the snip either, M also displays wrong. 
+
+2. I really don't want to enable it in language levels strictly below ASL. 
+Otherwise the functional model breaks. ** But I do not know how to make teachpacks
+depend on the language into which they linked. ** 
+|#
+
 (define (matrix-set! M* i j x)
-  (define _ (when (is-a? M imatrix%)
-              (error 'matrix-set! "use functional updates instead")))
+  (when (is-a? M imatrix%)
+    (error 'matrix-set! "use functional updates instead"))
   (define-values (M n m) (check-matrix 'matrix-ref M* i j))
   (vector-set! (matrix-get-mat M) (+ (* i m) j) x)
   M*)

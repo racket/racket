@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 
 (require htdp/matrix-sig
          htdp/matrix-render-sig
