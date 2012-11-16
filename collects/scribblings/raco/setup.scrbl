@@ -60,10 +60,18 @@ The @exec{raco setup} command performs two main services:
 
 @itemize[
 
- @item{@bold{Compiling and setting up all (or some of the)
-   collections:} When @exec{raco setup} is run without any arguments, it
-   finds all of the current collections (see @secref[#:doc
-   ref-src]{collects}) and compiles libraries in each collection.
+ @item{@bold{Compiling and setting up all or some collections:} 
+   When @exec{raco setup} is run without any arguments, it
+   finds all of the current collections---see @secref[#:doc
+   ref-src]{collects}---and compiles libraries in each collection.
+   (Directories that are named @filepath{.git} or @filepath{.svn} are 
+   not treated as collections.)
+
+   To restrict @exec{raco setup} to a set of collections, provide the
+   collection names as arguments. For example, @exec{raco setup
+   scribblings/raco} would only compile and render the documentation
+   for @exec{raco}, which is implemented in a
+   @filepath{scribblings/raco} collection.
 
    An optional @filepath{info.rkt} within the collection can indicate
    specifically how the collection's files are to be compiled and
@@ -82,9 +90,6 @@ The @exec{raco setup} command performs two main services:
    parallel processes.  The default value of @racket[_n] is
    @racket[(processor-count)], which typically uses all the machine's
    processing cores.
-
-   The @Flag{l} flag takes one or more collection names and restricts
-   @exec{raco setup}'s action to those collections.
 
    The @DFlag{mode} @nonterm{mode} flag causes @exec{raco setup} to use a
    @filepath{.zo} compiler other than the default compiler, and to put
@@ -107,7 +112,7 @@ The @exec{raco setup} command performs two main services:
  @item{@bold{Unpacking @filepath{.plt} files:} A
    @filepath{.plt} file is a platform-independent distribution archive
    for software based on Racket. When one or more file names are
-   provided as the command line arguments to @exec{raco setup}, the files
+   provided as the command line arguments to @exec{raco setup} with the @Flag{A} flag, the files
    contained in the @filepath{.plt} archive are unpacked (according to
    specifications embedded in the @filepath{.plt} file) and only
    collections specified by the @filepath{.plt} file are compiled and
