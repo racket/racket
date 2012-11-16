@@ -5,9 +5,7 @@
          in-column)
 
 (require math/array
-         (except-in math/matrix in-row in-column)
-         (for-syntax (except-in math/matrix in-row in-column))
-         (for-template (except-in math/matrix in-row in-column)))
+         (except-in math/matrix in-row in-column))
 
 ;;; COMPREHENSIONS
 
