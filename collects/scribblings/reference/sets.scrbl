@@ -59,7 +59,8 @@ Produces an unspecified element of @racket[st]. Multiple uses of
 
 @defproc[(set-rest [st (and/c set? (not/c set-empty?))]) set?]{
 
-Removes @racket[(set-first st)] from @racket[st].}
+Produces a set that includes all elements of @racket[st] except
+@racket[(set-first st)].}
 
 
 @defproc[(set-add [st set?] [v any/c]) set?]{
