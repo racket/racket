@@ -54,10 +54,10 @@ DO_MAP(int argc, Scheme_Object *argv[])
     char *s;
     intptr_t aelen;
 
-    s = scheme_make_arity_expect_string(argv[0], argc - 1, NULL, &aelen);
+    s = scheme_make_arity_expect_string(MAP_NAME, argv[0], argc - 1, NULL, &aelen);
 
     scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		     "%s: arity mismatch for %t", MAP_NAME,
+		     "%t",
 		     s, aelen);
     return NULL;
   }

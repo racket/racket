@@ -85,7 +85,7 @@
                 (let ([a (cadr p)])
                   (test a procedure-arity (car p))
                   (when (number? a)
-                    (let ([rx (regexp (format "arity mismatch;.*expected: (|at least )~a" 
+                    (let ([rx (regexp (format " mismatch;.*expected: (|at least )~a" 
                                               (if (zero? a) "(0|no)" a)))]
                           [bad-args (cons 'extra (for/list ([i (in-range a)]) 'a))])
                       (test #t regexp-match? rx

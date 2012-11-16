@@ -1101,18 +1101,18 @@ static Scheme_Object *check_arity_property_value_ok(int argc, Scheme_Object *arg
   return argv[0];
 }
 
-#define WRONG_NUMBER_OF_ARGUMENTS "arity mismatch;\n the expected number of arguments does not match the given number"
-
 static char *make_arity_expect_string(const char *name, int namelen,
 				      int minc, int maxc,
 				      int argc, Scheme_Object **argv,
-				      intptr_t *_len, int is_method)
+				      intptr_t *_len, int is_method,
+                                      const char *map_name)
 /* minc == -1 => name is really a case-lambda, native closure, or proc-struct.
    minc == -2 => use generic arity-mismatch message */
 {
   intptr_t len, pos, slen;
   int xargc, xminc, xmaxc;
   char *s, *arity_str = NULL;
+  const char *prefix_msg1, *prefix_msg2, *suffix_msg;
   int arity_len = 0;
 
   s = init_buf(&len, &slen);
@@ -1179,12 +1179,29 @@ static char *make_arity_expect_string(const char *name, int namelen,
     }
   }
 
+  if (map_name) {
+    prefix_msg1 = map_name;
+    prefix_msg2 = (": argument mismatch;\n"
+                   " the given procedure's expected number of arguments does not match\n"
+                   " the given number of lists\n"
+                   "  given procedure: ");
+    suffix_msg = "";
+  } else {
+    prefix_msg1 = "";
+    prefix_msg2 = "";
+    suffix_msg = (": arity mismatch;\n"
+                  " the expected number of arguments does not match the given number");
+  }
+
   if (arity_str) {
     pos = scheme_sprintf(s, slen, 
-                         "%t: " WRONG_NUMBER_OF_ARGUMENTS "\n"
+                         "%s%s%t%s\n"
                          "  expected: %t\n"
                          "  given: %d",
-			 name, (intptr_t)namelen, arity_str, (intptr_t)arity_len, xargc);
+                         prefix_msg1, prefix_msg2,
+			 name, (intptr_t)namelen, 
+                         suffix_msg,
+                         arity_str, (intptr_t)arity_len, xargc);
   } else if (minc < 0) {
     const char *n;
     int nlen;
@@ -1201,34 +1218,48 @@ static char *make_arity_expect_string(const char *name, int namelen,
     }
 
     pos = scheme_sprintf(s, slen, 
-                         "%t: " WRONG_NUMBER_OF_ARGUMENTS "\n"
+                         "%s%s%t%s\n"
                          "  given: %d",
+                         prefix_msg1, prefix_msg2,
 			 n, (intptr_t)nlen,
+                         suffix_msg,
 			 xargc);
   } else if (!maxc)
     pos = scheme_sprintf(s, slen, 
-                         "%t: " WRONG_NUMBER_OF_ARGUMENTS "\n"
+                         "%s%s%t%s\n"
                          "  expected: 0\n"
                          "  given: %d",
-			 name, (intptr_t)namelen, xargc);
+                         prefix_msg1, prefix_msg2,
+			 name, (intptr_t)namelen, 
+                         suffix_msg,
+                         xargc);
   else if (maxc < 0)
     pos = scheme_sprintf(s, slen, 
-                         "%t: " WRONG_NUMBER_OF_ARGUMENTS "\n"
+                         "%s%s%t%s\n"
                          "  expected: at least %d\n"
                          "  given: %d",
-			 name, (intptr_t)namelen, xminc, xargc);
+                         prefix_msg1, prefix_msg2,
+			 name, (intptr_t)namelen, 
+                         suffix_msg,
+                         xminc, xargc);
   else if (minc == maxc)
     pos = scheme_sprintf(s, slen, 
-                         "%t: " WRONG_NUMBER_OF_ARGUMENTS "\n"
+                         "%s%s%t%s\n"
                          "  expected: %d\n"
                          "  given: %d",
-			 name, (intptr_t)namelen, xminc, xargc);
+                         prefix_msg1, prefix_msg2,
+			 name, (intptr_t)namelen, 
+                         suffix_msg,
+                         xminc, xargc);
   else
     pos = scheme_sprintf(s, slen, 
-                         "%t: " WRONG_NUMBER_OF_ARGUMENTS "\n"
+                         "%s%s%t%s\n"
                          "  expected: %d to %d\n"
                          "  given: %d",
-			 name, (intptr_t)namelen, xminc, xmaxc, xargc);
+                         prefix_msg1, prefix_msg2,
+			 name, (intptr_t)namelen, 
+                         suffix_msg,
+                         xminc, xmaxc, xargc);
 
   if (xargc && argv) {
     len -= (xargc * 4);
@@ -1341,7 +1372,7 @@ void scheme_wrong_count_m(const char *name, int minc, int maxc,
   if (maxc > SCHEME_MAX_ARGS)
     maxc = -1;
 
-  s = make_arity_expect_string(name, -1, minc, maxc, argc, argv, &len, is_method);
+  s = make_arity_expect_string(name, -1, minc, maxc, argc, argv, &len, is_method, NULL);
 
   scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY, "%t", s, len);
 }
@@ -1365,12 +1396,13 @@ void scheme_case_lambda_wrong_count(const char *name,
   if (!argc)
     is_method = 0;
 
-  s = make_arity_expect_string(name, -1, -2, 0, argc, argv, &len, is_method);
+  s = make_arity_expect_string(name, -1, -2, 0, argc, argv, &len, is_method, NULL);
 
   scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY, "%t", s, len);
 }
 
-char *scheme_make_arity_expect_string(Scheme_Object *proc,
+char *scheme_make_arity_expect_string(const char *map_name,
+                                      Scheme_Object *proc,
 				      int argc, Scheme_Object **argv,
 				      intptr_t *_slen)
 {
@@ -1445,7 +1477,7 @@ char *scheme_make_arity_expect_string(Scheme_Object *proc,
     name = scheme_get_proc_name(proc, &namelen, 1);
   }
 
-  return make_arity_expect_string(name, namelen, mina, maxa, argc, argv, _slen, 0);
+  return make_arity_expect_string(name, namelen, mina, maxa, argc, argv, _slen, 0, map_name);
 }
 
 char *scheme_make_args_string(const char *s, int which, int argc, Scheme_Object **argv, intptr_t *_olen)
