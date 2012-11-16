@@ -36,11 +36,22 @@ Removes all user-selectable items from the control.
 
 }
 
+@defmethod[(delete [n exact-nonnegative-integer?])
+           void?]{
+
+Deletes the item indexed by @racket[n] (where items are indexed
+ from @racket[0]). If @racket[n] is equal
+ to or larger than the number of items in the control, @|MismatchExn|.
+
+Selected items that are not deleted remain selected, and no other
+ items are selected.}
+
+
 @defmethod[(find-string [s string?])
            (or/c exact-nonnegative-integer? #f)]{
 Finds a user-selectable item matching the given string. If no matching
  choice is found, @racket[#f] is returned, otherwise the index of the
- matching choice is returned (items are indexed from @racket[0]).
+ matching choice is returned (where items are indexed from @racket[0]).
 
 }
 
@@ -53,7 +64,7 @@ Returns the number of user-selectable items in the control (which is
 
 @defmethod[(get-selection)
            (or/c exact-nonnegative-integer? #f)]{
-Returns the index of the currently selected item (items are indexed
+Returns the index of the currently selected item (where items are indexed
  from @racket[0]). If the choice item currently contains no choices or no
  selections, @racket[#f] is returned.  If multiple selections are
  allowed and multiple items are selected, the index of the first
@@ -64,7 +75,7 @@ Returns the index of the currently selected item (items are indexed
 @defmethod[(get-string [n exact-nonnegative-integer?])
            (and/c immutable? label-string?)]{
 
-Returns the item for the given index (items are indexed from
+Returns the item for the given index (where items are indexed from
  @racket[0]). If the provided index is larger than the greatest index in
  the list control, @|MismatchExn|.
 
@@ -81,7 +92,7 @@ Returns the currently selected item.  If the control currently
 
 @defmethod[(set-selection [n exact-nonnegative-integer?])
            void?]{
-Selects the item specified by the given index (items are indexed from
+Selects the item specified by the given index (where items are indexed from
  @racket[0]). If the given index larger than the greatest index in the
  list control, @|MismatchExn|.
 

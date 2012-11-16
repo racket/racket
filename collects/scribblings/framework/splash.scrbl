@@ -26,7 +26,7 @@ that number to control the gauge along the bottom of the splash screen.
                        [splash-title string?]
                        [width-default exact-nonnegative-integer?]
                        [#:allow-funny? allow-funny? boolean? #f]
-                       [#:frame-icon 	
+                       [#:frame-icon
                         frame-icon
                         (or/c #f
                               (is-a?/c bitmap%)

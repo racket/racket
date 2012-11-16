@@ -168,7 +168,19 @@
 (define (escape x table)
   (regexp-replace* table x replace-escaped))
 
+
+;; write-string/excape: String Regexp Output-Port -> Void
+;; Writes the string to the output port, with a fast-path 
+;; that tries to avoid using string escapes unless necessary.
+(define (write-string/escape str table out)
+  (cond [(regexp-match table str)
+         (write-string (escape str table) out)]
+        [else
+         (write-string str out)]))
+
+
 (provide escape
+         write-string/escape
          escape-table
          escape-attribute-table
          lowercase-symbol

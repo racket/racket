@@ -76,11 +76,8 @@ of @racket[x], respectively.
                         (function (compose fltanh fl) #:label "fltanh x" #:color 3))
                        #:x-min -2 #:x-max 2 #:y-label #f #:legend-anchor 'bottom-right)]
 
-Direct implementations of the mathematical definitions of these functions usually
-exhibit worst-case approximation error in the millions of @tech{ulps}, and do not
-return sensible values for large inputs. These implementations have been verified
-experimentally to have error no more than 2 ulps, and to return sensible values on
-the largest possible domain.
+Maximum observed error is 2 @tech{ulps}, making these functions (currently) much more accurate than their
+@racketmodname[racket/math] counterparts. They also return sensible values on the largest possible domain.
 }
 
 @deftogether[(@defproc[(flasinh [y Flonum]) Flonum]
@@ -92,17 +89,25 @@ of @racket[y], respectively.
 These functions are as robust and accurate as their corresponding inverses.
 }
 
-@deftogether[(@defproc[(fllog-factorial [n Integer]) Flonum]
-              @defproc[(fllog-binomial [n Integer] [k Integer]) Flonum]
-              @defproc[(fllog-permutations [n Integer] [k Integer]) Flonum]
-              @defproc[(fllog-multinomial [n Integer] [k Integer] ...) Flonum])]{
-Like @racket[(fl (log (factorial n)))], @racket[(fl (log (binomial n k)))],
-@racket[(fl (log (permutations n k)))] and @racket[(fl (log (multinomial n k ...)))]
-respectively, but computed in nearly constant time. Also, these return @racket[+nan.0] when given
-negative arguments.
+@deftogether[(@defproc[(flfactorial [n Flonum]) Flonum]
+              @defproc[(flbinomial [n Flonum] [k Flonum]) Flonum]
+              @defproc[(flpermutations [n Flonum] [k Flonum]) Flonum]
+              @defproc[(flmultinomial [n Flonum] [k Flonum] ...) Flonum])]{
+Like @racket[(fl (factorial (fl->exact-integer n)))] and so on, but computed in constant
+time. Also, these return @racket[+nan.0] instead of raising exceptions.
 
-For @racket[factorial]-like functions that return sensible values for non-integers, see
-@racket[gamma] and @racket[log-gamma].
+For @racket[factorial]-family functions that return sensible values for non-integers, see
+@racket[gamma] and @racket[beta].
+}
+
+@deftogether[(@defproc[(fllog-factorial [n Flonum]) Flonum]
+              @defproc[(fllog-binomial [n Flonum] [k Flonum]) Flonum]
+              @defproc[(fllog-permutations [n Flonum] [k Flonum]) Flonum]
+              @defproc[(fllog-multinomial [n Flonum] [k Flonum] ...) Flonum])]{
+Like @racket[(fllog (flfactorial n))] and so on, but more accurate and without unnecessary overflow.
+
+For log-@racket[factorial]-family functions that return sensible values for non-integers, see
+@racket[log-gamma] and @racket[log-beta].
 }
 
 @deftogether[(@defproc[(fllog1p [x Flonum]) Flonum]
@@ -130,7 +135,7 @@ around which flonums are particularly dense, result in outputs that are also clo
 to @racket[0.0]. Further, both functions are approximately the identity function
 near @racket[0.0], so the output density is approximately the same.
 
-Most flonum functions defined in terms of @racket[fllog] and @racket[flexp]
+Many flonum functions defined in terms of @racket[fllog] and @racket[flexp]
 become much more accurate when their defining expressions are put in terms of
 @racket[fllog1p] and @racket[flexpm1]. The functions exported by this module and
 by @racketmodname[math/special-functions] use them extensively.
@@ -145,6 +150,7 @@ comes from subtracting such a small number from @racket[1.0] in the first place:
 Fortunately, we can compute this correctly by putting the expression in terms
 of @racket[fllog1p], which avoids the error-prone subtraction:
 @interaction[#:eval untyped-eval (flexp (* 1e20 (fllog1p (- 1e-20))))]
+But see @racket[flexpt1p], which is more accurate still.
 }
 
 @defproc[(make-flexp/base [x Real]) (Flonum -> Flonum)]{
@@ -221,11 +227,11 @@ For example, say we want the probability density of the standard normal distribu
 @interaction[#:eval untyped-eval
                     (require math/distributions)
                     (define d (normal-dist))
-                    ((real-dist-pdf d) 50.0)]
+                    ((dist-pdf d) 50.0)]
 Mathematically, the density is nonzero everywhere, but the density at 50 is less than
 @racket[+min.0]. However, its density in log space, or its log-density, is representable:
 @interaction[#:eval untyped-eval
-                    ((real-dist-pdf d) 50.0 #t)]
+                    ((dist-pdf d) 50.0 #t)]
 While this example may seem contrived, it is very common, when computing the density
 of a @italic{vector} of data, for the product of the densities to be too small to represent directly.
 

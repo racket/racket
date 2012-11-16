@@ -265,9 +265,9 @@ functionality exposed by @seclink["cmdline"]{the @exec{raco planet} command-line
 also available programmatically through this library.
 
 @defproc[(download/install-pkg [owner string?]
-			       [pkg (and/c string? #rx"[.]plt$")]
-			       [maj natural-number/c]
-			       [min natural-number/c])
+                               [pkg (and/c string? #rx"[.]plt$")]
+                               [maj natural-number/c]
+                               [min natural-number/c])
          (or/c pkg? #f)]{
 Downloads and installs the package specifed by the given owner name,
 package name, major and minor version number. Returns false if no such
@@ -393,16 +393,16 @@ See also @racket[build-scribble-docs?] and @racket[force-package-building?]
 }
 
 @defproc[(unpack-planet-archive [plt-file (or/c path? path-string?)]
-				[output-dir (or/c path? path-string?)])
- 	 any]{
+                                [output-dir (or/c path? path-string?)])
+         any]{
 Unpacks the PLaneT archive with the given filename, placing its contents
 into the given directory (creating that path if necessary).}
 
 @defproc[(remove-pkg [owner string?]
-		     [pkg   (and/c string? #rx"[.]plt$")]
-		     [maj   natural-number/c]
-		     [min   natural-number/c])
-	 any]{
+                     [pkg   (and/c string? #rx"[.]plt$")]
+                     [maj   natural-number/c]
+                     [min   natural-number/c])
+         any]{
 Removes the specified package from the local planet cache, deleting the installed files.
 }
 
@@ -410,20 +410,20 @@ Removes the specified package from the local planet cache, deleting the installe
                     [pkg   (and/c string? #rx"[.]plt$")]
                     [maj   natural-number/c]
                     [min   natural-number/c])
-	 any]{
+         any]{
 Like @racket[remove-pkg], removes the specified package from the local planet cache and deletes
 all of the files corresponding to the package, but also deletes the cached @filepath{.plt} file
 (so it will be redownloaded later).
 }
-             
+
 @defproc[(display-plt-file-structure [plt-file (or/c path-string? path?)])
          any]{
 Print a tree representing the file and directory structure of the
 PLaneT archive .plt file named by @racket[plt-file] to @racket[(current-output-port)].}
 
 @defproc[(display-plt-archived-file [plt-file (or/c path-string? path?)]
-				    [file-to-print string?])
-	 any]{
+                                    [file-to-print string?])
+         any]{
 Print the contents of the file named @racket[file-to-print] within the 
 PLaneT archive .plt file named by @racket[plt-file] to @racket[(current-output-port)].}
 
@@ -432,11 +432,11 @@ Removes the entire linkage table from the system, which will force all
 modules to relink themselves to PLaneT modules the next time they run.}
 
 @defproc[(add-hard-link [owner string?]
-			[pkg   (and/c string? #rx"[.]plt$")]
-			[maj   natural-number/c]
-			[min   natural-number/c]
-			[dir   path?])
-	 any]{
+                        [pkg   (and/c string? #rx"[.]plt$")]
+                        [maj   natural-number/c]
+                        [min   natural-number/c]
+                        [dir   path?])
+         any]{
 Adds a development link between the specified package and the given
 directory; once a link is established, PLaneT will treat the cache as
 having a package with the given owner, name, and version whose files
@@ -451,11 +451,11 @@ The @racket[pkg] argument must end with the string @racket[".plt"].
 }
 
 @defproc[(remove-hard-link [owner string?]
-	 		   [pkg   (and/c string? #rx"[.]plt$")]
-			   [maj   natural-number/c]
-			   [min   natural-number/c]
+                           [pkg   (and/c string? #rx"[.]plt$")]
+                           [maj   natural-number/c]
+                           [min   natural-number/c]
                            [#:quiet? quiet? boolean? #false])
- 	 any]{
+         any]{
 Removes any hard link that may be associated with the given package.
 
 The @racket[pkg] argument must end with the string @racket[".plt"].
@@ -465,7 +465,7 @@ procedure signals an error if no such link exists, unless
 }
 
 @defproc[(resolve-planet-path [spec quoted-planet-require-spec?])
-	 path?]{
+         path?]{
 This is the same function as the one with the same name,
 exported by @racketmodname[planet/resolver].
 }

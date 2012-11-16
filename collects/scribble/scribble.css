@@ -154,6 +154,10 @@ table td {
   font-size: xx-small; /* avoid overlap with author */
 }
 
+.version:before, .versionNoNav:before {
+  content: "Version ";
+}
+
 /* ---------------------------------------- */
 /* Margin notes */
 

@@ -1,6 +1,11 @@
-#lang racket
+#lang racket/base
 
-(require "syntax-property.rkt")
+(require racket/list
+         racket/match
+         racket/contract
+         racket/class
+         racket/unit
+         "syntax-property.rkt")
 
 ; CONTRACTS
 

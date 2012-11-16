@@ -1,3 +1,3 @@
-#cs(module guess-gui mzscheme
-  (require htdp/guess-gui)
-  (provide (all-from htdp/guess-gui)))
+#lang racket/base
+(require htdp/guess-gui)
+(provide (all-from-out htdp/guess-gui))

@@ -52,7 +52,8 @@
 
 struct jit_local_state {
 #ifdef JIT_X86_64
-  int   long_jumps;
+  int   long_jumps, long_jumps_default;
+# define LONG_JUMPS_DEFAULT(jitl) (jitl.long_jumps_default)
   int   nextarg_geti;
 #else
   int	framesize;
@@ -352,6 +353,8 @@ struct jit_local_state {
 #define jit_rshr_l(d, r1, r2)	jit_replace((r1), (r2), _ECX, 				jit_qop_ ((d), (r1), SARQrr(_CL,  (d)) ))
 #define jit_rshr_ul(d, r1, r2)	jit_replace((r1), (r2), _ECX, 				jit_qop_ ((d), (r1), SHRQrr(_CL,  (d)) ))
 
+#define jit_leai_l(d, rs, is, js)  LEAQmr((is), 0, (rs), 1 << (js), (d))
+
 /* Stack */
 #define jit_pushi_i(is)		PUSHLi(is)
 #define jit_pushr_i(rs)		PUSHLr(rs)
@@ -432,8 +435,8 @@ struct jit_local_state {
 # define jit_normal_pushonlyarg_i(rs) (_jitl.argpushes--, MOVQrr(rs, jit_arg_reg_order[0]))
 # define jit_save_argstate(curstate)	curstate = _jitl.argpushes;
 # define jit_restore_argstate(curstate)	_jitl.argpushes = curstate;
-# define jit_finish(sub)        (jit_shift_args(), (void)jit_calli((sub)), jit_restore_locals())
-# define jit_normal_finish(sub) jit_calli((sub))
+# define jit_finish(sub)        (jit_shift_args(), (void)jit_long_calli((sub)), jit_restore_locals())
+# define jit_normal_finish(sub) jit_long_calli((sub))
 # define jit_return_pop_insn_len() 0
 # define jit_finishr(reg)	((jit_reg_is_arg((reg)) ? MOVQrr(reg, JIT_REXTMP) : (void)0), \
                                  jit_shift_args(), \
@@ -604,7 +607,13 @@ static const int const jit_arg_reg_order[] = { _EDI, _ESI, _EDX, _ECX };
 #define jit_bmci_l(label, rs, is) jit_bmci_i(label, rs, is)
 
 #define jit_jmpi(label)		(JMPm( ((uintptr_t) (label)),	0, 0, 0), _jit.x.pc)
-#define jit_calli(label)	(CALLm( ((uintptr_t) (label)),	0, 0, 0), _jit.x.pc)
+#define jit_long_calli(label)	(CALLm( ((uintptr_t) (label)),	0, 0, 0), _jit.x.pc)
+#define jit_short_calli(label)	(CALLmL( ((uintptr_t) (label)),	0, 0, 0), _jit.x.pc)
+#ifdef JIT_X86_64
+# define jit_calli(label)	(_jitl.long_jumps_default ? jit_long_calli(label) : jit_short_calli(label))
+#else
+# define jit_calli(label)	jit_long_calli(label)
+#endif
 #define jit_callr(reg)		(CALLsr(reg))
 #define jit_jmpr(reg)		JMPsr(reg)
 
@@ -673,12 +682,12 @@ XFORM_NONGCING static intptr_t _CHECK_TINY(intptr_t diff) { if ((diff < -128) ||
 #define _jit_ldi_i(d, is)		MOVLmr((is), 0,    0,    0,  (d))
 #define jit_ldr_i(d, rs)		MOVLmr(0,    (rs), 0,    0,  (d))
 #define jit_ldxr_i(d, s1, s2)		MOVLmr(0,    (s1), (s2), 1,  (d))
-#define jit_ldxi_i(d, rs, is)		MOVLmr((is), (rs), 0,    0,  (d))
+#define jit_ldxi_i(d, rs, is)		MOVLmQr((is), (rs), 0,    0,  (d))
 
 #define _jit_sti_i(id, rs)		MOVLrm((rs), (id), 0,    0,    0)
 #define jit_str_i(rd, rs)		MOVLrm((rs), 0,    (rd), 0,    0)
 #define jit_stxr_i(d1, d2, rs)		MOVLrm((rs), 0,    (d1), (d2), 1)
-#define jit_stxi_i(id, rd, rs)		MOVLrm((rs), (id), (rd), 0,    0)
+#define jit_stxi_i(id, rd, rs)		MOVLQrm((rs), (id), (rd), 0,    0)
 
 #define _jit_ldi_l(d, is)		MOVQmQr((is), 0,    0,    0,  (d))
 #define jit_ldr_l(d, rs)		MOVQmQr(0,    (rs), 0,    0,  (d))
@@ -690,17 +699,27 @@ XFORM_NONGCING static intptr_t _CHECK_TINY(intptr_t diff) { if ((diff < -128) ||
 #define jit_stxr_l(d1, d2, rs)		MOVQrQm((rs), 0,    (d1), (d2), 1)
 #define jit_stxi_l(id, rd, rs)		MOVQrQm((rs), (id), (rd), 0,    0)
 
+#define _jit_stir_l(rd, is)		MOVQim((is), 0,    (rd), 0,    0)
+#define _jit_stixi_l(id, rd, is)	MOVQim((is),  (id), (rd), 0,   0)
+
 #ifdef JIT_X86_64
 # define jit_ldi_l(d, is) (_u32P((intptr_t)(is)) ? _jit_ldi_l(d, is) : (jit_movi_l(d, is), jit_ldr_l(d, d)))
 # define jit_sti_l(id, rs) (_u32P((intptr_t)(id)) ? _jit_sti_l(id, rs) : (jit_movi_l(JIT_REXTMP, (intptr_t)(id)), MOVQrQm(rs, 0, JIT_REXTMP, 0, 0)))
 # define jit_ldi_i(d, is) (_u32P((intptr_t)(is)) ? _jit_ldi_i(d, is) : (jit_movi_l(d, is), jit_ldr_i(d, d)))
 # define jit_sti_i(id, rs) (_u32P((intptr_t)(id)) ? _jit_sti_i(id, rs) : (jit_movi_l(JIT_REXTMP, (intptr_t)(id)), MOVQrm(rs, 0, JIT_REXTMP, 0, 0)))
+# define jit_stir_l(rd, is) (_u32P((intptr_t)(is)) ? _jit_stir_l(rd, is) : (jit_movi_l(JIT_REXTMP, (intptr_t)(is)), jit_str_l(rd, JIT_REXTMP)))
+# define jit_stixi_l(id, rd, is) (_u32P((intptr_t)(is)) ? _jit_stixi_l(id, rd, is) : (jit_movi_l(JIT_REXTMP, is), jit_stxi_l(id, rd, JIT_REXTMP)))
 #else
 # define jit_ldi_l(d, is) _jit_ldi_l(d, is)
 # define jit_sti_l(id, rs) _jit_sti_l(id, rs)
 # define jit_ldi_i(d, is) _jit_ldi_i(d, is)
 # define jit_sti_i(id, rs) _jit_sti_i(id, rs)
+# define jit_stir_l(rd, is) _jit_stir_l(rd, is) 
+# define jit_stixi_l(id, rd, is) _jit_stixi_l(id, rd, is) 
 #endif
+
+#define jit_stir_p(rd, is) jit_stir_l(rd, is)
+#define jit_stixi_p(id, rd, is) jit_stixi_l(id, rd, is)
 
 #define jit_lock_cmpxchgr_i(rd, rs) LOCK_PREFIX(CMPXCHGr(rd, rs))
 #define jit_lock_cmpxchgr_s(rd, rs) LOCK_PREFIX(CMPXCHGWr(rd, rs))

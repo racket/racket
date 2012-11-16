@@ -1,4 +1,4 @@
-;; The first three lines of this file were inserted by DrScheme. They record metadata
+;; The first three lines of this file were inserted by DrRacket. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
 #reader(lib "htdp-intermediate-lambda-reader.ss" "lang")((modname matrix-test) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ())))
 ;(require htdp/matrix-invisible)
@@ -50,7 +50,11 @@
 (check-expect (matrix-ref m1-minor 0 0) 'a00)
 (check-expect (matrix-ref m1-minor 0 1) 'a02)
 
-;; --- IMPERATIVE --- 
 (check-expect (matrix-ref m1 0 0) 'a00)
-;(define m1-modified (matrix-set! m1 0 0 'xxx)) ;; <-------- uncomment this and the test engine breaks
-;(check-expect (matrix-ref m1 0 0) 'xxx)
+;; --- IMPERATIVE ---
+;; see comment in matrix-unit.rkt
+;; ---------------------------------
+;; (define M-imperative (build-matrix 2 3 (λ (i j) (* (expt 2 i) (expt 3 j)))))
+;; (define M-modified   (matrix-set! M-imperative 0 0 'xxx))
+;; (check-expect (matrix-ref M-modified 0 0) 'xxx)
+;; (check-expect (matrix-ref M-imperative 0 0) 'xxx)

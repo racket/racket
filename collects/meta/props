@@ -359,7 +359,7 @@ path/s is either such a string or a list of them.
 
 (define (verify)
   (define errors 0)
-  (define (path-error path fmt . more)
+  (define (path-warning path fmt . more)
     (when (= 0 errors) (newline))
     (set! errors (add1 errors))
     (printf "  ~a: ~a\n" (or path "<ROOT>") (apply format fmt more)))
@@ -391,8 +391,8 @@ path/s is either such a string or a list of them.
               (define rest  (cdr values))
               (define same? (andmap (λ (v) (equal? value v)) rest))
               (when (and same? (pair? rest) (null? others))
-                (path-error (string-append path/ "...")
-                            "all ~s sub-properties are ~s" pname value)
+                (path-warning (string-append path/ "...")
+                              "all ~s sub-properties are ~s" pname value)
                 ;; Printing the others is usually too verbose.
                 ;; (define rx (regexp (string-append "^" (regexp-quote path/))))
                 ;; (define os (map (λ (o) (regexp-replace rx o "")) others))
@@ -407,21 +407,23 @@ path/s is either such a string or a list of them.
     (define props (Tree-props tree))
     (define all-props (append props base-props))
     (define subs (Tree-subs tree))
-    (when (eq? '|| name) (path-error base-path "empty name (trailing slash?)"))
+    (when (eq? '|| name)
+      (path-warning base-path "empty name (trailing slash?)"))
     (unless (equal? (reverse (Tree-subs tree)) (Tree-subs/sorted tree))
-      (path-error path "unsorted sub-paths"))
+      (path-warning path "unsorted sub-paths"))
     (when (and (Tree-in-db? tree) (null? props))
-      (path-error path "no properties"))
+      (path-warning path "no properties"))
     (for ([p (in-list props)] #:when (member p base-props))
-      (path-error path "redundant property: ~s := ~s" (car p) (cdr p)))
+      (path-warning path "redundant property: ~s := ~s" (car p) (cdr p)))
     (define path/ ; #f for a file, "" for the root
       (cond [(not path) ""]
             [(directory-exists? path) (string-append path "/")]
             [(file-exists? path) #f]
-            [else (path-error path "Missing file/directory")]))
+            [else (path-warning path "Missing file/directory")
+                  #f]))
     (define others (if path/ (uncovered-subs path/ (map Tree-name subs)) '()))
     (unless (assq 'responsible all-props)
-      (define (bad p) (path-error p "no responsible"))
+      (define (bad p) (path-warning p "no responsible"))
       (if path/ (for-each bad others) (bad path)))
     (if path/
       (let* ([rs (for/list ([sub (in-list subs)]) (loop sub path/ all-props))]
@@ -641,6 +643,7 @@ path/s is either such a string or a list of them.
 "collects/2htdp/tests/mouse-evt.rkt" drdr:command-line #f
 "collects/2htdp/tests/mp.rkt" drdr:command-line #f
 "collects/2htdp/tests/on-release-no-key.rkt" drdr:command-line (raco "make" *)
+"collects/2htdp/tests/on-tick-universe-with-limit.rkt" drdr:command-line (gracket *)
 "collects/2htdp/tests/pad1.rkt" drdr:command-line (raco "make" *)
 "collects/2htdp/tests/perform-record.rkt" drdr:command-line (gracket *)
 "collects/2htdp/tests/perform-robby.rkt" drdr:command-line (gracket *)
@@ -726,6 +729,7 @@ path/s is either such a string or a list of them.
 "collects/ffi/unsafe/objc.rkt" responsible (mflatt) drdr:command-line (mzc *)
 "collects/file" responsible (mflatt)
 "collects/framework" responsible (robby)
+"collects/framework/private/follow-log.rkt" drdr:command-line (mzc *)
 "collects/frtime" responsible (jay gcooper)
 "collects/frtime/animation.rkt" drdr:command-line (mzc *)
 "collects/frtime/demos/analog-clock.rkt" drdr:command-line (mzc *)
@@ -804,6 +808,9 @@ path/s is either such a string or a list of them.
 "collects/meta/drdr2" responsible (jay) drdr:command-line #f
 "collects/meta/images/mkheart.rkt" drdr:command-line #f
 "collects/meta/images/taking-screenshots/racket-widget.scm" drdr:command-line #f
+"collects/meta/planet2-index" responsible (jay)
+"collects/meta/planet2-index/official/main.rkt" drdr:command-line (raco "test" *)
+"collects/meta/planet2-index/planet-compat/main.rkt" drdr:command-line (raco "test" *)
 "collects/meta/props" responsible (eli jay) drdr:command-line (racket "-um" * "verify")
 "collects/meta/web" drdr:command-line #f
 "collects/mred" responsible (mflatt)
@@ -856,6 +863,7 @@ path/s is either such a string or a list of them.
 "collects/picturing-programs" responsible (sbloch)
 "collects/plai" responsible (jay)
 "collects/planet" responsible (robby)
+"collects/planet2" responsible (jay)
 "collects/plot" responsible (ntoronto)
 "collects/plot/scribblings/plot.scrbl" drdr:timeout 180
 "collects/plot/tests/extreme-bounds-tests.rkt" drdr:timeout 150
@@ -930,6 +938,7 @@ path/s is either such a string or a list of them.
 "collects/redex/tests/run-tests.rkt" drdr:command-line (racket * "--examples" "--no-bitmap-gui") drdr:timeout 360
 "collects/redex/tests/stepper-test.rkt" drdr:command-line (mzc *)
 "collects/redex/tests/term-test.rkt" drdr:command-line (mzc *)
+"collects/redex/tests/test-docs-complete.rkt" drdr:command-line (raco "make" *)
 "collects/redex/tests/tl-test.rkt" drdr:command-line (mzc *)
 "collects/repo-time-stamp" responsible (eli)
 "collects/rnrs" responsible (mflatt)
@@ -1027,7 +1036,7 @@ path/s is either such a string or a list of them.
 "collects/tests/drracket/repl-test-misc.rkt" drdr:command-line (gracket *)
 "collects/tests/drracket/repl-test-raw.rkt" drdr:command-line (gracket *) drdr:timeout 300
 "collects/tests/drracket/snip/collapsed.rkt" drdr:command-line (racket "-l" "racket/gui/base" "-t" *)
-"collects/tests/drracket/snip/run-all.rkt" drdr:timeout 400
+"collects/tests/drracket/snip/run-all.rkt" drdr:timeout 500
 "collects/tests/drracket/snips.rkt" drdr:command-line (gracket *)
 "collects/tests/drracket/syncheck-test.rkt" drdr:command-line (gracket *) drdr:timeout 200
 "collects/tests/drracket/teaching-lang-coverage.rkt" responsible (robby matthias) drdr:command-line (gracket *)
@@ -1144,6 +1153,8 @@ path/s is either such a string or a list of them.
 "collects/tests/planet/test-docs-complete.rkt" drdr:command-line (raco "make" *)
 "collects/tests/planet/thread-safe-resolver.rkt" drdr:command-line (raco "make" *) drdr:timeout 1000
 "collects/tests/planet/version.rkt" drdr:command-line (raco "make" *)
+"collects/tests/planet2" responsible (jay) drdr:command-line (mzc *)
+"collects/tests/planet2/test-pkgs" drdr:command-line #f
 "collects/tests/profile" responsible (eli)
 "collects/tests/r6rs" responsible (mflatt)
 "collects/tests/racket" responsible (mflatt)
@@ -1154,6 +1165,8 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/benchmarks/common/mk-chicken.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/mk-gambit.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/typed" responsible (stamourv samth)
+"collects/tests/racket/benchmarks/common/typed/collatz-q.rktl" drdr:command-line #f
+"collects/tests/racket/benchmarks/common/typed/collatz.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/typed/cpstak.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/typed/ctak.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/typed/dderiv.rktl" drdr:command-line #f
@@ -1387,7 +1400,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/stress/contract-lifting.rkt" responsible (robby sstrickl)
 "collects/tests/racket/stress/dict.rkt" drdr:timeout 180
 "collects/tests/racket/stress/fuzz.rkt" responsible (samth mflatt) drdr:command-line (racket * "-c") drdr:timeout 300 drdr:random #t
-"collects/tests/racket/stress/module-stack.rkt" drdr:timeout 180
+"collects/tests/racket/stress/module-stack.rkt" drdr:timeout 360
 "collects/tests/racket/sync.rktl" drdr:command-line #f
 "collects/tests/racket/syntax.rktl" drdr:command-line #f
 "collects/tests/racket/thread.rktl" drdr:command-line #f

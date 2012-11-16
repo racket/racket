@@ -6,6 +6,7 @@
          ffi/unsafe
          ffi/unsafe/objc
          "utils.rkt"
+         "const.rkt"
          "types.rkt"
          "frame.rkt"
          "window.rkt"
@@ -63,9 +64,10 @@
  file-creator-and-type
  file-selector
  key-symbol-to-menu-key
- needs-grow-box-spacer?)
+ needs-grow-box-spacer?
+ get-current-mouse-state)
 
-(import-class NSScreen NSCursor NSMenu)
+(import-class NSScreen NSCursor NSMenu NSEvent)
 
 (define (find-graphical-system-path what)
   #f)
@@ -192,3 +194,28 @@
 
 (define (needs-grow-box-spacer?)
   (not (version-10.7-or-later?)))
+
+;; ------------------------------------------------------------
+;; Mouse and modifier-key state
+
+(define (get-current-mouse-state)
+  (define posn (tell #:type _NSPoint NSEvent mouseLocation))
+  (define buttons (tell #:type _NSUInteger NSEvent pressedMouseButtons))
+  (define mods (tell #:type _NSUInteger NSEvent modifierFlags))
+  (define (maybe v mask sym)
+    (if (zero? (bitwise-and v mask))
+        null
+        (list sym)))
+  (define h (let ([f (tell #:type _NSRect (tell NSScreen mainScreen) frame)])
+              (NSSize-height (NSRect-size f))))
+  (values (make-object point% 
+                       (->long (NSPoint-x posn))
+                       (->long (- (- h (NSPoint-y posn)) (get-menu-bar-height))))
+          (append
+           (maybe buttons #x1 'left)
+           (maybe buttons #x2 'right)
+           (maybe mods NSShiftKeyMask 'shift)
+           (maybe mods NSCommandKeyMask 'meta)
+           (maybe mods NSAlternateKeyMask 'alt)
+           (maybe mods NSControlKeyMask 'control)
+           (maybe mods NSAlphaShiftKeyMask 'caps))))

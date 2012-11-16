@@ -278,6 +278,7 @@ Scheme_Object *(*scheme_tail_eval_expr)(Scheme_Object *obj);
 void (*scheme_set_tail_buffer_size)(int s);
 Scheme_Object *(*scheme_force_value)(Scheme_Object *);
 Scheme_Object *(*scheme_force_one_value)(Scheme_Object *);
+void (*scheme_ignore_result)(Scheme_Object *);
 MZ_MARK_STACK_TYPE (*scheme_set_cont_mark)(Scheme_Object *key, Scheme_Object *val);
 void (*scheme_push_continuation_frame)(Scheme_Cont_Frame_Data *);
 void (*scheme_pop_continuation_frame)(Scheme_Cont_Frame_Data *);
@@ -453,6 +454,7 @@ Scheme_Object *(*scheme_make_closed_prim_w_everything)(Scheme_Closed_Prim *fun,
 void (*scheme_prim_is_method)(Scheme_Object *o);
 Scheme_Object *(*scheme_make_pair)(Scheme_Object *car, Scheme_Object *cdr);
 Scheme_Object *(*scheme_make_mutable_pair)(Scheme_Object *car, Scheme_Object *cdr);
+Scheme_Object *(*scheme_make_list_pair)(Scheme_Object *car, Scheme_Object *cdr);
 Scheme_Object *(*scheme_make_raw_pair)(Scheme_Object *, Scheme_Object *);
 Scheme_Object *(*scheme_make_byte_string)(const char *chars);
 Scheme_Object *(*scheme_make_sized_byte_string)(char *chars, intptr_t len, int copy);

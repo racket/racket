@@ -194,6 +194,15 @@ break is sent (via @racket[break-thread]) to the created eventspace's
 @tech{handler thread}.}
 
 
+@defproc[(get-current-mouse-state) (values (is-a?/c point%)
+                                           (listof (or/c 'left 'middle 'right
+                                                         'shift 'control 'alt 'meta 'caps)))]{
+
+Returns the current location of the mouse in screen coordinates,
+and returns a list of symbols for mouse buttons and modifier keys
+that are currently pressed.}
+
+
 @defproc[(hide-cursor-until-moved) void?]{
 
 Hides the cursor until the user moves the mouse or clicks the mouse

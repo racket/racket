@@ -64,14 +64,14 @@
     ;; draw cube.
     (glLoadIdentity)
     (glTranslated 0 0 *z*)
-    (glRotated *xrot* 1 0 0)	
+    (glRotated *xrot* 1 0 0)
     (glRotated *yrot* 0 1 0)
     (glRotated *zrot* 0 0 1)
     (glBindTexture GL_TEXTURE_2D (get-texture *tex*))
     (glBegin GL_QUADS)
     ; front
     (glNormal3d 0 0 1)
-    (glTexCoord2i 0 0)  
+    (glTexCoord2i 0 0)
     (glVertex3i -1 -1 1)
     (glTexCoord2i 1 0)
     (glVertex3i 1 -1 1)
@@ -81,7 +81,7 @@
     (glVertex3i -1 1 1)
     ; back
     (glNormal3d 0 0 -1)
-    (glTexCoord2i 1 0)  
+    (glTexCoord2i 1 0)
     (glVertex3i -1 -1 -1)
     (glTexCoord2i 1 1)
     (glVertex3i 1 -1 -1)
@@ -91,7 +91,7 @@
     (glVertex3i -1 1 -1)
     ; top
     (glNormal3d 0 1 0)
-    (glTexCoord2i 0 1)  
+    (glTexCoord2i 0 1)
     (glVertex3i -1 1 -1)
     (glTexCoord2i 0 0)
     (glVertex3i 1 1 -1)
@@ -111,7 +111,7 @@
     (glVertex3i 1 -1 -1)
     ; right
     (glNormal3d 1 0 0)
-    (glTexCoord2i 1 0)  
+    (glTexCoord2i 1 0)
     (glVertex3i 1 -1 -1)
     (glTexCoord2i 1 1)
     (glVertex3i 1 -1 1)
@@ -121,7 +121,7 @@
     (glVertex3i 1 1 -1)
     ;left
     (glNormal3d -1 0 0)
-    (glTexCoord2i 0 0)  
+    (glTexCoord2i 0 0)
     (glVertex3i -1 -1 -1)
     (glTexCoord2i 1 0)
     (glVertex3i -1 1 -1)

@@ -206,8 +206,8 @@
         (lambda ()
           (set! the-world 
             (with-handlers ([exn:break? break-handler]
-      		      [exn? exn-handler])
-      	(on-tick-proc the-world)))))
+                      [exn? exn-handler])
+        (on-tick-proc the-world)))))
       ;; World -> World 
       (define on-tick-proc void)
       (define exn-handler 

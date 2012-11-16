@@ -196,6 +196,7 @@
   scheme_extension_table->scheme_set_tail_buffer_size = scheme_set_tail_buffer_size;
   scheme_extension_table->scheme_force_value = scheme_force_value;
   scheme_extension_table->scheme_force_one_value = scheme_force_one_value;
+  scheme_extension_table->scheme_ignore_result = scheme_ignore_result;
   scheme_extension_table->scheme_set_cont_mark = scheme_set_cont_mark;
   scheme_extension_table->scheme_push_continuation_frame = scheme_push_continuation_frame;
   scheme_extension_table->scheme_pop_continuation_frame = scheme_pop_continuation_frame;
@@ -318,6 +319,7 @@
   scheme_extension_table->scheme_prim_is_method = scheme_prim_is_method;
   scheme_extension_table->scheme_make_pair = scheme_make_pair;
   scheme_extension_table->scheme_make_mutable_pair = scheme_make_mutable_pair;
+  scheme_extension_table->scheme_make_list_pair = scheme_make_list_pair;
   scheme_extension_table->scheme_make_raw_pair = scheme_make_raw_pair;
   scheme_extension_table->scheme_make_byte_string = scheme_make_byte_string;
   scheme_extension_table->scheme_make_sized_byte_string = scheme_make_sized_byte_string;

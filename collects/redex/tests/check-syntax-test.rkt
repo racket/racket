@@ -45,8 +45,8 @@
     (super-new)
     (define/override (syncheck:find-source-object stx)
       stx)
-    (define/override (syncheck:add-rename-menu id	 
-                                               all-ids	 
+    (define/override (syncheck:add-rename-menu id
+                                               all-ids
                                                new-name-interferes?)
       (match all-ids
         [(list (list ids _ _) ...)
@@ -58,13 +58,13 @@
                             (equal? (source stx) (source id)))
                     (set-union class (apply set (map source ids)))
                     class)))
-    (define/override (syncheck:add-arrow start-source-obj	 
-                                         start-left	 
-                                         start-right	 
-                                         end-source-obj	 
-                                         end-left	 
-                                         end-right	 
-                                         actual?	 
+    (define/override (syncheck:add-arrow start-source-obj
+                                         start-left
+                                         start-right
+                                         end-source-obj
+                                         end-left
+                                         end-right
+                                         actual?
                                          phase-level)
       (set! arrows 
             (set-add arrows 

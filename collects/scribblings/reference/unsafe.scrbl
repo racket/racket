@@ -192,6 +192,12 @@ Unsafe variants of @racket[car], @racket[cdr], @racket[mcar],
 @racket[mcdr], @racket[set-mcar!], and @racket[set-mcdr!].}
 
 
+@defproc[(unsafe-cons [v any/c] [rest list?]) (and/c pair? list?)]{
+
+Unsafe variant of @racket[cons] that produces a pair that claims to be
+a list---without checking whether @racket[rest] is a list.}
+
+
 @deftogether[(
 @defproc[(unsafe-list-ref [lst pair?] [pos (and/c exact-nonnegative-integer? fixnum?)]) any/c]
 @defproc[(unsafe-list-tail [lst any/c] [pos (and/c exact-nonnegative-integer? fixnum?)]) any/c]

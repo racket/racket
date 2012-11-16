@@ -16,7 +16,7 @@
      (let ([definitions-text (send drr-frame get-definitions-text)]
            [interactions-text (send drr-frame get-interactions-text)])
        
-       (set-language-level! (list #rx"How to Design Programs" #rx"Beginning Student$"))
+       (set-language-level! (list #rx"Beginning Student$"))
        (clear-definitions drr-frame)
        (queue-callback/res
         (λ () 

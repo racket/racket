@@ -1,5 +1,8 @@
-#lang racket
-(require web-server/http/request-structs)
+#lang racket/base
+
+(require racket/match
+         racket/contract
+         web-server/http/request-structs)
 
 (define framing-mode (make-parameter 'old))
 

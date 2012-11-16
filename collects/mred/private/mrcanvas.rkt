@@ -19,9 +19,10 @@
 
 (define canvas-default-size 20) ; a default size for canvases tht fits borders without losing client sizes
 (define canvas-scroll-size 10)
-(define canvas-control-border-extra (case (system-type)
-      				[(windows) 2]
-      				[else 0]))
+(define canvas-control-border-extra
+  (case (system-type)
+    [(windows) 2]
+    [else 0]))
 
 (define canvas<%>
   (interface (subwindow<%>)

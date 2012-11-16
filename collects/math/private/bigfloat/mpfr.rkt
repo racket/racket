@@ -37,6 +37,7 @@
  bigfloat->flonum
  bigfloat->integer
  bigfloat->rational
+ bigfloat->real
  ;; String conversion
  bigfloat->string
  string->bigfloat
@@ -390,7 +391,13 @@
 (define (bigfloat->rational x)
   (unless (bfrational? x) (raise-argument-error 'bigfloat->rational "bfrational?" x))
   (define-values (sig exp) (bigfloat-sig+exp x))
-  (* sig (expt 2 exp)))
+  (cond [(zero? sig)  0]  ; without this, (bigfloat->rational 0.bf) chews up half a gigabyte
+        [else  (* sig (expt 2 exp))]))
+
+; bigfloat->real : bigfloat -> (or exact-rational flonum)
+(define (bigfloat->real x)
+  (cond [(bfrational? x)  (bigfloat->rational x)]
+        [else  (bigfloat->flonum x)]))
 
 ;; ===================================================================================================
 ;; String conversions

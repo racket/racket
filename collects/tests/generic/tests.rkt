@@ -8,6 +8,8 @@
          (submod "struct-form.rkt" test)
          (submod "equal+hash.rkt" test)
          (submod "custom-write.rkt" test)
+         (submod "defaults.rkt" test)
+         "syntax-errors.rkt"
          "base-interfaces.rkt"
          "contract.rkt"
          "from-unstable.rkt"

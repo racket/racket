@@ -710,6 +710,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_noninline_proc_type, small_object);
   GC_REG_TRAV(scheme_prune_context_type, small_object);
 
+  GC_REG_TRAV(scheme_proc_shape_type, small_object);
   GC_REG_TRAV(scheme_struct_proc_shape_type, small_atomic_obj);
 }
 

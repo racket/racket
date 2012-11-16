@@ -890,7 +890,7 @@
                       (list (make-element (if (include-navigation?)
                                               "version"
                                               "versionNoNav")
-                                          (list "Version: " v)))
+                                          v))
                       d
                       ri))))))
 

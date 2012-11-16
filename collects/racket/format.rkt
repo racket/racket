@@ -378,7 +378,7 @@
 
 (define (number->fraction-string N base upper? precision)
   (let ([s (number->string* N base upper?)])
-    (string-append (make-string (- precision (string-length s)) #\0) s)))
+    (string-append (make-string (max 0 (- precision (string-length s))) #\0) s)))
 
 ;; Allow base up to 36!
 (define (get-digit d upper?)

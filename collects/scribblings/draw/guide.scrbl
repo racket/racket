@@ -764,3 +764,6 @@ Different kinds of bitmaps can produce different results:
        reason.}
 
 ]
+
+
+@close-eval[draw-eval]

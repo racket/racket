@@ -69,43 +69,43 @@
     } 
     @defproc[(with-input-from-string [s string] [p (-> any)]) any]{
     Turns @racket[s] into input for @racket[read] operations in @racket[p].
-    @interaction[#:eval (asl) 
-		  (with-input-from-string "hello" read)
-		  (string-length (symbol->string (with-input-from-string "hello" read)))]
+    @interaction[#:eval (asl)
+      (with-input-from-string "hello" read)
+      (string-length (symbol->string (with-input-from-string "hello" read)))]
     } 
     @defproc[(with-output-to-string [p (-> any)]) any]{
     Produces a string from all write/display/print operations in @racket[p].
     @interaction[#:eval (asl)
-		  (with-output-to-string (lambda () (display 10)))]
+      (with-output-to-string (lambda () (display 10)))]
     } 
     
     @defproc[(print [x any]) void]{
     Prints the argument as a value.
     @interaction[#:eval (asl)
-		  (print 10)
-		  (print "hello")
-		  (print 'hello)]
+      (print 10)
+      (print "hello")
+      (print 'hello)]
     } 
     @defproc[(display [x any]) void]{
     Prints the argument to stdout (without quotes on symbols and strings, etc.).
     @interaction[#:eval (asl)
-		  (display 10)
-		  (display "hello")
-		  (display 'hello)]
+      (display 10)
+      (display "hello")
+      (display 'hello)]
     } 
     @defproc[(write [x any]) void]{
     Prints the argument to stdout (in a traditional style that is somewhere between @racket[print] and @racket[display]).
     @interaction[#:eval (asl)
-		  (write 10)
-		  (write "hello")
-		  (write 'hello)]
+      (write 10)
+      (write "hello")
+      (write 'hello)]
     } 
     @defproc[((pp pretty-print) [x any]) void]{
     Pretty prints S-expressions (like @racket[write]). 
     @interaction[#:eval (asl)
-		  (pretty-print '((1 2 3) ((a) ("hello world" true) (((false "good bye"))))))
-		  (pretty-print (build-list 10 (lambda (i) (build-list 10 (lambda (j) (= i j))))))
-		  ]
+                  (pretty-print '((1 2 3) ((a) ("hello world" true) (((false "good bye"))))))
+                  (pretty-print (build-list 10 (lambda (i) (build-list 10 (lambda (j) (= i j))))))
+                  ]
     }
 
     @defproc[(printf [f string] [x any] ...) void]{
@@ -189,7 +189,7 @@
     @defproc[(build-vector [n nat] [f (nat -> X)]) (vectorof X)]{
     Constructs a vector by applying @racket[f] to the numbers @racket[0] through @racket[(- n 1)]. 
     @interaction[#:eval (asl) (build-vector 5 add1)]
-    }	 
+    }
     @defproc[(vector-ref [v (vector X)] [n nat]) X]{
     Extracts the @racket[n]th element from @racket[v].
     @interaction[#:eval (asl) v (vector-ref v 3)]
@@ -197,7 +197,7 @@
     @defproc[(vector-length [v (vector X)]) nat]{
     Determines the length of @racket[v].
     @interaction[#:eval (asl) v (vector-length v)]
-    }	 
+    } 
     @defproc[(vector-set! [v (vectorof X)][n nat][x X]) void]{
     Updates @racket[v] at position @racket[n] to be @racket[x].
     @interaction[#:eval (asl) v (vector-set! v 3 77) v]
@@ -238,49 +238,49 @@
     Constructs a mutable hash table from an optional list of mappings that
     uses equal? for comparisions.
     @interaction[#:eval (asl)
-		  (make-hash)
-		  (make-hash '((b 69) (e 61) (i 999)))
-		  ]
+      (make-hash)
+      (make-hash '((b 69) (e 61) (i 999)))
+      ]
     } 
     @defproc[((advanced-make-hasheq make-hasheq)) (hash X Y)]{
     Constructs a mutable hash table from an optional list of mappings that
     uses eq? for comparisions.
     @interaction[#:eval (asl)
-		  (make-hasheq)
-		  (make-hasheq '((b 69) (e 61) (i 999)))
-		  ] 
+      (make-hasheq)
+      (make-hasheq '((b 69) (e 61) (i 999)))
+      ] 
     } 
     @defproc[((advanced-make-hasheqv make-hasheqv)) (hash X Y)]{
     Constructs a mutable hash table from an optional list of mappings that
     uses eqv? for comparisions.
     @interaction[#:eval (asl)
-		  (make-hasheqv)
-		  (make-hasheqv '((b 69) (e 61) (i 999)))
-		  ]    
+      (make-hasheqv)
+      (make-hasheqv '((b 69) (e 61) (i 999)))
+      ]
     } 
     @defproc[((advanced-make-immutable-hash make-immutable-hash)) (hash X Y)]{
     Constructs an immutable hash table from an optional list of mappings
     that uses equal? for comparisions.
     @interaction[#:eval (asl)
-		  (make-immutable-hash)
-		  (make-immutable-hash '((b 69) (e 61) (i 999)))
-		  ]    
+      (make-immutable-hash)
+      (make-immutable-hash '((b 69) (e 61) (i 999)))
+      ]
     } 
     @defproc[((advanced-make-immutable-hasheq make-immutable-hasheq)) (hash X Y)]{
     Constructs an immutable hash table from an optional list of mappings
     that uses eq? for comparisions.
     @interaction[#:eval (asl)
-		  (make-immutable-hasheq)
-		  (make-immutable-hasheq '((b 69) (e 61) (i 999)))
-		  ] 
+      (make-immutable-hasheq)
+      (make-immutable-hasheq '((b 69) (e 61) (i 999)))
+      ]
     } 
     @defproc[((advanced-make-immutable-hasheqv make-immutable-hasheqv)) (hash X Y)]{
     Constructs an immutable hash table from an optional list of mappings
     that uses eqv? for comparisions.
     @interaction[#:eval (asl)
-		  (make-immutable-hasheqv)
-		  (make-immutable-hasheqv '((b 69) (e 61) (i 999)))
-		  ]    
+      (make-immutable-hasheqv)
+      (make-immutable-hasheqv '((b 69) (e 61) (i 999)))
+      ]
     } 
     @defproc[(hash-set! [h (hash X Y)] [k X] [v Y]) void?]{
     Updates a mutable hash table with a new mapping.
@@ -318,44 +318,44 @@
     @defproc[(hash-has-key? [h (hash X Y)] [x X]) boolean]{
     Determines if a key is associated with a value in a hash table.
     @interaction[#:eval (asl)
-		  ish
-		  (hash-has-key? ish 'b)
-		  hsh
-		  (hash-has-key? hsh 'd)]
+      ish
+      (hash-has-key? ish 'b)
+      hsh
+      (hash-has-key? hsh 'd)]
     } 
     @defproc[(hash-remove! [h (hash X Y)] [x X]) void]{
     Removes an mapping from a mutable hash table.
     @interaction[#:eval (asl)
-		  hsh
-		  (hash-remove! hsh 'r)
-		  hsh]
+      hsh
+      (hash-remove! hsh 'r)
+      hsh]
     } 
     @defproc[(hash-remove [h (hash X Y)] [k X]) (hash X Y)]{
     Constructs an immutable hash table with one less mapping than an
     existing immutable hash table.
     @interaction[#:eval (asl)
-		  ish
-		  (hash-remove ish 'b)]
+      ish
+      (hash-remove ish 'b)]
     } 
     @defproc[(hash-map [h (hash X Y)] [f (X Y -> Z)]) (listof Z)]{
     Constructs a new list by applying a function to each mapping of a hash
     table.
     @interaction[#:eval (asl)
-		  ish
-		  (hash-map ish list)]
+      ish
+      (hash-map ish list)]
     } 
     @defproc[(hash-for-each [h (hash X Y)] [f (X Y -> any)]) void?]{
     Applies a function to each mapping of a hash table for effect only.
     @interaction[#:eval (asl)
-		  hsh
-		  (hash-for-each hsh (lambda (ky vl) (hash-set! hsh ky (+ vl 1))))
-		  hsh]
+      hsh
+      (hash-for-each hsh (lambda (ky vl) (hash-set! hsh ky (+ vl 1))))
+      hsh]
     } 
     @defproc[(hash-count [h hash]) integer]{
     Determines the number of keys mapped by a hash table.
     @interaction[#:eval (asl)
-		  ish
-		  (hash-count ish)]
+      ish
+      (hash-count ish)]
     } 
     @defproc[(hash-copy [h hash]) hash]{
     Copies a hash table.
@@ -363,36 +363,36 @@
     @defproc[(hash? [x any]) boolean]{
     Determines if a value is a hash table.
     @interaction[#:eval (asl)
-		  ish
-		  (hash? ish)
-		  (hash? 42)]
+      ish
+      (hash? ish)
+      (hash? 42)]
     } 
     @defproc[(hash-equal? [h hash?]) boolean]{
     Determines if a hash table uses equal? for comparisons.
     @interaction[#:eval (asl)
-		  ish
-		  (hash-equal? ish)
-		  ieq
-		  (hash-equal? ieq)
-		  ]
+      ish
+      (hash-equal? ish)
+      ieq
+      (hash-equal? ieq)
+      ]
     } 
     @defproc[(hash-eq? [h hash]) boolean]{
     Determines if a hash table uses eq? for comparisons.
     @interaction[#:eval (asl)
-		  hsh
-		  (hash-eq? hsh)
-		  heq
-		  (hash-eq? heq)
-		  ]
+      hsh
+      (hash-eq? hsh)
+      heq
+      (hash-eq? heq)
+      ]
     } 
     @defproc[(hash-eqv? [h hash]) boolean]{
     Determines if a hash table uses eqv? for comparisons.
     @interaction[#:eval (asl)
-		  heq
-		  (hash-eqv? heq)
-		  heqv
-		  (hash-eqv? heqv)
-		  ]
+      heq
+      (hash-eqv? heq)
+      heqv
+      (hash-eqv? heqv)
+      ]
     })) 
 
 #|

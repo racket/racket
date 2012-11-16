@@ -36,25 +36,25 @@
                                        (list/c (or/c symbol? #f #t)
                                                (or/c path? module-path?)
                                                (listof symbol?))))
-                         #:configure-via-first-module? any/c	 
-                         #:literal-files (listof path-string?)	 
-                         #:literal-expression any/c	 
-                         #:literal-expressions (listof any/c)	 
+                         #:configure-via-first-module? any/c
+                         #:literal-files (listof path-string?)
+                         #:literal-expression any/c
+                         #:literal-expressions (listof any/c)
                          #:cmdline (listof string?)
                          #:gracket? any/c
-                         #:mred? any/c	 
-                         #:variant (or/c '3m 'cgc)	 
+                         #:mred? any/c
+                         #:variant (or/c '3m 'cgc)
                          #:aux (listof (cons/c symbol? any/c))
                          #:collects-path (or/c #f
                                                path-string?
                                                (listof path-string?))
                          #:collects-dest (or/c #f path-string?)
-                         #:launcher? any/c	 
-                         #:verbose? any/c	 
-                         #:compiler (-> any/c compiled-expression?)	 
+                         #:launcher? any/c
+                         #:verbose? any/c
+                         #:compiler (-> any/c compiled-expression?)
                          #:expand-namespace namespace?
                          #:src-filter (-> path? any)
-                         #:on-extension (or/c #f (-> path-string? boolean? any))	 
+                         #:on-extension (or/c #f (-> path-string? boolean? any))
                          #:get-extra-imports (-> path? compiled-module-expression? (listof module-path?)))
                         void?)])
 
@@ -63,4 +63,3 @@
          embedding-executable-is-actually-directory?
          embedding-executable-put-file-extension+style+filters
          embedding-executable-add-suffix)
-

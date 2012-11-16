@@ -1,6 +1,10 @@
-#lang racket
+#lang racket/base
 
-(require (for-syntax "rewrite-side-conditions.rkt")
+(require racket/list
+         racket/contract
+         racket/set
+         racket/match
+         (for-syntax "rewrite-side-conditions.rkt")
          "match-a-pattern.rkt"
          "matcher.rkt"
          "extract-conditions.rkt")

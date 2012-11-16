@@ -959,6 +959,9 @@ the name of the procedure. In this case, Racket decides, at
 compile-time, to name as @racket['f] all procedures created by the
 @racket[let]-bound @racket[lambda].
 
+
+@margin-note/ref{See @racket[procedure-rename] to override a procedure's
+inferred name at runtime.}
 Names are inferred whenever possible for procedures. Names closer to
 an expression take precedence. For example, in
 

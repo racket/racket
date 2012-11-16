@@ -94,3 +94,6 @@ Returns a sequence whose elements are the elements of
   These contracts recognize queues; the latter requires the queue to
   contain at least one value.
 }
+
+
+@close-eval[qeval]

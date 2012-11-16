@@ -10,7 +10,8 @@
             (for-label racket/base racket/gui)
             (for-label framework/framework)
             (for-label drracket/syncheck-drracket-button
-                       drracket/check-syntax)
+                       drracket/check-syntax
+                       string-constants/string-constant)
             scribble/eval
             scribble/extract)
    
@@ -318,6 +319,12 @@ This must be bound to a
   corresponds to the position of the language in language
   dialog. Each language position is a list of strings whose
   length must be at least two.
+  
+  If the first string is the same as 
+  @racket[(string-constant teaching-languages)], then
+  it is put into the ``Teaching Languages'' section
+  of the dialog. Otherwise, it goes into the ``Other Languages''
+  section of the dialog.
 }  
 @item/cap[drscheme-language-numbers]{
 This is optional. If
@@ -779,15 +786,15 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
                 (super-new)
                 (define/override (syncheck:find-source-object stx)
                   stx)
-                (define/override (syncheck:add-arrow start-source-obj	 
-                                                     start-left	 
-                                                     start-right	 
-                                                     end-source-obj	 
-                                                     end-left	 
-                                                     end-right	 
-                                                     actual?	 
+                (define/override (syncheck:add-arrow start-source-obj
+                                                     start-left
+                                                     start-right
+                                                     end-source-obj
+                                                     end-left
+                                                     end-right
+                                                     actual?
                                                      phase-level)
-                  (set! arrows 
+                  (set! arrows
                         (cons (list start-source-obj end-source-obj)
                               arrows)))
                 (define arrows '())

@@ -1,5 +1,9 @@
-#lang racket
-(require compiler/zo-parse
+#lang racket/base
+
+(require racket/list
+         racket/match
+         racket/contract
+         compiler/zo-parse
          "util.rkt"
          "mpi.rkt"
          racket/set)
@@ -24,13 +28,28 @@
       [(struct @phase (_ (struct module-code (modvar-rewrite lang-info ctop))))
        (values ctop lang-info (modvar-rewrite-modidx modvar-rewrite) get-modvar-rewrite)])))
 
-(define (path->comp-top pth)
-  (hash-ref! (ZOS) pth
+(define (path->comp-top pth submod)
+  (hash-ref! (ZOS) (cons pth submod)
              (λ ()
-               (call-with-input-file pth zo-parse))))
+                (define zo (call-with-input-file pth zo-parse))
+                (if submod
+                    (extract-submod zo submod)
+                    zo))))
+
+(define (extract-submod zo submod)
+  (define m (compilation-top-code zo))
+  (struct-copy compilation-top
+               zo
+               [code (let loop ([m m])
+                       (if (and (pair? (mod-name m))
+                                (equal? submod (cdr (mod-name m))))
+                           m
+                           (or (ormap loop (mod-pre-submodules m))
+                               (ormap loop (mod-post-submodules m)))))]))
 
 (define (excluded? pth)
-  (set-member? (current-excluded-modules) (path->string pth)))
+  (and (path? pth)
+       (set-member? (current-excluded-modules) (path->string pth))))
 
 (define (get-nodep-module-code/index mpi phase)
   (define pth (mpi->path! mpi))
@@ -57,7 +76,9 @@
       (hash-ref! 
        MODULE-CACHE pth 
        (lambda ()
-         (define-values (base file dir?) (split-path pth))
+         (define-values (base file dir?) (split-path (if (path-string? pth)
+                                                         pth
+                                                         (cadr pth))))
          (define base-directory
            (if (path? base) 
                (path->complete-path base (current-directory))
@@ -69,8 +90,9 @@
               (parameterize ([current-load-relative-directory base-directory])
                 (path->comp-top
                  (build-compiled-path 
-                             base 
-                             (path-add-suffix file #".zo"))))
+                  base 
+                  (path-add-suffix file #".zo"))
+                 (and (pair? pth) (cddr pth))))
               pth
               phase)))
          (when (and phase (zero? phase))
@@ -92,7 +114,8 @@
 
 (define (nodep-form form phase)
   (if (mod? form)
-      (local [(define-values (modvar-rewrite lang-info mods) (nodep-module form phase))]
+      (let-values ([(modvar-rewrite lang-info mods)
+                    (nodep-module form phase)])
         (values modvar-rewrite lang-info (make-splice mods)))
       (error 'nodep-form "Doesn't support non mod forms")))
 

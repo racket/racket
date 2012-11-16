@@ -30,6 +30,7 @@
  [bigfloat->flonum    (Bigfloat -> Float)]
  [bigfloat->integer   (Bigfloat -> Integer)]
  [bigfloat->rational  (Bigfloat -> Exact-Rational)]
+ [bigfloat->real      (Bigfloat -> (U Exact-Rational Flonum))]
  [flonum->bigfloat    (Float -> Bigfloat)]
  [integer->bigfloat   (Integer -> Bigfloat)]
  [rational->bigfloat  (Exact-Rational -> Bigfloat)]
@@ -165,6 +166,7 @@
  bigfloat->flonum
  bigfloat->integer
  bigfloat->rational
+ bigfloat->real
  ;; String conversion
  bigfloat->string
  string->bigfloat

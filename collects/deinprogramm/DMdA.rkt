@@ -247,7 +247,7 @@
   ((DMdA-cons cons) (%a (list-of %a) -> (list-of %a))
 	     "erzeuge ein Paar aus Element und Liste")
   (pair? (any -> boolean)
-	 "feststellen, ob ein Wert ein Paar ist")	
+	 "feststellen, ob ein Wert ein Paar ist")
   (cons? (any -> boolean)
 	 "feststellen, ob ein Wert ein Paar ist")
   (empty? (any -> boolean)

@@ -26,10 +26,10 @@
 (define _J_DITHER_MODE _int)
 
 (define _jbool (if win64? 
-		   (make-ctype _byte
-			       (lambda (v) (if v 1 0))
-			       (lambda (v) (not (zero? v))))
-		   _bool))
+                   (make-ctype _byte
+                               (lambda (v) (if v 1 0))
+                               (lambda (v) (not (zero? v))))
+                   _bool))
 (define-enum
   0
   JCS_UNKNOWN
@@ -40,7 +40,7 @@
   JCS_YCCK)
 
 (define _pool_id _int)
-(define JPOOL_PERMANENT	0)
+(define JPOOL_PERMANENT 0)
 (define JPOOL_IMAGE 1)
 (define JPOOL_NUMPOOLS 2)
 (define JMSG_LENGTH_MAX  200)

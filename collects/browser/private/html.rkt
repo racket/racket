@@ -529,7 +529,7 @@
       v)))
 
 (define html-convert
-  (lambda (a-port a-text)	    
+  (lambda (a-port a-text)
     (let ([content (parse-html a-port)])
       (with-method ([a-text-insert (a-text insert)]
                     [current-pos (a-text last-position)]

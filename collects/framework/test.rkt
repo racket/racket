@@ -253,22 +253,26 @@
 
 (define object-tag 'test:find-object)
 
-;; find-object : class (union string (object -> boolean)) -> object
+;; find-object : class (union string regexp (object -> boolean)) -> object
 (define (find-object obj-class b-desc)
   (λ ()
     (cond
       [(or (string? b-desc)
+           (regexp? b-desc)
            (procedure? b-desc))
        (let* ([active-frame (test:get-active-top-level-window)]
               [_ (unless active-frame
                    (error object-tag
-                          "could not find object: ~a, no active frame" 
+                          "could not find object: ~e, no active frame" 
                           b-desc))]
               [child-matches?
                (λ (child)
                  (cond
                    [(string? b-desc)
                     (equal? (send child get-label) b-desc)]
+                   [(regexp? b-desc)
+                    (and (send child get-label)
+                         (regexp-match? b-desc (send child get-label)))]
                    [(procedure? b-desc)
                     (b-desc child)]))]
               [found
@@ -287,13 +291,13 @@
                         (send panel get-children)))])
          (or found
              (error object-tag 
-                    "no object of class ~a named ~e in active frame"
+                    "no object of class ~e named ~e in active frame"
                     obj-class
                     b-desc)))]
       [(is-a? b-desc obj-class) b-desc]
       [else (error 
              object-tag
-             "expected either a string or an object of class ~a as input, received: ~a"
+             "expected either a string or an object of class ~e as input, received: ~e"
              obj-class b-desc)])))
 
 
@@ -317,7 +321,7 @@
            [else
             (update-control ctrl)
             (send ctrl command event)
-            (void)]))))))	     
+            (void)]))))))
 
 ;;
 ;; BUTTON
@@ -420,21 +424,26 @@
 
 ;; entry-matches : string | regexp -> radio-box -> boolean
 (define (entry-matches name)
-  (λ (rb)
-    (let loop ([n (send rb get-number)])
-      (cond
-        [(zero? n) #f]
-        [else
-         (let ([itm (send rb get-item-label (- n 1))]
-               [pln-itm (send rb get-item-plain-label (- n 1))])
-           (or (cond
-                 [(string? name)
-                  (or (equal? name itm)
-                      (equal? name pln-itm))]
-                 [(regexp? name)
-                  (or (regexp-match name itm)
-                      (regexp-match name pln-itm))])
-               (loop (- n 1))))]))))
+  (procedure-rename
+   (λ (rb)
+     (let loop ([n (send rb get-number)])
+       (cond
+         [(zero? n) #f]
+         [else
+          (let ([itm (send rb get-item-label (- n 1))]
+                [pln-itm (send rb get-item-plain-label (- n 1))])
+            (or (cond
+                  [(string? name)
+                   (or (equal? name itm)
+                       (equal? name pln-itm))]
+                  [(regexp? name)
+                   (or (regexp-match name itm)
+                       (regexp-match name pln-itm))])
+                (loop (- n 1))))])))
+   (string->symbol
+    (if (regexp? name)
+        (object-name name)
+        name))))
 
 ;;; CHOICE 
 
@@ -936,7 +945,8 @@
  (proc-doc/names
   test:keystroke
   (->* ((or/c char? symbol?))
-       ((listof (symbols 'alt 'control 'meta 'shift 'noalt 'nocontrol 'nometea 'noshift)))
+       ((listof (or/c 'alt 'control 'meta 'shift 
+                      'noalt 'nocontrol 'nometea 'noshift)))
        void?)
   ((key)
    ((modifier-list null)))
@@ -973,10 +983,11 @@
  (proc-doc/names
   test:mouse-click
   (->*
-   ((symbols 'left 'middle 'right)
+   ((or/c 'left 'middle 'right)
     (and/c exact? integer?)
     (and/c exact? integer?))
-   ((listof (symbols 'alt 'control 'meta 'shift 'noalt 'nocontrol 'nometa 'noshift)))
+   ((listof (or/c 'alt 'control 'meta 'shift 'noalt
+                  'nocontrol 'nometa 'noshift)))
    void?)
   ((button x y)
    ((modifiers null)))
@@ -985,7 +996,7 @@
   @method[canvas<%> on-event] method.
   Use @racket[test:button-push] to click on a button.
   
-  On the Macintosh, @racket['right] corresponds to holding down the command
+  Under Mac OS X, @racket['right] corresponds to holding down the command
   modifier key while clicking and @racket['middle] cannot be generated.
   
   Under Windows, @racket['middle] can only be generated if the user has a

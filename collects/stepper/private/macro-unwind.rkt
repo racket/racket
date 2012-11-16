@@ -1,6 +1,8 @@
-#lang racket
+#lang racket/base
 
 (require (only-in syntax/kerncase kernel-syntax-case)
+         racket/list
+         racket/contract
          "model-settings.rkt"
          "shared.rkt"
          "syntax-property.rkt")

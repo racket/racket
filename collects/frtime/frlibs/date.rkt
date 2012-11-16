@@ -1,6 +1,7 @@
-#lang racket
-(require (rename-in (only-in frtime/frtime provide) 
-                    [provide frtime:provide]))
+#lang racket/base
+
+(require racket/promise
+         (only-in frtime/frtime [provide frtime:provide]))
 
 (frtime:provide (lifted date->string
                         date-display-format

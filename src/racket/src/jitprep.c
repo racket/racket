@@ -550,8 +550,8 @@ Scheme_Object *scheme_jit_closure(Scheme_Object *code, Scheme_Object *context)
 
     if (!context)
       data->u.jit_clone = data2;
-  }      
-    
+  }
+
   /* If it's zero-sized, then create closure now */
   if (!data2->closure_size)
     return scheme_make_native_closure(data2->u.native_code);

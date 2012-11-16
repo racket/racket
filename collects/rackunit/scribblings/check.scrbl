@@ -184,7 +184,7 @@ The following check fails:
 @defproc[(check (op (-> any any any))
                 (v1 any)
                 (v2 any)
-		(message string? ""))
+                (message string? ""))
          void?]{
 
 The most generic check.  Succeeds if @racket[op] applied to
@@ -233,13 +233,13 @@ misspelling errors:
 
 @defproc*[([(make-check-name (name string?)) check-info?]
            [(make-check-params (params (listof any))) check-info?]
-	   [(make-check-location (loc (list/c any (or/c number? #f) (or/c number? #f) 
+           [(make-check-location (loc (list/c any (or/c number? #f) (or/c number? #f) 
                                                   (or/c number? #f) (or/c number? #f))))
             check-info?]
-     	   [(make-check-expression (msg any)) check-info?]
-	   [(make-check-message (msg string?)) check-info?]
-	   [(make-check-actual (param any)) check-info?]
-	   [(make-check-expected (param any)) check-info?])]{}
+           [(make-check-expression (msg any)) check-info?]
+           [(make-check-message (msg string?)) check-info?]
+           [(make-check-actual (param any)) check-info?]
+           [(make-check-expected (param any)) check-info?])]{}
 
 @defproc[(with-check-info* (info (listof check-info?)) (thunk (-> any))) any]{
 

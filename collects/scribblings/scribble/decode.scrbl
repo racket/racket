@@ -168,18 +168,20 @@ otherwise.}
 @defstruct[title-decl ([tag-prefix (or/c #f string?)]
                        [tags (listof string?)]
                        [version (or/c string? #f)]
-                       [style any/c]
+                       [style style?]
                        [content content?])]{
 
-See @racket[decode] and @racket[decode-part]. The @racket[_tag-prefix]
-and @racket[_style] fields are propagated to the resulting
+See @racket[decode] and @racket[decode-part]. The @racket[tag-prefix]
+and @racketidfont{style} fields are propagated to the resulting
+@racket[part]. If the @racketidfont{version} field is not @racket[#f], 
+it is propagated as a @racket[document-version] style property on the
 @racket[part].}
 
 
 @defstruct[part-start ([depth integer?]
                        [tag-prefix (or/c #f string?)]
                        [tags (listof string?)]
-                       [style any/c]
+                       [style style?]
                        [title content?])]{
 
 Like @racket[title-decl], but for a sub-part.  See @racket[decode] and

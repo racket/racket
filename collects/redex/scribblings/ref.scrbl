@@ -1641,7 +1641,7 @@ metafunctions or unnamed reduction-relation cases) to application counts.}
                 (generate-term term-spec)]
               ([term-spec (code:line language @#,ttpattern)
                           (code:line language #:satisfying (judgment-form-id @#,ttpattern ...))
-                          (code:line language #:satisfying (metafunction-id @#,ttpattern ...) @#,ttpattern)
+                          (code:line language #:satisfying (metafunction-id @#,ttpattern ...) = @#,ttpattern)
                           (code:line #:source metafunction)
                           (code:line #:source relation-expr)]
                [kw-args (code:line #:attempt-num attempts-expr)
@@ -1824,6 +1824,27 @@ term that does not match @racket[pattern].}
                     (add1 (abs n)))
         #:attempts 3)]
 
+@defform/subs[(redex-generator language-id satisfying size-expr)
+              ([satisfying (judgment-form-id @#,ttpattern ...)
+                           (code:line (metafunction-id @#,ttpattern ...) = @#,ttpattern)])
+              #:contracts ([size-expr natural-number/c])]{
+  
+  @italic{WARNING: @racket[redex-generator] is a new, experimental form, 
+          and its API may change.}
+                                                     
+  Returns a thunk that, each time it is called, either generates a random
+  s-expression based on @racket[satisfying] or fails to (and returns @racket[#f]). 
+  The terms returned by a particular thunk are guaranteed to be distinct.
+  
+  @examples[#:eval
+            redex-eval
+            (define gen-sum (redex-generator nats (sum n_1 n_2 n_3) 5))
+            (gen-sum)
+            (gen-sum)
+            (gen-sum)
+            (gen-sum)]
+}
+
 @defstruct[counterexample ([term any/c]) #:inspector #f]{
 Produced by @racket[redex-check], @racket[check-reduction-relation], and 
 @racket[check-metafunction] when testing falsifies a property.}
@@ -1834,6 +1855,7 @@ Raised by @racket[redex-check], @racket[check-reduction-relation], and
 The @racket[exn:fail:redex:test-source] component contains the exception raised by the property,
 and the @racket[exn:fail:redex:test-term] component contains the term that induced the exception.}
 
+                                                         
 @defform/subs[(check-reduction-relation relation property kw-args ...)
               ([kw-arg (code:line #:attempts attempts-expr)
                        (code:line #:retries retries-expr)
@@ -2140,6 +2162,36 @@ Like @racket[stepper], this function opens a stepper window, but it
 seeds it with the reduction-sequence supplied in @racket[seed].
 }
 
+@defproc[(show-derivations [derivations (cons/c derivation? (listof derivation?))]
+                           [#:pp pp
+                                 (or/c (any -> string)
+                                       (any output-port number (is-a?/c text%) -> void))
+                                 default-pretty-printer]
+                           [#:racket-colors? racket-colors? boolean? #f]
+                           [#:init-derivation init-derivation exact-nonnegative-integer? 0])
+         any]{
+  Opens a window to show @racket[derivations]. 
+                         
+  The @racket[pp] and @racket[racket-colors?] arguments are like those to @racket[traces].
+  
+  The initial derivation shown in the window is chosen by @racket[init-derivation], used
+  as an index into @racket[derivations].
+}
+
+@defproc[(derivation/ps [derivation derivation?]
+                        [filename path-string?]
+                        [#:pp pp
+                              (or/c (any -> string)
+                                    (any output-port number (is-a?/c text%) -> void))
+                              default-pretty-printer]
+                        [#:racket-colors? racket-colors? boolean? #f]
+                        [#:post-process post-process (-> (is-a?/c pasteboard%) any)])
+         void?]{
+                
+  Like @racket[show-derivations], except it prints a single
+  derivation in PostScript to @racket[filename].
+}
+
 @defproc[(term-node-children [tn term-node?]) (listof term-node?)]{
 
 Returns a list of the children (ie, terms that this term
@@ -2150,6 +2202,7 @@ term reduces to -- only those that are currently in the
 graph.
 }
 
+               
 @defproc[(term-node-parents [tn term-node?]) (listof term-node?)]{
 
 Returns a list of the parents (ie, terms that reduced to the
@@ -3077,3 +3130,5 @@ just before or just after that argument. The line-span and
 column-span of the new lw is always zero.
 }
 
+
+@close-eval[redex-eval]

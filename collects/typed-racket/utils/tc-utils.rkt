@@ -93,9 +93,9 @@ don't depend on any other portion of the system
     [l
      (let ([stxs
             (for/list ([e l])
-              (sync (thread
-                     (lambda ()
-                       (raise-typecheck-error (err-msg e) (err-stx e)))))
+              (with-handlers ([exn:fail:syntax? 
+                               (λ (e) ((error-display-handler) (exn-message e) e))])
+                (raise-typecheck-error (err-msg e) (err-stx e)))
               (err-stx e))])
        (reset!)
        (unless (null? stxs)

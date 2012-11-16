@@ -948,7 +948,7 @@
 										       raw-predicate
 										       sigs
 										       #'name_)))
- 						       (let ((arbs (map signature-arbitrary sigs)))
+						       (let ((arbs (map signature-arbitrary sigs)))
 							 (when (andmap values arbs)
 							   (set-signature-arbitrary! 
 							    sig
@@ -1914,7 +1914,7 @@
 	 (let ([bindings (syntax->list (syntax (binding ...)))])
 	   (for-each (lambda (binding)
 		       (syntax-case binding ()
-            		 [(something . exprs)
+                         [(something . exprs)
                           (not (identifier/non-kw? (syntax something)))
 			  (teach-syntax-error
 			   who
@@ -2445,7 +2445,7 @@
 			who
 			stx
 			#'q
-			"expected a question and an answer, but found only one part")]		      
+			"expected a question and an answer, but found only one part")]
                       [(_ q a)
 		       (with-syntax ([who who]
                                      [target target-stx])

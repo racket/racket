@@ -1417,18 +1417,18 @@
 (test-values '(1 2) (lambda () (andmap (lambda (x) (values 1 2)) '(1))))
 
 (test -3 call-with-current-continuation
-		(lambda (exit)
-                  (for-each (lambda (x) (if (negative? x) (exit x) (void)))
-		 	'(54 0 37 -3 245 19))
-		#t))
+      (lambda (exit)
+        (for-each (lambda (x) (if (negative? x) (exit x) (void)))
+                  '(54 0 37 -3 245 19))
+        #t))
 (define list-length
  (lambda (obj)
   (call-with-current-continuation
    (lambda (return)
     (letrec ((r (lambda (obj) (cond ((null? obj) 0)
-				((pair? obj) (+ (r (cdr obj)) 1))
-				(else (return #f))))))
-	(r obj))))))
+                                    ((pair? obj) (+ (r (cdr obj)) 1))
+                                    (else (return #f))))))
+      (r obj))))))
 (test 4 list-length '(1 2 3 4))
 (test #f list-length '(a b . c))
 (test '() map cadr '())

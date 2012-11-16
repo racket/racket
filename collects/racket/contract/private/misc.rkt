@@ -1014,7 +1014,8 @@
          '(expected: "~s" given: "~e")
          (contract-name ctc)
          val))
-      (proxy val proj1 proj2 call/cc-guard call/cc-proxy))))
+      (proxy val proj1 proj2 call/cc-guard call/cc-proxy
+             impersonator-prop:contracted ctc))))
 
 (define ((prompt-tag/c-first-order ctc) v)
   (continuation-prompt-tag? v))
@@ -1074,7 +1075,8 @@
          '(expected: "~s" given: "~e")
          (contract-name ctc)
          val))
-      (proxy val proj1 proj2))))
+      (proxy val proj1 proj2
+             impersonator-prop:contracted ctc))))
 
 (define ((continuation-mark-key/c-first-order ctc) v)
   (continuation-mark-key? v))

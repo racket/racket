@@ -207,7 +207,7 @@ typedef _uc		jit_insn;
 #ifdef JIT_X86_64
 # define  _REX_(P,R,X,B)                          ( _jit_B(P|((R&0x8)>>1)|((X&0x8)>>2)|((B&0x8)>>3)) )
 # define  _REX(R,X,B)                              _REX_(0x48,R,X,B)
-# define  _REXd(R,X,B)                             _REX_(0x40,R,X,B)
+# define  _REXd(R,X,B)                             ((B&0x8) ? _REX_(0x40,R,X,B) : 0)
 # define  _qO(	     OP, R,X,B			)  ( _REX(R,X,B), _jit_B(  OP	) )
 # define  _qOd(	     OP, R,X,B			)  ( _REXd(R,X,B), _jit_B(  OP	) )
 #else
@@ -217,8 +217,10 @@ typedef _uc		jit_insn;
 #define	  _Or(	     OP,R			)  (		  _jit_B( (OP)|_r(R))				  )
 #ifdef JIT_X86_64
 # define  _qOr(	     OP,R			)  ( _REX(0,0,R), _jit_B( (OP)|_r(R&0x7))				  )
+# define  _qOdr(     OP,R			)  ( _REXd(0,0,R), _jit_B( (OP)|_r(R&0x7))				  )
 #else
 # define _qOr(       OP,R                       ) _Or(OP,R) 
+# define _qOdr(       OP,R                       ) _Or(OP,R) 
 #endif
 #define	 _OO(	     OP				)  ( _jit_B((OP)>>8), _jit_B( (OP)	)				  )
 #ifdef JIT_X86_64
@@ -248,6 +250,7 @@ typedef _uc		jit_insn;
 #define	  _qOr_Q(     OP,R		    ,Q	)  (	   _qOr	    (  OP,R)			      ,_jit_L(Q)	  )
 #define	  _O_Mrm(    OP	 ,MO,R,M		)  (	    _O	    (  OP  ),_Mrm(MO,R,M	    )		  )
 #define	 _qO_Mrm(    OP	 ,MO,R,M		)  (	    _qO	    (  OP,R,0,M),_qMrm(MO,R,M	    )		  )
+#define	 _qOd_Mrm(   OP	 ,MO,R,M		)  (	    _qOd    (  OP,R,0,M),_qMrm(MO,R,M	    )		  )
 #define	 _OO_Mrm(    OP	 ,MO,R,M		)  (	   _OO	    (  OP  ),_Mrm(MO,R,M	    )		  )
 #define	 _qOO_Mrm(   OP	 ,MO,R,M		)  (	   _qOO	    (  OP  ),_Mrm(MO,R,M	    )		  )
 #define	  _O_Mrm_B(  OP	 ,MO,R,M	    ,B	)  (	    _O	    (  OP  ),_Mrm(MO,R,M	    ) ,_jit_B(B)	  )
@@ -263,18 +266,20 @@ typedef _uc		jit_insn;
 #define	  _O_r_X(    OP	    ,R	,MD,MB,MI,MS	)  (	    _O	    (  OP  ),_r_X(   R	,MD,MB,MI,MS)		  )
 #define	 _qO_r_X(    OP	    ,R	,MD,MB,MI,MS	)  (	   _qO	    (  OP,R,0,MS),_qr_X(R,MD,MB,MI,MS)		  )
 #define	 _qO_r_XB(   OP	    ,R	,MD,MB,MI,MS	)  (	   _qO	    (  OP,R,0,MB),_qr_X(R,MD,MB,MI,MS)		  )
-#define	 _qO_r_Xd(   OP	    ,R	,MD,MB,MI,MS	)  (	   _qOd	    (  OP,R,0,MB),_qr_X(R,MD,MB,MI,MS)		  )
+#define	 _qOd_r_X(   OP	    ,R	,MD,MB,MI,MS	)  (	   _qOd	    (  OP,R,0,MB),_qr_X(R,MD,MB,MI,MS)		  )
 #define	 _OO_r_X(    OP	    ,R	,MD,MB,MI,MS	)  (	   _OO	    (  OP  ),_r_X(   R	,MD,MB,MI,MS)		  )
 #define	 _qOO_r_X(    OP    ,R	,MD,MB,MI,MS	)  (	   _qOO	    (  OP  ),_r_X(   R	,MD,MB,MI,MS)		  )
 #define	  _O_r_X_B(  OP	    ,R	,MD,MB,MI,MS,B	)  (	    _O	    (  OP  ),_r_X(   R	,MD,MB,MI,MS) ,_jit_B(B)	  )
 #define	  _O_r_X_W(  OP	    ,R	,MD,MB,MI,MS,W	)  (	    _O	    (  OP  ),_r_X(   R	,MD,MB,MI,MS) ,_jit_W(W)	  )
 #define	  _O_r_X_L(  OP	    ,R	,MD,MB,MI,MS,L	)  (	    _O	    (  OP  ),_r_X(   R	,MD,MB,MI,MS) ,_jit_I(L)	  )
+#define	  _qO_r_X_L( OP	    ,R	,MD,MB,MI,MS,L	)  (	    _qO	    (  OP,R,0,MB),_r_X(   R	,MD,MB,MI,MS) ,_jit_I(L)	  )
 #define	 _OO_r_X_B(  OP	    ,R	,MD,MB,MI,MS,B	)  (	   _OO	    (  OP  ),_r_X(   R	,MD,MB,MI,MS) ,_jit_B(B)	  )
 #define	  _Os_r_X_sW(OP	    ,R	,MD,MB,MI,MS,W	)  (	    _Os	    (  OP,W),_r_X(   R	,MD,MB,MI,MS),_sW(W)	  )
 #define	  _Os_r_X_sL(OP	    ,R	,MD,MB,MI,MS,L	)  (	    _Os	    (  OP,L),_r_X(   R	,MD,MB,MI,MS),_sL(L)	  )
 #define	  _O_X_B(    OP		,MD,MB,MI,MS,B	)  (	    _O_r_X_B(  OP	    ,0	,MD,MB,MI,MS	 ,B)	  )
 #define	  _O_X_W(    OP		,MD,MB,MI,MS,W	)  (	    _O_r_X_W(  OP	    ,0	,MD,MB,MI,MS	 ,W)	  )
 #define	  _O_X_L(    OP		,MD,MB,MI,MS,L	)  (	    _O_r_X_L(  OP	    ,0	,MD,MB,MI,MS	 ,L)	  )
+#define	  _qO_X_L(   OP		,MD,MB,MI,MS,L	)  (	    _qO_r_X_L(  OP	    ,0	,MD,MB,MI,MS	 ,L)	  )
 #define	 _wO(	     OP				)  (_d16(), _O(	       OP				   )	  )
 #define	 _wOr(	     OP,R			)  (_d16(), _Or(       OP,R				   )	  )
 #define	 _wOr_W(     OP,R		    ,W	)  (_d16(), _Or_W(     OP,R				 ,W)	  )
@@ -406,15 +411,21 @@ typedef _uc		jit_insn;
 #define BTSLrr(RS,RD)			_OO_Mrm		(0x0fab		,_b11,_r4(RS),_r4(RD)				)
 #define BTSLrm(RS,MD,MB,MI,MS)		_OO_r_X		(0x0fab		     ,_r4(RS)		,MD,MB,MI,MS		)
 
+#ifdef _ASM_SAFETY
+# define CALLmL(D,B,I,S)		((_r0P(B) && _r0P(I)) ? _O_D32	(0xe8			,(intptr_t)(D)		) : \
+								JITFAIL("illegal mode in direct jump"))
+#else
+# define CALLmL(D,B,I,S)		_O_D32	(0xe8			,(intptr_t)(D)		)
+#endif
+
 #ifdef JIT_X86_64
 # define CALLm(D,B,I,S)	                (MOVQir((D), JIT_REXTMP), CALQsr(JIT_REXTMP))
 #else
-# define CALLm(D,B,I,S)			((_r0P(B) && _r0P(I)) ? _O_D32	(0xe8			,(intptr_t)(D)		) : \
-								JITFAIL("illegal mode in direct jump"))
+# define CALLm(D,B,I,S)			CALLmL(D,B,I,S)
 #endif
 
 #define CALLsr(R)			_O_Mrm	(0xff	,_b11,_b010,_r4(R)			)
-#define CALQsr(R)                       _qO_Mrm (0xff	,_b11,_b010,_r8(R))
+#define CALQsr(R)                       _qOd_Mrm(0xff	,_b11,_b010,_r8(R))
 
 #define CALLsm(D,B,I,S)			_O_r_X	(0xff	     ,_b010	,(intptr_t)(D),B,I,S		)
 
@@ -687,15 +698,19 @@ typedef _uc		jit_insn;
 
 #define MOVLrr(RS, RD)			_O_Mrm		(0x89		,_b11,_r4(RS),_r4(RD)				)
 #define MOVLmr(MD, MB, MI, MS, RD)	_O_r_X		(0x8b		     ,_r4(RD)		,MD,MB,MI,MS		)
+#define MOVLmQr(MD, MB, MI, MS, RD)	_qOd_r_X	(0x8b		     ,_r8(RD)		,MD,MB,MI,MS		)
 #define MOVLrm(RS, MD, MB, MI, MS)	_O_r_X		(0x89		     ,_r4(RS)		,MD,MB,MI,MS		)
+#define MOVLQrm(RS, MD, MB, MI, MS)	_qOd_r_X        (0x89		     ,_r8(RS)		,MD,MB,MI,MS		)
 #define MOVLir(IM,  R)			_Or_L		(0xb8,_r4(R)						,IM	)
-#define MOVLim(IM, MD, MB, MI, MS)	_O_X_L		(0xc7					,MD,MB,MI,MS	,IM	)
+#define MOVLiQr(IM,  R)			(_REXd(0,0,R), MOVLir(IM, R))
+#define MOVLim(IM, MD, MB, MI, MS)	_qOd_X_L	(0xc7					,MD,MB,MI,MS	,IM	)
 
 #define MOVQmr(MD, MB, MI, MS, RD)	_qO_r_X		(0x8b		     ,_r8(RD)		,MD,MB,MI,MS		)
 #define MOVQmQr(MD, MB, MI, MS, RD)	_qO_r_XB	(0x8b		     ,_r8(RD)		,MD,MB,MI,MS		)
-#define MOVQrm(RS, MD, MB, MI, MS)	_qO_r_Xd	(0x89		     ,_r8(RS)		,MD,MB,MI,MS		)
+#define MOVQrm(RS, MD, MB, MI, MS)	_qOd_r_X	(0x89		     ,_r8(RS)		,MD,MB,MI,MS		)
 #define MOVQrQm(RS, MD, MB, MI, MS)	_qO_r_XB     	(0x89		     ,_r8(RS)		,MD,MB,MI,MS		)
 #define MOVQir(IM,  R)			_qOr_Q	        (0xb8,_r8(R)			,IM	)
+#define MOVQim(IM, MD, MB, MI, MS)	_qO_X_L         (0xc7					,MD,MB,MI,MS	,IM	)
 
 #define MOVQrr(RS, RD)			_qO_Mrm		(0x89		,_b11,_r8(RS),_r8(RD)				)
 
@@ -776,7 +791,7 @@ typedef _uc		jit_insn;
 #define POPLr(RD)			_Or		(0x58,_r4(RD)							)
 #define POPLm(MD,MB,MI,MS)		_O_r_X		(0x8f		     ,_b000		,MD,MB,MI,MS		)
 
-#define POPQr(RD)			_qOr		(0x58,_r8(RD)							)
+#define POPQr(RD)			_qOdr		(0x58,_r8(RD)							)
 
 
 #define POPA_()				_wO		(0x61								)
@@ -794,7 +809,7 @@ typedef _uc		jit_insn;
 #define PUSHLm(MD,MB,MI,MS)		_O_r_X		(0xff		     ,_b110		,MD,MB,MI,MS		)
 #define PUSHLi(IM)			_Os_sL		(0x68							,IM	)
 
-#define PUSHQr(R)			_qOr		(0x50,_r8(R)							)
+#define PUSHQr(R)			_qOdr		(0x50,_r8(R)							)
 
 #define PUSHA_()			_wO		(0x60								)
 #define PUSHAD_()			_O		(0x60								)

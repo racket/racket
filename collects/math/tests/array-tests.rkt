@@ -2,7 +2,6 @@
 
 (require racket/flonum
          math/array
-         ;math/functions
          typed/rackunit
          math/private/array/utils)
 

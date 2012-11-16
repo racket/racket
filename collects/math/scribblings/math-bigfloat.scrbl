@@ -39,7 +39,7 @@ If you know MPFR is installed but can't use @racketmodname[math/bigfloat], see @
 @item{Set the working precision using @racket[(bf-precision <some-number-of-bits>)].}
 @item{Use @racket[bf] to convert real values and well-formed strings to bigfloats.}
 @item{Operate on bigfloats using @racket[bf]-prefixed functions like @racket[bf+] and @racket[bfsin].}
-@item{Convert bigfloats to real values using @racket[bigfloat->rational], @racket[bigfloat->flonum],
+@item{Convert bigfloats to real values using @racket[bigfloat->real], @racket[bigfloat->flonum],
       and @racket[bigfloat->integer]. Format them for display using @racket[bigfloat->string].}
 ]
 
@@ -287,15 +287,18 @@ to make up for triple rounding error.
 
 @deftogether[(@defproc[(bigfloat->integer [x Bigfloat]) Integer]
               @defproc[(bigfloat->rational [x Bigfloat]) Exact-Rational]
+              @defproc[(bigfloat->real [x Bigfloat]) (U Exact-Rational Flonum)]
               @defproc[(bigfloat->flonum [x Bigfloat]) Flonum])]{
-Convert bigfloats to integer, exact rational, and flonum values respectively.
+Convert bigfloats to integer, exact rational, real and flonum values respectively.
 
-Both @racket[bigfloat->rational] and @racket[bigfloat->integer] return values that can
-be converted exactly back to @racket[x] using @racket[bf]. In @racket[bigfloat->integer]'s
-case, this is done by requiring that @racket[(bfinteger? x)] is @racket[#t].
+@racket[bigfloat->integer], @racket[bigfloat->rational] and @racket[bigfloat->real] return values
+that can be converted exactly back to @racket[x] using @racket[bf]. For the first two, this is done
+by raising an error if @racket[x] is not respectively integer or rational. On the other hand,
+@racket[bigfloat->real] returns @racket[+inf.0], @racket[-inf.0] or @racket[+nan.0] when @racket[x]
+is not a rational bigfloat.
 
-On the other hand, @racket[bigfloat->flonum] rounds @racket[x] to 53 bits precision to
-fit the value into a flonum, using the current value of @racket[bf-rounding-mode].
+@racket[bigfloat->flonum] rounds @racket[x] to 53 bits precision to fit the value into a flonum,
+using the current value of @racket[bf-rounding-mode].
 
 @interaction[#:eval untyped-eval
                     (bf-precision 64)
@@ -324,8 +327,8 @@ fit the value into a flonum, using the current value of @racket[bf-rounding-mode
                      (bf= x (bf (bigfloat->rational x)))
                      (eval:result @racketresultfont{#t}))]
 
-@bold{Be careful} with @racket[bigfloat->integer] and @racket[bigfloat->rational].
-Bigfloats with large exponents may not fit in memory as integers or exact rationals.
+@bold{Be careful with exact conversions.} Bigfloats with large exponents may not fit in memory as
+integers or exact rationals. Worse, they might fit, but have all your RAM and swap space for lunch.
 }
 
 @deftogether[(@defproc[(bigfloat->string [x Bigfloat]) String]

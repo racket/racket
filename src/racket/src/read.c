@@ -4640,7 +4640,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       }
       break;
     case CPT_LET_ONE:
-    case CPT_LET_ONE_FLONUM:
+    case CPT_LET_ONE_TYPED:
     case CPT_LET_ONE_UNUSED:
       {
 	Scheme_Let_One *lo;
@@ -4654,9 +4654,11 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	v = read_compact(port, 1);
 	lo->body = v;
 	et = scheme_get_eval_type(lo->value);
-        if (ch == CPT_LET_ONE_FLONUM)
-          et |= LET_ONE_FLONUM;
-        if (ch == CPT_LET_ONE_UNUSED)
+        if (ch == CPT_LET_ONE_TYPED) {
+          int ty;
+          ty = read_compact_number(port);
+          et |= (ty << LET_ONE_TYPE_SHIFT);
+        } else if (ch == CPT_LET_ONE_UNUSED)
           et |= LET_ONE_UNUSED;
         SCHEME_LET_EVAL_TYPE(lo) = et;
 	
@@ -4692,11 +4694,12 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
     case CPT_MODULE_VAR:
       {
 	Module_Variable *mv;
-	Scheme_Object *mod, *var;
+	Scheme_Object *mod, *var, *shape;
 	int pos;
 
 	mod = read_compact(port, 0);
 	var = read_compact(port, 0);
+	shape = read_compact(port, 0);
 	pos = read_compact_number(port);
 
 	mv = MALLOC_ONE_TAGGED(Module_Variable);
@@ -4705,6 +4708,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
           mod = scheme_intern_resolved_module_path(mod);
 	mv->modidx = mod;
 	mv->sym = var;
+	mv->shape = shape;
         if (pos < -3) {
           pos = -(pos + 3);
           SCHEME_MODVAR_FLAGS(mv) = pos;

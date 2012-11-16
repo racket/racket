@@ -98,6 +98,11 @@
                               (module-path-index-join #f #f '(sub1)))
       `(submod ,(build-path (current-directory) "x.rkt") sub3))
 
+(test (build-path (current-directory) "z.rkt")
+      resolve-module-path-index
+      (module-path-index-join "z.rkt" #f)
+      `(submod ,(build-path (current-directory) "x.rkt") sub3))
+
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; collapse-module-path[-index]

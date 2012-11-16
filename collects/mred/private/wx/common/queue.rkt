@@ -453,7 +453,7 @@
         (define before (current-inexact-milliseconds))
         (when (log-level? event-logger 'debug)
           (log-message event-logger 'debug 
-                       "starting to handle an event"
+                       (format "starting to handle an event from ~a" (object-name thunk))
                        (gui-event before #f (object-name thunk))))
         (let ([b (box thunk)])
           ;; use the event-dispatch handler:

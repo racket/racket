@@ -298,7 +298,7 @@ Returns @racket[(not v)].}
   If exactly one of @racket[b1] and @racket[b2] is
   not @racket[#f], then return it. Otherwise, returns
   @racket[#f].
-  
+
   @examples[#:eval
             bool-eval
             (xor 11 #f)
@@ -307,3 +307,6 @@ Returns @racket[(not v)].}
             (xor #f #f)]
 
 }
+
+
+@close-eval[bool-eval]

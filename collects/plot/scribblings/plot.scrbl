@@ -46,3 +46,5 @@ If you have code written for PLoT 5.1.3 or earlier, please see @secref["porting"
 @include-section["porting.scrbl"]
 
 @include-section["compat.scrbl"]
+
+@close-plot-eval[]

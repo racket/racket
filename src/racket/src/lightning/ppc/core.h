@@ -43,6 +43,7 @@ struct jit_local_state {
    int	nextarg_getd;  /* The FP args are picked up from FPR1 -> FPR10 */
    int  nbArgs;        /* Number of arguments for the prolog */
    int long_jumps;    /* 1 => patch or leave room for long jumps */
+#  define LONG_JUMPS_DEFAULT(jitl) 1
 };
 
 #define JIT_SP			1
@@ -230,7 +231,7 @@ struct jit_local_state {
 #define jit_movi_i(d, is)		MOVEIri((d), (is))
 #define jit_movi_p(d, is)		(LISri((d), _HI((is))),ORIrri((d),(d),_LO((is))),_jit.x.pc)
 
-#define jit_movr_i(d, rs)		MRrr((d), (rs))
+#define jit_movr_i(d, rs)		(((d) == (rs)) ? 0 : MRrr((d), (rs)))
 #define jit_muli_i(d, rs, is)		jit_chk_ims  ((is), MULLIrri((d), (rs), (is)), MULLWrrr((d), (rs), JIT_AUX))
 #define jit_muli_ui(d, rs, is)		jit_chk_imu15((is), MULLIrri((d), (rs), (is)), MULLWrrr((d), (rs), JIT_AUX))
 #define jit_mulr_i(d, s1, s2)				    MULLWrrr((d), (s1), (s2))
@@ -283,6 +284,11 @@ struct jit_local_state {
 #define jit_str_i(rd, rs)		jit_stxr_i(0, (rd), (rs))	      
 #define jit_ldr_uc(rd, rs)		jit_ldxr_uc((rd), 0, (rs))	      
 #define jit_ldr_us(rd, rs)		jit_ldxr_us((rd), 0, (rs))	      
+
+#define jit_stir_l(rd, is) (jit_movi_l(JIT_AUX, (intptr_t)(is)), jit_str_l(rd, JIT_AUX))
+#define jit_stixi_l(id, rd, is) (jit_movi_l(JIT_AUX, is), jit_stxi_l(id, rd, JIT_AUX))
+#define jit_stir_p(rd, is) jit_stir_l(rd, is)
+#define jit_stixi_p(id, rd, is) jit_stixi_l(id, rd, is) 
 
 /* e.g.
  *	0x01234567	_HA << 16 = 0x01230000	_LA = 0x00004567 _HA << 16 + LA = 0x01234567

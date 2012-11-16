@@ -37,7 +37,7 @@
   (let ((a (make-bit-vector m)))
     (define (clear i)
       (do ([j (+ i i) (+ j i)])
-  	  ((>= j m))
+          ((>= j m))
         (bit-vector-set! a j #f)))
     (let ([c 0])
       (do ([i 2 (add1 i)])

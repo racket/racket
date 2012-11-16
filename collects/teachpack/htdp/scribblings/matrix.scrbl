@@ -75,8 +75,5 @@ renders this matrix @racket[m] as a rectangle of strings}
           matrix?]{ 
 creates a matrix minor from @racket[m] at (@racket[i],@racket[j])}
 
-@defproc[(matrix-set! [m matrix?][i (and/c natural-number/c (</c (matrix-rows m)))][j (and/c natural-number/c (</c (matrix-rows m)))]
-		      [x any/c])
-         matrix?]{
-like @racket[matrix-set] but uses a destructive update}
+@;defproc[(matrix-set! [m matrix?][i (and/c natural-number/c (</c (matrix-rows m)))][j (and/c natural-number/c (</c (matrix-rows m)))] [x any/c]) matrix?]{like @racket[matrix-set] but uses a destructive update}
 

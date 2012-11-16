@@ -8,8 +8,8 @@
               _GdkScreen
               _gpointer
               _GType
-	      _GdkEventType
-	      _GdkAtom
+              _GdkEventType
+              _GdkAtom
 
               _fnpointer
               _gboolean
@@ -31,9 +31,9 @@
               (struct-out GdkEventExpose)
               _GdkEventFocus _GdkEventFocus-pointer
               (struct-out GdkEventFocus)
-	      _GdkEventSelection _GdkEventSelection-pointer
+              _GdkEventSelection _GdkEventSelection-pointer
               (struct-out GdkEventSelection)
-	      _GdkRectangle _GdkRectangle-pointer
+              _GdkRectangle _GdkRectangle-pointer
               (struct-out GdkRectangle)
               _GdkColor _GdkColor-pointer
               (struct-out GdkColor)))
@@ -135,11 +135,11 @@
 (define-cstruct _GdkEventSelection ([type _GdkEventType]
                                     [window _GdkWindow]
                                     [send_event _byte]
-				    [selection _GdkAtom]
-				    [target _GdkAtom]
-				    [property _GdkAtom]
-				    [time _uint32]
-				    [requestor _pointer]))
+                                    [selection _GdkAtom]
+                                    [target _GdkAtom]
+                                    [property _GdkAtom]
+                                    [time _uint32]
+                                    [requestor _pointer]))
 
 (define-cstruct _GdkRectangle ([x _int]
                                [y _int]
@@ -155,8 +155,8 @@
 
 (define-cstruct _GdkEventFocus ([type _GdkEventType]
                                 [window _GdkWindow]
-                               	[send_event _byte]
-                               	[in _short]))
+                                [send_event _byte]
+                                [in _short]))
 
 (define-cstruct _GdkColor ([pixel _uint32]
                            [red _uint16]

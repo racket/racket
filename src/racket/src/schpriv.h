@@ -303,7 +303,7 @@ void scheme_free_dynamic_extensions(void);
 void scheme_free_all_code(void);
 void scheme_free_ghbn_data(void);
 
-XFORM_NONGCING int scheme_is_multiprocessor(int now);
+XFORM_NONGCING int scheme_is_multithreaded(int now);
 
 /* Type readers & writers for compiled code data */
 typedef Scheme_Object *(*Scheme_Type_Reader)(Scheme_Object *list);
@@ -359,15 +359,26 @@ extern Scheme_Object *scheme_values_func;
 extern Scheme_Object *scheme_procedure_p_proc;
 extern Scheme_Object *scheme_procedure_arity_includes_proc;
 extern Scheme_Object *scheme_void_proc;
+extern Scheme_Object *scheme_pair_p_proc;
+extern Scheme_Object *scheme_mpair_p_proc;
+extern Scheme_Object *scheme_unsafe_cons_list_proc;
+extern Scheme_Object *scheme_unsafe_car_proc;
+extern Scheme_Object *scheme_unsafe_cdr_proc;
+extern Scheme_Object *scheme_unsafe_mcar_proc;
+extern Scheme_Object *scheme_unsafe_mcdr_proc;
+extern Scheme_Object *scheme_unsafe_unbox_proc;
 extern Scheme_Object *scheme_cons_proc;
 extern Scheme_Object *scheme_mcons_proc;
 extern Scheme_Object *scheme_list_proc;
 extern Scheme_Object *scheme_list_star_proc;
 extern Scheme_Object *scheme_vector_proc;
+extern Scheme_Object *scheme_vector_p_proc;
 extern Scheme_Object *scheme_vector_immutable_proc;
 extern Scheme_Object *scheme_vector_ref_proc;
 extern Scheme_Object *scheme_vector_set_proc;
+extern Scheme_Object *scheme_unsafe_vector_length_proc;
 extern Scheme_Object *scheme_hash_ref_proc;
+extern Scheme_Object *scheme_box_p_proc;
 extern Scheme_Object *scheme_box_proc;
 extern Scheme_Object *scheme_call_with_values_proc;
 extern Scheme_Object *scheme_make_struct_type_proc;
@@ -375,6 +386,7 @@ extern Scheme_Object *scheme_make_struct_field_accessor_proc;
 extern Scheme_Object *scheme_make_struct_field_mutator_proc;
 extern Scheme_Object *scheme_struct_type_p_proc;
 extern Scheme_Object *scheme_current_inspector_proc;
+extern Scheme_Object *scheme_make_inspector_proc;
 extern Scheme_Object *scheme_varref_const_p_proc;
 
 extern Scheme_Object *scheme_define_values_syntax, *scheme_define_syntaxes_syntax;
@@ -849,6 +861,8 @@ Scheme_Object *scheme_make_serialized_struct_instance(Scheme_Object *s, int num_
 Scheme_Object *scheme_struct_getter(int argc, Scheme_Object **args, Scheme_Object *prim);
 Scheme_Object *scheme_struct_setter(int argc, Scheme_Object **args, Scheme_Object *prim);
 
+void scheme_force_struct_type_info(Scheme_Struct_Type *stype);
+
 Scheme_Object *scheme_extract_checked_procedure(int argc, Scheme_Object **argv);
 
 Scheme_Object *scheme_rename_struct_proc(Scheme_Object *p, Scheme_Object *sym);
@@ -1256,8 +1270,23 @@ typedef struct {
   Scheme_Object *body;
 } Scheme_With_Continuation_Mark;
 
+/* Used with SCHEME_LOCAL_TYPE_MASK, LET_ONE_TYPE_MASK, etc.*/
+#define SCHEME_LOCAL_TYPE_FLONUM   1
+#define SCHEME_LOCAL_TYPE_FIXNUM   2
+
+#define SCHEME_MAX_LOCAL_TYPE       2
+#define SCHEME_MAX_LOCAL_TYPE_MASK  0x3
+#define SCHEME_MAX_LOCAL_TYPE_BITS  2
+
+/* Flonum unboxing is only useful if a value is going to flow to a
+   function that wants it, otherwise we'll have to box the flonum anyway.
+   Fixnum unboxing is always fine, since it's easy to box. */
+#define ALWAYS_PREFER_UNBOX_TYPE(ty) ((ty) == SCHEME_LOCAL_TYPE_FIXNUM)
+
+#define IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(v) (((v) >= -1073741824) && ((v) <= 1073741823))
+
 typedef struct Scheme_Local {
-  Scheme_Inclhash_Object iso; /* keyex used for clear-on-read flag */
+  Scheme_Inclhash_Object iso; /* keyex used for flags and type info (and can't be hashed) */
   mzshort position;
 #ifdef MZ_PRECISE_GC
 # ifdef MZSHORT_IS_SHORT
@@ -1270,12 +1299,12 @@ typedef struct Scheme_Local {
 #define SCHEME_LOCAL_POS(obj)    (((Scheme_Local *)(obj))->position)
 #define SCHEME_LOCAL_FLAGS(obj)  MZ_OPT_HASH_KEY(&((Scheme_Local *)(obj))->iso)
 
-#define SCHEME_LOCAL_CLEAR_ON_READ 0x1
-#define SCHEME_LOCAL_OTHER_CLEARS  0x2
-#define SCHEME_LOCAL_FLONUM        0x3
-#define SCHEME_LOCAL_FLAGS_MASK    0x3
+#define SCHEME_LOCAL_CLEAR_ON_READ 1
+#define SCHEME_LOCAL_OTHER_CLEARS  2
+#define SCHEME_LOCAL_TYPE_OFFSET   2
 
-#define SCHEME_GET_LOCAL_FLAGS(obj)  (SCHEME_LOCAL_FLAGS(obj) & SCHEME_LOCAL_FLAGS_MASK)
+#define SCHEME_GET_LOCAL_FLAGS(obj)  SCHEME_LOCAL_FLAGS(obj)
+#define SCHEME_GET_LOCAL_TYPE(obj)  ((SCHEME_LOCAL_FLAGS(obj) > 2) ? (SCHEME_LOCAL_FLAGS(obj) - 2) : 0)
 
 typedef struct Scheme_Toplevel {
   Scheme_Inclhash_Object iso; /* keyex used for flags (and can't be hashed) */
@@ -1336,8 +1365,11 @@ typedef struct Scheme_Let_One {
 } Scheme_Let_One;
 
 #define SCHEME_LET_EVAL_TYPE(lh) MZ_OPT_HASH_KEY(&lh->iso)
-#define LET_ONE_FLONUM 0x8
-#define LET_ONE_UNUSED 0x10
+#define LET_ONE_UNUSED 0x8
+
+#define LET_ONE_TYPE_SHIFT 4
+#define LET_ONE_TYPE_MASK  (SCHEME_MAX_LOCAL_TYPE_MASK << 4)
+#define SCHEME_LET_ONE_TYPE(lo) (SCHEME_LET_EVAL_TYPE(lo) >> LET_ONE_TYPE_SHIFT)
 
 typedef struct Scheme_Let_Void {
   Scheme_Inclhash_Object iso; /* keyex used for autobox */
@@ -2135,7 +2167,6 @@ typedef struct Scheme_Prefix
   Scheme_Object so; /* scheme_prefix_type */
   int num_slots, num_toplevels, num_stxes;
   struct Scheme_Prefix *next_final; /* for special GC handling */
-  char *import_map; /* bitmap indicating which toplevels are imported */
   Scheme_Object *a[mzFLEX_ARRAY_DECL]; /* array of objects */
   /* followed by an array of `int's for tl_map uses */
 } Scheme_Prefix;
@@ -2280,9 +2311,9 @@ typedef struct Scheme_Comp_Env
 #define CLOS_IS_METHOD 16
 #define CLOS_SINGLE_RESULT 32
 #define CLOS_RESULT_TENTATIVE 64
-#define CLOS_SFS 128
 #define CLOS_VALIDATED 128
-/* BITS 8-15 used by write_compiled_closure() */
+#define CLOS_SFS 256
+/* BITS 8-15 (overlaps CLOS_SFS) used by write_compiled_closure() */
 
 typedef struct Scheme_Compile_Expand_Info
 {
@@ -2325,8 +2356,8 @@ typedef struct {
   int *local_flags; /* for arguments from compile pass, flonum info updated in optimize pass */
   mzshort base_closure_size; /* doesn't include top-level (if any) */
   mzshort *base_closure_map;
-  char *flonum_map; /* NULL when has_flomap set => no flonums */
-  char has_tl, has_flomap, has_nonleaf;
+  char *local_type_map; /* NULL when has_tymap set => no local types */
+  char has_tl, has_tymap, has_nonleaf;
   int body_size, body_psize;
 } Closure_Info;
 
@@ -2349,7 +2380,7 @@ typedef struct Scheme_Closure_Data
   mzshort max_let_depth;
   mzshort closure_size;
   mzshort *closure_map; /* actually a Closure_Info* until resolved; if CLOS_HAS_TYPED_ARGS, 
-                           followed by bit array with 2 bits per args then per closed-over */
+                           followed by bit array with CLOS_TYPE_BITS_PER_ARG bits per args then per closed-over */
   Scheme_Object *code;
   Scheme_Object *name; /* name or (vector name src line col pos span generated?) */
   void *tl_map; /* fixnum or bit array (as array of `int's) indicating which globals+lifts in prefix are used */
@@ -2363,6 +2394,13 @@ typedef struct Scheme_Closure_Data
 } Scheme_Closure_Data;
 
 #define SCHEME_CLOSURE_DATA_FLAGS(obj) MZ_OPT_HASH_KEY(&(obj)->iso)
+
+#define CLOS_TYPE_BITS_PER_ARG 4
+#define CLOS_TYPE_BOXED 1
+#define CLOS_TYPE_TYPE_OFFSET 1
+
+XFORM_NONGCING void scheme_boxmap_set(mzshort *boxmap, int j, int bit, int delta);
+XFORM_NONGCING int scheme_boxmap_get(mzshort *boxmap, int j, int delta);
 
 int scheme_has_method_property(Scheme_Object *code);
 
@@ -2478,8 +2516,7 @@ Scheme_Object *scheme_make_toplevel(mzshort depth, int position, int resolved, i
 
 #define MAX_CONST_LOCAL_POS 64
 #define MAX_CONST_LOCAL_TYPES 2
-#define MAX_CONST_LOCAL_FLAG_VAL 3
-#define SCHEME_LOCAL_FLAGS_MASK 0x3
+#define MAX_CONST_LOCAL_FLAG_VAL (2 + SCHEME_MAX_LOCAL_TYPE)
 
 #define MAX_CONST_TOPLEVEL_DEPTH 16
 #define MAX_CONST_TOPLEVEL_POS 16
@@ -2650,11 +2687,13 @@ Scheme_Object *scheme_protect_quote(Scheme_Object *expr);
 Scheme_Object *scheme_optimize_expr(Scheme_Object *, Optimize_Info *, int context);
 Scheme_Object *scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, int context);
 
-#define OPT_CONTEXT_FLONUM_ARG 0x1
-#define OPT_CONTEXT_BOOLEAN    0x2
-#define OPT_CONTEXT_NO_SINGLE  0x4
+#define OPT_CONTEXT_BOOLEAN    0x1
+#define OPT_CONTEXT_NO_SINGLE  0x2
+#define OPT_CONTEXT_TYPE_SHIFT   3
+#define OPT_CONTEXT_TYPE_MASK    (SCHEME_MAX_LOCAL_TYPE_MASK << OPT_CONTEXT_TYPE_SHIFT)
+#define OPT_CONTEXT_TYPE(oc)    ((oc & OPT_CONTEXT_TYPE_MASK) >> OPT_CONTEXT_TYPE_SHIFT)
 
-#define scheme_optimize_result_context(c) (c & (~(OPT_CONTEXT_FLONUM_ARG | OPT_CONTEXT_NO_SINGLE)))
+#define scheme_optimize_result_context(c) (c & (~(OPT_CONTEXT_TYPE_MASK | OPT_CONTEXT_NO_SINGLE)))
 #define scheme_optimize_tail_context(c) scheme_optimize_result_context(c) 
 
 Scheme_Object *scheme_optimize_apply_values(Scheme_Object *f, Scheme_Object *e, 
@@ -2698,8 +2737,7 @@ Scheme_Logger *scheme_optimize_info_logger(Optimize_Info *);
 
 Scheme_Object *scheme_toplevel_to_flagged_toplevel(Scheme_Object *tl, int flags);
 
-int scheme_wants_flonum_arguments(Scheme_Object *rator, int argpos);
-int scheme_expr_produces_flonum(Scheme_Object *expr);
+int scheme_expr_produces_local_type(Scheme_Object *expr);
 
 Scheme_Object *scheme_make_compiled_syntax(Scheme_Syntax *syntax,
 					   Scheme_Syntax_Expander *exp);
@@ -2781,15 +2819,19 @@ int scheme_env_min_use_below(Scheme_Comp_Env *frame, int pos);
 #define SCHEME_WAS_SET_BANGED          0x2
 #define SCHEME_WAS_ONLY_APPLIED        0x4
 #define SCHEME_WAS_APPLIED_EXCEPT_ONCE 0x8
-#define SCHEME_WAS_FLONUM_ARGUMENT     0x80
 
 #define SCHEME_USE_COUNT_MASK   0x70
 #define SCHEME_USE_COUNT_SHIFT  4
 #define SCHEME_USE_COUNT_INF    (SCHEME_USE_COUNT_MASK >> SCHEME_USE_COUNT_SHIFT)
 
+#define SCHEME_WAS_TYPED_ARGUMENT_SHIFT 7
+#define SCHEME_WAS_TYPED_ARGUMENT_MASK (SCHEME_MAX_LOCAL_TYPE_MASK << SCHEME_WAS_TYPED_ARGUMENT_SHIFT)
+#define SCHEME_WAS_TYPED_ARGUMENT(f) ((f & SCHEME_WAS_TYPED_ARGUMENT_MASK) >> SCHEME_WAS_TYPED_ARGUMENT_SHIFT)
+
 /* flags reported by scheme_resolve_info_flags */
 #define SCHEME_INFO_BOXED 0x1
-#define SCHEME_INFO_FLONUM_ARG 0x2
+#define SCHEME_INFO_TYPED_VAL_SHIFT 4
+#define SCHEME_INFO_TYPED_VAL_MASK (SCHEME_MAX_LOCAL_TYPE_MASK << SCHEME_INFO_TYPED_VAL_SHIFT)
 
 /* flags used with scheme_new_frame */
 #define SCHEME_TOPLEVEL_FRAME 1
@@ -2865,24 +2907,39 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
 int scheme_might_invoke_call_cc(Scheme_Object *value);
 int scheme_is_liftable(Scheme_Object *o, int bind_count, int fuel, int as_rator);
 int scheme_is_functional_primitive(Scheme_Object *rator, int num_args, int expected_vals);
+
+typedef struct {
+  int uses_super;
+  int field_count, init_field_count;
+  int normal_ops, indexed_ops, num_gets, num_sets;
+} Simple_Stuct_Type_Info;
+
 Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *app, int vals, int resolved, 
                                                  int check_auto, int *_auto_e_depth, 
-                                                 int *_field_count, int *_init_field_count, 
-                                                 int *_uses_super,
+                                                 Simple_Stuct_Type_Info *_stinfo,
                                                  Scheme_Hash_Table *top_level_consts, 
                                                  Scheme_Hash_Table *top_level_table,
                                                  Scheme_Object **runstack, int rs_delta,
                                                  Scheme_Object **symbols, Scheme_Hash_Table *symbol_table,
                                                  int fuel);
 
-Scheme_Object *scheme_make_struct_proc_shape(int k, int field_count, int init_field_count);
+intptr_t scheme_get_struct_proc_shape(int k, Simple_Stuct_Type_Info *sinfo);
+Scheme_Object *scheme_make_struct_proc_shape(intptr_t k);
 #define STRUCT_PROC_SHAPE_STRUCT  0
-#define STRUCT_PROC_SHAPE_PRED    1
-#define STRUCT_PROC_SHAPE_OTHER   2
-#define STRUCT_PROC_SHAPE_CONSTR  3
-#define STRUCT_PROC_SHAPE_MASK    0x7
-#define STRUCT_PROC_SHAPE_SHIFT   3
+#define STRUCT_PROC_SHAPE_CONSTR  1
+#define STRUCT_PROC_SHAPE_PRED    2
+#define STRUCT_PROC_SHAPE_GETTER  3
+#define STRUCT_PROC_SHAPE_SETTER  4
+#define STRUCT_PROC_SHAPE_OTHER   5
+#define STRUCT_PROC_SHAPE_MASK    0xF
+#define STRUCT_PROC_SHAPE_SHIFT   4
 #define SCHEME_PROC_SHAPE_MODE(obj) (((Scheme_Small_Object *)(obj))->u.int_val)
+
+Scheme_Object *scheme_get_or_check_procedure_shape(Scheme_Object *e, Scheme_Object *expected);
+int scheme_check_structure_shape(Scheme_Object *e, Scheme_Object *expected);
+int scheme_decode_struct_shape(Scheme_Object *shape, intptr_t *_v);
+int scheme_closure_preserves_marks(Scheme_Object *p);
+int scheme_native_closure_preserves_marks(Scheme_Object *p);
 
 int scheme_is_env_variable_boxed(Scheme_Comp_Env *env, int which);
 
@@ -3193,6 +3250,7 @@ typedef struct Module_Variable {
   Scheme_Object *modidx;
   Scheme_Object *sym;
   Scheme_Object *insp; /* for checking protected/unexported access */
+  Scheme_Object *shape; /* NULL or a symbol encoding "type" information */
   int pos, mod_phase;
 } Module_Variable;
 
@@ -3271,7 +3329,8 @@ int scheme_resolved_module_path_value_matches(Scheme_Object *rmp, Scheme_Object 
 
 Scheme_Object *scheme_hash_module_variable(Scheme_Env *env, Scheme_Object *modidx, 
 					   Scheme_Object *stxsym, Scheme_Object *insp,
-					   int pos, intptr_t mod_phase, int is_constant);
+					   int pos, intptr_t mod_phase, int is_constant,
+                                           Scheme_Object *shape);
 
 
 Scheme_Env *scheme_get_kernel_env();
@@ -3409,7 +3468,7 @@ Scheme_Object *scheme_get_stack_trace(Scheme_Object *mark_set);
 
 Scheme_Object *scheme_get_or_check_arity(Scheme_Object *p, intptr_t a);
 int scheme_native_arity_check(Scheme_Object *closure, int argc);
-Scheme_Object *scheme_get_native_arity(Scheme_Object *closure);
+Scheme_Object *scheme_get_native_arity(Scheme_Object *closure, int mode);
 
 struct Scheme_Logger {
   Scheme_Object so;

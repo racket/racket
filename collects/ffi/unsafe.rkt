@@ -1323,7 +1323,7 @@
 (provide define-cstruct)
 (define-syntax (define-cstruct stx)
   (define (make-syntax _TYPE-stx has-super? slot-names-stx slot-types-stx 
-                       alignment-stx property-stxes)
+                       alignment-stx property-stxes property-binding-stxes)
     (define name
       (cadr (regexp-match #rx"^_(.+)$" (symbol->string (syntax-e _TYPE-stx)))))
     (define slot-names (map (lambda (x) (symbol->string (syntax-e x)))
@@ -1349,6 +1349,9 @@
          [(slot-type ...)      slot-types-stx]
          [TYPE                 (id name)]
          [cpointer:TYPE        (id "cpointer:"name)]
+         [struct:cpointer:TYPE (if (null? property-stxes)
+                                   #'struct:cpointer:super
+                                   (id "struct:cpointer:"name))]
          [_TYPE                _TYPE-stx]
          [_TYPE-pointer        (id "_"name"-pointer")]
          [_TYPE-pointer/null   (id "_"name"-pointer/null")]
@@ -1359,9 +1362,7 @@
          [make-wrap-TYPE       (if (null? property-stxes)
                                    #'values
                                    (id "make-wrap-"name))]
-         [wrap-TYPE-type       (if (null? property-stxes)
-                                   #'values
-                                   (id "wrap-"name "-type"))]
+         [wrap-TYPE-type       (id "wrap-"name "-type")]
          [list->TYPE           (id "list->"name)]
          [list*->TYPE          (id "list*->"name)]
          [TYPE->list           (id name"->list")]
@@ -1377,26 +1378,50 @@
                      ;; the 1st-type might be a pointer to this type
                      (if (or (safe-id=? 1st-type #'_TYPE-pointer/null)
                              (safe-id=? 1st-type #'_TYPE-pointer))
-                       #'(values #f '() #f #f #f #f)
+                       #'(values #f '() #f #f #f #f #f values)
                        #`(cstruct-info #,1st-type
-                           (lambda () (values #f '() #f #f #f #f))))]
+                           (lambda () (values #f '() #f #f #f #f #f values))))]
                     [define-wrapper-struct (if (null? property-stxes)
                                                #'(begin)
                                                (with-syntax ([(prop ...) property-stxes])
-                                                 #'(define make-wrap-TYPE
+                                                 #'(define-values (make-wrap-TYPE struct:cpointer:TYPE)
                                                      (let ()
-                                                       (struct cpointer:TYPE (ptr)
-                                                         #:property prop:cpointer 0
-                                                         prop ...)
-                                                       cpointer:TYPE))))]
+                                                       (define-values (struct:cpointer:TYPE
+                                                                       cpointer:TYPE
+                                                                       ?
+                                                                       ref
+                                                                       set)
+                                                         (make-struct-type 'cpointer:TYPE
+                                                                           struct:cpointer:super
+                                                                           (if struct:cpointer:super
+                                                                               0
+                                                                               1)
+                                                                           0 #f
+                                                                           (append
+                                                                            (if struct:cpointer:super
+                                                                                null
+                                                                                (list
+                                                                                 (cons prop:cpointer 0)))
+                                                                            (list prop ...))
+                                                                           (current-inspector)
+                                                                           #f
+                                                                           (if struct:cpointer:super
+                                                                               null
+                                                                               '(0))))
+                                                       (values cpointer:TYPE struct:cpointer:TYPE)))))]
                     [define-wrap-type (if (null? property-stxes)
-                                        #'(begin)
-                                        #'(define (wrap-TYPE-type t)
-                                            (make-ctype t
-                                                        values
-                                                        (lambda (p)
-                                                          (and p
-                                                               (make-wrap-TYPE p))))))])
+                                          #'(define (wrap-TYPE-type t)
+                                              (super-wrap-type-type t))
+                                          #'(define (wrap-TYPE-type t)
+                                              (make-ctype t
+                                                          values
+                                                          (lambda (p)
+                                                            (and p
+                                                                 (make-wrap-TYPE p))))))]
+                    [(property-binding ...) property-binding-stxes]
+                    [(maybe-struct:TYPE ...) (if (null? property-stxes)
+                                                 null
+                                                 (list #'struct:cpointer:TYPE))])
         #'(begin
             (define-syntax TYPE
               (make-struct-info
@@ -1409,10 +1434,13 @@
                        #t))))
             (define-values (_TYPE _TYPE-pointer _TYPE-pointer/null TYPE? TYPE-tag
                                   make-TYPE TYPE-SLOT ... set-TYPE-SLOT! ...
-                                  list->TYPE list*->TYPE TYPE->list TYPE->list*)
+                                  list->TYPE list*->TYPE TYPE->list TYPE->list*
+                                  maybe-struct:TYPE ...)
               (let-values ([(super-pointer super-tags super-types super-offsets
-                                           super->list* list*->super)
-                            get-super-info])
+                                           super->list* list*->super
+                                           struct:cpointer:super super-wrap-type-type)
+                            get-super-info]
+                           property-binding ...)
                 (define-cpointer-type _TYPE super-pointer)
                 define-wrap-type
                 ;; these make it possible to use recursive pointer definitions
@@ -1481,10 +1509,10 @@
                       (for-each
                        (lambda (type ofs value)
                          (let-values
-                             ([(ptr tags types offsets T->list* list*->T)
+                             ([(ptr tags types offsets T->list* list*->T struct:T wrap)
                                (cstruct-info
                                 type
-                                (lambda () (values #f '() #f #f #f #f)))])
+                                (lambda () (values #f '() #f #f #f #f #f values)))])
                            (ptr-set! block type 'abs ofs
                                      (if list*->T (list*->T value) value))))
                        all-types all-offsets vals)
@@ -1502,18 +1530,20 @@
                   (map (lambda (type ofs)
                          (let-values
                              ([(v) (ptr-ref x type 'abs ofs)]
-                              [(ptr tags types offsets T->list* list*->T)
+                              [(ptr tags types offsets T->list* list*->T struct:T wrap)
                                (cstruct-info
                                 type
-                                (lambda () (values #f '() #f #f #f #f)))])
+                                (lambda () (values #f '() #f #f #f #f #f values)))])
                            (if T->list* (T->list* v) v)))
                        all-types all-offsets))
                 (cstruct-info
                  _TYPE* 'set!
-                 _TYPE all-tags all-types all-offsets TYPE->list* list*->TYPE)
+                 _TYPE all-tags all-types all-offsets TYPE->list* list*->TYPE
+                 struct:cpointer:TYPE wrap-TYPE-type)
                 (values _TYPE* _TYPE-pointer _TYPE-pointer/null TYPE? TYPE-tag
                         make-TYPE TYPE-SLOT ... set-TYPE-SLOT! ...
-                        list->TYPE list*->TYPE TYPE->list TYPE->list*)))))))
+                        list->TYPE list*->TYPE TYPE->list TYPE->list*
+                        maybe-struct:TYPE ...)))))))
   (define (err what . xs)
     (apply raise-syntax-error #f
            (if (list? what) (apply string-append what) what)
@@ -1524,19 +1554,26 @@
                    (syntax-case #'type ()
                      [(t s) (values #'t #'s)]
                      [_ (values #'type #f)])]
-                  [(alignment properties)
-                   (let loop ([more #'more] [alignment #f] [properties null])
+                  [(alignment properties property-bindings)
+                   (let loop ([more #'more] [alignment #f] [properties null] [property-bindings null])
                      (define (head) (syntax-case more () [(x . _) #'x]))
                      (syntax-case more ()
-                       [() (values alignment (reverse properties))]
+                       [() (values alignment (reverse properties) (reverse property-bindings))]
                        [(#:alignment) (err "missing expression for #:alignment" (head))]
                        [(#:alignment a . rest) 
                         (not alignment)
-                        (loop #'rest #'a properties)]
+                        (loop #'rest #'a properties property-bindings)]
                        [(#:property) (err "missing property expression for #:property" (head))]
                        [(#:property prop) (err "missing value expression for #:property" (head))]
                        [(#:property prop val . rest)
-                        (loop #'rest alignment (list* #'val #'prop (head) properties))]
+                        (let ()
+                          (define prop-id (car (generate-temporaries '(prop))))
+                          (define val-id (car (generate-temporaries '(prop-val))))
+                          (loop #'rest alignment 
+                                (list* #`(cons #,prop-id #,val-id) properties)
+                                (list* (list (list val-id) #'val) 
+                                       (list (list prop-id) #'(check-is-property prop))
+                                       property-bindings)))]
                        [(x . _) (err (if (keyword? (syntax-e #'x))
                                          "unknown keyword" "unexpected form")
                                      #'x)]
@@ -1554,9 +1591,10 @@
                       #`(#,(datum->syntax _TYPE 'super _TYPE) slot ...)
                       #`(#,_SUPER slot-type ...)
                       alignment
-                      properties)
+                      properties
+                      property-bindings)
          (make-syntax _TYPE #f #'(slot ...) #`(slot-type ...) 
-                      alignment properties)))]
+                      alignment properties property-bindings)))]
     ;; specific errors for bad slot specs, leave the rest for a generic error
     [(_ type (bad ...) . more)
      (err "bad slot specification, expecting [name ctype]"
@@ -1578,6 +1616,12 @@
                   (let ([v (ephemeron-value xs)])
                     (if v (apply values v) (msg/fail-thunk))))]
             [else (msg/fail-thunk)]))))
+
+;; another helper:
+(define (check-is-property p)
+  (unless (struct-type-property? p)
+    (raise-argument-error 'define-cstruct "struct-type-property?" p))
+  p)
 
 ;; ----------------------------------------------------------------------------
 ;;

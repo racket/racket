@@ -1,5 +1,9 @@
-#lang racket
-(require "match.rkt"
+#lang racket/base
+
+(require racket/list
+         racket/bool
+         racket/match
+         "match.rkt"
          "contract.rkt")
 
 (define (call-with-semaphore s thunk)

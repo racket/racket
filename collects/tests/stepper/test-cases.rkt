@@ -83,11 +83,11 @@
    :: {((lambda (x) x) 3)} -> {3})
 
 ;   (m:mz "((lambda (x) x) (begin (+ 3 4) (+ 4 5)))"
-;		      `((before-after ((begin (hilite (+ 3 4)) (+ 4 5)))
-;				      ((begin (hilite 7) (+ 4 5))))
-;			(before-after ((hilite (begin 7 (+ 4 5)))) ((hilite (+ 4 5))))
+;                     `((before-after ((begin (hilite (+ 3 4)) (+ 4 5)))
+;                                     ((begin (hilite 7) (+ 4 5))))
+;                       (before-after ((hilite (begin 7 (+ 4 5)))) ((hilite (+ 4 5))))
 ;                        (before-after ((hilite (+ 4 5))) ((hilite 9)))
-;			(finished-stepping)))
+;                       (finished-stepping)))
 
 (t 'curried m:mz
    ((lambda (a) (lambda (b) (+ a b))) 14)

@@ -35,6 +35,7 @@
 #ifdef CAN_INLINE_ALLOC
 THREAD_LOCAL_DECL(extern uintptr_t GC_gen0_alloc_page_ptr);
 intptr_t GC_initial_word(int sizeb);
+intptr_t GC_pair_initial_word(int sizeb);
 intptr_t GC_array_initial_word(int sizeb);
 intptr_t GC_compute_alloc_size(intptr_t sizeb);
 
@@ -99,16 +100,21 @@ static intptr_t read_first_word(void *sp)
   return foo;
 }
 
-static intptr_t initial_tag_word(Scheme_Type tag, int immut)
+static intptr_t initial_tag_word(Scheme_Type tag, int flags)
 {
-  GC_CAN_IGNORE Scheme_Small_Object sp;
-  memset(&sp, 0, sizeof(Scheme_Small_Object));
+  GC_CAN_IGNORE Scheme_Simple_Object sp;
+  memset(&sp, 0, sizeof(Scheme_Simple_Object));
   sp.iso.so.type = tag;
-  if (immut) SCHEME_SET_IMMUTABLE(&sp);
+  if (flags) {
+    if (tag == scheme_pair_type)
+      SCHEME_PAIR_FLAGS(&sp) |= flags;
+    else
+      SCHEME_SET_IMMUTABLE(&sp);
+  }
   return read_first_word((void *)&sp);
 }
 
-int scheme_inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int immut,
+int scheme_inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int flags,
 			int keep_r0_r1, int keep_fpr1, int inline_retry)
 /* Puts allocated result at JIT_V1; first word is GC tag.
    Uses JIT_R2 as temporary. The allocated memory is "dirty" (i.e., not 0ed).
@@ -153,19 +159,21 @@ int scheme_inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int immut
 
   /* GC header: */
   if (ty >= 0) {
-    a_word = GC_initial_word(amt);
-    jit_movi_l(JIT_R2, a_word);
-    jit_str_l(JIT_V1, JIT_R2);
+    if ((ty == scheme_pair_type)
+        || (ty == scheme_mutable_pair_type)
+        || (ty == scheme_raw_pair_type))
+      a_word = GC_pair_initial_word(amt);
+    else
+      a_word = GC_initial_word(amt);
+    jit_stir_l(JIT_V1, a_word);
     
     /* Scheme_Object header: */
-    a_word = initial_tag_word(ty, immut);
-    jit_movi_l(JIT_R2, a_word);
-    jit_stxi_l(sizeof(intptr_t), JIT_V1, JIT_R2);
+    a_word = initial_tag_word(ty, flags);
+    jit_stixi_l(sizeof(intptr_t), JIT_V1, a_word);
   } else {
     /* an array of pointers */
     a_word = GC_array_initial_word(amt);
-    jit_movi_l(JIT_R2, a_word);
-    jit_str_l(JIT_V1, JIT_R2);
+    jit_stir_l(JIT_V1, a_word);
   }
 
   CHECK_LIMIT();

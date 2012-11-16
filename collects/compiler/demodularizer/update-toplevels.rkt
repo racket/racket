@@ -1,5 +1,8 @@
-#lang racket
-(require compiler/zo-structs
+#lang racket/base
+
+(require racket/match
+         racket/contract
+         compiler/zo-structs
          "util.rkt")
 
 (define (update-toplevels toplevel-updater topsyntax-updater topsyntax-new-midpt)
@@ -34,8 +37,8 @@
          (map update clauses))
        (struct-copy case-lam cl
                     [clauses new-clauses])]
-      [(struct let-one (rhs body flonum? unused?))
-       (make-let-one (update rhs) (update body) flonum? unused?)] ; Q: is it okay to just pass in the old value for flonum?
+      [(struct let-one (rhs body type unused?))
+       (make-let-one (update rhs) (update body) type unused?)]
       [(and f (struct let-void (count boxes? body)))
        (struct-copy let-void f
                     [body (update body)])]
@@ -82,7 +85,7 @@
         (update args-expr))]
       [(and f (struct primval (id)))
        f]
-      [(and f (struct localref (unbox? pos clear? other-clears? flonum?)))
+      [(and f (struct localref (unbox? pos clear? other-clears? type)))
        f]
       [(and f (not (? form?)))
        f]

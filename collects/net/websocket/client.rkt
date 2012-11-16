@@ -1,5 +1,10 @@
-#lang racket
-(require net/url
+#lang racket/base
+
+(require racket/list
+         racket/port
+         racket/contract
+         racket/tcp
+         net/url
          web-server/http/response
          web-server/http/request
          web-server/http/request-structs
@@ -32,17 +37,16 @@
   (define the-path
     (if (empty? upath)
         "/"
-        (local 
-          [(define pre-path
-             (add-between 
-              (map (λ (pp)
-                     (define p (path/param-path pp))
-                     (case p
-                       [(up) ".."]
-                       [(same) "."]
-                       [else p]))
-                   upath)
-              "/"))]
+        (let ([pre-path
+               (add-between
+                (map (λ (pp)
+                       (define p (path/param-path pp))
+                       (case p
+                         [(up) ".."]
+                         [(same) "."]
+                         [else p]))
+                     upath)
+                "/")])
           (apply string-append
                  (if (url-path-absolute? url)
                      (list* "/"

@@ -116,6 +116,7 @@
 	     event-dispatch-handler
 	     eventspace?
 	     flush-display
+             get-current-mouse-state
 	     get-highlight-background-color
              get-highlight-text-color
 	     get-the-editor-data-class-list

@@ -136,6 +136,7 @@
   (time        time        0)
   (datetime    datetime    0)
   (varchar     varchar     0)
+  (string      character   0)
   (var-string  var-string  0)
   (tiny-blob   tinyblob    0)
   (medium-blob mediumblob  0)

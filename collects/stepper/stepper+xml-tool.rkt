@@ -1,6 +1,7 @@
-#lang racket
+#lang racket/base
 
-(require drracket/tool
+(require racket/unit
+         drracket/tool
          "stepper-tool.rkt"
          "xml-tool.rkt"
          "private/view-controller.rkt")

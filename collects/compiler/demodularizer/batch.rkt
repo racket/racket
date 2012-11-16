@@ -1,4 +1,5 @@
-#lang racket
+#lang racket/base
+
 #|
 Here's the idea:
 
@@ -40,6 +41,7 @@ Here's the idea:
 
 (require racket/pretty
          racket/system
+         racket/cmdline
          "mpi.rkt"
          "util.rkt"
          "nodep.rkt"

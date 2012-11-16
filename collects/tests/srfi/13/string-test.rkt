@@ -30,43 +30,43 @@
   (require rackunit)
   (require srfi/13/string
            srfi/14/char-set
-	   )
+           )
   (provide string-tests)
 
   (define-syntax-rule (expect a e) (check-equal? a e))
 
   (define string-tests
     (let ((abc null)
-	  (cba null)
-	  (test-string "This is a simple test string to generate a very simple char set!")
-	  )
-	    
+          (cba null)
+          (test-string "This is a simple test string to generate a very simple char set!")
+          )
+      
       (test-suite
        "String tests"
        (test-case "string? test 1"
-		       (check-true (string? test-string)))
+                  (check-true (string? test-string)))
 
        (test-case "string? test 2"
-		       (check-true (not (string? 'hello))))
-	     
+                  (check-true (not (string? 'hello))))
+       
        (test-case "string-null? test 1"
-		       (check-true (string-null? "")))
-	     
+                  (check-true (string-null? "")))
+       
        (test-case "string-null? test 2"
-		       (check-true (not (string-null? "not empty"))))
+                  (check-true (not (string-null? "not empty"))))
 
        (test-case "string-every test 1 (all #\a)"
-		       (check-true (string-every  #\a "aaaaaaaa")))
+                  (check-true (string-every  #\a "aaaaaaaa")))
 
        (test-case "string-every test 2 (charset a b c)"
-		       (check-true (string-every
-				     (char-set #\a #\b #\c)
-				     "baacaaaabbaa")))
+                  (check-true (string-every
+                               (char-set #\a #\b #\c)
+                               "baacaaaabbaa")))
 
        (test-case "string-every test 3 (pred vowel?)"
-		       (check-true (string-every vowel? "aeiou")))
+                  (check-true (string-every vowel? "aeiou")))
 
-	     
+       
        ;; string-every char/char-set/pred s [start end] -> value
        ;; string-any char/char-set/pred s [start end] -> value
 
@@ -95,7 +95,7 @@
            (expect (string-concatenate-reverse '() sample 0) "")
            (expect (string-concatenate-reverse '() sample (string-length sample))
                    sample)
-           (check-not-eq? sample		; the result must be a fresh string
+           (check-not-eq? sample                ; the result must be a fresh string
                           (string-concatenate-reverse '() sample (string-length sample)))
            (expect (string-concatenate-reverse (list sample) "" 0) sample)
            (check-not-eq? sample
@@ -112,7 +112,7 @@
          (let ((sample "0123456789+"))
            (expect (string-concatenate-reverse/shared '()) "")
            (expect (string-concatenate-reverse/shared (list sample)) sample)
-           (check-eq? sample			; Return the original string
+           (check-eq? sample                    ; Return the original string
                       (string-concatenate-reverse/shared (list sample)))
            (expect (string-concatenate-reverse/shared (list sample "")) sample)
            (expect (string-concatenate-reverse/shared (list "" sample)) sample)
@@ -280,7 +280,7 @@
   (define vowel?
     (lambda (v)
       (and (char? v)
-	   (or (char=? v #\a) (char=? v #\e) (char=? v #\i) (char=? v #\o) (char=? v #\u)))))
+           (or (char=? v #\a) (char=? v #\e) (char=? v #\i) (char=? v #\o) (char=? v #\u)))))
 
 
   ;; Build a string out of components

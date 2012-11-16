@@ -25,7 +25,19 @@ Many forms in the decompiled code, such as @racket[module],
  variables imported from other modules are prefixed with @litchar{_},
  which helps expose the difference between uses of local variables
  versus other variables. Variables imported from other modules,
- moreover, have a suffix that indicates the source module.
+ moreover, have a suffix starting with @litchar["@"] that indicates
+ the source module. Finally, imported variables with constantness
+ have a midfix: 
+ @litchar{:c} to indicate constant shape across all instantiations, 
+ @litchar{:f} to indicate a fixed value after initialization, 
+ @litchar{:p} to indicate a procedure,
+ @litchar{:P} to indicate a procedure that preserves continuation
+  marks on return, 
+ @litchar{:t} to indicate a structure type,
+ @litchar{:mk} to indicate a structure constructor,
+ @litchar{:?} to indicate a structure predicate,
+ @litchar{:ref} to indicate a structure accessor, or
+ @litchar{:set!} to indicate a structure mutator.
 
  Non-local variables are always accessed indirectly though an implicit
  @racketidfont{#%globals} or @racketidfont{#%modvars} variable that
@@ -98,18 +110,11 @@ Many forms in the decompiled code, such as @racket[module],
  @racketmodname[racket/flonum] and @racketmodname[racket/unsafe/ops]
  are always inlined, so @racketidfont{#%in} is not shown for them.}
 
-@item{Some applications of flonum operations from @racketmodname[racket/flonum] 
- and @racketmodname[racket/unsafe/ops] are annotated with
- @racketidfont{#%flonum}, indicating a place where the JIT compiler
- might avoid allocation for intermediate flonum results. A single
- @racketidfont{#%flonum} by itself is not useful, but a
- @racketidfont{#%flonum} operation that consumes a
- @racketidfont{#%flonum} or @racketidfont{#%from-flonum} argument
- indicates a potential performance improvement. A
- @racketidfont{#%from-flonum} wraps an identifier that is bound by
- @racket[let] with a @racketidfont{#%as-flonum} around its value,
- which indicates a local binding that can avoid boxing (when used as
- an argument to an operation that can work with unboxed values).}
+@item{Function arguments and local bindings that are known to have a
+ particular type have names that embed the known type. For example, an
+ argument might have a name that starts @racketidfont{argflonum} or a
+ local binding might have a name that starts @racketidfont{flonum} to
+ indicate a flonum value.}
 
 @item{A @racketidfont{#%decode-syntax} form corresponds to a syntax
  object.}

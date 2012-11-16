@@ -119,6 +119,21 @@
 (define-check (check-roundtrip c value)
   (check-roundtrip* c value check-equal?))
 
+;; FIXME: change to testing flag?
+(define (temp-table-ok?)
+  (ANYFLAGS 'postgresql 'mysql))
+
+(define (setup-temp-table c type)
+  (query-exec c (format "create temporary table testing_temp_table (v ~a)" type)))
+
+(define (check-roundtrip*/table c value check-equal?)
+  (query-exec c "delete from testing_temp_table")
+  (query-exec c (sql "insert into testing_temp_table (v) values ($1)") value)
+  (check-equal? (query-value c "select v from testing_temp_table") value))
+
+(define-check (check-roundtrip/table c value)
+  (check-roundtrip*/table c value check-equal?))
+
 (define (check-value/text* c val text check-val-equal? check-text-equal?)
   (cond [(ANYFLAGS 'postgresql)
          (let* ([tname (pg-type-name (current-type))]
@@ -147,7 +162,10 @@
     (when (string? len-fun)
       (check-equal? (query-value c (sql (format "select ~a($1)" len-fun)) str)
                     (string-length str)
-                    "check server-side length")))
+                    "check server-side length"))))
+
+(define-check (check-1char c str)
+  (check-varchar c str)
   (when (= (string-length str) 1)
     ;;  - if one char, check server-side char->int
     (let ([ci-fun (case dbsys
@@ -180,6 +198,9 @@
 (define-check (check-=any c elt lst in?)
   (check-equal? (query-value c (format "select ~a = any ($1)" elt) (list->pg-array lst))
                 in?))
+
+(define-check (check-trim-string=? a b)
+  (check-equal? (string-trim a) (string-trim b)))
 
 (define some-dates
   `((,(sql-date 1776 07 04) "1776-07-04")
@@ -228,6 +249,22 @@
     (,(sql-interval 0 0 -3 -4 -5 -6 0) "-3 days -04:05:06")
     (,(sql-interval -87 -1 0 0 0 0 0) "-87 years -1 mons")
     (,(sql-interval -1 -2 3 4 5 6 45000) "-1 years -2 mons +3 days 04:05:06.000045")))
+
+(define some-basic-strings
+  `("Az0"
+    "this is the time to remember"
+    "it's like that (and that's the way it is)"
+    ,(string #\\)
+    ,(string #\\ #\\)
+    ,(string #\')
+    ,(string #\\ #\')
+    "λ the ultimate"))
+(define some-intl-strings
+  `("αβψδεφγηιξκλμνοπρστθωςχυζ"
+    "अब्च्देघिज्क्ल्म्नोप्र्स्तुव्य्"
+    "شﻻؤيثبلاهتنمةىخحضقسفعرصءغئ"
+    "阿あでいおうわぁ"
+    "абцдефгхиклмнопљрстувњџзѕЋч"))
 
 (define test
   (test-suite "SQL types (roundtrip, etc)"
@@ -337,33 +374,21 @@
        (lambda (c)
          (unless (ANYFLAGS 'isora) ;; Oracle treats empty string as NULL (?!)
            (check-varchar c ""))
-         (check-varchar c "Az0")
-         (check-varchar c (string #\\))
-         (check-varchar c (string #\\ #\\))
-         (check-varchar c (string #\'))
-         (check-varchar c "this is the time to remember")
-         (check-varchar c "it's like that (and that's the way it is)")
-         (check-varchar c (string #\\))
-         (check-varchar c (string #\'))
-         (check-varchar c (string #\\ #\'))
-         (check-varchar c "λ the ultimate")
+         (for ([str some-basic-strings])
+           (check-varchar c str))
+         (for ([str some-intl-strings])
+           (check-varchar c str)
+           ;; and do the extra one-char checks:
+           (check-1char c (substring str 0 1)))
          (unless (ANYFLAGS 'isora 'isdb2)
            (check-varchar c (make-string 800 #\a)))
-         (let ([strs '("αβψδεφγηιξκλμνοπρστθωςχυζ"
-                       "अब्च्देघिज्क्ल्म्नोप्र्स्तुव्य्"
-                       "شﻻؤيثبلاهتنمةىخحضقسفعرصءغئ"
-                       "阿あでいおうわぁ"
-                       "абцдефгхиклмнопљрстувњџзѕЋч")])
-           (for ([s strs])
-             (check-varchar c s)
-             ;; and do the extra one-char checks:
-             (check-varchar c (string (string-ref s 0))))
-           (unless (ANYFLAGS 'isora 'isdb2) ;; too long
-             (check-varchar c (apply string-append strs))))
+         (unless (ANYFLAGS 'isora 'isdb2) ;; too long
+           (check-varchar c (apply string-append some-intl-strings)))
          ;; one-char checks
-         (check-varchar c (string #\λ))
-         (check-varchar c (make-string 1 #\u2200))
+         (check-1char c (string #\λ))
+         (check-1char c (make-string 1 #\u2200))
          (check-varchar c (make-string 20 #\u2200))
+         ;; check large strings
          (unless (ANYFLAGS 'isora 'isdb2) ;; too long (???)
            (check-varchar c (make-string 100 #\u2200)))
          ;; Following might not produce valid string (??)
@@ -373,6 +398,15 @@
                            (build-list 800
                                        (lambda (n)
                                          (integer->char (add1 n))))))))))
+
+    (type-test-case '(character)
+      (call-with-connection
+       (lambda (c)
+         (when (temp-table-ok?)
+           (setup-temp-table c "char(5)")
+           (check-roundtrip*/table c "" check-trim-string=?)
+           (check-roundtrip*/table c "abc" check-trim-string=?)
+           (check-roundtrip*/table c "abcde" check-trim-string=?)))))
 
     (type-test-case '(date)
       (call-with-connection

@@ -78,6 +78,7 @@ frame%
 gauge%
 get-choices-from-user
 get-color-from-user
+get-current-mouse-state
 get-default-shortcut-prefix
 get-directory
 get-display-count

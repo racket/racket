@@ -34,161 +34,158 @@
     (test-suite
      "and-let* tests"
      (test-case "empty body 1"
-		     ;; check-true, check-eqv?, etc.
-		     (check-eqv? (and-let* () ) #t))
+                ;; check-true, check-eqv?, etc.
+                (check-eqv? (and-let* () ) #t))
 
      (test-case "empty claws 1"
-		     (check-eqv? (and-let* () 1) 1))
+                (check-eqv? (and-let* () 1) 1))
 
      (test-case "empty claws 2"
-		     (check-eqv? (and-let* () 1 2) 2))
+                (check-eqv? (and-let* () 1 2) 2))
 
      (test-case "singleton claw 1"
-		     (check-eqv? (let ((x #f))
-				    (and-let* (x)))
-				  #f))
+                (check-eqv? (let ((x #f))
+                              (and-let* (x)))
+                            #f))
 
      (test-case "singleton claw 2"
-		     (check-eqv? (let ((x 1))
-				    (and-let* (x)))
-				  1))
+                (check-eqv? (let ((x 1))
+                              (and-let* (x)))
+                            1))
 
      (test-case "let-like assignment 1"
-		     (check-eqv? (and-let* ((x #f))) #f))
+                (check-eqv? (and-let* ((x #f))) #f))
 
      (test-case "let-like assignment 2"
-		     (check-eqv? (and-let* ((x 1))) 1))
+                (check-eqv? (and-let* ((x 1))) 1))
 
      ;;(test-case "gotta break 1"
-     ;; (check-true (and-let* (#f (x 1)))))
+     ;;           (check-true (and-let* (#f (x 1)))))
 
      (test-case "mixed claws 1"
-		     (check-eqv? (and-let* ((#f) (x 1))) #f))
+                (check-eqv? (and-let* ((#f) (x 1))) #f))
 
      ;; (test-case "gotta break 2"
-     ;; 		(check-true (and-let* (2 (x 1)))))
+     ;;            (check-true (and-let* (2 (x 1)))))
 
      (test-case "mixed claws 2"
-		     (check-eqv? (and-let* ((2) (x 1))) 1))
+                (check-eqv? (and-let* ((2) (x 1))) 1))
 
      (test-case "mixed claws 3"
-		     (check-eqv? (and-let* ((x 1) (2))) 2))
+                (check-eqv? (and-let* ((x 1) (2))) 2))
 
      (test-case "simple claw 1"
-		     (check-eqv?
-		      (let ((x #f))
-			(and-let* (x) x))
-		      #f))
+                (check-eqv?
+                 (let ((x #f))
+                   (and-let* (x) x))
+                 #f))
 
      (test-case "simple claw 2"
-		     (check-equal?
-		      (let ((x ""))
-			(and-let* (x) x))
-		      ""))
+                (check-equal?
+                 (let ((x ""))
+                   (and-let* (x) x))
+                 ""))
      
      (test-case "simple claw 3"
-		     (check-equal?
-		      (let ((x ""))
-			(and-let* (x)))
-		      ""))
+                (check-equal?
+                 (let ((x ""))
+                   (and-let* (x)))
+                 ""))
 
      (test-case "simple claw 4"
-		     (check-eqv?
-		      (let ((x 1))
-			(and-let* (x) (+ x 1)))
-		      2))
+                (check-eqv?
+                 (let ((x 1))
+                   (and-let* (x) (+ x 1)))
+                 2))
 
      (test-case "simple claw 5"
-		     (check-eqv?
-		      (let ((x #f))
-			(and-let* (x) (+ x 1)))
-		      #f))
+                (check-eqv?
+                 (let ((x #f))
+                   (and-let* (x) (+ x 1)))
+                 #f))
 
      (test-case "simple claw 6"
-		     (check-eqv?
-		      (let ((x 1))
-			(and-let* (((positive? x))) (+ x 1)))
-		      2))
+                (check-eqv?
+                 (let ((x 1))
+                   (and-let* (((positive? x))) (+ x 1)))
+                 2))
 
      (test-case "simple claw 7"
-		     (check-eqv?
-		      (let ((x 1))
-			(and-let* (((positive? x)))))
-		      #t))
+                (check-eqv?
+                 (let ((x 1))
+                   (and-let* (((positive? x)))))
+                 #t))
 
      (test-case "simple claw 8"
-		     (check-eqv?
-		      (let ((x 0))
-			(and-let* (((positive? x))) (+ x 1)))
-		      #f))
+                (check-eqv?
+                 (let ((x 0))
+                   (and-let* (((positive? x))) (+ x 1)))
+                 #f))
 
      (test-case "simple claw 9"
-		     (check-eqv?
-		      (let ((x 1))
-			(and-let* (((positive? x)) (x (+ x 1))) (+ x 1)))
-		      3))
+                (check-eqv?
+                 (let ((x 1))
+                   (and-let* (((positive? x)) (x (+ x 1))) (+ x 1)))
+                 3))
 
      ;; (test-case "gotta break 3"
-     ;; 		(check-true (and-let* (((positive? x)) (x (+ x 1)) (x (+ x 1))) (+ x 1))))
+     ;;            (check-true (and-let* (((positive? x)) (x (+ x 1)) (x (+ x 1))) (+ x 1))))
      
      (test-case "complex claw 1"
-		     (check-eqv?
-		      (let ((x 1))
-			(and-let* (x ((positive? x))) (+ x 1)))
-		      2))
+                (check-eqv?
+                 (let ((x 1))
+                   (and-let* (x ((positive? x))) (+ x 1)))
+                 2))
 
      (test-case "complex claw 2"
-		     (check-eqv?
-		      (let ((x 1))
-			(and-let* (((begin x)) ((positive? x))) (+ x 1)))
-		      2))
+                (check-eqv?
+                 (let ((x 1))
+                   (and-let* (((begin x)) ((positive? x))) (+ x 1)))
+                 2))
 
      (test-case "complex claw 3"
-		     (check-eqv?
-		      (let ((x 0))
-			(and-let* (x ((positive? x))) (+ x 1)))
-		      #f))
+                (check-eqv?
+                 (let ((x 0))
+                   (and-let* (x ((positive? x))) (+ x 1)))
+                 #f))
 
      (test-case "complex claw 4"
-		     (check-eqv?
-		      (let ((x #f))
-			(and-let* (x ((positive? x))) (+ x 1)))
-		      #f))
+                (check-eqv?
+                 (let ((x #f))
+                   (and-let* (x ((positive? x))) (+ x 1)))
+                 #f))
 
      (test-case "complex claw 5"
-		     (check-eqv?
-		      (let ((x #f))
-			(and-let* (((begin x)) ((positive? x))) (+ x 1)))
-		      #f))
+                (check-eqv?
+                 (let ((x #f))
+                   (and-let* (((begin x)) ((positive? x))) (+ x 1)))
+                 #f))
 
      (test-case "funky claw 1"
-		     (check-eqv?
-		      (let ((x 1))
-			(and-let* (x (y (- x 1)) ((positive? y))) (/ x y)))
-		      #f))
+                (check-eqv?
+                 (let ((x 1))
+                   (and-let* (x (y (- x 1)) ((positive? y))) (/ x y)))
+                 #f))
 
      (test-case "funky claw 2"
-		     (check-eqv?
-		      (let ((x 0))
-			(and-let* (x (y (- x 1)) ((positive? y))) (/ x y)))
-		      #f))
+                (check-eqv?
+                 (let ((x 0))
+                   (and-let* (x (y (- x 1)) ((positive? y))) (/ x y)))
+                 #f))
 
      (test-case "funky claw 3"
-		     (check-eqv?
-		      (let ((x #f))
-			(and-let* (x (y (- x 1)) ((positive? y))) (/ x y)))
-		      #f))
+                (check-eqv?
+                 (let ((x #f))
+                   (and-let* (x (y (- x 1)) ((positive? y))) (/ x y)))
+                 #f))
 
      (test-case "funky claw 4"
-		     (check-eqv?
-		      (let ((x 3))
-			(and-let* (x (y (- x 1)) ((positive? y))) (/ x y)))
-		      3/2))
+                (check-eqv?
+                 (let ((x 3))
+                   (and-let* (x (y (- x 1)) ((positive? y))) (/ x y)))
+                 3/2))
      ))
 
-  
   )
-    
-
 
 ;;; and-let-test.rkt ends here

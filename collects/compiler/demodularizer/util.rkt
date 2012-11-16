@@ -1,5 +1,7 @@
-#lang racket
-(require compiler/zo-parse)
+#lang racket/base
+
+(require racket/contract
+         compiler/zo-parse)
 
 (define (prefix-syntax-start pre)
   (length (prefix-toplevels pre)))

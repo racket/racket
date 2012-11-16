@@ -583,7 +583,7 @@ class c2 extends c1
   
 let o1 = new c1()
     o2 = new c2()
-in list(send o1 m1(),		% returns 1
+in list(send o1 m1(),           % returns 1
         send o1 m2(),           % returns 100
         send o1 m3(),           % returns 100
         send o2 m1(),           % returns 1 (from c1)

@@ -141,7 +141,7 @@
 
 (define (sort-benchmark sorter n)
   (let ((l (rgen n 1000000)))
-    (time (sorter l <))))
+    (time (length (sorter l <)))))
 
 (sort-benchmark sort1 1000000)
 

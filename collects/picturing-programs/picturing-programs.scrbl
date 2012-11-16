@@ -4,9 +4,9 @@
   (for-label racket
              picturing-programs/main
              ;picturing-programs/io-stuff
-	     ;picturing-programs/tiles
+             ;picturing-programs/tiles
              ;picturing-programs/dummy
-	     ; picturing-programs/map-image
+             ; picturing-programs/map-image
              2htdp/image
              teachpack/2htdp/universe
              (only-in lang/htdp-beginner check-expect)
@@ -93,12 +93,12 @@ model is exactly what should be displayed in the animation window:
          image?]{Chops off the specified number of pixels from the right side of the image.}
 
 @defproc[(flip-main [img image?])
- 	 image?]{Reflects an image across the line x=y, moving the pixel
+         image?]{Reflects an image across the line x=y, moving the pixel
 at coordinates (x,y) to (y,x).  The top-right corner becomes the
 bottom-left corner, and vice versa.  Width and height are swapped.}
 
 @defproc[(flip-other [img image?])
-	 image?]{Reflects an image by moving the pixel at coordinates
+         image?]{Reflects an image by moving the pixel at coordinates
 (x,y) to (h-y, w-x).  The top-left corner becomes the bottom-right
 corner, and vice versa.  Width and height are swapped.}
 
@@ -109,11 +109,11 @@ corner, and vice versa.  Width and height are swapped.}
          image?]{The same as @racket[flip-horizontal]; retained for compatibility.} 
 
 @defproc[(reflect-main-diag [img image?])
-	 image?]{The same as @racket[flip-main]; retained for
+         image?]{The same as @racket[flip-main]; retained for
 compatibility.}
 
 @defproc[(reflect-other-diag [img image?])
-	 image?]{The same as @racket[flip-other]; retained for
+         image?]{The same as @racket[flip-other]; retained for
 compatibility.}
 
 @section{Variables}
@@ -173,14 +173,14 @@ color struct, showing the red, green, blue, and alpha components.  If the name i
 recognized, returns @racket[false].}
 
 @defproc[(colorize [thing (or/c color? string? symbol? false/c)])
-	(or/c color? false/c)]{
+        (or/c color? false/c)]{
 Similar to @racket[name->color], but accepts colors and @racket[false] as
 well: colors produce themselves, while @racket[false] produces a transparent
 color.}
 
 @defproc[(color=? [c1 (or/c color? string? symbol? false/c)]
-		  [c2 (or/c color? string? symbol? false/c)])
-	 boolean?]{
+                  [c2 (or/c color? string? symbol? false/c)])
+         boolean?]{
 Compares two colors for equality.  As with @racket[colorize], treats
 @racket[false] as a transparent color (i.e. with an alpha-component of 0).
 All colors with alpha=0 are considered equal to one another, even if they have
@@ -241,12 +241,12 @@ For example, the above @racket[fuzz] example could also be written as
 }
 
 @defproc[(build4-image [width natural-number/c] [height natural-number/c]
-		       [red-function (-> natural-number/c natural-number/c natural-number/c)]
-		       [green-function (-> natural-number/c natural-number/c natural-number/c)]
-		       [blue-function (-> natural-number/c natural-number/c natural-number/c)]
-		       [alpha-function (-> natural-number/c natural-number/c
+                       [red-function (-> natural-number/c natural-number/c natural-number/c)]
+                       [green-function (-> natural-number/c natural-number/c natural-number/c)]
+                       [blue-function (-> natural-number/c natural-number/c natural-number/c)]
+                       [alpha-function (-> natural-number/c natural-number/c
 natural-number/c)])
-		image?]{
+                image?]{
 A version of @racket[build-image] for students who don't know about structs yet.
 Each of the four functions takes in the x and y coordinates of a pixel, and
 should return an integer from 0 through 255 to determine that color component.}
@@ -300,7 +300,7 @@ replacing the red component with a smooth color gradient increasing
 from left to right, but with the green and blue components unchanged.}
 
 @defproc*[([(map-image/extra [f (-> color? any/c color?)] [img image?] [extra any/c]) image?]
-	  [(map-image/extra [f (-> natural-number/c natural-number/c color? any/c color?)] [img image?] [extra any/c]) image?])]{
+          [(map-image/extra [f (-> natural-number/c natural-number/c color? any/c color?)] [img image?] [extra any/c]) image?])]{
 Passes the @racket[extra] argument in as an additional argument in each call
 to @racket[f].  This allows students who haven't learned closures yet to do pixel-by-pixel image
 manipulations inside a function depending on a parameter of that function.
@@ -309,13 +309,13 @@ For example,
 @codeblock|{
 ; clip-color : color number -> color
 (check-expect (clip-color (make-color 30 60 90) 100)
-	      (make-color 30 60 90))
+              (make-color 30 60 90))
 (check-expect (clip-color (make-color 30 60 90) 50)
-	      (make-color 30 50 50))
+              (make-color 30 50 50))
 (define (clip-color c limit)
     (make-color (min limit (color-red c))
-		(min limit (color-green c))
-		(min limit (color-blue c))))
+                (min limit (color-green c))
+                (min limit (color-blue c))))
 
 ; clip-picture-colors : number(limit) image -> image
 (define (clip-picture-colors limit pic)
@@ -443,7 +443,7 @@ enabling you to compute the average color, or a histogram of colors, etc.
 }
 
 @defproc*[([(fold-image/extra [f (-> color? any/c any/c any/c)] [init any/c] [img image?] [extra any/c]) any/c]
-	  [(fold-image/extra [f (-> natural-number/c natural-number/c color? any/c any/c any/c)] [init any/c] [img image?] [extra any/c]) any/c])]{
+          [(fold-image/extra [f (-> natural-number/c natural-number/c color? any/c any/c any/c)] [init any/c] [img image?] [extra any/c]) any/c])]{
 Like @racket[fold-image], but passes the @racket[extra] argument in as an additional argument in each call
 to @racket[f].  This allows students who haven't learned closures yet to call @racket[fold-image] on an
 operation that depends on a parameter to a containing function.

@@ -536,6 +536,15 @@ If a path is needed only on some platforms and not on others, use
 @racket[define-runtime-path-list] with an @racket[expr] that produces an
 empty list on platforms where the path is not needed.
 
+Beware that @racket[define-runtime-path] in a @tech{phase level} other
+than 0 does not cooperate properly with an executable creator. To work
+around that limitation, put @racket[define-runtime-path] in a separate
+module---perhaps a @tech{submodule} created by @racket[module]---then
+export the definition, and then the module containing the definition
+can be @racket[require]d into any phase level. Using
+@racket[define-runtime-path] in a @tech{phase level} other than 0
+logs a warning at expansion time.
+
 The enclosing path for a @racket[define-runtime-path] is determined as
 follows from the @racket[define-runtime-path] syntactic form:
 

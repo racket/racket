@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; provide a mechanism for defining the shape of big-bang and universe clauses 
@@ -6,7 +6,8 @@
 
 (provide define-keywords DEFAULT)
 
-(require (for-syntax syntax/parse))
+(require racket/class
+         (for-syntax racket/base syntax/parse))
 
 (define-syntax (DEFAULT stx)
   (raise-syntax-error 'DEFAULT "used out of context" stx))

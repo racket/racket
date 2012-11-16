@@ -93,7 +93,7 @@ enum {
   PAGE_ATOMIC   = 1,
   PAGE_ARRAY    = 2,
   PAGE_TARRAY   = 3,
-  PAGE_XTAGGED  = 4,
+  PAGE_PAIR     = 4,
   PAGE_BIG      = 5,
   /* the number of page types. */
   PAGE_TYPES    = 6,
@@ -128,7 +128,7 @@ static const char *type_name[PAGE_TYPES] = {
   "atomic", 
   "array",
   "tagged array", 
-  "xtagged",
+  "pair",
   "big" 
 };
 
@@ -276,8 +276,6 @@ MAYBE_UNUSED static void GCVERBOSEprintf(NewGC *gc, const char *fmt, ...) {
 /* the externals */
 void (*GC_out_of_memory)(void);
 void (*GC_report_out_of_memory)(void);
-void (*GC_mark_xtagged)(void *obj);
-void (*GC_fixup_xtagged)(void *obj);
 
 GC_collect_start_callback_Proc GC_set_collect_start_callback(GC_collect_start_callback_Proc func) {
   NewGC *gc = GC_get_GC();
@@ -352,6 +350,10 @@ inline static void check_used_against_max(NewGC *gc, size_t len)
 
   page_count = size_to_apage_count(len);
   gc->used_pages += page_count;
+
+#if MZ_GC_BACKTRACE
+  if (gc->dumping_avoid_collection) return;
+#endif
 
   if(gc->in_unsafe_allocation_mode) {
     if(gc->used_pages > gc->max_pages_in_heap)
@@ -632,8 +634,8 @@ static void dump_page_map(NewGC *gc, const char *when)
         case PAGE_TARRAY:
           kind = 'y';
           break;
-        case PAGE_XTAGGED:
-          kind = 'x';
+        case PAGE_PAIR:
+          kind = 'p';
           break;
         default:
           kind = '?';
@@ -1280,12 +1282,29 @@ inline static uintptr_t allocate_slowpath(NewGC *gc, size_t allocate_size, uintp
   return newptr;
 }
 
+static void check_allocation_time_invariants()
+{
+#if 0
+  Scheme_Thread *p = scheme_current_thread;
+  if (p) {
+    if (p->values_buffer) { 
+      memset(p->values_buffer, 0, sizeof(Scheme_Object*) * p->values_buffer_size);
+    }
+    if (p->tail_buffer && (p->tail_buffer != p->runstack_tmp_keep)) {
+      memset(p->tail_buffer, 0, sizeof(Scheme_Object*) * p->tail_buffer_size);
+    }
+  }
+#endif
+}
+
 inline static void *allocate(const size_t request_size, const int type)
 {
   size_t allocate_size;
   uintptr_t newptr;
 
   if(request_size == 0) return (void *) zero_sized;
+
+  check_allocation_time_invariants();
 
   allocate_size = COMPUTE_ALLOC_SIZE_FOR_OBJECT_SIZE(request_size);
   if(allocate_size > MAX_OBJECT_SIZE)  return allocate_big(request_size, type);
@@ -1338,6 +1357,8 @@ inline static void *fast_malloc_one_small_tagged(size_t request_size, int dirty)
   uintptr_t newptr;
   const size_t allocate_size = COMPUTE_ALLOC_SIZE_FOR_OBJECT_SIZE(request_size);
 
+  check_allocation_time_invariants();
+
   newptr = GC_gen0_alloc_page_ptr + allocate_size;
 
   if(OVERFLOWS_GEN0(newptr)) {
@@ -1371,13 +1392,15 @@ void *GC_malloc_pair(void *car, void *cdr)
   void *pair;
   const size_t allocate_size = PAIR_SIZE_IN_BYTES;
 
+  check_allocation_time_invariants();
+
   newptr = GC_gen0_alloc_page_ptr + allocate_size;
 
   if(OVERFLOWS_GEN0(newptr)) {
     NewGC *gc = GC_get_GC();
     gc->park[0] = car;
     gc->park[1] = cdr;
-    pair = GC_malloc_one_tagged(sizeof(Scheme_Simple_Object));
+    pair = allocate(sizeof(Scheme_Simple_Object), PAGE_PAIR);
     car = gc->park[0];
     cdr = gc->park[1];
     gc->park[0] = NULL;
@@ -1393,7 +1416,7 @@ void *GC_malloc_pair(void *car, void *cdr)
 
     memset(info, 0, sizeof(objhead)); /* init objhead */
 
-    /* info->type = type; */ /* We know that the type field is already 0 */
+    info->type = PAGE_PAIR;
     info->size = BYTES_MULTIPLE_OF_WORD_TO_WORDS(allocate_size); /* ALIGN_BYTES_SIZE bumbed us up to the next word boundary */
 
     pair = OBJHEAD_TO_OBJPTR(info);
@@ -1405,7 +1428,7 @@ void *GC_malloc_pair(void *car, void *cdr)
   {
     Scheme_Simple_Object *obj = (Scheme_Simple_Object *) pair;
     obj->iso.so.type = scheme_pair_type;
-    obj->iso.so.keyex = 0; /* init first word of SchemeObject to 0 */
+    obj->iso.so.keyex = 0; /* init first word of Scheme_Object to 0 */
     obj->u.pair_val.car = car;
     obj->u.pair_val.cdr = cdr;
   }
@@ -1416,7 +1439,6 @@ void *GC_malloc_pair(void *car, void *cdr)
 /* the allocation mechanism we present to the outside world */
 void *GC_malloc(size_t s)                         { return allocate(s, PAGE_ARRAY); }
 void *GC_malloc_one_tagged(size_t s)              { return allocate(s, PAGE_TAGGED); }
-void *GC_malloc_one_xtagged(size_t s)             { return allocate(s, PAGE_XTAGGED); }
 void *GC_malloc_array_tagged(size_t s)            { return allocate(s, PAGE_TARRAY); }
 void *GC_malloc_atomic(size_t s)                  { return allocate(s, PAGE_ATOMIC); }
 void *GC_malloc_atomic_uncollectable(size_t s)    { return ofm_malloc_zero(s); }
@@ -1432,7 +1454,7 @@ intptr_t GC_compute_alloc_size(intptr_t sizeb)
   return COMPUTE_ALLOC_SIZE_FOR_OBJECT_SIZE(sizeb);
 }
 
-intptr_t GC_initial_word(int request_size)
+static intptr_t initial_word(int request_size, int type)
 {
   intptr_t w = 0;
   objhead info;
@@ -1440,6 +1462,7 @@ intptr_t GC_initial_word(int request_size)
   const size_t allocate_size = COMPUTE_ALLOC_SIZE_FOR_OBJECT_SIZE(request_size);
 
   memset(&info, 0, sizeof(objhead));
+  info.type = type;
 
   info.size = BYTES_MULTIPLE_OF_WORD_TO_WORDS(allocate_size); /* ALIGN_BYTES_SIZE bumped us up to the next word boundary */
   memcpy(&w, &info, sizeof(objhead));
@@ -1447,21 +1470,19 @@ intptr_t GC_initial_word(int request_size)
   return w;
 }
 
+intptr_t GC_initial_word(int request_size)
+{
+  return initial_word(request_size, PAGE_TAGGED);
+}
+
+intptr_t GC_pair_initial_word(int request_size)
+{
+  return initial_word(request_size, PAGE_PAIR);
+}
+
 intptr_t GC_array_initial_word(int request_size)
 {
-  intptr_t w = 0;
-  objhead info;
-
-  const size_t allocate_size = COMPUTE_ALLOC_SIZE_FOR_OBJECT_SIZE(request_size);
-
-  memset(&info, 0, sizeof(objhead));
-  info.type = PAGE_ARRAY;
-  
-  info.size = BYTES_MULTIPLE_OF_WORD_TO_WORDS(allocate_size); /* ALIGN_BYTES_SIZE bumped us up to the next word boundary */
-
-  memcpy(&w, &info, sizeof(objhead));
-
-  return w;
+  return initial_word(request_size, PAGE_ARRAY);
 }
 
 intptr_t GC_alloc_alignment()
@@ -1943,13 +1964,14 @@ static void copy_backtrace_source(mpage *to_page, void *to_ptr,
   to_page->backtrace[to_delta+1] = from_page->backtrace[from_delta+1];
 }
 
-static void *get_backtrace(mpage *page, void *ptr)
+static void *get_backtrace(mpage *page, void *ptr, int *kind)
 /* ptr is after objhead */
 {
   uintptr_t delta;
 
   if (!page->backtrace) {
     /* This shouldn't happen, but fail more gracefully if it does. */
+    *kind = -1;
     return NULL;
   }
 
@@ -1961,6 +1983,8 @@ static void *get_backtrace(mpage *page, void *ptr)
   }
 
   delta = PPTR(ptr) - PPTR(page->addr);
+  *kind = ((intptr_t *)page->backtrace)[delta];
+
   return page->backtrace[delta - 1];
 }
 
@@ -3277,8 +3301,13 @@ static inline void propagate_marks_worker(NewGC *gc, Mark2_Proc *mark_table, voi
         }
         break;
       }
-    case PAGE_XTAGGED: 
-      GC_mark_xtagged(start); break;
+    case PAGE_PAIR: 
+      {
+        Scheme_Object *p = (Scheme_Object *)start;
+        GC_mark2(SCHEME_CAR(p), gc);
+        GC_mark2(SCHEME_CDR(p), gc);
+      }
+      break;
   }
 }
 
@@ -3400,23 +3429,39 @@ static void *trace_pointer_start(mpage *page, void *p) {
 # define TRACE_PAGE_ARRAY PAGE_ARRAY
 # define TRACE_PAGE_TAGGED_ARRAY PAGE_TARRAY
 # define TRACE_PAGE_ATOMIC PAGE_ATOMIC
-# define TRACE_PAGE_XTAGGED PAGE_XTAGGED
+# define TRACE_PAGE_PAIR PAGE_PAIR
 # define TRACE_PAGE_MALLOCFREE PAGE_TYPES
 # define TRACE_PAGE_BAD PAGE_TYPES
 # define trace_page_is_big(page) (page)->size_class
 # define trace_backpointer get_backtrace
+const char *trace_source_kind(int kind)
+{
+  switch (kind) {
+  case PAGE_TAGGED: return "_TAGGED";
+  case PAGE_ATOMIC: return "_ATOMIC";
+  case PAGE_ARRAY: return "_ARRAY";
+  case PAGE_TARRAY: return "_TARRAY";
+  case PAGE_PAIR: return "_PAIR";
+  case PAGE_BIG: return "_BIG";
+  case BT_STACK: return "STACK";
+  case BT_ROOT: return "ROOT";
+  case BT_FINALIZER: return "FINALIZER";
+  case BT_WEAKLINK: return "WEAK-LINK";
+  case BT_IMMOBILE: return "IMMOBILE";
+  default: return "???";
+  }
+}
 # include "backtrace.c"
 #else
 # define reset_object_traces() /* */
 # define register_traced_object(p) /* */
-# define print_traced_objects(x, y, q, z) /* */
+# define print_traced_objects(x, q, z) /* */
 #endif
 
 #define MAX_DUMP_TAG 256
 
 void GC_dump_with_traces(int flags,
                          GC_get_type_name_proc get_type_name,
-                         GC_get_xtagged_name_proc get_xtagged_name,
                          GC_for_each_found_proc for_each_found,
                          short min_trace_for_tag, short max_trace_for_tag,
                          GC_print_tagged_value_proc print_tagged_value,
@@ -3437,30 +3482,32 @@ void GC_dump_with_traces(int flags,
   for (i = 0; i < MAX_DUMP_TAG; i++) {
     counts[i] = sizes[i] = 0;
   }
-  for (page = gc->gen1_pages[PAGE_TAGGED]; page; page = page->next) {
-    void **start = PAGE_START_VSS(page);
-    void **end = PAGE_END_VSS(page);
+  for (i = 0; i < 2; i++) {
+    for (page = gc->gen1_pages[!i ? PAGE_TAGGED : PAGE_PAIR]; page; page = page->next) {
+      void **start = PAGE_START_VSS(page);
+      void **end = PAGE_END_VSS(page);
 
-    while(start < end) {
-      objhead *info = (objhead *)start;
-      if(!info->dead) {
-        void *obj_start = OBJHEAD_TO_OBJPTR(start);
-        unsigned short tag = *(unsigned short *)obj_start;
-        ASSERT_TAG(tag);
-        if (tag < MAX_DUMP_TAG) {
-          counts[tag]++;
-          sizes[tag] += info->size;
+      while(start < end) {
+        objhead *info = (objhead *)start;
+        if(!info->dead) {
+          void *obj_start = OBJHEAD_TO_OBJPTR(start);
+          unsigned short tag = *(unsigned short *)obj_start;
+          ASSERT_TAG(tag);
+          if (tag < MAX_DUMP_TAG) {
+            counts[tag]++;
+            sizes[tag] += info->size;
+          }
+          if ((tag == scheme_proc_struct_type) || (tag == scheme_structure_type)) {
+            if (for_each_struct) for_each_struct(obj_start);
+          }
+          if ((tag >= min_trace_for_tag) && (tag <= max_trace_for_tag)) {
+            register_traced_object(obj_start);
+            if (for_each_found)
+              for_each_found(obj_start);
+          }
         }
-        if ((tag == scheme_proc_struct_type) || (tag == scheme_structure_type)) {
-          if (for_each_struct) for_each_struct(obj_start);
-        }
-        if ((tag >= min_trace_for_tag) && (tag <= max_trace_for_tag)) {
-          register_traced_object(obj_start);
-          if (for_each_found)
-            for_each_found(obj_start);
-        }
+        start += info->size;
       }
-      start += info->size;
     }
   }
   for (page = gc->gen1_pages[PAGE_BIG]; page; page = page->next) {
@@ -3586,7 +3633,7 @@ void GC_dump_with_traces(int flags,
   GCWARN((GCOUTF,"# of immobile boxes: %i\n", num_immobiles));
 
   if (flags & GC_DUMP_SHOW_TRACE) {
-    print_traced_objects(path_length_limit, get_type_name, get_xtagged_name, print_tagged_value);
+    print_traced_objects(path_length_limit, get_type_name, print_tagged_value);
   }
 
   if (for_each_found)
@@ -3595,7 +3642,7 @@ void GC_dump_with_traces(int flags,
 
 void GC_dump(void)
 {
-  GC_dump_with_traces(0, NULL, NULL, NULL, 0, -1, NULL, 0, NULL);
+  GC_dump_with_traces(0, NULL, NULL, 0, -1, NULL, 0, NULL);
 }
 
 #ifdef MZ_GC_BACKTRACE
@@ -3611,7 +3658,8 @@ int GC_is_tagged(void *p)
     page = pagemap_find_page(MASTERGC->page_maps, p);
   }
 #endif
-  return page && (page->page_type == PAGE_TAGGED);
+  return page && ((page->page_type == PAGE_TAGGED)
+                  || (page->page_type == PAGE_PAIR));
 }
 
 int GC_is_tagged_start(void *p)
@@ -3974,8 +4022,12 @@ static void repair_heap(NewGC *gc)
           case PAGE_ARRAY: 
             while(start < end) gcFIXUP2(*(start++), gc); 
             break;
-          case PAGE_XTAGGED: 
-            GC_fixup_xtagged(start); 
+          case PAGE_PAIR: 
+            {
+              Scheme_Object *p = (Scheme_Object *)start;
+              gcFIXUP2(SCHEME_CAR(p), gc);
+              gcFIXUP2(SCHEME_CDR(p), gc);
+            }
             break;
           case PAGE_TARRAY: {
             unsigned short tag = *(unsigned short *)start;
@@ -4074,11 +4126,13 @@ static void repair_heap(NewGC *gc)
                 }
               }
               break;
-            case PAGE_XTAGGED:
+            case PAGE_PAIR:
               while(start < end) {
                 objhead *info = (objhead *)start;
                 if(info->mark) {
-                  GC_fixup_xtagged(OBJHEAD_TO_OBJPTR(start));
+                  Scheme_Object *p = (Scheme_Object *)OBJHEAD_TO_OBJPTR(start);
+                  gcFIXUP2(SCHEME_CAR(p), gc);
+                  gcFIXUP2(SCHEME_CDR(p), gc);
                   info->mark = 0;
                 } else {
                   info->dead = 1;
@@ -4086,8 +4140,9 @@ static void repair_heap(NewGC *gc)
                   killing_debug(gc, page, info);
 #endif
                 }
-                start += info->size;
+                start += PAIR_SIZE_IN_BYTES >> LOG_WORD_SIZE;
               }
+              break;
           }
         }
       } else GCDEBUG((DEBUGOUTF,"Not Cleaning page %p\n", page));
@@ -4562,9 +4617,12 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master, Log
 
   TIME_STEP("finalized2");
 
-  if(gc->gc_full)
-  if (premaster_or_place_gc(gc) || switching_master)
-    do_heap_compact(gc);
+#if MZ_GC_BACKTRACE
+  if (0) 
+#endif
+    if(gc->gc_full)
+      if (premaster_or_place_gc(gc) || switching_master)
+        do_heap_compact(gc);
   TIME_STEP("compacted");
 
   /* do some cleanup structures that either change state based on the
@@ -4759,13 +4817,13 @@ intptr_t GC_propagate_hierarchy_memory_use()
 #if MZ_GC_BACKTRACE
 
 static GC_get_type_name_proc stack_get_type_name;
-static GC_get_xtagged_name_proc stack_get_xtagged_name;
 static GC_print_tagged_value_proc stack_print_tagged_value;
 
 static void dump_stack_pos(void *a) 
 {
+  int kind = 0;
   GCPRINT(GCOUTF, " @%p: ", a);
-  print_out_pointer("", *(void **)a, stack_get_type_name, stack_get_xtagged_name, stack_print_tagged_value);
+  print_out_pointer("", *(void **)a, stack_get_type_name, stack_print_tagged_value, &kind);
 }
 
 # define GC_X_variable_stack GC_do_dump_variable_stack
@@ -4781,11 +4839,9 @@ void GC_dump_variable_stack(void **var_stack,
     void *limit,
     void *stack_mem,
     GC_get_type_name_proc get_type_name,
-    GC_get_xtagged_name_proc get_xtagged_name,
     GC_print_tagged_value_proc print_tagged_value)
 {
   stack_get_type_name = get_type_name;
-  stack_get_xtagged_name = get_xtagged_name;
   stack_print_tagged_value = print_tagged_value;
   GC_do_dump_variable_stack(var_stack, delta, limit, stack_mem, GC_get_GC());
 }

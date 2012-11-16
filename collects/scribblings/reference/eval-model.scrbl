@@ -683,13 +683,14 @@ the marks associated with the relevant frames are also captured.
 A @deftech{continuation barrier} is another kind of continuation frame
 that prohibits certain replacements of the current continuation with
 another. Specifically, a continuation can be replaced by another only
-when the replacement does not introduce any continuation barriers (but
-it may remove them). A continuation barrier thus prevents ``downward
-jumps'' into a continuation that is protected by a barrier. Certain operations
-install barriers automatically; in particular, when an exception
-handler is called, a continuation barrier prohibits the continuation
-of the handler from capturing the continuation past the exception
-point.
+when the replacement does not introduce any continuation barriers. It
+may remove continuation barriers only through jumps to continuations
+that are a tail of the current continuation.  A continuation barrier
+thus prevents ``downward jumps'' into a continuation that is protected
+by a barrier. Certain operations install barriers automatically; in
+particular, when an exception handler is called, a continuation
+barrier prohibits the continuation of the handler from capturing the
+continuation past the exception point.
 
 A @deftech{escape continuation} is essentially a derived concept. It
 combines a prompt for escape purposes with a continuation for

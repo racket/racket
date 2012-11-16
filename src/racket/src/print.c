@@ -510,8 +510,7 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
       || SCHEME_MUTABLE_PAIRP(obj)
       || (pp->print_box && SCHEME_CHAPERONE_BOXP(obj))
       || SCHEME_CHAPERONE_VECTORP(obj)
-      || ((SAME_TYPE(t, scheme_structure_type)
-	   || SAME_TYPE(t, scheme_proc_struct_type))
+      || (SCHEME_CHAPERONE_STRUCTP(obj)
           && ((pp->print_struct 
 	       && PRINTABLE_STRUCT(obj, pp))
 	      || scheme_is_writable_struct(obj)))
@@ -566,8 +565,7 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
       if ((for_write < 3) && res)
 	return res;
     }
-  } else if (SAME_TYPE(t, scheme_structure_type)
-	     || SAME_TYPE(t, scheme_proc_struct_type)) {
+  } else if (SCHEME_CHAPERONE_STRUCTP(obj)) {
     if (scheme_is_writable_struct(obj)) {
       if (pp->print_unreadable) {
         res = check_cycles(writable_struct_subs(obj, for_write, pp), for_write, ht, pp);
@@ -589,7 +587,12 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
         res = 0;
     } else {
       /* got here => printable */
-      int i = SCHEME_STRUCT_NUM_SLOTS(obj);
+      int i;
+
+      if (SCHEME_CHAPERONEP(obj))
+        i = SCHEME_STRUCT_NUM_SLOTS(SCHEME_CHAPERONE_VAL(obj));
+      else
+        i = SCHEME_STRUCT_NUM_SLOTS(obj);
 
       if ((for_write >= 3) && !SCHEME_PREFABP(obj))
         res = 0x1;
@@ -597,7 +600,11 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
         res = 0;
       while (i--) {
 	if (scheme_inspector_sees_part(obj, pp->inspector, i)) {
-	  res2 = check_cycles(((Scheme_Structure *)obj)->slots[i], for_write, ht, pp);
+          if (SCHEME_CHAPERONEP(obj))
+            val = scheme_struct_ref(obj, i);
+          else
+            val = ((Scheme_Structure *)obj)->slots[i];
+	  res2 = check_cycles(val, for_write, ht, pp);
           res |= res2;
           if ((for_write < 3) && res)
             return res;
@@ -867,7 +874,12 @@ static void setup_graph_table(Scheme_Object *obj, int for_write, Scheme_Hash_Tab
 	setup_graph_table(obj, for_write, ht, counter, pp);
       }
     } else {
-      int i = SCHEME_STRUCT_NUM_SLOTS(obj);
+      int i;
+
+      if (SCHEME_CHAPERONEP(obj))
+        i = SCHEME_STRUCT_NUM_SLOTS(SCHEME_CHAPERONE_VAL(obj));
+      else
+        i = SCHEME_STRUCT_NUM_SLOTS(obj);
 
       while (i--) {
 	if (scheme_inspector_sees_part(obj, pp->inspector, i))
@@ -2163,7 +2175,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	  print_this_string(pp, (char *)s, 0, 1);
 	} else {
           /* Make sure it's a fixnum on all platforms... */
-          if ((v >= -1073741824) && (v <= 1073741823)) {
+          if (IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(v)) {
             print_compact(pp, CPT_INT);
             print_compact_number(pp, v);
           } else {
@@ -2909,10 +2921,11 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
           print(mv->modidx, notdisplay, 1, ht, mt, pp);
         }
 	print(mv->sym, notdisplay, 1, ht, mt, pp);
+        print(mv->shape ? mv->shape : scheme_false, notdisplay, 1, ht, mt, pp);
         if (flags & 0x3) {
           print_compact_number(pp, -3-(flags&0x3));
         }
-        if (((Module_Variable *)obj)->mod_phase) {
+        if (mv->mod_phase) {
           print_compact_number(pp, -2);
           print_compact_number(pp, mv->mod_phase);
         }
@@ -3008,12 +3021,14 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 
       if (SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_UNUSED)
         print_compact(pp, CPT_LET_ONE_UNUSED);
-      else if (SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_FLONUM)
-        print_compact(pp, CPT_LET_ONE_FLONUM);
+      else if (SCHEME_LET_ONE_TYPE(lo))
+        print_compact(pp, CPT_LET_ONE_TYPED);
       else
         print_compact(pp, CPT_LET_ONE);
       print(scheme_protect_quote(lo->value), notdisplay, 1, NULL, mt, pp);
       closed = print(scheme_protect_quote(lo->body), notdisplay, 1, NULL, mt, pp);
+      if (SCHEME_LET_ONE_TYPE(lo))
+        print_compact_number(pp, SCHEME_LET_ONE_TYPE(lo));
     }
   else if (compact && SAME_TYPE(SCHEME_TYPE(obj), scheme_branch_type))
     {

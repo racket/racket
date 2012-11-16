@@ -41,6 +41,7 @@
 
 (define-generics (-stream gen:stream prop:stream stream?
                           #:defined-table defined-table
+                          #:defaults ()
                           #:prop-defined-already? stream-get-generics
                           #:define-contract #f)
   ;; These three are never used for the reasons explained above.

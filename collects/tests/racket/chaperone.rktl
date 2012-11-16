@@ -1300,5 +1300,20 @@
    (test #f values remove-proc)))
 
 ;; ----------------------------------------
+;; Check interaciton of chaperones and cycle checks
+
+(let ()
+  (struct a ([x #:mutable]) #:transparent)
+
+  (define an-a (a #f))
+  (set-a-x! an-a an-a)
+  (let ([o (open-output-bytes)])
+    (print
+     (chaperone-struct an-a
+                       a-x (lambda (s v) v))
+     o)
+    (test #"(a #0=(a #0#))" get-output-bytes o)))
+
+;; ----------------------------------------
 
 (report-errs)

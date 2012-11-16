@@ -1,3 +1,3 @@
-#cs(module master mzscheme
-  (require htdp/master)
-  (provide (all-from htdp/master)))
+#lang racket/base
+(require htdp/master)
+(provide (all-from-out htdp/master))

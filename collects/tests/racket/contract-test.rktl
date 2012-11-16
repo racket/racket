@@ -4218,6 +4218,15 @@
                        pt)])
       (do-test)))
 
+  (test/spec-passed/result
+   'prompt-tag/c-has-contract
+   '(let ([pt (contract (prompt-tag/c string? number?)
+                        (make-continuation-prompt-tag)
+                        'pos
+                        'neg)])
+      (has-contract? pt))
+   #t)
+
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
   ;;  continuation-mark-key/c
@@ -4349,6 +4358,35 @@
                               'neg)])
       (with-continuation-mark mark (lambda (x) (+ x 1))
         (do-mark mark))))
+
+  (test/pos-blame
+   'continuation-mark-key/c-ho-10
+   '(let* ([mark (make-continuation-mark-key)]
+           [ctc-mark (contract (continuation-mark-key/c number?)
+                               mark
+                               'pos
+                               'neg)])
+      (with-continuation-mark mark "not a number"
+        (+ 1 (continuation-mark-set-first #f ctc-mark)))))
+
+  (test/spec-passed
+   'continuation-mark-key/c-ho-11
+   '(let* ([mark (make-continuation-mark-key)]
+           [ctc-mark (contract (continuation-mark-key/c number?)
+                               mark
+                               'pos
+                               'neg)])
+      (continuation-mark-set-first #f ctc-mark)))
+
+  (test/spec-passed/result
+   'continuation-mark-key/c-has-contract
+   '(let* ([mark (make-continuation-mark-key)]
+           [ctc-mark (contract (continuation-mark-key/c number?)
+                               mark
+                               'pos
+                               'neg)])
+      (has-contract? ctc-mark))
+   #t)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
@@ -8975,6 +9013,19 @@
       (with-contract region
         #:result integer?
         (send (new c2%) m 3))))
+  
+  (contract-error-test
+   'interface-method-name-1
+   #'(begin
+       (eval '(module imn-bug scheme/base
+                (require scheme/class)
+                (define i<%> (interface () [m (->m integer? integer?)]))
+                (define c% (class* object% (i<%>) (super-new) (define/public (m x) x)))
+                (send (new c%) m "foo")))
+       (eval '(require 'imn-bug)))
+   (λ (x)
+     (and (exn:fail:contract:blame? x)
+          (regexp-match #rx"m: contract violation" (exn-message x)))))
 
 ;
 ;
@@ -11926,6 +11977,13 @@ so that propagation occurs.
   (test-name 'char? (flat-contract char?))
   (test-name 'any/c any/c)
 
+  (test-name 'mumble (let ([frotz/c integer?]
+                           [bazzle/c boolean?])
+                       (flat-named-contract 'mumble
+                                            (and/c frotz/c
+                                                   (not/c bazzle/c)))))
+
+  
   (test-name '(-> integer? integer?) (-> integer? integer?))
   (test-name '(-> integer? any) (-> integer? any))
   (test-name '(-> integer? (values boolean? char?)) (-> integer? (values boolean? char?)))
@@ -11948,7 +12006,7 @@ so that propagation occurs.
   (test-name '(->* (integer?) #:pre ... integer?)
 			  (->* (integer?) () #:pre (= 1 2) integer?))
   (test-name '(->* (integer?) integer? #:post ...)
-		 	  (->* (integer?) () integer? #:post #f))
+			  (->* (integer?) () integer? #:post #f))
   (test-name '(->* (integer?) #:pre ... integer? #:post ...)
 			  (->* (integer?) () #:pre (= 1 2) integer? #:post #f))
 

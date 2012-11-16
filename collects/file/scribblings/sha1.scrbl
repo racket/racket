@@ -40,3 +40,6 @@ until an end-of-file.
 Converts the given byte string to a string representation, where each
 byte in @racket[bstr] is converted to its two-digit hexadecimal
 representation in the resulting string.}
+
+
+@close-eval[sha1-eval]

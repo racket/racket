@@ -6,7 +6,7 @@
 (provide flsplit
          fast-mono-fl+/error fast-fl+/error fl+/error
          fast-mono-fl-/error fast-fl-/error fl-/error
-         fast-fl*/error fl*/error
+         fast-fl*/error fast-flsqr/error fl*/error
          fast-fl//error)
 
 ;(: flsplit (Flonum -> (Values Flonum Flonum)))
@@ -14,9 +14,9 @@
 ;; |hi| >= |lo| and hi + lo = a. (The extra sign bit accounts for the missing bit.)
 (define-syntax-rule (flsplit a-expr)
   (let ([a a-expr])
-    (define s (if ((flabs a) . < . 1e300) 1.0 (flexpt 2.0 52.0)))
-    (let* ([a  (fl/ a s)]
-           [c  (fl* a (+ 1.0 (flexpt 2.0 27.0)))]
+    (let* ([s  (if ((flabs a) . fl< . 1e300) 1.0 (flexpt 2.0 52.0))]
+           [a  (fl/ a s)]
+           [c  (fl* a (fl+ 1.0 (flexpt 2.0 27.0)))]
            [a-hi  (fl- c (fl- c a))]
            [a-lo  (fl- a a-hi)])
       (values (fl* a-hi s)
@@ -61,19 +61,27 @@
     (let*-values ([(x)  (fl* a b)]
                   [(a-hi a-lo)  (flsplit a)]
                   [(b-hi b-lo)  (flsplit b)])
-      (values x (fl- (fl* a-lo b-lo)
-                     (fl- (fl- (fl- x (fl* a-hi b-hi))
-                               (fl* a-lo b-hi))
-                          (fl* a-hi b-lo)))))))
+      (values x (- (fl- (fl- (fl- (fl- x (fl* a-hi b-hi))
+                                  (fl* a-lo b-hi))
+                             (fl* a-hi b-lo))
+                        (fl* a-lo b-lo)))))))
+
+(define-syntax-rule (fast-flsqr/error a-expr)
+  (let ([a a-expr])
+    (let*-values ([(x)  (fl* a a)]
+                  [(a-hi a-lo)  (flsplit a)])
+      (values x (- (fl- (fl- (fl- x (fl* a-hi a-hi))
+                             (fl* 2.0 (fl* a-hi a-lo)))
+                        (fl* a-lo a-lo)))))))
 
 ;(: fast-fl//error (Flonum Flonum -> (Values Flonum Flonum)))
 ;; Returns a/b and its rounding error
 (define-syntax-rule (fast-fl//error a-expr b-expr)
   (let ([a a-expr] [b b-expr])
-    (define q-hi (fl/ a b))
-    (define-values (q0 q1) (fast-fl*/error q-hi b))
-    (values q-hi (fl/ (fl+ (- q1) (fl- a q0)) b))))
-  
+    (let*-values ([(q-hi)  (fl/ a b)]
+                  [(q0 q1)  (fast-fl*/error q-hi b)])
+      (values q-hi (fl/ (fl+ (- q1) (fl- a q0)) b)))))
+
 #;; If we had a fused multiply-add:
 (define (fast-fl*/error a b)
   (let ([p  (* a b)])

@@ -7,7 +7,8 @@
      visible to the GC.
 
   3) Immediate operands must be 32-bit values on x86_64, except with
-     jit_movi, jit_sti, jit_ldi, jit_bXi, jit_calli, and jit_finishi.
+     jit_movi, jit_sti, jit_ldi, jit_bXi, jit_calli (in default-long
+     mode), and jit_finishi.
 
   4) Function calls are limited to 3 arguments (i.e., jit_prepare()
      must never be called with a number greater than 3). This limit
@@ -101,7 +102,16 @@ END_XFORM_ARITH;
 #define LOG_MZCHAR_SIZE 2
 
 #if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_X86_64)
+/* Both PPC and x86_64 need long jumps, sometimes */
 # define NEED_LONG_JUMPS
+#endif
+#if defined(MZ_USE_JIT_PPC)
+/* For PPC, long jumps may be needed even within a JIT-generated block */
+# define NEED_LONG_BRANCHES
+#endif
+#if defined(MZ_USE_JIT_X86_64)
+/* For x86_64, long jumps are needed only if we start allocating far away */
+# define SET_DEFAULT_LONG_JUMPS
 #endif
 /* Tiny jumps seem worthwhile for x86, but they don't seem to help for x86_64: */
 #if defined(MZ_USE_JIT_I386) && !defined(MZ_USE_JIT_X86_64)
@@ -210,9 +220,13 @@ struct scheme_jit_common_record {
 
 #define MAX_SHARED_CALL_RANDS 25
   void *shared_tail_code[4][MAX_SHARED_CALL_RANDS];
-  void *shared_non_tail_code[5][MAX_SHARED_CALL_RANDS][2];
-  void *shared_non_tail_retry_code[2];
-  void *shared_non_tail_argc_code[2];
+# define SHARED_SINGLE_VALUE_CASE 0
+# define SHARED_MULTI_OK_CASE 1
+# define SHARED_RESULT_IGNORED_CASE 2
+# define SHARED_NUM_NONTAIL_CASES 3
+  void *shared_non_tail_code[5][MAX_SHARED_CALL_RANDS][SHARED_NUM_NONTAIL_CASES];
+  void *shared_non_tail_retry_code[SHARED_NUM_NONTAIL_CASES];
+  void *shared_non_tail_argc_code[SHARED_NUM_NONTAIL_CASES];
   void *shared_tail_argc_code;
 
 #define MAX_SHARED_ARITY_CHECK 25
@@ -413,15 +427,20 @@ void *scheme_jit_get_threadlocal_table();
 # ifdef JIT_X86_64
 #  define JIT_R10 JIT_R(10)
 #  define JIT_R14 JIT_R(14)
-#  define mz_tl_addr(reg, addr) LEAQmQr((addr), (JIT_R14), 0, 0, (reg))
-#  define mz_tl_addr_tmp(tmp_reg, addr) (mz_tl_addr(JIT_R10, addr))
+#  define mz_tl_addr(reg, addr) (void)0
+#  define mz_tl_addr_tmp(tmp_reg, addr) (void)0
 #  define mz_tl_addr_untmp(tmp_reg) (void)0
 #  define mz_tl_tmp_reg(tmp_reg) JIT_R10
-#  define _mz_tl_str_p(addr, tmp_reg, reg) jit_str_p(tmp_reg, reg)
-#  define _mz_tl_str_l(addr, tmp_reg, reg) jit_str_l(tmp_reg, reg)
-#  define _mz_tl_str_i(addr, tmp_reg, reg) jit_str_i(tmp_reg, reg)
-#  define mz_tl_addr_tmp_i(tmp_reg, addr) (jit_movr_l(JIT_R10, tmp_reg), mz_tl_addr(tmp_reg, addr))
-#  define mz_tl_addr_untmp_i(tmp_reg) jit_movr_l(tmp_reg, JIT_R10)
+#  define _mz_tl_str_p(addr, tmp_reg, reg) jit_stxi_p(addr, JIT_R14, reg)
+#  define _mz_tl_str_l(addr, tmp_reg, reg) jit_stxi_l(addr, JIT_R14, reg)
+#  define _mz_tl_str_i(addr, tmp_reg, reg) jit_stxi_i(addr, JIT_R14, reg)
+#  define mz_tl_ldr_p(reg, addr) jit_ldxi_p(reg, JIT_R14, addr)
+#  define mz_tl_ldr_l(reg, addr) jit_ldxi_l(reg, JIT_R14, addr)
+#  define mz_tl_ldr_i(reg, addr) jit_ldxi_i(reg, JIT_R14, addr)
+#  define mz_tl_str_d_fppop(tmp_reg, reg, addr) jit_stxi_d_fppop(addr, JIT_R14, reg)
+#  define mz_tl_ldr_d_fppush(reg, tmp_reg, addr) jit_ldxi_d_fppush(reg, JIT_R14, addr)
+#  define mz_tl_addr_tmp_i(tmp_reg, addr) (void)0
+#  define mz_tl_addr_untmp_i(tmp_reg) (void)0
 #  define mz_tl_tmp_reg_i(tmp_reg) tmp_reg
 # else
 #  define THREAD_LOCAL_USES_JIT_V2
@@ -445,17 +464,22 @@ void *scheme_jit_get_threadlocal_table();
 #  define mz_tl_addr_tmp_i(tmp_reg, addr) mz_tl_addr_tmp(tmp_reg, addr)
 #  define mz_tl_addr_untmp_i(tmp_reg) mz_tl_addr_untmp(tmp_reg)
 #  define mz_tl_tmp_reg_i(tmp_reg) mz_tl_tmp_reg(tmp_reg)
+#  define mz_tl_ldr_p(reg, addr) jit_ldr_p(reg, reg)
+#  define mz_tl_ldr_l(reg, addr) jit_ldr_l(reg, reg)
+#  define mz_tl_ldr_i(reg, addr) jit_ldr_i(reg, reg)
+#  define mz_tl_str_d_fppop(tmp_reg, reg, addr) jit_str_d_fppop(tmp_reg, reg)
+#  define mz_tl_ldr_d_fppush(reg, tmp_reg, addr) jit_ldr_d_fppush(reg, tmp_reg)
 # endif
 
 /* A given tmp_reg doesn't have to be unused; it just has to be distinct from other arguments. */
 # define mz_tl_sti_p(addr, reg, tmp_reg) (mz_tl_addr_tmp(tmp_reg, addr), _mz_tl_str_p(addr, mz_tl_tmp_reg(tmp_reg), reg), mz_tl_addr_untmp(tmp_reg))
 # define mz_tl_sti_l(addr, reg, tmp_reg) (mz_tl_addr_tmp(tmp_reg, addr), _mz_tl_str_l(addr, mz_tl_tmp_reg(tmp_reg), reg), mz_tl_addr_untmp(tmp_reg))
 # define mz_tl_sti_i(addr, reg, tmp_reg) (mz_tl_addr_tmp_i(tmp_reg, addr), _mz_tl_str_i(addr, mz_tl_tmp_reg_i(tmp_reg), reg), mz_tl_addr_untmp_i(tmp_reg))
-# define mz_tl_ldi_p(reg, addr) (mz_tl_addr(reg, addr), jit_ldr_p(reg, reg))
-# define mz_tl_ldi_l(reg, addr) (mz_tl_addr(reg, addr), jit_ldr_l(reg, reg))
-# define mz_tl_ldi_i(reg, addr) (mz_tl_addr(reg, addr), jit_ldr_i(reg, reg))
-# define mz_tl_sti_d_fppop(addr, reg, tmp_reg) (mz_tl_addr(tmp_reg, addr), jit_str_d_fppop(tmp_reg, reg))
-# define mz_tl_ldi_d_fppush(reg, addr, tmp_reg) (mz_tl_addr(tmp_reg, addr), jit_ldr_d_fppush(reg, tmp_reg))
+# define mz_tl_ldi_p(reg, addr) (mz_tl_addr(reg, addr), mz_tl_ldr_p(reg, addr))
+# define mz_tl_ldi_l(reg, addr) (mz_tl_addr(reg, addr), mz_tl_ldr_l(reg, addr))
+# define mz_tl_ldi_i(reg, addr) (mz_tl_addr(reg, addr), mz_tl_ldr_i(reg, addr))
+# define mz_tl_sti_d_fppop(addr, reg, tmp_reg) (mz_tl_addr(tmp_reg, addr), mz_tl_str_d_fppop(tmp_reg, reg, addr))
+# define mz_tl_ldi_d_fppush(reg, addr, tmp_reg) (mz_tl_addr(tmp_reg, addr), mz_tl_ldr_d_fppush(reg, tmp_reg, addr))
 #else
 # define mz_tl_sti_p(addr, reg, tmp_reg) jit_sti_p(addr, reg)
 # define mz_tl_sti_l(addr, reg, tmp_reg) jit_sti_l(addr, reg)
@@ -861,7 +885,7 @@ static jit_insn *fp_tmpr;
 
 #ifdef NEED_LONG_JUMPS
 # define __START_SHORT_JUMPS__(cond) if (cond) { _jitl.long_jumps = 0; }
-# define __END_SHORT_JUMPS__(cond) if (cond) { _jitl.long_jumps= 1; }
+# define __END_SHORT_JUMPS__(cond) if (cond) { _jitl.long_jumps = LONG_JUMPS_DEFAULT(_jitl); }
 #else
 # define __START_SHORT_JUMPS__(cond) /* empty */
 # define __END_SHORT_JUMPS__(cond) /* empty */
@@ -900,6 +924,13 @@ static jit_insn *fp_tmpr;
 # define mz_bnei_p(a, v, i) jit_bnei_p(a, v, i)
 #endif
 
+#ifdef jit_leai_l
+# define jit_fixnum_l(JIT_Rdest, JIT_Rsrc) jit_leai_l(JIT_Rdest, JIT_Rsrc, 1, 1)
+#else
+# define jit_fixnum_l(JIT_Rdest, JIT_Rsrc) (jit_lshi_l(JIT_Rdest, JIT_Rsrc, 1), \
+                                            jit_ori_l(JIT_Rdest, JIT_Rdest, 0x1))
+#endif
+
 /* 
  About short-jump mode:
    
@@ -918,7 +949,19 @@ static jit_insn *fp_tmpr;
    Tiny-jump mode is like short-jump mode, but the offset must be
    within +/- 2^7. Favor tiny jumps over short jumps when possible.
 
-   All mz_finish() and jit_calli() are implicitly long jumps.
+   On x86_64, short is the default, since "short" is pretty long.
+   Short mode is never needed for jumps within a single allocated
+   block (on the assumption that a single block of code can never get
+   that long). Default-long mode must be enabled if allocated code
+   blocks can be far apart.
+
+   A jit_calli() is "medium": for x86_64, it is short unless
+   default-long mode is enabled; otherwise, it is always
+   long.
+
+   All mz_finish() are long jumps. This is true even in default-short
+   jump mode on x86_64, since the target is likely to be C code that
+   is not necessarily close to JIT-allocate code.
 */
 
 /* A lightweight continuation is one that contains only frames from
@@ -1044,6 +1087,11 @@ static void emit_indentation(mz_jit_state *jitter)
 
 /**********************************************************************/
 
+/* Does boxing a type require registers, possibly GC, etc.? */
+#define JIT_TYPE_NEEDS_BOXING(t) ((t) == SCHEME_LOCAL_TYPE_FLONUM)
+
+/**********************************************************************/
+
 #ifdef MZ_USE_FUTURES
 # define mz_prepare_direct_prim(n) mz_prepare(n)
 # define mz_finishr_direct_prim(reg, proc, refr) (jit_pusharg_p(reg), (void)mz_finish_lwe(proc, refr))
@@ -1113,15 +1161,15 @@ static void emit_indentation(mz_jit_state *jitter)
 #endif
 
 #define PAST_LIMIT() ((uintptr_t)jit_get_ip().ptr > (uintptr_t)jitter->limit)
-#define CHECK_LIMIT() if (PAST_LIMIT()) return past_limit(jitter);
+#define CHECK_LIMIT() if (PAST_LIMIT()) return past_limit(jitter, __FILE__, __LINE__);
 #if 1
-# define past_limit(j) 0
+# define past_limit(j, f, l) 0
 #else
-static int past_limit(mz_jit_state *jitter)
+static int past_limit(mz_jit_state *jitter, const char *file, int line)
 {
   if (((uintptr_t)jit_get_ip().ptr > (uintptr_t)jitter->limit + JIT_BUFFER_PAD_SIZE)
       || (jitter->retain_start)) {
-    printf("way past\n"); abort();
+    printf("way past %s %d\n", file, line); abort();
   }
   return 0;
 }
@@ -1175,24 +1223,27 @@ int scheme_inlined_unary_prim(Scheme_Object *o, Scheme_Object *_app, mz_jit_stat
 int scheme_inlined_binary_prim(Scheme_Object *o, Scheme_Object *_app, mz_jit_state *jitter);
 int scheme_inlined_nary_prim(Scheme_Object *o, Scheme_Object *_app, mz_jit_state *jitter);
 int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, int is_tail, int multi_ok, 
-				  Branch_Info *for_branch, int branch_short, int need_sync, int result_ignored);
+				  Branch_Info *for_branch, int branch_short, int need_sync, int result_ignored,
+                                  int dest);
 int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, int is_tail, int multi_ok, 
-				   Branch_Info *for_branch, int branch_short, int need_sync, int result_ignored);
+				   Branch_Info *for_branch, int branch_short, int need_sync, int result_ignored,
+                                   int dest);
 int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int is_tail, int multi_ok, 
-                                 Branch_Info *for_branch, int branch_short, int result_ignored);
+                                 Branch_Info *for_branch, int branch_short, int result_ignored,
+                                 int dest);
 int scheme_generate_inlined_test(mz_jit_state *jitter, Scheme_Object *obj, int branch_short, 
                                  Branch_Info *for_branch, int need_sync);
-int scheme_generate_cons_alloc(mz_jit_state *jitter, int rev, int inline_retry);
+int scheme_generate_cons_alloc(mz_jit_state *jitter, int rev, int inline_retry, int known_list, int dest);
 int scheme_generate_struct_alloc(mz_jit_state *jitter, int num_args, 
                                  int inline_slow, int pop_and_jump,
-                                 int is_tail, int multi_ok);
+                                 int is_tail, int multi_ok, int dest);
 
 /**********************************************************************/
 /*                             jitalloc                               */
 /**********************************************************************/
 
 #ifdef CAN_INLINE_ALLOC
-int scheme_inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int immut,
+int scheme_inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int flags,
 			int keep_r0_r1, int keep_fpr1, int inline_retry);
 int scheme_generate_alloc_retry(mz_jit_state *jitter, int i);
 #else
@@ -1215,12 +1266,14 @@ int scheme_can_unbox_directly(Scheme_Object *obj);
 int scheme_generate_unboxing(mz_jit_state *jitter, int target);
 int scheme_generate_pop_unboxed(mz_jit_state *jitter);
 int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
-                               int arith, int cmp, Branch_Info *for_branch, int branch_short);
-int scheme_generate_alloc_double(mz_jit_state *jitter, int inline_retry);
+                               int arith, int cmp, Branch_Info *for_branch, int branch_short,
+                               int dest);
+int scheme_generate_alloc_double(mz_jit_state *jitter, int inline_retry, int dest);
 int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Object *rand, Scheme_Object *rand2, 
 			  int orig_args, int arith, int cmp, int v, 
                           Branch_Info *for_branch, int branch_short,
-                          int unsafe_fx, int unsafe_fl, GC_CAN_IGNORE jit_insn *overflow_refslow);
+                          int unsafe_fx, int unsafe_fl, GC_CAN_IGNORE jit_insn *overflow_refslow,
+                          int dest);
 
 /**********************************************************************/
 /*                              jitcall                               */
@@ -1228,15 +1281,17 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 
 typedef struct jit_direct_arg jit_direct_arg;
 
-void *scheme_generate_shared_call(int num_rands, mz_jit_state *old_jitter, int multi_ok, int is_tail, 
-				  int direct_prim, int direct_native, int nontail_self, int unboxed_args);
-void scheme_ensure_retry_available(mz_jit_state *jitter, int multi_ok);
+void *scheme_generate_shared_call(int num_rands, mz_jit_state *old_jitter, int multi_ok, int result_ignored, 
+                                  int is_tail, int direct_prim, int direct_native, int nontail_self, int unboxed_args);
+void scheme_ensure_retry_available(mz_jit_state *jitter, int multi_ok, int result_ignored);
 int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_rands, 
-			mz_jit_state *jitter, int is_tail, int multi_ok, int no_call);
+			mz_jit_state *jitter, int is_tail, int multi_ok, int ignored_result,
+                        int no_call);
 int scheme_generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs, 
                               int is_inline, Scheme_Native_Closure *direct_to_code, jit_direct_arg *direct_arg);
 int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs, 
-				  int multi_ok, int nontail_self, int pop_and_jump, int is_inlined, int unboxed_args);
+				  int multi_ok, int result_ignored, int nontail_self, int pop_and_jump, 
+                                  int is_inlined, int unboxed_args);
 int scheme_generate_finish_tail_call(mz_jit_state *jitter, int direct_native);
 int scheme_generate_finish_apply(mz_jit_state *jitter);
 int scheme_generate_finish_multi_apply(mz_jit_state *jitter);

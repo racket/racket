@@ -1,4 +1,4 @@
-#lang scheme/gui
+#lang racket/gui
 
 ;; 4. integrate with snips
 

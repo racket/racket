@@ -1,10 +1,12 @@
-#lang racket
+#lang racket/base
 
 (require "datatype.rkt"
          "private/sllgen.rkt"
+         racket/promise
          mzlib/trace
          mzlib/pretty)
-(require (for-syntax "private/slldef.rkt"))
+(require (for-syntax racket/base
+                     "private/slldef.rkt"))
 
 (provide define-datatype
          cases)

@@ -61,7 +61,7 @@
      (define (set-module-language! drr-frame)
        (test:menu-select "Language" "Choose Language...")
        (define language-dialog (wait-for-new-frame drr-frame))
-       (test:set-radio-box-item! #rx"Use the language declared in the source")
+       (test:set-radio-box-item! #rx"The Racket Language")
        
        (with-handlers ([exn:fail? (lambda (x) (void))])
          (test:button-push "Show Details"))

@@ -329,7 +329,7 @@
                                    (send blue get-value)))]
                    [install-color
                     (lambda (color)
-            	      (send red set-value (send color red))
+                      (send red set-value (send color red))
                       (send green set-value (send color green))
                       (send blue set-value (send color blue))
                       (send canvas refresh))])

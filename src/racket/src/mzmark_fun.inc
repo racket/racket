@@ -10,7 +10,7 @@ static int mark_closure_info_MARK(void *p, struct NewGC *gc) {
   
   gcMARK2(i->local_flags, gc);
   gcMARK2(i->base_closure_map, gc);
-  gcMARK2(i->flonum_map, gc);
+  gcMARK2(i->local_type_map, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Closure_Info));
@@ -21,7 +21,7 @@ static int mark_closure_info_FIXUP(void *p, struct NewGC *gc) {
   
   gcFIXUP2(i->local_flags, gc);
   gcFIXUP2(i->base_closure_map, gc);
-  gcFIXUP2(i->flonum_map, gc);
+  gcFIXUP2(i->local_type_map, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Closure_Info));

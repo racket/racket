@@ -13,7 +13,7 @@
        TRACE_PAGE_ARRAY
        TRACE_PAGE_TAGGED_ARRAY
        TRACE_PAGE_ATOMIC
-       TRACE_PAGE_XTAGGED
+       TRACE_PAGE_PAIR
        TRACE_PAGE_MALLOCFREE
        TRACE_PAGE_BAD
       trace_page_is_big
@@ -39,24 +39,25 @@ static void register_traced_object(void *p)
 
 static void *print_out_pointer(const char *prefix, void *p,
 			       GC_get_type_name_proc get_type_name,
-			       GC_get_xtagged_name_proc get_xtagged_name,
-			       GC_print_tagged_value_proc print_tagged_value)
+			       GC_print_tagged_value_proc print_tagged_value,
+                               int *_kind)
 {
   trace_page_t *page;
   const char *what;
 
   page = pagemap_find_page(GC_instance->page_maps, p);
   if (!page || (trace_page_type(page) == TRACE_PAGE_BAD)) {
-    GCPRINT(GCOUTF, "%s??? %p\n", prefix, p);
+    GCPRINT(GCOUTF, "%s%s %p\n", prefix, trace_source_kind(*_kind), p);
     return NULL;
   }
   p = trace_pointer_start(page, p);
 
-  if (trace_page_type(page) == TRACE_PAGE_TAGGED) {
+  if ((trace_page_type(page) == TRACE_PAGE_TAGGED)
+      || (trace_page_type(page) == TRACE_PAGE_PAIR)) {
     Type_Tag tag;
     tag = *(Type_Tag *)p;
     if ((tag >= 0) && get_type_name && get_type_name(tag)) {
-      print_tagged_value(prefix, p, 0, 0, 1000, "\n");
+      print_tagged_value(prefix, p, 0, 1000, "\n");
     } else {
       GCPRINT(GCOUTF, "%s<#%d> %p\n", prefix, tag, p);
     }
@@ -67,11 +68,6 @@ static void *print_out_pointer(const char *prefix, void *p,
     what = "TARRAY";
   } else if (trace_page_type(page) == TRACE_PAGE_ATOMIC) {
     what = "ATOMIC";
-  } else if (trace_page_type(page) == TRACE_PAGE_XTAGGED) {
-    if (get_xtagged_name)
-      what = get_xtagged_name(p);
-    else
-      what = "XTAGGED";
   } else if (trace_page_type(page) == TRACE_PAGE_MALLOCFREE) {
     what = "MALLOCED";
   } else {
@@ -85,12 +81,11 @@ static void *print_out_pointer(const char *prefix, void *p,
 	    p);
   }
 
-  return trace_backpointer(page, p);
+  return trace_backpointer(page, p, _kind);
 }
 
 static void print_traced_objects(int path_length_limit,
 				 GC_get_type_name_proc get_type_name,
-				 GC_get_xtagged_name_proc get_xtagged_name,
 				 GC_print_tagged_value_proc print_tagged_value)
 {
   int i, j, k, dp = 0, counter, each;
@@ -104,8 +99,9 @@ static void print_traced_objects(int path_length_limit,
   for (i = 0; i < found_object_count; i++) {
     void *p;
     int limit = path_length_limit;
+    int kind = 0;
     p = found_objects[i];
-    p = print_out_pointer("==* ", p, get_type_name, get_xtagged_name, print_tagged_value);
+    p = print_out_pointer("==* ", p, get_type_name, print_tagged_value, &kind);
 
     j = 0; counter = 0; each = 1;
     while (p && limit) {
@@ -127,7 +123,7 @@ static void print_traced_objects(int path_length_limit,
             counter = 0;
           }
         }
-        p = print_out_pointer(" <- ", p, get_type_name, get_xtagged_name, print_tagged_value);
+        p = print_out_pointer(" <- ", p, get_type_name, print_tagged_value, &kind);
         limit--;
       }
     }

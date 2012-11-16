@@ -531,7 +531,8 @@ which allows such optimizations.}
 A @tech{parameter} that determines whether the native-code just-in-time
 compiler (@deftech{JIT}) is enabled for code (compiled or not) that is passed to
 the default evaluation handler. A true parameter value is effective
-only on platforms for which the JIT is supported.
+only on platforms for which the JIT is supported, and changing the value
+from its initial setting affects only forms that are outside of @racket[module].
 
 The default is @racket[#t], unless the JIT is not supported by the
 current platform, unless it is disabled through the

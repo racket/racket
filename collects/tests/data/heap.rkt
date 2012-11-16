@@ -84,4 +84,3 @@
           [lst (for/list ([x (in-heap/consume! h)]) x)])
      (heap-count h))
    0)
-         

@@ -14,12 +14,11 @@
          ;; avoid the other dependencies of `racket/place`
          '#%place
          unstable/function
-         racket/udp
          unstable/lazy-require
          (except-in racket/contract/base ->* -> one-of/c)
          (prefix-in c: racket/contract/base)
          (for-syntax racket/base syntax/parse racket/list)
-         (for-template racket/base racket/contract/base racket/promise racket/tcp racket/flonum)
+         (for-template racket/base racket/contract/base racket/promise racket/tcp racket/flonum racket/udp '#%place)
          racket/pretty racket/udp
          ;; for base type predicates
          racket/promise racket/tcp racket/flonum)
@@ -215,7 +214,7 @@
 (define -Special-Comment
   (make-Base 'Special-Comment #'special-comment? special-comment? #'-Special-Comment))
 
-(define -Custodian (make-Base 'Custodian #'custodian? custodian? #'Custodian))
+(define -Custodian (make-Base 'Custodian #'custodian? custodian? #'-Custodian))
 
 (define -Parameterization (make-Base 'Parameterization #'parameterization? parameterization? #'-Parameterization))
 

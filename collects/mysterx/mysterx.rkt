@@ -12,7 +12,7 @@
          cocreate-instance-from-progid
          cci/progid
 
-         get-active-object-from-coclass	
+         get-active-object-from-coclass
          gao/coclass
          
          coclass
@@ -26,11 +26,11 @@
          com-invoke
 
          com-get-properties
-	 (rename-out [mx:com-get-property-type com-get-property-type])
+         (rename-out [mx:com-get-property-type com-get-property-type])
          com-get-property
 
          com-set-properties
-	 (rename-out [mx:com-set-property-type com-set-property-type])
+         (rename-out [mx:com-set-property-type com-set-property-type])
          com-set-property!
 
          com-help
@@ -143,7 +143,7 @@
 
 (define (reorder t)
   (if (and (pair? t)
-	   (eq? (car t) '->))
+           (eq? (car t) '->))
       (append (cadr t) (list '-> (caddr t)))
       t))
 

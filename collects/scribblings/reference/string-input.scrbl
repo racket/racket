@@ -1,6 +1,9 @@
 #lang scribble/doc
 @(require "mz.rkt")
 
+@(define si-eval (make-base-eval))
+
+
 @title{Byte and String Input}
 
 @defproc[(read-char [in input-port? (current-input-port)]) 
@@ -12,12 +15,36 @@ several bytes to UTF-8-decode them into a character (see
 perform the decoding. If no bytes are available before an end-of-file,
 then @racket[eof] is returned.}
 
+@examples[#:eval si-eval
+(let ([ip (open-input-string "S2")])
+  (print (read-char ip)) 
+  (newline)
+  (print (read-char ip))
+  (newline)
+  (print (read-char ip)))
+
+(let ([ip (open-input-bytes #"\316\273")])
+  @code:comment{The byte string contains UTF-8-encoded content:}
+  (print (read-char ip)))
+]
+
 
 @defproc[(read-byte [in input-port? (current-input-port)]) 
          (or/c byte? eof-object?)]{
 
 Reads a single byte from @racket[in]. If no bytes are available before
 an end-of-file, then @racket[eof] is returned.}
+
+
+@examples[#:eval si-eval
+(let ([ip (open-input-string "a")])
+  @code:comment{The two values in the following list should be the same.}
+  (list (read-byte ip) (char->integer #\a)))
+
+(let ([ip (open-input-string (string #\u03bb))])
+  @code:comment{This string has a two byte-encoding.}
+  (list (read-byte ip) (read-byte ip) (read-byte ip)))
+]
 
 
 @defproc[(read-line [in input-port? (current-input-port)]
@@ -65,6 +92,27 @@ changes return-linefeed combinations to a linefeed. Thus, when a file
 is opened in text mode, @racket['linefeed] is usually the appropriate
 @racket[read-line] mode.}
 
+@examples[#:eval si-eval
+(let ([ip (open-input-string "x\ny\n")])
+  (read-line ip))
+
+(let ([ip (open-input-string "x\ny\n")])
+  (read-line ip 'return))
+
+(let ([ip (open-input-string "x\ry\r")])
+  (read-line ip 'return))
+
+(let ([ip (open-input-string "x\r\ny\r\n")])
+  (read-line ip 'return-linefeed))
+
+(let ([ip (open-input-string "x\r\ny\nz")])
+  (list (read-line ip 'any) (read-line ip 'any)))
+
+(let ([ip (open-input-string "x\r\ny\nz")])
+  (list (read-line ip 'any-one) (read-line ip 'any-one)))
+]
+
+
 @defproc[(read-bytes-line [in input-port? (current-input-port)] 
                     [mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'linefeed])
          (or/c bytes? eof-object?)]{
@@ -93,11 +141,25 @@ If an error occurs during reading, some characters may be lost; that
 is, if @racket[read-string] successfully reads some characters before
 encountering an error, the characters are dropped.}
 
+@examples[#:eval si-eval
+(let ([ip (open-input-string "supercalifragilisticexpialidocious")])
+  (read-string 5 ip))
+]
+
 @defproc[(read-bytes [amt exact-nonnegative-integer?]
                      [in input-port? (current-input-port)])
          (or/c bytes? eof-object?)]{
 @margin-note{To read an entire port as bytes use @racket[port->bytes].}
 Like @racket[read-string], but reads bytes and produces a byte string.}
+
+@examples[#:eval si-eval
+(let ([ip (open-input-bytes 
+                  (bytes 6 
+                         115 101 99 114 101
+                         116))])
+  (define length (read-byte ip))
+  (bytes->string/utf-8 (read-bytes length ip)))
+]
 
 @defproc[(read-string! [str (and/c string? (not/c immutable?))]
                        [in input-port? (current-input-port)]
@@ -121,13 +183,34 @@ characters read. If @math{m} characters are read and
 not modified at indices @math{@racket[start-pos]+m} through
 @racket[end-pos].}
 
+@examples[#:eval si-eval
+(let ([buffer (make-string 10 #\_)]
+      [ip (open-input-string "cketRa")])
+  (printf "~s\n" buffer)
+  (read-string! buffer ip 2 6)
+  (printf "~s\n" buffer)
+  (read-string! buffer ip 0 2)
+  (printf "~s\n" buffer))
+]
+
 @defproc[(read-bytes! [bstr bytes?]
                       [in input-port? (current-input-port)]
                       [start-pos exact-nonnegative-integer? 0]
                       [end-pos exact-nonnegative-integer? (bytes-length bstr)])
          (or/c exact-positive-integer? eof-object?)]{
 Like @racket[read-string!], but reads bytes, puts them into a byte
-string, and returns the number of bytes read.}
+string, and returns the number of bytes read.
+
+@examples[
+(let ([buffer (make-bytes 10 (char->integer #\_))]
+      [ip (open-input-string "cketRa")])
+  (printf "~s\n" buffer)
+  (read-bytes! buffer ip 2 6)
+  (printf "~s\n" buffer)
+  (read-bytes! buffer ip 0 2)
+  (printf "~s\n" buffer))
+]
+}
 
 @defproc[(read-bytes-avail! [bstr bytes?]
                             [in input-port? (current-input-port)]
@@ -408,3 +491,6 @@ for some input port, @racket[#f] otherwise.
 
 With two arguments, returns @racket[#t] if @racket[evt] is a progress
 event for @racket[in], @racket[#f] otherwise.}
+
+
+@close-eval[si-eval]

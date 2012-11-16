@@ -38,7 +38,7 @@
   ;; output term set is represented in bit-vector form
   (define (compute-read a g)
     (let* ((dr (compute-DR a g))
-	   (reads (compute-reads a g)))
+           (reads (compute-reads a g)))
       (digraph-tk->terml (send a get-mapped-non-term-keys)
                          reads
                          dr
@@ -127,13 +127,12 @@
   ;; output term set is represented in bit-vector form
   (define (compute-LA a g)
     (let* ((includes (compute-includes a g))
-	   (lookback (compute-lookback a g))
-	   (follow  (compute-follow a g includes)))
+           (lookback (compute-lookback a g))
+           (follow  (compute-follow a g includes)))
       (lambda (k p)
-	(let* ((l (lookback k p))
-	       (f (map follow l)))
-	  (apply bitwise-ior (cons 0 f))))))
-
+        (let* ((l (lookback k p))
+               (f (map follow l)))
+          (apply bitwise-ior (cons 0 f))))))
 
   (define (print-DR dr a g)
     (print-input-st-sym dr "DR" a g print-output-terms))
@@ -192,8 +191,8 @@
     (map
      (lambda (p)
        (list
-	(kernel-index (trans-key-st p))
-	(gram-sym-symbol (trans-key-gs p))))
+        (kernel-index (trans-key-st p))
+        (gram-sym-symbol (trans-key-gs p))))
      r))
 
   ;; init-tk-map : int -> (vectorof hashtable?)
@@ -230,52 +229,49 @@
   ;; Computes (f x) = (f- x) union Union{(f y) | y in (edges x)}
   ;; A specialization of digraph in the file graph.rkt
   (define (digraph-tk->terml nodes edges f- num-states)
-    (letrec (
-	     ;; Will map elements of trans-key to term sets represented as bit vectors
-	     (results (init-tk-map num-states))
+    (letrec [
+             ;; Will map elements of trans-key to term sets represented as bit vectors
+             (results (init-tk-map num-states))
              
-	     ;; Maps elements of trans-keys to integers.
-	     (N (init-tk-map num-states))
+             ;; Maps elements of trans-keys to integers.
+             (N (init-tk-map num-states))
              
              (get-N (lookup-tk-map N))
-	     (set-N (add-tk-map N))
-	     (get-f (lookup-tk-map results))
-	     (set-f (add-tk-map results))
-	     
-	     (stack null)
-	     (push (lambda (x)
-		     (set! stack (cons x stack))))
-	     (pop (lambda () 
+             (set-N (add-tk-map N))
+             (get-f (lookup-tk-map results))
+             (set-f (add-tk-map results))
+             
+             (stack null)
+             (push (lambda (x)
+                     (set! stack (cons x stack))))
+             (pop (lambda () 
                     (begin0 
-		     (car stack)
-		     (set! stack (cdr stack)))))
-       	     (depth (lambda () (length stack)))
+                     (car stack)
+                     (set! stack (cdr stack)))))
+             (depth (lambda () (length stack)))
 
-	     ;; traverse: 'a -> 
-	     (traverse
-	      (lambda (x)
-		(push x)
-		(let ((d (depth)))
-		  (set-N x d)
-		  (set-f x (f- x))
-		  (for-each (lambda (y)
-			      (when (= 0 (get-N y))
+             ;; traverse: 'a -> 
+             (traverse
+              (lambda (x)
+                (push x)
+                (let ((d (depth)))
+                  (set-N x d)
+                  (set-f x (f- x))
+                  (for-each (lambda (y)
+                              (when (= 0 (get-N y))
                                 (traverse y))
-			      (set-f x (bitwise-ior (get-f x) (get-f y)))
-			      (set-N x (min (get-N x) (get-N y))))
-			    (edges x))
-		  (when (= d (get-N x))
+                              (set-f x (bitwise-ior (get-f x) (get-f y)))
+                              (set-N x (min (get-N x) (get-N y))))
+                            (edges x))
+                  (when (= d (get-N x))
                     (let loop ((p (pop)))
                       (set-N p +inf.0)
                       (set-f p (get-f x))
                       (unless (equal? x p)
-                        (loop (pop)))))))))
+                        (loop (pop))))))))]
       (for-each (lambda (x)
-		  (when (= 0 (get-N x))
+                  (when (= 0 (get-N x))
                     (traverse x)))
-		nodes)
+                nodes)
       get-f))
 )
-
-
-

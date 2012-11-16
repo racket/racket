@@ -14,7 +14,7 @@
     (define (wrap-struct s)
       (define (extract-functions struct-type)
         (define-values (sym init auto ref set! imms par skip?)
-          (struct-type-info type))
+          (struct-type-info struct-type))
         (when skip? (fail s)) ;; "Opaque struct type!")
         (define-values (fun/chap-list _)
           (for/fold ([res null]
@@ -36,7 +36,7 @@
                         res)
                  imms))))
         (cond
-          [par (cons fun/chap-list (extract-functions par))]
+          [par (append fun/chap-list (extract-functions par))]
           [else fun/chap-list]))
       (define-values (type skipped?) (struct-info s))
       (when skipped? (fail s));  "Opaque struct type!"

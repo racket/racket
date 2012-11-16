@@ -104,7 +104,7 @@
                  xylaphon
                  yellow
                  zombie))
-          WORDS))	    
+          WORDS))
 
 ;; ------------------------------------------------------------------------
 ;; The GUI
@@ -122,11 +122,11 @@
              
              ------------------------------------------------
              |                                              |
-             |   a ... z    "Check"  "Status"   word	     |
+             |   a ... z    "Check"  "Status"   word        |
              |   choice%     button%  message%  message%    |
-             | 					     |
+             |                                              |
              |         Welcome/Winner/Loser                 |
-             |            message%             	     |
+             |            message%                          |
              ------------------------------------------------
              |#
           

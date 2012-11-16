@@ -1307,7 +1307,7 @@ void scheme_wrong_count_m(const char *name, int minc, int maxc,
 #ifdef MZ_USE_JIT
     } else if (SAME_TYPE(SCHEME_TYPE((Scheme_Object *)name), scheme_native_closure_type)) {
       Scheme_Object *pa;
-      pa = scheme_get_native_arity((Scheme_Object *)name);
+      pa = scheme_get_native_arity((Scheme_Object *)name, -1);
       if (SCHEME_BOXP(pa)) {
 	pa = SCHEME_BOX_VAL(pa);
 	is_method = 1;
@@ -1405,7 +1405,7 @@ char *scheme_make_arity_expect_string(Scheme_Object *proc,
 #ifdef MZ_USE_JIT
   } else if (SAME_TYPE(SCHEME_TYPE((Scheme_Object *)proc), scheme_native_closure_type)) {
     Scheme_Object *pa;
-    pa = scheme_get_native_arity((Scheme_Object *)proc);
+    pa = scheme_get_native_arity((Scheme_Object *)proc, -1);
     if (SCHEME_BOXP(pa)) {
       pa = SCHEME_BOX_VAL(pa);
     }
@@ -4313,6 +4313,7 @@ void scheme_init_exn(Scheme_Env *env)
     if (exn_table[i].count) {
       Scheme_Object **values;
 
+      scheme_force_struct_type_info((Scheme_Struct_Type *)exn_table[i].type);
       values = scheme_make_struct_values(exn_table[i].type,
 					 exn_table[i].names,
 					 exn_table[i].count,

@@ -127,10 +127,14 @@ typedef long FILE;
    old way. */
 #ifdef MZ_USE_OLD_ARRAY_STYLE
 # define mzFLEX_ARRAY_DECL 1
+# define mzFLEX_ARRAY4_DECL 4
 # define mzFLEX_DELTA 1
+# define mzFLEX4_DELTA 4
 #else
 # define mzFLEX_ARRAY_DECL /* empty */
+# define mzFLEX_ARRAY4_DECL /* empty */
 # define mzFLEX_DELTA 0
+# define mzFLEX4_DELTA 0
 #endif
 
 #ifdef MZ_XFORM
@@ -331,7 +335,7 @@ typedef struct {
 typedef struct Scheme_Symbol {
   Scheme_Inclhash_Object iso; /* 1 in low bit of keyex indicates uninterned */
   intptr_t len;
-  char s[4]; /* Really, a number of chars to match `len' */
+  char s[mzFLEX_ARRAY4_DECL];
 } Scheme_Symbol;
 
 typedef struct Scheme_Vector {

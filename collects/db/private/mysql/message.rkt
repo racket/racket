@@ -668,7 +668,7 @@ computed string on the server can be. See also:
     ((int24) (io:read-le-int24 in)) ;; FIXME signed/unsigned
     ((long) (io:read-le-int32 in (not (memq 'unsigned flags))))
     ((longlong) (io:read-le-int64 in (not (memq 'unsigned flags))))
-    ((varchar var-string blob tiny-blob medium-blob long-blob)
+    ((varchar string var-string blob tiny-blob medium-blob long-blob)
      (if (memq 'binary flags)
          (io:read-length-coded-bytes in)
          (io:read-length-coded-string in)))
@@ -765,7 +765,7 @@ computed string on the server can be. See also:
 (define (supported-result-typeid? typeid)
   (case typeid
     ((tiny short int24 long longlong float double) #t)
-    ((varchar var-string blob tiny-blob medium-blob long-blob) #t)
+    ((varchar string var-string blob tiny-blob medium-blob long-blob) #t)
     ((date datetime timestamp newdate time year) #t)
     ((newdecimal bit geometry) #t)
     ((null) #t)

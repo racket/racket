@@ -413,7 +413,7 @@
         ; Introduce the names before using them, to allow
         ; judgment form definition at the top-level.
         #`(begin 
-            (define-syntaxes (judgment-form-runtime-proc judgment-form-lws) (values))
+            (define-syntaxes (judgment-form-runtime-proc judgment-form-lws judgment-runtime-gen-clauses) (values))
             #,definitions)
         definitions))
    'disappeared-use

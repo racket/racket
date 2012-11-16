@@ -311,17 +311,17 @@ Scheme_Object *scheme_apply_lightweight_continuation_stack(Scheme_Current_LWC *l
 #ifdef USE_FLONUM_UNBOXING
 int scheme_jit_check_closure_flonum_bit(Scheme_Closure_Data *data, int pos, int delta)
 {
-  int bit;
+  int ct;
   pos += delta;
-  bit = ((mzshort)2 << ((2 * pos) & (BITS_PER_MZSHORT - 1)));
-  if (data->closure_map[data->closure_size + ((2 * pos) / BITS_PER_MZSHORT)] & bit)
+  ct = scheme_boxmap_get(data->closure_map, pos, data->closure_size);
+  if (ct == (CLOS_TYPE_TYPE_OFFSET + SCHEME_LOCAL_TYPE_FLONUM))
     return 1;
   else
     return 0;
 }
 #endif
 
-#ifdef NEED_LONG_JUMPS
+#ifdef NEED_LONG_BRANCHES
 static int is_short(Scheme_Object *obj, int fuel)
 {
   Scheme_Type t;
@@ -443,7 +443,7 @@ static int no_sync_change(Scheme_Object *obj, int fuel)
       return no_sync_change(branch->fbranch, fuel);
     }
   case scheme_local_type:
-    if (SCHEME_GET_LOCAL_FLAGS(obj) == SCHEME_LOCAL_FLONUM)
+    if (JIT_TYPE_NEEDS_BOXING(SCHEME_GET_LOCAL_TYPE(obj)))
       return 0;
     else
       return fuel - 1;
@@ -469,14 +469,9 @@ Scheme_Object *scheme_extract_global(Scheme_Object *o, Scheme_Native_Closure *nc
   pos = SCHEME_TOPLEVEL_POS(o);
 
   if (local_only) {
-    /* Usually, we look for local bindings only, because module caching means
-       that JIT-generated code can be linked to different other modules that
-       may have different bindings, even though we expect them binding to be
-       consistent. */
-    if (pos < globs->num_toplevels) {
-      if (globs->import_map[pos >> 3] & (1 << (pos & 7)))
-        return NULL;
-    }
+    /* Look for local bindings when the JIT depends on information that is not
+       validated across module boundaries. */
+    scheme_signal_error("internal error: import map not available");
   }
 
   return globs->a[pos];
@@ -506,6 +501,23 @@ Scheme_Object *scheme_extract_closure_local(Scheme_Object *obj, mz_jit_state *ji
   return NULL;
 }
 
+int scheme_native_closure_preserves_marks(Scheme_Object *p)
+{
+  Scheme_Native_Closure_Data *ndata = ((Scheme_Native_Closure *)p)->code;
+
+  if (ndata->closure_size >= 0) { /* not case-lambda */
+    if (lambda_has_been_jitted(ndata)) {
+      if (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(ndata) & NATIVE_PRESERVES_MARKS)
+        return 1;
+    } else {
+      if (SCHEME_CLOSURE_DATA_FLAGS(ndata->u2.orig_code) & CLOS_PRESERVES_MARKS)
+        return 1;
+    }
+  }
+
+  return 0;
+}
+
 int scheme_is_noncm(Scheme_Object *a, mz_jit_state *jitter, int depth, int stack_start)
 {
   if (SCHEME_PRIMP(a)) {
@@ -525,20 +537,12 @@ int scheme_is_noncm(Scheme_Object *a, mz_jit_state *jitter, int depth, int stack
       && SAME_TYPE(SCHEME_TYPE(a), scheme_toplevel_type)
       && ((SCHEME_TOPLEVEL_FLAGS(a) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_CONST)) {
     Scheme_Object *p;
-    p = scheme_extract_global(a, jitter->nc, 1);
+    p = scheme_extract_global(a, jitter->nc, 0);
     if (p) {
       p = ((Scheme_Bucket *)p)->val;
       if (p && SAME_TYPE(SCHEME_TYPE(p), scheme_native_closure_type)) {
-        Scheme_Native_Closure_Data *ndata = ((Scheme_Native_Closure *)p)->code;
-        if (ndata->closure_size >= 0) { /* not case-lambda */
-          if (lambda_has_been_jitted(ndata)) {
-            if (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(ndata) & NATIVE_PRESERVES_MARKS)
-              return 1;
-          } else {
-            if (SCHEME_CLOSURE_DATA_FLAGS(ndata->u2.orig_code) & CLOS_PRESERVES_MARKS)
-              return 1;
-          }
-        }
+        if (scheme_native_closure_preserves_marks(p))
+          return 1;
       }
     }
   }
@@ -712,7 +716,7 @@ int scheme_is_non_gc(Scheme_Object *obj, int depth)
     break;
 
   case scheme_local_type:
-    if (SCHEME_GET_LOCAL_FLAGS(obj) == SCHEME_LOCAL_FLONUM)
+    if (JIT_TYPE_NEEDS_BOXING(SCHEME_GET_LOCAL_TYPE(obj)))
       return 0;
     return 1;
     break;
@@ -747,7 +751,7 @@ static int is_a_procedure(Scheme_Object *v, mz_jit_state *jitter)
       if (jitter->nc) {
 	Scheme_Object *p;
         
-	p = scheme_extract_global(v, jitter->nc, 1);
+	p = scheme_extract_global(v, jitter->nc, 0);
         if (p) {
           p = ((Scheme_Bucket *)p)->val;
           return SAME_TYPE(SCHEME_TYPE(p), scheme_native_closure_type);
@@ -761,18 +765,22 @@ static int is_a_procedure(Scheme_Object *v, mz_jit_state *jitter)
 
 int scheme_ok_to_move_local(Scheme_Object *obj)
 {
-  if (SAME_TYPE(SCHEME_TYPE(obj), scheme_local_type)
-      && !SCHEME_GET_LOCAL_FLAGS(obj)) {
-    return 1;
-  } else
-    return 0;
+  if (SAME_TYPE(SCHEME_TYPE(obj), scheme_local_type)) {
+    int flags = SCHEME_GET_LOCAL_FLAGS(obj);
+    if (!flags
+        || ((flags > SCHEME_LOCAL_TYPE_OFFSET)
+            && !JIT_TYPE_NEEDS_BOXING(flags - SCHEME_LOCAL_TYPE_OFFSET)))
+      return 1;
+  }
+  
+  return 0;
 }
 
 int scheme_ok_to_delay_local(Scheme_Object *obj)
 {
   if (SAME_TYPE(SCHEME_TYPE(obj), scheme_local_type)
-      /* We can delay if the clears flag is set: */
-      && (SCHEME_GET_LOCAL_FLAGS(obj) <= 1)) {
+      /* We can delay if the clears flag is set and no type: */
+      && (SCHEME_GET_LOCAL_FLAGS(obj) <= SCHEME_LOCAL_CLEAR_ON_READ)) {
     return 1;
   } else
     return 0;
@@ -823,7 +831,7 @@ static int expression_avoids_clearing_local(Scheme_Object *wrt, int pos, int fue
     return 1;
   else if (SAME_TYPE(t, scheme_local_type))
     return ((SCHEME_LOCAL_POS(wrt) != pos)
-            || !(SCHEME_GET_LOCAL_FLAGS(wrt) & SCHEME_LOCAL_CLEAR_ON_READ));
+            || !(SCHEME_GET_LOCAL_FLAGS(wrt) == SCHEME_LOCAL_CLEAR_ON_READ));
   else if (SAME_TYPE(t, scheme_toplevel_type))
     return 1;
   else if (t == scheme_application2_type) {
@@ -854,9 +862,9 @@ int scheme_is_relatively_constant_and_avoids_r1_maybe_fp(Scheme_Object *obj, Sch
 
   t = SCHEME_TYPE(obj);
   if (SAME_TYPE(t, scheme_local_type)) {
-    /* Must have clearing, other-clears, or flonum flag set,
+    /* Must have clearing, other-clears, or type flag set,
        otherwise is_constant_and_avoids_r1() would have returned 1. */
-    if (SCHEME_GET_LOCAL_FLAGS(obj) == SCHEME_LOCAL_FLONUM)
+    if (SCHEME_GET_LOCAL_TYPE(obj) == SCHEME_LOCAL_TYPE_FLONUM)
       return fp_ok;
     else if (expression_avoids_clearing_local(wrt, SCHEME_LOCAL_POS(obj), 3))
       /* different local vars, sp order doesn't matter */
@@ -880,9 +888,10 @@ int scheme_needs_only_target_register(Scheme_Object *obj, int and_can_reorder)
 
   t = SCHEME_TYPE(obj);
   if (SAME_TYPE(t, scheme_local_type)) {
-    if (and_can_reorder && SCHEME_GET_LOCAL_FLAGS(obj))
+    int flags = SCHEME_GET_LOCAL_FLAGS(obj);
+    if (and_can_reorder && (flags && (flags <= SCHEME_LOCAL_OTHER_CLEARS)))
       return 0;
-    if (SCHEME_GET_LOCAL_FLAGS(obj) == SCHEME_LOCAL_FLONUM)
+    if (JIT_TYPE_NEEDS_BOXING(flags - SCHEME_LOCAL_TYPE_OFFSET))
       return 0;
     return 1;
   } else 
@@ -1417,8 +1426,8 @@ static int generate_non_tail_with_branch(Scheme_Object *obj, mz_jit_state *jitte
       LOG_IT(("non-tail\n"));
       if (mark_pos_ends)
 	scheme_generate_non_tail_mark_pos_prefix(jitter);
-      mz_tl_ldi_p(JIT_R2, tl_scheme_current_cont_mark_stack);
       if (!jitter->local1_busy) {
+        mz_tl_ldi_p(JIT_R2, tl_scheme_current_cont_mark_stack);
         using_local1 = 1;
         jitter->local1_busy = save_pushed_marks + 1;
         mz_set_local_p(JIT_R2, JIT_LOCAL1);
@@ -1427,9 +1436,9 @@ static int generate_non_tail_with_branch(Scheme_Object *obj, mz_jit_state *jitte
            have been pushed */
         using_local1 = 2;
       } else {
+        mz_tl_ldi_p(JIT_R2, tl_scheme_current_cont_mark_stack);
         /* mark stack is an integer... turn it into a pointer */
-        jit_lshi_l(JIT_R2, JIT_R2, 0x1);
-        jit_ori_l(JIT_R2, JIT_R2, 0x1);
+        jit_fixnum_l(JIT_R2, JIT_R2);
         mz_pushr_p(JIT_R2); /* no sync */
 # ifdef MZ_USE_LWC
         /* For lighweight continuations, we need to be able to recognize
@@ -1585,14 +1594,17 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
   int pushed_marks;
   int nsrs, nsrs1, g1, g2, amt, need_sync, flostack, flostack_pos;
   int else_is_empty = 0, i, can_chain_branch, chain_true, chain_false, old_self_pos;
-#ifdef NEED_LONG_JUMPS
+#ifdef NEED_LONG_BRANCHES
   int then_short_ok, else_short_ok;
 #else
   int then_short_ok = 1;
+# ifdef NEED_LONG_JUMPS
+  int else_short_ok = 1;
+# endif
 #endif
   START_JIT_DATA();
 
-#ifdef NEED_LONG_JUMPS
+#ifdef NEED_LONG_BRANCHES
   /* It's possible that the code for a then
      or else branch will be so large that we might
      need a long jump. Conservatively analyze the
@@ -1622,12 +1634,12 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
 
   if (can_chain_branch && chain_true)
     for_this_branch.true_needs_jump = 1;
-#ifdef NEED_LONG_JUMPS
+#ifdef NEED_LONG_BRANCHES
   if (can_chain_branch && (chain_true || chain_false)
       && !for_branch->branch_short)
     then_short_ok = 0;
-  for_this_branch.branch_short = then_short_ok;
 #endif
+  for_this_branch.branch_short = then_short_ok;
   
   LOG_IT(("if...\n"));
 
@@ -1849,6 +1861,30 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
   }
 #endif
 
+#ifdef TEST_ALTERNATE_TARGET_REGISTER
+# define IS_SKIP_TYPE(t) 0
+  if ((target == JIT_R0)
+      && !is_tail
+      && !for_branch
+      && !jitter->unbox
+      && !IS_SKIP_TYPE(SCHEME_TYPE(obj))
+      && !SAME_TYPE(SCHEME_TYPE(obj), scheme_toplevel_type)
+      && !SAME_TYPE(SCHEME_TYPE(obj), scheme_local_type)
+      && !SAME_TYPE(SCHEME_TYPE(obj), scheme_local_unbox_type)
+      && (SCHEME_TYPE(obj) < _scheme_values_types_)) {
+    scheme_generate(obj, jitter, is_tail, wcm_may_replace, multi_ok, JIT_R1, for_branch);
+    CHECK_LIMIT();
+    jit_movr_p(JIT_R0, JIT_R1);
+    return 1;
+  } else if ((target == JIT_R1)
+             && IS_SKIP_TYPE(SCHEME_TYPE(obj))) {
+    scheme_generate(obj, jitter, is_tail, wcm_may_replace, multi_ok, JIT_R0, for_branch);
+    CHECK_LIMIT();
+    jit_movr_p(JIT_R1, JIT_R0);
+    return 1;
+  }
+#endif
+
   orig_target = target;
   result_ignored = (target < 0);
   if (target < 0) target = JIT_R0;
@@ -1898,11 +1934,11 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
   case scheme_local_type:
     {
       /* Other parts of the JIT rely on this code modifying only the target register,
-         unless the flag is SCHEME_LOCAL_FLONUM */
+         unless the type is SCHEME_FLONUM_TYPE */
       int pos, flonum;
       START_JIT_DATA();
 #ifdef USE_FLONUM_UNBOXING
-      flonum = (SCHEME_GET_LOCAL_FLAGS(obj) == SCHEME_LOCAL_FLONUM);
+      flonum = (SCHEME_GET_LOCAL_TYPE(obj) == SCHEME_LOCAL_TYPE_FLONUM);
 #else
       flonum = 0;
 #endif
@@ -2040,8 +2076,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
           mz_tl_ldi_p(JIT_R0, tl_scheme_current_thread);
           CHECK_LIMIT();
           jit_ldxi_l(JIT_V1, JIT_R0, &((Scheme_Thread *)0x0)->ku.multiple.count);
-          jit_lshi_l(JIT_V1, JIT_V1, 0x1);
-          jit_ori_l(JIT_V1, JIT_V1, 0x1);
+          jit_fixnum_l(JIT_V1, JIT_V1);
           mz_pushr_p(JIT_V1); /* sync'd below */
           jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Thread *)0x0)->ku.multiple.array);
           mz_pushr_p(JIT_V1); /* sync'd below */
@@ -2272,9 +2307,13 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       (void)jit_jmpi(refloop);
       CHECK_LIMIT();
       mz_patch_branch(ref3);
+      /* clear array pointer and re-laod argc: */
       (void)mz_tl_ldi_p(JIT_R0, tl_scheme_current_thread);
+      (void)jit_movi_p(JIT_R1, NULL);
+      jit_stxi_l(&((Scheme_Thread *)0x0)->ku.multiple.array, JIT_R0, JIT_R1);
       jit_ldxi_l(JIT_R0, JIT_R0, &((Scheme_Thread *)0x0)->ku.multiple.count);
-          
+      CHECK_LIMIT();
+
       /* Perform call --------------------- */
       /* Function is in V1, argc in R0, args on RUNSTACK */
       mz_patch_ucbranch(ref2);
@@ -2282,16 +2321,18 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 
       if (is_tail) {
         if (!sjc.shared_tail_argc_code) {
-          sjc.shared_tail_argc_code = scheme_generate_shared_call(-1, jitter, 1, 1, 0, 0, 0, 0);
+          sjc.shared_tail_argc_code = scheme_generate_shared_call(-1, jitter, 1, 0, 1, 0, 0, 0, 0);
         }
         mz_set_local_p(JIT_R0, JIT_LOCAL2);
         (void)jit_jmpi(sjc.shared_tail_argc_code);
       } else {
-        int mo = multi_ok ? 1 : 0;
+        int mo = (multi_ok 
+                  ? (result_ignored ? SHARED_RESULT_IGNORED_CASE : SHARED_MULTI_OK_CASE) 
+                  : SHARED_SINGLE_VALUE_CASE);
         void *code;
         if (!sjc.shared_non_tail_argc_code[mo]) {
-          scheme_ensure_retry_available(jitter, multi_ok);
-          code = scheme_generate_shared_call(-2, jitter, multi_ok, 0, 0, 0, 0, 0);
+          scheme_ensure_retry_available(jitter, multi_ok, result_ignored);
+          code = scheme_generate_shared_call(-2, jitter, multi_ok, result_ignored, 0, 0, 0, 0, 0);
           sjc.shared_non_tail_argc_code[mo] = code;
         }
         code = sjc.shared_non_tail_argc_code[mo];
@@ -2425,16 +2466,14 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 
       LOG_IT(("app %d\n", app->num_args));
 
-      r = scheme_generate_inlined_nary(jitter, app, is_tail, multi_ok, NULL, 1, result_ignored);
+      r = scheme_generate_inlined_nary(jitter, app, is_tail, multi_ok, NULL, 1, result_ignored, target);
       CHECK_LIMIT();
       if (r) {
-        if (target != JIT_R0)
-          jit_movr_p(target, JIT_R0);
         if (for_branch) finish_branch(jitter, target, for_branch);
 	return r;
       }
 
-      r = scheme_generate_app(app, NULL, app->num_args, jitter, is_tail, multi_ok, 0);
+      r = scheme_generate_app(app, NULL, app->num_args, jitter, is_tail, multi_ok, result_ignored, 0);
 
       CHECK_LIMIT();
       if (target != JIT_R0)
@@ -2450,11 +2489,9 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       Scheme_Object *args[2];
       int r;
 
-      r = scheme_generate_inlined_unary(jitter, app, is_tail, multi_ok, NULL, 1, 0, result_ignored);
+      r = scheme_generate_inlined_unary(jitter, app, is_tail, multi_ok, NULL, 1, 0, result_ignored, target);
       CHECK_LIMIT();
       if (r) {
-        if (target != JIT_R0)
-          jit_movr_p(target, JIT_R0);
         if (for_branch) finish_branch(jitter, target, for_branch);
 	return r;
       }
@@ -2464,7 +2501,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       args[0] = app->rator;
       args[1] = app->rand;
       
-      r = scheme_generate_app(NULL, args, 1, jitter, is_tail, multi_ok, 0);
+      r = scheme_generate_app(NULL, args, 1, jitter, is_tail, multi_ok, result_ignored, 0);
 
       CHECK_LIMIT();
       if (target != JIT_R0)
@@ -2480,11 +2517,9 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       Scheme_Object *args[3];
       int r;
 
-      r = scheme_generate_inlined_binary(jitter, app, is_tail, multi_ok, NULL, 1, 0, result_ignored);
+      r = scheme_generate_inlined_binary(jitter, app, is_tail, multi_ok, NULL, 1, 0, result_ignored, target);
       CHECK_LIMIT();
       if (r) {
-        if (target != JIT_R0)
-          jit_movr_p(target, JIT_R0);
         if (for_branch) finish_branch(jitter, target, for_branch);
 	return r;
       }
@@ -2495,7 +2530,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       args[1] = app->rand1;
       args[2] = app->rand2;
 
-      r = scheme_generate_app(NULL, args, 2, jitter, is_tail, multi_ok, 0);
+      r = scheme_generate_app(NULL, args, 2, jitter, is_tail, multi_ok, result_ignored, 0);
 
       CHECK_LIMIT();
       if (target != JIT_R0)
@@ -2597,9 +2632,9 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 	/* Did we get multiple results? If not, go to error: */
 	ref = jit_bnei_p(jit_forward(), JIT_R0, SCHEME_MULTIPLE_VALUES);
 	/* Load count and result array: */
-	mz_tl_ldi_p(JIT_R2, tl_scheme_current_thread);
-	jit_ldxi_l(JIT_R1, JIT_R2, &((Scheme_Thread *)0x0)->ku.multiple.count);
-	jit_ldxi_p(JIT_R2, JIT_R2, &((Scheme_Thread *)0x0)->ku.multiple.array);
+	mz_tl_ldi_p(JIT_V1, tl_scheme_current_thread);
+        jit_ldxi_p(JIT_R2, JIT_V1, &((Scheme_Thread *)0x0)->ku.multiple.array);
+	jit_ldxi_l(JIT_R1, JIT_V1, &((Scheme_Thread *)0x0)->ku.multiple.count);
 	CHECK_LIMIT();
 	/* If we got the expected count, jump to installing values: */
 	ref2 = jit_beqi_i(jit_forward(), JIT_R1, lv->count);
@@ -2626,9 +2661,11 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 	(void)mz_finish_lwe(ts_lexical_binding_wrong_return_arity, ref);
 	CHECK_LIMIT();
 
-	/* Continue with expected values; R2 has value array: */
+	/* Continue with expected values; R2 has values and V1 has thread pointer: */
         mz_patch_branch(ref2);
 	__END_SHORT_JUMPS__(1);
+        (void)jit_movi_p(JIT_R0, NULL);
+        jit_stxi_p(&((Scheme_Thread *)0x0)->ku.multiple.array, JIT_V1, JIT_R0);
 	for (i = 0; i < lv->count; i++) {
 	  jit_ldxi_p(JIT_R1, JIT_R2, WORDS_TO_BYTES(i));
 	  if (ab) {
@@ -2794,7 +2831,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       mz_runstack_skipped(jitter, 1);
 
 #ifdef USE_FLONUM_UNBOXING
-      flonum = SCHEME_LET_EVAL_TYPE(lv) & LET_ONE_FLONUM;
+      flonum = (SCHEME_LET_ONE_TYPE(lv) == SCHEME_LOCAL_TYPE_FLONUM);
 #else
       flonum = 0;
 #endif
@@ -3930,7 +3967,7 @@ int scheme_native_arity_check(Scheme_Object *closure, int argc)
   return sjc.check_arity_code(closure, argc + 1, 0 EXTRA_NATIVE_ARGUMENT);
 }
 
-Scheme_Object *scheme_get_native_arity(Scheme_Object *closure)
+Scheme_Object *scheme_get_native_arity(Scheme_Object *closure, int mode)
 {
   int cnt;
 
@@ -3951,7 +3988,11 @@ Scheme_Object *scheme_get_native_arity(Scheme_Object *closure)
 	has_rest = 1;
       } else 
 	has_rest = 0;
-      a = scheme_make_arity(v, has_rest ? -1 : v);
+      if (mode == -3) {
+        if (has_rest) v = -(v+1);
+        a = scheme_make_integer(v);
+      } else
+        a = scheme_make_arity(v, has_rest ? -1 : v);
       l = scheme_make_pair(a, l);
     }
     if (is_method)

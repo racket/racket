@@ -8,21 +8,21 @@
            racket/contract)
 
   ;; Data defn ----------------------------------------
-    
+
   (define-struct char-set (set/thunk))
 
   (define (fold-set op init l)
     (if (null? l)
-	init
-	(fold-set op (op init (car l)) (cdr l))))
+        init
+        (fold-set op (op init (car l)) (cdr l))))
 
   (define (char-set-set cs)
     (let ([v (char-set-set/thunk cs)])
       (if (procedure? v)
-	  (let ([v2 (v)])
-	    (set-char-set-set/thunk! cs v2)
-	    v2)
-	  v)))
+          (let ([v2 (v)])
+            (set-char-set-set/thunk! cs v2)
+            v2)
+          v)))
 
   ;; General procedures ----------------------------------------
   
@@ -31,7 +31,7 @@
      [() #t]
      [(cs) #t]
      [(cs1 cs2) (equal? (integer-set-contents (char-set-set cs1))
-			(integer-set-contents (char-set-set cs2)))]
+                        (integer-set-contents (char-set-set cs2)))]
      [(cs1 . rest) (fold-set (lambda (v cs) (and v (char-set= cs1 cs))) #t rest)]))
   
   (define char-set<=
@@ -63,8 +63,8 @@
   (define (char-set-cursor-next cs c)
     (let ([d (- (cdadr c) (caadr c))])
       (if (= d (car c))
-	  (cons 0 (cddr c))
-	  (cons (add1 (car c)) (cdr c)))))
+          (cons 0 (cddr c))
+          (cons (add1 (car c)) (cdr c)))))
 
   (define (end-of-char-set? c)
     (null? (cdr c)))
@@ -72,15 +72,15 @@
   (define (char-set-fold/done kons knil cs done?)
     (let loop ([v knil][l (integer-set-contents (char-set-set cs))])
       (if (null? l)
-	  v
-	  (let ([end (cdar l)])
-	    (let iloop ([v v][i (caar l)])
-	      (if (i . > . end)
-		  (loop v (cdr l))
-		  (let ([v (kons (integer->char i) v)])
-		    (if (done? v)
-			v
-			(iloop v (add1 i))))))))))
+          v
+          (let ([end (cdar l)])
+            (let iloop ([v v][i (caar l)])
+              (if (i . > . end)
+                  (loop v (cdr l))
+                  (let ([v (kons (integer->char i) v)])
+                    (if (done? v)
+                        v
+                        (iloop v (add1 i))))))))))
 
   (define (char-set-fold kons knil cs)
     (char-set-fold/done kons knil cs (lambda (x) #f)))
@@ -92,7 +92,7 @@
       ;; Implementation taken directly from SRFI-14:
       (let lp ((seed seed) (cs base-cs))
         (if (p seed) 
-	    cs ; P says we are done.
+            cs ; P says we are done.
             (lp (g seed) ; Loop on (G SEED).
                 (char-set-adjoin! cs (f seed)))))]))
 
@@ -116,7 +116,7 @@
 
   (define mk-char-set
     (let ([char-set (lambda more
-		      (list->char-set more char-set:empty))])
+                      (list->char-set more char-set:empty))])
       char-set))
 
   (define list->char-set 
@@ -138,10 +138,10 @@
      [(pred cs) (char-set-filter pred cs char-set:empty)]
      [(pred cs base-cs)
       (char-set-fold (lambda (c v) (if (pred c)
-				       (char-set-adjoin v c)
-				       v))
-		     base-cs
-		     cs)]))
+                                       (char-set-adjoin v c)
+                                       v))
+                     base-cs
+                     cs)]))
   (define (char-set-filter! pred cs base-cs)
     (char-set-filter pred cs base-cs))
 
@@ -151,34 +151,34 @@
      [(lower upper error?) (ucs-range->char-set lower upper error? char-set:empty)]
      [(lower upper error? cs)
       (when (or (lower . < . 0)
-		(upper . > . #x110000)
-		(lower . >= . upper))
-	(raise (make-exn:fail:contract
-		(format "ucs-range->char-set: invalid range: [~a, ~a)" lower upper)
-		(current-continuation-marks))))
+                (upper . > . #x110000)
+                (lower . >= . upper))
+        (raise (make-exn:fail:contract
+                (format "ucs-range->char-set: invalid range: [~a, ~a)" lower upper)
+                (current-continuation-marks))))
       (char-set-union cs
-		      (cond
-		       [(and (upper . <= . #xE000)
-			     (lower . >= . #xD800))
-			;; Completely in the hole
-			char-set:empty]
-		       [(upper . <= . #xE000)
-			;; Below the hole
-			(make-char-set (make-integer-set (list (cons lower (sub1 (min #xD800 upper))))))]
-		       [(lower . >= . #xD800)
-			;; Above the hole
-			(make-char-set (make-integer-set (list (cons (max #xE000 lower) (sub1 upper)))))]
-		       [else
-			;; Spans the hole:
-			(make-char-set (make-integer-set (list (cons lower #xD7FF)
-							       (cons #xE000 (sub1 upper)))))]))]))
+                      (cond
+                       [(and (upper . <= . #xE000)
+                             (lower . >= . #xD800))
+                        ;; Completely in the hole
+                        char-set:empty]
+                       [(upper . <= . #xE000)
+                        ;; Below the hole
+                        (make-char-set (make-integer-set (list (cons lower (sub1 (min #xD800 upper))))))]
+                       [(lower . >= . #xD800)
+                        ;; Above the hole
+                        (make-char-set (make-integer-set (list (cons (max #xE000 lower) (sub1 upper)))))]
+                       [else
+                        ;; Spans the hole:
+                        (make-char-set (make-integer-set (list (cons lower #xD7FF)
+                                                               (cons #xE000 (sub1 upper)))))]))]))
   (define (ucs-range->char-set! lower upper error? base-cs)
     (ucs-range->char-set lower upper error? base-cs))
 
   (define (->char-set x)
     (cond
      [(char? x) (let ([v (char->integer x)])
-		  (make-char-set (make-integer-set (list (cons v v)))))]
+                  (make-char-set (make-integer-set (list (cons v v)))))]
      [(string? x) (string->char-set x)]
      [(char-set? x) x]
      [else (raise-type-error '->char-set "character, string, or char-set" x)]))
@@ -188,18 +188,18 @@
   (define (char-set-size cs)
     (let loop ([l (integer-set-contents (char-set-set cs))][c 0])
       (if (null? l)
-	  c
-	  (loop (cdr l) (+ c 1 (- (cdar l) (caar l)))))))
+          c
+          (loop (cdr l) (+ c 1 (- (cdar l) (caar l)))))))
 
   (define (char-set-count pred cs)
     (char-set-fold (lambda (c v)
-		     (+ v (if (pred c) 1 0)))
-		   0
-		   cs))
+                     (+ v (if (pred c) 1 0)))
+                   0
+                   cs))
 
   (define (char-set->list cs)
     (char-set-fold cons null cs))
-    
+
   (define (char-set->string cs)
     (list->string (char-set->list cs)))
 
@@ -208,28 +208,28 @@
   
   (define (char-set-every pred cs)
     (char-set-fold/done (lambda (c v)
-			  (and v
-			       (pred c)))
-			#t
-			cs
-			not))
+                          (and v
+                               (pred c)))
+                        #t
+                        cs
+                        not))
 
   (define (char-set-any pred cs)
     (char-set-fold/done (lambda (c v)
-			  (or v
-			      (pred c)))
-			#f
-			cs
-			values))
+                          (or v
+                              (pred c)))
+                        #f
+                        cs
+                        values))
   
   ;; Character-set algebra ----------------------------------------
 
-  (define char-set-adjoin 
+  (define char-set-adjoin
     (case-lambda
      [(cs char1) 
       (let ([v (char->integer char1)])
-	(make-char-set (union (char-set-set cs)
-			      (make-integer-set (list (cons v v))))))]
+        (make-char-set (union (char-set-set cs)
+                              (make-integer-set (list (cons v v))))))]
      [(cs . more)
       (fold-set char-set-adjoin cs more)]))
 
@@ -237,27 +237,27 @@
     (case-lambda
      [(cs char1) 
       (let ([v (char->integer char1)])
-	(make-char-set (difference (char-set-set cs)
-				   (make-integer-set (list (cons v v))))))]
+        (make-char-set (difference (char-set-set cs)
+                                   (make-integer-set (list (cons v v))))))]
      [(cs . more)
       (fold-set char-set-delete cs more)]))
 
    (define (char-set-complement cs)
      (make-char-set
       (difference (complement (char-set-set cs) 0 #x10FFFF)
-  	         (make-range #xD800 #xDFFF))))
+                  (make-range #xD800 #xDFFF))))
 
   (define-syntax define-set-op
     (syntax-rules ()
       [(_ char-set-op set-op neutral)
-       (define char-set-op 
-	 (case-lambda
-	  [(cs1 cs2)
-	   (make-char-set (set-op (char-set-set cs1) (char-set-set cs2)))]
-	  [() 
-	   neutral]
-	  [(cs1 . more)
-	   (fold-set char-set-op cs1 more)]))]))
+       (define char-set-op
+         (case-lambda
+          [(cs1 cs2)
+           (make-char-set (set-op (char-set-set cs1) (char-set-set cs2)))]
+          [()
+           neutral]
+          [(cs1 . more)
+           (fold-set char-set-op cs1 more)]))]))
 
   (define-set-op char-set-union union char-set:empty)
   (define-set-op char-set-intersection intersect char-set:full)
@@ -301,39 +301,39 @@
     (make-char-set
      (lambda ()
        (make-integer-set
-	(let loop ([l unicode])
-	  (cond
-	   [(null? l) null]
-	   [(caddar l) 
-	    ;; Every char in this range has the same properites
-	    (if (pred? (integer->char (caar l)))
-		(cons (cons (caar l) (cadar l)) (loop (cdr l)))
-		(loop (cdr l)))]
-	   [else
-	    ;; Check char-by-char:
-	    (let ([end (cadar l)])
-	      (let no-loop ([v (caar l)])
-		(cond
-		 [(v . > . end)
-		  ;; None in this range
-		  (loop (cdr l))]
-		 [(pred? (integer->char v))
-		  ;; Found a char in this range
-		  (let yes-loop ([v2 (add1 v)])
-		    (cond
-		     [(v2 . > . end)
-		      ;; Went to end
-		      (cons (cons v (sub1 v2)) (loop (cdr l)))]
-		     [(pred? (integer->char v2))
-		      (yes-loop (add1 v2))]
-		     [else
-		      ;; Found end of sub-range; treat the rest
-		      ;;  of this range as a new range
-		      (cons (cons v (sub1 v2))
-			    (loop (cons (list v2 end #f) (cdr l))))]))]
-		 [else
-		  ;; Still looking for a char in this range
-		  (no-loop (add1 v))])))]))))))
+        (let loop ([l unicode])
+          (cond
+           [(null? l) null]
+           [(caddar l) 
+            ;; Every char in this range has the same properites
+            (if (pred? (integer->char (caar l)))
+                (cons (cons (caar l) (cadar l)) (loop (cdr l)))
+                (loop (cdr l)))]
+           [else
+            ;; Check char-by-char:
+            (let ([end (cadar l)])
+              (let no-loop ([v (caar l)])
+                (cond
+                 [(v . > . end)
+                  ;; None in this range
+                  (loop (cdr l))]
+                 [(pred? (integer->char v))
+                  ;; Found a char in this range
+                  (let yes-loop ([v2 (add1 v)])
+                    (cond
+                     [(v2 . > . end)
+                      ;; Went to end
+                      (cons (cons v (sub1 v2)) (loop (cdr l)))]
+                     [(pred? (integer->char v2))
+                      (yes-loop (add1 v2))]
+                     [else
+                      ;; Found end of sub-range; treat the rest
+                      ;;  of this range as a new range
+                      (cons (cons v (sub1 v2))
+                            (loop (cons (list v2 end #f) (cdr l))))]))]
+                 [else
+                  ;; Still looking for a char in this range
+                  (no-loop (add1 v))])))]))))))
 
   (define char-set:lower-case
     (make-standard-set char-lower-case?))

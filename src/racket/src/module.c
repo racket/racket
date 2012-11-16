@@ -573,7 +573,7 @@ void scheme_finish_kernel(Scheme_Env *env)
     running[1] = 1;
     env->running = running;
     env->attached = 1;
-
+    
     /* Since this is the first module rename, it's registered as
        the kernel module rename: */
     rn = scheme_make_module_rename(scheme_make_integer(0), mzMOD_RENAME_NORMAL, NULL, NULL, NULL);
@@ -4069,6 +4069,19 @@ static int is_procedure_expression(Scheme_Object *e)
           || (t == scheme_case_lambda_sequence_type));
 }
 
+static void get_procedure_shape(Scheme_Object *e, Scheme_Object **_c)
+{
+  Scheme_Object *p, *v;
+
+  p = scheme_get_or_check_procedure_shape(e, NULL);
+
+  v = scheme_alloc_small_object();
+  v->type = scheme_proc_shape_type;
+  SCHEME_PTR_VAL(v) = p;
+
+  *_c = v;
+}
+
 static void setup_accessible_table(Scheme_Module *m)
 {
   if (!m->exp_infos[0]->accessible) {
@@ -4121,7 +4134,8 @@ static void setup_accessible_table(Scheme_Module *m)
           for (i = 0; i < cnt; i++) {
             form = SCHEME_VEC_ELS(m->bodies[0])[i];
             if (SAME_TYPE(SCHEME_TYPE(form), scheme_define_values_type)) {
-              int checked_st = 0, is_st = 0, st_count = 0, st_icount = 0;
+              int checked_st = 0, is_st = 0;
+              Simple_Stuct_Type_Info stinfo;
               for (k = SCHEME_VEC_SIZE(form); k-- > 1; ) {
                 tl = SCHEME_VEC_ELS(form)[k];
                 if (SCHEME_TOPLEVEL_FLAGS(tl) & SCHEME_TOPLEVEL_SEAL) {
@@ -4146,8 +4160,9 @@ static void setup_accessible_table(Scheme_Module *m)
                               SCHEME_VEC_ELS(SCHEME_VEC_ELS(form)[0])[2] = (Scheme_Object *)m->prefix;
                             v = scheme_make_pair(v, SCHEME_VEC_ELS(form)[0]);
                           } else if (is_procedure_expression(SCHEME_VEC_ELS(form)[0])) {
-                            /* record that it's constant across all instantiations: */
-                            v = scheme_make_pair(v, scheme_constant_key);
+                            /* that it's a procedure: */
+                            v = scheme_make_vector(2, v);
+                            SCHEME_VEC_ELS(v)[1] = SCHEME_VEC_ELS(form)[0];
                           } else {
                             /* record that it's fixed for any given instantiation: */
                             v = scheme_make_pair(v, scheme_fixed_key);
@@ -4156,15 +4171,18 @@ static void setup_accessible_table(Scheme_Module *m)
                           if (!checked_st) {
                             is_st = !!scheme_is_simple_make_struct_type(SCHEME_VEC_ELS(form)[0],
                                                                         SCHEME_VEC_SIZE(form)-1,
-                                                                        1, 1, NULL, &st_count, &st_icount, 
-                                                                        NULL,
+                                                                        1, 1, NULL, &stinfo,
                                                                         NULL, NULL, NULL, 0,
                                                                         m->prefix->toplevels, ht,
                                                                         5);
                             checked_st = 1;
                           }
-                          if (is_st)
-                            v = scheme_make_pair(v, scheme_make_struct_proc_shape(k-1, st_count, st_icount));
+                          if (is_st) {
+                            intptr_t shape;
+                            shape = scheme_get_struct_proc_shape(k-1, &stinfo);
+                            v = scheme_make_vector(3, v);
+                            SCHEME_VEC_ELS(v)[1] = scheme_make_integer(shape);
+                          }
                         }
                         scheme_hash_set(ht, tl, v);
                       }
@@ -4376,6 +4394,20 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
         if (SCHEME_PAIRP(pos)) {
           if (_is_constant) *_is_constant = SCHEME_CDR(pos);
           pos = SCHEME_CAR(pos);
+        } else if (SCHEME_VECTORP(pos)) {
+          if (SCHEME_VEC_SIZE(pos) == 2) {
+            if (_is_constant)
+              get_procedure_shape(SCHEME_VEC_ELS(pos)[1], _is_constant);
+          } else {
+            if (_is_constant) {
+              Scheme_Object *ps;
+              
+              ps = scheme_make_struct_proc_shape(SCHEME_INT_VAL(SCHEME_VEC_ELS(pos)[1]));
+
+              *_is_constant = ps;
+            }
+          }
+          pos = SCHEME_VEC_ELS(pos)[0];
         }
       }
 
@@ -4521,6 +4553,11 @@ int scheme_module_export_position(Scheme_Object *modname, Scheme_Env *env, Schem
   setup_accessible_table(m);
 
   pos = scheme_hash_get(m->exp_infos[0]->accessible, varname);
+
+  if (SCHEME_PAIRP(pos))
+    pos = SCHEME_CAR(pos);
+  else if (SCHEME_VECTORP(pos))
+    pos = SCHEME_VEC_ELS(pos)[0];
   
   if (pos && (SCHEME_INT_VAL(pos) >= 0))
     return SCHEME_INT_VAL(pos);
@@ -4654,8 +4691,8 @@ static int indent = 0;
 static void show(const char *what, Scheme_Env *menv, int v1, int v2, int ph, int base_phase)
 {
   if (menv->phase > 3) return;
-  if (0 || SCHEME_SYMBOLP(SCHEME_PTR_VAL(menv->module->modname)))
-    if (0 || SCHEME_SYM_VAL(SCHEME_PTR_VAL(menv->module->modname))[0] != '#') {
+  if (1 || SCHEME_SYMBOLP(SCHEME_PTR_VAL(menv->module->modname)))
+    if (1 || SCHEME_SYM_VAL(SCHEME_PTR_VAL(menv->module->modname))[0] != '#') {
       int i;
       for (i = 0; i < indent; i++) {
         fprintf(stderr, " ");
@@ -5499,7 +5536,9 @@ static Scheme_Object *body_one_expr(void *prefix_plus_expr, int argc, Scheme_Obj
   v = _scheme_eval_linked_expr_multi(SCHEME_CDR((Scheme_Object *)prefix_plus_expr));
   scheme_suspend_prefix(saved_runstack);
 
-  return v;
+  scheme_ignore_result(v);
+
+  return scheme_void;
 }
 
 static int needs_prompt(Scheme_Object *e)
@@ -5595,7 +5634,7 @@ void *scheme_module_run_finish(Scheme_Env *menv, Scheme_Env *env)
                                              scheme_make_raw_pair(save_prefix, body));
         scheme_resume_prefix(save_prefix);
       } else
-        (void)_scheme_eval_linked_expr_multi(body);
+        scheme_ignore_result(_scheme_eval_linked_expr_multi(body));
     }
 
     if (scheme_module_demand_hook) {
@@ -8011,8 +8050,8 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
          sets m->comp_prefix to NULL, which is how optimize & resolve
          know to avoid re-optimizing and re-resolving. */
 
-      o = scheme_get_param(scheme_current_config(), MZCONFIG_USE_JIT);
-      use_jit = SCHEME_TRUEP(o);
+      /* Note: don't use MZCONFIG_USE_JIT for module bodies */
+      use_jit = scheme_startup_use_jit;
 
       oi = scheme_optimize_info_create(env->prefix, 1);
       scheme_optimize_info_enforce_const(oi, rec[drec].comp_flags & COMP_ENFORCE_CONSTS);
@@ -8644,7 +8683,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
             unbounds = scheme_make_pair(eenv->prefix->unbound, unbounds);
 	
           m = scheme_sfs(m, NULL, max_let_depth);
-	  if (scheme_resolve_info_use_jit(ri))
+	  if (scheme_startup_use_jit /* Note: not scheme_resolve_info_use_jit(ri) */)
 	    m = scheme_jit_expr(m);
           rp = scheme_prefix_eval_clone(rp);
           
@@ -11749,19 +11788,29 @@ void parse_requires(Scheme_Object *form, int at_phase,
                    start ? eval_exp : 0, start ? eval_run : 0, 
                    main_env->phase, scheme_null, 0);
 
+      x_just_mode = just_mode;
+      x_mode = mode;
+      if (at_phase) {
+        if (x_mode && SCHEME_TRUEP(x_mode)) {
+          x_mode = scheme_bin_plus(x_mode, scheme_make_integer(at_phase));
+        }
+        /* x_just_mode refers to the mode at export, which doesn't shift 
+           by phase context at import */
+      }
+
       /* Add name to require list, if it's not there: */
       if (main_env->module) {
         Scheme_Object *reqs;
-        if (SAME_OBJ(mode, scheme_make_integer(0))) {
+        if (SAME_OBJ(x_mode, scheme_make_integer(0))) {
           reqs = add_req(scheme_make_pair(idx, scheme_null), main_env->module->requires);
           main_env->module->requires = reqs;
-        } else if (SAME_OBJ(mode, scheme_make_integer(1))) {
+        } else if (SAME_OBJ(x_mode, scheme_make_integer(1))) {
           reqs = add_req(scheme_make_pair(idx, scheme_null), main_env->module->et_requires);
           main_env->module->et_requires = reqs;
-        } else if (SAME_OBJ(mode, scheme_make_integer(-1))) {
+        } else if (SAME_OBJ(x_mode, scheme_make_integer(-1))) {
           reqs = add_req(scheme_make_pair(idx, scheme_null), main_env->module->tt_requires);
           main_env->module->tt_requires = reqs;
-        } else if (SAME_OBJ(mode, scheme_false)) {
+        } else if (SAME_OBJ(x_mode, scheme_false)) {
           reqs = add_req(scheme_make_pair(idx, scheme_null), main_env->module->dt_requires);
           main_env->module->dt_requires = reqs;
         } else {
@@ -11771,22 +11820,12 @@ void parse_requires(Scheme_Object *form, int at_phase,
             oht = scheme_make_hash_table_equal();
             main_env->module->other_requires = oht;
           }
-          reqs = scheme_hash_get(oht, mode);
+          reqs = scheme_hash_get(oht, x_mode);
           if (!reqs)
             reqs = scheme_null;
           reqs = add_req(scheme_make_pair(idx, scheme_null), reqs);
-          scheme_hash_set(oht, mode, reqs);
+          scheme_hash_set(oht, x_mode, reqs);
         }
-      }
-
-      x_just_mode = just_mode;
-      x_mode = mode;
-      if (at_phase) {
-        if (x_mode && SCHEME_TRUEP(x_mode)) {
-          x_mode = scheme_bin_plus(x_mode, scheme_make_integer(at_phase));
-        }
-        /* x_just_mode refers to the mode at export, which doesn't shift 
-           by phase context at import */
       }
 
       add_single_require(m->me, x_just_mode, x_mode, idx, rename_env,

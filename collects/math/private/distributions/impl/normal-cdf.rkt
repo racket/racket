@@ -10,9 +10,12 @@ Cribbed from LGPL Fortran implementation in:
 ALGORITHM 715: SPECFUN - A Portable FORTRAN Package of Special Function Routines and Test Drivers
 W. J. Cody
 ACM Transactions on Mathematical Software, Vol. 19 (1993), pp. 22-32
+
+Error is <= 3 ulps for both log and non-log functions
 |#
 
 (require "../../../flonum.rkt"
+         "../../../base.rkt"
          "normal-utils.rkt")
 
 (provide standard-flnormal-log-cdf
@@ -43,6 +46,15 @@ ACM Transactions on Mathematical Software, Vol. 19 (1993), pp. 22-32
                      (lg- (fllog 0.5) (lg* (fllog (- x)) (lg/ (fllog r) (fllog s)))))]
           [else  (fl+ 0.5 (fl* x (fl/ r s)))])))
 
+(: R2-post (Flonum Flonum Any -> Flonum))
+(define (R2-post x q log?)
+  (cond [log?
+         (cond [(x . fl> . 0.0)  (fllog1p (- (fl* (flexp-1/2*x^2 x) q)))]
+               [else  (fl+ (fl* (fl* -0.5 x) x) (fllog q))])]
+        [else
+         (define z (fl* (flexp-1/2*x^2 x) q))
+         (if (x . fl> . 0.0) (fl- 1.0 z) z)]))
+
 (: R2 (Float Any -> Float))
 (define (R2 x log?)
   (define y (flabs x))
@@ -64,14 +76,7 @@ ACM Transactions on Mathematical Software, Vol. 19 (1993), pp. 22-32
          [s  (fl+ (fl* s y) 3.4900952721145977266e4)]
          [s  (fl+ (fl* s y) 3.8912003286093271411e4)]
          [s  (fl+ (fl* s y) 1.9685429676859990727e4)])
-    (cond [log?
-           (define q (lg/ (fllog r) (fllog s)))
-           (define z (lg* (fl* (fl* -0.5 y) y) q))
-           (if (x . fl> . 0.0) (lg1- z) z)]
-          [else
-           (define q (fl/ r s))
-           (define z (fl* (flexp-1/2*x^2 y) q))
-           (if (x . fl> . 0.0) (fl- 1.0 z) z)])))
+    (R2-post x (fl/ r s) log?)))
 
 (: R3 (Float Any -> Float))
 (define (R3 x log?)
@@ -88,16 +93,9 @@ ACM Transactions on Mathematical Software, Vol. 19 (1993), pp. 22-32
          [s  (fl+ (fl* s x^2) 6.59881378689285515e-2)]
          [s  (fl+ (fl* s x^2) 3.78239633202758244e-3)]
          [s  (fl+ (fl* s x^2) 7.29751555083966205e-5)])
-    (cond [log?  
-           (define q (lg/ (lg- -logsqrt2pi.0 (lg* (fllog x^2) (lg/ (fllog r) (fllog s))))
-                          (fllog (flabs x))))
-           (define z (lg* (fl* (fl* -0.5 x) x) q))
-           (if (x . fl> . 0.0) (lg1- z) z)]
-          [else
-           (define q (fl/ (fl- 1/sqrt2pi.0 (fl* x^2 (fl/ r s)))
-                          (flabs x)))
-           (define z (fl* (flexp-1/2*x^2 x) q))
-           (if (x . fl> . 0.0) (fl- 1.0 z) z)])))
+    (R2-post x (fl/ (fl- 1/sqrt2pi.0 (fl* x^2 (fl/ r s)))
+                    (flabs x))
+             log?)))
 
 (: standard-flnormal-log-cdf (Float -> Float))
 (define (standard-flnormal-log-cdf x)

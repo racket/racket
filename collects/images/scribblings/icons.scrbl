@@ -475,3 +475,6 @@ Icons for the Debugger. The @racket[small-debugger-icon] is used when the toolba
 @doc-apply[small-macro-stepper-hash-color]{
 Constants used within @racketmodname[images/icons/tool].
 }
+
+
+@close-eval[icons-eval]

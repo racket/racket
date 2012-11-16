@@ -73,19 +73,43 @@ structures that are produced by @racket[zo-parse] and consumed by
              [sym symbol?]
              [pos exact-integer?]
              [phase exact-nonnegative-integer?]
-             [constantness (or/c #f 'constant 'fixed)])]{
+             [constantness (or/c #f 'constant 'fixed 
+                                 function-shape? struct-shape?)])]{
   Represents a top-level variable, and used only in a @racket[prefix].
   The @racket[pos] may record the variable's offset within its module,
   or it can be @racket[-1] if the variable is always located by name.
   The @racket[phase] indicates the phase level of the definition within
-  its module. The @racket[constantness] field is either @racket['constant]
+  its module. The @racket[constantness] field is either @racket['constant],
+  a @racket[function-shape] value, or a @racket[struct-shape] value
   to indicate that
-  variable's value is always the same for every instantiation of its module,
+  variable's value is always the same for every instantiation of its module;
   @racket['fixed] to indicate 
-  that it doesn't change within a particular instantiation of the module,
+  that it doesn't change within a particular instantiation of the module;
   or @racket[#f] to indicate that the variable's value
- can change even for one particular instantiation of its module.}
+  can change even for one particular instantiation of its module.}
 
+@defstruct+[function-shape
+            ([arity procedure-arity?]
+             [preserves-marks? boolean?])]{
+
+Represents the shape of an expected import, which should be a function
+having the arity specified by @racket[arity]. The
+@racket[preserves-marks?]  field is true if calling the function is
+expected to leave continuation marks unchanged by the time it
+returns.}
+
+@deftogether[(
+@defstruct+[struct-shape ()]
+@defstruct+[(struct-type-shape struct-shape) ([field-count exact-nonnegative-integer?])]
+@defstruct+[(constructor-shape struct-shape) ([arity exact-nonnegative-integer?])]
+@defstruct+[(predicate-shape struct-shape) ()]
+@defstruct+[(accessor-shape struct-shape) ([field-count exact-nonnegative-integer?])]
+@defstruct+[(mutator-shape struct-shape) ([field-count exact-nonnegative-integer?])]
+@defstruct+[(struct-other-shape struct-shape) ()]
+)]{
+
+Represents the shape of an expected import as a structure-type
+binding, constructor, etc.}
 
 @defstruct+[(stx zo) ([encoded wrapped?])]{
   Wraps a syntax object in a @racket[prefix].}
@@ -246,7 +270,7 @@ structures that are produced by @racket[zo-parse] and consumed by
              [flags (listof (or/c 'preserves-marks 'is-method 'single-result 
                                   'only-rest-arg-not-used 'sfs-clear-rest-args))]
              [num-params exact-nonnegative-integer?]
-             [param-types (listof (or/c 'val 'ref 'flonum))]
+             [param-types (listof (or/c 'val 'ref 'flonum 'fixnum))]
              [rest? boolean?]
              [closure-map (vectorof exact-nonnegative-integer?)]
              [closure-types (listof (or/c 'val/ref 'flonum))]
@@ -315,13 +339,13 @@ structures that are produced by @racket[zo-parse] and consumed by
 @defstruct+[(let-one expr)
             ([rhs (or/c expr? seq? any/c)]
              [body (or/c expr? seq? any/c)]
-             [flonum? boolean?]
+             [type (or/c #f 'flonum 'fixnum)]
              [unused? boolean?])]{
   Pushes an uninitialized slot onto the stack, evaluates @racket[rhs]
   and puts its value into the slot, and then runs @racket[body].  If
-  @racket[flonum?] is @racket[#t], then @racket[rhs] must produce a
-  flonum, and the slot must be accessed by @racket[localref]s that
-  expect a flonum.  If @racket[unused?] is @racket[#t], then the slot
+  @racket[type] is not @racket[#f], then @racket[rhs] must produce a
+  value of the corresponding type, and the slot must be accessed by @racket[localref]s that
+  expect the type.  If @racket[unused?] is @racket[#t], then the slot
   must not be used, and the value of @racket[rhs] is not actually pushed
   onto the stack (but @racket[rhs] is constrained to produce a single
   value).
@@ -378,7 +402,7 @@ structures that are produced by @racket[zo-parse] and consumed by
              [pos exact-nonnegative-integer?]
              [clear? boolean?]
              [other-clears? boolean?]
-             [flonum? boolean?])]{
+             [type (or/c #f 'flonum 'fixnum)])]{
   Represents a local-variable reference; it accesses the value in the
   stack slot after the first @racket[pos] slots.  If @racket[unbox?]  is
   @racket[#t], the stack slot contains a box, and a value is extracted
@@ -386,8 +410,8 @@ structures that are produced by @racket[zo-parse] and consumed by
   is obtained, the stack slot is cleared (to avoid retaining a reference
   that can prevent reclamation of the value as garbage).  If
   @racket[other-clears?] is @racket[#t], then some later reference to
-  the same stack slot may clear after reading.  If @racket[flonum?] is
-  @racket[#t], the slot holds to a flonum value.}
+  the same stack slot may clear after reading.  If @racket[type] is
+  not @racket[#f], the slot is known to hold a specific type of value.}
 
 @defstruct+[(toplevel expr)
             ([depth exact-nonnegative-integer?]

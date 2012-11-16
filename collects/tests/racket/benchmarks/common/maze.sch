@@ -671,9 +671,9 @@
 ;------------------------------------------------------------------------------
 
 (let ((input (with-input-from-file "input.txt" read)))
-  (time (let loop ((n 1000) (v 0))
+  (time (let loop ((n 10000) (v 0))
           (if (zero? n)
-              v
+              (length v)
               (begin
                 (set! output '())
                 (pmaze 20 (if input 7 0))

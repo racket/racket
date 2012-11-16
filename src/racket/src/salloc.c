@@ -1882,7 +1882,6 @@ static void count_managed(Scheme_Custodian *m, int *c, int *a, int *u, int *t,
 #endif
 
 #if MZ_PRECISE_GC_TRACE
-char *(*GC_get_xtagged_name)(void *p) = NULL;
 static Scheme_Object *cons_accum_result;
 static void cons_onto_list(void *p)
 {
@@ -1928,7 +1927,7 @@ static int check_home(Scheme_Object *o)
 }
 
 static void print_tagged_value(const char *prefix, 
-			       void *v, int xtagged, uintptr_t diff, int max_w,
+			       void *v, uintptr_t diff, int max_w,
 			       const char *suffix)
 {
   char buffer[256];
@@ -1940,7 +1939,7 @@ static void print_tagged_value(const char *prefix,
   
   scheme_check_print_is_obj = check_home;
 
-  if (!xtagged) {
+  {
     if (SCHEME_TYPE(v) > _scheme_compiled_values_types_) {
       sprintf(hashstr, "{%" PRIdPTR "}", scheme_hash_key(v));
       hash_code = hashstr;
@@ -2112,13 +2111,8 @@ static void print_tagged_value(const char *prefix,
     }
 
     sep = "=";
-  } else if (scheme_external_dump_type) {
-    type = scheme_external_dump_type(v);
-    if (*type)
-      sep = ":";
-  } else
-    type = "";
-  
+  }
+
   if (diff)
     sprintf(diffstr, "%lx", diff);
 
@@ -2160,7 +2154,6 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
 #  define path_length_limit 10000
 #  define for_each_found NULL
 #  define for_each_struct NULL
-#  define GC_get_xtagged_name NULL
 #  define print_tagged_value NULL
 # endif
 #endif
@@ -2508,7 +2501,6 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
       }
       GC_dump_variable_stack(var_stack, delta, limit, NULL,
                              scheme_get_type_name_or_null,
-                             GC_get_xtagged_name,
                              print_tagged_value);
     } else {
       scheme_console_printf(" done\n");
@@ -2532,7 +2524,6 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
 # ifdef MZ_PRECISE_GC
   GC_dump_with_traces(flags, 
 		      scheme_get_type_name_or_null,
-		      GC_get_xtagged_name,
 		      for_each_found,
 		      trace_for_tag, trace_for_tag,
 		      print_tagged_value,

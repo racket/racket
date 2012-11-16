@@ -30,7 +30,7 @@
   
   (: flexp-1/2*x^2 (Float -> Float))
   (define (flexp-1/2*x^2 x)
-    (define trunc-x (truncate x))
+    (define trunc-x (fl/ (fltruncate (fl* (flexpt 2.0 21.0) x)) (flexpt 2.0 21.0)))
     (fl* (flexp (fl* (fl* -0.5 trunc-x) trunc-x))
          (flexp (fl* (fl* -0.5 (fl- x trunc-x)) (fl+ x trunc-x)))))
   

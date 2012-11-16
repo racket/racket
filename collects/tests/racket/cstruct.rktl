@@ -77,4 +77,29 @@
 (syntax-test #'(define-cstruct _y () #:property x))
 (syntax-test #'(define-cstruct _y () #:property x y . 10))
 
+;; ----------------------------------------
+;; Check struct properties and subtypes:
+
+(let ()
+  (define-values (p p? p-ref) (make-struct-type-property 'my-p))
+  (define-cstruct _S ([a (_array _byte 23)])
+    #:property p (lambda () _S))
+  (define s (ptr-ref (malloc _S) _S)) ; dummy instance
+  struct:cpointer:S
+  (test #t p? struct:cpointer:S)
+  (test #t p? s)
+
+  (define-cstruct (_Q _S) ())
+  (test #t p? (ptr-ref (malloc _Q) _Q))
+
+  (define-cstruct _Z ([a (_array _byte 23)]))
+  (define-cstruct (_W _Z) ()
+    #:property p (lambda () _Z))
+  (test #f p? (ptr-ref (malloc _Z) _Z))
+  (test #t p? (ptr-ref (malloc _W) _W))
+  (test #t p? struct:cpointer:W)
+  (test #t Z? (ptr-ref (malloc _W) _W)))
+
+;; ----------------------------------------
+
 (report-errs)

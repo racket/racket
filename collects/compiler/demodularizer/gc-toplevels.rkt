@@ -1,5 +1,10 @@
-#lang racket
-(require compiler/zo-parse
+#lang racket/base
+
+(require racket/match
+         racket/list
+         racket/dict
+         racket/contract
+         compiler/zo-parse
          "util.rkt")
 
 ; XXX Use efficient set structure
@@ -133,7 +138,7 @@
        (build-graph! lhs args-expr)]
       [(and f (struct primval (id)))
        (void)]
-      [(and f (struct localref (unbox? pos clear? other-clears? flonum?)))
+      [(and f (struct localref (unbox? pos clear? other-clears? type)))
        (void)]
       [(and v (not (? form?)))
        (void)]))
@@ -150,21 +155,20 @@
         (match (dict-ref g n)
           [(struct refs (n-tls n-stxs))
            (hash-set! visited? n #t)
-           (local
-             [(define-values (new-tls1 new-stxs1)
-                (for/fold ([new-tls tls]
-                           [new-stxs stxs])
-                  ([tl (in-list n-tls)])
-                  (visit-tl tl new-tls new-stxs)))
-              (define new-stxs2
-                (for/fold ([new-stxs new-stxs1])
-                  ([stx (in-list n-stxs)])
-                  (define this-stx (visit-stx stx))
-                  (if this-stx
-                      (list* this-stx new-stxs)
-                      new-stxs)))]          
-             (values (list* n new-tls1)
-                     new-stxs2))])))
+           (define-values (new-tls1 new-stxs1)
+             (for/fold ([new-tls tls]
+                        [new-stxs stxs])
+                       ([tl (in-list n-tls)])
+               (visit-tl tl new-tls new-stxs)))
+           (define new-stxs2
+             (for/fold ([new-stxs new-stxs1])
+                       ([stx (in-list n-stxs)])
+               (define this-stx (visit-stx stx))
+               (if this-stx
+                   (list* this-stx new-stxs)
+                   new-stxs)))
+           (values (list* n new-tls1)
+                   new-stxs2)])))
   (define stx-visited? (make-hasheq))
   (define (visit-stx n)
     (if (hash-has-key? stx-visited? n)
@@ -219,8 +223,8 @@
       [(and cl (struct case-lam (name clauses)))
        (struct-copy case-lam cl
                     [clauses (map update clauses)])]
-      [(struct let-one (rhs body flonum? unused?))
-       (make-let-one (update rhs) (update body) flonum? unused?)] ; Q: is flonum? okay here?
+      [(struct let-one (rhs body type unused?))
+       (make-let-one (update rhs) (update body) type unused?)]
       [(and f (struct let-void (count boxes? body)))
        (struct-copy let-void f
                     [body (update body)])]
@@ -267,7 +271,7 @@
         (update args-expr))]
       [(and f (struct primval (id)))
        f]
-      [(and f (struct localref (unbox? pos clear? other-clears? flonum?)))
+      [(and f (struct localref (unbox? pos clear? other-clears? type)))
        f]
       [(and v (not (? form?)))
        v]

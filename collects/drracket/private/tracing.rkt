@@ -103,13 +103,17 @@
       
       (define any-results? #f)
       (define/public (get-any-results?) any-results?)
+      (define ever-been-reset? #f)
       (define/public (tracing:reset)
-        (set! any-results? #f)
-        (send show-tracing-text lock #f)
-        (send show-tracing-text erase)
-        (send show-tracing-text auto-wrap #t)
-        (send show-tracing-text insert (string-constant tracing-tracing-nothing-to-show))
-        (send show-tracing-text lock #t))
+        (when (or any-results?
+                  (not ever-been-reset?))
+          (set! any-results? #f)
+          (set! ever-been-reset? #t)
+          (send show-tracing-text lock #f)
+          (send show-tracing-text erase)
+          (send show-tracing-text auto-wrap #t)
+          (send show-tracing-text insert (string-constant tracing-tracing-nothing-to-show))
+          (send show-tracing-text lock #t)))
       
       (define show-tracing-text (new text:hide-caret/selection%))
       (define/public (get-tracing-text) show-tracing-text)

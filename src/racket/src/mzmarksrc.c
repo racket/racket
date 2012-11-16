@@ -20,6 +20,7 @@ module_var {
   gcMARK2(mv->modidx, gc);
   gcMARK2(mv->sym, gc);
   gcMARK2(mv->insp, gc);
+  gcMARK2(mv->shape, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Module_Variable));
@@ -550,7 +551,7 @@ symbol_obj {
 
  mark:
  size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Symbol) + s->len - 3);
+  gcBYTES_TO_WORDS(sizeof(Scheme_Symbol) + s->len + 1 - mzFLEX4_DELTA);
 }
 
 cons_cell {
@@ -949,7 +950,6 @@ prefix_val {
   int i;
   for (i = pf->num_slots; i--; )
     gcMARK2(pf->a[i], gc);
-  gcMARK2(pf->import_map, gc);
  size:
   gcBYTES_TO_WORDS((sizeof(Scheme_Prefix) 
 		    + ((pf->num_slots-mzFLEX_DELTA) * sizeof(Scheme_Object *))
@@ -1310,6 +1310,7 @@ mark_optimize_info {
   gcMARK2(i->transitive_use_len, gc);
   gcMARK2(i->context, gc);
   gcMARK2(i->logger, gc);
+  gcMARK2(i->types, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Optimize_Info));
@@ -1382,7 +1383,7 @@ mark_closure_info {
   
   gcMARK2(i->local_flags, gc);
   gcMARK2(i->base_closure_map, gc);
-  gcMARK2(i->flonum_map, gc);
+  gcMARK2(i->local_type_map, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Closure_Info));

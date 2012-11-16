@@ -1,3 +1,3 @@
-(module matrix mzscheme
-  (provide (all-from htdp/matrix))
-  (require htdp/matrix))
+#lang racket/base
+(require htdp/matrix)
+(provide (all-from-out htdp/matrix))

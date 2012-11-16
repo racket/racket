@@ -195,7 +195,7 @@
 	(make-parameter
 	 (case (system-type)
 	   [(unix macosx) 
-	    (case (string->symbol (path->string (system-library-subpath #f)))	    
+	    (case (string->symbol (path->string (system-library-subpath #f)))
 	      [(i386-cygwin) win-gcc-link-output-strings]
 	      [else (lambda (s) (list "-o" (path-string->string s)))])]
 	   [(windows) (cond
@@ -239,7 +239,7 @@
 			  (list (wrap-xxxxxxx dllfile (wrap-3m "libracket~a~~a.dll"))
 				(wrap-xxxxxxx dllfile (drop-3m "libmzgc~a.dll"))))
 		      (list
-		       (mzdyn-maybe (filethunk (wrap-3m "mzdyn~a.exp")))		       
+		       (mzdyn-maybe (filethunk (wrap-3m "mzdyn~a.exp")))
 		       (mzdyn-maybe (filethunk (wrap-3m 
 						;; mzdyn.o is for Unix build, mzdynw.o for Windows
 						(format "mzdyn~a~~a.o"

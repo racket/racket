@@ -67,34 +67,28 @@
         [(string? s)
          ;; Parse Unix-style relative path string
          (define-values (dir submod) (get-dir))
-         (combine-submod
-          (path-ss->rkt
-           (apply build-path dir (explode-relpath-string s)))
-          submod)]
+         (path-ss->rkt
+          (apply build-path dir (explode-relpath-string s)))]
         [(and (or (not (pair? s)) (not (list? s))) (not (path? s)))
          #f]
         [(or (path? s) (eq? (car s) 'file))
          (let ([p (if (path? s) s (expand-user-path (cadr s)))])
            (define-values (d submod) (get-dir))
-           (combine-submod
-            (path-ss->rkt
-             (path->complete-path
-              p 
-              (if (path-string? d)
-                  d
-                  (or (current-load-relative-directory)
-                      (current-directory)))))
-            submod))]
+           (path-ss->rkt
+            (path->complete-path
+             p 
+             (if (path-string? d)
+                 d
+                 (or (current-load-relative-directory)
+                     (current-directory))))))]
         [(or (eq? (car s) 'lib)
              (eq? (car s) 'quote)
              (eq? (car s) 'planet))
          ;; use resolver handler in this case, too:
          (define-values (d submod) (force-relto relto #f #:path? #f))
-         (combine-submod
-          (resolved-module-path-name
-           (module-path-index-resolve
-            (module-path-index-join s #f)))
-          submod)]
+         (resolved-module-path-name
+          (module-path-index-resolve
+           (module-path-index-join s #f)))]
         [(eq? (car s) 'submod)
          (define r (cond
                     [(or (equal? (cadr s) ".")

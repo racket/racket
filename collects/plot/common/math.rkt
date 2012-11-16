@@ -1,6 +1,7 @@
-#lang racket
+#lang racket/base
 
-(require racket/contract racket/unsafe/ops
+(require racket/math racket/string racket/match racket/list racket/vector
+         racket/contract racket/unsafe/ops
          unstable/flonum unstable/latent-contract/defthing)
 
 (provide (all-defined-out))

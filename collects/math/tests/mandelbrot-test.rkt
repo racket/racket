@@ -8,8 +8,8 @@
 (define (mandelbrot step max-iters)
   (define xs (sequence->list (in-range -2.0 0.800001 step)))
   (define ys (sequence->list (in-range -1.4 1.400001 step)))
-  (define x ((inst list->array Float) xs flonum?))
-  (define y (array-slice-ref ((inst list->array Float) ys flonum?) (list ::... (::new 1))))
+  (define x ((inst list*->array Float) xs flonum?))
+  (define y (array-slice-ref ((inst list*->array Float) ys flonum?) (list ::... (::new 1))))
   (define c (array->fcarray (array+ x (array-scale y +1.0i))))
   (define-values (z divtime)
     (for/fold: ([z : FCArray c]
