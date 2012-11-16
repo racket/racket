@@ -1,12 +1,5 @@
 #lang racket/base
 
-(require racket/list
-         racket/class
-         racket/match
-         racket/pretty
-         racket/gui/base
-         framework/private/logging-timer)
-
 #|
 
 This file sets up a log receiver and then
@@ -21,7 +14,17 @@ extent as well as the number of milliseconds
 from the start of the gui event before the
 log message was reported.
 
+(This is not really a test suite, but instead
+ a tool to help understand DrRacket's performance)
+
 |#
+
+(require racket/list
+         racket/class
+         racket/match
+         racket/pretty
+         racket/gui/base
+         framework/private/logging-timer)
 
 
 (define lr (make-log-receiver (current-logger)
@@ -33,11 +36,11 @@ log message was reported.
 
 (define top-n-events 50)
 (define drop-gc? #f)
-(define start-right-away? #t) ;; only applies if the 'main' module is loaded
+(define start-right-away? #f) ;; only applies if the 'main' module is loaded
 (define show-hist? #t)
-(define script-drr? #t)
-(define interesting-range-start 24)
-(define interesting-range-end 30)
+(define script-drr? #f)
+(define interesting-range-start -inf.0)
+(define interesting-range-end +inf.0)
 
 (define log-done-chan (make-channel))
 (define bt-done-chan (make-channel))
@@ -219,14 +222,15 @@ log message was reported.
      (print-gui-event-hist no-gc-events)]
     [else
      (define interesting-gui-events
-       (take (sort (filter (λ (x)
-                             (<= interesting-range-start 
-                                 (gui-event->delta x)
-                                 interesting-range-end))
-                           gui-events)
-                   >
-                   #:key gui-event->delta)
-             top-n-events))
+       (let ([candidate-events
+              (sort (filter (λ (x)
+                              (<= interesting-range-start 
+                                  (gui-event->delta x)
+                                  interesting-range-end))
+                            gui-events)
+                    >
+                    #:key gui-event->delta)])
+         (take candidate-events (min (length candidate-events) top-n-events))))
      
      (define with-other-events
        (for/list ([gui-evt (in-list interesting-gui-events)])
