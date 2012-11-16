@@ -1877,15 +1877,15 @@ static int compare_modules(const void *_am, const void *_bm)
   Scheme_Object *a = ((Module_And_Offset *)_am)->mod;
   Scheme_Object *b = ((Module_And_Offset *)_bm)->mod;
   intptr_t i, alen, blen;
-  char *as, *bs;
+  unsigned char *as, *bs;
 
   a = SCHEME_CAR(a);
   b = SCHEME_CAR(b);
 
   alen = SCHEME_BYTE_STRLEN_VAL(a);
-  blen = SCHEME_BYTE_STRLEN_VAL(a);
-  as = SCHEME_BYTE_STR_VAL(a);
-  bs = SCHEME_BYTE_STR_VAL(b);
+  blen = SCHEME_BYTE_STRLEN_VAL(b);
+  as = (unsigned char *)SCHEME_BYTE_STR_VAL(a);
+  bs = (unsigned char *)SCHEME_BYTE_STR_VAL(b);
 
   for (i = 0; (i < alen) && (i < blen); i++) {
     if (as[i] != bs[i])
