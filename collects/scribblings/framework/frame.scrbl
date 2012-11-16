@@ -725,8 +725,13 @@
   descriptions refers to the original editor and the term @bold{delegatee}
   refers to the editor showing the 20,000 feet overview.
 
-  @defmethod*[(((get-delegated-text) (is-a?/c text:delegate<%>)))]{
-    Returns the delegate text.
+  @defmethod[(get-delegated-text) (or/c #f (is-a?/c text:delegate<%>))]{
+    Returns the current delegate text, if any.
+  }
+  
+  @defmethod[(set-delegated-text [d (or/c #f (is-a?/c text:delegate<%>))]) 
+             void?]{
+    Sets the delegate text to @racket[d].
   }
 
   @defmethod*[(((delegated-text-shown?) boolean?))]{

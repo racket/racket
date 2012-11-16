@@ -1566,11 +1566,12 @@
 
 (define delegate<%>
   (interface (status-line<%> text<%>)
-    get-delegated-text
     delegated-text-shown?
     hide-delegated-text
     show-delegated-text
-    delegate-moved))
+    delegate-moved
+    set-delegated-text
+    get-delegated-text))
 
 (define delegatee-editor-canvas%
   (class (canvas:color-mixin canvas:basic%)
@@ -1737,7 +1738,20 @@
 (define delegate-mixin
   (mixin (status-line<%> text<%>) (delegate<%>)
     
-    (define/public (get-delegated-text) (get-editor))
+    (define delegated-text #f)
+    (define/public-final (get-delegated-text) delegated-text)
+    (define/public-final (set-delegated-text t) 
+      (unless (or (not t) (is-a? t text:delegate<%>))
+        (error 'set-delegated-text 
+               "expected either #f or a text:delegate<%> object, got ~e" 
+               t))
+      (unless (eq? delegated-text t)
+        (set! delegated-text t)
+        (when shown?
+          (unless (send (get-delegated-text) get-delegate)
+            (send (get-delegated-text) set-delegate 
+                  (new delegatee-text%)))
+          (send delegate-ec set-editor (send (get-delegated-text) get-delegate)))))
     
     [define rest-panel 'uninitialized-root]
     [define super-root 'uninitialized-super-root]
@@ -1764,23 +1778,26 @@
     (inherit close-status-line open-status-line)
     (define/public (hide-delegated-text)
       (set! shown? #f)
-      (send (get-delegated-text) set-delegate #f)
+      (when delegated-text 
+        (send delegated-text set-delegate #f))
       (send super-root change-children
             (λ (l) (list rest-panel))))
     (define/public (show-delegated-text)
       (set! shown? #t)
-      (send (get-delegated-text) set-delegate delegatee)
+      (when delegated-text
+        (unless (send delegated-text get-delegate)
+          (send delegated-text set-delegate 
+                (new delegatee-text%))))
       (send super-root change-children
             (λ (l) (list rest-panel delegate-ec))))
     
     (define/public (click-in-overview pos)
       (when shown?
-        (let* ([d-text (get-delegated-text)]
-               [d-canvas (send d-text get-canvas)]
+        (let* ([d-canvas (send delegated-text get-canvas)]
                [bx (box 0)]
                [by (box 0)])
           (let-values ([(cw ch) (send d-canvas get-client-size)])
-            (send d-text position-location pos bx by)
+            (send delegated-text position-location pos bx by)
             (send d-canvas focus)
             (send d-canvas scroll-to 
                   (- (unbox bx) (/ cw 2))
@@ -1788,37 +1805,31 @@
                   cw
                   ch
                   #t)
-            (send d-text set-position pos)))))
+            (send delegated-text set-position pos)))))
     
     (define/public (delegate-moved)
-      (let ([startb (box 0)]
-            [endb (box 0)]
-            [delegate-text (get-delegated-text)])
-        (send delegate-text get-visible-position-range startb endb #f)
-        (send delegatee set-start/end-para
-              (send delegate-text position-paragraph (unbox startb)) 
-              (send delegate-text position-paragraph (unbox endb)))))
+      (define delegatee (send delegate-ec get-editor))
+      (when delegatee
+        (let ([startb (box 0)]
+              [endb (box 0)])
+          (send delegated-text get-visible-position-range startb endb #f)
+          (send delegatee set-start/end-para
+                (send delegated-text position-paragraph (unbox startb)) 
+                (send delegated-text position-paragraph (unbox endb))))))
     
-    (define/public (get-delegatee) delegatee)
-    
+    (define/public (get-delegatee) (send delegate-ec get-editor))
+        
     (super-new)
     
-    (define delegatee (instantiate delegatee-text% ()))
-    (define delegate-ec (instantiate delegatee-editor-canvas% ()
-                          (editor delegatee)
-                          (parent super-root)
-                          (delegate-frame this)
-                          (min-width 150)
-                          (stretchable-width #f)))
+    (define delegate-ec (new delegatee-editor-canvas%
+                             [parent super-root]
+                             [delegate-frame this]
+                             [min-width 150]
+                             [stretchable-width #f]))
     (inherit get-editor)
     (if (preferences:get 'framework:show-delegate?)
-        (begin
-          (send (get-delegated-text) set-delegate delegatee)
-          (send super-root change-children
-                (λ (l) (list rest-panel delegate-ec))))
-        (begin
-          (send (get-delegated-text) set-delegate #f)
-          (send super-root change-children (λ (l) (list rest-panel)))))))
+        (show-delegated-text)
+        (hide-delegated-text))))
 
 (define searchable<%> (interface (basic<%>)
                         search

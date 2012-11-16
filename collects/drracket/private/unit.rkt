@@ -1371,7 +1371,8 @@ module browser threading seems wrong.
                file-menu:get-save-item
                file-menu:get-save-as-item
                file-menu:get-revert-item
-               file-menu:get-print-item)
+               file-menu:get-print-item
+               set-delegated-text)
       
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;;
@@ -2854,8 +2855,6 @@ module browser threading seems wrong.
         (unless definitions-canvas
           (set! definitions-canvas (create-definitions-canvas))))
       
-      (define/override (get-delegated-text) definitions-text)
-      
       ;; wire the definitions text to the interactions text and initialize it.
       (define/private (init-definitions-text tab)
         (let ([defs (send tab get-defs)]
@@ -2919,8 +2918,7 @@ module browser threading seems wrong.
       (inherit begin-container-sequence end-container-sequence)
       (define/private (change-to-tab tab)
         (unless (eq? current-tab tab)
-          (let ([old-delegate (send definitions-text get-delegate)]
-                [old-tab current-tab])
+          (let ([old-tab current-tab])
             (save-visible-tab-regions)
             (set! current-tab tab)
             (set! definitions-text (send current-tab get-defs))
@@ -2936,9 +2934,9 @@ module browser threading seems wrong.
             (update-save-message)
             (update-save-button)
             (language-changed)
+            (set-delegated-text definitions-text)
             
             (send definitions-text update-frame-filename)
-            (send definitions-text set-delegate old-delegate)
             (update-running (send current-tab is-running?))
             (on-tab-change old-tab current-tab)
             (send tab update-log)
@@ -2959,12 +2957,6 @@ module browser threading seems wrong.
             (if new-enabled
                 (enable-evaluation)
                 (disable-evaluation))))
-        
-        (let ([from-defs (send from-tab get-defs)]
-              [to-defs (send to-tab get-defs)])
-          (let ([delegate (send from-defs get-delegate)])
-            (send from-defs set-delegate #f)
-            (send to-defs set-delegate delegate)))
         
         (inner (void) on-tab-change from-tab to-tab))
       
