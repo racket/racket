@@ -1605,12 +1605,12 @@
 
 (define delegatee-text%
   (class* text:basic% (delegatee-text<%>)
-    (inherit get-admin)
     (define start-para #f)
     (define end-para #f)
     (define view-x-b (box 0))
     (define view-width-b (box 0))
-    (inherit paragraph-start-position paragraph-end-position 
+    (inherit get-admin
+             paragraph-start-position paragraph-end-position 
              position-location invalidate-bitmap-cache scroll-to-position
              get-visible-position-range position-paragraph
              last-position)
@@ -1647,15 +1647,32 @@
                   [(v-end-para . <= . end-para)
                    (scroll-to-position (paragraph-end-position end-para))]
                   [else (void)]))))
-          
+          (define the-l #f)
+          (define the-t #f)
+          (define the-r #f)
+          (define the-b #f)
           (when (and old-start-para old-end-para)
             (let-values ([(x y w h) (get-rectangle old-start-para old-end-para)])
               (when x
-                (invalidate-bitmap-cache x y w h))))
+                (set! the-l x)
+                (set! the-t y)
+                (set! the-r (+ x w))
+                (set! the-b (+ y h)))))
           (when (and start-para end-para)
             (let-values ([(x y w h) (get-rectangle start-para end-para)])
-              (when x
-                (invalidate-bitmap-cache x y w h)))))))
+              (cond
+                [(and x the-l)
+                 (set! the-l (min x the-l))
+                 (set! the-t (min y the-t))
+                 (set! the-r (max the-r (+ x w)))
+                 (set! the-b (max the-b (+ y h)))]
+                [x
+                 (set! the-l x)
+                 (set! the-t y)
+                 (set! the-r (+ x w))
+                 (set! the-b (+ y h))])))
+          (when the-l
+            (invalidate-bitmap-cache the-l the-t (- the-r the-l) (- the-b the-t))))))
     
     (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
       (when (and before?
