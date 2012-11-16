@@ -16,7 +16,9 @@ file to either record or replay evaluations.
 
 If @racket[mode] is @racket['record], the evaluator records every
 interaction to @racket[log-file], replacing @racket[log-file] if it
-already exists. The result of each interaction must be serializable.
+already exists. The result of each interaction must be
+@seclink["serialization" #:doc '(lib
+"scribblings/reference/reference.scrbl")]{serializable}.
 
 If @racket[mode] is @racket['replay], the evaluator uses the contents
 of @racket[log-file] instead of actually performing evaluatings. For
