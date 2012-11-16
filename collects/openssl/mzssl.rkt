@@ -20,6 +20,7 @@
            ffi/unsafe/atomic
            racket/port
            racket/tcp
+           racket/string
            "libcrypto.rkt"
            "libssl.rkt")
 
@@ -41,6 +42,8 @@
            ssl-try-verify!
 
            ssl-peer-verified?
+           ssl-peer-certificate-hostnames
+           ssl-peer-check-hostname
            ssl-peer-subject-name
            ssl-peer-issuer-name
 
@@ -87,7 +90,12 @@
   (typedef _SSL_CTX* _pointer)
   (typedef _SSL* _pointer)
   (typedef _X509_NAME* _pointer)
+  (typedef _X509_NAME_ENTRY* _pointer)
   (typedef _X509* _pointer)
+  (typedef _ASN1_STRING* _pointer)
+  (typedef _STACK* _pointer)
+
+  (define-cstruct _GENERAL_NAME ([type _int] [d _pointer]))
 
   (define-ssl SSLv2_client_method (_fun -> _SSL_METHOD*))
   (define-ssl SSLv2_server_method (_fun -> _SSL_METHOD*))
@@ -150,6 +158,19 @@
 
   (define-ssl SSL_library_init (_fun -> _void))
   (define-ssl SSL_load_error_strings (_fun -> _void))
+
+  (define-crypto GENERAL_NAME_free _fpointer)
+  (define-crypto ASN1_STRING_length (_fun _ASN1_STRING* -> _int))
+  (define-crypto ASN1_STRING_data (_fun _ASN1_STRING* -> _pointer))
+  (define-crypto X509_NAME_get_index_by_NID (_fun _X509_NAME* _int _int -> _int))
+  (define-crypto X509_NAME_get_entry (_fun _X509_NAME* _int -> _X509_NAME_ENTRY*))
+  (define-crypto X509_NAME_ENTRY_get_data (_fun _X509_NAME_ENTRY* -> _pointer))
+  (define-crypto X509_get_ext_d2i (_fun _X509* _int _pointer _pointer -> _STACK*))
+  (define-crypto sk_num (_fun _STACK* -> _int))
+  (define-crypto sk_GENERAL_NAME_value (_fun _STACK* _int -> _GENERAL_NAME-pointer)
+    #:c-id sk_value)
+  (define-crypto sk_pop_free (_fun _STACK* _fpointer -> _void))
+
   
   (define X509_V_OK 0)
 
@@ -171,6 +192,10 @@
   (define SSL_MODE_ENABLE_PARTIAL_WRITE #x01)
   (define SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER #x02)
   (define SSL_CTRL_MODE 33)
+
+  (define NID_subject_alt_name 85)
+  (define NID_commonName 13)
+  (define GEN_DNS 2)
 
   (define-mzscheme scheme_start_atomic (_fun -> _void))
   (define-mzscheme scheme_end_atomic (_fun -> _void))
@@ -1070,28 +1095,113 @@
       (set-mzssl-shutdown-on-close?! mzssl #f)
       ;; Call close-output-port to flush, shutdown, and decrement mzssl refcount.
       (close-output-port p)))
-  
+
   (define (ssl-peer-verified? p)
     (let-values ([(mzssl input?) (lookup 'ssl-peer-verified? "ssl-port?" p)])
       (and (eq? X509_V_OK (SSL_get_verify_result (mzssl-ssl mzssl)))
            (SSL_get_peer_certificate (mzssl-ssl mzssl))
            #t)))
-  
+
   (define (ssl-peer-subject-name p)
-    (let-values ([(mzssl input?) (lookup 'ssl-peer-subject-name "ssl-port?" p)])
-      (let ([cert (SSL_get_peer_certificate (mzssl-ssl mzssl))])
-        (if cert
-            (let ([bytes (make-bytes 1024 0)])
-              (X509_NAME_oneline (X509_get_subject_name cert) bytes (bytes-length bytes)))
-            #f))))
-  
+    (let ([cert (ssl-port->cert 'ssl-peer-subject-name p)])
+      (if cert
+          (let ([bytes (make-bytes 1024 0)])
+            (X509_NAME_oneline (X509_get_subject_name cert) bytes (bytes-length bytes)))
+          #f)))
+
   (define (ssl-peer-issuer-name p)
-    (let-values ([(mzssl input?) (lookup 'ssl-peer-subject-name "ssl-port?" p)])
-      (let ([cert (SSL_get_peer_certificate (mzssl-ssl mzssl))])
-        (if cert
-            (let ([bytes (make-bytes 1024 0)])
-              (X509_NAME_oneline (X509_get_issuer_name cert) bytes (bytes-length bytes)))
-            #f))))
+    (let ([cert (ssl-port->cert 'ssl-peer-subject-name p)])
+      (if cert
+          (let ([bytes (make-bytes 1024 0)])
+            (X509_NAME_oneline (X509_get_issuer_name cert) bytes (bytes-length bytes)))
+          #f)))
+
+  ;; ssl-peer-certificate-hostnames : ssl-port -> (listof string)
+  (define (ssl-peer-certificate-hostnames p)
+    (let ([cert (ssl-port->cert 'ssl-peer-certificate-hostnames p)])
+      (if cert (cert->names cert) null)))
+
+  ;; ssl-peer-check-hostname : ssl-port string -> boolean
+  (define (ssl-peer-check-hostname p hostname)
+    (let ([cert (ssl-port->cert 'ssl-peer-check-hostname p)])
+      (hostname-in-cert? hostname cert)))
+
+  ;; ssl-port->cert : symbol ssl-port -> Cert/#f
+  (define (ssl-port->cert who p)
+    (let-values ([(mzssl _input?) (lookup who "ssl-port?" p)])
+      (SSL_get_peer_certificate (mzssl-ssl mzssl))))
+
+  ;; hostname-in-cert? : string Cert -> boolean
+  (define (hostname-in-cert? hostname cert)
+    (for/or ([cert-hostname (in-list (cert->names cert))])
+      (check-hostname hostname cert-hostname)))
+
+  (define (cert->names cert)
+    ;; RFC 2818 (section 3.1) says use subjectAltName dNSName extensions
+    ;; if present, else use final commonName entry.
+    (let ([names (cert->altnames cert)])
+      (cond [(pair? names) names]
+            [else (let ([name (cert->name cert)])
+                    (if name (list name) null))])))
+
+  (define (cert->name cert)
+    ;; Returns commonName DNS name if exists, #f otherwise.
+    (let* ([name (X509_get_subject_name cert)]
+           [last-cn-index
+            (let loop ([i -1])
+              (let ([next (X509_NAME_get_index_by_NID name NID_commonName i)])
+                (cond [(>= next 0) (loop next)]
+                      [else i])))])
+      (cond [(< last-cn-index 0) #f]
+            [else
+             (let* ([entry (X509_NAME_get_entry name last-cn-index)]
+                    [asn1str (X509_NAME_ENTRY_get_data entry)])
+               (asn1string->bytes asn1str))])))
+
+  (define (asn1string->bytes asn1str)
+    (let* ([len (ASN1_STRING_length asn1str)]
+           [data (ASN1_STRING_data asn1str)]
+           [buf (make-bytes len 0)])
+      (memcpy buf data len)
+      ;; FIXME: detect UTF-8 strings?
+      (bytes->string/latin-1 buf)))
+
+  (define (cert->altnames cert)
+    ;; Returns list of DNS names in subjectAltName extension
+    ;; FIXME: also return IP addresses?
+    ;; Reference: curl-7.28.0/lib/ssluse.c verifyhost()
+    ;;  from http://www.mail-archive.com/openssl-users@openssl.org/msg39142.html
+    (let* ([namestack (X509_get_ext_d2i cert NID_subject_alt_name #f #f)]
+           [names
+            (reverse
+             (for/fold ([acc null])
+                 ([i (in-range (if namestack (sk_num namestack) 0))])
+               (let ([gn (sk_GENERAL_NAME_value namestack i)])
+                 (cond [(= (GENERAL_NAME-type gn) GEN_DNS)
+                        (let* ([asn1str (GENERAL_NAME-d gn)])
+                          (cons (asn1string->bytes asn1str) acc))]
+                       [else acc]))))])
+      (when namestack (sk_pop_free namestack GENERAL_NAME_free))
+      names))
+
+  (define (check-hostname cx-name cert-name-pattern)
+    (let* ([cx-parts (string-split cx-name "." #:trim? #f)]
+           [cert-parts (string-split cert-name-pattern "." #:trim? #f)])
+      (and (equal? (length cx-parts)
+                   (length cert-parts))
+           (andmap check-hostname-part cx-parts cert-parts))))
+
+  (define (check-hostname-part cx-part cert-part)
+    (cond [(equal? cert-part "*")
+           #t]
+          [(for/or ([c (in-string cert-part)]) (eqv? c #\*))
+           (regexp-match? (glob->regexp cert-part) cx-part)]
+          [else (string-ci=? cx-part cert-part)]))
+
+  (define (glob->regexp glob)
+    (let* ([lit-parts (string-split glob #rx"[*]" #:trim? #f)]
+           [lit-rxs (for/list ([part (in-list lit-parts)]) (regexp-quote part #f))])
+      (regexp (string-join lit-rxs ".*"))))
 
   (define (ssl-port? v)
     (and (hash-ref ssl-ports v #f) #t))

@@ -389,13 +389,38 @@ whether verification succeeded.}
 Returns @racket[#t] if the peer of SSL port @racket[p] has presented a
 valid and verified certificate, @racket[#f] otherwise.}
 
+@defproc[(ssl-peer-certificate-hostnames [p ssl-port?])
+         (listof string?)]{
+
+Returns the list of hostnames for which the certificate of
+@racket[p]'s peer is valid according to
+@hyperlink["http://www.ietf.org/rfc/rfc2818.txt"]{RFC 2818}. If the
+peer has not presented a certificate, @racket['()] is returned.
+
+The result list may contain both hostnames such as
+@racket["www.racket-lang.org"] and hostname patterns such as
+@racket["*.racket-lang.org"].
+}
+
+@defproc[(ssl-peer-check-hostname [p ssl-port?] [hostname string?])
+         boolean?]{
+
+Returns @racket[#t] if the peer certificate of @racket[p] is valid for
+@racket[hostname] according to
+@hyperlink["http://www.ietf.org/rfc/rfc2818.txt"]{RFC 2818}.
+}
+
 @defproc[(ssl-peer-subject-name [p ssl-port?]) (or/c bytes? #f)]{
 
 If @racket[ssl-peer-verified?] would return @racket[#t] for
 @racket[p], the result is a byte string for the subject field of
 the certificate presented by the SSL port's peer, otherwise the result
-is @racket[#f].}
+is @racket[#f].
 
+Use @racket[ssl-peer-check-hostname] or
+@racket[ssl-peer-certificate-hostnames] instead to check the validity
+of an SSL connection.
+}
 
 @defproc[(ssl-peer-issuer-name [p ssl-port?]) (or/c bytes? #f)]{
 
