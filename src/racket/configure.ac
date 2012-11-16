@@ -335,6 +335,8 @@ INSTALL_SETUP_FLAGS=
 
 STRIP_DEBUG=":"
 
+use_flag_pthread=yes
+
 ###### OSKit stuff #######
 
 if test "${enable_oskit}" = "yes" ; then
@@ -641,6 +643,7 @@ case "$host_os" in
     ;;
   nto-qnx*)
     enable_sgc=yes
+    use_flag_pthread=no
     LIBS="$LIBS -lsocket -Wl,--export-dynamic"
     ;;
   *)
@@ -1071,9 +1074,10 @@ fi
 ############### pthread ###################
 
 if test "${enable_pthread}" = "yes" ; then
-  # FIXME: the following two flags are GCC-specific:
-  PREFLAGS="$PREFLAGS -pthread"
-  LDFLAGS="$LDFLAGS -pthread"
+  if test "${use_flag_pthread}" = "yes" ; then
+    PREFLAGS="$PREFLAGS -pthread"
+    LDFLAGS="$LDFLAGS -pthread"
+  fi
   AC_DEFINE(USE_PTHREAD_INSTEAD_OF_ITIMER, 1, [Pthread timer enabled])
 
 [ msg="whether pthread_rwlock is available"   ]

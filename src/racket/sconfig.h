@@ -965,6 +965,8 @@
 
 # define FLAGS_ALREADY_SET
 
+# define USE_DYNAMIC_FDSET_SIZE
+
 #if defined(i386)
 # define MZ_USE_JIT_I386
 # define MZ_JIT_USE_MPROTECT
