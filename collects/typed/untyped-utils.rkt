@@ -2,9 +2,28 @@
 
 (require (for-syntax racket/base
                      syntax/parse
-                     racket/syntax))
+                     racket/syntax
+                     typed-racket/utils/tc-utils))
 
-(provide require/untyped-contract)
+(provide require/untyped-contract
+         define-typed/untyped-identifier)
+
+(define-for-syntax (rename-head stx id)
+  (syntax-case stx ()
+    [(_ . args)  (quasisyntax/loc stx (#,id . args))]
+    [_  (quasisyntax/loc stx #,id)]))
+
+(define-for-syntax ((typed/untyped-renamer typed-name untyped-name) stx)
+  (if (unbox typed-context?)
+      (rename-head stx typed-name)
+      (rename-head stx untyped-name)))
+
+(define-syntax (define-typed/untyped-identifier stx)
+  (syntax-parse stx
+    [(_ name:id typed-name:id untyped-name:id)
+     (syntax/loc stx
+       (define-syntax name
+         (typed/untyped-renamer #'typed-name #'untyped-name)))]))
 
 (define-syntax (require/untyped-contract stx)
   (syntax-parse stx #:literals (begin)
@@ -25,23 +44,13 @@
              (define untyped-name name) ...)
            
            (module untyped-module racket/base
-             (require (for-syntax racket/base
-                                  typed-racket/utils/tc-utils)
-                      (rename-in from-module-spec [name typed-name] ...)
-                      (rename-in (submod ".." typed-module) [untyped-name untyped2-name] ...))
-             
+             (require typed/untyped-utils
+                      (rename-in (only-in from-module-spec name ...)
+                                 [name typed-name] ...)
+                      (rename-in (only-in (submod ".." typed-module) untyped-name ...)
+                                 [untyped-name untyped2-name] ...))
              (provide macro-name ...)
-             
-             (define-for-syntax (rename-head stx id)
-               (syntax-case stx ()
-                 [(_ . args)  (quasisyntax/loc stx (#,id . args))]
-                 [_  (quasisyntax/loc stx #,id)]))
-             
-             (define-syntax (macro-name stx)
-               (if (unbox typed-context?)
-                   (rename-head stx #'typed-name)
-                   (rename-head stx #'untyped2-name)))
-             ...)
+             (define-typed/untyped-identifier macro-name typed-name untyped2-name) ...)
            
            (require (rename-in (submod "." untyped-module) [macro-name name] ...)))))]
     [(_ from-module-spec:expr [name:id T:expr] ...)
