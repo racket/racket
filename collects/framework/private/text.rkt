@@ -1431,6 +1431,7 @@
                          (res dc x y)
                          (send dc draw-line (+ x start) y (+ x start (- len 1)) y))))]))]))])))
 
+
 #;
 (let ()
   ;; test cases for for-each/section
@@ -1445,16 +1446,18 @@
        0)
       calls))
   
-  (equal? (run-fe/s "") '())
-  (equal? (run-fe/s "a") '((0 0)))
-  (equal? (run-fe/s " ") '())
-  (equal? (run-fe/s "ab") '((0 1)))
-  (equal? (run-fe/s "ab c") '((0 1) (3 3)))
-  (equal? (run-fe/s "a bc") '((0 0) (2 3)))
-  (equal? (run-fe/s "a b c d") '((0 0) (2 2) (4 4) (6 6)))
-  (equal? (run-fe/s "a b c d    ") '((0 0) (2 2) (4 4) (6 6)))
-  (equal? (run-fe/s "abc def ghi") '((0 2) (4 6) (8 10)))
-  (equal? (run-fe/s "abc   def   ghi") '((0 2) (6 8) (12 14))))
+  (printf "framework/private/text.rkt: ~s\n" 
+          (list
+           (equal? (run-fe/s "") '())
+           (equal? (run-fe/s "a") '((0 0)))
+           (equal? (run-fe/s " ") '())
+           (equal? (run-fe/s "ab") '((0 1)))
+           (equal? (run-fe/s "ab c") '((0 1) (3 3)))
+           (equal? (run-fe/s "a bc") '((0 0) (2 3)))
+           (equal? (run-fe/s "a b c d") '((0 0) (2 2) (4 4) (6 6)))
+           (equal? (run-fe/s "a b c d    ") '((0 0) (2 2) (4 4) (6 6)))
+           (equal? (run-fe/s "abc def ghi") '((0 2) (4 6) (8 10)))
+           (equal? (run-fe/s "abc   def   ghi") '((0 2) (6 8) (12 14))))))
 
 (define 1-pixel-tab-snip%
   (class tab-snip%
@@ -1532,34 +1535,10 @@
         (send new-snip set-style (send snip get-style))
         new-snip))
     
-    ;; todo : (listof (-> void))
-    ;; actions that have happened to this editor, but that
-    ;; have not yet been propogated to the delegate
-    (define todo '())
-    
-    (define timer (new logging-timer% 
-                       [notify-callback
-                        (λ ()
-                          ;; it should be the case that todo is always '() when the delegate is #f
-                          (when delegate
-                            (send delegate begin-edit-sequence)
-                            (for ([th (in-list (reverse todo))])
-                              (th))
-                            (send delegate end-edit-sequence))
-                          (set! todo '()))]))
-    
-    (define/private (to-delegate thunk)
-      (when delegate
-        (send timer stop)
-        (send timer start 250 #t)
-        (set! todo (cons thunk todo))))
-    
     (define delegate #f)
     (inherit get-highlighted-ranges)
     (define/public-final (get-delegate) delegate)
     (define/public-final (set-delegate _d)
-      (set! todo '())
-      
       (when delegate
         ;; the delegate may be in a bad state because we've killed the pending todo
         ;; items; to clear out the bad state, end any edit sequences, and unhighlight
@@ -1584,7 +1563,8 @@
       (refresh-delegate))
     
     (define/private (refresh-delegate)
-      (to-delegate (λ () (refresh-delegate/do-work))))
+      (when delegate 
+        (refresh-delegate/do-work)))
     
     (define/private (refresh-delegate/do-work)
       (send delegate begin-edit-sequence)
@@ -1625,87 +1605,77 @@
       (send delegate end-edit-sequence))
     
     (define/override (highlight-range start end color [caret-space? #f] [priority 'low] [style 'rectangle])
-      (to-delegate
-       (λ ()
-         (send delegate highlight-range start end color caret-space? priority style)))
+      (when delegate 
+        (send delegate highlight-range start end color caret-space? priority style))
       (super highlight-range start end color caret-space? priority style))
     
     (define/override (unhighlight-range start end color [caret-space? #f] [style 'rectangle])
-      (to-delegate
-       (λ ()
-         (send delegate unhighlight-range start end color caret-space? style)))
+      (when delegate 
+        (send delegate unhighlight-range start end color caret-space? style))
       (super unhighlight-range start end color caret-space? style))
     
     (inherit get-canvases get-active-canvas has-focus?)
     (define/override (on-paint before? dc left top right bottom dx dy draw-caret?)
       (super on-paint before? dc left top right bottom dx dy draw-caret?)
-      (unless before?
-        (let ([active-canvas (get-active-canvas)])
-          (when active-canvas
-            (to-delegate
-             (λ ()
-               (send (send active-canvas get-top-level-window) delegate-moved)))))))
+      (when delegate 
+        (unless before?
+          (let ([active-canvas (get-active-canvas)])
+            (when active-canvas
+              (send (send active-canvas get-top-level-window) delegate-moved))))))
     
     (define/augment (on-edit-sequence)
-      (to-delegate
-       (λ ()
-         (send delegate begin-edit-sequence)))
+      (when delegate 
+        (send delegate begin-edit-sequence))
       (inner (void) on-edit-sequence))
 
     (define/augment (after-edit-sequence)
-      (to-delegate
-       (λ ()
-         (send delegate end-edit-sequence)))
+      (when delegate 
+        (send delegate end-edit-sequence))
       (inner (void) after-edit-sequence))
     
     (define/override (resized snip redraw-now?)
       (super resized snip redraw-now?)
       (when (and delegate
                  (not (is-a? snip string-snip%)))
-        (to-delegate
-         (λ ()
-           (when linked-snips
-             (let ([delegate-copy (hash-ref linked-snips snip (λ () #f))])
-               (when delegate-copy
-                 (send delegate resized delegate-copy redraw-now?))))))))
+        (when linked-snips
+          (let ([delegate-copy (hash-ref linked-snips snip (λ () #f))])
+            (when delegate-copy
+              (send delegate resized delegate-copy redraw-now?))))))
     
     (define/augment (after-insert start len)
-      (to-delegate
-       (λ ()
-         (send delegate begin-edit-sequence)
-         (send delegate lock #f)
-         (split-snip start)
-         (split-snip (+ start len))
-         (let loop ([snip (find-snip (+ start len) 'before-or-none)])
-           (when snip
-             (unless ((get-snip-position snip) . < . start)
-               (send delegate insert (copy snip) start start)
-               (loop (send snip previous)))))
-         (send delegate lock #t)
-         (send delegate end-edit-sequence)))
+      (when delegate 
+        (send delegate begin-edit-sequence)
+        (send delegate lock #f)
+        (split-snip start)
+        (split-snip (+ start len))
+        (let loop ([snip (find-snip (+ start len) 'before-or-none)])
+          (when snip
+            (unless ((get-snip-position snip) . < . start)
+              (send delegate insert (copy snip) start start)
+              (loop (send snip previous)))))
+        (send delegate lock #t)
+        (send delegate end-edit-sequence))
       (inner (void) after-insert start len))
     
     (define/augment (after-delete start len)
-      (to-delegate
-       (λ ()
-         (send delegate lock #f)
-         (send delegate begin-edit-sequence)
-         (send delegate delete start (+ start len))
-         (send delegate end-edit-sequence)
-         (send delegate lock #t)))
+      (when delegate 
+        (send delegate lock #f)
+        (send delegate begin-edit-sequence)
+        (send delegate delete start (+ start len))
+        (send delegate end-edit-sequence)
+        (send delegate lock #t))
       (inner (void) after-delete start len))
     
     (define/augment (after-change-style start len)
-      (to-delegate
-       (λ ()
-         (send delegate begin-edit-sequence)
-         (send delegate lock #f)
-         (split-snip start)
-         (let* ([snip (find-snip start 'after)]
-                [style (send snip get-style)])
-           (send delegate change-style style start (+ start len)))
-         (send delegate lock #f)
-         (send delegate end-edit-sequence)))
+      (when delegate 
+        (send delegate begin-edit-sequence)
+        (send delegate lock #f)
+        (split-snip start)
+        (let* ([snip (find-snip start 'after)]
+               [style (send snip get-style)])
+          (send delegate change-style style start (+ start len)))
+        (send delegate lock #f)
+        (send delegate end-edit-sequence))
       (inner (void) after-change-style start len))
     
     (define/augment (after-load-file success?)
