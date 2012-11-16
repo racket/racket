@@ -297,10 +297,16 @@
                   maj
                   min)))
 
+  (define (skip-collection-directory? collection)
+    ;; Skiping ".git" or ".svn" makes it cleaner to use a git of subversion
+    ;; checkout as a collection directory
+    (regexp-match? #rx"[.](git|svn)$" (path->bytes collection)))
+
   ;; Add in all non-planet collections:
   (for ([cp (current-library-collection-paths)]
         #:when (directory-exists? cp)
         [collection (directory-list cp)]
+        #:unless (skip-collection-directory? collection)
         #:when (directory-exists? (build-path cp collection)))
     (collection-cc! (list collection)
                     #:path (build-path cp collection)))
@@ -317,6 +323,7 @@
     (for ([cp (in-list (links #:root? #t #:user? #f))]
           #:when (directory-exists? cp)
           [collection (directory-list cp)]
+          #:unless (skip-collection-directory? collection)
           #:when (directory-exists? (build-path cp collection)))
       (cc! (list collection)
            #:path (build-path cp collection))))
@@ -336,6 +343,7 @@
     (for ([cp (in-list (links #:root? #t))]
           #:when (directory-exists? cp)
           [collection (directory-list cp)]
+          #:unless (skip-collection-directory? collection)
           #:when (directory-exists? (build-path cp collection)))
       (cc! (list collection) #:path (build-path cp collection))))
 

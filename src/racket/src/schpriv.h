@@ -3416,7 +3416,8 @@ void scheme_raise_out_of_memory(const char *where, const char *msg, ...);
 
 uintptr_t scheme_get_max_symbol_length();
 
-char *scheme_make_arity_expect_string(Scheme_Object *proc,
+char *scheme_make_arity_expect_string(const char *map_name,
+                                      Scheme_Object *proc,
 				      int argc, Scheme_Object **argv,
 				      intptr_t *len);
 

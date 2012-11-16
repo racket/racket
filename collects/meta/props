@@ -1023,6 +1023,7 @@ path/s is either such a string or a list of them.
 "collects/tests/drracket" responsible (robby) drdr:random #t
 "collects/tests/drracket/easter-egg.rkt" drdr:timeout 240
 "collects/tests/drracket/example-tool.rkt" drdr:command-line (gracket *)
+"collects/tests/drracket/follow-log.rkt" drdr:command-line (raco "make" *)
 "collects/tests/drracket/hangman.rkt" responsible (robby matthias) drdr:command-line (gracket *)
 "collects/tests/drracket/io.rkt" drdr:command-line (gracket *) drdr:timeout 500
 "collects/tests/drracket/language-test.rkt" responsible (robby matthias) drdr:command-line (gracket *) drdr:timeout 1500

@@ -32,9 +32,11 @@
     (mixin (basic<%>) (delegate<%>)
       (inherit get-top-level-window)
       (define/override (on-superwindow-show shown?)
-        (send (send (get-top-level-window) get-delegatee) set-start/end-para #f #f)
+        (define delegatee (send (get-top-level-window) get-delegatee))
+        (when delegatee
+          (send delegatee set-start/end-para #f #f))
         (super on-superwindow-show shown?))
-      (super-instantiate ())))
+      (super-new)))
   
   (define info<%> (interface (basic<%>)))
   ;; (basic<%> -> (class (is-a? (send this get-top-level-window) frame:info<%>)))
