@@ -800,6 +800,7 @@ path/s is either such a string or a list of them.
 "collects/lazy" responsible (eli stchang)
 "collects/macro-debugger" responsible (ryanc)
 "collects/make" responsible (mflatt)
+"collects/math" responsible (ntoronto)
 "collects/meta" responsible (eli)
 "collects/meta/build" drdr:command-line #f
 "collects/meta/check-dists.rkt" drdr:timeout 480
