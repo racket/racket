@@ -7,8 +7,7 @@ Both implementations do some argument reduction, find excellent 53-bit initial e
 perform one Newton step.
 |#
 
-(require "../../../bigfloat.rkt"
-         "../flonum-functions.rkt"
+(require "../flonum-functions.rkt"
          "../flonum-syntax.rkt"
          "../flonum-log.rkt"
          "expansion-base.rkt"
@@ -28,6 +27,8 @@ A value of k that reduces any x to [0.5, 1.0] is
   
   k = -truncate(log(x)/log(2))
 |#
+
+(define-values (log2-hi log2-lo) (values 0.6931471805599453 2.3190468138462996e-17))
 
 (: fl2log-reduction (Flonum Flonum -> (Values Flonum Flonum Flonum)))
 (define (fl2log-reduction x2 x1)
@@ -78,8 +79,6 @@ A `k'  that reduces any argument `x' to (-1/2,1/2) is
 
   k = round(log1p(x)/log(2))
 |#
-
-(define-values (log2-hi log2-lo) (bigfloat->fl2 log2.bf))
 
 (: fl2log1p-reduction (Flonum Flonum -> (Values Flonum Flonum Flonum)))
 (define (fl2log1p-reduction x2 x1)
