@@ -53,7 +53,7 @@
         ["libpixman-1.0.dylib" 633368]
         ["libgthread-2.0.0.dylib" 8592]
         ["libpng15.15.dylib" 214836]
-        ["PSMTabBarControl.tgz" 107267 "PSMTabBarControl.framework" 316528]]
+        ["PSMTabBarControl.tgz" 156265 "PSMTabBarControl.framework" 450751]]
       '[ppc-macosx
         ["libcairo.2.dylib" 2620616]
         ["libffi.5.dylib" 67920]
@@ -173,11 +173,19 @@
               (directory-size path)
               0))))
 
+  (define-values (path-size/show)
+    (lambda (path)
+      (let-values ([(sz) (path-size path)])
+        (if (getenv "PLT_SHOW_PATH_SIZES")
+            (printf "~s ~s\n" path sz)
+            (void))
+        sz)))
+
   (define-values (got-path?) ; approximate, using size
     (case-lambda [(path size unpacked-path unpacked-size)
                   (got-path? unpacked-path unpacked-size)]
                  [(path size)
-                  (equal? size (path-size path))]))
+                  (equal? size (path-size/show path))]))
 
   ;; not provided by #%kernel
   (define-values (filter)

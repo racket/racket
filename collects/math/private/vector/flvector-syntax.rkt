@@ -3,16 +3,12 @@
 (module syntax-defs* racket/base
   
   (require (for-syntax racket/base)
-           "../syntax-utils.rkt"
-           "../exception.rkt"
-           (except-in typed/racket/base
-                      raise-arguments-error
-                      raise-argument-error
-                      raise-result-error
-                      raise-range-error)
+           typed/racket/base
            racket/flonum
            racket/fixnum
-           racket/unsafe/ops)
+           racket/unsafe/ops
+           "../syntax-utils.rkt"
+           "../exception.rkt")
   
   (provide (all-defined-out))
   

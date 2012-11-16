@@ -1,7 +1,6 @@
 #lang typed/racket/base
 
 (require racket/list
-         "../exception.rkt"
          "divisibility.rkt"
          "modular-arithmetic.rkt"
          (only-in "number-theory.rkt" 
@@ -41,7 +40,7 @@
         [(n . <= . 0)  (raise-argument-error 'order "Positive-Integer" 1 g n)]
         [(not (coprime? g n))  (error 'order "expected coprime arguments; given ~e and ~e" g n)]
         [else
-         (parameterize ([current-modulus n])
+         (with-modulus n
            (let: loop : Positive-Integer ([k : Positive-Integer 1] 
                                           [a : Natural g])
              (cond [(mod= a 1)  k]
@@ -87,7 +86,7 @@
          (error 'primitive-root? "expected coprime arguments; given ~e and ~e" g n)]
         [else
          (define phi-n (totient n))
-         (parameterize ([current-modulus  n])
+         (with-modulus n
            (andmap (λ: ([x : Boolean]) x)
                    (map (λ: ([q : Natural]) (not (mod= (modexpt g (quotient phi-n q)) 1)))
                         (prime-divisors phi-n))))]))
@@ -126,7 +125,7 @@
                 [qs    (prime-divisors phi-n)])
            (: primitive-root? : Natural -> Boolean)
            (define (primitive-root? g)
-             (parameterize ([current-modulus  n])
+             (with-modulus n
                (andmap (λ: ([x : Boolean]) x)
                        (map (λ: ([q : Natural])
                               (not (mod= (modexpt g (quotient phi-n q)) 1)))
@@ -166,7 +165,7 @@
          (define qs    (prime-divisors phi-n))
          (: primitive-root? : Natural -> Boolean)
          (define (primitive-root? g)
-           (parameterize ([current-modulus  n])
+           (with-modulus n
              (andmap (λ: ([x : Boolean]) x)
                      (map (λ: ([q : Natural])
                             (not (mod= (modexpt g (quotient phi-n q)) 1)))

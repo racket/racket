@@ -148,7 +148,7 @@
                              #f)]
        [on-drop-file (lambda (s)
                        (unless (path-string? s)
-                         (raise-type-error (who->name '(method window<%> on-drop-file)) "pathname string" s)))]
+                         (raise-argument-error (who->name '(method window<%> on-drop-file)) "path-string?" s)))]
 
        [focus (entry-point (lambda () (send wx set-focus)))]
        [has-focus? (entry-point (lambda () (send wx has-focus?)))]
@@ -212,10 +212,10 @@
                             (when on?
                               (unless top?
                                 (unless (memq wx (send (send wx area-parent) get-children))
-                                  (raise-mismatch-error 
+                                  (raise-arguments-error 
                                    (who->name '(method window<%> show))
-                                   "cannot show a subwindow that is not active in its parent: "
-                                   this))))
+                                   "cannot show a subwindow that is not active in its parent"
+                                   "subwindow" this))))
                             (send wx show on?)))]
        [is-shown? (entry-point (lambda () (send wx is-shown?)))]
        [on-superwindow-show (lambda (visible?) (void))]

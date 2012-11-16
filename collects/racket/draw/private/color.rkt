@@ -1,7 +1,8 @@
 #lang racket/base
 (require racket/class
          racket/contract/base
-         (except-in "syntax.rkt" real-in integer-in))
+         (except-in "syntax.rkt" real-in integer-in)
+         "lock.rkt")
 
 (provide color%
          make-color
@@ -110,13 +111,13 @@
     (super-new)
     (define/public (find-color name)
       (let ([name (string-downcase name)])
-        (or (hash-ref color-objects name #f)
+        (or (atomically (hash-ref color-objects name #f))
             (let ([v (hash-ref colors (string-foldcase name) #f)])
               (if v
                   (let ([c (new color%)])
                     (send c set (vector-ref v 0) (vector-ref v 1) (vector-ref v 2))
                     (send c set-immutable)
-                    (hash-set! color-objects name c)
+                    (atomically (hash-set! color-objects name c))
                     c)
                   #f)))))
     (define/public (get-names)

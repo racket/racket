@@ -68,15 +68,42 @@ failed, and anything else to indicate it passed.}
 
 ]
 
+Contracts in Racket are subdivided into three different categories:
+@itemlist[@item{@deftech{Flat contract}s can be fully checked immediately for
+                 a given value. These kinds of contracts are essentially
+                 predicate functions. Using @racket[flat-contract-predicate],
+                 you can extract the predicate from a flat contract, and
+                 @racket[flat-contract?] recognizes a flat contract.}
+          @item{@deftech{Chaperone contracts} are not always immediately
+                 checkable, but are guaranteed to not change any properties
+                 of any values that they check. That is, they may wrap
+                 a value in such a way that it signals contract violations
+                 later, as the value is used (e.g., a function contract
+                 checks the inputs and outputs to the function only when
+                 the function is called and returned), but any properties
+                 that the value had before being wrapped by the contract
+                 are preserved by the contract wrapper. 
+                 
+                 All flat contracts are also chaperone contracts (but
+                 not vice-versa).}
+         @item{@deftech{Impersonator contracts} do not provide any 
+                guarantees about values they check. Impersonator contracts
+                may hide properties of values, or even make them completely
+                opaque (e.g, @racket[new-∀/c]).
+                
+                All contracts are impersonator contracts.}]
+
+For more about this hierarchy, see @tech{chaperones} and
+a research paper on chaperones, impersonators, and how they can be used to 
+implement contracts @cite{Strickland12}.
+
+
 @local-table-of-contents[]
 
 @; ----------------------------------------
 
 @section[#:tag "data-structure-contracts"]{Data-structure Contracts}
 @declare-exporting-ctc[racket/contract/base]
-
-A @deftech{flat contract} can be fully checked immediately for
-a given value.
 
 @defproc[(flat-contract [predicate (any/c . -> . any/c)]) flat-contract?]{
 
@@ -390,12 +417,14 @@ produced.  Otherwise, an impersonator contract is produced.
 
 
 @defform/subs[(struct/dc struct-id field-spec ...)
-              ([field-spec [field-id maybe-lazy contract-expr]
-                           [field-id (dep-field-id ...)
-                                     maybe-lazy
-                                     maybe-flat-or-impersonator
-                                     maybe-dep-state
-                                     contract-expr]]
+              ([field-spec [field-name maybe-lazy contract-expr]
+                           [field-name (dep-field-name ...)
+                                       maybe-lazy
+                                       maybe-flat-or-impersonator
+                                       maybe-dep-state
+                                       contract-expr]]
+               [field-name field-id
+                           (field-id #:parent struct-id)]
                [maybe-lazy (code:line) #:lazy]
                [maybe-flat-or-impersonator (code:line) #:flat #:impersonator]
                [maybe-dep-state (code:line) #:depends-on-state])]{
@@ -406,7 +435,8 @@ contracts produced by the @racket[field-spec]s.
 If the @racket[field-spec] lists the names of other fields,
 then the contract depends on values in those fields, and the @racket[contract-expr]
 expression is evaluated each time a selector is applied, building a new contract
-for the fields based on the values of the @racket[dep-field-id] fields.
+for the fields based on the values of the @racket[dep-field-name] fields (the
+@racket[dep-field-name] syntax is the same as the @racket[field-name] syntax).
 If the field is a dependent field, then it is assumed that the contract is
 a chaperone, but not always a flat contract (and theus the entire @racket[struct/dc]
 contract is not a flat contract).
@@ -490,7 +520,12 @@ to the input.  The result will be a copy for immutable hash tables, and either a
 }
 
 
-@defproc[(prompt-tag/c [contract contract?] ...) contract?]{
+@defform/subs[#:literals (values)
+  (prompt-tag/c contract ... maybe-call/cc)
+  ([maybe-call/cc (code:line)
+                  (code:line #:call/cc contract)
+                  (code:line #:call/cc (values contract ...))])
+   #:contracts ([contract contract?])]{
 Takes any number of contracts and returns a contract that recognizes
 continuation prompt tags and will check any aborts or prompt handlers that
 use the contracted prompt tag.
@@ -502,6 +537,10 @@ call to @racket[call-with-continuation-prompt].
 If all of the @racket[contract]s are chaperone contracts, the resulting
 contract will also be a @tech{chaperone} contract. Otherwise, the contract is
 an @tech{impersonator} contract.
+
+If @racket[maybe-call/cc] is provided, then the provided contracts
+are used to check the return values from a continuation captured with
+@racket[call-with-current-continuation].
 
 @examples[#:eval (contract-eval)
   (define/contract tag

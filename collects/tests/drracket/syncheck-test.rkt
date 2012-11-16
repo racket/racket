@@ -50,7 +50,7 @@
   
   ;; tests : (listof test)
   (define tests
-    (list 
+    (list
      (build-test "12345"
                 '(("12345" constant)))
      (build-test "'abcdef"
@@ -730,7 +730,7 @@
                   ("x:foldl"                          imported-variable)
                   (")"                                default-color))
                 (list '((10 18) (20 27))
-                      '((28 50) (52 59))))
+                      '((39 49) (52 59))))
 
      (build-test "(module m mzscheme (require (prefix x: mzlib/list) mzlib/list) x:foldl foldl)"
                 '(("("                                    default-color)
@@ -743,7 +743,7 @@
                   ("foldl"                                imported-variable)
                   (")"                                    default-color))
                 (list '((10 18) (20 27))
-                      '((28 50) (63 70))
+                      '((39 49) (63 70))
                       '((51 61) (71 76))))
 
      (build-test "(module m mzscheme (require (only mzlib/list foldr) (only mzlib/list foldl)) foldl foldr)"
@@ -757,8 +757,8 @@
                    ("foldr"                                              imported-variable)
                    (")"                                                  default-color))
                  (list '((10 18) (20 27))
-                       '((28 51) (77 82) (83 88))
-                       '((52 75) (77 82) (83 88))))
+                       '((34 44) (83 88))
+                       '((58 68) (77 82))))
 
      (build-test "(module m mzscheme (require (prefix x: mzscheme)) x:+ +)"
                  '(("("                                                  default-color)
@@ -771,8 +771,8 @@
                    ("+"                                                  imported-variable)
                    (")"                                                  default-color))
                  (list '((10 18) (20 27) (54 55))
-                       '((28 48) (50 53))))
-
+                       '((39 47) (50 53))))
+     
      (build-test "(module m mzscheme (require mzlib/etc) (rec f 1))"
                 '(("("                     default-color)
                   ("module"                imported-syntax)
@@ -989,6 +989,17 @@
                        '((61 63) (65 67))
                        '((6 12) (14 21) (40 43) (49 54) (74 80))))
 
+     (build-test "#lang racket/base\n(define red 1)\n(module+ test red)"
+                 '(("#lang racket/base\n(" default-color)
+                   ("define"               imported)
+                   (" "                    default-color)
+                   ("red"                  lexically-bound)
+                   (" 1)\n(module+ test "  default-color)
+                   ("red"                  imported)
+                   (")"                    default-color))
+                 '(((26 29) (47 50))
+                   ((6 17) (19 25))))
+
      (build-rename-test "(lambda (x) x)"
                         9
                         "x"
@@ -1189,7 +1200,8 @@
            (queue-callback/res
             (λ ()
               (define defs (send drs get-definitions-text))
-              (define menu (send defs syncheck:build-popup-menu (rename-test-pos test) defs))
+              (define menu (make-object popup-menu%))
+              (send defs syncheck:build-popup-menu menu (rename-test-pos test) defs)
               (define item-name (format "Rename ~a" (rename-test-old-name test)))
               (define menu-item
                 (for/or ([x (in-list (send menu get-items))])

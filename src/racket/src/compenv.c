@@ -2000,7 +2000,11 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
       is_constant = 2;
     else if (SAME_OBJ(mod_constant, scheme_fixed_key))
       is_constant = 1;
-    else if (SAME_TYPE(SCHEME_TYPE(mod_constant), scheme_inline_variant_type)) {
+    else if (SAME_TYPE(SCHEME_TYPE(mod_constant), scheme_struct_proc_shape_type)) {
+      if (_inline_variant)
+        *_inline_variant = mod_constant;
+      is_constant = 2;
+    } else if (SAME_TYPE(SCHEME_TYPE(mod_constant), scheme_inline_variant_type)) {
       if (_inline_variant)
         *_inline_variant = mod_constant;
       is_constant = 2;

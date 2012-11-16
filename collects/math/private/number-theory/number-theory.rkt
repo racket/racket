@@ -1,7 +1,6 @@
 #lang typed/racket
 
-(require "../functions/random.rkt"
-         "../exception.rkt"
+(require "../base/base-random.rkt"
          "divisibility.rkt"
          "modular-arithmetic.rkt"
          "types.rkt")

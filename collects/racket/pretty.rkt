@@ -221,11 +221,11 @@
 			 [post-hook (pretty-print-post-print-hook)])
 		     (generic-write obj display?
 				    width
-				    (make-printing-port port 
-							pre-hook
-							post-hook
-							print-hook
-							(pretty-print-print-line))
+                                    (make-printing-port port 
+                                                        pre-hook
+                                                        post-hook
+                                                        print-hook
+                                                        (pretty-print-print-line))
 				    (print-graph) (print-struct) (print-hash-table)
 				    (and (not display?) (print-vector-length)) (print-box) 
                                     (and (not display?) as-qq? (print-as-expression)) qq-depth
@@ -305,8 +305,7 @@
                                     (newline p))
                                   (set! first-line? #f)
                                   0)
-                                esc))
-       p))
+                                esc))))
 
    (define (make-tentative-pretty-print-output-port pport width esc)
      (let ([p (make-tentative-output-port pport width esc)])
@@ -336,10 +335,10 @@
 				  (lambda (use-line? offset width)
 				    (set! line (add1 line))
 				    (print-line (and use-line? line) p offset width))
-				  void))
-	 p)))
+				  void)))))
 
-   (define printing-ports (make-weak-hasheq))
+   (struct printing-port (port info)
+     #:property prop:output-port 0)
 
    (define-struct print-port-info (get-content
 				   def-box
@@ -350,21 +349,13 @@
 				   esc))
 
    (define (register-printing-port p info)
-     (hash-set! printing-ports p (make-ephemeron p info)))
+     (printing-port p info))
 
    (define (register-printing-port-like p pport)
-     (hash-set! printing-ports p 
-                (make-ephemeron p
-                                (ephemeron-value (hash-ref printing-ports pport)))))
+     (printing-port p (printing-port-info pport)))
 
    (define (get pport selector)
-     (let ([e (hash-ref printing-ports pport #f)])
-       (selector (if e
-		     (ephemeron-value e)
-		     (make-print-port-info
-		      (lambda () null)
-		      (box #t)
-		      void void void void void)))))
+     (selector (printing-port-info pport)))
 
    (define (printing-port-pre-print pport)
      (get pport print-port-info-pre-print))
@@ -696,10 +687,10 @@
 	     (port-write-handler p writer)
 	     (port-display-handler p displayer)
 	     (port-print-handler p printer))
-	   (register-printing-port-like p pport)
-	   (parameterize ([pretty-printing multi-line?]
-			  [pretty-print-columns (or width 'infinity)])
-	     ((custom-write-accessor obj) obj p (or qd (not display?)))))))
+	   (let ([p (register-printing-port-like p pport)])
+             (parameterize ([pretty-printing multi-line?]
+                            [pretty-print-columns (or width 'infinity)])
+               ((custom-write-accessor obj) obj p (or qd (not display?))))))))
 
      ;; ------------------------------------------------------------
      

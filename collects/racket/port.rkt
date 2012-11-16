@@ -605,9 +605,15 @@
   (lambda (p location-proc pos [close? #t] [count-lines!-proc void])
     (make-input-port
      (object-name p)
+     p ;; redirect `read' to `p'
+     ;; Here's the long way to redirect:
+     #;
      (lambda (s)
        (let ([v (read-bytes-avail!* s p)])
          (if (eq? v 0) (wrap-evt p (lambda (x) 0)) v)))
+     p ;; redirect `peek' to `p'
+     ;; Here's the long way to redirect:
+     #;
      (lambda (s skip evt)
        (let ([v (peek-bytes-avail!* s skip evt p)])
          (if (eq? v 0)
@@ -623,7 +629,15 @@
           (lambda (n evt target-evt) (port-commit-peeked n evt target-evt p)))
      location-proc
      count-lines!-proc
-     pos)))
+     (let ([delta (- pos (or (file-position* p) pos))])
+       (if (= delta 1)
+           p
+           (lambda () 
+             (define v (file-position* p))
+             (+ delta v))))
+     (case-lambda
+      [(mode) (file-stream-buffer-mode p mode)]
+      [() (file-stream-buffer-mode p)]))))
 
 (define filter-read-input-port
   (lambda (p wrap-read wrap-peek [close? #t])
@@ -651,7 +665,7 @@
           (lambda (n evt target-evt) (port-commit-peeked n evt target-evt p)))
      (lambda () (port-next-location p))
      (lambda () (port-count-lines! p))
-     (add1 (file-position p)))))
+     p)))
 
 ;; Not kill-safe.
 (define make-pipe-with-specials
@@ -1050,7 +1064,7 @@
                                       (lambda (v) (loop))))))))
        (lambda () (port-next-location port))
        (lambda () (port-count-lines! port))
-       (add1 (file-position port))))))
+       port))))
 
 (define special-filter-input-port
   (lambda (p filter [close? #t])
@@ -1084,7 +1098,7 @@
           (lambda (n evt target-evt) (port-commit-peeked n evt target-evt p)))
      (lambda () (port-next-location p))
      (lambda () (port-count-lines! p))
-     (add1 (file-position p)))))
+     p)))
 
 ;; ----------------------------------------
 
@@ -1929,7 +1943,7 @@
     (let ([new (transplant-output-port
                 p
                 (lambda () (port-next-location p))
-                (add1 (file-position p))
+                (add1 (or (file-position* p) 0))
                 close?
                 (lambda () (port-count-lines! p)))])
       (port-display-handler new (port-display-handler p))
@@ -1941,7 +1955,7 @@
     (let ([new (transplant-input-port
                 p
                 (lambda () (port-next-location p))
-                (add1 (file-position p))
+                (add1 (or (file-position* p) 0))
                 close?
                 (lambda () (port-count-lines! p)))])
       (port-read-handler new (port-read-handler p))

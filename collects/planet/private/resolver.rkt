@@ -343,6 +343,7 @@ See the scribble documentation on the planet/resolver module.
                  [current-module-declare-name #f]
                  [use-compiled-file-paths (call-with-parameterization orig-paramz use-compiled-file-paths)]
                  [current-library-collection-paths (call-with-parameterization orig-paramz current-library-collection-paths)]
+                 [error-print-source-location (call-with-parameterization orig-paramz error-print-source-location)]
                  [powerful-security-guard (call-with-parameterization orig-paramz current-security-guard)])
     (let-values ([(path pkg) (get-planet-module-path/pkg/internal spec rmp stx load?)])
       (when load? (add-pkg-to-diamond-registry! pkg stx))

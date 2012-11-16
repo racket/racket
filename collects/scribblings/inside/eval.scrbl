@@ -24,7 +24,8 @@ followed by @cppi{scheme_eval_compiled}.
 
 The functions @cpp{scheme_eval}, @cpp{scheme_apply}, etc., are
 @defterm{top-level evaluation functions}. Continuation invocations are
-confined to jumps within a top-level evaluation.
+confined to jumps within a top-level evaluation (i.e., a continuation
+barrier is installed by these functions).
 
 The functions @cppi{_scheme_eval_compiled}, @cppi{_scheme_apply},
 etc. (with a leading underscore) provide the same functionality

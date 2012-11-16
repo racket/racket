@@ -3,9 +3,10 @@
 (require "../utils/utils.rkt"
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
-         (only-in (rep free-variance) combine-frees)
+         (rep free-variance)
          (env index-env tvar-env)
          racket/match
+         racket/set
          racket/contract
          unstable/lazy-require)
 (lazy-require ("union.rkt" (Un)))
@@ -36,11 +37,11 @@
 
 ;; substitute-many : Hash[Name,Type] Type -> Type
 (define/cond-contract (substitute-many subst target #:Un [Un (lambda (args) (apply Un args))])
-  ((simple-substitution/c Type?) (#:Un procedure?) . ->* . Type?)
+  ((simple-substitution/c Type/c) (#:Un procedure?) . ->* . Type/c)
   (define (sb t) (substitute-many subst t #:Un Un))
   (define names (hash-keys subst))
   (define fvs (free-vars* target))
-  (if (ormap (lambda (name) (hash-has-key? fvs name)) names)
+  (if (ormap (lambda (name) (free-vars-has-key? fvs name)) names)
       (type-case (#:Type sb #:Filter (sub-f sb) #:Object (sub-o sb))
                  target
                  [#:Union tys (Un (map sb tys))]
@@ -73,15 +74,16 @@
 
 ;; substitute : Type Name Type -> Type
 (define/cond-contract (substitute image name target #:Un [Un (lambda (args) (apply Un args))])
-  ((Type/c symbol? Type?) (#:Un procedure?) . ->* . Type?)
+  ((Type/c symbol? Type/c) (#:Un procedure?) . ->* . Type/c)
   (substitute-many (hash name image) target #:Un Un))
 
 ;; implements angle bracket substitution from the formalism
 ;; substitute-dots : Listof[Type] Option[type] Name Type -> Type
 (define/cond-contract (substitute-dots images rimage name target)
-  ((listof Type/c) (or/c #f Type/c) symbol? Type? . -> . Type?)
+  ((listof Type/c) (or/c #f Type/c) symbol? Type/c . -> . Type/c)
   (define (sb t) (substitute-dots images rimage name t))
-  (if (or (hash-ref (free-idxs* target) name #f) (hash-ref (free-vars* target) name #f))
+  (if (or (set-member? (free-vars-names (free-idxs* target)) name)
+          (set-member? (free-vars-names (free-vars* target)) name))
       (type-case (#:Type sb #:Filter (sub-f sb)) target
                  [#:ListDots dty dbound
                              (if (eq? name dbound)
@@ -127,7 +129,7 @@
 ;; substitute-dotted : Type Name Name Type -> Type
 (define (substitute-dotted image image-bound name target)
   (define (sb t) (substitute-dotted image image-bound name t))
-  (if (hash-ref (free-idxs* target) name #f)
+  (if (set-member? (free-vars-names (free-idxs* target)) name)
       (type-case (#:Type sb #:Filter (sub-f sb))
                  target
                  [#:ValuesDots types dty dbound
@@ -155,7 +157,7 @@
 ;; substitution = Listof[U List[Name,Type] List[Name,Listof[Type]]]
 ;; subst-all : substitution Type -> Type
 (define/cond-contract (subst-all s ty)
-  (substitution/c Type? . -> . Type?)
+  (substitution/c Type/c . -> . Type/c)
 
   (define t-substs
     (for/fold ([acc (hash)]) ([(v r) (in-hash s)])

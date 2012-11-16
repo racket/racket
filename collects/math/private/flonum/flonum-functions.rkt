@@ -1,21 +1,34 @@
 #lang typed/racket/base
 
 (require racket/flonum
+         (only-in racket/math pi)
          racket/performance-hint
          (for-syntax racket/base)
-         "../exception.rkt"
          "flonum-constants.rkt"
          "flonum-bits.rkt")
 
 (provide (all-from-out racket/flonum)
-         (rename-out [real->double-flonum fl])
+         fl
          flsubnormal?
          flnext* flprev*
          flulp-error
          float-complex? (rename-out [inline-number->float-complex number->float-complex])
-         find-least-flonum
          fleven? flodd? flsgn flhypot fllog/base
-         flprobability?)
+         flprobability?
+         flsinpix flcospix fltanpix flcscpix flsecpix flcotpix)
+
+(module syntax-defs racket/base
+  (require (for-syntax racket/base)
+           racket/flonum)
+  (provide fl)
+  (define-syntax (fl stx)
+    ;; can't use a rename transformer: get error:
+    ;; "unsealed local-definition or module context found in syntax object"
+    (syntax-case stx ()
+      [(_ . args)  (syntax/loc stx (real->double-flonum . args))]
+      [_  (syntax/loc stx real->double-flonum)])))
+
+(require 'syntax-defs)
 
 (begin-encourage-inline
   
@@ -89,42 +102,6 @@
 (define (number->float-complex z) (inline-number->float-complex z))
 
 ;; ===================================================================================================
-;; Search
-
-(define +inf-ordinal (flonum->ordinal +inf.0))
-
-(: find-least-flonum (case-> ((Flonum -> Any) Flonum -> (U Flonum #f))
-                             ((Flonum -> Any) Flonum Flonum -> (U Flonum #f))))
-
-(define find-least-flonum
-  (case-lambda
-    [(pred? x-start)
-     (when (eqv? +nan.0 x-start)
-       (raise-argument-error 'find-least-flonum "non-NaN Flonum" 1 pred? x-start))
-     (let loop ([n-end  (flonum->ordinal x-start)] [step 1])
-       (define x-end (ordinal->flonum n-end))
-       (cond [(pred? x-end)  (find-least-flonum pred? x-start x-end)]
-             [(fl= x-end +inf.0)  #f]
-             [else  (loop (min +inf-ordinal (+ n-end step)) (* step 2))]))]
-    [(pred? x-start x-end)
-     (when (eqv? x-start +nan.0)
-       (raise-argument-error 'find-least-flonum "non-NaN Flonum" 1 pred? x-start x-end))
-     (when (eqv? x-end +nan.0)
-       (raise-argument-error 'find-least-flonum "non-NaN Flonum" 2 pred? x-start x-end))
-     (cond [(pred? x-start)  x-start]
-           [(not (pred? x-end))  #f]
-           [else
-            (let loop ([n-start  (flonum->ordinal x-start)] [n-end  (flonum->ordinal x-end)])
-              (cond [(= n-start n-end)  (define x (ordinal->flonum n-end))
-                                        (if (pred? x) x #f)]
-                    [else
-                     (define n-mid (quotient (+ n-start n-end) 2))
-                     (cond [(pred? (ordinal->flonum n-mid))
-                            (loop n-start n-mid)]
-                           [else
-                            (loop (+ n-mid 1) n-end)])]))])]))
-
-;; ===================================================================================================
 ;; More floating-point functions
 
 (begin-encourage-inline
@@ -174,3 +151,68 @@
           [else  (and (p . fl>= . 0.0) (p . fl<= . 1.0))]))
   
   )  ; begin-encourage-inline
+
+(: flsinpix (Flonum -> Flonum))
+;; Computes sin(pi*x) accurately; i.e. error <= 2 ulps but almost always <= 1 ulp
+(define (flsinpix x)
+  (cond [(fl= x 0.0)  x]
+        [(and (x . fl> . -inf.0) (x . fl< . +inf.0))
+         (let*-values
+             ([(x s)  (if (x . fl< . 0.0) (values (- x) -1.0) (values x 1.0))]
+              [(x)    (fl- x (fl* 2.0 (fltruncate (fl* 0.5 x))))]
+              [(x s)  (if (x . fl> . 1.0) (values (fl- x 1.0) (fl* s -1.0)) (values x s))]
+              [(x)    (if (x . fl> . 0.5) (fl- 1.0 x) x)])
+           (fl* s (flsin (fl* pi x))))]
+        [else  +nan.0]))
+
+(: flcospix (Flonum -> Flonum))
+;; Computes cos(pi*x) accurately; i.e. error <= 1 ulps
+(define (flcospix x)
+  (cond [(and (x . fl> . -inf.0) (x . fl< . +inf.0))
+         (let*-values
+             ([(x)  (flabs x)]
+              [(x)  (fl- x (fl* 2.0 (fltruncate (fl* 0.5 x))))]
+              [(x)  (if (x . fl> . 1.0) (fl- 2.0 x) x)]
+              [(x s)  (if (x . fl> . 0.5) (values (fl- 1.0 x) -1.0) (values x 1.0))])
+           (cond [(x . fl> . 0.25)  (fl* (fl* s -1.0) (flsin (fl* pi (fl- x 0.5))))]
+                 [else  (fl* s (flcos (fl* pi x)))]))]
+        [else  +nan.0]))
+
+(: fltanpix (Flonum -> Flonum))
+;; Computes tan(pi*x) accurately; i.e. error <= 2 ulps but almost always <= 1 ulp
+(define (fltanpix x)
+  (cond [(fl= x 0.0)  x]
+        [(and (x . fl> . -inf.0) (x . fl< . +inf.0))
+         (let*-values 
+             ([(x s)  (if (x . fl< . 0.0) (values (- x) -1.0) (values x 1.0))]
+              [(x)    (fl- x (fltruncate x))]
+              [(x s)  (if (x . fl> . 0.5) (values (fl- 1.0 x) (fl* s -1.0)) (values x s))])
+           (cond [(x . fl= . 0.5)  +nan.0]
+                 [(x . fl> . 0.25)  (fl/ s (fltan (fl* pi (fl- 0.5 x))))]
+                 [else  (fl* s (fltan (fl* pi x)))]))]
+        [else  +nan.0]))
+
+(: flcscpix (Flonum -> Flonum))
+(define (flcscpix x)
+  (cond [(and (not (zero? x)) (integer? x))  +nan.0]
+        [else  (/ 1.0 (flsinpix x))]))
+
+(: flsecpix (Flonum -> Flonum))
+(define (flsecpix x)
+  (cond [(and (x . fl> . 0.0) (integer? (fl- x 0.5)))  +nan.0]
+        [(and (x . fl< . 0.0) (integer? (fl+ x 0.5)))  +nan.0]
+        [else  (/ 1.0 (flcospix x))]))
+
+(: flcotpix (Flonum -> Flonum))
+;; Computes 1/tan(pi*x) accurately; i.e. error <= 2 ulps but almost always <= 1 ulp
+(define (flcotpix x)
+  (cond [(fl= x 0.0)  (fl/ 1.0 x)]
+        [(and (x . fl> . -inf.0) (x . fl< . +inf.0))
+         (let*-values 
+             ([(x s)  (if (x . fl< . 0.0) (values (- x) -1.0) (values x 1.0))]
+              [(x)    (fl- x (fltruncate x))]
+              [(x s)  (if (x . fl> . 0.5) (values (fl- 1.0 x) (fl* s -1.0)) (values x s))])
+           (cond [(x . fl= . 0.0)  +nan.0]
+                 [(x . fl< . 0.25)  (fl/ s (fltan (fl* pi x)))]
+                 [else  (fl* s (fltan (fl* pi (fl- 0.5 x))))]))]
+        [else  +nan.0]))

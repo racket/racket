@@ -34,7 +34,7 @@
                 honu-$
                 ;; FIXME: in-lines should probably not be here
                 honu-in-lines
-                %racket)
+                postfix)
 
 (define-syntax-rule (define-literal+set set literal ...)
                     (begin
@@ -43,5 +43,4 @@
                         (define-literal-set set (literal ...)))))
 
 (define-literal-set cruft (#%parens #%brackets #%braces
-                           %racket
                            semicolon colon honu-comma))

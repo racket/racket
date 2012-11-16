@@ -18,13 +18,12 @@
                            (warn "no git dir found => no release info\n  (~a)"
                                  "set $GIT_DIR to a racket repo .git dir")))]
          [nowhere (open-output-nowhere)])
-    (and dir
-         (λ args (define o (open-output-string))
-                 (parameterize ([current-directory dir]
-                                [current-output-port o]
-                                [current-error-port nowhere])
-                   (and (apply system* exe "--no-pager" args)
-                        (get-output-string o)))))))
+    (and dir (λ args (define o (open-output-string))
+                     (parameterize ([current-directory dir]
+                                    [current-output-port o]
+                                    [current-error-port nowhere])
+                       (and (apply system* exe "--no-pager" args)
+                            (get-output-string o)))))))
 
 (provide get-version-tag-info)
 (define (get-version-tag-info version)
@@ -48,11 +47,11 @@
                                  (substring h (cdar m)))))
                        (regexp-split #rx"\n" (substring text 0 (caar sep))))]
            [text  (substring text (cdar sep))])
-    (match meta
-      [`((object ,_) (type "commit") (tag ,_)
-         (tagger ,(regexp #rx"^(.* <.*>) ([0-9]+) ([-+]?[0-9][0-9])00$"
-                          (list _ tagger date ofs))))
-       ;; ignore the time offset (it probably depends on where the tag
-       ;; was made)
-       (list tagger (seconds->date (string->number date)) text)]
-      [_ (check #f)]))))
+      (match meta
+        [`((object ,_) (type "commit") (tag ,_)
+           (tagger ,(regexp #rx"^(.* <.*>) ([0-9]+) ([-+]?[0-9][0-9])00$"
+                            (list _ tagger date ofs))))
+         ;; ignore the time offset (it probably depends on where the tag
+         ;; was made)
+         (list tagger (seconds->date (string->number date)) text)]
+        [_ (check #f)]))))

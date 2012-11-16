@@ -59,5 +59,5 @@
                                   ((or/c #f Values? ValuesDots? Result? Type/c)) . ->* . any)]
    [cond-contracted infer/dots (((listof symbol?)
                                  symbol?
-                                 (listof Type/c) (listof Type/c) Type/c Type? (listof symbol?))
-                                (#:expected (or/c #f Type?)) . ->* . any)]))
+                                 (listof Type/c) (listof Type/c) Type/c Type/c (listof symbol?))
+                                (#:expected (or/c #f Type/c)) . ->* . any)]))

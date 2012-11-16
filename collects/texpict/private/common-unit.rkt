@@ -952,13 +952,17 @@
 
       (define (colorize p color)
         (unless (or (string? color)
-                    (is-a? color color%))
+                    (is-a? color color%)
+                    (and (list? color) (= 3 (length color)) (andmap byte? color)))
           (error 'colorize "expected a color, given ~e" color))
-        (if (black-and-white)
-            p
-            (extend-pict 
-             p 0 0 0 0 0
-             `(color ,color ,(pict-draw p)))))
+        (let ([color (if (list? color) 
+                         (apply make-color color) 
+                         color)])
+          (if (black-and-white)
+              p
+              (extend-pict 
+               p 0 0 0 0 0
+               `(color ,color ,(pict-draw p))))))
 
       (define (optimize s)
 	(let o-loop ([s s][dx 0][dy 0])

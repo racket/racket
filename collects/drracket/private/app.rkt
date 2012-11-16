@@ -187,11 +187,6 @@
       (insert ".\n\nBased on:\n  ")
       (insert (banner)))
     
-    (when (or (eq? (system-type) 'macos)
-              (eq? (system-type) 'macosx))
-      (send* e
-        (insert "  The A List (c) 1997-2001 Kyle Hammond\n")))
-    
     (let ([tools (sort (drracket:tools:get-successful-tools)
                        (lambda (a b)
                          (string<? (path->string (drracket:tools:successful-tool-spec a))

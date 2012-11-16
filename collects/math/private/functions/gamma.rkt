@@ -273,13 +273,13 @@ Approximations:
                   [(and (x . fl> . -4.5) (x . fl< . 4.5))  (flgamma-taylor x)]
                   [else  (flgamma-lanczos x)])))]))
 
-(: gamma (case-> (Nonpositive-Integer -> Nothing)
+(: gamma (case-> (One -> One)
                  (Integer -> Positive-Integer)
                  (Float -> Float)
-                 (Real -> Real)))
+                 (Real -> (U Positive-Integer Flonum))))
 (define (gamma x)
   (cond [(double-flonum? x)  (flgamma x)]
-        [(exact-integer? x)  (if (x . > . 0)
-                                 (factorial (- x 1))
-                                 (error 'gamma "undefined for nonpositive integers"))]
-        [else  (flgamma (real->double-flonum x))]))
+        [(exact-integer? x)
+         (cond [(x . > . 0)  (factorial (- x 1))]
+               [else  (raise-argument-error 'gamma "Real, not Zero or Negative-Integer" x)])]
+        [else  (flgamma (fl x))]))

@@ -35,8 +35,13 @@ Win32).
  Compiling for Mac OS X
 ========================================================================
 
-First, install the Mac OS X Developer Tools from Apple.  Then, follow
-the Unix instructions below, but note the following:
+First, install developer command-line tools from Apple. As of this
+writing, install by getting "Xcode" from the AppStore; then, in
+Xcode's preferences window and in the "Downloads" panel, install
+"Command Line Tools".
+
+After installing developer tools, follow the Unix instructions below,
+but note the following:
 
  * The Racket build creates a framework, "Racket.framework", which is
    installed into "racket/lib".  This framework is used by the `racket'

@@ -2,6 +2,7 @@
 
 (require "../utils/utils.rkt" racket/match unstable/list unstable/sequence
          syntax/parse
+         racket/set
          (only-in srfi/1 unzip4) (only-in racket/list make-list)
          (prefix-in c: racket/contract)
          "check-below.rkt" "tc-subst.rkt"
@@ -10,11 +11,6 @@
          (types utils union abbrev subtype))
 
 (provide (all-defined-out))
-
-(define-syntax-class special-op
-  (pattern i:identifier
-           #:when (or (syntax-property #'i 'type-inst)
-                      (syntax-property #'i 'type-ascription))))
 
 ;; syntax? syntax? arr? (listof tc-results?) (or/c #f tc-results) [boolean?] -> tc-results?
 (define/cond-contract (tc/funapp1 f-stx args-stx ftype0 argtys expected #:check [check? #t])
@@ -316,7 +312,8 @@
                                             (string-append
                                              "Polymorphic " fcn-string " could not be applied to arguments:\n"
                                              dom
-                                             (if (not (for/and ([t (apply append (map fv/list msg-doms))]) (memq t msg-vars)))
+                                             (if (not (subset? (apply set-union (seteq) (map fv/list msg-doms))
+                                                               (list->seteq msg-vars)))
                                                  (string-append "Type Variables: " (stringify msg-vars) "\n")
                                                  ""))))))]
     [(or (Poly-names: msg-vars (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests kws) ...)))
@@ -338,7 +335,8 @@
                                             (string-append
                                              "Polymorphic " fcn-string " could not be applied to arguments:\n"
                                              dom
-                                             (if (not (for/and ([t (apply append (map fv/list msg-doms))]) (memq t msg-vars)))
+                                             (if (not (subset? (apply set-union (seteq) (map fv/list msg-doms))
+                                                               (list->seteq msg-vars)))
                                                  (string-append "Type Variables: " (stringify msg-vars) "\n")
                                                  ""))))))]))
 

@@ -1,18 +1,17 @@
 #lang typed/racket/base
 
 (require racket/flonum
-         racket/performance-hint
-         "../exception.rkt")
+         racket/performance-hint)
 
 (provide flonum->bit-field bit-field->flonum
          flonum->ordinal ordinal->flonum
          flstep flnext flprev flonums-between
          flulp)
 
-(: flonum->bit-field (Flonum -> Nonnegative-Integer))
+(: flonum->bit-field (Flonum -> Natural))
 (define (flonum->bit-field x)
-  (define y (integer-bytes->integer (real->floating-point-bytes x (ann 8 8)) #f))
-  (with-asserts ([y exact-nonnegative-integer?]) y))
+  (assert (integer-bytes->integer (real->floating-point-bytes x (ann 8 8)) #f)
+          exact-nonnegative-integer?))
 
 (: bit-field->flonum (Integer -> Flonum))
 (define (bit-field->flonum i)

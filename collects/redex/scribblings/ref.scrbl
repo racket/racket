@@ -8,7 +8,7 @@
                      racket/gui
                      racket/pretty
                      racket/contract
-		     mrlib/graph
+                     mrlib/graph
                      (only-in slideshow/pict pict? text dc-for-text-size text-style/c
                               vc-append)
                      redex))
@@ -43,6 +43,11 @@
     [(_ args ...)
      #'((tech (racketvarfont "term")) args ...)]
     [x (identifier? #'x) #'(tech (racketvarfont "term"))]))
+@(define-syntax (tttterm-no-unquote stx)
+   (syntax-case stx ()
+    [(_ args ...)
+     #'((tech (racketvarfont "term-without-unquote") #:key "term") args ...)]
+    [x (identifier? #'x) #'(tech (racketvarfont "term-without-unquote") #:key "term")]))
 
 @(define-syntax (tterm stx)
    (syntax-case stx ()
@@ -342,6 +347,22 @@ match the pattern, using the language @racket[lang]. The
 procedures accepts a single expression and if the expresion
 matches, it returns a list of match structures describing the
 matches. If the match fails, the procedure returns @racket[#f].
+
+@examples[#:eval 
+          redex-eval
+          (define-language nums
+            (AE number
+                (+ AE AE)))
+          (redex-match nums
+                       (+ AE_1 AE_2)
+                       (term (+ (+ 1 2) 3)))
+          (redex-match nums
+                       (+ AE_1 (+ AE_2 AE_3))
+                       (term (+ (+ 1 2) 3)))
+          (redex-match nums
+                       (+ AE_1 AE_1)
+                       (term (+ (+ 1 2) 3)))]
+
 }
 
 @defform*[[(redex-match? lang @#,ttpattern any)
@@ -349,6 +370,19 @@ matches. If the match fails, the procedure returns @racket[#f].
           
 Like @racket[redex-match], except it returns only a boolean
 indicating if the match was successful.
+
+@examples[#:eval 
+          redex-eval
+          (define-language nums
+            (AE number
+                (+ AE AE)))
+          (redex-match? nums
+                        (+ AE_1 AE_2)
+                        (term (+ (+ 1 2) 3)))
+          (redex-match? nums
+                        (+ AE_1 AE_1)
+                        (term (+ (+ 1 2) 3)))]
+
 }
 
 @defproc[(match? [val any/c]) boolean?]{
@@ -740,7 +774,8 @@ otherwise.
 
 @declare-exporting[redex/reduction-semantics redex]
 
-@defform/subs[#:literals (--> fresh side-condition where with) 
+@defform/subs[#:literals (--> fresh side-condition side-condition/hidden
+                          where where/hidden judgment-holds with)
               (reduction-relation language domain base-arrow
                                   reduction-case ...
                                   shortcuts)
@@ -1138,12 +1173,12 @@ and @racket[#f] otherwise.
 
 @defform/subs[#:literals (I O where where/hidden side-condition side-condition/hidden etc.)
              (define-judgment-form language
-               option ...
+               mode-spec
+               contract-spec
                rule rule ...)
-             ([option mode-spec
-                      contract-spec]
-              [mode-spec (code:line #:mode (form-id pos-use ...))]
-              [contract-spec (code:line #:contract (form-id @#,ttpattern ...))]
+             ([mode-spec (code:line #:mode (form-id pos-use ...))]
+              [contract-spec (code:line) 
+                             (code:line #:contract (form-id @#,ttpattern ...))]
               [pos-use I
                        O]
               [rule [premise
@@ -1156,10 +1191,10 @@ and @racket[#f] otherwise.
                      rule-name]]
               [conclusion (form-id pat/term ...)]
               [premise (code:line (judgment-form-id pat/term ...) maybe-ellipsis)
-                       (where @#,ttpattern @#,tttterm)
-                       (where/hidden @#,ttpattern @#,tttterm)
-                       (side-condition @#,tttterm)
-                       (side-condition/hidden @#,tttterm)]
+                       (where @#,ttpattern @#,tttterm-no-unquote)
+                       (where/hidden @#,ttpattern @#,tttterm-no-unquote)
+                       (side-condition @#,tttterm-no-unquote)
+                       (side-condition/hidden @#,tttterm-no-unquote)]
               [rule-name (code:line)
                          string
                          non-ellipsis-non-hypens-var]
@@ -1230,7 +1265,8 @@ to compute all pairs with a given sum.
        (judgment-holds (sumr n_1 n_2 (s (s z))) (n_1 n_2))]
 
 A rule's @racket[where] and @racket[where/hidden] premises behave as in 
-@racket[reduction-relation] and @racket[define-metafunction].
+@racket[reduction-relation] and @racket[define-metafunction] except the term
+cannot use unquotes.
 @examples[
 #:eval redex-eval
        (define-judgment-form nats
@@ -1258,9 +1294,11 @@ A rule's @racket[where] and @racket[where/hidden] premises behave as in
 
 A rule's @racket[side-condition] and @racket[side-condition/hidden] premises are similar
 to those in @racket[reduction-relation] and @racket[define-metafunction], except that
-they do not implicitly unquote their right-hand sides. In other words, a premise
-of the form @racket[(side-condition exp)] is equivalent to the premise
-@racket[(where #t exp)], except it does not typeset with the ``#t = '', as that would.
+they do not implicitly unquote their right-hand sides. In other words, a premise 
+of the form @racket[(side-condition term)] is equivalent to the premise 
+@racket[(where #t term)], except it does not typeset with the ``#t = '', as that would. 
+Also, the term on the right-hand side cannot use unquotes so it is often convenient to 
+define a metafunction for these side-conditions.
 
 A literal ellipsis may follow a judgment premise when a template in one of the
 judgment's input positions contains a pattern variable bound at ellipsis-depth
@@ -1348,6 +1386,26 @@ each satisfying assignment of pattern variables.
 See @racket[define-judgment-form] for examples.
 }
 
+@defform[(build-derivations judgment)]{
+  Constructs all of the @racket[derivation] trees
+  for @racket[judgment]. 
+  
+@examples[
+#:eval redex-eval
+       (build-derivations (even (s (s z))))]
+}
+
+@defstruct[derivation ([term any/c] [name (or/c string? #f)] [subs (listof derivation?)])]{
+  Represents a derivation from a judgment form. 
+
+  The @racket[term] field holds an s-expression based rendering of the
+  conclusion of the derivation, the @racket[name] field holds the name
+  of the clause with @racket[term] as the conclusion, and
+  @racket[subs] contains the sub-derivations.
+
+  See also @racket[build-derivations].
+}
+                                                            
 @defidform[I]{
 Recognized specially within @racket[define-judgment-form], the @racket[I] keyword
 is an error elsewhere.
@@ -1459,7 +1517,7 @@ then it is used to compare the expected and actual results.
 @defform/subs[(test--> rel-expr option ... e1-expr e2-expr ...)
               ([option (code:line #:equiv pred-expr)])
               #:contracts ([rel-expr reduction-relation?]
-                           [pred-expr (--> any/c any/c anyc)]
+                           [pred-expr (--> any/c any/c any/c)]
                            [e1-expr any/c]
                            [e2-expr any/c])]{
 
@@ -1582,6 +1640,8 @@ metafunctions or unnamed reduction-relation cases) to application counts.}
 @defform*/subs[[(generate-term term-spec size-expr kw-args ...)
                 (generate-term term-spec)]
               ([term-spec (code:line language @#,ttpattern)
+                          (code:line language #:satisfying (judgment-form-id @#,ttpattern ...))
+                          (code:line language #:satisfying (metafunction-id @#,ttpattern ...) @#,ttpattern)
                           (code:line #:source metafunction)
                           (code:line #:source relation-expr)]
                [kw-args (code:line #:attempt-num attempts-expr)
@@ -1591,14 +1651,21 @@ metafunctions or unnamed reduction-relation cases) to application counts.}
                            [retries-expr natural-number/c])]{
 
 In its first form, @racket[generate-term] produces a random term according
-to @racket[term-spec], which is either a language and a pattern, the name
-of a metafunction, or an expression producing a reduction relation. In the
-first of these cases, the produced term matches the given pattern (interpreted 
-according to the definition of the given language). In the second and third cases, 
-the produced term matches one of the clauses of the specified metafunction or
-reduction relation.
+to @racket[term-spec]:
+@itemlist[@item{In the first @racket[term-spec] case, the produced 
+                term matches the given pattern (interpreted 
+                according to the definition of the given language).}
+           @item{In the second case,
+                 the expression produced is the quoted form of a use of the judgment-form or
+                 @racket[#f], if Redex cannot find one.}
+           @item{The third cases generates a random term that satsifies 
+                 the call to the metafunction with the given result 
+                 or @racket[#f], if Redex cannot find one.}
+           @item{In the last two cases, 
+                 the produced term matches one of the clauses of the specified metafunction or
+                 reduction relation.}]
 
-In its second form, @racket[generate-term] produces a procedure for constructing 
+In @racket[generate-term]'s second form, it produces a procedure for constructing 
 terms according to @racket[term-spec].
 This procedure expects @racket[size-expr] (below) as its sole positional
 argument and allows the same optional keyword arguments as the first form.
@@ -1907,7 +1974,7 @@ exploring reduction sequences.
                  [#:filter term-filter (-> any/c (or/c #f string?) any/c) (λ (x y) #t)]
                  [#:x-spacing x-spacing number? 15]
                  [#:y-spacing y-spacing number? 15]
-                 [#:layout layout (-> (listof term-node?) void) void]
+                 [#:layout layout (-> (listof term-node?) void?) void]
                  [#:edge-labels? edge-labels? boolean? #t]
                  [#:edge-label-font edge-label-font (or/c #f (is-a?/c font%)) #f]
                  [#:graph-pasteboard-mixin graph-pasteboard-mixin (make-mixin-contract graph-pasteboard<%>) values])
@@ -2022,7 +2089,7 @@ inserted into the editor by this library have a
                                               (λ (x) (<= 0 (length x) 6)))))
                               '()]
                     [#:filter term-filter (-> any/c (or/c #f string?) any/c) (λ (x y) #t)]
-                    [#:layout layout (-> (listof term-node?) void) void]
+                    [#:layout layout (-> (listof term-node?) void?) void]
                     [#:x-spacing x-spacing number? 15]
                     [#:y-spacing y-spacing number? 15]
                     [#:edge-labels? edge-labels? boolean? #t]
@@ -2092,7 +2159,7 @@ Note that this function does not return all terms that
 reduce to this one -- only those that are currently in the
 graph.
 }
-@defproc[(term-node-labels [tn term-node]) (listof (or/c false/c string?))]{
+@defproc[(term-node-labels [tn term-node?]) (listof (or/c false/c string?))]{
 
 Returns a list of the names of the reductions that led to
 the given node, in the same order as the result of
@@ -2133,13 +2200,13 @@ Returns the expression in this node.
 Sets the position of @racket[tn] in the graph to (@racket[x],@racket[y]). 
 }
 
-@defproc[(term-node-x [tn term-node?]) real]{
+@defproc[(term-node-x [tn term-node?]) real?]{
 Returns the @tt{x} coordinate of @racket[tn] in the window.
 }
-@defproc[(term-node-y [tn term-node?]) real]{
+@defproc[(term-node-y [tn term-node?]) real?]{
 Returns the @tt{y} coordinate of @racket[tn] in the window.
 }
-@defproc[(term-node-width [tn term-node?]) real]{
+@defproc[(term-node-width [tn term-node?]) real?]{
 Returns the width of @racket[tn] in the window.
 }
 @defproc[(term-node-height [tn term-node?]) real?]{
@@ -2277,14 +2344,30 @@ sets @racket[dc-for-text-size] and the latter does not.
 }
 
 
-@defproc[(term->pict [lang compiled-lang?] [term any/c]) pict?]{
+@defform[(term->pict lang term)]{
  Produces a pict like @racket[render-term], but without
  adjusting @racket[dc-for-text-size].
 
+ The first argument is expected to be a @racket[compiled-language?] and
+ the second argument is expected to be a term (without the
+ @racket[term] wrapper). The formatting in the @racket[term] argument
+ is used to determine how the resulting pict will look.
+ 
  This function is primarily designed to be used with
  Slideshow or with other tools that combine picts together.
 }
 
+@defproc[(render-term/pretty-write [lang compiled-lang?] [term any/c] [filename path-string?] [#:width width #f]) void?]{
+  Like @racket[render-term], except that the @racket[term] argument is evaluated,
+  and expected to return a term. Then, @racket[pretty-write] is used
+  to determine where the line breaks go, using the @racket[width] argument
+  as a maximum width (via @racket[pretty-print-columns]).
+}
+
+@defproc[(term->pict/pretty-write [lang compiled-lang?] [term any/c] [filename (or/c path-string? #f)] [#:width width #f]) pict?]{
+  Like @racket[term->pict], but with the same change that
+  @racket[render-term/pretty-write] has from @racket[render-term].
+}
 
 @defproc[(render-language [lang compiled-lang?]
                           [file (or/c false/c path-string?) #f]
@@ -2719,7 +2802,7 @@ single reduction relation.
 When reduction rules, a metafunction, or a grammar contains
 unquoted Racket code or side-conditions, they are rendered
 with a pink background as a guide to help find them and
-provide alternative typesettings for them. In general, a
+provide an alternative typesetting for them. In general, a
 good goal for a PLT Redex program that you intend to typeset
 is to only include such things when they correspond to
 standard mathematical operations, and the Racket code is an
@@ -2773,8 +2856,8 @@ its head.
 The result list is constrained to have at most 2 adjacent
 non-@racket[lw]s. That list is then transformed by adding
 @racket[lw] structs for each of the non-@racket[lw]s in the
-list (see the description of @racket[lw] below for an
-explanation of logical-space):
+list (see the text just below the description of @racket[lw] for a
+explanation of logical space):
 
 @itemize[
 @item{
@@ -2798,6 +2881,13 @@ explanation of logical-space):
     absorbed by a new @racket[lw] that renders using no
     actual space in the typeset version.
 }]
+
+One useful way to take advantage of @racket[with-compound-rewriters]
+is to return a list that begins and ends with @racket[""] (the
+empty string). In that situation, any extra logical space that
+would have been just outside the sequence is replaced with an 
+@racket[lw] that does not draw anything at all.
+
 }
 
 @defform[(with-compound-rewriters ([name-symbol proc] ...)

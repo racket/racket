@@ -1,6 +1,8 @@
 #lang scribble/doc
 @(require "common.rkt")
 
+@centered{@image[#:suffixes @list[".png"]]{image/group-box-panel}}
+
 @defclass/title[group-box-panel% vertical-panel% ()]{
 
 A group-box panel arranges its subwindows in a single column, but also

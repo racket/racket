@@ -3,8 +3,12 @@
           scribble/eval
           scribble/struct
           racket/sandbox
+          racket/runtime-path
           "config.rkt"
           (for-label db db/util/datetime db/util/geometry db/util/postgresql db/util/testing))
+
+@(define-runtime-path log-file "log-for-util.rktd")
+@(define the-eval (make-pg-eval log-file #t))
 
 @title[#:tag "util"]{Utilities}
 
@@ -179,6 +183,34 @@ Returns a @racket[pg-array] of dimension 1 with the contents of
 @racket[lst].
 }
 
+@defstruct*[pg-empty-range ()]{
+
+Represents an empty range.
+}
+
+@defstruct*[pg-range
+            ([lb _range-type]
+             [includes-lb? boolean?]
+             [ub _range-type]
+             [includes-ub? boolean?])]{
+
+Represents a range of values from @racket[lb] (lower bound) to
+@racket[ub] (upper bound). The @racket[includes-lb?] and
+@racket[includes-ub?] fields indicate whether each end of the range is
+open or closed.
+
+The @racket[lb] and @racket[ub] fields must have the same type; the
+permissible types are exact integers, real numbers, and
+@racket[sql-timestamp]s. Either or both bounds may also be
+@racket[#f], which indicates the range is unbounded on that end.
+}
+
+@defproc[(pg-range-or-empty? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] is a @racket[pg-range] or
+@racket[pg-empty-range] instance; otherwise, returns @racket[#f].
+}
+
 @deftogether[[
 @defstruct*[pg-box
             ([ne point?] [sw point?])]
@@ -230,3 +262,5 @@ call (see @secref["ffi-concurrency"]). Even so, it may not accurately
 simulate an ODBC connection that internally uses cursors to fetch data
 on demand, as each fetch would introduce additional latency.
 }
+
+@(close-eval the-eval)

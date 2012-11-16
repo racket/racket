@@ -11,13 +11,13 @@
                                      (let ([w (send bm0 get-width)]
                                            [h (send bm0 get-height)])
                                        (let ([bm (make-bitmap w h)])
-                                         (let ([dc (make-object bitmap-dc% bm)])
+                                         (let ([dc (send bm make-dc)])
                                            (send dc draw-bitmap bm0 0 0)
                                            (send dc set-bitmap #f))
                                           bm)))]
 @interaction-eval[#:eval draw-eval (define (line-bitmap mode)
                                      (let* ([bm (make-bitmap 30 4)]
-                                            [dc (make-object bitmap-dc% bm)])
+                                            [dc (send bm make-dc)])
                                        (send dc set-smoothing mode)
                                        (send dc draw-line 0 2 30 2)
                                        (send dc set-bitmap #f)
@@ -276,13 +276,13 @@ stipple for @racket[blue-brush]:
 Along similar lines, a @racket[color%] object lets you specify a color
 through its red, green, and blue components instead of a built-in
 color name. Due to the way that @racket[color%] initialization is
-overloaded, use @racket[make-object%] instead of @racket[new] to
-instantiate @racket[color%]:
+overloaded, use @racket[make-object] instead of @racket[new] to
+instantiate @racket[color%], or use the @racket[make-color] function:
 
 @racketblock+eval[
 #:eval draw-eval
 (define red-pen 
-  (new pen% [color (make-object color% 200 100 150)] [width 2]))
+  (new pen% [color (make-color 200 100 150)] [width 2]))
 (send dc erase)
 (draw-face dc)
 ]
@@ -521,7 +521,8 @@ either the pen or brush, can be set using
 @racketblock+eval[
 #:eval draw-eval
 (send dc erase)
-(send dc set-font (make-object font% 14 'roman 'normal 'bold))
+(send dc set-font (make-font #:size 14 #:family 'roman 
+                             #:weight 'bold))
 (send dc set-text-foreground "blue")
 (send dc draw-rectangle 0 0 100 30)
 (send dc draw-text "Hello, World!" 5 1)
@@ -645,10 +646,10 @@ text with its reflection below it.
 (code:comment "using a small bitmap that we never draw into.")
 (define bdc (new bitmap-dc% [bitmap (make-bitmap 1 1)]))
 (define str "Racketeers, ho!")
-(define the-font (send the-font-list find-or-create-font 
-                       24 'swiss 'normal 'bold))
+(define the-font (make-font #:size 24 #:family 'swiss 
+                            #:weight 'bold))
 (define-values (tw th)
-  (let-values ([(tw th _1 _2)
+  (let-values ([(tw th ta td)
                 (send dc get-text-extent str the-font)])
     (values (inexact->exact (ceiling tw))
             (inexact->exact (ceiling th)))))
@@ -691,8 +692,8 @@ text with its reflection below it.
 (code:comment "linear gradient over the portion of the bitmap")
 (code:comment "where the shadow goes")
 (define stops
-  (list (list 0 (make-object color% 0 0 0 0.4))
-        (list 1 (make-object color% 0 0 0 0.0))))
+  (list (list 0 (make-color 0 0 0 0.4))
+        (list 1 (make-color 0 0 0 0.0))))
 (send bdc set-brush 
       (new brush% 
            [gradient 

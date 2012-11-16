@@ -162,6 +162,7 @@
                     [(ndash) "\U2013"]
                     [(ldquo) "\U201C"]
                     [(rdquo) "\U201D"]
+                    [(lsquo) "\U2018"]
                     [(rsquo) "\U2019"]
                     [(lang) ">"]
                     [(rang) "<"]

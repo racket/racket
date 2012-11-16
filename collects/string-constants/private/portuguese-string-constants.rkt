@@ -399,7 +399,6 @@ please adhere to these guidelines:
  (show-line-and-column-numbers "Mostrar número de linha e coluna") ; used for popup menu; right click on line/column box in bottom of drs window
  (show-character-offsets "Mostrar caractéres de offset") ; used for popup menu; right click on line/column box in bottom of drs window
  (enable-keybindings-in-menus "Activar ligações de teclas nos menus")
- (automatically-to-ps "Imprimir automaticamente para um ficheiro postscript")
  (option-as-meta "Tratar tecla option como meta") ;; macos/macos x only
  (reuse-existing-frames "Reutilizar janelas já existentes para abrir novos ficheiros")
  (default-fonts "Fontes por Defeito")

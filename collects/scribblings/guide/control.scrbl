@@ -176,7 +176,7 @@ section.
 
 @; ----------------------------------------------------------------------
 
-@section{Continuations}
+@section[#:tag "conts"]{Continuations}
 
 
 A @deftech{continuation} is a value that encapsulates a piece of an

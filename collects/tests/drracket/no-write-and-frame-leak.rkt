@@ -16,6 +16,7 @@ This test checks:
 |#
 
 (require "private/drracket-test-util.rkt"
+         drracket/private/local-member-names
          racket/gui/base
          framework)
 
@@ -35,13 +36,20 @@ This test checks:
      (λ ()
        (check-menus (wait-for-drracket-frame))
        
-       (try-to-find-leak "online compilation disabled:")
+       (try-to-find-leak "online compilation disabled:" void)
        
        (preferences:set 'drracket:online-compilation-default-on #t)
        
-       (try-to-find-leak "online compilation enabled:")))))
+       (try-to-find-leak "online compilation enabled:" wait-for-online-compilation-to-finish)))))
 
-(define (try-to-find-leak online-compilation-string)
+(define (wait-for-online-compilation-to-finish frame) 
+  (let loop ([i 0])
+    (define current-colors (send frame get-online-expansion-colors))
+    (unless (equal? current-colors '("forestgreen"))
+      (sleep 1)
+      (loop (+ i 1)))))
+
+(define (try-to-find-leak online-compilation-string extra-waiting)
   (define drs-frame1 (wait-for-drracket-frame))
   (sync (system-idle-evt))
 
@@ -63,8 +71,9 @@ This test checks:
     
     (queue-callback/res
      (λ () (send (send (send (weak-box-value drs-frame2b) get-current-tab) get-defs) load-file
-                 (collection-file-path "unit.rkt" "drracket" "private"))))
+                 (collection-file-path "rep.rkt" "drracket" "private"))))
     (sleep 2)
+    (extra-waiting (weak-box-value drs-frame2b))
     (sync (system-idle-evt))
     
     (test:menu-select "File" (if (eq? (system-type) 'unix) "Close" "Close Window"))
@@ -74,9 +83,9 @@ This test checks:
       (cond
         [(zero? n) 
          (when (weak-box-value drs-tabb)
-           (eprintf "~a frame leak!\n" online-compilation-string))
-         (when (weak-box-value drs-frame2b)
            (eprintf "~a tab leak!\n" online-compilation-string))
+         (when (weak-box-value drs-frame2b)
+           (eprintf "~a frame leak!\n" online-compilation-string))
          (when (weak-box-value tab-nsb)
            (eprintf "~a tab namespace leak!\n" online-compilation-string))
          (when (weak-box-value frame2-nsb)

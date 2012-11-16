@@ -79,9 +79,10 @@ the @rfc for more information about JSON.
 
 @defproc[(read-json [in input-port? (current-input-port)]
                     [#:null jsnull any? (json-null)])
-         jsexpr?]{
+         (or/c jsexpr? eof-object?)]{
   Reads a @tech{jsexpr} from a JSON-encoded input port @racket[in] as a
-  Racket (immutable) value.}
+  Racket (immutable) value, or produces @racket[eof] if only whitespace
+  remains.}
 
 @defproc[(string->jsexpr [str string?] [#:null jsnull any? (json-null)])
          jsexpr?]{

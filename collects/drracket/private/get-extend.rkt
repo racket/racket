@@ -1,7 +1,8 @@
 #lang racket/unit
 
 (require racket/class
-         "drsig.rkt")
+         "drsig.rkt"
+         framework/private/logging-timer)
 
 (import [prefix drracket:unit: drracket:unit^]
         [prefix drracket:frame: drracket:frame^]
@@ -13,7 +14,7 @@
 (export drracket:get/extend^)
 
 (define make-extender
-  (λ (get-base% name)
+  (λ (get-base% name [final-mixin values])
     (let ([extensions (λ (x) x)]
           [built-yet? #f]
           [built #f]
@@ -42,7 +43,7 @@
        (λ ()
          (unless built-yet?
            (set! built-yet? #t)
-           (set! built (extensions (get-base%))))
+           (set! built (final-mixin (extensions (get-base%)))))
          built)))))
 
 (define (get-base-tab%)
@@ -93,4 +94,14 @@
        (drracket:unit:get-definitions-text%)))))))
 
 (define-values (extend-definitions-text get-definitions-text)
-  (make-extender get-base-definitions-text% 'definitions-text%))
+  (make-extender get-base-definitions-text%
+                 'definitions-text%
+                 (let ([add-on-paint-logging
+                        (λ (%)
+                          (class %
+                            (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
+                              (log-timeline 
+                               (format "on-paint method of ~a area: ~a" (object-name this) (* (- right left) (- bottom top)))
+                               (super on-paint before? dc left top right bottom dx dy draw-caret)))
+                            (super-new)))])
+                   add-on-paint-logging)))

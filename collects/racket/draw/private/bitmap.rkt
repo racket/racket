@@ -22,10 +22,15 @@
          make-platform-bitmap
          read-bitmap
          make-monochrome-bitmap
+         -bitmap-dc%
          (protect-out make-alternate-bitmap-kind
                       build-cairo-surface
                       quartz-bitmap%
-                      win32-no-hwnd-bitmap%))
+                      win32-no-hwnd-bitmap%
+                      install-bitmap-dc-class!))
+
+(define -bitmap-dc% #f)
+(define (install-bitmap-dc-class! v) (set! -bitmap-dc% v))
 
 ;; FIXME: there must be some way to abstract over all many of the
 ;; ARGB/RGBA/BGRA iterations.
@@ -226,7 +231,7 @@
                         (cairo_image_surface_get_width s)
                         (cairo_image_surface_get_height s)
                         b&w?
-                        alpha?
+                        (and alpha? (not b&w?))
                         s
                         mask-bm)
                 (values #f 0 0 #f #f #f #f))))]
@@ -286,6 +291,8 @@
     (define/public (get-bitmap-gl-context)
       #f)
 
+    (define/public (make-dc) (make-object -bitmap-dc% this))
+
     (define/public (load-file in
                               [kind 'unknown]
                               [bg #f]
@@ -295,7 +302,8 @@
       (set!-values (s b&w?) (do-load-bitmap in kind bg complain-on-failure?))
       (set! width (if s (cairo_image_surface_get_width s) 0))
       (set! height (if s (cairo_image_surface_get_height s) 0))
-      (set! shadow (make-bytes (* width height 4))))
+      (set! shadow (make-bytes (* width height 4)))
+      (and s #t))
 
     (define/private (do-load-bitmap in kind bg complain-on-failure?)
       (if (path-string? in)
@@ -538,9 +546,9 @@
                         (let ([src (+ (* j row-width) (* (* bi 8) 4))])
                           (for/fold ([v 0]) ([k (in-range 8)])
                             (if ((+ (* 8 bi) k) . < . width)
-                                (if (zero? (bytes-ref data (+ src (* 4 k))))
-                                    v
-                                    (bitwise-ior v (unsafe-fxrshift 128 k)))
+                                (if (zero? (bytes-ref data (+ src 3 (* 4 k))))
+                                    (bitwise-ior v (unsafe-fxrshift 128 k))
+                                    v)
                                 v)))))))
                  (let ([w (create-png-writer out width height #t #f)])
                    (write-png w rows)

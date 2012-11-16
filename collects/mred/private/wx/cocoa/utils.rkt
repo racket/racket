@@ -3,6 +3,7 @@
          ffi/unsafe
          ffi/unsafe/alloc
          ffi/unsafe/define
+         ffi/unsafe/nsalloc
          "../common/utils.rkt"
          "../../lock.rkt")
 
@@ -17,13 +18,14 @@
               as-objc-allocation-with-retain
               clean-up-deleted
               retain release
-              with-autorelease
               clean-menu-label
               ->wxb
               ->wx
               old-cocoa?
               version-10.6-or-later?
               version-10.7-or-later?)
+ with-autorelease
+ call-with-autorelease
  define-mz)
 
 (define cocoa-lib (ffi-lib (format "/System/Library/Frameworks/Cocoa.framework/Cocoa")))
@@ -58,18 +60,6 @@
 (define retain ((retainer release car)
                 (lambda (obj)
                   (tellv obj retain))))
-
-(import-class NSAutoreleasePool)
-
-;; Use `with-autorelease' and `call-with-autorelease' 
-;; in atomic mode
-(define-syntax-rule (with-autorelease expr ...)
-  (call-with-autorelease (lambda () expr ...)))
-(define (call-with-autorelease thunk)
-  (let ([pool (tell (tell NSAutoreleasePool alloc) init)])
-    (begin0
-     (thunk)
-     (tellv pool release))))
 
 (define (clean-menu-label str)
   (regexp-replace* #rx"&(.)" str "\\1"))

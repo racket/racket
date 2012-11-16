@@ -514,7 +514,7 @@ locations reported by @racket[in].
 If @racket[count-lines!] is supplied, it is called when line counting
 is enabled for the resulting port. The default is @racket[void].}
 
-@defproc[(transplant-output-port [in input-port?]
+@defproc[(transplant-output-port [out output-port?]
                                  [get-location (or/c 
                                                 (->
                                                  (values
@@ -528,6 +528,7 @@ is enabled for the resulting port. The default is @racket[void].}
           output-port?]{
 
 Like @racket[transplant-input-port], but for output ports.}
+
 
 @defproc[(filter-read-input-port [in input-port?]
                                  [read-wrap (bytes? (or/c exact-nonnegative-integer?

@@ -55,9 +55,9 @@
     (when proc
       (unless (and (procedure? proc)
 		   (procedure-arity-includes? proc arity))
-	(raise-type-error who
-			  (format "procedure (arity ~a) or #f" arity)
-			  proc)))
+	(raise-argument-error who
+                              (format "(or/c (procedure-arity-includes/c ~a) #f)" arity)
+                              proc)))
     (let ([e (wx:current-eventspace)])
       (when (wx:main-eventspace? e)
         (param (make-app-handler
@@ -178,9 +178,10 @@
 	  (with-handlers ([exn:fail?
 			   (lambda (x)
 			     (if (wx:eventspace-shutdown? e)
-				 (raise-mismatch-error
+				 (raise-arguments-error
 				  'eventspace-handler-thread
-				  "eventspace is shutdown: "
+				  "eventspace is shutdown"
+                                  "eventspace"
 				  e)
 				 (raise x)))])
 	    (let ([done (make-semaphore)]

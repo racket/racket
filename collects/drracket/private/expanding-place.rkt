@@ -16,6 +16,17 @@
 
 (define old-registry-chan (make-channel))
 
+(define expanding-place-logger (make-logger 
+                                'drracket-background-compilation
+                                (current-logger)))
+(define-syntax-rule
+  (ep-log-info expr)
+  (when (log-level? expanding-place-logger 'info)
+    (log-message expanding-place-logger
+                 'info
+                 expr
+                 (current-continuation-marks))))
+
 (define (start p)
   ;; get the module-language-compile-lock in the initial message
   (set! module-language-parallel-lock-client
@@ -54,15 +65,15 @@
                  old-registry)]))))))
 
 (define (abort-job job)
-  (when (log-level? (current-logger) 'info)
+  (when (log-level? expanding-place-logger 'info)
     (define stack (continuation-mark-set->context
                    (continuation-marks 
                     (job-working-thd job))))
-    (log-info (format "expanding-place.rkt: kill; worker-thd stack (size ~a) dead? ~a:" 
+    (ep-log-info (format "expanding-place.rkt: kill; worker-thd stack (size ~a) dead? ~a:" 
                       (length stack)
                       (thread-dead? (job-working-thd job))))
     (for ([x (in-list stack)])
-      (log-info (format "  ~s" x))))
+      (ep-log-info (format "  ~s" x))))
   (custodian-shutdown-all (job-cust job))
   (place-channel-put (job-response-pc job) #f))
 
@@ -81,23 +92,23 @@
     (parameterize ([current-custodian cust])
       (thread
        (λ ()
-         (log-info "expanding-place.rkt: 01 starting thread")
+         (ep-log-info "expanding-place.rkt: 01 starting thread")
          (define sema (make-semaphore 0))
-         (log-info "expanding-place.rkt: 02 setting basic parameters")
+         (ep-log-info "expanding-place.rkt: 02 setting basic parameters")
          (set-basic-parameters/no-gui)
-         (log-info "expanding-place.rkt: 03 setting module language parameters")
+         (ep-log-info "expanding-place.rkt: 03 setting module language parameters")
          (set-module-language-parameters settings
                                          module-language-parallel-lock-client
                                          #:use-use-current-security-guard? #t)
-         (log-info "expanding-place.rkt: 04 setting directories")
+         (ep-log-info "expanding-place.rkt: 04 setting directories")
          (let ([init-dir (get-init-dir path)])
            (current-directory init-dir))
          (current-load-relative-directory #f)
          (define sp (open-input-string program-as-string))
          (port-count-lines! sp)
-         (log-info "expanding-place.rkt: 05 installing security guard")
+         (ep-log-info "expanding-place.rkt: 05 installing security guard")
          (install-security-guard) ;; must come after the call to set-module-language-parameters
-         (log-info "expanding-place.rkt: 06 setting uncaught-exception-handler")
+         (ep-log-info "expanding-place.rkt: 06 setting uncaught-exception-handler")
          (uncaught-exception-handler
           (λ (exn)
             (parameterize ([current-custodian orig-cust])
@@ -108,18 +119,18 @@
                  (channel-put exn-chan exn))))
             (semaphore-wait sema)
             ((error-escape-handler))))
-         (log-info "expanding-place.rkt: 07 starting read-syntax")
+         (ep-log-info "expanding-place.rkt: 07 starting read-syntax")
          (define stx
            (parameterize ([read-accept-reader #t])
              (read-syntax the-source sp)))
-         (log-info "expanding-place.rkt: 08 read")
+         (ep-log-info "expanding-place.rkt: 08 read")
          (when (syntax? stx) ;; could be eof
            (define-values (name lang transformed-stx)
              (transform-module path
                                (namespace-syntax-introduce stx)
                                raise-hopeless-syntax-error))
-           (log-info "expanding-place.rkt: 09 starting expansion")
-           (define log-io? (log-level? (current-logger) 'warning))
+           (ep-log-info "expanding-place.rkt: 09 starting expansion")
+           (define log-io? (log-level? expanding-place-logger 'warning))
            (define-values (in out) (if log-io? 
                                        (make-pipe)
                                        (values #f (open-output-nowhere))))
@@ -136,7 +147,7 @@
            (channel-put old-registry-chan 
                         (namespace-module-registry (current-namespace)))
            (place-channel-put pc-status-expanding-place (void))
-           (log-info "expanding-place.rkt: 10 expanded")
+           (ep-log-info "expanding-place.rkt: 10 expanded")
            (define handler-results
              (for/list ([handler (in-list handlers)])
                (list (handler-key handler)
@@ -144,7 +155,7 @@
                                              path
                                              the-source
                                              orig-cust))))
-           (log-info "expanding-place.rkt: 11 handlers finished")
+           (ep-log-info "expanding-place.rkt: 11 handlers finished")
            
            (parameterize ([current-custodian orig-cust])
              (thread
@@ -153,7 +164,7 @@
                 (semaphore-post sema)
                 (channel-put result-chan handler-results))))
            (semaphore-wait sema)
-           (log-info "expanding-place.rkt: 12 finished"))))))
+           (ep-log-info "expanding-place.rkt: 12 finished"))))))
   
   (thread
    (λ ()

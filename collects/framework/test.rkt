@@ -852,25 +852,30 @@
 (define test:mouse-click mouse-click)
 (define test:new-window new-window)
 
+(define (label-of-enabled/shown-button-in-top-level-window? str)
+  (test:top-level-focus-window-has?
+   (λ (c)
+     (and (is-a? c button%)
+          (string=? (send c get-label) str)
+          (send c is-enabled?)
+          (send c is-shown?)))))
+
+(define (enabled-shown-button? btn)
+  (and (send btn is-enabled?)
+       (send btn is-shown?)))
+
+(define (button-in-top-level-focusd-window? btn)
+  (test:top-level-focus-window-has?
+   (λ (c) (eq? c btn))))
+
 (provide/doc
  (proc-doc/names
   test:button-push
-  (-> (or/c (λ (str)
-              (and (string? str)
-                   (test:top-level-focus-window-has?
-                    (λ (c)
-                      (and (is-a? c button%)
-                           (string=? (send c get-label) str)
-                           (send c is-enabled?)
-                           (send c is-shown?))))))
-            
+  (-> (or/c (and/c string?
+                   label-of-enabled/shown-button-in-top-level-window?)
             (and/c (is-a?/c button%)
-                   (λ (btn)
-                     (and (send btn is-enabled?)
-                          (send btn is-shown?)))
-                   (λ (btn)
-                     (test:top-level-focus-window-has?
-                      (λ (c) (eq? c btn))))))
+                   enabled-shown-button?
+                   button-in-top-level-focusd-window?))
       void?)
   (button)
   @{Simulates pushing @racket[button].  If a string is supplied, the
@@ -1075,4 +1080,28 @@
   test:get-active-top-level-window
   (-> (or/c (is-a?/c frame%) (is-a?/c dialog%) #f))
   ()
-  @{Returns the frontmost frame, based on @racket[test:use-focus-table].}))
+  @{Returns the frontmost frame, based on @racket[test:use-focus-table].})
+ 
+ (proc-doc/names
+  label-of-enabled/shown-button-in-top-level-window?
+  (-> string? boolean?)
+  (label)
+  @{Returns @racket[#t] when @racket[label] is
+            the label of an enabled and shown
+            @racket[button%] instance that
+            is in the top-level window that currently
+            has the focus, using @racket[test:top-level-focus-window-has?].})
+ 
+ (proc-doc/names
+  enabled-shown-button?
+  (-> (is-a?/c button%) boolean?)
+  (button)
+  @{Returns @racket[#t] when @racket[button]
+            is both enabled and shown.})
+ 
+ (proc-doc/names
+  button-in-top-level-focusd-window?
+  (-> (is-a?/c button%) boolean?)
+  (button)
+  @{Returns @racket[#t] when @racket[button] is
+            in the top-level focused window.}))

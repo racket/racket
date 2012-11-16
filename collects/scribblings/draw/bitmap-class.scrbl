@@ -241,6 +241,12 @@ For PNG loading, if @racket[bg-color] is not @racket[#f], then it is
 
 }
 
+@defmethod[(make-dc)
+           boolean?]{
+
+Return @racket[(make-object bitmap-dc% this)].}
+
+
 @defmethod[(ok?)
            boolean?]{
 

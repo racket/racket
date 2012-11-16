@@ -1,11 +1,13 @@
-#lang scheme/base
-(require frtime/core/frp
-         scheme/bool
-         scheme/list
-         (only-in mzlib/etc
-                  rec identity)
-         (for-syntax scheme/list
-                     scheme/base))
+#lang racket/base
+(require (for-syntax racket/base
+                     (only-in racket/list first second last-pair empty empty?))
+         (only-in racket/list first second cons? empty empty? rest last-pair)
+         (only-in racket/function identity)
+         (only-in frtime/core/frp super-lift undefined undefined? behavior? do-in-manager-after do-in-manager proc->signal set-signal-thunk! register unregister 
+                  signal? signal-depth signal:switching? signal-value value-now signal:compound? signal:compound-content signal:switching-current signal:switching-trigger 
+                  set-cell! snap? iq-enqueue value-now/no-copy event-receiver event-set? proc->signal:switching set-signal-producers! set-signal-depth! safe-signal-depth 
+                  make-events-now iq-resort event-set-events current-logical-time event-set-time event-producer2 schedule-alarm value-now/sync set-signal-value! signal-thunk
+                  send-event exceptions send-synchronous-event send-synchronous-events signal-count))
 
 (define nothing (void));(string->uninterned-symbol "nothing"))
 
@@ -152,7 +154,7 @@
           new-clause ...)
        )]))
 
-(define undefined?/lifted (lambda (arg) (lift false undefined? arg)))
+(define undefined?/lifted (lambda (arg) (lift #f undefined? arg)))
 
 (define (event? v)
   (and (signal? v)
@@ -229,7 +231,7 @@
 
 ; while-e : behavior[bool] behavior[number] -> event
 (define (while-e b interval)
-  (rec ret (event-producer2
+  (letrec ([ret (event-producer2
             (lambda (emit)
               (lambda the-args
                 (cond
@@ -237,7 +239,8 @@
                                  (lambda (v)
                                    (emit v)
                                    (schedule-alarm (+ (value-now interval) (current-inexact-milliseconds)) ret))])))
-            b)))
+            b)])
+    ret))
 
 ; ==> : event[a] (a -> b) -> event[b]
 (define (e . ==> . f)
@@ -881,8 +884,6 @@
          value-now/no-copy
          value-now/sync
          signal-count
-         signal?
-         
-         )
+         signal?)
 
 

@@ -25,21 +25,19 @@
                   #:lock-while-reading? [lock-while-reading? #f])
       ;; Check arguments:
       (unless (text . is-a? . text%)
-	(raise-type-error 'open-input-text-editor "text% object" text))
+	(raise-argument-error 'open-input-text-editor "(is-a?/c text%)" text))
       (check-non-negative-integer 'open-input-text-editor start)
       (unless (or (eq? end 'end)
 		  (and (integer? end) (exact? end) (not (negative? end))))
-	(raise-type-error 'open-input-text-editor "non-negative exact integer or 'end" end))
+	(raise-argument-error 'open-input-text-editor "(or/c exact-nonnegative-integer? 'end)" end))
       (let ([last (send text last-position)])
 	(when (start . > . last)
-	  (raise-mismatch-error 'open-input-text-editor
-				(format "start index outside the range [0,~a]: " last)
-				start))
+          (raise-range-error 'open-input-text-editor "editor" "starting "
+                             start text 0 last #f))
 	(unless (eq? end 'end)
 	  (unless (<= start end last)
-	    (raise-mismatch-error 'open-input-text-editor
-				  (format "end index outside the range [~a,~a]: " start last)
-				  end))))
+            (raise-range-error 'open-input-text-editor "editor" "ending "
+                               end text start last 0))))
       (let ([end (if (eq? end 'end) (send text last-position) end)]
 	    [snip (send text find-snip start 'after-or-none)])
 	;; If the region is small enough, and if the editor contains
@@ -123,10 +121,10 @@
 		       [next-snip
 			(lambda (to-str)
 			  (unless (= revision (grn))
-			    (raise-mismatch-error 
+			    (raise-arguments-error 
 			     'text-input-port 
-			     "editor has changed since port was opened: "
-			     text))
+			     "editor has changed since port was opened"
+			     "editor" text))
 			  (set! snip (send-generic snip next-generic))
 			  (update-str-to-snip to-str))]
 		       [read-chars (lambda (to-str)

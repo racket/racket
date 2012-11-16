@@ -1,6 +1,7 @@
 #lang typed/racket/base
 
-(require math/flonum
+(require "../flonum/flonum-functions.rkt"
+         "../flonum/flonum-constants.rkt"
          "bigfloat-struct.rkt"
          "bigfloat-continued-fraction.rkt"
          "bigfloat-log-arithmetic.rkt"

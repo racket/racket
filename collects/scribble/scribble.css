@@ -469,3 +469,15 @@ i {
   display: inline;
   white-space: nowrap;
 }
+
+/* print styles : hide the navigation elements */
+@media print {
+  .tocset,
+  .navsettop,
+  .navsetbottom { display: none; }
+  .maincolumn {
+    width: auto;
+    margin-right: 13em;
+    margin-left: 0;
+  }
+}

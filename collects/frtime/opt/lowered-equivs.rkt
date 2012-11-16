@@ -1,7 +1,7 @@
 ;; This module defines all the logic necessary for working with lowered
 ;; equivalents at the syntactic level.  That is, it treats functions simply 
 ;; as syntactic identifiers.
-#lang scheme
+#lang racket
 (provide (except-out (all-defined-out)
                      module-identifier=?))
 (require (only-in srfi/1 any))

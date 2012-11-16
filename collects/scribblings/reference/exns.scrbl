@@ -3,6 +3,8 @@
 
 @title[#:tag "exns"]{Exceptions}
 
+@guideintro["exns"]{exceptions}
+
 See @secref["exn-model"] for information on the Racket exception
 model. It is based on a proposal by Friedman, Haynes, and Dybvig
 @cite["Friedman95"].
@@ -241,7 +243,8 @@ string describes the value for which the index is meant to select an element,
 and @racket[index-prefix] is a prefix for the word ``index.'' The @racket[index]
 argument is the rejected index. The @racket[in-value] argument is the value
 for which the index was meant. The @racket[lower-bound] and @racket[upper-bound]
-arguments specify the valid range of indices, inclusive. If @racket[alt-lower-bound]
+arguments specify the valid range of indices, inclusive; if @racket[upper-bound]
+is below @racket[lower-bound], the value is characterized as ``empty.'' If @racket[alt-lower-bound]
 is not @racket[#f], and if @racket[index] is between @racket[alt-lower-bound]
 and @racket[upper-bound], then the error is report as @racket[index] being less
 than the ``starting'' index @racket[lower-bound].
@@ -406,7 +409,8 @@ it returns, an exception is raised (to be handled by an exception
 handler that reports both the original and newly raised exception).
 
 The default uncaught-exception handler prints an error message using
-the current @tech{error display handler} (see @racket[error-display-handler]).
+the current @tech{error display handler} (see @racket[error-display-handler]),
+unless the argument to the handler is an instance of @racket[exn:break:hang-up].
 If the argument to the handler is an instance of @racket[exn:break:hang-up]
 or @racket[exn:break:terminate], the default uncaught-exception handler
 then calls the @tech{exit handler} with @racket[1], which normally exits

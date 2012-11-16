@@ -169,7 +169,7 @@
     }
     @defproc[(sqrt [x number]) number]{
     Computes the square root of a number.
-    @interaction[#:eval (bsl) (sqrt 9)]
+    @interaction[#:eval (bsl) (sqrt 9) (sqrt 2)]
     }
     @defproc[(integer-sqrt [x number]) integer]{
     Computes the integer (exact or inexact) square root of a number. 
@@ -779,7 +779,7 @@
     }
     @defproc[(string=? [s string][t string][x string] ...) boolean?]{
     Determines whether all strings are equal, character for character.
-    @interaction[#:eval (bsl) (string-copy "hello")]
+    @interaction[#:eval (bsl) (string=? "hello" "world") (string=? "bye" "bye")]
     }
     @defproc[(string<? [s string][t string][x string] ...) boolean?]{
     Determines whether the strings are ordered in a lexicographically strictly increasing manner.

@@ -201,12 +201,15 @@ the binding (according to @racket[free-identifier=?]) matters.}
 [module-level-form general-top-level-form
                    (#%provide raw-provide-spec ...)
                    (begin-for-syntax module-level-form ...)
-                   (module id module-path 
-                     module-level-form ...)
+                   (module id module-path
+                     (#%plain-module-begin
+                      module-level-form ...))
                    (module* id module-path 
-                     module-level-form ...)
+                     (#%plain-module-begin
+                      module-level-form ...))
                    (module* id #f 
-                     module-level-form ...)]
+                     (#%plain-module-begin
+                      module-level-form ...))]
 [general-top-level-form expr
                         (define-values (id ...) expr)
                         (define-syntaxes (id ...) expr)

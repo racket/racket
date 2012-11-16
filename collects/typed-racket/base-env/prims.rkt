@@ -19,8 +19,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
 |#
 
 
-(provide (except-out (all-defined-out) dtsi* let-internal: define-for-variants define-for*-variants 
-                     with-handlers: for/annotation for*/annotation define-for/sum:-variants
+(provide (except-out (all-defined-out) dtsi* dtsi/exec* let-internal: define-for-variants define-for*-variants 
+                     with-handlers: for/annotation for*/annotation define-for/sum:-variants base-for/flvector: base-for/vector
                      -lambda -define)
          :
          (rename-out [define-typed-struct define-struct:]
@@ -52,7 +52,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
           "../utils/tc-utils.rkt"
           "../types/utils.rkt"
           "for-clauses.rkt")
-         "../types/numeric-predicates.rkt")
+         "../types/numeric-predicates.rkt"
+         racket/unsafe/ops
+         racket/vector)
 (provide index?) ; useful for assert, and racket doesn't have it
 
 (begin-for-syntax 
@@ -101,18 +103,15 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (define-syntax-class (struct-clause legacy)
     ;#:literals (struct)
     #:attributes (nm (body 1) (constructor-parts 1))
-    (pattern [struct nm:opt-parent (body ...) (~var constructor (opt-constructor legacy #'nm.nm))]
-             #:fail-unless (eq? 'struct (syntax-e #'struct)) #f
+    (pattern [(~or (~datum struct) #:struct) nm:opt-parent (body ...) (~var constructor (opt-constructor legacy #'nm.nm))]
              #:with (constructor-parts ...) #'constructor.value))
 
   (define-syntax-class opaque-clause
     ;#:literals (opaque)
     #:attributes (ty pred opt)
-    (pattern [opaque ty:id pred:id]
-             #:fail-unless (eq? 'opaque (syntax-e #'opaque)) #f
+    (pattern [(~or (~datum opaque) #:opaque) ty:id pred:id]
              #:with opt #'())
-    (pattern [opaque ty:id pred:id #:name-exists]
-             #:fail-unless (eq? 'opaque (syntax-e #'opaque)) #f
+    (pattern [(~or (~datum opaque) #:opaque) opaque ty:id pred:id #:name-exists]
              #:with opt #'(#:name-exists)))
 
   (define-syntax-class (clause legacy lib)
@@ -223,7 +222,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                    (type->contract
                      typ
                      ;; must be a flat contract
-                     #:flat #t
+                     #:kind 'flat
                      ;; the value is not from the typed side
                      #:typed-side #f
                      (lambda () (tc-error/stx #'ty "Type ~a could not be converted to a predicate." typ)))
@@ -407,6 +406,12 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(let: . rest)
      (syntax/loc stx (let-internal: . rest))]))
 
+(define-syntax (plet: stx)
+  (syntax-parse stx #:literals (:)
+    [(_ (A:id ...) ([bn:optionally-annotated-name e] ...) . body)
+     (syntax/loc stx
+       ((plambda: (A ...) (bn ...) . body) e ...))]))
+
 (define-syntax (define-type-alias stx)
   (syntax-parse stx
     [(_ tname:id rest)
@@ -415,17 +420,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
          #,(internal (syntax/loc stx (define-type-alias-internal tname rest))))]
     [(_ (tname:id args:id ...) rest)
      (syntax/loc stx (define-type-alias tname (All (args ...) rest)))]))
-
-(define-syntax (define-typed-struct/exec stx)
-  (syntax-parse stx #:literals (:)
-    [(_ nm ((~describe "field specification" [fld:optionally-annotated-name]) ...) [proc : proc-ty])
-     (with-syntax*
-      ([proc* (syntax-property #'(ann proc : proc-ty) 'typechecker:with-type #t)]
-       [d-s (syntax-property (syntax/loc stx (define-struct nm (fld.name ...)
-                                               #:property prop:procedure proc*))
-                             'typechecker:ignore-some #t)]
-       [dtsi (internal (syntax/loc stx (define-typed-struct/exec-internal nm (fld ...) proc-ty)))])
-      #'(begin d-s dtsi))]))
 
 (define-syntax (with-handlers: stx)
   (syntax-parse stx
@@ -439,7 +433,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                         'typechecker:with-handlers
                         #t))]))
 
-(define-syntax (dtsi* stx)
+(begin-for-syntax
   (define-syntax-class struct-name
     #:description "struct name (with optional super-struct name)"
     #:attributes (name super value)
@@ -447,17 +441,36 @@ This file defines two sorts of primitives. All of them are provided into any mod
              #:attr value (attribute name.value))
     (pattern (~var name (static struct-info? "struct name"))
              #:attr value (attribute name.value)
-             #:with super #f))
-  (syntax-parse stx
-    [(_ () nm:struct-name . rest)
-     (internal (quasisyntax/loc stx
-                 (define-typed-struct-internal
-                   #,(syntax-property #'nm 'struct-info (attribute nm.value)) . rest)))]
-    [(_ (vars:id ...) nm:struct-name . rest)
-     (internal (quasisyntax/loc stx
-                 (define-typed-struct-internal (vars ...)
-                   #,(syntax-property #'nm 'struct-info (attribute nm.value)) . rest)))]))
+             #:with super #f)))
 
+(define-syntax (define-typed-struct/exec stx)
+  (syntax-parse stx #:literals (:)
+    [(_ nm ((~describe "field specification" [fld:optionally-annotated-name]) ...) [proc : proc-ty])
+     (with-syntax*
+      ([proc* (syntax-property #'(ann proc : proc-ty) 'typechecker:with-type #t)]
+       [d-s (syntax-property (syntax/loc stx (define-struct nm (fld.name ...)
+                                               #:property prop:procedure proc*))
+                             'typechecker:ignore-some #t)]
+       [dtsi (quasisyntax/loc stx (dtsi/exec* () nm (fld ...) proc-ty))])
+      #'(begin d-s dtsi))]))
+
+(define-syntaxes (dtsi* dtsi/exec*)
+  (let ()
+    (define (mk internal-id)
+      (lambda (stx)
+        (syntax-parse stx
+          [(_ () nm:struct-name . rest)
+           (internal (quasisyntax/loc stx
+                       (#,internal-id
+                        #,(syntax-property #'nm 'struct-info (attribute nm.value)) . rest)))]
+          [(_ (vars:id ...) nm:struct-name . rest)
+           (internal (quasisyntax/loc stx
+                       (#,internal-id (vars ...)
+                                      #,(syntax-property #'nm 'struct-info (attribute nm.value)) . rest)))])))
+    (values (mk #'define-typed-struct-internal)
+            (mk #'define-typed-struct/exec-internal))))
+              
+  
 (define-syntaxes (define-typed-struct struct:)
   (let ()
     (define-syntax-class fld-spec
@@ -747,8 +760,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (for/or: for/or)
   (for/first: for/first)
   (for/last: for/last)
-  (for/vector: for/vector)
-  (for/flvector: for/flvector)
   (for/product: for/product))
 
 ;; Unlike with the above, the inferencer can handle any number of #:when
@@ -838,8 +849,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (for*/or: for*/or)
   (for*/first: for*/first)
   (for*/last: for*/last)
-  (for*/vector: for*/vector)
-  (for*/flvector: for*/flvector)
   (for*/product: for*/product))
 
 ;; Like for/lists: and for/fold:, the inferencer can handle these correctly.
@@ -979,3 +988,124 @@ This file defines two sorts of primitives. All of them are provided into any mod
      #'(quote-syntax (typecheck-fail-internal orig "Incomplete case coverage" var))]
     [(_ orig)
      #'(quote-syntax (typecheck-fail-internal orig "Incomplete case coverage" #f))]))
+
+(define-syntax (base-for/vector stx)
+  (syntax-case stx ()
+    [(name for ann T K #:length n-expr #:fill fill-expr (clauses ...) body-expr)
+     (syntax/loc stx
+       (call/ec
+        (ann (λ (break)
+               (define n n-expr)
+               (define vs (ann (make-vector n fill-expr) T))
+               (define i 0)
+               (for (clauses ...)
+                 (unsafe-vector-set! vs i body-expr)
+                 (set! i (unsafe-fx+ i 1))
+                 (when (i . unsafe-fx>= . n) (break vs)))
+               vs)
+             K)))]
+    [(name for ann T K #:length n-expr (clauses ...) body-expr)
+     (syntax/loc stx
+       (let ([n n-expr])
+         (define vs
+           (call/ec
+            (ann (λ (break)
+                   (define vs (ann (vector) T))
+                   (define i 0)
+                   (for (clauses ...)
+                     (define v body-expr)
+                     (cond [(unsafe-fx= i 0)  (define new-vs (ann (make-vector n v) T))
+                                              (set! vs new-vs)]
+                           [else  (unsafe-vector-set! vs i v)])
+                     (set! i (unsafe-fx+ i 1))
+                     (when (i . unsafe-fx>= . n) (break vs)))
+                   vs)
+                 K)))
+         (cond [(= (vector-length vs) n)  vs]
+               [else
+                ;; Only happens when n > 0 and vs = (vector)
+                (raise-result-error 'name (format "~e-element vector" n) vs)])))]
+    [(_ for ann T K (clauses ...) body-expr)
+     (syntax/loc stx
+       (let ()
+         (define n 0)
+         (define vs (ann (vector) T))
+         (define i 0)
+         (for (clauses ...)
+           (define v body-expr)
+           (cond [(unsafe-fx= i n)  (define new-n (max 4 (unsafe-fx* 2 n)))
+                                    (define new-vs (ann (make-vector new-n v) T))
+                                    (vector-copy! new-vs 0 vs)
+                                    (set! n new-n)
+                                    (set! vs new-vs)]
+                 [else  (unsafe-vector-set! vs i v)])
+           (set! i (unsafe-fx+ i 1)))
+         (vector-copy vs 0 i)))]))
+
+(define-for-syntax (base-for/vector: stx for:)
+  (syntax-parse stx #:literals (:)
+    [(name (~optional (~seq : T:expr))
+           (~optional (~seq #:length n-expr:expr))
+           (~optional (~seq #:fill fill-expr:expr))
+           (clauses ...)
+           (~optional (~seq : A:expr))
+           body ...+)
+     (let ([T  (attribute T)]
+           [A  (attribute A)])
+       (with-syntax ([(maybe-length ...)  (if (attribute n-expr) #'(#:length n-expr) #'())]
+                     [(maybe-fill ...)  (if (attribute fill-expr) #'(#:fill fill-expr) #'())]
+                     [body-expr  (if A #`(ann (let () body ...) #,A) #'(let () body ...))]
+                     [T  (cond [(and T A)  #`(U #,T (Vectorof #,A))]
+                               [T  T]
+                               [A  #`(Vectorof #,A)]
+                               [else  #'(Vectorof Any)])])
+         (quasisyntax/loc stx
+           (base-for/vector #,for: ann T ((T -> Nothing) -> T)
+                            maybe-length ... maybe-fill ... (clauses ...) body-expr))))]))
+
+(define-syntax (for/vector: stx)
+  (base-for/vector: stx #'for:))
+
+(define-syntax (for*/vector: stx)
+  (base-for/vector: stx #'for*:))
+
+(define-syntax (base-for/flvector: stx)
+  (syntax-parse stx
+    [(_ for: #:length n-expr:expr (clauses ...) body ...+)
+     (syntax/loc stx
+       (let: ([n : Integer  n-expr])
+         (cond [(n . > . 0)
+                (define xs (make-flvector n))
+                (define: i : Nonnegative-Fixnum 0)
+                (let/ec: break : Void
+                  (for: (clauses ...)
+                    (unsafe-flvector-set! xs i (let () body ...))
+                    (set! i (unsafe-fx+ i 1))
+                    (when (i . unsafe-fx>= . n) (break (void)))))
+                xs]
+               [else  (flvector)])))]
+    [(_ for: (clauses ...) body ...+)
+     (syntax/loc stx
+       (let ()
+         (define n 4)
+         (define xs (make-flvector 4))
+         (define i 0)
+         (for: (clauses ...)
+           (let: ([x : Float  (let () body ...)])
+             (cond [(unsafe-fx= i n)  (define new-n (unsafe-fx* 2 n))
+                                      (define new-xs (make-flvector new-n x))
+                                      (let: loop : Void ([i : Nonnegative-Fixnum 0])
+                                        (when (i . unsafe-fx< . n)
+                                          (unsafe-flvector-set! new-xs i (unsafe-flvector-ref xs i))
+                                          (loop (unsafe-fx+ i 1))))
+                                      (set! n new-n)
+                                      (set! xs new-xs)]
+                   [else  (unsafe-flvector-set! xs i x)]))
+           (set! i (unsafe-fx+ i 1)))
+         (flvector-copy xs 0 i)))]))
+
+(define-syntax-rule (for/flvector: e ...)
+  (base-for/flvector: for: e ...))
+
+(define-syntax-rule (for*/flvector: e ...)
+  (base-for/flvector: for*: e ...))

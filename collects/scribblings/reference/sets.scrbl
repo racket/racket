@@ -11,9 +11,10 @@ set, elements are equivalent via @racket[equal?], @racket[eqv?], or
 element-comparison procedure (@racket[equal?], @racket[eqv?], or
 @racket[eq?]) and have equivalent elements.
 
-A set can be used as a single-valued sequence (see
-@secref["sequences"]). The elements of the set serve as elements
-of the sequence. See also @racket[in-set].
+A set can be used as a @tech{stream} (see @secref["streams"]) and thus
+as a single-valued @tech{sequence} (see @secref["sequences"]). The
+elements of the set serve as elements of the stream or sequence. See
+also @racket[in-set].
 
 Operations on sets that contain elements that are mutated are
 unpredictable in much the same way that @tech{hash table} operations are
@@ -48,6 +49,17 @@ Returns the number of elements in @racket[st].}
 
 Returns @racket[#t] if @racket[v] is in @racket[st], @racket[#f]
 otherwise.}
+
+
+@defproc[(set-first [st (and/c set? (not/c set-empty?))]) any/c]{
+
+Produces an unspecified element of @racket[st]. Multiple uses of
+@racket[set-first] on @racket[st] produce the same result.}
+
+
+@defproc[(set-rest [st (and/c set? (not/c set-empty?))]) set?]{
+
+Removes @racket[(set-first st)] from @racket[st].}
 
 
 @defproc[(set-add [st set?] [v any/c]) set?]{

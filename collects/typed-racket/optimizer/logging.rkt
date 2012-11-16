@@ -5,8 +5,7 @@
          "../utils/tc-utils.rkt")
 
 (provide log-optimization log-missed-optimization
-         log-message-from-tr-opt?
-         with-intercepted-tr-logging with-tr-logging-to-port
+         with-tr-logging-to-port
          (struct-out log-entry)
          (struct-out opt-log-entry)
          (struct-out missed-opt-log-entry))
@@ -14,21 +13,14 @@
 ;;--------------------------------------------------------------------
 
 (define TR-logging-level 'debug)
+(define TR-logger (make-logger 'TR-optimizer (current-logger)))
 
 (define (emit-log-message l)
-  (log-message (current-logger) TR-logging-level
-               (format-log-entry l)
-               (cons optimization-log-key l)))
+  (log-message TR-logger TR-logging-level (format-log-entry l) l))
 
 ;; producing logs can be expensive, don't do it if no-one's listening
 ;; to the logs
-(define (anyone-listening?) (log-level? (current-logger) TR-logging-level))
-
-;; to identify log messages that come from the optimizer
-;; to be stored in the data section of log messages
-;; external tools/scripts (like the test harness) can look for it
-;; since this is used across phases, can't be a gensym
-(define optimization-log-key 'log-message-coming-from-the-TR-optimizer)
+(define (anyone-listening?) (log-level? TR-logger TR-logging-level))
 
 ;; msg is for consumption by the DrRacket tool
 (struct log-entry (kind msg stx located-stx pos provenance) #:prefab)
@@ -61,8 +53,6 @@
         (irritants merged-irritants badness)
         #:prefab)
 
-;; Attempts to merge the incoming missed optimization with existing ones.
-;; Otherwise, adds the new one to the log.
 (define (log-missed-optimization kind msg stx [irritants '()])
   (when (anyone-listening?)
     (let (;; for convenience, if a single irritant is given, wrap it in a list
@@ -122,22 +112,11 @@
 
 ;;--------------------------------------------------------------------
 
-(define (log-message-from-tr-opt? l)
-  (let ([data (vector-ref l 2)])
-    (and (pair? data)
-         (eq? (car data) optimization-log-key))))
-
-;; only intercepts TR log messages
-(define (with-intercepted-tr-logging interceptor thunk)
-  (with-intercepted-logging
-   #:level TR-logging-level
-   (lambda (l) ;; look only for optimizer messages
-     (when (log-message-from-tr-opt? l)
-       (interceptor l)))
-   thunk))
-
 (define (with-tr-logging-to-port port thunk)
-  (with-intercepted-tr-logging
+  (with-intercepted-logging
    (lambda (l)
-     (displayln (vector-ref l 1) port)) ; print log message
-   thunk))
+     (displayln ; print log message
+      (string-trim (vector-ref l 1) "TR-optimizer: ") ; remove logger prefix
+      port))
+   thunk
+   'debug 'TR-optimizer))

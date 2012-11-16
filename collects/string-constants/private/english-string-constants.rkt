@@ -233,19 +233,19 @@ please adhere to these guidelines:
   (sc-f2-to-un/lock "f2 to (un)lock")
   
  ;; the online check syntax status messages (mouse over the bottom right of drracket's window to see the messages during online expansion's various phases)
- (online-expansion-running "Online expansion running")
+ (online-expansion-running "Background expansion running")
  (online-expansion-only-raw-text-files-supported "Only pure text files supported")
- (online-expansion-abnormal-termination "Online expansion terminated abnormally")
- (online-expansion-finished-successfully "Online expansion finished successfully")
+ (online-expansion-abnormal-termination "Background expansion terminated abnormally")
+ (online-expansion-finished-successfully "Background expansion finished successfully")
   
  (jump-to-error "Jump to Error")
- (online-expansion-is-disabled "Online expansion is disabled")
+ (online-expansion-is-disabled "Background expansion is disabled")
  ;; these next two show up in the bar along the bottom of the drracket window
- (online-expansion-pending "Online expansion pending ...")
- (online-expansion-finished "Online expansion finished") ;; note: there may still be errors in this case
+ (online-expansion-pending "Background expansion pending ...")
+ (online-expansion-finished "Background expansion finished") ;; note: there may still be errors in this case
   
  ;; the online expansion preferences pane
- (online-expansion "Online expansion") ;; title of prefs pane
+ (online-expansion "Background expansion") ;; title of prefs pane
  ; the different kinds of errors
  (online-expansion-show-read-errors-as "Show read-level errors")
  (online-expansion-show-variable-errors-as "Show unbound identifier errors")
@@ -440,6 +440,7 @@ please adhere to these guidelines:
  (install-plt-file-tab "File")
  (install-plt-filename "Filename:")
  (install-plt-url "URL:")
+ (install-plt-error-header "There was an error when checking the validity of the downloaded .plt file. Please check the url and try again.")
  
  ;; install plt file when opened in drscheme strings
  (install-plt-file "Install ~a or open for editing?")
@@ -499,7 +500,10 @@ please adhere to these guidelines:
  (show-line-and-column-numbers "Show Line && Column Numbers") ; used for popup menu; right click on line/column box in bottom of drs window
  (show-character-offsets "Show Character Offsets") ; used for popup menu; right click on line/column box in bottom of drs window
  (enable-keybindings-in-menus "Enable keybindings in menus")
- (automatically-to-ps "Automatically print to PostScript file")
+ (printing-mode "Printing Mode")
+ (print-using-platform-specific-mode "Platform-specific printing")
+ (print-to-ps "Print to PostScript File")
+ (print-to-pdf "Print to PDF File")
  (command-as-meta "Treat command key as meta") ;; macos/macos x only
  (reuse-existing-frames "Reuse existing frames when opening new files")
  (default-fonts "Default Fonts")
@@ -1677,5 +1681,10 @@ please adhere to these guidelines:
   (interactions-window-label "interactions")
   (hide-defs/ints-label "Hide Definitions/Interactions Labels") ;; popup menu
   (show-defs/ints-label "Show definitions/interactions labels") ;; preferences checkbox
-  
+
+  ;; menu item in the 'edit' menu; applies to editors with programs in them
+  ;; (technically, editors that implement color:text<%>)
+  (spell-check-string-constants "Spell Check String Constants")
+  (misspelled-text-color "Misspelled Text Color") ;; in the preferences dialog  
+  (cannot-find-ispell-or-aspell-path "Cannot find the aspell or ispell binary")
   )

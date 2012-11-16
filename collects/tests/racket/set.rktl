@@ -34,6 +34,10 @@
 (test #t set-member? (set 1 2 3) 3)
 (test #f set-member? (set 1 2 3) 4)
 
+(test #t stream? (set 1 2 3))
+(test (set-first (set 1 2 3)) set-first (set 1 2 3))
+(test (set-remove (set 1 2 3) (set-first (set 1 2 3))) set-rest (set 1 2 3))
+
 (let ([s (set 1 2 3)])
   (test #t equal? s (set-add (set-add (set-add (set) 1) 2) 3))
   (test #t equal? (seteq 1 2 3) (seteq 1 2 3))
@@ -126,6 +130,13 @@
 ;; ----------------------------------------
 
 (test (set 1 2 3) 'for/set (for/set ([i '(0 1 2)]) (add1 i)))
+
+(test (set 1 2 3) 'for/set (for/set ([i '(0 1 2 3 4)]) 
+                                    #:break (= i 3)
+                                    (add1 i)))
+(test (set 1 2 3) 'for/set (for/set ([i '(0 1 2 3 4)]) 
+                                    #:final (= i 2)
+                                    (add1 i)))
 
 ;; ----------------------------------------
 

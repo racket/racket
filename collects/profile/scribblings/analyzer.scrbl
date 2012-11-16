@@ -59,7 +59,8 @@ Represents an analyzed profile result.
   the analyzer assembles (see the @racket[edge] field).  The nodes are
   sorted by a topological top-to-bottom sort, and by decreasing total
   amount of time (time spent either in the function or in its callees)
-  as a secondary key.}
+  as a secondary key.  It does not include the special
+  @racket[*-node].}
 
 @item{@racket[*-node] holds a ``special'' root node value that is
   constructed for every call graph.  This node is used as the caller

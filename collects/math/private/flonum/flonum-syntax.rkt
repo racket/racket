@@ -1,21 +1,26 @@
 #lang racket/base
 
-(require racket/flonum)
+(require (for-syntax racket/base)
+         racket/flonum)
 
 (provide flsplit
          fast-mono-fl+/error fast-fl+/error fl+/error
          fast-mono-fl-/error fast-fl-/error fl-/error
-         fast-fl*/error fl*/error)
+         fast-fl*/error fl*/error
+         fast-fl//error)
 
 ;(: flsplit (Flonum -> (Values Flonum Flonum)))
 ;; Splits a flonum into a two flonums `hi' and `lo' with 26 bits precision each, such that
 ;; |hi| >= |lo| and hi + lo = a. (The extra sign bit accounts for the missing bit.)
 (define-syntax-rule (flsplit a-expr)
   (let ([a a-expr])
-    (let* ([c  (fl* 134217729.0 a)]  ; 134217729 = (expt 2 (ceiling (/ 53 2)))
+    (define s (if ((flabs a) . < . 1e300) 1.0 (flexpt 2.0 52.0)))
+    (let* ([a  (fl/ a s)]
+           [c  (fl* a (+ 1.0 (flexpt 2.0 27.0)))]
            [a-hi  (fl- c (fl- c a))]
            [a-lo  (fl- a a-hi)])
-      (values a-hi a-lo))))
+      (values (fl* a-hi s)
+              (fl* a-lo s)))))
 
 ;(: fast-mono-fl+/error (Flonum Flonum -> (Values Flonum Flonum)))
 ;; Returns a+b and its rounding error
@@ -61,6 +66,14 @@
                                (fl* a-lo b-hi))
                           (fl* a-hi b-lo)))))))
 
+;(: fast-fl//error (Flonum Flonum -> (Values Flonum Flonum)))
+;; Returns a/b and its rounding error
+(define-syntax-rule (fast-fl//error a-expr b-expr)
+  (let ([a a-expr] [b b-expr])
+    (define q-hi (fl/ a b))
+    (define-values (q0 q1) (fast-fl*/error q-hi b))
+    (values q-hi (fl/ (fl+ (- q1) (fl- a q0)) b))))
+  
 #;; If we had a fused multiply-add:
 (define (fast-fl*/error a b)
   (let ([p  (* a b)])

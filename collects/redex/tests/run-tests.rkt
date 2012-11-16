@@ -20,6 +20,7 @@
    '("lw-test.rkt"
      "matcher-test.rkt"
      "rewrite-side-condition-test.rkt"
+     "unify-tests.rkt"
      "tl-test.rkt"
      "term-test.rkt"
      "rg-test.rkt"

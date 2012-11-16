@@ -55,6 +55,7 @@ volatile int *scheme_fuel_counter_ptr;
 # endif
 #endif
 Scheme_Thread *(*scheme_get_current_thread)();
+int (*scheme_is_atomic)(void);
 void (*scheme_start_atomic)(void);
 void (*scheme_end_atomic)(void);
 void (*scheme_end_atomic_no_swap)(void);
@@ -675,6 +676,7 @@ intptr_t (*scheme_get_char_string)(const char *who,
 intptr_t (*scheme_get_bytes)(Scheme_Object *port, intptr_t size, char *buffer, int offset);
 Scheme_Object *(*scheme_get_ready_special)(Scheme_Object *port, Scheme_Object *stxsrc, int peek);
 intptr_t (*scheme_tell)(Scheme_Object *port);
+intptr_t (*scheme_tell_can_redirect)(Scheme_Object *port, int not_via_loc);
 intptr_t (*scheme_output_tell)(Scheme_Object *port);
 intptr_t (*scheme_tell_line)(Scheme_Object *port);
 intptr_t (*scheme_tell_column)(Scheme_Object *port);

@@ -3,6 +3,7 @@
          racket/draw
          racket/class
          racket/match
+         racket/pretty
          (only-in racket/list drop-right last partition)
          
          texpict/mrpict
@@ -15,11 +16,19 @@
          "matcher.rkt"
          "arrow.rkt"
          "core-layout.rkt")
+(require (prefix-in lw/ct: "loc-wrapper-ct.rkt")
+         (prefix-in lw/rt: "loc-wrapper-rt.rkt"))
+
 (require (for-syntax racket/base
                      "term-fn.rkt"))
 
 (provide render-term 
          term->pict
+         
+         render-term/pretty-write
+         term->pict/pretty-write
+         
+         to-lw/stx
          
          language->pict
          render-language
@@ -533,9 +542,11 @@
     (send ps-setup copy-from (current-ps-setup))
     (send ps-setup set-file filename)
     (send ps-setup set-mode 'file)
-    (define % (if (regexp-match #rx#"[.]pdf$" (path->bytes filename))
-                  pdf-dc%
-                  post-script-dc%))
+    (define is-pdf? 
+      (cond
+        [(path? filename) (regexp-match #rx#"[.]pdf$" (path->bytes filename))]
+        [else (regexp-match #rx"[.]pdf$" filename)]))
+    (define % (if is-pdf? pdf-dc% post-script-dc%))
     (parameterize ([current-ps-setup ps-setup])
       (make-object % #f #f))))
 
@@ -1065,7 +1076,8 @@
   (inference-rules-pict (metafunc-proc-name (metafunction-proc mf))
                         (metafunc-proc-pict-info (metafunction-proc mf))
                         (map (λ (x) #f) (metafunc-proc-pict-info (metafunction-proc mf)))
-                        (metafunc-proc-lang (metafunction-proc mf))))
+                        (metafunc-proc-lang (metafunction-proc mf))
+                        #f))
 
 (define (render-pict make-pict filename)
   (cond
@@ -1075,7 +1087,7 @@
      (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
        (make-pict))]))
 
-(define (inference-rules-pict name all-eqns eqn-names lang)
+(define (inference-rules-pict name all-eqns eqn-names lang judgment-form?)
   (define all-nts (language-nts lang))
   (define (wrapper->pict lw) (lw->pict all-nts lw))
   (define all-conclusions 
@@ -1085,21 +1097,55 @@
          all-eqns))
   (define-values (selected-eqns conclusions selected-eqn-names)
     (select-jf-cases all-eqns all-conclusions eqn-names))
-  (define premisess (map (lambda (eqn)
-                           (append (map wrapper->pict (list-ref eqn 2))
-                                   (map (match-lambda
-                                          [(struct metafunc-extra-where (lhs rhs))
-                                           (where-pict (wrapper->pict lhs) (wrapper->pict rhs))]
-                                          [(struct metafunc-extra-side-cond (expr))
-                                           (wrapper->pict expr)]
-                                          [wrapper (wrapper->pict wrapper)])
-                                        (list-ref eqn 1))))
-                         selected-eqns))
+  
+  (define (wrapper->pict+lines lw)
+    (list (wrapper->pict lw) (lw-line lw) (+ (lw-line lw) (lw-line-span lw))))
+  
+  ;; premises : (listof (listof pict))
+  ;; each inner list of premises goes on the same line; each element
+  ;; of the outer list is a separate line
+  (define premisess 
+    (for/list ([eqn (in-list selected-eqns)])
+      ;; all-premises : (listof pict number[first-line] number [last-line])
+      (define all-premises
+        (append (map wrapper->pict+lines (list-ref eqn 2))
+                (map (match-lambda
+                       [(struct metafunc-extra-where (lhs rhs))
+                        (list (where-pict (wrapper->pict lhs) (wrapper->pict rhs))
+                              (lw-line lhs)
+                              (+ (lw-line rhs) (lw-line-span rhs)))]
+                       [(struct metafunc-extra-side-cond (expr))
+                        (wrapper->pict+lines expr)]
+                       [wrapper (wrapper->pict+lines wrapper)])
+                     (list-ref eqn 1))))
+      (define sorted-premises (sort all-premises < #:key (λ (x) (list-ref x 1))))
+       
+      ;; returns #t if the two premises share at least one line in common
+      (define (overlaps? premise1 premise2)
+        (<= (list-ref premise1 1)
+            (list-ref premise2 1)
+            (list-ref premise1 2)))
+      
+      (cond
+        [(not judgment-form?) (list (map car all-premises))]
+        [(null? sorted-premises) '()]
+        [else
+         (define line-grouped-premises (list (list (car sorted-premises))))
+         (for ([prev-premise (in-list sorted-premises)]
+               [premise (in-list (cdr sorted-premises))])
+           (cond
+             [(overlaps? prev-premise premise)
+              (set! line-grouped-premises (cons (cons premise (car line-grouped-premises))
+                                                (cdr line-grouped-premises)))]
+             [else
+              (set! line-grouped-premises (cons (list premise) line-grouped-premises))]))
+         (reverse (map (λ (x) (reverse (map car x))) line-grouped-premises))])))
+
   ((relation-clauses-combine)
    (for/list ([conclusion (in-list conclusions)]
               [premises (in-list premisess)]
               [name (in-list selected-eqn-names)])
-     (define top (apply hbl-append 20 premises))
+     (define top (apply vc-append 4 (map (λ (premises) (apply hbl-append 20 premises)) premises)))
      (define line-w (max (pict-width top) (pict-width conclusion)))
      (define line (dc (λ (dc dx dy) (send dc draw-line dx dy (+ dx line-w) dy))
                       line-w 1)) 
@@ -1127,9 +1173,10 @@
    #`(inference-rules-pict '#,(judgment-form-name jf)
                            #,(judgment-form-lws jf)
                            '#,(judgment-form-rule-names jf)
-                           #,(judgment-form-lang jf))
+                           #,(judgment-form-lang jf)
+                           #t)
    'disappeared-use
-   form-name))
+   (syntax-local-introduce form-name)))
 
 (define-syntax (render-judgment-form stx)
   (syntax-case stx ()
@@ -1184,3 +1231,24 @@
         (do-term->pict lang lw))))
 
 (define (do-term->pict lang lw) (lw->pict (language-nts lang) lw))
+
+(define (render-term/pretty-write lang term [filename #f] #:width [width (pretty-print-columns)])
+  (if filename
+      (save-as-ps/pdf (λ () (term->pict/pretty-write lang term #:width width)) filename)
+      (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
+        (term->pict/pretty-write lang term #:width width))))
+
+(define (term->pict/pretty-write lang term #:width [width (pretty-print-columns)])
+  (define-values (in out) (make-pipe))
+  (thread (λ ()
+            (parameterize ([pretty-print-columns width])
+              (pretty-write term out))
+            (close-output-port out)))
+  (port-count-lines! in)
+  (lw->pict lang (to-lw/stx (read-syntax #f in))))
+
+(define (to-lw/stx stx)
+  (lw/rt:add-spans/interp-lws 
+   (syntax->datum 
+    (lw/ct:to-lw/proc stx #f))))
+

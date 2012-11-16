@@ -787,7 +787,8 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
 					   int pos, int mod_phase,
 					   Scheme_Env *env, 
                                            Scheme_Object **exprs, int which,
-                                           char *import_map)
+                                           char *import_map,
+                                           int flags)
 {
   Scheme_Object *modname;
   Scheme_Env *menv;
@@ -840,20 +841,41 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
 
   bkt = scheme_global_bucket(varname, menv);
   if (!self) {
+    const char *bad_reason = NULL;
+
     if (!bkt->val) {
+      bad_reason = "uninitialized";
+    } else if (flags) {
+      if (flags & SCHEME_MODVAR_CONST) {
+        /* The fact that the link target is consistent is a fine
+           sanity check, but the check is not good enough for the JIT
+           to rely on it. To be useful for the JIT, we'd have to make
+           sure that every link goes to the same value. Since we can't
+           currently guarantee that, all the JIT assumes is that the
+           value is "fixed". */
+        if (!(((Scheme_Bucket_With_Flags *)bkt)->flags & GLOB_IS_CONSISTENT))
+          bad_reason = "not constant across all instantiations";
+      } else {
+        if (!(((Scheme_Bucket_With_Flags *)bkt)->flags & GLOB_IS_IMMUTATED))
+          bad_reason = "not constant";
+      }
+    }
+
+    if (bad_reason) {
       scheme_wrong_syntax("link", NULL, varname,
                           "bad variable linkage;\n"
-                          " reference to a variable that is uninitialized\n"
+                          " reference to a variable that is %s\n"
                           "  reference phase level: %d\n"
                           "  variable module: %D\n"
                           "  variable phase: %d\n"
                           "  reference in module: %D",
+                          bad_reason,
                           env->phase,
                           modname,
                           mod_phase,
                           env->module ? env->module->modsrc : scheme_false);
     }
-    
+
     if (!(((Scheme_Bucket_With_Flags *)bkt)->flags & (GLOB_IS_IMMUTATED | GLOB_IS_LINKED)))
       ((Scheme_Bucket_With_Flags *)bkt)->flags |= GLOB_IS_LINKED;
   }
@@ -909,7 +931,8 @@ static Scheme_Object *link_toplevel(Scheme_Object **exprs, int which, Scheme_Env
                                 -1, mod_phase,
                                 env, 
                                 NULL, 0,
-                                import_map);
+                                import_map,
+                                0);
   } else if (SAME_TYPE(SCHEME_TYPE(expr), scheme_variable_type)) {
     Scheme_Bucket *b = (Scheme_Bucket *)expr;
     Scheme_Env *home;
@@ -921,11 +944,11 @@ static Scheme_Object *link_toplevel(Scheme_Object **exprs, int which, Scheme_Env
     else
       return link_module_variable(home->module->modname,
 				  (Scheme_Object *)b->key,
-				  1, home->module->insp,
+				  1, home->access_insp,
 				  -1, home->mod_phase,
 				  env, 
                                   exprs, which,
-                                  import_map);
+                                  import_map, 0);
   } else {
     Module_Variable *mv = (Module_Variable *)expr;
 
@@ -939,7 +962,8 @@ static Scheme_Object *link_toplevel(Scheme_Object **exprs, int which, Scheme_Env
 				mv->pos, mv->mod_phase,
 				env,
                                 exprs, which,
-                                import_map);
+                                import_map, 
+                                SCHEME_MODVAR_FLAGS(mv) & 0x3);
   }
 }
 
@@ -1379,9 +1403,14 @@ static Scheme_Prompt *lookup_cont_prompt(Scheme_Cont *c,
                                          const char *msg)
 {
   Scheme_Prompt *prompt;
+  Scheme_Object *pt;
 
-  prompt = scheme_get_prompt(SCHEME_PTR_VAL(c->prompt_tag), _prompt_mc, _prompt_pos);
-  if (!prompt && !SAME_OBJ(scheme_default_prompt_tag, c->prompt_tag)) {
+  pt = c->prompt_tag;
+  if (SCHEME_NP_CHAPERONEP(pt))
+    pt = SCHEME_CHAPERONE_VAL(pt);
+
+  prompt = scheme_get_prompt(SCHEME_PTR_VAL(pt), _prompt_mc, _prompt_pos);
+  if (!prompt && !SAME_OBJ(scheme_default_prompt_tag, pt)) {
     scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION, msg);
   }
 
@@ -1446,6 +1475,7 @@ static int exec_dyn_wind_posts(Scheme_Dynamic_Wind *common, Scheme_Cont *c, int 
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Dynamic_Wind *dw;
   int old_cac = scheme_continuation_application_count;
+  Scheme_Object *pt;
 
   *_common = common;
 
@@ -1481,7 +1511,11 @@ static int exec_dyn_wind_posts(Scheme_Dynamic_Wind *common, Scheme_Cont *c, int 
       if (scheme_continuation_application_count != old_cac) {
         old_cac = scheme_continuation_application_count;
         
-        common = intersect_dw(p->dw, c->dw, c->prompt_tag, c->has_prompt_dw, &common_depth);
+        pt = c->prompt_tag;
+        if (SCHEME_NP_CHAPERONEP(pt))
+          pt = SCHEME_CHAPERONE_VAL(pt);
+
+        common = intersect_dw(p->dw, c->dw, pt, c->has_prompt_dw, &common_depth);
         *_common = common;
       }
     } else
@@ -1544,6 +1578,7 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
     /* Aborting (Scheme-style) continuation. */
     int orig_cac = scheme_continuation_application_count;
     Scheme_Overflow *thread_end_oflow;
+    Scheme_Object *pt;
 
     scheme_about_to_move_C_stack();
 
@@ -1552,10 +1587,14 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
 
     p->suspend_break++; /* restored at call/cc destination */
 
+    pt = c->prompt_tag;
+    if (SCHEME_NP_CHAPERONEP(pt))
+      pt = SCHEME_CHAPERONE_VAL(pt);
+
     /* Find `common', the intersection of dynamic-wind chain for 
        the current continuation and the given continuation, looking
        no further back in the current continuation than a prompt. */
-    common = intersect_dw(p->dw, c->dw, c->prompt_tag, c->has_prompt_dw, &common_depth);
+    common = intersect_dw(p->dw, c->dw, pt, c->has_prompt_dw, &common_depth);
 
     /* For dynamic-winds after `common' in this
        continuation, execute the post-thunks */
@@ -1614,7 +1653,7 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
                && !prompt_mc) {
       /* The current prompt is the same as the one in place when
          capturing the continuation, so we can jump directly. */
-      scheme_drop_prompt_meta_continuations(c->prompt_tag);
+      scheme_drop_prompt_meta_continuations(pt);
       c->shortcut_prompt = prompt;
       if ((!prompt->boundary_overflow_id && !p->overflow)
           || (prompt->boundary_overflow_id
@@ -1682,12 +1721,12 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
         if (p->meta_continuation->pseudo)
           scheme_signal_error("internal error: trying to jump to a prompt in a meta-cont"
                               " that starts with a pseudo prompt");
-        scheme_drop_prompt_meta_continuations(c->prompt_tag);
+        scheme_drop_prompt_meta_continuations(pt);
         scheme_longjmp(*prompt->prompt_buf, 1);
       } else {
         /* Need to unwind overflows to get to the prompt. */
         Scheme_Overflow *overflow;
-        scheme_drop_prompt_meta_continuations(c->prompt_tag);
+        scheme_drop_prompt_meta_continuations(pt);
         overflow = p->overflow;
         while (overflow->prev
                && (!overflow->prev->id
@@ -1850,10 +1889,21 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
     
     g = scheme_current_thread->ku.multiple.count;
     if (i == g) {
+      int is_st;
+
       values = scheme_current_thread->ku.multiple.array;
       scheme_current_thread->ku.multiple.array = NULL;
       if (SAME_OBJ(values, scheme_current_thread->values_buffer))
 	scheme_current_thread->values_buffer = NULL;
+
+      if (dm_env)
+        is_st = 0;
+      else
+        is_st = !!scheme_is_simple_make_struct_type(vals_expr, g, 1, 1, 
+                                                    NULL, NULL, NULL, NULL,
+                                                    NULL, NULL, MZ_RUNSTACK, 0, 
+                                                    NULL, NULL, 5);
+      
       for (i = 0; i < g; i++) {
         var = SCHEME_VEC_ELS(vec)[i+delta];
 	if (dm_env) {
@@ -1874,7 +1924,10 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
 	  scheme_shadow(scheme_get_bucket_home(b), (Scheme_Object *)b->key, 1);
 
 	  if (SCHEME_TOPLEVEL_FLAGS(var) & SCHEME_TOPLEVEL_SEAL) {
-            ((Scheme_Bucket_With_Flags *)b)->flags |= GLOB_IS_IMMUTATED;
+            if (is_st)
+              ((Scheme_Bucket_With_Flags *)b)->flags |= (GLOB_IS_IMMUTATED | GLOB_IS_CONSISTENT);
+            else
+              ((Scheme_Bucket_With_Flags *)b)->flags |= GLOB_IS_IMMUTATED;
 	  }
 	}
       }
@@ -1909,7 +1962,8 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
         int flags = GLOB_IS_IMMUTATED;
         if (SCHEME_PROCP(vals_expr) 
             || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_unclosed_procedure_type)
-            || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_case_lambda_sequence_type))
+            || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_case_lambda_sequence_type)
+            || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_inline_variant_type))
           flags |= GLOB_IS_CONSISTENT;
         ((Scheme_Bucket_With_Flags *)b)->flags |= flags;
       }
@@ -2386,6 +2440,10 @@ void scheme_delay_load_closure(Scheme_Closure_Data *data)
                               (SCHEME_TRUEP(SCHEME_VEC_ELS(vinfo)[8])
                                ? (void *)SCHEME_VEC_ELS(vinfo)[8]
                                : NULL),
+                              (SCHEME_TRUEP(SCHEME_VEC_ELS(vinfo)[9])
+                               ? (mzshort *)(SCHEME_VEC_ELS(vinfo)[9])
+                               : NULL),
+                              SCHEME_INT_VAL(SCHEME_VEC_ELS(vinfo)[10]),
                               SCHEME_INT_VAL(SCHEME_VEC_ELS(vinfo)[6]),
                               (SCHEME_TRUEP(SCHEME_VEC_ELS(vinfo)[7])
                                ? (Scheme_Hash_Tree *)SCHEME_VEC_ELS(vinfo)[7]
@@ -3953,7 +4011,7 @@ static void *compile_k(void)
 	  break;
       }
 
-      oi = scheme_optimize_info_create(cenv->prefix);
+      oi = scheme_optimize_info_create(cenv->prefix, 1);
       scheme_optimize_info_enforce_const(oi, enforce_consts);
       if (!(comp_flags & COMP_CAN_INLINE))
         scheme_optimize_info_never_inline(oi);
@@ -3984,6 +4042,7 @@ static void *compile_k(void)
                              top->prefix->num_toplevels,
                              top->prefix->num_stxes,
                              top->prefix->num_lifts,
+                             NULL,
                              NULL,
                              0);
       }
@@ -5133,6 +5192,7 @@ static Scheme_Object *do_eval_string_all(Scheme_Object *port, const char *str, S
           printer = scheme_get_param(scheme_current_config(), MZCONFIG_PRINT_HANDLER);
           arg[0] = a[i];
           scheme_apply(printer, 1, arg);
+          scheme_flush_output(scheme_get_param(scheme_current_config(), MZCONFIG_OUTPUT_PORT));
         }
       }
     }
@@ -5226,6 +5286,8 @@ void scheme_init_collection_paths_post(Scheme_Env *global_env, Scheme_Object *ex
       a[0] = _scheme_apply(flcp, 2, a);
       _scheme_apply(clcp, 1, a);
     }
+  } else {
+    scheme_clear_escape();
   }
   p->error_buf = save;
 }
@@ -5233,6 +5295,40 @@ void scheme_init_collection_paths_post(Scheme_Env *global_env, Scheme_Object *ex
 void scheme_init_collection_paths(Scheme_Env *global_env, Scheme_Object *extra_dirs)
 {
   scheme_init_collection_paths_post(global_env, extra_dirs, scheme_null);
+}
+
+void scheme_init_compiled_roots(Scheme_Env *global_env, const char *paths)
+{
+  mz_jmp_buf * volatile save, newbuf;
+  Scheme_Thread * volatile p;
+  p = scheme_get_current_thread();
+  save = p->error_buf;
+  p->error_buf = &newbuf;
+  if (!scheme_setjmp(newbuf)) {
+    Scheme_Object *rr, *ccfr, *pls2pl, *a[3];
+
+    rr = scheme_builtin_value("regexp-replace*");
+    ccfr = scheme_builtin_value("current-compiled-file-roots");
+    pls2pl = scheme_builtin_value("path-list-string->path-list");
+
+    if (rr && ccfr && pls2pl) {
+      a[0] = scheme_make_utf8_string("@[(]version[)]");
+      a[1] = scheme_make_utf8_string(paths);
+      a[2] = scheme_make_utf8_string(scheme_version());
+      a[2] = _scheme_apply(rr, 3, a);
+
+      a[0] = scheme_intern_symbol("same");
+      a[1] = scheme_build_path(1, a);
+
+      a[0] = a[2];
+      a[1] = scheme_make_pair(a[1], scheme_null);
+      a[0] = _scheme_apply(pls2pl, 2, a);
+      _scheme_apply(ccfr, 1, a);
+    }
+  } else {
+    scheme_clear_escape();
+  }
+  p->error_buf = save;  
 }
 
 static Scheme_Object *allow_set_undefined(int argc, Scheme_Object **argv)
@@ -5383,7 +5479,7 @@ local_eval(int argc, Scheme_Object **argv)
   if (!((void **)SCHEME_PTR1_VAL(argv[2]))[2])
     ((void **)SCHEME_PTR1_VAL(argv[2]))[2] = stx_env;
 
-  SCHEME_EXPAND_OBSERVE_NEXT(observer);
+  SCHEME_EXPAND_OBSERVE_EXIT_LOCAL_BIND(observer);
 
   return scheme_void;
 }
@@ -5456,7 +5552,7 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
     scheme_check_unsafe_accessible((SCHEME_FALSEP(rp->uses_unsafe)
                                     ? (insp
                                        ? insp
-                                       : genv->insp)
+                                       : genv->access_insp)
                                     : rp->uses_unsafe),
                                    genv);
   }

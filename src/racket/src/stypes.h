@@ -198,47 +198,47 @@ enum {
   scheme_serialized_tcp_fd_type,        /* 178 */
   scheme_serialized_file_fd_type,       /* 179 */
   scheme_port_closed_evt_type,          /* 180 */
+  scheme_struct_proc_shape_type,        /* 181 */
 
 #ifdef MZTAG_REQUIRED
-  _scheme_last_normal_type_,            /* 181 */
+  _scheme_last_normal_type_,            /* 182 */
 
-  scheme_rt_weak_array,                 /* 182 */
+  scheme_rt_weak_array,                 /* 183 */
 
-  scheme_rt_comp_env,                   /* 183 */
-  scheme_rt_constant_binding,           /* 184 */
-  scheme_rt_resolve_info,               /* 185 */
-  scheme_rt_unresolve_info,             /* 186 */
-  scheme_rt_optimize_info,              /* 187 */
-  scheme_rt_compile_info,               /* 188 */
-  scheme_rt_cont_mark,                  /* 189 */
-  scheme_rt_saved_stack,                /* 190 */
-  scheme_rt_reply_item,                 /* 191 */
-  scheme_rt_closure_info,               /* 192 */
-  scheme_rt_overflow,                   /* 193 */
-  scheme_rt_overflow_jmp,               /* 194 */
-  scheme_rt_meta_cont,                  /* 195 */
-  scheme_rt_dyn_wind_cell,              /* 196 */
-  scheme_rt_dyn_wind_info,              /* 197 */
-  scheme_rt_dyn_wind,                   /* 198 */
-  scheme_rt_dup_check,                  /* 199 */
-  scheme_rt_thread_memory,              /* 200 */
-  scheme_rt_input_file,                 /* 201 */
-  scheme_rt_input_fd,                   /* 202 */
-  scheme_rt_oskit_console_input,        /* 203 */
-  scheme_rt_tested_input_file,          /* 204 */
-  scheme_rt_tested_output_file,         /* 205 */
-  scheme_rt_indexed_string,             /* 206 */
-  scheme_rt_output_file,                /* 207 */
-  scheme_rt_load_handler_data,          /* 208 */
-  scheme_rt_pipe,                       /* 209 */
-  scheme_rt_beos_process,               /* 210 */
-  scheme_rt_system_child,               /* 211 */
-  scheme_rt_tcp,                        /* 212 */
-  scheme_rt_write_data,                 /* 213 */
-  scheme_rt_tcp_select_info,            /* 214 */
-  scheme_rt_param_data,                 /* 215 */
-  scheme_rt_will,                       /* 216 */
-  scheme_rt_struct_proc_info,           /* 217 */
+  scheme_rt_comp_env,                   /* 184 */
+  scheme_rt_constant_binding,           /* 185 */
+  scheme_rt_resolve_info,               /* 186 */
+  scheme_rt_unresolve_info,             /* 187 */
+  scheme_rt_optimize_info,              /* 188 */
+  scheme_rt_compile_info,               /* 189 */
+  scheme_rt_cont_mark,                  /* 190 */
+  scheme_rt_saved_stack,                /* 191 */
+  scheme_rt_reply_item,                 /* 192 */
+  scheme_rt_closure_info,               /* 193 */
+  scheme_rt_overflow,                   /* 194 */
+  scheme_rt_overflow_jmp,               /* 195 */
+  scheme_rt_meta_cont,                  /* 196 */
+  scheme_rt_dyn_wind_cell,              /* 197 */
+  scheme_rt_dyn_wind_info,              /* 198 */
+  scheme_rt_dyn_wind,                   /* 199 */
+  scheme_rt_dup_check,                  /* 200 */
+  scheme_rt_thread_memory,              /* 201 */
+  scheme_rt_input_file,                 /* 202 */
+  scheme_rt_input_fd,                   /* 203 */
+  scheme_rt_oskit_console_input,        /* 204 */
+  scheme_rt_tested_input_file,          /* 205 */
+  scheme_rt_tested_output_file,         /* 206 */
+  scheme_rt_indexed_string,             /* 207 */
+  scheme_rt_output_file,                /* 208 */
+  scheme_rt_load_handler_data,          /* 209 */
+  scheme_rt_pipe,                       /* 210 */
+  scheme_rt_beos_process,               /* 211 */
+  scheme_rt_system_child,               /* 212 */
+  scheme_rt_tcp,                        /* 213 */
+  scheme_rt_write_data,                 /* 214 */
+  scheme_rt_tcp_select_info,            /* 215 */
+  scheme_rt_param_data,                 /* 216 */
+  scheme_rt_will,                       /* 217 */
   scheme_rt_linker_name,                /* 218 */
   scheme_rt_param_map,                  /* 219 */
   scheme_rt_finalization,               /* 220 */

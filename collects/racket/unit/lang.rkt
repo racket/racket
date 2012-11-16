@@ -1,12 +1,12 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/unit
-         (for-syntax scheme/base
+(require racket/unit
+         (for-syntax racket/base
                      syntax/kerncase))
 
 (provide (rename-out [module-begin #%module-begin])
-         (except-out (all-from-out scheme/base) #%module-begin)
-         (all-from-out scheme/unit))
+         (except-out (all-from-out racket/base) #%module-begin)
+         (all-from-out racket/unit))
 
 (define-for-syntax (make-name s)
   (string->symbol

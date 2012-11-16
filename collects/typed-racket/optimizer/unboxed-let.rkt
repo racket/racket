@@ -6,7 +6,7 @@
          "../utils/tc-utils.rkt"
          (for-template racket/base)
          (types numeric-tower utils type-table)
-         (rep type-rep)
+         (rep type-rep) (env mvar-env)
          (optimizer utils logging float-complex))
 
 (provide unboxed-let-opt-expr)

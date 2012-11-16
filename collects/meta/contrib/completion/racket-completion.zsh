@@ -115,7 +115,7 @@ _racket_self_test() {
 
 ###############################################################################
 
-_racket_self_test 'racket:1580018499:grep -v "Welcome to Racket"'
+_racket_self_test 'racket:3785877773:grep -v "Welcome to Racket"'
 
 RACKET_COMMON=( -C -s -w -S : '(- : *)'{-h,--help}'[Display help]' )
 RACKET_ARGS=( "$RACKET_COMMON[@]" )
@@ -149,6 +149,7 @@ RACKET_ARGS+=(
   '(-X --collects)'{-X,--collects}'+[Main collects dir ("" disables all)]:directory:_files -/'
   '*'{-S,--search}'+[More collects dir (after main)]:directory:_files -/'
   '(-A --addon)'{-A,--addon}'+[Addon directory]:directory:_files -/'
+  '(-R --compiled)'{-A,--addon}'+[Set compiled-file search roots to directory]:directory:_files -/'
   '(-C --links)'{-C,--links}'+[User-specific collection links file]:file:_files'
   '(-U --no-user-path)'{-U,--no-user-path}'[Ignore user-specific collects, etc.]'
   '(-N --name)'{-N,--name}'+[Sets (find-system-path '"'"'run-file)]:file:_files'
@@ -205,7 +206,7 @@ _raco_cmd_docs() {
   _racket_do_state
 }
 
-_racket_self_test 'raco setup:1426826849:tail -n +2' # full path for this one
+_racket_self_test 'raco setup:2092236815:tail -n +2' # full path for this one
 _raco_cmd_setup() {
   _arguments "$RACKET_COMMON[@]" \
     '(-c --clean)'{-c,--clean}'[Delete existing compiled files; implies -nxi]' \

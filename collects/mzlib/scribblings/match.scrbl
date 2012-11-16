@@ -31,6 +31,7 @@ follows:
 @; ------------------------------------------------------------
 
 @deftogether[(
+@defform[(define/match (head args) match*-clause ...)]
 @defform[(match-lambda clause ...)]
 @defform[(match-lambda* clause ...)]
 @defform[(match-let ([pat expr] ...) body ...+)]

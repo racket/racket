@@ -8,6 +8,7 @@
          "xref.rkt"
          string-constants
          racket/unit
+         racket/match
          racket/set
          racket/class
          racket/list
@@ -192,7 +193,8 @@
             (syntax-case* stx-obj (#%plain-lambda case-lambda if begin begin0 let-values letrec-values set!
                                                   quote quote-syntax with-continuation-mark 
                                                   #%plain-app #%top #%plain-module-begin
-                                                  define-values define-syntaxes begin-for-syntax module
+                                                  define-values define-syntaxes begin-for-syntax 
+                                                  module module*
                                                   #%require #%provide #%expression)
               (λ (x y) (free-identifier=? x y level 0))
               [(#%plain-lambda args bodies ...)
@@ -316,55 +318,61 @@
                (begin
                  (annotate-raw-keyword stx-obj varrefs)
                  (hash-set! module-lang-requires (syntax lang) #t)
-                 ((annotate-require-open user-namespace user-directory) (syntax lang))
-                 
+                 (annotate-require-open user-namespace user-directory (syntax lang))
                  (hash-cons! requires (syntax->datum (syntax lang)) (syntax lang))
                  (for-each loop (syntax->list (syntax (bodies ...)))))]
+              [(module* m-name lang (#%plain-module-begin bodies ...))
+               (begin
+                 (annotate-raw-keyword stx-obj varrefs)
+                 (when (syntax-e #'lang)
+                   (hash-set! module-lang-requires (syntax lang) #t)
+                   (annotate-require-open user-namespace user-directory (syntax lang))
+                   (hash-cons! requires (syntax->datum (syntax lang)) (syntax lang)))
+                 
+                 (for-each loop (syntax->list (syntax (bodies ...)))))]
+              
               
               ; top level or module top level only:
-              [(#%require require-specs ...)
-               (let ([at-phase
-                      (lambda (stx level)
-                        (define requires (hash-ref! phase-to-requires level (λ () (make-hash))))
-                        (syntax-case stx ()
-                          [(_ require-specs ...)
-                           (with-syntax ([((require-specs ...) ...)
-                                          (map (lambda (spec)
-                                                 (syntax-case spec (just-meta)
-                                                   [(just-meta m spec ...)
-                                                    #'(spec ...)]
-                                                   [else (list spec)]))
-                                               (syntax->list #'(require-specs ...)))])
-                             (let ([new-specs (map trim-require-prefix
-                                                   (syntax->list (syntax (require-specs ... ...))))])
-                               (annotate-raw-keyword stx-obj varrefs)
-                               (for-each (annotate-require-open user-namespace
-                                                                user-directory)
-                                         new-specs)
-                               (for-each (add-require-spec requires)
-                                         new-specs
-                                         (syntax->list (syntax (require-specs ... ...))))))]))])
-                 (for ([spec (in-list (syntax->list #'(require-specs ...)))])
+              [(#%require raw-require-specs ...)
+               (let ()
+                 (define (handle-raw-require-spec spec)
                    (let loop ([spec spec]
                               [level level])
                      (define (add-to-level n) (and n level (+ n level)))
-                     (syntax-case* spec (for-syntax for-template for-label for-meta just-meta) 
-                       (lambda (a b)
-                         (eq? (syntax-e a) (syntax-e b)))
-                       [(just-meta phase specs ...)
-                        (for ([spec (in-list (syntax->list #'(specs ...)))])
-                          (loop spec (add-to-level (syntax-e #'phase))))]
+                     (syntax-case* spec (for-meta for-syntax for-template for-label just-meta) symbolic-compare?
                        [(for-meta phase specs ...)
                         (for ([spec (in-list (syntax->list #'(specs ...)))])
                           (loop spec (add-to-level (syntax-e #'phase))))]
                        [(for-syntax specs ...)
-                        (at-phase spec (add-to-level 1))]
+                        (for ([spec (in-list (syntax->list #'(specs ...)))])
+                          (loop spec (add-to-level 1)))]
                        [(for-template specs ...)
-                        (at-phase spec (add-to-level -1))]
+                        (for ([spec (in-list (syntax->list #'(specs ...)))])
+                          (loop spec (add-to-level -1)))]
                        [(for-label specs ...)
-                        (at-phase spec #f)]
+                        (for ([spec (in-list (syntax->list #'(specs ...)))])
+                          (loop spec #f))]
+                       [(just-meta phase specs ...)
+                        (for ([spec (in-list (syntax->list #'(specs ...)))])
+                          (handle-phaseless-spec spec (add-to-level (syntax-e #'phase))))]
                        [else
-                        (at-phase (list #f spec) level)]))))]
+                        (handle-phaseless-spec spec level)])))
+                 (define (handle-phaseless-spec stx level)
+                   (define require-ht (hash-ref! phase-to-requires level
+                                                 (λ () 
+                                                   (define h (make-hash))
+                                                   (hash-set! phase-to-requires level h)
+                                                   h)))
+                   (define raw-module-path (phaseless-spec->raw-module-path stx))
+                   (annotate-require-open user-namespace user-directory raw-module-path)
+                   (when (syntax-original? raw-module-path)
+                     (define key (syntax->datum raw-module-path))
+                     (hash-set! require-ht 
+                                key
+                                (cons stx (hash-ref require-ht key '())))))
+                 
+                 (for ([spec (in-list (syntax->list #'(raw-require-specs ...)))])
+                   (handle-raw-require-spec spec)))]
               
               ; module top level only:
               [(#%provide provide-specs ...)
@@ -421,21 +429,6 @@
               [(identifier? prop)
                (add-id id-set prop)])))))
     
-    ;; add-require-spec : hash-table[sexp[require-spec] -o> (listof syntax)]
-    ;;                 -> sexp[require-spec]
-    ;;                    syntax
-    ;;                 -> void
-    (define (add-require-spec require-ht)
-      (λ (raw-spec syntax)
-        (when (syntax-original? syntax)
-          (let ([key (syntax->datum raw-spec)])
-            (hash-set! require-ht
-                       key
-                       (cons syntax
-                             (hash-ref require-ht
-                                       key
-                                       (λ () '()))))))))
-    
     ;; annotate-variables : namespace directory string id-set[four of them] (listof syntax) (listof syntax) -> void
     ;; colors in and draws arrows for variables, according to their classifications
     ;; in the various id-sets
@@ -459,10 +452,10 @@
       ;;      (list src pos pos) -o> (cons number number)]          ;; indicates the number of defs and uses at this spot
       (define connections (make-hash))
 
-      (for ([(level hash) (in-hash phase-to-requires)])
+      (for ([(level requires) (in-hash phase-to-requires)])
         (define new-hash (make-hash))
         (hash-set! unused/phases level new-hash)
-        (for ([(k v) (in-hash hash)])
+        (for ([(k v) (in-hash requires)])
           (hash-set! new-hash k #t)))
       
       (for ([(level binders) (in-hash phase-to-binders)])
@@ -573,64 +566,77 @@
     (define (connect-identifier var all-binders unused/phases phase-to-requires
                                 phase-level user-namespace user-directory actual?
                                 connections)
-      (let ([binders (get-ids all-binders var)])
-        (when binders
-          (for ([x (in-list binders)])
-            (connect-syntaxes x var actual? (id-level phase-level x) connections)))
+      (define binders (get-ids all-binders var))
+      (when binders
+        (for ([x (in-list binders)])
+          (connect-syntaxes x var actual? (id-level phase-level x) connections)))
         
-        (when (and unused/phases phase-to-requires)
-          (let ([req-path/pr (get-module-req-path var phase-level)]
-                [source-req-path/pr (get-module-req-path var phase-level #:nominal? #f)])
-            (when (and req-path/pr source-req-path/pr)
-              (let* ([req-path (list-ref req-path/pr 0)]
-                     [id (list-ref req-path/pr 1)]
-                     [source-req-path (list-ref source-req-path/pr 3)]
-                     [source-id (list-ref source-req-path/pr 1)]
-                     [req-phase-level (list-ref req-path/pr 2)]
-                     [unused (hash-ref! unused/phases req-phase-level (λ () (make-hash)))]
-                     [requires (hash-ref! phase-to-requires req-phase-level (λ () (make-hash)))]
-                     [req-stxes (hash-ref requires req-path (λ () #f))])
-                (when req-stxes
-                  (hash-remove! unused req-path)
-                  (for-each (λ (req-stx) 
-                              (when (id/require-match? (syntax->datum var) 
-                                                       id 
-                                                       (syntax->datum req-stx))
-                                (when id
-                                  (define filename (get-require-filename source-req-path user-namespace user-directory))
-                                  (when filename
-                                    (add-jump-to-definition
-                                     var
-                                     source-id
-                                     filename)))
-                                (add-mouse-over var
-                                                (format 
-                                                 (string-constant cs-mouse-over-import)
-                                                 (syntax-e var)
-                                                 req-path))
-                                (connect-syntaxes req-stx var actual?
-                                                  (id-level phase-level var)
-                                                  connections)))
-                            req-stxes))))))))
-    
+      (when (and unused/phases phase-to-requires)
+        (define req-path/pr (get-module-req-path var phase-level))
+        (define source-req-path/pr (get-module-req-path var phase-level #:nominal? #f))
+        (when (and req-path/pr source-req-path/pr)
+          (define req-path (list-ref req-path/pr 0))
+          (define id (list-ref req-path/pr 1))
+          (define source-req-path (list-ref source-req-path/pr 3))
+          (define source-id (list-ref source-req-path/pr 1))
+          (define req-phase-level (list-ref req-path/pr 2))
+          (define require-ht (hash-ref! phase-to-requires req-phase-level #f))
+          (when require-ht
+            (define req-stxes (hash-ref require-ht req-path #f))
+            (when req-stxes
+              (define unused (hash-ref! unused/phases req-phase-level #f))
+              (when unused (hash-remove! unused req-path))
+              (for ([req-stx (in-list req-stxes)])
+                (when (id/require-match? (syntax->datum var) 
+                                         id 
+                                         (syntax->datum req-stx))
+                  (when id
+                    (define filename (get-require-filename source-req-path user-namespace user-directory))
+                    (when filename
+                      (add-jump-to-definition
+                       var
+                       source-id
+                       filename)))
+                  (define raw-module-path (phaseless-spec->raw-module-path req-stx))
+                  (add-mouse-over var
+                                  (format 
+                                   (string-constant cs-mouse-over-import)
+                                   (syntax-e var)
+                                   req-path))
+                  (connect-syntaxes (if (syntax-source raw-module-path)
+                                        raw-module-path
+                                        req-stx)
+                                    var actual?
+                                    (id-level phase-level var)
+                                    connections))))))))
+             
     (define (id/require-match? var id req-stx)
-      (cond
-        [(and (pair? req-stx)
-              (eq? (list-ref req-stx 0) 'prefix))
-         (let ([prefix (list-ref req-stx 1)])
-           (equal? (format "~a~a" prefix id)
-                   (symbol->string var)))]
-        [(and (pair? req-stx)
-              (eq? (list-ref req-stx 0) 'prefix-all-except))
-         (let ([prefix (list-ref req-stx 1)])
-           (and (not (memq id (cdddr req-stx)))
-                (equal? (format "~a~a" prefix id)
-                        (symbol->string var))))]
-        [(and (pair? req-stx)
-              (eq? (list-ref req-stx 0) 'rename))
-         (eq? (list-ref req-stx 2)
-              var)]
+      (match req-stx
+        [`(only ,_ . ,ids)
+         (and (memq id ids)
+              (eq? var id))]
+        [`(prefix ,prefix ,_)
+         (equal? (format "~a~a" prefix id)
+                 (symbol->string var))]
+        [`(all-except ,_ . ,ids)
+         (and (eq? var id)
+              (not (member var ids)))]
+        [`(prefix-all-except ,prefix ,_ . ,rest)
+         (and (not (memq id rest))
+              (equal? (format "~a~a" prefix id)
+                      (symbol->string var)))]
+        [`(rename ,_ ,local-id ,exported-id)
+         (eq? local-id var)]
         [else (eq? var id)]))
+    
+    (define (phaseless-spec->raw-module-path stx)
+      (syntax-case* stx (only prefix all-expect prefix-all-except rename) symbolic-compare?
+        [(only raw-module-path id ...) #'raw-module-path]
+        [(prefix prefix-id raw-module-path) #'raw-module-path]
+        [(all-except raw-module-path id ...) #'raw-module-path]
+        [(prefix-all-except prefix-id raw-module-path id ...) #'raw-module-path]
+        [(rename raw-module-path local-id exported-id) #'raw-module-path]
+        [_ stx]))
     
     
     ;; get-module-req-path : binding number [#:nominal? boolean] -> (union #f (list require-sexp sym ?? module-path))
@@ -788,23 +794,22 @@
     ;; annotate-require-open : namespace string -> (stx -> void)
     ;; relies on current-module-name-resolver, which in turn depends on
     ;; current-directory and current-namespace
-    (define (annotate-require-open user-namespace user-directory)
-      (λ (require-spec)
-        (when (syntax-original? require-spec)
-          (let ([source (find-source-editor require-spec)])
-            (when (and source
-                       (syntax-position require-spec)
-                       (syntax-span require-spec))
-              (let ([defs-text (current-annotations)])
-                (when defs-text
-                  (let* ([start (- (syntax-position require-spec) 1)]
-                         [end (+ start (syntax-span require-spec))]
-                         [file (get-require-filename (syntax->datum require-spec)
-                                                     user-namespace
-                                                     user-directory)])
-                    (when file
-                      (send defs-text syncheck:add-require-open-menu
-                            source start end file))))))))))
+    (define (annotate-require-open user-namespace user-directory require-spec)
+      (when (syntax-original? require-spec)
+        (define source (find-source-editor require-spec))
+        (when (and source
+                   (syntax-position require-spec)
+                   (syntax-span require-spec))
+          (define defs-text (current-annotations))
+          (when defs-text
+            (define start (- (syntax-position require-spec) 1))
+            (define end (+ start (syntax-span require-spec)))
+            (define file (get-require-filename (syntax->datum require-spec)
+                                               user-namespace
+                                               user-directory))
+            (when file
+              (send defs-text syncheck:add-require-open-menu
+                    source start end file))))))
     
     ;; get-require-filename : sexp-or-module-path-index namespace string[directory] -> filename or #f
     ;; finds the filename corresponding to the require in stx
@@ -1129,10 +1134,22 @@
                                   (for/or ([(level id-set) (in-hash phase-to-map)])
                                     (get-ids id-set new-id))))))))
                       #t))
-               (send defs-text syncheck:add-rename-menu
-                     id-as-sym
-                     loc-lst
-                     name-dup?)))))))
+               (define max-to-send-at-once 30)
+               (let loop ([loc-lst loc-lst]
+                          [len (length loc-lst)])
+                 (cond
+                   [(<= len max-to-send-at-once)
+                    (send defs-text syncheck:add-rename-menu
+                          id-as-sym
+                          loc-lst
+                          name-dup?)]
+                   [else
+                    (send defs-text syncheck:add-rename-menu
+                          id-as-sym
+                          (take loc-lst max-to-send-at-once)
+                          name-dup?)
+                    (loop (drop loc-lst max-to-send-at-once)
+                          (- len max-to-send-at-once))]))))))))
     
     ;; remove-duplicates-stx : (listof syntax[original]) -> (listof syntax[original])
     ;; removes duplicates, based on the source locations of the identifiers

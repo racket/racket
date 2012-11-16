@@ -4,13 +4,19 @@
          racket/system
          setup/dirs)
 
-(define-syntax-rule (test expect expr)
-  (let ([val expr]
-        [ex expect])
-    (printf "~s\n" 'expr)
-    (unless (equal? ex val)
-      (error 'test "~s failed: ~e" 'expr val))
-    (set! count (add1 count))))
+(define-syntax test
+  (syntax-rules ()
+    [(_ expect expr)
+     (test expect #:alts '() expr)]
+    [(_ expect #:alts alts-expr expr)
+     (let ([val expr]
+	   [ex expect]
+	   [alts alts-expr])
+       (printf "~s\n" 'expr)
+       (unless (or (equal? ex val)
+		   (member val alts))
+         (error 'test "~s failed: ~e" 'expr val))
+       (set! count (add1 count)))]))
 
 (define count 0)
 
@@ -130,8 +136,8 @@
   (test "The Racket Language" (com-get-property ie "Document" "title"))
   (test (void) (com-set-property! ie "Document" "title" "The Racket Documentation"))
   (test "The Racket Documentation" (com-get-property ie "Document" "title"))
-  (test '(-> () string) (com-get-property-type doc "title"))
-  (test '(-> (string) void) (com-set-property-type doc "title"))
+  (test '(-> () string) #:alts '((-> () any)) (com-get-property-type doc "title"))
+  (test '(-> (string) void) #:alts '((-> (any) void)) (com-set-property-type doc "title"))
 
   (test (void) (com-set-property! ie "Visible" #t))
   (test (void) (com-invoke ie "Quit"))

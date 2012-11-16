@@ -11,4 +11,5 @@
          "base-interfaces.rkt"
          "contract.rkt"
          "from-unstable.rkt"
-         "poly-contracts.rkt")
+         "poly-contracts.rkt"
+         "empty-interface.rkt")

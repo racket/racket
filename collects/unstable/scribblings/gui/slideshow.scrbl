@@ -157,6 +157,56 @@ perform a transformation.  The macros @racket[pict-if], @racket[pict-cond],
 which change naturally between stages.
 }
 
+@section{Revealing Slides}
+
+@addition{Jon Rafkind}
+
+@defform[(reveal number expr ...)]{
+
+Expands to either @racket[(show expr ...)] or @racket[(hide expr ...)] if
+@racket[number] is greater than or equal to the current revealed slide within a
+@racket[revealing-slide].
+
+}
+
+@defform[(revealing-slide expr ...)]{
+
+Creates N slides where N is the maximum number given to a @racket[reveal]
+expression as the first argument. Each slide has the current reveal number
+incremented by one so progressive slides can reveal picts in that appear in
+arbitrary places.
+
+@racketblock[
+(revealing-slide
+  (hc-append (reveal 0 @t{I show up first})
+             (reveal 1 @t{I show up second}))
+  (reveal 1 @t{I also show up second}))
+]
+
+}
+
+@defform[(items-slide (name ...) expr ...)]{
+
+Creates N slides where N is the maximum number given to a @racket[reveal]
+similar to @racket[revealing-slide]. Each slide will show the names on the left
+hand side using right justification and only one reveal will be displayed on the
+right. The order of the names will be matched with the current reveal number so
+the first item will be displayed while the first reveal is displayed. Reveals
+that are not active will have their corresponding items displayed but in a light
+font so as to indicate inactivity.
+
+@racketblock[
+(items-slide ("item1" "item2" "item3")
+  (reveal 0
+    @t{I will show up for item1})
+  (reveal 1
+    @t{I will show up for item2})
+  (reveal 2
+    @t{I will show up for item3}))
+]
+
+}
+
 @section{Miscellaneous Slide Utilities}
 
 @addition{Scott Owens}

@@ -96,7 +96,7 @@ function GotoPLTRoot(ver, relative) {
 
 // Utilities ------------------------------------------------------------------
 
-normalize_rxs = [/\/\/+/g, /\/\.(\/|$)/, /\/[^\/]*\/\.\.(\/|$)/];
+var normalize_rxs = [/\/\/+/g, /\/\.(\/|$)/, /\/[^\/]*\/\.\.(\/|$)/];
 function NormalizePath(path) {
   var tmp, i;
   for (i = 0; i < normalize_rxs.length; i++)

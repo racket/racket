@@ -20,7 +20,6 @@
   (class %
     (inherit on-set-focus
              on-kill-focus
-             try-mouse
              wndproc)
 
     (init-field [callback void])
@@ -30,17 +29,15 @@
     (super-new)
     
     (define/public (ctlproc w msg wParam lParam default)
-      (if (try-mouse w msg wParam lParam)
-          0
-          (cond
-           [(= msg WM_SETFOCUS)
-            (queue-window-event this (lambda () (on-set-focus)))
-            (default w msg wParam lParam)]
-           [(= msg WM_KILLFOCUS)
-            (queue-window-event this (lambda () (on-kill-focus)))
-            (default w msg wParam lParam)]
-           [else
-            (wndproc-for-ctlproc w msg wParam lParam default)])))
+     (cond
+      [(= msg WM_SETFOCUS)
+       (queue-window-event this (lambda () (on-set-focus)))
+       (default w msg wParam lParam)]
+      [(= msg WM_KILLFOCUS)
+       (queue-window-event this (lambda () (on-kill-focus)))
+       (default w msg wParam lParam)]
+      [else
+       (wndproc-for-ctlproc w msg wParam lParam default)]))
 
     (define/public (wndproc-for-ctlproc w msg wParam lParam default)
       (wndproc w msg wParam lParam default))))

@@ -261,11 +261,11 @@
     ;; Represent modules with lists starting with the filename, so we
     ;; can use assoc:
     (define (make-mod normal-file-path normal-module-path 
-                      code name prefix full-name relative-mappings 
+                      code name prefix full-name relative-mappings-box 
                       runtime-paths runtime-module-syms
                       actual-file-path)
       (list normal-file-path normal-module-path code
-            name prefix full-name relative-mappings 
+            name prefix full-name relative-mappings-box
             runtime-paths runtime-module-syms 
             actual-file-path))
     
@@ -275,7 +275,7 @@
     (define (mod-name m) (list-ref m 3))
     (define (mod-prefix m) (list-ref m 4))
     (define (mod-full-name m) (list-ref m 5))
-    (define (mod-mappings m) (list-ref m 6))
+    (define (mod-mappings m) (unbox (list-ref m 6)))
     (define (mod-runtime-paths m) (list-ref m 7))
     (define (mod-runtime-module-syms m) (list-ref m 8))
     (define (mod-actual-file m) (list-ref m 9))
@@ -420,7 +420,7 @@
                 (set-box! codes
                           (cons (make-mod filename module-path code 
                                           name prefix full-name
-                                          null null null
+                                          (box null) null null
                                           actual-filename)
                                 (unbox codes)))]
                [code
@@ -527,7 +527,7 @@
                               (set-box! codes
                                         (cons (make-mod filename module-path #f
                                                         #f #f #f
-                                                        null null null
+                                                        (box null) null null
                                                         actual-filename)
                                               (unbox codes))))
                             ;; Build up relative module resolutions, relative to this one,
@@ -538,34 +538,35 @@
                                                              (mod-full-name m)
                                                              ;; must have been a cycle...
                                                              (hash-ref working sub-filename))))]
-                                   [mappings (append
-                                              (map (lambda (sub-i sub-filename sub-path)
-                                                     (and (not (and collects-dest
-                                                                    (is-lib-path? sub-path)))
-                                                          (let-values ([(path base) (module-path-index-split sub-i)])
-                                                            (and base ; can be #f if path isn't relative
-                                                                 (begin
-                                                                   ;; Assert: base should refer to this module:
-                                                                   (let-values ([(path2 base2) (module-path-index-split base)])
-                                                                     (when (or path2 base2)
-                                                                       (error 'embed "unexpected nested module path index")))
-                                                                   (cons path (lookup-full-name sub-filename)))))))
-                                                   all-file-imports sub-files sub-paths)
-                                              (map (lambda (m)
-                                                     (define name (cadr (module-compiled-name m)))
-                                                     (cons `(submod "." ,name)
-                                                           (lookup-full-name 
-                                                            (collapse-module-path-index 
-                                                             (module-path-index-join `(submod "." ,name) #f)
-                                                             filename))))
-                                                   (append pre-submods post-submods)))])
+                                   [get-submod-mapping
+                                    (lambda (m)
+                                      (define name (cadr (module-compiled-name m)))
+                                      (cons `(submod "." ,name)
+                                            (lookup-full-name 
+                                             (collapse-module-path-index 
+                                              (module-path-index-join `(submod "." ,name) #f)
+                                              filename))))]
+                                   [mappings-box
+                                    (box (append
+                                          (filter (lambda (p) (and p (cdr p)))
+                                                  (map (lambda (sub-i sub-filename sub-path)
+                                                         (and (not (and collects-dest
+                                                                        (is-lib-path? sub-path)))
+                                                              (let-values ([(path base) (module-path-index-split sub-i)])
+                                                                (and base ; can be #f if path isn't relative
+                                                                     (begin
+                                                                       ;; Assert: base should refer to this module:
+                                                                       (let-values ([(path2 base2) (module-path-index-split base)])
+                                                                         (when (or path2 base2)
+                                                                           (error 'embed "unexpected nested module path index")))
+                                                                       (cons path (lookup-full-name sub-filename)))))))
+                                                       all-file-imports sub-files sub-paths))
+                                          (map get-submod-mapping pre-submods)))])
                               ;; Record the module
                               (set-box! codes
                                         (cons (make-mod filename module-path code 
                                                         name prefix full-name
-                                                        (filter (lambda (p)
-                                                                  (and p (cdr p)))
-                                                                mappings)
+                                                        mappings-box
                                                         runtime-paths
                                                         ;; extract runtime-path module symbols:
                                                         (let loop ([runtime-paths runtime-paths]
@@ -581,7 +582,11 @@
                                                         actual-filename)
                                               (unbox codes)))
                               ;; Add code for post submodules:
-                              (for-each get-one-submodule-code post-submods)))))))]
+                              (for-each get-one-submodule-code post-submods)
+                              ;; Add post-submodule mappings:
+                              (set-box! mappings-box
+                                        (append (unbox mappings-box)
+                                                (map get-submod-mapping post-submods)))))))))]
                [else
                 (set-box! codes
                           (cons (make-mod filename module-path code 
@@ -658,41 +663,8 @@
              (hash-set! regs 
                         (namespace-module-registry (current-namespace))
                         (vector mapping-table library-table))
-             (letrec-values ([(embedded-resolver)
-                              (case-lambda 
-                               [(name from-namespace)
-                                ;; A notification
-                                (if from-namespace
-                                  ;; If the source namespace has a mapping for `name',
-                                  ;; then copy it to the current namespace.
-                                  (let-values ([(name) (if name (resolved-module-path-name name) #f)])
-                                    (let-values ([(src-vec) (hash-ref regs (namespace-module-registry from-namespace) #f)])
-                                      (let-values ([(a) (if src-vec
-                                                            (assq name (vector-ref src-vec 0))
-                                                            #f)])
-                                        (if a
-                                            (let-values ([(vec) (hash-ref regs (namespace-module-registry (current-namespace))
-                                                                          (lambda ()
-                                                                            (let-values ([(vec) (vector null null)])
-                                                                              (hash-set! regs (namespace-module-registry (current-namespace)) vec)
-                                                                              vec)))])
-                                              ;; add mapping:
-                                              (vector-set! vec 0 (cons a (vector-ref vec 0)))
-                                              ;; add library mappings:
-                                              (vector-set! vec 1 (append 
-                                                                  (letrec-values ([(loop)
-                                                                                   (lambda (l)
-                                                                                     (if (null? l)
-                                                                                         null
-                                                                                         (if (eq? (cdar l) name)
-                                                                                             (cons (car l) (loop (cdr l)))
-                                                                                             (loop (cdr l)))))])
-                                                                    (loop library-table))
-                                                                  (vector-ref vec 1))))
-                                            (void)))))
-                                  (void))
-                                (orig name from-namespace)]
-                               [(name rel-to stx load?)
+             (letrec-values ([(lookup)
+                              (lambda (name rel-to stx load? orig)
                                 (if (not (module-path? name))
                                     ;; Bad input
                                     (orig name rel-to stx load?)
@@ -867,7 +839,58 @@
                                                           ;; Have it:
                                                           (make-resolved-module-path (cdr a3))
                                                           ;; Let default handler try:
-                                                          (orig name rel-to stx load?))))))))))])])
+                                                          (orig name rel-to stx load?)))))))))))]
+                             [(embedded-resolver)
+                              (case-lambda 
+                               [(name from-namespace)
+                                ;; A notification
+                                (if from-namespace
+                                  ;; If the source namespace has a mapping for `name',
+                                  ;; then copy it to the current namespace.
+                                  (let-values ([(name) (if name (resolved-module-path-name name) #f)])
+                                    (let-values ([(src-vec) (hash-ref regs (namespace-module-registry from-namespace) #f)])
+                                      (let-values ([(a) (if src-vec
+                                                            (assq name (vector-ref src-vec 0))
+                                                            #f)])
+                                        (if a
+                                            (let-values ([(vec) (hash-ref regs (namespace-module-registry (current-namespace))
+                                                                          (lambda ()
+                                                                            (let-values ([(vec) (vector null null)])
+                                                                              (hash-set! regs (namespace-module-registry (current-namespace)) vec)
+                                                                              vec)))])
+                                              ;; add mapping:
+                                              (vector-set! vec 0 (cons a (vector-ref vec 0)))
+                                              ;; add library mappings:
+                                              (vector-set! vec 1 (append 
+                                                                  (letrec-values ([(loop)
+                                                                                   (lambda (l)
+                                                                                     (if (null? l)
+                                                                                         null
+                                                                                         (if (eq? (cdar l) name)
+                                                                                             (cons (car l) (loop (cdr l)))
+                                                                                             (loop (cdr l)))))])
+                                                                    (loop library-table))
+                                                                  (vector-ref vec 1))))
+                                            (void)))))
+                                  (void))
+                                (orig name from-namespace)]
+                               [(name rel-to stx load?)
+                                (lookup name rel-to stx load?
+                                        (lambda (name rel-to stx load?)
+                                          ;; For a submodule, if we have a mapping for the base name,
+                                          ;; then don't try the original handler.
+                                          (let-values ([(base)
+                                                        (if (pair? name)
+                                                            (if (eq? (car name) 'submod)
+                                                                (lookup (cadr name) rel-to stx load? (lambda (n r s l?) #f))
+                                                                #f)
+                                                            #f)])
+                                            (if base
+                                                ;; don't chain to `orig':
+                                                (make-resolved-module-path
+                                                 (list* 'submod (resolved-module-path-name base) (cddr name)))
+                                                ;; chain to `orig':
+                                                (orig name rel-to stx load?)))))])])
                (current-module-name-resolver embedded-resolver))))))
 
     (define (ss<->rkt path)

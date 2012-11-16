@@ -1,6 +1,8 @@
 #lang scribble/doc
 @(require "common.rkt")
 
+@centered{@image[#:suffixes @list[".png"]]{image/combo-field}}
+
 @defclass/title[combo-field% text-field% ()]{
 
 A @racket[combo-field%] object is a @racket[text-field%]

@@ -449,6 +449,20 @@
     (test n      array-ref ar 19 9 4))
   (for-each t '(1 2 3)))
 
+;; test casting of GCable and offset pointers:
+(let ()
+  (define _thing-pointer (_cpointer 'thing))
+  (define _stuff-pointer (_cpointer 'stuff))
+  
+  (define p (cast (ptr-add (malloc 10) 5) _pointer _thing-pointer))
+  (cpointer-gcable? p)
+  (define q (cast p _thing-pointer _stuff-pointer))
+  (test (cast p _pointer _intptr)
+        cast q _pointer _intptr)
+  (collect-garbage)
+  (test (cast p _thing-pointer _intptr)
+        cast q _stuff-pointer _intptr))
+
 (delete-test-files)
 
 (report-errs)

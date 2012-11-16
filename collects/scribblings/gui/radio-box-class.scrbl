@@ -1,6 +1,8 @@
 #lang scribble/doc
 @(require "common.rkt")
 
+@centered{@image[#:suffixes @list[".png"]]{image/radio-box}}
+
 @defclass/title[radio-box% object% (control<%>)]{
 
 

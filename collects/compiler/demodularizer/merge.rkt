@@ -59,7 +59,7 @@
 
 (define (compute-new-modvar mv rw)
   (match mv
-    [(struct module-variable (modidx sym pos phase))
+    [(struct module-variable (modidx sym pos phase constantness))
      (match rw
        [(struct modvar-rewrite (self-modidx provide->toplevel))
         (log-debug (format "Rewriting ~a of ~S" pos (mpi->path* modidx)))
@@ -76,7 +76,7 @@
                [remap empty])
       ([tl (in-list mod-toplevels)])
       (match tl
-        [(and mv (struct module-variable (modidx sym pos phase)))
+        [(and mv (struct module-variable (modidx sym pos phase constantness)))
          (define rw ((current-get-modvar-rewrite) modidx))
          ; XXX We probably don't need to deal with #f phase
          (unless (or (not phase) (zero? phase))

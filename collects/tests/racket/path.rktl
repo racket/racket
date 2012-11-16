@@ -877,4 +877,31 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(let ([reroot-path/u
+       (lambda (a b)
+         (bytes->string/utf-8
+          (path->bytes
+           (reroot-path (bytes->path (string->bytes/utf-8 a) 'unix)
+                        (bytes->path (string->bytes/utf-8 b) 'unix)))))])
+  (test "b/x/a" reroot-path/u "/x/a" "b")
+  (test "b" reroot-path/u "/" "b")
+  (test "b/x/y/z" reroot-path/u "//x//y//z" "b")
+  (test "/tmp/b/x/y/z" reroot-path/u "//x//y//z" "/tmp/b"))
+
+(let ([reroot-path/w
+       (lambda (a b)
+         (bytes->string/utf-8
+          (path->bytes
+           (reroot-path (bytes->path (string->bytes/utf-8 a) 'windows)
+                        (bytes->path (string->bytes/utf-8 b) 'windows)))))])
+  (test "b\\c\\x\\a" reroot-path/w "c:/x/a" "b")
+  (test "b\\z\\" reroot-path/w "z:/" "b")
+  (test "b\\UNC\\machine\\folder\\a" reroot-path/w "//machine/folder/a" "b")
+  (test "q:/tmp/b\\x\\y\\z" reroot-path/w "x://y//z" "q:/tmp/b")
+  (test "\\\\?\\q:\\tmp\\b\\c\\x/y" reroot-path/w "\\\\?\\c:\\x/y" "q:/tmp/b")
+  (test "\\\\?\\q:\\tmp\\b\\UNC\\machine\\path\\x/y\\z" 
+        reroot-path/w "\\\\?\\UNC\\machine\\path\\x/y\\z" "q:/tmp/b"))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

@@ -160,13 +160,14 @@
   (in-heap/consume! (heap-copy h)))
 
 (define (in-heap/consume! h)
-  (lambda ()
-    (values (lambda () (heap-min h))
-            (lambda () (heap-remove-min! h) #t)
-            #t
-            (lambda (_) (> (heap-count h) 0))
-            (lambda _ #t)
-            (lambda _ #t))))
+  (make-do-sequence
+   (lambda ()
+     (values (lambda (_) (heap-min h))
+             (lambda (_) (heap-remove-min! h) #t)
+             #t
+             (lambda (_) (> (heap-count h) 0))
+             (lambda _ #t)
+             (lambda _ #t)))))
 
 ;; --------
 
@@ -204,4 +205,7 @@
  [heap->vector (-> heap? vector?)]
  [heap-copy (-> heap? heap?)]
 
- [heap-sort! (-> procedure? vector? void?)])
+ [heap-sort! (-> procedure? vector? void?)]
+ 
+ [in-heap (-> heap? sequence?)]
+ [in-heap/consume! (-> heap? sequence?)])

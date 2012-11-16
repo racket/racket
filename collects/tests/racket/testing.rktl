@@ -222,11 +222,14 @@ transcript.
 
 (define no-extra-if-tests? #f)
 
-(define (syntax-test expr)
+(define (syntax-test expr [rx #f])
   (error-test expr exn:fail:syntax?)
   (unless no-extra-if-tests?
     (error-test (datum->syntax expr `(if #f ,expr (void)) expr)
-                exn:fail:syntax?)))
+                (lambda (x)
+                  (and (exn:fail:syntax? x)
+                       (or (not rx)
+                           (regexp-match? rx (exn-message x))))))))
 
 (define arity-test
   (case-lambda

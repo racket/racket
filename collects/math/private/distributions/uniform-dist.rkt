@@ -10,7 +10,7 @@
          fluniform-cdf
          fluniform-inv-cdf
          fluniform-random
-         Uniform-Distribution uniform-dist uniform-dist? uniform-dist-min uniform-dist-max)
+         Uniform-Dist uniform-dist uniform-dist? uniform-dist-min uniform-dist-max)
 
 (: unsafe-fluniform-pdf (Float Float Float Any -> Float))
 (define (unsafe-fluniform-pdf a b x log?)
@@ -82,12 +82,12 @@
 
 (begin-encourage-inline
   
-  (define-distribution-type: uniform-dist
-    Uniform-Distribution Real-Distribution ([min : Float] [max : Float]))
+  (define-distribution-type: Uniform-Dist (Ordered-Dist Real Flonum)
+    uniform-dist ([min : Float] [max : Float]))
   
-  (: uniform-dist (case-> (-> Uniform-Distribution)
-                          (Real -> Uniform-Distribution)
-                          (Real Real -> Uniform-Distribution)))
+  (: uniform-dist (case-> (-> Uniform-Dist)
+                          (Real -> Uniform-Dist)
+                          (Real Real -> Uniform-Dist)))
   (define uniform-dist
     (case-lambda
       [()   (uniform-dist 0.0 1.0)]
@@ -102,6 +102,6 @@
            (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [1-p? : Any #f])
                              (unsafe-fluniform-inv-cdf a b (fl p) log? 1-p?)))
            (define (random) (fluniform-random a b))
-           (make-uniform-dist pdf cdf inv-cdf random a b (delay (fl* 0.5 (fl+ a b))) a b)))]))
+           (make-uniform-dist pdf random cdf inv-cdf a b (delay (fl* 0.5 (fl+ a b))) a b)))]))
   
   )

@@ -10,7 +10,7 @@
          fllogistic-cdf
          fllogistic-inv-cdf
          fllogistic-random
-         Logistic-Distribution logistic-dist logistic-dist? logistic-dist-center logistic-dist-scale)
+         Logistic-Dist logistic-dist logistic-dist? logistic-dist-center logistic-dist-scale)
 
 (: fllogistic-pdf (Float Float Float Any -> Float))
 (define fllogistic-pdf
@@ -60,12 +60,12 @@
 
 (begin-encourage-inline
   
-  (define-distribution-type: logistic-dist
-    Logistic-Distribution Real-Distribution ([center : Float] [scale : Float]))
+  (define-distribution-type: Logistic-Dist (Ordered-Dist Real Flonum)
+    logistic-dist ([center : Float] [scale : Float]))
   
-  (: logistic-dist (case-> (-> Logistic-Distribution)
-                           (Real -> Logistic-Distribution)
-                           (Real Real -> Logistic-Distribution)))
+  (: logistic-dist (case-> (-> Logistic-Dist)
+                           (Real -> Logistic-Dist)
+                           (Real Real -> Logistic-Dist)))
   (define (logistic-dist [c 0.0] [s 1.0])
     (let ([c  (fl c)] [s   (fl s)])
       (define pdf (opt-lambda: ([x : Real] [log? : Any #f])
@@ -75,6 +75,6 @@
       (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [1-p? : Any #f])
                         (fllogistic-inv-cdf c s (fl p) log? 1-p?)))
       (define (random) (fllogistic-random c s))
-      (make-logistic-dist pdf cdf inv-cdf random -inf.0 +inf.0 (delay c) c s)))
+      (make-logistic-dist pdf random cdf inv-cdf -inf.0 +inf.0 (delay c) c s)))
   
   )

@@ -190,7 +190,9 @@
             (syntax-case body ( begin
                                 define-values
                                 define-syntaxes
-                                define-for-syntaxes
+                                begin-for-syntax
+                                module
+                                module*
                                 #%require
                                 #%provide )
               [(begin expr ...)
@@ -202,7 +204,9 @@
                    (letrec-syntaxes ([(sp-id) (syntax-local-value (quote-syntax temp-id))] ...)
                      rhs)))]
               [(define-syntaxes . _) body]
-              [(define-for-syntaxes . _) body]
+              [(begin-for-syntax . _) body]
+              [(module . _) body]
+              [(module* . _) body]
               [(#%require . _) body]
               [(#%provide . _) body]
               [expr (syntax/loc body

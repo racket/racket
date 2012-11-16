@@ -6,6 +6,7 @@
          "../private/matcher.rkt"
          "../private/term.rkt"
          "../private/rg.rkt"
+         "../private/generate-term.rkt"
          "../private/keyword-macros.rkt"
          "../private/error.rkt")
 
@@ -227,9 +228,15 @@
           (parameterize ([current-namespace ns])
             (expand #'(generate-term M n))))
         #rx"generate-term: expected an identifier defined by define-language([\n ]+in: M)?(\n|$)")
-  (test-contract-violation/client (generate-term L n 1.5))
-  (test-contract-violation/client (generate-term L n 1 #:retries .5))
-  (test-contract-violation/client (generate-term L n 1 #:attempt-num .5))
+  (test (with-handlers ([exn:fail:contract? exn-message])
+          (generate-term L n 1.5))
+        #rx"generate-term: contract violation([\n ]+)expected: natural number.*")
+  (test (with-handlers ([exn:fail:contract? exn-message])
+          (generate-term L n 1 #:retries .5))
+        #rx"generate-term: contract violation([\n ]+)expected: natural number.*")
+  (test (with-handlers ([exn:fail:contract? exn-message])
+          (generate-term L n 1 #:attempt-num .5))
+        #rx"generate-term: contract violation([\n ]+)expected: natural number.*")
   (test-contract-violation/client "#:source" (generate-term #:source 'not-a-reduction-relation)))
 
 (let ([set-rand-2 
@@ -1278,6 +1285,55 @@
           (repeat (name variable_1 variable) ..._3 #f)
           (repeat (name variable_1 variable) ..._4 #f))
    '((..._1 . ..._4) (..._2 . ..._4) (..._3 . ..._4))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;  #:satisfying tests
+;;
+(let ()
+  (define-language nats [n z (s n)])
+
+  (define-judgment-form nats
+    #:mode (sum I I O)
+    [-----------
+     (sum z n n)]
+    [(sum n_1 (s n_2) n_3)
+     -------------------------
+     (sum (s n_1) n_2 n_3)])
+
+  (test (generate-term L
+                       #:satisfying
+                       (sum z z n)
+                       5)
+        '(sum z z z))
+
+  (test (generate-term L
+                       #:satisfying
+                       (sum (s z) (s z) n)
+                       5)
+        '(sum (s z) (s z) (s (s z)))))
+
+(let ()
+  (define-language nats [n z (s n)])
+  
+  (define-metafunction nats
+    [(sum z n) n]
+    [(sum (s n_1) n_2) (sum n_1 (s n_2))])
+
+  (test (generate-term nats
+                       #:satisfying
+                       (sum z z)
+                       n
+                       5)
+        '((sum z z) = z))
+
+  (test (generate-term nats
+                       #:satisfying
+                       (sum (s z) (s z))
+                       n
+                       5)
+        '((sum (s z) (s z)) = (s (s z)))))
+
 
 ;; redex-test-seed
 (let ([seed 0])

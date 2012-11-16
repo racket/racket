@@ -60,3 +60,4 @@ to call methods by name and with safe argument marshaling.
 
 @include-section["com-auto.scrbl"]
 @include-section["com-intf.scrbl"]
+@include-section["active-x.scrbl"]

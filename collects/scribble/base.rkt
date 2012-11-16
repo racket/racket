@@ -426,7 +426,8 @@
                 #:rest (listof pre-flow?)
                 compound-paragraph?)]
  [tabular (->* ((listof (listof (or/c 'cont block? content?))))
-               (#:style (or/c style? string? symbol? #f ))
+               (#:style (or/c style? string? symbol? #f)
+                #:sep (or/c content? block? #f))
                table?)])
 
 (define (convert-block-style style)
@@ -447,7 +448,7 @@
   (make-compound-paragraph (convert-block-style style)
                            (decode-flow c)))
 
-(define (tabular #:style [style #f] cells)
+(define (tabular #:style [style #f] #:sep [sep #f] cells)
   (define (nth-str pos)
     (case (modulo pos 10)
       [(1) "st"]
@@ -476,12 +477,15 @@
        row)))
   (make-table (convert-block-style style)
               (map (lambda (row)
-                     (map (lambda (cell)
-                            (cond
-                             [(eq? cell 'cont) cell]
-                             [(block? cell) cell]
-                             [else (make-paragraph plain cell)]))
-                          row))
+                     (define (cvt cell)
+                       (cond
+                        [(eq? cell 'cont) cell]
+                        [(block? cell) cell]
+                        [else (make-paragraph plain cell)]))
+                     (define l (map cvt row))
+                     (if sep
+                         (add-between l (cvt sep))
+                         l))
                    cells)))
 
 ;; ----------------------------------------

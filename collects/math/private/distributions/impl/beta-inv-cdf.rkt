@@ -1,7 +1,5 @@
 #lang typed/racket/base
 
-;(module defs typed/racket/base
-
 (require racket/fixnum
          "../../../flonum.rkt"
          "../../functions/beta.rkt"
@@ -11,7 +9,6 @@
          "normal-inv-cdf.rkt")
 
 (provide flbeta-inv-cdf)
-;(provide (all-defined-out))
 
 ;; =================================================================================================
 ;; Initial approximation
@@ -101,12 +98,12 @@
 (define (flbeta-inv-log-cdf-appx a b log-p log-1-p)
   (cond [(or (a . fl< . 10.0) (b . fl< . 10.0))
          (define x (bound-estimate (flbeta-inv-log-cdf-appx-asym a b log-p log-1-p)))
-         (values x (fllog-beta-lower-regularized a b x))]
+         (values x (fllog-beta-inc a b x #f #t))]
         [else
          (define x0 (bound-estimate (flbeta-inv-log-cdf-appx-asym a b log-p log-1-p)))
          (define x1 (bound-estimate (flbeta-inv-log-cdf-appx-normal a b log-p log-1-p)))
-         (define real-log-p0 (fllog-beta-lower-regularized a b x0))
-         (define real-log-p1 (fllog-beta-lower-regularized a b x1))
+         (define real-log-p0 (fllog-beta-inc a b x0 #f #t))
+         (define real-log-p1 (fllog-beta-inc a b x1 #f #t))
          (if ((flabs (fl- log-p real-log-p0)) . fl< . (flabs (fl- log-p real-log-p1)))
              (values x0 real-log-p0)
              (values x1 real-log-p1))]))
@@ -141,7 +138,7 @@
   (let loop ([dx 0.0] [x x] [real-log-p real-log-p] [fac 1.0] [#{c : Nonnegative-Fixnum} 1])
     (define-values (new-dx new-fac) (newton-lower-log-iter a b log-p x real-log-p fac))
     (define new-x (fl+ x new-dx))
-    (define new-real-log-p (fllog-beta-lower-regularized a b new-x))
+    (define new-real-log-p (fllog-beta-inc a b new-x #f #t))
     ;(printf "~v ~v ~v~n" new-x new-dx new-fac)
     (cond [(or (fl<= (flabs (fl- real-log-p new-real-log-p))
                      (flabs (fl* (fl* 1000.0 epsilon.0) new-real-log-p)))
@@ -152,7 +149,7 @@
            (let ([new-fac  (if (fl= (flsgn dx) (flsgn new-dx))
                                (flmin 1.0 (fl* new-fac 2.0))
                                (fl* (flmin new-fac 1.0) 0.5))])
-             (loop new-dx new-x (fllog-beta-lower-regularized a b new-x) new-fac (fx+ c 1)))]
+             (loop new-dx new-x (fllog-beta-inc a b new-x #f #t) new-fac (fx+ c 1)))]
           [else
            new-x])))
 
@@ -184,8 +181,8 @@
         [else
          (define mid-log-p
            (if (a . fl> . b)
-               (lg1- (fllog-beta-lower-regularized b a (fl/ b (fl+ a b))))
-               (fllog-beta-lower-regularized a b (fl/ a (fl+ a b)))))
+               (lg1- (fllog-beta-inc b a (fl/ b (fl+ a b)) #f #t))
+               (fllog-beta-inc a b (fl/ a (fl+ a b)) #f #t)))
          (let-values ([(a b log-p log-1-p 1-?)  (if (log-p . fl< . mid-log-p)
                                                     (values a b log-p log-1-p #f)
                                                     (values b a log-1-p log-p #t))])
@@ -209,99 +206,3 @@
                   (flbeta-inv-log-cdf* a b log-p log-1-p))]
                [else
                 +nan.0])]))
-
-
-#|
-  )
-
-(require 'defs plot
-         "../../../flonum.rkt"
-         "../../../bigfloat.rkt"
-         "../../functions/beta.rkt"
-         "../../functions/incomplete-beta.rkt"
-         "../dist-struct.rkt"
-         "beta-pdf.rkt"
-         "beta-utils.rkt")
-
-(define a 1.4280969904206666)
-(define b 1.0756718200854635e-16)
-(define log-p (fllog 1.0381437356760724e-15))
-
-(plot (list (inverse (λ (x) (fllog-beta-lower-regularized a b (fl x))))
-            (function (λ (p) (flbeta-inv-log-cdf a b (fl p)))
-                      #:color 2 #:style 'long-dash #:width 2)
-            (function (λ (p) (flbeta-inv-log-cdf-appx a b (fl p) (lg1- (fl p))))
-                      #:color 3 #:style 'short-dash)
-            )
-      ;#:y-min 0.0 ;#:y-max 1e-300
-      #:x-min -40.0 ;(fllog-beta-lower-regularized a b +min.0)
-      #:x-max (fllog-beta-lower-regularized a b (flprev 1.0))
-      )
-
-(plot (function
-       (λ (p)
-         (flbeta-inv-log-cdf a b (fl p))
-         (define cs (get-cs))
-         (cond [(empty? cs)  0]
-               [else  (first cs)])))
-      #:x-min -40.0 ;(fllog-beta-lower-regularized a b +min.0)
-      #:x-max (fllog-beta-lower-regularized a b (flprev 1.0))
-      #:y-max 20
-      )
-
-(require "../dist-struct.rkt"
-         "../exponential-dist.rkt"
-         "../uniform-dist.rkt")
-
-(define dist1 (exp-dist 1e-16))
-(define dist2 (exp-dist 1.0))
-(define dist3 (exp-dist 1e16))
-(define threshold 1e-7)
-
-(define (random-param)
-  (define r (random))
-  (cond [(r . < . #i1/3)  (random-real dist1)]
-        [(r . < . #i2/3)  (random-real dist2)]
-        [else  (random-real dist3)]))
-#;
-(for ([_  (in-range 1000)])
-  (define a (random-param))
-  (define b (random-param))
-  (define min-p (flbeta-lower-regularized a b +min.0))
-  (define max-p (flbeta-lower-regularized a b (flprev 1.0)))
-  (define min-log-p (fllog-beta-lower-regularized a b +min.0))
-  (define max-log-p (fllog-beta-lower-regularized a b (flprev 1.0)))
-  (define p (random-real (uniform-dist min-p max-p)))
-  (define log-p (random-real (uniform-dist min-log-p max-log-p)))
-  
-  (define printed? #f)
-  (define (print-header)
-    (unless printed?
-      (set! printed? #t)
-      (printf "a = ~v  b = ~v~n" a b)))
-  
-  (define x0 (flbeta-inv-cdf a b p))
-  (define p0 (flbeta-lower-regularized a b x0))
-  (define err0 (relative-error p0 p))
-  (when (err0 . > . threshold)
-    (define p-prev (flbeta-lower-regularized a b (flprev x0)))
-    (define p-next (flbeta-lower-regularized a b (flnext x0)))
-    (when (not (and (p . >= . p-prev) (p . <= . p-next)))
-      (print-header)
-      (printf "input: ~v~n" p)
-      (printf "err0 = ~v~n" err0)))
-  
-  (define x1 (flbeta-inv-log-cdf a b log-p))
-  (define log-p1 (fllog-beta-lower-regularized a b x1))
-  (define err1 (relative-error log-p1 log-p))
-  (when (err1 . > . threshold)
-    (define log-p-prev (fllog-beta-lower-regularized a b (flprev x1)))
-    (define log-p-next (fllog-beta-lower-regularized a b (flnext x1)))
-    (when (not (and (log-p1 . >= . log-p-prev) (log-p1 . <= . log-p-next)))
-      (print-header)
-      (printf "input (log): ~v~n" log-p)
-      (printf "err1 = ~v~n" err1)))
-  
-  (when printed? (newline))
-  )
-|#

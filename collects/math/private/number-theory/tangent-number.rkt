@@ -1,7 +1,5 @@
 #lang typed/racket/base
 
-(require "../exception.rkt")
-
 (provide tangent-number)
 
 (: tangent-number : Integer -> Natural)

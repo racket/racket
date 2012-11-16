@@ -397,7 +397,6 @@ please adhere to these guidelines:
   (show-line-and-column-numbers "Vis linje og søjlenumre") ; used for popup menu; right click on line/column box in bottom of drs window
   (show-character-offsets "Vis tegnnummerering") ; used for popup menu; right click on line/column box in bottom of drs window
   (enable-keybindings-in-menus "Slå tastaturgenveje i menuer til")
-  (automatically-to-ps "Udskriv automatisk til postscriptfil")
   (option-as-meta "Brugtion option-tasten som meta") ;; macos/macos x only  
   (reuse-existing-frames "Genbrug gamle vinduer, når nye filer åbnes")
   (default-fonts "Standardskrifttyper")

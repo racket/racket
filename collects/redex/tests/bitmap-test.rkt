@@ -318,8 +318,7 @@
   (define-judgment-form nats
     #:mode (uses-ellipses I)
     [(uses-ellipses (n ...))
-     (lt2 n) ...
-     (sum z z z)])
+     (lt2 n) ... (sum z z z)])
   
   (btest (vc-append 
           10
@@ -352,8 +351,7 @@
     #:mode (typeof I I O)
     #:contract (typeof Γ e τ)
     [(typeof Γ (e_1 e_2) τ)
-     (typeof Γ e_1 (τ_2 → τ))
-     (typeof Γ e_2 τ_2)]
+     (typeof Γ e_1 (τ_2 → τ)) (typeof Γ e_2 τ_2)]
     [(typeof Γ (λ (x : τ) e) (τ → σ))
      (typeof (extend Γ x τ) e σ)]
     [(typeof Γ x τ)

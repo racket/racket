@@ -139,7 +139,7 @@
       (define/public (get-one-line-summary) one-line-summary)
       (define/public (get-language-url) language-url)
       (define/public (get-reader) reader)
-      (super-instantiate ())))
+      (super-new)))
   
   
   
@@ -188,7 +188,7 @@
         (simple-module-based-language-render-value/format value settings port width))
       (define/public (render-value value settings port)
         (simple-module-based-language-render-value/format value settings port 'infinity))
-      (super-instantiate ())))
+      (super-new)))
   
   ;; settings for a simple module based language
   (define-struct simple-settings (case-sensitive 

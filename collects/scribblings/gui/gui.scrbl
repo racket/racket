@@ -41,6 +41,7 @@ Both parts of the toolbox rely extensively on the
 @;------------------------------------------------------------------------
 
 @include-section["win-overview.scrbl"]
+@include-section["widget-gallery.scrbl"]
 @include-section["win-classes.scrbl"]
 @include-section["win-funcs.scrbl"]
 @include-section["editor-overview.scrbl"]

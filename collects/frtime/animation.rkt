@@ -1,24 +1,22 @@
 (module animation frtime
   
-  (require (all-except frtime/animation/graphics
-                       make-posn posn-x posn-y make-rgb)
-           (lifted frtime/animation/graphics
-                   posn-x posn-y make-posn make-rgb)
-           mzlib/match
+  (require (for-syntax racket/base (only-in racket/function identity))
+           racket/match
+           racket/class
+           (except-in frtime/animation/graphics make-posn posn-x posn-y make-rgb)
+           (lifted (only-in frtime/animation/graphics posn-x) posn-x)
+           (lifted (only-in frtime/animation/graphics posn-y) posn-y)
+           (lifted (only-in frtime/animation/graphics make-posn) make-posn)
+           (lifted (only-in frtime/animation/graphics make-rgb) make-rgb)
            (as-is:unchecked frtime/lang-ext lift)
-           mzlib/class
            frtime/frlibs/list
-           frtime/frlibs/etc
-           frtime/frlibs/math
-           (rename mzscheme mz:define-struct define-struct))
-  
-  (require-for-syntax mzlib/etc)
+           frtime/frlibs/math)
   
   (open-graphics)
   
   (define fresh-anim
     (let ([first #t])
-      (opt-lambda ([x 400] [y 400] [title "Animation - DrRacket"])
+      (lambda ([x 400] [y 400] [title "Animation - DrRacket"])
         (if first
             (set! first #f)
             (begin
@@ -41,7 +39,7 @@
               (set! left-clicks ((viewport-mouse-events window) . =#> . (lambda (ev) (send ev button-down? 'left))))
               (set! middle-clicks ((viewport-mouse-events window) . =#> . (lambda (ev) (send ev button-down? 'middle))))
               (set! right-clicks ((viewport-mouse-events window) . =#> . (lambda (ev) (send ev button-down? 'right)))))))))
-    
+  
   (define window
     (open-viewport "Animation - DrRacket" 400 400))
   
@@ -75,7 +73,7 @@
     (syntax-case stx ()
       [(_ name (field ...))
        (with-syntax
-           ([ctor-name (datum->syntax-object stx (string->symbol (format "make-~a" (syntax-e #'name))))]
+           ([ctor-name (datum->syntax stx (string->symbol (format "make-~a" (syntax-e #'name))))]
             [(accessor-name ...)
              (map (lambda (fd)
                     (string->symbol (format "~a-~a" (syntax-e #'name) (syntax-e fd))))
@@ -104,11 +102,11 @@
   
   (define (prep-image file)
     (draw-pixmap-posn file))
-
+  
   (define (make-circle center r color)
     (make-solid-ellipse (make-posn (- (posn-x center) r)
                                    (- (posn-y center) r))
-                                   (* 2 r) (* 2 r) color))
+                        (* 2 r) (* 2 r) color))
   
   (define l (new-cell empty))
   
@@ -136,7 +134,7 @@
        (lambda (v)
          (match (v-n v)
            [(? undefined?) (void)]
-           [($ ring center radius color)
+           [(ring center radius color)
             (let ([center (v-n center)]
                   [radius (v-n radius)]
                   [color (v-n color)])
@@ -148,25 +146,25 @@
                  (* 2 radius)
                  (* 2 radius)
                  (if (undefined? color) "black" color))))]
-           [($ arc pos width height start-radians end-radians color)
+           [(arc pos width height start-radians end-radians color)
             (let ([pos (v-n pos)]
                   [width (v-n width)]
                   [height (v-n height)]
                   [start-radians (v-n start-radians)]
                   [end-radians (v-n end-radians)])
               ((draw-arc pixmap) pos width height start-radians end-radians color))]
-           [($ solid-arc pos width height start-radians end-radians color)
+           [(solid-arc pos width height start-radians end-radians color)
             (let ([pos (v-n pos)]
                   [width (v-n width)]
                   [height (v-n height)]
                   [start-radians (v-n start-radians)]
                   [end-radians (v-n end-radians)])
               ((draw-solid-arc pixmap) pos width height start-radians end-radians color))]
-           [($ image pos renderer)
+           [(image pos renderer)
             (let ([renderer (v-n renderer)]
                   [pos (v-n pos)])
               ((renderer pixmap) pos))]
-           [($ solid-ellipse ul w h color)
+           [(solid-ellipse ul w h color)
             (let ([ul (v-n ul)]
                   [w (v-n w)]
                   [h (v-n h)]
@@ -175,26 +173,26 @@
                           (undefined? w)
                           (undefined? h))
                 ((draw-solid-ellipse pixmap) ul w h (if (undefined? color) "black" color))))]
-           [($ graph-string pos text color) ((draw-string pixmap) (v-n pos) (v-n text) (v-n color))]
-           [($ line p1 p2 color)
+           [(graph-string pos text color) ((draw-string pixmap) (v-n pos) (v-n text) (v-n color))]
+           [(line p1 p2 color)
             (let ([p1 (v-n p1)]
                   [p2 (v-n p2)]
                   [color (v-n color)])
               (unless (or (undefined? p1)
                           (undefined? p2))
                 ((draw-line pixmap) p1 p2 (if (undefined? color) "black" color))))]
-           [($ rect ul w h color)
+           [(rect ul w h color)
             (let ([ul (v-n ul)]
                   [w (v-n w)]
                   [h (v-n h)]
                   [color (v-n color)])
-            (cond
-              [(and (>= w 0) (>= h 0)) ((draw-solid-rectangle pixmap) ul w h color)]
-              [(>= h 0) ((draw-solid-rectangle pixmap) (make-posn (+ (posn-x ul) w) (posn-y ul)) (- w) h color)]
-              [(>= w 0) ((draw-solid-rectangle pixmap) (make-posn (posn-x ul) (+ (posn-y ul) h)) w (- h) color)]
-              [else ((draw-solid-rectangle pixmap) (make-posn (+ (posn-x ul) w) (+ (posn-y ul) h)) (- w) (- h) color)]))]
-           [($ polygon pts offset color) ((draw-polygon pixmap) pts offset color)]
-           [($ solid-polygon pts offset color) ((draw-solid-polygon pixmap) pts offset color)]
+              (cond
+                [(and (>= w 0) (>= h 0)) ((draw-solid-rectangle pixmap) ul w h color)]
+                [(>= h 0) ((draw-solid-rectangle pixmap) (make-posn (+ (posn-x ul) w) (posn-y ul)) (- w) h color)]
+                [(>= w 0) ((draw-solid-rectangle pixmap) (make-posn (posn-x ul) (+ (posn-y ul) h)) w (- h) color)]
+                [else ((draw-solid-rectangle pixmap) (make-posn (+ (posn-x ul) w) (+ (posn-y ul) h)) (- w) (- h) color)]))]
+           [(polygon pts offset color) ((draw-polygon pixmap) pts offset color)]
+           [(solid-polygon pts offset color) ((draw-solid-polygon pixmap) pts offset color)]
            [(? list? x) (loop (v-n x))]
            [(? void?) (void)]))
        a-los v-n)))
@@ -206,7 +204,7 @@
   (define (draw-graph-color pm gc)
     (let ([dp (draw-pixel pm)])
       (match gc
-        [($ graph-color fn xmin xmax ymin ymax)
+        [(graph-color fn xmin xmax ymin ymax)
          (let ([xincr (/ (- xmax xmin) 300)]
                [yincr (/ (- ymax ymin) 300)])
            (let loop ([i 50] [y ymin])
@@ -220,7 +218,7 @@
   (define (valid-posn? v)
     (and (posn? v) (number? (posn-x v)) (number? (posn-y v))))
   
-
+  
   
   (define (key sym)
     (key-strokes
@@ -230,23 +228,23 @@
   (define (draw vp pm posl)
     ((clear-viewport pm))
     (for-each (lambda (elt)
-                 (cond
-                   [(graph-color? elt) (draw-graph-color pm elt)]
-                   [(string? elt) ((draw-string pm) (make-posn 8 20) elt)]
-                   [(valid-posn? elt) ((draw-solid-ellipse pm)
-                                       (make-posn (- (posn-x elt) 10)
-                                                  (- (posn-y elt) 10))
-                                       20 20
-                                       (make-rgb 0 .6 .6))]
-                   [(and (cons? elt)
-                         (valid-posn? (first elt))
-                         (valid-posn? (rest elt))) ((draw-line pm)
-                                                    (first elt)
-                                                    (rest elt)
-                                                    "black")]
-                   [else (void)])) posl)
+                (cond
+                  [(graph-color? elt) (draw-graph-color pm elt)]
+                  [(string? elt) ((draw-string pm) (make-posn 8 20) elt)]
+                  [(valid-posn? elt) ((draw-solid-ellipse pm)
+                                      (make-posn (- (posn-x elt) 10)
+                                                 (- (posn-y elt) 10))
+                                      20 20
+                                      (make-rgb 0 .6 .6))]
+                  [(and (cons? elt)
+                        (valid-posn? (first elt))
+                        (valid-posn? (rest elt))) ((draw-line pm)
+                                                   (first elt)
+                                                   (rest elt)
+                                                   "black")]
+                  [else (void)])) posl)
     (copy-viewport pm vp))
-
+  
   #|
   (define foldl
     (case-lambda
@@ -275,9 +273,9 @@
   (define (fix-rgb r g b)
     (let ([fix (lambda (n) (min 1 (max 0 n)))])
       (apply make-rgb (map fix (list r g b)))))
-
+  
   (define range-control
-    (opt-lambda (up down limit [init 0])
+    (lambda (up down limit [init 0])
       (accum-b
        (merge-e (up   . -=> . (inc-max limit))
                 (down . -=> . (dec-min 0)))
@@ -301,9 +299,9 @@
                    (make-wave-state (value-now hz) 0)
                    (lambda (new-freq+time old-state)
                      (match new-freq+time
-                       [(h1 t)
+                       [(list h1 t)
                         (match old-state
-                          [($ wave-state h0 o0)
+                          [(wave-state h0 o0)
                            (make-wave-state
                             h1
                             (+ o0 (* .002 pi t (- h0 h1))))])])))])
@@ -320,14 +318,14 @@
   (define (last-value signal)
     (second (current-and-last-value signal)))
   
-;   (define (last-value signal)
-;    (let ([init (value-now signal)])
-;      (rest
-;       (collect-b (changes signal)
-;                  (cons init init)
-;                  (lambda (new old-pair)
-;                    (cons new (first old-pair)))))))
-                 
+  ;   (define (last-value signal)
+  ;    (let ([init (value-now signal)])
+  ;      (rest
+  ;       (collect-b (changes signal)
+  ;                  (cons init init)
+  ;                  (lambda (new old-pair)
+  ;                    (cons new (first old-pair)))))))
+  
   (define (posn+ . args)
     (make-posn (apply + (map posn-x args))
                (apply + (map posn-y args))))
@@ -367,7 +365,7 @@
   (define (posn-diff p1 p2)
     (sqrt (+ (sqr (- (posn-x p1) (posn-x p2)))
              (sqr (- (posn-y p1) (posn-y p2))))))
-
+  
   (define (posn-derivative p)
     (make-posn (derivative (posn-x p)) (derivative (posn-y p))))
   
@@ -375,6 +373,6 @@
     (make-posn (integral (posn-x p)) (integral (posn-y p))))
   
   (provide
-   (all-defined-except pixmap window draw-list l d 
-                       make-wave-state wave-state-hz wave-state-offset)
-   (all-from frtime/animation/graphics)))
+   (except-out (all-defined-out) pixmap window draw-list l d 
+               make-wave-state wave-state-hz wave-state-offset)
+   (all-from-out frtime/animation/graphics)))

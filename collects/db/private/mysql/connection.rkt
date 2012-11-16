@@ -3,6 +3,7 @@
          racket/match
          openssl
          openssl/sha1
+         unstable/error
          "../generic/interfaces.rkt"
          "../generic/common.rkt"
          "../generic/prepared.rkt"
@@ -184,12 +185,13 @@
           [(struct handshake-packet (pver sver tid scramble capabilities charset status auth))
            (check-required-flags capabilities)
            (unless (member auth '("mysql_native_password" #f))
-             (uerror 'mysql-connect "unsupported authentication plugin: ~s" auth))
+             (raise-misc-error 'mysql-connect "back end requested unsupported authentication plugin"
+                               '("plugin" value) auth))
            (define do-ssl?
              (and (case ssl ((yes optional) #t) ((no) #f))
                   (memq 'ssl capabilities)))
            (when (and (eq? ssl 'yes) (not do-ssl?))
-             (uerror 'mysql-connect "server refused SSL connection"))
+             (error 'mysql-connect "back end refused SSL connection"))
            (define wanted-capabilities (desired-capabilities capabilities do-ssl? dbname))
            (when do-ssl?
              (send-message (make-abbrev-client-auth-packet wanted-capabilities))
@@ -215,9 +217,8 @@
               [(equal? auth-plugin "mysql_old_password")
                (send-message (auth (bytes-append (old-scramble-password scramble password)
                                                  (bytes 0))))]
-              [else (uerror 'mysql-connect
-                            "server does not support authentication plugin: ~s"
-                            auth-plugin)])
+              [else (raise-misc-error 'mysql-connect "back end does not support authentication plugin"
+                                      '("plugin" value) auth-plugin)])
         (match (recv 'mysql-connect 'auth)
           [(struct ok-packet (_ _ status warnings message))
            (after-connect)]
@@ -228,9 +229,8 @@
     (define/private (check-required-flags capabilities)
       (for-each (lambda (rf)
                   (unless (memq rf capabilities)
-                    (uerror 'mysql-connect
-                            "server does not support required capability: ~s"
-                            rf)))
+                    (raise-misc-error 'mysql-connect "server does not support required capability"
+                                      "capability" rf)))
                 REQUIRED-CAPABILITIES))
 
     (define/private (desired-capabilities capabilities ssl? dbname)

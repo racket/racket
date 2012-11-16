@@ -3,9 +3,14 @@
           scribble/eval
           scribble/struct
           racket/sandbox
+          racket/runtime-path
           "config.rkt"
           (for-label db
                      openssl))
+
+
+@(define-runtime-path log-file "log-for-connect.rktd")
+@(define the-eval (make-pg-eval log-file #t))
 
 @title[#:tag "connect"]{Connections}
 
@@ -749,3 +754,6 @@ Provides only @racket[odbc-connect], @racket[odbc-driver-connect],
 @racketmodname[db], this module immediately attempts to
 load the ODBC native library when required, and it raises an exception
 if it cannot be found.
+
+
+@(close-eval the-eval)

@@ -77,7 +77,7 @@ is rejected by the syntax class, an error of the form
 the result is @racket[#f], the syntax class is skipped in the search
 for a description to report.
 
-If the option is not given absent, the name of the syntax class is
+If the option is not given, the name of the syntax class is
 used instead.
 }
 

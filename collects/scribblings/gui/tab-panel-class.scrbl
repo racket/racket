@@ -1,6 +1,8 @@
 #lang scribble/doc
 @(require "common.rkt")
 
+@centered{@image[#:suffixes @list[".png"]]{image/tab-panel}}
+
 @defclass/title[tab-panel% vertical-panel% ()]{
 
 A tab panel arranges its subwindows in a single column, but also

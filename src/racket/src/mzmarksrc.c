@@ -89,6 +89,12 @@ small_object {
   gcBYTES_TO_WORDS(sizeof(Scheme_Small_Object));
 }
 
+small_atomic_obj {
+ mark:
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Small_Object));
+}
+
 app_rec {
   Scheme_App_Rec *r = (Scheme_App_Rec *)p;
 
@@ -467,12 +473,6 @@ escaping_cont_proc {
   gcBYTES_TO_WORDS(sizeof(Scheme_Escaping_Cont));
 }
 
-char_obj {
- mark:
- size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Small_Object));
-}
-
 bignum_obj {
   Scheme_Bignum *b = (Scheme_Bignum *)p;
 
@@ -599,6 +599,7 @@ input_port {
  mark:
   Scheme_Input_Port *ip = (Scheme_Input_Port *)p;
   
+  gcMARK2(ip->p.position_redirect, gc);
   gcMARK2(ip->sub_type, gc);
   gcMARK2(ip->port_data, gc);
   gcMARK2(ip->name, gc);
@@ -626,6 +627,7 @@ output_port {
  mark:
   Scheme_Output_Port *op = (Scheme_Output_Port *)p;
 
+  gcMARK2(op->p.position_redirect, gc);
   gcMARK2(op->sub_type, gc);
   gcMARK2(op->port_data, gc);
   gcMARK2(op->name, gc);
@@ -879,7 +881,8 @@ namespace_val {
   gcMARK2(e->module, gc);
   gcMARK2(e->module_registry, gc);
   gcMARK2(e->module_pre_registry, gc);
-  gcMARK2(e->insp, gc);
+  gcMARK2(e->guard_insp, gc);
+  gcMARK2(e->access_insp, gc);
 
   gcMARK2(e->rename_set, gc);
   gcMARK2(e->temp_marked_names, gc);
@@ -1171,8 +1174,10 @@ mark_logger {
   Scheme_Logger *l = (Scheme_Logger *)p;
   gcMARK2(l->name, gc);
   gcMARK2(l->parent, gc);
-  gcMARK2(l->readers, gc);
   gcMARK2(l->timestamp, gc);
+  gcMARK2(l->syslog_level, gc);
+  gcMARK2(l->stderr_level, gc);
+  gcMARK2(l->readers, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Logger));
 }
@@ -1180,6 +1185,7 @@ mark_logger {
 mark_log_reader {
  mark:
   Scheme_Log_Reader *lr = (Scheme_Log_Reader *)p;
+  gcMARK2(lr->level, gc);
   gcMARK2(lr->sema, gc);
   gcMARK2(lr->head, gc);
   gcMARK2(lr->tail, gc);
@@ -1303,6 +1309,7 @@ mark_optimize_info {
   gcMARK2(i->transitive_use, gc);
   gcMARK2(i->transitive_use_len, gc);
   gcMARK2(i->context, gc);
+  gcMARK2(i->logger, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Optimize_Info));
@@ -2093,17 +2100,6 @@ mark_struct_type_val {
   gcBYTES_TO_WORDS((sizeof(Scheme_Struct_Type)
 		    + ((t->name_pos + 1 - mzFLEX_DELTA) 
                        * sizeof(Scheme_Struct_Type *))));
-}
-
-mark_struct_proc_info {
- mark:
-  Struct_Proc_Info *i = (Struct_Proc_Info *)p;
-
-  gcMARK2(i->struct_type, gc);
-  gcMARK2(i->func_name, gc);
-
- size:
-  gcBYTES_TO_WORDS(sizeof(Struct_Proc_Info));
 }
 
 mark_struct_property {

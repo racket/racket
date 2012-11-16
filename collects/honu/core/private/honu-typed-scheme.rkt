@@ -14,7 +14,7 @@
                      "debug.rkt"
                      "contexts.rkt"
                      "util.rkt"
-                     "ops.rkt"
+                     ;; "ops.rkt"
                      "syntax.rkt"
                      ;; "parse.rkt"
                      "parse2.rkt"

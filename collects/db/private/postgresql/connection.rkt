@@ -1,9 +1,9 @@
 #lang racket/base
 (require racket/class
          racket/match
-         racket/vector
          file/md5
          openssl
+         unstable/error
          "../generic/interfaces.rkt"
          "../generic/common.rkt"
          "../generic/sql-data.rkt"
@@ -30,6 +30,7 @@
     (define inport #f)
     (define outport #f)
     (define process-id #f)
+    (define integer-datetimes? 'unknown)  ;; see connect:after-auth
 
     (inherit call-with-lock
              call-with-lock*
@@ -90,7 +91,7 @@
                        (lambda (e)
                          ;; Anything but exn:fail:sql (raised by recv-message) indicates
                          ;; a communication error.
-                         ;; FIXME: alternatively, have check-ready-for-query set an ok flag
+                         ;; Alternative: could have check-ready-for-query set a done-reading flag.
                          (unless (exn:fail:sql? e)
                            (disconnect* #f))
                          (raise e))])
@@ -128,7 +129,7 @@
                                  ((transaction) #t)
                                  ((failed) 'invalid)))]
               [(and or-eof? (eof-object? r)) (void)]
-              [else (error/comm fsym "expected ready")])))
+              [else (error/comm fsym "expecting ready-for-query")])))
 
     ;; == Asynchronous messages
 
@@ -145,11 +146,10 @@
          (cond [(equal? name "client_encoding")
                 (unless (equal? value "UTF8")
                   (disconnect* #f)
-                  (uerror fsym
-                          (string-append
-                           "server attempted to change the client character encoding "
-                           "from UTF8 to ~a, disconnecting")
-                          value))]
+                  (raise-misc-error fsym "client character encoding changed, disconnecting"
+                                    '("new encoding" value) value))]
+               [(equal? name "integer_datetimes")
+                (set! integer-datetimes? (equal? value "on"))]
                [else (void)])]))
 
     ;; == Connection management
@@ -176,7 +176,9 @@
     ;; == System
 
     (define/public (get-dbsystem)
-      dbsystem)
+      (if integer-datetimes?
+          dbsystem/integer-datetimes
+          dbsystem/floating-point-datetimes))
 
     ;; ========================================
 
@@ -209,20 +211,20 @@
            (unless (string? password)
              (error/need-password 'postgresql-connect))
            (unless allow-cleartext-password?
-             (uerror 'postgresql-connect (nosupport "cleartext password")))
+             (error/no-support 'postgresql-connect "cleartext password"))
            (send-message (make-PasswordMessage password))
            (connect:expect-auth username password)]
           [(struct AuthenticationCryptPassword (salt))
-           (uerror 'postgresql-connect (nosupport "crypt()-encrypted password"))]
+           (error/no-support 'postgresql-connect "crypt()-encrypted password")]
           [(struct AuthenticationMD5Password (salt))
            (unless password
              (error/need-password 'postgresql-connect))
            (send-message (make-PasswordMessage (md5-password username password salt)))
            (connect:expect-auth username password)]
           [(struct AuthenticationKerberosV5 ())
-           (uerror 'postgresql-connect (nosupport "KerberosV5 authentication"))]
+           (error/no-support 'postgresql-connect "KerberosV5 authentication")]
           [(struct AuthenticationSCMCredential ())
-           (uerror 'postgresql-connect (nosupport "SCM authentication"))]
+           (error/no-support 'postgresql-connect "SCM authentication")]
           ;; ErrorResponse handled by recv-message
           [_ (error/comm 'postgresql-connect "during authentication")])))
 
@@ -231,12 +233,36 @@
       (let ([r (recv-message 'postgresql-connect)])
         (match r
           [(struct ReadyForQuery (status))
-           (void)]
+           (connect:after-auth)]
           [(struct BackendKeyData (pid secret))
            (set! process-id pid)
            (connect:expect-ready-for-query)]
           [_
            (error/comm 'postgresql-connect "after authentication")])))
+
+    ;; connect:after-auth : -> void
+    (define/private (connect:after-auth)
+      (when (eq? integer-datetimes? 'unknown)
+        ;; According to http://www.postgresql.org/docs/8.4/static/libpq-status.html
+        ;; (see PQparameterStatus), versions of PostgreSQL before 8.0 do not send
+        ;; (or AFAICT even *have*) the "integer_datetimes" parameter on startup.
+        ;; Version 7.4.8 from Ubuntu 5.10 uses integer datetimes, no config var.
+        ;; Version 7.4.6 from Fedora Core 3 uses floating-point, no config var.
+        ;; So determine by trying query w/ integer; if wrong result, try float.
+        (dprintf "  ** testing datetime representation\n")
+        (let ([r (internal-query1 'postgresql-connect "select time '12:34:56'")])
+          (define (test-config)
+            (match (query1:process-result 'postgresql-connect r)
+              [(rows-result _ (list (vector (sql-time 12 34 56 0 #f)))) #t]
+              [_ #f]))
+          (set! integer-datetimes? #t)
+          (unless (test-config)
+            (set! integer-datetimes? #f)
+            (unless (test-config)
+              (error/internal 'postgresql-connect
+                              "unable to determine server datetime representation")))
+          (dprintf "  ** datetime representation = ~a\n"
+                   (if integer-datetimes? "integer" "floating-point")))))
 
     ;; ============================================================
 
@@ -294,7 +320,8 @@
                       [pst-name (send pst get-handle)]
                       [params (statement-binding-params stmt)])
                  (unless pst-name
-                   (error/internal 'query1:enqueue "statement was deleted: ~s" (send pst get-stmt)))
+                   (error/internal* 'query1:enqueue "statement was deleted"
+                                    "statement" (send pst get-stmt)))
                  (buffer-message (make-Bind portal pst-name
                                             (map typeid->format (send pst get-param-typeids))
                                             params
@@ -365,33 +392,26 @@
     (define/private (query1:error fsym r)
       (match r
         [(struct CopyInResponse (format column-formats))
-         (uerror fsym (nosupport "COPY IN statements"))]
+         (error/no-support fsym "COPY IN statements")]
         [(struct CopyOutResponse (format column-formats))
-         (uerror fsym (nosupport "COPY OUT statements"))]
-        [_ (error/comm fsym (format "got: ~e" r))]))
-
-    (define/private (get-convert-row! fsym field-dvecs)
-      (let* ([type-reader-v
-              (list->vector (query1:get-type-readers fsym field-dvecs))])
-        (lambda (row)
-          (vector-map! (lambda (value type-reader)
-                         (cond [(sql-null? value) sql-null]
-                               [else (type-reader value)]))
-                       row
-                       type-reader-v))))
+         (error/no-support fsym "COPY OUT statements")]
+        [_ (error/internal* fsym "unexpected message from back end"
+                            '("message" value) r)]))
 
     (define/private (query1:process-result fsym result)
       (match result
         [(vector 'rows field-dvecs rows)
-         (for-each (get-convert-row! fsym field-dvecs) rows)
-         (rows-result (map field-dvec->field-info field-dvecs) rows)]
+         (let ([type-readers (query1:get-type-readers fsym field-dvecs)])
+           (parameterize ((use-integer-datetimes? integer-datetimes?))
+             (rows-result (map field-dvec->field-info field-dvecs)
+                          (map (lambda (data) (bytes->row data type-readers))
+                               rows))))]
         [(vector 'cursor field-dvecs stmt portal)
-         (let* ([convert-row! (get-convert-row! fsym field-dvecs)]
-                [pst (statement-binding-pst stmt)])
-           ;; FIXME: register finalizer to close portal?
+         (let ([pst (statement-binding-pst stmt)]
+               [type-readers (query1:get-type-readers fsym field-dvecs)])
            (cursor-result (map field-dvec->field-info field-dvecs)
                           pst
-                          (list portal convert-row! (box #f))))]
+                          (list portal type-readers (box #f))))]
         [(vector 'command command)
          (simple-result command)]))
 
@@ -408,7 +428,7 @@
             [extra (cursor-result-extra cursor)])
         (send pst check-owner fsym this pst)
         (let ([portal (car extra)]
-              [convert-row! (cadr extra)]
+              [type-readers (cadr extra)]
               [end-box (caddr extra)])
           (let ([rows
                  (call-with-lock fsym
@@ -423,7 +443,8 @@
                               (when (unbox end-box)
                                 (cursor:close fsym pst portal))
                               rows)])))])
-            (and rows (begin (for-each convert-row! rows) rows))))))
+            (parameterize ((use-integer-datetimes? integer-datetimes?))
+              (and rows (map (lambda (data) (bytes->row data type-readers)) rows)))))))
 
     (define/private (cursor:close fsym pst portal)
       (let ([close-on-exec? (send pst get-close-on-exec?)])
@@ -561,9 +582,11 @@
                  ((current)
                   "table_schema = current_schema")))]
              [result (call-with-lock fsym (lambda () (internal-query1 fsym stmt)))]
-             [rows (vector-ref result 2)])
+             [rows (vector-ref result 2)]
+             [type-readers (list subbytes)])
         (for/list ([row (in-list rows)])
-          (bytes->string/utf-8 (vector-ref row 0)))))
+          (let ([row (bytes->row row type-readers)])
+            (bytes->string/utf-8 (vector-ref row 0))))))
     ))
 
 ;; ========================================
@@ -609,12 +632,6 @@
                 (error/comm 'postgresql-connect "after SSL request")))))
           ((no)
            (super attach-to-ports in out)))))))
-
-;; ========================================
-
-;; nosupport : string -> string
-(define (nosupport str)
-  (string-append "not supported: " str))
 
 ;; ========================================
 

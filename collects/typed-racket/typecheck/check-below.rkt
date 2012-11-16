@@ -2,7 +2,7 @@
 
 (require (rename-in "../utils/utils.rkt" [private private-in])
          racket/match (prefix-in - racket/contract)
-         (types utils union subtype remove-intersect type-table filter-ops)
+         (types utils union subtype type-table filter-ops)
          (private-in parse-type type-annotation)
          (rep type-rep object-rep filter-rep)
          (only-in (infer infer) restrict)
@@ -12,8 +12,8 @@
          (only-in srfi/1 split-at))
 
 (provide/cond-contract
- [check-below (-->d ([s (-or/c Type/c tc-results?)] [t (-or/c Type/c tc-results?)]) () [_ (if (Type? s) Type/c tc-results?)])]
- [cond-check-below (-->d ([s (-or/c Type/c tc-results?)] [t (-or/c #f Type/c tc-results?)]) () [_ (if (Type? s) Type/c tc-results?)])])
+ [check-below (-->d ([s (-or/c Type/c tc-results?)] [t (-or/c Type/c tc-results?)]) () [_ (if (Type/c s) Type/c tc-results?)])]
+ [cond-check-below (-->d ([s (-or/c Type/c tc-results?)] [t (-or/c #f Type/c tc-results?)]) () [_ (if (Type/c s) Type/c tc-results?)])])
 
 (define (print-object o)
   (match o

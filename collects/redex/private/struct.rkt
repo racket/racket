@@ -8,6 +8,7 @@
          reduction-relation-rule-names
          reduction-relation-lws
          reduction-relation-procs
+         reduction-relation-domain-pat
          build-reduction-relation make-reduction-relation
          reduction-relation?
          empty-reduction-relation
@@ -40,13 +41,14 @@
 ;; make-procs = (listof (compiled-lang -> proc))
 ;; rule-names : (listof sym)
 ;; procs : (listof proc)
-(define-struct reduction-relation (lang make-procs rule-names lws procs))
+(define-struct reduction-relation (lang make-procs rule-names lws procs domain-pat))
 
 (define empty-reduction-relation (make-reduction-relation 'empty-reduction-relations-language
                                                           '()
                                                           '()
                                                           '()
-                                                          '()))
+                                                          '()
+                                                          #f))
 
 (define (build-reduction-relation original language rules rule-names lws domain)
   (define combined-rules
@@ -62,8 +64,7 @@
     (if original
         (remove-duplicates (append rule-names (reduction-relation-rule-names original)))
         rule-names))
-  (define compiled-domain
-    (compile-pattern language domain #f))
+  (define compiled-domain (compile-pattern language domain #f))
   (make-reduction-relation
    language combined-rules combined-rule-names lws
    (map (λ (rule)
@@ -81,4 +82,5 @@
             (unless (match-pattern compiled-domain exp)
               (error 'reduction-relation "relation not defined for ~s" exp))
             (specialized exp exp checked-rewrite acc)))
-        combined-rules)))
+        combined-rules)
+   domain))

@@ -14,6 +14,7 @@
 @include-section["atomic.scrbl"]
 @include-section["try-atomic.scrbl"]
 @include-section["objc.scrbl"]
+@include-section["ns.scrbl"]
 @include-section["com.scrbl"]
 @include-section["file.scrbl"]
 @include-section["winapi.scrbl"]

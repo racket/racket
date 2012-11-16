@@ -76,25 +76,29 @@
 
 (: flarray-map (case-> ((-> Float) -> FlArray)
                        ((Float -> Float) FlArray -> FlArray)
-                       ((Float Float * -> Float) FlArray FlArray * -> FlArray)))
+                       ((Float Float Float * -> Float) FlArray FlArray FlArray * -> FlArray)))
 (define flarray-map
   (case-lambda:
     [([f : (-> Float)])
      (inline-flarray-map f)]
     [([f : (Float -> Float)] [arr : FlArray])
      (inline-flarray-map f arr)]
-    [([f : (Float Float * -> Float)] [arr : FlArray] . [arrs : FlArray *])
-     (define ds (array-shape arr))
-     (define dss (map (λ: ([arr : FlArray]) (array-shape arr)) arrs))
+    [([f : (Float Float -> Float)] [arr0 : FlArray] [arr1 : FlArray])
+     (inline-flarray-map f arr0 arr1)]
+    [([f : (Float Float Float * -> Float)] [arr0 : FlArray] [arr1 : FlArray] . [arrs : FlArray *])
+     (define ds (array-shape arr0))
+     (define dss (map (λ: ([arr : FlArray]) (array-shape arr)) (cons arr1 arrs)))
      (define new-ds (array-shape-broadcast (list* ds dss)))
-     (let: ([arr : (Array Float)  (array-broadcast arr new-ds)]
+     (let: ([arr0 : (Array Float)  (array-broadcast arr0 new-ds)]
+            [arr1 : (Array Float)  (array-broadcast arr1 new-ds)]
             [arrs : (Listof (Array Float))
                   (map (λ: ([arr : FlArray]) (array-broadcast arr new-ds)) arrs)])
-       (define proc  (unsafe-array-proc arr))
+       (define proc0 (unsafe-array-proc arr0))
+       (define proc1 (unsafe-array-proc arr1))
        (define procs (map (λ: ([arr : (Array Float)]) (unsafe-array-proc arr)) arrs))
        (array->flarray
         (unsafe-build-array new-ds (λ: ([js : Indexes])
-                                     (apply f (proc js)
+                                     (apply f (proc0 js) (proc1 js)
                                             (map (λ: ([proc : (Indexes -> Float)]) (proc js))
                                                  procs))))))]))
 

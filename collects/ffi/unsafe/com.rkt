@@ -6,6 +6,7 @@
          ffi/unsafe/custodian
          racket/date
          racket/runtime-path
+	 racket/list
          (for-syntax racket/base)
          "private/win32.rkt")
 
@@ -123,14 +124,17 @@
 ;; ----------------------------------------
 ;; Manual memory management and strings
 
-(define _system-string/utf-16
+(define (_system-string/utf-16 mode)
   (make-ctype _pointer
 	      (lambda (s)
 		(and s                     
                      (let ([c (string->pointer s)])
                        (register-cleanup! (lambda () (SysFreeString c)))
                        c)))
-	      (lambda (p) (cast p _pointer _string/utf-16))))
+	      (lambda (p)
+		(begin0
+		 (cast p _pointer _string/utf-16)
+		 (when (memq 'out mode) (SysFreeString p))))))
 
 (define current-cleanup (make-parameter #f))
 (define current-commit (make-parameter #f))
@@ -329,10 +333,11 @@
    [Invoke (_mfun _DISPID _REFIID _LCID _WORD
                   _DISPPARAMS-pointer/null
                   _VARIANT-pointer/null
-                  (e : (_ptr o _EXCEPINFO))
-                  (err : (_ptr o _UINT))
-                  -> (r : _HRESULT)
-                  -> (values r e err))]))
+                  _pointer ; to _EXCEPINFO
+                  _pointer ; to _UINT
+                  -> _HRESULT)]))
+
+(define error-index-ptr (malloc 'atomic-interior _UINT))
 
 ;; --------------------------------------------------
 ;; ITypeInfo
@@ -468,11 +473,11 @@
 ;; COM object creation
 
 (define-cstruct _COSERVERINFO ([dwReserved1 _DWORD]
-                               [pwszName _system-string/utf-16]
+                               [pwszName (_system-string/utf-16 '(in))]
                                [pAuthInfo _pointer]
                                [dwReserved2 _DWORD]))
 (define-cstruct _MULTI_QI ([pIID _GUID-pointer]
-                           [pItf _IUnknown-pointer]
+                           [pItf _IUnknown-pointer/null]
                            [hr _HRESULT]))
 
 (define-ole CoCreateInstance (_hfun _REFCLSID _pointer _DWORD _REFIID
@@ -517,6 +522,7 @@
                   [sink #:mutable]
                   [sink-table-links #:mutable]
                   [types #:mutable]
+                  [scheme-types #:mutable]
                   [mref #:mutable]))
 
 (define (com-object-unknown obj) (com-impl-unknown (com-object-impl obj)))
@@ -529,6 +535,7 @@
 (define (com-object-sink obj) (com-impl-sink (com-object-impl obj)))
 (define (com-object-sink-table-links obj) (com-impl-sink-table-links (com-object-impl obj)))
 (define (com-object-types obj) (com-impl-types (com-object-impl obj)))
+(define (com-object-scheme-types obj) (com-impl-scheme-types (com-object-impl obj)))
 (define (com-object-mref obj) (com-impl-mref (com-object-impl obj)))
 
 (define (com-object-eq? a b)
@@ -537,18 +544,6 @@
   (ptr-equal? (com-object-unknown a) (com-object-unknown b)))
 
 (struct com-type (type-info clsid))
-
-(define _com-object
-  (make-ctype _pointer
-              (lambda (v)
-                (com-object-get-dispatch v))
-              (lambda (p)
-                (if p
-                    (let ()
-                      (define dispatch (cast p _pointer _IDispatch-pointer))
-                      (((allocator Release) (lambda () dispatch)))
-                      (make-com-object dispatch #f))
-                    #f))))
 
 (define scheme_security_check_file
   (get-ffi-obj 'scheme_security_check_file #f (_fun _string _path _int -> _void)))
@@ -600,12 +595,17 @@
                            (bitwise-ior CLSCTX_LOCAL_SERVER CLSCTX_INPROC_SERVER)
                            IID_IUnknown)]
         [else
-         (define csi (make-COSERVERINFO 0 (cast machine _system-string/utf-16 _pointer) #f 0))
+	 (define cleanup (box null))
+         (define csi (parameterize ([current-cleanup cleanup])
+		       (make-COSERVERINFO 0 machine #f 0)))
          (define mqi (make-MULTI_QI IID_IUnknown #f 0))
          (define unknown
-           (CoCreateInstanceEx clsid #f CLSCTX_REMOTE_SERVER (and machine csi) 1 mqi))
-         (when machine
-           (SysFreeString (COSERVERINFO-pwszName csi)))
+	   (dynamic-wind
+	    void
+	    (lambda ()
+	      (CoCreateInstanceEx clsid #f CLSCTX_REMOTE_SERVER (and machine csi) 1 mqi))
+	    (lambda ()
+	      (for ([proc (in-list (unbox cleanup))]) (proc)))))
          (unless (and (zero? (MULTI_QI-hr mqi))
                       unknown)
            (error who "unable to obtain IUnknown interface for remote server"))
@@ -627,6 +627,7 @@
                          #f
                          #f
                          (make-hash)
+                         (make-hash)
                          #f)))
   (when manage?
     (register-with-custodian obj))
@@ -643,14 +644,7 @@
        (when mref
          (set-com-impl-mref! impl #f)
 	 (unregister-custodian-shutdown impl mref)))
-     ;; Although reference counting should let us release in any
-     ;; order, comments in the MysterX source suggest that the
-     ;; order matters, so release type descriptions first and
-     ;; the main impl last.
-     (when (positive? (hash-count (com-impl-types impl)))
-       (for ([td (in-hash-values (com-impl-types impl))])
-	 (release-type-desc td))
-       (set-com-impl-types! impl (make-hash)))
+     (release-type-types (com-impl-type-info impl))
      (define (bye! sel st!)
        (when (sel impl)
          (Release (sel impl))
@@ -667,6 +661,17 @@
            set-com-impl-dispatch!)
      (bye! com-impl-unknown
            set-com-impl-unknown!))))
+
+(define (release-type-types type-info)
+  (when type-info
+    (let ([type (type-info-type type-info)])
+      (set-type-ref-count! type (sub1 (type-ref-count type)))
+      (when (zero? (type-ref-count type))
+        (when (positive? (hash-count (type-types type)))
+          (for ([td (in-hash-values (type-types type))])
+  	    (release-type-desc td))
+          (set-type-types! type (make-hash)))
+        (hash-remove! types type-info)))))
 
 (define (release-type-desc td)
   ;; call in atomic mode
@@ -730,6 +735,28 @@
         (set-com-impl-dispatch! (com-object-impl obj) dispatch)
         dispatch)))
 
+(struct type (type-info [types #:mutable]
+			scheme-types
+			[ref-count #:mutable]))
+(define types (make-weak-hash))
+
+(define (intern-type-info type-info)
+  ;; called in atomic mode
+  (let ([ti-e (hash-ref types type-info #f)])
+    (if ti-e
+	(let* ([t (ephemeron-value ti-e)]
+	       [ti (type-type-info t)])
+	  (set-type-ref-count! t (add1 (type-ref-count t)))
+	  (Release type-info)
+	  (AddRef ti)
+	  t)
+	(let ([t (type type-info (make-hash) (make-hash) 1)])
+	  (hash-set! types type-info (make-ephemeron type-info t))
+	  t))))
+
+(define (type-info-type type-info)
+  (ephemeron-value (hash-ref types type-info)))
+
 (define (type-info-from-com-object obj [exn? #t])
   (or (com-object-type-info obj)
       (let ([dispatch (com-object-get-dispatch obj)])
@@ -739,13 +766,18 @@
                 (error "COM object does not expose type information")
                 #f)
             (let ([type-info (GetTypeInfo
-                              dispatch
-                              0
-                              LOCALE_SYSTEM_DEFAULT)])
-              (unless type-info
-                (error "Error getting COM type information"))
-              (set-com-impl-type-info! (com-object-impl obj) type-info)
-              type-info)))))
+			      dispatch
+			      0
+			      LOCALE_SYSTEM_DEFAULT)])
+	      (unless type-info
+		(error "Error getting COM type information"))
+	      (let* ([type (intern-type-info type-info)]
+		     [type-info (type-type-info type)]
+		     [impl (com-object-impl obj)])
+		(set-com-impl-type-info! impl type-info)
+		(set-com-impl-types! impl (type-types type))
+		(set-com-impl-scheme-types! impl (type-scheme-types type))
+		type-info))))))
 
 (define (com-object-type obj)
   (check-com-obj 'com-object-type obj)
@@ -970,7 +1002,8 @@
              [(string=? ti-name name)
               var-desc]
              [else
-              (ReleaseVarDesc type-info var-desc)])))
+              (ReleaseVarDesc type-info var-desc)
+	      #f])))
      ;; search in inherited interfaces
      (for/or ([i (in-range (TYPEATTR-cImplTypes type-attr))])
        (define ref-type (GetRefTypeOfImplType type-info i))
@@ -1051,35 +1084,46 @@
                (event-type-info-from-com-object obj)]
               [else
                (type-info-from-com-object obj exn?)])])
-        (and type-info
+	(and type-info
              (let ([mx-type-desc (type-desc-from-type-info name inv-kind type-info)])
                (when mx-type-desc
                  (hash-set! (com-object-types obj) (cons name inv-kind) mx-type-desc))
                mx-type-desc)))))
 
-(define (get-var-type-from-elem-desc elem-desc)
-  (define param-desc (union-ref (ELEMDESC-u elem-desc) 1))
-  (define flags (PARAMDESC-wParamFlags param-desc))
+(define (get-var-type-from-elem-desc elem-desc
+				     #:keep-safe-array? [keep-safe-array? #f])
+  ;; hack: allow elem-desc as a TYPEDESC
+  (define param-desc (and (ELEMDESC? elem-desc)
+			  (union-ref (ELEMDESC-u elem-desc) 1)))
+  (define flags (if param-desc
+		    (PARAMDESC-wParamFlags param-desc)
+		    0))
   (define (fixup-vt vt)
     (cond
      [(= vt (bitwise-ior VT_USERDEFINED VT_BYREF))
       VT_UNKNOWN]
      [(= vt VT_USERDEFINED)
       VT_INT]
+     [(and (= vt VT_SAFEARRAY)
+	   (not keep-safe-array?))
+      (bitwise-ior VT_ARRAY VT_VARIANT)]
      [else vt]))
+  (define type-desc (if (ELEMDESC? elem-desc)
+			(ELEMDESC-tdesc elem-desc)
+			elem-desc))
   (cond
    [(and (bit-and? flags PARAMFLAG_FOPT)
          (bit-and? flags PARAMFLAG_FHASDEFAULT))
     (fixup-vt
      (VARIANT-vt (PARAMDESCEX-varDefaultValue (PARAMDESC-pparamdescex param-desc))))]
-   [(= (TYPEDESC-vt (ELEMDESC-tdesc elem-desc)) VT_PTR)
+   [(= (TYPEDESC-vt type-desc) VT_PTR)
     (fixup-vt
      (bitwise-ior VT_BYREF
-		  (TYPEDESC-vt (cast (union-ref (TYPEDESC-u (ELEMDESC-tdesc elem-desc)) 0) 
+		  (TYPEDESC-vt (cast (union-ref (TYPEDESC-u type-desc) 0) 
 				     _pointer 
 				     _TYPEDESC-pointer))))]
    [else
-    (fixup-vt (TYPEDESC-vt (ELEMDESC-tdesc elem-desc)))]))
+    (fixup-vt (TYPEDESC-vt type-desc))]))
 
 (define (elem-desc-has-default? elem-desc)
   (define param-desc (union-ref (ELEMDESC-u elem-desc) 1))
@@ -1099,7 +1143,7 @@
      [else else-expr])))
 
 (define (elem-desc-to-scheme-type elem-desc ignore-by-ref? is-opt? internal?)
-  (define vt (let ([vt (get-var-type-from-elem-desc elem-desc)])
+  (define vt (let ([vt (get-var-type-from-elem-desc elem-desc #:keep-safe-array? #t)])
                (if (and ignore-by-ref?
 			(not (= vt (bitwise-ior VT_USERDEFINED VT_BYREF))))
                    (- vt (bitwise-and vt VT_BYREF))
@@ -1112,6 +1156,7 @@
     (if is-opt?
         '(opt iunknown)
         'iunknown)]
+   [(= vt VT_SAFEARRAY) `(array ? any)]
    [(bit-and? vt VT_ARRAY)
     (define array-desc (cast (union-ref (TYPEDESC-u (ELEMDESC-tdesc elem-desc)) 1)
                              _pointer
@@ -1120,8 +1165,8 @@
       (elem-desc-to-scheme-type (ARRAYDESC-tdescElem array-desc) #f #f internal?))
     (for/fold ([base base]) ([i (in-range (ARRAYDESC-cDims array-desc))])
       `(array ,(SAFEARRAYBOUND-cElements (ptr-ref (array-ptr (ARRAYDESC-rgbounds array-desc)) 
-                                                  i
-                                                  _SAFEARRAYBOUND))
+                                                  _SAFEARRAYBOUND
+                                                  i))
               ,base))]
    [else
     (define as-iunk? (= vt (bitwise-ior VT_USERDEFINED VT_BYREF)))
@@ -1170,12 +1215,15 @@
     ;; but we'll report them as an enumeration.
     'com-enumeration]
    [VT_VOID 'void]
+   [VT_SAFEARRAY `(array ? any)]
    [else 
     (cond
      [(= VT_ARRAY (bitwise-and vt VT_ARRAY))
       `(array ? ,(vt-to-scheme-type (- vt VT_ARRAY)))]
      [(= vt (bitwise-ior VT_USERDEFINED VT_BYREF))
       'iunknown]
+     [(= VT_BYREF (bitwise-and vt VT_BYREF))
+      `(box ,(vt-to-scheme-type (- vt VT_BYREF)))]
      [else
       (string->symbol (format "COM-0x~x" vt))])]))
 
@@ -1233,80 +1281,89 @@
 (define (do-get-method-type who obj name inv-kind internal?)
   (call-as-atomic
    (lambda ()
-     (define type-info (extract-type-info who obj (not internal?)))
-     (when (and (= inv-kind INVOKE_FUNC)
-                (is-dispatch-name? name))
-       (error who "IDispatch methods not available"))
-     (define mx-type-desc
-       (cond
-        [(com-object? obj) (get-method-type obj name inv-kind (not internal?))]
-        [else (define x-type-info
-                (if (= inv-kind INVOKE_EVENT)
-                    (event-type-info-from-com-type obj)
-                    type-info))
-              (type-desc-from-type-info name inv-kind x-type-info)]))
-     (cond
-      [(not mx-type-desc)
-       ;; there is no type info
-       #f]
-      [else
-       (define-values (args ret)
-         (cond
-          [(function-type-desc? mx-type-desc)
-           (define func-desc (car (mx-com-type-desc-desc mx-type-desc)))
-           (define num-actual-params (FUNCDESC-cParams func-desc))
-           (cond
-            [(= -1 (FUNCDESC-cParamsOpt func-desc))
-             ;; all args > pFuncDesc->cParams - 1 get packaged into SAFEARRAY
-             (values
-              (append
-               (for/list ([i (in-range num-actual-params)])
-                 (elem-desc-to-scheme-type (elem-desc-ref func-desc i)
-                                           #f
-                                           #f
-                                           internal?))
-               (list '...))
-              (elem-desc-to-scheme-type (FUNCDESC-elemdescFunc func-desc)
-                                        #f
-                                        #f
-                                        internal?))]
-            [else
-             (define last-is-retval?
-               (is-last-param-retval? inv-kind func-desc))
-             (define num-params (- num-actual-params (if last-is-retval? 1 0)))
-             ;; parameters that are optional with a default value in IDL are not
-             ;; counted in pFuncDesc->cParamsOpt, so look for default bit flag
-             (define num-opt-params (get-opt-param-count func-desc num-params))
-             (define first-opt-arg (- num-params num-opt-params))
-             (values
-              (for/list ([i (in-range num-params)])
-                (elem-desc-to-scheme-type (elem-desc-ref func-desc i)
-                                          #f
-                                          (i . >= . first-opt-arg)
-                                          internal?))
-              (elem-desc-to-scheme-type (if last-is-retval?
-                                            (elem-desc-ref func-desc num-params)
-                                            (FUNCDESC-elemdescFunc func-desc))
-                                        #t
-                                        #f
-                                        internal?))])]
-          [(= inv-kind INVOKE_PROPERTYGET)
-           (define var-desc (mx-com-type-desc-desc mx-type-desc))
-           (values null
-                   (elem-desc-to-scheme-type (VARDESC-elemdescVar var-desc)
-                                             #f
-                                             #f
-                                             internal?))]
-          [(= inv-kind INVOKE_PROPERTYPUT)
-           (define var-desc (mx-com-type-desc-desc mx-type-desc))
-           (values (list (elem-desc-to-scheme-type (VARDESC-elemdescVar var-desc)
-                                                   #f
-                                                   #f
-                                                   internal?))
-                   'void)]
-          [(= inv-kind INVOKE_EVENT)
-           (values null 'void)]))
-       `(-> ,args ,ret)]))))
+     (or (and (com-object? obj)
+	      (hash-ref (com-object-scheme-types obj) (cons name inv-kind) #f))
+	 (let ([t (get-uncached-method-type who obj name inv-kind internal?)])
+	   (when (com-object? obj)
+	     (hash-set! (com-object-scheme-types obj) (cons name inv-kind) t))
+	   t)))))
+
+(define (get-uncached-method-type who obj name inv-kind internal?)
+  (define type-info (extract-type-info who obj (not internal?)))
+  (when (and (= inv-kind INVOKE_FUNC)
+	     (is-dispatch-name? name))
+	(error who "IDispatch methods not available"))
+  (define mx-type-desc
+    (cond
+     [(com-object? obj) (get-method-type obj name inv-kind (not internal?))]
+     [else (define x-type-info
+	     (if (= inv-kind INVOKE_EVENT)
+		 (event-type-info-from-com-type obj)
+		 type-info))
+	   (type-desc-from-type-info name inv-kind x-type-info)]))
+  (cond
+   [(not mx-type-desc)
+    ;; there is no type info
+    #f]
+   [else
+    (define-values (args ret)
+      (cond
+       [(function-type-desc? mx-type-desc)
+	(define func-desc (car (mx-com-type-desc-desc mx-type-desc)))
+	(define num-actual-params (FUNCDESC-cParams func-desc))
+	(cond
+	 [(= -1 (FUNCDESC-cParamsOpt func-desc))
+	  ;; all args > pFuncDesc->cParams - 1 get packaged into SAFEARRAY,
+	  ;; but that is handled by COM automation; we just pass "any"s
+	  (values
+	   (append
+	    (for/list ([i (in-range (sub1 num-actual-params))])
+		      (elem-desc-to-scheme-type (elem-desc-ref func-desc i)
+						#f
+						#f
+						internal?))
+	    '(any ...))
+	   (elem-desc-to-scheme-type (FUNCDESC-elemdescFunc func-desc)
+				     #f
+				     #f
+				     internal?))]
+	 [else
+	  (define last-is-retval?
+	    (is-last-param-retval? inv-kind func-desc))
+	  (define num-params (- num-actual-params (if last-is-retval? 1 0)))
+	  ;; parameters that are optional with a default value in IDL are not
+	  ;; counted in pFuncDesc->cParamsOpt, so look for default bit flag
+	  (define num-opt-params (get-opt-param-count func-desc num-params))
+	  (define first-opt-arg (- num-params num-opt-params))
+	  (values
+	   (for/list ([i (in-range num-params)])
+		     (elem-desc-to-scheme-type (elem-desc-ref func-desc i)
+					       #f
+					       (i . >= . first-opt-arg)
+					       internal?))
+	   (elem-desc-to-scheme-type (if last-is-retval?
+					 (elem-desc-ref func-desc num-params)
+					 (FUNCDESC-elemdescFunc func-desc))
+				     #t
+				     #f
+				     internal?))])]
+       [(= inv-kind INVOKE_PROPERTYGET)
+	(define var-desc (mx-com-type-desc-desc mx-type-desc))
+	(values null
+		(elem-desc-to-scheme-type (VARDESC-elemdescVar var-desc)
+					  #f
+					  #f
+					  internal?))]
+       [(= inv-kind INVOKE_PROPERTYPUT)
+	(define var-desc (mx-com-type-desc-desc mx-type-desc))
+	(values (list (elem-desc-to-scheme-type (VARDESC-elemdescVar var-desc)
+						#f
+						#f
+						internal?))
+		'void)]
+       [(= inv-kind INVOKE_EVENT)
+	(values null 'void)]))
+    `(-> ,args ,ret)]))
 
 (define (com-method-type obj name)
   (do-get-method-type 'com-method-type obj name INVOKE_FUNC #f))
@@ -1438,7 +1495,7 @@
       [(iunknown) (or (IUnknown? arg)
                       (com-object? arg))]
       [(com-object) (com-object? arg)]
-      [(any) #t]
+      [(any ...) #t]
       [(com-enumeration) (signed-int? arg 32)]
       [else #f])]
    [(eq? 'opt (car type))
@@ -1449,7 +1506,8 @@
          (ok-argument? (unbox arg) (cadr type)))]
    [(eq? 'array (car type))
     (and (vector? arg)
-         (= (vector-length arg) (cadr type))
+	 (or (eq? (cadr type) '?)
+	     (= (vector-length arg) (cadr type)))
          (for/and ([v (in-vector arg)])
            (ok-argument? v (caddr type))))]
    [(eq? 'variant (car type))
@@ -1479,7 +1537,10 @@
              (iunknown . #t)
              (com-object . #t)
              (any . #t)
-             (com-enumeration . #t))
+             (com-enumeration . #t)
+             ;; meant to to be used only at the end 
+             ;; of an argument list:
+             (... . #t))
      type
      #f)]
    [(and (list? type)
@@ -1493,7 +1554,8 @@
            (type-description? (cadr type)))]
      [(eq? 'array (car type))
       (and (= (length type) 3)
-           (exact-positive-integer? (cadr type))
+           (or (exact-positive-integer? (cadr type))
+               (eq? '? (cadr type)))
            (type-description? (caddr type)))]
      [(eq? 'variant (car type))
       (and (= (length type) 2)
@@ -1524,12 +1586,12 @@
 (define (variant-set! var type val)
   (ptr-set! (union-ptr (VARIANT-u var)) type val))
 
-(define (scheme-to-variant! var a elem-desc scheme-type)
+(define (scheme-to-variant! var a elem-desc scheme-type #:mode [mode '(in)])
   (cond
    [(type-described? a)
-    (scheme-to-variant! var (type-described-value a) elem-desc scheme-type)]
+    (scheme-to-variant! var (type-described-value a) elem-desc scheme-type #:mode mode)]
    [(and (pair? scheme-type) (eq? 'variant (car scheme-type)))
-    (scheme-to-variant! var a elem-desc (cadr scheme-type))]
+    (scheme-to-variant! var a elem-desc (cadr scheme-type) #:mode mode)]
    [(eq? a com-omit)
     (if (and elem-desc
              (elem-desc-has-default? elem-desc))
@@ -1544,13 +1606,13 @@
           (variant-set! var _ulong DISP_E_PARAMNOTFOUND)))]
    [(and elem-desc (not (any-type? scheme-type)))
     (set-VARIANT-vt! var (get-var-type-from-elem-desc elem-desc))
-    (variant-set! var (to-ctype scheme-type) a)]
+    (variant-set! var (to-ctype scheme-type #:mode mode) a)]
    [else
     (define use-scheme-type (if (any-type? scheme-type)
 				(arg-to-type a)
 				scheme-type))
     (set-VARIANT-vt! var (to-vt use-scheme-type))
-    (variant-set! var (to-ctype use-scheme-type) a)]))
+    (variant-set! var (to-ctype use-scheme-type #:mode mode) a)]))
 
 (define (any-type? t)
   (or (eq? t 'any)
@@ -1566,7 +1628,7 @@
 (define (_box/permanent _t)
   (define (extract p)
     (if (eq? _t _VARIANT)
-	(variant-to-scheme (cast p _pointer _VARIANT-pointer))
+	(variant-to-scheme (cast p _pointer _VARIANT-pointer) #:mode '(in out))
 	(ptr-ref p _t)))
   (make-ctype _pointer
               (lambda (v)
@@ -1575,7 +1637,7 @@
 		    (let ([p (cast p _pointer _VARIANT-pointer)]
 			  [v (unbox v)])
 		      (VariantInit p)
-		      (scheme-to-variant! p v #f (arg-to-type v)))
+		      (scheme-to-variant! p v #f (arg-to-type v) #:mode '(in out)))
 		    (ptr-set! p _t (unbox v)))
 		(register-cleanup! 
                  (lambda ()
@@ -1583,7 +1645,9 @@
                    (free p)))
                 p)
               (lambda (p)
-                (extract p))))
+		;; We box the value, but we don't support reflecting box
+		;; changes back to changes of the original reference:
+                (box (extract p)))))
 
 (define (make-a-VARIANT [mode 'atomic-interior])
   (define var (cast (malloc _VARIANT mode)
@@ -1604,10 +1668,13 @@
    [VT_VARIANT var]
    [else ptr]))
 
-(define (_safe-array/vectors dims base)
+(define (_safe-array/vectors given-dims base mode)
   (make-ctype _pointer
 	      (lambda (v)
 	        (define base-vt (to-vt base))
+		(define dims (if (equal? given-dims '(?))
+				 (list (vector-length v))
+				 given-dims))
 		(define sa (SafeArrayCreate base-vt
 					    (length dims)
 					    (for/list ([d (in-list dims)])
@@ -1620,7 +1687,7 @@
 		    (define idx (cons i index))
 		    (if (null? (cdr dims))
 			(let ([var (make-a-VARIANT)])
-			  (scheme-to-variant! var v #f base)
+			  (scheme-to-variant! var v #f base #:mode mode)
 			  (SafeArrayPutElement sa (reverse idx) 
 					       (extract-variant-pointer var #f base-vt)))
 			(loop v idx (cdr dims)))))
@@ -1639,24 +1706,33 @@
 			  (set-VARIANT-vt! var vt)
 			  (SafeArrayGetElement sa (reverse (cons i index)) 
 					       (extract-variant-pointer var #t))
-			  (variant-to-scheme var))
+			  (variant-to-scheme var #:mode mode))
 			(loop (cdr dims) (add1 level) (cons i index))))))))
 
-(define _IUnknown-pointer-or-com-object
+(define (_IUnknown-pointer-or-com-object mode)
   (make-ctype 
-   _IUnknown-pointer
+   _IUnknown-pointer/null
    (lambda (v)
      (define p
        (if (com-object? v)
            (com-object-get-iunknown v)
            v))
-     (register-commit! (lambda () (AddRef/no-release p)))
+     (when (memq 'out mode)
+       (register-commit! (lambda () (AddRef/no-release p))))
      p)
    (lambda (p) 
-     (((allocator Release) (lambda () p)))
-     (make-com-object p #f))))
+     (if p
+	 (begin
+	   (if (memq 'out mode)
+	       (((allocator Release) (lambda () p)))
+	       (AddRef p))
+	   (make-com-object p #f))
+	 p))))
 
-(define (to-ctype type [as-boxed? #f])
+(define (_com-object mode)
+  (_IUnknown-pointer-or-com-object mode))
+
+(define (to-ctype type [as-boxed? #f] #:mode [mode '()])
   (cond
    [(symbol? type)
     (case type
@@ -1671,34 +1747,36 @@
       [(long-long) _llong]
       [(float) _float*]
       [(double) _double*]
-      [(string) _system-string/utf-16]
+      [(string) (_system-string/utf-16 mode)]
       [(currency) _currency]
       [(date) _date]
       [(boolean) _bool]
       [(scode) _SCODE]
-      [(iunknown) _IUnknown-pointer-or-com-object]
-      [(com-object) _com-object]
-      [(any) (if as-boxed?
-		 _VARIANT
-		 (error "internal error: cannot marshal to any"))]
+      [(iunknown) (_IUnknown-pointer-or-com-object mode)]
+      [(com-object) (_com-object mode)]
+      [(any ...) (if as-boxed?
+                     _VARIANT
+                     (error "internal error: cannot marshal to any"))]
       [(com-enumeration) _int]
       [else (error 'to-ctype "internal error: unknown type ~s" type)])]
    [(eq? 'opt (car type))
-    (to-ctype (cadr type))]
+    (to-ctype (cadr type) #:mode mode)]
    [(eq? 'box (car type))
-    (_box/permanent (to-ctype (cadr type) #t))]
+    (_box/permanent (to-ctype (cadr type) #t #:mode '(in out)))]
    [(eq? 'array (car type))
     (define-values (dims base)
-      (let loop ([t type])
+      (let loop ([t type] [?-ok? #t])
 	(cond
-	 [(and (pair? t) (eq? 'array (car t)))
-	  (define-values (d b) (loop (caddr t)))
+	 [(and (pair? t) (eq? 'array (car t)) (or ?-ok? (number? (cadr t))))
+	  (define-values (d b) (if (number? (cadr t))
+                                   (loop (caddr t) #f)
+                                   (values null (cadr t))))
 	  (values (cons (cadr t) d) b)]
 	 [else
 	  (values null t)])))
-    (_safe-array/vectors dims base)]
+    (_safe-array/vectors dims base mode)]
    [(eq? 'variant (car type))
-    (to-ctype (cadr type))]
+    (to-ctype (cadr type) #:mode mode)]
    [else #f]))
 
 (define (to-vt type)
@@ -1721,7 +1799,7 @@
     [(boolean) VT_BOOL]
     [(iunknown) VT_UNKNOWN]
     [(com-object) VT_DISPATCH]
-    [(any) VT_VARIANT]
+    [(any ...) VT_VARIANT]
     [(com-enumeration) VT_INT]
     [else 
      (case (and (pair? type)
@@ -1736,11 +1814,29 @@
 (define (build-method-arguments-using-function-desc func-desc scheme-types inv-kind args)
   (define lcid-index (and func-desc (get-lcid-param-index func-desc)))
   (define last-is-retval? (and func-desc (is-last-param-retval? inv-kind func-desc)))
-  (define count (if func-desc
-                    (- (FUNCDESC-cParams func-desc)
-                       (if lcid-index 1 0)
-                       (if last-is-retval? 1 0))
-                    (length scheme-types)))
+  (define last-is-repeat-any? (and func-desc (= -1 (FUNCDESC-cParamsOpt func-desc))))
+  (define base-count (if func-desc
+			 (- (FUNCDESC-cParams func-desc)
+			    (if lcid-index 1 0)
+			    (if last-is-retval? 1 0))
+			 (length scheme-types)))
+  (define count (if last-is-repeat-any?
+		    (if (or lcid-index
+			    last-is-retval?)
+			(error "cannot handle combination of `any ...' and lcid/retval")
+			(length scheme-types))
+		    base-count))
+  (build-method-arguments-from-desc count
+				    (lambda (i)
+				      (and func-desc 
+					   (or (not last-is-repeat-any?)
+					       (i . < . (sub1 base-count)))
+					   (elem-desc-ref func-desc i)))
+				    scheme-types
+				    inv-kind
+				    args))
+
+(define (build-method-arguments-from-desc count get-elem-desc scheme-types inv-kind args)
   (define vars (if (zero? count)
                    #f
                    (malloc count _VARIANTARG 'raw)))
@@ -1756,7 +1852,10 @@
           [scheme-type (in-list scheme-types)])
       (define var (ptr-ref vars _VARIANT (- count i 1))) ; reverse order
       (VariantInit var)
-      (scheme-to-variant! var a (and func-desc (elem-desc-ref func-desc i)) scheme-type)))
+      (scheme-to-variant! var 
+			  a 
+			  (get-elem-desc i)
+			  scheme-type)))
   (define disp-params (cast (malloc _DISPPARAMS 'raw)
 			    _pointer
 			    _DISPPARAMS-pointer))
@@ -1775,8 +1874,18 @@
           (cons (lambda () (free disp-params)) (unbox cleanup))
           (unbox commit)))
 
-(define (variant-to-scheme var)
-  (define _t (to-ctype (vt-to-scheme-type (VARIANT-vt var))))
+(define (build-method-arguments-using-var-desc var-desc scheme-types inv-kind args)
+  (build-method-arguments-from-desc (if (= inv-kind INVOKE_PROPERTYPUT)
+					1
+					0)
+				    (lambda (i)
+				      (VARDESC-elemdescVar var-desc))
+				    scheme-types
+				    inv-kind
+				    args))
+
+(define (variant-to-scheme var #:mode [mode '(out)])
+  (define _t (to-ctype (vt-to-scheme-type (VARIANT-vt var)) #:mode mode))
   (if _t
       (ptr-ref (union-ptr (VARIANT-u var)) _t)
       (void)))
@@ -1792,9 +1901,9 @@
                                                 scheme-types
                                                 inv-kind args)]
    [else
-    (error "unimplemented") ; FIXME?
-    '(build-method-arguments-using-var-desc (mx-com-type-desc-desc type-desc)
-                                            inv-kind args)]))
+    (build-method-arguments-using-var-desc (mx-com-type-desc-desc type-desc)
+					   scheme-types
+					   inv-kind args)]))
 
 (define (find-memid who obj name)
   (define-values (r memid)
@@ -1806,19 +1915,33 @@
     (windows-error (format "~a: error getting ID of method ~s" who name)
                      r)]))
 
+(define (adjust-any-... args t)
+  (define ta (cadr t))
+  (define len (length ta))
+  (if (and (len . >= . 2)
+	   ((length args) . >= . (- len 2))
+	   (eq? '... (list-ref ta (sub1 len)))
+	   (eq? 'any (list-ref ta (- len 2))))
+      ;; Replace `any ...' with the right number of `any's
+      `(,(car t) ,(append (take ta (- len 2))
+			  (make-list (- (length args) (- len 2)) 'any))
+	. ,(cddr t))
+      t))
+
 (define (do-com-invoke who obj name args inv-kind)
   (check-com-obj who obj)
   (unless (string? name) (raise-type-error who "string" name))
-  (let ([t (or (call-as-atomic
-                (lambda ()
-                  (do-get-method-type who obj name inv-kind #t)))
-               ;; wing it by inferring types from the arguments:
-               `(-> ,(map arg-to-type args) any))])
-    (unless (<= (length (filter (lambda (v) (not (and (pair? v) (eq? (car v) 'opt))))
-                                (cadr t)))
+  (let* ([t (or (do-get-method-type who obj name inv-kind #t)
+		;; wing it by inferring types from the arguments:
+		`(-> ,(map arg-to-type args) any))]
+	 [t (adjust-any-... args t)])
+    (unless (<= (for/fold ([n 0]) ([v (in-list (cadr t))])
+		  (if (and (pair? v) (eq? (car v) 'opt))
+		      (add1 n)
+		      n))
                 (length args)
                 (length (cadr t)))
-      (error 'com-invoke "bad argument count for ~s" name))
+	    (error 'com-invoke "bad argument count for ~s" name))
     (for ([arg (in-list args)]
           [type (in-list (cadr t))])
       (check-argument 'com-invoke name arg type))
@@ -1844,7 +1967,9 @@
                           (for/list ([i (in-range num-params-passed)])
                             (variant-to-scheme (ptr-ref (DISPPARAMS-rgvarg method-arguments) 
                                                         _VARIANT 
-                                                        i))))))
+                                                        i)
+					       #:mode '())))))
+	      (define exn-info-ptr (malloc 'atomic-interior _EXCEPINFO))
               (define-values (method-result cleanups)
                 (if (= inv-kind INVOKE_PROPERTYPUT)
                     (values #f arg-cleanups)
@@ -1852,7 +1977,7 @@
 		      (values r (cons (lambda () (free r))
 				      arg-cleanups)))))
               (for ([proc (in-list commits)]) (proc))
-              (define-values (hr exn-info error-index)
+              (define hr
 		;; Note that all arguments to `Invoke' should
 		;; not be movable by a GC. A call to `Invoke'
 		;; may use the Windows message queue, and other
@@ -1861,10 +1986,10 @@
                 (Invoke (com-object-get-dispatch obj)
                         memid IID_NULL LOCALE_SYSTEM_DEFAULT
                         inv-kind method-arguments
-                        method-result))
+                        method-result
+			exn-info-ptr error-index-ptr))
               (cond
                [(zero? hr)
-                                (log-error (format "result kind: ~s" (VARIANT-vt method-result)))
                 (begin0
                  (if method-result
                      (variant-to-scheme method-result)
@@ -1872,6 +1997,7 @@
                  (for ([proc (in-list cleanups)]) (proc)))]
                [(= hr DISP_E_EXCEPTION)
                 (for ([proc (in-list cleanups)]) (proc))
+		(define exn-info (cast exn-info-ptr _pointer _EXCEPINFO-pointer))
                 (define has-error-code? (positive? (EXCEPINFO-wCode exn-info)))
                 (define desc (EXCEPINFO-bstrDescription exn-info))
                 (windows-error
@@ -2002,7 +2128,7 @@
                        (ptr-ref (ptr-ref argv _pointer i) _racket)))))
 
 (define (sink-variant-to-scheme var)
-  (malloc-immobile-cell (variant-to-scheme var)))
+  (malloc-immobile-cell (variant-to-scheme var #:mode '(in add-ref))))
 
 (define (sink-unmarshal-scheme p var)
   (define a (ptr-ref p _racket))

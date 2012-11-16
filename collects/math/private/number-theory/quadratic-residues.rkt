@@ -1,7 +1,6 @@
 #lang typed/racket/base
 
 (require racket/list
-         "../exception.rkt"
          "divisibility.rkt"
          "modular-arithmetic.rkt"
          "number-theory.rkt")

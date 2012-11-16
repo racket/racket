@@ -152,35 +152,39 @@
        ;; Extract "lib" location from binary:
        (let ([exe (parameterize ([current-directory (system-path* 'orig-dir)])
                     (find-executable-path (find-system-path 'exec-file)))])
-         (with-input-from-file exe
-           (lambda ()
-             (let ([m (regexp-match (byte-regexp
-                                     (bytes-append
-                                      (bytes->utf-16-bytes #"dLl dIRECTORy:")
-                                      #"((?:..)*?)\0\0"))
-                                    (current-input-port))])
-               (unless m
-                 (error "cannot find \"dLl dIRECTORy\" tag in binary"))
-               (let-values ([(dir name dir?) (split-path exe)])
-                 (if (regexp-match #rx#"^<" (cadr m))
-                     ;; no DLL dir in binary
-                     #f
-                     ;; resolve relative directory:
-                     (let ([p (bytes->path (utf-16-bytes->bytes (cadr m)))])
-                       (path->complete-path p dir))))))))]
+         (and
+          exe
+          (with-input-from-file exe
+            (lambda ()
+              (let ([m (regexp-match (byte-regexp
+                                      (bytes-append
+                                       (bytes->utf-16-bytes #"dLl dIRECTORy:")
+                                       #"((?:..)*?)\0\0"))
+                                     (current-input-port))])
+                (unless m
+                  (error "cannot find \"dLl dIRECTORy\" tag in binary"))
+                (let-values ([(dir name dir?) (split-path exe)])
+                  (if (regexp-match #rx#"^<" (cadr m))
+                      ;; no DLL dir in binary
+                      #f
+                      ;; resolve relative directory:
+                      (let ([p (bytes->path (utf-16-bytes->bytes (cadr m)))])
+                        (path->complete-path p dir)))))))))]
       [(macosx)
        (let* ([exe (parameterize ([current-directory (system-path* 'orig-dir)])
                      (let loop ([p (find-executable-path
                                     (find-system-path 'exec-file))])
-                       (if (link-exists? p)
-                           (loop (let-values ([(r) (resolve-path p)]
-                                              [(dir name dir?) (split-path p)])
-                                   (if (and (path? dir)
-                                            (relative-path? r))
-                                       (build-path dir r)
-                                       r)))
-                           p)))]
-              [rel (get/set-dylib-path exe "Racket" #f)])
+                       (and 
+                        p
+                        (if (link-exists? p)
+                            (loop (let-values ([(r) (resolve-path p)]
+                                               [(dir name dir?) (split-path p)])
+                                    (if (and (path? dir)
+                                             (relative-path? r))
+                                        (build-path dir r)
+                                        r)))
+                            p))))]
+              [rel (and exe (get/set-dylib-path exe "Racket" #f))])
          (cond
           [(not rel) #f] ; no framework reference found!?
           [(regexp-match

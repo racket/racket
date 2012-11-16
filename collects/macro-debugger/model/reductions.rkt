@@ -1,6 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base)
          racket/match
+         racket/format
          syntax/stx
          "../util/eomap.rkt"
          "deriv-util.rkt"
@@ -221,12 +222,7 @@
         [#:learn (list #'?var)])]
 
     [(Wrap p:provide (e1 e2 rs ?1 inners ?2))
-     (let ([wrapped-inners
-            (for/list ([inner (in-list inners)])
-              (match inner
-                [(Wrap deriv (e1 e2))
-                 (make local-expansion e1 e2
-                       #f e1 inner #f e2 #f)]))])
+     (let ([wrapped-inners (map expr->local-action inners)])
        (R [! ?1]
           [#:pattern ?form]
           [#:pass1]
@@ -505,7 +501,17 @@
         ]]
     [(struct local-remark (contents))
      (R [#:reductions (list (walk/talk 'remark contents))])]
-
+    [(struct local-mess (events))
+     ;; FIXME: While it is not generally possible to parse tokens as one or more
+     ;; interrupted derivations (possibly interleaved with successful derivs),
+     ;; it should be possible to recover *some* information and display it.
+     (R [#:reductions
+         (let ([texts
+                (list (~a "Some expansion history has been lost due to a jump "
+                          "within expansion.")
+                      (~a "For example, a macro may have caught an "
+                          "exception coming from within a call to `local-expand'."))])
+           (list (walk/talk 'remark texts)))])]
     [#f
      (R)]))
 
@@ -657,7 +663,9 @@
         [#:do (DEBUG (printf "** module begin pass 2\n"))]
         [ModulePass ?forms pass2]
         ;; ignore pass3 for now: only provides
-        )]))
+        [#:new-local-context
+         [#:pattern ?form]
+         [LocalActions ?form (map expr->local-action (or pass3 null))]])]))
 
 ;; ModulePass : (list-of MBRule) -> RST
 (define (ModulePass mbrules)
@@ -784,6 +792,12 @@
   (newline (current-error-port))
   (when #f
     (apply error sym args)))
+
+(define (expr->local-action d)
+  (match d
+    [(Wrap deriv (e1 e2))
+     (make local-expansion e1 e2
+           #f e1 d #f e2 #f)]))
 
 ;; opaque-table
 ;; Weakly remembers assoc between opaque values and

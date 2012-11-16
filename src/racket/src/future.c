@@ -1071,13 +1071,13 @@ static void end_traversal(Fevent_Buffer *b)
 }
 
 static void log_future_event(Scheme_Future_State *fs, 
-                                         const char *msg_str, 
-                                         const char *extra_str, 
-                                         int which, 
-                                         int what, 
-                                         double timestamp, 
-                                         int fid, 
-                                         Scheme_Object *user_data) 
+                             const char *msg_str, 
+                             const char *extra_str, 
+                             int which, 
+                             int what, 
+                             double timestamp, 
+                             int fid, 
+                             Scheme_Object *user_data) 
 {
   Scheme_Object *data, *v;
 
@@ -1107,7 +1107,7 @@ static void log_future_event(Scheme_Future_State *fs,
 
   ((Scheme_Structure *)data)->slots[5] = user_data;
   
-  scheme_log_w_data(scheme_main_logger, SCHEME_LOG_DEBUG, 0,
+  scheme_log_w_data(scheme_get_future_logger(), SCHEME_LOG_DEBUG, 0,
                     data,                 
                     msg_str,
                     fid,
@@ -1123,7 +1123,7 @@ static Scheme_Object *mark_future_trace_end(int argc, Scheme_Object **argv)
   Scheme_Future_State *fs;
   fs = scheme_future_state;
   log_future_event(fs,
-                   "future %d, process %d: %s: %s; time: %f",
+                   "id %d, process %d: %s: %s; time: %f",
                    "tracing",
                    -1, 
                    FEVENT_STOP_TRACE, 
@@ -1137,7 +1137,7 @@ static Scheme_Object *mark_future_trace_end(int argc, Scheme_Object **argv)
 static void log_overflow_event(Scheme_Future_State *fs, int which, double timestamp)
 {
   log_future_event(fs,
-                   "future ??%-, process %d: %s%s; before time: %f",
+                   "id ??%-, process %d: %s%s; before time: %f",
                    "",
                    which, 
                    FEVENT_MISSING, 
@@ -1154,7 +1154,7 @@ static void flush_future_logs(Scheme_Future_State *fs)
   Fevent_Buffer *b, *min_b;
   Scheme_Object *data_val;
 
-  if (scheme_log_level_p(scheme_main_logger, SCHEME_LOG_DEBUG)) {
+  if (scheme_log_level_p(scheme_get_future_logger(), SCHEME_LOG_DEBUG)) {
     /* Hold lock while swapping buffers: */
     mzrt_mutex_lock(fs->future_mutex);
     for (i = 0; i < fs->thread_pool_size; i++) {
@@ -1223,7 +1223,7 @@ static void flush_future_logs(Scheme_Future_State *fs)
 
       data_val = scheme_make_integer(min_b->a[min_b->i].data);
       log_future_event(fs,
-                       "future %d, process %d: %s%s; time: %f",
+                       "id %d, process %d: %s%s; time: %f",
                        "",
                        min_which, 
                        min_b->a[min_b->i].what, 
@@ -2095,7 +2095,7 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
       Scheme_Object *targid_obj;
       targid_obj = scheme_make_integer(targ_ft->id);
       log_future_event(fs,
-                       "future %d, process %d: %s: %s; time: %f",
+                       "id %d, process %d: %s: %s; time: %f",
                        "touch",
                        -1, 
                        FEVENT_RTCALL_TOUCH, 
@@ -2778,6 +2778,18 @@ static void future_do_runtimecall(Scheme_Future_Thread_State *fts,
   /* Fetch the future descriptor for this thread */
   future = fts->thread->current_ft;
 
+  if (!for_overflow) {
+    /* Check if this prim in fact does have a 
+        safe C version */
+    if (func == scheme_even_p || func == scheme_odd_p) {
+      prim_iS_s f = (prim_iS_s)func;
+      Scheme_Object *ret;
+      ret = f(future->arg_i0, future->arg_S1);
+      future->retval_s = ret;
+      return;
+    }
+  }
+
   /* Check whether we are in slow-path trace mode */ 
   if (fts->is_runtime_thread) { 
     /* On runtime thread - must be slow-path tracing */ 
@@ -3021,8 +3033,9 @@ Scheme_Object *scheme_rtcall_make_fsemaphore(Scheme_Object *ready)
   future->source_of_request = "[make_fsemaphore]";
   future->source_type = FSRC_OTHER;
 
-  /* conservative check for when creation can succeed atomically: */
-  if (SCHEME_INT_VAL(ready) 
+  /* conservative check for when creation can succeed atomically 
+     (because it won't raise an error): */
+  if (SCHEME_INTP(ready) 
       && (SCHEME_INT_VAL(ready) >= 0)
       && (SCHEME_INT_VAL(ready) < 1024))
     is_atomic = 1;
@@ -3093,6 +3106,36 @@ void scheme_rtcall_allocate_values(int count, Scheme_Thread *t)
   future = fts->thread->current_ft;
 
   future->arg_s0 = NULL;
+}
+
+Scheme_Structure *scheme_rtcall_allocate_structure(int count, Scheme_Struct_Type *t)
+  XFORM_SKIP_PROC
+/* Called in future thread */
+{
+  Scheme_Future_Thread_State *fts = scheme_future_thread_state;
+  future_t *future = fts->thread->current_ft;
+  Scheme_Object *retval;
+
+  future->prim_protocol = SIG_ALLOC_STRUCT;
+
+  future->arg_i0 = count;
+  future->arg_s0 = (Scheme_Object *)t;
+
+  future->time_of_request = get_future_timestamp();
+  future->source_of_request = "[allocate_structure]";
+  future->source_type = FSRC_OTHER;
+
+  future_do_runtimecall(fts, NULL, 1, 0, 0);
+
+  /* Fetch the future again, in case moved by a GC */ 
+  future = fts->thread->current_ft;
+
+  future->arg_s0 = NULL;
+
+  retval = future->retval_s;
+  future->retval_s = NULL;
+
+  return (Scheme_Structure *)retval;
 }
 
 Scheme_Object *scheme_rtcall_tail_apply(Scheme_Object *rator, int argc, Scheme_Object **argv)
@@ -3352,7 +3395,7 @@ static void do_invoke_rtcall(Scheme_Future_State *fs, future_t *future)
   g_rtcall_count++;
 #endif
 
-  if (scheme_log_level_p(scheme_main_logger, SCHEME_LOG_DEBUG)) {
+  if (scheme_log_level_p(scheme_get_future_logger(), SCHEME_LOG_DEBUG)) {
     const char *src;
     Scheme_Object *userdata;
 
@@ -3396,7 +3439,7 @@ static void do_invoke_rtcall(Scheme_Future_State *fs, future_t *future)
       }
 
     log_future_event(fs,
-                      "future %d, process %d: %s: %s; time: %f",
+                      "id %d, process %d: %s: %s; time: %f",
                       src,
                       -1, 
                       (future->rt_prim_is_atomic ? FEVENT_HANDLE_RTCALL_ATOMIC : FEVENT_HANDLE_RTCALL),
@@ -3458,7 +3501,7 @@ static void do_invoke_rtcall(Scheme_Future_State *fs, future_t *future)
       }
     case SIG_FUTURE: 
       {
-        Scheme_Object *s = future->arg_s1; 
+        GC_CAN_IGNORE Scheme_Object *s = future->arg_s1;
         future->arg_s1 = NULL;
         s = make_future(s, 1, future);
         future->retval_s = s;
@@ -3471,6 +3514,19 @@ static void do_invoke_rtcall(Scheme_Future_State *fs, future_t *future)
         future->arg_s0 = NULL;
 
         scheme_jit_allocate_values(future->arg_i0, (Scheme_Thread *)arg_s0);
+
+        break;
+      }
+    case SIG_ALLOC_STRUCT:
+      {
+        GC_CAN_IGNORE Scheme_Object *arg_s0 = future->arg_s0;
+        GC_CAN_IGNORE Scheme_Structure *res;
+
+        future->arg_s0 = NULL;
+
+        res = scheme_jit_allocate_structure(future->arg_i0, (Scheme_Struct_Type *)arg_s0);
+
+        future->retval_s = (Scheme_Object *)res;
 
         break;
       }

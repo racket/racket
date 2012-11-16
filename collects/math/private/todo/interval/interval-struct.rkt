@@ -3,8 +3,7 @@
 (require racket/match
          racket/performance-hint
          (for-syntax racket/base)
-         "../../flonum.rkt"
-         "../exception.rkt")
+         "../../flonum.rkt")
 
 (provide
  ;; Types

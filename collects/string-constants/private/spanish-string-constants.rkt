@@ -297,7 +297,6 @@
  (count-columns-from-one "Cuenta números de columna a partir de uno") 
  (display-line-numbers "Muestra números de línea en el contenedor; sin desplazamiento de caracteres")
  (enable-keybindings-in-menus "Habilita enlaces de teclas en los menús")
- (automatically-to-ps "Imprime automáticamente a un archivo en postscript")
  (option-as-meta "Tratar cualquier tecla como meta") ;; macos/macos x only
  (reuse-existing-frames "Reutilizar marcos existentes cuando se abre un nuevo archivo")
  (default-fonts "Fuentes por omisión")

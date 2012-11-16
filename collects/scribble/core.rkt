@@ -107,6 +107,7 @@
           [ldquo . #t]
           [rdquo . #t]
           [rsquo . #t]
+          [lsquo . #t]
           [prime . #t]
           [rarr . #t]
           [larr . #t]

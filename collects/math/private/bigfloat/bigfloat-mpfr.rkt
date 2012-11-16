@@ -1,13 +1,17 @@
 #lang typed/racket/base
 
 (require (only-in "mpfr.rkt" 1ary-funs 1ary-preds 1ary2-funs 2ary-funs)
-         "../functions/random.rkt"
+         "../base/base-random.rkt"
          "utils.rkt")
 
 (define-type Rounding-Mode (U 'nearest 'zero 'up 'down))
 
 (require/typed
  "mpfr.rkt"
+ ;; Library stuffs
+ [get-mpfr-lib-dirs   ((U 'unix 'windows 'macosx) -> (Listof Path-String))]
+ [set-mpfr-lib-dirs!  ((U 'unix 'windows 'macosx) (Listof Path-String) -> Void)]
+ [mpfr-available?  (-> Boolean)]
  ;; Parameters
  [bf-rounding-mode  (Parameterof Rounding-Mode)]
  [bf-min-precision  Exact-Positive-Integer]
@@ -15,8 +19,9 @@
  [bf-precision  (Parameterof Integer)]
  ;; Type and predicate
  [opaque Bigfloat bigfloat?]
+ [bfcanonicalize  (Bigfloat -> Bigfloat)]
  ;; Accessors
- [bigfloat-precision    (Bigfloat -> Integer)]
+ [bigfloat-precision    (Bigfloat -> Exact-Positive-Integer)]
  [bigfloat-sign         (Bigfloat -> (U 0 1))]
  [bigfloat-exponent     (Bigfloat -> Integer)]
  [bigfloat-sig+exp      (Bigfloat -> (Values Integer Integer))]
@@ -51,9 +56,16 @@
  [bfgte?  (Bigfloat Bigfloat -> Boolean)]
  ;; Functions with non-uniform types
  [bffactorial  (Integer -> Bigfloat)]
- [bfjn  (Integer Bigfloat -> Bigfloat)]
- [bfyn  (Integer Bigfloat -> Bigfloat)]
+ [bfbesj  (Integer Bigfloat -> Bigfloat)]
+ [bfbesy  (Integer Bigfloat -> Bigfloat)]
+ [bfroot  (Bigfloat Integer -> Bigfloat)]
  [bfshift  (Bigfloat Integer -> Bigfloat)]
+ [bigfloat->ordinal  (Bigfloat -> Integer)]
+ [ordinal->bigfloat  (Integer -> Bigfloat)]
+ [bigfloats-between  (Bigfloat Bigfloat -> Integer)]
+ [bfstep  (Bigfloat Integer -> Bigfloat)]
+ [bfnext  (Bigfloat -> Bigfloat)]
+ [bfprev  (Bigfloat -> Bigfloat)]
  [bflog-gamma/sign  (Bigfloat -> (Values Bigfloat (U -1 1)))])
 
 (req/prov-uniform-collection "mpfr.rkt" 1ary-funs (Bigfloat -> Bigfloat))
@@ -127,6 +139,10 @@
   (bf (random-bits bits) (- bits)))
 
 (provide
+ ;; Library stuffs
+ get-mpfr-lib-dirs
+ set-mpfr-lib-dirs!
+ mpfr-available?
  ;; Parameters
  bf-rounding-mode
  bf-min-precision
@@ -134,6 +150,7 @@
  bf-precision
  ;; Type and predicate
  Bigfloat bigfloat?
+ bfcanonicalize
  ;; Accessors
  bigfloat-precision
  bigfloat-sign
@@ -155,11 +172,18 @@
  bf
  ;; Functions with non-uniform types
  bffactorial
- bfjn
- bfyn
+ bfbesj
+ bfbesy
  bfshift
  bflog-gamma/sign
  bfrandom
+ bfroot
+ bigfloat->ordinal
+ ordinal->bigfloat
+ bigfloats-between
+ bfstep
+ bfnext
+ bfprev
  ;; Function wrappers with Rackety APIs
  bf+
  bf-
@@ -171,5 +195,4 @@
  bf<
  bf<=
  bf>
- bf>=
- bfrandom)
+ bf>=)

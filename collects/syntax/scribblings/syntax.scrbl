@@ -17,6 +17,8 @@
 
 @include-section["reader-helpers.scrbl"]
 
+@include-section["for-body.scrbl"]
+
 @include-section["srcloc.scrbl"]
 
 @include-section["quote.scrbl"]

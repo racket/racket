@@ -516,7 +516,10 @@
                                                stx
                                                super-id))
                                           (and super-expr
-                                               #`(check-struct-type 'fm #,super-expr)))]
+                                               #`(let ([the-super #,super-expr])
+                                                   (if (struct-type? the-super)
+                                                       the-super
+                                                       (check-struct-type 'fm the-super)))))]
                        [prune (lambda (stx) (identifier-prune-lexical-context stx
                                                                               (list (syntax-e stx) '#%top)))]
                        [reflect-name-expr (if reflect-name-expr

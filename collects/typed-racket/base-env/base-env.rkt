@@ -942,6 +942,8 @@
 [make-weak-custom-hash (->opt (-> Univ Univ Univ) (-> Univ -Nat) [(-> Univ -Nat)] Univ)]
 
 ;Section 3.14 (Sequences and Streams)
+[in-directory (-> (-seq -Path))]
+
 [sequence? (make-pred-ty (-seq Univ))]
 [stop-before (-poly (a) ((-seq a) (a . -> . Univ) . -> . (-seq a)))]
 [stop-after (-poly (a) ((-seq a) (a . -> . Univ) . -> . (-seq a)))]
@@ -2155,6 +2157,7 @@
                                [(-Port (one-of/c 'none 'line 'block)) -Void])]
 [file-position (cl-> [(-Port) -Nat]
                      [(-Port -Integer) -Void])]
+[file-position* (-> -Port (Un -Nat (-val #f)))]
 
 ;Section 12.1.4
 [port-count-lines! (-> (Un -Input-Port -Output-Port) -Void)]

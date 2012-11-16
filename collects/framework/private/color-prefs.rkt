@@ -341,6 +341,11 @@
                                                 (editor:get-default-color-style-name)
                                                 (string-constant default-text-color))
          
+         (build-text-foreground-selection-panel vp
+                                                'framework:misspelled-text-color
+                                                color:misspelled-text-color-style-name
+                                                (string-constant misspelled-text-color))
+         
          (let* ([choice (new choice% 
                              [label (string-constant parenthesis-color-scheme)]
                              [parent vp]

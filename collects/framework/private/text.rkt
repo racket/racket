@@ -11,7 +11,8 @@
          "autocomplete.rkt"
          mred/mred-sig
          mrlib/interactive-value-port
-         racket/list)
+         racket/list
+         "logging-timer.rkt")
 (require setup/xref
          scribble/xref
          scribble/manual-struct)
@@ -1063,7 +1064,7 @@
       (when searching-str
         (unless timer
           (set! timer 
-                (new timer% 
+                (new logging-timer% 
                      [notify-callback 
                       (λ () 
                         (run-after-edit-sequence
@@ -1536,7 +1537,7 @@
     ;; have not yet been propogated to the delegate
     (define todo '())
     
-    (define timer (new timer% 
+    (define timer (new logging-timer% 
                        [notify-callback
                         (λ ()
                           ;; it should be the case that todo is always '() when the delegate is #f

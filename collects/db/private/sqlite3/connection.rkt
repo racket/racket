@@ -2,6 +2,7 @@
 (require racket/class
          ffi/unsafe
          ffi/unsafe/atomic
+         unstable/error
          "../generic/interfaces.rkt"
          "../generic/common.rkt"
          "../generic/prepared.rkt"
@@ -120,7 +121,7 @@
              [(sql-null? param)
               (sqlite3_bind_null stmt i)]
              [else
-              (error/internal fsym "bad parameter: ~e" param)])))
+              (error/internal* fsym "bad parameter value" '("value" value) param)])))
 
     (define/private (step* fsym db stmt end-box fetch-limit)
       (if (zero? fetch-limit)
@@ -154,8 +155,8 @@
                                         [(= type SQLITE_BLOB)
                                          (sqlite3_column_blob stmt i)]
                                         [else
-                                         (error/internal
-                                          fsym "unknown column type: ~e" type)]))))
+                                         (error/internal* fsym "unknown column type"
+                                                          "type" type)]))))
                  vec)])))
 
     (define/override (classify-stmt sql) (classify-sl-sql sql))
@@ -170,11 +171,12 @@
                                     (sqlite3_prepare_v2 db sql)])
                         (when tail?
                           (when stmt (sqlite3_finalize stmt))
-                          (uerror fsym "multiple SQL statements given: ~e" sql))
+                          (raise-misc-error fsym "multiple statements given"
+                                            '("given" value) sql))
                         (values prep-status stmt)))])
         (when DEBUG?
           (dprintf "  << prepared statement #x~x\n" (cast stmt _pointer _uintptr)))
-        (unless stmt (uerror fsym "SQL syntax error in ~e" sql))
+        (unless stmt (raise-misc-error fsym "SQL syntax error" '("given" value) sql))
         (let* ([param-typeids
                 (for/list ([i (in-range (sqlite3_bind_parameter_count stmt))])
                   'any)]
@@ -204,7 +206,7 @@
              (let loop ()
                (let ([stmt (sqlite3_next_stmt db #f)])
                  (when stmt
-                   (HANDLE 'disconnect (sqlite3_finalize stmt))
+                   (sqlite3_finalize stmt)
                    (loop))))
              (HANDLE 'disconnect (sqlite3_close db))
              (void))))))
@@ -223,7 +225,7 @@
          (let ([stmt (send pst get-handle)])
            (send pst set-handle #f)
            (when (and stmt -db)
-             (HANDLE fsym (sqlite3_finalize stmt)))
+             (sqlite3_finalize stmt))
            (void)))))
 
     ;; Internal query
@@ -314,7 +316,14 @@
     ;; ----
 
     (super-new)
-    (register-finalizer this (lambda (obj) (send obj disconnect)))))
+    (register-finalizer this
+                        (lambda (obj)
+                          ;; Keep a reference to the class to keep all FFI callout objects
+                          ;; (eg, sqlite3_close) used by its methods from being finalized.
+                          (let ([dont-gc this%])
+                            (send obj disconnect)
+                            ;; Dummy result to prevent reference from being optimized away
+                            dont-gc)))))
 
 ;; ----------------------------------------
 
@@ -326,7 +335,7 @@
           (= s SQLITE_ROW)
           (= s SQLITE_DONE))
       s
-      (uerror who "~a" (lookup-status-message s db))))
+      (error who "~a" (lookup-status-message s db))))
 
 (define error-table
   `([,SQLITE_ERROR . "unknown error"]

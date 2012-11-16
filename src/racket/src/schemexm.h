@@ -30,6 +30,7 @@
 # endif
 #endif
 #define scheme_get_current_thread (scheme_extension_table->scheme_get_current_thread)
+#define scheme_is_atomic (scheme_extension_table->scheme_is_atomic)
 #define scheme_start_atomic (scheme_extension_table->scheme_start_atomic)
 #define scheme_end_atomic (scheme_extension_table->scheme_end_atomic)
 #define scheme_end_atomic_no_swap (scheme_extension_table->scheme_end_atomic_no_swap)
@@ -481,6 +482,7 @@
 #define scheme_get_bytes (scheme_extension_table->scheme_get_bytes)
 #define scheme_get_ready_special (scheme_extension_table->scheme_get_ready_special)
 #define scheme_tell (scheme_extension_table->scheme_tell)
+#define scheme_tell_can_redirect (scheme_extension_table->scheme_tell_can_redirect)
 #define scheme_output_tell (scheme_extension_table->scheme_output_tell)
 #define scheme_tell_line (scheme_extension_table->scheme_tell_line)
 #define scheme_tell_column (scheme_extension_table->scheme_tell_column)

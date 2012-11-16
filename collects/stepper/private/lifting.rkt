@@ -159,46 +159,50 @@
 
   ; TESTING:
   
-  (define-syntax (test-begin stx)
-    (syntax-case stx ()
-      [(_ expr ...)
-       ;#'(begin expr ...) ; testing version
-       #'(void) ; non-testing version
-       ]))
-  
   (define (datum-ize-context-record cr)
      (list (syntax->datum (context-record-stx cr))
                           (context-record-index cr)
                           (context-record-kind cr)))
   
-  (test-begin (require tests/utils/mz-testing))
-  
-  (test-begin (SECTION 'stepper-lifting))
-
-  (test-begin
-   ; TEST OF FIND-HIGHLIGHT
-   
-   
-   (define test-datum (expand (car (build-stx-with-highlight
-                                    `((define (f x) (letrec ([a (lambda (x) (b (- x 1)))]
-                                                             [b (lambda (x) ((hilite a) x))])
-                                                      (a x))))))))
-
-   (define expected (list (list `(#%app a x) '(1) 'expr)
-                          (list `(lambda (x) (#%app a x)) '(2) 'expr)
-                          (list `(letrec-values ([(a) (lambda (x) (#%app b (#%app (#%top . -) x (quote 1))))] [(b) (lambda (x) (#%app a x))]) (#%app a x)) '(1 1 1) 'expr)
-                          (list `(lambda (x) (letrec-values ([(a) (lambda (x) (#%app b (#%app (#%top . -) x (quote 1))))] [(b) (lambda (x) (#%app a x))]) (#%app a x))) '(2) 'expr)                 
-                          (list `(define-values (f) (lambda (x) (letrec-values ([(a) (lambda (x) (#%app b (#%app (#%top . -) x (quote 1))))] [(b) (lambda (x) (#%app a x))]) (#%app a x)))) '(2)
-                                               'general-top-level)))
-   
-   (match-let* ([(vector context-records highlight) (find-highlight test-datum)])
-     (test expected map datum-ize-context-record context-records))
-   
-   
-   (test null (lambda () 
-                (match-let* ([(vector context-records dc) 
-                              (find-highlight (car (build-stx-with-highlight `((hilite foo)))))])
-                  context-records))))
+  (module+ test
+    (require rackunit)
+    
+    ; TEST OF FIND-HIGHLIGHT
+    
+    (let ()
+      (define test-datum 
+        (with-syntax ([hilite-a 
+                       (stepper-syntax-property
+                        #'a
+                        'stepper-highlight
+                        #t)])
+          (expand #`(define (f x) (letrec ([a (lambda (x) (b (- x 1)))]
+                                           [b (lambda (x) (hilite-a x))])
+                                    (a x))))))
+      
+      (define expected 
+        (list (list `(#%app a x) '(1) 'expr)
+              (list `(lambda (x) (#%app a x)) '(2) 'expr)
+              (list `(letrec-values ([(a) (lambda (x) (#%app b (#%app - x (quote 1))))] [(b) (lambda (x) (#%app a x))]) (#%app a x)) '(1 1 1) 'expr)
+              (list `(lambda (x) (letrec-values ([(a) (lambda (x) (#%app b (#%app - x (quote 1))))] [(b) (lambda (x) (#%app a x))]) (#%app a x))) '(2) 'expr)                 
+              (list `(define-values (f) (lambda (x) (letrec-values ([(a) (lambda (x) (#%app b (#%app - x (quote 1))))] [(b) (lambda (x) (#%app a x))]) (#%app a x)))) '(2)
+                    'general-top-level)))
+      
+      (match-define (vector context-records highlight) 
+        (find-highlight test-datum))
+      
+      (check-equal? (map datum-ize-context-record context-records)
+                    expected))
+    
+    (let ()
+      (define test-stx (stepper-syntax-property
+                        #'foo
+                        'stepper-highlight
+                        #t))
+      
+      (match-define (vector context-records dc) (find-highlight test-stx))
+      
+      (check-equal? context-records null)))
   
   ; substitute-in-syntax takes a syntax expression (which must be a proper syntax list) and a path
   ; (represented by a list of numbers) and a syntax-expression to insert.  If the path is null, the
@@ -229,12 +233,12 @@
         arg
         (fn (n-times (- n 1) fn arg))))
   
-  (test-begin
-   
-   (local
-       ((define expected '(let-values ([(a) (lambda (x) 'bar)]) (a)))
-        (define actual (syntax->datum (substitute-in-syntax #'(let-values ([(a) (lambda (x) 'foo)]) (a)) '(1 0 1 2 1) #'bar))))
-     (printf "equal? ~v\n" (equal? expected actual))))
+  (module+ test
+    (let ()
+      (define expected '(let-values ([(a) (lambda (x) 'bar)]) (a)))
+      (define actual (syntax->datum (substitute-in-syntax #'(let-values ([(a) (lambda (x) 'foo)]) (a)) '(1 0 1 2 1) #'bar)))
+      
+      (check-equal? actual expected)))
   
   
   ; lift-local-defs takes a list of contexts and an instruction and works its way out, reconstructing the expression.
@@ -291,31 +295,28 @@
        (lift)]
       [else (values so-far-defs stx)])))
   
-  (test-begin
-   (local 
-       ((define actual-stxs
-          (lift-local-defs
-            (list (make-context-record #'(dc 14) '(0) 'expr)
-                  (make-context-record #'(letrec-values ([(a) 3] [(b) dc] [(c) 5]) (+ 3 4)) '(1 1 1) 'expr)
-                  (make-context-record #'(f dc) '(1) 'expr))
-            #'(let-values ([(a) 4] [(b) 9] [(c) 12]) (p q))
-            #t))
-        
-        (define actual-sexps (map syntax-object->hilite-datum actual-stxs))
-        
-        (define expected-sexps
-          (list '(define-values (a) 3)
-                `(hilite (define-values (a) 4))
-                `(hilite (define-values (b) 9))
-                `(hilite (define-values (c) 12))
-                `(define-values (b) ((hilite (p q)) 14))
-                '(define-values (c) 5)
-                '(f (+ 3 4)))))
-     
-     (test expected-sexps (lambda () actual-sexps))
-     ;(printf "shared: ~v\n" (sexp-shared actual expected))
-     )
-   
-   (report-errs)
-   )
+  (module+ test
+    (define actual-stxs
+      (lift-local-defs
+       (list (make-context-record #'(dc 14) '(0) 'expr)
+             (make-context-record #'(letrec-values ([(a) 3] [(b) dc] [(c) 5]) (+ 3 4)) '(1 1 1) 'expr)
+             (make-context-record #'(f dc) '(1) 'expr))
+       #'(let-values ([(a) 4] [(b) 9] [(c) 12]) (p q))
+       #t))
+    
+    
+    (define actual-sexps (map syntax->hilite-datum actual-stxs))
+    
+    (define expected-sexps
+      (list '(define-values (a) 3)
+            '(hilite (define-values (a) 4))
+            '(hilite (define-values (b) 9))
+            '(hilite (define-values (c) 12))
+            '(define-values (b) ((hilite (p q)) 14))
+            '(define-values (c) 5)
+            '(f (+ 3 4))))
+    
+    (check-equal? actual-sexps expected-sexps)
+    )
+  
  

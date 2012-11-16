@@ -157,19 +157,20 @@
                                        ((length number) . > . 3)))])
               (printf "\n\n\\~a~a~a"
                       (case (+ (length number) (or (render-part-depth) 0))
-                        [(0 1) "sectionNewpage\n\n\\section"]
-                        [(2) "subsection"]
-                        [(3) "subsubsection"]
-                        [else "subsubsection"])
+                        [(0 1) "sectionNewpage\n\n\\Ssection"]
+                        [(2) "Ssubsection"]
+                        [(3) "Ssubsubsection"]
+                        [(4) "Ssubsubsubsection"]
+                        [else "Ssubsubsubsubsection"])
                       (if (and (part-style? d 'hidden) (not no-number?))
                           "hidden" "")
-                      (if no-number? "*" ""))
+                      (if no-number? "star" ""))
               (when (not (or (part-style? d 'hidden) no-number?))
-                (printf "[")
+                (printf "{")
                 (parameterize ([disable-images #t]
                                [escape-brackets #t])
                   (render-content (part-title-content d) d ri))
-                (printf "]")))
+                (printf "}")))
             (printf "{")
             (render-content (part-title-content d) d ri)
             (printf "}")
@@ -360,7 +361,7 @@
                   [(newline) 
                    (check-render)
                    (unless (suppress-newline-content)
-                     (printf "\\\\"))]
+                     (printf "\\hspace*{\\fill}\\\\"))]
                   [else (error 'latex-render
                                "unrecognzied style symbol: ~s" style)])]
                [(string? style-name)
@@ -728,6 +729,7 @@
                     [(ldquo) "{``}"]
                     [(rdquo) "{''}"]
                     [(rsquo) "{'}"]
+                    [(lsquo) "{`}"]
                     [(prime) "$'$"]
                     [(rarr) "$\\rightarrow$"]
                     [(larr) "$\\leftarrow$"]
@@ -751,8 +753,8 @@
           (let ([len (string-length s)])
             (let loop ([i 0])
               (unless (= i len)
-                (let ([c (string-ref s i)])
-                  (display
+                (display
+                 (let char-loop ([c (string-ref s i)])
                    (case c
                      [(#\\) (if (rendering-tt)
                                 "{\\char`\\\\}"
@@ -784,6 +786,11 @@
                      [(#\uDF) "{\\ss}"]
                      [else
                       (if ((char->integer c) . > . 127)
+                          ;; latex-prefix.rkt enables utf8 input, but this does not work for
+                          ;; all the characters below (e.g. ∞). Some parts of the table
+                          ;; below are therefore necessary, but some parts probably are not.
+                          ;; Which parts are necessary may depend on the latex version,
+                          ;; though, so we keep this table around to avoid regressions.
                           (case c
                             [(#\u2011) "\\mbox{-}"] ; non-breaking hyphen
                             [(#\uB0) "$^{\\circ}$"] ; degree
@@ -935,42 +942,10 @@
                             [(#\☺) "$\\smiley$"]
                             [(#\☻) "$\\blacksmiley$"]
                             [(#\☹) "$\\frownie$"]
-                            [(#\à) "\\`{a}"]
-                            [(#\À) "\\`{A}"]
-                            [(#\á) "\\'{a}"]
-                            [(#\â) "\\^{a}"]
-                            [(#\Â) "\\^{A}"]
-                            [(#\Á) "\\'{A}"]
-                            [(#\ç) "\\c{c}"]
-                            [(#\Ç) "\\c{C}"]
-                            [(#\è) "\\`{e}"]
-                            [(#\È) "\\`{E}"]
-                            [(#\é) "\\'{e}"]
-                            [(#\É) "\\'{E}"]
-                            [(#\ê) "\\^{e}"]
-                            [(#\Ê) "\\^{E}"]
-                            [(#\í) "\\'{i}"]
-                            [(#\Í) "\\'{I}"]
-                            [(#\î) "\\^{i}"]
-                            [(#\Î) "\\^{I}"]
-                            [(#\ô) "\\^{o}"]
-                            [(#\Ô) "\\^{O}"]
-                            [(#\û) "\\^{u}"]
-                            [(#\Û) "\\^{U}"]
-                            [(#\ä) "\\\"a"]
-                            [(#\Ä) "\\\"A"]
-                            [(#\ü) "\\\"u"]
-                            [(#\Ü) "\\\"U"]
-                            [(#\ö) "\\\"o"]
-                            [(#\Ö) "\\\"O"]
                             [(#\ø) "{\\o}"]
                             [(#\Ø) "{\\O}"]
                             [(#\ł) "{\\l}"]
                             [(#\Ł) "{\\L}"]
-                            [(#\ř) "{\\v r}"]
-                            [(#\Ř) "{\\v R}"]
-                            [(#\š) "{\\v s}"]
-                            [(#\Š) "{\\v S}"]
                             [(#\uA7) "{\\S}"]
                             [(#\〚) "$[\\![$"]
                             [(#\〛) "$]\\!]$"]
@@ -990,7 +965,34 @@
                             [(#\u2079) "$^9$"]
                             [(#\u207a) "$^+$"]
                             [(#\u207b) "$^-$"]
-                            [else c])
+                            [else
+                             ;; Detect characters that can be formed with combining characters
+                             ;; and translate them to Latex combinations:
+                             (define s (string-normalize-nfd (string c)))
+                             (define len (string-length s))
+                             (cond
+                              [(len . > . 1)
+                               (define combiner (case (string-ref s (sub1 len))
+                                                  [(#\u300) "\\`{~a}"]
+                                                  [(#\u301) "\\'{~a}"]
+                                                  [(#\u302) "\\^{~a}"]
+                                                  [(#\u303) "\\~~{~a}"]
+                                                  [(#\u304) "\\={~a}"]
+                                                  [(#\u306) "\\u{~a}"]
+                                                  [(#\u307) "\\.{~a}"]
+                                                  [(#\u308) "\\\"{~a}"]
+                                                  [(#\u30a) "\\r{~a}"]
+                                                  [(#\u30b) "\\H{~a}"]
+                                                  [(#\u30c) "\\v{~a}"]
+                                                  [(#\u327) "\\c{~a}"]
+                                                  [(#\u328) "\\k{~a}"]
+                                                  [else #f]))
+                               (define base (string-normalize-nfc (substring s 0 (sub1 len))))
+                               (if (and combiner
+                                        (= 1 (string-length base)))
+                                   (format combiner (char-loop (string-ref base 0)))
+                                   c)]
+                              [else c])])
                           c)])))
                 (loop (add1 i)))))))
 

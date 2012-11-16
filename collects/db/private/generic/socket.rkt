@@ -9,7 +9,7 @@
 ;; Connects to the unix domain socket associated with the given path.
 (define (unix-socket-connect path0)
   (unless (path-string? path0)
-    (raise-type-error 'unix-socket-connect "path or string" path0))
+    (raise-argument-error 'unix-socket-connect "path-string?" path0))
   (security-guard-check-file 'unix-socket-connect path0 '(read write))
   (let* ([path* (cleanse-path (path->complete-path path0))]
          [path-b (path->bytes path*)])
@@ -51,9 +51,7 @@
 
 (define (make-socket)
   (unless (and AF_UNIX SOCK_STREAM)
-    (raise-user-error
-     'unix-socket-connect
-     "unix-domain sockets not supported on this platform"))
+    (error 'unix-socket-connect "unix-domain sockets not supported on this platform"))
   (_socket AF_UNIX SOCK_STREAM 0))
 
 (define _sockaddr_un_path_part

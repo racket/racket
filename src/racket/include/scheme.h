@@ -679,8 +679,10 @@ typedef struct Scheme_Offset_Cptr
 /* Values with SCHEME_PRIM_OTHER_TYPE_MASK */
 #define SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_GETTER (32 | 256)
 #define SCHEME_PRIM_STRUCT_TYPE_CONSTR           128
+#define SCHEME_PRIM_STRUCT_TYPE_SIMPLE_CONSTR    (32 | 64 | 128)
 #define SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER 256
 #define SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER   (128 | 256)
+#define SCHEME_PRIM_STRUCT_TYPE_BROKEN_INDEXED_SETTER   (32 | 128)
 #define SCHEME_PRIM_TYPE_PARAMETER               64
 #define SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER      (64 | 128)
 #define SCHEME_PRIM_SOMETIMES_INLINED            (64 | 256)
@@ -1075,7 +1077,7 @@ typedef struct Scheme_Thread {
 
   struct Scheme_Marshal_Tables *current_mt;
 
-  Scheme_Object *constant_folding; /* compiler hack */
+  struct Optimize_Info *constant_folding; /* compiler hack */
   Scheme_Object *reading_delayed; /* reader hack */
 
   Scheme_Object *(*overflow_k)(void);
@@ -1280,6 +1282,7 @@ enum {
   MZCONFIG_CODE_INSPECTOR,
 
   MZCONFIG_USE_COMPILED_KIND,
+  MZCONFIG_USE_COMPILED_ROOTS,
   MZCONFIG_USE_USER_PATHS,
   MZCONFIG_USE_LINK_PATHS,
 
@@ -1378,6 +1381,7 @@ struct Scheme_Port
   Scheme_Location_Fun location_fun;
   Scheme_Count_Lines_Fun count_lines_fun;
   Scheme_Buffer_Mode_Fun buffer_mode_fun;
+  Scheme_Object *position_redirect; /* for `file-position' */
 };
 
 struct Scheme_Input_Port
@@ -1767,6 +1771,7 @@ MZ_EXTERN void scheme_set_startup_load_on_demand(int);
 MZ_EXTERN void scheme_set_ignore_user_paths(int);
 MZ_EXTERN void scheme_set_ignore_link_paths(int);
 MZ_EXTERN void scheme_set_logging(int syslog_level, int stderr_level);
+MZ_EXTERN void scheme_set_logging_spec(Scheme_Object *syslog_level, Scheme_Object *stderr_level);
 
 MZ_EXTERN int scheme_get_allow_set_undefined();
 
@@ -1833,9 +1838,11 @@ MZ_EXTERN void scheme_set_addon_dir(Scheme_Object *p);
 MZ_EXTERN void scheme_set_links_file(Scheme_Object *p);
 MZ_EXTERN void scheme_set_command_line_arguments(Scheme_Object *vec);
 MZ_EXTERN void scheme_set_compiled_file_paths(Scheme_Object *list);
+MZ_EXTERN void scheme_set_compiled_file_roots(Scheme_Object *list);
 
 MZ_EXTERN void scheme_init_collection_paths(Scheme_Env *global_env, Scheme_Object *extra_dirs);
 MZ_EXTERN void scheme_init_collection_paths_post(Scheme_Env *global_env, Scheme_Object *extra_dirs, Scheme_Object *extra_post_dirs);
+MZ_EXTERN void scheme_init_compiled_roots(Scheme_Env *global_env, const char *paths);
 
 MZ_EXTERN void scheme_seal_parameters();
 

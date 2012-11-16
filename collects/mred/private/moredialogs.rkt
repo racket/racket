@@ -236,15 +236,15 @@
       (check-label-string 'get-choices-from-user title)
       (check-label-string/false 'get-choices-from-user message)
       (unless (and (list? choices) (andmap label-string? choices))
-	(raise-type-error 'get-choices-from-user "list of strings (up to 200 characters)" choices))
+	(raise-argument-error 'get-choices-from-user "(listof label-string?)" choices))
       (check-top-level-parent/false 'get-choices-from-user parent)
-      (unless (and (list? init-vals) (andmap (lambda (x) (and (integer? x) (exact? x) (not (negative? x)))) init-vals))
-	(raise-type-error 'get-choices-from-user "list of exact non-negative integers" init-vals))
+      (unless (and (list? init-vals) (andmap exact-nonnegative-integer? init-vals))
+	(raise-argument-error 'get-choices-from-user "(listof exact-nonnegative-integer?)" init-vals))
       (check-style 'get-choices-from-user '(single multiple extended) null style)
       (when (and (memq 'single style) (> (length init-vals) 1))
-	(raise-mismatch-error 'get-choices-from-user 
-			      (format "multiple initial-selection indices provided with ~e style: " 'single)
-			      init-vals))
+	(raise-arguments-error 'get-choices-from-user 
+                               "multiple initial-selection indices provided with 'single style"
+                               "indices" init-vals))
       (let* ([f (make-object dialog% title parent box-width (min 300 (max 150 (* 14 (length choices)))))]
 	     [ok-button #f]
 	     [update-ok (lambda (l) (send ok-button enable (not (null? (send l get-selections)))))]
@@ -259,11 +259,12 @@
 	      [p (make-object horizontal-pane% f)])
 	  (for-each (lambda (i) 
 		      (when (>= i (send l get-number))
-			(raise-mismatch-error 
-			 'get-choices-from-user 
-			 (format "inital-selection list specifies an out-of-range index (~e choices provided): "
-				 (send l get-number))
-			 i))
+			(raise-arguments-error 
+                         'get-choices-from-user 
+                         "out of range;\n inital-selection list specifies an out-of-range index"
+                         "index" i
+                         "provided choices" (send l get-number)
+                         "list..." init-vals))
 		      (send l select i #t)) init-vals)
 	  (send p set-alignment 'right 'center)
 	  (send p stretchable-height #f)

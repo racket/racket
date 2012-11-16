@@ -201,9 +201,11 @@
   (send (send test-engine get-info) add-check)
   (let ([result (with-handlers ([exn?
                                  (lambda (e)
-                                   (or (equal? (exn-message e) error)
+                                   (define msg 
+                                     (rewrite-contract-error-message (exn-message e)))
+                                   (or (equal? msg error)
                                        (make-incorrect-error src (test-format) error
-                                                             (exn-message e) e)))])
+                                                             msg e)))])
                   (let ([test-val (test)])
                     (make-expected-error src (test-format) error test-val)))])
     (if (check-fail? result)

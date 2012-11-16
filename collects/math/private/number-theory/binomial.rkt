@@ -1,7 +1,6 @@
 #lang typed/racket/base
 
-(require "../exception.rkt"
-         "types.rkt")
+(require "types.rkt")
 
 (provide binomial)
 
@@ -22,8 +21,12 @@
                            (* prod (/ (+ n (- k) i) i))))]))
    natural?))
 
-(: binomial (Integer Integer -> Natural))
+(: binomial (case-> (Integer Zero -> One)
+                    (One One -> One)
+                    (Integer Integer -> Natural)))
 (define (binomial n k)
   (cond [(n . < . 0)  (raise-argument-error 'binomial "Natural" 0 n k)]
         [(k . < . 0)  (raise-argument-error 'binomial "Natural" 1 n k)]
+        [(zero? k)  1]
+        [(eqv? n 1)  (if (eqv? k 1) 1 (binomial* n k))]
         [else  (binomial* n k)]))

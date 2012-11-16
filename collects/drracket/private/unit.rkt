@@ -42,7 +42,10 @@ module browser threading seems wrong.
          mred
          (prefix-in mred: mred)
          
-         mzlib/date)
+         mzlib/date
+         
+         framework/private/aspell
+         framework/private/logging-timer)
 
 (provide unit@)
 
@@ -3628,6 +3631,29 @@ module browser threading seems wrong.
       
       (define/override (edit-menu:between-find-and-preferences edit-menu)
         (super edit-menu:between-find-and-preferences edit-menu)
+        (new menu:can-restore-checkable-menu-item%
+             [label (string-constant spell-check-string-constants)]
+             [shortcut #\c]
+             [shortcut-prefix (cons 'shift (get-default-shortcut-prefix))]
+             [parent edit-menu]
+             [demand-callback
+              (λ (item)
+                (define ed (get-edit-target-object))
+                (define on? (and ed (is-a? ed color:text<%>)))
+                (send item enable ed)
+                (send item check (and on? (send ed get-spell-check-strings))))]
+             [callback
+              (λ (item evt)
+                (define asp (find-aspell-binary-path))
+                (cond
+                 [asp
+                  (define ed (get-edit-target-object))
+                  (define old-val (send ed get-spell-check-strings))
+                  (preferences:set 'framework:spell-check-on? (not old-val))
+                  (send ed set-spell-check-strings (not old-val))]
+                 [else
+                  (message-box (string-constant drscheme)
+                               (string-constant cannot-find-ispell-or-aspell-path))]))])
         (new menu:can-restore-menu-item%
              [label (string-constant complete-word)]
              [shortcut #\/]
@@ -4519,7 +4545,7 @@ module browser threading seems wrong.
       (define num-running-frames (vector-length running-frames))
       (define is-running? #f)
       (define frame 0)
-      (define timer (make-object timer% (λ () (refresh) (yield)) #f))
+      (define timer (make-object logging-timer% (λ () (refresh) (yield)) #f))
       
       (define/public (set-running r?)
         (cond [r?    (unless is-running? (set! frame 4))

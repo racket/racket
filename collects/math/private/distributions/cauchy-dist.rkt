@@ -11,7 +11,7 @@
          flcauchy-cdf
          flcauchy-inv-cdf
          flcauchy-random
-         Cauchy-Distribution cauchy-dist cauchy-dist? cauchy-dist-center cauchy-dist-scale)
+         Cauchy-Dist cauchy-dist cauchy-dist? cauchy-dist-center cauchy-dist-scale)
 
 (: flcauchy-pdf (Float Float Float Any -> Float))
 (define flcauchy-pdf
@@ -62,12 +62,12 @@
 
 (begin-encourage-inline
   
-  (define-distribution-type: cauchy-dist
-    Cauchy-Distribution Real-Distribution ([center : Float] [scale : Float]))
+  (define-distribution-type: Cauchy-Dist (Ordered-Dist Real Flonum)
+    cauchy-dist ([center : Float] [scale : Float]))
 
-  (: cauchy-dist (case-> (-> Cauchy-Distribution)
-                         (Real -> Cauchy-Distribution)
-                         (Real Real -> Cauchy-Distribution)))
+  (: cauchy-dist (case-> (-> Cauchy-Dist)
+                         (Real -> Cauchy-Dist)
+                         (Real Real -> Cauchy-Dist)))
   (define (cauchy-dist [c 0.0] [s 1.0])
     (let ([c  (fl c)] [s   (fl s)])
       (define pdf (opt-lambda: ([x : Real] [log? : Any #f])
@@ -77,6 +77,6 @@
       (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [complement? : Any #f])
                         (flcauchy-inv-cdf c s (fl p) log? complement?)))
       (define (random) (flcauchy-random c s))
-      (make-cauchy-dist pdf cdf inv-cdf random -inf.0 +inf.0 (delay c) c s)))
+      (make-cauchy-dist pdf random cdf inv-cdf -inf.0 +inf.0 (delay c) c s)))
   
   )

@@ -18,7 +18,7 @@
 
 @author["Paul Graunke and Jay McCarthy"]
 
-@defmodule[xml]
+@defmodule[xml #:use-sources (xml/private/xexpr-core)]
 
 The @racketmodname[xml] library provides functions for parsing and
 generating XML. XML can be represented as an instance of the
@@ -34,11 +34,11 @@ It does not interpret namespaces either.
 
 @section{Datatypes}
 
-@defstruct[location ([line exact-nonnegative-integer?]
-                     [char exact-nonnegative-integer?]
+@defstruct[location ([line (or/c false/c exact-nonnegative-integer?)]
+                     [char (or/c false/c exact-nonnegative-integer?)]
                      [offset exact-nonnegative-integer?])]{
 
-Represents a location in an input stream.}
+Represents a location in an input stream. The offset is a character offset unless @racket[xml-count-bytes] is @racket[#t], in which case it is a byte offset.}
 
 @defthing[location/c contract?]{
  Equivalent to @racket[(or/c location? symbol? false/c)].
@@ -178,6 +178,16 @@ and a @racket[_misc] is an instance of the @racket[comment] or
  A contract that is like @racket[xexpr?] except produces a better error
  message when the value is not an @tech{X-expression}.
 }
+
+@; ----------------------------------------------------------------------
+
+@section{X-expression Predicate and Contract}
+
+@defmodule[xml/xexpr]
+
+The @racketmodname[xml/xexpr] library provides just @racket[xexpr/c],
+@racket[xexpr?], @racket[correct-xexpr?], and @racket[validate-xexpr]
+from @racketmodname[xml] with minimal dependencies.
 
 @; ----------------------------------------------------------------------
 
@@ -367,6 +377,17 @@ by a single space.  CDATA sections are not affected. The default is
 A parameter that determines whether comments are preserved or
 discarded when reading XML.  The default is @racket[#f], which
 discards comments.}
+
+@defboolparam[xml-count-bytes count-bytes?]{
+
+A parameter that determines whether @racket[read-xml] counts
+characters or bytes in its location tracking. The default is
+@racket[#f], which counts characters.
+
+You may want to use @racket[#t] if, for example, you will be
+communicating these offsets to a C program that can more easily deal
+with byte offsets into the character stream, as opposed to UTF-8
+character offsets.}
 
 @defboolparam[xexpr-drop-empty-attributes drop?]{
 

@@ -7,12 +7,6 @@ Algorithm AS 91: The Percentage Points of the Chi^2 Distribution
 Used for starting points in Newton's method
 |#
 
-#|
-#lang racket
-
-(module defs typed/racket/base
-|#
-
 (require racket/fixnum
          "../../../flonum.rkt"
          "../../functions/gamma.rkt"
@@ -83,7 +77,7 @@ Used for starting points in Newton's method
 
 (: newton-lower-log-iter (Float Float Float -> Float))
 (define (newton-lower-log-iter k log-p x)
-  (define real-log-p (fllog-gamma-lower-regularized k x))
+  (define real-log-p (fllog-gamma-inc k x #f #t))
   (define pdf-log-p (standard-flgamma-log-pdf k x))
   (define dx (fl/ (fl- log-p real-log-p) (flexp (fl- pdf-log-p real-log-p))))
   (define new-x (fl+ x dx))
@@ -91,14 +85,11 @@ Used for starting points in Newton's method
 
 (: newton-upper-log-iter (Float Float Float -> Float))
 (define (newton-upper-log-iter k log-1-p x)
-  (define real-log-1-p (fllog-gamma-upper-regularized k x))
+  (define real-log-1-p (fllog-gamma-inc k x #t #t))
   (define pdf-log-p (standard-flgamma-log-pdf k x))
   (define dx (fl/ (fl- real-log-1-p log-1-p) (flexp (fl- pdf-log-p real-log-1-p))))
   (define new-x (fl+ x dx))
   (if (and (new-x . fl>= . 0.0) (new-x . fl< . +inf.0)) new-x x))
-
-;(define: max-c : Integer  0)
-;(define: max-c-values : (Listof Any)  null)
 
 (: flgamma-inv-log-cdf-newton (Float Float Float Any Float -> Float))
 (define (flgamma-inv-log-cdf-newton k log-p log-1-p 1-p? x)
@@ -109,7 +100,6 @@ Used for starting points in Newton's method
       (define new-x (cond [1-p?  (newton-upper-log-iter k log-1-p x)]
                           [else  (newton-lower-log-iter k log-p x)]))
       (define new-dx (fl- new-x x))
-      ;(printf "~v ~v~n" x new-x)
       (cond [(or ((flabs (fl- x new-x)) . fl<= . (flabs (fl* (fl* 4.0 epsilon.0) new-x)))
                  (c . fx>= . 100)
                  (not (rational? new-x)))
@@ -119,10 +109,6 @@ Used for starting points in Newton's method
              (values (fl* 0.5 (fl+ new-x x)) c)]
             [else
              (loop new-dx new-x (fx+ c 1))])))
-  #;; For testing
-  (when (c . > . max-c)
-    (set! max-c c)
-    (set! max-c-values (list k log-p 1-p? x new-x)))
   new-x)
 
 (: standard-flgamma-inv-log-cdf (Float Float Any -> Float))
@@ -144,58 +130,3 @@ Used for starting points in Newton's method
 (define (standard-flgamma-inv-cdf k p log? 1-p?)
   (cond [log?  (standard-flgamma-inv-log-cdf k p 1-p?)]
         [else  (standard-flgamma-inv-log-cdf k (fllog p) 1-p?)]))
-#|  
-)
-
-(require 'defs plot
-         "../../../flonum.rkt"
-         "../../functions/gamma.rkt"
-         "../../functions/log-gamma.rkt"
-         "../../functions/incomplete-gamma.rkt"
-         "../../functions/lambert.rkt"
-         "gamma-pdf.rkt"
-         "normal-inv-cdf.rkt")
-#;
-(plot3d (contour-intervals3d
-         (λ (k p)
-           (let ([k  (fl k)] [p  (fl p)])
-             (printf "k = ~v  p = ~v~n" k p)
-             (standard-flgamma-inv-cdf k p)))
-         1.0 5
-         0.99 (flstep 1.0 -1))
-        #:x-label "k"
-        #:y-label "p")
-
-(define (relative-inverse-error p x f)
-  (define new-ps
-    (sort (filter rational? (list (f (flstep x -1)) (f x) (f (flstep x 1))))
-          <))
-  (values
-   new-ps
-   (cond [(empty? new-ps)  +inf.0]
-         [(<= (first new-ps) p (last new-ps))  0.0]
-         [else
-          (define new-p (/ (apply + new-ps) (length new-ps)))
-          (relative-error new-p p)])))
-
-(define (err k p)
-  (let ([k  (fl k)] [log-p  (fllog (fl p))])
-    ;(printf "k = ~v  p = ~v~n" k p)
-    (define x (standard-flgamma-inv-log-cdf k log-p #f))
-    (define-values (new-ps err)
-      (relative-inverse-error log-p x (λ (x) (fllog-gamma-lower-regularized k x))))
-    (when (not (rational? err))
-      (printf "k = ~v  p = ~v  x = ~v  new-ps = ~v  err = ~v~n" k (exp log-p) x new-ps err))
-    (if (rational? err) err -1.0)))
-
-#;
-(plot3d (contour-intervals3d
-         err
-         0.1 1.0
-         0.0001 0.9999)
-        #:x-label "k"
-        #:y-label "p")
-
-max-c
-max-c-values
-|#

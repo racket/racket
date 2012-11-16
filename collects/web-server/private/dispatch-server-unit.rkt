@@ -1,14 +1,15 @@
 #lang racket/unit
 (require net/tcp-sig
          racket/async-channel
+         racket/port
          mzlib/thread)
 (require "web-server-structs.rkt"
          "connection-manager.rkt"
          "dispatch-server-sig.rkt")
 
-;; ****************************************  
+;; ****************************************
 (import tcp^ (prefix config: dispatch-server-config^))
-(export dispatch-server^) 
+(export dispatch-server^)
 
 (define (async-channel-put* ac v)
   (when ac
@@ -24,15 +25,15 @@
     (start-connection-manager)
     (thread
      (lambda ()
-       (run-server 1 ; This is the port argument, but because we specialize listen, it is ignored. 
+       (run-server 1 ; This is the port argument, but because we specialize listen, it is ignored.
                    handle-connection
                    #f
                    (lambda (exn)
-                     ((error-display-handler) 
+                     ((error-display-handler)
                       (format "Connection error: ~a" (exn-message exn))
                       exn))
                    (lambda (_ mw re)
-                     (with-handlers ([exn? 
+                     (with-handlers ([exn?
                                       (λ (x)
                                         (async-channel-put* confirmation-channel x)
                                         (raise x))])
@@ -85,12 +86,23 @@
     ;; connection will be closed. This shouldn't change any other
     ;; behavior: read-request is already blocking, peeking doesn't
     ;; consume a byte, etc.
-    (if (eof-object? (peek-byte ip))
-      (kill-connection! conn)
-      (let-values
-          ([(req close?) (config:read-request conn config:port port-addresses)])
-        (set-connection-close?! conn close?)
-        (config:dispatch conn req)
-        (if (connection-close? conn)
-          (kill-connection! conn)
-          (connection-loop))))))
+    (sync
+     (handle-evt
+      (port-closed-evt ip)
+      (λ (res)
+        (kill-connection! conn)))
+     (handle-evt
+      (peek-bytes-evt 1 0 #f ip)
+      (λ (res)
+        (cond
+          [(eof-object? res)
+           (kill-connection! conn)]
+          [else
+           (define-values
+             (req close?)
+             (config:read-request conn config:port port-addresses))
+           (set-connection-close?! conn close?)
+           (config:dispatch conn req)
+           (if (connection-close? conn)
+             (kill-connection! conn)
+             (connection-loop))]))))))

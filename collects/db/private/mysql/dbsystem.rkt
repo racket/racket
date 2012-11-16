@@ -10,10 +10,10 @@
          classify-my-sql)
 
 (define mysql-dbsystem%
-  (class* object% (dbsystem<%>)
+  (class* dbsystem-base% (dbsystem<%>)
 
     (define/public (get-short-name) 'mysql)
-    (define/public (get-known-types) supported-types)
+    (define/override (get-type-list) type-list)
 
     (define/public (has-support? option)
       (case option
@@ -61,7 +61,7 @@
 
 ;; ========================================
 
-(define (check-param fsym index param)
+(define (check-param fsym param)
   (unless (or (string? param)
               (rational? param)
               (bytes? param)
@@ -120,35 +120,33 @@
 
 ;; ========================================
 
-(define-type-table (supported-types*
-                    type-alias->type
+(define-type-table (type-list*
                     typeid->type
-                    type->typeid
                     describe-typeid)
 
-  (newdecimal  decimal     ()    #t)
-  (tiny        tinyint     ()    #t)
-  (short       smallint    ()    #t)
-  (int24       mediumint   ()    #t)
-  (long        integer     (int) #t)
-  (longlong    bigint      ()    #t)
-  (float       real        ()    #t)
-  (double      double      ()    #t)
-  (newdate     date        ()    #t)
-  (time        time        ()    #t)
-  (datetime    datetime    ()    #t)
-  (varchar     varchar     ()    #t)
-  (var-string  var-string  ()    #t)
-  (tiny-blob   tinyblob    ()    #t)
-  (medium-blob mediumblob  ()    #t)
-  (long-blob   longblob    ()    #t)
-  (blob        blob        ()    #t)
-  (bit         bit         ()    #t)
-  (geometry    geometry    ()    #t))
+  (newdecimal  decimal     0)
+  (tiny        tinyint     0)
+  (short       smallint    0)
+  (int24       mediumint   0)
+  (long        integer     0)
+  (longlong    bigint      0)
+  (float       real        0)
+  (double      double      0)
+  (newdate     date        0)
+  (time        time        0)
+  (datetime    datetime    0)
+  (varchar     varchar     0)
+  (var-string  var-string  0)
+  (tiny-blob   tinyblob    0)
+  (medium-blob mediumblob  0)
+  (long-blob   longblob    0)
+  (blob        blob        0)
+  (bit         bit         0)
+  (geometry    geometry    0))
 
-(define supported-types
-  (sort (append '(tinytext text mediumtext longtext var-binary) supported-types*)
-        string<?
-        #:key symbol->string))
+(define type-list
+  (append (map (lambda (t) (list t 0))
+               '(tinytext text mediumtext longtext var-binary))
+          type-list*))
 
 ;; decimal, date typeids not used (?)

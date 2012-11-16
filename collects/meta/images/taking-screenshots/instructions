@@ -1,0 +1,50 @@
+Important: before you add a bunch of images or modify a bunch of
+existing ones to reflect some minor gui change in your theme, consider
+the fact that binary files changes have a heavy cost in terms of
+repository size and performance.  Please minimize the number of such
+commits (ie, prefer a single big commit over many smaller ones, avoid
+committing files that are not "stable").
+
+* Using GIMP
+
+  To take screen shots of the widgets, you can follow these steps:
+
+  1. Take a widget screen shot
+
+  2. Open it with GIMP
+
+  3. Cut it to 240 x 73
+
+  4. Add a border using Filters/Decor/Add Border...
+     + Border X size :: 1
+     + Border Y size :: 1
+     + Border color :: black
+     + Delta value on color :: 25
+
+  5. Combine all layers
+
+  6. Add a drop shadow using Filters/Light and Shadow/Drop Shadow...
+     + Offset X :: 8
+     + Offset Y :: 8
+     + Blur radius :: 9
+     + Color :: black
+     + Opacity :: 80
+     + Allow resizing :: #t
+
+  7. Save as .png
+
+  There are two scripts in this directory that might help in this
+  process.  Keep in mind though that the GIMP script is very fragile
+  and some tweaking might be necessary to make it work in different
+  setups.
+
+  + [[file:widget.rkt][widget.rkt]] ::
+    Creates a "canvas" panel with a border, so it is easier to select
+    the widget area using GIMP's Fuzzy Select Tool
+
+  + [[file:racket-widget.scm][racket-widget.scm]] ::
+    GIMP's script which, when invoked, asks for a window to take a
+    screen shot and do the post production to the image.  This script
+    should be put inside a specific directory, here being
+    "~/.gimp-2.6/scripts", and should be invoked at File/Create/Racket
+    Widget.

@@ -6,6 +6,7 @@
          "../private/defaults.rkt"
          net/ftp
          racket/file
+         scribble/latex-prefix
          (for-syntax scheme/base))
 (provide (except-out (all-from-out scribble/doclang) #%module-begin)
          (all-from-out scribble/jfp)
@@ -32,7 +33,8 @@
 (define ((post-process) doc)
   (add-defaults doc
                 (string->bytes/utf-8
-                 (format "\\documentclass{jfp1}\n\\usepackage{times}\n\\usepackage{qcourier}\n"))
+                 (format "\\documentclass{jfp1}\n~a\\usepackage{times}\n\\usepackage{qcourier}\n"
+                         unicode-encoding-packages))
                 (scribble-file "jfp/style.tex")
                 (list cls-file)
                 #f))

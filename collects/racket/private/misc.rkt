@@ -187,7 +187,8 @@
 
   (#%provide define-syntax-rule
              rationalize 
-             path-string? path-replace-suffix path-add-suffix normal-case-path
+             path-string? path-replace-suffix path-add-suffix 
+             normal-case-path reroot-path
              read-eval-print-loop
              load/cd
              load-relative load-relative-extension

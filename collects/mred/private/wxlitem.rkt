@@ -33,6 +33,7 @@
           (send this alignment ha va)
           this)
         (let ([p (make-object wx-vertical-pane% #f proxy this null #f)])
+	  (send p skip-enter-leave-events #t)
           (send p skip-subwindow-events? #t)
           (send (send p area-parent) add-child p)
           (send p alignment ha va)
@@ -41,6 +42,7 @@
   (define (make-label label proxy p font)
     (and label 
          (let ([l (make-object wx-message% #f proxy p label -1 -1 null font)])
+	   (send l skip-enter-leave-events #t)
            (send l skip-subwindow-events? #t)
            l)))
 
@@ -57,7 +59,7 @@
   (define wx-label-panel%
     (class wx-control-horizontal-panel% 
       (init proxy parent label style font halign valign)
-      (inherit area-parent)
+      (inherit area-parent skip-enter-leave-events)
       (define c #f)
 
       (define/override (enable on?) (if c (send c enable on?) (void)))
@@ -65,6 +67,7 @@
       (define/override (is-window-enabled?) (if c (send c is-window-enabled?) #t))
 
       (super-make-object #f proxy parent (if (memq 'deleted style) '(deleted) null) #f)
+      (skip-enter-leave-events #t)
       (unless (memq 'deleted style)
         (send (area-parent) add-child this))
       (define horiz? (is-horiz? style parent))

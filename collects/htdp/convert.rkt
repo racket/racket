@@ -1,4 +1,6 @@
-#lang racket/gui
+#lang racket
+
+(require racket/gui)
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; functions that demonstrate how one and the same function can be used in three different contexts
@@ -112,19 +114,9 @@
       (inexact->exact x)
       (error 'convert OUT-ERROR x)))
 
-;; f2c : num -> num
-;; to convert a Fahrenheit temperature into a Celsius temperature 
-(define (f2c f)
-  (2int (* 5/9 (- f 32))))
-
-;; fahr->cel : num -> num 
-;; student-supplied function for converting F to C
-(define (fahr->cel f)
-  (error 'convert "not initialized"))
-
-;; slider-cb : slider% event% -> void
+;; slider-cb : (num -> num) object object -> [slider% event% -> void]
 ;; to use fahr->cel to perform the conversion 
-(define (slider-cb c s)
+(define ((slider-cb fahr->cel sliderC sliderF) c s)
   (send sliderC set-value
         ((compose in-slider-range 2int fahr->cel)
          (send sliderF get-value))))
@@ -139,31 +131,31 @@
 
 #| --------------------------------------------------------------------
   
-  view  (exports sliderF sliderC SLI-MIN SLI-MAX) (imports f2c slider-cb)   
-  
-  model (imports sliderF sliderC SLI-MIN SLI-MAX) (exports f2c slider-cb)   
+  view  (exports SLI-MIN SLI-MAX) (imports slider-cb)   
+  parameter: sliderC sliderF 
+
+  model (imports SLI-MIN SLI-MAX) (exports slider-cb)   
   
   ----------------------------------------------------------------------- |#
 
 ;; ============================================================================
 ;; VIEW
 
-(define frame (make-object frame% "Fahrenheit to Celsius Conversion"))
-(send frame set-alignment 'center 'center)
-(define main-panel (instantiate horizontal-panel% () (parent frame)
-                     (stretchable-height #f)))
+;; convert-gui : (num -> num) -> void
+;; to install f as the temperature converter 
+;; effect: to create a window with two rulers for converting F to C
+(define (convert-gui f)
+  (check-proc 'convert-gui f 1 "convert-gui" "one argument")
+  ;; only initialize the slider based on the user's program when there aren't any exceptions.
+  ;; if there are exceptions, wait for the user to click "convert" to see an error.
+  (define-values (sliderC frame) (make-gui f))
+  (with-handlers ([exn:fail? (lambda (x) (void))])
+    (send sliderC set-value (in-slider-range (f F-SLI-0))))
+  (send frame show #t))
 
-;; create labels; aligned with sliders 
-(define mpanel (make-object vertical-panel% main-panel))
-(let ()
-  (make-object message% "Fahrenheit" mpanel)
-  (make-object message% "" mpanel)
-  (make-object message% "Celsius" mpanel)
-  (void))
-(send mpanel stretchable-width #f)
-
-(define panel (make-object vertical-panel% main-panel))
-(send panel set-alignment 'center 'center)
+;; f2c : num -> num
+;; to convert a Fahrenheit temperature into a Celsius temperature 
+(define (f2c f) (2int (* 5/9 (- f 32))))
 
 (define F-SLI-MIN -50)
 (define F-SLI-MAX 250)
@@ -171,42 +163,45 @@
 (define SLI-MIN (f2c F-SLI-MIN))
 (define SLI-MAX (f2c F-SLI-MAX))
 
-;; sliderF : slider% 
-;; to display the Fahrenheit temperature 
-(define sliderF (make-object slider% #f F-SLI-MIN F-SLI-MAX panel void F-SLI-0))
-(send sliderF min-width (- F-SLI-MAX F-SLI-MIN))
-
-;; sliderC : slider% 
-;; to display the Celsius temperature 
-(define sliderC (make-object scale% panel))
-(define _set-sliderC (send sliderC set-value (in-slider-range (f2c F-SLI-0))))
-
-
-(define button-panel (instantiate vertical-panel% () 
-                       (stretchable-width #f)
-                       (stretchable-height #f)
-                       (parent main-panel)))
-
-;; convert : button%
-;; to convert fahrenheit to celsius 
-(define convert (make-object button% "Convert" button-panel slider-cb))
-
-(define close (make-object button% "Close" button-panel
-                (lambda (x e) (send frame show #f))))
-
-;; convert-gui : (num -> num) -> void
-;; to install f as the temperature converter 
-;; effect: to create a window with two rulers for converting F to C
-(define (convert-gui f)
-  (check-proc 'convert-gui f 1 "convert-gui" "one argument")
-  (set! fahr->cel f)
-  ;; only initialize the slider based on the user's program 
-  ;; when there aren't any exceptions.
-  ;; if there are exceptions, wait for the user to click
-  ;; "convert" to see an error.
-  (with-handlers ([exn:fail? (lambda (x) (void))])
-    (send sliderC set-value (in-slider-range (fahr->cel F-SLI-0))))
-  (send frame show #t))
+(define (make-gui fahr->cel)
+  (define frame 
+    (parameterize ((current-eventspace (make-eventspace))) 
+      (new frame% 
+           [label "Fahrenheit to Celsius Conversion"]
+           [alignment '(center center)])))
+  
+  (define main-panel
+    (new horizontal-panel% [parent frame] [stretchable-height #f]))
+  
+  ;; create labels; aligned with sliders 
+  (define mpanel (make-object vertical-panel% main-panel))
+  (make-object message% "Fahrenheit" mpanel)
+  (make-object message% "" mpanel)
+  (make-object message% "Celsius" mpanel)
+  (send mpanel stretchable-width #f)
+  
+  (define panel (make-object vertical-panel% main-panel))
+  (send panel set-alignment 'center 'center)
+  
+  ;; sliderF : slider% 
+  ;; to display the Fahrenheit temperature 
+  (define sliderF (make-object slider% #f F-SLI-MIN F-SLI-MAX panel void F-SLI-0))
+  (send sliderF min-width (- F-SLI-MAX F-SLI-MIN))
+  
+  ;; sliderC : slider% 
+  ;; to display the Celsius temperature 
+  (define sliderC (make-object scale% panel))
+  (define _set-sliderC (send sliderC set-value (in-slider-range (f2c F-SLI-0))))
+  
+  (define button-panel
+    (new vertical-panel% (stretchable-width #f) (stretchable-height #f) (parent main-panel)))
+  
+  ;; convert : button%
+  ;; to convert fahrenheit to celsius 
+  (make-object button% "Convert" button-panel (slider-cb fahr->cel sliderC sliderF))
+  (make-object button% "Close" button-panel (lambda (x e) (send frame show #f)))
+  
+  (values sliderC frame))
 
 ;; ============================================================================
 ;; convert-repl : (num -> num) -> void
@@ -257,7 +252,7 @@
                         (with-handlers ((exn:fail:read? (lambda (y) (raise x))))
                           (convert-file
                            (lambda ()
-			     (unless (htdp-file-prefix? (current-input-port)) (raise x)))))]
+                             (unless (htdp-file-prefix? (current-input-port)) (raise x)))))]
                        [else (raise x)]))))
     (convert-file void)))
 

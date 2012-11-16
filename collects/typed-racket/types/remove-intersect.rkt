@@ -67,29 +67,29 @@
               (list _ (Pair: _ _)))
           #f]
          [(or (list (Value: (? (λ (e) (or (null? e) (symbol? e) (number? e) (boolean? e) (pair? e) (keyword? e)))))
-                    (Struct: n _ flds _ _ _ _ _))
-              (list (Struct: n _ flds _ _ _ _ _) 
+                    (Struct: n _ flds _ _ _))
+              (list (Struct: n _ flds _ _ _) 
                     (Value: (? (λ (e) (or (null? e) (symbol? e) (number? e) (boolean? e) (pair? e) (keyword? e)))))))
           #f]
-         [(list (Struct: n _ flds _ _ _ _ _)
-                (Struct: n* _ flds* _ _ _ _ _)) (=> nevermind)
+         [(list (Struct: n _ flds _ _ _)
+                (Struct: n* _ flds* _ _ _)) (=> nevermind)
           (unless (free-identifier=? n n*) (nevermind))
           (for/and ([f flds] [f* flds*])
             (match* (f f*)
               [((fld: t _ _) (fld: t* _ _)) (overlap t t*)]))]
-         [(list (Struct: n #f _ _ _ _ _ _)
-                (StructTop: (Struct: n* #f _ _ _ _ _ _))) (=> nevermind)
+         [(list (Struct: n #f _ _ _ _)
+                (StructTop: (Struct: n* #f _ _ _ _))) (=> nevermind)
           (unless (free-identifier=? n n*) (nevermind))
           #t]
          ;; n and n* must be different, so there's no overlap
-         [(list (Struct: n #f flds _ _ _ _ _)
-                (Struct: n* #f flds* _ _ _ _ _))
+         [(list (Struct: n #f flds _ _ _)
+                (Struct: n* #f flds* _ _ _))
           #f]
-         [(list (Struct: n #f flds _ _ _ _ _)
-                (StructTop: (Struct: n* #f flds* _ _ _ _ _)))
+         [(list (Struct: n #f flds _ _ _)
+                (StructTop: (Struct: n* #f flds* _ _ _)))
           #f]
-         [(list (and t1 (Struct: _ _ _ _ _ _ _ _))
-                (and t2 (Struct: _ _ _ _ _ _ _ _)))
+         [(list (and t1 (Struct: _ _ _ _ _ _))
+                (and t2 (Struct: _ _ _ _ _ _)))
           (or (subtype t1 t2) (subtype t2 t1))]
          [(list (== (-val eof))
                 (Function: _))

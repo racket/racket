@@ -9,6 +9,7 @@
                           [#:submodule-path submodule-path (listof symbol?) '()]
                           [#:sub-path compiled-subdir0 (and/c path-string? relative-path?) "compiled"]
                           [compiled-subdir (and/c path-string? relative-path?) compiled-subdir0]
+                          [#:roots roots (listof (or/c path-string? 'same)) (current-compiled-file-roots)]
                           [#:compile compile-proc0 (any/c . -> . any) compile] 
                           [compile-proc (any/c . -> . any) compile-proc0] 
                           [#:extension-handler ext-proc0 (or/c false/c (path? boolean? . -> . any)) #f]
@@ -31,7 +32,8 @@ submodule.
 
 The @racket[compiled-subdir] argument defaults to @racket["compiled"];
 it specifies the sub-directory to search for a compiled version of the
-module.
+module. The @racket[roots] list specifies a compiled-file search path
+in the same way as the @racket[current-compiled-file-roots] parameter.
 
 The @racket[compile-proc] argument defaults to @racket[compile]. This
 procedure is used to compile module source if an already-compiled

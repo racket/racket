@@ -886,39 +886,13 @@ static intptr_t get_page_size()
 }
 
 #if defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC) && defined(_WIN64)
-static RUNTIME_FUNCTION rtf;
-typedef struct mzUNWIND_INFO {
-  unsigned char version:3;
-  unsigned char flags:5;
-  unsigned char prolog_size;
-  unsigned char unwind_code_count;
-  unsigned char fp:4;
-  unsigned char fp_off:4;
-  unsigned short *unwind_codes;
-} mzUNWIND_INFO;
-static mzUNWIND_INFO uwi;
-
 PRUNTIME_FUNCTION get_rewind_info(DWORD64 ControlPc, PVOID Context)
 {
   /* When Win64 wants to unwind the stack and hit hits FFI- or 
      JIT-generated code, it invokes this callback. We should return
-     information that lets the unwind continue. For now, though,
-     we give up, which means that certain attempts to report crashes
-     turn into unwind-failure aborts. */
-  rtf.BeginAddress = ControlPc;
-  rtf.EndAddress = ControlPc;
-  rtf.UnwindData = (intptr_t)&uwi;
-  uwi.version = 1;
-  uwi.flags = 0;
-  uwi.prolog_size = 0;
-  uwi.fp = 5;
-  uwi.fp_off = 0;
-
-  /* that's not right, yet, so... */
-  scheme_log_abort("Cannot provide unwind info for generated code");
-  abort();
-
-  return &rtf;
+     information that lets the unwind continue, if possible. For
+     now, though, we just cut off the unwind. */
+  return NULL;
 }
 #endif
 

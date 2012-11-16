@@ -156,6 +156,37 @@
              #f
              (lambda (pos val1 val2) (not (string=? val2 "4")))))
 
+
+(test '(1 2 3)
+      'three
+      (for/list ([i 10])
+        #:break (= i 3)
+        (add1 i)))
+(test '(1 2 3 4)
+      'three
+      (for/list ([i 10])
+        #:final (= i 3)
+        (add1 i)))
+
+;; Make sure that breaking a sequence stops before consuming another element:
+(test '(("1" "2" "3" "4" "5" "6" "7" "8" "9") . 10)
+      'producer
+      (let ([c 0])
+        (cons
+         (for/list ([i (in-producer (lambda () (set! c (add1 c)) c) #f)]) 
+           #:break (= i 10)
+           (number->string i))
+         c)))
+(test '(("1" "2" "3" "4" "5" "6" "7" "8" "9") . 10)
+      'producer
+      (let ([c 0])
+        (cons
+         (for*/list ([j '(0)]
+                     [i (in-producer (lambda () (set! c (add1 c)) c) #f)])
+           #:break (= i 10)
+           (number->string i))
+         c)))
+
 ;; Basic sanity checks.
 (test '#(1 2 3 4) 'for/vector (for/vector ((i (in-range 4))) (+ i 1)))
 (test '#(1 2 3 4) 'for/vector-fast (for/vector #:length 4 ((i (in-range 4))) (+ i 1)))

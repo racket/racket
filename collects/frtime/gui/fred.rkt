@@ -1,25 +1,15 @@
 (module fred frtime
   (require "mixin-macros.rkt"
            "aux-mixin-macros.rkt"
-           mzlib/class
-           mzlib/string
+           racket/class
+           racket/string
            texpict/mrpict
-           (all-except mred send-event)
+           mred
            framework)
-  
-  
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Helpers
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  
-  (define (in-string itm)
-    (if (undefined? itm)
-        ""
-        (if (string? itm)
-            itm
-            (expr->string itm))))
-  
   
   ;; adding assumed methods
   (define (add-void-set-value super-class)
@@ -40,8 +30,6 @@
       (inherit show)
       (show shown-val)))
       
-  
-  
   ;; *-event-processor init-argument values
   (define event-is-val
     (lambda (es)
@@ -322,7 +310,7 @@
       menu-item%)))  
   
   
-  (provide (all-defined)
-           (all-from mzlib/class)
-           (all-from "mixin-macros.rkt")
-           (all-from "aux-mixin-macros.rkt")))
+  (provide (all-defined-out)
+           (all-from-out racket/class)
+           (all-from-out "mixin-macros.rkt")
+           (all-from-out "aux-mixin-macros.rkt")))

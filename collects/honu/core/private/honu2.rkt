@@ -12,6 +12,7 @@
                   honu-in
                   honu-in-lines
                   honu-prefix
+                  postfix
                   semicolon
                   honu-comma
                   define-literal)
@@ -107,7 +108,7 @@
      (debug "Parse expression ~a\n" (pretty-format (syntax->datum #'(stuff ...))))
      (define-values (parsed unparsed)
                     (parse #'(stuff ...)))
-     (with-syntax ([parsed* (honu->racket parsed)]
+     (with-syntax ([parsed* parsed]
                    [unparsed unparsed])
        (emit-local-step parsed #'parsed* #:id #'honu-parse-expression)
        (debug "Parsed ~a. Unparsed ~a\n" #'parsed #'unparsed)
@@ -142,6 +143,29 @@
       [(_ name:id level:number association:honu-expression function:honu-expression/phase+1 . rest)
        (debug "Operator function ~a\n" (syntax->datum #'function.result))
        (define out (racket-syntax (define-honu-operator/syntax name level association.result function.result)))
+       (values out #'rest #t)])))
+
+(provide define-make-honu-binary-operator)
+(define-honu-syntax define-make-honu-binary-operator
+  (lambda (code)
+    (syntax-parse code
+      [(_ name:id level:honu-expression association:honu-expression function:honu-expression . rest)
+       (define out (racket-syntax
+                     (define-binary-operator name level.result association.result function.result)))
+       (values out #'rest #t)])))
+
+(provide define-make-honu-unary-operator)
+(define-honu-syntax define-make-honu-unary-operator
+  (lambda (code)
+    (syntax-parse code #:literals (postfix)
+      [(_ name:id level:honu-expression
+          (~optional (~and postfix postfix?)
+                     #:defaults ([postfix? #f]))
+          function:honu-expression . rest)
+       (define out
+         (with-syntax ([postfix? (if (attribute postfix?) #t #f)])
+           (racket-syntax
+             (define-unary-operator name level.result postfix? function.result))))
        (values out #'rest #t)])))
 
 ;; equals can have a compile time property that allows it to do something like set!
@@ -387,6 +411,22 @@
               #:with (name ...) #'(variables.id ...)
               #:with expression #'one.result]))
 
+(begin-for-syntax
+  (provide honu-declaration/phase+1)
+
+  ;; parses a declaration
+  ;; var x = 9
+  ;; var a, b, c = values(1 + 2, 5, 9)
+  (define-splicing-syntax-class honu-declaration/phase+1
+                              #:literal-sets (cruft)
+                              #:literals (honu-syntax-var)
+     [pattern (~seq honu-syntax-var (~var variables (separate-ids (literal-syntax-class honu-comma)
+                                                           (literal-syntax-class honu-equal)))
+                    honu-equal one:honu-expression/phase+1)
+              #:with (name ...) #'(variables.id ...)
+              #:with expression #'one.result]))
+
+;; like define
 (provide honu-var)
 (define-honu-syntax honu-var
   (lambda (code)
@@ -395,6 +435,17 @@
        (define result 
          ;; wrap the expression in a let so that we can insert new `define-syntax'es
          (racket-syntax (define-values (var.name ...) (let () var.expression))))
+       (values result #'rest #t)])))
+
+;; like define-syntax
+(provide honu-syntax-var)
+(define-honu-syntax honu-syntax-var
+  (lambda (code)
+    (syntax-parse code #:literal-sets (cruft)
+      [(var:honu-declaration/phase+1 . rest)
+       (define result 
+         ;; wrap the expression in a let so that we can insert new `define-syntax'es
+         (racket-syntax (define-syntaxes (var.name ...) (let () var.expression))))
        (values result #'rest #t)])))
 
 (provide (rename-out [honu-with-syntax withSyntax]))

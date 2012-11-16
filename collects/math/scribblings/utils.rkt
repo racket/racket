@@ -1,9 +1,18 @@
-#lang racket/base
+#lang at-exp racket/base
 
-(require scribble/eval)
+(require scribble/eval
+         scribble/manual)
 
-(provide make-math-eval
+(provide author-neil
+         author-jens-axel
+         make-math-eval
          make-untyped-math-eval)
+
+(define (author-neil)
+  @author{@(author+email "Neil Toronto" "ntoronto@racket-lang.org")})
+
+(define (author-jens-axel)
+  @author{@(author+email "Jens Axel Søgaard" "jensaxel@soegaard.net")})
 
 (define (make-math-eval)
   (define eval (make-base-eval))

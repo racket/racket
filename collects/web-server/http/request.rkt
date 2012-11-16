@@ -218,18 +218,19 @@
 
 ;; read-bindings&post-data/raw: input-port symbol url (listof header?) -> (values (or/c (listof binding?) string?) (or/c bytes? false/c?))
 (define (read-bindings&post-data/raw in meth uri headers)
+  (define bindings-GET
+   (delay
+     (filter-map
+      (match-lambda
+       [(list-rest k v)
+        (if (and (symbol? k) (string? v))
+          (make-binding:form (string->bytes/utf-8 (symbol->string k))
+                             (string->bytes/utf-8 v))
+          #f)])
+      (url-query uri))))
   (cond
     [(bytes-ci=? #"GET" meth)
-     (values (delay
-               (filter-map 
-                (match-lambda
-                 [(list-rest k v)
-                  (if (and (symbol? k) (string? v))
-                    (make-binding:form (string->bytes/utf-8 (symbol->string k))
-                                       (string->bytes/utf-8 v))
-                    #f)])
-                (url-query uri)))
-             #f)]
+     (values bindings-GET #f)]
     [(bytes-ci=? #"POST" meth)
      (define content-type (headers-assq* #"Content-Type" headers))
      (cond
@@ -264,7 +265,7 @@
                                             (apply bytes-append contents))])])
                     (read-mime-multipart content-boundary in)))
              (values
-              (delay bs)
+              (delay (append (force bindings-GET) bs))
               #f)])]
        [else        
         (match (headers-assq* #"Content-Length" headers)
@@ -273,7 +274,7 @@
              [(string->number (bytes->string/utf-8 value))
               => (lambda (len)
                    (let ([raw-bytes (read-bytes len in)])
-                     (values (delay (parse-bindings raw-bytes)) raw-bytes)))]
+                     (values (delay (append (parse-bindings raw-bytes) (force bindings-GET))) raw-bytes)))]
              [else 
               (network-error
                'read-bindings

@@ -1,12 +1,16 @@
-#lang typed/racket/base
+#lang racket/base
 
-(require "private/flonum/flonum-bits.rkt"
+(require (for-syntax racket/base)
+         "private/flonum/flonum-bits.rkt"
          "private/flonum/flonum-constants.rkt"
          "private/flonum/flonum-functions.rkt"
+         "private/flonum/flonum-search.rkt"
          "private/flonum/flonum-exp.rkt"
          "private/flonum/flonum-log.rkt"
          "private/flonum/flonum-sum.rkt"
          "private/flonum/flonum-more-functions.rkt"
+         "private/flonum/flonum-factorial.rkt"
+         "private/flonum/flonum-log1pmx.rkt"
          "private/flonum/flonum-polyfun.rkt"
          "private/flonum/flonum-syntax.rkt")
 
@@ -14,9 +18,17 @@
           "private/flonum/flonum-bits.rkt"
           "private/flonum/flonum-constants.rkt"
           "private/flonum/flonum-functions.rkt"
+          "private/flonum/flonum-search.rkt"
           "private/flonum/flonum-exp.rkt"
           "private/flonum/flonum-log.rkt"
           "private/flonum/flonum-sum.rkt"
           "private/flonum/flonum-more-functions.rkt"
+          "private/flonum/flonum-factorial.rkt"
+          "private/flonum/flonum-log1pmx.rkt"
           "private/flonum/flonum-polyfun.rkt"
-          "private/flonum/flonum-syntax.rkt"))
+          "private/flonum/flonum-syntax.rkt")
+         lg* lg/ lgprod)
+
+(define-syntax lg* (make-rename-transformer #'fl+))
+(define-syntax lg/ (make-rename-transformer #'fl-))
+(define-syntax lgprod (make-rename-transformer #'flsum))

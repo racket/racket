@@ -2909,10 +2909,9 @@ static char *locale_recase(int to_up,
 
   /* Re-case chars in "out" */
   for (i = 0; i < iilen; i++) {
-    if (to_up)
-      out[od + i] = toupper(out[od + i]);
-    else
-      out[od + i] = tolower(out[od + i]);
+    char t;
+    t = (to_up) ? toupper(out[od+i]) : tolower(out[od+i]);
+    out[od+i] = t;
   }
 
   return out;

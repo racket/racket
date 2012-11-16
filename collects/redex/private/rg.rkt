@@ -3,22 +3,15 @@
 (require "matcher.rkt"
          "reduction-semantics.rkt"
          "underscore-allowed.rkt"
-         "term.rkt"
          "error.rkt"
          "struct.rkt"
          "match-a-pattern.rkt"
-         (for-syntax racket/base
-                     setup/path-to-relative
-                     "rewrite-side-conditions.rkt"
-                     "term-fn.rkt"
-                     "reduction-semantics.rkt"
-                     "keyword-macros.rkt")
+         (for-syntax "reduction-semantics.rkt")
          racket/dict
          racket/contract
          racket/promise
          racket/unit
          racket/match
-         racket/pretty
          mrlib/tex-table)
 
 (define redex-pseudo-random-generator
@@ -741,326 +734,6 @@
 ;; used in generating the `any' pattern
 (define-language sexp (sexp variable string number hole (sexp ...)))
 
-(define-for-syntax (metafunc name)
-  (and (identifier? name)
-       (let ([tf (syntax-local-value name (λ () #f))])
-         (and (term-fn? tf) (term-fn-get-id tf)))))
-
-(define-for-syntax (metafunc/err name stx)
-  (let ([m (metafunc name)])
-    (if m m (raise-syntax-error #f "not a metafunction" stx name))))
-
-(define-for-syntax (term-generator lang pattern what)
-  (with-syntax ([pattern pattern])
-    #`((compile #,lang '#,what) `pattern)))
-
-(define-syntax (generate-term stx)
-  (define form-name
-    (syntax-case stx ()
-      [(name . _) (syntax-e #'name)]))
-  (define-values (raw-generators args)
-    (syntax-case stx ()
-      [(_ #:source src . rest)
-       (values 
-        (cond [(metafunc #'src) 
-               => (λ (f)
-                    #`(let* ([f #,f]
-                             [L (metafunc-proc-lang f)]
-                             [compile-pat (compile L '#,form-name)])
-                            (map (λ (c) (compile-pat ((metafunc-case-lhs+ c) L))) 
-                                 (metafunc-proc-cases f))))]
-              [else
-               #`(let* ([r #,(apply-contract #'reduction-relation?  #'src "#:source argument" form-name)]
-                        [L (reduction-relation-lang r)]
-                        [compile-pat (compile L '#,form-name)])
-                       (map (λ (p) (compile-pat ((rewrite-proc-lhs p) L)))
-                            (reduction-relation-make-procs r)))])
-        #'rest)]
-      [(_ lang pat . rest)
-       (with-syntax ([(pattern (vars ...) (vars/ellipses ...)) 
-                      (rewrite-side-conditions/check-errs 
-                       (language-id-nts #'lang form-name)
-                       form-name #t #'pat)])
-         (values #`(list #,(term-generator #'lang #'pattern form-name))
-                 #'rest))]))
-  (define generator-syntax
-    #`(make-generator #,raw-generators '#,form-name #,(client-name stx form-name) #,(src-loc-stx stx)))
-  (syntax-case args ()
-    [()
-     generator-syntax]
-    [(size . kw-args)
-     (quasisyntax/loc stx
-       (#,generator-syntax size . kw-args))]))
-
-(define (make-generator raw-generators form-name client-name src-loc)
-  (contract (->* (natural-number/c)
-                 (#:attempt-num natural-number/c #:retries natural-number/c)
-                 any)
-            (λ (size #:attempt-num [attempt-num 1] #:retries [retries default-retries])
-              (let-values ([(term _) ((match raw-generators
-                                        [(list g) g]
-                                        [_ (pick-from-list raw-generators)])
-                                      size attempt-num retries)])
-                term))
-            form-name client-name #f src-loc))
-
-(define-for-syntax (show-message stx)
-  (syntax-case stx ()
-    [(what . _)
-     (identifier? #'what)
-     (with-syntax ([loc (if (and (path? (syntax-source stx))
-                                 (syntax-line stx))
-                            (format "~a:~a"
-                                    (path->relative-string/library (syntax-source stx)) 
-                                    (syntax-line stx))
-                            #f)])
-       #`(λ (msg)
-           (fprintf 
-            (current-output-port)
-            "~a: ~a~a"
-            'what (if loc (string-append loc "\n") "") msg)))]))
-
-(define-for-syntax attempts-keyword
-  (list '#:attempts #'(default-check-attempts)
-        (list #'natural-number/c "#:attempts argument")))
-(define-for-syntax source-keyword
-  (list '#:source #f))
-(define-for-syntax retries-keyword
-  (list '#:retries #'default-retries 
-        (list #'natural-number/c "#:retries argument")))
-(define-for-syntax print?-keyword
-  (list '#:print? #t))
-(define-for-syntax attempt-size-keyword
-  (list '#:attempt-size #'default-attempt-size 
-        (list #'attempt-size/c "#:attempt-size argument")))
-(define-for-syntax (prepare-keyword lists?)
-  (list '#:prepare #f 
-        (list (if lists? #'(-> list? list?) #'(-> any/c any/c)) 
-              "#:prepare argument")))
-
-(define-syntax (redex-check stx)
-  (syntax-case stx ()
-    [(form lang pat property . kw-args)
-     (with-syntax ([(pattern (name ...) (name/ellipses ...))
-                    (rewrite-side-conditions/check-errs 
-                     (language-id-nts #'lang 'redex-check)
-                     'redex-check #t #'pat)]
-                   [show (show-message stx)])
-     (let-values ([(attempts-stx source-stx retries-stx print?-stx size-stx fix-stx)
-                   (apply values
-                          (parse-kw-args (list attempts-keyword
-                                               source-keyword
-                                               retries-keyword
-                                               print?-keyword
-                                               attempt-size-keyword
-                                               (prepare-keyword #f))
-                                         (syntax kw-args)
-                                         stx
-                                         (syntax-e #'form)))])
-         (with-syntax ([property (syntax
-                                  (bind-prop
-                                   (λ (bindings)
-                                     (term-let ([name/ellipses (lookup-binding bindings 'name)] ...)
-                                               property))))])
-           (quasisyntax/loc stx
-             (let ([att #,attempts-stx]
-                   [ret #,retries-stx]
-                   [print? #,print?-stx]
-                   [fix #,fix-stx]
-                   [term-match (λ (generated)
-                                 (cond [(test-match lang pat generated) => values]
-                                       [else (redex-error 'redex-check "~s does not match ~s" generated 'pat)]))])
-               (parameterize ([attempt->size #,size-stx])
-               #,(if source-stx
-                     #`(let-values ([(metafunc/red-rel num-cases) 
-                                     #,(cond [(metafunc source-stx)
-                                              => (λ (x) #`(values #,x (length (metafunc-proc-cases #,x))))]
-                                             [else
-                                              #`(let ([r #,(apply-contract #'reduction-relation? source-stx 
-                                                                           "#:source argument" (syntax-e #'form))])
-                                                  (values r (length (reduction-relation-make-procs r))))])])
-                         (check-lhs-pats
-                          lang
-                          metafunc/red-rel
-                          property
-                          (max 1 (floor (/ att num-cases)))
-                          ret
-                          'redex-check
-                          (and print? show)
-                          fix
-                          #:term-match term-match))
-                     #`(check-one
-                        #,(term-generator #'lang #'pattern 'redex-check)
-                        property att ret (and print? show) fix (and fix term-match)))))))))]))
-
-(define (format-attempts a)
-  (format "~a attempt~a" a (if (= 1 a) "" "s")))
-
-(define (check-one generator property attempts retries show term-fix term-match) 
-  (let ([c (check generator property attempts retries show 
-                  #:term-fix term-fix
-                  #:term-match term-match)])
-    (if (counterexample? c)
-        (unless show c) ; check printed it
-        (if show
-            (show (format "no counterexamples in ~a\n"
-                          (format-attempts attempts)))
-            #t))))
-
-(define-struct (exn:fail:redex:test exn:fail:redex) (source term))
-(define-struct counterexample (term) #:transparent)
-
-(define-struct term-prop (pred))
-(define-struct bind-prop (pred))
-
-(define (check generator property attempts retries show
-               #:source [source #f]
-               #:term-fix [term-fix #f]
-               #:term-match [term-match #f])
-  (let loop ([remaining attempts])
-    (if (zero? remaining)
-        #t
-        (let ([attempt (add1 (- attempts remaining))])
-          (let-values ([(term bindings) (generator ((attempt->size) attempt) attempt retries)]
-                       [(handler) 
-                        (λ (action term)
-                          (λ (exn)
-                            (let ([msg (format "~a ~s raises an exception" action term)])
-                              (when show (show (format "~a\n" msg)))
-                              (raise 
-                               (if show
-                                   exn
-                                   (make-exn:fail:redex:test
-                                    (format "~a:\n~a" msg (exn-message exn))
-                                    (current-continuation-marks)
-                                    exn
-                                    term))))))])
-            (let ([term (with-handlers ([exn:fail? (handler "fixing" term)])
-                          (if term-fix (term-fix term) term))])
-              (if (if term-match
-                      (let ([bindings (make-bindings 
-                                       (match-bindings
-                                        (pick-from-list (term-match term))))])
-                        (with-handlers ([exn:fail? (handler "checking" term)])
-                          (match property
-                            [(term-prop pred) (pred term)]
-                            [(bind-prop pred) (pred bindings)])))
-                      (with-handlers ([exn:fail? (handler "checking" term)])
-                        (match (cons property term-fix)
-                          [(cons (term-prop pred) _) (pred term)]
-                          [(cons (bind-prop pred) #f) (pred bindings)])))
-                  (loop (sub1 remaining))
-                  (begin
-                    (when show
-                      (show
-                       (format "counterexample found after ~a~a:\n"
-                               (format-attempts attempt)
-                               (if source (format " with ~a" source) "")))
-                      (pretty-write term (current-output-port)))
-                    (make-counterexample term)))))))))
-
-(define (check-lhs-pats lang mf/rr prop attempts retries what show term-fix
-                        #:term-match [term-match #f])
-  (let ([lang-gen (compile lang what)])
-    (let-values ([(pats srcs)
-                  (cond [(metafunc-proc? mf/rr)
-                         (values (map (λ (case) ((metafunc-case-lhs+ case) lang)) 
-                                      (metafunc-proc-cases mf/rr))
-                                 (metafunction-srcs mf/rr))]
-                        [(reduction-relation? mf/rr)
-                         (values (map (λ (rwp) ((rewrite-proc-lhs rwp) lang)) (reduction-relation-make-procs mf/rr))
-                                 (reduction-relation-srcs mf/rr))])])
-      (let loop ([pats pats] [srcs srcs])
-        (if (and (null? pats) (null? srcs))
-            (if show
-                (show
-                 (format "no counterexamples in ~a (with each clause)\n"
-                         (format-attempts attempts)))
-                #t)
-            (let ([c (with-handlers ([exn:fail:redex:generation-failure?
-                                      ; Produce an error message that blames the LHS as a whole.
-                                      (λ (_)
-                                        (raise-gen-fail what (format "LHS of ~a" (car srcs)) retries))])
-                       (check
-                        (lang-gen (car pats))
-                        prop
-                        attempts
-                        retries
-                        show
-                        #:source (car srcs)
-                        #:term-match term-match
-                        #:term-fix term-fix))])
-              (if (counterexample? c)
-                  (unless show c)
-                  (loop (cdr pats) (cdr srcs)))))))))
-
-(define-syntax (check-metafunction stx)
-  (syntax-case stx ()
-    [(form name property . kw-args)
-     (let-values ([(attempts retries print? size fix)
-                   (apply values
-                          (parse-kw-args (list attempts-keyword
-                                               retries-keyword
-                                               print?-keyword
-                                               attempt-size-keyword
-                                               (prepare-keyword #t))
-                                         (syntax kw-args)
-                                         stx
-                                         (syntax-e #'form)))]
-                  [(m) (metafunc/err #'name stx)])
-       (quasisyntax/loc stx
-         (parameterize ([attempt->size #,size])
-           (let ([att #,attempts]
-                 [ret #,retries]
-                 [fix #,fix])
-             (check-lhs-pats 
-              (metafunc-proc-lang #,m)
-              #,m
-              (term-prop #,(apply-contract #'(-> (listof any/c) any) #'property #f (syntax-e #'form)))
-              att
-              ret
-              'check-metafunction
-              (and #,print? #,(show-message stx))
-              fix)))))]))
-
-(define (reduction-relation-srcs r)
-  (map (λ (proc) (or (rewrite-proc-name proc)
-                     (format "clause at ~a" (rewrite-proc-lhs-src proc))))
-       (reduction-relation-make-procs r)))
-
-(define (metafunction-srcs m)
-  (map (λ (x) (format "clause at ~a" (metafunc-case-src-loc x)))
-       (metafunc-proc-cases m)))
-
-(define-syntax (check-reduction-relation stx)
-  (syntax-case stx ()
-    [(form relation property . kw-args)
-     (let-values ([(attempts retries print? size fix)
-                   (apply values
-                          (parse-kw-args (list attempts-keyword
-                                               retries-keyword
-                                               print?-keyword
-                                               attempt-size-keyword
-                                               (prepare-keyword #f))
-                                         (syntax kw-args)
-                                         stx
-                                         (syntax-e #'form)))])
-       (quasisyntax/loc stx
-         (parameterize ([attempt->size #,size])
-           (let ([att #,attempts]
-                 [ret #,retries]
-                 [rel #,(apply-contract #'reduction-relation? #'relation #f (syntax-e #'form))]
-                 [fix #,fix])
-             (check-lhs-pats
-              (reduction-relation-lang rel)
-              rel
-              (term-prop #,(apply-contract #'(-> any/c any) #'property #f (syntax-e #'form)))
-              att
-              ret
-              'check-reduction-relation
-              (and #,print? #,(show-message stx))
-              fix)))))]))
-
 (define-signature decisions^
   (next-variable-decision
    next-number-decision
@@ -1086,24 +759,15 @@
 
 (define generation-decisions (make-parameter random-decisions@))
 
-(provide redex-check
-         generate-term
-         check-reduction-relation
-         check-metafunction
-         default-attempt-size
-         default-check-attempts
-         attempt-size/c
-         exn:fail:redex:generation-failure?
-         redex-pseudo-random-generator)
-
 (provide (struct-out ellipsis) 
          (struct-out mismatch)
          (struct-out class)
          (struct-out binder)
          (struct-out rg-lang)
-         (struct-out base-cases) base-cases-cross
-         (struct-out counterexample)
-         (struct-out exn:fail:redex:test))
+         (struct-out base-cases) 
+         base-cases-cross
+         (struct-out exn:fail:redex:generation-failure)
+         raise-gen-fail)
 
 (provide pick-from-list pick-sequence-length pick-nts
          pick-char pick-var pick-string pick-any
@@ -1111,9 +775,18 @@
          unparse-pattern
          prepare-lang
          class-reassignments reassign-classes
-         default-retries proportion-at-size
+         default-retries
+         default-attempt-size
+         default-check-attempts
+         attempt-size/c
+         proportion-at-size
          retry-threshold proportion-before-threshold post-threshold-incr
          is-nt? nt-by-name min-prods
          generation-decisions decisions^ 
          random-string
-         sexp find-base-cases)
+         sexp 
+         find-base-cases
+         attempt->size
+         redex-pseudo-random-generator)
+
+(provide compile)

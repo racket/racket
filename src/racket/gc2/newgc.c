@@ -753,14 +753,17 @@ int GC_is_allocated(void *p)
 # else
 #  define PREFIX_WSIZE 3
 # endif
+# define CHECK_ALIGN_MASK 0xF
 #elif defined(GC_ALIGN_EIGHT) 
 # if defined(SIXTY_FOUR_BIT_INTEGERS)
 #  define PREFIX_WSIZE 0
 # else
 #  define PREFIX_WSIZE 1
 # endif
+# define CHECK_ALIGN_MASK 0x7
 #else /* GC_ALIGN_FOUR or byte aligned */
 # define PREFIX_WSIZE 0
+# define CHECK_ALIGN_MASK 0x3
 #endif
 #define PREFIX_SIZE (PREFIX_WSIZE * WORD_SIZE)
 
@@ -773,7 +776,8 @@ int GC_is_allocated(void *p)
 #define MAX_OBJECT_SIZE  (APAGE_SIZE - ((PREFIX_WSIZE + 3) * WORD_SIZE))
 
 #define ASSERT_TAG(tag) GC_ASSERT((tag) >= 0 && (tag) <= NUMBER_OF_TAGS)
-#define ASSERT_VALID_OBJPTR(objptr) GC_ASSERT(!((intptr_t)(objptr) & (0x3)))
+#define ASSERT_VALID_OBJPTR(objptr) GC_ASSERT(!((intptr_t)(objptr) & CHECK_ALIGN_MASK))
+#define ASSERT_VALID_INFOPTR(objptr) GC_ASSERT(!(((intptr_t)(objptr) + sizeof(objhead)) & CHECK_ALIGN_MASK))
 
 /* Generation 0. Generation 0 is a set of very large pages in a list(gc->gen0.pages),
    plus a set of smaller bigpages in a separate list(gc->gen0.big_pages). 
@@ -1233,8 +1237,8 @@ inline static void gen0_allocate_and_setup_new_page(NewGC *gc) {
   if (!gc->gen0.pages)
     gc->gen0.pages = new_mpage;
 
-  GC_gen0_alloc_page_ptr    = NUM(new_mpage->addr);
-  ASSERT_VALID_OBJPTR(GC_gen0_alloc_page_ptr);
+  GC_gen0_alloc_page_ptr    = NUM(new_mpage->addr) + new_mpage->size;
+  ASSERT_VALID_INFOPTR(GC_gen0_alloc_page_ptr);
   GC_gen0_alloc_page_end    = NUM(new_mpage->addr) + GEN0_ALLOC_SIZE(new_mpage);
 }
 
@@ -1249,7 +1253,7 @@ inline static uintptr_t allocate_slowpath(NewGC *gc, size_t allocate_size, uintp
     if(gc->gen0.curr_alloc_page && gc->gen0.curr_alloc_page->next) { 
       gc->gen0.curr_alloc_page  = gc->gen0.curr_alloc_page->next;
       GC_gen0_alloc_page_ptr    = NUM(gc->gen0.curr_alloc_page->addr) + gc->gen0.curr_alloc_page->size;
-      ASSERT_VALID_OBJPTR(GC_gen0_alloc_page_ptr);
+      ASSERT_VALID_INFOPTR(GC_gen0_alloc_page_ptr);
       GC_gen0_alloc_page_end    = NUM(gc->gen0.curr_alloc_page->addr) + GEN0_ALLOC_SIZE(gc->gen0.curr_alloc_page);
     }
     /* WARNING: tries to avoid a collection but
@@ -1269,7 +1273,7 @@ inline static uintptr_t allocate_slowpath(NewGC *gc, size_t allocate_size, uintp
 #endif
     }
     newptr = GC_gen0_alloc_page_ptr + allocate_size;
-    ASSERT_VALID_OBJPTR(newptr);
+    ASSERT_VALID_INFOPTR(newptr);
 
   } while (OVERFLOWS_GEN0(newptr));
   
@@ -1288,7 +1292,6 @@ inline static void *allocate(const size_t request_size, const int type)
 
   /* ensure that allocation will fit in a gen0 page */
   newptr = GC_gen0_alloc_page_ptr + allocate_size;
-  ASSERT_VALID_OBJPTR(newptr);
 
   /* SLOW PATH: allocate_size overflows current gen0 page */
   if(OVERFLOWS_GEN0(newptr)) {
@@ -1302,12 +1305,15 @@ inline static void *allocate(const size_t request_size, const int type)
 
     newptr = allocate_slowpath(gc, allocate_size, newptr);
   }
+   
+  ASSERT_VALID_INFOPTR(GC_gen0_alloc_page_ptr);
 
   /* actual Allocation */
   {
     objhead *info = (objhead *)PTR(GC_gen0_alloc_page_ptr);
 
     GC_gen0_alloc_page_ptr = newptr;
+    ASSERT_VALID_INFOPTR(GC_gen0_alloc_page_ptr);
 
     if (type == PAGE_ATOMIC)
       memset(info, 0, sizeof(objhead)); /* init objhead */
@@ -1333,7 +1339,6 @@ inline static void *fast_malloc_one_small_tagged(size_t request_size, int dirty)
   const size_t allocate_size = COMPUTE_ALLOC_SIZE_FOR_OBJECT_SIZE(request_size);
 
   newptr = GC_gen0_alloc_page_ptr + allocate_size;
-  ASSERT_VALID_OBJPTR(newptr);
 
   if(OVERFLOWS_GEN0(newptr)) {
     return GC_malloc_one_tagged(request_size);
@@ -1341,6 +1346,7 @@ inline static void *fast_malloc_one_small_tagged(size_t request_size, int dirty)
     objhead *info = (objhead *)PTR(GC_gen0_alloc_page_ptr);
 
     GC_gen0_alloc_page_ptr = newptr;
+    ASSERT_VALID_INFOPTR(GC_gen0_alloc_page_ptr);
 
     if (dirty)
       memset(info, 0, sizeof(objhead)); /* init objhead */
@@ -1366,7 +1372,6 @@ void *GC_malloc_pair(void *car, void *cdr)
   const size_t allocate_size = PAIR_SIZE_IN_BYTES;
 
   newptr = GC_gen0_alloc_page_ptr + allocate_size;
-  ASSERT_VALID_OBJPTR(newptr);
 
   if(OVERFLOWS_GEN0(newptr)) {
     NewGC *gc = GC_get_GC();
@@ -1384,6 +1389,7 @@ void *GC_malloc_pair(void *car, void *cdr)
   else {
     objhead *info = (objhead *) PTR(GC_gen0_alloc_page_ptr);
     GC_gen0_alloc_page_ptr = newptr;
+    ASSERT_VALID_INFOPTR(GC_gen0_alloc_page_ptr);
 
     memset(info, 0, sizeof(objhead)); /* init objhead */
 
@@ -1391,8 +1397,9 @@ void *GC_malloc_pair(void *car, void *cdr)
     info->size = BYTES_MULTIPLE_OF_WORD_TO_WORDS(allocate_size); /* ALIGN_BYTES_SIZE bumbed us up to the next word boundary */
 
     pair = OBJHEAD_TO_OBJPTR(info);
-    ASSERT_VALID_OBJPTR(pair);
   }
+
+  ASSERT_VALID_OBJPTR(pair);
   
   /* initialize pair */
   {
@@ -1711,7 +1718,7 @@ inline static void resize_gen0(NewGC *gc, uintptr_t new_size)
   /* we're going to allocate onto the first page now */
   gc->gen0.curr_alloc_page = gc->gen0.pages;
   GC_gen0_alloc_page_ptr = NUM(gc->gen0.curr_alloc_page->addr) + gc->gen0.curr_alloc_page->size;
-  ASSERT_VALID_OBJPTR(GC_gen0_alloc_page_ptr);
+  ASSERT_VALID_INFOPTR(GC_gen0_alloc_page_ptr);
   GC_gen0_alloc_page_end = NUM(gc->gen0.curr_alloc_page->addr) + GEN0_ALLOC_SIZE(gc->gen0.curr_alloc_page);
 
   /* set the two size variables */
@@ -1748,6 +1755,14 @@ inline static void reset_nursery(NewGC *gc)
   resize_gen0(gc, new_gen0_size);
 }
 
+inline static mpage *pagemap_find_page_for_marking(NewGC *gc, const void *p) {
+  mpage *page;
+  page = pagemap_find_page(gc->page_maps, p);
+  if (page && !gc->gc_full && page->generation && !page->marked_on) return NULL;
+  return page;
+}
+
+
 /* This procedure fundamentally returns true if a pointer is marked, and
    false if it isn't. This function assumes that you're talking, at this
    point, purely about the mark field of the object. It ignores things like
@@ -1758,7 +1773,7 @@ inline static int marked(NewGC *gc, const void *p)
   mpage *page;
 
   if(!p) return 0;
-  if(!(page = pagemap_find_page(gc->page_maps, p))) return 1;
+  if(!(page = pagemap_find_page_for_marking(gc, p))) return 1;
   switch(page->size_class) {
     case SIZE_CLASS_BIG_PAGE_MARKED:
       return 1;
@@ -2594,7 +2609,7 @@ static void wait_if_master_in_progress(NewGC *gc, Log_Master_Info *lmi) {
 
 /* MUST CALL WITH cangc lock */
 static intptr_t NewGCMasterInfo_find_free_id() {
-  GC_ASSERT(MASTERGCINFO->live <= MASTERGCINFO->size);
+  GC_ASSERT(MASTERGCINFO->alive <= MASTERGCINFO->size);
   if ((MASTERGCINFO->alive + 1) == MASTERGCINFO->size) {
     MASTERGCINFO->size++;
     MASTERGCINFO->alive++;
@@ -2613,6 +2628,7 @@ static intptr_t NewGCMasterInfo_find_free_id() {
   }
   printf("Error in MASTERGCINFO table\n");
   abort();
+  return 0;
 } 
 
 static void NewGCMasterInfo_register_gc(NewGC *newgc) {
@@ -2992,7 +3008,7 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
     return;
   }
 
-  if(!(page = pagemap_find_page(gc->page_maps, p))) {
+  if(!(page = pagemap_find_page_for_marking(gc, p))) {
 #ifdef MZ_USE_PLACES
     if (MASTERGC && MASTERGC->major_places_gc && (page = pagemap_find_page(MASTERGC->page_maps, p))) {
       is_a_master_page = 1;
@@ -3211,7 +3227,7 @@ static inline void propagate_marks_worker(NewGC *gc, Mark2_Proc *mark_table, voi
   if (IS_BIG_PAGE_PTR(pp)) {
     mpage *page;
     p = REMOVE_BIG_PAGE_PTR_TAG(pp);
-    page = pagemap_find_page(gc->page_maps, p);
+    page = pagemap_find_page_for_marking(gc, p);
 #ifdef MZ_USE_PLACES
     if (!page && MASTERGC && MASTERGC->major_places_gc) {
       page = pagemap_find_page(MASTERGC->page_maps, p);
@@ -3300,7 +3316,7 @@ static void promote_marked_gen0_big_pages(NewGC *gc) {
 
 void *GC_resolve2(void *p, NewGC *gc)
 {
-  mpage *page = pagemap_find_page(gc->page_maps, p);
+  mpage *page = pagemap_find_page_for_marking(gc, p);
   objhead *info;
 
   if(!page || page->size_class)
@@ -3331,7 +3347,7 @@ void GC_fixup2(void *pp, struct NewGC *gc)
   if(!p || (NUM(p) & 0x1))
     return;
 
-  if((page = pagemap_find_page(gc->page_maps, p))) {
+  if((page = pagemap_find_page_for_marking(gc, p))) {
     objhead *info;
 
     if(page->size_class) return;
@@ -3660,30 +3676,10 @@ static void reset_gen1_pages_live_and_previous_sizes(NewGC *gc)
 
 static void remove_all_gen1_pages_from_pagemap(NewGC *gc)
 {
-  mpage *work;
-  int i;
-
-  GCDEBUG((DEBUGOUTF, "MINOR COLLECTION - PREPPING PAGES - remove all gen1 pages from pagemap.\n"));
-
-  /* if we're not doing a major collection, then we need to remove all the
-     pages in gc->gen1_pages[] from the page map */
-
-  for(i = 0; i < PAGE_TYPES; i++) {
-    for(work = gc->gen1_pages[i]; work; work = work->next) {
-      pagemap_remove(gc->page_maps, work);
-      work->added = 0;
-    }
-  }
-
-  for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
-    for (work = gc->med_pages[i]; work; work = work->next) {
-      if (work->generation) {
-          pagemap_remove(gc->page_maps, work);
-          work->added = 0;
-      }
-    }
-  }
-  mmu_flush_write_unprotect_ranges(gc->mmu);
+  /* We don't have to work here; just setting gc->gc_full to
+     0 means that any page with a non-0 `generation' and a
+     0 `marked_on' will not be returned by 
+     pagemap_find_page_for_marking(). */
 }
 
 static void mark_backpointers(NewGC *gc)
@@ -4310,8 +4306,10 @@ static void unprotect_old_pages(NewGC *gc)
     if(i != PAGE_ATOMIC) {
       for(page = gc->gen1_pages[i]; page; page = page->next) {
         if(page->page_type != PAGE_ATOMIC)  {
-          page->mprotected = 0;
-          mmu_queue_write_unprotect_range(mmu, page->addr, real_page_size(page), page_mmu_type(page), &page->mmu_src_block);
+          if (page->mprotected) {
+            page->mprotected = 0;
+            mmu_queue_write_unprotect_range(mmu, page->addr, real_page_size(page), page_mmu_type(page), &page->mmu_src_block);
+          }
         }
       }
     }
@@ -4319,8 +4317,10 @@ static void unprotect_old_pages(NewGC *gc)
 
   for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
     for (page = gc->med_pages[i]; page; page = page->next) {
-      page->mprotected = 0;
-      mmu_queue_write_unprotect_range(mmu, page->addr, real_page_size(page), page_mmu_type(page), &page->mmu_src_block);
+      if (page->mprotected) {
+        page->mprotected = 0;
+        mmu_queue_write_unprotect_range(mmu, page->addr, real_page_size(page), page_mmu_type(page), &page->mmu_src_block);
+      }
     }
   }
 
@@ -4340,10 +4340,12 @@ static void protect_old_pages(NewGC *gc)
   for(i = 0; i < PAGE_TYPES; i++) {
     if(i != PAGE_ATOMIC) {
       for(page = gc->gen1_pages[i]; page; page = page->next) {
-        if(page->page_type != PAGE_ATOMIC)  {
-          page->back_pointers = 0;
-          page->mprotected = 1;
-          mmu_queue_write_protect_range(mmu, page->addr, real_page_size(page), page_mmu_type(page), &page->mmu_src_block);
+        if (page->page_type != PAGE_ATOMIC) {
+          if (!page->mprotected) { 
+            page->back_pointers = 0;
+            page->mprotected = 1;
+            mmu_queue_write_protect_range(mmu, page->addr, real_page_size(page), page_mmu_type(page), &page->mmu_src_block);
+          }
         }
       }
     }
@@ -4351,9 +4353,11 @@ static void protect_old_pages(NewGC *gc)
 
   for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
     for (page = gc->med_pages[i]; page; page = page->next) {
-      page->back_pointers = 0;
-      page->mprotected = 1;
-      mmu_queue_write_protect_range(mmu, page->addr, APAGE_SIZE, page_mmu_type(page), &page->mmu_src_block);
+      if (!page->mprotected) {
+        page->back_pointers = 0;
+        page->mprotected = 1;
+        mmu_queue_write_protect_range(mmu, page->addr, APAGE_SIZE, page_mmu_type(page), &page->mmu_src_block);
+      }
     }
   }
 

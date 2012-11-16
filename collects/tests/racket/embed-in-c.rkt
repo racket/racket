@@ -10,7 +10,7 @@
 (define-syntax-rule (test expected expr)
   (let ([val expr])
     (unless (equal? expected val)
-      (error 'test "failed at ~s: ~e" 'expr val))))
+      (error 'test "failed at ~s: ~e; expected: ~e" 'expr val expected))))
 
 (define dir (collection-path "tests" "racket"))
 (define lib-dir (find-lib-dir))

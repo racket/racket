@@ -48,7 +48,8 @@ extern Scheme_Object *scheme_get_expand_observe();
 #define SCHEME_EXPAND_OBSERVE_PHASE_UP(observer)           _SCHEME_EXPOBS(observer,20,NULL)
 
 #define SCHEME_EXPAND_OBSERVE_MACRO_PRE_X(observer,stx)   _SCHEME_EXPOBS(observer,21,stx)
-#define SCHEME_EXPAND_OBSERVE_MACRO_POST_X(observer,stx)  _SCHEME_EXPOBS(observer,22,stx)
+#define SCHEME_EXPAND_OBSERVE_MACRO_POST_X(observer,stx,orig_stx) \
+  _SCHEME_EXPOBS(observer,22,scheme_make_pair(stx, orig_stx))
 
 #define SCHEME_EXPAND_OBSERVE_MODULE_BODY(observer,list)  _SCHEME_EXPOBS(observer,23,list)
 #define SCHEME_EXPAND_OBSERVE_BLOCK_RENAMES(observer,old,new)        \
@@ -170,6 +171,8 @@ extern Scheme_Object *scheme_get_expand_observe();
 
 #define SCHEME_EXPAND_OBSERVE_LOCAL_BIND(obs,ids) \
         _SCHEME_EXPOBS(obs,143,ids)
+#define SCHEME_EXPAND_OBSERVE_EXIT_LOCAL_BIND(obs) \
+        _SCHEME_EXPOBS(obs,160,scheme_false);
 #define SCHEME_EXPAND_OBSERVE_ENTER_BIND(obs) \
         _SCHEME_EXPOBS(obs,144,scheme_false)
 #define SCHEME_EXPAND_OBSERVE_EXIT_BIND(obs) \
@@ -196,6 +199,6 @@ extern Scheme_Object *scheme_get_expand_observe();
 #define SCHEME_EXPAND_OBSERVE_PREPARE_ENV(obs) \
         _SCHEME_EXPOBS(obs,157,scheme_false)
 
-/* next: 160 */
+/* next: 161 */
 
 #endif

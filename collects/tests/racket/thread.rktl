@@ -613,6 +613,8 @@
       (test #f semaphore-try-wait? s)
       (test #f semaphore-try-wait? s2))))
 
+(require tests/net/available)
+(when (tcp-localhost-available?)
 (define (listen-port x)
   (let-values ([(la lp pa pp) (tcp-addresses x #t)])
     lp))
@@ -720,7 +722,7 @@
 
 	  (close-output-port cw)
 	  (test sr sync s t l sr))))
-    (tcp-close l)))
+    (tcp-close l))))
 
 ;; Test limited pipe output waiting:
 (let-values ([(r w) (make-pipe 5000)])
@@ -1437,7 +1439,20 @@
                           [current-logger l])
              (raise 'ack))))
         (vector-ref (sync r) 1)))
-      
+
+
+; --------------------
+;; initial prompt uses the default abort handler:
+
+(let ([v #f])
+  (sync
+   (thread
+    (lambda ()
+      (abort-current-continuation
+       (default-continuation-prompt-tag)
+       (lambda () (set! v "yes"))))))
+  (test "yes" values v))
+
 ; --------------------
 
 (report-errs)

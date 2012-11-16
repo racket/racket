@@ -17,22 +17,21 @@
   (define old-ds (array-shape arr))
   (define old-dims (vector-length old-ds))
   (define new-dims (vector-length new-ds))
-  (define shift (- new-dims old-dims))
+  (define shift (assert (- new-dims old-dims) index?))
   (define old-js (make-thread-local-indexes old-dims))
   (define old-f (unsafe-array-proc arr))
-  (with-asserts ([shift index?])
-    (unsafe-build-array
-     new-ds
-     (λ: ([new-js : Indexes])
-       (let ([old-js  (old-js)])
-         (let: loop : A ([k : Nonnegative-Fixnum  0])
-           (cond [(k . < . old-dims)
-                  (define new-jk (unsafe-vector-ref new-js (+ k shift)))
-                  (define old-dk (unsafe-vector-ref old-ds k))
-                  (define old-jk (unsafe-fxmodulo new-jk old-dk))
-                  (unsafe-vector-set! old-js k old-jk)
-                  (loop (+ k 1))]
-                 [else  (old-f old-js)])))))))
+  (unsafe-build-array
+   new-ds
+   (λ: ([new-js : Indexes])
+     (let ([old-js  (old-js)])
+       (let: loop : A ([k : Nonnegative-Fixnum  0])
+         (cond [(k . < . old-dims)
+                (define new-jk (unsafe-vector-ref new-js (+ k shift)))
+                (define old-dk (unsafe-vector-ref old-ds k))
+                (define old-jk (unsafe-fxmodulo new-jk old-dk))
+                (unsafe-vector-set! old-js k old-jk)
+                (loop (+ k 1))]
+               [else  (old-f old-js)]))))))
 
 (: array-broadcast (All (A) ((Array A) Indexes -> (Array A))))
 (define (array-broadcast arr ds)

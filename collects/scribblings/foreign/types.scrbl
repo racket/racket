@@ -342,7 +342,12 @@ might eventually become managed by the garbage collector. For example,
 if a reference is created by @racket[malloc] with @racket['raw] and
 released by @racket[free], then the @racket[free] may allow the memory
 formerly occupied by the reference to be used later by the garbage
-collector.}
+collector.
+
+The @racket[cpointer-gcable?] function returns @racket[#t] for a
+cpointer generated via the @racket[_gcpointer] type, while it
+generates @racket[#f] for a cpointer generated via the
+@racket[_cpointer] type.}
 
 
 @deftogether[(
@@ -479,6 +484,11 @@ For @tech{callouts} to foreign functions with the generated type:
        the foreign function invokes Racket callbacks, however, beware
        that values managed by the Racket garbage collector might be
        moved in memory by the garbage collector.}
+
+ @item{A @tech{callout} object is finalized internally. Beware
+       of trying to use a @tech{callout} object that is reachable
+       only from a finalized object, since the two objects
+       might be finalized in either order.}
 
 ]
 

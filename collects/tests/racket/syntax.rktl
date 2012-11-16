@@ -315,6 +315,16 @@
 			[else #f])))
 (error-test #'(cond [(values 1 2) 8]) arity?)
 (error-test #'(case (values 1 2) [(a) 8]) arity?)
+(syntax-test #'(case 1 []) #rx"ill-formed clause")
+(syntax-test #'(case 1 [(y) 5] []) #rx"ill-formed clause")
+(syntax-test #'(case 1 [x]) #rx"not a datum sequence")
+(syntax-test #'(case 1 [(y) 5] [x]) #rx"not a datum sequence")
+(syntax-test #'(case 1 [(y) 5] [x x]) #rx"not a datum sequence")
+(syntax-test #'(case 1 [x x]) #rx"not a datum sequence")
+(syntax-test #'(case 1 [(x)]) #rx"missing expression after datum sequence")
+(syntax-test #'(case 1 [(y) 5] [(x)]) #rx"missing expression after datum sequence")
+(syntax-test #'(case 1 [(x) . 8]) #rx"illegal use of `.'")
+(syntax-test #'(case 1 [(x) 10] . 9) #rx"illegal use of `.'")
 
 ;; test larger `case' dispatches to trigger for binary-search
 ;; and hash-table-based dispatch:

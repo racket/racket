@@ -21,7 +21,7 @@
                     [-> t:->])
          (utils tc-utils utils)
          (utils mutated-vars)
-         (env type-name-env type-env-structs init-envs)
+         (env type-name-env type-env-structs init-envs mvar-env)
          rackunit rackunit/text-ui
          syntax/parse
          (for-syntax (utils tc-utils) racket/file racket/port
@@ -75,8 +75,8 @@
                       [current-namespace (namespace-anchor->namespace anch)]
                       [orig-module-stx (quote-syntax e)])
          (let ([ex (expand 'e)])
-           (parameterize ([mutated-vars (find-mutated-vars ex)])
-             (values (lambda () (tc-expr ex)) ex))))]))
+	   (find-mutated-vars ex mvar-env)
+           (values (lambda () (tc-expr ex)) ex)))]))
 
 (define-syntax (tc-expr/expand stx)
   (syntax-case stx ()
@@ -85,8 +85,8 @@
                       [current-namespace (namespace-anchor->namespace anch)]
                       [orig-module-stx (quote-syntax e)])
          (let ([ex (expand 'e)])
-           (parameterize ([mutated-vars (find-mutated-vars ex)])
-             (tc-expr ex))))]))
+           (find-mutated-vars ex mvar-env)
+           (tc-expr ex)))]))
 
 ;; check that an expression typechecks correctly
 (define-syntax (tc-e stx)
@@ -203,7 +203,8 @@
         (tc-e (lcm (ann 3 Integer) -1/2) -NonNegRat)
         (tc-e (expt 0.5 0.3) -PosFlonum)
         (tc-e (expt 0.5 2) -PosFlonum)
-        (tc-e (expt 0.5 0) -PosFlonum)
+        (tc-e (expt 0.5 0) -One)
+        (tc-e (expt -1/2 -1/2) N)
         (tc-e (flexpt 0.5 0.3) -NonNegFlonum)
         (tc-e (flexpt 0.00000000001 100000000000.0) -NonNegFlonum)
         (tc-e (flexpt -2.0 -0.5) -Flonum) ; NaN

@@ -23,7 +23,7 @@ otherwise.}
 @defproc[(ico-depth [ico ico?]) (one-of/c 1 2 4 8 16 24 32)]
 )]{
 
-Returns the width or of an icon in pixels, or the depth in bits per
+Returns the width or height of an icon in pixels, or the depth in bits per
 pixel.}
 
 @defproc[(read-icos [src (or/c path-string? input-port?)])

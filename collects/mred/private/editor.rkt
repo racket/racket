@@ -61,9 +61,9 @@
 
 (define (check-format who format)
   (unless (memq format '(guess standard text text-force-cr same copy))
-    (raise-type-error (who->name who)
-                      "'guess, 'standard, 'text, 'text-force-cr, 'same, or 'copy"
-                      format)))
+    (raise-argument-error (who->name who)
+                          "(or/c 'guess 'standard 'text 'text-force-cr 'same 'copy)"
+                          format)))
 
 (define-syntax (augmentize stx)
   (syntax-case stx ()
@@ -378,7 +378,7 @@
       (entry-point
        (lambda (type)
          (unless (memq type '(text pasteboard))
-           (raise-type-error (who->name '(method editor<%> on-new-box)) "symbol: text or pasteboard" type))
+           (raise-argument-error (who->name '(method editor<%> on-new-box)) "(or/c 'text 'pasteboard)" type))
          (make-object editor-snip%
                       (let ([e (make-object (cond
                                              [(eq? type 'pasteboard) pasteboard%]
@@ -557,9 +557,9 @@
   (lambda (p)
     (unless (and (procedure? p)
                  (procedure-arity-includes? p 1))
-      (raise-type-error who
-                        "procedure of arity 1"
-                        p))
+      (raise-argument-error who
+                            "(procedure-arity-includes/c 1)"
+                            p))
     p))
 
 (define current-text-keymap-initializer

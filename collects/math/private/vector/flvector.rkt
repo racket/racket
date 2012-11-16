@@ -4,7 +4,6 @@
          racket/string
          (for-syntax racket/base syntax/parse)
          "../unsafe.rkt"
-         "../exception.rkt"
          "flvector-syntax.rkt")
 
 (provide

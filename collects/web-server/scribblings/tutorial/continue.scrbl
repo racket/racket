@@ -661,10 +661,10 @@ following content:
 web-server/insta
 (define (start request)
   (response/xexpr
-   '(html (head (title "Testing"))
-          (link ((rel "stylesheet")
-                 (href "/test-static.css")
-                 (type "text/css")))
+   '(html (head (title "Testing")
+                (link ((rel "stylesheet")
+                       (href "/test-static.css")
+                       (type "text/css"))))          
           (body (h1 "Testing")
                 (h2 "This is a header")
                 (p "This is " (span ((class "hot")) "hot") ".")))))
@@ -834,7 +834,7 @@ At this point, we @emph{can} read and write the blog to disk. So let's do it.
 First, we'll add to the model a path pointing to where the blog resides on
 disk:
 
-@defstruct*[blog ([home string?] [posts (listof post?)]) #:mutable]
+@defstruct*[blog ([home string?] [posts (listof post?)]) #:mutable #:prefab]
 
 Notice that we will need to convert the path into a string. Why didn't we just
 make the blog structure contain paths? Answer: They can't be used with
@@ -1255,7 +1255,7 @@ For example, @racket[input-string] is itself a library
 @racket[title] to that string.
 
 @racket[input-string] is rendered as @racketresult[`(input ([type "text"] [name
-,_fresh_name]))], so @racket[(formlet-dispay
+,_fresh_name]))], so @racket[(formlet-display
 new-post-formlet)] is rendered as:
 @racketresultblock[
 (list '(input ([type "text"] [name "input_0"]))

@@ -1585,9 +1585,31 @@ static Scheme_Object *foreign_set_cpointer_tag_bang(int argc, Scheme_Object *arg
   Scheme_Object *cp;
   cp = unwrap_cpointer_property(argv[0]);
   if (!SCHEME_CPTRP(cp))
-    scheme_wrong_contract(MYNAME, "propert-cpointer?", 0, argc, argv);
+    scheme_wrong_contract(MYNAME, "proper-cpointer?", 0, argc, argv);
   SCHEME_CPTR_TYPE(cp) = argv[1];
   return scheme_void;
+}
+#undef MYNAME
+
+#define MYNAME "cpointer-gcable?"
+static Scheme_Object *foreign_cpointer_gcable_p(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *cp;
+  cp = unwrap_cpointer_property(argv[0]);
+  if (SCHEME_CPTRP(cp)) {
+    return ((SCHEME_CPTR_FLAGS(cp) & 0x1)
+            ? scheme_false
+            : scheme_true);
+  } else if (SCHEME_FALSEP(cp)
+             || SCHEME_FFIOBJP(cp)
+             || SCHEME_FFICALLBACKP(cp))
+    return scheme_false;
+  else if (SCHEME_BYTE_STRINGP(cp))
+    return scheme_true;
+  else {
+    scheme_wrong_contract(MYNAME, "cpointer?", 0, argc, argv);
+    return NULL;
+  }
 }
 #undef MYNAME
 
@@ -3033,7 +3055,7 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
 #ifdef MZ_USE_PLACES
   int           orig_place = SCHEME_TRUEP(SCHEME_VEC_ELS(data)[7]);
 #endif
-  int           nargs   = cif->nargs;
+  int           nargs /* = cif->nargs, after checking cif */;
   /* When the foreign function is called, we need an array (ivals) of nargs
    * ForeignAny objects to store the actual C values that are created, and we
    * need another array (avalues) for the pointers to these values (this is
@@ -3060,6 +3082,13 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
   if (orig_place && (scheme_current_place_id == 0))
     orig_place = 0;
 #endif
+  if (!cif) {
+    scheme_signal_error("ffi-call: foreign-function reference was already finalized%s%s",
+                        name ? "\n  name: " : "",
+                        name ? name : "");
+    return NULL;
+  }
+  nargs =  cif->nargs;
   if ((nargs <= MAX_QUICK_ARGS)) {
     ivals   = stack_ivals;
     avalues = stack_avalues;
@@ -3129,8 +3158,9 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
 }
 
 /* see below */
-void free_fficall_data(void *ignored, void *p)
+void free_fficall_data(void *data, void *p)
 {
+  SCHEME_VEC_ELS(data)[4] = NULL;
   free(((ffi_cif*)p)->arg_types);
   free(p);
 }
@@ -3819,6 +3849,8 @@ void scheme_init_foreign(Scheme_Env *env)
     scheme_make_prim_w_arity(foreign_cpointer_tag, "cpointer-tag", 1, 1), menv);
   scheme_add_global("set-cpointer-tag!",
     scheme_make_prim_w_arity(foreign_set_cpointer_tag_bang, "set-cpointer-tag!", 2, 2), menv);
+  scheme_add_global("cpointer-gcable?",
+    scheme_make_prim_w_arity(foreign_cpointer_gcable_p, "cpointer-gcable?", 1, 1), menv);
   scheme_add_global("ctype-sizeof",
     scheme_make_prim_w_arity(foreign_ctype_sizeof, "ctype-sizeof", 1, 1), menv);
   scheme_add_global("ctype-alignof",
@@ -4142,6 +4174,8 @@ void scheme_init_foreign(Scheme_Env *env)
    scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "cpointer-tag", 1, 1), menv);
   scheme_add_global("set-cpointer-tag!",
    scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "set-cpointer-tag!", 2, 2), menv);
+  scheme_add_global("cpointer-gcable?",
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "cpointer-gcable?", 1, 1), menv);
   scheme_add_global("ctype-sizeof",
    scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ctype-sizeof", 1, 1), menv);
   scheme_add_global("ctype-alignof",

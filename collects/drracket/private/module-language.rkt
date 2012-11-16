@@ -25,7 +25,9 @@
          "rep.rkt"
          "eval-helpers.rkt"
          "local-member-names.rkt"
-         "rectangle-intersect.rkt")
+         "rectangle-intersect.rkt"
+         
+         framework/private/logging-timer)
 
 (define-runtime-path expanding-place.rkt "expanding-place.rkt")
 
@@ -109,14 +111,19 @@
             ;; creating a sanbox can fail in strange ways so we just
             ;; swallow the failures so as to not wreck DrRacket
             (with-handlers ((exn:fail? (λ (x) 
-                                         (log-error (exn-message x))
+                                         (log-error (format "DrRacket:module-language:sandbox exn: ~a" (exn-message x)))
                                          (for ([x (in-list (continuation-mark-set->context
                                                             (exn-continuation-marks x)))])
                                            (log-error (format "  ~s" x))))))
               (set! sandbox (make-evaluator 'racket/base))))))
       
       (define/override (first-opened settings)
-        (define ns (with-handlers ((exn:fail? (lambda (x) #f)))
+        (define ns (with-handlers ((exn:fail? (lambda (x) 
+                                                (log-error (format "DrRacket:module-language.rkt:first-opened exn: ~a" (exn-message x)))
+                                                (for ([x (in-list (continuation-mark-set->context
+                                                                   (exn-continuation-marks x)))])
+                                                  (log-error (format "  ~s" x)))
+                                                #f)))
                      ;; get-ns can fail in all kinds of strange ways;
                      ;; just give up if it does, since an error here
                      ;; means drracket won't start up.
@@ -125,6 +132,7 @@
       
       (define/private (get-ns str)
         (define ev (make-evaluator 'racket/base))
+        (ev `(current-inspector ,(current-inspector)))
         (ev `(parameterize ([read-accept-reader #t])
                (define stx (read-syntax "here" (open-input-string ,str)))
                (define modname
@@ -139,29 +147,31 @@
       
       (inherit get-language-name)
       (define/public (get-users-language-name defs-text)
-        (let* ([defs-port (open-input-text-editor defs-text)]
-               [read-successfully?
-                (with-handlers ((exn:fail? (λ (x) #f)))
-                  (read-language defs-port (λ () #f))
-                  #t)])
-          (cond
-            [read-successfully?
-             (let* ([str (send defs-text get-text 0 (file-position defs-port))]
-                    [pos (regexp-match-positions #rx"#(?:!|lang )" str)])
-               (cond
-                 [(not pos)
-                  (get-language-name)]
-                 [else
-                  ;; newlines can break things (ie the language text won't 
-                  ;; be in the right place in the interactions window, which
-                  ;; at least makes the test suites unhappy), so get rid of 
-                  ;; them from the name. Otherwise, if there is some weird formatting,
-                  ;; so be it.
-                  (regexp-replace* #rx"[\r\n]+"
-                                   (substring str (cdr (car pos)) (string-length str))
-                                   " ")]))]
-            [else
-             (get-language-name)])))
+        (define defs-port (open-input-text-editor defs-text))
+        (port-count-lines! defs-port)
+        (define read-successfully?
+          (with-handlers ((exn:fail? (λ (x) #f)))
+            (read-language defs-port (λ () #f))
+            #t))
+        (cond
+          [read-successfully?
+           (define-values (_line _col port-pos) (port-next-location defs-port))
+           (define str (send defs-text get-text 0 (- port-pos 1)))
+           (define pos (regexp-match-positions #rx"#(?:!|lang )" str))
+           (cond
+             [(not pos)
+              (get-language-name)]
+             [else
+              ;; newlines can break things (ie the language text won't 
+              ;; be in the right place in the interactions window, which
+              ;; at least makes the test suites unhappy), so get rid of 
+              ;; them from the name. Otherwise, if there is some weird formatting,
+              ;; so be it.
+              (regexp-replace* #rx"[\r\n]+"
+                               (substring str (cdr (car pos)) (string-length str))
+                               " ")])]
+          [else
+           (get-language-name)]))
                 
       (define/override (use-namespace-require/copy?) #f)
       
@@ -927,6 +937,7 @@
       ;; colors : (or/c #f (listof string?) 'parens)
       (define colors #f)
       (define tooltip-labels #f)
+      (define/public (get-online-expansion-colors) colors)
       
       (super-new)
       
@@ -1308,7 +1319,7 @@
       
       (define compilation-out-of-date? #f)
       
-      (define tmr (new timer% [notify-callback (lambda () (send-off))]))
+      (define tmr (new logging-timer% [notify-callback (lambda () (send-off))]))
       
       (define cb-proc (λ (sym new-val) 
                         (when new-val
@@ -1775,7 +1786,7 @@
       (define lang-wants-big-defs/ints-labels? #f)
 
       (define recently-typed-timer 
-        (new timer%
+        (new logging-timer%
              [notify-callback
               (λ ()
                 (update-recently-typed #f)

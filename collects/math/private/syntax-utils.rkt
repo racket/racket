@@ -7,32 +7,16 @@
 (provide (all-defined-out)
          (all-from-out (submod "." ensures)))
 
-(define skip-ids (syntax->list #'(+ - * / < > <= >= = min max)))
-
-(define (skip-binding? e-stx)
-  (and (identifier? e-stx)
-       (findf (λ (skip-id) (free-identifier=? skip-id e-stx)) skip-ids)))
-
-(define (maybe-binding e-stx temp-id)
-  (cond [(skip-binding? e-stx)  (values (list) e-stx)]
-        [else  (values (list #`[#,temp-id #,e-stx]) temp-id)]))
-
-(define (generate-bindings e-stxs)
-  (let ([e-stxs  (if (list? e-stxs) e-stxs (syntax->list e-stxs))])
-    (define-values (bnds refs)
-      (for/lists (bnds refs) ([e-stx  (in-list e-stxs)]
-                              [temp-id  (in-list (generate-temporaries e-stxs))])
-        (maybe-binding e-stx temp-id)))
-    (list (apply append bnds) refs)))
+(define-syntax-rule (define-inline-op name inline-op typed-op inline-pats ...)
+  (define-syntax (name stx)
+    (syntax-case stx ()
+      [(_ . inline-pats)  (syntax/loc stx (inline-op . inline-pats))] ...
+      [(_ . args)  (syntax/loc stx (typed-op . args))]
+      [_  (syntax/loc stx typed-op)])))
 
 (module ensures racket/base
   (require racket/flonum
-           "exception.rkt"
-           (except-in typed/racket/base
-                      raise-arguments-error
-                      raise-argument-error
-                      raise-result-error
-                      raise-range-error))
+           typed/racket/base)
   
   (provide (all-defined-out))
 
@@ -48,19 +32,6 @@
     (let: ([f : T  f-expr])
       (if (procedure? f) f (raise-argument-error name "Procedure" f))))
   
-  (define-syntax-rule (ensure-float-complex name z-expr)
-    (let*: ([z : Float-Complex  z-expr]
-            [x : Flonum  (if (number? z)
-                             (let: ([x : Flonum  (real-part z)])
-                               (if (flonum? x) x #f))
-                             #f)]
-            [y : Flonum  (if x
-                             (let: ([y : Flonum  (imag-part z)])
-                               (if (flonum? y) y #f))
-                             #f)])
-      (values x (if y y (raise-argument-error name "Float-Complex" z)))))
-  
   )
 
 (require 'ensures)
-

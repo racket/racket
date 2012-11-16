@@ -1,9 +1,5 @@
 #lang typed/racket/base
-#|
-#lang racket
 
-(module defs typed/racket/base
-|#
 #|
 Algorithms taken from:
 
@@ -32,26 +28,13 @@ This implementation extends those in the papers in three ways:
          "../distributions/impl/normal-cdf.rkt"
          "continued-fraction.rkt"
          "gamma.rkt"
-         "gammastar.rkt"
-         "log-gamma.rkt")
+         "log-gamma.rkt"
+         "stirling-error.rkt")
 
-;(provide (all-defined-out))
-(provide flgamma-lower
-         flgamma-upper
-         flgamma-lower-regularized
-         flgamma-upper-regularized
-         fllog-gamma-lower
-         fllog-gamma-upper
-         fllog-gamma-lower-regularized
-         fllog-gamma-upper-regularized
-         gamma-lower
-         gamma-upper
-         gamma-lower-regularized
-         gamma-upper-regularized
-         log-gamma-lower
-         log-gamma-upper
-         log-gamma-lower-regularized
-         log-gamma-upper-regularized)
+(provide fllog-gamma-inc
+         flgamma-inc
+         log-gamma-inc
+         gamma-inc)
 
 (define sqrt2pi 2.5066282746310007)
 (define logsqrt2pi 0.9189385332046728)
@@ -365,7 +348,7 @@ This implementation extends those in the papers in three ways:
 (: R (Float Float -> Float))
 (define (R k n)
   (fl/ (fl* (R-sum k n) (flexp (fl* (fl* (fl* -0.5 k) n) n)))
-       (fl* (flsqrt (fl* (fl* 2.0 pi) k)) (flgamma* k))))
+       (fl* (flsqrt (fl* (fl* 2.0 pi) k)) (flexp-stirling k))))
 
 (: R-log (Float Float -> (Values Float Float)))
 ;; Log-space version of `R' above
@@ -375,7 +358,7 @@ This implementation extends those in the papers in three ways:
    (fl- (fl- (fl- (fl+ (fllog (abs sum)) (fl* (fl* (fl* -0.5 k) n) n))
                   (fl* 0.5 (fllog k)))
              (fl* 0.5 (fllog (fl* 2.0 pi))))
-        (fllog-gamma* k))
+        (flstirling k))
    (flsgn sum)))
 
 (: flgamma-regularized-temme (Float Float Any -> Float))
@@ -496,177 +479,40 @@ This implementation extends those in the papers in three ways:
         [else  +nan.0]))
 
 ;; ===================================================================================================
-;; Unregularized incomplete gamma functions
+;; User-facing gamma functions
 
-(: fllog-gamma-lower (Float Float -> Float))
-(define (fllog-gamma-lower k x)
-  (fl+ (fllog-gamma-lower-regularized k x) (fllog-gamma k)))
+(: fllog-gamma-inc (Float Float Any Any -> Float))
+(define (fllog-gamma-inc k x upper? regularized?)
+  (define z
+    (cond [upper?  (fllog-gamma-upper-regularized k x)]
+          [else    (fllog-gamma-lower-regularized k x)]))
+  (cond [regularized?  z]
+        [else  (fl+ z (fllog-gamma k))]))
 
-(: fllog-gamma-upper (Float Float -> Float))
-(define (fllog-gamma-upper k x)
-  (fl+ (fllog-gamma-upper-regularized k x) (fllog-gamma k)))
+(: flgamma-inc* (Float Float Any Any -> Float))
+(define (flgamma-inc* k x upper? regularized?)
+  (define z
+    (cond [upper?  (flgamma-upper-regularized k x)]
+          [else    (flgamma-lower-regularized k x)]))
+  (cond [regularized?  z]
+        [else  (fl* z (flgamma k))]))
 
-(: flgamma-lower (Float Float -> Float))
-(define (flgamma-lower k x)
-  (cond [(use-log? k x)  (flexp (fllog-gamma-lower k x))]
-        [else  (fl* (flgamma-lower-regularized k x) (flgamma k))]))
-
-(: flgamma-upper (Float Float -> Float))
-(define (flgamma-upper k x)
-  (cond [(use-log? k x)  (flexp (fllog-gamma-upper k x))]
-        [else  (fl* (flgamma-upper-regularized k x) (flgamma k))]))
-
-;; ===================================================================================================
-;; Wrappers for functions that accept reals
+(: flgamma-inc (Float Float Any Any -> Float))
+(define (flgamma-inc k x upper? regularized?)
+  (cond [(use-log? k x)  (flexp (fllog-gamma-inc k x upper? regularized?))]
+        [else  (flgamma-inc* k x upper? regularized?)]))
 
 (define-syntax-rule (define-incomplete-gamma-wrapper name flname)
   (begin
-    (: name (Real Real -> Flonum))
-    (define (name k x)
-      (cond [(and (flonum? k) (flonum? x))  (flname k x)]
-            [else  (flname (fl k) (fl x))]))))
+    (: name (case-> (Real Real -> Float)
+                    (Real Real Any -> Float)
+                    (Real Real Any Any -> Float)))
+    (define (name k x [upper? #f] [regularized? #f])
+      (cond [(and (exact? k) (k . <= . 0))
+             (raise-argument-error 'name "Positive-Real" 0 k x)]
+            [(and (exact? x) (x . < . 0))
+             (raise-argument-error 'name "Nonnegative-Real" 1 k x)]
+            [else  (flname (fl k) (fl x) upper? regularized?)]))))
 
-(define-incomplete-gamma-wrapper gamma-lower flgamma-lower)
-(define-incomplete-gamma-wrapper gamma-upper flgamma-upper)
-(define-incomplete-gamma-wrapper gamma-lower-regularized flgamma-lower-regularized)
-(define-incomplete-gamma-wrapper gamma-upper-regularized flgamma-upper-regularized)
-(define-incomplete-gamma-wrapper log-gamma-lower fllog-gamma-lower)
-(define-incomplete-gamma-wrapper log-gamma-upper fllog-gamma-upper)
-(define-incomplete-gamma-wrapper log-gamma-lower-regularized fllog-gamma-lower-regularized)
-(define-incomplete-gamma-wrapper log-gamma-upper-regularized fllog-gamma-upper-regularized)
-#|
-)
-
-(require plot
-         'defs
-         math/bigfloat
-         "../../flonum.rkt"
-         "../../base.rkt"
-         "../../vector.rkt"
-         "../polynomial/chebyshev.rkt"
-         "../distributions/impl/normal-cdf.rkt"
-         "continued-fraction.rkt"
-         "gamma.rkt"
-         "gammastar.rkt"
-         "log-gamma.rkt"
-         "polyfun.rkt")
-
-(define h (make-hash))
-
-(define (gamma-lower* k x)
-  (let ([k  (fl k)] (x  (fl x)))
-    (hash-ref!
-     h (list 'lower (bf-precision) k x)
-     (λ ()
-       (printf "k = ~v  x = ~v~n" k x)
-       (bigfloat->flonum (bfgamma-lower (bf k) (bf x)))))))
-
-(define (gamma-upper* k x)
-  (let ([k  (fl k)] (x  (fl x)))
-    (hash-ref!
-     h (list 'upper (bf-precision) k x)
-     (λ ()
-       (printf "k = ~v  x = ~v~n" k x)
-       (bigfloat->flonum (bfgamma-upper (bf k) (bf x)))))))
-
-(define (log-gamma-lower* k x)
-  (let ([k  (fl k)] (x  (fl x)))
-    (hash-ref!
-     h (list 'log-lower (bf-precision) k x)
-     (λ ()
-       (printf "k = ~v  x = ~v~n" k x)
-       (bigfloat->flonum (bflog-gamma-lower (bf k) (bf x)))))))
-
-(define (log-gamma-upper* k x)
-  (let ([k  (fl k)] (x  (fl x)))
-    (hash-ref!
-     h (list 'log-upper (bf-precision) k x)
-     (λ ()
-       (printf "k = ~v  x = ~v~n" k x)
-       (bigfloat->flonum (bflog-gamma-upper (bf k) (bf x)))))))
-
-(define (gamma-lower-regularized* k x)
-  (let ([k  (fl k)] (x  (fl x)))
-    (hash-ref!
-     h (list 'lower-reg (bf-precision) k x)
-     (λ ()
-       (printf "k = ~v  x = ~v~n" k x)
-       (bigfloat->flonum (bfgamma-lower-regularized (bf k) (bf x)))))))
-
-(define (gamma-upper-regularized* k x)
-  (let ([k  (fl k)] (x  (fl x)))
-    (hash-ref!
-     h (list 'upper-reg (bf-precision) k x)
-     (λ ()
-       (printf "k = ~v  x = ~v~n" k x)
-       (bigfloat->flonum (bfgamma-upper-regularized (bf k) (bf x)))))))
-
-(define (log-gamma-lower-regularized* k x)
-  (let ([k  (fl k)] (x  (fl x)))
-    (hash-ref!
-     h (list 'log-lower-reg (bf-precision) k x)
-     (λ ()
-       (printf "k = ~v  x = ~v~n" k x)
-       (bigfloat->flonum (bflog-gamma-lower-regularized (bf k) (bf x)))))))
-
-(define (log-gamma-upper-regularized* k x)
-  (let ([k  (fl k)] (x  (fl x)))
-    (hash-ref!
-     h (list 'log-upper-reg (bf-precision) k x)
-     (λ ()
-       (printf "k = ~v  x = ~v~n" k x)
-       (bigfloat->flonum (bflog-gamma-upper-regularized (bf k) (bf x)))))))
-#;
-(for* ([f+log-f  (in-list (list (cons fllog-gamma-lower-regularized
-                                      flgamma-lower-regularized)
-                                (cons fllog-gamma-upper-regularized
-                                      flgamma-upper-regularized)))]
-       [end  (in-list (list (flstep +min.0 41)
-                            epsilon.0
-                            1.0
-                            10.0
-                            200.0))])
-  (define log-f (car f+log-f))
-  (define f (cdr f+log-f))
-  (printf "f = ~a; end = ~v~n" f end)
-  (print
-   (with-handlers ([exn?  (λ (e) e)])
-     (plot3d (contour-intervals3d
-              (λ (k x)
-                (let ([k  (fl k)] [x  (fl x)])
-                  (f k x)
-                  #;
-                  (relative-error (f k x) (exp (log-f k x)))))
-              +min.0 end
-              +min.0 end))))
-  (newline))
-
-#;
-(plot3d
- (contour-intervals3d
-  (λ (k x)
-    (let ([k  (fl k)] [x  (fl x)])
-      (relative-error
-       (flgamma-lower-regularized k x)
-       (gamma-lower-regularized* k x))))
-  +min.0 epsilon.0
-  +min.0 epsilon.0))
-
-(plot3d
- (contour-intervals3d
-  (λ (k x)
-    (let ([k  (fl k)] [x  (fl x)])
-      (fllog-gamma-lower-regularized k x)))
-  1e-16 1e-15
-  0 1.1))
-#;
-(plot3d
- (contour-intervals3d
-  (λ (k x)
-    (let ([k  (fl k)] [x  (fl x)])
-      (relative-error
-       (flgamma-lower-regularized k x)
-       (gamma-lower-regularized* k x))))
-  +min.0 epsilon.0
-  +min.0 epsilon.0))
-|#
+(define-incomplete-gamma-wrapper gamma-inc flgamma-inc)
+(define-incomplete-gamma-wrapper log-gamma-inc fllog-gamma-inc)

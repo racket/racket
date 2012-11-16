@@ -394,14 +394,17 @@
 			    (- end start))))
    (lambda (special) always-evt)))
 (test (void) display "hello" /dev/null-out)
+(set! should-be-breakable? #f)
 (test 5 write-bytes-avail #"hello" /dev/null-out)
+(set! should-be-breakable? #t)
 (test #t write-special 'hello /dev/null-out)
 (test 5 sync (write-bytes-avail-evt #"hello" /dev/null-out))
+(set! should-be-breakable? #f)
 (test 5 write-bytes-avail/enable-break #"hello" /dev/null-out)
 (test #t write-special-avail* 'hello /dev/null-out)
 (parameterize-break #f
-  (test 5 write-bytes-avail/enable-break #"hello" /dev/null-out)
   (set! should-be-breakable? #f)
+  (test 5 write-bytes-avail/enable-break #"hello" /dev/null-out)
   (test #t write-special-avail* 'hello /dev/null-out)
   (test 5 write-bytes-avail #"hello" /dev/null-out))
 
@@ -639,6 +642,66 @@
    #f 
    (try (lambda (x) (read-bytes-avail!/enable-break (make-bytes 10) x)))))
 
+;; Check nonblock? and break? interaction (again):
+(let ()
+  (define status '())
+  (define p (make-output-port
+             'p
+             always-evt
+             (lambda (bstr start end nonblock? break?)
+               (set! status (list nonblock? break? (break-enabled)))
+               (- end start))
+             void
+             (lambda (v nonblock? break?)
+               (set! status (list 'special nonblock? break? (break-enabled)))
+               #t)))
+  (write-bytes #"hi" p)
+  (test '(#f #t #f) values status)
+  (parameterize-break
+   #f
+   (write-bytes #"hi" p))
+  (test '(#f #f #f) values status)
+  (write-bytes-avail #"hi" p)
+  (test '(#t #f #f) values status)
+  (write-bytes-avail* #"hi" p)
+  (test '(#t #f #f) values status)
+  (write-special 'any p)
+  (test '(special #f #t #f) values status)
+  (write-special-avail* 'any p)
+  (test '(special #t #f #f) values status))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check port shortcuts for `make-input-port' and `make-output-port'
+
+(let-values ([(i o) (make-pipe 5)])
+  (define i2 (make-input-port
+              (object-name i)
+              i
+              i
+              void))
+  (define o2 (make-output-port
+              (object-name o)
+              o
+              o
+              void))
+  (test #f sync/timeout 0 i2)
+  (test o2 sync/timeout 0 o2)
+  (write-bytes #"01234" o2)
+  (test #f sync/timeout 0 o2)
+  (test i2 sync/timeout 0 i2)
+  (test #"01234" read-bytes 5 i2)
+  (test 0 read-bytes-avail!* (make-bytes 3) i2)
+  (thread (lambda () 
+            (sync (system-idle-evt))
+            (write-bytes #"5" o2)))
+  (test #\5 read-char i2)
+  (let ([s (make-bytes 6)])
+    (thread (lambda () 
+              (sync (system-idle-evt))
+              (test 5 write-bytes-avail #"6789ab" o2)))
+    (test 5 read-bytes-avail! s i2)
+    (test #"6789a\0" values s)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that an uncooperative output port doesn't keep breaks
 ;; disabled too long:
@@ -663,6 +726,7 @@
 (let ([check
        (lambda (in [d 0] [first-three-bytes #"123"] [char-len 3])
          (test d file-position in)
+         (test d file-position* in)
          (let-values ([(l c p) (port-next-location in)])
            (test p add1 d)
            (test first-three-bytes peek-bytes 3 0 in)
@@ -748,6 +812,21 @@
            (if (char? c)
                (char->integer c)
                c))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(let* ([p (open-input-bytes #"123")]
+       [p2 (make-input-port
+            (object-name p)
+            p
+            p
+            void
+            #f #f #f void
+            #f)])
+  (test #f file-position* p2)
+  (test #\1 read-char p2)
+  (test #f file-position* p2)
+  (err/rt-test (file-position p2) exn:fail:filesystem?))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

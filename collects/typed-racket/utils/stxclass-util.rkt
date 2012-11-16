@@ -17,7 +17,7 @@
 		    (string->symbol
 		     (string-append (symbol->string (syntax-e i))
 				    "."
-				    (symbol->string #'attr.datum))))])
+				    (symbol->string (syntax-e #'attr)))))])
        (quasisyntax/loc stx
          (syntax-parse arg
            [#,i #:declare #,i pat #'#,get-i])))]))

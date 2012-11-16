@@ -28,14 +28,14 @@
   (define-values (conn headers) (make-mock-connection&headers post-data))
   (call-with-values
       (lambda ()
-        (read-bindings&post-data/raw (connection-i-port conn) #"POST" #f headers))
+        (read-bindings&post-data/raw (connection-i-port conn) #"POST" (string->url "http://localhost") headers))
     (lambda (f s) f)))
 
 (define (get-post-data/raw post-data)
   (define-values (conn headers) (make-mock-connection&headers post-data))
   (call-with-values 
       (lambda () 
-        (read-bindings&post-data/raw (connection-i-port conn) #"POST" #f headers))
+        (read-bindings&post-data/raw (connection-i-port conn) #"POST" (string->url "http://localhost") headers))
     (lambda (f s) s)))
 
 (define (test-read-request b)

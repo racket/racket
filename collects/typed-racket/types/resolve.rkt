@@ -1,9 +1,9 @@
 #lang racket/base
 (require "../utils/utils.rkt")
 
-(require (rep type-rep rep-utils)
-	 (env type-name-env)
-	 (utils tc-utils)
+(require (rep type-rep rep-utils free-variance)
+         (env type-name-env)
+         (utils tc-utils)
          (types utils)
          racket/match
          racket/contract)
@@ -17,7 +17,7 @@
 (define (resolve-name t)
   (match t
     [(Name: n) (let ([t (lookup-type-name n)])
-                 (if (Type? t) t #f))]
+                 (if (Type/c t) t #f))]
     [_ (int-err "resolve-name: not a name ~a" t)]))
 
 (define already-resolving? (make-parameter #f))
@@ -54,6 +54,7 @@
       [(Mu: _ _) (resolve-app (unfold rator) rands stx)]
       [(App: r r* s) (resolve-app (resolve-app r r* s) rands stx)]
       [_ (tc-error "cannot apply a non-polymorphic type: ~a" rator)])))
+
 
 (define (needs-resolving? t)
   (or (Mu? t) (App? t) (Name? t)))

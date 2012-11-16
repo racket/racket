@@ -2,7 +2,7 @@
 
 (require racket/flonum
          math/array
-         math/functions
+         ;math/functions
          typed/rackunit
          math/private/array/utils)
 
@@ -63,189 +63,169 @@
                 (make-indexes-vector 6 2)))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; list->array
+;; list*->array
 
-(check-equal? (list-shape flonum? 0.0) #())
-(check-equal? (list-shape flonum? '[]) #(0))
-(check-equal? (list-shape flonum? '[0.0]) #(1))
-(check-equal? (list-shape flonum? '[0.0 0.0]) #(2))
-(check-equal? (list-shape flonum? '[[0.0 0.0 0.0] [0.0 0.0 0.0]]) #(2 3))
-(check-equal? (list-shape flonum? '[[0.0 0.0 0.0] [0.0 0.0]]) #f)
-(check-equal? (list-shape flonum? '[[] [] []]) #(3 0))
-(check-equal? (list-shape flonum? '[[[]] [[]] [[]]]) #(3 1 0))
-(check-equal? (list-shape flonum? '[[[0.0]]]) #(1 1 1))
-
-(check-equal? (list->array 1.0 flonum?)
+(check-equal? (list*->array 1.0 flonum?)
               (make-mutable-array #() #(1.0)))
 
-(check-equal? (list->array '[] flonum?)
+(check-equal? (list*->array '[] flonum?)
               (make-mutable-array #(0) #()))
 
-(check-equal? (list->array '[[]] flonum?)
+(check-equal? (list*->array '[[]] flonum?)
               (make-mutable-array #(1 0) #()))
 
-(check-equal? (list->array '[1.0] flonum?)
+(check-equal? (list*->array '[1.0] flonum?)
               (make-mutable-array #(1) #(1.0)))
 
-(check-equal? (list->array '[[1.0]] flonum?)
+(check-equal? (list*->array '[[1.0]] flonum?)
               (make-mutable-array #(1 1) #(1.0)))
 
-(check-equal? (list->array '[[[1.0]]] flonum?)
+(check-equal? (list*->array '[[[1.0]]] flonum?)
               (make-mutable-array #(1 1 1) #(1.0)))
 
-(check-equal? (list->array '() listof-flonum?)
+(check-equal? (list*->array '() listof-flonum?)
               (make-mutable-array #() #(())))
 
-(check-equal? (list->array '[()] listof-flonum?)
+(check-equal? (list*->array '[()] listof-flonum?)
               (make-mutable-array #(1) #(())))
 
-(check-equal? (list->array '[(1.0) (2.0)] listof-flonum?)
+(check-equal? (list*->array '[(1.0) (2.0)] listof-flonum?)
               (make-mutable-array #(2) #((1.0) (2.0))))
 
-(check-equal? (list->array '[((1.0)) ((2.0))] listof-flonum?)
+(check-equal? (list*->array '[((1.0)) ((2.0))] listof-flonum?)
               (make-mutable-array #(2 1) #((1.0) (2.0))))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; array->list
+;; array->list*
 
 (let ([arr  (build-array #() (λ (js) 'foo))])
-  (check-equal? (array->list arr) 'foo)
-  (check-equal? arr (list->array (array->list arr) symbol?)))
+  (check-equal? (array->list* arr) 'foo)
+  (check-equal? arr (list*->array (array->list* arr) symbol?)))
 
 (let ([arr  ((inst build-array Float) #(4) (λ (js) (exact->inexact (vector-ref js 0))))])
-  (check-equal? (array->list arr) '[0.0 1.0 2.0 3.0])
-  (check-equal? arr (list->array (array->list arr) flonum?)))
+  (check-equal? (array->list* arr) '[0.0 1.0 2.0 3.0])
+  (check-equal? arr (list*->array (array->list* arr) flonum?)))
 
 (let ([arr  (build-array #(3 3) (inst vector->list Index))])
-  (check-equal? (array->list arr) '[[(0 0) (0 1) (0 2)]
-                                    [(1 0) (1 1) (1 2)]
-                                    [(2 0) (2 1) (2 2)]])
-  (check-equal? arr (list->array (array->list arr) listof-index?)))
+  (check-equal? (array->list* arr) '[[(0 0) (0 1) (0 2)]
+                                     [(1 0) (1 1) (1 2)]
+                                     [(2 0) (2 1) (2 2)]])
+  (check-equal? arr (list*->array (array->list* arr) listof-index?)))
 
 (let ([arr  (build-array #(2 2 2) (inst vector->list Index))])
-  (check-equal? (array->list arr)
+  (check-equal? (array->list* arr)
                 '[[[(0 0 0) (0 0 1)] [(0 1 0) (0 1 1)]]
                   [[(1 0 0) (1 0 1)] [(1 1 0) (1 1 1)]]])
-  (check-equal? arr (list->array (array->list arr) listof-index?)))
+  (check-equal? arr (list*->array (array->list* arr) listof-index?)))
 
 (let ([arr  (build-array #(2 2 2 2) (inst vector->list Index))])
-  (check-equal? (array->list arr)
+  (check-equal? (array->list* arr)
                 '[[[[(0 0 0 0) (0 0 0 1)] [(0 0 1 0) (0 0 1 1)]]
                    [[(0 1 0 0) (0 1 0 1)] [(0 1 1 0) (0 1 1 1)]]]
                   [[[(1 0 0 0) (1 0 0 1)] [(1 0 1 0) (1 0 1 1)]]
                    [[(1 1 0 0) (1 1 0 1)] [(1 1 1 0) (1 1 1 1)]]]])
-  (check-equal? arr (list->array (array->list arr) listof-index?)))
+  (check-equal? arr (list*->array (array->list* arr) listof-index?)))
 
-(check-equal? (array->list (list->array '[1.0 2.0] flonum?))
+(check-equal? (array->list* (list*->array '[1.0 2.0] flonum?))
               '[1.0 2.0])
-(check-equal? (array->list (list->array '[[1.0 2.0] [3.0 4.0]] flonum?))
+(check-equal? (array->list* (list*->array '[[1.0 2.0] [3.0 4.0]] flonum?))
               '[[1.0 2.0] [3.0 4.0]])
 
 ;; ---------------------------------------------------------------------------------------------------
-;; vector->array
+;; vector*->array
 
-(check-equal? (vector-shape flonum? 0.0) #())
-(check-equal? (vector-shape flonum? #[]) #(0))
-(check-equal? ((inst vector-shape Float) flonum? #[0.0]) #(1))
-(check-equal? ((inst vector-shape Float) flonum? #[0.0 0.0]) #(2))
-(check-equal? ((inst vector-shape Float) flonum? #[#[0.0 0.0 0.0] #[0.0 0.0 0.0]]) #(2 3))
-(check-equal? ((inst vector-shape Float) flonum? #[#[0.0 0.0 0.0] #[0.0 0.0]]) #f)
-(check-equal? ((inst vector-shape Float) flonum? #[#[] #[] #[]]) #(3 0))
-(check-equal? ((inst vector-shape Float) flonum? #[#[#[]] #[#[]] #[#[]]]) #(3 1 0))
-(check-equal? ((inst vector-shape Float) flonum? #[#[#[0.0]]]) #(1 1 1))
-
-(check-equal? (vector->array 1.0 flonum?)
+(check-equal? (vector*->array 1.0 flonum?)
               (make-mutable-array #() #(1.0)))
 
-(check-equal? ((inst vector->array Float) #() flonum?)
+(check-equal? ((inst vector*->array Float) #() flonum?)
               (make-mutable-array #(0) #()))
 
-(check-equal? ((inst vector->array Float) #(#()) flonum?)
+(check-equal? ((inst vector*->array Float) #(#()) flonum?)
               (make-mutable-array #(1 0) #()))
 
-(check-equal? ((inst vector->array Float) #(1.0) flonum?)
+(check-equal? ((inst vector*->array Float) #(1.0) flonum?)
               (make-mutable-array #(1) #(1.0)))
 
-(check-equal? ((inst vector->array Float) #(#(1.0)) flonum?)
+(check-equal? ((inst vector*->array Float) #(#(1.0)) flonum?)
               (make-mutable-array #(1 1) #(1.0)))
 
-(check-equal? ((inst vector->array Float) #(#(#(1.0))) flonum?)
+(check-equal? ((inst vector*->array Float) #(#(#(1.0))) flonum?)
               (make-mutable-array #(1 1 1) #(1.0)))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; array->vector
 
 (let ([arr  (build-array #() (λ (js) 'foo))])
-  (check-equal? (array->vector arr) 'foo)
-  (check-equal? arr (vector->array (array->vector arr) symbol?)))
+  (check-equal? (array->vector* arr) 'foo)
+  (check-equal? arr (vector*->array (array->vector* arr) symbol?)))
 
 (let ([arr  ((inst build-array Float) #(4) (λ (js) (exact->inexact (vector-ref js 0))))])
-  (check-equal? (array->vector arr) #(0.0 1.0 2.0 3.0))
-  (check-equal? arr (vector->array (array->vector arr) flonum?)))
+  (check-equal? (array->vector* arr) #(0.0 1.0 2.0 3.0))
+  (check-equal? arr (vector*->array (array->vector* arr) flonum?)))
 
 (let ([arr  (build-array #(3 3) (inst vector->list Index))])
-  (check-equal? (array->vector arr) #[#[(0 0) (0 1) (0 2)]
+  (check-equal? (array->vector* arr) #[#[(0 0) (0 1) (0 2)]
                                       #[(1 0) (1 1) (1 2)]
                                       #[(2 0) (2 1) (2 2)]])
-  (check-equal? arr (vector->array (array->vector arr) listof-index?)))
+  (check-equal? arr (vector*->array (array->vector* arr) listof-index?)))
 
 (let ([arr  (build-array #(2 2 2) (inst vector->list Index))])
-  (check-equal? (array->vector arr)
+  (check-equal? (array->vector* arr)
                 #[#[#[(0 0 0) (0 0 1)] #[(0 1 0) (0 1 1)]]
                   #[#[(1 0 0) (1 0 1)] #[(1 1 0) (1 1 1)]]])
-  (check-equal? arr (vector->array (array->vector arr) listof-index?)))
+  (check-equal? arr (vector*->array (array->vector* arr) listof-index?)))
 
 (let ([arr  (build-array #(2 2 2 2) (inst vector->list Index))])
-  (check-equal? (array->vector arr)
+  (check-equal? (array->vector* arr)
                 #[#[#[#[(0 0 0 0) (0 0 0 1)] #[(0 0 1 0) (0 0 1 1)]]
                     #[#[(0 1 0 0) (0 1 0 1)] #[(0 1 1 0) (0 1 1 1)]]]
                   #[#[#[(1 0 0 0) (1 0 0 1)] #[(1 0 1 0) (1 0 1 1)]]
                     #[#[(1 1 0 0) (1 1 0 1)] #[(1 1 1 0) (1 1 1 1)]]]])
-  (check-equal? arr (vector->array (array->vector arr) listof-index?)))
+  (check-equal? arr (vector*->array (array->vector* arr) listof-index?)))
 
-(check-equal? (array->vector ((inst vector->array Flonum) #[1.0 2.0] flonum?))
+(check-equal? (array->vector* ((inst vector*->array Flonum) #[1.0 2.0] flonum?))
               #[1.0 2.0])
-(check-equal? (array->vector ((inst vector->array Flonum) #[#[1.0 2.0] #[3.0 4.0]] flonum?))
+(check-equal? (array->vector* ((inst vector*->array Flonum) #[#[1.0 2.0] #[3.0 4.0]] flonum?))
               #[#[1.0 2.0] #[3.0 4.0]])
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Array syntax
 
 (check-equal? (array 1.0)
-              (list->array 1.0 flonum?))
+              (list*->array 1.0 flonum?))
 
 (check-equal? (array [])
-              (list->array '[] flonum?))
+              (list*->array '[] flonum?))
 
 (check-equal? (array [[]])
-              (list->array '[[]] flonum?))
+              (list*->array '[[]] flonum?))
 
 (check-equal? (array [1.0])
-              (list->array '[1.0] flonum?))
+              (list*->array '[1.0] flonum?))
 
 (check-equal? (array [[1.0]])
-              (list->array '[[1.0]] flonum?))
+              (list*->array '[[1.0]] flonum?))
 
 (check-equal? (array [[[1.0]]])
-              (list->array '[[[1.0]]] flonum?))
+              (list*->array '[[[1.0]]] flonum?))
 
 (check-equal? (mutable-array 1.0)
-              (list->array 1.0 flonum?))
+              (list*->array 1.0 flonum?))
 
 (check-equal? (mutable-array [])
-              (list->array '[] flonum?))
+              (list*->array '[] flonum?))
 
 (check-equal? (mutable-array [[]])
-              (list->array '[[]] flonum?))
+              (list*->array '[[]] flonum?))
 
 (check-equal? (mutable-array [1.0])
-              (list->array '[1.0] flonum?))
+              (list*->array '[1.0] flonum?))
 
 (check-equal? (mutable-array [[1.0]])
-              (list->array '[[1.0]] flonum?))
+              (list*->array '[[1.0]] flonum?))
 
 (check-equal? (mutable-array [[[1.0]]])
-              (list->array '[[[1.0]]] flonum?))
+              (list*->array '[[[1.0]]] flonum?))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Other constructors
@@ -314,14 +294,14 @@
   (check-equal? (array-axis-min arr 0) (array [-1.0 -4.0 -9.0 -16.0]))
   (check-equal? (array-axis-max arr 0) (array [ 1.0  4.0  9.0  16.0]))
   (check-equal? (array-axis-fold arr 0 (inst cons Float (Listof Float)) null)
-                (list->array '[[-1.0 1.0] [-4.0 4.0] [-9.0 9.0] [-16.0 16.0]]
+                (list*->array '[[-1.0 1.0] [-4.0 4.0] [-9.0 9.0] [-16.0 16.0]]
                              listof-flonum?))
   (check-equal? (array-axis-sum arr 1) (array [30.0 -30.0]))
   (check-equal? (array-axis-prod arr 1) (array [576.0 576.0]))
   (check-equal? (array-axis-min arr 1) (array [1.0 -16.0]))
   (check-equal? (array-axis-max arr 1) (array [16.0 -1.0]))
   (check-equal? (array-axis-fold arr 1 (inst cons Float (Listof Float)) null)
-                (list->array '[[ 16.0  9.0  4.0  1.0]
+                (list*->array '[[ 16.0  9.0  4.0  1.0]
                                [-16.0 -9.0 -4.0 -1.0]]
                              listof-flonum?))
   (check-equal? (array-all-sum arr) 0.0)
@@ -908,11 +888,11 @@
   (check-equal? (for/list: : (Listof (Listof Indexes)) ([brr  (in-array-axis arr 0)])
                   (for/list: : (Listof Indexes) ([js  (in-array brr)])
                     js))
-                (array->list arr))
+                (array->list* arr))
   (check-equal? (for/list: : (Listof (Listof Indexes)) ([brr  (in-array-axis arr 1)])
                   (for/list: : (Listof Indexes) ([js  (in-array brr)])
                     js))
-                (array->list (array-axis-swap arr 0 1))))
+                (array->list* (array-axis-swap arr 0 1))))
 
 (check-equal? (array-list->array empty 0)
               (array []))

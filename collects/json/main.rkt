@@ -156,9 +156,10 @@
       (list (string->symbol k) (read-json)))
     (apply hasheq (apply append (read-list 'object #rx#"^}" read-pair))))
   ;;
-  (define (read-json)
+  (define (read-json [top? #f])
     (skip-whitespace)
     (cond
+      [(and top? (eof-object? (peek-char i))) eof]
       [(regexp-try-match #px#"^true\\b"  i) #t]
       [(regexp-try-match #px#"^false\\b" i) #f]
       [(regexp-try-match #px#"^null\\b"  i) jsnull]
@@ -173,7 +174,7 @@
                     [(equal? m #"{")  (read-hash)])))]
       [else (err "bad input")]))
   ;;
-  (read-json))
+  (read-json #t))
 
 ;; ----------------------------------------------------------------------------
 ;; Convenience functions

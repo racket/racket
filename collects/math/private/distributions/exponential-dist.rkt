@@ -6,35 +6,35 @@
          "dist-struct.rkt"
          "utils.rkt")
 
-(provide flexp-pdf
-         flexp-cdf
-         flexp-inv-cdf
-         flexp-random
-         Exponential-Distribution exp-dist exp-dist? exp-dist-scale)
+(provide flexponential-pdf
+         flexponential-cdf
+         flexponential-inv-cdf
+         flexponential-random
+         Exponential-Dist exponential-dist exponential-dist? exponential-dist-scale)
 
-(: flexp-pdf (Float Float Any -> Float))
-(define flexp-pdf
+(: flexponential-pdf (Float Float Any -> Float))
+(define flexponential-pdf
   (make-one-sided-scale-flpdf
    (λ: ([x : Float] [log? : Any])
      (if log? (- x) (flexp (- x))))))
 
-(: flexp-cdf (Float Float Any Any -> Float))
-(define flexp-cdf
+(: flexponential-cdf (Float Float Any Any -> Float))
+(define flexponential-cdf
   (make-one-sided-scale-flcdf
    (λ: ([x : Float] [log? : Any] [1-p? : Any])
      (cond [1-p?  (if log? (- x) (flexp (- x)))]
            [else  (if log? (lg1- (- x)) (- (flexpm1 (- x))))]))))
 
-(: standard-flexp-inv-cdf (Float Any Any -> Float))
-(define (standard-flexp-inv-cdf q log? 1-p?)
+(: standard-flexponential-inv-cdf (Float Any Any -> Float))
+(define (standard-flexponential-inv-cdf q log? 1-p?)
   (cond [1-p?  (if log? (- q) (- (fllog q)))]
         [else  (if log? (- (lg1- q)) (- (fllog1p (- q))))]))
 
-(: flexp-inv-cdf (Float Float Any Any -> Float))
-(define flexp-inv-cdf (make-one-sided-scale-flinv-cdf standard-flexp-inv-cdf))
+(: flexponential-inv-cdf (Float Float Any Any -> Float))
+(define flexponential-inv-cdf (make-one-sided-scale-flinv-cdf standard-flexponential-inv-cdf))
 
-(: flexp-random (Float -> Float))
-(define (flexp-random s)
+(: flexponential-random (Float -> Float))
+(define (flexponential-random s)
   (fl* s (- (fllog (random)))))
 
 ;; ===================================================================================================
@@ -42,20 +42,20 @@
 
 (begin-encourage-inline
   
-  (define-distribution-type: exp-dist
-    Exponential-Distribution Real-Distribution ([scale : Float]))
+  (define-distribution-type: Exponential-Dist (Ordered-Dist Real Flonum)
+    exponential-dist ([scale : Flonum]))
   
-  (: exp-dist (case-> (-> Exponential-Distribution)
-                      (Real -> Exponential-Distribution)))
-  (define (exp-dist [s 1.0])
+  (: exponential-dist (case-> (-> Exponential-Dist)
+                      (Real -> Exponential-Dist)))
+  (define (exponential-dist [s 1.0])
     (let ([s  (fl s)])
       (define pdf (opt-lambda: ([x : Real] [log? : Any #f])
-                    (flexp-pdf s (fl x) log?)))
+                    (flexponential-pdf s (fl x) log?)))
       (define cdf (opt-lambda: ([x : Real] [log? : Any #f] [1-p? : Any #f])
-                    (flexp-cdf s (fl x) log? 1-p?)))
+                    (flexponential-cdf s (fl x) log? 1-p?)))
       (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [1-p? : Any #f])
-                        (flexp-inv-cdf s (fl p) log? 1-p?)))
-      (define (random) (flexp-random s))
-      (make-exp-dist pdf cdf inv-cdf random 0.0 +inf.0 (delay (fl* s (fllog 2.0))) s)))
+                        (flexponential-inv-cdf s (fl p) log? 1-p?)))
+      (define (random) (flexponential-random s))
+      (make-exponential-dist pdf random cdf inv-cdf 0.0 +inf.0 (delay (fl* s (fllog 2.0))) s)))
   
   )

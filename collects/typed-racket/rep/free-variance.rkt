@@ -1,13 +1,37 @@
 #lang racket/base
-(require "../utils/utils.rkt" (for-syntax racket/base) (contract-req)) 
+(require "../utils/utils.rkt" 
+         racket/match
+         racket/set
+         (for-syntax racket/base)
+         unstable/lazy-require
+         (contract-req)) 
 
-(provide Covariant Contravariant Invariant Constant Dotted
-         combine-frees flip-variances without-below unless-in-table
-         fix-bound make-invariant make-constant variance?)
+;; Ugly hack - should use units
+(lazy-require
+  ("../env/type-name-env.rkt" (lookup-type-variance)))
+
+(provide 
+  ;; Variances
+  Covariant Contravariant Invariant Constant Dotted
+  variance? variance->binding
+
+  ;; Construcing frees
+  combine-frees flip-variances
+  make-invariant make-constant 
+  instantiate-frees
+  empty-free-vars
+  single-free-var
+  free-vars-remove
+
+  ;; Examining frees
+  free-vars-hash
+  free-vars-names
+  free-vars-has-key?)
+
 
 ;; this file contains support for calculating the free variables/indexes of types
 ;; actual computation is done in rep-utils.rkt  and type-rep.rkt
-(define-values (Covariant Contravariant Invariant Constant Dotted)
+(define-values (variance? Covariant Contravariant Invariant Constant Dotted)
   (let ()
     (define-struct Variance () #:transparent)
     (define-struct (Covariant Variance) () #:transparent)
@@ -16,15 +40,119 @@
     (define-struct (Constant Variance) () #:transparent)
     ;; not really a variance, but is disjoint with the others
     (define-struct (Dotted Variance) () #:transparent)
-    (values (make-Covariant) (make-Contravariant) (make-Invariant) (make-Constant) (make-Dotted))))
+    (values Variance? (make-Covariant) (make-Contravariant) (make-Invariant) (make-Constant) (make-Dotted))))
+
+(define (variance->binding var)
+  (match var
+   ((== Covariant) #'Covariant)
+   ((== Contravariant) #'Contravariant)
+   ((== Invariant) #'Contravariant)
+   ((== Constant) #'Constant)
+   ((== Dotted) #'Dotted)))
+
+(define (flip-variance v)
+  (match v
+   ((== Covariant) Contravariant)
+   ((== Contravariant) Covariant)
+   (else v)))
+
+;;All of these are used internally
+;;Only combined-frees is used externally
+(struct combined-frees (table computed) #:transparent)
+(struct app-frees (name args) #:transparent)
+(struct remove-frees (inner name) #:transparent)
 
 
-(define (variance? e)
-  (memq e (list Covariant Contravariant Invariant Constant Dotted)))
+;; Base constructors
+(define (single-free-var name (variance Covariant))
+  (combined-frees (hasheq name variance) null))
+
+(define empty-free-vars 
+  (combined-frees (hasheq) null))
+
+;; Computed constructor
+(define (instantiate-frees name frees)
+  (combined-frees (hasheq) (list (app-frees name frees))))
+
+
+;; frees -> frees
+(define (flip-variances frees)
+  (match frees
+   ((combined-frees hash computed)
+    (combined-frees
+      (for/hasheq (((k v) hash))
+        (values k (flip-variance v)))
+      (map flip-variances computed)))
+   ((app-frees name args)
+    (app-frees name (map flip-variances args)))
+   ((remove-frees inner name)
+    (remove-frees (flip-variances inner) name))))
+
+
+(define (make-invariant frees)
+  (combined-frees
+    (for/hasheq ((name (free-vars-names frees)))
+      (values name Invariant))
+    null))
+
+(define (make-constant frees)
+  (combined-frees
+    (for/hasheq ((name (free-vars-names frees)))
+      (values name Constant))
+    null))
+
+;; Listof[frees] -> frees
+(define (combine-frees freess)
+  (define-values (hash computed)
+    (for/fold ((hash (hasheq)) (computed null))
+              ((frees freess))
+      (match frees
+       ((combined-frees new-hash new-computed)
+        (values (combine-hashes (list hash new-hash))
+                (append new-computed computed))))))
+  (combined-frees hash computed))
+
+
+(define (free-vars-remove frees name)
+  (match frees
+   ((combined-frees hash computed)
+    (combined-frees (hash-remove hash name)
+                    (map (λ (v) (remove-frees v name)) computed)))))
+
+;;
+(define (free-vars-names vars)
+  (match vars
+    ((combined-frees hash computed)
+     (apply set-union
+            (list->seteq (hash-keys hash))
+            (map free-vars-names computed)))
+    ((remove-frees inner name) (set-remove (free-vars-names inner) name))
+    ((app-frees name args)
+     (apply set-union (map free-vars-names args)))))
+
+(define (free-vars-has-key? vars key)
+  (set-member? (free-vars-names vars) key))
+
+;; Only valid after full type resolution
+(define (free-vars-hash vars)
+  (match vars
+    ((combined-frees hash computed)
+     (combine-hashes (cons hash (map free-vars-hash computed))))
+    ((remove-frees inner name) (hash-remove (free-vars-hash inner) name))
+    ((app-frees name args)
+     (combine-hashes
+       (for/list ((var (lookup-type-variance name)) (arg args))
+        (free-vars-hash
+         (cond
+          ((eq? var Covariant) arg)
+          ((eq? var Contravariant) (flip-variances arg))
+          ((eq? var Invariant) (make-invariant arg))
+          ((eq? var Constant) (make-constant arg)))))))))
+
 
 ;; frees = HT[Idx,Variance] where Idx is either Symbol or Number
 ;; (listof frees) -> frees
-(define (combine-frees freess)
+(define (combine-hashes hashes)
   (define ((combine-var v) w)
     (cond
       [(eq? v w) v]
@@ -33,42 +161,9 @@
       [(eq? v Constant) w]
       [(eq? w Constant) v]
       [else Invariant]))
-  (for*/fold ([ht #hasheq()])
-    ([old-ht (in-list freess)]
-     [(sym var) (in-hash old-ht)])
-    (hash-update ht sym (combine-var var) var)))
+    (for*/fold ([ht #hasheq()])
+      ([old-free (in-list hashes)]
+       [(sym var) (in-hash old-free)])
+      (hash-update ht sym (combine-var var) var)))
 
-;; given a set of free variables, change bound to ...
-;; (if bound wasn't free, this will add it as Dotted
-;;  appropriately so that things that expect to see
-;;  it as "free" will -- fixes the case where the
-;;  dotted pre-type base doesn't use the bound).
-(define (fix-bound vs bound)
-  (hash-set vs bound Dotted))
 
-;; frees -> frees
-(define (flip-variances vs)
-  (for/hasheq ([(k v) (in-hash vs)])
-    (values k 
-            (cond [(eq? v Covariant) Contravariant]
-                  [(eq? v Contravariant) Covariant]
-                  [else v]))))
-
-(define (make-invariant vs)
-  (for/hasheq ([(k v) (in-hash vs)])
-    (values k Invariant)))
-
-(define (make-constant vs)
-  (for/hasheq ([(k v) (in-hash vs)])
-    (values k Constant)))
-
-(define (without-below n frees)
-  (for/hasheq ([(k v) (in-hash frees)]
-               #:when (>= k n))
-    (values k v)))
-
-(define-syntax (unless-in-table stx)
-  (syntax-case stx ()
-    [(_ table val . body)
-     (quasisyntax/loc stx
-       (hash-ref table val #,(syntax/loc #'body (lambda () . body))))]))

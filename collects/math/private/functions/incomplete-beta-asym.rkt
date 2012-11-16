@@ -4,8 +4,7 @@
          "../../flonum.rkt"
          "../unsafe.rkt"
          "erf.rkt"
-         "beta.rkt"
-         "log1pmx.rkt")
+         "beta.rkt")
 
 (provide fllog-del-ratio flbeta-lower-regularized-asym)
 
@@ -163,7 +162,7 @@
                       (loop sum new-s new-hn j0 j1 znm1 zn w (fx+ n 2))]))]
             [else  sum])))
   
-  (cond [log?  (flsum log-e0 (- f) (- (fllog-del-ratio a b)) (fllog sum))]
+  (cond [log?  (flsum (list log-e0 (- f) (- (fllog-del-ratio a b)) (fllog sum)))]
         [else  (fl* (fl* (fl* e0 (flexp (- f)))
                          (flexp (- (fllog-del-ratio a b))))
                     sum)]))

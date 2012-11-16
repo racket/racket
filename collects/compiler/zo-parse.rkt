@@ -857,11 +857,21 @@
          (let ([mod (read-compact cp)]
                [var (read-compact cp)]
                [pos (read-compact-number cp)])
-           (let-values ([(mod-phase pos)
-                         (if (= pos -2)
-                           (values (read-compact-number cp) (read-compact-number cp))
-                           (values 0 pos))])
-             (make-module-variable mod var pos mod-phase)))]
+           (let-values ([(flags mod-phase pos)
+                         (let loop ([pos pos])
+                           (cond
+                            [(pos . < . -3)
+                             (let ([real-pos (read-compact-number cp)])
+                               (define-values (_ m p) (loop real-pos))
+                               (values (- (+ pos 3)) m p))]
+                            [(= pos -2)
+                             (values 0 (read-compact-number cp) (read-compact-number cp))]
+                            [else (values 0 0 pos)]))])
+             (make-module-variable mod var pos mod-phase
+                                   (cond
+                                    [(not (zero? (bitwise-and #x1 flags))) 'constant]
+                                    [(not (zero? (bitwise-and #x2 flags))) 'fixed]
+                                    [else #f]))))]
         [(local-unbox)
          (let* ([p* (read-compact-number cp)]
                 [p (if (< p* 0) (- (add1 p*)) p*)]

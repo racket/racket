@@ -148,11 +148,14 @@
     (unless (and (not (exn? got))
                  (matches? got expected))
       (set! failures (+ 1 failures))
-      (eprintf "test: file ~a line ~a:\n     got ~s\nexpected ~s\n\n"
+      (eprintf "test: file ~a line ~a:\n     got ~s\nexpected ~s\n"
                filename
                line
                got
-               expected))))
+               expected)
+      (when (exn:fail? got)
+        ((error-display-handler) (exn-message got) got))
+      (eprintf "\n"))))
 
 (define (matches? got expected)
   (cond

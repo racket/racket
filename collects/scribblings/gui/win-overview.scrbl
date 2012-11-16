@@ -458,10 +458,9 @@ Each @tech{containee}, or child, has the following properties:
 
 A @tech{container} arranges its children based on these four
  properties of each @tech{containee}. A @tech{containee}'s parent
- container is specified when the @tech{containee} is created, and the
- parent cannot be changed. However, a @tech{containee} can be
- @tech{hidden} or @tech{deleted} within its parent, as described in
- @secref["containers"].
+ container is specified when the @tech{containee} is created. A window
+ @tech{containee} can be @tech{hidden} or @tech{deleted} within its
+ parent, and its parent can be changed by @tech{reparent}ing.
 
 The @deftech{graphical minimum size} of a particular containee, as
  reported by @method[area<%> get-graphical-min-size], depends on the
@@ -535,10 +534,11 @@ These properties are factored into the container's calculation of its
  size and stretchability are the same as for its containee aspect.
 
 A containee's parent container is specified when the containee is
- created, and the parent cannot be changed. However, a containee
+ created. A containee
  window can be @tech{hidden} or @tech{deleted} within its parent
- container (but a non-window containee cannot be @tech{hidden} or
- @tech{deleted}):
+ container, and its parent can be changed by @tech{reparent}ing
+ (but a non-window containee cannot be @tech{hidden},
+ @tech{deleted}, or @tech{reparent}ed):
 
 @itemize[
 
@@ -552,6 +552,10 @@ A containee's parent container is specified when the containee is
  non-deleted, call the container's @method[area-container<%>
  delete-child] or @method[area-container<%> add-child] method (which
  calls the child's @method[window<%> show] method).}
+
+ @item{To @deftech{reparent} a window containee, use the
+ @method[subwindow<%> reparent] method. The window retains its
+ @tech{hidden} or @tech{deleted} status within its new parent.}
 
 ]
 
@@ -946,6 +950,23 @@ Along similar lines, if a button callback captures a continuation
  button callback is not included in the continuation. A continuation
  captured during a button callback is therefore potentially useful
  outside of the same callback.
+
+@subsection{Logging}
+
+The GUI system logs the timing of when events are handled and how
+long they take to be handled. Each event that involves a callback
+into Racket code has two events logged, both of which use
+the @racket[gui-event] struct:
+@racketblock[(struct gui-event (start end name) #:prefab)]
+The @racket[_start] field is the result of @racket[(current-inexact-milliseconds)]
+when the event handling starts. The @racket[_end] field is 
+@racket[#f] for the log message when the event handling starts,
+and the result of @racket[(current-inexact-milliseconds)] when
+it finishes for the log message when an event finishes.
+The @racket[_name] field is
+the name of the function that handled the event; in the case of a
+@racket[queue-callback]-based event, it is the name of the thunk passed to
+@racket[queue-callback].
 
 @section[#:tag "animation"]{Animation in Canvases}
 

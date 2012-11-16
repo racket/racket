@@ -1,6 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base)
          rackunit
+         (only-in "setup.rkt" convert-syntax-error tcerr)
          racket/syntax
          syntax/parse
          syntax/parse/experimental/template)
@@ -11,8 +12,13 @@
   (syntax-case stx ()
     [(tc expr expected)
      #`(test-equal? (format "line ~s" #,(syntax-line stx))
-                    (syntax->datum expr)
+                    (syntax->datum (convert-syntax-error expr))
                     expected)]))
+
+(define-syntax (terx stx)
+  (syntax-case stx ()
+    [(terx expr err-rx ...)
+     #`(tcerr (format "line ~s" #,(syntax-line stx)) expr err-rx ...)]))
 
 ;; ----------------------------------------
 
@@ -102,6 +108,9 @@
     ;; compatible with syntax
     (syntax->datum #'(((uu aa yy) ...) ...)))
 
+(tc (template ((aa ... xx) ...))
+    '((a b c x) (a b c y) (a b c z)))
+
 ;; liberal depth rules with consecutive ellipses
 
 (tc (template ((aa yy) ... ...))
@@ -133,7 +142,6 @@
 
 ;; ----------------------------------------
 
-
 (define-template-metafunction (join stx)
   (syntax-parse stx
     [(join a:id b:id ...)
@@ -152,3 +160,80 @@
     '((x abc-x) (y abc-y) (z abc-z)))
 (tc (template ((xx (join aa xx)) ...))
     '((x ax) (y by) (z cz)))
+
+;; ----------------------------------------
+
+(tc (quasitemplate (a #,'b))
+    '(a b))
+(tc (quasitemplate ((aa #,'0) ...))
+    '((a 0) (b 0) (c 0)))
+
+;; quasiquote-style nesting
+(tc (quasitemplate (#,1 (quasitemplate #,(+ 1 2))))
+    '(1 (quasitemplate (unsyntax (+ 1 2)))))
+(tc (quasitemplate (#,1 (quasitemplate #,#,(+ 1 2))))
+    '(1 (quasitemplate (unsyntax 3))))
+
+;; ============================================================
+
+;; Error tests
+
+(terx (template (1 ...))
+      #rx"no pattern variables before ellipsis in template")
+
+(terx (template (uu ...))
+      #rx"too many ellipses in template")
+
+(terx (template ((aa ... uu) ...))
+      #rx"too many ellipses in template")
+
+(terx (template aa)
+      #rx"missing ellipses with pattern variable in template")
+
+(terx (template (?@))
+      #rx"illegal use")
+
+(terx (template ((?@ . uu)))
+      #rx"splicing template did not produce a syntax list")
+
+(define-template-metafunction (bad-mf stx) 123)
+
+(terx (template (bad-mf))
+      #rx"result of template metafunction was not syntax")
+
+(terx (with-syntax ([(bb ...) #'(y z)]) (template ((aa bb) ...)))
+      #rx"incompatible ellipsis match counts")
+
+;; ============================================================
+
+(define loc (datum->syntax #'here 'loc (list "I have a location!" #f #f 42 17)))
+
+(define-syntax-rule (tloc tform tmpl loc?)
+  (test-case (format "~s" '(loc tmpl))
+    (let ([result (convert-syntax-error (tform loc tmpl))])
+      (cond [loc?
+             (check-equal? (syntax-source result) (syntax-source loc))
+             (check-equal? (syntax-position result) (syntax-position loc))]
+            [else
+             (check-equal? (syntax-source result) (syntax-source (quote-syntax here)))]))))
+
+(tloc template/loc uu #f)
+(tloc template/loc lambda #t)
+(tloc template/loc (lambda (x) x) #t)
+(tloc template/loc (aa ... 1) #f)
+(terx (template/loc loc ((?@ aa ...) 2))
+      #rx"cannot apply syntax location to template")
+(terx (template/loc loc (?? 1 2))
+      #rx"cannot apply syntax location to template")
+
+(tloc quasitemplate/loc uu #f)
+(tloc quasitemplate/loc lambda #t)
+(tloc quasitemplate/loc (lambda (x) x) #t)
+(tloc quasitemplate/loc (aa ... 1) #f)
+(tloc quasitemplate/loc (#,'a) #t)
+(tloc quasitemplate/loc #,'a #f)
+(tloc quasitemplate/loc (#,@(list 1 2 3)) #f)
+(terx (quasitemplate/loc loc ((?@ aa ...) 2))
+      #rx"cannot apply syntax location to template")
+(terx (quasitemplate/loc loc (?? 1 2))
+      #rx"cannot apply syntax location to template")

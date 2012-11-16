@@ -138,19 +138,19 @@
   (sc-f2-to-un/lock "f2 um zu (ent)blockieren")
 
  ;; the online check syntax status messages (mouse over the bottom right of drracket's window to see the messages during online expansion's various phases)
- (online-expansion-running "Online-Expansion läuft")
+ (online-expansion-running "Hintergrund-Expansion läuft")
  (online-expansion-only-raw-text-files-supported "Nur reine Text-Dateien sind unterstützt")
- (online-expansion-abnormal-termination "Online-Expansion unglücklich abgebrochen")
- (online-expansion-finished-successfully "Online-Expansion erfolgreich abgeschlossen")
+ (online-expansion-abnormal-termination "Hintergrund-Expansion unglücklich abgebrochen")
+ (online-expansion-finished-successfully "Hintergrund-Expansion erfolgreich abgeschlossen")
 
  (jump-to-error "Zum Fehler springen")
- (online-expansion-is-disabled "Online-Expansion ist deaktiviert")
+ (online-expansion-is-disabled "Hintergrund-Expansion ist deaktiviert")
  ;; these next two show up in the bar along the bottom of the drracket window
- (online-expansion-pending "Online-Expansion läuft ...")
- (online-expansion-finished "Online-Expansion fertig") ;; note: there may still be errors in this case
+ (online-expansion-pending "Hintergrund-Expansion läuft ...")
+ (online-expansion-finished "Hintergrund-Expansion fertig") ;; note: there may still be errors in this case
  
  ;; the online expansion preferences pane
- (online-expansion "Online-Expansion") ;; title of prefs pane
+ (online-expansion "Hintergrund-Expansion") ;; title of prefs pane
  ; the different kinds of errors
  (online-expansion-show-read-errors-as "Reader-Fehler anzeigen")
  (online-expansion-show-variable-errors-as "Ungebundene Bezeichner anzeigen")
@@ -338,6 +338,7 @@
  (install-plt-file-tab "Datei")
  (install-plt-filename "Dateiname:")
  (install-plt-url "URL:")
+ (install-plt-error-header "Beim Überprüfen der heruntergeladenen .plt-Datei ist ein Fehler aufgetreten. Bitte überprüfen Sie die URL und versuchen Sie es noch einmal.")
   
  (install-plt-file "~a installieren oder editieren?")
  (install-plt-file/yes "Installieren")
@@ -396,7 +397,11 @@
  (show-line-and-column-numbers "Zeilen- && Spaltennummern anzeigen") ; used for popup menu; right click on line/column box in bottom of drs window
  (show-character-offsets "Zeichen-Offsets anzeigen") ; used for popup menu; right click on line/column box in bottom of drs window
  (enable-keybindings-in-menus "Tastenbelegung für Menüs")
- (automatically-to-ps "Automatisch in PostScript-Datei drucken")
+ (printing-mode "Druckmodus")
+ (print-using-platform-specific-mode "Plattformspezifisches Drucken")
+ (print-to-ps "Drucken in PostScript-Datei")
+ (print-to-pdf "Drucken in PDF-Datei")
+
  (command-as-meta "Command-Taste als Meta behandeln") ;; macos/macos x only
  (reuse-existing-frames "Existierende Fenster für neu geöffnete Dateien wiederverwenden")
  (default-fonts "Standard-Fonts")

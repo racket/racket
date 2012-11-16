@@ -48,6 +48,8 @@ A future never runs in parallel if all of the @tech{custodians} that
 allow its creating thread to run are shut down. Such futures can
 execute through a call to @racket[touch], however.
 
+@section{Creating and Touching Futures}
+
 @deftogether[(
   @defproc[(future [thunk (-> any)]) future?]
   @defproc[(touch [f future?]) any]
@@ -124,6 +126,10 @@ execute through a call to @racket[touch], however.
 
 }
 
+@; ----------------------------------------
+
+@section{Future Semaphores}
+
 @defproc[(make-fsemaphore [init exact-nonnegative-integer?]) fsemaphore?]{
 
   Creates and returns a new @deftech{future semaphore} with the
@@ -174,5 +180,9 @@ execute through a call to @racket[touch], however.
   Returns @racket[fsema]'s current internal counter value.
 
 }
+
+@; ----------------------------------------
+
+@include-section["futures-logging.scrbl"]
 
 @close-eval[future-eval]

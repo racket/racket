@@ -1,17 +1,16 @@
 #lang racket/base
 
 (require (for-syntax racket/base
-                     racket/list
-                     "syntax-utils.rkt"))
+                     racket/list))
 
 (provide inline-sort)
 
 (define-syntax (inline-sort stx)
   (syntax-case stx ()
-    [(_ < vs ...)
-     (with-syntax ([(bnds (< vs ...))  (generate-bindings #'(< vs ...))])
+    [(_ lt-expr v-exprs ...)
+     (with-syntax ([(< vs ...)  (generate-temporaries #'(lt-expr v-exprs ...))])
        (quasisyntax/loc stx
-         (let bnds
+         (let ([< lt-expr] [vs v-exprs] ...)
            #,(inline-sort/k #'(vs ...) #'< (λ (lst) #`(values #,@lst))))))]))
 
 (define-for-syntax (inline-sort/k vs < k)

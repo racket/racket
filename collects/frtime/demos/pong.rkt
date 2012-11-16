@@ -2,7 +2,7 @@
 (require
  frtime/animation
  frtime/gui
- (all-except mzlib/match match))
+ (only-in racket/match match-lambda))
 
 (define paddle-radius (make-slider "Paddle radius" 10 30 20))
 (define key-control-speed (* 0.01 (make-slider "Key control speed" 1 50 25)))
@@ -91,7 +91,7 @@
     ((snapshot-e (when-e (x-pred (posn-x ball-pos))) (posn-y ball-pos))
      . =#=> .
      (match-lambda
-       [(_ y) (when (and (> y 150) (< y 250))
+       [(list _ y) (when (and (> y 150) (< y 250))
                 add1)])))
    0))
 

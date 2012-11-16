@@ -5,7 +5,7 @@
 (run-tests
  (test-suite "logging.rkt"
    (test-case "start/stop-recording"
-     (let ([l (start-recording #:level 'warning)])
+     (let ([l (start-recording 'warning)])
        (log-warning "1")
        (log-warning "2")
        (log-warning "3")

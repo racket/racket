@@ -15,7 +15,7 @@
          flbeta-cdf
          flbeta-inv-cdf
          flbeta-random
-         Beta-Distribution beta-dist beta-dist? beta-dist-alpha beta-dist-beta)
+         Beta-Dist beta-dist beta-dist? beta-dist-alpha beta-dist-beta)
 
 (: flbeta-pdf (Flonum Flonum Flonum Any -> Flonum))
 (define (flbeta-pdf a b x log?)
@@ -29,10 +29,8 @@
                                 [else  (if log? -inf.0 0.0)])]
         [(x . fl> . 1.0)  (cond [1-p?  (if log? -inf.0 0.0)]
                                 [else  (if log? 0.0 1.0)])]
-        [1-p?  (cond [log?  (fllog-beta-upper-regularized a b x)]
-                     [else  (flbeta-upper-regularized a b x)])]
-        [else  (cond [log?  (fllog-beta-lower-regularized a b x)]
-                     [else  (flbeta-lower-regularized a b x)])]))
+        [log?  (fllog-beta-inc a b x 1-p? #t)]
+        [else  (flbeta-inc a b x 1-p? #t)]))
 
 (: flbeta-random (Flonum Flonum -> Flonum))
 (define (flbeta-random a b)
@@ -42,11 +40,11 @@
 
 (begin-encourage-inline
   
-  (define-distribution-type: beta-dist
-    Beta-Distribution Real-Distribution ([alpha : Flonum] [beta : Flonum]))
+  (define-distribution-type: Beta-Dist (Ordered-Dist Real Flonum)
+    beta-dist ([alpha : Flonum] [beta : Flonum]))
   
-  (: beta-dist (case-> (-> Beta-Distribution)
-                       (Real Real -> Beta-Distribution)))
+  (: beta-dist (case-> (-> Beta-Dist)
+                       (Real Real -> Beta-Dist)))
   (define beta-dist
     (case-lambda
       [()  (beta-dist 1.0 1.0)]
@@ -59,7 +57,7 @@
          (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [1-p? : Any #f])
                            (flbeta-inv-cdf a b (fl p) log? 1-p?)))
          (define (random) (flbeta-random a b))
-         (make-beta-dist pdf cdf inv-cdf random
+         (make-beta-dist pdf random cdf inv-cdf
                          0.0 1.0 (delay (flbeta-inv-cdf a b 0.5 #f #f))
                          a b))]))
   
