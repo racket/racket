@@ -44,6 +44,35 @@ error string (when @racket[ssl-available?] is @racket[#f]).}
 
 @; ----------------------------------------------------------------------
 
+@section{Using SSL Securely}
+
+SSL and TLS are client-server cryptographic protocols that enable
+secure communication with remote hosts (called ``peers''). But SSL
+must be properly configured in order to be secure.
+
+The security of client programs using SSL generally depends
+on the authentication of the server credentials, which requires proper
+initialization of this library's client contexts. To use SSL securely,
+a client program must at a minimum take the following steps:
+
+@itemlist[
+
+@item{create an SSL client context using @racket[ssl-make-client-context]}
+
+@item{tell the context what certificate authorities to trust using
+@racket[ssl-load-verify-root-certificates!]}
+
+@item{turn on certificate verification using @racket[ssl-set-verify!]
+(or check each connection individually using @racket[ssl-peer-verified?])}
+
+@item{turn on hostname verification using
+@racket[ssl-set-verify-hostname!] (or check each connection
+individually using @racket[ssl-peer-check-hostname])}
+]
+
+
+@; ----------------------------------------------------------------------
+
 @section{TCP-like Client Procedures}
 
 @defproc[(ssl-connect (hostname string?)
