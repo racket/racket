@@ -409,6 +409,7 @@ This function is known as Eulers totient or phi function.
 Note: The function @racket[totient] is multiplicative.
 
 @interaction[#:eval untyped-eval
+                    (require racket/function) ; for curry
                     (totient 9)
                     (length (filter (curry coprime? 9) (range 10)))]
 

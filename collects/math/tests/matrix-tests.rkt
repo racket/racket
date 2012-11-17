@@ -372,4 +372,3 @@
          (equal? (matrix* (matrix-2d-orthogonal-projection 1 0) e2) O)
          (equal? (matrix* (matrix-2d-orthogonal-projection 0 1) e1) O)
          (equal? (matrix* (matrix-2d-orthogonal-projection 0 1) e2) e2))))))
-
