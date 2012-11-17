@@ -845,7 +845,7 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 {
   GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *ref4, *refd = NULL, *refdt = NULL;
   GC_CAN_IGNORE jit_insn *refslow;
-  int skipped, simple_rand, simple_rand2, reversed = 0;
+  int reversed = 0;
   int has_fixnum_fast = 1, has_flonum_fast = 1;
   int inlined_flonum1, inlined_flonum2;
 
@@ -1081,75 +1081,39 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
         /* Unary subtract */
         reversed = 1;
       }
-      
+
       if (rand2) {
-        simple_rand = (scheme_ok_to_move_local(rand)
-                       || SCHEME_INTP(rand));
-        simple_rand2 = (SAME_TYPE(SCHEME_TYPE(rand2), scheme_local_type)
-                        && (SCHEME_GET_LOCAL_TYPE(rand2) != SCHEME_LOCAL_TYPE_FLONUM));
-        if (simple_rand && simple_rand2) {
-          if (mz_CURRENT_REG_STATUS_VALID()
-              && (jitter->r0_status >= 0)
-              && !(SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)
-                   && SCHEME_LOCAL_POS(rand) == SCHEME_LOCAL_POS(rand2))) {
-            /* prefer to evaluate the rand2 second, so that we can use R0 if 
-               it's helpful to set up R1 as rand */
-            simple_rand = 0;
-          } else
-            simple_rand2 = 0;
+        int dir;
+        dir = scheme_generate_two_args(rand, rand2, jitter, 0, orig_args);
+        CHECK_LIMIT();
+        /* Since we want rand in R1 and rand2 in R0, direction is backwards: */
+        if (dir > 0) {
+          Scheme_Object *t = rand2;
+          rand2 = rand;
+          rand = t;
+          cmp = -cmp;
+          reversed = !reversed;
         }
       } else {
-        simple_rand = 0;
-        simple_rand2 = 0;
-      }
-
-      if (rand2 && !simple_rand && !simple_rand2)
-        skipped = orig_args - 1;    
-      else
-        skipped = orig_args;
-
-      mz_runstack_skipped(jitter, skipped);
-
-      if (rand2 && !simple_rand && !simple_rand2) {
-        mz_runstack_skipped(jitter, 1);
+        mz_runstack_skipped(jitter, orig_args);
         scheme_generate_non_tail(rand, jitter, 0, 1, 0); /* sync'd later */
         CHECK_LIMIT();
-        mz_runstack_unskipped(jitter, 1);
-        mz_rs_dec(1);
+        mz_runstack_unskipped(jitter, orig_args);
         CHECK_RUNSTACK_OVERFLOW();
-        mz_runstack_pushed(jitter, 1);
-        mz_rs_str(JIT_R0);
       }
       /* not sync'd... */
 
-      if (simple_rand2) {
-        if (SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type))
-          scheme_generate(rand, jitter, 0, 0, 0, JIT_R1, NULL); /* sync'd below */
-        else {
-          scheme_generate_non_tail(rand, jitter, 0, 1, 0); /* sync'd below */
-          CHECK_LIMIT();
-          jit_movr_p(JIT_R1, JIT_R0);
-        }
-        CHECK_LIMIT();
-        scheme_generate(rand2, jitter, 0, 0, 0, JIT_R0, NULL); /* sync'd below */
-      } else {
-        scheme_generate_non_tail(rand2 ? rand2 : rand, jitter, 0, 1, 0); /* sync'd below */
-      }
-      CHECK_LIMIT();
-      /* sync'd in three branches below */
+      /* two arguments: rand2 in R0, and rand in R1 */
+      /* one argument: rand in R0 */
 
-      /* rand2 in R0, and rand in R1 unless it's simple */
-
-      if (simple_rand || simple_rand2) {
+      if (rand2) {
         int va;
 
-        if (simple_rand && SCHEME_INTP(rand)) {
-          (void)jit_movi_p(JIT_R1, rand);
-          va = JIT_R0;
+        if (SCHEME_INTP(rand)) {
+          va = JIT_R0; /* check only rand2 */
+        } else if (SCHEME_INTP(rand2)) {
+          va = JIT_R1; /* check only rand */
         } else {
-          if (simple_rand) {
-            scheme_generate(rand, jitter, 0, 0, 0, JIT_R1, NULL);
-          }
           if (!unsafe_fx && !unsafe_fl) {
             /* check both fixnum bits at once by ANDing into R2: */
             jit_andr_ul(JIT_R2, JIT_R0, JIT_R1);
@@ -1186,7 +1150,8 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
           }
 
           /* Slow path */
-          refslow = generate_arith_slow_path(jitter, rator, &ref, &ref4, for_branch, branch_short, orig_args, reversed, arith, 0, 0, dest);
+          refslow = generate_arith_slow_path(jitter, rator, &ref, &ref4, for_branch, branch_short, 
+                                             orig_args, reversed, arith, 0, 0, dest);
 
           if (has_fixnum_fast) {
             __START_TINY_JUMPS_IF_COMPACT__(1);
@@ -1199,57 +1164,6 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
           ref4 = NULL;
         }
         CHECK_LIMIT();
-      } else if (rand2) {
-        /* Move rand result back into R1 */
-        mz_rs_ldr(JIT_R1);
-        mz_rs_inc(1);
-        mz_runstack_popped(jitter, 1);
-
-        if (!unsafe_fx && !unsafe_fl) {
-          mz_rs_sync();
-
-          /* check both fixnum bits at once by ANDing into R2: */
-          jit_andr_ul(JIT_R2, JIT_R0, JIT_R1);
-          __START_TINY_JUMPS_IF_COMPACT__(1);
-          ref2 = jit_bmsi_ul(jit_forward(), JIT_R2, 0x1);
-          __END_TINY_JUMPS_IF_COMPACT__(1);
-          CHECK_LIMIT();
-        } else {
-          if (for_branch) mz_rs_sync();
-          ref2 = NULL;
-          CHECK_LIMIT();
-        }
-
-        if (unsafe_fl || (!unsafe_fx && has_flonum_fast && can_fast_double(arith, cmp, 1))) {
-          /* Maybe they're both doubles... */
-          if (unsafe_fl) mz_rs_sync();
-          generate_double_arith(jitter, rator, arith, cmp, reversed, 1, 0, &refd, &refdt, 
-                                for_branch, branch_short, unsafe_fl, 0, unbox, dest);
-          CHECK_LIMIT();
-        }
-
-        if (!unsafe_fx && !unsafe_fl) {
-          if (!has_fixnum_fast) {
-            __START_TINY_JUMPS_IF_COMPACT__(1);
-            mz_patch_branch(ref2);
-            __END_TINY_JUMPS_IF_COMPACT__(1);
-          }
-
-          /* Slow path */
-          refslow = generate_arith_slow_path(jitter, rator, &ref, &ref4, for_branch, branch_short, orig_args, reversed, arith, 0, 0, dest);
-      
-          if (has_fixnum_fast) {
-            /* Fixnum branch: */
-            __START_TINY_JUMPS_IF_COMPACT__(1);
-            mz_patch_branch(ref2);
-            __END_TINY_JUMPS_IF_COMPACT__(1);
-          }
-          CHECK_LIMIT();
-        } else {
-          refslow = overflow_refslow;
-          ref = NULL;
-          ref4 = NULL;
-        }
       } else {
         /* Only one argument: */
         if (!unsafe_fx && !unsafe_fl) {
@@ -1284,7 +1198,8 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
           }
 
           /* Slow path */
-          refslow = generate_arith_slow_path(jitter, rator, &ref, &ref4, for_branch, branch_short, orig_args, reversed, arith, 1, v, dest);
+          refslow = generate_arith_slow_path(jitter, rator, &ref, &ref4, for_branch, branch_short, 
+                                             orig_args, reversed, arith, 1, v, dest);
 
           if (has_fixnum_fast) {
             __START_TINY_JUMPS_IF_COMPACT__(1);
@@ -1299,8 +1214,6 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
       }
 
       CHECK_LIMIT();
-
-      mz_runstack_unskipped(jitter, skipped);
     }
 
     __START_SHORT_JUMPS__(branch_short);

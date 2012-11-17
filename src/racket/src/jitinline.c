@@ -124,9 +124,6 @@ static Scheme_Object *cont_mark_set_first_try_fast(Scheme_Object *cms, Scheme_Ob
   return ts_extract_one_cc_mark_to_tag(nullableCms, key, prompt_tag);
 }
 
-static int generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_state *jitter, 
-                             int order_matters, int skipped);
-
 static int check_val_struct_prim(Scheme_Object *p, int arity)
 {
   if (p && SCHEME_PRIMP(p)) {
@@ -388,7 +385,7 @@ static int generate_inlined_struct_op(int kind, mz_jit_state *jitter,
   LOG_IT(("inlined struct op\n"));
 
   if (!rand2) {
-    generate_two_args(rator, rand, jitter, 1, 1); /* sync'd below */
+    scheme_generate_two_args(rator, rand, jitter, 1, 1); /* sync'd below */
     CHECK_LIMIT();
   } else {
     Scheme_Object *args[3];
@@ -1821,7 +1818,22 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
   return 0;
 }
 
-static int generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_state *jitter, 
+static int already_in_register(Scheme_Object *o, mz_jit_state *jitter)
+{
+  if (SAME_TYPE(SCHEME_TYPE(o), scheme_local_type)) {
+    if (mz_CURRENT_REG_STATUS_VALID()) {
+      int pos;
+      pos = mz_remap(SCHEME_LOCAL_POS(o));
+      if ((pos == jitter->r0_status)
+          || (pos == jitter->r1_status))
+        return 1;
+    }
+  }
+
+  return 0;
+}
+
+int scheme_generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_state *jitter, 
                              int order_matters, int skipped)
 /* de-sync's rs.
    Results go into R0 and R1. If !order_matters, and if only the
@@ -1878,8 +1890,13 @@ static int generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_
       scheme_generate_non_tail(rand2, jitter, 0, 1, 0); /* no sync... */
       CHECK_LIMIT();
 
-      jit_movr_p(JIT_R1, JIT_R0);
-      mz_rs_ldr(JIT_R0);
+      if (order_matters) {
+        jit_movr_p(JIT_R1, JIT_R0);
+        mz_rs_ldr(JIT_R0);
+      } else {
+        mz_rs_ldr(JIT_R1);
+        direction = -1;
+      }
 
       mz_runstack_unskipped(jitter, skipped-1);
       mz_rs_inc(1);
@@ -1888,16 +1905,22 @@ static int generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_
   } else {
     mz_runstack_skipped(jitter, skipped);
 
-    if (simple2) {
-      scheme_generate(rand2, jitter, 0, 0, 0, JIT_R1, NULL); /* no sync... */
-      CHECK_LIMIT();
+    if (simple2 && !order_matters && already_in_register(rand1, jitter)) {
+      scheme_generate(rand1, jitter, 0, 0, 0, JIT_R1, NULL); /* no sync... */
+      scheme_generate(rand2, jitter, 0, 0, 0, JIT_R0, NULL); /* no sync... */
+      direction = -1;
     } else {
-      scheme_generate_non_tail(rand2, jitter, 0, 1, 0); /* no sync... */
-      CHECK_LIMIT();
-      jit_movr_p(JIT_R1, JIT_R0);
-    }
+      if (simple2) {
+        scheme_generate(rand2, jitter, 0, 0, 0, JIT_R1, NULL); /* no sync... */
+        CHECK_LIMIT();
+      } else {
+        scheme_generate_non_tail(rand2, jitter, 0, 1, 0); /* no sync... */
+        CHECK_LIMIT();
+        jit_movr_p(JIT_R1, JIT_R0);
+      }
 
-    scheme_generate(rand1, jitter, 0, 0, 0, JIT_R0, NULL); /* no sync... */
+      scheme_generate(rand1, jitter, 0, 0, 0, JIT_R0, NULL); /* no sync... */
+    }
     CHECK_LIMIT();
 
     mz_runstack_unskipped(jitter, skipped);
@@ -1918,7 +1941,7 @@ static int generate_binary_char(mz_jit_state *jitter, Scheme_App3_Rec *app,
 
   r1 = app->rand1;
   r2 = app->rand2;
-  direction = generate_two_args(r1, r2, jitter, 1, 2);
+  direction = scheme_generate_two_args(r1, r2, jitter, 0, 2);
   CHECK_LIMIT();
 
   mz_rs_sync();
@@ -2266,7 +2289,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       __END_SHORT_JUMPS__(branch_short);
     } else {
       /* Two complex expressions: */
-      generate_two_args(a2, a1, jitter, 0, 2);
+      scheme_generate_two_args(a2, a1, jitter, 0, 2);
       CHECK_LIMIT();
 
       if (need_sync) mz_rs_sync();
@@ -2298,7 +2321,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
   }  else if (IS_NAMED_PRIM(rator, "equal?")) {
     GC_CAN_IGNORE jit_insn *ref_f, *ref_d, *refr;
 
-    generate_two_args(app->rand1, app->rand2, jitter, 0, 2);
+    scheme_generate_two_args(app->rand1, app->rand2, jitter, 0, 2);
     CHECK_LIMIT();
 
     mz_rs_sync();
@@ -2340,7 +2363,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     GC_CAN_IGNORE jit_insn *ref_f1, *ref_f2, *ref_f3, *ref_f4, *ref_f5;
     GC_CAN_IGNORE jit_insn *ref_d1, *ref_d2, *ref_t1;
 
-    generate_two_args(app->rand1, app->rand2, jitter, 0, 2);
+    scheme_generate_two_args(app->rand1, app->rand2, jitter, 0, 2);
     CHECK_LIMIT();
 
     if (need_sync) mz_rs_sync();
@@ -2717,7 +2740,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 		&& (SCHEME_INT_VAL(app->rand2) >= 0));
 
       if (!simple) {
-        generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+        scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
         CHECK_LIMIT();
 
         if (!unsafe || can_chaperone)
@@ -2835,7 +2858,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       is_f64 = IS_NAMED_PRIM(rator, "unsafe-f64vector-ref");
       
       jitter->unbox = 0; /* no unboxing of vector and index arguments */
-      generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+      scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
       jitter->unbox = unbox;
       CHECK_LIMIT();
 
@@ -2871,7 +2894,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
       is_u = IS_NAMED_PRIM(rator, "unsafe-u16vector-ref");
       
-      generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+      scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
 
       jit_ldxi_p(JIT_R0, JIT_R0, (intptr_t)&(((Scheme_Structure *)0x0)->slots[0]));
       jit_ldxi_p(JIT_R0, JIT_R0, (intptr_t)&SCHEME_CPTR_VAL(0x0));
@@ -2887,7 +2910,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       return 1;
     } else if (IS_NAMED_PRIM(rator, "list-ref")
                || IS_NAMED_PRIM(rator, "list-tail")) {
-      generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+      scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
 
       mz_rs_sync();
       if (IS_NAMED_PRIM(rator, "list-ref"))
@@ -2921,7 +2944,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
         }
       }
 
-      generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+      scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
 
       if (IS_NAMED_PRIM(rator, "unsafe-list-ref"))
         (void)jit_calli(sjc.list_ref_code);
@@ -2939,7 +2962,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
       LOG_IT(("inlined set-mcar!\n"));
 
-      generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+      scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
       CHECK_LIMIT();
       mz_rs_sync_fail_branch();
 
@@ -2974,7 +2997,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
       LOG_IT(("inlined unsafe-set-mcar!\n"));
 
-      generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+      scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
       CHECK_LIMIT();
       if (set_mcar)
         (void)jit_stxi_p(&((Scheme_Simple_Object *)0x0)->u.pair_val.car, JIT_R0, JIT_R1);
@@ -2994,7 +3017,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
       unsafe = IS_NAMED_PRIM(rator, "unsafe-set-box!");
 
-      generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+      scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
       CHECK_LIMIT();
       mz_rs_sync();
       __START_TINY_JUMPS__(1);
@@ -3028,7 +3051,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     } else if (IS_NAMED_PRIM(rator, "unsafe-set-box*!")) {
       LOG_IT(("inlined unsafe-set-box*!\n"));
 
-      generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+      scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
       CHECK_LIMIT();
       (void)jit_stxi_p(&SCHEME_BOX_VAL(0x0), JIT_R0, JIT_R1);
       
@@ -3041,7 +3064,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       int dir, known_list;
       LOG_IT(("inlined cons\n"));
 
-      dir = generate_two_args(app->rand1, app->rand2, jitter, 0, 2);
+      dir = scheme_generate_two_args(app->rand1, app->rand2, jitter, 0, 2);
       CHECK_LIMIT();
       mz_rs_sync();
       
@@ -3055,7 +3078,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       int dir;
       LOG_IT(("inlined unsafe-cons-list\n"));
 
-      dir = generate_two_args(app->rand1, app->rand2, jitter, 0, 2);
+      dir = scheme_generate_two_args(app->rand1, app->rand2, jitter, 0, 2);
       CHECK_LIMIT();
       mz_rs_sync();
 
@@ -3063,7 +3086,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     } else if (IS_NAMED_PRIM(rator, "mcons")) {
       LOG_IT(("inlined mcons\n"));
 
-      generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+      scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
       CHECK_LIMIT();
       mz_rs_sync();
 
@@ -3092,7 +3115,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     } else if (IS_NAMED_PRIM(rator, "list")) {
       LOG_IT(("inlined list\n"));
 
-      generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+      scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
       CHECK_LIMIT();
 
       mz_rs_dec(1);
@@ -3120,7 +3143,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
       LOG_IT(("inlined make-rectangular\n"));
 
-      generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+      scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
       CHECK_LIMIT();
       mz_rs_sync();
 
@@ -3177,7 +3200,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       
       LOG_IT(("inlined make-rectangular\n"));
 
-      generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+      scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
       CHECK_LIMIT();
       mz_rs_sync();
 
@@ -3198,7 +3221,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     } else if (IS_NAMED_PRIM(rator, "unsafe-make-flrectangular")) {
       LOG_IT(("inlined make-rectangular\n"));
 
-      generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+      scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
       CHECK_LIMIT();
       
       allocate_rectangular(jitter, dest);
@@ -3207,7 +3230,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     } else if (IS_NAMED_PRIM(rator, "procedure-arity-includes?")) {
       LOG_IT(("inlined procedure-arity-includes?\n"));
 
-      generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+      scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
       CHECK_LIMIT();
 
       mz_rs_sync();
@@ -3242,7 +3265,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
       LOG_IT(("inlined continuation-mark-set-first\n"));
 
-      generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+      scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
       CHECK_LIMIT();
       /* R0 has the first argument, R1 has the second argument */
 
@@ -3982,7 +4005,7 @@ static int generate_vector_alloc(mz_jit_state *jitter, Scheme_Object *rator,
     mz_runstack_unskipped(jitter, 1);
     c = 1;
   } else if (app3) {
-    generate_two_args(app3->rand1, app3->rand2, jitter, 1, 2);  /* sync'd below */
+    scheme_generate_two_args(app3->rand1, app3->rand2, jitter, 1, 2);  /* sync'd below */
     c = 2;
   } else {
     c = app->num_args;

@@ -1237,6 +1237,8 @@ int scheme_generate_cons_alloc(mz_jit_state *jitter, int rev, int inline_retry, 
 int scheme_generate_struct_alloc(mz_jit_state *jitter, int num_args, 
                                  int inline_slow, int pop_and_jump,
                                  int is_tail, int multi_ok, int dest);
+int scheme_generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_state *jitter, 
+                             int order_matters, int skipped);
 
 /**********************************************************************/
 /*                             jitalloc                               */
