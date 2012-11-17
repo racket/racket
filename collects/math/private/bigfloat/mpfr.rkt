@@ -5,6 +5,7 @@
          ffi/unsafe/custodian
          racket/list
          racket/promise
+         racket/serialize
          (for-syntax racket/base))
 
 (require (only-in rnrs/arithmetic/bitwise-6
@@ -42,7 +43,8 @@
  bigfloat->string
  string->bigfloat
  ;; Main constructor
- bf)
+ bf
+ bigfloat-deserialize-info)
 
 ;; Arithmetic, comparison, and other functions are provided by the macros that create them
 
@@ -187,12 +189,49 @@
                 [(sig exp)  (canonicalize-sig+exp sig exp)])
     (recur-hash (vector (bigfloat-sign x) sig exp))))
 
+(define bigfloat-deserialize
+  (case-lambda
+    [(p x)
+     (unless (exact-integer? p)
+       (raise-argument-error 'bigfloat-deserialize "Integer" 0 p x))
+     (unless (or (string? x) (real? x))
+       (raise-argument-error 'bigfloat-deserialize "(U String Real)" 1 p x))
+     (parameterize ([bf-precision p])
+       (bf x))]
+    [(p sig exp)
+     (unless (exact-integer? p)
+       (raise-argument-error 'bigfloat-deserialize "Integer" 0 p sig exp))
+     (unless (exact-integer? sig)
+       (raise-argument-error 'bigfloat-deserialize "Integer" 1 p sig exp))
+     (unless (exact-integer? exp)
+       (raise-argument-error 'bigfloat-deserialize "Integer" 2 p sig exp))
+     (parameterize ([bf-precision p])
+       (bf sig exp))]))
+
+(define bigfloat-deserialize-info
+  (make-deserialize-info
+   bigfloat-deserialize
+   #f))
+
+(define bigfloat-serialize-info
+  (make-serialize-info
+   (λ (x)
+     (cond [(bfzero? x)      (vector (bigfloat-precision x) (if (zero? (bigfloat-sign x)) 0.0 -0.0))]
+           [(bfnan? x)       (vector (bigfloat-precision x) +nan.0)]
+           [(bfinfinite? x)  (vector (bigfloat-precision x)
+                                     (if (zero? (bigfloat-sign x)) +inf.0 -inf.0))]
+           [else  (define-values (sig exp) (bigfloat-sig+exp (bfcanonicalize x)))
+                  (vector (bigfloat-precision x) sig exp)]))
+   #'bigfloat-deserialize-info
+   #f
+   (or (current-load-relative-directory) 
+       (current-directory))))
+
 ;; mpfr_t: a multi-precision float with rounding (the main data type)
 (define-cstruct _mpfr ([prec _prec_t] [sign _sign_t] [exp _exp_t] [d (_gcable _mpfr_limbs)])
-  #:property prop:custom-write
-  (λ (b port mode) (bigfloat-custom-write b port mode))
-  #:property prop:equal+hash
-  (list bigfloat-equal? bigfloat-hash bigfloat-hash))
+  #:property prop:custom-write (λ (b port mode) (bigfloat-custom-write b port mode))
+  #:property prop:equal+hash (list bigfloat-equal? bigfloat-hash bigfloat-hash)
+  #:property prop:serializable bigfloat-serialize-info)
 
 (define mpfr-set-nan (get-mpfr-fun 'mpfr_set_nan (_fun _mpfr-pointer -> _void)))
 
