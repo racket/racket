@@ -81,7 +81,15 @@
 		   (when (boolean? v)
 		     ;; (printf " for branch...\n")
 		     (test (if v 'yes 'no) name ((eval `(lambda (x) (if (,op x ',arg2) 'yes 'no))) arg1))
-		     (test (if v 'yes 'no) name ((eval `(lambda (x) (if (,op ',arg1 x) 'yes 'no))) arg2)))))]
+		     (test (if v 'yes 'no) name ((eval `(lambda (x) (if (,op ',arg1 x) 'yes 'no))) arg2)))
+                   (when (fixnum? arg2)
+                     (test v name ((eval `(lambda (x) (let ([x2 (fx+ (random 1) ',arg2)])
+                                                        (,op x x2))))
+                                   arg1)))
+                   (when (fixnum? arg1)
+                     (test v name ((eval `(lambda (y) (let ([x1 (fx+ (random 1) ',arg1)])
+                                                        (,op x1 y))))
+                                   arg2)))))]
 	 [bin-exact (lambda (v op arg1 arg2 [check-fixnum-as-bad? #f])
 		      (check-error-message op (eval `(lambda (x) (,op x ',arg2))))
 		      (check-error-message op (eval `(lambda (x) (,op ',arg1 x))))

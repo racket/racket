@@ -2046,6 +2046,7 @@ static int produces_local_type(Scheme_Object *rator, int argc)
 }
 
 int scheme_expr_produces_local_type(Scheme_Object *expr)
+/* can be called by the JIT */
 {
   while (1) {
     switch (SCHEME_TYPE(expr)) {

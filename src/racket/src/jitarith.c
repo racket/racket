@@ -30,6 +30,18 @@
 #define JITARITH_TS_PROCS
 #include "jit_ts.c"
 
+int scheme_jit_is_fixnum(Scheme_Object *rand)
+{
+  if (SCHEME_INTP(rand)
+      || (SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)
+          && (SCHEME_GET_LOCAL_TYPE(rand) == SCHEME_LOCAL_TYPE_FIXNUM)))
+    return 1;
+  else if (scheme_expr_produces_local_type(rand) == SCHEME_LOCAL_TYPE_FIXNUM)
+    return 1;
+  else
+    return 0;
+}
+
 static int can_reorder_unboxing(Scheme_Object *rand, Scheme_Object *rand2)
 {
   /* Can we reorder `rand' and `rand2', given that we want floating-point
@@ -1038,6 +1050,18 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
       ref = NULL;
       ref4 = NULL;
     } else {
+      if (!unsafe_fl
+          && ((arith == ARITH_MIN)
+              || (arith == ARITH_MAX)
+              || (arith == ARITH_AND)
+              || (arith == ARITH_IOR)
+              || (arith == ARITH_XOR))) {
+        /* No slow path necessary for fixnum arguments. */
+        if (scheme_jit_is_fixnum(rand) && (!rand2 || scheme_jit_is_fixnum(rand2))) {
+          unsafe_fx = 1;
+        }
+      }
+
       if (rand2) {
         if (SCHEME_INTP(rand2)
             && SCHEME_INT_SMALL_ENOUGH(rand2)
@@ -1082,6 +1106,12 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
         reversed = 1;
       }
 
+      if (!unsafe_fl && !unsafe_fx 
+          && (scheme_jit_is_fixnum(rand) && (!rand2 || scheme_jit_is_fixnum(rand2)))) {
+        /* Since we'll get a fix num, skip flonum variant */
+        has_flonum_fast = 0;
+      }
+
       if (rand2) {
         int dir;
         dir = scheme_generate_two_args(rand, rand2, jitter, 0, orig_args);
@@ -1109,9 +1139,13 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
       if (rand2) {
         int va;
 
-        if (SCHEME_INTP(rand)) {
-          va = JIT_R0; /* check only rand2 */
-        } else if (SCHEME_INTP(rand2)) {
+        if (scheme_jit_is_fixnum(rand)) {
+          if (scheme_jit_is_fixnum(rand2)) {
+            va = -1; /* no check needed */
+          } else {
+            va = JIT_R0; /* check only rand2 */
+          }
+        } else if (scheme_jit_is_fixnum(rand2)) {
           va = JIT_R1; /* check only rand */
         } else {
           if (!unsafe_fx && !unsafe_fl) {
@@ -1125,7 +1159,10 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
           mz_rs_sync();
 
           __START_TINY_JUMPS_IF_COMPACT__(1);
-          ref2 = jit_bmsi_ul(jit_forward(), va, 0x1);
+          if (va == -1)
+            ref2 = jit_jmpi(jit_forward());
+          else
+            ref2 = jit_bmsi_ul(jit_forward(), va, 0x1);
           __END_TINY_JUMPS_IF_COMPACT__(1);
         } else {
           ref2 = NULL;
@@ -1145,7 +1182,10 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
         if (!unsafe_fx && !unsafe_fl) {
           if (!has_fixnum_fast) {
             __START_TINY_JUMPS_IF_COMPACT__(1);
-            mz_patch_branch(ref2);
+            if (va == -1)
+              mz_patch_ucbranch(ref2);
+            else
+              mz_patch_branch(ref2);
             __END_TINY_JUMPS_IF_COMPACT__(1);
           }
 
@@ -1155,7 +1195,10 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 
           if (has_fixnum_fast) {
             __START_TINY_JUMPS_IF_COMPACT__(1);
-            mz_patch_branch(ref2);
+            if (va == -1)
+              mz_patch_ucbranch(ref2);
+            else
+              mz_patch_branch(ref2);
             __END_TINY_JUMPS_IF_COMPACT__(1);
           }
         } else {
@@ -1166,10 +1209,17 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
         CHECK_LIMIT();
       } else {
         /* Only one argument: */
+        int is_fx;
+
+        is_fx = scheme_jit_is_fixnum(rand);
+
         if (!unsafe_fx && !unsafe_fl) {
           mz_rs_sync();
           __START_TINY_JUMPS_IF_COMPACT__(1);
-          ref2 = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
+          if (is_fx)
+            ref2 = jit_jmpi(jit_forward());
+          else
+            ref2 = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
           __END_TINY_JUMPS_IF_COMPACT__(1);
         } else {
           if (for_branch) mz_rs_sync();
@@ -1193,7 +1243,10 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
         if (!unsafe_fx && !unsafe_fl) {
           if (!has_fixnum_fast) {
             __START_TINY_JUMPS_IF_COMPACT__(1);
-            mz_patch_branch(ref2);
+            if (is_fx)
+              mz_patch_ucbranch(ref2);
+            else
+              mz_patch_branch(ref2);
             __END_TINY_JUMPS_IF_COMPACT__(1);
           }
 
@@ -1203,7 +1256,10 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 
           if (has_fixnum_fast) {
             __START_TINY_JUMPS_IF_COMPACT__(1);
-            mz_patch_branch(ref2);
+            if (is_fx)
+              mz_patch_ucbranch(ref2);
+            else
+              mz_patch_branch(ref2);
             __END_TINY_JUMPS_IF_COMPACT__(1);
           }
         } else {

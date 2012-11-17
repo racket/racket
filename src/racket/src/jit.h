@@ -1263,6 +1263,7 @@ Scheme_Object *scheme_jit_make_two_element_ivector(Scheme_Object *a, Scheme_Obje
 /*                             jitarith                               */
 /**********************************************************************/
 
+int scheme_jit_is_fixnum(Scheme_Object *rand);
 int scheme_can_unbox_inline(Scheme_Object *obj, int fuel, int regs, int unsafely);
 int scheme_can_unbox_directly(Scheme_Object *obj);
 int scheme_generate_unboxing(mz_jit_state *jitter, int target);
