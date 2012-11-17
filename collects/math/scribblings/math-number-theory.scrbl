@@ -198,8 +198,8 @@ Returns the first prime larger than @racket[z].
                     (untyped-next-prime 4)
                     (untyped-next-prime 5)]
 
-TODO: Figure out how to export next-prime even though
-TR can't make contract automatically.
+Note: Use @racket[next-prime] in Typed Racket and 
+@racket[untyped-next-prime] otherwise.
 }
 
 @defproc[(prev-prime [z Integer]) prime?]{
@@ -209,8 +209,8 @@ Returns the first prime smaller than @racket[z].
                     (untyped-prev-prime 4)
                     (untyped-prev-prime 5)]
 
-TODO: Figure out how to export prev-prime even though
-TR can't make contract automatically.
+Note: Use @racket[prev-prime] in Typed Racket and 
+@racket[untyped-prev-prime] otherwise.
 }
 
 @defproc[(next-primes [z Integer] [n Natural]) (Listof prime?)]{
