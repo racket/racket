@@ -1876,54 +1876,18 @@ static int is_nonmutating_primitive(Scheme_Object *rator, int n)
 
 static int wants_local_type_arguments(Scheme_Object *rator, int argpos)
 {
-  /* See ALWAYS_PREFER_UNBOX_TYPE() for why we don't return SCHEME_LOCAL_TYPE_FIXNUM */
   if (SCHEME_PRIMP(rator)) {
-    if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_IS_UNSAFE_NONMUTATING) {
-      if (IS_NAMED_PRIM(rator, "unsafe-flabs")
-          || IS_NAMED_PRIM(rator, "unsafe-flsqrt")
-          || IS_NAMED_PRIM(rator, "unsafe-fl+")
-          || IS_NAMED_PRIM(rator, "unsafe-fl-")
-          || IS_NAMED_PRIM(rator, "unsafe-fl*")
-          || IS_NAMED_PRIM(rator, "unsafe-fl/")
-          || IS_NAMED_PRIM(rator, "unsafe-fl<")
-          || IS_NAMED_PRIM(rator, "unsafe-fl<=")
-          || IS_NAMED_PRIM(rator, "unsafe-fl=")
-          || IS_NAMED_PRIM(rator, "unsafe-fl>")
-          || IS_NAMED_PRIM(rator, "unsafe-fl>=")
-          || IS_NAMED_PRIM(rator, "unsafe-flmin")
-          || IS_NAMED_PRIM(rator, "unsafe-flmax")
-          || IS_NAMED_PRIM(rator, "unsafe-fl->fx"))
+    int flags;
+    flags = SCHEME_PRIM_PROC_OPT_FLAGS(rator);
+
+    if (argpos == 0) {
+      if (flags & SCHEME_PRIM_WANTS_FLONUM_FIRST)
         return SCHEME_LOCAL_TYPE_FLONUM;
-    } else if (SCHEME_PRIM_IS_SOMETIMES_INLINED(rator)) {
-      if (IS_NAMED_PRIM(rator, "flabs")
-          || IS_NAMED_PRIM(rator, "flsqrt")
-          || IS_NAMED_PRIM(rator, "fltruncate")
-          || IS_NAMED_PRIM(rator, "flround")
-          || IS_NAMED_PRIM(rator, "flfloor")
-          || IS_NAMED_PRIM(rator, "flceiling")
-          || IS_NAMED_PRIM(rator, "flsin")
-          || IS_NAMED_PRIM(rator, "flcos")
-          || IS_NAMED_PRIM(rator, "fltan")
-          || IS_NAMED_PRIM(rator, "flasin")
-          || IS_NAMED_PRIM(rator, "flacos")
-          || IS_NAMED_PRIM(rator, "flatan")
-          || IS_NAMED_PRIM(rator, "fllog")
-          || IS_NAMED_PRIM(rator, "flexp")
-          || IS_NAMED_PRIM(rator, "flexpt")
-          || IS_NAMED_PRIM(rator, "fl+")
-          || IS_NAMED_PRIM(rator, "fl-")
-          || IS_NAMED_PRIM(rator, "fl*")
-          || IS_NAMED_PRIM(rator, "fl/")
-          || IS_NAMED_PRIM(rator, "fl<")
-          || IS_NAMED_PRIM(rator, "fl<=")
-          || IS_NAMED_PRIM(rator, "fl=")
-          || IS_NAMED_PRIM(rator, "fl>")
-          || IS_NAMED_PRIM(rator, "flmin")
-          || IS_NAMED_PRIM(rator, "flmax"))
+    } else if (argpos == 1) {
+      if (flags & SCHEME_PRIM_WANTS_FLONUM_SECOND)
         return SCHEME_LOCAL_TYPE_FLONUM;
-      if ((argpos == 2)
-          && (IS_NAMED_PRIM(rator, "unsafe-flvector-set!")
-              || IS_NAMED_PRIM(rator, "flvector-set!")))
+    } else if (argpos == 2) {
+      if (flags & SCHEME_PRIM_WANTS_FLONUM_THIRD)
         return SCHEME_LOCAL_TYPE_FLONUM;
     }
   }
@@ -1933,115 +1897,14 @@ static int wants_local_type_arguments(Scheme_Object *rator, int argpos)
 
 static int produces_local_type(Scheme_Object *rator, int argc)
 {
-  if (SCHEME_PRIMP(rator)) {
-    if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_IS_UNSAFE_NONMUTATING) {
-      if (((argc == 1)
-           && (IS_NAMED_PRIM(rator, "unsafe-flabs")
-               || IS_NAMED_PRIM(rator, "unsafe-flsqrt")
-               || IS_NAMED_PRIM(rator, "unsafe-flreal-part")
-               || IS_NAMED_PRIM(rator, "unsafe-flimag-part")))
-          || ((argc == 2)
-              && (IS_NAMED_PRIM(rator, "unsafe-fl+")
-                  || IS_NAMED_PRIM(rator, "unsafe-fl-")
-                  || IS_NAMED_PRIM(rator, "unsafe-fl*")
-                  || IS_NAMED_PRIM(rator, "unsafe-fl/")
-                  || IS_NAMED_PRIM(rator, "unsafe-flmin")
-                  || IS_NAMED_PRIM(rator, "unsafe-flmax"))))
-        return SCHEME_LOCAL_TYPE_FLONUM;
-      if (((argc == 2) && IS_NAMED_PRIM(rator, "unsafe-flvector-ref"))
-          || ((argc == 1) && IS_NAMED_PRIM(rator, "unsafe-fx->fl")))
-        return SCHEME_LOCAL_TYPE_FLONUM;
-      if (((argc == 1)
-           && (IS_NAMED_PRIM(rator, "unsafe-fxabs")
-               || IS_NAMED_PRIM(rator, "fxnot")
-               || IS_NAMED_PRIM(rator, "unsafe-fl->fx")))
-          || ((argc == 2)
-              && (IS_NAMED_PRIM(rator, "unsafe-fx+")
-                  || IS_NAMED_PRIM(rator, "unsafe-fx-")
-                  || IS_NAMED_PRIM(rator, "unsafe-fx*")
-                  || IS_NAMED_PRIM(rator, "unsafe-fxquotient")
-                  || IS_NAMED_PRIM(rator, "unsafe-fxremainder")
-                  || IS_NAMED_PRIM(rator, "unsafe-fxmodulo")
-                  || IS_NAMED_PRIM(rator, "unsafe-fxmin")
-                  || IS_NAMED_PRIM(rator, "unsafe-fxmax")
-                  || IS_NAMED_PRIM(rator, "fxlshift")
-                  || IS_NAMED_PRIM(rator, "fxrshift")
-                  || IS_NAMED_PRIM(rator, "fxior")
-                  || IS_NAMED_PRIM(rator, "fxand")
-                  || IS_NAMED_PRIM(rator, "fxxor"))))
-        return SCHEME_LOCAL_TYPE_FIXNUM;
-      if (((argc == 2) 
-           && (IS_NAMED_PRIM(rator, "unsafe-fxvector-ref")
-               || IS_NAMED_PRIM(rator, "unsafe-bytes-ref")))
-          || ((argc == 1) 
-              && (IS_NAMED_PRIM(rator, "unsafe-fl->fx")
-                  || IS_NAMED_PRIM(rator, "unsafe-vector-length")
-                  || IS_NAMED_PRIM(rator, "unsafe-flvector-length")
-                  || IS_NAMED_PRIM(rator, "unsafe-fxvector-length")
-                  || IS_NAMED_PRIM(rator, "unsafe-string-length")
-                  || IS_NAMED_PRIM(rator, "unsafe-bytes-length"))))
-        return SCHEME_LOCAL_TYPE_FIXNUM;
-    } else if ((argc == 1) && SCHEME_PRIM_IS_SOMETIMES_INLINED(rator)) {
-      if (IS_NAMED_PRIM(rator, "flabs")
-          || IS_NAMED_PRIM(rator, "flsqrt")
-          || IS_NAMED_PRIM(rator, "fltruncate")
-          || IS_NAMED_PRIM(rator, "flround")
-          || IS_NAMED_PRIM(rator, "flfloor")
-          || IS_NAMED_PRIM(rator, "flceiling")
-          || IS_NAMED_PRIM(rator, "flsin")
-          || IS_NAMED_PRIM(rator, "flcos")
-          || IS_NAMED_PRIM(rator, "fltan")
-          || IS_NAMED_PRIM(rator, "flasin")
-          || IS_NAMED_PRIM(rator, "flacos")
-          || IS_NAMED_PRIM(rator, "flatan")
-          || IS_NAMED_PRIM(rator, "fllog")
-          || IS_NAMED_PRIM(rator, "flexp")
-          || IS_NAMED_PRIM(rator, "flimag-part")
-          || IS_NAMED_PRIM(rator, "flreal-part")
-          || IS_NAMED_PRIM(rator, "->fl")
-          || IS_NAMED_PRIM(rator, "fx->fl"))
-        return SCHEME_LOCAL_TYPE_FLONUM;
-      if (IS_NAMED_PRIM(rator, "fxabs")
-          || IS_NAMED_PRIM(rator, "fxnot")
-          || IS_NAMED_PRIM(rator, "fl->fx")
-          || IS_NAMED_PRIM(rator, "vector-length")
-          || IS_NAMED_PRIM(rator, "fxvector-length")
-          || IS_NAMED_PRIM(rator, "flvector-length")
-          || IS_NAMED_PRIM(rator, "string-length")
-          || IS_NAMED_PRIM(rator, "bytes-length"))
-        return SCHEME_LOCAL_TYPE_FIXNUM;
-    } else if ((argc ==2) && SCHEME_PRIM_IS_SOMETIMES_INLINED(rator)) {
-      if (IS_NAMED_PRIM(rator, "flabs")
-          || IS_NAMED_PRIM(rator, "flsqrt")
-          || IS_NAMED_PRIM(rator, "fl+")
-          || IS_NAMED_PRIM(rator, "fl-")
-          || IS_NAMED_PRIM(rator, "fl*")
-          || IS_NAMED_PRIM(rator, "fl/")
-          || IS_NAMED_PRIM(rator, "flmin")
-          || IS_NAMED_PRIM(rator, "flmax")
-          || IS_NAMED_PRIM(rator, "flexpt")
-          || IS_NAMED_PRIM(rator, "flvector-ref"))
-        return SCHEME_LOCAL_TYPE_FLONUM;
-      if (IS_NAMED_PRIM(rator, "fxabs")
-          || IS_NAMED_PRIM(rator, "fx+")
-          || IS_NAMED_PRIM(rator, "fx-")
-          || IS_NAMED_PRIM(rator, "fx*")
-          || IS_NAMED_PRIM(rator, "fxquotient")
-          || IS_NAMED_PRIM(rator, "fxremainder")
-          || IS_NAMED_PRIM(rator, "fxmodulo")
-          || IS_NAMED_PRIM(rator, "fxmin")
-          || IS_NAMED_PRIM(rator, "fxmax")
-          || IS_NAMED_PRIM(rator, "fxlshift")
-          || IS_NAMED_PRIM(rator, "fxrshift")
-          || IS_NAMED_PRIM(rator, "fxand")
-          || IS_NAMED_PRIM(rator, "fxior")
-          || IS_NAMED_PRIM(rator, "fxxor")
-          || IS_NAMED_PRIM(rator, "fxvector-ref")
-          || IS_NAMED_PRIM(rator, "bytes-ref"))
-        return SCHEME_LOCAL_TYPE_FIXNUM;
-    }
+  if (SCHEME_PRIMP(rator)
+      && (argc >= ((Scheme_Primitive_Proc *)rator)->mina)
+      && (argc <= ((Scheme_Primitive_Proc *)rator)->mu.maxa)) {
+    int flags;
+    flags = SCHEME_PRIM_PROC_OPT_FLAGS(rator);
+    return SCHEME_PRIM_OPT_TYPE(flags);
   }
-  
+
   return 0;
 }
 

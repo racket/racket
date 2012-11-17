@@ -59,16 +59,25 @@
 #define SCHEME_PRIM_IS_UNSAFE_OMITABLE   8
 #define SCHEME_PRIM_IS_OMITABLE          16
 #define SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL 32
+#define SCHEME_PRIM_WANTS_FLONUM_FIRST   64
+#define SCHEME_PRIM_WANTS_FLONUM_SECOND  128
+#define SCHEME_PRIM_WANTS_FLONUM_THIRD   256
 
-#define SCHEME_PRIM_OPT_TYPE_SHIFT           6
-#define SCHEME_PRIM_OPT_TYPE_MASK            (SCHEME_MAX_LOCAL_TYPE_MASK << 6)
+#define SCHEME_PRIM_OPT_TYPE_SHIFT           9
+#define SCHEME_PRIM_OPT_TYPE_MASK            (SCHEME_MAX_LOCAL_TYPE_MASK << SCHEME_PRIM_OPT_TYPE_SHIFT)
+#define SCHEME_PRIM_OPT_TYPE(x) ((x & SCHEME_PRIM_OPT_TYPE_MASK) >> SCHEME_PRIM_OPT_TYPE_SHIFT)
+
+#define SCHEME_PRIM_PRODUCES_FLONUM (SCHEME_LOCAL_TYPE_FLONUM << SCHEME_PRIM_OPT_TYPE_SHIFT)
+#define SCHEME_PRIM_PRODUCES_FIXNUM (SCHEME_LOCAL_TYPE_FIXNUM << SCHEME_PRIM_OPT_TYPE_SHIFT)
+
+#define SCHEME_PRIM_WANTS_FLONUM_BOTH (SCHEME_PRIM_WANTS_FLONUM_FIRST | SCHEME_PRIM_WANTS_FLONUM_SECOND)
 
 extern int scheme_prim_opt_flags[]; /* uses an index from SCHEME_PRIM_OPT_INDEX_MASK */
 extern XFORM_NONGCING int scheme_intern_prim_opt_flags(int);
 
 #define SCHEME_PRIM_PROC_OPT_FLAGS(proc) \
-  scheme_prim_opt_flags[(SCHEME_PRIM_PROC_FLAGS(proc) & SCHEME_PRIM_OPT_INDEX_MASK) \
-                        >> SCHEME_PRIM_OPT_INDEX_SHIFT]
+  scheme_prim_opt_flags[(SCHEME_PRIM_PROC_FLAGS(proc) >> SCHEME_PRIM_OPT_INDEX_SHIFT) \
+                        & SCHEME_PRIM_OPT_INDEX_MASK]
 
 /*========================================================================*/
 /*                         allocation and GC                              */

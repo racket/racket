@@ -417,10 +417,10 @@ scheme_init_string (Scheme_Env *env)
 						    "string",
 						    0, -1),
 			     env);
-  scheme_add_global_constant("string-length",
-			     scheme_make_folding_prim(string_length,
-						      "string-length",
-						      1, 1, 1),
+  
+  p = scheme_make_folding_prim(string_length, "string-length", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_PRODUCES_FIXNUM);
+  scheme_add_global_constant("string-length", p,
 			     env);
 
   p = scheme_make_immed_prim(scheme_checked_string_ref, "string-ref", 2, 2);
@@ -696,14 +696,13 @@ scheme_init_string (Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY("make-shared-bytes", make_shared_byte_string, 1, 2, env);
   GLOBAL_PRIM_W_ARITY("shared-bytes", shared_byte_string, 0, -1, env);
 
-  scheme_add_global_constant("bytes-length",
-			     scheme_make_folding_prim(byte_string_length,
-						      "bytes-length",
-						      1, 1, 1),
-			     env);
+  p = scheme_make_folding_prim(byte_string_length, "bytes-length", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_PRODUCES_FIXNUM);
+  scheme_add_global_constant("bytes-length", p, env);
 
   p = scheme_make_immed_prim(scheme_checked_byte_string_ref, "bytes-ref", 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_PRODUCES_FIXNUM);
   scheme_add_global_constant("bytes-ref", p, env);
 
   p = scheme_make_immed_prim(scheme_checked_byte_string_set, "bytes-set!", 3, 3);
@@ -767,17 +766,14 @@ scheme_init_string (Scheme_Env *env)
 						    1, 1),
 			     env);
 
+  p = scheme_make_immed_prim(byte_string_utf8_index, "bytes-utf-8-index", 2, 4);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_PRODUCES_FIXNUM);
+  scheme_add_global_constant("bytes-utf-8-index", p, env);
 
-  scheme_add_global_constant("bytes-utf-8-index",
-			     scheme_make_immed_prim(byte_string_utf8_index,
-						    "bytes-utf-8-index",
-						    2, 4),
-			     env);
-  scheme_add_global_constant("bytes-utf-8-length",
-			     scheme_make_immed_prim(byte_string_utf8_length,
-						    "bytes-utf-8-length",
-						    1, 4),
-			     env);
+  p = scheme_make_immed_prim(byte_string_utf8_length, "bytes-utf-8-length", 1, 4);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_PRODUCES_FIXNUM);
+  scheme_add_global_constant("bytes-utf-8-length", p, env);
+
   scheme_add_global_constant("bytes-utf-8-ref",
 			     scheme_make_immed_prim(byte_string_utf8_ref,
 						    "bytes-utf-8-ref",
