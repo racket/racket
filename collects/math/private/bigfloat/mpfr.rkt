@@ -3,6 +3,8 @@
 (require ffi/unsafe
          ffi/unsafe/cvector
          ffi/unsafe/custodian
+         ffi/unsafe/define
+         racket/runtime-path
          racket/list
          racket/promise
          racket/serialize
@@ -13,8 +15,6 @@
 
 (provide
  ;; Library stuffs
- get-mpfr-lib-dirs
- set-mpfr-lib-dirs!
  mpfr-available?
  ;; Parameters
  bf-rounding-mode
@@ -57,48 +57,36 @@
 ;; use MPFR for functions that don't have a Typed Racket implementation yet. On systems without MPFR,
 ;; no exceptions will be raised unless a user tries to use those functions.
 
-(define mpfr-lib-dirs
-  (make-hasheq '((macosx . ("/usr/local/lib"
-                            "/opt/local/lib"
-                            "/sw/local/lib")))))
+(define-runtime-path libgmp-so 
+  (case (system-type)
+    [(macosx) '(so "libgmp.10.dylib")]
+    [(windows) '(so "libgmp-10.dll")]
+    [else '(so "libgmp")]))
+(define-runtime-path libmpfr-so
+  (case (system-type)
+    [(macosx) '(so "libmpfr.4.dylib")]
+    [(windows) '(so "libmpfr-4.dll")]
+    [else '(so "libmpfr")]))
 
-(define (set-mpfr-lib-dirs! os dirs)
-  (hash-set! mpfr-lib-dirs os dirs))
+(define gmp-lib (ffi-lib libgmp-so '("10" "3" "") #:fail (λ () #f)))
+(define mpfr-lib (ffi-lib libmpfr-so '("4" "1" "") #:fail (λ () #f)))
 
-(define (get-mpfr-lib-dirs os)
-  (hash-ref mpfr-lib-dirs os '()))
+(define-syntax-rule (get-gmp-fun name type)
+  (get-ffi-obj name gmp-lib type (make-not-available name)))
 
-(define (get-lib-dirs)
-  (hash-ref mpfr-lib-dirs (system-type) '()))
-
-(define libgmp (lazy (ffi-lib "libgmp" #:get-lib-dirs get-lib-dirs)))
-(define libmpfr (lazy (ffi-lib "libmpfr" #:get-lib-dirs get-lib-dirs)))
-
-(define-syntax-rule (get-gmp-fun name args ...)
-  (let ()
-    (define fun (lazy (get-ffi-obj name (force libgmp) args ...)))
-    (λ xs (apply (force fun) xs))))
-
-(define-syntax-rule (get-mpfr-fun name args ...)
-  (let ()
-    (define fun (lazy (get-ffi-obj name (force libmpfr) args ...)))
-    (λ xs (apply (force fun) xs))))
+(define-syntax get-mpfr-fun
+  (syntax-rules ()
+    [(_ name type) (get-mpfr-fun name type (make-not-available name))]
+    [(_ name type fail-thunk) (get-ffi-obj name mpfr-lib type fail-thunk)]))
+                  
 
 (define mpfr-free-cache (get-mpfr-fun 'mpfr_free_cache (_fun -> _void)))
 #;; This may be crashing Racket
 (define mpfr-shutdown (register-custodian-shutdown
                        mpfr-free-cache (λ (free) (free))))
 
-(define (mpfr-available?*)
-  (and (ffi-lib? (ffi-lib "libgmp" #:get-lib-dirs get-lib-dirs #:fail (λ () #f)))
-       (ffi-lib? (ffi-lib "libmpfr" #:get-lib-dirs get-lib-dirs #:fail (λ () #f)))
-       #t))
-
-(define mpfr-available?
-  (let ([val  #f])
-    (λ () (or val (let ([v  (mpfr-available?*)])
-                    (set! val v)
-                    v)))))
+(define (mpfr-available?)
+  (and gmp-lib mpfr-lib))
 
 ;; ===================================================================================================
 ;; Parameters: rounding mode, bit precision, printing
@@ -285,9 +273,10 @@
 (define mpfr-signbit (get-mpfr-fun 'mpfr_signbit (_fun _mpfr-pointer -> _int)))
 (define mpfr-get-exp (get-mpfr-fun 'mpfr_get_exp (_fun _mpfr-pointer -> _exp_t)))
 (define mpfr-get-z-2exp
-  (with-handlers ([exn?  (λ _ (get-mpfr-fun 'mpfr_get_z_exp
-                                            (_fun _mpz-pointer _mpfr-pointer -> _exp_t)))])
-    (get-mpfr-fun 'mpfr_get_z_2exp (_fun _mpz-pointer _mpfr-pointer -> _exp_t))))
+  (get-mpfr-fun 'mpfr_get_z_2exp (_fun _mpz-pointer _mpfr-pointer -> _exp_t)
+                (lambda ()
+                  (get-mpfr-fun 'mpfr_get_z_exp
+                                (_fun _mpz-pointer _mpfr-pointer -> _exp_t)))))
 
 ;; bigfloat-precision : bigfloat -> integer
 ;; Returns the maximum number of nonzero bits in the significand.
@@ -389,7 +378,7 @@
 (define mpfr-get-d (get-mpfr-fun 'mpfr_get_d (_fun _mpfr-pointer _rnd_t -> _double)))
 (define mpfr-get-z (get-mpfr-fun 'mpfr_get_z (_fun _mpz-pointer _mpfr-pointer _rnd_t -> _int)))
 (define mpz-get-si (get-mpfr-fun '__gmpz_get_si (_fun _mpz-pointer -> _long)))
-(define mpz-fits-long? (get-mpfr-fun '__gmpz_fits_slong_p (_fun _mpz-pointer -> _int)))
+(define mpz-fits-long? (get-gmp-fun '__gmpz_fits_slong_p (_fun _mpz-pointer -> _int)))
 
 ;; size+limbs->integer : integer (listof integer) -> integer
 ;; Converts a size (which may be negative) and a limb list into an integer.
@@ -534,18 +523,20 @@
 
 (define (bigfloat-custom-write x port mode)
   (write-string
-   (cond [(bfzero? x)  (if (= 0 (bigfloat-sign x)) "0.bf" "-0.bf")]
-         [(bfrational? x)
-          (define str (bigfloat->string x))
-          (cond [(regexp-match #rx"\\.|e" str)
-                 (define exp (bigfloat-exponent x))
-                 (define prec (bigfloat-precision x))
-                 (if ((abs exp) . > . (* prec 2))
-                     (format "(bf \"~a\")" str)
-                     (format "(bf #e~a)" str))]
-                [else  (format "(bf ~a)" str)])]
-         [(bfinfinite? x)  (if (= 0 (bigfloat-sign x)) "+inf.bf" "-inf.bf")]
-         [else  "+nan.bf"])
+   (if (mpfr-available?)
+       (cond [(bfzero? x)  (if (= 0 (bigfloat-sign x)) "0.bf" "-0.bf")]
+             [(bfrational? x)
+              (define str (bigfloat->string x))
+              (cond [(regexp-match #rx"\\.|e" str)
+                     (define exp (bigfloat-exponent x))
+                     (define prec (bigfloat-precision x))
+                     (if ((abs exp) . > . (* prec 2))
+                         (format "(bf \"~a\")" str)
+                         (format "(bf #e~a)" str))]
+                    [else  (format "(bf ~a)" str)])]
+             [(bfinfinite? x)  (if (= 0 (bigfloat-sign x)) "+inf.bf" "-inf.bf")]
+             [else  "+nan.bf"])
+       "#<bigfloat>")
    port))
 
 ;; ===================================================================================================

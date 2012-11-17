@@ -75,8 +75,15 @@ Racket software includes or extends the following copyrighted material:
 
 @copyright{
   GNU MP Library
-  Copyright (c) 1992, 1993, 1994, 1996
+  Copyright (c) 1991, 1992, 1993, 1994, 1996, 1999, 2000, 2007
   Free Software Foundation, Inc.
+}
+
+@copyright{
+  GNU MPFR Library
+  Copyright (c) 2000-2012
+  Free Software Foundation, Inc.
+  Contributed by the AriC and Caramel projects, INRIA.
 }
 
 @copyright{

@@ -9,8 +9,6 @@
 (require/typed
  "mpfr.rkt"
  ;; Library stuffs
- [get-mpfr-lib-dirs   ((U 'unix 'windows 'macosx) -> (Listof Path-String))]
- [set-mpfr-lib-dirs!  ((U 'unix 'windows 'macosx) (Listof Path-String) -> Void)]
  [mpfr-available?  (-> Boolean)]
  ;; Parameters
  [bf-rounding-mode  (Parameterof Rounding-Mode)]
@@ -141,8 +139,6 @@
 
 (provide
  ;; Library stuffs
- get-mpfr-lib-dirs
- set-mpfr-lib-dirs!
  mpfr-available?
  ;; Parameters
  bf-rounding-mode

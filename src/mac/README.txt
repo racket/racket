@@ -9,6 +9,8 @@ Get these packages (or newer, if compatible):
  libffi-3.0.10.tar.gz    [PowerPC: skip]
  glib-2.31.14.tar.gz     [PowerPC: glib-2.22.4.tar.gz]
  pango-1.29.5.tar.gz     [PowerPC: pango-1.28.0.tar.gz]
+ gmp-5.0.5.tar.gz
+ mpfr-3.1.1.tar.gz
  libjpeg62 (maybe in binary form)
 
  PSMTabBarControl, probably from
@@ -46,6 +48,7 @@ Patches:
      // can modify the array (which is not allowed)
      NSArray *copyOfCells = [NSArray arrayWithArray: _cells];
      NSEnumerator *enumerator = [copyOfCells objectEnumerator];
+ gcc-4.0: gmp/gmp.h:424: __gnu_inline__ => __weak__
 
 Configures (where <dest> is some temporary area):
   pkg-config: --prefix=<dest>
@@ -59,6 +62,8 @@ Configures (where <dest> is some temporary area):
              add "-lresolv" to link command for "libgio"]
   Pango: PATH=<dest>/bin:... --without-x --with-included-modules=yes --with-dynamic-modules=no --prefix=<dest>
    [PowerPC: same as glib for "libtool"; use PATH for `make', too]
+  gmp: --prefix=<dest>
+  mpfr: CFLAGS=-I<dest>/include LDFLAGS=-L<dest>/lib --prefix=<dest>
 
  To support 10.4, add
   CC=gcc-4.0 

@@ -21,6 +21,23 @@
         ["libiconv-2.dll" 1378028]
         ["libeay32.dll" 1503232]
         ["ssleay32.dll" 309760]]]
+     ;; Math Libraries
+     '[math
+       [i386-macosx
+        ["libgmp.10.dylib" 399304]
+        ["libmpfr.4.dylib" 398552]]
+       [x86_64-macosx
+        ["libgmp.10.dylib" 429684]
+        ["libmpfr.4.dylib" 676320]]
+       [ppc-macosx
+        ["libgmp.10.dylib" 387588]
+        ["libmpfr.4.dylib" 553892]]
+       [win32/i386
+        ["libgmp-10.dll" 394766]
+        ["libmpfr-4.dll" 411662]]
+       [win32/x86_64
+        ["libgmp-10.dll" 386048]
+        ["libmpfr-4.dll" 441344]]]
      ;; GUI Libraries
      [list
       'gui
