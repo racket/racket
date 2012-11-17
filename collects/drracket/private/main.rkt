@@ -506,8 +506,8 @@
 
   (preferences:set-default 'drracket:online-compilation-default-on #t boolean?)
   (preferences:set-default 'drracket:online-expansion:read-in-defs-errors 
-                           'corner
-                           (or/c 'margin 'gold 'corner))
+                           'margin
+                           (or/c 'margin 'gold))
   (preferences:set-default 'drracket:online-expansion:variable-errors 
                            'margin
                            (or/c 'margin 'gold))

@@ -1471,8 +1471,7 @@
           [(reader-in-defs-error)
            (case (preferences:get 'drracket:online-expansion:read-in-defs-errors)
              [(margin) (show-error-in-margin res)]
-             [(gold) (show-error-as-highlighted-regions res)]
-             [(corner) (show-error-as-parens-in-corner res)])]
+             [(gold) (show-error-as-highlighted-regions res)])]
           [(access-violation)
            (send (get-tab) show-bkg-running 'failed (gui-utils:format-literal-label "~a" (vector-ref res 1)))
            (clear-old-error)
@@ -1500,13 +1499,7 @@
            (send (get-tab) show-bkg-running 'completed-successfully sc-finished-successfully)]
           [else
            (error 'module-language.rkt "unknown response from the expanding place: ~s\n" res)]))
-      
-      (define/private (show-error-as-parens-in-corner res)
-        (send (get-tab) show-bkg-running 'reader-in-defs-error
-              (gui-utils:format-literal-label "~a" (vector-ref res 1)))
-        (clear-old-error)
-        (reset-frame-expand-error #f))
-      
+            
       (define/private (show-error-in-margin res)
         (begin-edit-sequence #f #f)
         (define tlw (send (get-tab) get-frame))
@@ -1937,8 +1930,7 @@
               [label (string-constant online-expansion-show-read-errors-as)]
               [callback (make-callback 'drracket:online-expansion:read-in-defs-errors)]
               [choices (list (string-constant online-expansion-error-margin)
-                             (string-constant online-expansion-error-gold-highlight)
-                             (string-constant online-expansion-error-in-corner))]))
+                             (string-constant online-expansion-error-gold-highlight))]))
        (define var-choice
          (new choice% 
               [parent vp]
@@ -1961,13 +1953,11 @@
        (define (index->pref n)
          (case n
            [(0) 'margin]
-           [(1) 'gold]
-           [(2) 'corner]))
+           [(1) 'gold]))
        (define (pref->index p)
          (case p
            [(margin) 0]
-           [(gold) 1]
-           [(corner) 2]))
+           [(gold) 1]))
        (connect-to-prefs read-choice 'drracket:online-expansion:read-in-defs-errors)
        (connect-to-prefs var-choice 'drracket:online-expansion:variable-errors)
        (connect-to-prefs other-choice 'drracket:online-expansion:other-errors)

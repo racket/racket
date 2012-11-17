@@ -251,7 +251,6 @@ please adhere to these guidelines:
  (online-expansion-show-variable-errors-as "Show unbound identifier errors")
  (online-expansion-show-other-errors-as "Show other errors")
  ; locations the errors can be shown
- (online-expansion-error-in-corner "in the corner of the window")
  (online-expansion-error-gold-highlight "with gold highlighting")
  (online-expansion-error-margin "in the margin")
  ;;; info bar at botttom of drscheme frame
