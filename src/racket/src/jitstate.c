@@ -762,11 +762,17 @@ int scheme_stack_safety(mz_jit_state *jitter, int cnt, int offset)
      that we make, so that whatever happens to be there isn't
      traversed in case of a GC. the value of JIT_RUNSTACK is
      handy to use as a "clear" value. */
-  int i;
+  int i, valid;
+
+  valid = mz_CURRENT_REG_STATUS_VALID();
+
   for (i = 0; i < cnt; i++) {
     mz_rs_stxi(i+offset, JIT_RUNSTACK);
     CHECK_LIMIT();
   }
+
+  if (valid) mz_SET_REG_STATUS_VALID(1);
+
   return 1;
 }
 
