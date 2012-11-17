@@ -583,6 +583,9 @@ plt-extras :+=
      "uchat/") ; Matthias doesn't want this in now
   (package: "test-engine/")
 
+;; -------------------- math
+dr-extras :+= (package: "math")
+
 ;; -------------------- stepper
 plt-extras :+= (package: "stepper")
 

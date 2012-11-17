@@ -20,6 +20,8 @@
     "libcairo.2"
     "libpixman-1.0"
     "libpng15.15"
+    "libgmp.10"
+    "libmpfr.4"
     "libjpeg.62"))
 
 (define (fixup p p-new)

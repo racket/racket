@@ -711,9 +711,10 @@ Canonicalizing bigfloats won't change answers computed from them.
 
 @section[#:tag "loading"]{Loading the MPFR Library}
 
-@racketmodname[math/bigfloat] depends directly on one library: MPFR, which on the filesystem is
-named @tt{libmpfr}. MPFR itself depends on @hyperlink["http://gmplib.org/"]{GMP}, the
-GNU Multiple Precision Arithmetic Library, which on the filesystem is named @tt{libgmp}.
+The @racketmodname[math/bigfloat] library depends directly on one library: MPFR, which on the filesystem is
+named something like @filepath{libmpfr.so}, but with a platform-specific suffix.
+MPFR itself depends on @hyperlink["http://gmplib.org/"]{GMP}, the
+GNU Multiple Precision Arithmetic Library, which on the filesystem is named @filepath{libgmp.so}.
 
 If @racket[(mpfr-available?)] is @racket[#t], both of these libraries have been loaded
 by the Racket runtime, and everything in @racketmodname[math/bigfloat] should work.
@@ -727,29 +728,6 @@ see @racket[set-mpfr-lib-dirs!].
 
 @defproc[(mpfr-available?) Boolean]{
 Returns @racket[#t] when both GMP and MPFR are available; @racket[#f] otherwise.
-Calling this function will cause Racket's runtime to load @tt{libgmp} and @tt{libmpfr}
-if they haven't already been loaded.
-}
-
-@defproc[(get-mpfr-lib-dirs [system (U 'unix 'windows 'macosx)])
-         (Listof Path-String)]{
-Returns the extra search paths used to find @tt{libgmp} and @tt{libmpfr}, for the given
-@racket[system].
-@examples[#:eval untyped-eval
-                 (get-mpfr-lib-dirs 'macosx)]
-}
-
-@defproc[(set-mpfr-lib-dirs! [system (U 'unix 'windows 'macosx)]
-                             [paths (Listof Path-String)])
-         Void]{
-Sets the extra search @racket[paths] used to find @tt{libgmp} and @tt{libmpfr}, for the
-given @racket[system], overriding the previous paths.
-
-If you know that @tt{libmpfr} resides on your system in the directory @racket{<path>},
-but @racket[(mpfr-available?)] returns @racket[#f], try something like the following:
-@racketblock[(require math/bigfloat)
-             (set-mpfr-lib-dirs! (system-type) '("<path>"))
-             (mpfr-available?)]
 }
 
 @(close-eval untyped-eval)

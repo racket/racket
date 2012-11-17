@@ -81,6 +81,7 @@ plain-install:
 
 install-common-first:
 	mkdir -p $(ALLDIRINFO)
+	@RUN_RACKET_CGC@ -c "$(srcdir)/get-libs.rkt" math "$(DESTDIR)$(libpltdir)"
 
 install-common-middle:
 	$(MAKE) @MAKE_COPYTREE@-run

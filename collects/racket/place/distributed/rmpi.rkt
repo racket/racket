@@ -144,7 +144,7 @@
 
 (define (partit num cnt id)
   (define-values (quo rem) (quotient/remainder num cnt))
-  (values (+ (* id quo) (if (< id rem) id 0))
+  (values (+ (* id quo) (if (< id rem) id rem))
           (+ quo (if (< id rem) 1 0))))
 
 (define (rmpi-partition comm num)
@@ -256,10 +256,11 @@
   (rmpi-reduce (rmpi-comm 0 8 (vector 0 1 2 3 4 5 6 7)) 3 + 7)
   )
 
+
 #;
 (module+ test
   (require tests/eli-tester)
   (test 
     (partit 10 3 0) => (values 0 4)
-    (partit 10 3 1) => (values 3 3)
-    (partit 10 3 2) => (values 6 3)))
+    (partit 10 3 1) => (values 4 3)
+    (partit 10 3 2) => (values 7 3)))
