@@ -79,6 +79,8 @@ static void ASSERT_SUSPEND_BREAK_ZERO() {
 /* globals */
 SHARED_OK int scheme_defining_primitives; /* set to 1 during start-up */
 
+SHARED_OK int scheme_prim_opt_flags[(1 << SCHEME_PRIM_OPT_INDEX_SIZE)];
+
 READ_ONLY Scheme_Object scheme_void[1]; /* the void constant */
 READ_ONLY Scheme_Object *scheme_values_func; /* the function bound to `values' */
 READ_ONLY Scheme_Object *scheme_procedure_p_proc;
@@ -246,8 +248,8 @@ scheme_init_fun (Scheme_Env *env)
   REGISTER_SO(scheme_procedure_arity_includes_proc);
 
   o = scheme_make_folding_prim(procedure_p, "procedure?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(o) |= (SCHEME_PRIM_IS_UNARY_INLINED
-                                | SCHEME_PRIM_IS_OMITABLE);
+  SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+                                                            | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("procedure?", o, env);
 
   scheme_procedure_p_proc = o;
@@ -293,10 +295,10 @@ scheme_init_fun (Scheme_Env *env)
 						 "values",
 						 0, -1,
 						 0, -1);
-  SCHEME_PRIM_PROC_FLAGS(scheme_values_func) |= (SCHEME_PRIM_IS_UNARY_INLINED
-                                                 | SCHEME_PRIM_IS_BINARY_INLINED
-                                                 | SCHEME_PRIM_IS_NARY_INLINED
-                                                 | SCHEME_PRIM_IS_OMITABLE);
+  SCHEME_PRIM_PROC_FLAGS(scheme_values_func) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+                                                                             | SCHEME_PRIM_IS_BINARY_INLINED
+                                                                             | SCHEME_PRIM_IS_NARY_INLINED
+                                                                             | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("values",
 			     scheme_values_func,
 			     env);
@@ -455,7 +457,7 @@ scheme_init_fun (Scheme_Env *env)
   o = scheme_make_prim_w_arity(extract_one_cc_mark,
                                "continuation-mark-set-first",
                                2, 4);
-  SCHEME_PRIM_PROC_FLAGS(o) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
   scheme_add_global_constant("continuation-mark-set-first", o, env);
 
   scheme_add_global_constant("call-with-immediate-continuation-mark",
@@ -479,13 +481,13 @@ scheme_init_fun (Scheme_Env *env)
   scheme_void_proc = scheme_make_folding_prim(void_func,
 					      "void",
 					      0, -1, 1);
-  SCHEME_PRIM_PROC_FLAGS(scheme_void_proc) |= SCHEME_PRIM_IS_OMITABLE;
+  SCHEME_PRIM_PROC_FLAGS(scheme_void_proc) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("void", scheme_void_proc, env);
 
   
   o = scheme_make_folding_prim(void_p, "void?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(o) |= (SCHEME_PRIM_IS_UNARY_INLINED
-                                | SCHEME_PRIM_IS_OMITABLE);
+  SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+                                                            | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("void?", o, env);
 
 #ifdef TIME_SYNTAX
@@ -553,7 +555,7 @@ scheme_init_fun (Scheme_Env *env)
   o = scheme_make_folding_prim(scheme_procedure_arity_includes,
                                "procedure-arity-includes?",
                                2, 3, 1);
-  SCHEME_PRIM_PROC_FLAGS(o) |= SCHEME_PRIM_IS_BINARY_INLINED;  
+  SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
   scheme_procedure_arity_includes_proc = o;
   scheme_add_global_constant("procedure-arity-includes?", o, env);
 
@@ -908,6 +910,26 @@ void scheme_prim_is_method(Scheme_Object *o)
 int scheme_has_method_property(Scheme_Object *code)
 {
   return SCHEME_TRUEP(scheme_stx_property(code, is_method_symbol, NULL));
+}
+
+int scheme_intern_prim_opt_flags(int flags)
+{
+  int i;
+
+  if (!flags) return 0;
+
+  for (i = 1; i < (1 << SCHEME_PRIM_OPT_INDEX_SIZE); i++) {
+    if (scheme_prim_opt_flags[i] == flags)
+      return (i << SCHEME_PRIM_OPT_INDEX_SHIFT);
+    else if (!scheme_prim_opt_flags[i]) {
+      scheme_prim_opt_flags[i] = flags;
+      return (i << SCHEME_PRIM_OPT_INDEX_SHIFT);
+    }
+  }
+
+  scheme_signal_error("too many flag combinations");
+
+  return 0;
 }
 
 /*========================================================================*/

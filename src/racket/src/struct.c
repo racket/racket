@@ -794,7 +794,7 @@ scheme_init_struct (Scheme_Env *env)
     p = scheme_make_prim_w_arity(scheme_extract_checked_procedure,
                                  "checked-procedure-check-and-extract",
                                  5, 5);
-    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
+    SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED);
     scheme_add_global_constant("checked-procedure-check-and-extract", p, env);
   }
 

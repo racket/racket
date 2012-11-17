@@ -33,6 +33,44 @@
 #endif
 
 /*========================================================================*/
+/*                        optimization flags                              */
+/*========================================================================*/
+
+/* Used with SCHEME_LOCAL_TYPE_MASK, LET_ONE_TYPE_MASK, etc.*/
+#define SCHEME_LOCAL_TYPE_FLONUM   1
+#define SCHEME_LOCAL_TYPE_FIXNUM   2
+
+#define SCHEME_MAX_LOCAL_TYPE       2
+#define SCHEME_MAX_LOCAL_TYPE_MASK  0x3
+#define SCHEME_MAX_LOCAL_TYPE_BITS  2
+
+/* Flonum unboxing is only useful if a value is going to flow to a
+   function that wants it, otherwise we'll have to box the flonum anyway.
+   Fixnum unboxing is always fine, since it's easy to box. */
+#define ALWAYS_PREFER_UNBOX_TYPE(ty) ((ty) == SCHEME_LOCAL_TYPE_FIXNUM)
+
+#define IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(v) (((v) >= -1073741824) && ((v) <= 1073741823))
+
+
+/* We support 2^SCHEME_PRIM_OPT_INDEX_SIZE combinations of optimization flags: */
+#define SCHEME_PRIM_IS_UNARY_INLINED     1
+#define SCHEME_PRIM_IS_BINARY_INLINED    2
+#define SCHEME_PRIM_IS_NARY_INLINED      4
+#define SCHEME_PRIM_IS_UNSAFE_OMITABLE   8
+#define SCHEME_PRIM_IS_OMITABLE          16
+#define SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL 32
+
+#define SCHEME_PRIM_OPT_TYPE_SHIFT           6
+#define SCHEME_PRIM_OPT_TYPE_MASK            (SCHEME_MAX_LOCAL_TYPE_MASK << 6)
+
+extern int scheme_prim_opt_flags[]; /* uses an index from SCHEME_PRIM_OPT_INDEX_MASK */
+extern XFORM_NONGCING int scheme_intern_prim_opt_flags(int);
+
+#define SCHEME_PRIM_PROC_OPT_FLAGS(proc) \
+  scheme_prim_opt_flags[(SCHEME_PRIM_PROC_FLAGS(proc) & SCHEME_PRIM_OPT_INDEX_MASK) \
+                        >> SCHEME_PRIM_OPT_INDEX_SHIFT]
+
+/*========================================================================*/
 /*                         allocation and GC                              */
 /*========================================================================*/
 
@@ -1269,21 +1307,6 @@ typedef struct {
   Scheme_Object *val;
   Scheme_Object *body;
 } Scheme_With_Continuation_Mark;
-
-/* Used with SCHEME_LOCAL_TYPE_MASK, LET_ONE_TYPE_MASK, etc.*/
-#define SCHEME_LOCAL_TYPE_FLONUM   1
-#define SCHEME_LOCAL_TYPE_FIXNUM   2
-
-#define SCHEME_MAX_LOCAL_TYPE       2
-#define SCHEME_MAX_LOCAL_TYPE_MASK  0x3
-#define SCHEME_MAX_LOCAL_TYPE_BITS  2
-
-/* Flonum unboxing is only useful if a value is going to flow to a
-   function that wants it, otherwise we'll have to box the flonum anyway.
-   Fixnum unboxing is always fine, since it's easy to box. */
-#define ALWAYS_PREFER_UNBOX_TYPE(ty) ((ty) == SCHEME_LOCAL_TYPE_FIXNUM)
-
-#define IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(v) (((v) >= -1073741824) && ((v) <= 1073741823))
 
 typedef struct Scheme_Local {
   Scheme_Inclhash_Object iso; /* keyex used for flags and type info (and can't be hashed) */
@@ -3277,7 +3300,7 @@ void scheme_add_global_constant_symbol(Scheme_Object *name, Scheme_Object *v, Sc
 #define GLOBAL_FOLDING_PRIM_UNARY_INLINED(name, func, a1, a2, a3, env)      do {\
   Scheme_Object *p; \
   p = scheme_make_folding_prim(func, name, a1, a2, a3); \
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED; \
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED); \
   scheme_add_global_constant(name, p, env); \
 } while(0)
 

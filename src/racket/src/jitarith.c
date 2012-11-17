@@ -54,7 +54,7 @@ static int is_inline_unboxable_op(Scheme_Object *obj, int flag, int unsafely, in
 {
   if (!SCHEME_PRIMP(obj))
     return 0;
-  if (!(SCHEME_PRIM_PROC_FLAGS(obj) & flag))
+  if (!(SCHEME_PRIM_PROC_OPT_FLAGS(obj) & flag))
     return 0;
 
   if (IS_NAMED_PRIM(obj, "unsafe-fl+")) return 1;
@@ -190,7 +190,7 @@ int scheme_can_unbox_inline(Scheme_Object *obj, int fuel, int regs, int unsafely
         return 0;
       else if (ok_op == 2)
         unsafely = 0;
-      if ((SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_BINARY_INLINED)
+      if ((SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_IS_BINARY_INLINED)
           && (IS_NAMED_PRIM(app->rator, "unsafe-f64vector-ref")
               || IS_NAMED_PRIM(app->rator, "unsafe-flvector-ref"))) {
         if (is_unboxing_immediate(app->rand1, 1)
@@ -222,7 +222,7 @@ int scheme_can_unbox_directly(Scheme_Object *obj)
         if (is_inline_unboxable_op(app->rator, SCHEME_PRIM_IS_UNARY_INLINED, 1, 1))
           return 1;
         if (SCHEME_PRIMP(app->rator)
-            && (SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_UNARY_INLINED)) {
+            && (SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_IS_UNARY_INLINED)) {
           if (IS_NAMED_PRIM(app->rator, "->fl")
               || IS_NAMED_PRIM(app->rator, "fx->fl"))
             return 1;
@@ -236,7 +236,7 @@ int scheme_can_unbox_directly(Scheme_Object *obj)
         if (is_inline_unboxable_op(app->rator, SCHEME_PRIM_IS_BINARY_INLINED, 1, 1))
           return 1;
         if (SCHEME_PRIMP(app->rator)
-            && (SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_BINARY_INLINED)) {
+            && (SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_IS_BINARY_INLINED)) {
           if (IS_NAMED_PRIM(app->rator, "flvector-ref")) return 1;
         }
         return 0;

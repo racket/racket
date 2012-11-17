@@ -410,7 +410,7 @@ static int no_sync_change(Scheme_Object *obj, int fuel)
     {
       Scheme_App2_Rec *app = (Scheme_App2_Rec *)obj;
       if (SCHEME_PRIMP(app->rator)
-          && (SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_UNARY_INLINED)
+          && (SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_IS_UNARY_INLINED)
           && (IS_NAMED_PRIM(app->rator, "car")
               || IS_NAMED_PRIM(app->rator, "cdr")
               || IS_NAMED_PRIM(app->rator, "cadr")

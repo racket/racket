@@ -162,10 +162,10 @@ int scheme_is_functional_primitive(Scheme_Object *rator, int num_args, int expec
 /* return 2 => results are a constant when arguments are constants */
 {
   if (SCHEME_PRIMP(rator)
-      && (SCHEME_PRIM_PROC_FLAGS(rator) & (SCHEME_PRIM_IS_OMITABLE | SCHEME_PRIM_IS_UNSAFE_NONMUTATING))
+      && (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & (SCHEME_PRIM_IS_OMITABLE | SCHEME_PRIM_IS_UNSAFE_NONMUTATING))
       && (num_args >= ((Scheme_Primitive_Proc *)rator)->mina)
       && (num_args <= ((Scheme_Primitive_Proc *)rator)->mu.maxa)
-      && ((expected_vals < 0) 
+      && ((expected_vals < 0)
           || ((expected_vals == 1) && !(SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_MULTI_RESULT))
           || (SAME_OBJ(scheme_values_func, rator)
               && (expected_vals == num_args)))) {
@@ -934,7 +934,7 @@ static int is_movable_prim(Scheme_Object *rator, int n, int cross_lambda)
    changing space complexity. */
 {
   if (rator && SCHEME_PRIMP(rator)) {
-    if (((Scheme_Prim_Proc_Header *)rator)->flags & SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL) {
+    if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL) {
       /* Although it's semantically ok to return -1 even when cross_lambda,
          doing so risks duplicating a computation if the relevant `lambda'
          is later inlined. */
@@ -1864,7 +1864,7 @@ static Scheme_Object *check_app_let_rator(Scheme_Object *app, Scheme_Object *rat
 static int is_nonmutating_primitive(Scheme_Object *rator, int n)
 {
   if (SCHEME_PRIMP(rator)
-      && (SCHEME_PRIM_PROC_FLAGS(rator) & (SCHEME_PRIM_IS_OMITABLE | SCHEME_PRIM_IS_UNSAFE_NONMUTATING))
+      && (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & (SCHEME_PRIM_IS_OMITABLE | SCHEME_PRIM_IS_UNSAFE_NONMUTATING))
       && (n >= ((Scheme_Primitive_Proc *)rator)->mina)
       && (n <= ((Scheme_Primitive_Proc *)rator)->mu.maxa))
     return 1;
@@ -1878,7 +1878,7 @@ static int wants_local_type_arguments(Scheme_Object *rator, int argpos)
 {
   /* See ALWAYS_PREFER_UNBOX_TYPE() for why we don't return SCHEME_LOCAL_TYPE_FIXNUM */
   if (SCHEME_PRIMP(rator)) {
-    if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNSAFE_NONMUTATING) {
+    if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_IS_UNSAFE_NONMUTATING) {
       if (IS_NAMED_PRIM(rator, "unsafe-flabs")
           || IS_NAMED_PRIM(rator, "unsafe-flsqrt")
           || IS_NAMED_PRIM(rator, "unsafe-fl+")
@@ -1934,7 +1934,7 @@ static int wants_local_type_arguments(Scheme_Object *rator, int argpos)
 static int produces_local_type(Scheme_Object *rator, int argc)
 {
   if (SCHEME_PRIMP(rator)) {
-    if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNSAFE_NONMUTATING) {
+    if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_IS_UNSAFE_NONMUTATING) {
       if (((argc == 1)
            && (IS_NAMED_PRIM(rator, "unsafe-flabs")
                || IS_NAMED_PRIM(rator, "unsafe-flsqrt")
@@ -2439,7 +2439,7 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
 
   /* Check for things like (cXr (cons X Y)): */
   if (SCHEME_PRIMP(app->rator)
-      && (SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_UNARY_INLINED)) {
+      && (SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_IS_UNARY_INLINED)) {
     Scheme_Object *rand, *inside = NULL, *alt = NULL;
 
     rand = app->rand;
@@ -2684,7 +2684,7 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
 
   /* Ad hoc optimization of (unsafe-fx+ <x> 0), etc. */
   if (SCHEME_PRIMP(app->rator)
-      && (SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_UNSAFE_NONMUTATING)) {
+      && (SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_IS_UNSAFE_NONMUTATING)) {
     int z1, z2;
 
     z1 = SAME_OBJ(app->rand1, scheme_make_integer(0));

@@ -317,8 +317,8 @@ void scheme_init_file(Scheme_Env *env)
   unix_symbol = scheme_intern_symbol("unix");
 
   p = scheme_make_prim_w_arity(path_p, "path?", 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
-                                | SCHEME_PRIM_IS_OMITABLE);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+                                                            | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("path?", p, env);
 
   scheme_add_global_constant("path-for-some-system?", 

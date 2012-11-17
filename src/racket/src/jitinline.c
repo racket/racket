@@ -175,7 +175,7 @@ static int inlineable_struct_prim(Scheme_Object *o, mz_jit_state *jitter, int ex
 int scheme_inlined_unary_prim(Scheme_Object *o, Scheme_Object *_app, mz_jit_state *jitter)
 {
   if (SCHEME_PRIMP(o)
-      && (SCHEME_PRIM_PROC_FLAGS(o) & SCHEME_PRIM_IS_UNARY_INLINED))
+      && (SCHEME_PRIM_PROC_OPT_FLAGS(o) & SCHEME_PRIM_IS_UNARY_INLINED))
     return 1;
 
   if (inlineable_struct_prim(o, jitter, 1, 1))
@@ -187,7 +187,7 @@ int scheme_inlined_unary_prim(Scheme_Object *o, Scheme_Object *_app, mz_jit_stat
 int scheme_inlined_binary_prim(Scheme_Object *o, Scheme_Object *_app, mz_jit_state *jitter)
 {
   return ((SCHEME_PRIMP(o)
-           && (SCHEME_PRIM_PROC_FLAGS(o) & SCHEME_PRIM_IS_BINARY_INLINED))
+           && (SCHEME_PRIM_PROC_OPT_FLAGS(o) & SCHEME_PRIM_IS_BINARY_INLINED))
           || inlineable_struct_prim(o, jitter, 2, 2));
 }
 
@@ -196,7 +196,7 @@ int scheme_inlined_nary_prim(Scheme_Object *o, Scheme_Object *_app, mz_jit_state
   int n = ((Scheme_App_Rec *)_app)->num_args;
 
   return ((SCHEME_PRIMP(o)
-           && (SCHEME_PRIM_PROC_FLAGS(o) & SCHEME_PRIM_IS_NARY_INLINED)
+           && (SCHEME_PRIM_PROC_OPT_FLAGS(o) & SCHEME_PRIM_IS_NARY_INLINED)
            && (n >= ((Scheme_Primitive_Proc *)o)->mina)
            && (n <= ((Scheme_Primitive_Proc *)o)->mu.maxa))
           || inlineable_struct_prim(o, jitter, n, n));
@@ -963,7 +963,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
   if (!SCHEME_PRIMP(rator))
     return 0;
 
-  if (!(SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNARY_INLINED))
+  if (!(SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_IS_UNARY_INLINED))
     return 0;
 
   scheme_direct_call_count++;
@@ -1809,7 +1809,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
   }
 
   if (!for_branch) {
-    scheme_console_printf("Inlining expected.\n");
+    scheme_console_printf("Inlining expected for %s.\n", scheme_write_to_string(rator, NULL));
     abort();
   }
 
@@ -2220,7 +2220,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
   if (!SCHEME_PRIMP(rator))
     return 0;
 
-  if (!(SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_BINARY_INLINED))
+  if (!(SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_IS_BINARY_INLINED))
     return 0;
 
   scheme_direct_call_count++;
@@ -3319,7 +3319,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
   if (!SCHEME_PRIMP(rator))
     return 0;
 
-  if (!(SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_NARY_INLINED))
+  if (!(SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_IS_NARY_INLINED))
     return 0;
 
   if (app->num_args < ((Scheme_Primitive_Proc *)rator)->mina)

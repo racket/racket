@@ -487,7 +487,7 @@ void scheme_init_futures(Scheme_Env *newenv)
                              newenv);
 
   p = scheme_make_prim_w_arity(scheme_future, "future", 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
   scheme_add_global_constant("future", p, newenv);
 
   scheme_add_global_constant(
@@ -500,7 +500,7 @@ void scheme_init_futures(Scheme_Env *newenv)
                              newenv);
 
   p = scheme_make_prim_w_arity(touch, "touch", 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
   scheme_add_global_constant("touch", p, newenv);
 
   p = scheme_make_immed_prim( 
@@ -508,7 +508,7 @@ void scheme_init_futures(Scheme_Env *newenv)
                               "current-future", 
                               0, 
                               0);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED);
   scheme_add_global_constant("current-future", p, newenv);
 
   p = scheme_make_immed_prim(
@@ -517,7 +517,7 @@ void scheme_init_futures(Scheme_Env *newenv)
                               1, 
                               1);
 
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
   scheme_add_global_constant("fsemaphore?", p, newenv);
 
   p = scheme_make_immed_prim(
@@ -525,7 +525,7 @@ void scheme_init_futures(Scheme_Env *newenv)
                               "make-fsemaphore", 
                               1, 
                               1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
   scheme_add_global_constant("make-fsemaphore", p, newenv);
 
   p = scheme_make_immed_prim(
@@ -533,7 +533,7 @@ void scheme_init_futures(Scheme_Env *newenv)
                               "fsemaphore-count", 
                               1, 
                               1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
   scheme_add_global_constant("fsemaphore-count", p, newenv);
   
   p = scheme_make_immed_prim(
@@ -541,7 +541,7 @@ void scheme_init_futures(Scheme_Env *newenv)
                               "fsemaphore-wait",
                               1, 
                               1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
   scheme_add_global_constant("fsemaphore-wait", p, newenv);
 
   p = scheme_make_immed_prim(
@@ -549,7 +549,7 @@ void scheme_init_futures(Scheme_Env *newenv)
                               "fsemaphore-post", 
                               1, 
                               1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
   scheme_add_global_constant("fsemaphore-post", p, newenv);
 
   p = scheme_make_immed_prim(
@@ -557,7 +557,7 @@ void scheme_init_futures(Scheme_Env *newenv)
                               "fsemaphore-try-wait?", 
                               1, 
                               1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
   scheme_add_global_constant("fsemaphore-try-wait?", p, newenv);  
 
   GLOBAL_PRIM_W_ARITY("would-be-future", would_be_future, 1, 1, newenv);
