@@ -3,7 +3,7 @@
 (require typed/untyped-utils
          "private/number-theory/divisibility.rkt"
          "private/number-theory/modular-arithmetic.rkt"
-         "private/number-theory/number-theory.rkt"
+         (except-in "private/number-theory/number-theory.rkt" prev-prime next-prime)
          (except-in "private/number-theory/factorial.rkt" factorial permutations)
          "private/number-theory/bernoulli.rkt"
          "private/number-theory/eulerian-number.rkt"
@@ -25,6 +25,11 @@
  "private/number-theory/binomial.rkt"
  [binomial  (Integer Integer -> Natural)])
 
+(require/untyped-contract
+ "private/number-theory/number-theory.rkt"
+ [next-prime (Integer -> Integer)]
+ [prev-prime (Integer -> Integer)])
+
 (provide (all-from-out
           "private/number-theory/divisibility.rkt"
           "private/number-theory/modular-arithmetic.rkt"
@@ -40,5 +45,6 @@
           "private/number-theory/quadratic.rkt"
           "private/number-theory/quadratic-residues.rkt"
           "private/number-theory/tangent-number.rkt")
+         next-prime prev-prime
          factorial permutations
          binomial)

@@ -193,22 +193,16 @@ Returns the n'th positive prime.
 Returns the first prime larger than @racket[z].
 
 @interaction[#:eval untyped-eval
-                    (untyped-next-prime 4)
-                    (untyped-next-prime 5)]
-
-Note: Use @racket[next-prime] in Typed Racket and 
-@racket[untyped-next-prime] otherwise.
+                    (next-prime 4)
+                    (next-prime 5)]
 }
 
 @defproc[(prev-prime [z Integer]) prime?]{
 Returns the first prime smaller than @racket[z].
 
 @interaction[#:eval untyped-eval
-                    (untyped-prev-prime 4)
-                    (untyped-prev-prime 5)]
-
-Note: Use @racket[prev-prime] in Typed Racket and 
-@racket[untyped-prev-prime] otherwise.
+                    (prev-prime 4)
+                    (prev-prime 5)]
 }
 
 @defproc[(next-primes [z Integer] [n Natural]) (Listof prime?)]{
