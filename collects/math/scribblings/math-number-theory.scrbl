@@ -12,6 +12,13 @@
           racket/math
           "utils.rkt")
 
+@(define math-style tt)
+
+@(define math-eval 
+   (parameterize ([sandbox-output 'string]
+                  [sandbox-error-output 'string])
+     (make-evaluator 'racket)))
+@;(interaction-eval #:eval math-eval (require racket math))
 @(define untyped-eval (make-untyped-math-eval))
 
 @title[#:tag "number-theory" #:style '(toc)]{Number Theory}
@@ -50,10 +57,6 @@
   @; http://en.wikipedia.org/wiki/B%C3%A9zout's_identity
 }
   
-@defproc[(bezout-binary [a Integer] [b Integer]) (Listof Integer)]{
-  Same as @racket[bezout] but restricted to two arguments.
-}
-
 @defproc[(coprime? [a Integer] [b Integer] ...) boolean?]{
   Returns @racket[#t] if the integers @racket[a],@racket[b],... are coprime.
 
@@ -76,7 +79,7 @@
   @; http://en.wikipedia.org/wiki/Pairwise_coprime
 }  
 
-@defproc[(inverse [a Integer] [n Integer]) natural?]{
+@defproc[(modular-inverse [a Integer] [n Integer]) natural?]{
   Returns the inverse of @racket[a] module @racket[n],
   if @racket[a] and @racket[n] are coprime,
   otherwise @racket[#f] is returned.
@@ -87,11 +90,11 @@
   
   The number 3 is an inverse to 2 modulo 5.
   @interaction[#:eval untyped-eval
-                      (inverse 2 5)
+                      (modular-inverse 2 5)
                       (modulo (* 2 3) 5)]
   The number 0 has no inverse modulo 5.
   @interaction[#:eval untyped-eval
-                      (inverse 0 5)]
+                      (modular-inverse 0 5)]
   @; http://en.wikipedia.org/wiki/Modular_multiplicative_inverse
 }  
 
@@ -117,6 +120,35 @@
                       (solve-chinese '(2 3 2) '(3 5 7))]
   
   @; http://en.wikipedia.org/wiki/Chinese_remainder_theorem
+}
+
+@defproc[(quadratic-residue? [a natural?] [n natural?]) boolean?]{
+Returns @racket[#t] if @racket[a] is a quadratic residue modulo @racket[n],        
+otherwise @racket[#f] is returned. 
+
+A number @racket[a] is a quadratic residue modulo @racket[n], if there
+exists a number @racket[x] such that @math-style{x^2=a mod n}.
+  @interaction[(require math)
+               (quadratic-residue? 0 4)
+               (quadratic-residue? 1 4)
+               (quadratic-residue? 2 4)
+               (quadratic-residue? 3 4)]
+}
+
+@defproc[(quadratic-character [a natural?] [p prime?]) (union -1 1)]{
+Returns the values of the quadratic character modulo the prime @racket[p].                                                               
+That is, for a non-zero @racket[a] the number @racket[1] is returned when 
+@racket[a] is a quadratic residue,
+and @racket[-1] is returned when @racket[a] is a non-residue. 
+If @racket[a] is zero, then @racket[0] is returned.
+        
+This function is also known as the @emph{Legendre Symbol}.
+
+  @interaction[(require math)
+               (quadratic-character 0 4)
+               (quadratic-character 1 4)
+               (quadratic-character 2 4)
+               (quadratic-character 3 4)]
 }
 
 
@@ -375,6 +407,7 @@ This function is known as Eulers totient or phi function.
 Note: The function @racket[totient] is multiplicative.
 
 @interaction[#:eval untyped-eval
+                    (require racket/function) ; for curry
                     (totient 9)
                     (length (filter (curry coprime? 9) (range 10)))]
 
@@ -422,10 +455,253 @@ Note: The function @racket[divisor-sum] is multiplicative.
 @defproc[(bernoulli [n Natural]) exact-rational?]{
   Returns the @racket[n]th Bernoulli number.
   Definition:
-  @racket[http://en.wikipedia.org/wiki/Bernoulli_number].
+  @url{http://en.wikipedia.org/wiki/Bernoulli_number}.
 
   @interaction[#:eval untyped-eval
                       (map bernoulli (range 9))]
 }
 
+@defproc[(eulerian-number [n Natural] [k Natural]) natural?]{
+  Returns the Eulerian number @math-style{<n,k>}.
+  Definition:
+  @url{http://mathworld.wolfram.com/EulerianNumber.html}.
+
+  @interaction[(require math racket)
+               (eulerian-number 5 2)]
+}
+
+@defproc[(fibonacci [n Natural]) natural?]{
+  Returns the @racket[n]th Fibonacci number.
+  See 
+  @url{http://en.wikipedia.org/wiki/Fibonacci_number}
+  for a definition.
+
+  The ten first Fibonacci numbers.
+  @interaction[(require math racket)
+               (map fibonacci (range 10))]
+}
+
+@defproc[(fibonacci/mod [n Natural] [m Natural]) natural?]{
+  Returns the @racket[n]th Fibonacci number modulo @racket[m].
+
+  The ten first Fibonacci numbers modulo 5.
+  @interaction[(require math racket)
+               (map (λ (n) (fibonacci/mod n 5)) (range 10))]
+}
+
+@defproc[(farey [n Natural]) (listof rational?)]{
+Returns a list of the numbers in the @racket[n]th Farey sequence.
+The @racket[n]th Farey sequence is the sequence of all 
+completely reduced rational numbers from 0 to 1 which denominators
+are less than or equal to @racket[n].
+  @interaction[(require math)
+               (farey 1)
+               (farey 2)
+               (farey 3)]
+}
+
+@defproc[(tangent-number [n integer?]) integer?]{
+Returns the @racket[n]th tangent number.
+See @url{http://mathworld.wolfram.com/TangentNumber.html} for a definition.
+  @interaction[(require math)
+               (tangent-number 1)
+               (tangent-number 2)
+               (tangent-number 3)]
+}
+
+
+@; ----------------------------------------
+@section[#:tag "combinatorics"]{Combinatorics}
+
+@defproc[(factorial [n Natural]) natural?]{
+  Returns the factorial of @racket[n].
+  The factorial of @racket[n] is the 
+  number @math-style{n!=n*(n-1)*(n-2)*...*1}.
+  @interaction[(require math racket)
+               (factorial 3)
+               (factorial 0)]
+}
+
+@defproc[(binomial [n Natural] [k Natural]) natural?]{
+  Returns @racket[n] choose @racket[k].
+  The binomial coeffecient is given by 
+  @math-style{C(n,k)=n!/(n!(n-k)!)}.
+  @interaction[(require math racket)
+               (binomial 5 3)]
+}
+
+@defproc[(permutations [n Natural] [k Natural]) natural?]{
+  Returns the number of @racket[k]-permutations of @racket[n].
+  That is the number of sequences of length @racket[k] where the 
+  elements are drawn from a set with @racket[n] elements.
+  @math-style{P(n,k)=n!/(n-k)!}.
+  @interaction[(require math racket)
+               (permutations 5 3)]
+}
+
+@defproc[(multinomial [n Natural] [ks (Listof Natural)]) natural?]{
+  Returns the multinomial coeffecient.
+  The expression @racket[(multinomial n (list k0 k1 ...))] 
+  returns the number @math-style{n! / (k0! * k1! * ...)}.
+
+  @interaction[(require math racket)
+               (multinomial 5 3 2)]
+}
+
+@defproc[(partition-count [n Natural]) natural?]{
+  Returns the number of partitions of @racket[n].
+  A partition of a positive integer @racket[n] is a way 
+  of writing @racket[n] as a sum of positive integers.
+  The number 3 has the partitions @math-style{1+1+1, 1+2, 3}.
+  See @url{http://en.wikipedia.org/wiki/Partition_(number_theory)}.
+  @interaction[(require math racket)
+               (partition-count 3)
+               (partition-count 4)]
+}
+
+
+@; ----------------------------------------
+@section[#:tag "special_numbers"]{Special Numbers}
+
+@subsection{Polygonal Numbers}
+
+@defproc[(triangle? [n Natural]) boolean?]{}
+@defproc[(square? [n Natural]) boolean?]{}
+@defproc[(pentagonal? [n Natural]) boolean?]{}
+@defproc[(hexagonal? [n Natural]) boolean?]{}
+@defproc[(heptagonal? [n Natural]) boolean?]{}
+@defproc[(octagonal? [n Natural]) boolean?]{
+The functions 
+@racket[triangle?], @racket[square?], @racket[pentagonal?],
+@racket[hexagonal?],@racket[heptagonal?] and @racket[octagonal?] 
+checks whether the input is a polygonal number of the types
+triangle, square, pentagonal, hexagonal, heptagonal and octogonal 
+respectively.
+}
+
+@defproc[(triangle [n Natural]) natural?]{}
+@defproc[(sqr [n Natural]) natural?]{}
+@defproc[(pentagonal [n Natural]) natural?]{}
+@defproc[(hexagonal [n Natural]) natural?]{}
+@defproc[(heptagonal [n Natural]) natural?]{}
+@defproc[(octagonal [n Natural]) natural?]{
+The functions @racket[triangle], @racket[sqr], @racket[pentagonal],
+@racket[hexagonal],@racket[heptagonal] and @racket[octagonal] 
+return the @racket[n]th polygonal number of the corresponding
+type of polygonal number.
+}
+
+@; ----------------------------------------
+@section[#:tag "fractions"]{Fractions}
+@defproc[(mediant [x Rational] [y Rational]) rational?]{
+Computes the @racket[mediant] of the numbers @racket[x] and @racket[y].
+The mediant of two fractions @math-style{p/q} and @math-style{r/s} in their
+lowest term is the number @math-style{(p+r)/(q+s)}.
+  @interaction[(require math)
+               (mediant 1/2 5/6)]
+}
+
+@; ----------------------------------------
+@section[#:tag "quadratics"]{The Quadratic Equation}
+
+@defproc[(quadratic-solutions [a Real] [b Real] [c Real]) (listof Real)]{
+Returns a list of all real solutions to the equation @math-style{a x^2 + b x +c = 0}.
+  @interaction[(require math)
+               (quadratic-solutions 1 0 -1)
+               (quadratic-solutions 1 2 1)
+               (quadratic-solutions 1 0 1)]  
+}
+
+@defproc[(quadratic-integer-solutions [a Real] [b Real] [c Real]) (listof Integer)]{
+Returns a list of all integer solutions to the equation @math-style{a x^2 + b x +c = 0}.
+  @interaction[(require math)
+               (quadratic-integer-solutions 1 0 -1)
+               (quadratic-integer-solutions 1 0 -2)]  
+}
+
+@defproc[(quadratic-natural-solutions [a Real] [b Real] [c Real]) (listof Natural)]{
+Returns a list of all natural solutions to the equation @math-style{a x^2 + b x +c = 0}.
+  @interaction[(require math)
+               (quadratic-natural-solutions 1 0 -1)
+               (quadratic-natural-solutions 1 0 -2)]  
+}
+
+@; ----------------------------------------
+@section[#:tag "primitive_roots"]{The group Zn and Primitive Roots}
+
+The numbers @math-style{0, 1, ..., n-1} with addition and multiplication
+modulo @racket[n] is a ring called @math-style{Zn}. 
+
+The group of units in @math-style{Zn} with respect to multiplication 
+modulo @racket[n] is called @math-style{Un}.
+
+The order of an element @math-style{x} in @math-style{Un} 
+is the least @math-style{k>0} such that @math-style{x^k=1 mod n}.
+
+A generator the group @math-style{Un} is called a @emph{primitive root} modolo @racket[n].
+Note that @math-style{g} is a primitive root if and only if @math-style{order(g)=phi(n)},
+where @math-style{phi} is Eulers totient. A group with a generator is called @emph{cyclic}.
+
+
+@defproc[(unit-group [n Natrual]) (listof Natural)]{
+Returns a list of all elements of @math-style{Un}, the unit group modulo @racket[n].
+  @interaction[(require math)
+               (unit-group 5)
+               (unit-group 6)]  
+}
+
+@defproc[(order [x Natural] [n Natural]) natural?]{
+Returns the order of @racket[x] in the group @math-style{Un}.
+Note: @racket[x] is in @math-style{Un} if and only if @racket[(gcd x n)] is 1.
+  @interaction[(require math)
+               (order 2 5)
+               (order 2 6)]  
+}
+
+@defproc[(orders [n Natural]) (listof natural?)]{
+Returns a list @racket[(list (order x0) (order x1) ...)] where
+@racket[x0], @racket[x1], ... are the elements of @math-style{Un}.
+  @interaction[(require math racket)
+               (orders 5)
+               (map (curryr order 5) (unit-group 5))]
+}
+
+@defproc[(primitive-root? [x Natural] [n Natural]) boolean?]{
+Returns @racket[#t] if the element @racket[x] in @math-style{Un} is a primitive root modulo @racket[n],
+otherwise @racket[#f] is returned. An error is signaled if @racket[x] is not a member of @math-style{Un}.       
+  @interaction[(require math)
+               (primitive-root? 1 5)
+               (primitive-root? 2 5)
+               (primitive-root? 5 5)]
+}
+
+@defproc[(exists-primitive-root? [n Natural]) boolean?]{
+Returns @racket[#t] if the group @math-style{Un} has a primitive root (i.e. it is cyclic),
+otherwise @racket[#f] is returned.        
+In other words, @racket[#t] is returned if @racket[n] is one of 
+@math-style{1, 2, 4, p^e, 2*p^e} where @math-style{p} is an odd prime,
+and @racket[#f] otherwise.
+  @interaction[(require math)               
+               (exists-primitive-root? 5)
+               (exists-primitive-root? 6)
+               (exists-primitive-root? 12)]  
+}
+
+@defproc[(primitive-root [n Natural]) (Union natural? #f)]{
+Returns a primitive root of @math-style{Un} if one exists,
+otherwise @racket[#f] is returned.
+  @interaction[(require math)
+               (primitive-root 5)
+               (primitive-root 6)]
+}
+
+@defproc[(primitive-roots [n Natural]) (Listof natural?)]{
+Returns a list of all primitive roots of @math-style{Un}.
+  @interaction[(require math)
+               (primitive-roots 3)
+               (primitive-roots 5)
+               (primitive-roots 6)]
+}
+
+         
 @(close-eval untyped-eval)

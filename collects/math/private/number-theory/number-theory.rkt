@@ -52,7 +52,7 @@
 (define prime-strong-pseudo-trials
   (integer-length (assert (/ 1 prime-strong-pseudo-certainty) integer?)))
 
-(define *SMALL-PRIME-LIMIT* 1000000)
+(define *SMALL-PRIME-LIMIT* 10000)
 ; (define *SMALL-PRIME-LIMIT* 1000) ; use 1000 for coverage testing
 ; Determines the size of the pre-built table of small primes
 (define *SMALL-FACORIZATION-LIMIT* *SMALL-PRIME-LIMIT*)

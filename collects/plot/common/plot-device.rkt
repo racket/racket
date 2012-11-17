@@ -321,7 +321,7 @@
     (define/public (get-text-corners str v [anchor 'top-left] [angle 0] [dist 0])
       (cond [(vrational? v)
              (match-define (vector x y) v)
-             (map (λ (v) (vector-map inexact->exact v))
+             (map (λ (v) (vector-map inexact->extended-exact v))
                   (get-text-corners/anchor dc str x y anchor angle dist))]
             [else  empty]))
     
@@ -383,8 +383,8 @@
     
     (define/public (get-tick-endpoints v r angle)
       (match-define (vector x y) v)
-      (define dx (* (inexact->exact (cos angle)) r))
-      (define dy (* (inexact->exact (sin angle)) r))
+      (define dx (* (inexact->extended-exact (cos angle)) r))
+      (define dy (* (inexact->extended-exact (sin angle)) r))
       (list (vector (- x dx) (- y dy)) (vector (+ x dx) (+ y dy))))
     
     (define/public (make-draw-tick r angle)

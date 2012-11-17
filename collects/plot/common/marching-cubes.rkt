@@ -550,7 +550,7 @@ Cube vertex numbers:
         [(= d d1 d2 d3 d4 d5 d6 d7 d8)  empty]
         [else
          (let-map
-          (d d1 d2 d3 d4 d5 d6 d7 d8) inexact->exact
+          (d d1 d2 d3 d4 d5 d6 d7 d8) inexact->extended-exact
           (define d-min (min d d1 d2 d3 d4 d5 d6 d7 d8))
           (define d-max (max d d1 d2 d3 d4 d5 d6 d7 d8))
           (define d-scale (- d-max d-min))

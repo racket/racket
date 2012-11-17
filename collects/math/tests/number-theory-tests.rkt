@@ -102,6 +102,7 @@
 
 (check-equal? (multinomial 20 3 4 5 8) 3491888400)
 
+>>>>>>> upstream/master
 ; "binomial.rkt"
 (check-equal? (binomial 10 3) 120)
 (check-equal? (binomial 10 11) 0)

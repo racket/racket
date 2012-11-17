@@ -51,7 +51,7 @@
 ;; hypot
 
 (ε (* 2 epsilon.0))
-  
+
 (check-equal? (flhypot 0. 0.) 0.)
 (check-equal? (flhypot 3. 0.) 3.)
 (check-equal? (flhypot 3. 4.) 5.)
@@ -59,7 +59,7 @@
 (check-equal? (flhypot 4. 3.) 5.)
 (check-= (flhypot 2. 3.) 3.6055512754639892931 (ε))
 (check-= (flhypot 3. 2.) 3.6055512754639892931 (ε))
-  
+
 ;; ---------------------------------------------------------------------------------------------------
 ;; logs, exponents, bases, etc.
 
