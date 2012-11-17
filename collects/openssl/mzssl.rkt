@@ -18,6 +18,7 @@
   (require ffi/unsafe
            ffi/unsafe/define
            ffi/unsafe/atomic
+           ffi/file
            racket/port
            racket/tcp
            racket/string
@@ -425,15 +426,17 @@
 	(raise-argument-error 'ssl-load-certificate-chain!
                               "path-string?"
                               pathname))
-      (let ([path (path->bytes
-		   (path->complete-path (cleanse-path pathname)
-					(current-directory)))])
-        (atomically ;; for to connect ERR_get_error to `load-it'
-         (let ([n (load-it ctx path)])
-           (unless (= n 1)
-             (error who "load failed from: ~e ~a"
-                    pathname
-                    (get-error-message (ERR_get_error)))))))))
+      (let ([path 
+             (path->complete-path (cleanse-path pathname)
+                                  (current-directory))])
+        (security-guard-check-file who path '(read))
+        (let ([path (path->bytes path)])
+          (atomically ;; for to connect ERR_get_error to `load-it'
+           (let ([n (load-it ctx path)])
+             (unless (= n 1)
+               (error who "load failed from: ~e ~a"
+                      pathname
+                      (get-error-message (ERR_get_error))))))))))
 
   (define (ssl-load-certificate-chain! ssl-context-or-listener pathname)
     (ssl-load-... 'ssl-load-certificate-chain! 
