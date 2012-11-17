@@ -23,6 +23,7 @@
          divisors
          prime-divisors
          prime-exponents
+         prime-omega
          
          ; roots
          integer-root
@@ -488,6 +489,12 @@
 (define (prime-exponents n)
   (map (inst cadr N N (Listof N)) 
        (prime-divisors/exponents n)))
+
+(: prime-omega : N -> N)
+; http://reference.wolfram.com/mathematica/ref/PrimeOmega.html
+(define (prime-omega n)
+  (for/fold: ([sum : Natural 0]) ([e (in-list (prime-exponents n))])
+    (+ sum e)))
 
 
 (: integer-root/remainder : N N -> (Values N N))

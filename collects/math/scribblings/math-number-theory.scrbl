@@ -539,6 +539,15 @@ all divisors of @racket[n].
                     (apply + (map sqr (divisors 12)))]
 }
 
+@margin-note{OEIS: @hyperlink["http://oeis.org/A001222"]{Big Omega}}
+@defproc[(prime-omega [n Natural]) natural?]{
+Counting multiplicities the number of prime factors of @racket[n] is returned.
+
+Note: The function @racket[prime-omega] is multiplicative.
+
+@interaction[#:eval untyped-eval         
+                    (prime-omega (* 2 2 2 3 3 4 5))]
+}
 
 @; ----------------------------------------
 @section[#:tag "number-sequences"]{Number Sequences}
