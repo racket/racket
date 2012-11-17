@@ -1087,7 +1087,7 @@
             (unless hostname
               (error/ssl who "~a failed (hostname not provided for verification)"
                          (if connect? "connect" "accept")))
-            (unless (hostname-in-cert? (SSL_get_peer_certificate ssl))
+            (unless (hostname-in-cert? hostname (SSL_get_peer_certificate ssl))
               (error/ssl who "~a failed (certificate not valid for hostname)"
                          (if connect? "connect" "accept"))))
 	  ;; Connection complete; make ports
