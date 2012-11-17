@@ -41,6 +41,7 @@
 
            ssl-set-verify!
            ssl-try-verify!
+           ssl-set-verify-hostname!
 
            ssl-peer-verified?
            ssl-peer-certificate-hostnames
@@ -300,7 +301,7 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Structs
 
-  (define-struct ssl-context (ctx))
+  (define-struct ssl-context (ctx [verify-hostname? #:mutable]))
   (define-struct (ssl-client-context ssl-context) ())
   (define-struct (ssl-server-context ssl-context) ())
 
@@ -391,7 +392,7 @@
          (SSL_CTX_set_mode ctx (bitwise-ior SSL_MODE_ENABLE_PARTIAL_WRITE
                                             SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER))
          (register-finalizer ctx (lambda (v) (SSL_CTX_free v)))
-         ((if client? make-ssl-client-context make-ssl-server-context) ctx)))))
+         ((if client? make-ssl-client-context make-ssl-server-context) ctx #f)))))
 
   (define (ssl-make-client-context [protocol-symbol default-encrypt])
     (make-context 'ssl-make-client-context protocol-symbol "" #t))
@@ -468,6 +469,13 @@
         ctx path
         (if asn1? SSL_FILETYPE_ASN1 SSL_FILETYPE_PEM)))
      ssl-context-or-listener pathname))
+
+  (define (ssl-set-verify-hostname! ssl-context on?)
+    (unless (ssl-context? ssl-context)
+      (raise-argument-error 'ssl-set-verify-hostname!
+                            "(or/c ssl-client-context? ssl-server-context?)"
+                            ssl-context))
+    (set-ssl-context-verify-hostname?! ssl-context (and on? #t)))
 
   (define (ssl-try-verify! ssl-context-or-listener-or-port on?)
     (do-ssl-set-verify! ssl-context-or-listener-or-port on?
@@ -965,8 +973,11 @@
                             #:mode [mode 'connect]
                             #:close-original? [close-original? #f]
                             #:shutdown-on-close? [shutdown-on-close? #f]
-                            #:error/ssl [error/ssl error])
-    (wrap-ports 'port->ssl-ports i o (or context encrypt) mode close-original? shutdown-on-close? error/ssl))
+                            #:error/ssl [error/ssl error]
+                            #:hostname [hostname #f])
+    (wrap-ports 'port->ssl-ports i o (or context encrypt) mode
+                close-original? shutdown-on-close? error/ssl
+                hostname))
 
   (define (create-ssl who context-or-encrypt-method connect/accept error/ssl)
     (atomically ; so we register the finalizer (and it's ok since everything is non-blocking)
@@ -1023,14 +1034,22 @@
 	      ;; Return SSL and the cancel boxL:
 	      (values ssl cancel r-bio w-bio connect?)))))))))
 
-  (define (wrap-ports who i o context-or-encrypt-method connect/accept close? shutdown-on-close? error/ssl)
+  (define (wrap-ports who i o context-or-encrypt-method connect/accept
+                      close? shutdown-on-close? error/ssl
+                      hostname)
     (unless (input-port? i)
       (raise-argument-error who "input-port?" i))
     (unless (output-port? o)
       (raise-argument-error who "output-port?" o))
+    (unless (or (string? hostname) (eq? hostname #f))
+      (raise-argument-error who "(or/c string? #f)" hostname))
     ;; Create the SSL connection:
     (let-values ([(ssl cancel r-bio w-bio connect?)
-		  (create-ssl who context-or-encrypt-method connect/accept error/ssl)])
+		  (create-ssl who context-or-encrypt-method connect/accept error/ssl)]
+                 [(verify-hostname?)
+                  (cond [(ssl-context? context-or-encrypt-method)
+                         (ssl-context-verify-hostname? context-or-encrypt-method)]
+                        [else #f])])
       ;; connect/accept:
       (let-values ([(buffer) (make-bytes BUFFER-SIZE)]
 		   [(pipe-r pipe-w) (make-pipe)]
@@ -1064,6 +1083,13 @@
 		      (error/ssl who "~a failed ~a"
                                  (if connect? "connect" "accept")
                                  estr)]))))))
+          (when verify-hostname?
+            (unless hostname
+              (error/ssl who "~a failed (hostname not provided for verification)"
+                         (if connect? "connect" "accept")))
+            (unless (hostname-in-cert? (SSL_get_peer_certificate ssl))
+              (error/ssl who "~a failed (certificate not valid for hostname)"
+                         (if connect? "connect" "accept"))))
 	  ;; Connection complete; make ports
 	  (values (register (make-ssl-input-port mzssl) mzssl #t)
 		  (register (make-ssl-output-port mzssl) mzssl #f))))))
@@ -1243,7 +1269,7 @@
 			      (close-input-port i)
 			      (close-output-port o)
 			      (raise exn))])
-	(wrap-ports who i o (ssl-listener-mzctx ssl-listener) 'accept #t #f error/network))))
+	(wrap-ports who i o (ssl-listener-mzctx ssl-listener) 'accept #t #f error/network #f))))
 
   (define (ssl-accept ssl-listener)
     (do-ssl-accept 'ssl-accept tcp-accept ssl-listener))
@@ -1261,7 +1287,8 @@
 			      (close-input-port i)
 			      (close-output-port o)
 			      (raise exn))])
-	(wrap-ports who i o client-context-or-protocol-symbol 'connect #t #f error/network))))
+	(wrap-ports who i o client-context-or-protocol-symbol 'connect #t #f error/network
+                    hostname))))
 
   (define (ssl-connect
               hostname port-k
