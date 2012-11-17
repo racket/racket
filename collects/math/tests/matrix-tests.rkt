@@ -2,31 +2,26 @@
 
 (require math/array
          math/base
-         math/flonum)
-(require "matrix-types.rkt"
-         "matrix-pointwise.rkt"
-         "matrix-constructors.rkt"
-         "matrix-multiply.rkt"
-         "matrix-expt.rkt"
-         "matrix-operations.rkt"
-         "matrix-2d.rkt")
+         math/flonum
+         math/matrix)
+
 (begin  
   (begin "matrix-types.rkt"
          (list
           'array-matrix?
-          (array-matrix? (list->array '[[1 2] [3 4]] real? ))
-          (not (array-matrix? (list->array '[[[1 2] [3 4]] [[1 2] [3 4]]] real? ))))
+          (array-matrix? (list*->array '[[1 2] [3 4]] real? ))
+          (not (array-matrix? (list*->array '[[[1 2] [3 4]] [[1 2] [3 4]]] real? ))))
          (list
           'square-matrix?
-          (square-matrix? (list->array '[[1 2] [3 4]] real? ))
-          (not (square-matrix? (list->array '[[1 2 3] [4 5 6]] real? ))))
+          (square-matrix? (list*->array '[[1 2] [3 4]] real? ))
+          (not (square-matrix? (list*->array '[[1 2 3] [4 5 6]] real? ))))
          (list
           'square-matrix-size
-          (= 2 (square-matrix-size (list->array '[[1 2 3] [4 5 6]] real? ))))
+          (= 2 (square-matrix-size (list*->array '[[1 2 3] [4 5 6]] real? ))))
          (list
           'matrix-all=-
-          (matrix-all= (list->array '[[1 2] [3 4]] real?) (list->array '[[1 2] [3 4]] real? ))
-          (not (matrix-all= (list->array '[[1 2] [3 4]] real?) (list->array '[[1 2]] real? ))))
+          (matrix-all= (list*->array '[[1 2] [3 4]] real?) (list*->array '[[1 2] [3 4]] real? ))
+          (not (matrix-all= (list*->array '[[1 2] [3 4]] real?) (list*->array '[[1 2]] real? ))))
          (list
           'matrix-dimensions
           (let-values ([(m n) (matrix-dimensions (list->matrix '[[1 2 3] [4 5 6]]))])
@@ -35,16 +30,16 @@
   (begin "matrix-constructors.rkt"
          (list
           'identity-matrix
-          (equal? (array->list (identity-matrix 1)) '[[1]])
-          (equal? (array->list (identity-matrix 2)) '[[1 0] [0 1]])
-          (equal? (array->list (identity-matrix 3)) '[[1 0 0] [0 1 0] [0 0 1]]) 
-          (equal? (array->list (flidentity-matrix 1)) '[[1.]])
-          (equal? (array->list (flidentity-matrix 2)) '[[1. 0.] [0. 1.]])
-          (equal? (array->list (flidentity-matrix 3)) '[[1. 0. 0.] [0. 1. 0.] [0. 0. 1.]]))
+          (equal? (array->list* (identity-matrix 1)) '[[1]])
+          (equal? (array->list* (identity-matrix 2)) '[[1 0] [0 1]])
+          (equal? (array->list* (identity-matrix 3)) '[[1 0 0] [0 1 0] [0 0 1]]) 
+          (equal? (array->list* (flidentity-matrix 1)) '[[1.]])
+          (equal? (array->list* (flidentity-matrix 2)) '[[1. 0.] [0. 1.]])
+          (equal? (array->list* (flidentity-matrix 3)) '[[1. 0. 0.] [0. 1. 0.] [0. 0. 1.]]))
          (list
           'const-matrix
-          (equal? (array->list (make-matrix 2 3 0)) '((0 0 0) (0 0 0)))
-          (equal? (array->list (make-matrix 2 3 0.)) '((0. 0. 0.) (0. 0. 0.))))
+          (equal? (array->list* (make-matrix 2 3 0)) '((0 0 0) (0 0 0)))
+          (equal? (array->list* (make-matrix 2 3 0.)) '((0. 0. 0.) (0. 0. 0.))))
          (list
           'matrix->list
           (equal? (matrix->list (list->matrix '((1 2) (3 4)))) '((1 2) (3 4)))
@@ -260,15 +255,15 @@
     (list 
      'matrix-scale-row
      (equal? (matrix-scale-row (identity-matrix 3) 0 2)
-             (list->array '[[2 0 0] [0 1 0] [0 0 1]] real? )))
+             (list*->array '[[2 0 0] [0 1 0] [0 0 1]] real? )))
     (list
      'matrix-swap-rows
-     (equal? (matrix-swap-rows (list->array '[[1 2 3] [4 5 6] [7 8 9]] real? ) 0 1)
-             (list->array '[[4 5 6] [1 2 3] [7 8 9]] real? )))
+     (equal? (matrix-swap-rows (list*->array '[[1 2 3] [4 5 6] [7 8 9]] real? ) 0 1)
+             (list*->array '[[4 5 6] [1 2 3] [7 8 9]] real? )))
     (list
      'matrix-add-scaled-row
-     (equal? (matrix-add-scaled-row (list->array '[[1 2 3] [4 5 6] [7 8 9]] real? ) 0 2 1)
-             (list->array '[[9 12 15] [4 5 6] [7 8 9]] real? )))
+     (equal? (matrix-add-scaled-row (list*->array '[[1 2 3] [4 5 6] [7 8 9]] real? ) 0 2 1)
+             (list*->array '[[9 12 15] [4 5 6] [7 8 9]] real? )))
     (let ()
       (define M (list->matrix '[[1  1  0  3]
                                 [2  1 -1  1]
@@ -377,4 +372,3 @@
          (equal? (matrix* (matrix-2d-orthogonal-projection 1 0) e2) O)
          (equal? (matrix* (matrix-2d-orthogonal-projection 0 1) e1) O)
          (equal? (matrix* (matrix-2d-orthogonal-projection 0 1) e2) e2))))))
-
