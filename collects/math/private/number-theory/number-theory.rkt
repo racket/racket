@@ -12,6 +12,7 @@
          
          ; primes
          nth-prime
+         random-prime
          next-prime untyped-next-prime
          next-primes
          prev-prime untyped-prev-prime
@@ -275,6 +276,15 @@
 (define (nth-prime n)
   (for/fold: ([p : Prime  2]) ([m (in-range n)])
     (next-prime p)))
+
+(: random-prime : N -> Prime)
+(define (random-prime n)
+  (when (<= n 2)
+    (error 'random-prime "expected natural number greater than 2, got ~a" n))
+  (define p (random-natural n))
+  (if (prime? p)
+      p
+      (random-prime n)))
 
 
 ;;;

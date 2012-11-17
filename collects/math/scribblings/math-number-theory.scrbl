@@ -12,8 +12,6 @@
           racket/math
           "utils.rkt")
 
-@(define untyped-eval (make-untyped-math-eval))
-
 @(define math-style tt)
 
 @(define math-eval 
@@ -21,7 +19,7 @@
                   [sandbox-error-output 'string])
      (make-evaluator 'racket)))
 @;(interaction-eval #:eval math-eval (require racket math))
-
+@(define untyped-eval (make-untyped-math-eval))
 
 @title[#:tag "number-theory" #:style '(toc)]{Number Theory}
 @(author-jens-axel)
@@ -31,7 +29,6 @@
 @; ----------------------------------------
 @section[#:tag "congruences"]{Congruences and Modular Arithmetic}
 
-@margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Divisor"]{Divisor}}
 @defproc[(divides? [m Integer] [n Integer]) boolean?]{
    Returns @racket[#t] if @racket[m] divides @racket[n],
    @racket[#f] otherwise.
@@ -42,10 +39,11 @@
    Test whether 2 divides 9:
    @interaction[#:eval untyped-eval
                        (require math)
-                       (divides? 2 9)]   
+                       (divides? 2 9)]
+   
+   @; http://en.wikipedia.org/wiki/Divisor
 }   
 
-@margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/B%C3%A9zout's_identity"]{Bezout's Identity}}
 @defproc[(bezout [a Integer] [b Integer] [c Integer] ...) (Listof Integer)]{
   Given integers @racket[a], @racket[b], @racket[c] ... 
   returns a list of integers @racket[u], @racket[v], @racket[q] ... 
@@ -56,9 +54,9 @@
   @interaction[#:eval untyped-eval
                       (bezout 6 15)
                       (+ (* -2 6) (* 1 15))]
+  @; http://en.wikipedia.org/wiki/B%C3%A9zout's_identity
 }
   
-@margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Coprime"]{Coprime}}
 @defproc[(coprime? [a Integer] [b Integer] ...) boolean?]{
   Returns @racket[#t] if the integers @racket[a],@racket[b],... are coprime.
 
@@ -68,19 +66,19 @@
   The numbers 2, 6, and, 15 are coprime.
   @interaction[#:eval untyped-eval
                       (coprime? 2 6 15)]
+  @; http://en.wikipedia.org/wiki/Coprime
 }  
 
  
-@margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Pairwise_coprime"]{Pairwise Coprime}}
 @defproc[(pairwise-coprime? [a Integer] [b Integer] ...) boolean?]{
   Returns @racket[#t] if the integers @racket[a],@racket[b],... are pairwise coprime.
 
   The numbers 2, 6, and, 15 are not pairwise coprime, since 2 and 6 share the factor 3.
   @interaction[#:eval untyped-eval
                       (pairwise-coprime? 2 6 15)]
+  @; http://en.wikipedia.org/wiki/Pairwise_coprime
 }  
 
-@margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Modular_multiplicative_inverse"]{Multiplicative Inverse}}
 @defproc[(modular-inverse [a Integer] [n Integer]) natural?]{
   Returns the inverse of @racket[a] module @racket[n],
   if @racket[a] and @racket[n] are coprime,
@@ -91,18 +89,18 @@
   such that @racket[ab=1 mod n].
   
   The number 3 is an inverse to 2 modulo 5.
-  @interaction[(require math)
-               (modular-inverse 2 5)
-               (modulo (* 2 3) 5)]
+  @interaction[#:eval untyped-eval
+                      (modular-inverse 2 5)
+                      (modulo (* 2 3) 5)]
   The number 0 has no inverse modulo 5.
-  @interaction[(require math)
-               (modular-inverse 0 5)]
+  @interaction[#:eval untyped-eval
+                      (modular-inverse 0 5)]
+  @; http://en.wikipedia.org/wiki/Modular_multiplicative_inverse
 }  
 
 
 
 @defproc[(solve-chinese [as (Listof Integer)] [bs (Listof Integer)]) natural?]{
-  @margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Chinese_remainder_theorem"]{Chinese Remainder Theorem}}
   Given a list of integers @racket[as] and a list of coprime moduli @racket[ns]
   the function @racket[solve-chinese] will return
   the single natural solution @racket[x] in @racket[{0,...,n-1}]
@@ -119,7 +117,9 @@
   a remainder of 2, when divided by 5 leaves a remainder of 3, and 
   when divided by 7 leaves a remainder of 2? 
   @interaction[#:eval untyped-eval
-                      (solve-chinese '(2 3 2) '(3 5 7))]  
+                      (solve-chinese '(2 3 2) '(3 5 7))]
+  
+  @; http://en.wikipedia.org/wiki/Chinese_remainder_theorem
 }
 
 @defproc[(quadratic-residue? [a natural?] [n natural?]) boolean?]{
@@ -189,20 +189,38 @@ Returns the n'th positive prime.
                     (nth-prime 2)]
 }
 
+@defproc[(random-prime [n Natural]) natural?]{
+Returns a random prime smaller than @racket[n].
+                                    
+The function @racket[random-prime] picks random numbers 
+below @racket[n] until a prime is found.
+
+@interaction[#:eval untyped-eval
+                    (random-prime 10)
+                    (random-prime 10)
+                    (random-prime 10)]
+}
+
 @defproc[(next-prime [z Integer]) prime?]{
 Returns the first prime larger than @racket[z].
 
 @interaction[#:eval untyped-eval
-                    (next-prime 4)
-                    (next-prime 5)]
+                    (untyped-next-prime 4)
+                    (untyped-next-prime 5)]
+
+TODO: Figure out how to export next-prime even though
+TR can't make contract automatically.
 }
 
 @defproc[(prev-prime [z Integer]) prime?]{
 Returns the first prime smaller than @racket[z].
 
 @interaction[#:eval untyped-eval
-                    (prev-prime 4)
-                    (prev-prime 5)]
+                    (untyped-prev-prime 4)
+                    (untyped-prev-prime 5)]
+
+TODO: Figure out how to export prev-prime even though
+TR can't make contract automatically.
 }
 
 @defproc[(next-primes [z Integer] [n Natural]) (Listof prime?)]{
@@ -392,7 +410,6 @@ for all coprime natural numbers @racket[a] and @racket[b].
 The functions @racket[totient], @racket[moebius-mu], and, 
 @racket[divisor-sum] are multiplicative.
 
-@margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Euler%27s_totient_function"]{Euler's Totient}}
 @defproc[(totient [n Natural]) natural?]{
 Returns the number of integers from 1 to @racket[n]
 that are coprime with @racket[n].
@@ -405,13 +422,12 @@ Note: The function @racket[totient] is multiplicative.
                     (require racket/function) ; for curry
                     (totient 9)
                     (length (filter (curry coprime? 9) (range 10)))]
+
+@; http://en.wikipedia.org/wiki/Euler%27s_totient_function
 }
 
 
-
-
 @defproc[(moebius-mu [n Natural]) (Union -1 0 1)]{
-@margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/M%C3%B6bius_function"]{Moebius Function}}
 Returns:
 
 @racket[1]  if @racket[n] is a product of an even number of primes
@@ -426,10 +442,11 @@ Note: The function @racket[moebius-mu] is multiplicative.
                     (moebius-mu (* 2 3 5))
                     (moebius-mu (* 2 3 5 7))
                     (moebius-mu (* 2 2 3 5 7))]
+
+@; http://en.wikipedia.org/wiki/M%C3%B6bius_function
 }
 
 
-@margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Divisor_function"]{Divisor Function}}
 @defproc[(divisor-sum [n Natural] [k Natural]) natural?]{
 Returns sum of the @racket[k]th powers of 
 all divisors of @racket[n].
@@ -439,41 +456,37 @@ Note: The function @racket[divisor-sum] is multiplicative.
 @interaction[#:eval untyped-eval         
                     (divisor-sum 12 2)
                     (apply + (map sqr (divisors 12)))]
+
+@; http://en.wikipedia.org/wiki/Divisor_function
 }
 
-@margin-note{OEIS: @hyperlink["http://oeis.org/A001222"]{Big Omega}}
-@defproc[(prime-omega [n Natural]) natural?]{
-Counting multiplicities the number of prime factors of @racket[n] is returned.
-
-Note: The function @racket[prime-omega] is multiplicative.
-
-@interaction[#:eval untyped-eval         
-                    (prime-omega (* 2 2 2 3 3 5))]
-}
 
 @; ----------------------------------------
 @section[#:tag "number-sequences"]{Number Sequences}
 
-@margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Bernoulli_number"]{Bernoulli Number}}
 @defproc[(bernoulli [n Natural]) exact-rational?]{
   Returns the @racket[n]th Bernoulli number.
-
+  Definition:
+  @url{http://en.wikipedia.org/wiki/Bernoulli_number}.
 
   @interaction[#:eval untyped-eval
                       (map bernoulli (range 9))]
 }
 
-@margin-note{MathWorld: @hyperlink["http://mathworld.wolfram.com/EulerianNumber.html"]{Eulerian Number}}
 @defproc[(eulerian-number [n Natural] [k Natural]) natural?]{
   Returns the Eulerian number @math-style{<n,k>}.
+  Definition:
+  @url{http://mathworld.wolfram.com/EulerianNumber.html}.
 
   @interaction[(require math racket)
                (eulerian-number 5 2)]
 }
 
-@margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Fibonacci_number"]{Fibonacci Number}}
 @defproc[(fibonacci [n Natural]) natural?]{
   Returns the @racket[n]th Fibonacci number.
+  See 
+  @url{http://en.wikipedia.org/wiki/Fibonacci_number}
+  for a definition.
 
   The ten first Fibonacci numbers.
   @interaction[(require math racket)
@@ -499,10 +512,9 @@ are less than or equal to @racket[n].
                (farey 3)]
 }
 
-@margin-note{MathWorld: @hyperlink["http://mathworld.wolfram.com/TangentNumber.html"]{Tangent Number}}
 @defproc[(tangent-number [n integer?]) integer?]{
 Returns the @racket[n]th tangent number.
-            
+See @url{http://mathworld.wolfram.com/TangentNumber.html} for a definition.
   @interaction[(require math)
                (tangent-number 1)
                (tangent-number 2)
@@ -548,14 +560,12 @@ Returns the @racket[n]th tangent number.
                (multinomial 5 3 2)]
 }
 
-
-
-@margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Partition_(number_theory)"]{Partition}}
 @defproc[(partition-count [n Natural]) natural?]{
   Returns the number of partitions of @racket[n].
   A partition of a positive integer @racket[n] is a way 
   of writing @racket[n] as a sum of positive integers.
   The number 3 has the partitions @math-style{1+1+1, 1+2, 3}.
+  See @url{http://en.wikipedia.org/wiki/Partition_(number_theory)}.
   @interaction[(require math racket)
                (partition-count 3)
                (partition-count 4)]
@@ -593,9 +603,7 @@ return the @racket[n]th polygonal number of the corresponding
 type of polygonal number.
 }
 
-
 @; ----------------------------------------
-
 @section[#:tag "fractions"]{Fractions}
 @defproc[(mediant [x Rational] [y Rational]) rational?]{
 Computes the @racket[mediant] of the numbers @racket[x] and @racket[y].
@@ -604,8 +612,6 @@ lowest term is the number @math-style{(p+r)/(q+s)}.
   @interaction[(require math)
                (mediant 1/2 5/6)]
 }
-
-
 
 @; ----------------------------------------
 @section[#:tag "quadratics"]{The Quadratic Equation}
@@ -631,8 +637,6 @@ Returns a list of all natural solutions to the equation @math-style{a x^2 + b x 
                (quadratic-natural-solutions 1 0 -1)
                (quadratic-natural-solutions 1 0 -2)]  
 }
-
-
 
 @; ----------------------------------------
 @section[#:tag "primitive_roots"]{The group Zn and Primitive Roots}
@@ -711,6 +715,5 @@ Returns a list of all primitive roots of @math-style{Un}.
                (primitive-roots 6)]
 }
 
-
+         
 @(close-eval untyped-eval)
-
