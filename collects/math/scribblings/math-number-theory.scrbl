@@ -546,7 +546,7 @@ Counting multiplicities the number of prime factors of @racket[n] is returned.
 Note: The function @racket[prime-omega] is multiplicative.
 
 @interaction[#:eval untyped-eval         
-                    (prime-omega (* 2 2 2 3 3 4 5))]
+                    (prime-omega (* 2 2 2 3 3 5))]
 }
 
 @; ----------------------------------------
