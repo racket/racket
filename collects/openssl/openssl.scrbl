@@ -44,6 +44,35 @@ error string (when @racket[ssl-available?] is @racket[#f]).}
 
 @; ----------------------------------------------------------------------
 
+@section{Using SSL Securely}
+
+SSL and TLS are client-server cryptographic protocols that enable
+secure communication with remote hosts (called ``peers''). But SSL
+must be properly configured in order to be secure.
+
+The security of client programs using SSL generally depends
+on the authentication of the server credentials, which requires proper
+initialization of this library's client contexts. To use SSL securely,
+a client program must at a minimum take the following steps:
+
+@itemlist[
+
+@item{create an SSL client context using @racket[ssl-make-client-context]}
+
+@item{tell the context what certificate authorities to trust using
+@racket[ssl-load-verify-root-certificates!]}
+
+@item{turn on certificate verification using @racket[ssl-set-verify!]
+(or check each connection individually using @racket[ssl-peer-verified?])}
+
+@item{turn on hostname verification using
+@racket[ssl-set-verify-hostname!] (or check each connection
+individually using @racket[ssl-peer-check-hostname])}
+]
+
+
+@; ----------------------------------------------------------------------
+
 @section{TCP-like Client Procedures}
 
 @defproc[(ssl-connect (hostname string?)
@@ -67,6 +96,10 @@ details (including the meanings of the protocol symbols).
 
 Closing the resulting output port does not send a shutdown message to
 the server. See also @racket[ports->ssl-ports].
+
+If hostname verification is enabled (see
+@racket[ssl-set-verify-hostname!]), the peer's certificate is checked
+against @racket[hostname].
 
 @;{
 See `enforce-retry?' in "mzssl.rkt", currently set to #f so that this
@@ -230,7 +263,8 @@ Returns @racket[#t] if @racket[v] is a value produced by
 	   [#:encrypt protocol symbol? 'sslv2-or-v3]
 	   [#:close-original? close-original? boolean? #f]
 	   [#:shutdown-on-close? shutdown-on-close? boolean? #f]
-	   [#:error/ssl error procedure? error])
+	   [#:error/ssl error procedure? error]
+           [#:hostname hostname (or/c string? #f) #f])
          (values input-port? output-port?)]{
 
 Returns two values---an input port and an output port---that
@@ -275,7 +309,12 @@ communication errors. The default is @racket[error], which raises
 @racket[exn:fail:network].
 
 See also @racket[ssl-connect] about the limitations of reading and
-writing to an SSL connection (i.e., one direction at a time).}
+writing to an SSL connection (i.e., one direction at a time).
+
+If hostname verification is enabled (see
+@racket[ssl-set-verify-hostname!]), the peer's certificate is checked
+against @racket[hostname].
+}
 
 @; ----------------------------------------------------------------------
 
@@ -360,7 +399,7 @@ collection for testing purposes where the peer identifies itself using
 @defproc[(ssl-set-verify! [clp (or/c ssl-client-context? ssl-server-context?
                                      ssl-listener?
                                      ssl-port?)] 
-                          [on? any/c]) void]{
+                          [on? any/c]) void?]{
 
 Requires certificate verification on the peer SSL connection when
 @racket[on?] is @racket[#t]. If @racket[clp] is an SSL port, then the
@@ -371,13 +410,19 @@ subsequent connection using the context or listener.
 
 Enabling verification also requires, at a minimum, designating trusted
 certificate authorities with
-@racket[ssl-load-verify-root-certificates!].}
+@racket[ssl-load-verify-root-certificates!].
+
+Verifying the certificate is not sufficient to prevent attacks by
+active adversaries, such as
+@hyperlink["http://en.wikipedia.org/wiki/Man-in-the-middle_attack"]{man-in-the-middle
+attacks}.  See also @racket[ssl-set-verify-hostname!].
+}
 
 
 @defproc[(ssl-try-verify! [clp (or/c ssl-client-context? ssl-server-context?
                                      ssl-listener?
                                      ssl-port?)] 
-                          [on? any/c]) void]{
+                          [on? any/c]) void?]{
 
 Like @racket[ssl-set-verify!], but when peer certificate verification fails,
 then connection continues to work. Use @racket[ssl-peer-verified?] to determine
@@ -389,13 +434,55 @@ whether verification succeeded.}
 Returns @racket[#t] if the peer of SSL port @racket[p] has presented a
 valid and verified certificate, @racket[#f] otherwise.}
 
+@defproc[(ssl-set-verify-hostname! [ctx (or/c ssl-client-context? ssl-server-context?)]
+                                   [on? any/c])
+         void?]{
+
+Requires hostname verification of SSL peers of connections made using
+@racket[ctx] when @racket[on?] is @racket[#t]. When hostname
+verification is enabled, the hostname associated with a connection
+(see @racket[ssl-connect] or @racket[ports->ssl-ports]) is checked
+against the hostnames listed in the peer's certificate. If the peer
+certificate does not contain an entry matching the hostname, or if the
+peer does not present a certificate, the connection is rejected and an
+exception is raised.
+
+Hostname verification does not imply certificate verification. To
+verify the certificate itself, also call @racket[ssl-set-verify!].
+}
+
+@defproc[(ssl-peer-certificate-hostnames [p ssl-port?])
+         (listof string?)]{
+
+Returns the list of hostnames for which the certificate of
+@racket[p]'s peer is valid according to
+@hyperlink["http://www.ietf.org/rfc/rfc2818.txt"]{RFC 2818}. If the
+peer has not presented a certificate, @racket['()] is returned.
+
+The result list may contain both hostnames such as
+@racket["www.racket-lang.org"] and hostname patterns such as
+@racket["*.racket-lang.org"].
+}
+
+@defproc[(ssl-peer-check-hostname [p ssl-port?] [hostname string?])
+         boolean?]{
+
+Returns @racket[#t] if the peer certificate of @racket[p] is valid for
+@racket[hostname] according to
+@hyperlink["http://www.ietf.org/rfc/rfc2818.txt"]{RFC 2818}.
+}
+
 @defproc[(ssl-peer-subject-name [p ssl-port?]) (or/c bytes? #f)]{
 
 If @racket[ssl-peer-verified?] would return @racket[#t] for
 @racket[p], the result is a byte string for the subject field of
 the certificate presented by the SSL port's peer, otherwise the result
-is @racket[#f].}
+is @racket[#f].
 
+Use @racket[ssl-peer-check-hostname] or
+@racket[ssl-peer-certificate-hostnames] instead to check the validity
+of an SSL connection.
+}
 
 @defproc[(ssl-peer-issuer-name [p ssl-port?]) (or/c bytes? #f)]{
 

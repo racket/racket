@@ -237,7 +237,6 @@
   (online-expansion-show-variable-errors-as "Montrer les identificateurs libres")
   (online-expansion-show-other-errors-as "Montrer les autres erreurs")
   ; locations the errors can be shown
-  (online-expansion-error-in-corner "dans le coin de la fenêtre")
   (online-expansion-error-gold-highlight "par surlignage doré")
   (online-expansion-error-margin "dans la marge")
   ;;; info bar at botttom of drscheme frame

@@ -9,10 +9,9 @@ Discrete & Computational Geometry 18(3):305–363, October 1997
 |#
 
 (require "../flonum-functions.rkt"
-         "../flonum-syntax.rkt"
-         "../../bigfloat/bigfloat-struct.rkt")
+         "../flonum-syntax.rkt")
 
-(provide fl2 bigfloat->fl2 fl2->real fl2->bigfloat
+(provide fl2 fl2->real
          fl2+ fl2- fl2*split-fl fl2* fl2/
          flsqrt/error fl2sqrt)
 
@@ -31,21 +30,12 @@ Discrete & Computational Geometry 18(3):305–363, October 1997
     [(x y)
      (fast-fl+/error x y)]))
 
-(: bigfloat->fl2 (Bigfloat -> (Values Flonum Flonum)))
-(define (bigfloat->fl2 x)
-  (define x2 (bigfloat->flonum x))
-  (values x2 (bigfloat->flonum (bf- x (bf x2)))))
-
 (: fl2->real (Flonum Flonum -> Real))
 (define (fl2->real x2 x1)
   (cond [(and (x1 . fl> . -inf.0) (x1 . fl< . +inf.0)
               (x2 . fl> . -inf.0) (x2 . fl< . +inf.0))
          (+ (inexact->exact x2) (inexact->exact x1))]
         [else  (fl+ x1 x2)]))
-
-(: fl2->bigfloat (Flonum Flonum -> Bigfloat))
-(define (fl2->bigfloat x2 x1)
-  (bf+ (bf x1) (bf x2)))
 
 (: fl3->fl2 (Flonum Flonum Flonum -> (Values Flonum Flonum)))
 (define (fl3->fl2 e3 e2 e1)

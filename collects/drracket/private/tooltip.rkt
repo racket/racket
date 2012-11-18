@@ -6,7 +6,18 @@
 
 (define tooltip-frame%
   (class frame%
-    (inherit show reflow-container move get-width get-height is-shown?)
+    (inherit reflow-container move get-width get-height is-shown?)
+    
+    (init-field [frame-to-track #f])
+    (define timer
+      (and frame-to-track
+           (new timer%
+                [notify-callback
+                 (λ ()
+                   (unless (send frame-to-track is-shown?)
+                     (show #f)
+                     (send timer stop)))])))
+                
     
     (define/override (on-subwindow-event r evt)
       (and (is-shown?)
@@ -14,6 +25,13 @@
                   #t)))
     (define/public (set-tooltip ls) 
       (send yellow-message set-lab ls))
+    
+    (define/override (show on?)
+      (when timer
+        (cond
+          [on? (send timer start 200 #f)]
+          [else (send timer stop)]))
+      (super show on?))
     
     (define/public (show-over x y w h #:prefer-upper-left? [prefer-upper-left? #f])
       (reflow-container)

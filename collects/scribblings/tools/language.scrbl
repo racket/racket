@@ -42,9 +42,11 @@ implementation of this interface.
 }
 
 @defmethod[(get-one-line-summary)
-           string?]{
-  The result of this method is shown in the language dialog when the
-  user selects this language.
+           (or/c #f string?)]{
+  The result of this method is shown in a tooltip in
+  the language dialog when the
+  user mouses over this language. If the result is
+  @racket[#f], no tooltip is shown.
 }
 
 @defmethod[(get-reader)

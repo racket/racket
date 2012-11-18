@@ -1,4 +1,4 @@
-#lang racket/base
+lang racket/base
 
 (require ffi/unsafe
          ffi/unsafe/cvector
@@ -1000,24 +1000,6 @@
 (begin-for-syntax
   (set! 0ary-funs (list* #'phi.bf #'epsilon.bf #'-max.bf #'-min.bf #'+min.bf #'+max.bf
                          0ary-funs)))
-
-;; ===================================================================================================
-;; Extra functions
-
-(define (random-bits bits)
-  (let loop ([bits bits] [acc 0])
-    (cond [(= 0 bits)  acc]
-          [else
-           (define new-bits (min 24 bits))
-           (loop (- bits new-bits)
-                 (bitwise-ior (random (arithmetic-shift 1 new-bits))
-                              (arithmetic-shift acc new-bits)))])))
-
-(define (bfrandom)
-  (define bits (bf-precision))
-  (bf (random-bits bits) (- bits)))
-
-(provide bfrandom)
 
 ;; ===================================================================================================
 ;; Number Theoretic Functions

@@ -163,78 +163,7 @@
       
       (define/public (get-additional-important-urls) '())
       (define/override (help-menu:after-about menu)
-        (drracket:app:add-important-urls-to-help-menu
-         menu 
-         (get-additional-important-urls))
-        (new menu-item%
-             [label (string-constant bug-report-submit-menu-item)]
-             [parent menu]
-             [callback
-              (λ (x y)
-                (define saved (saved-bug-report-titles/ids))
-                (cond
-                  [(null? saved)
-                   (help-desk:report-bug #f #:frame-mixin basics-mixin)]
-                  [else
-                   (define which #f)
-                   (define (done the-one)
-                     (set! which the-one)
-                     (send dlg show #f))
-                   (define dlg (new dialog% 
-                                    [label (string-constant drscheme)]
-                                    [parent this]))
-                   (define btn1 (new button% 
-                                     [parent dlg]
-                                     [label (string-constant new-bug-report)]
-                                     [callback (λ (x y) (done #f))]))
-                   (new message% [parent dlg] [label (string-constant saved-unsubmitted-bug-reports)])
-                   (define btns
-                     (cons btn1
-                           (for/list ([a-brinfo (in-list saved)])
-                             (new button%
-                                  [parent dlg]
-                                  [label (brinfo-title a-brinfo)]
-                                  [callback
-                                   (λ (x y) (done (brinfo-id a-brinfo)))]))))
-                   (define width (apply max (map (λ (x) (let-values ([(w h) (send x get-client-size)]) w))
-                                                 btns)))
-                   (for ([x (in-list btns)])
-                     (send x min-width width))
-                   (send btn1 focus)
-                   (send dlg show #t)
-                   (help-desk:report-bug which #:frame-mixin basics-mixin)]))])
-        (new menu%
-             [label (string-constant saved-bug-reports-menu-item)]
-             [parent menu]
-             [demand-callback
-              (let ([last-time (gensym)]) ;;  a unique thing to guarantee the menu is built the first time
-                (λ (saved-bug-reports-menu)
-                  (define this-time (saved-bug-report-titles/ids))
-                  (unless (equal? last-time this-time)
-                    (set! last-time this-time)
-                    (for ([x (in-list (send saved-bug-reports-menu get-items))])
-                      (send x delete))
-                    (cond
-                      [(null? this-time)
-                       (send (new menu-item%
-                                  [parent saved-bug-reports-menu]
-                                  [label (string-constant no-saved-bug-reports)]
-                                  [callback void])
-                             enable #f)]
-                      [else
-                       (for ([a-brinfo (in-list this-time)])
-                         (new menu-item%
-                           [parent saved-bug-reports-menu]
-                           [label (brinfo-title a-brinfo)]
-                           [callback
-                            (λ (x y)
-                              (help-desk:report-bug (brinfo-id a-brinfo) #:frame-mixin basics-mixin))]))
-                       (new separator-menu-item% [parent saved-bug-reports-menu])
-                       (new menu-item%
-                            [parent saved-bug-reports-menu]
-                            [label (string-constant disacard-all-saved-bug-reports)]
-                            [callback (λ (x y) (discard-all-saved-bug-reports))])]))))])
-        (drracket:app:add-language-items-to-help-menu menu))
+        (drracket-help-menu:after-about menu this))
       
       (define/override (file-menu:new-string) (string-constant new-menu-item))
       (define/override (file-menu:open-string) (string-constant open-menu-item))
@@ -713,53 +642,54 @@
   
   
   (define (create-root-menubar)
-    (let* ([mb (new menu-bar% (parent 'root))]
-           [file-menu (new menu% 
+    (define mb (new menu-bar% (parent 'root)))
+    (define file-menu (new menu% 
                            (label (string-constant file-menu))
-                           (parent mb))]
-           [help-menu (new menu% 
+                           (parent mb)))
+    (define help-menu (new menu% 
                            (label (string-constant help-menu))
-                           (parent mb))])
+                           (parent mb)))
+    (new menu-item%
+         (label (string-constant new-menu-item))
+         (parent file-menu)
+         (shortcut #\n)
+         (callback
+          (λ (x y)
+            (handler:edit-file #f)
+            #t)))
+    (new menu-item%
+         (label (string-constant open-menu-item))
+         (parent file-menu)
+         (shortcut #\o)
+         (callback
+          (λ (x y)
+            (handler:open-file)
+            #t)))
+    (new menu%
+         (label (string-constant open-recent-menu-item))
+         (parent file-menu)
+         (demand-callback
+          (λ (menu)
+            (handler:install-recent-items menu))))
+    (new menu-item%
+         [label (string-constant mfs-multi-file-search-menu-item)]
+         [parent file-menu]
+         [callback
+          (λ (_1 _2)
+            (drracket:multi-file-search:multi-file-search))])
+    (unless (current-eventspace-has-standard-menus?)
+      (new separator-menu-item% (parent file-menu))
       (new menu-item%
-           (label (string-constant new-menu-item))
+           (label (string-constant quit-menu-item-others))
            (parent file-menu)
-           (shortcut #\n)
+           (shortcut #\q)
            (callback
             (λ (x y)
-              (handler:edit-file #f)
-              #t)))
-      (new menu-item%
-           (label (string-constant open-menu-item))
-           (parent file-menu)
-           (shortcut #\o)
-           (callback
-            (λ (x y)
-              (handler:open-file)
-              #t)))
-      (new menu%
-           (label (string-constant open-recent-menu-item))
-           (parent file-menu)
-           (demand-callback
-            (λ (menu)
-              (handler:install-recent-items menu))))
-      (instantiate menu-item% ()
-        (label (string-constant mfs-multi-file-search-menu-item))
-        (parent file-menu)
-        (callback
-         (λ (_1 _2)
-           (drracket:multi-file-search:multi-file-search))))
-      (unless (current-eventspace-has-standard-menus?)
-        (new separator-menu-item% (parent file-menu))
-        (new menu-item%
-             (label (string-constant quit-menu-item-others))
-             (parent file-menu)
-             (shortcut #\q)
-             (callback
-              (λ (x y)
-                (when (exit:user-oks-exit)
-                  (exit:exit))
-                #t))))
-      (make-help-desk-menu-item help-menu)))
+              (when (exit:user-oks-exit)
+                (exit:exit))
+              #t))))
+    (make-help-desk-menu-item help-menu)
+    (drracket-help-menu:after-about help-menu #f))
   
   (define (make-help-desk-menu-item help-menu)
     (define (docs-menu-item label)
@@ -770,3 +700,75 @@
     (docs-menu-item (string-constant racket-documentation))
     (new separator-menu-item% [parent help-menu])
     (docs-menu-item (string-constant help-desk)))
+
+  (define (drracket-help-menu:after-about menu dlg-parent)
+    (drracket:app:add-important-urls-to-help-menu menu '())
+    (new menu-item%
+         [label (string-constant bug-report-submit-menu-item)]
+         [parent menu]
+         [callback
+          (λ (x y)
+            (define saved (saved-bug-report-titles/ids))
+            (cond
+              [(null? saved)
+               (help-desk:report-bug #f #:frame-mixin basics-mixin)]
+              [else
+               (define which #f)
+               (define (done the-one)
+                 (set! which the-one)
+                 (send dlg show #f))
+               (define dlg (new dialog% 
+                                [label (string-constant drscheme)]
+                                [parent dlg-parent]))
+               (define btn1 (new button% 
+                                 [parent dlg]
+                                 [label (string-constant new-bug-report)]
+                                 [callback (λ (x y) (done #f))]))
+               (new message% [parent dlg] [label (string-constant saved-unsubmitted-bug-reports)])
+               (define btns
+                 (cons btn1
+                       (for/list ([a-brinfo (in-list saved)])
+                         (new button%
+                              [parent dlg]
+                              [label (brinfo-title a-brinfo)]
+                              [callback
+                               (λ (x y) (done (brinfo-id a-brinfo)))]))))
+               (define width (apply max (map (λ (x) (let-values ([(w h) (send x get-client-size)]) w))
+                                             btns)))
+               (for ([x (in-list btns)])
+                 (send x min-width width))
+               (send btn1 focus)
+               (send dlg show #t)
+               (help-desk:report-bug which #:frame-mixin basics-mixin)]))])
+    (new menu%
+         [label (string-constant saved-bug-reports-menu-item)]
+         [parent menu]
+         [demand-callback
+          (let ([last-time (gensym)]) ;;  a unique thing to guarantee the menu is built the first time
+            (λ (saved-bug-reports-menu)
+              (define this-time (saved-bug-report-titles/ids))
+              (unless (equal? last-time this-time)
+                (set! last-time this-time)
+                (for ([x (in-list (send saved-bug-reports-menu get-items))])
+                  (send x delete))
+                (cond
+                  [(null? this-time)
+                   (send (new menu-item%
+                              [parent saved-bug-reports-menu]
+                              [label (string-constant no-saved-bug-reports)]
+                              [callback void])
+                         enable #f)]
+                  [else
+                   (for ([a-brinfo (in-list this-time)])
+                     (new menu-item%
+                          [parent saved-bug-reports-menu]
+                          [label (brinfo-title a-brinfo)]
+                          [callback
+                           (λ (x y)
+                             (help-desk:report-bug (brinfo-id a-brinfo) #:frame-mixin basics-mixin))]))
+                   (new separator-menu-item% [parent saved-bug-reports-menu])
+                   (new menu-item%
+                        [parent saved-bug-reports-menu]
+                        [label (string-constant disacard-all-saved-bug-reports)]
+                        [callback (λ (x y) (discard-all-saved-bug-reports))])]))))])
+    (drracket:app:add-language-items-to-help-menu menu))

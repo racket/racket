@@ -137,6 +137,15 @@
   (define bits (bf-precision))
   (bf (random-bits bits) (- bits)))
 
+(: bigfloat->fl2 (Bigfloat -> (Values Flonum Flonum)))
+(define (bigfloat->fl2 x)
+  (define x2 (bigfloat->flonum x))
+  (values x2 (bigfloat->flonum (bf- x (flonum->bigfloat x2)))))
+
+(: fl2->bigfloat (Flonum Flonum -> Bigfloat))
+(define (fl2->bigfloat x2 x1)
+  (bf+ (flonum->bigfloat x1) (flonum->bigfloat x2)))
+
 (provide
  ;; Library stuffs
  mpfr-available?
@@ -159,10 +168,12 @@
  integer->bigfloat
  rational->bigfloat
  real->bigfloat
+ fl2->bigfloat
  bigfloat->flonum
  bigfloat->integer
  bigfloat->rational
  bigfloat->real
+ bigfloat->fl2
  ;; String conversion
  bigfloat->string
  string->bigfloat

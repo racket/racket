@@ -13,12 +13,13 @@
 ;   The number s is called a squre root of a modulo n.
 
 ; p is prime
-(: quadratic-character : Integer Integer -> Integer)
+(: quadratic-character : Integer Integer -> (U -1 0 1))
 (define (quadratic-character a p)
   (cond [(a . < . 0)  (raise-argument-error 'quadratic-character "Natural" 0 a p)]
         [(p . <= . 0)  (raise-argument-error 'quadratic-character "Positive-Integer" 1 a p)]
         [else  (let ([l  (modular-expt a (quotient (- p 1) 2) p)])
-                 (if (<= 0 l 1) l -1))]))
+                 (cond [(or (eqv? l 0) (eqv? l 1))  l]
+                       [else  -1]))]))
 
 (: quadratic-residue? : Integer Integer -> Boolean)
 (define (quadratic-residue? a n)

@@ -119,7 +119,7 @@
       (init-field module
                   language-position
                   (language-numbers (map (λ (x) 0) language-position))
-                  (one-line-summary "")
+                  (one-line-summary #f)
                   (language-url #f)
                   (documentation-reference #f)
                   (reader (λ (src port)

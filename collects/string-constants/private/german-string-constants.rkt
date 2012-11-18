@@ -156,7 +156,6 @@
  (online-expansion-show-variable-errors-as "Ungebundene Bezeichner anzeigen")
  (online-expansion-show-other-errors-as "Andere Fehler anzeigen")
  ; locations the errors can be shown
- (online-expansion-error-in-corner "in der Ecke des Fensters")
  (online-expansion-error-gold-highlight "mit goldener Markierung")
  (online-expansion-error-margin "am Rand")
  ;;; info bar at botttom of drscheme frame

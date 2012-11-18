@@ -1369,7 +1369,6 @@
 	  
         (add-deinprogramm-language
          (instantiate (make-deinprogramm-language% 'write 'explicit) ()
-	   (one-line-summary "Die Macht der Abstraktion - Anfänger")
 	   (module '(lib "deinprogramm/DMdA-beginner.rkt"))
            (manual #"DMdA-beginner")
 	   (language-position (list (string-constant teaching-languages)
@@ -1384,7 +1383,6 @@
 	
 	(add-deinprogramm-language
          (instantiate (make-deinprogramm-language% 'write 'explicit) ()
-	   (one-line-summary "Die Macht der Abstraktion")
 	   (module '(lib "deinprogramm/DMdA-vanilla.rkt"))
            (manual #"DMdA-vanilla")
 	   (language-position (list (string-constant teaching-languages)
@@ -1399,7 +1397,6 @@
 
         (add-deinprogramm-language
          (instantiate (make-deinprogramm-language% 'write 'explicit) ()
-	   (one-line-summary "Die Macht der Abstraktion mit Zuweisungen")
 	   (module '(lib "deinprogramm/DMdA-assignments.rkt"))
            (manual #"DMdA-assignments")
 	   (language-position (list (string-constant teaching-languages)
@@ -1415,7 +1412,6 @@
 
         (add-deinprogramm-language
          (instantiate (make-deinprogramm-language% 'write 'datum) ()
-	   (one-line-summary "Die Macht der Abstraktion - fortgeschritten")
 	   (module '(lib "deinprogramm/DMdA-advanced.rkt"))
            (manual #"DMdA-advanced")
 	   (language-position (list (string-constant teaching-languages)
