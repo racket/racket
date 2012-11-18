@@ -540,11 +540,8 @@ The result is @racket[#f] if the user cancels the dialog, a
 
 @defproc[(can-get-page-setup-from-user?)
          boolean?]{
-Returns @racket[#t] if the current platform (Mac OS X) supports a
- page-layout dialog for use with @racket[printer-dc%] printing, and
- if the page-layout dialog is different from the print-job dialog that
- is automatically shown when a @racket[printer-dc%] is
- created. Returns @racket[#f] if no separate page-layout dialog is
- needed (Windows and Unix).
+Returns @racket[#t] if the current platform supports a
+ page-layout dialog for use with @racket[printer-dc%] printing. 
+ Currently, all platforms support a page-layout dialog.
 
 }

@@ -15,15 +15,14 @@ A @racket[printer-dc%] object is a printer device context. A newly
 
 See also @racket[post-script-dc%].
 
-When a @racket[printer-dc%] object is created, the user gets
- platform-specific modal dialogs for configuring the output.
- If the user cancels the dialog, the @method[dc<%> ok?] method
- of the object returns @racket[#f].
+When the @method[dc<%> end-doc] method is called on a
+ @racket[printer-dc%] instance, the user may receive a dialog
+ to determine how the document is printed.
 
 @defconstructor[([parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f])]{
 
-If @racket[parent] is not @racket[#f], it is used as the parent window
- of the configuration dialog.
+If @racket[parent] is not @racket[#f], it is may be as the parent window
+ of the dialog (if any) presented by @method[dc<%> end-doc].
 
 
 }}
