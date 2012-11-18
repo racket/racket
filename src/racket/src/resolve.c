@@ -1739,6 +1739,7 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
 {
   Scheme_Closure_Data *data;
   int i, closure_size, offset, np, num_params, expanded_already = 0, captured_typed;
+  int no_map_shift_needed;
   int has_tl, convert_size, need_lift;
   mzshort *oldpos, *closure_map, *new_closure_map;
   Closure_Info *cl;
@@ -1938,7 +1939,9 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
         closure_map[cp] = old_pos;
       }
     }
-  }
+    no_map_shift_needed = 1;
+  } else
+    no_map_shift_needed = 0;
 
   if (convert
       && (offset || !has_tl) /* either need args, or treat as convert because it's fully closed */
@@ -1982,7 +1985,8 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
     offset++;
   }
 
-  if (!convert && !just_compute_lift && (offset < data->closure_size) && expanded_already) {
+  if (!convert && !just_compute_lift && (offset < data->closure_size) 
+      && expanded_already && !no_map_shift_needed) {
     /* shift boxmap down, since we're dropping closure elements */
     int bsz;
     bsz = boxmap_size(data->num_params + offset);
