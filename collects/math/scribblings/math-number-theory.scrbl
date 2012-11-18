@@ -304,6 +304,18 @@ Returns the @racket[n]th positive prime; @racket[n] must be nonnegative.
                     (nth-prime 2)]
 }
 
+@defproc[(random-prime [n Integer]) Natural]{
+Returns a random prime smaller than @racket[n], which must be greater than @racket[2].
+                                    
+The function @racket[random-prime] picks random numbers
+below @racket[n] until a prime is found.
+
+@interaction[#:eval untyped-eval
+                    (random-prime 10)
+                    (random-prime 10)
+                    (random-prime 10)]
+}
+
 @defproc[(next-prime [z Integer]) Integer]{
 Returns the first prime larger than @racket[z].
 

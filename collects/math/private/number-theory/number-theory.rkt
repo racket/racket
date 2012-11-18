@@ -12,6 +12,7 @@
          
          ; primes
          nth-prime
+         random-prime
          next-prime untyped-next-prime
          next-primes
          prev-prime untyped-prev-prime
@@ -286,6 +287,14 @@
          (for/fold: ([p : Prime  2]) ([m (in-range n)])
            (next-prime p))]))
 
+(: random-prime : Z -> Prime)
+(define (random-prime n)
+  (when (<= n 2)
+    (raise-argument-error 'random-prime "Natural > 2" n))
+  (define p (random-natural n))
+  (if (prime? p)
+      p
+      (random-prime n)))
 
 ;;;
 ;;; FACTORIZATION
