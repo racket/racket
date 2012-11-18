@@ -1738,14 +1738,16 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
                             Scheme_Object *precomputed_lift)
 {
   Scheme_Closure_Data *data;
-  int i, closure_size, offset, np, num_params, expanded_already = 0;
+  int i, closure_size, offset, np, num_params, expanded_already = 0, captured_typed;
   int has_tl, convert_size, need_lift;
   mzshort *oldpos, *closure_map, *new_closure_map;
   Closure_Info *cl;
   Resolve_Info *new_info;
   Scheme_Object *lifted, *result, *lifteds = NULL;
   Scheme_Hash_Table *captured = NULL;
-  mzshort *convert_map, *convert_boxes = NULL;
+  mzshort *convert_boxes = NULL; /* local type for captured (i.e,. first captured is at 0) */
+  mzshort *convert_map;  /* includes local type for args and captured (i.e,. first captured 
+                            is at data->num_params) */
 
   data = (Scheme_Closure_Data *)_data;
   cl = (Closure_Info *)data->closure_map;
@@ -1847,6 +1849,7 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
   
   /* Add bindings introduced by closure conversion. The `captured'
      table maps old positions to new positions. */
+  captured_typed = 0;
   while (lifteds) {
     int j, cnt, local_typed;
     Scheme_Object *vec, *loc;
@@ -1888,8 +1891,10 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
         /* Need to capture an extra binding: */
         int cp;
         cp = captured->count;
-        if (local_typed)
+        if (local_typed) {
           cp = -((cp << CLOS_TYPE_BITS_PER_ARG) + local_typed);
+          captured_typed = 1;
+        }
         scheme_hash_set(captured, scheme_make_integer(i), scheme_make_integer(cp));
       }
     }
@@ -1902,9 +1907,10 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
        is in captured, so just build it from scratch. */
     int old_pos, j, new_size, need_flags;
     new_size = (captured->count + (has_tl ? 1 : 0));
-    if (cl->local_type_map || expanded_already || convert_boxes) {
+    if (cl->local_type_map || expanded_already || convert_boxes || captured_typed) {
       need_flags = new_size;
       new_size += boxmap_size(data->num_params + new_size);
+      expanded_already = 1;
     } else
       need_flags = 0;
     closure_map = (mzshort *)scheme_malloc_atomic(sizeof(mzshort) * new_size);
@@ -1927,7 +1933,7 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
             convert_boxes = allocate_boxmap(offset);
           scheme_boxmap_set(convert_boxes, cp, bit, 0);
           if (need_flags)
-            scheme_boxmap_set(closure_map, cp, bit, need_flags);
+            scheme_boxmap_set(closure_map, cp + data->num_params, bit, need_flags);
         }
         closure_map[cp] = old_pos;
       }
