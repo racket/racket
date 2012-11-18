@@ -7,9 +7,10 @@
 ;;;
 
 (: divides? : Integer Integer -> Boolean)
-; For b<>0:  ( a divides b <=> exists k s.t. a*k=b )
+; a divides b <=> exists unique k s.t. a*k=b
 (define (divides? a b)
-  (= (remainder b a) 0))
+  (cond [(zero? a)  #f]
+        [else  (= (remainder b a) 0)]))
 
 ; DEF (Coprime, relatively prime)
 ;  Two or more integers are called coprime, if their greatest common divisor is 1.

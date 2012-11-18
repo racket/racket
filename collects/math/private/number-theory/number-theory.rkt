@@ -107,8 +107,10 @@
 
 ; Example : (solve-chinese '(2 3 2) '(3 5 7)) = 23
 
-(: solve-chinese : Zs (Listof N+) -> N)
+(: solve-chinese : Zs (Listof Z) -> N)
 (define (solve-chinese as ns)
+  (unless (andmap positive? ns)
+    (raise-argument-error 'solve-chinese "(Listof Positive-Integer)" 1 as ns))
   ; the ns should be coprime
   (let* ([n  (apply * ns)]
          [cs (map (λ: ([ni : Z]) (quotient n ni)) ns)]
@@ -245,35 +247,43 @@
                      (prev-prime n-2)))]))
 
 
-(: next-primes : Z N -> Zs)
+(: next-primes : Z Z -> Zs)
 (define (next-primes m primes-wanted)
-  (: loop : Z Z -> Zs)
-  (define (loop n primes-wanted)
-    (if (= primes-wanted 0)
-        '()
-        (let ([next (next-prime n)])
-          (if next
-              (cons next (loop next (sub1 primes-wanted)))
-              '()))))
-  (loop m primes-wanted))
+  (cond
+    [(primes-wanted . < . 0)  (raise-argument-error 'next-primes "Natural" 1 m primes-wanted)]
+    [else
+     (: loop : Z Z -> Zs)
+     (define (loop n primes-wanted)
+       (if (= primes-wanted 0)
+           '()
+           (let ([next (next-prime n)])
+             (if next
+                 (cons next (loop next (sub1 primes-wanted)))
+                 '()))))
+     (loop m primes-wanted)]))
 
-(: prev-primes : Z N -> Zs)
+(: prev-primes : Z Z -> Zs)
 (define (prev-primes m primes-wanted)
-  (: loop : Z Z -> Zs)
-  (define (loop n primes-wanted)
-    (if (= primes-wanted 0)
-        '()
-        (let ([prev (prev-prime n)])
-          (if prev
-              (cons prev (loop prev (sub1 primes-wanted)))
-              '()))))
-  (loop m primes-wanted))
+  (cond
+    [(primes-wanted . < . 0)  (raise-argument-error 'prev-primes "Natural" 1 m primes-wanted)]
+    [else
+     (: loop : Z Z -> Zs)
+     (define (loop n primes-wanted)
+       (if (= primes-wanted 0)
+           '()
+           (let ([prev (prev-prime n)])
+             (if prev
+                 (cons prev (loop prev (sub1 primes-wanted)))
+                 '()))))
+     (loop m primes-wanted)]))
 
 
-(: nth-prime : N -> Prime)
+(: nth-prime : Z -> Prime)
 (define (nth-prime n)
-  (for/fold: ([p : Prime  2]) ([m (in-range n)])
-    (next-prime p)))
+  (cond [(n . < . 0)  (raise-argument-error 'nth-prime "Natural" n)]
+        [else
+         (for/fold: ([p : Prime  2]) ([m (in-range n)])
+           (next-prime p))]))
 
 
 ;;;

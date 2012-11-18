@@ -23,8 +23,12 @@
   
   (provide (all-defined-out))
   
-  (: current-modulus-param (Parameterof Positive-Integer))
-  (define current-modulus-param (make-parameter 1))
+  (: current-modulus-param (Parameterof Integer Positive-Integer))
+  (define current-modulus-param
+    (make-parameter
+     1 (λ: ([n : Integer])
+         (cond [(n . <= . 0)  (raise-argument-error 'with-modulus "Positive-Integer" n)]
+               [else  n]))))
   
   (: current-modulus (-> Positive-Integer))
   (begin-encourage-inline
