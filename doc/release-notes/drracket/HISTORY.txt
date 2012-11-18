@@ -1,4 +1,14 @@
 ------------------------------
+       Version 5.3.2
+------------------------------
+
+  . DrRacket is more responsive when editing
+
+  . The language dialog has been revamped to encourage people even
+    more to use the #lang language (unless they are using the teaching
+    languages)
+
+------------------------------
        Version 5.3.1
 ------------------------------
 
