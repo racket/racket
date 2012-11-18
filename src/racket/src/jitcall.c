@@ -1079,7 +1079,7 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
   int closure_size = jitter->self_closure_size;
   int space, offset;
 #ifdef USE_FLONUM_UNBOXING
-  int arg_offset = 1, arg_tmp_offset;
+  int arg_offset = 0, arg_tmp_offset;
   Scheme_Object *rand;
 #endif
 
@@ -1124,7 +1124,7 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
               ? alt_rands[i+1+args_already_in_place] 
               : app->args[i+1+args_already_in_place]);
       mz_ld_fppush(JIT_FPR0, arg_tmp_offset);
-      --arg_tmp_offset;
+      arg_tmp_offset -= sizeof(double);
       already_unboxed = 1;
       if (!already_loaded && !SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)) {
         already_loaded = 1;
@@ -1140,8 +1140,8 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
     if (is_flonum) {
       if (!already_unboxed)
         jit_ldxi_d_fppush(JIT_FPR0, JIT_R0, &((Scheme_Double *)0x0)->double_val); 
+      arg_offset += sizeof(double);
       mz_st_fppop(arg_offset, JIT_FPR0);
-      arg_offset++;
     }
 #endif
     CHECK_LIMIT();
@@ -1179,7 +1179,7 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
                 : app->args[i+1+args_already_in_place]);
         if (!SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)
             || (SCHEME_GET_LOCAL_TYPE(rand) == SCHEME_LOCAL_TYPE_FLONUM)) {
-          int aoffset = JIT_FRAME_FLONUM_OFFSET - (arg_tmp_offset * sizeof(double));
+          int aoffset = JIT_FRAME_FLOSTACK_OFFSET - arg_tmp_offset;
           GC_CAN_IGNORE jit_insn *iref;
           if (i != num_rands - 1)
             mz_pushr_p(JIT_R0);
@@ -1207,7 +1207,7 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
           CHECK_LIMIT();
           if (i != num_rands - 1)
             mz_popr_p(JIT_R0);
-          --arg_tmp_offset;
+          arg_tmp_offset -= sizeof(double);
         }
       }
     }
@@ -1226,7 +1226,7 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
         iref = jit_bnei_p(jit_forward(), JIT_R0, NULL);
         __END_TINY_JUMPS__(1);
         {
-          int aoffset = JIT_FRAME_FLONUM_OFFSET - (arg_tmp_offset * sizeof(double));
+          int aoffset = JIT_FRAME_FLOSTACK_OFFSET - arg_tmp_offset;
           jit_movi_l(JIT_R0, aoffset);
           (void)jit_calli(sjc.box_flonum_from_stack_code);
           mz_ld_runstack_base_alt(JIT_R2);
@@ -1238,7 +1238,7 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
         __END_TINY_JUMPS__(1);
         mz_popr_p(JIT_R0);
         CHECK_LIMIT();
-        --arg_tmp_offset;
+        arg_tmp_offset -= sizeof(double);
       }
     }
   }
@@ -1521,18 +1521,18 @@ static int generate_fp_argument_shuffle(int direct_flostack_offset, mz_jit_state
   /* Copy unboxed flonums into place where the target code expects them,
      which is shifted and reverse of the order that we pushed. */
   if (direct_flostack_offset
-      && ((direct_flostack_offset > 1)
+      && ((direct_flostack_offset > sizeof(double))
           || (direct_flostack_offset != jitter->flostack_offset))) {
     /* If the source and target areas don't overlap (or if they
        overlap only by one item), we can do it in one step, otherwise
        reverse then shift. */
-    if (jitter->flostack_offset >= ((2 * direct_flostack_offset) - 1)) {
+    if (jitter->flostack_offset >= ((2 * direct_flostack_offset) - sizeof(double))) {
       /* one step: */
       if (direct_flostack_offset != jitter->flostack_offset) {
         /* shift: */
-        for (i = 0; i < direct_flostack_offset; i++) {
+        for (i = 0; i < direct_flostack_offset; i += sizeof(double)) {
           int i_pos, a_pos;
-          i_pos = jitter->flostack_offset - direct_flostack_offset + i + 1;
+          i_pos = jitter->flostack_offset - direct_flostack_offset + i + sizeof(double);
           a_pos = direct_flostack_offset - i;
           if (i_pos != a_pos) {
             mz_ld_fppush(JIT_FPR0, i_pos);
@@ -1543,10 +1543,10 @@ static int generate_fp_argument_shuffle(int direct_flostack_offset, mz_jit_state
       }
     } else {
       /* reverse: */          
-      for (i = 0, j = direct_flostack_offset-1; i < j; i++, j--) {
+      for (i = 0, j = direct_flostack_offset-sizeof(double); i < j; i += sizeof(double), j -= sizeof(double)) {
         int i_pos, j_pos;
-        i_pos = jitter->flostack_offset - direct_flostack_offset + i + 1;
-        j_pos = jitter->flostack_offset - direct_flostack_offset + j + 1;
+        i_pos = jitter->flostack_offset - direct_flostack_offset + i + sizeof(double);
+        j_pos = jitter->flostack_offset - direct_flostack_offset + j + sizeof(double);
         mz_ld_fppush(JIT_FPR1, i_pos);
         mz_ld_fppush(JIT_FPR0, j_pos);
         mz_st_fppop(i_pos, JIT_FPR0);
@@ -1556,11 +1556,11 @@ static int generate_fp_argument_shuffle(int direct_flostack_offset, mz_jit_state
      
       if (direct_flostack_offset != jitter->flostack_offset) {
         /* shift: */
-        for (i = 0; i < direct_flostack_offset; i++) {
+        for (i = 0; i < direct_flostack_offset; i += sizeof(double)) {
           int i_pos, a_pos;
-          i_pos = jitter->flostack_offset - direct_flostack_offset + i + 1;
+          i_pos = jitter->flostack_offset - direct_flostack_offset + i + sizeof(double);
           mz_ld_fppush(JIT_FPR0, i_pos);
-          a_pos = i + 1;
+          a_pos = i + sizeof(double);
           mz_st_fppop(a_pos, JIT_FPR0);
           CHECK_LIMIT();
         }
@@ -1586,11 +1586,11 @@ static int generate_call_path_with_unboxes(mz_jit_state *jitter, int direct_flos
 
   offset = FLOSTACK_SPACE_CHUNK * ((direct_flostack_offset + (FLOSTACK_SPACE_CHUNK - 1)) 
                                    / FLOSTACK_SPACE_CHUNK);
-  jit_subi_l(JIT_SP, JIT_SP, offset * sizeof(double));
+  jit_subi_l(JIT_SP, JIT_SP, offset);
   
-  for (i = 0; i < direct_flostack_offset; i++) {
+  for (i = 0; i < direct_flostack_offset; i += sizeof(double)) {
     int i_pos, a_pos;
-    i_pos = jitter->flostack_offset - direct_flostack_offset + i + 1;
+    i_pos = jitter->flostack_offset - direct_flostack_offset + i + sizeof(double);
     a_pos = direct_flostack_offset - i;
     mz_ld_fppush_x(JIT_FPR0, i_pos, JIT_R2);
     mz_st_fppop(a_pos, JIT_FPR0);
@@ -1617,9 +1617,9 @@ static int generate_call_path_with_unboxes(mz_jit_state *jitter, int direct_flos
   for (i = 0, k = 0; i < num_rands; i++) {
     if ((SCHEME_CLOSURE_DATA_FLAGS(direct_data) & CLOS_HAS_TYPED_ARGS)
         && (CLOSURE_ARGUMENT_IS_FLONUM(direct_data, i))) {
-      k++;
+      k += sizeof(double);
       offset = jitter->flostack_offset - direct_flostack_offset + k;
-      offset = JIT_FRAME_FLONUM_OFFSET - (offset * sizeof(double));
+      offset = JIT_FRAME_FLOSTACK_OFFSET - offset;
       jit_ldxi_p(JIT_R0, JIT_RUNSTACK, WORDS_TO_BYTES(i));
       scheme_generate_flonum_local_boxing(jitter, i, offset, JIT_R0);
     }
@@ -1939,7 +1939,7 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
       } else {
         (void)jit_movi_p(JIT_R0, NULL);
       }
-      direct_flostack_offset++;
+      direct_flostack_offset += sizeof(double);
     } else
 #endif
       if (inline_direct_args) {

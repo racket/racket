@@ -652,7 +652,7 @@ void scheme_mz_flostack_restore(mz_jit_state *jitter, int space, int pos, int ge
   if (space != jitter->flostack_space) {
     if (gen) {
       int delta = jitter->flostack_space - space;
-      jit_addi_p(JIT_SP, JIT_SP, delta * sizeof(double));
+      jit_addi_p(JIT_SP, JIT_SP, delta);
     }
     if (adj) jitter->flostack_space = space;
   }
@@ -722,7 +722,7 @@ int scheme_mz_is_closure(mz_jit_state *jitter, int i, int arity, int *_flags)
 }
 
 #ifdef USE_FLONUM_UNBOXING
-int scheme_mz_flonum_pos(mz_jit_state *jitter, int i)
+int scheme_mz_flostack_pos(mz_jit_state *jitter, int i)
 {
   int j = i, p = jitter->num_mappings, c;
   while (p && (j >= 0)) {

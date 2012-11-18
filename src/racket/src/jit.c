@@ -1087,8 +1087,8 @@ int scheme_generate_flonum_local_boxing(mz_jit_state *jitter, int pos, int offse
 static int generate_flonum_local_boxing(mz_jit_state *jitter, int pos, int local_pos, int target)
 {
   int offset;
-  offset = scheme_mz_flonum_pos(jitter, local_pos);
-  offset = JIT_FRAME_FLONUM_OFFSET - (offset * sizeof(double));
+  offset = scheme_mz_flostack_pos(jitter, local_pos);
+  offset = JIT_FRAME_FLOSTACK_OFFSET - offset;
   if (jitter->unbox) {
     int fpr0;
     fpr0 = JIT_FPR_0(jitter->unbox_depth);
@@ -1105,13 +1105,13 @@ static int generate_flonum_local_boxing(mz_jit_state *jitter, int pos, int local
 int scheme_generate_flonum_local_unboxing(mz_jit_state *jitter, int push)
 /* Move FPR0 onto C stack */
 {
-  if (jitter->flostack_offset == jitter->flostack_space) {
-    int space = FLOSTACK_SPACE_CHUNK * sizeof(double);
-    jitter->flostack_space += FLOSTACK_SPACE_CHUNK;
+  if ((jitter->flostack_offset + sizeof(double)) > jitter->flostack_space) {
+    int space = FLOSTACK_SPACE_CHUNK;
+    jitter->flostack_space += space;
     jit_subi_l(JIT_SP, JIT_SP, space);
   }
 
-  jitter->flostack_offset += 1;
+  jitter->flostack_offset += sizeof(double);
   if (push)
     mz_runstack_flonum_pushed(jitter, jitter->flostack_offset);
   CHECK_LIMIT();
@@ -3339,7 +3339,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     /* In the case of a direct native call, the flonums can be
        already unpacked, in which case JIT_SP is set up. Check whether
        JIT_SP is already different than the 0-flonums case. */
-    f_offset = JIT_FRAME_FLONUM_OFFSET - (jitter->flostack_space * sizeof(double));
+    f_offset = JIT_FRAME_FLOSTACK_OFFSET - jitter->flostack_space;
     jit_subr_p(JIT_R1, JIT_SP, JIT_FP);
     zref = jit_bnei_l(jit_forward(), JIT_R1, f_offset);
         

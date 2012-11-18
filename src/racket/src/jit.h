@@ -329,7 +329,7 @@ typedef struct mz_jit_state {
                     .             shift >>2 to get flags
 		    . 1 -> case 0x2 bit:
                     .        0 -> shift >>2 to get new (native) pushed
-                    .        1 -> shift >>2 to get flonum stack pos */
+                    .        1 -> shift >>2 to get flostack offset */
   int num_mappings, mappings_size;
   int retained, retained_double;
   int need_set_rs;
@@ -706,7 +706,7 @@ int check_location;
       LOCAL4 (x86_64: = saved R14 otherwise when THREAD_LOCAL
               x86: = RUNSTACK_BASE or THREAD_LOCAL)
       [some empty slots, maybe, depending on alignment]
-      [space for local, unboxed flonums]
+      [space for "flostack" --- local unboxed values, such as flonums]
     Registers: JIT_V1 = RUNSTACK, JIT_V2 = x86_64: RUNSTACK_BASE
                                            x86: RUNSTACK_BASE or THREAD_LOCAL
                x86_64: JIT_R14 = THREAD_LOCAL
@@ -823,7 +823,7 @@ void scheme_jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 # endif
 # define mz_push_locals() SUBQir((LOCAL_FRAME_SIZE << JIT_LOG_WORD_SIZE), JIT_SP)
 # define mz_pop_locals() ADDQir((LOCAL_FRAME_SIZE << JIT_LOG_WORD_SIZE), JIT_SP)
-# define JIT_FRAME_FLONUM_OFFSET (-(JIT_WORD_SIZE * (LOCAL_FRAME_SIZE + 3)))
+# define JIT_FRAME_FLOSTACK_OFFSET (-(JIT_WORD_SIZE * (LOCAL_FRAME_SIZE + 3)))
 # define _jit_prolog_again(jitter, n, ret_addr_reg) (PUSHQr(ret_addr_reg), jit_base_prolog())
 # if defined(MZ_USE_JIT_X86_64) && !defined(_WIN64)
 #  define jit_shuffle_saved_regs() (MOVQrr(_ESI, _R12), MOVQrr(_EDI, _R13))
@@ -865,19 +865,19 @@ void scheme_jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 #if 0
 static jit_insn *fp_tmpr;
 # define check_fp_depth(i, FP) \
-  (jit_addi_l(FP, FP, (JIT_FRAME_FLONUM_OFFSET - ((i) * sizeof(double)))), \
+  (jit_addi_l(FP, FP, (JIT_FRAME_FLOSTACK_OFFSET - (i))),             \
    fp_tmpr = jit_bger_l(0, FP, JIT_SP),                               \
    jit_ldi_p(FP, 0),                                                    \
    mz_patch_branch(fp_tmpr),                                            \
-   jit_subi_l(FP, FP, (JIT_FRAME_FLONUM_OFFSET - ((i) * sizeof(double)))))
+   jit_subi_l(FP, FP, (JIT_FRAME_FLOSTACK_OFFSET - (i))))
 #else
 # define check_fp_depth(i, FP) (void)0
 #endif
 
-#define FLOSTACK_SPACE_CHUNK 4
-# define mz_ld_fppush_x(r, i, FP) (check_fp_depth(i, FP), jit_ldxi_d_fppush(r, FP, (JIT_FRAME_FLONUM_OFFSET - ((i) * sizeof(double)))))
+#define FLOSTACK_SPACE_CHUNK 16
+# define mz_ld_fppush_x(r, i, FP) (check_fp_depth(i, FP), jit_ldxi_d_fppush(r, FP, (JIT_FRAME_FLOSTACK_OFFSET - (i))))
 # define mz_ld_fppush(r, i) mz_ld_fppush_x(r, i, JIT_FP) 
-# define mz_st_fppop_x(i, r, FP) (check_fp_depth(i, FP), (void)jit_stxi_d_fppop((JIT_FRAME_FLONUM_OFFSET - ((i) * sizeof(double))), FP, r))
+# define mz_st_fppop_x(i, r, FP) (check_fp_depth(i, FP), (void)jit_stxi_d_fppop((JIT_FRAME_FLOSTACK_OFFSET - (i)), FP, r))
 # define mz_st_fppop(i, r) mz_st_fppop_x(i, r, JIT_FP) 
 
 #define mz_patch_branch(a) mz_patch_branch_at(a, (_jit.x.pc))
@@ -1195,7 +1195,7 @@ void scheme_mz_popr_p_it(mz_jit_state *jitter, int reg, int discard);
 void scheme_mz_need_space(mz_jit_state *jitter, int need_extra);
 int scheme_stack_safety(mz_jit_state *jitter, int cnt, int offset);
 #ifdef USE_FLONUM_UNBOXING
-int scheme_mz_flonum_pos(mz_jit_state *jitter, int i);
+int scheme_mz_flostack_pos(mz_jit_state *jitter, int i);
 #endif
 void scheme_mz_load_retained(mz_jit_state *jitter, int rs, void *o);
 
