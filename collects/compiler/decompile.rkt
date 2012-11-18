@@ -326,7 +326,7 @@
     [(struct topsyntax (depth pos midpt))
      (list-ref/protect (glob-desc-vars globs) (+ midpt pos) 'topsyntax)]
     [(struct primval (id))
-     (hash-ref primitive-table id)]
+     (hash-ref primitive-table id (lambda () (error "unknown primitive")))]
     [(struct assign (id rhs undef-ok?))
      `(set! ,(decompile-expr id globs stack closed)
             ,(decompile-expr rhs globs stack closed))]
