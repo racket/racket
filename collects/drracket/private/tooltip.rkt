@@ -34,7 +34,6 @@
       (super show on?))
     
     (define/public (show-over x y w h #:prefer-upper-left? [prefer-upper-left? #f])
-      (send timer start 200 #f)
       (reflow-container)
       (define mw (get-width))
       (define mh (get-height))
