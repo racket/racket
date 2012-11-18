@@ -1253,7 +1253,20 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
     mz_set_local_p(JIT_R2, JIT_LOCAL2);
   }
 
-  mz_rs_stxi(num_rands - 1, JIT_R0);
+  if (num_rands > 0) {
+    /* We didn't leave room for the last argument, so now we need to make
+       space for it. (Possible improvement: it may be possible to know that 
+       room is available already, so that this isn't necessary.) */
+    mz_runstack_unskipped(jitter, 1);
+    mz_runstack_pushed(jitter, 1);
+    mz_rs_dec(1);
+    for (i = 0; i < num_rands-1; i++) {
+      mz_rs_ldxi(JIT_R1, i+1);
+      mz_rs_stxi(i, JIT_R1);
+    }
+    
+    mz_rs_stxi(num_rands - 1, JIT_R0);
+  }
   scheme_generate(rator, jitter, 0, 0, 0, JIT_V1, NULL);
   CHECK_LIMIT();
   mz_rs_sync();
@@ -1818,10 +1831,19 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
     if (inline_direct_args) {
       mz_runstack_skipped(jitter, num_rands);
     } else if (!direct_prim || (num_rands > 1) || (no_call == 2)) {
-      mz_rs_dec(num_rands);
-      need_safety = num_rands;
-      CHECK_RUNSTACK_OVERFLOW();
-      mz_runstack_pushed(jitter, num_rands);
+      int skip_end = 0;
+      if (direct_self && is_tail && !no_call && (num_rands > 0)) {
+        /* last argument is kept in a register */
+        skip_end = 1;
+      }
+      if (num_rands - skip_end > 0) {
+        mz_rs_dec(num_rands-skip_end);
+        CHECK_RUNSTACK_OVERFLOW();
+        mz_runstack_pushed(jitter, num_rands-skip_end);
+      }
+      need_safety = num_rands-skip_end;
+      if (skip_end)
+        mz_runstack_skipped(jitter, skip_end);
     } else {
       mz_runstack_skipped(jitter, 1);
     }
@@ -1933,8 +1955,8 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
       mz_rs_ldxi(JIT_V1, i + offset);
     }
     if ((!direct_prim || (num_rands > 1) || (no_call == 2))
-               && (!direct_self || !is_tail || no_call || (i + 1 < num_rands))
-               && !inline_direct_args) {
+        && (!direct_self || !is_tail || no_call || (i + 1 < num_rands))
+        && !inline_direct_args) {
       int reg = mz_CURRENT_REG_STATUS_VALID();
       mz_rs_stxi(i + offset, JIT_R0);
       mz_SET_REG_STATUS_VALID(reg);
