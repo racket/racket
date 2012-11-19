@@ -1140,11 +1140,10 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
         int va;
 
         if (scheme_jit_is_fixnum(rand)) {
-          if (scheme_jit_is_fixnum(rand2)) {
+          if (scheme_jit_is_fixnum(rand2))
             va = -1; /* no check needed */
-          } else {
+          else
             va = JIT_R0; /* check only rand2 */
-          }
         } else if (scheme_jit_is_fixnum(rand2)) {
           va = JIT_R1; /* check only rand */
         } else {
@@ -1152,7 +1151,8 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
             /* check both fixnum bits at once by ANDing into R2: */
             jit_andr_ul(JIT_R2, JIT_R0, JIT_R1);
             va = JIT_R2;
-          }
+          } else
+            va =  -1;
         }
 
         if (!unsafe_fx && !unsafe_fl) {
