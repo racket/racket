@@ -3,6 +3,7 @@
                  define-namespace-anchor
                  namespace-anchor->empty-namespace
                  make-base-empty-namespace)
+           (only scheme/base) (only scheme/class) ; so that `make-gui-namespace' attaches them
            racket/class
            racket/draw racket/snip
            file/resource
