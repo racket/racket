@@ -312,13 +312,19 @@ are not named in the @racket[tags] list.  Using @racket[(lambda (x) #t)] as
 @racket[choose] filters all elements regardless of the @racket[tags]
 list.}
 
-@defproc[(validate-xexpr [v any/c]) (one-of/c #t)]{
+@defproc[(validate-xexpr [v any/c]) #t]{
 
-If @racket[v] is an @tech{X-expression}, the result
+If @racket[v] is an @tech{X-expression}, the result is
 @racket[#t]. Otherwise, @racket[exn:invalid-xexpr]s is raised, with
-the a message of the form ``Expected @nonterm{something}, given
-@nonterm{something-else}/'' The @racket[code] field of the exception
-is the part of @racket[v] that caused the exception.}
+a message of the form ``Expected @nonterm{something}, given
+@nonterm{something-else}''. The @racket[code] field of the exception
+is the part of @racket[v] that caused the exception.
+
+@examples[#:eval xml-eval
+  (validate-xexpr '(doc () "over " (em () "9000") "!"))
+  (validate-xexpr #\newline)
+]
+}
 
 @defproc[(correct-xexpr? [v any/c]
                          [success-k (-> any/c)]
@@ -328,7 +334,7 @@ is the part of @racket[v] that caused the exception.}
 Like @racket[validate-xexpr], except that @racket[success-k] is called
 on each valid leaf, and @racket[fail-k] is called on invalid leaves;
 the @racket[fail-k] may return a value instead of raising an exception
-of otherwise escaping. Results from the leaves are combined with
+or otherwise escaping. Results from the leaves are combined with
 @racket[and] to arrive at the final result.}
 
 @; ----------------------------------------------------------------------
