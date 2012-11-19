@@ -1029,6 +1029,8 @@ static void validate_unclosed_procedure(Mz_CPort *port, Scheme_Object *expr,
       int pos = data->num_params + i;
       int ct;
       ct = scheme_boxmap_get(map, pos, data->closure_size);
+      if (ct == CLOS_TYPE_BOXED)
+        scheme_ill_formed_code(port);
       if (ct > CLOS_TYPE_TYPE_OFFSET) {
         if (vld != (VALID_TYPED + (ct - CLOS_TYPE_TYPE_OFFSET)))
           vld = VALID_NOT;

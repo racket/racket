@@ -1933,7 +1933,7 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
           if (!convert_boxes)
             convert_boxes = allocate_boxmap(offset);
           scheme_boxmap_set(convert_boxes, cp, bit, 0);
-          if (need_flags)
+          if (need_flags && (bit > CLOS_TYPE_TYPE_OFFSET))
             scheme_boxmap_set(closure_map, cp + data->num_params, bit, need_flags);
         }
         closure_map[cp] = old_pos;
