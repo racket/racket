@@ -1,10 +1,12 @@
 #lang racket/base
 (require file/untar
+         file/untgz
          racket/file
          racket/system)
 
 (define tmp (find-system-path 'temp-dir))
 (define tar-exe (find-executable-path "tar"))
+(define gzip-exe (find-executable-path "gzip"))
 
 (define work-dir (build-path tmp (format "untar-testing~a" (random 1000))))
 (printf "Working in ~a\n" work-dir)
@@ -101,9 +103,20 @@
 (delete-directory/files sub-dir)
 
 (parameterize ([current-directory work-dir])
+  (untgz a.tar #:dest "sub"))
+(diff ex1-dir (build-path sub-dir "ex1"))
+(delete-directory/files sub-dir)
+
+(parameterize ([current-directory work-dir])
   (untar a.tar #:dest "sub" #:filter (lambda args #f)))
 (when (directory-exists? sub-dir)
   (error "should not have been unpacked"))
+
+(void (system* gzip-exe a.tar))
+(parameterize ([current-directory work-dir])
+  (untgz (path-replace-suffix a.tar #".tar.gz") #:dest "sub"))
+(diff ex1-dir (build-path sub-dir "ex1"))
+(delete-directory/files sub-dir)
 
 (file-or-directory-permissions* more-dir '(read execute write))
 (delete-directory/files work-dir)
