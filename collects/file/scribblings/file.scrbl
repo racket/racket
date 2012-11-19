@@ -10,6 +10,7 @@
 @include-section["gunzip.scrbl"]
 @include-section["zip.scrbl"]
 @include-section["tar.scrbl"]
+@include-section["untar.scrbl"]
 @include-section["md5.scrbl"]
 @include-section["sha1.scrbl"]
 @include-section["gif.scrbl"]
