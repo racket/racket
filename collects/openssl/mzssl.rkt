@@ -38,6 +38,7 @@
 	   ssl-load-private-key!
 	   ssl-load-verify-root-certificates!
 	   ssl-load-suggested-certificate-authorities!
+           ssl-seal-context!
 
            ssl-set-verify!
            ssl-try-verify!
@@ -301,7 +302,7 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Structs
 
-  (define-struct ssl-context (ctx [verify-hostname? #:mutable]))
+  (define-struct ssl-context (ctx [verify-hostname? #:mutable] [sealed? #:mutable]))
   (define-struct (ssl-client-context ssl-context) ())
   (define-struct (ssl-server-context ssl-context) ())
 
@@ -392,7 +393,7 @@
          (SSL_CTX_set_mode ctx (bitwise-ior SSL_MODE_ENABLE_PARTIAL_WRITE
                                             SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER))
          (register-finalizer ctx (lambda (v) (SSL_CTX_free v)))
-         ((if client? make-ssl-client-context make-ssl-server-context) ctx #f)))))
+         ((if client? make-ssl-client-context make-ssl-server-context) ctx #f #f)))))
 
   (define (ssl-make-client-context [protocol-symbol default-encrypt])
     (make-context 'ssl-make-client-context protocol-symbol "" #t))
@@ -400,19 +401,21 @@
   (define (ssl-make-server-context [protocol-symbol default-encrypt])
     (make-context 'ssl-make-server-context protocol-symbol "" #f))
 
-  (define (get-context who context-or-encrypt-method client?)
+  (define (get-context who context-or-encrypt-method client?
+                       #:need-unsealed? [need-unsealed? #f])
     (if (ssl-context? context-or-encrypt-method)
-	(ssl-context-ctx context-or-encrypt-method)
+	(extract-ctx who need-unsealed? context-or-encrypt-method)
 	(let ([ctx (SSL_CTX_new (encrypt->method who "ssl-context? " context-or-encrypt-method client?))])
 	  (SSL_CTX_set_mode ctx SSL_MODE_ENABLE_PARTIAL_WRITE)
 	  ctx)))
 
-  (define (get-context/listener who ssl-context-or-listener [fail? #t])
+  (define (get-context/listener who ssl-context-or-listener [fail? #t]
+                                #:need-unsealed? [need-unsealed? #f])
     (cond
      [(ssl-context? ssl-context-or-listener)
-      (ssl-context-ctx ssl-context-or-listener)]
+      (extract-ctx who need-unsealed? ssl-context-or-listener)]
      [(ssl-listener? ssl-context-or-listener)
-      (ssl-context-ctx (ssl-listener-mzctx ssl-context-or-listener))]
+      (extract-ctx who need-unsealed? (ssl-listener-mzctx ssl-context-or-listener))]
      [else
       (if fail?
           (raise-argument-error who
@@ -420,9 +423,22 @@
                                 ssl-context-or-listener)
           #f)]))
 
+  (define (extract-ctx who need-unsealed? mzctx)
+    (when (and need-unsealed? (ssl-context-sealed? mzctx))
+      (error who "context is sealed; no further changes are allowed"))
+    (ssl-context-ctx mzctx))
+
+  (define (ssl-seal-context! mzctx)
+    (unless (ssl-context? mzctx)
+      (raise-argument-error 'ssl-seal-context!
+                            "(or/c ssl-client-context? ssl-server-context?)"
+                            mzctx))
+    (set-ssl-context-sealed?! mzctx #t))
+
   (define (ssl-load-... who load-it ssl-context-or-listener pathname)
     (let ([ctx (get-context/listener 'ssl-load-certificate-chain!
-				     ssl-context-or-listener)])
+				     ssl-context-or-listener
+                                     #:need-unsealed? #t)])
       (unless (path-string? pathname)
 	(raise-argument-error 'ssl-load-certificate-chain!
                               "path-string?"
@@ -475,6 +491,7 @@
       (raise-argument-error 'ssl-set-verify-hostname!
                             "(or/c ssl-client-context? ssl-server-context?)"
                             ssl-context))
+    (void (extract-ctx 'ssl-set-verify-hostname! #t ssl-context))
     (set-ssl-context-verify-hostname?! ssl-context (and on? #t)))
 
   (define (ssl-try-verify! ssl-context-or-listener-or-port on?)
@@ -492,7 +509,8 @@
     (cond
      [(get-context/listener who
                             ssl-context-or-listener-or-port
-                            #f)
+                            #f
+                            #:need-unsealed? #t)
       => (lambda (ctx)
            ;; required by openssl. This is more for when calling i2d_SSL_SESSION/d2i_SSL_SESSION
            ;; for instance if we were saving sessions in a database etc... We aren't using that

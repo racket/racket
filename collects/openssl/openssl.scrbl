@@ -393,6 +393,15 @@ You can use the file @filepath{test.pem} of the @filepath{openssl}
 collection for testing purposes where the peer identifies itself using
 @filepath{test.pem}.}
 
+@defproc[(ssl-seal-context! [context (or/c ssl-client-context? ssl-server-context?)])
+         void?]{
+
+Seals @racket[context], preventing further modifications. After a
+context is sealed, passing it to functions such as
+@racket[ssl-set-verify!] and
+@racket[ssl-load-verify-root-certificates!] results in an error.}
+
+
 @; ----------------------------------------------------------------------
 @section[#:tag "peer-verif"]{Peer Verification}
 
