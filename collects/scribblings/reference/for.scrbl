@@ -22,7 +22,7 @@ The @racket[for] iteration forms are based on SRFI-42
                [break-clause (code:line #:break guard-expr)
                              (code:line #:final guard-expr)]
                [body-or-break body
-                              bleak-clause])
+                              break-clause])
               #:contracts ([seq-expr sequence?])]{
 
 Iteratively evaluates @racket[body]s. The @racket[for-clause]s
