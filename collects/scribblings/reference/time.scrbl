@@ -138,11 +138,11 @@ The reliability of the timing numbers depends on the platform. If
 multiple Racket threads are running, then the reported time may
 include work performed by other threads.}
 
-@defform[(time expr)]{
+@defform[(time body ...+)]{
 
 Reports @racket[time-apply]-style timing information for the
 evaluation of @racket[expr] directly to the current output port.  The
-result is the result of @racket[expr].}
+result is the result of  the last @racket[body].}
 
 @; ----------------------------------------------------------------------
 
