@@ -8,6 +8,7 @@
                      (only-in racket/base struct hash hasheq hasheqv in-directory local-require)
                      (only-in racket/unit struct/ctc)
                      (only-in scheme/gui/base make-gui-namespace make-gui-empty-namespace)
+                     (only-in scheme/gui/dynamic gui-dynamic-require)
                      (only-in mzlib/unit struct~s struct~s/ctc)
                      scheme/gui/base
                      scheme/sandbox))
@@ -20,12 +21,14 @@
                                  make-evaluator-id
                                  make-module-evaluator-id
                                  pretty-print-id
-                                 printable<%>-id)
+                                 printable<%>-id
+                                 gui-dynamic-require-id)
   (begin
     (require (for-label (only-in scheme struct struct/ctc)
                         (only-in racket/base make-base-namespace
                                              make-base-empty-namespace)
                         (only-in racket/pretty pretty-print)
+                        (only-in racket/gui/dynamic gui-dynamic-require)
                         racket/sandbox))
     (define unit-struct (racket struct))
     (define unit-struct/ctc (racket struct/ctc))
@@ -35,7 +38,8 @@
     (define make-evaluator-id (racket make-evaluator))
     (define make-module-evaluator-id (racket make-module-evaluator))
     (define pretty-print-id (racket pretty-print))
-    (define printable<%>-id (racket printable<%>))))
+    (define printable<%>-id (racket printable<%>))
+    (define gui-dynamic-require-id (racket gui-dynamic-require))))
 @(def-extras unit-struct
              unit-struct/ctc
              make-base-namespace-id
@@ -44,7 +48,8 @@
              make-evaluator-id
              make-module-evaluator-id
              pretty-print-id
-             printable<%>-id)
+             printable<%>-id
+             gui-dynamic-require-id)
 
 @(define-syntax-rule (compat-except sid rid . rest)
    (begin
@@ -158,6 +163,8 @@ must occur after all the @racket[provide*] forms to which it refers.}
 @compat-except[scheme/gui racket/gui]{, except that it builds on
 @racketmodname[scheme/gui/base] instead of @racketmodname[racket/gui/base]}
 
+@; ----------------------------------------------------------------------
+
 @compat-except[scheme/gui/base racket/gui/base]{, except that it builds on
 @racketmodname[scheme] instead of @racketmodname[racket]}
 
@@ -175,7 +182,16 @@ environment of the result namespace.}
 
 @; ----------------------------------------------------------------------
 
-@compat[scheme/gui/dynamic racket/gui/dynamic]
+@compat-except[scheme/gui/dynamic racket/gui/dynamic]{, except
+that @racket[gui-dynamic-require] extracts bindings from @racket[mred]
+instead of @racket[scheme/gui/base]}
+
+@defproc[(gui-dynamic-require [sym symbol?]) any]{
+
+Like @|gui-dynamic-require-id| from @racket[racket/gui/base], but
+to access exports of @racketmodname[scheme/gui/base].}
+
+@; ----------------------------------------------------------------------
 @compat[scheme/help racket/help]
 @compat[scheme/include racket/include]
 @; ----------------------------------------------------------------------

@@ -23,10 +23,9 @@
      (eq? (dynamic-require 'mred/private/dynamic 'kernel-initialized)
           'done))))
 
-(define-namespace-anchor anchor)
-
 (define (gui-dynamic-require sym)
-  (parameterize ([current-namespace (namespace-anchor->empty-namespace anchor)])
+  (parameterize ([current-namespace (variable-reference->empty-namespace
+                                     (#%variable-reference))])
     (if (gui-available?)
-        (dynamic-require 'mred sym)
+        (dynamic-require 'racket/gui/base sym)
         (error "racket/gui/base is not available"))))

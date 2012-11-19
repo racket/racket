@@ -6,4 +6,6 @@
 
 (let ([ns ((gui-dynamic-require 'make-gui-namespace))]
       [orig-ns (current-namespace)])
+  (when (namespace-variable-value 'hash #t (lambda () #f) ns)
+    (error "did not expect a binding for `hash'"))
   (namespace-attach-module orig-ns 'scheme/base ns))
