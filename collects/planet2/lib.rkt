@@ -18,6 +18,7 @@
          racket/set
          unstable/debug
          racket/string
+         file/untgz
          "util.rkt"
          "util-plt.rkt")
 
@@ -60,8 +61,7 @@
 
 (define (untar pkg pkg-dir #:strip-components [strip-components 0])
   (make-directory* pkg-dir)
-  (system* (find-executable-path "tar") "-C" pkg-dir "-xvzf" pkg
-           "--strip-components" (number->string strip-components)))
+  (untgz pkg #:dest pkg-dir #:strip-count strip-components))
 
 (define (download-file! url file #:fail-okay? [fail-okay? #f])
   (with-handlers
