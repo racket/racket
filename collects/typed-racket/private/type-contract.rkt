@@ -142,7 +142,11 @@
                [_ #`(values #,@rngs*)]))
            (cond
             ;; To generate a single `->*', everything must be the same for all arrs, except for positional
-            ;; arguments which only need to be monotonically increasing.
+            ;; arguments which can increase by at most one each time.
+            ;; Note: optional arguments can only increase by 1 each time, to avoid problems with
+            ;;  functions that take, e.g., either 2 or 6 arguments. These functions shouldn't match,
+            ;;  since this code would generate contracts that accept any number of arguments between
+            ;;  2 and 6, which is wrong.
             ;; TODO sufficient condition, but may not be necessary
             [(and
               (> (length arrs) 1)
@@ -151,17 +155,20 @@
 					    (list rng rest-spec kws)])
 			     arrs)])
                 (foldl equal? (first xs) (rest xs)))
-              ;; Positionals are monotonically increasing.
+              ;; Positionals are monotonically increasing by at most one.
               (let-values ([(_ ok?)
                             (for/fold ([positionals '()]
                                        [ok-so-far?  #t])
                                 ([arr (in-list arrs)])
                               (match arr
                                 [(arr: dom _ _ _ _)
+                                 (define ldom         (length dom))
+                                 (define lpositionals (length positionals))
                                  (values dom
                                          (and ok-so-far?
-                                              (>= (length dom) (length positionals))
-                                              (equal? positionals (take dom (length positionals)))))]))])
+                                              (or (= ldom lpositionals)
+                                                  (= ldom (add1 lpositionals)))
+                                              (equal? positionals (take dom lpositionals))))]))])
                 ok?))
              (match* ((first arrs) (last arrs))
                [((arr: first-dom (Values: (list (Result: rngs (FilterSet: (Top:) (Top:)) (Empty:)) ...)) rst #f kws)
