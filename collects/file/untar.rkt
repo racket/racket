@@ -113,10 +113,10 @@
         (lambda ()
           (try-file-op
            (lambda ()
-             (file-or-directory-permissions filename mode)))
+             (file-or-directory-permissions* filename mode #t)))
           (try-file-op
            (lambda ()
-             (file-or-directory-modify-seconds filename mod-time))))
+             (file-or-directory-modify-seconds* filename mod-time #t))))
         delays)]
       [(file)
        (define-values (base name dir?) (split-path filename))
@@ -128,10 +128,10 @@
           (copy-bytes size in out)))
        (try-file-op
         (lambda ()
-          (file-or-directory-permissions filename mode)))
+          (file-or-directory-permissions* filename mode #f)))
        (try-file-op
         (lambda ()
-          (file-or-directory-modify-seconds filename mod-time)))
+          (file-or-directory-modify-seconds* filename mod-time #f)))
        (copy-bytes (- total-len size) in #f)
        delays]
       [(link)
@@ -192,3 +192,19 @@
                      (log-error "untar: ~a" (exn-message exn))
                      (void))])
     (thunk)))
+
+(define (file-or-directory-modify-seconds* filename mod-time dir?)
+  (unless (and dir? (eq? (system-type) 'windows))
+    (file-or-directory-modify-seconds filename mod-time)))
+
+(define (file-or-directory-permissions* file perms dir?)
+  (file-or-directory-permissions file
+                                 (case (system-type)
+                                   [(windows)
+                                    ;; corce perms to be the same for user, group, and others
+                                    (define user-perms (bitwise-and #o700))
+                                    (bitwise-ior user-perms
+                                                 (arithmetic-shift user-perms -3)
+                                                 (arithmetic-shift user-perms -6))]
+                                   [else perms])))
+
