@@ -19,6 +19,7 @@
          unstable/debug
          racket/string
          file/untgz
+         file/unzip
          "util.rkt"
          "util-plt.rkt")
 
@@ -300,8 +301,7 @@
                [#"tgz"
                 (untar pkg pkg-dir)]
                [#"zip"
-                (system* (find-executable-path "unzip")
-                         "-n" pkg "-d" pkg-dir)]
+                (unzip pkg (make-filesystem-entry-reader #:dest pkg-dir))]
                [#"plt"
                 (unplt pkg pkg-dir)]
                [x
