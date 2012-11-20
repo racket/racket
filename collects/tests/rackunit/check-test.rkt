@@ -44,6 +44,18 @@
               (lambda ()
                 (apply pred args)))))
 
+;; NOTE(jpolitz): Not generalizing make-failure-test above because (at
+;; least) util-test expects it to be present, not exported, and a
+;; 2-argument procedure to test require/expose
+(define-syntax make-failure-test/stx
+  (syntax-rules ()
+    [(_ name pred arg ...)
+     (test-case
+      name
+      (check-exn exn:test:check?
+                 (lambda ()
+                   (pred arg ...))))]))
+
 (define-check (good)
   #t)
 
@@ -92,6 +104,28 @@
                 (define-simple-check (check-symbol? x)
                   (symbol? x))
                 (for-each check-symbol? '(a b c))))
+
+   (test-case "Trivial check-match test"
+              (check-match "dirigible" _))
+
+   (test-case "Simple check-match test"
+              (check-match (list 1 2 3) (list _ _ 3)))
+
+   (test-case "check-match with a nested struct"
+              (let ()
+                (struct data (f1 f2 f3))
+                (check-match (data 1 2 (data 1 2 3))
+                             (data _ 2 (data _ _ _)))))
+
+   (test-case "Simple check-match test with a binding pred"
+              (check-match 3 x (odd? x)))
+
+   (test-case "check-match with a nested struct and a binding pred"
+              (let ()
+                (struct data (f1 f2 f3))
+                (check-match (data 1 2 (data 1 2 3))
+                             (data _ _ (data x y z))
+                             (equal? (+ x y z) 6))))
    
    ;; Failures
    (make-failure-test "check-equal? failure"
@@ -122,6 +156,12 @@
                       check-not-false #f)
    (make-failure-test "check-= failure"
                       check-= 1.0 2.0 0.0)
+
+   (make-failure-test/stx "check-match failure pred"
+                          check-match 5 x (even? x))
+
+   (make-failure-test/stx "check-match failure match"
+                           check-match (list 4 5) (list _))
    
    (test-case "check-= allows differences within epsilon"
               (check-= 1.0 1.09 1.1))
