@@ -91,7 +91,7 @@
   ;; vector-ref on het vectors
   (pattern (~and form ((~or vector-ref unsafe-vector-ref unsafe-vector*-ref) vec:expr index:expr))
     (match (single-value #'vec)
-      [(tc-result1: (and vec-t (app resolve (HeterogenousVector: es))))
+      [(tc-result1: (and vec-t (app resolve (HeterogeneousVector: es))))
        (tc/hetero-ref #'index es vec-t expected "vector")]
       [v-ty (tc/app-regular #'form expected)]))
   ;; unsafe struct-set! 
@@ -103,17 +103,17 @@
   ;; vector-set! on het vectors
   (pattern (~and form ((~or vector-set! unsafe-vector-set! unsafe-vector*-set!) v:expr index:expr val:expr))
     (match (single-value #'v)
-      [(tc-result1: (and vec-t (app resolve (HeterogenousVector: es))))
+      [(tc-result1: (and vec-t (app resolve (HeterogeneousVector: es))))
        (tc/hetero-set! #'index es #'val vec-t expected "vector")]
       [v-ty (tc/app-regular #'form expected)]))
   (pattern (~and form ((~or vector-immutable vector) args:expr ...))
     (match expected
       [(tc-result1: (app resolve (Vector: t))) (tc/app-regular #'form expected)]
-      [(tc-result1: (app resolve (HeterogenousVector: ts)))
+      [(tc-result1: (app resolve (HeterogeneousVector: ts)))
        (unless (= (length ts) (length (syntax->list #'(args ...))))
          (tc-error/expr "expected vector with ~a elements, but got ~a"
                         (length ts)
-                        (make-HeterogenousVector (map tc-expr/t (syntax->list #'(args ...))))))
+                        (make-HeterogeneousVector (map tc-expr/t (syntax->list #'(args ...))))))
        (for ([e (in-list (syntax->list #'(args ...)))]
              [t (in-list ts)])
          (tc-expr/check e (ret t)))
@@ -131,6 +131,6 @@
          [_ (continue)])]
       ;; since vectors are mutable, if there is no expected type, we want to generalize the element type
       [(or #f (tc-result1: _))
-       (ret (make-HeterogenousVector (map (lambda (x) (generalize (tc-expr/t x)))
-                                          (syntax->list #'(args ...)))))]
+       (ret (make-HeterogeneousVector (map (lambda (x) (generalize (tc-expr/t x)))
+                                           (syntax->list #'(args ...)))))]
       [_ (int-err "bad expected: ~a" expected)])))

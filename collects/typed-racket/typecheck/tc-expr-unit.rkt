@@ -101,14 +101,14 @@
                               t ;; so that this isn't (Un) when we get no elems
                               (for/list ([l (in-vector (syntax-e #'i))])
                                 (tc-literal l t))))]
-         [(HeterogenousVector: ts)
-          (make-HeterogenousVector
+         [(HeterogeneousVector: ts)
+          (make-HeterogeneousVector
            (for/list ([l (in-vector (syntax-e #'i))]
                       [t (in-list ts)])
              (tc-literal l t)))]
          ;; errors are handled elsewhere
-         [_ (make-HeterogenousVector (for/list ([l (syntax-e #'i)])
-                                       (generalize (tc-literal l #f))))])]
+         [_ (make-HeterogeneousVector (for/list ([l (syntax-e #'i)])
+                                        (generalize (tc-literal l #f))))])]
       [(~var i (3d hash?))
        (match expected
          [(Hashtable: k v)

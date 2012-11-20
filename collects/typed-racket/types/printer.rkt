@@ -252,10 +252,10 @@
     [(Function: arities) (fp "~a" (print-case-lambda c))]
     [(arr: _ _ _ _ _) (fp "(arr ~a)" (format-arr c))]
     [(Vector: e) (fp "(Vectorof ~a)" e)]
-    [(HeterogenousVector: e) (fp "(Vector")
-                             (for ([i (in-list e)])
-                               (fp " ~a" i))
-                             (fp ")")]
+    [(HeterogeneousVector: e) (fp "(Vector")
+                              (for ([i (in-list e)])
+                                (fp " ~a" i))
+                              (fp ")")]
     [(Box: e) (fp "(Boxof ~a)" e)]
     [(Future: e) (fp "(Futureof ~a)" e)]
     [(Channel: e) (fp "(Channelof ~a)" e)]

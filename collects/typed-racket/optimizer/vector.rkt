@@ -26,7 +26,7 @@
   #:commit
   (pattern e:expr
            #:when (match (type-of #'e)
-                    [(tc-result1: (HeterogenousVector: _)) #t]
+                    [(tc-result1: (HeterogeneousVector: _)) #t]
                     [_ #f])
            #:with opt ((optimize) #'e)))
 
@@ -43,7 +43,7 @@
                                     this-syntax)
                   (add-disappeared-use #'op)
                   (match (type-of #'v)
-                    [(tc-result1: (HeterogenousVector: es))
+                    [(tc-result1: (HeterogeneousVector: es))
                      #`(begin v.opt #,(length es))]))) ; v may have side effects
   ;; we can optimize vector-length on all vectors.
   ;; since the program typechecked, we know the arg is a vector.
@@ -63,7 +63,7 @@
   ;; the index is within bounds (for now, literal or singleton type)
   (pattern (#%plain-app op:vector-op v:known-length-vector-expr i:expr new:expr ...)
            #:when (let ((len (match (type-of #'v)
-                               [(tc-result1: (HeterogenousVector: es)) (length es)]
+                               [(tc-result1: (HeterogeneousVector: es)) (length es)]
                                [_ 0]))
                         (ival (or (syntax-parse #'i [((~literal quote) i:number) (syntax-e #'i)] [_ #f])
                                   (match (type-of #'i)

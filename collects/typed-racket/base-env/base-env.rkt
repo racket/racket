@@ -36,7 +36,7 @@
           make-ThreadCellTop
           make-Ephemeron
           make-CustodianBox
-          make-HeterogenousVector
+          make-HeterogeneousVector
           make-ListDots))
 
 ;Section 9.2
@@ -1190,12 +1190,12 @@
                           (-opt -Integer)
                           (-opt -Integer)
                           (-opt -Integer)))]
-        [srcvec (make-HeterogenousVector (list
-                                          Univ
-                                          (-opt -Integer)
-                                          (-opt -Integer)
-                                          (-opt -Integer)
-                                          (-opt -Integer)))]
+        [srcvec (make-HeterogeneousVector (list
+                                           Univ
+                                           (-opt -Integer)
+                                           (-opt -Integer)
+                                           (-opt -Integer)
+                                           (-opt -Integer)))]
         [srcloc (Un S (-val #f) srclist srcvec)]
         [prop (-opt S)]
         [cert (-opt S)])
@@ -1903,7 +1903,7 @@
                                   (-val null)))))))))]
 [module-compiled-language-info
  (-> -Compiled-Module-Expression
-     (-opt (make-HeterogenousVector (list -Module-Path -Symbol Univ))))]
+     (-opt (make-HeterogeneousVector (list -Module-Path -Symbol Univ))))]
 
 ;Section 13.4.3
 [dynamic-require
@@ -1924,7 +1924,7 @@
 [module->language-info
  (->opt (Un -Module-Path -Path -Resolved-Module-Path)
         [Univ]
-        (-opt (make-HeterogenousVector (list -Module-Path -Symbol Univ))))]
+        (-opt (make-HeterogeneousVector (list -Module-Path -Symbol Univ))))]
 
 
 [module->imports (-> -Compiled-Module-Expression
@@ -2087,11 +2087,11 @@
 [pseudo-random-generator? (make-pred-ty -Pseudo-Random-Generator)]
 [current-pseudo-random-generator (-Param -Pseudo-Random-Generator -Pseudo-Random-Generator)]
 [pseudo-random-generator->vector
- (-> -Pseudo-Random-Generator (make-HeterogenousVector (list -PosInt -PosInt -PosInt -PosInt -PosInt -PosInt)))]
+ (-> -Pseudo-Random-Generator (make-HeterogeneousVector (list -PosInt -PosInt -PosInt -PosInt -PosInt -PosInt)))]
 [vector->pseudo-random-generator
- (-> (make-HeterogenousVector (list -PosInt -PosInt -PosInt -PosInt -PosInt -PosInt)) -Pseudo-Random-Generator)]
+ (-> (make-HeterogeneousVector (list -PosInt -PosInt -PosInt -PosInt -PosInt -PosInt)) -Pseudo-Random-Generator)]
 [vector->pseudo-random-generator!
- (-> -Pseudo-Random-Generator (make-HeterogenousVector (list -PosInt -PosInt -PosInt -PosInt -PosInt -PosInt)) -Void)]
+ (-> -Pseudo-Random-Generator (make-HeterogeneousVector (list -PosInt -PosInt -PosInt -PosInt -PosInt -PosInt)) -Void)]
 
 [current-evt-pseudo-random-generator (-Param -Pseudo-Random-Generator -Pseudo-Random-Generator)]
 

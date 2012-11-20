@@ -223,12 +223,12 @@
         [tc-e (void) -Void]
         [tc-e (void 3 4) -Void]
         [tc-e (void #t #f '(1 2 3)) -Void]
-        [tc-e/t #(3 4 5) (make-HeterogenousVector (list -Integer -Integer -Integer))]
+        [tc-e/t #(3 4 5) (make-HeterogeneousVector (list -Integer -Integer -Integer))]
         [tc-e/t '(2 3 4) (-lst* -PosByte -PosByte -PosByte)]
         [tc-e/t '(2 3 #t) (-lst* -PosByte -PosByte (-val #t))]
-        [tc-e/t #(2 3 #t) (make-HeterogenousVector (list -Integer -Integer -Boolean))]
-        [tc-e (vector 2 "3" #t) (make-HeterogenousVector (list -Integer -String -Boolean))]
-        [tc-e (vector-immutable 2 "3" #t) (make-HeterogenousVector (list -Integer -String -Boolean))]
+        [tc-e/t #(2 3 #t) (make-HeterogeneousVector (list -Integer -Integer -Boolean))]
+        [tc-e (vector 2 "3" #t) (make-HeterogeneousVector (list -Integer -String -Boolean))]
+        [tc-e (vector-immutable 2 "3" #t) (make-HeterogeneousVector (list -Integer -String -Boolean))]
         [tc-e (make-vector 4 1) (-vec -Integer)]
         [tc-e (build-vector 4 (lambda (x) 1)) (-vec -Integer)]
         [tc-e (range 4) (-lst -Byte)]
@@ -1371,7 +1371,7 @@
         ;Random Numbers
         (tc-e (make-pseudo-random-generator) -Pseudo-Random-Generator)
         (tc-e (let: ((pg : Pseudo-Random-Generator (make-pseudo-random-generator)))
-                (pseudo-random-generator->vector pg)) (make-HeterogenousVector (list -PosInt -PosInt -PosInt -PosInt -PosInt -PosInt)))
+                (pseudo-random-generator->vector pg)) (make-HeterogeneousVector (list -PosInt -PosInt -PosInt -PosInt -PosInt -PosInt)))
 
         ;Structure Type Properties
         (tc-e (make-struct-type-property 'prop) (list -Struct-Type-Property (t:-> Univ B) (t:-> Univ Univ)))

@@ -324,7 +324,7 @@
         [(Vector: t)
          (set-chaperone!)
          #`(vectorof #,(t->c t))]
-        [(HeterogenousVector: ts)
+        [(HeterogeneousVector: ts)
          (set-chaperone!)
          #`(vector/c #,@(map t->c ts))]
         [(Box: t)

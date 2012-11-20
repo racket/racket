@@ -27,7 +27,7 @@
   (pattern e:expr
            #:when (match (type-of #'e)
                     [(tc-result1: (Vector: _)) #t]
-                    [(tc-result1: (HeterogenousVector: _)) #t]
+                    [(tc-result1: (HeterogeneousVector: _)) #t]
                     [_ #f])
            #:with opt ((optimize) #'e)))
 

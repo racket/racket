@@ -101,10 +101,10 @@
   [#:key 'vector])
 
 ;; elems are all Types
-(def-type HeterogenousVector ([elems (listof Type/c)])
+(def-type HeterogeneousVector ([elems (listof Type/c)])
   [#:frees (λ (f) (make-invariant (combine-frees (map f elems))))]
   [#:key 'vector]
-  [#:fold-rhs (*HeterogenousVector (map type-rec-id elems))])
+  [#:fold-rhs (*HeterogeneousVector (map type-rec-id elems))])
 
 ;; elem is a Type
 (def-type Box ([elem Type/c])

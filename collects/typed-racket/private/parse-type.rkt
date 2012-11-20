@@ -184,7 +184,7 @@
        (-Tuple* (map parse-type (syntax->list #'(ts ...))) (parse-type #'t))]
       [((~and kw t:Vector) ts ...)
        (add-disappeared-use #'kw)
-       (make-HeterogenousVector (map parse-type (syntax->list #'(ts ...))))]
+       (make-HeterogeneousVector (map parse-type (syntax->list #'(ts ...))))]
       [((~and kw cons) fst rst)
        (add-disappeared-use #'kw)
        (-pair (parse-type #'fst) (parse-type #'rst))]
