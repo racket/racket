@@ -15,7 +15,8 @@ information detailing the failure.
 
 Although checks are implemented as macros, which is
 necessary to grab source location, they are conceptually
-functions.  This means, for instance, checks always evaluate
+functions (with the exception of @racket[check-match] below).
+This means, for instance, checks always evaluate
 their arguments.  You can use checks as first class
 functions, though you will lose precision in the reported
 source locations if you do so.
@@ -178,6 +179,47 @@ The following check fails:
 @interaction[#:eval rackunit-eval
   (check-regexp-match "a+bba" "aaaabbba")
 ]
+}
+
+@defform*[((check-match v pattern)
+           (check-match v pattern pred))]{
+
+A check that pattern matches on the test value.  Matches the test value
+@racket[v] against @racket[pattern] as a @racket[match] clause.  If no
+@racket[pred] is provided, then if the match succeeds, the entire check
+succeeds.  For example, this use succeeds:
+
+@interaction[#:eval rackunit-eval
+  (check-match (list 1 2 3) (list _ _ 3))
+]
+
+This check fails to match:
+
+@interaction[#:eval rackunit-eval
+  (check-match (list 1 2 3) (list _ _ 4))
+]
+
+If @racket[pred] is provided, it is evaluated with the bindings from the
+match pattern.  If it produces @racket[#t], the entire check succeeds,
+otherwise it fails.  For example, this use succeeds, binding @racket[x]
+in the predicate:
+
+@interaction[#:eval rackunit-eval
+  (check-match (list 1 (list 3)) (list x (list _)) (odd? x))
+]
+
+This check fails because the @racket[pred] fails:
+
+@interaction[#:eval rackunit-eval
+  (check-match 6 x (odd? x))
+]
+
+This check fails because of a failure to match:
+
+@interaction[#:eval rackunit-eval
+  (check-match (list 1 2) (list x) (odd? x))
+]
+
 }
 
 

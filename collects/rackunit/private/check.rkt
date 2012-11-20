@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require (for-syntax racket/base
+(require racket/match
+         (for-syntax racket/base
                      "location.rkt")
          "base.rkt"
          "check-info.rkt"
@@ -31,6 +32,7 @@
          check-not-eq?
          check-not-eqv?
          check-not-equal?
+         check-match
          fail)
 
 ;; default-check-handler : any -> any
@@ -273,4 +275,29 @@
 
 (define-simple-check (fail)
   #f)
+
+;; NOTE(jpolitz): This match form isn't eager like the others, hence the
+;; define-syntax and the need to carry around location information
+(define-syntax (check-match stx)
+  (syntax-case stx ()
+    [(_ actual expected pred)
+     (quasisyntax
+      (let ([actual-val actual])
+       (with-check-info*
+        (list (make-check-name 'check-match)
+              (make-check-location
+               (list '(unsyntax (syntax-source stx))
+                     '(unsyntax (syntax-line stx))
+                     '(unsyntax (syntax-column stx))
+                     '(unsyntax (syntax-position stx))
+                     '(unsyntax (syntax-span stx))))
+              (make-check-expression '#,(syntax->datum stx))
+              (make-check-actual actual-val)
+              (make-check-expected 'expected))
+        (lambda ()
+         (check-true (match actual-val
+                       [expected pred]
+                       [_ #f]))))))]
+    [(_ actual expected)
+     (syntax/loc stx (check-match actual expected #t))]))
 

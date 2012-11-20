@@ -104,6 +104,7 @@
          check-not-eqv?
          check-not-equal?
          check-regexp-match
+         check-match
          fail)
 
 (define (void-thunk) (void))
