@@ -29,6 +29,7 @@
 	   ssl-load-fail-reason
 
 	   ssl-make-client-context
+           ssl-secure-client-context
 	   ssl-make-server-context
 	   ssl-client-context?
 	   ssl-server-context?
@@ -634,7 +635,45 @@
                              SSL_ST_ACCEPT)
       (check-err (lambda () (SSL_do_handshake (mzssl-ssl mzssl))))))
 
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; ----
+
+  (define (ssl-make-secure-client-context sym)
+    (let ([ctx (ssl-make-client-context sym)])
+      ;; Load root certificates
+      (ssl-load-default-verify-root-certificates! ctx)
+      ;; Require verification
+      (ssl-set-verify! ctx #t)
+      (ssl-set-verify-hostname! ctx #t)
+      ;; No weak cipher suites; see discussion, patch at http://bugs.python.org/issue13636
+      (ssl-set-ciphers! ctx "DEFAULT:!aNULL:!eNULL:!LOW:!EXPORT:!SSLv2")
+      ;; Seal context so further changes cannot weaken it
+      (ssl-seal-context! ctx)
+      ctx))
+
+  ;; context-cache: (list (weak-box ssl-client-context) (listof path-string) nat) or #f
+  (define context-cache #f)
+
+  (define (ssl-secure-client-context)
+    (let ([locs (ssl-default-root-certificate-locations)])
+      (define (reset)
+        (let* ([now (current-seconds)]
+               [ctx (ssl-make-secure-client-context 'tls)])
+          (set! context-cache (list (make-weak-box ctx) locs now))
+          ctx))
+      (let* ([cached context-cache]
+             [c-wb (and cached (car cached))]
+             [c-ctx (and c-wb (weak-box-value c-wb))]
+             [c-locs (and cached (cadr cached))]
+             [c-time (and cached (caddr cached))])
+        (cond [c-ctx
+               ;; May reuse only if locations haven't changed
+               ;; FIXME: ideally, should also check that no file in locs has changed since
+               ;;   c-time, but don't want to hit the filesystem so often
+               (cond [(equal? locs c-locs) c-ctx]
+                     [else (reset)])]
+              [else (reset)]))))
+
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; SSL ports
 
   (define (mzssl-release mzssl)

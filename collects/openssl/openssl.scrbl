@@ -157,6 +157,18 @@ request verification of a server's certificate. Use @racket[ssl-set-verify!]
 to enable such verification.}
 
 
+@defproc[(ssl-secure-client-context)
+         ssl-client-context?]{
+
+Returns a client context (using @racket['tls]) that verifies
+certificates using the root certificates located in
+@racket[(ssl-default-root-certificate-locations)], verifies hostnames,
+and avoids using weak ciphers. The context is sealed to prevent
+further modification, and the context is cached, so different calls to
+@racket[ssl-secure-client-context] return the same context unless
+@racket[(ssl-default-root-certificate-locations)] has changed.
+}
+
 @defproc[(ssl-client-context? (v any/c)) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a value produced by
