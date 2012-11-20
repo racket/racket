@@ -1,6 +1,7 @@
 Version 5.3.1.8
 file/untar: added
 file/untgz: added
+file/unzip: added
 
 Version 5.3.1.7
 compiler/zo-structs: generalize flonum? field to type
