@@ -1951,7 +1951,8 @@
                       abstract-ids   ; list of abstract method names
                       method-ictcs   ; list of indices of methods to fix for interface ctcs
 
-                      ictc-classes   ; concretized versions of this class keyed by blame
+                      [ictc-classes  ; #f or weak hash of cached classes keyed by blame
+                       #:mutable]
 
                       methods        ; vector of methods (for external dynamic dispatch)
                       super-methods  ; vector of methods (for subclass super calls)
@@ -2260,7 +2261,7 @@
                                   make-)
                                 method-width method-ht method-names remaining-abstract-names
                                 (interfaces->contracted-methods (list i))
-                                (make-weak-hasheq)
+                                #f
                                 methods super-methods int-methods beta-methods meth-flags
                                 inner-projs dynamic-idxs dynamic-projs
                                 field-width field-pub-width field-ht field-names
@@ -2919,7 +2920,7 @@ An example
                               (class-abstract-ids cls)
                               (remq* ctc-methods method-ictcs)
 
-                              (make-weak-hasheq)
+                              #f
                               
                               methods
                               super-methods
@@ -3764,7 +3765,7 @@ An example
                  void ; never inspectable
                  
                  0 (make-hasheq) null null null
-                 (make-weak-hasheq)
+                 #f
                  (vector) (vector) (vector) (vector) (vector)
 
                  (vector) (vector) (vector)
@@ -3888,7 +3889,9 @@ An example
 ;; takes a class and concretize interface ctc methods
 (define (fetch-concrete-class cls blame)
   (cond [(null? (class-method-ictcs cls)) cls]
-        [(hash-ref (class-ictc-classes cls) blame #f) => values]
+        [(and (class-ictc-classes cls)
+              (hash-ref (class-ictc-classes cls) blame #f))
+         => values]
         [else
          ;; if there are contracted methods to concretize, do so
          (let* ([name (class-name cls)]
@@ -3917,7 +3920,7 @@ An example
                                null
                                null
 
-                               (make-weak-hasheq)
+                               #f
 
                                meths
                                (class-super-methods cls)
@@ -3978,6 +3981,11 @@ An example
                (define wrapped-meth (concretize-ictc-method m meth ictc-infos))
                (vector-set! meths index wrapped-meth)))
 
+           ;; initialize if not yet initialized
+           (unless (class-ictc-classes cls)
+             (set-class-ictc-classes! cls (make-weak-hasheq)))
+
+           ;; cache the concrete class
            (hash-set! (class-ictc-classes cls) blame c)
            c)]))
 
