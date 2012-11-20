@@ -1426,6 +1426,7 @@ static int generate_non_tail_with_branch(Scheme_Object *obj, mz_jit_state *jitte
       LOG_IT(("non-tail\n"));
       if (mark_pos_ends)
 	scheme_generate_non_tail_mark_pos_prefix(jitter);
+      CHECK_LIMIT();
       if (!jitter->local1_busy) {
         mz_tl_ldi_p(JIT_R2, tl_scheme_current_cont_mark_stack);
         using_local1 = 1;
