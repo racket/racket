@@ -6,7 +6,8 @@
          (utils tc-utils)
          (types utils)
          racket/match
-         racket/contract)
+         racket/contract
+         racket/format)
 
 (provide resolve-name resolve-app needs-resolving?
          resolve resolve-app-check-error)
@@ -32,10 +33,21 @@
                    n (length rands)))]
       [(Name: n)
        (when (and (current-poly-struct)
-                  (free-identifier=? n (poly-name (current-poly-struct)))
-                  (not (or (ormap Error? rands)
-                           (andmap type-equal? rands (poly-vars (current-poly-struct))))))
-         (tc-error "Structure type constructor ~a applied to non-regular arguments ~a" rator rands))]
+                  (free-identifier=? n (poly-name (current-poly-struct))))
+        (define num-rands (length rands))
+        (define num-poly (length (poly-vars (current-poly-struct))))
+        ;; check arity of constructor first
+        (if (= num-rands num-poly)
+            (when (not (or (ormap Error? rands)
+                           (andmap type-equal? rands
+                                   (poly-vars (current-poly-struct)))))
+                  (tc-error (~a "Structure type constructor " rator
+                                " applied to non-regular arguments " rands)))
+            (tc-error (~a "The expected number of arguments for"
+                          " structure type constructor " rator
+                          " does not match the given number:"
+                          " expected " num-poly
+                          ", given " num-rands))))]
       [(Mu: _ _) (void)]
       [(App: _ _ _) (void)]
       [(Error:) (void)]
