@@ -749,13 +749,10 @@ This file defines two sorts of primitives. All of them are provided into any mod
      (quasisyntax/loc
          stx
        (begin (define-syntax name (define-for-variant #'untyped-name)) ...))]))
-;; for/hash{,eq,eqv}:, for/vector:, for/flvector:, for/and:, for/first: and
+;; for/vector:, for/flvector:, for/and:, for/first: and
 ;; for/last:'s expansions can't currently be handled by the typechecker.
 (define-for-variants
   (for/list: for/list)
-  (for/hash: for/hash)
-  (for/hasheq: for/hasheq)
-  (for/hasheqv: for/hasheqv)
   (for/and: for/and)
   (for/or: for/or)
   (for/first: for/first)
@@ -842,9 +839,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
               ...))]))
 (define-for*-variants
   (for*/list: for*/list)
-  (for*/hash: for*/hash)
-  (for*/hasheq: for*/hasheq)
-  (for*/hasheqv: for*/hasheqv)
   (for*/and: for*/and)
   (for*/or: for*/or)
   (for*/first: for*/first)
@@ -923,6 +917,40 @@ This file defines two sorts of primitives. All of them are provided into any mod
        (begin (define-syntax name (define-for/sum:-variant #'for/folder))
               ...))]))
 (define-for/sum:-variants (for/sum: for/fold:) (for*/sum: for*/fold:))
+
+(define-for-syntax (define-for/hash:-variant hash-maker)
+  (lambda (stx)
+    (syntax-parse stx
+      #:literals (:)
+      ((_ (~seq : return-annotation:expr)
+          (bind:optionally-annotated-binding ...) body:expr ...)
+       (quasisyntax/loc stx
+         (for/fold: : return-annotation
+           ((return-hash : return-annotation (ann (#,hash-maker null) return-annotation)))
+           (bind ...)
+           (let-values (((key val) (let () body ...)))
+             (hash-set return-hash key val))))))))
+
+(define-syntax for/hash:    (define-for/hash:-variant #'make-immutable-hash))
+(define-syntax for/hasheq:  (define-for/hash:-variant #'make-immutable-hasheq))
+(define-syntax for/hasheqv: (define-for/hash:-variant #'make-immutable-hasheqv))
+
+(define-for-syntax (define-for*/hash:-variant hash-maker)
+  (lambda (stx)
+    (syntax-parse stx
+      #:literals (:)
+      ((_ (~seq : return-annotation:expr)
+          (bind:optionally-annotated-binding ...) body:expr ...)
+       (quasisyntax/loc stx
+         (for*/fold: : return-annotation
+           ((return-hash : return-annotation (ann (#,hash-maker null) return-annotation)))
+           (bind ...)
+           (let-values (((key val) (let () body ...)))
+             (hash-set return-hash key val))))))))
+
+(define-syntax for*/hash:    (define-for*/hash:-variant #'make-immutable-hash))
+(define-syntax for*/hasheq:  (define-for*/hash:-variant #'make-immutable-hasheq))
+(define-syntax for*/hasheqv: (define-for*/hash:-variant #'make-immutable-hasheqv))
 
 
 (define-syntax (provide: stx)
