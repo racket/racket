@@ -1263,6 +1263,7 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
     for (i = 0; i < num_rands-1; i++) {
       mz_rs_ldxi(JIT_R1, i+1);
       mz_rs_stxi(i, JIT_R1);
+      CHECK_LIMIT();
     }
     
     mz_rs_stxi(num_rands - 1, JIT_R0);
