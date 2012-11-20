@@ -40,6 +40,9 @@
 	   ssl-load-suggested-certificate-authorities!
            ssl-seal-context!
 
+           ssl-default-root-certificate-locations
+           ssl-load-default-verify-root-certificates!
+
            ssl-set-verify!
            ssl-try-verify!
            ssl-set-verify-hostname!
@@ -127,7 +130,7 @@
 
   (define-ssl SSL_CTX_set_verify (_fun _SSL_CTX* _int _pointer -> _void))
   (define-ssl SSL_CTX_use_certificate_chain_file (_fun _SSL_CTX* _bytes -> _int))
-  (define-ssl SSL_CTX_load_verify_locations (_fun _SSL_CTX* _bytes _pointer -> _int))
+  (define-ssl SSL_CTX_load_verify_locations (_fun _SSL_CTX* _bytes _bytes -> _int))
   (define-ssl SSL_CTX_set_client_CA_list (_fun _SSL_CTX* _X509_NAME* -> _int))
   (define-ssl SSL_CTX_set_session_id_context (_fun _SSL_CTX* _bytes _int -> _int))
   (define-ssl SSL_CTX_use_RSAPrivateKey_file (_fun _SSL_CTX* _bytes _int -> _int))
@@ -174,7 +177,40 @@
     #:c-id sk_value)
   (define-crypto sk_pop_free (_fun _STACK* _fpointer -> _void))
 
-  
+  ;; (define-crypto X509_get_default_cert_area (_fun -> _string))
+  (define-crypto X509_get_default_cert_dir  (_fun -> _string))
+  (define-crypto X509_get_default_cert_file (_fun -> _string))
+  (define-crypto X509_get_default_cert_dir_env (_fun -> _string))
+  (define-crypto X509_get_default_cert_file_env (_fun -> _string))
+
+  (define (get-x509-default get-env get-path)
+    (case (system-type)
+      ((windows)
+       ;; On Windows, SSLeay produces paths like "/usr/local/ssl/certs", which
+       ;; aren't useful. So just skip them.
+       #f)
+      (else
+       (and libcrypto
+            (let ([result (or (getenv (get-env)) (get-path))])
+              (with-handlers ([exn:fail? (lambda (e) #f)])
+                (string->path result)))))))
+
+  (define ssl-default-root-certificate-locations
+    (make-parameter
+     (filter values
+             ;; FIXME: openssl treats dir as dir-list w/ platform-specific separator
+             ;;  (see /crypto/x509/by_dir.c)
+             (list (get-x509-default X509_get_default_cert_dir_env X509_get_default_cert_dir)
+                   (get-x509-default X509_get_default_cert_file_env X509_get_default_cert_file)))
+     (lambda (v)
+       (define (bad)
+         (raise-argument-error 'ssl-default-root-certificate-locations
+                               "(listof path-string?)"
+                               v))
+       (unless (list? v) (bad))
+       (for ([entry (in-list v)]) (unless (or (eq? v #f) (path-string? v)) (bad)))
+       v)))
+
   (define X509_V_OK 0)
 
   (define SSL_ERROR_SSL 1)
@@ -462,8 +498,22 @@
 
   (define (ssl-load-verify-root-certificates! ssl-context-or-listener pathname)
     (ssl-load-... 'ssl-load-verify-root-certificates! 
-		  (lambda (a b) (SSL_CTX_load_verify_locations a b #f))
+		  (lambda (a b)
+                    (cond [(directory-exists? pathname)
+                           (SSL_CTX_load_verify_locations a #f b)]
+                          [(file-exists? pathname)
+                           (SSL_CTX_load_verify_locations a b #f)]
+                          [else
+                           (error 'ssl-load-verify-root-certificates!
+                                  "file or directory does not exist")]))
 		  ssl-context-or-listener pathname))
+
+  (define (ssl-load-default-verify-root-certificates! ctx)
+    (let ([cert-locs (ssl-default-root-certificate-locations)])
+      (for ([cert-loc (in-list cert-locs)])
+        (cond [(or (file-exists? cert-loc) (directory-exists? cert-loc))
+               (ssl-load-verify-root-certificates! ctx cert-loc)]
+              [else (void)]))))
 
   (define (ssl-load-suggested-certificate-authorities! ssl-listener pathname)
     (ssl-load-... 'ssl-load-suggested-certificate-authorities! 

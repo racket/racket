@@ -370,9 +370,37 @@ Loads a PEM-format file containing trusted certificates that are used
 to verify the certificates of a connection peer. Call this procedure
 multiple times to load multiple sets of trusted certificates.
 
+If @racket[pathname] is a file, its contents are immediately
+loaded. If @racket[pathname] is a directory, it should contain hashed
+certificates names (see the @tt{openssl c_rehash} utility); the
+directory is searched only when a certificate needs verification.
+
 You can use the file @filepath{test.pem} of the @filepath{openssl}
 collection for testing purposes. Since @filepath{test.pem} is public,
-such a test configuration obviously provides no security.}
+such a test configuration obviously provides no security.
+}
+
+@defparam[ssl-default-root-certificate-locations paths
+          (listof path-string?)]{
+
+Holds a list of paths of root certificate authority certificates, used
+by @racket[ssl-load-default-verify-root-certificates!]. The list of
+paths may refer to both files and directories, and nonexistent paths
+are allowed.
+
+The initial values are determined by the @tt{SSL_CERT_FILE} and
+@tt{SSL_CERT_DIR} environment variables, if the variables are set, or
+the system-wide default locations otherwise.
+}
+
+@defproc[(ssl-load-default-verify-root-certificates!
+           [context (or/c ssl-client-context? ssl-server-context?)])
+         void?]{
+
+Loads the default root certificates, as determined by the
+@racket[ssl-default-root-certificate-locations] parameter, into
+@racket[context]. Nonexistent paths are skipped.
+}
 
 @defproc[(ssl-load-suggested-certificate-authorities!
 	  (context-or-listener (or/c ssl-client-context? ssl-server-context?
