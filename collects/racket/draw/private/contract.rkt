@@ -22,7 +22,35 @@
          "gl-config.rkt"
          "gl-context.rkt")
 
-(provide (all-defined-out))
+(provide brush-style/c
+         pen-cap-style/c
+         pen-join-style/c
+         pen-style/c
+         font-family/c
+         font-weight/c
+         font-style/c
+         transformation-vector/c
+         make-color/c
+         make-brush/c
+         make-pen/c
+         color%/c
+         point%/c
+         font%/c
+         pen%/c
+         pen-list%/c
+         brush%/c
+         brush-list%/c
+         linear-gradient%/c
+         radial-gradient%/c
+         bitmap-dc%/c
+         post-script-dc%/c
+         pdf-dc%/c
+         svg-dc%/c
+         record-dc%/c
+         region%/c
+         dc-path%/c
+         gl-config%/c
+         bitmap%/c)
 
 ;; dummy values to avoid cycles
 (define-values (frame% dialog%) (values object% object%))
