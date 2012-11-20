@@ -127,12 +127,22 @@ information on the @racket[dests] argument.}
 
 @defmethod[(collect [srcs (listof part?)]
                     [dests (listof path-string?)]
-                    [fp (and/c hash? immutable?)])
+                    [fp (and/c hash? immutable?)]
+                    [demand (tag? collect-info? . -> . any/c) (lambda (_tag _ci) #f)])
            collect-info?]{
 
 Performs the @techlink{collect pass}. See @method[render<%> render] for
-information on the @racket[dests] argument. The @racket[fp] argument
-is a result from the @method[render<%> traverse] method.}
+information on the @racket[dests] arguments. The @racket[fp] argument
+is a result from the @method[render<%> traverse] method.
+
+The @racket[demand] argument supplies external tag mappings on demand.
+When the @racket[collect-info] result is later used to find a mapping
+for a tag and no mapping is already available, @racket[demand] is
+called with the tag and the @racket[collect-info]. The @racket[demand]
+function returns true to indicate when it adds information to the
+@racket[collect-info] so that the lookup should be tried again; the
+@racket[demand] function should return @racket[#f] if it does not
+extend @racket[collect-info].}
 
 @defmethod[(resolve [srcs (listof part?)]
                     [dests (listof path-string?)]

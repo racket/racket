@@ -1193,7 +1193,9 @@ Returns the width in characters of the given @tech{content}.
 Returns the width in characters of the given @tech{block}.}
 
 
-@defstruct[collect-info ([ht any/c] [ext-ht any/c] [parts any/c] 
+@defstruct[collect-info ([ht any/c] [ext-ht any/c] 
+                         [ext-demand (tag? collect-info? . -> . any/c)]
+                         [parts any/c] 
                          [tags any/c] [gen-prefix any/c] 
                          [relatives any/c] 
                          [parents (listof part?)])]{

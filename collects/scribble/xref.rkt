@@ -34,16 +34,23 @@
 (define-namespace-anchor here)
 
 (define (load-xref sources
+                   #:demand-source [demand-source (lambda (key) #f)]
                    #:render% [render% (html:render-mixin render%)]
                    #:root [root-path #f])
   (let* ([renderer (new render% [dest-dir (find-system-path 'temp-dir)])]
          [fp (send renderer traverse null null)]
-         [ci (send renderer collect null null fp)])
+         [load-source (lambda (src ci)
+                        (parameterize ([current-namespace
+                                        (namespace-anchor->empty-namespace here)])
+                          (let ([v (src)])
+                            (when v (send renderer deserialize-info v ci #:root root-path)))))]
+         [ci (send renderer collect null null fp
+                   (lambda (key ci)
+                     (define src (demand-source key))
+                     (and src
+                          (load-source src ci))))])
     (for ([src sources])
-      (parameterize ([current-namespace
-                      (namespace-anchor->empty-namespace here)])
-        (let ([v (src)])
-          (when v (send renderer deserialize-info v ci #:root root-path)))))
+      (load-source src ci))
     (make-xrefs renderer (send renderer resolve null null ci))))
 
 ;; ----------------------------------------

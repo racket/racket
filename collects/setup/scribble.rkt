@@ -7,6 +7,7 @@
          "main-collects.rkt"
          "main-doc.rkt"
          "parallel-do.rkt"
+         "doc-db.rkt"
          scheme/class
          scheme/list
          scheme/file
@@ -512,11 +513,18 @@
      [(equal? (list-ref stamp-data pos) (get-sha1 file)) stamp-time]
      [else t])))
 
+(define (find-db-file doc)
+  (build-path (if (main-doc? doc)
+                  (find-doc-dir)
+                  (find-user-doc-dir))
+              "docindex.sqlite"))
+
 (define ((get-doc-info only-dirs latex-dest auto-main? auto-user?
                        with-record-error setup-printf workerid)
          doc)
   (let* ([info-out-file (sxref-path latex-dest doc "out.sxref")]
          [info-in-file  (sxref-path latex-dest doc "in.sxref")]
+         [db-file (find-db-file doc)]
          [stamp-file  (sxref-path latex-dest doc "stamp.sxref")]
          [out-file (build-path (doc-dest-dir doc) "index.html")]
          [src-zo (let-values ([(base name dir?) (split-path (doc-src-file doc))])
@@ -674,7 +682,7 @@
                                      #f
                                      #f)])
                      (when need-out-write?
-                       (render-time "xref-out" (write-out/info latex-dest info sci))
+                       (render-time "xref-out" (write-out/info latex-dest info sci db-file))
                        (set-info-need-out-write?! info #f))
                      (when (info-need-in-write? info)
                        (render-time "xref-in" (write-in/info latex-dest info))
@@ -779,7 +787,8 @@
               [undef (render-time "undefined" (send renderer get-external ri))]
               [in-delta? (not (equal? (any-order undef) (any-order ff-undef)))]
               [out-delta? (or (not (serialized=? sci ff-sci))
-                              (not (equal? (any-order defs) (any-order ff-provides))))])
+                              (not (equal? (any-order defs) (any-order ff-provides))))]
+              [db-file (find-db-file doc)])
          (when (verbose)
            (printf " [~a~afor ~a]\n"
                    (if in-delta? "New in " "")
@@ -791,7 +800,7 @@
          (when in-delta?
            (render-time "xref-in" (write-in latex-dest vers doc undef ff-deps-rel ff-searches ff-dep-docs)))
          (when out-delta?
-           (render-time "xref-out" (write-out latex-dest vers doc sci defs)))
+           (render-time "xref-out" (write-out latex-dest vers doc sci defs db-file)))
 
          (cleanup-dest-dir doc)
          (render-time
@@ -836,21 +845,25 @@
       (parameterize ([current-namespace p])
         (call-in-nested-thread (lambda () (dynamic-require mod-path 'doc)))))))
 
-(define (write- latex-dest vers doc name data)
+(define (write- latex-dest vers doc name data prep!)
   (let* ([filename (sxref-path latex-dest doc name)])
+    (prep! filename)
     (when (verbose) (printf " [Caching to disk ~a]\n" filename))
     (make-directory*/ignore-exists-exn (doc-dest-dir doc))
     (with-compile-output filename 
                          (lambda (out tmp-filename)
                            (write-bytes (s-exp->fasl (append (list (list vers (doc-flags doc))) data)) out)))))
 
-(define (write-out latex-dest vers doc sci provides)
+(define (write-out latex-dest vers doc sci provides db-file)
   (write- latex-dest vers doc "out.sxref" 
           (list sci
-                (serialize provides))))
+                (serialize provides))
+          (lambda (filename)
+            (unless latex-dest
+              (doc-db-record-provides db-file provides filename)))))
 
-(define (write-out/info latex-dest info sci)
-  (write-out latex-dest (info-vers info) (info-doc info) sci (info-provides info)))
+(define (write-out/info latex-dest info sci db-file)
+  (write-out latex-dest (info-vers info) (info-doc info) sci (info-provides info) db-file))
 
 (define (write-in latex-dest vers doc undef rels searches dep-docs)
   (write- latex-dest vers doc "in.sxref" 
@@ -864,7 +877,8 @@
                 ;; for a place to reconstruct a suitable `doc' record.
                 ;; It probably would be better to reconstruct the `doc'
                 ;; record in a place from the path.
-                (serialize (map doc->rel-doc dep-docs)))))
+                (serialize (map doc->rel-doc dep-docs)))
+          void))
 
 (define (write-in/info latex-dest info)
   (write-in latex-dest

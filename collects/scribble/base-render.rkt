@@ -288,7 +288,11 @@
     (define/public (transfer-info ci src-ci)
       (let ([in-ht (collect-info-ext-ht ci)])
         (for ([(k v) (collect-info-ext-ht src-ci)])
-          (hash-set! in-ht k v))))
+          (hash-set! in-ht k v)))
+      (set-demand-chain-demands! 
+       (collect-info-ext-demand ci)
+       (cons (collect-info-ext-demand src-ci)
+             (demand-chain-demands (collect-info-ext-demand ci)))))
 
     ;; ----------------------------------------
     ;; document-order traversal
@@ -386,10 +390,11 @@
     ;; ----------------------------------------
     ;; global-info collection
 
-    (define/public (collect ds fns fp)
+    (define/public (collect ds fns fp [demand (lambda (key ci) #f)])
       (let ([ci (make-collect-info fp
                                    (make-hash)
                                    (make-hash)
+                                   (make-demand-chain (list demand))
                                    (make-hasheq)
                                    (make-hasheq)
                                    null
@@ -407,6 +412,7 @@
                    (collect-info-fp ci)
                    (make-hash)
                    (collect-info-ext-ht ci)
+                   (collect-info-ext-demand ci)
                    (collect-info-parts ci)
                    (collect-info-tags ci)
                    (if (part-tag-prefix d)
@@ -911,3 +917,12 @@
     ;; ----------------------------------------
 
     (super-new)))
+
+
+;; ----------------------------------------
+
+(define-struct demand-chain ([demands #:mutable])
+  #:property prop:procedure (lambda (self key ci)
+                              (for/or ([demand (in-list (demand-chain-demands self))])
+                                (demand key ci))))
+

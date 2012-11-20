@@ -3,9 +3,11 @@
 (require scribble/xref
          scheme/fasl
          scheme/path
+         racket/promise
          setup/dirs
          "getinfo.rkt"
-         "private/path-utils.rkt")
+         "private/path-utils.rkt"
+         "doc-db.rkt")
 
 (provide load-collections-xref)
 
@@ -37,20 +39,44 @@
                   [p (and d (build-path d "out.sxref"))])
              (and p (file-exists? p) p))))))
 
+(define (dest->source dest)
+  (lambda ()
+    (with-handlers ([exn:fail? (lambda (exn)
+                                 (log-error
+                                  "warning: ~a"
+                                  (if (exn? exn)
+                                      (exn-message exn)
+                                      (format "~e" exn)))
+                                 #f)])
+      (cadr (call-with-input-file* dest fasl->s-exp)))))
+
+(define (dir->connection dir)
+  (define p (build-path dir "docindex.sqlite"))
+  (and (file-exists? p)
+       (doc-db-file->connection p)))
+
+(define main-db (delay (dir->connection (find-doc-dir))))
+(define user-db (delay (dir->connection (find-user-doc-dir))))
+
+(define (key->source key)
+  (define (try p)
+    (and p
+         (doc-db-key->path p key)))
+  (define dest (or (try (force main-db))
+                   (try (force user-db))))
+  (and dest
+       (dest->source dest)))
+
 (define (get-reader-thunks)
-  (map (lambda (dest)
-         (lambda ()
-           (with-handlers ([exn:fail? (lambda (exn)
-                                        (eprintf "WARNING: ~a\n"
-                                                 (if (exn? exn)
-                                                   (exn-message exn)
-                                                   (format "~e" exn)))
-                                        #f)])
-             (cadr (call-with-input-file* dest fasl->s-exp)))))
+  (map dest->source
        (filter values (get-dests))))
 
 (define (load-collections-xref [report-loading void])
   (or cached-xref
       (begin (report-loading)
-             (set! cached-xref (load-xref (get-reader-thunks)))
+             (set! cached-xref 
+                   (if (doc-db-available?)
+                       (load-xref null 
+                                  #:demand-source key->source)
+                       (load-xref (get-reader-thunks))))
              cached-xref)))
