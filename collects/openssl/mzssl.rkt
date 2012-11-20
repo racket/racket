@@ -38,6 +38,7 @@
 	   ssl-load-private-key!
 	   ssl-load-verify-root-certificates!
 	   ssl-load-suggested-certificate-authorities!
+           ssl-set-ciphers!
            ssl-seal-context!
 
            ssl-default-root-certificate-locations
@@ -136,6 +137,7 @@
   (define-ssl SSL_CTX_use_RSAPrivateKey_file (_fun _SSL_CTX* _bytes _int -> _int))
   (define-ssl SSL_CTX_use_PrivateKey_file (_fun _SSL_CTX* _bytes _int -> _int))
   (define-ssl SSL_load_client_CA_file (_fun _bytes -> _X509_NAME*))
+  (define-ssl SSL_CTX_set_cipher_list (_fun _SSL_CTX* _string -> _int))
 
   (define-ssl SSL_new (_fun _SSL_CTX* -> _SSL*))
   (define-ssl SSL_set_bio (_fun _SSL* _BIO* _BIO* -> _void))
@@ -536,6 +538,19 @@
         (if asn1? SSL_FILETYPE_ASN1 SSL_FILETYPE_PEM)))
      ssl-context-or-listener pathname))
 
+  (define (ssl-set-ciphers! context cipher-spec)
+    (unless (ssl-context? context)
+      (raise-argument-error 'ssl-set-ciphers!
+                            "(or/c ssl-client-context? ssl-server-context?)"
+                            context))
+    (unless (string? cipher-spec)
+      (raise-argument-error 'ssl-set-ciphers! "string?" cipher-spec))
+    (let* ([ctx (extract-ctx 'ssl-set-ciphers! #t context)]
+           [result (SSL_CTX_set_cipher_list ctx cipher-spec)])
+      (unless (= result 1)
+        (error 'ssl-set-ciphers! "setting cipher list failed"))
+      (void)))
+
   (define (ssl-set-verify-hostname! ssl-context on?)
     (unless (ssl-context? ssl-context)
       (raise-argument-error 'ssl-set-verify-hostname!
@@ -618,8 +633,8 @@
       (set-ssl_struct-state! (cast (mzssl-ssl mzssl) _pointer _ssl_struct-pointer)
                              SSL_ST_ACCEPT)
       (check-err (lambda () (SSL_do_handshake (mzssl-ssl mzssl))))))
-  
-  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; SSL ports
 
   (define (mzssl-release mzssl)

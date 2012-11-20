@@ -421,6 +421,17 @@ You can use the file @filepath{test.pem} of the @filepath{openssl}
 collection for testing purposes where the peer identifies itself using
 @filepath{test.pem}.}
 
+@defproc[(ssl-set-ciphers! [context (or/c ssl-client-context? ssl-server-context?)]
+                           [cipher-spec string?])
+         void?]{
+
+Specifies the cipher suites that can be used in connections created
+with @racket[context]. The meaning of @racket[cipher-spec] is the same
+as for the
+@hyperlink["http://www.openssl.org/docs/apps/ciphers.html"]{@tt{openssl
+ciphers} command}.
+}
+
 @defproc[(ssl-seal-context! [context (or/c ssl-client-context? ssl-server-context?)])
          void?]{
 
