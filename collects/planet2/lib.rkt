@@ -4,7 +4,6 @@
          openssl/sha1
          racket/contract
          racket/match
-         racket/system
          racket/path
          racket/file
          setup/link
@@ -19,6 +18,8 @@
          unstable/debug
          racket/string
          file/untgz
+         file/tar
+         file/zip
          file/unzip
          "util.rkt"
          "util-plt.rkt")
@@ -756,15 +757,25 @@
           ""))
        (match create:format
          ["tgz"
-          (unless (system* (find-executable-path "tar") "-cvzf" pkg "-C" dir ".")
-            (delete-file pkg)
-            (error 'planet2 "Package creation failed"))]
-         ["zip"
-          (define orig-pkg (normalize-path pkg))
+          (define pkg/complete (path->complete-path pkg))
+          (when (file-exists? pkg/complete)
+            (delete-file pkg/complete))
           (parameterize ([current-directory dir])
-            (unless (system* (find-executable-path "zip") "-r" orig-pkg ".")
-              (delete-file pkg)
-              (error 'planet2 "Package creation failed")))]
+            (with-handlers ([exn? (lambda (exn)
+                                    (when (file-exists? pkg/complete)
+                                      (delete-file pkg/complete))
+                                    (raise exn))])
+              (apply tar-gzip pkg/complete (directory-list))))]
+         ["zip"
+          (define pkg/complete (path->complete-path pkg))
+          (when (file-exists? pkg/complete)
+            (delete-file pkg/complete))
+          (parameterize ([current-directory dir])
+            (with-handlers ([exn? (lambda (exn)
+                                    (when (file-exists? pkg/complete)
+                                      (delete-file pkg/complete))
+                                    (raise exn))])
+              (apply zip pkg/complete (directory-list))))]
          ["plt"
           (pack-plt pkg pkg-name (list dir)
                     #:as-paths (list "."))]
