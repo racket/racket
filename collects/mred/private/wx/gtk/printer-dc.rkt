@@ -230,4 +230,5 @@
                  [op-gtk (gtk_print_operation_new)]
                  [pages (reverse pages)]
                  [page-setup page-setup])
-            go))))
+            go)
+      (void))))
