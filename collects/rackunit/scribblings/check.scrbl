@@ -1,6 +1,8 @@
 #lang scribble/doc
 @(require "base.rkt")
 
+@(require (for-label racket/match))
+
 @(define rackunit-eval (make-base-eval))
 @(interaction-eval #:eval rackunit-eval (require rackunit))
 @(interaction-eval #:eval rackunit-eval (error-print-context-length 0))
