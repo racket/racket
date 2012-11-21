@@ -42,8 +42,9 @@
          [load-source (lambda (src ci)
                         (parameterize ([current-namespace
                                         (namespace-anchor->empty-namespace here)])
-                          (let ([v (src)])
-                            (when v (send renderer deserialize-info v ci #:root root-path)))))]
+                          (let ([vs (src)])
+                            (for ([v (in-list (if (procedure? vs) (vs) (list vs)))])
+                              (when v (send renderer deserialize-info v ci #:root root-path))))))]
          [ci (send renderer collect null null fp
                    (lambda (key ci)
                      (define src (demand-source key))
@@ -57,14 +58,15 @@
 ;; Xref reading
 
 (define (xref-index xrefs)
-  (filter
-   values
-   (hash-map
-    (collect-info-ext-ht (resolve-info-ci (xrefs-ri xrefs)))
-    (lambda (k v)
-      (and (pair? k)
-           (eq? (car k) 'index-entry)
-           (make-entry (car v) (cadr v) (cadr k) (caddr v)))))))
+  (define ci (resolve-info-ci (xrefs-ri xrefs)))
+  ;; Force all xref info:
+  ((collect-info-ext-demand ci) #f ci)
+  ;; look for `index-entry' keys:
+  (for/list ([(k v) (in-hash (collect-info-ext-ht ci))]
+             #:when
+             (and (pair? k)
+                  (eq? (car k) 'index-entry)))
+    (make-entry (car v) (cadr v) (cadr k) (caddr v))))
 
 ;; dest-file can be #f, which will make it return a string holding the
 ;; resulting html

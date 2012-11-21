@@ -998,9 +998,7 @@
     (set-doc:verbose)
     (with-handlers ([exn:fail?
                      (lambda (exn)
-                       (setup-printf #f "docs failure: ~a" (exn->string exn))
-                       (for ([x (in-list (continuation-mark-set->context (exn-continuation-marks exn)))])
-                         (setup-printf #f "~s" x)))])
+                       (setup-printf #f "docs failure: ~a" (exn->string exn)))])
       (define auto-start-doc?
         (and (not (null? (archives)))
              (archive-implies-reindex)))
