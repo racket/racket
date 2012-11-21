@@ -4,6 +4,7 @@
          racket/class
          racket/math
          racket/runtime-path
+         racket/serialize
          data/interval-map
          setup/dirs
          images/icons/misc
@@ -43,7 +44,7 @@
               (define pos (file-position port))
               (list x
                     (+ (string->number first-line) pos)
-                    (read port))))))))
+                    (deserialize (read port)))))))))
 
 (define files->tag->offset #f)
 

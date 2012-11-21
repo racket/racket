@@ -3,7 +3,8 @@
          (prefix-in text: "text-render.rkt")
          "base-render.rkt"
          "core.rkt"
-         file/convertible)
+         file/convertible
+         racket/serialize)
 (provide override-render-mixin-single
          override-render-mixin-multi)
 
@@ -23,7 +24,7 @@
                        [the-ri ri]
                        [the-text-p p])
           (r-part part 'block index-table))
-        (define table-str (format "~s\n" index-table))
+        (define table-str (format "~s\n" (serialize index-table)))
         (define cb.rktd 
           (cond
             [multi?
@@ -135,8 +136,10 @@
   
   (define-values (after-line _3 _4) (port-next-location text-p))
   (define txt-loc (cons before-position (- after-line before-line)))
+  (define ri (the-ri))
   (for ([(k v) (in-hash ents)])
-    (hash-set! index-table k (cons txt-loc (hash-ref index-table k '())))))
+    (let ([k (tag-key k ri)])
+      (hash-set! index-table k (cons txt-loc (hash-ref index-table k '()))))))
 
 (define (r-blockss+cont blockss mode index-table)
   (for ([blocks (in-list blockss)])
@@ -172,7 +175,7 @@
     (when (pair? mode)
       (define ents (cdr mode))
       (define key (index-element-tag element))
-      (hash-set! ents key #t)))
+      (hash-set! ents (tag-key key (the-ri)) #t)))
   (r-content (element-content element) mode index-table))
 
 
