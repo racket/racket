@@ -325,11 +325,8 @@
   (define (make-immobile-bytes n)
     (if 3m?
 	;; Allocate the byte string via malloc:
-	(atomically
-	 (let* ([p (malloc 'raw n)]
-		[s (make-sized-byte-string p n)])
-	   (register-finalizer s (lambda (v) (free p)))
-	   s))
+        (let ([p (malloc 'atomic-interior n)])
+          (make-sized-byte-string p n))
 	;; Normal byte string is immobile:
 	(make-bytes n)))
 
