@@ -14,7 +14,8 @@
    mysql-guess-socket-path
    mysql-password-hash)]
  ["private/sqlite3/main.rkt"
-  (sqlite3-connect)]
+  (sqlite3-connect
+   sqlite3-available?)]
  ["private/odbc/main.rkt"
   (odbc-connect
    odbc-driver-connect
@@ -71,6 +72,8 @@
         #:use-place boolean?
         #:debug? any/c)
        connection?)]
+ [sqlite3-available?
+  (-> boolean?)]
 
  ;; Duplicates contracts at odbc.rkt
  [odbc-connect

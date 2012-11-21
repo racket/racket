@@ -5,7 +5,8 @@
          "connection.rkt"
          "dbsystem.rkt"
          "ffi.rkt")
-(provide sqlite3-connect)
+(provide sqlite3-connect
+         sqlite3-available?)
 
 (define (sqlite3-connect #:database path
                          #:mode [mode 'read/write]
@@ -53,3 +54,6 @@
   (class place-proxy-connection%
     (super-new)
     (define/override (get-dbsystem) dbsystem)))
+
+(define (sqlite3-available?)
+  (and sqlite-lib #t))

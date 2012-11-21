@@ -8,7 +8,8 @@
          doc-db-key->path
          doc-db-file->connection)
 
-(define (doc-db-available?) #t)
+(define (doc-db-available?)
+  (sqlite3-available?))
 
 (define (doc-db-file->connection db-file)
   (sqlite3-connect #:database db-file))

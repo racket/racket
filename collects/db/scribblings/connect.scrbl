@@ -247,6 +247,13 @@ Base connections are made using the following functions.
      (new connection%)]]
 }
 
+
+@defproc[(sqlite3-available?) boolean?]{
+
+Reports whether the SQLite native library is found, in which case
+@racket[sqlite3-connect] works, otherwise it raises an exception.}
+
+
 @defproc[(odbc-connect [#:dsn dsn string?]
                        [#:user user (or/c string? #f) #f]
                        [#:password password (or/c string? #f) #f]
@@ -742,10 +749,9 @@ Provides only @racket[mysql-connect] and
 
 @defmodule*/no-declare[(db/sqlite3)]
 
-Provides only @racket[sqlite3-connect]. In contrast to
-@racketmodname[db], this module immediately attempts to
-load the SQLite native library when required, and it raises an
-exception if it cannot be found.
+Provides @racket[sqlite3-connect] plus @racket[sqlite3-available?]. When
+the SQLite native library cannot be found, @racket[sqlite3-connect]
+raises an exception.
 
 @defmodule*/no-declare[(db/odbc)]
 
