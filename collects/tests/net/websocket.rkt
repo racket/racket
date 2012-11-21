@@ -6,6 +6,7 @@
          racket/async-channel
          net/url
          rackunit
+         tests/net/available
          tests/eli-tester)
 
 (define RANDOM-K 100)
@@ -81,14 +82,14 @@
              (define p (async-channel-get confirm))
              (define conn
                (ws-connect (string->url (format "ws://localhost:~a" p))))
-             (when conn
-               (test (ws-send! conn r)
-                     (ws-recv conn) => r
-                     (ws-send! conn "a")
-                     (ws-recv conn) => "a"
-                     (ws-close! conn)))
+             (test (ws-send! conn r)
+                   (ws-recv conn) => r
+                   (ws-send! conn "a")
+                   (ws-recv conn) => "a"
+                   (ws-close! conn))
              (test (shutdown!)))]
-     (test #:failure-prefix "old"
-           (parameterize ([framing-mode 'old]) (test-echo-server))
-           #:failure-prefix "new"
-           (parameterize ([framing-mode 'new]) (test-echo-server))))))
+          (when (tcp-localhost-available?)
+            (test #:failure-prefix "old"
+                  (parameterize ([framing-mode 'old]) (test-echo-server))
+                  #:failure-prefix "new"
+                  (parameterize ([framing-mode 'new]) (test-echo-server)))))))

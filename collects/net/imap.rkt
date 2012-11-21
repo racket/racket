@@ -97,10 +97,7 @@
 (define (symbol->imap-flag s)
   (cond [(assoc s flag-names) => cadr] [else s]))
 
-(define (log-warning . args)
-  ;; (apply printf args)
-  (void))
-(define log log-warning)
+(define-logger imap)
 
 (define make-msg-id
   (let ([id 0])
@@ -180,16 +177,16 @@
 (define (get-response r id info-handler continuation-handler)
   (let loop ()
     (let ([l (read-bytes-line r eol)])
-      (log "raw-reply: ~s\n" l)
+      (log-imap-debug "raw-reply: ~s" l)
       (cond [(eof-object? l)
              (error 'imap-send "unexpected end-of-file from server")]
             [(and id (starts-with? l id))
              (let ([reply (imap-read (skip l id) r)])
-               (log "response: ~a\n" reply)
+               (log-imap-debug "response: ~a" reply)
                reply)]
             [(starts-with? l #"* ")
              (let ([info (imap-read (skip l 2) r)])
-               (log "info: ~s\n" info)
+               (log-imap-debug "info: ~s" info)
                (info-handler info))
              (when id (loop))]
             [(starts-with? l #"+ ")
@@ -197,7 +194,7 @@
                (error 'imap-send "unexpected continuation request: ~a" l)
                ((car continuation-handler) loop (imap-read (skip l 2) r)))]
             [else
-             (log-warning "warning: unexpected response for ~a: ~a\n" id l)
+             (log-imap-warning "warning: unexpected response for ~a: ~a" id l)
              (when id (loop))]))))
 
 ;; A cmd is
@@ -210,7 +207,7 @@
   (let ([r (imap-r imap)]
         [w (imap-w imap)]
         [id (make-msg-id)])
-    (log "sending ~a~a\n" id cmd)
+    (log-imap-debug "sending ~a~a" id cmd)
     (fprintf w "~a" id)
     (let loop ([cmd cmd])
       (cond
@@ -267,7 +264,7 @@
          (set-imap-recent! imap (car i))]
         [(tag-eq? (cadr i) 'EXPUNGE)
          (let ([n (car i)])
-           (log "Recording expunge: ~s\n" n)
+           (log-imap-debug "Recording expunge: ~s" n)
            ;; add it to the tree of expunges
            (expunge-insert! (imap-expunges imap) n)
            ;; decrement exists count:
