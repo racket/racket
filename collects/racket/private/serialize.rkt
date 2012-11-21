@@ -257,6 +257,17 @@
 	  (hash-remove! tmp-cycle v)
 	  (set! cycle-stack (cdr cycle-stack))]))))
 
+  (define (quotable? v)
+    (if (pair? v)
+        (eq? (car v) 'q)
+        (or (boolean? v)
+            (number? v)
+            (char? v)
+            (null? v)
+            (string? v)
+            (symbol? v)
+            (bytes? v))))
+
   (define (serialize-one v share check-share? mod-map mod-map-cache)
     (define ((serial check-share?) v)
       (cond
@@ -297,13 +308,20 @@
        [(path-for-some-system? v)
 	(list* 'p+ (path->bytes v) (path-convention-type v))]
        [(vector? v)
-	(cons (if (immutable? v) 'v 'v!)
-	      (map (serial #t) (vector->list v)))]
+        (define elems (map (serial #t) (vector->list v)))
+        (if (and (immutable? v)
+                 (andmap quotable? elems))
+            (cons 'q v)
+            (cons (if (immutable? v) 'v 'v!) elems))]
        [(pair? v)
 	(let ([loop (serial #t)])
-	  (cons 'c
-		(cons (loop (car v)) 
-		      (loop (cdr v)))))]
+          (let ([a (loop (car v))]
+                [d (loop (cdr v))])
+            (cond
+             [(and (quotable? a) (quotable? d))
+              (cons 'q v)]
+             [else
+              (cons 'c (cons a d))])))]
        [(mpair? v)
 	(let ([loop (serial #t)])
 	  (cons 'm
@@ -460,6 +478,7 @@
        [else
 	(case (car v)
 	  [(?) (lookup-shared! share (cdr v) mod-map module-path-index-join)]
+          [(q) (cdr v)]
           [(f) (apply make-prefab-struct (cadr v) (map loop (cddr v)))]
 	  [(void) (void)]
           [(su) (string->unreadable-symbol (cdr v))]
