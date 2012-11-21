@@ -63,7 +63,19 @@
          (enqueue! q 2)
          (check-equal? (dequeue! q) 1)
          (check-equal? (dequeue! q) 2)
-         (check-exn exn:fail? (lambda () (dequeue! q))))))
+         (check-exn exn:fail? (lambda () (dequeue! q)))))
+     (test-case "don't leak last element"
+       (let* ([thing (box 'box-that-queue-should-not-hold-onto)]
+              [wb (make-weak-box thing)]
+              [q (make-queue)])
+         (enqueue! q thing)
+         (set! thing #f)
+         (dequeue! q)
+         (collect-garbage)
+         (check-false (weak-box-value wb))
+         ;; need a reference to 'q' after looking in the
+         ;; box or else the whole queue gets collected
+         (check-true (queue? q)))))
    (test-suite "queue misc"
      (test-case "queue as a sequence"
        (let ([queue (make-queue)])

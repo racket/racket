@@ -30,8 +30,13 @@
 (define (dequeue! q)
   (unless (queue? q) (raise-type-error dequeue! "queue" 0 q))
   (let ([old (queue-head q)])
-    (unless old (error 'dequeue! "empty queue"))
-    (set-queue-head! q (link-tail old))
+    (unless old (raise-type-error 'dequeue! "non-empty queue" 0 q))
+    (cond
+      [(eq? old (queue-tail q))
+       (set-queue-tail! q #f)
+       (set-queue-head! q #f)]
+      [else
+       (set-queue-head! q (link-tail old))])
     (link-value old)))
 
 (define (queue->list queue)
