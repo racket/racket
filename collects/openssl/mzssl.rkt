@@ -233,8 +233,6 @@
   (define NID_commonName 13)
   (define GEN_DNS 2)
 
-  (define-mzscheme scheme_start_atomic (_fun -> _void))
-  (define-mzscheme scheme_end_atomic (_fun -> _void))
   (define-mzscheme scheme_make_custodian (_fun _pointer -> _scheme))
 
   ;; Make this bigger than 4096 to accommodate at least
@@ -289,9 +287,7 @@
   (define (check-valid v who what)
     (when (ptr-equal? v #f)
       (let ([id (ERR_get_error)])
-	(escape-atomic
-	 (lambda ()
-	   (error who "~a failed ~a" what (get-error-message id)))))))
+        (error who "~a failed ~a" what (get-error-message id)))))
 
   (define (error/network who fmt . args)
     (raise (make-exn:fail:network
@@ -301,36 +297,8 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Atomic blocks
 
-  ;; Obviously, be careful in an atomic block. In particular,
-  ;; DO NOT CONSTRUCT AN ERROR DIRECTLY IN AN ATOMIC BLOCK,
-  ;; because the error message almost certainly involves things
-  ;; like a ~a or ~e format, which can trigger all sorts of
-  ;; printing extensions. Instead, send a thunk that
-  ;; constructs and raises the exception to `escape-atomic'.
-
-  (define in-atomic? (make-parameter #f))
-  (define-struct (exn:atomic exn) (thunk))
-
-  (define-syntax atomically
-    (syntax-rules ()
-      [(_ body ...)
-       (parameterize-break
-	#f
-	(with-handlers ([exn:atomic? (lambda (exn)
-				       ((exn:atomic-thunk exn)))])
-	  (parameterize ([in-atomic? #t])
-	    (dynamic-wind
-		(lambda () (scheme_start_atomic))
-		(lambda () body ...)
-		(lambda () (scheme_end_atomic))))))]))
-
-  (define (escape-atomic thunk)
-    (if (in-atomic?)
-	(raise (make-exn:atomic 
-		"error during atomic..."
-		(current-continuation-marks)
-		thunk))
-	(thunk)))
+  (define-syntax-rule (atomically body ...)
+    (call-as-atomic (lambda () body ...)))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Structs
@@ -411,12 +379,10 @@
        [(tls) (if client?
 		  TLSv1_client_method
 		  TLSv1_server_method)]
-       [else (escape-atomic
-	      (lambda ()
-		(raise-argument-error 
-		 who
-		 (format "(or/c ~a'sslv2-or-v3 'sslv2 'sslv3 'tls)" also-expect)
-		 e)))])))
+       [else
+        (raise-argument-error who
+                              (format "(or/c ~a'sslv2-or-v3 'sslv2 'sslv3 'tls)" also-expect)
+                              e)])))
 
   (define (make-context who protocol-symbol also-expected client?)
     (let ([meth (encrypt->method who also-expected protocol-symbol client?)])
@@ -1107,10 +1073,8 @@
 			  [(connect) #t]
 			  [(accept) #f]
 			  [else
-			   (escape-atomic
-			    (lambda ()
-			      (raise-argument-error who "(or/c 'connect 'accept)"
-                                                    connect/accept)))])]
+                           (raise-argument-error who "(or/c 'connect 'accept)"
+                                                 connect/accept)])]
 	      [r-bio (BIO_new (BIO_s_mem))]
 	      [w-bio (BIO_new (BIO_s_mem))]
 	      [free-bio? #t])
@@ -1122,13 +1086,11 @@
 		       (if connect?
 			   (ssl-client-context? context-or-encrypt-method)
 			   (ssl-server-context? context-or-encrypt-method)))
-	     (escape-atomic
-	      (lambda ()
-		(error who
-		       "'~a mode requires a ~a context, given: ~e"
-		       (if connect? 'connect 'accept)
-		       (if connect? "client" "server")
-		       context-or-encrypt-method))))
+             (error who
+                    "'~a mode requires a ~a context, given: ~e"
+                    (if connect? 'connect 'accept)
+                    (if connect? "client" "server")
+                    context-or-encrypt-method))
 	   (let ([ssl (SSL_new ctx)]
 		 [cancel (box #t)])
 	     (check-valid ssl who "ssl setup")
