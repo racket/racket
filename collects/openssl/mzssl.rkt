@@ -1059,55 +1059,52 @@
                 hostname))
 
   (define (create-ssl who context-or-encrypt-method connect/accept error/ssl)
-    (atomically ; so we register the finalizer (and it's ok since everything is non-blocking)
+    (define connect?
+      (case connect/accept
+        [(connect) #t]
+        [(accept) #f]
+        [else (raise-argument-error who "(or/c 'connect 'accept)" connect/accept)]))
+    (unless (or (symbol? context-or-encrypt-method)
+                (if connect?
+                    (ssl-client-context? context-or-encrypt-method)
+                    (ssl-server-context? context-or-encrypt-method)))
+      (error who
+             "'~a mode requires a ~a context, given: ~e"
+             (if connect? 'connect 'accept)
+             (if connect? "client" "server")
+             context-or-encrypt-method))
+    (atomically ;; so we register the finalizer (and it's ok since everything is non-blocking)
      (let ([ctx (get-context who context-or-encrypt-method (eq? connect/accept 'connect))])
        (check-valid ctx who "context creation")
        (with-failure
-	(lambda () (when (and ctx
-			      (symbol? context-or-encrypt-method))
-		     (SSL_CTX_free ctx)))
-	(let ([connect? (case connect/accept
-			  [(connect) #t]
-			  [(accept) #f]
-			  [else
-                           (raise-argument-error who "(or/c 'connect 'accept)"
-                                                 connect/accept)])]
-	      [r-bio (BIO_new (BIO_s_mem))]
-	      [w-bio (BIO_new (BIO_s_mem))]
-	      [free-bio? #t])
-	  (with-failure
-	   (lambda () (when free-bio?
-			(BIO_free r-bio)
-			(BIO_free w-bio)))
-	   (unless (or (symbol? context-or-encrypt-method)
-		       (if connect?
-			   (ssl-client-context? context-or-encrypt-method)
-			   (ssl-server-context? context-or-encrypt-method)))
-             (error who
-                    "'~a mode requires a ~a context, given: ~e"
-                    (if connect? 'connect 'accept)
-                    (if connect? "client" "server")
-                    context-or-encrypt-method))
-	   (let ([ssl (SSL_new ctx)]
-		 [cancel (box #t)])
-	     (check-valid ssl who "ssl setup")
-	     ;; ssl has a ref count on ctx, so release:
-	     (when (symbol? context-or-encrypt-method)
-	       (SSL_CTX_free ctx)
-	       (set! ctx #f))
-	     (with-failure
-	      (lambda () (SSL_free ssl))
-	      (SSL_set_bio ssl r-bio w-bio)
-	      ;; ssl has r-bio & w-bio (no ref count?), so drop it:
-	      (set! free-bio? #f)
-	      
-	      ;; Register a finalizer for ssl:
-	      (register-finalizer ssl 
-				  (lambda (v)
-				    (when (unbox cancel)
-				      (SSL_free ssl))))
-	      ;; Return SSL and the cancel boxL:
-	      (values ssl cancel r-bio w-bio connect?)))))))))
+        (lambda () (when (and ctx (symbol? context-or-encrypt-method))
+                     (SSL_CTX_free ctx)))
+        (let ([r-bio (BIO_new (BIO_s_mem))]
+              [w-bio (BIO_new (BIO_s_mem))]
+              [free-bio? #t])
+          (with-failure
+           (lambda () (when free-bio?
+                        (BIO_free r-bio)
+                        (BIO_free w-bio)))
+           (let ([ssl (SSL_new ctx)]
+                 [cancel (box #t)])
+             (check-valid ssl who "ssl setup")
+             ;; ssl has a ref count on ctx, so release:
+             (when (symbol? context-or-encrypt-method)
+               (SSL_CTX_free ctx)
+               (set! ctx #f))
+             (with-failure
+              (lambda () (SSL_free ssl))
+              (SSL_set_bio ssl r-bio w-bio)
+              ;; ssl has r-bio & w-bio (no ref count?), so drop it:
+              (set! free-bio? #f)
+              ;; Register a finalizer for ssl:
+              (register-finalizer ssl 
+                                  (lambda (v)
+                                    (when (unbox cancel)
+                                      (SSL_free ssl))))
+              ;; Return SSL and the cancel box:
+              (values ssl cancel r-bio w-bio connect?)))))))))
 
   (define (wrap-ports who i o context-or-encrypt-method connect/accept
                       close? shutdown-on-close? error/ssl
