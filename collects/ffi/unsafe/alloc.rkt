@@ -23,8 +23,9 @@
          start-atomic
          (lambda ()
            (let ([v (apply proc args)])
-             (hash-set! allocated v (list d))
-             (register-finalizer v deallocate)
+             (when v
+               (hash-set! allocated v (list d))
+               (register-finalizer v deallocate))
              v))
          end-atomic))
    proc))
