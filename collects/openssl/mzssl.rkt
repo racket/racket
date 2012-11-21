@@ -18,6 +18,7 @@
   (require ffi/unsafe
            ffi/unsafe/define
            ffi/unsafe/atomic
+           ffi/unsafe/alloc
            ffi/file
            racket/port
            racket/tcp
@@ -109,7 +110,7 @@
   (define-ssl TLSv1_server_method (_fun -> _SSL_METHOD*))
 
   (define-crypto BIO_s_mem (_fun -> _BIO_METHOD*))
-  (define-crypto BIO_new (_fun _BIO_METHOD* -> _BIO*))
+  (define-crypto BIO_new (_fun _BIO_METHOD* -> _BIO*/null))
   (define-crypto BIO_free (_fun _BIO* -> _void))
 
   (define-crypto BIO_read (_fun _BIO* _bytes _int -> _int))
@@ -118,8 +119,10 @@
   (define (BIO_set_mem_eof_return b v)
     (BIO_ctrl b BIO_C_SET_BUF_MEM_EOF_RETURN v 0))
 
-  (define-ssl SSL_CTX_new (_fun _SSL_METHOD* -> _SSL_CTX*))
-  (define-ssl SSL_CTX_free (_fun _SSL_CTX* -> _void))
+  (define-ssl SSL_CTX_free (_fun _SSL_CTX* -> _void)
+    #:wrap (deallocator))
+  (define-ssl SSL_CTX_new (_fun _SSL_METHOD* -> _SSL_CTX*)
+    #:wrap (allocator SSL_CTX_free))
   (define-ssl SSL_CTX_ctrl (_fun _SSL_CTX* _int _long _pointer -> _long))
   (define (SSL_CTX_set_mode ctx m)
     (SSL_CTX_ctrl ctx SSL_CTRL_MODE m #f))
@@ -134,21 +137,27 @@
   (define-ssl SSL_load_client_CA_file (_fun _bytes -> _X509_NAME*/null))
   (define-ssl SSL_CTX_set_cipher_list (_fun _SSL_CTX* _string -> _int))
 
-  (define-ssl SSL_new (_fun _SSL_CTX* -> _SSL*))
+  (define-ssl SSL_free (_fun _SSL* -> _void)
+    #:wrap (deallocator))
+  (define-ssl SSL_new (_fun _SSL_CTX* -> _SSL*)
+    #:wrap (allocator SSL_free))
   (define-ssl SSL_set_bio (_fun _SSL* _BIO* _BIO* -> _void))
   (define-ssl SSL_connect (_fun _SSL* -> _int))
   (define-ssl SSL_accept (_fun _SSL* -> _int))
-  (define-ssl SSL_free (_fun _SSL* -> _void))
   (define-ssl SSL_read (_fun _SSL* _bytes _int -> _int))
   (define-ssl SSL_write (_fun _SSL* _bytes _int -> _int))
   (define-ssl SSL_shutdown (_fun _SSL* -> _int))
   (define-ssl SSL_get_verify_result (_fun _SSL* -> _long))
-  (define-ssl SSL_get_peer_certificate (_fun _SSL* -> _X509*/null))
   (define-ssl SSL_set_verify (_fun _SSL* _int _pointer -> _void))
   (define-ssl SSL_set_session_id_context (_fun _SSL* _bytes _int -> _int))
   (define-ssl SSL_renegotiate (_fun _SSL* -> _int))
   (define-ssl SSL_renegotiate_pending (_fun _SSL* -> _int))
   (define-ssl SSL_do_handshake (_fun _SSL* -> _int))
+
+  (define-crypto X509_free (_fun _X509* -> _void)
+    #:wrap (deallocator))
+  (define-ssl SSL_get_peer_certificate (_fun _SSL* -> _X509*/null)
+    #:wrap (allocator X509_free))
 
   (define-crypto X509_get_subject_name (_fun _X509* -> _X509_NAME*))
   (define-crypto X509_get_issuer_name (_fun _X509* -> _X509_NAME*))
@@ -383,12 +392,11 @@
 
   (define (make-context who protocol-symbol also-expected client?)
     (let ([meth (encrypt->method who also-expected protocol-symbol client?)])
-      (atomically ; so we reliably register the finalizer
+      (atomically ;; connect SSL_CTX_new to subsequent check-valid (ERR_get_error)
        (let ([ctx (SSL_CTX_new meth)])
          (check-valid ctx who "context creation")
          (SSL_CTX_set_mode ctx (bitwise-ior SSL_MODE_ENABLE_PARTIAL_WRITE
                                             SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER))
-         (register-finalizer ctx (lambda (v) (SSL_CTX_free v)))
          ((if client? make-ssl-client-context make-ssl-server-context) ctx #f #f)))))
 
   (define (ssl-make-client-context [protocol-symbol default-encrypt])
@@ -1073,7 +1081,7 @@
              (if connect? 'connect 'accept)
              (if connect? "client" "server")
              context-or-encrypt-method))
-    (atomically ;; so we register the finalizer (and it's ok since everything is non-blocking)
+    (atomically ;; connect functions to subsequent check-valid (ie, ERR_get_error)
      (let ([ctx (get-context who context-or-encrypt-method (eq? connect/accept 'connect))])
        (check-valid ctx who "context creation")
        (with-failure
@@ -1098,11 +1106,6 @@
               (SSL_set_bio ssl r-bio w-bio)
               ;; ssl has r-bio & w-bio (no ref count?), so drop it:
               (set! free-bio? #f)
-              ;; Register a finalizer for ssl:
-              (register-finalizer ssl 
-                                  (lambda (v)
-                                    (when (unbox cancel)
-                                      (SSL_free ssl))))
               ;; Return SSL and the cancel box:
               (values ssl cancel r-bio w-bio connect?)))))))))
 
