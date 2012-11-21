@@ -327,7 +327,6 @@
 			    flushing? must-write must-read
 			    refcount 
 			    close-original? shutdown-on-close?
-			    finalizer-cancel
                             error)
     #:mutable)
 
@@ -645,9 +644,7 @@
     ;; Lock must be held
     (set-mzssl-refcount! mzssl (sub1 (mzssl-refcount mzssl)))
     (when (zero? (mzssl-refcount mzssl))
-      (atomically
-       (set-box! (mzssl-finalizer-cancel mzssl) #f)
-       (SSL_free (mzssl-ssl mzssl)))
+      (SSL_free (mzssl-ssl mzssl))
       (when (mzssl-close-original? mzssl)
 	(close-input-port (mzssl-i mzssl))
 	(close-output-port (mzssl-o mzssl)))))
@@ -1094,8 +1091,7 @@
            (lambda () (when free-bio?
                         (BIO_free r-bio)
                         (BIO_free w-bio)))
-           (let ([ssl (SSL_new ctx)]
-                 [cancel (box #t)])
+           (let ([ssl (SSL_new ctx)])
              (check-valid ssl who "ssl setup")
              ;; ssl has a ref count on ctx, so release:
              (when (symbol? context-or-encrypt-method)
@@ -1106,8 +1102,7 @@
               (SSL_set_bio ssl r-bio w-bio)
               ;; ssl has r-bio & w-bio (no ref count?), so drop it:
               (set! free-bio? #f)
-              ;; Return SSL and the cancel box:
-              (values ssl cancel r-bio w-bio connect?)))))))))
+              (values ssl r-bio w-bio connect?)))))))))
 
   (define (wrap-ports who i o context-or-encrypt-method connect/accept
                       close? shutdown-on-close? error/ssl
@@ -1119,7 +1114,7 @@
     (unless (or (string? hostname) (eq? hostname #f))
       (raise-argument-error who "(or/c string? #f)" hostname))
     ;; Create the SSL connection:
-    (let-values ([(ssl cancel r-bio w-bio connect?)
+    (let-values ([(ssl r-bio w-bio connect?)
 		  (create-ssl who context-or-encrypt-method connect/accept error/ssl)]
                  [(verify-hostname?)
                   (cond [(ssl-context? context-or-encrypt-method)
@@ -1127,14 +1122,12 @@
                         [else #f])])
       ;; connect/accept:
       (let-values ([(buffer) (make-bytes BUFFER-SIZE)]
-		   [(pipe-r pipe-w) (make-pipe)]
-		   [(cancel) (box #t)])
+		   [(pipe-r pipe-w) (make-pipe)])
 	(let ([mzssl (make-mzssl ssl i o r-bio w-bio pipe-r pipe-w 
 				 buffer (make-semaphore 1) 
 				 #f #f
 				 #f #f #f 2 
 				 close? shutdown-on-close?
-				 cancel
                                  error/ssl)])
 	  (let loop ()
 	    (let-values ([(status err estr) (save-errors (if connect?
