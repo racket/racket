@@ -256,10 +256,49 @@
     (define/public (get-serialize-version)
       4)
 
+    (define/public (serialize-infos ri n d)
+      (if (= n 1)
+          (list (serialize-info ri))
+          (map (lambda (ht) (serialize-one-ht ri ht))
+               (partition-info (resolve-info-ci ri) n d))))
+
+    (define/private (partition-info all-ci n d)
+      ;; partition information in `all-ci' based on `d's:
+      (let ([prefix (part-tag-prefix d)]
+            [new-hts (for/list ([i (in-range n)])
+                       (make-hash))]
+            [covered (make-hash)])
+        ;; Fill in new-hts from parts:
+        (for ([sub-d (in-list (part-parts d))]
+              [i (in-naturals)])
+          (define ht (list-ref new-hts (min (add1 i) (sub1 n))))
+          (define cdi (hash-ref (collect-info-parts all-ci) sub-d #f))
+          (define sub-prefix (part-tag-prefix sub-d))
+          (when cdi
+            (for ([(k v) (in-hash (collected-info-info cdi))])
+              (when (cadr k)
+                (define sub-k (if sub-prefix
+                                  (convert-key sub-prefix k)
+                                  k))
+                (define full-k (if prefix
+                                   (convert-key prefix sub-k)
+                                   sub-k))
+                (hash-set! ht full-k v)
+                (hash-set! covered full-k #t)))))
+        ;; Anything not covered in the new-hts must go in the main hts:
+        (let ([ht0 (car new-hts)])
+          (for ([(k v) (in-hash (collect-info-ht all-ci))])
+            (unless (hash-ref covered k #f)
+              (hash-set! ht0 k v))))
+        ;; Return hts:
+        new-hts))
+
     (define/public (serialize-info ri)
+      (serialize-one-ht ri (collect-info-ht (resolve-info-ci ri))))
+
+    (define/public (serialize-one-ht ri ht)
       (parameterize ([current-serialize-resolve-info ri])
-        (serialize (cons root
-                         (collect-info-ht (resolve-info-ci ri))))))
+        (serialize (cons root ht))))
 
     (define/public (deserialize-info v ci #:root [root-path #f])
       (let ([root+ht (deserialize v)]
@@ -271,6 +310,10 @@
 
     (define/public (get-defined ci)
       (hash-map (collect-info-ht ci) (lambda (k v) k)))
+
+    (define/public (get-defineds ci n d)
+      (for/list ([ht (partition-info ci n d)])
+        (hash-map ht (lambda (k v) k))))
 
     (define/public (get-external ri)
       (hash-map (resolve-info-undef ri) (lambda (k v) k)))

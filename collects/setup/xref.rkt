@@ -20,24 +20,34 @@
                       (if d (list d) null))])
       (for/hash ([k (in-list (find-relevant-directories '(scribblings) 'no-planet))])
         (values k #t))))
-  (for*/list ([dir (find-relevant-directories '(scribblings) 'all-available)]
-              [d (let ([info-proc (get-info/full dir)])
-                   (if info-proc
-                       (info-proc 'scribblings)
-                       '()))])
-    (unless (and (list? d) (pair? d))
-      (error 'xref "bad scribblings entry: ~e" d))
-    (let* ([len   (length d)]
-           [flags (if (len . >= . 2) (cadr d) '())]
-           [name  (if (len . >= . 4)
-                    (cadddr d)
-                    (path->string
-                     (path-replace-suffix (file-name-from-path (car d))
-                                          #"")))])
-      (and (not (and (len . >= . 3) (memq 'omit (caddr d))))
-           (let* ([d (doc-path dir name flags (hash-ref main-dirs dir #f) 'false-if-missing)]
-                  [p (and d (build-path d "out.sxref"))])
-             (and p (file-exists? p) p))))))
+  (apply
+   append
+   (for*/list ([dir (find-relevant-directories '(scribblings) 'all-available)]
+               [d (let ([info-proc (get-info/full dir)])
+                    (if info-proc
+                        (info-proc 'scribblings)
+                        '()))])
+     (unless (and (list? d) (pair? d))
+       (error 'xref "bad scribblings entry: ~e" d))
+     (let* ([len   (length d)]
+            [flags (if (len . >= . 2) (cadr d) '())]
+            [name  (if (len . >= . 4)
+                       (cadddr d)
+                       (path->string
+                        (path-replace-suffix (file-name-from-path (car d))
+                                             #"")))]
+            [out-count (if (len . >= . 5)
+                           (list-ref d 4)
+                           1)])
+       (if (not (and (len . >= . 3) (memq 'omit (caddr d))))
+           (let ([d (doc-path dir name flags (hash-ref main-dirs dir #f) 'false-if-missing)])
+             (if d
+                 (for*/list ([i (in-range (add1 out-count))]
+                             [p (in-value (build-path d (format "out~a.sxref" i)))]
+                             #:when (file-exists? p))
+                   p)
+                 null))
+           null)))))
 
 (define (dest->source dest)
   (lambda ()

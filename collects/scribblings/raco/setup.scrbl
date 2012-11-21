@@ -154,7 +154,8 @@ Optional @filepath{info.rkt} fields trigger additional actions by
      [doc (list src-string)
           (list src-string flags)
           (list src-string flags category)
-          (list src-string flags category name-string)]
+          (list src-string flags category name-string)
+          (list src-string flags category name-string out-k)]
      [flags (list mode-symbol ...)]
      [category (list category-symbol)
                (list category-symbol sort-number)]
@@ -271,7 +272,13 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    alphabetically. For a pair of manuals with sorting numbers
    @racket[_n] and @racket[_m], the groups for the manuals are
    separated by space if @racket[(truncate (/ _n 10))]and
-   @racket[(truncate (/ _m 10))] are different.}
+   @racket[(truncate (/ _m 10))] are different.
+
+   The @racket[_out-k] specification is a hint on whether to break the
+   document's cross-reference information into multiple parts, which
+   can reduce the time and memory use for resolving a cross-reference
+   into the document. It must be a positive, exact integer, and the
+   default is @racket[1].}
 
  @item{@racket[racket-launcher-names] : @racket[(listof string?)]
    --- @elemtag["racket-launcher-names"] A list of executable names

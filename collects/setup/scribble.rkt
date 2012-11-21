@@ -32,10 +32,11 @@
 
 (define verbose (make-parameter #t))
 
-(define-serializable-struct doc (src-dir src-spec src-file dest-dir flags under-main? category) #:transparent)
-(define-serializable-struct info (doc      ; doc structure above
-                                  provides ; provides
-                                  undef    ; unresolved requires
+(define-serializable-struct doc (src-dir src-spec src-file dest-dir flags under-main? category out-count)
+  #:transparent)
+(define-serializable-struct info (doc       ; doc structure above
+                                  providess ; list of list of provide
+                                  undef     ; unresolved requires
                                   searches 
                                   deps 
                                   known-deps
@@ -79,7 +80,7 @@
     (memq sym '(main-doc main-doc-root user-doc-root user-doc multi-page
                          depends-all depends-all-main no-depend-on always-run)))
   (define (validate-scribblings-infos infos)
-    (define (validate path [flags '()] [cat '(library)] [name #f])
+    (define (validate path [flags '()] [cat '(library)] [name #f] [out-count 1])
       (and (string? path) (relative-path? path)
            (list? flags) (andmap scribblings-flag? flags)
            (or (not name) (and (path-string? name) (relative-path? name) name))
@@ -88,12 +89,14 @@
                 (symbol? (car cat))
                 (or (null? (cdr cat))
                     (real? (cadr cat))))
+           (and (exact-positive-integer? out-count))
            (list path flags cat
                  (or name (let-values ([(_1 name _2) (split-path path)])
-                            (path-replace-suffix name #""))))))
+                            (path-replace-suffix name #"")))
+                 out-count)))
     (and (list? infos)
          (let ([infos (map (lambda (i)
-                             (and (list? i) (<= 1 (length i) 4)
+                             (and (list? i) (<= 1 (length i) 5)
                                   (apply validate i)))
                            infos)])
            (and (not (memq #f infos)) infos))))
@@ -121,7 +124,8 @@
                                           (cdr spec))))
                              (simplify-path (build-path dir (car d)) #f)
                              (doc-path dir (cadddr d) flags under-main?)
-                             flags under-main? (caddr d))))
+                             flags under-main? (caddr d)
+                             (list-ref d 4))))
                s)
           (begin (setup-printf
                   "WARNING"
@@ -192,7 +196,8 @@
           [src->info (make-hash)])
       ;; Collect definitions
       (for* ([info infos]
-             [k (info-provides info)])
+             [ks (info-providess info)]
+             [k ks])
         (let ([prev (hash-ref ht k #f)])
           (when (and first? prev)
             (setup-printf "WARNING" "duplicate tag: ~s" k)
@@ -329,9 +334,9 @@
           (define (update-info info response)
             (match response 
               [#f (set-info-failed?! info #t)]
-              [(list in-delta? out-delta? defs undef)
+              [(list in-delta? out-delta? defss undef)
                (set-info-rendered?! info #t)
-               (set-info-provides! info defs)
+               (set-info-providess! info defss)
                (set-info-undef! info undef)
                (when out-delta?
                  (set-info-out-time! info (/ (current-inexact-milliseconds) 1000)))
@@ -522,7 +527,8 @@
 (define ((get-doc-info only-dirs latex-dest auto-main? auto-user?
                        with-record-error setup-printf workerid)
          doc)
-  (let* ([info-out-file (sxref-path latex-dest doc "out.sxref")]
+  (let* ([info-out-files (for/list ([i (add1 (doc-out-count doc))])
+                           (sxref-path latex-dest doc (format "out~a.sxref" i)))]
          [info-in-file  (sxref-path latex-dest doc "in.sxref")]
          [db-file (find-db-file doc)]
          [stamp-file  (sxref-path latex-dest doc "stamp.sxref")]
@@ -556,7 +562,10 @@
                          stamp-time stamp-data 2
                          get-file-sha1))]
          [my-time (file-or-directory-modify-seconds out-file #f (lambda () -inf.0))]
-         [info-out-time (file-or-directory-modify-seconds info-out-file #f (lambda () #f))]
+         [info-out-time (for/fold ([t +inf.0]) ([info-out-file info-out-files])
+                          (and t
+                               (let ([t2 (file-or-directory-modify-seconds info-out-file #f (lambda () #f))])
+                                 (and t2 (min t t2)))))]
          [info-in-time (file-or-directory-modify-seconds info-in-file #f (lambda () #f))]
          [info-time (min (or info-out-time -inf.0) (or info-in-time -inf.0))]
          [vers (send renderer get-serialize-version)]
@@ -596,23 +605,25 @@
          (with-handlers ([exn:fail? (lambda (exn)
                                       (log-error (format "get-doc-info error: ~a"
                                                          (exn-message exn)))
-                                      (delete-file info-out-file)
+                                      (for-each delete-file info-out-files)
                                       (delete-file info-in-file)
                                       ((get-doc-info only-dirs latex-dest auto-main?
                                                      auto-user? with-record-error
                                                      setup-printf workerid)
                                        doc))])
            (let* ([v-in  (load-sxref info-in-file)]
-                  [v-out (load-sxref info-out-file)])
+                  [v-outs (map load-sxref info-out-files)])
              (unless (and (equal? (car v-in) (list vers (doc-flags doc)))
-                          (equal? (car v-out) (list vers (doc-flags doc))))
+                          (for/and ([v-out v-outs])
+                            (equal? (car v-out) (list vers (doc-flags doc)))))
                (error "old info has wrong version or flags"))
              (make-info
               doc
-              (let ([v (list-ref v-out 2)]) ; provides
-                (with-my-namespace
-                 (lambda ()
-                   (deserialize v))))
+              (for/list ([v-out v-outs])  ; providess
+                (let ([v (list-ref v-out 2)])
+                  (with-my-namespace
+                   (lambda ()
+                     (deserialize v)))))
               (let ([v (list-ref v-in 1)])  ; undef
                 (with-my-namespace
                  (lambda ()
@@ -642,30 +653,36 @@
                         [fp (send renderer traverse (list v) (list dest-dir))]
                         [ci (send renderer collect (list v) (list dest-dir) fp)]
                         [ri (send renderer resolve (list v) (list dest-dir) ci)]
-                        [out-v (and info-out-time
-                                    (info-out-time . >= . src-time)
-                                    (with-handlers ([exn:fail? (lambda (exn) #f)])
-                                      (let ([v (load-sxref info-out-file)])
-                                        (unless (equal? (car v) (list vers (doc-flags doc)))
-                                          (error "old info has wrong version or flags"))
-                                        v)))]
-                        [sci (send renderer serialize-info ri)]
-                        [defs (send renderer get-defined ci)]
+                        [out-vs (and info-out-time
+                                     (info-out-time . >= . src-time)
+                                     (with-handlers ([exn:fail? (lambda (exn) #f)])
+                                       (for/list ([info-out-file info-out-files])
+                                         (let ([v (load-sxref info-out-file)])
+                                           (unless (equal? (car v) (list vers (doc-flags doc)))
+                                             (error "old info has wrong version or flags"))
+                                           v))))]
+                        [scis (send renderer serialize-infos ri (add1 (doc-out-count doc)) v)]
+                        [defss (send renderer get-defineds ci (add1 (doc-out-count doc)) v)]
                         [undef (send renderer get-external ri)]
                         [searches (resolve-info-searches ri)]
                         [need-out-write?
-                         (or (not out-v)
-                             (not (equal? (list vers (doc-flags doc))
-                                          (car out-v)))
-                             (not (serialized=? sci (cadr out-v)))
-                             (not (equal? (any-order defs) (any-order (deserialize (caddr out-v)))))
+                         (or (not out-vs)
+                             (not (for/and ([out-v out-vs])
+                                    (equal? (list vers (doc-flags doc))
+                                            (car out-v))))
+                             (not (for/and ([sci scis]
+                                            [out-v out-vs])
+                                    (serialized=? sci (cadr out-v))))
+                             (not (for/and ([defs defss]
+                                            [out-v out-vs])
+                                    (equal? (any-order defs) (any-order (deserialize (caddr out-v))))))
                              (info-out-time . > . (current-seconds)))])
                    (when (and (verbose) need-out-write?)
                      (eprintf " [New out ~a]\n" (doc-src-file doc)))
                    (gc-point)
                    (let ([info
                           (make-info doc
-                                     defs     ; provides
+                                     defss  ; providess
                                      undef
                                      searches
                                      null ; no deps, yet
@@ -682,7 +699,7 @@
                                      #f
                                      #f)])
                      (when need-out-write?
-                       (render-time "xref-out" (write-out/info latex-dest info sci db-file))
+                       (render-time "xref-out" (write-out/info latex-dest info scis db-file))
                        (set-info-need-out-write?! info #f))
                      (when (info-need-in-write? info)
                        (render-time "xref-in" (write-in/info latex-dest info))
@@ -728,18 +745,23 @@
   (collect-garbage) (collect-garbage) (printf "post ~a ~s\n" what (current-memory-use)))))
 
 (define (load-sxrefs latex-dest doc vers)
-  (match (list (load-sxref (sxref-path latex-dest doc "in.sxref")) (load-sxref (sxref-path latex-dest doc "out.sxref")))
-    [(list (list in-version undef deps-rel searches dep-docs) (list out-version sci provides))
-     (unless (and (equal? in-version  (list vers (doc-flags doc)))
-                  (equal? out-version (list vers (doc-flags doc))))
+  (match (list (load-sxref (sxref-path latex-dest doc "in.sxref"))
+               (for/list ([i (add1 (doc-out-count doc))])
+                 (load-sxref (sxref-path latex-dest doc (format "out~a.sxref" i)))))
+    [(list (list in-version undef deps-rel searches dep-docs) 
+           (list (list out-versions scis providess) ...))
+     (define expected (list vers (doc-flags doc)))
+     (unless (and (equal? in-version  expected)
+                  (for/and ([out-version out-versions])
+                    (equal? out-version expected)))
        (error "old info has wrong version or flags"))
      (with-my-namespace*
       (values (deserialize undef) 
               deps-rel
               (deserialize searches)
               (map rel-doc->doc (deserialize dep-docs))
-              sci
-              (deserialize provides)))]))
+              scis
+              (map deserialize providess)))]))
 
 (define (build-again! latex-dest info with-record-error)
   (define (cleanup-dest-dir doc)
@@ -753,22 +775,23 @@
                        (not (regexp-match? #"[.]sxref$"
                                            (path-element->bytes f)))))
               (delete-file (build-path dir f)))))))
-  (define (load-doc-sci doc)
-    (cadr (load-sxref (sxref-path latex-dest doc "out.sxref"))))
+  (define (load-doc-scis doc)
+    (map cadr (for/list ([i (add1 (doc-out-count doc))])
+                (load-sxref (sxref-path latex-dest doc (format "out~a.sxref" i))))))
   (define doc (if (info? info ) (info-doc info) info))
   (define renderer (make-renderer latex-dest doc))
   (with-record-error
    (doc-src-file doc)
    (lambda ()
      (define vers (send renderer get-serialize-version))
-     (define-values (ff-undef ff-deps-rel ff-searches ff-dep-docs ff-sci ff-provides)
+     (define-values (ff-undef ff-deps-rel ff-searches ff-dep-docs ff-scis ff-providess)
        (if (info? info)
            (values (info-undef info) 
                    (info-deps->rel-doc-src-file info)
                    (info-searches info)
                    (info-deps->doc info)
-                   (load-doc-sci doc)
-                   (info-provides info))
+                   (load-doc-scis doc)
+                   (info-providess info))
            (load-sxrefs latex-dest doc vers)))
      
      (parameterize ([current-directory (doc-src-dir doc)])
@@ -779,15 +802,20 @@
               [ri (begin 
                     (render-time "deserialize" 
                                  (with-my-namespace* 
-                                  (for ([dep-doc ff-dep-docs]) 
-                                    (send renderer deserialize-info (load-doc-sci dep-doc) ci))))
+                                  (for* ([dep-doc ff-dep-docs]
+                                         [sci (load-doc-scis dep-doc)])
+                                    (send renderer deserialize-info sci ci))))
                     (render-time "resolve" (send renderer resolve (list v) (list dest-dir) ci)))]
-              [sci (render-time "serialize" (send renderer serialize-info ri))]
-              [defs (render-time "defined" (send renderer get-defined ci))]
+              [scis (render-time "serialize" (send renderer serialize-infos ri (add1 (doc-out-count doc)) v))]
+              [defss (render-time "defined" (send renderer get-defineds ci (add1 (doc-out-count doc)) v))]
               [undef (render-time "undefined" (send renderer get-external ri))]
               [in-delta? (not (equal? (any-order undef) (any-order ff-undef)))]
-              [out-delta? (or (not (serialized=? sci ff-sci))
-                              (not (equal? (any-order defs) (any-order ff-provides))))]
+              [out-delta? (or (not (for/and ([sci scis]
+                                             [ff-sci ff-scis])
+                                     (serialized=? sci ff-sci)))
+                              (not (for/and ([defs defss]
+                                             [ff-provides ff-providess])
+                                     (equal? (any-order defs) (any-order ff-provides)))))]
               [db-file (find-db-file doc)])
          (when (verbose)
            (printf " [~a~afor ~a]\n"
@@ -800,7 +828,7 @@
          (when in-delta?
            (render-time "xref-in" (write-in latex-dest vers doc undef ff-deps-rel ff-searches ff-dep-docs)))
          (when out-delta?
-           (render-time "xref-out" (write-out latex-dest vers doc sci defs db-file)))
+           (render-time "xref-out" (write-out latex-dest vers doc scis defss db-file)))
 
          (cleanup-dest-dir doc)
          (render-time
@@ -810,7 +838,7 @@
            (lambda () (send renderer render (list v) (list dest-dir) ri))
            void))
          (gc-point)
-         (list in-delta? out-delta? defs undef))))
+         (list in-delta? out-delta? defss undef))))
    (lambda () #f)))
 
 (define (gc-point)
@@ -854,16 +882,19 @@
                          (lambda (out tmp-filename)
                            (write-bytes (s-exp->fasl (append (list (list vers (doc-flags doc))) data)) out)))))
 
-(define (write-out latex-dest vers doc sci provides db-file)
-  (write- latex-dest vers doc "out.sxref" 
+(define (write-out latex-dest vers doc scis providess db-file)
+  (for ([i (add1 (doc-out-count doc))]
+        [sci scis]
+        [provides providess])
+  (write- latex-dest vers doc (format "out~a.sxref" i)
           (list sci
                 (serialize provides))
           (lambda (filename)
             (unless latex-dest
-              (doc-db-record-provides db-file provides filename)))))
+              (doc-db-record-provides db-file provides filename))))))
 
-(define (write-out/info latex-dest info sci db-file)
-  (write-out latex-dest (info-vers info) (info-doc info) sci (info-provides info) db-file))
+(define (write-out/info latex-dest info scis db-file)
+  (write-out latex-dest (info-vers info) (info-doc info) scis (info-providess info) db-file))
 
 (define (write-in latex-dest vers doc undef rels searches dep-docs)
   (write- latex-dest vers doc "in.sxref" 

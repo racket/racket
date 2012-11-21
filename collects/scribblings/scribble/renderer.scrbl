@@ -168,10 +168,23 @@ directory; normally, they should indicates a path within the
 @racket[_dest-dir] supplied on initialization of the @racket[render%]
 object.}
 
+
 @defmethod[(serialize-info [ri resolve-info?])
            any/c]{
 
 Serializes the collected info in @racket[ri].}
+
+
+@defmethod[(serialize-infos [ri resolve-info?] 
+                            [count exact-positive-integer?] 
+                            [doc part?])
+           list?]{
+
+Like @method[render<%> serialize-info], but produces @racket[count] results
+that together have the same information as produced by
+@method[render<%> serialize-info]. The structure of @racket[doc] is used to
+drive the partitioning (on the assumption that @racket[ri] is derived
+from @racket[doc]).}
 
 
 @defmethod[(deserialize-info [v any/c]
@@ -191,6 +204,17 @@ recorded in @racket[ci] as relative to an instantiation-supplied
 
 Returns a list of tags that were defined within the documents
 represented by @racket[ci].}
+
+
+@defmethod[(get-defineds [ci collect-info?] 
+                         [count exact-positive-integer?] 
+                         [doc part?])
+           (listof (listof tag?))]{
+
+Analogous to @method[render<%> serialize-infos]: returns a list of
+tags for each of @racket[count] partitions of the result of
+@method[render<%> get-defined], using the structure of @racket[doc] to
+drive the partitioning.}
 
 
 @defmethod[(get-external [ri resolve-info?]) (listof tag?)]{
