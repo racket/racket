@@ -10,58 +10,104 @@
 @author[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 This module provides a simple mutable queue representation,
-first-in/first-out only.  Operations on queues mutate it in a
-thread-unsafe way.
+providing first-in/first-out semantics. 
 
-@defproc[(make-queue) queue/c]{
+Operations on queues mutate it in a thread-unsafe way.
+
+@defproc[(make-queue) queue?]{
   Produces an empty queue.
 }
 
-@defproc[(enqueue! [q queue/c] [v any/c]) void?]{
+@defproc[(enqueue! [q queue?] [v any/c]) void?]{
   Adds an element to the back of a queue.
+  
+  This takes constant time, independent of the number
+  of elements in @racket[q].
 }
 
-@defproc[(dequeue! [q nonempty-queue/c]) any/c]{
-  Removes an element from the front of a nonempty queue, and returns that
+@defproc[(enqueue-front! [q queue?] [v any/c]) void?]{
+  Adds an element to the front of a queue.
+
+  This takes constant time, independent of the number
+  of elements in @racket[q].
+}
+
+@defproc[(dequeue! [q non-empty-queue?]) any/c]{
+  Removes an element from the front of a non-empty queue, and returns that
   element.
 
-  @defexamples[#:eval qeval
+  This takes constant time, independent of the number
+  of elements in @racket[q].
+
+@defexamples[#:eval qeval
     (define q (make-queue))
     (enqueue! q 1)
     (dequeue! q)
     (enqueue! q 2)
     (enqueue! q 3)
     (dequeue! q)
-    (dequeue! q)]
+    (dequeue! q)
+    (enqueue! q 2)
+    (enqueue! q 1)
+    (enqueue-front! q 3)
+    (enqueue-front! q 4)
+    (queue->list q)]
 }
 
-@defproc[(queue->list [queue queue/c]) (listof any/c)]{
+@defproc[(queue-filter! [q queue?] [pred? (-> any/c any/c)]) void?]{
+  Applies @racket[pred?] to each element of the queue,
+  removing any where @racket[pred?] returns @racket[#f]. 
+  
+  This takes time proportional to the number of elements in @racket[q]
+  (assuming that @racket[pred?] takes constant time, independent
+   of the number of elements in @racket[q]). It does not allocate and
+   it calls @racket[pred?] exactly once for each element of @racket[q].
+  
+    @defexamples[#:eval qeval
+    (define q (make-queue))
+    (enqueue! q 1)
+    (enqueue! q 2)
+    (enqueue! q 3)
+    (enqueue! q 4)
+    (queue-filter! q even?)
+    (queue->list q)]
+}
+
+@defproc[(queue->list [queue queue?]) (listof any/c)]{
   Returns an immutable list containing the elements of the queue
   in the order the elements were added.
 
+  This takes time proportional to the number of elements in @racket[q].
+  
   @defexamples[#:eval qeval
-    (define queue (make-queue))
-    (enqueue! queue 8)
-    (enqueue! queue 9)
-    (enqueue! queue 0)
-    (queue->list queue)]
+    (define q (make-queue))
+    (enqueue! q 8)
+    (enqueue! q 9)
+    (enqueue! q 0)
+    (queue->list q)]
 }
 
-@defproc[(queue-length [queue queue/c]) integer?]{
+@defproc[(queue-length [queue queue?]) exact-nonnegative-integer?]{
   Returns the number of elements in the queue.
 
+  This takes constant time, independent of the number
+  of elements in @racket[q].
+  
   @defexamples[#:eval qeval
     (define queue (make-queue))
-    (queue-length queue)
-    (enqueue! queue 5)
-    (enqueue! queue 12)
-    (queue-length queue)
-    (dequeue! queue)
-    (queue-length queue)]
+    (queue-length q)
+    (enqueue! q 5)
+    (enqueue! q 12)
+    (queue-length q)
+    (dequeue! q)
+    (queue-length q)]
 }
 
-@defproc[(queue-empty? [q queue/c]) boolean?]{
+@defproc[(queue-empty? [q queue?]) boolean?]{
   Recognizes whether a queue is empty or not.
+  
+  This takes constant time, independent of the number
+  of elements in @racket[q].
 
   @defexamples[#:eval qeval
     (define q (make-queue))
@@ -74,10 +120,27 @@ thread-unsafe way.
 
 @defproc[(queue? [v any/c]) boolean?]{
   This predicate recognizes queues.
+  
+  This takes constant time, independent of the 
+  size of the argument @racket[v].
 
   @defexamples[#:eval qeval
     (queue? (make-queue))
     (queue? 'not-a-queue)]
+}
+
+@defproc[(non-empty-queue? [v any/c]) boolean?]{
+  This predicate recognizes non-empty queues.
+  
+  This takes constant time, independent of the 
+  size of the argument @racket[v].
+
+  @defexamples[#:eval qeval
+    (non-empty-queue? (let ([q (make-queue)])
+                        (enqueue! q 1)
+                        q))
+    (non-empty-queue? (make-queue))
+    (non-empty-queue? 'not-a-queue)]
 }
 
 @defproc[(in-queue [queue queue?])
@@ -91,9 +154,9 @@ Returns a sequence whose elements are the elements of
   @defthing[queue/c flat-contract?]
   @defthing[nonempty-queue/c flat-contract?]
 )]{
-  These contracts recognize queues; the latter requires the queue to
-  contain at least one value.
+ These are provided for backwards compatibility. They are
+ identical to @racket[queue?] and @racket[non-empty-queue?],
+ respectively.
 }
-
 
 @close-eval[qeval]

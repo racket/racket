@@ -7,17 +7,18 @@
 ;; to the head and the tail -- where items are pulled from the head and
 ;; pushed on the tail.  It is not thread safe: mutating a queue from
 ;; different threads can break it.
-(struct queue (head tail) #:mutable)
+(struct queue (head tail length) #:mutable
+  #:property prop:sequence (λ (q) (in-queue q)))
 ;; (Note: uses #f for `head' to mark an empty queue, but in those cases
 ;; the tail will be set to #f too, to avoid holding on to values that
 ;; should be collected.)
 (struct link (value [tail #:mutable]))
 
-(define (make-queue) (queue #f #f))
+(define (make-queue) (queue #f #f 0))
 
 (define (queue-empty? q) (not (queue-head q)))
 
-(define (nonempty-queue? v) (and (queue? v) (queue-head v) #t))
+(define (non-empty-queue? v) (and (queue? v) (queue-head v) #t))
 
 (define (enqueue! q v)
   (unless (queue? q) (raise-type-error enqueue! "queue" 0 q))
@@ -25,7 +26,20 @@
     (if (queue-head q)
       (set-link-tail! (queue-tail q) new)
       (set-queue-head! q new))
-    (set-queue-tail! q new)))
+    (set-queue-tail! q new)
+    (set-queue-length! q (+ (queue-length q) 1))))
+
+(define (enqueue-front! q v)
+  (unless (queue? q) (raise-type-error enqueue! "enqueue-front!" 0 q))
+  (define fr (queue-head q))
+  (cond
+    [fr
+     (set-queue-head! q (link v fr))]
+    [else
+     (define k (link v #f))
+     (set-queue-head! q k)
+     (set-queue-tail! q k)])
+  (set-queue-length! q (+ (queue-length q) 1)))
 
 (define (dequeue! q)
   (unless (queue? q) (raise-type-error dequeue! "queue" 0 q))
@@ -37,14 +51,10 @@
        (set-queue-head! q #f)]
       [else
        (set-queue-head! q (link-tail old))])
+    (set-queue-length! q (- (queue-length q) 1))
     (link-value old)))
 
-(define (queue->list queue)
-  (let loop ([link (queue-head queue)]
-             [out '()])
-    (if (not link)
-      (reverse out)
-      (loop (link-tail link) (cons (link-value link) out)))))
+(define (queue->list q) (for/list ([e (in-queue q)]) e))
 
 ;; queue->vector could be implemented as (list->vector (queue->list q))
 ;; but this is somewhat slow. a direct translation between queue's and
@@ -52,19 +62,36 @@
 ;; as an intermediate data structure.
 ;; maybe add the elements to a gvector and use gvector->vector?
 
-;; could use (length (queue->list q)) here but that would double
-;; the time it takes to get the length
-;; probably if `queue->vector' gets implemented it would be better to
-;; do (vector-length (queue->vector q))
-(define (queue-length queue)
-  (let loop ([link (queue-head queue)]
-             [count 0])
-    (if (not link)
-      count
-      (loop (link-tail link) (add1 count)))))
+(define (queue-filter! q pred?)
+  (unless (queue-empty? q)
+    (let loop ([prev #f]
+               [curr (queue-head q)]
+               [i 0])
+      (cond
+        [(not curr)
+         (set-queue-tail! q prev)
+         (set-queue-length! q i)]
+        [else
+         (define passed? (pred? (link-value curr)))
+         (cond
+           [passed?
+            (loop curr (link-tail curr) (+ i 1))]
+           [else
+            (define tl (link-tail curr))
+            (if prev
+                (set-link-tail! prev tl)
+                (set-queue-head! q tl))
+            (loop prev tl i)])]))))
 
-(define (in-queue queue)
-  (in-list (queue->list queue)))
+(define (in-queue q)
+  (make-do-sequence
+   (λ ()
+     (values 
+      link-value
+      link-tail
+      (queue-head q)
+      link?
+      #f #f))))
 
 (define-sequence-syntax in-queue*
   (lambda () #'in-queue)
@@ -86,22 +113,19 @@
         #f))))
 
 ;; --- contracts ---
+(define queue/c queue?)
+(define nonempty-queue/c non-empty-queue?)
 
-(define queue/c
-  (flat-named-contract "queue" queue?))
-
-(define nonempty-queue/c
-  (flat-named-contract "nonempty-queue" nonempty-queue?))
-
-;; Eli: Are these needed?  (vs just providing `queue?', `make-queue' and
-;; `queue-empty?'.)
 (provide/contract
  [queue/c flat-contract?]
  [nonempty-queue/c flat-contract?]
  [queue? (-> any/c boolean?)]
- [make-queue (-> queue/c)]
- [queue-empty? (-> queue/c boolean?)]
- [queue-length (-> queue/c integer?)]
- [queue->list (-> queue/c (listof any/c))])
+ [non-empty-queue? (-> any/c boolean?)]
+ [make-queue (-> queue?)]
+ [queue-empty? (-> queue? boolean?)]
+ [queue-length (-> queue? exact-nonnegative-integer?)]
+ [queue->list (-> queue? (listof any/c))]
+ [queue-filter! (-> queue? (-> any/c any/c) void?)])
 
-(provide enqueue! dequeue! (rename-out [in-queue* in-queue]))
+(provide enqueue! enqueue-front!
+         dequeue! (rename-out [in-queue* in-queue]))
