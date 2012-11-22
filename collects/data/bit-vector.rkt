@@ -1,11 +1,17 @@
-#lang racket
+#lang racket/base
 
+(require (for-syntax racket/base
+                     unstable/wrapc
+                     syntax/for-body)
+         racket/match
+         racket/dict         
+         racket/contract/base)
 
 (define ((bad-index-error who index))
   (raise-mismatch-error who "index out of range" index))
 
 (define (bit-vector-ref bv n
-          [default (bad-index-error 'gvector-ref n)])
+                        [default (bad-index-error 'gvector-ref n)])
   (unless (exact-nonnegative-integer? n)
     (raise-type-error 'bit-vector-ref "exact nonnegative integer" n))
   
@@ -29,7 +35,7 @@
 
 (define (bit-vector-iterate-value bv key)
   (bit-vector-ref bv key))
-             
+
 
 (define (bit-vector-count bv)
   (bit-vector-size bv))
@@ -45,8 +51,6 @@
   (define words (make-vector word-size 0))
   (bit-vector words size word-size))
 
-
-
 (define (bit-vector-set! bv n b)
   (unless (boolean? b)
     (error 'bit-vector-set! "expected boolean as third argument, got ~a" b))
@@ -58,6 +62,33 @@
      (define bit  (bitwise-bit-set? word bi))
      (unless (eq? bit b)
        (vector-set! words wi (bitwise-xor word (expt 2 bi))))]))
+
+(define (in-bit-vector/fun bv)
+  (unless (bit-vector? bv)
+    (raise-type-error 'in-bit-vector "bit-vector" bv))
+  (in-dict-values bv))
+
+(define-sequence-syntax in-bit-vector
+  (lambda () #'in-bit-vector/fun)
+  (lambda (stx)
+    (syntax-case stx ()
+      [[(var) (in-bv bv-expr)]
+       (with-syntax ([bv-expr-c (wrap-expr/c #'bit-vector? #'bv-expr #:macro #'in-bv)])
+         (syntax/loc stx
+           [(var)
+            (:do-in ([(bv) bv-expr-c])
+                    (void) ;; outer-check; handled by contract
+                    ([n 0] [size (bit-vector-size bv)]) ;; loop bindings
+                    (< n size) ;; pos-guard
+                    ([(var) (bit-vector-ref bv n)]) ;; inner bindings
+                    #t ;; pre-guard
+                    #t ;; post-guard
+                    ((add1 n) (bit-vector-size bv)))]))]
+      [[(var ...) (in-bv bv-expr)]
+       (with-syntax ([bv-expr-c (wrap-expr/c #'bit-vector? #'bv-expr #:macro #'in-bv)])
+         (syntax/loc stx
+           [(var ...) (in-bit-vector bit-expr-c)]))]
+      [_ #f])))
 
 ; A bit vector is represented as a vector of words.
 ; Each word contains 30 or 62 bits depending on the size of a fixnum.
@@ -88,21 +119,11 @@
   ;#:property prop:sequence in-bit-vector
   )
 
-(define bv (make-bit-vector 500))
-(bit-vector-set! bv 4 #t)
-(bit-vector-ref bv 4)
-(bit-vector-set! bv 4 #f)
-(bit-vector-ref bv 4)
-(bit-vector-set! bv 4 #t)
-(bit-vector-ref bv 4)
-(bit-vector-set! bv 4 #f)
-(bit-vector-ref bv 4)
-
-(bit-vector-set! bv 400 #t)
-(bit-vector-ref bv 400)
-(bit-vector-set! bv 400 #f)
-(bit-vector-ref bv 400)
-(bit-vector-set! bv 400 #t)
-(bit-vector-ref bv 400)
-(bit-vector-set! bv 400 #t)
-(bit-vector-ref bv 400)
+#;(begin
+    (define bv (make-bit-vector 10))
+    (bit-vector-set! bv 4 #t)
+    (bit-vector-ref bv 4)
+    (bit-vector-set! bv 4 #f)
+    (bit-vector-ref bv 4)
+    (bit-vector-set! bv 4 #t)
+    (bit-vector-ref bv 4))
