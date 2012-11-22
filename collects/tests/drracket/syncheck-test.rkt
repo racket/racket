@@ -999,6 +999,16 @@
                    (")"                    default-color))
                  '(((26 29) (47 50))
                    ((6 17) (19 25))))
+     
+     (build-test "#lang racket/base\n(require '#%kernel)\npair?"
+                 '(("#lang racket/base\n(" default-color)
+                   ("require"              imported)
+                   (" '#%kernel)\n"        default-color)
+                   ("pair?"                imported))
+                 (list '((6 17) (19 26))
+                       '((27 36) (38 43))))
+
+
 
      (build-rename-test "(lambda (x) x)"
                         9

@@ -630,7 +630,7 @@
         [else (eq? var id)]))
     
     (define (phaseless-spec->raw-module-path stx)
-      (syntax-case* stx (only prefix all-expect prefix-all-except rename) symbolic-compare?
+      (syntax-case* stx (only prefix all-except prefix-all-except rename) symbolic-compare?
         [(only raw-module-path id ...) #'raw-module-path]
         [(prefix prefix-id raw-module-path) #'raw-module-path]
         [(all-except raw-module-path id ...) #'raw-module-path]
