@@ -2027,7 +2027,22 @@ If the namespace does not, they are colored the unbound color.
       
       (send keymap add-function "show/hide blue boxes in upper-right corner"
             (λ (txt evt)
-              (send txt toggle-syncheck-docs)))
+              (when (is-a? txt editor<%>)
+                (let loop ([ed txt])
+                  (define c (send ed get-canvas))
+                  (cond
+                    [c (let loop ([w c])
+                         (cond
+                           [(is-a? w drracket:unit:frame<%>)
+                            (send (send w get-definitions-text) toggle-syncheck-docs)]
+                           [(is-a? w area<%>)
+                            (loop (send w get-parent))]))]
+                    [else
+                     (define admin (send ed get-admin))
+                     (when (is-a? admin editor-snip-editor-admin<%>)
+                       (define admin2 (send (send admin get-snip) get-admin))
+                       (when admin2
+                         (loop (send admin2 get-editor))))])))))
       (send keymap map-function "f2" "show/hide blue boxes in upper-right corner"))
     
     ;; find-syncheck-text : text% -> (union #f (is-a?/c syncheck-text<%>))
