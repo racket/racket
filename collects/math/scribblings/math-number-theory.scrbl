@@ -698,30 +698,27 @@ Returns the @racket[n]th tangent number; @racket[n] must be nonnegative.
 
 @subsection{Polygonal Numbers}
 
-@defproc[(triangle? [n Natural]) Boolean]{}
-@defproc[(square? [n Natural]) Boolean]{}
-@defproc[(pentagonal? [n Natural]) Boolean]{}
-@defproc[(hexagonal? [n Natural]) Boolean]{}
-@defproc[(heptagonal? [n Natural]) Boolean]{}
-@defproc[(octagonal? [n Natural]) Boolean]{
-The functions 
-@racket[triangle?], @racket[square?], @racket[pentagonal?],
-@racket[hexagonal?],@racket[heptagonal?] and @racket[octagonal?] 
-checks whether the input is a polygonal number of the types
+@deftogether[
+(@defproc[(triangle-number? [n Natural]) Boolean]
+  @defproc[(square-number? [n Natural]) Boolean]
+  @defproc[(pentagonal-number? [n Natural]) Boolean]
+  @defproc[(hexagonal-number? [n Natural]) Boolean]
+  @defproc[(heptagonal-number? [n Natural]) Boolean]
+  @defproc[(octagonal-number? [n Natural]) Boolean])]{
+These functions check whether the input is a polygonal number of the types
 triangle, square, pentagonal, hexagonal, heptagonal and octogonal 
 respectively.
 }
 
-@defproc[(triangle [n Natural]) Natural]{}
-@defproc[(sqr [n Natural]) Natural]{}
-@defproc[(pentagonal [n Natural]) Natural]{}
-@defproc[(hexagonal [n Natural]) Natural]{}
-@defproc[(heptagonal [n Natural]) Natural]{}
-@defproc[(octagonal [n Natural]) Natural]{
-The functions @racket[triangle], @racket[sqr], @racket[pentagonal],
-@racket[hexagonal],@racket[heptagonal] and @racket[octagonal] 
-return the @racket[n]th polygonal number of the corresponding
-type of polygonal number.
+@deftogether[
+(@defproc[(triangle-number [n Natural]) Natural]
+@defproc[(sqr [n Natural]) Natural]
+@defproc[(pentagonal-number [n Natural]) Natural]
+@defproc[(hexagonal-number [n Natural]) Natural]
+@defproc[(heptagonal-number [n Natural]) Natural]
+@defproc[(octagonal-number [n Natural]) Natural])]{
+These functions return the @racket[n]th polygonal number 
+of the corresponding type of polygonal number.
 }
 
 

@@ -4,53 +4,53 @@
          (only-in "number-theory.rkt" perfect-square)
          "types.rkt")
 
-(provide triangle triangle?
-         square?
-         pentagonal pentagonal?
-         hexagonal hexagonal?
-         heptagonal heptagonal?
-         octagonal octagonal?)
+(provide triangle-number triangle-number?
+         square-number?
+         pentagonal-number pentagonal-number?
+         hexagonal-number hexagonal-number?
+         heptagonal-number heptagonal-number?
+         octagonal-number octagonal-number?)
 
-(: triangle : Natural -> Natural)
-(define (triangle n)
+(: triangle-number : Natural -> Natural)
+(define (triangle-number n)
   (quotient (* n (+ n 1)) 2))
 
-(: triangle? : Natural -> Boolean)
-(define (triangle? n)
+(: triangle-number? : Natural -> Boolean)
+(define (triangle-number? n)
   (not (null? (quadratic-natural-solutions 1/2 1/2 (- n)))))
 
-(: square? : Natural -> Boolean)
-(define (square? n)
+(: square-number? : Natural -> Boolean)
+(define (square-number? n)
   (and (perfect-square n) #t))
 
-(: pentagonal : Natural -> Natural)
-(define (pentagonal n)
+(: pentagonal-number : Natural -> Natural)
+(define (pentagonal-number n)
   (assert (quotient (* n (- (* 3 n) 1)) 2) natural?))
 
-(: pentagonal? : Natural -> Boolean)
-(define (pentagonal? n)
+(: pentagonal-number? : Natural -> Boolean)
+(define (pentagonal-number? n)
   (not (null? (quadratic-natural-solutions 3/2 -1/2 (- n)))))
 
-(: hexagonal : Natural -> Natural)
-(define (hexagonal n)
+(: hexagonal-number : Natural -> Natural)
+(define (hexagonal-number n)
   (assert (* n (- (* 2 n) 1)) natural?))
 
-(: hexagonal? : Natural -> Boolean)
-(define (hexagonal? n)
+(: hexagonal-number? : Natural -> Boolean)
+(define (hexagonal-number? n)
   (not (null? (quadratic-natural-solutions 2 -1 (- n)))))
 
-(: heptagonal : Natural -> Natural)
-(define (heptagonal n)
+(: heptagonal-number : Natural -> Natural)
+(define (heptagonal-number n)
   (assert (quotient (* n (- (* 5 n) 3)) 2) natural?))
 
-(: heptagonal? : Natural -> Boolean)
-(define (heptagonal? n)
+(: heptagonal-number? : Natural -> Boolean)
+(define (heptagonal-number? n)
   (not (null? (quadratic-natural-solutions 5/2 -3/2 (- n)))))
 
-(: octagonal : Natural -> Natural)
-(define (octagonal n)
+(: octagonal-number : Natural -> Natural)
+(define (octagonal-number n)
   (assert (* n (- (* 3 n) 2)) natural?))
 
-(: octagonal? : Natural -> Boolean)
-(define (octagonal? n)
+(: octagonal-number? : Natural -> Boolean)
+(define (octagonal-number? n)
   (not (null? (quadratic-natural-solutions 3 -2 (- n)))))
