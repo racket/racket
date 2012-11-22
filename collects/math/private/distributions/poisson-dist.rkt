@@ -3,6 +3,8 @@
 (require racket/performance-hint
          racket/promise
          "../../flonum.rkt"
+         "../../vector.rkt"
+         "../unsafe.rkt"
          "../functions/incomplete-gamma.rkt"
          (prefix-in impl: "impl/poisson-pdf.rkt")
          "impl/poisson-random.rkt"
@@ -13,9 +15,9 @@
 (provide flpoisson-pdf
          flpoisson-cdf
          flpoisson-inv-cdf
-         flpoisson-random
+         flpoisson-sample
          flpoisson-median
-         Poisson-Dist poisson-dist poisson-dist? poisson-dist-mean)
+         Poisson-Dist poisson-dist poisson-dist-mean)
 
 (: flpoisson-pdf (Flonum Flonum Any -> Flonum))
 (define (flpoisson-pdf l k log?)
@@ -53,10 +55,10 @@
          (cond [(fl= k 0.0)  k]
                [else  (if ((flpoisson-cdf l (- k 1.0) #f #f) . fl< . 0.5) k (- k 1.0))])]))
 
+(define-real-dist: poisson-dist Poisson-Dist
+  poisson-dist-struct ([mean : Flonum]))
+
 (begin-encourage-inline
-  
-  (define-distribution-type: Poisson-Dist (Ordered-Dist Real Flonum)
-    poisson-dist ([mean : Flonum]))
   
   (: poisson-dist (case-> (-> Poisson-Dist)
                           (Real -> Poisson-Dist)))
@@ -68,9 +70,9 @@
                     (flpoisson-cdf l (fl k) log? 1-p?)))
       (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [1-p? : Any #f])
                         (flpoisson-inv-cdf l (fl p) log? 1-p?)))
-      (define (random) (flpoisson-random l))
-      (make-poisson-dist pdf random cdf inv-cdf
-                         0.0 +inf.0 (delay (flpoisson-median l))
-                         l)))
+      (define sample (case-lambda:
+                       [()  (unsafe-flvector-ref (flpoisson-sample l 1) 0)]
+                       [([n : Integer])  (flvector->list (flpoisson-sample l n))]))
+      (poisson-dist-struct pdf sample cdf inv-cdf 0.0 +inf.0 (delay (flpoisson-median l)) l)))
   
   )

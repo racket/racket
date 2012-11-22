@@ -3,14 +3,16 @@
 (require racket/performance-hint
          racket/promise
          "../../flonum.rkt"
+         "../../vector.rkt"
+         "../unsafe.rkt"
          "dist-struct.rkt"
          "utils.rkt")
 
 (provide fllogistic-pdf
          fllogistic-cdf
          fllogistic-inv-cdf
-         fllogistic-random
-         Logistic-Dist logistic-dist logistic-dist? logistic-dist-center logistic-dist-scale)
+         fllogistic-sample
+         Logistic-Dist logistic-dist logistic-dist-mean logistic-dist-scale)
 
 (: fllogistic-pdf (Float Float Float Any -> Float))
 (define fllogistic-pdf
@@ -52,16 +54,22 @@
 (: fllogistic-inv-cdf (Float Float Float Any Any -> Float))
 (define fllogistic-inv-cdf (make-symmetric-location-scale-flinv-cdf standard-fllogistic-inv-cdf))
 
-(: fllogistic-random (Float Float -> Float))
-(define fllogistic-random (make-symmetric-location-scale-flrandom standard-fllogistic-inv-cdf))
+(: fllogistic-sample-single (Float Float -> Float))
+(define fllogistic-sample-single
+  (make-symmetric-location-scale-flrandom standard-fllogistic-inv-cdf))
+
+(: fllogistic-sample (Flonum Flonum Integer -> FlVector))
+(define (fllogistic-sample c s n)
+  (cond [(n . < . 0)  (raise-argument-error 'fllogistic-sample "Natural" 2 c s n)]
+        [else  (build-flvector n (λ (_) (fllogistic-sample-single c s)))]))
 
 ;; ===================================================================================================
 ;; Distribution object
 
+(define-real-dist: logistic-dist Logistic-Dist
+  logistic-dist-struct ([mean : Flonum] [scale : Flonum]))
+
 (begin-encourage-inline
-  
-  (define-distribution-type: Logistic-Dist (Ordered-Dist Real Flonum)
-    logistic-dist ([center : Float] [scale : Float]))
   
   (: logistic-dist (case-> (-> Logistic-Dist)
                            (Real -> Logistic-Dist)
@@ -74,7 +82,9 @@
                     (fllogistic-cdf c s (fl x) log? 1-p?)))
       (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [1-p? : Any #f])
                         (fllogistic-inv-cdf c s (fl p) log? 1-p?)))
-      (define (random) (fllogistic-random c s))
-      (make-logistic-dist pdf random cdf inv-cdf -inf.0 +inf.0 (delay c) c s)))
+      (define sample (case-lambda:
+                       [()  (unsafe-flvector-ref (fllogistic-sample c s 1) 0)]
+                       [([n : Integer])  (flvector->list (fllogistic-sample c s n))]))
+      (logistic-dist-struct pdf sample cdf inv-cdf -inf.0 +inf.0 (delay c) c s)))
   
   )

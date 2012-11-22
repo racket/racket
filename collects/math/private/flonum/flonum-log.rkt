@@ -57,7 +57,8 @@
   
   (: lg- (Float Float -> Float))
   (define (lg- log-x log-y)
-    (cond [(log-y . fl> . log-x)  +nan.0]
+    (cond [(log-x . fl< . log-y)  +nan.0]
+          [(fl= log-x -inf.0)  -inf.0]
           [else  (fl+ log-x (lg1- (fl- log-y log-x)))]))
   
   )  ; begin-encourage-inline

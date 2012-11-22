@@ -19,73 +19,96 @@ For others: sum of Gamma and Exponential variables, Normal approximation.
 |#
 
 (require "../../../flonum.rkt"
+         "../../../vector.rkt"
+         "../../unsafe.rkt"
          "normal-random.rkt")
 
-(provide standard-flgamma-random)
+(provide flgamma-sample)
 
-(: standard-flgamma-random-small (Float -> Float))
+(: flgamma-sample-small (Flonum Flonum Natural -> FlVector))
 ;; Ahrens and Dieter's rejection method
 ;; Good for 0.0 <= k < 1.0
-(define (standard-flgamma-random-small k)
-  (cond [(fl= k 0.0)  0.0]
-        [else
-         (define e (fl+ 1.0 (fl* k (flexp -1.0))))
-         (let loop ()
-           (define p (fl* e (random)))
-           (define q (fllog (random)))
-           (cond [(p . fl>= . 1.0)
-                  (define x (- (fllog (fl/ (fl- e p) k))))
-                  (cond [(q . fl<= . (fl* (fl- k 1.0) (fllog x)))  x]
-                        [else  (loop)])]
-                 [else
-                  (define x (flexpt p (fl/ 1.0 k)))
-                  (cond [(q . fl<= . (- x))  x]
-                        [else  (loop)])]))]))
+(define (flgamma-sample-small k s n)
+  (cond
+    [(fl= k 0.0)  (make-flvector n 0.0)]
+    [else
+     (define e (fl+ 1.0 (fl* k (flexp -1.0))))
+     (define k-1 (fl- k 1.0))
+     (define 1/k (fl/ 1.0 k))
+     (build-flvector
+      n (λ (_)
+          (let loop ()
+            (define p (fl* e (random)))
+            (define q (fllog (random)))
+            (cond [(p . fl>= . 1.0)
+                   (define x (- (fllog (fl/ (fl- e p) k))))
+                   (cond [(q . fl<= . (fl* k-1 (fllog x)))  (fl* s x)]
+                         [else  (loop)])]
+                  [else
+                   (define x (flexpt p 1/k))
+                   (cond [(q . fl<= . (- x))  (fl* s x)]
+                         [else  (loop)])]))))]))
 
-(: standard-flgamma-random-1-2 (Float -> Float))
+(: flgamma-sample-1-2 (Flonum Flonum Natural -> FlVector))
 ;; Sum of Gamma and Exponential rvs
 ;; Good for 1.0 <= k < 2.0
-(define (standard-flgamma-random-1-2 k)
-  (fl- (standard-flgamma-random-small (fl- k 1.0))
-       (fllog (random))))
+(define (flgamma-sample-1-2 k s n)
+  (define xs (flgamma-sample-small (fl- k 1.0) s n))
+  (for ([i  (in-range n)])
+    (define x (unsafe-flvector-ref xs i))
+    (unsafe-flvector-set! xs i (fl- x (fl* s (fllog (random))))))
+  xs)
 
-(: standard-flgamma-random-2-3 (Float -> Float))
+(: flgamma-sample-2-3 (Flonum Flonum Natural -> FlVector))
 ;; Sum of Gamma and two Exponential rvs
 ;; Good for 2.0 <= k < 3.0
-(define (standard-flgamma-random-2-3 k)
-  (fl- (fl- (standard-flgamma-random-small (fl- k 2.0))
-            (fllog (random)))
-       (fllog (random))))
+(define (flgamma-sample-2-3 k s n)
+  (define xs (flgamma-sample-small (fl- k 2.0) s n))
+  (for ([i  (in-range n)])
+    (define x (unsafe-flvector-ref xs i))
+    (unsafe-flvector-set! xs i (fl- x (fl* s (fl+ (fllog (random)) (fllog (random)))))))
+  xs)
 
-(: standard-flgamma-random-large (Float -> Float))
+(: flgamma-sample-large (Flonum Flonum Natural -> FlVector))
 ;; Tadikamalla's rejection method (Laplacian candidate)
 ;; Good for 1.0 <= k < huge (where "huge" causes the floating-point ops to behave badly)
 ;; Faster than the other methods for large k when k >= 3 or so (Laplacian left tail generates too
 ;; many negative candidates, which are rejected, when k < 3)
-(define (standard-flgamma-random-large k)
+(define (flgamma-sample-large k s n)
   (define A (fl- k 1.0))
   (define B (fl+ 0.5 (fl* 0.5 (flsqrt (fl- (fl* 4.0 k) 3.0)))))
   (define C (fl/ (fl* A (fl+ 1.0 B)) B))
   (define D (fl/ (fl- B 1.0) (fl* A B)))
-  (let loop ()
-    (define lx (flmax -max.0 (fllog (random))))
-    (define x (fl+ A (fl* B (if ((random) . fl< . 0.5) (- lx) lx))))
-    (cond [(x . fl< . 0.0)  (loop)]
-          [((fllog (random)) . fl<= . (fl+ (fl- (fl- (* A (fllog (* D x))) x) lx) C))  x]
-          [else  (loop)])))
+  (build-flvector
+   n (λ (_)
+       (let loop ()
+         (define lx (flmax -max.0 (fllog (random))))
+         (define x (fl+ A (fl* B (if ((random) . fl< . 0.5) (- lx) lx))))
+         (cond [(x . fl< . 0.0)
+                (loop)]
+               [((fllog (random)) . fl<= . (fl+ (fl- (fl- (fl* A (fllog (fl* D x))) x) lx) C))
+                (fl* s x)]
+               [else
+                (loop)])))))
 
-(: standard-flgamma-random-huge (Float -> Float))
+(: flgamma-sample-huge (Flonum Flonum Natural -> FlVector))
 ;; Normal approximation
 ;; Good for 1e10 <= k <= +inf.0
-(define (standard-flgamma-random-huge k)
-  (cond [(fl= k +inf.0)  +inf.0]
-        [else  (flmax 0.0 (fl+ k (fl* (flsqrt k) (standard-flnormal-random))))]))
+(define (flgamma-sample-huge k s n)
+  (cond [(fl= k +inf.0)  (build-flvector n (λ (_) +inf.0))]
+        [else
+         (define xs (flnormal-sample k (flsqrt k) n))
+         (for ([i  (in-range n)])
+           (define x (unsafe-flvector-ref xs i))
+           (unsafe-flvector-set! xs i (flmax 0.0 (fl* s x))))
+         xs]))
 
-(: standard-flgamma-random (Float -> Float))
-(define (standard-flgamma-random k)
-  (cond [(k . fl>= . 1e10)  (standard-flgamma-random-huge k)]
-        [(k . fl>= . 3.0)   (standard-flgamma-random-large k)]
-        [(k . fl>= . 2.0)   (standard-flgamma-random-2-3 k)]
-        [(k . fl>= . 1.0)   (standard-flgamma-random-1-2 k)]
-        [(k . fl>= . 0.0)   (standard-flgamma-random-small k)]
-        [else  +nan.0]))
+(: flgamma-sample (Flonum Flonum Integer -> FlVector))
+(define (flgamma-sample k s n)
+  (cond [(n . < . 0)  (raise-argument-error 'flgamma-sample "Natural" 2 k s n)]
+        [(k . fl>= . 1e10)  (flgamma-sample-huge k s n)]
+        [(k . fl>= . 3.0)   (flgamma-sample-large k s n)]
+        [(k . fl>= . 2.0)   (flgamma-sample-2-3 k s n)]
+        [(k . fl>= . 1.0)   (flgamma-sample-1-2 k s n)]
+        [(k . fl>= . 0.0)   (flgamma-sample-small k s n)]
+        [else  (build-flvector n (λ (_) +nan.0))]))

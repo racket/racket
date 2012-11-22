@@ -1,8 +1,11 @@
 #lang typed/racket/base
 
-(require racket/performance-hint
+(require racket/fixnum
+         racket/performance-hint
          racket/promise
          "../../flonum.rkt"
+         "../../vector.rkt"
+         "../unsafe.rkt"
          "../functions/beta.rkt"
          "../functions/incomplete-beta.rkt"
          "impl/beta-pdf.rkt"
@@ -14,8 +17,8 @@
 (provide flbeta-pdf
          flbeta-cdf
          flbeta-inv-cdf
-         flbeta-random
-         Beta-Dist beta-dist beta-dist? beta-dist-alpha beta-dist-beta)
+         flbeta-sample
+         Beta-Dist beta-dist beta-dist-alpha beta-dist-beta)
 
 (: flbeta-pdf (Flonum Flonum Flonum Any -> Flonum))
 (define (flbeta-pdf a b x log?)
@@ -32,33 +35,38 @@
         [log?  (fllog-beta-inc a b x 1-p? #t)]
         [else  (flbeta-inc a b x 1-p? #t)]))
 
-(: flbeta-random (Flonum Flonum -> Flonum))
-(define (flbeta-random a b)
-  (define x (standard-flgamma-random a))
-  (define y (standard-flgamma-random b))
-  (fl/ x (fl+ x y)))
+(: flbeta-sample (Flonum Flonum Integer -> FlVector))
+(define (flbeta-sample a b n)
+  (cond [(n . < . 0)  (raise-argument-error 'flbeta-sample "Natural" 2 a b n)]
+        [else
+         (define xs (flgamma-sample a 1.0 n))
+         (define ys (flgamma-sample b 1.0 n))
+         (for ([i  (in-range n)])
+           (define x (unsafe-flvector-ref xs i))
+           (define y (unsafe-flvector-ref ys i))
+           (unsafe-flvector-set! xs i (fl/ x (fl+ x y))))
+         xs]))
+
+(define-real-dist: beta-dist Beta-Dist
+  beta-dist-struct ([alpha : Flonum] [beta : Flonum]))
 
 (begin-encourage-inline
   
-  (define-distribution-type: Beta-Dist (Ordered-Dist Real Flonum)
-    beta-dist ([alpha : Flonum] [beta : Flonum]))
-  
-  (: beta-dist (case-> (-> Beta-Dist)
-                       (Real Real -> Beta-Dist)))
-  (define beta-dist
-    (case-lambda
-      [()  (beta-dist 1.0 1.0)]
-      [(a b)
-       (let ([a  (fl a)] [b  (fl b)])
-         (define pdf (opt-lambda: ([x : Real] [log? : Any #f])
-                       (flbeta-pdf a b (fl x) log?)))
-         (define cdf (opt-lambda: ([x : Real] [log? : Any #f] [1-p? : Any #f])
-                       (flbeta-cdf a b (fl x) log? 1-p?)))
-         (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [1-p? : Any #f])
-                           (flbeta-inv-cdf a b (fl p) log? 1-p?)))
-         (define (random) (flbeta-random a b))
-         (make-beta-dist pdf random cdf inv-cdf
-                         0.0 1.0 (delay (flbeta-inv-cdf a b 0.5 #f #f))
-                         a b))]))
+  (: beta-dist (Real Real -> Beta-Dist))
+  (define (beta-dist a b)
+    (let ([a  (fl a)] [b  (fl b)])
+      (define pdf (opt-lambda: ([x : Real] [log? : Any #f])
+                    (flbeta-pdf a b (fl x) log?)))
+      (define cdf (opt-lambda: ([x : Real] [log? : Any #f] [1-p? : Any #f])
+                    (flbeta-cdf a b (fl x) log? 1-p?)))
+      (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [1-p? : Any #f])
+                        (flbeta-inv-cdf a b (fl p) log? 1-p?)))
+      (define sample (case-lambda:
+                       [()  (unsafe-flvector-ref (flbeta-sample a b 1) 0)]
+                       [([n : Integer])  (flvector->list (flbeta-sample a b n))]))
+      (beta-dist-struct
+       pdf sample cdf inv-cdf
+       0.0 1.0 (delay (flbeta-inv-cdf a b 0.5 #f #f))
+       a b)))
   
   )

@@ -10,12 +10,12 @@
 (provide fldelta-pdf
          fldelta-cdf
          fldelta-inv-cdf
-         Delta-Dist delta-dist delta-dist?)
+         Delta-Dist delta-dist delta-dist-mean)
+
+(define-real-dist: delta-dist Delta-Dist
+  delta-dist-struct ([mean : Flonum]))
 
 (begin-encourage-inline
-  
-  (define-distribution-type: Delta-Dist (Ordered-Dist Real Flonum)
-    delta-dist ([center : Float]))
   
   (: delta-dist (case-> (-> Delta-Dist)
                         (Real -> Delta-Dist)))
@@ -27,7 +27,9 @@
                     (fldelta-cdf c (fl x) log? 1-p?)))
       (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [1-p? : Any #f])
                         (fldelta-inv-cdf c (fl p) log? 1-p?)))
-      (define (random) c)
-      (make-delta-dist pdf random cdf inv-cdf c c (delay c) c)))
+      (define sample (case-lambda:
+                       [()  c]
+                       [([n : Integer])  (build-list n (λ (_) c))]))
+      (delta-dist-struct pdf sample cdf inv-cdf c c (delay c) c)))
   
   )

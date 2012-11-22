@@ -3,14 +3,16 @@
 (require racket/performance-hint
          racket/promise
          "../../flonum.rkt"
+         "../../vector.rkt"
+         "../unsafe.rkt"
          "dist-struct.rkt"
          "utils.rkt")
 
 (provide flgeometric-pdf
          flgeometric-cdf
          flgeometric-inv-cdf
-         flgeometric-random
-         Geometric-Dist geometric-dist geometric-dist? geometric-dist-prob)
+         flgeometric-sample
+         Geometric-Dist geometric-dist geometric-dist-prob)
 
 (: flgeometric-pdf (Flonum Flonum Any -> Flonum))
 (define (flgeometric-pdf q k log?)
@@ -49,21 +51,26 @@
                  [else  (if log? (lg1- p) (fllog1p (- p)))]))
          (flmax 0.0 (fl- (flceiling (fl/ log-1-p (fllog1p (- q)))) 1.0))]))
 
-(: flgeometric-random (Flonum -> Flonum))
-(define (flgeometric-random q)
-  (cond [(or (q . fl<= . 0.0) (q . fl>= . 1.0))
-         (cond [(fl= q 1.0)  0.0]
-               [(fl= q 0.0)  +inf.0]
-               [else  +nan.0])]
+(: flgeometric-sample (Flonum Integer -> FlVector))
+(define (flgeometric-sample q n)
+  (cond [(n . < . 0)  (raise-argument-error 'flgeometric-sample "Natural" 1 q n)]
+        [(or (q . fl<= . 0.0) (q . fl>= . 1.0))
+         (define v
+           (cond [(fl= q 1.0)  0.0]
+                 [(fl= q 0.0)  +inf.0]
+                 [else  +nan.0]))
+         (build-flvector n (λ (_) v))]
         [else
-         (define p (fl* 0.5 (random)))
-         (define log-1-p (if ((random) . fl> . 0.5) (fllog p) (fllog1p (- p))))
-         (flmax 0.0 (fl- (flceiling (fl/ log-1-p (fllog1p (- q)))) 1.0))]))
+         (build-flvector
+          n (λ (_)
+              (define p (fl* 0.5 (random)))
+              (define log-1-p (if ((random) . fl> . 0.5) (fllog p) (fllog1p (- p))))
+              (flmax 0.0 (fl- (flceiling (fl/ log-1-p (fllog1p (- q)))) 1.0))))]))
+
+(define-real-dist: geometric-dist Geometric-Dist
+  geometric-dist-struct ([prob : Flonum]))
 
 (begin-encourage-inline
-  
-  (define-distribution-type: Geometric-Dist (Ordered-Dist Real Flonum)
-    geometric-dist ([prob : Flonum]))
   
   (: geometric-dist (case-> (-> Geometric-Dist)
                             (Real -> Geometric-Dist)))
@@ -75,9 +82,12 @@
                     (flgeometric-cdf q (fl k) log? 1-p?)))
       (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [1-p? : Any #f])
                         (flgeometric-inv-cdf q (fl p) log? 1-p?)))
-      (define (random) (flgeometric-random q))
-      (make-geometric-dist pdf random cdf inv-cdf
-                           0.0 +inf.0 (delay (flgeometric-inv-cdf q 0.5 #f #f))
-                           q)))
+      (define sample (case-lambda:
+                       [()  (unsafe-flvector-ref (flgeometric-sample q 1) 0)]
+                       [([n : Integer])  (flvector->list (flgeometric-sample q n))]))
+      (geometric-dist-struct
+       pdf sample cdf inv-cdf
+       0.0 +inf.0 (delay (flgeometric-inv-cdf q 0.5 #f #f))
+       q)))
   
   )

@@ -4,14 +4,16 @@
          racket/promise
          "../../flonum.rkt"
          "../../base.rkt"
+         "../../vector.rkt"
+         "../unsafe.rkt"
          "dist-struct.rkt"
          "utils.rkt")
 
 (provide flcauchy-pdf
          flcauchy-cdf
          flcauchy-inv-cdf
-         flcauchy-random
-         Cauchy-Dist cauchy-dist cauchy-dist? cauchy-dist-center cauchy-dist-scale)
+         flcauchy-sample
+         Cauchy-Dist cauchy-dist cauchy-dist-mode cauchy-dist-scale)
 
 (: flcauchy-pdf (Float Float Float Any -> Float))
 (define flcauchy-pdf
@@ -54,29 +56,37 @@
 (: flcauchy-inv-cdf (Float Float Float Any Any -> Float))
 (define flcauchy-inv-cdf (make-symmetric-location-scale-flinv-cdf standard-flcauchy-inv-cdf))
 
-(: flcauchy-random (Float Float -> Float))
-(define flcauchy-random (make-symmetric-location-scale-flrandom standard-flcauchy-inv-cdf))
+(: flcauchy-sample-single (Flonum Flonum -> Flonum))
+(define flcauchy-sample-single
+  (make-symmetric-location-scale-flrandom standard-flcauchy-inv-cdf))
+
+(: flcauchy-sample (Float Float Integer -> FlVector))
+(define (flcauchy-sample c s n)
+  (cond [(n . < . 0)  (raise-argument-error 'flcauchy-sample "Natural" 2 c s n)]
+        [else  (build-flvector n (λ (_) (flcauchy-sample-single c s)))]))
 
 ;; ===================================================================================================
 ;; Distribution object
 
+(define-real-dist: cauchy-dist Cauchy-Dist
+  cauchy-dist-struct ([mode : Float] [scale : Float]))
+
 (begin-encourage-inline
   
-  (define-distribution-type: Cauchy-Dist (Ordered-Dist Real Flonum)
-    cauchy-dist ([center : Float] [scale : Float]))
-
   (: cauchy-dist (case-> (-> Cauchy-Dist)
                          (Real -> Cauchy-Dist)
                          (Real Real -> Cauchy-Dist)))
   (define (cauchy-dist [c 0.0] [s 1.0])
-    (let ([c  (fl c)] [s   (fl s)])
+    (let ([c  (fl c)] [s  (fl s)])
       (define pdf (opt-lambda: ([x : Real] [log? : Any #f])
                     (flcauchy-pdf c s (fl x) log?)))
       (define cdf (opt-lambda: ([x : Real] [log? : Any #f] [complement? : Any #f])
                     (flcauchy-cdf c s (fl x) log? complement?)))
       (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [complement? : Any #f])
                         (flcauchy-inv-cdf c s (fl p) log? complement?)))
-      (define (random) (flcauchy-random c s))
-      (make-cauchy-dist pdf random cdf inv-cdf -inf.0 +inf.0 (delay c) c s)))
+      (define sample (case-lambda:
+                       [()  (unsafe-flvector-ref (flcauchy-sample c s 1) 0)]
+                       [([n : Integer])  (flvector->list (flcauchy-sample c s n))]))
+      (cauchy-dist-struct pdf sample cdf inv-cdf -inf.0 +inf.0 (delay c) c s)))
   
   )

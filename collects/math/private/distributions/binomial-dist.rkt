@@ -3,6 +3,8 @@
 (require racket/performance-hint
          racket/promise
          "../../flonum.rkt"
+         "../../vector.rkt"
+         "../unsafe.rkt"
          "../functions/incomplete-beta.rkt"
          (prefix-in impl: "impl/binomial-pdf.rkt")
          "impl/binomial-random.rkt"
@@ -13,8 +15,8 @@
 (provide flbinomial-pdf
          flbinomial-cdf
          flbinomial-inv-cdf
-         flbinomial-random
-         Binomial-Dist binomial-dist binomial-dist? binomial-dist-count binomial-dist-prob)
+         flbinomial-sample
+         Binomial-Dist binomial-dist binomial-dist-count binomial-dist-prob)
 
 (: flbinomial-pdf (Flonum Flonum Flonum Any -> Flonum))
 (define (flbinomial-pdf n q k log?)
@@ -51,10 +53,10 @@
           0.0 n
           (flmax 0.0 (flmin n z)))]))
 
+(define-real-dist: binomial-dist Binomial-Dist
+  binomial-dist-struct ([count : Flonum] [prob : Flonum]))
+
 (begin-encourage-inline
-  
-  (define-distribution-type: Binomial-Dist (Ordered-Dist Real Flonum)
-    binomial-dist ([count : Flonum] [prob : Flonum]))
   
   (: binomial-dist (case-> (-> Binomial-Dist)
                            (Real -> Binomial-Dist)
@@ -67,9 +69,12 @@
                     (flbinomial-cdf n q (fl k) log? 1-p?)))
       (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [1-p? : Any #f])
                         (flbinomial-inv-cdf n q (fl p) log? 1-p?)))
-      (define (random) (flbinomial-random n q))
-      (make-binomial-dist pdf random cdf inv-cdf
-                          0.0 +inf.0 (delay (flfloor (fl* n q)))
-                          n q)))
+      (define sample (case-lambda:
+                       [()  (unsafe-flvector-ref (flbinomial-sample n q 1) 0)]
+                       [([m : Integer])  (flvector->list (flbinomial-sample n q m))]))
+      (binomial-dist-struct
+       pdf sample cdf inv-cdf
+       0.0 +inf.0 (delay (flfloor (fl* n q)))
+       n q)))
   
   )

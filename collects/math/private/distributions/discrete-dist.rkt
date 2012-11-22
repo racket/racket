@@ -1,19 +1,37 @@
 #lang typed/racket/base
 
-(require racket/promise
+(require racket/performance-hint
+         racket/promise
          "../../flonum.rkt"
          "../statistics/statistics-utils.rkt"
+         "../utils.rkt"
          "impl/walker-table.rkt"
-         "dist-struct.rkt"
-         "utils.rkt")
+         "dist-struct.rkt")
 
 (provide Discrete-Dist
          discrete-dist
          discrete-dist-values
          discrete-dist-weights)
 
-(define-distribution-type: (Discrete-Dist A) (Dist A A) (In Out)
-  discrete-dist ([values : (Listof Out)] [weights : (Listof Positive-Flonum)]))
+(begin-encourage-inline
+  (struct: (In Out) discrete-dist-struct dist ([values : (Listof Out)]
+                                               [weights : (Listof Positive-Flonum)])
+    #:property prop:custom-print-quotable 'never
+    #:property prop:custom-write
+    (λ (v port mode)
+      (pretty-print-constructor
+       'discrete-dist (list (discrete-dist-struct-values v) (discrete-dist-struct-weights v))
+       port mode)))
+  
+  (define-type (Discrete-Dist A) (discrete-dist-struct A A))
+
+  (: discrete-dist-values (All (A) ((Discrete-Dist A) -> (Listof A))))
+  (define (discrete-dist-values d) (discrete-dist-struct-values d))
+  
+  (: discrete-dist-weights (All (A) ((Discrete-Dist A) -> (Listof Positive-Flonum))))
+  (define (discrete-dist-weights d) (discrete-dist-struct-weights d))
+  
+  )
 
 (: discrete-dist
    (All (A) (case-> ((Sequenceof A) -> (Discrete-Dist A))
@@ -30,5 +48,10 @@
     (define pdf (opt-lambda: ([x : A] [log? : Any #f])
                   (define p (hash-ref (force hash) x (λ () 0.0)))
                   (if log? (fllog p) p)))
-    (define random (λ () (walker-table-sample (force table))))
-    (make-discrete-dist pdf random xs ws)))
+    (define sample (case-lambda:
+                     [()  (walker-table-sample (force table))]
+                     [([n : Integer])
+                      (cond [(n . < . 0)  (raise-argument-error 'discrete-dist-sample "Natural" n)]
+                            [else  (let ([table  (force table)])
+                                     (build-list n (λ (_) (walker-table-sample table))))])]))
+    (discrete-dist-struct pdf sample xs ws)))

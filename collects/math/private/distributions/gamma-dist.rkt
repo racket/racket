@@ -3,6 +3,8 @@
 (require racket/performance-hint
          racket/promise
          "../../flonum.rkt"
+         "../../vector.rkt"
+         "../unsafe.rkt"
          "../functions/incomplete-gamma.rkt"
          "impl/gamma-pdf.rkt"
          "impl/gamma-inv-cdf.rkt"
@@ -13,8 +15,8 @@
 (provide flgamma-pdf
          flgamma-cdf
          flgamma-inv-cdf
-         flgamma-random
-         Gamma-Dist gamma-dist gamma-dist? gamma-dist-shape gamma-dist-scale)
+         flgamma-sample
+         Gamma-Dist gamma-dist gamma-dist-shape gamma-dist-scale)
 
 (: flgamma-pdf (Float Float Float Any -> Float))
 (define (flgamma-pdf k s x log?)
@@ -45,15 +47,10 @@
              (standard-flgamma-inv-cdf k p log? 1-p?)))
           s p log? 1-p?)]))
 
-(: flgamma-random (Float Float -> Float))
-(define (flgamma-random k s)
-  (cond [(k . fl< . 0.0)  +nan.0]
-        [else  (fl* s (standard-flgamma-random k))]))
+(define-real-dist: gamma-dist Gamma-Dist
+  gamma-dist-struct ([shape : Flonum] [scale : Flonum]))
 
 (begin-encourage-inline
-  
-  (define-distribution-type: Gamma-Dist (Ordered-Dist Real Flonum)
-    gamma-dist ([shape : Float] [scale : Float]))
   
   (: gamma-dist (case-> (-> Gamma-Dist)
                         (Real -> Gamma-Dist)
@@ -66,9 +63,12 @@
                     (flgamma-cdf k s (fl x) log? 1-p?)))
       (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [1-p? : Any #f])
                         (flgamma-inv-cdf k s (fl p) log? 1-p?)))
-      (define (random) (flgamma-random k s))
-      (make-gamma-dist pdf random cdf inv-cdf
-                       0.0 +inf.0 (delay (flgamma-inv-cdf k s 0.5 #f #f))
-                       k s)))
+      (define sample (case-lambda:
+                       [()  (unsafe-flvector-ref (flgamma-sample k s 1) 0)]
+                       [([n : Integer])  (flvector->list (flgamma-sample k s n))]))
+      (gamma-dist-struct
+       pdf sample cdf inv-cdf
+       0.0 +inf.0 (delay (flgamma-inv-cdf k s 0.5 #f #f))
+       k s)))
   
   )

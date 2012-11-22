@@ -3,14 +3,16 @@
 (require racket/performance-hint
          racket/promise
          "../../flonum.rkt"
+         "../../vector.rkt"
+         "../unsafe.rkt"
          "dist-struct.rkt"
          "utils.rkt")
 
 (provide flexponential-pdf
          flexponential-cdf
          flexponential-inv-cdf
-         flexponential-random
-         Exponential-Dist exponential-dist exponential-dist? exponential-dist-scale)
+         flexponential-sample
+         Exponential-Dist exponential-dist exponential-dist-mean)
 
 (: flexponential-pdf (Float Float Any -> Float))
 (define flexponential-pdf
@@ -33,17 +35,18 @@
 (: flexponential-inv-cdf (Float Float Any Any -> Float))
 (define flexponential-inv-cdf (make-one-sided-scale-flinv-cdf standard-flexponential-inv-cdf))
 
-(: flexponential-random (Float -> Float))
-(define (flexponential-random s)
-  (fl* s (- (fllog (random)))))
+(: flexponential-sample (Flonum Integer -> FlVector))
+(define (flexponential-sample s n)
+  (cond [(n . < . 0)  (raise-argument-error 'flexponential-sample "Natural" 1 s n)]
+        [else  (build-flvector n (λ (_) (fl* s (- (fllog (random))))))]))
 
 ;; ===================================================================================================
 ;; Distribution object
 
+(define-real-dist: exponential-dist Exponential-Dist
+  exponential-dist-struct ([mean : Flonum]))
+
 (begin-encourage-inline
-  
-  (define-distribution-type: Exponential-Dist (Ordered-Dist Real Flonum)
-    exponential-dist ([scale : Flonum]))
   
   (: exponential-dist (case-> (-> Exponential-Dist)
                       (Real -> Exponential-Dist)))
@@ -55,7 +58,9 @@
                     (flexponential-cdf s (fl x) log? 1-p?)))
       (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [1-p? : Any #f])
                         (flexponential-inv-cdf s (fl p) log? 1-p?)))
-      (define (random) (flexponential-random s))
-      (make-exponential-dist pdf random cdf inv-cdf 0.0 +inf.0 (delay (fl* s (fllog 2.0))) s)))
+      (define sample (case-lambda:
+                       [()  (unsafe-flvector-ref (flexponential-sample s 1) 0)]
+                       [([n : Integer])  (flvector->list (flexponential-sample s n))]))
+      (exponential-dist-struct pdf sample cdf inv-cdf 0.0 +inf.0 (delay (fl* s (fllog 2.0))) s)))
   
   )

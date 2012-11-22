@@ -3,14 +3,16 @@
 (require racket/performance-hint
          racket/promise
          "../../flonum.rkt"
+         "../../vector.rkt"
+         "../unsafe.rkt"
          "dist-struct.rkt"
          "utils.rkt")
 
 (provide fluniform-pdf
          fluniform-cdf
          fluniform-inv-cdf
-         fluniform-random
-         Uniform-Dist uniform-dist uniform-dist? uniform-dist-min uniform-dist-max)
+         fluniform-sample
+         Uniform-Dist uniform-dist uniform-dist-min uniform-dist-max)
 
 (: unsafe-fluniform-pdf (Float Float Float Any -> Float))
 (define (unsafe-fluniform-pdf a b x log?)
@@ -44,18 +46,20 @@
                        [(fl= q 0.0)  a]
                        [else  (fl+ (fl* (fl- b a) q) a)]))]))
 
-(: unsafe-fluniform-random (Float Float -> Float))
+(: unsafe-fluniform-sample (Float Float Natural -> FlVector))
 ;; Chooses a random flonum in [a,b] in a way that preserves the precision of the random flonum
 ;; returned by (random)
-(define (unsafe-fluniform-random a b)
+(define (unsafe-fluniform-sample a b n)
   (define d (fl- b a))
   (cond
     ;; Both positive, `a' smaller in magnitude
-    [(a . fl>= . 0.0)  (fl+ a (fl* d (random)))]
+    [(a . fl>= . 0.0)  (build-flvector n (λ (_) (fl+ a (fl* d (random)))))]
     ;; Both negative, `b' smaller in magnitude
-    [(b . fl<= . 0.0)  (fl+ b (fl* (- d) (random)))]
+    [(b . fl<= . 0.0)  (build-flvector n (λ (_) (fl- b (fl* d (random)))))]
     ;; Straddle 0 case
-    [else  (if ((fl* d (random)) . fl> . b) (fl* a (random)) (fl* b (random)))]))
+    [else
+     (build-flvector
+      n (λ (_) (if ((fl* d (random)) . fl> . b) (fl* a (random)) (fl* b (random)))))]))
 
 (begin-encourage-inline
   
@@ -71,19 +75,20 @@
   (define (fluniform-inv-cdf a b q log? 1-p?)
     (unsafe-fluniform-inv-cdf (flmin a b) (flmax a b) q log? 1-p?))
   
-  (: fluniform-random (Float Float -> Float))
-  (define (fluniform-random a b)
-    (unsafe-fluniform-random (flmin a b) (flmax a b)))
+  (: fluniform-sample (Float Float Integer -> FlVector))
+  (define (fluniform-sample a b n)
+    (cond [(n . < . 0)  (raise-argument-error 'fluniform-sample "Natural" 2 a b n)]
+          [else  (unsafe-fluniform-sample (flmin a b) (flmax a b) n)]))
   
   )
 
 ;; ===================================================================================================
 ;; Distribution object
 
+(define-real-dist: uniform-dist Uniform-Dist
+  uniform-dist-struct ([min : Float] [max : Float]))
+
 (begin-encourage-inline
-  
-  (define-distribution-type: Uniform-Dist (Ordered-Dist Real Flonum)
-    uniform-dist ([min : Float] [max : Float]))
   
   (: uniform-dist (case-> (-> Uniform-Dist)
                           (Real -> Uniform-Dist)
@@ -101,7 +106,9 @@
                          (unsafe-fluniform-cdf a b (fl x) log? 1-p?)))
            (define inv-cdf (opt-lambda: ([p : Real] [log? : Any #f] [1-p? : Any #f])
                              (unsafe-fluniform-inv-cdf a b (fl p) log? 1-p?)))
-           (define (random) (fluniform-random a b))
-           (make-uniform-dist pdf random cdf inv-cdf a b (delay (fl* 0.5 (fl+ a b))) a b)))]))
+           (define sample (case-lambda:
+                            [()  (unsafe-flvector-ref (fluniform-sample a b 1) 0)]
+                            [([n : Integer])  (flvector->list (fluniform-sample a b n))]))
+           (uniform-dist-struct pdf sample cdf inv-cdf a b (delay (fl* 0.5 (fl+ a b))) a b)))]))
   
   )

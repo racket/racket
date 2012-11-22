@@ -180,7 +180,7 @@ modulus. For example, the code
 corresponds with the mathematical statement
 @italic{a}@superscript{@italic{b}} = @italic{c} (mod @italic{n}).
 
-The current modulus is stored in a @tech{parameter} that, for performance reasons, can only be
+The current modulus is stored in a parameter that, for performance reasons, can only be
 set using @racket[with-modulus]. (The basic modular operators cache parameter reads, and this
 restriction guarantees that the cached values are current.)
 

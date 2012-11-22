@@ -8,13 +8,12 @@
 
 (provide Truncated-Dist
          truncated-dist
-         truncated-dist?
          truncated-dist-min
          truncated-dist-max
          truncated-dist-original)
 
-(define-distribution-type: Truncated-Dist (Ordered-Dist Real Flonum)
-  truncated-dist ([original : Real-Dist] [min : Float] [max : Float]))
+(define-real-dist: truncated-dist Truncated-Dist
+  truncated-dist-struct ([original : Real-Dist] [min : Flonum] [max : Flonum]))
 
 (: truncated-dist (case-> (Real-Dist -> Truncated-Dist)
                           (Real-Dist Real -> Truncated-Dist)
@@ -29,20 +28,18 @@
                                    (min (dist-max d) (max a b)))])
        (unsafe-truncated-dist d a b))]))
 
-(define-syntax-rule (make-inv-cdf-random inv-cdf)
-  (λ () (inv-cdf (fl* 0.5 (random)) #f ((random) . fl> . 0.5))))
-
 (: unsafe-truncated-dist (Real-Dist Float Float -> Truncated-Dist))
 (define (unsafe-truncated-dist d a b)
   (define orig-pdf (dist-pdf d))
   (define orig-cdf (dist-cdf d))
   (define orig-inv-cdf (dist-inv-cdf d))
-  (define orig-random (dist-random d))
+  (define orig-sample (dist-sample d))
   (define log-P_a<x<=b (real-dist-prob d a b #t #f))
   (define log-P_x<=a (delay (orig-cdf a #t #f)))
   (define log-P_x>b (delay (orig-cdf b #t #t)))
   
-  (: pdf Real-PDF)
+  (: pdf (case-> (Real -> Flonum)
+                 (Real Any -> Flonum)))
   (define (pdf x [log? #f])
     (let ([x  (fl x)])
       (define log-d
@@ -51,7 +48,9 @@
               [else  (fl- (orig-pdf x #t) log-P_a<x<=b)]))
       (if log? log-d (flexp log-d))))
   
-  (: cdf Real-CDF)
+  (: cdf (case-> (Real -> Flonum)
+                 (Real Any -> Flonum)
+                 (Real Any Any -> Flonum)))
   (define (cdf x [log? #f] [1-p? #f])
     (let ([x  (fl x)])
       (define log-p
@@ -67,7 +66,9 @@
                                                   log-P_a<x<=b))])]))
       (if log? log-p (flexp log-p))))
   
-  (: inv-cdf Real-Inverse-CDF)
+  (: inv-cdf (case-> (Real -> Flonum)
+                     (Real Any -> Flonum)
+                     (Real Any Any -> Flonum)))
   (define (inv-cdf p [log? #f] [1-p? #f])
     (let ([log-p  (if log? (fl p) (fllog (fl p)))])
       (cond
@@ -86,18 +87,24 @@
                                                    #t #f)])]))
          (min b (max a x))])))
   
-  (: random (-> Float))
-  (define random
+  (: sample-single (-> Flonum))
+  (define sample-single
     (cond [(log-P_a<x<=b . fl< . (- (fllog 3.0)))
-           (make-inv-cdf-random inv-cdf)]
+           (λ () (inv-cdf (fl* 0.5 (random)) #f ((random) . fl> . 0.5)))]
           [else
-           (define (random)
-             (define x (orig-random))
+           (define (sample-single)
+             (define x (orig-sample))
              (cond [(and (a . fl<= . x) (x . fl<= . b))  x]
-                   [else  (random)]))
-           random]))
+                   [else  (sample-single)]))
+           sample-single]))
+  
+  (: sample (Sample Flonum))
+  (define sample
+    (case-lambda:
+      [()  (sample-single)]
+      [([n : Integer])
+       (cond [(n . < . 0)  (raise-argument-error 'truncated-dist-sample "Natural" n)]
+             [else  (build-list n (λ (_) (sample-single)))])]))
   
   ;; Finally put it together
-  (make-truncated-dist pdf random cdf inv-cdf
-                       a b (delay (inv-cdf 0.5))
-                       d a b))
+  (truncated-dist-struct pdf sample cdf inv-cdf a b (delay (inv-cdf 0.5)) d a b))

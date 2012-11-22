@@ -5,6 +5,7 @@
                      racket/string)
          racket/performance-hint
          "../../flonum.rkt"
+         "../utils.rkt"
          "impl/delta-dist.rkt"
          "dist-struct.rkt")
 
@@ -31,19 +32,40 @@
 
 ;; ===================================================================================================
 
-(define-syntax (define-distribution-type: stx)
-  (syntax-case stx ()
-    [(_ (type-name T ...) (parent-type-name In Out)
-        (A B) name ([arg-names arg-opts ...] ...))
+(define-syntax (define-real-dist: stx)
+  (syntax-case stx (:)
+    [(_ name type-name struct-name ([arg-names : arg-types] ...) struct-opts ...)
      (let ([arg-name-lst  (syntax->list #'(arg-names ...))])
-       (with-syntax* ([internal-type-name  (format-id #'type-name "~a-Struct" #'type-name)]
-                      [(internal-proc-names ...)  (map (λ (arg-name)
+       (with-syntax* ([(struct-proc-names ...)
+                       (map (λ (arg-name) (format-id #'struct-name "~a-~a" #'struct-name arg-name))
+                            arg-name-lst)]
+                      [(proc-names ...)
+                       (map (λ (arg-name) (format-id #'name "~a-~a" #'name arg-name))
+                            arg-name-lst)])
+         (syntax/loc stx
+           (begin-encourage-inline
+             (struct: (In Out) struct-name ordered-dist ([arg-names : arg-types] ...) struct-opts ...
+               #:property prop:custom-print-quotable 'never
+               #:property prop:custom-write
+               (λ (v port mode)
+                 (pretty-print-constructor 'name (list (struct-proc-names v) ...) port mode)))
+             (define-type type-name (struct-name Real Flonum))
+             (: proc-names (type-name -> arg-types)) ...
+             (define (proc-names v) (struct-proc-names v)) ...))))]))
+
+(define-syntax (define-distribution-type: stx)
+  (syntax-case stx (:)
+    [(_ (type-name T ...) (parent-type-name In Out)
+        (A B) name ([arg-names : arg-type] ...))
+     (let ([arg-name-lst  (syntax->list #'(arg-names ...))])
+       (with-syntax* ([struct-type-name  (format-id #'type-name "~a-struct" #'type-name)]
+                      [(struct-proc-names ...)  (map (λ (arg-name)
                                                          (format-id #'type-name
                                                                     "~a-~a"
-                                                                    #'internal-type-name
+                                                                    #'struct-type-name
                                                                     arg-name))
                                                        arg-name-lst)]
-                      [internal-pred-name  (format-id #'type-name "~a?" #'internal-type-name)]
+                      [struct-pred-name  (format-id #'type-name "~a?" #'struct-type-name)]
                       [make-name  (format-id #'name "make-~a" #'name)]
                       [(proc-names ...)  (map (λ (arg-name)
                                                 (format-id #'name "~a-~a" #'name arg-name))
@@ -55,15 +77,16 @@
                                       ")")])
          (syntax/loc stx
            (begin
-             (struct: (A B) internal-type-name parent-type-name ([arg-names arg-opts ...] ...)
+             (struct: (A B) struct-type-name parent-type-name ([arg-names : arg-types] ...)
                #:property prop:custom-print-quotable 'never
                #:property prop:custom-write
                (λ (v port write?)
                  (fprintf port format-str 'name (proc-names v) ...)))
-             (define-type (type-name T ...) (internal-type-name In Out))
-             (define proc-names internal-proc-names) ...
-             (define make-name internal-type-name)
-             (define pred-name internal-pred-name)))))]
+             (define-type (type-name T ...) (struct-type-name In Out))
+             (: proc-names ((type-name T ...) -> arg-types)) ...
+             (define (proc-names d) (struct-proc-names d)) ...
+             (define make-name struct-type-name)
+             (define pred-name struct-pred-name)))))]
     [(_ type-name (parent-type-name In Out) name ([arg-names arg-opts ...] ...))
      (syntax/loc stx
        (define-distribution-type: (type-name) (parent-type-name In Out)
