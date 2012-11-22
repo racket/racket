@@ -107,6 +107,9 @@ factor 3:
                       (solve-chinese '(2 3 2) '(3 5 7))]  
 }
 
+
+
+@margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Quadratic_residue"]{Quadratic Residue}}
 @defproc[(quadratic-residue? [a Integer] [n Integer]) Boolean]{
 Returns @racket[#t] if @racket[a] is a quadratic residue modulo @racket[n], otherwise @racket[#f].
 The modulus @racket[n] must be positive, and @racket[a] must be nonnegative.
@@ -123,6 +126,7 @@ In other words, @racket[(quadratic-residue? a n)] is @racket[#t] when
                  (quadratic-residue? 3 4)]
 }
 
+@margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Legendre_symbol"]{Legendre Symbol}}
 @defproc[(quadratic-character [a Integer] [p Integer]) (U -1 0 1)]{
 Returns the value of the quadratic character modulo the prime @racket[p].                                                              
 That is, for a non-zero @racket[a] the number @racket[1] is returned when 
@@ -170,6 +174,7 @@ This function is also known as the @emph{Legendre symbol}.
 }
 
 @subsection[#:tag "modular"]{Parameterized Modular Arithmetic}
+@margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Modular_arithmetic"]{Modular Arithmetic}}
 
 The @racketmodname[math/number-theory] library supports modular arithmetic parameterized on a current
 modulus. For example, the code
@@ -273,6 +278,7 @@ So the problem isn't that @racket[b] doesn't exist, it's that @racket[b] isn't @
 @section[#:tag "primes"]{Primes}
 
 
+@margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Prime_number"]{Prime Number}}
 @defproc[(prime? [z Integer]) Boolean]{
 Returns @racket[#t] if @racket[z] is a prime, @racket[#f] otherwise.
 
@@ -346,6 +352,7 @@ Returns list of the next @racket[n] primes smaller than @racket[z]; @racket[n] m
                     (prev-primes 13 4)]
 }
 
+@margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Integer_factorization"]{Integer Factorization}}
 @defproc[(factorize [n Natural]) (Listof (List Natural Natural))]{
 Returns the factorization of a natural number @racket[n].
 The factorization consists of a list of corresponding 
@@ -397,7 +404,7 @@ Returns a list of the exponents of in a factorization of the integer
 
 @defproc[(integer-root [n Natural] [m Natural]) Natural]{
 Returns the @racket[m]th integer root of @racket[n].
-This is the largest number @racket[r] such that 
+This is the largest integer @racket[r] such that 
 @racket[(expt r m) <= n].
 
  @interaction[#:eval untyped-eval
@@ -443,6 +450,7 @@ is returned, otherwise @racket[#f] is returned.
 }
 
  
+@margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Perfect_power"]{Perfect Power}}
 @defproc[(perfect-power? [m Integer]) Boolean]{
 Returns @racket[#t] if @racket[m] is a perfect power,
 otherwise @racket[#f].        
@@ -613,6 +621,7 @@ Otherwise 0 is returned.
                       (map (λ (n) (fibonacci/mod n 5)) (range 10))]
 }
 
+@margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Farey_sequence"]{Farey Sequence}}
 @defproc[(farey [n Integer]) (Listof Exact-Rational)]{
 Returns a list of the numbers in the @racket[n]th Farey sequence; @racket[n] must be positive.
 
@@ -639,6 +648,7 @@ Returns the @racket[n]th tangent number; @racket[n] must be nonnegative.
 @; ----------------------------------------
 @section[#:tag "combinatorics"]{Combinatorics}
 
+@margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Factorial"]{Factorial}}
 @defproc[(factorial [n Integer]) Natural]{
   Returns the factorial of @racket[n], which must be nonnegative.
   The factorial of @racket[n] is the number @racket[(* n (- n 1) (- n 2) ... 1)].
@@ -647,6 +657,7 @@ Returns the @racket[n]th tangent number; @racket[n] must be nonnegative.
                       (factorial 0)]
 }
 
+@margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Binomial_coefficient"]{Binomial Coefficient}}
 @defproc[(binomial [n Integer] [k Integer]) Natural]{
   Returns the number of ways to choose a @italic{set} of @racket[k] items from a set of
   @racket[n] items; i.e. the order of the @racket[k] items is not significant.
@@ -659,6 +670,9 @@ Returns the @racket[n]th tangent number; @racket[n] must be nonnegative.
                       (binomial 5 3)]
 }
 
+
+@margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Permutation#Permutations_in_combinatorics"]{
+Permutations}}
 @defproc[(permutations [n Integer] [k Integer]) Natural]{
   Returns the number of ways to choose a @italic{sequence} of @racket[k] items from a set of
   @racket[n] items; i.e. the order of the @racket[k] items is significant.
@@ -670,6 +684,7 @@ Returns the @racket[n]th tangent number; @racket[n] must be nonnegative.
                       (permutations 5 3)]
 }
 
+@margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Multinomial_theorem#Multinomial_coefficients"]{Multinomial Coeffecient}}
 @defproc[(multinomial [n Integer] [ks (Listof Integer)]) Natural]{
   A generalization of @racket[binomial] to multiple sets of choices; i.e.
   @racket[(multinomial n (list k0 k1))] is the number of ways to choose a set of @racket[k0] items
@@ -698,6 +713,7 @@ Returns the @racket[n]th tangent number; @racket[n] must be nonnegative.
 
 @subsection{Polygonal Numbers}
 
+@margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Polygonal_number"]{Polygonal Number}}
 @deftogether[
 (@defproc[(triangle-number? [n Natural]) Boolean]
   @defproc[(square-number? [n Natural]) Boolean]
@@ -724,6 +740,7 @@ of the corresponding type of polygonal number.
 
 @; ----------------------------------------
 
+@margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Mediant_(mathematics)"]{Mediant}}
 @section[#:tag "fractions"]{Fractions}
 @defproc[(mediant [x Exact-Rational] [y Exact-Rational]) Exact-Rational]{
 Computes the @racket[mediant] of the numbers @racket[x] and @racket[y].
@@ -765,6 +782,8 @@ Returns a list of all natural solutions to the equation @math-style{a x^2 + b x 
 @; ----------------------------------------
 @section[#:tag "primitive_roots"]{The group Zn and Primitive Roots}
 
+@margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Multiplicative_group_of_integers_modulo_n"]{
+The Group Zn}}
 The numbers @math-style{0, 1, ..., n-1} with addition and multiplication
 modulo @racket[n] is a ring called @math-style{Zn}. 
 
