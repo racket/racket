@@ -77,7 +77,7 @@
 @margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Pairwise_coprime"]{Pairwise Coprime}}
 @defproc[(pairwise-coprime? [a Integer] [b Integer] ...) Boolean]{
   Returns @racket[#t] if the integers @racket[a b ...] are @italic{pairwise} coprime, meaning
-  that each adjacent pair of integers is coprime.
+  that each distinct pair of integers is coprime.
 
 The numbers 2, 6 and 15 are coprime, but not @italic{pairwise} coprime, because 2 and 6 share the
 factor 3:
@@ -523,6 +523,7 @@ that are coprime with @racket[n].
 This function is known as Eulers totient or phi function.
 
 @interaction[#:eval untyped-eval
+                    (require racket/function) ; for curry
                     (totient 9)
                     (length (filter (curry coprime? 9) (range 10)))]
 }

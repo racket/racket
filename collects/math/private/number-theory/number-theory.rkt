@@ -44,6 +44,7 @@
          totient
          moebius-mu
          divisor-sum
+         mangoldt-lambda
          )
 
 ;;;
@@ -688,6 +689,13 @@
                                     [else    divisor-sumk])
                               ps es))
                 natural?))])))
+
+(: mangoldt-lambda : N -> Real)                   
+(define (mangoldt-lambda n)
+  (define am (prime-power n))
+  (cond
+    [(cons? am) (log (car am))]
+    [else 0]))
 
 
 ; These tests are for un-exported functions.
