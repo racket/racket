@@ -120,6 +120,7 @@ please adhere to these guidelines:
  (stop "Stop")   
  (&stop "&Stop") ;; for use in button and menu item labels, with short cut.
  (are-you-sure-delete? "Are you sure you want to delete ~a?") ;; ~a is a filename or directory name
+ (are-you-sure-replace? "Are you sure you want to replace ~a?") ;; ~a is a filename or directory name
  (ignore "Ignore")
  (revert "Revert")
 
@@ -995,7 +996,8 @@ please adhere to these guidelines:
  (save-a-mzscheme-stand-alone-executable "Save a Racket Stand-alone Executable")
  (save-a-mred-distribution "Save a GRacket Distribution")
  (save-a-mzscheme-distribution "Save a Racket Distribution")
-
+ (error-creating-executable "Error creating executable:") ;; this is suffixed with an error message ala error-display-handler
+  
  (definitions-not-saved "The definitions window has not been saved. The executable will use the latest saved version of the definitions window. Continue?")
  ;; The "-explanatory-label" variants are the labels used for the radio buttons in
  ;;  the "Create Executable..." dialog for the "(module ...)" language.
