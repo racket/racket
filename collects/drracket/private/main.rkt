@@ -98,10 +98,10 @@
 (drr:set-default 'drracket:show-line-numbers? #f boolean?)
 
 (drr:set-default 'drracket:toolbar-state 
-                         '(#f . top)
-                         (λ (x) (and (pair? x)
-                                     (boolean? (car x))
-                                     (memq (cdr x) '(left top right)))))
+                 '(#f . top)
+                 (λ (x) (and (pair? x)
+                             (boolean? (car x))
+                             (memq (cdr x) '(left top top-no-label right)))))
 
 (drr:set-default 'drracket:htdp:last-set-teachpacks
                          '() 

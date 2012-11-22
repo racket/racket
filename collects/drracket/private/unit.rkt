@@ -1822,6 +1822,7 @@ module browser threading seems wrong.
       (inherit show-info hide-info is-info-hidden?)
       (field [toolbar-state (preferences:get 'drracket:toolbar-state)]
              [toolbar-top-menu-item #f]
+             [toolbar-top-no-label-menu-item #f]
              [toolbar-left-menu-item #f]
              [toolbar-right-menu-item #f]
              [toolbar-hidden-menu-item #f]
@@ -1840,17 +1841,20 @@ module browser threading seems wrong.
       (define/private (set-toolbar-left) (change-toolbar-state (cons #f 'left)))
       (define/private (set-toolbar-right) (change-toolbar-state (cons #f 'right)))
       (define/private (set-toolbar-top) (change-toolbar-state (cons #f 'top)))
+      (define/private (set-toolbar-top-no-label) (change-toolbar-state (cons #f 'top-no-label)))
       (define/private (set-toolbar-hidden) (change-toolbar-state (cons #t (cdr toolbar-state))))
       
       (define/public (update-toolbar-visibility)
         (let* ([hidden? (toolbar-is-hidden?)]
                [left? (toolbar-is-left?)]
                [right? (toolbar-is-right?)]
-               [top? (toolbar-is-top?)])
+               [top? (toolbar-is-top?)]
+               [top-no-label? (toolbar-is-top-no-label?)])
           
           (send toolbar-left-menu-item check left?)
           (send toolbar-right-menu-item check right?)
           (send toolbar-top-menu-item check top?)
+          (send toolbar-top-no-label-menu-item check top-no-label?)
           (send toolbar-hidden-menu-item check hidden?)
           
           (cond
@@ -1859,6 +1863,7 @@ module browser threading seems wrong.
              (send top-outer-panel change-children (λ (l) '()))
              (send transcript-parent-panel change-children (λ (l) '()))]
             [top? (orient/show #t)]
+            [top-no-label? (orient/show #t)]
             [left? (orient/show #t)]
             [right? (orient/show #f)]))
         (update-defs/ints-resize-corner))
@@ -1877,6 +1882,10 @@ module browser threading seems wrong.
         (and (not (toolbar-is-hidden?))
              (eq? (cdr (preferences:get 'drracket:toolbar-state))
                   'left)))
+      (define/private (toolbar-is-top-no-label?)
+        (and (not (toolbar-is-hidden?))
+             (eq? (cdr (preferences:get 'drracket:toolbar-state))
+                  'top-no-label)))
       
       (define/private (orient/show bar-at-beginning?)
         (let ([vertical? (or (toolbar-is-left?) (toolbar-is-right?))])
@@ -2006,9 +2015,9 @@ module browser threading seems wrong.
           (void)))
 
       (define/private (set-toolbar-label-visibilities/check-registered)
-        (let ([vertical? (or (toolbar-is-left?) (toolbar-is-right?))])
-          (for ([(button number) (in-hash toolbar-buttons)])
-            (send button set-label-visible (not vertical?))))
+        (define label-visible? (toolbar-is-top?))
+        (for ([(button number) (in-hash toolbar-buttons)])
+          (send button set-label-visible label-visible?))
         
         (let loop ([obj button-panel])
           (cond
@@ -3285,6 +3294,12 @@ module browser threading seems wrong.
                    [label (string-constant toolbar-on-top)]
                    [parent toolbar-menu]
                    [callback (λ (x y) (set-toolbar-top))]
+                   [checked #f]))
+        (set! toolbar-top-no-label-menu-item
+              (new checkable-menu-item%
+                   [label (string-constant toolbar-on-top-no-label)]
+                   [parent toolbar-menu]
+                   [callback (λ (x y) (set-toolbar-top-no-label))]
                    [checked #f]))
         (set! toolbar-right-menu-item
               (new checkable-menu-item%

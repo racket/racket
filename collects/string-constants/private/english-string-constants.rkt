@@ -931,6 +931,7 @@ please adhere to these guidelines:
  (interactions-menu-item-help-string "Show/Hide the interactions window")
  (toolbar "Toolbar")
  (toolbar-on-top "Toolbar On Top")
+ (toolbar-on-top-no-label "Toolbar On Top With Small Buttons")
  (toolbar-on-left "Toolbar On Left")
  (toolbar-on-right "Toolbar On Right")
  (toolbar-hidden "Toolbar Hidden")
