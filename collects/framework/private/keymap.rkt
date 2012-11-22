@@ -344,7 +344,10 @@
                       
                       ((add-to-right-button-menu/before) m edit event)
                       
-                      (append-editor-operation-menu-items m)
+                      (append-editor-operation-menu-items 
+                       m #:popup-position 
+                       (list edit
+                             (send edit find-position (send event get-x) (send event get-y))))
                       (for-each
                        (λ (i)
                          (when (is-a? i selectable-menu-item<%>)
