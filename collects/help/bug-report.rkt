@@ -206,33 +206,34 @@
                      [current-alist-separator-mode 'amp])
         (thread
          (λ ()
-           ;; Note that this UI is not great: every submission asks for a
-           ;; captcha and nothing is kept.  This is fine since this is only in
-           ;; case it needs to be used in the future -- if/when that happens,
-           ;; the code can be improved to remember some of it, and the server
-           ;; can have some better policy to send the same captcha to the same
-           ;; client.  So the only case where you'd suffer the bad UI is if a
-           ;; captcha is added *and* you have this version of the code (which
-           ;; will be outdated by that time).
-           (define captcha-question (get-captcha-text))
-           (define captcha-answer
-             (and captcha-question
-                  (get-text-from-user
-                   "Are you human?" ; FIXME: use string-constant
-                   captcha-question bug-frame)))
-           (define post-data
-             (let* ([q (get-query)]
-                    [q (if captcha-answer
-                         `([captcha . ,captcha-answer]
-                           ;; send back the question too: if things get really
-                           ;; bad, then the server can make up random captchas
-                           ;; and check the reply against the challenge that
-                           ;; was used
-                           [captcha-question . ,captcha-question]
-                           ,@q)
-                         q)])
-               (string->bytes/utf-8 (alist->form-urlencoded q))))
            (with-handlers ([exn:fail? (λ (x) (channel-put exn-chan x))])
+             ;; Note that this UI is not great: every submission asks for a
+             ;; captcha and nothing is kept.  This is fine since this is only in
+             ;; case it needs to be used in the future -- if/when that happens,
+             ;; the code can be improved to remember some of it, and the server
+             ;; can have some better policy to send the same captcha to the same
+             ;; client.  So the only case where you'd suffer the bad UI is if a
+             ;; captcha is added *and* you have this version of the code (which
+             ;; will be outdated by that time).
+             (define captcha-question (get-captcha-text))
+             (define captcha-answer
+               (and captcha-question
+                    (get-text-from-user
+                     "Are you human?" ; FIXME: use string-constant
+                     captcha-question bug-frame)))
+             (define post-data
+               (let* ([q (get-query)]
+                      [q (if captcha-answer
+                             `([captcha . ,captcha-answer]
+                               ;; send back the question too: if things get really
+                               ;; bad, then the server can make up random captchas
+                               ;; and check the reply against the challenge that
+                               ;; was used
+                               [captcha-question . ,captcha-question]
+                               ,@q)
+                             q)])
+                 (string->bytes/utf-8 (alist->form-urlencoded q))))
+
              (call/input-url
               bug-report-url
               (lambda (x) (post-impure-port x post-data))
