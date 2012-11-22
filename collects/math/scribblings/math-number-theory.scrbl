@@ -561,6 +561,19 @@ Note: The function @racket[prime-omega] is multiplicative.
                     (prime-omega (* 2 2 2 3 3 5))]
 }
 
+@margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Von_Mangoldt_function"]{Von Mangoldt Function}}
+@defproc[(mangoldt-lambda [n Natural]) Real]{
+The von Mangoldt function. 
+If @racket[n=p^k] for a prime @racket[p] and an integer @racket[k>=1] then @racket[(log n)] is returned.                                             
+Otherwise 0 is returned.
+
+@interaction[#:eval untyped-eval         
+                    (mangoldt-lambda (* 3 3))
+                    (log 3)]
+}
+
+
+
 @; ----------------------------------------
 @section[#:tag "number-sequences"]{Number Sequences}
 
