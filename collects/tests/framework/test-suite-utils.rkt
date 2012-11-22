@@ -86,18 +86,21 @@
   (shutdown-mred)
   (thread
    (lambda ()
-     (system*
-      (path->string
-       (build-path
-        (let-values ([(dir exe _)
-                      (split-path (find-system-path 'exec-file))])
-          (if (eq? dir 'relative)
-              'same
-              dir))
-        (if (eq? 'windows (system-type)) "Racket.exe" "racket")))
-      (path->string
-       (build-path (collection-path "tests" "framework")
-                   "framework-test-engine.rkt")))))
+     (define racket-bin
+       (path->string
+        (build-path
+         (let-values ([(dir exe _)
+                       (split-path (find-system-path 'exec-file))])
+           (if (eq? dir 'relative)
+               'same
+               dir))
+         (if (eq? 'windows (system-type)) "Racket.exe" "racket"))))
+     (unless (system*
+              racket-bin
+              (path->string
+               (build-path (collection-path "tests" "framework")
+                           "framework-test-engine.rkt")))
+       (eprintf "starting gracket failed; used path ~s\n" racket-bin))))
   (debug-printf mz-tcp "accepting listener\n")
   (let-values ([(in out) (tcp-accept listener)])
     (set! in-port in)
@@ -133,11 +136,10 @@
       (set! in-port #f)
       (set! in-port #f))))
 
-(define mred-running?
-  (lambda ()
-    (if (char-ready? in-port)
-        (not (eof-object? (peek-char in-port)))
-        #t)))
+(define (mred-running?)
+  (if (char-ready? in-port)
+      (not (eof-object? (peek-char in-port)))
+      #t))
 
 (define queue-sexp-to-mred
   (lambda (sexp)

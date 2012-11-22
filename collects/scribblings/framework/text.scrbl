@@ -11,8 +11,8 @@
                                  (end exact-nonnegative-integer?)
                                  (color (or/c string? (is-a?/c color%)))
                                  (caret-space boolean? #f)
-                                 (priority (symbols 'high 'low) 'low)
-                                 (style (symbols 'rectangle 'ellipse 'hollow-ellipse 'dot) 'rectangle))
+                                 (priority (or/c 'high 'low) 'low)
+                                 (style (or/c 'rectangle 'ellipse 'hollow-ellipse 'dot) 'rectangle))
                 (-> void?)))]{
     This function highlights a region of text in the buffer.
 
@@ -46,16 +46,33 @@
   }
 
   @defmethod[(unhighlight-range
-                   (start exact-nonnegative-integer?)
-                   (end exact-nonnegative-integer?)
-                   (color (or/c string? (is-a?/c color%)))
-                   (caret-space boolean? #f)
-                   (style (symbols 'rectangle 'ellipse 'hollow-ellipse) 'rectangle))
-               void?]{
+              (start exact-nonnegative-integer?)
+              (end exact-nonnegative-integer?)
+              (color (or/c string? (is-a?/c color%)))
+              (caret-space boolean? #f)
+              (style (or/c 'rectangle 'ellipse 'hollow-ellipse) 'rectangle))
+             void?]{
     This method removes the highlight from a region of text in the buffer.
 
     The region must match up to a region specified from an earlier call to
     @method[text:basic<%> highlight-range].
+    
+    This method does a linear scan over all of the regions currently set.
+    If you expect to call this method many times (when there are many 
+    ranges set)
+    consider instead calling @method[text:basic<%> unhighlight-ranges].
+  }
+
+  @defmethod[(unhighlight-ranges
+              [pred? (-> exact-nonnegative-integer?
+                         exact-nonnegative-integer?
+                         (is-a?/c color%)
+                         boolean?
+                         (or/c 'rectangle 'ellipse 'hollow-ellipse)
+                         boolean?)])
+               void?]{
+    This method removes the highlight from regions in the buffer as 
+    selected by @racket[pred?].
   }
 
   @defmethod*[(((get-highlighted-ranges) (listof text:range?)))]{
@@ -353,11 +370,12 @@
 
   @defmethod[(set-searching-state [str (or/c false/c string?)]
                                   [cs? boolean?]
-                                  [replace-start (or/c false/c number?)])
+                                  [replace-start (or/c false/c number?)]
+                                  [notify-frame? boolean?])
              void?]{
-    If @racket[str] is not @racket[#f], then this method highlights every
-    occurrence of @racket[str] in the editor. If @racket[str] is @racket[#f],
-    then it clears all of the highlighting in the buffer.
+    If @racket[str] is not @racket[#f], then this method initiates a search for
+    every occurrence of @racket[str] in the editor. If @racket[str] is @racket[#f],
+    then it clears all of the search highlighting in the buffer.
 
     If @racket[cs?] is @racket[#f], the search is case-insensitive, and otherwise
     it is case-sensitive.
@@ -365,6 +383,13 @@
     If the @racket[replace-start] argument is @racket[#f], then the search is not
     in replacement mode. If it is a number, then the first search hit after that
     position in the editor is where the next replacement will take place.
+    
+    The search does not complete before @method[text:searching<%> set-searching-state]
+    returns. Accordingly, @method[text:searching<%> get-search-hit-count] may
+    have out-of-date results for a while, until the search process is finished.
+    If @racket[notify-frame?] is @racket[#t] then 
+    @method[frame:searchable<%> search-hits-changed]
+    is called when the search completes.
   }
 
   @defmethod[(set-search-anchor [position (or/c false/c number?)]) void?]{
@@ -374,7 +399,7 @@
 
   @defmethod[(get-search-hit-count) number?]{
     Returns the number of hits for the search in the buffer, based on the count
-    found last time that a search happened.
+    found last time that a search completed.
   }
 
   @defmethod[(get-replace-search-hit) (or/c number? #f)]{
@@ -578,8 +603,8 @@
                                  (end exact-nonnegative-integer?)
                                  (color (or/c string? (is-a?/c color%)))
                                  (caret-space boolean? #f)
-                                 (priority (symbols 'high 'low) 'low)
-                                 (style (symbols 'rectangle 'ellipse 'hollow-ellipse 'dot) 'rectangle))
+                                 (priority (or/c 'high 'low) 'low)
+                                 (style (or/c 'rectangle 'ellipse 'hollow-ellipse 'dot) 'rectangle))
                                  (-> void?)))]{
     In addition to calling the super method, @method[text:basic<%>
     highlight-range], this method forwards the highlighting to the delegatee.
@@ -591,7 +616,7 @@
                    (end exact-nonnegative-integer?)
                    (color (or/c string? (is-a?/c color%)))
                    (caret-space boolean? #f)
-                   (style (symbols 'rectangle 'ellipse 'hollow-ellipse) 'rectangle))
+                   (style (or/c 'rectangle 'ellipse 'hollow-ellipse) 'rectangle))
                void?]{
     This method propagates the call to the delegate and calls the super method.
   }

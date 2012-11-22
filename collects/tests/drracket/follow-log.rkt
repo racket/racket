@@ -36,10 +36,10 @@ log message was reported.
 
 (define top-n-events 50)
 (define drop-gc? #f)
-(define start-right-away? #f) ;; only applies if the 'main' module is loaded
+(define start-right-away? #t) ;; only applies if the 'main' module is loaded
 (define show-hist? #t)
-(define script-drr? #f)
-(define interesting-range-start -inf.0)
+(define script-drr? #t)
+(define interesting-range-start 26)
 (define interesting-range-end +inf.0)
 
 (define log-done-chan (make-channel))
@@ -219,7 +219,9 @@ log message was reported.
      (printf "\nwith gc\n")
      (print-gui-event-hist has-gc-events)
      (printf "\nwithout gc\n")
-     (print-gui-event-hist no-gc-events)]
+     (print-gui-event-hist no-gc-events)
+     (printf "\nboth with and without gc\n")
+     (print-gui-event-hist gui-events)]
     [else
      (define interesting-gui-events
        (let ([candidate-events
@@ -338,15 +340,19 @@ log message was reported.
 
       ;(wait-until online-syncheck-done)
       
-      (for ([x (in-range 20)])
+      (for ([x (in-range 1)])
         
-        #;
+        
         (let ([s "fdjafjdklafjkdalsfjdaklfjdkaslfdjafjdklafjkdalsfjdaklfjdkasl"])
           (for ([c (in-string s)])
-            (test:keystroke c))
+            (test:keystroke c)
+            ;(test:keystroke #\return)
+            (sleep .3))
+          #;
           (for ([c (in-string s)])
+            (test:keystroke #\backspace)
             (test:keystroke #\backspace)))
-        
+        #;
         (begin
           (test:keystroke #\")
           (test:keystroke #\a)
