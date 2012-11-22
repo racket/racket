@@ -37,17 +37,17 @@
 (check-true   (andmap find-and-check-root '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 78125)))
 
 ;"polygonal.rkt"
-(check-equal? (map triangle    '(0 1 2 3 4 5)) '(0 1 3  6 10 15))
-(check-equal? (map pentagonal  '(0 1 2 3 4 5)) '(0 1 5 12 22 35))
-(check-equal? (map hexagonal   '(0 1 2 3 4 5)) '(0 1 6 15 28 45))
-(check-equal? (map heptagonal  '(0 1 2 3 4 5)) '(0 1 7 18 34 55))
-(check-equal? (map octagonal   '(0 1 2 3 4 5)) '(0 1 8 21 40 65))
-(check-true   (andmap triangle?    '(0 1 3  6 10 15)))
-(check-true   (andmap square?      '(0 1 4  9 16 25)))
-(check-true   (andmap pentagonal?  '(0 1 5 12 22 35)))
-(check-true   (andmap hexagonal?   '(0 1 6 15 28 45)))
-(check-true   (andmap heptagonal?  '(0 1 7 18 34 55)))
-(check-true   (andmap octagonal?   '(0 1 8 21 40 65)))
+(check-equal? (map triangle-number    '(0 1 2 3 4 5)) '(0 1 3  6 10 15))
+(check-equal? (map pentagonal-number  '(0 1 2 3 4 5)) '(0 1 5 12 22 35))
+(check-equal? (map hexagonal-number   '(0 1 2 3 4 5)) '(0 1 6 15 28 45))
+(check-equal? (map heptagonal-number  '(0 1 2 3 4 5)) '(0 1 7 18 34 55))
+(check-equal? (map octagonal-number   '(0 1 2 3 4 5)) '(0 1 8 21 40 65))
+(check-true   (andmap triangle-number?    '(0 1 3  6 10 15)))
+(check-true   (andmap square-number?      '(0 1 4  9 16 25)))
+(check-true   (andmap pentagonal-number?  '(0 1 5 12 22 35)))
+(check-true   (andmap hexagonal-number?   '(0 1 6 15 28 45)))
+(check-true   (andmap heptagonal-number?  '(0 1 7 18 34 55)))
+(check-true   (andmap octagonal-number?   '(0 1 8 21 40 65)))
 
 ; "farey.rkt"
 (check-equal? (farey 5) '(0 1/5 1/4 1/3 2/5 1/2 3/5 2/3 3/4 4/5 1))
