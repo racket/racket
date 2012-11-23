@@ -161,12 +161,12 @@ to enable such verification.}
          ssl-client-context?]{
 
 Returns a client context (using @racket['tls]) that verifies
-certificates using the root certificates located in
-@racket[(ssl-default-root-certificate-locations)], verifies hostnames,
-and avoids using weak ciphers. The context is sealed to prevent
-further modification, and the context is cached, so different calls to
+certificates using the root certificates from
+@racket[(ssl-default-verify-sources)], verifies hostnames, and
+avoids using weak ciphers. The context is sealed to prevent further
+modification, and the context is cached, so different calls to
 @racket[ssl-secure-client-context] return the same context unless
-@racket[(ssl-default-root-certificate-locations)] has changed.
+@racket[(ssl-default-verify-sources)] has changed.
 }
 
 @defproc[(ssl-client-context? (v any/c)) boolean?]{
@@ -372,46 +372,89 @@ You can use the file @filepath{test.pem} of the @filepath{openssl}
 collection for testing purposes. Since @filepath{test.pem} is public,
 such a test configuration obviously provides no security.}
 
-@defproc[(ssl-load-verify-root-certificates!
-	  (context-or-listener (or/c ssl-client-context? ssl-server-context?
-				      ssl-listener?))
-	  (pathname path-string?))
+@defproc[(ssl-load-verify-source!
+	    [context (or/c ssl-client-context? ssl-server-context?)]
+            [src (or/c path-string?
+                       (list/c 'directory path-string?)
+                       (list/c 'win32-store string?))]
+            [#:try? try? any/c #f])
          void?]{
 
-Loads a PEM-format file containing trusted certificates that are used
-to verify the certificates of a connection peer. Call this procedure
-multiple times to load multiple sets of trusted certificates.
+Loads verification sources from @racket[src] into
+@racket[context]. Currently, only root certificates are loaded; the
+certificates are used to verify the certificates of a connection
+peer. Call this procedure multiple times to load multiple sets of
+trusted certificates.
 
-If @racket[pathname] is a file, its contents are immediately
-loaded. If @racket[pathname] is a directory, it should contain hashed
-certificates names (see the @tt{openssl c_rehash} utility); the
-directory is searched only when a certificate needs verification.
+The following kinds of verification sources are supported:
+
+@itemlist[
+
+@item{If @racket[src] is a path or string, it is treated as a PEM file
+containing root certificates. The file is loaded immediately.}
+
+@item{If @racket[src] is @racket[(list 'directory _dir)], then
+@racket[_dir] should contain PEM files with hashed symbolic links (see
+the @tt{openssl c_rehash} utility). The directory contents are not
+loaded immediately; rather, they are searched only when a certificate
+needs verification.}
+
+@item{If @racket[src] is @racket[(list 'win32-store _store)], then the
+certificates from the store named @racket[_store] are loaded
+immediately. Only supported on Windows.}
+
+]
+
+If @racket[try?] is @racket[#f] and loading @racket[src] fails (for
+example, because the file or directory does not exist), then an
+exception is raised. If @racket[try?] is a true value, then a load
+failure is ignored.
 
 You can use the file @filepath{test.pem} of the @filepath{openssl}
 collection for testing purposes. Since @filepath{test.pem} is public,
 such a test configuration obviously provides no security.
 }
 
-@defparam[ssl-default-root-certificate-locations paths
-          (listof path-string?)]{
+@defparam[ssl-default-verify-sources srcs
+          (let ([source/c (or/c path-string?
+                                (list/c 'directory path-string?)
+                                (list/c 'win32-store string?))])
+            (listof source/c))]{
 
-Holds a list of paths of root certificate authority certificates, used
-by @racket[ssl-load-default-verify-root-certificates!]. The list of
-paths may refer to both files and directories, and nonexistent paths
-are allowed.
+Holds a list of verification sources, used by
+@racket[ssl-load-default-verify-sources!]. The default sources depend
+on the platform:
 
-The initial values are determined by the @tt{SSL_CERT_FILE} and
-@tt{SSL_CERT_DIR} environment variables, if the variables are set, or
-the system-wide default locations otherwise.
+@itemlist[
+
+@item{On Mac OS X and Linux, the default sources are determined by the
+@tt{SSL_CERT_FILE} and @tt{SSL_CERT_DIR} environment variables, if the
+variables are set, or the system-wide default locations otherwise.}
+
+@item{On Windows, the default source is @racket['(win32-store
+"ROOT")], the system certificate store for root certificates.}
+
+]
 }
 
-@defproc[(ssl-load-default-verify-root-certificates!
+@defproc[(ssl-load-default-verify-sources!
            [context (or/c ssl-client-context? ssl-server-context?)])
          void?]{
 
-Loads the default root certificates, as determined by the
-@racket[ssl-default-root-certificate-locations] parameter, into
-@racket[context]. Nonexistent paths are skipped.
+Loads the default verification sources, as determined by
+@racket[(ssl-default-verify-sources)], into @racket[context]. Load
+failures are ignored, since some default sources may refer to
+nonexistent paths.
+}
+
+@defproc[(ssl-load-verify-root-certificates!
+            [context-or-listener (or/c ssl-client-conntext? ssl-server-context?
+                                       ssl-listener?)]
+            [pathname path-string?])
+         void?]{
+
+Deprecated; like @racket[ssl-load-verify-source!], but only supports
+loading certificate files in PEM format.
 }
 
 @defproc[(ssl-load-suggested-certificate-authorities!

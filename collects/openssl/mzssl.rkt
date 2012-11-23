@@ -23,8 +23,11 @@
            racket/port
            racket/tcp
            racket/string
+           unstable/lazy-require
            "libcrypto.rkt"
            "libssl.rkt")
+  (lazy-require
+   ["private/win32.rkt" (load-win32-root-certificates)])
 
   (provide ssl-available?
 	   ssl-load-fail-reason
@@ -39,12 +42,13 @@
 	   ssl-load-certificate-chain!
 	   ssl-load-private-key!
 	   ssl-load-verify-root-certificates!
+           ssl-load-verify-source!
 	   ssl-load-suggested-certificate-authorities!
            ssl-set-ciphers!
            ssl-seal-context!
 
-           ssl-default-root-certificate-locations
-           ssl-load-default-verify-root-certificates!
+           ssl-default-verify-sources
+           ssl-load-default-verify-sources!
 
            ssl-set-verify!
            ssl-try-verify!
@@ -189,33 +193,36 @@
   (define-crypto X509_get_default_cert_dir_env (_fun -> _string))
   (define-crypto X509_get_default_cert_file_env (_fun -> _string))
 
-  (define (get-x509-default get-env get-path)
-    (case (system-type)
-      ((windows)
-       ;; On Windows, SSLeay produces paths like "/usr/local/ssl/certs", which
-       ;; aren't useful. So just skip them.
-       #f)
-      (else
-       (and libcrypto
-            (let ([result (or (getenv (get-env)) (get-path))])
-              (with-handlers ([exn:fail? (lambda (e) #f)])
-                (string->path result)))))))
+  (define (x509-root-sources)
+    (define (dir-sep)
+      (case (system-type)
+        [(windows) ";"]
+        [else ":"]))
+    (define (get-paths get-env get-path dir? split?)
+      (cond [libcrypto
+             (let* ([result (or (getenv (get-env)) (get-path))]
+                    [results (if split?
+                                 (string-split result (dir-sep))
+                                 (list result))])
+               (if dir?
+                   (map (lambda (p) (list 'directory p)) results)
+                   results))]
+            [else null]))
+    (append (get-paths X509_get_default_cert_file_env X509_get_default_cert_file #f #f)
+            (get-paths X509_get_default_cert_dir_env X509_get_default_cert_dir #t #t)))
 
-  (define ssl-default-root-certificate-locations
+  (define ssl-default-verify-sources
     (make-parameter
-     (filter values
-             ;; FIXME: openssl treats dir as dir-list w/ platform-specific separator
-             ;;  (see /crypto/x509/by_dir.c)
-             (list (get-x509-default X509_get_default_cert_dir_env X509_get_default_cert_dir)
-                   (get-x509-default X509_get_default_cert_file_env X509_get_default_cert_file)))
-     (lambda (v)
-       (define (bad)
-         (raise-argument-error 'ssl-default-root-certificate-locations
-                               "(listof path-string?)"
-                               v))
-       (unless (list? v) (bad))
-       (for ([entry (in-list v)]) (unless (or (eq? v #f) (path-string? v)) (bad)))
-       v)))
+     (case (system-type)
+       [(windows)
+        ;; On Windows, x509-root-sources produces paths like "/usr/local/ssl/certs", which
+        ;; aren't useful. So just skip them.
+        '((win32-store "ROOT"))]
+       [(macosx)
+        ;; FIXME: load from keyring
+        (x509-root-sources)]
+       [else
+        (x509-root-sources)])))
 
   (define X509_V_OK 0)
 
@@ -438,9 +445,9 @@
                             mzctx))
     (set-ssl-context-sealed?! mzctx #t))
 
-  (define (ssl-load-... who load-it ssl-context-or-listener pathname)
-    (let ([ctx (get-context/listener 'ssl-load-certificate-chain!
-				     ssl-context-or-listener
+  (define (ssl-load-... who load-it ssl-context-or-listener pathname
+                        #:try? [try? #f])
+    (let ([ctx (get-context/listener who ssl-context-or-listener
                                      #:need-unsealed? #t)])
       (unless (path-string? pathname)
 	(raise-argument-error 'ssl-load-certificate-chain!
@@ -453,7 +460,7 @@
         (let ([path (path->bytes path)])
           (atomically ;; for to connect ERR_get_error to `load-it'
            (let ([n (load-it ctx path)])
-             (unless (= n 1)
+             (unless (or (= n 1) try?)
                (error who "load failed from: ~e ~a"
                       pathname
                       (get-error-message (ERR_get_error))))))))))
@@ -462,25 +469,6 @@
     (ssl-load-... 'ssl-load-certificate-chain! 
 		  SSL_CTX_use_certificate_chain_file
 		  ssl-context-or-listener pathname))
-
-  (define (ssl-load-verify-root-certificates! ssl-context-or-listener pathname)
-    (ssl-load-... 'ssl-load-verify-root-certificates! 
-		  (lambda (a b)
-                    (cond [(directory-exists? pathname)
-                           (SSL_CTX_load_verify_locations a #f b)]
-                          [(file-exists? pathname)
-                           (SSL_CTX_load_verify_locations a b #f)]
-                          [else
-                           (error 'ssl-load-verify-root-certificates!
-                                  "file or directory does not exist")]))
-		  ssl-context-or-listener pathname))
-
-  (define (ssl-load-default-verify-root-certificates! ctx)
-    (let ([cert-locs (ssl-default-root-certificate-locations)])
-      (for ([cert-loc (in-list cert-locs)])
-        (cond [(or (file-exists? cert-loc) (directory-exists? cert-loc))
-               (ssl-load-verify-root-certificates! ctx cert-loc)]
-              [else (void)]))))
 
   (define (ssl-load-suggested-certificate-authorities! ssl-listener pathname)
     (ssl-load-... 'ssl-load-suggested-certificate-authorities! 
@@ -502,6 +490,44 @@
         ctx path
         (if asn1? SSL_FILETYPE_ASN1 SSL_FILETYPE_PEM)))
      ssl-context-or-listener pathname))
+
+  (define (ssl-load-verify-root-certificates! scl src)
+    (ssl-load-... 'ssl-load-verify-root-certificates!
+                  (lambda (a b) (SSL_CTX_load_verify_locations a b #f))
+                  scl src))
+
+  (define (ssl-load-verify-source! context src #:try? [try? #f])
+    (define (bad-source)
+      (error 'ssl-load-verify-root-certificates!
+             "bad source: ~e" src))
+    (unless (ssl-context? context)
+      (raise-argument-error 'ssl-load-verify-source!
+                            "(or/c ssl-client-context? ssl-server-context?)"
+                            context))
+    (cond [(path-string? src)
+           (ssl-load-... 'ssl-load-verify-root-certificates!
+                         (lambda (a b) (SSL_CTX_load_verify_locations a b #f))
+                         context src #:try? try?)]
+          [(and (list? src) (= (length src) 2))
+           (let ([tag (car src)]
+                 [val (cadr src)])
+             (case tag
+               [(directory)
+                (ssl-load-... 'ssl-load-verify-root-certificates!
+                              (lambda (a b) (SSL_CTX_load_verify_locations a #f b))
+                              context val #:try? try?)]
+               [(win32-store)
+                (let ([ctx (get-context/listener 'ssl-load-verify-root-certificates! context
+                                                 #:need-unsealed? #t)])
+                  (unless (path-string? val) (bad-source))
+                  (load-win32-root-certificates 'ssl-load-verify-root-certificates!
+                                                ctx val try?))]
+               [else (bad-source)]))]
+          [else (bad-source)]))
+
+  (define (ssl-load-default-verify-sources! ctx)
+    (for ([src (in-list (ssl-default-verify-sources))])
+      (ssl-load-verify-source! ctx src #:try? #t)))
 
   (define (ssl-set-ciphers! context cipher-spec)
     (unless (ssl-context? context)
@@ -604,7 +630,7 @@
   (define (ssl-make-secure-client-context sym)
     (let ([ctx (ssl-make-client-context sym)])
       ;; Load root certificates
-      (ssl-load-default-verify-root-certificates! ctx)
+      (ssl-load-default-verify-sources! ctx)
       ;; Require verification
       (ssl-set-verify! ctx #t)
       (ssl-set-verify-hostname! ctx #t)
@@ -618,7 +644,7 @@
   (define context-cache #f)
 
   (define (ssl-secure-client-context)
-    (let ([locs (ssl-default-root-certificate-locations)])
+    (let ([locs (ssl-default-verify-sources)])
       (define (reset)
         (let* ([now (current-seconds)]
                [ctx (ssl-make-secure-client-context 'tls)])
