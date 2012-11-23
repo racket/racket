@@ -217,16 +217,40 @@
 
     Must only be called while the tokenizer is started.
   }
-  @defmethod*[(((insert-close-paren (position natural-number/c) (char char?) (flash? boolean?) (fixup? boolean?)) void?))]{
-
-    The @racket[position] is the place to put the parenthesis, and
+  @defmethod*[(((insert-close-paren (position natural-number/c) (char char?)
+                                    (flash? boolean?) (fixup? boolean?)
+                                    (smart-skip? (or/c #f 'adjacent 'forward) #f)) void?))]{
+    Inserts a close parentheses, or, under scenarios described further below, skips
+    past a subsequent one. The @racket[position] is the place to put the parenthesis, or
+    from which to start searching for a subsequent one, and
     @racket[char] is the parenthesis to be added (e.g., that the user typed).
     If @racket[fixup?] is true, the right kind of closing parenthesis will be
     chosen from the set previously passed to @method[color:text<%> start-colorer]---but only
     if an inserted @racket[char] would be colored as a parenthesis (i.e., with
     the @racket['parenthesis] classification).  Otherwise, @racket[char] will
-    be inserted, even if it is not the right kind.  If @racket[flash?] is true,
-    the matching open parenthesis will be flashed.
+    be inserted (or skipped past), even if it is not the right kind.  
+    If @racket[flash?] is true, the matching open parenthesis will be flashed when
+    the insertion or skip is done.
+    
+    The "smart skipping" behavior of this function is determined by
+    @racket[smart-skip?]. If @racket[smart-skip?] is false, no skip will 
+    take place. A parenthesis will simply be inserted as described in the 
+    paragraph above. When @racket[smart-skip?] is @racket['adjacent], if
+    the next token after @racket[position], ignoring whitespace and 
+    comments (see @racket[skip-whitespace]), is a properly matched closing
+    parenthesis (which may not necessarily match @racket[char] if
+    @racket[fixup?] is true) then simply move the cursor to the position
+    immediately after that already present closing parenthesis. When
+    @racket[smart-skip?] is @racket['forward], this function attempts to
+    determine the closest pair of properly balanced parentheses around
+    @racket[position]. If that exists, then the cursor position skips
+    to the position immediately after the closing parenthesis of that 
+    outer pair. If a properly balanced outer pair is not present, then
+    the cursor attempts to skip immediately after the next closing
+    parenthesis that occurs after @racket[position], ignoring whitespace,
+    comments, and all other tokens. In both non-false cases of 
+    @racket[smart-skip?], if there is no subsequent parenthesis, then
+    a parenthesis is simply inserted, as previously described.
   }
   @defmethod*[(((classify-position (position exact-nonnegative-integer?)) (or/c symbol? #f)))]{
 
