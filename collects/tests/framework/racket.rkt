@@ -147,22 +147,47 @@
                              initial-text (list initial-start-pos initial-end-pos) keys
                              (apply string-append final-pair) (string-length (car final-pair))
                              auto?))
-   '("no-auto-parens" "auto-parens")
+   '("no-auto-parens" "with-auto-parens")
    '(#f #t)
    final-states))
 
+#| hmm... how crazy should we go with testing? I'll leave this
+   for now and just have a few representative tests  .NAH. 
+(define before+afters
+  `(["" "" ""]
+    ["" "" "abcd"]
+    ["" "abc" "efgh"]
+    ["" "abc" ""]
+    ["abcd" "" "efg"]
+    ...
+    ["abcd" "ef" "ghi"]
+    ))
+|#
+
 (test-parens-behavior/full 'open-1
                            "abcd" "" "efg"
-                           #\(     
-                           '(("abcd(" "efg")
-                             ("abcd(" ")efg")))
-(test-parens-behavior/full 'select-open-1
+                           #\(
+                           '(["abcd(" "efg"]  ["abcd(" ")efg"]))
+
+(test-parens-behavior/full 'close-1
+                           "abcd" "" "efg"
+                           #\)
+                           '(["abcd)" "efg"]  ["abcd)" "efg"]))
+(test-parens-behavior/full 'close-2
+                           "(abcd" "" "efg"
+                           #\)
+                           '(["(abcd)" "efg"]  ["(abcd)" "efg"]))
+(test-parens-behavior/full 'close-3
+                           "(abcd" "" ")efg"
+                           #\)
+                           '(["(abcd)" ")efg"]  ["(abcd)" "efg"]))
+
+(test-parens-behavior/full 'surround-open-1
                            "abcd" "ef" "g" 
                            #\(
-                           '(("abcd(" "g")
-                             ("abcd(" "ef)g")))
+                           '(["abcd(" "g"]  ["abcd(" "ef)g"]))
+
 (test-parens-behavior/full 'meta-open-1
                            "abcd" "" "efg"
                            '((new key-event% [key-code #\(] [meta-down #t]))
-                           '(("abcd(" "efg")
-                             ("abcd(" ")efg")))
+                           '(["abcd(" "efg"]  ["abcd(" ")efg"]))

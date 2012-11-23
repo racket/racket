@@ -952,9 +952,11 @@ added get-regions
                                #f)))))
                  c))))))
     
-    (inherit insert delete flash-on on-default-char)
+    (inherit insert delete flash-on on-default-char set-position)
     ;; See docs
-    (define/public (insert-close-paren pos char flash? fixup?)
+    ;; smart-skip? : if already an exactly matching closing character at pos, 
+    ;;               then skip over it instead of inserting another one
+    (define/public (insert-close-paren pos char flash? fixup? [smart-skip? #f])
       (let ((closer
              (begin
                (begin-edit-sequence #f #f)
@@ -968,13 +970,18 @@ added get-regions
                                 ;;  as a paren, then don't try to change it.
                                 #f))))
         (end-edit-sequence)
-        (let ((insert-str (if closer closer (string char))))
-          (for-each (lambda (c)
-                      (on-default-char (new key-event% (key-code c))))
-                    (string->list insert-str))
+        (let* ([insert-str (if closer closer (string char))]
+               [end-pos (+ (string-length insert-str) pos)]
+               [skip-over? (and smart-skip? 
+                                (string=? insert-str (get-text pos end-pos)))])
+          (if skip-over?
+              (set-position end-pos)
+              (for-each (lambda (c)
+                          (on-default-char (new key-event% (key-code c))))
+                        (string->list insert-str)))
           (when flash?
             (unless stopped?
-              (let ((to-pos (backward-match (+ (string-length insert-str) pos) 0)))
+              (let ((to-pos (backward-match end-pos 0)))
                 (when to-pos
                   (let ([ls (find-ls to-pos)])
                     (when ls

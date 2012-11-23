@@ -505,7 +505,8 @@
       (insert-close-paren (get-start-position) 
                           (send key-event get-key-code)
                           (preferences:get 'framework:paren-match)
-                          (preferences:get 'framework:fixup-parens)))
+                          (preferences:get 'framework:fixup-parens)
+                          (preferences:get 'framework:automatic-parens)))
     
     (define/public (tabify-on-return?) #t)
     (define/public (tabify [pos (get-start-position)])
