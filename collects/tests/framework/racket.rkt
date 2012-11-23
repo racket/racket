@@ -91,3 +91,257 @@
 (test-magic-square-bracket 'local1 "(local " "(local [")
 (test-magic-square-bracket 'local2 "(local [" "(local [(")
 (test-magic-square-bracket 'local2 "(local [(define x 1)] " "(local [(define x 1)] (")
+
+
+;; tests what happens when a given key/s is/are typed in an editor with initial
+;;       text and cursor position, under different settings of the auto-parentheses and
+;;       smart-skip-parentheses preferences   .nah.
+
+;; test-auto-parens-behavior
+;;    : any string [or num (list num num)] [or char symbol 1string (list char) (list key-event%)] [or num (list num num)] string
+(define (test-auto-parens-behavior which initial-text initial-pos keys final-text final-pos
+                                   [auto-parens? #f])
+  (test
+   (string->symbol (format "racket:test-auto-parens-behavior ~a" which))
+   (λ (x) (if (list? final-pos)
+              (equal? x (car final-pos) (cadr final-pos) final-text)
+              (equal? x (list final-pos final-pos final-text))))
+   (λ ()
+     (queue-sexp-to-mred
+      `(let* ([t (new racket:text%)]
+              [f (new frame% [label ""] [width 600] [height 600])]
+              [ec (new editor-canvas% [parent f] [editor t])])
+         (preferences:set 'framework:automatic-parens ,auto-parens?)
+         (send f reflow-container)
+         (send t insert ,initial-text)
+         ,(if (number? initial-pos)
+              `(send t set-position ,initial-pos)
+              `(send t set-position ,(car initial-pos) ,(cadr initial-pos)))
+         ,@(map
+            (lambda (k)
+              (cond [(char? k)
+                     `(send (racket:get-keymap)
+                            handle-key-event t (new key-event% [key-code ,k]))]
+                    [(string? k)
+                     `(send (racket:get-keymap)
+                            handle-key-event t (new key-event% [key-code ,(car (string->list k))]))]
+                    [(symbol? k)
+                     `(send (racket:get-keymap)
+                            handle-key-event t (new key-event% [key-code (quote ,k)]))]
+                    [else `(send (racket:get-keymap) handle-key-event t ,k)]))
+            (if (list? keys) keys (list keys)))
+         (list (send t get-start-position) (send t get-end-position) (send t get-text)))))))
+
+
+;; this takes an initial editor state (specified by the text before the cursor,
+;;   some selected text (may be blank string), and text after the cursor), and
+;;   a key(s), and runs tests to check what happens when that key(s) is/are
+;;   typed - in both possible settings of the 'automatic-parens preference
+;;
+;; final-states is a list of 2 pairs of strings. each pair is the final text before
+;;   and after the cursor, for auto-parens disabled and enabled respectively
+(define (test-parens-behavior/full which
+                               init-text-before init-text-selected init-text-after
+                               keys
+                               final-states)
+  (define initial-text (string-append init-text-before init-text-selected init-text-after))
+  (define initial-start-pos (string-length init-text-before))
+  (define initial-end-pos (+ initial-start-pos (string-length init-text-selected)))
+  (for-each
+   (lambda (label auto? final-pair)
+     (test-auto-parens-behavior (format "~a-~a" which label)
+                             initial-text (list initial-start-pos initial-end-pos) keys
+                             (apply string-append final-pair) (string-length (car final-pair))
+                             auto?))
+   '("no-auto-parens" "with-auto-parens")
+   '(#f #t)
+   final-states))
+
+
+(define SPECIAL-CHARS '(#\( #\) #\[ #\] #\" #\| #\{ #\}))
+
+(for ([k SPECIAL-CHARS])
+  ;; test that character literals never result in a pair of characters typed...
+  (test-parens-behavior/full (format "literal-~a" k)
+                             "(list 1 #\\" "" ")"
+                             k
+                             `([,(string-append "(list 1 #\\" (string k)) ")"]
+                               [,(string-append "(list 1 #\\" (string k)) ")"]))
+  ;; test that auto-parens has no effect in strings
+  (test-parens-behavior/full (format "~a-in-string" k)
+                             "\" abc def " "" " \""
+                             k
+                             `([,(string-append "\" abc def " (string k)) " \""]
+                               [,(string-append "\" abc def " (string k)) " \""]))
+
+  ;; test that auto-parens has no effect in various comment situations
+  (define scenarios
+    ;    description     before-cursor    after-cursor
+    '(("in-line-comment"  ";; abc def "    " ghi ")
+      ("end-of-line-comment" ";; abc def " "")
+      ("in-block-comment" "#| abc def "  " ghi |#")
+      ))
+  (for ([s scenarios])
+    (let* ([before (cadr s)]
+           [after (caddr s)]
+           [before-final (string-append before (string k))]
+           [result (list before-final after)])
+      (test-parens-behavior/full (format "~a-~a" k (car s))
+                                 before "" after k `(,result ,result)))))
+
+;;; assorted other scenarios...
+(test-parens-behavior/full 'open-parens
+                           "abcd" "" "efg"  ; editor state: before, selected, after
+                           #\(              ; key(s) pressed
+                           '(["abcd(" "efg"]  ; result state sep by cursor, no auto-parens
+                             ["abcd(" ")efg"])) ; result state with auto-parens
+
+(test-parens-behavior/full 'close-1
+                           "abcd" "" "efg"
+                           #\)
+                           '(["abcd)" "efg"]  ["abcd)" "efg"]))
+(test-parens-behavior/full 'close-2
+                           "(abcd" "" "efg"
+                           #\)
+                           '(["(abcd)" "efg"]  ["(abcd)" "efg"]))
+(test-parens-behavior/full 'close-3
+                           "(abcd" "" ")efg"
+                           #\)
+                           '(["(abcd)" ")efg"]  ["(abcd)" "efg"]))
+(test-parens-behavior/full 'close-4
+                           "(abcd efg " "" "   ) efg"
+                           #\)
+                           '(["(abcd efg )" "   ) efg"]
+                             ["(abcd efg    )" " efg"]))
+(test-parens-behavior/full 'close-5
+                           "(define before+afters `([\"\" abc \"efg\" 12345 xyz]) [84])"
+                           ""
+                           ""
+                           #\)
+                           '(["(define before+afters `([\"\" abc \"efg\" 12345 xyz]) [84]))" ""]
+                             ["(define before+afters `([\"\" abc \"efg\" 12345 xyz]) [84]))" ""]))
+(test-parens-behavior/full 'close-6
+                           "(define before+afters `([\"\" abc \"efg\""
+                           ""
+                           " 12345 xyz]) [84])"
+                           #\)
+                           '(["(define before+afters `([\"\" abc \"efg\"]" " 12345 xyz]) [84])"]
+                             ["(define before+afters `([\"\" abc \"efg\"]" " 12345 xyz]) [84])"]))
+
+
+(test-parens-behavior/full 'close-skip-1
+                           "(define before+afters `([\"\" abc \"efg\" 12345 xyz]"
+                           ""
+                           "  ) [84])"
+                           #\)
+                           '(["(define before+afters `([\"\" abc \"efg\" 12345 xyz])" "  ) [84])"]
+                             ["(define before+afters `([\"\" abc \"efg\" 12345 xyz]  )" " [84])"]))
+(test-parens-behavior/full 'close-skip-fixup-1
+                           "(define before+afters `{[abc 123]"
+                           ""
+                           "  ) [84])"
+                           #\)   ; here the next close after ) doesn't match the {, so no skip happens
+                           '(["(define before+afters `{[abc 123]}" "  ) [84])"]
+                             ["(define before+afters `{[abc 123]}" "  ) [84])"]))
+(test-parens-behavior/full 'close-skip-fixup-2
+                           "(define before+afters `{[abc 123]"
+                           ""
+                           "  } [84])"
+                           #\)   ; here the next close does match the {, so  skip
+                           '(["(define before+afters `{[abc 123]}" "  } [84])"]
+                             ["(define before+afters `{[abc 123]  }" " [84])"]))
+
+(test-parens-behavior/full 'surround-open-1
+                           "abcd" "ef" "g"
+                           #\(
+                           '(["abcd(" "g"]  ["abcd(" "ef)g"]))
+
+(test-parens-behavior/full 'double-quote-1
+                           "" "" ""
+                           #\"
+                           '(["\"" ""] ["\"" "\""]))
+(test-parens-behavior/full 'double-quote-2
+                           "abc " "" ""
+                           #\"
+                           '(["abc \"" ""] ["abc \"" "\""]))
+(test-parens-behavior/full 'double-quote-selection-1
+                           "(abc " "def 123" " xyz]"
+                           #\"
+                           '(["(abc \"" " xyz]"] ["(abc \"" "def 123\" xyz]"]))
+(test-parens-behavior/full 'double-quote-skip-1
+                           "\"abc def " "" "\" 123"
+                           #\"
+                           '(["\"abc def \"" "\" 123"] ["\"abc def \"" " 123"]))
+(test-parens-behavior/full 'double-quote-escaped-1
+                           "\"abcd \\" "" ""
+                           #\"
+                           '(["\"abcd \\\"" ""]
+                             ["\"abcd \\\"" "\""])) ; this one inserts a pair
+                                  ; because the string wasn't closed anyway
+                                  ; (it's a hard case to distinguish)
+(test-parens-behavior/full 'double-quote-escaped-2
+                           "\"abcd \\" "" "\""
+                           #\"
+                           '(["\"abcd \\\"" "\""]
+                             ["\"abcd \\\"" "\""]))
+
+(test-parens-behavior/full 'bar
+                           "abc " "" "123"
+                           #\|
+                           '(["abc |" "123"] ["abc |" "|123"]))
+(test-parens-behavior/full 'bar-literal
+                           "(list 1 #\\" "" ")"
+                           #\|
+                           '(["(list 1 #\\|" ")"] ["(list 1 #\\|" ")"]))
+(test-parens-behavior/full 'bar-skip
+                           "abc |def" "" "|123"
+                           #\|
+                           '(["abc |def|" "|123"] ["abc |def|" "123"]))
+(test-parens-behavior/full 'bar-selection
+                           "abc |def " "hij" "|123"
+                           #\|
+                           '(["abc |def |" "|123"] ["abc |def |" "hij||123"]))
+
+
+(test-parens-behavior/full 'block-comment-1
+                           " #" "" ""
+                           #\|
+                           '([" #|" ""]
+                             [" #|" "|#"]))
+(test-parens-behavior/full 'block-comment-2
+                           "(123 abc#" "" " def 456)"
+                           #\|
+                           '(["(123 abc#|" " def 456)"]
+                             ["(123 abc#|" "|# def 456)"]))
+(test-parens-behavior/full 'block-comment-skip-1
+                           "#| (123 abc" "" "|# def 456)"
+                           #\|
+                           '(["#| (123 abc|" "|# def 456)"]
+                             ["#| (123 abc|#" " def 456)"]))
+
+#| for these, the key-event with meta-down doesn't seem to work... maybe a Mac OS
+  issue; and may cause problems with these tests on another platform? .nah. |#
+(when (equal? 'macosx (system-type))
+  (test-parens-behavior/full 'meta-open-1
+                             "abcd" "" "efg"
+                             '(escape #\()   ; '((new key-event% [key-code #\(] [meta-down #t]))
+                             '(["abcd(" ")efg"]  ["abcd(" ")efg"]))
+
+  (test-parens-behavior/full 'meta-close-skip-1
+                             "(define before (list 1 2" "" " 3 4)"
+                             '(escape #\))   ; '((new key-event% [key-code #\)] [meta-down #t]))
+                             '(["(define before (list 1 2 3 4)" ""]
+                               ["(define before (list 1 2 3 4)" ""]))
+  (test-parens-behavior/full 'meta-close-skip-2
+                             "#lang racket\n(define before+afters `([\"\" abc \"efg\""
+                             ""
+                             " 12345 xyz] [84])"
+                             '(escape #\))    ;'((new key-event% [key-code #\)] [meta-down #t]))
+                             '(["#lang racket\n(define before+afters `([\"\" abc \"efg\" 12345 xyz]" " [84])"]
+                               ["#lang racket\n(define before+afters `([\"\" abc \"efg\" 12345 xyz]" " [84])"]))
+  (test-parens-behavior/full 'meta-close-skip-3
+                             "(define before" "" " (list 1 2 3 4)"
+                             '(escape #\))   ; '((new key-event% [key-code #\)] [meta-down #t]))
+                             '(["(define before (list 1 2 3 4)" ""]
+                               ["(define before (list 1 2 3 4)" ""]))
+  )
