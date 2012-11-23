@@ -784,5 +784,19 @@
   (module m 'local-expand-lang2))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; check that quoted submodule paths work with `all-from-out':
+
+(module has-submodule-all-from-out racket/base
+  (module a racket/base
+    (define x-from-submodule-out 10)
+    (provide x-from-submodule-out))
+  
+  (require 'a)
+  (void x-from-submodule-out)
+  (provide (all-from-out 'a)))
+(require 'has-submodule-all-from-out)
+(test 10 values x-from-submodule-out)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

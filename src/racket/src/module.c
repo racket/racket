@@ -153,6 +153,12 @@ static void check_formerly_unbound(Scheme_Object *unbounds, Scheme_Comp_Env *env
 static void install_stops(Scheme_Comp_Env *xenv, int phase, Scheme_Object **_begin_for_syntax_stx);
 static int is_modulestar_stop(Scheme_Comp_Env *env);
 
+typedef int (*Convert_Submodule_Proc)(Scheme_Object *mp, Scheme_Object *data);
+static Scheme_Object *convert_submodule_path(Scheme_Object *name, 
+                                             Convert_Submodule_Proc check,
+                                             Scheme_Object *check_data);
+static int check_is_submodule(Scheme_Object *modname, Scheme_Object *_genv);
+
 static Scheme_Object *scheme_sys_wraps_phase_worker(intptr_t p);
 
 #define cons scheme_make_pair
@@ -9841,6 +9847,9 @@ Scheme_Object *scheme_module_imported_list(Scheme_Env *genv, Scheme_Object *bind
   } else {
     Scheme_Object *reprovided;
 
+    modpath = convert_submodule_path(modpath, check_is_submodule, 
+                                     (Scheme_Object *)genv);
+
     reprovided = scheme_make_pair(scheme_make_pair(modpath,
                                                    scheme_make_pair(scheme_false,
                                                                     scheme_null)),
@@ -10882,8 +10891,6 @@ void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
     }
   }
 }
-
-typedef int (*Convert_Submodule_Proc)(Scheme_Object *mp, Scheme_Object *data);
 
 static int check_in_hash(Scheme_Object *mp, Scheme_Object *data)
 {
