@@ -165,6 +165,16 @@
     string constants. Otherwise, disable spell-checking of constants.
   }
   
+  @defmethod[(set-spell-current-dict [dict (or/c string? #f)])]{
+    Sets the current dictionary used with aspell to @racket[dict].
+    If @racket[dict] is @racket[#f], then the default dictionary is used.
+  }
+  
+  @defmethod[(get-spell-current-dict) (or/c string? #f)]{
+    Get the current dictionary used with aspell.
+    If the result is @racket[#f], then the default dictionary is used.
+  }
+  
   @defmethod*[(((get-regions) (listof (list/c number? (or/c (quote end) number?)))))]{
     This returns the list of regions that are currently being colored in the
     editor.

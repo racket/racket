@@ -23,6 +23,8 @@
 
 (application-preferences-handler (λ () (preferences:show-dialog)))
 
+(preferences:set-default 'framework:aspell-dict #f (λ (x) (or (not x) (string? x))))
+
 (preferences:set-default 'framework:line-spacing-add-gap?
                          (not (eq? (system-type) 'windows))
                          boolean?)

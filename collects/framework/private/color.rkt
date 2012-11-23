@@ -64,7 +64,8 @@ added get-regions
     get-token-range
     
     set-spell-check-strings
-    get-spell-check-strings))
+    get-spell-check-strings
+    get-spell-current-dict))
 
 (define text-mixin
   (mixin (text:basic<%>) (-text<%>)
@@ -234,6 +235,13 @@ added get-regions
         (set! spell-check-strings? s)
         (reset-tokens)
         (start-colorer token-sym->style get-token pairs)))
+    (define current-dict (preferences:get 'framework:aspell-dict))
+    (define/public (set-spell-current-dict d)
+      (unless (equal? d current-dict)
+        (set! current-dict d)
+        (reset-tokens)
+        (start-colorer token-sym->style get-token pairs)))
+    (define/public (get-spell-current-dict) current-dict)
     
     ;; ---------------------- Multi-threading ---------------------------
     ;; The editor revision when the last coloring was started
@@ -382,7 +390,7 @@ added get-regions
                        [pos sp])
               (unless (null? strs)
                 (define str (car strs))
-                (let loop ([spellos (query-aspell str)]
+                (let loop ([spellos (query-aspell str current-dict)]
                            [lp 0])
                   (cond
                     [(null? spellos) 

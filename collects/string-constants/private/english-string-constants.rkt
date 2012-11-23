@@ -1711,6 +1711,8 @@ please adhere to these guidelines:
   ;; menu item in the 'edit' menu; applies to editors with programs in them
   ;; (technically, editors that implement color:text<%>)
   (spell-check-string-constants "Spell Check String Constants")
+  (spelling-dictionaries "Spelling Dictionaries") ; (sub)menu whose items are the different possible dictionaries
+  (default-spelling-dictionary "Default Dictionary") ; first item in menu from previous line
   (misspelled-text-color "Misspelled Text Color") ;; in the preferences dialog  
   (cannot-find-ispell-or-aspell-path "Cannot find the aspell or ispell binary")
   ; puts the path to the spell program in the ~a and then the error message

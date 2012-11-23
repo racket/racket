@@ -3667,6 +3667,33 @@ module browser threading seems wrong.
                   (define old-val (send ed get-spell-check-strings))
                   (preferences:set 'framework:spell-check-on? (not old-val))
                   (send ed set-spell-check-strings (not old-val))]))])
+        (define dicts (get-aspell-dicts))
+        (when dicts
+          (define dicts-menu (new menu:can-restore-underscore-menu% 
+                                  [parent edit-menu]
+                                  [label (string-constant spelling-dictionaries)]))
+          (define (mk-item dict label)
+            (new menu:can-restore-checkable-menu-item%
+                 [parent dicts-menu]
+                 [label label]
+                 [callback
+                  (λ (item evt)
+                    (define ed (get-edit-target-object))
+                    (when (and ed (is-a? ed color:text<%>))
+                      (preferences:set 'framework:aspell-dict dict)
+                      (send ed set-spell-current-dict dict)))]
+                 [demand-callback 
+                  (λ (item)
+                    (define ed (get-edit-target-object))
+                    (send item enable (and ed (is-a? ed color:text<%>)))
+                    (send item check 
+                          (and ed 
+                               (is-a? ed color:text<%>)
+                               (equal? dict (send ed get-spell-current-dict)))))]))
+          (mk-item #f (string-constant default-spelling-dictionary))
+          (new separator-menu-item% [parent dicts-menu])
+          (for ([dict (in-list dicts)])
+            (mk-item dict dict)))
         (new menu:can-restore-menu-item%
              [label (string-constant complete-word)]
              [shortcut #\/]
