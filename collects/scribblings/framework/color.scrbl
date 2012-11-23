@@ -165,7 +165,7 @@
     string constants. Otherwise, disable spell-checking of constants.
   }
   
-  @defmethod[(set-spell-current-dict [dict (or/c string? #f)])]{
+  @defmethod[(set-spell-current-dict [dict (or/c string? #f)]) void?]{
     Sets the current dictionary used with aspell to @racket[dict].
     If @racket[dict] is @racket[#f], then the default dictionary is used.
   }
