@@ -91,3 +91,78 @@
 (test-magic-square-bracket 'local1 "(local " "(local [")
 (test-magic-square-bracket 'local2 "(local [" "(local [(")
 (test-magic-square-bracket 'local2 "(local [(define x 1)] " "(local [(define x 1)] (")
+
+
+;; tests what happens when a given key/s is/are typed in an editor with initial
+;;       text and cursor position, under different settings of the auto-parentheses and
+;;       smart-skip-parentheses preferences   .NAH.
+
+;; test-auto-parens-behavior 
+;;    : any string [or num (list num num)] [or char (list char) (list key-event%)] [or num (list num num)] string
+(define (test-auto-parens-behavior which initial-text initial-pos keys final-text final-pos
+                                   [auto-parens? #f])
+  (test
+   (string->symbol (format "racket:test-auto-parens-behavior ~a" which))
+   (λ (x) (if (list? final-pos)
+              (equal? x (car final-pos) (cadr final-pos) final-text)
+              (equal? x (list final-pos final-pos final-text))))
+   (λ ()
+     (queue-sexp-to-mred
+      `(let* ([t (new racket:text%)]
+              [f (new frame% [label ""] [width 600] [height 600])]
+              [ec (new editor-canvas% [parent f] [editor t])]
+              #;[keys (if (list? ,keys) ,keys (list ,keys))])
+         (preferences:set 'framework:automatic-parens ,auto-parens?)
+         (send f reflow-container)
+         (send t insert ,initial-text)
+         ,(if (number? initial-pos)
+              `(send t set-position ,initial-pos)            
+              `(send t set-position ,(car initial-pos) ,(cadr initial-pos)))
+         ,@(map
+            (lambda (k)
+              (cond [(char? k) `(send (racket:get-keymap)
+                                      handle-key-event t (new key-event% [key-code ,k]))]
+                    [else `(send (racket:get-keymap) handle-key-event t ,k)]))
+            (if (list? keys) keys (list keys)))
+         (list (send t get-start-position) (send t get-end-position) (send t get-text)))))))
+
+
+;; this takes an initial editor state (specified by the text before the cursor,
+;;   some selected text (may be blank string), and text after the cursor), and
+;;   a key(s), and runs tests to check what happens when that key(s) is/are
+;;   typed - in both possible settings of the 'automatic-parens preference
+;;
+;; final-states is a list of 2 pairs of strings. each pair is the final text before
+;;   and after the cursor, for auto-parens disabled and enabled respectively
+(define (test-parens-behavior/full which
+                               init-text-before init-text-selected init-text-after
+                               keys
+                               final-states)
+  (define initial-text (string-append init-text-before init-text-selected init-text-after))
+  (define initial-start-pos (string-length init-text-before))
+  (define initial-end-pos (+ initial-start-pos (string-length init-text-selected)))
+  (for-each
+   (lambda (label auto? final-pair)
+     (test-auto-parens-behavior (format "~a-~a" which label)
+                             initial-text (list initial-start-pos initial-end-pos) keys
+                             (apply string-append final-pair) (string-length (car final-pair))
+                             auto?))
+   '("no-auto-parens" "auto-parens")
+   '(#f #t)
+   final-states))
+
+(test-parens-behavior/full 'open-1
+                           "abcd" "" "efg"
+                           #\(     
+                           '(("abcd(" "efg")
+                             ("abcd(" ")efg")))
+(test-parens-behavior/full 'select-open-1
+                           "abcd" "ef" "g" 
+                           #\(
+                           '(("abcd(" "g")
+                             ("abcd(" "ef)g")))
+(test-parens-behavior/full 'meta-open-1
+                           "abcd" "" "efg"
+                           '((new key-event% [key-code #\(] [meta-down #t]))
+                           '(("abcd(" "efg")
+                             ("abcd(" ")efg")))
