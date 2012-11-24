@@ -30,7 +30,6 @@
                               #:busy-retry-limit 0))
   (unless exists?
     (call-with-transaction/retry
-     void
      db
      #f
      (lambda ()
@@ -47,7 +46,7 @@
 (define select-other-path-vq
   (virtual-statement "SELECT atmain, path FROM other.pathids WHERE pathid=$1"))
 
-(define (call-with-database lock db-file proc 
+(define (call-with-database db-file proc 
                             #:fail [fail #f]
                             #:setup [setup void]
                             #:teardown [teardown void])
@@ -60,7 +59,6 @@
        (setup db)
        (begin0
         (call-with-transaction/retry
-         lock
          db
          (if (connection? db-file)
              (lambda () (esc fail))
@@ -80,7 +78,6 @@
                           #:fail [fail #f]
                           #:main-doc-relative-ok? [main-doc-relative-ok? #f])
   (call-with-database
-   void
    db-file
    #:fail fail
    (lambda (db)
@@ -92,9 +89,8 @@
           (pathid->filename db pathid #f main-doc-relative-ok?)))))
 
 
-(define (add lock db-file elems filename callback)
+(define (add db-file elems filename callback)
   (call-with-database
-   lock
    db-file
    (lambda (db)
      (prepare-tables db)
@@ -103,9 +99,8 @@
        (define stag (~s p))
        (callback db stag pathid)))))
 
-(define (clear lock db-file filename statement)
+(define (clear db-file filename statement)
   (call-with-database
-   lock
    db-file
    (lambda (db)
      (prepare-tables db)
@@ -113,38 +108,32 @@
      (query-exec db statement
                  pathid))))
 
-(define (doc-db-add-provides db-file provides filename
-                             #:lock [lock void])
-  (add lock db-file provides filename
+(define (doc-db-add-provides db-file provides filename)
+  (add db-file provides filename
        (lambda (db stag pathid)
          (query-exec db "INSERT INTO documented VALUES ($1, $2)"
                      stag
                      pathid))))
        
 
-(define (doc-db-clear-provides db-file filename
-                               #:lock [lock void])
-  (clear lock db-file filename
+(define (doc-db-clear-provides db-file filename)
+  (clear db-file filename
          "DELETE FROM documented WHERE pathid=$1"))
 
-(define (doc-db-add-dependencies db-file depends filename
-                                 #:lock [lock void])
-  (add lock db-file depends filename
+(define (doc-db-add-dependencies db-file depends filename)
+  (add db-file depends filename
        (lambda (db stag pathid)
          (query-exec db "INSERT INTO dependencies VALUES ($1, $2)"
                      pathid
                      stag))))
 
 
-(define (doc-db-clear-dependencies db-file filename
-                                   #:lock [lock void])
-  (clear lock db-file filename 
+(define (doc-db-clear-dependencies db-file filename)
+  (clear db-file filename 
          "DELETE FROM dependencies WHERE pathid=$1"))
 
-(define (doc-db-add-searches db-file searches filename
-                             #:lock [lock void])
+(define (doc-db-add-searches db-file searches filename)
   (call-with-database
-   lock
    db-file
    (lambda (db)
      (prepare-tables db)
@@ -162,10 +151,8 @@
                      setid
                      stag))))))
 
-(define (doc-db-clear-searches db-file filename
-                               #:lock [lock void])
+(define (doc-db-clear-searches db-file filename)
   (call-with-database
-   lock
    db-file
    (lambda (db)
      (prepare-tables db)
@@ -188,7 +175,6 @@
                                  #:attach [attach-db-path #f]
                                  #:main-doc-relative-ok? [main-doc-relative-ok? #f])
   (call-with-database
-   void
    db-file
    #:setup (maybe-attach attach-db-path)
    #:teardown (maybe-detach attach-db-path)
@@ -231,7 +217,6 @@
 (define (doc-db-check-unsatisfied filename db-file
                                   #:attach [attach-db-path #f])
   (call-with-database
-   void
    db-file
    #:setup (maybe-attach attach-db-path)
    #:teardown (maybe-detach attach-db-path)
@@ -294,7 +279,6 @@
                                  #:attach [attach-db-path #f]
                                  #:main-doc-relative-ok? [main-doc-relative-ok? #f])
   (call-with-database
-   void
    db-file
    #:setup (maybe-attach attach-db-path)
    #:teardown (maybe-detach attach-db-path)
@@ -321,10 +305,8 @@
                       pathid))
          null))))
 
-(define (doc-db-clean-files db-file ok-files
-                            #:lock [lock void])
+(define (doc-db-clean-files db-file ok-files)
   (call-with-database
-   lock
    db-file
    (lambda (db)
      (prepare-tables db)
@@ -440,62 +422,44 @@
        (regexp-match #rx"the database file is locked$"
                      (exn-message v))))
 
-;; Call in a transation, and also with a lock if `lock'
-;; implements one. (Even though the database can
-;; handle locking, it deosn't handle contention all that
-;; well, so we offer the option of manual locking.)
-;; If `lock' implements a lock, it should expect arguments: 'lock or
-;; 'unlock, and a boolean to indicate wheter breaks should be enabled
-;; while waiting.
-;;
-;; Handle Sqlite-level lock failures, too. By default, failure
-;; uses rollbacks, but `fast-abort' can be provided for a faster
-;; abort by dropping the connection. Don't try to use a connection
-;; provided here in any other way on an abort.
-(define (call-with-transaction/retry lock db fast-abort thunk)
+;; Call in a transation and handle Sqlite-level lock failures.  By
+;; default, failure uses rollbacks, but `fast-abort' can be provided
+;; for a faster abort by dropping the connection. Don't try to use a
+;; connection provided here in any other way on an abort.
+(define (call-with-transaction/retry db fast-abort thunk)
   (let ([old-break-paramz (current-break-parameterization)]
         [can-break? (break-enabled)])
-    (parameterize-break
-     #f
-     (lock 'lock can-break?)
-     (dynamic-wind
-      void
-      (lambda ()
-        (call-with-break-parameterization
-         old-break-paramz
-         (lambda ()
-           (let loop ([pause 0.01])
-             (define (call-with-lock-handler handler thunk)
-               (with-handlers* ([exn:fail:database-locked?
-                                 (lambda (exn)
-                                   ;; Try again:
-                                   (log-doc-db-info "database locked; now waiting ~a seconds" pause)
-                                   (handler (min 10 (* pause 2))))])
-                 (thunk)))
-             ((let/ec esc
-                (define success? #f)
-                (dynamic-wind
-                 (lambda ()
-                   (call-with-lock-handler
-                    (lambda (pause) (esc (lambda ()
-                                           (sleep pause)
-                                           (loop pause))))
-                    (lambda () (start-transaction db))))
-                 (lambda ()
-                   (call-with-lock-handler
-                    (lambda (pause) (esc (lambda ()
-                                           (rollback db fast-abort 1)
-                                           (sleep pause)
-                                           (loop pause))))
-                    (lambda ()
-                      (define l (call-with-values thunk list))
-                      (commit-transaction db)
-                      (set! success? #t)
-                      (lambda () (apply values l)))))
-                 (lambda ()
-                   (unless success?
-                     (rollback db fast-abort 1))))))))))
-      (lambda () (lock 'unlock #f))))))
+    (let loop ([pause 0.01])
+      (define (call-with-lock-handler handler thunk)
+        (with-handlers* ([exn:fail:database-locked?
+                          (lambda (exn)
+                            ;; Try again:
+                            (log-doc-db-info "database locked; now waiting ~a seconds" pause)
+                            (handler (min 10 (* pause 2))))])
+          (thunk)))
+      ((let/ec esc
+         (define success? #f)
+         (dynamic-wind
+          (lambda ()
+            (call-with-lock-handler
+             (lambda (pause) (esc (lambda ()
+                                    (sleep pause)
+                                    (loop pause))))
+             (lambda () (start-transaction db))))
+          (lambda ()
+            (call-with-lock-handler
+             (lambda (pause) (esc (lambda ()
+                                    (rollback db fast-abort 1)
+                                    (sleep pause)
+                                    (loop pause))))
+             (lambda ()
+               (define l (call-with-values thunk list))
+               (commit-transaction db)
+               (set! success? #t)
+               (lambda () (apply values l)))))
+          (lambda ()
+            (unless success?
+              (rollback db fast-abort 1)))))))))
 
 (define (rollback db fast-abort count)
   (when (in-transaction? db)
