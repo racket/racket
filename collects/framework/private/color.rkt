@@ -893,6 +893,7 @@ added get-regions
         (tokenize-to-pos ls position)))
     
     ;; See docs
+    ;;  Note: this doesn't seem to handle sexp-comments correctly  .nah.
     (define/public (skip-whitespace position direction comments?)
       (when stopped?
         (error 'skip-whitespace "called on a color:text<%> whose colorer is stopped."))
@@ -953,19 +954,24 @@ added get-regions
                                #f)))))
                  c))))))
     
-    ;; returns the start position of the next token at or after
+    ;; returns the start and end positions of the next token at or after
     ;;   pos that matches any of the given list. If skip-type is 
     ;;   'adjacent, it skips whitespace after pos; if skip-type is
     ;;   'forward it skips all tokens after pos in its search; if
     ;;   skip-type is #f, then there must be a match right at pos
     ;; skip-to-close : number (list string) (or #f 'adjacent 'forward)
+    ;;                 -> (or #f number) (or #f number)
     (define/public (skip-to-close-paren pos matches skip-type)
       (r:match 
        skip-type
        [#f
-        (and (andmap (λ (match) 
-                       (string=? match (get-text pos (+ pos (string-length match))))))
-             pos)]
+        (define first-match
+          (ormap (λ (match) 
+                    (and (string=? match (get-text pos (+ pos (string-length match))))
+                         match))))
+        (if first-match
+            (values pos (+ pos (string-length first-match)))
+            (values #f #f))]
        [(or 'adjacent 'forward)
         (define next-pos (skip-whitespace pos 'forward #t))
         (define tree (lexer-state-tokens (find-ls next-pos)))
@@ -973,17 +979,17 @@ added get-regions
                                  (send tree get-root-start-position)))
         (define end-pos (send tree get-root-end-position))
         
-        ;(printf "~a |~a| |~a|~n" (list pos next-pos start-pos end-pos (send tree get-root-data)) match (get-text start-pos end-pos))
+       #;(printf "~a |~a| |~a|~n" (list pos next-pos start-pos end-pos (send tree get-root-data)) matches (get-text start-pos end-pos))
         
         (cond
           [(or (not (send tree get-root-data)) (<= end-pos pos))
-           #f]    ;; didn't find /any/ token ending after pos
+           (values #f #f)]    ;; didn't find /any/ token ending after pos
           [(and (<= pos start-pos)
                 (member (get-text start-pos end-pos) matches))
-           start-pos]   ; token at start-pos matches
+           (values start-pos end-pos)]   ; token at start-pos matches
           [(equal? skip-type 'forward)   ; try skipping over this token
            (skip-to-close-paren end-pos matches skip-type)]
-          [else #f])]
+          [else (values #f #f)])]
        [_   
         (error 'skip-to-close-paren (format "invalid skip-type: ~a" skip-type))]))
     
@@ -996,8 +1002,7 @@ added get-regions
               (begin
                 (begin-edit-sequence #f #f)    ;; WHY is this here? .nah.
                 (get-close-paren pos 
-                                 (if fixup? 
-                                     ;; Ensure preference for given character:
+                                 (if fixup? ;; Ensure preference for given character:
                                      (cons (string char) (remove (string char) closers))
                                      null)
                                  ;; If the inserted preferred (i.e., given) paren doesn't parse
@@ -1005,11 +1010,18 @@ added get-regions
                                  #f))])
         (end-edit-sequence)
         (let* ([insert-str (if closer closer (string char))]
-               [end-pos (+ (string-length insert-str) pos)]
-               [next-close (and smart-skip
-                                (skip-to-close-paren pos (if fixup? closers (list insert-str)) smart-skip))])
-          (if next-close
-              (set-position (+ next-close (string-length insert-str)))
+               [end-pos (+ (string-length insert-str) pos)])
+          (define-values (next-close-start next-close-end)
+            (if smart-skip (skip-to-close-paren pos (if fixup? closers (list insert-str)) smart-skip)
+                (values #f #f)))
+          
+          #;(when next-close-start
+            (printf "|~a| |~a| |~a|~n" (get-text next-close-start next-close-end)
+                    (get-close-paren next-close-start closers #f) closer))
+          
+          (if (and next-close-start ; only skip if the thing being skipped matches the expected close
+                   (string=? closer (get-text next-close-start next-close-end)))
+              (set-position next-close-end) 
               (for-each (lambda (c)
                           (on-default-char (new key-event% (key-code c))))
                         (string->list insert-str)))

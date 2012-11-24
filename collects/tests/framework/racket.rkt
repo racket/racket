@@ -205,6 +205,14 @@
                            #\)
                            '(["(define before+afters `([\"\" abc \"efg\" 12345 xyz])" "  ) [84])"]
                              ["(define before+afters `([\"\" abc \"efg\" 12345 xyz]  )" " [84])"]))
+(test-parens-behavior/full 'close-skip-fixup-1   
+                           "(define before+afters `{[abc 123]"
+                           ""
+                           "  ) [84])"
+                           #\)   ; here the next close after ) doesn't match the {, so no skip happens
+                           '(["(define before+afters `{[abc 123]}" "  ) [84])"]
+                             ["(define before+afters `{[abc 123]}" "  ) [84])"]))
+
 
 
 (test-parens-behavior/full 'surround-open-1
