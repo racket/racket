@@ -15,7 +15,8 @@
 ;;  opposite must be completed, first.
 
 #lang racket/base
-(require ffi/unsafe
+(require (rename-in racket/contract/base [-> c->])
+         ffi/unsafe
          ffi/unsafe/define
          ffi/unsafe/atomic
          ffi/unsafe/alloc
@@ -29,51 +30,123 @@
 (lazy-require
  ["private/win32.rkt" (load-win32-root-certificates)])
 
-(provide ssl-available?
-         ssl-load-fail-reason
+(define protocol-symbol/c
+  (or/c 'sslv2-or-v3 'sslv2 'sslv3 'tls))
 
-         ssl-make-client-context
-         ssl-secure-client-context
-         ssl-make-server-context
-         ssl-client-context?
-         ssl-server-context?
-         ssl-context?
-
-         ssl-load-certificate-chain!
-         ssl-load-private-key!
-         ssl-load-verify-root-certificates!
-         ssl-load-verify-source!
-         ssl-load-suggested-certificate-authorities!
-         ssl-set-ciphers!
-         ssl-seal-context!
-
-         ssl-default-verify-sources
-         ssl-load-default-verify-sources!
-
-         ssl-set-verify!
-         ssl-try-verify!
-         ssl-set-verify-hostname!
-
-         ssl-peer-verified?
-         ssl-peer-certificate-hostnames
-         ssl-peer-check-hostname
-         ssl-peer-subject-name
-         ssl-peer-issuer-name
-
-         ports->ssl-ports
-
-         ssl-listen
-         ssl-close
-         ssl-accept
-         ssl-accept/enable-break
-         ssl-connect
-         ssl-connect/enable-break
-
-         ssl-listener?
-         ssl-addresses
-         ssl-abandon-port
-
-         ssl-port?)
+(provide
+ (contract-out
+  [ssl-available? boolean?]
+  [ssl-load-fail-reason (or/c #f string?)]
+  [ssl-make-client-context
+   (c-> protocol-symbol/c ssl-client-context?)]
+  [ssl-secure-client-context
+   (c-> ssl-client-context?)]
+  [ssl-make-server-context
+   (c-> protocol-symbol/c ssl-server-context?)]
+  [ssl-client-context?
+   (c-> any/c boolean?)]
+  [ssl-server-context?
+   (c-> any/c boolean?)]
+  [ssl-context?
+   (c-> any/c boolean?)]
+  [ssl-load-certificate-chain!
+   (c-> (or/c ssl-context? ssl-listener?) path-string? void?)]
+  [ssl-load-private-key!
+   (->* ((or/c ssl-context? ssl-listener?) path-string?)
+        (any/c any/c)
+        void?)]
+  [ssl-load-verify-root-certificates!
+   (c-> (or/c ssl-context? ssl-listener? ssl-port?)
+        path-string?
+        void?)]
+  [ssl-load-verify-source!
+   (c-> ssl-context?
+        (or/c path-string?
+              (list/c 'directory path-string?)
+              (list/c 'win32-store string?))
+        void?)]
+  [ssl-load-suggested-certificate-authorities!
+   (c-> (or/c ssl-context? ssl-listener?)
+        path-string?
+        void?)]
+  [ssl-set-ciphers!
+   (c-> ssl-context? string? void?)]
+  [ssl-seal-context!
+   (c-> ssl-context? void?)]
+  [ssl-default-verify-sources
+   (parameter/c
+    (listof
+     (or/c path-string?
+           (list/c 'directory path-string?)
+           (list/c 'win32-store string?))))]
+  [ssl-load-default-verify-sources!
+   (c-> ssl-context? void?)]
+  [ssl-set-verify!
+   (c-> (or/c ssl-context? ssl-listener? ssl-port?)
+        any/c
+        void?)]
+  [ssl-try-verify!
+   (c-> (or/c ssl-context? ssl-listener? ssl-port?)
+        any/c
+        void?)]
+  [ssl-set-verify-hostname!
+   (c-> ssl-context? any/c void?)]
+  [ssl-peer-verified?
+   (c-> ssl-port? boolean?)]
+  [ssl-peer-certificate-hostnames
+   (c-> ssl-port? (listof string?))]
+  [ssl-peer-check-hostname
+   (c-> ssl-port? string? boolean?)]
+  [ssl-peer-subject-name
+   (c-> ssl-port? (or/c bytes? #f))]
+  [ssl-peer-issuer-name
+   (c-> ssl-port? (or/c bytes? #f))]
+  [ports->ssl-ports
+   (->* [input-port?
+         output-port?]
+        [#:mode (or/c 'connect 'accept)
+         #:context ssl-context?
+         #:encrypt protocol-symbol/c
+         #:close-original? any/c
+         #:shutdown-on-close? any/c
+         #:error/ssl procedure?
+         #:hostname (or/c string? #f)]
+        (values input-port? output-port?))]
+  [ssl-listen
+   (->* [(integer-in 1 (sub1 (expt 2 16)))]
+        [exact-nonnegative-integer?
+         any/c
+         (or/c string? #f)
+         (or/c ssl-server-context? protocol-symbol/c)]
+        ssl-listener?)]
+  [ssl-close
+   (c-> ssl-listener? void?)]
+  [ssl-accept
+   (c-> ssl-listener?
+        (values input-port? output-port?))]
+  [ssl-accept/enable-break
+   (c-> ssl-listener?
+        (values input-port? output-port?))]
+  [ssl-connect
+   (->* [string?
+         (integer-in 1 (sub1 (expt 2 16)))]
+        [(or/c ssl-client-context? protocol-symbol/c)]
+        (values input-port? output-port?))]
+  [ssl-connect/enable-break
+   (->* [string?
+         (integer-in 1 (sub1 (expt 2 16)))]
+        [(or/c ssl-client-context? protocol-symbol/c)]
+        (values input-port? output-port?))]
+  [ssl-listener?
+   (c-> any/c boolean?)]
+  [ssl-addresses
+   (->* [(or/c ssl-listener? ssl-port?)]
+        [any/c]
+        any)]
+  [ssl-abandon-port
+   (c-> ssl-port? void?)]
+  [ssl-port?
+   (c-> any/c boolean?)]))
 
 (define ssl-load-fail-reason
   (or libssl-load-fail-reason
