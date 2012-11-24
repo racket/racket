@@ -712,6 +712,7 @@ Permutations}}
 @section[#:tag "special_numbers"]{Special Numbers}
 
 @subsection{Polygonal Numbers}
+@margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Polygonal_number"]{Polygonal Number}}
 
 @margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Polygonal_number"]{Polygonal Number}}
 @deftogether[
