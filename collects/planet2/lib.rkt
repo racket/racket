@@ -684,13 +684,15 @@
   (define to-update (filter-map update-package pkgs))
   (cond
     [(empty? to-update)
-     (printf "No updates available\n")]
+     (printf "No updates available\n")
+     #f]
     [else
      (install-cmd
       #:updating? #t
       #:pre-succeed (λ () (for-each (compose remove-package car) to-update))
       #:dep-behavior dep-behavior
-      (map cdr to-update))]))
+      (map cdr to-update))
+     #t]))
 
 (define (show-cmd)
   (let ()
@@ -805,7 +807,7 @@
         (#:dep-behavior dep-behavior/c
                         #:all? boolean?
                         #:deps? boolean?)
-        void)]
+        boolean?)]
   [remove-packages
    (->* ((listof string?))
         (#:auto? boolean?

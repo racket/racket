@@ -50,11 +50,11 @@
   #:args pkgs
   (parameterize ([current-install-system-wide? installation])
     (with-package-lock
-     (update-packages pkgs
-                      #:all? all
-                      #:dep-behavior deps
-                      #:deps? update-deps)
-     (setup dont-setup)))]
+     (when (update-packages pkgs
+                            #:all? all
+                            #:dep-behavior deps
+                            #:deps? update-deps)
+       (setup dont-setup))))]
  [remove
   "Remove packages"
   [#:bool dont-setup () "Don't run 'raco setup' after changing packages (generally not a good idea)"]
