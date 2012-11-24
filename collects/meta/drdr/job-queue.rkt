@@ -28,26 +28,30 @@
               jobs-ch
               (match-lambda
                 [(? job? the-job)
-                 (working-manager (sub1 spaces) accept-new? (list* the-job jobs) continues)]
+                 (working-manager (sub1 spaces) accept-new?
+                                  (list* the-job jobs) continues)]
                 [(? done?)
                  (working-manager spaces #f jobs continues)]))
              never-evt)
          (handle-evt
           done-ch
           (lambda (reply-ch)
-            (working-manager spaces accept-new? jobs (list* reply-ch continues))))
+            (working-manager spaces accept-new? 
+                             jobs (list* reply-ch continues))))
          (if (empty? jobs)
              never-evt
              (handle-evt
               (async-channel-put-evt work-ch (first jobs))
               (lambda (_)
-                (working-manager spaces accept-new? (rest jobs) continues))))
+                (working-manager spaces accept-new?
+                                 (rest jobs) continues))))
          (map
           (lambda (reply-ch)
             (handle-evt
              (async-channel-put-evt reply-ch 'continue)
              (lambda (_)
-               (working-manager (add1 spaces) accept-new? jobs (remq reply-ch continues)))))
+               (working-manager (add1 spaces) accept-new? 
+                                jobs (remq reply-ch continues)))))
           continues))))
   (define (killing-manager left)
     (unless (zero? left)
@@ -95,6 +99,7 @@
 (provide/contract
  [current-worker (parameter/c (or/c false/c exact-nonnegative-integer?))]
  [job-queue? (any/c . -> . boolean?)]
- [rename make-queue make-job-queue (exact-nonnegative-integer? . -> . job-queue?)]
+ [rename make-queue make-job-queue 
+         (exact-nonnegative-integer? . -> . job-queue?)]
  [submit-job! (job-queue? (-> any) . -> . void)]
  [stop-job-queue! (job-queue? . -> . void)])

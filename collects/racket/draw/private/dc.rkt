@@ -1522,7 +1522,7 @@
                                                           (/ (PangoRectangle-width logical) 
                                                              (exact->inexact PANGO_SCALE)))]
                                                      [flh (/ orig-h (exact->inexact PANGO_SCALE))]
-                                                     [ld (/ (- orig-h baseline) (exact->inexact PANGO_SCALE))]
+                                                     [ld (exact->inexact (/ (- orig-h baseline) (exact->inexact PANGO_SCALE)))]
                                                      [la 0.0])
                                                  (let ([lh (ceiling flh)])
                                                    (when cache

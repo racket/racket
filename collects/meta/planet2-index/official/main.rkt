@@ -1,4 +1,6 @@
 #lang racket/base
+(module+ test
+  (require rackunit))
 (require web-server/http
          web-server/servlet-env
          racket/file
@@ -408,7 +410,7 @@
       (error 'planet2 "Source must not be empty: ~e" new-source))
     (define new-desc (request-binding/string pkg-req "description"))
 
-    (when (regexp-match #rx"[^a-zA-Z0-9_\\-]" new-pkg)
+    (unless (valid-name? new-pkg)
       (error 'planet2
              "Illegal character in name; only alphanumerics, plus '-' and '_' allowed: ~e"
              new-pkg))
@@ -499,13 +501,24 @@
   (add-tag! pkg-name new-tag)
   (redirect-to (main-url page/info pkg-name)))
 
+(define (valid-name? t)
+  (not (regexp-match #rx"[^a-zA-Z0-9_\\-]" t)))
+
+(module+ test
+  (check-equal? (valid-name? "net") #t)
+  (check-equal? (valid-name? "120") #t)
+  (check-equal? (valid-name? "Web") #t)
+  (check-equal? (valid-name? "foo-bar") #t)
+  (check-equal? (valid-name? "!meh") #f)
+  (check-equal? (valid-name? "foo_bar") #t))
+
 (define (add-tag! pkg-name new-tag)
   (when (and new-tag
              (not (string=? new-tag "")))
     (define i (package-info pkg-name))
-    (when (regexp-match #rx"[^a-zA-Z0-9]" new-tag)
+    (unless (valid-name? new-tag) 
       (error 'planet2
-             "Illegal character in tag; only alphanumerics allowed: ~e"
+             "Illegal character in tag; only alphanumerics allowed, plus '_' and '-': ~e"
              new-tag))
     (package-info-set!
      pkg-name
@@ -550,7 +563,7 @@
               `(span (input ([name "source"]
                              [type "text"]
                              [value ,(package-ref* i 'source "")]))
-                     " (" (a ([href "XXX"]) "details") ")")
+                     " (" (a ([href "http://pre.racket-lang.org/docs/html/planet2/Planet_2_Concepts.html#(tech._package._source)"]) "details") ")")
               `(a ([href
                     ,(package-url->useful-url (package-ref i 'source))])
                   ,(package-ref i 'source)))))

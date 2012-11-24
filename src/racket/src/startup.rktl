@@ -429,14 +429,16 @@
                  (define-values (make-handler)
                    (lambda (ts)
                      (lambda (exn)
-                       (let ([l (current-logger)])
-                         (when (log-level? l 'error)
-                           (log-message l 'error 
-                                        (format
-                                         "error reading collection links file ~s: ~a"
-                                         (if user? user-links-path links-path)
-                                         (exn-message exn))
-                                        (current-continuation-marks))))
+                       (if (exn:fail? exn)
+                           (let ([l (current-logger)])
+                             (when (log-level? l 'error)
+                               (log-message l 'error 
+                                            (format
+                                             "error reading collection links file ~s: ~a"
+                                             (if user? user-links-path links-path)
+                                             (exn-message exn))
+                                            (current-continuation-marks))))
+                           (void))
                        (when ts
                          (if user?
                              (begin
@@ -445,7 +447,10 @@
                              (begin
                                (set! links-cache (make-hasheq))
                                (set! links-timestamp ts))))
-                       (esc (make-hasheq)))))
+                       (if (exn:fail? exn)
+                           (esc (make-hasheq))
+                           ;; re-raise the exception (which is probably a break)
+                           exn))))
                  (with-continuation-mark
                      exception-handler-key
                      (make-handler #f)

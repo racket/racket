@@ -162,7 +162,7 @@
               ;; non-parallel version:
               (map (get-doc-info only-dirs latex-dest auto-main? auto-user? 
                                  with-record-error setup-printf #f
-                                 force-out-of-date? force-out-of-date?)
+                                 #f force-out-of-date?)
                    docs)
               ;; maybe parallel...
               (or

@@ -17,8 +17,7 @@
          racket/file
          (for-syntax racket/base))
 (define-runtime-path *data-file*
-  (list 'lib 
-        "web-server/default-web-root/htdocs/servlets/examples/english-measure-questions.rkt"))
+  "english-measure-questions.rkt")
 (define *questions-per-quiz* 5)
 
 (require web-server/servlet

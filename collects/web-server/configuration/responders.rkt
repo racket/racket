@@ -23,8 +23,7 @@
                     "<unknown location>")))))
 
 (define-runtime-path default-error-style-sheet
-  (list 'lib
-        "web-server/default-web-root/htdocs/error.css"))
+  "../default-web-root/htdocs/error.css")
 
 (define (pretty-exception-response url exn)
   (response/xexpr

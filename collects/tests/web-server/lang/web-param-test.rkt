@@ -19,7 +19,7 @@
      "web-parameterize does not overwrite with multiple parameters"
      (let-values ([(meval)
                    (make-module-eval
-                    (module m (lib "lang.rkt" "web-server")
+                    (module m web-server/lang
                       (define first (make-web-parameter #f))
                       (define second (make-web-parameter #f))
                       (provide start)
@@ -34,7 +34,7 @@
      
      (let-values ([(meval)
                    (make-module-eval
-                    (module m (lib "lang.rkt" "web-server")
+                    (module m web-server/lang
                       (provide start)
                       (define first (make-web-parameter #f))
                       (define second (make-web-parameter #f))

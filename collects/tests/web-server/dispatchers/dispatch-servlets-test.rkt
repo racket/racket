@@ -2,6 +2,8 @@
 (require rackunit
          mzlib/etc
          mzlib/list
+         racket/runtime-path
+         racket/path
          xml
          web-server/http
          web-server/private/cache-table
@@ -30,23 +32,25 @@
                      (raise exn))))
   d)
 
-(define example-servlets 
-  (build-path (collection-path "web-server") "default-web-root" "htdocs" "servlets" "examples/"))
+(define-runtime-path default-web-root
+  "../../../web-server/default-web-root")
+(define example-servlets
+  (build-path default-web-root "htdocs" "servlets" "examples/"))
 
 (define dispatch-servlets-tests
   (test-suite
    "Servlets"
-   
-   ; XXX test update cache
-   ; XXX redirect/get
-   ; XXX web-cells
-   
+
+                                        ; XXX test update cache
+                                        ; XXX redirect/get
+                                        ; XXX web-cells
+
    (test-pred "configure.rkt"
               string?
               (let* ([d (mkd (build-path example-servlets 'up "configure.rkt"))]
                      [k0 (simple-xpath* '(form #:action) (call d url0 empty))])
                 k0))
-   
+
    (test-suite
     "Examples"
     (test-equal? "hello.rkt - loading"
@@ -92,10 +96,13 @@
                  (list (list "1" "1")
                        (list "2" "1")))
     (test-equal? "dir.rkt - current-directory"
-                 (let* ([d (mkd (build-path example-servlets "dir.rkt"))]
-                        [t0 (simple-xpath* '(p em) (call d url0 empty))])
-                   t0)
-                 (path->string example-servlets))
+                 (path->string
+                  (normalize-path
+                   (let* ([d (mkd (build-path example-servlets "dir.rkt"))]
+                          [t0 (simple-xpath* '(p em) (call d url0 empty))])
+                     t0)))
+                 (path->string
+                  (normalize-path example-servlets)))
     (test-pred "quiz.rkt - send/suspend"
                string?
                (let* ([d (mkd (build-path example-servlets "quiz.rkt"))])
@@ -116,21 +123,21 @@
                  (list "Expired"
                        "Done."
                        "Expired"))
-    
+
     (test-double-counters
      mkd
      "wc-fake.rkt - no cells"
      (build-path example-servlets "wc-fake.rkt"))
-    
+
     (test-double-counters
      mkd
      "wc.rkt - make-web-cell web-cell-ref web-cell-shadow"
      (build-path example-servlets "wc.rkt"))
-    
-    ; XXX Broken
+
+                                        ; XXX Broken
     #;(test-equal? "adjust.rkt - adjust-timeout!"
-                   (let* ([d (mkd (build-path example-servlets "adjust.rkt"))]
-                          [k0 (first ((sxpath "//a/@href/text()") (call d url0 empty)))])
-                     (sleep 3)
-                     (call d k0 empty))
-                   "#"))))
+    (let* ([d (mkd (build-path example-servlets "adjust.rkt"))]
+    [k0 (first ((sxpath "//a/@href/text()") (call d url0 empty)))])
+    (sleep 3)
+    (call d k0 empty))
+    "#"))))

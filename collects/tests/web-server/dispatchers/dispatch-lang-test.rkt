@@ -2,6 +2,8 @@
 (require rackunit
          mzlib/etc
          mzlib/list
+         racket/path
+         racket/runtime-path
          web-server/dispatchers/dispatch
          web-server/http
          web-server/configuration/namespace
@@ -39,7 +41,11 @@
                      (raise exn))))
   d)
 
-(define example-servlets (build-path (collection-path "web-server") "default-web-root" "htdocs" "lang-servlets/"))
+(define-runtime-path default-web-root
+  "../../../web-server/default-web-root")
+
+(define example-servlets 
+  (build-path default-web-root "htdocs" "lang-servlets/"))
 
 (define dispatch-lang-tests
   (test-suite
@@ -141,7 +147,9 @@
                 (let* ([d (mkd (build-path example-servlets "check-dir.rkt"))]
                        [t0 (simple-xpath* '(h2) (call d url0 empty))])
                   t0)
-                (format "The current directory: ~a" (path->string example-servlets)))
+                (format "The current directory: ~a/" 
+                        (path->string
+                         (normalize-path example-servlets))))
    
    ; XXX Use kont
    #;(test-equal? "quiz01.rkt"
