@@ -95,7 +95,7 @@
 
 ;; tests what happens when a given key/s is/are typed in an editor with initial
 ;;       text and cursor position, under different settings of the auto-parentheses and
-;;       smart-skip-parentheses preferences   .NAH.
+;;       smart-skip-parentheses preferences   .nah.
 
 ;; test-auto-parens-behavior 
 ;;    : any string [or num (list num num)] [or char (list char) (list key-event%)] [or num (list num num)] string
@@ -152,7 +152,7 @@
    final-states))
 
 #| hmm... how crazy should we go with testing? I'll leave this
-   for now and just have a few representative tests  .NAH. 
+   for now and just have a few representative tests  .nah. 
 (define before+afters
   `(["" "" ""]
     ["" "" "abcd"]
@@ -165,9 +165,10 @@
 |#
 
 (test-parens-behavior/full 'open-1
-                           "abcd" "" "efg"
-                           #\(
-                           '(["abcd(" "efg"]  ["abcd(" ")efg"]))
+                           "abcd" "" "efg"  ; editor state: before, selected, after
+                           #\(              ; key(s) pressed
+                           '(["abcd(" "efg"]  ; result state sep by cursor, no auto-parens
+                             ["abcd(" ")efg"])) ; result state with auto-parens
 
 (test-parens-behavior/full 'close-1
                            "abcd" "" "efg"
@@ -181,13 +182,54 @@
                            "(abcd" "" ")efg"
                            #\)
                            '(["(abcd)" ")efg"]  ["(abcd)" "efg"]))
+(test-parens-behavior/full 'close-4
+                           "(define before+afters `([\"\" abc \"efg\" 12345 xyz]) [84])"
+                           "" 
+                           ""
+                           #\)
+                           '(["(define before+afters `([\"\" abc \"efg\" 12345 xyz]) [84]))" ""]
+                             ["(define before+afters `([\"\" abc \"efg\" 12345 xyz]) [84]))" ""]))
+(test-parens-behavior/full 'close-5
+                           "(define before+afters `([\"\" abc \"efg\""
+                           ""
+                           " 12345 xyz]) [84])"
+                           #\)
+                           '(["(define before+afters `([\"\" abc \"efg\"]" " 12345 xyz]) [84])"]
+                             ["(define before+afters `([\"\" abc \"efg\"]" " 12345 xyz]) [84])"]))
+
+
+(test-parens-behavior/full 'close-skip-1
+                           "(define before+afters `([\"\" abc \"efg\" 12345 xyz]"
+                           ""
+                           "  ) [84])"
+                           #\)
+                           '(["(define before+afters `([\"\" abc \"efg\" 12345 xyz])" "  ) [84])"]
+                             ["(define before+afters `([\"\" abc \"efg\" 12345 xyz]  )" " [84])"]))
+
 
 (test-parens-behavior/full 'surround-open-1
                            "abcd" "ef" "g" 
                            #\(
                            '(["abcd(" "g"]  ["abcd(" "ef)g"]))
 
+
 (test-parens-behavior/full 'meta-open-1
                            "abcd" "" "efg"
                            '((new key-event% [key-code #\(] [meta-down #t]))
                            '(["abcd(" "efg"]  ["abcd(" ")efg"]))
+
+#| I don't know why these don't work... they seem to work interactively...  .nah.
+(test-parens-behavior/full 'meta-close-skip-1
+                           "(define before (list 1 2" "" " 3 4)"
+                           '((new key-event% [key-code #\)] [meta-down #t]))
+                           '(["(define before (list 1 2 3 4)" ""]
+                             ["(define before (list 1 2 3 4)" ""]))
+(test-parens-behavior/full 'meta-close-skip-2
+                           "#lang racket\n(define before+afters `([\"\" abc \"efg\""
+                           ""
+                           " 12345 xyz] [84])"
+                           '((new key-event% [key-code #\)] [meta-down #t]))
+                           '(["#lang racket\n(define before+afters `([\"\" abc \"efg\" 12345 xyz]" " [84])"]
+                             ["#lang racket\n(define before+afters `([\"\" abc \"efg\" 12345 xyz]" " [84])"]))
+|#
+
