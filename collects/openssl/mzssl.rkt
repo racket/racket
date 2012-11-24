@@ -144,7 +144,7 @@
         [any/c]
         any)]
   [ssl-abandon-port
-   (c-> ssl-port? void?)]
+   (c-> (and/c input-port? ssl-port?) void?)]
   [ssl-port?
    (c-> any/c boolean?)]))
 
@@ -450,27 +450,21 @@
 
 (define default-encrypt 'sslv2-or-v3)
 
-(define (encrypt->method who also-expect e client?)
+(define (encrypt->method who e client?)
   ((case e
-     [(sslv2-or-v3) (if client?
-                  SSLv23_client_method
-                  SSLv23_server_method)]
-     [(sslv2) (if client?
-            SSLv2_client_method
-            SSLv2_server_method)]
-     [(sslv3) (if client?
-            SSLv3_client_method
-            SSLv3_server_method)]
-     [(tls) (if client?
-          TLSv1_client_method
-          TLSv1_server_method)]
+     [(sslv2-or-v3)
+      (if client? SSLv23_client_method SSLv23_server_method)]
+     [(sslv2)
+      (if client? SSLv2_client_method SSLv2_server_method)]
+     [(sslv3)
+      (if client? SSLv3_client_method SSLv3_server_method)]
+     [(tls)
+      (if client? TLSv1_client_method TLSv1_server_method)]
      [else
-      (raise-argument-error who
-                            (format "(or/c ~a'sslv2-or-v3 'sslv2 'sslv3 'tls)" also-expect)
-                            e)])))
+      (error 'encrypt->method "internal error, unknown encrypt: ~e" e)])))
 
-(define (make-context who protocol-symbol also-expected client?)
-  (let ([meth (encrypt->method who also-expected protocol-symbol client?)])
+(define (make-context who protocol-symbol client?)
+  (let ([meth (encrypt->method who protocol-symbol client?)])
     (atomically ;; connect SSL_CTX_new to subsequent check-valid (ERR_get_error)
      (let ([ctx (SSL_CTX_new meth)])
        (check-valid ctx who "context creation")
@@ -479,16 +473,16 @@
        ((if client? make-ssl-client-context make-ssl-server-context) ctx #f #f)))))
 
 (define (ssl-make-client-context [protocol-symbol default-encrypt])
-  (make-context 'ssl-make-client-context protocol-symbol "" #t))
+  (make-context 'ssl-make-client-context protocol-symbol #t))
 
 (define (ssl-make-server-context [protocol-symbol default-encrypt])
-  (make-context 'ssl-make-server-context protocol-symbol "" #f))
+  (make-context 'ssl-make-server-context protocol-symbol #f))
 
 (define (get-context who context-or-encrypt-method client?
                      #:need-unsealed? [need-unsealed? #f])
   (if (ssl-context? context-or-encrypt-method)
       (extract-ctx who need-unsealed? context-or-encrypt-method)
-      (let ([ctx (SSL_CTX_new (encrypt->method who "ssl-context? " context-or-encrypt-method client?))])
+      (let ([ctx (SSL_CTX_new (encrypt->method who context-or-encrypt-method client?))])
         (SSL_CTX_set_mode ctx SSL_MODE_ENABLE_PARTIAL_WRITE)
         ctx)))
 
@@ -512,20 +506,12 @@
   (ssl-context-ctx mzctx))
 
 (define (ssl-seal-context! mzctx)
-  (unless (ssl-context? mzctx)
-    (raise-argument-error 'ssl-seal-context!
-                          "(or/c ssl-client-context? ssl-server-context?)"
-                          mzctx))
   (set-ssl-context-sealed?! mzctx #t))
 
 (define (ssl-load-... who load-it ssl-context-or-listener pathname
                       #:try? [try? #f])
   (let ([ctx (get-context/listener who ssl-context-or-listener
                                    #:need-unsealed? #t)])
-    (unless (path-string? pathname)
-      (raise-argument-error 'ssl-load-certificate-chain!
-                            "path-string?"
-                            pathname))
     (let ([path 
            (path->complete-path (cleanse-path pathname)
                                 (current-directory))])
@@ -572,11 +558,7 @@
 (define (ssl-load-verify-source! context src #:try? [try? #f])
   (define (bad-source)
     (error 'ssl-load-verify-root-certificates!
-           "bad source: ~e" src))
-  (unless (ssl-context? context)
-    (raise-argument-error 'ssl-load-verify-source!
-                          "(or/c ssl-client-context? ssl-server-context?)"
-                          context))
+           "internal error: bad source: ~e" src))
   (cond [(path-string? src)
          (ssl-load-... 'ssl-load-verify-root-certificates!
                        (lambda (a b) (SSL_CTX_load_verify_locations a b #f))
@@ -603,12 +585,6 @@
     (ssl-load-verify-source! ctx src #:try? #t)))
 
 (define (ssl-set-ciphers! context cipher-spec)
-  (unless (ssl-context? context)
-    (raise-argument-error 'ssl-set-ciphers!
-                          "(or/c ssl-client-context? ssl-server-context?)"
-                          context))
-  (unless (string? cipher-spec)
-    (raise-argument-error 'ssl-set-ciphers! "string?" cipher-spec))
   (let* ([ctx (extract-ctx 'ssl-set-ciphers! #t context)]
          [result (SSL_CTX_set_cipher_list ctx cipher-spec)])
     (unless (= result 1)
@@ -616,10 +592,7 @@
     (void)))
 
 (define (ssl-set-verify-hostname! ssl-context on?)
-  (unless (ssl-context? ssl-context)
-    (raise-argument-error 'ssl-set-verify-hostname!
-                          "(or/c ssl-client-context? ssl-server-context?)"
-                          ssl-context))
+  ;; to check not sealed:
   (void (extract-ctx 'ssl-set-verify-hostname! #t ssl-context))
   (set-ssl-context-verify-hostname?! ssl-context (and on? #t)))
 
@@ -653,8 +626,7 @@
                                  SSL_VERIFY_NONE)
                              #f))]
    [else
-    (let-values ([(mzssl input?) (lookup who "(or/c ssl-context? ssl-listener? ssl-port?)"
-                                         ssl-context-or-listener-or-port)])
+    (let-values ([(mzssl input?) (lookup who ssl-context-or-listener-or-port)])
       (SSL_set_verify (mzssl-ssl mzssl)
                       (if on?
                           mode
@@ -1167,7 +1139,7 @@
     (case connect/accept
       [(connect) #t]
       [(accept) #f]
-      [else (raise-argument-error who "(or/c 'connect 'accept)" connect/accept)]))
+      [else (error who "internal error: bad connect/accept: ~e" connect/accept)]))
   (unless (or (symbol? context-or-encrypt-method)
               (if connect?
                   (ssl-client-context? context-or-encrypt-method)
@@ -1178,7 +1150,7 @@
            (if connect? "client" "server")
            context-or-encrypt-method))
   (atomically ;; connect functions to subsequent check-valid (ie, ERR_get_error)
-   (let ([ctx (get-context who context-or-encrypt-method (eq? connect/accept 'connect))])
+   (let ([ctx (get-context who context-or-encrypt-method connect?)])
      (check-valid ctx who "context creation")
      (with-failure
       (lambda () (when (and ctx (symbol? context-or-encrypt-method))
@@ -1206,12 +1178,6 @@
 (define (wrap-ports who i o context-or-encrypt-method connect/accept
                     close? shutdown-on-close? error/ssl
                     hostname)
-  (unless (input-port? i)
-    (raise-argument-error who "input-port?" i))
-  (unless (output-port? o)
-    (raise-argument-error who "output-port?" o))
-  (unless (or (string? hostname) (eq? hostname #f))
-    (raise-argument-error who "(or/c string? #f)" hostname))
   ;; Create the SSL connection:
   (let-values ([(ssl r-bio w-bio connect?)
           (create-ssl who context-or-encrypt-method connect/accept error/ssl)]
@@ -1270,30 +1236,28 @@
   (hash-set! ssl-ports port (make-ephemeron port (cons mzssl input?)))
   port)
 
-(define (lookup who what port)
+(define (lookup who port)
   (let ([v (hash-ref ssl-ports port #f)])
     (unless v
-      (raise-argument-error who what port))
+      (error who "internal error: not an SSL port or listener: ~e" port))
     (let ([p (ephemeron-value v)])
       (values (car p) (cdr p)))))
 
 (define (ssl-addresses p [port-numbers? #f])
-  (let-values ([(mzssl input?) (lookup 'ssl-addresses "(or/c ssl-port? ssl-listener?)" p)])
+  (let-values ([(mzssl input?) (lookup 'ssl-addresses p)])
     (tcp-addresses (if (eq? 'listener input?)
                        (ssl-listener-l mzssl)
                        (if input? (mzssl-i mzssl) (mzssl-o mzssl)))
                    port-numbers?)))
 
 (define (ssl-abandon-port p)
-  (let-values ([(mzssl input?) (lookup 'ssl-abandon-port "(and/c ssl-port? output-port?)" p)])
-    (when input?
-      (raise-argument-error 'ssl-abandon-port "(and/c ssl-port? output-port?)" p))
+  (let-values ([(mzssl input?) (lookup 'ssl-abandon-port p)])
     (set-mzssl-shutdown-on-close?! mzssl #f)
     ;; Call close-output-port to flush, shutdown, and decrement mzssl refcount.
     (close-output-port p)))
 
 (define (ssl-peer-verified? p)
-  (let-values ([(mzssl input?) (lookup 'ssl-peer-verified? "ssl-port?" p)])
+  (let-values ([(mzssl input?) (lookup 'ssl-peer-verified? p)])
     (and (eq? X509_V_OK (SSL_get_verify_result (mzssl-ssl mzssl)))
          (SSL_get_peer_certificate (mzssl-ssl mzssl))
          #t)))
@@ -1324,7 +1288,7 @@
 
 ;; ssl-port->cert : symbol ssl-port -> Cert/#f
 (define (ssl-port->cert who p)
-  (let-values ([(mzssl _input?) (lookup who "ssl-port?" p)])
+  (let-values ([(mzssl _input?) (lookup who p)])
     (SSL_get_peer_certificate (mzssl-ssl mzssl))))
 
 ;; hostname-in-cert? : string Cert -> boolean
@@ -1410,15 +1374,12 @@
                     [protocol-symbol-or-context default-encrypt])
   (let* ([ctx (if (ssl-server-context? protocol-symbol-or-context)
                protocol-symbol-or-context
-               (make-context 'ssl-listen protocol-symbol-or-context
-                             "server context, " #f))]
+               (make-context 'ssl-listen protocol-symbol-or-context #f))]
         [l (tcp-listen port-k queue-k reuse? hostname-or-#f)]
         [ssl-l (make-ssl-listener l ctx)])
     (register ssl-l ssl-l 'listener)))
 
 (define (ssl-close l)
-  (unless (ssl-listener? l)
-    (raise-argument-error 'ssl-close "ssl-listener?" l))
   (tcp-close (ssl-listener-l l)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1433,9 +1394,9 @@
     ;; anyway. So we can assume that breaks are enabled without loss
     ;; of (additional) resources.
     (with-handlers ([void (lambda (exn)
-                      (close-input-port i)
-                      (close-output-port o)
-                      (raise exn))])
+                            (close-input-port i)
+                            (close-output-port o)
+                            (raise exn))])
       (wrap-ports who i o (ssl-listener-mzctx ssl-listener) 'accept #t #f error/network #f))))
 
 (define (ssl-accept ssl-listener)
@@ -1451,24 +1412,22 @@
   (let-values ([(i o) (tcp-connect hostname port-k)])
     ;; See do-ssl-accept for note on race condition here:
     (with-handlers ([void (lambda (exn)
-                      (close-input-port i)
-                      (close-output-port o)
-                      (raise exn))])
+                            (close-input-port i)
+                            (close-output-port o)
+                            (raise exn))])
       (wrap-ports who i o client-context-or-protocol-symbol 'connect #t #f error/network
                   hostname))))
 
-(define (ssl-connect
-            hostname port-k
-            [client-context-or-protocol-symbol default-encrypt])
+(define (ssl-connect hostname port-k
+                     [client-context-or-protocol-symbol default-encrypt])
   (do-ssl-connect 'ssl-connect
                   tcp-connect
                   hostname
                   port-k
                   client-context-or-protocol-symbol))
 
-(define (ssl-connect/enable-break
-         hostname port-k
-         [client-context-or-protocol-symbol default-encrypt])
+(define (ssl-connect/enable-break hostname port-k
+                                  [client-context-or-protocol-symbol default-encrypt])
   (do-ssl-connect 'ssl-connect/enable-break
                   tcp-connect/enable-break
                   hostname
