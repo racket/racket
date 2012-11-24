@@ -4,6 +4,7 @@
                   make-temporary-file)
          net/url
          racket/promise
+         racket/runtime-path
          racket/list
          racket/serialize
          web-server/http
@@ -15,7 +16,10 @@
 (require/expose web-server/dispatchers/dispatch-passwords
                 (read-passwords))
 
-(define default-passwords (build-path (collection-path "web-server") "default-web-root" "passwords"))
+(define-runtime-path default-web-root
+  "../../../web-server/default-web-root")
+
+(define default-passwords (build-path default-web-root "passwords"))
 (define test-passwords (make-temporary-file))
 (define (write-test-passwords!)
   (with-output-to-file test-passwords

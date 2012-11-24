@@ -9,7 +9,12 @@
                   make-directory*)
          web-server/configuration/configuration-table-structs
          web-server/configuration/configuration-table
-         web-server/private/util)
+         web-server/private/util
+         racket/runtime-path)
+
+(define-runtime-path default-web-root
+  "../default-web-root")
+
 (provide
  interface-version timeout
  start)
@@ -710,7 +715,7 @@
           (build-path (build-path-unless-absolute root (paths-servlet paths)) "servlets")])
     (ensure-config-servlet configuration-path servlets-path)
     (let ([defaults (build-path "Defaults")])
-      (ensure* (collection-path "web-server" "default-web-root" "htdocs")
+      (ensure* (build-path default-web-root "htdocs")
                (build-path-unless-absolute root (paths-htdocs paths))
                defaults))))
 
@@ -736,7 +741,7 @@
     (ensure-directory-shallow (build-path-unless-absolute host-base (paths-servlet paths)))
     (let* ([messages (host-table-messages host)]
            ; more here maybe - check default config file instead? maybe not
-           [from-conf (collection-path "web-server" "default-web-root" "conf")]
+           [from-conf (build-path default-web-root "conf")]
            [copy-conf
             (lambda (from to)
               (let ([to-path (build-path-unless-absolute conf to)])

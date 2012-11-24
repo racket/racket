@@ -17,8 +17,7 @@
  [default-configuration-table-path path?])
 
 (define-runtime-path default-configuration-table-path
-  (list 'lib
-        "web-server/default-web-root/configuration-table.rkt"))
+  "../default-web-root/configuration-table.rkt")
 
 (define (get-binding key bindings default)
   (first (get-binding* key bindings (list default))))

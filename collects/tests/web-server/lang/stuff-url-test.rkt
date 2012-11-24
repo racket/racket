@@ -23,8 +23,8 @@
      (lambda (k*v)
        ((car k*v) k*v))))
 
-(define m00 '(lib "mm00.rkt" "web-server" "default-web-root" "htdocs" "lang-servlets")) 
-(define m01 '(lib "mm01.rkt" "web-server" "default-web-root" "htdocs" "lang-servlets")) 
+(define m00 'web-server/default-web-root/htdocs/lang-servlets/mm00) 
+(define m01 'web-server/default-web-root/htdocs/lang-servlets/mm01) 
 
 (define stuff-url-tests
   (test-suite

@@ -37,9 +37,7 @@
                         (div ([class "title"]) "Server Stopped")
                         (p "Return to DrRacket."))))))))
 
-(define-runtime-path default-web-root
-  (list 'lib
-        "web-server/default-web-root"))
+(define-runtime-path default-web-root "default-web-root")
 
 (provide/contract
  [serve/servlet (((request? . -> . can-be-response?))

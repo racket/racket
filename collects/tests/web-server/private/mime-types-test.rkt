@@ -1,6 +1,7 @@
 #lang racket/base
 (require rackunit
          (only-in mzlib/file make-temporary-file)
+         racket/runtime-path
          web-server/http
          web-server/private/mime-types)
 (provide mime-types-tests)
@@ -15,13 +16,16 @@ END
             ))
   #:exists 'replace)  
 
+(define-runtime-path default-web-root
+  "../../../web-server/default-web-root")
+
 (define mime-types-tests
   (test-suite
    "MIME Types"
    
    (test-case
     "Distribution mime.types parses"
-    (check-not-false (read-mime-types (build-path (collection-path "web-server") "default-web-root" "mime.types"))))
+    (check-not-false (read-mime-types (build-path default-web-root "mime.types"))))
    
    (test-case
     "Test file parses"
