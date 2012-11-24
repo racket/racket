@@ -1452,10 +1452,12 @@
   
   (define (insert-brace-pair text open-brace close-brace)
     (define selection-start (send text get-start-position))
+    (send text begin-edit-sequence)
     (send text set-position (send text get-end-position))
     (send text insert close-brace)
     (send text set-position selection-start)
-    (send text insert open-brace))
+    (send text insert open-brace)
+    (send text end-edit-sequence))
   
   (define (maybe-insert-brace-pair text open-brace close-brace)
     (cond
