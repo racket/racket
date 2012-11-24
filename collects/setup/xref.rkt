@@ -86,20 +86,23 @@
                      (or (and (box-cas! (cdr p) maybe-db #f)
                               maybe-db)
                          ;; ... create a new one
-                         (doc-db-file->connection (car p)))])
-               ((let/ec esc
-                  ;; The db query:
-                  (define result
-                    (doc-db-key->path db key
-                                      #:fail (lambda ()
-                                               ;; Rollback within a connection can be slow,
-                                               ;; so abandon the connection and try again:
-                                               (doc-db-disconnect db)
-                                               (esc (lambda () (try p))))))
-                  ;; cache the connection, if none is already cached:
-                  (or (box-cas! (cdr p) #f db)
-                      (doc-db-disconnect db))
-                  (lambda () result))))))
+                         (and (file-exists? (car p))
+                              (doc-db-file->connection (car p))))])
+               (and 
+                db
+                ((let/ec esc
+                   ;; The db query:
+                   (define result
+                     (doc-db-key->path db key
+                                       #:fail (lambda ()
+                                                ;; Rollback within a connection can be slow,
+                                                ;; so abandon the connection and try again:
+                                                (doc-db-disconnect db)
+                                                (esc (lambda () (try p))))))
+                   ;; cache the connection, if none is already cached:
+                   (or (box-cas! (cdr p) #f db)
+                       (doc-db-disconnect db))
+                   (lambda () result)))))))
       (define dest (or (try main-db) (try user-db)))
       (and dest
            ((dest->source done-ht) dest))]
