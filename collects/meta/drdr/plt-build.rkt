@@ -329,13 +329,20 @@
    (list "-t"
          (path->string*
           (build-path (drdr-directory) "set-browser.rkt"))))
-  ;; And go
+  ;; And go    
   (define top-sema (make-semaphore 0))
   (notify! "Starting testing")
   (when (directory-exists? collects-pth)
     (test-directory collects-pth top-sema)
     (notify! "All testing scheduled... waiting for completion")
-    (semaphore-wait top-sema))
+    (sync
+     top-sema
+     (handle-evt
+      (alarm-evt 
+       (+ (current-inexact-milliseconds)
+          (* 1000 (* 2 (current-make-install-timeout-seconds)))))
+      (λ _
+        (kill-thread (current-thread))))))
   (notify! "Stopping testing")
   (stop-job-queue! test-workers)
   (stop-job-queue! gui-workers))
