@@ -30,6 +30,7 @@
  (stop "Stop")
  (&stop "&Stop") ;; for use in button and menu item labels, with short cut.
  (are-you-sure-delete? "Sind Sie sicher, dass Sie ~a löschen wollen?") ;; ~a is a filename or directory name
+ (are-you-sure-replace? "Sind Sie sicher, dass Sie ~a ersetzen wollen?") ;; ~a is a filename or directory name
  (ignore "Ignorieren")
  (revert "Änderungen rückgängig machen")
 
@@ -829,6 +830,7 @@
  (interactions-menu-item-help-string "Interaktionsfenster ein-/ausblenden")
  (toolbar "Toolbar")
  (toolbar-on-top "Toolbar oben")
+ (toolbar-on-top-no-label "Toolbar oben mit kleinen Knöpfen")
  (toolbar-on-left "Toolbar links")
  (toolbar-on-right "Toolbar rechts")
  (toolbar-hidden "Toolbar ausblenden")
@@ -895,6 +897,8 @@
  (save-a-mzscheme-stand-alone-executable "Racket-Stand-Alone-Programmdatei speichern")
  (save-a-mred-distribution "GRacket-Distribution speichern")
  (save-a-mzscheme-distribution "Racket-Distribution speichern")
+
+ (error-creating-executable "Fehler beim Erzeugen der Stand-Alone-Programmdatei:") ;; this is suffixed with an error message ala error-display-handler
 
  (definitions-not-saved "Die Definitionen sind nicht gespeichert. Die Programmdatei wird von der letzten gespeicherten Version gezogen. Weitermachen?")
  (launcher "Launcher")
@@ -1608,6 +1612,11 @@
   ;; menu item in the 'edit' menu; applies to editors with programs in them
   ;; (technically, editors that implement color:text<%>)
   (spell-check-string-constants "String-Konstanten korrekturlesen")
+  (spelling-dictionaries "Wörterbücher für die Rechtschreibprüfung") ; (sub)menu whose items are the different possible dictionaries
+  (default-spelling-dictionary "Standard-Wörterbuch") ; first item in menu from previous line
   (misspelled-text-color "Rechtschreibfehler in Textfarbe") ;; in the preferences dialog  
   (cannot-find-ispell-or-aspell-path "aspell- bzw. ispell-Programm nicht gefunden")
+  ; puts the path to the spell program in the ~a and then the error message
+  ; is put following this string (with a blank line in between)
+  (spell-program-wrote-to-stderr-on-startup "Der Rechtschreibchecker (~a) hat eine Fehlermeldung ausgegeben:")
  )
