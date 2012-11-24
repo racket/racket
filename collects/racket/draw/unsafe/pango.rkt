@@ -85,7 +85,7 @@
    ;; Inline PangoAnalysis:
    [shape_engine _pointer]
    [lang_engine _pointer]
-   [font PangoFont]
+   [font (_or-null PangoFont)]
    [level _uint8]
    [gravity _uint8]
    [flags _uint8]
