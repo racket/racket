@@ -57,14 +57,12 @@
   (test-pipe #t))
 (let ([test-file
        (lambda (commit-eof?)
-	 (let ([p (begin
-		    (with-output-to-file "tmp8"
-		      (lambda ()
-			(write-string "hello"))
-                      #:exists 'truncate/replace)
-		    (open-input-file "tmp8"))])
-	   (test-hello-port p commit-eof?)
-	   (close-input-port p)))])
+         (with-output-to-file "tmp8" #:exists 'truncate/replace
+           (lambda () (write-string "hello")))
+         (define p (open-input-file "tmp8"))
+         (test-hello-port p commit-eof?)
+         (close-input-port p)
+         (delete-file "tmp8"))])
   (test-file #f)
   (test-file #t))
 

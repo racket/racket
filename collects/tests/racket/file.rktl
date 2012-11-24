@@ -1503,6 +1503,9 @@
   (err/rt-test (filesystem-root-list) (fs-reject? 'filesystem-root-list))
   (err/rt-test (find-system-path 'temp-dir) (fs-reject? 'find-system-path)))
 
+;; Cleanup files created above
+(for ([f '("tmp1" "tmp2" "tmp3")] #:when (file-exists? f)) (delete-file f))
+
 ;; Network - - - - - - - - - - - - - - - - - - - - - -
 
 (define (net-reject? who host port what)

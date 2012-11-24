@@ -27,7 +27,7 @@
 (write-to-file "\u03BB" tmp-name #:exists 'truncate)
 (test #"\"\316\273\"" file->bytes tmp-name)
 (test "\u03BB" file->value tmp-name)
-(define tmp-name "tmp0-filelib")
+(when (file-exists? tmp-name) (delete-file tmp-name))
 
 (define-syntax-rule (err/rt-chk-test (op arg ...))
   (err/rt-test (op arg ...) (check-msg 'op)))

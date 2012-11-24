@@ -458,4 +458,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(for ([f (list tmpfile tmpfile2)] #:when (file-exists? f)) (delete-file f))
+
 (report-errs)

@@ -1,5 +1,4 @@
 
-
 (load-relative "loadtest.rktl")
 
 (Section 'serialization)
@@ -485,7 +484,8 @@
   (define s (dynamic-require `(submod ,fn main) 's))
   (let ([o (open-output-bytes)])
     (write s o)
-    (test s read (open-input-string (get-output-string o)))))
+    (test s read (open-input-string (get-output-string o))))
+  (delete-file fn))
 
 
 ;; ----------------------------------------

@@ -860,22 +860,26 @@
   (define am-s (compile-m (a-expr #t) '()))
   (define b-s (compile-m b-expr (list a-s)))
 
+  (define temp-dir (find-system-path 'temp-dir))
+  (define dir (build-path temp-dir "compiled"))
+  (define dir-existed? (directory-exists? dir))
+  (unless dir-existed? (make-directory dir))
+
   (define (go a-s)
-    (parameterize ([current-namespace (make-base-namespace)])
-      (parameterize ([read-accept-compiled #t])
-        (eval (read (open-input-bytes a-s)))
-        (define temp-dir (find-system-path 'temp-dir))
-        (define dir (build-path temp-dir "compiled"))
-        (make-directory* dir)
-        (with-output-to-file (build-path dir "check-gen_rkt.zo")
-          #:exists 'truncate
-          (lambda () (write-bytes b-s)))
-        ((dynamic-require (build-path temp-dir "check-gen.rkt") 'b) 10)
-        (delete-file (build-path dir "check-gen_rkt.zo")))))
+    (parameterize ([current-namespace (make-base-namespace)]
+                   [read-accept-compiled #t])
+      (eval (read (open-input-bytes a-s)))
+      (with-output-to-file (build-path dir "check-gen_rkt.zo")
+        #:exists 'truncate
+        (lambda () (write-bytes b-s)))
+      ((dynamic-require (build-path temp-dir "check-gen.rkt") 'b) 10)))
   ;; Triger JIT generation with constant function as `a':
   (go a-s)
   ;; Check that we don't crash when trying to use a different `a':
-  (err/rt-test (go am-s) exn:fail?))
+  (err/rt-test (go am-s) exn:fail?)
+  ;; Cleanup
+  (delete-file (build-path dir "check-gen_rkt.zo"))
+  (unless dir-existed? (delete-directory dir)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

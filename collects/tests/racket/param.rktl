@@ -3,7 +3,10 @@
 
 (Section 'parameters)
 
-(let ([p (open-output-file "tmp5" #:exists 'replace)])
+(define temp-compiled-file
+  (path->string (build-path (find-system-path 'temp-dir) "param-temp-file")))
+
+(let ([p (open-output-file temp-compiled-file #:exists 'replace)])
   (display (compile '(cons 1 2)) p)
   (close-output-port p))
 
@@ -201,7 +204,7 @@
 		      #f)
 		(list read-accept-compiled
 		      (list #t #f)
-		      '(let ([p (open-input-file "tmp5")])
+		      `(let ([p (open-input-file ,temp-compiled-file)])
 			 (dynamic-wind
 			  void
 			  (lambda () (void (read p)))
@@ -345,7 +348,7 @@
 
 		(list current-load
 		      (list (current-load) (lambda (f e) (error "This won't do it")))
-		      '(load "tmp5")
+		      `(load ,temp-compiled-file)
 		      exn:fail?
 		      (list "bad setting" zero-arg-proc one-arg-proc))
 		(list current-eval
@@ -522,5 +525,7 @@
 
 ; Test current-library-collection-paths?
 ; Test require-library-use-compiled?
+
+(when (file-exists? temp-compiled-file) (delete-file temp-compiled-file))
 
 (report-errs)
