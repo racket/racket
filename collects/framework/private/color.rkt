@@ -967,7 +967,8 @@ added get-regions
        [#f
         (define first-match
           (ormap (λ (match) 
-                    (and (string=? match (get-text pos (+ pos (string-length match))))
+                    (and (get-text pos (+ pos (string-length match)))
+                         (string=? match (get-text pos (+ pos (string-length match))))
                          match))))
         (if first-match
             (values pos (+ pos (string-length first-match)))
@@ -1019,7 +1020,10 @@ added get-regions
             (printf "|~a| |~a| |~a|~n" (get-text next-close-start next-close-end)
                     (get-close-paren next-close-start closers #f) closer))
           
+          ;; TODO : need to make smart-skip = 'forward jump to outermost closing 
+          
           (if (and next-close-start ; only skip if the thing being skipped matches the expected close
+                   closer
                    (string=? closer (get-text next-close-start next-close-end)))
               (set-position next-close-end) 
               (for-each (lambda (c)

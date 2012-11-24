@@ -226,7 +226,7 @@
                            '((new key-event% [key-code #\(] [meta-down #t]))
                            '(["abcd(" "efg"]  ["abcd(" ")efg"]))
 
-#| I don't know why these don't work... they seem to work interactively...  .nah.
+#| I don't know why these don't work... they seem to work interactively...  .nah. 
 (test-parens-behavior/full 'meta-close-skip-1
                            "(define before (list 1 2" "" " 3 4)"
                            '((new key-event% [key-code #\)] [meta-down #t]))
