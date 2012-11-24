@@ -501,12 +501,14 @@
     
     (define/public (get-limit pos) 0)
     
-    (define/public (balance-parens key-event)
+    (define/public (balance-parens key-event [smart-skip #f])
       (insert-close-paren (get-start-position) 
                           (send key-event get-key-code)
                           (preferences:get 'framework:paren-match)
                           (preferences:get 'framework:fixup-parens)
-                          (preferences:get 'framework:automatic-parens)))
+                          (or smart-skip
+                              (and (preferences:get 'framework:automatic-parens)
+                                   'adjacent))))
     
     (define/public (tabify-on-return?) #t)
     (define/public (tabify [pos (get-start-position)])
@@ -1426,6 +1428,9 @@
   (send keymap add-function "balance-parens"
         (λ (edit event)
           (send edit balance-parens event)))
+  (send keymap add-function "balance-parens/skip-forward"
+        (λ (edit event)
+          (send edit balance-parens event 'forward)))
   
   (send keymap map-function "TAB" "tabify-at-caret")
   
@@ -1550,13 +1555,17 @@
   
   ;(map-meta "c:m" "mark-matching-parenthesis")
   ; this keybinding doesn't interact with the paren colorer
+
+  (map-meta ")" "balance-parens/skip-forward")
+  (map-meta "]" "balance-parens/skip-forward")
+  (map-meta "}" "balance-parens/skip-forward")
   
   (map-meta "(" "insert-()-pair")
   (map-meta "[" "insert-[]-pair")
   (map-meta "{" "insert-{}-pair")
   (map-meta "\"" "insert-\"\"-pair")
   (map-meta "|" "insert-||-pair")
-
+  
   (map "(" "maybe-insert-()-pair")
   (map "[" "maybe-insert-[]-pair-maybe-fixup-[]")
   (map "{" "maybe-insert-{}-pair")

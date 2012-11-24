@@ -8,6 +8,7 @@ added get-regions
 
 (require racket/class
          racket/gui/base
+         (prefix-in r: racket/match)  ; does 'match' conflict with something else
          syntax-color/token-tree
          syntax-color/paren-tree
          syntax-color/default-lexer
@@ -952,11 +953,42 @@ added get-regions
                                #f)))))
                  c))))))
     
+    ;; returns the start position of the next token at or after
+    ;;   pos that matches the string match. If skip-type is 
+    ;;   'adjacent, it skips whitespace after pos; if skip-type is
+    ;;   'forward it skips all tokens after pos in its search
+    ;; skip-to-close : number string (or #f 'adjacent 'forward)
+    (define/public (skip-to-close-paren pos match skip-type)
+      (r:match 
+       skip-type
+       [#f
+        (and (string=? match (get-text pos (+ pos (string-length match))))
+             pos)]
+       [(or 'adjacent 'forward)
+        (define next-pos (skip-whitespace pos 'forward #t))
+        (define tree (lexer-state-tokens (find-ls next-pos)))
+        (define start-pos (begin (send tree search! next-pos)
+                                 (send tree get-root-start-position)))
+        (define end-pos (send tree get-root-end-position))
+        
+        ;(printf "~a |~a|~n" (list pos next-pos start-pos end-pos (send tree get-root-data)) (get-text start-pos end-pos))
+        
+        (cond
+          [(or (not (send tree get-root-data)) (<= end-pos pos))
+           #f]    ;; didn't find /any/ token ending after pos
+          [(and (<= pos start-pos)
+                (string=? match (get-text start-pos end-pos)))
+           start-pos]   ; token at start-pos matches
+          [(equal? skip-type 'forward)   ; try skipping over this token
+           (skip-to-close-paren end-pos match skip-type)]
+          [else #f])]
+       [_   
+        (error 'skip-to-close-paren (format "invalid skip-type: ~a" skip-type))]))
+    
     (inherit insert delete flash-on on-default-char set-position)
     ;; See docs
-    ;; smart-skip? : if already an exactly matching closing character at pos, 
-    ;;               then skip over it instead of inserting another one
-    (define/public (insert-close-paren pos char flash? fixup? [smart-skip? #f])
+    ;; smart-skip : (or #f 'adjacent 'forward)
+    (define/public (insert-close-paren pos char flash? fixup? [smart-skip #f])
       (let ((closer
              (begin
                (begin-edit-sequence #f #f)
@@ -972,10 +1004,10 @@ added get-regions
         (end-edit-sequence)
         (let* ([insert-str (if closer closer (string char))]
                [end-pos (+ (string-length insert-str) pos)]
-               [skip-over? (and smart-skip? 
-                                (string=? insert-str (get-text pos end-pos)))])
-          (if skip-over?
-              (set-position end-pos)
+               [next-close (and smart-skip
+                                (skip-to-close-paren pos insert-str smart-skip))])
+          (if next-close
+              (set-position (+ next-close (string-length insert-str)))
               (for-each (lambda (c)
                           (on-default-char (new key-event% (key-code c))))
                         (string->list insert-str)))
