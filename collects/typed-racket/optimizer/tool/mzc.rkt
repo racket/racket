@@ -388,57 +388,47 @@
   (define struct-construction-badness (ceiling (* 20 badness-multiplier)))
   (define exact-real-arith-badness    (ceiling (* 20 badness-multiplier)))
 
-  (when inside-hot-function?
-    (for ([TR-entry (in-list TR-log)]
-          #:when (info-log-entry? TR-entry)
-          #:when (equal? (log-entry-kind TR-entry) "hidden parameter")
-          #:when (pos-inside-us? (log-entry-pos TR-entry)))
-      (emit (missed-opt-log-entry
-             "" ; kind not used at this point
-             (string-append "This function may implicitly dereference the "
-                            "`current-output-port' parameter. " ;; TODO hard coded
-                            "It may be faster to take the value of the "
-                            "parameter once, outside hot code, and pass it "
-                            "to this function as an argument.")
-             (log-entry-located-stx TR-entry) (log-entry-located-stx TR-entry)
-             (log-entry-pos TR-entry) 'typed-racket
-             '() '()
-             parameter-access-badness))))
+  (define (check-hidden-cost kind message badness)
+    (when inside-hot-function?
+      (for/list ([TR-entry (in-list TR-log)]
+                 #:when (info-log-entry? TR-entry)
+                 #:when (equal? (log-entry-kind TR-entry) kind)
+                 #:when (pos-inside-us? (log-entry-pos TR-entry)))
+        (emit (missed-opt-log-entry
+               "" ; kind not used at this point
+               message
+               (log-entry-located-stx TR-entry) (log-entry-located-stx TR-entry)
+               (log-entry-pos TR-entry) 'typed-racket
+               '() '()
+               badness)))))
 
-  (when inside-hot-function?
-    (for ([TR-entry (in-list TR-log)]
-          #:when (info-log-entry? TR-entry)
-          #:when (equal? (log-entry-kind TR-entry) "struct constructor")
-          #:when (pos-inside-us? (log-entry-pos TR-entry)))
-      (emit (missed-opt-log-entry
-             "" ; kind not used at this point
-             (string-append
-              "This struct constructor is used in hot code. "
-              "Allocating structs is expensive, consider using vectors instead. "
-              "To keep the same interface, consider defining macro wrappers "
-              "around the vector operations that have the same name as the "
-              "struct constructor and accessors.")
-             (log-entry-located-stx TR-entry) (log-entry-located-stx TR-entry)
-             (log-entry-pos TR-entry) 'typed-racket
-             '() '()
-             struct-construction-badness))))
+  (check-hidden-cost
+   "hidden parameter"
+   (string-append "This function may implicitly dereference the "
+                  "`current-output-port' parameter. " ;; TODO hard coded
+                  "It may be faster to take the value of the "
+                  "parameter once, outside hot code, and pass it "
+                  "to this function as an argument.")
+   parameter-access-badness)
 
-  (when inside-hot-function?
-    (for ([TR-entry (in-list TR-log)]
-          #:when (info-log-entry? TR-entry)
-          #:when (equal? (log-entry-kind TR-entry) "exact real arith")
-          #:when (pos-inside-us? (log-entry-pos TR-entry)))
-      (emit (missed-opt-log-entry
-             "" ; kind not used at this point
-             (string-append
-              "This expression may use exact rational arithmetic, which is inefficient. "
-              "You can avoid this by using operations that don't return fractional "
-              ;; TODO don't hard-code `quotient', show the right one depending on the operation
-              "results, such as `quotient', or using floating-point numbers.")
-             (log-entry-located-stx TR-entry) (log-entry-located-stx TR-entry)
-             (log-entry-pos TR-entry) 'typed-racket
-             '() '()
-             exact-real-arith-badness))))
+  (check-hidden-cost
+   "struct constructor"
+   (string-append
+    "This struct constructor is used in hot code. "
+    "Allocating structs is expensive, consider using vectors instead. "
+    "To keep the same interface, consider defining macro wrappers "
+    "around the vector operations that have the same name as the "
+    "struct constructor and accessors.")
+   struct-construction-badness)
+
+  (check-hidden-cost
+   "exact real arith"
+   (string-append
+    "This expression may use exact rational arithmetic, which is inefficient. "
+    "You can avoid this by using operations that don't return fractional "
+    ;; TODO don't hard-code `quotient', show the right one depending on the operation
+    "results, such as `quotient', or using floating-point numbers.")
+   exact-real-arith-badness)
 
   produced-entries)
 
