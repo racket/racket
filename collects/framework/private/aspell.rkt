@@ -48,7 +48,8 @@
 (define problematic 'dont-know)
 (define (aspell-problematic?)
   (when (eq? problematic 'dont-know)
-    (set! problematic (do-aspell-problematic)))
+    (set! problematic (do-aspell-problematic))
+    (asp-log (format "set problematic to ~s" problematic)))
   problematic)
 
 (define (do-aspell-problematic)

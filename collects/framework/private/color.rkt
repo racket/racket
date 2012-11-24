@@ -394,7 +394,7 @@ added get-regions
                            [lp 0])
                   (cond
                     [(null? spellos) 
-                     (add-coloring color (+ sp lp) (+ sp (string-length str)))]
+                     (add-coloring color (+ pos lp) (+ pos (string-length str)))]
                     [else
                      (define err (car spellos))
                      (define err-start (list-ref err 0))
