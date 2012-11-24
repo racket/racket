@@ -567,7 +567,7 @@ mr-extras :+= (- (+ (package: "mrlib/")
 mr-extras :+= (package: "sgl/")
 
 ;; -------------------- syntax-color
-mz-extras :+= (package: "syntax-color")
+mz-extras :+= (package: "syntax-color") (doc: "red-black")
 
 ;; -------------------- plt-help
 dr-extras :+= (collects: "help") (bin: "Racket Documentation")
