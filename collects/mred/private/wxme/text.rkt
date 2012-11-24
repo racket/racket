@@ -4803,11 +4803,11 @@
             (set! last-line (mline-last (unbox line-root-box)))
             (set! num-valid-lines (mline-number (unbox line-root-box))))
 
-          (let ([-changed?
-                 (or (mline-update-graphics (unbox line-root-box) this dc
-                                            padding-l padding-t
-                                            max-line-width)
-                     -changed?)])
+          (let*-values ([(snip-sizes-changed? this-changed?)
+                         (mline-update-graphics (unbox line-root-box) this dc
+                                                padding-l padding-t
+                                                max-line-width)]
+                        [(-changed?) (or this-changed? -changed?)])
 
             (if (and (not -changed?)
                      (not graphic-maybe-invalid-force?))
@@ -4868,8 +4868,8 @@
 
                         (when (and resized? s-admin)
                           (send s-admin resized #f))
-
-                        (on-reflow)))))))))))
+                        (when (or resized? snip-sizes-changed?)
+                          (on-reflow))))))))))))
 
   (def/public (on-reflow) (void))
 
