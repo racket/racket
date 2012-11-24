@@ -954,15 +954,17 @@ added get-regions
                  c))))))
     
     ;; returns the start position of the next token at or after
-    ;;   pos that matches the string match. If skip-type is 
+    ;;   pos that matches any of the given list. If skip-type is 
     ;;   'adjacent, it skips whitespace after pos; if skip-type is
-    ;;   'forward it skips all tokens after pos in its search
-    ;; skip-to-close : number string (or #f 'adjacent 'forward)
-    (define/public (skip-to-close-paren pos match skip-type)
+    ;;   'forward it skips all tokens after pos in its search; if
+    ;;   skip-type is #f, then there must be a match right at pos
+    ;; skip-to-close : number (list string) (or #f 'adjacent 'forward)
+    (define/public (skip-to-close-paren pos matches skip-type)
       (r:match 
        skip-type
        [#f
-        (and (string=? match (get-text pos (+ pos (string-length match))))
+        (and (andmap (λ (match) 
+                       (string=? match (get-text pos (+ pos (string-length match))))))
              pos)]
        [(or 'adjacent 'forward)
         (define next-pos (skip-whitespace pos 'forward #t))
@@ -971,16 +973,16 @@ added get-regions
                                  (send tree get-root-start-position)))
         (define end-pos (send tree get-root-end-position))
         
-        ;(printf "~a |~a|~n" (list pos next-pos start-pos end-pos (send tree get-root-data)) (get-text start-pos end-pos))
+        ;(printf "~a |~a| |~a|~n" (list pos next-pos start-pos end-pos (send tree get-root-data)) match (get-text start-pos end-pos))
         
         (cond
           [(or (not (send tree get-root-data)) (<= end-pos pos))
            #f]    ;; didn't find /any/ token ending after pos
           [(and (<= pos start-pos)
-                (string=? match (get-text start-pos end-pos)))
+                (member (get-text start-pos end-pos) matches))
            start-pos]   ; token at start-pos matches
           [(equal? skip-type 'forward)   ; try skipping over this token
-           (skip-to-close-paren end-pos match skip-type)]
+           (skip-to-close-paren end-pos matches skip-type)]
           [else #f])]
        [_   
         (error 'skip-to-close-paren (format "invalid skip-type: ~a" skip-type))]))
@@ -989,23 +991,23 @@ added get-regions
     ;; See docs
     ;; smart-skip : (or #f 'adjacent 'forward)
     (define/public (insert-close-paren pos char flash? fixup? [smart-skip #f])
-      (let ((closer
-             (begin
-               (begin-edit-sequence #f #f)
-               (get-close-paren pos 
-                                (if fixup? 
-                                    (let ([l (map symbol->string (map cadr pairs))])
-                                      ;; Ensure preference for given character:
-                                      (cons (string char) (remove (string char) l)))
-                                    null)
-                                ;; If the inserted preferred (i.e., given) paren doesn't parse
-                                ;;  as a paren, then don't try to change it.
-                                #f))))
+      (let* ([closers (map symbol->string (map cadr pairs))]
+             [closer
+              (begin
+                (begin-edit-sequence #f #f)    ;; WHY is this here? .nah.
+                (get-close-paren pos 
+                                 (if fixup? 
+                                     ;; Ensure preference for given character:
+                                     (cons (string char) (remove (string char) closers))
+                                     null)
+                                 ;; If the inserted preferred (i.e., given) paren doesn't parse
+                                 ;;  as a paren, then don't try to change it.
+                                 #f))])
         (end-edit-sequence)
         (let* ([insert-str (if closer closer (string char))]
                [end-pos (+ (string-length insert-str) pos)]
                [next-close (and smart-skip
-                                (skip-to-close-paren pos insert-str smart-skip))])
+                                (skip-to-close-paren pos (if fixup? closers (list insert-str)) smart-skip))])
           (if next-close
               (set-position (+ next-close (string-length insert-str)))
               (for-each (lambda (c)
