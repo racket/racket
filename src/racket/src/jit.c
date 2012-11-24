@@ -1324,6 +1324,19 @@ static int generate_case_closure(Scheme_Object *obj, mz_jit_state *jitter, int t
   ensure_case_closure_native(c);
   ndata = c->native_code;
 
+  count = c->count;
+
+  for (i = 0; i < count; i++) {
+    o = c->array[i];
+    if (SCHEME_PROCP(o))
+      o = (Scheme_Object *)((Scheme_Closure *)o)->code;
+    data = (Scheme_Closure_Data *)o;
+    mz_rs_sync();
+    CHECK_LIMIT();
+    generate_closure_prep(data, jitter);
+    CHECK_LIMIT();
+  }
+
   mz_rs_sync();
 
   JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
@@ -1337,8 +1350,6 @@ static int generate_case_closure(Scheme_Object *obj, mz_jit_state *jitter, int t
   jit_retval(JIT_R1);
   CHECK_LIMIT();
 
-  count = c->count;
-  
   for (i = 0; i < count; i++) {
     o = c->array[i];
     if (SCHEME_PROCP(o))
@@ -1514,7 +1525,7 @@ int scheme_generate_non_tail(Scheme_Object *obj, mz_jit_state *jitter,
 }
 
 int scheme_generate_unboxed(Scheme_Object *obj, mz_jit_state *jitter, int inlined_ok, int unbox_anyway)
-/* de-sync's; if refslow, failure jumps conditionally with non-flonum in R0;
+/* de-sync's;
    inlined_ok == 2 => can generate directly; inlined_ok == 1 => non-tail unbox */
 {
   int saved;
@@ -2844,12 +2855,13 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
         if (scheme_can_unbox_inline(lv->value, 5, JIT_FPR_NUM-1, 0)) {
           jitter->unbox++;
           scheme_generate_unboxed(lv->value, jitter, 2, 0);
-        } else {
-          if (0) /* validator should ensure that this is ok */
-            if (!scheme_can_unbox_directly(lv->value))
-              scheme_signal_error("internal error: bad FLONUM annotation on let");
+        } else if (scheme_can_unbox_directly(lv->value)) {
           jitter->unbox++;
           scheme_generate_unboxed(lv->value, jitter, 1, 0);
+        } else {
+          /* validator should ensure that this is ok */
+          jitter->unbox++;
+          scheme_generate_unboxed(lv->value, jitter, 0, 1);
         }
 #endif
       } else if (unused && SCHEME_FALSEP(lv->value)) {

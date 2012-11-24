@@ -3400,6 +3400,7 @@ module browser threading seems wrong.
         (when module-browser-panel
           (set! module-browser-shown? #f)
           (send module-browser-menu-item set-label (string-constant show-module-browser))
+          (set! module-browser-mouse-over-status-line-open? #f)
           (close-status-line 'plt:module-browser:mouse-over)
           (send module-browser-parent-panel change-children
                 (λ (l)
@@ -3419,8 +3420,10 @@ module browser threading seems wrong.
                          #:dialog-mixin frame:focus-table-mixin))
           can-browse?))
       
+      (define module-browser-mouse-over-status-line-open? #f)
       (define/private (update-module-browser-pane)
         (open-status-line 'plt:module-browser:mouse-over)
+        (set! module-browser-mouse-over-status-line-open? #t)
         (send module-browser-panel begin-container-sequence)
         (unless module-browser-ec 
           (set! module-browser-pb 
@@ -3493,16 +3496,17 @@ module browser threading seems wrong.
                 [(3) 'very-long])))
       
       (define/private (mouse-currently-over snips)
-        (if (null? snips)
-            (update-status-line 'plt:module-browser:mouse-over #f)
-            (let* ([snip (car snips)]
-                   [lines (send snip get-lines)]
-                   [name (or (send snip get-filename)
-                             (send snip get-word))]
-                   [str (if lines
-                            (format (string-constant module-browser-filename-format) name lines)
-                            name)])
-              (update-status-line 'plt:module-browser:mouse-over str))))
+        (when module-browser-mouse-over-status-line-open?
+          (if (null? snips)
+              (update-status-line 'plt:module-browser:mouse-over #f)
+              (let* ([snip (car snips)]
+                     [lines (send snip get-lines)]
+                     [name (or (send snip get-filename)
+                               (send snip get-word))]
+                     [str (if lines
+                              (format (string-constant module-browser-filename-format) name lines)
+                              name)])
+                (update-status-line 'plt:module-browser:mouse-over str)))))
       
       (define/private (calculate-module-browser)
         (let ([mod-tab current-tab])
@@ -3663,6 +3667,33 @@ module browser threading seems wrong.
                   (define old-val (send ed get-spell-check-strings))
                   (preferences:set 'framework:spell-check-on? (not old-val))
                   (send ed set-spell-check-strings (not old-val))]))])
+        (define dicts (get-aspell-dicts))
+        (when dicts
+          (define dicts-menu (new menu:can-restore-underscore-menu% 
+                                  [parent edit-menu]
+                                  [label (string-constant spelling-dictionaries)]))
+          (define (mk-item dict label)
+            (new menu:can-restore-checkable-menu-item%
+                 [parent dicts-menu]
+                 [label label]
+                 [callback
+                  (λ (item evt)
+                    (define ed (get-edit-target-object))
+                    (when (and ed (is-a? ed color:text<%>))
+                      (preferences:set 'framework:aspell-dict dict)
+                      (send ed set-spell-current-dict dict)))]
+                 [demand-callback 
+                  (λ (item)
+                    (define ed (get-edit-target-object))
+                    (send item enable (and ed (is-a? ed color:text<%>)))
+                    (send item check 
+                          (and ed 
+                               (is-a? ed color:text<%>)
+                               (equal? dict (send ed get-spell-current-dict)))))]))
+          (mk-item #f (string-constant default-spelling-dictionary))
+          (new separator-menu-item% [parent dicts-menu])
+          (for ([dict (in-list dicts)])
+            (mk-item dict dict)))
         (new menu:can-restore-menu-item%
              [label (string-constant complete-word)]
              [shortcut #\/]

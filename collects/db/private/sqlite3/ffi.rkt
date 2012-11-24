@@ -5,10 +5,14 @@
 (provide (all-from-out "ffi-constants.rkt")
          (protect-out (all-defined-out)))
 
-(define-ffi-definer define-sqlite
+(define sqlite-lib
   (case (system-type)
-    ((windows) (ffi-lib "sqlite3.dll"))
-    (else (ffi-lib "libsqlite3" '("0" #f)))))
+    [(windows) (ffi-lib "sqlite3.dll" #:fail (lambda () #f))]
+    [else (ffi-lib "libsqlite3" '("0" #f) #:fail (lambda () #f))]))
+
+(define-ffi-definer define-sqlite
+  sqlite-lib
+  #:default-make-fail make-not-available)
 
 ; Types
 (define-cpointer-type _sqlite3_database)

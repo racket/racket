@@ -746,7 +746,10 @@
    (let ([parent (collected-info-parent (part-collected-info sec ri))])
      (if parent
        (collected-info-info (part-collected-info parent ri))
-       (collect-info-ext-ht (resolve-info-ci ri))))
+       (let ([ci (resolve-info-ci ri)])
+         ;; Force all xref info:
+         ((collect-info-ext-demand ci) #f ci)
+         (collect-info-ext-ht ci))))
    (lambda (k v)
      (when (and (pair? k) (eq? 'index-entry (car k)))
        (set! l (cons (cons (cadr k) v) l)))))

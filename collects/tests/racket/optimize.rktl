@@ -2589,6 +2589,20 @@
                (f)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; check a `case-lambda' that closes over flonums
+
+(let ()
+  (define f #f)
+  (set! f
+        (lambda (x)
+          (let ([x (fl+ x x)])
+            (case-lambda
+             [() (fl+ x x)]
+             [(y) (fl+ x y)]))))
+  
+  (test 4.0 (f 1.0) 2.0))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 (report-errs)

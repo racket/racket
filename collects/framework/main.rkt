@@ -486,8 +486,8 @@
   (parameter/c string?)
   extension
   @{This parameter controls the default extension for the framework's
-    @racket[finder:put-file] dialog.  Its value gets passed as the
-    @racket[default-extension] argument to @racket[put-file].
+    @racket[finder:put-file] and @racket[finder:get-file] dialog.  Its value gets passed as the
+    @racket[_extension] argument to @racket[put-file] and @racket[get-file].
     
     Its default value is @racket[""].})
 

@@ -50,12 +50,17 @@ static int can_reorder_unboxing(Scheme_Object *rand, Scheme_Object *rand2)
 }
 
 static int is_inline_unboxable_op(Scheme_Object *obj, int flag, int unsafely, int just_checking_result)
-/* If unsafely, a result f 2 means that arguments should be checked safely. */
+/* If unsafely, a result of 2 means that arguments should be checked safely. */
 {
   if (!SCHEME_PRIMP(obj))
     return 0;
   if (!(SCHEME_PRIM_PROC_OPT_FLAGS(obj) & flag))
     return 0;
+
+  /* We have a table here for now, instead of flags accessed via
+     SCHEME_PRIM_PROC_OPT_FLAGS(), because this function reports
+     properties of the JIT rather than inherent properties of the 
+     functions. */
 
   if (IS_NAMED_PRIM(obj, "unsafe-fl+")) return 1;
   if (IS_NAMED_PRIM(obj, "unsafe-fl-")) return 1;
@@ -209,7 +214,8 @@ int scheme_can_unbox_inline(Scheme_Object *obj, int fuel, int regs, int unsafely
 
 int scheme_can_unbox_directly(Scheme_Object *obj)
 /* Used only when !can_unbox_inline(). Detects safe operations that
-   produce flonums when they don't raise an exception. */
+   produce flonums when they don't raise an exception, and that the JIT
+   supports directly unboxing. */
 {
   Scheme_Type t;
 

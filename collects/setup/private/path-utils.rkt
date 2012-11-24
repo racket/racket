@@ -17,4 +17,6 @@
         [(memq 'user-doc flags)      (user-doc name)]
         [(or under-main? (memq 'main-doc flags) (pair? (path->main-collects-relative dir)))
          (build-path (find-doc-dir) name)]
-        [else (build-path dir "doc" name)]))
+        [else 
+         (and (not (eq? 'never user-doc-mode))
+              (build-path dir "doc" name))]))

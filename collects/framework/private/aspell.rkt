@@ -6,7 +6,14 @@
          string-constants)
 
 (provide/contract
- [query-aspell (-> (and/c string? (not/c #rx"[\n]")) (listof (list/c number? number?)))]
+ [query-aspell (->* ((and/c string? (not/c #rx"[\n]")))
+                    ((or/c #f string?))
+                    (listof (list/c number? number?)))]
+
+ ;; may return #f when aspell is really ispell or when
+ ;; something goes wrong trying to get the list of dictionaries
+ [get-aspell-dicts (-> (or/c #f (listof string?)))]
+ 
  [find-aspell-binary-path (-> (or/c path? #f))]
  [aspell-problematic? (-> (or/c string? #f))])
 
@@ -28,17 +35,29 @@
             (and (file-exists? c2)
                  c2)))))
 
-(define (start-aspell asp)
+(define (start-aspell asp dict)
   (define aspell? (regexp-match? #rx"aspell" (path->string asp)))
-  (apply process* asp "-a" (if aspell? '("--encoding=utf-8") '())))
+  (apply process* asp 
+         (append
+          '("-a")
+          (if dict
+              (list "-d" dict)
+              '())
+          (if aspell? '("--encoding=utf-8") '()))))
 
+(define problematic 'dont-know)
 (define (aspell-problematic?)
+  (when (eq? problematic 'dont-know)
+    (set! problematic (do-aspell-problematic)))
+  problematic)
+
+(define (do-aspell-problematic)
   (define asp (find-aspell-binary-path))
   (cond
     [(not asp)
      (string-constant cannot-find-ispell-or-aspell-path)]
     [else
-     (define proc-lst (start-aspell asp))
+     (define proc-lst (start-aspell asp #f))
      (define stdout (list-ref proc-lst 0))
      (define stderr (list-ref proc-lst 3))
      (close-output-port (list-ref proc-lst 1)) ;; close stdin
@@ -64,6 +83,7 @@
   (log-message asp-logger 'debug arg (current-continuation-marks)))
 
 (define aspell-req-chan (make-channel))
+(define change-dict-chan (make-channel))
 (define aspell-thread #f)
 (define (start-aspell-thread)
   (unless aspell-thread
@@ -72,13 +92,14 @@
            (λ () 
              (define aspell-proc #f)
              (define already-attempted-aspell? #f)
+             (define current-dict #f)
              
              (define (fire-up-aspell)
                (unless already-attempted-aspell?
                  (set! already-attempted-aspell? #t)
                  (define asp (find-aspell-binary-path))
                  (when asp
-                   (set! aspell-proc (start-aspell asp))
+                   (set! aspell-proc (start-aspell asp current-dict))
                    (define line (with-handlers ((exn:fail? exn-message))
                                   (read-line (list-ref aspell-proc 0))))
                    (asp-log (format "framework: started speller: ~a" line))
@@ -113,7 +134,12 @@
                 (handle-evt
                  aspell-req-chan
                  (match-lambda
-                   [(list line resp-chan nack-evt)
+                   [(list line new-dict resp-chan nack-evt)
+                    (unless (equal? new-dict current-dict)
+                      (when aspell-proc
+                        (shutdown-aspell "changing dictionary")
+                        (set! already-attempted-aspell? #f))
+                      (set! current-dict new-dict))
                     (unless aspell-proc (fire-up-aspell))
                     (define (send-resp resp)
                       (sync (channel-put-evt resp-chan resp)
@@ -133,11 +159,12 @@
                          (define check-on-aspell (sync/timeout .5 stdout))
                          (cond
                            [check-on-aspell
-                            (define l (with-handlers ((exn:fail? (λ (x)
-                                                                   (asp-log
-                                                                    (format "error reading stdout of aspell process: ~a"
-                                                                            (exn-message x)))
-                                                                   eof)))
+                            (define (handle-err x)
+                              (asp-log
+                               (format "error reading stdout of aspell process: ~a"
+                                       (exn-message x)))
+                              eof)
+                            (define l (with-handlers ((exn:fail? handle-err))
                                         (read-line stdout)))
                             (cond
                               [(eof-object? l) 
@@ -168,11 +195,36 @@
                       [else (send-resp '())])
                     (loop)])))))))))
 
-(define (query-aspell line)
-  (start-aspell-thread)
-  (sync
-   (nack-guard-evt
-    (λ (nack-evt)
-      (define resp (make-channel))
-      (channel-put aspell-req-chan (list line resp nack-evt))
-      resp))))
+(define (query-aspell line [dict #f])
+  (unless (aspell-problematic?)
+    
+    (when dict
+      (unless (member dict (get-aspell-dicts))
+        (set! dict #f)))
+    
+    (start-aspell-thread)
+    (sync
+     (nack-guard-evt
+      (λ (nack-evt)
+        (define resp (make-channel))
+        (channel-put aspell-req-chan (list line dict resp nack-evt))
+        resp)))))
+
+(define aspell-dicts #f)
+(define (get-aspell-dicts)
+  (unless (aspell-problematic?)
+    (unless aspell-dicts
+      (define asp (find-aspell-binary-path))
+      (when (regexp-match? #rx"aspell" (path->string asp))
+        (define proc-lst (process* asp "dump" "dicts"))
+        (define stdout (list-ref proc-lst 0))
+        (define stderr (list-ref proc-lst 3))
+        (close-output-port (list-ref proc-lst 1)) ;; close stdin
+        (close-input-port stderr)
+        (set! aspell-dicts
+              (let loop ()
+                (define l (read-line stdout))
+                (cond
+                  [(eof-object? l) '()]
+                  [else (cons l (loop))]))))))
+  aspell-dicts)

@@ -7,6 +7,7 @@
          (for-syntax racket/base)
          (prefix-in wx: "kernel.rkt")
          (prefix-in wx: racket/snip/private/style)
+         (prefix-in wx: racket/snip/private/snip)
          (prefix-in wx: "wxme/keymap.rkt")
          (prefix-in wx: "wxme/editor.rkt")
          (prefix-in wx: "wxme/text.rkt")
@@ -592,42 +593,71 @@
 
 ;; ------------------------- Menus ----------------------------------------
 
-(define append-editor-operation-menu-items
-  (case-lambda
-    [(m) (append-editor-operation-menu-items m #t)]
-    [(m text-only?)
-     (menu-parent-only 'append-editor-operation-menu-items m)
-     (let* ([mk (lambda (name key op)
-                  (make-object (class menu-item%
-                                 (inherit enable)
-                                 (define/override (on-demand)
-                                   (let ([o (find-item-editor this)])
-                                     (enable (and o
-                                                  (send o can-do-edit-operation? op)))))
-                                 (super-make-object
-                                  name m
-                                  (lambda (i e)
-                                    (let* ([o (find-item-editor i)])
-                                      (and o
-                                           (send o do-edit-operation op))))
-                                  key))))]
-            [mk-sep (lambda () (make-object separator-menu-item% m))])
-       (mk "&Undo" #\z 'undo)
-       (mk "Redo" #f 'redo)
-       (mk-sep)
-       (mk "&Copy" #\c 'copy)
-       (mk "Cu&t" #\x 'cut)
-       (mk "&Paste" #\v 'paste)
-       (if (eq? (system-type) 'windows)
-           (mk "Delete" #f 'clear)
-           (mk "Clear" #f 'clear))
-       (mk "Select &All" #\a 'select-all)
-       (unless text-only?
-         (mk-sep)
-         (mk "Insert Text Box" #f 'insert-text-box)
-         (mk "Insert Pasteboard Box" #f 'insert-pasteboard-box)
-         (mk "Insert Image..." #f 'insert-image))
-       (void))]))
+(define (append-editor-operation-menu-items m
+                                            [text-only? #t]
+                                            #:popup-position [popup-position #f])
+  (unless (or (not popup-position)
+              (and (list? popup-position)
+                   (= 2 (length popup-position))
+                   (is-a? (list-ref popup-position 0) text%)
+                   (exact-nonnegative-integer? (list-ref popup-position 1))))
+    (raise-argument-error 'append-editor-operation-menu-items
+                          (format "~s" '(or/c #f (list/c (is-a?/c text%) exact-nonnegative-integer?)))
+                          popup-position))
+  (menu-parent-only 'append-editor-operation-menu-items m)
+  (let* ([mk (lambda (name key op [special-case? (λ () #f)] [special-go void])
+               (make-object (class menu-item%
+                              (inherit enable)
+                              (define/override (on-demand)
+                                (let ([o (find-item-editor this)])
+                                  (enable (and o
+                                               (or (send o can-do-edit-operation? op)
+                                                   (special-case?))))))
+                              (super-make-object
+                               name m
+                               (lambda (i e)
+                                 (let* ([o (find-item-editor i)])
+                                   (and o
+                                        (if (special-case?)
+                                            (special-go)
+                                            (send o do-edit-operation op)))))
+                               key))))]
+         [mk-sep (lambda () (make-object separator-menu-item% m))])
+    (define (special-case?)
+      (cond
+        [popup-position
+         (define snp (send (list-ref popup-position 0) find-snip 
+                           (list-ref popup-position 1)
+                           'after-or-none))
+         (and snp (not (is-a? snp wx:string-snip%)))]
+        [else
+         #f]))
+    (define (copy-special-go)
+      (send (list-ref popup-position 0)
+            copy #f 0 
+            (list-ref popup-position 1)
+            (+ (list-ref popup-position 1) 1)))
+    (define (cut-special-go)
+      (send (list-ref popup-position 0)
+            cut #f 0 
+            (list-ref popup-position 1)
+            (+ (list-ref popup-position 1) 1)))
+    (mk "&Undo" #\z 'undo)
+    (mk "Redo" #f 'redo)
+    (mk-sep)
+    (mk "&Copy" #\c 'copy special-case? copy-special-go)
+    (mk "Cu&t" #\x 'cut special-case? cut-special-go)
+    (mk "&Paste" #\v 'paste)
+    (if (eq? (system-type) 'windows)
+        (mk "Delete" #f 'clear)
+        (mk "Clear" #f 'clear))
+    (mk "Select &All" #\a 'select-all)
+    (unless text-only?
+      (mk-sep)
+      (mk "Insert Text Box" #f 'insert-text-box)
+      (mk "Insert Pasteboard Box" #f 'insert-pasteboard-box)
+      (mk "Insert Image..." #f 'insert-image))
+    (void)))
 
 (define (append-editor-font-menu-items m)
   (menu-parent-only 'append-editor-font-menu-items m)

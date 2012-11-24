@@ -1393,14 +1393,18 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
           o->type = scheme_cpointer_type;
           SCHEME_CPTR_FLAGS(o) |= 0x1;
           SCHEME_CPTR_VAL(o) = SCHEME_CPTR_VAL(so);
-          o2 = shallow_types_copy(SCHEME_CPTR_TYPE(so), NULL, fd_accumulators, delayed_errno, mode, 
-                                  can_raise_exn, master_chain, invalid_object);
+          o2 = SCHEME_CPTR_TYPE(so);
+          if (o2)
+            o2 = shallow_types_copy(o2, NULL, fd_accumulators, delayed_errno, mode, 
+                                    can_raise_exn, master_chain, invalid_object);
           SCHEME_CPTR_TYPE(o) = o2;
 
           new_so = o;
         } else {
-          (void)shallow_types_copy(SCHEME_CPTR_TYPE(so), NULL, fd_accumulators, delayed_errno, mode, 
-                                   can_raise_exn, master_chain, invalid_object);
+          if (SCHEME_CPTR_TYPE(so)) {
+            (void)shallow_types_copy(SCHEME_CPTR_TYPE(so), NULL, fd_accumulators, delayed_errno, mode, 
+                                     can_raise_exn, master_chain, invalid_object);
+          }
         }
       }
       else {

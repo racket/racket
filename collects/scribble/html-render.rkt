@@ -1483,11 +1483,12 @@
 
     (define/override (include-navigation?) #t)
 
-    (define/override (collect ds fns fp)
+    (define/override (collect ds fns fp [demand (lambda (key ci) #f)])
       (super collect 
              ds 
              (map (lambda (fn) (build-path fn "index.html")) fns)
-             fp))
+             fp
+             demand))
 
     (define/override (current-part-whole-page? d)
       (collecting-whole-page))

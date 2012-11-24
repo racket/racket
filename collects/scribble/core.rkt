@@ -6,7 +6,7 @@
 
 ;; ----------------------------------------
 
-(define-struct collect-info (fp ht ext-ht parts tags gen-prefix relatives parents) #:transparent)
+(define-struct collect-info (fp ht ext-ht ext-demand parts tags gen-prefix relatives parents) #:transparent)
 (define-struct resolve-info (ci delays undef searches) #:transparent)
 
 (define (part-collected-info part ri)
@@ -34,8 +34,14 @@
                (collected-info-parent (part-collected-info part ri))
                ri key)]
         [else
-         (values (hash-ref (collect-info-ext-ht (resolve-info-ci ri)) key #f)
-                 #t)]))))
+         (define ci (resolve-info-ci ri))
+         (define (try-ext)
+           (hash-ref (collect-info-ext-ht ci) key #f))
+         (values
+          (or (try-ext)
+              (and ((collect-info-ext-demand ci) key ci)
+                   (try-ext)))
+          #t)]))))
 
 (define (resolve-get/ext? part ri key)
   (resolve-get/ext?* part ri key #f))

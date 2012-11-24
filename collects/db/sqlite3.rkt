@@ -12,4 +12,6 @@
         #:busy-retry-delay (and/c rational? (not/c negative?))
         #:use-place any/c
         #:debug? any/c)
-       connection?)])
+       connection?)]
+ [sqlite3-available?
+  (-> boolean?)])

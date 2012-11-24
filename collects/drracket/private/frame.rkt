@@ -360,7 +360,13 @@
     ;; browse : -> void
     ;; gets the name of a file from the user and updates file-text-field
     (define (browse)
-      (let ([filename (finder:get-file #f "" #f "" dialog)])
+      (let ([filename (parameterize ([finder:default-extension "plt"]
+                                     [finder:default-filters
+                                      (if (eq? (system-type) 'macosx)
+                                          (finder:default-filters)
+                                          '(("PLT Files" "*.plt")
+                                            ("Any" "*.*")))])
+                        (finder:get-file #f "" #f "" dialog))])
         (when filename
           (send file-text-field set-value (path->string filename)))))
     ;; from-web? : -> boolean

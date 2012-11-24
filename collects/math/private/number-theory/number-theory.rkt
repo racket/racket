@@ -44,6 +44,7 @@
          totient
          moebius-mu
          divisor-sum
+         mangoldt-lambda
          )
 
 ;;;
@@ -322,6 +323,7 @@
 ; Factor a number n without prime factors below the prime p.
 (define (small-prime-factors-over n p) ; p prime
   (cond
+    [(<= p 0)        (raise-argument-error 'small-prime-factors-over "Natural" p)]
     [(< n p)         '()]
     [(= n p)         (list (list p 1))]
     [(prime? n)      (list (list n 1))]
@@ -689,6 +691,14 @@
                               ps es))
                 natural?))])))
 
+(: mangoldt-lambda : Z -> Real)                   
+(define (mangoldt-lambda n)
+  (cond 
+    [(<= n 0) (raise-argument-error 'mangoldt-lambda "Natural" n)]
+    [else (define am (prime-power n))
+          (cond
+            [(cons? am) (log (car am))]
+            [else 0])]))
 
 ; These tests are for un-exported functions.
 #;(begin

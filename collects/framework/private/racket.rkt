@@ -1033,8 +1033,9 @@
       (λ (start-pos)
         (let* ([pos (skip-whitespace start-pos 'forward #f)]
                [first-char (get-character pos)]
-               [paren? (or (char=? first-char #\( )
-                           (char=? first-char #\[ ))]
+               [paren? (or (char=? first-char #\()
+                           (char=? first-char #\[)
+                           (char=? first-char #\{))]
                [closer (and paren? 
                             (get-forward-sexp pos))])
           (if (and paren? closer)

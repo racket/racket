@@ -20,6 +20,9 @@ by @racket[load-xref], @racket[#f] otherwise.}
 
 
 @defproc[(load-xref [sources (listof (-> any/c))]
+                    [#:demand-source demand-source 
+                                     (tag? -> (or/c (-> any/c) #f)) 
+                                     (lambda (_tag) #f)]
                     [#:render% using-render% (implementation?/c render<%>)
                                (render-mixin render%)]
                     [#:root root-path (or/c path-string? false/c) #f])
@@ -29,6 +32,11 @@ Creates a cross-reference record given a list of functions that each
 produce a serialized information obtained from @xmethod[render<%>
 serialize-info]. If a @racket[sources] element produces @racket[#f],
 its result is ignored.
+
+The @racket[demand-source] function can effectively add a new source
+to @racket[sources] in response to a search for information on the
+given tag. The @racket[demand-source] function returns @racket[#f]
+to indicate that no new sources satisfy the given tag.
 
 Since the format of serialized information is specific to a rendering
 class, the optional @racket[using-render%] argument accepts the

@@ -103,7 +103,11 @@ Appends menu items to @racket[menu] to implement a
 }
 
 @defproc[(append-editor-operation-menu-items [menu (or/c (is-a?/c menu%) (is-a?/c popup-menu%))]
-                                             [text-only? any/c #t])
+                                             [text-only? any/c #t]
+                                             [#:popup-position 
+                                              popup-position 
+                                              (or/c #f (list/c (is-a?/c text%) exact-nonnegative-integer?))
+                                              #f])
          void?]{
 Appends menu items to @racket[menu] to implement the
  standard editor operations, such as cut and paste. The callback for
@@ -112,13 +116,17 @@ Appends menu items to @racket[menu] to implement the
  reached); if the result is an @racket[editor<%>] object,
 @xmethod[editor<%> do-edit-operation] is called on the editor.
 
-
-
 If @racket[text-only?] is @racket[#f], then menu items that insert
  non-text snips (such as @onscreen{Insert Image...}) are appended to
  the menu.
 
-
+If @racket[popup-position] is not @racket[#f], then @racket[append-editor-operation-menu-items]
+is expected to have been called to build a popup menu and the two elements
+of the list should be the @racket[text%] object where the mouse was clicked
+for the popup menu and the position where the click happened. In that case,
+the @onscreen{Copy} and @onscreen{Cut} menus are enabled when the click
+lands on a snip that is not a @racket[string-snip%], and the corresponding
+callbacks will copy and cut that one snip.
 
 }
 

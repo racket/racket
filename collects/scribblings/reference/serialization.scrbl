@@ -209,6 +209,10 @@ elements:
                   a list of serials representing arguments to be
                   provided to the structure type's deserializer.}
 
+            @item{a pair whose @racket[car] is @racket['q] and whose
+                  @racket[cdr] is an immutable value; it represents
+                  the quoted value.}
+
             @item{a pair whose @racket[car] is @racket['f]; it
                   represents an instance of a @tech{prefab} structure
                   type. The @racket[cadr] of the pair is a @tech{prefab}
