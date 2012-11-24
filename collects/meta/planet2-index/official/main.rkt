@@ -563,7 +563,7 @@
               `(span (input ([name "source"]
                              [type "text"]
                              [value ,(package-ref* i 'source "")]))
-                     " (" (a ([href "XXX"]) "details") ")")
+                     " (" (a ([href "http://pre.racket-lang.org/docs/html/planet2/Planet_2_Concepts.html#(tech._package._source)"]) "details") ")")
               `(a ([href
                     ,(package-url->useful-url (package-ref i 'source))])
                   ,(package-ref i 'source)))))
