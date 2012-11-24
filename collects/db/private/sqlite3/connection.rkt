@@ -76,7 +76,10 @@
                      (step* fsym db stmt #f +inf.0))])
             (unless (eq? (get-tx-status) 'invalid)
               (set-tx-status! fsym (read-tx-status)))
-            (unless cursor? (send pst after-exec #f))
+            (unless cursor?
+              (HANDLE fsym (sqlite3_reset stmt))
+              (HANDLE fsym (sqlite3_clear_bindings stmt))
+              (send pst after-exec #f))
             (cond [(and (pair? info) (not cursor?))
                    (rows-result info result)]
                   [(and (pair? info) cursor?)
@@ -92,9 +95,12 @@
           (lambda ()
             (cond [(unbox end-box) #f]
                   [else
-                   (begin0 (step* fsym (get-db fsym) (send pst get-handle) end-box fetch-size)
-                     (when (unbox end-box)
-                       (send pst after-exec #f)))])))))
+                   (let ([stmt (send pst get-handle)])
+                     (begin0 (step* fsym (get-db fsym) stmt end-box fetch-size)
+                       (when (unbox end-box)
+                         (HANDLE fsym (sqlite3_reset stmt))
+                         (HANDLE fsym (sqlite3_clear_bindings stmt))
+                         (send pst after-exec #f))))])))))
 
     (define/private (check-statement fsym stmt cursor?)
       (cond [(statement-binding? stmt)
