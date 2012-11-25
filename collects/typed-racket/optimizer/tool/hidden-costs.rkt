@@ -4,14 +4,14 @@
 
 (provide report-hidden-costs)
 
-(define (report-hidden-costs TR-log profile hot-functions)
+(define (report-hidden-costs info-log profile hot-functions)
   (apply
    append
    (for/list ([node (in-list (profile-nodes profile))])
-     (process-profile-node node hot-functions TR-log
+     (process-profile-node node hot-functions info-log
                            (profile-total-time profile)))))
 
-(define (process-profile-node profile-entry hot-functions TR-log total-time)
+(define (process-profile-node profile-entry hot-functions info-log total-time)
   (define produced-entries '())
   (define (emit e) (set! produced-entries (cons e produced-entries)))
 
@@ -30,15 +30,16 @@
 
   (define (check-hidden-cost kind message badness)
     (when inside-hot-function?
-      (for/list ([TR-entry (in-list TR-log)]
-                 #:when (info-log-entry? TR-entry)
-                 #:when (equal? (log-entry-kind TR-entry) kind)
-                 #:when (inside-us? (log-entry-pos TR-entry)))
+      (for/list ([info-entry (in-list info-log)]
+                 #:when (info-log-entry? info-entry)
+                 #:when (equal? (log-entry-kind info-entry) kind)
+                 #:when (inside-us? (log-entry-pos info-entry)))
         (emit (missed-opt-log-entry
                "" ; kind not used at this point
                message
-               (log-entry-located-stx TR-entry) (log-entry-located-stx TR-entry)
-               (log-entry-pos TR-entry) 'typed-racket
+               (log-entry-located-stx info-entry)
+               (log-entry-located-stx info-entry)
+               (log-entry-pos info-entry) 'typed-racket
                '() '()
                badness)))))
 

@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/class racket/match racket/list
+(require racket/class racket/match
          "structs.rkt" "instrumentation.rkt" "inlining.rkt" "hidden-costs.rkt"
          "locality-merging.rkt" "causality-merging.rkt")
 
@@ -8,29 +8,20 @@
 
 ;; profile is currently only used to refine the inlining logs
 (define (generate-report this profile)
-  (define-values (pre-TR-log mzc-log) (generate-logs this))
-  ;; The raw TR log may contain duplicates from the optimizer traversing
-  ;; the same piece of code multiple times.
-  ;; Duplicates are not significant (unlike for inlining logs) and we can
-  ;; prune them.
-  (define TR-log (remove-duplicates pre-TR-log))
+  (define-values (TR-log mzc-log info-log) (generate-logs this))
   (define hot-functions (and profile (prune-profile profile)))
   (log->report
    (append (causality-merging
             (prune-cold-TR-failures TR-log profile hot-functions))
            (report-inlining mzc-log profile hot-functions)
            (if profile
-               (report-hidden-costs TR-log profile hot-functions)
+               (report-hidden-costs info-log profile hot-functions)
                '()))))
 
 
 ;; Returns a report-entry or #f, which means prune.
 (define (log-entry->report-entry l)
   (match l
-    [(? info-log-entry? _)
-     ;; Info entries are only useful for log analysis, and should not be
-     ;; presented to users. Drop them.
-     #f]
     [(log-entry kind msg stx located-stx (? number? pos) provenance)
      (define start     (sub1 pos))
      (define end       (+ start (syntax-span stx)))

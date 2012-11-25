@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/class racket/gui/base racket/string racket/match
+(require racket/class racket/gui/base racket/string racket/match racket/list
          unstable/syntax unstable/logging
          "structs.rkt" "sandbox.rkt")
 
@@ -19,8 +19,9 @@
             (build-path dir file)
             #f)))
     (file-predicate path))
-  (define TR-log  '())
-  (define mzc-log '())
+  (define TR-log   '())
+  (define mzc-log  '())
+  (define info-log '()) ; for hidden costs
   (with-intercepted-logging
       (lambda (l)
         ;; From mzc, create a log-entry from the info.
@@ -33,7 +34,9 @@
             ;; From TR, use the log-entry struct provided.
             (define entry (vector-ref l 2))
             (when (right-file? entry)
-              (set! TR-log (cons entry TR-log))))
+              (if (info-log-entry? entry)
+                  (set! info-log (cons entry info-log))
+                  (set! TR-log   (cons entry TR-log)))))
         (lambda ()
           (run-inside-optimization-coach-sandbox
            this
@@ -41,7 +44,13 @@
              (void (compile (read-syntax (send this get-port-name) input))))))
         'debug 'TR-optimizer))
     'debug 'optimizer)
-  (values (reverse TR-log) (reverse mzc-log)))
+  ;; The raw TR logs may contain duplicates from the optimizer traversing
+  ;; the same piece of code multiple times.
+  ;; Duplicates are not significant (unlike for inlining logs) and we can
+  ;; prune them.
+  (values (reverse (remove-duplicates TR-log))
+          (reverse mzc-log)
+          (reverse (remove-duplicates info-log))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

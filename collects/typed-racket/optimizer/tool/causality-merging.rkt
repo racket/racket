@@ -13,7 +13,7 @@
     (cond [(missed-opt-log-entry? new)
            (maybe-merge-with-parent new res)]
           [else
-           (cons new res)]))) ; no merging for opts and info
+           (cons new res)]))) ; no merging for opts
 
 ;; is parent the "parent" missed optimization of child?
 ;; this determines whether they get reported together or not
