@@ -98,7 +98,7 @@
 ;;       smart-skip-parentheses preferences   .nah.
 
 ;; test-auto-parens-behavior 
-;;    : any string [or num (list num num)] [or char (list char) (list key-event%)] [or num (list num num)] string
+;;    : any string [or num (list num num)] [or char symbol 1string (list char) (list key-event%)] [or num (list num num)] string
 (define (test-auto-parens-behavior which initial-text initial-pos keys final-text final-pos
                                    [auto-parens? #f])
   (test
@@ -110,8 +110,7 @@
      (queue-sexp-to-mred
       `(let* ([t (new racket:text%)]
               [f (new frame% [label ""] [width 600] [height 600])]
-              [ec (new editor-canvas% [parent f] [editor t])]
-              #;[keys (if (list? ,keys) ,keys (list ,keys))])
+              [ec (new editor-canvas% [parent f] [editor t])])
          (preferences:set 'framework:automatic-parens ,auto-parens?)
          (send f reflow-container)
          (send t insert ,initial-text)
@@ -123,6 +122,9 @@
               (cond [(char? k)
                      `(send (racket:get-keymap)
                             handle-key-event t (new key-event% [key-code ,k]))]
+                    [(string? k)
+                     `(send (racket:get-keymap)
+                            handle-key-event t (new key-event% [key-code ,(car (string->list k))]))]
                     [(symbol? k)
                      `(send (racket:get-keymap)
                             handle-key-event t (new key-event% [key-code (quote ,k)]))]
@@ -161,6 +163,12 @@
                            #\(              ; key(s) pressed
                            '(["abcd(" "efg"]  ; result state sep by cursor, no auto-parens
                              ["abcd(" ")efg"])) ; result state with auto-parens
+
+(test-parens-behavior/full 'block-comment
+                           "(123 abc#" "" " def 456)"
+                           #\|
+                           '(["(123 abc#|" " def 456)"]
+                             ["(123 abc#|" "|# def 456)"]))
 
 (test-parens-behavior/full 'close-1
                            "abcd" "" "efg"

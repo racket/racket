@@ -1450,18 +1450,33 @@
   
   (send keymap map-function "leftbuttondouble" "paren-double-select")
   
+  
+  
   (define (insert-brace-pair text open-brace close-brace)
     (define selection-start (send text get-start-position))
+    (define hash-before?  ; tweak to detect and correctly close block comments #| ... |#
+      (and (< 0 selection-start)
+           (string=? "#" (send text get-text (- selection-start 1) selection-start))))
     (send text begin-edit-sequence)
     (send text set-position (send text get-end-position))
     (send text insert close-brace)
+    (when (and (char=? #\| open-brace) hash-before?) (send text insert #\#))
     (send text set-position selection-start)
     (send text insert open-brace)
     (send text end-edit-sequence))
   
+  ;; determines if the 
+  (define (char-literal-prefixed? text)
+    (define selection-start (send text get-start-position))
+    (define selection-end (send text get-end-position))
+    (and (= selection-start selection-end)   ; nothing selected
+         (< 1 selection-start)
+         (string=? "#\\" (send text get-text (- selection-start 2) selection-start))))
+  
   (define (maybe-insert-brace-pair text open-brace close-brace)
     (cond
-      [(preferences:get 'framework:automatic-parens)
+      [(and (preferences:get 'framework:automatic-parens)
+            (not (char-literal-prefixed? text))) ;; don't insert a pair if a char literal is being typed
        (insert-brace-pair text open-brace close-brace)]
       [else
        (send text insert open-brace)]))
