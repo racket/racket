@@ -120,8 +120,12 @@
               `(send t set-position ,(car initial-pos) ,(cadr initial-pos)))
          ,@(map
             (lambda (k)
-              (cond [(char? k) `(send (racket:get-keymap)
-                                      handle-key-event t (new key-event% [key-code ,k]))]
+              (cond [(char? k)
+                     `(send (racket:get-keymap)
+                            handle-key-event t (new key-event% [key-code ,k]))]
+                    [(symbol? k)
+                     `(send (racket:get-keymap)
+                            handle-key-event t (new key-event% [key-code (quote ,k)]))]
                     [else `(send (racket:get-keymap) handle-key-event t ,k)]))
             (if (list? keys) keys (list keys)))
          (list (send t get-start-position) (send t get-end-position) (send t get-text)))))))
@@ -218,23 +222,31 @@
                            #\(
                            '(["abcd(" "g"]  ["abcd(" "ef)g"]))
 
-(test-parens-behavior/full 'meta-open-1
-                           "abcd" "" "efg"
-                           '((new key-event% [key-code #\(] [meta-down #t]))
-                           '(["abcd(" "efg"]  ["abcd(" ")efg"]))
+#| for these, the key-event with meta-down doesn't seem to work... maybe a Mac OS
+  issue; and may cause problems with these tests on another platform? .nah. |#
+(when (equal? 'macosx (system-type))
+  (test-parens-behavior/full 'meta-open-1
+                             "abcd" "" "efg"
+                             '(escape #\()   ; '((new key-event% [key-code #\(] [meta-down #t]))
+                             '(["abcd(" ")efg"]  ["abcd(" ")efg"]))
+  
+  (test-parens-behavior/full 'meta-close-skip-1
+                             "(define before (list 1 2" "" " 3 4)"
+                             '(escape #\))   ; '((new key-event% [key-code #\)] [meta-down #t]))
+                             '(["(define before (list 1 2 3 4)" ""]
+                               ["(define before (list 1 2 3 4)" ""]))
+  (test-parens-behavior/full 'meta-close-skip-2
+                             "#lang racket\n(define before+afters `([\"\" abc \"efg\""
+                             ""
+                             " 12345 xyz] [84])"
+                             '(escape #\))    ;'((new key-event% [key-code #\)] [meta-down #t]))
+                             '(["#lang racket\n(define before+afters `([\"\" abc \"efg\" 12345 xyz]" " [84])"]
+                               ["#lang racket\n(define before+afters `([\"\" abc \"efg\" 12345 xyz]" " [84])"]))
+  (test-parens-behavior/full 'meta-close-skip-3
+                             "(define before" "" " (list 1 2 3 4)"
+                             '(escape #\))   ; '((new key-event% [key-code #\)] [meta-down #t]))
+                             '(["(define before (list 1 2 3 4)" ""]
+                               ["(define before (list 1 2 3 4)" ""]))
+  )
 
-#| I don't know why these don't work... they seem to work interactively...  .nah. 
-(test-parens-behavior/full 'meta-close-skip-1
-                           "(define before (list 1 2" "" " 3 4)"
-                           '((new key-event% [key-code #\)] [meta-down #t]))
-                           '(["(define before (list 1 2 3 4)" ""]
-                             ["(define before (list 1 2 3 4)" ""]))
-(test-parens-behavior/full 'meta-close-skip-2
-                           "#lang racket\n(define before+afters `([\"\" abc \"efg\""
-                           ""
-                           " 12345 xyz] [84])"
-                           '((new key-event% [key-code #\)] [meta-down #t]))
-                           '(["#lang racket\n(define before+afters `([\"\" abc \"efg\" 12345 xyz]" " [84])"]
-                             ["#lang racket\n(define before+afters `([\"\" abc \"efg\" 12345 xyz]" " [84])"]))
-|#
 

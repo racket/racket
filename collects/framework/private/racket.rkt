@@ -1428,7 +1428,7 @@
   (send keymap add-function "balance-parens"
         (λ (edit event)
           (send edit balance-parens event)))
-  (send keymap add-function "balance-parens/skip-forward"
+  (send keymap add-function "balance-parens-forward"
         (λ (edit event)
           (send edit balance-parens event 'forward)))
   
@@ -1558,9 +1558,9 @@
   ;(map-meta "c:m" "mark-matching-parenthesis")
   ; this keybinding doesn't interact with the paren colorer
 
-  (map-meta ")" "balance-parens/skip-forward")
-  (map-meta "]" "balance-parens/skip-forward")
-  (map-meta "}" "balance-parens/skip-forward")
+  (map-meta ")" "balance-parens-forward")
+  (map-meta "]" "balance-parens-forward")
+  (map-meta "}" "balance-parens-forward")
   
   (map-meta "(" "insert-()-pair")
   (map-meta "[" "insert-[]-pair")
