@@ -5,6 +5,7 @@
          typed-racket/base-env/prims
          racket/unsafe/ops
          "array-struct.rkt"
+         "utils.rkt"
          (except-in "typed-array-sequence.rkt" in-array-indexes))
 
 (require/untyped-contract
@@ -56,7 +57,7 @@
          [(x)
           (:do-in
            ([(ds size dims js)
-             (let*: ([ds : User-Indexes  ds-expr]
+             (let*: ([ds : In-Indexes  ds-expr]
                      [ds : Indexes  (check-array-shape
                                      ds (λ () (raise-argument-error 'in-array-indexes "Indexes"
                                                                          ds)))])

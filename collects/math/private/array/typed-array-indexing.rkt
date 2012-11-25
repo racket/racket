@@ -27,11 +27,11 @@
   (define (unsafe-array-set! arr js v)
     ((unsafe-settable-array-set-proc arr) js v))
   
-  (: array-ref (All (A) ((Array A) User-Indexes -> A)))
+  (: array-ref (All (A) ((Array A) In-Indexes -> A)))
   (define (array-ref arr js)
     ((unsafe-array-proc arr) (check-array-indexes 'array-ref (array-shape arr) js)))
 
-  (: array-set! (All (A) ((Settable-Array A) User-Indexes A -> Void)))
+  (: array-set! (All (A) ((Settable-Array A) In-Indexes A -> Void)))
   (define (array-set! arr js v)
     (define ds (array-shape arr))
     (define set-proc (unsafe-settable-array-set-proc arr))
@@ -42,13 +42,13 @@
 ;; ===================================================================================================
 ;; Indexing using array of indexes
 
-(: array-indexes-ref (All (A) ((Array A) (Array User-Indexes) -> (Array A))))
+(: array-indexes-ref (All (A) ((Array A) (Array In-Indexes) -> (Array A))))
 (define (array-indexes-ref arr idxs)
   (define ds (array-shape idxs))
   (define idxs-proc (unsafe-array-proc idxs))
   (unsafe-build-array ds (λ: ([js : Indexes]) (array-ref arr (idxs-proc js)))))
 
-(: array-indexes-set! (All (A) ((Settable-Array A) (Array User-Indexes) (Array A) -> Void)))
+(: array-indexes-set! (All (A) ((Settable-Array A) (Array In-Indexes) (Array A) -> Void)))
 (define (array-indexes-set! arr idxs vals)
   (define ds (array-shape-broadcast (list (array-shape idxs) (array-shape vals))))
   (let ([idxs  (array-broadcast idxs ds)]
@@ -230,14 +230,14 @@
     ;; number of indexes should match
     (define num-specs (length slices))
     (unless (= dims num-specs)
-      (error 'array-slice-ref "expected list with ~e slices; given ~e in ~e"
+      (error 'array-slice-ref "expected list with ~e slice specifications; given ~e in ~e"
              dims num-specs orig-slices))
     (let-values ([(arr jss)  (slices->array-axis-transform 'array-slice-ref arr slices)])
       (for/fold ([arr (unsafe-array-axis-transform arr jss)]) ([na  (in-list new-axes)])
         (match-define (cons k dk) na)
         (array-axis-insert arr k dk)))))
 
-(: slice-indexes-array (User-Indexes (Listof Slice-Spec) -> (Array Indexes)))
+(: slice-indexes-array (In-Indexes (Listof Slice-Spec) -> (Array Indexes)))
 (define (slice-indexes-array ds slices)
   (array-slice-ref (indexes-array ds) slices))
 

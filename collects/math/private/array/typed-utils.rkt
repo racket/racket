@@ -12,7 +12,7 @@
 (define-type (Vectorof* A) (Rec T (U A (Vectorof T))))
 
 (define-type Indexes (Vectorof Index))
-(define-type User-Indexes (U (Vectorof Integer) Indexes))
+(define-type In-Indexes (U (Vectorof Integer) Indexes))
 
 (begin-encourage-inline
   
@@ -37,7 +37,7 @@
                              (loop (+ i 1) (* n d))]
             [else  n])))
   
-  (: check-array-shape (User-Indexes (-> Nothing) -> Indexes))
+  (: check-array-shape (In-Indexes (-> Nothing) -> Indexes))
   (define (check-array-shape ds fail)
     (define dims (vector-length ds))
     (define: new-ds : Indexes (make-vector dims 0))
@@ -77,12 +77,12 @@
 (define: empty-vectorof-index : Indexes
   #())
 
-(: raise-array-index-error (Symbol Indexes User-Indexes -> Nothing))
+(: raise-array-index-error (Symbol Indexes In-Indexes -> Nothing))
 (define (raise-array-index-error name ds js)
   (error name "expected indexes for shape ~e; given ~e"
          (vector->list ds) js))
 
-(: array-index->value-index (Symbol Indexes User-Indexes -> Nonnegative-Fixnum))
+(: array-index->value-index (Symbol Indexes In-Indexes -> Nonnegative-Fixnum))
 (define (array-index->value-index name ds js)
   (define (raise-index-error) (raise-array-index-error name ds js))
   (define dims (vector-length ds))
@@ -96,7 +96,7 @@
                  [else  (raise-index-error)])]
           [else  j])))
 
-(: check-array-indexes (Symbol Indexes User-Indexes -> Indexes))
+(: check-array-indexes (Symbol Indexes In-Indexes -> Indexes))
 (define (check-array-indexes name ds js)
   (define (raise-index-error) (raise-array-index-error name ds js))
   (define dims (vector-length ds))

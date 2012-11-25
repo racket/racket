@@ -47,8 +47,11 @@
                    ((Matrix Number)                 -> (Matrix Number))
                    ((Matrix Real)   (Matrix Real)   -> (Matrix Real))
                    ((Matrix Number) (Matrix Number) -> (Matrix Number))))
+(: matrix.sqr (case-> ((Matrix Real) -> (Matrix Real))
+                      ((Matrix Number) -> (Matrix Number))))
+(: matrix.magnitude ((Matrix Number) -> (Matrix Real)))
 
 (define matrix+ (make-matrix-pointwise2 'matrix+ array+))
 (define matrix- (make-matrix-pointwise1/2 'matrix- array-))
-(define matrix.sqr array-sqr)
-(define matrix.magnitude array-magnitude)
+(define matrix.sqr (make-matrix-pointwise1 'matrix.sqr array-sqr))
+(define matrix.magnitude (make-matrix-pointwise1 'matrix.magnitude array-magnitude))

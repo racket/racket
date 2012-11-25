@@ -11,7 +11,7 @@
 ;; ===================================================================================================
 ;; Arbitrary transforms
 
-(: array-transform (All (A) ((Array A) User-Indexes (Indexes -> User-Indexes) -> (Array A))))
+(: array-transform (All (A) ((Array A) In-Indexes (Indexes -> In-Indexes) -> (Array A))))
 (define (array-transform arr new-ds idx-fun)
   (define old-ds (array-shape arr))
   (define old-f (unsafe-array-proc arr))
@@ -111,7 +111,7 @@
 ;; ===================================================================================================
 ;; Reshape
 
-(: array-reshape (All (A) ((Array A) User-Indexes -> (Array A))))
+(: array-reshape (All (A) ((Array A) In-Indexes -> (Array A))))
 (define (array-reshape arr ds)
   (let ([ds  (check-array-shape
               ds (λ () (raise-argument-error 'array-reshape "(Vectorof Index)" 1 arr ds)))])

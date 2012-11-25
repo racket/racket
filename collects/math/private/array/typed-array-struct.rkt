@@ -47,6 +47,12 @@
                                size ds)]))]
         [else  (values (vector->immutable-vector ds) size strict? proc)]))
 
+#|
+(: array-procedure (All (A) ((Array A) In-Indexes -> A)))
+(define (array-procedure arr js)
+  ((Array-unsafe-proc arr) (check-array-indexes 'array-ref (Array-shape arr) js)))
+|#
+
 (struct: (A) Array ([shape : Indexes]
                     [size : Index]
                     [strict? : Boolean]
@@ -55,6 +61,8 @@
   #:property prop:custom-print-quotable 'never
   #:property prop:custom-write (λ (arr port mode) ((array-custom-printer) arr 'array port mode))
   #:property prop:equal+hash (list array-recur-equal? array-hash-code array-hash-code)
+  ;; It would be really nice to do this, but TR can't right now:
+  ;#:property prop:procedure array-procedure
   )
 
 (define-syntax-rule (make-unsafe-array-proc ds ref)
@@ -65,7 +73,7 @@
 (begin-encourage-inline
   (define (array-dims arr) (vector-length (Array-shape arr))))
 
-(: build-array (All (A) (User-Indexes (Indexes -> A) -> (Array A))))
+(: build-array (All (A) (In-Indexes (Indexes -> A) -> (Array A))))
 (define (build-array ds proc)
   (let ([ds  (check-array-shape
               ds (λ () (raise-argument-error 'build-array "(Vectorof Index)" 0 ds proc)))])
@@ -147,7 +155,7 @@
   (define lst null)
   (for-each-array-index ds (λ (js) (set! lst (cons (proc js) lst))))
   
-  (write-string "[" port)
+  (write-string "#[" port)
   (unless (null? lst)
     (let ([lst  (reverse lst)])
       (recur-print (car lst) port)

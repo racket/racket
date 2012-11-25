@@ -6,13 +6,13 @@
 
 (provide (all-defined-out))
 
-(: make-array (All (A) (User-Indexes A -> (Array A))))
+(: make-array (All (A) (In-Indexes A -> (Array A))))
 (define (make-array ds v)
   (let ([ds  (check-array-shape
               ds (λ () (raise-argument-error 'make-array "(Vectorof Index)" 0 ds v)))])
     (unsafe-build-array ds (λ (js) v))))
 
-(: axis-index-array (User-Indexes Integer -> (Array Index)))
+(: axis-index-array (In-Indexes Integer -> (Array Index)))
 (define (axis-index-array ds k)
   (let* ([ds  (check-array-shape
                ds (λ () (raise-argument-error 'axis-index-array "(Vectorof Index)" 0 ds k)))]
@@ -21,14 +21,14 @@
            (unsafe-build-array ds (λ: ([js : Indexes]) (unsafe-vector-ref js k)))]
           [else  (raise-argument-error 'axis-index-array (format "Index < ~a" dims) 1 ds k)])))
 
-(: index-array (User-Indexes -> (Array Index)))
+(: index-array (In-Indexes -> (Array Index)))
 (define (index-array ds)
   (let ([ds  (check-array-shape
               ds (λ () (raise-argument-error 'index-array "(Vectorof Index)" ds)))])
     (unsafe-build-array ds (λ: ([js : Indexes])
                              (assert (unsafe-array-index->value-index ds js) index?)))))
 
-(: indexes-array (User-Indexes -> (Array Indexes)))
+(: indexes-array (In-Indexes -> (Array Indexes)))
 (define (indexes-array ds)
   (let ([ds  (check-array-shape
               ds (λ () (raise-argument-error 'indexes-array "(Vectorof Index)" ds)))])

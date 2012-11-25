@@ -23,7 +23,7 @@
   (define set-proc (make-unsafe-array-set-proc A ds (λ (j v) (unsafe-vector-set! vs j v))))
   (Mutable-Array ds (vector-length vs) #t proc set-proc vs))
 
-(: make-mutable-array (All (A) (User-Indexes (Vectorof A) -> (Mutable-Array A))))
+(: make-mutable-array (All (A) (In-Indexes (Vectorof A) -> (Mutable-Array A))))
 (define (make-mutable-array ds vs)
   (let* ([ds  (check-array-shape
                ds (λ () (raise-argument-error 'make-mutable-array "(Vectorof Index)" 0 ds vs)))]

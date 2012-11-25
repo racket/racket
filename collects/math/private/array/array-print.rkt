@@ -3,6 +3,7 @@
 ;; Defines the custom printer used for array values
 
 (require racket/pretty
+         racket/fixnum
          "array-struct.rkt"
          "utils.rkt")
 
@@ -66,24 +67,24 @@
     (define: js : Indexes (make-vector dims 0))
     ;; For each shape axis
     (let i-loop ([#{i : Nonnegative-Fixnum} 0])
-      (cond [(i . < . dims)  ; proves i : Index
-             (write-string "[" port)
+      (cond [(i . fx< . dims)  ; proves i : Index
+             (write-string "#[" port)
              (define di (vector-ref ds i))  ; length of axis i
              ;; For each index on this axis
              (let ji-loop ([#{ji : Nonnegative-Fixnum} 0])
-               (when (ji . < . di)  ; proves ji : Index
+               (when (ji . fx< . di)  ; proves ji : Index
                  (vector-set! js i ji)
                  ;; Print either nested elements or the element here
-                 (i-loop (+ i 1))
+                 (i-loop (fx+ i 1))
                  ;; Print delimiter when not printing the last element on this axis
-                 (when (ji . < . (- di 1))
-                   (cond [(and (eq? layout 'compact) (= i (- dims 1)))
+                 (when (ji . fx< . (fx- di 1))
+                   (cond [(and (eq? layout 'compact) (fx= i (fx- dims 1)))
                           ;; Keep elements on one line in compact layout
                           (write-string " " port)]
                          [else
-                          ;; +1 to indent past "(", +1 to indent past the first "[", and `i' axes
-                          (maybe-print-newline (+ 2 i))]))
-                 (ji-loop (+ ji 1))))
+                          ;; +1 to indent past "(", +2 to indent past the first "#[", and `i' axes
+                          (maybe-print-newline (+ 3 (* i 2)))]))
+                 (ji-loop (fx+ ji 1))))
              (write-string "]" port)]
             [else
              ;; Print an element

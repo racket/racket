@@ -17,7 +17,7 @@
     (define (maybe-list->vector vs)
       (and vs (list->vector vs)))
     
-    (: vector-shape (All (A) ((Vectorof* A) ((Vectorof* A) -> Boolean : A)
+    (: vector-shape (All (A) ((Vectorof* A) ((Vectorof* A) -> Any : A)
                                             -> (U #f (Vectorof Integer)))))
     (define (vector-shape vec pred?)
       (maybe-list->vector
@@ -36,7 +36,7 @@
                                    [else  #f]))
                            #f)])]))))
     
-    (: list-shape (All (A) ((Listof* A) ((Listof* A) -> Boolean : A) -> (U #f (Vectorof Integer)))))
+    (: list-shape (All (A) ((Listof* A) ((Listof* A) -> Any : A) -> (U #f (Vectorof Integer)))))
     (define (list-shape lst pred?)
       (maybe-list->vector
        (let: list-shape : (U #f (Listof Integer)) ([lst : (Listof* A)  lst])
@@ -56,7 +56,7 @@
     ;; ===============================================================================================
     ;; Conversion to arrays
     
-    (: first* (All (A) ((Listof* A) ((Listof* A) -> Boolean : A) -> A)))
+    (: first* (All (A) ((Listof* A) ((Listof* A) -> Any : A) -> A)))
     (define (first* lst pred?)
       (let/ec: return : A
         (let: loop : A ([lst : (Listof* A)  lst])
@@ -65,7 +65,7 @@
                          (loop lst))
                        (error 'first* "no first* element")]))))
     
-    (: list*->flat-vector (All (A) ((Listof* A) Integer ((Listof* A) -> Boolean : A) -> (Vectorof A))))
+    (: list*->flat-vector (All (A) ((Listof* A) Integer ((Listof* A) -> Any : A) -> (Vectorof A))))
     (define (list*->flat-vector lst size pred?)
       (cond [(zero? size)  (vector)]
             [else
@@ -77,7 +77,7 @@
                               (loop lst i))]))
              vec]))
     
-    (: list*->array (All (A) ((Listof* A) ((Listof* A) -> Boolean : A) -> (Array A))))
+    (: list*->array (All (A) ((Listof* A) ((Listof* A) -> Any : A) -> (Array A))))
     (define (list*->array lst pred?)
       (define (raise-shape-error)
         ;; don't have to worry about non-Index size - can't fit in memory anyway
@@ -90,7 +90,7 @@
                    (unsafe-mutable-array ds (list*->flat-vector lst size pred?)))]
             [else  (raise-shape-error)]))
     
-    (: vector*->array (All (A) ((Vectorof* A) (Any -> Boolean : A) -> (Array A))))
+    (: vector*->array (All (A) ((Vectorof* A) ((Vectorof* A) -> Any : A) -> (Array A))))
     (define (vector*->array vec pred?)
       (define (raise-shape-error)
         ;; don't have to worry about non-Index size - can't fit in memory anyway

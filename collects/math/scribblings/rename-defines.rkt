@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require (for-syntax racket/base))
+(require (for-syntax racket/base)
+         (only-in typed/racket/base define:))
 
 (provide rename-defines)
 

@@ -33,7 +33,7 @@
 ;; ===================================================================================================
 ;; Sequence of indexes
 
-(: in-array-indexes (User-Indexes -> (Sequenceof Indexes)))
+(: in-array-indexes (In-Indexes -> (Sequenceof Indexes)))
 (define (in-array-indexes ds)
   (let: ([ds : Indexes  (check-array-shape
                          ds (λ () (raise-argument-error 'in-array-indexes "Indexes" ds)))])

@@ -46,6 +46,4 @@
   (syntax-parse stx
     [(_ e:expr)
      (syntax/loc stx (array/syntax array list flat-list->array e))]
-    [(_ e:expr T:expr)
-     (syntax/loc stx (array/syntax array list (inst flat-list->array T) e))]
     [_:id  (raise-syntax-error 'array "not allowed as an expression" stx)]))

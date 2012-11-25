@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require typed/untyped-utils
+         typed/racket/base
          (for-syntax racket/base syntax/parse)
          "array-syntax.rkt"
          (except-in "typed-mutable-array.rkt"
@@ -26,9 +27,9 @@
  flat-vector->matrix)
 
 (define-syntax (mutable-array stx)
-  (syntax-parse stx
+  (syntax-parse stx #:literals (:)
     [(_ e:expr)
      (syntax/loc stx (array/syntax mutable-array vector make-mutable-array e))]
-    [(_ e:expr T:expr)
+    [(_ e:expr : T:expr)
      (syntax/loc stx (array/syntax mutable-array (inst vector T) make-mutable-array e))]
     [_:id  (raise-syntax-error 'mutable-array "not allowed as an expression" stx)]))
