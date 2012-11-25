@@ -37,7 +37,7 @@
     - Detect when a character constant is being typed, and
       don't insert brace pairs if so
 
-   
+
 ------------------------------
        Version 5.3.1
 ------------------------------
