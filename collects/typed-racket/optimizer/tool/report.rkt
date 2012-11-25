@@ -17,7 +17,9 @@
             (if profile
                 (report-hidden-costs info-log profile hot-functions)
                 '())))
-   (report-inlining mzc-log profile hot-functions)))
+   (if profile ; inlining reports have too low a SNR to be shown w/o profiling
+       (report-inlining mzc-log profile hot-functions)
+       '())))
 
 
 ;; Returns a report-entry or #f, which means prune.
