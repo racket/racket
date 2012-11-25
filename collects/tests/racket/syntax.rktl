@@ -457,6 +457,87 @@
   (test (void) f 'gigante)
   (test (void) f 0))
 
+(let ()
+  ;; This test uses string-copy to avoid interning string literals.
+  (define (f x)
+    (define y 
+      (if (string? x)
+          (string-copy x)
+          x))
+    (case y
+      [("low") 0]
+      [("one") 1]
+      [("middle") 2]
+      [("upper" #t) 3]
+      [("high" "big" "up-there" "more") 4]
+      [("extreme" "massive" "huge" "gigantic" #f) 5]))
+  (test 0 f "low")
+  (test 1 f "one")
+  (test 2 f "middle")
+  (test 3 f "upper")
+  (test 3 f #t)
+  (test 4 f "high")
+  (test 4 f "big")
+  (test 4 f "up-there")
+  (test 4 f "more")
+  (test 5 f "extreme")
+  (test 5 f "massive")
+  (test 5 f "huge")
+  (test 5 f #f)
+  (test 5 f "gigantic")
+  (test (void) f "gigante")
+  (test (void) f 'gigante)
+  (test (void) f 0))
+
+(let ()
+  (define (f x)
+    (case x
+      [("zero"  #"zero"  (z . 0) (z e r o)   #(z e r o)   #&zero 
+                #hash((z . "z") (e . "e") (r . "r") (o . "o")) 
+                #s(z e r o)) 
+       0]
+      [("one"   #"one"   (o . 1) (o n e)     #(o n e)     #&one 
+                #hash((o . "o") (n . "n") (e . "e")) 
+                #s(o n e)) 
+       1]
+      [("two"   #"two"   (t . 2) (t w o)     #(t w o)     #&two 
+                #hash((t . "t") (w . "w") (o . "o")) 
+                #s(t w o))
+       2]
+      [("three" #"three" (t . 3) (t h r e e) #(t h r e e) #&three 
+                #hash((t . "t") (h . "h") (r . "e") (e . "e") (e . "e")) 
+                #s(t h r e e)) 
+       3]
+      [("four"  #"four"  (f . 4) (f o u r)   #(f o u r)   #&four 
+                #hash((f . "f") (o . "o") (u . "u") (r . "r"))
+                #s(f o u r))
+       4]
+      [("five"  #"five"  (f . 5) (f i v e)   #(f i v e)   #&five 
+                #hash((f . "f") (i . "i") (v . "v") (e . "e"))
+                #s(f i v e)) 
+       5]
+      [("six"   #"six"   (s . 6) (s i x)     #(s i x)     #&six 
+                #hash((s . "s") (i . "i") (x . "x")) 
+                #s(s i x)) 
+       6]
+      [("seven" #"seven" (s . 7) (s e v e n) #(s e v e n) #&seven 
+                #hash((s . "s") (e . "e") (v . "v") (e . "e") (n . "n"))
+                #s(s e v e n))
+       7]
+      [("eight" #"eight" (e . 8) (e i g h t) #(e i g h t) #&eight 
+                #hash((e . "e") (i . "i") (g . "g") (h . "h") (t . "t"))
+                #s(e i g h t))
+       8]))
+  (test 8 f "eight")
+  (test 7 f #"seven")
+  (test 6 f (cons 's 6))
+  (test 5 f '(f i v e))
+  (test 4 f '#(f o u r))
+  (test 3 f (box 'three))
+  (test 2 f (hash 't "t" 'w "w" 'o "o"))
+  (test 1 f #s(o n e))
+  (test (void) f #f))
+
 (test #t 'and (and (= 2 2) (> 2 1)))
 (test #f 'and (and (= 2 2) (< 2 1)))
 (test '(f g) 'and (and 1 2 'c '(f g)))

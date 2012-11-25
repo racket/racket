@@ -10,7 +10,7 @@
   
   
   (define-syntax (case stx)
-    (syntax-case* stx (else) (λ (a b) (free-identifier=? a (datum->syntax stx 'else)))
+    (syntax-case stx (else)
       ;; Empty case
       [(_ v) (syntax/loc stx (#%expression (begin v (void))))]
       
@@ -96,8 +96,8 @@
   (define-syntax (case/sequential-test stx)
     (syntax-case stx ()
       [(_ v ())         #'#f]
-      [(_ v (k))        #`(eqv? v 'k)]
-      [(_ v (k ks ...)) #`(if (eqv? v 'k)
+      [(_ v (k))        #`(equal? v 'k)]
+      [(_ v (k ks ...)) #`(if (equal? v 'k)
                               #t
                               (case/sequential-test v (ks ...)))]))
   
@@ -145,7 +145,7 @@
     (define interval-index caddr)
     
     (define (partition-constants stx)
-      (define h (make-hasheqv))
+      (define h (make-hash))
       
       (define (duplicate? x)
         (not (eq? (hash-ref h x nothing) nothing)))
@@ -163,7 +163,7 @@
               [else (let inner ([f f] [s s] [c c] [o o] [ys (syntax->list (car xs))])
                       (cond [(null? ys) (loop f s c o (add1 idx) (cdr xs))]
                             [else
-                             (let ([y (syntax-e (car ys))])
+                             (let ([y (syntax->datum (car ys))])
                                (cond [(duplicate? y) (inner f s c o (cdr ys))]
                                      [(fixnum? y)    (inner (add f y idx) s c o (cdr ys))]
                                      [(symbol? y)    (inner f (add s y idx) c o (cdr ys))]
@@ -205,7 +205,7 @@
       (dispatch-hashable tmp-stx symbol-alist make-immutable-hasheq else-exp))
 
     (define (dispatch-other tmp-stx other-alist else-exp)
-      (dispatch-hashable tmp-stx other-alist make-immutable-hasheqv else-exp))
+      (dispatch-hashable tmp-stx other-alist make-immutable-hash else-exp))
 
     (define (test-for-symbol tmp-stx alist)
       (define (contains? pred)

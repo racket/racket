@@ -2132,7 +2132,7 @@ position with respect to the original @racket[or] form.
 
 Evaluates @racket[val-expr] and uses the result to select a
 @racket[case-clause]. The selected clause is the first one with a
-@racket[datum] whose @racket[quote]d form is @racket[eqv?] to the
+@racket[datum] whose @racket[quote]d form is @racket[equal?] to the
 result of @racket[val-expr]. If no such @racket[datum] is present, the
 @racket[else] @racket[case-clause] is selected; if no @racket[else]
 @racket[case-clause] is present, either, then the result of the
