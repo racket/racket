@@ -1315,16 +1315,19 @@
          [(and lam-reg (regexp-match lam-reg text)) 'lambda]
          [else #f])))))
 
-  ;; determines if the cursor is currently sitting right after
-  ;;  a  #\  or \  characters - thus looking like we are typing
-  ;;  a char literal or maybe an escaped character in a string
-  ;;  literal
-  (define (char-literal-prefixed? text)
-    (define selection-start (send text get-start-position))
-    (and (= selection-start (send text get-end-position))   ; nothing selected
-         (< 1 selection-start)
-         (string=? "\\"
-                   (send text get-text (- selection-start 1) selection-start))))
+
+(define (position-type-when-inserted text char)
+  (define selection-start (send text get-start-position))
+  (define selection-end (send text get-end-position))
+  (send text begin-edit-sequence #t #f)
+  (send text insert char selection-start)
+  (define actual-type (send text classify-position selection-start))
+  (send text delete selection-start (+ 1 selection-start))
+  (send text end-edit-sequence)
+  (send text undo)  ; to avoid messing up the editor's modified state
+  ;(printf "check: |~a| actual: ~a~n" char actual-type)
+  actual-type)
+
 
   ;; determines if the cursor is currently sitting in a string
   ;; literal or a comment. To do this more accurately, first
@@ -1508,19 +1511,41 @@
   ;;   - cursor is not in a string or line/block comment, and
   ;;   - cursor is not preceded by #\ or \ escape characters
   (define (maybe-insert-brace-pair text open-brace close-brace)
+    (define open-parens 
+      (for/list ([x (racket-paren:get-paren-pairs)]) (string-ref (car x) 0)))
     (cond
-      [(and (preferences:get 'framework:automatic-parens)
-            (not (char-literal-prefixed? text))) ;; don't insert a pair if a char literal is being typed
+      [(preferences:get 'framework:automatic-parens)
        (define c (immediately-following-cursor text))
+       (define when-inserted (position-type-when-inserted text (string open-brace)))
        (cond
+         ; insert paren pair if it results valid parenthesis token...
+         [(member open-brace open-parens)
+          (if (eq? (position-type-when-inserted text (string open-brace)) 'parenthesis)
+              (insert-brace-pair text open-brace close-brace)
+              (send text insert open-brace))]
+         
+         ; ASSUME: from here on, open-brace is either "  or  |
+         ; is there a token error at current position which would 
+         ; be fixed by inserting the character...
+         [(and (eq? 'error (send text classify-position (send text get-start-position)))
+               (not (eq? 'error when-inserted)))
+          (send text insert open-brace)]
+         
+         ; smart-skip over a  "  |  or  |# ...
          [(and c (char=? #\" open-brace) (string=? c "\""))
-          (send text set-position (+ 1 (send text get-end-position))) ]
+          (send text set-position (+ 1 (send text get-end-position)))]
          [(and c (char=? #\| open-brace) (string=? c "|"))
           (send text set-position (+ 1 (send text get-end-position)))
           (define d (immediately-following-cursor text))
           (when (and d (string=? d "#"))   ; a block comment?
-            (send text set-position (+ 1 (send text get-end-position)))) ]
+            (send text set-position (+ 1 (send text get-end-position))))]
+
+         ; are we in a string or comment...
          [(in-string/comment? text) (send text insert open-brace)]
+         
+         ; otherwise if open-brace would result in some literal
+         [(eq? 'constant when-inserted) (send text insert open-brace)]
+         
          [else (insert-brace-pair text open-brace close-brace)])]
       [else
        (send text insert open-brace)]))
@@ -1745,8 +1770,8 @@
     (send text end-edit-sequence)
     (cond
       [(and (preferences:get 'framework:automatic-parens)
-            (not (char-literal-prefixed? text))
-            (not (in-string/comment? text)))
+            (not (in-string/comment? text))
+            (eq? (position-type-when-inserted text real-char) 'parenthesis))
        (send text insert (case real-char
                            [(#\() #\)]
                            [(#\[) #\]]

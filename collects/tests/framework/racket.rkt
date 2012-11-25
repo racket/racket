@@ -272,11 +272,18 @@
                            "\"abc def " "" "\" 123"
                            #\"
                            '(["\"abc def \"" "\" 123"] ["\"abc def \"" " 123"]))
-(test-parens-behavior/full 'double-quote-escaped
+(test-parens-behavior/full 'double-quote-escaped-1
                            "\"abcd \\" "" ""
                            #\"
-                           '(["\"abcd \\\"" ""] ["\"abcd \\\"" ""]))
-
+                           '(["\"abcd \\\"" ""]
+                             ["\"abcd \\\"" "\""])) ; this one inserts a pair
+                                  ; because the string wasn't closed anyway
+                                  ; (it's a hard case to distinguish)
+(test-parens-behavior/full 'double-quote-escaped-2
+                           "\"abcd \\" "" "\""
+                           #\"
+                           '(["\"abcd \\\"" "\""]
+                             ["\"abcd \\\"" "\""]))
 
 (test-parens-behavior/full 'bar
                            "abc " "" "123"
