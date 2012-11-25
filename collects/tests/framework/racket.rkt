@@ -158,7 +158,39 @@
    final-states))
 
 
-(test-parens-behavior/full 'open-1
+(define SPECIAL-CHARS '(#\( #\) #\[ #\] #\" #\| #\{ #\}))
+
+(for ([k SPECIAL-CHARS])
+  ;; test that character literals never result in a pair of characters typed...
+  (test-parens-behavior/full (format "literal-~a" k)
+                             "(list 1 #\\" "" ")"
+                             k
+                             `([,(string-append "(list 1 #\\" (string k)) ")"] 
+                               [,(string-append "(list 1 #\\" (string k)) ")"]))
+  ;; test that auto-parens has no effect in strings
+  (test-parens-behavior/full (format "~a-in-string" k)
+                             "\" abc def " "" " \""
+                             k
+                             `([,(string-append "\" abc def " (string k)) " \""] 
+                               [,(string-append "\" abc def " (string k)) " \""]))
+  
+  ;; test that auto-parens has no effect in various comment situations
+  (define scenarios
+    ;    description     before-cursor    after-cursor
+    '(("in-line-comment"  ";; abc def "    " ghi ")
+      ("end-of-line-comment" ";; abc def " "")
+      ("in-block-comment" "#| abc def "  " ghi |#")
+      ))
+  (for ([s scenarios])
+    (let* ([before (cadr s)]
+           [after (caddr s)]
+           [before-final (string-append before (string k))]
+           [result (list before-final after)])
+      (test-parens-behavior/full (format "~a-~a" k (car s))
+                                 before "" after k `(,result ,result)))))
+ 
+;;; assorted other scenarios...
+(test-parens-behavior/full 'open-parens
                            "abcd" "" "efg"  ; editor state: before, selected, after
                            #\(              ; key(s) pressed
                            '(["abcd(" "efg"]  ; result state sep by cursor, no auto-parens
@@ -240,31 +272,29 @@
                            "\"abc def " "" "\" 123"
                            #\"
                            '(["\"abc def \"" "\" 123"] ["\"abc def \"" " 123"]))
-(test-parens-behavior/full 'double-quote-literal-1
+(test-parens-behavior/full 'double-quote-escaped
                            "\"abcd \\" "" ""
                            #\"
                            '(["\"abcd \\\"" ""] ["\"abcd \\\"" ""]))
-(test-parens-behavior/full 'double-quote-literal-2
-                           "(list 1 #\\" "" ")"
-                           #\"
-                           '(["(list 1 #\\\"" ")"] ["(list 1 #\\\"" ")"]))
 
-(test-parens-behavior/full 'bar-1
+
+(test-parens-behavior/full 'bar
                            "abc " "" "123"
                            #\|
                            '(["abc |" "123"] ["abc |" "|123"]))
-(test-parens-behavior/full 'bar-literal-1
+(test-parens-behavior/full 'bar-literal
                            "(list 1 #\\" "" ")"
                            #\|
                            '(["(list 1 #\\|" ")"] ["(list 1 #\\|" ")"]))
-(test-parens-behavior/full 'bar-skip-1
+(test-parens-behavior/full 'bar-skip
                            "abc |def" "" "|123"
                            #\|
                            '(["abc |def|" "|123"] ["abc |def|" "123"]))
-(test-parens-behavior/full 'bar-selection-1
+(test-parens-behavior/full 'bar-selection
                            "abc |def " "hij" "|123"
                            #\|
                            '(["abc |def |" "|123"] ["abc |def |" "hij||123"]))
+
 
 (test-parens-behavior/full 'block-comment-1
                            " #" "" ""
