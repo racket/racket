@@ -38,7 +38,6 @@
    (log-entry-stx         parent) ; we report the outermost one
    (log-entry-located-stx parent)
    (log-entry-pos         parent)
-   (log-entry-provenance  parent)
 
    (remove-duplicates
     (append (remove (log-entry-stx child)

@@ -85,7 +85,6 @@
   (inliner-log-entry kind kind
                      forged-stx forged-stx
                      (syntax-position forged-stx)
-                     'mzc
                      evt))
 
 (define inlining-event-regexp

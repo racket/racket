@@ -25,9 +25,10 @@
 ;; Returns a report-entry or #f, which means prune.
 (define (log-entry->report-entry l)
   (match l
-    [(log-entry kind msg stx located-stx (? number? pos) provenance)
+    [(log-entry kind msg stx located-stx (? number? pos))
      (define start     (sub1 pos))
      (define end       (+ start (syntax-span stx)))
+     (define provenance 'typed-racket)
      ;; When we first create report entries, they have a single sub.
      (report-entry (list (if (opt-log-entry? l)
                              (opt-report-entry located-stx msg provenance)
@@ -76,9 +77,9 @@
               (/ (node-self (car profile-entry)) total-time)
               1))
         (match l
-          [(missed-opt-log-entry kind msg stx located-stx pos provenance
+          [(missed-opt-log-entry kind msg stx located-stx pos
                                  irritants merged-irritants badness)
-           (missed-opt-log-entry kind msg stx located-stx pos provenance
+           (missed-opt-log-entry kind msg stx located-stx pos
                                  irritants merged-irritants
                                  ;; uses ceiling to never go down to 0
                                  ;; both badness and badness-multiplier are non-0

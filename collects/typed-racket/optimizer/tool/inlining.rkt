@@ -63,7 +63,7 @@
     ;; prune this entry from the logs, but return what we produced so far
     (define (prune) (escape produced-entries))
     (match (car log) ; events are grouped, first element is representative
-      [(log-entry kind msg stx located-stx pos provenance)
+      [(log-entry kind msg stx located-stx pos)
 
        ;; #f if no profiling info is available for this function
        ;; takes in either a single pos number or a pair of numbers (line col)
@@ -190,7 +190,7 @@
                                (format-aggregation-string pruned-log)
                                (if msg (format "~a\n" msg) "")
                                recommendation)
-                       provenance
+                       'inlining
                        badness
                        '())) ; no irritants to highlight
                 start end
@@ -201,7 +201,7 @@
                        located-stx
                        (format "Inlining ~a"
                                (format-aggregation-string pruned-log))
-                       provenance))
+                       'inlining))
                 start end
                 0)))
 
