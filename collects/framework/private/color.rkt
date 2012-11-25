@@ -953,13 +953,13 @@ added get-regions
                                (get-close-paren pos (cdr closers) #t)
                                #f)))))
                  c))))))
-    
-    
+
+
     ;; this returns the start/end positions
     ;; of the matching close paren of the first open paren to the left of pos,
-    ;; if it is properly balanced. (this one assumes though that closers 
+    ;; if it is properly balanced. (this one assumes though that closers
     ;; really contains only 'parenthesis type characters)
-    ;; find-next-outer-paren : number (list string) 
+    ;; find-next-outer-paren : number (list string)
     ;;            -> (values (or #f number) (or #f number) (or #f string))
     (define/private (find-next-outer-paren pos closers)
       (cond
@@ -970,23 +970,23 @@ added get-regions
          (define ls (find-ls pos))
          (cond
            [(not ls) (values #f #f #f)]
-           [else 
+           [else
             (define start-pos (lexer-state-start-pos ls))
             (insert c pos)             ; temporarily insert c
             (define m (backward-match (+ l pos) start-pos)) ; find matching open parens
             (delete pos (+ l pos))     ; delete c
             (define n                  ; now from the open parens find the *real* matching close parens
               (and m (forward-match m (last-position)))) ; n is the position *after* the close
-            #;(printf "outer: ~a~n" (list pos n m (and n m (let-values ([(a b) (get-token-range (- n l))]) 
+            #;(printf "outer: ~a~n" (list pos n m (and n m (let-values ([(a b) (get-token-range (- n l))])
                                                            (list a b)))))
-            (if n 
+            (if n
                 (let-values ([(a b) (get-token-range (- n l))])
                   (values a b (get-text a b)))
                 (find-next-outer-paren pos (cdr closers)))])]))
     
 
     ;; returns the start and end positions of the next token at or after
-    ;;   pos that matches any of the given list of closers, as well as 
+    ;;   pos that matches any of the given list of closers, as well as
     ;;   the string of the matching token itself and whether it
     ;;   occurred immediately adjacent to pos, ignoring whitespace and comments
     ;; find-next-close-paren : number (list string) boolean
@@ -997,7 +997,7 @@ added get-regions
       (define start-pos (begin (send tree search! next-pos)
                                (send tree get-root-start-position)))
       (define end-pos (send tree get-root-end-position))
-      
+
       #;(printf "~a |~a| |~a|~n" (list pos next-pos start-pos end-pos (send tree get-root-data)) closers (get-text start-pos end-pos))
 
       (cond
@@ -1005,11 +1005,11 @@ added get-regions
          (values #f #f #f #f)]    ;; didn't find /any/ token ending after pos
         [(and (<= pos start-pos)
               (member (get-text start-pos end-pos) closers)) ; token at start-pos matches
-         (values start-pos end-pos (get-text start-pos end-pos) adj?)]   
+         (values start-pos end-pos (get-text start-pos end-pos) adj?)]
         [else   ; skip ahead
          (find-next-close-paren end-pos closers #f)]))
-    
-    
+
+
     ;; given end-pos, a position right after a closing parens,
     ;; flash the matching open parens
     (define/private (flash-from end-pos)
@@ -1022,8 +1022,8 @@ added get-regions
                 (when (and (send parens is-open-pos? (- to-pos start-pos))
                            (send parens is-close-pos? (- end-pos 1 start-pos)))
                   (flash-on to-pos (+ 1 to-pos)))))))))
-    
-    
+
+
     (inherit insert delete flash-on on-default-char set-position undo)
     ;; See docs
     ;; smart-skip : (or/c #f 'adjacent 'forward)
@@ -1044,7 +1044,7 @@ added get-regions
         (find-next-outer-paren pos closers))
       (end-edit-sequence)  ;; wraps up the net-zero editing changes done by get-close-paren etc.
       (undo)   ;; to avoid messing up the editor's modified state in case of a simple skip
-      
+
       ;; an action is either '(insert) or '(skip p) where p is a position
       (define the-action
         (r:match smart-skip
@@ -1063,7 +1063,7 @@ added get-regions
                         [else  `(insert)])]
            [_ (error 'insert-close-paren
                      (format "invalid smart-skip option: ~a" smart-skip))]))
-      
+
       (define end-pos
         (r:match the-action
            [(list 'insert)
@@ -1071,9 +1071,9 @@ added get-regions
                       (string->list insert-str))
             (+ pos (string-length insert-str))]
            [(list 'skip p) (set-position p) p]))
-      
+
       (when (and flash? (not stopped?)) (flash-from end-pos)))
-  
+
     
     (define/public (debug-printout)
       (for-each 

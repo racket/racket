@@ -1,7 +1,7 @@
 #lang racket/unit
 
 ;; originally by Dan Grossman
-;; 6/30/95   
+;; 6/30/95
 
 (require string-constants
          racket/class
@@ -1325,7 +1325,7 @@
          (< 1 selection-start)
          (string=? "\\"
                    (send text get-text (- selection-start 1) selection-start))))
-    
+
   ;; determines if the cursor is currently sitting in a string
   ;; literal or a comment. To do this more accurately, first
   ;; insert a space at the current cursor start position, then
@@ -1338,7 +1338,7 @@
     (define type (send text classify-position selection-start))
     (send text delete selection-start (add1 selection-start))
     (send text end-edit-sequence)
-    (send text undo)  ; to avoid messing up the editor's modified state  
+    (send text undo)  ; to avoid messing up the editor's modified state
                       ; in case of a simple skip
     (and (member type '(comment string)) #t))
 
@@ -1350,7 +1350,7 @@
     (and (= selection-start (send text get-end-position))   ; nothing selected
          (< selection-start (send text last-position))
          (send text get-text selection-start (+ selection-start 1))))
-  
+
 
 
 (define set-mode-mixin
@@ -1488,8 +1488,8 @@
   
   (send keymap map-function "leftbuttondouble" "paren-double-select")
   
-  
-  
+
+
   (define (insert-brace-pair text open-brace close-brace)
     (define selection-start (send text get-start-position))
     (define hash-before?  ; tweak to detect and correctly close block comments #| ... |#
@@ -1626,7 +1626,7 @@
   (map-meta "{" "insert-{}-pair")
   (map-meta "\"" "insert-\"\"-pair")
   (map-meta "|" "insert-||-pair")
-  
+
   (map "(" "maybe-insert-()-pair")
   (map "[" "maybe-insert-[]-pair-maybe-fixup-[]")
   (map "{" "maybe-insert-{}-pair")
