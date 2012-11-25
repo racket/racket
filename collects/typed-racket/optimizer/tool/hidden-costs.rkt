@@ -34,13 +34,16 @@
                  #:when (info-log-entry? info-entry)
                  #:when (equal? (log-entry-kind info-entry) kind)
                  #:when (inside-us? (log-entry-pos info-entry)))
-        (emit (missed-opt-log-entry
-               "" ; kind not used at this point
-               message
-               (log-entry-located-stx info-entry)
-               (log-entry-located-stx info-entry)
-               (log-entry-pos info-entry) 'typed-racket
-               '() '()
+        (define start     (sub1 (log-entry-pos info-entry)))
+        (define end       (+ start (syntax-span (log-entry-stx info-entry))))
+        (emit (report-entry
+               (list (missed-opt-report-entry
+                      (log-entry-located-stx info-entry)
+                      message
+                      'typed-racket
+                      badness
+                      '())) ; no irritants to highlight
+               start end
                badness)))))
 
   (check-hidden-cost

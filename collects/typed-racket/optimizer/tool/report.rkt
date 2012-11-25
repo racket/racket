@@ -12,13 +12,13 @@
   (define hot-functions (and profile (prune-profile profile)))
   (append
    (log->report
-    (append (causality-merging
-             (prune-cold-TR-failures TR-log profile hot-functions))
-            (if profile
-                (report-hidden-costs info-log profile hot-functions)
-                '())))
-   (if profile ; inlining reports have too low a SNR to be shown w/o profiling
-       (report-inlining mzc-log profile hot-functions)
+    (causality-merging
+     (prune-cold-TR-failures TR-log profile hot-functions)))
+   (if profile
+       ;; inlining and hidden cost reports have too low a SNR to be shown
+       ;; w/o profiling-based pruning
+       (append (report-inlining mzc-log profile hot-functions)
+               (report-hidden-costs info-log profile hot-functions))
        '())))
 
 
