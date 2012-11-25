@@ -40,7 +40,7 @@
                (list (missed-opt-report-entry
                       (log-entry-located-stx info-entry)
                       message
-                      'typed-racket
+                      'hidden-cost
                       badness
                       '())) ; no irritants to highlight
                start end

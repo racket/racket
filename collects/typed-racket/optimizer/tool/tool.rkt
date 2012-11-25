@@ -21,6 +21,9 @@
                     [_ #f]))
     ("Report inlining optimizations?" .
      ,(match-lambda [(sub-report-entry s m 'mzc) #t]
+                    [_ #f]))
+    ("Report hidden costs?" .
+     ,(match-lambda [(sub-report-entry s m 'hidden-cost) #t]
                     [_ #f]))))
 
 (define (copy-definitions definitions)
