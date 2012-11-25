@@ -507,7 +507,7 @@
     (define/private (in-lock/in-read-more? evt)
       (cond
         [(send evt leaving?) (values #f #f)]
-        [(get-show-docs?)
+        [(and (get-show-docs?) (get-dc))
          (define dc-x (send evt get-x))
          (define dc-y (send evt get-y))
          (define-values (br bt bmp-x bmp-y) (get-box-upper-right-and-lock-coordinates))
