@@ -391,12 +391,19 @@
                   (let ([v (car l)])
                     (cond
                      [(target-url? v)
-                      (printf "\\href{~a}{" (regexp-replace* #rx"%"
-                                                             (let ([p (target-url-addr v)])
-                                                               (if (path? p)
-                                                                   (path->string p)
-                                                                   p))
-                                                             "\\\\%"))
+                      (define target (regexp-replace* #rx"%"
+                                                      (let ([p (target-url-addr v)])
+                                                        (if (path? p)
+                                                            (path->string p)
+                                                            p))
+                                                      "\\\\%"))
+                      (if (regexp-match? #rx"^[^#]*#[^#]*$" target)
+                          ;; work around a problem with `\href' as an
+                          ;; argument to other macros, such as `\marginpar':
+                          (let ([l (string-split target "#")])
+                            (printf "\\Shref{~a}{~a}{" (car l) (cadr l)))
+                          ;; normal:
+                          (printf "\\href{~a}{" target))
                       (loop (cdr l) #t)
                       (printf "}")]
                      [(color-property? v)
