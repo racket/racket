@@ -1,7 +1,7 @@
 #lang racket/unit
 
 ;; originally by Dan Grossman
-;; 6/30/95
+;; 6/30/95   
 
 (require string-constants
          racket/class
@@ -1315,6 +1315,44 @@
          [(and lam-reg (regexp-match lam-reg text)) 'lambda]
          [else #f])))))
 
+  ;; determines if the cursor is currently sitting right after
+  ;;  a  #\  or \  characters - thus looking like we are typing
+  ;;  a char literal or maybe an escaped character in a string
+  ;;  literal
+  (define (char-literal-prefixed? text)
+    (define selection-start (send text get-start-position))
+    (and (= selection-start (send text get-end-position))   ; nothing selected
+         (< 1 selection-start)
+         (string=? "\\"
+                   (send text get-text (- selection-start 1) selection-start))))
+    
+  ;; determines if the cursor is currently sitting in a string
+  ;; literal or a comment. To do this more accurately, first
+  ;; insert a space at the current cursor start position, then
+  ;; check what classification of that space character itself
+  (define (in-string/comment? text)
+    (define selection-start (send text get-start-position))
+    (define selection-end (send text get-end-position))
+    (send text begin-edit-sequence #t #f)
+    (send text insert " " selection-start)
+    (define type (send text classify-position selection-start))
+    (send text delete selection-start (add1 selection-start))
+    (send text end-edit-sequence)
+    (send text undo)  ; to avoid messing up the editor's modified state  
+                      ; in case of a simple skip
+    (and (member type '(comment string)) #t))
+
+  ;; produces the 1 character string immediately following
+  ;; the cursor, if there is one and if there is not a current
+  ;; selection, in which case produces #f
+  (define (immediately-following-cursor text)
+    (define selection-start (send text get-start-position))
+    (and (= selection-start (send text get-end-position))   ; nothing selected
+         (< selection-start (send text last-position))
+         (send text get-text selection-start (+ selection-start 1))))
+  
+
+
 (define set-mode-mixin
   (mixin (-text<%> mode:host-text<%>) ()
     (super-new)
@@ -1465,30 +1503,10 @@
     (send text insert open-brace)
     (send text end-edit-sequence))
   
-  ;; determines if the cursor is currently sitting right after
-  ;;  a  #\  or \  characters - thus looking like we are typing
-  ;;  a char literal or maybe an escaped character in a string
-  ;;  literal
-  (define (char-literal-prefixed? text)
-    (define selection-start (send text get-start-position))
-    (define selection-end (send text get-end-position))
-    (and (= selection-start selection-end)   ; nothing selected
-         (< 1 selection-start)
-         (string=? "\\"
-                   (send text get-text (- selection-start 1) selection-start))))
-  
-  ;; produces the 1 character string immediately following
-  ;; the cursor, if there is one and if there is not a current
-  ;; selection, in which case produces #f
-  (define (immediately-following-cursor text)
-    (define selection-start (send text get-start-position))
-    (define selection-end (send text get-end-position))
-    (and (= selection-start selection-end)   ; nothing selected
-         (< selection-start (send text last-position))
-         (send text get-text selection-start (+ selection-start 1))))
-  
-  ; TODO: ideally, might want to detect if in a string literal or line/block
-  ;       comment, in which cases this should perhaps *not* insert a pair  .nah.
+  ;; only insert a pair if:
+  ;;   - automatic-parens is on, and
+  ;;   - cursor is not in a string or line/block comment, and
+  ;;   - cursor is not preceded by #\ or \ escape characters
   (define (maybe-insert-brace-pair text open-brace close-brace)
     (cond
       [(and (preferences:get 'framework:automatic-parens)
@@ -1502,7 +1520,8 @@
           (define d (immediately-following-cursor text))
           (when (and d (string=? d "#"))   ; a block comment?
             (send text set-position (+ 1 (send text get-end-position)))) ]
-         [else (insert-brace-pair text open-brace close-brace)] ) ]
+         [(in-string/comment? text) (send text insert open-brace)]
+         [else (insert-brace-pair text open-brace close-brace)])]
       [else
        (send text insert open-brace)]))
   
@@ -1725,7 +1744,9 @@
     (send text delete pos (+ pos 1) #f)
     (send text end-edit-sequence)
     (cond
-      [(preferences:get 'framework:automatic-parens)
+      [(and (preferences:get 'framework:automatic-parens)
+            (not (char-literal-prefixed? text))
+            (not (in-string/comment? text)))
        (send text insert (case real-char
                            [(#\() #\)]
                            [(#\[) #\]]

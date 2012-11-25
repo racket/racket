@@ -1024,11 +1024,11 @@ added get-regions
                   (flash-on to-pos (+ 1 to-pos)))))))))
     
     
-    (inherit insert delete flash-on on-default-char set-position)
+    (inherit insert delete flash-on on-default-char set-position undo)
     ;; See docs
     ;; smart-skip : (or/c #f 'adjacent 'forward)
     (define/public (insert-close-paren pos char flash? fixup? [smart-skip #f])
-      (begin-edit-sequence #f #f)  ;; to hide get-close-paren's temporary edits
+      (begin-edit-sequence #t #f)  ;; to hide get-close-paren's temporary edits
       (define closers (map symbol->string (map cadr pairs)))
       (define closer
         (get-close-paren pos (if fixup? ;; Ensure preference for given character:
@@ -1043,6 +1043,7 @@ added get-regions
       (define-values (outer-close-start outer-close-end outer-close-str)
         (find-next-outer-paren pos closers))
       (end-edit-sequence)  ;; wraps up the net-zero editing changes done by get-close-paren etc.
+      (undo)   ;; to avoid messing up the editor's modified state in case of a simple skip
       
       ;; an action is either '(insert) or '(skip p) where p is a position
       (define the-action
