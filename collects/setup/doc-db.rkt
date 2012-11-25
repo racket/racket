@@ -16,7 +16,9 @@
          doc-db-get-dependencies
          doc-db-file->connection
          doc-db-disconnect
-         doc-db-clean-files)
+         doc-db-clean-files
+         doc-db-init-pause
+         doc-db-pause)
 
 (define-logger doc-db)
 
@@ -30,6 +32,7 @@
                               #:busy-retry-limit 0))
   (unless exists?
     (call-with-transaction/retry
+     'prepare-tables
      db
      #f
      (lambda ()
@@ -46,12 +49,20 @@
 (define select-other-path-vq
   (virtual-statement "SELECT atmain, path FROM other.pathids WHERE pathid=$1"))
 
-(define (call-with-database db-file proc 
+(define (doc-db-init-pause)
+  0.01)
+(define (doc-db-pause who pause)
+  (log-doc-db-info "database locked at ~a; now waiting ~a seconds" 
+                   who
+                   pause)
+  (sleep pause)
+  (min 2 (* 2 pause)))
+
+(define (call-with-database who db-file proc 
                             #:fail [fail #f]
                             #:setup [setup void]
                             #:teardown [teardown void])
-  (let loop ([pause 0.0])
-    (unless (zero? pause) (sleep pause))
+  (let loop ([pause (doc-db-init-pause)])
     ((let/ec esc
        (define db (if (connection? db-file)
                       db-file
@@ -59,6 +70,7 @@
        (setup db)
        (begin0
         (call-with-transaction/retry
+         who
          db
          (if (connection? db-file)
              (lambda () (esc fail))
@@ -66,7 +78,7 @@
                (esc (lambda () 
                       (disconnect db)
                       (when fail (fail))
-                      (loop (max 0.01 (min 2 (* 2 pause))))))))
+                      (loop (doc-db-pause who pause))))))
          (lambda ()
            (define results (call-with-values (lambda () (proc db)) list))
            (lambda () (apply values results))))
@@ -78,6 +90,7 @@
                           #:fail [fail #f]
                           #:main-doc-relative-ok? [main-doc-relative-ok? #f])
   (call-with-database
+   'doc-db-key->path
    db-file
    #:fail fail
    (lambda (db)
@@ -89,8 +102,9 @@
           (pathid->filename db pathid #f main-doc-relative-ok?)))))
 
 
-(define (add db-file elems filename callback)
+(define (add who db-file elems filename callback)
   (call-with-database
+   who
    db-file
    (lambda (db)
      (prepare-tables db)
@@ -99,8 +113,9 @@
        (define stag (~s p))
        (callback db stag pathid)))))
 
-(define (clear db-file filename statement)
+(define (clear who db-file filename statement)
   (call-with-database
+   who
    db-file
    (lambda (db)
      (prepare-tables db)
@@ -109,7 +124,8 @@
                  pathid))))
 
 (define (doc-db-add-provides db-file provides filename)
-  (add db-file provides filename
+  (add 'doc-db-add-provides
+       db-file provides filename
        (lambda (db stag pathid)
          (query-exec db "INSERT INTO documented VALUES ($1, $2)"
                      stag
@@ -117,11 +133,13 @@
        
 
 (define (doc-db-clear-provides db-file filename)
-  (clear db-file filename
+  (clear 'doc-db-clear-provides
+         db-file filename
          "DELETE FROM documented WHERE pathid=$1"))
 
 (define (doc-db-add-dependencies db-file depends filename)
-  (add db-file depends filename
+  (add 'doc-db-add-dependencies
+       db-file depends filename
        (lambda (db stag pathid)
          (query-exec db "INSERT INTO dependencies VALUES ($1, $2)"
                      pathid
@@ -129,11 +147,13 @@
 
 
 (define (doc-db-clear-dependencies db-file filename)
-  (clear db-file filename 
+  (clear 'doc-db-clear-dependencies
+         db-file filename 
          "DELETE FROM dependencies WHERE pathid=$1"))
 
 (define (doc-db-add-searches db-file searches filename)
   (call-with-database
+   'doc-db-add-searches
    db-file
    (lambda (db)
      (prepare-tables db)
@@ -153,6 +173,7 @@
 
 (define (doc-db-clear-searches db-file filename)
   (call-with-database
+   'doc-db-clear-searches
    db-file
    (lambda (db)
      (prepare-tables db)
@@ -175,6 +196,7 @@
                                  #:attach [attach-db-path #f]
                                  #:main-doc-relative-ok? [main-doc-relative-ok? #f])
   (call-with-database
+   'doc-db-check-duplicates
    db-file
    #:setup (maybe-attach attach-db-path)
    #:teardown (maybe-detach attach-db-path)
@@ -217,6 +239,7 @@
 (define (doc-db-check-unsatisfied filename db-file
                                   #:attach [attach-db-path #f])
   (call-with-database
+   'doc-db-check-unsatisfied
    db-file
    #:setup (maybe-attach attach-db-path)
    #:teardown (maybe-detach attach-db-path)
@@ -279,6 +302,7 @@
                                  #:attach [attach-db-path #f]
                                  #:main-doc-relative-ok? [main-doc-relative-ok? #f])
   (call-with-database
+   'doc-db-get-dependencies
    db-file
    #:setup (maybe-attach attach-db-path)
    #:teardown (maybe-detach attach-db-path)
@@ -307,6 +331,7 @@
 
 (define (doc-db-clean-files db-file ok-files)
   (call-with-database
+   'doc-db-clean-files
    db-file
    (lambda (db)
      (prepare-tables db)
@@ -426,16 +451,15 @@
 ;; default, failure uses rollbacks, but `fast-abort' can be provided
 ;; for a faster abort by dropping the connection. Don't try to use a
 ;; connection provided here in any other way on an abort.
-(define (call-with-transaction/retry db fast-abort thunk)
+(define (call-with-transaction/retry who db fast-abort thunk)
   (let ([old-break-paramz (current-break-parameterization)]
         [can-break? (break-enabled)])
-    (let loop ([pause 0.01])
+    (let loop ([pause (doc-db-init-pause)])
       (define (call-with-lock-handler handler thunk)
         (with-handlers* ([exn:fail:database-locked?
                           (lambda (exn)
                             ;; Try again:
-                            (log-doc-db-info "database locked; now waiting ~a seconds" pause)
-                            (handler (min 10 (* pause 2))))])
+                            (loop (doc-db-pause who pause)))])
           (thunk)))
       ((let/ec esc
          (define success? #f)
@@ -443,15 +467,13 @@
           (lambda ()
             (call-with-lock-handler
              (lambda (pause) (esc (lambda ()
-                                    (sleep pause)
-                                    (loop pause))))
+                                    (loop (doc-db-pause `(start ,who) pause)))))
              (lambda () (start-transaction db))))
           (lambda ()
             (call-with-lock-handler
              (lambda (pause) (esc (lambda ()
                                     (rollback db fast-abort 1)
-                                    (sleep pause)
-                                    (loop pause))))
+                                    (loop (doc-db-pause `(rollback ,who) pause)))))
              (lambda ()
                (define l (call-with-values thunk list))
                (commit-transaction db)
@@ -463,14 +485,13 @@
 
 (define (rollback db fast-abort count)
   (when (in-transaction? db)
-    (when fast-abort 
-      (log-doc-db-info "fast rollback abort")
+    (when fast-abort
       (fast-abort))
     (with-handlers* ([exn:fail:database-locked?
                       (lambda (exn)
                         (when (zero? (modulo count 100))
                           (when (= count 10000) (error "fail"))
-                          (log-doc-db-info "database locked on rollback for ~a; tried ~a times so far" 
+                          (log-doc-db-info "database locked on rollback for ~a; tried ~a times so far"
                                            count))
                         (rollback db #f (add1 count)))])
       (rollback-transaction db))))
