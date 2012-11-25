@@ -10,13 +10,14 @@
 (define (generate-report this profile)
   (define-values (TR-log mzc-log info-log) (generate-logs this))
   (define hot-functions (and profile (prune-profile profile)))
-  (log->report
-   (append (causality-merging
-            (prune-cold-TR-failures TR-log profile hot-functions))
-           (report-inlining mzc-log profile hot-functions)
-           (if profile
-               (report-hidden-costs info-log profile hot-functions)
-               '()))))
+  (append
+   (log->report
+    (append (causality-merging
+             (prune-cold-TR-failures TR-log profile hot-functions))
+            (if profile
+                (report-hidden-costs info-log profile hot-functions)
+                '())))
+   (report-inlining mzc-log profile hot-functions)))
 
 
 ;; Returns a report-entry or #f, which means prune.

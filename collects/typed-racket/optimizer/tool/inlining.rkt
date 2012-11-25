@@ -180,23 +180,30 @@
 
        ;; Produce as many log entries as necessary.
        (define (emit e) (set! produced-entries (cons e produced-entries)))
+       (define start     (sub1 pos))
+       (define end       (+ start (syntax-span stx)))
        (define (emit-near-miss msg badness)
-         (emit (missed-opt-log-entry
-                kind
-                (format "Missed Inlining ~a\n~a~a"
-                        (format-aggregation-string pruned-log)
-                        (if msg (format "~a\n" msg) "")
-                        recommendation)
-                stx located-stx pos provenance
-                '() '()
-                ;; uses ceiling to never go down to 0
-                ;; both badness and badness-multiplier are non-0
-                (ceiling (* badness badness-multiplier)))))
+         (emit (report-entry
+                (list (missed-opt-report-entry
+                       located-stx
+                       (format "Missed Inlining ~a\n~a~a"
+                               (format-aggregation-string pruned-log)
+                               (if msg (format "~a\n" msg) "")
+                               recommendation)
+                       provenance
+                       badness
+                       '())) ; no irritants to highlight
+                start end
+                badness)))
        (define (emit-success)
-         (emit (opt-log-entry
-                kind
-                (format "Inlining ~a" (format-aggregation-string pruned-log))
-                stx located-stx pos provenance)))
+         (emit (report-entry
+                (list (opt-report-entry
+                       located-stx
+                       (format "Inlining ~a"
+                               (format-aggregation-string pruned-log))
+                       provenance))
+                start end
+                0)))
 
        (define inside-hot-function?
          (and profile (memq profile-entry hot-functions)))
