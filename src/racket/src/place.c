@@ -3017,11 +3017,16 @@ static void place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *uo) 
     /*wake up possibly sleeping multiple receiver */  
     else if (SCHEME_VECTORP(ch->wakeup_signal)) {
       Scheme_Object *v = ch->wakeup_signal;
-      int i;
+      int i, j, delta;
       int size = SCHEME_VEC_SIZE(v);
       int alive = 0;
-      for (i = 0; i < size; i++) {
+      /* Try to be fair by cycling through the available places
+         starting at `delta'. */
+      delta = ch->delta++;
+      if (delta < 0) delta = -delta;
+      for (j = 0; j < size; j++) {
         Scheme_Place_Object *o3;
+        i = (j + delta) % size;
         o3 = (Scheme_Place_Object *)SCHEME_VEC_ELS(v)[i];
         if (o3) {
           int refcount = 0;
@@ -3119,13 +3124,17 @@ static void register_place_object_with_channel(Scheme_Place_Async_Channel *ch, S
     int i = 0;
     Scheme_Object *v = ch->wakeup_signal;
     int size = SCHEME_VEC_SIZE(v);
-    /* look for unused slot in wakeup vector */
+    /* already registered? */
     for (i = 0; i < size; i++) {
       Scheme_Object *vo = SCHEME_VEC_ELS(v)[i];
       if (vo == o) { 
         return;
       }
-      else if (!vo) {
+    }
+    /* look for unused slot in wakeup vector */
+    for (i = 0; i < size; i++) {
+      Scheme_Object *vo = SCHEME_VEC_ELS(v)[i];
+      if (!vo) {
         place_object_inc_refcount(o);
         SCHEME_VEC_ELS(v)[i] = o;
         return;

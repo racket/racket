@@ -3906,6 +3906,7 @@ typedef struct Scheme_Place_Async_Channel {
   int out;
   int count;
   int size;
+  int delta;
 #if defined(MZ_USE_PLACES)
   mzrt_mutex *lock;
 #endif
