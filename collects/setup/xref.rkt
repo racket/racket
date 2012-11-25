@@ -75,47 +75,63 @@
                              ;; cache for a connection:
                              (box #f))))
   (define done-ht (make-hash)) ; tracks already-loaded documents
+  (define forced-all? #f)
+  (define (force-all)
+    ;; force all documents
+    (define thunks (get-reader-thunks no-user? done-ht))
+    (set! forced-all? #t)
+    (lambda () 
+      ;; return a procedure so we can produce a list of results:
+      (lambda () 
+        (for/list ([thunk (in-list thunks)])
+          (thunk)))))
+  (define pause-limit 1.0)
   (lambda (key)
     (cond
+     [forced-all? #f]
      [key
       (define (try p)
         (let loop ([pause (doc-db-init-pause)])
-          (and p
-               (let* ([maybe-db (unbox (cdr p))]
-                      [db 
-                       ;; Use a cached connection, or...
-                       (or (and (box-cas! (cdr p) maybe-db #f)
-                                maybe-db)
-                           ;; ... create a new one
-                           (and (file-exists? (car p))
-                                (doc-db-file->connection (car p))))])
-                 (and 
-                  db
-                  ((let/ec esc
-                     ;; The db query:
-                     (define result
-                       (doc-db-key->path db key
-                                         #:fail (lambda ()
-                                                  ;; Rollback within a connection can be slow,
-                                                  ;; so abandon the connection and try again:
-                                                  (doc-db-disconnect db)
-                                                  (esc (lambda () 
-                                                         (loop (doc-db-pause 'xref-lookup pause)))))))
-                     ;; cache the connection, if none is already cached:
-                     (or (box-cas! (cdr p) #f db)
-                         (doc-db-disconnect db))
-                     (lambda () result))))))))
+          (cond
+           [(pause . >= . pause-limit)
+            ;; Too much database contention? Give up on the database.
+            #t]
+           [else
+            (and p
+                 (let* ([maybe-db (unbox (cdr p))]
+                        [db 
+                         ;; Use a cached connection, or...
+                         (or (and (box-cas! (cdr p) maybe-db #f)
+                                  maybe-db)
+                             ;; ... create a new one
+                             (and (file-exists? (car p))
+                                  (doc-db-file->connection (car p))))])
+                   (and 
+                    db
+                    ((let/ec esc
+                       ;; The db query:
+                       (define result
+                         (doc-db-key->path db key
+                                           #:delay-limit pause-limit
+                                           #:fail (lambda (should-retry?)
+                                                    ;; Rollback within a connection can be slow,
+                                                    ;; so abandon the connection and try again:
+                                                    (doc-db-disconnect db)
+                                                    (when should-retry?
+                                                      (esc (lambda () 
+                                                             (loop (doc-db-pause 'xref-lookup pause))))))))
+                       ;; cache the connection, if none is already cached:
+                       (or (box-cas! (cdr p) #f db)
+                           (doc-db-disconnect db))
+                       (lambda () result))))))])))
       (define dest (or (try main-db) (try user-db)))
       (and dest
-           ((dest->source done-ht) dest))]
+           (if (eq? dest #t)
+               (force-all)
+               ((dest->source done-ht) dest)))]
      [else
-      ;; force all documents
-      (define thunks (get-reader-thunks no-user? done-ht))
-      (lambda () 
-        ;; return a procedure so we can produce a list of results:
-        (lambda () 
-          (for/list ([thunk (in-list thunks)])
-            (thunk))))])))
+      (unless forced-all?
+        (force-all))])))
 
 (define (get-reader-thunks no-user? done-ht)
   (map (dest->source done-ht)

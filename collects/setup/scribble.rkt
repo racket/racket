@@ -70,6 +70,40 @@
   (setup-printf "error running" (module-path-prefix->string (doc-src-spec doc)))
   (eprintf errstr))
 
+;; We use a lock to control writing to the database, because
+;; the database or binding doesn't seem to deal well with concurrent
+;; writers within a process.
+(define no-lock void)
+(define (lock-via-channel lock-ch)
+  (let ([saved-ch #f])
+    (lambda (mode)
+      (case mode
+        [(lock)
+         (define ch (sync lock-ch))
+         (place-channel-put ch 'lock)
+         (set! saved-ch ch)]
+        [(unlock)
+         (place-channel-put saved-ch 'done)
+         (set! saved-ch #f)]))))
+(define lock-ch #f)
+(define lock-ch-in #f)
+(define (init-lock-ch!)
+  (unless lock-ch
+    (set!-values (lock-ch lock-ch-in) (place-channel))
+    (thread (lambda ()
+              (define-values (ch ch-in) (place-channel))
+              (let loop ()
+                (place-channel-put lock-ch-in ch)
+                (place-channel-get ch-in)
+                (place-channel-get ch-in)
+                (loop))))))
+(define (call-with-lock lock thunk)
+  (lock 'lock)
+  (dynamic-wind
+   void
+   thunk
+   (lambda () (lock 'unlock))))
+
 (define (setup-scribblings
          worker-count       ; number of cores to use to create documentation
          program-name       ; name of program that calls setup-scribblings
@@ -162,7 +196,8 @@
               ;; non-parallel version:
               (map (get-doc-info only-dirs latex-dest auto-main? auto-user? 
                                  with-record-error setup-printf #f
-                                 #f force-out-of-date?)
+                                 #f force-out-of-date?
+                                 no-lock)
                    docs)
               ;; maybe parallel...
               (or
@@ -170,7 +205,8 @@
                                                with-record-error setup-printf #f 
                                                ;; only-fast:
                                                #t
-                                               force-out-of-date?)
+                                               force-out-of-date?
+                                               no-lock)
                                  docs)])
                  ;; check fast result
                  (and (andmap values infos)
@@ -179,8 +215,9 @@
                (parallel-do 
                 (min worker-count (length docs))
                 (lambda (workerid)
+                  (init-lock-ch!)
                   (list workerid program-name (verbose) only-dirs latex-dest auto-main? auto-user?
-                        force-out-of-date?))
+                        force-out-of-date? lock-ch))
                 (list-queue
                  docs
                  (lambda (x workerid) (s-exp->fasl (serialize x)))
@@ -191,9 +228,9 @@
                  (lambda (work errmsg outstr errstr) 
                    (parallel-do-error-handler setup-printf work errmsg outstr errstr)))
                 (define-worker (get-doc-info-worker workerid program-name verbosev only-dirs latex-dest 
-                                                    auto-main? auto-user? force-out-of-date?)
+                                                    auto-main? auto-user? force-out-of-date? lock-ch)
                   (define ((get-doc-info-local program-name only-dirs latex-dest auto-main? auto-user? 
-                                               force-out-of-date?
+                                               force-out-of-date? lock
                                                send/report) 
                            doc)
                     (define (setup-printf subpart formatstr . rest)
@@ -211,14 +248,14 @@
                     (s-exp->fasl (serialize 
                                   ((get-doc-info only-dirs latex-dest auto-main? auto-user?  
                                                  with-record-error setup-printf workerid
-                                                 #f force-out-of-date?)
+                                                 #f force-out-of-date? lock)
                                    (deserialize (fasl->s-exp doc))))))
                   
                   (verbose verbosev)
                   (match-message-loop
                    [doc (send/success 
                          ((get-doc-info-local program-name only-dirs latex-dest auto-main? auto-user? 
-                                              force-out-of-date?
+                                              force-out-of-date? (lock-via-channel lock-ch)
                                               send/report) 
                           doc))]))))))))
 
@@ -392,7 +429,7 @@
                                         (and (info-need-run? i)
                                              (begin
                                                (when (info-need-in-write? i) 
-                                                 (write-in/info latex-dest i)
+                                                 (write-in/info latex-dest i no-lock)
                                                  (set-info-need-in-write?! i #f))
                                                (set-info-deps! i (filter info? (info-deps i)))
                                                (set-info-need-run?! i #f)
@@ -421,12 +458,13 @@
           (if ((min worker-count (length need-rerun)) . < . 2)
               (map (lambda (i) 
                      (say-rendering i #f)
-                     (update-info i (build-again! latex-dest i with-record-error))) 
+                     (update-info i (build-again! latex-dest i with-record-error no-lock))) 
                    need-rerun)
               (parallel-do 
                (min worker-count (length need-rerun))
                (lambda (workerid)
-                 (list workerid (verbose) latex-dest))
+                 (init-lock-ch!)
+                 (list workerid (verbose) latex-dest lock-ch))
                (list-queue
                 need-rerun
                 (lambda (i workerid) 
@@ -438,7 +476,7 @@
                   (update-info i (deserialize (fasl->s-exp r))))
                 (lambda (i errmsg outstr errstr) 
                   (parallel-do-error-handler setup-printf (info-doc i) errmsg outstr errstr)))
-               (define-worker (build-again!-worker2 workerid verbosev latex-dest)
+               (define-worker (build-again!-worker2 workerid verbosev latex-dest lock-ch)
                  (define (with-record-error cc go fail-k)
                    (with-handlers ([exn:fail?
                                     (lambda (x)
@@ -451,7 +489,8 @@
                    (send/success 
                     (s-exp->fasl (serialize (build-again! latex-dest
                                                           (deserialize (fasl->s-exp info))
-                                                          with-record-error))))])))))
+                                                          with-record-error
+                                                          (lock-via-channel lock-ch)))))])))))
         ;; If we only build 1, then it reaches it own fixpoint
         ;; even if the info doesn't seem to converge immediately.
         ;; This is a useful shortcut when re-building a single
@@ -464,7 +503,7 @@
   (when infos
     (make-loop #t 0)
     ;; cache info to disk
-    (for ([i infos] #:when (info-need-in-write? i)) (write-in/info latex-dest i))))
+    (for ([i infos] #:when (info-need-in-write? i)) (write-in/info latex-dest i no-lock))))
 
 (define (make-renderer latex-dest doc)
   (if latex-dest
@@ -614,7 +653,7 @@
 
 (define ((get-doc-info only-dirs latex-dest auto-main? auto-user?
                        with-record-error setup-printf workerid 
-                       only-fast? force-out-of-date?)
+                       only-fast? force-out-of-date? lock)
          doc)
   (let* ([info-out-files (for/list ([i (add1 (doc-out-count doc))])
                            (sxref-path latex-dest doc (format "out~a.sxref" i)))]
@@ -710,7 +749,7 @@
                                       (delete-file info-in-file)
                                       ((get-doc-info only-dirs latex-dest auto-main?
                                                      auto-user? with-record-error
-                                                     setup-printf workerid #f #f)
+                                                     setup-printf workerid #f #f lock)
                                        doc))])
            (let ([v-in  (load-sxref info-in-file)])
              (unless (equal? (car v-in) (list vers (doc-flags doc)))
@@ -784,10 +823,10 @@
                                      #f
                                      #f)])
                      (when need-out-write?
-                       (render-time "xref-out" (write-out/info latex-dest info scis defss db-file))
+                       (render-time "xref-out" (write-out/info latex-dest info scis defss db-file lock))
                        (set-info-need-out-write?! info #f))
                      (when (info-need-in-write? info)
-                       (render-time "xref-in" (write-in/info latex-dest info))
+                       (render-time "xref-in" (write-in/info latex-dest info lock))
                        (set-info-need-in-write?! info #f))
 
                      (when (or (stamp-time . < . aux-time)
@@ -871,7 +910,7 @@
                  searches
                  scis))])]))
 
-(define (build-again! latex-dest info with-record-error)
+(define (build-again! latex-dest info with-record-error lock)
   (define (cleanup-dest-dir doc)
     (unless latex-dest
       (let ([dir (doc-dest-dir doc)])
@@ -933,9 +972,9 @@
                    (doc-src-file doc)))
 
          (when in-delta?
-           (render-time "xref-in" (write-in latex-dest vers doc undef ff-deps-rel searches db-file)))
+           (render-time "xref-in" (write-in latex-dest vers doc undef ff-deps-rel searches db-file lock)))
          (when out-delta?
-           (render-time "xref-out" (write-out latex-dest vers doc scis defss db-file)))
+           (render-time "xref-out" (write-out latex-dest vers doc scis defss db-file lock)))
 
          (cleanup-dest-dir doc)
          (render-time
@@ -993,31 +1032,37 @@
                                            data)) 
                       out))))))
 
-(define (write-out latex-dest vers doc scis providess db-file)
+(define (write-out latex-dest vers doc scis providess db-file lock)
   (for ([i (add1 (doc-out-count doc))]
         [sci scis]
         [provides providess])
-  (write- latex-dest vers doc (format "out~a.sxref" i)
-          (list (list sci))
-          (lambda (filename)
-            (doc-db-clear-provides db-file filename)
-            (doc-db-add-provides db-file provides filename)))))
+    (write- latex-dest vers doc (format "out~a.sxref" i)
+            (list (list sci))
+            (lambda (filename)
+              (call-with-lock
+               lock
+               (lambda ()
+                 (doc-db-clear-provides db-file filename)
+                 (doc-db-add-provides db-file provides filename)))))))
 
-(define (write-out/info latex-dest info scis providess db-file)
-  (write-out latex-dest (info-vers info) (info-doc info) scis providess db-file))
+(define (write-out/info latex-dest info scis providess db-file lock)
+  (write-out latex-dest (info-vers info) (info-doc info) scis providess db-file lock))
 
-(define (write-in latex-dest vers doc undef rels searches db-file)
+(define (write-in latex-dest vers doc undef rels searches db-file lock)
   (write- latex-dest vers doc "in.sxref" 
           (list (list rels)
                 (list (serialize (list undef
                                        searches))))
           (lambda (filename)
-            (doc-db-clear-dependencies db-file filename)
-            (doc-db-clear-searches db-file filename)
-            (doc-db-add-dependencies db-file undef filename)
-            (doc-db-add-searches db-file searches filename))))
+            (call-with-lock
+             lock
+             (lambda ()
+               (doc-db-clear-dependencies db-file filename)
+               (doc-db-clear-searches db-file filename)
+               (doc-db-add-dependencies db-file undef filename)
+               (doc-db-add-searches db-file searches filename))))))
 
-(define (write-in/info latex-dest info)
+(define (write-in/info latex-dest info lock)
   (when (eq? 'delayed (info-undef info))
     (read-delayed-in! info latex-dest))
   (write-in latex-dest
@@ -1026,7 +1071,8 @@
             (info-undef info)
             (info-deps->rel-doc-src-file info)
             (info-searches info)
-            (find-db-file (info-doc info) latex-dest)))
+            (find-db-file (info-doc info) latex-dest)
+            lock))
 
 (define (rel->path r)
   (if (bytes? r)

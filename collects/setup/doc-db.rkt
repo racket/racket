@@ -35,6 +35,7 @@
      'prepare-tables
      db
      #f
+     +inf.0
      (lambda ()
        (prepare-tables db))))
   db)
@@ -60,6 +61,7 @@
 
 (define (call-with-database who db-file proc 
                             #:fail [fail #f]
+                            #:delay-limit [pause-limit +inf.0]
                             #:setup [setup void]
                             #:teardown [teardown void])
   (let loop ([pause (doc-db-init-pause)])
@@ -73,12 +75,19 @@
          who
          db
          (if (connection? db-file)
-             (lambda () (esc fail))
-             (lambda ()
-               (esc (lambda () 
-                      (disconnect db)
-                      (when fail (fail))
-                      (loop (doc-db-pause who pause))))))
+             (and fail
+                  (lambda (should-retry?)
+                    (if should-retry?
+                        (esc (lambda () (fail #t)))
+                        (fail #f))))
+             (lambda (should-retry?)
+               (if should-retry?
+                   (esc (lambda () 
+                          (disconnect db)
+                          (when fail (fail))
+                          (loop (doc-db-pause who pause))))
+                   (disconnect db))))
+         pause-limit
          (lambda ()
            (define results (call-with-values (lambda () (proc db)) list))
            (lambda () (apply values results))))
@@ -88,11 +97,13 @@
 
 (define (doc-db-key->path db-file key
                           #:fail [fail #f]
+                          #:delay-limit [pause-limit +inf.0]
                           #:main-doc-relative-ok? [main-doc-relative-ok? #f])
   (call-with-database
    'doc-db-key->path
    db-file
    #:fail fail
+   #:delay-limit pause-limit
    (lambda (db)
      (define row (query-maybe-row db select-pathid-vq
                                   (~s key)))
@@ -447,51 +458,51 @@
        (regexp-match #rx"the database file is locked$"
                      (exn-message v))))
 
-;; Call in a transation and handle Sqlite-level lock failures.  By
-;; default, failure uses rollbacks, but `fast-abort' can be provided
-;; for a faster abort by dropping the connection. Don't try to use a
-;; connection provided here in any other way on an abort.
-(define (call-with-transaction/retry who db fast-abort thunk)
-  (let ([old-break-paramz (current-break-parameterization)]
-        [can-break? (break-enabled)])
-    (let loop ([pause (doc-db-init-pause)])
-      (define (call-with-lock-handler handler thunk)
+;; By default, failure uses rollbacks, but `fast-abort' can be
+;; provided for a faster abort by dropping the connection. Don't try
+;; to use a connection provided here in any other way on an abort. The
+;; argument to `fast-abort' is `should-retry?': on #t, perhaps escape
+;; to retry, but on #f, just clean up without escaping.
+(define (call-with-transaction/retry who db fast-abort pause-limit thunk)
+  (let loop ([pause (doc-db-init-pause)])
+    (define (call-with-lock-handler handler thunk)
+      (with-handlers* ([exn:fail:database-locked?
+                        (lambda (exn) (handler pause))])
+        (thunk)))
+    ((let/ec esc
+       (define success? #f)
+       (dynamic-wind
+        (lambda ()
+          (call-with-lock-handler
+           (lambda (pause) (esc (lambda ()
+                                  (if (and fast-abort
+                                           (pause . > . pause-limit))
+                                      (fast-abort #t)
+                                      (loop (doc-db-pause `(start ,who) pause))))))
+           (lambda () (start-transaction db))))
+        (lambda ()
+          (call-with-lock-handler
+           (lambda (pause) (esc (lambda ()
+                                  (rollback db fast-abort #t 1)
+                                  (loop (doc-db-pause `(rollback ,who) pause)))))
+           (lambda ()
+             (define l (call-with-values thunk list))
+             (commit-transaction db)
+             (set! success? #t)
+             (lambda () (apply values l)))))
+        (lambda ()
+          (unless success?
+            (rollback db fast-abort #f 1))))))))
+
+(define (rollback db fast-abort should-retry? count)
+  (if fast-abort
+      (fast-abort should-retry?)
+      (when (in-transaction? db)
         (with-handlers* ([exn:fail:database-locked?
                           (lambda (exn)
-                            ;; Try again:
-                            (loop (doc-db-pause who pause)))])
-          (thunk)))
-      ((let/ec esc
-         (define success? #f)
-         (dynamic-wind
-          (lambda ()
-            (call-with-lock-handler
-             (lambda (pause) (esc (lambda ()
-                                    (loop (doc-db-pause `(start ,who) pause)))))
-             (lambda () (start-transaction db))))
-          (lambda ()
-            (call-with-lock-handler
-             (lambda (pause) (esc (lambda ()
-                                    (rollback db fast-abort 1)
-                                    (loop (doc-db-pause `(rollback ,who) pause)))))
-             (lambda ()
-               (define l (call-with-values thunk list))
-               (commit-transaction db)
-               (set! success? #t)
-               (lambda () (apply values l)))))
-          (lambda ()
-            (unless success?
-              (rollback db fast-abort 1)))))))))
-
-(define (rollback db fast-abort count)
-  (when (in-transaction? db)
-    (when fast-abort
-      (fast-abort))
-    (with-handlers* ([exn:fail:database-locked?
-                      (lambda (exn)
-                        (when (zero? (modulo count 100))
-                          (when (= count 10000) (error "fail"))
-                          (log-doc-db-info "database locked on rollback for ~a; tried ~a times so far"
-                                           count))
-                        (rollback db #f (add1 count)))])
-      (rollback-transaction db))))
+                            (when (zero? (modulo count 100))
+                              (when (= count 10000) (error "fail"))
+                              (log-doc-db-info "database locked on rollback; tried ~a times so far"
+                                               count))
+                            (rollback db #f should-retry? (add1 count)))])
+          (rollback-transaction db)))))
