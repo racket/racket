@@ -1026,7 +1026,7 @@ added get-regions
     
     (inherit insert delete flash-on on-default-char set-position)
     ;; See docs
-    ;; smart-skip : (or #f 'adjacent 'forward)
+    ;; smart-skip : (or/c #f 'adjacent 'forward)
     (define/public (insert-close-paren pos char flash? fixup? [smart-skip #f])
       (begin-edit-sequence #f #f)  ;; to hide get-close-paren's temporary edits
       (define closers (map symbol->string (map cadr pairs)))

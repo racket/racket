@@ -164,12 +164,6 @@
                            '(["abcd(" "efg"]  ; result state sep by cursor, no auto-parens
                              ["abcd(" ")efg"])) ; result state with auto-parens
 
-(test-parens-behavior/full 'block-comment
-                           "(123 abc#" "" " def 456)"
-                           #\|
-                           '(["(123 abc#|" " def 456)"]
-                             ["(123 abc#|" "|# def 456)"]))
-
 (test-parens-behavior/full 'close-1
                            "abcd" "" "efg"
                            #\)
@@ -229,6 +223,64 @@
                            "abcd" "ef" "g" 
                            #\(
                            '(["abcd(" "g"]  ["abcd(" "ef)g"]))
+
+(test-parens-behavior/full 'double-quote-1
+                           "" "" ""
+                           #\"
+                           '(["\"" ""] ["\"" "\""]))
+(test-parens-behavior/full 'double-quote-2
+                           "abc " "" ""
+                           #\"
+                           '(["abc \"" ""] ["abc \"" "\""]))
+(test-parens-behavior/full 'double-quote-selection-1
+                           "(abc " "def 123" " xyz]"
+                           #\"
+                           '(["(abc \"" " xyz]"] ["(abc \"" "def 123\" xyz]"]))
+(test-parens-behavior/full 'double-quote-skip-1
+                           "\"abc def " "" "\" 123"
+                           #\"
+                           '(["\"abc def \"" "\" 123"] ["\"abc def \"" " 123"]))
+(test-parens-behavior/full 'double-quote-literal-1
+                           "\"abcd \\" "" ""
+                           #\"
+                           '(["\"abcd \\\"" ""] ["\"abcd \\\"" ""]))
+(test-parens-behavior/full 'double-quote-literal-2
+                           "(list 1 #\\" "" ")"
+                           #\"
+                           '(["(list 1 #\\\"" ")"] ["(list 1 #\\\"" ")"]))
+
+(test-parens-behavior/full 'bar-1
+                           "abc " "" "123"
+                           #\|
+                           '(["abc |" "123"] ["abc |" "|123"]))
+(test-parens-behavior/full 'bar-literal-1
+                           "(list 1 #\\" "" ")"
+                           #\|
+                           '(["(list 1 #\\|" ")"] ["(list 1 #\\|" ")"]))
+(test-parens-behavior/full 'bar-skip-1
+                           "abc |def" "" "|123"
+                           #\|
+                           '(["abc |def|" "|123"] ["abc |def|" "123"]))
+(test-parens-behavior/full 'bar-selection-1
+                           "abc |def " "hij" "|123"
+                           #\|
+                           '(["abc |def |" "|123"] ["abc |def |" "hij||123"]))
+
+(test-parens-behavior/full 'block-comment-1
+                           " #" "" ""
+                           #\|
+                           '([" #|" ""]
+                             [" #|" "|#"]))
+(test-parens-behavior/full 'block-comment-2
+                           "(123 abc#" "" " def 456)"
+                           #\|
+                           '(["(123 abc#|" " def 456)"]
+                             ["(123 abc#|" "|# def 456)"]))
+(test-parens-behavior/full 'block-comment-skip-1
+                           "#| (123 abc" "" "|# def 456)"
+                           #\|
+                           '(["#| (123 abc|" "|# def 456)"]
+                             ["#| (123 abc|#" " def 456)"]))
 
 #| for these, the key-event with meta-down doesn't seem to work... maybe a Mac OS
   issue; and may cause problems with these tests on another platform? .nah. |#

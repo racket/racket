@@ -1465,19 +1465,44 @@
     (send text insert open-brace)
     (send text end-edit-sequence))
   
-  ;; determines if the 
+  ;; determines if the cursor is currently sitting right after
+  ;;  a  #\  or \  characters - thus looking like we are typing
+  ;;  a char literal or maybe an escaped character in a string
+  ;;  literal
   (define (char-literal-prefixed? text)
     (define selection-start (send text get-start-position))
     (define selection-end (send text get-end-position))
     (and (= selection-start selection-end)   ; nothing selected
          (< 1 selection-start)
-         (string=? "#\\" (send text get-text (- selection-start 2) selection-start))))
+         (string=? "\\"
+                   (send text get-text (- selection-start 1) selection-start))))
   
+  ;; produces the 1 character string immediately following
+  ;; the cursor, if there is one and if there is not a current
+  ;; selection, in which case produces #f
+  (define (immediately-following-cursor text)
+    (define selection-start (send text get-start-position))
+    (define selection-end (send text get-end-position))
+    (and (= selection-start selection-end)   ; nothing selected
+         (< selection-start (send text last-position))
+         (send text get-text selection-start (+ selection-start 1))))
+  
+  ; TODO: ideally, might want to detect if in a string literal or line/block
+  ;       comment, in which cases this should perhaps *not* insert a pair  .nah.
   (define (maybe-insert-brace-pair text open-brace close-brace)
     (cond
       [(and (preferences:get 'framework:automatic-parens)
             (not (char-literal-prefixed? text))) ;; don't insert a pair if a char literal is being typed
-       (insert-brace-pair text open-brace close-brace)]
+       (define c (immediately-following-cursor text))
+       (cond
+         [(and c (char=? #\" open-brace) (string=? c "\""))
+          (send text set-position (+ 1 (send text get-end-position))) ]
+         [(and c (char=? #\| open-brace) (string=? c "|"))
+          (send text set-position (+ 1 (send text get-end-position)))
+          (define d (immediately-following-cursor text))
+          (when (and d (string=? d "#"))   ; a block comment?
+            (send text set-position (+ 1 (send text get-end-position)))) ]
+         [else (insert-brace-pair text open-brace close-brace)] ) ]
       [else
        (send text insert open-brace)]))
   
