@@ -954,81 +954,119 @@ added get-regions
                                #f)))))
                  c))))))
     
+    
+    ;; this returns the start/end positions
+    ;; of the matching close paren of the first open paren to the left of pos,
+    ;; if it is properly balanced. (this one assumes though that closers 
+    ;; really contains only 'parenthesis type characters)
+    (define/private (find-next-outer-paren pos closers)
+      (cond
+        [(null? closers) (values #f #f)]
+        [else
+         (define c (car closers))       ; pick a close parens
+         (define l (string-length c))
+         (define ls (find-ls pos))
+         (cond
+           [(not ls) (values #f #f)]
+           [else 
+            (define start-pos (lexer-state-start-pos ls))
+            (insert c pos)             ; temporarily insert c
+            (define m (backward-match (+ l pos) start-pos)) ; find matching open parens
+            (delete pos (+ l pos))     ; delete c
+            (define n                  ; now from the open parens find the *real* matching close parens
+              (and m (forward-match m (last-position)))) ; n is the position *after* the close
+            #;(printf "outer: ~a~n" (list pos n m (and n m (let-values ([(a b) (get-token-range (- n l))]) 
+                                                           (list a b)))))
+            (if n 
+                (get-token-range (- n l)) 
+                (find-next-outer-paren pos (cdr closers)))])]))
+    
+
     ;; returns the start and end positions of the next token at or after
-    ;;   pos that matches any of the given list. If skip-type is 
-    ;;   'adjacent, it skips whitespace after pos; if skip-type is
-    ;;   'forward it skips all tokens after pos in its search; if
-    ;;   skip-type is #f, then there must be a match right at pos
-    ;; skip-to-close : number (list string) (or #f 'adjacent 'forward)
-    ;;                 -> (or #f number) (or #f number)
-    (define/public (skip-to-close-paren pos matches skip-type)
-      (r:match 
-       skip-type
-       [#f
-        (define first-match
-          (ormap (λ (match) 
-                    (and (get-text pos (+ pos (string-length match)))
-                         (string=? match (get-text pos (+ pos (string-length match))))
-                         match))))
-        (if first-match
-            (values pos (+ pos (string-length first-match)))
-            (values #f #f))]
-       [(or 'adjacent 'forward)
-        (define next-pos (skip-whitespace pos 'forward #t))
-        (define tree (lexer-state-tokens (find-ls next-pos)))
-        (define start-pos (begin (send tree search! next-pos)
-                                 (send tree get-root-start-position)))
-        (define end-pos (send tree get-root-end-position))
-        
-       #;(printf "~a |~a| |~a|~n" (list pos next-pos start-pos end-pos (send tree get-root-data)) matches (get-text start-pos end-pos))
-        
-        (cond
-          [(or (not (send tree get-root-data)) (<= end-pos pos))
-           (values #f #f)]    ;; didn't find /any/ token ending after pos
-          [(and (<= pos start-pos)
-                (member (get-text start-pos end-pos) matches))
-           (values start-pos end-pos)]   ; token at start-pos matches
-          [(equal? skip-type 'forward)   ; try skipping over this token
-           (skip-to-close-paren end-pos matches skip-type)]
-          [else (values #f #f)])]
-       [_   
-        (error 'skip-to-close-paren (format "invalid skip-type: ~a" skip-type))]))
+    ;;   pos that matches any of the given list of closers, as well as 
+    ;;   whether the matching token occurred immediately adjacent to 
+    ;;   pos, ignoring whitespace and comments
+    ;; find-next-close-paren : number (list string) boolean
+    ;;      -> (values (or #f number) (or #f number) boolean)
+    (define/private (find-next-close-paren pos closers [adj? #t])
+      (define next-pos (skip-whitespace pos 'forward #t))
+      (define tree (lexer-state-tokens (find-ls next-pos)))
+      (define start-pos (begin (send tree search! next-pos)
+                               (send tree get-root-start-position)))
+      (define end-pos (send tree get-root-end-position))
+      
+      #;(printf "~a |~a| |~a|~n" (list pos next-pos start-pos end-pos (send tree get-root-data)) closers (get-text start-pos end-pos))
+
+      (cond
+        [(or (not (send tree get-root-data)) (<= end-pos pos))
+         (values #f #f #f)]    ;; didn't find /any/ token ending after pos
+        [(and (<= pos start-pos)
+              (member (get-text start-pos end-pos) closers))
+         (values start-pos end-pos adj?)]   ; token at start-pos matches
+        [else   ; skip ahead
+         (find-next-close-paren end-pos closers #f)]))
+    
+
     
     (inherit insert delete flash-on on-default-char set-position)
     ;; See docs
     ;; smart-skip : (or #f 'adjacent 'forward)
     (define/public (insert-close-paren pos char flash? fixup? [smart-skip #f])
-      (let* ([closers (map symbol->string (map cadr pairs))]
-             [closer
-              (begin
-                (begin-edit-sequence #f #f)    ;; WHY is this here? .nah.
-                (get-close-paren pos 
-                                 (if fixup? ;; Ensure preference for given character:
-                                     (cons (string char) (remove (string char) closers))
-                                     null)
-                                 ;; If the inserted preferred (i.e., given) paren doesn't parse
-                                 ;;  as a paren, then don't try to change it.
-                                 #f))])
-        (end-edit-sequence)
-        (let* ([insert-str (if closer closer (string char))]
-               [end-pos (+ (string-length insert-str) pos)])
-          (define-values (next-close-start next-close-end)
-            (if smart-skip (skip-to-close-paren pos (if fixup? closers (list insert-str)) smart-skip)
-                (values #f #f)))
-          
-          #;(when next-close-start
-            (printf "|~a| |~a| |~a|~n" (get-text next-close-start next-close-end)
-                    (get-close-paren next-close-start closers #f) closer))
-          
-          ;; TODO : need to make smart-skip = 'forward jump to outermost closing 
-          
-          (if (and next-close-start ; only skip if the thing being skipped matches the expected close
-                   closer
-                   (string=? closer (get-text next-close-start next-close-end)))
-              (set-position next-close-end) 
-              (for-each (lambda (c)
+      (begin-edit-sequence #f #f)   ;; to hide the temporary inserts/deletes  
+                                    ;; done by get-close-paren 
+      (define closers (map symbol->string (map cadr pairs)))
+      (define closer
+        (get-close-paren pos 
+                         (if fixup? ;; Ensure preference for given character:
+                             (cons (string char) (remove (string char) closers))
+                             null)
+                         ;; If the inserted preferred (i.e., given) paren doesn't parse
+                         ;;  as a paren, then don't try to change it.
+                         #f))
+      (define insert-str (if closer closer (string char)))
+      (define-values (next-close-start next-close-end next-close-adj?)
+        (find-next-close-paren pos closers))
+      (define-values (outer-close-start outer-close-end)
+        (find-next-outer-paren pos closers))
+      (end-edit-sequence)  ;; wraps up the net-zero editing changes done by get-close-paren
+        
+      ;; an action is either '(insert) or '(skip p) where p is a position
+      (define the-action
+        (r:match smart-skip
+          [#f 
+           '(insert)]
+          ['adjacent
+           (if (and next-close-start 
+                    next-close-adj?
+                    (string=? insert-str (get-text next-close-start next-close-end)))
+               `(skip ,next-close-end)
+               `(insert))]
+          ['forward
+           (cond
+             [(and outer-close-start
+                   (or fixup? 
+                       (string=? insert-str (get-text outer-close-start outer-close-end))))
+              `(skip ,outer-close-end)]
+             [(and next-close-start
+                   (or fixup? 
+                       (string=? insert-str (get-text next-close-start next-close-end))))
+              `(skip ,next-close-end)]
+             [else 
+              `(insert)])]
+          [_ 
+           (error 'insert-close-paren (format "invalid smart-skip: ~a" smart-skip))]))
+      
+      (define end-pos
+        (r:match the-action
+           [(list 'insert)
+            (for-each (lambda (c)
                           (on-default-char (new key-event% (key-code c))))
-                        (string->list insert-str)))
+                        (string->list insert-str))
+            (+ pos (string-length insert-str))]
+           [(list 'skip p)
+            (set-position p)
+            p]))
+        
           (when flash?
             (unless stopped?
               (let ((to-pos (backward-match end-pos 0)))
@@ -1039,7 +1077,7 @@ added get-regions
                             [parens (lexer-state-parens ls)])
                         (when (and (send parens is-open-pos? (- to-pos start-pos))
                                    (send parens is-close-pos? (- pos start-pos)))
-                          (flash-on to-pos (+ 1 to-pos)))))))))))))
+                          (flash-on to-pos (+ 1 to-pos)))))))))))
     
     (define/public (debug-printout)
       (for-each 

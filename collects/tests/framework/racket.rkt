@@ -151,18 +151,6 @@
    '(#f #t)
    final-states))
 
-#| hmm... how crazy should we go with testing? I'll leave this
-   for now and just have a few representative tests  .nah. 
-(define before+afters
-  `(["" "" ""]
-    ["" "" "abcd"]
-    ["" "abc" "efgh"]
-    ["" "abc" ""]
-    ["abcd" "" "efg"]
-    ...
-    ["abcd" "ef" "ghi"]
-    ))
-|#
 
 (test-parens-behavior/full 'open-1
                            "abcd" "" "efg"  ; editor state: before, selected, after
@@ -183,13 +171,18 @@
                            #\)
                            '(["(abcd)" ")efg"]  ["(abcd)" "efg"]))
 (test-parens-behavior/full 'close-4
+                           "(abcd efg " "" "   ) efg"
+                           #\)
+                           '(["(abcd efg )" "   ) efg"] 
+                             ["(abcd efg    )" " efg"]))
+(test-parens-behavior/full 'close-5
                            "(define before+afters `([\"\" abc \"efg\" 12345 xyz]) [84])"
                            "" 
                            ""
                            #\)
                            '(["(define before+afters `([\"\" abc \"efg\" 12345 xyz]) [84]))" ""]
                              ["(define before+afters `([\"\" abc \"efg\" 12345 xyz]) [84]))" ""]))
-(test-parens-behavior/full 'close-5
+(test-parens-behavior/full 'close-6
                            "(define before+afters `([\"\" abc \"efg\""
                            ""
                            " 12345 xyz]) [84])"
@@ -212,14 +205,18 @@
                            #\)   ; here the next close after ) doesn't match the {, so no skip happens
                            '(["(define before+afters `{[abc 123]}" "  ) [84])"]
                              ["(define before+afters `{[abc 123]}" "  ) [84])"]))
-
-
+(test-parens-behavior/full 'close-skip-fixup-2  
+                           "(define before+afters `{[abc 123]"
+                           ""
+                           "  } [84])"
+                           #\)   ; here the next close does match the {, so  skip 
+                           '(["(define before+afters `{[abc 123]}" "  } [84])"]
+                             ["(define before+afters `{[abc 123]  }" " [84])"]))
 
 (test-parens-behavior/full 'surround-open-1
                            "abcd" "ef" "g" 
                            #\(
                            '(["abcd(" "g"]  ["abcd(" "ef)g"]))
-
 
 (test-parens-behavior/full 'meta-open-1
                            "abcd" "" "efg"
