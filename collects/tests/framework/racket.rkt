@@ -97,7 +97,7 @@
 ;;       text and cursor position, under different settings of the auto-parentheses and
 ;;       smart-skip-parentheses preferences   .nah.
 
-;; test-auto-parens-behavior 
+;; test-auto-parens-behavior
 ;;    : any string [or num (list num num)] [or char symbol 1string (list char) (list key-event%)] [or num (list num num)] string
 (define (test-auto-parens-behavior which initial-text initial-pos keys final-text final-pos
                                    [auto-parens? #f])
@@ -115,7 +115,7 @@
          (send f reflow-container)
          (send t insert ,initial-text)
          ,(if (number? initial-pos)
-              `(send t set-position ,initial-pos)            
+              `(send t set-position ,initial-pos)
               `(send t set-position ,(car initial-pos) ,(cadr initial-pos)))
          ,@(map
             (lambda (k)
@@ -165,15 +165,15 @@
   (test-parens-behavior/full (format "literal-~a" k)
                              "(list 1 #\\" "" ")"
                              k
-                             `([,(string-append "(list 1 #\\" (string k)) ")"] 
+                             `([,(string-append "(list 1 #\\" (string k)) ")"]
                                [,(string-append "(list 1 #\\" (string k)) ")"]))
   ;; test that auto-parens has no effect in strings
   (test-parens-behavior/full (format "~a-in-string" k)
                              "\" abc def " "" " \""
                              k
-                             `([,(string-append "\" abc def " (string k)) " \""] 
+                             `([,(string-append "\" abc def " (string k)) " \""]
                                [,(string-append "\" abc def " (string k)) " \""]))
-  
+
   ;; test that auto-parens has no effect in various comment situations
   (define scenarios
     ;    description     before-cursor    after-cursor
@@ -188,7 +188,7 @@
            [result (list before-final after)])
       (test-parens-behavior/full (format "~a-~a" k (car s))
                                  before "" after k `(,result ,result)))))
- 
+
 ;;; assorted other scenarios...
 (test-parens-behavior/full 'open-parens
                            "abcd" "" "efg"  ; editor state: before, selected, after
@@ -211,11 +211,11 @@
 (test-parens-behavior/full 'close-4
                            "(abcd efg " "" "   ) efg"
                            #\)
-                           '(["(abcd efg )" "   ) efg"] 
+                           '(["(abcd efg )" "   ) efg"]
                              ["(abcd efg    )" " efg"]))
 (test-parens-behavior/full 'close-5
                            "(define before+afters `([\"\" abc \"efg\" 12345 xyz]) [84])"
-                           "" 
+                           ""
                            ""
                            #\)
                            '(["(define before+afters `([\"\" abc \"efg\" 12345 xyz]) [84]))" ""]
@@ -236,23 +236,23 @@
                            #\)
                            '(["(define before+afters `([\"\" abc \"efg\" 12345 xyz])" "  ) [84])"]
                              ["(define before+afters `([\"\" abc \"efg\" 12345 xyz]  )" " [84])"]))
-(test-parens-behavior/full 'close-skip-fixup-1   
+(test-parens-behavior/full 'close-skip-fixup-1
                            "(define before+afters `{[abc 123]"
                            ""
                            "  ) [84])"
                            #\)   ; here the next close after ) doesn't match the {, so no skip happens
                            '(["(define before+afters `{[abc 123]}" "  ) [84])"]
                              ["(define before+afters `{[abc 123]}" "  ) [84])"]))
-(test-parens-behavior/full 'close-skip-fixup-2  
+(test-parens-behavior/full 'close-skip-fixup-2
                            "(define before+afters `{[abc 123]"
                            ""
                            "  } [84])"
-                           #\)   ; here the next close does match the {, so  skip 
+                           #\)   ; here the next close does match the {, so  skip
                            '(["(define before+afters `{[abc 123]}" "  } [84])"]
                              ["(define before+afters `{[abc 123]  }" " [84])"]))
 
 (test-parens-behavior/full 'surround-open-1
-                           "abcd" "ef" "g" 
+                           "abcd" "ef" "g"
                            #\(
                            '(["abcd(" "g"]  ["abcd(" "ef)g"]))
 
@@ -319,7 +319,7 @@
                              "abcd" "" "efg"
                              '(escape #\()   ; '((new key-event% [key-code #\(] [meta-down #t]))
                              '(["abcd(" ")efg"]  ["abcd(" ")efg"]))
-  
+
   (test-parens-behavior/full 'meta-close-skip-1
                              "(define before (list 1 2" "" " 3 4)"
                              '(escape #\))   ; '((new key-event% [key-code #\)] [meta-down #t]))
@@ -338,5 +338,3 @@
                              '(["(define before (list 1 2 3 4)" ""]
                                ["(define before (list 1 2 3 4)" ""]))
   )
-
-
