@@ -37,11 +37,9 @@
                   (dynamic-require '',compiled-module-name #f)
                   (sampler 'stop)
                   (sampler 'get-snapshots)))))))
-  (define (right-file? node)
-    (define src (node-src node))
-    (equal? (and src (srcloc-source src)) res-mpi))
-  (define orig-profile (analyze-samples snapshots))
-  (filter right-file? (profile-nodes orig-profile)))
+  ;; We can't prune what's outside the file yet. We need the entire profile
+  ;; to identify hot functions, and to get meaningful caller-callee stats.
+  (analyze-samples snapshots))
 
 
 ;; In some cases, we only want to consider "hot" functions for further
