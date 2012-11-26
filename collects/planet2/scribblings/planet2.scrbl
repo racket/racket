@@ -124,7 +124,7 @@ reprovides all their options.
 
 @subsection{Command Line}
 
-The @exec{raco pkg} sub-command provides the following
+The @as-index{@exec{raco pkg}} sub-command provides the following
 sub-sub-commands:
 
 @itemlist[
