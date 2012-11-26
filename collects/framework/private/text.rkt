@@ -147,16 +147,16 @@
                 [(equal? new-rectangles old-rectangles)
                  (loop left top right bottom)]
                 [else
-                 (define-values (new-left new-right new-top new-bottom)
+                 (define-values (new-left new-top new-right new-bottom)
                    (for/fold ([left left] [top top] [right right] [bottom bottom]) 
                      ([r (in-list new-rectangles)])
                      (join-rectangles left top right bottom r)))
-                 (define-values (both-left both-right both-top both-bottom)
+                 (define-values (both-left both-top both-right both-bottom)
                    (for/fold ([left new-left] [top new-top] [right new-right] [bottom new-bottom]) 
                      ([r (in-list old-rectangles)])
                      (join-rectangles left top right bottom r)))
                  (set-range-rectangles! a-range new-rectangles)
-                 (loop both-left both-right both-top both-bottom)])]
+                 (loop both-left both-top both-right both-bottom)])]
              [else 
               ;; when old-rectangles is #f, that means that this
               ;; range has been removed from the ranges-deq, so 
