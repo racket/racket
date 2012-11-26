@@ -388,6 +388,24 @@
              '() '()
              20)))) ;; TODO have actual badness
 
+  (when inside-hot-function?
+    (for ([TR-entry (in-list TR-log)]
+          #:when (info-log-entry? TR-entry)
+          #:when (equal? (log-entry-kind TR-entry) "struct constructor")
+          #:when (pos-inside-us? (log-entry-pos TR-entry)))
+      (emit (missed-opt-log-entry
+             "" ; kind not used at this point
+             (string-append
+              "This struct constructor is used in hot code. "
+              "Allocating structs is expensive, consider using vectors instead. "
+              "To keep the same interface, consider defining macro wrappers "
+              "around the vector operations that have the same name as the "
+              "struct constructor and accessors.")
+             (log-entry-located-stx TR-entry) (log-entry-located-stx TR-entry)
+             (log-entry-pos TR-entry) 'typed-racket
+             '() '()
+             20)))) ;; TODO have actual badness
+
   produced-entries)
 
 (define (group-badness group)

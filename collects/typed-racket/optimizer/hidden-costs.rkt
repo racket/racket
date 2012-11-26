@@ -6,6 +6,8 @@
          (optimizer utils logging)
          (types abbrev))
 
+(require (types type-table))
+
 (provide hidden-cost-log-expr)
 
 (define-syntax-class hidden-port-parameter-function
@@ -29,4 +31,11 @@
                           (syntax->list #'(args ...)))
            #:with opt
            (begin (log-optimization-info "hidden parameter" #'op)
+                  #`(op #,@(syntax-map (optimize) #'(args ...)))))
+  ;; Log calls to struct constructors, so that OC can report those used in
+  ;; hot loops.
+  (pattern (#%plain-app op:id args ...)
+           #:when (struct-constructor? #'op)
+           #:with opt
+           (begin (log-optimization-info "struct constructor" #'op)
                   #`(op #,@(syntax-map (optimize) #'(args ...))))))
