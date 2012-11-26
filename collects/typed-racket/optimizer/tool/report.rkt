@@ -3,7 +3,6 @@
 (require racket/class racket/gui/base racket/match racket/port racket/list
          unstable/syntax racket/sandbox
          typed-racket/optimizer/logging
-         (prefix-in tr: typed-racket/typed-reader)
          "logging.rkt" "mzc.rkt")
 
 (provide (struct-out report-entry)
@@ -79,7 +78,7 @@
                     base)
                   (current-load-relative-directory))]
              [read-accept-reader #t])
-          (void (compile (tr:read-syntax portname input))))))))
+          (void (compile (read-syntax portname input))))))))
   (filter right-file? (reverse log)))
 
 
