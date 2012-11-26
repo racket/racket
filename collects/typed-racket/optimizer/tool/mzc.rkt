@@ -155,16 +155,22 @@
 ;; We aggregate results for each function.
 ;; Log messages produced by the inliner are very raw, unlike the TR logs,
 ;; which have gone through some aggregation. We do the aggregation here.
-(define (post-process-inline-log log profile)
+(define (post-process-inline-log log profile TR-log)
   (define hot-functions (and profile (prune-profile profile)))
   (define grouped-events
     (group-by equal? #:key log-entry-pos log)) ; right file, so that's enough
-  (apply append
-         (for/list ([group (in-list grouped-events)])
-           (process-function group profile hot-functions))))
+  (apply
+   append
+   (append
+    (for/list ([group (in-list grouped-events)])
+      (process-function group profile hot-functions TR-log))
+    (if profile
+        (for/list ([node (in-list (profile-nodes profile))])
+          (process-profile-node node grouped-events hot-functions TR-log))
+        '()))))
 
 ;; Process the inlining logs corresponding to a single function.
-(define (process-function log profile hot-functions)
+(define (process-function log profile hot-functions TR-log)
   (define produced-entries '())
   (let/ec escape
     ;; prune this entry from the logs, but return what we produced so far
@@ -352,6 +358,37 @@
               (emit-success)])
 
        produced-entries]))) ; return the list of new entries
+
+(define (process-profile-node profile-entry grouped-events hot-functions TR-log)
+
+  (define produced-entries '())
+  (define (emit e) (set! produced-entries (cons e produced-entries)))
+
+  (define inside-hot-function? (memq profile-entry hot-functions))
+
+  (define (pos-inside-us? pos)
+    (define our-pos  (node-pos  profile-entry))
+    (define our-span (node-span profile-entry))
+    (and pos our-pos our-span (<= our-pos pos (+ our-pos our-span))))
+
+  (when inside-hot-function?
+    (for ([TR-entry (in-list TR-log)]
+          #:when (info-log-entry? TR-entry)
+          #:when (equal? (log-entry-kind TR-entry) "hidden parameter")
+          #:when (pos-inside-us? (log-entry-pos TR-entry)))
+      (emit (missed-opt-log-entry
+             "" ; kind not used at this point
+             (string-append "This function may implicitly dereference the "
+                            "`current-output-port' parameter. " ;; TODO hard coded
+                            "It may be faster to take the value of the "
+                            "parameter once, outside hot code, and pass it "
+                            "to this function as an argument.")
+             (log-entry-located-stx TR-entry) (log-entry-located-stx TR-entry)
+             (log-entry-pos TR-entry) 'typed-racket
+             '() '()
+             20)))) ;; TODO have actual badness
+
+  produced-entries)
 
 (define (group-badness group)
   (+ (n-failures group) (- (n-out-of-fuels group) (n-successes group))))

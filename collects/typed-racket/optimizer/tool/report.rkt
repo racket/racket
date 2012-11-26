@@ -30,7 +30,7 @@
   (define-values (TR-log mzc-log) (generate-logs this))
   (log->report
    (append TR-log
-           (post-process-inline-log mzc-log profile))))
+           (post-process-inline-log mzc-log profile TR-log))))
 
 
 (define (generate-logs this)
