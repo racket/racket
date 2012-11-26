@@ -14,6 +14,15 @@
 ;;  read/write (the opposite direction) didn't finish, and so that
 ;;  opposite must be completed, first.
 
+#|
+TO DO:
+ - hostname checking should shutdown SSL negotiation w/ right alert code
+ - CRL support (?)
+ - alternative hostname checking styles
+ - double-check refcounting of X509
+ - SNI: http://en.wikipedia.org/wiki/Server_Name_Indication
+|#
+
 #lang racket/base
 (require (rename-in racket/contract/base [-> c->])
          ffi/unsafe
