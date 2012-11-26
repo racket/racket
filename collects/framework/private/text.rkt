@@ -213,7 +213,7 @@
       (define-values (start-x top-start-y bottom-start-y)
         (begin 
           (position-locations start b1 b2 #f b3 start-eol? #t)
-          (values (if caret-space?
+          (values (if (and caret-space? (not (= start end)))
                       (+ 1 (unbox b1))
                       (unbox b1))
                   (unbox b2)
