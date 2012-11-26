@@ -320,13 +320,19 @@
       (define color (if (is-a? in-color color%)
                         in-color
                         (send the-color-database find-color in-color)))
+      (define found-one? #f)
       (unhighlight-ranges
        (λ (r-start r-end r-color r-caret-space? r-style)
-         (and (equal? start r-start)
-              (equal? end r-end)
-              (equal? color r-color)
-              (equal? caret-space? r-caret-space?)
-              (equal? style r-style)))))
+         (cond
+           [found-one? #f]
+           [(and (equal? start r-start)
+                 (equal? end r-end)
+                 (equal? color r-color)
+                 (equal? caret-space? r-caret-space?)
+                 (equal? style r-style))
+            (set! found-one? #t)
+            #t]
+           [else #f]))))
     
     (define/public (unhighlight-ranges pred)
       (define left #f)
