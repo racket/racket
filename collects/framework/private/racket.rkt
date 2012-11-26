@@ -5,6 +5,7 @@
 
 (require string-constants
          racket/class
+         racket/string
          mred/mred-sig
          syntax-color/module-lexer
          "collapsed-snipclass-helpers.rkt"
@@ -900,17 +901,39 @@
         (let ([snip-pos (get-snip-position snip)])
           (delete snip-pos (+ snip-pos 1)))
         (set-position pos pos)))
-    
+
+
+    ;; stick-to-next-sexp?: natural -> boolean
+    (define stick-to-patterns
+      '("'" "," ",@" "`" "#'" "#," "#`" "#,@"
+        "#&" "#;" "#hash" "#hasheq" "#ci" "#cs"))
+    (define stick-to-patterns-union
+      (regexp (string-append 
+               "^("
+               (string-join (map regexp-quote stick-to-patterns) "|")
+               ")")))
+    (define stick-to-patterns-union-anchored
+      (regexp (string-append 
+               "^("
+               (string-join (map regexp-quote stick-to-patterns) "|")
+               ")$")))
+    (define stick-to-max-pattern-length 
+      (apply max (map string-length stick-to-patterns)))
     (define/public (stick-to-next-sexp? start-pos)
-      (let ([end-pos (forward-match start-pos (last-position))])
-        (and end-pos
-             (member (get-text start-pos end-pos)
-                     '("'" "," ",@" "`"
-                           "#'" "#," "#`" "#,@"
-                           "#&" "#;"
-                           "#hash" "#hasheq"
-                           "#ci" "#cs")))))
-    
+      ;; Optimization: speculatively check whether the string will
+      ;; match the patterns; at time of writing, forward-match can be
+      ;; really expensive.
+      (define snippet 
+        (get-text start-pos 
+                  (min (last-position) 
+                       (+ start-pos stick-to-max-pattern-length))))
+      (and (regexp-match stick-to-patterns-union snippet)
+           (let ([end-pos (forward-match start-pos (last-position))])
+             (and end-pos
+                  (regexp-match stick-to-patterns-union-anchored
+                                (get-text start-pos end-pos))
+                  #t))))
+      
     (define/public (get-forward-sexp start-pos) 
       ;; loop to work properly with quote, etc.
       (let loop ([one-forward (forward-match start-pos (last-position))])
