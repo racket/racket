@@ -18,7 +18,8 @@
          doc-db-disconnect
          doc-db-clean-files
          doc-db-init-pause
-         doc-db-pause)
+         doc-db-pause
+         log-doc-db-info)
 
 (define-logger doc-db)
 
@@ -31,13 +32,21 @@
                               #:mode 'create
                               #:busy-retry-limit 0))
   (unless exists?
-    (call-with-transaction/retry
+    (call-with-retry/transaction
      'prepare-tables
      db
      #f
      +inf.0
      (lambda ()
        (prepare-tables db))))
+  ;; we don't need to survive a catastrophic failure:
+  (call-with-retry
+   'synchronous-off
+   db
+   #f
+   +inf.0
+   (lambda ()
+     (query-exec db "pragma synchronous = off")))
   db)
 
 (define (doc-db-disconnect db)
@@ -71,7 +80,7 @@
                       (doc-db-file->connection db-file)))
        (setup db)
        (begin0
-        (call-with-transaction/retry
+        (call-with-retry/transaction
          who
          db
          (if (connection? db-file)
@@ -457,34 +466,37 @@
   (and (exn:fail? v)
        (regexp-match #rx"the database file is locked$"
                      (exn-message v))))
+(define (call-with-lock-handler handler thunk)
+  (with-handlers* ([exn:fail:database-locked?
+                    (lambda (exn) (handler))])
+    (thunk)))
+(define (fast-abort-on-limit fast-abort should-retry?)
+  (log-doc-db-info "database lock delay exceeded limit")
+  (fast-abort should-retry?))
 
 ;; By default, failure uses rollbacks, but `fast-abort' can be
 ;; provided for a faster abort by dropping the connection. Don't try
 ;; to use a connection provided here in any other way on an abort. The
 ;; argument to `fast-abort' is `should-retry?': on #t, perhaps escape
 ;; to retry, but on #f, just clean up without escaping.
-(define (call-with-transaction/retry who db fast-abort pause-limit thunk)
+(define (call-with-retry/transaction who db fast-abort pause-limit thunk)
   (let loop ([pause (doc-db-init-pause)])
-    (define (call-with-lock-handler handler thunk)
-      (with-handlers* ([exn:fail:database-locked?
-                        (lambda (exn) (handler pause))])
-        (thunk)))
     ((let/ec esc
        (define success? #f)
        (dynamic-wind
         (lambda ()
           (call-with-lock-handler
-           (lambda (pause) (esc (lambda ()
-                                  (if (and fast-abort
-                                           (pause . > . pause-limit))
-                                      (fast-abort #t)
-                                      (loop (doc-db-pause `(start ,who) pause))))))
+           (lambda () (esc (lambda ()
+                             (if (and fast-abort
+                                      (pause . > . pause-limit))
+                                 (fast-abort-on-limit fast-abort #t)
+                                 (loop (doc-db-pause `(start ,who) pause))))))
            (lambda () (start-transaction db))))
         (lambda ()
           (call-with-lock-handler
-           (lambda (pause) (esc (lambda ()
-                                  (rollback db fast-abort #t 1)
-                                  (loop (doc-db-pause `(rollback ,who) pause)))))
+           (lambda () (esc (lambda ()
+                             (rollback db fast-abort #t 1)
+                             (loop (doc-db-pause `(rollback ,who) pause)))))
            (lambda ()
              (define l (call-with-values thunk list))
              (commit-transaction db)
@@ -506,3 +518,16 @@
                                                count))
                             (rollback db #f should-retry? (add1 count)))])
           (rollback-transaction db)))))
+
+(define (call-with-retry who db fast-abort pause-limit thunk)
+  (let loop ([pause (doc-db-init-pause)])
+    ((let/ec esc
+       (call-with-lock-handler
+        (lambda () (esc (lambda ()
+                          (if (and fast-abort
+                                   (pause . > . pause-limit))
+                              (fast-abort-on-limit fast-abort #t)
+                              (loop (doc-db-pause `(retry ,who) pause))))))
+        (lambda ()
+          (define l (call-with-values thunk list))
+          (lambda () (apply values l))))))))

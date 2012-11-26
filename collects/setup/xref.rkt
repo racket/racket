@@ -94,7 +94,7 @@
         (let loop ([pause (doc-db-init-pause)])
           (cond
            [(pause . >= . pause-limit)
-            ;; Too much database contention? Give up on the database.
+            (log-doc-db-info "too much contention on database; falling back to full index")
             #t]
            [else
             (and p
