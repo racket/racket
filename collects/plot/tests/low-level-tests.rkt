@@ -17,10 +17,15 @@
                   int-str->e-str frac-str->e-str)
          plot/common/worker-thread)
 
+(check-equal? (linear-seq 1 1 2) '(1 1))
 (check-equal? (linear-seq 0 1 2 #:start? #t #:end? #t) '(0 1))
 (check-equal? (linear-seq 0 1 2 #:start? #t #:end? #f) '(0 2/3))
 (check-equal? (linear-seq 0 1 2 #:start? #f #:end? #t) '(1/3 1))
 (check-equal? (linear-seq 0 1 2 #:start? #f #:end? #f) '(1/4 3/4))
+(check-equal? (linear-seq 1 0 2 #:start? #t #:end? #t) '(1 0))
+(check-equal? (linear-seq 1 0 2 #:start? #t #:end? #f) '(1 1/3))
+(check-equal? (linear-seq 1 0 2 #:start? #f #:end? #t) '(2/3 0))
+(check-equal? (linear-seq 1 0 2 #:start? #f #:end? #f) '(3/4 1/4))
 
 (check-exn exn:fail:contract?
            (λ () (vector-field (λ (v [z 0]) v) -4 4 -4 4))

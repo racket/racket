@@ -50,8 +50,10 @@ A log transform. Use this to generate plots with log-scale axes. Any such axis m
 
 The beginning of the @secref["ticks and transforms"] section has a working example. An example of exceeding the bounds is
 @interaction[#:eval plot-eval
-                    (parameterize ([plot-x-transform  log-transform])
-                      (plot (function (λ (x) x) -1 1)))]
+                    (eval:alts
+                     (parameterize ([plot-x-transform  log-transform])
+                       (plot (function (λ (x) x) -1 1)))
+                     (eval:result "" "" "log-transform: expects type <positive real> as 1st argument, given: -1; other arguments were: 1"))]
 See @racket[axis-transform-bound] and @racket[axis-transform-append] for ways to get around an axis transform's bounds limitations.
 }
 
