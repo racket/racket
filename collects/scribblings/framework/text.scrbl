@@ -170,7 +170,16 @@
   The class that this mixin produces uses the same initialization arguments as
   its input.
 
-  @defmethod*[#:mode override (((on-paint (before? any/c) (dc (is-a?/c dc<%>)) (left real?) (top real?) (right real?) (bottom real?) (dx real?) (dy real?) (draw-caret (one-of/c (quote no-caret) (quote show-inactive-caret) (quote show-caret)))) void?))]{
+  @defmethod*[#:mode override (((on-paint (before? any/c)
+                                          (dc (is-a?/c dc<%>))
+                                          (left real?)
+                                          (top real?)
+                                          (right real?)
+                                          (bottom real?)
+                                          (dx real?)
+                                          (dy real?)
+                                          (draw-caret (or/c 'no-caret 'show-inactive-caret 'show-caret))) 
+                                void?))]{
     Draws the rectangles installed by @method[text:basic<%> highlight-range].
   }
 
@@ -360,17 +369,9 @@
 @definterface[text:searching<%> (editor:keymap<%> text:basic<%>)]{
   Any object matching this interface can be searched.
 
-  Searches using this class has a non-traditional feature for performance
-  reasons. Specifically, multiple adjacent hits are coalesced into a single
-  search results when bubbles are drawn. This means, for example, that
-  searching for a space in a file with 80,000 spaces (as one file in the Racket
-  code base has) is still tractable, since many of those spaces will be next to
-  each other and thus there will be far fewer bubbles (the file in question has
-  only 20,000 such bubbles).
-
-  @defmethod[(set-searching-state [str (or/c false/c string?)]
+  @defmethod[(set-searching-state [str (or/c #f string?)]
                                   [cs? boolean?]
-                                  [replace-start (or/c false/c number?)]
+                                  [replace-mode? boolean?]
                                   [notify-frame? boolean?])
              void?]{
     If @racket[str] is not @racket[#f], then this method initiates a search for
@@ -380,10 +381,14 @@
     If @racket[cs?] is @racket[#f], the search is case-insensitive, and otherwise
     it is case-sensitive.
 
-    If the @racket[replace-start] argument is @racket[#f], then the search is not
-    in replacement mode. If it is a number, then the first search hit after that
-    position in the editor is where the next replacement will take place.
-    
+    The @racket[replace-mode?] boolean determines if the resulting search should
+    be tracking the next-to-replace search hit as the insertion point moves
+    around in the editor. Also, when @racket[replace-mode?] is @racket[#f], then
+    the bubbles are are uniform medium purple color (@racket["plum"] in
+    @racket[the-color-database]) and otherwise they are either a lighter
+    purple or a darker purple, with every bubble except the one just following
+    the insertion the lighter color.
+
     The search does not complete before @method[text:searching<%> set-searching-state]
     returns. Accordingly, @method[text:searching<%> get-search-hit-count] may
     have out-of-date results for a while, until the search process is finished.
@@ -392,7 +397,7 @@
     is called when the search completes.
   }
 
-  @defmethod[(set-search-anchor [position (or/c false/c number?)]) void?]{
+  @defmethod[(set-search-anchor [position (or/c #f number?)]) void?]{
     Sets the anchor's position in the editor. Only takes effect if the
     @racket['framework:anchored-search] preference is on.
   }
@@ -404,31 +409,23 @@
 
   @defmethod[(get-replace-search-hit) (or/c number? #f)]{
     Returns the position of the nearest search hit that comes after the
-    position set by the @method[text:searching<%> set-replace-start] method.
+    insertion point.
   }
 
   @defmethod[(set-replace-start [pos (or/c number? #f)]) void?]{
-    Sets the position where replacement next occurs. This is equivalent to
-    calling @method[text:searching<%> set-searching-state] with a new
-    @racket[replace-start] argument, but the other arguments the same as the
-    last call to @method[text:searching<%> set-searching-state], but is more
-    efficient (since @method[text:searching<%> set-searching-state] will search
-    the entire buffer and re-build all of the bubbles).
+    This method is ignored. (The next replacement start is now
+    tracked via the @method[text% after-set-position] method.)
   }
 
   @defmethod[(get-search-bubbles)
              (listof (list/c (cons/c number? number?)
-                             (list/c number? number? number?)))]{
+                             (or/c 'normal-search-color
+                                   'dark-search-color
+                                   'light-search-color)))]{
     Returns information about the search bubbles in the editor. Each item in
     the outermost list corresponds to a single bubble. The pair of numbers is
-    the range of the bubble and the triple of numbers is the color of the
-    bubble, in RGB coordinates.
-
-    If @tt{replace-start} has been set (via @method[text:searching<%>
-    set-replace-start]) and the closest search hit following @tt{replace-start}
-    does not collapse with an adjacent bubble,the result will include that
-    bubble. If the closest search hit after @tt{replace-start} is collpased
-    with another bubble, then the search hit is not reflected in the result.
+    the range of the bubble and the symbol is the color of the
+    bubble.
 
     This method is intended for use in test suites.
   }
@@ -533,7 +530,10 @@
   This snip is used in conjunction with the @racket[frame:delegate<%>] and
   @racket[text:delegate<%>] interfaces.
 
-  @defmethod*[#:mode override (((split (position exact) (first (box/c (is-a?/c snip%))) (second (box/c (is-a?/c snip%)))) void?))]{
+  @defmethod*[#:mode override (((split (position exact-nonnegative-integer?)
+                                       (first (box/c (is-a?/c snip%)))
+                                       (second (box/c (is-a?/c snip%))))
+                                void?))]{
     Fills the boxes with instance of @racket[text:1-pixel-string-snip%]s.
   }
 
@@ -545,12 +545,12 @@
               (((get-extent
                  (dc (is-a?/c dc<%>))
                  (x real?) (y real?)
-                 (w (or/c (box/c (or/c (and/c real? (not/c negative?)))) #f) #f)
-                 (h (or/c (box/c (or/c (and/c real? (not/c negative?)))) #f) #f)
-                 (descent (or/c (box/c (or/c (and/c real? (not/c negative?)))) #f) #f)
-                 (space (or/c (box/c (or/c (and/c real? (not/c negative?)))) #f) #f)
-                 (lspace (or/c (box/c (or/c (and/c real? (not/c negative?)))) #f) #f)
-                 (rspace (or/c (box/c (or/c (and/c real? (not/c negative?)))) #f) #f))
+                 (w (or/c (box/c (and/c real? (not/c negative?))) #f) #f)
+                 (h (or/c (box/c (and/c real? (not/c negative?))) #f) #f)
+                 (descent (or/c (box/c (and/c real? (not/c negative?))) #f) #f)
+                 (space (or/c (box/c (and/c real? (not/c negative?))) #f) #f)
+                 (lspace (or/c (box/c (and/c real? (not/c negative?))) #f) #f)
+                 (rspace (or/c (box/c (and/c real? (not/c negative?))) #f) #f))
                 void?))]{
 
     Sets the descent, space, lspace, and rspace to zero. Sets the height to
@@ -560,7 +560,17 @@
   @defmethod*[#:mode override (((insert (s string?) (len exact-nonnegative-integer?) (pos exact-nonnegative-integer? 0)) void?))]{
   }
 
-  @defmethod*[#:mode override (((draw (dc (is-a?/c dc<%>)) (x real?) (y real?) (left real?) (top real?) (right real?) (bottom real?) (dx real?) (dy real?) (draw-caret (or/c (quote no-caret) (quote show-inactive-caret) (quote show-caret)))) void?))]{
+  @defmethod*[#:mode override (((draw (dc (is-a?/c dc<%>))
+                                      (x real?) 
+                                      (y real?)
+                                      (left real?)
+                                      (top real?)
+                                      (right real?)
+                                      (bottom real?)
+                                      (dx real?)
+                                      (dy real?)
+                                      (draw-caret (or/c 'no-caret 'show-inactive-caret 'show-caret)))
+                                void?))]{
     Draws black pixels for non-whitespace characters and draws nothing for
     whitespace characters.
   }
@@ -576,7 +586,10 @@
   This snip is used in conjunction with the @racket[frame:delegate<%>] and
   @racket[text:delegate<%>] interfaces.
 
-  @defmethod*[#:mode override (((split (position exact) (first (box/c (is-a?/c snip%))) (second (box/c (is-a?/c snip%)))) void?))]{
+  @defmethod*[#:mode override (((split (position exact-nonnegative-integer?)
+                                       (first (box/c (is-a?/c snip%)))
+                                       (second (box/c (is-a?/c snip%))))
+                                void?))]{
     Fills the boxes with instance of @racket[text:1-pixel-tab-snip%]s.
   }
 
@@ -584,13 +597,32 @@
     Creates and returns an instance of @racket[text:1-pixel-tab-snip%].
   }
 
-  @defmethod*[#:mode override (((get-extent (dc (is-a?/c dc<%>)) (x real?) (y real?) (w (or/c (box/c (and/c real? (not/c negative?)) #f)) #f) (h (or/c (box/c (and/c real? (not/c negative?)) #f)) #f) (descent (or/c (box/c (and/c real? (not/c negative?)) #f)) #f) (space (or/c (box/c (and/c real? (not/c negative?)) #f)) #f) (lspace (or/c (box/c (and/c real? (not/c negative?)) #f)) #f) (rspace (or/c (box/c (and/c real? (not/c negative?)) #f)) #f)) void?))]{
+  @defmethod*[#:mode override (((get-extent (dc (is-a?/c dc<%>))
+                                            (x real?)
+                                            (y real?)
+                                            (w (or/c (box/c (and/c real? (not/c negative?)) #f)) #f)
+                                            (h (or/c (box/c (and/c real? (not/c negative?)) #f)) #f)
+                                            (descent (or/c (box/c (and/c real? (not/c negative?)) #f)) #f)
+                                            (space (or/c (box/c (and/c real? (not/c negative?)) #f)) #f)
+                                            (lspace (or/c (box/c (and/c real? (not/c negative?)) #f)) #f)
+                                            (rspace (or/c (box/c (and/c real? (not/c negative?)) #f)) #f))
+                                void?))]{
     Sets the descent, space, lspace, and rspace to zero. Sets the height to
     1. Sets the width to the width of tabs as returned in the
     @racket[tab-width] parameter of the @method[text% get-tabs] method.
   }
 
-  @defmethod*[#:mode override (((draw (dc (is-a?/c dc<%>)) (x real?) (y real?) (left real?) (top real?) (right real?) (bottom real?) (dx real?) (dy real?) (draw-caret (or/c (quote no-caret) (quote show-inactive-caret) (quote show-caret)))) void?))]{
+  @defmethod*[#:mode override (((draw (dc (is-a?/c dc<%>))
+                                      (x real?)
+                                      (y real?)
+                                      (left real?)
+                                      (top real?)
+                                      (right real?)
+                                      (bottom real?)
+                                      (dx real?)
+                                      (dy real?)
+                                      (draw-caret (or/c 'no-caret 'show-inactive-caret 'show-caret)))
+                                void?))]{
     Draws nothing.
   }
 }
@@ -730,7 +762,9 @@
   set-file-format] for more information. If not, the file format passed to
   @method[editor<%> save-file] is used.
 
-  @defmethod*[#:mode augment (((on-save-file (filename path?) (format (one-of/c (quote guess) (quote standard) (quote text) (quote text-force-cr) (quote same) (quote copy)))) void?))]{
+  @defmethod*[#:mode augment (((on-save-file (filename path?)
+                                             (format (or/c 'guess 'standard 'text 'text-force-cr 'same 'copy)))
+                               void?))]{
     If the method @method[text% get-file-format] returns @racket['standard] and
     the text has only @racket[string-snip%]s, the file format is set to
     @racket['text].

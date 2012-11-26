@@ -974,7 +974,6 @@
           search-position-callback-running?
           search-coroutine))
     
-    ;; NOW IGNORED
     (define/public (set-replace-start n) (void))
     
     (define/public (get-anchor-pos) anchor-pos)
@@ -993,7 +992,6 @@
     
     (define/public (get-search-hit-count) (values before-caret-search-hit-count search-hit-count))
     
-    ;; NOW JUST BOOLEAN: r? argument (used to be "rs")
     (define/public (set-searching-state s in-cs? in-r? [notify-frame? #f])
       (define r? (and in-r? #t))
       (define cs? (and in-cs? #t))
