@@ -8,6 +8,36 @@
     more to use the #lang language (unless they are using the teaching
     languages)
 
+  . Automatic-parenthesis mode improvements:
+    - Added some "smart-skip" behavior to insert-close-paren,
+      described in the documentation.
+      - When auto-parens mode is enabled,
+        the existing "balance-parens" keybinding invokes
+        insert-close-paren with a smart-skip argument of
+        'adjacent
+      - A new "balance-parens-forward" keybinding invokes
+        insert-close-paren with a smart-skip argument of
+        'forward (whether or not auto-parens mode is
+                        enabled)
+
+    - Some basic smart-skip behavior is also enabled for
+      strings ("...") and |...| pairs, specifically, typing
+      a double-quote or bar character when the cursor
+      immediately precedes one causes the cursor to simply
+      skip over the existing one
+
+    - Tweaked insertion of block comment pairs in
+      auto-parens mode
+
+    - In strings and line/block comments, auto-parens mode
+      no longer has any effect (you can still use the M+..
+      keybindings to force insertion of a particular brace
+      pair)
+
+    - Detect when a character constant is being typed, and
+      don't insert brace pairs if so
+
+
 ------------------------------
        Version 5.3.1
 ------------------------------
