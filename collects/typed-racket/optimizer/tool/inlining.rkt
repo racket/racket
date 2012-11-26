@@ -57,7 +57,7 @@
 
 ;; Process the inlining logs corresponding to a single function.
 (define (process-function log profile hot-functions)
-  (define total-time (and profile (profile-total-time profile)))
+  (define total-time (profile-total-time profile))
   (define produced-entries '())
   (let/ec escape
     ;; prune this entry from the logs, but return what we produced so far
@@ -68,13 +68,12 @@
        ;; #f if no profiling info is available for this function
        ;; takes in either a single pos number or a pair of numbers (line col)
        (define (pos->node pos)
-         (and profile
-              (for/first ([p (in-list (profile-nodes profile))]
-                          #:when (if (pair? pos)
-                                     (and (equal? (car pos) (node-line p))
-                                          (equal? (cdr pos) (node-col  p)))
-                                     (equal? pos (node-pos p))))
-                p)))
+         (for/first ([p (in-list (profile-nodes profile))]
+                     #:when (if (pair? pos)
+                                (and (equal? (car pos) (node-line p))
+                                     (equal? (cdr pos) (node-col  p)))
+                                (equal? pos (node-pos p))))
+           p))
        (define profile-entry (pos->node pos))
 
        (define badness-multiplier
@@ -206,7 +205,7 @@
                 0)))
 
        (define inside-hot-function?
-         (and profile (memq profile-entry hot-functions)))
+         (memq profile-entry hot-functions))
 
        (define (inside-us? h)
          (pos-inside-us? (node-pos h)
@@ -225,23 +224,19 @@
                      ;; TODO try dropping 3/4
                      (drop hot-functions (quotient (length hot-functions) 2)))))
 
-       ;; If we know which regions are hot, prune reports about cold
-       ;; regions. If we don't know, err on the side of showing more.
+       ;; Prune reports about cold regions.
        ;; We don't want to prune earlier, since traversing cold functions can
        ;; give us advice about hot functions.
-       (when (and profile
-                  (not inside-hot-function?)
+       (when (and (not inside-hot-function?)
                   (not really-hot-anonymous-function-inside-us?))
          (prune))
 
-       (cond [(and profile
-                   (counts-as-a-missed-opt? pruned-log)
+       (cond [(and (counts-as-a-missed-opt? pruned-log)
                    is-a-loop?
                    ;; loops are hard to act upon, only report in extreme cases
                    (< (group-badness pruned-log) 50))
               (prune)]
-             [(and profile
-                   (counts-as-a-missed-opt? pruned-log)
+             [(and (counts-as-a-missed-opt? pruned-log)
                    (not is-a-loop?)
                    (not really-hot-anonymous-function-inside-us?)
                    ;; needs to have enough failures to report
