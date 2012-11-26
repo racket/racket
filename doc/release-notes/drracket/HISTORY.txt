@@ -8,7 +8,9 @@
     more to use the #lang language (unless they are using the teaching
     languages)
 
-  . Automatic-parenthesis mode improvements:
+  . Automatic-parenthesis mode improvements 
+    (thanks to Nadeem Abdul Hamid)
+
     - Added some "smart-skip" behavior to insert-close-paren,
       described in the documentation.
       - When auto-parens mode is enabled,

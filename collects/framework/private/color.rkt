@@ -8,7 +8,6 @@ added get-regions
 
 (require racket/class
          racket/gui/base
-         (prefix-in r: racket/match)  ; does 'match' conflict with something else
          syntax-color/token-tree
          syntax-color/paren-tree
          syntax-color/default-lexer
@@ -1045,32 +1044,33 @@ added get-regions
       (end-edit-sequence)  ;; wraps up the net-zero editing changes done by get-close-paren etc.
       (undo)   ;; to avoid messing up the editor's modified state in case of a simple skip
 
-      ;; an action is either '(insert) or '(skip p) where p is a position
-      (define the-action
-        (r:match smart-skip
-           [#f        '(insert)]
-           ['adjacent (if (and next-close-start next-close-adj?
-                               (string=? insert-str next-close-str))
-                          `(skip ,next-close-end)
-                          `(insert))]
-           ['forward  (cond
-                        [(and outer-close-start
-                              (or fixup? (string=? insert-str outer-close-str)))
-                         `(skip ,outer-close-end)]
-                        [(and next-close-start
-                              (or fixup? (string=? insert-str next-close-str)))
-                         `(skip ,next-close-end)]
-                        [else  `(insert)])]
-           [_ (error 'insert-close-paren
-                     (format "invalid smart-skip option: ~a" smart-skip))]))
-
+      (define (insert)
+        (for ([c (in-string insert-str)])
+          (on-default-char (new key-event% (key-code c))))
+        (+ pos (string-length insert-str)))
+      (define (skip p)
+        (set-position p)
+        p)
+      
       (define end-pos
-        (r:match the-action
-           [(list 'insert)
-            (for-each (λ(c) (on-default-char (new key-event% (key-code c))))
-                      (string->list insert-str))
-            (+ pos (string-length insert-str))]
-           [(list 'skip p) (set-position p) p]))
+        (cond
+          [(not smart-skip) (insert)]
+          [(eq? smart-skip 'adjacent)
+           (if (and next-close-start next-close-adj?
+                    (string=? insert-str next-close-str))
+               (skip next-close-end)
+               (insert))]
+          [(eq? smart-skip 'forward)
+           (cond
+             [(and outer-close-start
+                   (or fixup? (string=? insert-str outer-close-str)))
+              (skip outer-close-end)]
+             [(and next-close-start
+                   (or fixup? (string=? insert-str next-close-str)))
+              (skip next-close-end)]
+             [else  (insert)])]
+          [else (error 'insert-close-paren
+                       (format "invalid smart-skip option: ~a" smart-skip))]))
 
       (when (and flash? (not stopped?)) (flash-from end-pos)))
 
