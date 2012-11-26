@@ -42,12 +42,14 @@
 (define-struct rectangle (left top right bottom style color) #:inspector #f)
 
 (define (build-rectangle left top right bottom style color)
-  (when (right . < . left)
-    (error 'build-rectangle "found right to the right of left: ~s"
-           (list left top right bottom style color)))
-  (when (bottom . < . top)
-    (error 'build-rectangle "found bottom above top: ~s"
-           (list left top right bottom style color)))
+  (unless (or (symbol? right) (symbol? left))
+    (when (right . < . left)
+      (error 'build-rectangle "found right to the right of left: ~s"
+             (list left top right bottom style color))))
+  (unless (or (symbol? top) (symbol? bottom))
+    (when (bottom . < . top)
+      (error 'build-rectangle "found bottom above top: ~s"
+             (list left top right bottom style color))))
   (make-rectangle left top right bottom style color))
   
 
