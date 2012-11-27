@@ -4,7 +4,7 @@
          racket/match
          racket/dict         
          racket/contract/base
-         racket/vector
+         racket/fixnum
          racket/unsafe/ops)
 
 (define bits-in-a-word
@@ -20,7 +20,7 @@
 
 (define (make-bit-vector size [fill #f])
   (define word-size (add1 (quotient size bits-in-a-word)))
-  (define words (make-vector word-size (if fill largest-fixnum 0)))
+  (define words (make-fxvector word-size (if fill largest-fixnum 0)))
   (bit-vector words size word-size))
 
 (define (bit-vector* . init-bits)
@@ -46,7 +46,7 @@
   (define-values (wi bi) (quotient/remainder n bits-in-a-word))
   (match bv
     [(struct bit-vector (words size word-size))
-     (define word (vector-ref words wi))
+     (define word (fxvector-ref words wi))
      (define bit  (bitwise-bit-set? word bi))
      bit]))
 
@@ -68,10 +68,10 @@
   (define-values (wi bi) (quotient/remainder n bits-in-a-word))
   (match bv
     [(struct bit-vector (words size word-size))
-     (define word (vector-ref words wi))
+     (define word (fxvector-ref words wi))
      (define bit  (bitwise-bit-set? word bi))
      (unless (eq? bit b)
-       (vector-set! words wi (bitwise-xor word (expt 2 bi))))]))
+       (fxvector-set! words wi (bitwise-xor word (expt 2 bi))))]))
 
 (define (bit-vector-length bv)
   (bit-vector-size bv))
@@ -80,7 +80,7 @@
   (let ([bit-vector-copy
          (case-lambda
           [(bv)
-           (bit-vector (vector-copy (bit-vector-words bv))
+           (bit-vector (fxvector-copy (bit-vector-words bv))
                        (bit-vector-size bv)
                        (bit-vector-word-size bv))]
           [(bv start)
@@ -102,7 +102,7 @@
 ; A bit vector is represented as a vector of words.
 ; Each word contains 30 or 62 bits depending on the size of a fixnum.
 (struct bit-vector (words size word-size)
-  ; words     is the vector of words
+  ; words     is the fxvector of words
   ; size      is the number of bits in bitvector
   ; word-size is the number of words in words
   #:property prop:dict/contract
@@ -129,9 +129,9 @@
            [wsx (bit-vector-word-size x)]
            [wsy (bit-vector-word-size y)])
        (and (= nx ny) (= wsx wsy) 
-            (for/and ([index (in-range (- (vector-length vx) 1))])
-              (eqv? (vector-ref vx index)
-                    (vector-ref vy index)))
+            (for/and ([index (in-range (- (fxvector-length vx) 1))])
+              (eq? (fxvector-ref vx index)
+                   (fxvector-ref vy index)))
             ; TODO: check last word
             )))
    (define (hash-code x hc)
@@ -140,8 +140,8 @@
            [ws (bit-vector-word-size x)])
        (bitwise-xor
         (hc ws) (hc n)
-        (for/fold ([h 1]) ([i (in-range (vector-length v))])
-          (bitwise-xor h (hc (vector-ref v i)))))))
+        (for/fold ([h 1]) ([i (in-range (fxvector-length v))])
+          (bitwise-xor h (hc (fxvector-ref v i)))))))
    (define hash-proc  hash-code)
    (define hash2-proc hash-code)]
   #:property prop:sequence in-bit-vector)
