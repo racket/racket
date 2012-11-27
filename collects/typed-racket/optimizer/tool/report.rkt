@@ -10,7 +10,8 @@
          (struct-out opt-report-entry)
          (struct-out missed-opt-report-entry)
          generate-report
-         collapse-report)
+         collapse-report
+         run-inside-optimization-coach-sandbox)
 
 ;; Similar to the log-entry family of structs, but geared towards GUI display.
 ;; Also designed to contain info for multiple overlapping log entries.
@@ -30,6 +31,19 @@
    (post-process-inline-log
     (generate-log this))))
 
+
+(define (run-inside-optimization-coach-sandbox this thunk)
+  (call-with-trusted-sandbox-configuration
+   (lambda ()
+     (define port-name (send this get-port-name))
+     (parameterize ([current-namespace (make-base-namespace)]
+                    [current-load-relative-directory
+                     (if (path-string? port-name)
+                         (let-values ([(base name _) (split-path port-name)])
+                           base)
+                         (current-load-relative-directory))]
+                    [read-accept-reader #t])
+       (thunk)))))
 
 (define (generate-log this)
   (define portname (send this get-port-name))
@@ -63,22 +77,12 @@
           [else ; different file
            #f]))
   (define log '())
-  (call-with-trusted-sandbox-configuration
+  (with-intercepted-opt-logging
+   (lambda (l)
+     (set! log (cons l log)))
    (lambda ()
-     (with-intercepted-opt-logging
-      (lambda (l)
-        (set! log (cons l log)))
-      (lambda ()
-        (define port-name (send this get-port-name))
-        (parameterize
-            ([current-namespace  (make-base-namespace)]
-             [current-load-relative-directory
-              (if (path-string? port-name)
-                  (let-values ([(base name _) (split-path port-name)])
-                    base)
-                  (current-load-relative-directory))]
-             [read-accept-reader #t])
-          (void (compile (read-syntax portname input))))))))
+     (run-inside-optimization-coach-sandbox
+      this (lambda () (void (compile (read-syntax portname input)))))))
   (filter right-file? (reverse log)))
 
 
