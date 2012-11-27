@@ -273,6 +273,10 @@
             ((w y) 'semivowel)
             (else 'consonant))
           'consonant)
+    (test (case (list 1 2) ; newly allocated => not `eqv?'
+            (((1 2)) 'two)
+            (else 'other))
+          'other)
 
     (test (and (= 2 2) (> 2 1)) #t)
     (test (and (= 2 2) (< 2 1)) #f)

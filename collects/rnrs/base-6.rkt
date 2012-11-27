@@ -32,7 +32,9 @@
  (rename-out [r6rs:set! set!])
 
  ;; 11.4.5
- cond else => case
+ (rename-out [r5rs:cond cond]
+             [r5rs:case case])
+ else => 
  and or
  
  ;; 11.4.6

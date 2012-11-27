@@ -2136,7 +2136,11 @@ Evaluates @racket[val-expr] and uses the result to select a
 result of @racket[val-expr]. If no such @racket[datum] is present, the
 @racket[else] @racket[case-clause] is selected; if no @racket[else]
 @racket[case-clause] is present, either, then the result of the
-@racket[case] form is @|void-const|.
+@racket[case] form is @|void-const|.@margin-note{The @racket[case]
+form of @racketmodname[racket] differs from that of @other-manual['(lib
+"r6rs/scribblings/r6rs.scrbl")] or @other-manual['(lib
+"r5rs/r5rs.scrbl")] by being based @racket[equal?] instead of
+@racket[eqv?] (in addition to allowing internal definitions).}
 
 For the selected @racket[case-clause], the results of the last
 @racket[then-body], which is in tail position with respect to the
@@ -2152,6 +2156,18 @@ A @racket[case-clause] that starts with @racket[else] must be the last
 (case (- 7 5)
  [(1 2 3) 'small]
  [(10 11 12) 'big])
+(case (string-append "do" "g")
+ [("cat" "dog" "mouse") "animal"]
+ [else "mineral or vegetable"])
+(case (list 'y 'x)
+ [((a b) (x y)) 'forwards]
+ [((b a) (y x)) 'backwards])
+(case 'x
+ [(x) "ex"]
+ [('x) "quoted ex"])
+(case (list 'quote 'x)
+ [(x) "ex"]
+ [('x) "quoted ex"])
 ]
 @def+int[
 (define (classify c)
