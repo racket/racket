@@ -843,6 +843,8 @@
           ""
           `(span ([class "navright"])
              ,@(render
+                ;; put space here for text browsers and to avoid an Opera issue
+                sep-element
                 (make-element
                  (cond [(not parent) "nonavigation"]
                        [prev (titled-url "backward" prev)]
@@ -871,7 +873,7 @@
                  next-content)))))
       (define navbar
         `(div ([class ,(if top? "navsettop" "navsetbottom")])
-           ,navleft ,sep-element ,navright nbsp)) ; need nbsp to make the navset bg visible
+           ,navleft ,navright nbsp)) ; need nbsp to make the navset bg visible
       (if (include-navigation?)
           (list navbar)
           null))
