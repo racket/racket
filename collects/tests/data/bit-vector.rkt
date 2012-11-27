@@ -32,8 +32,8 @@
                (bit-vector->vector bv))
              '#(#t #f #t))
 
-(test-equal? "bit-vector-count"
-             (bit-vector-count (bit-vector #t #f #t))
+(test-equal? "bit-vector-length"
+             (bit-vector-length (bit-vector #t #f #t))
              3)
 
 (test-equal? "in-bit-vector"

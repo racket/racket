@@ -16,7 +16,7 @@
 
 @author[@author+email["Jens Axel Søgaard" "soegaard@racket-lang.org"]]
 
-A bit vector (bit-vector) is a mutable sequence whose elements 
+A @deftech{bit vector} is a mutable sequence whose elements 
 are booleans. A bit vector also acts as a dictionary (@racket[dict?]
 from @racketmodname[racket/dict]), where the keys are zero-based
 indexes and the values are the elements of the bit-vector. A bit-vector 
@@ -45,9 +45,9 @@ Creates a new bit-vector containing each @racket[elem] in order.
 (bit-vector-ref bv 1)]
 }
 
-@defproc[(bit-vector? [x any/c]) boolean?]{
+@defproc[(bit-vector? [v any/c]) boolean?]{
 
-Returns @racket[#t] if @racket[x] is a bit-vector, @racket[#f] otherwise.
+Returns @racket[#t] if @racket[v] is a bit-vector, @racket[#f] otherwise.
 }
 
 @defproc[(bit-vector-ref [bv bit-vector?]
@@ -56,14 +56,14 @@ Returns @racket[#t] if @racket[x] is a bit-vector, @racket[#f] otherwise.
          any/c]{
 
 Returns the element at index @racket[index], if @racket[index] is less
-than @racket[(bit-vector-count gv)]. Otherwise, @racket[default] is
+than @racket[(bit-vector-length gv)]. Otherwise, @racket[default] is
 invoked if it is a procedure, returned otherwise.
 }
 
 @defproc[(bit-vector-set! 
           [bv bit-vector?]
           [index (and/c exact-nonnegative-integer? 
-                        (</c (+ 1 (bit-vector-count vv))))]
+                        (</c (+ 1 (bit-vector-length vv))))]
           [value boolean?])
          void?]{
 
@@ -73,17 +73,20 @@ Sets the value at index @racket[index] to be @racket[value].
 (bit-vector-ref bv 1)]
 }
 
-@defproc[(bit-vector-count [bv bit-vector?])
+@defproc[(bit-vector-length [bv bit-vector?])
          exact-nonnegative-integer?]{
 
 Returns the number of items in the bit-vector @racket[bv].
 }
 
-@defproc[(bit-vector-copy [bv bit-vector?])
+@defproc[(bit-vector-copy [bv bit-vector?]
+                          [start exact-nonnegative-integer? 0]
+                          [end exact-nonnegative-integer? (vector-length v)])
          bit-vector?]{
 
-Creates a fresh bit-vector of the same size and with the
-same elements as the bit-vector @racket[bv].
+Creates a fresh bit-vector with the
+same elements as @racket[bv] from @racket[start] (inclusive)
+to @racket[end] (exclusive).
 }
 
 @defproc[(in-bit-vector [bv bit-vector?])
@@ -101,7 +104,8 @@ from a snapshot of @racket[gv], use @racket[(in-vector
 (for/list ([x (in-bit-vector bv)]) x)]
 }
 
-@defform/subs[(for/bit-vector maybe-length (for-clause ...) body-or-break ... body)
+@defform/subs[(for/bit-vector maybe-length (for-clause ...) 
+                body-or-break ... body)
               ([maybe-length (code:line)
                              (code:line #:length length-expr)
                              (code:line #:length length-expr #:fill fill-expr)])
@@ -125,7 +129,8 @@ the default argument of @racket[make-bit-vector]).
 (to-list (for/bit-vector ([i '(1 2 3)]) (odd? i)))
 (to-list (for/bit-vector #:length 2 ([i '(1 2 3)]) (odd? i)))
 (to-list (for/bit-vector #:length 4 ([i '(1 2 3)]) (odd? i)))
-(to-list (for/bit-vector #:length 4 #:fill #t ([i '(1 2 3)]) (odd? i)))
+(to-list 
+ (for/bit-vector #:length 4 #:fill #t ([i '(1 2 3)]) (odd? i)))
 ]
 
 The @racket[for/bit-vector] form may allocate a bit-vector and mutate it 
@@ -133,11 +138,8 @@ after each iteration of @racket[body], which means that capturing a
 continuation during @racket[body] and applying it multiple times may
 mutate a shared bit-vector.}
 
-@defform/subs[(for*/bit-vector maybe-length (for-clause ...) body-or-break ... body)
-              ([maybe-length (code:line)
-                             (code:line #:length length-expr)
-                             (code:line #:length length-expr #:fill fill-expr)])
-              #:contracts ([length-expr exact-nonnegative-integer?])]{
+@defform[(for*/bit-vector maybe-length (for-clause ...)
+           body-or-break ... body)]{
 
 Like @racket[for/bit-vector] but with the implicit nesting of @racket[for*].
 }

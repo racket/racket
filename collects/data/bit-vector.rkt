@@ -1,7 +1,6 @@
 #lang racket/base
-(require (for-syntax racket/base
-                     unstable/wrapc
-                     syntax/for-body)
+(require (for-syntax racket/base)
+         racket/private/vector-wraps
          racket/match
          racket/dict         
          racket/contract/base
@@ -41,12 +40,15 @@
          (default)
          default)]
     [else
-     (define-values (wi bi) (quotient/remainder n bits-in-a-word))
-     (match bv
-       [(struct bit-vector (words size word-size))
-        (define word (vector-ref words wi))
-        (define bit  (bitwise-bit-set? word bi))
-        bit])]))
+     (unsafe-bit-vector-ref bv n)]))
+
+(define (unsafe-bit-vector-ref bv n)
+  (define-values (wi bi) (quotient/remainder n bits-in-a-word))
+  (match bv
+    [(struct bit-vector (words size word-size))
+     (define word (vector-ref words wi))
+     (define bit  (bitwise-bit-set? word bi))
+     bit]))
 
 (define (bit-vector-iterate-first bv)
   (if (zero? (bit-vector-size bv)) #f 0))
@@ -63,8 +65,6 @@
   (bit-vector-ref bv key))
 
 (define (bit-vector-set! bv n b)
-  (unless (boolean? b)
-    (error 'bit-vector-set! "expected boolean as third argument, got ~a" b))
   (define-values (wi bi) (quotient/remainder n bits-in-a-word))
   (match bv
     [(struct bit-vector (words size word-size))
@@ -73,40 +73,31 @@
      (unless (eq? bit b)
        (vector-set! words wi (bitwise-xor word (expt 2 bi))))]))
 
-(define (in-bit-vector/fun bv)
-  (unless (bit-vector? bv)
-    (raise-type-error 'in-bit-vector "bit-vector" bv))
-  (in-dict-values bv))
-
-(define-sequence-syntax in-bit-vector
-  (lambda () #'in-bit-vector/fun)
-  (lambda (stx)
-    (syntax-case stx ()
-      [[(var) (in-bv bv-expr)]
-       (with-syntax ([bv-expr-c (wrap-expr/c #'bit-vector? #'bv-expr #:macro #'in-bv)])
-         (syntax/loc stx
-           [(var)
-            (:do-in ([(bv) bv-expr-c])
-                    (void) ;; outer-check; handled by contract
-                    ([n 0] [size (bit-vector-size bv)]) ;; loop bindings
-                    (< n size) ;; pos-guard
-                    ([(var) (bit-vector-ref bv n)]) ;; inner bindings
-                    #t ;; pre-guard
-                    #t ;; post-guard
-                    ((add1 n) (bit-vector-size bv)))]))]
-      [[(var ...) (in-bv bv-expr)]
-       (with-syntax ([bv-expr-c (wrap-expr/c #'bit-vector? #'bv-expr #:macro #'in-bv)])
-         (syntax/loc stx
-           [(var ...) (in-bit-vector bit-expr-c)]))]
-      [_ #f])))
-
-(define (bit-vector-count bv)
+(define (bit-vector-length bv)
   (bit-vector-size bv))
 
-(define (bit-vector-copy bv)
-  (bit-vector (vector-copy (bit-vector-words bv))
-              (bit-vector-size bv)
-              (bit-vector-word-size bv)))
+(define bit-vector-copy*
+  (let ([bit-vector-copy
+         (case-lambda
+          [(bv)
+           (bit-vector (vector-copy (bit-vector-words bv))
+                       (bit-vector-size bv)
+                       (bit-vector-word-size bv))]
+          [(bv start)
+           (bit-vector-copy bv start)]
+          [(bv start end)
+           (bit-vector-copy bv start end)])])
+    bit-vector-copy))
+
+(define-vector-wraps "bit-vector"
+  bit-vector? bit-vector-length bit-vector-ref bit-vector-set! make-bit-vector
+  unsafe-bit-vector-ref bit-vector-set! bit-vector-length
+  in-bit-vector*
+  in-bit-vector
+  for/bit-vector
+  for*/bit-vector
+  bit-vector-copy
+  #f)
 
 ; A bit vector is represented as a vector of words.
 ; Each word contains 30 or 62 bits depending on the size of a fixnum.
@@ -120,7 +111,7 @@
                           #f ;; set
                           #f ;; remove!
                           #f ;; remove
-                          bit-vector-count
+                          bit-vector-length
                           bit-vector-iterate-first
                           bit-vector-iterate-next
                           bit-vector-iterate-key
@@ -155,98 +146,6 @@
    (define hash2-proc hash-code)]
   #:property prop:sequence in-bit-vector)
 
-(define (grow-bit-vector bv)
-  (define s (bit-vector-size bv))
-  (define w (bit-vector-words bv))
-  (define v (make-vector (* 2 (vector-length w)) 0))
-  (define new (bit-vector v (* 2 s) (bit-vector-word-size bv)))
-  (for ([i (in-range (vector-length w))])
-    (vector-set! v i (vector-ref w i)))
-  new)
-
-(define (shrink-bit-vector bv i)
-  (define nws (add1 (quotient i bits-in-a-word)))
-  (bit-vector (vector-copy (bit-vector-words bv) 0 nws)
-              i nws))
-
-(define-for-syntax (for_/vector stx orig-stx for_/vector-stx 
-                                for_/fold/derived-stx wrap-all?)
-  (syntax-case stx ()
-    [(_ (for-clause ...) body ...)
-     (with-syntax ([orig-stx orig-stx]
-                   [for_/fold/derived for_/fold/derived-stx]
-                   [((middle-body ...) (last-body ...)) 
-                    (split-for-body stx #'(body ...))])
-       (syntax/loc stx
-         (let-values ([(bv i)
-                       (for_/fold/derived
-                        orig-stx
-                        ([bv (make-bit-vector (* 16 bits-in-a-word))]
-                         [i 0])
-                        (for-clause ...) 
-                        middle-body ...
-                        (let ([new-bv (if (eq? i (bit-vector-size bv))
-                                          (grow-bit-vector bv)
-                                          bv)])
-                          (bit-vector-set! new-bv i (let () last-body ...))
-                          (values new-bv (unsafe-fx+ i 1))))])
-           (shrink-bit-vector bv i))))]
-    [(_ #:length length-expr #:fill fill-expr (for-clause ...) body ...)
-     (with-syntax ([orig-stx orig-stx]
-                   [(limited-for-clause ...)
-                    ;; If `wrap-all?', wrap all binding clauses. Otherwise, wrap
-                    ;; only the first and the first after each keyword clause:
-                    (let loop ([fcs (syntax->list #'(for-clause ...))] [wrap? #t])
-                      (cond
-                        [(null? fcs) null]
-                        [(keyword? (syntax-e (car fcs)))
-                         (if (null? (cdr fcs))
-                             fcs
-                             (list* (car fcs) (cadr fcs) (loop (cddr fcs) #t)))]
-                        [(not wrap?)
-                         (cons (car fcs) (loop (cdr fcs) #f))]
-                        [else
-                         (define fc (car fcs))
-                         (define wrapped-fc
-                           (syntax-case fc ()
-                             [[ids rhs]
-                              (or (identifier? #'ids)
-                                  (let ([l (syntax->list #'ids)])
-                                    (and l (andmap identifier? l))))
-                              (syntax/loc fc [ids (stop-after
-                                                   rhs
-                                                   (lambda x
-                                                     (unsafe-fx= i len)))])]
-                             [_ fc]))
-                         (cons wrapped-fc
-                               (loop (cdr fcs) wrap-all?))]))]
-                   [((middle-body ...) (last-body ...)) (split-for-body stx #'(body ...))]
-                   [for_/vector for_/vector-stx]
-                   [for_/fold/derived for_/fold/derived-stx])
-       (syntax/loc stx
-         (let ([len length-expr])
-           (unless (exact-nonnegative-integer? len)
-             (raise-argument-error 'for_/vector "exact-nonnegative-integer?" len))
-           (let ([v (make-bit-vector len fill-expr)])
-             (unless (zero? len)
-               (for_/fold/derived
-                orig-stx 
-                ([i 0])
-                (limited-for-clause ...)
-                middle-body ...
-                (bit-vector-set! v i (let () last-body ...))
-                (add1 i)))
-             v))))]
-    [(_ #:length length-expr (for-clause ...) body ...)
-     (for_/vector #'(fv #:length length-expr #:fill #f (for-clause ...) body ...) 
-                  orig-stx for_/vector-stx for_/fold/derived-stx wrap-all?)]))
-
-(define-syntax (for/bit-vector stx)
-  (for_/vector stx stx #'for/bit-vector #'for/fold/derived #f))
-
-(define-syntax (for*/bit-vector stx)
-  (for_/vector stx stx #'for*/bit-vector #'for*/fold/derived #t))
-
 (provide/contract
  [bit-vector?
   (-> any/c any)]
@@ -257,10 +156,11 @@
  [bit-vector-ref
   (->* (bit-vector? exact-nonnegative-integer?) (any/c) any)]
  [bit-vector-set!
-  (-> bit-vector? exact-nonnegative-integer? any/c any)] 
- [bit-vector-count
+  (-> bit-vector? exact-nonnegative-integer? boolean? any)] 
+ [bit-vector-length
   (-> bit-vector? any)]
- [bit-vector-copy
-  (-> bit-vector? bit-vector?)])
+ (rename bit-vector-copy*
+         bit-vector-copy
+         (-> bit-vector? bit-vector?)))
 
 (provide in-bit-vector for/bit-vector for*/bit-vector)
