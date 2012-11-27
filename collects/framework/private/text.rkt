@@ -41,15 +41,17 @@
 (define-struct range (start end caret-space? style color [rectangles #:mutable]) #:inspector #f)
 (define-struct rectangle (left top right bottom style color) #:inspector #f)
 
-(define (build-rectangle left top right bottom style color)
+(define (build-rectangle left top right bottom style color [info (λ () "")])
   (unless (or (symbol? right) (symbol? left))
     (when (right . < . left)
-      (error 'build-rectangle "found right to the right of left: ~s"
-             (list left top right bottom style color))))
+      (error 'build-rectangle "found right to the right of left: ~s; info ~a"
+             (list left top right bottom style color)
+             (info))))
   (unless (or (symbol? top) (symbol? bottom))
     (when (bottom . < . top)
-      (error 'build-rectangle "found bottom above top: ~s"
-             (list left top right bottom style color))))
+      (error 'build-rectangle "found bottom above top: ~s; info ~a"
+             (list left top right bottom style color)
+             (info))))
   (make-rectangle left top right bottom style color))
   
 
@@ -235,7 +237,11 @@
                                     end-x)
                                 bottom-start-y
                                 style
-                                color))]
+                                color
+                                (λ () (format "start = ~s end = ~s filename = ~s content = ~s"
+                                              start end 
+                                              (send this get-filename)
+                                              (send this get-text 0 100)))))]
         [(or (eq? style 'hollow-ellipse)
              (eq? style 'ellipse))
          (define end-line (position-line end end-eol?))
