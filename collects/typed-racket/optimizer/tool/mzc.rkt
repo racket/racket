@@ -160,11 +160,7 @@
   (define grouped-events
     (group-by equal? #:key log-entry-pos log)) ; right file, so that's enough
   (define new-inline-log-entries
-    (for*/list ([g     (in-list  grouped-events)]
-                [group (in-value (filter (lambda (x)
-                                           (not (self-out-of-fuel? x)))
-                                         g))]
-                #:when (not (null? group)))
+    (for/list ([group (in-list grouped-events)])
       (process-function group profile hot-functions)))
   (filter values new-inline-log-entries))
 
@@ -209,6 +205,8 @@
        ;; Of course, we lose precision if `g' has multiple call sites to `f'.
        (define is-a-loop?
          (or (any-self-o-o-f? log) (> (n-unrollings log) 0)))
+       ;; From now on, we ignore self-out-of-fuels.
+       (set! log (filter (lambda (l) (not (self-out-of-fuel? l))) log))
        (define inlining-sites
          (group-by equal? #:key (lambda (x)
                                   (inlining-event-where-loc
