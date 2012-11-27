@@ -79,6 +79,14 @@ Sets the value at index @racket[index] to be @racket[value].
 Returns the number of items in the bit-vector @racket[bv].
 }
 
+@defproc[(bit-vector-count [bv bit-vector?])
+         exact-nonnegative-integer?]{
+
+Returns the number of set bits in the bit-vector @racket[bv].
+@examples[#:eval the-eval
+(bit-vector-count (bit-vector #f #t #t))]
+}
+
 @defproc[(bit-vector-copy [bv bit-vector?]
                           [start exact-nonnegative-integer? 0]
                           [end exact-nonnegative-integer? (vector-length v)])

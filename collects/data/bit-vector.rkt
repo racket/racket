@@ -5,7 +5,8 @@
          racket/dict         
          racket/contract/base
          racket/fixnum
-         racket/unsafe/ops)
+         racket/unsafe/ops
+         "private/count-bits-in-fixnum.rkt")
 
 (define bits-in-a-word
   (if (fixnum? (expt 2 61)) 
@@ -19,8 +20,11 @@
   (raise-mismatch-error who "index out of range: " index))
 
 (define (make-bit-vector size [fill #f])
-  (define word-size (add1 (quotient size bits-in-a-word)))
-  (define words (make-fxvector word-size (if fill largest-fixnum 0)))
+  (define-values (q r) (quotient/remainder size bits-in-a-word))
+  (define word-size (add1 q))
+  (define words (make-fxvector word-size (if fill largest-fixnum 0)))  
+  (when (and fill (not (zero? r))) 
+    (fxvector-set! words q (- (expt 2 r) 1)))
   (bit-vector words size word-size))
 
 (define (bit-vector* . init-bits)
@@ -88,6 +92,10 @@
           [(bv start end)
            (bit-vector-copy bv start end)])])
     bit-vector-copy))
+
+(define (bit-vector-count bv)
+  (for/sum ([fx (in-fxvector (bit-vector-words bv))])
+    (fxcount fx)))
 
 (define-vector-wraps "bit-vector"
   bit-vector? bit-vector-length bit-vector-ref bit-vector-set! make-bit-vector
@@ -158,6 +166,8 @@
  [bit-vector-set!
   (-> bit-vector? exact-nonnegative-integer? boolean? any)] 
  [bit-vector-length
+  (-> bit-vector? any)]
+ [bit-vector-count
   (-> bit-vector? any)]
  (rename bit-vector-copy*
          bit-vector-copy

@@ -1,7 +1,8 @@
 #lang racket/base
 (require data/bit-vector
          racket/dict
-         rackunit)
+         rackunit
+         racket/set)
 
 (define (bit-vector->vector bv)
   (for/vector ([b (in-bit-vector bv)])
@@ -96,3 +97,16 @@
            (let ([bv (make-bit-vector 1000)])
              (bit-vector-set! bv 400 #t)
              (check-equal? bv (for/bit-vector ([i 1000]) (= i 400)))))
+
+(test-case "bit-vector-count"
+           (let ()
+             (define (test)
+               (define fill (odd? (random 2)))
+               (define bv (make-bit-vector 1000 fill))
+               (define ns (list->set (build-list 100 (λ (_) (random 1000)))))
+               (for ([n (in-set ns)]) (bit-vector-set! bv n (not fill)))
+               (define count 
+                 (if fill (- 1000 (set-count ns)) (set-count ns)))
+               (check-equal? (bit-vector-count bv) count))
+             (for ([i (in-range 100)])
+               (test))))
