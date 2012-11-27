@@ -1399,17 +1399,14 @@
          (case i
            [(mdash) '(#x2014 (wbr))] ;; <wbr> encourages breaking after rather than before
 
-           ;; FIXME: blatant violation of HTML 4 *and* HTML 5 specs!
+           ;; FIXME: 'lang and 'rang do not match `&rang;' and `&lang;' in HTML 4 or 5.
            ;; Happened because of the thread:
            ;;   <http://lists.racket-lang.org/users/archive/2008-June/025126.html>
            ;; ("Fonts with proper angle brackets")
            ;;
            ;; Do we still need this?  See test page at <http://jsbin.com/okizeb/3>.
-
-           [(lang) '(#x2039)] ; SINGLE LEFT-POINTING ANGLE QUOTATION MARK
-           [(rang) '(#x203a)] ; SINGLE RIGHT-POINTING ANGLE QUOTATION MARK
-
-           ;; Background:
+           ;; 
+           ;; More background:
            ;;
            ;; HTML 4 says (in HTMLsymbol.dtd):
            ;;
@@ -1426,6 +1423,9 @@
            ;;
            ;;   "&lang;": { "codepoints": [10216], "characters": "\u27E8" },
            ;;   "&rang;": { "codepoints": [10217], "characters": "\u27E9" },
+           ;;
+           [(lang) '(#x2039)] ; SINGLE LEFT-POINTING ANGLE QUOTATION MARK
+           [(rang) '(#x203a)] ; SINGLE RIGHT-POINTING ANGLE QUOTATION MARK
 
            [else (list i)])]
         [else 
