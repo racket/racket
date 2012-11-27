@@ -16,15 +16,15 @@
 
 (: flgeometric-pdf (Flonum Flonum Any -> Flonum))
 (define (flgeometric-pdf q k log?)
-  (cond [(or (q . fl<= . 0.0) (q . fl>= . 1.0))
+  (cond [(not (flinteger? k))  +nan.0]
+        [(or (q . fl<= . 0.0) (q . fl>= . 1.0))
          (cond [(fl= q 1.0)  (cond [(fl= k 0.0)  (if log? 0.0 1.0)]
                                    [else  (if log? -inf.0 0.0)])]
                [(fl= q 0.0)  (if log? -inf.0 0.0)]
                [else  +nan.0])]
         [(k . fl< . 0.0)  (if log? -inf.0 0.0)]
-        [(integer? k)  (cond [log?  (fl+ (fllog q) (fl* k (fllog1p (- q))))]
-                             [else  (fl* q (flexp (fl* k (fllog1p (- q)))))])]
-        [else  (if log? -inf.0 0.0)]))
+        [log?  (fl+ (fllog q) (fl* k (fllog1p (- q))))]
+        [else  (fl* q (flexp (fl* k (fllog1p (- q)))))]))
 
 (: flgeometric-cdf (Flonum Flonum Any Any -> Flonum))
 (define (flgeometric-cdf q k log? 1-p?)
@@ -34,9 +34,10 @@
                [else  +nan.0])]
         [(k . fl< . 0.0)  (flprobability 0.0 log? 1-p?)]
         [else
-         (define log-1-p (fl* (fl+ (flfloor k) 1.0) (fllog1p (- q))))
-         (cond [1-p?  (if log? log-1-p (exp log-1-p))]
-               [else  (if log? (lg1- log-1-p) (- (flexpm1 log-1-p)))])]))
+         (let ([k  (flfloor k)])
+           (define log-1-p (fl* (fl+ k 1.0) (fllog1p (- q))))
+           (cond [1-p?  (if log? log-1-p (exp log-1-p))]
+                 [else  (if log? (lg1- log-1-p) (- (flexpm1 log-1-p)))]))]))
 
 (: flgeometric-inv-cdf (Flonum Flonum Any Any -> Flonum))
 (define (flgeometric-inv-cdf q p log? 1-p?)

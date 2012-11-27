@@ -25,29 +25,30 @@
 
 (: flbinomial-cdf (Flonum Flonum Flonum Any Any -> Flonum))
 (define (flbinomial-cdf n q k log? 1-p?)
-  (cond [(n . fl< . 0.0)  +nan.0]
-        [(not (integer? n))  +nan.0]
-        [(or (q . < . 0.0) (q . > . 1.0))  +nan.0]
+  (cond [(or (not (flinteger? n)) (n . fl< . 0.0)
+             (q . fl< . 0.0) (q . fl> . 1.0))
+         +nan.0]
         [else
          (let ([k  (flfloor k)])
-           (cond [log?  (fllog-beta-inc (+ k 1.0) (- n k) q (not 1-p?) #t)]
-                 [else  (flbeta-inc (+ k 1.0) (- n k) q (not 1-p?) #t)]))]))
+           (cond [log?  (fllog-beta-inc (fl+ k 1.0) (fl- n k) q (not 1-p?) #t)]
+                 [else  (flbeta-inc (fl+ k 1.0) (fl- n k) q (not 1-p?) #t)]))]))
 
 (: flbinomial-inv-cdf (Flonum Flonum Flonum Any Any -> Flonum))
 (define (flbinomial-inv-cdf n q p log? 1-p?)
-  (cond [(n . fl< . 0.0)  +nan.0]
-        [(not (integer? n))  +nan.0]
-        [(not (flprobability? p log?))  +nan.0]
+  (cond [(or (not (flinteger? n)) (n . fl< . 0.0)
+             (q . fl< . 0.0) (q . fl> . 1.0)
+             (not (flprobability? p log?)))
+         +nan.0]
         [(flprobability-one? p log? 1-p?)  n]
         [(flprobability-zero? p log? 1-p?)  0.0]
         [1-p?
-         (define z (flnormal-inv-cdf (fl* n q) (flsqrt (* n q (fl- 1.0 q))) p log? 1-p?))
+         (define z (flnormal-inv-cdf (fl* n q) (flsqrt (* n q (fl- 1.0 q))) p log? #t))
          (flfind-least-integer
           (λ: ([k : Flonum]) ((flbinomial-cdf n q k log? 1-p?) . fl< . p))
           0.0 n
           (flmax 0.0 (flmin n z)))]
         [else
-         (define z (flnormal-inv-cdf (fl* n q) (flsqrt (* n q (fl- 1.0 q))) p log? 1-p?))
+         (define z (flnormal-inv-cdf (fl* n q) (flsqrt (* n q (fl- 1.0 q))) p log? #f))
          (flfind-least-integer
           (λ: ([k : Flonum]) ((flbinomial-cdf n q k log? 1-p?) . fl>= . p))
           0.0 n

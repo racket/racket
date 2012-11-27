@@ -38,6 +38,10 @@
 (: flbeta-sample (Flonum Flonum Integer -> FlVector))
 (define (flbeta-sample a b n)
   (cond [(n . < . 0)  (raise-argument-error 'flbeta-sample "Natural" 2 a b n)]
+        [(or (a . fl< . 0.0) (b . fl< . 0.0)
+             (and (fl= a 0.0) (fl= b 0.0))
+             (and (fl= a +inf.0) (fl= b +inf.0)))
+         (build-flvector n (λ (_) +nan.0))]
         [else
          (define xs (flgamma-sample a 1.0 n))
          (define ys (flgamma-sample b 1.0 n))

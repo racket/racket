@@ -9,7 +9,7 @@
 
 (provide (all-from-out racket/flonum)
          fl
-         flsubnormal?
+         flsubnormal? flrational? flnan? flinteger?
          flnext* flprev*
          flulp-error
          float-complex? (rename-out [inline-number->float-complex number->float-complex])
@@ -36,6 +36,18 @@
   (define (flsubnormal? x)
     (and ((flabs x) . fl<= . +max-subnormal.0)
          (not (fl= x 0.0))))
+  
+  (define flrational?
+    (λ: ([x : Flonum])
+      (and (x . fl> . -inf.0) (x . fl< . +inf.0))))
+  
+  (define flnan?
+    (λ: ([x : Flonum])
+      (not (and (x . fl>= . -inf.0) (x . fl<= . +inf.0)))))
+  
+  (define flinteger?
+    (λ: ([x : Flonum])
+      (fl= x (fltruncate x))))
   
   (: flsubnormal-next* (Flonum -> Flonum))
   (define (flsubnormal-next* x)
@@ -194,13 +206,13 @@
 
 (: flcscpix (Flonum -> Flonum))
 (define (flcscpix x)
-  (cond [(and (not (zero? x)) (integer? x))  +nan.0]
+  (cond [(and (not (zero? x)) (flinteger? x))  +nan.0]
         [else  (/ 1.0 (flsinpix x))]))
 
 (: flsecpix (Flonum -> Flonum))
 (define (flsecpix x)
-  (cond [(and (x . fl> . 0.0) (integer? (fl- x 0.5)))  +nan.0]
-        [(and (x . fl< . 0.0) (integer? (fl+ x 0.5)))  +nan.0]
+  (cond [(and (x . fl> . 0.0) (flinteger? (fl- x 0.5)))  +nan.0]
+        [(and (x . fl< . 0.0) (flinteger? (fl+ x 0.5)))  +nan.0]
         [else  (/ 1.0 (flcospix x))]))
 
 (: flcotpix (Flonum -> Flonum))

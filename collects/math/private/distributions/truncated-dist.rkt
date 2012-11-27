@@ -88,15 +88,8 @@
          (min b (max a x))])))
   
   (: sample-single (-> Flonum))
-  (define sample-single
-    (cond [(log-P_a<x<=b . fl< . (- (fllog 3.0)))
-           (λ () (inv-cdf (fl* 0.5 (random)) #f ((random) . fl> . 0.5)))]
-          [else
-           (define (sample-single)
-             (define x (orig-sample))
-             (cond [(and (a . fl<= . x) (x . fl<= . b))  x]
-                   [else  (sample-single)]))
-           sample-single]))
+  (define (sample-single)
+    (inv-cdf (fl* 0.5 (random)) #f ((random) . fl> . 0.5)))
   
   (: sample (Sample Flonum))
   (define sample

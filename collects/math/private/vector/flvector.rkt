@@ -1,8 +1,9 @@
 #lang typed/racket/base
 
-(require racket/flonum
+(require racket/fixnum
          racket/string
          (for-syntax racket/base syntax/parse)
+         "../../flonum.rkt"
          "../unsafe.rkt"
          "flvector-syntax.rkt")
 
@@ -47,7 +48,9 @@
  flvector<
  flvector<=
  flvector>
- flvector>=)
+ flvector>=
+ ;;
+ flvector-sums)
 
 ;; ===================================================================================================
 ;; flvector-copy
@@ -256,3 +259,38 @@
 (define flvector<= (lift-comparison 'flvector<= fl<=))
 (define flvector>  (lift-comparison 'flvector>  fl>))
 (define flvector>= (lift-comparison 'flvector>= fl>=))
+
+;; ===================================================================================================
+
+(: flvector-sums (FlVector -> FlVector))
+(define (flvector-sums xs)
+  (define n (flvector-length xs))
+  (define rs (make-flvector n))
+  (define ss (make-flvector n))
+  (let j-loop ([#{j : Nonnegative-Fixnum} 0]
+               [#{m : Nonnegative-Fixnum} 0])
+    (cond
+      [(j . fx< . n)
+       (define x (unsafe-flvector-ref xs j))
+       (let p-loop ([#{p : Nonnegative-Fixnum} 0]
+                    [#{x : Flonum} x]
+                    [#{s : Flonum} 0.0]
+                    [#{i : Nonnegative-Fixnum} 0])
+         (cond
+           [(p . fx< . m)
+            (define r (unsafe-flvector-ref rs p))
+            (let-values ([(x r)  (if ((flabs x) . fl< . (flabs r)) (values r x) (values x r))])
+              (define z (fl+ x r))
+              (define-values (hi lo)
+                (cond [(flrational? z)  (values z (fl- r (fl- z x)))]
+                      [else  (values x r)]))
+              (cond [(fl= lo 0.0)
+                     (p-loop (unsafe-fx+ p 1) hi s i)]
+                    [else
+                     (unsafe-flvector-set! rs i lo)
+                     (p-loop (unsafe-fx+ p 1) hi (fl+ s lo) (unsafe-fx+ i 1))]))]
+           [else
+            (unsafe-flvector-set! rs i x)
+            (unsafe-flvector-set! ss j (fl+ s x))
+            (j-loop (fx+ j 1) (unsafe-fx+ i 1))]))]
+      [else  ss])))

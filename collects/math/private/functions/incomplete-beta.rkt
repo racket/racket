@@ -170,10 +170,12 @@ ACM Transactions on Mathematical Software, 1992, vol 18, no 3, pp 360--373.
 
 (: flbeta-regularized-limits (Flonum Flonum Flonum -> Flonum))
 (define (flbeta-regularized-limits a b x)
-  (cond [(or (x . fl< . 0.0) (x . fl> . 1.0) (a . fl< . 0.0) (b . fl< . 0.0))  +nan.0]
+  (cond [(or (x . fl< . 0.0) (x . fl> . 1.0)
+             (a . fl< . 0.0) (b . fl< . 0.0)
+             (and (fl= a 0.0) (fl= b 0.0))
+             (and (fl= a +inf.0) (fl= b +inf.0)))
+         +nan.0]
         [(fl= x 1.0)  1.0]
-        [(and (fl= a 0.0) (fl= b 0.0))  0.5]
-        [(and (fl= a +inf.0) (fl= b +inf.0))  (if (x . fl< . 0.5) 0.0 1.0)]
         [(fl= a +inf.0)  0.0]
         [(fl= b +inf.0)  1.0]
         [(fl= a 0.0)  1.0]

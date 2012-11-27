@@ -27,6 +27,7 @@
                                (fl* (fl- b a) (fl- c a)))]
           [(x . fl< . b)  (fl/ (fl* 2.0 (fl- b x))
                                (fl* (fl- b a) (fl- b c)))]
+          [(= x a b)  +inf.0]
           [else  0.0]))
   (if log? (fllog p) p))
 
@@ -41,12 +42,12 @@
                           (fl- 1.0 (fl/ (fl* b-x b-x)
                                         (fl* (fl- b a) (fl- b c))))]
           [else  1.0]))
-  (cond [1-p?  (if log? (fllog (fl- 1.0 q)) (fl- 1.0 q))]
+  (cond [1-p?  (if log? (fllog1p (- q)) (fl- 1.0 q))]
         [else  (if log? (fllog q) q)]))
 
 (: unsafe-fltriangle-inv-cdf (Float Float Float Float Any Any -> Float))
 (define (unsafe-fltriangle-inv-cdf a b c q log? 1-p?)
-  (let ([q  (cond [1-p?  (if log? (fl- 1.0 (flexp q)) (fl- 1.0 q))]
+  (let ([q  (cond [1-p?  (if log? (- (flexpm1 q)) (fl- 1.0 q))]
                   [else  (if log? (flexp q) q)])])
     (cond [(q . fl< . 0.0)  +nan.0]
           [(q . fl= . 0.0)  a]

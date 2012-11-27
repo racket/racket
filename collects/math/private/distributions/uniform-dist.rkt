@@ -25,12 +25,12 @@
 (define (unsafe-fluniform-cdf a b x log? 1-p?)
   (cond [1-p?  (define q
                  (cond [(x . fl< . a)  1.0]
-                       [(x . fl> . b)  0.0]
+                       [(x . fl>= . b)  0.0]
                        [else  (fl/ (fl- b x) (fl- b a))]))
                (if log? (fllog q) q)]
         [else  (define q
                  (cond [(x . fl< . a)  0.0]
-                       [(x . fl> . b)  1.0]
+                       [(x . fl>= . b)  1.0]
                        [else  (fl/ (fl- x a) (fl- b a))]))
                (if log? (fllog q) q)]))
 

@@ -19,10 +19,10 @@
   (cond [(not (flprobability? q))  +nan.0]
         [log?  (cond [(fl= k 0.0)  (fllog1p (- q))]
                      [(fl= k 1.0)  (fllog q)]
-                     [else  0.0])]
+                     [else  +nan.0])]
         [else  (cond [(fl= k 0.0)  (fl- 1.0 q)]
                      [(fl= k 1.0)  q]
-                     [else  0.0])]))
+                     [else  +nan.0])]))
 
 (: flbernoulli-cdf (Flonum Flonum Any Any -> Flonum))
 (define (flbernoulli-cdf q k log? 1-p?)

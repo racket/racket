@@ -21,8 +21,7 @@
 
 (: flpoisson-pdf (Flonum Flonum Any -> Flonum))
 (define (flpoisson-pdf l k log?)
-  (cond [(l . fl< . 0.0)  +nan.0]
-        [(not (integer? k))  (if log? -inf.0 0.0)]
+  (cond [(or (l . fl< . 0.0) (not (integer? k)))  +nan.0]
         [log?  (impl:flpoisson-log-pdf l k)]
         [else  (impl:flpoisson-pdf l k)]))
 
