@@ -1,5 +1,5 @@
 #lang racket/base
-(require slideshow
+(require "slide.rkt"
          "code-pict.rkt")
 
 (provide (all-from-out "code-pict.rkt"))
