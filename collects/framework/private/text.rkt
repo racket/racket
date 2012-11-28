@@ -122,48 +122,52 @@
     (define recompute-callback-running? #f)
     
     (define/private (run-recompute-range-rectangles)
-      (define done-time (+ (current-inexact-milliseconds) 20)) 
-      (define did-something? #f)
-      (let loop ([left #f]
-                 [top #f]
-                 [right #f]
-                 [bottom #f])
-        (cond
-          [(and did-something? ((current-inexact-milliseconds) . >= . done-time))
-           (final-invalidate left top right bottom)
-           (queue-callback
-            (λ () (run-recompute-range-rectangles))
-            #f)]
-          [(null? pending-ranges)
-           (final-invalidate left top right bottom)
-           (set! recompute-callback-running? #f)]
-          [else
-           (set! did-something? #t)
-           (define a-range (car pending-ranges))
-           (set! pending-ranges (cdr pending-ranges))
-           (define old-rectangles (range-rectangles a-range))
-           (cond
-             [old-rectangles
-              (define new-rectangles (compute-rectangles a-range))
-              (cond
-                [(equal? new-rectangles old-rectangles)
-                 (loop left top right bottom)]
-                [else
-                 (define-values (new-left new-top new-right new-bottom)
-                   (for/fold ([left left] [top top] [right right] [bottom bottom]) 
-                     ([r (in-list new-rectangles)])
-                     (join-rectangles left top right bottom r)))
-                 (define-values (both-left both-top both-right both-bottom)
-                   (for/fold ([left new-left] [top new-top] [right new-right] [bottom new-bottom]) 
-                     ([r (in-list old-rectangles)])
-                     (join-rectangles left top right bottom r)))
-                 (set-range-rectangles! a-range new-rectangles)
-                 (loop both-left both-top both-right both-bottom)])]
-             [else 
-              ;; when old-rectangles is #f, that means that this
-              ;; range has been removed from the ranges-deq, so 
-              ;; can just skip over it here.
-              (loop left top right bottom)])])))
+      (when (get-admin)
+        ;; when there is no admin, then the position-location information
+        ;; is bogus, so we just give up trying to recompute this information
+        
+        (define done-time (+ (current-inexact-milliseconds) 20)) 
+        (define did-something? #f)
+        (let loop ([left #f]
+                   [top #f]
+                   [right #f]
+                   [bottom #f])
+          (cond
+            [(and did-something? ((current-inexact-milliseconds) . >= . done-time))
+             (final-invalidate left top right bottom)
+             (queue-callback
+              (λ () (run-recompute-range-rectangles))
+              #f)]
+            [(null? pending-ranges)
+             (final-invalidate left top right bottom)
+             (set! recompute-callback-running? #f)]
+            [else
+             (set! did-something? #t)
+             (define a-range (car pending-ranges))
+             (set! pending-ranges (cdr pending-ranges))
+             (define old-rectangles (range-rectangles a-range))
+             (cond
+               [old-rectangles
+                (define new-rectangles (compute-rectangles a-range))
+                (cond
+                  [(equal? new-rectangles old-rectangles)
+                   (loop left top right bottom)]
+                  [else
+                   (define-values (new-left new-top new-right new-bottom)
+                     (for/fold ([left left] [top top] [right right] [bottom bottom]) 
+                       ([r (in-list new-rectangles)])
+                       (join-rectangles left top right bottom r)))
+                   (define-values (both-left both-top both-right both-bottom)
+                     (for/fold ([left new-left] [top new-top] [right new-right] [bottom new-bottom]) 
+                       ([r (in-list old-rectangles)])
+                       (join-rectangles left top right bottom r)))
+                   (set-range-rectangles! a-range new-rectangles)
+                   (loop both-left both-top both-right both-bottom)])]
+               [else 
+                ;; when old-rectangles is #f, that means that this
+                ;; range has been removed from the ranges-deq, so 
+                ;; can just skip over it here.
+                (loop left top right bottom)])]))))
     
     (define/private (join-rectangles left top right bottom r)
       (define this-left
