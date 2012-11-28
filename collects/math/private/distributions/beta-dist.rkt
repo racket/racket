@@ -4,7 +4,6 @@
          racket/performance-hint
          racket/promise
          "../../flonum.rkt"
-         "../../vector.rkt"
          "../unsafe.rkt"
          "../functions/beta.rkt"
          "../functions/incomplete-beta.rkt"

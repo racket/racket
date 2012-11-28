@@ -3,7 +3,6 @@
 (require racket/fixnum
          "../../../flonum.rkt"
          "../../../base.rkt"
-         "../../../vector.rkt"
          "../../functions/log-gamma.rkt")
 
 (provide flpoisson-sample)

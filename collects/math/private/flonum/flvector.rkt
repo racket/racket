@@ -3,7 +3,7 @@
 (require racket/fixnum
          racket/string
          (for-syntax racket/base syntax/parse)
-         "../../flonum.rkt"
+         "flonum-functions.rkt"
          "../unsafe.rkt"
          "flvector-syntax.rkt")
 
@@ -12,9 +12,6 @@
  ;; Construction
  unsafe-flvector-copy!
  flvector-copy!
- ;; Loops
- for/flvector:
- for*/flvector:
  ;; Conversion
  list->flvector
  flvector->list
@@ -89,47 +86,6 @@
             (error 'flvector-copy! "not enough room in target vector")]
            [else
             (unsafe-flvector-copy! dest dest-start src src-start src-end)])]))
-
-;; ===================================================================================================
-;; Loops
-
-(define-syntax (base-for/flvector: stx)
-  (syntax-parse stx
-    [(_ for: #:length n-expr:expr (clauses ...) body ...+)
-     (syntax/loc stx
-       (let: ([n : Integer  n-expr])
-         (cond [(n . > . 0)
-                (define xs (make-flvector n))
-                (define: i : Nonnegative-Fixnum 0)
-                (let/ec: break : Void
-                  (for: (clauses ...)
-                    (unsafe-flvector-set! xs i (let () body ...))
-                    (set! i (unsafe-fx+ i 1))
-                    (when (i . unsafe-fx>= . n) (break (void)))))
-                xs]
-               [else  (flvector)])))]
-    [(_ for: (clauses ...) body ...+)
-     (syntax/loc stx
-       (let ()
-         (define n 4)
-         (define xs (make-flvector 4))
-         (define i 0)
-         (for: (clauses ...)
-           (let: ([x : Float  (let () body ...)])
-             (cond [(unsafe-fx= i n)  (define new-n (unsafe-fx* 2 n))
-                                      (define new-xs (make-flvector new-n x))
-                                      (unsafe-flvector-copy! new-xs 0 xs 0 n)
-                                      (set! n new-n)
-                                      (set! xs new-xs)]
-                   [else  (unsafe-flvector-set! xs i x)]))
-           (set! i (unsafe-fx+ i 1)))
-         (flvector-copy xs 0 i)))]))
-
-(define-syntax-rule (for/flvector: e ...)
-  (base-for/flvector: for: e ...))
-
-(define-syntax-rule (for*/flvector: e ...)
-  (base-for/flvector: for*: e ...))
 
 ;; ===================================================================================================
 ;; Conversion

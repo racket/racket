@@ -3,7 +3,6 @@
 (require racket/performance-hint
          racket/promise
          "../../flonum.rkt"
-         "../../vector.rkt"
          "../unsafe.rkt"
          "../functions/incomplete-beta.rkt"
          (prefix-in impl: "impl/binomial-pdf.rkt")

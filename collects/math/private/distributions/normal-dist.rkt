@@ -3,7 +3,6 @@
 (require racket/performance-hint
          racket/promise
          "../../flonum.rkt"
-         "../../vector.rkt"
          "../unsafe.rkt"
          "impl/normal-pdf.rkt"
          "impl/normal-cdf.rkt"
