@@ -13,6 +13,8 @@
  "This tool is used for managing installed packages."
  [install
   "Install packages"
+  [(#:sym #f) type ("-t") ("type of <pkg-source>: file, dir, url, github, or name"
+                           "If not specified, the type is inferred syntactically")]
   [#:bool dont-setup () "Don't run 'raco setup' after changing packages (generally not a good idea)"]
   [#:bool installation ("-i") "Operate on the installation-wide package database"]
   [(#:sym #f) deps ()
@@ -25,14 +27,16 @@
   [#:bool force () "Ignores conflicts"]
   [#:bool ignore-checksums () "Ignores checksums"]
   [#:bool link () "When used with a directory package, leave the directory in place, but add a link to it in the package directory. This is a global setting for all installs for this command, which means it affects dependencies... so make sure the dependencies exist first."]
-  #:args pkgs
+  #:args pkg-source
   (parameterize ([current-install-system-wide? installation])
     (with-package-lock
      (install-cmd #:dep-behavior deps
                   #:force? force
                   #:link? link
                   #:ignore-checksums? ignore-checksums
-                  (map (curry cons #f) pkgs))
+                  #:type (or type 
+                             (and link 'dir))
+                  (map (curry cons #f) pkg-source))
      (setup dont-setup)))]
  [update
   "Update packages"

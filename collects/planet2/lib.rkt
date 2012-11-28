@@ -259,14 +259,26 @@
          #:updating? [updating? #f]
          #:ignore-checksums? [ignore-checksums? #f]
          #:link? [link? #f]
+         #:type [type #f]
          #:force? [force? #f]
          auto+pkgs)
+  (define (path-match? path-ok? rx path)
+    (define str (if (path? path)
+                    (and path-ok? (path->bytes path))
+                    path))
+    (and str (regexp-match? rx str)))
   (define check-sums? (not ignore-checksums?))
   (define (install-package pkg
+                           #:type [type type]
                            #:pkg-name [given-pkg-name #f])
-    (define pkg-url (and (string? pkg) (string->url pkg)))
     (cond
-      [(file-exists? pkg)
+      [(if type
+           (eq? type 'file)
+           (or
+            (path-match? #t #rx"[.](plt|zip|tar|tgz|tar[.]gz)$" pkg)
+            (and (path? pkg) (not (directory-exists? pkg)))))
+       (unless (file-exists? pkg)
+         (error 'pkg "no such file\n  path: ~e" pkg))
        (define checksum-pth (format "~a.CHECKSUM" pkg))
        (define expected-checksum
          (and (file-exists? checksum-pth)
@@ -301,6 +313,10 @@
              (match pkg-format
                [#"tgz"
                 (untar pkg pkg-dir)]
+               [#"tar"
+                (untar pkg pkg-dir)]
+               [#"gz" ; assuming .tar.gz
+                (untar pkg pkg-dir)]
                [#"zip"
                 (unzip pkg (make-filesystem-entry-reader #:dest pkg-dir))]
                [#"plt"
@@ -311,12 +327,19 @@
              (update-install-info-checksum
               (update-install-info-orig-pkg
                (install-package pkg-dir
+                                #:type 'dir
                                 #:pkg-name pkg-name)
                `(file ,(simple-form-path* pkg)))
               checksum))
            (λ ()
              (delete-directory/files pkg-dir)))]
-      [(directory-exists? pkg)
+      [(if type
+           (eq? type 'dir)
+           (or
+            (path-match? #t #rx"/$" pkg)
+            (and (path? pkg) (directory-exists? pkg))))
+       (unless (directory-exists? pkg)
+         (error 'pkg "no such directory\n  path: ~e" pkg))
        (let ([pkg (directory-path-no-slash pkg)])
          (define pkg-name
            (or given-pkg-name (path->string (file-name-from-path pkg))))
@@ -336,9 +359,17 @@
                           `(dir ,(simple-form-path* pkg))
                           pkg-dir
                           #t #f)]))]
-      [(url-scheme pkg-url)
-       =>
-       (lambda (scheme)
+      [(and (eq? type 'github)
+            (not (path-match? #f #rx"^github://" pkg)))
+       ;; Add "github://github.com/"
+       (install-package (string-append "github://github.com/" pkg))]
+      [(if type
+           (eq? type 'url)
+           (path-match? #f #rx"^(https?|file|github)://" pkg))
+       (let ()
+         (define pkg-url (string->url pkg))
+         (define scheme (url-scheme pkg-url))
+
          (define orig-pkg `(url ,pkg))
          (define checksum (remote-package-checksum orig-pkg))
          (define info
@@ -378,6 +409,7 @@
                          (λ ()
                            (untar tmp.tgz tmp-dir #:strip-components 1)
                            (install-package (path->string package-path)
+                                            #:type 'dir
                                             #:pkg-name given-pkg-name))
                          (λ ()
                            (delete-directory/files tmp-dir))))
@@ -465,7 +497,9 @@
          (update-install-info-checksum
           info
           checksum))]
-      [else
+      [(if type
+           (eq? type 'name)
+           (path-match? #f #rx"^[-+_a-zA-Z0-9]*$" pkg))
        (define index-info (package-index-lookup pkg))
        (define source (hash-ref index-info 'source))
        (define checksum (hash-ref index-info 'checksum))
@@ -479,7 +513,9 @@
         (update-install-info-checksum
          info
          checksum)
-        `(pns ,pkg))]))
+        `(pns ,pkg))]
+      [else
+       (error 'pkg "cannot infer package-name type\n  name: ~e\n" pkg)]))
   (define db (read-pkg-db))
   (define (install-package/outer infos auto+pkg info)
     (match-define (cons auto? pkg)
@@ -604,6 +640,7 @@
                      #:old-auto+pkgs [old-auto+pkgs empty]
                      #:force? [force #f]
                      #:link? [link #f]
+                     #:type [type #f]
                      #:ignore-checksums? [ignore-checksums #f]
                      #:pre-succeed [pre-succeed void]
                      #:dep-behavior [dep-behavior #f]
@@ -619,6 +656,7 @@
                       #:old-auto+pkgs (append old-auto+pkgs pkgs)
                       #:force? force
                       #:link? link
+                      #:type type
                       #:ignore-checksums? ignore-checksums
                       #:dep-behavior dep-behavior
                       #:pre-succeed pre-succeed
@@ -629,6 +667,7 @@
      #:old-auto+pkgs old-auto+pkgs
      #:force? force
      #:link? link
+     #:type type
      #:ignore-checksums? ignore-checksums
      #:dep-behavior dep-behavior
      #:pre-succeed pre-succeed
@@ -816,9 +855,10 @@
   [show-cmd
    (-> void)]
   [install-cmd
-   (->* ((listof (cons/c boolean? string?)))
+   (->* ((listof (cons/c boolean? path-string?)))
         (#:dep-behavior dep-behavior/c
                         #:force? boolean?
                         #:link? boolean?
+                        #:type (or/c #f 'file 'dir 'url 'github 'name)
                         #:ignore-checksums? boolean?)
         void)]))
