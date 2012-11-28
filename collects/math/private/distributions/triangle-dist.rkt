@@ -3,7 +3,6 @@
 (require racket/performance-hint
          racket/promise
          "../../flonum.rkt"
-         "../../vector.rkt"
          "../unsafe.rkt"
          "../inline-sort.rkt"
          "dist-struct.rkt"

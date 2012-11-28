@@ -10,7 +10,6 @@
   
   (require "../../flonum.rkt"
            "../unsafe.rkt"
-           "../vector/flvector.rkt"
            "array-struct.rkt"
            "utils.rkt"
            "for-each.rkt")

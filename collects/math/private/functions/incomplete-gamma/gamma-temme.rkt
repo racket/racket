@@ -2,7 +2,6 @@
 
 (require "../../../flonum.rkt"
          "../../../base.rkt"
-         "../../../vector.rkt"
          "../../unsafe.rkt"
          "../../distributions/impl/normal-cdf.rkt"
          "../stirling-error.rkt"

@@ -15,7 +15,8 @@
          "private/flonum/flonum-syntax.rkt"
          "private/flonum/expansion/expansion-base.rkt"
          "private/flonum/expansion/expansion-exp.rkt"
-         "private/flonum/expansion/expansion-log.rkt")
+         "private/flonum/expansion/expansion-log.rkt"
+         "private/flonum/flvector.rkt")
 
 (provide (all-from-out
           "private/flonum/flonum-bits.rkt"
@@ -32,7 +33,8 @@
           "private/flonum/flonum-syntax.rkt"
           "private/flonum/expansion/expansion-base.rkt"
           "private/flonum/expansion/expansion-exp.rkt"
-          "private/flonum/expansion/expansion-log.rkt")
+          "private/flonum/expansion/expansion-log.rkt"
+          "private/flonum/flvector.rkt")
          lg* lg/ lgprod)
 
 (define-syntax lg* (make-rename-transformer #'fl+))

@@ -6,7 +6,6 @@ Wolfgang Hormann. The Generation of Binomial Random Variates.
 
 (require "../../../base.rkt"
          "../../../flonum.rkt"
-         "../../../vector.rkt"
          "../../unsafe.rkt"
          "normal-random.rkt")
 

@@ -4,7 +4,6 @@
          racket/promise
          "../../flonum.rkt"
          "../../base.rkt"
-         "../../vector.rkt"
          "../unsafe.rkt"
          "dist-struct.rkt"
          "utils.rkt")

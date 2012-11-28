@@ -25,7 +25,6 @@ Approximations:
          "../../flonum.rkt"
          "../../base.rkt"
          "../number-theory/factorial.rkt"
-         "../vector/flvector.rkt"
          "lanczos.rkt")
 
 (provide gamma flgamma)
