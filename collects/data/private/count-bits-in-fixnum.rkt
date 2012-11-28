@@ -1,7 +1,7 @@
 #lang racket
 (require racket/unsafe/ops
          (for-syntax racket/fixnum racket/vector))
-(provide fxcount)
+(provide fxpopcount)
 ;; Count set bits for 30 bit number in 5 steps.
 ;; for 62 bit number in 6.
 
@@ -20,7 +20,7 @@
     #x3FFF0000FFFF0000
     #x3FFFFFFF00000000))
 
-(define-syntax (mk-fxcount stx)
+(define-syntax (mk-fxpopcount stx)
   (syntax-case stx ()
     [(_ name)
      ;; Choose at compile time what word length is
@@ -37,5 +37,5 @@
                                       (unsafe-fxand n #,f))])
              n)))]))
 
-(mk-fxcount fxcount)
+(mk-fxpopcount fxpopcount)
 

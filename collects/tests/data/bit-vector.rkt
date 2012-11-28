@@ -98,7 +98,7 @@
              (bit-vector-set! bv 400 #t)
              (check-equal? bv (for/bit-vector ([i 1000]) (= i 400)))))
 
-(test-case "bit-vector-count"
+(test-case "bit-vector-popcount"
            (let ()
              (define (test)
                (define fill (odd? (random 2)))
@@ -107,6 +107,6 @@
                (for ([n (in-set ns)]) (bit-vector-set! bv n (not fill)))
                (define count 
                  (if fill (- 1000 (set-count ns)) (set-count ns)))
-               (check-equal? (bit-vector-count bv) count))
+               (check-equal? (bit-vector-popcount bv) count))
              (for ([i (in-range 100)])
                (test))))

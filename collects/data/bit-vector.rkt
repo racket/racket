@@ -93,9 +93,9 @@
            (bit-vector-copy bv start end)])])
     bit-vector-copy))
 
-(define (bit-vector-count bv)
+(define (bit-vector-popcount bv)
   (for/sum ([fx (in-fxvector (bit-vector-words bv))])
-    (fxcount fx)))
+    (fxpopcount fx)))
 
 (define-vector-wraps "bit-vector"
   bit-vector? bit-vector-length bit-vector-ref bit-vector-set! make-bit-vector
@@ -167,7 +167,7 @@
   (-> bit-vector? exact-nonnegative-integer? boolean? any)] 
  [bit-vector-length
   (-> bit-vector? any)]
- [bit-vector-count
+ [bit-vector-popcount
   (-> bit-vector? any)]
  (rename bit-vector-copy*
          bit-vector-copy
