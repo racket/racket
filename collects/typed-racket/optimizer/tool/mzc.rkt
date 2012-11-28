@@ -298,6 +298,47 @@
                 (format "Inlining ~a" (format-aggregation-string pruned-log))
                 stx located-stx pos provenance)))
 
+
+       ;; This function has an interesting caller, but no trace of inlining
+       ;; attempts in it, which means it probably gets there via a higher-order
+       ;; call. Recommend performing a devirtualization-like transformation to
+       ;; turn the call into a first-order one.
+       ;; Limitation: to even get to this point in the optimization analysis
+       ;;   process, the callee needs to have inlining attempts somewhere,
+       ;;   otherwise it won't be visited when traversing the inlining logs.
+       ;;   Solution: record this pattern when traversing the progiling logs.
+       (when profile-entry
+         (for ([caller+site (in-list interesting-callers+sites)]
+               #:when (null? (cdr caller+site)))
+           (define caller (car caller+site))
+           (define caller-pos (list (node-source caller)
+                                    (node-line   caller)
+                                    (node-col    caller)
+                                    (node-pos    caller)
+                                    (node-span   caller)))
+           (define forged-stx
+             (datum->syntax #'here (node-id caller) caller-pos))
+           (define callee-id (node-id profile-entry))
+           (emit (missed-opt-log-entry
+                  kind
+                  (string-append
+                   (format "This function spends a lot of time in ~a (~a:~a) "
+                           callee-id
+                           (node-line profile-entry)
+                           (node-col  profile-entry))
+                   "but gets there via a higher-order call, preventing inlining.\n\n"
+                   "Using a conditional direct call would enable further optimization.\n\n"
+                   "For example, assuming funarg is the higher-order callee:\n"
+                   (format "    (if (eq? funarg ~a) (~a ...) (funarg ...))\n"
+                           callee-id callee-id))
+                  ;; TODO maybe report only if the function would be small
+                  ;;  enough to be inlined (fuel), but we don't have size
+                  ;;  info for callee
+                  forged-stx forged-stx (node-pos caller) provenance
+                  '() '()
+                  20)))) ; TODO actual badness
+
+
        (define inside-hot-function?
          (and profile (memq profile-entry hot-functions)))
 
