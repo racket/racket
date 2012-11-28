@@ -13,6 +13,7 @@
 (provide flfactorial
          flbinomial
          flpermutations
+         flmultinomial
          fllog-factorial
          fllog-permutations
          fllog-binomial
@@ -138,10 +139,14 @@
 ;; ===================================================================================================
 ;; Multinomial
 
-(: fllog-multinomial (Flonum Flonum * -> Flonum))
-(define (fllog-multinomial n . ks)
+(: fllog-multinomial (Flonum (Listof Flonum) -> Flonum))
+(define (fllog-multinomial n ks)
   (cond [(n . < . 0)  +nan.0]
         [(ormap negative? ks)  +nan.0]
         [(not (= n (apply + ks)))  -inf.0]
         [(ormap (λ: ([k : Flonum]) (= n k)) ks)  0.0]
         [else  (apply - (fllog-factorial n) (map fllog-factorial ks))]))
+
+(: flmultinomial (Flonum (Listof Flonum) -> Flonum))
+(define (flmultinomial n ks)
+  (flexp (fllog-multinomial n ks)))
