@@ -41,8 +41,8 @@
                   #:force? force
                   #:link? link
                   #:ignore-checksums? ignore-checksums
-                  #:type (or type 
-                             (and link 'dir))
+                  #:type (or (and link 'dir) 
+                             type)
                   (map (curry cons #f) pkg-source))
      (setup no-setup)))]
  [update

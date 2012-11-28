@@ -271,6 +271,150 @@
                            #:type [type type]
                            #:pkg-name [given-pkg-name #f])
     (cond
+      [(and (eq? type 'github)
+            (not (path-match? #f #rx"^github://" pkg)))
+       ;; Add "github://github.com/"
+       (install-package (string-append "github://github.com/" pkg))]
+      [(if type
+           (or (eq? type 'url) (eq? type 'github))
+           (path-match? #f #rx"^(https?|github)://" pkg))
+       (let ()
+         (define pkg-url (string->url pkg))
+         (define scheme (url-scheme pkg-url))
+
+         (define orig-pkg `(url ,pkg))
+         (define checksum (remote-package-checksum orig-pkg))
+         (define info
+           (update-install-info-orig-pkg
+            (match scheme
+              ["github"
+               (match-define (list* user repo branch path)
+                             (map path/param-path (url-path/no-slash pkg-url)))
+               (define new-url
+                 (url "https" #f "github.com" #f #t
+                      (map (λ (x) (path/param x empty))
+                           (list user repo "tarball" branch))
+                      empty
+                      #f))
+               (define tmp.tgz
+                 (make-temporary-file
+                  (string-append
+                   "~a-"
+                   (format "~a.~a.tgz" repo branch))
+                  #f))
+               (delete-file tmp.tgz)
+               (define tmp-dir
+                 (make-temporary-file
+                  (string-append
+                   "~a-"
+                   (format "~a.~a" repo branch))
+                  'directory))
+               (define package-path
+                 (apply build-path tmp-dir path))
+
+               (dynamic-wind
+                   void
+                   (λ ()
+                     (download-file! new-url tmp.tgz)
+                     (dynamic-wind
+                         void
+                         (λ ()
+                           (untar tmp.tgz tmp-dir #:strip-components 1)
+                           (install-package (path->string package-path)
+                                            #:type 'dir
+                                            #:pkg-name given-pkg-name))
+                         (λ ()
+                           (delete-directory/files tmp-dir))))
+                   (λ ()
+                     (delete-directory/files tmp.tgz)))]
+              [_
+               (define url-last-component
+                 (path/param-path (last (url-path pkg-url))))
+               (define url-looks-like-directory?
+                 (string=? "" url-last-component))
+               (define-values
+                 (package-path package-name download-type download-package!)
+                 (cond
+                   [url-looks-like-directory?
+                    (define package-name
+                      (path/param-path
+                       (second (reverse (url-path pkg-url)))))
+                    (define package-path
+                      (make-temporary-file
+                       (string-append
+                        "~a-"
+                        package-name)
+                       'directory))
+                    (define (path-like f)
+                      (build-path package-path f))
+                    (define (url-like f)
+                      (combine-url/relative pkg-url f))
+                    (values package-path
+                            package-name
+                            'dir
+                            (λ ()
+                              (printf "\tCloning remote directory\n")
+                              (make-directory* package-path)
+                              (define manifest
+                                (call/input-url+200
+                                 (url-like "MANIFEST")
+                                 port->lines))
+                              (for ([f (in-list manifest)])
+                                (download-file! (url-like f)
+                                                (path-like f)))))]
+                   [else
+                    (define package-path
+                      (make-temporary-file
+                       (string-append
+                        "~a-"
+                        url-last-component)
+                       #f))
+                    (delete-file package-path)
+                    (values package-path
+                            (regexp-replace
+                             #rx"\\.[^.]+$"
+                             url-last-component
+                             "")
+                            'file
+                            (λ ()
+                              (dprintf "\tAssuming URL names a file\n")
+                              (download-file! pkg-url package-path)))]))
+               (dynamic-wind
+                   void
+                   (λ ()
+                     (download-package!)
+                     (define pkg-name
+                       (or given-pkg-name
+                           package-name))
+                     (dprintf "\tDownloading done, installing ~a as ~a\n"
+                              package-path pkg-name)
+                     (install-package package-path
+                                      #:type download-type
+                                      #:pkg-name
+                                      pkg-name))
+                   (λ ()
+                     (when (or (file-exists? package-path)
+                               (directory-exists? package-path))
+                       (delete-directory/files package-path))))])
+            orig-pkg))
+         (when (and check-sums?
+                    (install-info-checksum info)
+                    (not checksum))
+           (error 'planet2 "Remote package ~a had no checksum"
+                  pkg))
+         (when (and checksum
+                    (install-info-checksum info)
+                    check-sums?
+                    (not (equal? (install-info-checksum info) checksum)))
+           (error 'planet2 "Incorrect checksum on package ~e: expected ~e, got ~e"
+                  pkg
+                  (install-info-checksum info) checksum))
+         (update-install-info-checksum
+          info
+          checksum))]
+      [(and (not type)
+            (path-match? #f #rx"^[a-zA-Z]*://" pkg))
+       (error 'pkg "unrecognized scheme for package source\n  given: ~e\n" pkg)]
       [(if type
            (eq? type 'file)
            (or
@@ -363,147 +507,9 @@
                           `(dir ,(simple-form-path* pkg))
                           pkg-dir
                           #t #f)]))]
-      [(and (eq? type 'github)
-            (not (path-match? #f #rx"^github://" pkg)))
-       ;; Add "github://github.com/"
-       (install-package (string-append "github://github.com/" pkg))]
-      [(if type
-           (eq? type 'url)
-           (path-match? #f #rx"^(https?|file|github)://" pkg))
-       (let ()
-         (define pkg-url (string->url pkg))
-         (define scheme (url-scheme pkg-url))
-
-         (define orig-pkg `(url ,pkg))
-         (define checksum (remote-package-checksum orig-pkg))
-         (define info
-           (update-install-info-orig-pkg
-            (match scheme
-              ["github"
-               (match-define (list* user repo branch path)
-                             (map path/param-path (url-path/no-slash pkg-url)))
-               (define new-url
-                 (url "https" #f "github.com" #f #t
-                      (map (λ (x) (path/param x empty))
-                           (list user repo "tarball" branch))
-                      empty
-                      #f))
-               (define tmp.tgz
-                 (make-temporary-file
-                  (string-append
-                   "~a-"
-                   (format "~a.~a.tgz" repo branch))
-                  #f))
-               (delete-file tmp.tgz)
-               (define tmp-dir
-                 (make-temporary-file
-                  (string-append
-                   "~a-"
-                   (format "~a.~a" repo branch))
-                  'directory))
-               (define package-path
-                 (apply build-path tmp-dir path))
-
-               (dynamic-wind
-                   void
-                   (λ ()
-                     (download-file! new-url tmp.tgz)
-                     (dynamic-wind
-                         void
-                         (λ ()
-                           (untar tmp.tgz tmp-dir #:strip-components 1)
-                           (install-package (path->string package-path)
-                                            #:type 'dir
-                                            #:pkg-name given-pkg-name))
-                         (λ ()
-                           (delete-directory/files tmp-dir))))
-                   (λ ()
-                     (delete-directory/files tmp.tgz)))]
-              [_
-               (define url-last-component
-                 (path/param-path (last (url-path pkg-url))))
-               (define url-looks-like-directory?
-                 (string=? "" url-last-component))
-               (define-values
-                 (package-path package-name download-package!)
-                 (cond
-                   [url-looks-like-directory?
-                    (define package-name
-                      (path/param-path
-                       (second (reverse (url-path pkg-url)))))
-                    (define package-path
-                      (make-temporary-file
-                       (string-append
-                        "~a-"
-                        package-name)
-                       'directory))
-                    (define (path-like f)
-                      (build-path package-path f))
-                    (define (url-like f)
-                      (combine-url/relative pkg-url f))
-                    (values package-path
-                            package-name
-                            (λ ()
-                              (printf "\tCloning remote directory\n")
-                              (make-directory* package-path)
-                              (define manifest
-                                (call/input-url+200
-                                 (url-like "MANIFEST")
-                                 port->lines))
-                              (for ([f (in-list manifest)])
-                                (download-file! (url-like f)
-                                                (path-like f)))))]
-                   [else
-                    (define package-path
-                      (make-temporary-file
-                       (string-append
-                        "~a-"
-                        url-last-component)
-                       #f))
-                    (delete-file package-path)
-                    (values package-path
-                            (regexp-replace
-                             #rx"\\.[^.]+$"
-                             url-last-component
-                             "")
-                            (λ ()
-                              (dprintf "\tAssuming URL names a file\n")
-                              (download-file! pkg-url package-path)))]))
-               (dynamic-wind
-                   void
-                   (λ ()
-                     (download-package!)
-                     (define pkg-name
-                       (or given-pkg-name
-                           package-name))
-                     (dprintf "\tDownloading done, installing ~a as ~a\n"
-                              package-path pkg-name)
-                     (install-package package-path
-                                      #:pkg-name
-                                      pkg-name))
-                   (λ ()
-                     (when (or (file-exists? package-path)
-                               (directory-exists? package-path))
-                       (delete-directory/files package-path))))])
-            orig-pkg))
-         (when (and check-sums?
-                    (install-info-checksum info)
-                    (not checksum))
-           (error 'planet2 "Remote package ~a had no checksum"
-                  pkg))
-         (when (and checksum
-                    (install-info-checksum info)
-                    check-sums?
-                    (not (equal? (install-info-checksum info) checksum)))
-           (error 'planet2 "Incorrect checksum on package ~e: expected ~e, got ~e"
-                  pkg
-                  (install-info-checksum info) checksum))
-         (update-install-info-checksum
-          info
-          checksum))]
       [(if type
            (eq? type 'name)
-           (path-match? #f #rx"^[-+_a-zA-Z0-9]*$" pkg))
+           (path-match? #f #rx"^[-_a-zA-Z0-9]*$" pkg))
        (define index-info (package-index-lookup pkg))
        (define source (hash-ref index-info 'source))
        (define checksum (hash-ref index-info 'checksum))
@@ -519,7 +525,7 @@
          checksum)
         `(pns ,pkg))]
       [else
-       (error 'pkg "cannot infer package-name type\n  name: ~e\n" pkg)]))
+       (error 'pkg "cannot infer package source type\n  given: ~e\n" pkg)]))
   (define db (read-pkg-db))
   (define (install-package/outer infos auto+pkg info)
     (match-define (cons auto? pkg)

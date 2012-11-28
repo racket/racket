@@ -18,4 +18,6 @@
   (shelly-install "remote/github"
                   "github://github.com/jeapostrophe/galaxy/master/tests/planet2/test-pkgs/planet2-test1")
   (shelly-install "remote/github with slash"
-                  "github://github.com/jeapostrophe/galaxy/master/tests/planet2/test-pkgs/planet2-test1/")))
+                  "github://github.com/jeapostrophe/galaxy/master/tests/planet2/test-pkgs/planet2-test1/")
+  (shelly-install "remote/github with auto prefix"
+                  "--type github jeapostrophe/galaxy/master/tests/planet2/test-pkgs/planet2-test1/")))
