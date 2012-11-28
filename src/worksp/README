@@ -125,6 +125,14 @@ make the OpenSSL source refer to `_stat', you must use `struct
 _stat64i32' in place of `struct stat', `#undef _stat', and use
 `_stat()' in place of `stat()'.
 
+The pre-built binaries are unpatched with the exception of
+"libpangowin32", where we have disabled the SYMBOL_CHARSET test that
+makes Pango ignore symbol fonts. The test is in the
+pango_win32_insert_font() function, and the patch was made in the
+pre-built binary by modifying the machine code: change a comparison
+to 2, which is SYMBOL_CHARSET, to a comparsion to 3, which doesn't
+correspond to any CHARSET.
+
 
 Building Racket3m and GRacket3m
 -------------------------------
