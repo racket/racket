@@ -468,15 +468,21 @@
                                      (if hidden-child
                                          (- height (child-info-y-min (car children-info))) ;; 2-pixel border here, too
                                          height))])
+              (define expected-length (- (length children-info) (if hidden-child 1 0)))
               (unless (and (list? l)
-                           (= (length l) (- (length children-info) (if hidden-child 1 0)))
+                           (= (length l) expected-length)
                            (andmap (lambda (x) (and (list? x)
                                                     (= 4 (length x))
-                                                    (andmap (lambda (x) (and (integer? x) (exact? x))) x)))
+                                                    (andmap exact-integer? x)))
                                    l))
-                (raise-arguments-error 'container-redraw 
-                                       "result from place-children is not a list of 4-integer lists with the correct length"
-                                       "result" l))
+                (raise-arguments-error
+                 'container-redraw 
+                 (format
+                  (string-append 
+                   "result from place-children is not a list of length ~a (matching the"
+                   " input list length) whose elements are lists of length 4 of exact integers")
+                  expected-length)
+                 "result" l))
               (panel-redraw children children-info (if hidden-child
                                                        (cons (list 0 0 width height)
                                                              (let ([dy (child-info-y-min (car children-info))])
