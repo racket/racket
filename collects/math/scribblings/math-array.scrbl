@@ -689,6 +689,9 @@ and @italic{no greater than} the number of axes after broadcasting.
                  ]
 This function is a left inverse of @racket[array->array-list]. (It cannot be a right inverse
 because broadcasting cannot be undone.)
+
+For a similar function that does not increase the dimension of the broadcast arrays, see
+@racket[array-append*].
 }
 
 @defproc[(array->array-list [arr (Array A)] [axis Integer 0]) (Listof (Array A))]{
@@ -703,10 +706,30 @@ The axis number @racket[axis] must be nonnegative and less than the number of @r
 
 @subsection{Printing}
 
-@;{
-array-custom-printer
-print-array-fields
-print-array
+@defparam[array-custom-printer
+          print-array
+          (All (A) ((Array A) Symbol Output-Port (U Boolean Zero One) -> Any))]{
+A parameter that controls array printing.
+}
+(All (A) ((Array A) Symbol Output-Port (U Boolean Zero One) -> Any))
+
+@defproc[(print-array [arr (Array A)]
+                      [name Symbol]
+                      [port Output-Port]
+                      [mode (U Boolean 0 1)])
+         Any]{
+Prints an array using @racket[array] syntax, using @racket[name] instead of @racket['array]
+as the head form. This function is set as the value of @racket[array-custom-printer] when
+@racketmodname[math/array] is required.
+
+Well-behaved @racket[Array] subtypes do not call this function directly to print themselves.
+They call the current @racket[array-custom-printer]:
+@interaction[#:eval typed-eval
+                    ((array-custom-printer)
+                     (array #[0 1 2 3])
+                     'my-cool-array
+                     (current-output-port)
+                     #t)]
 }
 
 @section{Comprehensions and Sequences}
@@ -939,12 +962,34 @@ the array arguments are eagerly evaluated. For example, this function never retu
 
 @subsection{Broadcasting}
 
-@defparam[array-broadcasting broadcasting? (U Boolean 'permissive)]{
+@defparam[array-broadcasting broadcasting (U Boolean 'permissive)]{
+Determines the rules used when broadcasting arrays for pointwise operations. See
+@secref{array:broadcasting:control}.
 }
 
-@;{
-array-shape-broadcast
-array-broadcast
+@defproc[(array-shape-broadcast [dss (Listof Indexes)]
+                                [broadcasting (U Boolean 'permissive) (array-broadcasting)])
+         Indexes]{
+Determines the shape of the resulting array if some number of arrays with shapes @racket[dss]
+were broadcast for a pointwise operation using the given broadcasting rules. If broadcasting
+fails, @racket[array-shape-broadcast] raises an error.
+@examples[#:eval typed-eval
+                 (array-shape-broadcast '())
+                 (array-shape-broadcast (list (vector) ((inst vector Index) 10)))
+                 (array-shape-broadcast (list ((inst vector Index) 2)
+                                              ((inst vector Index) 10)))
+                 (array-shape-broadcast (list ((inst vector Index) 2)
+                                              ((inst vector Index) 10))
+                                        'permissive)]
+}
+
+@defproc[(array-broadcast [arr (Array A)] [ds Indexes]) (Array A)]{
+Returns an array with shape @racket[ds] made by inserting new axes and repeating rows.
+This is used for both @racket[(array-broadcasting #t)] and @racket[(array-broadcasting 'permissive)].
+@examples[#:eval typed-eval
+                 (array-broadcast (array 10) ((inst vector Index) 10))
+                 (array-broadcast (array #[0 1]) #())
+                 (array-broadcast (array #[0 1]) ((inst vector Index) 5))]
 }
 
 @section{Indexing and Slicing}
@@ -1191,6 +1236,114 @@ Given a slice @racket[s] and an axis length @racket[dk], returns the arguments t
 that would produce an equivalent slice specification.
 }
 
+@section{Transformations}
+
+@defproc[(array-transform [arr (Array A)] [ds In-Indexes] [proc (Indexes -> In-Indexes)])
+         (Array A)]{
+Returns an array with shape @racket[ds] and elements taken from @racket[arr], by composing
+@racket[arr]'s procedure with @racket[proc].
+
+Possibly the most useless, but simplest example of @racket[proc] disregards its input
+indexes and returns constant indexes:
+@interaction[#:eval typed-eval
+                    (define arr (array #[#[0 1] #[2 'three]]))
+                    (array-transform arr #(3 3) (λ: ([js : Indexes]) #(1 1)))]
+Double an array in every dimension by duplicating elements:
+@interaction[#:eval typed-eval
+                    (define arr (index-array #(3 3)))
+                    arr
+                    (array-transform
+                     arr
+                     (vector-map (λ: ([d : Index]) (* d 2)) (array-shape arr))
+                     (λ: ([js : Indexes])
+                       (vector-map (λ: ([j : Index]) (quotient j 2)) js)))]
+Recall that, because @racket[array-transform] returns @tech{non-strict} arrays, the above
+result takes little more space than the original array.
+
+Almost all array transformations, including those effected by @secref{array:slice-specs}, are
+implemented using @racket[array-transform] or its unsafe counterpart.
+}
+
+@defproc[(array-append* [arrs (Listof (Array A))] [k Integer 0]) (Array A)]{
+Appends the arrays in @racket[arrs] along axis @racket[k]. If the arrays' shapes are not
+the same, they are @tech{broadcast} first.
+@examples[#:eval typed-eval
+                 (define arr (array #[#[0 1] #[2 3]]))
+                 (define brr (array #[#['a 'b] #['c 'd]]))
+                 (array-append* (list arr brr))
+                 (array-append* (list arr brr) 1)
+                 (array-append* (list arr (array 'x)))]
+For an append-like operation that increases the dimension of the broadcast arrays, see
+@racket[array-list->array].
+}
+
+@defproc[(array-axis-insert [arr (Array A)] [k Integer] [dk Integer 1]) (Array A)]{
+Inserts an axis of length @racket[dk] before axis number @racket[k], which must be no greater
+than the dimension of @racket[arr].
+@examples[#:eval typed-eval
+                 (define arr (array #[#[0 1] #[2 3]]))
+                 (array-axis-insert arr 0)
+                 (array-axis-insert arr 1)
+                 (array-axis-insert arr 2)
+                 (array-axis-insert arr 1 2)]
+}
+
+@defproc[(array-axis-ref [arr (Array A)] [k Integer] [jk Integer]) (Array A)]{
+Removes an axis from @racket[arr] by keeping only row @racket[jk] in axis @racket[k], which
+must be less than the dimension of @racket[arr].
+@examples[#:eval typed-eval
+                 (define arr (array #[#[0 1] #[2 3]]))
+                 (array-axis-ref arr 0 0)
+                 (array-axis-ref arr 0 1)
+                 (array-axis-ref arr 1 0)]
+}
+
+@defproc[(array-axis-swap [arr (Array A)] [k0 Integer] [k1 Integer]) (Array A)]{
+Returns an array like @racket[arr], but with axes @racket[k0] and @racket[k1] swapped.
+In two dimensions, this is called a transpose.
+@examples[#:eval typed-eval
+                 (array-axis-swap (array #[#[0 1] #[2 3]]) 0 1)
+                 (define arr (indexes-array #(2 2 2)))
+                 arr
+                 (array-axis-swap arr 0 1)
+                 (array-axis-swap arr 1 2)]
+}
+
+@defproc[(array-axis-permute [arr (Array A)] [perm (Listof Integer)]) (Array A)]{
+Returns an array like @racket[arr], but with axes permuted according to @racket[perm].
+
+The list @racket[perm] represents a mapping from source axis numbers to destination
+axis numbers: the source is the list position, the destination is the list element.
+For example, the permutation @racket['(0 1)] is the identity permutation for two-dimensional
+arrays, @racket['(1 0)] swaps axes @racket[0] and @racket[1], and @racket['(3 1 2 0)] swaps
+axes @racket[0] and @racket[3].
+
+The permutation must contain each integer from @racket[0] to @racket[(- (array-dims arr) 1)]
+exactly once.
+
+@examples[#:eval typed-eval
+                 (array-axis-swap (array #[#[0 1] #[2 3]]) 0 1)
+                 (array-axis-permute (array #[#[0 1] #[2 3]]) '(1 0))]
+}
+
+@defproc[(array-reshape [arr (Array A)] [ds In-Indexes]) (Array A)]{
+Returns an array with elements in the same row-major order as @racket[arr], but with
+shape @racket[ds]. The product of the indexes in @racket[ds] must be @racket[(array-size arr)].
+@examples[#:eval typed-eval
+                 (define arr (indexes-array #(2 3)))
+                 arr
+                 (array-reshape arr #(3 2))
+                 (array-reshape (index-array #(3 3)) #(9))]
+}
+
+@defproc[(array-flatten [arr (Array A)]) (Array A)]{
+Returns an array with shape @racket[(vector (array-size arr))], with the elements of
+@racket[arr] in row-major order.
+@examples[#:eval typed-eval
+                 (array-flatten (array 10))
+                 (array-flatten (array #[#[0 1] #[2 3]]))]
+}
+
 @section{Folds}
 
 @;{
@@ -1219,25 +1372,6 @@ array-axis-fft
 array-fft
 array-inverse-fft
 array-axis-inverse-fft
-}
-
-@section{Transformations}
-
-@defidform[array-axis-insert]{
-}
-
-@defidform[array-axis-ref]{
-}
-
-@defidform[array-flatten]{
-}
-
-@;{
-array-transform
-array-axis-permute
-array-axis-swap
-array-append*
-array-reshape
 }
 
 @section{Subtypes}
