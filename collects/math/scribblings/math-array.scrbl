@@ -5,9 +5,9 @@
           (for-label racket/base racket/vector racket/match racket/unsafe/ops racket/string
                      math plot
                      (only-in typed/racket/base
-                              ann inst : λ: define: make-predicate
+                              ann inst : λ: define: make-predicate ->
                               Flonum Real Boolean Any Integer Index Natural Exact-Positive-Integer
-                              Nonnegative-Real Sequenceof Fixnum Values
+                              Nonnegative-Real Sequenceof Fixnum Values Number
                               All U List Vector Listof Vectorof Struct))
           "utils.rkt")
 
@@ -16,7 +16,8 @@
                          (require racket/match
                                   racket/vector
                                   racket/string
-                                  racket/sequence)]
+                                  racket/sequence
+                                  racket/list)]
 
 @title[#:tag "arrays" #:style 'toc]{Arrays}
 @(author-neil)
@@ -51,6 +52,10 @@ do not even allocate contiguous space to store their elements. All are functions
 applied to indexes to retrieve elements.
 
 @local-table-of-contents[]
+
+
+@;{==================================================================================================}
+
 
 @section{Preliminaries}
 
@@ -296,6 +301,10 @@ of stretching just singleton axes:
 Notice that @racket[(array #["+" "-"])] was repeated five times, and that
 @racket[arr3] was repeated three full times and once partially.
 
+
+@;{==================================================================================================}
+
+
 @section{Types, Predicates and Accessors}
 
 @defform[(Array A)]{
@@ -432,6 +441,10 @@ Returns the number of @racket[arr]'s dimensions. Equivalent to
 @defproc[(mutable-array-data [arr (Mutable-Array A)]) (Vectorof A)]{
 Returns the vector of data that @racket[arr] contains.
 }
+
+
+@;{==================================================================================================}
+
 
 @section{Construction}
 
@@ -614,6 +627,10 @@ have the value @racket[on-value]; the rest have the value @racket[off-value].
                  (diagonal-array 2 7 1 0)]
 }
 
+
+@;{==================================================================================================}
+
+
 @section{Conversion}
 
 @deftogether[(@defproc[(list->array [lst (Listof A)]) (Array A)]
@@ -732,6 +749,10 @@ They call the current @racket[array-custom-printer]:
                      #t)]
 }
 
+
+@;{==================================================================================================}
+
+
 @section{Comprehensions and Sequences}
 
 Sometimes sequential processing is unavoidable, so @racket[math/array] provides loops and sequences.
@@ -804,6 +825,10 @@ Returns a sequence of indexes for shape @racket[ds], in row-major order.
                    (vector j0 j1))
                  (indexes-array #(3 3))]
 }
+
+
+@;{==================================================================================================}
+
 
 @section{Pointwise Operations}
 
@@ -991,6 +1016,10 @@ This is used for both @racket[(array-broadcasting #t)] and @racket[(array-broadc
                  (array-broadcast (array #[0 1]) #())
                  (array-broadcast (array #[0 1]) ((inst vector Index) 5))]
 }
+
+
+@;{==================================================================================================}
+
 
 @section{Indexing and Slicing}
 
@@ -1236,6 +1265,10 @@ Given a slice @racket[s] and an axis length @racket[dk], returns the arguments t
 that would produce an equivalent slice specification.
 }
 
+
+@;{==================================================================================================}
+
+
 @section{Transformations}
 
 @defproc[(array-transform [arr (Array A)] [ds In-Indexes] [proc (Indexes -> In-Indexes)])
@@ -1257,8 +1290,8 @@ Double an array in every dimension by duplicating elements:
                      (vector-map (λ: ([d : Index]) (* d 2)) (array-shape arr))
                      (λ: ([js : Indexes])
                        (vector-map (λ: ([j : Index]) (quotient j 2)) js)))]
-Recall that, because @racket[array-transform] returns @tech{non-strict} arrays, the above
-result takes little more space than the original array.
+Because @racket[array-transform] returns @tech{non-strict} arrays, the above result takes
+little more space than the original array.
 
 Almost all array transformations, including those effected by @secref{array:slice-specs}, are
 implemented using @racket[array-transform] or its unsafe counterpart.
@@ -1314,7 +1347,7 @@ Returns an array like @racket[arr], but with axes permuted according to @racket[
 
 The list @racket[perm] represents a mapping from source axis numbers to destination
 axis numbers: the source is the list position, the destination is the list element.
-For example, the permutation @racket['(0 1)] is the identity permutation for two-dimensional
+For example, the permutation @racket['(0 1 2)] is the identity permutation for three-dimensional
 arrays, @racket['(1 0)] swaps axes @racket[0] and @racket[1], and @racket['(3 1 2 0)] swaps
 axes @racket[0] and @racket[3].
 
@@ -1344,35 +1377,208 @@ Returns an array with shape @racket[(vector (array-size arr))], with the element
                  (array-flatten (array #[#[0 1] #[2 3]]))]
 }
 
-@section{Folds}
 
-@;{
-array-axis-fold
-array-fold
-array-all-sum
-array-all-prod
-array-all-min
-array-all-max
-array-axis-count
-array-all-count
-array-axis-andmap
-array-all-andmap
-array-axis-ormap
-array-all-ormap
-array-all-eq?
-array-all-equal?
-array-all-eqv?
-array-all=
-array-axis-sum
-array-axis-prod
-array-axis-min
-array-axis-max
-array-lift-comparison
-array-axis-fft
-array-fft
+@;{==================================================================================================}
+
+
+@section{Folds and Other Axis Reductions}
+
+@defproc*[([(array-axis-fold [arr (Array A)] [k Integer] [f (A A -> A)]) (Array A)]
+           [(array-axis-fold [arr (Array A)] [k Integer] [f (A B -> B)] [init B]) (Array B)])]{
+Folds a binary function @racket[f] over axis @racket[k] of @racket[arr]. The result has the
+shape of @racket[arr] but with axis @racket[k] removed.
+
+The three-argument variant uses the first value of each row in axis @racket[k] as @racket[init].
+It therefore requires axis @racket[k] to have positive length.
+
+@examples[#:eval typed-eval
+                 (define arr (index-array #(3 4)))
+                 arr
+                 (array-axis-fold arr 0 +)
+                 (array-axis-fold arr 1 (inst cons Index (Listof Index)) empty)]
+Notice that the second example returns an array of reversed lists.
+This is therefore a left fold; see @racket[foldl].
+}
+
+@deftogether[(@defform*[((array-axis-sum arr k)
+                         (array-axis-sum arr k init))]
+              @defform*[((array-axis-prod arr k)
+                         (array-axis-prod arr k init))
+                        #:contracts ([arr   (Array Number)]
+                                     [k     Integer]
+                                     [init  Number])])]{
+}
+@deftogether[(@defform*[((array-axis-min arr k)
+                         (array-axis-min arr k init))]
+              @defform*[((array-axis-max arr k)
+                         (array-axis-max arr k init))
+                        #:contracts ([arr   (Array Real)]
+                                     [k     Integer]
+                                     [init  Real])])]{
+Some standard per-axis folds, defined in terms of @racket[array-axis-fold]. The two-argument
+variants require axis @racket[k] to have positive length.
+@examples[#:eval typed-eval
+                 (define arr (index-array #(3 4)))
+                 arr
+                 (array-axis-fold arr 1 +)
+                 (array-axis-sum arr 1)
+                 (array-axis-sum arr 0 0.0)]
+}
+
+@defproc[(array-fold [arr (Array A)] [g ((Array A) Index -> (Array A))]) (Array A)]{
+Folds @racket[g] over @italic{each axis} of @racket[arr], in reverse order. The arguments
+to @racket[g] are an array (initially @racket[arr]) and the current axis.
+It should return an array with one fewer dimension than the array given, but does not have to.
+@examples[#:eval typed-eval
+                 (define arr (index-array #(3 4)))
+                 arr
+                 (array-fold arr (λ: ([arr : (Array Integer)] [k : Index])
+                                   (array-axis-sum arr k)))
+                 (+ 0 1 2 3 4 5 6 7 8 9 10 11)
+                 (array-fold
+                  arr
+                  (λ: ([arr : (Array (Listof* Index))] [k : Index])
+                    (array-map
+                     (inst reverse (Listof* Index))
+                     (array-axis-fold arr k
+                                      (inst cons (Listof* Index) (Listof (Listof* Index)))
+                                      empty))))]
+}
+
+@defproc*[([(array-all-fold [arr (Array A)] [f (A A -> A)]) A]
+           [(array-all-fold [arr (Array A)] [f (A A -> A)] [init A]) A])]{
+Folds @racket[f] over every element of @racket[arr] by folding @racket[f] over each axis in
+reverse order. The two-argument variant is equivalent to
+@racketblock[(array-ref (array-fold arr (λ: ([arr : (Array A)] [k : Index])
+                                          (array-axis-fold arr k f)))
+                        #())]
+and the three-argument variant is similar. The two-argument variant requires every axis to have
+positive length.
+@examples[#:eval typed-eval
+                 (define arr (index-array #(3 4)))
+                 arr
+                 (array-all-fold arr +)
+                 (array-all-fold (array #[]) + 0.0)]
+}
+
+@deftogether[(@defform*[((array-all-sum arr)
+                         (array-all-sum arr init))]
+              @defform*[((array-all-prod arr)
+                         (array-all-prod arr init))
+                        #:contracts ([arr   (Array Number)]
+                                     [init  Number])])]{
+}
+@deftogether[(@defform*[((array-all-min arr)
+                         (array-all-min arr init))]
+              @defform*[((array-all-max arr)
+                         (array-all-max arr init))
+                        #:contracts ([arr   (Array Real)]
+                                     [init  Real])])]{
+Some standard whole-array folds, defined in terms of @racket[array-all-fold]. The one-argument
+variants require each axis in @racket[arr] to have positive length.
+@examples[#:eval typed-eval
+                 (define arr (index-array #(3 4)))
+                 arr
+                 (array-all-fold arr +)
+                 (array-all-sum arr)
+                 (array-all-sum arr 0.0)]
+}
+
+@defproc[(array-axis-count [arr (Array A)] [k Integer] [pred? (A -> Any)]) (Array Index)]{
+Counts the elements @racket[x] in rows of axis @racket[k] for which @racket[(pred? x)] is true.
+@examples[#:eval typed-eval
+                 (define arr (index-array #(3 3)))
+                 arr
+                 (array-axis-count arr 1 odd?)]
+}
+
+@defproc*[([(array-count [pred? (A -> Any)] [arr0 (Array A)]) Index]
+           [(array-count [pred? (A B Ts ... -> Any)]
+                         [arr0 (Array A)]
+                         [arr1 (Array B)]
+                         [arrs (Array Ts)] ...)
+            Index])]{
+The two-argument variant returns the number of elements @racket[x] in @racket[arr] for which
+@racket[(pred? x)] is true. The other variant does the same with the corresponding elements from
+any number of arrays. If the arrays' shapes are not the same, they are @tech{broadcast} first.
+@examples[#:eval typed-eval
+                 (array-count zero? (array #[#[0 1 0 2] #[0 3 -1 4]]))
+                 (array-count equal?
+                              (array #[#[0 1] #[2 3] #[0 1] #[2 3]])
+                              (array #[0 1]))]
+}
+
+@deftogether[(@defproc[(array-axis-and [arr (Array A)] [k Integer]) (Array (U A Boolean))]
+              @defproc[(array-axis-or [arr (Array A)] [k Integer]) (Array (U A #f))])]{
+Apply @racket[and] or @racket[or] to each row in axis @racket[k] of array @racket[arr], using
+short-cut evaluation.
+
+Consider the following array, whose second element takes 10 seconds to compute:
+@interaction[#:eval typed-eval
+                    (define arr (build-array #(2) (λ: ([js : Indexes])
+                                                    (cond [(zero? (vector-ref js 0))  #f]
+                                                          [else  (sleep 10)
+                                                                 #t]))))]
+Printing it takes over 10 seconds, but this returns immediately:
+@interaction[#:eval typed-eval
+                    (array-axis-and arr 0)]
+}
+
+@deftogether[(@defproc[(array-all-and [arr (Array A)]) (U A Boolean)]
+              @defproc[(array-all-or [arr (Array A)]) (U A #f)])]{
+Apply @racket[and] or @racket[or] to each element in @racket[arr] using short-cut evaluation.
+
+@racket[(array-all-and arr)] is defined as
+@racketblock[(array-ref (array-fold arr array-axis-and) #())]
+and @racket[array-all-or] is defined similarly.
+
+@examples[#:eval typed-eval
+                 (define arr (index-array #(3 3)))
+                 (array-all-and (array= arr arr))
+                 (define brr (array+ arr (array 1)))
+                 (array-all-and (array= arr brr))
+                 (array-all-or (array= arr (array 0)))]
+}
+
+@defproc[(array-axis-reduce [arr (Array A)] [k Integer] [h (Index (Integer -> A) -> B)]) (Array B)]{
+Like @racket[array-axis-fold], but allows evaluation control (such as short-cutting @racket[and] and
+@racket[or]) by moving the loop into @racket[h]. The result has the shape of @racket[arr], but with
+axis @racket[k] removed.
+
+The arguments to @racket[h] are the length of axis @racket[k] and a procedure that retrieves
+elements from that axis's rows by their indexes in axis @racket[k]. It should return the elements
+of the resulting array.
+
+For example, summing the squares of the rows in axis @racket[1]:
+@interaction[#:eval typed-eval
+                    (define arr (index-array #(3 3)))
+                    arr
+                    (array-axis-reduce
+                     arr 1
+                     (λ: ([dk : Index] [proc : (Integer -> Real)])
+                       (for/fold: ([s : Real 0]) ([jk  (in-range dk)])
+                         (+ s (sqr (proc jk))))))
+                    (array-axis-sum (array-map sqr arr) 1)]
+
+Every fold, including @racket[array-axis-fold], is ultimately defined using
+@racket[array-axis-reduce] or its unsafe counterpart.
+}
+
+
+@;{==================================================================================================}
+
+
+@section{Other Array Operations}
+
+@;{array-fft
 array-inverse-fft
+array-axis-fft
 array-axis-inverse-fft
 }
+
+
+@;{==================================================================================================}
+
 
 @section{Subtypes}
 
@@ -1382,7 +1588,7 @@ array-axis-inverse-fft
 }
 
 @defproc[(array->flarray [arr (Array Real)]) FlArray]{
-Returns an flarray that has approximately the same elements as @racket[arr].
+Returns an flonum array that has approximately the same elements as @racket[arr].
 The elements may lose precision during the conversion.
 }
 
@@ -1429,7 +1635,7 @@ flarray>=
 }
 
 @defproc[(array->fcarray [arr (Array Number)]) FCArray]{
-Returns an fcarray that has approximately the same elements as @racket[arr].
+Returns a float-complex array that has approximately the same elements as @racket[arr].
 The elements may lose precision during the conversion.
 }
 
@@ -1466,6 +1672,10 @@ fcarray-asin
 fcarray-atan
 }
 
+
+@;{==================================================================================================}
+
+
 @section{Unsafe Operations}
 
 @;{
@@ -1481,6 +1691,7 @@ unsafe-build-array
 unsafe-mutable-array
 unsafe-flarray
 unsafe-array-transform
+unsafe-array-axis-reduce
 }
 
 @;{
