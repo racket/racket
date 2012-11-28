@@ -37,7 +37,8 @@
   (vector-ref (array-shape a) 0))
 
 (: matrix-all= : (Matrix Number) (Matrix Number) -> Boolean)
-(define matrix-all= array-all=)
+(define (matrix-all= arr0 arr1)
+  (array-all-and (array= arr0 arr1)))
 
 (: matrix-dimensions : (Matrix Number) -> (Values Index Index))
 (define (matrix-dimensions a)
