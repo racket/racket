@@ -1,13 +1,13 @@
 #lang racket/base
 (require racket/function
-         racket/system
          "lib.rkt"
-         "commands.rkt")
+         "commands.rkt"
+         (prefix-in setup: setup/setup))
 
 (define (setup dont-setup)
   (unless (or dont-setup
               (equal? "1" (getenv "PLT_PLANET2_DONTSETUP")))
-    (system "raco setup")))
+    (setup:setup)))
 
 (commands
  "This tool is used for managing installed packages."
