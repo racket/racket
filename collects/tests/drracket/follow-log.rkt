@@ -34,10 +34,9 @@ log message was reported.
                               'debug 'framework/colorer
                               'debug 'timeline))
 
-(define top-n-events 50)
+(define top-n-events 30)
 (define drop-gc? #f)
 (define start-right-away? #t) ;; only applies if the 'main' module is loaded
-(define show-hist? #t)
 (define script-drr? #t)
 (define interesting-range-start 26)
 (define interesting-range-end +inf.0)
@@ -105,24 +104,40 @@ log message was reported.
                  (λ (_1 _2)
                    (stop-and-dump))]))
 (define (stop-and-dump)
-  (cond
-    [following-log?
-     (define resp (make-channel))
-     (channel-put log-done-chan resp)
-     (show-results (channel-get resp))
-     (send db enable #f)
-     (send sb enable #t)
-     (send sb2 enable #t)
-     (set! following-log? #f)]
-    [following-bt?
-     (define resp (make-channel))
-     (channel-put bt-done-chan resp)
-     (define stacks (channel-get resp))
-     (show-bt-results stacks)
-     (send db enable #f)
-     (send sb enable #t)
-     (send sb2 enable #t)
-     (set! following-bt? #f)]))
+  (define sp (open-output-string))
+  (parameterize ([current-output-port sp])
+    (cond
+      [following-log?
+       (define resp (make-channel))
+       (channel-put log-done-chan resp)
+       (show-results (channel-get resp))
+       (send db enable #f)
+       (send sb enable #t)
+       (send sb2 enable #t)
+       (set! following-log? #f)]
+      [following-bt?
+       (define resp (make-channel))
+       (channel-put bt-done-chan resp)
+       (define stacks (channel-get resp))
+       (show-bt-results stacks)
+       (send db enable #f)
+       (send sb enable #t)
+       (send sb2 enable #t)
+       (set! following-bt? #f)]))
+  (show-string (get-output-string sp)))
+
+(define (show-string str)
+  (define t (new text%))
+  (send t insert str)
+  (send t change-style (make-object style-delta% 'change-family 'modern)
+        0
+        (send t last-position))
+  (define f (new frame% [width 600] [height 800] [label "Log Follower Results"]))
+  (define ec (new editor-canvas% [parent f] [editor t]))
+  (define mb (new menu-bar% [parent f]))
+  (define edit-menu (new menu% [label "Edit"] [parent mb]))
+  (append-editor-operation-menu-items edit-menu)
+  (send f show #t))
 
 (define following-log? #f)
 (define following-bt? #f)
@@ -192,37 +207,37 @@ log message was reported.
                                     (number? (gui-event-end i))))
                              evts))
   
-  (cond
-    [show-hist?
-     (define gc-starts+ends
-       (filter 
-        values
-        (for/list ([evt (in-list evts)])
-          (cond
-            [(gc-info? (vector-ref evt 2))
-             (cons (gc-info-start-time (vector-ref evt 2))
-                   (gc-info-end-time (vector-ref evt 2)))]
-            [else #f]))))
+  (define (show-hist)
+    (define gc-starts+ends
+      (filter 
+       values
+       (for/list ([evt (in-list evts)])
+         (cond
+           [(gc-info? (vector-ref evt 2))
+            (cons (gc-info-start-time (vector-ref evt 2))
+                  (gc-info-end-time (vector-ref evt 2)))]
+           [else #f]))))
+    
+    (printf "gc deltas\n")
+    (print-hist (map (λ (x) (- (cdr x) (car x))) gc-starts+ends))
+    
+    (define (has-a-gc? evt-vec)
+      (define evt (vector-ref evt-vec 2))
+      (for/or ([gc-start+end (in-list gc-starts+ends)])
+        (<= (gui-event-start evt) 
+            (car gc-start+end)
+            (gui-event-end evt))))
+    
+    (define-values (has-gc-events no-gc-events)
+      (partition has-a-gc? gui-events))
+    (printf "\nwith gc\n")
+    (print-gui-event-hist has-gc-events)
+    (printf "\nwithout gc\n")
+    (print-gui-event-hist no-gc-events)
+    (printf "\nboth with and without gc\n")
+    (print-gui-event-hist gui-events))
 
-     (printf "gc deltas\n")
-     (print-hist (map (λ (x) (- (cdr x) (car x))) gc-starts+ends))
-     
-     (define (has-a-gc? evt-vec)
-       (define evt (vector-ref evt-vec 2))
-       (for/or ([gc-start+end (in-list gc-starts+ends)])
-         (<= (gui-event-start evt) 
-             (car gc-start+end)
-             (gui-event-end evt))))
-     
-     (define-values (has-gc-events no-gc-events)
-       (partition has-a-gc? gui-events))
-     (printf "\nwith gc\n")
-     (print-gui-event-hist has-gc-events)
-     (printf "\nwithout gc\n")
-     (print-gui-event-hist no-gc-events)
-     (printf "\nboth with and without gc\n")
-     (print-gui-event-hist gui-events)]
-    [else
+  (define (show-top-events)
      (define interesting-gui-events
        (let ([candidate-events
               (sort (filter (λ (x)
@@ -262,7 +277,11 @@ log message was reported.
       (if drop-gc?
           (filter (λ (x) (not (has-a-gc-event? x)))
                   with-other-events)
-          with-other-events))]))
+          with-other-events)))
+  
+  (show-top-events)
+  (printf "\n\n============================================================\n\n\n")
+  (show-hist))
 
 (struct gc-info (major? pre-amount pre-admin-amount code-amount
                         post-amount post-admin-amount
@@ -376,3 +395,4 @@ log message was reported.
       (queue-callback
        (λ () 
          (run-drracket-script))))))
+
