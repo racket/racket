@@ -411,6 +411,55 @@ Optional @filepath{info.rkt} fields trigger additional actions by
 
 @section[#:tag "setup-plt-plt"]{API for Installation}
 
+@defmodule[setup/setup]
+
+@defproc[(setup [#:file file (or/c #f path-string?) #f]
+                [#:collections collections (or/c #f (listof (listof path-string?))) #f]
+                [#:planet-specs planet-specs (or/c #f 
+                                                   (listof (list/c string?
+                                                                   string?
+                                                                   exact-nonnegative-integer?
+                                                                   exact-nonnegative-integer?)))
+                                             #f]
+                [#:make-user? make-user? any/c #t]
+                [#:make-docs? make-docs? any/c #t]
+                [#:clean? clean? any/c #f]
+                [#:jobs jobs exact-nonnegative-integer? #f]
+                [#:get-target-dir get-target-dir (or/c #f (-> path-string?)) #f])
+          void?]{
+Runs @exec{raco setup} with various options:
+
+@itemlist[
+
+ @item{@racket[file] --- if not @racket[#f], installs @racket[file] as
+       a @filepath{.plt} archive.}
+
+ @item{@racket[collections] --- if not @racket[#f], constrains setup to
+       the named collections, along with @racket[planet-specs], if any}
+
+ @item{@racket[planet-spec] --- if not @racket[#f], constrains setup to
+       the named @|PLaneT| packages, along with @racket[collections], if any}
+
+ @item{@racket[make-docs?] --- if @racket[#f], disables any
+       documentation-specific setup actions}
+
+ @item{@racket[make-user?] --- if @racket[#f], disables any
+       user-specific setup actions}
+
+ @item{@racket[clean?] --- if true, enables cleaning mode instead of setup mode}
+
+ @item{@racket[jobs] --- if not @racket[#f], determines the maximum number of parallel
+       tasks used for setup}
+
+ @item{@racket[get-target-dir] --- if not @racket[#f], treated as a
+       value for @sigelem[setup-option^ current-target-directory-getter]}
+
+]}
+
+@subsection{@exec{raco setup} Unit}
+
+@defmodule[setup/setup-unit]
+
 The @racketmodname[setup/setup-unit] library provides @exec{raco setup} in unit
 form. The associated @racket[setup/option-sig] and
 @racket[setup/option-unit] libraries provides the interface for
@@ -433,10 +482,6 @@ initialized between them, e.g.:
     [() setup@ OPTIONS _...])
   _...)
 ]
-
-@subsection{@exec{raco setup} Unit}
-
-@defmodule[setup/setup-unit]
 
 @defthing[setup@ unit?]{
 
@@ -573,7 +618,7 @@ form.}
   documentation is built, then suitable documentation start pages, search pages,
   and master index pages are re-built. @defaults[@racket[#t]]}
 
-@defparam[current-target-directory-getter thunk (-> . path-string?)]{
+@defparam[current-target-directory-getter thunk (-> path-string?)]{
   A thunk that returns the target directory for unpacking a relative
   @filepath{.plt} archive; when unpacking an archive, either this or
   the procedure in @racket[current-target-plt-directory-getter] will
