@@ -204,7 +204,8 @@
                       (andmap (λ (srcloc) (equal? (srcloc-source srcloc) the-source))
                               (exn:fail:read-srclocs exn)))
                  'reader-in-defs-error]
-                [(regexp-match #rx"expand: unbound identifier" (exn-message exn))
+                [(and (exn? exn)
+                      (regexp-match #rx"expand: unbound identifier" (exn-message exn)))
                  'exn:variable]
                 [else 'exn])
               (trim-message 
