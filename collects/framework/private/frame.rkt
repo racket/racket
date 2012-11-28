@@ -1038,7 +1038,9 @@
     (define/private (update-macro-recording-icon)
       (unless (eq? (send macro-recording-message is-shown?)
                    macro-recording?)
-        (send macro-recording-message show macro-recording?)))
+        (if macro-recording?
+            (add-uncommon-child macro-recording-message)
+            (remove-uncommon-child macro-recording-message))))
     (define/public (set-macro-recording on?)
       (set! macro-recording? on?)
       (update-macro-recording-icon))
@@ -1049,16 +1051,16 @@
              (λ ()
                (unless (eq? anchor-last-state? #f)
                  (set! anchor-last-state? #f)
-                 (send anchor-message show #f)))])
+                 (remove-uncommon-child anchor-message)))])
         (cond
           [info-edit
            (let ([anchor-now? (send info-edit get-anchor)])
              (unless (eq? anchor-now? anchor-last-state?)
                (cond
                  [(object? anchor-message)
-                  (send anchor-message
-                        show
-                        anchor-now?)
+                  (if anchor-now?
+                      (add-uncommon-child anchor-message)
+                      (remove-uncommon-child anchor-message))
                   (set! anchor-last-state? anchor-now?)]
                  [else (failed)])))]
           [else
@@ -1072,16 +1074,16 @@
             [failed
              (λ ()
                (set! overwrite-last-state? #f)
-               (send overwrite-message show #f))])
+               (remove-uncommon-child overwrite-message))])
         (cond
           [info-edit
            (let ([overwrite-now? (send info-edit get-overwrite-mode)])
              (unless (eq? overwrite-now? overwrite-last-state?)
                (cond
                  [(object? overwrite-message)
-                  (send overwrite-message
-                        show
-                        overwrite-now?)
+                  (if overwrite-now?
+                      (add-uncommon-child overwrite-message)
+                      (remove-uncommon-child overwrite-message))
                   (set! overwrite-last-state? overwrite-now?)]
                  [else
                   (failed)])))]
@@ -1140,37 +1142,43 @@
           (λ (l)
             (cons file-text-mode-msg-parent (remq file-text-mode-msg-parent l))))
     
-    (define-values (anchor-message
-                    overwrite-message 
-                    macro-recording-message)
-      (let* ([anchor-message
-              (new message%
-                   [font small-control-font]
-                   [label (string-constant auto-extend-selection)]
-                   [parent (get-info-panel)])]
-             [overwrite-message 
-              (new message%
-                   [font small-control-font]
-                   [label (string-constant overwrite)]
-                   [parent (get-info-panel)])]
-             [macro-recording-message
-              (new message%
-                   [label "c-x;("]
-                   [font small-control-font]
-                   [parent (get-info-panel)])]
-             [msgs (list anchor-message
-                         overwrite-message
-                         macro-recording-message)])
-        (send (get-info-panel) change-children
-              (λ (l) (append msgs (remq* msgs l))))
-        (values anchor-message
-                overwrite-message 
-                macro-recording-message)))
+    (define uncommon-parent (new horizontal-panel%
+                                 [parent (get-info-panel)]
+                                 [stretchable-width #f]))
     
+    (send (get-info-panel) change-children
+          (λ (l) (cons uncommon-parent (remq uncommon-parent l))))
+    (define anchor-message
+      (new message%
+           [font small-control-font]
+           [label (string-constant auto-extend-selection)]
+           [parent uncommon-parent]))
+    (define overwrite-message 
+      (new message%
+           [font small-control-font]
+           [label (string-constant overwrite)]
+           [parent uncommon-parent]))
+    (define macro-recording-message
+      (new message%
+           [label "c-x;("]
+           [font small-control-font]
+           [parent uncommon-parent]))
+    (define/private (remove-uncommon-child c)
+      (send uncommon-parent change-children
+            (λ (l) (remq c l))))
+    (define/private (add-uncommon-child c)
+      (define (child->num c)
+        (cond
+          [(eq? c anchor-message) 0]
+          [(eq? c overwrite-message) 1]
+          [(eq? c macro-recording-message) 2]))
+      (send uncommon-parent change-children
+            (λ (l) (sort (cons c (remq c l))
+                         <
+                         #:key child->num))))
+
     (inherit determine-width)
-    (send macro-recording-message show #f)
-    (send anchor-message show #f)
-    (send overwrite-message show #f)
+    (send uncommon-parent change-children (λ (l) '()))
     (editor-position-changed)
     (use-file-text-mode-changed)))
 
