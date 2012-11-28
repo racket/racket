@@ -184,7 +184,7 @@ P. Borwein. An Efficient Algorithm for the Riemann Zeta Function.
         [(integer? s)
          (cond [(zero? s)  1/2]
                [(negative? s)  (define k (- 1 s))
-                               (* (/ (bernoulli k) k) (- (expt 2 k) 1))]
+                               (* (/ (bernoulli-number k) k) (- (expt 2 k) 1))]
                [else  (fleta (fl s))])]
         [else
          (fleta (fl s))]))
@@ -198,7 +198,7 @@ P. Borwein. An Efficient Algorithm for the Riemann Zeta Function.
         [(integer? s)
          (cond [(zero? s)  -1/2]
                [(negative? s)  (define k (- 1 s))
-                               (- (/ (bernoulli k) k))]
+                               (- (/ (bernoulli-number k) k))]
                [(eqv? s 1)  (raise-argument-error 'zeta "Real, not One" s)]
                [else  (flzeta (fl s))])]
         [else

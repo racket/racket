@@ -26,12 +26,10 @@ a C library that provides
 The arbitrary-precision floating-point numbers MPFR provides and operates on are
 represented by the type @racket[Bigfloat].
 
-MPFR is free, license-compatible with commercial software, and
-@hyperlink["http://www.mpfr.org/ports.html"]{easy to install} on all 
-major platforms. Even so, not all systems have it, so @racketmodname[math/bigfloat] links
-against MPFR lazily.
-
-If you know MPFR is installed but can't use @racketmodname[math/bigfloat], see @secref{loading}.
+MPFR is free and license-compatible with commercial software. It is distributed with Racket
+for Windows and Mac OS X, is installed on most Linux systems, and is
+@hyperlink["http://www.mpfr.org/ports.html"]{easy to install} on all major platforms.
+See @secref{loading} for details.
 
 @section[#:tag "quick"]{Quick Start}
 
@@ -711,23 +709,19 @@ Canonicalizing bigfloats won't change answers computed from them.
 
 @section[#:tag "loading"]{Loading the MPFR Library}
 
-The @racketmodname[math/bigfloat] library depends directly on one library: MPFR, which on the filesystem is
-named something like @filepath{libmpfr.so}, but with a platform-specific suffix.
-MPFR itself depends on @hyperlink["http://gmplib.org/"]{GMP}, the
-GNU Multiple Precision Arithmetic Library, which on the filesystem is named @filepath{libgmp.so}.
-
-If @racket[(mpfr-available?)] is @racket[#t], both of these libraries have been loaded
-by the Racket runtime, and everything in @racketmodname[math/bigfloat] should work.
-(If something doesn't, it's likely an error in the foreign function interface. In that
-case, please email the author of this library or submit a bug report.)
-
-If @racket[(mpfr-available?)] is @racket[#f], one of these libraries can't be loaded. The
-most common reason is that one or both needs to be installed. Another possibility is that
-both are installed, but one is not in the operating system's search path. In this case,
-see @racket[set-mpfr-lib-dirs!].
+The @racketmodname[math/bigfloat] library depends directly on external one library:
+MPFR, which on the filesystem is named something like @filepath{libmpfr.so}, but with a
+platform-specific suffix. MPFR itself depends on @hyperlink["http://gmplib.org/"]{GMP}, the
+GNU Multiple Precision Arithmetic Library, which on the filesystem is named something like
+@filepath{libgmp.so}.
 
 @defproc[(mpfr-available?) Boolean]{
-Returns @racket[#t] when both GMP and MPFR are available; @racket[#f] otherwise.
+If @racket[(mpfr-available?)] is @racket[#t], both MPFR and GMP have been loaded
+by the Racket runtime, and everything in @racketmodname[math/bigfloat] should work.
+
+If @racket[(mpfr-available?)] is @racket[#t] and something doesn't work, it's likely an error
+in the foreign function interface. In that case, please email the author of this library or
+submit a bug report.
 }
 
 @(close-eval untyped-eval)

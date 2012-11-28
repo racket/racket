@@ -41,7 +41,7 @@
                          [numer : Bigfloat  s]
                          [denom : Bigfloat  (bf/ fn n+q)]
                          [k : Nonnegative-Fixnum  0])
-    (define ck (bf (/ (bernoulli (* 2 (fx+ k 1))) (factorial (* 2 (fx+ k 1))))))
+    (define ck (bf (/ (bernoulli-number (* 2 (fx+ k 1))) (factorial (* 2 (fx+ k 1))))))
     (define dy (bf* (bf* numer denom) ck))
     (define new-y (bf+ y dy))
     (cond [((bfabs dy) . bf<= . (bf* eps (bfabs new-y)))
