@@ -6,7 +6,7 @@
          (for-syntax racket/base images/icons/misc images/icons/style)
          string-constants)
 
-(require "report.rkt" "profiling.rkt" "display.rkt")
+(require "structs.rkt" "report.rkt" "profiling.rkt" "display.rkt")
 
 (provide tool@ optimization-coach-drracket-button)
 
@@ -129,7 +129,7 @@
         (unless (and report-cache (not source) (not profile))
           (set! report-cache (generate-report source profile)))
         (define report
-          (collapse-report
+          (locality-merging
            (for/list ([entry (in-list report-cache)]
                       ;; At this point, report enties have a single sub.
                       #:when (for/or ([f (in-list filters)])
