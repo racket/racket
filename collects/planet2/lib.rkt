@@ -21,8 +21,7 @@
          file/tar
          file/zip
          file/unzip
-         "util.rkt"
-         "util-plt.rkt")
+         "util.rkt")
 
 (define current-install-system-wide?
   (make-parameter #f))
@@ -320,7 +319,12 @@
                [#"zip"
                 (unzip pkg (make-filesystem-entry-reader #:dest pkg-dir))]
                [#"plt"
-                (unplt pkg pkg-dir)]
+                (make-directory* pkg-dir)
+                (unpack pkg pkg-dir
+                        (lambda (x) (printf "~a\n" x))
+                        (lambda () pkg-dir)
+                        #f
+                        (lambda (auto-dir main-dir file) pkg-dir))]
                [x
                 (error 'pkg "Invalid package format: ~e" x)])
 
@@ -818,8 +822,15 @@
                                     (raise exn))])
               (apply zip pkg/complete (directory-list))))]
          ["plt"
-          (pack-plt pkg pkg-name (list dir)
-                    #:as-paths (list "."))]
+          (define dest (path->complete-path pkg))
+          (parameterize ([current-directory dir])
+            (define names (filter std-filter (directory-list)))
+            (define dirs (filter directory-exists? names))
+            (pack-plt dest pkg-name 
+                      names
+                      #:plt-relative? #t
+                      #:as-paths (map (lambda (v) (build-path "collects" v)) names)
+                      #:collections (map list (map path->string dirs))))]
          [x
           (error 'pkg "Invalid package format: ~e" x)])
        (define chk (format "~a.CHECKSUM" pkg))
