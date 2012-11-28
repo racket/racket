@@ -4,11 +4,15 @@ cl rbuildmode.c
 rbuildmode.exe
 if errorlevel 1 (set BUILDMODE=win32) else (set BUILDMODE=x64)
 
+set DEVENV=devenv
+for %%X in (vcexpress.exe) do (set VCEXP=%%~$PATH:X)
+if defined VCEXP set DEVENV=%VCEXP%
+
 cd racket
-devenv racket.sln /Build "Release|%BUILDMODE%"
+"%DEVENV%" racket.sln /Build "Release|%BUILDMODE%"
 if errorlevel 1 exit /B 1
 cd ..\gracket
-devenv gracket.sln /Build "Release|%BUILDMODE%"
+"%DEVENV%" gracket.sln /Build "Release|%BUILDMODE%"
 if errorlevel 1 exit /B 1
 cd ..
 
@@ -29,15 +33,15 @@ if errorlevel 1 exit /B 1
 if errorlevel 1 exit /B 1
 
 cd mzstart
-devenv mzstart.sln /Build "Release|%BUILDMODE%"
+"%DEVENV%" mzstart.sln /Build "Release|%BUILDMODE%"
 if errorlevel 1 exit /B 1
 cd ..\mrstart
-devenv mrstart.sln /Build "Release|%BUILDMODE%"
+"%DEVENV%" mrstart.sln /Build "Release|%BUILDMODE%"
 if errorlevel 1 exit /B 1
 cd ..
 
 cd mzcom
-devenv mzcom.sln /Build "Release|%BUILDMODE%"
+"%DEVENV%" mzcom.sln /Build "Release|%BUILDMODE%"
 if errorlevel 1 exit /B 1
 cd ..
 
@@ -47,7 +51,7 @@ if errorlevel 1 exit /B 1
 cd ..
 
 cd mzcom
-devenv mzcom.sln /Build "3m|%BUILDMODE%"
+"%DEVENV%" mzcom.sln /Build "3m|%BUILDMODE%"
 if errorlevel 1 exit /B 1
 cd ..
 

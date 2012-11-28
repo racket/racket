@@ -45,8 +45,8 @@ As always, please report bugs via one of the following:
 Building Racket and GRacket
 ---------------------------
 
-If you're using MSVC 2008 (not Express), and if `devenv.exe' is in your
-path, then you can just run
+If you're using MSVC 2008, and if `cl.exe' and either `devenv.exe'
+or `vcexpress.exe' is in your path, then you can just run
     racket\src\worksp\build.bat
 from its own directory to perform all steps up to "Versioning",
 including the MzCOM steps.
