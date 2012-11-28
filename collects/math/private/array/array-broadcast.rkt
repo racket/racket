@@ -17,7 +17,12 @@
   (define old-ds (array-shape arr))
   (define old-dims (vector-length old-ds))
   (define new-dims (vector-length new-ds))
-  (define shift (assert (- new-dims old-dims) index?))
+  (define shift
+    (let ([shift  (- new-dims old-dims)])
+      (cond [(index? shift)  shift]
+            [else  (error 'array-broadcast
+                          "cannot broadcast to lower-dimensional array; given ~e and ~e"
+                          arr new-ds)])))
   (define old-js (make-thread-local-indexes old-dims))
   (define old-f (unsafe-array-proc arr))
   (unsafe-build-array
