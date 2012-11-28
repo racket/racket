@@ -92,21 +92,21 @@ These functions are as robust and accurate as their corresponding inverses.
 @deftogether[(@defproc[(flfactorial [n Flonum]) Flonum]
               @defproc[(flbinomial [n Flonum] [k Flonum]) Flonum]
               @defproc[(flpermutations [n Flonum] [k Flonum]) Flonum]
-              @defproc[(flmultinomial [n Flonum] [k Flonum] ...) Flonum])]{
+              @defproc[(flmultinomial [n Flonum] [ks (Listof Flonum)]) Flonum])]{
 Like @racket[(fl (factorial (fl->exact-integer n)))] and so on, but computed in constant
 time. Also, these return @racket[+nan.0] instead of raising exceptions.
 
-For @racket[factorial]-family functions that return sensible values for non-integers, see
+For factorial-like functions that return sensible values for non-integers, see
 @racket[gamma] and @racket[beta].
 }
 
 @deftogether[(@defproc[(fllog-factorial [n Flonum]) Flonum]
               @defproc[(fllog-binomial [n Flonum] [k Flonum]) Flonum]
               @defproc[(fllog-permutations [n Flonum] [k Flonum]) Flonum]
-              @defproc[(fllog-multinomial [n Flonum] [k Flonum] ...) Flonum])]{
+              @defproc[(fllog-multinomial [n Flonum] [ks (Listof Flonum)]) Flonum])]{
 Like @racket[(fllog (flfactorial n))] and so on, but more accurate and without unnecessary overflow.
 
-For log-@racket[factorial]-family functions that return sensible values for non-integers, see
+For log-factorial-like functions that return sensible values for non-integers, see
 @racket[log-gamma] and @racket[log-beta].
 }
 
