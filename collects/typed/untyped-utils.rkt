@@ -3,10 +3,15 @@
 (require (for-syntax racket/base
                      syntax/parse
                      racket/syntax
-                     typed-racket/utils/tc-utils))
+                     typed-racket/utils/tc-utils)
+         typed-racket/utils/tc-utils)
 
-(provide require/untyped-contract
-         define-typed/untyped-identifier)
+(provide syntax-local-typed-context?
+         define-typed/untyped-identifier
+         require/untyped-contract)
+
+(define (syntax-local-typed-context?)
+  (unbox typed-context?))
 
 (define-for-syntax (rename-head stx id)
   (syntax-case stx ()

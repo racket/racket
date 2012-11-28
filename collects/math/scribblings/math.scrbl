@@ -40,4 +40,5 @@ be used in untyped Racket. Exceptions and performance warnings are in @bold{bold
 @include-section["math-number-theory.scrbl"]
 @include-section["math-bigfloat.scrbl"]
 @include-section["math-array.scrbl"]
+@include-section["math-statistics.scrbl"]
 @include-section["math-distributions.scrbl"]

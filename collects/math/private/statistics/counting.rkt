@@ -1,10 +1,11 @@
 #lang typed/racket/base
 
-(require racket/unsafe/ops
-         racket/list
-         racket/sequence)
+(require racket/list
+         racket/sequence
+         "../../base.rkt"
+         "../unsafe.rkt")
 
-(provide samples->immutable-hash samples->hash
+(provide samples->hash
          count-samples
          (struct-out sample-bin)
          Real-Bin
@@ -14,15 +15,9 @@
 
 (define-type Real-Bin (sample-bin Real))
 
-(: samples->immutable-hash (All (A) ((Sequenceof A) -> (HashTable A Positive-Integer))))
-(define (samples->immutable-hash xs)
-  (define: h : (HashTable A Positive-Integer)  (make-immutable-hash null))
-  (for/fold: ([h : (HashTable A Positive-Integer)  h]) ([x : A  xs])
-    (hash-set h x (unsafe-fx+ 1 (hash-ref h x (λ () 0))))))
-
 (: samples->hash (All (A) ((Sequenceof A) -> (HashTable A Positive-Integer))))
 (define (samples->hash xs)
-  (define: h : (HashTable A Positive-Integer)  (make-hash null))
+  (define: h : (HashTable A Positive-Integer)  (make-hash))
   (for: ([x : A  xs])
     (hash-set! h x (unsafe-fx+ 1 (hash-ref h x (λ () 0)))))
   h)

@@ -929,7 +929,7 @@ Equivalent to @racket[(array-map f arr0 arr1 arrs ...)], where @racket[f] is res
 The short-cutting behavior of @racket[array-and], @racket[array-or] and @racket[array-if]
 can keep array arguments' elements from being referred to (and thus computed). However,
 they cannot be used to distinguish base and inductive cases in a recursive function, because
-the array arguments are always evaluated. For example, this function never returns:
+the array arguments are eagerly evaluated. For example, this function never returns:
 @racketblock[(: array-factorial ((Array Integer) -> (Array Integer)))
              (define (array-factorial arr)
                (array-if (array<= arr (array 0))
@@ -939,8 +939,10 @@ the array arguments are always evaluated. For example, this function never retur
 
 @subsection{Broadcasting}
 
+@defparam[array-broadcasting broadcasting? (U Boolean 'permissive)]{
+}
+
 @;{
-array-broadcasting
 array-shape-broadcast
 array-broadcast
 }
@@ -1221,20 +1223,34 @@ array-axis-inverse-fft
 
 @section{Transformations}
 
+@defidform[array-axis-insert]{
+}
+
+@defidform[array-axis-ref]{
+}
+
+@defidform[array-flatten]{
+}
+
 @;{
 array-transform
 array-axis-permute
 array-axis-swap
-array-axis-insert
-array-axis-ref
 array-append*
 array-reshape
-array-flatten
 }
 
 @section{Subtypes}
 
 @subsection{Flonum Arrays}
+
+@defidform[FlArray]{
+}
+
+@defproc[(array->flarray [arr (Array Real)]) FlArray]{
+Returns an flarray that has approximately the same elements as @racket[arr].
+The elements may lose precision during the conversion.
+}
 
 @;{
 FlArray
@@ -1274,6 +1290,14 @@ flarray>=
 }
 
 @subsection{Float-Complex Arrays}
+
+@defidform[FCArray]{
+}
+
+@defproc[(array->fcarray [arr (Array Number)]) FCArray]{
+Returns an fcarray that has approximately the same elements as @racket[arr].
+The elements may lose precision during the conversion.
+}
 
 @;{
 FCArray

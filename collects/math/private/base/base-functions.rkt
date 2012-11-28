@@ -9,7 +9,10 @@
          absolute-error
          relative-error
          sum
-         asinh acosh atanh)
+         asinh acosh atanh
+         float-complex?
+         inline-number->float-complex
+         number->float-complex)
 
 ;; Returns #t if x is an integer power of 2
 (: power-of-two? (Real -> Boolean))
@@ -100,3 +103,35 @@
         [(real? x)  (flatanh (fl x))]
         [(float-complex? x)  (* 0.5 (- (log (+ 1.0 x)) (log (- 1.0 x))))]
         [else  (* 1/2 (- (log (+ 1 x)) (log (- 1 x))))]))
+
+;; ===================================================================================================
+;; Float-Complex functions
+
+(define-predicate float-complex? Float-Complex)
+
+(module syntax-defs racket/base
+  (require (for-syntax racket/base
+                       typed/untyped-utils)
+           (only-in typed/racket/base : Number let:)
+           racket/flonum)
+  
+  (provide inline-number->float-complex)
+  
+  (define-syntax (inline-number->float-complex stx)
+    (syntax-case stx ()
+      [(_ z-expr)
+       (syntax/loc stx
+         (let: ([z : Number  z-expr])
+           (if (number? z)
+               (make-rectangular (real->double-flonum (real-part z))
+                                 (real->double-flonum (imag-part z)))
+               (raise-argument-error 'number->float-complex "number?" z))))]))
+  
+  )  ; module
+
+(require 'syntax-defs)
+
+(: number->float-complex (Number -> Float-Complex))
+(define (number->float-complex z)
+  (make-rectangular (fl (real-part z))
+                    (fl (imag-part z))))

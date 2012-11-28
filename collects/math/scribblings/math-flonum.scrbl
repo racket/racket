@@ -153,6 +153,10 @@ of @racket[fllog1p], which avoids the error-prone subtraction:
 But see @racket[flexpt1p], which is more accurate still.
 }
 
+@defproc[(flexpt1p [x Flonum] [y Flonum]) Flonum]{
+Like @racket[(flexpt (+ 1.0 x) y)], but accurate for any @racket[x] and @racket[y].
+}
+
 @defproc[(make-flexp/base [x Real]) (Flonum -> Flonum)]{
 Equivalent to @racket[(λ (y) (flexpt x y))] when @racket[x] is a flonum, but much more
 accurate for large @racket[y] when @racket[x] cannot be exactly represented

@@ -12,7 +12,6 @@
          flsubnormal? flrational? flnan? flinteger?
          flnext* flprev*
          flulp-error
-         float-complex? (rename-out [inline-number->float-complex number->float-complex])
          fleven? flodd? flsgn flhypot fllog/base
          flprobability?
          flsinpix flcospix fltanpix flcscpix flsecpix flcotpix)
@@ -95,23 +94,6 @@
         [else  (flabs (real->double-flonum
                        (/ (- (inexact->exact x) (inexact->exact r))
                           (inexact->exact (flulp x)))))]))
-
-;; ===================================================================================================
-;; Types, conversion
-
-(define-predicate float-complex? Float-Complex)
-
-(define-syntax (inline-number->float-complex stx)
-  (syntax-case stx ()
-    [(_ z-expr)  (syntax/loc stx
-                   (let: ([z : Number  z-expr])
-                     (make-rectangular (real->double-flonum (real-part z))
-                                       (real->double-flonum (imag-part z)))))]
-    [(_ e ...)  (syntax/loc stx (number->float-complex e ...))]
-    [_  (syntax/loc stx number->float-complex)]))
-
-(: number->float-complex (Number -> Float-Complex))
-(define (number->float-complex z) (inline-number->float-complex z))
 
 ;; ===================================================================================================
 ;; More floating-point functions
