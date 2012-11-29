@@ -344,7 +344,8 @@ against @racket[hostname].
 	    [context (or/c ssl-client-context? ssl-server-context?)]
             [src (or/c path-string?
                        (list/c 'directory path-string?)
-                       (list/c 'win32-store string?))]
+                       (list/c 'win32-store string?)
+                       (list/c 'macosx-keychain path-string?))]
             [#:try? try? any/c #f])
          void?]{
 
@@ -371,6 +372,10 @@ needs verification.}
 certificates from the store named @racket[_store] are loaded
 immediately. Only supported on Windows.}
 
+@item{If @racket[src] is @racket[(list 'macosx-keychain _path)], then
+the certificates from the keychain stored at @racket[_path] are loaded
+immediately. Only supported on Mac OS X.}
+
 ]
 
 If @racket[try?] is @racket[#f] and loading @racket[src] fails (for
@@ -386,7 +391,8 @@ such a test configuration obviously provides no security.
 @defparam[ssl-default-verify-sources srcs
           (let ([source/c (or/c path-string?
                                 (list/c 'directory path-string?)
-                                (list/c 'win32-store string?))])
+                                (list/c 'win32-store string?)
+                                (list/c 'macosx-keychain path-string?))])
             (listof source/c))]{
 
 Holds a list of verification sources, used by
@@ -395,12 +401,17 @@ on the platform:
 
 @itemlist[
 
-@item{On Mac OS X and Linux, the default sources are determined by the
+@item{On Linux, the default sources are determined by the
 @tt{SSL_CERT_FILE} and @tt{SSL_CERT_DIR} environment variables, if the
 variables are set, or the system-wide default locations otherwise.}
 
-@item{On Windows, the default source is @racket['(win32-store
-"ROOT")], the system certificate store for root certificates.}
+@item{On Mac OS X, the default sources consist of the system keychain
+for root certificates: @racket['(macosx-keychain
+"/System/Library/Keychains/SystemRootCertificates.keychain")].}
+
+@item{On Windows, the default sources consist of the system
+certificate store for root certificates: @racket['(win32-store
+"ROOT")].}
 
 ]
 }
