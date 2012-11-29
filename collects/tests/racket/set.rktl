@@ -105,7 +105,11 @@
   (test '(1 2 3) sort (for/list ([v s]) v) <)
   (test '(1 2 3) sort (for/list ([v (in-set s)]) v) <)
   (test '(1 2 3) sort (let ([seq (in-set s)]) (for/list ([v seq]) v)) <)
+  ;; Optimized
   (test '(1) sort (for/list ([v (in-set (set 1))]) v) <)
+  (test #t values (let ([noset #t])
+                    (for ([v (in-set (set))]) (set! noset #f))
+                    noset))
         
 
   (void))
