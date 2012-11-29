@@ -9,7 +9,8 @@
 (provide load-win32-root-certificates)
 
 ;; -- libcrypto
-(define-ffi-definer define-crypto libcrypto)
+(define-ffi-definer define-crypto libcrypto
+  #:default-make-fail make-not-available)
 (define-cpointer-type _X509*)
 (define-cpointer-type _X509_STORE*)
 
@@ -26,7 +27,8 @@
 
 ;; -- libssl
 
-(define-ffi-definer define-ssl libssl)
+(define-ffi-definer define-ssl libssl
+  #:default-make-fail make-not-available)
 (define _SSL_CTX* _pointer)
 
 (define-ssl SSL_CTX_get_cert_store
@@ -34,7 +36,10 @@
 
 ;; -- Windows CryptoAPI
 
-(define crypt-lib (ffi-lib "crypt32.dll"))
+(define crypt-lib
+  (case (system-type)
+    ((windows) (ffi-lib "crypt32.dll"))
+    (else #f)))
 (define-ffi-definer define-crypt crypt-lib
   #:default-make-fail make-not-available)
 
