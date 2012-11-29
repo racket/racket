@@ -1,10 +1,14 @@
-#lang racket/unit
+#lang racket/base
 
-  (require racket/class
-           racket/list
-           "sig.rkt"
-           mred/mred-sig)
+(require racket/class
+         racket/list
+         racket/unit
+         "sig.rkt"
+         mred/mred-sig
+         mrlib/switchable-button)
+(provide panel@)
 
+(define-unit panel@
   (import [prefix icon: framework:icon^]
           mred^)
   (export framework:panel^)
@@ -634,6 +638,261 @@
     ;; canvas (widget -> editor) -> editor
     (define/public (split-vertical canvas maker)
       (do-split canvas maker (generic splitter-private<%> self-vertical?)
-                vertical-panel% (generic splitter<%> split-vertical)))
+                vertical-panel% (generic splitter<%> split-vertical)))))
 
-    ))
+    
+  (define discrete-child<%> 
+    (interface ()
+      get-discrete-widths
+      get-discrete-heights))
+  
+  (define discrete-sizes<%> (interface ((class->interface panel%))
+                              get-orientation
+                              set-orientation))
+  
+  (define (discrete-get-widths c)
+    (cond
+      [(is-a? c switchable-button%) 
+       (list (send c get-large-width)
+             (send c get-small-width))]
+      [(is-a? c discrete-sizes<%>)
+       (send c get-discrete-widths)]
+      [else
+       #f]))
+  
+  (define (discrete-get-heights c)
+    (cond
+      [(is-a? c discrete-sizes<%>)
+       (send c get-discrete-heights)]
+      [else
+       #f]))
+  
+  (define discrete-sizes-mixin
+    (mixin ((class->interface panel%)) (discrete-sizes<%> discrete-child<%>)
+      (inherit get-children spacing get-alignment border container-flow-modified
+               get-size get-client-size)
+      (define horizontal? #t)
+      (define/public (get-orientation) horizontal?)
+      (define/public (set-orientation h?)
+        (unless (equal? horizontal? h?)
+          (set! horizontal? h?)
+          (container-flow-modified)))
+      
+      (define/public (get-discrete-widths)
+        (cond
+          [horizontal?
+           (define ws 
+             (for/list ([c (in-list (get-children))])
+               (discrete-get-widths c)))
+           (and (andmap values ws)
+                (remove-duplicates
+                 (map
+                  (λ (x) (apply + x))
+                  (candidate-sizes ws))))]
+          [else #f]))
+      
+      (define/public (get-discrete-heights)
+        (cond
+          [horizontal? #f]
+          [else
+           (define hs 
+             (for/list ([c (in-list (get-children))])
+               (discrete-get-heights c)))
+           (and (andmap values hs)
+                (remove-duplicates
+                 (map
+                  (λ (x) (apply + x))
+                  (candidate-sizes hs))))]))
+      
+      (define/override (container-size infos)
+        (define the-spacing (spacing))
+        (define the-border (spacing))
+        (define-values (total-min-w total-min-h)
+          (for/fold ([w 0] [h 0])
+            ([info (in-list infos)]
+             [n (in-naturals)])
+            (define-values (min-w min-h h-stretch? v-stretch?)
+              (apply values info))
+            (define this-spacing (if (zero? n) 0 the-spacing))
+            (cond
+              [horizontal?
+               (values (+ w this-spacing min-w)
+                       (max h min-h))]
+              [else
+               (values (max w min-w)
+                       (+ h this-spacing min-h))])))
+        (define-values (sw sh) (get-size))
+        (define-values (cw ch) (get-client-size))
+        (values (+ total-min-w the-border the-border
+                   (- sw cw))
+                (+ total-min-h the-border the-border
+                   (- sh ch))))
+      
+      (define/override (place-children infos w h)
+        (define the-spacing (spacing))
+        (define the-border (border))
+        (define-values (halign valign) (get-alignment))
+        (define children (get-children))
+        (define all-sizess
+          (candidate-sizes
+           (for/list ([c (in-list children)]
+                      [info (in-list infos)]
+                      #:unless (if horizontal?
+                                   (and (not (discrete-get-widths c))
+                                        (list-ref info 2))
+                                   (and (not (discrete-get-heights c))
+                                        (list-ref info 3))))
+             (if horizontal?
+                 (or (discrete-get-widths c)
+                     (list (list-ref info 0)))
+                 (or (discrete-get-heights c)
+                     (list (list-ref info 1)))))))
+        (define fitting-sizes
+          (for/or ([sizes (in-list all-sizess)])
+            (and (<= (apply + sizes) 
+                     (- (if horizontal? w h)
+                        (* 2 the-border)))
+                 sizes)))
+        (define fixed-size (apply + fitting-sizes))
+        (define number-stretchable
+          (for/sum ([info (in-list infos)]
+                    [c children])
+            (if (if horizontal?
+                    (and (not (discrete-get-widths c))
+                         (list-ref info 2))
+                    (and (not (discrete-get-heights c))
+                         (list-ref info 3)))
+                1
+                0)))
+        (define initial-position
+          (+ the-border
+             (if (zero? number-stretchable)
+                 (if horizontal?
+                     (case halign
+                       [(right) (- w fixed-size)]
+                       [(center) (round (/ (- w fixed-size) 2))]
+                       [(left) 0])
+                     (case valign
+                       [(bottom) (- h fixed-size)]
+                       [(center) (round (/ (- h fixed-size) 2))]
+                       [(top) 0]))
+                 0)))
+        (define-values (stretchable-size stretchable-leftover)
+          (if (zero? number-stretchable)
+              (values 0 0)
+              (let ([total 
+                     (- (if horizontal?
+                            w
+                            h)
+                        fixed-size)])
+                (values (quotient total number-stretchable)
+                        (modulo total number-stretchable)))))
+        (define (take-one) 
+          (cond
+            [(zero? stretchable-leftover)
+             0]
+            [else
+             (set! stretchable-leftover (- stretchable-leftover 1))
+             1]))
+        (let loop ([infos infos]
+                   [children children]
+                   [spot initial-position])
+          (cond
+            [(null? infos) null]
+            [else
+             (define-values (min-w min-h h-stretch? v-stretch?)
+               (apply values (car infos)))
+             (define discrete-child? (if horizontal?
+                                         (discrete-get-widths (car children))
+                                         (discrete-get-heights (car children))))
+             (define this-one
+               (cond
+                 [(and horizontal? h-stretch? (not discrete-child?))
+                  (list spot
+                        (round (- (/ h 2) (/ min-h 2)))
+                        (+ stretchable-size (take-one))
+                        min-h)]
+                 [(and (not horizontal?) v-stretch? (not discrete-child?))
+                  (list (round (- (/ w 2) (/ min-w 2)))
+                        spot
+                        min-w
+                        (+ stretchable-size (take-one)))]
+                 [horizontal?
+                  (define size (car fitting-sizes))
+                  (set! fitting-sizes (cdr fitting-sizes))
+                  (list spot 
+                        (round (- (/ h 2) (/ min-h 2)))
+                        size
+                        min-h)]
+                 [else
+                  (define size (car fitting-sizes))
+                  (set! fitting-sizes (cdr fitting-sizes))
+                  (list (round (- (/ w 2) (/ min-w 2)))
+                        spot
+                        min-w
+                        size)]))
+             (cons this-one (loop (cdr infos)
+                                  (cdr children)
+                                  (+ spot
+                                     (if horizontal? 
+                                         (list-ref this-one 2)
+                                         (list-ref this-one 3)))))])))
+      
+      (super-new)))
+  
+  (define horizontal-discrete-sizes%
+    ;; extra wrapper to get the name right
+    (class (discrete-sizes-mixin panel%)
+      (super-new)))
+  (define vertical-discrete-sizes%
+    (class (discrete-sizes-mixin panel%)
+      (super-new)
+      (inherit set-orientation)
+      (set-orientation #f))))
+
+
+;; candidate-sizes : (listof (listof number)) -> (listof (listof number))
+;; in the input, the outer list corresponds to the children for a panel,
+;; and each inner list are the sizes that the children can take on.
+;; This function returns each possible configuration of sizes, starting
+;; with the largest for each and then shrinking each child one size
+;; at a time, starting from the earlier children in the list.
+;; Note that this will not try all combinations of sizes; once a child
+;; has been shrunk one size, larger sizes for that child will not be
+;; considered, and shrinking always proceeds from the left to the right.
+(define (candidate-sizes lolon)
+  (define all-boxes (map (λ (x) (box (sort x >=))) lolon))
+  (define answer '())
+  (define (record-current)
+    (set! answer (cons (map car (map unbox all-boxes)) answer)))
+  (for ([box (in-list all-boxes)])
+    (for ([i (in-range (- (length (unbox box)) 1))])
+      (record-current)
+      (set-box! box (cdr (unbox box)))))
+  (record-current)
+  (reverse answer))
+
+(module+ test
+  (require rackunit)
+  
+  (define (log-em lolon) (candidate-sizes lolon))
+  
+  (check-equal? (log-em '((1)))
+                (list '(1)))
+  (check-equal? (log-em '((1) (2) (3)))
+                (list '(1 2 3)))
+  (check-equal? (log-em '((4 3 2 1)))
+                (list '(4) '(3) '(2) '(1)))
+  (check-equal? (log-em '((1 2 3 4)))
+                (list '(4) '(3) '(2) '(1)))
+  (check-equal? (log-em '((5 1) (6 2) (7 3)))
+                (list '(5 6 7)
+                      '(1 6 7)
+                      '(1 2 7)
+                      '(1 2 3)))
+  (check-equal? (log-em '((10 9 8) (7 6 5)))
+                (list '(10 7)
+                      '(9 7)
+                      '(8 7)
+                      '(8 6)
+                      '(8 5))))

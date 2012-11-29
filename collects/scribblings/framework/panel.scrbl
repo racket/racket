@@ -1,7 +1,6 @@
 #lang scribble/doc
 @(require scribble/manual scribble/extract)
-@(require (for-label framework))
-@(require (for-label scheme/gui))
+@(require (for-label framework mrlib/switchable-button racket/gui))
 @title{Panel}
 
 @definterface[panel:single<%> (area-container<%>)]{
@@ -217,6 +216,61 @@
     any split panes as necessary.
   }
 
+}
+
+@definterface[panel:discrete-sizes<%> ()]{
+  Classes implementing this interface support children
+  with multiple fixed sizes. As the panel is resized,
+  it calculates a set of sizes of its children
+  that fills its available size and approtions the space accordingly
+  using only one of the fixed sizes.
+  
+  The strategy it uses is to try to give the largest of
+  the sizes to children that appear later in
+  the list of children (to the right horizontal and lower
+  vertically). It does not try all possible combinations.
+  
+  Each child that supports minimum sizes is expected to
+  implement the @racket[panel:discrete-child<%>] interface.
+  Children that do not implement this interface are just
+  treated like @racket[horizontal-panel%] or @racket[vertical-panel%]
+  would treat them, with the exception of 
+  @racket[switchable-button%]. In that case, the
+  results of
+  @method[switchable-button% get-small-width] and
+  @method[switchable-button% get-large-width] are 
+  treated as the two fixed sizes for instances of that class.
+
+  Also note that, the orientation of the panel determines whether
+  or not it treats heights or widths as described above. That is,
+  when a panel is in vertical mode, it ignores the horizontal
+  discrete sizes, and vice-versa.
+  
+  @defmethod[(set-orientation [horizontal? boolean?]) void?]{
+    Changes the orientation of the panel.                                                           
+  }
+  @defmethod[(get-orientation) boolean?]{
+    Returns the current orientation of the panel.                                                           
+  }
+}
+
+@definterface[panel:discrete-child<%> ()]{
+   Classes that implement this method collaborate with 
+   @racket[panel:discrete-sizes<%>] to indicate 
+   which fixed sizes they support.
+                                          
+  @defmethod[(get-discrete-widths) (listof exact-nonnegative-integer?)]{
+     Return a list of widths this class supports.
+  }
+  @defmethod[(get-discrete-heights) (listof exact-nonnegative-integer?)]{    
+     Return a list of heights this class supports.
+  }
+}
+
+@defmixin[panel:discrete-sizes-mixin (panel%) (panel:discrete-sizes<%> panel:discrete-child<%>)]{
+   Provides an implementation of @racket[panel:discrete-sizes<%>].
+                                 
+   It uses the sizes of its children to implement the @racket[panel:discrete-child<%>] interface.
 }
 
 @(include-previously-extracted "main-extracts.rkt" #rx"^panel:")

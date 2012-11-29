@@ -1124,7 +1124,7 @@
                                  [extra-menu-items (λ (menu) (add-line-number-menu-items menu))]))
     (define position-canvas (new position-canvas% 
                                  [parent position-parent] 
-                                 [init-width "000:00-000:00"]))
+                                 [init-width "1:1"]))
     (define/private (change-position-edit-contents str)
       (send position-canvas set-str str))
     

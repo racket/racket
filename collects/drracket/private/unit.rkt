@@ -55,8 +55,6 @@ module browser threading seems wrong.
 (define show-planet-paths (string-constant module-browser-show-planet-paths/short))
 (define refresh (string-constant module-browser-refresh))
 
-(define define-button-long-label "(define ...)")
-
 (define oprintf
   (let ([op (current-output-port)])
     (λ args
@@ -1896,7 +1894,8 @@ module browser threading seems wrong.
           (let loop ([obj button-panel])
             (when (is-a? obj area-container<%>)
               (when (or (is-a? obj vertical-panel%)
-                        (is-a? obj horizontal-panel%))
+                        (is-a? obj horizontal-panel%)
+                        (is-a? obj panel:discrete-sizes<%>))
                 (unless (equal? (send obj get-orientation) (not vertical?))
                   (send obj set-orientation (not vertical?))))
               (for-each loop (send obj get-children))))
@@ -4372,7 +4371,10 @@ module browser threading seems wrong.
       [define teachpack-items null]
       [define break-button (void)]
       [define execute-button (void)]
-      [define button-panel (new horizontal-panel% [parent top-panel] [spacing 2])]
+      [define button-panel (new panel:horizontal-discrete-sizes% 
+                                [parent top-panel]
+                                [stretchable-width #t]
+                                [alignment '(right center)])]
       (define/public (get-execute-button) execute-button)
       (define/public (get-break-button) break-button)
       (define/public (get-button-panel) button-panel)
@@ -4454,14 +4456,9 @@ module browser threading seems wrong.
                  [label (string-constant break-button-label)]))
       (register-toolbar-button break-button #:number 101)
       
-      (send button-panel stretchable-height #f)
-      (send button-panel stretchable-width #f) 
-      
       (send top-panel change-children
             (λ (l)
-              (list name-panel save-button
-                    (make-object vertical-panel% top-panel) ;; spacer
-                    button-panel)))
+              (list name-panel save-button button-panel)))
       
       (send top-panel stretchable-height #f)
       (inherit get-label)
@@ -4816,7 +4813,7 @@ module browser threading seems wrong.
                   (string-constant no-full-name-since-not-saved)])
       
       (inherit set-allow-shrinking)
-      (set-allow-shrinking 100)))
+      (set-allow-shrinking 50)))
   
   
   

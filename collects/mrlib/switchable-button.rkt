@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/gui/base
-         scheme/class)
+#lang racket/base
+(require racket/gui/base
+         racket/class)
 
 (provide switchable-button%)
 (define gap 4) ;; space between the text and the icon
@@ -57,7 +57,8 @@
                 bitmap
                 callback
                 [alternate-bitmap bitmap]
-                [vertical-tight? #f])
+                [vertical-tight? #f]
+                [min-width-includes-label? #f])
     
     (define/public (get-button-label) label)
     
@@ -206,13 +207,13 @@
             ;; Draw background. Use alpha blending if it can work,
             ;;  otherwise fall back to a suitable color.
             (let ([color (cond
-                          [disabled? #f]
-                          [in? (if (eq? (send dc get-smoothing) 'aligned)
-                                   (if down? 0.5 0.2)
-                                   (if down?
-                                       half-gray
-                                       one-fifth-gray))]
-                          [else #f])])
+                           [disabled? #f]
+                           [in? (if (eq? (send dc get-smoothing) 'aligned)
+                                    (if down? 0.5 0.2)
+                                    (if down?
+                                        half-gray
+                                        one-fifth-gray))]
+                           [else #f])])
               (when color
                 (send dc set-pen "black" 1 'transparent)
                 (send dc set-brush (if (number? color) "black" color) 'solid)
@@ -232,14 +233,19 @@
               (send dc set-alpha .5))
             
             (cond
-              [with-label? 
-               (let-values ([(tw th _1 _2) (send dc get-text-extent label)])
-                 (let ([text-start (+ (/ cw 2) 
-                                      (- (/ tw 2))
-                                      (- (/ (send bitmap get-width) 2))
-                                      (- rhs-pad))])
-                   (send dc draw-text label text-start (- (/ ch 2) (/ th 2)))
-                   (draw-the-bitmap (+ text-start tw gap) (- (/ ch 2) (/ (send bitmap get-height) 2)))))]
+              [with-label?
+               (cond
+                 [(<= cw (get-small-width))
+                  (draw-the-bitmap (- (/ cw 2) (/ (send bitmap get-width) 2)) 
+                                   (- (/ ch 2) (/ (send bitmap get-height) 2)))]
+                 [else
+                  (define-values (tw th _1 _2) (send dc get-text-extent label))
+                  (define text-start (+ (/ cw 2) 
+                                        (- (/ tw 2))
+                                        (- (/ (send bitmap get-width) 2))
+                                        (- rhs-pad)))
+                  (send dc draw-text label text-start (- (/ ch 2) (/ th 2)))
+                  (draw-the-bitmap (+ text-start tw gap) (- (/ ch 2) (/ (send bitmap get-height) 2)))])]
               [else
                (draw-the-bitmap (- (/ cw 2) (/ (send (if with-label? bitmap alternate-bitmap) get-width) 2))
                                 (- (/ ch 2) (/ (send (if with-label? bitmap alternate-bitmap) get-height) 2)))])
@@ -268,22 +274,53 @@
         (refresh)))
     
     (define/private (update-sizes)
-      (let ([dc (get-dc)])
-        (cond
-          [with-label?
-           (let-values ([(w h _1 _2) (send dc get-text-extent label normal-control-font)])
-             (do-w/h (+ w gap (send bitmap get-width) rhs-pad)
-                     (max h (send bitmap get-height))))]
-          [else
-           (do-w/h (send alternate-bitmap get-width)
-                   (send alternate-bitmap get-height))])))
+      (define dc (get-dc))
+      (define-values (tw th _1 _2) (send dc get-text-extent label normal-control-font))
+      (define h 
+        (inexact->exact 
+         (floor
+          (+ (max th
+                  (send alternate-bitmap get-height)
+                  (send bitmap get-height))
+             h-circle-space margin margin 
+             (if vertical-tight? -6 0)))))
+      (cond
+        [with-label?
+         (cond
+           [min-width-includes-label?
+            (min-width (get-large-width))]
+           [else
+            (min-width (get-small-width))])
+         (min-height h)]
+        [else
+         (min-width (get-without-label-small-width))
+         (min-height h)]))
     
-    (define/private (do-w/h w h)
-      (let ([w (floor (inexact->exact w))]
-            [h (floor (inexact->exact h))])
-        (min-width (+ w w-circle-space margin margin))
-        (min-height (+ h h-circle-space margin margin 
-                       (if vertical-tight? -6 0)))))
+    (define/public (get-large-width)
+      (define dc (get-dc))
+      (define-values (tw th _1 _2) (send dc get-text-extent label normal-control-font))
+      (inexact->exact
+       (floor
+        (+ (+ tw gap (send bitmap get-width) rhs-pad)
+           w-circle-space
+           margin
+           margin))))
+    
+    (define/private (get-without-label-small-width)
+      (inexact->exact
+       (floor
+        (+ (send alternate-bitmap get-width)
+           w-circle-space
+           margin
+           margin))))
+    
+    (define/public (get-small-width)
+      (inexact->exact
+       (floor
+        (+ (send bitmap get-width)
+           w-circle-space
+           margin
+           margin))))
     
     (super-new [style '(transparent no-focus)])
     (send (get-dc) set-smoothing 'aligned)

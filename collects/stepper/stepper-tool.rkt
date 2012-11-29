@@ -173,7 +173,7 @@
       (define/public (get-stepper-button) stepper-button)
       
       (define stepper-button-parent-panel 
-        (new horizontal-panel%
+        (new frame:panel:horizontal-discrete-sizes%
              [parent (get-button-panel)]
              [stretchable-width #f]
              [stretchable-height #f]))
