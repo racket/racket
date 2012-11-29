@@ -1385,7 +1385,7 @@
       (cond
         [(string? i)
          (let ([m (and (extra-breaking?)
-                       (regexp-match-positions #rx"[-:/+_]|[a-z](?=[A-Z])" i))])
+                       (regexp-match-positions #rx"[-:/+_](?=.)|[a-z](?=[A-Z])" i))])
            (if m
              (list* (substring i 0 (cdar m))
                     ;; Most browsers wrap after a hyphen. The one that
