@@ -10,7 +10,8 @@
          planet/config
          racket/system
          racket/path
-         racket/list)
+         racket/list
+         setup/unpack)
 
 (module+ main
   (define-runtime-path root "root")
@@ -269,8 +270,11 @@
             (unless (directory-exists? dest-dir)
               (printf "Unpacking ~a\n" pkg-short)
               (make-directory dest-dir)
-              (local-require planet2/util-plt)
-              (unplt dest dest-dir))
+              (unpack pkg pkg-dir
+                        (lambda (x) (printf "~a\n" x))
+                        (lambda () dest-dir)
+                        #f
+                        (lambda (auto-dir main-dir file) dest-dir)))
 
             (define pkg/no-plt
               (format "~a~a"
