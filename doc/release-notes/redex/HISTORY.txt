@@ -4,6 +4,11 @@ v5.3.2
     (which allows Redex to more effectively generate things
      like well-typed terms)
 
+  * removed the restriction on unquotes in define-judgment-form
+
+  * added the option to use judgment-forms with only I mode
+    positions in terms
+
 v5.3.1
 
   * added optional #:lang keyword to term

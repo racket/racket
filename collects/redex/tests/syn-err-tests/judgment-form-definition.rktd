@@ -142,21 +142,7 @@
      [(name)
       bad-prem])
    (void)))
-(#rx"unquote unsupported"
- ([unq ,(+ 1)])
- (let ()
-   (define-judgment-form syn-err-lang
-     #:mode (uses-unquote I)
-     [(uses-unquote n)
-      (where n unq)])
-   (void)))
-(#rx"unquote unsupported"
- ([unq ,'z])
- (let ()
-   (define-judgment-form syn-err-lang
-     #:mode (uses-unquote I O)
-     [(uses-unquote n unq)])
-   (void)))
+
 
 (#rx"missing ellipsis"
  ([use any_0]) ([ellipsis ...] [def any_0])

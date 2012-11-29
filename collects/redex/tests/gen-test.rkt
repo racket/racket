@@ -63,10 +63,10 @@
               #t)
   
   (test-equal (generate-term nats #:satisfying (sum z (s z) n) +inf.0)
-              (term (sum z (s z) (s z))))
+              '(sum z (s z) (s z)))
   
   (test-equal (generate-term nats #:satisfying (sum (s z) (s z) n) +inf.0)
-              (term (sum (s z) (s z) (s (s z)))))
+              '(sum (s z) (s z) (s (s z))))
   
   (for ([_ 100])
     (match (generate-term nats #:satisfying (sum n_1 n_2 n_3) 5)

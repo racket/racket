@@ -20,7 +20,7 @@
  (define-relation syn-err-lang
    [(R () ())]
    [(R (any_a) (any_b)) 
-    (R anc_c any_d) 
+    (R any_c any_d) 
     first-where
     (where any_d any_b)
     first-post-where]))

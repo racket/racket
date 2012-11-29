@@ -24,6 +24,7 @@
      "tl-test.rkt"
      "term-test.rkt"
      "rg-test.rkt"
+     "gen-test.rkt"
      "keyword-macros-test.rkt"
      "core-layout-test.rkt"
      "pict-test.rkt"

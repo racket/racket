@@ -18,7 +18,8 @@
          term/nts
          (for-syntax term-rewrite
                      term-temp->pat
-                     currently-expanding-term-fn))
+                     currently-expanding-term-fn
+                     judgment-form-id?))
 
 (define-syntax (hole stx) (raise-syntax-error 'hole "used outside of term"))
 (define-syntax (in-hole stx) (raise-syntax-error 'in-hole "used outside of term"))
@@ -30,6 +31,10 @@
 
 (define-for-syntax lang-keyword
   (list '#:lang #f))
+
+(define-for-syntax (judgment-form-id? stx)
+  (and (identifier? stx)
+       (judgment-form? (syntax-local-value stx (λ () #f)))))
 
 (define-syntax (term stx)
   (syntax-case stx ()
@@ -70,6 +75,12 @@
     [(_ inner-apps)
      #'(λ (l) (map inner-apps l))]))
 
+(define-syntax (jf-apply stx)
+  (syntax-case stx ()
+    [(_ jf)
+     (judgment-form-id? #'jf)
+     (judgment-form-term-proc (syntax-local-value #'jf (λ () #f)))]))
+
 (define-for-syntax currently-expanding-term-fn (make-parameter #f))
 
 
@@ -80,7 +91,7 @@
 ;; term-binding  := `(,t-bind-pat (,mf-apps ,term-datum))
 ;; t-bind-pat    := id | (ref id) | `(,t-b-seq ...)
 ;; t-b-seq       := t-bind-pat | ellipsis
-;; mf-apps       := `(mf-map ,mf-apps) | `(mf-app ,metafunction-id)
+;; mf-apps       := `(mf-map ,mf-apps) | `(mf-apply ,metafunction-id) | `(jf-apply ,judgment-form-id)
 ;; term-datum    := `(quasidatum ,d)
 ;; d             := literal | pattern-variable | `(,d-seq ...) | ;; other (holes, undatum)
 ;; d-seq         := d | ellipsis
@@ -105,7 +116,9 @@
     (let-values ([(rewritten max-depth) (rewrite/max-depth args depth)])
       (let ([result-id (car (generate-temporaries '(f-results)))])
         (with-syntax ([fn fn])
-          (let loop ([func (syntax (mf-apply fn))]
+          (let loop ([func (if (judgment-form-id? #'fn)
+                               (syntax (jf-apply fn))
+                               (syntax (mf-apply fn)))]
                      [args-stx rewritten]
                      [res result-id]
                      [args-depth (min depth max-depth)])
@@ -134,6 +147,16 @@
        (let ([f (term-fn-get-id (syntax-local-value/record (syntax metafunc-name) (λ (x) #t)))])
          (free-identifier-mapping-put! applied-metafunctions f #t)
          (rewrite-application f (syntax/loc stx (arg ...)) depth))]
+      [(jf-name arg ...)
+       (and (identifier? (syntax jf-name))
+            (if names
+                (not (memq (syntax->datum #'jf-name) names))
+                #t)
+            (judgment-form-id? #'jf-name))
+       (begin
+         (unless (not (memq 'O (judgment-form-mode (syntax-local-value #'jf-name))))
+           (raise-syntax-error 'term "judgment forms with output mode (\"O\") positions disallowed" arg-stx stx))
+         (rewrite-application #'jf-name (syntax/loc stx (arg ...)) depth))]
       [f
        (and (identifier? (syntax f))
             (if names
@@ -291,7 +314,7 @@
 
 (define-for-syntax (bind-mf-sig->pat bmfs)
   (syntax-case bmfs ()
-    ;; TODO : handle apps at ellipsis depth 
+    ;; TODO : handle apps at ellipsis depth , handle judgment forms (I only)
     [(mf-apply f)
      (and (identifier? #'mf-apply)
           (eq? (syntax-e #'mf-apply) 'mf-apply))
@@ -299,39 +322,23 @@
 
 (define-syntax (term-let-fn stx)
   (syntax-case stx ()
-    [(_ ([f . rhs-stuff] ...) body1 body2 ...)
-     (with-syntax ([(g ...) (generate-temporaries (syntax (f ...)))]
-                   [((rhs info) ...)
-                    (for/list ([rhs-stuff (in-list (syntax->list #'(rhs-stuff ...)))]
-                               [f (in-list (syntax->list #'(f ...)))])
-                      (syntax-case rhs-stuff ()
-                        [(rhs) #'(rhs #f)]
-                        [(rhs info) #'(rhs info)]
-                        [else (raise-syntax-error 'term-let-fn 
-                                                  (format "expected the rhs of a binding for ~a"
-                                                          (syntax->datum f))
-                                                  stx f)]))])
+    [(_ ([f rhs] ...) body1 body2 ...)
+     (with-syntax ([(g ...) (generate-temporaries (syntax (f ...)))])
        (syntax 
         (let ([g rhs] ...)
-          (let-syntax ([f (make-term-fn #'g info)] ...)
+          (let-syntax ([f (make-term-fn #'g)] ...)
             body1
             body2 ...))))]))
 
 (define-syntax (term-define-fn stx)
   (syntax-case stx ()
-    [(_ id exp info)
-     ;; this info is currently used to record the 
-     ;; difference between define-metafunctions 
-     ;; bound identifiers and define-relation bound
-     ;; ones for use in the unification-based generator
+    [(_ id exp)
      (with-syntax ([id2 (datum->syntax #'here (syntax-e #'id))])
        (syntax
         (begin
           (define id2 exp)
           (define-syntax id
-            (make-term-fn #'id2 info)))))]
-    [(_ id exp)
-     #'(term-define-fn id exp #f)]))
+            (make-term-fn #'id2)))))]))
 
 (define-syntax (term-let/error-name stx)
   (syntax-case stx ()

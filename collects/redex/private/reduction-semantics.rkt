@@ -1117,29 +1117,21 @@
 (define-syntax (define-metafunction stx)
   (syntax-case stx ()
     [(_ . rest)
-     (internal-define-metafunction stx #f #'rest #f)]))
-
-(define-syntax (define-relation stx)
-  (syntax-case stx ()
-    [(_ . rest)
-     ;; need to rule out the contracts for this one
-     (internal-define-metafunction stx #f #'rest #t)]))
+     (internal-define-metafunction stx #f #'rest)]))
 
 (define-syntax (define-metafunction/extension stx)
   (syntax-case stx ()
     [(_ prev . rest)
      (identifier? #'prev)
-     (internal-define-metafunction stx #'prev #'rest #f)]))
+     (internal-define-metafunction stx #'prev #'rest)]))
 
-(define-for-syntax (internal-define-metafunction orig-stx prev-metafunction stx relation?)
+(define-for-syntax (internal-define-metafunction orig-stx prev-metafunction stx)
   (not-expression-context orig-stx)
   (syntax-case stx ()
     [(lang . rest)
-     (let ([syn-error-name (if relation?
-                               'define-relation
-                               (if prev-metafunction
-                                   'define-metafunction/extension
-                                   'define-metafunction))])
+     (let ([syn-error-name (if prev-metafunction
+                               'define-metafunction/extension
+                               'define-metafunction)])
        ;; keep this near the beginning, so it signals the first error (PR 10062)
        (definition-nts #'lang orig-stx syn-error-name)
        (when (null? (syntax-e #'rest))
@@ -1150,7 +1142,7 @@
           (λ ()
             (raise-syntax-error syn-error-name "expected a previously defined metafunction" orig-stx prev-metafunction))))
        (let*-values ([(contract-name dom-ctcs codom-contracts pats)
-                      (split-out-contract orig-stx syn-error-name #'rest relation?)]
+                      (split-out-contract orig-stx syn-error-name #'rest #f)]
                      [(name _) (defined-name (list contract-name) pats orig-stx)])
          (when (and prev-metafunction (eq? (syntax-e #'name) (syntax-e prev-metafunction)))
            (raise-syntax-error syn-error-name
@@ -1169,9 +1161,8 @@
                                                             #,dom-ctcs
                                                             #,codom-contracts
                                                             #,pats
-                                                            #,relation?
                                                             #,syn-error-name))
-                                   (term-define-fn name name2 #,relation?))])
+                                   (term-define-fn name name2))])
              (if (eq? 'top-level (syntax-local-context))
                  ; Introduce the names before using them, to allow
                  ; metafunction definition at the top-level.
@@ -1181,52 +1172,19 @@
                     defs))
                  (syntax defs))))))]))
 
-(define-for-syntax (relation-split-out-rhs raw-rhsss orig-stx)
-  (for/list ([rhss (in-list (syntax->list raw-rhsss))])
-    (define rhses '())
-    (define sc/wheres '())
-    (for ([rhs (in-list (syntax->list rhss))])
-      (define (found-one) 
-        (set! sc/wheres (cons rhs sc/wheres)))
-      (syntax-case rhs (side-condition side-condition/hidden where where/hidden judgment-holds)
-        [(side-condition . stuff) (found-one)]
-        [(side-condition/hidden . stuff) (found-one)]
-        [(where . stuff) (found-one)]
-        [(where/hidden . stuff) (found-one)]
-        [(judgment-holds . stuff) (found-one)]
-        [_ 
-         (cond
-           [(null? sc/wheres)
-            (set! rhses (cons rhs rhses))]
-           [else
-            (raise-syntax-error 'define-relation
-                                (format "found a '~a' clause not at the end; followed by a normal, right-hand side clause"
-                                        (syntax-e (car (syntax-e (car sc/wheres)))))
-                                (last sc/wheres)
-                                #f
-                                (list  rhs))])]))
-    (list (reverse rhses)
-          (reverse sc/wheres))))
-
 (define-syntax (generate-metafunction stx)
   (syntax-case stx ()
-    [(_ orig-stx lang prev-metafunction name name-predicate dom-ctcs codom-contracts pats relation? syn-error-name)
+    [(_ orig-stx lang prev-metafunction name name-predicate dom-ctcs codom-contracts pats syn-error-name)
      (let ([prev-metafunction (and (syntax-e #'prev-metafunction) #'prev-metafunction)]
            [dom-ctcs (syntax-e #'dom-ctcs)]
            [codom-contracts (syntax-e #'codom-contracts)]
            [pats (syntax-e #'pats)]
-           [relation? (syntax-e #'relation?)]
            [syn-error-name (syntax-e #'syn-error-name)])
        (define lang-nts
          (definition-nts #'lang #'orig-stx syn-error-name))
        (with-syntax ([(((original-names lhs-clauses ...) raw-rhses ...) ...) pats]
                      [(lhs-for-lw ...) (lhs-lws pats)])
-         (with-syntax ([((rhs stuff ...) ...) (if relation?
-                                                  (with-syntax ([(((rhses ...) (where/sc ...)) ...) 
-                                                                 (relation-split-out-rhs #'((raw-rhses ...) ...)
-                                                                                         #'orig-stx)])
-                                                    #'(((AND rhses ...) where/sc ...) ...))
-                                                  #'((raw-rhses ...) ...))]
+         (with-syntax ([((rhs stuff ...) ...) #'((raw-rhses ...) ...)]
                        [(lhs ...) #'((lhs-clauses ...) ...)])
            (parse-extras #'((stuff ...) ...))
            (with-syntax ([((side-conditions-rewritten lhs-names lhs-namess/ellipses) ...) 
@@ -1301,30 +1259,24 @@
                               (map (λ (names names/ellipses rhs/where)
                                      (with-syntax ([(names ...) names]
                                                    [(names/ellipses ...) names/ellipses]
-                                                   [rhs/where rhs/where]
-                                                   [relation? relation?])
+                                                   [rhs/where rhs/where])
                                        (syntax
                                         (λ (name bindings)
-                                          (term-let-fn ((name name relation?))
+                                          (term-let-fn ((name name))
                                                        (term-let ([names/ellipses (lookup-binding bindings 'names)] ...)
                                                                  rhs/where))))))
                                    (syntax->list #'(lhs-names ...))
                                    (syntax->list #'(lhs-namess/ellipses ...))
                                    (syntax->list (syntax (rhs/wheres ...))))]
                              [((gen-clause lhs-pat) ...)
-                              (if relation?
-                                  (make-rl-clauses (syntax->list #'(lhs ...))
-                                                   (syntax->list #'((raw-rhses ...) ...))
-                                                   lang-nts syn-error-name #'name #'lang)
-                                  (make-mf-clauses (syntax->list #'(lhs ...))
-                                                   (syntax->list #'(rhs ...))
-                                                   (syntax->list #'((stuff ...) ...))
-                                                   lang-nts syn-error-name #'name #'lang))])
+                              (make-mf-clauses (syntax->list #'(lhs ...))
+                                               (syntax->list #'(rhs ...))
+                                               (syntax->list #'((stuff ...) ...))
+                                               lang-nts syn-error-name #'name #'lang)])
                  (syntax-property
                   (prune-syntax
                    #`(let ([sc `(side-conditions-rewritten ...)]
                            [dsc `dom-side-conditions-rewritten])
-                       ;(printf "rhs/ws: ~s\rg-rhs/ws: ~s\n" '(rhs/wheres ...) '(rg-rhs/wheres ...))
                        (let ([cases (map (λ (pat rhs-fn rg-lhs src)
                                            (make-metafunc-case
                                             (λ (effective-lang) (compile-pattern effective-lang pat #t))
@@ -1346,13 +1298,11 @@
                           (λ (f/dom)
                             (make-metafunc-proc
                              (let ([name (lambda (x) (f/dom x))]) name)
-                             (generate-lws #,relation?
+                             (generate-lws #f
                                            (lhs ...)
                                            (lhs-for-lw ...)
                                            ((stuff ...) ...)
-                                           #,(if relation?
-                                                 #'((raw-rhses ...) ...)
-                                                 #'(rhs ...))
+                                           (rhs ...)
                                            #t)
                              lang
                              #t ;; multi-args?
@@ -1360,11 +1310,7 @@
                              (let ([name (lambda (x) (name-predicate x))]) name)
                              dsc
                              (append cases parent-cases)
-                             #,relation?
                              #,(cond
-                                 [relation?
-                                  #'(λ ()
-                                      (error 'define-relation "not yet supported by generation"))]
                                  [prev-metafunction
                                   #`(extend-mf-clauses #,(term-fn-get-id (syntax-local-value prev-metafunction))
                                                        (λ ()
@@ -1380,8 +1326,7 @@
                                    #`new-lhs-pats)))
                           #,(if dom-ctcs #'dsc #f)
                           `(codom-side-conditions-rewritten ...)
-                          'name
-                          #,relation?))))
+                          'name))))
                   'disappeared-use
                   (map syntax-local-introduce 
                        (syntax->list #'(original-names ...))))))))))]))
@@ -1479,67 +1424,6 @@
             the-name (list (car others))))
          (loop (cdr others))]))))
 
-(define-for-syntax (split-out-contract stx syn-error-name rest relation?)
-  ;; initial test determines if a contract is specified or not
-  (cond
-    [(pair? (syntax-e (car (syntax->list rest))))
-     (values #f #f (list #'any) (check-clauses stx syn-error-name (syntax->list rest) relation?))]
-    [else
-     (syntax-case rest ()
-       [(id separator more ...)
-        (identifier? #'id)
-        (cond
-          [relation?
-           (let-values ([(contract clauses) 
-                         (parse-relation-contract #'(separator more ...) syn-error-name stx)])
-             (when (null? clauses)
-               (raise-syntax-error syn-error-name 
-                                   "expected clause definitions to follow domain contract"
-                                   stx))
-             (values #'id contract (list #'any) (check-clauses stx syn-error-name clauses #t)))]
-          [else
-           (unless (eq? ': (syntax-e #'separator))
-             (raise-syntax-error syn-error-name "expected a colon to follow the meta-function's name" stx #'separator))
-           (let loop ([more (syntax->list #'(more ...))]
-                      [dom-pats '()])
-             (cond
-               [(null? more)
-                (raise-syntax-error syn-error-name "expected an ->" stx)]
-               [(eq? (syntax-e (car more)) '->)
-                (define-values (raw-clauses rev-codomains)
-                  (let loop ([prev (car more)]
-                             [more (cdr more)]
-                             [codomains '()])
-                    (cond
-                      [(null? more)
-                       (raise-syntax-error syn-error-name "expected a range contract to follow" stx prev)]
-                      [else
-                       (define after-this-one (cdr more))
-                       (cond
-                         [(null? after-this-one)
-                          (values null (cons (car more) codomains))]
-                         [else
-                          (define kwd (cadr more))
-                          (cond
-                            [(member (syntax-e kwd) '(or ∨ ∪))
-                             (loop kwd 
-                                   (cddr more)
-                                   (cons (car more) codomains))]
-                            [else
-                             (values (cdr more)
-                                     (cons (car more) codomains))])])])))
-                (let ([doms (reverse dom-pats)]
-                      [clauses (check-clauses stx syn-error-name raw-clauses relation?)])
-                  (values #'id doms (reverse rev-codomains) clauses))]
-               [else
-                (loop (cdr more) (cons (car more) dom-pats))]))])]
-       [_
-        (raise-syntax-error
-         syn-error-name
-         (format "expected the name of the ~a, followed by its contract (or no name and no contract)"
-                 (if relation? "relation" "meta-function"))
-         stx
-         rest)])]))
 
 (define-for-syntax (parse-extras extras)
   (for-each
@@ -1575,33 +1459,8 @@
       (syntax->list stuffs)))
    (syntax->list extras)))
 
-(define-for-syntax (parse-relation-contract after-name syn-error-name orig-stx)
-  (syntax-case after-name ()
-    [(subset . rest-pieces)
-     (unless (memq (syntax-e #'subset) '(⊂ ⊆))
-       (raise-syntax-error syn-error-name
-                           "expected ⊂ or ⊆ to follow the relation's name"
-                           orig-stx #'subset))
-     (let ([more (syntax->list #'rest-pieces)])
-       (when (null? more)
-         (raise-syntax-error syn-error-name 
-                             (format "expected a sequence of patterns separated by x or × to follow ~a" 
-                                     (syntax-e #'subset))
-                             orig-stx
-                             #'subset))
-       (let loop ([more (cdr more)]
-                  [arg-pats (list (car more))])
-         (cond
-           [(and (not (null? more)) (memq (syntax-e (car more)) '(x ×)))
-            (when (null? (cdr more))
-              (raise-syntax-error syn-error-name 
-                                  (format "expected a pattern to follow ~a" (syntax-e (car more)))
-                                  orig-stx (car more)))
-            (loop (cddr more)
-                  (cons (cadr more) arg-pats))]
-           [else (values (reverse arg-pats) more)])))]))
 
-(define (build-metafunction lang cases parent-cases wrap dom-contract-pat codom-contract-pats name relation?)
+(define (build-metafunction lang cases parent-cases wrap dom-contract-pat codom-contract-pats name)
   (let* ([dom-compiled-pattern (and dom-contract-pat (compile-pattern lang dom-contract-pat #f))]
          [codom-compiled-patterns (map (λ (codom-contract-pat) (compile-pattern lang codom-contract-pat #f))
                                        codom-contract-pats)]
@@ -1609,7 +1468,6 @@
          [lhss-at-lang (map (λ (case) ((metafunc-case-lhs case) lang)) all-cases)]
          [rhss-at-lang (map (λ (case) ((metafunc-case-rhs case) lang)) all-cases)]
          [ids (map metafunc-case-id all-cases)])
-    ;(printf "all-cases: ~s\nhsss: ~s\nrhsss: ~s\nids: ~s\n" all-cases lhss-at-lang rhss-at-lang ids)
     (values
      (wrap
       (letrec ([cache (make-hash)]
@@ -1648,11 +1506,7 @@
                                   [num (- (length parent-cases))])
                          (cond
                            [(null? ids) 
-                            (if relation?
-                                (begin 
-                                  (cache-result exp #f #f)
-                                  #f)
-                                (redex-error name "no clauses matched for ~s" `(,name . ,exp)))]
+                            (redex-error name "no clauses matched for ~s" `(,name . ,exp))]
                            [else
                             (let ([pattern (car lhss)]
                                   [rhs (car rhss)]
@@ -1661,22 +1515,6 @@
                               (let ([mtchs (match-pattern pattern exp)])
                                 (cond
                                   [(not mtchs) (continue)]
-                                  [relation? 
-                                   (let ([ans
-                                          (ormap (λ (mtch) 
-                                                   (define rhs-ans (rhs traced-metafunc (mtch-bindings mtch)))
-                                                   (and rhs-ans (ormap values rhs-ans)))
-                                                 mtchs)])
-                                     (unless (ormap (λ (codom-compiled-pattern) (match-pattern codom-compiled-pattern ans))
-                                                    codom-compiled-patterns)
-                                       (redex-error name "codomain test failed for ~s, call was ~s" ans `(,name ,@exp)))
-                                     (cond
-                                       [ans 
-                                        (cache-result exp #t id)
-                                        (log-coverage id)
-                                        #t]
-                                       [else
-                                        (continue)]))]
                                   [else
                                    (let ([anss (apply append
                                                       (filter values
@@ -2462,7 +2300,6 @@
          metafunc-proc-in-dom?
          metafunc-proc-dom-pat
          metafunc-proc-cases
-         metafunc-proc-relation?
          metafunc-proc?
          (struct-out metafunc-case)
          
@@ -2502,12 +2339,3 @@
          coverage?)
 
 (provide do-test-match)
-
-;; the AND metafunction is defined here to be used
-;; in define-relation so that ellipses work properly
-;; across clauses in relations
-(define-language and-L)
-(define-metafunction and-L
-  AND : any ... -> any
-  [(AND any ...) 
-   ,(andmap values (term (any ...)))])
