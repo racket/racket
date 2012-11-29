@@ -37,10 +37,17 @@ TO DO:
          "libcrypto.rkt"
          "libssl.rkt")
 (lazy-require
- ["private/win32.rkt" (load-win32-root-certificates)])
+ ["private/win32.rkt" (load-win32-store)]
+ ["private/macosx.rkt" (load-macosx-keychain)])
 
 (define protocol-symbol/c
   (or/c 'sslv2-or-v3 'sslv2 'sslv3 'tls))
+
+(define verify-source/c
+  (or/c path-string?
+        (list/c 'directory path-string?)
+        (list/c 'win32-store string?)
+        (list/c 'macosx-keychain path-string?)))
 
 (provide
  (contract-out
@@ -70,9 +77,7 @@ TO DO:
         void?)]
   [ssl-load-verify-source!
    (c-> ssl-context?
-        (or/c path-string?
-              (list/c 'directory path-string?)
-              (list/c 'win32-store string?))
+        verify-source/c
         void?)]
   [ssl-load-suggested-certificate-authorities!
    (c-> (or/c ssl-context? ssl-listener?)
@@ -83,11 +88,7 @@ TO DO:
   [ssl-seal-context!
    (c-> ssl-context? void?)]
   [ssl-default-verify-sources
-   (parameter/c
-    (listof
-     (or/c path-string?
-           (list/c 'directory path-string?)
-           (list/c 'win32-store string?))))]
+   (parameter/c (listof verify-source/c))]
   [ssl-load-default-verify-sources!
    (c-> ssl-context? void?)]
   [ssl-set-verify!
@@ -301,8 +302,7 @@ TO DO:
       ;; aren't useful. So just skip them.
       '((win32-store "ROOT"))]
      [(macosx)
-      ;; FIXME: load from keyring
-      (x509-root-sources)]
+      '((macosx-keychain "/System/Library/Keychains/SystemRootCertificates.keychain"))]
      [else
       (x509-root-sources)])))
 
@@ -566,10 +566,10 @@ TO DO:
 
 (define (ssl-load-verify-source! context src #:try? [try? #f])
   (define (bad-source)
-    (error 'ssl-load-verify-root-certificates!
+    (error 'ssl-load-verify-source!
            "internal error: bad source: ~e" src))
   (cond [(path-string? src)
-         (ssl-load-... 'ssl-load-verify-root-certificates!
+         (ssl-load-... 'ssl-load-verify-source!
                        (lambda (a b) (SSL_CTX_load_verify_locations a b #f))
                        context src #:try? try?)]
         [(and (list? src) (= (length src) 2))
@@ -577,15 +577,18 @@ TO DO:
                [val (cadr src)])
            (case tag
              [(directory)
-              (ssl-load-... 'ssl-load-verify-root-certificates!
+              (ssl-load-... 'ssl-load-verify-source!
                             (lambda (a b) (SSL_CTX_load_verify_locations a #f b))
                             context val #:try? try?)]
              [(win32-store)
-              (let ([ctx (get-context/listener 'ssl-load-verify-root-certificates! context
+              (let ([ctx (get-context/listener 'ssl-load-verify-source! context
                                                #:need-unsealed? #t)])
-                (unless (path-string? val) (bad-source))
-                (load-win32-root-certificates 'ssl-load-verify-root-certificates!
-                                              ctx val try?))]
+                (load-win32-store 'ssl-load-verify-source!
+                                               ctx val try?))]
+             [(macosx-keychain)
+              (let ([ctx (get-context/listener 'ssl-load-verify-source! context
+                                               #:need-unsealed? #t)])
+                (load-macosx-keychain 'ssl-load-verify-source! ctx val try?))]
              [else (bad-source)]))]
         [else (bad-source)]))
 

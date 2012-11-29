@@ -4,10 +4,8 @@
 (require ffi/unsafe
          ffi/unsafe/define
          ffi/unsafe/alloc
-         "../libssl.rkt"
-         "../libcrypto.rkt"
          "add-cert.rkt")
-(provide load-win32-root-certificates)
+(provide load-win32-store)
 
 ;; -- Windows CryptoAPI
 
@@ -49,7 +47,7 @@
 
 ;; FIXME: also load CRLs?
 
-(define (load-win32-root-certificates who ssl-ctx storename try?)
+(define (load-win32-store who ssl-ctx storename try?)
   (define cstore (CertOpenSystemStoreW storename))
   (cond [cstore
          (define xstore (SSL_CTX_get_cert_store ssl-ctx))
