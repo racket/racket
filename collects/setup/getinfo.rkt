@@ -222,7 +222,7 @@
 (provide/contract
  (reset-relevant-directories-state! (-> any))
  (get-info (((listof path-or-string?)) (#:namespace (or/c namespace? #f)) . ->* . (or/c info? boolean?)))
- (get-info/full ((path?) (#:namespace (or/c namespace? #f)) . ->* . (or/c info? boolean?)))
+ (get-info/full ((path-string?) (#:namespace (or/c namespace? #f)) . ->* . (or/c info? boolean?)))
  (find-relevant-directories
   (->* [(listof symbol?)]
        [(lambda (x) (memq x '(preferred all-available no-planet)))]
