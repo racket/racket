@@ -1,10 +1,8 @@
 #lang typed/racket/base
 
 (require racket/fixnum
-         racket/string
-         (for-syntax racket/base syntax/parse)
-         "flonum-functions.rkt"
          "../unsafe.rkt"
+         "flonum-functions.rkt"
          "flvector-syntax.rkt")
 
 (provide
@@ -19,38 +17,22 @@
  flvector->vector
  ;; Pointwise operations
  flvector-scale
- flvector-round
- flvector-floor
- flvector-ceiling
- flvector-truncate
- flvector-abs
  flvector-sqr
  flvector-sqrt
- flvector-log
- flvector-exp
- flvector-sin
- flvector-cos
- flvector-tan
- flvector-asin
- flvector-acos
- flvector-atan
+ flvector-abs
  flvector+
  flvector*
  flvector-
  flvector/
- flvector-expt
  flvector-min
  flvector-max
- flvector=
- flvector<
- flvector<=
- flvector>
- flvector>=
- ;;
- flvector-sums)
+ ;; Sum
+ flvector-sum
+ flvector-sums
+ flsum)
 
 ;; ===================================================================================================
-;; flvector-copy
+;; flvector-copy!
 
 (: unsafe-flvector-copy! (FlVector Integer FlVector Integer Integer -> Void))
 (define (unsafe-flvector-copy! dest dest-start src src-start src-end)
@@ -92,12 +74,8 @@
 
 (: list->flvector ((Listof Real) -> FlVector))
 (define (list->flvector vs)
-  (define n (length vs))
-  (define xs (make-flvector n))
-  (let loop ([#{i : Nonnegative-Fixnum} 0] [vs vs])
-    (cond [(i . < . n)  (unsafe-flvector-set! xs i (real->double-flonum (unsafe-car vs)))
-                        (loop (+ i 1) (unsafe-cdr vs))]
-          [else  xs])))
+  (for/flvector: #:length (length vs) ([v  (in-list vs)])
+    (fl v)))
 
 (: flvector->list (FlVector -> (Listof Float)))
 (define (flvector->list xs)
@@ -105,148 +83,156 @@
 
 (: vector->flvector ((Vectorof Real) -> FlVector))
 (define (vector->flvector vs)
-  (define n (vector-length vs))
-  (define xs (make-flvector n))
-  (let loop ([#{i : Nonnegative-Fixnum} 0])
-    (cond [(i . < . n)  (unsafe-flvector-set! xs i (real->double-flonum (unsafe-vector-ref vs i)))
-                        (loop (+ i 1))]
-          [else  xs])))
+  (for/flvector: #:length (vector-length vs) ([v  (in-vector vs)])
+    (fl v)))
 
 (: flvector->vector (FlVector -> (Vectorof Float)))
 (define (flvector->vector xs)
-  (define n (flvector-length xs))
-  (define vs (make-vector n 0.0))
-  (let loop ([#{i : Nonnegative-Fixnum} 0])
-    (cond [(i . < . n)  (unsafe-vector-set! vs i (unsafe-flvector-ref xs i))
-                        (loop (+ i 1))]
-          [else  vs])))
+  (for/vector: #:length (flvector-length xs) ([x  (in-flvector xs)]) : Flonum
+    x))
 
 ;; ===================================================================================================
 ;; Pointwise operations
 
-(define-syntax (lift1 stx)
-  (syntax-case stx ()
-    [(_ f)  (syntax/loc stx (λ (arr) (flvector-map f arr)))]))
+(define-syntax-rule (lift1 f)
+  (λ: ([arr : FlVector])
+    (inline-flvector-map f arr)))
 
-(define-syntax (lift2 stx)
-  (syntax-case stx ()
-    [(_ f)  (syntax/loc stx (λ (arr1 arr2) (flvector-map f arr1 arr2)))]))
-
-(define-syntax-rule (lift-comparison name comp)
-  (λ (xs1 xs2)
-    (define n1 (flvector-length xs1))
-    (define n2 (flvector-length xs2))
-    (unless (= n1 n2) (error name "flvectors must be the same length; given lengths ~e and ~e" n1 n2))
-    (build-vector
-     n1 (λ: ([j : Index])
-          (comp (unsafe-flvector-ref xs1 j)
-                (unsafe-flvector-ref xs2 j))))))
+(define-syntax-rule (lift2 f)
+  (λ: ([arr0 : FlVector] [arr1 : FlVector])
+    (inline-flvector-map f arr0 arr1)))
 
 (: flvector-scale (FlVector Float -> FlVector))
-(define (flvector-scale arr y) (flvector-map (λ (x) (fl* x y)) arr))
+(define (flvector-scale arr y) (inline-flvector-map (λ: ([x : Flonum]) (fl* x y)) arr))
 
-(: flvector-round    (FlVector -> FlVector))
-(: flvector-floor    (FlVector -> FlVector))
-(: flvector-ceiling  (FlVector -> FlVector))
-(: flvector-truncate (FlVector -> FlVector))
-(: flvector-abs  (FlVector -> FlVector))
-(: flvector-sqr  (FlVector -> FlVector))
+(: flvector-sqr (FlVector -> FlVector))
+(define flvector-sqr (lift1 (λ: ([x : Flonum]) (fl* x x))))
+
 (: flvector-sqrt (FlVector -> FlVector))
-(: flvector-log  (FlVector -> FlVector))
-(: flvector-exp  (FlVector -> FlVector))
-(: flvector-sin  (FlVector -> FlVector))
-(: flvector-cos  (FlVector -> FlVector))
-(: flvector-tan  (FlVector -> FlVector))
-(: flvector-asin (FlVector -> FlVector))
-(: flvector-acos (FlVector -> FlVector))
-(: flvector-atan (FlVector -> FlVector))
+(define flvector-sqrt (lift1 flsqrt))
+
+(: flvector-abs (FlVector -> FlVector))
+(define flvector-abs (lift1 flabs))
 
 (: flvector+ (FlVector FlVector -> FlVector))
-(: flvector* (FlVector FlVector -> FlVector))
-(: flvector- (case-> (FlVector -> FlVector)
-                    (FlVector FlVector -> FlVector)))
-(: flvector/ (case-> (FlVector -> FlVector)
-                    (FlVector FlVector -> FlVector)))
-(: flvector-expt (FlVector FlVector -> FlVector))
-(: flvector-min  (FlVector FlVector -> FlVector))
-(: flvector-max  (FlVector FlVector -> FlVector))
-
-(: flvector=  (FlVector FlVector -> (Vectorof Boolean)))
-(: flvector<  (FlVector FlVector -> (Vectorof Boolean)))
-(: flvector<= (FlVector FlVector -> (Vectorof Boolean)))
-(: flvector>  (FlVector FlVector -> (Vectorof Boolean)))
-(: flvector>= (FlVector FlVector -> (Vectorof Boolean)))
-
-(define flvector-round    (lift1 flround))
-(define flvector-floor    (lift1 flfloor))
-(define flvector-ceiling  (lift1 flceiling))
-(define flvector-truncate (lift1 fltruncate))
-(define flvector-abs  (lift1 flabs))
-(define flvector-sqr  (lift1 (λ: ([x : Float]) (fl* x x))))
-(define flvector-sqrt (lift1 flsqrt))
-(define flvector-log  (lift1 fllog))
-(define flvector-exp  (lift1 flexp))
-(define flvector-sin  (lift1 flsin))
-(define flvector-cos  (lift1 flcos))
-(define flvector-tan  (lift1 fltan))
-(define flvector-asin (lift1 flasin))
-(define flvector-acos (lift1 flacos))
-(define flvector-atan (lift1 flatan))
-
 (define flvector+ (lift2 fl+))
+
+(: flvector* (FlVector FlVector -> FlVector))
 (define flvector* (lift2 fl*))
 
+(: flvector- (case-> (FlVector -> FlVector)
+                     (FlVector FlVector -> FlVector)))
 (define flvector-
-  (case-lambda
-    [(arr)  (flvector-map (λ: ([x : Float]) (fl- 0.0 x)) arr)]
-    [(arr1 arr2)  (flvector-map fl- arr1 arr2)]))
+  (case-lambda:
+    [([arr0 : FlVector])
+     (inline-flvector-map (λ: ([x : Float]) (fl- 0.0 x)) arr0)]
+    [([arr0 : FlVector] [arr1 : FlVector])
+     (inline-flvector-map fl- arr0 arr1)]))
 
+(: flvector/ (case-> (FlVector -> FlVector)
+                     (FlVector FlVector -> FlVector)))
 (define flvector/
-  (case-lambda
-    [(arr)  (flvector-map (λ: ([x : Float]) (fl/ 1.0 x)) arr)]
-    [(arr1 arr2)  (flvector-map fl/ arr1 arr2)]))
+  (case-lambda:
+    [([arr0 : FlVector])
+     (inline-flvector-map (λ: ([x : Float]) (fl/ 1.0 x)) arr0)]
+    [([arr0 : FlVector] [arr1 : FlVector])
+     (inline-flvector-map fl/ arr0 arr1)]))
 
-(define flvector-expt (lift2 flexpt))
-(define flvector-min  (lift2 flmin))
-(define flvector-max  (lift2 flmax))
+(: flvector-min  (FlVector FlVector -> FlVector))
+(define flvector-min (lift2 flmin))
 
-(define flvector=  (lift-comparison 'flvector=  fl=))
-(define flvector<  (lift-comparison 'flvector<  fl<))
-(define flvector<= (lift-comparison 'flvector<= fl<=))
-(define flvector>  (lift-comparison 'flvector>  fl>))
-(define flvector>= (lift-comparison 'flvector>= fl>=))
+(: flvector-max  (FlVector FlVector -> FlVector))
+(define flvector-max (lift2 flmax))
 
 ;; ===================================================================================================
+;; Summation
+
+#|
+Algorithm adapted from:
+
+J R Shewchuk. Adaptive Precision Floating-Point Arithmetic and Fast Geometric Predicates.
+Discrete & Computational Geometry, 1996, vol 18, pp 305--363.
+|#
+
+(: flvector-sum (FlVector -> Flonum))
+;; Returns the sum of the elements in xs in a way that incurs rounding error only once
+(define (flvector-sum xs)
+  (define n (flvector-length xs))
+  ;; Vector of remainders
+  (define rs (make-flvector n))
+  ;; Loop over `xs'
+  (let i-loop ([#{i : Nonnegative-Fixnum} 0]
+               ;; p = Number of valid remainders in `rs'
+               [#{p : Nonnegative-Fixnum} 0])
+    (cond
+      [(i . fx< . n)
+       ;; Add x consecutively to each remainder, storing the remainder of *those* additions in `rs'
+       (let j-loop ([#{j : Nonnegative-Fixnum} 0]
+                    ;; q = Number of remainders generated by this j-loop:
+                    [#{q : Nonnegative-Fixnum} 0]
+                    [x  (unsafe-flvector-ref xs i)])
+         (cond
+           [(j . fx< . p)
+            (define r (unsafe-flvector-ref rs j))
+            ;; Get the largest of x and r, or x if it's not rational
+            (let-values ([(x r)  (if ((flabs x) . fl< . (flabs r)) (values r x) (values x r))])
+              ;; Add with remainder
+              (define z (fl+ x r))
+              (define-values (hi lo)
+                (cond [(flrational? z)  (values z (fl- r (fl- z x)))]
+                      [else  (values x r)]))
+              (cond [(fl= lo 0.0)
+                     ;; No remainder: don't store (makes average case O(n*log(n)))
+                     (j-loop (unsafe-fx+ j 1) q hi)]
+                    [else
+                     ;; Store the remainder, increment the counter
+                     (unsafe-flvector-set! rs q lo)
+                     (j-loop (unsafe-fx+ j 1) (unsafe-fx+ q 1) hi)]))]
+           [else
+            ;; Store the sum so far as the last remainder
+            (unsafe-flvector-set! rs q x)
+            (i-loop (fx+ i 1) (unsafe-fx+ q 1))]))]
+      [else
+       ;; Add all the remainders
+       (let j-loop ([#{j : Nonnegative-Fixnum} 0] [acc  0.0])
+         (cond [(j . fx< . p)  (j-loop (unsafe-fx+ j 1) (fl+ acc (unsafe-flvector-ref rs j)))]
+               [else  acc]))])))
 
 (: flvector-sums (FlVector -> FlVector))
+;; Returns the partial sums of the elements in xs in a way that incurs rounding error only once
+;; for each
+;; This function works just like `flvector-sum', but keeps track of partial sums instead of
+;; summing all the remainders at the end
 (define (flvector-sums xs)
   (define n (flvector-length xs))
   (define rs (make-flvector n))
   (define ss (make-flvector n))
-  (let j-loop ([#{j : Nonnegative-Fixnum} 0]
-               [#{m : Nonnegative-Fixnum} 0])
+  (let i-loop ([#{i : Nonnegative-Fixnum} 0]
+               [#{p : Nonnegative-Fixnum} 0])
     (cond
-      [(j . fx< . n)
-       (define x (unsafe-flvector-ref xs j))
-       (let p-loop ([#{p : Nonnegative-Fixnum} 0]
-                    [#{x : Flonum} x]
-                    [#{s : Flonum} 0.0]
-                    [#{i : Nonnegative-Fixnum} 0])
+      [(i . fx< . n)
+       (let j-loop ([#{j : Nonnegative-Fixnum} 0]
+                    [#{q : Nonnegative-Fixnum} 0]
+                    [x (unsafe-flvector-ref xs i)]
+                    [s 0.0])
          (cond
-           [(p . fx< . m)
-            (define r (unsafe-flvector-ref rs p))
+           [(j . fx< . p)
+            (define r (unsafe-flvector-ref rs j))
             (let-values ([(x r)  (if ((flabs x) . fl< . (flabs r)) (values r x) (values x r))])
               (define z (fl+ x r))
               (define-values (hi lo)
                 (cond [(flrational? z)  (values z (fl- r (fl- z x)))]
                       [else  (values x r)]))
               (cond [(fl= lo 0.0)
-                     (p-loop (unsafe-fx+ p 1) hi s i)]
+                     (j-loop (unsafe-fx+ j 1) q hi s)]
                     [else
-                     (unsafe-flvector-set! rs i lo)
-                     (p-loop (unsafe-fx+ p 1) hi (fl+ s lo) (unsafe-fx+ i 1))]))]
+                     (unsafe-flvector-set! rs q lo)
+                     (j-loop (unsafe-fx+ j 1) (unsafe-fx+ q 1) hi (fl+ s lo))]))]
            [else
-            (unsafe-flvector-set! rs i x)
-            (unsafe-flvector-set! ss j (fl+ s x))
-            (j-loop (fx+ j 1) (unsafe-fx+ i 1))]))]
+            (unsafe-flvector-set! rs q x)
+            (unsafe-flvector-set! ss i (fl+ s x))
+            (i-loop (fx+ i 1) (unsafe-fx+ q 1))]))]
       [else  ss])))
+
+(: flsum ((Listof Flonum) -> Flonum))
+(define (flsum xs) (flvector-sum (list->flvector xs)))

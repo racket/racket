@@ -2,12 +2,15 @@
 
 @(require scribble/eval
           racket/sandbox
-          (for-label racket/base
+          (for-label racket/base racket/vector racket/list
                      math plot
-                     (only-in typed/racket/base Flonum Real Boolean Any Listof Integer))
+                     (only-in typed/racket/base
+                              ->
+                              Flonum Integer Index Real Boolean Any Listof Vectorof FlVector))
           "utils.rkt")
 
 @(define untyped-eval (make-untyped-math-eval))
+@interaction-eval[#:eval untyped-eval (require racket/list)]
 
 @title[#:tag "flonum"]{Flonums}
 @(author-neil)
@@ -16,6 +19,8 @@
 
 For convenience, @racketmodname[math/flonum] re-exports @racketmodname[racket/flonum]
 as well as providing the functions document below.
+
+@local-table-of-contents[]
 
 @section{Additional Flonum Functions}
 
@@ -61,6 +66,8 @@ The @racket[sum] function does the same for heterogenous lists of reals.
 Worst-case time complexity is O(@italic{n}@superscript{2}), though the pathological
 inputs needed to observe quadratic time are exponentially improbable and are hard
 to generate purposely. Expected time complexity is O(@italic{n} log(@italic{n})).
+
+See @racket[flvector-sums] for a variant that computes all the partial sums in @racket[xs].
 }
 
 @deftogether[(@defproc[(flsinh [x Flonum]) Flonum]
@@ -494,6 +501,91 @@ in outputs as close to zero @tech{ulps} as possible.
 The maximum positive and negative subnormal flonums. A flonum @racket[x] is subnormal when
 it is not zero and @racket[((abs x) . <= . +max-subnormal.0)].
 @examples[#:eval untyped-eval +max-subnormal.0]
+}
+
+@section{Additional Flonum Vector Functions}
+
+@defproc[(build-flvector [n Integer] [proc (Index -> Flonum)]) FlVector]{
+Creates a length-@racket[n] flonum vector by applying @racket[proc] to the indexes
+from @racket[0] to @racket[(- n 1)]. Analogous to @racket[build-vector].
+@examples[#:eval untyped-eval
+                 (flvector->list (build-flvector 10 fl))]
+}
+
+@defform[(inline-build-flvector n proc)
+         #:contracts ([n Integer]
+                      [proc (Index -> Flonum)])]{
+Like @racket[build-flvector], but always inlined. This increases speed at the expense of code size.
+}
+
+@defproc[(flvector-map [proc (Flonum Flonum ... -> Flonum)] [xs FlVector] [xss FlVector] ...)
+         FlVector]{
+Applies @racket[proc] to the corresponding elements of @racket[xs] and @racket[xss]. Analogous to
+@racket[vector-map].
+
+The @racket[proc] is meant to accept the same number of arguments as the number of its following
+flonum vector arguments. However, a current limitation in Typed Racket requires @racket[proc]
+to accept @italic{any} number of arguments. To map a single-arity function such as @racket[fl+]
+over the corresponding number of flonum vectors, for now, use @racket[inline-flvector-map].
+}
+
+@defform[(inline-flvector-map proc xs xss ...)
+         #:contracts ([proc (Flonum Flonum ... -> Flonum)]
+                      [xs FlVector]
+                      [xss FlVector])]{
+Like @racket[flvector-map], but always inlined.
+}
+
+@defproc[(flvector-copy! [dest FlVector]
+                         [dest-start Integer]
+                         [src FlVector]
+                         [src-start Integer 0]
+                         [src-end Integer (flvector-length src)])
+         Void]{
+Like @racket[vector-copy!], but for flonum vectors.
+}
+
+@deftogether[(@defproc[(list->flvector [vs (Listof Real)]) FlVector]
+              @defproc[(flvector->list [xs FlVector]) (Listof Flonum)]
+              @defproc[(vector->flvector [vs (Vectorof Real)]) FlVector]
+              @defproc[(flvector->vector [xs FlVector]) (Vectorof Flonum)])]{
+Convert between lists and flonum vectors, and between vectors and flonum vectors.
+}
+
+@deftogether[(@defproc[(flvector+ [xs FlVector] [ys FlVector]) FlVector]
+              @defproc[(flvector* [xs FlVector] [ys FlVector]) FlVector]
+              @defproc*[([(flvector- [xs FlVector]) FlVector]
+                         [(flvector- [xs FlVector] [ys FlVector]) FlVector])]
+              @defproc*[([(flvector/ [xs FlVector]) FlVector]
+                         [(flvector/ [xs FlVector] [ys FlVector]) FlVector])]
+              @defproc[(flvector-scale [xs FlVector] [y Flonum]) FlVector]
+              @defproc[(flvector-abs [xs FlVector]) FlVector]
+              @defproc[(flvector-sqr [xs FlVector]) FlVector]
+              @defproc[(flvector-sqrt [xs FlVector]) FlVector]
+              @defproc[(flvector-min [xs FlVector] [ys FlVector]) FlVector]
+              @defproc[(flvector-max [xs FlVector] [ys FlVector]) FlVector])]{
+Arithmetic lifted to operate on flonum vectors.
+}
+
+@defproc[(flvector-sum [xs FlVector]) Flonum]{
+Like @racket[flsum], but operates on flonum vectors. In fact, @racket[flsum] is defined in terms
+of @racket[flvector-sum].
+}
+
+@defproc[(flvector-sums [xs FlVector]) FlVector]{
+Computes the partial sums of the elements in @racket[xs] in a way that incurs rounding error only
+once for each partial sum.
+@examples[#:eval untyped-eval
+                 (flvector->list
+                  (flvector-sums
+                   (flvector 1.0 1e-16 1e-16 1e-16 1e-16 1e100 -1e100)))]
+Compare the same example computed by direct summation:
+@interaction[#:eval untyped-eval
+                    (rest
+                     (reverse
+                      (foldl (λ (x xs) (cons (+ x (first xs)) xs))
+                             (list 0.0)
+                             '(1.0 1e-16 1e-16 1e-16 1e-16 1e100 -1e100))))]
 }
 
 @(close-eval untyped-eval)

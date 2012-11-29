@@ -1,7 +1,7 @@
 #lang typed/racket/base
 
 (require racket/flonum
-         "../flonum/flonum-sum.rkt"
+         "../flonum/flvector.rkt"
          "../flonum/flonum-functions.rkt"
          "../flonum/flonum-more-functions.rkt")
 

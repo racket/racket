@@ -28,38 +28,23 @@
 (define-syntax-rule (array-scale arr x)
   (inline-array-map (λ (y) (* x y)) arr))
 
+(define-array-op1 array-sqr sqr)
+(define-array-op1 array-sqrt sqrt)
 (define-array-op1 array-abs abs)
-(define-array-op1 array-round round)
-(define-array-op1 array-floor floor)
-(define-array-op1 array-ceiling ceiling)
-(define-array-op1 array-truncate truncate)
-(define-array-op1 array-conjugate conjugate)
 (define-array-op1 array-magnitude magnitude)
 (define-array-op1 array-angle angle)
-(define-array-op1 array-sqrt sqrt)
-(define-array-op1 array-log log)
-(define-array-op1 array-sqr sqr)
-(define-array-op1 array-exp exp)
-(define-array-op1 array-sin sin)
-(define-array-op1 array-cos cos)
-(define-array-op1 array-tan tan)
-(define-array-op1 array-asin asin)
-(define-array-op1 array-acos acos)
-(define-array-op1 array-atan atan)
-(define-array-op1 array-inexact->exact inexact->exact)
-(define-array-op1 array-exact->inexact exact->inexact)
-(define-array-op1 array-fl real->double-flonum)
-(define-array-op1 array-fc number->float-complex)
+(define-array-op1 array-conjugate conjugate)
 (define-array-op1 array-real-part real-part)
 (define-array-op1 array-imag-part imag-part)
+
 (define-array-op2 array-make-rectangular make-rectangular)
+(define-array-op2 array-make-polar make-polar)
 
 (define-array-op array+ +)
 (define-array-op array* *)
 (define-array-op1+ array- -)
 (define-array-op1+ array/ /)
 
-(define-array-op2 array-expt expt)
 (define-array-op1+ array-min min)
 (define-array-op1+ array-max max)
 
@@ -81,29 +66,20 @@
  array-map
  ;; Lifted operators
  array-scale
- array-abs
- array-round
- array-floor
- array-ceiling
- array-truncate
  array-sqr
  array-sqrt
- array-conjugate
+ array-abs
  array-magnitude
  array-angle
- array-log
- array-exp
- array-sin
- array-cos
- array-tan
- array-asin
- array-acos
- array-atan
+ array-conjugate
+ array-real-part
+ array-imag-part
+ array-make-rectangular
+ array-make-polar
  array+
  array-
  array*
  array/
- array-expt
  array-min
  array-max     
  array=
@@ -114,12 +90,4 @@
  array-not
  array-and
  array-or
- array-if
- ;; Number conversions
- array-inexact->exact
- array-exact->inexact
- array-fl
- array-fc
- array-real-part
- array-imag-part
- array-make-rectangular)
+ array-if)

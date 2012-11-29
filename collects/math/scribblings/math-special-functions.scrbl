@@ -2,7 +2,7 @@
 
 @(require scribble/eval
           racket/sandbox
-          (for-label racket/base
+          (for-label racket/base racket/unsafe/ops
                      math plot
                      (only-in typed/racket/base
                               Flonum Real Integer Natural Zero Positive-Integer Exact-Rational

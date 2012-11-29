@@ -5,8 +5,8 @@
          "flonum-functions.rkt"
          "flonum-constants.rkt"
          "flonum-exp.rkt"
-         "flonum-sum.rkt"
-         "flonum-syntax.rkt")
+         "flonum-syntax.rkt"
+         "flvector.rkt")
 
 (provide fllog1p fllog+
          lg1+ lg+ lg1- lg- lgsum

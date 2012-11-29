@@ -16,33 +16,15 @@
  flarray-map
  ;; Pointwise operations
  flarray-scale
- flarray-round
- flarray-floor
- flarray-ceiling
- flarray-truncate
- flarray-abs
  flarray-sqr
  flarray-sqrt
- flarray-log
- flarray-exp
- flarray-sin
- flarray-cos
- flarray-tan
- flarray-asin
- flarray-acos
- flarray-atan
+ flarray-abs
  flarray+
  flarray*
  flarray-
  flarray/
- flarray-expt
  flarray-min
- flarray-max
- flarray=
- flarray<
- flarray<=
- flarray>
- flarray>=)
+ flarray-max)
 
 ;; ===================================================================================================
 ;; Mapping
@@ -53,7 +35,7 @@
     [(_ f arr-expr)
      (syntax/loc stx
        (let: ([arr : FlArray  arr-expr])
-         (unsafe-flarray (array-shape arr) (flvector-map f (flarray-data arr)))))]
+         (unsafe-flarray (array-shape arr) (inline-flvector-map f (flarray-data arr)))))]
     [(_ f arr-expr arr-exprs ...)
      (with-syntax ([(arrs ...)   (generate-temporaries #'(arr-exprs ...))]
                    [(dss ...)    (generate-temporaries #'(arr-exprs ...))]
@@ -65,7 +47,7 @@
            (define dss (array-shape arrs)) ...
            (cond [(and (equal? ds dss) ...)
                   (unsafe-flarray
-                   ds (flvector-map f (flarray-data arr) (flarray-data arrs) ...))]
+                   ds (inline-flvector-map f (flarray-data arr) (flarray-data arrs) ...))]
                  [else
                   (define new-ds (array-shape-broadcast (list ds dss ...)))
                   (define proc  (unsafe-array-proc (array-broadcast arr new-ds)))
@@ -115,91 +97,42 @@
     (cond [(equal? ds1 ds2)  (unsafe-flarray ds1 (f (flarray-data arr1) (flarray-data arr2)))]
           [else  (array->flarray (array-f arr1 arr2))])))
 
-(define-syntax (lift2 stx)
-  (syntax-case stx ()
-    [(_ f)  (syntax/loc stx (λ (arr1 arr2) (inline-flarray-map f arr1 arr2)))]))
-
-(define-syntax-rule (lift-flvector-compare flvector-comp array-comp)
-  (λ (arr1 arr2)
-    (define ds1 (array-shape arr1))
-    (define ds2 (array-shape arr2))
-    (cond [(equal? ds1 ds2)
-           (unsafe-mutable-array ds1 (flvector-comp (flarray-data arr1) (flarray-data arr2)))]
-          [else  (array-comp arr1 arr2)])))
-
 (: flarray-scale (FlArray Float -> FlArray))
-
-(: flarray-round    (FlArray -> FlArray))
-(: flarray-floor    (FlArray -> FlArray))
-(: flarray-ceiling  (FlArray -> FlArray))
-(: flarray-truncate (FlArray -> FlArray))
-(: flarray-abs  (FlArray -> FlArray))
-(: flarray-sqr  (FlArray -> FlArray))
-(: flarray-sqrt (FlArray -> FlArray))
-(: flarray-log  (FlArray -> FlArray))
-(: flarray-exp  (FlArray -> FlArray))
-(: flarray-sin  (FlArray -> FlArray))
-(: flarray-cos  (FlArray -> FlArray))
-(: flarray-tan  (FlArray -> FlArray))
-(: flarray-asin (FlArray -> FlArray))
-(: flarray-acos (FlArray -> FlArray))
-(: flarray-atan (FlArray -> FlArray))
-
-(: flarray+ (FlArray FlArray -> FlArray))
-(: flarray* (FlArray FlArray -> FlArray))
-(: flarray- (case-> (FlArray -> FlArray)
-                    (FlArray FlArray -> FlArray)))
-(: flarray/ (case-> (FlArray -> FlArray)
-                    (FlArray FlArray -> FlArray)))
-(: flarray-expt (FlArray FlArray -> FlArray))
-(: flarray-min  (FlArray FlArray -> FlArray))
-(: flarray-max  (FlArray FlArray -> FlArray))
-
-(: flarray=  (FlArray FlArray -> (Array Boolean)))
-(: flarray<  (FlArray FlArray -> (Array Boolean)))
-(: flarray<= (FlArray FlArray -> (Array Boolean)))
-(: flarray>  (FlArray FlArray -> (Array Boolean)))
-(: flarray>= (FlArray FlArray -> (Array Boolean)))
-
 (define (flarray-scale arr y)
   (define-syntax-rule (fun xs) (flvector-scale xs y))
   ((lift-flvector1 fun) arr))
 
-(define flarray-round    (lift-flvector1 flvector-round))
-(define flarray-floor    (lift-flvector1 flvector-floor))
-(define flarray-ceiling  (lift-flvector1 flvector-ceiling))
-(define flarray-truncate (lift-flvector1 flvector-truncate))
-(define flarray-abs  (lift-flvector1 flvector-abs))
-(define flarray-sqr  (lift-flvector1 flvector-sqr))
-(define flarray-sqrt (lift-flvector1 flvector-sqrt))
-(define flarray-log  (lift-flvector1 flvector-log))
-(define flarray-exp  (lift-flvector1 flvector-exp))
-(define flarray-sin  (lift-flvector1 flvector-sin))
-(define flarray-cos  (lift-flvector1 flvector-cos))
-(define flarray-tan  (lift-flvector1 flvector-tan))
-(define flarray-asin (lift-flvector1 flvector-asin))
-(define flarray-acos (lift-flvector1 flvector-acos))
-(define flarray-atan (lift-flvector1 flvector-atan))
+(: flarray-sqr (FlArray -> FlArray))
+(define flarray-sqr (lift-flvector1 flvector-sqr))
 
+(: flarray-sqrt (FlArray -> FlArray))
+(define flarray-sqrt (lift-flvector1 flvector-sqrt))
+
+(: flarray-abs (FlArray -> FlArray))
+(define flarray-abs (lift-flvector1 flvector-abs))
+
+(: flarray+ (FlArray FlArray -> FlArray))
 (define flarray+ (lift-flvector2 flvector+ array+))
+
+(: flarray* (FlArray FlArray -> FlArray))
 (define flarray* (lift-flvector2 flvector* array*))
 
+(: flarray- (case-> (FlArray -> FlArray)
+                    (FlArray FlArray -> FlArray)))
 (define flarray-
   (case-lambda
     [(arr)  ((lift-flvector1 flvector-) arr)]
     [(arr1 arr2)  ((lift-flvector2 flvector- array-) arr1 arr2)]))
 
+(: flarray/ (case-> (FlArray -> FlArray)
+                    (FlArray FlArray -> FlArray)))
 (define flarray/
   (case-lambda
     [(arr)  ((lift-flvector1 flvector/) arr)]
     [(arr1 arr2)  ((lift-flvector2 flvector/ array/) arr1 arr2)]))
 
-(define flarray-expt (lift2 flexpt))
+(: flarray-min  (FlArray FlArray -> FlArray))
 (define flarray-min  (lift-flvector2 flvector-min array-min))
-(define flarray-max  (lift-flvector2 flvector-max array-max))
 
-(define flarray=  (lift-flvector-compare flvector=  array=))
-(define flarray<  (lift-flvector-compare flvector<  array<))
-(define flarray<= (lift-flvector-compare flvector<= array<=))
-(define flarray>  (lift-flvector-compare flvector>  array>))
-(define flarray>= (lift-flvector-compare flvector>= array>=))
+(: flarray-max  (FlArray FlArray -> FlArray))
+(define flarray-max  (lift-flvector2 flvector-max array-max))

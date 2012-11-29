@@ -1,8 +1,8 @@
 #lang typed/racket/base
 
-(require "../../parameters.rkt"
-         "../../base.rkt"
+(require "../../base.rkt"
          "../../flonum.rkt"
+         "../parameters.rkt"
          "../unsafe.rkt"
          "../vector/vector-fft.rkt"
          "fcarray-struct.rkt"
@@ -13,7 +13,6 @@
 
 (provide array-axis-fft
          array-fft
-         fcarray-fft
          array-axis-inverse-fft
          array-inverse-fft)
 
