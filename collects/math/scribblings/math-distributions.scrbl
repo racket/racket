@@ -216,10 +216,10 @@ ordered distribution returns as random samples. Additionally, its @tech{cdf} acc
                  (ordered-dist? (discrete-dist '(a b c)))
                  (ordered-dist? (normal-dist))]
 
-The median is stored in an @racket[ordered-dist] to allow interval probabilities to be calculated
+The median is stored in an @racket[ordered-dist] to allow interval probabilities to be computed
 accurately. For example, for @racket[d = (normal-dist)], whose median is @racket[0.0],
-@racket[(real-dist-prob d -2.0 -1.0)] is calculated using lower-tail probabilities, and
-@racket[(real-dist-prob d 1.0 2.0)] is calculated using upper-tail probabilities.
+@racket[(real-dist-prob d -2.0 -1.0)] is computed using lower-tail probabilities, and
+@racket[(real-dist-prob d 1.0 2.0)] is computed using upper-tail probabilities.
 }
 
 @defidform[Real-Dist]{
@@ -280,6 +280,9 @@ The first four are synonyms for @racket[ordered-dist-cdf], @racket[ordered-dist-
                           (Discrete-Dist A)])]
               @defproc[(discrete-dist-values [d (Discrete-Dist A)]) (Listof A)]
               @defproc[(discrete-dist-probs [d (Discrete-Dist A)]) (Listof Positive-Flonum)])]{
+@bold{Warning:} The types and functions for discrete distributions will probably change soon,
+as part of overhauling how @racket[math/statistics] handles weighted samples.
+
 Represents families of unordered, discrete distributions over values of type @racket[A], with equality
 decided by @racket[equal?].
 
@@ -311,8 +314,7 @@ or over extended integers. The most common definitions use the extended reals, s
 @tech{distribution object} constructors return objects of type @racket[Real-Dist].
 
 (Another reason is that the extended integers correspond with the type
-@racket[(U Integer +inf.0 -inf.0)]. Values of this type are difficult to use as integers: in
-practice, they are the same as values of type @racket[Real].)
+@racket[(U Integer +inf.0 -inf.0)]. Values of this type have little support in Racket's library.)
 
 This leaves us with a quandary and two design decisions users should be aware of. The quandary is
 that, when an integer distribution is defined over the reals, it has a @tech{cdf}, but @italic{no
@@ -422,7 +424,7 @@ independent events.
 
 @section{Real Distribution Families}
 
-The @tech{distribution object} constructors documented in this section return unique, useful
+The @tech{distribution object} constructors documented in this section return uniquely defined
 distributions for the largest possible parameter domain. This usually means that they return
 distributions for a larger domain than their mathematical counterparts are defined on.
 
@@ -523,18 +525,13 @@ Represents the Cauchy distribution family parameterized by mode and scale.
 Represents the family of distributions whose densities are Dirac delta functions.
 
 @examples[#:eval untyped-eval
-                 ((dist-pdf (delta-dist)) 0)
-                 ((dist-pdf (delta-dist)) 1)
+                 (pdf (delta-dist) 0)
+                 (pdf (delta-dist) 1)
                  (plot (for/list ([μ  (in-list '(-1 0 1))]
                                   [i  (in-naturals)])
                          (function (dist-cdf (delta-dist μ))
                                    #:color i #:style i #:label (format "δ(~a)" μ)))
                        #:x-min -2 #:x-max 2 #:y-label "probability")]
-When a distribution with a scale parameter has scale zero, it behaves like a delta distribution:
-@interaction[#:eval untyped-eval
-                    ((dist-pdf (normal-dist 0 0)) 0)
-                    ((dist-pdf (normal-dist 0 0)) 1)
-                    (plot (function (dist-cdf (normal-dist 0 0)) -1e-300 1e-300))]
 }
 
 @subsection{Exponential Distributions}
@@ -548,7 +545,7 @@ When a distribution with a scale parameter has scale zero, it behaves like a del
 Represents the exponential distribution family parameterized by mean, or scale.
 
 @bold{Warning:} The exponential distribution family is often parameterized by @italic{rate}, which
-is the reciprocal of mean or scale. If you have rates, construct exponential distributions using
+is the reciprocal of mean or scale. Construct exponential distributions from rates using
 @racketblock[(exponential-dist (/ 1.0 rate))]
 
 @examples[#:eval untyped-eval
@@ -579,7 +576,7 @@ Represents the gamma distribution family parameterized by shape and scale. The @
 parameter must be nonnegative.
 
 @bold{Warning:} The gamma distribution family is often parameterized by shape and @italic{rate},
-which is the reciprocal of scale. If you have rates, construct gamma distributions using
+which is the reciprocal of scale. Construct gamma distributions from rates using
 @racketblock[(gamma-dist shape (/ 1.0 rate))]
 
 @examples[#:eval untyped-eval
@@ -648,8 +645,7 @@ and scale. In this parameterization, the variance is @racket[(* 1/3 (sqr (* pi s
 Represents the normal distribution family parameterized by mean and standard deviation.
 
 @bold{Warning:} The normal distribution family is often parameterized by mean and @italic{variance},
-which is the square of standard deviation. If you have variances, construct normal distributions
-using
+which is the square of standard deviation. Construct normal distributions from variances using
 @racketblock[(normal-dist mean (sqrt var))]
 
 @examples[#:eval untyped-eval
@@ -776,7 +772,7 @@ distribution centered at @racket[x].
 @section[#:tag "dist:flonum"]{Low-Level Distribution Functions}
 
 The following functions are provided for users who need lower overhead than that of
-@tech{distribution objects}, such as (currently) untyped Racket users, and library writers who
+@tech{distribution objects}, such as untyped Racket users (currently), and library writers who
 are implementing their own distribution abstractions.
 
 Because applying these functions is meant to be fast, none of them have optional arguments. In
@@ -854,7 +850,7 @@ Low-level flonum functions used to implement @racket[cauchy-dist].
  @defproc[(fldelta-inv-cdf [mean Flonum] [p Flonum] [log? Any] [1-p? Any]) Flonum])]{
 Low-level flonum functions used to implement @racket[delta-dist].
 
-If you need delta-distributed random samples, use @racket[(make-flvector n mean)].
+To get delta-distributed random samples, use @racket[(make-flvector n mean)].
 }
 
 @deftogether[

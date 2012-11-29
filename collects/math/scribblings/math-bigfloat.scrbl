@@ -31,6 +31,8 @@ for Windows and Mac OS X, is installed on most Linux systems, and is
 @hyperlink["http://www.mpfr.org/ports.html"]{easy to install} on all major platforms.
 See @secref{loading} for details.
 
+@local-table-of-contents[]
+
 @section[#:tag "quick"]{Quick Start}
 
 @itemlist[#:style 'ordered

@@ -22,7 +22,7 @@ as well as providing the values document below.
 In general, the functions provided by @racketmodname[math/base] are @deftech{elementary}
 functions, or those functions that can be defined in terms of a finite number of
 arithmetic operations, logarithms, exponentials, trigonometric functions, and constants.
-For others, see @racketmodname[math/special-functions].
+For others, see @racketmodname[math/special-functions] and @racketmodname[math/distributions].
 
 @section{Constants}
 

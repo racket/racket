@@ -6,7 +6,7 @@
          racket/future
          "../../base.rkt"
          "../../flonum.rkt"
-         "../../parameters.rkt"
+         "../parameters.rkt"
          "../unsafe.rkt")
 
 (provide vector-fft flvector-fft!

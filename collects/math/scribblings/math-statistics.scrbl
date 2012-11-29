@@ -17,10 +17,11 @@
 
 @defmodule[math/statistics]
 
-xxx intro
+@bold{Warning:} The documentation for this module is delayed while the
+types for weighted samples get reworked. Please wait.
 
-something about accepting weighted samples whenever it makes sense
-(time it doesn't make sense: autocorrelation)
+@;{something about accepting weighted samples whenever it makes sense
+(time it doesn't make sense: autocorrelation)}
 
 @local-table-of-contents[]
 
