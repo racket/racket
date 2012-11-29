@@ -339,11 +339,11 @@
          #`(promise/c #,(t->c t))]
         [(Opaque: p? cert)
          #`(flat-named-contract (quote #,(syntax-e p?)) #,(cert p?))]
-        [(Continuation-Mark-Key: t)
+        [(Continuation-Mark-Keyof: t)
          (set-chaperone!)
          #`(continuation-mark-key/c #,(t->c t))]
         ;; TODO: this is not quite right for case->
-        [(Prompt-Tag: s (Function: (list (arr: (list ts ...) _ _ _ _))))
+        [(Prompt-Tagof: s (Function: (list (arr: (list ts ...) _ _ _ _))))
          (set-chaperone!)
          #`(prompt-tag/c #,@(map t->c ts) #:call/cc #,(t->c s))]
         ;; TODO

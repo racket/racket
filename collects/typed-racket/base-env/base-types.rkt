@@ -169,5 +169,5 @@
 [Thread-Cellof (-poly (a) (-thread-cell a))]
 [Custodian-Boxof (-poly (a) (make-CustodianBox a))]
 
-[Continuation-Mark-Key (-poly (a) (make-Continuation-Mark-Key a))]
-[Prompt-Tag (-poly (a b) (make-Prompt-Tag a b))]
+[Continuation-Mark-Keyof (-poly (a) (make-Continuation-Mark-Keyof a))]
+[Prompt-Tagof (-poly (a b) (make-Prompt-Tagof a b))]

@@ -535,9 +535,9 @@
            (cset-meet (cg e e*) (cg e* e))]
           [((ThreadCell: e) (ThreadCell: e*))
            (cset-meet (cg e e*) (cg e* e))]
-          [((Continuation-Mark-Key: e) (Continuation-Mark-Key: e*))
+          [((Continuation-Mark-Keyof: e) (Continuation-Mark-Keyof: e*))
            (cset-meet (cg e e*) (cg e* e))]
-          [((Prompt-Tag: s t) (Prompt-Tag: s* t*))
+          [((Prompt-Tagof: s t) (Prompt-Tagof: s* t*))
            (cset-meet* (list (cg s s*) (cg s* s) (cg t t*) (cg t* t)))]
           [((Promise: e) (Promise: e*))
            (cg e e*)]
