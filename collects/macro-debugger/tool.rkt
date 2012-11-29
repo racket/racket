@@ -127,10 +127,8 @@
                  get-current-tab)
 
         (define macro-debug-panel
-          (new horizontal-pane%
-               (parent (get-button-panel))
-               (stretchable-height #f)
-               (stretchable-width #f)))
+          (new panel:horizontal-discrete-sizes%
+               (parent (get-button-panel))))
         (define macro-debug-button
           (new switchable-button%
                (label macro-stepper-button-label)

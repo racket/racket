@@ -1391,7 +1391,7 @@
                (label (string-constant debug-tool-button-name))
                (bitmap debug-bitmap)
                (alternate-bitmap small-debug-bitmap)
-               (parent (new vertical-pane%
+               (parent (new panel:horizontal-discrete-sizes%
                             [parent (get-button-panel)]
                             [alignment '(center center)]))
                (callback (λ (button) (debug-callback)))))
@@ -1526,9 +1526,9 @@
                   (send (send debug-button get-parent) delete-child debug-button)))))
         
         (send (get-button-panel) change-children
-              (lambda (_)
+              (lambda (children)
                 (cons (send debug-button get-parent)
-                      (remq (send debug-button get-parent) _))))
+                      (remq (send debug-button get-parent) children))))
         
         ; hide debug button if it's not supported for the initial language:
         (check-current-language-for-debugger)))
