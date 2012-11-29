@@ -779,13 +779,9 @@
 
 (define-syntax (render-relation stx)
   (syntax-case stx ()
-    [(form name)
-     (identifier? #'name)
-     #'(render-relation/proc 'form (metafunction name) #f)]
-    [(form name #:file filename)
-     (identifier? #'name)
-     #'(render-relation/proc 'form (metafunction name) filename)]))
-
+    [(form rest ...)
+     #'(render-judgment-form rest ...)]))
+               
 (define linebreaks (make-parameter #f))
 
 (define metafunction-pict-style (make-parameter 'left-right))
@@ -845,9 +841,6 @@
        (cons (car l) (loop (cdr l)))])))
 
 (define (metafunctions->pict/proc mfs name)
-  (for ([mf (in-list mfs)])
-    (when (metafunc-proc-relation? (metafunction-proc mf))
-      (error name "expected metafunction as argument, got a relation")))
   (unless (andmap (λ (mf) (eq? (metafunc-proc-lang (metafunction-proc (car mfs)))
                                (metafunc-proc-lang (metafunction-proc mf))))
                   mfs)
@@ -1066,19 +1059,6 @@
      (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
        (metafunctions->pict/proc mfs name))]))
 
-(define (render-relation/proc form mf filename)
-  (render-pict (λ () (inference-rules-pict/relation form mf))
-               filename))
-
-(define (inference-rules-pict/relation form mf)
-  (unless (metafunc-proc-relation? (metafunction-proc mf))
-    (error form "expected relation as argument, got a metafunction"))
-  (inference-rules-pict (metafunc-proc-name (metafunction-proc mf))
-                        (metafunc-proc-pict-info (metafunction-proc mf))
-                        (map (λ (x) #f) (metafunc-proc-pict-info (metafunction-proc mf)))
-                        (metafunc-proc-lang (metafunction-proc mf))
-                        #f))
-
 (define (render-pict make-pict filename)
   (cond
     [filename
@@ -1169,12 +1149,15 @@
 
 (define-for-syntax (inference-rules-pict/judgment-form form-name)
   (define jf (syntax-local-value form-name))
+  (define-values (name lws rule-names lang relation?) 
+    (values (judgment-form-name jf) (judgment-form-lws jf) (judgment-form-rule-names jf)
+            (judgment-form-lang jf) (judgment-form-relation? jf)))
   (syntax-property
-   #`(inference-rules-pict '#,(judgment-form-name jf)
-                           #,(judgment-form-lws jf)
-                           '#,(judgment-form-rule-names jf)
-                           #,(judgment-form-lang jf)
-                           #t)
+   #`(inference-rules-pict '#,name
+                           #,lws
+                           '#,rule-names
+                           #,lang
+                           #,(not relation?))
    'disappeared-use
    (syntax-local-introduce form-name)))
 

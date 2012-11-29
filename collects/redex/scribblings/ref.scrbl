@@ -43,11 +43,6 @@
     [(_ args ...)
      #'((tech (racketvarfont "term")) args ...)]
     [x (identifier? #'x) #'(tech (racketvarfont "term"))]))
-@(define-syntax (tttterm-no-unquote stx)
-   (syntax-case stx ()
-    [(_ args ...)
-     #'((tech (racketvarfont "term-without-unquote") #:key "term") args ...)]
-    [x (identifier? #'x) #'(tech (racketvarfont "term-without-unquote") #:key "term")]))
 
 @(define-syntax (tterm stx)
    (syntax-case stx ()
@@ -1191,10 +1186,10 @@ and @racket[#f] otherwise.
                      rule-name]]
               [conclusion (form-id pat/term ...)]
               [premise (code:line (judgment-form-id pat/term ...) maybe-ellipsis)
-                       (where @#,ttpattern @#,tttterm-no-unquote)
-                       (where/hidden @#,ttpattern @#,tttterm-no-unquote)
-                       (side-condition @#,tttterm-no-unquote)
-                       (side-condition/hidden @#,tttterm-no-unquote)]
+                       (where @#,ttpattern @#,tttterm)
+                       (where/hidden @#,ttpattern @#,tttterm)
+                       (side-condition @#,tttterm)
+                       (side-condition/hidden @#,tttterm)]
               [rule-name (code:line)
                          string
                          non-ellipsis-non-hypens-var]
@@ -1211,9 +1206,8 @@ Each rule must be such that its premises can be evaluated left-to-right
 without ``guessing'' values for any of their pattern variables. Redex checks this
 property using the mandatory @racket[mode-spec] declaration, which partitions positions
 into inputs @racket[I] and outputs @racket[O]. Output positions in conclusions
-and input positions in premises must be @|tttterm|s with no uses of 
-@racket[unquote]; input positions in conclusions and output positions in 
-premises must be @|ttpattern|s. When the optional @racket[contract-spec] 
+and input positions in premises must be @|tttterm|s; input positions in conclusions and 
+output positions in premises must be @|ttpattern|s. When the optional @racket[contract-spec] 
 declaration is present, Redex dynamically checks that the terms flowing through
 these positions match the provided patterns, raising an exception recognized by 
 @racket[exn:fail:redex] if not.
@@ -1265,8 +1259,7 @@ to compute all pairs with a given sum.
        (judgment-holds (sumr n_1 n_2 (s (s z))) (n_1 n_2))]
 
 A rule's @racket[where] and @racket[where/hidden] premises behave as in 
-@racket[reduction-relation] and @racket[define-metafunction] except the term
-cannot use unquotes.
+@racket[reduction-relation] and @racket[define-metafunction].
 @examples[
 #:eval redex-eval
        (define-judgment-form nats
@@ -1296,9 +1289,14 @@ A rule's @racket[side-condition] and @racket[side-condition/hidden] premises are
 to those in @racket[reduction-relation] and @racket[define-metafunction], except that
 they do not implicitly unquote their right-hand sides. In other words, a premise 
 of the form @racket[(side-condition term)] is equivalent to the premise 
-@racket[(where #t term)], except it does not typeset with the ``#t = '', as that would. 
-Also, the term on the right-hand side cannot use unquotes so it is often convenient to 
-define a metafunction for these side-conditions.
+@racket[(where #t term)], except it does not typeset with the ``#t = '', as that would.
+
+Judgments with exclusively @racket[I] mode positions may also be used in @|tttterm|s
+in a manner similar to metafunctions, and evaluate to a boolean.
+@examples[
+#:eval redex-eval
+       (term (le (s z) (s (s z))))
+       (term (le (s z) z))]
 
 A literal ellipsis may follow a judgment premise when a template in one of the
 judgment's input positions contains a pattern variable bound at ellipsis-depth
@@ -1452,12 +1450,6 @@ the argument contracts.
        (term (subtype int num))
        (term (subtype (int → int) (num → num)))
        (term (subtype (num → int) (num → num)))]
-
-Note that relations are assumed to always return the same results for
-the same inputs, and their results are cached, unless
-@racket[caching-enable?] is set to @racket[#f]. Accordingly, if a
-relation is called with the same inputs twice, then its right-hand
-sides are evaluated only once.
 }
 
 @defparam[current-traced-metafunctions traced-metafunctions (or/c 'all (listof symbol?))]{
