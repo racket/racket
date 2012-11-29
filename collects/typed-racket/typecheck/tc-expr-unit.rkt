@@ -328,7 +328,7 @@
         [(with-continuation-mark e1 e2 e3)
          (define key-t (single-value #'e1))
          (match key-t
-           [(tc-result1: (Continuation-Mark-Key: rhs))
+           [(tc-result1: (Continuation-Mark-Keyof: rhs))
             (tc-expr/check/type #'e2 rhs)
             (tc-expr/check #'e3 expected)]
            [(? (λ _ (and (identifier? #'e1)
@@ -434,7 +434,7 @@
       [(with-continuation-mark e1 e2 e3)
        (define key-t (single-value #'e1))
        (match key-t
-         [(tc-result1: (Continuation-Mark-Key: rhs))
+         [(tc-result1: (Continuation-Mark-Keyof: rhs))
           (tc-expr/check/type #'e2 rhs)
           (tc-expr #'e3)]
          [(? (λ _ (and (identifier? #'e1)

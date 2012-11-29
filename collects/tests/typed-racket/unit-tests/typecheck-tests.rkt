@@ -1355,7 +1355,7 @@
         ;; TODO: supporting default-continuation-prompt-tag means we need to
         ;;       specially handle abort-current-continuation in the type system
         ;(tc-e (default-continuation-prompt-tag) -Prompt-Tag)
-        (tc-e (let: ((pt : (Prompt-Tag Integer Integer) (make-continuation-prompt-tag)))
+        (tc-e (let: ((pt : (Prompt-Tagof Integer Integer) (make-continuation-prompt-tag)))
                    (continuation-marks #f pt)) -Cont-Mark-Set)
         (tc-e (let: ((set : Continuation-Mark-Set (current-continuation-marks)))
                    (continuation-mark-set? set)) #:ret (ret B (-FS -top -bot)))

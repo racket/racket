@@ -8,7 +8,7 @@
          (types abbrev union)
          (utils any-wrap)
          (only-in (rep type-rep)
-                  make-Prompt-Tag))
+                  make-Prompt-Tagof))
 
 ;; this submodule defines the contracted versions
 (module contracted racket/base
@@ -34,4 +34,5 @@
 
 ;; set up the type environment
 (define-initial-env initialize-contracted
-  [default-continuation-prompt-tag (-> (make-Prompt-Tag Univ (-> ManyUniv Univ)))])
+  [default-continuation-prompt-tag
+    (-> (make-Prompt-Tagof Univ (-> ManyUniv Univ)))])

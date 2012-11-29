@@ -423,8 +423,8 @@
               [((Hashtable: _ _) (HashtableTop:)) A0]
               ;; TODO: subtyping for two `Prompt-Tagof`s with recursive types
               ;;       may be rejected unnecessarily
-              [((Prompt-Tag: _ _) (Prompt-TagTop:)) A0]
-              [((Continuation-Mark-Key: _) (Continuation-Mark-KeyTop:)) A0]
+              [((Prompt-Tagof: _ _) (Prompt-TagTop:)) A0]
+              [((Continuation-Mark-Keyof: _) (Continuation-Mark-KeyTop:)) A0]
               ;; subtyping on structs follows the declared hierarchy
               [((Struct: nm (? Type? parent) _ _ _ _) other)
                ;(dprintf "subtype - hierarchy : ~a ~a ~a\n" nm parent other)

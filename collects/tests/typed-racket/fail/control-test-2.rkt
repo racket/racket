@@ -8,10 +8,10 @@
 (module typed typed/racket
   (provide tag call-f)
 
-  (: tag (Prompt-Tag String (Integer -> String)))
+  (: tag (Prompt-Tagof String (Integer -> String)))
   (define tag (make-continuation-prompt-tag))
 
-  (: call-f (((Prompt-Tag String (Integer -> String)) -> String) -> String))
+  (: call-f (((Prompt-Tagof String (Integer -> String)) -> String) -> String))
   (define (call-f f)
     (call-with-continuation-prompt
      (λ () (f tag))

@@ -1,6 +1,6 @@
 #lang typed/racket
 
-(: pt (Prompt-Tag String (Integer -> Integer)))
+(: pt (Prompt-Tagof String (Integer -> Integer)))
 (define pt (make-continuation-prompt-tag))
 
 ;; Test abort
@@ -9,7 +9,7 @@
  pt
  (λ: ([x : Integer]) x))
 
-(: pt2 (Prompt-Tag Integer ((Integer -> Integer) -> Integer)))
+(: pt2 (Prompt-Tagof Integer ((Integer -> Integer) -> Integer)))
 (define pt2 (make-continuation-prompt-tag))
 
 ;; Test call/comp & abort
@@ -22,7 +22,7 @@
  (λ: ([f : (Integer -> Integer)]) (f 5)))
 
 ;; Test the default handler
-(: pt3 (Prompt-Tag Integer ((-> Integer) -> Integer)))
+(: pt3 (Prompt-Tagof Integer ((-> Integer) -> Integer)))
 (define pt3 (make-continuation-prompt-tag))
 
 (+ 2
