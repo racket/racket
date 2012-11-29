@@ -2,12 +2,34 @@
 
 (require racket/flonum
          math/array
-         typed/rackunit
+         (rename-in
+          (except-in typed/rackunit check-eq?)
+          [check-equal?  old:check-equal?])
          math/private/array/utils)
 
 (define-predicate listof-index? (Listof Index))
 (define-predicate listof-flonum? (Listof Float))
 (define-predicate undefined? Undefined)
+
+;; This gets around the fact that typed/rackunit can no longer test higher-order values for equality,
+;; since TR has firmed up its rules on passing `Any' types in and out of untyped code
+(define-syntax-rule (check-equal? a b . message)
+  (check-true (equal? a b) . message))
+
+(define-syntax-rule (check-eq? a b . message)
+  (check-equal? (eq-hash-code a) (eq-hash-code b) . message))
+
+(define-syntax-rule (array-axis-andmap arr k pred?)
+  (array-axis-and (array-map pred? arr) k))
+
+(define-syntax-rule (array-axis-ormap arr k pred?)
+  (array-axis-or (array-map pred? arr) k))
+
+(define-syntax-rule (array-all-andmap arr pred?)
+  (array-all-and (array-map pred? arr)))
+
+(define-syntax-rule (array-all-ormap arr pred?)
+  (array-all-or (array-map pred? arr)))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; array-mutable
@@ -343,7 +365,7 @@
 (let ([arr  (array #[#[1.0 1.0 2.0 3.0] #[0.0 -1.0 2.0 3.0]])])
   (check-equal? (array-axis-count arr 0 positive?) (array #[1 1 2 2]))
   (check-equal? (array-axis-count arr 1 positive?) (array #[4 2]))
-  (check-equal? (array-all-count arr positive?) 6))
+  (check-equal? (array-count positive? arr) 6))
 
 (let ([arr  (array #[#[1.0 1.0 2.0 3.0] #[0.0 -1.0 2.0 3.0]])])
   (check-equal? (array-axis-andmap arr 0 positive?) (array #[#f #f #t #t]))
@@ -366,12 +388,12 @@
   (check-equal? (array-all-ormap arr positive?) #f))
 
 (let ([arr  (make-array #() 0.0)])
-  (check-equal? (array-all-count arr positive?) 0)
+  (check-equal? (array-count positive? arr) 0)
   (check-equal? (array-all-andmap arr positive?) #f)
   (check-equal? (array-all-ormap arr positive?) #f))
 
 (let ([arr  (make-array #() 1.0)])
-  (check-equal? (array-all-count arr positive?) 1)
+  (check-equal? (array-count positive? arr) 1)
   (check-equal? (array-all-andmap arr positive?) #t)
   (check-equal? (array-all-ormap arr positive?) #t))
 
@@ -382,7 +404,7 @@
   (check-equal? (array-axis-count arr 1 positive?)  (array #[0 0 0 0]))
   (check-equal? (array-axis-andmap arr 1 positive?) (array #[#t #t #t #t]))
   (check-equal? (array-axis-ormap arr 1 positive?)  (array #[#f #f #f #f]))
-  (check-equal? (array-all-count arr positive?) 0)
+  (check-equal? (array-count positive? arr) 0)
   (check-equal? (array-all-andmap arr positive?) #t)
   (check-equal? (array-all-ormap arr positive?) #f))
 
@@ -394,12 +416,12 @@
 (check-exn exn? (λ () (array-fft (make-array #(3) 1))))
 
 (let ([arr  (make-array #(4) 1)])
-  (check array-all= (array-fft arr) (array #[4 0 0 0]))
-  (check array-all= (array-inverse-fft (array-fft arr)) arr))
+  (check-true (array-all-and (array= (array-fft arr) (array #[4 0 0 0]))))
+  (check-true (array-all-and (array= (array-inverse-fft (array-fft arr)) arr))))
 
 (let ([arr  (make-array #(2 2) 1)])
-  (check array-all= (array-fft arr) (array #[#[4 0] #[0 0]]))
-  (check array-all= (array-inverse-fft (array-fft arr)) arr))
+  (check-true (array-all-and (array= (array-fft arr) (array #[#[4 0] #[0 0]]))))
+  (check-true (array-all-and (array= (array-inverse-fft (array-fft arr)) arr))))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Unsafe ref
@@ -744,7 +766,7 @@
 (let ([arr  (indexes-array #(4))])
   (check-exn exn? (λ () (array-axis-ref arr 1 0)))
   (check-equal? (array-axis-ref arr 0 2)
-                (array #(2))))
+                (array '#(2))))
 
 (let ([arr  (indexes-array #(2 2))])
   (check-equal? (array-axis-ref arr 0 0)
