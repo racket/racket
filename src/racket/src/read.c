@@ -142,6 +142,8 @@ static MZ_INLINE intptr_t SPAN(Scheme_Object *port, intptr_t pos) {
 #define mz_shape_hash_list 2
 #define mz_shape_hash_elem 3
 #define mz_shape_vec_plus_infix 4
+#define mz_shape_fl_vec 5
+#define mz_shape_fx_vec 6
 
 typedef struct Readtable {
   Scheme_Object so;
@@ -207,6 +209,20 @@ static Scheme_Object *read_vector(Scheme_Object *port, Scheme_Object *stxsrc,
 				  Scheme_Hash_Table **ht,
 				  Scheme_Object *indentation,
 				  ReadParams *params, int allow_infix);
+static Scheme_Object *read_flvector (Scheme_Object *port, Scheme_Object *stxsrc, 
+                                  intptr_t line, intptr_t col, intptr_t pos,
+                                  int opener, char closer,
+                                  intptr_t requestLength, const mzchar *reqBuffer,
+                                  Scheme_Hash_Table **ht,
+                                  Scheme_Object *indentation,
+                                  ReadParams *params, int allow_infix);
+static Scheme_Object *read_fxvector (Scheme_Object *port, Scheme_Object *stxsrc, 
+                                  intptr_t line, intptr_t col, intptr_t pos,
+                                  int opener, char closer,
+                                  intptr_t requestLength, const mzchar *reqBuffer,
+                                  Scheme_Hash_Table **ht,
+                                  Scheme_Object *indentation,
+                                  ReadParams *params, int allow_infix);
 static Scheme_Object *read_number(int init_ch,
 				  Scheme_Object *port, Scheme_Object *stxsrc,
 				  intptr_t line, intptr_t col, intptr_t pos,
@@ -291,6 +307,25 @@ static Scheme_Object *readtable_call(int w_char, int ch, Scheme_Object *proc, Re
 				     Scheme_Object *port, Scheme_Object *src, intptr_t line, intptr_t col, intptr_t pos,
                                      int get_info,
 				     Scheme_Hash_Table **ht, Scheme_Object *modpath_stx);
+static Scheme_Object *read_flonum(Scheme_Object *port, 
+				  Scheme_Object *stxsrc, 
+				  Scheme_Hash_Table **ht,
+				  Scheme_Object *indentation, 
+				  ReadParams *params,
+				  int comment_mode);
+static Scheme_Object *read_fixnum(Scheme_Object *port, 
+				  Scheme_Object *stxsrc, 
+				  Scheme_Hash_Table **ht,
+				  Scheme_Object *indentation, 
+				  ReadParams *params,
+				  int comment_mode);
+static Scheme_Object *read_number_literal(Scheme_Object *port, 
+				  Scheme_Object *stxsrc, 
+                                  int is_float, int is_not_float,
+				  Scheme_Hash_Table **ht,
+				  Scheme_Object *indentation, 
+				  ReadParams *params,
+				  int comment_mode);
 
 #define READTABLE_WHITESPACE 0x1
 #define READTABLE_CONTINUING 0x2
@@ -831,6 +866,86 @@ static Scheme_Object *read_inner_inner_k(void)
 
 #define MAX_GRAPH_ID_DIGITS 8
 
+static int read_vector_length(Scheme_Object *port, Readtable *table, int *ch, mzchar *tagbuf, mzchar *vecbuf, int *vector_length, int *digits, int *overflow)
+{
+  int i = 0, j = 0, nch;
+  *vector_length = -1;
+  *overflow = 0;
+  *digits = 0;
+
+  while (NOT_EOF_OR_SPECIAL((*ch)) && isdigit_ascii((*ch))) {
+    if (*digits <= MAX_GRAPH_ID_DIGITS)
+      (*digits)++;
+
+    /* For vector error msgs, want to drop leading zeros: */
+    if (j || ((*ch) != '0')) {
+      if (j < 60) {
+        vecbuf[j++] = (*ch);
+      } else if (j == 60) {
+        vecbuf[j++] = '.';
+        vecbuf[j++] = '.';
+        vecbuf[j++] = '.';
+        vecbuf[j] = 0;
+      }
+    }
+
+    /* For tag error msgs, want to keep zeros: */
+    if (i < 60) {
+      tagbuf[i++] = (*ch);
+    } else if (i == 60) {
+      tagbuf[i++] = '.';
+      tagbuf[i++] = '.';
+      tagbuf[i++] = '.';
+      tagbuf[i] = 0;
+    }
+
+    if (!(*overflow)) {
+      intptr_t old_len;
+
+      if (*vector_length < 0)
+        *vector_length = 0;
+
+      old_len = *vector_length;
+      *vector_length = ((*vector_length) * 10) + ((*ch) - 48);
+      if ((*vector_length < 0)|| ((*vector_length / 10) != old_len)) {
+        *overflow = 1;
+      }
+    }
+    nch = scheme_getc_special_ok(port);
+    (*ch) = nch;
+  }
+
+  if (*overflow)
+    *vector_length = -2;
+  vecbuf[j] = 0;
+  tagbuf[i] = 0;
+
+  return readtable_effective_char(table, (*ch));
+}
+
+static Scheme_Object *
+read_plus_minus_period_leading_number(Scheme_Object *port, Scheme_Object *stxsrc,
+    int ch, intptr_t line, intptr_t col, intptr_t pos,
+    int is_float, int is_not_float,
+    Scheme_Hash_Table **ht, Scheme_Object *indentation, ReadParams *params,
+    Readtable *table)
+{
+  int ch2;
+  Scheme_Object *special_value;
+  ch2 = scheme_peekc_special_ok(port);
+  if ((NOT_EOF_OR_SPECIAL(ch2) && isdigit_ascii(ch2)) || (ch2 == '.')
+      || ((ch2 == 'i') || (ch2 == 'I') /* Maybe inf */
+          || (ch2 == 'n') || (ch2 == 'N') /* Maybe nan*/ )) {
+    /* read_number tries to get a number, but produces a symbol if number parsing doesn't work: */
+    special_value = read_number(ch, port, stxsrc, line, col, pos, 
+        is_float, is_not_float, 10, 0, ht, indentation, params, table);
+  } else {
+    special_value = read_symbol(ch, 0, port, stxsrc, line, col, pos, ht, indentation, params, table);
+  }
+  return special_value;
+}
+
+
 static Scheme_Object *
 read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table **ht,
 		 Scheme_Object *indentation, ReadParams *params,
@@ -1027,15 +1142,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
     case '+':
     case '-':
     case '.': /* ^^^ fallthrough ^^^ */
-      ch2 = scheme_peekc_special_ok(port);
-      if ((NOT_EOF_OR_SPECIAL(ch2) && isdigit_ascii(ch2)) || (ch2 == '.')
-	  || ((ch2 == 'i') || (ch2 == 'I') /* Maybe inf */
-              || (ch2 == 'n') || (ch2 == 'N') /* Maybe nan*/ )) {
-	/* read_number tries to get a number, but produces a symbol if number parsing doesn't work: */
-	special_value = read_number(ch, port, stxsrc, line, col, pos, 0, 0, 10, 0, ht, indentation, params, table);
-      } else {
-	special_value = read_symbol(ch, 0, port, stxsrc, line, col, pos, ht, indentation, params, table);
-      }
+      special_value = read_plus_minus_period_leading_number(port, stxsrc, ch, line, col, pos, 0, 0, ht, indentation, params, table);
       break;
     case '#':
       ch = scheme_getc_special_ok(port);
@@ -1143,9 +1250,65 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
                     ? scheme_make_stx_w_offset(scheme_false, line, col, pos, 2, stxsrc, STX_SRCTAG)
                     : scheme_false);
           } else {
-            GC_CAN_IGNORE const mzchar str[] = { 'f', 'a', 'l', 's', 'e', 0 };
-            return read_delimited_constant(ch, str, scheme_false, port, stxsrc, line, col, pos, 
-                                           indentation, params, table);
+            int next;
+            next = scheme_peekc_special_ok(port);
+            switch (next) {
+              case 'l':
+              case 'x': 
+                {
+                  int vector_length = -1;
+                  int overflow = 0, digits = 0, effective_ch;
+                  mzchar tagbuf[64], vecbuf[64]; /* just for errors */
+                  int ch;
+                  ch = scheme_getc_special_ok(port);
+                  ch = scheme_getc_special_ok(port);
+                  if (isdigit_ascii(ch)) {
+                    effective_ch = read_vector_length(port, table, &ch, tagbuf, vecbuf, &vector_length, &digits, &overflow);
+                  }
+                  else {
+                    effective_ch = ch; 
+                  }
+                  switch (effective_ch)
+                  {
+                    case '(':
+                      if (next == 'l')
+                        return read_flvector(port, stxsrc, line, col, pos, ch, ')', vector_length, vecbuf, ht, indentation, params, 0);
+                      else
+                        return read_fxvector(port, stxsrc, line, col, pos, ch, ')', vector_length, vecbuf, ht, indentation, params, 0);
+                      break;
+                    case '[':
+                      if (!params->square_brackets_are_parens) {
+                        scheme_read_err(port, stxsrc, line, col, pos, 2, effective_ch, indentation, "read: bad syntax `#f%c['", next);
+                        return NULL;
+                      } else
+                        if (next == 'l')
+                          return read_flvector(port, stxsrc, line, col, pos, ch, ']', vector_length, vecbuf, ht, indentation, params, 0);
+                        else
+                          return read_fxvector(port, stxsrc, line, col, pos, ch, ']', vector_length, vecbuf, ht, indentation, params, 0);
+                      break;
+                    case '{':
+                      if (!params->curly_braces_are_parens) {
+                        scheme_read_err(port, stxsrc, line, col, pos, 2, effective_ch, indentation, "read: bad syntax `#f%c{'", next);
+                        return NULL;
+                      } else
+                        if (next == 'l')
+                          return read_flvector(port, stxsrc, line, col, pos, ch, '}', vector_length, vecbuf, ht, indentation, params, 0);
+                        else
+                          return read_fxvector(port, stxsrc, line, col, pos, ch, '}', vector_length, vecbuf, ht, indentation, params, 0);
+                      break;
+                    default:
+                      scheme_read_err(port, stxsrc, line, col, pos, 2, effective_ch, indentation,
+                                      "read: expected `(' `[' or `{' after #f%c", next);
+                  }
+                }
+              default:
+                {
+                  GC_CAN_IGNORE const mzchar str[] = { 'f', 'a', 'l', 's', 'e', 0 };
+                  return read_delimited_constant(ch, str, scheme_false, port, stxsrc, line, col, pos, 
+                                                 indentation, params, table);
+                }
+            } 
+
           }
 	case 'c':
 	case 'C':
@@ -1671,56 +1834,9 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	default:
           {
 	    int vector_length = -1;
-	    int i = 0, j = 0, overflow = 0, digits = 0, effective_ch;
+	    int overflow = 0, digits = 0, effective_ch;
 	    mzchar tagbuf[64], vecbuf[64]; /* just for errors */
-
-	    while (NOT_EOF_OR_SPECIAL(ch) && isdigit_ascii(ch)) {
-	      if (digits <= MAX_GRAPH_ID_DIGITS)
-		digits++;
-
-	      /* For vector error msgs, want to drop leading zeros: */
-	      if (j || (ch != '0')) {
-		if (j < 60) {
-		  vecbuf[j++] = ch;
-		} else if (j == 60) {
-		  vecbuf[j++] = '.';
-		  vecbuf[j++] = '.';
-		  vecbuf[j++] = '.';
-		  vecbuf[j] = 0;
-		}
-	      }
-
-	      /* For tag error msgs, want to keep zeros: */
-	      if (i < 60) {
-		tagbuf[i++] = ch;
-	      } else if (i == 60) {
-		tagbuf[i++] = '.';
-		tagbuf[i++] = '.';
-		tagbuf[i++] = '.';
-		tagbuf[i] = 0;
-	      }
-
-	      if (!overflow) {
-		intptr_t old_len;
-
-		if (vector_length < 0)
-		  vector_length = 0;
-
-		old_len = vector_length;
-		vector_length = (vector_length * 10) + (ch - 48);
-		if ((vector_length < 0)|| ((vector_length / 10) != old_len)) {
-		  overflow = 1;
-		}
-	      }
-	      ch = scheme_getc_special_ok(port);
-	    }
-
-	    if (overflow)
-	      vector_length = -2;
-	    vecbuf[j] = 0;
-	    tagbuf[i] = 0;
-
-            effective_ch = readtable_effective_char(table, ch);
+            effective_ch = read_vector_length(port, table, &ch, tagbuf, vecbuf, &vector_length, &digits, &overflow);
 
 	    if (effective_ch == '(')
 	      return read_vector(port, stxsrc, line, col, pos, ch, ')', vector_length, vecbuf, ht, indentation, params, 0);
@@ -2646,8 +2762,16 @@ read_list(Scheme_Object *port,
 	prefetched = NULL;
       } else {
 	scheme_ungetc(ch, port);
-	car = read_inner(port, stxsrc, ht, indentation, params, 
-                         RETURN_FOR_SPECIAL_COMMENT);
+        switch (shape) {
+          case mz_shape_fl_vec:
+            car = read_flonum(port, NULL, ht, indentation, params, RETURN_FOR_SPECIAL_COMMENT);
+            break;
+          case mz_shape_fx_vec:
+            car = read_fixnum(port, NULL, ht, indentation, params, RETURN_FOR_SPECIAL_COMMENT);
+            break;
+          default:
+	    car = read_inner(port, stxsrc, ht, indentation, params, RETURN_FOR_SPECIAL_COMMENT);
+        }
 	if (!car) continue; /* special was a comment */
       }
       /* can't be eof, due to check above */
@@ -2808,6 +2932,116 @@ static Scheme_Object *attach_shape_property(Scheme_Object *list,
     return scheme_stx_property(list, paren_shape_symbol, opener);
   }
   return list;
+}
+
+static Scheme_Object *read_flonum(Scheme_Object *port, 
+				  Scheme_Object *stxsrc, 
+				  Scheme_Hash_Table **ht,
+				  Scheme_Object *indentation, 
+				  ReadParams *params,
+				  int comment_mode)
+{
+  intptr_t line = 0, col = 0, pos = 0;
+  intptr_t line2 = 0, col2 = 0, pos2 = 0;
+  Scheme_Object *n;
+  scheme_tell_all(port, &line, &col, &pos);
+  n = read_number_literal(port, stxsrc, 1, 0, ht, indentation, params, comment_mode);
+  if (SCHEME_DBLP(n))
+    return n;
+  else {
+    scheme_tell_all(port, &line2, &col2, &pos2);
+    //printf("%d %d %d %d %d %d\n", line, col, pos, line2, col2, pos2);
+    scheme_read_err(port, stxsrc, line, col, pos, pos2-pos, -1, indentation, "read: expected flonum, got %V", n);
+  }
+  return NULL;
+}
+
+static Scheme_Object *read_fixnum(Scheme_Object *port, 
+				  Scheme_Object *stxsrc, 
+				  Scheme_Hash_Table **ht,
+				  Scheme_Object *indentation, 
+				  ReadParams *params,
+				  int comment_mode)
+{
+  intptr_t line = 0, col = 0, pos = 0;
+  intptr_t line2 = 0, col2 = 0, pos2 = 0;
+  Scheme_Object *n;
+  scheme_tell_all(port, &line, &col, &pos);
+  n = read_number_literal(port, stxsrc, 0, 1, ht, indentation, params, comment_mode);
+  if (SCHEME_INTP(n))
+    return n;
+  else
+    scheme_tell_all(port, &line2, &col2, &pos2);
+    scheme_read_err(port, stxsrc, line, col, pos, pos2-pos, -1, indentation, "read: expected fixnum, got %V", n);
+  return NULL;
+}
+
+static Scheme_Object *read_number_literal(Scheme_Object *port, 
+				  Scheme_Object *stxsrc, 
+                                  int is_float, int is_not_float,
+				  Scheme_Hash_Table **ht,
+				  Scheme_Object *indentation, 
+				  ReadParams *params,
+				  int comment_mode)
+{
+  int ch, ch2;
+  intptr_t line = 0, col = 0, pos = 0;
+  Scheme_Object *special_value = NULL;
+  Readtable *table;
+
+  table = params->table;
+  scheme_tell_all(port, &line, &col, &pos);
+  ch = scheme_getc_special_ok(port);
+  switch (ch) {
+    case '+':
+    case '-':
+    case '.': /* ^^^ fallthrough ^^^ */
+      special_value = read_plus_minus_period_leading_number(port, stxsrc, ch, line, col, pos, is_float, is_not_float, ht, indentation, params, table);
+      break;
+    case '#':
+      ch = scheme_getc_special_ok(port);
+      switch (ch ) {
+	case 'X':
+	case 'x': 
+          /* 0 0 */
+          return read_number(-1, port, stxsrc, line, col, pos, is_float, is_not_float, 16, 1, ht, indentation, params, table);
+	  break;
+	case 'B':
+	case 'b': 
+          /* 0 0 */
+          return read_number(-1, port, stxsrc, line, col, pos, is_float, is_not_float, 2, 1, ht, indentation, params, table);
+	  break;
+	case 'O':
+	case 'o': 
+          /* 0 0 */
+          return read_number(-1, port, stxsrc, line, col, pos, is_float, is_not_float, 8, 1, ht, indentation, params, table);
+	  break;
+	case 'D':
+	case 'd': 
+          /* 0 0 */
+          return read_number(-1, port, stxsrc, line, col, pos, is_float, is_not_float, 10, 1, ht, indentation, params, table);
+	  break;
+	case 'E':
+	case 'e': 
+          /* 0 1 */
+          return read_number(-1, port, stxsrc, line, col, pos, is_float, is_not_float, 10, 0, ht, indentation, params, table);
+	  break;
+	case 'I':
+	case 'i': 
+          /* 1 0 */
+          return read_number(-1, port, stxsrc, line, col, pos, is_float, is_not_float, 10, 0, ht, indentation, params, table);
+	  break;
+        default:
+          scheme_read_err(port, stxsrc, line, col, pos, 2, ch, indentation, "read: expected one of [XxBbOoDdEeII]");
+      }
+    default:
+      if (isdigit_ascii(ch))
+        /* 0 0 */
+	special_value = read_number(ch, port, stxsrc, line, col, pos, is_float, is_not_float, 10, 0, ht, indentation, params, table);
+      else
+        scheme_read_err(port, stxsrc, line, col, pos, 2, ch, indentation, "read: expected digit");
+  }
+  return special_value;
 }
 
 /*========================================================================*/
@@ -3205,78 +3439,44 @@ char *scheme_extract_indentation_suggestions(Scheme_Object *indentation)
 /*========================================================================*/
 /*                            vector reader                               */
 /*========================================================================*/
+#define FUNC_NAME read_vector
+#define VTYPE_STR "vector"
+#define VEC_TYPE Scheme_Object
+#define ELMS_TYPE Scheme_Object **
+#define ELM_TYPE Scheme_Object *
+#define MZ_SHAPE allow_infix ? mz_shape_vec_plus_infix : mz_shape_vec
+#define MK_VEC() (Scheme_Object *) scheme_make_vector(requestLength, NULL)
+#define ELMS_SELECTOR SCHEME_VEC_ELS
+#define ELM_SELECTOR
+#define ELM_MAKE_ZERO scheme_make_integer(0)
+#define VEC_SIZE SCHEME_VEC_SIZE
+#include "read_vector.inc"
 
-/* "#(" has been read */
-static Scheme_Object *
-read_vector (Scheme_Object *port,
-	     Scheme_Object *stxsrc, intptr_t line, intptr_t col, intptr_t pos,
-	     int opener, char closer,
-	     intptr_t requestLength, const mzchar *reqBuffer,
-	     Scheme_Hash_Table **ht,
-	     Scheme_Object *indentation, ReadParams *params, int allow_infix)
-/* requestLength == -1 => no request
-   requestLength == -2 => overflow */
-{
-  Scheme_Object *lresult, *obj, *vec, **els;
-  int len, i;
+#define FUNC_NAME read_fxvector
+#define VTYPE_STR "fxvector"
+#define VEC_TYPE Scheme_Object
+#define ELMS_TYPE Scheme_Object **
+#define ELM_TYPE Scheme_Object *
+#define MZ_SHAPE mz_shape_fx_vec
+#define MK_VEC() (Scheme_Object *) scheme_alloc_fxvector(requestLength)
+#define ELMS_SELECTOR SCHEME_FXVEC_ELS
+#define ELM_SELECTOR
+#define ELM_MAKE_ZERO scheme_make_integer(0)
+#define VEC_SIZE SCHEME_FXVEC_SIZE
+#include "read_vector.inc"
 
-  lresult = read_list(port, stxsrc, line, col, pos, opener, closer, 
-                      allow_infix ? mz_shape_vec_plus_infix : mz_shape_vec, 
-                      1, ht, indentation, params);
-
-  if (requestLength == -2) {
-    scheme_raise_out_of_memory("read", "making vector of size %5", reqBuffer);
-    return NULL;
-  }
-
-  if (stxsrc)
-    obj = ((Scheme_Stx *)lresult)->val;
-  else
-    obj = lresult;
-
-  len = scheme_list_length(obj);
-  if (requestLength >= 0 && len > requestLength) {
-    char buffer[20];
-    sprintf(buffer, "%" PRIdPTR, requestLength);
-    scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), 0, indentation,
-		    "read: vector length %ld is too small, "
-		    "%d values provided",
-		    requestLength, len);
-    return NULL;
-  }
-  if (requestLength < 0)
-    requestLength = len;
-  vec = scheme_make_vector(requestLength, NULL);
-  els = SCHEME_VEC_ELS(vec);
-  for (i = 0; i < len ; i++) {
-    els[i] = SCHEME_CAR(obj);
-    obj = SCHEME_CDR(obj);
-  }
-  els = NULL;
-  if (i < requestLength) {
-    if (len)
-      obj = SCHEME_VEC_ELS(vec)[len - 1];
-    else {
-      obj = scheme_make_integer(0);
-      if (stxsrc)
-	obj = scheme_make_stx_w_offset(obj, line, col, pos, SPAN(port, pos), stxsrc, STX_SRCTAG);
-    }
-
-    els = SCHEME_VEC_ELS(vec);
-    for (; i < requestLength; i++) {
-      els[i] = obj;
-    }
-    els = NULL;
-  }
-
-  if (stxsrc) {
-    if (SCHEME_VEC_SIZE(vec) > 0)
-      SCHEME_SET_VECTOR_IMMUTABLE(vec);
-    ((Scheme_Stx *)lresult)->val = vec;
-    return lresult;
-  } else
-    return vec;
-}
+#define FUNC_NAME read_flvector
+#define VTYPE_STR "flvector"
+#define VEC_TYPE Scheme_Double_Vector
+#define ELMS_TYPE double *
+#define ELM_TYPE double
+#define MZ_SHAPE mz_shape_fl_vec
+#define MK_VEC() scheme_alloc_flvector(requestLength)
+#define ELMS_SELECTOR SCHEME_FLVEC_ELS
+#define ELM_SELECTOR SCHEME_DBL_VAL
+#define ELM_MAKE_ZERO 0.0
+#define VEC_SIZE SCHEME_FLVEC_SIZE
+#include "read_vector.inc"
 
 /*========================================================================*/
 /*                            symbol reader                               */

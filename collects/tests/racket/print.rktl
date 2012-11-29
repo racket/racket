@@ -5,6 +5,9 @@
 
 (Section 'printing)
 
+(require racket/flonum
+         racket/fixnum)
+
 (let ([ptest (lambda (s v)
                (define (to-string v)
                  (format "~v" v))
@@ -190,6 +193,9 @@
   (ptest "'`,#,#`a" '`,#,#`a)
   (ptest "'`,#,#`,@#,@a" '`,#,#`,@#,@a)
 
+  (ptest "'#fx(1 10000 3)" (fxvector 1 10000 3))
+  (ptest "'#fl(1.1 10000.1 3.1)" (flvector 1.1 10000.1 3.1))
+
   (void))
 
 (let ([in-string (lambda (f v)
@@ -249,5 +255,6 @@
   (test +inf.0 print-syntax-width))
 
 ;; ----------------------------------------
+
 
 (report-errs)

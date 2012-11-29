@@ -1531,12 +1531,8 @@ string_to_number (int argc, Scheme_Object *argv[])
   return v;
 }
 
-
-static char *double_to_string (double d, int alloc, int was_single)
+char *scheme_double_to_string (double d, char* s, int slen, int was_single, int *used_buffer)
 {
-  char buffer[100], *s;
-  int l, i, digits;
-
   if (MZ_IS_NAN(d))
 #ifdef MZ_USE_SINGLE_FLOATS
     if (was_single)
@@ -1581,13 +1577,15 @@ static char *double_to_string (double d, int alloc, int was_single)
        (single). That's big enough to get most right, small enough to
        avoid nonsense digits. But we'll loop in case it's not precise
        enough to get read-write invariance: */
+    int i, l, digits;
     GC_CAN_IGNORE char *loc;
+    char *buffer = s;
     if (was_single)
       digits = 6;
     else
       digits = 14;
     loc = scheme_push_c_numeric_locale();
-    while (digits < 30) {
+    while (digits < 30 && digits < slen) {
       double check;
       GC_CAN_IGNORE char *ptr;
 
@@ -1637,7 +1635,20 @@ static char *double_to_string (double d, int alloc, int was_single)
       }
     }
 #endif
-    
+    *used_buffer = 1;
+  }
+
+  return s;
+}
+
+static char *double_to_string (double d, int alloc, int was_single)
+{
+  char buffer[100];
+  char *s;
+  int used_buffer = 0;
+  s = scheme_double_to_string(d, buffer, 100, was_single, &used_buffer);
+
+  if (used_buffer) {
     s = (char *)scheme_malloc_atomic(strlen(buffer) + 1);
     strcpy(s, buffer);
     alloc = 0;
@@ -1645,6 +1656,7 @@ static char *double_to_string (double d, int alloc, int was_single)
 
   if (alloc) {
     char *s2;
+    int l;
     l = strlen(s) + 1;
     s2 = (char *)scheme_malloc_atomic(l);
     memcpy(s2, s, l);
