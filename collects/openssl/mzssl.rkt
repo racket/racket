@@ -47,11 +47,11 @@ TO DO:
   [ssl-available? boolean?]
   [ssl-load-fail-reason (or/c #f string?)]
   [ssl-make-client-context
-   (c-> protocol-symbol/c ssl-client-context?)]
+   (->* () (protocol-symbol/c) ssl-client-context?)]
   [ssl-secure-client-context
    (c-> ssl-client-context?)]
   [ssl-make-server-context
-   (c-> protocol-symbol/c ssl-server-context?)]
+   (->* () (protocol-symbol/c) ssl-server-context?)]
   [ssl-client-context?
    (c-> any/c boolean?)]
   [ssl-server-context?
@@ -153,7 +153,7 @@ TO DO:
         [any/c]
         any)]
   [ssl-abandon-port
-   (c-> (and/c input-port? ssl-port?) void?)]
+   (c-> (and/c ssl-port? output-port?) void?)]
   [ssl-port?
    (c-> any/c boolean?)]))
 
