@@ -862,8 +862,8 @@ Imports @racket[mred^] and exports @racket[setup:plt-installer^]. }
    and calls @racket[get-info/full] with the full path corresponding to the
    named collection and the @racket[namespace] argument.}
 
-@defproc[(get-info/full [path path?]
-                         [#:namespace namespace (or/c namespace? #f) #f])
+@defproc[(get-info/full [path path-string?]
+                        [#:namespace namespace (or/c namespace? #f) #f])
          (or/c
           (symbol? [(-> any)] . -> . any)
           false/c)]{
