@@ -443,7 +443,7 @@
                                (namespace-base-phase)))
        (if (eq? (syntax-e #'name) 'errortrace-key)
            top-e
-           (let ([top-e (normal (expand-syntax top-e))])
+           (let ([top-e (normal top-e)])
              (initialize-test-coverage)
              (add-test-coverage-init-code
               (transform-all-modules 
