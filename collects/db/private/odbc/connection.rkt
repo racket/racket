@@ -517,10 +517,13 @@
 
     ;; Transactions
 
-    (define/override (start-transaction* fsym isolation)
+    (define/override (start-transaction* fsym isolation option)
       (when (eq? isolation 'nested)
         (raise-misc-error fsym "already in transaction"
                           #:continued "nested transactions not supported for ODBC connections"))
+      (when option
+        ;; No options supported
+        (raise-argument-error fsym "#f" option))
       (let* ([db (get-db fsym)]
              [ok-levels
               (let-values ([(status value)

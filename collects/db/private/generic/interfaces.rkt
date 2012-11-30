@@ -44,7 +44,7 @@
 
     ;; in start-tx and end-tx, the final boolean arg indicates whether the
     ;; transaction is managed manually (#f) or by call-with-tx (#t)
-    start-transaction  ;; symbol (U 'serializable ...) boolean -> void
+    start-transaction  ;; symbol (U 'serializable ...) any boolean -> void
     end-transaction    ;; symbol (U 'commit 'rollback) boolean -> void
     transaction-status ;; symbol -> (U boolean 'invalid)
     free-statement))   ;; prepared-statement<%> boolean -> void
@@ -190,6 +190,7 @@ producing plain old exn:fail.
          error/tx-bad-stmt
          error/unbalanced-tx
          error/unclosed-tx
+         error/nested-tx-option
          error/exn-in-rollback
          error/stmt-arity
          error/stmt
@@ -239,6 +240,10 @@ producing plain old exn:fail.
   (raise-misc-error fsym "statement not allowed in current transaction state"
                     "statement type" stmt-type-string
                     "transaction state" tx-state))
+
+(define (error/nested-tx-option fsym option)
+  (raise-misc-error fsym "option not allowed for nested transaction"
+                    '("option" value) option))
 
 (define (error/exn-in-rollback fsym e1 e2)
   (raise-misc-error fsym "error during rollback"

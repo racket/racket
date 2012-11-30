@@ -539,19 +539,24 @@
 
     ;; == Transactions
 
-    (define/override (start-transaction* fsym isolation)
+    (define/override (start-transaction* fsym isolation option)
       (cond [(eq? isolation 'nested)
+             ;; FIXME: error if option != #f ?
              (let ([savepoint (generate-name)])
                (internal-query1 fsym (format "SAVEPOINT ~a" savepoint))
                savepoint)]
             [else
-             (let* ([isolation-level (isolation-symbol->string isolation)]
-                    [stmt (if isolation-level
-                              (string-append "BEGIN WORK ISOLATION LEVEL " isolation-level)
-                              "BEGIN WORK")])
-               ;; FIXME: also support
-               ;;   'read-only  => "READ ONLY"
-               ;;   'read-write => "READ WRITE"
+             (let* ([isolation-part (isolation-symbol->string isolation)]
+                    [option-part
+                     (case option
+                       ((read-write) " READ WRITE")
+                       ((read-only) " READ ONLY")
+                       ((#f) #f)
+                       (else (raise-argument-error fsym "(or/c 'read-write 'read-only #f)" option)))]
+                    [stmt (string-append "BEGIN WORK"
+                                         (if isolation-part " ISOLATION LEVEL " "")
+                                         (or isolation-part "")
+                                         (or option-part ""))])
                (internal-query1 fsym stmt)
                #f)]))
 
