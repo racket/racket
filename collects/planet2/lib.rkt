@@ -15,7 +15,6 @@
          racket/function
          racket/dict
          racket/set
-         unstable/debug
          racket/string
          file/untgz
          file/tar
@@ -23,6 +22,7 @@
          file/unzip
          setup/getinfo
          setup/dirs
+         racket/format
          "name.rkt"
          "util.rkt")
 
@@ -30,6 +30,20 @@
   (make-parameter #f))
 (define current-install-version-specific?
   (make-parameter #t))
+(define current-pkg-error
+  (make-parameter (lambda args (apply error 'pkg args))))
+
+(define (pkg-error . rest)
+  (apply (current-pkg-error) rest))
+
+(define (format-list l)
+  (if (null? l)
+      " [none]"
+      (apply string-append
+             (for/list ([v (in-list l)])
+               (format "\n   ~a" v)))))
+
+(define-logger planet2)
 
 (struct pkg-desc (source type name auto?))
 
@@ -73,7 +87,7 @@
           (unless fail-okay?
             (raise x)))])
     (make-parent-directory* file)
-    (dprintf "\t\tDownloading ~a to ~a\n" (url->string url) file)
+    (log-planet2-debug "\t\tDownloading ~a to ~a" (url->string url) file)
     (call-with-output-file file
       (λ (op)
         (call/input-url+200
@@ -139,17 +153,18 @@
                (for/and ([dep (in-list deps)])
                  (and (string? dep)
                       (package-source->name dep))))
-    (error 'pkg
-           "invalid `dependencies' specification\n  specification: ~e"
-           deps)))
+    (pkg-error (~a "invalid `deps' specification\n"
+                   "  specification: ~e")
+               deps)))
 
 (define (with-package-lock* t)
   (make-directory* (pkg-dir))
   (call-with-file-lock/timeout
    #f 'exclusive
    t
-   (λ () (error 'planet2 "Could not acquire package lock: ~e"
-                (pkg-lock-file)))
+   (λ () (pkg-error  (~a "could not acquire package lock\n"
+                        "  lock file: ~a")
+                    (pkg-lock-file)))
    #:lock-file (pkg-lock-file)))
 (define-syntax-rule (with-package-lock e ...)
   (with-package-lock* (λ () e ...)))
@@ -175,7 +190,9 @@
        (string->url i)
        (format "/pkg/~a" pkg))
       read))
-   (error 'planet2 "Cannot find package ~a on indexes" pkg)))
+   (pkg-error (~a "cannot find package on indexes\n"
+                  "  package: ~a")
+              pkg)))
 
 (define (remote-package-checksum pkg)
   (match pkg
@@ -207,9 +224,11 @@
     [(not fail?)
      #f]
     [else
-     (error 'planet2 "Package ~e not currently installed; ~e are installed"
-            pkg-name
-            (hash-keys db))]))
+     (pkg-error (~a "package not currently installed\n"
+                    "  package: ~a\n"
+                    "  currently installed:~a")
+                pkg-name
+                (format-list (hash-keys db)))]))
 
 (define (update-pkg-db! pkg-name info)
   (write-file-hash!
@@ -301,8 +320,9 @@
                     (set->list
                      remaining-pkg-db-set)))))
     (unless (set-empty? deps-to-be-removed)
-      (error 'planet2 "Cannot remove packages that are dependencies of other packages: ~e"
-             (set->list deps-to-be-removed))))
+      (pkg-error (~a "cannot remove packages that are dependencies of other packages\n"
+                     "  dependencies:~a")
+                 (format-list (set->list deps-to-be-removed)))))
   (for-each remove-package pkgs))
 
 (define (install-packages
@@ -326,7 +346,9 @@
           (package-source->name+type pkg given-type)))
     (define pkg-name (or given-pkg-name inferred-pkg-name))
     (when (and type (not pkg-name))
-      (error 'pkg "count not infer package name from source\n  source: ~e" pkg))
+      (pkg-error (~a "could not infer package name from source\n"
+                     "  source: ~a")
+                 pkg))
     (cond
      [(and (eq? type 'github)
            (not (regexp-match? #rx"^github://" pkg)))
@@ -419,8 +441,9 @@
                               (url-like "MANIFEST")
                               port->lines))
                            (unless manifest
-                             (error 'pkg "could not find MANIFEST for package source\n  source: ~e"
-                                    pkg))
+                             (pkg-error (~a "could not find MANIFEST for package source\n"
+                                            "  source: ~a")
+                                        pkg))
                            (for ([f (in-list manifest)])
                              (download-file! (url-like f)
                                              (path-like f)))))]
@@ -435,13 +458,13 @@
                 (values package-path
                         'file
                         (λ ()
-                           (dprintf "\tAssuming URL names a file\n")
+                           (log-planet2-debug "\tAssuming URL names a file")
                            (download-file! pkg-url package-path)))]))
             (dynamic-wind
              void
              (λ ()
                 (download-package!)
-                (dprintf "\tDownloading done, installing ~a as ~a\n"
+                (log-planet2-debug "\tDownloading done, installing ~a as ~a"
                          package-path pkg-name)
                 (install-package package-path
                                  download-type
@@ -454,21 +477,25 @@
       (when (and check-sums?
                  (install-info-checksum info)
                  (not checksum))
-        (error 'planet2 "Remote package ~a had no checksum"
-               pkg))
+        (pkg-error (~a "remote package had no checksum\n"
+                       "  package: ~a")
+                   pkg))
       (when (and checksum
                  (install-info-checksum info)
                  check-sums?
                  (not (equal? (install-info-checksum info) checksum)))
-        (error 'planet2 "Incorrect checksum on package ~e: expected ~e, got ~e"
-               pkg
-               (install-info-checksum info) checksum))
+        (pkg-error (~a "incorrect checksum on package\n"
+                       "  package: ~a\n"
+                       "  expected ~e\n"
+                       "  got ~e")
+                   pkg
+                   (install-info-checksum info) checksum))
       (update-install-info-checksum
        info
        checksum)]
      [(eq? type 'file)
       (unless (file-exists? pkg)
-        (error 'pkg "no such file\n  path: ~e" pkg))
+        (pkg-error "no such file\n  path: ~a" pkg))
       (define checksum-pth (format "~a.CHECKSUM" pkg))
       (define expected-checksum
         (and (file-exists? checksum-pth)
@@ -480,8 +507,10 @@
              (sha1 (current-input-port)))))
       (unless (or (not expected-checksum)
                   (string=? expected-checksum actual-checksum))
-        (error 'pkg "Incorrect checksum on package: expected ~e, got ~e"
-               expected-checksum actual-checksum))
+        (pkg-error (~a "incorrect checksum on package\n"
+                       "  expected: ~e\n"
+                       "  got: ~e")
+                   expected-checksum actual-checksum))
       (define checksum
         actual-checksum)
       (define pkg-format (filename-extension pkg))
@@ -505,12 +534,12 @@
             [#"plt"
              (make-directory* pkg-dir)
              (unpack pkg pkg-dir
-                     (lambda (x) (printf "~a\n" x))
+                     (lambda (x) (log-planet2-debug "~a" x))
                      (lambda () pkg-dir)
                      #f
                      (lambda (auto-dir main-dir file) pkg-dir))]
             [x
-             (error 'pkg "Invalid package format: ~e" x)])
+             (pkg-error "invalid package format\n  given: ~a" x)])
 
           (update-install-info-checksum
            (update-install-info-orig-pkg
@@ -524,7 +553,7 @@
      [(or (eq? type 'dir)
           (eq? type 'link))
       (unless (directory-exists? pkg)
-        (error 'pkg "no such directory\n  path: ~e" pkg))
+        (pkg-error "no such directory\n  path: ~a" pkg))
       (let ([pkg (directory-path-no-slash pkg)])
         (cond
          [(eq? type 'link)
@@ -552,14 +581,14 @@
       (when (and (install-info-checksum info)
                  check-sums?
                  (not (equal? (install-info-checksum info) checksum)))
-        (error 'planet2 "Incorrect checksum on package: ~e" pkg))
+        (pkg-error "incorrect checksum on package\n  package: ~a" pkg))
       (update-install-info-orig-pkg
        (update-install-info-checksum
         info
         checksum)
        `(pns ,pkg))]
      [else
-      (error 'pkg "cannot infer package source type\n  given: ~e" pkg)]))
+      (pkg-error "cannot infer package source type\n  source: ~a" pkg)]))
   (define db (read-pkg-db))
   (define db+with-dbs
     (let ([with-sys-wide (lambda (t)
@@ -596,7 +625,7 @@
     (cond
       [(and (not updating?) (package-info pkg-name #f))
        (clean!)
-       (error 'planet2 "~e is already installed" pkg-name)]
+       (pkg-error "package is already installed\n  package: ~a" pkg-name)]
       [(and
         (not force?)
         (for/or ([c (in-list (package-collections pkg-dir metadata-ns))]
@@ -632,12 +661,11 @@
        (λ (conflicting-pkg*file)
          (clean!)
          (match-define (cons conflicting-pkg file) conflicting-pkg*file)
-         (error 'planet2 (string-append
-                          "packages conflict\n"
-                          "  package: ~a\n"
-                          "  package: ~a\n"
-                          "  file: ~a")
-                pkg conflicting-pkg file))]
+         (pkg-error (~a "packages conflict\n"
+                        "  package: ~a\n"
+                        "  package: ~a\n"
+                        "  file: ~a")
+                    pkg conflicting-pkg file))]
       [(and
         (not (eq? dep-behavior 'force))
         (let ()
@@ -661,7 +689,7 @@
                    'fail))
            ['fail
             (clean!)
-            (error 'planet2 "missing dependencies: ~e" unsatisfied-deps)]
+            (pkg-error "missing dependencies\n  missing packages:~a" (format-list unsatisfied-deps))]
            ['search-auto
             (printf (string-append
                      "The following packages are listed as dependencies, but are not currently installed,\n"
@@ -685,7 +713,7 @@
                  (raise (vector infos unsatisfied-deps))]
                 [(or "n" "N")
                  (clean!)
-                 (error 'planet2 "missing dependencies: ~e" unsatisfied-deps)]
+                 (pkg-error "missing dependencies\n  missing packages:~a" (format-list unsatisfied-deps))]
                 [x
                  (eprintf "Invalid input: ~e\n" x)
                  (loop)]))]))]
@@ -701,14 +729,14 @@
               final-pkg-dir]
              [else
               pkg-dir]))
-         (dprintf "creating link to ~e" final-pkg-dir)
+         (log-planet2-debug "creating link to ~e" final-pkg-dir)
          (links final-pkg-dir
                 #:user? (not (current-install-system-wide?))
                 #:version-regexp (link-version-regexp)
                 #:root? #t)
          (define this-pkg-info
            (pkg-info orig-pkg checksum auto?))
-         (dprintf "updating db with ~e to ~e" pkg-name this-pkg-info)
+         (log-planet2-debug "updating db with ~e to ~e" pkg-name this-pkg-info)
          (update-pkg-db! pkg-name this-pkg-info))]))
   (define metadata-ns (make-metadata-namespace))
   (define infos
@@ -730,8 +758,8 @@
                                                         (and (list? c)
                                                              (pair? c)
                                                              (andmap path-string? c))))))
-                                   (error 'pkg "bad 'setup-collects value\n  value: ~e"
-                                          v)))))))
+                                   (pkg-error "bad 'setup-collects value\n  value: ~e"
+                                              v)))))))
   (define do-its
     (map (curry install-package/outer (append old-infos infos))
          (append old-descs descs)
@@ -782,15 +810,21 @@
                 (package-info pkg-name))
   (match orig-pkg
     [`(link ,_)
-     (error 'planet2 "Cannot update linked packages (~e is linked to ~e)"
-            pkg-name
-            orig-pkg)]
+     (pkg-error (~a "cannot update linked packages\n"
+                    "  package name: ~a\n"
+                    "  package source: ~a")
+                pkg-name
+                orig-pkg)]
     [`(dir ,_)
-     (error 'planet2 "Cannot update packages installed locally. (~e was installed via a local directory.)"
-            pkg-name)]
+     (pkg-error (~a "cannot update packages installed locally;\n"
+                    " package was installed via a local directory\n"
+                    "  package name: ~a")
+                pkg-name)]
     [`(file ,_)
-     (error 'planet2 "Cannot update packages installed locally. (~e was installed via a local file.)"
-            pkg-name)]
+     (pkg-error (~a "cannot update packages installed locally;\n"
+                    " package was installed via a local file\n"
+                    "  package name: ~a")
+                pkg-name)]
     [`(,_ ,orig-pkg-source)
      (define new-checksum
        (remote-package-checksum orig-pkg))
@@ -857,9 +891,9 @@
        [(list* (and key "indexes") val)
         (update-pkg-cfg! "indexes" val)]
        [(list key)
-        (error 'planet2 "unsupported config key: ~e" key)]
+        (pkg-error "unsupported config key\n  key: ~e" key)]
        [(list)
-        (error 'planet2 "must provide config key")])]
+        (pkg-error "config key not provided")])]
     [else
      (match key+vals
        [(list key)
@@ -868,17 +902,17 @@
            (for ([s (in-list (read-pkg-cfg/def "indexes"))])
              (printf "~a\n" s))]
           [_
-           (error 'planet2 "unsupported config key: ~e" key)])]
+           (pkg-error "unsupported config key\n  key: ~e" key)])]
        [(list)
-        (error 'planet2 "must provide config key")]
+        (pkg-error "config key not provided")]
        [_
-        (error 'planet2 "must provide only config key")])]))
+        (pkg-error "multiple config keys provided")])]))
 
 (define (create-cmd create:format maybe-dir)
   (begin
     (define dir (regexp-replace* #rx"/$" maybe-dir ""))
     (unless (directory-exists? dir)
-      (error 'planet2 "directory does not exist: ~e" dir))
+      (pkg-error "directory does not exist\n  path: ~a" dir))
     (match create:format
       ["MANIFEST"
        (with-output-to-file
@@ -928,7 +962,7 @@
                       #:as-paths (map (lambda (v) (build-path "collects" v)) names)
                       #:collections (map list (map path->string dirs))))]
          [x
-          (error 'pkg "Invalid package format: ~e" x)])
+          (pkg-error "invalid package format\n  format: ~a" x)])
        (define chk (format "~a.CHECKSUM" pkg))
        (with-output-to-file chk #:exists 'replace
                             (λ () (display (call-with-input-file pkg sha1))))])))
@@ -944,6 +978,8 @@
    (parameter/c boolean?)]
   [current-install-version-specific?
    (parameter/c boolean?)]
+  [current-pkg-error 
+   (parameter/c procedure?)]
   [pkg-desc 
    (-> string? 
        (or/c #f 'file 'dir 'link 'file-url 'dir-url 'github 'name) 
