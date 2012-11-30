@@ -200,9 +200,10 @@ sub-sub-commands:
        inferred for each @nonterm{pkg-source}.}
 
  @item{@DFlag{no-setup} --- Does not run @exec{raco setup} after installation. This behavior is also the case if the
-       environment variable @envvar{PLT_PLANET2_NOSETUP} is set (to anything).}
+       environment variable @envvar{PLT_PLANET2_NOSETUP} is set to any non-empty value.}
 
- @item{@DFlag{installation} or @Flag{i} --- Install system-wide rather than user-local.}
+ @item{@DFlag{installation} or @Flag{i} --- Install system-wide, rather than user-local.}
+ @item{@DFlag{shared} or @Flag{s} --- Install for all versions, rather than user-local and version-specific.}
 
  @item{@DFlag{deps} @nonterm{behavior} --- Selects the behavior for dependencies, where @nonterm{behavior} is one of
   @itemlist[
@@ -235,6 +236,7 @@ the following @nonterm{option}s:
  @itemlist[
  @item{@DFlag{no-setup} --- Same as for @exec{install}.}
  @item{@DFlag{installation} or @Flag{i} --- Same as for @exec{install}.}
+ @item{@DFlag{shared} or @Flag{s} --- Same as for @exec{install}.}
  @item{@DFlag{deps} @nonterm{behavior} --- Same as for @exec{install}.}
  @item{@DFlag{all} or @Flag{a} --- Update all packages, if no packages are given in the argument list.}
  @item{@DFlag{update-deps} --- Checks the named packages, and their dependencies (transitively) for updates.}
@@ -248,15 +250,21 @@ listed, this command fails atomically. It accepts the following @nonterm{option}
  @itemlist[
  @item{@DFlag{no-setup} --- Same as for @exec{install}.}
  @item{@DFlag{installation} or @Flag{i} --- Same as for @exec{install}.}
+ @item{@DFlag{shared} or @Flag{s} --- Same as for @exec{install}.}
  @item{@DFlag{force} --- Ignore dependencies when removing packages.}
  @item{@DFlag{auto} --- Remove packages that were installed by the @exec{search-auto} and @exec{search-ask} dependency behavior that are no longer required.}
  ]
 }
 
-@item{@exec{show} @nonterm{option} ... --- Print information about currently installed packages. It accepts the following @nonterm{option}s:
+@item{@exec{show} @nonterm{option} ... --- Print information about currently installed packages. 
+ By default, packages are shown for all installation modes (installation-wide,
+ user- and version-specific, and user-specific all-version).
+ The command accepts the following @nonterm{option}s:
 
  @itemlist[
- @item{@DFlag{installation} or @Flag{i} --- Same as for @exec{install}.}
+ @item{@DFlag{installation} or @Flag{i} --- Show only installation-wide packages.}
+ @item{@DFlag{user} or @Flag{u} --- Show only user-specific, version-specific packages.}
+ @item{@DFlag{shared} or @Flag{s} --- Show only user-specific, all-version packages.}
  ]
 }
 
@@ -265,6 +273,7 @@ View and modify package configuration options. It accepts the following @nonterm
 
  @itemlist[
  @item{@DFlag{installation} or @Flag{i} --- Same as for @exec{install}.}
+ @item{@DFlag{shared} or @Flag{s} --- Same as for @exec{install}.}
  @item{@DFlag{set} --- Sets an option, rather than printing it.}
  ]
 
@@ -547,31 +556,40 @@ the package manager.
 @subsection{Are package installations versioned with respect to the
 Racket version?}
 
-No. When you install a package, it is installed for all
-versions of Racket until you remove it. (In contrast, @|Planet1|
+By default, when you install a package, it is installed for a specific
+user and a specific version of Racket.
+
+You can use the @DFlag{installation} or @Flag{i} flag to install for
+all users of a particular Racket installation; an installation-wide
+package is not exactly version-specific, because the version of an
+installation can change if it corresponds to a source-code checkout
+that is periodically updated and rebuilt.
+
+Finally, you can use the @DFlag{shared} or @Flag{s} flag
+with @exec{raco pkg} commands to install user-specific packages that
+apply to all Racket versions that you run. (In contrast, @|Planet1|
 requires reinstallation of all packages every version change.)
 
 @subsection{Where and how are packages installed?}
 
-User-local packages are in @racket[(build-path (find-system-path
-'addon-dir) "pkgs")] and installation-wide packages are in
+User-local and version-specific packages are in @racket[(build-path
+(find-system-path 'addon-dir) (version) "pkgs")], user-local and
+all-version packages are in @racket[(build-path (find-system-path
+'addon-dir) "pkgs")], and installation-wide packages are in
 @racket[(build-path (find-lib-dir) "pkgs")]. They are linked as
 collection roots with @exec{raco link}.
 
 @subsection{How are user-local and installation-wide packages
 related?}
 
-They are totally distinct: packages are not compared with one another
-for conflicts.
+User-local packages are checked against installation-wide packages
+for conflicts. Installation-wide packages are checked only against
+other installation-wide packages.
 
-This is because it would be in-feasible to check them reliably. For
-example, if a system package is being installed by user A, then how
-could the system know that user B exists so B's packages could be
-checked for conflicts?
-
-We anticipate that most users will only one kind of package. The
-majority of users will employ user-local packages but classes or other
-shared workspaces might exclusively employ installation-wide packages.
+Beware that a new installation-wide package can invalidate previous
+conflict checks for user-specific packages. Similarly, new
+user-specific but all-version packages can invalidate previous
+user-specific conflict checks for a different Racket version.
 
 @subsection{If packages have no version numbers, how can I update
 packages with error fixes, etc?}

@@ -6,7 +6,7 @@
 
 (define (setup no-setup? installation? setup-collects)
   (unless (or no-setup?
-              (getenv "PLT_PLANET2_NOSETUP"))
+              (not (member (getenv "PLT_PLANET2_NOSETUP") '(#f ""))))
     (setup:setup
      #:make-user? (not installation?)
      #:collections (and setup-collects
@@ -28,6 +28,7 @@
   [#:bool no-setup () ("Don't run 'raco setup' after changing packages"
                        "(generally not a good idea)")]
   [#:bool installation ("-i") "Operate on the installation-wide package database"]
+  [#:bool shared ("-s") "Install user-specific packages as shared for all versions"]
   [(#:sym #f) deps ()
    ("Specify the behavior for dependencies;"
     "options are:"
@@ -44,7 +45,8 @@
                    "this is a global setting for all installs for this command, which means"
                    "that it affects dependencies... so make sure the dependencies exist first")]
   #:args pkg-source
-  (parameterize ([current-install-system-wide? installation])
+  (parameterize ([current-install-system-wide? installation]
+                 [current-install-version-specific? (not shared)])
     (with-package-lock
      (define setup-collects
        (install-cmd #:dep-behavior deps
@@ -58,6 +60,7 @@
   [#:bool no-setup () ("Don't run 'raco setup' after changing packages"
                        "(generally not a good idea)")]
   [#:bool installation ("-i") "Operate on the installation-wide package database"]
+  [#:bool shared ("-s") "Operate on the user-specific all-version package database"]
   [#:bool all ("-a") ("Update all packages;"
                       "only if no packages are given on the command line")]
   [(#:sym #f) deps ()
@@ -72,7 +75,8 @@
     "  search-auto: like 'search-ask' but does not ask for permission to install")]
   [#:bool update-deps () "Check named packages' dependencies for updates"]
   #:args pkgs
-  (parameterize ([current-install-system-wide? installation])
+  (parameterize ([current-install-system-wide? installation]
+                 [current-install-version-specific? (not shared)])
     (with-package-lock
      (define setup-collects
        (update-packages pkgs
@@ -86,10 +90,12 @@
   [#:bool no-setup () ("Don't run 'raco setup' after changing packages"
                        "(generally not a good idea)")]
   [#:bool installation ("-i") "Operate on the installation-wide package database"]
+  [#:bool shared ("-s") "Operate on the user-specific all-version package database"]
   [#:bool force () "Force removal of packages"]
   [#:bool auto () "Remove automatically installed packages with no dependencies"]
   #:args pkgs
-  (parameterize ([current-install-system-wide? installation])
+  (parameterize ([current-install-system-wide? installation]
+                 [current-install-version-specific? (not shared)])
     (with-package-lock
      (remove-packages pkgs
                       #:auto? auto
@@ -97,17 +103,34 @@
      (setup no-setup installation #f)))]
  [show
   "Show information about installed packages"
-  [#:bool installation ("-i") "Operate on the installation-wide package database"]
+  [#:bool installation ("-i") "Show only the installation-wide package database"]
+  [#:bool shared ("-s") "Show only the user-specific all-version package database"]
+  [#:bool user ("-u") "Show only the user- and version-specific package database"]
   #:args ()
-  (parameterize ([current-install-system-wide? installation])
-    (with-package-lock
-     (show-cmd)))]
+  (define only-mode (cond
+                     [installation 'i]
+                     [shared 's]
+                     [user 'u]
+                     [else #f]))
+  (for ([mode '(i s u)])
+    (when (or (eq? mode only-mode) (not only-mode))
+      (unless only-mode
+        (printf "~a\n" (case mode
+                         [(i) "Installation-wide:"]
+                         [(s) "User-specific, all-version:"]
+                         [(u) "User-spcific, version-specific:"])))
+      (parameterize ([current-install-system-wide? (eq? mode 'i)]
+                     [current-install-version-specific? (eq? mode 'u)])
+        (with-package-lock
+         (show-cmd (if only-mode "" " "))))))]
  [config
   "View and modify the package configuration"
   [#:bool installation ("-i") "Operate on the installation-wide package database"]
+  [#:bool shared ("-s") "Operate on the user-specific all-version package database"]
   [#:bool set () "Completely replace the value"]
   #:args key+vals
-  (parameterize ([current-install-system-wide? installation])
+  (parameterize ([current-install-system-wide? installation]
+                 [current-install-version-specific? (not shared)])
     (with-package-lock
      (config-cmd set key+vals)))]
  [create
