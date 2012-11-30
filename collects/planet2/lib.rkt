@@ -28,6 +28,8 @@
 
 (define current-install-system-wide?
   (make-parameter #f))
+(define current-install-version-specific?
+  (make-parameter #t))
 
 (struct pkg-desc (source type name auto?))
 
@@ -79,9 +81,12 @@
          (λ (ip) (copy-port ip op)))))))
 
 (define (pkg-dir)
-  (build-path (if (current-install-system-wide?)
-                (find-lib-dir)
-                (find-system-path 'addon-dir))
+  (build-path (cond
+               [(current-install-system-wide?) (find-lib-dir)]
+               [(current-install-version-specific?)
+                (build-path (find-system-path 'addon-dir) (version))]
+               [else
+                (find-system-path 'addon-dir)])
               "pkgs"))
 (define (pkg-config-file)
   (build-path (pkg-dir) "config.rktd"))
@@ -92,8 +97,11 @@
 (define (pkg-lock-file)
   (make-lock-file-name (pkg-db-file)))
 
-(for-each make-directory*
-          (list (pkg-dir) (pkg-installed-dir)))
+(define (link-version-regexp)
+  (cond
+   [(current-install-system-wide?) #f]
+   [(current-install-version-specific?) (regexp (regexp-quote (version)))]
+   [else #f]))
 
 (define (make-metadata-namespace)
   (make-base-empty-namespace))
@@ -249,11 +257,13 @@
      (links pkg-dir
             #:remove? #t
             #:user? (not (current-install-system-wide?))
+            #:version-regexp (link-version-regexp)
             #:root? #t)]
     [_
      (links pkg-dir
             #:remove? #t
             #:user? (not (current-install-system-wide?))
+            #:version-regexp (link-version-regexp)
             #:root? #t)
      (delete-directory/files pkg-dir)]))
 
@@ -551,6 +561,27 @@
      [else
       (error 'pkg "cannot infer package source type\n  given: ~e" pkg)]))
   (define db (read-pkg-db))
+  (define db+with-dbs
+    (let ([with-sys-wide (lambda (t)
+                           (parameterize ([current-install-system-wide? #t])
+                             (t)))]
+          [with-vers-spec (lambda (t)
+                            (parameterize ([current-install-version-specific? #t])
+                              (t)))]
+          [with-vers-all (lambda (t)
+                            (parameterize ([current-install-version-specific? #f])
+                              (t)))]
+          [with-current (lambda (t) (t))])
+      (cond
+       [(current-install-system-wide?) (list (cons db with-current))]
+       [(current-install-version-specific?)
+        (list (cons (with-sys-wide read-pkg-db) with-sys-wide)
+              (cons db with-current)
+              (cons (with-vers-all read-pkg-db) with-vers-all))]
+       [else
+        (list (cons (with-sys-wide read-pkg-db) with-sys-wide)
+              (cons (with-vers-spec read-pkg-db) with-vers-spec)
+              db)])))
   (define (install-package/outer infos desc info)
     (match-define (pkg-desc pkg type orig-name auto?) desc)
     (match-define
@@ -581,12 +612,16 @@
                    (file-exists? (build-path other-d f)))))
           (or
            ;; Compare with main installation's collections
+           ;;  FIXME: this should check all collection paths that aren't
+           ;;  from the package system.
            (and (file-exists? (build-path (find-collects-dir) c f))
                 (cons "racket" (build-path c f)))
            ;; Compare with installed packages
-           (for/or ([other-pkg (in-hash-keys db)]
-                    #:unless (and updating? (equal? other-pkg pkg-name)))
-             (and (has-collection-file? (package-directory other-pkg))
+           (for*/or ([db+with-db (in-list db+with-dbs)]
+                     [other-pkg (in-hash-keys (car db+with-db))]
+                     #:unless (and updating? (equal? other-pkg pkg-name)))
+             (and ((cdr db+with-db)
+                   (lambda () (has-collection-file? (package-directory other-pkg))))
                   (cons other-pkg (build-path c f))))
            ;; Compare with simultaneous installs
            (for/or ([other-pkg-info (in-list infos)]
@@ -669,6 +704,7 @@
          (dprintf "creating link to ~e" final-pkg-dir)
          (links final-pkg-dir
                 #:user? (not (current-install-system-wide?))
+                #:version-regexp (link-version-regexp)
                 #:root? #t)
          (define this-pkg-info
            (pkg-info orig-pkg checksum auto?))
@@ -796,16 +832,17 @@
       #:dep-behavior dep-behavior
       to-update)]))
 
-(define (show-cmd)
+(define (show-cmd indent)
   (let ()
     (define db (read-pkg-db))
     (define pkgs (sort (hash-keys db) string-ci<=?))
     (table-display
      (list*
-      (list "Package(auto?)" "Checksum" "Source")
+      (list (format "~aPackage(auto?)" indent) "Checksum" "Source")
       (for/list ([pkg (in-list pkgs)])
         (match-define (pkg-info orig-pkg checksum auto?) (hash-ref db pkg))
-        (list (format "~a~a"
+        (list (format "~a~a~a"
+                      indent
                       pkg
                       (if auto?
                         "*"
@@ -905,6 +942,8 @@
  (contract-out
   [current-install-system-wide?
    (parameter/c boolean?)]
+  [current-install-version-specific?
+   (parameter/c boolean?)]
   [pkg-desc 
    (-> string? 
        (or/c #f 'file 'dir 'link 'file-url 'dir-url 'github 'name) 
@@ -913,26 +952,26 @@
        pkg-desc?)]
   [config-cmd
    (-> boolean? list?
-       void)]
+       void?)]
   [create-cmd
    (-> string? path-string?
-       void)]
+       void?)]
   [update-packages
    (->* ((listof string?))
         (#:dep-behavior dep-behavior/c
                         #:all? boolean?
                         #:deps? boolean?)
-        boolean?)]
+        (or/c #f (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [remove-packages
    (->* ((listof string?))
         (#:auto? boolean?
                  #:force? boolean?)
         void)]
   [show-cmd
-   (-> void)]
+   (-> string? void)]
   [install-cmd
    (->* ((listof pkg-desc?))
         (#:dep-behavior dep-behavior/c
                         #:force? boolean?
                         #:ignore-checksums? boolean?)
-        void)]))
+        (or/c #f (listof (or/c path-string? (non-empty-listof path-string?)))))]))
