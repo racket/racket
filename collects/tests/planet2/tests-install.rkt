@@ -39,13 +39,10 @@
     "local directory name fails because not inferred as such (inferred as package name)"
     $ "raco pkg install test-pkgs" =exit> 1)
    (shelly-case
-    "local directory name fails because not inferred as such (no default inference)"
-    $ "raco pkg install test-pkgs/pkg-a-first" =exit> 1)
-   (shelly-case
-    "local file name with bad suffix and not a package name"
+    "local file name with bad suffix and not a package name or directory"
     $ "raco pkg install tests-install.rkt" =exit> 1)
    (shelly-case
-    "not a file, directory, or valid package name"
+    "not a valid (inferred) package name"
     $ "raco pkg install 1+2" =exit> 1)
 
    (shelly-case
@@ -63,13 +60,13 @@
     $ "raco pkg install http://localhost:9999/planet2-test1.rar" =exit> 1)
    (shelly-case
     "remote/URL/http directory, no manifest fail"
-    $ "raco pkg install http://localhost:9999/planet2-test1/planet2-test1"
+    $ "raco pkg install http://localhost:9999/planet2-test1/planet2-test1/"
     =exit> 1
-    =stderr> #rx"Invalid package format")
+    =stderr> #rx"could not find MANIFEST")
    (shelly-case
     "remote/URL/http directory, bad manifest"
     ;; XXX why does this error now?
-    $ "raco pkg install http://localhost:9999/planet2-test1-manifest-error" =exit> 1)
+    $ "raco pkg install http://localhost:9999/planet2-test1-manifest-error/" =exit> 1)
 
    (shelly-case
     "local directory fails when not there"

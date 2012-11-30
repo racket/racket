@@ -28,6 +28,7 @@
                   (for-each (λ (x) (x)) l)))))
 
 (run-tests
+ "name"
  "basic" "create" "install"
  "network" "conflicts" "checksums"
  "deps" "update" 
