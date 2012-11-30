@@ -158,6 +158,8 @@ Only errors with an associated SQLSTATE are represented by
 exn:fail:sql, specifically only errors originating from a database
 backend or library. Other errors are typically raised using 'error',
 producing plain old exn:fail.
+
+For SQLite, use symbol instead of SQLSTATE string.
 |#
 
 ;; exn:fail:sql
