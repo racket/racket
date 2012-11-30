@@ -2044,7 +2044,8 @@
 [call/ec (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
 [call-with-continuation-barrier (-poly (a) (-> (-> a) a))]
 [continuation-prompt-available? (-> (make-Prompt-TagTop) B)]
-;; TODO?: continuation? is missing
+[continuation?
+ (asym-pred Univ B (-FS (-filter top-func 0) -top))]
 [continuation-prompt-tag? (make-pred-ty (make-Prompt-TagTop))]
 [dynamic-wind (-poly (a) (-> (-> ManyUniv) (-> a) (-> ManyUniv) a))]
 
