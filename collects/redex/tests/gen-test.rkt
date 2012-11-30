@@ -73,6 +73,9 @@
   (test-equal (generate-term nats #:satisfying (sum (s z) (s z) n) +inf.0)
               '(sum (s z) (s z) (s (s z))))
   
+  (test-equal (generate-term nats #:satisfying (sum z z (s z)) 5)
+              #f)
+  
   (for ([_ 100])
     (match (generate-term nats #:satisfying (sum n_1 n_2 n_3) 5)
       [`(sum ,l ,r ,res)
