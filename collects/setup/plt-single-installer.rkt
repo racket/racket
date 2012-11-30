@@ -38,7 +38,7 @@
          (setup #:jobs 1
                 #:file file
                 #:get-target-dir get-target-dir
-                #:planet-spec (and planet-spec (list planet-spec))
+                #:planet-specs (and planet-spec (list planet-spec))
                 #:collections collections))))
     (dynamic-wind
      void
