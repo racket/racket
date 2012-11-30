@@ -35,4 +35,4 @@
 ;; set up the type environment
 (define-initial-env initialize-contracted
   [default-continuation-prompt-tag
-    (-> (make-Prompt-Tagof Univ (-> ManyUniv Univ)))])
+    (-> (make-Prompt-Tagof ManyUniv (-> ManyUniv ManyUniv)))])
