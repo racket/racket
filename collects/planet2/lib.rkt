@@ -95,20 +95,20 @@
 (for-each make-directory*
           (list (pkg-dir) (pkg-installed-dir)))
 
-
 (define (make-metadata-namespace)
   (make-base-empty-namespace))
 
-(define (get-metadata metadata-ns pkg-dir key default
+(define (get-metadata metadata-ns pkg-dir key get-default
                       #:checker [checker void])
   (define get-info (get-info/full pkg-dir #:namespace metadata-ns))
   (define v
     (if get-info
-        (get-info key (lambda () default))
+        (get-info key get-default)
         ;; during a transition period, also check for "METADATA.rktd":
-        (and (eq? key 'deps)
-             (dict-ref (file->value* (build-path pkg-dir "METADATA.rktd") empty)
-                       'dependency default))))
+        (if (eq? key 'deps)
+            (dict-ref (file->value* (build-path pkg-dir "METADATA.rktd") empty)
+                      'dependency (get-default))
+            (get-default))))
   (checker v)
   v)
 
@@ -145,6 +145,10 @@
    #:lock-file (pkg-lock-file)))
 (define-syntax-rule (with-package-lock e ...)
   (with-package-lock* (λ () e ...)))
+
+(define (maybe-append lists)
+  (and (for/and ([v (in-list lists)]) (not (eq? v 'all)))
+       (apply append lists)))
 
 (define (read-pkg-cfg/def k)
   (define c (read-pkg-cfg))
@@ -603,7 +607,7 @@
         (not (eq? dep-behavior 'force))
         (let ()
           (define deps (get-metadata metadata-ns pkg-dir 
-                                     'deps empty
+                                     'deps (lambda () empty)
                                      #:checker check-dependencies))
           (define unsatisfied-deps
             (filter-not (λ (dep)
@@ -674,12 +678,31 @@
   (define infos
     (for/list ([v (in-list descs)])
       (install-package (pkg-desc-source v) (pkg-desc-type v) (pkg-desc-name v))))
+  (define setup-collects
+    (maybe-append
+     (for/list ([info (in-list (append old-infos infos))])
+       (define pkg-dir (install-info-directory info))
+       (get-metadata metadata-ns pkg-dir 
+                     'setup-collects (lambda () (package-collections
+                                                 pkg-dir
+                                                 metadata-ns))
+                     #:checker (lambda (v)
+                                 (unless (or (eq? v 'all)
+                                             (and (list? v)
+                                                  (for ([c (in-list v)])
+                                                    (or (path-string? c)
+                                                        (and (list? c)
+                                                             (pair? c)
+                                                             (andmap path-string? c))))))
+                                   (error 'pkg "bad 'setup-collects value\n  value: ~e"
+                                          v)))))))
   (define do-its
     (map (curry install-package/outer (append old-infos infos))
          (append old-descs descs)
          (append old-infos infos)))
   (pre-succeed)
-  (for-each (λ (t) (t)) do-its))
+  (for-each (λ (t) (t)) do-its)
+  setup-collects)
 
 (define (install-cmd descs
                      #:old-infos [old-infos empty]
@@ -743,7 +766,7 @@
 
 (define ((package-dependencies metadata-ns) pkg-name)
   (get-metadata metadata-ns (package-directory pkg-name) 
-                'deps empty 
+                'deps (lambda () empty)
                 #:checker check-dependencies))
 
 (define (update-packages in-pkgs
@@ -771,8 +794,7 @@
       #:updating? #t
       #:pre-succeed (λ () (for-each (compose remove-package pkg-desc-name) to-update))
       #:dep-behavior dep-behavior
-      to-update)
-     #t]))
+      to-update)]))
 
 (define (show-cmd)
   (let ()

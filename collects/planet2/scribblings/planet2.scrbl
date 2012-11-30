@@ -200,7 +200,7 @@ sub-sub-commands:
        inferred for each @nonterm{pkg-source}.}
 
  @item{@DFlag{no-setup} --- Does not run @exec{raco setup} after installation. This behavior is also the case if the
-       environment variable @envvar{PLT_PLANET2_NOSETUP} is set to @exec{1}.}
+       environment variable @envvar{PLT_PLANET2_NOSETUP} is set (to anything).}
 
  @item{@DFlag{installation} or @Flag{i} --- Install system-wide rather than user-local.}
 
@@ -481,6 +481,14 @@ The following fields are used by the package manager:
        is inferred from the @tech{package source} (i.e., dependencies are
        on package names, not package sources), while the @tech{package source} indicates
        where to get the package if needed to satisfy the dependency.}
+
+ @item{@racketidfont{setup-collects} --- a list of path strings and/or
+       lists of path strings, which are used as collection names to
+       set up via @exec{raco setup} after the package is installed, or
+       @racket['all] to indicate that all collections need to be
+       setup. By default, only collections included in the package are
+       set up (plus collections for global documentation indexes and
+       links).}
 
 ]
 
