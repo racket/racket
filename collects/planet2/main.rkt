@@ -4,10 +4,17 @@
          "commands.rkt"
          (prefix-in setup: setup/setup))
 
-(define (setup no-setup)
-  (unless (or no-setup
-              (equal? "1" (getenv "PLT_PLANET2_NOSETUP")))
-    (setup:setup)))
+(define (setup no-setup? installation? setup-collects)
+  (unless (or no-setup?
+              (getenv "PLT_PLANET2_NOSETUP"))
+    (setup:setup
+     #:make-user? (not installation?)
+     #:collections (and setup-collects
+                        (map (lambda (s)
+                               (if (list? s) s (list s)))
+                             (append setup-collects
+                                     (if installation? '("scribblings/main") null)
+                                     '("scribblings/main/user")))))))
 
 (commands
  "This tool is used for managing installed packages."
@@ -39,12 +46,13 @@
   #:args pkg-source
   (parameterize ([current-install-system-wide? installation])
     (with-package-lock
-     (install-cmd #:dep-behavior deps
-                  #:force? force
-                  #:ignore-checksums? ignore-checksums
-                  (for/list ([p (in-list pkg-source)])
-                    (pkg-desc p (or (and link 'link) type) name #f)))
-     (setup no-setup)))]
+     (define setup-collects
+       (install-cmd #:dep-behavior deps
+                    #:force? force
+                    #:ignore-checksums? ignore-checksums
+                    (for/list ([p (in-list pkg-source)])
+                      (pkg-desc p (or (and link 'link) type) name #f))))
+     (setup no-setup installation setup-collects)))]
  [update
   "Update packages"
   [#:bool no-setup () ("Don't run 'raco setup' after changing packages"
@@ -66,11 +74,13 @@
   #:args pkgs
   (parameterize ([current-install-system-wide? installation])
     (with-package-lock
-     (when (update-packages pkgs
-                            #:all? all
-                            #:dep-behavior deps
-                            #:deps? update-deps)
-       (setup no-setup))))]
+     (define setup-collects
+       (update-packages pkgs
+                        #:all? all
+                        #:dep-behavior deps
+                        #:deps? update-deps))
+     (when setup-collects
+       (setup no-setup installation setup-collects))))]
  [remove
   "Remove packages"
   [#:bool no-setup () ("Don't run 'raco setup' after changing packages"
@@ -84,7 +94,7 @@
      (remove-packages pkgs
                       #:auto? auto
                       #:force? force)
-     (setup no-setup)))]
+     (setup no-setup installation #f)))]
  [show
   "Show information about installed packages"
   [#:bool installation ("-i") "Operate on the installation-wide package database"]
