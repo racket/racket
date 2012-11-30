@@ -441,7 +441,8 @@
                        (λ ()
                          (match (gen-proc)
                            [`(,jf-name (,trms (... ...)))
-                            `(,jf-name ,@trms)])))
+                            `(,jf-name ,@trms)]
+                           [#f #f])))
                    #`(make-jf-gen/proc 'jf/mf-id #,clauses lang-id 'pat size))))]
           [_
            (raise-syntax-error 'redex-generator 
