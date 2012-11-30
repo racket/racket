@@ -62,8 +62,8 @@
           (when delenda
             (for ([pst (in-hash-values delenda)])
               (send pst finalize #f)))
-          (HANDLE fsym (sqlite3_reset stmt))
-          (HANDLE fsym (sqlite3_clear_bindings stmt))
+          (void (sqlite3_reset stmt))
+          (void (sqlite3_clear_bindings stmt))
           (for ([i (in-naturals 1)]
                 [param (in-list params)])
             (load-param fsym db stmt i param))
@@ -126,16 +126,22 @@
               (error/internal* fsym "bad parameter value" '("value" value) param)])))
 
     (define/private (step* fsym db stmt end-box fetch-limit)
-      (if (zero? fetch-limit)
-          null
-          (let ([c (step fsym db stmt)])
-            (cond [c
-                   (cons c (step* fsym db stmt end-box (sub1 fetch-limit)))]
-                  [else
-                   (HANDLE fsym (sqlite3_reset stmt))
-                   (HANDLE fsym (sqlite3_clear_bindings stmt))
-                   (when end-box (set-box! end-box #t))
-                   null]))))
+      (with-handlers ([exn:fail?
+                       (lambda (e)
+                         (void (sqlite3_reset stmt))
+                         (void (sqlite3_clear_bindings stmt))
+                         (raise e))])
+        (let loop ([fetch-limit fetch-limit])
+          (if (zero? fetch-limit)
+              null
+              (let ([c (step fsym db stmt)])
+                (cond [c
+                       (cons c (loop (sub1 fetch-limit)))]
+                      [else
+                       (void (sqlite3_reset stmt))
+                       (void (sqlite3_clear_bindings stmt))
+                       (when end-box (set-box! end-box #t))
+                       null]))))))
 
     (define/private (step fsym db stmt)
       (let ([s (HANDLE fsym (sqlite3_step stmt))])
