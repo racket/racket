@@ -37,6 +37,12 @@
                              (loop (+ i 1) (* n d))]
             [else  n])))
   
+  (: check-array-shape-size (Symbol Indexes -> Index))
+  (define (check-array-shape-size name ds)
+    (define size (array-shape-size ds))
+    (cond [(index? size)  size]
+          [else  (error name "array size ~e (for shape ~e) is too large (is not an Index)" size ds)]))
+  
   (: check-array-shape (In-Indexes (-> Nothing) -> Indexes))
   (define (check-array-shape ds fail)
     (define dims (vector-length ds))

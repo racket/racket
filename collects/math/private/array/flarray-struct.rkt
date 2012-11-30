@@ -25,7 +25,7 @@
   (define (unsafe-flarray ds vs)
     (define proc (make-unsafe-array-proc ds (λ (j) (unsafe-flvector-ref vs j))))
     (define set-proc (make-unsafe-array-set-proc Float ds (λ (j v) (unsafe-flvector-set! vs j v))))
-    (flarray ds 0 #t proc set-proc vs))
+    (flarray ds (flvector-length vs) (box #t) void proc set-proc vs))
   
   (: unsafe-vector->flarray (Indexes (Vectorof Real) -> FlArray))
   (define (unsafe-vector->flarray ds vs)

@@ -9,13 +9,13 @@
   (define x (list->array (sequence->list (in-range -2.0 0.800001 step))))
   (define y (array-slice-ref (list->array (sequence->list (in-range -1.4 1.400001 step)))
                              (list ::... (::new 1))))
-  (define c (array->fcarray (array+ x (array-scale y +1.0i))))
+  (define c (array->fcarray (array-make-rectangular x y)))
   (define-values (z divtime)
     (for/fold: ([z : FCArray c]
-                [divtime : (Array Integer)  (make-array (array-shape c) max-iters)]
+                [divtime : (Array Integer)  (array max-iters)]
                 ) ([i  (in-range max-iters)])
       (let ([z  (fcarray+ (fcarray-sqr z) c)])
-        (values z (array-strict (array-if (array-and (array> (fcarray-magnitude z) (flarray 4.0))
+        (values z (array-strict (array-if (array-and (array> (fcarray-magnitude z) (array 4.0))
                                                      (array= divtime (array max-iters)))
                                           (array i)
                                           divtime))))))

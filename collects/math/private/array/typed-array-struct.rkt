@@ -37,16 +37,6 @@
 ;; ===================================================================================================
 ;; Array data type: a function whose domain has a rectangular shape
 
-(: array-guard (All (A) (Indexes Index Boolean (Indexes -> A) Symbol
-                                 -> (Values Indexes Index Boolean (Indexes -> A)))))
-(define (array-guard ds size strict? proc name)
-  (cond [(zero? size)
-         (let ([size  (array-shape-size ds)])
-           (cond [(index? size)  (values (vector->immutable-vector ds) size strict? proc)]
-                 [else  (error 'array "array size ~e (for shape ~e) is too large (is not an Index)"
-                               size ds)]))]
-        [else  (values (vector->immutable-vector ds) size strict? proc)]))
-
 #|
 (: array-procedure (All (A) ((Array A) In-Indexes -> A)))
 (define (array-procedure arr js)
@@ -55,9 +45,9 @@
 
 (struct: (A) Array ([shape : Indexes]
                     [size : Index]
-                    [strict? : Boolean]
+                    [strict? : (Boxof Boolean)]
+                    [strict! : (-> Void)]
                     [unsafe-proc : (Indexes -> A)])
-  #:guard array-guard
   #:property prop:custom-print-quotable 'never
   #:property prop:custom-write (λ (arr port mode) ((array-custom-printer) arr 'array port mode))
   #:property prop:equal+hash (list array-recur-equal? array-hash-code array-hash-code)
@@ -70,42 +60,79 @@
     (ref (unsafe-array-index->value-index ds js))))
 
 (: array-dims (All (A) ((Array A) -> Index)))
-(begin-encourage-inline
-  (define (array-dims arr) (vector-length (Array-shape arr))))
+(define (array-dims arr)
+  (vector-length (Array-shape arr)))
+
+(: array-strict? (All (A) ((Array A) -> Boolean)))
+(define (array-strict? arr)
+  (unbox (Array-strict? arr)))
+
+(: array-strict! (All (A) ((Array A) -> Void)))
+(define (array-strict! arr)
+  (define strict? (Array-strict? arr))
+  (unless (unbox strict?)
+    ((Array-strict! arr))
+    (set-box! strict? #t)))
+
+(: unsafe-build-array (All (A) (Indexes (Indexes -> A) -> (Array A))))
+(define (unsafe-build-array ds f)
+  (define size (check-array-shape-size 'unsafe-build-array ds))
+  (define: data : (U #f (Vectorof A)) #f)
+  (define (strict!)
+    (set! data (inline-build-array-data ds (λ (js j) (f js)) A)))
+  (define unsafe-proc
+    (λ: ([js : Indexes])
+      (let ([data data])
+        (if data
+            (unsafe-vector-ref data (unsafe-array-index->value-index ds js))
+            (f js)))))
+  (Array ds size ((inst box Boolean) #f) strict! unsafe-proc))
+
+(: unsafe-build-strict-array (All (A) (Indexes (Indexes -> A) -> (Array A))))
+(define (unsafe-build-strict-array ds f)
+  (define size (check-array-shape-size 'unsafe-build-strict-array ds))
+  (Array ds size (box #t) void f))
 
 (: build-array (All (A) (In-Indexes (Indexes -> A) -> (Array A))))
 (define (build-array ds proc)
   (let ([ds  (check-array-shape
               ds (λ () (raise-argument-error 'build-array "(Vectorof Index)" 0 ds proc)))])
-    (Array ds 0 #f (λ: ([js : Indexes])
-                     (proc (vector->immutable-vector js))))))
+    (unsafe-build-array ds (λ: ([js : Indexes])
+                             (proc (vector->immutable-vector js))))))
 
-(: unsafe-build-array (All (A) (Indexes (Indexes -> A) -> (Array A))))
-(define (unsafe-build-array ds proc)
-  (Array ds 0 #f proc))
+(: build-strict-array (All (A) (In-Indexes (Indexes -> A) -> (Array A))))
+(define (build-strict-array ds proc)
+  (let ([ds  (check-array-shape
+              ds (λ () (raise-argument-error 'build-strict-array "(Vectorof Index)" 0 ds proc)))])
+    (unsafe-build-strict-array ds (λ: ([js : Indexes])
+                                    (proc (vector->immutable-vector js))))))
 
-(: flat-list->array (All (A) ((Vectorof Integer) (Listof A) -> (Array A))))
+(: flat-list->array (All (A) (In-Indexes (Listof A) -> (Array A))))
 (define (flat-list->array ds lst)
   (let ([ds  (check-array-shape ds (λ () (raise-argument-error 'array "(Vectorof Index)" ds)))])
     (define vs (list->vector lst))
-    (unsafe-build-array
+    (unsafe-build-strict-array
      ds (λ: ([js : Indexes]) (unsafe-vector-ref vs (unsafe-array-index->value-index ds js))))))
 
 (: array-lazy (All (A) ((Array A) -> (Array A))))
 (define (array-lazy arr)
   (define ds (Array-shape arr))
+  (define size (Array-size arr))
   (define proc (Array-unsafe-proc arr))
   (define: vs : (Vectorof (Promise A))
     (inline-build-array-data
      ds (λ (js j)
           ;; Because `delay' captures js in its closure, if we don't make this copy, `js' will have
           ;; been mutated by the time the promise is forced
+          ;; Using vector->immutable-vector to copy won't work: `proc' might need to mutate `js'
           (let ([js  (vector-copy-all js)])
             (delay (proc js))))
      (Promise A)))
-  (unsafe-build-array
-   ds (λ: ([js : Indexes])
-        (force (unsafe-vector-ref vs (unsafe-array-index->value-index ds js))))))
+  (define (strict!) (for: ([v  (in-vector vs)]) (force v)))
+  (define unsafe-proc
+    (λ: ([js : Indexes])
+      (force (unsafe-vector-ref vs (unsafe-array-index->value-index ds js)))))
+  (Array ds size ((inst box Boolean) #f) strict! unsafe-proc))
 
 ;; ===================================================================================================
 ;; Abstract settable array data type

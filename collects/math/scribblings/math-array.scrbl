@@ -82,14 +82,14 @@ are @deftech{non-strict}. Almost all array functions exported by @racket[math/ar
 non-strict arrays. Exceptions are noted in the documentation.
 
 @bold{Non-strict arrays are not lazy.} By default, arrays do not cache computed elements, but
-like functions, recompute them every time they are referred to. See @secref{array:strictness}
-for details.
+like functions, recompute them every time they are referred to. Unlike functions, they can have
+every element computed and cached at once. See @secref{array:strictness} for details.
 
 A @deftech{pointwise} operation is one that operates on each array element independently, on each
 corresponding pair of elements from two arrays independently, or on a corresponding collection
 of elements from many arrays independently. This is usually done using @racket[array-map].
 
-When a pointwise operation is performed on two arrays with different shapes, the arrays are
+When a pointwise operation is performed on arrays with different shapes, the arrays are
 @deftech{broadcast} so that their shapes match. See @secref{array:broadcasting} for details.
 
 @subsection{Quick Start}
@@ -113,9 +113,9 @@ Arrays can be made @tech{strict} using @racket[array-strict] or @racket[array->m
 @interaction[#:eval typed-eval
                     (array-strict arr)
                     (array->mutable-array arr)]
-The difference is that @racket[(array-strict arr)] returns @racket[arr] whenever @racket[arr] is
-already strict. (It therefore has a less precise return type.)
-See @secref{array:strictness} for details.
+While @racket[(array-strict arr)] causes @racket[arr] to compute and store all of its elements
+at once, @racket[array->mutable-array] makes a strict copy. See @secref{array:strictness} for
+details.
 
 Arrays can be indexed using @racket[array-ref], and settable arrays can be mutated using
 @racket[array-set!]:
@@ -189,17 +189,18 @@ between array operations, so not doing so provides opportunities for future para
 
 @margin-note*{Still, it is easier to reason about non-strict array performance than lazy array
               performance.}
-The downside is that it is more difficult to reason about the performance characteristics of
-operations on non-strict arrays. Also, when using arrays, you must decide which arrays to make
-strict. (This can be done using the @racket[array-strict] function.) Fortunately, there is a
-simple rule of thumb:
+One downside is that it is more difficult to reason about the performance characteristics of
+operations on non-strict arrays. Also, when using arrays, the user must decide which arrays to make
+strict. (This can be done using @racket[array-strict!] or @racket[array-strict].) Fortunately,
+there is a simple rule of thumb:
 
 @nested[#:style 'inset]{@bold{Make arrays strict when you must refer to most of their elements
                               more than once or twice.}}
 
 Additionally, having to name an array is a good indicator that it should be strict. In the
 following example, which computes @racket[(+ (expt x x) (expt x x))] for @racket[x] from @racket[0]
-to @racket[2499], every element in @racket[xrr] is computed twice:
+to @racket[2499], elements in @racket[xrr] are computed twice whenever elements in @racket[res]
+are referred to:
 @racketblock[(define xrr (array-expt (index-array #(50 50))
                                      (index-array #(50 50))))
              (define res (array+ xrr xrr))]
@@ -208,12 +209,9 @@ Having to name @racket[xrr] means we should make it strict:
                           (array-expt (index-array #(50 50))
                                       (index-array #(50 50)))))
              (define res (array+ xrr xrr))]
-Doing so halves the time it takes to compute @racket[res]'s elements because each
-@racket[(expt x x)] is computed only once.
+Doing so halves the time it takes to compute @racket[res]'s elements.
 
-An exception to these guidelines is non-strict arrays returned from constructors like
-@racket[make-array], which barely compute anything at all. Such exceptions are noted in each
-function's documentation. Another exception is returning an array from a function. In this
+An exception to these guidelines is returning an array from a function. In this
 case, application sites should make the array strict, if necessary.
 
 If you cannot determine whether to make arrays strict, or are using arrays for so-called
@@ -423,9 +421,27 @@ their predicates have @racket[Struct] filters:
 @defproc[(array-strict? [arr (Array A)]) Boolean]{
 Returns @racket[#t] when @racket[arr] is @tech{strict}.
 @examples[#:eval typed-eval
-                 (define arr (array #[0 1 2 3]))
+                 (define arr (array+ (array 10) (array #[0 1 2 3])))
                  (array-strict? arr)
-                 (array-strict? (array-strict arr))]
+                 (array-strict! arr)
+                 (array-strict? arr)]
+}
+
+@defproc[(array-strict! [arr (Array A)]) Void]{
+Causes @racket[arr] to compute and store all of its elements. Thereafter, @racket[arr]
+computes its elements by retrieving them from the store.
+
+If @racket[arr] is already strict, @racket[(array-strict! arr)] does nothing.
+}
+
+@defform[(array-strict arr)
+         #:contracts ([arr (Array A)])]{
+An expression form of @racket[array-strict!], which is often more convenient. First evaluates
+@racket[(array-strict! arr)], then returns @racket[arr].
+
+This is a macro so that Typed Racket will preserve @racket[arr]'s type exactly. If it were a
+function, @racket[(array-strict arr)] would always have the type @racket[(Array A)], even if
+@racket[arr] were a subtype of @racket[(Array A)], such as @racket[(Mutable-Array A)].
 }
 
 @defproc[(array-shape [arr (Array A)]) Indexes]{
@@ -463,7 +479,7 @@ Returns the vector of data that @racket[arr] contains.
 @section{Construction}
 
 @defform[(array #[#[...] ...])]{
-Creates an @racket[Array] from nested rows of expressions.
+Creates a @tech{strict} @racket[Array] from nested rows of expressions.
 
 The vector syntax @racket[#[...]] delimits rows. These may be nested to any depth, and must have a
 rectangular shape. Using square parentheses is not required, but is encouraged to help distinguish
@@ -515,17 +531,17 @@ the array's elements:
 
 @defproc[(make-array [ds In-Indexes] [value A]) (Array A)]{
 Returns an array with @tech{shape} @racket[ds], with every element's value as @racket[value].
-Analogous to @racket[make-vector], but the result is @tech{non-strict}.
+Analogous to @racket[make-vector], but does not allocate storage for its elements.
 @examples[#:eval typed-eval
                  (make-array #() 5)
                  (make-array #(1 2) 'sym)
                  (make-array #(4 0 2) "Invisible")]
-It is useless to make a strict copy of an array returned by @racket[make-array].
+The arrays returned by @racket[make-array] are @tech{strict}.
 }
 
 @defproc[(build-array [ds In-Indexes] [proc (Indexes -> A)]) (Array A)]{
 Returns an array with @tech{shape} @racket[ds] and @tech{procedure} @racket[proc].
-Analogous to @racket[build-vector], but the result is @tech{non-strict}.
+Analogous to @racket[build-vector], but returns a @tech{non-strict} array.
 @examples[#:eval typed-eval
                  (eval:alts
                   (define: fibs : (Array Natural)
@@ -539,21 +555,10 @@ Analogous to @racket[build-vector], but the result is @tech{non-strict}.
                  (eval:alts
                   fibs
                   (ann (array #[0 1 1 2 3 5 8 13 21 34]) (Array Natural)))]
-Because @racket[build-array] returns a non-strict array, @racket[fibs] may refer to itself
+Because @racket[build-array] returns non-strict arrays, @racket[fibs] may refer to itself
 within its definition. Of course, this naïve implementation computes its elements in time
 exponential in the size of @racket[fibs]. A quick, widely applicable fix is given in
 @racket[array-lazy]'s documentation.
-}
-
-@defproc[(array-strict [arr (Array A)]) (Array A)]{
-Returns a @tech{strict} array with the same elements as @racket[arr]. If
-@racket[(array-strict? arr)] is @racket[#t], returns @racket[arr].
-
-Currently, if @racket[(array-strict? arr)] is @racket[#f], @racket[(array-strict arr)] returns
-a new @racket[Mutable-Array]. Typed Racket code is unlikely to accidentally rely on this fact
-(see @racket[mutable-array?] for the reason), but untyped Racket code could easily do so. Refrain.
-The type used for new strict arrays could change to another descendant of @racket[Array] in a
-future release. Use @racket[array->mutable-array] to reliably get a mutable array.
 }
 
 @defproc[(array-lazy [arr (Array A)]) (Array A)]{
@@ -577,7 +582,7 @@ time. Speeding it up to linear time only requires wrapping its definition with @
                      fibs
                      (ann (array #[0 1 1 2 3 5 8 13 21 34]) (Array Natural)))]
 Printing a lazy array computes and caches all of its elements, as does applying
-@racket[array-strict] to it.
+@racket[array-strict!] to it.
 }
 
 @defproc[(make-mutable-array [ds In-Indexes] [vs (Vectorof A)]) (Mutable-Array A)]{
@@ -591,16 +596,12 @@ Returns a mutable array with @tech{shape} @racket[ds] and elements @racket[vs]; 
 }
 
 @defproc[(array->mutable-array [arr (Array A)]) (Mutable-Array A)]{
-Returns a mutable array with the same elements as @racket[arr].
-
-While @racket[array-strict] may return any subtype of @racket[Array], @racket[array->mutable-array]
-always returns a @racket[Mutable-Array]. Additionally, @racket[(array-strict arr)] may return
-@racket[arr] if @racket[arr] is already strict, but @racket[array->mutable-array] always makes a
-copy.
+Returns a mutable array with the same elements as @racket[arr]. The result is a copy of
+@racket[arr], even when @racket[arr] is mutable.
 }
 
 @defproc[(mutable-array-copy [arr (Mutable-Array A)]) (Mutable-Array A)]{
-Like @racket[(array->mutable-array arr)], but is restricted to mutable arrays. It is also faster.
+Like @racket[(array->mutable-array arr)], but restricted to mutable arrays. It is also faster.
 }
 
 @defproc[(indexes-array [ds In-Indexes]) (Array Indexes)]{
@@ -611,6 +612,8 @@ array.
                  (indexes-array #(4))
                  (indexes-array #(2 3))
                  (indexes-array #(4 0 2))]
+The resulting array does not allocate storage for its elements, and is @tech{strict}.
+(It is essentially the identity function for the domain @racket[ds].)
 }
 
 @defproc[(index-array [ds In-Indexes]) (Array Index)]{
@@ -619,6 +622,7 @@ the array.
 @examples[#:eval typed-eval
                  (index-array #(2 3))
                  (array-flatten (index-array #(2 3)))]
+Like @racket[indexes-array], this does not allocate storage for its elements, and is @tech{strict}.
 }
 
 @defproc[(axis-index-array [ds In-Indexes] [axis Integer]) (Array Index)]{
@@ -629,7 +633,7 @@ Returns an array with @tech{shape} @racket[ds], with each element set to its pos
                  (axis-index-array #(3 3) 0)
                  (axis-index-array #(3 3) 1)
                  (axis-index-array #() 0)]
-It is useless to make a strict copy of an array returned by @racket[axis-index-array].
+Like @racket[indexes-array], this does not allocate storage for its elements, and is @tech{strict}.
 }
 
 @defproc[(diagonal-array [dims Integer] [axes-length Integer] [on-value A] [off-value A])
@@ -639,6 +643,7 @@ on the diagonal (i.e. at indexes of the form @racket[(vector j j ...)] for @rack
 have the value @racket[on-value]; the rest have the value @racket[off-value].
 @examples[#:eval typed-eval
                  (diagonal-array 2 7 1 0)]
+Like @racket[indexes-array], this does not allocate storage for its elements, and is @tech{strict}.
 }
 
 

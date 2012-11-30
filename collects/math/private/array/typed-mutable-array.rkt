@@ -21,7 +21,7 @@
 (define (unsafe-mutable-array ds vs)
   (define proc (make-unsafe-array-proc ds (λ (j) (unsafe-vector-ref vs j))))
   (define set-proc (make-unsafe-array-set-proc A ds (λ (j v) (unsafe-vector-set! vs j v))))
-  (Mutable-Array ds (vector-length vs) #t proc set-proc vs))
+  (Mutable-Array ds (vector-length vs) (box #t) void proc set-proc vs))
 
 (: make-mutable-array (All (A) (In-Indexes (Vectorof A) -> (Mutable-Array A))))
 (define (make-mutable-array ds vs)
@@ -48,8 +48,3 @@
   (define ds (array-shape arr))
   (define g (unsafe-array-proc arr))
   (unsafe-mutable-array ds (inline-build-array-data ds (λ (js j) (g js)) A)))
-
-(: array-strict (All (A) ((Array A) -> (Array A))))
-(define (array-strict arr)
-  (cond [(array-strict? arr)  arr]
-        [else  (array->mutable-array arr)]))

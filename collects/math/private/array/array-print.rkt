@@ -18,10 +18,7 @@
 (: print-array (All (A) ((Array A) Symbol Output-Port (U #t #f 0 1) -> Any)))
 ;; The logic in `print-array' causes the REPL printer to try printing an array in each layout, and
 ;; keep the first successful one. An overflowing line means failure.
-(define (print-array orig-arr name port mode)
-  ;; Try to compute each element only once
-  (define arr (array-lazy orig-arr))
-  
+(define (print-array arr name port mode)
   ;; Called to print array elements; may recur (e.g. printing arrays of arrays)
   ;; We never have to consider the `mode' argument again after defining `recur-print'
   (define recur-print

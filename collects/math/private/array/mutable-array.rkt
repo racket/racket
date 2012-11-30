@@ -23,7 +23,6 @@
  mutable-array
  ;; Conversion
  array->mutable-array
- array-strict
  flat-vector->matrix)
 
 (define-syntax (mutable-array stx)
