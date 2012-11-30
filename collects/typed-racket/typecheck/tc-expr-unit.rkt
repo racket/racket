@@ -331,8 +331,9 @@
            [(tc-result1: (Continuation-Mark-Keyof: rhs))
             (tc-expr/check/type #'e2 rhs)
             (tc-expr/check #'e3 expected)]
-           [(? (λ _ (and (identifier? #'e1)
-                         (free-identifier=? #'pz:pk #'e1))))
+           [(? (λ (result)
+                 (and (identifier? #'e1)
+                      (free-identifier=? #'pz:pk #'e1))))
             (tc-expr/check/type #'e2 Univ)
             (tc-expr/check #'e3 expected)]
            [(tc-result1: key-t)
@@ -437,8 +438,9 @@
          [(tc-result1: (Continuation-Mark-Keyof: rhs))
           (tc-expr/check/type #'e2 rhs)
           (tc-expr #'e3)]
-         [(? (λ _ (and (identifier? #'e1)
-                       (free-identifier=? #'pz:pk #'e1))))
+         [(? (λ (result)
+               (and (identifier? #'e1)
+                    (free-identifier=? #'pz:pk #'e1))))
           (tc-expr/check/type #'e2 Univ)
           (tc-expr #'e3)]
          [(tc-result1: key-t)
