@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/function
+         raco/command-name
          "lib.rkt"
          "commands.rkt"
          (prefix-in setup: setup/setup))
@@ -15,6 +16,11 @@
                              (append setup-collects
                                      (if installation? '("scribblings/main") null)
                                      '("scribblings/main/user")))))))
+
+(define ((pkg-error cmd) . args)
+  (apply raise-user-error
+         (string->symbol (format "~a ~a" (short-program+command-name) cmd))
+         args))
 
 (commands
  "This tool is used for managing installed packages."
@@ -46,7 +52,8 @@
                    "that it affects dependencies... so make sure the dependencies exist first")]
   #:args pkg-source
   (parameterize ([current-install-system-wide? installation]
-                 [current-install-version-specific? (not shared)])
+                 [current-install-version-specific? (not shared)]
+                 [current-pkg-error (pkg-error 'install)])
     (with-package-lock
      (define setup-collects
        (install-cmd #:dep-behavior deps
@@ -76,7 +83,8 @@
   [#:bool update-deps () "Check named packages' dependencies for updates"]
   #:args pkgs
   (parameterize ([current-install-system-wide? installation]
-                 [current-install-version-specific? (not shared)])
+                 [current-install-version-specific? (not shared)]
+                 [current-pkg-error (pkg-error 'update)])
     (with-package-lock
      (define setup-collects
        (update-packages pkgs
@@ -95,7 +103,8 @@
   [#:bool auto () "Remove automatically installed packages with no dependencies"]
   #:args pkgs
   (parameterize ([current-install-system-wide? installation]
-                 [current-install-version-specific? (not shared)])
+                 [current-install-version-specific? (not shared)]
+                 [current-pkg-error (pkg-error 'remove)])
     (with-package-lock
      (remove-packages pkgs
                       #:auto? auto
@@ -120,7 +129,8 @@
                          [(s) "User-specific, all-version:"]
                          [(u) "User-spcific, version-specific:"])))
       (parameterize ([current-install-system-wide? (eq? mode 'i)]
-                     [current-install-version-specific? (eq? mode 'u)])
+                     [current-install-version-specific? (eq? mode 'u)]
+                 [current-pkg-error (pkg-error 'show)])
         (with-package-lock
          (show-cmd (if only-mode "" " "))))))]
  [config
@@ -130,7 +140,8 @@
   [#:bool set () "Completely replace the value"]
   #:args key+vals
   (parameterize ([current-install-system-wide? installation]
-                 [current-install-version-specific? (not shared)])
+                 [current-install-version-specific? (not shared)]
+                 [current-pkg-error (pkg-error 'config)])
     (with-package-lock
      (config-cmd set key+vals)))]
  [create
@@ -140,4 +151,5 @@
     "options are: zip (the default), tgz, plt")]
   [#:bool manifest () "Creates a manifest file for a directory, rather than an archive"]
   #:args (maybe-dir)
-  (create-cmd (if manifest "MANIFEST" (or format "zip")) maybe-dir)])
+  (parameterize ([current-pkg-error (pkg-error 'create)])
+    (create-cmd (if manifest "MANIFEST" (or format "zip")) maybe-dir))])

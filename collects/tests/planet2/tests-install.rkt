@@ -53,7 +53,7 @@
     $ "raco pkg install --type file test-pkgs/pkg-a-first/" =exit> 1)
    (shelly-case
     "local directory name fails because called a URL"
-    $ "raco pkg install --type url test-pkgs/pkg-a-first/" =exit> 1)
+    $ "raco pkg install --type file-url test-pkgs/pkg-a-first/" =exit> 1)
 
    (shelly-case
     "remote/URL/http directory, non-existant file"
