@@ -1163,13 +1163,15 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
        simpify in "syntax.c") and submodules won't re-expand correctly.
        So, check for a context-determined existing rename. */
     if (!SCHEME_HASHTP((Scheme_Object *)env) && env->module && (mode <= 2)) {
-      Scheme_Object *mod, *nm = id;
+      Scheme_Object *mod, *nm = id, *nom_modix = scheme_false;
       int skipped;
-      mod = scheme_stx_module_name(NULL, &nm, scheme_make_integer(env->phase), NULL, NULL, NULL, 
+      mod = scheme_stx_module_name(NULL, &nm, scheme_make_integer(env->phase), &nom_modix, NULL, NULL, 
                                    NULL, NULL, NULL, NULL, NULL, &skipped);
-      if (mod /* must refer to env->module, otherwise there would
-		 have been an error before getting here */
+      if (mod
           && !SAME_OBJ(mod, scheme_undefined)
+          /* refers to env->module if nom_modix has #f path */
+          && (!SAME_TYPE(SCHEME_TYPE(nom_modix), scheme_module_index_type)
+              || SCHEME_FALSEP(((Scheme_Modidx *)nom_modix)->path))
           && ((skipped == 0) || (mode < 2))
 	  && NOT_SAME_OBJ(nm, sym))
 	/* It has a rename already! */
