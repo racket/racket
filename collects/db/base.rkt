@@ -189,7 +189,8 @@
 
  [start-transaction
   (->* (connection?)
-       (#:isolation (or/c 'serializable 'repeatable-read 'read-committed 'read-uncommitted #f))
+       (#:isolation (or/c 'serializable 'repeatable-read 'read-committed 'read-uncommitted #f)
+        #:option any/c)
        void?)]
  [commit-transaction
   (-> connection? void?)]
@@ -201,7 +202,8 @@
   (-> connection? boolean?)]
  [call-with-transaction
   (->* (connection? (-> any))
-       (#:isolation (or/c 'serializable 'repeatable-read 'read-committed 'read-uncommitted #f))
+       (#:isolation (or/c 'serializable 'repeatable-read 'read-committed 'read-uncommitted #f)
+        #:option any/c)
        any)]
 
  [prop:statement

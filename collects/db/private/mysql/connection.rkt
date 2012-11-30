@@ -505,13 +505,16 @@
     ;;   - transaction deadlock = 1213 (ER_LOCK_DEADLOCK)
     ;;   - lock wait timeout (depends on config) = 1205 (ER_LOCK_WAIT_TIMEOUT)
 
-    (define/override (start-transaction* fsym isolation)
+    (define/override (start-transaction* fsym isolation option)
       (cond [(eq? isolation 'nested)
              (let ([savepoint (generate-name)])
                (query1 fsym (format "SAVEPOINT ~a" savepoint) #f #t)
                savepoint)]
             [else
              (let ([isolation-level (isolation-symbol->string isolation)])
+               (when option
+                 ;; No options supported
+                 (raise-argument-error fsym "#f" option))
                (when isolation-level
                  (query1 fsym (format "SET TRANSACTION ISOLATION LEVEL ~a" isolation-level) #f #t))
                (query1 fsym "START TRANSACTION" #f #t)

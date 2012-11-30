@@ -308,6 +308,19 @@
         (check-equal? (in-transaction? c) #t)
         (check-pred void? (commit-transaction c))
         (check-equal? (in-transaction? c) #f)))
+    (test-case "start w/ option"
+      (with-connection c
+        (for ([option
+               (case dbsys
+                 ((postgresql) '(read-only read-write))
+                 ((sqlite3) '(deferred immediate exclusive))
+                 (else '()))])
+          (check-pred void? (start-transaction c #:option option))
+          (check-equal? (in-transaction? c) #t)
+          (check-pred void? (commit-transaction c))
+          (check-equal? (in-transaction? c) #f))
+        (check-exn #rx"^start-transaction: "
+                   (lambda () (start-transaction c #:option 'no-such-option)))))
     (test-case "start, rollback"
       (with-connection c
         (check-pred void? (start-transaction c))
@@ -394,6 +407,20 @@
         (check-equal? (call-with-transaction c
                         (lambda () (query-value c (select-val "'abc'"))))
                       "abc")))
+    (test-case "cwt w/ option"
+      (with-connection c
+        (for ([option
+               (case dbsys
+                 ((postgresql) '(read-only read-write))
+                 ((sqlite3) '(deferred immediate exclusive))
+                 (else '()))])
+          (check-equal? (call-with-transaction c #:option option
+                          (lambda () (query-value c (select-val "'abc'"))))
+                        "abc"))
+        (check-exn #rx"^call-with-transaction"
+                   (lambda ()
+                     (call-with-transaction c #:option 'no-such-option
+                       (lambda () (query-value c (select-val "'abc'"))))))))
     (test-case "cwt w/ error"
       (with-connection c
         (check-exn exn:fail?

@@ -297,21 +297,23 @@
 
     ;; ----
 
-    (define/public (start-transaction fsym isolation cwt?)
+    (define/public (start-transaction fsym isolation option cwt?)
       (call-with-lock fsym
         (lambda ()
           (check-valid-tx-status fsym)
           (cond [(not tx-status)
-                 (start-transaction* fsym isolation)
+                 (start-transaction* fsym isolation option)
                  (set! tx-stack (list (cons #f cwt?)))]
                 [else ;; in transaction
                  (unless (eq? isolation #f)
                    (error/invalid-nested-isolation fsym isolation))
-                 (let ([savepoint (start-transaction* fsym 'nested)])
+                 (when option
+                   (error/nested-tx-option fsym option))
+                 (let ([savepoint (start-transaction* fsym 'nested #f)])
                    (set! tx-stack (cons (cons savepoint cwt?) tx-stack)))])))
       (void))
 
-    (define/public (start-transaction* fsym isolation)
+    (define/public (start-transaction* fsym isolation option)
       ;; returns string (savepoint name) if isolation = 'nested, #f otherwise
       (error/internal fsym "not implemented"))
 

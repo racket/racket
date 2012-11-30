@@ -271,8 +271,10 @@
 
 ;; ========================================
 
-(define (start-transaction c #:isolation [isolation #f])
-  (send c start-transaction 'start-transaction isolation #f))
+(define (start-transaction c
+                           #:isolation [isolation #f]
+                           #:option [option #f])
+  (send c start-transaction 'start-transaction isolation option #f))
 
 (define (commit-transaction c)
   (send c end-transaction 'commit-transaction 'commit #f))
@@ -280,8 +282,10 @@
 (define (rollback-transaction c)
   (send c end-transaction 'rollback-transaction 'rollback #f))
 
-(define (call-with-transaction c proc #:isolation [isolation #f])
-  (send c start-transaction '|call-with-transaction (start)| isolation #t)
+(define (call-with-transaction c proc
+                               #:isolation [isolation #f]
+                               #:option [option #f])
+  (send c start-transaction '|call-with-transaction (start)| isolation option #t)
   (with-handlers ([exn?
                    (lambda (e1)
                      (with-handlers ([exn?

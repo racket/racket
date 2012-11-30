@@ -629,7 +629,8 @@ implicitly rolled back.
                                    'read-committed
                                    'read-uncommitted
                                    #f)
-                             #f])
+                             #f]
+                            [#:option option any/c #f])
          void?]{
 
   Starts a transaction with isolation @racket[isolation-level]. If
@@ -637,8 +638,21 @@ implicitly rolled back.
   database-dependent; it may be a default isolation level or it may be
   the isolation level of the previous transaction.
 
+  The behavior of @racket[option] depends on the database system:
+  @itemlist[
+  @item{PostgreSQL supports @racket['read-only] and @racket['read-write]
+    for the @hyperlink["http://www.postgresql.org/docs/9.0/static/sql-set-transaction.html"]{corresponding
+    transaction options}.}
+  @item{SQLite supports @racket['deferred], @racket['immediate], and
+    @racket['exclusive] for the @hyperlink["http://www.sqlite.org/lang_transaction.html"]{corresponding
+    locking modes}.} 
+  @item{MySQL and ODBC no not support any options.}
+  ]
+  If @racket[option] is not supported, an exception is raised.
+
   If @racket[c] is already in a transaction, @racket[isolation-level]
-  must be @racket[#f], and a @tech{nested transaction} is opened.
+  and @racket[option] must both be @racket[#f], and a @tech{nested
+  transaction} is opened.
 }
 
 @defproc[(commit-transaction [c connection?]) void?]{
@@ -691,7 +705,8 @@ implicitly rolled back.
                                        'read-committed
                                        'read-uncommitted
                                        #f)
-                                 #f])
+                                 #f]
+                                [#:option option any/c #f])
          any]{
 
   Calls @racket[proc] in the context of a new transaction with

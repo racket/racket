@@ -248,7 +248,7 @@
     (define/private (read-tx-status)
       (not (sqlite3_get_autocommit -db)))
 
-    (define/override (start-transaction* fsym isolation)
+    (define/override (start-transaction* fsym isolation option)
       ;; Isolation level can be set to READ UNCOMMITTED via pragma, but
       ;; ignored in all but a few cases, don't bother.
       ;; FIXME: modes are DEFERRED | IMMEDIATE | EXCLUSIVE
@@ -257,8 +257,16 @@
                (internal-query1 fsym (format "SAVEPOINT ~a" savepoint))
                savepoint)]
             [else
-             (internal-query1 fsym "BEGIN TRANSACTION")
-             #f]))
+             ;; Note: pragma read_uncommitted irrelevant, since we don't use
+             ;; the shared page cache.
+             (let ([sql
+                    (case option
+                      ((deferred #f) "BEGIN TRANSACTION")
+                      ((immediate) "BEGIN IMMEDIATE TRANSACTION")
+                      ((exclusive) "BEGIN EXCLUSIVE TRANSACTION")
+                      (else (raise-argument-error fsym "(or/c 'deferred 'immediate 'exclusive #f)" option)))])
+               (internal-query1 fsym sql)
+               #f)]))
 
     (define/override (end-transaction* fsym mode savepoint)
       (case mode
