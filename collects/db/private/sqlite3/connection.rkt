@@ -306,10 +306,14 @@
       (call-with-values thunk
         (lambda (s . rest)
           (cond [(and (= s SQLITE_BUSY) (< iteration busy-retry-limit))
-                 (dbdebug "sqlite: busy, will retry")
                  (sleep busy-retry-delay)
                  (handle* who thunk (add1 iteration))]
-                [else (apply values (handle-status who s) rest)]))))
+                [else
+                 (when (> iteration 0)
+                   (dbdebug "continuing with ~s after SQLITE_BUSY x ~s"
+                            (if (= s SQLITE_BUSY) "SQLITE_BUSY" s)
+                            iteration))
+                 (apply values (handle-status who s) rest)]))))
 
     ;; Some errors can cause whole transaction to rollback;
     ;; (see http://www.sqlite.org/lang_transaction.html)
