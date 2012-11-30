@@ -32,7 +32,7 @@
        Float-Complex ds (λ (j v)
                           (unsafe-flvector-set! xs j (real-part v))
                           (unsafe-flvector-set! ys j (imag-part v)))))
-    (fcarray ds 0 #t proc set-proc xs ys))
+    (fcarray ds (flvector-length xs) (box #t) void proc set-proc xs ys))
   
   (: unsafe-vector->fcarray (Indexes (Vectorof Number) -> FCArray))
   (define (unsafe-vector->fcarray ds zs)
