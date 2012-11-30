@@ -66,11 +66,16 @@
 
  (proc-doc
   color:get-parenthesis-colors-table 
-  (-> (listof (list/c symbol? string? (vectorof (is-a?/c color%)))))
+  (-> (listof (list/c symbol? string? (vectorof (is-a?/c color%)) (or/c 'low 'high))))
   @{Returns a table of colors that get used for parenthesis highlighting.
     Each entry in the table consists of a symbolic name, a name to show
-    in a GUI, and the color to use. The colors are used to show the nesting
-    structure in the parens.})
+    in a GUI, the color to use, and the @racket[_priority] argument to
+    pass to @racket[text:basic<%> highlight-range] when highlighting the parens.
+    Generally the priority should be @racket['low] if the color is solid
+    (α=1) but can be @racket['high] if the α component is small.
+    
+    When an entry in the table has multiple colors, they are used to show the nesting
+    structure in the parentheses.})
  
  (thing-doc
   color:misspelled-text-color-style-name

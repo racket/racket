@@ -157,15 +157,33 @@
 
 (editor:set-standard-style-list-pref-callbacks)
 
-(color-prefs:set-default/color-scheme
- 'framework:paren-match-color
- (let ([gray-level
-        ;; old gray-level 192
-        (if (eq? (system-type) 'windows)
-            (* 3/4 256)
-            (- (* 7/8 256) 1))])
-   (make-object color% gray-level gray-level gray-level))
- (make-object color% 50 50 50))
+(let ([gray-level
+       ;; old gray-level 192
+       (if (eq? (system-type) 'windows)
+           (* 3/4 256)
+           (- (* 7/8 256) 1))])
+  (define default-color (make-object color% 0 0 0 (- 1. (/ gray-level 255))))
+  (define w-o-b-default-color (make-object color% 255 255 255 (/ 50 255)))
+  (color-prefs:set-default/color-scheme 'framework:paren-match-color
+                                        default-color
+                                        w-o-b-default-color)
+  
+  ;; when the preference is currently set to the old color,
+  ;; then just update it to the new one (if someone really
+  ;; wants the old default, they can still have a color that is
+  ;; off by one from the old default which should be ok)
+  (define current-color (preferences:get 'framework:paren-match-color))
+  (cond
+    [(and (= (send current-color red) gray-level)
+          (= (send current-color green) gray-level)
+          (= (send current-color blue) gray-level)
+          (= (send current-color alpha) 1.0))
+     (preferences:set 'framework:paren-match-color default-color)]
+    [(and (= (send current-color red) 50)
+          (= (send current-color green) 50)
+          (= (send current-color blue) 50)
+          (= (send current-color alpha) 1.0))
+     (preferences:set 'framework:paren-match-color w-o-b-default-color)]))
 
 (preferences:set-default 'framework:recently-opened-files/pos 
                          null 

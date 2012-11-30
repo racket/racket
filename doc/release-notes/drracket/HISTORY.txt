@@ -11,34 +11,39 @@
   . Automatic-parenthesis mode improvements 
     (thanks to Nadeem Abdul Hamid)
 
-    - Added some "smart-skip" behavior to insert-close-paren,
-      described in the documentation.
-      - When auto-parens mode is enabled,
-        the existing "balance-parens" keybinding invokes
-        insert-close-paren with a smart-skip argument of
-        'adjacent
-      - A new "balance-parens-forward" keybinding invokes
-        insert-close-paren with a smart-skip argument of
-        'forward (whether or not auto-parens mode is
-                        enabled)
+      - Added some "smart-skip" behavior to insert-close-paren,
+        described in the documentation.
+        - When auto-parens mode is enabled,
+          the existing "balance-parens" keybinding invokes
+          insert-close-paren with a smart-skip argument of
+          'adjacent
+        - A new "balance-parens-forward" keybinding invokes
+          insert-close-paren with a smart-skip argument of
+          'forward (whether or not auto-parens mode is
+                          enabled)
+  
+      - Some basic smart-skip behavior is also enabled for
+        strings ("...") and |...| pairs, specifically, typing
+        a double-quote or bar character when the cursor
+        immediately precedes one causes the cursor to simply
+        skip over the existing one
+  
+      - Tweaked insertion of block comment pairs in
+        auto-parens mode
+  
+      - In strings and line/block comments, auto-parens mode
+        no longer has any effect (you can still use the M+..
+        keybindings to force insertion of a particular brace
+        pair)
+  
+      - Detect when a character constant is being typed, and
+        don't insert brace pairs if so
+  
+  . DrRacket's window can now be substantially narrower
 
-    - Some basic smart-skip behavior is also enabled for
-      strings ("...") and |...| pairs, specifically, typing
-      a double-quote or bar character when the cursor
-      immediately precedes one causes the cursor to simply
-      skip over the existing one
-
-    - Tweaked insertion of block comment pairs in
-      auto-parens mode
-
-    - In strings and line/block comments, auto-parens mode
-      no longer has any effect (you can still use the M+..
-      keybindings to force insertion of a particular brace
-      pair)
-
-    - Detect when a character constant is being typed, and
-      don't insert brace pairs if so
-
+  . DrRacket's paren highlighting uses alpha-blending to avoid having
+    the highlight disappear completely when completely inside an
+    error.
 
 ------------------------------
        Version 5.3.1

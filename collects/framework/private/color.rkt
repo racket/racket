@@ -665,14 +665,14 @@ added get-regions
     ;;   Otherwise, it treats it like a boolean, where a true value  
     ;;   means the normal paren color and #f means an error color. 
     ;; numbers are expected to have zero be start-pos.
-    (define/private (highlight ls start end caret-pos color)
+    (define/private (highlight ls start end caret-pos color [priority 'low])
       (let* ([start-pos (lexer-state-start-pos ls)]
              [off (highlight-range (+ start-pos start) (+ start-pos end)
                                    (if (is-a? color color%)
                                        color
                                        (if color mismatch-color (get-match-color)))
                                    (= caret-pos (+ start-pos start))
-                                   'low)])
+                                   priority)])
         (set! clear-old-locations
               (let ([old clear-old-locations])
                 (λ ()
@@ -739,14 +739,16 @@ added get-regions
     ;; highlight-nested-region : lexer-state number number number -> void
     ;; colors nested regions of parentheses.
     (define/private (highlight-nested-region ls orig-start orig-end here)
+      (define priority (get-parenthesis-priority))
+      (define paren-colors (get-parenthesis-colors))
       (let paren-loop ([start orig-start]
                        [end orig-end]
                        [depth 0])
-        (when (< depth (vector-length (get-parenthesis-colors)))
+        (when (< depth (vector-length paren-colors))
           
           ;; when there is at least one more color in the vector we'll look
           ;; for regions to color at that next level
-          (when (< (+ depth 1) (vector-length (get-parenthesis-colors)))
+          (when (< (+ depth 1) (vector-length paren-colors))
             (let seq-loop ([inner-sequence-start (+ start 1)])
               (when (< inner-sequence-start end)
                 (let ([post-whitespace (skip-whitespace inner-sequence-start 'forward #t)])
@@ -761,7 +763,7 @@ added get-regions
                        (λ (after-non-paren-thing)
                          (seq-loop after-non-paren-thing))]))))))
           
-          (highlight ls start end here (vector-ref (get-parenthesis-colors) depth)))))
+          (highlight ls start end here (vector-ref paren-colors depth) priority))))
     
     ;; See docs
     (define/public (forward-match position cutoff)
@@ -1155,32 +1157,40 @@ added get-regions
 
 (define parenthesis-color-table #f)
 (define (get-parenthesis-colors-table)
+  (define (reverse-vec v) (list->vector (reverse (vector->list v))))
   (unless parenthesis-color-table
     (set! parenthesis-color-table
           (list
            (list 'shades-of-gray  
                  (string-constant paren-color-shades-of-gray)
-                 (between 180 180 180
-                          220 220 220))
+                 (reverse-vec
+                  (between .2 0 0 0
+                           .2 0 0 0))
+                 'high)
            (list 'shades-of-blue
                  (string-constant paren-color-shades-of-blue)
-                 (between 204 204 255
-                          153 153 255))
+                 (between .4 153 153 255
+                          .4 153 153 255)
+                 'high)
            (list 'spring
                  (string-constant paren-color-spring)
-                 (between 255 255 153
-                          204 255 153))
+                 (between 1 255 255 153
+                          1 204 255 153)
+                 'low)
            (list 'fall
                  (string-constant paren-color-fall)
-                 (between 255 204 153
-                          204 153 102))
+                 (between 1 255 204 153
+                          1 204 153 102)
+                 'low)
            (list 'winter
                  (string-constant paren-color-winter)
-                 (between 204 205 255
-                          238 238 255)))))
+                 (between 1 204 205 255
+                          1 238 238 255)
+                 'low))))
   (cons (list 'basic-grey
               (string-constant paren-color-basic-grey)
-              (vector (preferences:get 'framework:paren-match-color)))
+              (vector (preferences:get 'framework:paren-match-color))
+              'high)
         parenthesis-color-table))
 
 (define (get-parenthesis-colors) 
@@ -1189,16 +1199,23 @@ added get-regions
                     (car (get-parenthesis-colors-table)))])
     (caddr choice)))
 
-(define (between start-r start-g start-b end-r end-g end-b)
+(define (get-parenthesis-priority) 
+  (let ([choice (or (assoc (preferences:get 'framework:paren-color-scheme)
+                           (get-parenthesis-colors-table))
+                    (car (get-parenthesis-colors-table)))])
+    (list-ref choice 3)))
+
+(define (between start-a start-r start-g start-b end-a end-r end-g end-b)
   (let ([size 4])
     (build-vector
      4 
      (lambda (x) 
-       (let ([between (λ (start end) (floor (+ start (* (- end start) (/ x (- size 1))))))])
-         (make-object color% 
-           (between start-r end-r)
-           (between start-g end-g)
-           (between start-b end-b)))))))
+       (define (between start end) (+ start (* (- end start) (/ x (- size 1)))))
+       (make-object color% 
+         (floor (between start-r end-r))
+         (floor (between start-g end-g))
+         (floor (between start-b end-b))
+         (between start-a end-a))))))
 
 (define -text% (text-mixin text:keymap%))
 
