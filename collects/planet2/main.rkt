@@ -14,8 +14,10 @@
  [install
   "Install packages"
   [(#:sym #f) type ("-t") ("Type of <pkg-source>;"
-                           "options are: file, dir, url, github, or name;"
+                           "options are: file, dir, file-url, dir-url, github, or name;"
                            "if not specified, the type is inferred syntactically")]
+  [(#:str #f) name ("-n") ("Name of package, instead of inferred"
+                           "(makes sense only when a single <pkg-source> is given)")]
   [#:bool no-setup () ("Don't run 'raco setup' after changing packages"
                        "(generally not a good idea)")]
   [#:bool installation ("-i") "Operate on the installation-wide package database"]
@@ -39,11 +41,9 @@
     (with-package-lock
      (install-cmd #:dep-behavior deps
                   #:force? force
-                  #:link? link
                   #:ignore-checksums? ignore-checksums
-                  #:type (or (and link 'dir) 
-                             type)
-                  (map (curry cons #f) pkg-source))
+                  (for/list ([p (in-list pkg-source)])
+                    (pkg-desc p (or (and link 'link) type) name #f)))
      (setup no-setup)))]
  [update
   "Update packages"
@@ -104,9 +104,7 @@
   "Bundle a new package"
   [(#:str #f) format ()
    ("Select the format of the package to be created;"
-    "options are: tgz, zip, plt")]
+    "options are: zip (the default), tgz, plt")]
   [#:bool manifest () "Creates a manifest file for a directory, rather than an archive"]
   #:args (maybe-dir)
-  (unless (or manifest format)
-    (error 'planet2 "You must specify an archive format"))
-  (create-cmd (if manifest "MANIFEST" format) maybe-dir)])
+  (create-cmd (if manifest "MANIFEST" (or format "zip")) maybe-dir)])

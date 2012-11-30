@@ -1,1 +1,0 @@
-((dependency "pkg-a"))

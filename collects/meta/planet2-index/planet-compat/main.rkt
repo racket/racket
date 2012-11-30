@@ -334,9 +334,12 @@
                            all-deps)))
 
                 (printf "\tdeps ~a\n" deps)
-                (write-to-file
-                 `((dependency ,@deps))
-                 (build-path pkg-dir "METADATA.rktd"))))
+                (call-with-output-file*
+                 (build-path pkg-dir "info.rkt.rktd")
+                 (lambda (o)
+                   (fprintf o "#lang setup/infotab\n")
+                   (write `(define deps ',deps) o)))))
+
 
             (define pkg-pth (build-path pkg-depo pkg-depo-dir pkg-name.plt))
             (when-delete?
