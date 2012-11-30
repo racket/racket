@@ -3014,6 +3014,9 @@
       (parameterize ([relation-coverage (list c)])
         (term (f 1))
         (test (sorted-counts c) '(1 0 0))))
+    
+    ;; coverage for define-relation not working since
+    ;; it was changed to compile to judgment-form
     #;
     (let ([c (make-coverage R)])
       (parameterize ([relation-coverage (list c)])

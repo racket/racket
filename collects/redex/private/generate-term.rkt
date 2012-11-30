@@ -429,10 +429,20 @@
           [(size)
            (let* ([j-f (lookup-judgment-form-id #'jf/mf-id)]
                   [clauses (judgment-form-gen-clauses j-f)]
-                  [nts (definition-nts #'lang-id stx 'redex-generator)])
+                  [nts (definition-nts #'lang-id stx 'redex-generator)]
+                  [relation? (judgment-form-relation? j-f)]
+                  [args-stx (if relation?
+                                (syntax/loc #'args (args))
+                                #'args)]) 
              (with-syntax ([(pat (names ...) (names/ellipses ...))
-                            (rewrite-side-conditions/check-errs nts 'redex-generator #t #'args)])
-               #`(make-jf-gen/proc 'jf/mf-id #,clauses lang-id 'pat size)))]
+                            (rewrite-side-conditions/check-errs nts 'redex-generator #t args-stx)])
+               (if relation?
+                   #`(let ([gen-proc (make-jf-gen/proc 'jf/mf-id #,clauses lang-id 'pat size)])
+                       (λ ()
+                         (match (gen-proc)
+                           [`(,jf-name (,trms (... ...)))
+                            `(,jf-name ,@trms)])))
+                   #`(make-jf-gen/proc 'jf/mf-id #,clauses lang-id 'pat size))))]
           [_
            (raise-syntax-error 'redex-generator 
                                "expected an integer depth bound"

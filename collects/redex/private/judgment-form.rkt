@@ -1097,32 +1097,7 @@
                                              (λ ()
                                                #,(check-pats
                                                   #'(list comp-clauses ...)))))))
-       #`(values #,(do-compile-judgment-form-proc #'judgment-form-name
-                                                       #'mode-arg
-                                                       clauses
-                                                       rule-names
-                                                       contracts
-                                                       nts
-                                                       #'orig
-                                                       #'full-def
-                                                       syn-err-name)
-                 #,(with-syntax* ([(comp-clauses ...) 
-                                       (map (λ (c) (compile-gen-clause c mode nts syn-err-name 
-                                                                       #'judgment-form-name #'lang)) 
-                                            clauses)])
-                                     (if (identifier? #'orig)
-                                         (with-syntax ([prev-mk (judgment-form-mk-gen-clauses (lookup-judgment-form-id #'orig))])
-                                           #`(λ (effective-lang judgment-form-runtime-gen-clauses)
-                                               (define mk-prev-clauses (prev-mk effective-lang judgment-form-runtime-gen-clauses))
-                                               (λ ()
-                                                 (append 
-                                                  (mk-prev-clauses)
-                                                  #,(check-pats
-                                                     #'(list comp-clauses ...))))))
-                                         #`(λ (effective-lang judgment-form-runtime-gen-clauses)
-                                             (λ ()
-                                               #,(check-pats
-                                                  #'(list comp-clauses ...))))))))]))
+       #`(values #,proc-stx #,gen-stx))]))
 
 (define-for-syntax (rewrite-relation-prems clauses)
   (map (λ (c)
