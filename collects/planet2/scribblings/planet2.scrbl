@@ -1,7 +1,6 @@
 #lang scribble/manual
 @(require scribble/bnf)
 
-@(define Planet2 "Planet2")
 @(define @|Planet1| @|PLaneT|)
 
 @(define pkgname onscreen)
@@ -17,11 +16,12 @@
 
 @; ----------------------------------------
 
-@title{@|Planet2|: Package Management (Beta)}
+@title{Package Management in Racket (Beta)}
 @author[@author+email["Jay McCarthy" "jay@racket-lang.org"]]
 
-@|Planet2| is a system for managing the use of external code packages in
-your Racket installation.
+The Racket package manager lets you install new libraries and
+collections, and the Racket package sever helps other Racket
+programmers find libraries that you make available.
 
 @table-of-contents[]
 
@@ -140,9 +140,9 @@ bound to the source and @racket['checksum] bound to the
 checksum. Typically, the source will be a remote URL string.
 
 PLT supports two @tech{package name services}, which are enabled by
-default: @url{https://plt-etc.byu.edu:9004} for new @|Planet2|
+default: @url{https://plt-etc.byu.edu:9004} for new
 packages and @url{https://plt-etc.byu.edu:9003} for
-automatically generated @|Planet2| packages for old @|PLaneT|
+automatically generated packages for old @|PLaneT|
 packages. Anyone may host their own @tech{package name service}. The
 source for the PLT-hosted servers is in the
 @racket[(build-path (find-collects-dir) "meta" "planet2-index")]
@@ -508,9 +508,9 @@ were developed using the original @seclink[#:doc '(lib
 "planet/planet.scrbl") "top"]{@|Planet1|} package system.  This
 compatibility service is at
 @link["https://plt-etc.byu.edu:9003/"]{https://plt-etc.byu.edu:9003/},
-which is included by default in the @|Planet2| search path.
+which is included by default in the package-server search path.
 
-@|Planet2| copies of @|Planet1| packages are automatically created by the
+Copies of @|Planet1| packages are automatically created by the
 server according to the following system: for all packages that are in
 the @litchar{4.x} @|Planet1| repository, the latest minor version of
 @tt{@nonterm{user}/@nonterm{package}.plt/@nonterm{major-version}} will be available as
@@ -527,14 +527,12 @@ rather than @|Planet1|-style requires. For example, if any file contains
 @racket[(planet jaymccarthy/opencl/module)], then it is transliterated
 to @racket[jaymccarthy/opencl1/module]. @emph{This transliteration is
 purely syntactic and is trivial to confuse, but works for most
-packages, in practice.}
-
-Any transliterations that occurred are automatically added as
-dependencies for the @|Planet2| compatibility package.
+packages, in practice.} Any transliterations that occurred are automatically added as
+dependencies for the compatibility package.
 
 We do not intend to improve this compatibility system much more over
-time, because it is simply a stop-gap as developers port their
-packages to @|Planet2|. Additionally, the existence of the compatibility 
+time, because it is simply a stop-gap as developers port their @|Planet1|
+packages to the new system. Additionally, the existence of the compatibility 
 server is not meant
 to imply that we will be removing @|Planet1| from existence in the near
 future.
@@ -544,12 +542,12 @@ future.
 @section[#:style 'quiet]{FAQ}
 
 This section answers anticipated frequently asked questions about
-@|Planet2|.
+the package manager.
 
 @subsection{Are package installations versioned with respect to the
 Racket version?}
 
-No. When you install a @|Planet2| package, it is installed for all
+No. When you install a package, it is installed for all
 versions of Racket until you remove it. (In contrast, @|Planet1|
 requires reinstallation of all packages every version change.)
 
@@ -589,27 +587,27 @@ which version of a package I depend on if its interface has changed
 and I need an old version?}
 
 In such a situation, the author of the package has released a
-backwards incompatible edition of a package. It is not possible in
-@|Planet2| to deal with this situation. (Other than, of course, not
-installing the "update".) Therefore, package authors should not make
+backwards incompatible edition of a package. The package manager provides
+no help to deal with this situation (other than, of course, not
+installing the ``update''). Therefore, package authors should not make
 backwards incompatible changes to packages. Instead, they should
 release a new package with a new name. For example, package
 @pkgname{libgtk} might become @pkgname{libgtk2}. These packages
 should be designed to not conflict with each other, as well.
 
-@subsection{Why is @|Planet2| so different than @|Planet1|?}
+@subsection{Why is the package manager so different than @|Planet1|?}
 
-There are two fundamental differences between @|Planet1| and @|Planet2|.
+There are two fundamental differences between @|Planet1| and this package manager.
 
-The first is that @|Planet1| uses "internal linking" whereas @|Planet2|
-uses "external linking". For example, an individual module requires a
+The first is that @|Planet1| uses ``internal linking'' whereas the current package manager
+uses ``external linking.'' For example, an individual module requires a
 @|Planet1| package directly in a require statement:
 
 @racketblock[
  (require (planet game/tic-tac-toe/data/matrix))
 ]
 
-whereas in @|Planet2|, the module would simply require the module of
+whereas using the package manager, the module would simply require the module of
 interest:
 
 @racketblock[
@@ -626,12 +624,12 @@ can easily be split up, combined, or taken over by other authors, etc.
 This change is bad because it makes the meaning of your program
 dependent on the state of the system. (This is already true of Racket
 code in general, because there's no way to make the required core
-version explicit, but the problem will be exacerbated by @|Planet2|.)
+version explicit, but the problem will be exacerbated by the package manager.)
 
 The second major difference is that @|Planet1| is committed to
 guaranteeing that packages that never conflict with one another, so
 that any number of major and minor versions of the same package can be
-installed and used simultaneously. @|Planet2| does not share this
+installed and used simultaneously. The package manager does not share this
 commitment, so package authors and users must be mindful of potential
 conflicts and plan around them.
 
@@ -640,11 +638,11 @@ maintenance (provided most packages don't conflict.)
 
 The change is bad because users must plan around potential conflicts.
 
-In general, the goal of @|Planet2| is to be a lower-level package
+In general, the goal of the package manager is to be a lower-level
 system, more like the package systems used by operating systems. The
 goals of @|Planet1| are not bad, but we believe they are needed
 infrequently and a system like @|Planet1| could be more easily built
-atop @|Planet2| than the reverse.
+atop the package manager than the reverse.
 
 In particular, our plans to mitigate the downsides of these changes
 are documented in @secref["short-term"].
@@ -655,8 +653,8 @@ are documented in @secref["short-term"].
 
 @subsection[#:tag "short-term"]{Short Term}
 
-This section lists some short term plans for @|Planet2|. These are
-important, but didn't block its release. @|Planet2| will be considered
+This section lists some short term plans for the package manager. These are
+important, but didn't block its release. The package manager will be considered
 out of beta when these are completed.
 
 @itemlist[
@@ -733,7 +731,7 @@ different policies.}
 
 @subsection{Long Term}
 
-This section lists some long term plans for @|Planet2|. Many of these
+This section lists some long term plans for the package manager. Many of these
 require a lot of cross-Racket integration.
 
 @itemlist[
