@@ -24,7 +24,7 @@
          remove-empty-dqs)
 
 ;;
-;; atom := `any | `number | `string | `integer | `real | `variable | `variable-not-otherwise-mentioned
+;; atom := `any | `number | `string | `integer | `boolean | `real | `variable | `variable-not-otherwise-mentioned
 ;; var  := symbol?
 ;; nt   := symbol?
 ;; pat  := `(nt ,var) | `(list ,pat ...)  | atom | `(name ,var ,pat) | `(mismatch-name ,name ,pat)
@@ -50,7 +50,7 @@
 (struct env (eqs dqs) #:transparent)
 (define empty-env (env (hash) '()))
 
-(define predef-pats (set 'any 'number 'string 'integer 'real 'variable 'natural 'variable-not-otherwise-mentioned))
+(define predef-pats (set 'any 'number 'string 'integer 'boolean 'real 'variable 'natural 'variable-not-otherwise-mentioned))
 (define (predef-pat? a)
   (set-member? predef-pats a))
 (define (var? s)
@@ -67,6 +67,7 @@
        [`natural #t]
        [`integer #t]
        [`real #t]
+       [`boolean #t]
        [`variable #t]
        [`(variable-except ,vars ...) #f]
        [`(variable-prefix ,pfx) #f]
@@ -411,6 +412,17 @@
      (unify* u t e L)]
     [(`string (? string? s))
      s]
+    
+    ;; booleans
+    [(`boolean `boolean)
+     `boolean]
+    [(`string `boolean)
+     #f]
+    [(_ `boolean)
+     (unify* u t e L)]
+    [(`boolean (? boolean? b))
+     b]
+    
     ;; other
     [((? base-type? t) (? base-type? u))
      (and (equal? t u)
@@ -583,7 +595,7 @@
 
 (define (base-type? symbol)
   (member symbol
-          '(any number string natural integer real 
+          '(any number string natural integer real boolean
                 variable variable-not-otherwise-mentioned)))
 
 (define (lookup-pat id env)

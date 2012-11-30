@@ -143,6 +143,9 @@
 (define (pick-real attempt [random generator-random])
   (pick-number attempt #:top-threshold real-threshold random))
 
+(define (pick-boolean attempt [random generator-random])
+  (zero? (random 2)))
+
 (define (pick-sequence-length size)
   (random-natural (expected-value->p size)))
 
@@ -286,6 +289,7 @@
           [`natural (values pat '())]
           [`integer (values pat '())]
           [`real (values pat '())]
+          [`boolean (values pat '())]
           [`variable (values pat '())]
           [`(variable-except ,vars ...) (values pat '())]
           [`(variable-prefix ,var) (values pat '())]
@@ -367,6 +371,7 @@
                 [`natural (generator/attempts (λ (a) ((next-natural-decision) a)))]
                 [`integer (generator/attempts (λ (a) ((next-integer-decision) a)))]
                 [`real (generator/attempts (λ (a) ((next-real-decision) a)))]
+                [`boolean (generator/attempts (λ (a) ((next-boolean-decision) a)))]
                 [`variable (generator/attempts (λ (a) ((next-variable-decision) lits a)))]
                 [`(variable-except ,vars ...)
                  (let ([g (recur 'variable)])
@@ -523,6 +528,7 @@
           [`natural (void)]
           [`integer (void)]
           [`real (void)]
+          [`boolean (void)]
           [`variable (void)]
           [`(variable-except ,vars ...) (void)]
           [`(variable-prefix ,var) (void)]
@@ -685,6 +691,7 @@
                        [`natural assignments]
                        [`integer assignments]
                        [`real assignments]
+                       [`boolean assignments]
                        [`variable assignments]
                        [`(variable-except ,vars ...) assignments]
                        [`(variable-prefix ,var) assignments]
@@ -740,6 +747,7 @@
    next-natural-decision
    next-integer-decision
    next-real-decision
+   next-boolean-decision
    next-non-terminal-decision
    next-sequence-decision
    next-any-decision
@@ -752,6 +760,7 @@
         (define (next-natural-decision) pick-natural)
         (define (next-integer-decision) pick-integer)
         (define (next-real-decision) pick-real)
+        (define (next-boolean-decision) pick-boolean)
         (define (next-non-terminal-decision) pick-nts)
         (define (next-sequence-decision) pick-sequence-length)
         (define (next-any-decision) pick-any)
@@ -770,7 +779,7 @@
          raise-gen-fail)
 
 (provide pick-from-list pick-sequence-length pick-nts
-         pick-char pick-var pick-string pick-any
+         pick-char pick-var pick-string pick-any pick-boolean
          pick-number pick-natural pick-integer pick-real
          unparse-pattern
          prepare-lang

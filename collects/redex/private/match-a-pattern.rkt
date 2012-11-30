@@ -82,6 +82,7 @@ turns into this:
                   `natural
                   `integer
                   `real
+                  `boolean
                   `variable
                   `(variable-except ,var ...)
                   `(variable-prefix ,var)

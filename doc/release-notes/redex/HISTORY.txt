@@ -9,6 +9,8 @@ v5.3.2
   * added the option to use judgment-forms with only I mode
     positions in terms
 
+  * added 'boolean' as a new pattern
+
 v5.3.1
 
   * added optional #:lang keyword to term
