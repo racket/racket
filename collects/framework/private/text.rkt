@@ -423,6 +423,7 @@
               (define height (if (bottom . <= . top) 0 (- bottom top)))
               (define color (let ([rc (rectangle-color rectangle)])
                               (cond
+                                [(not (= 1 (send rc alpha))) rc]
                                 [(and last-color (eq? last-color rc))
                                  rc]
                                 [rc
