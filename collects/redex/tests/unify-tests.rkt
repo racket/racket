@@ -316,6 +316,7 @@
   ['number 'number]
   ['real 'real]
   ['string 'string]
+  ['boolean 'boolean]
   ['variable 'variable]
   ['variable-not-otherwise-mentioned 'variable-not-otherwise-mentioned]
   [7 7]
@@ -331,6 +332,7 @@
   [7.5 7.5]
   ["a string" #f]
   ['string #f]
+  ['boolean #f]
   ['variable #f]
   ['variable-not-otherwise-mentioned #f]
   ['(list 1 2 3) #f]
@@ -343,6 +345,7 @@
   [7.5 #f]
   ["a string" #f]
   ['string #f]
+  ['boolean #f]
   ['variable #f]
   ['variable-not-otherwise-mentioned #f]
   ['(list 1 2 3) #f]
@@ -355,6 +358,7 @@
   [7.5 #f]
   ["a string" #f]
   ['string #f]
+  ['boolean #f]
   ['variable #f]
   ['variable-not-otherwise-mentioned #f]
   ['(list 1 2 3) #f]
@@ -367,6 +371,7 @@
   [7.5 7.5]
   ["a string" #f]
   ['string #f]
+  ['boolean #f]
   ['variable #f]
   ['variable-not-otherwise-mentioned #f]
   ['(list 1 2 3) #f]
@@ -377,6 +382,7 @@
  (['string 'string]
   ['variable #f]
   ['variable-not-otherwise-mentioned #f]
+  ['boolean #f]
   [7 #f]
   ["a string" "a string"]
   ['(list a b c) #f]
@@ -386,6 +392,7 @@
  'variable (hash)
  (['variable 'variable]
   ['x 'x]
+  ['boolean #f]
   ["a string" #f]
   ['(nt e) '(cstr (e) variable)]
   ['(list 1 2 3) #f]
@@ -395,6 +402,7 @@
  'variable-not-otherwise-mentioned (hash)
  (['variable-not-otherwise-mentioned 'variable-not-otherwise-mentioned]
   ['x 'x]
+  ['boolean #f]
   ["a string" #f]
   ['(nt e) '(cstr (e) variable-not-otherwise-mentioned)]
   ['(list 1 2 3) #f]
@@ -404,12 +412,20 @@
  '(nt e) (hash)
  ([5 '(cstr (e) 5)]
   ["a string" '(cstr (e) "a string")]
+  ['boolean '(cstr (e) boolean)]
   ['(nt q) '(cstr (e) (nt q))]))
+
+(unify-all/results/no-bindings
+ 'boolean (hash)
+ (['boolean 'boolean]
+  [`(list 1 2 3) #f]
+  ["abc" #f]))
 
 (unify-all/results
  '(name x any) (hash)
  ([5 `(name x ,(bound)) (hash (lvar 'x) 5)]
   [`(list 1 2 3) `(name x ,(bound)) (hash (lvar 'x) `(list 1 2 3))]
+  ['boolean `(name x ,(bound)) (hash (lvar 'x) `boolean)]
   ["a string" `(name x ,(bound)) (hash (lvar 'x) "a string")]))
 
 (unify-all/results/no-bindings
@@ -422,6 +438,7 @@
   ['natural 'natural]
   ['real 'real]
   ['string 'string]
+  ['boolean 'boolean]
   ['(list 1 2 3) '(list 1 2 3)]
   ['(mismatch-name y 5) 5]
   ['(nt e) '(cstr (e) any)]
@@ -463,6 +480,7 @@
   ['number `(cstr (e q) number) (make-hash)]
   ['real `(cstr (e q) real) (make-hash)]
   ['string `(cstr (e q) string) (make-hash)]
+  [`boolean `(cstr (e q) boolean) (make-hash)]
   ['variable `(cstr (e q) variable) (make-hash)]
   ['variable-not-otherwise-mentioned 
    `(cstr (e q) variable-not-otherwise-mentioned) (make-hash)]
@@ -481,6 +499,7 @@
   ['natural `(name x ,(bound)) (make-hash `((,(lvar 'x) . natural)))]
   ['real `(name x ,(bound)) (make-hash `((,(lvar 'x) . real)))]
   ['string `(name x ,(bound)) (make-hash `((,(lvar 'x) . string)))]
+  ['boolean `(name x ,(bound)) (make-hash `((,(lvar 'x) . boolean)))]
   ['variable `(name x ,(bound)) (make-hash `((,(lvar 'x) . variable)))]
   ['variable-not-otherwise-mentioned `(name x ,(bound)) (make-hash `((,(lvar 'x) . variable-not-otherwise-mentioned)))]
   ['(cstr (number) any) `(name x ,(bound)) (make-hash `((,(lvar 'x) . (cstr (number) any))))]

@@ -99,6 +99,7 @@ in the grammar are terminals.
             integer
             real
             string 
+            boolean
             variable 
             (variable-except <id> ...)
             (variable-prefix <id>)
@@ -156,6 +157,14 @@ before the underscore.
 }
 
 @item{The @defpattech[string] @pattern matches any string. 
+This @pattern may also be suffixed with an underscore and another
+identifier, in which case they bind the full name (as if it
+were an implicit @pattech[name] @pattern) and match the portion
+before the underscore.
+}
+
+@item{The @defpattech[boolean] @pattern matches @racket[#true] and @racket[#false]
+(which are the same as @racket[#t] and @racket[#f], respectively).
 This @pattern may also be suffixed with an underscore and another
 identifier, in which case they bind the full name (as if it
 were an implicit @pattech[name] @pattern) and match the portion

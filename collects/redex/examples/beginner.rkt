@@ -73,13 +73,13 @@ reflects the (broken) spec).
      non-struct-value)
   (non-struct-value number
                     list-value
-                    boolean
+                    bool
                     string
                     'x)
   (list-value empty
               (cons v list-value))
-  (boolean true
-           false)
+  (bool true
+        false)
   
   (maker (side-condition variable_1 (maker? (term variable_1))))
   
