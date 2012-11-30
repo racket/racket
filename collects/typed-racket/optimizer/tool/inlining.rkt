@@ -20,9 +20,9 @@
 ;;; This is similar in spirit to the post-processing done for missed-opts in
 ;;; the TR logger.
 
-(define (success?     l) (equal? success-regexp     (log-entry-kind l)))
-(define (failure?     l) (equal? failure-regexp     (log-entry-kind l)))
-(define (out-of-fuel? l) (equal? out-of-fuel-regexp (log-entry-kind l)))
+(define (success?     l) (equal? success-key     (log-entry-kind l)))
+(define (failure?     l) (equal? failure-key     (log-entry-kind l)))
+(define (out-of-fuel? l) (equal? out-of-fuel-key (log-entry-kind l)))
 
 ;; f gets inlined in f (or tried to)
 (define (self-inline? l)

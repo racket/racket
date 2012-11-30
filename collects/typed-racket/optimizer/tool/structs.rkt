@@ -40,4 +40,5 @@
                         size ; size of the closure being inlined
                         threshold ; how big of a closure can we inline
                         ;; the last two use the same units
-                        ))
+                        )
+        #:transparent)
