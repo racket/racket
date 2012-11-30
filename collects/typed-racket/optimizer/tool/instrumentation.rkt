@@ -48,9 +48,7 @@
   ;; the same piece of code multiple times.
   ;; Duplicates are not significant (unlike for inlining logs) and we can
   ;; prune them.
-  (values (reverse (remove-duplicates TR-log))
-          (reverse mzc-log)
-          (reverse (remove-duplicates info-log))))
+  (values (remove-duplicates TR-log) mzc-log (remove-duplicates info-log)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
