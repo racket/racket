@@ -3565,23 +3565,21 @@ int scheme_compiled_propagate_ok(Scheme_Object *value, Optimize_Info *info)
        scheme_log(info->logger,
 		  SCHEME_LOG_DEBUG,
 		  0,
-		  /* actual cause: contains non-copyable body elements that prevent inlining */
-		  /* TODO have OC recognize this as a separate event instead of reusing failure */
-		  "no-inlining %s size: %d threshold: %d#<separator>%s",
+		  /* contains non-copyable body elements that prevent inlining */
+		  "non-copyable %s size: %d threshold: %d#<separator>%s",
 		  scheme_write_to_string(data->name ? data->name : scheme_false, NULL),
 		  sz,
-		  0, /* TODO no sensible threshold here */
+		  0, /* no sensible threshold here */
 		  scheme_optimize_context_to_string(info->context));
      else
        scheme_log(info->logger,
 		  SCHEME_LOG_DEBUG,
 		  0,
-		  /* actual cause: too big for an inlining candidate */
-		  /* TODO have OC recognize this as a separate event instead of reusing OOF */
-		  "out-of-fuel %s size: %d threshold: %d#<separator>%s",
+		  /* too large to be an inlining candidate */
+		  "too-large %s size: %d threshold: %d#<separator>%s",
 		  scheme_write_to_string(data->name ? data->name : scheme_false, NULL),
 		  sz,
-		  0, /* TODO no sensible threshold here */
+		  0, /* no sensible threshold here */
 		  scheme_optimize_context_to_string(info->context));
      return 0;
    }

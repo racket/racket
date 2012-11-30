@@ -103,9 +103,9 @@
   (define forged-stx (inlining-event->forged-stx evt))
   (define kind
     (match (inlining-event-kind evt)
-      [(== success-key)     success-key]
-      [(== failure-key)     failure-key]
-      [(== out-of-fuel-key) out-of-fuel-key]
+      [(== success-key)                             success-key]
+      [(or (== failure-key)     (== 'non-copyable)) failure-key]
+      [(or (== out-of-fuel-key) (== 'too-large))    out-of-fuel-key]
       [_ (error "Unknown log message type" l)]))
   (inliner-log-entry kind kind
                      forged-stx forged-stx
