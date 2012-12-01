@@ -1,7 +1,8 @@
-#lang scheme/unit
+#lang racket/unit
   (require mzlib/class
            mred
            string-constants
+           racket/match
            "../preferences.rkt"
            "sig.rkt")
   
@@ -510,12 +511,16 @@
       (preferences:set-default pref-sym bw-c (λ (x) (is-a? x color%)))
       (preferences:set-un/marshall 
        pref-sym
-       (λ (clr) (list (send clr red) (send clr green) (send clr blue)))
-       (λ (lst) (and (pair? lst)
-                     (pair? (cdr lst))
-                     (pair? (cddr lst))
-                     (null? (cdddr lst))
-                     (make-object color% (car lst) (cadr lst) (caddr lst)))))
+       (λ (clr) (list (send clr red) (send clr green) (send clr blue) (send clr alpha)))
+       (λ (lst) 
+         (match lst
+           [(list (? byte? red) (? byte? green) (? byte? blue))
+            ;; old prefs-- before there were no alpha components to color% objects
+            ;; and so only r/g/b was saved.
+            (make-object color% red green blue)]
+           [(list (? byte? red) (? byte? green) (? byte? blue) (? (λ (x) (and (real? x) (<= 0 x 1))) α))
+            (make-object color% red green blue α)]
+           [else #f])))
       (void)))
   
   (define (to-color c)
