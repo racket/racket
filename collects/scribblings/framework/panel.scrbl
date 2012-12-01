@@ -275,7 +275,7 @@
 
 @defclass[panel:horizontal-discrete-sizes% (panel:discrete-sizes-mixin panel%) ()]{}
 @defclass[panel:vertical-discrete-sizes% (panel:discrete-sizes-mixin panel%) ()]{
-  Calls @racket[panel:discrete-sizes<%> set-orientation] with @racket[#f] during
+  Calls @method[panel:discrete-sizes<%> set-orientation] with @racket[#f] during
         initialization.
 }
 
