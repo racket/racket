@@ -216,19 +216,21 @@
       (define color (range-color range))
       (define lp (last-position))
       (define-values (start-eol? end-eol?) (if (= start end) (values #f #f) (values #f #t)))
-      (define-values (start-x top-start-y bottom-start-y)
-        (begin 
-          (position-locations start b1 b2 #f b3 start-eol? #t)
-          (values (if (and caret-space? (not (= start end)))
-                      (+ 1 (unbox b1))
-                      (unbox b1))
-                  (unbox b2)
-                  (unbox b3))))
       (define-values (end-x top-end-y bottom-end-y)
         (begin (position-locations end b1 b2 #f b3 end-eol? #t)
                (values (unbox b1) 
                        (unbox b2)
                        (unbox b3))))
+      (define-values (start-x top-start-y bottom-start-y)
+        (begin 
+          (position-locations start b1 b2 #f b3 start-eol? #t)
+          (values (if (and caret-space? 
+                           (not (= start end))
+                           (<= (+ (unbox b1) 1) end-x))
+                      (+ 1 (unbox b1))
+                      (unbox b1))
+                  (unbox b2)
+                  (unbox b3))))
       (cond
         ;; the position-location values can be strange when
         ;; this condition is true, so we just bail out.
