@@ -8,7 +8,7 @@
 
   (#%provide (for-syntax do-syntax-parameterize))
 
-  (define-for-syntax (do-syntax-parameterize stx let-syntaxes-id empty-body-ok?)
+  (define-for-syntax (do-syntax-parameterize stx let-syntaxes-id empty-body-ok? keep-orig?)
     (syntax-case stx ()
       [(_ ([id val] ...) body ...)
        (let ([ids (syntax->list #'(id ...))])
@@ -46,7 +46,11 @@
                 #f
                 "missing body expression(s)"
                 stx)))
-           (with-syntax ([let-syntaxes let-syntaxes-id])
+           (with-syntax ([let-syntaxes let-syntaxes-id]
+                         [(orig ...) (if keep-orig?
+                                         (list ids)
+                                         #'())])
              (syntax/loc stx
                (let-syntaxes ([(gen-id) (convert-renamer val)] ...)
+                 orig ...
                  body ...)))))])))
