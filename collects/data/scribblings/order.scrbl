@@ -232,7 +232,8 @@ shown:
 (datum-order (box 'car) (box 'candy))
 (datum-order '#s(point a 1) '#s(point b 0))
 (datum-order '#s(A 1 2) '#s(Z 3 4 5))
-(datum-order (make-fish 'alewife) (make-fish 'sockeye))
+(struct fish (name) #:transparent)
+(datum-order (fish 'alewife) (fish 'sockeye))
 ]
 
 The following example comparisons are unspecified but consistent within
@@ -248,7 +249,8 @@ all executions of a single version of Racket:
 The following example comparison is unspecified but consistent within
 a single execution of a program:
 @racketblock[
-(datum-order (make-fish 'alewife) (make-fowl 'dodo))
+(struct fowl (name) #:transparent)
+(datum-order (fish 'alewife) (fowl 'dodo))
 ]
 }
 
