@@ -653,6 +653,8 @@ implicitly rolled back.
   If @racket[c] is already in a transaction, @racket[isolation-level]
   and @racket[option] must both be @racket[#f], and a @tech{nested
   transaction} is opened.
+
+  See also @secref["dbperf-concurrency"].
 }
 
 @defproc[(commit-transaction [c connection?]) void?]{

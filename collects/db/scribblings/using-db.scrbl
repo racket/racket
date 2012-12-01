@@ -372,6 +372,58 @@ bandwidth. High-latency environments may be roughly approximated with
 the @racket[high-latency-connection] function, but there's no
 substitute for the real thing.
 
+@subsection[#:tag "dbperf-concurrency"]{Transactions and Concurrency}
+
+Database systems use
+@hyperlink["http://en.wikipedia.org/wiki/Database_transaction"]{transactions}
+to guarantee properties such as
+@hyperlink["http://en.wikipedia.org/wiki/ACID"]{atomicity and
+isolation} while accommodating concurrent reads and writes by the
+database's clients. Within a transaction a client is insulated from
+the actions of other clients, but the transaction may be aborted and
+rolled back if the database system cannot reconcile it with other
+concurrent interactions. Some database systems are more adept at
+reconciling transactions than others, and most allow reconciliation to
+be tuned through the specification of @emph{isolation levels}.
+
+PostgreSQL supports
+@hyperlink["http://www.postgresql.org/docs/9.2/static/mvcc.html"]{very
+fine-grained reconciliation}: two transactions that both read and
+modify the same table concurrently might both be allowed to complete
+if they involve disjoint sets of rows. However, clients should be
+prepared to retry transactions that fail with a @racket[exn:fail:sql]
+exception with SQLSTATE matching @racket[#rx"^40...$"]---typically
+@racket["40001"], ``could not serialize access due to concurrent
+update.''
+
+MySQL's transaction behavior varies based on the storage drivers in
+use. Clients should be prepared to retry transactions that fail with a
+@racket[exn:fail:sql] exception with SQLSTATE matching
+@racket[#rx"^40...$"].@;{---typically @racket["40001"], ``Deadlock found
+when trying to get lock; try restarting transaction.''}
+
+SQLite enforces a
+@hyperlink["http://www.sqlite.org/lockingv3.html"]{very coarse-grained
+policy}: only one transaction is allowed to write to the database at a
+time, and thus concurrent writers are very likely to conflict. Clients
+should be prepared to retry transactions that fail with a
+@racket[exn:fail:sql] exception with SQLSTATE of @racket['busy].
+
+An alternative to retrying whole SQLite transactions is to start each
+transaction with the appropriate locking level, since a transaction
+usually fails when it is unable to upgrade its lock level. Start a
+transaction that only performs reads in the default mode, and start a
+transaction that may perform writes in @racket['immediate] mode (see
+@racket[start-transaction]). That converts the problem of retrying
+whole transactions into the problem of retrying the initial @tt{BEGIN
+TRANSACTION} statment, and this library already automatically retries
+individual statements that fail with @racket['busy] errors. Depending
+on the length and frequency of the transactions, you may need to
+adjust @racket[_busy-retry-limit] (see @racket[sqlite3-connect]).
+
+ODBC's behavior varies depending on the driver and back end. See the
+appropriate database system's documentation.
+
 
 @;{============================================================}
 
