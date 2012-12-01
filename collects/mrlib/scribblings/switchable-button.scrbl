@@ -15,7 +15,7 @@
   The @racket[panel:discrete-sizes-mixin] explicitly
   uses @racket[switchable-button%]s via their
   @method[switchable-button% get-small-width] and
-  @method[switchable-button% get-small-height] methods.
+  @method[switchable-button% get-large-width] methods.
   See @racket[panel:discrete-sizes-mixin] for more details.
   
   @defconstructor/auto-super[([label (or/c string? (is-a?/c bitmap%) #f)]
