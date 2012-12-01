@@ -470,3 +470,8 @@
   ;; test that it works on proper lists w/ embedded stxpairs
   (check-eq? (syntax-parse #'(a b . (c  d)) [(x:id ...) #t] [_ #f]) #t)
   (check-eq? (syntax-parse #'(a b . (c  d)) [(_ x:id ...) #t] [_ #f]) #t))
+
+;; from Eric Dobson (11/30/2012)
+(terx (x y) ((~describe #:opaque "an X" x:id) n:number)
+      #rx"expected number"
+      (not #rx"expected an X"))
