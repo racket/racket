@@ -1788,6 +1788,7 @@
       (set! shown? #f)
       (when delegated-text 
         (send delegated-text set-delegate #f))
+      (send delegate-ec set-editor #f)
       (send super-root change-children
             (λ (l) (list rest-panel))))
     (define/public (show-delegated-text)
@@ -1795,7 +1796,8 @@
       (when delegated-text
         (unless (send delegated-text get-delegate)
           (send delegated-text set-delegate 
-                (new delegatee-text%))))
+                (new delegatee-text%)))
+        (send delegate-ec set-editor (send (get-delegated-text) get-delegate)))
       (send super-root change-children
             (λ (l) (list rest-panel delegate-ec))))
     
