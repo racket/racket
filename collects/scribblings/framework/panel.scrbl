@@ -273,4 +273,11 @@
    It uses the sizes of its children to implement the @racket[panel:discrete-child<%>] interface.
 }
 
+@defclass[panel:horizontal-discrete-sizes% (panel:discrete-sizes-mixin panel%) ()]{}
+@defclass[panel:vertical-discrete-sizes% (panel:discrete-sizes-mixin panel%) ()]{
+  Calls @racket[panel:discrete-sizes<%> set-orientation] with @racket[#f] during
+        initialization.
+}
+
+
 @(include-previously-extracted "main-extracts.rkt" #rx"^panel:")
