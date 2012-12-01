@@ -104,5 +104,5 @@
     (remove-pkg "planet" "test-connection.plt" 1 0))
   
   (check-equal? (get-docs-build-count)
-                4))
+                6))
 
