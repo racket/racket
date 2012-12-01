@@ -1,7 +1,11 @@
 #lang racket/base
 (require (for-syntax racket/base
                      syntax/kerncase
-                     racket/syntax)
+                     racket/syntax
+                     "private/stxparamkey.rkt")
+         (for-meta 2  ; for wrap-et-param
+                   racket/base
+                   syntax/kerncase)
          "private/stxparam.rkt"
          "private/local.rkt")
 
@@ -159,24 +163,24 @@
 (define-syntax (splicing-syntax-parameterize stx)
   (if (eq? 'expression (syntax-local-context))
       ;; Splicing is no help in an expression context:
-      (do-syntax-parameterize stx #'let-syntaxes #f)
+      (do-syntax-parameterize stx #'let-syntaxes #f #f)
       ;; Let `syntax-parameterize' check syntax, then continue
-      (do-syntax-parameterize stx #'ssp-let-syntaxes #t)))
+      (do-syntax-parameterize stx #'ssp-let-syntaxes #t #t)))
 
 (define-syntax (ssp-let-syntaxes stx)
   (syntax-case stx ()
-    [(_ ([(id) rhs] ...) body ...)
+    [(_ ([(id) rhs] ...) (orig-id ...) body ...)
      (with-syntax ([(splicing-temp ...) (generate-temporaries #'(id ...))])
        #'(begin
            ;; Evaluate each RHS only once:
            (define-syntax splicing-temp rhs) ...
            ;; Partially expand `body' to push down `let-syntax':
-           (expand-ssp-body (id ...) (splicing-temp ...) body)
+           (expand-ssp-body (id ...) (splicing-temp ...) (orig-id ...) body)
            ...))]))
 
 (define-syntax (expand-ssp-body stx)
   (syntax-case stx ()
-    [(_ (sp-id ...) (temp-id ...) body)
+    [(_ (sp-id ...) (temp-id ...) (orig-id ...) body)
      (let ([body (local-expand #'(letrec-syntaxes/trans ([(sp-id) (syntax-local-value (quote-syntax temp-id))]
                                                          ...)
                                     (force-expand body))
@@ -197,14 +201,18 @@
                                 #%provide )
               [(begin expr ...)
                (syntax/loc body
-                 (begin (expand-ssp-body (sp-id ...) (temp-id ...) expr) ...))]
+                 (begin (expand-ssp-body (sp-id ...) (temp-id ...) (orig-id ...) expr) ...))]
               [(define-values (id ...) rhs)
                (syntax/loc body
                  (define-values (id ...)
                    (letrec-syntaxes ([(sp-id) (syntax-local-value (quote-syntax temp-id))] ...)
                      rhs)))]
-              [(define-syntaxes . _) body]
-              [(begin-for-syntax . _) body]
+              [(define-syntaxes ids rhs)
+               (syntax/loc body
+                 (define-syntaxes ids (wrap-param-et rhs (orig-id ...) (temp-id ...))))]
+              [(begin-for-syntax e ...)
+               (syntax/loc body
+                 (begin-for-syntax (wrap-param-et e (orig-id ...) (temp-id ...)) ...))]
               [(module . _) body]
               [(module* . _) body]
               [(#%require . _) body]
@@ -233,3 +241,48 @@
                                #f))
       'certify-mode
       'transparent)]))
+
+(define-for-syntax (parameter-of id)
+  (let* ([rt (syntax-local-value id)]
+         [sp (if (set!-transformer? rt)
+                 (set!-transformer-procedure rt)
+                 rt)])
+    (syntax-parameter-target-parameter
+     (syntax-parameter-target sp))))
+
+(begin-for-syntax
+ (define-syntax (wrap-param-et stx)
+   (syntax-case stx ()
+     [(_ e (orig-id ...) (temp-id ...))
+      (let ([as-expression
+             (lambda ()
+               #'(parameterize ([(parameter-of (quote-syntax orig-id)) 
+                                 (quote-syntax temp-id)]
+                                ...)
+                   e))])
+        (if (eq? (syntax-local-context) 'expression)
+            (as-expression)
+            (let ([e (local-expand #'e
+                                   (syntax-local-context)
+                                   (kernel-form-identifier-list)
+                                   #f)])
+              (syntax-case e (begin
+                               define-syntaxes define-values
+                               begin-for-syntax
+                               module module*
+                               #%require #%provide
+                               quote-syntax)
+                [(begin form ...)
+                 (syntax/loc e
+                   (begin (wrap-param-et form (orig-id ...) (temp-id ...)) ...))]
+                [(define-syntaxes . _) e]
+                [(begin-for-syntax . _) e]
+                [(define-values ids rhs)
+                 (syntax/loc e
+                   (define-values ids (wrap-param-et rhs (orig-id ...) (temp-id ...))))]
+                [(module . _) e]
+                [(module* . _) e]
+                [(#%require . _) e]
+                [(#%provide . _) e]
+                [(quote-syntax . _) e]
+                [else (as-expression)]))))])))

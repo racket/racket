@@ -30,4 +30,4 @@
 		   gen-id))))))]))
 
   (define-syntax (syntax-parameterize stx)
-    (do-syntax-parameterize stx #'let-syntaxes #f)))
+    (do-syntax-parameterize stx #'let-syntaxes #f #f)))
