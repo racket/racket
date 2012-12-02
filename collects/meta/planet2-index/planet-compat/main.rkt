@@ -270,11 +270,11 @@
             (unless (directory-exists? dest-dir)
               (printf "Unpacking ~a\n" pkg-short)
               (make-directory dest-dir)
-              (unpack pkg pkg-dir
-                        (lambda (x) (printf "~a\n" x))
-                        (lambda () dest-dir)
-                        #f
-                        (lambda (auto-dir main-dir file) dest-dir)))
+              (unpack dest pkg-dir
+                      (lambda (x) (printf "~a\n" x))
+                      (lambda () dest-dir)
+                      #f
+                      (lambda (auto-dir main-dir file) dest-dir)))
 
             (define pkg/no-plt
               (format "~a~a"
@@ -335,10 +335,10 @@
 
                 (printf "\tdeps ~a\n" deps)
                 (call-with-output-file*
-                 (build-path pkg-dir "info.rkt")
-                 (lambda (o)
-                   (fprintf o "#lang setup/infotab\n")
-                   (write `(define deps ',deps) o)))))
+                    (build-path pkg-dir "info.rkt")
+                  (lambda (o)
+                    (fprintf o "#lang setup/infotab\n")
+                    (write `(define deps ',deps) o)))))
 
 
             (define pkg-pth (build-path pkg-depo pkg-depo-dir pkg-name.plt))
