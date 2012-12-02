@@ -335,7 +335,7 @@
 
                 (printf "\tdeps ~a\n" deps)
                 (call-with-output-file*
-                 (build-path pkg-dir "info.rkt.rktd")
+                 (build-path pkg-dir "info.rkt")
                  (lambda (o)
                    (fprintf o "#lang setup/infotab\n")
                    (write `(define deps ',deps) o)))))
