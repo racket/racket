@@ -4,6 +4,7 @@
          scribble/struct
          setup/getinfo
          setup/main-collects
+         setup/dirs
          scheme/list
          scheme/match
          "../config.rkt")
@@ -14,9 +15,6 @@
 
 (define sections
   (map (lambda (xs) (apply make-sec xs)) manual-sections))
-
-(define (in-main-collects? dir)
-  (pair? (path->main-collects-relative dir)))
 
 (define (add-sections cat mk-sep l)
   (if (null? l)
@@ -33,10 +31,14 @@
 (define (make-start-page all?)
   (let* ([recs (find-relevant-directory-records '(scribblings))]
          [infos (map get-info/full (map directory-record-path recs))]
+         [main-dirs (parameterize ([current-library-collection-paths
+                                    (list (find-collects-dir))])
+                      (for/hash ([k (in-list (find-relevant-directories '(scribblings) 'no-planet))])
+                        (values k #t)))]
          [docs (append-map
                 (lambda (i rec)
                   (define dir (directory-record-path rec))
-                  (define s (and (or all? (in-main-collects? dir))
+                  (define s (and (or all? (hash-ref main-dirs dir #f))
                                  i
                                  (i 'scribblings)))
                   (if (not s)
