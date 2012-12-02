@@ -3660,7 +3660,8 @@ module browser threading seems wrong.
                 (cond
                  [problem
                   (message-box (string-constant drscheme)
-                               problem)]
+                               problem)
+                  (preferences:set 'framework:spell-check-on? #f)]
                  [else
                   (define ed (get-edit-target-object))
                   (define old-val (send ed get-spell-check-strings))
