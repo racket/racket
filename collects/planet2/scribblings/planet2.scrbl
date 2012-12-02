@@ -219,9 +219,7 @@ sub-sub-commands:
   @item{@DFlag{ignore-checksums} --- Ignores errors verifying package checksums (unsafe.)}
 
   @item{@DFlag{link} --- Implies @exec{--type dir} (and overrides any specified type),
-        and links the existing directory as an installed package.
-        This option affects all installs for the command, which means it affects dependencies...
-        so make sure the dependencies exist first.}
+        and links the existing directory as an installed package.}
  ]
 }
 

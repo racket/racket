@@ -47,9 +47,7 @@
     "  search-auto: like 'search-ask' but does not ask for permission to install")]
   [#:bool force () "Ignores conflicts"]
   [#:bool ignore-checksums () "Ignores checksums"]
-  [#:bool link () ("Link a directory package source in place;"
-                   "this is a global setting for all installs for this command, which means"
-                   "that it affects dependencies... so make sure the dependencies exist first")]
+  [#:bool link () ("Link a directory package source in place")]
   #:args pkg-source
   (parameterize ([current-install-system-wide? installation]
                  [current-install-version-specific? (not shared)]
