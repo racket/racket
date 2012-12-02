@@ -208,8 +208,13 @@
 (provide do-parse-rest-macro)
 (define-syntax (do-parse-rest-macro stx)
   (syntax-case stx ()
-    [(_ stuff ...)
-     (do-parse-rest #'(stuff ...) #'do-parse-rest-macro)]))
+    [(_ code ...)
+     #'(let ()
+         (define-syntax (parse-more stx)
+           (syntax-case stx ()
+             [(_ stuff (... ...))
+              (do-parse-rest #'(stuff (... ...)) #'parse-more)]))
+         (parse-more code ...))]))
 |#
 
 (define-syntax-rule (parse-delayed code ...)
@@ -298,6 +303,12 @@
       (values (left current) stream)
       (begin
         (debug "Honu macro at phase ~a: ~a ~a\n" (syntax-local-phase-level) head (syntax-local-value head))
+        (emit-remark "Input to macro" 
+                     (with-syntax ([head head]
+                                     [(rest ...) rest])
+                         (datum->syntax #'head
+                                        (syntax->list #'(head rest ...))
+                                        #'head #'head)))
         (let-values ([(parsed unparsed terminate?)
                       ((syntax-local-value head)
                        (with-syntax ([head head]
@@ -305,8 +316,7 @@
                          (datum->syntax #'head
                                         (syntax->list #'(head rest ...))
                                         #'head #'head)))])
-          #;
-          (emit-remark parsed)
+          (emit-remark "Output from macro" parsed)
           #;
           (emit-local-step stream parsed #:id #'do-macro)
           (with-syntax ([parsed parsed]
@@ -590,6 +600,7 @@
                              (values (left current) stream))]
                      [else (error 'what "don't know how to parse ~a" #'head)])])])])))
 
+  (emit-remark "Honu parse" input)
   (define-values (parsed unparsed)
                  (do-parse input 0 (lambda (x) x) #f))
   (values ;; (parsed-syntax parsed)
@@ -666,13 +677,54 @@
         (debug "[~a] failed\n" context)
         (fail))
       (let ()
+        ;; probably dont need to use local-expand here, just marking the syntax
+        ;; ourselves is good enough
+        #;
+        (define out
+          (with-syntax ([(stx ...) stx])
+            ;; we have to trampoline to phase 0 because this is phase -1 code
+            (local-expand #'(letrec-syntax
+                              ([parse-more (lambda (stx*)
+                                             (syntax-case stx* ()
+                                               [(_ stuff (... ...))
+                                                (let ()
+                                                  (define-values (parsed unparsed)
+                                                                 (parse #'(stuff (... ...))))
+                                                  (with-syntax ([parsed parsed]
+                                                                [unparsed unparsed])
+                                                    #'(#%datum parsed unparsed))
+                                                  )
+                                                  ]))])
+                              (parse-more stx ...))
+                          'expression '())))
+        #;
+        (debug "Local expanded: ~a\n" (syntax->datum out))
+        ;; pull the values out of the local expansion
+        #;
         (define-values (parsed unparsed)
-                       (parse stx))
-        (debug "[~a] expression parsed ~a\n" context (if parsed (syntax->datum parsed) parsed))
+                       (syntax-case out ()
+                         [(letrec-values (ignore-syntaxes ...) 
+                                         (ignore-values ...)
+                                         (quote (parsed unparsed)))
+                          (values #'parsed #'unparsed)]))
+        (define mark (make-syntax-introducer))
+        ;; mark the syntax that is passed to `parse', then re-mark the parsed
+        ;; object that comes out and the unparsed object
+        (define-values (parsed unparsed)
+                       (call-with-values 
+                         (lambda ()
+                           (parse (mark stx)))
+                         (lambda (parsed unparsed)
+                           (values (mark parsed)
+                                   (mark unparsed)))))
+        (emit-remark "honu-expression class parsed" parsed)
+        (debug "[~a] expression parsed ~a. Parsed? ~a\n" context (if parsed (syntax->datum parsed) parsed) (parsed-syntax? parsed))
         (debug 2 "[~a] Parsed things ~a\n" context (parsed-things stx unparsed))
         (if (parsed-syntax? parsed)
           (list (parsed-things stx unparsed)
                 parsed)
+          ;; if the parsed thing still needs to be parsed more it probably doesn't
+          ;; need to be remarked
           (list (parsed-things stx unparsed)
                 (parse-all parsed)))))))
 

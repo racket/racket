@@ -5,6 +5,7 @@
                      syntax/stx
                      racket/set
                      racket/syntax
+                     macro-debugger/emit
                      "template.rkt"
                      "literals.rkt"
                      "syntax.rkt"
@@ -268,6 +269,7 @@
          (define output 
            (syntax (quote-syntax 
                      (lambda (stx)
+                       (emit-remark "Invoke macro" (symbol->string 'name) "on" stx)
                        (define-literal-set local-literals (literal ...))
                        (syntax-parse stx
                          #:literal-sets ([cruft #:at name]
