@@ -3,6 +3,7 @@ Changed case to use equal? instead of eqv?
 r5rs, r6rs: fixed case and cond to disallow internal definitions
  in clauses
 Add #fx() and #fl() reader forms for flvectors and fxvectors
+racket/serialize: fxvectors and flvectors are serializable
 
 Version 5.3.1.8
 file/untar: added
