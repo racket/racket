@@ -62,8 +62,8 @@ Some simplifications require more than one step. For example:
 An expression that is not a @tech{value} can always be partitioned
 into two parts: a @deftech{redex}, which is the part that changed in a
 single-step simplification (highlighted), and the
-@deftech{continuation}, which is the surrounding expression
-context. In @racket[(- 4 (+ 1 1))], the redex is @racket[(+ 1 1)], and
+@deftech{continuation}, which is the evaluation
+context surrounding an expression. In @racket[(- 4 (+ 1 1))], the redex is @racket[(+ 1 1)], and
 the continuation is @racket[(- 4 @#,hole)], where @hole takes the
 place of the redex. That is, the continuation says how to ``continue''
 after the @tech{redex} is reduced to a @tech{value}.
