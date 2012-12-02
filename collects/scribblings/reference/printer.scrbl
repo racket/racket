@@ -275,6 +275,16 @@ all @tech{quotable}, then the vector @racket[print]s as
 and a closing @litchar{)}. A vector is @tech{quotable} when all of
 its elements are @tech{quotable}.
 
+In @racket[write] or @racket[display] mode, an @tech{flvector} prints
+like a @tech{vector}, but with a @litchar{#fl} prefix instead of
+@litchar{#}. A @tech{fxvector} similarly prints with a @litchar{#fx}
+prefix instead of @litchar{#}. The @racket[print-vector-length]
+parameter affects @tech{flvector} and @tech{fxvector} printing the
+same as @tech{vector} printing. In @racket[print] mode,
+@tech{flvectors} and @tech{fxvectors} are not @tech{quotable}, and
+they print like a @tech{vector} at @tech{quoting depth} 0 using a
+@litchar["(flvector "] or @litchar["(fxvector "] prefix, respectively.
+
 
 @section[#:tag "print-structure"]{Printing Structures}
 

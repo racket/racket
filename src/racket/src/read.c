@@ -320,12 +320,12 @@ static Scheme_Object *read_fixnum(Scheme_Object *port,
 				  ReadParams *params,
 				  int comment_mode);
 static Scheme_Object *read_number_literal(Scheme_Object *port, 
-				  Scheme_Object *stxsrc, 
-                                  int is_float, int is_not_float,
-				  Scheme_Hash_Table **ht,
-				  Scheme_Object *indentation, 
-				  ReadParams *params,
-				  int comment_mode);
+                                          Scheme_Object *stxsrc, 
+                                          int is_float, int is_not_float,
+                                          Scheme_Hash_Table **ht,
+                                          Scheme_Object *indentation, 
+                                          ReadParams *params,
+                                          int comment_mode);
 
 #define READTABLE_WHITESPACE 0x1
 #define READTABLE_CONTINUING 0x2
@@ -925,10 +925,10 @@ static int read_vector_length(Scheme_Object *port, Readtable *table, int *ch, mz
 
 static Scheme_Object *
 read_plus_minus_period_leading_number(Scheme_Object *port, Scheme_Object *stxsrc,
-    int ch, intptr_t line, intptr_t col, intptr_t pos,
-    int is_float, int is_not_float,
-    Scheme_Hash_Table **ht, Scheme_Object *indentation, ReadParams *params,
-    Readtable *table)
+                                      int ch, intptr_t line, intptr_t col, intptr_t pos,
+                                      int is_float, int is_not_float,
+                                      Scheme_Hash_Table **ht, Scheme_Object *indentation, ReadParams *params,
+                                      Readtable *table)
 {
   int ch2;
   Scheme_Object *special_value;
@@ -936,9 +936,10 @@ read_plus_minus_period_leading_number(Scheme_Object *port, Scheme_Object *stxsrc
   if ((NOT_EOF_OR_SPECIAL(ch2) && isdigit_ascii(ch2)) || (ch2 == '.')
       || ((ch2 == 'i') || (ch2 == 'I') /* Maybe inf */
           || (ch2 == 'n') || (ch2 == 'N') /* Maybe nan*/ )) {
-    /* read_number tries to get a number, but produces a symbol if number parsing doesn't work: */
+    /* read_number tries to get a number, but produces a symbol if number parsing doesn't work,
+       unless `is_float' or `is_not_float': */
     special_value = read_number(ch, port, stxsrc, line, col, pos, 
-        is_float, is_not_float, 10, 0, ht, indentation, params, table);
+                                is_float, is_not_float, 10, 0, ht, indentation, params, table);
   } else {
     special_value = read_symbol(ch, 0, port, stxsrc, line, col, pos, ht, indentation, params, table);
   }
@@ -1260,55 +1261,58 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
                   int overflow = 0, digits = 0, effective_ch;
                   mzchar tagbuf[64], vecbuf[64]; /* just for errors */
                   int ch;
+
+                  if (stxsrc) {
+                    scheme_read_err(port, stxsrc, line, col, pos, 3, 0, indentation,
+                                    "read-syntax: literal f%cvectors not allowed", next);
+                    return NULL;
+                  }
+
                   ch = scheme_getc_special_ok(port);
                   ch = scheme_getc_special_ok(port);
-                  if (isdigit_ascii(ch)) {
+                  if (isdigit_ascii(ch))
                     effective_ch = read_vector_length(port, table, &ch, tagbuf, vecbuf, &vector_length, &digits, &overflow);
-                  }
-                  else {
+                  else 
                     effective_ch = ch; 
-                  }
-                  switch (effective_ch)
-                  {
-                    case '(':
+                  switch (effective_ch) {
+                  case '(':
+                    if (next == 'l')
+                      return read_flvector(port, stxsrc, line, col, pos, ch, ')', vector_length, vecbuf, ht, indentation, params, 0);
+                    else
+                      return read_fxvector(port, stxsrc, line, col, pos, ch, ')', vector_length, vecbuf, ht, indentation, params, 0);
+                    break;
+                  case '[':
+                    if (!params->square_brackets_are_parens) {
+                      scheme_read_err(port, stxsrc, line, col, pos, 2, effective_ch, indentation, "read: bad syntax `#f%c['", next);
+                      return NULL;
+                    } else
                       if (next == 'l')
-                        return read_flvector(port, stxsrc, line, col, pos, ch, ')', vector_length, vecbuf, ht, indentation, params, 0);
+                        return read_flvector(port, stxsrc, line, col, pos, ch, ']', vector_length, vecbuf, ht, indentation, params, 0);
                       else
-                        return read_fxvector(port, stxsrc, line, col, pos, ch, ')', vector_length, vecbuf, ht, indentation, params, 0);
-                      break;
-                    case '[':
-                      if (!params->square_brackets_are_parens) {
-                        scheme_read_err(port, stxsrc, line, col, pos, 2, effective_ch, indentation, "read: bad syntax `#f%c['", next);
-                        return NULL;
-                      } else
-                        if (next == 'l')
-                          return read_flvector(port, stxsrc, line, col, pos, ch, ']', vector_length, vecbuf, ht, indentation, params, 0);
-                        else
-                          return read_fxvector(port, stxsrc, line, col, pos, ch, ']', vector_length, vecbuf, ht, indentation, params, 0);
-                      break;
-                    case '{':
-                      if (!params->curly_braces_are_parens) {
-                        scheme_read_err(port, stxsrc, line, col, pos, 2, effective_ch, indentation, "read: bad syntax `#f%c{'", next);
-                        return NULL;
-                      } else
-                        if (next == 'l')
-                          return read_flvector(port, stxsrc, line, col, pos, ch, '}', vector_length, vecbuf, ht, indentation, params, 0);
-                        else
-                          return read_fxvector(port, stxsrc, line, col, pos, ch, '}', vector_length, vecbuf, ht, indentation, params, 0);
-                      break;
-                    default:
-                      scheme_read_err(port, stxsrc, line, col, pos, 2, effective_ch, indentation,
-                                      "read: expected `(' `[' or `{' after #f%c", next);
+                        return read_fxvector(port, stxsrc, line, col, pos, ch, ']', vector_length, vecbuf, ht, indentation, params, 0);
+                    break;
+                  case '{':
+                    if (!params->curly_braces_are_parens) {
+                      scheme_read_err(port, stxsrc, line, col, pos, 2, effective_ch, indentation, "read: bad syntax `#f%c{'", next);
+                      return NULL;
+                    } else
+                      if (next == 'l')
+                        return read_flvector(port, stxsrc, line, col, pos, ch, '}', vector_length, vecbuf, ht, indentation, params, 0);
+                      else
+                        return read_fxvector(port, stxsrc, line, col, pos, ch, '}', vector_length, vecbuf, ht, indentation, params, 0);
+                    break;
+                  default:
+                    scheme_read_err(port, stxsrc, line, col, pos, 3, effective_ch, indentation,
+                                    "read: expected `(' `[' or `{' after #f%c", next);
                   }
                 }
-              default:
-                {
-                  GC_CAN_IGNORE const mzchar str[] = { 'f', 'a', 'l', 's', 'e', 0 };
+            default:
+              {
+                GC_CAN_IGNORE const mzchar str[] = { 'f', 'a', 'l', 's', 'e', 0 };
                   return read_delimited_constant(ch, str, scheme_false, port, stxsrc, line, col, pos, 
                                                  indentation, params, table);
-                }
-            } 
-
+              }
+            }
           }
 	case 'c':
 	case 'C':
@@ -2950,7 +2954,6 @@ static Scheme_Object *read_flonum(Scheme_Object *port,
     return n;
   else {
     scheme_tell_all(port, &line2, &col2, &pos2);
-    //printf("%d %d %d %d %d %d\n", line, col, pos, line2, col2, pos2);
     scheme_read_err(port, stxsrc, line, col, pos, pos2-pos, -1, indentation, "read: expected flonum, got %V", n);
   }
   return NULL;
@@ -2977,14 +2980,14 @@ static Scheme_Object *read_fixnum(Scheme_Object *port,
 }
 
 static Scheme_Object *read_number_literal(Scheme_Object *port, 
-				  Scheme_Object *stxsrc, 
-                                  int is_float, int is_not_float,
-				  Scheme_Hash_Table **ht,
-				  Scheme_Object *indentation, 
-				  ReadParams *params,
-				  int comment_mode)
+                                          Scheme_Object *stxsrc, 
+                                          int is_float, int is_not_float,
+                                          Scheme_Hash_Table **ht,
+                                          Scheme_Object *indentation, 
+                                          ReadParams *params,
+                                          int comment_mode)
 {
-  int ch, ch2;
+  int ch;
   intptr_t line = 0, col = 0, pos = 0;
   Scheme_Object *special_value = NULL;
   Readtable *table;
@@ -3003,43 +3006,28 @@ static Scheme_Object *read_number_literal(Scheme_Object *port,
       switch (ch ) {
 	case 'X':
 	case 'x': 
-          /* 0 0 */
           return read_number(-1, port, stxsrc, line, col, pos, is_float, is_not_float, 16, 1, ht, indentation, params, table);
 	  break;
 	case 'B':
 	case 'b': 
-          /* 0 0 */
           return read_number(-1, port, stxsrc, line, col, pos, is_float, is_not_float, 2, 1, ht, indentation, params, table);
 	  break;
 	case 'O':
 	case 'o': 
-          /* 0 0 */
           return read_number(-1, port, stxsrc, line, col, pos, is_float, is_not_float, 8, 1, ht, indentation, params, table);
 	  break;
 	case 'D':
 	case 'd': 
-          /* 0 0 */
           return read_number(-1, port, stxsrc, line, col, pos, is_float, is_not_float, 10, 1, ht, indentation, params, table);
 	  break;
-	case 'E':
-	case 'e': 
-          /* 0 1 */
-          return read_number(-1, port, stxsrc, line, col, pos, is_float, is_not_float, 10, 0, ht, indentation, params, table);
-	  break;
-	case 'I':
-	case 'i': 
-          /* 1 0 */
-          return read_number(-1, port, stxsrc, line, col, pos, is_float, is_not_float, 10, 0, ht, indentation, params, table);
-	  break;
         default:
-          scheme_read_err(port, stxsrc, line, col, pos, 2, ch, indentation, "read: expected one of [XxBbOoDdEeII]");
+          scheme_read_err(port, stxsrc, line, col, pos, 2, ch, indentation, "read: expected `x', `X', `b', `B', `o', `O', `d', or `D'");
       }
     default:
       if (isdigit_ascii(ch))
-        /* 0 0 */
 	special_value = read_number(ch, port, stxsrc, line, col, pos, is_float, is_not_float, 10, 0, ht, indentation, params, table);
       else
-        scheme_read_err(port, stxsrc, line, col, pos, 2, ch, indentation, "read: expected digit");
+        scheme_read_err(port, stxsrc, line, col, pos, 2, ch, indentation, "read: expected a digit, `+', `-', `.', or `#'");
   }
   return special_value;
 }

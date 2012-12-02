@@ -12,7 +12,9 @@
 
 (Section 'pretty)
 
-(require racket/pretty)
+(require racket/pretty
+         racket/fixnum
+         racket/flonum)
 
 (print-as-expression #f)
 
@@ -68,6 +70,8 @@
   (test "#<box>" pretty-format (box 10)))
 (test "#(10)" pretty-format (vector 10))
 (test "#(10 10)" pretty-format (vector 10 10))
+(test "#fl(10.0 10.0)" pretty-format (flvector 10.0 10.0))
+(test "#fx(11 11)" pretty-format (fxvector 11 11))
 (parameterize ([print-vector-length #t])
   (test "#1(10)" pretty-format (vector 10))
   (test "#2(10)" pretty-format (vector 10 10))
@@ -111,6 +115,8 @@
     (test "(1234567890 1 2 3 4)" pretty-format '(1234567890 1 2 3 4))
     (test "(1234567890xx\n 1\n 2\n 3\n 4)" pretty-format '(1234567890xx 1 2 3 4))
     (test "#(1234567890xx\n  1\n  2\n  3\n  4)" pretty-format (vector '1234567890xx 1 2 3 4))
+    (test "#fx(1234567890\n    1\n    2\n    3\n    4)" pretty-format (fxvector 1234567890 1 2 3 4))
+    (test "#fl(1234567890.0\n    1.0\n    2.0\n    3.0\n    4.0)" pretty-format (flvector 1234567890.0 1.0 2.0 3.0 4.0))
     (test "#s(apple\n   1234567890xx\n   1\n   2\n   3\n   4)" pretty-format #s(apple 1234567890xx 1 2 3 4))
     (test "#(struct:a\n  1234567890xx\n  1)" pretty-format (make-a '1234567890xx 1))
     (test "#hash((a\n       .\n       1234567890xx))" pretty-format #hash((a . 1234567890xx)))
@@ -245,6 +251,8 @@
      (mcons 1 2)
      (mcons 1 (mcons 2 null))
      #(1 2 3 4 5)
+     (fxvector 1 2 3)
+     (flvector 1.0 2.0 3.0)
      (read (open-input-string "(#0=() . #0#)"))
      (read (open-input-string "#1=(1 . #1#)"))
      (read (open-input-string "#1={#0={1 2 . #2={#0# . #1#}} . #2#}"))

@@ -169,6 +169,8 @@ static Scheme_Object *writable_struct_subs(Scheme_Object *s, int for_write, Prin
    (SCHEME_PAIRP(obj) \
     || SCHEME_MUTABLE_PAIRP(obj) \
     || SCHEME_CHAPERONE_VECTORP(obj) \
+    || SCHEME_FLVECTORP(obj) \
+    || SCHEME_FXVECTORP(obj) \
     || (qk(pp->print_box, 1) && SCHEME_CHAPERONE_BOXP(obj)) \
     || (qk(pp->print_struct  \
 	   && SCHEME_CHAPERONE_STRUCTP(obj) \
@@ -534,6 +536,8 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
       || SCHEME_MUTABLE_PAIRP(obj)
       || (pp->print_box && SCHEME_CHAPERONE_BOXP(obj))
       || SCHEME_CHAPERONE_VECTORP(obj)
+      || SCHEME_FLVECTORP(obj)
+      || SCHEME_FXVECTORP(obj)
       || (SCHEME_CHAPERONE_STRUCTP(obj)
           && ((pp->print_struct 
 	       && PRINTABLE_STRUCT(obj, pp))
@@ -589,6 +593,8 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
       if ((for_write < 3) && res)
 	return res;
     }
+  } else if (SCHEME_FLVECTORP(obj) || SCHEME_FXVECTORP(obj)) {
+    res = 0x1; /* escape for qq printing */
   } else if (SCHEME_CHAPERONE_STRUCTP(obj)) {
     if (scheme_is_writable_struct(obj)) {
       if (pp->print_unreadable) {
@@ -797,6 +803,8 @@ static int check_cycles_fast(Scheme_Object *obj, PrintParams *pp, int *fast_chec
       cycle = -1;
   } else if (SCHEME_CHAPERONEP(obj))
     cycle = -1; /* no fast checks for chaperones */
+  else if ((write >= 3) && (SCHEME_FLVECTORP(obj) || SCHEME_FXVECTORP(obj)))
+    cycle = -1; /* needs unquote */
   else
     cycle = 0;
 

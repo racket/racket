@@ -594,22 +594,12 @@
                                 (add1 i)))))]
                 [(flvector? obj)
                  (is-compound! obj)
-                 (let ([len (flvector-length obj)])
-                   (let vloop ([esc? #f][i 0])
-                     (if (= i len)
-                         (and esc? 
-                              (escapes! obj))
-                         (vloop (or (loop (flvector-ref obj i)) esc?) 
-                                (add1 i)))))]
+                 ;; always unquoted:
+                 #t]
                 [(fxvector? obj)
                  (is-compound! obj)
-                 (let ([len (fxvector-length obj)])
-                   (let vloop ([esc? #f][i 0])
-                     (if (= i len)
-                         (and esc? 
-                              (escapes! obj))
-                         (vloop (or (loop (fxvector-ref obj i)) esc?) 
-                                (add1 i)))))]
+                 ;; always unquoted:
+                 #t]
                 [(pair? obj)
                  (is-compound! obj)
                  (and (orf (loop (car obj))
@@ -873,8 +863,7 @@
               obj pport #t
               #f #f
               (lambda ()
-                (let ([qd (to-quoted out qd obj)]
-                      [vecl (flvector->repeatless-list obj)])
+                (let ([vecl (flvector->repeatless-list obj)])
                   (if (and qd (zero? qd))
                       (wr-lst (cons (make-unquoted 'flvector) vecl)
                               #f depth pair? car cdr "(" ")" qd)
@@ -888,8 +877,7 @@
               obj pport #t
               #f #f
               (lambda ()
-                (let ([qd (to-quoted out qd obj)]
-                      [vecl (fxvector->repeatless-list obj)])
+                (let ([vecl (fxvector->repeatless-list obj)])
                   (if (and qd (zero? qd))
                       (wr-lst (cons (make-unquoted 'fxvector) vecl)
                               #f depth pair? car cdr "(" ")" qd)
@@ -1105,8 +1093,7 @@
                                             pair? car cdr pair-open pair-close
                                             qd))))]
                           [(flvector? obj)   
-                              (let ([qd (to-quoted out qd obj)]
-                                    [vecl (flvector->repeatless-list obj)])
+                              (let ([vecl (flvector->repeatless-list obj)])
                                 (if (and qd (zero? qd))
                                     (pp-pair (cons (make-unquoted 'flvector) vecl)
                                             pair? car cdr pair-open pair-close
@@ -1119,8 +1106,7 @@
                                             pair? car cdr pair-open pair-close
                                             qd))))]
                           [(fxvector? obj)   
-                              (let ([qd (to-quoted out qd obj)]
-                                    [vecl (fxvector->repeatless-list obj)])
+                              (let ([vecl (fxvector->repeatless-list obj)])
                                 (if (and qd (zero? qd))
                                     (pp-pair (cons (make-unquoted 'fxvector) vecl)
                                               pair? car cdr pair-open pair-close
