@@ -9,6 +9,7 @@
 @(define package-name-chars
    @list{@litchar{a} through @litchar{z}, 
          @litchar{A} through @litchar{Z}, 
+         @litchar{0} through @litchar{9}, 
          @litchar{_}, and @litchar{-}})
 
 @(define (inset . c)
