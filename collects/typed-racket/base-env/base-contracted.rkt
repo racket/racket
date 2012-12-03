@@ -38,4 +38,10 @@
 ;; set up the type environment
 (define-initial-env initialize-contracted
   [default-continuation-prompt-tag
-    (-> (make-Prompt-Tagof ManyUniv (-> ManyUniv ManyUniv)))])
+    ;; TODO: we actually want the type
+    ;;       for the handler (->* (list) Univ ManyUniv)
+    ;;       but the prompt tag contract doesn't quite
+    ;;       support this (it needs a #:rest argument)
+    ;;
+    ;;       Also, this type works better with inference.
+    (-> (make-Prompt-Tagof Univ (-> Univ ManyUniv)))])
