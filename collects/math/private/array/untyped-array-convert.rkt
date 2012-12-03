@@ -84,7 +84,7 @@
         (raise-argument-error 'list*->array "rectangular (Listof* A)" lst))
       
       (define ds (list-shape lst pred?))
-      (cond [(pred? lst)  (unsafe-build-array #() (λ (js) lst))]
+      (cond [(pred? lst)  (unsafe-build-strict-array #() (λ (js) lst))]
             [ds  (let ([ds  (check-array-shape ds raise-shape-error)])
                    (define size (array-shape-size ds))
                    (unsafe-mutable-array ds (list*->flat-vector lst size pred?)))]
@@ -97,7 +97,7 @@
         (raise-argument-error 'vector*->array "rectangular (Vectorof* A)" vec))
       
       (define ds (vector-shape vec pred?))
-      (cond [(pred? vec)  (unsafe-build-array #() (λ (js) vec))]
+      (cond [(pred? vec)  (unsafe-build-strict-array #() (λ (js) vec))]
             [ds  (let ([ds  (check-array-shape ds raise-shape-error)])
                    (define dims (vector-length ds))
                    (unsafe-build-array

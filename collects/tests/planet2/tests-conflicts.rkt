@@ -17,8 +17,8 @@
  (shelly-begin
   (initialize-indexes)
 
-  $ "raco pkg create --format plt test-pkgs/planet2-test1"
-  $ "raco pkg create --format plt test-pkgs/planet2-test1-not-conflict"
+  $ "raco pkg create --format plt test-pkgs/planet2-test1/"
+  $ "raco pkg create --format plt test-pkgs/planet2-test1-not-conflict/"
   (shelly-install "only modules are considered for conflicts"
                   "test-pkgs/planet2-test1.plt"
                   $ "raco pkg install test-pkgs/planet2-test1-not-conflict.plt")
@@ -37,6 +37,10 @@
    (shelly-install "conflicts are caught" "test-pkgs/planet2-test1.zip"
                    $ "test -f test-pkgs/planet2-test1-conflict.zip"
                    $ "raco pkg install test-pkgs/planet2-test1-conflict.zip" =exit> 1)
+
+   (shelly-install "conflicts are caught across sharing modes" "test-pkgs/planet2-test1.zip"
+                   $ "test -f test-pkgs/planet2-test1-conflict.zip"
+                   $ "raco pkg install -s test-pkgs/planet2-test1-conflict.zip" =exit> 1)
 
    (shelly-wind
     $ "cp -r test-pkgs/planet2-test1 test-pkgs/planet2-test1-linking"

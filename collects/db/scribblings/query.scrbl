@@ -629,7 +629,8 @@ implicitly rolled back.
                                    'read-committed
                                    'read-uncommitted
                                    #f)
-                             #f])
+                             #f]
+                            [#:option option any/c #f])
          void?]{
 
   Starts a transaction with isolation @racket[isolation-level]. If
@@ -637,8 +638,23 @@ implicitly rolled back.
   database-dependent; it may be a default isolation level or it may be
   the isolation level of the previous transaction.
 
+  The behavior of @racket[option] depends on the database system:
+  @itemlist[
+  @item{PostgreSQL supports @racket['read-only] and @racket['read-write]
+    for the @hyperlink["http://www.postgresql.org/docs/9.0/static/sql-set-transaction.html"]{corresponding
+    transaction options}.}
+  @item{SQLite supports @racket['deferred], @racket['immediate], and
+    @racket['exclusive] for the @hyperlink["http://www.sqlite.org/lang_transaction.html"]{corresponding
+    locking modes}.} 
+  @item{MySQL and ODBC no not support any options.}
+  ]
+  If @racket[option] is not supported, an exception is raised.
+
   If @racket[c] is already in a transaction, @racket[isolation-level]
-  must be @racket[#f], and a @tech{nested transaction} is opened.
+  and @racket[option] must both be @racket[#f], and a @tech{nested
+  transaction} is opened.
+
+  See also @secref["dbperf-concurrency"].
 }
 
 @defproc[(commit-transaction [c connection?]) void?]{
@@ -691,7 +707,8 @@ implicitly rolled back.
                                        'read-committed
                                        'read-uncommitted
                                        #f)
-                                 #f])
+                                 #f]
+                                [#:option option any/c #f])
          any]{
 
   Calls @racket[proc] in the context of a new transaction with
@@ -725,14 +742,27 @@ SQL errors are represented by the @racket[exn:fail:sql] exception
 type.
 
 @defstruct[(exn:fail:sql exn:fail)
-           ([sqlstate string?]
+           ([sqlstate (or/c string? symbol?)]
             [info (listof (cons/c symbol? any/c))])]{
 
   Represents a SQL error originating from the database server or
   native library. The @racket[sqlstate] field contains the SQLSTATE
-  code (a five-character string) of the error; refer to the database
-  system's documentation for the definitions of SQLSTATE codes. The
-  @racket[info] field contains all information available about the
+  code (a five-character string) of the error for PostgreSQL, MySQL,
+  or ODBC connections or a symbol for SQLite connections. Refer to the
+  database system's documentation for the definitions of error codes:
+
+  @itemlist[
+  @item{@hyperlink["http://www.postgresql.org/docs/9.0/static/errcodes-appendix.html"]{
+    PostgreSQL SQLSTATE codes}}
+  @item{@hyperlink["http://dev.mysql.com/doc/refman/5.5/en/error-messages-server.html"]{
+    MySQL SQLSTATE codes}}
+  @item{@hyperlink["http://www.sqlite.org/c3ref/c_abort.html"]{
+    SQLite error codes}; errors are represented as a symbol based on
+  the error constant's name, such as @racket['busy] for @tt{SQLITE_BUSY}}
+  @item{ODBC: see the database system's documentation}
+  ]
+
+  The @racket[info] field contains all information available about the
   error as an association list. The available keys vary, but the
   @racket['message] key is typically present; its value is a string
   containing the error message.
@@ -744,9 +774,7 @@ type.
 
   Errors originating from the @racketmodname[db] library, such as
   arity and contract errors, type conversion errors, etc, are not
-  represented by @racket[exn:fail:sql]. SQLite errors are not
-  represented via @racket[exn:fail:sql], because SQLite does not
-  provide SQLSTATE error codes.
+  represented by @racket[exn:fail:sql]. 
 }
 
 @section{Database Catalog Information}

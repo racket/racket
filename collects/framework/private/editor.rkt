@@ -40,7 +40,8 @@
       close
       get-filename/untitled-name
       
-      get-pos/text))
+      get-pos/text
+      get-pos/text-dc-location))
   
   (define basic-mixin
     (mixin (editor<%>) (basic<%>)

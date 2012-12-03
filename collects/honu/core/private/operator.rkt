@@ -131,3 +131,12 @@
 (define-binary-operator honu-== 1 'left equal?)
 (define-binary-operator honu-not-equal 1 'left (lambda (left right)
                                                  (not (equal? left right))))
+
+(define-honu-operator/syntax honu-=> 0.00001 'left
+  (lambda (left right)
+    (when (not (identifier? left))
+      (raise-syntax-error '=> "expected an identifier" left))
+    (with-syntax ([left left]
+                  [right right])
+      (racket-syntax (lambda (left)
+                       right)))))

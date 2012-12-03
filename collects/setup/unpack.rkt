@@ -119,7 +119,9 @@
     (let ([location (string->loc (car v))])
       (if (eq? location 'relative)
           (apply build-path v)
-          (list location (apply build-path (cdr v)))))]
+          (if (null? (cdr v))
+              (list location (build-path/convention-type (system-path-convention-type) 'same))
+              (list location (apply build-path (cdr v))))))]
    [else (error "malformed path description: " v)]))
 
 ;; string->loc : string -> location

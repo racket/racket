@@ -20,25 +20,17 @@
  fcarray-scale
  fcarray-sqr
  fcarray-sqrt
- fcarray-conjugate
  fcarray-magnitude
  fcarray-angle
- fcarray-log
- fcarray-exp
- fcarray-sin
- fcarray-cos
- fcarray-tan
- fcarray-asin
- fcarray-acos
- fcarray-atan
  fcarray+
  fcarray*
  fcarray-
  fcarray/
- fcarray-expt
+ fcarray-conjugate
  fcarray-real-part
  fcarray-imag-part
  fcarray-make-rectangular
+ fcarray-make-polar
  )
 
 ;; ===================================================================================================
@@ -143,9 +135,6 @@
 ;; ===================================================================================================
 ;; Pointwise operations
 
-(define-syntax-rule (lift1 f)
-  (λ (arr) (inline-fcarray-map f arr)))
-
 (define-syntax-rule (lift1->fl f)
   (λ (arr)
     (define ds (array-shape arr))
@@ -162,73 +151,63 @@
             [else
              (unsafe-flarray ds new-xs)]))))
 
+(define-syntax-rule (lift1 f)
+  (λ: ([arr : FCArray]) (inline-fcarray-map f arr)))
+
 (define-syntax-rule (lift2 f)
-  (λ (arr1 arr2) (inline-fcarray-map f arr1 arr2)))
+  (λ: ([arr1 : FCArray] [arr2 : FCArray]) (inline-fcarray-map f arr1 arr2)))
 
 (: fcarray-scale (FCArray (U Float Float-Complex) -> FCArray))
-
-(: fcarray-sqr (FCArray -> FCArray))
-(: fcarray-sqrt (FCArray -> FCArray))
-(: fcarray-conjugate (FCArray -> FCArray))
-(: fcarray-magnitude (FCArray -> FlArray))
-(: fcarray-angle (FCArray -> FlArray))
-(: fcarray-log (FCArray -> FCArray))
-(: fcarray-exp (FCArray -> FCArray))
-(: fcarray-sin (FCArray -> FCArray))
-(: fcarray-cos (FCArray -> FCArray))
-(: fcarray-tan (FCArray -> FCArray))
-(: fcarray-asin (FCArray -> FCArray))
-(: fcarray-acos (FCArray -> FCArray))
-(: fcarray-atan (FCArray -> FCArray))
-
-(: fcarray+ (FCArray FCArray -> FCArray))
-(: fcarray* (FCArray FCArray -> FCArray))
-(: fcarray- (case-> (FCArray -> FCArray)
-                    (FCArray FCArray -> FCArray)))
-(: fcarray/ (case-> (FCArray -> FCArray)
-                    (FCArray FCArray -> FCArray)))
-(: fcarray-expt (FCArray FCArray -> FCArray))
-
-(: fcarray-real-part (FCArray -> FlArray))
-(: fcarray-imag-part (FCArray -> FlArray))
-(: fcarray-make-rectangular (FlArray FlArray -> FCArray))
-
 (define (fcarray-scale arr y)
   (if (flonum? y)
       (inline-fcarray-map (λ (z) (* z y)) arr)
       (inline-fcarray-map (λ (z) (* z y)) arr)))
 
-(define fcarray-sqr (lift1 (λ (x) (* x x))))
-(define fcarray-sqrt (lift1 sqrt))
-(define fcarray-conjugate (lift1 conjugate))
-(define fcarray-magnitude (lift1->fl magnitude))
-(define fcarray-angle (lift1->fl angle))
-(define fcarray-log (lift1 log))
-(define fcarray-exp (lift1 exp))
-(define fcarray-sin (lift1 sin))
-(define fcarray-cos (lift1 cos))
-(define fcarray-tan (lift1 tan))
-(define fcarray-asin (lift1 asin))
-(define fcarray-acos (lift1 acos))
-(define fcarray-atan (lift1 atan))
+(: fcarray-sqr (FCArray -> FCArray))
+(define fcarray-sqr (lift1 (λ: ([z : Float-Complex]) (* z z))))
 
+(: fcarray-sqrt (FCArray -> FCArray))
+(define fcarray-sqrt (lift1 sqrt))
+
+(: fcarray-magnitude (FCArray -> FlArray))
+(define fcarray-magnitude (lift1->fl magnitude))
+
+(: fcarray-angle (FCArray -> FlArray))
+(define fcarray-angle (lift1->fl angle))
+
+(: fcarray-conjugate (FCArray -> FCArray))
+(define fcarray-conjugate (lift1 conjugate))
+
+(: fcarray+ (FCArray FCArray -> FCArray))
 (define fcarray+ (lift2 +))
+
+(: fcarray* (FCArray FCArray -> FCArray))
 (define fcarray* (lift2 *))
 
+(: fcarray- (case-> (FCArray -> FCArray)
+                    (FCArray FCArray -> FCArray)))
 (define fcarray-
   (case-lambda
     [(arr)  (inline-fcarray-map (λ (z) (- 0.0 z)) arr)]
     [(arr1 arr2)  (inline-fcarray-map - arr1 arr2)]))
 
+(: fcarray/ (case-> (FCArray -> FCArray)
+                    (FCArray FCArray -> FCArray)))
 (define fcarray/
   (case-lambda
     [(arr)  (inline-fcarray-map (λ (z) (/ 1.0 z)) arr)]
     [(arr1 arr2)  (inline-fcarray-map / arr1 arr2)]))
 
-(define fcarray-expt (lift2 expt))
-
+(: fcarray-real-part (FCArray -> FlArray))
 (define fcarray-real-part (lift1->fl real-part))
+
+(: fcarray-imag-part (FCArray -> FlArray))
 (define fcarray-imag-part (lift1->fl imag-part))
 
+(: fcarray-make-rectangular (FlArray FlArray -> FCArray))
 (define (fcarray-make-rectangular arr1 arr2)
   (array->fcarray (array-make-rectangular arr1 arr2)))
+
+(: fcarray-make-polar (FlArray FlArray -> FCArray))
+(define (fcarray-make-polar arr1 arr2)
+  (array->fcarray (array-make-polar arr1 arr2)))

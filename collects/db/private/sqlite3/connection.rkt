@@ -62,8 +62,8 @@
           (when delenda
             (for ([pst (in-hash-values delenda)])
               (send pst finalize #f)))
-          (HANDLE fsym (sqlite3_reset stmt))
-          (HANDLE fsym (sqlite3_clear_bindings stmt))
+          (void (sqlite3_reset stmt))
+          (void (sqlite3_clear_bindings stmt))
           (for ([i (in-naturals 1)]
                 [param (in-list params)])
             (load-param fsym db stmt i param))
@@ -76,7 +76,8 @@
                      (step* fsym db stmt #f +inf.0))])
             (unless (eq? (get-tx-status) 'invalid)
               (set-tx-status! fsym (read-tx-status)))
-            (unless cursor? (send pst after-exec #f))
+            (unless cursor?
+              (send pst after-exec #f))
             (cond [(and (pair? info) (not cursor?))
                    (rows-result info result)]
                   [(and (pair? info) cursor?)
@@ -92,9 +93,10 @@
           (lambda ()
             (cond [(unbox end-box) #f]
                   [else
-                   (begin0 (step* fsym (get-db fsym) (send pst get-handle) end-box fetch-size)
-                     (when (unbox end-box)
-                       (send pst after-exec #f)))])))))
+                   (let ([stmt (send pst get-handle)])
+                     (begin0 (step* fsym (get-db fsym) stmt end-box fetch-size)
+                       (when (unbox end-box)
+                         (send pst after-exec #f))))])))))
 
     (define/private (check-statement fsym stmt cursor?)
       (cond [(statement-binding? stmt)
@@ -124,16 +126,22 @@
               (error/internal* fsym "bad parameter value" '("value" value) param)])))
 
     (define/private (step* fsym db stmt end-box fetch-limit)
-      (if (zero? fetch-limit)
-          null
-          (let ([c (step fsym db stmt)])
-            (cond [c
-                   (cons c (step* fsym db stmt end-box (sub1 fetch-limit)))]
-                  [else
-                   (HANDLE fsym (sqlite3_reset stmt))
-                   (HANDLE fsym (sqlite3_clear_bindings stmt))
-                   (when end-box (set-box! end-box #t))
-                   null]))))
+      (with-handlers ([exn:fail?
+                       (lambda (e)
+                         (void (sqlite3_reset stmt))
+                         (void (sqlite3_clear_bindings stmt))
+                         (raise e))])
+        (let loop ([fetch-limit fetch-limit])
+          (if (zero? fetch-limit)
+              null
+              (let ([c (step fsym db stmt)])
+                (cond [c
+                       (cons c (loop (sub1 fetch-limit)))]
+                      [else
+                       (void (sqlite3_reset stmt))
+                       (void (sqlite3_clear_bindings stmt))
+                       (when end-box (set-box! end-box #t))
+                       null]))))))
 
     (define/private (step fsym db stmt)
       (let ([s (HANDLE fsym (sqlite3_step stmt))])
@@ -240,7 +248,7 @@
     (define/private (read-tx-status)
       (not (sqlite3_get_autocommit -db)))
 
-    (define/override (start-transaction* fsym isolation)
+    (define/override (start-transaction* fsym isolation option)
       ;; Isolation level can be set to READ UNCOMMITTED via pragma, but
       ;; ignored in all but a few cases, don't bother.
       ;; FIXME: modes are DEFERRED | IMMEDIATE | EXCLUSIVE
@@ -249,8 +257,16 @@
                (internal-query1 fsym (format "SAVEPOINT ~a" savepoint))
                savepoint)]
             [else
-             (internal-query1 fsym "BEGIN TRANSACTION")
-             #f]))
+             ;; Note: pragma read_uncommitted irrelevant, since we don't use
+             ;; the shared page cache.
+             (let ([sql
+                    (case option
+                      ((deferred #f) "BEGIN TRANSACTION")
+                      ((immediate) "BEGIN IMMEDIATE TRANSACTION")
+                      ((exclusive) "BEGIN EXCLUSIVE TRANSACTION")
+                      (else (raise-argument-error fsym "(or/c 'deferred 'immediate 'exclusive #f)" option)))])
+               (internal-query1 fsym sql)
+               #f)]))
 
     (define/override (end-transaction* fsym mode savepoint)
       (case mode
@@ -298,10 +314,14 @@
       (call-with-values thunk
         (lambda (s . rest)
           (cond [(and (= s SQLITE_BUSY) (< iteration busy-retry-limit))
-                 (dbdebug "sqlite: busy, will retry")
                  (sleep busy-retry-delay)
                  (handle* who thunk (add1 iteration))]
-                [else (apply values (handle-status who s) rest)]))))
+                [else
+                 (when (> iteration 0)
+                   (dbdebug "continuing with ~s after SQLITE_BUSY x ~s"
+                            (if (= s SQLITE_BUSY) "SQLITE_BUSY" s)
+                            iteration))
+                 (apply values (handle-status who s) rest)]))))
 
     ;; Some errors can cause whole transaction to rollback;
     ;; (see http://www.sqlite.org/lang_transaction.html)
@@ -331,46 +351,54 @@
 ;; Returns the status code if no error occurred, otherwise
 ;; raises an exception with an appropriate message.
 (define (handle-status* who s db)
-  (if (or (= s SQLITE_OK)
-          (= s SQLITE_ROW)
-          (= s SQLITE_DONE))
-      s
-      (error who "~a" (lookup-status-message s db))))
+  (cond [(or (= s SQLITE_OK)
+             (= s SQLITE_ROW)
+             (= s SQLITE_DONE))
+         s]
+        [else
+         (let* ([info
+                 (or (assoc s error-table)
+                     '(#f unknown "unknown error code"))]
+                [sym
+                 (cadr info)]
+                [message
+                 (cond [(and (= s SQLITE_ERROR) db)
+                        (sqlite3_errmsg db)]
+                       [else (caddr info)])])
+           (raise (make-exn:fail:sql (format "~a: ~a" who message)
+                                     (current-continuation-marks)
+                                     sym
+                                     `((code . ,sym)
+                                       (message . ,message)
+                                       (errcode . ,s)))))]))
 
 (define error-table
-  `([,SQLITE_ERROR . "unknown error"]
-    [,SQLITE_INTERNAL . "an internal logic error in SQLite"]
-    [,SQLITE_PERM . "access permission denied"]
-    [,SQLITE_ABORT . "callback routine requested an abort"]
-    [,SQLITE_BUSY . "the database file is locked"]
-    [,SQLITE_LOCKED . "table in the database is locked"]
-    [,SQLITE_NOMEM . "malloc() failed"]
-    [,SQLITE_READONLY . "attempt to write a readonly database"]
-    [,SQLITE_INTERRUPT . "operation terminated by sqlite3_interrupt()"]
-    [,SQLITE_IOERR . "some kind of disk I/O error occurred"]
-    [,SQLITE_CORRUPT . "the database disk image is malformed"]
-    [,SQLITE_NOTFOUND . "(internal only) table or record not found"]
-    [,SQLITE_FULL . "insertion failed because database is full"]
-    [,SQLITE_CANTOPEN . "unable to open the database file"]
-    [,SQLITE_PROTOCOL . "database lock protocol error"]
-    [,SQLITE_EMPTY . "database is empty"]
-    [,SQLITE_SCHEMA . "database schema changed"]
-    [,SQLITE_TOOBIG . "too much data for one row of a table"]
-    [,SQLITE_CONSTRAINT . "abort due to constraint violation"]
-    [,SQLITE_MISMATCH . "data type mismatch"]
-    [,SQLITE_MISUSE . "library used incorrectly"]
-    [,SQLITE_NOLFS . "uses OS features not supported on host"]
-    [,SQLITE_AUTH . "authorization denied"]
-    [,SQLITE_FORMAT . "auxiliary database format error"]
-    [,SQLITE_RANGE . "2nd parameter to sqlite3_bind out of range"]
-    [,SQLITE_NOTADB . "file opened that is not a database file"]))
-
-;; lookup-status-message : integer db/#f -> string
-(define (lookup-status-message s db)
-  (cond [(and (eq? s SQLITE_ERROR) db)
-         (sqlite3_errmsg db)]
-        [(assoc s error-table) => cdr]
-        [else "unknown condition"]))
+  `([,SQLITE_ERROR       error      "unknown error"]
+    [,SQLITE_INTERNAL    internal   "an internal logic error in SQLite"]
+    [,SQLITE_PERM        perm       "access permission denied"]
+    [,SQLITE_ABORT       abort      "callback routine requested an abort"]
+    [,SQLITE_BUSY        busy       "the database file is locked"]
+    [,SQLITE_LOCKED      locked     "table in the database is locked"]
+    [,SQLITE_NOMEM       nomem      "malloc() failed"]
+    [,SQLITE_READONLY    readonly   "attempt to write a readonly database"]
+    [,SQLITE_INTERRUPT   interrupt  "operation terminated by sqlite3_interrupt()"]
+    [,SQLITE_IOERR       ioerr      "some kind of disk I/O error occurred"]
+    [,SQLITE_CORRUPT     corrupt    "the database disk image is malformed"]
+    [,SQLITE_NOTFOUND    notfound   "(internal only) table or record not found"]
+    [,SQLITE_FULL        full       "insertion failed because database is full"]
+    [,SQLITE_CANTOPEN    cantopen   "unable to open the database file"]
+    [,SQLITE_PROTOCOL    protocol   "database lock protocol error"]
+    [,SQLITE_EMPTY       empty      "database is empty"]
+    [,SQLITE_SCHEMA      schema     "database schema changed"]
+    [,SQLITE_TOOBIG      toobig     "too much data for one row of a table"]
+    [,SQLITE_CONSTRAINT  constraint "abort due to constraint violation"]
+    [,SQLITE_MISMATCH    mismatch   "data type mismatch"]
+    [,SQLITE_MISUSE      misuse     "library used incorrectly"]
+    [,SQLITE_NOLFS       nolfs      "uses OS features not supported on host"]
+    [,SQLITE_AUTH        auth       "authorization denied"]
+    [,SQLITE_FORMAT      format     "auxiliary database format error"]
+    [,SQLITE_RANGE       range      "2nd parameter to sqlite3_bind out of range"]
+    [,SQLITE_NOTADB      notadb     "file opened that is not a database file"]))
 
 ;; http://www.sqlite.org/lang_transaction.html
 (define maybe-rollback-status-list

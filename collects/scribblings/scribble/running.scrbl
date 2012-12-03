@@ -7,8 +7,8 @@
 
 @title[#:tag "running"]{Running @exec{scribble}}
 
-The @exec{scribble} command-line tool (also available as @exec{raco
-scribble}) runs a Scribble document and renders it to a specific
+The @exec{scribble} command-line tool (also available as @as-index{@exec{raco
+scribble}}) runs a Scribble document and renders it to a specific
 format. Select a format with one of the following flags, where the
 output name @|fn| is by default the document source name without
 its file suffix:

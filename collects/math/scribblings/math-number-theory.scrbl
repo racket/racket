@@ -586,13 +586,13 @@ Otherwise 0 is returned.
 @section[#:tag "number-sequences"]{Number Sequences}
 
 @margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Bernoulli_number"]{Bernoulli Number}}
-@defproc[(bernoulli [n Integer]) Exact-Rational]{
+@defproc[(bernoulli-number [n Integer]) Exact-Rational]{
   Returns the @racket[n]th Bernoulli number; @racket[n] must be nonnegative.
 
   @interaction[#:eval untyped-eval
-                      (map bernoulli (range 9))]
+                      (map bernoulli-number (range 9))]
   
-  Note that these are the @italic{first} Bernoulli numbers, since @racket[(bernoulli 1) = -1/2].
+  Note that these are the @italic{first} Bernoulli numbers, since @racket[(bernoulli-number 1) = -1/2].
 }
 
 @margin-note{MathWorld: @hyperlink["http://mathworld.wolfram.com/EulerianNumber.html"]{Eulerian Number}}
@@ -612,26 +612,41 @@ Otherwise 0 is returned.
                       (map fibonacci (range 10))]
 }
 
-@defproc[(fibonacci/mod [n Integer] [m Integer]) Natural]{
+@defproc[(make-fibonacci [a Integer] [b Integer]) (Integer -> Integer)]{
+Returns a function representing @italic{a} Fibonacci sequence with the first two numbers
+@racket[a] and @racket[b]. The @racket[fibonacci] function is defined as
+@racket[(make-fibonacci 0 1)].
+
+@margin-note{Wikipedia: @hyperlink["http://wikipedia.org/wiki/Lucas_number"]{Lucas Number}}
+The Lucas numbers are defined as a Fibonacci sequence starting with 2 and 1:
+@interaction[#:eval untyped-eval
+                    (map (make-fibonacci 2 1) (range 10))]
+}
+
+@defproc[(modular-fibonacci [n Integer] [m Integer]) Natural]{
   Returns the @racket[n]th Fibonacci number modulo @racket[m]; @racket[n] must be nonnegative
   and @racket[m] must be positive.
 
   The ten first Fibonacci numbers modulo 5.
   @interaction[#:eval untyped-eval
-                      (map (λ (n) (fibonacci/mod n 5)) (range 10))]
+                      (map (λ (n) (modular-fibonacci n 5)) (range 10))]
+}
+
+@defproc[(make-modular-fibonacci [a Integer] [b Integer]) (Integer Integer -> Integer)]{
+Like @racket[make-fibonacci], but makes a modular Fibonacci sequence.
 }
 
 @margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Farey_sequence"]{Farey Sequence}}
-@defproc[(farey [n Integer]) (Listof Exact-Rational)]{
+@defproc[(farey-sequence [n Integer]) (Listof Exact-Rational)]{
 Returns a list of the numbers in the @racket[n]th Farey sequence; @racket[n] must be positive.
 
 The @racket[n]th Farey sequence is the sequence of all 
 completely reduced rational numbers from 0 to 1 which denominators
 are less than or equal to @racket[n].
   @interaction[#:eval untyped-eval
-                      (farey 1)
-                      (farey 2)
-                      (farey 3)]
+                      (farey-sequence 1)
+                      (farey-sequence 2)
+                      (farey-sequence 3)]
 }
 
 @margin-note{MathWorld: @hyperlink["http://mathworld.wolfram.com/TangentNumber.html"]{Tangent Number}}
@@ -806,21 +821,21 @@ modulus @racket[n] must be positive.
                       (unit-group 6)]  
 }
 
-@defproc[(order [x Integer] [n Integer]) Positive-Integer]{
+@defproc[(unit-group-order [x Integer] [n Integer]) Positive-Integer]{
 Returns the order of @racket[x] in the group @math-style{Un}; both arguments must be positive.
-If @racket[x] and @racket[n] are not coprime, @racket[(order x n)] raises an error.
+If @racket[x] and @racket[n] are not coprime, @racket[(unit-group-order x n)] raises an error.
   @interaction[#:eval untyped-eval
-                      (order 2 5)
-                      (order 2 6)]  
+                      (unit-group-order 2 5)
+                      (unit-group-order 2 6)]  
 }
 
-@defproc[(orders [n Integer]) (Listf Positive-Integer)]{
-Returns a list @racket[(list (order x0 n) (order x1 n) ...)] where
+@defproc[(unit-group-orders [n Integer]) (Listf Positive-Integer)]{
+Returns a list @racket[(list (unit-group-order x0 n) (unit-group-order x1 n) ...)] where
 @racket[x0], @racket[x1], ... are the elements of @math-style{Un}.
 The modulus @racket[n] must be positive.
   @interaction[#:eval untyped-eval
-                      (orders 5)
-                      (map (curryr order 5) (unit-group 5))]
+                      (unit-group-orders 5)
+                      (map (curryr unit-group-order 5) (unit-group 5))]
 }
 
 @defproc[(primitive-root? [x Integer] [n Integer]) Boolean]{

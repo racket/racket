@@ -52,7 +52,10 @@ The safest way to ensure that @(racket plot) can determine bounds for the plot a
 
 Because PLoT is now smarter about choosing bounds, there are better ways. For example, suppose you have
 
-@interaction[#:eval plot-eval (plot (line sin))]
+@interaction[#:eval plot-eval
+                    (eval:alts
+                     (plot (line sin))
+                     (eval:result "" "" "plot: could not determine sensible plot bounds; got x ∈ [#f,#f], y ∈ [#f,#f]"))]
 
 You could either change it to
 

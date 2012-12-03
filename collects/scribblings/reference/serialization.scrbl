@@ -45,7 +45,8 @@ The following kinds of values are serializable:
        @tech{unreadable symbols}, @tech{strings}, @tech{byte strings}, @tech{paths} (for a
        specific convention), @|void-const|, and the empty list;}
 
- @item{@tech{pairs}, @tech{mutable pairs}, @tech{vectors}, @tech{box}es, @tech{hash tables}, and @tech{sets};}
+ @item{@tech{pairs}, @tech{mutable pairs}, @tech{vectors}, @tech{flvectors}, @tech{fxvectors},
+       @tech{box}es, @tech{hash tables}, and @tech{sets};}
 
  @item{@racket[date], @racket[date*], and @racket[arity-at-least] structures; and}
  
@@ -263,6 +264,14 @@ elements:
             @item{a pair whose @racket[car] is @racket['v!] and whose
                   @racket[cdr] is a list of serials; it represents a
                   mutable vector.}
+
+            @item{a pair whose @racket[car] is @racket['vl] and whose
+                  @racket[cdr] is a list of serials; it represents a
+                  @tech{flvector}.}
+
+            @item{a pair whose @racket[car] is @racket['vx] and whose
+                  @racket[cdr] is a list of serials; it represents a
+                  @tech{fxvector}.}
 
             @item{a pair whose @racket[car] is @racket['b] and whose
                   @racket[cdr] is a serial; it represents an immutable

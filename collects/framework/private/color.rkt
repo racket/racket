@@ -665,14 +665,14 @@ added get-regions
     ;;   Otherwise, it treats it like a boolean, where a true value  
     ;;   means the normal paren color and #f means an error color. 
     ;; numbers are expected to have zero be start-pos.
-    (define/private (highlight ls start end caret-pos color)
+    (define/private (highlight ls start end caret-pos color [priority 'low])
       (let* ([start-pos (lexer-state-start-pos ls)]
              [off (highlight-range (+ start-pos start) (+ start-pos end)
                                    (if (is-a? color color%)
                                        color
                                        (if color mismatch-color (get-match-color)))
                                    (= caret-pos (+ start-pos start))
-                                   'low)])
+                                   priority)])
         (set! clear-old-locations
               (let ([old clear-old-locations])
                 (λ ()
@@ -739,14 +739,16 @@ added get-regions
     ;; highlight-nested-region : lexer-state number number number -> void
     ;; colors nested regions of parentheses.
     (define/private (highlight-nested-region ls orig-start orig-end here)
+      (define priority (get-parenthesis-priority))
+      (define paren-colors (get-parenthesis-colors))
       (let paren-loop ([start orig-start]
                        [end orig-end]
                        [depth 0])
-        (when (< depth (vector-length (get-parenthesis-colors)))
+        (when (< depth (vector-length paren-colors))
           
           ;; when there is at least one more color in the vector we'll look
           ;; for regions to color at that next level
-          (when (< (+ depth 1) (vector-length (get-parenthesis-colors)))
+          (when (< (+ depth 1) (vector-length paren-colors))
             (let seq-loop ([inner-sequence-start (+ start 1)])
               (when (< inner-sequence-start end)
                 (let ([post-whitespace (skip-whitespace inner-sequence-start 'forward #t)])
@@ -761,7 +763,7 @@ added get-regions
                        (λ (after-non-paren-thing)
                          (seq-loop after-non-paren-thing))]))))))
           
-          (highlight ls start end here (vector-ref (get-parenthesis-colors) depth)))))
+          (highlight ls start end here (vector-ref paren-colors depth) priority))))
     
     ;; See docs
     (define/public (forward-match position cutoff)
@@ -892,6 +894,7 @@ added get-regions
         (tokenize-to-pos ls position)))
     
     ;; See docs
+    ;;  Note: this doesn't seem to handle sexp-comments correctly  .nah.
     (define/public (skip-whitespace position direction comments?)
       (when stopped?
         (error 'skip-whitespace "called on a color:text<%> whose colorer is stopped."))
@@ -951,38 +954,128 @@ added get-regions
                                (get-close-paren pos (cdr closers) #t)
                                #f)))))
                  c))))))
+
+
+    ;; this returns the start/end positions
+    ;; of the matching close paren of the first open paren to the left of pos,
+    ;; if it is properly balanced. (this one assumes though that closers
+    ;; really contains only 'parenthesis type characters)
+    ;; find-next-outer-paren : number (list string)
+    ;;            -> (values (or #f number) (or #f number) (or #f string))
+    (define/private (find-next-outer-paren pos closers)
+      (cond
+        [(null? closers) (values #f #f #f)]
+        [else
+         (define c (car closers))       ; pick a close parens
+         (define l (string-length c))
+         (define ls (find-ls pos))
+         (cond
+           [(not ls) (values #f #f #f)]
+           [else
+            (define start-pos (lexer-state-start-pos ls))
+            (insert c pos)             ; temporarily insert c
+            (define m (backward-match (+ l pos) start-pos)) ; find matching open parens
+            (delete pos (+ l pos))     ; delete c
+            (define n                  ; now from the open parens find the *real* matching close parens
+              (and m (forward-match m (last-position)))) ; n is the position *after* the close
+            #;(printf "outer: ~a~n" (list pos n m (and n m (let-values ([(a b) (get-token-range (- n l))])
+                                                           (list a b)))))
+            (if n
+                (let-values ([(a b) (get-token-range (- n l))])
+                  (values a b (get-text a b)))
+                (find-next-outer-paren pos (cdr closers)))])]))
     
-    (inherit insert delete flash-on on-default-char)
+
+    ;; returns the start and end positions of the next token at or after
+    ;;   pos that matches any of the given list of closers, as well as
+    ;;   the string of the matching token itself and whether it
+    ;;   occurred immediately adjacent to pos, ignoring whitespace and comments
+    ;; find-next-close-paren : number (list string) boolean
+    ;;      -> (values (or #f number) (or #f number) (or #f string) boolean)
+    (define/private (find-next-close-paren pos closers [adj? #t])
+      (define next-pos (skip-whitespace pos 'forward #t))
+      (define tree (lexer-state-tokens (find-ls next-pos)))
+      (define start-pos (begin (send tree search! next-pos)
+                               (send tree get-root-start-position)))
+      (define end-pos (send tree get-root-end-position))
+
+      #;(printf "~a |~a| |~a|~n" (list pos next-pos start-pos end-pos (send tree get-root-data)) closers (get-text start-pos end-pos))
+
+      (cond
+        [(or (not (send tree get-root-data)) (<= end-pos pos))
+         (values #f #f #f #f)]    ;; didn't find /any/ token ending after pos
+        [(and (<= pos start-pos)
+              (member (get-text start-pos end-pos) closers)) ; token at start-pos matches
+         (values start-pos end-pos (get-text start-pos end-pos) adj?)]
+        [else   ; skip ahead
+         (find-next-close-paren end-pos closers #f)]))
+
+
+    ;; given end-pos, a position right after a closing parens,
+    ;; flash the matching open parens
+    (define/private (flash-from end-pos)
+      (let ((to-pos (backward-match end-pos 0)))
+        (when to-pos
+          (let ([ls (find-ls to-pos)])
+            (when ls
+              (let ([start-pos (lexer-state-start-pos ls)]
+                    [parens (lexer-state-parens ls)])
+                (when (and (send parens is-open-pos? (- to-pos start-pos))
+                           (send parens is-close-pos? (- end-pos 1 start-pos)))
+                  (flash-on to-pos (+ 1 to-pos)))))))))
+
+
+    (inherit insert delete flash-on on-default-char set-position undo)
     ;; See docs
-    (define/public (insert-close-paren pos char flash? fixup?)
-      (let ((closer
-             (begin
-               (begin-edit-sequence #f #f)
-               (get-close-paren pos 
-                                (if fixup? 
-                                    (let ([l (map symbol->string (map cadr pairs))])
-                                      ;; Ensure preference for given character:
-                                      (cons (string char) (remove (string char) l)))
-                                    null)
-                                ;; If the inserted preferred (i.e., given) paren doesn't parse
-                                ;;  as a paren, then don't try to change it.
-                                #f))))
-        (end-edit-sequence)
-        (let ((insert-str (if closer closer (string char))))
-          (for-each (lambda (c)
-                      (on-default-char (new key-event% (key-code c))))
-                    (string->list insert-str))
-          (when flash?
-            (unless stopped?
-              (let ((to-pos (backward-match (+ (string-length insert-str) pos) 0)))
-                (when to-pos
-                  (let ([ls (find-ls to-pos)])
-                    (when ls
-                      (let ([start-pos (lexer-state-start-pos ls)]
-                            [parens (lexer-state-parens ls)])
-                        (when (and (send parens is-open-pos? (- to-pos start-pos))
-                                   (send parens is-close-pos? (- pos start-pos)))
-                          (flash-on to-pos (+ 1 to-pos)))))))))))))
+    ;; smart-skip : (or/c #f 'adjacent 'forward)
+    (define/public (insert-close-paren pos char flash? fixup? [smart-skip #f])
+      (begin-edit-sequence #t #f)  ;; to hide get-close-paren's temporary edits
+      (define closers (map symbol->string (map cadr pairs)))
+      (define closer
+        (get-close-paren pos (if fixup? ;; Ensure preference for given character:
+                                 (cons (string char) (remove (string char) closers))
+                                 null)
+                         ;; If the inserted preferred (i.e., given) paren doesn't parse
+                         ;;  as a paren, then don't try to change it.
+                         #f))
+      (define insert-str (if closer closer (string char)))
+      (define-values (next-close-start next-close-end next-close-str next-close-adj?)
+        (find-next-close-paren pos closers))
+      (define-values (outer-close-start outer-close-end outer-close-str)
+        (find-next-outer-paren pos closers))
+      (end-edit-sequence)  ;; wraps up the net-zero editing changes done by get-close-paren etc.
+      (undo)   ;; to avoid messing up the editor's modified state in case of a simple skip
+
+      (define (insert)
+        (for ([c (in-string insert-str)])
+          (on-default-char (new key-event% (key-code c))))
+        (+ pos (string-length insert-str)))
+      (define (skip p)
+        (set-position p)
+        p)
+      
+      (define end-pos
+        (cond
+          [(not smart-skip) (insert)]
+          [(eq? smart-skip 'adjacent)
+           (if (and next-close-start next-close-adj?
+                    (string=? insert-str next-close-str))
+               (skip next-close-end)
+               (insert))]
+          [(eq? smart-skip 'forward)
+           (cond
+             [(and outer-close-start
+                   (or fixup? (string=? insert-str outer-close-str)))
+              (skip outer-close-end)]
+             [(and next-close-start
+                   (or fixup? (string=? insert-str next-close-str)))
+              (skip next-close-end)]
+             [else  (insert)])]
+          [else (error 'insert-close-paren
+                       (format "invalid smart-skip option: ~a" smart-skip))]))
+
+      (when (and flash? (not stopped?)) (flash-from end-pos)))
+
     
     (define/public (debug-printout)
       (for-each 
@@ -1064,32 +1157,40 @@ added get-regions
 
 (define parenthesis-color-table #f)
 (define (get-parenthesis-colors-table)
+  (define (reverse-vec v) (list->vector (reverse (vector->list v))))
   (unless parenthesis-color-table
     (set! parenthesis-color-table
           (list
            (list 'shades-of-gray  
                  (string-constant paren-color-shades-of-gray)
-                 (between 180 180 180
-                          220 220 220))
+                 (reverse-vec
+                  (between .2 0 0 0
+                           .2 0 0 0))
+                 'high)
            (list 'shades-of-blue
                  (string-constant paren-color-shades-of-blue)
-                 (between 204 204 255
-                          153 153 255))
+                 (between .4 153 153 255
+                          .4 153 153 255)
+                 'high)
            (list 'spring
                  (string-constant paren-color-spring)
-                 (between 255 255 153
-                          204 255 153))
+                 (between 1 255 255 153
+                          1 204 255 153)
+                 'low)
            (list 'fall
                  (string-constant paren-color-fall)
-                 (between 255 204 153
-                          204 153 102))
+                 (between 1 255 204 153
+                          1 204 153 102)
+                 'low)
            (list 'winter
                  (string-constant paren-color-winter)
-                 (between 204 205 255
-                          238 238 255)))))
+                 (between 1 204 205 255
+                          1 238 238 255)
+                 'low))))
   (cons (list 'basic-grey
               (string-constant paren-color-basic-grey)
-              (vector (preferences:get 'framework:paren-match-color)))
+              (vector (preferences:get 'framework:paren-match-color))
+              'high)
         parenthesis-color-table))
 
 (define (get-parenthesis-colors) 
@@ -1098,16 +1199,23 @@ added get-regions
                     (car (get-parenthesis-colors-table)))])
     (caddr choice)))
 
-(define (between start-r start-g start-b end-r end-g end-b)
+(define (get-parenthesis-priority) 
+  (let ([choice (or (assoc (preferences:get 'framework:paren-color-scheme)
+                           (get-parenthesis-colors-table))
+                    (car (get-parenthesis-colors-table)))])
+    (list-ref choice 3)))
+
+(define (between start-a start-r start-g start-b end-a end-r end-g end-b)
   (let ([size 4])
     (build-vector
      4 
      (lambda (x) 
-       (let ([between (λ (start end) (floor (+ start (* (- end start) (/ x (- size 1))))))])
-         (make-object color% 
-           (between start-r end-r)
-           (between start-g end-g)
-           (between start-b end-b)))))))
+       (define (between start end) (+ start (* (- end start) (/ x (- size 1)))))
+       (make-object color% 
+         (floor (between start-r end-r))
+         (floor (between start-g end-g))
+         (floor (between start-b end-b))
+         (between start-a end-a))))))
 
 (define -text% (text-mixin text:keymap%))
 

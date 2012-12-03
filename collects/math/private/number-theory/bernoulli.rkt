@@ -5,7 +5,7 @@
          "factorial.rkt"
          "binomial.rkt")
 
-(provide bernoulli)
+(provide bernoulli-number)
 
 ;; Number of globally memoized Bernoulli numbers
 (define num-global-bs 200)
@@ -76,7 +76,7 @@
               [else  (error 'unreachable-code)])]))))
   (bern n))
 
-(: bernoulli (Integer -> Exact-Rational))
-(define (bernoulli n)
-  (cond [(n . < . 0)  (raise-argument-error 'bernoulli "Natural" n)]
+(: bernoulli-number (Integer -> Exact-Rational))
+(define (bernoulli-number n)
+  (cond [(n . < . 0)  (raise-argument-error 'bernoulli-number "Natural" n)]
         [else  (bernoulli* n)]))

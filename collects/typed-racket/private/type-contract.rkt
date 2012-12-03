@@ -1,5 +1,7 @@
 #lang racket/base
 
+;; Contract generation for Typed Racket
+
 (provide type->contract define/fixup-contract? change-contract-fixups)
 
 (require
@@ -337,6 +339,13 @@
          #`(promise/c #,(t->c t))]
         [(Opaque: p? cert)
          #`(flat-named-contract (quote #,(syntax-e p?)) #,(cert p?))]
+        [(Continuation-Mark-Keyof: t)
+         (set-chaperone!)
+         #`(continuation-mark-key/c #,(t->c t))]
+        ;; TODO: this is not quite right for case->
+        [(Prompt-Tagof: s (Function: (list (arr: (list ts ...) _ _ _ _))))
+         (set-chaperone!)
+         #`(prompt-tag/c #,@(map t->c ts) #:call/cc #,(t->c s))]
         ;; TODO
         [(F: v) (cond [(assoc v (vars)) => second]
                       [else (int-err "unknown var: ~a" v)])]

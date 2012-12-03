@@ -535,6 +535,10 @@
            (cset-meet (cg e e*) (cg e* e))]
           [((ThreadCell: e) (ThreadCell: e*))
            (cset-meet (cg e e*) (cg e* e))]
+          [((Continuation-Mark-Keyof: e) (Continuation-Mark-Keyof: e*))
+           (cset-meet (cg e e*) (cg e* e))]
+          [((Prompt-Tagof: s t) (Prompt-Tagof: s* t*))
+           (cset-meet* (list (cg s s*) (cg s* s) (cg t t*) (cg t* t)))]
           [((Promise: e) (Promise: e*))
            (cg e e*)]
           [((Ephemeron: e) (Ephemeron: e*))

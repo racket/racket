@@ -1,8 +1,12 @@
 #lang typed/racket/base
 
-(require racket/pretty)
+(require racket/pretty
+         racket/fixnum
+         racket/flonum
+         "exception.rkt")
 
-(provide pretty-print-constructor)
+(provide pretty-print-constructor
+         check-flvector-lengths!)
 
 (: port-next-column (Output-Port -> Natural))
 ;; Helper to avoid the annoying #f column value
@@ -59,3 +63,9 @@
         [else
          ;; No pretty printer, or printing to infinite-width lines, so print on one line
          (print-all port 'one-line)]))
+
+(: check-flvector-lengths! (Symbol Index FlVector * -> Void))
+(define (check-flvector-lengths! name n . xss)
+  (for: ([xs  (in-list xss)])
+    (unless (fx= n (flvector-length xs))
+      (raise-length-error name "FlVector" xs n))))

@@ -1215,7 +1215,7 @@
                 (get/set-selected-language-settings)))
          (λ (receiver evt)
            (case (send evt get-key-code)
-             [(#\u) 
+             [(#\r) 
               (if (mouse-event-uses-shortcut-prefix? evt)
                   (begin (send use-language-in-source-rb set-selection 0)
                          (use-language-in-source-rb-callback)

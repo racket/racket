@@ -33,24 +33,46 @@
                    "http://localhost:9999/planet2-test1/")
 
    (shelly-case
+    "fails due to unrecognized scheme"
+    $ "raco pkg install magic://download" =exit> 1)
+   (shelly-case
+    "local directory name fails because not inferred as such (inferred as package name)"
+    $ "raco pkg install test-pkgs" =exit> 1)
+   (shelly-case
+    "local file name with bad suffix and not a package name or directory"
+    $ "raco pkg install tests-install.rkt" =exit> 1)
+   (shelly-case
+    "not a valid (inferred) package name"
+    $ "raco pkg install 1+2" =exit> 1)
+
+   (shelly-case
+    "local file fails because called a directory"
+    $ "raco pkg install --type dir test-pkgs/pkg-a-first.plt" =exit> 1)
+   (shelly-case
+    "local directory name fails because called a file"
+    $ "raco pkg install --type file test-pkgs/pkg-a-first/" =exit> 1)
+   (shelly-case
+    "local directory name fails because called a URL"
+    $ "raco pkg install --type file-url test-pkgs/pkg-a-first/" =exit> 1)
+
+   (shelly-case
     "remote/URL/http directory, non-existant file"
     $ "raco pkg install http://localhost:9999/planet2-test1.rar" =exit> 1)
    (shelly-case
     "remote/URL/http directory, no manifest fail"
-    $ "raco pkg install http://localhost:9999/planet2-test1/planet2-test1"
+    $ "raco pkg install http://localhost:9999/planet2-test1/planet2-test1/"
     =exit> 1
-    =stderr> #rx"Invalid package format")
+    =stderr> #rx"could not find MANIFEST")
    (shelly-case
     "remote/URL/http directory, bad manifest"
     ;; XXX why does this error now?
-    $ "raco pkg install http://localhost:9999/planet2-test1-manifest-error" =exit> 1)
+    $ "raco pkg install http://localhost:9999/planet2-test1-manifest-error/" =exit> 1)
 
    (shelly-case
-    "local directory fails when not there (because interpreted as package name that isn't there)"
-    $ "raco pkg install test-pkgs/planet2-test1-not-there" =exit> 1)
+    "local directory fails when not there"
+    $ "raco pkg install test-pkgs/planet2-test1-not-there/" =exit> 1)
 
-   (shelly-install "local package (directory)" "test-pkgs/planet2-test1")
-   (shelly-install "local package (directory with slash)" "test-pkgs/planet2-test1/")
+   (shelly-install "local package (directory)" "test-pkgs/planet2-test1/")
 
    (with-fake-root
     (shelly-case

@@ -4,7 +4,9 @@
 (Section 'serialization)
 
 (require racket/serialize
-         racket/file)
+         racket/file
+         racket/flonum
+         racket/fixnum)
 
 ;; ----------------------------------------
 
@@ -136,6 +138,8 @@
 (test-ser (mk-ht make-weak-hash))
 (test-ser #s(a 0 1 2))
 (test-ser #s((a q 2) 0 1 2))
+(test-ser (fxvector 1 2 30))
+(test-ser (flvector 0.1 2.0 30e3))
 
 (test-ser (set 'set 0 1 2))
 (test-ser (seteqv 'seteqv 0 1 2))

@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 
 (require "test-util.rkt"
          "../private/reduction-semantics.rkt"
@@ -117,6 +117,8 @@
 (test (pick-natural 224 (make-random 1/5)) 5)
 (test (pick-integer 900 (make-random 0 0 1/5)) -7)
 (test (pick-real 9000 (make-random 0 0 0 .5 1 1/8)) 11.0)
+(test (pick-boolean 9000 (make-random 1)) #f)
+(test (pick-boolean 9000 (make-random 0)) #t)
 
 (let* ([lits '("bcd" "cbd")])
   (test (pick-char 0 (make-random 0 0)) #\A)
@@ -166,6 +168,7 @@
                    #:nat [nat pick-natural]
                    #:int [int pick-integer]
                    #:real [real pick-real]
+                   #:bool [bool pick-boolean]
                    #:any [any pick-any]
                    #:seq [seq pick-sequence-length])
   (define-syntax decision
@@ -178,6 +181,7 @@
         (define next-natural-decision (decision nat))
         (define next-integer-decision (decision int))
         (define next-real-decision (decision real))
+        (define next-boolean-decision (decision bool))
         (define next-string-decision (decision str))
         (define next-any-decision (decision any))
         (define next-sequence-decision (decision seq))))
@@ -291,7 +295,8 @@
   (define-language L
     (n natural)
     (i integer)
-    (r real))
+    (r real)
+    (b boolean))
   (test (let ([n (generate-term L n 0 #:attempt-num 10000)])
           (and (integer? n)
                (exact? n)
@@ -1244,7 +1249,9 @@
    '(list (repeat (name x_1 (nt x)) ..._1 #f) (repeat (name x (nt x)) ..._2 #f) (repeat (name x_1 (nt x)) ..._2 #f))
    '((..._1 . ..._2)))
   (test-class-reassignments
-   '(list (repeat (name x_1 (nt x)) ..._1 #f) (repeat (name x_2 (nt x)) ..._2 #f) (repeat (list (name x_1 (nt x)) (name x_2 (nt x))) ..._3 #f))
+   '(list (repeat (name x_1 (nt x)) ..._1 #f)
+          (repeat (name x_2 (nt x)) ..._2 #f)
+          (repeat (list (name x_1 (nt x)) (name x_2 (nt x))) ..._3 #f))
    '((..._1 . ..._3) (..._2 . ..._3)))
   (test-class-reassignments
    '(list (repeat (list (repeat (name x_1 (nt x)) ..._1 #f)) ..._2 #f)

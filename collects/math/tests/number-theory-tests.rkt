@@ -19,13 +19,13 @@
 
 ; "primitive-roots.rkt"
 (check-equal? (unit-group 20) '(1 3 7 9 11 13 17 19))  ; 19 !!!!
-(check-equal? (order 19 20) 2)
-(check-equal? (order  3 20) 4)
-(check-equal? (orders 20) '(1 4 4 2 2 4 4 2)) ; (order 3 20)=4, ...
+(check-equal? (unit-group-order 19 20) 2)
+(check-equal? (unit-group-order  3 20) 4)
+(check-equal? (unit-group-orders 20) '(1 4 4 2 2 4 4 2)) ; (unit-group-order 3 20)=4, ...
 (check-true   (andmap exists-primitive-root? '(1 2 4 3 9 6 18)))
 (check-false  (ormap  exists-primitive-root? '(8 16 12)))
 (check-equal? (primitive-root 20) #f)
-(check-equal? (primitive-root 10) 7) ; (length (unit-group 10)) = (order 7 10)
+(check-equal? (primitive-root 10) 7) ; (length (unit-group 10)) = (unit-group-order 7 10)
 (check-true   (primitive-root? 7 10))
 (check-false  (primitive-root? 7 20))
 (check-equal? (primitive-roots 10) '(3 7))
@@ -33,7 +33,7 @@
 (define (find-and-check-root n)
   (define r (primitive-root n))
   (cond [(not r) #t]
-        [else (= (length (unit-group n)) (order r n))]))
+        [else (= (length (unit-group n)) (unit-group-order r n))]))
 (check-true   (andmap find-and-check-root '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 78125)))
 
 ;"polygonal.rkt"
@@ -50,7 +50,7 @@
 (check-true   (andmap octagonal-number?   '(0 1 8 21 40 65)))
 
 ; "farey.rkt"
-(check-equal? (farey 5) '(0 1/5 1/4 1/3 2/5 1/2 3/5 2/3 3/4 4/5 1))
+(check-equal? (farey-sequence 5) '(0 1/5 1/4 1/3 2/5 1/2 3/5 2/3 3/4 4/5 1))
 (check-equal? (mediant 1/1 1/2) 2/3)
 
 ; "fibonacci.rkt"
@@ -59,7 +59,7 @@
 (for*: ([a  (in-range -5 6)]
         [b  (in-range -5 6)]
         [mod  (in-range 1 8)])
-  (check-equal? (build-list 20 (λ: ([n : Integer]) ((make-fibonacci/mod a b) n mod)))
+  (check-equal? (build-list 20 (λ: ([n : Integer]) ((make-modular-fibonacci a b) n mod)))
                 (build-list 20 (λ: ([n : Integer]) (modulo ((make-fibonacci a b) n) mod)))))
 
 ; "partitions.rkt"
@@ -68,7 +68,7 @@
 
 
 ; "bernoulli.rkt"
-(check-equal? (map bernoulli '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18))
+(check-equal? (map bernoulli-number '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18))
               '(1 -1/2 1/6 0 -1/30 0 1/42 0 -1/30 0 5/66 0 -691/2730 0 7/6 0 -3617/510 0 43867/798))
 
 ; "tangent-number.rkt"

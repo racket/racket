@@ -10,7 +10,7 @@
          "vector.rkt"
          "array.rkt"
          ;"matrix.rkt"
-         "parameters.rkt")
+         "utils.rkt")
 
 (provide (all-from-out
           "base.rkt"
@@ -23,4 +23,4 @@
           "vector.rkt"
           "array.rkt"
           ;"matrix.rkt"
-          "parameters.rkt"))
+          "utils.rkt"))

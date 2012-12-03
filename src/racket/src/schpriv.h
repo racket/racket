@@ -1878,6 +1878,7 @@ typedef struct {
 
 XFORM_NONGCING Scheme_Object *scheme_make_small_bignum(intptr_t v, Small_Bignum *s);
 char *scheme_number_to_string(int radix, Scheme_Object *obj);
+char *scheme_double_to_string (double d, char* s, int slen, int was_single, int *used_buffer);
 
 Scheme_Object *scheme_bignum_copy(const Scheme_Object *n);
 
@@ -3906,6 +3907,7 @@ typedef struct Scheme_Place_Async_Channel {
   int out;
   int count;
   int size;
+  int delta;
 #if defined(MZ_USE_PLACES)
   mzrt_mutex *lock;
 #endif

@@ -27,6 +27,27 @@
 
 ;; ===================================================================================================
 
+(: find-near-pow2 (Real -> Nonnegative-Exact-Rational))
+(define (find-near-pow2 x)
+  (expt 2 (max -1073 (min 1023 (exact-round (/ (log (abs x)) (fllog 2.0)))))))
+
+(: weights->list (Symbol (Sequenceof Real) -> (Listof Nonnegative-Real)))
+(define (weights->list name w-seq)
+  (for/list: : (Listof Nonnegative-Real) ([w w-seq])
+    (cond [(w . >= . 0)  w]
+          [else  (raise-argument-error name "(Sequenceof Nonnegative-Real)" w-seq)])))
+
+(: weights->normalized-weights (Symbol (Sequenceof Real) -> (Listof Nonnegative-Flonum)))
+(define (weights->normalized-weights name ws)
+  (let ([ws  (weights->list name ws)])
+    (when (empty? ws) (raise-argument-error name "nonempty (Sequenceof Real)" ws))
+    (define max-w (find-near-pow2 (apply max ws)))
+    (let ([ws  (map (λ: ([w : Real]) (/ w max-w)) ws)])
+      (define total-w (sum ws))
+      (map (λ: ([w : Real]) (assert (fl (/ w total-w)) nonnegative?)) ws))))
+
+;; ===================================================================================================
+
 (: check-lengths! (All (A B) (Symbol String A B Index Index -> Void)))
 (define (check-lengths! name what xs ys m n)
   (unless (= m n) (error name "~a must be the same length; given ~e (length ~a) and ~e (length ~a)"
@@ -45,10 +66,6 @@
   (values xs ws))
 
 (define nonnegative? (λ: ([x : Real]) (not (negative? x))))
-
-(: find-near-pow2 (Nonnegative-Real -> Nonnegative-Exact-Rational))
-(define (find-near-pow2 x)
-  (expt 2 (max -1073 (min 1023 (exact-round (/ (log x) (fllog 2.0)))))))
 
 (: sequences->normalized-weighted-samples
    (All (A) (Symbol (Sequenceof A) (Sequenceof Real)

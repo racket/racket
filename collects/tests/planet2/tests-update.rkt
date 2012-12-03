@@ -23,7 +23,7 @@
                    "test-pkgs/planet2-test1.zip"
                    $ "raco pkg update planet2-test1" =exit> 1)
    (shelly-install "local packages can't be updated (directory)"
-                   "test-pkgs/planet2-test1"
+                   "test-pkgs/planet2-test1/"
                    $ "raco pkg update planet2-test1" =exit> 1)
    (shelly-wind
     $ "mkdir -p test-pkgs/update-test"

@@ -387,7 +387,9 @@
          [(parsed-syntax? #'head)
           (debug "Parsed syntax ~a\n" #'head)
           (emit-local-step #'head #'head #:id #'do-parse)
-          (do-parse #'(rest ...) precedence left #'head)]
+          (if current
+            (values current stream)
+            (do-parse #'(rest ...) precedence left #'head))]
          [(honu-fixture? #'head)
           (debug 2 "Fixture ~a\n" #'head)
           (define transformer (fixture:fixture-ref (syntax-local-value #'head) 0))

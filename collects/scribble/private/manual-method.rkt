@@ -14,8 +14,8 @@
          constructor-tag
          name-this-object)
 
-(define-syntax-rule (method a b)
-  (*method 'b (quote-syntax a)))
+(define-syntax-rule (method class/interface method-name)
+  (*method 'method-name (quote-syntax class/interface)))
 
 (define-syntax-rule (xmethod a b)
   (elem (method a b) " in " (racket a)))

@@ -5,7 +5,8 @@
          "flonum-constants.rkt"
          "flonum-exp.rkt"
          "flonum-log.rkt"
-         "flonum-syntax.rkt")
+         "flonum-syntax.rkt"
+         "flvector.rkt")
 
 (provide flsqrt1pm1
          flsinh flcosh fltanh

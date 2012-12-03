@@ -2,6 +2,8 @@
   (require syntax/modcollapse
            unstable/struct
            racket/list
+           racket/flonum
+           racket/fixnum
            "serialize-structs.rkt")
 
   ;; This module implements the core serializer. The syntactic
@@ -43,6 +45,8 @@
 	(path-for-some-system? v)
 	(bytes? v)
 	(vector? v)
+	(flvector? v)
+	(fxvector? v)
 	(pair? v)
 	(mpair? v)
 	(hash? v)
@@ -137,6 +141,8 @@
 		 (hash? o))
 	     (not (immutable? o)))
 	(serializable-struct? o)
+        (flvector? o)
+        (fxvector? o)
         (let ([k (prefab-struct-key o)])
           (and k
                ;; Check whether all fields are mutable:
@@ -226,6 +232,8 @@
 	    (void)]
 	   [(vector? v)
 	    (for-each loop (vector->list v))]
+           [(flvector? v) (void)] 
+           [(fxvector? v) (void)] 
 	   [(pair? v)
 	    (loop (car v)) 
 	    (loop (cdr v))]
@@ -313,6 +321,10 @@
                  (andmap quotable? elems))
             (cons 'q v)
             (cons (if (immutable? v) 'v 'v!) elems))]
+       [(flvector? v)
+        (cons 'vl (for/list ([i (in-flvector v)]) i))]
+       [(fxvector? v)
+        (cons 'vx (for/list ([i (in-fxvector v)]) i))]
        [(pair? v)
 	(let ([loop (serial #t)])
           (let ([a (loop (car v))]
@@ -493,6 +505,8 @@
 	  [(m) (mcons (loop (cadr v)) (loop (cddr v)))]
 	  [(v) (apply vector-immutable (map loop (cdr v)))]
 	  [(v!) (list->vector (map loop (cdr v)))]
+          [(vl) (apply flvector (map loop (cdr v)))]
+          [(vx) (apply fxvector (map loop (cdr v)))]
 	  [(b) (box-immutable (loop (cdr v)))]
 	  [(b!) (box (loop (cdr v)))]
 	  [(h) (let ([al (map (lambda (p)

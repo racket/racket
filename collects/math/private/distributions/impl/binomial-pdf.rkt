@@ -18,11 +18,13 @@
   (max 1.0 (flexpt 2.0 (flfloor (/ (fllog d) (fllog 2.0))))))
 
 (: flbinomial-pdf (Flonum Flonum Flonum -> Flonum))
-;; Maximum error grows without bound in the size of `n', but is reasonable for xxx
+;; Maximum error grows without bound in the size of `n' (todo: figure out what it's reasonable for)
 (define (flbinomial-pdf n p k)
-  (cond [(or (not (integer? n)) (n . fl< . 0.0))  +nan.0]
-        [(or (p . fl< . 0.0) (p . fl> . 1.0))  +nan.0]
-        [(or (not (integer? k)) (k . fl< . 0.0) (k . fl> . n))  0.0]
+  (cond [(or (not (integer? n)) (n . fl< . 0.0)
+             (p . fl< . 0.0) (p . fl> . 1.0)
+             (not (integer? k)))
+         +nan.0]
+        [(or (k . fl< . 0.0) (k . fl> . n))  0.0]
         [(fl= p 0.0)  (if (fl= k 0.0) 1.0 0.0)]
         [(fl= p 1.0)  (if (fl= k n) 1.0 0.0)]
         [(fl= k 0.0)  (flexpt1p (- p) n)]
@@ -66,9 +68,11 @@
 (: flbinomial-log-pdf (Flonum Flonum Flonum -> Flonum))
 ;; Maximum error grows without bound in `n', but is <= 4 ulps for n <= 1e4
 (define (flbinomial-log-pdf n p k)
-  (cond [(or (not (integer? n)) (n . fl< . 0.0))  +nan.0]
-        [(or (p . fl< . 0.0) (p . fl> . 1.0))  +nan.0]
-        [(or (not (integer? k)) (k . fl< . 0.0) (k . fl> . n))  -inf.0]
+  (cond [(or (not (flinteger? n)) (n . fl< . 0.0)
+             (p . fl< . 0.0) (p . fl> . 1.0)
+             (not (flinteger? k)))
+         +nan.0]
+        [(or (k . fl< . 0.0) (k . fl> . n))  -inf.0]
         [(fl= p 0.0)  (if (fl= k 0.0) 0.0 -inf.0)]
         [(fl= p 1.0)  (if (fl= k n) 0.0 -inf.0)]
         [(fl= k 0.0)  (fl* n (fllog1p (- p)))]

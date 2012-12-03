@@ -14,11 +14,11 @@ for working with numbers and collections of numbers. These include
   @item{Additional constants and elementary functions}
   @item{Special functions}
   @item{@racket[Bigfloat]s, or arbitrary-precision floating-point numbers}
-  @item{Probability distributions}
-  @item{Statistical functions}
   @item{Number-theoretic functions}
   @item{@racket[Array]s for storing and transforming large rectangular data sets}
-  @item{Linear algebra functions}
+  @item{Probability distributions}
+  @item{Statistical functions (currently undergoing refactoring)}
+  @item{Linear algebra functions (currently under review)}
 ]
 
 With this library, we hope to support a wide variety of applied mathematics in
@@ -40,4 +40,6 @@ be used in untyped Racket. Exceptions and performance warnings are in @bold{bold
 @include-section["math-number-theory.scrbl"]
 @include-section["math-bigfloat.scrbl"]
 @include-section["math-array.scrbl"]
+@include-section["math-statistics.scrbl"]
 @include-section["math-distributions.scrbl"]
+@include-section["math-utils.scrbl"]

@@ -3,7 +3,7 @@
 (require racket/future
          racket/list
          "../unsafe.rkt"
-         "../../parameters.rkt"
+         "../parameters.rkt"
          "array-struct.rkt"
          "mutable-array.rkt"
          "utils.rkt")

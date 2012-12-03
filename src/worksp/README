@@ -45,8 +45,8 @@ As always, please report bugs via one of the following:
 Building Racket and GRacket
 ---------------------------
 
-If you're using MSVC 2008 (not Express), and if `devenv.exe' is in your
-path, then you can just run
+If you're using MSVC 2008, and if `cl.exe' and either `devenv.exe'
+or `vcexpress.exe' is in your path, then you can just run
     racket\src\worksp\build.bat
 from its own directory to perform all steps up to "Versioning",
 including the MzCOM steps.
@@ -124,6 +124,14 @@ unresolved reference to `_stat64i32'. That function is equivalent to
 make the OpenSSL source refer to `_stat', you must use `struct
 _stat64i32' in place of `struct stat', `#undef _stat', and use
 `_stat()' in place of `stat()'.
+
+The pre-built binaries are unpatched with the exception of
+"libpangowin32", where we have disabled the SYMBOL_CHARSET test that
+makes Pango ignore symbol fonts. The test is in the
+pango_win32_insert_font() function, and the patch was made in the
+pre-built binary by modifying the machine code: change a comparison
+to 2, which is SYMBOL_CHARSET, to a comparsion to 3, which doesn't
+correspond to any CHARSET.
 
 
 Building Racket3m and GRacket3m

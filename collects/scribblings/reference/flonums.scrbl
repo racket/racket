@@ -133,7 +133,7 @@ inexact.}
 
 @; ------------------------------------------------------------------------
 
-@section{Flonum Vectors}
+@section[#:tag "flvectors"]{Flonum Vectors}
 
 A @deftech{flvector} is like a @tech{vector}, but it holds only
 inexact real numbers. This representation can be more compact, and

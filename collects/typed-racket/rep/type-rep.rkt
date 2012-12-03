@@ -323,6 +323,9 @@
 (def-type MPairTop () [#:fold-rhs #:base] [#:key 'mpair])
 (def-type StructTop ([name Struct?]) [#:key 'struct])
 (def-type ThreadCellTop () [#:fold-rhs #:base] [#:key 'thread-cell])
+(def-type Prompt-TagTop () [#:fold-rhs #:base] [#:key 'prompt-tag])
+(def-type Continuation-Mark-KeyTop ()
+  [#:fold-rhs #:base] [#:key 'continuation-mark-key])
 
 ;; v : Racket Value
 (def-type Value (v) [#:frees #f] [#:fold-rhs #:base] [#:key (cond [(number? v) 'number]
@@ -409,6 +412,20 @@
   [#:key #f] [#:fold-rhs (*Sequence (map type-rec-id tys))])
 
 (def-type Future ([t Type/c]) [#:key 'future])
+
+;; body: the type of the body
+;; handler: the type of the prompt handler
+;;   prompts with this tag will return a union of `body` 
+;;   and the codomains of `handler`
+(def-type Prompt-Tagof ([body Type/c] [handler Function?])
+  [#:frees (λ (f) (combine-frees (list (make-invariant (f body))
+                                       (make-invariant (f handler)))))]
+  [#:key 'prompt-tag])
+
+;; value: the type of allowable values
+(def-type Continuation-Mark-Keyof ([value Type/c])
+  [#:frees (λ (f) (make-invariant (f value)))]
+  [#:key 'continuation-mark-key])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -2,8 +2,7 @@
 
 (require racket/fixnum
          "../../flonum.rkt"
-         "../vector/vector.rkt"
-         "../vector/flvector.rkt")
+         "../vector/vector.rkt")
 
 (provide fltan-diff/y flcot-diff/y)
 

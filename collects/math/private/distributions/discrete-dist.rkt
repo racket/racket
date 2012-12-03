@@ -11,16 +11,16 @@
 (provide Discrete-Dist
          discrete-dist
          discrete-dist-values
-         discrete-dist-weights)
+         discrete-dist-probs)
 
 (begin-encourage-inline
   (struct: (In Out) discrete-dist-struct dist ([values : (Listof Out)]
-                                               [weights : (Listof Positive-Flonum)])
+                                               [probs : (Listof Positive-Flonum)])
     #:property prop:custom-print-quotable 'never
     #:property prop:custom-write
     (λ (v port mode)
       (pretty-print-constructor
-       'discrete-dist (list (discrete-dist-struct-values v) (discrete-dist-struct-weights v))
+       'discrete-dist (list (discrete-dist-struct-values v) (discrete-dist-struct-probs v))
        port mode)))
   
   (define-type (Discrete-Dist A) (discrete-dist-struct A A))
@@ -28,8 +28,8 @@
   (: discrete-dist-values (All (A) ((Discrete-Dist A) -> (Listof A))))
   (define (discrete-dist-values d) (discrete-dist-struct-values d))
   
-  (: discrete-dist-weights (All (A) ((Discrete-Dist A) -> (Listof Positive-Flonum))))
-  (define (discrete-dist-weights d) (discrete-dist-struct-weights d))
+  (: discrete-dist-probs (All (A) ((Discrete-Dist A) -> (Listof Positive-Flonum))))
+  (define (discrete-dist-probs d) (discrete-dist-struct-probs d))
   
   )
 

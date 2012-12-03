@@ -1,5 +1,5 @@
-#reader scribble/reader
-(module blurbs scheme/base
+#lang at-exp scheme/base
+
   (require scribble/struct
            scribble/manual
            scribble/scheme
@@ -95,8 +95,9 @@ or equal to the selection's start/end @techlink{position}, then the selection's
 start/end @techlink{position} is incremented by @|what|.})
 
   (define OVD
-    @elem{The result is only valid when the editor is displayed (see
-          @secref["tb:miaoverview"]).})
+    @elem{The result is only valid when the editor is displayed 
+          (see @secref["tb:miaoverview"]). Editors are displayed when 
+          @method[editor<%> get-admin] returns an administrator (not @racket[#f]).})
 
   (define (FCAX c details)
     @elem{@|c|alling this method may force the recalculation of @techlink{location}
@@ -269,5 +270,5 @@ information@|details|, even if the editor currently has delayed refreshing (see
       (index* (list (format "~a preference" (res-sym s)))
               (list r) 
               r)))
-  )
+  
 

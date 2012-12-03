@@ -600,8 +600,9 @@
                   (set! x "foo")
                   x)]
         ;; w-c-m
-        [tc-e/t (with-continuation-mark 'key 'mark
-                3)
+        [tc-e/t (with-continuation-mark
+                  ((inst make-continuation-mark-key Symbol)) 'mark
+                  3)
               -PosByte]
         [tc-err (with-continuation-mark (5 4) 1
                   3)]
@@ -1351,8 +1352,10 @@
               #:ret (ret B (-FS -top -bot)))
 
         ;Continuation Prompt Tags ang Continuation Mark Sets
-        (tc-e (default-continuation-prompt-tag) -Prompt-Tag)
-        (tc-e (let: ((pt : Prompt-Tag (make-continuation-prompt-tag)))
+        ;; TODO: supporting default-continuation-prompt-tag means we need to
+        ;;       specially handle abort-current-continuation in the type system
+        ;(tc-e (default-continuation-prompt-tag) -Prompt-Tag)
+        (tc-e (let: ((pt : (Prompt-Tagof Integer Integer) (make-continuation-prompt-tag)))
                    (continuation-marks #f pt)) -Cont-Mark-Set)
         (tc-e (let: ((set : Continuation-Mark-Set (current-continuation-marks)))
                    (continuation-mark-set? set)) #:ret (ret B (-FS -top -bot)))

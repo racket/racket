@@ -1,5 +1,7 @@
 #lang racket/base
-(provide (all-defined-out))
+
+;; Support for defining the initial TR environment
+
 (require "../utils/utils.rkt"
          "../utils/tc-utils.rkt"
          "global-env.rkt"
@@ -10,9 +12,31 @@
          (for-template (rep type-rep object-rep filter-rep)
                        (types union abbrev)
                        racket/shared racket/base)
+         (for-syntax syntax/parse racket/base)
          (types abbrev)
          racket/syntax racket/dict
          mzlib/pconvert racket/match)
+
+(provide ;; convenience form for defining an initial environment
+         ;; used by "base-special-env.rkt" and "base-contracted.rkt"
+         define-initial-env
+         initialize-type-name-env
+         initialize-type-env
+         converter
+         bound-in-this-module
+         tname-env-init-code
+         tvariance-env-init-code
+         talias-env-init-code
+         env-init-code
+         mvar-env-init-code )
+
+(define-syntax (define-initial-env stx)
+  (syntax-parse stx
+    [(_ initialize-env [id-expr ty] ...)
+     #`(begin
+         (define initial-env (make-env [id-expr (λ () ty)] ... ))
+         (define (initialize-env) (initialize-type-env initial-env))
+         (provide initialize-env))]))
 
 (define (initialize-type-name-env initial-type-names)
   (for-each (lambda (nm/ty) (register-resolved-type-alias (car nm/ty) (cadr nm/ty))) initial-type-names))

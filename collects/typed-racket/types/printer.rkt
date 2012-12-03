@@ -226,6 +226,8 @@
     [(ThreadCellTop:) (fp "ThreadCell")]
     [(VectorTop:) (fp "Vector")]
     [(MPairTop:) (fp "MPair")]
+    [(Prompt-TagTop:) (fp "Prompt-Tag")]
+    [(Continuation-Mark-KeyTop:) (fp "Continuation-Mark-Key")]
     [(App: rator rands stx)
      (fp "~a" (list* rator rands))]
     ;; special cases for lists
@@ -279,7 +281,10 @@
          (fp "(Parameterof ~a)" in)
          (fp "(Parameterof ~a ~a)" in out))]
     [(Hashtable: k v) (fp "(HashTable ~a ~a)" k v)]
-
+    [(Continuation-Mark-Keyof: rhs)
+     (fp "(Continuation-Mark-Keyof ~a)" rhs)]
+    [(Prompt-Tagof: body handler)
+     (fp "(Prompt-Tagof ~a ~a)" body handler)]
     #;[(Poly-unsafe: n b) (fp "(unsafe-poly ~a ~a ~a)" (Type-seq c) n b)]
     [(Poly-names: names body)
      #;(eprintf "POLY SEQ: ~a\n" (Type-seq body))

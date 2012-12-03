@@ -181,22 +181,40 @@
     (test (string->url/vec "http://foo:/abc/def.html")
           => #("http" #f "foo" #f #t (#("abc") #("def.html")) () #f)))
 
-  (test (url->string (path->url (bytes->path #"c:\\a\\b" 'windows)))
+  (test (url->string (path->url (bytes->path #"/a/b" 'unix)))
+        => "file:///a/b"
+        (url->string (path->url (bytes->path #"/a/b/" 'unix)))
+        => "file:///a/b/"
+        (url->string (path->url (bytes->path #"c:\\a\\b" 'windows)))
         => "file:///c:/a/b"
+        (url->string (path->url (bytes->path #"c:\\a\\b\\" 'windows)))
+        => "file:///c:/a/b/"
         (url->string (path->url (bytes->path #"\\\\?\\c:\\a\\b" 'windows)))
-        => "file:///c:/a/b")
+        => "file:///c:/a/b"
+        (url->string (path->url (bytes->path #"\\\\?\\c:\\a\\b\\" 'windows)))
+        => "file:///c:/a/b/")
 
   (test
    (path->bytes (url->path (path->url (bytes->path #"/a/b/c" 'unix)) 'unix))
    => #"/a/b/c"
+   (path->bytes (url->path (path->url (bytes->path #"/a/b/c/" 'unix)) 'unix))
+   => #"/a/b/c/."
    (path->bytes (url->path (path->url (bytes->path #"a/b/c" 'unix)) 'unix))
    => #"a/b/c"
+   (path->bytes (url->path (path->url (bytes->path #"a/b/c/" 'unix)) 'unix))
+   => #"a/b/c/."
    (path->bytes (url->path (path->url (bytes->path #"c:/a/b" 'windows)) 'windows))
    => #"c:\\a\\b"
+   (path->bytes (url->path (path->url (bytes->path #"c:/a/b/" 'windows)) 'windows))
+   => #"c:\\a\\b\\."
    (path->bytes (url->path (path->url (bytes->path #"a/b" 'windows)) 'windows))
    => #"a\\b"
+   (path->bytes (url->path (path->url (bytes->path #"a/b/" 'windows)) 'windows))
+   => #"a\\b\\."
    (path->bytes (url->path (path->url (bytes->path #"//d/c/a" 'windows)) 'windows))
    => #"\\\\d\\c\\a"
+   (path->bytes (url->path (path->url (bytes->path #"//d/c/a/" 'windows)) 'windows))
+   => #"\\\\d\\c\\a\\."
    (path->bytes (url->path (path->url (bytes->path #"\\\\?\\c:\\a\\b" 'windows)) 'windows))
    => #"c:\\a\\b"
    (path->bytes (url->path (path->url (bytes->path #"\\\\?\\UNC\\d\\c\\a\\b" 'windows)) 'windows))

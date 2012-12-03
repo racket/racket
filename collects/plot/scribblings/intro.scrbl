@@ -108,11 +108,19 @@ In both cases, @(racket plot) and @(racket function-interval) work together to d
 It is not always possible for renderers and @(racket plot) or @(racket plot3d) to determine the bounds:
 
 @interaction[#:eval plot-eval
-                    (plot (function sqr))
-                    (plot (function sqr #f #f))
-                    (plot (function sqr (- pi)))
-                    (plot (list (function sqr #f 0)
-                                (function sqr 0 #f)))]
+                    (eval:alts
+                     (plot (function sqr))
+                     (eval:result "" "" "plot: could not determine sensible plot bounds; got x ∈ [#f,#f], y ∈ [#f,#f]"))
+                    (eval:alts
+                     (plot (function sqr #f #f))
+                     (eval:result "" "" "plot: could not determine sensible plot bounds; got x ∈ [#f,#f], y ∈ [#f,#f]"))
+                    (eval:alts
+                     (plot (function sqr (- pi)))
+                     (eval:result "" "" "plot: could not determine sensible plot bounds; got x ∈ [-3.141592653589793,#f], y ∈ [#f,#f]"))
+                    (eval:alts
+                     (plot (list (function sqr #f 0)
+                                 (function sqr 0 #f)))
+                     (eval:result "" "" "plot: could not determine sensible plot bounds; got x ∈ [0,0], y ∈ [0,0]"))]
 
 There is a difference between passing bounds to renderers and passing bounds to @(racket plot) or @(racket plot3d): bounds passed to @(racket plot) or @(racket plot3d) cannot be changed by a renderer that requests different bounds.
 We might say that bounds passed to renderers are @italic{suggestions}, and bounds passed to @(racket plot) and @(racket plot3d) are @italic{commandments}.

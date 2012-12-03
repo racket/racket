@@ -18,8 +18,8 @@
    (struct-out dist)
    (struct-out ordered-dist)
    Real-Dist
-   dist-median sample
-   real-dist-prob)
+   dist-median
+   pdf sample cdf inv-cdf real-dist-prob)
   
   (define-type (PDF In)
     (case-> (In -> Flonum)
@@ -60,12 +60,29 @@
     (: dist-median (All (In Out) ((ordered-dist In Out) -> Out)))
     (define (dist-median d) (force (ordered-dist-median d)))
     
+    (: pdf (All (In Out) (case-> ((dist In Out) In -> Flonum)
+                                 ((dist In Out) In Any -> Flonum))))
+    (define (pdf d v [log? #f])
+      ((dist-pdf d) v log?))
+    
     (: sample (All (In Out) (case-> ((dist In Out) -> Out)
                                     ((dist In Out) Integer -> (Listof Out)))))
     (define sample
       (case-lambda
         [(d)  ((dist-sample d))]
         [(d n)  ((dist-sample d) n)]))
+    
+    (: cdf (All (In Out) (case-> ((ordered-dist In Out) In -> Flonum)
+                                 ((ordered-dist In Out) In Any -> Flonum)
+                                 ((ordered-dist In Out) In Any Any -> Flonum))))
+    (define (cdf d v [log? #f] [1-p? #f])
+      ((ordered-dist-cdf d) v log? 1-p?))
+    
+    (: inv-cdf (All (In Out) (case-> ((ordered-dist In Out) Real -> Out)
+                                     ((ordered-dist In Out) Real Any -> Out)
+                                     ((ordered-dist In Out) Real Any Any -> Out))))
+    (define (inv-cdf d p [log? #f] [1-p? #f])
+      ((ordered-dist-inv-cdf d) p log? 1-p?))
     
     )
   

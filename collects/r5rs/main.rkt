@@ -446,6 +446,86 @@
                        (begin (set! id tmp-id) ...) ...
                        . exprs))))))]))
 
+  (define-syntax (r5rs:case stx)
+    ;; Racket's `case' uses `equal?' and allows internal definitions,
+    ;; this one uses `eqv?' and allows only expressions in clauses.
+    (define (convert-case stx)
+      (with-syntax ([(clause ...)
+                     (map (lambda (clause)
+                            (syntax-case clause ()
+                              [[datums rhs ...]
+                               (syntax/loc clause
+                                 [datums (#%expression rhs) ...])]
+                              [else 
+                               ;; bad syntax
+                               clause]))
+                          (cddr (syntax->list stx)))]
+                    [(_ expr . _) stx])
+        (syntax/loc stx
+          (case expr clause ...))))
+    (define (eqv-is-equal-datum? e)
+      (define v (syntax-e e))
+      (or (null? v)
+          (number? v)
+          (char? v)
+          (symbol? v)
+          (boolean? v)))
+    (syntax-case stx (else)
+      [(_ expr [(datum ...) . _] ... [else . _])
+       (andmap eqv-is-equal-datum? (syntax->list #'(datum ... ...)))
+       ;; normal `case' with `else'
+       (convert-case stx)]
+      [(_ expr [(datum ...) . _] ...)
+       ;; normal `case' without `else'
+       (andmap eqv-is-equal-datum? (syntax->list #'(datum ... ...)))
+       (convert-case stx)]
+      [(_ expr [datums rhs ...] ...)
+       ;; weird `case' clause
+       (with-syntax ([(clause ...)
+                      (map (lambda (clause)
+                             (syntax-case clause (else)
+                               [[else rhs ...]
+                                (with-syntax ([(els . _) clause])
+                                  (syntax/loc clause
+                                    [els (#%expression rhs) ...]))]
+                               [[datums rhs ...]
+                                (syntax/loc clause
+                                  [(memv v '(datums)) (#%expression rhs) ...])]))
+                           (cddr (syntax->list stx)))])
+         (syntax/loc stx
+           (let ([v expr])
+             (cond clause ...))))]
+      [else
+       ;; let `case' complain about syntax:
+       (with-syntax ([(_ . rest) stx])
+         (syntax/loc stx (case . rest)))]))
+
+  (define-syntax (r5rs:cond stx)
+    ;; Racket's `cond' allows internal definitions,
+    ;; this one allows only expressions in clauses.
+    (syntax-case stx ()
+      [(_ clause ...)
+       (with-syntax ([(new-clause ...)
+                      (map (lambda (clause)
+                             (syntax-case clause (else =>)
+                               [[else rhs ...]
+                                (with-syntax ([(els . _) clause])
+                                  (syntax/loc clause
+                                    [els (#%expression rhs) ...]))]
+                               [[expr => rhs]
+                                clause]
+                               [[expr rhs ...]
+                                (syntax/loc clause
+                                  [expr (#%expression rhs) ...])]))
+                           (syntax->list #'(clause ...)))])
+         (syntax/loc stx
+           (cond new-clause ...)))]
+      [else
+       ;; let `cond' complain about syntax:
+       (with-syntax ([(_ . rest) stx])
+         (syntax/loc stx (cond . rest)))]))
+
+
   (define-syntax-rule (mk-undefined id) undefined)
     
   (provide unquote unquote-splicing 
@@ -460,8 +540,10 @@
                        [r5rs:let let]
                        [r5rs:let* let*]
                        [r5rs:let-syntax let-syntax]
-                       [r5rs:letrec-syntax letrec-syntax])
-           and or cond case do
+                       [r5rs:letrec-syntax letrec-syntax]
+                       [r5rs:case case]
+                       [r5rs:cond cond])
+           and or do
 	   begin set!
            => else
 

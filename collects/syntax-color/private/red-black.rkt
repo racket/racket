@@ -54,6 +54,7 @@
 
 (provide [contract-out 
           [tree? (any/c . -> . boolean?)]
+
           [tree-root (tree? . -> . node?)]
           [tree-first (tree? . -> . node?)]
           [tree-last (tree? . -> . node?)]
@@ -61,7 +62,7 @@
           [singleton-node? (any/c . -> . boolean?)]
           [non-nil-node? (any/c . -> . boolean?)]
           [nil node?]
-          [rename public:nil? nil-node? (any/c . -> . boolean?)]
+          [rename nil?/proc nil-node? (any/c . -> . boolean?)]
           [node-data (node? . -> . any)]
           [set-node-data! (node? any/c . -> . any)]
           [node-self-width (node? . -> . natural-number/c)]
@@ -72,8 +73,8 @@
           [node-left (node? . -> . node?)]
           [node-right (node? . -> . node?)]
           [node-color (node? . -> . (or/c 'red 'black))]
-          [rename public:red? red? (node? . -> . boolean?)]
-          [rename public:black? black? (node? . -> . boolean?)]
+          [rename red?/proc red? (node? . -> . boolean?)]
+          [rename black?/proc black? (node? . -> . boolean?)]
 
           [new-tree (-> tree?)]
           [new-node (any/c natural-number/c . -> . node?)]
@@ -87,14 +88,18 @@
           [insert-after/data! (tree? non-nil-node? any/c natural-number/c . -> . any)]
                        
           [delete! (->i ([t tree?] 
-                         [n (t) (non-nil-node-in-tree? t)])
+                         [n (t) (attached-in-tree/c t)])
                         [result any/c])]
-          [join! (tree? tree? . -> . tree?)]
-          [concat! (tree? singleton-node? tree? . -> . any)]
+          [join! (->i ([t1 tree?] [t2 (t1) (and/c tree? (not-eq?/c t1))])
+                      [result tree?])]
+          [rename public:concat! concat! 
+                  (->i ([t1 tree?] [n singleton-node?] [t2 (t1) (and/c tree? (not-eq?/c t1))])
+                       [result any/c])]
           [split! (->i ([t tree?] 
-                         [n (t) (non-nil-node-in-tree? t)])
+                         [n (t) (attached-in-tree/c t)])
                         (values [t1 tree?] [t2 tree?]))]
 
+          [reset! (tree? . -> . any)]
                        
           [search (tree? natural-number/c . -> . node?)]
           [search/residual (tree? natural-number/c . -> . (values node? natural-number/c))]
@@ -164,10 +169,12 @@
 
 
 
+;; attached-in-tree/c: tree -> contract
+;;
 ;; We use this function for contract checking with delete! and split!,
 ;; where the node being deleted must be in the tree in the first place.
-(define (non-nil-node-in-tree? t)
-  (flat-named-contract 'node-in-tree
+(define (attached-in-tree/c t)
+  (flat-named-contract 'attached-in-tree/c
                        (lambda (n)
                          (and (node? n)
                               (not (nil? n))
@@ -179,26 +186,64 @@
                                        (loop p)]))))))
 
 
+;; not-eq?/c: any -> flat-contract
+;; Returns a flat contract that checks that the value isn't eq? to x.
+(define (not-eq?/c x)
+  (flat-named-contract 'not-eq?/c
+                       (lambda (y)
+                         (not (eq? x y)))))
+
+
+
 
 ;; nil?: node -> boolean
 ;; Tell us if we're at the distinguished nil node.
-(define-syntax-rule (nil? x) (eq? x nil))
-(define public:nil? (procedure-rename (lambda (x) (nil? x)) 'nil?))
+(define-syntax (nil? stx)
+  (syntax-case stx ()
+    [(_ x)
+     (syntax/loc stx 
+       (eq? x nil))]
+    [(_ . args)
+     (syntax/loc stx
+       (nil?/proc . args))]
+    [_
+     (identifier? stx)
+     #'nil?/proc]))
+(define nil?/proc (procedure-rename (lambda (x) (nil? x)) 'nil?))
+
 
 ;; red?: node -> boolean
 ;; Is the node red?
-(define-syntax-rule (red? x) 
-  (let ([v x])
-    (eq? (node-color v) red)))
-(define public:red? (procedure-rename (lambda (x) (red? x)) 'red?))
+(define-syntax (red? stx)
+  (syntax-case stx ()
+    [(_ x)
+     (syntax/loc stx
+       (let ([v x])
+         (eq? (node-color v) red)))]
+    [(_ . args)
+     (syntax/loc stx
+       (red?/proc . args))]
+    [_
+     (identifier? stx)
+     #'red?/proc]))
+(define red?/proc (procedure-rename (lambda (x) (red? x)) 'red?))
 
 
 ;; black?: node -> boolean
 ;; Is the node black?
-(define-syntax-rule (black? x) 
-  (let ([v x])
-    (eq? (node-color v) black)))
-(define public:black? (procedure-rename (lambda (x) (black? x)) 'black?))
+(define-syntax (black? stx)
+  (syntax-case stx ()
+    [(_ x)
+     (syntax/loc stx
+       (let ([v x])
+         (eq? (node-color v) black)))]
+    [(_ . args)
+     (syntax/loc stx
+       (black?/proc . args))]
+    [_
+     (identifier? stx)
+     #'black?/proc]))
+(define black?/proc (procedure-rename (lambda (x) (black? x)) 'black?))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -305,6 +350,16 @@
       [else
        (update-node-subtree-width! n)
        (loop (node-parent n))])))
+
+
+
+;; update-node-self-width!: node exact-nonnegative-integer -> void Updates
+;; the node's self width, and propagates that change up the tree.
+;; Internal note: do not confuse this with the similarly-named
+;; update-node-subtree-width, which does something different.
+(define (update-node-self-width! n w)
+  (set-node-self-width! n w)
+  (update-subtree-width-up-to-root! n))
 
 
 
@@ -577,6 +632,7 @@
                    (set-node-left! z nil)
                    (set-node-right! z nil)
                    (set-node-color! z red)
+                   (set-node-subtree-width! z (node-self-width z))
 
                    (values x y-original-color nil-parent)]
                   
@@ -591,6 +647,7 @@
                    (set-node-left! z nil)
                    (set-node-right! z nil)
                    (set-node-color! z red)
+                   (set-node-subtree-width! z (node-self-width z))
                    (values x y-original-color nil-parent)]
                   
                   ;; The hardest case is when z has non-nil left and right.
@@ -639,7 +696,8 @@
                      (set-node-left! z nil)
                      (set-node-right! z nil)
                      (set-node-color! z red)
- 
+                     (set-node-subtree-width! z (node-self-width z)) 
+
                      (values x y-original-color nil-parent))])])
     (cond [(eq? black y-original-color)
            (fix-after-delete! a-tree x nil-parent)]
@@ -841,9 +899,13 @@
 (define (join! t1 t2)
   (cond
     [(nil? (tree-root t2))
-     t1]
+     (define result (clone! t1))
+     (reset! t1)
+     result]
     [(nil? (tree-root t1))
-     t2]
+     (define result (clone! t2))
+     (reset! t2)
+     result]
     [else
      ;; First, remove element x from t2.  x will act as the
      ;; pivot point.
@@ -851,7 +913,31 @@
      (delete! t2 x)
      ;; Next, delegate to the more general concat! function, using
      ;; x as the pivot.
-     (concat! t1 x t2)]))
+     (public:concat! t1 x t2)]))
+
+
+
+;; public:concat!: tree node tree -> tree
+;; Joins t1, x, and t2 together, returning a new tree.
+;; Destructively modifies t1 and t2 to the empty trees.
+(define (public:concat! t1 x t2)
+  (define result (concat! t1 x t2))
+  (cond
+   [(eq? result t1)
+    (let ([result (clone! t1)])
+      (reset! t1)
+      (reset! t2)
+      result)]
+   [(eq? result t2)
+    (let ([result (clone! t2)])
+      (reset! t1)
+      (reset! t2)
+      result)]
+   [else
+    (reset! t1)
+    (reset! t2)
+    result]))
+
 
 
 ;; concat!: tree node tree -> tree
@@ -869,7 +955,6 @@
 ;; to how this is used by split!.
 (define (concat! t1 x t2)
   (cond
-
     [(nil? (tree-root t1))
      (set-node-left! x nil)
      (set-node-right! x nil)
@@ -893,7 +978,7 @@
      (define t1-bh (tree-bh t1))
      (define t2-bh (tree-bh t2))
      (cond
-      [(>= t1-bh t2-bh)     
+      [(>= t1-bh t2-bh) 
        ;; Note: even if tree-last is invalid, nothing gets hurt here.
        (set-tree-last! t1 (tree-last t2))
 
@@ -983,6 +1068,7 @@
 ;; split!: tree node -> (values tree tree)
 ;; Partitions the tree into two trees: the predecessors of x, and the
 ;; successors of x.  Also mutates x into a singleton node.
+;; Finally, modifies a-tree so it looks empty.
 ;;
 ;; Note: during the loop, the L and R trees do not necessarily have
 ;; a valid tree-first or tree-last.  I want to avoid recomputing
@@ -1000,6 +1086,10 @@
   (set-node-right! x nil)
   (set-node-left! x nil)
   (set-node-color! x red)
+  (set-node-subtree-width! x (node-self-width x))
+
+  ;; Clear out a-tree so it's unusable.
+  (reset! a-tree)
 
   ;; The loop walks the ancestors of x, adding the left and right
   ;; elements appropriately.
@@ -1047,13 +1137,27 @@
                (concat! R ancestor subtree))])])))
 
 
-;; update-node-self-width!: node exact-nonnegative-integer -> void Updates
-;; the node's self width, and propagates that change up the tree.
-;; Internal note: do not confuse this with the similarly-named
-;; update-node-subtree-width, which does something different.
-(define (update-node-self-width! n w)
-  (set-node-self-width! n w)
-  (update-subtree-width-up-to-root! n))
+;; reset!: tree -> void
+;; Resets a tree to empty.
+(define (reset! a-tree)
+  (set-tree-root! a-tree nil)
+  (set-tree-first! a-tree nil)
+  (set-tree-last! a-tree nil)
+  (set-tree-bh! a-tree 0))
+
+
+
+;; clone!: tree -> tree
+;; Shallow copy of the components of the tree.
+(define (clone! a-tree)
+  (tree (tree-root a-tree)
+        (tree-first a-tree)
+        (tree-last a-tree)
+        (tree-bh a-tree)))
+
+
+
+
 
 
 ;; force-tree-first!: tree -> void
@@ -1200,7 +1304,7 @@
            singleton-node?
            non-nil-node?
            nil
-           [rename-out [public:nil? nil-node?]]
+           [rename-out [nil? nil-node?]]
            node-data
            set-node-data!
            node-self-width
@@ -1209,8 +1313,8 @@
            node-left
            node-right
            node-color
-           [rename-out [public:red? red?]
-                       [public:black? black?]]
+           red?
+           black?
            new-tree
            new-node
            insert-first!
@@ -1224,8 +1328,9 @@
            
            delete!
            join!
-           concat!
+           [rename-out [public:concat! concat!]]
            split!
+           reset!
 
            update-node-self-width!
            
@@ -1263,6 +1368,13 @@
            racket/list
            racket/class
            racket/promise)
+
+  (define (singleton-node? n)
+    (and (node? n)
+         (red? n)
+         (nil? (node-parent n))
+         (= (node-subtree-width n)
+            (node-self-width n))))
   
   
   ;; tree-items: tree -> (listof (list X number))
@@ -1658,7 +1770,19 @@
       (delete! t (search t 1))
       (check-rb-structure! t)
       (delete! t (search t 0))
+      (check-rb-structure! t))
+
+     
+     (test-case
+      "does deletion get subtree width right?"
+      (define t (new-tree))
+      (insert-last/data! t "hello" 5)
+      (insert-last/data! t "dyoo" 4)
+      (define r (tree-root t))
+      (delete! t r)
+      (insert-last! t r)
       (check-rb-structure! t))))
+      
   
   
   
@@ -1883,6 +2007,8 @@
       (define t1 (new-tree))
       (define t2 (new-tree))
       (define t1+t2 (join! t1 t2))
+      (check-true (nil? (tree-root t1)))
+      (check-true (nil? (tree-root t2)))
       (check-true (nil? (tree-root t1+t2)))
       (check-rb-structure! t1+t2))
      
@@ -1892,6 +2018,8 @@
       (define t2 (new-tree))
       (insert-last/data! t2 "hello" 5)
       (define t1+t2 (join! t1 t2))
+      (check-true (nil? (tree-root t1)))
+      (check-true (nil? (tree-root t2)))
       (check-equal? (map first (tree-items t1+t2))
                     '("hello"))
       (check-rb-structure! t1+t2))
@@ -1902,6 +2030,8 @@
       (define t2 (new-tree))
       (insert-last/data! t1 "hello" 5)
       (define t1+t2 (join! t1 t2))
+      (check-true (nil? (tree-root t1)))
+      (check-true (nil? (tree-root t2)))
       (check-equal? (map first (tree-items t1+t2))
                     '("hello"))
       (check-rb-structure! t1+t2))
@@ -1913,8 +2043,30 @@
       (insert-last/data! t1 "append" 5)
       (insert-last/data! t2 "this" 4)
       (define t1+t2 (join! t1 t2))
+      (check-true (nil? (tree-root t1)))
+      (check-true (nil? (tree-root t2)))
       (check-equal? (map first (tree-items t1+t2)) '("append" "this"))
       (check-rb-structure! t1+t2))
+
+
+     (test-case
+      "joining back and forth"
+      (define t (new-tree))
+      (for ([i (in-range 20)])
+        (define t2 (new-tree))
+        (insert-last/data! t2 i i)
+        (cond
+         [(even? i)
+          (set! t (join! t t2))
+          (check-true (nil? (tree-root t2)))]
+         [else
+          (set! t (join! t2 t))
+          (check-true (nil? (tree-root t2)))]))
+      (check-equal? (tree-items t)
+                    '((19 19) (17 17) (15 15) (13 13) (11 11) (9 9)
+                      (7 7) (5 5) (3 3) (1 1) (0 0) (2 2) (4 4) (6 6) 
+                      (8 8) (10 10) (12 12) (14 14) (16 16) (18 18)))
+      (check-rb-structure! t))
      
      
      (test-case
@@ -1925,6 +2077,8 @@
       (insert-last/data! t1 "and" 3)
       (insert-last/data! t2 "peace" 5)
       (define t1+t2 (join! t1 t2))
+      (check-true (nil? (tree-root t1)))
+      (check-true (nil? (tree-root t2)))
       (check-equal? (map first (tree-items t1+t2)) '("love" "and" "peace"))
       (check-rb-structure! t1+t2))
      
@@ -1936,6 +2090,8 @@
       (insert-last/data! t2 "and" 3)
       (insert-last/data! t2 "war" 3)
       (define t1+t2 (join! t1 t2))
+      (check-true (nil? (tree-root t1)))
+      (check-true (nil? (tree-root t2)))
       (check-equal? (map first (tree-items t1+t2)) '("love" "and" "war"))
       (check-rb-structure! t1+t2))
      
@@ -1951,6 +2107,8 @@
       (insert-last/data! t2 "years" 5)
       (insert-last/data! t2 "ago" 3)
       (define t1+t2 (join! t1 t2))
+      (check-true (nil? (tree-root t1)))
+      (check-true (nil? (tree-root t2)))
       (check-equal? (map first (tree-items t1+t2)) '("four" "score" "and" "seven" "years" "ago"))
       (check-rb-structure! t1+t2))
      
@@ -1990,6 +2148,9 @@
       (for ([word (in-list (string-split m3))])
         (insert-last/data! t3 word (string-length word)))
       (define speech-tree (join! (join! t1 t2) t3))
+      (check-true (nil? (tree-root t1)))
+      (check-true (nil? (tree-root t2)))
+      (check-true (nil? (tree-root t3)))
       (check-equal? (map first (tree-items speech-tree))
                     (string-split (string-append m1 " " m2 " " m3)))
       (check-rb-structure! speech-tree))))
@@ -2004,11 +2165,13 @@
       (insert-last/data! t "a" 1)
       (define n (search t 0))
       (define-values (l r) (split! t n))
+      (check-true (nil? (tree-root t)))
       (check-true (singleton-node? n))
       (check-equal? (map first (tree-items l)) '())
       (check-equal? (map first (tree-items r)) '())
       (check-rb-structure! l)
-      (check-rb-structure! r))
+      (check-rb-structure! r)
+      (check-rb-structure! t))
      
      (test-case
       "(a b) ---split-a--> () (b)"
@@ -2017,11 +2180,13 @@
       (insert-last/data! t "b" 1)
       (define n (search t 0))
       (define-values (l r) (split! t n))
+      (check-true (nil? (tree-root t)))
       (check-true (singleton-node? n))
       (check-equal? (map first (tree-items l)) '())
       (check-equal? (map first (tree-items r)) '("b"))
       (check-rb-structure! l)
-      (check-rb-structure! r))
+      (check-rb-structure! r)
+      (check-rb-structure! t))
      
      (test-case
       "(a b) ---split-b--> (a) ()"
@@ -2030,11 +2195,13 @@
       (insert-last/data! t "b" 1)
       (define n (search t 1))
       (define-values (l r) (split! t n))
+      (check-true (nil? (tree-root t)))
       (check-true (singleton-node? n))
       (check-equal? (map first (tree-items l)) '("a"))
       (check-equal? (map first (tree-items r)) '())
       (check-rb-structure! l)
-      (check-rb-structure! r))
+      (check-rb-structure! r)
+      (check-rb-structure! t))
      
      (test-case
       "(a b c) ---split-b--> (a) (c)"
@@ -2044,11 +2211,13 @@
       (insert-last/data! t "c" 1)
       (define n (search t 1))
       (define-values (l r) (split! t n))
+      (check-true (nil? (tree-root t)))
       (check-true (singleton-node? n))
       (check-equal? (map first (tree-items l)) '("a"))
       (check-equal? (map first (tree-items r)) '("c"))
       (check-rb-structure! l)
-      (check-rb-structure! r))
+      (check-rb-structure! r)
+      (check-rb-structure! t))
      
      (test-case
       "(a b c d) ---split-a--> () (b c d)"
@@ -2059,11 +2228,13 @@
       (insert-last/data! t "d" 1)
       (define n (search t 0))
       (define-values (l r) (split! t n))
+      (check-true (nil? (tree-root t)))
       (check-true (singleton-node? n))
       (check-equal? (map first (tree-items l)) '())
       (check-equal? (map first (tree-items r)) '("b" "c" "d"))
       (check-rb-structure! l)
-      (check-rb-structure! r))
+      (check-rb-structure! r)
+      (check-rb-structure! t))
      
      
      (test-case
@@ -2075,11 +2246,13 @@
       (insert-last/data! t "d" 1)
       (define n (search t 1))
       (define-values (l r) (split! t n))
+      (check-true (nil? (tree-root t)))
       (check-true (singleton-node? n))
       (check-equal? (map first (tree-items l)) '("a"))
       (check-equal? (map first (tree-items r)) '("c" "d"))
       (check-rb-structure! l)
-      (check-rb-structure! r))
+      (check-rb-structure! r)
+      (check-rb-structure! t))
      
      
      (test-case
@@ -2091,11 +2264,13 @@
       (insert-last/data! t "d" 1)
       (define n (search t 2))
       (define-values (l r) (split! t n))
+      (check-true (nil? (tree-root t)))
       (check-true (singleton-node? n))
       (check-equal? (map first (tree-items l)) '("a" "b"))
       (check-equal? (map first (tree-items r)) '("d"))
       (check-rb-structure! l)
-      (check-rb-structure! r))
+      (check-rb-structure! r)
+      (check-rb-structure! t))
      
      (test-case
       "(a b c d) ---split-d--> (a b c) ()"
@@ -2106,11 +2281,13 @@
       (insert-last/data! t "d" 1)
       (define n (search t 3))
       (define-values (l r) (split! t n))
+      (check-true (nil? (tree-root t)))
       (check-true (singleton-node? n))
       (check-equal? (map first (tree-items l)) '("a" "b" "c"))
       (check-equal? (map first (tree-items r)) '())
       (check-rb-structure! l)
-      (check-rb-structure! r))
+      (check-rb-structure! r)
+      (check-rb-structure! t))
      
      (test-case
       "(a ... z) ---split-m--> (a ... l) (n ...z)"
@@ -2120,11 +2297,13 @@
                            1))
       (define letter-m (search t 12))
       (define-values (l r) (split! t letter-m))
+      (check-true (nil? (tree-root t)))
       (check-true (singleton-node? letter-m))
       (check-equal? (map first (tree-items l)) '("a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l"))
       (check-equal? (map first (tree-items r)) '("n" "o" "p" "q" "r" "s" "t" "u" "v" "w" "x" "y" "z"))
       (check-rb-structure! l)
-      (check-rb-structure! r))
+      (check-rb-structure! r)
+      (check-rb-structure! t))
      
      (test-case
       "(a ... z) ---split-n--> (a ... l) (n ...z)"
@@ -2136,12 +2315,14 @@
           (insert-last/data! t w 1))
         (define a-letter (search t n))
         (define-values (l r) (split! t a-letter))
+        (check-true (nil? (tree-root t)))
         (check-true (singleton-node? a-letter))
         (define-values (expected-l 1+expected-r) (split-at letters n))
         (check-equal? (map first (tree-items l)) expected-l)
         (check-equal? (map first (tree-items r)) (rest 1+expected-r))
         (check-rb-structure! l)
-        (check-rb-structure! r)))))
+        (check-rb-structure! r)
+        (check-rb-structure! t)))))
      
   
 
@@ -2313,6 +2494,7 @@
             ;; Delete a random word if we can.
             (define k (random (length known-model)))
             (delete-kth! k)))
+
         
         (define/public (insert-before/random!)
           (when (not (empty? known-model))
@@ -2369,6 +2551,7 @@
             (define offset (kth-offset k))
             (define node (search t offset))
             (define-values (l r) (split! t node))
+            (check-true (nil? (tree-root t)))
             (check-true (singleton-node? node))
             (set! t l)
             (send m2 catch-and-concat-at-front r (drop known-model (add1 k)))
@@ -2377,6 +2560,7 @@
         ;; private
         (define/public (catch-and-concat-at-front other-t other-known-model)
           (set! t (join! other-t t))
+          (check-true (nil? (tree-root other-t)))
           (set! known-model (append other-known-model known-model)))
 
         
@@ -2530,6 +2714,7 @@
           (time-acc 
            total-splitting-time
            (split! t pivot)))
+        (check-true (nil? (tree-root t)))
         (check-true (singleton-node? pivot))
         (define-values (expected-l 1+expected-r) (split-at elts n))
         (check-equal? (map first (tree-items l)) expected-l)

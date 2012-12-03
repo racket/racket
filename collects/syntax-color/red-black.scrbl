@@ -498,15 +498,14 @@ will become a singleton node.
 (tree-items t)
 ]
 
-Note that @racket[n] must be attached to tree @racket[t] or else an
-error will be raised:
+Note that @racket[n] must be attached to tree @racket[t] or else will raise
+a contract error:
 @interaction[#:eval my-eval
 (define t1 (new-tree))
-(define t2 (new-tree))
 (insert-first/data! t1 "tricky" 1)
-(insert-first/data! t2 "tricky" 1)
+(define n (new-node "tricky" 1))
 @code:comment{This should raise an error:}
-(delete! t1 (tree-root t2))
+(delete! t1 n)
 ]}
 
 
@@ -522,10 +521,17 @@ the elements in @racket[t2].
 @code:comment{Tier two characters:}
 (define t2 (new-tree))
 (for ([name (in-list '(yamcha tien chiaotzu bulma chi-chi
-                       oolong puar master-roshi))])
+                       roshi))])
   (insert-last/data! t2 name 1))
 (define tree-of-mighty-z-warriors (join! t1 t2))
-(tree-items tree-of-mighty-z-warriors)
+(map car (tree-items tree-of-mighty-z-warriors))
+]
+
+Note that @racket[t1] should not be @racket[eq?] to @racket[t2] or else will raise
+a contract error.
+@interaction[#:eval my-eval
+(define t1 (new-tree))
+(join! t1 t1)
 ]
 }
 
@@ -544,6 +550,14 @@ the elements in @racket[t2].
 (insert-last/data! t2 "fezzik" 100)
 (define poor-lost-circus-performers (concat! t1 x t2))
 (tree-items poor-lost-circus-performers)
+]
+
+Note that @racket[t1] should not be @racket[eq?] to @racket[t2] or else will raise
+a contract error.
+@interaction[#:eval my-eval
+(define t1 (new-tree))
+(define n (new-node "a-node" 1))
+(concat! t1 n t1)
 ]
 }
 
@@ -565,8 +579,8 @@ Afterwards, @racket[n] becomes a singleton node.
 (singleton-node? bob-node)
 ]
 
-Note that @racket[n] must be attached to tree @racket[t] or else
-an error will be raised.
+Note that @racket[n] must be attached to tree @racket[t] or else raise
+a contract error.
 @interaction[#:eval my-eval
 (define t (new-tree))
 (for ([name '(melchior caspar bob balthazar)])
@@ -576,6 +590,19 @@ an error will be raised.
 (insert-last! t2 (new-node "bob" 1))
 (split! t (tree-root t2))
 ]}
+
+
+@defproc[(reset! [t tree?]) void?]{
+Resets the contents of the tree to the empty state.
+@interaction[#:eval my-eval
+(define t (new-tree))
+(insert-last/data! t "house" 5)
+(insert-last/data! t "cleaning" 8)
+(tree-items t)
+(reset! t)
+(tree-items t)]
+}
+
 
 
 @defproc[(search [t tree?] [p natural-number/c]) node?]{

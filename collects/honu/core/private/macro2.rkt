@@ -156,7 +156,7 @@
   ;;   foo_a temp_a
   ;;   (foo_b ...) (temp_b ...)
   (define (bind-attributes variable new-name)
-    (debug "Syntax class of ~a is ~a at ~a\n"
+    (debug 2 "Syntax class of ~a is ~a at ~a\n"
            (pattern-variable-class variable)
            (syntax-local-value (pattern-variable-class variable) (lambda () #f))
            (syntax-local-phase-level))
@@ -170,7 +170,7 @@
                             #f))))
 
     (define (mirror-attribute attribute)
-      (debug "Mirror attribute ~a\n" attribute)
+      (debug 2 "Mirror attribute ~a\n" attribute)
       (define-struct-fields attribute pattern-variable
                             (name original depth class))
       ;; create a new pattern variable with a syntax object that uses
@@ -181,7 +181,7 @@
                             attribute.original attribute.depth attribute.class)))
       (define-struct-fields variable pattern-variable
                             (name original depth class))
-      (debug "Bind attributes ~a ~a\n" variable.name attribute.name)
+      (debug 2 "Bind attributes ~a ~a\n" variable.name attribute.name)
       (with-syntax ([bind-attribute
                       #;
                       (create name (syntax-e name) name)
@@ -201,7 +201,7 @@
                                      new-name
                                      attribute.name)
                           attribute.original attribute.depth #f))])
-        (debug "Bind ~a to ~a\n" #'bind-attribute #'new-attribute)
+        (debug 2 "Bind ~a to ~a\n" #'bind-attribute #'new-attribute)
         #'(#:with bind-attribute #'new-attribute)))
 
     (for/set ([attribute attributes])
@@ -378,7 +378,7 @@
         (define mapping (make-hash))
         (for ([old variables]
               [new use])
-          (debug "Update mapping ~a to ~a\n" (syntax-e (pattern-variable-name old)) new)
+          (debug 2 "Update mapping ~a to ~a\n" (syntax-e (pattern-variable-name old)) new)
           (hash-set! mapping
                      (syntax-e (pattern-variable-name old))
                      (pattern-variable new
@@ -391,7 +391,12 @@
         (with-syntax ([(new-pattern ...) (convert-pattern honu-pattern mapping)]
                       [((withs ...) ...) (set->list withs)]
                       [(result-with ...) (if (syntax-e maybe-out)
-                                           (with-syntax ([(out ...) maybe-out])
+                                           (with-syntax ([(out ...)
+                                                          (syntax-parse maybe-out
+                                                            #:literal-sets (cruft)
+                                                            [(#%braces what ...)
+                                                             #'(what ...)])
+                                                            ])
                                              #'(#:with result (parse-stuff honu-syntax (#%parens out ...))))
                                            #'(#:with result #'()))])
           (syntax/loc honu-pattern
@@ -423,10 +428,11 @@
                       new-pattern ...
 
                       #;
-                      [pattern (~seq new-pattern ...)
-                               withs ... ...
-                               result-with ...
-                               ])))))
+                      [pattern x #:when (begin
+                                          (debug "All patterns failed for ~a\n" 'name)
+                                          #f)]
+
+                      )))))
         (debug "Output is ~a\n" (pretty-syntax output))
         output)])))
 

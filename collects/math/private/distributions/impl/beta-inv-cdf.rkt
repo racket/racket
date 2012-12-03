@@ -164,9 +164,10 @@
 (: flbeta-inv-log-cdf-limits (Flonum Flonum Flonum -> Flonum))
 (define (flbeta-inv-log-cdf-limits a b log-p)
   (cond [(not (and (log-p . fl<= . 0.0) (a . fl>= . 0.0) (b . fl>= . 0.0)))  +nan.0]
+        [(or (and (fl= a 0.0) (fl= b 0.0))
+             (and (fl= a +inf.0) (fl= b +inf.0)))
+         +nan.0]
         [(fl= log-p -inf.0)  0.0]
-        [(and (fl= a 0.0) (fl= b 0.0))  (if (log-p . fl< . (fllog 0.5)) 0.0 1.0)]
-        [(and (fl= a +inf.0) (fl= b +inf.0))  0.5]
         [(fl= a +inf.0)  1.0]
         [(fl= b +inf.0)  0.0]
         [(fl= a 0.0)  0.0]

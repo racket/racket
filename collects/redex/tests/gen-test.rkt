@@ -56,6 +56,11 @@
     [(sum (s n_1) n_2 (s n_3))
      (sum n_1 n_2 n_3)])
   
+  (define-relation nats
+    [(r-sum z n n)]
+    [(r-sum (s n_1) n_2 (s n_3))
+     (r-sum n_1 n_2 n_3)])
+  
   (test-equal (judgment-holds (sum z (s z) (s z)))
               #t)
   
@@ -63,16 +68,23 @@
               #t)
   
   (test-equal (generate-term nats #:satisfying (sum z (s z) n) +inf.0)
-              (term (sum z (s z) (s z))))
+              '(sum z (s z) (s z)))
   
   (test-equal (generate-term nats #:satisfying (sum (s z) (s z) n) +inf.0)
-              (term (sum (s z) (s z) (s (s z)))))
+              '(sum (s z) (s z) (s (s z))))
+  
+  (test-equal (generate-term nats #:satisfying (sum z z (s z)) 5)
+              #f)
   
   (for ([_ 100])
     (match (generate-term nats #:satisfying (sum n_1 n_2 n_3) 5)
       [`(sum ,l ,r ,res)
        (test-equal (judgment-holds (sum ,l ,r n) n)
-                   `(,res))])))
+                   `(,res))])
+    (match (generate-term nats #:satisfying (r-sum n_1 n_2 n_3) 5)
+      [`(r-sum ,l ,r ,res)
+       (test-equal (term (r-sum ,l ,r ,res))
+                   #t)])))
 
 (let ()
   

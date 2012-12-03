@@ -4,8 +4,9 @@
           racket/sandbox
           (for-label racket/base
                      math
-                     (only-in typed/racket/base Real Boolean Integer Natural Number Listof
-                              Positive-Flonum))
+                     (only-in typed/racket/base
+                              Real Boolean Integer Natural Number Listof
+                              Positive-Flonum Float-Complex Any))
           "utils.rkt")
 
 @(define untyped-eval (make-untyped-math-eval))
@@ -21,7 +22,7 @@ as well as providing the values document below.
 In general, the functions provided by @racketmodname[math/base] are @deftech{elementary}
 functions, or those functions that can be defined in terms of a finite number of
 arithmetic operations, logarithms, exponentials, trigonometric functions, and constants.
-For others, see @racketmodname[math/special-functions].
+For others, see @racketmodname[math/special-functions] and @racketmodname[math/distributions].
 
 @section{Constants}
 
@@ -49,6 +50,15 @@ An approximation of @italic{G}, or @hyperlink["http://en.wikipedia.org/wiki/Cata
 }
 
 @section{Functions}
+
+@defproc[(float-complex? [v Any]) Boolean]{
+Returns @racket[#t] when @racket[v] is of type @racket[Float-Complex]. Analogous to @racket[flonum?].
+}
+
+@defproc[(number->float-complex [x Number]) Float-Complex]{
+Returns a new complex number with a flonum real part and a flonum imaginary part.
+Analogous to @racket[real->double-flonum].
+}
 
 @defproc[(power-of-two? [x Real]) Boolean]{
 Returns @racket[#t] when @racket[x] is an integer power of 2.

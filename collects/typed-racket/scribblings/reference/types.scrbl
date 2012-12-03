@@ -194,7 +194,6 @@ needed to check the desired bounds at runtime.
 @defidform[Null]
 @defidform[EOF]
 @defidform[Continuation-Mark-Set]
-@defidform[Prompt-Tag]
 @defidform[Undefined]
 @defidform[Module-Path]
 @defidform[Module-Path-Index]
@@ -382,6 +381,35 @@ of type @racket[Syntax-E].}
 @defidform[Datum]{Applying @racket[datum->syntax] to a value of type
 @racket[Datum] produces a value of type @racket[Syntax].  Equivalent to
 @racket[(Sexpof Syntax)].}
+
+
+@section{Control}
+
+The following types represent @rtech{prompt tag}s and
+keys for @rtech{continuation mark}s for use with delimited continuation
+functions and continuation mark functions.
+
+@defform[(Prompt-Tagof s t)]{
+  A prompt tag to be used in a continuation prompt whose body
+  produces the type @racket[_s] and whose handler has the type
+  @racket[_t]. The type @racket[_t] must be a function type.
+
+  The domain of @racket[_t] determines the type of the values
+  that can be aborted, using @racket[abort-current-continuation],
+  to a prompt with this prompt tag.
+
+  @ex[(make-continuation-prompt-tag 'prompt-tag)]
+}
+
+@defform[(Continuation-Mark-Keyof t)]{
+  A continuation mark key that is used for continuation mark
+  operations such as @racket[with-continuation-mark] and
+  @racket[continuation-mark-set->list]. The type @racket[_t]
+  represents the type of the data that is stored in the
+  continuation mark with this key.
+
+  @ex[(make-continuation-mark-key 'mark-key)]
+}
 
 
 @section{Other Type Constructors}

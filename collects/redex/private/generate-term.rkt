@@ -322,7 +322,6 @@
      (cond
        [(metafunc #'jf/mf-id)
         (let ()
-          (define relation? (term-fn-get-info (syntax-local-value #'jf/mf-id)))
           (define (signal-error whatever)
             (when (stx-pair? whatever)
               (define cr (syntax-e (stx-car whatever)))
@@ -334,28 +333,24 @@
             (raise-syntax-error 'generate-term
                                 "expected a metafunction result and a size"
                                 stx))
-          (if relation?
-              (raise-syntax-error 'generate-term
-                                  "relations are not yet supported"
-                                  stx)
-              (let ([body-code 
-                     (λ (res size)
-                       #`(generate-mf-pat language (jf/mf-id . args) #,res #,size))])
-                (syntax-case #'rest (=)
-                  [(= res) 
-                   #`(λ (size) 
-                       #,(body-code #'res #'size))]
-                  [(= res size)
-                   (body-code #'res #'size)]
-                  [(x . y)
-                   (or (not (identifier? #'x))
-                       (not (free-identifier=? #'= #'x)))
-                   (raise-syntax-error 'generate-term
-                                       "expected to find ="
-                                       stx
-                                       #'x)]
-                  [whatever
-                   (signal-error #'whatever)]))))]
+          (let ([body-code 
+                 (λ (res size)
+                   #`(generate-mf-pat language (jf/mf-id . args) #,res #,size))])
+            (syntax-case #'rest (=)
+              [(= res) 
+               #`(λ (size) 
+                   #,(body-code #'res #'size))]
+              [(= res size)
+               (body-code #'res #'size)]
+              [(x . y)
+               (or (not (identifier? #'x))
+                   (not (free-identifier=? #'= #'x)))
+               (raise-syntax-error 'generate-term
+                                   "expected to find ="
+                                   stx
+                                   #'x)]
+              [whatever
+               (signal-error #'whatever)])))]
        [(judgment-form-id? #'jf/mf-id)
         (syntax-case #'rest ()
           [() 
@@ -434,10 +429,21 @@
           [(size)
            (let* ([j-f (lookup-judgment-form-id #'jf/mf-id)]
                   [clauses (judgment-form-gen-clauses j-f)]
-                  [nts (definition-nts #'lang-id stx 'redex-generator)])
+                  [nts (definition-nts #'lang-id stx 'redex-generator)]
+                  [relation? (judgment-form-relation? j-f)]
+                  [args-stx (if relation?
+                                (syntax/loc #'args (args))
+                                #'args)]) 
              (with-syntax ([(pat (names ...) (names/ellipses ...))
-                            (rewrite-side-conditions/check-errs nts 'redex-generator #t #'args)])
-               #`(make-jf-gen/proc 'jf/mf-id #,clauses lang-id 'pat size)))]
+                            (rewrite-side-conditions/check-errs nts 'redex-generator #t args-stx)])
+               (if relation?
+                   #`(let ([gen-proc (make-jf-gen/proc 'jf/mf-id #,clauses lang-id 'pat size)])
+                       (λ ()
+                         (match (gen-proc)
+                           [`(,jf-name (,trms (... ...)))
+                            `(,jf-name ,@trms)]
+                           [#f #f])))
+                   #`(make-jf-gen/proc 'jf/mf-id #,clauses lang-id 'pat size))))]
           [_
            (raise-syntax-error 'redex-generator 
                                "expected an integer depth bound"

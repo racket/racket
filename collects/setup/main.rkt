@@ -34,7 +34,7 @@
   ;; that will not be parsed as flags by "parse-cmdline.rkt". We don't
   ;; want to load "parse-cmdline.rkt" because it takes a long time with
   ;; bytecode files disabled, and we're not yet sure whether to trust
-  ;; bytecode ifes that do exist.
+  ;; bytecode files that do exist.
   (define-values (filter-flags)
     (lambda (flags)
       (if (or (null? flags)
@@ -99,8 +99,8 @@
 		    ;;  any date mismatch in the loading process, abort and
 		    ;;  try again without .zo files. If .zo files are newer
 		    ;;  than .rkt files but a required file is newer than its
-		    ;;  requring file, we won't notice, but that
-		    ;;  shouldn't happen for a reaonsbaly maintained
+		    ;;  requiring file, we won't notice, but that
+		    ;;  shouldn't happen for a reasonably maintained
 		    ;;  tree, and there's always --clean to turn this
 		    ;;  off. If an .so file is used, we give up using
 		    ;;  compiled files.

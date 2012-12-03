@@ -55,8 +55,6 @@ module browser threading seems wrong.
 (define show-planet-paths (string-constant module-browser-show-planet-paths/short))
 (define refresh (string-constant module-browser-refresh))
 
-(define define-button-long-label "(define ...)")
-
 (define oprintf
   (let ([op (current-output-port)])
     (λ args
@@ -1896,7 +1894,8 @@ module browser threading seems wrong.
           (let loop ([obj button-panel])
             (when (is-a? obj area-container<%>)
               (when (or (is-a? obj vertical-panel%)
-                        (is-a? obj horizontal-panel%))
+                        (is-a? obj horizontal-panel%)
+                        (is-a? obj panel:discrete-sizes<%>))
                 (unless (equal? (send obj get-orientation) (not vertical?))
                   (send obj set-orientation (not vertical?))))
               (for-each loop (send obj get-children))))
@@ -3661,7 +3660,8 @@ module browser threading seems wrong.
                 (cond
                  [problem
                   (message-box (string-constant drscheme)
-                               problem)]
+                               problem)
+                  (preferences:set 'framework:spell-check-on? #f)]
                  [else
                   (define ed (get-edit-target-object))
                   (define old-val (send ed get-spell-check-strings))
@@ -4372,7 +4372,10 @@ module browser threading seems wrong.
       [define teachpack-items null]
       [define break-button (void)]
       [define execute-button (void)]
-      [define button-panel (new horizontal-panel% [parent top-panel] [spacing 2])]
+      [define button-panel (new panel:horizontal-discrete-sizes% 
+                                [parent top-panel]
+                                [stretchable-width #t]
+                                [alignment '(right center)])]
       (define/public (get-execute-button) execute-button)
       (define/public (get-break-button) break-button)
       (define/public (get-button-panel) button-panel)
@@ -4454,14 +4457,9 @@ module browser threading seems wrong.
                  [label (string-constant break-button-label)]))
       (register-toolbar-button break-button #:number 101)
       
-      (send button-panel stretchable-height #f)
-      (send button-panel stretchable-width #f) 
-      
       (send top-panel change-children
             (λ (l)
-              (list name-panel save-button
-                    (make-object vertical-panel% top-panel) ;; spacer
-                    button-panel)))
+              (list name-panel save-button button-panel)))
       
       (send top-panel stretchable-height #f)
       (inherit get-label)
@@ -4629,41 +4627,87 @@ module browser threading seems wrong.
                         [parent d]
                         [label (string-constant limit-memory-msg-2)]))
     
-    (define outer-hp (new horizontal-panel% [parent d] [alignment '(center bottom)]))
-    (define rb (new radio-box%
-                    [label #f]
-                    [choices (list (string-constant limit-memory-unlimited)
-                                   (string-constant limit-memory-limited))]
-                    [callback (λ (a b) (grayizie))]
-                    [parent outer-hp]))
+    (define top-hp (new horizontal-panel% [parent d] [stretchable-height #f] [alignment '(left center)]))
+    (define bot-hp (new horizontal-panel% [parent d] [stretchable-height #f] [alignment '(left bottom)]))
+    (define limited-rb
+      (new radio-box%
+           [label #f]
+           [choices (list (string-constant limit-memory-limited))]
+           [callback (λ (a b)
+                       (send unlimited-rb set-selection #f)
+                       (cb-checked))]
+           [parent top-hp]))
+    (define unlimited-rb
+      (new radio-box%
+           [label #f]
+           [choices (list (string-constant limit-memory-unlimited))]
+           [callback (λ (a b) 
+                       (send limited-rb set-selection #f)
+                       (cb-checked))]
+           [parent bot-hp]))
     
-    (define (grayizie)
-      (case (send rb get-selection)
-        [(0) 
-         (send tb enable #f)
-         (send msg2 enable #f)
-         (background gray-foreground-sd)]
-        [(1)
+    (define unlimited-warning-panel (new horizontal-panel%
+                                         [parent d]
+                                         [stretchable-width #t]
+                                         [stretchable-height #f]))
+    
+    (define (show-unlimited-warning)
+      (when (null? (send unlimited-warning-panel get-children))
+        (send d begin-container-sequence)
+        (define t (new text%))
+        (send t insert (string-constant limit-memory-warning-prefix))
+        (define between-pos (send t last-position))
+        (send t insert (string-constant limit-memory-warning))
+        
+        (define sdb (make-object style-delta% 'change-family 'system))
+        (send sdb set-delta-face (send normal-control-font get-face))
+        (send sdb set-size-mult 0)
+        (send sdb set-size-add (send normal-control-font get-point-size))
+        (send sdb set-size-in-pixels-off #t)
+        (send sdb set-weight-on 'bold)
+        (define sd (make-object style-delta%))
+        (send sd copy sdb)
+        (send sd set-weight-on 'normal)
+        
+        (send t change-style sdb 0 between-pos)
+        (send t change-style sd between-pos (send t last-position))
+        
+        (define ec (new editor-canvas% 
+                        [editor t]
+                        [parent unlimited-warning-panel]
+                        [style '(no-border no-focus hide-hscroll hide-vscroll transparent)]
+                        [horiz-margin 12]))
+        (send t auto-wrap #t)
+        (send d reflow-container)
+        (send ec set-line-count (+ 1 (send t position-line (send t last-position))))
+        (send t hide-caret #t)
+        (send t lock #t)
+        (send d end-container-sequence)
+        (send unlimited-rb focus)))
+    
+    (define (cb-checked)
+      (cond
+        [(send limited-rb get-selection)
          (send tb enable #t)
          (send msg2 enable #t)
          (background black-foreground-sd)
          (let ([e (send tb get-editor)])
            (send e set-position 0 (send e last-position)))
-         (send tb focus)])
+         (send tb focus)]
+        [else
+         (show-unlimited-warning)
+         (send tb enable #f)
+         (send msg2 enable #f)
+         (background gray-foreground-sd)])
       (update-ok-button-state))
-    
-    (define hp (new horizontal-panel% 
-                    [parent outer-hp] 
-                    [stretchable-height #f]
-                    [stretchable-width #f]))
     
     (define tb
       (new text-field%
            [label #f]
-           [parent hp]
+           [parent top-hp]
            [init-value (if current-limit
                            (format "~a" current-limit)
-                           "64")]
+                           "128")]
            [stretchable-width #f]
            [min-width 100]
            [callback
@@ -4677,19 +4721,23 @@ module browser threading seems wrong.
               (update-ok-button-state))]))
     
     (define (update-ok-button-state)
-      (case (send rb get-selection)
-        [(0) (send ok-button enable #t)]
-        [(1) (send ok-button enable (is-valid-number? (send tb get-editor)))]))
+      (cond
+        [(send limited-rb get-selection)
+         (send ok-button enable (is-valid-number? (send tb get-editor)))]
+        [else
+         (send ok-button enable #t)]))
     
-    (define msg2 (new message% [parent hp] [label (string-constant limit-memory-megabytes)]))
+    (define msg2 (new message% [parent top-hp] [label (string-constant limit-memory-megabytes)]))
     (define bp (new horizontal-panel% [parent d]))
     (define-values (ok-button cancel-button)
       (gui-utils:ok/cancel-buttons
        bp 
        (λ (a b) 
-         (case (send rb get-selection)
-           [(0) (set! result #t)]
-           [(1) (set! result (string->number (send (send tb get-editor) get-text)))])
+         (cond
+           [(send limited-rb get-selection)
+            (set! result (string->number (send (send tb get-editor) get-text)))]
+           [else
+            (set! result #t)])
          (send d show #f))
        (λ (a b) (send d show #f))))
     
@@ -4717,17 +4765,22 @@ module browser threading seems wrong.
     (send gray-foreground-sd set-delta-foreground "gray")
     (send d set-alignment 'left 'center)
     (send bp set-alignment 'right 'center)
-    (when current-limit
-      (send rb set-selection 1))
+    (cond
+      [current-limit
+       (send limited-rb set-selection 0)
+       (send unlimited-rb set-selection #f)]
+      [else
+       (send unlimited-rb set-selection 0)
+       (send limited-rb set-selection #f)])
     (update-ok-button-state)
-    (grayizie)
-    (send tb focus)
+    (cb-checked)
     (let ([e (send tb get-editor)])
       (send e set-position 0 (send e last-position)))
+    (cond 
+      [current-limit (send tb focus)]
+      [else (send unlimited-rb focus)])
     (send d show #t)
     result)
-  
-  
   
   (define (limit-length l n)
     (let loop ([l l]
@@ -4816,7 +4869,7 @@ module browser threading seems wrong.
                   (string-constant no-full-name-since-not-saved)])
       
       (inherit set-allow-shrinking)
-      (set-allow-shrinking 100)))
+      (set-allow-shrinking 50)))
   
   
   

@@ -1121,6 +1121,33 @@
   (err/rt-test (read-language p)
                (lambda (exn) (regexp-match? #rx"read-language" (exn-message exn)))))
 
+(require racket/flonum
+         racket/fixnum)
+(test #t flvector? (readstr "#fl(1.5 0.33 0.3)"))
+(test #t fxvector? (readstr "#fx(1000 76 100000)"))
+(test #t fxvector? (readstr "#fx(#x10 #X10 #d9 #D9 #b111 #B111 #o77 #O77)"))
+(err/rt-test (readstr "#fx(4.2235 4.2235)") exn:fail:read?)
+(test #t equal? (flvector 1.5 0.33 0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.3) (readstr "#fl10(1.5 0.33 0.3)"))
+(test #t equal? (fxvector 1000 76 100000 100000 100000 100000 100000 100000 100000 100000) (readstr "#fx10(1000 76 100000)"))
+(test #t equal? (flvector 0.0 0.0 0.0) (readstr "#fl3()"))
+(test #t equal? (flvector 2.0 1.0 1.0) (readstr "#fl3(2 1)"))
+(test #t equal? (fxvector 0 0 0) (readstr "#fx3()"))
+(test #t equal? (fxvector 2 1 1) (readstr "#fx3(2 1)"))
+
+(err/rt-test (readstr "#fl(1.5") exn:fail:read:eof?)
+(err/rt-test (readstr "#fl(1.5 0.33 0.3 (1 2))") exn:fail:read?)
+(err/rt-test (readstr "#fx(1000 76 100000 (1 2))") exn:fail:read?)
+(err/rt-test (readstr "#fl(1.5 0.33 0.3 'a)") exn:fail:read?)
+(err/rt-test (readstr "#fx(1000 76 100000 'a)") exn:fail:read?)
+(err/rt-test (readstr "#fli(1.5 0.33 0.3 'a)") exn:fail:read?)
+(err/rt-test (readstr "#fxi(1000 76 100000 'a)") exn:fail:read?)
+(err/rt-test (readstr "#fi(1000 76 100000 'a)") exn:fail:read?)
+(err/rt-test (readstr "#fx(1 . 2)") exn:fail:read?)
+(err/rt-test (readstr "#fx(1 . 2 . 3)") exn:fail:read?)
+
+(err/rt-test (read-syntax 'x (open-input-string "#fx()")) exn:fail:read?)
+(err/rt-test (read-syntax 'x (open-input-string "#fl()")) exn:fail:read?)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

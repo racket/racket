@@ -12,8 +12,8 @@
                   prime-power))
 
 (provide unit-group
-         order
-         orders
+         unit-group-order
+         unit-group-orders
          exists-primitive-root?
          primitive-root?
          primitive-root
@@ -34,11 +34,12 @@
         [else  (filter (λ: ([m : Natural]) (coprime? m n))
                        (build-list (- n 1) add1))]))
 
-(: order : Integer Integer -> Positive-Integer)
-(define (order g n)
-  (cond [(g . <= . 0)  (raise-argument-error 'order "Positive-Integer" 0 g n)]
-        [(n . <= . 0)  (raise-argument-error 'order "Positive-Integer" 1 g n)]
-        [(not (coprime? g n))  (error 'order "expected coprime arguments; given ~e and ~e" g n)]
+(: unit-group-order : Integer Integer -> Positive-Integer)
+(define (unit-group-order g n)
+  (cond [(g . <= . 0)  (raise-argument-error 'unit-group-order "Positive-Integer" 0 g n)]
+        [(n . <= . 0)  (raise-argument-error 'unit-group-order "Positive-Integer" 1 g n)]
+        [(not (coprime? g n))
+         (error 'unit-group-order "expected coprime arguments; given ~e and ~e" g n)]
         [else
          (with-modulus n
            (let: loop : Positive-Integer ([k : Positive-Integer 1] 
@@ -46,10 +47,10 @@
              (cond [(mod= a 1)  k]
                    [else  (loop (+ k 1) (mod* a g))])))]))
 
-(: orders : Integer -> (Listof Positive-Integer))
-(define (orders n)
-  (cond [(n . <= . 0)  (raise-argument-error 'orders "Positive-Integer" n)]
-        [else  (map (λ: ([m : Positive-Integer]) (order m n))
+(: unit-group-orders : Integer -> (Listof Positive-Integer))
+(define (unit-group-orders n)
+  (cond [(n . <= . 0)  (raise-argument-error 'unit-group-orders "Positive-Integer" n)]
+        [else  (map (λ: ([m : Positive-Integer]) (unit-group-order m n))
                     (unit-group n))]))
 
 ; DEFINITION (Primitive Root)
@@ -60,7 +61,7 @@
 (define (primitive-root? g n)
   (if (not (coprime? g n))
       (error 'primitive-root? "expected coprime arguments; given ~e and ~e" g n)
-      (= (order g n) (phi n))))
+      (= (unit-group-order g n) (phi n))))
 
 ; THEOREM (Existence of primitive roots)
 ;      Un is cyclic   (i.e. have a primitive root)
@@ -149,7 +150,7 @@
          (define p (if pp (first pp) (error 'primitive-root "internal error")))
          (define gg (primitive-root p))
          (define g (or gg (error 'primitive-root "internal error")))
-         (if (= (order g (* p p)) (totient (* p p)))
+         (if (= (unit-group-order g (* p p)) (totient (* p p)))
              g
              (modulo (+ g p) n))]
         ; U_2p^e , p odd

@@ -13,17 +13,25 @@
    (examples #:eval the-top-eval . args))
 
 
-@(define-syntax-rule (def-racket for-id for*-id with-handlers-id mod-beg-id lambda-id λ-id define-id)
+@(define-syntax-rule (def-racket for-id for*-id with-handlers-id
+                                 default-continuation-prompt-tag-id
+                                 mod-beg-id lambda-id λ-id define-id)
   (begin
-    (require (for-label (only-in racket/base for for* with-handlers #%module-begin lambda λ define)))
+    (require (for-label (only-in racket/base for for* with-handlers
+                                             default-continuation-prompt-tag
+                                             #%module-begin lambda λ define)))
     (define for-id (racket for))
     (define for*-id (racket for*))
     (define mod-beg-id (racket #%module-begin))
     (define with-handlers-id (racket with-handlers))
+    (define default-continuation-prompt-tag-id
+      (racket default-continuation-prompt-tag))
     (define lambda-id (racket lambda))
     (define λ-id (racket λ))
     (define define-id (racket define))))
-@(def-racket for-id for*-id with-handlers-id mod-beg-id lambda-id λ-id define-id)
+@(def-racket for-id for*-id with-handlers-id
+  default-continuation-prompt-tag-id
+  mod-beg-id lambda-id λ-id define-id)
 
 
 @title[#:tag "special-forms"]{Special Form Reference}
@@ -434,6 +442,33 @@ annotation.
              
 Note that unlike @|define-id|, @racket[define] does not bind functions with keyword arguments
 to static information about those functions.
+}
+
+@defproc[(default-continuation-prompt-tag) (-> (Prompt-Tagof Any (Any -> Any)))]{
+  Identical to @|default-continuation-prompt-tag-id|, but additionally protects
+  the resulting prompt tag with a contract that wraps
+  higher-order values, such as functions, that are communicated with that
+  prompt tag. If the wrapped value is used in untyped code, a contract error
+  will be raised.
+
+  @ex[
+    (module typed typed/racket
+      (provide do-abort)
+      (: do-abort (-> Void))
+      (define (do-abort)
+        (abort-current-continuation
+         (code:comment "typed, and thus contracted, prompt tag")
+         (default-continuation-prompt-tag)
+         (λ: ([x : Integer]) (+ 1 x)))))
+    (module untyped racket
+      (require 'typed)
+      (call-with-continuation-prompt
+        (λ () (do-abort))
+        (default-continuation-prompt-tag)
+        (code:comment "the function cannot be passed an argument")
+        (λ (f) (f 3))))
+    (require 'untyped)
+  ]
 }
 
 @defform[(#%module-begin form ...)]{

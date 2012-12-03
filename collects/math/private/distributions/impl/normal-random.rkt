@@ -1,30 +1,68 @@
 #lang typed/racket/base
 
-(require "../../../flonum.rkt"
+;; Return random samples from a normal distribution using the Box-Muller transform
+
+(require racket/fixnum
+         "../../../flonum.rkt"
          "../../../base.rkt"
-         "../../../vector.rkt")
+         "../../unsafe.rkt")
 
 (provide flnormal-sample)
 
-(: box-muller-transform (Float Float -> Float))
-(define (box-muller-transform x y)
-  (cond [(and (fl= x 0.0) (fl= y 0.0))  0.0]
-        [else  (fl* (flsqrt (fl* -2.0 (fllog x)))
-                    (flsin (fl* (fl* 2.0 pi) y)))]))
+;; Leaving these in, in case we discover in the future that it's actually important for them
+;; to be accurate
+#|
+(: flsin2pix (Flonum -> Flonum))
+;; Computes sin(2*pi*x) accurately in the range [0,1]
+(define (flsin2pix x)
+  (let*-values ([(x s)  (if (x . fl> . 0.5) (values (fl- x 0.5) -1.0) (values x 1.0))]
+                [(x)    (if (x . fl> . 0.25) (fl- 0.5 x) x)])
+    (fl* s (flsin (fl* (fl* 2.0 pi) x)))))
+
+(: flcos2pix (Flonum -> Flonum))
+;; Computes cos(2*pi*x) accurately in the range [0,1]
+(define (flcos2pix x)
+  (let*-values ([(x)  (if (x . fl> . 0.5) (fl- 1.0 x) x)]
+                [(x s)  (if (x . fl> . 0.25) (values (fl- 0.5 x) 1.0) (values x -1.0))])
+    (fl* s (flsin (fl* (fl* 2.0 pi) (fl- x 0.25))))))
+|#
+
+(: nonzero-random (-> Flonum))
+(define (nonzero-random)
+  (let ([u  (random)])
+    (if (fl= u 0.0) (nonzero-random) u)))
 
 (: flnormal-sample (Flonum Flonum Integer -> FlVector))
 ;; The Box-Muller method has an bad reputation, but undeservedly:
 ;;  1. There's nothing unstable about the floating-point implementation of the transform
 ;;  2. It has good tail behavior (i.e. it can return very unlikely numbers)
-;;  3. With today's RNGs, there's no need to worry about generating two random numbers
-;;  4. With today's FPUs, there's no need to worry about computing `log' and `sin' (sheesh)
+;;  3. With today's FPUs, there's no need to worry about computing `log' and `sin' (sheesh)
 ;; Points in favor: it's simple and fast
 (define (flnormal-sample c s n)
-  (cond [(n . < . 0)  (raise-argument-error 'flnormal-sample "Natural" 2 c s n)]
+  (cond [(not (index? n))  (raise-argument-error 'flnormal-sample "Natural" 2 c s n)]
         [else
-         (build-flvector
-          n (λ (_)
-              (let loop ()
-                (define r (box-muller-transform (random) (random)))
-                (if (rational? r) (fl+ c (fl* s r)) (loop)))))]))
-
+         (define xs (make-flvector n))
+         (cond
+           [(fx= n 0)  xs]
+           [else
+            (define n-1 (fx- n 1))
+            (let loop ([#{i : Nonnegative-Fixnum} 0])
+              (cond [(i . fx< . n-1)
+                     (define u1 (nonzero-random))
+                     (define u2 (random))
+                     (define t (flsqrt (fl* -2.0 (fllog u1))))
+                     (define z (fl* (fl* 2.0 pi) u2))
+                     (define x (fl* t (flcos z)))
+                     (define y (fl* t (flsin z)))
+                     (unsafe-flvector-set! xs i (fl+ c (fl* s x)))
+                     (unsafe-flvector-set! xs (fx+ i 1) (fl+ c (fl* s y)))
+                     (loop (fx+ i 2))]
+                    [(i . fx= . n-1)
+                     (define u1 (nonzero-random))
+                     (define u2 (random))
+                     (define x (fl* (flsqrt (fl* -2.0 (fllog u1)))
+                                    (flsin (fl* (fl* 2.0 pi) u2))))
+                     (unsafe-flvector-set! xs i (fl+ c (fl* s x)))
+                     xs]
+                    [else
+                     xs]))])]))

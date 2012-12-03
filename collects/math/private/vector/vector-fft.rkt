@@ -5,10 +5,9 @@
          racket/list
          racket/future
          "../../base.rkt"
-         "../../parameters.rkt"
-         "../unsafe.rkt"
-         "flvector.rkt"
-         "vector.rkt")
+         "../../flonum.rkt"
+         "../parameters.rkt"
+         "../unsafe.rkt")
 
 (provide vector-fft flvector-fft!
          vector-inverse-fft flvector-inverse-fft!)

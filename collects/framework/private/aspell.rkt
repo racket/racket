@@ -197,19 +197,21 @@
                     (loop)])))))))))
 
 (define (query-aspell line [dict #f])
-  (unless (aspell-problematic?)
-    
-    (when dict
-      (unless (member dict (get-aspell-dicts))
-        (set! dict #f)))
-    
-    (start-aspell-thread)
-    (sync
-     (nack-guard-evt
-      (λ (nack-evt)
-        (define resp (make-channel))
-        (channel-put aspell-req-chan (list line dict resp nack-evt))
-        resp)))))
+  (cond
+    [(aspell-problematic?)
+     '()]
+    [else
+     (when dict
+       (unless (member dict (get-aspell-dicts))
+         (set! dict #f)))
+     
+     (start-aspell-thread)
+     (sync
+      (nack-guard-evt
+       (λ (nack-evt)
+         (define resp (make-channel))
+         (channel-put aspell-req-chan (list line dict resp nack-evt))
+         resp)))]))
 
 (define aspell-dicts #f)
 (define (get-aspell-dicts)

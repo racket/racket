@@ -601,16 +601,28 @@
 ;; ----------------------------------------
 
 (define (adjust mline new-val val-sel val-mut! sel mut!)
-  (let ([delta (- new-val (val-sel mline))])
-    (val-mut! mline new-val)
-    (let loop ([node mline])
-      (let ([parent (mline-parent node)])
-        (unless (eq? parent NIL)
-          (if (eq? node (mline-left parent))
-              (begin
-                (mut! parent (+ delta (sel parent)))
-                (loop parent))
-              (loop parent)))))))
+  (define delta (- new-val (val-sel mline)))
+  (define val-changed? 
+    (cond
+      [(= (val-sel mline) new-val) #f]
+      [else
+       (val-mut! mline new-val)
+       #t]))
+  (or (let loop ([node mline])
+        (let ([parent (mline-parent node)])
+          (cond
+            [(eq? parent NIL) #f]
+            [else
+             (if (eq? node (mline-left parent))
+                 (cond
+                   [(= delta 0)
+                    (loop parent)]
+                   [else
+                    (mut! parent (+ delta (sel parent)))
+                    (loop parent)
+                    #t])
+                 (loop parent))])))
+      val-changed?))
 
 (define (set-length mline len)
   (adjust mline
@@ -685,38 +697,41 @@
 ;; ------------------------------------------------------------
 
 (define (adjust-max-width mline [recur? #f])
-  (when (not (eq? mline NIL))
+  (define anything-changed? #f)
+  (unless (eq? mline NIL)
     (let loop ([node mline])
-      (let ([old (bitwise-and (mline-flags node) MAX-W-MASK)])
-        (let ([which
-               (cond
-                [(and (not (eq? (mline-right node) NIL))
-                      ((mline-max-width (mline-right node)) . > . (mline-w node))
-                      (or (eq? (mline-left node) NIL)
-                          ((mline-max-width (mline-right node)) . > . (mline-max-width (mline-left node)))))
-                 (set-mline-max-width! node (mline-max-width (mline-right node)))
-                 MAX-W-RIGHT]
-                [(and (not (eq? (mline-left node) NIL))
-                      ((mline-max-width (mline-left node)) . > . (mline-w node)))
-                 (set-mline-max-width! node (mline-max-width (mline-left node)))
-                 MAX-W-LEFT]
-                [else
-                 (set-mline-max-width! node (mline-w node))
-                 MAX-W-HERE])])
-          (unless (= old which)
-            (set-mline-flags! node
-                              (bitwise-ior
-                               (bitwise-and (mline-flags node)
-                                            (bitwise-not MAX-W-MASK))
-                               which)))
-          (when recur?
-            (let ([parent (mline-parent node)])
-              (unless (eq? parent NIL)
-                (loop parent)))))))))
+      (define old (bitwise-and (mline-flags node) MAX-W-MASK))
+      (define-values (new-max-width which)
+        (cond
+          [(and (not (eq? (mline-right node) NIL))
+                ((mline-max-width (mline-right node)) . > . (mline-w node))
+                (or (eq? (mline-left node) NIL)
+                    ((mline-max-width (mline-right node)) . > . (mline-max-width (mline-left node)))))
+           (values (mline-max-width (mline-right node)) MAX-W-RIGHT)]
+          [(and (not (eq? (mline-left node) NIL))
+                ((mline-max-width (mline-left node)) . > . (mline-w node)))
+           (values (mline-max-width (mline-left node)) MAX-W-LEFT)]
+          [else
+           (values (mline-w node) MAX-W-HERE)]))
+      (unless (= (mline-max-width node) new-max-width)
+        (set! anything-changed? #t)
+        (set-mline-max-width! node new-max-width))
+      (unless (= old which)
+        (set-mline-flags! node
+                          (bitwise-ior
+                           (bitwise-and (mline-flags node)
+                                        (bitwise-not MAX-W-MASK))
+                           which)))
+      (when recur?
+        (let ([parent (mline-parent node)])
+          (unless (eq? parent NIL)
+            (loop parent))))))
+  anything-changed?)
 
 (define (set-width mline w)
-  (set-mline-w! mline w)
-  (adjust-max-width mline #t))
+  (define w-same? (= (mline-w mline) w))
+  (unless w-same? (set-mline-w! mline w))
+  (or (adjust-max-width mline #t) (not w-same?)))
 
 ;; ----------------------------------------
 
@@ -1068,115 +1083,136 @@ Debugging tools:
   (flow-left))
 
 ;; ----------------------------------------
-
 (define (update-graphics mline media dc padding-l padding-t max-line-width)
   (define (update-left)
-    (and (bit-overlap? (mline-flags mline) CALC-LEFT)
-         (not (eq? (mline-left mline) NIL))
-         (update-graphics (mline-left mline) media dc padding-l padding-t max-line-width)))
+    (cond
+      [(and (bit-overlap? (mline-flags mline) CALC-LEFT)
+            (not (eq? (mline-left mline) NIL)))
+       (update-graphics (mline-left mline) media dc padding-l padding-t max-line-width)]
+      [else (values #f #f)]))
   (define (update-here)
-    (and 
-     (bit-overlap? (mline-flags mline) CALC-HERE)
-     (let ([y (+ (get-location mline) padding-t)]
-           [nextsnip (snip->next (mline-last-snip mline))])
-       (let loop ([asnip (mline-snip mline)]
-                  [maxbase 0.0]
-                  [maxdescent 0.0]
-                  [maxspace 0.0]
-                  [maxantidescent 0.0]
-                  [maxantispace 0.0]
-                  [totalwidth padding-l]
-                  [maxscroll 1]
-                  [scroll-snip #f]
-                  [last-w 0.0]
-                  [last-h 0.0])
-         (if (not (eq? asnip nextsnip))
-             (let-boxes ([w 0.0]
-                         [h 0.0]
-                         [descent 0.0]
-                         [space 0.0])
-                 (send asnip get-extent dc totalwidth y w h descent space #f #f)
-               (let* ([align (send (snip->style asnip) get-alignment)]
-                      [scroll (send asnip get-num-scroll-steps)]
-                      [maxbase (max maxbase (- h descent space))]
-                      [maxdescent (if (eq? align 'bottom)
-                                      (max maxdescent descent)
-                                      maxdescent)]
-                      [maxantispace (if (eq? align 'bottom)
-                                        maxantispace
-                                        (max maxantispace (- h space)))]
-                      [maxspace (if (eq? align 'top)
-                                    (max maxspace space)
-                                    maxspace)]
-                      [maxantidescent (if (eq? align 'top)
-                                          maxantidescent
-                                          (max maxantidescent (- h descent)))]
-                      [scroll-snip (if (scroll . > . maxscroll)
-                                       asnip
-                                       scroll-snip)]
-                      [maxscroll (max maxscroll scroll)]
-                      [totalwidth (+ w totalwidth)])
-                 (loop (snip->next asnip)
-                       maxbase maxdescent maxspace maxantidescent maxantispace
-                       totalwidth maxscroll scroll-snip
-                       w h)))
-             (let ([maxspace (max maxspace (- maxantidescent maxbase))]
-                   [maxdescent (max maxdescent (- maxantispace maxbase))])
-               (set-mline-scroll-snip! mline scroll-snip)
-               (set-mline-last-h! mline last-h)
-               (set-mline-last-w! mline last-w)
-               (set-mline-topbase! mline maxspace)
-               (set-mline-bottombase! mline (+ maxspace maxbase))
-               (let ([maxh (+ maxbase 
-                              maxdescent
-                              maxspace
-                              (send media get-s-line-spacing))]
-                     [bigwidth (+ (if ((mline-w mline) . > . totalwidth)
-                                      (mline-w mline)
-                                      totalwidth)
-                                  CURSOR-WIDTH
-                                  (let-boxes ([is-first? #f]
-                                              [para #f])
-                                      (set-box! para (get-paragraph-style mline is-first?))
-                                    (if is-first?
-                                        (paragraph-left-margin-first para)
-                                        (paragraph-left-margin para))))])
-                 (set-width mline (- totalwidth padding-l))
-                 (unless (= maxscroll (mline-numscrolls mline))
-                   (set-scroll-length mline maxscroll))
-                 (define (send-refresh-box w h)
-                   (define x-delta
-                     (case (if max-line-width
-                               (let-boxes ([is-first? #f]
-                                           [para #f])
-                                   (set-box! para (get-paragraph-style mline is-first?))
-                                 (paragraph-alignment para))
-                               'left)
-                       [(left) 0]
-                       [(right) (max 0 (- max-line-width w))]
-                       [else (max 0 (/ (- max-line-width w) 2))]))
-                   (send media refresh-box (+ padding-l x-delta) y w h))
-                 (if (= maxh (mline-h mline))
-                     (send-refresh-box bigwidth maxh)
-                     (begin
-                       (set-height mline maxh)
-                       (let ([bigwidth (max 1e5 ;; really want viewable width, but > ok
-                                            (send media get-s-total-width))]
-                             [bigheight (+ maxh (send media get-s-total-height))])
-                         (send-refresh-box bigwidth bigheight))))))))
-       #t)))
+    (cond
+      [(bit-overlap? (mline-flags mline) CALC-HERE)
+       (let ([y (+ (get-location mline) padding-t)]
+             [nextsnip (snip->next (mline-last-snip mline))]
+             [sizing-changed? #f])
+         (let loop ([asnip (mline-snip mline)]
+                    [maxbase 0.0]
+                    [maxdescent 0.0]
+                    [maxspace 0.0]
+                    [maxantidescent 0.0]
+                    [maxantispace 0.0]
+                    [totalwidth padding-l]
+                    [maxscroll 1]
+                    [scroll-snip #f]
+                    [last-w 0.0]
+                    [last-h 0.0])
+           (if (not (eq? asnip nextsnip))
+               (let-boxes ([w 0.0]
+                           [h 0.0]
+                           [descent 0.0]
+                           [space 0.0])
+                          (send asnip get-extent dc totalwidth y w h descent space #f #f)
+                          (let* ([align (send (snip->style asnip) get-alignment)]
+                                 [scroll (send asnip get-num-scroll-steps)]
+                                 [maxbase (max maxbase (- h descent space))]
+                                 [maxdescent (if (eq? align 'bottom)
+                                                 (max maxdescent descent)
+                                                 maxdescent)]
+                                 [maxantispace (if (eq? align 'bottom)
+                                                   maxantispace
+                                                   (max maxantispace (- h space)))]
+                                 [maxspace (if (eq? align 'top)
+                                               (max maxspace space)
+                                               maxspace)]
+                                 [maxantidescent (if (eq? align 'top)
+                                                     maxantidescent
+                                                     (max maxantidescent (- h descent)))]
+                                 [scroll-snip (if (scroll . > . maxscroll)
+                                                  asnip
+                                                  scroll-snip)]
+                                 [maxscroll (max maxscroll scroll)]
+                                 [totalwidth (+ w totalwidth)])
+                            (loop (snip->next asnip)
+                                  maxbase maxdescent maxspace maxantidescent maxantispace
+                                  totalwidth maxscroll scroll-snip
+                                  w h)))
+               (let ([maxspace (max maxspace (- maxantidescent maxbase))]
+                     [maxdescent (max maxdescent (- maxantispace maxbase))])
+                 (unless (eq? (mline-scroll-snip mline) scroll-snip)
+                   (set! sizing-changed? #t)
+                   (set-mline-scroll-snip! mline scroll-snip))
+                 (unless (= (mline-last-h mline) last-h)
+                   (set! sizing-changed? #t)
+                   (set-mline-last-h! mline last-h))
+                 (unless (= (mline-last-w mline) last-w)
+                   (set! sizing-changed? #t)
+                   (set-mline-last-w! mline last-w))
+                 (unless (= (mline-topbase mline) maxspace)
+                   (set! sizing-changed? #t)
+                   (set-mline-topbase! mline maxspace))
+                 (let ([bottombase (+ maxspace maxbase)])
+                   (unless (= (mline-bottombase mline) bottombase)
+                     (set! sizing-changed? #t)
+                     (set-mline-bottombase! mline bottombase)))
+                 (let ([maxh (+ maxbase 
+                                maxdescent
+                                maxspace
+                                (send media get-s-line-spacing))]
+                       [bigwidth (+ (if ((mline-w mline) . > . totalwidth)
+                                        (mline-w mline)
+                                        totalwidth)
+                                    CURSOR-WIDTH
+                                    (let-boxes ([is-first? #f]
+                                                [para #f])
+                                               (set-box! para (get-paragraph-style mline is-first?))
+                                               (if is-first?
+                                                   (paragraph-left-margin-first para)
+                                                   (paragraph-left-margin para))))])
+                   (when (set-width mline (- totalwidth padding-l))
+                     (set! sizing-changed? #t))
+                   (unless (= maxscroll (mline-numscrolls mline))
+                     (when (set-scroll-length mline maxscroll)
+                       (set! sizing-changed? #t)))
+                   (define (send-refresh-box w h)
+                     (define x-delta
+                       (case (if max-line-width
+                                 (let-boxes ([is-first? #f]
+                                             [para #f])
+                                            (set-box! para (get-paragraph-style mline is-first?))
+                                            (paragraph-alignment para))
+                                 'left)
+                         [(left) 0]
+                         [(right) (max 0 (- max-line-width w))]
+                         [else (max 0 (/ (- max-line-width w) 2))]))
+                     (send media refresh-box (+ padding-l x-delta) y w h))
+                   (if (= maxh (mline-h mline))
+                       (send-refresh-box bigwidth maxh)
+                       (begin
+                         (when (set-height mline maxh)
+                           (set! sizing-changed? #t))
+                         (let ([bigwidth (max 1e5 ;; really want viewable width, but > ok
+                                              (send media get-s-total-width))]
+                               [bigheight (+ maxh (send media get-s-total-height))])
+                           (send-refresh-box bigwidth bigheight))))))))
+         (values sizing-changed? #t))]
+      [else (values #f #f)]))
   (define (update-right)
-    (and (bit-overlap? (mline-flags mline) CALC-RIGHT)
-         (not (eq? (mline-right mline) NIL))
-         (update-graphics (mline-right mline) media dc padding-l padding-t max-line-width)))
+    (cond
+      [(and (bit-overlap? (mline-flags mline) CALC-RIGHT)
+            (not (eq? (mline-right mline) NIL)))
+       (update-graphics (mline-right mline) media dc padding-l padding-t max-line-width)]
+      [else
+       (values #f #f)]))
 
-  (let ([left? (update-left)]
-        [here? (update-here)]
-        [right? (update-right)])
-    (set-mline-flags! mline (bitwise-and
-                             (mline-flags mline)
-                             (bitwise-not CALC-MASK)))
-    (or left? here? right?)))
+  (define-values (sizing-left? left?) (update-left))
+  (define-values (sizing-here? here?) (update-here))
+  (define-values (sizing-right? right?) (update-right))
+  (set-mline-flags! mline (bitwise-and
+                           (mline-flags mline)
+                           (bitwise-not CALC-MASK)))
+  (values (or sizing-left? sizing-here? sizing-right?)
+          (or left? here? right?)))
 
 ;; ------------------------------------------------------------
 

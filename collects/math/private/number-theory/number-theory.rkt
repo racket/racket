@@ -66,11 +66,11 @@
 ;;; Powers
 ;;;
 
-(: max-dividing-power : Z Z -> N)
+(: max-dividing-power : Integer Integer -> Natural)
 ; (max-dividing-power p n) = m  <=> p^m | n  and  p^(m+1) doesn't divide n
 ;   In Mathematica this one is called IntegerExponent
 (define (max-dividing-power p n)
-  (: find-start : Z Z -> Z)
+  (: find-start : Integer Integer -> Integer)
   (define (find-start p-to-e e)
     ;(display (list 'fs 'p-to-e p-to-e  'e e)) (newline)
     ; p-to-e divides n  and  p-to-e = p^e
@@ -81,7 +81,7 @@
                                       (find-start p-to-e2 (* 2 e))
                                       (* 2 e))]
             [else (find-power p-to-e e)])))
-  (: find-power : Z Z -> Z)
+  (: find-power : Integer Integer -> Integer)
   (define (find-power p-to-e e)
     ;(display (list 'fp 'p-to-e p-to-e  'e e)) (newline)
     ; p-to-e <= n < (square p-to-e)
@@ -90,10 +90,10 @@
         [(not (divides? p n)) 0]
         [else                 (assert (find-start p 1) natural?)]))
 
-(: max-dividing-power-naive : Z Z -> N)
+(: max-dividing-power-naive : Integer Integer -> Natural)
 (define (max-dividing-power-naive p n)
   ; sames as max-dividing-power but using naive algorithm
-  (: loop : Z Z -> Z)
+  (: loop : Integer Integer -> Integer)
   (define (loop p-to-e e)
     (if (divides? p-to-e n)
         (loop (* p p-to-e) (+ e 1))
@@ -110,15 +110,15 @@
 
 ; Example : (solve-chinese '(2 3 2) '(3 5 7)) = 23
 
-(: solve-chinese : Zs (Listof Z) -> N)
+(: solve-chinese : (Listof Integer) (Listof Integer) -> Natural)
 (define (solve-chinese as ns)
   (unless (andmap positive? ns)
     (raise-argument-error 'solve-chinese "(Listof Positive-Integer)" 1 as ns))
   ; the ns should be coprime
   (let* ([n  (apply * ns)]
-         [cs (map (λ: ([ni : Z]) (quotient n ni)) ns)]
+         [cs (map (λ: ([ni : Integer]) (quotient n ni)) ns)]
          [ds (map modular-inverse cs ns)]
-         [es (cast ds integers?)])
+         [es (cast ds (make-predicate (Listof Integer)))])
     (cast (modulo (apply + (map * as cs es)) n) natural?)))
 
 ;;;
@@ -137,7 +137,7 @@
 ;   'composite            (with at least probability 1/2)  if n is a composite non-Carmichael number
 ;   a proper divisor of n (with at least probability 1/2)  if n is a Carmichael number
 ; [MCA, p.509 - Algorithm 18.5]
-(: prime-strong-pseudo-single? : Integer -> (U 'probably-prime 'composite N))
+(: prime-strong-pseudo-single? : Integer -> (U 'probably-prime 'composite Natural))
 (define (prime-strong-pseudo-single? n)
   (cond
     [(n . <= . 0)  (raise-argument-error 'prime-strong-pseudo-single? "Positive-Integer" n)]
@@ -170,19 +170,19 @@
     [(= n 1)  'composite]
     [else  'probably-prime]))
 
-(define-type Strong-Test-Result         (U 'very-probably-prime 'composite N))
+(define-type Strong-Test-Result         (U 'very-probably-prime 'composite Natural))
 
-(: prime-strong-pseudo/explanation : N -> Strong-Test-Result)
+(: prime-strong-pseudo/explanation : Natural -> Strong-Test-Result)
 (define (prime-strong-pseudo/explanation n)
   ; run the strong test several times to improve probability
-  (: loop : Z (U Strong-Test-Result 'probably-prime) -> Strong-Test-Result)
+  (: loop : Integer (U Strong-Test-Result 'probably-prime) -> Strong-Test-Result)
   (define (loop trials result)
     (cond [(= trials 0)                 'very-probably-prime]
           [(eq? result 'probably-prime) (loop (sub1 trials) (prime-strong-pseudo-single? n))]
           [else                         result]))
   (loop prime-strong-pseudo-trials (prime-strong-pseudo-single? n)))
 
-(: prime-strong-pseudo? : N -> Boolean)
+(: prime-strong-pseudo? : Natural -> Boolean)
 (define (prime-strong-pseudo? n)
   (let ([explanation (prime-strong-pseudo/explanation n)])
     (or (eq? explanation 'very-probably-prime)
@@ -209,7 +209,8 @@
             (prime-strong-pseudo? n))))))
 
 
-(: next-prime : (case-> (N -> N) (Z -> Z)) )
+(: next-prime : (case-> (Natural -> Natural)
+                        (Integer -> Integer)))
 (define (next-prime n)
   (cond
     [(negative? n) (- (prev-prime (abs n)))]
@@ -225,16 +226,16 @@
                      n+2
                      (next-prime n+2)))]))
 
-(: untyped-next-prime : Z -> Z)
+(: untyped-next-prime : Integer -> Integer)
 (define (untyped-next-prime z)
   (next-prime z))
 
-(: untyped-prev-prime : Z -> Z)
+(: untyped-prev-prime : Integer -> Integer)
 (define (untyped-prev-prime z)
   (prev-prime z))
 
 
-(: prev-prime : Z -> Z)
+(: prev-prime : Integer -> Integer)
 (define (prev-prime n)
   (cond
     [(negative? n) (- (next-prime (abs n)))]
@@ -250,12 +251,12 @@
                      (prev-prime n-2)))]))
 
 
-(: next-primes : Z Z -> Zs)
+(: next-primes : Integer Integer -> (Listof Integer))
 (define (next-primes m primes-wanted)
   (cond
     [(primes-wanted . < . 0)  (raise-argument-error 'next-primes "Natural" 1 m primes-wanted)]
     [else
-     (: loop : Z Z -> Zs)
+     (: loop : Integer Integer -> (Listof Integer))
      (define (loop n primes-wanted)
        (if (= primes-wanted 0)
            '()
@@ -265,12 +266,12 @@
                  '()))))
      (loop m primes-wanted)]))
 
-(: prev-primes : Z Z -> Zs)
+(: prev-primes : Integer Integer -> (Listof Integer))
 (define (prev-primes m primes-wanted)
   (cond
     [(primes-wanted . < . 0)  (raise-argument-error 'prev-primes "Natural" 1 m primes-wanted)]
     [else
-     (: loop : Z Z -> Zs)
+     (: loop : Integer Integer -> (Listof Integer))
      (define (loop n primes-wanted)
        (if (= primes-wanted 0)
            '()
@@ -281,14 +282,14 @@
      (loop m primes-wanted)]))
 
 
-(: nth-prime : Z -> Prime)
+(: nth-prime : Integer -> Natural)
 (define (nth-prime n)
   (cond [(n . < . 0)  (raise-argument-error 'nth-prime "Natural" n)]
         [else
-         (for/fold: ([p : Prime  2]) ([m (in-range n)])
+         (for/fold: ([p : Natural  2]) ([m (in-range n)])
            (next-prime p))]))
 
-(: random-prime : Z -> Prime)
+(: random-prime : Integer -> Natural)
 (define (random-prime n)
   (when (<= n 2)
     (raise-argument-error 'random-prime "Natural > 2" n))
@@ -301,25 +302,25 @@
 ;;; FACTORIZATION
 ;;;
 
-(: factorize : N -> (Listof (List N N)))
+(: factorize : Natural -> (Listof (List Natural Natural)))
 (define (factorize n)
   (if (< n *SMALL-PRIME-LIMIT*)   ; NOTE: Do measurement of best cut
       (factorize-small n)
       (factorize-large n)))
 
-(: defactorize : (Listof (List N N)) -> N)
+(: defactorize : (Listof (List Natural Natural)) -> Natural)
 (define (defactorize bes)
   (cond [(empty? bes) 1]
         [else (define be (first bes))
               (* (expt (first be) (second be))
                  (defactorize (rest bes)))]))
 
-(: factorize-small : N -> (Listof (List N N)))
+(: factorize-small : Natural -> (Listof (List Natural Natural)))
 (define (factorize-small n)
   ; fast for small n, but works correctly for large n too
   (small-prime-factors-over n 2))
 
-(: small-prime-factors-over : N Prime -> (Listof (List N N)))
+(: small-prime-factors-over : Natural Natural -> (Listof (List Natural Natural)))
 ; Factor a number n without prime factors below the prime p.
 (define (small-prime-factors-over n p) ; p prime
   (cond
@@ -338,7 +339,7 @@
 ;;; ALGORITHM 19.8  Pollard's rho method
 ; INPUT   n>=3 neither a prime nor a perfect power
 ; OUTPUT  Either a proper divisor of n or #f
-(: pollard : N -> (U N False))
+(: pollard : Natural -> (U Natural False))
 (define (pollard n)
   (let ([x0 (random-natural n)])
     (do ([xi x0 (remainder (+ (* xi xi) 1) n)]
@@ -360,7 +361,7 @@
         [(even? n)      `((2 1) ,@(pollard-factorize (quotient n 2)))]
         [(divides? 3 n) `((3 1) ,@(pollard-factorize (quotient n 3)))]
         [(simple-perfect-power n)
-         => (λ: ([base-and-exp : (List N N)]) 
+         => (λ: ([base-and-exp : (List Natural Natural)]) 
               (cond
                 [(prime? (car base-and-exp)) (list base-and-exp)]
                 [else (map (λ: ([b-and-e : (List Natural Natural)])
@@ -374,19 +375,20 @@
                        (pollard-factorize (quotient n divisor)))
                (loop (pollard n))))])))
 
-(: factorize-large : N -> (Listof (List N N)))
+(: factorize-large : Natural -> (Listof (List Natural Natural)))
 (define (factorize-large n)
   (combine-same-base
    (sort (pollard-factorize n) base-and-exponent<?)))
 
-(: base-and-exponent<? : (U N (List N N)) (U N (List N N)) -> Boolean)
+(: base-and-exponent<? ((U Natural (List Natural Natural)) (U Natural (List Natural Natural))
+                                                           -> Boolean))
 (define (base-and-exponent<? x y)
   (let ([id-or-first 
          (λ: ([x : (U Integer (List Integer Integer))])
            (if (number? x) x (first x)))])
     (<= (id-or-first x) (id-or-first y))))
 
-(: combine-same-base : (Listof (List N N)) -> (Listof (List N N)))
+(: combine-same-base : (Listof (List Natural Natural)) -> (Listof (List Natural Natural)))
 (define (combine-same-base list-of-base-and-exponents)
   ; list-of-base-and-exponents must be sorted
   (let ([l list-of-base-and-exponents])
@@ -408,7 +410,7 @@
 
 ; find-tail pred clist -> pair or false
 ; Return the first pair of clist whose car satisfies pred. If no pair does, return false.
-(: find-tail : (Z -> Boolean) Zs -> (U False Zs))
+(: find-tail : (Integer -> Boolean) (Listof Integer) -> (U False (Listof Integer)))
 (define (find-tail pred xs)
   (cond [(empty? xs) #f]
         [(pred (car xs)) xs]
@@ -419,14 +421,14 @@
 ;;; Powers
 ;;;
 
-(: as-power : N+ -> (Values N N))
+(: as-power : Exact-Positive-Integer -> (Values Natural Natural))
 ;   Write a>0 as b^r with r maximal. Return b and r.
 (define (as-power a)    
-  (let ([r (apply gcd ((inst map N (List N N)) second (factorize a)))])
+  (let ([r (apply gcd ((inst map Natural (List Natural Natural)) second (factorize a)))])
     (values (integer-root a r) r)))
 
 
-(: prime-power : N -> (U (List Prime N) False))
+(: prime-power : Natural -> (U (List Natural Natural) False))
 ;   if n is a prime power, return list of prime and exponent in question,
 ;   otherwise return #f
 (define (prime-power n)
@@ -435,24 +437,24 @@
         (first (prime-divisors/exponents n))
         #f)))
 
-(: prime-power? : N -> Boolean)
+(: prime-power? : Natural -> Boolean)
 ;   Is n of the form p^m, with p is prime?
 (define (prime-power? n)
   (and (prime-power n) #t))
 
-(: odd-prime-power? : N -> Boolean)
+(: odd-prime-power? : Natural -> Boolean)
 (define (odd-prime-power? n)
   (let ([p/e (prime-power n)])
     (and p/e
          (odd? (first p/e)))))
 
-(: perfect-power? : N -> Boolean)
+(: perfect-power? : Natural -> Boolean)
 (define (perfect-power? a)
   (and (not (zero? a))
        (let-values ([(base n) (as-power a)])
          (and (> n 1) (> a 1)))))
 
-(: simple-perfect-power : N -> (U (List N N) False))
+(: simple-perfect-power : Natural -> (U (List Natural Natural) False))
 (define (simple-perfect-power a)
   ; simple-perfect-power is used by pollard-fatorize
   (and (not (zero? a))
@@ -461,7 +463,7 @@
              (list base n)
              #f))))
 
-(: perfect-power : N -> (U (List N N) False))
+(: perfect-power : Natural -> (U (List Natural Natural) False))
 ;   if a = b^n with b>1 and n>1
 (define (perfect-power a)
   (and (not (zero? a))
@@ -470,50 +472,50 @@
              (list base n)
              #f))))
 
-(: perfect-square : N -> (U N False))
+(: perfect-square : Natural -> (U Natural False))
 (define (perfect-square n)
   (let ([sqrt-n (integer-sqrt n)])
     (if (= (* sqrt-n sqrt-n) n)
         sqrt-n
         #f)))
 
-(: powers-of : N N -> (Listof N))
+(: powers-of : Natural Natural -> (Listof Natural))
 ;   returns a list of numbers: a^0, ..., a^n
 (define (powers-of a n)
-  (let: loop : (Listof N)
-    ([i   : N 0] 
-     [a^i : N 1])
+  (let: loop : (Listof Natural)
+    ([i   : Natural 0] 
+     [a^i : Natural 1])
     (if (<= i n)
         (cons a^i (loop (+ i 1) (* a^i a)))
         '())))
 
 (define prime-divisors/exponents factorize)
 
-(: prime-divisors : N -> (Listof Prime))
+(: prime-divisors : Natural -> (Listof Natural))
 ;   return list of primes in a factorization of n
 (define (prime-divisors n)
-  (map (inst car N (Listof N))
+  (map (inst car Natural (Listof Natural))
        (prime-divisors/exponents n)))
 
-(: prime-exponents : N -> (Listof N))
+(: prime-exponents : Natural -> (Listof Natural))
 ;   return list of exponents in a factorization of n
 (define (prime-exponents n)
-  (map (inst cadr N N (Listof N)) 
+  (map (inst cadr Natural Natural (Listof Natural)) 
        (prime-divisors/exponents n)))
 
-(: prime-omega : N -> N)
+(: prime-omega : Natural -> Natural)
 ; http://reference.wolfram.com/mathematica/ref/PrimeOmega.html
 (define (prime-omega n)
   (for/fold: ([sum : Natural 0]) ([e (in-list (prime-exponents n))])
     (+ sum e)))
 
 
-(: integer-root/remainder : N N -> (Values N N))
+(: integer-root/remainder : Natural Natural -> (Values Natural Natural))
 (define (integer-root/remainder a n)
   (let ([i (integer-root a n)])
     (values i (assert (- a (expt i n)) natural?))))
 
-(: integer-root : N N -> N)
+(: integer-root : Natural Natural -> Natural)
 (define (integer-root x y)
     ; y'th root of x
     (cond 
@@ -540,7 +542,7 @@
                         (let* ([top-bits          (arithmetic-shift x (- (* length/y/2 y)))]
                                [nth-root-top-bits (integer-root top-bits y)])
                           (arithmetic-shift (+ nth-root-top-bits 1) length/y/2))])
-                   (let: loop : Z ([g : Z init-g])
+                   (let: loop : Integer ([g : Integer init-g])
                      (let* ([a (expt g (assert (- y 1) natural?))]
                             [b (* a y)]
                             [c (* a (- y 1))]
@@ -560,14 +562,14 @@
         natural?)]))
 
 
-(: simple-as-power : N+ -> (Values N N))
+(: simple-as-power : Exact-Positive-Integer -> (Values Natural Natural))
 ;    For a>0 write it as a = b^r where r maximal
 ;    return (values b r)
 (define (simple-as-power a)
   ; (displayln (list 'simple-as-power a))
   ; Note: The simple version is used by pollard-factorize
-  (let: loop : (Values N N)
-    ([n : N (integer-length a)])
+  (let: loop : (Values Natural Natural)
+    ([n : Natural (integer-length a)])
     (let-values ([(root rem) (integer-root/remainder a (add1 n))])
       (if (zero? rem)
           (values root (assert (add1 n) natural?))
@@ -575,20 +577,20 @@
               (loop (sub1 n))
               (error 'simple-as-power "internal error"))))))
 
-(: prime-power? : N -> Boolean)
+(: prime-power? : Natural -> Boolean)
 
 ;;;
 ;;; DIVISORS
 ;;;
 
-(: divisors : Z -> (Listof N))
+(: divisors : Integer -> (Listof Natural))
 ;   return the positive divisorts of n
 (define (divisors n)
   (cond [(zero? n) '()]
         [else (define n+ (if (positive? n) n (- n)))
               (sort (factorization->divisors (factorize n+)) <)]))
 
-(: factorization->divisors : (Listof (List N N)) -> (Listof N))
+(: factorization->divisors : (Listof (List Natural Natural)) -> (Listof Natural))
 (define (factorization->divisors f)
   (cond
     [(null? f) '(1)]
@@ -598,8 +600,8 @@
             ; f = p^n * g
             (let ([divisors-of-g (factorization->divisors g)])
               (apply append
-                     ((inst map (Listof N) N)
-                      (λ: ([p^i : N]) (map (λ: ([d : N]) (* p^i d)) divisors-of-g))
+                     ((inst map (Listof Natural) Natural)
+                      (λ: ([p^i : Natural]) (map (λ: ([d : Natural]) (* p^i d)) divisors-of-g))
                       (powers-of p n)))))]))
 
 ;;;
@@ -622,11 +624,11 @@
 ;   phi(n) = n * product (1 - ---- )
 ;                  i=1         pi
 
-(: totient : N -> N)
+(: totient : Natural -> Natural)
 (define (totient n)
   (let ((ps (prime-divisors n)))
     (assert (* (quotient n (apply * ps))
-               (apply * (map (λ: ([p : N]) (sub1 p)) ps)))
+               (apply * (map (λ: ([p : Natural]) (sub1 p)) ps)))
             natural?)))
 
 (: every : (All (A) (A -> Boolean) (Listof A) -> Boolean))
@@ -640,47 +642,47 @@
 ;   mu(n) =  1  if n is a product of an even number of primes
 ;         = -1  if n is a product of an odd number of primes
 ;         =  0  if n has a multiple prime factor
-(: moebius-mu : N -> (U -1 0 1))
+(: moebius-mu : Natural -> (U -1 0 1))
 (define (moebius-mu n)
-  (: one? : Z -> Boolean)
+  (: one? : Integer -> Boolean)
   (define (one? x) (= x 1))
   (define f         (factorize n))
-  (define exponents ((inst map N (List N N)) second f))
+  (define exponents ((inst map Natural (List Natural Natural)) second f))
   (cond 
     [(every one? exponents)
-     (define primes ((inst map N (List N N)) first f))
+     (define primes ((inst map Natural (List Natural Natural)) first f))
      (if (even? (length primes))
          1 -1)]
     [else 0]))
 
 
-(: divisor-sum : (case-> (N -> N) (N N -> N)))                   
+(: divisor-sum : (case-> (Natural -> Natural) (Natural Natural -> Natural)))                   
 (define divisor-sum 
   ; returns the sum of the kth power of all divisors of n
   (let ()
     (case-lambda 
       [(n)   (divisor-sum n 1)]
       [(n k) (let* ([f  (factorize n)]
-                    [ps ((inst map N (List N N)) first f)]
-                    [es ((inst map N (List N N)) second f)])
-               (: divisor-sum0 : Any N -> N)
+                    [ps ((inst map Natural (List Natural Natural)) first f)]
+                    [es ((inst map Natural (List Natural Natural)) second f)])
+               (: divisor-sum0 : Any Natural -> Natural)
                (define (divisor-sum0 p e) (+ e 1))
-               (: divisor-sum1 : N N -> N)
+               (: divisor-sum1 : Natural Natural -> Natural)
                (define (divisor-sum1 p e)
-                 (let: loop : N 
-                   ([sum    : N 1]
-                    [n      : N 0]
-                    [p-to-n : N 1])
+                 (let: loop : Natural 
+                   ([sum    : Natural 1]
+                    [n      : Natural 0]
+                    [p-to-n : Natural 1])
                    (cond [(= n e) sum]
                          [else (let ([t (* p p-to-n)])
                                  (loop (+ t sum) (+ n 1) t))])))
-               (: divisor-sumk : N N -> N)
+               (: divisor-sumk : Natural Natural -> Natural)
                (define (divisor-sumk p e)
                  (let ([p-to-k (expt p k)])
-                   (let: loop : N
-                     ([sum     : N 1]
-                      [n       : N 0]
-                      [p-to-kn : N 1])
+                   (let: loop : Natural
+                     ([sum     : Natural 1]
+                      [n       : Natural 0]
+                      [p-to-kn : Natural 1])
                      (cond [(= n e) sum]
                            [else (let ([t (* p-to-k p-to-kn)])
                                    (loop (+ t sum) (+ n 1) t))]))))
@@ -691,7 +693,7 @@
                               ps es))
                 natural?))])))
 
-(: mangoldt-lambda : Z -> Real)                   
+(: mangoldt-lambda : Integer -> Real)                   
 (define (mangoldt-lambda n)
   (cond 
     [(<= n 0) (raise-argument-error 'mangoldt-lambda "Natural" n)]

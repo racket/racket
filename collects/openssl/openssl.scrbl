@@ -1,8 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual
-          scribble/bnf
           (for-label openssl
-                     scheme
+                     racket
                      openssl/sha1))
 
 @title{OpenSSL: Secure Communication}
@@ -15,20 +14,26 @@ identically to the standard TCP subsystem in Racket, plus a
 generic @racket[ports->ssl-ports] interface.
 
 To use this library, you will need OpenSSL installed on your machine,
-but
+but on many platforms the necessary libraries are included with the OS
+or with the Racket distribution. In particular:
 
 @itemize[
-  @item{for Windows, the Racket distribution for Windows includes
-  the necessary DLLs.}
 
-  @item{for Mac OS X, version 10.2 and later provides the necessary
-  OpenSSL libraries.}
+@item{For Windows, @racketmodname[openssl] depends on
+@filepath{libeay32.dll} and @filepath{ssleay32.dll}, which are
+included in the Racket distribution for Windows.}
 
-  @item{for Unix, @filepath{libssl.so} and @filepath{libcrypto.so} are
-  likely to be installed on your machine, already.}
+@item{For Mac OS X, @racketmodname[openssl] depends on
+@filepath{libssl.dylib} and @filepath{libcrypto.dylib}, which are
+provided by Mac OS X 10.2 and later.}
+
+@item{For Unix, @racketmodname[openssl] depends on
+@filepath{libssl.so} and @filepath{libcrypto.so}, which must be
+installed in a standard library location or in a directory listed by
+@envvar{LD_LIBRARY_PATH}. These libraries are included in many OS
+distributions.}
 
 ]
-
 
 @defthing[ssl-available? boolean?]{
 
@@ -37,48 +42,30 @@ successfully loaded. Calling @racket[ssl-connect], @|etc| when this
 value is @racket[#f] (library not loaded) will raise an exception.}
 
 
-@defthing[ssl-load-fail-reason (or/c false/c string?)]{
+@defthing[ssl-load-fail-reason (or/c #f string?)]{
 
 Either @racket[#f] (when @racket[ssl-available?] is @racket[#t]) or an
 error string (when @racket[ssl-available?] is @racket[#f]).}
 
 @; ----------------------------------------------------------------------
 
-@section{Using SSL Securely}
-
-SSL and TLS are client-server cryptographic protocols that enable
-secure communication with remote hosts (called ``peers''). But SSL
-must be properly configured in order to be secure.
-
-The security of client programs using SSL generally depends
-on the authentication of the server credentials, which requires proper
-initialization of this library's client contexts. To use SSL securely,
-a client program must at a minimum take the following steps:
-
-@itemlist[
-
-@item{create an SSL client context using @racket[ssl-make-client-context]}
-
-@item{tell the context what certificate authorities to trust using
-@racket[ssl-load-verify-root-certificates!]}
-
-@item{turn on certificate verification using @racket[ssl-set-verify!]
-(or check each connection individually using @racket[ssl-peer-verified?])}
-
-@item{turn on hostname verification using
-@racket[ssl-set-verify-hostname!] (or check each connection
-individually using @racket[ssl-peer-check-hostname])}
-]
-
-
-@; ----------------------------------------------------------------------
-
 @section{TCP-like Client Procedures}
 
-@defproc[(ssl-connect (hostname string?)
-                      (port-no (integer-in 1 65535))
-                      (client-protocol
-                       (or/c ssl-client-context? symbol?) 'sslv2-or-v3))
+Use @racket[ssl-connect] or @racket[ssl-connect/enable-break] to
+create an SSL connection over TCP. To create a secure connection,
+supply the result of @racket[ssl-secure-client-context] or create a
+client context with @racket[ssl-make-client-context] and configure it
+using the functions described in @secref["cert-procs"].
+
+@defproc[(ssl-connect [hostname string?]
+                      [port-no (integer-in 1 65535)]
+                      [client-protocol
+                       (or/c ssl-client-context? 
+                             'sslv2-or-v3
+                             'sslv2
+                             'sslv3
+                             'tls)
+                       'sslv2-or-v3])
          (values input-port? output-port?)]{
 
 Connect to the host given by @racket[hostname], on the port given by
@@ -119,17 +106,49 @@ whether the other end is supposed to be sending or reading data.
 }
 
 @defproc[(ssl-connect/enable-break
-          (hostname string?)
-	  (port-no (integer-in 1 65535))
-	  (client-protocol
-	   (or/c ssl-client-context? symbol?) 'sslv2-or-v3))
+          [hostname string?]
+	  [port-no (integer-in 1 65535)]
+	  [client-protocol
+	   (or/c ssl-client-context? 'sslv2-or-v3 'sslv2 'sslv3 'tls)
+           'sslv2-or-v3])
          (values input-port? output-port?)]{
 
 Like @racket[ssl-connect], but breaking is enabled while trying to
 connect.}
 
 
-@defproc[(ssl-make-client-context (protocol symbol? 'sslv2-or-v3))
+@defproc[(ssl-secure-client-context)
+         ssl-client-context?]{
+
+Returns a client context (using the @racket['tls] protocol) that
+verifies certificates using the default verification sources from
+@racket[(ssl-default-verify-sources)], verifies hostnames, and avoids
+using weak ciphers. The result is essentially equivalent to the
+following:
+
+@racketblock[
+(let ([ctx (ssl-make-client-context 'tls)])
+  (code:comment "Load default verification sources (root certificates)")
+  (ssl-load-default-verify-sources! ctx)
+  (code:comment "Require certificate verification")
+  (ssl-set-verify! ctx #t)
+  (code:comment "Require hostname verification")
+  (ssl-set-verify-hostname! ctx #t)
+  (code:comment "No weak cipher suites")
+  (ssl-set-ciphers! ctx "DEFAULT:!aNULL:!eNULL:!LOW:!EXPORT:!SSLv2")
+  (code:comment "Seal context so further changes cannot weaken it")
+  (ssl-seal-context! ctx)
+  ctx)
+]
+
+The context is cached, so different calls to
+@racket[ssl-secure-client-context] return the same context unless
+@racket[(ssl-default-verify-sources)] has changed.
+}
+
+
+@defproc[(ssl-make-client-context
+          [protocol (or/c 'sslv2-or-v3 'sslv2 'sslv3 'tls) 'sslv2-or-v3])
          ssl-client-context?]{
 
 Creates a context to be supplied to @racket[ssl-connect]. The context
@@ -151,25 +170,10 @@ The @racket[protocol] must be one of the following:
 Note that SSL protocol version 2 is deprecated on some platforms and may not be
 present in your system libraries. The use of SSLv2 may also compromise security; 
 thus, using SSLv3 is recommended.
-
-By default, the context returned by @racket[ssl-make-client-context] does not
-request verification of a server's certificate. Use @racket[ssl-set-verify!]
-to enable such verification.}
-
-
-@defproc[(ssl-secure-client-context)
-         ssl-client-context?]{
-
-Returns a client context (using @racket['tls]) that verifies
-certificates using the root certificates located in
-@racket[(ssl-default-root-certificate-locations)], verifies hostnames,
-and avoids using weak ciphers. The context is sealed to prevent
-further modification, and the context is cached, so different calls to
-@racket[ssl-secure-client-context] return the same context unless
-@racket[(ssl-default-root-certificate-locations)] has changed.
 }
 
-@defproc[(ssl-client-context? (v any/c)) boolean?]{
+
+@defproc[(ssl-client-context? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a value produced by
 @racket[ssl-make-client-context], @racket[#f] otherwise.}
@@ -180,12 +184,13 @@ Returns @racket[#t] if @racket[v] is a value produced by
 @section{TCP-like Server Procedures}
 
 @defproc[(ssl-listen
-	  (port-no (integer-in 1 65535))
-	  [queue-k exact-nonnegative-integer?]
+	  [port-no (integer-in 1 65535)]
+	  [queue-k exact-nonnegative-integer? 5]
 	  [reuse? any/c #f]
-	  [hostname-or-#f (or/c string? false/c) #f]
+	  [hostname-or-#f (or/c string? #f) #f]
 	  [server-protocol
-	   (or/c ssl-server-context? symbol?) 'sslv2-or-v3])
+	   (or/c ssl-server-context? 'sslv2-or-v3 'sslv2 'sslv3 'tls)
+           'sslv2-or-v3])
 	 ssl-listener?]{
 
 Like @racket[tcp-listen], but the result is an SSL listener. The extra optional
@@ -207,15 +212,15 @@ further communication is needed to establish the connection.}
 
 
 @deftogether[(
-  @defproc[(ssl-close (listener ssl-listener?)) void?]
-  @defproc[(ssl-listener? (v any/c)) boolean?])]{
+  @defproc[(ssl-close [listener ssl-listener?]) void?]
+  @defproc[(ssl-listener? [v any/c]) boolean?])]{
 
 Analogous to @racket[tcp-close] and @racket[tcp-listener?].}
 
 @deftogether[(
-  @defproc[(ssl-accept (listener ssl-listener?))
+  @defproc[(ssl-accept [listener ssl-listener?])
            (values input-port? output-port?)]
-  @defproc[(ssl-accept/enable-break (listener ssl-listener?))
+  @defproc[(ssl-accept/enable-break [listener ssl-listener?])
            (values input-port? output-port?)])]{
 
 Analogous to @racket[tcp-accept].
@@ -235,7 +240,9 @@ The @racket[ssl-accept/enable-break] procedure is analogous to
 Analogous to @racket[tcp-abandon-port].}
 
 
-@defproc[(ssl-addresses [p (or/c ssl-port? ssl-listener?)][port-numbers? any/c #f]) void?]{
+@defproc[(ssl-addresses [p (or/c ssl-port? ssl-listener?)]
+                        [port-numbers? any/c #f])
+         void?]{
 
 Analogous to @racket[tcp-addresses].}
 
@@ -248,12 +255,12 @@ Returns @racket[#t] of @racket[v] is an SSL port produced by
 @racket[ports->ssl-ports].}
 
 
-@defproc[(ssl-make-server-context (protocol symbol?))
+@defproc[(ssl-make-server-context [protocol (or/c 'sslv2-or-v3 'sslv2 'sslv3 'tls)])
          ssl-server-context?]{
 
 Like @racket[ssl-make-client-context], but creates a server context.}
 
-@defproc[(ssl-server-context? (v any/c)) boolean?]{
+@defproc[(ssl-server-context? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a value produced by
 @racket[ssl-make-server-context], @racket[#f] otherwise.}
@@ -264,15 +271,16 @@ Returns @racket[#t] if @racket[v] is a value produced by
 @section{SSL-wrapper Interface}
 
 @defproc[(ports->ssl-ports
-           (input-port input-port?)
-	   (output-port output-port?)
+           [input-port input-port?]
+	   [output-port output-port?]
            [#:mode mode symbol? 'accept]
-	   [#:context context (or/c ssl-client-context? ssl-server-context?)
+	   [#:context context
+                      (or/c ssl-client-context? ssl-server-context?)
                       ((if (eq? mode 'accept)
                            ssl-make-server-context 
                            ssl-make-client-context)
                        protocol)]
-	   [#:encrypt protocol symbol? 'sslv2-or-v3]
+	   [#:encrypt protocol (or/c 'sslv2-or-v3 'sslv2 'sslv3 'tls) 'sslv2-or-v3]
 	   [#:close-original? close-original? boolean? #f]
 	   [#:shutdown-on-close? shutdown-on-close? boolean? #f]
 	   [#:error/ssl error procedure? error]
@@ -332,106 +340,101 @@ against @racket[hostname].
 
 @section[#:tag "cert-procs"]{Context Procedures}
 
-@defproc[(ssl-load-certificate-chain!
-           (context-or-listener (or/c ssl-client-context? ssl-server-context?
-				      ssl-listener?))
-	   (pathname path-string?))
+@defproc[(ssl-load-verify-source!
+	    [context (or/c ssl-client-context? ssl-server-context?)]
+            [src (or/c path-string?
+                       (list/c 'directory path-string?)
+                       (list/c 'win32-store string?)
+                       (list/c 'macosx-keychain path-string?))]
+            [#:try? try? any/c #f])
          void?]{
 
-Loads a PEM-format certification chain file for connections to made
-with the given context (created by @racket[ssl-make-client-context] or
-@racket[ssl-make-server-context]) or listener (created by
-@racket[ssl-listen]).
+Loads verification sources from @racket[src] into
+@racket[context]. Currently, only certificates are loaded; the
+certificates are used to verify the certificates of a connection
+peer. Call this procedure multiple times to load multiple sets of
+trusted certificates.
 
-This chain is used to identify the client or server when it connects
-or accepts connections. Loading a chain overwrites the old chain. Also
-call @racket[ssl-load-private-key!] to load the certificate's
-corresponding key.
+The following kinds of verification sources are supported:
 
-You can use the file @filepath{test.pem} of the @filepath{openssl}
-collection for testing purposes. Since @filepath{test.pem} is public,
-such a test configuration obviously provides no security.}
+@itemlist[
 
-@defproc[(ssl-load-private-key!
-	  (context-or-listener (or/c ssl-client-context? ssl-server-context?
-				     ssl-listener?))
-	  (pathname path-string?)
-	  [rsa? boolean? #t]
-	  [asn1? boolean? #f])
-         void?]{
+@item{If @racket[src] is a path or string, it is treated as a PEM file
+containing root certificates. The file is loaded immediately.}
 
-Loads the first private key from @racket[pathname] for the given
-context or listener. The key goes with the certificate that identifies
-the client or server.
+@item{If @racket[src] is @racket[(list 'directory _dir)], then
+@racket[_dir] should contain PEM files with hashed symbolic links (see
+the @tt{openssl c_rehash} utility). The directory contents are not
+loaded immediately; rather, they are searched only when a certificate
+needs verification.}
 
-If @racket[rsa?] is @racket[#t] (the default), the first RSA key is
-read (i.e., non-RSA keys are skipped). If @racket[asn1?] is
-@racket[#t], the file is parsed as ASN1 format instead of PEM.
+@item{If @racket[src] is @racket[(list 'win32-store _store)], then the
+certificates from the store named @racket[_store] are loaded
+immediately. Only supported on Windows.}
 
-You can use the file @filepath{test.pem} of the @filepath{openssl}
-collection for testing purposes. Since @filepath{test.pem} is public,
-such a test configuration obviously provides no security.}
+@item{If @racket[src] is @racket[(list 'macosx-keychain _path)], then
+the certificates from the keychain stored at @racket[_path] are loaded
+immediately. Only supported on Mac OS X.}
 
-@defproc[(ssl-load-verify-root-certificates!
-	  (context-or-listener (or/c ssl-client-context? ssl-server-context?
-				      ssl-listener?))
-	  (pathname path-string?))
-         void?]{
+]
 
-Loads a PEM-format file containing trusted certificates that are used
-to verify the certificates of a connection peer. Call this procedure
-multiple times to load multiple sets of trusted certificates.
-
-If @racket[pathname] is a file, its contents are immediately
-loaded. If @racket[pathname] is a directory, it should contain hashed
-certificates names (see the @tt{openssl c_rehash} utility); the
-directory is searched only when a certificate needs verification.
+If @racket[try?] is @racket[#f] and loading @racket[src] fails (for
+example, because the file or directory does not exist), then an
+exception is raised. If @racket[try?] is a true value, then a load
+failure is ignored.
 
 You can use the file @filepath{test.pem} of the @filepath{openssl}
 collection for testing purposes. Since @filepath{test.pem} is public,
 such a test configuration obviously provides no security.
 }
 
-@defparam[ssl-default-root-certificate-locations paths
-          (listof path-string?)]{
+@defparam[ssl-default-verify-sources srcs
+          (let ([source/c (or/c path-string?
+                                (list/c 'directory path-string?)
+                                (list/c 'win32-store string?)
+                                (list/c 'macosx-keychain path-string?))])
+            (listof source/c))]{
 
-Holds a list of paths of root certificate authority certificates, used
-by @racket[ssl-load-default-verify-root-certificates!]. The list of
-paths may refer to both files and directories, and nonexistent paths
-are allowed.
+Holds a list of verification sources, used by
+@racket[ssl-load-default-verify-sources!]. The default sources depend
+on the platform:
 
-The initial values are determined by the @tt{SSL_CERT_FILE} and
-@tt{SSL_CERT_DIR} environment variables, if the variables are set, or
-the system-wide default locations otherwise.
+@itemlist[
+
+@item{On Linux, the default sources are determined by the
+@tt{SSL_CERT_FILE} and @tt{SSL_CERT_DIR} environment variables, if the
+variables are set, or the system-wide default locations otherwise.}
+
+@item{On Mac OS X, the default sources consist of the system keychain
+for root certificates: @racket['(macosx-keychain
+"/System/Library/Keychains/SystemRootCertificates.keychain")].}
+
+@item{On Windows, the default sources consist of the system
+certificate store for root certificates: @racket['(win32-store
+"ROOT")].}
+
+]
 }
 
-@defproc[(ssl-load-default-verify-root-certificates!
+@defproc[(ssl-load-default-verify-sources!
            [context (or/c ssl-client-context? ssl-server-context?)])
          void?]{
 
-Loads the default root certificates, as determined by the
-@racket[ssl-default-root-certificate-locations] parameter, into
-@racket[context]. Nonexistent paths are skipped.
+Loads the default verification sources, as determined by
+@racket[(ssl-default-verify-sources)], into @racket[context]. Load
+failures are ignored, since some default sources may refer to
+nonexistent paths.
 }
 
-@defproc[(ssl-load-suggested-certificate-authorities!
-	  (context-or-listener (or/c ssl-client-context? ssl-server-context?
-				     ssl-listener?))
-	  (pathname path-string?))
-          void?]{
+@defproc[(ssl-load-verify-root-certificates!
+            [context-or-listener (or/c ssl-client-conntext? ssl-server-context?
+                                       ssl-listener?)]
+            [pathname path-string?])
+         void?]{
 
-Loads a PEM-format file containing certificates that are used by a
-server. The certificate list is sent to a client when the server
-requests a certificate as an indication of which certificates the
-server trusts.
-
-Loading the suggested certificates does not imply trust, however; any
-certificate presented by the client will be checked using the trusted
-roots loaded by @racket[ssl-load-verify-root-certificates!].
-
-You can use the file @filepath{test.pem} of the @filepath{openssl}
-collection for testing purposes where the peer identifies itself using
-@filepath{test.pem}.}
+Deprecated; like @racket[ssl-load-verify-source!], but only supports
+loading certificate files in PEM format.
+}
 
 @defproc[(ssl-set-ciphers! [context (or/c ssl-client-context? ssl-server-context?)]
                            [cipher-spec string?])
@@ -452,14 +455,80 @@ context is sealed, passing it to functions such as
 @racket[ssl-set-verify!] and
 @racket[ssl-load-verify-root-certificates!] results in an error.}
 
+@defproc[(ssl-load-certificate-chain!
+           [context-or-listener (or/c ssl-client-context? ssl-server-context?
+				      ssl-listener?)]
+	   [pathname path-string?])
+         void?]{
+
+Loads a PEM-format certification chain file for connections to made
+with the given server context (created by
+@racket[ssl-make-server-context]) or listener (created by
+@racket[ssl-listen]). A certificate chain can also be loaded into a
+client context (created by @racket[ssl-make-client-context]) when
+connecting to a server requiring client credentials, but that
+situation is uncommon.
+
+This chain is used to identify the client or server when it connects
+or accepts connections. Loading a chain overwrites the old chain. Also
+call @racket[ssl-load-private-key!] to load the certificate's
+corresponding key.
+
+You can use the file @filepath{test.pem} of the @filepath{openssl}
+collection for testing purposes. Since @filepath{test.pem} is public,
+such a test configuration obviously provides no security.
+}
+
+@defproc[(ssl-load-private-key!
+	  [context-or-listener (or/c ssl-client-context? ssl-server-context?
+				     ssl-listener?)]
+	  [pathname path-string?]
+	  [rsa? boolean? #t]
+	  [asn1? boolean? #f])
+         void?]{
+
+Loads the first private key from @racket[pathname] for the given
+context or listener. The key goes with the certificate that identifies
+the client or server. Like @racket[ssl-load-certificate-chain!], this
+procedure is usually used with server contexts or listeners, seldom
+with client contexts.
+
+If @racket[rsa?] is @racket[#t] (the default), the first RSA key is
+read (i.e., non-RSA keys are skipped). If @racket[asn1?] is
+@racket[#t], the file is parsed as ASN1 format instead of PEM.
+
+You can use the file @filepath{test.pem} of the @filepath{openssl}
+collection for testing purposes. Since @filepath{test.pem} is public,
+such a test configuration obviously provides no security.
+}
+
+@defproc[(ssl-load-suggested-certificate-authorities!
+	  [context-or-listener (or/c ssl-client-context? ssl-server-context?
+				     ssl-listener?)]
+	  [pathname path-string?])
+          void?]{
+
+Loads a PEM-format file containing certificates that are used by a
+server. The certificate list is sent to a client when the server
+requests a certificate as an indication of which certificates the
+server trusts.
+
+Loading the suggested certificates does not imply trust, however; any
+certificate presented by the client will be checked using the trusted
+roots loaded by @racket[ssl-load-verify-root-certificates!].
+
+You can use the file @filepath{test.pem} of the @filepath{openssl}
+collection for testing purposes where the peer identifies itself using
+@filepath{test.pem}.}
+
 
 @; ----------------------------------------------------------------------
 @section[#:tag "peer-verif"]{Peer Verification}
 
 @defproc[(ssl-set-verify! [clp (or/c ssl-client-context? ssl-server-context?
-                                     ssl-listener?
-                                     ssl-port?)] 
-                          [on? any/c]) void?]{
+                                     ssl-listener? ssl-port?)] 
+                          [on? any/c])
+         void?]{
 
 Requires certificate verification on the peer SSL connection when
 @racket[on?] is @racket[#t]. If @racket[clp] is an SSL port, then the
@@ -469,8 +538,7 @@ context or listener, certification verification happens on each
 subsequent connection using the context or listener.
 
 Enabling verification also requires, at a minimum, designating trusted
-certificate authorities with
-@racket[ssl-load-verify-root-certificates!].
+certificate authorities with @racket[ssl-load-verify-source!].
 
 Verifying the certificate is not sufficient to prevent attacks by
 active adversaries, such as
@@ -480,9 +548,9 @@ attacks}.  See also @racket[ssl-set-verify-hostname!].
 
 
 @defproc[(ssl-try-verify! [clp (or/c ssl-client-context? ssl-server-context?
-                                     ssl-listener?
-                                     ssl-port?)] 
-                          [on? any/c]) void?]{
+                                     ssl-listener? ssl-port?)] 
+                          [on? any/c])
+         void?]{
 
 Like @racket[ssl-set-verify!], but when peer certificate verification fails,
 then connection continues to work. Use @racket[ssl-peer-verified?] to determine
@@ -581,22 +649,3 @@ until an end-of-file.}
 Converts the given byte string to a string representation, where each
 byte in @racket[bstr] is converted to its two-digit hexadecimal
 representation in the resulting string.}
-
-@; ----------------------------------------------------------------------
-
-@section{Implementation Notes}
-
-For Windows, @racketmodname[openssl] relies on @filepath{libeay32.dll}
-and @filepath{ssleay32.dll}, where the DLLs are located in the same
-place as @filepath{libmzsch@nonterm{vers}.dll} (where @nonterm{vers}
-is either @tt{xxxxxxx} or a mangling of Racket's version
-number). The DLLs are distributed as part of Racket.
-
-For Unix variants, @racketmodname[openssl] relies on
-@filepath{libcrypto.so} and @filepath{libssl.so}, which must be
-installed in a standard library location, or in a directory listed by
-@envvar{LD_LIBRARY_PATH}.
-
-For Mac OS X, @racketmodname[openssl] relies on
-@filepath{libssl.dylib} and @filepath{libcrypto.dylib}, which are part
-of the OS distribution for Mac OS X 10.2 and later.

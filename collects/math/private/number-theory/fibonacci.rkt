@@ -2,8 +2,8 @@
 
 (provide make-fibonacci
          fibonacci
-         make-fibonacci/mod
-         fibonacci/mod)
+         make-modular-fibonacci
+         modular-fibonacci)
 
 (: generator : Integer Integer Natural Natural Natural -> Integer)
 (define (generator a b p q count)
@@ -29,28 +29,30 @@
 
 (define fibonacci (make-fibonacci 0 1))
 
-(: generator/mod : Integer Integer Natural Natural Natural Positive-Integer -> Integer)
-(define (generator/mod a b p q count mod)
+(: modular-generator : Integer Integer Natural Natural Natural Positive-Integer -> Integer)
+(define (modular-generator a b p q count mod)
   (cond 
     [(zero? count) (modulo b mod)]
     [(even? count)
-     (generator/mod a b
-                    (modulo (+ (* p p) (* q q)) mod)
-                    (modulo (+ (* 2 p q) (* q q)) mod)
-                    (quotient count 2)
-                    mod)]
+     (modular-generator
+      a b
+      (modulo (+ (* p p) (* q q)) mod)
+      (modulo (+ (* 2 p q) (* q q)) mod)
+      (quotient count 2)
+      mod)]
     [else
-     (generator/mod (modulo (+ (* b q) (* a q) (* a p)) mod)
-                    (modulo (+ (* b p) (* a q)) mod)
-                    p
-                    q
-                    (- count 1)
-                    mod)]))
+     (modular-generator
+      (modulo (+ (* b q) (* a q) (* a p)) mod)
+      (modulo (+ (* b p) (* a q)) mod)
+      p
+      q
+      (- count 1)
+      mod)]))
 
-(: make-fibonacci/mod (Integer Integer -> (Integer Integer -> Integer)))
-(define ((make-fibonacci/mod a b) n mod)
-  (cond [(n . < . 0)  (raise-argument-error 'fibonacci "Natural" 0 n mod)]
-        [(mod . <= . 0)  (raise-argument-error 'fibonacci "Positive-Integer" 1 n mod)]
-        [else  (generator/mod b a 0 1 n mod)]))
+(: make-modular-fibonacci (Integer Integer -> (Integer Integer -> Integer)))
+(define ((make-modular-fibonacci a b) n mod)
+  (cond [(n . < . 0)  (raise-argument-error 'modular-fibonacci "Natural" 0 n mod)]
+        [(mod . <= . 0)  (raise-argument-error 'modular-fibonacci "Positive-Integer" 1 n mod)]
+        [else  (modular-generator b a 0 1 n mod)]))
 
-(define fibonacci/mod (make-fibonacci/mod 0 1))
+(define modular-fibonacci (make-modular-fibonacci 0 1))

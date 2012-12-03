@@ -96,8 +96,8 @@
 
 ;; HTML anchors should be case-insensitively unique. To make them
 ;;  distinct, add a "." in front of capital letters.  Also clean up
-;;  characters that give browers trouble (i.e., the ones that are not
-;;  allowed as-in in URI codecs) by using "~" followed by a hex
+;;  characters that give browsers trouble (i.e., the ones that are not
+;;  allowed as-is in URI components) by using "~" followed by a hex
 ;;  encoding.  (The idea is that the result is still readable, so the
 ;;  link can be used as a rough indication of where you'll get to.)
 (define (anchor-name v)
@@ -152,8 +152,8 @@
                     a))
           a))))
 
-;; combine a 'class attribute from both cl and al
-;;  if cl starts with one
+;; combine a 'class attribute from both `cl' and `al'
+;;  if `cl' starts with one
 (define (combine-class cl al)
   (cond
    [(and (pair? cl)
@@ -223,8 +223,8 @@
     (inherit-field prefix-file style-file style-extra-files)
 
     (init-field [alt-paths null]
-                ;; up-path is either a link "up", or #t which uses
-                ;; goes to start page (using cookies to get to the
+                ;; `up-path' is either a link "up", or #t which goes
+                ;; to the start page (using cookies to get to the
                 ;; user start page). If it's a path, then it's also
                 ;; used for the "top" link on the page.
                 [up-path #f]
@@ -420,7 +420,7 @@
                [class ,(if (or (eq? t d) (and show-mine? (memq t toc-chain)))
                          "tocviewselflink"
                          "tocviewlink")]
-               [pltdoc "x"])
+               [data-pltdoc "x"])
               ,@(render-content (or (part-title-content t) '("???")) d ri)))
          (format-number (collected-info-number (part-collected-info t ri))
                         '(nbsp))))
@@ -610,7 +610,7 @@
                                                     [(part? p) "tocsubseclink"]
                                                     [any-parts? "tocsubnonseclink"]
                                                     [else "tocsublink"])]
-                                              [pltdoc "x"])
+                                              [data-pltdoc "x"])
                                              ,@(render-content
                                                 (if (part? p)
                                                     (or (part-title-content p)
@@ -669,7 +669,7 @@
               `(html ,(style->attribs (part-style d))
                  (head ()
                    (meta ([http-equiv "content-type"]
-                          [content "text-html; charset=utf-8"]))
+                          [content "text/html; charset=utf-8"]))
                    ,title
                    ,(scribble-css-contents scribble-css (lookup-path scribble-css alt-paths))
                    ,@(map (lambda (style-file)
@@ -813,7 +813,7 @@
                                url))
           (make-attributes
            `([title . ,(if title* (string-append label " to " title*) label)]
-             [pltdoc . "x"]
+             [data-pltdoc . "x"]
              ,@more)))))
       (define top-link
         (titled-url
@@ -843,6 +843,8 @@
           ""
           `(span ([class "navright"])
              ,@(render
+                ;; put space here for text browsers and to avoid an Opera issue
+                sep-element
                 (make-element
                  (cond [(not parent) "nonavigation"]
                        [prev (titled-url "backward" prev)]
@@ -1150,7 +1152,7 @@
                          ;; Normal link:
                          (dest->url dest)]))
                      ,@(attribs)
-                     [pltdoc "x"]]
+                     [data-pltdoc "x"]]
                     ,@(if (empty-content? (element-content e))
                           (render-content (strip-aux (dest-title dest)) part ri)
                           (render-content (element-content e) part ri))))
@@ -1383,7 +1385,7 @@
       (cond
         [(string? i)
          (let ([m (and (extra-breaking?)
-                       (regexp-match-positions #rx"[-:/+_]|[a-z](?=[A-Z])" i))])
+                       (regexp-match-positions #rx"[-:/+_](?=.)|[a-z](?=[A-Z])" i))])
            (if m
              (list* (substring i 0 (cdar m))
                     ;; Most browsers wrap after a hyphen. The one that
@@ -1397,16 +1399,39 @@
              (ascii-ize i)))]
         [(symbol? i)
          (case i
-           [(mdash) '(8212 (wbr))] ;; <wbr> encourages breaking after rather than before
-           ;; use "single left/right-pointing angle quotation mark"
-           ;; -- it's not a correct choice, but works best for now
-           ;;    (see the "Fonts with proper angle brackets"
-           ;;    discussion on the mailing list from June 2008)
-           [(lang) '(8249)]
-           [(rang) '(8250)]
+           [(mdash) '(#x2014 (wbr))] ;; <wbr> encourages breaking after rather than before
+
+           ;; FIXME: 'lang and 'rang do not match `&rang;' and `&lang;' in HTML 4 or 5.
+           ;; Happened because of the thread:
+           ;;   <http://lists.racket-lang.org/users/archive/2008-June/025126.html>
+           ;; ("Fonts with proper angle brackets")
+           ;;
+           ;; Do we still need this?  See test page at <http://jsbin.com/okizeb/3>.
+           ;; 
+           ;; More background:
+           ;;
+           ;; HTML 4 says (in HTMLsymbol.dtd):
+           ;;
+           ;; <!ENTITY lang     CDATA "&#9001;" -- left-pointing angle bracket = bra,
+           ;;                                      U+2329 ISOtech -->
+           ;; <!-- lang is NOT the same character as U+003C 'less than'
+           ;;      or U+2039 'single left-pointing angle quotation mark' -->
+           ;; <!ENTITY rang     CDATA "&#9002;" -- right-pointing angle bracket = ket,
+           ;;                                      U+232A ISOtech -->
+           ;; <!-- rang is NOT the same character as U+003E 'greater than'
+           ;;      or U+203A 'single right-pointing angle quotation mark' -->
+           ;;
+           ;; HTML 5 says (in <https://github.com/w3c/html/raw/4b354c25cdc7025fef9f561bbc98fee2d9d241c1/entities.json>, dated 2012-10-12):
+           ;;
+           ;;   "&lang;": { "codepoints": [10216], "characters": "\u27E8" },
+           ;;   "&rang;": { "codepoints": [10217], "characters": "\u27E9" },
+           ;;
+           [(lang) '(#x2039)] ; SINGLE LEFT-POINTING ANGLE QUOTATION MARK
+           [(rang) '(#x203a)] ; SINGLE RIGHT-POINTING ANGLE QUOTATION MARK
+
            [else (list i)])]
         [else 
-         (log-error (format "Unreocgnized element in content: ~e" i))
+         (log-error (format "Unrecognized element in content: ~e" i))
          (list (format "~s" i))]))
     
     (define/private (ascii-ize s)

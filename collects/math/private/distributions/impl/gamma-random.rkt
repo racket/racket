@@ -19,7 +19,6 @@ For others: sum of Gamma and Exponential variables, Normal approximation.
 |#
 
 (require "../../../flonum.rkt"
-         "../../../vector.rkt"
          "../../unsafe.rkt"
          "normal-random.rkt")
 

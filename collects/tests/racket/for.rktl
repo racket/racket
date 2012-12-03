@@ -51,6 +51,10 @@
 (test-sequence [(65 66 67)] (open-input-bytes #"ABC"))
 (test-sequence [(65 66 67)] (in-input-port-bytes (open-input-bytes #"ABC")))
 
+;; Test optimized:
+(test '(2) 'in-list-of-list (for/list ([v (in-list (list 1))]) (add1 v)))
+(test '(0) 'in-mlist-of-mlist (for/list ([v (in-mlist (mlist 1))]) (sub1 v)))
+
 (test-sequence [(1 2 3)] (in-port read (open-input-string "1 2 3")))
 (test-sequence [((123) 4)] (in-port read (open-input-string "(123) 4")))
 (test-sequence [(65 66 67)] (in-port read-byte (open-input-string "ABC")))

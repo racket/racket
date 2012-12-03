@@ -91,7 +91,7 @@
       (get-base)
       (free-statement stmt need-lock?)
       (transaction-status fsym)
-      (start-transaction fsym isolation cwt?)
+      (start-transaction fsym isolation option cwt?)
       (end-transaction fsym mode cwt?)
       (list-tables fsym schema))
 
@@ -177,7 +177,7 @@
       (#t '_     (get-dbsystem))
       (#t '_     (query fsym stmt cursor?))
       (#t '_     (fetch/cursor fsym stmt fetch-size))
-      (#t '_     (start-transaction fsym isolation cwt?))
+      (#t '_     (start-transaction fsym isolation option cwt?))
       (#f (void) (end-transaction fsym mode cwt?))
       (#f #f     (transaction-status fsym))
       (#t '_     (list-tables fsym schema)))
@@ -340,7 +340,7 @@
       (get-base)
       (free-statement stmt need-lock?)
       (transaction-status fsym)
-      (start-transaction fsym isolation cwt?)
+      (start-transaction fsym isolation option cwt?)
       (end-transaction fsym mode cwt?)
       (list-tables fsym schema))
 

@@ -537,16 +537,16 @@ Conventions:
             (if (vector? datum)
                 (let ([datum (vector->list datum)]
                       [vcx (if (syntax? x) x cx)] ;; FIXME: (vector? datum) => (syntax? x) ???
-                      [pr (ps-add-unvector pr)])
-                  (parse:S datum vcx subpattern pr es k))
+                      [pr* (ps-add-unvector pr)])
+                  (parse:S datum vcx subpattern pr* es k))
                 (fail (failure pr es))))]
        [#s(pat:box _attrs subpattern)
         #`(let ([datum (if (syntax? x) (syntax-e x) x)])
             (if (box? datum)
                 (let ([datum (unbox datum)]
                       [bcx (if (syntax? x) x cx)] ;; FIXME: (box? datum) => (syntax? x) ???
-                      [pr (ps-add-unbox pr)])
-                  (parse:S datum bcx subpattern pr es k))
+                      [pr* (ps-add-unbox pr)])
+                  (parse:S datum bcx subpattern pr* es k))
                 (fail (failure pr es))))]
        [#s(pat:pstruct _attrs key subpattern)
         #`(let ([datum (if (syntax? x) (syntax-e x) x)])
@@ -554,13 +554,13 @@ Conventions:
                   (and xkey (equal? xkey 'key)))
                 (let ([datum (struct->list datum)]
                       [scx (if (syntax? x) x cx)] ;; FIXME: (struct? datum) => (syntax? x) ???
-                      [pr (ps-add-unpstruct pr)])
-                  (parse:S datum scx subpattern pr es k))
+                      [pr* (ps-add-unpstruct pr)])
+                  (parse:S datum scx subpattern pr* es k))
                 (fail (failure pr es))))]
        [#s(pat:describe attrs pattern description transparent? role)
-        #`(let ([es (es-add-thing pr description transparent? role es)]
-                [pr (if 'transparent? pr (ps-add-opaque pr))])
-            (parse:S x cx pattern pr es k))]
+        #`(let ([es* (es-add-thing pr description transparent? role es)]
+                [pr* (if 'transparent? pr (ps-add-opaque pr))])
+            (parse:S x cx pattern pr* es* k))]
        [#s(pat:delimit attrs pattern)
         #`(let ([cp0 cut-prompt])
             (with ([cut-prompt fail-handler])
@@ -574,8 +574,8 @@ Conventions:
                               [fail-handler fh0])
                          k))))]
        [#s(pat:post attrs pattern)
-        #`(let ([pr (ps-add-post pr)])
-            (parse:S x cx pattern pr es k))]
+        #`(let ([pr* (ps-add-post pr)])
+            (parse:S x cx pattern pr* es k))]
        [#s(pat:integrated _attrs name predicate description role)
         (with-syntax ([(name-attr ...)
                        (if (identifier? #'name)
@@ -584,8 +584,8 @@ Conventions:
           #'(let ([x* (datum->syntax cx x cx)])
               (if (predicate x*)
                   (let-attributes (name-attr ...) k)
-                  (let ([es (es-add-thing pr 'description #t role es)])
-                    (fail (failure pr es))))))])]))
+                  (let ([es* (es-add-thing pr 'description #t role es)])
+                    (fail (failure pr es*))))))])]))
 
 ;; (disjunct ???-pattern success (pre:expr ...) (id:id ...)) : expr[Ans]
 (define-syntax (disjunct stx)
@@ -636,8 +636,8 @@ Conventions:
        [#s(action:do _ (stmt ...))
         #'(let () (no-shadow stmt) ... (#%expression k))]
        [#s(action:post _ pattern)
-        #'(let ([pr (ps-add-post pr)])
-            (parse:A x cx pattern pr es k))])]))
+        #'(let ([pr* (ps-add-post pr)])
+            (parse:A x cx pattern pr* es k))])]))
 
 ;; (bind/sides clauses k) : expr[Ans]
 ;; In k: attrs(clauses) are bound.
@@ -679,8 +679,8 @@ Conventions:
      (syntax-case #'head ()
        [#s(hpat:describe _ pattern description transparent? role)
         #`(let ([es* (es-add-thing pr description transparent? role es)]
-                [pr (if 'transparent? pr (ps-add-opaque pr))])
-            (parse:H x cx rest-x rest-cx rest-pr pattern pr es*
+                [pr* (if 'transparent? pr (ps-add-opaque pr))])
+            (parse:H x cx rest-x rest-cx rest-pr pattern pr* es*
                      (let ([rest-pr (if 'transparent? rest-pr (ps-pop-opaque rest-pr))])
                        k)))]
        [#s(hpat:var _attrs name parser argu (nested-a ...) attr-count commit? role)
@@ -921,8 +921,8 @@ Conventions:
          [_  #`(parse:H x cx x* cx* pr* head pr es
                         (if (< rep (rep:max-number repc))
                             (let ([rep (add1 rep)]) k*)
-                            (let ([es (expectation-of-reps/too-many es rep repc)])
-                              (fail (failure pr* es)))))]))]))
+                            (let ([es* (expectation-of-reps/too-many es rep repc)])
+                              (fail (failure pr* es*)))))]))]))
 
 ;; (rep:initial-value RepConstraint) : expr
 (define-syntax (rep:initial-value stx)

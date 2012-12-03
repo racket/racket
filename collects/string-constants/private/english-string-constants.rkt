@@ -974,6 +974,12 @@ please adhere to these guidelines:
  (limit-memory-unlimited "Unlimited")
  (limit-memory-limited "Limited")
  (limit-memory-megabytes "Megabytes")
+ ; the next two constants are used together in the limit memory dialog; they are inserted
+ ; one after another. The first one is shown in a bold font and the second is not.
+ ; (the first can be the empty string)
+ (limit-memory-warning-prefix "Warning: ")
+ (limit-memory-warning "the unlimited memory setting is unsafe. With this setting, DrRacket cannot protect itself against programs that allocate too much, and DrRacket may crash.")
+ 
  (clear-error-highlight-menu-item-label "Clear Error Highlight")
  (clear-error-highlight-item-help-string "Removes the pink error highlighting")
  (jump-to-next-error-highlight-menu-item-label "Jump to Next Error Highlight")

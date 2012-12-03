@@ -558,47 +558,53 @@
                ";"))
 
 (define (path->url path)
-  (let ([url-path
-         (let loop ([path (simplify-path path #f)][accum null])
-           (let-values ([(base name dir?) (split-path path)])
-             (cond
-               [(not base)
-                (append (map
-                         (lambda (s)
-                           (make-path/param s null))
-                         (if (eq? (path-convention-type path) 'windows)
-                           ;; For Windows, massage the root:
-                           (let ([s (regexp-replace
-                                     #rx"[/\\\\]$"
-                                     (bytes->string/utf-8 (path->bytes name))
-                                     "")])
-                             (cond
-                               [(regexp-match? #rx"^\\\\\\\\[?]\\\\[a-zA-Z]:" s)
-                                ;; \\?\<drive>: path:
-                                (regexp-split #rx"[/\\]+" (substring s 4))]
-                               [(regexp-match? #rx"^\\\\\\\\[?]\\\\UNC" s)
-                                ;; \\?\ UNC path:
-                                (regexp-split #rx"[/\\]+" (substring s 7))]
-                               [(regexp-match? #rx"^[/\\]" s)
-                                ;; UNC path:
-                                (regexp-split #rx"[/\\]+" s)]
-                               [else
-                                (list s)]))
-                           ;; On other platforms, we drop the root:
-                           null))
-                        accum)]
-               [else
-                (let ([accum (cons (make-path/param
-                                    (if (symbol? name)
-                                      name
-                                      (bytes->string/utf-8
-                                       (path-element->bytes name)))
-                                    null)
-                                   accum)])
-                  (if (eq? base 'relative)
-                    accum
-                    (loop base accum)))])))])
-    (make-url "file" #f "" #f (absolute-path? path) url-path '() #f)))
+  (let* ([spath (simplify-path path #f)]
+         [dir? (let-values ([(b n dir?) (split-path spath)]) dir?)]
+         ;; If original path is a directory the resulting URL
+         ;; should have a trailing forward slash
+         [url-tail (if dir? (list (make-path/param "" null)) null)]
+         [url-path
+          (let loop ([path spath][accum null])
+            (let-values ([(base name dir?) (split-path path)])
+              (cond
+                [(not base)
+                 (append (map
+                          (lambda (s)
+                            (make-path/param s null))
+                          (if (eq? (path-convention-type path) 'windows)
+                              ;; For Windows, massage the root:
+                              (let ([s (regexp-replace
+                                        #rx"[/\\\\]$"
+                                        (bytes->string/utf-8 (path->bytes name))
+                                        "")])
+                                (cond
+                                  [(regexp-match? #rx"^\\\\\\\\[?]\\\\[a-zA-Z]:" s)
+                                   ;; \\?\<drive>: path:
+                                   (regexp-split #rx"[/\\]+" (substring s 4))]
+                                  [(regexp-match? #rx"^\\\\\\\\[?]\\\\UNC" s)
+                                   ;; \\?\ UNC path:
+                                   (regexp-split #rx"[/\\]+" (substring s 7))]
+                                  [(regexp-match? #rx"^[/\\]" s)
+                                   ;; UNC path:
+                                   (regexp-split #rx"[/\\]+" s)]
+                                  [else
+                                   (list s)]))
+                              ;; On other platforms, we drop the root:
+                              null))
+                         accum)]
+                [else
+                 (let ([accum (cons (make-path/param
+                                     (if (symbol? name)
+                                         name
+                                         (bytes->string/utf-8
+                                          (path-element->bytes name)))
+                                     null)
+                                    accum)])
+                   (if (eq? base 'relative)
+                       accum
+                       (loop base accum)))])))])
+    (make-url "file" #f "" #f (absolute-path? path) (append url-path url-tail) '() #f)))
+
 
 (define (url->path url [kind (system-path-convention-type)])
   (file://->path url kind))

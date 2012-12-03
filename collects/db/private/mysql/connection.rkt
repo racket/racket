@@ -505,13 +505,16 @@
     ;;   - transaction deadlock = 1213 (ER_LOCK_DEADLOCK)
     ;;   - lock wait timeout (depends on config) = 1205 (ER_LOCK_WAIT_TIMEOUT)
 
-    (define/override (start-transaction* fsym isolation)
+    (define/override (start-transaction* fsym isolation option)
       (cond [(eq? isolation 'nested)
              (let ([savepoint (generate-name)])
                (query1 fsym (format "SAVEPOINT ~a" savepoint) #f #t)
                savepoint)]
             [else
              (let ([isolation-level (isolation-symbol->string isolation)])
+               (when option
+                 ;; No options supported
+                 (raise-argument-error fsym "#f" option))
                (when isolation-level
                  (query1 fsym (format "SET TRANSACTION ISOLATION LEVEL ~a" isolation-level) #f #t))
                (query1 fsym "START TRANSACTION" #f #t)
@@ -594,9 +597,9 @@
       (cond [(<= (char->integer #\0) c (char->integer #\9))
              (- c (char->integer #\0))]
             [(<= (char->integer #\a) c (char->integer #\f))
-             (- c (char->integer #\a))]
+             (+ 10 (- c (char->integer #\a)))]
             [(<= (char->integer #\A) c (char->integer #\F))
-             (- c (char->integer #\A))])))
+             (+ 10 (- c (char->integer #\A)))])))
   (unless (and (string? s) (even? (string-length s))
                (regexp-match? #rx"[0-9a-zA-Z]*" s))
     (raise-type-error 'hex-string->bytes

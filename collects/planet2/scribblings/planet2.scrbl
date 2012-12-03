@@ -1,17 +1,34 @@
 #lang scribble/manual
+@(require scribble/bnf)
+
+@(define @|Planet1| @|PLaneT|)
 
 @(define pkgname onscreen)
 @(define reponame litchar)
 
-@title{Planet 2: Package Distribution (Beta)}
+@(define package-name-chars
+   @list{@litchar{a} through @litchar{z}, 
+         @litchar{A} through @litchar{Z}, 
+         @litchar{0} through @litchar{9}, 
+         @litchar{_}, and @litchar{-}})
+
+@(define (inset . c)
+   (cons (hspace 2) c))
+
+@; ----------------------------------------
+
+@title{Package Management in Racket (Beta)}
 @author[@author+email["Jay McCarthy" "jay@racket-lang.org"]]
 
-Planet 2 is a system for managing the use of external code packages in
-your Racket installation.
+The Racket package manager lets you install new libraries and
+collections, and the Racket package sever helps other Racket
+programmers find libraries that you make available.
 
 @table-of-contents[]
 
-@section{Planet 2 Concepts}
+@; ----------------------------------------
+
+@section{Package Concepts}
 
 A @deftech{package} is a set of modules from some number of
 collections. @tech{Packages} also have associated @tech{package
@@ -19,18 +36,15 @@ metadata}.
 
 @deftech{Package metadata} is:
 @itemlist[
- @item{a name -- a string made of the characters: @litchar{a-zA-Z0-9_-}.}
+ @item{a name -- a string made of the characters @|package-name-chars|.}
  @item{a list of dependencies -- a list of strings that name other packages that must be installed simultaneously.}
  @item{a checksum -- a string that identifies different releases of a package.} 
 ]
 
 A @tech{package} is typically represented by a directory with the same
-name as the package which contains a file named
-@filepath{METADATA.rktd} formatted as:
-@verbatim{
- ((dependency "dependency1" ... "dependencyn"))
-}
-The checksum is typically left implicit.
+name as the package. The checksum is typically left implicit.
+If the package depends on other packages, the directory can
+contain a file named @filepath{info.rkt} (see @secref["metadata"]).
 
 A @deftech{package source} identifies a @tech{package}
 representation. Each package source type has a different way of
@@ -40,21 +54,41 @@ storing the checksum. The valid package source types are:
 
 @item{a local file path naming an archive -- The name of the package
 is the basename of the archive file. The checksum for archive
-@filepath{f.ext} is given by the file @filepath{f.ext.CHECKSUM}. For
+@filepath{f.@nonterm{ext}} is given by the file @filepath{f.@nonterm{ext}.CHECKSUM}. For
 example, @filepath{~/tic-tac-toe.zip}'s checksum would be inside
 @filepath{~/tic-tac-toe.zip.CHECKSUM}. The valid archive formats
-are (currently): @filepath{.zip}, @filepath{.tgz}, and
-@filepath{.plt}. }
+are (currently) @filepath{.zip}, @filepath{.tar}, @filepath{.tgz}, 
+@filepath{.tar.gz}, and
+@filepath{.plt}.
+
+A package source is inferred to refer to a file
+only when it has a suffix matching a valid archive format
+and when it does not start
+with alphabetic characters followed by @litchar{://}. The inferred
+package name is the filename without its suffix.}
 
 @item{a local directory -- The name of the package is the name of the
 directory. The checksum is not present. For example,
-@filepath{~/tic-tac-toe}.}
+@filepath{~/tic-tac-toe/}.
+
+A package source is inferred to refer
+to a directory only when it does not have a file-archive suffix, does
+not match the grammar of a package name, and does not start
+with alphabetic characters followed by @litchar{://}. The inferred
+package name is the directory name.}
 
 @item{a remote URL naming an archive -- This type follows the same
 rules as a local file path, but the archive and checksum files are
 accessed via HTTP(S). For example,
 @filepath{http://game.com/tic-tac-toe.zip} and
-@filepath{http://game.com/tic-tac-toe.zip.CHECKSUM}.}
+@filepath{http://game.com/tic-tac-toe.zip.CHECKSUM}.
+
+A package source is inferred to be a URL only when it
+starts with @litchar{http://} or @litchar{https://}, and it
+is inferred to be a file URL when the URL ends with a path element
+that could be inferred as a file archive.
+The inferred package name is from the URL's file name in the same
+way as for a file package source.}
 
 @item{a remote URL naming a directory -- The remote directory must
 contain a file named @filepath{MANIFEST} that lists all the contingent
@@ -63,32 +97,53 @@ for local directory paths are followed. However, if the remote
 directory contains a file named @filepath{.CHECKSUM}, then it is used
 to determine the checksum. For example,
 @filepath{http://game.com/tic-tac-toe/} and
-@filepath{http://game.com/tic-tac-toe/.CHECKSUM}}
+@filepath{http://game.com/tic-tac-toe/.CHECKSUM}.
+
+A package source is inferred to be a URL the same for a directory or
+file, and it is treated as a directory URL when it does not end with a
+path element that has an archive file suffix. The inferred package name
+is the directory name.}
 
 @item{a remote URL naming a GitHub repository -- The format for such
 URLs is:
-@filepath{github://github.com/<user>/<repository>/<branch>/<path>/<to>/<package>/<directory>}. The
-Zip formatted archive for the repository (generated by GitHub for
+
+@inset{@exec{github://github.com/}@nonterm{user}@exec{/}@nonterm{repository}@;
+@exec{/}@nonterm{branch}@exec{/}@nonterm{optional-subpath}}
+
+For example,
+@filepath{github://github.com/game/tic-tac-toe/master/}.
+
+The @exec{zip}-formatted archive for the repository (generated by GitHub for
 every branch) is used as a remote URL archive path, except the
-checksum is the hash identifying the branch. For example,
-@filepath{github://github.com/game/tic-tac-toe/master/}.}
+checksum is the hash identifying the branch. 
+
+A package source is inferred to be a GitHub reference when it
+starts with @litchar{github://}; a package source that is otherwise
+specified as a GitHub reference is automatically prefixed with
+@filepath{github://github.com/}. The inferred package name
+is the last element of @nonterm{optional-subpath} if it is
+non-empty, otherwise the inferred name is @nonterm{repository}.}
 
 @item{a bare package name -- The local list of @tech{package name
 services} is consulted to determine the source and checksum for the
-package. For example, @pkgname{tic-tac-toe}.}
+package. For example, @exec{tic-tac-toe}.
+
+A package source is inferred
+to be a package name when it fits the grammar of package names, which
+means that it has only the characters @|package-name-chars|.}
 
 ]
 
-A @deftech{package name service} (PNS) is a string representing a URL,
-such that appending @filepath{/pkg/<package-name>} to it will respond
+A @deftech{package name service} (@deftech{PNS}) is a string representing a URL,
+such that appending @exec{/pkg/}@nonterm{package} to the URL responds
 with a @racket[read]-able hash table with the keys: @racket['source]
 bound to the source and @racket['checksum] bound to the
 checksum. Typically, the source will be a remote URL string.
 
 PLT supports two @tech{package name services}, which are enabled by
-default: @filepath{https://plt-etc.byu.edu:9004} for new Planet 2
-packages and @filepath{https://plt-etc.byu.edu:9003} for
-automatically generated Planet 2 packages for old Planet 1
+default: @url{https://plt-etc.byu.edu:9004} for new
+packages and @url{https://plt-etc.byu.edu:9003} for
+automatically generated packages for old @|PLaneT|
 packages. Anyone may host their own @tech{package name service}. The
 source for the PLT-hosted servers is in the
 @racket[(build-path (find-collects-dir) "meta" "planet2-index")]
@@ -109,113 +164,132 @@ conflict with Racket itself, if it contains a module file that is part
 of the core Racket distribution. For example, any package that
 contains @filepath{racket/list.rkt} is in conflict with Racket. For
 the purposes of conflicts, a module is a file that ends in
-@litchar{.rkt} or @litchar{.ss}.
+@filepath{.rkt} or @filepath{.ss}.
 
 Package A is a @deftech{package update} of Package B if (1) B is
 installed, (2) A and B have the same name, and (3) A's checksum is
 different than B's.
 
-@section{Using Planet 2}
+@; ----------------------------------------
 
-Planet 2 has two user interfaces: a command line @exec{raco}
+@section{Using Packages}
+
+The Racket package manager has two user interfaces: a command line @exec{raco}
 sub-command and a library. They have the exact same capabilities, as
 the command line interface invokes the library functions and
 reprovides all their options.
 
 @subsection{Command Line}
 
-The @exec{raco pkg} sub-command provides the following
+The @as-index{@exec{raco pkg}} sub-command provides the following
 sub-sub-commands:
 
 @itemlist[
 
-@item{@exec{install pkg ...} -- Installs the list of @tech{package
-sources}. The first feasible interpretation of each string as a
-package source is used. For example, local files are preferred to
-local directories which are preferred to remote URLs, etc. (This is
-only relevant when you have a directory with the same name as a
-package you intend to install from a @tech{package name service}.)  It
-accepts the following options:
+@item{@exec{install} @nonterm{option} ... @nonterm{pkg-source} ... 
+ --- Installs the given @tech{package sources} with the given
+ @nonterm{option}s:
 
  @itemlist[
 
- @item{@DFlag{dont-setup} -- Does not run @exec{raco setup} after installation. This behavior is also the case if the environment variable @envvar{PLT_PLANET2_DONTSETUP} is set to @litchar{1}.}
+ @item{@DFlag{type} @nonterm{type} or @Flag{t} @nonterm{type} --- specifies an interpretation of the package source,
+       where @nonterm{type} is either @exec{file}, @exec{dir}, @exec{url}, @exec{github}, 
+       or @exec{name}.}
 
- @item{@DFlag{installation} -- Install system-wide rather than user-local.}
+ @item{@DFlag{name} @nonterm{pkg} or @Flag{n} @nonterm{pkg} --- specifies the name of the package,
+       which makes sense only when a single @nonterm{pkg-source} is provided. The name is normally
+       inferred for each @nonterm{pkg-source}.}
 
- @item{@Flag{i} -- Alias for @DFlag{installation}.}
+ @item{@DFlag{no-setup} --- Does not run @exec{raco setup} after installation. This behavior is also the case if the
+       environment variable @envvar{PLT_PLANET2_NOSETUP} is set to any non-empty value.}
 
- @item{@DFlag{deps} @exec{dep-behavior} -- Selects the behavior for dependencies. The options are:
+ @item{@DFlag{installation} or @Flag{i} --- Install system-wide, rather than user-local.}
+ @item{@DFlag{shared} or @Flag{s} --- Install for all versions, rather than user-local and version-specific.}
+
+ @item{@DFlag{deps} @nonterm{behavior} --- Selects the behavior for dependencies, where @nonterm{behavior} is one of
   @itemlist[
-   @item{@exec{fail} -- Cancels the installation if dependencies are unmet (default for most packages)}
-   @item{@exec{force} -- Installs the package(s) despite missing dependencies (unsafe)}
-   @item{@exec{search-ask} -- Looks for the dependencies on the configured @tech{package name services} (default if the dependency is an indexed name) but asks if you would like it installed.}
+   @item{@exec{fail} --- Cancels the installation if dependencies are unmet (default for most packages)}
+   @item{@exec{force} --- Installs the package(s) despite missing dependencies (unsafe)}
+   @item{@exec{search-ask} --- Looks for the dependencies on the configured @tech{package name services} 
+         (default if the dependency is an indexed name) but asks if you would like it installed.}
    @item{@exec{search-auto} --- Like @exec{search-ask}, but does not ask for permission to install.}
   ]}
 
-  @item{@DFlag{force} -- Ignores conflicts (unsafe.)}
+  @item{@DFlag{force} --- Ignores conflicts (unsafe)}
 
-  @item{@DFlag{ignore-checksums} -- Ignores errors verifying package checksums (unsafe.)}
+  @item{@DFlag{ignore-checksums} --- Ignores errors verifying package checksums (unsafe.)}
 
-  @item{@DFlag{link} -- When used with a directory package, leave the directory in place, but add a link to it in the package directory. This is a global setting for all installs for this command instance, which means it affects dependencies... so make sure the dependencies exist first.}
+  @item{@DFlag{link} --- Implies @exec{--type dir} (and overrides any specified type),
+        and links the existing directory as an installed package.}
  ]
 }
 
 
-@item{@exec{update pkg ...} -- Checks the list of packages for
+@item{@exec{update} @nonterm{option} ... @nonterm{pkg} ... 
+--- Checks the specified packages for
 @tech{package updates}. If an update is found, but it cannot be
 installed (e.g. it is conflicted with another installed package), then
-this command fails atomically. It accepts the following options:
+this command fails atomically. The @exec{update} sub-command accepts 
+the following @nonterm{option}s:
 
  @itemlist[
- @item{@DFlag{dont-setup} -- Same as for @exec{install}.}
- @item{@DFlag{installation} -- Same as for @exec{install}.}
- @item{@Flag{i} -- Same as for @exec{install}.}
- @item{@DFlag{deps} @exec{dep-behavior} -- Same as for @exec{install}.}
- @item{@DFlag{all} -- Update all packages, if no packages are given in the argument list.}
- @item{@Flag{a} -- Alias for @DFlag{all}.}
- @item{@DFlag{update-deps} -- Checks the named packages, and their dependencies (transitively) for updates.}
+ @item{@DFlag{no-setup} --- Same as for @exec{install}.}
+ @item{@DFlag{installation} or @Flag{i} --- Same as for @exec{install}.}
+ @item{@DFlag{shared} or @Flag{s} --- Same as for @exec{install}.}
+ @item{@DFlag{deps} @nonterm{behavior} --- Same as for @exec{install}.}
+ @item{@DFlag{all} or @Flag{a} --- Update all packages, if no packages are given in the argument list.}
+ @item{@DFlag{update-deps} --- Checks the named packages, and their dependencies (transitively) for updates.}
  ]
 }
 
-@item{@exec{remove pkg ...} -- Attempts to remove the packages. If a package is the dependency of another package that is not listed, this command fails atomically. It accepts the following options:
+@item{@exec{remove} @nonterm{option} ... @nonterm{pkg} ... 
+--- Attempts to remove the given packages. If a package is the dependency of another package that is not 
+listed, this command fails atomically. It accepts the following @nonterm{option}s:
 
  @itemlist[
- @item{@DFlag{dont-setup} -- Same as for @exec{install}.}
- @item{@DFlag{installation} -- Same as for @exec{install}.}
- @item{@Flag{i} -- Same as for @exec{install}.}
- @item{@DFlag{force} -- Ignore dependencies when removing packages.}
- @item{@DFlag{auto} -- Remove packages that were installed by the @exec{search-auto} and @exec{search-ask} dependency behavior that are no longer required.}
+ @item{@DFlag{no-setup} --- Same as for @exec{install}.}
+ @item{@DFlag{installation} or @Flag{i} --- Same as for @exec{install}.}
+ @item{@DFlag{shared} or @Flag{s} --- Same as for @exec{install}.}
+ @item{@DFlag{force} --- Ignore dependencies when removing packages.}
+ @item{@DFlag{auto} --- Remove packages that were installed by the @exec{search-auto} and @exec{search-ask} dependency behavior that are no longer required.}
  ]
 }
 
-@item{@exec{show} -- Print information about currently installed packages. It accepts the following options:
+@item{@exec{show} @nonterm{option} ... --- Print information about currently installed packages. 
+ By default, packages are shown for all installation modes (installation-wide,
+ user- and version-specific, and user-specific all-version).
+ The command accepts the following @nonterm{option}s:
 
  @itemlist[
- @item{@DFlag{installation} -- Same as for @exec{install}.}
- @item{@Flag{i} -- Same as for @exec{install}.}
+ @item{@DFlag{installation} or @Flag{i} --- Show only installation-wide packages.}
+ @item{@DFlag{user} or @Flag{u} --- Show only user-specific, version-specific packages.}
+ @item{@DFlag{shared} or @Flag{s} --- Show only user-specific, all-version packages.}
  ]
 }
 
-@item{@exec{config key val ...} -- View and modify Planet 2 configuration options. It accepts the following options:
+@item{@exec{config} @nonterm{option} ... @nonterm{key} @nonterm{val} ... --- 
+View and modify package configuration options. It accepts the following @nonterm{option}s:
 
  @itemlist[
- @item{@DFlag{installation} -- Same as for @exec{install}.}
- @item{@Flag{i} -- Same as for @exec{install}.}
- @item{@DFlag{set} -- Sets an option, rather than printing it.}
+ @item{@DFlag{installation} or @Flag{i} --- Same as for @exec{install}.}
+ @item{@DFlag{shared} or @Flag{s} --- Same as for @exec{install}.}
+ @item{@DFlag{set} --- Sets an option, rather than printing it.}
  ]
 
  The valid keys are:
  @itemlist[
-  @item{@exec{indexes} -- A list of URLs for @tech{package name services}.}           
+  @item{@exec{indexes} --- A list of URLs for @tech{package name services}.}           
  ]
 }
 
-@item{@exec{create package-directory} -- Bundles a package. It accepts the following options:
+@item{@exec{create} @nonterm{option} ... @nonterm{package-directory}
+--- Bundles a package. It accepts the following @nonterm{option}s:
 
  @itemlist[
- @item{@DFlag{format str} -- Specifies the archive format. The options are: @exec{tgz}, @exec{zip}, and @exec{plt}. This must be specified if @DFlag{manifest} is not present.}
- @item{@DFlag{manifest} -- Creates a manifest file for a directory, rather than an archive.}
+ @item{@DFlag{format} @nonterm{format} --- Specifies the archive format. 
+      The allowed @nonterm{format}s are: @exec{zip} (the default), @exec{tgz}, and @exec{plt}. 
+      This option must be specified if @DFlag{manifest} is not present.}
+ @item{@DFlag{manifest} --- Creates a manifest file for a directory, rather than an archive.}
  ]
 }
 ]
@@ -225,12 +299,12 @@ this command fails atomically. It accepts the following options:
 
 @defmodule[planet2]
 
-The @racketmodname[planet2] module provides a programmatic interface to
-the command sub-sub-commands. Each long form option is keyword
-argument. @DFlag{deps} accepts its argument as a symbol and
-@DFlag{format} accepts its argument as a string. All other options
-accept booleans, where @racket[#t] is equivalent to the presence of
-the option.
+The @racketmodname[planet2] module provides a programmatic interface
+to the command sub-sub-commands. Each long form option is keyword
+argument. An argument corresponding to @DFlag{type} or @DFlag{deps}
+accepts its argument as a symbol, and @DFlag{format} accepts its
+argument as a string. All other options accept booleans, where
+@racket[#t] is equivalent to the presence of the option.
 
 @deftogether[
  (@defthing[install procedure?]             
@@ -243,32 +317,35 @@ the option.
  Duplicates the command line interface.  
 }
 
-@section{Developing Planet 2 Packages}
+@; ----------------------------------------
 
-This section walks through the setup for a basic Planet 2 package.
+@section{Developing Packages}
 
-First, make a directory for your package and select its name:
+To create a package, first make a directory for your package and
+select its name, @nonterm{package}:
 
-@commandline{mkdir <package-name>}
+@commandline{mkdir @nonterm{package}}
 
 Next, link your development directory to your local package
 repository:
 
-@commandline{raco pkg install --link <package-name>}
+@commandline{raco pkg install --link @nonterm{package}}
 
-Next, enter your directory and create a basic @tech{package metadata}
-file:
+Optionally, enter your directory and create a basic @filepath{info.rkt} file:
 
-@commandline{cd <package-name>}
-@commandline{echo "((dependency))" > METADATA.rktd}
+@commandline{cd @nonterm{package}}
+@commandline{echo "#lang setup/infotab" > info.rkt}
+@commandline{echo "(define deps (list))" >> info.rkt}
 
-This metadata file is not necessary if you have no dependencies, but
+The @filepath{info.rkt} file is not necessary if you have no dependencies, but
 you may wish to create it to simplify adding dependencies in the
 future.
 
-Next, inside this directory, create directories for the collections
-and modules that your package will provide. For example,
-the developer of @pkgname{tic-tac-toe} might do:
+Next, inside the @nonterm{package} directory, create directories for
+the collections and modules that your package will provide. For
+example, the developer of @pkgname{tic-tac-toe} package that provides
+@racketidfont{games/tic-tac-toe/main} and @racketidfont{data/matrix}
+libraries might create directories and files like this:
 
 @commandline{mkdir -p games/tic-tac-toe}
 @commandline{touch games/tic-tac-toe/info.rkt}
@@ -276,62 +353,63 @@ the developer of @pkgname{tic-tac-toe} might do:
 @commandline{mkdir -p data}
 @commandline{touch data/matrix.rkt}
 
-After your package is ready to deploy choose one of the following
-options:
+After your package is ready to deploy, choose either @secref["github-deploy"]
+or @secref["manual-deploy"].
 
-@subsection{Github Deployment}
+@subsection[#:tag "github-deploy"]{GitHub Deployment}
 
-First, create a free account on
-Github (@link["https://github.com/signup/free"]{signup here}). Then
-create a repository for your
-package (@link["https://github.com/new"]{here} (@link["https://help.github.com/articles/create-a-repo"]{documentation}).)
-Then initialize the Git repository locally and do your first push:
+First, @link["https://github.com/signup/free"]{create a free account} on GitHub,
+then @link["https://github.com/new"]{create a repository for your
+package} (@link["https://help.github.com/articles/create-a-repo"]{documentation}).
+Initialize the Git repository locally and do your first push like this:
 
 @commandline{git init}
 @commandline{git add *}
 @commandline{git commit -m "First commit"}
-@commandline{git remote add origin https://github.com/<username>/<package-name>.git}
+@commandline{git remote add origin https://github.com/@nonterm{user}/@nonterm{package}.git}
 @commandline{git push -u origin master}
 
 Now, publish your package source as:
 
-@exec{github://github.com/<username>/<package-name>/<branch>}
+@inset{@exec{github://github.com/@nonterm{user}/@nonterm{package}/@nonterm{branch}}}
 
-(Typically, <branch> will be @litchar{master}, but you may wish to use
-different branches for releases and development.)
+Typically, @nonterm{branch} will be @exec{master}, but you may wish to use
+different branches for releases and development.
 
-Now, whenever you
+Whenever you
 
 @commandline{git push}
 
-Your changes will automatically be discovered by those who used your
-package source.
+your changes will automatically be discovered by those who used your
+package source when they use @exec{raco pkg update}.
 
-@subsection{Manual Deployment}
+@subsection[#:tag "manual-deploy"]{Manual Deployment}
 
 Alternatively, you can deploy your package by publishing it on a URL
 you control. If you do this, it is preferable to create an archive
 first:
 
-@commandline{raco pkg create <package-name>}
+@commandline{raco pkg create @nonterm{package}}
 
 And then upload the archive and its checksum to your site:
 
-@commandline{scp <package-name>.plt <package-name>.plt.CHECKSUM your-host:public_html/}
+@commandline{scp @nonterm{package}.zip @nonterm{package}.zip.CHECKSUM your-host:public_html/}
 
 Now, publish your package source as:
 
-@exec{http://your-host/~<username>/<package-name>.plt}
+@inset{@exec{http://your-host/~@nonterm{user}/@nonterm{package}.zip}}
 
-Now, whenever you want to release a new version, recreate and reupload
-the package archive (and checksum). Your changes will automatically be
-discovered by those who used your package source.
+Whenever you want to release a new version, recreate and reupload the
+package archive (and checksum). Your changes will automatically be
+discovered by those who used your package source when they use
+@exec{raco pkg update}.
 
 @subsection{Helping Others Discover Your Package}
 
 By using either of the above deployment techniques, anyone will be
-able to use your package. However, they will not be able to refer to
-it by name until it is listed on a @tech{package name service}.
+able to use your package by referring to your @tech{package source}.
+However, they will not be able to refer to
+it by a simple name until it is listed on a @tech{package name service}.
 
 If you'd like to use the official @tech{package name service}, browse
 to
@@ -343,9 +421,9 @@ You only need to go to this site @emph{once} to list your package. The
 server will periodically check the package source you designate for
 updates.
 
-If you use this server, and use Github for deployment, then you will
-never need to open a Web browser to update your package for end
-users. You just need to push to your Github repository, then within 24
+If you use this server, and use GitHub for deployment, then you will
+never need to open a web browser to update your package for end
+users. You just need to push to your GitHub repository, then within 24
 hours, the official @tech{package name service} will notice, and
 @exec{raco pkg update} will work on your user's machines.
 
@@ -394,73 +472,123 @@ PLT curation.}
 
 ]
 
-@section{Planet 1 Compatibility}
+@; ----------------------------------------
 
-PLT maintains a Planet 1 compatibility @tech{package name service} at
-@link["https://plt-etc.byu.edu:9003/"]{https://plt-etc.byu.edu:9003/}. This
-PNS is included by default in the Planet search path.
+@section[#:tag "metadata"]{Package Metadata}
 
-Planet 2 copies of Planet 1 packages are automatically created by this
+Package metadata, including dependencies on thar packages, is reported
+by an @filepath{info.rkt} module within the package. This module must be
+implemented in the @racketmodname[setup/infotab] language.
+
+The following fields are used by the package manager:
+
+@itemlist[
+
+ @item{@racketidfont{deps} --- a list of @tech{package source} strings.
+       Each string determines a dependency on the @tech{package} whose name
+       is inferred from the @tech{package source} (i.e., dependencies are
+       on package names, not package sources), while the @tech{package source} indicates
+       where to get the package if needed to satisfy the dependency.}
+
+ @item{@racketidfont{setup-collects} --- a list of path strings and/or
+       lists of path strings, which are used as collection names to
+       set up via @exec{raco setup} after the package is installed, or
+       @racket['all] to indicate that all collections need to be
+       setup. By default, only collections included in the package are
+       set up (plus collections for global documentation indexes and
+       links).}
+
+]
+
+For example, a basic @filepath{info.rkt} file might be
+
+@codeblock{
+#lang setup/infotab
+(define deps (list _package-source-string ...))
+}
+
+@; ----------------------------------------
+
+@section{@|Planet1| Compatibility}
+
+PLT maintains a @tech{package name service} to serve packages that
+were developed using the original @seclink[#:doc '(lib
+"planet/planet.scrbl") "top"]{@|Planet1|} package system.  This
+compatibility service is at
+@link["https://plt-etc.byu.edu:9003/"]{https://plt-etc.byu.edu:9003/},
+which is included by default in the package-server search path.
+
+Copies of @|Planet1| packages are automatically created by the
 server according to the following system: for all packages that are in
-the @litchar{4.x} Planet 1 repository, the latest minor version of
-@tt{<user>/<package>.plt/<major-version>} will be available as
-@pkgname{planet-<user>-<package><major-version>}. For example,
+the @litchar{4.x} @|Planet1| repository, the latest minor version of
+@tt{@nonterm{user}/@nonterm{package}.plt/@nonterm{major-version}} will be available as
+@pkgname{planet-@nonterm{user}-@nonterm{package}@nonterm{major-version}}. For example,
 @tt{jaymccarthy/opencl.plt/1} minor version @tt{2}, will be available as
 @pkgname{planet-jaymccarthy-opencl1}.
 
 The contents of these copies is a single collection with the name
-@filepath{<user>/<package><major-version>} with all the files from the
-original Planet 1 package in it.
+@filepath{@nonterm{user}/@nonterm{package}@nonterm{major-version}} with all the files from the
+original @|Planet1| package in it.
 
 Each file has been transliterated to use direct Racket-style requires
-rather than Planet 1-style requires. For example, if any file contains
+rather than @|Planet1|-style requires. For example, if any file contains
 @racket[(planet jaymccarthy/opencl/module)], then it is transliterated
 to @racket[jaymccarthy/opencl1/module]. @emph{This transliteration is
 purely syntactic and is trivial to confuse, but works for most
-packages, in practice.}
-
-Any transliterations that occurred are automatically added as
-dependencies for the Planet 2 compatibility package.
+packages, in practice.} Any transliterations that occurred are automatically added as
+dependencies for the compatibility package.
 
 We do not intend to improve this compatibility system much more over
-time, because it is simply a stop-gap as developers port their
-packages to Planet 2. Additionally, the existence of this is not meant
-to imply that we will be removing Planet 1 from existence in the near
+time, because it is simply a stop-gap as developers port their @|Planet1|
+packages to the new system. Additionally, the existence of the compatibility 
+server is not meant
+to imply that we will be removing @|Planet1| from existence in the near
 future.
 
-@section{FAQ}
+@; ----------------------------------------
+
+@section[#:style 'quiet]{FAQ}
 
 This section answers anticipated frequently asked questions about
-Planet 2.
+the package manager.
 
 @subsection{Are package installations versioned with respect to the
 Racket version?}
 
-No. When you install a Planet 2 package, it is installed for all
-versions of Racket until you remove it. (In contrast, Planet 1
+By default, when you install a package, it is installed for a specific
+user and a specific version of Racket.
+
+You can use the @DFlag{installation} or @Flag{i} flag to install for
+all users of a particular Racket installation; an installation-wide
+package is not exactly version-specific, because the version of an
+installation can change if it corresponds to a source-code checkout
+that is periodically updated and rebuilt.
+
+Finally, you can use the @DFlag{shared} or @Flag{s} flag
+with @exec{raco pkg} commands to install user-specific packages that
+apply to all Racket versions that you run. (In contrast, @|Planet1|
 requires reinstallation of all packages every version change.)
 
 @subsection{Where and how are packages installed?}
 
-User-local packages are in @racket[(build-path (find-system-path
-'addon-dir) "pkgs")] and installation-wide packages are in
+User-local and version-specific packages are in @racket[(build-path
+(find-system-path 'addon-dir) (version) "pkgs")], user-local and
+all-version packages are in @racket[(build-path (find-system-path
+'addon-dir) "pkgs")], and installation-wide packages are in
 @racket[(build-path (find-lib-dir) "pkgs")]. They are linked as
 collection roots with @exec{raco link}.
 
 @subsection{How are user-local and installation-wide packages
 related?}
 
-They are totally distinct: packages are not compared with one another
-for conflicts.
+User-local packages are checked against installation-wide packages
+for conflicts. Installation-wide packages are checked only against
+other installation-wide packages.
 
-This is because it would be in-feasible to check them reliably. For
-example, if a system package is being installed by user A, then how
-could the system know that user B exists so B's packages could be
-checked for conflicts?
-
-We anticipate that most users will only one kind of package. The
-majority of users will employ user-local packages but classes or other
-shared workspaces might exclusively employ installation-wide packages.
+Beware that a new installation-wide package can invalidate previous
+conflict checks for user-specific packages. Similarly, new
+user-specific but all-version packages can invalidate previous
+user-specific conflict checks for a different Racket version.
 
 @subsection{If packages have no version numbers, how can I update
 packages with error fixes, etc?}
@@ -476,27 +604,27 @@ which version of a package I depend on if its interface has changed
 and I need an old version?}
 
 In such a situation, the author of the package has released a
-backwards incompatible edition of a package. It is not possible in
-Planet 2 to deal with this situation. (Other than, of course, not
-installing the "update".) Therefore, package authors should not make
+backwards incompatible edition of a package. The package manager provides
+no help to deal with this situation (other than, of course, not
+installing the ``update''). Therefore, package authors should not make
 backwards incompatible changes to packages. Instead, they should
 release a new package with a new name. For example, package
 @pkgname{libgtk} might become @pkgname{libgtk2}. These packages
 should be designed to not conflict with each other, as well.
 
-@subsection{Why is Planet 2 so different than Planet 1?}
+@subsection{Why is the package manager so different than @|Planet1|?}
 
-There are two fundamental differences between Planet 1 and Planet 2.
+There are two fundamental differences between @|Planet1| and this package manager.
 
-The first is that Planet 1 uses "internal linking" whereas Planet 2
-uses "external linking". For example, an individual module requires a
-Planet 1 package directly in a require statement:
+The first is that @|Planet1| uses ``internal linking'' whereas the current package manager
+uses ``external linking.'' For example, an individual module requires a
+@|Planet1| package directly in a require statement:
 
 @racketblock[
  (require (planet game/tic-tac-toe/data/matrix))
 ]
 
-whereas in Planet 2, the module would simply require the module of
+whereas using the package manager, the module would simply require the module of
 interest:
 
 @racketblock[
@@ -513,12 +641,12 @@ can easily be split up, combined, or taken over by other authors, etc.
 This change is bad because it makes the meaning of your program
 dependent on the state of the system. (This is already true of Racket
 code in general, because there's no way to make the required core
-version explicit, but the problem will be exacerbated by Planet 2.)
+version explicit, but the problem will be exacerbated by the package manager.)
 
-The second major difference is that Planet 1 is committed to
+The second major difference is that @|Planet1| is committed to
 guaranteeing that packages that never conflict with one another, so
 that any number of major and minor versions of the same package can be
-installed and used simultaneously. Planet 2 does not share this
+installed and used simultaneously. The package manager does not share this
 commitment, so package authors and users must be mindful of potential
 conflicts and plan around them.
 
@@ -527,31 +655,26 @@ maintenance (provided most packages don't conflict.)
 
 The change is bad because users must plan around potential conflicts.
 
-In general, the goal of Planet 2 is to be a lower-level package
+In general, the goal of the package manager is to be a lower-level
 system, more like the package systems used by operating systems. The
-goals of Planet 1 are not bad, but we believe they are needed
-infrequently and a system like Planet 1 could be more easily built
-atop Planet 2 than the reverse.
+goals of @|Planet1| are not bad, but we believe they are needed
+infrequently and a system like @|Planet1| could be more easily built
+atop the package manager than the reverse.
 
 In particular, our plans to mitigate the downsides of these changes
 are documented in @secref["short-term"].
+
+@; ----------------------------------------
 
 @section{Future Plans}
 
 @subsection[#:tag "short-term"]{Short Term}
 
-This section lists some short term plans for Planet 2. These are
-important, but didn't block its release. Planet 2 will be considered
+This section lists some short term plans for the package manager. These are
+important, but didn't block its release. The package manager will be considered
 out of beta when these are completed.
 
 @itemlist[
-
-@item{It has not been tested on Windows or Mac OS X. If you would like
-to test it, please run @exec{racket
-collects/tests/planet2/test.rkt}. It is recommended that you run this
-with the environment variable @envvar{PLT_PLANET2_DONTSETUP} set to
-@litchar{1}. (The tests that require @exec{raco setup} to run
-explicitly ignore the environment of the test script.)}
 
 @item{The official PNS will divide packages into three
 categories: @reponame{planet}, @reponame{solar-system}, and @reponame{galaxy}. The definitions
@@ -559,12 +682,12 @@ for these categories are:
 
  @itemlist[
 
-  @item{@reponame{galaxy} -- No restrictions.}
+  @item{@reponame{galaxy} --- No restrictions.}
 
-  @item{@reponame{solar-system} -- Must not conflict any package
+  @item{@reponame{solar-system} --- Must not conflict any package
 in @reponame{solar-system} or @reponame{planet}.}
 
-  @item{@reponame{planet} -- Must not conflict any package in @reponame{solar-system}
+  @item{@reponame{planet} --- Must not conflict any package in @reponame{solar-system}
 or @reponame{planet}. Must have documentation and tests. The author must be
 responsive about fixing regressions against changes in Racket, etc.}
 
@@ -596,7 +719,7 @@ category will have more benefits, such as automatic regression testing
 on DrDr, testing during releases, provided binaries, and advertisement
 during installation.
 
-The Planet 1 compatibility packages will also be included in
+The @|Planet1| compatibility packages will also be included in
 the @reponame{solar-system} category, automatically. 
 
 }
@@ -625,7 +748,7 @@ different policies.}
 
 @subsection{Long Term}
 
-This section lists some long term plans for Planet 2. Many of these
+This section lists some long term plans for the package manager. Many of these
 require a lot of cross-Racket integration.
 
 @itemlist[

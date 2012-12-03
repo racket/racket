@@ -1725,7 +1725,8 @@
   (define-sequence-syntax *in-list
     (lambda () #'in-list)
     (lambda (stx)
-      (syntax-case stx ()
+      (syntax-case stx (list)
+        [[(id) (_ (list expr))] #'[(id) (:do-in ([(id) expr]) #t () #t () #t #f ())]]
         [[(id) (_ lst-expr)]
          (for-clause-syntax-protect
           #'[(id)
@@ -1751,7 +1752,8 @@
   (define-sequence-syntax *in-mlist
     (lambda () #'in-mlist)
     (lambda (stx)
-      (syntax-case stx ()
+      (syntax-case stx (mlist)
+        [[(id) (_ (mlist expr))] #'[(id) (:do-in ([(id) expr]) #t () #t () #t #f ())]]
         [[(id) (_ lst-expr)]
          (for-clause-syntax-protect
           #'[(id)

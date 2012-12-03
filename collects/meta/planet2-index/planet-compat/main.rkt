@@ -10,7 +10,8 @@
          planet/config
          racket/system
          racket/path
-         racket/list)
+         racket/list
+         setup/unpack)
 
 (module+ main
   (define-runtime-path root "root")
@@ -269,8 +270,11 @@
             (unless (directory-exists? dest-dir)
               (printf "Unpacking ~a\n" pkg-short)
               (make-directory dest-dir)
-              (local-require planet2/util-plt)
-              (unplt dest dest-dir))
+              (unpack dest pkg-dir
+                      (lambda (x) (printf "~a\n" x))
+                      (lambda () dest-dir)
+                      #f
+                      (lambda (auto-dir main-dir file) dest-dir)))
 
             (define pkg/no-plt
               (format "~a~a"
@@ -330,9 +334,12 @@
                            all-deps)))
 
                 (printf "\tdeps ~a\n" deps)
-                (write-to-file
-                 `((dependency ,@deps))
-                 (build-path pkg-dir "METADATA.rktd"))))
+                (call-with-output-file*
+                    (build-path pkg-dir "info.rkt")
+                  (lambda (o)
+                    (fprintf o "#lang setup/infotab\n")
+                    (write `(define deps ',deps) o)))))
+
 
             (define pkg-pth (build-path pkg-depo pkg-depo-dir pkg-name.plt))
             (when-delete?

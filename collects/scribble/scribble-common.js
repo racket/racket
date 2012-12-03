@@ -26,7 +26,7 @@ function GetPageArg(key, def) {
 
 function MergePageArgsIntoLink(a) {
   if (page_args.length == 0 ||
-      (!a.attributes["pltdoc"]) || (a.attributes["pltdoc"].value == ""))
+      (!a.attributes["data-pltdoc"]) || (a.attributes["data-pltdoc"].value == ""))
     return;
   a.href.search(/^([^?#]*)(?:\?([^#]*))?(#.*)?$/);
   if (RegExp.$2.length == 0) {

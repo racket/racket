@@ -5,6 +5,7 @@
 
 (require string-constants
          racket/class
+         racket/string
          mred/mred-sig
          syntax-color/module-lexer
          "collapsed-snipclass-helpers.rkt"
@@ -501,11 +502,14 @@
     
     (define/public (get-limit pos) 0)
     
-    (define/public (balance-parens key-event)
+    (define/public (balance-parens key-event [smart-skip #f])
       (insert-close-paren (get-start-position) 
                           (send key-event get-key-code)
                           (preferences:get 'framework:paren-match)
-                          (preferences:get 'framework:fixup-parens)))
+                          (preferences:get 'framework:fixup-parens)
+                          (or smart-skip
+                              (and (preferences:get 'framework:automatic-parens)
+                                   'adjacent))))
     
     (define/public (tabify-on-return?) #t)
     (define/public (tabify [pos (get-start-position)])
@@ -897,17 +901,39 @@
         (let ([snip-pos (get-snip-position snip)])
           (delete snip-pos (+ snip-pos 1)))
         (set-position pos pos)))
-    
+
+
+    ;; stick-to-next-sexp?: natural -> boolean
+    (define stick-to-patterns
+      '("'" "," ",@" "`" "#'" "#," "#`" "#,@"
+        "#&" "#;" "#hash" "#hasheq" "#ci" "#cs"))
+    (define stick-to-patterns-union
+      (regexp (string-append 
+               "^("
+               (string-join (map regexp-quote stick-to-patterns) "|")
+               ")")))
+    (define stick-to-patterns-union-anchored
+      (regexp (string-append 
+               "^("
+               (string-join (map regexp-quote stick-to-patterns) "|")
+               ")$")))
+    (define stick-to-max-pattern-length 
+      (apply max (map string-length stick-to-patterns)))
     (define/public (stick-to-next-sexp? start-pos)
-      (let ([end-pos (forward-match start-pos (last-position))])
-        (and end-pos
-             (member (get-text start-pos end-pos)
-                     '("'" "," ",@" "`"
-                           "#'" "#," "#`" "#,@"
-                           "#&" "#;"
-                           "#hash" "#hasheq"
-                           "#ci" "#cs")))))
-    
+      ;; Optimization: speculatively check whether the string will
+      ;; match the patterns; at time of writing, forward-match can be
+      ;; really expensive.
+      (define snippet 
+        (get-text start-pos 
+                  (min (last-position) 
+                       (+ start-pos stick-to-max-pattern-length))))
+      (and (regexp-match stick-to-patterns-union snippet)
+           (let ([end-pos (forward-match start-pos (last-position))])
+             (and end-pos
+                  (regexp-match stick-to-patterns-union-anchored
+                                (get-text start-pos end-pos))
+                  #t))))
+      
     (define/public (get-forward-sexp start-pos) 
       ;; loop to work properly with quote, etc.
       (let loop ([one-forward (forward-match start-pos (last-position))])
@@ -1312,6 +1338,47 @@
          [(and lam-reg (regexp-match lam-reg text)) 'lambda]
          [else #f])))))
 
+
+(define (position-type-when-inserted text char)
+  (define selection-start (send text get-start-position))
+  (define selection-end (send text get-end-position))
+  (send text begin-edit-sequence #t #f)
+  (send text insert char selection-start)
+  (define actual-type (send text classify-position selection-start))
+  (send text delete selection-start (+ 1 selection-start))
+  (send text end-edit-sequence)
+  (send text undo)  ; to avoid messing up the editor's modified state
+  ;(printf "check: |~a| actual: ~a~n" char actual-type)
+  actual-type)
+
+
+  ;; determines if the cursor is currently sitting in a string
+  ;; literal or a comment. To do this more accurately, first
+  ;; insert a space at the current cursor start position, then
+  ;; check what classification of that space character itself
+  (define (in-string/comment? text)
+    (define selection-start (send text get-start-position))
+    (define selection-end (send text get-end-position))
+    (send text begin-edit-sequence #t #f)
+    (send text insert " " selection-start)
+    (define type (send text classify-position selection-start))
+    (send text delete selection-start (add1 selection-start))
+    (send text end-edit-sequence)
+    (send text undo)  ; to avoid messing up the editor's modified state
+                      ; in case of a simple skip
+    (and (member type '(comment string)) #t))
+
+  ;; produces the 1 character string immediately following
+  ;; the cursor, if there is one and if there is not a current
+  ;; selection, in which case produces #f
+  (define (immediately-following-cursor text)
+    (define selection-start (send text get-start-position))
+    (and (= selection-start (send text get-end-position))   ; nothing selected
+         (< selection-start (send text last-position))
+         (send text get-text selection-start (+ selection-start 1))))
+
+
+
 (define set-mode-mixin
   (mixin (-text<%> mode:host-text<%>) ()
     (super-new)
@@ -1425,6 +1492,9 @@
   (send keymap add-function "balance-parens"
         (λ (edit event)
           (send edit balance-parens event)))
+  (send keymap add-function "balance-parens-forward"
+        (λ (edit event)
+          (send edit balance-parens event 'forward)))
   
   (send keymap map-function "TAB" "tabify-at-caret")
   
@@ -1444,17 +1514,62 @@
   
   (send keymap map-function "leftbuttondouble" "paren-double-select")
   
+
+
   (define (insert-brace-pair text open-brace close-brace)
     (define selection-start (send text get-start-position))
+    (define hash-before?  ; tweak to detect and correctly close block comments #| ... |#
+      (and (< 0 selection-start)
+           (string=? "#" (send text get-text (- selection-start 1) selection-start))))
+    (send text begin-edit-sequence)
     (send text set-position (send text get-end-position))
     (send text insert close-brace)
+    (when (and (char=? #\| open-brace) hash-before?) (send text insert #\#))
     (send text set-position selection-start)
-    (send text insert open-brace))
+    (send text insert open-brace)
+    (send text end-edit-sequence))
   
+  ;; only insert a pair if:
+  ;;   - automatic-parens is on, and
+  ;;   - cursor is not in a string or line/block comment, and
+  ;;   - cursor is not preceded by #\ or \ escape characters
   (define (maybe-insert-brace-pair text open-brace close-brace)
+    (define open-parens 
+      (for/list ([x (racket-paren:get-paren-pairs)]) (string-ref (car x) 0)))
     (cond
       [(preferences:get 'framework:automatic-parens)
-       (insert-brace-pair text open-brace close-brace)]
+       (define c (immediately-following-cursor text))
+       (define when-inserted (position-type-when-inserted text (string open-brace)))
+       (cond
+         ; insert paren pair if it results valid parenthesis token...
+         [(member open-brace open-parens)
+          (if (eq? (position-type-when-inserted text (string open-brace)) 'parenthesis)
+              (insert-brace-pair text open-brace close-brace)
+              (send text insert open-brace))]
+         
+         ; ASSUME: from here on, open-brace is either "  or  |
+         ; is there a token error at current position which would 
+         ; be fixed by inserting the character...
+         [(and (eq? 'error (send text classify-position (send text get-start-position)))
+               (not (eq? 'error when-inserted)))
+          (send text insert open-brace)]
+         
+         ; smart-skip over a  "  |  or  |# ...
+         [(and c (char=? #\" open-brace) (string=? c "\""))
+          (send text set-position (+ 1 (send text get-end-position)))]
+         [(and c (char=? #\| open-brace) (string=? c "|"))
+          (send text set-position (+ 1 (send text get-end-position)))
+          (define d (immediately-following-cursor text))
+          (when (and d (string=? d "#"))   ; a block comment?
+            (send text set-position (+ 1 (send text get-end-position))))]
+
+         ; are we in a string or comment...
+         [(in-string/comment? text) (send text insert open-brace)]
+         
+         ; otherwise if open-brace would result in some literal
+         [(eq? 'constant when-inserted) (send text insert open-brace)]
+         
+         [else (insert-brace-pair text open-brace close-brace)])]
       [else
        (send text insert open-brace)]))
   
@@ -1549,6 +1664,10 @@
   
   ;(map-meta "c:m" "mark-matching-parenthesis")
   ; this keybinding doesn't interact with the paren colorer
+
+  (map-meta ")" "balance-parens-forward")
+  (map-meta "]" "balance-parens-forward")
+  (map-meta "}" "balance-parens-forward")
   
   (map-meta "(" "insert-()-pair")
   (map-meta "[" "insert-[]-pair")
@@ -1673,7 +1792,9 @@
     (send text delete pos (+ pos 1) #f)
     (send text end-edit-sequence)
     (cond
-      [(preferences:get 'framework:automatic-parens)
+      [(and (preferences:get 'framework:automatic-parens)
+            (not (in-string/comment? text))
+            (eq? (position-type-when-inserted text real-char) 'parenthesis))
        (send text insert (case real-char
                            [(#\() #\)]
                            [(#\[) #\]]

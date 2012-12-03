@@ -46,12 +46,12 @@
                       'source
                       "http://localhost:9999/pkg-a-first.plt"))
    $ "raco pkg install --deps search-auto pkg-b" =exit> 0 <input= "y\n"
-   $ "raco pkg show" =stdout> #rx"Package\\(auto\\?\\)    Checksum                                    Source\npkg-a\\*            [a-f0-9]+    \\(pns pkg-a\\)\npkg-b             [a-f0-9]+    \\(pns pkg-b\\)\n"
+   $ "raco pkg show -u" =stdout> #rx"Package\\(auto\\?\\)    Checksum                                    Source\npkg-a\\*            [a-f0-9]+    \\(pns pkg-a\\)\npkg-b             [a-f0-9]+    \\(pns pkg-b\\)\n"
    $ "racket -e '(require pkg-b)'" =exit> 43
    $ "racket -e '(require pkg-a)'" =exit> 0
    ;; remove auto doesn't do anything because everything is needed
    $ "raco pkg remove --auto"
-   $ "raco pkg show" =stdout> #rx"Package\\(auto\\?\\)    Checksum                                    Source\npkg-a\\*            [a-f0-9]+    \\(pns pkg-a\\)\npkg-b             [a-f0-9]+    \\(pns pkg-b\\)\n"
+   $ "raco pkg show -u" =stdout> #rx"Package\\(auto\\?\\)    Checksum                                    Source\npkg-a\\*            [a-f0-9]+    \\(pns pkg-a\\)\npkg-b             [a-f0-9]+    \\(pns pkg-b\\)\n"
    $ "racket -e '(require pkg-b)'" =exit> 43
    $ "racket -e '(require pkg-a)'" =exit> 0
    ;; pkg-a is now an auto
@@ -63,9 +63,9 @@
    $ "raco pkg update -a" =exit> 0
    $ "racket -e '(require pkg-a)'" =exit> 43
    $ "raco pkg remove pkg-b"
-   $ "raco pkg show" =stdout> #rx"Package\\(auto\\?\\)    Checksum                                    Source\npkg-a\\*            [a-f0-9]+    \\(pns pkg-a\\)\n"
+   $ "raco pkg show -u" =stdout> #rx"Package\\(auto\\?\\)    Checksum                                    Source\npkg-a\\*            [a-f0-9]+    \\(pns pkg-a\\)\n"
    $ "racket -e '(require pkg-b)'" =exit> 1
    ;; pkg-a is now not needed
    $ "raco pkg remove --auto"
-   $ "raco pkg show" =stdout> "Package(auto?)    Checksum    Source\n"
+   $ "raco pkg show -u" =stdout> "Package(auto?)    Checksum    Source\n"
    $ "racket -e '(require pkg-a)'" =exit> 1)))

@@ -28,6 +28,8 @@
     [(zero? num)  empty]
     ; ambiguous request: arbitrarily return start
     [(and start? end? (= 1 num))  (list start)]
+    [(end . < . start)  (reverse (linear-seq end start num #:start? end? #:end? start?))]
+    [(end . = . start)  (build-list num (λ _ start))]
     [else
      (define size (- end start))
      (define step (/ size (cond [(and start? end?)  (- num 1)]

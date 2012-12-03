@@ -783,7 +783,7 @@
           (super help-menu:after-about menu))
 
         (define client-panel
-          (new vertical-pane% (parent (get-button-panel))))
+          (new panel:vertical-discrete-sizes% (parent (get-button-panel))))
 
         (define client-button
           (new switchable-button%

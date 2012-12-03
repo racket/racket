@@ -12,6 +12,7 @@
 (load-relative "stx.rktl")
 (load-relative "module.rktl")
 (load-relative "submodule.rktl")
+(load-relative "stxparam.rktl")
 (load-relative "number.rktl")
 (load-relative "unsafe.rktl")
 (load-relative "object.rktl")

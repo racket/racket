@@ -113,6 +113,14 @@ on the next character or characters in the input stream as follows:
   @dispatch[@litchar{#[}]{starts a @tech{vector}; see @secref["parse-vector"]}
   @dispatch[@litchar["#{"]]{starts a @tech{vector}; see @secref["parse-vector"]}
 
+  @dispatch[@litchar{#fl(}]{starts a @tech{flvector}; see @secref["parse-vector"]}
+  @dispatch[@litchar{#fl[}]{starts a @tech{flvector}; see @secref["parse-vector"]}
+  @dispatch[@litchar["#fl{"]]{starts a @tech{flvector}; see @secref["parse-vector"]}
+
+  @dispatch[@litchar{#fx(}]{starts a @tech{fxvector}; see @secref["parse-vector"]}
+  @dispatch[@litchar{#fx[}]{starts a @tech{fxvector}; see @secref["parse-vector"]}
+  @dispatch[@litchar["#fx{"]]{starts a @tech{fxvector}; see @secref["parse-vector"]}
+
   @dispatch[@litchar{#s(}]{starts a @tech{structure} literal; see @secref["parse-structure"]}
   @dispatch[@litchar{#s[}]{starts a @tech{structure} literal; see @secref["parse-structure"]}
   @dispatch[@litchar["#s{"]]{starts a @tech{structure} literal; see @secref["parse-structure"]}
@@ -157,6 +165,15 @@ on the next character or characters in the input stream as follows:
   @dispatch[@elem{@litchar{#}@kleeneplus{@nonterm{digit@sub{10}}}@litchar{(}}]{starts a vector; see @secref["parse-vector"]}
   @dispatch[@elem{@litchar{#}@kleeneplus{@nonterm{digit@sub{10}}}@litchar{[}}]{starts a vector; see @secref["parse-vector"]}
   @dispatch[@elem{@litchar{#}@kleeneplus{@nonterm{digit@sub{10}}}@litchar["{"]}]{starts a vector; see @secref["parse-vector"]}
+
+  @dispatch[@elem{@litchar{#fl}@kleeneplus{@nonterm{digit@sub{10}}}@litchar{(}}]{starts a flvector; see @secref["parse-vector"]}
+  @dispatch[@elem{@litchar{#fl}@kleeneplus{@nonterm{digit@sub{10}}}@litchar{[}}]{starts a flvector; see @secref["parse-vector"]}
+  @dispatch[@elem{@litchar{#fl}@kleeneplus{@nonterm{digit@sub{10}}}@litchar["{"]}]{starts a flvector; see @secref["parse-vector"]}
+
+  @dispatch[@elem{@litchar{#fx}@kleeneplus{@nonterm{digit@sub{10}}}@litchar{(}}]{starts a fxvector; see @secref["parse-vector"]}
+  @dispatch[@elem{@litchar{#fx}@kleeneplus{@nonterm{digit@sub{10}}}@litchar{[}}]{starts a fxvector; see @secref["parse-vector"]}
+  @dispatch[@elem{@litchar{#fx}@kleeneplus{@nonterm{digit@sub{10}}}@litchar["{"]}]{starts a fxvector; see @secref["parse-vector"]}
+
   @dispatch[@graph-defn[]]{binds a graph tag; see @secref["parse-graph"]}
   @dispatch[@graph-ref[]]{uses a graph tag; see @secref["parse-graph"]}
 
@@ -578,16 +595,27 @@ file.
 
 When the reader encounters a @litchar{#(}, @litchar{#[}, or
 @litchar["#{"], it starts parsing a @tech{vector}; see @secref["vectors"] for
-information on vectors. The @litchar{#[} and @litchar["#{"] forms can
-be disabled through the @racket[read-square-bracket-as-paren] and
+information on vectors. A @litchar{#fl} in place of @litchar{#}
+starts an @tech{flvector}, but is not allowed in @racket[read-syntax] mode; 
+see @secref["flvectors"] for information on flvectors.
+A @litchar{#fx} in place of @litchar{#}
+starts an @tech{fxvector}, but is not allowed in @racket[read-syntax] mode; 
+see @secref["fxvectors"] for information on fxvectors.
+The @litchar{#[}, @litchar["#{"], @litchar{#fl[}, @litchar["#fl{"], 
+@litchar{#fx[}, and @litchar["#fx{"] forms can be disabled through 
+the @racket[read-square-bracket-as-paren] and
 @racket[read-curly-brace-as-paren] @tech{parameters}.
 
 The elements of the vector are recursively read until a matching
 @litchar{)}, @litchar{]}, or @litchar["}"] is found, just as for
 lists (see @secref["parse-pair"]). A delimited @litchar{.} is not
-allowed among the vector elements.
+allowed among the vector elements. In the case of @tech{flvectors},
+the recursive read for element is implicitly prefixed with @litchar{#i}
+and must produce a @tech{flonum}. In the case of @tech{flvectors},
+the recursive read for element is implicitly prefixed with @litchar{#e}
+and must produce a @tech{fixnum}.
 
-An optional vector length can be specified between the @litchar{#} and
+An optional vector length can be specified between @litchar{#}, @litchar{#fl}, @litchar{#fx}  and
 @litchar{(}, @litchar{[}, or @litchar["{"]. The size is specified
 using a sequence of decimal digits, and the number of elements
 provided for the vector must be no more than the specified size. If
@@ -595,7 +623,7 @@ fewer elements are provided, the last provided element is used for the
 remaining vector slots; if no elements are provided, then @racket[0]
 is used for all slots.
 
-In @racket[read-syntax] mode, each recursive read for the vector
+In @racket[read-syntax] mode, each recursive read for vector
 elements is also in @racket[read-syntax] mode, so that the wrapped
 vector's elements are also wrapped as syntax objects, and the vector is
 immutable.

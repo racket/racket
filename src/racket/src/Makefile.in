@@ -378,14 +378,16 @@ port.@LTO@: $(COMMON_HEADERS) \
 portfun.@LTO@: $(COMMON_HEADERS) $(srcdir)/schvers.h \
         $(srcdir)/../src/stypes.h $(srcdir)/schfd.h $(srcdir)/mzmark_portfun.inc
 print.@LTO@: $(COMMON_HEADERS) $(srcdir)/../src/stypes.h $(srcdir)/../src/schcpt.h \
-          $(srcdir)/schvers.h $(SCONFIG) $(srcdir)/mzmark_print.inc
+          $(srcdir)/schvers.h $(SCONFIG) $(srcdir)/mzmark_print.inc \
+          $(srcdir)/print_vector.inc 
 thread.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/../src/stypes.h  $(srcdir)/schfd.h $(srcdir)/mzmark_thread.inc
 rational.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/../src/stypes.h    
 read.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/schcpt.h $(srcdir)/schvers.h $(srcdir)/schminc.h \
-        $(srcdir)/../src/stypes.h $(srcdir)/mzmark_read.inc
+        $(srcdir)/../src/stypes.h $(srcdir)/mzmark_read.inc \
+        $(srcdir)/read_vector.inc
 regexp.@LTO@:  $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h $(srcdir)/mzmark_regexp.inc $(srcdir)/schrx.h
 resolve.@LTO@:  $(COMMON_HEADERS) \

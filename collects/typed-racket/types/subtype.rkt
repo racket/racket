@@ -421,6 +421,10 @@
                (if (andmap (lambda (e0) (type-equal? e0 e*)) e) A0 (fail! s t))]
               [((MPair: _ _) (MPairTop:)) A0]
               [((Hashtable: _ _) (HashtableTop:)) A0]
+              ;; TODO: subtyping for two `Prompt-Tagof`s with recursive types
+              ;;       may be rejected unnecessarily
+              [((Prompt-Tagof: _ _) (Prompt-TagTop:)) A0]
+              [((Continuation-Mark-Keyof: _) (Continuation-Mark-KeyTop:)) A0]
               ;; subtyping on structs follows the declared hierarchy
               [((Struct: nm (? Type? parent) _ _ _ _) other)
                ;(dprintf "subtype - hierarchy : ~a ~a ~a\n" nm parent other)
