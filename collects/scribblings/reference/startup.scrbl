@@ -234,7 +234,12 @@ flags:
 
   @item{@FlagFirst{c} or @DFlagFirst{no-compiled} : Disables loading
         of compiled byte-code @filepath{.zo} files, by initializing
-        @racket[current-compiled-file-paths] to @racket[null].}
+        @racket[current-compiled-file-paths] to @racket[null].
+        Use judiciously: this effectively ignores the content of all
+        @filepath{compiled} subdirectories, so that any used modules are
+        compiled on the fly---even @racketmodname[racket/base] and
+        its dependencies---which leads to prohibitively expensive
+        run times.}
 
   @item{@FlagFirst{q} or @DFlagFirst{no-init-file} : Skips loading
         @racket[(find-system-path 'init-file)] for
