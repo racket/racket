@@ -25,7 +25,10 @@
   (define default-continuation-prompt-tag
     (contract (-> (prompt-tag/c any-wrap/c #:call/cc any-wrap/c))
               -default-continuation-prompt-tag
-              'typed 'untyped)))
+              ;; TODO: we actually want to be able to specify that the
+              ;;       "contract from" party is not the untyped party
+              ;;       here, but that's not currently possible
+              'untyped 'typed)))
 
 (require (for-template (submod "." contracted))
          (submod "." contracted))
