@@ -7,21 +7,14 @@
 
 (define-syntax (lazy-require stx)
   (syntax-case stx ()
-    [(lazy-require #:requires-for-path (extra-req ...)
-                   [modpath (thing ...)] ...)
-     #`(begin
-         (lazy-require1 modpath (extra-req ...) (thing ...) #,stx)
-         ...)]
     [(lazy-require [modpath (thing ...)] ...)
-     (syntax/loc stx
-       (lazy-require #:requires-for-path ()
-                     [modpath (thing ...)] ...))]))
+     #`(begin (lazy-require1 modpath (thing ...) #,stx) ...)]))
 
 (define-for-syntax counter 0)
 
 (define-syntax (lazy-require1 stx)
   (syntax-case stx ()
-    [(lazy-require1 modpath (extra-req ...) (name ...) orig-stx)
+    [(lazy-require1 modpath (name ...) orig-stx)
      (with-syntax ([(defn ...)
                     (for/list ([name (in-list (syntax->list #'(name ...)))])
                       (unless (identifier? name)
@@ -37,7 +30,7 @@
                      (let ([phase (sub1 (variable-reference->phase (#%variable-reference)))])
                        (if (zero? phase)
                            ;; `define-runtime-module-path-index' works right at phase-level 0:
-                           #'(define-runtime-module-path-index mpi-var (quasiquote modpath))
+                           #'(define-runtime-module-path-index mpi-var (quote modpath))
                            ;; need a submodule:
                            (with-syntax ([lazy-require-path-n
                                           (string->symbol
@@ -48,20 +41,17 @@
                              #'(begin
                                  (module lazy-require-path-n racket/base
                                    (require racket/runtime-path
-                                            (for-syntax racket/base)
-                                            extra-req ...)
+                                            (for-syntax racket/base))
                                    (provide mpi-var)
-                                   (define-runtime-module-path-index mpi-var (quasiquote modpath)))
+                                   (define-runtime-module-path-index mpi-var (quote modpath)))
                                  (require 'lazy-require-path-n)))))])
-       ;; implicit quasiquote, so can use normal module-path syntax
-       ;; or escape to compute a the module-path via expression
        #'(begin 
            define-mpi-var
            (define (get-sym sym)
              (parameterize ((current-namespace (variable-reference->namespace (#%variable-reference))))
                (begin0
                 (dynamic-require mpi-var sym)
-                (do-registration (#%variable-reference) (quasiquote modpath)))))
+                (do-registration (#%variable-reference) (quote modpath)))))
            defn ...))]))
 
 (define (make-lazy-function name get-sym)

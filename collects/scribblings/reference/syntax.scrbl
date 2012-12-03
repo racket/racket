@@ -2786,33 +2786,17 @@ Attaches a @racket['compiler-hint:cross-module-inline]
 
 @note-lib-only[racket/lazy-require]
 
-@defform/subs[#:literals (unquote)
-              (lazy-require maybe-requires
-                            [mod (imported-fun-id ...)] ...)
-              ([mod module-path
-                    (unquote module-path-expr)]
-               [maybe-requires code:blank
-                               (code:line #:requires-for-path (require-spec ...))])
-              #:contracts ([module-path-expr module-path?])]{
+@defform[(lazy-require [module-path (imported-fun-id ...)] ...)]{
 
 Defines each @racket[imported-fun-id] as a function that, when called,
 dynamically requires the export named @racket[imported-fun-id] from
-the module specified by @racket[mod] and calls it with the same
-arguments.
-
-The module @racket[mod] can be specified as a @racket[_module-path]
-(see @racket[require]) or as an @racket[unquote]-escaped expression
-that computes a module path. As with
-@racket[define-runtime-module-path-index], a @racket[module-path-expr]
-is evaluated both in phase level 0 and phase level 1 relative to its 
-enclosing phase level.
+the module specified by @racket[module-path] and calls it with the
+same arguments.
 
 If the enclosing relative phase level is not 0, then
-@racket[module-path-expr] is also placed in a submodule (with a use of
+@racket[module-path] is also placed in a submodule (with a use of
 @racket[define-runtime-module-path-index] at phase level 0 within the
-submodule); supply extra @racket[require-spec]s with
-@racket[#:requires-for-path] to bind within the submodule for
-@racket[module-path-expr]. Introduced submodules have the names
+submodule). Introduced submodules have the names
 @racket[lazy-require-]@racket[_n]@racketidfont{-}@racket[_m], where
 @racket[_n] is a phase-level number and @racket[_m] is a number.
 
