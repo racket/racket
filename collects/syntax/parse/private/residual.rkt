@@ -1,7 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base)
          racket/stxparam
-         unstable/lazy-require)
+         racket/lazy-require)
 
 ;; ============================================================
 ;; Compile-time

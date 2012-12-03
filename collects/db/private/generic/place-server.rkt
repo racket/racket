@@ -4,7 +4,7 @@
          syntax/parse/private/minimatch
          racket/place
          racket/serialize
-         unstable/lazy-require
+         racket/lazy-require
          "interfaces.rkt"
          "prepared.rkt")
 (provide connection-server)

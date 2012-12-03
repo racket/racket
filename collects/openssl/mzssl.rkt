@@ -33,7 +33,7 @@ TO DO:
          racket/port
          racket/tcp
          racket/string
-         unstable/lazy-require
+         racket/lazy-require
          "libcrypto.rkt"
          "libssl.rkt")
 (lazy-require

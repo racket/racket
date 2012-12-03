@@ -3,7 +3,7 @@
          racket/match
          racket/set
          (for-syntax racket/base)
-         unstable/lazy-require
+         racket/lazy-require
          (contract-req)) 
 
 ;; Ugly hack - should use units

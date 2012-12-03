@@ -1,6 +1,6 @@
 #lang racket/base
 (require (for-syntax racket/base
-                     unstable/lazy-require)
+                     racket/lazy-require)
          "keywords.rkt")
 
 ;; keep and keep as abs. path -- lazy-loaded macros produce references to this

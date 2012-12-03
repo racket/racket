@@ -6,7 +6,7 @@
          unstable/contract
          slideshow/pict
          unstable/parameter-group
-         unstable/lazy-require
+         racket/lazy-require
          unstable/latent-contract/defthing
          "../common/contract.rkt"
          "../common/math.rkt"

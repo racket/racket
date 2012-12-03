@@ -7,7 +7,7 @@
                   define-match-expander)
          "define-forms.rkt"
          "struct.rkt"
-         (for-syntax unstable/lazy-require
+         (for-syntax racket/lazy-require
                      (only-in "stxtime.rkt"
                               match-...-nesting
                               prop:match-expander

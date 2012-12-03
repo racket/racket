@@ -8,7 +8,7 @@
          racket/match
          racket/set
          racket/contract
-         unstable/lazy-require)
+         racket/lazy-require)
 (lazy-require ("union.rkt" (Un)))
 
 (provide subst-all substitute substitute-dots substitute-dotted subst

@@ -5,7 +5,7 @@
          "rep-utils.rkt" "object-rep.rkt" "filter-rep.rkt" "free-variance.rkt"
          racket/match ;mzlib/etc
          racket/contract
-         unstable/lazy-require
+         racket/lazy-require
          (for-syntax racket/base syntax/parse))
 
 ;; Ugly hack - should use units

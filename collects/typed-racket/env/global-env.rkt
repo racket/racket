@@ -5,7 +5,7 @@
 
 (require "../types/tc-error.rkt"
          syntax/id-table
-         unstable/lazy-require) 
+         racket/lazy-require) 
 (provide register-type register-type-if-undefined
          finish-register-type
          maybe-finish-register-type

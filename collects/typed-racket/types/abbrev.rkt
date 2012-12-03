@@ -14,7 +14,7 @@
          ;; avoid the other dependencies of `racket/place`
          '#%place
          unstable/function
-         unstable/lazy-require
+         racket/lazy-require
          (except-in racket/contract/base ->* -> one-of/c)
          (prefix-in c: racket/contract/base)
          (for-syntax racket/base syntax/parse racket/list)

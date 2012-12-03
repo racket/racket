@@ -1,7 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base
                      syntax/parse
-                     unstable/lazy-require
+                     racket/lazy-require
                      "../private/kws.rkt")
          syntax/parse/private/residual) ;; keep abs. path
 (provide define-primitive-splicing-syntax-class)

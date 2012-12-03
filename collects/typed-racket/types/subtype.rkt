@@ -6,7 +6,7 @@
          (env type-name-env)
          racket/match unstable/match
          racket/function
-         unstable/lazy-require
+         racket/lazy-require
          (prefix-in c: racket/contract)
          (for-syntax racket/base syntax/parse))
 

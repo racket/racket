@@ -1,6 +1,6 @@
 #lang racket/base
 (require (for-syntax racket/base
-                     unstable/lazy-require
+                     racket/lazy-require
                      syntax/parse/private/residual-ct) ;; keep abs.path
          racket/contract/base
          racket/contract/combinator

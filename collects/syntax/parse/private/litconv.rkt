@@ -1,6 +1,6 @@
 #lang racket/base
 (require (for-syntax racket/base
-                     unstable/lazy-require
+                     racket/lazy-require
                      "sc.rkt"
                      "lib.rkt"
                      "kws.rkt"

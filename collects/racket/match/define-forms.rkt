@@ -6,7 +6,7 @@
                      unstable/sequence
                      syntax/parse
                      syntax/parse/experimental/template
-                     unstable/lazy-require))
+                     racket/lazy-require))
 
 (begin-for-syntax
  (lazy-require [racket/match/patterns (bound-vars)]

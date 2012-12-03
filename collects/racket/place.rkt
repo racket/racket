@@ -10,7 +10,7 @@
          racket/place/private/th-place
          racket/place/private/prop
          racket/private/streams
-         unstable/lazy-require
+         racket/lazy-require
 
 
          (for-syntax racket/base

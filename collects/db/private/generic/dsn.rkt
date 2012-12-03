@@ -1,5 +1,5 @@
 #lang racket/base
-(require unstable/lazy-require
+(require racket/lazy-require
          syntax/parse/private/minimatch
          racket/file
          racket/list)
