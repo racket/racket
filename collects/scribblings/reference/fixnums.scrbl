@@ -93,7 +93,7 @@ Safe versions of @racket[unsafe-fx->fl] and @racket[unsafe-fl->fx].}
 
 @; ------------------------------------------------------------
 
-@section{Fixnum Vectors}
+@section[#:tag "fxvectors"]{Fixnum Vectors}
 
 A @deftech{fxvector} is like a @tech{vector}, but it holds only
 @tech{fixnums}. The only advantage of a @tech{fxvector} over a
