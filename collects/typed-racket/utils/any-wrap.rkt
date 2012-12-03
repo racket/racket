@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require racket/match racket/contract/base racket/contract/combinator)
+(require racket/match racket/contract/base racket/contract/combinator
+         racket/promise)
 
 (define undef (letrec ([x x]) x))
 
@@ -81,6 +82,10 @@
            (chaperone-procedure v (case-lambda [() (values)]
                                                [_ (fail v)]))
            (chaperone-procedure v (lambda args (fail v))))]
+      [(? promise?)
+       ;; for promises, just apply Any in the promise
+       (contract (promise/c any-wrap/c) v
+                 (blame-positive b) (blame-negative b))]
       [_ (fail v)]))
   t)
 
