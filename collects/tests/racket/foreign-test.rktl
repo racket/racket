@@ -463,6 +463,18 @@
   (test (cast p _thing-pointer _intptr)
         cast q _stuff-pointer _intptr))
 
+(let ()
+  (struct foo (ptr)
+    #:property prop:cpointer 0)
+  
+  (define a-foo (foo (malloc 16 'raw)))
+  (free a-foo)
+  (struct bar (ptr)
+    #:property prop:cpointer (λ (s) (bar-ptr s)))
+  
+  (define a-bar (bar (malloc 16 'raw)))
+  (free a-bar))
+
 (delete-test-files)
 
 (report-errs)

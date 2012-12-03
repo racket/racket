@@ -1320,7 +1320,7 @@ static Scheme_Object *unwrap_cpointer_property(Scheme_Object *orig_v)
       if (val) {
         if (SCHEME_INTP(val))
           v = scheme_struct_ref(v, SCHEME_INT_VAL(val));
-        else if (SCHEME_PROCP(v)) {
+        else if (SCHEME_PROCP(val)) {
           Scheme_Object *a[1];
           a[0] = v;
           v = _scheme_apply(val, 1, a);
