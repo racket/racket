@@ -102,11 +102,11 @@ command-line arguments to @exec{racket}:
 @verbatim[#:indent 2]|{
   #! /bin/sh
   #|
-  exec racket -cu "$0" ${1+"$@"}
+  exec racket -e '(printf "Running...\n")' -u "$0" ${1+"$@"}
   |#
   #lang racket/base
-  (printf "This script started slowly, because the use of\n")
-  (printf "bytecode files has been disabled via -c.\n")
+  (printf "The above line of output had been produced via\n")
+  (printf "a use of the `-e' flag.\n")
   (printf "Given arguments: ~s\n"
           (current-command-line-arguments))
 }|
