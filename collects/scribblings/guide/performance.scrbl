@@ -414,6 +414,112 @@ then the expansion of the @racket[let] form to implement
 automatically converts the closure to pass itself @racket[n] as an
 argument instead.
 
+@section{Reachability and Garbage Collection}
+
+In general, Racket re-uses the storage for a value when the
+garbage collector can prove that the object is unreachable from
+any other (reachable) value. Reachability is a low-level, 
+abstraction breaking concept (and thus one must understand many
+details of the runtime system's implementation to accurate predicate
+precisely when values are reachable from each other),
+but generally speaking one value is reachable from a second one when 
+there is some operation to recover the original value from the second
+one.
+
+To help programmers understand when an object is no longer reachable and its
+storage can be reused,
+Racket provides @racket[make-weak-box] and @racket[weak-box-value],
+the creator and accessor for a one-record struct that the garbage
+collector treats specially. An object inside a weak box does not count
+as reachable, and so @racket[weak-box-value] might return the object
+inside the box, but it might also return @racket[#f] to indicate
+that the object was otherwise unreachable and garbage collected.
+Note that unless a garbage collection actually occurs, the value will
+remain inside the weak box, even if it is unreachable.
+
+For example, consider this program:
+@racketmod[racket
+           (struct fish (weight color) #:transparent)
+           (define f (fish 7 'blue))
+           (define b (make-weak-box f))
+           (printf "b has ~s\n" (weak-box-value b))
+           (collect-garbage)
+           (printf "b has ~s\n" (weak-box-value b))]
+It will print @litchar{b has #(struct:fish 7 blue)} twice because the
+definition of @racket[f] still holds onto the fish. If the program
+were this, however:
+@racketmod[racket
+           (struct fish (weight color) #:transparent)
+           (define f (fish 7 'blue))
+           (define b (make-weak-box f))
+           (printf "b has ~s\n" (weak-box-value b))
+           (set! f #f)
+           (collect-garbage)
+           (printf "b has ~s\n" (weak-box-value b))]
+the second printout will be @litchar{b has #f} because
+no reference to the fish exists (other than the one in the box).
+
+As a first approximation, all values in Racket must be allocated and will
+demonstrate behavior similar to the fish above. 
+There are a number of exceptions, however:
+@itemlist[@item{Small integers (recognizable with @racket[fixnum?]) are
+                always available without explicit
+                allocation. From the perspective of the garbage collector
+                and weak boxes, their storage is never reclaimed. (Due to
+                clever representation techniques, however, their storage
+                does not count towards the space that Racket uses.
+                That is, they are effectively free.)}
+         @item{Procedures where
+               the compiler can see all of their call sites may never be
+               allocated at all (as discussed above). 
+               Similar optimizations may also eliminate 
+               the allocation for other kinds of values.}
+         @item{Interned symbols are allocated only once (per place). A table inside
+               Racket tracks this allocation so a symbol may not become garbage
+               because that table holds onto it.}
+         @item{Reachability is only approximate with the CGC collector (i.e.,
+               a value may appear reachable to that collector when there is,
+               in fact, no way to reach it anymore.}]
+
+@section{Weak Boxes and Testing}
+
+One important use of weak boxes is in testing that some abstraction properly 
+releases storage for data it no longer needs, but there is a gotcha that 
+can easily cause such test cases to pass improperly. 
+
+Imagine you're designing a data structure that needs to
+hold onto some value temporarily but then should clear a field or
+somehow break a link to avoid referencing that value so it can be
+collected. Weak boxes are a good way to test that your data structure
+properly clears the value. This is, you might write a test case
+that builds a value, extracts some other value from it
+(that you hope becomes unreachable), puts the extracted value into a weak-box,
+and then checks to see if the value disappears from the box.
+
+This code is one attempt to follow that pattern, but it has a subtle bug:
+@racketmod[racket
+           (let* ([fishes (list (fish 8 'red)
+                                (fish 7 'blue))]
+                  [wb (make-weak-box (list-ref fishes 0))])
+             (collect-garbage)
+             (printf "still there? ~s\n" (weak-box-value wb)))]
+Specifically, it will show that the weak box is empty, but not
+beacause @racket[_fishes] no longer holds onto the value, but
+because @racket[_fishes] itself is not reachable anymore!
+
+Change the program to this one:
+@racketmod[racket
+           (let* ([fishes (list (fish 8 'red)
+                                (fish 7 'blue))]
+                  [wb (make-weak-box (list-ref fishes 0))])
+             (collect-garbage)
+             (printf "still there? ~s\n" (weak-box-value wb))
+             (printf "fishes is ~s\n" fishes))]
+and now we see the expected result. The difference is that last
+occurrence of the variable @racket[_fishes]. That constitutes
+a reference to the list, ensuring that the list is not itself
+garbage collected, and thus the red fish is not either.
+
 @; ----------------------------------------------------------------------
 
 @include-section["futures.scrbl"]
