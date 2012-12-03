@@ -77,7 +77,6 @@ Keep documentation and tests up to date.
 @include-section["../automata/scribblings/automata.scrbl"]
 @include-section["bytes.scrbl"]
 @include-section["contract.scrbl"]
-@include-section["cat.scrbl"]
 @include-section["wrapc.scrbl"]
 @include-section["debug.scrbl"]
 @include-section["define.scrbl"]
