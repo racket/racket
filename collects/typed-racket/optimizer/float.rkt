@@ -180,7 +180,7 @@
            #:with opt
            (begin (log-optimization "unary float" float-opt-msg this-syntax)
                   (add-disappeared-use #'op)
-                  #'(unsafe-fl- 0.0 f.opt)))
+                  #'(unsafe-fl* -1.0 f.opt)))
   (pattern (#%plain-app (~and op (~literal /)) f:float-expr)
            #:with opt
            (begin (log-optimization "unary float" float-opt-msg this-syntax)
