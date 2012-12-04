@@ -1492,6 +1492,7 @@ DO_WINDOWS_BUILD() {
   win_build_step RKT "get-libs (core)" ../src/get-libs.rkt core
   win_build_step RKT "get-libs (gui)" ../src/get-libs.rkt gui
   win_build_step RKT "get-libs (db)" ../src/get-libs.rkt db
+  win_build_step RKT "get-libs (math)" ../src/get-libs.rkt math
   win_build_step RKT "get-libs (com)" ../src/get-libs.rkt com
 
   header -s "Windows: Building libraries"

@@ -585,7 +585,7 @@ plt-extras :+=
   (package: "test-engine/")
 
 ;; -------------------- math
-dr-extras :+= (package: "math")
+dr-extras :+= (package: "math") (get-libs: math)
 
 ;; -------------------- stepper
 plt-extras :+= (package: "stepper")
@@ -708,7 +708,7 @@ plt-extras :+= (package: "racklog/")
 plt-extras :+= (package: "datalog/")
 
 ;; -------------------- db
-mz-extras :+= (package: "db/") (lib: "sqlite*")
+mz-extras :+= (package: "db/") (get-libs: db)
 
 ;; -------------------- future-visualizer
 plt-extras :+= (package: "future-visualizer/")
