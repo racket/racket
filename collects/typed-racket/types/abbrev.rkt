@@ -284,6 +284,7 @@
 (define -car (make-CarPE))
 (define -cdr (make-CdrPE))
 (define -syntax-e (make-SyntaxPE))
+(define -force (make-ForcePE))
 
 
 ;; convenient syntax

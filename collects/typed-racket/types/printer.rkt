@@ -83,6 +83,7 @@
   (match c
     [(CarPE:) (fp "car")]
     [(CdrPE:) (fp "cdr")]
+    [(ForcePE:) (fp "force")]
     [(StructPE: t i) (fp "(~a ~a)" t i)]
     [else (fp "(Unknown Path Element: ~a)" (struct->vector c))]))
 

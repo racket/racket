@@ -38,6 +38,12 @@
     [((Syntax: t) (NotTypeFilter: u (list rst ... (SyntaxPE:)) x))
      (make-Syntax (update t (-not-filter u x rst)))]
 
+    ;; promise op
+    [((Promise: t) (TypeFilter: u (list rst ... (ForcePE:)) x))
+     (make-Promise (update t (-filter u x rst)))]
+    [((Promise: t) (NotTypeFilter: u (list rst ... (ForcePE:)) x))
+     (make-Promise (update t (-not-filter u x rst)))]
+
     ;; struct ops
     [((Struct: nm par flds proc poly pred)
       (TypeFilter: u (list rst ... (StructPE: (? (lambda (s) (subtype t s)) s) idx)) x))
