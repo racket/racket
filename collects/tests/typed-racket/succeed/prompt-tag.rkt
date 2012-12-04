@@ -14,7 +14,8 @@
 
 ;; Test call/comp & abort
 (call-with-continuation-prompt
- (λ () (+ 1 (call-with-composable-continuation
+ (λ () (+ 1 ((inst call-with-composable-continuation
+                   Integer ((Integer -> Integer) -> Integer) Integer)
              (λ: ([k : (Integer -> Integer)])
                (abort-current-continuation pt2 k))
              pt2)))

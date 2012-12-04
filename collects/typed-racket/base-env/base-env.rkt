@@ -2036,9 +2036,13 @@
 [call/cc (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
 [call-with-composable-continuation
  (-polydots (b c a)
-   (cl->*
-    (-> (->... '() (a a) b) (make-Prompt-Tagof b c)
-        (make-ValuesDots '() a 'a))))]
+   (-> ;; takes a continuation and should return the same
+       ;; type as the continuation's input type
+       (-> (->... '() (a a) b) (make-ValuesDots '() a 'a))
+       (make-Prompt-Tagof b c)
+       ;; the continuation's input is the same as the
+       ;; return type here
+       (make-ValuesDots '() a 'a)))]
 [call-with-escape-continuation
  (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
 [call/ec (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
