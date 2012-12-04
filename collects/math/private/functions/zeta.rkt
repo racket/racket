@@ -107,7 +107,7 @@ P. Borwein. An Efficient Algorithm for the Riemann Zeta Function.
 (define pi.128 267257146016241686964920093290467695825/85070591730234615865843651857942052864)
 
 (: flexppi (Flonum -> Flonum))
-(define flexppi (make-flexp/base pi.128))
+(define flexppi (make-flexpt pi.128))
 
 (require math/bigfloat)
 (: fleta (Flonum -> Flonum))
@@ -124,7 +124,7 @@ P. Borwein. An Efficient Algorithm for the Riemann Zeta Function.
                       [(fleven? (fltruncate (* 0.5 s)))  +inf.0]
                       [else  -inf.0])]
                [(s . fl< . -171.0)
-                (define f (make-flexp/base (/ (* euler.64 pi.64) (inexact->exact (- s)))))
+                (define f (make-flexpt (/ (* euler.64 pi.64) (inexact->exact (- s)))))
                 (* (/ 4.0 pi)
                    (flexp-stirling (- s))
                    (flsqrt (/ pi (* -0.5 s)))
@@ -160,7 +160,7 @@ P. Borwein. An Efficient Algorithm for the Riemann Zeta Function.
                  [else  (- (flexpm1 (fl* (fl- 1.0 s) (fllog 2.0))))]))
          (fl/ (fleta s) c)]
         [(and (s . fl> . -266.5) (s . fl< . 0.0))  ; s < 0 keeps TR happy
-         (define f (make-flexp/base (/ (* euler.64 pi.64) (inexact->exact (- s)))))
+         (define f (make-flexpt (/ (* euler.64 pi.64) (inexact->exact (- s)))))
          (* (/ 4.0 pi)
             (flexp-stirling (- s))
             (flsqrt (/ pi (* -0.5 s)))

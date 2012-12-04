@@ -164,7 +164,7 @@ But see @racket[flexpt1p], which is more accurate still.
 Like @racket[(flexpt (+ 1.0 x) y)], but accurate for any @racket[x] and @racket[y].
 }
 
-@defproc[(make-flexp/base [x Real]) (Flonum -> Flonum)]{
+@defproc[(make-flexpt [x Real]) (Flonum -> Flonum)]{
 Equivalent to @racket[(λ (y) (flexpt x y))] when @racket[x] is a flonum, but much more
 accurate for large @racket[y] when @racket[x] cannot be exactly represented
 by a flonum.
@@ -181,9 +181,9 @@ the error is low near zero, but grows with distance from the origin:
                                (eval:result ""))
                     (eval:alts (flulp-error (flexpt pi y) pi^y)
                                (eval:result @racketresultfont{43.12619934359266}))]
-Using @racket[make-flexp/base], the error is near rounding error everywhere:
+Using @racket[make-flexpt], the error is near rounding error everywhere:
 @interaction[#:eval untyped-eval
-                    (eval:alts (define flexppi (make-flexp/base (bigfloat->rational pi.bf)))
+                    (eval:alts (define flexppi (make-flexpt (bigfloat->rational pi.bf)))
                                (eval:result ""))
                     (eval:alts (flulp-error (flexppi y) pi^y)
                                (eval:result @racketresultfont{0.8738006564073412}))]

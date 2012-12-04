@@ -53,45 +53,6 @@
              (: proc-names (type-name -> arg-types)) ...
              (define (proc-names v) (struct-proc-names v)) ...))))]))
 
-(define-syntax (define-distribution-type: stx)
-  (syntax-case stx (:)
-    [(_ (type-name T ...) (parent-type-name In Out)
-        (A B) name ([arg-names : arg-type] ...))
-     (let ([arg-name-lst  (syntax->list #'(arg-names ...))])
-       (with-syntax* ([struct-type-name  (format-id #'type-name "~a-struct" #'type-name)]
-                      [(struct-proc-names ...)  (map (λ (arg-name)
-                                                         (format-id #'type-name
-                                                                    "~a-~a"
-                                                                    #'struct-type-name
-                                                                    arg-name))
-                                                       arg-name-lst)]
-                      [struct-pred-name  (format-id #'type-name "~a?" #'struct-type-name)]
-                      [make-name  (format-id #'name "make-~a" #'name)]
-                      [(proc-names ...)  (map (λ (arg-name)
-                                                (format-id #'name "~a-~a" #'name arg-name))
-                                              arg-name-lst)]
-                      [pred-name  (format-id #'name "~a?" #'name)]
-                      [format-str
-                       (string-append "(~a "
-                                      (string-join (build-list (length arg-name-lst) (λ _ "~v")))
-                                      ")")])
-         (syntax/loc stx
-           (begin
-             (struct: (A B) struct-type-name parent-type-name ([arg-names : arg-types] ...)
-               #:property prop:custom-print-quotable 'never
-               #:property prop:custom-write
-               (λ (v port write?)
-                 (fprintf port format-str 'name (proc-names v) ...)))
-             (define-type (type-name T ...) (struct-type-name In Out))
-             (: proc-names ((type-name T ...) -> arg-types)) ...
-             (define (proc-names d) (struct-proc-names d)) ...
-             (define make-name struct-type-name)
-             (define pred-name struct-pred-name)))))]
-    [(_ type-name (parent-type-name In Out) name ([arg-names arg-opts ...] ...))
-     (syntax/loc stx
-       (define-distribution-type: (type-name) (parent-type-name In Out)
-         (A B) name ([arg-names arg-opts ...] ...)))]))
-
 ;; ===================================================================================================
 ;; One-sided scale family distributions (e.g. exponential)
 

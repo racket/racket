@@ -24,16 +24,16 @@
     [(d a)  (truncated-dist d -inf.0 a)]
     [(d a b)
      (let*-values ([(a b)  (values (fl a) (fl b))]
-                   [(a b)  (values (max (dist-min d) (min a b))
-                                   (min (dist-max d) (max a b)))])
+                   [(a b)  (values (max (ordered-dist-min d) (min a b))
+                                   (min (ordered-dist-max d) (max a b)))])
        (unsafe-truncated-dist d a b))]))
 
 (: unsafe-truncated-dist (Real-Dist Float Float -> Truncated-Dist))
 (define (unsafe-truncated-dist d a b)
-  (define orig-pdf (dist-pdf d))
-  (define orig-cdf (dist-cdf d))
-  (define orig-inv-cdf (dist-inv-cdf d))
-  (define orig-sample (dist-sample d))
+  (define orig-pdf (distribution-pdf d))
+  (define orig-cdf (ordered-dist-cdf d))
+  (define orig-inv-cdf (ordered-dist-inv-cdf d))
+  (define orig-sample (distribution-sample d))
   (define log-P_a<x<=b (real-dist-prob d a b #t #f))
   (define log-P_x<=a (delay (orig-cdf a #t #f)))
   (define log-P_x>b (delay (orig-cdf b #t #t)))

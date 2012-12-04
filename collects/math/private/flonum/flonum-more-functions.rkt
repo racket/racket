@@ -11,7 +11,7 @@
 (provide flsqrt1pm1
          flsinh flcosh fltanh
          flasinh flacosh flatanh
-         make-flexp/base flexpt+ flexpt1p)
+         make-flexpt flexpt+ flexpt1p)
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; sqrt(1+x)-1
@@ -163,8 +163,8 @@
 
 (begin-encourage-inline
   
-  (: make-flexp/base (Positive-Exact-Rational -> (Flonum -> Flonum)))
-  (define (make-flexp/base b)
+  (: make-flexpt (Positive-Exact-Rational -> (Flonum -> Flonum)))
+  (define (make-flexpt b)
     (define b-hi (fl b))
     (define b-lo (fl (- (/ (inexact->exact b-hi) b) 1)))
     (cond [(fl= b-lo 0.0)  (λ: ([x : Flonum]) (flexpt b-hi x))]

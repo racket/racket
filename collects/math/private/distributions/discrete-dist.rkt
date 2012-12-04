@@ -14,8 +14,8 @@
          discrete-dist-probs)
 
 (begin-encourage-inline
-  (struct: (In Out) discrete-dist-struct dist ([values : (Listof Out)]
-                                               [probs : (Listof Positive-Flonum)])
+  (struct: (In Out) discrete-dist-struct distribution ([values : (Listof Out)]
+                                                       [probs : (Listof Positive-Flonum)])
     #:property prop:custom-print-quotable 'never
     #:property prop:custom-write
     (λ (v port mode)

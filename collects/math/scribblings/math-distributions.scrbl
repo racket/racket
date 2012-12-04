@@ -12,7 +12,7 @@
 @(define untyped-eval (make-untyped-math-eval))
 @interaction-eval[#:eval untyped-eval (require racket/list)]
 
-@title[#:tag "dist"]{Probability Distributions}
+@title[#:tag "dist" #:style 'toc]{Probability Distributions}
 @(author-neil)
 
 @defmodule[math/distributions]
@@ -57,7 +57,7 @@ half-open interval (1/2,1], and computes another approximation from random sampl
 
 This plots the pdf and a kernel density estimate of the pdf from random samples:
 @interaction[#:eval untyped-eval
-                    (plot (list (function (dist-pdf d) #:color 0 #:style 'dot)
+                    (plot (list (function (distribution-pdf d) #:color 0 #:style 'dot)
                                 (density xs))
                           #:x-label "x" #:y-label "density of N(2,5)")]
 
@@ -69,7 +69,7 @@ the probabilities within the interval:
                     (define d-trunc (truncated-dist d -inf.0 5))
                     (real-dist-prob d-trunc 5 6)
                     (real-dist-prob d-trunc 0.5 1.0)
-                    (plot (list (function (dist-pdf d-trunc) #:color 0 #:style 'dot)
+                    (plot (list (function (distribution-pdf d-trunc) #:color 0 #:style 'dot)
                                 (density (sample d-trunc 1000)))
                           #:x-label "x" #:y-label "density of T(N(2,5),-∞,5)")]
 
@@ -132,7 +132,7 @@ When distribution object constructors receive parameters outside their domains, 
                     (cdf (beta-dist 0 0) 1/2)
                     (inv-cdf (geometric-dist 1.1) 0.2)]
 
-@section{Basic Distribution Types and Operations}
+@section{Distribution Types and Operations}
 
 @defform[(PDF In)]{
 The type of probability density functions, or @tech{pdfs}, defined as
@@ -149,38 +149,6 @@ The type of a distribution's sampling procedure, defined as
 When given a nonnegative integer @racket[n] as an argument, a sampling procedure should return
 a length-@racket[n] list of independent, random samples.
 }
-
-@defstruct*[dist ([pdf (PDF In)] [sample (Sample Out)])]{
-The parent type of @tech{distribution objects}. The @racket[In] type parameter is the data type a
-distribution accepts as arguments to its @tech{pdf}. The @racket[Out] type parameter is the data
-type a distribution returns as random samples.
-
-@examples[#:eval untyped-eval
-                 (dist? (discrete-dist '(a b c)))
-                 (dist? (normal-dist))
-                 ((dist-pdf (normal-dist)) 0)
-                 ((dist-sample (normal-dist)))]
-See @racket[pdf] and @racket[sample] for uncurried forms of @racket[dist-pdf] and
-@racket[dist-sample].
-}
-
-@defproc[(pdf [d (dist In Out)] [v In] [log? Any #f]) Flonum]{
-An uncurried form of @racket[dist-pdf]. When @racket[log?] is not @racket[#f], returns a
-log density.
-@examples[#:eval untyped-eval
-                 (pdf (discrete-dist '(a b c) '(1 2 3)) 'a)
-                 (pdf (discrete-dist '(a b c) '(1 2 3)) 'a #t)]
-}
-
-@defproc*[([(sample [d (dist In Out)]) Out]
-           [(sample [d (dist In Out)] [n Integer]) (Listof Out)])]{
-An uncurried form of @racket[dist-sample].
-@examples[#:eval untyped-eval
-                 (sample (exponential-dist))
-                 (sample (exponential-dist) 3)]
-}
-
-@section{Ordered Distribution Types and Operations}
 
 @defform[(CDF In)]{
 The type of cumulative distribution functions, or @tech{cdfs}, defined as
@@ -200,17 +168,32 @@ For any function of this type, both optional arguments should default to @racket
 interpreted as specified in the description of @racket[inv-cdf].
 }
 
-@defstruct*[(ordered-dist dist) ([cdf (CDF In)]
-                                 [inv-cdf (Inverse-CDF Out)]
-                                 [min Out]
-                                 [max Out]
-                                 [median (Promise Out)])]{
+@defstruct*[distribution ([pdf (PDF In)] [sample (Sample Out)])]{
+The parent type of @tech{distribution objects}. The @racket[In] type parameter is the data type a
+distribution accepts as arguments to its @tech{pdf}. The @racket[Out] type parameter is the data
+type a distribution returns as random samples.
+
+@examples[#:eval untyped-eval
+                 (distribution? (discrete-dist '(a b c)))
+                 (distribution? (normal-dist))
+                 ((distribution-pdf (normal-dist)) 0)
+                 ((distribution-sample (normal-dist)))]
+See @racket[pdf] and @racket[sample] for uncurried forms of @racket[distribution-pdf] and
+@racket[distribution-sample].
+}
+
+@defstruct*[(ordered-dist distribution) ([cdf (CDF In)]
+                                         [inv-cdf (Inverse-CDF Out)]
+                                         [min Out]
+                                         [max Out]
+                                         [median (Promise Out)])]{
 The parent type of @italic{ordered} @tech{distribution objects}.
 
-Similarly to @racket[dist], the @racket[In] type parameter is the data type an ordered distribution
-accepts as arguments to its @tech{pdf}, and the @racket[Out] type parameter is the data type an
-ordered distribution returns as random samples. Additionally, its @tech{cdf} accepts values of type
-@racket[In], and its @tech{inverse cdf} returns values of type @racket[Out].
+Similarly to @racket[distribution], the @racket[In] type parameter is the data type an ordered
+distribution accepts as arguments to its @tech{pdf}, and the @racket[Out] type parameter is the
+data type an ordered distribution returns as random samples. Additionally, its @tech{cdf}
+accepts values of type @racket[In], and its @tech{inverse cdf} returns values of type
+@racket[Out].
 
 @examples[#:eval untyped-eval
                  (ordered-dist? (discrete-dist '(a b c)))
@@ -227,8 +210,24 @@ The parent type of real-valued distributions, such as any distribution returned 
 @racket[normal-dist]. Equivalent to the type @racket[(ordered-dist Real Flonum)].
 }
 
+@defproc[(pdf [d (dist In Out)] [v In] [log? Any #f]) Flonum]{
+An uncurried form of @racket[distribution-pdf]. When @racket[log?] is not @racket[#f], returns a
+log density.
+@examples[#:eval untyped-eval
+                 (pdf (discrete-dist '(a b c) '(1 2 3)) 'a)
+                 (pdf (discrete-dist '(a b c) '(1 2 3)) 'a #t)]
+}
+
+@defproc*[([(sample [d (dist In Out)]) Out]
+           [(sample [d (dist In Out)] [n Integer]) (Listof Out)])]{
+An uncurried form of @racket[distribution-sample].
+@examples[#:eval untyped-eval
+                 (sample (exponential-dist))
+                 (sample (exponential-dist) 3)]
+}
+
 @defproc[(cdf [d (ordered-dist In Out)] [v In] [log? Any #f] [1-p? Any #f]) Flonum]{
-An uncurried form of @racket[dist-cdf].
+An uncurried form of @racket[ordered-dist-cdf].
 
 When @racket[log?] is @racket[#f], @racket[cdf] returns a probability; otherwise, it returns a log
 probability.
@@ -238,7 +237,7 @@ When @racket[1-p?] is @racket[#f], @racket[cdf] returns a lower-tail probability
 }
 
 @defproc[(inv-cdf [d (ordered-dist In Out)] [p Real] [log? Any #f] [1-p? Any #f]) Out]{
-An uncurried form of @racket[dist-inv-cdf].
+An uncurried form of @racket[ordered-dist-inv-cdf].
 
 When @racket[log?] is @racket[#f], @racket[inv-cdf] interprets @racket[p] as a probability; otherwise,
 it interprets @racket[p] as a log probability.
@@ -252,22 +251,6 @@ probability or log probability.
 Computes the probability of the half-open interval (@racket[a], @racket[b]]. (If @racket[b < a],
 the two endpoints are swapped first.) The @racket[log?] and @racket[1-p?] arguments determine the
 meaning of the return value in the same way as the corresponding arguments to @racket[cdf].
-}
-
-@deftogether[(@defproc[(dist-cdf [d (ordered-dist In Out)]) (CDF In)]
-              @defproc[(dist-inv-cdf [d (ordered-dist In Out)]) (Inverse-CDF Out)]
-              @defproc[(dist-min [d (ordered-dist In Out)]) Out]
-              @defproc[(dist-max [d (ordered-dist In Out)]) Out]
-              @defproc[(dist-median [d (ordered-dist In Out)]) Out])]{
-The first four are synonyms for @racket[ordered-dist-cdf], @racket[ordered-dist-inv-cdf],
-@racket[ordered-dist-min] and @racket[ordered-dist-max]. The last is equivalent to
-@racket[(force (ordered-dist-median d))].
-
-@examples[#:eval untyped-eval
-                 (dist-min (normal-dist))
-                 (dist-min (geometric-dist 1/3))
-                 (dist-max (uniform-dist 1 2))
-                 (dist-median (gamma-dist 4 2))]
 }
 
 @section{Finite Distribution Families}
@@ -299,7 +282,7 @@ random samples.
                  (define n 500)
                  (define h (samples->hash (sample d n)))
                  (plot (list (discrete-histogram
-                              (map vector xs (map (dist-pdf d) xs))
+                              (map vector xs (map (distribution-pdf d) xs))
                               #:x-min 0 #:skip 2 #:label "P[x]")
                              (discrete-histogram
                               (map vector xs (map (λ (x) (/ (hash-ref h x) n)) xs))
@@ -354,11 +337,11 @@ on it are faster.
 
 @examples[#:eval untyped-eval
                  (define d (bernoulli-dist 0.75))
-                 (map (dist-pdf d) '(0 1))
-                 (map (dist-cdf d) '(0 1))
+                 (map (distribution-pdf d) '(0 1))
+                 (map (ordered-dist-cdf d) '(0 1))
                  (define d (binomial-dist 1 0.75))
-                 (map (dist-pdf d) '(0 1))
-                 (map (dist-cdf d) '(0 1))]
+                 (map (distribution-pdf d) '(0 1))
+                 (map (ordered-dist-cdf d) '(0 1))]
 }
 
 @subsection{Binomial Distributions}
@@ -375,9 +358,9 @@ probability of success.
 @examples[#:eval untyped-eval
                  (define d (binomial-dist 15 0.6))
                  (plot (discrete-histogram
-                        (map vector (build-list 16 values) (build-list 16 (dist-pdf d))))
+                        (map vector (build-list 16 values) (build-list 16 (distribution-pdf d))))
                        #:x-label "number of successes" #:y-label "probability")
-                 (plot (function-interval (λ (x) 0) (dist-cdf d) -0.5 15.5)
+                 (plot (function-interval (λ (x) 0) (ordered-dist-cdf d) -0.5 15.5)
                        #:x-label "at-most number of successes" #:y-label "probability")]
 }
 
@@ -395,9 +378,9 @@ first success starting from zero.
 @examples[#:eval untyped-eval
                  (define d (geometric-dist 0.25))
                  (plot (discrete-histogram
-                        (map vector (build-list 16 values) (build-list 16 (dist-pdf d))))
+                        (map vector (build-list 16 values) (build-list 16 (distribution-pdf d))))
                        #:x-label "first success index" #:y-label "probability")
-                 (plot (function-interval (λ (x) 0) (dist-cdf d) -0.5 15.5)
+                 (plot (function-interval (λ (x) 0) (ordered-dist-cdf d) -0.5 15.5)
                        #:x-label "at-most first success index" #:y-label "probability"
                        #:y-max 1)]
 }
@@ -415,9 +398,9 @@ independent events.
 @examples[#:eval untyped-eval
                  (define d (poisson-dist 6.2))
                  (plot (discrete-histogram
-                        (map vector (build-list 16 values) (build-list 16 (dist-pdf d))))
+                        (map vector (build-list 16 values) (build-list 16 (distribution-pdf d))))
                        #:x-label "number of events" #:y-label "probability")
-                 (plot (function-interval (λ (x) 0) (dist-cdf d) -0.5 15.5)
+                 (plot (function-interval (λ (x) 0) (ordered-dist-cdf d) -0.5 15.5)
                        #:x-label "at-most number of events" #:y-label "probability"
                        #:y-max 1)]
 }
@@ -468,14 +451,14 @@ which must both be nonnegative.
                  (plot (for/list ([α  (in-list '(1 2 3 1/2))]
                                   [β  (in-list '(1 3 1 1/2))]
                                   [i  (in-naturals)])
-                         (function (dist-pdf (beta-dist α β))
+                         (function (distribution-pdf (beta-dist α β))
                                    #:color i #:label (format "Beta(~a,~a)" α β)))
                        #:x-min 0 #:x-max 1 #:y-max 4 #:y-label "density")
                  
                  (plot (for/list ([α  (in-list '(1 2 3 1/2))]
                                   [β  (in-list '(1 3 1 1/2))]
                                   [i  (in-naturals)])
-                         (function (dist-cdf (beta-dist α β))
+                         (function (ordered-dist-cdf (beta-dist α β))
                                    #:color i #:label (format "Beta(~a,~a)" α β)))
                        #:x-min 0 #:x-max 1 #:y-label "probability")]
 
@@ -502,7 +485,7 @@ Represents the Cauchy distribution family parameterized by mode and scale.
                  (plot (for/list ([m  (in-list '(0 -1 0 2))]
                                   [s  (in-list '(1 1/2 2.25 0.7))]
                                   [i  (in-naturals)])
-                         (function (dist-pdf (cauchy-dist m s))
+                         (function (distribution-pdf (cauchy-dist m s))
                                    #:color i #:label (format "Cauchy(~a,~a)" m s)))
                        #:x-min -8 #:x-max 8 #:y-label "density"
                        #:legend-anchor 'top-right)
@@ -510,7 +493,7 @@ Represents the Cauchy distribution family parameterized by mode and scale.
                  (plot (for/list ([m  (in-list '(0 -1 0 2))]
                                   [s  (in-list '(1 1/2 2.25 0.7))]
                                   [i  (in-naturals)])
-                         (function (dist-cdf (cauchy-dist m s))
+                         (function (ordered-dist-cdf (cauchy-dist m s))
                                    #:color i #:label (format "Cauchy(~a,~a)" m s)))
                        #:x-min -8 #:x-max 8 #:y-label "probability")]
 }
@@ -529,7 +512,7 @@ Represents the family of distributions whose densities are Dirac delta functions
                  (pdf (delta-dist) 1)
                  (plot (for/list ([μ  (in-list '(-1 0 1))]
                                   [i  (in-naturals)])
-                         (function (dist-cdf (delta-dist μ))
+                         (function (ordered-dist-cdf (delta-dist μ))
                                    #:color i #:style i #:label (format "δ(~a)" μ)))
                        #:x-min -2 #:x-max 2 #:y-label "probability")]
 }
@@ -551,14 +534,14 @@ is the reciprocal of mean or scale. Construct exponential distributions from rat
 @examples[#:eval untyped-eval
                  (plot (for/list ([μ  (in-list '(2/3 1 2))]
                                   [i  (in-naturals)])
-                         (function (dist-pdf (exponential-dist μ))
+                         (function (distribution-pdf (exponential-dist μ))
                                    #:color i #:label (format "Exponential(~a)" μ)))
                        #:x-min 0 #:x-max 5 #:y-label "density"
                        #:legend-anchor 'top-right)
                  
                  (plot (for/list ([μ  (in-list '(2/3 1 2))]
                                   [i  (in-naturals)])
-                         (function (dist-cdf (exponential-dist μ))
+                         (function (ordered-dist-cdf (exponential-dist μ))
                                    #:color i #:label (format "Exponential(~a)" μ)))
                        #:x-min 0 #:x-max 5 #:y-label "probability"
                        #:legend-anchor 'bottom-right)]
@@ -583,7 +566,7 @@ which is the reciprocal of scale. Construct gamma distributions from rates using
                  (plot (for/list ([k  (in-list '(1 2 3 9))]
                                   [s  (in-list '(2 2 3 1/2))]
                                   [i  (in-naturals)])
-                         (function (dist-pdf (gamma-dist k s))
+                         (function (distribution-pdf (gamma-dist k s))
                                    #:color i #:label (format "Gamma(~a,~a)" k s)))
                        #:x-min 0 #:x-max 15 #:y-label "density"
                        #:legend-anchor 'top-right)
@@ -591,7 +574,7 @@ which is the reciprocal of scale. Construct gamma distributions from rates using
                  (plot (for/list ([k  (in-list '(1 2 3 9))]
                                   [s  (in-list '(2 2 3 1/2))]
                                   [i  (in-naturals)])
-                         (function (dist-cdf (gamma-dist k s))
+                         (function (ordered-dist-cdf (gamma-dist k s))
                                    #:color i #:label (format "Gamma(~a,~a)" k s)))
                        #:x-min 0 #:x-max 15 #:y-label "probability"
                        #:legend-anchor 'bottom-right)]
@@ -621,7 +604,7 @@ and scale. In this parameterization, the variance is @racket[(* 1/3 (sqr (* pi s
                  (plot (for/list ([μ  (in-list '(0 -1 0 2))]
                                   [s  (in-list '(1 1/2 2.25 0.7))]
                                   [i  (in-naturals)])
-                         (function (dist-pdf (logistic-dist μ s))
+                         (function (distribution-pdf (logistic-dist μ s))
                                    #:color i #:label (format "Logistic(~a,~a)" μ s)))
                        #:x-min -8 #:x-max 8 #:y-label "density"
                        #:legend-anchor 'top-right)
@@ -629,7 +612,7 @@ and scale. In this parameterization, the variance is @racket[(* 1/3 (sqr (* pi s
                  (plot (for/list ([μ  (in-list '(0 -1 0 2))]
                                   [s  (in-list '(1 1/2 2.25 0.7))]
                                   [i  (in-naturals)])
-                         (function (dist-cdf (logistic-dist μ s))
+                         (function (ordered-dist-cdf (logistic-dist μ s))
                                    #:color i #:label (format "Logistic(~a,~a)" μ s)))
                        #:x-min -8 #:x-max 8 #:y-label "probability")]
 }
@@ -652,14 +635,14 @@ which is the square of standard deviation. Construct normal distributions from v
                  (plot (for/list ([μ  (in-list '(0 -1 0 2))]
                                   [σ  (in-list '(1 1/2 2.25 0.7))]
                                   [i  (in-naturals)])
-                         (function (dist-pdf (normal-dist μ σ))
+                         (function (distribution-pdf (normal-dist μ σ))
                                    #:color i #:label (format "N(~a,~a)" μ σ)))
                        #:x-min -5 #:x-max 5 #:y-label "density")
                  
                  (plot (for/list ([μ  (in-list '(0 -1 0 2))]
                                   [σ  (in-list '(1 1/2 2.25 0.7))]
                                   [i  (in-naturals)])
-                         (function (dist-cdf (normal-dist μ σ))
+                         (function (ordered-dist-cdf (normal-dist μ σ))
                                    #:color i #:label (format "N(~a,~a)" μ σ)))
                        #:x-min -5 #:x-max 5 #:y-label "probability")]
 }
@@ -685,7 +668,7 @@ before constructing the distribution object.
                                   [b  (in-list '(0 1 3))]
                                   [m  (in-list '(-2 0 2))]
                                   [i  (in-naturals)])
-                         (function (dist-pdf (triangle-dist a b m)) #:color i
+                         (function (distribution-pdf (triangle-dist a b m)) #:color i
                                    #:label (format "Triangle(~a,~a,~a)" a b m)))
                        #:x-min -3.5 #:x-max 3.5 #:y-label "density")
                  
@@ -693,7 +676,7 @@ before constructing the distribution object.
                                   [b  (in-list '(0 1 3))]
                                   [m  (in-list '(-2 0 2))]
                                   [i  (in-naturals)])
-                         (function (dist-cdf (triangle-dist a b m)) #:color i
+                         (function (ordered-dist-cdf (triangle-dist a b m)) #:color i
                                    #:label (format "Triangle(~a,~a,~a)" a b m)))
                        #:x-min -3.5 #:x-max 3.5 #:y-label "probability")]
 
@@ -724,11 +707,11 @@ Samples are taken by applying the truncated distribution's @tech{inverse cdf} to
                  (define d (normal-dist))
                  (define t (truncated-dist d -2 1))
                  t
-                 (plot (list (function (dist-pdf d) #:label "N(0,1)" #:color 0)
-                             (function (dist-pdf t) #:label "T(N(0,1),-2,1)"))
+                 (plot (list (function (distribution-pdf d) #:label "N(0,1)" #:color 0)
+                             (function (distribution-pdf t) #:label "T(N(0,1),-2,1)"))
                        #:x-min -3.5 #:x-max 3.5 #:y-label "density")
-                 (plot (list (function (dist-cdf d) #:label "N(0,1)" #:color 0)
-                             (function (dist-cdf t) #:label "T(N(0,1),-2,1)"))
+                 (plot (list (function (ordered-dist-cdf d) #:label "N(0,1)" #:color 0)
+                             (function (ordered-dist-cdf t) #:label "T(N(0,1),-2,1)"))
                        #:x-min -3.5 #:x-max 3.5 #:y-label "probability")]
 }
 
@@ -754,14 +737,14 @@ they are swapped before constructing the distribution object.
                  (plot (for/list ([a  (in-list '(-3 -1 -2))]
                                   [b  (in-list '(0 1 3))]
                                   [i  (in-naturals)])
-                         (function (dist-pdf (uniform-dist a b)) #:color i
+                         (function (distribution-pdf (uniform-dist a b)) #:color i
                                    #:label (format "Uniform(~a,~a)" a b)))
                        #:x-min -3.5 #:x-max 3.5 #:y-label "density")
                  
                  (plot (for/list ([a  (in-list '(-3 -1 -2))]
                                   [b  (in-list '(0 1 3))]
                                   [i  (in-naturals)])
-                         (function (dist-cdf (uniform-dist a b)) #:color i
+                         (function (ordered-dist-cdf (uniform-dist a b)) #:color i
                                    #:label (format "Uniform(~a,~a)" a b)))
                        #:x-min -3.5 #:x-max 3.5 #:y-label "probability")]
 

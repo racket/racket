@@ -211,7 +211,7 @@
 (define pi.128 267257146016241686964920093290467695825/85070591730234615865843651857942052864)
 
 (: flexppi (Flonum -> Flonum))
-(define flexppi (make-flexp/base pi.128))
+(define flexppi (make-flexpt pi.128))
 
 (: flpsi (Integer Flonum -> Flonum))
 (define (flpsi m x)
