@@ -8,8 +8,6 @@
 
 (require/typed
  "mpfr.rkt"
- ;; Library stuffs
- [mpfr-available?  (-> Boolean)]
  ;; Parameters
  [bf-rounding-mode  (Parameterof Rounding-Mode)]
  [bf-min-precision  Exact-Positive-Integer]
@@ -48,7 +46,7 @@
  [bfsum  ((Listof Bigfloat) -> Bigfloat)]
  [bfmax2  (Bigfloat Bigfloat -> Bigfloat)]
  [bfmin2  (Bigfloat Bigfloat -> Bigfloat)]
- [bfeqv?  (Bigfloat Bigfloat -> Boolean)]
+ [bf=?    (Bigfloat Bigfloat -> Boolean)]
  [bflt?   (Bigfloat Bigfloat -> Boolean)]
  [bflte?  (Bigfloat Bigfloat -> Boolean)]
  [bfgt?   (Bigfloat Bigfloat -> Boolean)]
@@ -126,7 +124,7 @@
     (: bfpred? (Bigfloat Bigfloat * -> Boolean))
     (define (bfpred? x . xs) (fold-binary-pred bfpred2? x xs))))
 
-(define-nary-pred bf=  bfeqv?)
+(define-nary-pred bf=  bf=?)
 (define-nary-pred bf<  bflt?)
 (define-nary-pred bf<= bflte?)
 (define-nary-pred bf>  bfgt?)
@@ -147,8 +145,6 @@
   (bf+ (flonum->bigfloat x1) (flonum->bigfloat x2)))
 
 (provide
- ;; Library stuffs
- mpfr-available?
  ;; Parameters
  bf-rounding-mode
  bf-min-precision
