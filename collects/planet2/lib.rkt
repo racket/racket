@@ -122,7 +122,9 @@
 
 (define (get-metadata metadata-ns pkg-dir key get-default
                       #:checker [checker void])
-  (define get-info (get-info/full pkg-dir #:namespace metadata-ns))
+  (define get-info 
+    (with-handlers ([exn:fail? (λ (x) #f)])
+      (get-info/full pkg-dir #:namespace metadata-ns)))
   (define v
     (if get-info
         (get-info key get-default)
