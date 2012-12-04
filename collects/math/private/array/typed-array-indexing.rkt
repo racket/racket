@@ -237,13 +237,10 @@
         (match-define (cons k dk) na)
         (array-axis-insert arr k dk)))))
 
-(: slice-indexes-array (In-Indexes (Listof Slice-Spec) -> (Array Indexes)))
-(define (slice-indexes-array ds slices)
-  (array-slice-ref (indexes-array ds) slices))
-
 (: array-slice-set! (All (A) ((Settable-Array A) (Listof Slice-Spec) (Array A) -> Void)))
 (define (array-slice-set! arr slices vals)
-  (array-indexes-set! arr (slice-indexes-array (array-shape arr) slices) vals))
+  (let ([idxs  (array-slice-ref (indexes-array (array-shape arr)) slices)])
+    (array-indexes-set! arr idxs vals)))
 
 ;; ---------------------------------------------------------------------------------------------------
 

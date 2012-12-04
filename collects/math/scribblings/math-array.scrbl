@@ -1042,7 +1042,8 @@ If @racket[idxs] and @racket[vals] do not have the same shape, they are @tech{br
                  (define idxs (array #['#(0 0) '#(1 1)]))
                  (array-indexes-set! arr idxs (array -1))
                  arr]
-When indexes are repeated in @racket[idxs], they are mutated in some unspecified order.
+When two indexes in @racket[idxs] are the same, the element at that index is mutated more
+than once in some unspecified order.
 }
 
 @defproc[(array-slice-ref [arr (Array A)] [specs (Listof Slice-Spec)]) (Array A)]{
@@ -1053,16 +1054,10 @@ Returns a transformation of @racket[arr] according to the list of slice specific
 @defproc[(array-slice-set! [arr (Settable-Array A)] [specs (Listof Slice-Spec)] [vals (Array A)])
          Void]{
 Like @racket[array-indexes-set!], but for slice specifications. Equivalent to
-@racketblock[(let ([idxs  (slice-indexes-array (array-shape arr) specs)])
+@racketblock[(let ([idxs  (array-slice-ref (indexes-array (array-shape arr)) specs)])
                (array-indexes-set! arr idxs vals))]
 When a slice specification refers to an element in @racket[arr] more than once, the element is
 mutated more than once in some unspecified order.
-}
-
-@defproc[(slice-indexes-array [ds In-Indexes] [specs (Listof Slice-Spec)]) (Array Indexes)]{
-Returns the indexes of the elements that would be retrieved if an array with shape @racket[ds]
-were sliced according to @racket[specs].
-Equivalent to @racketblock[(array-slice-ref (indexes-array ds) specs)]
 }
 
 @subsection[#:tag "array:slice-specs"]{Slice Specifications}

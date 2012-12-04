@@ -613,7 +613,7 @@
       [slices  (list (:: 0 4 2) (:: 2 -1 -2))])
   (check-equal? (array-indexes-ref arr idxs)
                 (array #[0 2 3 5 7 8]))
-  (check-equal? (array-indexes-ref arr (slice-indexes-array (array-shape arr) slices))
+  (check-equal? (array-indexes-ref arr (array-slice-ref (indexes-array (array-shape arr)) slices))
                 (array-slice-ref arr slices))
   (array-indexes-set! arr idxs vals)
   (check-equal? arr (array #[#['a 1 2 3 4 5]

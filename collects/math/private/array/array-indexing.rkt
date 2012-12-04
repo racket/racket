@@ -5,8 +5,7 @@
                     array-ref
                     array-set!
                     array-indexes-ref
-                    array-indexes-set!
-                    slice-indexes-array))
+                    array-indexes-set!))
 
 (require/untyped-contract
  (begin (require "array-struct.rkt"
@@ -16,8 +15,7 @@
  [array-ref   (All (A) ((Array A) (Vectorof Integer) -> A))]
  [array-set!  (All (A) ((Settable-Array A) (Vectorof Integer) A -> Void))]
  [array-indexes-ref   (All (A) ((Array A) (Array (Vectorof Integer)) -> (Array A)))]
- [array-indexes-set!  (All (A) ((Settable-Array A) (Array (Vectorof Integer)) (Array A) -> Void))]
- [slice-indexes-array  ((Vectorof Integer) (Listof Slice-Spec) -> (Array Indexes))])
+ [array-indexes-set!  (All (A) ((Settable-Array A) (Array (Vectorof Integer)) (Array A) -> Void))])
 
 (provide
  array-ref
@@ -36,5 +34,4 @@
  ::... slice-dots?
  ::new slice-new-axis? slice-new-axis-length
  array-slice-ref
- slice-indexes-array
  array-slice-set!)
