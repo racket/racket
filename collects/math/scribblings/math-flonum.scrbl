@@ -509,7 +509,7 @@ it is not zero and @racket[((abs x) . <= . +max-subnormal.0)].
 Creates a length-@racket[n] flonum vector by applying @racket[proc] to the indexes
 from @racket[0] to @racket[(- n 1)]. Analogous to @racket[build-vector].
 @examples[#:eval untyped-eval
-                 (flvector->list (build-flvector 10 fl))]
+                 (build-flvector 10 fl)]
 }
 
 @defform[(inline-build-flvector n proc)
@@ -576,9 +576,8 @@ of @racket[flvector-sum].
 Computes the partial sums of the elements in @racket[xs] in a way that incurs rounding error only
 once for each partial sum.
 @examples[#:eval untyped-eval
-                 (flvector->list
-                  (flvector-sums
-                   (flvector 1.0 1e-16 1e-16 1e-16 1e-16 1e100 -1e100)))]
+                 (flvector-sums
+                  (flvector 1.0 1e-16 1e-16 1e-16 1e-16 1e100 -1e100))]
 Compare the same example computed by direct summation:
 @interaction[#:eval untyped-eval
                     (rest
