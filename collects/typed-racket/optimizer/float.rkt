@@ -5,7 +5,7 @@
          (for-template racket/base racket/flonum racket/unsafe/ops racket/math)
          "../utils/utils.rkt"
          (utils tc-utils)
-         (types numeric-tower type-table)
+         (types numeric-tower type-table union)
          (optimizer utils numeric-utils logging fixnum))
 
 (provide float-opt-expr float-arg-expr int-expr)
@@ -115,24 +115,23 @@
                           ;; For it to be safe, we need:
                           ;; - the result to be a float, in which case coercing args to floats
                           ;;   won't change the result type
-                          ;; - if we're multiplying or dividing, all the args need to be actual
-                          ;;   floats, can't coerce anything (o/w can turn division by 0 into a
-                          ;;   non-error)
-                          ;; - for other operations, only one argument can be coerced. If more
-                          ;;   than one needs coercion, we could end up turning exact (or
-                          ;;   single-float) operations into float operations by accident.
+                          ;; - all non-float arguments need to be provably non-zero
+                          ;;   otherwise, we may hit corner cases like (* 0 <float>) => 0
+                          ;;   or (+ 0 -0.0) => -0.0 (while (+ 0.0 -0.0) => 0.0)
+                          ;; - only one argument can be coerced. If more than one needs
+                          ;;   coercion, we could end up turning exact (or single-float)
+                          ;;   operations into float operations by accident.
                           ;;   (Note: could allow for more args, if not next to each other, but
                           ;;    probably not worth the trouble (most ops have 2 args anyway))
                           (and (subtypeof? this-syntax -Flonum)
-                               (cond [(or (free-identifier=? #'op #'*)
-                                          (free-identifier=? #'op #'/))
-                                      (for/and ([a (in-list (syntax->list #'(f1 f2 fs ...)))])
-                                        (subtypeof? a -Flonum))]
-                                     [else
-                                      (>= 1
-                                          (for/sum ([a (in-list (syntax->list #'(f1 f2 fs ...)))]
-                                                    #:when (not (subtypeof? a -Flonum)))
-                                            1))]))]
+                               (for/and ([a (in-list (syntax->list #'(f1 f2 fs ...)))])
+                                 ;; flonum or provably non-zero
+                                 (or (subtypeof? a -Flonum)
+                                     (subtypeof? a (Un -PosReal -NegReal))))
+                               (>= 1
+                                   (for/sum ([a (in-list (syntax->list #'(f1 f2 fs ...)))]
+                                             #:when (not (subtypeof? a -Flonum)))
+                                     1)))]
                          ;; if we don't have a return type of float, or if the return type is
                          ;; float, but we can't optimizer for some other reason, we missed an
                          ;; optimization opportunity, report it
