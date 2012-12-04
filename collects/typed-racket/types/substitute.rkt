@@ -48,7 +48,13 @@
                  [#:F name (hash-ref subst name target)]
                  [#:arr dom rng rest drest kws
                         (cond
-                          [(and (pair? drest) (ormap (and/c (cdr drest) (not/c bound-tvar?)) names)) =>
+                          [(and (pair? drest)
+                                (ormap (λ (name)
+                                          (and (equal? name (cdr drest))
+                                               (not (bound-tvar? name))
+                                               name))
+                                       names))
+                           =>
                            (lambda (name)
                              (int-err "substitute used on ... variable ~a in type ~a" name target))]
                           [else
