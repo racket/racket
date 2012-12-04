@@ -26,7 +26,7 @@
       (lambda (l)
         ;; From mzc, create a log-entry from the info.
         (define entry (mzc-opt-log-message->log-entry (vector-ref l 1)))
-        (when (right-file? entry)
+        (when (and entry (right-file? entry))
           (set! mzc-log (cons entry mzc-log))))
     (lambda ()
       (with-intercepted-logging
@@ -100,17 +100,19 @@
 ;; String (message from the mzc optimizer) -> log-entry
 (define (mzc-opt-log-message->log-entry l)
   (define evt (parse-inlining-event l))
-  (define forged-stx (inlining-event->forged-stx evt))
-  (define kind
-    (match (inlining-event-kind evt)
-      [(== success-key)                             success-key]
-      [(or (== failure-key)     (== 'non-copyable)) failure-key]
-      [(or (== out-of-fuel-key) (== 'too-large))    out-of-fuel-key]
-      [_ (error "Unknown log message type" l)]))
-  (inliner-log-entry kind kind
-                     forged-stx forged-stx
-                     (syntax-position forged-stx)
-                     evt))
+  (cond [evt
+         (define forged-stx (inlining-event->forged-stx evt))
+         (define kind
+           (match (inlining-event-kind evt)
+             [(== success-key)                             success-key]
+             [(or (== failure-key)     (== 'non-copyable)) failure-key]
+             [(or (== out-of-fuel-key) (== 'too-large))    out-of-fuel-key]
+             [_ (error "Unknown log message type" l)]))
+         (inliner-log-entry kind kind
+                            forged-stx forged-stx
+                            (syntax-position forged-stx)
+                            evt)]
+        [else #f]))
 
 ;; _Where_ this happens (in which function, can't get more precise info).
 ;; Note: sadly, this part still needs to be parsed by a regexp. Inliner logging
@@ -139,31 +141,39 @@
                  #f))])) ; no source location
 
 (define (parse-inlining-event l)
+  (define (ill-formed)
+    (log-debug (format "OC log parser: ill-formed mzc log entry: ~a" l))
+    #f)
   ;; Inlining log entry strings consist of two parts.
   ;; The first is `read'-able, given the custom reader above that can
   ;; read path literals.
   ;; The second part needs to be parsed with a regexp (see above).
   ;; The two are separated by "#<separator>", which shouldn't clash with
   ;; program identifiers.
-  (match-define `(,readable-part ,parsable-part)
-    (regexp-split #rx"#<separator>" l))
-  (match (read/path (format "(~a)" readable-part))
-    [`(optimizer: ,kind ,what
-       size: ,size threshold: ,threshold)
-     (define-values (what-name  what-loc)
-       (match what
-         [`#(,what-name ,what-path ,what-line ,what-col ,what-pos ,what-span ,gen?)
-          (values what-name
+  (cond [(regexp-match #rx"#<separator>" l)
+         (match-define `(,readable-part ,parsable-part)
+           (regexp-split #rx"#<separator>" l))
+         (match (read/path (format "(~a)" readable-part))
+           [`(optimizer: ,kind ,what
+                         size: ,size threshold: ,threshold)
+            (define-values (what-name  what-loc)
+              (match what
+                [`#(,what-name ,what-path ,what-line ,what-col
+                               ,what-pos ,what-span ,gen?)
+                 (values
+                  what-name
                   (list what-path what-line what-col what-pos what-span))]
-         [only-name
-          (values only-name #f)]))
-     (define-values (where-name where-loc)
-       (parse-where parsable-part))
-     (inlining-event kind
-                     what-name  what-loc
-                     where-name where-loc
-                     size threshold)]
-    [_ (error "OC log parser: ill-formed inlining log entry" l)]))
+                [only-name
+                 (values only-name #f)]))
+            (define-values (where-name where-loc)
+              (parse-where parsable-part))
+            (inlining-event kind
+                            what-name  what-loc
+                            where-name where-loc
+                            size threshold)]
+           ;; can't parse, or log entry not about inlining (e.g. div by 0 detected)
+           [_ (ill-formed)])]
+        [else (ill-formed)]))
 
 
 (define (inlining-event->forged-stx evt)
