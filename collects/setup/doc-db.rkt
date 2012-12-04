@@ -35,16 +35,13 @@
     (call-with-retry/transaction
      'prepare-tables
      db
-     #f
-     +inf.0
+     #t
      (lambda ()
        (prepare-tables db))))
   ;; we don't need to survive a catastrophic failure:
   (call-with-retry
    'synchronous-off
    db
-   #f
-   +inf.0
    (lambda ()
      (query-exec db "pragma synchronous = off")))
   db)
@@ -69,50 +66,28 @@
   (min 2 (* 2 pause)))
 
 (define (call-with-database who db-file proc 
-                            #:fail [fail #f]
-                            #:delay-limit [pause-limit +inf.0]
+                            #:write? [write? #f]
                             #:setup [setup void]
                             #:teardown [teardown void])
-  (let loop ([pause (doc-db-init-pause)])
-    ((let/ec esc
-       (define db (if (connection? db-file)
-                      db-file
-                      (doc-db-file->connection db-file)))
-       (setup db)
-       (begin0
-        (call-with-retry/transaction
-         who
-         db
-         (if (connection? db-file)
-             (and fail
-                  (lambda (should-retry?)
-                    (if should-retry?
-                        (esc (lambda () (fail #t)))
-                        (fail #f))))
-             (lambda (should-retry?)
-               (if should-retry?
-                   (esc (lambda () 
-                          (disconnect db)
-                          (when fail (fail))
-                          (loop (doc-db-pause who pause))))
-                   (disconnect db))))
-         pause-limit
-         (lambda ()
-           (define results (call-with-values (lambda () (proc db)) list))
-           (lambda () (apply values results))))
-        (teardown db)
-        (unless (connection? db-file)
-          (disconnect db)))))))
+  (define db (if (connection? db-file)
+                 db-file
+                 (doc-db-file->connection db-file)))
+  (setup db)
+  (begin0
+   (call-with-retry/transaction
+    who
+    db
+    write?
+    (lambda () (proc db)))
+   (teardown db)
+   (unless (connection? db-file)
+     (disconnect db))))
 
 (define (doc-db-key->path db-file key
-                          #:fail [fail #f]
-                          #:delay-limit [pause-limit +inf.0]
                           #:main-doc-relative-ok? [main-doc-relative-ok? #f])
   (call-with-database
    'doc-db-key->path
    db-file
-   #:fail fail
-   #:delay-limit pause-limit
    (lambda (db)
      (define row (query-maybe-row db select-pathid-vq
                                   (~s key)))
@@ -126,6 +101,7 @@
   (call-with-database
    who
    db-file
+   #:write? #t
    (lambda (db)
      (prepare-tables db)
      (define pathid (filename->pathid db filename))
@@ -137,6 +113,7 @@
   (call-with-database
    who
    db-file
+   #:write? #t
    (lambda (db)
      (prepare-tables db)
      (define pathid (filename->pathid db filename))
@@ -175,6 +152,7 @@
   (call-with-database
    'doc-db-add-searches
    db-file
+   #:write? #t
    (lambda (db)
      (prepare-tables db)
      (define pathid (filename->pathid db filename))
@@ -195,6 +173,7 @@
   (call-with-database
    'doc-db-clear-searches
    db-file
+   #:write? #t
    (lambda (db)
      (prepare-tables db)
      (define pathid (filename->pathid db filename))
@@ -353,6 +332,7 @@
   (call-with-database
    'doc-db-clean-files
    db-file
+   #:write? #t
    (lambda (db)
      (prepare-tables db)
      (define rows (query-rows db "SELECT atmain, path, pathid FROM pathids"))
@@ -462,72 +442,55 @@
     (query-exec db (~a "CREATE INDEX searchesPathId "
                        "on searches (pathid, setid)"))))
 
-(define (exn:fail:database-locked? v)
-  (and (exn:fail? v)
-       (regexp-match #rx"the database file is locked$"
-                     (exn-message v))))
+(define (exn:fail:retry? v)
+  (and (exn:fail:sql? v)
+       (let ([s (exn:fail:sql-sqlstate v)])
+         (or (eq? s 'busy)
+             (and (string? s) (regexp-match? s #rx"^40...$"))))))
+
 (define (call-with-lock-handler handler thunk)
-  (with-handlers* ([exn:fail:database-locked?
+  (with-handlers* ([exn:fail:retry?
                     (lambda (exn) (handler))])
     (thunk)))
-(define (fast-abort-on-limit fast-abort should-retry?)
-  (log-doc-db-info "database lock delay exceeded limit")
-  (fast-abort should-retry?))
 
-;; By default, failure uses rollbacks, but `fast-abort' can be
-;; provided for a faster abort by dropping the connection. Don't try
-;; to use a connection provided here in any other way on an abort. The
-;; argument to `fast-abort' is `should-retry?': on #t, perhaps escape
-;; to retry, but on #f, just clean up without escaping.
-(define (call-with-retry/transaction who db fast-abort pause-limit thunk)
+(define (call-with-retry/transaction who db write? thunk)
   (let loop ([pause (doc-db-init-pause)])
     ((let/ec esc
+       (define at-commit? #f)
        (define success? #f)
        (dynamic-wind
         (lambda ()
           (call-with-lock-handler
            (lambda () (esc (lambda ()
-                             (if (and fast-abort
-                                      (pause . > . pause-limit))
-                                 (fast-abort-on-limit fast-abort #t)
-                                 (loop (doc-db-pause `(start ,who) pause))))))
-           (lambda () (start-transaction db))))
+                             (loop (doc-db-pause `(start ,who) pause)))))
+           (lambda () (start-transaction db #:option (if write? 'immediate #f)))))
         (lambda ()
           (call-with-lock-handler
            (lambda () (esc (lambda ()
-                             (rollback db fast-abort #t 1)
-                             (loop (doc-db-pause `(rollback ,who) pause)))))
+                             (loop (doc-db-pause `(,(if at-commit? 'commit 'query)
+                                                   ,who)
+                                                 pause)))))
            (lambda ()
              (define l (call-with-values thunk list))
+             (set! at-commit? #t)
              (commit-transaction db)
              (set! success? #t)
              (lambda () (apply values l)))))
         (lambda ()
           (unless success?
-            (rollback db fast-abort #f 1))))))))
+            (rollback db 1))))))))
 
-(define (rollback db fast-abort should-retry? count)
-  (if fast-abort
-      (fast-abort should-retry?)
-      (when (in-transaction? db)
-        (with-handlers* ([exn:fail:database-locked?
-                          (lambda (exn)
-                            (when (zero? (modulo count 100))
-                              (when (= count 10000) (error "fail"))
-                              (log-doc-db-info "database locked on rollback; tried ~a times so far"
-                                               count))
-                            (rollback db #f should-retry? (add1 count)))])
-          (rollback-transaction db)))))
+(define (rollback db count)
+  (when (in-transaction? db)
+    (with-handlers* ([exn:fail:retry?
+                      (lambda (exn)
+                        (log-doc-db-info "database locked on rollback; tried ~a times so far"
+                                         count)
+                        (rollback db (add1 count)))])
+      (rollback-transaction db))))
 
-(define (call-with-retry who db fast-abort pause-limit thunk)
+(define (call-with-retry who db thunk)
   (let loop ([pause (doc-db-init-pause)])
-    ((let/ec esc
-       (call-with-lock-handler
-        (lambda () (esc (lambda ()
-                          (if (and fast-abort
-                                   (pause . > . pause-limit))
-                              (fast-abort-on-limit fast-abort #t)
-                              (loop (doc-db-pause `(retry ,who) pause))))))
-        (lambda ()
-          (define l (call-with-values thunk list))
-          (lambda () (apply values l))))))))
+    (call-with-lock-handler
+     (lambda () (loop (doc-db-pause `(query ,who) pause)))
+     thunk)))

@@ -85,45 +85,29 @@
       (lambda () 
         (for/list ([thunk (in-list thunks)])
           (thunk)))))
-  (define pause-limit 1.0)
   (lambda (key)
     (cond
      [forced-all? #f]
      [key
       (define (try p)
-        (let loop ([pause (doc-db-init-pause)])
-          (cond
-           [(pause . >= . pause-limit)
-            (log-doc-db-info "too much contention on database; falling back to full index")
-            #t]
-           [else
-            (and p
-                 (let* ([maybe-db (unbox (cdr p))]
-                        [db 
-                         ;; Use a cached connection, or...
-                         (or (and (box-cas! (cdr p) maybe-db #f)
-                                  maybe-db)
-                             ;; ... create a new one
-                             (and (file-exists? (car p))
-                                  (doc-db-file->connection (car p))))])
-                   (and 
-                    db
-                    ((let/ec esc
-                       ;; The db query:
-                       (define result
-                         (doc-db-key->path db key
-                                           #:delay-limit pause-limit
-                                           #:fail (lambda (should-retry?)
-                                                    ;; Rollback within a connection can be slow,
-                                                    ;; so abandon the connection and try again:
-                                                    (doc-db-disconnect db)
-                                                    (when should-retry?
-                                                      (esc (lambda () 
-                                                             (loop (doc-db-pause 'xref-lookup pause))))))))
-                       ;; cache the connection, if none is already cached:
-                       (or (box-cas! (cdr p) #f db)
-                           (doc-db-disconnect db))
-                       (lambda () result))))))])))
+        (and p
+             (let* ([maybe-db (unbox (cdr p))]
+                    [db 
+                     ;; Use a cached connection, or...
+                     (or (and (box-cas! (cdr p) maybe-db #f)
+                              maybe-db)
+                         ;; ... create a new one
+                         (and (file-exists? (car p))
+                              (doc-db-file->connection (car p))))])
+               (and 
+                db
+                (let ()
+                  ;; The db query:
+                  (begin0
+                   (doc-db-key->path db key)
+                   ;; cache the connection, if none is already cached:
+                   (or (box-cas! (cdr p) #f db)
+                       (doc-db-disconnect db))))))))
       (define dest (or (try main-db) (try user-db)))
       (and dest
            (if (eq? dest #t)
