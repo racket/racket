@@ -108,7 +108,11 @@ implement contracts @cite{Strickland12}.
 @defproc[(flat-contract [predicate (any/c . -> . any/c)]) flat-contract?]{
 
 Constructs a @tech{flat contract} from @racket[predicate]. A value
-satisfies the contract if the predicate returns a true value.}
+satisfies the contract if the predicate returns a true value.
+
+This function is a holdover from before flat contracts could be used
+directly as predicates. It exists today for backwards compatibilty.
+}
 
 
 @defproc[(flat-named-contract [type-name any/c]
