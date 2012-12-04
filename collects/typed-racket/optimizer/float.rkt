@@ -160,7 +160,9 @@
                         (filter
                          values
                          (for/list ([subexpr (in-list (syntax->list #'(f1 f2 fs ...)))]
-                                    #:when (or (in-real-layer? subexpr)
+                                    #:when (or (and (in-real-layer? subexpr)
+                                                    ;; exclude single-flonums
+                                                    (not (subtypeof? subexpr -InexactReal)))
                                                (in-rational-layer? subexpr)))
                            (syntax-parse subexpr
                              ;; Only warn about subexpressions that actually perform exact arithmetic.
