@@ -1096,8 +1096,9 @@
                               (let ([vecl (flvector->repeatless-list obj)])
                                 (if (and qd (zero? qd))
                                     (pp-pair (cons (make-unquoted 'flvector) vecl)
-                                            pair? car cdr pair-open pair-close
-                                            qd)
+                                             extra depth
+                                             pair? car cdr pair-open pair-close
+                                             qd)
                                     (begin
                                       (out "#fl")
                                       (when print-vec-length?
@@ -1109,8 +1110,9 @@
                               (let ([vecl (fxvector->repeatless-list obj)])
                                 (if (and qd (zero? qd))
                                     (pp-pair (cons (make-unquoted 'fxvector) vecl)
-                                              pair? car cdr pair-open pair-close
-                                              qd)
+                                             extra depth
+                                             pair? car cdr pair-open pair-close
+                                             qd)
                                     (begin
                                       (out "#fx")
                                       (when print-vec-length?

@@ -175,6 +175,11 @@
                            ")"))
                         #f))
 
+(parameterize ([pretty-print-columns 20]
+               [print-as-expression #t])
+  (test "(fxvector\n 1234567890\n 1\n 2\n 3\n 4)" pretty-format (fxvector 1234567890 1 2 3 4))
+  (test "(flvector\n 1234567890.0\n 1.0\n 2.0\n 3.0\n 4.0)" pretty-format (flvector 1234567890.0 1.0 2.0 3.0 4.0)))
+
 (parameterize ([pretty-print-exact-as-decimal #t])
   (test "10" pretty-format 10)
   (test "0.5" pretty-format 1/2)
