@@ -130,6 +130,12 @@
 
 (define num-exceptions 0)
 
+(define (mk-eval lang)
+  (call-with-trusted-sandbox-configuration
+   (λ () (make-evaluator lang #:requires '(racket/flonum racket/unsafe/ops)))))
+(define racket-eval (mk-eval 'racket))
+(define tr-eval     (mk-eval 'typed/racket))
+
 (define (check-all-reals sexp)
   (or (with-handlers
           ;; something went wrong, almost certainly typechecking failed
@@ -139,7 +145,28 @@
                     #t)])
         (get-type sexp)
         #f) ; go on and check preservation
-      (right-type? sexp)))
+      (and (right-type? sexp)
+           ;; do we get the same result with and without optimization?
+           (let ()
+             (define racket-failed?  #f)
+             (define both-failed?    #f)
+             (define racket-result
+               (with-handlers
+                   ;; something went wrong, e.g. division by zero
+                   ;; TR must fail too
+                   ([exn? (λ (e) (set! racket-failed? #t))])
+                 (racket-eval sexp)))
+             (define tr-result
+               (with-handlers
+                   ;; did Racket error too?
+                   ([exn? (λ (e) (when racket-failed?
+                                   (set! both-failed? #t)))])
+                 (tr-eval sexp)))
+             (or both-failed?
+                 (and (not racket-failed?)
+                      (or (=      racket-result tr-result)
+                          ;; for NaN, which is not = to itself
+                          (equal? racket-result tr-result))))))))
 
 (define n-attempts 1000)
 (command-line
