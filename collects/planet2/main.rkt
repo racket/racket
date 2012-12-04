@@ -125,7 +125,7 @@
         (printf "~a\n" (case mode
                          [(i) "Installation-wide:"]
                          [(s) "User-specific, all-version:"]
-                         [(u) "User-spcific, version-specific:"])))
+                         [(u) "User-specific, version-specific:"])))
       (parameterize ([current-install-system-wide? (eq? mode 'i)]
                      [current-install-version-specific? (eq? mode 'u)]
                  [current-pkg-error (pkg-error 'show)])

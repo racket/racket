@@ -476,7 +476,7 @@ PLT curation.}
 
 @section[#:tag "metadata"]{Package Metadata}
 
-Package metadata, including dependencies on thar packages, is reported
+Package metadata, including dependencies on other packages, is reported
 by an @filepath{info.rkt} module within the package. This module must be
 implemented in the @racketmodname[setup/infotab] language.
 
@@ -693,7 +693,7 @@ responsive about fixing regressions against changes in Racket, etc.}
 
  ]
 
-This categories will be curated by PLT.
+These categories will be curated by PLT.
 
 Our goal is for all packages to be in the @reponame{solar-system}, with
 the @reponame{galaxy} as a temporary place while the curators work with the
