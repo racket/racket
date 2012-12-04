@@ -193,8 +193,8 @@
   (ptest "'`,#,#`a" '`,#,#`a)
   (ptest "'`,#,#`,@#,@a" '`,#,#`,@#,@a)
 
-  (ptest "'#fx(1 10000 3)" (fxvector 1 10000 3))
-  (ptest "'#fl(1.1 10000.1 3.1)" (flvector 1.1 10000.1 3.1))
+  (ptest "(fxvector 1 10000 3)" (fxvector 1 10000 3))
+  (ptest "(flvector 1.1 10000.1 3.1)" (flvector 1.1 10000.1 3.1))
 
   (void))
 
