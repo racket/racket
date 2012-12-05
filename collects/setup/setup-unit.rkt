@@ -970,7 +970,9 @@
             (with-output-to-file p #:exists 'truncate/replace
               (lambda ()
                 (write (hash-map ht cons))
-                (newline))))))))
+                (newline)))))))
+    ;; Flush cached state in the current namespace:
+    (reset-relevant-directories-state!))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                       Docs                    ;;
