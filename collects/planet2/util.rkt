@@ -43,21 +43,33 @@
       rest]
      [_ rp])))
 
-(define (package-url->checksum pkg-url-str)
+(define (package-url->checksum pkg-url-str [query empty])
   (define pkg-url
     (string->url pkg-url-str))
   (match (url-scheme pkg-url)
     ["github"
      (match-define (list* user repo branch path)
                    (map path/param-path (url-path/no-slash pkg-url)))
+     (define api-u
+       (url "https" #f "api.github.com" #f #t
+            (map (λ (x) (path/param x empty))
+                 (list "repos" user repo "branches"))
+            query
+            #f))
+     (define api-bs
+       (call/input-url+200 api-u port->bytes))
+     (unless api-bs
+       (error 'package-url->checksum 
+              "Could not connect to GitHub"))
      (define branches
-       (call/input-url+200
-        (url "https" #f "api.github.com" #f #t
-             (map (λ (x) (path/param x empty))
-                  (list "repos" user repo "branches"))
-             empty
-             #f)
-        read-json))
+       (read-json (open-input-bytes api-bs)))
+     (unless (and (list? branches)
+                  (andmap hash? branches)
+                  (andmap (λ (b) (hash-has-key? b 'name)) branches)
+                  (andmap (λ (b) (hash-has-key? b 'commit)) branches))
+       (error 'package-url->checksum 
+              "Invalid response from Github: ~e"
+              api-bs))
      (for/or ([b (in-list branches)])
        (and (equal? (hash-ref b 'name) branch)
             (hash-ref (hash-ref b 'commit) 'sha)))]

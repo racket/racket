@@ -116,6 +116,10 @@ table.packages tbody tr:nth-child(2n) {
     height: 4em;
 }
 
+div.delete {
+    margin-top: 1em;
+}
+
 #footer {
     width: 95%;
     text-align: right;

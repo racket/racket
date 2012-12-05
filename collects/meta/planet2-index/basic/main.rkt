@@ -29,10 +29,13 @@
          ,@(for/list ([n (in-list (sort (get-pkgs) string<=?))])
              `(tr
                (td (a ([href ,(get-url display-info n)]) ,n)))))))))
+  (define (write-pkgs req)
+    (response/sexpr (get-pkgs)))
   (define-values (dispatch get-url)
     (dispatch-rules
      [() list-pkgs]
      [("") list-pkgs]
+     [("pkgs") write-pkgs]
      [("pkg" (string-arg) "display") display-info]
      [("pkg" (string-arg)) write-info]))
   dispatch)

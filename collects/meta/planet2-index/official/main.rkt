@@ -43,6 +43,8 @@
    (build-path root "secret.key")))
 (define users-path (build-path root "users"))
 (make-directory* users-path)
+(define client_id (file->string (build-path root "client_id")))
+(define client_secret (file->string (build-path root "client_secret")))
 
 (module+ main
   (define users-old-path (build-path root "users.old"))
@@ -128,8 +130,8 @@
    (list (cons "Packages" (main-url page/main))
          pkg-name)
    #f
-   (λ (embed/url t)
-     (main-url page/search (list t)))
+   #f
+   #f
    req pkg-name))
 
 (define (search-term-eval pkg-name info term)
@@ -210,6 +212,20 @@
   (define terms (formlet-process search-formlet req))
   (redirect-to (main-url page/search (append old-terms terms))))
 
+(define (package-tags pkgs terms)
+  (define tag->count (make-hash))
+  (for* ([p (in-list pkgs)]
+         [t (in-list (package-ref (package-info p) 'tags))])
+    (hash-update! tag->count t add1 0))
+  (define tags
+    (sort (hash-keys tag->count)
+          >
+          #:key (λ (t) (hash-ref tag->count t))))
+  `(p ,@(for/list ([t (in-list tags)])
+          `(span (a ([href ,(main-url page/search (snoc terms t))])
+                    ,t)
+                 " "))))
+
 (define (page/search req terms)
   (define pkgs (package-list/search terms))
   (template
@@ -229,6 +245,7 @@
                         ,(if (current-user req #f)
                            "Manage Your Packages"
                            "Contribute a Package")))))
+   (package-tags pkgs terms)
    (package-table page/info pkgs #:terms terms)))
 
 (define (page/login req)
@@ -465,6 +482,20 @@
     (redirect-to
      (main-url page/manage/edit new-pkg)))
 
+  (define (delete! pkg-req)
+    (when (and (package-exists? pkg)
+               (not (equal? (package-ref (package-info pkg) 'author)
+                            (current-user pkg-req #t))))
+      (error 'planet2
+             "Packages may only be modified by their authors: ~e"
+             pkg))
+
+    (when pkg
+      (package-remove! pkg))
+
+    (redirect-to
+     (main-url page/manage)))
+
   (page/info-like
    (list* (cons "Packages" (main-url page/main))
           (current-user req #t)
@@ -476,6 +507,7 @@
    edit-details
    (λ (embed/url t)
      (embed/url (remove-tag-handler pkg t)))
+   delete!
    req pkg))
 
 
@@ -516,7 +548,7 @@
   (when (and new-tag
              (not (string=? new-tag "")))
     (define i (package-info pkg-name))
-    (unless (valid-name? new-tag) 
+    (unless (valid-name? new-tag)
       (error 'planet2
              "Illegal character in tag; only alphanumerics allowed, plus '_' and '-': ~e"
              new-tag))
@@ -529,7 +561,7 @@
                            old)))
                   empty))))
 
-(define (page/info-like bc edit-details tag-url req pkg-name)
+(define (page/info-like bc edit-details tag-url delete-handler req pkg-name)
   (define form-handler
     (or edit-details
         (add-tag-handler pkg-name)))
@@ -590,8 +622,15 @@
           (td
            (ul
             ,@(for/list ([t (in-list (package-ref* i 'tags empty))])
-                `(li (a ([href ,(tag-url embed/url t)])
-                        ,t)))
+                `(li
+                  (a ([href ,(main-url page/search (list t))])
+                     ,t)
+                  ,@(if tag-url
+                      (list " ["
+                            `(a ([href ,(tag-url embed/url t)])
+                                "delete tag")
+                            "]")
+                      empty)))
             ,(if pkg-name
                `(li (input ([name "tag"] [type "text"])))
                ""))))
@@ -616,6 +655,12 @@
                            "(require planet2)"
                            (format "(install \"~a\")"
                                    pkg-name))))
+           "")
+        ,(if (and pkg-name delete-handler)
+           `(div ([class "delete"])
+                 (a ([href ,(embed/url delete-handler)])
+                    "Delete this package")
+                 " (Warning: There is no undo.)")
            ""))))))
 
 (define (page/manage/update req)
@@ -632,7 +677,10 @@
     (package-ref i 'checksum))
   (define now (current-seconds))
   (define new-checksum
-    (package-url->checksum (package-ref i 'source)))
+    (package-url->checksum 
+     (package-ref i 'source)
+     (list (cons 'client_id client_id)
+           (cons 'client_secret client_secret))))
   (package-begin
    (define* i
      (hash-set i 'checksum
@@ -655,7 +703,8 @@
    (λ ()
      (while true
        (printf "updating checksums\n")
-       (update-checksums (package-list))
+       (with-handlers ([exn:fail? void])
+         (update-checksums (package-list)))
        ;; update once per day based on whenever the server started
        (sleep (* 24 60 60)))))
   (serve/servlet
