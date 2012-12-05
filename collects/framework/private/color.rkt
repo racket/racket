@@ -994,10 +994,12 @@ added get-regions
     ;;      -> (values (or #f number) (or #f number) (or #f string) boolean)
     (define/private (find-next-close-paren pos closers [adj? #t])
       (define next-pos (skip-whitespace pos 'forward #t))
-      (define tree (lexer-state-tokens (find-ls next-pos)))
-      (define start-pos (begin (send tree search! next-pos)
-                               (send tree get-root-start-position)))
-      (define end-pos (send tree get-root-end-position))
+      (define ls (find-ls next-pos))
+      (define ls-start (lexer-state-start-pos ls))
+      (define tree (lexer-state-tokens ls))
+      (send tree search! (- next-pos ls-start))
+      (define start-pos (+ ls-start (send tree get-root-start-position)))
+      (define end-pos (+ ls-start (send tree get-root-end-position))) 
 
       #;(printf "~a |~a| |~a|~n" (list pos next-pos start-pos end-pos (send tree get-root-data)) closers (get-text start-pos end-pos))
 

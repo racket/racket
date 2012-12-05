@@ -509,6 +509,7 @@
                           (preferences:get 'framework:fixup-parens)
                           (or smart-skip
                               (and (preferences:get 'framework:automatic-parens)
+                                   (not (in-string/comment? this))
                                    'adjacent))))
     
     (define/public (tabify-on-return?) #t)

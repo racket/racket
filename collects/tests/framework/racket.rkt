@@ -179,6 +179,7 @@
     ;    description     before-cursor    after-cursor
     '(("in-line-comment"  ";; abc def "    " ghi ")
       ("end-of-line-comment" ";; abc def " "")
+      ("end-of-line-comment-with-close-paren" ";; abc def " "   ) \n )")
       ("in-block-comment" "#| abc def "  " ghi |#")
       ))
   (for ([s scenarios])
