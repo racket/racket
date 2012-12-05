@@ -318,9 +318,10 @@
                  (handle* who thunk (add1 iteration))]
                 [else
                  (when (> iteration 0)
-                   (dbdebug "continuing with ~s after SQLITE_BUSY x ~s"
-                            (if (= s SQLITE_BUSY) "SQLITE_BUSY" s)
-                            iteration))
+                   (log-db-debug "continuing ~s with ~s after SQLITE_BUSY x ~s"
+                                 who
+                                 (if (= s SQLITE_BUSY) "SQLITE_BUSY" s)
+                                 iteration))
                  (apply values (handle-status who s) rest)]))))
 
     ;; Some errors can cause whole transaction to rollback;

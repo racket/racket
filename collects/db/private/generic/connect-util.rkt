@@ -141,7 +141,7 @@
                  (handle-evt (apply choice-evt keys)
                              ;; Assignment to key has expired
                              (lambda (key)
-                               (dbdebug "virtual-connection: key expiration: ~e" key)
+                               (log-db-debug "virtual-connection: key expiration: ~e" key)
                                (remove! key)))))))))
 
     ;; == methods called in client thread ==
@@ -253,21 +253,21 @@
                     [else (new-connection)])]
              [proxy-number (begin0 proxy-counter (set! proxy-counter (add1 proxy-counter)))]
              [c (new proxy-connection% (pool this) (connection raw-c) (number proxy-number))])
-        (dbdebug "connection-pool: leasing connection #~a (~a @~a)"
-                 proxy-number
-                 (if take-idle? "idle" "new")
-                 (hash-ref actual=>number raw-c "???"))
+        (log-db-debug "connection-pool: leasing connection #~a (~a @~a)"
+                      proxy-number
+                      (if take-idle? "idle" "new")
+                      (hash-ref actual=>number raw-c "???"))
         (hash-set! proxy=>evt c (wrap-evt key (lambda (_e) c)))
         (set! assigned-connections (add1 assigned-connections))
         c))
 
     (define/private (release* proxy raw-c why)
-      (dbdebug "connection-pool: releasing connection #~a (~a, ~a)"
-               (send proxy get-number)
-               (cond [(not raw-c) "no-op"]
-                     [(< (length idle-list) max-idle-connections) "idle"]
-                     [else "disconnect"])
-               why)
+      (log-db-debug "connection-pool: releasing connection #~a (~a, ~a)"
+                    (send proxy get-number)
+                    (cond [(not raw-c) "no-op"]
+                          [(< (length idle-list) max-idle-connections) "idle"]
+                          [else "disconnect"])
+                    why)
       (hash-remove! proxy=>evt proxy)
       (when raw-c
         (with-handlers ([exn:fail? void])

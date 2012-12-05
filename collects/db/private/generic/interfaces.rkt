@@ -18,8 +18,10 @@
 
          init-private
 
-         dblogger
-         dbdebug
+         log-db-error
+         log-db-warning
+         log-db-info
+         log-db-debug
 
          (struct-out exn:fail:sql)
          raise-sql-error)
@@ -144,10 +146,7 @@
 
 ;; Logging
 
-(define dblogger (make-logger 'db (current-logger)))
-
-(define (dbdebug fmt . args)
-  (log-message dblogger 'debug (apply format fmt args) #f))
+(define-logger db)
 
 ;; ----------------------------------------
 
