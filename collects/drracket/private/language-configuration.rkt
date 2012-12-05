@@ -1176,9 +1176,11 @@
         ;; remove the newline at the front of the first inlined category (if there)
         ;; it won't be there if the module language is at the top.
         (for ([hier-list (in-list (list other-languages-hier-list teaching-languages-hier-list))])
-          (define t (send (car (send hier-list get-items)) get-editor))
-          (when (equal? "\n" (send t get-text 0 1))
-            (send t delete 0 1)))
+          (define items (send hier-list get-items))
+          (unless (null? items)
+            (define t (send (car items) get-editor))
+            (when (equal? "\n" (send t get-text 0 1))
+              (send t delete 0 1))))
         
         (send details-outer-panel stretchable-width #f)
         (send details/manual-parent-panel change-children 
