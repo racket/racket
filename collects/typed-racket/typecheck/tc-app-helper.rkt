@@ -44,6 +44,18 @@
              ([r (in-list results)])
              (open-Result r o-a t-a)))
          (ret t-r f-r o-r)))]
+    ;; this case should only match if the function type has mandatory keywords
+    ;; but no keywords were provided in the application
+    [((arr: _ _ _ _
+            ;; at least one mandatory keyword
+            (app (λ (kws)
+                   (for/or ([keyword kws])
+                     (match keyword
+                       [(Keyword: kw _ #t) kw]
+                       [_ #f])))
+                 (? values req-kw))) _)
+     (when check?
+       (tc-error "Required keyword not supplied: ~a" req-kw))]
     [((arr: _ _ _ drest '()) _)
      (int-err "funapp with drest args ~a ~a NYI" drest argtys)]
     [((arr: _ _ _ _ kws) _)
