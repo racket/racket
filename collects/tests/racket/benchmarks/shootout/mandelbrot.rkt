@@ -25,19 +25,13 @@
       (flvector-set! v x (fl- (fl/ (fx->fl (fx* 2 x)) N.0) 1.5)))
     v))
 
-(define-syntax (let-n stx)
-  (syntax-case stx ()
-    [(_ N bindings E)
-     (let loop ([N (syntax-e #'N)] [E #'E])
-       (if (zero? N) E (loop (sub1 N) #`(let bindings #,E))))]))
-
 (define-syntax-rule (mandelbrot Cr Ci)
   (let loop ([i 0] [Zr 0.0] [Zi 0.0])
     (cond [(fl> (fl+ (fl* Zr Zr) (fl* Zi Zi)) LIMIT-SQR) 0]
           [(fx= i ITERATIONS) 1]
-          [else (let-n 5 ([Zr (fl+ (fl- (fl* Zr Zr) (fl* Zi Zi)) Cr)]
-                          [Zi (fl+ (fl* 2.0 (fl* Zr Zi)) Ci)])
-                  (loop (fx+ i 5) Zr Zi))])))
+          [else (let ([Zr (fl+ (fl- (fl* Zr Zr) (fl* Zi Zi)) Cr)]
+                      [Zi (fl+ (fl* 2.0 (fl* Zr Zi)) Ci)])
+                  (loop (fx+ i 1) Zr Zi))])))
 
 (fprintf O "P4\n~a ~a\n" N N)
 (let loop-y ([y N])
