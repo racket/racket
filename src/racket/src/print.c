@@ -3808,8 +3808,7 @@ print_pair(Scheme_Object *pair, int notdisplay, int compact,
 #define F_VECTOR print_utf8_string(pp, "(flvector ", 0, 10)
 #define F_ print_utf8_string(pp, "#fl(", 0, 4)
 #define PRINT_ELM() do {\
-  scheme_double_to_string(elem, buffer, 100, 0, &used_buffer); \
-  print_utf8_string(pp, buffer, 0, -1); \
+  print_utf8_string(pp, scheme_double_to_string(elem, buffer, 100, 0, &used_buffer), 0, -1); \
 } while(0);
 #include "print_vector.inc"
 
