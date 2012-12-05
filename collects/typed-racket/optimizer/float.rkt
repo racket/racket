@@ -5,7 +5,7 @@
          (for-template racket/base racket/flonum racket/unsafe/ops racket/math)
          "../utils/utils.rkt"
          (utils tc-utils)
-         (types numeric-tower type-table)
+         (types numeric-tower type-table union)
          (optimizer utils numeric-utils logging fixnum))
 
 (provide float-opt-expr float-arg-expr int-expr)
@@ -106,17 +106,40 @@
            (begin (log-optimization "unary float" float-opt-msg this-syntax)
                   #'(op.unsafe f.opt)))
   (pattern (#%plain-app (~var op (float-op binary-float-ops))
+                        ;; for now, accept anything that can be coerced to float
+                        ;; finer-grained checking is done below
                         f1:float-arg-expr
                         f2:float-arg-expr
                         fs:float-arg-expr ...)
-           ;; if the result is a float, we can coerce integers to floats and optimize
-           #:when (let* ([safe-to-opt? (subtypeof? this-syntax -Flonum)]
-                         ;; if we don't have a return type of float, we missed an optimization
-                         ;; opportunity, report it
+           #:when (let* ([safe-to-opt?
+                          ;; For it to be safe, we need:
+                          ;; - the result to be a float, in which case coercing args to floats
+                          ;;   won't change the result type
+                          ;; - all non-float arguments need to be provably non-zero
+                          ;;   otherwise, we may hit corner cases like (* 0 <float>) => 0
+                          ;;   or (+ 0 -0.0) => -0.0 (while (+ 0.0 -0.0) => 0.0)
+                          ;; - only one argument can be coerced. If more than one needs
+                          ;;   coercion, we could end up turning exact (or single-float)
+                          ;;   operations into float operations by accident.
+                          ;;   (Note: could allow for more args, if not next to each other, but
+                          ;;    probably not worth the trouble (most ops have 2 args anyway))
+                          (and (subtypeof? this-syntax -Flonum)
+                               (for/and ([a (in-list (syntax->list #'(f1 f2 fs ...)))])
+                                 ;; flonum or provably non-zero
+                                 (or (subtypeof? a -Flonum)
+                                     (subtypeof? a (Un -PosReal -NegReal))))
+                               (>= 1
+                                   (for/sum ([a (in-list (syntax->list #'(f1 f2 fs ...)))]
+                                             #:when (not (subtypeof? a -Flonum)))
+                                     1)))]
+                         ;; if we don't have a return type of float, or if the return type is
+                         ;; float, but we can't optimizer for some other reason, we missed an
+                         ;; optimization opportunity, report it
                          ;; ignore operations that stay within integers or rationals, since
                          ;; these have nothing to do with float optimizations
                          [missed-optimization? (and (not safe-to-opt?)
-                                                    (in-real-layer? this-syntax))])
+                                                    (or (in-real-layer? this-syntax)
+                                                        (in-float-layer? this-syntax)))])
                     (when missed-optimization?
                       (log-float-real-missed-opt
                        this-syntax
@@ -136,7 +159,9 @@
                         (filter
                          values
                          (for/list ([subexpr (in-list (syntax->list #'(f1 f2 fs ...)))]
-                                    #:when (or (in-real-layer? subexpr)
+                                    #:when (or (and (in-real-layer? subexpr)
+                                                    ;; exclude single-flonums
+                                                    (not (subtypeof? subexpr -InexactReal)))
                                                (in-rational-layer? subexpr)))
                            (syntax-parse subexpr
                              ;; Only warn about subexpressions that actually perform exact arithmetic.

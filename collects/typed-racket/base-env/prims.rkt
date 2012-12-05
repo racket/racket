@@ -409,7 +409,13 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (let: stx)
   (syntax-parse stx #:literals (:)
     [(let: nm:id ~! : ret-ty (bs:annotated-binding ...) . body)
-     (syntax/loc stx ((letrec: ([nm : (bs.ty ... -> ret-ty) (lambda (bs.ann-name ...) . body)]) nm) bs.rhs ...))]
+     (quasisyntax/loc stx
+       (#,(quasisyntax/loc stx
+            (letrec: ([nm : (bs.ty ... -> ret-ty)
+                          #,(quasisyntax/loc stx
+                              (lambda (bs.ann-name ...) . #,(syntax/loc stx body)))])
+                     #,(quasisyntax/loc stx nm)))
+        bs.rhs ...))]
     [(let: . rest)
      (syntax/loc stx (let-internal: . rest))]))
 
@@ -659,11 +665,13 @@ This file defines two sorts of primitives. All of them are provided into any mod
         ((var:optionally-annotated-name rest ...) ...)
         (stop?:expr ret ...)
         c:expr ...)
-     (syntax/loc
+     (quasisyntax/loc
          stx
-       (ann (do ((var.ann-name rest ...) ...)
-                (stop? ret ...)
-              c ...)
+       (ann #,(syntax/loc
+                  stx
+                (do ((var.ann-name rest ...) ...)
+                    (stop? ret ...)
+                  c ...))
             ty))]))
 
 ;; wrap the original for with a type annotation

@@ -604,7 +604,8 @@
                               (t)))]
           [with-current (lambda (t) (t))])
       (cond
-       [(current-install-system-wide?) (list (cons db with-current))]
+       [(current-install-system-wide?)
+        (list (cons db with-current))]
        [(current-install-version-specific?)
         (list (cons (with-sys-wide read-pkg-db) with-sys-wide)
               (cons db with-current)
@@ -612,7 +613,7 @@
        [else
         (list (cons (with-sys-wide read-pkg-db) with-sys-wide)
               (cons (with-vers-spec read-pkg-db) with-vers-spec)
-              db)])))
+              (cons db with-current))])))
   (define (install-package/outer infos desc info)
     (match-define (pkg-desc pkg type orig-name auto?) desc)
     (match-define

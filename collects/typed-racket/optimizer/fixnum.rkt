@@ -170,53 +170,39 @@
   ;; for fx-specific ops, we need to mimic the typing rules of their generic
   ;; counterparts, since fx-specific ops rely on error behavior for typechecking
   ;; and thus their return type cannot be used directly for optimization
+  ;; Note: We don't log near misses for those, too many false positives.
+  ;;  If someone is using `fx+' in the first place, they should know about `unsafe-fx+'.
   (pattern (#%plain-app (~and op (~literal fx+)) n1:fixnum-expr n2:fixnum-expr)
-           #:when (let ([safe-to-opt?
-                         (or (and (subtypeof? #'n1 -Index) (subtypeof? #'n2 -Index))
-                             (and (subtypeof? #'n1 -NonNegFixnum) (subtypeof? #'n2 -NonPosFixnum))
-                             (and (subtypeof? #'n1 -NonPosFixnum) (subtypeof? #'n2 -NonNegFixnum)))])
-                    (unless safe-to-opt?
-                      (log-fixnum-missed-opt this-syntax))
-                    safe-to-opt?)
+           #:when (or (and (subtypeof? #'n1 -Index) (subtypeof? #'n2 -Index))
+                      (and (subtypeof? #'n1 -NonNegFixnum) (subtypeof? #'n2 -NonPosFixnum))
+                      (and (subtypeof? #'n1 -NonPosFixnum) (subtypeof? #'n2 -NonNegFixnum)))
            #:with opt
            (begin (log-optimization "fixnum fx+" fixnum-opt-msg this-syntax)
                   (add-disappeared-use #'op)
                   #'(unsafe-fx+ n1.opt n2.opt)))
   (pattern (#%plain-app (~and op (~literal fx-)) n1:fixnum-expr n2:fixnum-expr)
-           #:when (let ([safe-to-opt? (and (subtypeof? #'n1 -NonNegFixnum)
-                                           (subtypeof? #'n2 -NonNegFixnum))])
-                    (unless safe-to-opt?
-                      (log-fixnum-missed-opt this-syntax))
-                    safe-to-opt?)
+           #:when (and (subtypeof? #'n1 -NonNegFixnum)
+                       (subtypeof? #'n2 -NonNegFixnum))
            #:with opt
            (begin (log-optimization "fixnum fx-" fixnum-opt-msg this-syntax)
                   (add-disappeared-use #'op)
                   #'(unsafe-fx- n1.opt n2.opt)))
   (pattern (#%plain-app (~and op (~literal fx*)) n1:fixnum-expr n2:fixnum-expr)
-           #:when (let ([safe-to-opt? (and (subtypeof? #'n1 -Byte)
-                                           (subtypeof? #'n2 -Byte))])
-                    (unless safe-to-opt?
-                      (log-fixnum-missed-opt this-syntax))
-                    safe-to-opt?)
+           #:when (and (subtypeof? #'n1 -Byte)
+                       (subtypeof? #'n2 -Byte))
            #:with opt
            (begin (log-optimization "fixnum fx*" fixnum-opt-msg this-syntax)
                   (add-disappeared-use #'op)
                   #'(unsafe-fx* n1.opt n2.opt)))
   (pattern (#%plain-app (~and op (~literal fxquotient)) n1:fixnum-expr n2:fixnum-expr)
-           #:when (let ([safe-to-opt? (and (subtypeof? #'n1 -NonNegFixnum)
-                                           (subtypeof? #'n2 -Fixnum))])
-                    (unless safe-to-opt?
-                      (log-fixnum-missed-opt this-syntax))
-                    safe-to-opt?)
+           #:when (and (subtypeof? #'n1 -NonNegFixnum)
+                       (subtypeof? #'n2 -Fixnum))
            #:with opt
            (begin (log-optimization "fixnum fxquotient" fixnum-opt-msg this-syntax)
                   (add-disappeared-use #'op)
                   #'(unsafe-fxquotient n1.opt n2.opt)))
   (pattern (#%plain-app (~and op (~or (~literal fxabs) (~literal abs))) n:fixnum-expr)
-           #:when (let ([safe-to-opt? (subtypeof? #'n -NonNegFixnum)]) ; (abs min-fixnum) is not a fixnum
-                    (unless safe-to-opt?
-                      (log-fixnum-missed-opt this-syntax))
-                    safe-to-opt?)
+           #:when (subtypeof? #'n -NonNegFixnum)
            #:with opt
            (begin (log-optimization "fixnum fxabs" fixnum-opt-msg this-syntax)
                   (add-disappeared-use #'op)
