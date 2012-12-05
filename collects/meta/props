@@ -1477,7 +1477,6 @@ path/s is either such a string or a list of them.
 "collects/tests/units" responsible (sstrickl)
 "collects/tests/unstable" responsible (jay samth cce ryanc)
 "collects/tests/unstable/automata" responsible (jay)
-"collects/tests/unstable/cat.rkt" responsible (ryanc)
 "collects/tests/unstable/list.rkt" responsible (jay)
 "collects/tests/unstable/logging.rkt" responsible (stamourv)
 "collects/tests/unstable/srcloc.rktl" responsible (cce)
