@@ -53,11 +53,11 @@
 ;;   - a hashtable mapping S-expressions to syntax objects
 ;;   - a hashtable mapping syntax objects to S-expressions
 ;; Syntax objects which are eq? will map to same flat values
-(define (syntax->datum/tables stx partition limit suffixopt)
-  (table stx partition limit suffixopt))
+(define (syntax->datum/tables stx partition limit suffixopt abbrev?)
+  (table stx partition limit suffixopt abbrev?))
 
-;; table : syntax maybe-partition% maybe-num SuffixOption -> (values s-expr hashtable hashtable)
-(define (table stx partition limit suffixopt)
+;; table : syntax maybe-partition% maybe-num SuffixOption boolean -> (values s-expr hashtable hashtable)
+(define (table stx partition limit suffixopt abbrev?)
   (define (make-identifier-proxy id)
     (define sym (syntax-e id))
     (case suffixopt
@@ -89,7 +89,7 @@
                  (hash-set! flat=>stx lp-datum obj)
                  (hash-set! stx=>flat obj lp-datum)
                  lp-datum)]
-              [(and (syntax? obj) (check+convert-special-expression obj))
+              [(and (syntax? obj) abbrev? (check+convert-special-expression obj))
                => (lambda (newobj)
                     (when partition (send/i partition partition<%> get-partition obj))
                     (let* ([inner (cadr newobj)]
