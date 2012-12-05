@@ -105,16 +105,6 @@ implement contracts @cite{Strickland12}.
 @section[#:tag "data-structure-contracts"]{Data-structure Contracts}
 @declare-exporting-ctc[racket/contract/base]
 
-@defproc[(flat-contract [predicate (any/c . -> . any/c)]) flat-contract?]{
-
-Constructs a @tech{flat contract} from @racket[predicate]. A value
-satisfies the contract if the predicate returns a true value.
-
-This function is a holdover from before flat contracts could be used
-directly as predicates. It exists today for backwards compatibilty.
-}
-
-
 @defproc[(flat-named-contract [type-name any/c]
                               [predicate (or/c flat-contract? (any/c . -> . any))]
                               [generator (or/c #f (-> contract (-> int? any))) #f])
@@ -629,6 +619,26 @@ multiple values.  It can only be used in a result position of contracts like
 Constructs a contract on a promise. The contract does not force the
 promise, but when the promise is forced, the contract checks that the
 result value meets the contract produced by @racket[expr].}
+
+@defproc[(flat-contract [predicate (any/c . -> . any/c)]) flat-contract?]{
+
+Constructs a @tech{flat contract} from @racket[predicate]. A value
+satisfies the contract if the predicate returns a true value.
+
+This function is a holdover from before flat contracts could be used
+directly as predicates. It exists today for backwards compatibilty.
+}
+
+
+@defproc[(flat-contract-predicate [v flat-contract?])
+         (any/c . -> . any/c)]{
+
+Extracts the predicate from a flat contract.
+
+This function is a holdover from before flat contracts could 
+be used directly as predicates. It exists today for backwards compatibility.
+}
+
 
 @; ------------------------------------------------------------------------
 
@@ -2166,11 +2176,6 @@ For example,
 symbols, booleans, numbers, and other ordinary Racket values
 (that are defined as @tech{contracts}) are also
 flat contracts.}
-
-@defproc[(flat-contract-predicate [v flat-contract?])
-         (any/c . -> . any/c)]{
-
-Extracts the predicate from a flat contract.}
 
 @defproc[(contract-name [c contract?]) any/c]{
 Produces the name used to describe the contract in error messages.
