@@ -8,7 +8,8 @@
          "pretty-printer.rkt"
          "interfaces.rkt"
          "prefs.rkt"
-         "util.rkt")
+         "util.rkt"
+         "../util/logger.rkt")
 (provide print-syntax-to-editor
          code-style)
 
@@ -36,19 +37,23 @@
                                 [insertion-point (send text last-position)])
   (define output-port (open-output-string/count-lines))
   (define range
-    (pretty-print-syntax stx output-port 
-                         (send/i controller controller<%> get-primary-partition)
-                         (length (send/i config config<%> get-colors))
-                         (send/i config config<%> get-suffix-option)
-                         (send config get-pretty-styles)
-                         columns
-                         (send config get-pretty-abbrev?)))
+    (with-log-time "** pretty-print-syntax"
+      (pretty-print-syntax stx output-port 
+                           (send/i controller controller<%> get-primary-partition)
+                           (length (send/i config config<%> get-colors))
+                           (send/i config config<%> get-suffix-option)
+                           (send config get-pretty-styles)
+                           columns
+                           (send config get-pretty-abbrev?))))
   (define output-string (get-output-string output-port))
   (define output-length (sub1 (string-length output-string))) ;; skip final newline
-  (fixup-parentheses output-string range)
+  (log-macro-stepper-debug "size of pretty-printed text: ~s" output-length)
+  (with-log-time "fixup-parentheses"
+    (fixup-parentheses output-string range))
   (with-unlock text
-    (uninterruptible
-     (send text insert output-length output-string insertion-point))
+    (with-log-time "inserting pretty-printed text"
+      (uninterruptible
+       (send text insert output-length output-string insertion-point)))
     (new display%
          (text text)
          (controller controller)
@@ -87,22 +92,26 @@
 
     ;; initialize : -> void
     (define/private (initialize)
-      (uninterruptible
-       (send text change-style base-style start-position end-position #f))
-      (uninterruptible (apply-primary-partition-styles))
-      (uninterruptible (add-clickbacks)))
+      (with-log-time "changing base style"
+        (uninterruptible
+         (send text change-style base-style start-position end-position #f)))
+      (with-log-time "applying primary styles"
+        (uninterruptible (apply-primary-partition-styles)))
+      (with-log-time "adding clickbacks"
+        (uninterruptible (add-clickbacks))))
 
     ;; add-clickbacks : -> void
     (define/private (add-clickbacks)
       (define mapping (send text get-region-mapping 'syntax))
       (define lazy-interval-map-init
         (delay
+          (with-log-time "forcing clickback mapping"
           (uninterruptible
            (for ([range (send/i range range<%> all-ranges)])
              (let ([stx (range-obj range)]
                    [start (range-start range)]
                    [end (range-end range)])
-               (interval-map-set! mapping (+ start-position start) (+ start-position end) stx))))))
+               (interval-map-set! mapping (+ start-position start) (+ start-position end) stx)))))))
       (define (the-callback position)
         (force lazy-interval-map-init)
         (send/i controller selection-manager<%> set-selected-syntax
@@ -113,6 +122,7 @@
     ;; refresh : -> void
     ;; Clears all highlighting and reapplies all non-foreground styles.
     (define/public (refresh)
+      (with-log-time "refresh"
       (with-unlock text
         (uninterruptible
          (let ([undo-select/highlight-d (get-undo-select/highlight-d)])
@@ -134,7 +144,7 @@
           (uninterruptible
            (apply-secondary-relation-styles selected-syntax))
           (uninterruptible
-           (apply-selection-styles selected-syntax)))))
+           (apply-selection-styles selected-syntax))))))
 
     ;; get-range : -> range<%>
     (define/public (get-range) range)
