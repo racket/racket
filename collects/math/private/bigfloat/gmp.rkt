@@ -7,8 +7,8 @@
 
 (provide
  _mp_size_t
- _limb_t
- sizeof-limb_t
+ _mp_limb_t
+ sizeof-mp_limb_t
  gmp-limb-bits
  _mpz-pointer
  new-mpz
@@ -26,21 +26,25 @@
 
 (define gmp-lib (ffi-lib libgmp-so '("10" "3" "") #:fail (λ () #f)))
 
-(define-syntax-rule (get-gmp-fun name type)
+(define (get-gmp-fun name type)
   (get-ffi-obj name gmp-lib type (make-not-available name)))
 
 ;; ===================================================================================================
 ;; Types
 
-;; Size header, precision, sign, exponent, limb (a "digit" in an _mpz)
-(define _mp_size_t _long)
-(define _limb_t _ulong)
+(define 64-bit? (= 8 (ctype-sizeof _intptr)))
+(define win64? (and 64-bit? (eq? (system-type) 'windows)))
+
+;; The Win64 build of libgmp is compiled using mingw64, for which GMP's configure script defines
+;; LONG_LONG_LIMB
+(define _mp_limb_t (if win64? _ullong _ulong))
+(define _mp_size_t _long)  ; used for limb counts
 (define _mp_bitcnt_t _ulong)
 
-(define sizeof-limb_t (ctype-sizeof _limb_t))
+(define sizeof-mp_limb_t (ctype-sizeof _mp_limb_t))
 
 ;; Number of bits in a limb
-(define gmp-limb-bits (* 8 sizeof-limb_t))
+(define gmp-limb-bits (* 8 sizeof-mp_limb_t))
 ;; We don't support "nail" builds, which haven't worked since before GMP 4.3 anyway (a "nail" takes
 ;; two bits from each limb, and is supposed to speed up carries between limbs on certain systems)
 
@@ -63,8 +67,6 @@
 ;; not relocatable. These are always safe to pass to mpz_* functions.
 (define (new-mpz [bits 0])
   (define z (make-mpz 0 0 #f))
-  ;; Same as above, but don't let it move:
-  ;(define z (ptr-ref (malloc _mpz 'atomic-interior) _mpz))
   (if (= bits 0) (mpz-init z) (mpz-init2 z bits))
   (register-finalizer z (λ (z) (mpz-clear z)))
   z)
@@ -85,7 +87,7 @@
   (let loop ([i 0])
     (when (i . < . len)
       (define bit (* i gmp-limb-bits))
-      (ptr-set! limbs _limb_t i (bitwise-bit-field abs-n bit (+ bit gmp-limb-bits)))
+      (ptr-set! limbs _mp_limb_t i (bitwise-bit-field abs-n bit (+ bit gmp-limb-bits)))
       (loop (+ i 1))))
   (define size (ceiling (/ (integer-length abs-n) gmp-limb-bits)))
   (set-mpz-size! z (if (< n 0) (- size) size))
@@ -98,7 +100,7 @@
   (define num
     (let loop ([i 0] [res  0])
       (cond [(i . < . len)
-             (define v (ptr-ref limbs _limb_t i))
+             (define v (ptr-ref limbs _mp_limb_t i))
              (loop (+ i 1) (bitwise-ior res (arithmetic-shift v (* i gmp-limb-bits))))]
             [else  res])))
   (if (negative? size) (- num) num))

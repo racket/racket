@@ -263,9 +263,6 @@ meaning of the return value in the same way as the corresponding arguments to @r
                           (Discrete-Dist A)])]
               @defproc[(discrete-dist-values [d (Discrete-Dist A)]) (Listof A)]
               @defproc[(discrete-dist-probs [d (Discrete-Dist A)]) (Listof Positive-Flonum)])]{
-@bold{Warning:} The types and functions for discrete distributions will probably change soon,
-as part of overhauling how @racket[math/statistics] handles weighted samples.
-
 Represents families of unordered, discrete distributions over values of type @racket[A], with equality
 decided by @racket[equal?].
 

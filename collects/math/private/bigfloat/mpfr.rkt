@@ -97,25 +97,13 @@
 (define _sign_t _int)
 (define _exp_t _long)
 
-;; The "limbs" of a bigint are an array of _limb_t, where the element 0 is the length of the array
-;; in bytes. Entirely reasonable... except that MPFR's bigfloats point at *element 1* for the
-;; significand. This ctype converts between a sane cvector and what MPFR expects.
-(define _mpfr_limbs
-  (make-ctype
-   _cvector
-   (λ (cvec)
-     ;(printf "racket->c~n")
-     (define len (cvector-length cvec))
-     (cvector-set! cvec 0 (* len sizeof-limb_t))
-     (make-cvector* (ptr-add (cvector-ptr cvec) 1 _limb_t) _limb_t (- len 1)))
-   (λ (cvec)
-     ;(printf "c->racket~n")
-     (define len (+ (cvector-length cvec) 1))
-     (let ([cvec  (make-cvector* (ptr-add (cvector-ptr cvec) -1 _limb_t) _limb_t len)])
-       (unless (= (cvector-ref cvec 0) (* len sizeof-limb_t))
-         (error '_mpfr_limbs "internal error: limb cvector not the size in the header"))
-       cvec))
-   ))
+;; In mpfr-impl.h, this is a union of mp_size_t and mp_limb_t
+(define _mpfr_size_limb_t
+  (if (sizeof-mp_limb_t . > . (ctype-sizeof _mp_size_t)) _mp_limb_t _mp_size_t))
+
+(define sizeof-mpfr_size_limb_t (ctype-sizeof _mpfr_size_limb_t))
+
+(define sizeof-exp_t (ctype-sizeof _exp_t))
 
 (define (bigfloat-equal? x1 x2 _)
   (or (and (bfnan? x1) (bfnan? x2))
@@ -184,36 +172,61 @@
    (or (current-load-relative-directory) 
        (current-directory))))
 
-;; mpfr_t: a multi-precision float with rounding (the main data type)
-(define-cstruct _mpfr ([prec _prec_t] [sign _sign_t] [exp _exp_t] [d (_gcable _mpfr_limbs)])
+;; _mpfr: a multi-precision float with rounding (the main data type)
+(define-cstruct _mpfr ([prec _prec_t] [sign _sign_t] [exp _exp_t] [d _gcpointer])
   #:property prop:custom-print-quotable 'never
   #:property prop:custom-write (λ (b port mode) (bigfloat-custom-write b port mode))
   #:property prop:equal+hash (list bigfloat-equal? bigfloat-hash bigfloat-hash)
   #:property prop:serializable bigfloat-serialize-info)
 
 (define mpfr-set-nan (get-mpfr-fun 'mpfr_set_nan (_fun _mpfr-pointer -> _void)))
+(define mpfr-init2 (get-mpfr-fun 'mpfr_init2 (_fun _mpfr-pointer _prec_t -> _void)))
+(define mpfr-clear (get-mpfr-fun 'mpfr_clear (_fun _mpfr-pointer -> _void)))
 
-;; new-mpfr : integer -> _mpfr
-;; Creates a new mpfr_t and initializes it, mimicking mpfr_init2. The difference is that our
-;; allocated memory is GC'd.
-;; (Allowing MPFR to do its own memory management is bad. If we allowed this, Racket wouldn't know
-;; how much memory the limbs take. It would assume it's using much less memory than it really is, and
-;; become a major memory hog. Feel free to verify this independently.)
+;; raw-mpfr : integer -> bigfloat
+;; Creates and initializes an _mpfr instance using MPFR's memory management
+;; It's better to use Racket's memory management for long-lived _mpfr objects. Racket can't track
+;; the memory used by the limbs of an _mpfr object constructed using `mpfr-init2', meaning that
+;; it would think it uses less memory than it actually does.
+(define (raw-mpfr prec)
+  (define x (make-mpfr 0 0 0 #f))
+  (mpfr-init2 x prec)
+  (register-finalizer x (λ (x) (mpfr-clear x)))
+  x)
+
+;; mpfr-prec->limbs : integer -> integer
+;; Reimplementation of MPFR_PREC2LIMBS
+(define (mpfr-prec->limbs prec)
+  (+ 1 (quotient (- prec 1) gmp-limb-bits)))
+
+;; mpfr-malloc-size : integer -> integer
+;; Reimplementation of MPFR_MALLOC_SIZE
+(define (mpfr-malloc-size n)
+  (+ sizeof-mpfr_size_limb_t (* sizeof-mp_limb_t n)))
+
+;; Reimplementation of MPFR_EXP_INVALID
+(define mpfr-exp-invalid
+  (arithmetic-shift 1 (- (quotient (* gmp-limb-bits sizeof-exp_t) sizeof-mp_limb_t) 2)))
+
+;; mpfr-set-alloc-size! : pointer integer -> void
+;; Reimplementation of MPFR_SET_ALLOC_SIZE
+(define (mpfr-set-alloc-size! d n)
+  (ptr-set! d _mp_size_t -1 n))
+
+;; new-mpfr : integer -> bigfloat
+;; Creates a new _mpfr instance and initializes it, mimicking `mpfr-init2'
 (define (new-mpfr prec)
-  (define n (add1 (quotient (- prec 1) gmp-limb-bits)))
-  (define size (* sizeof-limb_t (+ n 1)))
-  ;; Allocate d and x so they won't be traced (atomic) or moved (interior)
-  (define d (make-cvector* (malloc size 'atomic-interior) _limb_t (+ n 1)))
-  (define x (make-mpfr prec 1 0 d))
-  ;; The next five lines are like the one above, but malloc uses 'atomic-interior instead of 'atomic
-  ;(define x (ptr-ref (malloc (ctype-sizeof _mpfr) 'atomic-interior) _mpfr))
-  ;(set-mpfr-prec! x prec)
-  ;(set-mpfr-sign! x 1)
-  ;(set-mpfr-exp! x 0)
-  ;(set-mpfr-d! x d)
-  ;; Use a finalizer to keep a reference to d as long as x is alive (this is equivalent to tracing
-  ;; through d)
-  (register-finalizer x (λ (x) d))
+  (define n (mpfr-prec->limbs prec))
+  (define size (mpfr-malloc-size n))
+  ;; Allocate d so it won't be traced (atomic) or moved (interior)
+  (define orig-d (malloc size 'atomic-interior))
+  ;; An _mpfr object points at the second element of its limbs array, and uses the first element
+  ;; to store its size
+  (define d (ptr-add orig-d 1 _mpfr_size_limb_t))
+  (mpfr-set-alloc-size! d n)
+  (define x (make-mpfr prec 0 mpfr-exp-invalid d))
+  ;; Use a finalizer to keep a reference to orig-d as long as x is alive
+  (register-finalizer x (λ (x) orig-d))
   (mpfr-set-nan x)
   x)
 
@@ -230,9 +243,8 @@
 (define mpfr-get-exp (get-mpfr-fun 'mpfr_get_exp (_fun _mpfr-pointer -> _exp_t)))
 (define mpfr-get-z-2exp
   (get-mpfr-fun 'mpfr_get_z_2exp (_fun _mpz-pointer _mpfr-pointer -> _exp_t)
-                (lambda ()
-                  (get-mpfr-fun 'mpfr_get_z_exp
-                                (_fun _mpz-pointer _mpfr-pointer -> _exp_t)))))
+                (λ () (get-mpfr-fun 'mpfr_get_z_exp
+                                    (_fun _mpz-pointer _mpfr-pointer -> _exp_t)))))
 
 ;; bigfloat-precision : bigfloat -> integer
 ;; Returns the maximum number of nonzero bits in the significand.
@@ -268,7 +280,9 @@
 (define mpfr-set-si (get-mpfr-fun 'mpfr_set_si (_fun _mpfr-pointer _long _rnd_t -> _void)))
 (define mpfr-set-z  (get-mpfr-fun 'mpfr_set_z  (_fun _mpfr-pointer _mpz-pointer _rnd_t -> _void)))
 (define mpfr-set-z-2exp
-  (get-mpfr-fun 'mpfr_set_z_2exp (_fun _mpfr-pointer _mpz-pointer _exp_t _rnd_t -> _int)))
+  (get-mpfr-fun 'mpfr_set_z_2exp (_fun _mpfr-pointer _mpz-pointer _exp_t _rnd_t -> _int)
+                (λ () (get-mpfr-fun 'mpfr_set_z_exp
+                                    (_fun _mpfr-pointer _mpz-pointer _exp_t _rnd_t -> _int)))))
 
 ;; sig+exp->bigfloat integer integer -> bigfloat
 (define (sig+exp->bigfloat n e)
@@ -313,23 +327,23 @@
 ;; rational->bigfloat : rational -> bigfloat
 ;; Converts a Racket rational to a bigfloat; rounds if necessary.
 (define (rational->bigfloat q)
-  (define bits (bf-precision))
+  (define prec (bf-precision))
   (define sgn-q (sgn q))
   (define abs-q (abs q))
   (define ipart (floor abs-q))
   (cond [(zero? sgn-q)  (sig+exp->bigfloat 0 0)]
         [(zero? ipart)
-         (define e-ub (- (log2-upper-bound abs-q) bits))
-         (define e-lb (- (log2-lower-bound abs-q) bits))
+         (define e-ub (- (log2-upper-bound abs-q) prec))
+         (define e-lb (- (log2-lower-bound abs-q) prec))
          (let loop ([e  e-ub])
            (define 2^-e (arithmetic-shift 1 (- e)))
            (define sig (round/mode (* sgn-q abs-q 2^-e)))
-           (cond [(or (= e e-lb) (= bits (integer-length (abs sig))))
+           (cond [(or (= e e-lb) (= prec (integer-length (abs sig))))
                   (sig+exp->bigfloat sig e)]
                  [else
                   (loop (- e 1))]))]
         [else
-         (define e (- (integer-length ipart) bits))
+         (define e (- (integer-length ipart) prec))
          (define 2^-e (cond [(e . < . 0)  (arithmetic-shift 1 (- e))]
                             [else  (/ 1 (arithmetic-shift 1 e))]))
          (define sig (round/mode (* sgn-q abs-q 2^-e)))

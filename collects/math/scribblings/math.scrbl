@@ -13,9 +13,9 @@ for working with numbers and collections of numbers. These include
 @itemlist[
   @item{Additional constants and elementary functions}
   @item{Special functions}
-  @item{@racket[Bigfloat]s, or arbitrary-precision floating-point numbers}
+  @item{Bigfloats, or arbitrary-precision floating-point numbers}
   @item{Number-theoretic functions}
-  @item{@racket[Array]s for storing and transforming large rectangular data sets}
+  @item{Functional arrays for storing and operating on large rectangular data sets}
   @item{Probability distributions}
   @item{Statistical functions (currently undergoing refactoring)}
   @item{Linear algebra functions (currently under review)}
