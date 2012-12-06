@@ -65,9 +65,8 @@
                   
 (define mpfr-free-cache (get-mpfr-fun 'mpfr_free_cache (_fun -> _void)))
 
-;; This may be crashing Racket
-(define mpfr-shutdown (register-custodian-shutdown
-                       mpfr-free-cache (λ (free) (free))))
+(define mpfr-shutdown
+  (register-custodian-shutdown mpfr-free-cache (λ (free) (free))))
 
 ;; ===================================================================================================
 ;; Parameters: rounding mode, bit precision, printing
@@ -280,9 +279,7 @@
 (define mpfr-set-si (get-mpfr-fun 'mpfr_set_si (_fun _mpfr-pointer _long _rnd_t -> _void)))
 (define mpfr-set-z  (get-mpfr-fun 'mpfr_set_z  (_fun _mpfr-pointer _mpz-pointer _rnd_t -> _void)))
 (define mpfr-set-z-2exp
-  (get-mpfr-fun 'mpfr_set_z_2exp (_fun _mpfr-pointer _mpz-pointer _exp_t _rnd_t -> _int)
-                (λ () (get-mpfr-fun 'mpfr_set_z_exp
-                                    (_fun _mpfr-pointer _mpz-pointer _exp_t _rnd_t -> _int)))))
+  (get-mpfr-fun 'mpfr_set_z_2exp (_fun _mpfr-pointer _mpz-pointer _exp_t _rnd_t -> _int)))
 
 ;; sig+exp->bigfloat integer integer -> bigfloat
 (define (sig+exp->bigfloat n e)
