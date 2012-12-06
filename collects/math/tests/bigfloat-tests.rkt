@@ -123,7 +123,7 @@
 
 ;; Integer conversion
 
-(check-equal? (bigfloat->rational (integer->bigfloat 0)) 0)
+(check-equal? (bigfloat->integer (integer->bigfloat 0)) 0)
 
 (for ([mode  (in-list '(nearest up down zero))])
   (define eps (if (eq? mode 'nearest) (bf* (bf 0.5) epsilon.bf) epsilon.bf))

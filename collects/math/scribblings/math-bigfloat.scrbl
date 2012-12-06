@@ -150,32 +150,28 @@ Returns the number of bits in the significand of @racket[x]. This is almost alwa
 the value of @racket[(bf-precision)] when @racket[x] was created.
 }
 
-@defproc[(bigfloat-sign [x Bigfloat]) (U 0 1)]{
-Returns the @italic{sign bit} of the significand of @racket[x].
+@defproc[(bigfloat-signbit [x Bigfloat]) (U 0 1)]{
+Returns the sign bit of the significand of @racket[x].
 @examples[#:eval untyped-eval
                  (eval:alts
-                  (bigfloat-sign -1.bf)
+                  (bigfloat-signbit -1.bf)
                   (eval:result @racketresultfont{1}))
                  (eval:alts
-                  (bigfloat-sign 0.bf)
+                  (bigfloat-signbit 0.bf)
                   (eval:result @racketresultfont{0}))
                  (eval:alts
-                  (bigfloat-sign -0.bf)
+                  (bigfloat-signbit -0.bf)
                   (eval:result @racketresultfont{1}))
                  (eval:alts
-                  (bigfloat-sign -inf.bf)
+                  (bigfloat-signbit -inf.bf)
                   (eval:result @racketresultfont{1}))]
 }
 
 @deftogether[(@defproc[(bigfloat-significand [x Bigfloat]) Integer]
-              @defproc[(bigfloat-exponent [x Bigfloat]) Integer]
-              @defproc[(bigfloat-sig+exp [x Bigfloat]) (Values Integer Integer)])]{
-Return the @italic{signed} significand and exponent of @racket[x].
+              @defproc[(bigfloat-exponent [x Bigfloat]) Integer])]{
+Return the @italic{signed} significand or exponent of @racket[x].
 
-If @racket[(values sig exp) = (bigfloat-sig+exp x)], its value as an exact rational
-is @racket[(* sig (expt 2 exp))]. In fact, @racket[bigfloat->rational] converts
-bigfloats to rationals in exactly this way, after ensuring that @racket[(bfrational? x)]
-is @racket[#t].
+To get both the significand and exponent at the same time, use @racket[bigfloat->sig+exp].
 }
 
 @section{Bigfloat Parameters}
@@ -328,6 +324,15 @@ using the current value of @racket[bf-rounding-mode].
 
 @bold{Be careful with exact conversions.} Bigfloats with large exponents may not fit in memory as
 integers or exact rationals. Worse, they might fit, but have all your RAM and swap space for lunch.
+}
+
+@defproc[(bigfloat->sig+exp [x Bigfloat]) (Values Integer Integer)]{
+Returns the @italic{signed} significand and exponent of @racket[x].
+
+If @racket[(values sig exp) = (bigfloat->sig+exp x)], its value as an exact rational
+is @racket[(* sig (expt 2 exp))]. In fact, @racket[bigfloat->rational] converts
+bigfloats to rationals in exactly this way, after ensuring that @racket[(bfrational? x)]
+is @racket[#t].
 }
 
 @deftogether[(@defproc[(bigfloat->string [x Bigfloat]) String]

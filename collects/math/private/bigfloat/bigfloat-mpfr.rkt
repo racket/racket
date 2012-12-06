@@ -18,22 +18,23 @@
  [bfcanonicalize  (Bigfloat -> Bigfloat)]
  ;; Accessors
  [bigfloat-precision    (Bigfloat -> Exact-Positive-Integer)]
- [bigfloat-sign         (Bigfloat -> (U 0 1))]
+ [bigfloat-signbit      (Bigfloat -> (U 0 1))]
  [bigfloat-exponent     (Bigfloat -> Integer)]
- [bigfloat-sig+exp      (Bigfloat -> (Values Integer Integer))]
  [bigfloat-significand  (Bigfloat -> Integer)]
- ;; Conversion to and from Real
- [bigfloat->flonum    (Bigfloat -> Float)]
+ ;; Conversions from Bigfloat
+ [bigfloat->sig+exp   (Bigfloat -> (Values Integer Integer))]
+ [bigfloat->flonum    (Bigfloat -> Flonum)]
  [bigfloat->integer   (Bigfloat -> Integer)]
  [bigfloat->rational  (Bigfloat -> Exact-Rational)]
  [bigfloat->real      (Bigfloat -> (U Exact-Rational Flonum))]
- [flonum->bigfloat    (Float -> Bigfloat)]
+ [bigfloat->string    (Bigfloat -> String)]
+ ;; Conversions to Bigfloat
+ [sig+exp->bigfloat   (Integer Integer -> Bigfloat)]
+ [flonum->bigfloat    (Flonum -> Bigfloat)]
  [integer->bigfloat   (Integer -> Bigfloat)]
  [rational->bigfloat  (Exact-Rational -> Bigfloat)]
  [real->bigfloat      (Real -> Bigfloat)]
- ;; String conversion
- [bigfloat->string  (Bigfloat -> String)]
- [string->bigfloat  (String -> (U #f Bigfloat))]
+ [string->bigfloat    (String -> (U #f Bigfloat))]
  ;; Main constructor
  [bf  (case-> ((U String Real) -> Bigfloat)
               (Integer Integer -> Bigfloat))]
@@ -155,24 +156,25 @@
  bfcanonicalize
  ;; Accessors
  bigfloat-precision
- bigfloat-sign
+ bigfloat-signbit
  bigfloat-exponent
- bigfloat-sig+exp
+ bigfloat->sig+exp
  bigfloat-significand
- ;; Conversion to and from Real
+ ;; Conversions
+ sig+exp->bigfloat
  flonum->bigfloat
  integer->bigfloat
  rational->bigfloat
  real->bigfloat
  fl2->bigfloat
+ string->bigfloat
  bigfloat->flonum
  bigfloat->integer
  bigfloat->rational
  bigfloat->real
  bigfloat->fl2
- ;; String conversion
  bigfloat->string
- string->bigfloat
+ bigfloat->sig+exp
  ;; Main constructor
  bf
  ;; Functions with non-uniform types

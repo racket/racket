@@ -25,15 +25,16 @@
  bfcanonicalize
  ;; Accessors
  bigfloat-precision
- bigfloat-sign
+ bigfloat-signbit
  bigfloat-exponent
- bigfloat-sig+exp
  bigfloat-significand
  ;; Conversion to and from Real
+ sig+exp->bigfloat
  flonum->bigfloat
  integer->bigfloat
  rational->bigfloat
  real->bigfloat
+ bigfloat->sig+exp
  bigfloat->flonum
  bigfloat->integer
  bigfloat->rational
@@ -62,29 +63,11 @@
   (syntax-rules ()
     [(_ name type) (get-mpfr-fun name type (make-not-available name))]
     [(_ name type fail-thunk) (get-ffi-obj name mpfr-lib type fail-thunk)]))
-                  
+
 (define mpfr-free-cache (get-mpfr-fun 'mpfr_free_cache (_fun -> _void)))
 
 (define mpfr-shutdown
   (register-custodian-shutdown mpfr-free-cache (λ (free) (free))))
-
-;; ===================================================================================================
-;; Parameters: rounding mode, bit precision, printing
-;; Exponent min and max are not included; they can't be made into parameters, and if we tried they
-;; wouldn't be thread-safe.
-
-;; One of 'nearest 'zero 'up 'down
-(define bf-rounding-mode (make-parameter 'nearest))
-
-;; minimum precision (1 bit can't be rounded correctly)
-(define bf-min-precision 2)
-;; maximum precision (the number when longs are 64 bits is ridiculously large)
-(define bf-max-precision _long-max)
-
-(define bf-precision
-  (make-parameter 128 (λ (p) (cond [(p . < . bf-min-precision)  bf-min-precision]
-                                   [(p . > . bf-max-precision)  bf-max-precision]
-                                   [else  p]))))
 
 ;; ===================================================================================================
 ;; MPFR types
@@ -104,6 +87,25 @@
 
 (define sizeof-exp_t (ctype-sizeof _exp_t))
 
+;; ===================================================================================================
+;; Parameters: rounding mode, precision
+
+;; One of 'nearest 'zero 'up 'down
+(define bf-rounding-mode (make-parameter 'nearest))
+
+;; minimum precision (1 bit can't be rounded correctly)
+(define bf-min-precision 2)
+;; maximum precision (the number when longs are 64 bits is ridiculously large)
+(define bf-max-precision _long-max)
+
+(define bf-precision
+  (make-parameter 128 (λ (p) (cond [(p . < . bf-min-precision)  bf-min-precision]
+                                   [(p . > . bf-max-precision)  bf-max-precision]
+                                   [else  p]))))
+
+;; ===================================================================================================
+;; _mpfr type (bigfloat)
+
 (define (bigfloat-equal? x1 x2 _)
   (or (and (bfnan? x1) (bfnan? x2))
       (bf=? x1 x2)))
@@ -119,19 +121,19 @@
                  [else  (values (* sgn sig) exp)]))]))
 
 (define (bfcanonicalize x)
-  (cond [(bfzero? x)  (if (zero? (bigfloat-sign x)) (force 0.bf) (force -0.bf))]
+  (cond [(bfzero? x)  (if (zero? (bigfloat-signbit x)) (force 0.bf) (force -0.bf))]
         [(bfnan? x)  (force +nan.bf)]
-        [(bfinfinite? x)  (if (zero? (bigfloat-sign x)) (force +inf.bf) (force -inf.bf))]
+        [(bfinfinite? x)  (if (zero? (bigfloat-signbit x)) (force +inf.bf) (force -inf.bf))]
         [else
-         (let*-values ([(sig exp)  (bigfloat-sig+exp x)]
+         (let*-values ([(sig exp)  (bigfloat->sig+exp x)]
                        [(sig exp)  (canonicalize-sig+exp sig exp)])
            (parameterize ([bf-precision (integer-length sig)])
              (sig+exp->bigfloat sig exp)))]))
 
 (define (bigfloat-hash x recur-hash)
   (let*-values ([(x)  (bfcanonicalize x)]
-                [(sig exp)  (bigfloat-sig+exp x)])
-    (recur-hash (vector (bigfloat-sign x) sig exp))))
+                [(sig exp)  (bigfloat->sig+exp x)])
+    (recur-hash (vector (bigfloat-signbit x) sig exp))))
 
 (define bigfloat-deserialize
   (case-lambda
@@ -160,11 +162,13 @@
 (define bigfloat-serialize-info
   (make-serialize-info
    (λ (x)
-     (cond [(bfzero? x)      (vector (bigfloat-precision x) (if (zero? (bigfloat-sign x)) 0.0 -0.0))]
-           [(bfnan? x)       (vector (bigfloat-precision x) +nan.0)]
+     (cond [(bfzero? x)      (vector (bigfloat-precision x)
+                                     (if (zero? (bigfloat-signbit x)) 0.0 -0.0))]
+           [(bfnan? x)       (vector (bigfloat-precision x)
+                                     +nan.0)]
            [(bfinfinite? x)  (vector (bigfloat-precision x)
-                                     (if (zero? (bigfloat-sign x)) +inf.0 -inf.0))]
-           [else  (define-values (sig exp) (bigfloat-sig+exp (bfcanonicalize x)))
+                                     (if (zero? (bigfloat-signbit x)) +inf.0 -inf.0))]
+           [else  (define-values (sig exp) (bigfloat->sig+exp (bfcanonicalize x)))
                   (vector (bigfloat-precision x) sig exp)]))
    #'bigfloat-deserialize-info
    #f
@@ -178,20 +182,100 @@
   #:property prop:equal+hash (list bigfloat-equal? bigfloat-hash bigfloat-hash)
   #:property prop:serializable bigfloat-serialize-info)
 
+;; ===================================================================================================
+;; Foreign functions
+
+(define mpfr-get-emin (get-mpfr-fun 'mpfr_get_emin (_fun -> _exp_t)))
+(define mpfr-get-emax (get-mpfr-fun 'mpfr_get_emax (_fun -> _exp_t)))
+
+;; Allocation/initialization
 (define mpfr-set-nan (get-mpfr-fun 'mpfr_set_nan (_fun _mpfr-pointer -> _void)))
 (define mpfr-init2 (get-mpfr-fun 'mpfr_init2 (_fun _mpfr-pointer _prec_t -> _void)))
 (define mpfr-clear (get-mpfr-fun 'mpfr_clear (_fun _mpfr-pointer -> _void)))
+;; A "special free" for strings allocated and returned by mpfr_get_str:
+(define mpfr-free-str (get-mpfr-fun 'mpfr_free_str (_fun _pointer -> _void)))
+
+;; Conversions from _mpfr to other types
+(define mpfr-get-d (get-mpfr-fun 'mpfr_get_d (_fun _mpfr-pointer _rnd_t -> _double)))
+(define mpfr-get-si (get-mpfr-fun 'mpfr_get_si (_fun _mpfr-pointer _rnd_t -> _long)))
+(define mpfr-get-z (get-mpfr-fun 'mpfr_get_z (_fun _mpz-pointer _mpfr-pointer _rnd_t -> _int)))
+(define mpfr-get-z-2exp
+  (get-mpfr-fun 'mpfr_get_z_2exp (_fun _mpz-pointer _mpfr-pointer -> _exp_t)
+                (λ () (get-mpfr-fun 'mpfr_get_z_exp
+                                    (_fun _mpz-pointer _mpfr-pointer -> _exp_t)))))
+(define mpfr-get-str
+  (get-mpfr-fun 'mpfr_get_str (_fun _pointer (_cpointer _exp_t) _int _ulong _mpfr-pointer _rnd_t
+                                    -> _bytes)))
+
+;; Conversions from other types to _mpfr
+(define mpfr-set (get-mpfr-fun 'mpfr_set (_fun _mpfr-pointer _mpfr-pointer _rnd_t -> _int)))
+(define mpfr-set-d (get-mpfr-fun 'mpfr_set_d  (_fun _mpfr-pointer _double _rnd_t -> _void)))
+(define mpfr-set-si (get-mpfr-fun 'mpfr_set_si (_fun _mpfr-pointer _long _rnd_t -> _void)))
+(define mpfr-set-z (get-mpfr-fun 'mpfr_set_z  (_fun _mpfr-pointer _mpz-pointer _rnd_t -> _void)))
+(define mpfr-set-str (get-mpfr-fun 'mpfr_set_str (_fun _mpfr-pointer _string _int _rnd_t -> _int)))
+
+;; Functions without simple or uniformly typed wrappers
+(define mpfr-nextabove (get-mpfr-fun 'mpfr_nextabove (_fun _mpfr-pointer -> _void)))
+(define mpfr-nextbelow (get-mpfr-fun 'mpfr_nextbelow (_fun _mpfr-pointer -> _void)))
+(define mpfr-jn (get-mpfr-fun 'mpfr_jn (_fun _mpfr-pointer _long _mpfr-pointer _rnd_t -> _int)))
+(define mpfr-yn (get-mpfr-fun 'mpfr_yn (_fun _mpfr-pointer _long _mpfr-pointer _rnd_t -> _int)))
+(define mpfr-root (get-mpfr-fun 'mpfr_root (_fun _mpfr-pointer _mpfr-pointer _ulong _rnd_t -> _int)))
+
+;; mpfr-set-z-exp : _mpfr _mpz integer _rnd_t -> _int
+;; Reimplementation of mpfr_set_z_2exp in Racket, used for older versions of MPFR that don't have it
+(define (mpfr-set-z-exp x z e rnd)
+  (define inex (mpfr-set-z x z rnd))
+  (cond
+    [(or (bfzero? x) (not (bfrational? x)))
+     ;; Zeros and non-rational numbers have exponents outside the range [emin..emax], which MPFR
+     ;; nevertheless recognizes as valid. Adding `e' to the exponent of one of those would result in
+     ;; an invalid exponent, for which MPFR would raise an assertion failure that would crash Racket.
+     inex]
+    [else
+     ;; Fix up the exponent
+     (let ([e  (+ (mpfr-exp x) e)])
+       ;; Check the exponent against its valid range; return sensible stuff if it's out of range
+       (cond [(e . > . (mpfr-get-emax))
+              (if ((mpfr-sign x) . >= . 0)
+                  (mpfr-set-d x +inf.0 'zero)
+                  (mpfr-set-d x -inf.0 'zero))
+              0]
+             [(e . < . (mpfr-get-emin))
+              (if ((mpfr-sign x) . >= . 0)
+                  (mpfr-set-d x +0.0 'zero)
+                  (mpfr-set-d x -0.0 'zero))
+              0]
+             [else
+              (set-mpfr-exp! x e)
+              inex]))]))
+
+(define mpfr-set-z-2exp
+  (get-mpfr-fun 'mpfr_set_z_2exp (_fun _mpfr-pointer _mpz-pointer _exp_t _rnd_t -> _int)
+                (λ () mpfr-set-z-exp)))
+
+;; ===================================================================================================
+;; Construction
+
+#|
+We always create _mpfr instances using new-mpfr, which uses Racket's memory management for the limbs.
+In doing so, we assume that no mpfr_* function will ever try to reallocate limbs. This is a good
+assumption because an _mpfr's precision is fixed from when it's allocated to when it's deallocated.
+There's no reason to allocate new limbs for an _mpfr without changing its precision.
+|#
 
 ;; raw-mpfr : integer -> bigfloat
-;; Creates and initializes an _mpfr instance using MPFR's memory management
-;; It's better to use Racket's memory management for long-lived _mpfr objects. Racket can't track
-;; the memory used by the limbs of an _mpfr object constructed using `mpfr-init2', meaning that
-;; it would think it uses less memory than it actually does.
+;; Creates and initializes an _mpfr instance using MPFR's memory management. This function exists
+;; mostly for documentation purposes. It's a simpler version of `new-mpfr'.
+;; It's a bad idea to use `raw-mpfr' for long-lived _mpfr objects. Racket can't track the memory used
+;; by the limbs of an _mpfr object constructed using `mpfr-init2', meaning that it would think it
+;; uses less memory than it actually does.
 (define (raw-mpfr prec)
   (define x (make-mpfr 0 0 0 #f))
   (mpfr-init2 x prec)
   (register-finalizer x (λ (x) (mpfr-clear x)))
   x)
+
+;; Reimplementation of `mpfr-init2' starts here
 
 ;; mpfr-prec->limbs : integer -> integer
 ;; Reimplementation of MPFR_PREC2LIMBS
@@ -213,75 +297,59 @@
   (ptr-set! d _mp_size_t -1 n))
 
 ;; new-mpfr : integer -> bigfloat
-;; Creates a new _mpfr instance and initializes it, mimicking `mpfr-init2'
+;; Creates a new _mpfr instance and initializes it, mimicking `mpfr-init2'.
 (define (new-mpfr prec)
   (define n (mpfr-prec->limbs prec))
-  (define size (mpfr-malloc-size n))
   ;; Allocate d so it won't be traced (atomic) or moved (interior)
-  (define orig-d (malloc size 'atomic-interior))
+  (define orig-d (malloc (mpfr-malloc-size n) 'atomic-interior))
   ;; An _mpfr object points at the second element of its limbs array, and uses the first element
-  ;; to store its size
+  ;; to store its size, so shift the pointer
   (define d (ptr-add orig-d 1 _mpfr_size_limb_t))
+  ;; Setting the size after shifting the pointer because that's what `mpfr-init2' does...
   (mpfr-set-alloc-size! d n)
+  ;; Make an _mpfr object managed by Racket
   (define x (make-mpfr prec 0 mpfr-exp-invalid d))
-  ;; Use a finalizer to keep a reference to orig-d as long as x is alive
+  ;; Use a finalizer to keep a reference to orig-d as long as x is alive (equiv. to tracing x, if
+  ;; the value of d pointed at a Racket object)
   (register-finalizer x (λ (x) orig-d))
+  ;; Set +nan.bf because that's what `mpfr-init2' does...
   (mpfr-set-nan x)
   x)
-
-;; We always create _mpfr instances using new-mpfr. In doing so, we assume that no mpfr_* function
-;; will ever try to reallocate limbs. This is a good assumption because an _mpfr's precision is
-;; fixed from when it's allocated to when it's deallocated. (There's no reason to allocate new limbs
-;; for an _mpfr without changing its precision.)
 
 ;; ===================================================================================================
 ;; Accessors
 
-(define mpfr-get-prec (get-mpfr-fun 'mpfr_get_prec (_fun _mpfr-pointer -> _prec_t)))
-(define mpfr-signbit (get-mpfr-fun 'mpfr_signbit (_fun _mpfr-pointer -> _int)))
-(define mpfr-get-exp (get-mpfr-fun 'mpfr_get_exp (_fun _mpfr-pointer -> _exp_t)))
-(define mpfr-get-z-2exp
-  (get-mpfr-fun 'mpfr_get_z_2exp (_fun _mpz-pointer _mpfr-pointer -> _exp_t)
-                (λ () (get-mpfr-fun 'mpfr_get_z_exp
-                                    (_fun _mpz-pointer _mpfr-pointer -> _exp_t)))))
-
 ;; bigfloat-precision : bigfloat -> integer
 ;; Returns the maximum number of nonzero bits in the significand.
-(define bigfloat-precision mpfr-get-prec)
+(define bigfloat-precision mpfr-prec)
 
-;; bigfloat-sign : bigfloat -> fixnum
+;; bigfloat-signbit : bigfloat -> fixnum
 ;; Returns the sign bit of a bigfloat.
-(define bigfloat-sign mpfr-signbit)
+(define (bigfloat-signbit x)
+  (if ((mpfr-sign x) . < . 0) 1 0))
 
 ;; bigfloat-exponent : bigfloat -> integer
 ;; Returns the exponent part of a bigfloat.
 (define (bigfloat-exponent x)
-  (- (mpfr-get-exp x) (bigfloat-precision x)))
+  (- (mpfr-exp x) (bigfloat-precision x)))
 
-;; bigfloat-sig+exp : bigfloat -> integer integer
+;; bigfloat->sig+exp : bigfloat -> integer integer
 ;; Returns the signed significand and exponent of a bigfloat.
-(define (bigfloat-sig+exp x)
+(define (bigfloat->sig+exp x)
   (define z (new-mpz))
   (define exp (mpfr-get-z-2exp z x))
-  (define sig (mpz->integer z))
-  (values sig exp))
+  (values (mpz->integer z) exp))
 
 ;; bigfloat-significand : bigfloat -> integer
 ;; Returns just the signed significand of a bigfloat.
 (define (bigfloat-significand x)
-  (define-values (sig exp) (bigfloat-sig+exp x))
+  (define-values (sig exp) (bigfloat->sig+exp x))
   sig)
 
 ;; ===================================================================================================
 ;; Conversion from Racket data types to bigfloat
 
-(define mpfr-set-d  (get-mpfr-fun 'mpfr_set_d  (_fun _mpfr-pointer _double _rnd_t -> _void)))
-(define mpfr-set-si (get-mpfr-fun 'mpfr_set_si (_fun _mpfr-pointer _long _rnd_t -> _void)))
-(define mpfr-set-z  (get-mpfr-fun 'mpfr_set_z  (_fun _mpfr-pointer _mpz-pointer _rnd_t -> _void)))
-(define mpfr-set-z-2exp
-  (get-mpfr-fun 'mpfr_set_z_2exp (_fun _mpfr-pointer _mpz-pointer _exp_t _rnd_t -> _int)))
-
-;; sig+exp->bigfloat integer integer -> bigfloat
+;; sig+exp->bigfloat : integer integer -> bigfloat
 (define (sig+exp->bigfloat n e)
   (define y (new-mpfr (bf-precision)))
   (mpfr-set-z-2exp y (integer->mpz n) e (bf-rounding-mode))
@@ -356,9 +424,6 @@
 ;; ===================================================================================================
 ;; Conversion from mpfr_t to Racket data types
 
-(define mpfr-get-d (get-mpfr-fun 'mpfr_get_d (_fun _mpfr-pointer _rnd_t -> _double)))
-(define mpfr-get-z (get-mpfr-fun 'mpfr_get_z (_fun _mpz-pointer _mpfr-pointer _rnd_t -> _int)))
-
 ;; bigfloat->flonum : bigfloat -> float
 ;; Converts a bigfloat to a Racket float; rounds if necessary.
 (define (bigfloat->flonum x)
@@ -377,7 +442,7 @@
 ;; Converts a bigfloat to a Racket rational; does not round.
 (define (bigfloat->rational x)
   (unless (bfrational? x) (raise-argument-error 'bigfloat->rational "bfrational?" x))
-  (define-values (sig exp) (bigfloat-sig+exp x))
+  (define-values (sig exp) (bigfloat->sig+exp x))
   (cond [(zero? sig)  0]  ; without this, (bigfloat->rational 0.bf) chews up half a gigabyte
         [else  (* sig (expt 2 exp))]))
 
@@ -388,13 +453,6 @@
 
 ;; ===================================================================================================
 ;; String conversions
-
-;; A "special free" for strings allocated and returned by mpfr_get_str:
-(define mpfr-free-str (get-mpfr-fun 'mpfr_free_str (_fun _pointer -> _void)))
-
-(define mpfr-get-str
-  (get-mpfr-fun 'mpfr_get_str (_fun _pointer (_cpointer _exp_t) _int _ulong _mpfr-pointer _rnd_t
-                                    -> _bytes)))
 
 (define (mpfr-get-string x base rnd)
   (define exp-ptr (cast (malloc _exp_t 'atomic-interior) _pointer (_cpointer _exp_t)))
@@ -444,8 +502,8 @@
 ;; Outputs enough digits to exactly recreate the bigfloat using string->bigfloat.
 (define (bigfloat->string x)
   (cond
-    [(bfzero? x)  (if (= 0 (bigfloat-sign x)) "0.0" "-0.0")]
-    [(bfinfinite? x)  (if (= 0 (bigfloat-sign x)) "+inf.bf" "-inf.bf")]
+    [(bfzero? x)  (if (= 0 (bigfloat-signbit x)) "0.0" "-0.0")]
+    [(bfinfinite? x)  (if (= 0 (bigfloat-signbit x)) "+inf.bf" "-inf.bf")]
     [(bfnan? x)   "+nan.bf"]
     [else
      (define-values (exp str) (mpfr-get-string x 10 'nearest))
@@ -461,8 +519,6 @@
         (define dlen (decimal-string-length exp digs))
         (cond [((string-length sstr) . < . dlen)  (string-append sign sstr)]
               [else  (string-append sign (decimal-string exp digs))])])]))
-
-(define mpfr-set-str (get-mpfr-fun 'mpfr_set_str (_fun _mpfr-pointer _string _int _rnd_t -> _int)))
 
 ;; string->bigfloat : string [integer] -> bigfloat
 ;; Converts a Racket string to a bigfloat.
@@ -482,7 +538,7 @@
 
 (define (bigfloat-custom-write x port mode)
   (write-string
-   (cond [(bfzero? x)  (if (= 0 (bigfloat-sign x)) "0.bf" "-0.bf")]
+   (cond [(bfzero? x)  (if (= 0 (bigfloat-signbit x)) "0.bf" "-0.bf")]
          [(bfrational? x)
           (define str (bigfloat->string x))
           (cond [(regexp-match #rx"\\.|e" str)
@@ -492,7 +548,7 @@
                      (format "(bf \"~a\")" str)
                      (format "(bf #e~a)" str))]
                 [else  (format "(bf ~a)" str)])]
-         [(bfinfinite? x)  (if (= 0 (bigfloat-sign x)) "+inf.bf" "-inf.bf")]
+         [(bfinfinite? x)  (if (= 0 (bigfloat-signbit x)) "+inf.bf" "-inf.bf")]
          [else  "+nan.bf"])
    port))
 
@@ -582,7 +638,7 @@
 
 (define (bfsgn x)
   (cond [(bfzero? x)  x]
-        [(= 0 (mpfr-signbit x))  (force 1.bf)]
+        [(= 0 (bigfloat-signbit x))  (force 1.bf)]
         [else  (force -1.bf)]))
 
 (define (bfround x)
@@ -750,9 +806,6 @@
                            2ary-funs
                            free-identifier=?)))
 
-(define mpfr-jn (get-mpfr-fun 'mpfr_jn (_fun _mpfr-pointer _long _mpfr-pointer _rnd_t -> _int)))
-(define mpfr-yn (get-mpfr-fun 'mpfr_yn (_fun _mpfr-pointer _long _mpfr-pointer _rnd_t -> _int)))
-
 (define (bfbesj n x)
   (unless (_long? n) (raise-argument-error 'bfbesj "_long?" 0 n x))
   (define y (new-mpfr (bf-precision)))
@@ -765,20 +818,11 @@
   (mpfr-yn y n x (bf-rounding-mode))
   y)
 
-(define mpfr-root (get-mpfr-fun 'mpfr_root (_fun _mpfr-pointer _mpfr-pointer _ulong _rnd_t -> _int)))
-
 (define (bfroot x n)
   (unless (and (_ulong? n) (n . >= . 0)) (raise-argument-error 'bfroot "_ulong?" 1 x n))
   (define y (new-mpfr (bf-precision)))
   (mpfr-root y x n (bf-rounding-mode))
   y)
-
-(define mpfr-set-exp (get-mpfr-fun 'mpfr_set_exp (_fun _mpfr-pointer _exp_t -> _int)))
-(define mpfr-set (get-mpfr-fun 'mpfr_set (_fun _mpfr-pointer _mpfr-pointer _rnd_t -> _int)))
-(define mpfr-get-emin (get-mpfr-fun 'mpfr_get_emin (_fun -> _exp_t)))
-(define mpfr-get-emax (get-mpfr-fun 'mpfr_get_emax (_fun -> _exp_t)))
-(define mpfr-nextabove (get-mpfr-fun 'mpfr_nextabove (_fun _mpfr-pointer -> _void)))
-(define mpfr-nextbelow (get-mpfr-fun 'mpfr_nextbelow (_fun _mpfr-pointer -> _void)))
 
 (define (bfnext x)
   (define y (bfcopy x))
@@ -794,7 +838,7 @@
   (unless (fixnum? n) (raise-argument-error 'bfshift "Fixnum" 1 x n))
   (cond [(bfzero? x)  x]
         [(not (bfrational? x))  x]
-        [else  (define-values (sig exp) (bigfloat-sig+exp x))
+        [else  (define-values (sig exp) (bigfloat->sig+exp x))
                (bf sig (+ n exp))]))
 
 (define (infinite-ordinal p)
@@ -809,7 +853,7 @@
                  [(bfinfinite? x)  (infinite-ordinal p)]
                  [(bfnan? x)  (+ 1 (infinite-ordinal p))]
                  [else
-                  (define-values (sig exp) (bigfloat-sig+exp x))
+                  (define-values (sig exp) (bigfloat->sig+exp x))
                   (+ 1 (bitwise-ior (arithmetic-shift (+ exp (- p (mpfr-get-emin))) (- p 1))
                                     (bitwise-xor (arithmetic-shift 1 (- p 1)) sig)))]))]))
 
