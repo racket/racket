@@ -40,6 +40,9 @@ its file suffix:
  @item{@DFlag{text} --- plain text in a single file
        @filepath{@|fn|.txt}, with non-ASCII content encoded as UTF-8}
 
+ @item{@DFlag{markdown} --- Markdown text in a single file
+       @filepath{@|fn|.md}, with non-ASCII content encoded as UTF-8}
+
 ]
 
 Use @DFlag{dest-name} to specify a @|fn| other than the default name,

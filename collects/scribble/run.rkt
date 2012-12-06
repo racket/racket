@@ -4,10 +4,11 @@
          "render.rkt"
          scheme/cmdline
          raco/command-name
-         (prefix-in text:  "text-render.rkt")
-         (prefix-in html:  "html-render.rkt")
-         (prefix-in latex: "latex-render.rkt")
-         (prefix-in pdf:   "pdf-render.rkt"))
+         (prefix-in text:     "text-render.rkt")
+         (prefix-in markdown: "markdown-render.rkt")
+         (prefix-in html:     "html-render.rkt")
+         (prefix-in latex:    "latex-render.rkt")
+         (prefix-in pdf:      "pdf-render.rkt"))
 
 (define multi-html:render-mixin
   (lambda (%) (html:render-multi-mixin (html:render-mixin %))))
@@ -54,6 +55,8 @@
       (current-render-mixin (latex:make-render-part-mixin v)))]
    [("--text") "generate text-format output"
     (current-render-mixin text:render-mixin)]
+   [("--markdown") "generate markdown-format output"
+    (current-render-mixin markdown:render-mixin)]
    #:once-each
    [("--dest") dir "write output in <dir>"
     (current-dest-directory dir)]
