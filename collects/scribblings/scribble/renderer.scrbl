@@ -101,6 +101,7 @@ current error port.}
 @racketmodname[scribble/base-render] module provides @racket[render%],
 which implements the core of a renderer. This rendering class must be
 refined with a mixin from @racketmodname[scribble/text-render],
+@racketmodname[scribble/markdown-render], or
 @racketmodname[scribble/html-render], or
 @racketmodname[scribble/latex-render].}
 
@@ -286,6 +287,21 @@ output location, such as image files or extra configuration files.}
 @defmixin[render-mixin (render<%>) ()]{
 
 Specializes a @racket[render<%>] class for generating plain text.}}
+
+@; ----------------------------------------
+
+@section{Markdown Renderer}
+
+@defmodule/local[scribble/markdown-render]{
+
+@defmixin[render-mixin (render<%>) ()]{
+
+Specializes a @racket[render<%>] class for generating Markdown text.
+
+Code blocks are marked using the
+@hyperlink["http://github.github.com/github-flavored-markdown/"
+"Github convention"] @verbatim{```scheme} so that they are lexed and
+formatted as Scheme code.}}
 
 @; ----------------------------------------
 
