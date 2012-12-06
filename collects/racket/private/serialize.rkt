@@ -54,7 +54,8 @@
 	(void? v)
 	(date? v)
 	(arity-at-least? v)
-        (module-path-index? v)))
+        (module-path-index? v)
+        (srcloc? v)))
 
   ;; If a module is dynamic-required through a path,
   ;;  then it can cause simplified module paths to be paths;
@@ -191,7 +192,8 @@
 	      (char? v)
 	      (symbol? v)
 	      (null? v)
-	      (void? v))
+	      (void? v)
+              (srcloc? v))
 	  (void)]
 	 [(hash-ref cycle v #f)
 	  ;; We already know that this value is
@@ -367,6 +369,9 @@
           (cons 'mpi
                 (cons ((serial #t) path)
                       ((serial #t) base))))]
+       [(srcloc? v)
+        (cons 'srcloc
+              (map (serial #t) (take (struct->list v) 5)))]
        [else (error 'serialize "shouldn't get here")]))
     ((serial check-share?) v))
   
@@ -529,6 +534,7 @@
 	  [(arity-at-least) (make-arity-at-least (loop (cdr v)))]
 	  [(mpi) (module-path-index-join (loop (cadr v))
                                          (loop (cddr v)))]
+          [(srcloc) (apply make-srcloc (map loop (cdr v)))]
 	  [else (error 'serialize "ill-formed serialization")])])))
 
   (define (deserial-shell v mod-map fixup n)

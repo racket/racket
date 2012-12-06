@@ -163,6 +163,9 @@
 (test-ser (make-c 30))
 (test-ser (make-d 100 200 300))
 
+(test-ser (make-srcloc 1 2 3 4 5))
+(test-ser (make-srcloc (string->path "/tmp/test.rkt") 2 3 4 5))
+
 ;; Simple sharing
 (let ([p (cons 1 2)])
   (test-ser (cons p p))
