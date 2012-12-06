@@ -228,7 +228,9 @@
        ;; We don't want to prune earlier, since traversing cold functions can
        ;; give us advice about hot functions.
        (when (and (not inside-hot-function?)
-                  (not really-hot-anonymous-function-inside-us?))
+                  (not really-hot-anonymous-function-inside-us?)
+                  ;; Cold successes are useful information.
+                  (counts-as-a-missed-opt? pruned-log))
          (prune))
 
        (cond [(and (counts-as-a-missed-opt? pruned-log)
