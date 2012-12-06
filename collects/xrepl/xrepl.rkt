@@ -1164,26 +1164,19 @@
 (define current-log-receiver-thread (make-parameter #f))
 (define global-logger (current-logger))
 
-(defcommand log "<level>"
+(defcommand log "<level> [<logger> ...] ..."
   "control log output"
-  ["Starts (or stops) logging events at the given level.  The level should be"
-   "one of the valid racket logging levels, or #f for no logging.  For"
-   "convenience, the level can also be #t (maximum logging) or an integer"
-   "(with 0 for no logging, and larger numbers for more logging output)."]
-  (define levels '(#f fatal error warning info debug))
-  (define level
-    (let ([l (getarg 'sexpr)])
-      (cond [(memq l levels) l]
-            [(memq l '(#f none -)) #f]
-            [(memq l '(#t all +)) (last levels)]
-            [(not (integer? l))
-             (cmderror "bad level, expecting one of: ~s" levels)]
-            [(<= l 0) #f]
-            [(< l (length levels)) (list-ref levels l)]
-            [else (last levels)])))
+  ["Starts logging events at the given level for each logger."
+   "The arguments are the same as for `make-log-receiver':"
+   "Multiple pairs of level and logger can be specfiied."
+   "The final level can have no name specified, which means"
+   "it is the level to use for all other loggers."]
+  ;; For now, don't try to check. Just assume they provide the spec
+  ;; correctly for make-log-receiver.
+  (define specs (getarg 'sexpr 'list))
   (cond [(current-log-receiver-thread) => kill-thread])
-  (when level
-    (let ([r (make-log-receiver global-logger level)])
+  (unless (empty? specs)
+    (let ([r (apply make-log-receiver (list* global-logger specs))])
       (current-log-receiver-thread
        (thread
         (λ ()
@@ -1191,7 +1184,11 @@
             (match (sync r)
               [(vector l m v)
                (display (format "; [~a] ~a~a\n"
-                                l m (if v (format " ~.s" v) "")))
+                                l m
+                                ;; Print v, except avoid clutter of
+                                ;; opaque "#<continuation-mark-set>"
+                                (if (and v (not (continuation-mark-set? v)))
+                                    (format " ~.s" v) "")))
                (flush-output)])
             (loop))))))))
 
