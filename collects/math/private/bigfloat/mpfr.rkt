@@ -44,7 +44,18 @@
  string->bigfloat
  ;; Main constructor
  bf
- bigfloat-deserialize-info)
+ bigfloat-deserialize-info
+ ;; Low-level stuff
+ mpfr-lib
+ get-mpfr-fun
+ _rnd_t
+ _prec_t
+ _sign_t
+ _exp_t
+ _mpfr_size_limb_t
+ _mpfr
+ _mpfr-pointer
+ (struct-out mpfr))
 
 ;; Arithmetic, comparison, and other functions are provided by the macros that create them
 
