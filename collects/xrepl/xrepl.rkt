@@ -1163,37 +1163,54 @@
 
 (define current-log-receiver-thread (make-parameter #f))
 (define global-logger (current-logger))
+(define logger-levels (make-hasheq))
+(define other-level 'fatal)
 
-(defcommand log "<level>"
+(defcommand log "[<level> [<logger>]]"
   "control log output"
-  ["Starts (or stops) logging events at the given level.  The level should be"
-   "one of the valid racket logging levels, or #f for no logging.  For"
-   "convenience, the level can also be #t (maximum logging) or an integer"
-   "(with 0 for no logging, and larger numbers for more logging output)."]
-  (define levels '(#f fatal error warning info debug))
-  (define level
-    (let ([l (getarg 'sexpr)])
-      (cond [(memq l levels) l]
-            [(memq l '(#f none -)) #f]
-            [(memq l '(#t all +)) (last levels)]
-            [(not (integer? l))
-             (cmderror "bad level, expecting one of: ~s" levels)]
-            [(<= l 0) #f]
-            [(< l (length levels)) (list-ref levels l)]
-            [else (last levels)])))
-  (cond [(current-log-receiver-thread) => kill-thread])
-  (when level
-    (let ([r (make-log-receiver global-logger level)])
+  [",log -- show the level(s) currently in effect"
+   ",log <level> <logger> -- set the level for a specific logger."
+   ",log default <logger> -- set the logger to follow the default level."
+   ",log <level> -- set the default level, for all other loggers."
+   "Valid levels are none, fatal, error, warning, info, and debug."]
+  (define (update)
+    (cond [(current-log-receiver-thread) => kill-thread])
+    (let* ([args (append (list global-logger)
+                         (flatten (for/list ([(k v) logger-levels])
+                                    (list v k)))
+                         (list other-level))]
+           [r (apply make-log-receiver args)])
       (current-log-receiver-thread
        (thread
         (λ ()
-          (let loop ()
-            (match (sync r)
-              [(vector l m v)
-               (display (format "; [~a] ~a~a\n"
-                                l m (if v (format " ~.s" v) "")))
-               (flush-output)])
-            (loop))))))))
+           (let loop ()
+             (match (sync r)
+               [(vector l m v)
+                (display (format "; [~a] ~a~a\n"
+                                 l m
+                                 ;; Print v, except avoid clutter of
+                                 ;; opaque "#<continuation-mark-set>"
+                                 (if (and v (not (continuation-mark-set? v)))
+                                     (format " ~.s" v) "")))
+                (flush-output)])
+             (loop)))))))
+  (define (show)
+    (printf "; Current log display level(s):\n")
+    (for ([(k v) logger-levels])
+      (printf ";   `~a` for `~a` logger\n" v k))
+    (printf ";   `~a` for all other loggers\n" other-level))
+  (match (getarg 'sexpr 'list)
+    [(list) (show)]
+    [(list (and level (or 'none 'fatal 'error 'warning 'info 'debug)))
+     (set! other-level level)
+     (update)]
+    [(list 'default logger)
+     (hash-remove! logger-levels logger)
+     (update)]
+    [(list (and level (or 'none 'fatal 'error 'warning 'info 'debug)) logger)
+     (hash-set! logger-levels logger level)
+     (update)]
+    [_ (cmderror "Bad argument. Enter \",help log\" for usage.")]))
 
 ;; ----------------------------------------------------------------------------
 ;; meta evaluation hook
