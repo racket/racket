@@ -253,12 +253,13 @@
           (list rev repo dest)
           end)
   (pipe
-   (system*
-    (git-path) "archive"
-    (format "--remote=~a" repo)
-    (format "--prefix=~a/" (regexp-replace #rx"/+$" (path->string* dest) ""))
-    "--format=tar"
-    end)
+   (parameterize ([current-directory repo])
+     (system*
+      (git-path) "archive"
+      (format "--prefix=~a/"
+              (regexp-replace #rx"/+$" (path->string* dest) ""))
+      "--format=tar"
+      end))
    (system* (find-executable-path "tar") "xf" "-" "--absolute-names"))
   (void))
 
