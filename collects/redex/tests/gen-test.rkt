@@ -507,7 +507,7 @@
   (test-equal (generate-term l #:satisfying (t 6 7) = 1 +inf.0)
               #f))
 
-#;
+
 (let ()
   (define-language L
     (e (or e e) b)
@@ -525,3 +525,23 @@
               '(or-eval T))
   (test-equal (generate-term L #:satisfying (or-eval (or (or F F) T)) +inf.0)
               '(or-eval (or (or F F) T))))
+
+(let ()
+  (define-language wrong-nums
+    (n z (s z)))
+  
+  (define-relation wrong-nums
+    [(sum z n n)]
+    [(sum (s n_1) n_2 (s n_3))
+     (sum n_1 n_2 n_3)])
+  
+  (for ([n 10])
+    (define r (random 100000))
+    (random-seed r)
+    (define g (redex-generator wrong-nums (sum n_1 n_2 n_3) 1))
+    (with-handlers
+        ([exn? (λ (e) 
+                 (printf "random seed: ~s\n" r)
+                 (raise e))])
+      (for ([n 10])
+        (g)))))
