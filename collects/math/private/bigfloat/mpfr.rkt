@@ -76,7 +76,7 @@
     [(_ name type fail-thunk) (get-ffi-obj name mpfr-lib type fail-thunk)]))
 
 (define mpfr-free-cache (get-mpfr-fun 'mpfr_free_cache (_fun -> _void)))
-
+#;
 (define mpfr-shutdown
   (register-custodian-shutdown mpfr-free-cache (λ (free) (free))))
 

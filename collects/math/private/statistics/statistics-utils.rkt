@@ -7,24 +7,6 @@
 
 (provide (all-defined-out))
 
-(define-type (Moment-Fun T)
-  (case-> ((Sequenceof Real) [#:bias (U #t #f Real)] -> T)
-          ((Sequenceof Real) (Option (Sequenceof Real)) [#:bias (U #t #f Real)] -> T)))
-
-(define-type (Moment/Mean-Fun T)
-  (case-> (Real (Sequenceof Real) [#:bias (U #t #f Real)] -> T)
-          (Real (Sequenceof Real) (Option (Sequenceof Real)) [#:bias (U #t #f Real)] -> T)))
-
-(define-type (Correlation-Fun T)
-  (case-> ((Sequenceof Real) (Sequenceof Real) [#:bias (U #t #f Real)] -> T)
-          ((Sequenceof Real) (Sequenceof Real) (Option (Sequenceof Real))
-                             [#:bias (U #t #f Real)] -> T)))
-
-(define-type (Correlation/Means-Fun T)
-  (case-> (Real Real (Sequenceof Real) (Sequenceof Real) [#:bias (U #t #f Real)] -> T)
-          (Real Real (Sequenceof Real) (Sequenceof Real) (Option (Sequenceof Real))
-                [#:bias (U #t #f Real)] -> T)))
-
 ;; ===================================================================================================
 
 (: find-near-pow2 (Real -> Nonnegative-Exact-Rational))

@@ -4,10 +4,14 @@
          "../../flonum.rkt"
          "statistics-utils.rkt")
 
-(provide (struct-out statistics)
+(provide statistics
+         statistics?
          empty-statistics
          update-statistics
-         sequence->statistics
+         update-statistics*
+         statistics-min
+         statistics-max
+         statistics-count
          statistics-range
          statistics-mean
          statistics-variance
@@ -15,14 +19,17 @@
          statistics-skewness
          statistics-kurtosis)
 
-(struct: statistics ([min : Flonum]
-                     [max : Flonum]
-                     [count : Nonnegative-Flonum]
-                     [m1 : Flonum]
-                     [m2 : Nonnegative-Flonum]
-                     [m3 : Flonum]
-                     [m4 : Nonnegative-Flonum])
+(struct: base-statistics
+  ([min : Flonum]
+   [max : Flonum]
+   [count : Nonnegative-Flonum])
   #:transparent)
+
+(struct: statistics base-statistics
+  ([m1 : Flonum]
+   [m2 : Nonnegative-Flonum]
+   [m3 : Flonum]
+   [m4 : Nonnegative-Flonum]))
 
 (define empty-statistics (statistics +inf.0 -inf.0 0.0 0.0 0.0 0.0 0.0))
 
@@ -49,16 +56,26 @@
                       0.0)])
        (statistics (flmin x mn) (flmax x mx) w+n new-m1 new-m2 new-m3 new-m4))]))
 
-(: sequence->statistics (case-> ((Sequenceof Real) -> statistics)
-                                ((Sequenceof Real) (Sequenceof Real) -> statistics)))
-(define sequence->statistics
-  (case-lambda
-    [(xs)  (for/fold: ([e : statistics  empty-statistics]) ([x xs])
-             (update-statistics e x))]
-    [(xs ws)  (for/fold: ([e : statistics  empty-statistics]) ([x xs] [w ws])
-                (update-statistics e x w))]))
+(: update-statistics*
+   (case-> (statistics (Sequenceof Real) -> statistics)
+           (statistics (Sequenceof Real) (Option (Sequenceof Real)) -> statistics)))
+(define (update-statistics* e xs [ws #f])
+  (cond [ws  (let-values ([(xs ws)  (sequences->weighted-samples 'update-statistics* xs ws)])
+               (for/fold: ([e : statistics  e]) ([x  (in-list xs)] [w  (in-list ws)])
+                 (update-statistics e x w)))]
+        [else  (for/fold: ([e : statistics  e]) ([x xs])
+                 (update-statistics e x 1.0))]))
 
 ;; ===================================================================================================
+
+(: statistics-min (statistics -> Flonum))
+(define (statistics-min e) (base-statistics-min e))
+
+(: statistics-max (statistics -> Flonum))
+(define (statistics-max e) (base-statistics-max e))
+
+(: statistics-count (statistics -> Nonnegative-Flonum))
+(define (statistics-count e) (base-statistics-count e))
 
 (: statistics-range (statistics -> Nonnegative-Flonum))
 (define (statistics-range e)

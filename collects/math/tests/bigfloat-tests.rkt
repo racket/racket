@@ -389,6 +389,7 @@
                  +nan.bf)
            (list +nan.bf +nan.bf +nan.bf -inf.bf -inf.bf +inf.bf +inf.bf 1.bf +inf.bf +inf.bf
                  +nan.bf))
+          #;
           (list
            bfpsi0
            (list -inf.bf -1.bf -min.bf -0.bf 0.bf +min.bf

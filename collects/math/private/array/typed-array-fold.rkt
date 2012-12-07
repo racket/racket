@@ -151,3 +151,15 @@
 (: array-all-or (All (A B) ((Array A) -> (U A #f))))
 (define (array-all-or arr)
   (array-ref ((inst array-fold (U A #f)) arr array-axis-or) #()))
+
+;; ===================================================================================================
+;; Other folds
+
+(: array->list-array (All (A) (case-> ((Array A) -> (Array (Listof A)))
+                                      ((Array A) Integer -> (Array (Listof A))))))
+(define (array->list-array arr [k 0])
+  (define dims (array-dims arr))
+  (cond [(and (k . >= . 0) (k . < . dims))
+         (unsafe-array-axis-reduce arr k (inst build-list A))]
+        [else
+         (raise-argument-error 'array->list-array (format "Index < ~a" dims) 1 arr k)]))

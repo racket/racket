@@ -80,34 +80,52 @@
                 (define m4 (sum xs^4))
                 (adjust-kurtosis (max 0 (/ (* (/ m4 m2) n) m2)) n bias)])]))
 
-(: variance/mean (Moment/Mean-Fun Nonnegative-Real))
+;; ===================================================================================================
+;; User-facing functions
+
+(: variance/mean (case-> (Real (Sequenceof Real) [#:bias (U #t #f Real)] -> Nonnegative-Real)
+                         (Real (Sequenceof Real) (Option (Sequenceof Real)) [#:bias (U #t #f Real)]
+                               -> Nonnegative-Real)))
 (define (variance/mean m xs [ws #f] #:bias [bias #f])
   (variance* 'variance/mean m xs ws bias))
 
-(: variance (Moment-Fun Nonnegative-Real))
+(: variance (case-> ((Sequenceof Real) [#:bias (U #t #f Real)] -> Nonnegative-Real)
+                    ((Sequenceof Real) (Option (Sequenceof Real)) [#:bias (U #t #f Real)]
+                                       -> Nonnegative-Real)))
 (define (variance xs [ws #f] #:bias [bias #f])
   (variance* 'variance (mean xs ws) xs ws bias))
 
-(: stddev/mean (Moment/Mean-Fun Nonnegative-Real))
+(: stddev/mean (case-> (Real (Sequenceof Real) [#:bias (U #t #f Real)] -> Nonnegative-Real)
+                       (Real (Sequenceof Real) (Option (Sequenceof Real)) [#:bias (U #t #f Real)]
+                             -> Nonnegative-Real)))
 (define (stddev/mean m xs [ws #f] #:bias [bias #f])
   (sqrt (variance* 'stddev/mean (mean xs ws) xs ws bias)))
 
-(: stddev (Moment-Fun Nonnegative-Real))
+(: stddev (case-> ((Sequenceof Real) [#:bias (U #t #f Real)] -> Nonnegative-Real)
+                  ((Sequenceof Real) (Option (Sequenceof Real)) [#:bias (U #t #f Real)]
+                                     -> Nonnegative-Real)))
 (define (stddev xs [ws #f] #:bias [bias #f])
   (sqrt (variance* 'stddev (mean xs ws) xs ws bias)))
 
-(: skewness/mean (Moment/Mean-Fun Real))
+(: skewness/mean (case-> (Real (Sequenceof Real) [#:bias (U #t #f Real)] -> Real)
+                         (Real (Sequenceof Real) (Option (Sequenceof Real)) [#:bias (U #t #f Real)]
+                               -> Real)))
 (define (skewness/mean m xs [ws #f] #:bias [bias #f])
   (skewness* 'skewness/mean m xs ws bias))
 
-(: skewness (Moment-Fun Real))
+(: skewness (case-> ((Sequenceof Real) [#:bias (U #t #f Real)] -> Real)
+                    ((Sequenceof Real) (Option (Sequenceof Real)) [#:bias (U #t #f Real)] -> Real)))
 (define (skewness xs [ws #f] #:bias [bias #f])
   (skewness* 'skewness (mean xs ws) xs ws bias))
 
-(: kurtosis/mean (Moment/Mean-Fun Nonnegative-Real))
+(: kurtosis/mean (case-> (Real (Sequenceof Real) [#:bias (U #t #f Real)] -> Nonnegative-Real)
+                         (Real (Sequenceof Real) (Option (Sequenceof Real)) [#:bias (U #t #f Real)]
+                               -> Nonnegative-Real)))
 (define (kurtosis/mean m xs [ws #f] #:bias [bias #f])
   (kurtosis* 'kurtosis/mean m xs ws bias))
 
-(: kurtosis (Moment-Fun Nonnegative-Real))
+(: kurtosis (case-> ((Sequenceof Real) [#:bias (U #t #f Real)] -> Nonnegative-Real)
+                    ((Sequenceof Real) (Option (Sequenceof Real)) [#:bias (U #t #f Real)]
+                                       -> Nonnegative-Real)))
 (define (kurtosis xs [ws #f] #:bias [bias #f])
   (kurtosis* 'kurtosis (mean xs ws) xs ws bias))

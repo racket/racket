@@ -45,4 +45,5 @@
          array-all-and
          array-all-or
          array-axis-reduce
-         unsafe-array-axis-reduce)
+         unsafe-array-axis-reduce
+         array->list-array)

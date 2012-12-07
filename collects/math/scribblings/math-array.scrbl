@@ -3,6 +3,7 @@
 @(require scribble/eval
           racket/sandbox
           (for-label racket/base racket/vector racket/match racket/unsafe/ops racket/string
+                     racket/list
                      math plot
                      (only-in typed/racket/base
                               ann inst : λ: define: make-predicate ->
@@ -1377,6 +1378,9 @@ It therefore requires axis @racket[k] to have positive length.
                  (array-axis-fold arr 1 (inst cons Index (Listof Index)) empty)]
 Notice that the second example returns an array of reversed lists.
 This is therefore a left fold; see @racket[foldl].
+
+If you need control over the order of evaluation in axis @racket[k]'s rows, see
+@racket[array-axis-reduce].
 }
 
 @deftogether[(@defform*[((array-axis-sum arr k)
@@ -1519,6 +1523,18 @@ and @racket[array-all-or] is defined similarly.
                  (array-all-or (array= arr (array 0)))]
 }
 
+@defproc[(array->list-array [arr (Array A)] [k Integer]) (Array (Listof A))]{
+Returns an array of lists, computed as if by applying @racket[list] to the elements in each row of
+axis @racket[k].
+@examples[#:eval typed-eval
+                 (define arr (index-array #(3 3)))
+                 arr
+                 (array->list-array arr 1)
+                 (array-ref (array->list-array (array->list-array arr 1) 0) #())]
+See @racket[mean] for more useful examples, and @racket[array-axis-reduce] for an example that shows
+how @racket[array->list-array] is implemented.
+}
+
 @defproc[(array-axis-reduce [arr (Array A)] [k Integer] [h (Index (Integer -> A) -> B)]) (Array B)]{
 Like @racket[array-axis-fold], but allows evaluation control (such as short-cutting @racket[and] and
 @racket[or]) by moving the loop into @racket[h]. The result has the shape of @racket[arr], but with
@@ -1538,6 +1554,14 @@ For example, summing the squares of the rows in axis @racket[1]:
                        (for/fold: ([s : Real 0]) ([jk  (in-range dk)])
                          (+ s (sqr (proc jk))))))
                     (array-axis-sum (array-map sqr arr) 1)]
+Transforming an axis into a list using @racket[array-axis-fold] and @racket[array-axis-reduce]:
+@interaction[#:eval typed-eval
+                    (array-map (inst reverse Index)
+                               (array-axis-fold arr 1
+                                                (inst cons Index (Listof Index))
+                                                empty))
+                    (array-axis-reduce arr 1 (inst build-list Index))]
+The latter is essentially the definition of @racket[array->list-array].
 
 Every fold, including @racket[array-axis-fold], is ultimately defined using
 @racket[array-axis-reduce] or its unsafe counterpart.
