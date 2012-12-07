@@ -115,7 +115,7 @@
     (test "(1234567890 1 2 3 4)" pretty-format '(1234567890 1 2 3 4))
     (test "(1234567890xx\n 1\n 2\n 3\n 4)" pretty-format '(1234567890xx 1 2 3 4))
     (test "#(1234567890xx\n  1\n  2\n  3\n  4)" pretty-format (vector '1234567890xx 1 2 3 4))
-    (test "#fx(1234567890\n    1\n    2\n    3\n    4)" pretty-format (fxvector 1234567890 1 2 3 4))
+    (test "#fx(123456789\n    1\n    2\n    3\n    4)" pretty-format (fxvector 123456789 1 2 3 4))
     (test "#fl(1234567890.0\n    1.0\n    2.0\n    3.0\n    4.0)" pretty-format (flvector 1234567890.0 1.0 2.0 3.0 4.0))
     (test "#s(apple\n   1234567890xx\n   1\n   2\n   3\n   4)" pretty-format #s(apple 1234567890xx 1 2 3 4))
     (test "#(struct:a\n  1234567890xx\n  1)" pretty-format (make-a '1234567890xx 1))
@@ -177,7 +177,7 @@
 
 (parameterize ([pretty-print-columns 20]
                [print-as-expression #t])
-  (test "(fxvector\n 1234567890\n 1\n 2\n 3\n 4)" pretty-format (fxvector 1234567890 1 2 3 4))
+  (test "(fxvector\n 123456789\n 1\n 2\n 3\n 4)" pretty-format (fxvector 123456789 1 2 3 4))
   (test "(flvector\n 1234567890.0\n 1.0\n 2.0\n 3.0\n 4.0)" pretty-format (flvector 1234567890.0 1.0 2.0 3.0 4.0)))
 
 (parameterize ([pretty-print-exact-as-decimal #t])

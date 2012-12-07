@@ -1903,7 +1903,7 @@ MZ_EXTERN Scheme_Object *scheme_register_parameter(Scheme_Prim *function, char *
 /*                              addrinfo                                  */
 /*========================================================================*/
 
-#ifdef HAVE_GETADDRINFO
+#if defined(HAVE_GETADDRINFO) || defined(__MINGW32__)
 # define mz_addrinfo addrinfo
 #else
 struct mz_addrinfo {

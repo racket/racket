@@ -483,7 +483,7 @@ EXTRA_OBJS_L = ../src/gmp.@LTO@ $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_U
 	$(NICEAR) $(AR) $(ARFLAGS) ../libracket3m.@LIBSFX@ $(OBJS) $(EXTRA_OBJS_L) gc2.@LTO@
 	$(RANLIB) ../libracket3m.@LIBSFX@
 
-../racket@MMM@@NOT_OSX@: main.@LTO@ ../libracket3m.@LIBSFX@
+../racket@MMM@@NOT_OSX@@NOT_MINGW@: main.@LTO@ ../libracket3m.@LIBSFX@
 	cd ..; @MZLINKER@ -o racket@MMM@ @PROFFLAGS@ gc2/main.@LTO@ libracket3m.@LIBSFX@ @LDFLAGS@ $(LIBS)
 
 # The above "cd .." prevents a problem with libtool's generated script in --enable-shared mode,
@@ -503,6 +503,17 @@ $(MZFWMMM): ../libracket3m.@LIBSFX@
 	mkdir -p "../Racket.framework/Versions/$(FWVERSION)_3m"
 	cp "Racket.framework/Versions/$(FWVERSION)_3m/Racket" "../Racket.framework/Versions/$(FWVERSION)_3m/Racket"
 	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)_3m/Racket" "@executable_path/Racket.framework/Versions/$(FWVERSION)_3m/Racket" "../racket@MMM@"
+
+../lib/libracket3mxxxxxxx.dll: ../libracket3m.@LIBSFX@ ../mzsj86g.o
+	mkdir -p lib
+	@MZLINKER@ -shared -o ../lib/libracket3mxxxxxxx.dll ../mzsj86g.o -Wl,--output-def -Wl,libracket3m.def -Wl,--whole-archive ../libracket3m.@LIBSFX@ -Wl,--no-whole-archive -lshell32 -luser32 -lws2_32
+
+libracket3m.dll.a: ../lib/libracket3mxxxxxxx.dll
+	dlltool --def libracket3m.def -D libracket3mxxxxxxx.dll --output-delaylib libracket3m.dll.a
+
+../racket@MMM@@MINGW@: libracket3m.dll.a main.@LTO@ ../rres.o $(SPECIALIZINGOBJECTS)
+	cd ..; @MZLINKER@ -o racket@MMM@ gc2/main.@LTO@ rres.o $(SPECIALIZINGOBJECTS) gc2/libracket3m.dll.a @LDFLAGS@ @LIBS@ -ldelayimp
+
 
 clean:
 	/bin/rm -f ../racket@MMM@ *.@LTO@ $(XSRCDIR)/*

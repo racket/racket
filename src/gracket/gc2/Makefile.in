@@ -87,8 +87,11 @@ GRACKETLIBS_la =
 GRACKETMZOBJS_a = $(MZOBJS)
 GRACKETMZOBJS_la =
 
-../gracket@MMM@@NOT_OSX@: grmain.@LTO@ ../../racket/libracket3m.@LIBSFX@
+../gracket@MMM@@NOT_OSX@@NOT_MINGW@: grmain.@LTO@ ../../racket/libracket3m.@LIBSFX@
 	$(GRACKETLINKER) $(GRACKETLDFLAGS) -o ../gracket@MMM@ grmain.@LTO@ ../../racket/libracket3m.@LIBSFX@ $(GRACKETMZOBJS_@LIBSFX@) $(GRACKETLIBS_@LIBSFX@)
+
+../gracket@MMM@@MINGW@: grmain.@LTO@ ../../racket/gc2/libracket3m.dll.a ../gres.o
+	$(GRACKETLINKER) -mwindows $(GRACKETLDFLAGS) -o ../gracket@MMM@ grmain.@LTO@ ../gres.o ../../racket/gc2/libracket3m.dll.a $(GRACKETMZOBJS_@LIBSFX@) $(GRACKETLIBS_@LIBSFX@) -l delayimp
 
 MZFW = ../../racket/Racket.framework/Versions/$(FWVERSION)_3m/Racket
 MRAPPSKEL = ../GRacket@MMM@.app/Contents/MacOS

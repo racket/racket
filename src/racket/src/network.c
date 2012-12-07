@@ -80,7 +80,12 @@ static int mzerrno = 0;
 # include <process.h>
 # include <winsock2.h>
 # include <ws2tcpip.h>
-# include <wspiapi.h>
+# ifndef __MINGW32__
+#  include <wspiapi.h>
+# else
+typedef int (WINAPI*gai_t)(const char*, const char*, const struct mz_addrinfo *, struct mz_addrinfo **);
+typedef void (WINAPI*fai_t)(struct mz_addrinfo *ai);
+# endif
 struct SOCKADDR_IN {
   short sin_family;
   unsigned short sin_port;
@@ -381,6 +386,24 @@ static int mz_getaddrinfo(const char *nodename, const char *servname,
 {
   struct hostent *h;
 
+#ifdef __MINGW32__
+  {
+    HMODULE hm;
+    hm = LoadLibrary("ws2_32.dll");
+    if (hm) {
+      gai_t gai;
+      gai = (gai_t)GetProcAddress(hm, "getaddrinfo");
+      if (gai) {
+	int v;
+	v = gai(nodename, servname, hints, res);
+	if (!v && !(*res)->ai_addr)
+	  (*res)->ai_addrlen = 0;
+	return v;
+      }
+    }
+  }
+#endif
+
   if (nodename)
     h = gethostbyname(nodename);
   else
@@ -423,13 +446,32 @@ static int mz_getaddrinfo(const char *nodename, const char *servname,
 void mz_freeaddrinfo(struct mz_addrinfo *ai)
   XFORM_SKIP_PROC
 {
+#ifdef __MINGW32__
+  {
+    HMODULE hm;
+    hm = LoadLibrary("ws2_32.dll");
+    if (hm) {
+      fai_t fai;
+      fai = (fai_t)GetProcAddress(hm, "freeaddrinfo");
+      if (fai) {
+	fai(ai);
+	return;
+      }
+    }
+  }
+#endif
+
   free(ai->ai_addr);
   free(ai);
 }
 const char *mz_gai_strerror(int ecode)
   XFORM_SKIP_PROC
 {
+#ifdef __MINGW32__
+  return NULL; /* => use FormatMessageW(), instead */
+#else
   return hstrerror(ecode);
+#endif
 }
 #endif
 
@@ -2302,7 +2344,7 @@ tcp_listen(int argc, Scheme_Object *argv[])
 		   "tcp-listen: listen failed\n"
                    "  port number: %d\n"
                    "  system error: %E",
-		   origid, errid);
+		   (int)origid, errid);
 #else
   scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
 		   "tcp-listen: " NOT_SUPPORTED_STR);

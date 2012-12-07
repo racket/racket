@@ -16,9 +16,12 @@ exec racket "$0" > `echo "$0" | sed 's/rktc$/c/'` "$0"
 #include <errno.h>
 
 @@@IFNDEF{WINDOWS_DYNAMIC_LOAD}{
-
 # include <dlfcn.h>
+}{
+# include <windows.h>
+}
 
+@@@IF{!defined(WINDOWS_DYNAMIC_LOAD) || defined(__MINGW32__)}{
 # if SIZEOF_CHAR == 1
    typedef   signed char Tsint8;
    typedef unsigned char Tuint8;
@@ -58,7 +61,6 @@ exec racket "$0" > `echo "$0" | sed 's/rktc$/c/'` "$0"
 
 }{
 
-# include <windows.h>
 # ifndef __CYGWIN32__
 #  include <wtypes.h>
    typedef          _int8  Tsint8;

@@ -15,6 +15,8 @@ static int wx_in_terminal = 0;
 # define MZ_DEFINE_UTF8_MAIN
 # define PRE_FILTER_CMDLINE_ARGUMENTS
 static void pre_filter_cmdline_arguments(int *argc, char ***argv);
+# define WINMAIN_ALREADY
+# undef wx_xt
 #endif
 
 struct Scheme_Env;
@@ -422,82 +424,6 @@ static void MrEdExit(int v)
 START_XFORM_SKIP;
 # endif
 
-char *wchar_to_char(wchar_t *wa, int len)
-{
-  char *a;
-  int l;
-
-  l = scheme_utf8_encode((unsigned int *)wa, 0, len, 
-			 NULL, 0,
-			 1 /* UTF-16 */);
-  a = (char *)malloc(l + 1);
-  scheme_utf8_encode((unsigned int *)wa, 0, len, 
-		     (unsigned char *)a, 0,
-		     1 /* UTF-16 */);
-  a[l] = 0;
-
-  return a;
-}
-
-static int parse_command_line(char ***_command, char *buf)
-{
-  GC_CAN_IGNORE unsigned char *parse, *created, *write;
-  int maxargs;
-  int findquote = 0;
-  char **command;
-  int count = 0;
-
-  maxargs = 49;
-  command = (char **)malloc((maxargs + 1) * sizeof(char *));
-  
-  parse = created = write = (unsigned char *)buf;
-  while (*parse) {
-    while (*parse && isspace(*parse)) { parse++; }
-    while (*parse && (!isspace(*parse) || findquote))	{
-      if (*parse== '"') {
-	findquote = !findquote;
-      } else if (*parse== '\\') {
-	GC_CAN_IGNORE unsigned char *next;
-	for (next = parse; *next == '\\'; next++) { }
-	if (*next == '"') {
-	  /* Special handling: */
-	  int count = (next - parse), i;
-	  for (i = 1; i < count; i += 2) {
-	    *(write++) = '\\';
-	  }
-	  parse += (count - 1);
-	  if (count & 0x1) {
-	    *(write++) = '\"';
-	    parse++;
-	  }
-	}	else
-	  *(write++) = *parse;
-      } else
-	*(write++) = *parse;
-      parse++;
-    }
-    if (*parse)
-      parse++;
-    *(write++) = 0;
-    
-    if (*created)	{
-      command[count++] = (char *)created;
-      if (count == maxargs) {
-	char **c2;
-	c2 = (char **)malloc(((2 * maxargs) + 1) * sizeof(char *));
-	memcpy(c2, command, maxargs * sizeof(char *));
-	maxargs *= 2;
-      }
-    }
-    created = write;
-  }
-
-  command[count] = NULL;
-  *_command = command;
-
-  return count;
-}
-
 /* ---------------------------------------- */
 /*        single-instance detection         */
 /* ---------------------------------------- */
@@ -680,9 +606,8 @@ static void pre_filter_cmdline_arguments(int *argc, char ***argv)
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored, int nCmdShow)
 {
-  LPWSTR m_lpCmdLine;
-  int j, argc, l;
-  char *a, **argv, *normalized_path;
+  int j, argc;
+  char **argv, *normalized_path;
 
   /* Order matters: load dependencies first */
 # ifndef MZ_PRECISE_GC
@@ -690,6 +615,10 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored
 # endif
   load_delayed_dll(NULL, "libracket" DLL_3M_SUFFIX "xxxxxxx.dll");
   record_dll_path();
+
+# ifdef __MINGW32__
+  scheme_set_atexit(atexit);
+# endif
 
   {
     HANDLE h;
@@ -700,41 +629,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored
     }
   }
 
-  /* Get command line: */
-  m_lpCmdLine = GetCommandLineW();
-  for (j = 0; m_lpCmdLine[j]; j++) {
-  }
-  a = wchar_to_char(m_lpCmdLine, j);
-
-  argc = parse_command_line(&argv, a);
-
-  /* argv[0] should be the name of the executable, but Windows doesn't
-     specify really where this name comes from, so we get it from
-     GetModuleFileName, just in case */
-  {
-    int name_len = 1024;
-    while (1) {
-      wchar_t *my_name;
-      my_name = (wchar_t *)malloc(sizeof(wchar_t) * name_len);
-      l = GetModuleFileNameW(NULL, my_name, name_len);
-      if (!l) {
-	name_len = GetLastError();
-	free(my_name);
-	my_name = NULL;
-	break;
-      } else if (l < name_len) {
-	a = wchar_to_char(my_name, l);
-	argv[0] = a;
-	CharLowerBuffW(my_name, l);
-	normalized_path = wchar_to_char(my_name, l);
-	free(my_name);
-	break;
-      } else {
-	free(my_name);
-	name_len = name_len * 2;
-      }
-    }
-  }
+  argv = cmdline_to_argv(&argc, &normalized_path);
 
   if (CheckSingleInstance(normalized_path, argv))
     return 0;
@@ -748,7 +643,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored
   scheme_set_console_printf(MrEdSchemeMessages);
   scheme_set_exit(MrEdExit);
 
-  j = main(argc, argv);
+  j = MAIN(argc, argv);
 
   MrEdExit(j);
   /* shouldn't get here */

@@ -160,7 +160,7 @@ sproc.@LTO@: @GCDIR@/sproc.@LTO@
 
 # Unix ----------------------------------------
 
-racket@CGC@@NOT_OSX@: libracket.@LIBSFX@ libmzgc.@LIBSFX@ main.@LTO@ $(SPECIALIZINGOBJECTS)
+racket@CGC@@NOT_OSX@@NOT_MINGW@: libracket.@LIBSFX@ libmzgc.@LIBSFX@ main.@LTO@ $(SPECIALIZINGOBJECTS)
 	@MZLINKER@ -o racket@CGC@ main.@LTO@ $(SPECIALIZINGOBJECTS) libracket.@LIBSFX@ libmzgc.@LIBSFX@ @LDFLAGS@ @LIBS@
 
 # Mac OS ----------------------------------------
@@ -176,6 +176,31 @@ $(MZFW): libracket.@LIBSFX@ libmzgc.@LIBSFX@ $(SPECIALIZINGOBJECTS)
 racket@CGC@@OSX@: $(MZFW) main.@LTO@
 	@MZLINKER@ -o racket@CGC@ @PROFFLAGS@ @LDFLAGS@ main.@LTO@ -Wl,-headerpad_max_install_names -F. -framework Racket @LIBS@
 	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)/Racket" "@executable_path/Racket.framework/Versions/$(FWVERSION)/Racket" "racket@CGC@"
+
+# mingw ----------------------------------------
+
+lib/libmzgcxxxxxxx.dll: libmzgc.@LIBSFX@
+	mkdir -p lib
+	@MZLINKER@ -shared -o lib/libmzgcxxxxxxx.dll -Wl,--output-def -Wl,libmzgc.def -Wl,--whole-archive libmzgc.@LIBSFX@ -Wl,--no-whole-archive 
+
+mzsj86g.o: $(srcdir)/src/mzsj86g.S
+	$(CC) -c -o mzsj86g.o $(srcdir)/src/mzsj86g.S
+
+lib/libracketxxxxxxx.dll: lib/libmzgcxxxxxxx.dll libracket.@LIBSFX@ mzsj86g.o
+	mkdir -p lib
+	@MZLINKER@ -shared -o lib/libracketxxxxxxx.dll mzsj86g.o -Wl,--output-def -Wl,libracket.def -Wl,--whole-archive libracket.@LIBSFX@ -Wl,--no-whole-archive -lshell32 -luser32 -lws2_32 lib/libmzgcxxxxxxx.dll
+
+libracket.dll.a: lib/libracketxxxxxxx.dll
+	dlltool --def libracket.def -D libracketxxxxxxx.dll --output-delaylib libracket.dll.a
+
+libmzgc.dll.a: lib/libmzgcxxxxxxx.dll
+	dlltool --def libmzgc.def -D libmzgcxxxxxxx.dll --output-delaylib libmzgc.dll.a
+
+rres.o : $(srcdir)/../worksp/racket/racket.rc
+	windres -i $(srcdir)/../worksp/racket/racket.rc -o rres.o
+
+racket@CGC@@MINGW@: libracket.dll.a libmzgc.dll.a main.@LTO@ $(SPECIALIZINGOBJECTS) rres.o
+	@MZLINKER@ -o racket@CGC@ main.@LTO@ rres.o $(SPECIALIZINGOBJECTS) libracket.dll.a libmzgc.dll.a @LDFLAGS@ @LIBS@ -ldelayimp
 
 # OSKit ----------------------------------------
 
@@ -193,7 +218,7 @@ racket.multiboot : libracket.@LIBSFX@ libmzgc.@LIBSFX@ main.@LTO@
 
 DEF_COLLECTS_DIR = -DINITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../collects; pwd`"'"'
 
-main.@LTO@: $(srcdir)/main.c $(srcdir)/include/scheme.h $(srcdir)/sconfig.h $(srcdir)/src/stypes.h $(srcdir)/cmdline.inc $(srcdir)/oskglue.inc
+main.@LTO@: $(srcdir)/main.c $(srcdir)/include/scheme.h $(srcdir)/sconfig.h $(srcdir)/src/stypes.h $(srcdir)/cmdline.inc $(srcdir)/parse_cmdl.inc $(srcdir)/oskglue.inc
 	$(CC) -I$(builddir) -I$(srcdir)/include @CFLAGS@ @COMPFLAGS@ @PREFLAGS@ @PROFFLAGS@ @OPTIONS@ @MZOPTIONS@ $(DEF_COLLECTS_DIR) -c $(srcdir)/main.c -o main.@LTO@
 
 main_ee.@LTO@: main.@LTO@
@@ -299,12 +324,12 @@ install-both:
 # Prefix might be relative to srcdir, or it might be absolute, so we
 # have to go up and install things from there.
 
-unix-install:	
-	cd ..; rm -f "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@"
-	cd ..; rm -f "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@"
-	cd ..; cp racket/starter "$(DESTDIR)$(libpltdir)/starter"
-	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libpltdir)/starter"
-	@RUN_RACKET_CGC@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(libpltdir)/starter" @COLLECTS_PATH@
+unix-install:
+	cd ..; rm -f "$(DESTDIR)@MZINSTALLBINDIR@/racket@CGC_INSTALLED@"
+	cd ..; rm -f "$(DESTDIR)@MZINSTALLBINDIR@/racket@MMM_INSTALLED@"
+	cd ..; cp racket/starter@EXE_SUFFIX@ "$(DESTDIR)$(libpltdir)/starter@EXE_SUFFIX@"
+	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libpltdir)/starter@EXE_SUFFIX@"
+	@RUN_RACKET_CGC@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(libpltdir)/starter@EXE_SUFFIX@" @COLLECTS_PATH@
 	cd ..; echo 'CC=@CC@' > "$(BUILDINFO)"
 	cd ..; echo 'CFLAGS=@CFLAGS@ @PREFLAGS@ @COMPFLAGS@' >> "$(BUILDINFO)"
 	cd ..; echo 'OPTIONS=@OPTIONS@' >> "$(BUILDINFO)"
@@ -329,6 +354,31 @@ unix-install-3m:
 	@RUN_RACKET_MMM@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
 
 unix-install-3m-final:
+	$(NOOP)
+
+# mingw install ----------------------------------------
+
+mingw-install:
+	cd ..; rm -f "$(DESTDIR)@MZINSTALLBINDIR@/racket@CGC_INSTALLED@"
+	cd ..; rm -f "$(DESTDIR)@MZINSTALLBINDIR@/racket@MMM_INSTALLED@"
+	cd ..; cp racket/starter@EXE_SUFFIX@ "$(DESTDIR)$(collectsdir)/launcher/MzStart@EXE_SUFFIX@"
+	cd ..; cp racket/mrstarter@EXE_SUFFIX@ "$(DESTDIR)$(collectsdir)/launcher/MrStart@EXE_SUFFIX@"
+
+mingw-install-cgc:
+	cd ..; $(ICP) racket/lib/libmzgcxxxxxxx.dll "$(DESTDIR)$(libdir)/libmzgcxxxxxxx.dll"
+	cd ..; $(ICP) racket/lib/libracketxxxxxxx.dll "$(DESTDIR)$(libdir)/libracketxxxxxxx.dll"
+	cd ..; $(ICP) racket/racket@CGC@ "$(DESTDIR)@MZINSTALLBINDIR@/Racket@CGC_INSTALLED@"
+	@RUN_RACKET_CGC@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)@MZINSTALLBINDIR@/Racket@CGC_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
+
+mingw-install-cgc-final:
+	$(NOOP)
+
+mingw-install-3m:
+	cd ..; $(ICP) racket/racket@MMM@ "$(DESTDIR)@MZINSTALLBINDIR@/Racket@MMM_INSTALLED@"
+	cd ..; $(ICP) racket/lib/libracket3mxxxxxxx.dll "$(DESTDIR)$(libdir)/libracket3mxxxxxxx.dll"
+	@RUN_RACKET_MMM@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)@MZINSTALLBINDIR@/Racket@MMM_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
+
+mingw-install-3m-final:
 	$(NOOP)
 
 # OS X install ----------------------------------------

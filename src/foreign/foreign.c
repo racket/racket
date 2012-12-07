@@ -13,9 +13,12 @@
 #include <errno.h>
 
 #ifndef WINDOWS_DYNAMIC_LOAD
-
 # include <dlfcn.h>
+#else /* WINDOWS_DYNAMIC_LOAD defined */
+# include <windows.h>
+#endif /* WINDOWS_DYNAMIC_LOAD */
 
+#if !defined(WINDOWS_DYNAMIC_LOAD) || defined(__MINGW32__)
 # if SIZEOF_CHAR == 1
    typedef   signed char Tsint8;
    typedef unsigned char Tuint8;
@@ -53,9 +56,8 @@
 #  error "configuration error, please contact PLT (int64)"
 # endif
 
-#else /* WINDOWS_DYNAMIC_LOAD defined */
+#else /* !defined(WINDOWS_DYNAMIC_LOAD) || defined(__MINGW32__)  */
 
-# include <windows.h>
 # ifndef __CYGWIN32__
 #  include <wtypes.h>
    typedef          _int8  Tsint8;
@@ -68,7 +70,7 @@
    typedef unsigned _int64 Tuint64;
 # endif
 
-#endif /* WINDOWS_DYNAMIC_LOAD */
+#endif /* !defined(WINDOWS_DYNAMIC_LOAD) || defined(__MINGW32__) */
 
 #include "ffi.h"
 

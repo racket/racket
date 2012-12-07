@@ -141,8 +141,6 @@ static void register_traversers(void);
 #define cons(a,b) scheme_make_pair(a,b)
 #define icons(a,b) scheme_make_pair(a,b)
 
-#define max(a, b) (((a) > (b)) ? (a) : (b))
-
 /**********************************************************************/
 /*                          initialization                            */
 /**********************************************************************/

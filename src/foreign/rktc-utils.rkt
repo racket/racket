@@ -17,7 +17,7 @@
    "\n"))
 
 ;; thunks are forced -- so this can be used as @@IFDEF{...}{...} too!
-(provide IFDEF IFNDEF)
+(provide IFDEF IFNDEF IF)
 (define ((((IF*DEF token choose) . c) . t) . e)
   (if (null? e)
     @list{@disable-prefix{#}@token @c
@@ -30,6 +30,7 @@
           @disable-prefix{#}endif /* @c */}))
 (define IFDEF  (IF*DEF "ifdef"  car))
 (define IFNDEF (IF*DEF "ifndef" cdr))
+(define IF     (IF*DEF "if"     (lambda (x) "")))
 
 (provide DEFINE UNDEF)
 (define (DEFINE . t) @list{@disable-prefix{#}define @t})

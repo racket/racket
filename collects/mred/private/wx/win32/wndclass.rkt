@@ -119,19 +119,21 @@
 
 (define wind-proc-ptr (function-ptr wind-proc _WndProc))
 
+(define-user32 CallWindowProcW (_wfun _fpointer _HWND _UINT _WPARAM _LPARAM -> _LRESULT))
+
 (define (control-proc w msg wParam lParam)
-  (let ([default-ctlproc (hwnd->ctlproc w)])
+  (let ([default-ctlproc (hwnd->ctlproc-fptr w)])
     (if (= msg WM_DESTROY)
         (begin
           (SetWindowLongPtrW w GWLP_WNDPROC (hwnd->ctlproc-fptr w))
           (unregister-hwnd! w)
-          (default-ctlproc w msg wParam lParam))
+          (CallWindowProcW default-ctlproc w msg wParam lParam))
         (let ([wx (hwnd->wx w)])
           (if wx
               (send wx ctlproc w msg wParam lParam
                     (lambda (w msg wParam lParam)
-                      (default-ctlproc w msg wParam lParam)))
-              (default-ctlproc w msg wParam lParam))))))
+                      (CallWindowProcW default-ctlproc w msg wParam lParam)))
+              (CallWindowProcW default-ctlproc w msg wParam lParam))))))
 
 (define control_proc (function-ptr control-proc _WndProc))
 

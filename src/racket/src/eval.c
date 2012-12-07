@@ -144,6 +144,9 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #endif
+#ifdef WINDOWS_FIND_STACK_BOUNDS
+#include <windows.h>
+#endif
 #ifdef BEOS_FIND_STACK_BOUNDS
 # include <be/kernel/OS.h>
 #endif

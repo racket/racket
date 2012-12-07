@@ -34,7 +34,7 @@
 #define MAXCOMMANDLEN 1024
 #define MAX_ARGS 100
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__MINGW32__)
 # define MSC_IZE(x) _ ## x
 #else
 # define MSC_IZE(x) x
@@ -163,7 +163,7 @@ static wchar_t *protect(wchar_t *s)
 }
 
 static int parse_command_line(int count, wchar_t **command, 
-			      wchar_t *buf, int maxargs)
+			      wchar_t *buf, int maxargs, int skip)
 
 {
   wchar_t *parse, *created, *write;
@@ -199,9 +199,13 @@ static int parse_command_line(int count, wchar_t **command,
     *(write++) = 0;
 	  
     if (*created) {
-      command[count++] = created;
-      if (count == maxargs)
-	return count;
+      if (skip) {
+	skip--;
+      } else {
+	command[count++] = created;
+	if (count == maxargs)
+	  return count;
+      }
     }
     created = write;
   }
@@ -247,9 +251,13 @@ static wchar_t *copy_string(wchar_t *s)
 }
 #endif
 
-#ifdef MRSTART
+#if defined(MRSTART) || defined(__MINGW32__)
+# define USE_WINMAIN
+#endif
+
+#ifdef USE_WINMAIN
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, 
-		     LPWSTR m_lpCmdLine, int nCmdShow)
+		     LPSTR m_lpCmdLine, int nCmdShow)
 #else
 int wmain(int argc_in, wchar_t **argv_in)
 #endif
@@ -274,7 +282,7 @@ int wmain(int argc_in, wchar_t **argv_in)
 #endif
 
   count = 1;
-  count = parse_command_line(count, args, input, MAX_ARGS);
+  count = parse_command_line(count, args, input, MAX_ARGS, 0);
   
   /* exedir can be relative to the current executable */
   if ((exedir[0] == '\\')
@@ -310,7 +318,7 @@ int wmain(int argc_in, wchar_t **argv_in)
   wc_strcat(go, L".exe");
 
   if (_wstat(go, &st)) {
-#ifdef MRSTART
+#ifdef USE_WINMAIN
     wchar_t errbuff[MAXCOMMANDLEN * 2];
     swprintf(errbuff,L"Can't find %s",go);
     MessageBoxW(NULL,errbuff,L"Error",MB_OK);
@@ -324,15 +332,16 @@ int wmain(int argc_in, wchar_t **argv_in)
 
   args[0] = go;
 
-#ifdef MRSTART
+#ifdef USE_WINMAIN
   {
     wchar_t *buf;
-    
+    LPWSTR m_lpCmdLine;
+
     m_lpCmdLine = GetCommandLineW();
 
     buf = (wchar_t *)malloc((wc_strlen(m_lpCmdLine) + 1) * sizeof(wchar_t));
     memcpy(buf, m_lpCmdLine, (wc_strlen(m_lpCmdLine) + 1) * sizeof(wchar_t));
-    count = parse_command_line(count, args, buf, MAX_ARGS);
+    count = parse_command_line(count, args, buf, MAX_ARGS, 1);
   }
 #else
   {

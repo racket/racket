@@ -333,8 +333,13 @@ int scheme_get_serialized_fd_flags(Scheme_Object* p, Scheme_Serialized_File_FD *
 #endif
 
 #if defined(DOS_FILE_SYSTEM)
-# define fseeko _fseeki64
-# define ftello _ftelli64
+# if defined(__MINGW32__)
+#  define fseeko fseek
+#  define ftello ftell
+# else
+#  define fseeko _fseeki64
+#  define ftello _ftelli64
+# endif
 #endif
 
 

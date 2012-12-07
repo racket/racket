@@ -703,10 +703,13 @@ GCDIR
 XFORMFLAGS
 MZBINTARGET
 MZINSTALLTARGET
+MZINSTALLBINDIR
 EXTRA_GMP_OBJ
 EXTRA_GMP_DEP
 OSX
 NOT_OSX
+MINGW
+NOT_MINGW
 FRAMEWORK_INSTALL_DIR
 FRAMEWORK_REL_INSTALL
 FRAMEWORK_PREFIX
@@ -2180,6 +2183,10 @@ if test "${enable_shared}" = "yes" ; then
        exit 1
     fi
   ;;
+  mingw*)
+   echo "ERROR: don't use --enable-shared or --enable-dynlib with mingw"
+   exit 1
+  ;;
   esac
 fi
 
@@ -2368,6 +2375,7 @@ GCDIR=gc
 
 MZBINTARGET=normal-bin
 MZINSTALLTARGET=unix-install
+MZINSTALLBINDIR='$(bindir)'
 
 MZOPTIONS=
 CGCOPTIONS=
@@ -2403,6 +2411,7 @@ INSTALL_SETUP_FLAGS=
 STRIP_DEBUG=":"
 
 use_flag_pthread=yes
+skip_iconv_check=no
 
 ###### OSKit stuff #######
 
@@ -3927,6 +3936,8 @@ EXTRA_GMP_DEP=
 # For Racket targets:
 OSX=".osx"
 NOT_OSX=""
+MINGW=".mingw"
+NOT_MINGW=""
 CGC_X86_64=""
 
 case "$host_os" in
@@ -4010,6 +4021,23 @@ case "$host_os" in
       MZOPTIONS="$MZOPTIONS +e"
     fi
     LIBS="$LIBS -Wl,-E"
+    ;;
+  mingw*)
+    enable_parallel_by_default=yes
+    use_flag_pthread=no
+    MZOPTIONS="$MZOPTIONS -fno-omit-framepointer" # to make JIT backtraces work
+    MINGW=""
+    NOT_MINGW=".other"
+    MZINSTALLTARGET=mingw-install
+    MZINSTALLBINDIR="${MZINSTALLBINDIR}/.."
+    EXE_SUFFIX=".exe"
+    COLLECTS_PATH="collects"
+    skip_iconv_check=yes
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_STDINT_H 1
+_ACEOF
+
     ;;
   cygwin*)
     enable_cgcdefault="yes"
@@ -4440,7 +4468,8 @@ rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
 echo "${ECHO_T}$have_getaddrinfo" >&6; }
 
 iconv_lib_flag=""
-if test "${enable_iconv}" = "yes" ; then
+if test "${skip_iconv_check}" = "no" ; then
+ if test "${enable_iconv}" = "yes" ; then
 
 { echo "$as_me:$LINENO: checking for grep that handles long lines and -e" >&5
 echo $ECHO_N "checking for grep that handles long lines and -e... $ECHO_C" >&6; }
@@ -5091,15 +5120,16 @@ fi
       fi
     fi
   fi
-fi
- msg="iconv is usable"
-{ echo "$as_me:$LINENO: checking $msg" >&5
+ fi
+  msg="iconv is usable"
+ { echo "$as_me:$LINENO: checking $msg" >&5
 echo $ECHO_N "checking $msg... $ECHO_C" >&6; }
-iconv_usage_result="$enable_iconv$iconv_lib_flag"
-{ echo "$as_me:$LINENO: result: $iconv_usage_result" >&5
+ iconv_usage_result="$enable_iconv$iconv_lib_flag"
+ { echo "$as_me:$LINENO: result: $iconv_usage_result" >&5
 echo "${ECHO_T}$iconv_usage_result" >&6; }
-if test "${enable_iconv}" = "no" ; then
+ if test "${enable_iconv}" = "no" ; then
   MZOPTIONS="$MZOPTIONS -DMZ_NO_ICONV"
+ fi
 fi
 
  msg="for mbsrtowcs"
@@ -8966,6 +8996,9 @@ LIBS="$LIBS $EXTRALIBS"
 
 
 
+
+
+
 mk_needed_dir()
 {
   if test ! -d "$1" ; then
@@ -9743,14 +9776,14 @@ GCDIR!$GCDIR$ac_delim
 XFORMFLAGS!$XFORMFLAGS$ac_delim
 MZBINTARGET!$MZBINTARGET$ac_delim
 MZINSTALLTARGET!$MZINSTALLTARGET$ac_delim
+MZINSTALLBINDIR!$MZINSTALLBINDIR$ac_delim
 EXTRA_GMP_OBJ!$EXTRA_GMP_OBJ$ac_delim
 EXTRA_GMP_DEP!$EXTRA_GMP_DEP$ac_delim
 OSX!$OSX$ac_delim
 NOT_OSX!$NOT_OSX$ac_delim
+MINGW!$MINGW$ac_delim
+NOT_MINGW!$NOT_MINGW$ac_delim
 FRAMEWORK_INSTALL_DIR!$FRAMEWORK_INSTALL_DIR$ac_delim
-FRAMEWORK_REL_INSTALL!$FRAMEWORK_REL_INSTALL$ac_delim
-FRAMEWORK_PREFIX!$FRAMEWORK_PREFIX$ac_delim
-INSTALL_ORIG_TREE!$INSTALL_ORIG_TREE$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -9792,6 +9825,9 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+FRAMEWORK_REL_INSTALL!$FRAMEWORK_REL_INSTALL$ac_delim
+FRAMEWORK_PREFIX!$FRAMEWORK_PREFIX$ac_delim
+INSTALL_ORIG_TREE!$INSTALL_ORIG_TREE$ac_delim
 EXE_SUFFIX!$EXE_SUFFIX$ac_delim
 SO_SUFFIX!$SO_SUFFIX$ac_delim
 OWN_LIBFFI!$OWN_LIBFFI$ac_delim
@@ -9839,7 +9875,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 45; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 48; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

@@ -7921,10 +7921,6 @@ static Scheme_Object *will_executor_sema(Scheme_Object *w, int *repost)
 /*                         GC preparation and timing                      */
 /*========================================================================*/
 
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-
 typedef struct Scheme_GC_Pre_Post_Callback_Desc {
   /* All pointer fields => allocate with GC_malloc() */
   Scheme_Object *boxed_key;
@@ -7973,7 +7969,7 @@ void scheme_remove_gc_callback(Scheme_Object *key)
   }
 }
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__MINGW32__)
 # define mzOSAPI WINAPI
 #else
 # define mzOSAPI /* empty */
@@ -8127,6 +8123,10 @@ static void run_gc_callbacks(int pre)
     desc = desc->next;
   }
 }
+
+#ifdef MZ_XFORM
+START_XFORM_SKIP;
+#endif
 
 void scheme_zero_unneeded_rands(Scheme_Thread *p)
 {

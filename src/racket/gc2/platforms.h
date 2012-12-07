@@ -2,7 +2,9 @@
 # include <winsock2.h>
 # include <windows.h>
 # define bzero(m, s) memset(m, 0, s)
-# define inline _inline
+# ifndef __MINGW32__
+#  define inline _inline
+# endif
 #endif
 
 #include "mzconfig.h"

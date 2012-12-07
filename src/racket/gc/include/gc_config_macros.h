@@ -154,7 +154,7 @@
 #endif
 
 #if defined(__MINGW32__) && defined(GC_DLL)
-# ifdef GC_BUILD
+# if defined(GC_BUILD) || defined(__MINGW32_DELAY_LOAD__)
 #   define GC_API __declspec(dllexport)
 # else
 #   define GC_API __declspec(dllimport)

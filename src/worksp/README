@@ -21,17 +21,19 @@ This directory contains
 Visual Studio Express is available for free from Microsoft; it can be
 used to build Racket and GRacket, but not MzCOM.
 
-Racket and GRacket also compile with Cygwin gcc (a free compiler from
-GNU and Cygnus Solutions), but the result is a Unix-style installation,
-not a Window-style installation.  To compile with gcc, follow the
-instructions in racket\src\README (which contains a short
+Racket and GRacket also compile with MinGW.  To compile with MinGW,
+follow the instructions in racket\src\README (which contains a short
 Windows-specific section).
+
+Finally, Racket and GRacket also compile with Cygwin gcc (a free
+compiler from GNU and Cygnus Solutions), but the result is a
+Unix-style installation, not a Window-style installation.  To compile
+with gcc, follow the instructions in racket\src\README (which contains
+a short Windows-specific section).
 
 With an MSVC-built Racket, compatible extensions can be built with other
 compilers.  Build with Cygwin and copy the installed racket\lib\gcc to a
-MSVC-based build to support Cygwin-built extensions.  To support
-Borland-built extensions, cd to racket\src\racket\dynsrc and run
-mkbordyn.bat (which requires bcc23.exe, of course).
+MSVC-based build to support Cygwin-built extensions.
 
 As always, please report bugs via one of the following:
   - DrRacket's "submit bug report" menu          (preferred)

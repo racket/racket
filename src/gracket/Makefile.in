@@ -51,8 +51,14 @@ ARLIBFLAGS = $(LDFLAGS) $(LDLIBS)
 
 GRACKETLINKER = @MZLINKER@
 
-GRACKETLDLIBS = ../racket/libracket.@LIBSFX@ ../racket/libmzgc.@LIBSFX@ $(LDLIBS)
+GRACKETLDLIBS@NOT_MINGW@ = ../racket/libracket.@LIBSFX@ ../racket/libmzgc.@LIBSFX@ $(LDLIBS)
+GRACKETLDLIBS@MINGW@ = ../racket/libracket.dll.a ../racket/libmzgc.dll.a $(LDLIBS) -ldelayimp
 GRACKETLDFLAGS = $(LDFLAGS) -L../racket
+
+GRACKETRES@NOT_MINGW@ =
+GRACKETRESDEP@NOT_MINGW@ =
+GRACKETRES@MINGW@ = -mwindows gres.o
+GRACKETRESDEP@MINGW@ = gres.o
 
 LOCALFLAGS_wx_xt = @WX_MMD_FLAG@
 LOCALFLAGS_wx_mac = -I$(srcdir)/../mac/racket -MMD -DWX_CARBON
@@ -78,6 +84,7 @@ bin:
 	$(MAKE) @MAIN_VARIANT@
 
 3m:
+	$(MAKE) resources
 	cd gc2; $(MAKE) 3m
 
 cgc:
@@ -87,8 +94,17 @@ both:
 	$(MAKE) cgc
 	$(MAKE) 3m
 
-gracket@CGC@ : $(RACKETDEPS) grmain.@LTO@ $(GRACKETOBJECTS) $(MRSTATIC_STUB)
-	$(GRACKETLINKER) $(GRACKETLDFLAGS) $(MRSTATIC) -o gracket@CGC@ $(GRACKETOBJECTS) $(GRACKETLDLIBS) $(MRSTATIC_STUB)
+gracket@CGC@ : $(RACKETDEPS) grmain.@LTO@ $(GRACKETOBJECTS) $(MRSTATIC_STUB) $(GRACKETRESDEP)
+	$(GRACKETLINKER) $(GRACKETLDFLAGS) $(MRSTATIC) -o gracket@CGC@ $(GRACKETOBJECTS) $(GRACKETRES) $(GRACKETLDLIBS) $(MRSTATIC_STUB)
+
+gres.o : $(srcdir)/../worksp/gracket/gracket.rc
+	windres -i $(srcdir)/../worksp/gracket/gracket.rc -o gres.o
+
+resources@NOT_MINGW@ :
+	$(NOOP)
+
+resources@MINGW@ : gres.o
+	$(NOOP)
 
 MRFW = Racket.framework/Versions/$(FWVERSION)/Racket
 MRAPPSKEL = GRacket@CGC@.app/Contents/MacOS
@@ -164,12 +180,12 @@ install-common:
 
 install-wx_xt:
 	$(MAKE) install-common
-	cd ..; rm -f "$(DESTDIR)$(bindir)/gracket@CGC_INSTALLED@"
-	cd ..; rm -f "$(DESTDIR)$(bindir)/gracket@MMM_INSTALLED@"
+	cd ..; rm -f "$(DESTDIR)@MZINSTALLBINDIR@/gracket@CGC_INSTALLED@"
+	cd ..; rm -f "$(DESTDIR)@MZINSTALLBINDIR@/gracket@MMM_INSTALLED@"
 	cd ..; echo 'MROPTIONS=@MROPTIONS@' >> $(BUILDINFO)
 	cd ..; echo "MRLIBS=$(GUILIBS_@WXVARIANT@)" >> $(BUILDINFO)
 	cd ..; echo "MRLDFLAGS=$(GRACKETLDFLAGS)" >> $(BUILDINFO)
-	cd ..; mkdir -p "$(DESTDIR)$(bindir)"
+	cd ..; mkdir -p "$(DESTDIR)@MZINSTALLBINDIR@";
 
 install-no-lib-cgc-wx_xt:
 	echo "no dynamic libs"
@@ -179,8 +195,8 @@ install-lib-cgc-wx_xt:
 
 install-wx_xt-cgc:
 	$(MAKE) @MRLIBINSTALL@-cgc-wx_xt
-	cd ..; $(ICP) gracket/gracket@CGC@ "$(DESTDIR)$(bindir)/gracket@CGC_INSTALLED@"
-	@RUN_RACKET_CGC@ -cu "$(srcdir)/../racket/collects-path.rkt" "$(DESTDIR)$(bindir)/gracket@CGC_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
+	cd ..; $(ICP) gracket/gracket@CGC@ "$(DESTDIR)@MZINSTALLBINDIR@/GRacket@CGC_INSTALLED@"
+	@RUN_RACKET_CGC@ -cu "$(srcdir)/../racket/collects-path.rkt" "$(DESTDIR)@MZINSTALLBINDIR@/gracket@CGC_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
 
 install-wx_xt-cgc-final:
 	$(NOOP)
@@ -193,8 +209,8 @@ install-lib-3m-wx_xt:
 
 install-wx_xt-3m:
 	$(MAKE) @MRLIBINSTALL@-3m-wx_xt
-	cd ..; $(ICP) gracket/gracket@MMM@ "$(DESTDIR)$(bindir)/gracket@MMM_INSTALLED@"
-	@RUN_RACKET_MMM@ -cu "$(srcdir)/../racket/collects-path.rkt" "$(DESTDIR)$(bindir)/gracket@MMM_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
+	cd ..; $(ICP) gracket/gracket@MMM@ "$(DESTDIR)@MZINSTALLBINDIR@/GRacket@MMM_INSTALLED@"
+	@RUN_RACKET_MMM@ -cu "$(srcdir)/../racket/collects-path.rkt" "$(DESTDIR)@MZINSTALLBINDIR@/gracket@MMM_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
 
 install-wx_xt-3m-final:
 	$(NOOP)

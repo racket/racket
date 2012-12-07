@@ -50,7 +50,9 @@
      (set! gc-variable-stack-through-funcs? #t)]
     [("+D") def "add CPP -D flag"
      (set! cpp (string-append cpp " -D" 
-			      (regexp-replace* "[ \"]" def "'\\0'")))]]
+     	       		      (if (eq? (system-type) 'windows)
+				  def
+				  (regexp-replace* "[ \"]" def "'\\0'"))))]]
    [args (file)
 	 (set! file-in file)])
 

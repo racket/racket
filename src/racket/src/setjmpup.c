@@ -657,11 +657,23 @@ void scheme_reset_jmpup_buf(Scheme_Jumpup_Buf *b)
 #ifdef USE_MZ_CYGWIN_SETJMP
 /* We have to define setjmp & longjmp to remain compatible
    with MSVC-compiled extensions. It's the mostly same code 
-   as mzsj86.c, just in a slightly different syntax, and it
-   probably only works with -O2. */
+   as mzsj86.c, just in a slightly different syntax. This code
+   is fragile, because it's not well defined whether the compiler
+   will generate frame-pointer setup; use mzsj86g.S, instead. */
+
+#ifdef __MINGW32__
+# if __OPTIMIZE__ > 0
+#  define NEED_STACK_FRAME_SETUP
+# endif
+#endif
 
 int scheme_mz_setjmp(mz_pre_jmp_buf b)
 {
+#ifdef NEED_STACK_FRAME_SETUP
+  asm("push %EBP");
+  asm("mov %ESP, %EBP");
+#endif
+
   asm("mov 4(%EBP), %ECX"); /* return address */
   asm("mov 8(%EBP), %EAX"); /* jmp_buf ptr */
   asm("mov (%EBP), %EDX");  /* old EBP */
@@ -671,12 +683,21 @@ int scheme_mz_setjmp(mz_pre_jmp_buf b)
   asm("mov %ESI, 12(%EAX)");
   asm("mov %ESP, 16(%EAX)");
   asm("mov %ECX, 20(%EAX)");
- 
+
+#ifdef NEED_STACK_FRAME_SETUP
+  asm("pop %EBP");
+#endif
+
   return 0;
 }
 
 void scheme_mz_longjmp(mz_pre_jmp_buf b, int v)
 {
+#ifdef NEED_STACK_FRAME_SETUP
+  asm("push %EBP");
+  asm("mov %ESP, %EBP");
+#endif
+
   asm("mov 12(%EBP), %EAX"); /* return value */
   asm("mov 8(%EBP), %ECX");  /* jmp_buf */
   asm("mov 16(%ECX), %ESP"); /* restore stack pointer */
@@ -688,6 +709,10 @@ void scheme_mz_longjmp(mz_pre_jmp_buf b, int v)
   asm("mov 12(%ECX), %ESI");
   asm("mov 20(%ECX), %ECX"); /* return address */
   asm("mov %ECX, 4(%EBP)");
+
+#ifdef NEED_STACK_FRAME_SETUP
+  asm("pop %EBP");
+#endif
 }
 
 #endif

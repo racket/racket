@@ -36,6 +36,10 @@ extern "C" {
 #   define THREAD_LOCAL /* empty */
 #   define IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
 #  endif
+# elif __MINGW32__
+#  define THREAD_LOCAL __thread
+#  define MZ_THREAD_EXTERN extern
+#  define IMPLEMENT_THREAD_LOCAL_EXTERNALLY_VIA_PROC
 # elif (defined(__APPLE__) && defined(__MACH__)) || defined(GC2_PLACES_TESTING)
 #  define IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
 #  if defined(__x86_64__) || defined(__i386__)
@@ -54,7 +58,7 @@ extern "C" {
     && !defined(SCHEME_EMBEDDED_NO_DLL)
 # define MZ_DLLIMPORT __declspec(dllimport)
 # define MZ_DLLEXPORT __declspec(dllexport)
-# ifdef __mzscheme_private__
+# if defined(__mzscheme_private__) || defined(__MINGW32_DELAY_LOAD__)
 #  define MZ_DLLSPEC __declspec(dllexport)
 # else
 #  define MZ_DLLSPEC __declspec(dllimport)
