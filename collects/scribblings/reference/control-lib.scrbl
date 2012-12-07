@@ -14,7 +14,7 @@ The @racket[racket/control] library provides various control operators
 from the research literature on higher-order control operators, plus a
 few extra convenience forms. These control operators are implemented
 in terms of @racket[call-with-continuation-prompt],
-@racket[call-with-composable-continuations], @|etc|, and they generally
+@racket[call-with-composable-continuation], @|etc|, and they generally
 work sensibly together. Many are redundant; for example,
 @racket[reset] and @racket[prompt] are aliases.
  
