@@ -32,30 +32,54 @@
 (define-struct dqn (lhs rhs) #:transparent)
 (define (prem-clauses prem) ((prem-mk-clauses prem)))
 
+(define-struct partial-rule (pat clauses tr-loc bound) 
+  #:transparent)
+;; fringe = (listof partial-rule)
+;; partial-rule = (partial-rule pat (listof clause) tr-frame)
+;; the partial rule is the order we're going to process a given rule in. 
+;; If above the bound, we randomize them before putting them into the fringe.
+
+(define-struct fail-cont (env fringe bound)
+  #:transparent)
+
 (define-struct gen-trace (tr-loc clause input state bound env) #:prefab)
 
 (define (search/next clauses input bound lang)
-  (define fresh-pat (fresh-pat-vars input (make-hash)))
-  (define fs (list (snapshot empty-env
-                             (list (make-partial-rule fresh-pat #;clauses (shuffle clauses) '() bound)))))
   (define name-nums 0)
+  (define fresh-pat (parameterize ([unique-name-nums 0])
+                      (begin0
+                       (fresh-pat-vars input (make-hash))
+                       (set! name-nums (unique-name-nums)))))
+  (define fs (list (fail-cont empty-env
+                             (list (make-partial-rule fresh-pat (shuffle clauses) '() bound))
+                             bound)))
   (define v-locs (make-hash))
   (λ ()
     (parameterize ([unique-name-nums name-nums]
                    [visited-locs v-locs])
       (define-values (ans fails)
-        (with-handlers ([exn:fail:redex:search-failure? (λ (e) (values #f (drop (exn:fail:redex:search-failure-fails e)
-                                                                                (* 2 bound))))])
+        (with-handlers ([exn:fail:redex:search-failure? (λ (e) 
+                                                          (define f-conts (exn:fail:redex:search-failure-fails e))
+                                                          (values #f (trim-fails f-conts)))])
           (define-values (env/f fails)
             (fail-back fs))
           (values (and env/f (unify fresh-pat 'any env/f lang))
                   fails)))
       (set-last-gen-trace! (generation-trace))
-      (set! fs (shuffle-fails fails))
+      (set! fs (trim-fails fails))
       (set! name-nums (unique-name-nums))
       (set! v-locs (visited-locs))
       ans)))
   
+(define (trim-fails fs)
+  (define rev-fs (reverse fs))
+  (reverse
+   (let loop ([rfs rev-fs])
+     (match rfs
+       [(cons (fail-cont _1 _2 (? (λ (b) (< b 0)) bound)) rest)
+        (loop rest)]
+       [else
+        rfs]))))
 
 (define (shuffle-fails fs)
   (cond 
@@ -64,21 +88,11 @@
      (append rs ls)]
     [else fs]))
 
-(define-struct partial-rule (pat clauses tr-loc bound) 
-  #:transparent)
-;; fringe = (listof partial-rule)
-;; partial-rule = (partial-rule pat (listof clause) tr-frame)
-;; the partial rule is the order we're going to process a given rule in. 
-;; If above the bound, we randomize them before putting them into the fringe.
-
-(define-struct snapshot (env fringe)
-  #:transparent)
-
-(define (fail-back shots)
-  (match shots
-    [(list (snapshot e f) rest ...)
+(define (fail-back fs)
+  (match fs
+    [(list (fail-cont e f b) rest ...)
      (choose-rule e f rest)]
-    [else (values #f shots)]))
+    [else (values #f fs)]))
 
 (define (choose-rule env fringe fail)
   ;(-> env? (listof partial-rule?) number? (-> (or/c env? #f)) (or/c env? #f))
@@ -128,7 +142,7 @@
                                       fringe))
            (choose-rule (p*e-e res-pe)
                         new-fringe
-                        (cons (snapshot env failure-fringe) fail))])])]))
+                        (cons (fail-cont env failure-fringe bound) fail))])])]))
 
 
 (define (do-unification clse input env)

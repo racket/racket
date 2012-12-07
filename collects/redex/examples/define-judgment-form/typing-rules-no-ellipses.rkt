@@ -92,4 +92,5 @@
      (unless (= 1 (length types))
        (error 'typeof "non-unique types: ~s in ~s\n" types e))
      (test-equal (car types) t)
-     e]))
+     e]
+    [#f #f]))
