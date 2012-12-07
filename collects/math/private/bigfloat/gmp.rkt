@@ -8,12 +8,17 @@
 (provide
  _mp_size_t
  _mp_limb_t
+ _mp_bitcnt_t
  sizeof-mp_limb_t
  gmp-limb-bits
+ _mpz
  _mpz-pointer
+ (struct-out mpz)
  new-mpz
  integer->mpz
- mpz->integer)
+ mpz->integer
+ ;; Low-level
+ gmp-lib)
 
 ;; ===================================================================================================
 ;; Setup

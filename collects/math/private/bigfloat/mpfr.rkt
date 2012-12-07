@@ -548,20 +548,26 @@ There's no reason to allocate new limbs for an _mpfr without changing its precis
      (if (zero? (mpfr-set-str y bs 10 'nearest)) y #f)]))
 
 (define (bigfloat-custom-write x port mode)
-  (write-string
-   (cond [(bfzero? x)  (if (= 0 (bigfloat-signbit x)) "0.bf" "-0.bf")]
-         [(bfrational? x)
-          (define str (bigfloat->string x))
-          (cond [(regexp-match #rx"\\.|e" str)
-                 (define exp (bigfloat-exponent x))
-                 (define prec (bigfloat-precision x))
-                 (if ((abs exp) . > . (* prec 2))
-                     (format "(bf \"~a\")" str)
-                     (format "(bf #e~a)" str))]
-                [else  (format "(bf ~a)" str)])]
-         [(bfinfinite? x)  (if (= 0 (bigfloat-signbit x)) "+inf.bf" "-inf.bf")]
-         [else  "+nan.bf"])
-   port))
+  (cond
+    [(and mpfr-lib gmp-lib)
+     ;; Only try to print if libmpfr was loaded; otherwise, we get an infinite loop when the
+     ;; `make-not-available' handler tries to print any _mpfr arguments
+     (write-string
+      (cond [(bfzero? x)  (if (= 0 (bigfloat-signbit x)) "0.bf" "-0.bf")]
+            [(bfrational? x)
+             (define str (bigfloat->string x))
+             (cond [(regexp-match #rx"\\.|e" str)
+                    (define exp (bigfloat-exponent x))
+                    (define prec (bigfloat-precision x))
+                    (if ((abs exp) . > . (* prec 2))
+                        (format "(bf \"~a\")" str)
+                        (format "(bf #e~a)" str))]
+                   [else  (format "(bf ~a)" str)])]
+            [(bfinfinite? x)  (if (= 0 (bigfloat-signbit x)) "+inf.bf" "-inf.bf")]
+            [else  "+nan.bf"])
+      port)]
+    [else
+     (write-string "#<_mpfr>" port)]))
 
 ;; ===================================================================================================
 ;; Main bigfloat constructor
