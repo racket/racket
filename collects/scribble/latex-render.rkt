@@ -324,7 +324,7 @@
                                                                (- (ceiling height) height)))]
                                               [fn (install-file (format "pict~a" suffix) bstr)])
                                          (if descent
-                                             (printf "\\raisebox{-~apx}{\\makebox[~apx][l]{\\includegraphics{~a}}}" 
+                                             (printf "\\raisebox{-~abp}{\\makebox[~abp][l]{\\includegraphics{~a}}}" 
                                                      descent
                                                      width 
                                                      fn)
