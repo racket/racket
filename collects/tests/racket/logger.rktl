@@ -78,6 +78,7 @@
 
 (let ()
   (define-logger test)
+  (test #t logger? test-logger)
   (define r (make-log-receiver (current-logger) 'warning 'test))
   (log-test-debug (/ 0))
   (log-test-debug "debug")

@@ -45,8 +45,8 @@
                        [log-X-warning (mk 'warning)]
                        [log-X-info (mk 'info)]
                        [log-X-debug (mk 'debug)]
-                       [current-X-logger 
-                        (datum->syntax X (string->symbol (format "current-~a-logger" (syntax-e X))) X)]
+                       [X-logger 
+                        (datum->syntax X (string->symbol (format "~a-logger" (syntax-e X))) X)]
                        [X X])
            #'(begin
                (define X-logger (make-logger 'X (current-logger)))

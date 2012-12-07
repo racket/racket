@@ -105,9 +105,11 @@ Defines @racketkeywordfont{log-}@racket[id]@racketkeywordfont{-fatal},
 @racketkeywordfont{log-}@racket[id]@racketkeywordfont{-info}, and
 @racketkeywordfont{log-}@racket[id]@racketkeywordfont{-debug} as forms
 like @racket[log-fatal], @racket[log-error],@racket[log-warning],
-@racket[log-info], and @racket[log-debug]. The new forms use a logger named
-@racket['@#,racket[id]] that is a child of @racket[current-logger],
-instead of using @racket[(current-logger)] directly. The new logger is
+@racket[log-info], and @racket[log-debug]. The @racket[define-logger]
+form also defines @racket[id]@racketidfont{-logger}, which is a logger named
+@racket['@#,racket[id]] that is a child of @racket[(current-logger)];
+the @racketkeywordfont{log-}@racket[id]@racketkeywordfont{-fatal},
+@|etc| forms use this new logger. The new logger is
 created when @racket[define-logger] is evaluated.}
 
 @; ----------------------------------------
