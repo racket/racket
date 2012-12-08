@@ -13,7 +13,7 @@
          ([(tests-f ...)
            (for/list ([f-stx (in-list (syntax->list #'(f ...)))])
              (define f (syntax->datum f-stx))
-             `(file ,(path->string (build-path test-directory (format "tests-~a.rkt" f)))))])
+             `(file ,(format "tests-~a.rkt" f)))])
        (syntax/loc stx
          (run-tests*
           (list (let ()
