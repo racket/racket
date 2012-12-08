@@ -92,7 +92,7 @@
     ("Lambda" "Λ")
     ("Sigma" "Σ")
     ("Psi" "Ψ")
-    ("Delta" "∆")
+    ("Delta" "Δ")
     ("Xi" "Ξ")
     ("Upsilon" "Υ")
     ("Omega" "Ω")
