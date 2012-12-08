@@ -875,6 +875,12 @@
  (limit-memory-limited "einschränken")
  (limit-memory-megabytes "Megabytes")
 
+ ; the next two constants are used together in the limit memory dialog; they are inserted
+ ; one after another. The first one is shown in a bold font and the second is not.
+ ; (the first can be the empty string)
+ (limit-memory-warning-prefix "Warning: ")
+ (limit-memory-warning "Die Einstellung für uneingeschränkten Speicherverbrauch ist unsicher. Mit dieser Einstellung kann DrRacket sich nicht gegen Programme schützen, die zuviel Speicher allozieren - DrRacket könnte abstürzen.")
+ 
  (clear-error-highlight-menu-item-label "Fehlermarkierung entfernen")
  (clear-error-highlight-item-help-string "Entfernt die rosa Fehlermarkierung")
  (jump-to-next-error-highlight-menu-item-label "Zur nächsten Fehlermarkierung springen")
