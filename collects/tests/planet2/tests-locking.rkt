@@ -1,7 +1,7 @@
 #lang racket/base
 (require web-server/http
          web-server/servlet-env
-         meta/planet2-index/basic/main
+         "basic-index.rkt"
          "shelly.rkt"
          "util.rkt")
 

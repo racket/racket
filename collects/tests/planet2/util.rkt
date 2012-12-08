@@ -58,13 +58,11 @@
                  #:port 9999
                  #:extra-files-paths (list (build-path test-directory "test-pkgs"))))
 
-(require meta/planet2-index/basic/main)
+(require "basic-index.rkt")
 (define *index-ht-1* (make-hash))
 (define *index-ht-2* (make-hash))
 (define (start-planet2-server index-ht port)
   (serve/servlet (planet2-index/basic
-                  (λ ()
-                    (hash-keys index-ht))
                   (λ (pkg-name)
                     (define r (hash-ref index-ht pkg-name #f))
                     (printf "[>server ~a] ~a = ~a\n" port pkg-name r)
