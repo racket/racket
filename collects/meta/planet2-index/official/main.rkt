@@ -43,8 +43,11 @@
    (build-path root "secret.key")))
 (define users-path (build-path root "users"))
 (make-directory* users-path)
-(define client_id (file->string (build-path root "client_id")))
-(define client_secret (file->string (build-path root "client_secret")))
+
+(define (client_id)
+  (file->string (build-path root "client_id")))
+(define (client_secret)
+  (file->string (build-path root "client_secret")))
 
 (module+ main
   (define users-old-path (build-path root "users.old"))
@@ -679,8 +682,8 @@
   (define new-checksum
     (package-url->checksum 
      (package-ref i 'source)
-     (list (cons 'client_id client_id)
-           (cons 'client_secret client_secret))))
+     (list (cons 'client_id (client_id))
+           (cons 'client_secret (client_secret)))))
   (package-begin
    (define* i
      (hash-set i 'checksum
