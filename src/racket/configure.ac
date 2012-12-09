@@ -560,7 +560,7 @@ case "$host_os" in
   mingw*)
     enable_parallel_by_default=yes
     use_flag_pthread=no
-    MZOPTIONS="$MZOPTIONS -fno-omit-framepointer" # to make JIT backtraces work
+    MZOPTIONS="$MZOPTIONS -fno-omit-frame-pointer" # to make JIT backtraces work
     MINGW=""
     NOT_MINGW=".other"
     MZINSTALLTARGET=mingw-install
