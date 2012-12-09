@@ -74,13 +74,13 @@
 ;; Bins
 
 (struct: (A B) sample-bin
-  ([values : (Listof A)] [weights : (U #f (Listof Nonnegative-Real))] [min : B] [max : B])
+  ([min : B] [max : B] [values : (Listof A)] [weights : (U #f (Listof Nonnegative-Real))])
   #:transparent)
 
 (: sample-bin-compact (All (A B) ((sample-bin A B) -> (sample-bin A B))))
 (define (sample-bin-compact bin)
   (let-values ([(xs ws)  (count-samples (sample-bin-values bin) (sample-bin-weights bin))])
-    (sample-bin xs ws (sample-bin-min bin) (sample-bin-max bin))))
+    (sample-bin (sample-bin-min bin) (sample-bin-max bin) xs ws)))
 
 (: sample-bin-total (All (A B) ((sample-bin A B) -> Nonnegative-Real)))
 (define (sample-bin-total bin)
@@ -102,12 +102,12 @@
 
 (: bin-samples
    (All (A B)
-        (case-> ((Sequenceof A) (Sequenceof A) (A A -> Any) -> (Listof (sample-bin A A)))
-                ((Sequenceof A) (Sequenceof B) (B B -> Any) (A -> B) -> (Listof (sample-bin A B))))))
+        (case-> ((Sequenceof A) (A A -> Any) (Sequenceof A) -> (Listof (sample-bin A A)))
+                ((Sequenceof B) (B B -> Any) (Sequenceof A) (A -> B) -> (Listof (sample-bin A B))))))
 (define bin-samples
   (case-lambda
-    [(xs bnds lte?)  (bin-samples xs bnds lte? (λ: ([x : A]) x))]
-    [(xs bnds lte? key)
+    [(bnds lte? xs)  (bin-samples bnds lte? xs (λ: ([x : A]) x))]
+    [(bnds lte? xs key)
      (let* ([bnds  (sort (sequence->list bnds) (λ: ([b1 : B] [b2 : B]) (and (lte? b1 b2) #t)))]
             [xs    (sequence->list xs)]
             [xks   (map (λ: ([x : A]) (cons x (key x))) xs)]
@@ -118,7 +118,7 @@
           (cond [(empty? xks)  empty]
                 [else  (define min (cdr (first xks)))
                        (define max (cdr (last xks)))
-                       (list (sample-bin (map (inst car A B) xks) #f min max))])]
+                       (list (sample-bin min max (map (inst car A B) xks) #f))])]
          [else
           (let: loop : (Listof (sample-bin A B)) ([min : (U #f B)  #f]
                                                   [max : B  (first bnds)]
@@ -128,37 +128,37 @@
             (let-values ([(yks xks)  (list-split-after xks (λ: ([xk : (Pair A B)])
                                                              (lte? (cdr xk) max)))])
               (define maybe-bin
-                (cond [min  (list (sample-bin (map (inst car A B) yks) #f min max))]
+                (cond [min  (list (sample-bin min max (map (inst car A B) yks) #f))]
                       [(empty? yks)  empty]
-                      [else  (list (sample-bin (map (inst car A B) yks) #f (cdr (first yks)) max))]))
+                      [else  (list (sample-bin (cdr (first yks)) max (map (inst car A B) yks) #f))]))
               (cond [(empty? bnds)
                      (cond [(empty? xks)  (reverse (append maybe-bin bins))]
                            [else
                             (define bin2
-                              (sample-bin (map (inst car A B) xks) #f max (cdr (last xks))))
+                              (sample-bin max (cdr (last xks)) (map (inst car A B) xks) #f))
                             (reverse (append (cons bin2 maybe-bin) bins))])]
                     [else
                      (loop max (first bnds) (rest bnds) xks (append maybe-bin bins))])))]))]))
 
 (: bin-weighted-samples
-   (All (A B) (case-> ((Sequenceof A) (U #f (Sequenceof Real)) (Sequenceof A) (A A -> Any)
+   (All (A B) (case-> ((Sequenceof A) (A A -> Any) (Sequenceof A) (U #f (Sequenceof Real))
                                       -> (Listof (sample-bin A A)))
-                      ((Sequenceof A) (U #f (Sequenceof Real)) (Sequenceof B) (B B -> Any) (A -> B)
+                      ((Sequenceof B) (B B -> Any) (Sequenceof A) (U #f (Sequenceof Real)) (A -> B)
                                       -> (Listof (sample-bin A B))))))
 (define bin-weighted-samples
   (case-lambda
-    [(xs ws bnds lte?)
-     (cond [ws  (bin-weighted-samples xs ws bnds lte? (λ: ([x : A]) x))]
-           [else  (bin-samples xs bnds lte?)])]
-    [(xs ws bnds lte? key)
+    [(bnds lte? xs ws)
+     (cond [ws  (bin-weighted-samples bnds lte? xs ws (λ: ([x : A]) x))]
+           [else  (bin-samples bnds lte? xs)])]
+    [(bnds lte? xs ws key)
      (cond [ws  (let-values ([(xs ws)  (sequences->weighted-samples 'bin-samples xs ws)])
                   (define xws (map (inst cons A Nonnegative-Real) xs ws))
                   (define xw-key (λ: ([xw : (Pair A Nonnegative-Real)]) (key (car xw))))
                   (map (λ: ([bin : (sample-bin (Pair A Nonnegative-Real) B)])
                          (define xws (sample-bin-values bin))
-                         (sample-bin (map (inst car A Nonnegative-Real) xws)
-                                     (map (inst cdr A Nonnegative-Real) xws)
-                                     (sample-bin-min bin)
-                                     (sample-bin-max bin)))
-                       (bin-samples xws bnds lte? xw-key)))]
-           [else  (bin-samples xs bnds lte? key)])]))
+                         (sample-bin (sample-bin-min bin)
+                                     (sample-bin-max bin)
+                                     (map (inst car A Nonnegative-Real) xws)
+                                     (map (inst cdr A Nonnegative-Real) xws)))
+                       (bin-samples bnds lte? xws xw-key)))]
+           [else  (bin-samples bnds lte? xs key)])]))

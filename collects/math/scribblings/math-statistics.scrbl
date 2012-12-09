@@ -52,20 +52,23 @@ See @secref{stats:expected-values} for a discussion.
                  (count-samples '(1 1 2 3 4) '(1/2 1/2 1 1 2))]
 }
 
-@defstruct*[sample-bin ([values (Listof A)]
-                        [weights (U #f (Listof Nonnegative-Real))]
-                        [min B] [max B])]{
+@defstruct*[sample-bin ([min B]
+                        [max B]
+                        [values (Listof A)]
+                        [weights (U #f (Listof Nonnegative-Real))])]{
 Represents a @italic{bin}, or a group of samples within an interval in a total order.
 The values and bounds have a different type to allow @racket[bin-samples] and
 @racket[bin-weighted-samples] to group elements based on a function of their values (a @racket[key],
 like in @racket[sort]).
 }
 
-@defproc*[([(bin-samples [xs (Sequenceof A)] [bounds (Sequenceof A)] [lte? (A A -> Any)])
+@defproc*[([(bin-samples [bounds (Sequenceof A)]
+                         [lte? (A A -> Any)]
+                         [xs (Sequenceof A)])
             (Listof (sample-bin A A))]
-           [(bin-samples [xs (Sequenceof A)]
-                         [bounds (Sequenceof B)]
+           [(bin-samples [bounds (Sequenceof B)]
                          [lte? (B B -> Any)]
+                         [xs (Sequenceof A)]
                          [key (A -> B)])
             (Listof (sample-bin A B))])]{
 Like @racket[(sort xs lte? #:key key)], but additionally groups samples into bins.
@@ -78,9 +81,9 @@ front.
 If some are greater than the largest bound, they are grouped into a single bin at the end.
 
 @examples[#:eval typed-eval
-                 (bin-samples '(0 1 2 3 4 5 6) '() <=)
-                 (bin-samples '(0 1 2 3 4 5 6) '(3) <=)
-                 (bin-samples '(0 1 2 3 4 5 6) '(2 4) <=)]
+                 (bin-samples '() <= '(0 1 2 3 4 5 6))
+                 (bin-samples '(3) <= '(0 1 2 3 4 5 6))
+                 (bin-samples '(2 4) <= '(0 1 2 3 4 5 6))]
 
 Note that @racket[bin-samples] always returns bins with @racket[#f] weights, meaning they contain
 unweighted samples.
@@ -103,15 +106,15 @@ Like @racket[bin-samples], but for weighted samples.
 @defproc[(sample-bin-compact [bin (sample-bin A B)]) (sample-bin A B)]{
 Compacts @racket[bin] by applying @racket[count-samples] to its values and weights.
 @examples[#:eval typed-eval
-                 (sample-bin-compact (sample-bin '(1 2 3 4 4) #f 1 4))]
+                 (sample-bin-compact (sample-bin 1 4 '(1 2 3 4 4) #f))]
 }
 
 @defproc[(sample-bin-total [bin (sample-bin A B)]) Nonnegative-Real]{
 If @racket[(sample-bin-weights bin)] is @racket[#f], returns the number of samples in @racket[bin];
 otherwise, returns the sum of their weights.
 @examples[#:eval typed-eval
-                 (sample-bin-total (sample-bin '(1 2 3 4 4) #f 1 4))
-                 (sample-bin-total (sample-bin-compact (sample-bin '(1 2 3 4 4) #f 1 4)))]
+                 (sample-bin-total (sample-bin 1 4 '(1 2 3 4 4) #f))
+                 (sample-bin-total (sample-bin-compact (sample-bin 1 4 '(1 2 3 4 4) #f)))]
 }
 
 @section[#:tag "stats:expected-values"]{Expected Values}
