@@ -7,7 +7,7 @@
                      (only-in typed/racket/base
                               Flonum Real Boolean Any Listof Integer case-> -> U
                               Sequenceof Positive-Flonum Nonnegative-Flonum
-                              Nonnegative-Real))
+                              HashTable Positive-Integer Nonnegative-Real Values))
           "utils.rkt")
 
 @(define typed-eval (make-math-eval))
@@ -18,12 +18,13 @@
 
 @defmodule[math/statistics]
 
-This module exports functions that compute summary values for collections of data, or
+This module exports functions that compute summary values for collections of samples, or
 @deftech{statistics}, such as means, standard devations, medians, and @italic{k}th order
-statistics. It also exports functions for managing collections of sample values.
+statistics.
+It also exports functions for managing collections of samples.
 
 Most of the functions that compute statistics also accept a sequence of nonnegative reals
-that correspond one-to-one with the data values.
+that correspond one-to-one with samples.
 These are used as weights; equivalently counts, pseudocounts or proportions.
 While this makes it easy to work with weighted samples, it introduces some subtleties
 in bias correction.
@@ -32,14 +33,84 @@ See @secref{stats:expected-values} for a discussion.
 
 @local-table-of-contents[]
 
-@section{Counting}
+@section{Counting and Binning}
 
-@defthing[samples->hash Any]{
-This stub represents forthcoming documentation.
+@defproc*[([(samples->hash [xs (Sequenceof A)]) (HashTable A Positive-Integer)]
+           [(samples->hash [xs (Sequenceof A)] [ws (U #f (Sequenceof Real))])
+            (HashTable A Nonnegative-Real)])]{
+@examples[#:eval typed-eval
+                 (samples->hash '(1 2 3 4 4))
+                 (samples->hash '(1 1 2 3 4) '(1/2 1/2 1 1 2))]
 }
 
-@defthing[count-samples Any]{
-This stub represents forthcoming documentation.
+@defproc*[([(count-samples [xs (Sequenceof A)]) (Values (Listof A) (Listof Positive-Integer))]
+           [(count-samples [xs (Sequenceof A)] [ws (U #f (Sequenceof Real))])
+            (Values (Listof A) (Listof Nonnegative-Real))])]{
+@examples[#:eval typed-eval
+                 (count-samples '(1 2 3 4 4))
+                 (count-samples '(1 1 2 3 4) '(1/2 1/2 1 1 2))]
+}
+
+@defstruct*[sample-bin ([values (Listof A)]
+                        [weights (U #f (Listof Nonnegative-Real))]
+                        [min B] [max B])]{
+Represents a @italic{bin}, or a group of samples within an interval in a total order.
+The values and bounds have a different type to allow @racket[bin-samples] and
+@racket[bin-weighted-samples] to group elements based on a function of their values (a @racket[key],
+like in @racket[sort]).
+}
+
+@defproc*[([(bin-samples [xs (Sequenceof A)] [bounds (Sequenceof A)] [lte? (A A -> Any)])
+            (Listof (sample-bin A A))]
+           [(bin-samples [xs (Sequenceof A)]
+                         [bounds (Sequenceof B)]
+                         [lte? (B B -> Any)]
+                         [key (A -> B)])
+            (Listof (sample-bin A B))])]{
+Like @racket[(sort xs lte? #:key key)], but additionally groups samples into bins.
+Keys are always cached, and @racket[bounds] is sorted before binning.
+
+If @racket[n = (length bounds)], then @racket[bin-samples] returns @italic{at least} @racket[(- n 1)]
+bins, one for each pair of adjacent (sorted) bounds.
+If some values in @racket[xs] are less than the smallest bound, they are grouped into a single bin in
+front.
+If some are greater than the largest bound, they are grouped into a single bin at the end.
+
+@examples[#:eval typed-eval
+                 (bin-samples '(0 1 2 3 4 5 6) '() <=)
+                 (bin-samples '(0 1 2 3 4 5 6) '(3) <=)
+                 (bin-samples '(0 1 2 3 4 5 6) '(2 4) <=)]
+
+Note that @racket[bin-samples] always returns bins with @racket[#f] weights, or bins containing
+unweighted samples.
+}
+
+@defproc*[([(bin-weighted-samples [xs (Sequenceof A)]
+                                  [ws (Sequenceof Real)]
+                                  [bounds (Sequenceof A)]
+                                  [lte? (A A -> Any)])
+            (Listof (sample-bin A A))]
+           [(bin-weighted-samples [xs (Sequenceof A)]
+                                  [ws (Sequenceof Real)]
+                                  [bounds (Sequenceof B)]
+                                  [lte? (B B -> Any)]
+                                  [key (A -> B)])
+            (Listof (sample-bin A B))])]{
+Like @racket[bin-samples], but for weighted samples.
+}
+
+@defproc[(sample-bin-compact [bin (sample-bin A B)]) (sample-bin A B)]{
+Compacts @racket[bin] by applying @racket[count-samples] to its values and weights.
+@examples[#:eval typed-eval
+                 (sample-bin-compact (sample-bin '(1 2 3 4 4) #f 1 4))]
+}
+
+@defproc[(sample-bin-total [bin (sample-bin A B)]) Nonnegative-Real]{
+If @racket[(sample-bin-weights bin)] is @racket[#f], returns the number of samples in @racket[bin];
+otherwise, returns the sum of their weights.
+@examples[#:eval typed-eval
+                 (sample-bin-total (sample-bin '(1 2 3 4 4) #f 1 4))
+                 (sample-bin-total (sample-bin-compact (sample-bin '(1 2 3 4 4) #f 1 4)))]
 }
 
 @section[#:tag "stats:expected-values"]{Expected Values}

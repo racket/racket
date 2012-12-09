@@ -1,4 +1,4 @@
-#lang typed/racket/base
+#lang racket/base
 
 (require "private/statistics/statistics-struct.rkt"
          "private/statistics/expected-values.rkt"
