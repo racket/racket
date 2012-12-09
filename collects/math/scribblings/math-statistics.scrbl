@@ -5,6 +5,7 @@
           (for-label racket/base racket/promise racket/list
                      math plot
                      (only-in typed/racket/base
+                              ann
                               Flonum Real Boolean Any Listof Integer case-> -> U
                               Sequenceof Positive-Flonum Nonnegative-Flonum
                               HashTable Positive-Integer Nonnegative-Real Values))
@@ -81,7 +82,7 @@ If some are greater than the largest bound, they are grouped into a single bin a
                  (bin-samples '(0 1 2 3 4 5 6) '(3) <=)
                  (bin-samples '(0 1 2 3 4 5 6) '(2 4) <=)]
 
-Note that @racket[bin-samples] always returns bins with @racket[#f] weights, or bins containing
+Note that @racket[bin-samples] always returns bins with @racket[#f] weights, meaning they contain
 unweighted samples.
 }
 
@@ -275,6 +276,52 @@ See @secref{stats:expected-values} for the meaning of the @racket[bias] keyword 
 }
 
 @section{Correlation}
+
+@deftogether[(@defproc[(covariance [xs (Sequenceof Real)]
+                                   [ys (Sequenceof Real)]
+                                   [ws (U #f (Sequenceof Real)) #f]
+                                   [#:bias bias (U #t #f Real) #f])
+                       Real]
+              @defproc[(correlation [xs (Sequenceof Real)]
+                                    [ys (Sequenceof Real)]
+                                    [ws (U #f (Sequenceof Real)) #f]
+                                    [#:bias bias (U #t #f Real) #f])
+                       Real])]{
+Compute the sample covariance and correlation of @racket[xs] and @racket[ys], optionally
+weighted by @racket[ws].
+
+@examples[#:eval typed-eval
+                 (define xs (sample (normal-dist) 10000))
+                 (define ys (map (λ: ([x : Real]) (sample (normal-dist x))) xs))
+                 (correlation xs ys)]
+Removing the correlation using importance weights:
+@interaction[#:eval typed-eval
+                    (define ws (map (λ: ([x : Real] [y : Real])
+                                      (/ (pdf (normal-dist) y)
+                                         (pdf (normal-dist x) y)))
+                                    xs ys))
+                    (correlation xs ys (ann ws (Sequenceof Real)))]
+
+See @secref{stats:expected-values} for the meaning of the @racket[bias] keyword argument.
+}
+
+@deftogether[(@defproc[(covariance/means [μx Real]
+                                         [μy Real]
+                                         [xs (Sequenceof Real)]
+                                         [ys (Sequenceof Real)]
+                                         [ws (U #f (Sequenceof Real)) #f]
+                                         [#:bias bias (U #t #f Real) #f])
+                       Real]
+              @defproc[(correlation/means [μx Real]
+                                          [μy Real]
+                                          [xs (Sequenceof Real)]
+                                          [ys (Sequenceof Real)]
+                                          [ws (U #f (Sequenceof Real)) #f]
+                                          [#:bias bias (U #t #f Real) #f])
+                       Real])]{
+Like @racket[covariance] and @racket[correlation], but computed using known means
+@racket[μx] and @racket[μy].
+}
 
 @section{Order Statistics}
 
