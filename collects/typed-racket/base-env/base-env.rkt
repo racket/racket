@@ -250,7 +250,7 @@
 [boolean=? (B B . -> . B)]
 [symbol=? (Sym Sym . -> . B)]
 [false? (make-pred-ty (-val #f))]
-
+[xor (-> Univ Univ Univ)]
 
 
 
