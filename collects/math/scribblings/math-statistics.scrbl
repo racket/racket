@@ -5,10 +5,11 @@
           (for-label racket/base racket/promise racket/list
                      math plot
                      (only-in typed/racket/base
-                              ann
+                              ann inst
                               Flonum Real Boolean Any Listof Integer case-> -> U
-                              Sequenceof Positive-Flonum Nonnegative-Flonum
-                              HashTable Positive-Integer Nonnegative-Real Values))
+                              Sequenceof Positive-Flonum Nonnegative-Flonum Symbol
+                              HashTable Positive-Integer Nonnegative-Real Values
+                              String))
           "utils.rkt")
 
 @(define typed-eval (make-math-eval))
@@ -33,89 +34,6 @@ In particular, central moments must be computed without bias correction by defau
 See @secref{stats:expected-values} for a discussion.
 
 @local-table-of-contents[]
-
-@section{Counting and Binning}
-
-@defproc*[([(samples->hash [xs (Sequenceof A)]) (HashTable A Positive-Integer)]
-           [(samples->hash [xs (Sequenceof A)] [ws (U #f (Sequenceof Real))])
-            (HashTable A Nonnegative-Real)])]{
-@examples[#:eval typed-eval
-                 (samples->hash '(1 2 3 4 4))
-                 (samples->hash '(1 1 2 3 4) '(1/2 1/2 1 1 2))]
-}
-
-@defproc*[([(count-samples [xs (Sequenceof A)]) (Values (Listof A) (Listof Positive-Integer))]
-           [(count-samples [xs (Sequenceof A)] [ws (U #f (Sequenceof Real))])
-            (Values (Listof A) (Listof Nonnegative-Real))])]{
-@examples[#:eval typed-eval
-                 (count-samples '(1 2 3 4 4))
-                 (count-samples '(1 1 2 3 4) '(1/2 1/2 1 1 2))]
-}
-
-@defstruct*[sample-bin ([min B]
-                        [max B]
-                        [values (Listof A)]
-                        [weights (U #f (Listof Nonnegative-Real))])]{
-Represents a @italic{bin}, or a group of samples within an interval in a total order.
-The values and bounds have a different type to allow @racket[bin-samples] and
-@racket[bin-weighted-samples] to group elements based on a function of their values (a @racket[key],
-like in @racket[sort]).
-}
-
-@defproc*[([(bin-samples [bounds (Sequenceof A)]
-                         [lte? (A A -> Any)]
-                         [xs (Sequenceof A)])
-            (Listof (sample-bin A A))]
-           [(bin-samples [bounds (Sequenceof B)]
-                         [lte? (B B -> Any)]
-                         [xs (Sequenceof A)]
-                         [key (A -> B)])
-            (Listof (sample-bin A B))])]{
-Like @racket[(sort xs lte? #:key key)], but additionally groups samples into bins.
-Keys are always cached, and @racket[bounds] is sorted before binning.
-
-If @racket[n = (length bounds)], then @racket[bin-samples] returns @italic{at least} @racket[(- n 1)]
-bins, one for each pair of adjacent (sorted) bounds.
-If some values in @racket[xs] are less than the smallest bound, they are grouped into a single bin in
-front.
-If some are greater than the largest bound, they are grouped into a single bin at the end.
-
-@examples[#:eval typed-eval
-                 (bin-samples '() <= '(0 1 2 3 4 5 6))
-                 (bin-samples '(3) <= '(0 1 2 3 4 5 6))
-                 (bin-samples '(2 4) <= '(0 1 2 3 4 5 6))]
-
-Note that @racket[bin-samples] always returns bins with @racket[#f] weights, meaning they contain
-unweighted samples.
-}
-
-@defproc*[([(bin-weighted-samples [xs (Sequenceof A)]
-                                  [ws (Sequenceof Real)]
-                                  [bounds (Sequenceof A)]
-                                  [lte? (A A -> Any)])
-            (Listof (sample-bin A A))]
-           [(bin-weighted-samples [xs (Sequenceof A)]
-                                  [ws (Sequenceof Real)]
-                                  [bounds (Sequenceof B)]
-                                  [lte? (B B -> Any)]
-                                  [key (A -> B)])
-            (Listof (sample-bin A B))])]{
-Like @racket[bin-samples], but for weighted samples.
-}
-
-@defproc[(sample-bin-compact [bin (sample-bin A B)]) (sample-bin A B)]{
-Compacts @racket[bin] by applying @racket[count-samples] to its values and weights.
-@examples[#:eval typed-eval
-                 (sample-bin-compact (sample-bin 1 4 '(1 2 3 4 4) #f))]
-}
-
-@defproc[(sample-bin-total [bin (sample-bin A B)]) Nonnegative-Real]{
-If @racket[(sample-bin-weights bin)] is @racket[#f], returns the number of samples in @racket[bin];
-otherwise, returns the sum of their weights.
-@examples[#:eval typed-eval
-                 (sample-bin-total (sample-bin 1 4 '(1 2 3 4 4) #f))
-                 (sample-bin-total (sample-bin-compact (sample-bin 1 4 '(1 2 3 4 4) #f)))]
-}
 
 @section[#:tag "stats:expected-values"]{Expected Values}
 
@@ -206,7 +124,7 @@ using known mean @racket[mean].
 @section[#:tag "stats:running"]{Running Expected Values}
 
 The @racket[statistics] object allows computing the sample minimum, maximum, count, mean, variance,
-skewness, and excess kurtosis of any number of samples in O(1) space.
+skewness, and excess kurtosis of a sequence of samples in O(1) space.
 
 To use it, start with @racket[empty-statistics], then use @racket[update-statistics] to obtain a
 new statistics object with updated values. Use @racket[statistics-min], @racket[statistics-mean],
@@ -326,6 +244,148 @@ Like @racket[covariance] and @racket[correlation], but computed using known mean
 @racket[μx] and @racket[μy].
 }
 
+                              @section{Counting and Binning}
+
+@defproc*[([(samples->hash [xs (Sequenceof A)]) (HashTable A Positive-Integer)]
+           [(samples->hash [xs (Sequenceof A)] [ws (U #f (Sequenceof Real))])
+            (HashTable A Nonnegative-Real)])]{
+@examples[#:eval typed-eval
+                 (samples->hash '(1 2 3 4 4))
+                 (samples->hash '(1 1 2 3 4) '(1/2 1/2 1 1 2))]
+}
+
+@defproc*[([(count-samples [xs (Sequenceof A)]) (Values (Listof A) (Listof Positive-Integer))]
+           [(count-samples [xs (Sequenceof A)] [ws (U #f (Sequenceof Real))])
+            (Values (Listof A) (Listof Nonnegative-Real))])]{
+@examples[#:eval typed-eval
+                 (count-samples '(1 2 3 4 4))
+                 (count-samples '(1 1 2 3 4) '(1/2 1/2 1 1 2))]
+}
+
+@defstruct*[sample-bin ([min B]
+                        [max B]
+                        [values (Listof A)]
+                        [weights (U #f (Listof Nonnegative-Real))])]{
+Represents a @italic{bin}, or a group of samples within an interval in a total order.
+The values and bounds have a different type to allow @racket[bin-samples/key]
+to group elements based on a function of their values.
+}
+
+@defproc[(bin-samples [bounds (Sequenceof A)]
+                      [lte? (A A -> Any)]
+                      [xs (Sequenceof A)]
+                      [ws (U #f (Sequenceof Real))])
+         (Listof (sample-bin A A))]{
+Like @racket[(sort xs lte?)], but additionally groups samples into bins.
+The bins' @racket[bounds] are sorted before binning @racket[xs].
+
+If @racket[n = (length bounds)], then @racket[bin-samples] returns @italic{at least} @racket[(- n 1)]
+bins, one for each pair of adjacent (sorted) bounds.
+If some values in @racket[xs] are less than the smallest bound, they are grouped into a single bin in
+front.
+If some are greater than the largest bound, they are grouped into a single bin at the end.
+
+@examples[#:eval typed-eval
+                 (bin-samples '() <= '(0 1 2 3 4 5 6))
+                 (bin-samples '(3) <= '(0 1 2 3 4 5 6))
+                 (bin-samples '(2 4) <= '(0 1 2 3 4 5 6))
+                 (bin-samples '(2 4) <=
+                              '(0 1 2 3 4 5 6)
+                              '(10 20 30 40 50 60 70))]
+
+If @racket[lte?] is a less-than-or-equal relation, the bins represent half-open intervals
+(@racket[min], @racket[max]] (except possibly the first, which may be closed).
+If @racket[lte?] is a less-than relation, the bins represent half-open intervals
+[@racket[min], @racket[max]) (except possibly the last, which may be closed).
+In either case, the sorts applied to @racket[bounds] and @racket[xs] are stable.
+
+Because intervals used in probability measurements are normally open on the left, prefer to use
+less-than-or-equal relations for @racket[lte?].
+
+If @racket[ws] is @racket[#f], @racket[bin-samples] returns bins with @racket[#f] weights.
+}
+
+@defproc[(bin-samples/key [bounds (Sequenceof B)]
+                          [lte? (B B -> Any)]
+                          [key (A -> B)]
+                          [xs (Sequenceof A)]
+                          [ws (U #f (Sequenceof Real))])
+         (Listof (sample-bin A B))]{
+Like @racket[(sort xs lte? #:key key #:cache-keys? #t)], but additionally groups samples into bins.
+@examples[#:eval typed-eval
+                 (bin-samples/key '(2 4) <= (inst car Real String)
+                                  '((1 . "1") (2 . "2") (3 . "3") (4 . "4") (5 . "5")))]
+See @racket[bin-samples] for the simpler, one-type variant.
+}
+
+@defproc[(sample-bin-compact [bin (sample-bin A B)]) (sample-bin A B)]{
+Compacts @racket[bin] by applying @racket[count-samples] to its values and weights.
+@examples[#:eval typed-eval
+                 (sample-bin-compact (sample-bin 1 4 '(1 2 3 4 4) #f))]
+}
+
+@defproc[(sample-bin-total [bin (sample-bin A B)]) Nonnegative-Real]{
+If @racket[(sample-bin-weights bin)] is @racket[#f], returns the number of samples in @racket[bin];
+otherwise, returns the sum of their weights.
+@examples[#:eval typed-eval
+                 (sample-bin-total (sample-bin 1 4 '(1 2 3 4 4) #f))
+                 (sample-bin-total (sample-bin-compact (sample-bin 1 4 '(1 2 3 4 4) #f)))]
+}
+
 @section{Order Statistics}
 
+@defproc*[([(sort-samples [lt? (A A -> Any)] [xs (Sequenceof A)]) (Listof A)]
+           [(sort-samples [lt? (A A -> Any)]
+                          [xs (Sequenceof A)]
+                          [ws (U #f (Sequenceof Real))])
+            (Values (Listof A) (Listof Nonnegative-Real))])]{
+Sorts possibly weighted samples according to @racket[lt?], which is assumed to define a total
+order over the elements in @racket[xs].
+@examples[#:eval typed-eval
+                 (sort-samples < '(5 2 3 1))
+                 (sort-samples < '(5 2 3 1) '(50 20 30 10))
+                 (sort-samples < '(5 2 3 1) #f)]
+Because @racket[sort-samples] is defined in terms of @racket[sort], the sort is only guaranteed
+to be stable if @racket[lt?] is strictly a less-than relation.
+}
+
+@defproc[(median [lt? (A A -> Any)] [xs (Sequenceof A)] [ws (U #f (Sequenceof Real)) #f]) A]{
+Equivalent to @racket[(quantile 1/2 lt? xs ws)].
+}
+
+@defproc[(quantile [p Real]
+                   [lt? (A A -> Any)]
+                   [xs (Sequenceof A)]
+                   [ws (U #f (Sequenceof Real)) #f])
+         A]{
+Computes the inverse of the empirical @tech{cdf} represented by the samples @racket[xs],
+which are optionally weighted by @racket[ws].
+
+@examples[#:eval typed-eval
+                 (quantile 0 < '(1 3 5))
+                 (quantile 0.5 < '(1 2 3 4))
+                 (quantile 0.5 < '(1 2 3 4) '(0.25 0.20 0.20 0.35))]
+
+If @racket[p = 0], @racket[quantile] returns the smallest element of @racket[xs] under the
+ordering relation @racket[lt?]. If @racket[p = 1], it returns the largest element.
+
+For weighted samples, @racket[quantile] sorts @racket[xs] and @racket[ws] together
+(using @racket[sort-samples]), then finds the least @racket[x] for which the proportion of its
+cumulative weight is greater than or equal to @racket[p].
+
+For unweighted samples, @racket[quantile] uses the quickselect algorithm to find the element that
+would be at index @racket[(ceiling (- (* p n) 1))] if @racket[xs] were sorted, where @racket[n]
+is the length of @racket[xs].
+}
+
+@defproc[(absdev [xs (Sequenceof Real)] [ws (U #f (Sequenceof Real)) #f]) Nonnegative-Real]{
+Computes the average absolute difference between the elements in @racket[xs] and
+@racket[(median < xs ws)]. If @racket[ws] is not @racket[#f], it is a weighted average.
+}
+
+@defproc[(absdev/median [median Real] [xs (Sequenceof Real)] [ws (U #f (Sequenceof Real)) #f])
+         Nonnegative-Real]{
+Like @racket[(absdev xs ws)], but computed using known median @racket[median].
+}
+         
 @(close-eval typed-eval)

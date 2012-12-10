@@ -9,6 +9,10 @@
 
 ;; ===================================================================================================
 
+(: lte?->lt? (All (A) ((A A -> Any) -> (A A -> Boolean))))
+(define ((lte?->lt? lte?) x1 x2)
+  (and (lte? x1 x2) (not (lte? x2 x1))))
+
 (: find-near-pow2 (Real -> Nonnegative-Exact-Rational))
 (define (find-near-pow2 x)
   (expt 2 (max -1073 (min 1023 (exact-round (/ (log (abs x)) (fllog 2.0)))))))

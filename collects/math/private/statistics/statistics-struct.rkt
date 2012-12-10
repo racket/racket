@@ -60,11 +60,12 @@
    (case-> (statistics (Sequenceof Real) -> statistics)
            (statistics (Sequenceof Real) (Option (Sequenceof Real)) -> statistics)))
 (define (update-statistics* e xs [ws #f])
-  (cond [ws  (let-values ([(xs ws)  (sequences->weighted-samples 'update-statistics* xs ws)])
-               (for/fold: ([e : statistics  e]) ([x  (in-list xs)] [w  (in-list ws)])
-                 (update-statistics e x w)))]
-        [else  (for/fold: ([e : statistics  e]) ([x xs])
-                 (update-statistics e x 1.0))]))
+  (cond [ws
+         (for/fold: ([e : statistics  e]) ([x xs] [w ws])
+           (update-statistics e x w))]
+        [else
+         (for/fold: ([e : statistics  e]) ([x xs])
+           (update-statistics e x 1.0))]))
 
 ;; ===================================================================================================
 
