@@ -853,6 +853,12 @@
                             [(#\♭) "$\\flat$"]
                             [(#\♮) "$\\natural$"]
                             [(#\√) "$\\surd$"]
+                            [(#\Δ) "$\\Delta$"] ; no better mapping for than \Delta for "increment"
+                            [(#\u2211) "$\\sum$"] ; better than \Sigma, right?
+                            [(#\u220F) "$\\prod$"] ; better than \Pi, right?
+                            [(#\u2210) "$\\coprod$"]
+                            [(#\u222B) "$\\int$"]
+                            [(#\u222E) "$\\oint$"]
                             [(#\¬) "$\\neg$"]
                             [(#\△) "$\\triangle$"]
                             [(#\∀) "$\\forall$"]
