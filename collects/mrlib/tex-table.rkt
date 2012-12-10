@@ -92,7 +92,7 @@
     ("Lambda" "Λ")
     ("Sigma" "Σ")
     ("Psi" "Ψ")
-    ("Delta" "Δ") ; <- this character is Unicode "increment", not Greek delta
+    ("Delta" "Δ")
     ("Xi" "Ξ")
     ("Upsilon" "Υ")
     ("Omega" "Ω")

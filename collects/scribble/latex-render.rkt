@@ -853,7 +853,7 @@
                             [(#\♭) "$\\flat$"]
                             [(#\♮) "$\\natural$"]
                             [(#\√) "$\\surd$"]
-                            [(#\Δ) "$\\Delta$"] ; no better mapping for than \Delta for "increment"
+                            [(#\∆) "$\\Delta$"] ; no better mapping for than \Delta for "increment"
                             [(#\u2211) "$\\sum$"] ; better than \Sigma, right?
                             [(#\u220F) "$\\prod$"] ; better than \Pi, right?
                             [(#\u2210) "$\\coprod$"]
@@ -881,7 +881,7 @@
                             [(#\ξ) "$\\xi$"]
                             [(#\Γ) "$\\Gamma$"]
                             [(#\Ψ) "$\\Psi$"]
-                            [(#\∆) "$\\Delta$"]
+                            [(#\Δ) "$\\Delta$"]
                             [(#\Ξ) "$\\Xi$"]
                             [(#\Υ) "$\\Upsilon$"]
                             [(#\Ω) "$\\Omega$"]
