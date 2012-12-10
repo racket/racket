@@ -61,30 +61,6 @@
 ;; Eli: We already have `explode-path', this looks like it's doing the
 ;;   same thing, except a little less useful.
 
-; strip-prefix-ups : (listof path-piece?) -> (listof path-piece?)
-(define (strip-prefix-ups l)
-  (define prefix? (box #t))
-  (filter (lambda (p)
-            (if (unbox prefix?)
-                (if (eq? 'up p)
-                    #f
-                    (begin #t
-                           (set-box! prefix? #f)))
-                #t))
-          l))
-;; Eli: This is bad.  If I understand it correctly, this is what this
-;;   *should* have been:
-;;     (define (strip-prefix-ups l)
-;;       (if (and (pair? l) (eq? 'up (car l))) (strip-prefix-ups (cdr l)) l))
-;;   or even:
-;;     (define (strip-prefix-ups l)
-;;       (match l [(cons 'up l) (strip-prefix-ups l)] [_ l]))
-;;   except that the above version manages to combine ugly and
-;;   obfuscated code, redundant mutation, redundant code (why is it a
-;;   box? why is there a (begin #t ...)?), and being extra slow.  Oh,
-;;   and if this wasn't enough, there's exactly one place in the web
-;;   server that uses it.
-
 ; path-without-base : path? path? -> (listof path-piece?)
 (define (path-without-base base path)
   (define b (explode-path* base))
@@ -120,7 +96,6 @@
 (provide/contract
  [explode-path* (path-string? . -> . (listof path-piece?))]
  [path-without-base (path-string? path-string? . -> . (listof path-piece?))]
- [strip-prefix-ups ((listof path-piece?) . -> . (listof path-piece?))] 
  [directory-part (path-string? . -> . path?)]
  [build-path-unless-absolute (path-string? path-string? . -> . path?)])
 

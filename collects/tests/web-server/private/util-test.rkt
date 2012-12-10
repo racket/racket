@@ -64,21 +64,6 @@
      (check-false (list-prefix? '(a b c) '(b c d)))))
    
    (test-suite
-    "strip-prefix-ups"
-    (test-case
-     "Does not apply"
-     (check-equal? (apply build-path (strip-prefix-ups (explode-path* (build-path "bar"))))
-                   (build-path "bar")))
-    (test-case
-     "Applies no suffix"
-     (check-equal? (apply build-path (strip-prefix-ups (explode-path* (build-path 'up 'up 'up "bar"))))
-                   (build-path "bar")))
-    (test-case
-     "Applies with suffix"
-     (check-equal? (apply build-path (strip-prefix-ups (explode-path* (build-path 'up 'up 'up "bar" "foo"))))
-                   (build-path "bar" "foo"))))
-   
-   (test-suite
     "url-path->string"
     (test-case
      "Simple (no param)"

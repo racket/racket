@@ -48,11 +48,6 @@
  Prepends @racket[base] to @racket[p], unless @racket[p] is absolute.
 }
 
-@defproc[(strip-prefix-ups [p (listof path-piece?)])
-         (listof path-piece?)]{
- Removes all the prefix @racket[".."]s from @racket[p].
-}
-
 @defproc[(network-error [s symbol?]
                         [fmt string?]
                         [v any/c] ...)

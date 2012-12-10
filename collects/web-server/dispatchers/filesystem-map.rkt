@@ -1,6 +1,7 @@
 #lang racket/base
 (require net/url
          racket/list
+         racket/match
          racket/contract)
 (require web-server/private/util)
 (define url->path/c
@@ -12,6 +13,56 @@
  [make-url->valid-path (url->path/c . -> . url->path/c)]
  [filter-url->path (regexp? url->path/c . -> . url->path/c)])
 
+(define (restrict l)
+  (not
+   (negative?
+    (let loop ([end-in-file? #f] [depth 0] [l l])
+      (match l
+        [(list)
+         (if end-in-file?
+           (sub1 depth)
+           depth)]
+        [(list-rest (or ".." 'up) rst)
+         (loop #f (sub1 depth) rst)]
+        [(list-rest (or "" 'same) rst)
+         (loop #f depth rst)]
+        [(list-rest _ rst)
+         (loop #t (add1 depth) rst)])))))
+
+(module+ test
+  (require rackunit)
+
+  (check-equal? (restrict (list))
+                #t)
+  (check-equal? (restrict (list 'up))
+                #f)
+  (check-equal? (restrict (list ".."))
+                #f)
+  (check-equal? (restrict (list 'same))
+                #t)
+  (check-equal? (restrict (list 'same ".."))
+                #f)
+
+  (check-equal? (restrict (list "foo" 'up "bar"))
+                #t)
+  (check-equal? (restrict (list "foo" 'up 'up "bar"))
+                #f)
+  (check-equal? (restrict (list 'up "bar"))
+                #f)
+  (check-equal? (restrict (list "foo" "bar" 'up "bar"))
+                #t)
+  (check-equal? (restrict (list "foo" "bar" 'up 'up 'up "bar"))
+                #f)
+
+  (check-equal? (restrict (list "foo" 'same "bar" 'up 'up 'up "bar"))
+                #f)
+  (check-equal? (restrict (list "foo" "" "bar" 'up 'up 'up "bar"))
+                #f)
+  (check-equal? (restrict (list "foo" "bar" 'up "bar" 'same))
+                #t)
+  (check-equal? (restrict (list "foo" "bar" 'up "bar" ""))
+                #t))
+
 (define (build-path* . l)
   (if (empty? l)
       (build-path 'same)
@@ -19,23 +70,18 @@
 
 (define ((make-url->path base) u)
   (define nbase (path->complete-path base))
+  (define path-from-url
+    (map path/param-path 
+         (url-path u)))
+  (unless (restrict path-from-url)
+    (error 'url->path "Illegal path: ~e outside base: ~e" 
+           path-from-url
+           base))
   (define the-path
-    ; Complete it against the base
     (path->complete-path
-     ; Build a path
-     (apply build-path*
-            ; Remove all ".."s
-            (strip-prefix-ups
-             (map (lambda (p)
-                    (if (and (string? p) (string=? "" p))
-                        'same
-                        p))
-                  ; Extract the paths from the url-path
-                  (map path/param-path 
-                       (url-path u)))))
+     (apply build-path* path-from-url)
      nbase))
   (define w/o-base (path-without-base nbase the-path))
-  #;(printf "~S\n" `(url->path ,base ,nbase ,(url->string u) ,the-path ,w/o-base))
   (values the-path w/o-base))
 
 (define ((make-url->valid-path url->path) u)

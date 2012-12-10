@@ -6,6 +6,10 @@
          web-server/dispatchers/filesystem-map)
 (provide filesystem-map-tests)
 
+(module+ test
+  (require rackunit/text-ui)
+  (run-tests filesystem-map-tests))
+
 (define-runtime-path base-dir
   "../../../web-server")
 
@@ -38,9 +42,8 @@
     (test-case "Strips parameters"
                (test-url->path test-map (build-path "dispatchers/filesystem-map.rkt")
                                #:url-string "http://test.com/dispatchers/filesystem-map.rkt;foo"))
-    (test-case "Strips outs bad '..'s"
-               (test-url->path test-map (build-path "dispatchers/filesystem-map.rkt")
-                               #:url-string "http://test.com/../../dispatchers/filesystem-map.rkt"))
+    (test-case "Strips out bad '..'s"
+               (check-exn exn:fail? (λ () (test-map (string->url "http://test.com/../../dispatchers/filesystem-map.rkt")))))
     (test-case "Leaves in good '..'s"
                (test-url->path test-map (build-path "dispatchers/../dispatchers/filesystem-map.rkt"))))
    
@@ -53,9 +56,8 @@
      (test-case "Strips parameters"
                 (test-url->path test-valid-map (build-path "dispatchers/filesystem-map.rkt")
                                 #:url-string "http://test.com/dispatchers/filesystem-map.rkt;foo"))
-     (test-case "Strips outs bad '..'s"
-                (test-url->path test-valid-map (build-path "dispatchers/filesystem-map.rkt")
-                                #:url-string "http://test.com/../../dispatchers/filesystem-map.rkt"))
+     (test-case "Strips out bad '..'s"
+               (check-exn exn:fail? (λ () (test-valid-map (string->url "http://test.com/../../dispatchers/filesystem-map.rkt")))))
      (test-case "Leaves in good '..'s"
                 (test-url->path test-valid-map (build-path "dispatchers/../dispatchers/filesystem-map.rkt"))))
     (test-case "Finds valid path underneath"
@@ -82,3 +84,4 @@
     (test-case "Allows content after w/ valid"
                (test-url->path test-filter-valid-map (build-path "dispatchers/filesystem-map.rkt/extra/info")
                                #:expected (build-path "dispatchers/filesystem-map.rkt"))))))
+
