@@ -403,26 +403,25 @@
                          (if (null? a)
                              #t
                              (loop a)))))
-            (void))
-	(let-values ([(e) (stx-cdr x)])
-	  (if (stx-null? e)
-	      (quote-syntax #t)
-	      (if (if (stx-pair? e)
-		      (stx-null? (stx-cdr e))
-		      #t)
-                  (datum->syntax
-                   here
-                   (list (quote-syntax #%expression)
-                         (stx-car e))
-                   x)
-		  (datum->syntax
-		   here
-		   (list (quote-syntax if)
-			 (stx-car e)
-			 (cons (quote-syntax and)
-			       (stx-cdr e))
-			 (quote-syntax #f))
-		   x)))))))
+            (let-values ([(e) (stx-cdr x)])
+              (if (stx-null? e)
+                  (quote-syntax #t)
+                  (if (if (stx-pair? e)
+                          (stx-null? (stx-cdr e))
+                          #t)
+                      (datum->syntax
+                       here
+                       (list (quote-syntax #%expression)
+                             (stx-car e))
+                       x)
+                      (datum->syntax
+                       here
+                       (list (quote-syntax if)
+                             (stx-car e)
+                             (cons (quote-syntax and)
+                                   (stx-cdr e))
+                             (quote-syntax #f))
+                       x))))))))
 
   (define-syntaxes (or)
     (let-values ([(here) (quote-syntax here)])
