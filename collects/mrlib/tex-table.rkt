@@ -1,5 +1,5 @@
-#lang scheme/base
-(require scheme/contract)
+#lang racket/base
+(require racket/contract)
 
 (define (string-len-one? x)
   (and (string? x)
@@ -165,7 +165,13 @@
     ("vdash" "⊢")
     ("dashv" "⊣")
     ("cdot" "·")
+    ("sum" "∑")
+    ("prod" "∏")
+    ("coprod" "∐")
     
+    ("int" "∫")
+    ("oint" "∮")
+
     ("sqrt" "√")
     
     ("skull" "☠") 
@@ -179,18 +185,16 @@
 
     ))
 
-;; checks to see if there are duplicates
-#;
-(define (find-dups)
-  (let ([ht (make-hash)])
-    (for-each
-     (λ (line)
-       (let ([name (list-ref line 0)]
-             [obj (list-ref line 1)])
-         (hash-set! ht name (cons obj (hash-ref ht name '())))))
-     tex-shortcut-table)
-    (hash-for-each
-     ht
-     (λ (k v)
-       (unless (= 1 (length v))
-         (printf "~s -> ~s\n" k v))))))
+
+(module+ test
+  (require racket/match)
+  (define name-ht (make-hash))
+  (define val-ht (make-hash))
+  (for ([line (in-list tex-shortcut-table)])
+    (match-define (list name obj) line)
+    (hash-set! name-ht name (cons obj (hash-ref name-ht name '()))))
+  (for ([(k v) (in-hash name-ht)])
+    (unless (= 1 (length v))
+      (eprintf "duplicate: ~s -> ~s\n" k v))))
+
+
