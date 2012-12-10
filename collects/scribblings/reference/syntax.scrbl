@@ -16,7 +16,8 @@
                      racket/lazy-require
                      (only-in compiler/cm-accomplice
                               register-external-module)
-                     racket/performance-hint))
+                     racket/performance-hint
+                     syntax/parse))
 
 @(define require-eval (make-base-eval))
 @(define syntax-eval
@@ -2728,12 +2729,19 @@ escape. An @racket[unquote-splicing] form as an expression is a syntax error.}
 
 @defform[(quote-syntax datum)]{
 
-Produces a @tech{syntax object} that preserves the @tech{lexical
-information} and source-location information attached to
-@racket[datum] at expansion time.
+Similar to @racket[quote], but produces a @tech{syntax object}
+that preserves the @tech{lexical information} and source-location
+information attached to @racket[datum] at expansion time.
+
+Unlike @racket[syntax] (@litchar{#'}), @racket[quote-syntax] does
+not substitute pattern variables bound by @racket[with-syntax],
+@racket[syntax-parse], or @racket[syntax-case].
 
 @mz-examples[
 (syntax? (quote-syntax x))
+(quote-syntax (1 2 3))
+(with-syntax ([a 5])
+  (quote-syntax (a b c)))
 ]
 }
 
