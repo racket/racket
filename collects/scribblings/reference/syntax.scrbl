@@ -2740,7 +2740,7 @@ not substitute pattern variables bound by @racket[with-syntax],
 @mz-examples[
 (syntax? (quote-syntax x))
 (quote-syntax (1 2 3))
-(with-syntax ([a 5])
+(with-syntax ([a #'5])
   (quote-syntax (a b c)))
 ]
 }
