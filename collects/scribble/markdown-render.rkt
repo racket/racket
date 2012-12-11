@@ -1,6 +1,6 @@
 #lang racket/base
 (require "core.rkt" "base-render.rkt"
-         racket/class racket/port racket/list racket/string
+         racket/class racket/port racket/list racket/string racket/match
          scribble/text/wrap)
 (provide render-mixin)
 
@@ -151,6 +151,12 @@
       (newline)
       null)
 
+    (define/private (content-style e)
+      (cond
+       [(element? e) (element-style e)]
+       [(multiarg-element? e) (multiarg-element-style e)]
+       [else #f]))
+
     (define/override (render-content i part ri)
       (define tick?
         (and (zero? (table-ticks-depth))
@@ -164,15 +170,29 @@
         (when (zero? (phrase-ticks-depth))
           (display "`"))
         (phrase-ticks-depth (add1 (phrase-ticks-depth))))
+      (define properties (let ([s (content-style i)])
+                           (if (style? s) (style-properties s) '())))
+      (define targ (for/or ([p properties])
+                    (if (target-url? p) p #f)))
+      (define url (and targ (target-url-addr targ)))
       (begin0
-          (if (and (element? i)
-                   (let ([s (element-style i)])
-                     (or (eq? 'hspace s)
-                         (and (style? s)
-                              (eq? 'hspace (style-name s))))))
-              (parameterize ([current-preserve-spaces #t])
-                (super render-content i part ri))
-              (super render-content i part ri))
+          (cond [url
+                 (define new-i
+                   (match (element-content i)
+                     [(list (? string? s))
+                      (element (element-style i)
+                               (list (format "[~a](~a)" s url)))]
+                     [else i]))
+                 (super render-content new-i part ri)]
+                [(and (element? i)
+                      (let ([s (element-style i)])
+                        (or (eq? 'hspace s)
+                            (and (style? s)
+                                 (eq? 'hspace (style-name s))))))
+                 (parameterize ([current-preserve-spaces #t])
+                   (super render-content i part ri))]
+                [else
+                 (super render-content i part ri)])
         (when tick?
           (phrase-ticks-depth (sub1 (phrase-ticks-depth)))
           (when (zero? (phrase-ticks-depth))

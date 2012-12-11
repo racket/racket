@@ -12,6 +12,8 @@
 
 @section{Section}
 
+@hyperlink["http://www.racket-lang.org/" "I am a hyperlink to Racket."]
+
 @italic{Italic}.
 _Just underlines_.
 
