@@ -76,9 +76,14 @@
     [(_ name type fail-thunk) (get-ffi-obj name mpfr-lib type fail-thunk)]))
 
 (define mpfr-free-cache (get-mpfr-fun 'mpfr_free_cache (_fun -> _void)))
-#;
+
 (define mpfr-shutdown
-  (register-custodian-shutdown mpfr-free-cache (λ (free) (free))))
+  (register-custodian-shutdown 
+   mpfr-free-cache ; acts as a "random" object for a shutdown handle
+   (λ (free) 
+      ;; The direct reference here is important, since custodian holds only
+      ;; a weak reference to shutdown handle:
+      (mpfr-free-cache))))
 
 ;; ===================================================================================================
 ;; MPFR types
