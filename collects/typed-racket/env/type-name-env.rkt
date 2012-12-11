@@ -1,7 +1,10 @@
 #lang racket/base
+
+;; Environment for type names
+
 (require "../utils/utils.rkt")
 
-(require syntax/boundmap
+(require syntax/id-table
          racket/dict
          (env type-alias-env)
          (utils tc-utils)
@@ -20,12 +23,12 @@
 
 ;; a mapping from id -> type (where id is the name of the type)
 (define the-mapping
-  (make-module-identifier-mapping))
+  (make-free-id-table))
 
 ;; add a name to the mapping
 ;; identifier Type -> void
 (define (register-type-name id [type #t])
-  (module-identifier-mapping-put! the-mapping id type))
+  (free-id-table-set! the-mapping id type))
 
 ;; add a bunch of names to the mapping
 ;; listof[identifier] listof[type] -> void
@@ -37,14 +40,14 @@
 ;; identifier (-> error) -> type
 (define (lookup-type-name id [k (lambda () (lookup-type-fail id))])
   (begin0
-    (module-identifier-mapping-get the-mapping id k)
+    (free-id-table-ref the-mapping id k)
     (add-disappeared-use id)))
 
 
 ;; map over the-mapping, producing a list
 ;; (id type -> T) -> listof[T]
 (define (type-name-env-map f)
-  (module-identifier-mapping-map the-mapping f))
+  (free-id-table-map the-mapping f))
 
 (define (add-alias from to)
   (when (lookup-type-name to (lambda () #f))
@@ -53,20 +56,20 @@
 
 ;; a mapping from id -> listof[Variance] (where id is the name of the type)
 (define variance-mapping
-  (make-module-identifier-mapping))
+  (make-free-id-table))
 
 ;; add a name to the mapping
 ;; identifier Type -> void
 (define (register-type-variance! id variance)
-  (module-identifier-mapping-put! variance-mapping id variance))
+  (free-id-table-set! variance-mapping id variance))
 
 (define (lookup-type-variance id )
-  (module-identifier-mapping-get variance-mapping id))
+  (free-id-table-ref variance-mapping id))
 
 ;; map over the-mapping, producing a list
 ;; (id variance -> T) -> listof[T]
 (define (type-variance-env-map f)
-  (module-identifier-mapping-map variance-mapping f))
+  (free-id-table-map variance-mapping f))
 
 
 
