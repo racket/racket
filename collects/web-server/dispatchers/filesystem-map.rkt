@@ -71,8 +71,11 @@
 (define ((make-url->path base) u)
   (define nbase (path->complete-path base))
   (define path-from-url
-    (map path/param-path 
-         (url-path u)))
+    (for/list ([p/p (in-list (url-path u))])
+      (match (path/param-path p/p)
+        ["" 'same]
+        [".." 'up]
+        [x x])))
   (unless (restrict path-from-url)
     (error 'url->path "Illegal path: ~e outside base: ~e" 
            path-from-url
