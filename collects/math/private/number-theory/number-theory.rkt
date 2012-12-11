@@ -3,7 +3,8 @@
 (require "../base/base-random.rkt"
          "divisibility.rkt"
          "modular-arithmetic.rkt"
-         "types.rkt")
+         "types.rkt"
+         "small-primes.rkt")
 
 (require/typed typed/racket
                [integer-sqrt/remainder (Natural -> (Values Natural Natural))])
@@ -55,10 +56,9 @@
 (define prime-strong-pseudo-trials
   (integer-length (assert (/ 1 prime-strong-pseudo-certainty) integer?)))
 
-(define *SMALL-PRIME-LIMIT* 10000)
-; (define *SMALL-PRIME-LIMIT* 1000) ; use 1000 for coverage testing
-; Determines the size of the pre-built table of small primes
-(define *SMALL-FACORIZATION-LIMIT* *SMALL-PRIME-LIMIT*)
+(define *VERY-SMALL-PRIME-LIMIT* 1000)
+; Determines the size of the pre-built table of very small primes
+(define *SMALL-FACORIZATION-LIMIT* *VERY-SMALL-PRIME-LIMIT*)
 ; Determines whether to use naive factorization or Pollards rho method.
 
 
@@ -193,7 +193,7 @@
 (define prime?
   (let ()
     ; TODO: Only store odd integers in this table
-    (define N *SMALL-PRIME-LIMIT*)
+    (define N *VERY-SMALL-PRIME-LIMIT*)
     (define ps (make-vector (+ N 1) #t))
     (define ! vector-set!)
     (! ps 0 #f)
@@ -204,10 +204,13 @@
           (! ps m #f))))
     (lambda (n)
       (let ([n (abs n)])
-        (if (< n N)
-            (vector-ref ps n)
-            (prime-strong-pseudo? n))))))
-
+        (cond 
+          [(< n N)
+           (vector-ref ps n)]
+          [(< n *SMALL-PRIME-LIMIT*)
+           (small-prime? n)]
+          [else
+           (prime-strong-pseudo? n)])))))
 
 (: next-prime : (case-> (Natural -> Natural)
                         (Integer -> Integer)))
@@ -304,7 +307,7 @@
 
 (: factorize : Natural -> (Listof (List Natural Natural)))
 (define (factorize n)
-  (if (< n *SMALL-PRIME-LIMIT*)   ; NOTE: Do measurement of best cut
+  (if (< n *SMALL-FACORIZATION-LIMIT*)  ; NOTE: Do measurement of best cut
       (factorize-small n)
       (factorize-large n)))
 
