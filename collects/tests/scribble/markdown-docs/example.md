@@ -8,6 +8,8 @@
 
 ## 1. Section
 
+[I am a hyperlink to Racket.](http://www.racket-lang.org/)
+
 Italic. \_Just underlines\_.
 
 Bold. \*Just asterisks.\*
