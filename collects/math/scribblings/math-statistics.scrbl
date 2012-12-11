@@ -20,14 +20,12 @@
 
 @defmodule[math/statistics]
 
-This module exports functions that compute summary values for collections of samples, or
-@deftech{statistics}, such as means, standard devations, medians, and @italic{k}th order
-statistics.
-It also exports functions for managing collections of samples.
+This module exports functions that compute @deftech{statistics}, meaning summary values for
+collections of samples, and functions for managing sequences of weighted or unweighted samples.
 
-Most of the functions that compute statistics also accept a sequence of nonnegative reals
-that correspond one-to-one with samples.
-These are used as weights; equivalently counts, pseudocounts or proportions.
+Most of the functions that compute statistics accept a sequence of nonnegative reals that
+correspond one-to-one with sample values.
+These are used as weights; equivalently counts, pseudocounts or unnormalized probabilities.
 While this makes it easy to work with weighted samples, it introduces some subtleties
 in bias correction.
 In particular, central moments must be computed without bias correction by default.
@@ -178,6 +176,7 @@ elements in @racket[ws], in the returned statistics object.
                  (define s (update-statistics* empty-statistics '(1 2 3 4) '(1 1 1 2)))
                  (statistics-mean s)
                  (statistics-stddev s #:bias #t)]
+This function uses O(1) space regardless of the length of @racket[xs].
 }
 
 @deftogether[(@defproc[(statistics-range [s statistics]) Nonnegative-Flonum]
@@ -244,11 +243,13 @@ Like @racket[covariance] and @racket[correlation], but computed using known mean
 @racket[μx] and @racket[μy].
 }
 
-                              @section{Counting and Binning}
+@section{Counting and Binning}
 
 @defproc*[([(samples->hash [xs (Sequenceof A)]) (HashTable A Positive-Integer)]
            [(samples->hash [xs (Sequenceof A)] [ws (U #f (Sequenceof Real))])
             (HashTable A Nonnegative-Real)])]{
+Returns a hash table mapping each unique element in @racket[xs] (under @racket[equal?]) to its
+count, or, if @racket[ws] is not @racket[#f], to its total weight.
 @examples[#:eval typed-eval
                  (samples->hash '(1 2 3 4 4))
                  (samples->hash '(1 1 2 3 4) '(1/2 1/2 1 1 2))]
@@ -257,6 +258,8 @@ Like @racket[covariance] and @racket[correlation], but computed using known mean
 @defproc*[([(count-samples [xs (Sequenceof A)]) (Values (Listof A) (Listof Positive-Integer))]
            [(count-samples [xs (Sequenceof A)] [ws (U #f (Sequenceof Real))])
             (Values (Listof A) (Listof Nonnegative-Real))])]{
+Like @racket[samples->hash], but returns two lists.
+The elements in the returned @racket[(Listof A)] are in order of first appearance in @racket[xs].
 @examples[#:eval typed-eval
                  (count-samples '(1 2 3 4 4))
                  (count-samples '(1 1 2 3 4) '(1/2 1/2 1 1 2))]
@@ -276,7 +279,7 @@ to group elements based on a function of their values.
                       [xs (Sequenceof A)]
                       [ws (U #f (Sequenceof Real))])
          (Listof (sample-bin A A))]{
-Like @racket[(sort xs lte?)], but additionally groups samples into bins.
+Similar to @racket[(sort xs lte?)], but additionally groups samples into bins.
 The bins' @racket[bounds] are sorted before binning @racket[xs].
 
 If @racket[n = (length bounds)], then @racket[bin-samples] returns @italic{at least} @racket[(- n 1)]
@@ -311,7 +314,8 @@ If @racket[ws] is @racket[#f], @racket[bin-samples] returns bins with @racket[#f
                           [xs (Sequenceof A)]
                           [ws (U #f (Sequenceof Real))])
          (Listof (sample-bin A B))]{
-Like @racket[(sort xs lte? #:key key #:cache-keys? #t)], but additionally groups samples into bins.
+Similar to @racket[(sort xs lte? #:key key #:cache-keys? #t)], but additionally groups samples into
+bins.
 @examples[#:eval typed-eval
                  (bin-samples/key '(2 4) <= (inst car Real String)
                                   '((1 . "1") (2 . "2") (3 . "3") (4 . "4") (5 . "5")))]

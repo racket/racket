@@ -17,7 +17,7 @@ for working with numbers and collections of numbers. These include
   @item{Number-theoretic functions}
   @item{Functional arrays for storing and operating on large rectangular data sets}
   @item{Probability distributions}
-  @item{Statistical functions (currently being documented)}
+  @item{Statistical functions}
   @item{Linear algebra functions (currently under review)}
 ]
 
