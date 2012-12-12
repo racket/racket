@@ -207,7 +207,7 @@
 
   (define: list->heap : (All (a) (case-lambda (comparator (list-of a) -> (Heap a)) ((list-of a) -> (Heap a))))
     ; time: O(n)
-    (pcase-lambda:  (a)
+    (pcase-lambda: (a)
       [([l : (list-of a)])     (list->heap (current-compare) l)]
       [([cmp : comparator] [l : (list-of a)])
        (let* ([e  (#{empty @ a} cmp)]

@@ -7,9 +7,9 @@
 #;(require "prims.rkt")
 (define: mymap : (All (a b) ((a -> b) (list-of a) -> (list-of b)))
   (plambda: (a b) ([f : (a -> b)] [l : (list-of a)])
-	    (cond [(null? l) '()]
-		  [else (cons (f (car l))
-			      (mymap f (cdr l)))])))
+    (cond [(null? l) '()]
+          [else (cons (f (car l))
+                      (mymap f (cdr l)))])))
 
 (pdefine: (a b) (mymap2 [f : (a -> b)] [l : (list-of a)]) : (list-of b)
 	  (cond [(null? l) '()]

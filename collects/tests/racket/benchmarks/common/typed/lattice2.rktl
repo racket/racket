@@ -67,7 +67,7 @@
 (: zulu-select (All (X) ((X -> Any) (Listof X) -> (Listof X))))
 (define zulu-select
   (lambda (test lst)
-    (: select-a (All (X) ((Listof X) (Listof X) -> (Listof X))))
+    (: select-a ((Listof X) (Listof X) -> (Listof X)))
     (define select-a
       (lambda (ac lst)
         (if (null? lst)
@@ -86,7 +86,7 @@
 (: select-map (All (X Y) ((X -> Any) (X -> Y) (Listof X) -> (Listof Y))))
 (define select-map
   (lambda (test func lst)
-    (: select-a (All (X Y) ((Listof Y) (Listof X) -> (Listof Y))))
+    (: select-a ((Listof Y) (Listof X) -> (Listof Y)))
     (define select-a
       (lambda (ac lst)
         (if (null? lst)
@@ -108,7 +108,7 @@
   (lambda (proc lst)
     (if (null? lst)
         #t
-        (letrec: ((drudge : (All (X) ((Listof X) -> Any))
+        (letrec: ((drudge : ((Listof X) -> Any)
                           (lambda (lst)
                             (let ((rest (cdr lst)))
                               (if (null? rest)
