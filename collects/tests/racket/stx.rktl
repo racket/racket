@@ -1712,5 +1712,16 @@
   (test #"1\n2\n" get-output-bytes o))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check preservation of properties by `quasisyntax'
+
+(test #\[ syntax-property #'[x] 'paren-shape)
+(test #\[ syntax-property #`[x] 'paren-shape)
+(test #\[ syntax-property #`[x #,#'y] 'paren-shape)
+(test #\[ syntax-property #`[0 #,@(list #'1 #'2)] 'paren-shape)
+(test #\[ syntax-property #`[0 #,@null] 'paren-shape)
+(test #\[ syntax-property (quasisyntax [x (unsyntax (syntax y))]) 'paren-shape)
+(test #\[ syntax-property (quasisyntax [x y]) 'paren-shape)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

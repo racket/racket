@@ -108,6 +108,7 @@
                                                     (list* (syntax temp)
                                                            (quote-syntax ...)
                                                            rest-v)
+                                                    stx
                                                     stx)
                                                    (with-syntax ([check check-splicing-list-id])
                                                      (cons #'[(temp (... ...)) (check x (quote-syntax ctx))]
@@ -122,6 +123,7 @@
                                     (convert-k (datum->syntax
                                                 stx
                                                 (cons x-v rest-v)
+                                                stx
                                                 stx)
                                                (append x-bindings
                                                        rest-bindings))))])
@@ -137,6 +139,7 @@
                                                        (datum->syntax
                                                         (stx-car stx)
                                                         (list (stx-car (stx-car stx)) x-v)
+                                                        (stx-car stx)
                                                         (stx-car stx))
                                                        x-bindings)])
                                      (loop (syntax rest) depth
@@ -161,6 +164,7 @@
                              (convert-k (datum->syntax
                                          stx
                                          (list (stx-car stx) v)
+                                         stx
                                          stx)
                                         bindings)))]
                     [_
@@ -175,6 +179,7 @@
                                                 (convert-k (datum->syntax
                                                             stx
                                                             l
+                                                            stx
                                                             stx)
                                                            bindings))])
                          (cond
@@ -201,7 +206,8 @@
                                               (lambda (a a-bindings)
                                                 (convert-k (cons (datum->syntax
                                                                   (car l)
-                                                                  a 
+                                                                  a
+                                                                  (car l)
                                                                   (car l))
                                                                  (cdr l))
                                                            a-bindings))))
@@ -214,6 +220,7 @@
                                                 (convert-k (cons (datum->syntax
                                                                   (car l)
                                                                   a
+                                                                  (car l)
                                                                   (car l))
                                                                  rest)
                                                            (append a-bindings
@@ -231,6 +238,7 @@
                                (convert-k (datum->syntax
                                            stx
                                            (list->vector (syntax->list v))
+                                           stx
                                            stx)
                                           bindings)))]
                       [else
