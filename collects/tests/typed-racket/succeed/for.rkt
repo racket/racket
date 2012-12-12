@@ -199,3 +199,28 @@
                  ([i : Natural (ann 4 Integer)])
                  i)
        6)
+
+(check string=?
+       (with-output-to-string
+         (lambda ()
+           (for: ([x 10] #:unless (> x 3)) (display x))))
+       "0123")
+
+;; break and final clauses
+;; TODO typechecker can't handle these
+;; (check string=?
+;;        (with-output-to-string
+;;          (lambda ()
+;;            (for: ([x 10] #:break (> x 3)) (display x))))
+;;        "0123")
+;; (check string=?
+;;        (with-output-to-string
+;;          (lambda ()
+;;            (for: ([x 10]) #:break (> x 3) (display x))))
+;;        "0123")
+;; (check =
+;;        (for/sum: : Integer ([x : Integer 10] #:break (> x 3)) (ann x Integer))
+;;        6)
+;; (check =
+;;        (for/sum: : Integer ([x 10] #:final (> x 3)) x)
+;;        10)
