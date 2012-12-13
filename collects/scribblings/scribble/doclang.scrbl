@@ -89,7 +89,7 @@ documentation
 
 
 
-
+@section{@racketmodname[scribble/doclang]}
 @defmodulelang[scribble/doclang]{The @racketmodname[scribble/doclang] language
 provides the same functionality as @racketmodname[scribble/doclang2], where the
 configuration options are positional and mandatory.  The first three elements
