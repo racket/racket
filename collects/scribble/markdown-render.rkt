@@ -176,14 +176,13 @@
                     (if (target-url? p) p #f)))
       (define url (and targ (target-url-addr targ)))
       (begin0
-          (cond [url
-                 (define new-i
-                   (match (element-content i)
-                     [(list (? string? s))
-                      (element (element-style i)
-                               (list (format "[~a](~a)" s url)))]
-                     [else i]))
-                 (super render-content new-i part ri)]
+          (cond [url (define new-i
+                       (match (element-content i)
+                         [(list (? string? s))
+                          (element (element-style i)
+                            (list (format "[~a](~a)" s url)))]
+                         [else i]))
+                     (super render-content new-i part ri)]
                 [(and (element? i)
                       (let ([s (element-style i)])
                         (or (eq? 'hspace s)
@@ -191,8 +190,15 @@
                                  (eq? 'hspace (style-name s))))))
                  (parameterize ([current-preserve-spaces #t])
                    (super render-content i part ri))]
-                [else
-                 (super render-content i part ri)])
+                [else (define style (and (element? i) (element-style i)))
+                      (define bold?   (eq? style 'bold))
+                      (define italic? (eq? style 'italic))
+                      (cond [bold?   (display "**")]
+                            [italic? (display "_")])
+                      (begin0
+                          (super render-content i part ri)
+                        (cond [bold?   (display "**")]
+                              [italic? (display "_")]))])
         (when tick?
           (phrase-ticks-depth (sub1 (phrase-ticks-depth)))
           (when (zero? (phrase-ticks-depth))
