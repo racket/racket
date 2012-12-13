@@ -28,7 +28,8 @@
   (define cop (open-output-string))
   (define-values [pasv1-thd pasv1-port] (tcp-serve* (current-output-port) DIRLIST))
   (define-values [pasv2-thd pasv2-port] (tcp-serve* (current-output-port) TEXT-FILE))
-  (define-values [main-thd main-port] (tcp-serve cop (SERVER-OUTPUT pasv1-port pasv2-port)))
+  (define-values [pasv3-thd pasv3-port] (tcp-serve* (open-output-nowhere) TEXT-FILE))
+  (define-values [main-thd main-port] (tcp-serve cop (SERVER-OUTPUT pasv1-port pasv2-port pasv3-port)))
   (define server "127.0.0.1")
   (define port main-port)
   (define user "anonymous")
@@ -46,11 +47,17 @@
                   (match-define (list* type ftp-date name ?size) f)
                   (test (ftp-make-file-seconds ftp-date)))
                 (ftp-download-file conn tmp-dir pth)
+                (ftp-upload-file conn (path->string (build-path tmp-dir pth)))
+                (ftp-delete-file conn "3dldf/test.file")
+                (ftp-make-directory conn "test")
+                (ftp-delete-directory conn "test")
+                (ftp-rename-file conn "test1" "test2")
                 (ftp-close-connection conn)
                 (delete-file (build-path tmp-dir pth))
                 (delete-directory/files tmp-dir)
                 (thread-wait pasv1-thd)
                 (thread-wait pasv2-thd)
+                (thread-wait pasv3-thd)
                 (thread-wait main-thd)
                 (get-output-string cop) => EXPECTED-USER-OUTPUT
                 ))))
@@ -176,7 +183,7 @@
   Thank You!
   @||})
 
-(define (SERVER-OUTPUT pasv1-port pasv2-port)
+(define (SERVER-OUTPUT pasv1-port pasv2-port pasv3-port)
   @S{220 GNU FTP server ready.
      230-Due to U.S. Export Regulations, all cryptographic software on this
      230-site is subject to the following legal notice:
@@ -220,6 +227,15 @@
      200 Switching to Binary mode.
      150 Opening BINARY mode data connection for =README-about-.diff-files (745 bytes).
      226 File send OK.
+     227 Entering Passive Mode (127,0,0,1,@pasv3-port)
+     200 Switching to Binary mode.
+     150 Opening BINARY mode data connection for =README-about-.diff-files (745 bytes).
+     226 File send OK.
+     250 Delete operation successful.
+     257 test created
+     250 Remove directory operation successful.
+     350 Ready for RNTO.
+     250 Rename successful.
      221 Goodbye.
      @||})
 
@@ -233,5 +249,13 @@
      PASV
      TYPE I
      RETR =README-about-.diff-files
+     PASV
+     TYPE I
+     STOR =README-about-.diff-files
+     DELE 3dldf/test.file
+     MKD test
+     RMD test
+     RNFR test1
+     RNTO test2
      QUIT
      @||})
