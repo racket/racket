@@ -7,3 +7,8 @@ ftp-close-connection
 ftp-directory-list
 ftp-download-file
 ftp-make-file-seconds
+ftp-upload-file
+ftp-delete-file
+ftp-make-directory
+ftp-delete-directory
+ftp-rename-file
