@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/date racket/file racket/port racket/tcp)
+(require racket/date racket/file racket/port racket/tcp racket/list)
 
 (provide ftp-connection?
          ftp-cd
@@ -8,7 +8,12 @@
          ftp-close-connection
          ftp-directory-list
          ftp-download-file
-         ftp-make-file-seconds)
+         ftp-make-file-seconds
+         ftp-upload-file
+         ftp-delete-file
+         ftp-make-directory
+         ftp-delete-directory
+         ftp-rename-file)
 
 ;; opqaue record to represent an FTP connection:
 (define-struct ftp-connection (in out))
@@ -61,6 +66,9 @@
      [else
       (error 'ftp "unexpected result: ~e" line)])))
 
+(define (bytes->number bytes)
+  (string->number (bytes->string/latin-1 bytes)))
+
 (define (get-month month-bytes)
   (cond [(assoc month-bytes
                 '((#"Jan" 1) (#"Feb" 2) (#"Mar" 3) (#"Apr" 4) (#"May" 5)
@@ -68,9 +76,6 @@
                   (#"Nov" 11) (#"Dec" 12)))
          => cadr]
         [else (error 'get-month "bad month: ~s" month-bytes)]))
-
-(define (bytes->number bytes)
-  (string->number (bytes->string/latin-1 bytes)))
 
 (define re:date #rx#"(...) *(.*) (..):(..)|(...) *([0-9]*) +(....)")
 
@@ -96,41 +101,44 @@
 
 (define re:passive #rx#"\\((.*),(.*),(.*),(.*),(.*),(.*)\\)")
 
-(define (establish-data-connection tcp-ports)
-  (fprintf (ftp-connection-out tcp-ports) "PASV\r\n")
+(define (establish-data-connection ftp-ports in-or-out)
+  (fprintf (ftp-connection-out ftp-ports) "PASV\r\n")
   (let ([response (ftp-check-response
-                   (ftp-connection-in tcp-ports)
-                   (ftp-connection-out tcp-ports)
-                   #"227"
-                   (lambda (s ignore) s) ; should be the only response
-                   (void))])
+                   (ftp-connection-in ftp-ports)
+                   (ftp-connection-out ftp-ports)
+                   #"227" (lambda (s ignore) s) (void))])
     (let* ([reg-list (regexp-match re:passive response)]
            [pn1 (and reg-list
                      (bytes->number (list-ref reg-list 5)))]
            [pn2 (bytes->number (list-ref reg-list 6))])
       (unless (and reg-list pn1 pn2)
         (error 'ftp "can't understand PASV response: ~e" response))
-      (let-values ([(tcp-data tcp-data-out)
+      (let-values ([(tcp-data-in tcp-data-out)
                     (tcp-connect (format "~a.~a.~a.~a"
                                          (list-ref reg-list 1)
                                          (list-ref reg-list 2)
                                          (list-ref reg-list 3)
                                          (list-ref reg-list 4))
                                  (+ (* 256 pn1) pn2))])
-        (fprintf (ftp-connection-out tcp-ports) "TYPE I\r\n")
-        (ftp-check-response (ftp-connection-in tcp-ports)
-                            (ftp-connection-out tcp-ports)
+        (fprintf (ftp-connection-out ftp-ports) "TYPE I\r\n")
+        (ftp-check-response (ftp-connection-in ftp-ports)
+                            (ftp-connection-out ftp-ports)
                             #"200" void (void))
-        (tcp-abandon-port tcp-data-out)
-        tcp-data))))
+        (if (eq? in-or-out 'in)
+            (begin
+              (tcp-abandon-port tcp-data-out)
+              tcp-data-in)
+            (begin
+              (tcp-abandon-port tcp-data-in)
+              tcp-data-out))))))
 
-;; Used where version 0.1a printed responses:
-(define (print-msg s ignore)
-  ;; (printf "~a\n" s)
-  (void))
-
+;; 230? is var. It always keep last line's action result. The lambda in this 
+;; ftp-check-response means:
+;; "if one line's head is 230, then this ftp server do not 
+;; need PASS command. "or 230? (rege..." means if 230? is true already
+;; , then do not check the line anymore, it's just true.
 (define (ftp-establish-connection* in out username password)
-  (ftp-check-response in out #"220" print-msg (void))
+  (ftp-check-response in out #"220" void (void))
   (fprintf out "USER ~a\r\n" username)
   (let ([no-password? (ftp-check-response
                        in out (list #"331" #"230")
@@ -146,13 +154,13 @@
   (let-values ([(tcpin tcpout) (tcp-connect server-address server-port)])
     (ftp-establish-connection* tcpin tcpout username password)))
 
-(define (ftp-close-connection tcp-ports)
-  (fprintf (ftp-connection-out tcp-ports) "QUIT\r\n")
-  (ftp-check-response (ftp-connection-in tcp-ports)
-                      (ftp-connection-out tcp-ports)
+(define (ftp-close-connection ftp-ports)
+  (fprintf (ftp-connection-out ftp-ports) "QUIT\r\n")
+  (ftp-check-response (ftp-connection-in ftp-ports)
+                      (ftp-connection-out ftp-ports)
                       #"221" void (void))
-  (close-input-port (ftp-connection-in tcp-ports))
-  (close-output-port (ftp-connection-out tcp-ports)))
+  (close-input-port (ftp-connection-in ftp-ports))
+  (close-output-port (ftp-connection-out ftp-ports)))
 
 (define (ftp-cd ftp-ports new-dir)
   (fprintf (ftp-connection-out ftp-ports) "CWD ~a\r\n" new-dir)
@@ -165,19 +173,19 @@
            "^(.)(.*) ((?i:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)"
            " .* [0-9][0-9]:?[0-9][0-9]) (.*)$")))
 
-(define (ftp-directory-list tcp-ports [path #f])
-  (define tcp-data (establish-data-connection tcp-ports))
+(define (ftp-directory-list ftp-ports [path #f])
+  (define tcp-data (establish-data-connection ftp-ports 'in))
   (if path
-    (fprintf (ftp-connection-out tcp-ports) "LIST ~a\r\n" path)
-    (fprintf (ftp-connection-out tcp-ports) "LIST\r\n"))
-  (ftp-check-response (ftp-connection-in tcp-ports)
-                      (ftp-connection-out tcp-ports)
+    (fprintf (ftp-connection-out ftp-ports) "LIST ~a\r\n" path)
+    (fprintf (ftp-connection-out ftp-ports) "LIST\r\n"))
+  (ftp-check-response (ftp-connection-in ftp-ports)
+                      (ftp-connection-out ftp-ports)
                       (list #"150" #"125") void (void))
   (define lines (port->lines tcp-data))
   (close-input-port tcp-data)
-  (ftp-check-response (ftp-connection-in tcp-ports)
-                      (ftp-connection-out tcp-ports)
-                      #"226" print-msg (void))
+  (ftp-check-response (ftp-connection-in ftp-ports)
+                      (ftp-connection-out ftp-ports)
+                      #"226" void (void))
   (for*/list ([l (in-list lines)]
               [m (in-value (cond [(regexp-match re:dir-line l) => cdr]
                                  [else #f]))]
@@ -189,27 +197,112 @@
     (define r `(,(car m) ,@(cddr m)))
     (if size `(,@r ,size) r)))
 
-(define (ftp-download-file tcp-ports folder filename)
+(define (ftp-download-file ftp-ports folder filename [progress-proc #f])
   ;; Save the file under the name tmp.file, rename it once download is
   ;; complete this assures we don't over write any existing file without
   ;; having a good file down
-  (let* ([tmpfile (make-temporary-file
-                   (string-append
-                    (regexp-replace
-                     #rx"~"
-                     (path->string (build-path folder "ftptmp"))
-                     "~~")
-                    "~a"))]
+  (let* ([tmpfile "file.tmp"]
          [new-file (open-output-file tmpfile #:exists 'replace)]
-         [tcp-data (establish-data-connection tcp-ports)])
-    (fprintf (ftp-connection-out tcp-ports) "RETR ~a\r\n" filename)
-    (ftp-check-response (ftp-connection-in tcp-ports)
-                        (ftp-connection-out tcp-ports)
-                        (list #"125" #"150") print-msg (void))
-    (copy-port tcp-data new-file)
-    (close-output-port new-file)
-    (close-input-port tcp-data)
-    (ftp-check-response (ftp-connection-in tcp-ports)
-                        (ftp-connection-out tcp-ports)
-                        #"226" print-msg (void))
+         [tcp-data (establish-data-connection ftp-ports 'in)])
+
+    (transfer-data ftp-ports 'download tcp-data new-file filename progress-proc)
+
     (rename-file-or-directory tmpfile (build-path folder filename) #t)))
+
+(define (ftp-upload-file ftp-ports filepath [progress-proc #f])
+  (let ([upload-file (open-input-file filepath)]
+        [tcp-data (establish-data-connection ftp-ports 'out)])
+
+    (let ([system-type (system-path-convention-type)]
+          [splitter ""])
+      (if (eq? system-type 'unix)
+          (set! splitter "/")
+          (set! splitter "\\\\"))
+
+      (transfer-data ftp-ports 'upload upload-file tcp-data (last (regexp-split (regexp splitter) filepath)) progress-proc))))
+
+;; download and upload's share part
+(define (transfer-data ftp-ports command from to filename [progress-proc #f])
+  (let ([inner-command ""])
+    (cond
+     [(eq? command 'upload)
+      (set! inner-command "STOR")]
+     [(eq? command 'download)
+      (set! inner-command "RETR")])
+        
+    (fprintf (ftp-connection-out ftp-ports) "~a ~a\r\n" inner-command filename))
+
+  (ftp-check-response (ftp-connection-in ftp-ports)
+                      (ftp-connection-out ftp-ports)
+                      (list #"125" #"150") void (void))
+
+  (let ([rcv-ch (make-channel)]
+        [ctrl-ch (make-channel)]
+        [bytes-tranferred 0])
+
+    (when (procedure? progress-proc)
+      (thread
+       (lambda ()
+         (progress-proc rcv-ch ctrl-ch)))
+
+      (thread
+       (lambda ()
+         (letrec ([loop
+                   (lambda ()
+                     (channel-put rcv-ch bytes-tranferred)
+                     (when (= 0 (channel-get ctrl-ch))
+                       (loop)))])
+           (loop)))))
+
+    (letrec ([loop
+              (lambda (read-from write-to)
+                (let ([bstr (read-bytes 40960 read-from)])
+                  (unless (eof-object? bstr)
+                    (set! bytes-tranferred (+ bytes-tranferred (write-bytes bstr write-to)))
+                    (loop read-from write-to))))])
+
+      (loop from to))
+    
+    (when (procedure? progress-proc)
+      ; stop receiver thread
+      (channel-put rcv-ch bytes-tranferred)
+      (channel-get ctrl-ch)
+      (channel-put rcv-ch -1)
+      
+      ; stop sender thread
+      (channel-get rcv-ch)
+      (channel-put ctrl-ch -1)))
+
+  (close-input-port from)
+  (close-output-port to)
+  (ftp-check-response (ftp-connection-in ftp-ports)
+                      (ftp-connection-out ftp-ports)
+                      #"226" void (void)))
+
+(define (ftp-delete-file ftp-ports filepath)
+  (fprintf (ftp-connection-out ftp-ports) "DELE ~a\r\n" filepath)
+  (ftp-check-response (ftp-connection-in ftp-ports)
+                      (ftp-connection-out ftp-ports)
+                      #"250" void (void)))
+
+(define (ftp-make-directory ftp-ports dirname)
+  (fprintf (ftp-connection-out ftp-ports) "MKD ~a\r\n" dirname)
+  (ftp-check-response (ftp-connection-in ftp-ports)
+                      (ftp-connection-out ftp-ports)
+                      #"257" void (void)))
+
+(define (ftp-delete-directory ftp-ports dirname)
+  (fprintf (ftp-connection-out ftp-ports) "RMD ~a\r\n" dirname)
+  (ftp-check-response (ftp-connection-in ftp-ports)
+                      (ftp-connection-out ftp-ports)
+                      #"250" void (void)))
+
+(define (ftp-rename-file ftp-ports origin dest)
+  (fprintf (ftp-connection-out ftp-ports) "RNFR ~a\r\n" origin)
+  (ftp-check-response (ftp-connection-in ftp-ports)
+                      (ftp-connection-out ftp-ports)
+                      #"350" void (void))
+  (fprintf (ftp-connection-out ftp-ports) "RNTO ~a\r\n" dest)
+  (ftp-check-response (ftp-connection-in ftp-ports)
+                      (ftp-connection-out ftp-ports)
+                      #"250" void (void)))
