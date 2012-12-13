@@ -144,7 +144,8 @@ For example, @racket[(Any -> String)] is a subtype of @racket[(Number
 
 @section{Polymorphism}
 
-Typed Racket offers abstraction over types as well as values.
+Typed Racket offers abstraction over types as well as values. This allows
+the definition of functions that use @deftech{parametric polymorphism}.
 
 @subsection{Polymorphic Data Structures}
 
@@ -253,6 +254,42 @@ typed/racket
 The new type constructor @racket[All] takes a list of type
 variables and a body type.  The type variables are allowed to
 appear free in the body of the @racket[All] form.
+
+@subsection{Lexically Scoped Type Variables}
+
+When the @racket[:] type annotation form includes type variables
+for @tech{parametric polymorphism},
+the type variables are @emph{lexically scoped}.
+In other words, the type variables are bound in the body of the
+definition that you annotate.
+
+For example, the following definition of @racket[_my-id] uses
+the type variable @racket[_a] to annotate the argument
+@racket[_x]:
+
+@racketblock[
+(: my-id (All (a) (a -> a)))
+(define my-id (lambda: ([x : a]) x))
+]
+
+Lexical scope also implies that type variables can be shadowed,
+such as in the following example:
+
+@racketblock[
+(: my-id (All (a) (a -> a)))
+(define my-id
+  (lambda: ([x : a])
+    (: helper (All (a) (a -> a)))
+    (define helper
+      (lambda: ([y : a]) y))
+    (helper x)))
+]
+
+The reference to @racket[_a] inside the inner @racket[lambda:]
+refers to the type variable in @racket[_helper]'s annotation.
+That @racket[_a] is @emph{not} the same as the @racket[_a]
+in the annotation of the outer @racket[lambda:] expression.
+
 
 @(close-eval the-eval)
 
