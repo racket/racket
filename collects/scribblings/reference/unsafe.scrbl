@@ -192,7 +192,7 @@ Unsafe variants of @racket[car], @racket[cdr], @racket[mcar],
 @racket[mcdr], @racket[set-mcar!], and @racket[set-mcdr!].}
 
 
-@defproc[(unsafe-cons [v any/c] [rest list?]) (and/c pair? list?)]{
+@defproc[(unsafe-cons-list [v any/c] [rest list?]) (and/c pair? list?)]{
 
 Unsafe variant of @racket[cons] that produces a pair that claims to be
 a list---without checking whether @racket[rest] is a list.}
