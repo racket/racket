@@ -3,6 +3,7 @@
           (except-in "utils.rkt" url)
           "struct-hierarchy.rkt" 
           (for-label scribble/manual-struct
+                     racket/serialize
                      file/convertible
                      setup/main-collects
                      scriblib/render-cond
@@ -1157,8 +1158,8 @@ or @racket[style] structure.}
 
 Returns @racket[#t] if @racket[v] is acceptable as a link
 @techlink{tag}, which is a list containing a symbol and either a
-string, a @racket[generated-tag] instance, or a list (of arbitrary
-values).}
+string, a @racket[generated-tag] instance, or a non-empty list
+of @racket[serializable?] values.}
 
 
 @defstruct[generated-tag ()]{

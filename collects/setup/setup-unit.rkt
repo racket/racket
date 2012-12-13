@@ -649,7 +649,13 @@
         (define fn (build-path p "info-domain" "compiled" "cache.rktd"))
         (when (file-exists? fn)
           (with-handlers ([exn:fail:filesystem? (warning-handler (void))])
-            (with-output-to-file fn void #:exists 'truncate/replace))))))
+            (with-output-to-file fn void #:exists 'truncate/replace))))
+      (setup-printf #f "deleting documentation databases")
+      (for ([d (in-list (list (find-doc-dir) (find-user-doc-dir)))])
+        (when d
+          (define f (build-path d "docindex.sqlite"))
+          (when (file-exists? f)
+            (delete-file f))))))
 
   (define (do-install-part part)
     (when (if (eq? part 'post) (call-post-install) (call-install))

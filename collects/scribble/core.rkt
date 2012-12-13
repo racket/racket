@@ -93,7 +93,8 @@
        (or (string? (cadr s))
            (generated-tag? (cadr s))
            (and (pair? (cadr s))
-                (list? (cadr s))))
+                (list? (cadr s))
+                (serializable? (cadr s))))
        (null? (cddr s))))
 
 (provide block?)

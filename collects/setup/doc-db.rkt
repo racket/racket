@@ -1,6 +1,7 @@
 #lang racket/base
 (require db
          racket/format
+         racket/serialize
          "main-doc.rkt")
 
 (provide doc-db-available?
@@ -89,10 +90,10 @@
    'doc-db-key->path
    db-file
    (lambda (db)
-     (define row (query-maybe-row db select-pathid-vq
-                                  (~s key)))
-     (define pathid (and row
-                         (vector-ref row 0)))
+     (define rows (query-rows db select-pathid-vq
+                              (->string key)))
+     (define pathid (and (pair? rows)
+                         (vector-ref (car rows) 0)))
      (and pathid
           (pathid->filename db pathid #f main-doc-relative-ok?)))))
 
@@ -106,7 +107,7 @@
      (prepare-tables db)
      (define pathid (filename->pathid db filename))
      (for ([p (in-list elems)])
-       (define stag (~s p))
+       (define stag (->string p))
        (callback db stag pathid)))))
 
 (define (clear who db-file filename statement)
@@ -161,9 +162,9 @@
        (query-exec db "INSERT INTO searchSets VALUES ($1, $2, $3)"
                    pathid
                    setid
-                   (~s sk))
+                   (->string sk))
        (for ([k (in-hash-keys s)])
-         (define stag (~s k))
+         (define stag (->string k))
          (query-exec db "INSERT INTO searches VALUES ($1, $2, $3)"
                      pathid
                      setid
@@ -226,9 +227,9 @@
                                 " WHERE stag=$1")
                          stag)
              null))
-       (cons (read (if (bytes? stag)
-                       (open-input-bytes stag)
-                       (open-input-string stag)))
+       (cons (<-string (if (bytes? stag)
+                           (open-input-bytes stag)
+                           (open-input-string stag)))
              (append
               (for/list ([pathid-row (in-list pathid-rows)])
                 (pathid->filename db (vector-ref pathid-row 0) #f main-doc-relative-ok?))
@@ -284,7 +285,7 @@
                           " GROUP BY SS.stag")
                    pathid))
      (map (lambda (s)
-            (read (open-input-string (vector-ref s 0))))
+            (<-string (open-input-string (vector-ref s 0))))
           (append
            rows
            more-rows)))))
@@ -342,7 +343,7 @@
                      [(equal? "y" (vector-ref row 0))
                       (main-doc-relative->path
                        (cons 'doc (or (hash-ref reader-cache bstr #f)
-                                      (let ([v (read (open-input-bytes bstr))])
+                                      (let ([v (<-string (open-input-bytes bstr))])
                                         (hash-set! reader-cache bstr v)
                                         v))))]
                      [(bytes? bstr)
@@ -370,7 +371,7 @@
   (define filename* (path->main-doc-relative filename))
   (define filename-bytes (cond
                           [(pair? filename*)
-                           (string->bytes/utf-8 (~s (cdr filename*)))]
+                           (string->bytes/utf-8 (->string (cdr filename*)))]
                           [(path? filename*)
                            (path->bytes filename*)]
                           [else (path->bytes (string->path filename*))]))
@@ -401,7 +402,7 @@
          (if (equal? "y" (vector-ref row 0))
              ((if main-doc-relative-ok? values main-doc-relative->path)
               (cons 'doc (or (hash-ref reader-cache path #f)
-                             (let ([v (read (open-input-bytes path))])
+                             (let ([v (<-string (open-input-bytes path))])
                                (hash-set! reader-cache path v)
                                v))))
              (bytes->path path)))))
@@ -494,3 +495,32 @@
     (call-with-lock-handler
      (lambda () (loop (doc-db-pause `(query ,who) pause)))
      thunk)))
+
+(define (readable? s)
+  (or (string? s)
+      (bytes? s)
+      (symbol? s)
+      (number? s)
+      (boolean? s)
+      (and (list? s) (andmap readable? s))
+      (and (vector? s) (for/and ([v (in-vector s)]) (readable? s)))))
+
+(define (->string v)
+  (if (and (not (box? v))
+           (readable? v))
+      (~s v)
+      (~s (box (serialize v)))))
+
+(define (<-string p)
+  (with-handlers ([exn:fail:read?
+                   (lambda (exn)
+                     (error 'read
+                            (~a "error unmarshaling from database\n"
+                                "  original error: ~e")
+                            (exn-message exn)))])
+    (define v (read p))
+    (if (box? v)
+        ;; A box indicates serialization:
+        (deserialize (unbox v))
+        ;; Normal value:
+        v)))
