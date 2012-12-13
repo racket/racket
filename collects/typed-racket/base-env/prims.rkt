@@ -340,8 +340,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(pdefine: (tvars:id ...) (nm:id . formals:annotated-formals) : ret-ty . body)
      (with-syntax ([type (syntax/loc #'ret-ty (All (tvars ...) (formals.arg-ty ... -> ret-ty)))])
        (syntax/loc stx
-         (define: nm : type
-           (plambda: (tvars ...) formals . body))))]))
+         (begin
+          (: nm : type)
+          (define (nm . formals.ann-formals) . body))))]))
 
 (define-syntax (ann stx)
   (syntax-parse stx #:literals (:)
@@ -372,8 +373,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(define: (tvars:id ...) (nm:id . formals:annotated-formals) : ret-ty body ...)
      (with-syntax ([type (syntax/loc #'ret-ty (All (tvars ...) (formals.arg-ty ... -> ret-ty)))])
        (syntax/loc stx
-         (define: nm : type
-           (plambda: (tvars ...) formals body ...))))]))
+         (begin
+          (: nm : type)
+          (define (nm . formals.ann-formals) body ...))))]))
 
 (define-syntax (lambda: stx)
   (syntax-parse stx
