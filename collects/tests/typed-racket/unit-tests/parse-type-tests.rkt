@@ -1,5 +1,5 @@
-#lang scheme/base
-(require "test-utils.rkt" (for-syntax scheme/base)
+#lang racket/base
+(require "test-utils.rkt" (for-syntax racket/base)
          (utils tc-utils)
          (env type-alias-env type-env-structs tvar-env type-name-env init-envs)
          (rep type-rep)
