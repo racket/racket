@@ -10,9 +10,9 @@
 
 [I am a hyperlink to Racket.](http://www.racket-lang.org/)
 
-Italic. \_Just underlines\_.
+_Italic_. \_Just underlines\_.
 
-Bold. \*Just asterisks.\*
+**Bold**. \*Just asterisks.\*
 
 “Dobule quoted”. ‘Single quoted’.
 
