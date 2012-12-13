@@ -324,7 +324,7 @@
        (cond
          ;; if it's a type variable, we just produce the corresponding reference (which is in the HT)
          [(bound-tvar? (syntax-e #'id))
-          (make-F (syntax-e #'id))]
+          (lookup-tvar (syntax-e #'id))]
          ;; if it was in current-indexes, produce a better error msg
          [(bound-index? (syntax-e #'id))
           (tc-error

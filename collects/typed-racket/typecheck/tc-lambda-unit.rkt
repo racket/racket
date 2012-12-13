@@ -291,16 +291,28 @@
       [(tc-result1: (and v (Values: _))) (maybe-loop form formals bodies (values->tc-results v #f))]
       [_ (int-err "expected not an appropriate tc-result: ~a" expected)]))
   (match expected
-    [(tc-result1: (and t (Poly-names: ns expected*)))
+    [(tc-result1: (and t (Poly-fresh: ns fresh-ns expected*)))
      (let* ([tvars (let ([p (plambda-prop form)])
                      (when (and (pair? p) (eq? '... (car (last p))))
                        (tc-error
                         "Expected a polymorphic function without ..., but given function had ..."))
-                     (or (and p (map syntax-e (syntax->list p)))
-                         ns))]
-            [ty (extend-tvars tvars
-                  (maybe-loop form formals bodies (ret expected*)))])
-       ;(printf "plambda: ~a ~a ~a \n" literal-tvars new-tvars ty)
+                     (and p (map syntax-e (syntax->list p))))])
+       ;; make sure the declared type variable arity matches up with the
+       ;; annotated type variable arity
+       (when tvars
+        (unless (= (length tvars) (length ns))
+          (tc-error "Expected ~a type variables, but given ~a"
+                    (length ns) (length tvars))))
+       ;; check the bodies appropriately
+       (if tvars
+           ;; make both annotated and given type variables point to the
+           ;; same actual type variables (the fresh names)
+           (extend-tvars/new ns fresh-ns
+            (extend-tvars/new tvars fresh-ns
+             (maybe-loop form formals bodies (ret expected*))))
+           ;; no plambda: type variables given
+           (extend-tvars/new ns fresh-ns
+            (maybe-loop form formals bodies (ret expected*))))
        t)]
     [(tc-result1: (and t (PolyDots-names: (list ns ... dvar) expected*)))
      (let-values
@@ -325,10 +337,13 @@
                        (tc/mono-lambda/type formals bodies #f)))])
           (make-PolyDots (append tvars (list dotted-var)) ty))]
        [tvars
-        (let* ([ty (extend-tvars tvars
+        (let* (;; manually make some fresh names since
+               ;; we don't use a match expander
+               [fresh-tvars (map gensym tvars)]
+               [ty (extend-tvars/new tvars fresh-tvars
                      (tc/mono-lambda/type formals bodies #f))])
           ;(printf "plambda: ~a ~a ~a \n" literal-tvars new-tvars ty)
-          (make-Poly tvars ty))])]
+          (make-Poly fresh-tvars ty #:original-names tvars))])]
     [(tc-result1: t)
      (check-below (tc/plambda form formals bodies #f) t)]
     [_ (int-err "not a good expected value: ~a" expected)]))

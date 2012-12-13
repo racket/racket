@@ -8,7 +8,8 @@
          (base-env base-types base-types-extra colon)
          (for-template (base-env base-types base-types-extra base-env colon))
          (private parse-type)
-         rackunit)
+         rackunit
+         racket/dict)
 
 (provide parse-type-tests)
 
@@ -109,7 +110,7 @@
 
    [(Listof Number) (make-Listof  N)]
 
-   [a (-v a) (cons 'a initial-tvar-env)]
+   [a (-v a) (dict-set initial-tvar-env 'a (-v a))]
    [(All (a ...) (a ... -> Number))
     (-polydots (a) ((list) [a a] . ->... . N))]
 
