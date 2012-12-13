@@ -132,9 +132,9 @@
               (tcp-abandon-port tcp-data-in)
               tcp-data-out))))))
 
-;; 230? is var. It always keep last line's action result. The lambda in this 
+;; 230? is var. It always keep last line's action result. The lambda in this
 ;; ftp-check-response means:
-;; "if one line's head is 230, then this ftp server do not 
+;; "if one line's head is 230, then this ftp server do not
 ;; need PASS command. "or 230? (rege..." means if 230? is true already
 ;; , then do not check the line anymore, it's just true.
 (define (ftp-establish-connection* in out username password)
@@ -197,7 +197,8 @@
     (define r `(,(car m) ,@(cddr m)))
     (if size `(,@r ,size) r)))
 
-(define (ftp-download-file ftp-ports folder filename [progress-proc #f])
+(define (ftp-download-file ftp-ports folder filename
+                           #:progress [progress-proc #f])
   ;; Save the file under the name tmp.file, rename it once download is
   ;; complete this assures we don't over write any existing file without
   ;; having a good file down
@@ -209,7 +210,8 @@
 
     (rename-file-or-directory tmpfile (build-path folder filename) #t)))
 
-(define (ftp-upload-file ftp-ports filepath [progress-proc #f])
+(define (ftp-upload-file ftp-ports filepath
+                         #:progress [progress-proc #f])
   (let ([upload-file (open-input-file filepath)]
         [tcp-data (establish-data-connection ftp-ports 'out)])
 
@@ -219,17 +221,19 @@
           (set! splitter "/")
           (set! splitter "\\\\"))
 
-      (transfer-data ftp-ports 'upload upload-file tcp-data (last (regexp-split (regexp splitter) filepath)) progress-proc))))
+      (transfer-data ftp-ports 'upload upload-file tcp-data
+                     (last (regexp-split (regexp splitter) filepath))
+                     progress-proc))))
 
 ;; download and upload's share part
-(define (transfer-data ftp-ports command from to filename [progress-proc #f])
+(define (transfer-data ftp-ports command from to filename progress-proc)
   (let ([inner-command ""])
     (cond
      [(eq? command 'upload)
       (set! inner-command "STOR")]
      [(eq? command 'download)
       (set! inner-command "RETR")])
-        
+
     (fprintf (ftp-connection-out ftp-ports) "~a ~a\r\n" inner-command filename))
 
   (ftp-check-response (ftp-connection-in ftp-ports)
@@ -238,40 +242,24 @@
 
   (let ([rcv-ch (make-channel)]
         [ctrl-ch (make-channel)]
-        [bytes-tranferred 0])
+        [transfer-pair (cons 0 (make-semaphore))])
 
-    (when (procedure? progress-proc)
-      (thread
-       (lambda ()
-         (progress-proc rcv-ch ctrl-ch)))
+    (when progress-proc
+      (progress-proc (lambda () 
+                       (define p transfer-pair)
+                       (values (car p) (semaphore-peek-evt (cdr p))))))
 
-      (thread
-       (lambda ()
-         (letrec ([loop
-                   (lambda ()
-                     (channel-put rcv-ch bytes-tranferred)
-                     (when (= 0 (channel-get ctrl-ch))
-                       (loop)))])
-           (loop)))))
-
-    (letrec ([loop
-              (lambda (read-from write-to)
-                (let ([bstr (read-bytes 40960 read-from)])
-                  (unless (eof-object? bstr)
-                    (set! bytes-tranferred (+ bytes-tranferred (write-bytes bstr write-to)))
-                    (loop read-from write-to))))])
-
-      (loop from to))
-    
-    (when (procedure? progress-proc)
-      ; stop receiver thread
-      (channel-put rcv-ch bytes-tranferred)
-      (channel-get ctrl-ch)
-      (channel-put rcv-ch -1)
-      
-      ; stop sender thread
-      (channel-get rcv-ch)
-      (channel-put ctrl-ch -1)))
+    (define bstr (make-bytes 40960))
+    (let loop ()
+      (let ([n (read-bytes! bstr from)])
+        (unless (eof-object? n)
+          (define sent (write-bytes bstr to 0 n))
+          (when progress-proc
+            (define old-pair transfer-pair)
+            (set! transfer-pair (cons (+ sent (car old-pair))
+                                      (make-semaphore)))
+            (semaphore-post (cdr old-pair)))
+          (loop)))))
 
   (close-input-port from)
   (close-output-port to)

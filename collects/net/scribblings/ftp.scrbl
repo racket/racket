@@ -79,7 +79,13 @@ this information can be unreliable.}
 @defproc[(ftp-download-file [ftp-conn ftp-connection?]
                             [local-dir path-string?]
                             [file string?]
-                            [progress-proc procedure? #f]) void?]{
+                            [#:progress progress-proc
+                                        (or/c #f 
+                                              (-> (-> (values exact-nonnegative-integer? 
+                                                              evt?)) 
+                                                  any)) 
+                                        #f]) 
+         void?]{
 
 Downloads @racket[file] from the server's current directory and puts
 it in @racket[local-dir] using the same name. If the file already
@@ -87,37 +93,43 @@ exists in the local directory, it is replaced, but only after the
 transfer succeeds (i.e., the file is first downloaded to a temporary
 file, then moved into place on success).
 
-@racket[progress-proc] is a @racket[(-> channel? channel? any?)], means @racket[(progress-proc receive-channel control-channel)].
-Inside the @racket[progress-proc], use @racket[(channel-get receive-channel)] to get bytes count has downloaded(uploaded).
-After @racket[(channel-get receive-channel)], use @racket[(channel-put control-channel 0)] to launch sender to get a new bytes count.
-
-@racket[-1] means "transfer completed" @racket[0] means "normal"
-
-Warning: Do something between get and put, not "refresh too fast", this will slow down the transfer speed.
-
-@racket[Example:]
+If @racket[progress-proc] is not @racket[#f], then it is called with a
+function @racket[_get-count] that returns two values: the number of bytes
+transferred so far, and an event that becomes ready when the
+transferred-bye count changes. The @racket[_get-count] function can be
+called in any thread and any number of times. The @racket[progress-proc] function should
+return immediately, perhaps starting a thread that periodically polls
+@racket[_get-count]. Do not poll too frequently, or else polling
+will slow the transfer; the second argument from @racket[_get-count]
+is intended to limit polling.
 
 @racketblock[
-(ftp-download-file 
-   ftp-conn "." "testfile"
-   (lambda (rcv-ch ctrl-ch)
-     (letrec ([loop
-       (lambda ()
-         (let ([data (channel-get rcv-ch)])
-           (unless (= data -1)
-             (channel-put ctrl-ch 0)
-             (printf "[~a] bytes has downloaded~%" data)
-             (loop))))])
-       (loop))))]
-}
+(ftp-download-file
+ ftp-conn "." "testfile"
+ (lambda (get-count)
+   (thread
+    (lambda ()
+      (let loop ()
+        (define-values (count changed-evt) (get-count))
+        (printf "~a bytes downloaded\n" count)
+        (sync changed-evt)
+        (loop))))))
+]}
 
 @defproc[(ftp-upload-file [ftp-conn ftp-connection?]
                           [file-path path-string?]
-                          [progress-proc procedure? #f]) void?]{
+                          [#:progress progress-proc
+                                      (or/c #f 
+                                            (-> (-> (values exact-nonnegative-integer? 
+                                                            evt?)) 
+                                                any)) 
+                                      #f])
+         void?]{
 
 Upload @racket[file-path] to the server's current directory using the same name. 
 If the file already exists in the local directory, it is replaced.
-@racket[progress-proc] usage is same as @racket[ftp-download-file].}
+The @racket[progress-proc] argument is used in the same way as in @racket[ftp-download-file],
+but to report uploaded bytes instead of downloaded bytes.}
 
 @defproc[(ftp-delete-file [ftp-conn ftp-connection?]
                           [file-path path-string?]) void?]{

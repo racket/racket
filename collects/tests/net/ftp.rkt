@@ -22,6 +22,15 @@
   (define-values [thd port] (tcp-serve dest text))
   (values thd (port->splitstr port)))
 
+(define ((progress-proc dir) get-count)
+  (thread
+   (lambda ()
+     (let loop ()
+       (define-values (count changed-evt) (get-count))
+       (printf "~a bytes ~aloaded\n" count dir)
+       (sync changed-evt)
+       (loop)))))
+
 (provide tests)
 (module+ main (tests))
 (define (tests)
@@ -46,8 +55,8 @@
                 (for ([f (in-list (ftp-directory-list conn))])
                   (match-define (list* type ftp-date name ?size) f)
                   (test (ftp-make-file-seconds ftp-date)))
-                (ftp-download-file conn tmp-dir pth)
-                (ftp-upload-file conn (path->string (build-path tmp-dir pth)))
+                (ftp-download-file conn tmp-dir pth #:progress (progress-proc "down"))
+                (ftp-upload-file conn (path->string (build-path tmp-dir pth)) #:progress (progress-proc "up"))
                 (ftp-delete-file conn "3dldf/test.file")
                 (ftp-make-directory conn "test")
                 (ftp-delete-directory conn "test")
