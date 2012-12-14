@@ -87,6 +87,7 @@ Keep documentation and tests up to date.
 @include-section["future.scrbl"]
 @include-section["function.scrbl"]
 @include-section["hash.scrbl"]
+@include-section["inline.scrbl"]
 @include-section["class-iop.scrbl"] ;; Interface-oriented Programming
 @include-section["lazy-require.scrbl"]
 @include-section["list.scrbl"]
