@@ -4074,13 +4074,23 @@ void scheme_cancel_sleep()
 }
 
 void scheme_check_threads(void)
-/* Signals should be suspended. */
 {
-  scheme_current_thread->suspend_break++;
-  scheme_thread_block((float)0);
-  --scheme_current_thread->suspend_break;
+  double start, now;
 
-  check_sleep(have_activity, 0);
+  start = scheme_get_inexact_milliseconds();
+  
+  while (1) {
+    scheme_current_thread->suspend_break++;
+    scheme_thread_block((float)0);
+    --scheme_current_thread->suspend_break;
+    
+    if (check_sleep(have_activity, 0))
+      break;
+
+    now = scheme_get_inexact_milliseconds();
+    if (((now - start) * 1000) > MZ_THREAD_QUANTUM_USEC)
+      break;
+  }
 }
 
 void scheme_wake_up(void)

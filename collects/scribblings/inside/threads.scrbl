@@ -553,8 +553,11 @@ it wakes up if the Racket thread if it is sleeping.}
 @function[(void scheme_check_threads)]{
 
 This function is periodically called by the embedding program to give
-background processes time to execute.  See @secref["threadtime"]
-for more information.}
+background processes time to execute. See @secref["threadtime"]
+for more information.
+
+As long as some threads are ready, this functions returns only after
+one thread quantum, at least.}
 
 @function[(void scheme_wake_up)]{
 
