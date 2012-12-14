@@ -2278,13 +2278,19 @@ local_get_shadower(int argc, Scheme_Object *argv[])
   uid = scheme_find_local_shadower(sym, sym_marks, env);
 
   if (!uid) {
-    /* No lexical shadower, but strip module context, if any */
-    sym = scheme_stx_strip_module_context(sym);
-    /* Add current module context, if any */
-    sym = local_module_introduce(1, &sym);
+    uid = scheme_tl_id_sym(env->genv, sym, NULL, 0, 
+                           scheme_make_integer(env->genv->phase), NULL);
+    if (!SAME_OBJ(uid, SCHEME_STX_VAL(sym))) {
+      /* has a toplevel biding via marks or context; keep it */
+    } else {
+      /* No lexical shadower, but strip module context, if any */
+      sym = scheme_stx_strip_module_context(sym);
+      /* Add current module context, if any */
+      sym = local_module_introduce(1, &sym);
 
-    if (!scheme_stx_is_clean(orig_sym))
-      sym = scheme_stx_taint(sym);
+      if (!scheme_stx_is_clean(orig_sym))
+        sym = scheme_stx_taint(sym);
+    }
 
     return sym;
   }
