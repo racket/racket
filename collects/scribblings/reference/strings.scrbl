@@ -101,7 +101,14 @@ Returns an immutable string with the same content as
 
 
 @defproc[(string-copy [str string?]) string?]{ Returns
- @racket[(substring str 0)].}
+ @racket[(substring str 0)].
+@examples[(define s1 "Yui")
+          (define pilot (string-copy s1))
+          (list s1 pilot)
+          (for ([i (in-naturals)] [ch '(#\R #\e #\i)])
+            (string-set! pilot i ch))
+          (list s1 pilot)]
+}
 
 
 @defproc[(string-copy! [dest (and/c string? (not/c immutable?))]
