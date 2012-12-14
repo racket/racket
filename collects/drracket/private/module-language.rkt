@@ -4,19 +4,17 @@
 (require racket/unit
          racket/class
          racket/list
-         racket/path
          racket/contract
          racket/sandbox
          racket/runtime-path
          racket/math
+         racket/match
          racket/gui/base
          compiler/embed
          compiler/cm
          launcher
          framework
          string-constants
-         planet/config
-         setup/dirs
          racket/place
          mrlib/close-icon
          mrlib/name-message
@@ -26,8 +24,24 @@
          "eval-helpers.rkt"
          "local-member-names.rkt"
          "rectangle-intersect.rkt"
-         
          framework/private/logging-timer)
+
+#|
+;; this code tracks which lines have been executed 
+;; for use while (manually) testing the oc state machine
+(require (for-syntax racket/base) racket/set)
+(define candidate-lines (set))
+(define touched-lines (set))
+(define-syntax (line-of-interest stx)
+  (with-syntax ([line (syntax-line stx)])
+    (syntax-local-lift-expression #'(set! candidate-lines (set-add candidate-lines line)))
+    #'(visited line)))
+(define (visited line)
+  (unless (set-member? touched-lines line)
+    (set! touched-lines (set-add touched-lines line))
+    (printf "~s\n" (sort (set->list (set-subtract candidate-lines touched-lines)) >))))
+|#
+(define-syntax-rule (line-of-interest) (void))
 
 (define-runtime-path expanding-place.rkt "expanding-place.rkt")
 
@@ -119,7 +133,8 @@
       
       (define/override (first-opened settings)
         (define ns (with-handlers ((exn:fail? (lambda (x) 
-                                                (log-error (format "DrRacket:module-language.rkt:first-opened exn: ~a" (exn-message x)))
+                                                (log-error (format "DrRacket:module-language.rkt:first-opened exn: ~a" 
+                                                                   (exn-message x)))
                                                 (for ([x (in-list (continuation-mark-set->context
                                                                    (exn-continuation-marks x)))])
                                                   (log-error (format "  ~s" x)))
@@ -524,7 +539,10 @@
     ;; raise the exception as normal.  (It can happen in some rare cases like
     ;; having a single empty scheme box in the definitions.)
     (unless rep (if exn (raise exn) (error "\nInteractions disabled")))
-    (when prefix (eprintf "Module Language: ~a\n" prefix))
+    (when prefix 
+      (display "Module Language: " (current-error-port))
+      (display prefix (current-error-port))
+      (display "\n" (current-error-port)))
     (when exn ((error-display-handler) (exn-message exn) exn))
     ;; these are needed, otherwise the warning can appear before the output
     (flush-output (current-output-port))
@@ -864,61 +882,442 @@
         [else #f])))
   
   (define-local-member-name
-    show-bkg-running
     frame-show-bkg-running
-    restart-place
     set-expand-error/status
     update-frame-expand-error
     expand-error-next
     expand-error-prev
-    hide-module-language-error-panel)
+    hide-module-language-error-panel
+    fetch-data-to-send
+    clear-old-error
+    set-bottom-bar-status
+    
+    get-oc-status
+    set-oc-status)
+  
+  (define online-expansion-logger (make-logger 'online-expansion-state-machine (current-logger)))
+  (define-syntax-rule
+    (define/oc-log (id . args) . body)
+    (define (id . args)
+      (log-oel 'id (list . args))
+      (begin0 (let () . body)
+              (log-oel 'id #f))))
+  
+  (define-syntax-rule
+    (log-oel id args)
+    (when (log-level? online-expansion-logger 'info)
+      (log-oel/proc id args)))
+  
+  (define (log-oel/proc id args)
+    (define-values (running-tab dirty/pending-tab dirty-tabs clean-tabs) (get-current-oc-state))
+    (define (val->str t)
+      (cond
+        [(is-a? t drracket:unit:tab<%>)
+         (define fn (send (send t get-defs) get-filename))
+         (if fn
+             (let-values ([(base name path?) (split-path fn)])
+               (path->string name))
+             "untitled")]
+        [(vector? t) (format "~s" (vector (vector-ref t 0) '...))]
+        [(not t) "#f"]
+        [else "?"]))
+    (log-message online-expansion-logger
+                 'info
+                 (format "~a: ~a\n     running ~a dirty/pending ~a dirty-tabs ~a clean-tabs ~a" 
+                         id
+                         (if args
+                             (map val->str args)
+                             (if oc-timer-running?
+                                 "return: timer running"
+                                 "return: timer stopped"))
+                         (val->str running-tab)
+                         (val->str dirty/pending-tab)
+                         (map val->str dirty-tabs)
+                         (map val->str clean-tabs))
+                 (current-continuation-marks))
+    (unless args
+      ;; the invariant is not always true when the call is made
+      ;; but it should be true when the call returns
+      (oc-check-invariant id)))
   
   (define module-language-online-expand-tab-mixin
     (mixin (drracket:unit:tab<%>) ()
-      (inherit get-frame)
-      (define bkg-label "")
+      (inherit get-frame get-defs get-ints)
+      
+      (define/augment (on-close) 
+        (oc-remove-tab this)
+        (inner (void) on-close))
+      
+      ;; (or/c clean? dirty? running?)
+      (define running-status (clean #f #f '()))
+      (define our-turn? #f)
+      
+      (define/public (set-oc-status s) 
+        (unless (equal? running-status s)
+          (set! running-status s)
+          (update-gui)))
+      (define/public (get-oc-status) running-status)
+      
+      (define/private (update-gui)
+        (update-little-dot)
+        (update-bottom-bar)
+        (update-error-in-defs))
+      
+      (define/private (update-error-in-defs)
+        (send (get-defs) begin-edit-sequence #f #f)
+        (send (get-defs) clear-old-error)
+        (when (clean? running-status)
+          (match-define (clean error-type error-message error-locs) running-status)
+          (when error-message
+            (define pref-key
+              (case error-type
+                [(exn access-violation abnormal-termination) 'drracket:online-expansion:other-errors]
+                [(exn:variable) 'drracket:online-expansion:variable-errors]
+                [(reader-in-defs-error) 'drracket:online-expansion:read-in-defs-errors]
+                [else (error 'module-language.rkt "unknown clean status: ~s" running-status)]))
+            (case (preferences:get pref-key)
+              [(margin) 
+               (send (get-defs) set-margin-error-ranges
+                     (for/list ([range (in-list error-locs)])
+                       (define pos (vector-ref range 0))
+                       (define span (vector-ref range 1))
+                       (error-range (- pos 1) (+ pos span -1) #f)))]
+              [(gold) 
+               (send (get-defs) set-gold-highlighted-errors error-locs)])
+            (send (get-ints) set-error-ranges 
+                  (for/list ([range (in-list error-locs)])
+                    (define pos (vector-ref range 0))
+                    (define span (vector-ref range 1))
+                    (srcloc (get-defs) #f #f pos span)))))
+        (send (get-defs) end-edit-sequence))
+      
+      (define/private (update-bottom-bar)
+        (cond
+          [(running? running-status)
+           (set-bottom-bar-status/pending)]
+          [(and (dirty? running-status) our-turn?)
+           (set-bottom-bar-status/pending)]
+          [(and (dirty? running-status) (not our-turn?))
+           (send (get-defs) set-bottom-bar-status "" '() #f #f)]
+          [(clean? running-status)
+           (if (clean-error-message running-status)
+               (send (get-defs) set-bottom-bar-status 
+                     (clean-error-message running-status)
+                     (clean-error-locs running-status)
+                     #t #t)
+               (send (get-defs) set-bottom-bar-status
+                     (string-constant online-expansion-finished) 
+                     '() 
+                     #f
+                     #f))]))
+      
+      (define/private (set-bottom-bar-status/pending)
+        (send (get-defs) set-bottom-bar-status
+              (string-constant online-expansion-pending) 
+              '() 
+              #f
+              #f))
+      
+      (define/public (update-little-dot)
+        (when (eq? this (send (get-frame) get-current-tab))
+          (send (get-frame) frame-show-bkg-running (get-colors) (get-label))))
+      
+      (define/private (get-colors)
+        (cond
+          [(running? running-status)
+           (case (running-sym running-status)
+             [(running) (list "blue")]
+             [(finished-expansion) (list "purple")])]
+          [(dirty? running-status)
+           (if (null? bkg-colors)
+               #f
+               (map (λ (x) (list-ref x 1)) bkg-colors))]
+          [(clean? running-status)
+           (if (clean-error-message running-status)
+               (list "red")
+               (if (null? bkg-colors)
+                   (list "forestgreen")
+                   (map (λ (x) (list-ref x 1)) bkg-colors)))]))
+      
+      (define/private (get-label)
+        (cond
+          [(running? running-status)
+           (list (running-str running-status))]
+          [(dirty? running-status)
+           (if (null? bkg-colors)
+               #f
+               (map (λ (x) (list-ref x 2)) bkg-colors))]
+          [(clean? running-status)
+           (if (clean-error-message running-status)
+               (list (clean-error-message running-status))
+               (list sc-finished-successfully))]))
+
       (define bkg-colors '())
-      (define bkg-state 'nothing)
-     
+      
       (define/public (add-bkg-running-color id color label)
         (set! bkg-colors
               (sort
                (cons (list id color label) bkg-colors)
-               string<=? #:key (compose symbol->string car))))
+               string<=? #:key (compose symbol->string car)))
+        (update-little-dot))
       
       (define/public (remove-bkg-running-color id)
         (set! bkg-colors (filter (λ (x) (not (eq? (car x) id))) bkg-colors))
-        (send (get-frame) frame-show-bkg-running (get-colors) (get-label)))
+        (update-little-dot))
       
-      (define/public (get-bkg-running)
-        (values (get-colors) (get-label)))
+      (super-new)))
+  
+  (define module-language-online-expand-text-mixin 
+    (mixin (text:basic<%> 
+            drracket:unit:definitions-text<%>
+            drracket:module-language-tools:definitions-text<%>) ()
+      (inherit last-position find-first-snip get-top-level-window get-filename
+               get-tab get-canvas invalidate-bitmap-cache 
+               set-position get-start-position get-end-position
+               highlight-range dc-location-to-editor-location
+               begin-edit-sequence end-edit-sequence)
       
-      (define/public (show-bkg-running state label)
-        (set! bkg-state state)
-        (set! bkg-label label)
-        (send (get-frame) frame-show-bkg-running (get-colors) (get-label)))
       
-      (define/private (get-colors)
-        (case bkg-state
-          [(reader-in-defs-error) 'parens]
-          [(running) (list "blue")]
-          [(finished-expansion) (list "purple")]
-          [(completed-successfully)
-           (if (null? bkg-colors)
-               (list "forestgreen")
-               (map (λ (x) (list-ref x 1)) bkg-colors))]
-          [(nothing) (if (null? bkg-colors)
-                         #f
-                         (map (λ (x) (list-ref x 1)) bkg-colors))]
-          [(failed) (list "red")]
-          [else (error 'show-bkg-running "unknown state ~s\n" bkg-state)]))
+      (define/public (fetch-data-to-send)
+        (define str (make-string (last-position) #\space))
+        (let/ec k
+          (let loop ([s (find-first-snip)]
+                     [i 0])
+            (cond
+              [(not s) (void)]
+              [(is-a? s string-snip%)
+               (define size (send s get-count))
+               (send s get-text! str 0 size i)
+               (loop (send s next) (+ i size))]
+              [else
+               (k #f i)]))
+          (define fn (let* ([b (box #f)]
+                            [n (get-filename b)])
+                       (and (not (unbox b))
+                            n)))
+          (values str fn)))
       
-      (define/private (get-label)
-        (if (eq? bkg-state 'nothing)
-            (if (null? bkg-colors)
-                #f
-                (map (λ (x) (list-ref x 2)) bkg-colors))
-            (list bkg-label)))
+      ;; the state of the bottom bar (when this definitions text is
+      ;; in the current tab)
+      ; if the bar is hidden entirely 
+      (define error/status-message-hidden? #t) 
+      ; the string message in the bar
+      (define error/status-message-str "")
+      ; if the string should be red/italic or just normal font
+      (define error/status-message-err? #f)
+      ; the srclocs (controls the "jump to error" / next prev buttons)
+      (define error-message-srclocs '())
+      
+      (define/public (set-bottom-bar-status new-error/status-message-str srclocs message-err? force-visible?)
+        (when (or (not (and (equal? error/status-message-str new-error/status-message-str)
+                            (equal? error-message-srclocs srclocs)
+                            (equal? error/status-message-err? message-err?)))
+                  (and force-visible?
+                       error/status-message-hidden?))
+          (set! error/status-message-str new-error/status-message-str)
+          (set! error-message-srclocs srclocs)
+          (set! error/status-message-err? message-err?)
+          (when force-visible? 
+            (set! error/status-message-hidden? #f))
+          (update-frame-expand-error)))
+      (define/public (update-frame-expand-error)
+        (when (eq? (get-tab) (send (send (get-tab) get-frame) get-current-tab))
+          (send (send (get-tab) get-frame) set-expand-error/status
+                error/status-message-hidden?
+                error/status-message-str 
+                error/status-message-err?
+                (length error-message-srclocs))))
+      (define/public (hide-module-language-error-panel)
+        (set! error/status-message-hidden? #t)
+        (update-frame-expand-error))
+
+      (define/public (expand-error-next) 
+        (define candidates (filter (λ (error-message-srcloc) 
+                                     (> (- (vector-ref error-message-srcloc 0) 1) 
+                                        (get-end-position)))
+                                   error-message-srclocs))
+        (cond
+          [(null? candidates)
+           (unless (null? error-message-srclocs)
+             (jump-to (car error-message-srclocs)))]
+          [else
+           (jump-to (car candidates))]))
+      
+      (define/public (expand-error-prev) 
+        (define candidates (filter (λ (error-message-srcloc) 
+                                     (< (+ (vector-ref error-message-srcloc 0)
+                                           (vector-ref error-message-srcloc 1)
+                                           -1)
+                                        (get-start-position)))
+                                   error-message-srclocs))
+        (cond
+          [(null? candidates)
+           (unless (null? error-message-srclocs)
+             (jump-to (last error-message-srclocs)))]
+          [else
+           (jump-to (last candidates))]))
+      
+      (define/private (jump-to vec)
+        (set-position (- (vector-ref vec 0) 1))
+        (define cnvs (get-canvas))
+        (when cnvs (send cnvs focus)))
+      
+
+      (define online-error-ranges '())
+      (define online-highlighted-errors '())
+      
+      (define/public (set-gold-highlighted-errors ranges)
+        (set! online-highlighted-errors 
+              (for/list ([range (in-list ranges)]) 
+                (define pos (vector-ref range 0))
+                (define span (vector-ref range 1))
+                (highlight-range (- pos 1) (+ pos span -1) "gold"))))
+      
+      (define/public (set-margin-error-ranges rngs)
+        (unless (equal? online-error-ranges rngs)
+          (invalidate-online-error-ranges)
+          (set! online-error-ranges rngs)
+          (invalidate-online-error-ranges)))
+      
+      (define/public (clear-old-error)
+        (begin-edit-sequence #f #f)
+        (for ([cleanup-thunk (in-list online-highlighted-errors)])
+          (cleanup-thunk))
+        (for ([an-error-range (in-list online-error-ranges)])
+          (when (error-range-clear-highlight an-error-range)
+            ((error-range-clear-highlight an-error-range))
+            (set-error-range-clear-highlight! an-error-range #f)))
+        (invalidate-online-error-ranges)
+        (set-margin-error-ranges '())        
+        (end-edit-sequence))
+      
+      (define/private (invalidate-online-error-ranges)
+        (when (get-admin)
+          ;; invalidate-online-error-ranges can be called at strange times
+          ;; because it is invoked via a queue-callback thunk; specifically
+          ;; the tab may have changed in drracket, which means that there is
+          ;; no admin and thus there is no reason to invalidate any drawing
+          (for ([an-error-range (in-list online-error-ranges)])
+            (define-values (x y w h) (get-box an-error-range))
+            (invalidate-bitmap-cache x y 'display-end h))))
+      
+      (define byt (box 0.0))
+      (define byb (box 0.0))
+      (define vbx (box 0.0))
+      (define vby (box 0.0))
+      (define vbw (box 0.0))
+      (define vbh (box 0.0))
+    
+      (inherit position-location get-admin)
+      
+      (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
+        (super on-paint before? dc left top right bottom dx dy draw-caret)
+        (unless before?
+          (define saved-brush (send dc get-brush))
+          (define saved-pen (send dc get-pen))
+          (define smoothing (send dc get-smoothing))
+          (send dc set-smoothing 'smoothed)
+          
+          (send dc set-brush "red" 'solid)
+          (send dc set-pen (send the-pen-list find-or-create-pen "red" 1 'transparent))
+          (send dc set-alpha 
+                (if (preferences:get 'framework:white-on-black?)
+                    .5
+                    .25))
+          (define path (new dc-path%))
+            
+          (for ([an-error-range (in-list online-error-ranges)])
+            (define-values (x y w h) (get-box an-error-range))
+            
+            (send path move-to (+ dx x) (+ dy y))
+            (send path line-to (+ dx x w) (+ dy y))
+            (send path line-to (+ dx x w) (+ dy y h))
+            (send path arc (+ dx x) (+ dy y) (* w 2/3) h (* pi 3/2) (* pi 1/2))
+            (send path close))
+          
+          (send dc draw-path path)
+          (send dc set-alpha 1)
+          (send dc set-brush saved-brush)
+          (send dc set-pen saved-pen)
+          (send dc set-smoothing smoothing)))
+      
+      (define/override (on-event evt)
+        (define-values (mx my) 
+          (dc-location-to-editor-location 
+           (send evt get-x)
+           (send evt get-y)))
+        (cond
+          [(or (send evt moving?)
+               (send evt entering?))
+           (for ([an-error-range (in-list online-error-ranges)])
+             (define-values (x y w h) (get-box an-error-range))
+             (cond
+               [(and (<= x mx (+ x w))
+                     (<= y my (+ y h)))
+                (unless (error-range-clear-highlight an-error-range)
+                  (set-error-range-clear-highlight! 
+                   an-error-range
+                   (highlight-range (error-range-start an-error-range)
+                                    (error-range-end an-error-range)
+                                    "pink")))]
+               [else
+                (when (error-range-clear-highlight an-error-range)
+                  ((error-range-clear-highlight an-error-range))
+                  (set-error-range-clear-highlight! an-error-range #f))]))
+           (super on-event evt)]
+          [(send evt leaving?)
+           (for ([an-error-range (in-list online-error-ranges)])
+             (when (error-range-clear-highlight an-error-range)
+               ((error-range-clear-highlight an-error-range))
+               (set-error-range-clear-highlight! an-error-range #f)))
+           (super on-event evt)]
+          [(send evt button-down? 'left)
+           (define used-click? #f)
+           (for ([an-error-range (in-list online-error-ranges)])
+             (define-values (x y w h) (get-box an-error-range))
+             (when (and (<= x mx (+ x w))
+                        (<= y my (+ y h)))
+               (set! used-click? #t)
+               (set-position (error-range-start an-error-range))))
+           (unless used-click?
+             (super on-event evt))]
+          [else
+           (super on-event evt)]))
+      
+      ;; pre: get-admin does not return #f
+      (define/private (get-box an-error-range)
+        (define start-pos (error-range-start an-error-range))
+        (define end-pos (error-range-end an-error-range))
+        (position-location start-pos #f byt)
+        (position-location end-pos #f byb #f)
+        (send (get-admin) get-view vbx vby vbw vbh)
+        
+        (define x (+ (unbox vbx)
+                     (unbox vbw)
+                     (- online-compilation-error-pen-width)
+                     (- online-compilation-error-pen-width)))
+        (define y (unbox byt))
+        (define w (* online-compilation-error-pen-width 2))
+        (define h (- (unbox byb) (unbox byt)))
+        
+        (values x y w h))
+        
+      (define/augment (after-insert start end) 
+        (oc-set-dirty (get-tab))
+        (inner (void) after-insert start end))
+      
+      (define/augment (after-delete start end) 
+        (oc-set-dirty (get-tab))
+        (inner (void) after-delete start end))
+      
+      (define/augment (after-load-file success?)
+        (when success? 
+          (oc-set-dirty (get-tab)))
+        (inner (void) after-load-file success?))
+      
+      (define/augment (after-set-next-settings new-settings)
+        (oc-language-change (get-tab))
+        (inner (void) after-set-next-settings new-settings))
       
       (super-new)))
   
@@ -934,7 +1333,7 @@
       (define expand-error-multiple-child #f)
       (define expand-error-zero-child #f)
       
-      ;; colors : (or/c #f (listof string?) 'parens)
+      ;; colors : (or/c #f (listof string?))
       (define colors #f)
       (define tooltip-labels #f)
       (define/public (get-online-expansion-colors) colors)
@@ -956,7 +1355,7 @@
                                         [msg "hi"]
                                         [err? #f]))
         (set! expand-error-button-parent-panel
-              (new panel:single% 
+              (new horizontal-panel%
                    [stretchable-width #f]
                    [stretchable-height #f]
                    [parent expand-error-panel]))
@@ -987,19 +1386,37 @@
         (new close-icon% 
              [parent expand-error-panel]
              [callback (λ () (send (send (get-current-tab) get-defs) hide-module-language-error-panel))])
+        
+        ;; this canvas makes sure that the expand-error-panel always has the same height,
+        ;; even when the contents of expand-error-button-parent-panel change. At this
+        ;; point in the construction of the frame, everything is in there so we can
+        ;; see how tall that is and then the spacer will insist it stays that high.
+        (send expand-error-panel reflow-container)
+        (define the-height (send expand-error-panel get-height))
+        (define spacer-canvas (new (class panel%
+                                     (define/override (container-size info)
+                                       (values 0 the-height))
+                                     (super-new 
+                                      [stretchable-width #f]
+                                      [stretchable-height #f]
+                                      [parent expand-error-panel]))))
+        
         (send expand-error-parent-panel change-children (λ (l) (remq expand-error-panel l)))
         root)
       
       (define expand-error-msg #f)
+      (define expand-error-msg-is-err? #f)
       (define expand-error-srcloc-count 0)
       (define expand-error-hidden? #f)
       
       (define/public (set-expand-error/status hidden? msg err? srcloc-count)
         (unless (and (equal? expand-error-hidden? hidden?)
                      (equal? expand-error-msg msg)
+                     (equal? expand-error-msg-is-err? err?)
                      (equal? expand-error-srcloc-count srcloc-count))
           (set! expand-error-hidden? hidden?)
           (set! expand-error-msg msg)
+          (set! expand-error-msg-is-err? err?)
           (set! expand-error-srcloc-count srcloc-count)
           (when expand-error-message
             (send expand-error-parent-panel change-children
@@ -1010,26 +1427,23 @@
                              (if (memq expand-error-panel l)
                                  l
                                  (append l (list expand-error-panel))))))
-            (send expand-error-message set-msg expand-error-msg err?)
-            (cond
-              [err?
-               (send expand-error-button-parent-panel active-child
-                     (cond
-                       [(= srcloc-count 0) expand-error-zero-child]
-                       [(= srcloc-count 1) expand-error-single-child]
-                       [else expand-error-multiple-child]))]
-              [else
-               (send expand-error-button-parent-panel active-child expand-error-zero-child)]))))
+            (send expand-error-message set-msg expand-error-msg expand-error-msg-is-err?)
+            (send expand-error-button-parent-panel change-children
+                  (λ (l)
+                    (list (cond
+                            [(not err?) expand-error-zero-child]
+                            [(= srcloc-count 0) expand-error-zero-child]
+                            [(= srcloc-count 1) expand-error-single-child]
+                            [else expand-error-multiple-child])))))))
       
       (define/augment (on-tab-change from-tab to-tab)
-        (send (send to-tab get-defs) restart-place)
+        (oc-new-active)
         (send (send to-tab get-defs) update-frame-expand-error)
+        (send to-tab update-little-dot)
         (inner (void) on-tab-change from-tab to-tab))
 
       (define/override (on-activate active?)
-        (define defs (send (get-current-tab) get-defs))
-        (when active? 
-          (send defs restart-place))
+        (oc-new-active)
         (super on-activate active?))
       
       (define/public (frame-show-bkg-running new-colors labels)
@@ -1105,24 +1519,19 @@
                        (send dc set-font parens-mismatch-font)
                        (define-values (tw th td ta) (send dc get-text-extent parens-mismatch-str))
                        (define-values (cw ch) (get-client-size))
-                       (cond
-                         [(list? colors-to-draw)
-                          (define len (length colors-to-draw))
-                          (for ([color (in-list colors-to-draw)]
-                                [i (in-naturals)])
-                            (if color
-                                (send dc set-brush color 'solid)
-                                (send dc set-brush "black" 'transparent))
-                            (send dc draw-arc 
-                                  (- (/ cw 2) (/ ball-size 2))
-                                  (- (/ ch 2) (/ ball-size 2))
-                                  ball-size ball-size
-                                  (+ (* pi 1/2) (* 2 pi (/ i len)))
-                                  (+ (* pi 1/2) (* 2 pi (/ (+ i 1) len)))))]
-                         [(eq? colors-to-draw 'parens)
-                          (send dc draw-text parens-mismatch-str 
-                                (- (/ cw 2) (/ tw 2))
-                                (- (/ ch 2) (/ th 2)))]))))
+                       (when (list? colors-to-draw)
+                         (define len (length colors-to-draw))
+                         (for ([color (in-list colors-to-draw)]
+                               [i (in-naturals)])
+                           (if color
+                               (send dc set-brush color 'solid)
+                               (send dc set-brush "black" 'transparent))
+                           (send dc draw-arc 
+                                 (- (/ cw 2) (/ ball-size 2))
+                                 (- (/ ch 2) (/ ball-size 2))
+                                 ball-size ball-size
+                                 (+ (* pi 1/2) (* 2 pi (/ i len)))
+                                 (+ (* pi 1/2) (* 2 pi (/ (+ i 1) len)))))))))
                  (define cb-proc (λ (sym new-val)
                                    (set! colors #f)
                                    (refresh)))
@@ -1245,6 +1654,290 @@
           (send dc draw-text label 2 (+ 2 (* i th)))))
       (super-new [stretchable-width #f] [stretchable-height #f])))
 
+  
+  ;; the online compilation state for individual tabs
+  ;; oc-state is either:
+  ;;   (clean symbol? string? (listof (vector number? number?)))
+  ;;   (dirty boolean?)
+  ;;   (running symbol? string?)
+  (struct clean (error-type error-message error-locs) #:transparent)
+  (struct dirty (timer-pending?) #:transparent)
+  (struct running (sym str) #:transparent)
+  
+  ;; get-current-oc-state : -> (or/c tab #f) (or/c tab #f) (listof tab) (listof tab)
+  ;; the tabs in the results are only those that are in the module language
+  (define (get-current-oc-state)
+    (define running-tab #f)
+    (define dirty/pending-tab #f)
+    (define dirty-tabs '())
+    (define clean-tabs '())
+    (for ([frame (in-list (send (group:get-the-frame-group) get-frames))])
+      (when (is-a? frame drracket:unit:frame<%>)
+        (for ([tab (in-list (send frame get-tabs))])
+          (define ts (send tab get-oc-status))
+          (when (tab-in-module-language tab)
+            (cond
+              [(dirty? ts)
+               (cond
+                 [(dirty-timer-pending? ts)
+                  (when dirty/pending-tab (error 'get-current-oc-state "found multiple dirty/pending tabs"))
+                  (set! dirty/pending-tab tab)]
+                 [else
+                  (set! dirty-tabs (cons tab dirty-tabs))])]
+              [(running? ts)
+               (when running-tab (error 'get-current-oc-state "found multiple running tabs"))
+               (set! running-tab tab)]
+              [(clean? ts)
+               (set! clean-tabs (cons tab clean-tabs))])))))
+    (values running-tab dirty/pending-tab dirty-tabs clean-tabs))
+  
+  (define (oc-check-invariant id)
+    (define-values (running-tab dirty/pending-tab dirty-tabs clean-tabs) (get-current-oc-state))
+    
+    (define (tab->fn tab/f)
+      (and (is-a? tab/f drracket:unit:tab%)
+           (let ([fn (send (send tab/f get-defs) get-filename)])
+             (if fn
+                 (let-values ([(base name dir?) (split-path fn)])
+                   (path->string name))
+                 "untitled"))))
+    (define (die str)
+      (error 'oc-check-invariant "just after call to ~a: ~a"
+             id
+             str))
+    
+    (for ([frame (in-list (send (group:get-the-frame-group) get-frames))])
+      (when (is-a? frame drracket:unit:frame<%>)
+        (for ([tab (in-list (send frame get-tabs))])
+          (define ts (send tab get-oc-status))
+          (cond
+            [(running? ts)
+             (unless (eq? running-tab tab)
+               (die (format "running-tab (~a) not the same as a tab with running status (~a)"
+                            (tab->fn running-tab)
+                            (tab->fn tab))))]
+            [(and (dirty? ts)
+                  (dirty-timer-pending? ts))
+             (unless (eq? dirty/pending-tab tab)
+               (die (format "dirty/pending-tab (~a) not the same as a tab with timer-pending status (~a)"
+                            (tab->fn running-tab)
+                            (tab->fn tab))))])))))
+          
+
+  
+  (define (oc-maybe-start-something)
+    (define-values (running-tab dirty/pending-tab dirty-tabs clean-tabs) (get-current-oc-state))
+    (cond
+      [running-tab
+       (line-of-interest)
+       (void)]
+      [dirty/pending-tab 
+       (line-of-interest)
+       (void)]
+      [else
+       (define focus-tab (get-focus-tab))
+       (define tab-to-start
+         (cond
+           [(member focus-tab dirty-tabs)
+            (line-of-interest)
+            focus-tab]
+           [(null? dirty-tabs)
+            (line-of-interest)
+            #f]
+           [else
+            (line-of-interest)
+            (argmax (λ (tab) (send tab get-last-touched)) 
+                    dirty-tabs)]))
+       (when tab-to-start
+         (send tab-to-start set-oc-status (dirty #t))
+         (postpone-oc-timer))]))
+  
+  ;; oc-stop-improper-tabs : -> void
+  ;; if the focused tab is dirty, then stop anything that might
+  ;; be pending or running in preparation to run the focused tab
+  (define (oc-stop-improper-tabs)
+    (define-values (running-tab dirty/pending-tab dirty-tabs clean-tabs) (get-current-oc-state))
+    (define focus-tab (get-focus-tab))
+    (line-of-interest)
+    (when (and focus-tab (dirty? (send focus-tab get-oc-status)))
+      (cond
+        [running-tab
+         (line-of-interest)
+         (unless (eq? running-tab focus-tab)
+           (line-of-interest)
+           (stop-place-running)
+           (send running-tab set-oc-status (dirty #f)))]
+        [dirty/pending-tab 
+         (line-of-interest)
+         (unless (eq? dirty/pending-tab focus-tab)
+           (line-of-interest)
+           (send dirty/pending-tab set-oc-status (dirty #f))
+           (send oc-timer stop))])))
+    
+  (define/oc-log (oc-remove-tab tab)
+    (define-values (running-tab dirty/pending-tab dirty-tabs clean-tabs) (get-current-oc-state))
+    (cond
+      [(eq? tab running-tab)
+       (line-of-interest)
+       (stop-place-running)
+       (send tab set-oc-status (clean #f #f '()))]
+      [(eq? tab dirty/pending-tab)
+       (line-of-interest)
+       (send oc-timer stop)
+       (send tab set-oc-status (clean #f #f '()))]
+      [else
+       (line-of-interest)
+       (void)])
+    (oc-maybe-start-something))
+  
+  (define/oc-log (oc-pref-set new-val)
+    (cond
+      [new-val
+       (line-of-interest)
+       (oc-maybe-start-something)]
+      [else
+       (define-values (running-tab dirty/pending-tab dirty-tabs clean-tabs) (get-current-oc-state))
+       (when running-tab
+         (line-of-interest)
+         (stop-place-running)
+         (send running-tab set-oc-status (dirty #f)))
+       (when dirty/pending-tab
+         (line-of-interest)
+         (send dirty/pending-tab set-oc-status (dirty #f))
+         (send oc-timer stop))]))
+  
+  (preferences:add-callback 
+   'drracket:online-compilation-default-on
+   (λ (_ new-val) (queue-callback (λ () (oc-pref-set new-val)))))
+  
+  (define/oc-log (oc-set-dirty tab)
+    (when (preferences:get 'drracket:online-compilation-default-on)
+      (when (tab-in-module-language tab)
+        (define-values (running-tab dirty/pending-tab dirty-tabs clean-tabs) (get-current-oc-state))
+        (cond
+          [(eq? running-tab tab)
+           (line-of-interest)
+           (stop-place-running)
+           (send tab set-oc-status (dirty #f))
+           (oc-maybe-start-something)]
+          [(eq? dirty/pending-tab tab)
+           (line-of-interest)
+           (postpone-oc-timer)]
+          [else
+           (line-of-interest)
+           (send tab set-oc-status (dirty #f))
+           (oc-stop-improper-tabs)
+           (oc-maybe-start-something)]))))
+  
+  (define/oc-log (oc-new-active)
+    (when (preferences:get 'drracket:online-compilation-default-on)
+      (line-of-interest)
+      (oc-stop-improper-tabs)
+      (oc-maybe-start-something)))
+  
+  (define/oc-log (oc-language-change tab)
+    (when (preferences:get 'drracket:online-compilation-default-on)
+      (cond
+        [(tab-in-module-language tab) 
+         (line-of-interest)
+         (send tab set-oc-status (dirty #f))
+         (oc-stop-improper-tabs)
+         (oc-maybe-start-something)]
+        [else
+         (line-of-interest)
+         (define ts (send tab get-oc-status)) 
+         (cond
+           [(running? ts)
+            (line-of-interest)
+            (stop-place-running)
+            (send tab set-oc-status (dirty #f))]
+           [(and (dirty? ts)
+                 (dirty-timer-pending? ts))
+            (line-of-interest)
+            (send tab set-oc-status (dirty #f))
+            (send oc-timer stop)])
+         (oc-maybe-start-something)])))
+
+  (define/oc-log (oc-timer-expired)
+    (define-values (running-tab dirty/pending-tab dirty-tabs clean-tabs) (get-current-oc-state))
+    (define-values (editor-contents filename/loc) (send (send dirty/pending-tab get-defs) fetch-data-to-send))
+    (cond
+      [editor-contents
+       (line-of-interest)
+       (when running-tab
+         (line-of-interest)
+         (stop-place-running)
+         (send running-tab set-oc-status (dirty #f)))
+       (send dirty/pending-tab set-oc-status (running 'running sc-online-expansion-running))
+       (define settings (tab-in-module-language dirty/pending-tab))
+       (send-to-place editor-contents
+                      filename/loc
+                      (module-language-settings->prefab-module-settings settings)
+                      (λ (res) (oc-finished res))
+                      (λ (a b) (oc-status-message a b)))]
+      [else
+       (line-of-interest)
+       (send dirty/pending-tab set-oc-status
+             (clean 'exn
+                    sc-only-raw-text-files-supported
+                    (list (vector (+ filename/loc 1) 1))))
+       (oc-maybe-start-something)]))
+
+  (define/oc-log (oc-finished res)
+    (define-values (running-tab dirty/pending-tab dirty-tabs clean-tabs) (get-current-oc-state))
+    (when running-tab ;; why can this be #f?
+      (cond
+        [(eq? (vector-ref res 0) 'handler-results)
+         (line-of-interest)
+         ;; inform the installed handlers that something has come back
+         (for ([key-val (in-list (vector-ref res 1))])
+           (define that-key (list-ref key-val 0))
+           (define val (list-ref key-val 1))
+           (for ([o-e-h (in-list (drracket:module-language-tools:get-online-expansion-handlers))])
+             (define this-key (list (drracket:module-language-tools:online-expansion-handler-mod-path o-e-h)
+                                    (drracket:module-language-tools:online-expansion-handler-id o-e-h)))
+             (when (equal? this-key that-key)
+               ((drracket:module-language-tools:online-expansion-handler-local-handler o-e-h) 
+                (send running-tab get-defs)
+                val))))
+         
+         (send running-tab set-oc-status (clean #f #f '()))]
+        [else
+         (line-of-interest)
+         (send running-tab set-oc-status
+               (clean (vector-ref res 0)
+                      (if (eq? (vector-ref res 0) 'abnormal-termination)
+                          sc-abnormal-termination
+                          (vector-ref res 1))
+                      (vector-ref res 2)))])
+      (oc-maybe-start-something)))
+  
+  (define/oc-log (oc-status-message sym str)
+    (line-of-interest)
+    (define-values (running-tab dirty/pending-tab dirty-tabs clean-tabs) (get-current-oc-state))
+    (send running-tab set-oc-status (running sym str)))
+  
+  ;; get-focus-tab : -> (or/c tab #f)
+  (define (get-focus-tab)
+    (define tlw (get-top-level-focus-window))
+    (and (is-a? tlw drracket:unit:frame<%>)
+         (send tlw get-current-tab)))
+
+  (define oc-timer-running? #f)
+  (define oc-timer (new (class timer%
+                          (define/override (start msec just-once?)
+                            (set! oc-timer-running? #t)
+                            (super start msec just-once?))
+                          (define/override (stop)
+                            (set! oc-timer-running? #f)
+                            (super stop))
+                          (super-new [notify-callback (lambda () 
+                                                        (set! oc-timer-running? #f)
+                                                        (oc-timer-expired))]))))
+  (define (postpone-oc-timer)
+    (send oc-timer stop)
+    (send oc-timer start 250 #t))
+  
   (define expanding-place #f)
   (define pending-thread #f)
   (define pending-tell-the-tab-show-bkg-running #f)
@@ -1257,7 +1950,6 @@
                          prefab-module-settings 
                          show-results 
                          tell-the-tab-show-bkg-running)
-    (tell-the-tab-show-bkg-running 'running sc-online-expansion-running)
     (unless expanding-place
       (set! expanding-place (dynamic-place expanding-place.rkt 'start))
       (place-channel-put expanding-place module-language-compile-lock)
@@ -1289,14 +1981,13 @@
                                'finished-expansion
                                sc-online-expansion-running))))))
                (define res (place-channel-get pc-out))
-               (when res
-                 (queue-callback
-                  (λ ()
-                    (when (eq? us pending-thread)
-                      (set-pending-thread #f #f)
-                      (when (getenv "PLTDRPLACEPRINT")
-                        (printf "PLTDRPLACEPRINT: got results back from the place\n"))
-                      (show-results res)))))))))
+               (queue-callback
+                (λ ()
+                  (when (eq? us pending-thread)
+                    (set-pending-thread #f #f))
+                  (when (getenv "PLTDRPLACEPRINT")
+                    (printf "PLTDRPLACEPRINT: got results back from the place\n"))
+                  (show-results res)))))))
   
   (define (stop-place-running)
     (when expanding-place
@@ -1307,396 +1998,6 @@
   (struct error-range (start end [clear-highlight #:mutable]))
   
   (define online-compilation-error-pen-width 8)
-  
-  (define module-language-online-expand-text-mixin 
-    (mixin (text:basic<%> 
-            drracket:unit:definitions-text<%>
-            drracket:module-language-tools:definitions-text<%>) ()
-      (inherit last-position find-first-snip get-top-level-window get-filename
-               get-tab get-canvas invalidate-bitmap-cache 
-               set-position get-start-position get-end-position
-               highlight-range dc-location-to-editor-location
-               begin-edit-sequence end-edit-sequence)
-      
-      (define compilation-out-of-date? #f)
-      
-      (define tmr (new logging-timer% [notify-callback (lambda () (send-off))]))
-      
-      (define cb-proc (λ (sym new-val) 
-                        (when new-val
-                          (queue-callback (λ () (buffer-modified))))))
-      (preferences:add-callback 'drracket:online-compilation-default-on cb-proc #t)
-      
-      ;; buffer-modified and restart-place
-      ;; are the two entry points that might
-      ;; trigger a compilation in a separate
-      ;; place (and thus trigger the creation
-      ;; of the separate place)
-      ;; thus, they are where we check the preference
-      ;; before doing anything
-
-      (define/private (buffer-modified)
-        (when (and (preferences:get 'drracket:online-compilation-default-on)
-                   (> (processor-count) 1))
-          (clear-old-error)
-          (reset-frame-expand-error #t)
-          (let ([tlw (get-top-level-window)])
-            (cond
-              [(in-module-language tlw)
-               (send (get-tab) show-bkg-running 'nothing #f)
-               (stop-place-running)
-               (set! compilation-out-of-date? #t)
-               (when (eq? (send tlw get-current-tab) (get-tab))
-                 (send tmr stop)
-                 (send tmr start 250 #t))]
-              [else
-               (send (get-tab) show-bkg-running 'nothing #f)
-               (hide-module-language-error-panel)]))))
-      
-      (define/public (restart-place)
-        (when (and (preferences:get 'drracket:online-compilation-default-on)
-                   (> (processor-count) 1))
-          (stop-place-running)
-          (when compilation-out-of-date?
-            (send tmr start 250 #t))))
-      
-      (define/private (send-off)
-        (define tlw (get-top-level-window))
-        ;; make sure the frame's current tab is still this one
-        ;; (we may get #f for the tlw when the tab has been switched)
-        (when (and tlw (eq? (send tlw get-current-tab) (get-tab)))
-          (define settings (in-module-language tlw))
-          (when settings
-            (define-values (editor-contents filename) (fetch-data-to-send))
-            (when editor-contents
-              (send-to-place editor-contents
-                             filename
-                             (module-language-settings->prefab-module-settings settings)
-                             (λ (res) (show-results res))
-                             (λ (a b) (send (get-tab) show-bkg-running a b)))
-              (when status-line-open?
-                (clear-old-error)
-                (reset-frame-expand-error #t))))))
-      
-      (define/private (fetch-data-to-send)
-        (define str (make-string (last-position) #\space))
-        (let/ec k
-          (let loop ([s (find-first-snip)]
-                     [i 0])
-            (cond
-              [(not s) (void)]
-              [(is-a? s string-snip%)
-               (define size (send s get-count))
-               (send s get-text! str 0 size i)
-               (loop (send s next) (+ i size))]
-              [else
-               (send (get-tab) show-bkg-running 'failed sc-only-raw-text-files-supported)
-               (k #f #f)]))
-          (define fn (let* ([b (box #f)]
-                            [n (get-filename b)])
-                       (and (not (unbox b))
-                            n)))
-          (values str fn)))
-      
-      (define status-line-open? #f)
-      
-      (define error/status-message-hidden? #f)
-      (define error/status-message-str "")
-      (define error/status-message-err? #f)
-      (define error-message-srclocs '())
-      (define/private (reset-frame-expand-error pending?)
-        (define new-error/status-message-str
-          (if pending?
-              (string-constant online-expansion-pending)
-              (string-constant online-expansion-finished)))
-        (unless (and (equal? error/status-message-str new-error/status-message-str)
-                     (eq? error-message-srclocs '())
-                     (eq? error/status-message-err? #f))
-          (set! error/status-message-str new-error/status-message-str)
-          (set! error-message-srclocs '())
-          (set! error/status-message-err? #f)
-          (update-frame-expand-error)))
-      (define/public (update-frame-expand-error)
-        (send (send (get-tab) get-frame) set-expand-error/status
-              error/status-message-hidden?
-              error/status-message-str 
-              error/status-message-err?
-              (length error-message-srclocs)))
-      (define/public (hide-module-language-error-panel)
-        (set! error/status-message-hidden? #t)
-        (update-frame-expand-error))
-
-      (define/public (expand-error-next) 
-        (define candidates (filter (λ (error-message-srcloc) 
-                                     (> (- (vector-ref error-message-srcloc 0) 1) 
-                                        (get-end-position)))
-                                   error-message-srclocs))
-        (cond
-          [(null? candidates)
-           (unless (null? error-message-srclocs)
-             (jump-to (car error-message-srclocs)))]
-          [else
-           (jump-to (car candidates))]))
-      
-      (define/public (expand-error-prev) 
-        (define candidates (filter (λ (error-message-srcloc) 
-                                     (< (+ (vector-ref error-message-srcloc 0)
-                                           (vector-ref error-message-srcloc 1)
-                                           -1)
-                                        (get-start-position)))
-                                   error-message-srclocs))
-        (cond
-          [(null? candidates)
-           (unless (null? error-message-srclocs)
-             (jump-to (last error-message-srclocs)))]
-          [else
-           (jump-to (last candidates))]))
-      
-      (define/private (jump-to vec)
-        (set-position (- (vector-ref vec 0) 1))
-        (define cnvs (get-canvas))
-        (when cnvs (send cnvs focus)))
-      
-      (define/private (show-results res)
-        (set! compilation-out-of-date? #f)
-        (case (vector-ref res 0)
-          [(exn)
-           (case (preferences:get 'drracket:online-expansion:other-errors)
-             [(margin) (show-error-in-margin res)]
-             [(gold) (show-error-as-highlighted-regions res)])]
-          [(exn:variable)
-           (case (preferences:get 'drracket:online-expansion:variable-errors)
-             [(margin) (show-error-in-margin res)]
-             [(gold) (show-error-as-highlighted-regions res)])]
-          [(reader-in-defs-error)
-           (case (preferences:get 'drracket:online-expansion:read-in-defs-errors)
-             [(margin) (show-error-in-margin res)]
-             [(gold) (show-error-as-highlighted-regions res)])]
-          [(access-violation)
-           (send (get-tab) show-bkg-running 'failed (gui-utils:format-literal-label "~a" (vector-ref res 1)))
-           (clear-old-error)
-           (reset-frame-expand-error #f)]
-          [(abnormal-termination)
-           (send (get-tab) show-bkg-running 'failed sc-abnormal-termination)
-           (clear-old-error)
-           (reset-frame-expand-error #f)]
-          [(no-errors)
-           (send (get-tab) show-bkg-running 'completed-successfully sc-finished-successfully)
-           (clear-old-error)
-           (reset-frame-expand-error #f)]
-          [(handler-results)
-           (clear-old-error)
-           (reset-frame-expand-error #f)
-           ;; inform the installed handlers that something has come back
-           (for ([key-val (in-list (vector-ref res 1))])
-             (define that-key (list-ref key-val 0))
-             (define val (list-ref key-val 1))
-             (for ([o-e-h (in-list (drracket:module-language-tools:get-online-expansion-handlers))])
-               (define this-key (list (drracket:module-language-tools:online-expansion-handler-mod-path o-e-h)
-                                      (drracket:module-language-tools:online-expansion-handler-id o-e-h)))
-               (when (equal? this-key that-key)
-                 ((drracket:module-language-tools:online-expansion-handler-local-handler o-e-h) this val))))
-           (send (get-tab) show-bkg-running 'completed-successfully sc-finished-successfully)]
-          [else
-           (error 'module-language.rkt "unknown response from the expanding place: ~s\n" res)]))
-            
-      (define/private (show-error-in-margin res)
-        (begin-edit-sequence #f #f)
-        (define tlw (send (get-tab) get-frame))
-        (send (get-tab) show-bkg-running 'nothing #f)
-        (set! error/status-message-str (vector-ref res 1))
-        (set! error-message-srclocs (vector-ref res 2))
-        (set! error/status-message-err? #t)
-        (clear-old-error)
-        (set-online-error-ranges
-         (for/list ([range (in-list (vector-ref res 2))])
-           (define pos (vector-ref range 0))
-           (define span (vector-ref range 1))
-           (error-range (- pos 1) (+ pos span -1) #f)))
-        (set-error-ranges-from-online-error-ranges (vector-ref res 2))
-        (invalidate-online-error-ranges)
-        (set! error/status-message-hidden? #f)
-        (update-frame-expand-error)
-        (end-edit-sequence))
-      
-      (define/private (show-error-as-highlighted-regions res)
-        (define tlw (send (get-tab) get-frame))
-        (send (get-tab) show-bkg-running 'nothing #f)
-        (set! error/status-message-str (vector-ref res 1))
-        (set! error-message-srclocs (vector-ref res 2))
-        (set! error/status-message-err? #t)
-        (clear-old-error)
-        (set! online-highlighted-errors 
-              (for/list ([range (in-list (vector-ref res 2))]) 
-                (define pos (vector-ref range 0))
-                (define span (vector-ref range 1))
-                (highlight-range (- pos 1) (+ pos span -1) "gold")))
-        (set-error-ranges-from-online-error-ranges (vector-ref res 2))
-        (set! error/status-message-hidden? #f)
-        (update-frame-expand-error))
-      
-      (define online-error-ranges '())
-      (define online-highlighted-errors '())
-      
-      (define/private (set-online-error-ranges rngs)
-        (unless (equal? online-error-ranges rngs)
-          (invalidate-online-error-ranges)
-          (set! online-error-ranges rngs)
-          (invalidate-online-error-ranges)))
-      
-      (define/private (set-error-ranges-from-online-error-ranges rngs)
-        (define srclocs (for/list ([range (in-list rngs)])
-                          (define pos (vector-ref range 0))
-                          (define span (vector-ref range 1))
-                          (srcloc this #f #f pos span)))
-        (send (send (get-tab) get-ints) set-error-ranges srclocs))
-      
-      (define/private (clear-old-error)
-        (begin-edit-sequence #f #f)
-        (for ([cleanup-thunk (in-list online-highlighted-errors)])
-          (cleanup-thunk))
-        (for ([an-error-range (in-list online-error-ranges)])
-          (when (error-range-clear-highlight an-error-range)
-            ((error-range-clear-highlight an-error-range))
-            (set-error-range-clear-highlight! an-error-range #f)))
-        (invalidate-online-error-ranges)
-        (set-online-error-ranges '())        
-        (end-edit-sequence))
-      
-      (define/private (invalidate-online-error-ranges)
-        (when (get-admin)
-          ;; invalidate-online-error-ranges can be called at strange times
-          ;; because it is invoked via a queue-callback thunk; specifically
-          ;; the tab may have changed in drracket, which means that there is
-          ;; no admin and thus there is no reason to invalidate any drawing
-          (for ([an-error-range (in-list online-error-ranges)])
-            (define-values (x y w h) (get-box an-error-range))
-            (invalidate-bitmap-cache x y 'display-end h))))
-      
-      (define byt (box 0.0))
-      (define byb (box 0.0))
-      (define vbx (box 0.0))
-      (define vby (box 0.0))
-      (define vbw (box 0.0))
-      (define vbh (box 0.0))
-    
-      (inherit position-location get-admin)
-      
-      (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
-        (super on-paint before? dc left top right bottom dx dy draw-caret)
-        (unless before?
-          (define saved-brush (send dc get-brush))
-          (define saved-pen (send dc get-pen))
-          (define smoothing (send dc get-smoothing))
-          (send dc set-smoothing 'smoothed)
-          
-          (send dc set-brush "red" 'solid)
-          (send dc set-pen (send the-pen-list find-or-create-pen "red" 1 'transparent))
-          (send dc set-alpha 
-                (if (preferences:get 'framework:white-on-black?)
-                    .5
-                    .25))
-          (define path (new dc-path%))
-            
-          (for ([an-error-range (in-list online-error-ranges)])
-            (define-values (x y w h) (get-box an-error-range))
-            
-            (send path move-to (+ dx x) (+ dy y))
-            (send path line-to (+ dx x w) (+ dy y))
-            (send path line-to (+ dx x w) (+ dy y h))
-            (send path arc (+ dx x) (+ dy y) (* w 2/3) h (* pi 3/2) (* pi 1/2))
-            (send path close))
-          
-          (send dc draw-path path)
-          (send dc set-alpha 1)
-          (send dc set-brush saved-brush)
-          (send dc set-pen saved-pen)
-          (send dc set-smoothing smoothing)))
-      
-      (define/override (on-event evt)
-        (define-values (mx my) 
-          (dc-location-to-editor-location 
-           (send evt get-x)
-           (send evt get-y)))
-        (cond
-          [(or (send evt moving?)
-               (send evt entering?))
-           (for ([an-error-range (in-list online-error-ranges)])
-             (define-values (x y w h) (get-box an-error-range))
-             (cond
-               [(and (<= x mx (+ x w))
-                     (<= y my (+ y h)))
-                (unless (error-range-clear-highlight an-error-range)
-                  (set-error-range-clear-highlight! 
-                   an-error-range
-                   (highlight-range (error-range-start an-error-range)
-                                    (error-range-end an-error-range)
-                                    "pink")))]
-               [else
-                (when (error-range-clear-highlight an-error-range)
-                  ((error-range-clear-highlight an-error-range))
-                  (set-error-range-clear-highlight! an-error-range #f))]))
-           (super on-event evt)]
-          [(send evt leaving?)
-           (for ([an-error-range (in-list online-error-ranges)])
-             (when (error-range-clear-highlight an-error-range)
-               ((error-range-clear-highlight an-error-range))
-               (set-error-range-clear-highlight! an-error-range #f)))
-           (super on-event evt)]
-          [(send evt button-down? 'left)
-           (define used-click? #f)
-           (for ([an-error-range (in-list online-error-ranges)])
-             (define-values (x y w h) (get-box an-error-range))
-             (when (and (<= x mx (+ x w))
-                        (<= y my (+ y h)))
-               (set! used-click? #t)
-               (set-position (error-range-start an-error-range))))
-           (unless used-click?
-             (super on-event evt))]
-          [else
-           (super on-event evt)]))
-      
-      ;; pre: get-admin does not return #f
-      (define/private (get-box an-error-range)
-        (define start-pos (error-range-start an-error-range))
-        (define end-pos (error-range-end an-error-range))
-        (position-location start-pos #f byt)
-        (position-location end-pos #f byb #f)
-        (send (get-admin) get-view vbx vby vbw vbh)
-        
-        (define x (+ (unbox vbx)
-                     (unbox vbw)
-                     (- online-compilation-error-pen-width)
-                     (- online-compilation-error-pen-width)))
-        (define y (unbox byt))
-        (define w (* online-compilation-error-pen-width 2))
-        (define h (- (unbox byb) (unbox byt)))
-        
-        (values x y w h))
-        
-      (define/override (move-to-new-language)
-        ;; this is here to get things running for the initital tab in a new frame
-        (super move-to-new-language)
-        (buffer-modified))
-      
-      (define/augment (after-insert start end) 
-        (buffer-modified)
-        (inner (void) after-insert start end))
-      
-      (define/augment (after-delete start end) 
-        (buffer-modified)
-        (inner (void) after-delete start end))
-      
-      (define/augment (after-load-file success?)
-        (when success? (buffer-modified))
-        (inner (void) after-load-file success?))
-      
-      (define/augment (after-set-next-settings new-settings)
-        (buffer-modified)
-        (inner (void) after-set-next-settings new-settings))
-      
-      (super-new)))
-
     
   (define module-language-put-file-mixin
     (mixin (text:basic<%>) ()
@@ -1899,15 +2200,18 @@
      module-language-compile-lock
      (current-custodian)))
   
-  ;; in-module-language : top-level-window<%> -> module-language-settings or #f
+  ;; in-module-language : (or/c top-level-window<%> #f) -> module-language-settings or #f
   (define (in-module-language tlw)
     (and tlw
          (is-a? tlw drracket:unit:frame<%>)
-         (let ([settings (send (send tlw get-definitions-text) get-next-settings)])
-           (and (is-a? (drracket:language-configuration:language-settings-language settings)
-                       module-language<%>)
-                (drracket:language-configuration:language-settings-settings settings)))))
+         (tab-in-module-language (send tlw get-current-tab))))
   
+  ;; in-module-language : tab -> module-language-settings or #f
+  (define (tab-in-module-language tab)
+    (define settings (send (send tab get-defs) get-next-settings))
+    (and (is-a? (drracket:language-configuration:language-settings-language settings)
+                module-language<%>)
+         (drracket:language-configuration:language-settings-settings settings)))
   
   (define (initialize-prefs-panel)
     (preferences:add-panel
