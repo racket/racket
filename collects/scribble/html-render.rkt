@@ -114,6 +114,17 @@
            [v (regexp-replace* #rx#"[^-a-zA-Z0-9_!+*'()/.,]" v encode-bytes)])
       (bytes->string/utf-8 v))))
 
+
+;; encode-href: string -> string
+;; Escape the parens in href URLs to make them nicer for external
+;; tools.
+(define (encode-href s)
+  (define (escape-paren v)
+    (cond [(string=? v "(") "%28"]
+          [(string=? v ")") "%29"]))
+  (regexp-replace* "[()]" s escape-paren))
+
+
 (define-serializable-struct literal-anchor (string))
 
 (define (color->string c)
@@ -416,7 +427,7 @@
       (define top (car toc-chain))
       (define (toc-item->title+num t show-mine?)
         (values
-         `((a ([href ,(dest->url (resolve-get t ri (car (part-tags/nonempty t))))]
+         `((a ([href ,(encode-href (dest->url (resolve-get t ri (car (part-tags/nonempty t)))))]
                [class ,(if (or (eq? t d) (and show-mine? (memq t toc-chain)))
                          "tocviewselflink"
                          "tocviewlink")]
@@ -596,15 +607,16 @@
                                       (parameterize ([current-no-links #t]
                                                      [extra-breaking? #t])
                                         `((a ([href
-                                               ,(format
-                                                 "#~a"
-                                                 (anchor-name
-                                                  (add-tag-prefixes
-                                                   (tag-key (if (part? p)
-                                                                (car (part-tags/nonempty p))
-                                                                (target-element-tag p))
-                                                            ri)
-                                                   prefixes)))]
+                                               ,(encode-href 
+                                                 (format
+                                                  "#~a"
+                                                  (anchor-name
+                                                   (add-tag-prefixes
+                                                    (tag-key (if (part? p)
+                                                                 (car (part-tags/nonempty p))
+                                                                 (target-element-tag p))
+                                                             ri)
+                                                    prefixes))))]
                                               [class
                                                   ,(cond
                                                     [(part? p) "tocsubseclink"]
@@ -1110,47 +1122,48 @@
                          (resolve-get/ext? part ri (link-element-tag e))])
              (if dest
                `((a [(href
-                      ,(cond
-                        [(and ext? external-root-url
-                              (let ([rel (find-relative-path
-                                          (find-doc-dir)
-                                          (relative->path (dest-path dest)))])
-                                (and (relative-path? rel)
-                                     rel)))
-                         => (lambda (rel)
-                              (url->string
-                               (struct-copy
-                                url
-                                (combine-url/relative
-                                 (string->url external-root-url)
-                                 (string-join (map (lambda (s)
-                                                     (case s
-                                                       [(up) ".."]
-                                                       [(same) "."]
-                                                       [else (path-element->string s)]))
-                                                   (explode-path rel))
-                                              "/"))
-                                [fragment
-                                 (and (not (dest-page? dest))
-                                      (anchor-name (dest-anchor dest)))])))]
-                        [(and ext? external-tag-path)
-                         ;; Redirected to search:
-                         (url->string
-                          (let ([u (string->url external-tag-path)])
-                            (struct-copy
-                             url
-                             u
-                             [query
-                              (cons (cons 'tag
-                                          (bytes->string/utf-8
-                                           (base64-encode
-                                            (string->bytes/utf-8
-                                             (format "~s" (serialize
-                                                           (link-element-tag e)))))))
-                                    (url-query u))])))]
-                        [else
-                         ;; Normal link:
-                         (dest->url dest)]))
+                      ,(encode-href
+                        (cond
+                         [(and ext? external-root-url
+                               (let ([rel (find-relative-path
+                                           (find-doc-dir)
+                                           (relative->path (dest-path dest)))])
+                                 (and (relative-path? rel)
+                                      rel)))
+                          => (lambda (rel)
+                               (url->string
+                                (struct-copy
+                                 url
+                                 (combine-url/relative
+                                  (string->url external-root-url)
+                                  (string-join (map (lambda (s)
+                                                      (case s
+                                                        [(up) ".."]
+                                                        [(same) "."]
+                                                        [else (path-element->string s)]))
+                                                    (explode-path rel))
+                                               "/"))
+                                 [fragment
+                                  (and (not (dest-page? dest))
+                                       (anchor-name (dest-anchor dest)))])))]
+                         [(and ext? external-tag-path)
+                          ;; Redirected to search:
+                          (url->string
+                           (let ([u (string->url external-tag-path)])
+                             (struct-copy
+                              url
+                              u
+                              [query
+                               (cons (cons 'tag
+                                           (bytes->string/utf-8
+                                            (base64-encode
+                                             (string->bytes/utf-8
+                                              (format "~s" (serialize
+                                                            (link-element-tag e)))))))
+                                     (url-query u))])))]
+                         [else
+                          ;; Normal link:
+                          (dest->url dest)])))
                      ,@(attribs)
                      [data-pltdoc "x"]]
                     ,@(if (empty-content? (element-content e))
@@ -1193,10 +1206,11 @@
                                   [(target-url? v)
                                    (if (current-no-links)
                                        null
-                                       `([href ,(let ([addr (target-url-addr v)])
-                                                  (if (path? addr)
-                                                      (from-root addr (get-dest-directory))
-                                                      addr))]))]
+                                       `([href ,(encode-href
+                                                 (let ([addr (target-url-addr v)])
+                                                   (if (path? addr)
+                                                       (from-root addr (get-dest-directory))
+                                                       addr)))]))]
                                   [else null]))
                                properties))
                (attribs))]
