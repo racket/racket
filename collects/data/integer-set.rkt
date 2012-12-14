@@ -44,7 +44,7 @@
 ;; set is the union of the ranges.  The ranges must be disjoint and
 ;; increasing.  Further, adjacent ranges must have at least
 ;; one number between them.
-(define-struct integer-set (contents))
+(define-struct integer-set (contents) #:mutable)
 
 ;; well-formed-set? : X -> bool
 (define (well-formed-set? x)
