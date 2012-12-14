@@ -5,6 +5,8 @@
                      racket/contract
                      (except-in racket/base
                                 foldr)))
+@(define (racket-tech pre)
+   (tech #:doc '(lib "scribblings/reference/reference.scrbl") pre))
 
 @title[#:tag "integer-set"]{Integer Sets}
 
@@ -33,6 +35,8 @@ For example: @racket['((-1 . 2) (4 . 10))] is a well-formed-set as is
 @racket['((1 . 5) (-3 . -1))], @racket['((5 . 1))], and @racket['((1
 . 5) (3 . 6))] are not.
 
+An integer set implements the @racket-tech{stream} and
+@racket-tech{sequence} generic interfaces.
 
 @defproc[(make-integer-set [wfs well-formed-set?]) integer-set?]{
 

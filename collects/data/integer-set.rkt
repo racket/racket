@@ -2,7 +2,10 @@
 
 ;; a library for integer interval sets
 
-(require racket/contract/base)
+(require racket/contract/base
+         racket/match
+         racket/stream
+         unstable/custom-write)
 
 (provide well-formed-set?
          (contract-out
@@ -44,7 +47,34 @@
 ;; set is the union of the ranges.  The ranges must be disjoint and
 ;; increasing.  Further, adjacent ranges must have at least
 ;; one number between them.
-(define-struct integer-set (contents) #:mutable)
+(define-struct integer-set (contents) #:mutable
+  #:methods gen:custom-write
+  [(define write-proc
+     (make-constructor-style-printer
+      (λ (set) 'integer-set)
+      (λ (set) (integer-set-contents set))))]
+  #:methods gen:equal+hash
+  [(define (equal-proc s1 s2 rec-equal?)
+     (rec-equal? (integer-set-contents s1)
+                 (integer-set-contents s2)))
+   (define (hash-proc set rec-hash)
+     (rec-hash (integer-set-contents set)))
+   (define (hash2-proc set rec-hash)
+     (rec-hash (integer-set-contents set)))]
+  #:methods gen:stream
+  [(define (stream-empty? set)
+     (null? (integer-set-contents set)))
+   (define (stream-first set)
+     (define contents (integer-set-contents set))
+     ;; the contract lets us assume non-null
+     (caar contents))
+   (define (stream-rest set)
+     (define contents (integer-set-contents set))
+     (match-define (cons low hi) (car contents))
+     (make-integer-set
+      (if (= low hi)
+          (cdr contents)
+          (cons (cons (+ 1 low) hi) contents))))])
 
 ;; well-formed-set? : X -> bool
 (define (well-formed-set? x)

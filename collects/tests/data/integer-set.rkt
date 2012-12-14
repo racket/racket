@@ -1,5 +1,6 @@
 #lang racket/base
 (require data/integer-set
+         racket/stream
          rackunit)
 
 (test-equal? "integer-set"
@@ -43,12 +44,19 @@
 (check-true (member? (get-integer s1) s1))
 (check-false (get-integer (make-integer-set '())))
 
-;; TODO: custom equal?
-#;
 (check-equal? (partition (list (make-integer-set '((1 . 2) (5 . 10)))
                                (make-integer-set '((2 . 2) (6 . 6) (12 . 12)))))
-              (list (make-integer-set '((1 . 1) (5 . 5) (7 . 10)))
-                    (make-integer-set '((2 . 2) (6 . 6)))
-                    (make-integer-set '((12 . 12)))))
+              (list (make-integer-set '((2 . 2) (6 . 6)))
+                    (make-integer-set '((12 . 12)))
+                    (make-integer-set '((1 . 1) (5 . 5) (7 . 10)))))
 
 (check-true (subset? (make-integer-set '((1 . 1))) s2))
+
+;; check gen:stream
+(check-equal? (stream-first s1) -1)
+(check-equal? (stream-first (stream-rest s1)) 0)
+(check-equal? (stream-first (stream-rest s2)) 3)
+(check-true (stream-empty? (make-integer-set '())))
+(check-false (stream-empty? s1))
+(check-equal? (stream->list (stream-map add1 s2)) '(2 4))
+
