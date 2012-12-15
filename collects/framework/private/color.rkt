@@ -1041,13 +1041,6 @@ added get-regions
                          ;;  as a paren, then don't try to change it.
                          #f))
       (define insert-str (if closer closer (string char)))
-      (define-values (next-close-start next-close-end next-close-str next-close-adj?)
-        (find-next-close-paren pos closers))
-      (define-values (outer-close-start outer-close-end outer-close-str)
-        (find-next-outer-paren pos closers))
-      (end-edit-sequence)  ;; wraps up the net-zero editing changes done by get-close-paren etc.
-      (undo)   ;; to avoid messing up the editor's modified state in case of a simple skip
-
       (define (insert)
         (for ([c (in-string insert-str)])
           (on-default-char (new key-event% (key-code c))))
@@ -1058,24 +1051,40 @@ added get-regions
       
       (define end-pos
         (cond
-          [(not smart-skip) (insert)]
-          [(eq? smart-skip 'adjacent)
-           (if (and next-close-start next-close-adj?
-                    (string=? insert-str next-close-str))
-               (skip next-close-end)
-               (insert))]
-          [(eq? smart-skip 'forward)
+          [smart-skip
+           (define-values (next-close-start next-close-end next-close-str next-close-adj?)
+             (find-next-close-paren pos closers))
            (cond
-             [(and outer-close-start
-                   (or fixup? (string=? insert-str outer-close-str)))
-              (skip outer-close-end)]
-             [(and next-close-start
-                   (or fixup? (string=? insert-str next-close-str)))
-              (skip next-close-end)]
-             [else  (insert)])]
-          [else (error 'insert-close-paren
-                       (format "invalid smart-skip option: ~a" smart-skip))]))
-
+             [(eq? smart-skip 'adjacent)
+              (end-edit-sequence)  ;; wraps up the net-zero editing changes done by get-close-paren etc.
+              (undo)               ;; to avoid messing up the editor's modified state in case of a simple skip
+              (if (and next-close-start next-close-adj?
+                       (string=? insert-str next-close-str))
+                  (skip next-close-end)
+                  (insert))]
+             [(eq? smart-skip 'forward)
+              (define-values (outer-close-start outer-close-end outer-close-str)
+                (find-next-outer-paren pos closers))
+              (end-edit-sequence)  ;; wraps up the net-zero editing changes done by get-close-paren etc.
+              (undo)               ;; to avoid messing up the editor's modified state in case of a simple skip
+              (cond
+                [(and outer-close-start
+                      (or fixup? (string=? insert-str outer-close-str)))
+                 (skip outer-close-end)]
+                [(and next-close-start
+                      (or fixup? (string=? insert-str next-close-str)))
+                 (skip next-close-end)]
+                [else  (insert)])]
+             [else
+              (end-edit-sequence)  ;; wraps up the net-zero editing changes done by get-close-paren etc.
+              (undo)               ;; to avoid messing up the editor's modified state in case of a simple skip
+              (error 'insert-close-paren
+                     (format "invalid smart-skip option: ~a" smart-skip))])]
+          [else
+           (begin0
+             (insert)
+             (end-edit-sequence))]))
+      
       (when (and flash? (not stopped?)) (flash-from end-pos)))
 
     
