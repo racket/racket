@@ -104,6 +104,13 @@ Returns a vector of length @racket[(gvector-count gv)] containing the
 elements of @racket[gv] in order.
 }
 
+@defproc[(gvector->list [gv gvector?])
+         list?]{
+
+Returns a list of length @racket[(gvector-count gv)] containing the
+elements of @racket[gv] in order.
+}
+
 @defproc[(in-gvector [gv gvector?])
          sequence?]{
 
