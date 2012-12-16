@@ -728,33 +728,39 @@
                   (let ([row (* j row-width)]
                         [p (* 4 (* dj w))])
                     (for ([i (in-range x w2)])
-                      (let* ([4i (* 4 i)]
-                             [pi (+ p (* 4 (- i x)))]
-                             [ri (+ row 4i)])
+                      (let* ([4i (unsafe-fx* 4 i)]
+                             [pi (unsafe-fx+ p (unsafe-fx* 4 (unsafe-fx- i x)))]
+                             [ri (unsafe-fx+ row 4i)])
                         (if b&w-local?
-                            (let ([v (if (and (= (bytes-ref bstr (+ pi 1)) 255)
-                                              (= (bytes-ref bstr (+ pi 2)) 255)
-                                              (= (bytes-ref bstr (+ pi 3)) 255))
+                            (let ([v (if (and (= (unsafe-bytes-ref bstr (+ pi 1)) 255)
+                                              (= (unsafe-bytes-ref bstr (+ pi 2)) 255)
+                                              (= (unsafe-bytes-ref bstr (+ pi 3)) 255))
                                          255
                                          0)])
-                              (bytes-set! data (+ ri A) (- 255 v))
-                              (bytes-set! data (+ ri 1) v)
-                              (bytes-set! data (+ ri 2) v)
-                              (bytes-set! data (+ ri B) v))
+                              (unsafe-bytes-set! data (unsafe-fx+ ri A) (- 255 v))
+                              (unsafe-bytes-set! data (unsafe-fx+ ri 1) v)
+                              (unsafe-bytes-set! data (unsafe-fx+ ri 2) v)
+                              (unsafe-bytes-set! data (unsafe-fx+ ri B) v))
                             (if alpha-channel-local?
                                 (let ([a (bytes-ref bstr pi)]
                                       [pm (lambda (a v)
                                             (if m
                                                 (unsafe-bytes-ref m (fx+ (fx* a 256) v))
                                                 (min a v)))])
-                                  (bytes-set! data (+ ri A) a)
-                                  (bytes-set! data (+ ri R) (pm a (bytes-ref bstr (+ pi 1))))
-                                  (bytes-set! data (+ ri G) (pm a (bytes-ref bstr (+ pi 2))))
-                                  (bytes-set! data (+ ri B) (pm a (bytes-ref bstr (+ pi 3)))))
+                                  (unsafe-bytes-set! data (unsafe-fx+ ri A) a)
+                                  (unsafe-bytes-set! data (unsafe-fx+ ri R)
+                                              (pm a (unsafe-bytes-ref bstr (unsafe-fx+ pi 1))))
+                                  (unsafe-bytes-set! data (unsafe-fx+ ri G)
+                                              (pm a (unsafe-bytes-ref bstr (unsafe-fx+ pi 2))))
+                                  (unsafe-bytes-set! data (unsafe-fx+ ri B)
+                                              (pm a (unsafe-bytes-ref bstr (unsafe-fx+ pi 3)))))
                                 (begin
-                                  (bytes-set! data (+ ri R) (bytes-ref bstr (+ pi 1)))
-                                  (bytes-set! data (+ ri G) (bytes-ref bstr (+ pi 2)))
-                                  (bytes-set! data (+ ri B) (bytes-ref bstr (+ pi 3))))))))))))
+                                  (unsafe-bytes-set! data (unsafe-fx+ ri R)
+                                              (unsafe-bytes-ref bstr (unsafe-fx+ pi 1)))
+                                  (unsafe-bytes-set! data (unsafe-fx+ ri G)
+                                              (unsafe-bytes-ref bstr (unsafe-fx+ pi 2)))
+                                  (unsafe-bytes-set! data (unsafe-fx+ ri B)
+                                              (unsafe-bytes-ref bstr (unsafe-fx+ pi 3))))))))))))
             (cairo_surface_mark_dirty s)))
         (cond
          [(and set-alpha?
