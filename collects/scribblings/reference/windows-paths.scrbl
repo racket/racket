@@ -12,7 +12,7 @@ but still relative to the current drive; such paths start with a
 that start with @litchar{\\?\}.
 
 A path that starts with a drive specification is @defterm{complete}.
-Roughly, a drive specification is either a Roman letter followed by a
+Roughly, a drive specification is either a Latin letter followed by a
 colon, a UNC path of the form
 @litchar{\\}@nonterm{machine}@litchar{\}@nonterm{volume}, or a
 @litchar{\\?\} form followed by something other than
@@ -45,7 +45,7 @@ Otherwise, Racket follows standard Windows path conventions, but also
  conventions to deal with excessive @litchar{\}s in @litchar{\\?\}
  paths.
 
-In the following, @nonterm{letter} stands for a Roman letter (case
+In the following, @nonterm{letter} stands for a Latin letter (case
 does not matter), @nonterm{machine} stands for any sequence of
 characters that does not include @litchar{\} or @litchar{/} and is
 not @litchar{?}, @nonterm{volume} stands for any sequence of
