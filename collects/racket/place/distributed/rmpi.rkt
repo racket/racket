@@ -21,6 +21,7 @@
          rmpi-barrier
          rmpi-id
          rmpi-cnt
+         rmpi-comm-split
          rmpi-partition
          rmpi-build-default-config
          rmpi-make-localhost-config
@@ -240,7 +241,7 @@
   (define rv (rmpi-reduce comm 0 op val))
   (rmpi-broadcast comm 0 rv))
 
-(define (rmpi-allgather comm op val)
+(define (rmpi-allgather comm val)
   (define rv (rmpi-gather comm 0 val))
   (rmpi-broadcast comm 0 rv))
 
@@ -420,6 +421,34 @@
       (v! invec ii x)))
 
   invec)
+
+(define (rmpi-comm-split comm color key)
+  (match-define (rmpi-comm id cnt chs) comm)
+  (define r (rmpi-allgather comm (vector id color key)))
+  (match-define (vector nid nc nk) (vector-ref r id))
+  (define ncl 
+    (for/fold ([nl null]) ([x (in-vector r)])
+      (cond 
+        [(= nc (vector-ref x 1))
+         (cons x nl)]
+        [else nl])))
+  (define nchsl (length ncl))
+  (define nchs (make-vector nchsl))
+  (for ([x ncl])
+    (match-define (vector cid cc ck) x)
+    (when (>= ck nchsl)
+      (error "new key value ~a is >= new comm size ~a" ck ncl))
+    (when (not (= 0 (vector-ref nchs ck)))
+      (error "duplicate key value ~a" ck))
+    (cond
+        [(= nid cid)
+         (vector-set! nchs ck null)]
+        [else
+         (vector-set! nchs ck (vector-ref chs cid))]))
+
+  (define ncomm (rmpi-comm nk nchsl nchs))
+  #;(list id ncl ncomm)
+  ncomm)
 
 (module+ bcast-print-test
   (rmpi-broadcast (rmpi-comm 0 8 (vector 0 1 2 3 4 5 6 7)) 0 "Hi")
