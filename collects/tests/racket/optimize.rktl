@@ -1603,6 +1603,21 @@
                       (+ p m (- p p) t))
                     'ok))))
 
+(test-comp '(lambda (n)
+              (let ([p (fx+ n n)])
+                (if n
+                    (let ([m (unsafe-fx- p 1)]
+                          [t (- p p)])
+                      (let ([q (- p p)]
+                            [s m])
+                        (+ p s q t)))
+                    'ok)))
+           '(lambda (n)
+              (let ([p (fx+ n n)])
+                (if n
+                    (let ([t (- p p)])
+                      (+ p (unsafe-fx- p 1) (- p p) t))
+                    'ok))))
 
 ;; simple cross-module inlining
 (test-comp `(module m racket/base 

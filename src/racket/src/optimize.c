@@ -6660,15 +6660,13 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
         o->cross_lambda = (j != orig_j);
         return (Scheme_Object *)o;
       } else if (SAME_TYPE(SCHEME_TYPE(n), scheme_local_type)) {
-	int pos, cross_lambda = (j != orig_j), extra_delta = 0;
+	int pos, cross_lambda = (j != orig_j);
 
 	pos = SCHEME_LOCAL_POS(n);
 	if (info->flags & SCHEME_LAMBDA_FRAME)
 	  j--; /* because it will get re-added on recur */
-        else if (info->flags & SCHEME_POST_BIND_FRAME) {
-          extra_delta = info->new_frame;
+        else if (info->flags & SCHEME_POST_BIND_FRAME)
           info = info->next; /* bindings are relative to next frame */
-        }
 
 	/* Marks local as used; we don't expect to get back
 	   a value, because chaining would normally happen on the
@@ -6693,8 +6691,8 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
 	  n = scheme_make_local(scheme_local_type, pos + delta, 0);
 	} else if (SAME_TYPE(SCHEME_TYPE(n), scheme_once_used_type)) {
           /* Need to adjust delta: */
-          delta = optimize_info_get_shift(info, pos);
-          ((Scheme_Once_Used *)n)->delta += delta + extra_delta;
+          delta += optimize_info_get_shift(info, pos);
+          ((Scheme_Once_Used *)n)->delta += delta;
           if (cross_lambda) ((Scheme_Once_Used *)n)->cross_lambda = 1;
         }
       }
