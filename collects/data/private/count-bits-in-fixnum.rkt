@@ -1,6 +1,6 @@
-#lang racket
+#lang racket/base
 (require racket/unsafe/ops
-         (for-syntax racket/fixnum racket/vector))
+         (for-syntax racket/base racket/fixnum racket/vector))
 (provide fxpopcount)
 ;; Count set bits for 30 bit number in 5 steps.
 ;; for 62 bit number in 6.

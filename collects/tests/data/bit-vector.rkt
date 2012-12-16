@@ -100,13 +100,17 @@
 
 (test-case "bit-vector-popcount"
            (let ()
-             (define (test)
+             (define (test len)
                (define fill (odd? (random 2)))
-               (define bv (make-bit-vector 1000 fill))
-               (define ns (list->set (build-list 100 (λ (_) (random 1000)))))
+               (define bv (make-bit-vector len fill))
+               (define ns (list->set (build-list 100 (λ (_) (random len)))))
                (for ([n (in-set ns)]) (bit-vector-set! bv n (not fill)))
                (define count 
-                 (if fill (- 1000 (set-count ns)) (set-count ns)))
+                 (if fill (- len (set-count ns)) (set-count ns)))
                (check-equal? (bit-vector-popcount bv) count))
              (for ([i (in-range 100)])
-               (test))))
+               (test 1000))
+             ;; test multiples of possible word sizes
+             (for ([ws (in-list '(8 30 62))])
+               (for ([i (in-range 10)])
+                 (test (* ws 10))))))

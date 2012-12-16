@@ -21,7 +21,7 @@
 
 (define (make-bit-vector size [fill #f])
   (define-values (q r) (quotient/remainder size bits-in-a-word))
-  (define word-size (add1 q))
+  (define word-size (+ q (if (zero? r) 0 1)))
   (define words (make-fxvector word-size (if fill largest-fixnum 0)))  
   (when (and fill (not (zero? r))) 
     (fxvector-set! words q (- (expt 2 r) 1)))
