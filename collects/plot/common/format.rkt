@@ -185,7 +185,7 @@
            (loop (+ i 2) (cons (string->symbol (substring str i (+ i 2))) fmt-list))]
           [else  (loop (+ i 1) (cons (substring str i (+ i 1)) fmt-list))])))
 
-(defproc (apply-formatter [formatter (symbol? . -> . (or/c string? #f))]
+(defproc (apply-formatter [formatter (symbol? any/c . -> . (or/c string? #f))]
                           [fmt-list (listof (or/c string? symbol?))]
                           [d any/c]) (listof string?)
   (for/list ([fmt  (in-list fmt-list)])

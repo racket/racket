@@ -1,7 +1,10 @@
 #lang racket/base
 
-(require racket/class racket/match racket/list racket/contract unstable/latent-contract/defthing
-         plot/utils)
+(require racket/class racket/match racket/list racket/contract
+         unstable/latent-contract/defthing
+         unstable/contract
+         plot/utils
+         "../common/utils.rkt")
 
 (provide (all-defined-out))
 
@@ -32,7 +35,7 @@
                        (lines3d-render-proc vs-thnk color width style alpha label)))]))
 
 (defproc (lines3d
-          [vs  (listof (vector/c real? real? real?))]
+          [vs  (sequence/c (sequence/c real?))]
           [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
           [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
           [#:z-min z-min (or/c rational? #f) #f] [#:z-max z-max (or/c rational? #f) #f]
@@ -42,10 +45,11 @@
           [#:alpha alpha (real-in 0 1) (line-alpha)]
           [#:label label (or/c string? #f) #f]
           ) renderer3d?
-  (lines3d-renderer (λ () vs) x-min x-max y-min y-max z-min z-max color width style alpha label))
+  (let ([vs  (sequence->listof-vector 'lines3d vs 3)])
+    (lines3d-renderer (λ () vs) x-min x-max y-min y-max z-min z-max color width style alpha label)))
 
 (defproc (parametric3d
-          [f (real? . -> . (vector/c real? real? real?))]
+          [f (real? . -> . (sequence/c real?))]
           [t-min rational?] [t-max rational?]
           [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
           [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
@@ -57,5 +61,6 @@
           [#:alpha alpha (real-in 0 1) (line-alpha)]
           [#:label label (or/c string? #f) #f]
           ) renderer3d?
-  (lines3d-renderer (λ () (map f (linear-seq t-min t-max (animated-samples samples))))
-                    x-min x-max y-min y-max z-min z-max color width style alpha label))
+  (let ([f  (λ (t) (sequence-head-vector 'parametric3d (f t) 3))])
+    (lines3d-renderer (λ () (map f (linear-seq t-min t-max (animated-samples samples))))
+                      x-min x-max y-min y-max z-min z-max color width style alpha label)))

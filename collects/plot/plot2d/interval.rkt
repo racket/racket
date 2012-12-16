@@ -2,9 +2,11 @@
 
 ;; Renderers for intervals between functions.
 
-(require racket/contract racket/class racket/match racket/math racket/list
+(require racket/contract racket/class racket/match racket/math racket/list racket/sequence
          unstable/latent-contract/defthing
-         plot/utils)
+         unstable/contract
+         plot/utils
+         "../common/utils.rkt")
 
 (provide (all-defined-out))
 
@@ -33,8 +35,8 @@
         [else  empty]))
 
 (defproc (lines-interval
-          [v1s (listof (vector/c real? real?))]
-          [v2s (listof (vector/c real? real?))]
+          [v1s (sequence/c (sequence/c real?))]
+          [v2s (sequence/c (sequence/c real?))]
           [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
           [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
           [#:color color plot-color/c (interval-color)]
@@ -48,24 +50,26 @@
           [#:alpha alpha (real-in 0 1) (interval-alpha)]
           [#:label label (or/c string? #f) #f]
           ) renderer2d?
-  (define rvs (filter vrational? (append v1s v2s)))
-  (cond
-    [(empty? rvs)  (renderer2d #f #f #f #f)]
-    [else
-     (match-define (list (vector rxs rys) ...) rvs)
-     (let ([x-min  (if x-min x-min (apply min* rxs))]
-           [x-max  (if x-max x-max (apply max* rxs))]
-           [y-min  (if y-min y-min (apply min* rys))]
-           [y-max  (if y-max y-max (apply max* rys))])
-       (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max)) #f default-ticks-fun
-                   (lines-interval-render-proc v1s v2s color style
-                                               line1-color line1-width line1-style
-                                               line2-color line2-width line2-style
-                                               alpha label)))]))
+  (let ([v1s  (sequence->listof-vector 'lines-interval v1s 2)]
+        [v2s  (sequence->listof-vector 'lines-interval v2s 2)])
+    (define rvs (filter vrational? (append v1s v2s)))
+    (cond
+      [(empty? rvs)  (renderer2d #f #f #f #f)]
+      [else
+       (match-define (list (vector rxs rys) ...) rvs)
+       (let ([x-min  (if x-min x-min (apply min* rxs))]
+             [x-max  (if x-max x-max (apply max* rxs))]
+             [y-min  (if y-min y-min (apply min* rys))]
+             [y-max  (if y-max y-max (apply max* rys))])
+         (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max)) #f default-ticks-fun
+                     (lines-interval-render-proc v1s v2s color style
+                                                 line1-color line1-width line1-style
+                                                 line2-color line2-width line2-style
+                                                 alpha label)))])))
 
 (defproc (parametric-interval
-          [f1 (real? . -> . (vector/c real? real?))]
-          [f2 (real? . -> . (vector/c real? real?))]
+          [f1 (real? . -> . (sequence/c real?))]
+          [f2 (real? . -> . (sequence/c real?))]
           [t-min rational?] [t-max rational?]
           [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
           [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
@@ -81,14 +85,16 @@
           [#:alpha alpha (real-in 0 1) (interval-alpha)]
           [#:label label (or/c string? #f) #f]
           ) renderer2d?
-  (lines-interval
-   (map f1 (linear-seq t-min t-max samples))
-   (map f2 (linear-seq t-min t-max samples))
-   #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max
-   #:color color #:style style
-   #:line1-color line1-color #:line1-width line1-width #:line1-style line1-style
-   #:line2-color line2-color #:line2-width line2-width #:line2-style line2-style
-   #:alpha alpha #:label label))
+  (let ([f1  (λ (t) (sequence-head-vector 'parametric-interval (f1 t) 2))]
+        [f2  (λ (t) (sequence-head-vector 'parametric-interval (f2 t) 2))])
+    (lines-interval
+     (map f1 (linear-seq t-min t-max samples))
+     (map f2 (linear-seq t-min t-max samples))
+     #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max
+     #:color color #:style style
+     #:line1-color line1-color #:line1-width line1-width #:line1-style line1-style
+     #:line2-color line2-color #:line2-width line2-width #:line2-style line2-style
+     #:alpha alpha #:label label)))
 
 (defproc (polar-interval
           [f1 (real? . -> . real?)] [f2 (real? . -> . real?)]

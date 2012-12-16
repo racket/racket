@@ -1,7 +1,10 @@
 #lang racket/base
 
-(require racket/class racket/list racket/match racket/contract unstable/latent-contract/defthing
-         plot/utils)
+(require racket/class racket/list racket/match racket/contract
+         unstable/latent-contract/defthing
+         unstable/contract
+         plot/utils
+         "../common/utils.rkt")
 
 (provide (all-defined-out))
 
@@ -17,7 +20,7 @@
         [else   empty]))
 
 (defproc (points3d
-          [vs  (listof (vector/c real? real? real?))]
+          [vs  (sequence/c (sequence/c real?))]
           [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
           [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
           [#:z-min z-min (or/c rational? #f) #f] [#:z-max z-max (or/c rational? #f) #f]
@@ -29,7 +32,8 @@
           [#:alpha alpha (real-in 0 1) (point-alpha)]
           [#:label label (or/c string? #f) #f]
           ) renderer3d?
-  (let ([vs  (filter vrational? vs)])
+  (let* ([vs  (sequence->listof-vector 'points3d vs 3)]
+         [vs  (filter vrational? vs)])
     (cond [(empty? vs)  (renderer3d #f #f #f #f)]
           [else
            (match-define (list (vector xs ys zs) ...) vs)
@@ -92,9 +96,8 @@
                     [else   empty])]))
 
 (defproc (vector-field3d
-          [f (or/c (real? real? real? . -> . (vector/c real? real? real?))
-                   ((vector/c real? real? real?)
-                    . -> . (vector/c real? real? real?)))]
+          [f (or/c (real? real? real? . -> . (sequence/c real?))
+                   ((vector/c real? real? real?) . -> . (sequence/c real?)))]
           [x-min (or/c rational? #f) #f] [x-max (or/c rational? #f) #f]
           [y-min (or/c rational? #f) #f] [y-max (or/c rational? #f) #f]
           [z-min (or/c rational? #f) #f] [z-max (or/c rational? #f) #f]
@@ -106,7 +109,9 @@
           [#:alpha alpha (real-in 0 1) (vector-field-alpha)]
           [#:label label (or/c string? #f) #f]
           ) renderer3d?
-  (let ([f  (cond [(procedure-arity-includes? f 3 #t)  f]
-                  [else  (λ (x y z) (f (vector x y z)))])])
+  (let ([f  (cond [(procedure-arity-includes? f 3 #t)
+                   (λ (x y z) (sequence-head-vector 'vector-field3d (f x y z) 3))]
+                  [else
+                   (λ (x y z) (sequence-head-vector 'vector-field3d (f (vector x y z)) 3))])])
     (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) #f default-ticks-fun
                 (vector-field3d-render-fun f samples scale color line-width line-style alpha label))))

@@ -4,7 +4,9 @@
 
 (require racket/contract racket/class racket/match racket/math racket/list
          unstable/latent-contract/defthing
+         unstable/contract
          plot/utils
+         "../common/utils.rkt"
          "line.rkt"
          "interval.rkt"
          "point.rkt"
@@ -222,7 +224,7 @@
   empty)
 
 (defproc (point-label
-          [v (vector/c real? real?)] [label (or/c string? #f) #f]
+          [v (sequence/c real?)] [label (or/c string? #f) #f]
           [#:color color plot-color/c (plot-foreground)]
           [#:size size (>=/c 0) (plot-font-size)]
           [#:family family font-family/c (plot-font-family)]
@@ -235,18 +237,18 @@
           [#:point-sym point-sym point-sym/c 'fullcircle]
           [#:alpha alpha (real-in 0 1) (label-alpha)]
           ) renderer2d?
-  (match-define (vector x y) v)
-  (renderer2d (vector (ivl x x) (ivl y y)) #f #f
-              (label-render-proc
-               label v color size family anchor angle
-               point-color (cond [(eq? point-fill-color 'auto)  (->pen-color point-color)]
-                                 [else  point-fill-color])
-               point-size point-line-width point-sym
-               alpha)))
+  (let ([v  (sequence-head-vector 'point-label v 2)])
+    (match-define (vector x y) v)
+    (renderer2d (vector (ivl x x) (ivl y y)) #f #f
+                (label-render-proc
+                 label v color size family anchor angle
+                 point-color (cond [(eq? point-fill-color 'auto)  (->pen-color point-color)]
+                                   [else  point-fill-color])
+                 point-size point-line-width point-sym
+                 alpha))))
 
 (defproc (parametric-label
-          [f (real? . -> . (vector/c real? real?))]
-          [t real?] [label (or/c string? #f) #f]
+          [f (real? . -> . (sequence/c real?))] [t real?] [label (or/c string? #f) #f]
           [#:color color plot-color/c (plot-foreground)]
           [#:size size (>=/c 0) (plot-font-size)]
           [#:family family font-family/c (plot-font-family)]
@@ -259,9 +261,7 @@
           [#:point-sym point-sym point-sym/c 'fullcircle]
           [#:alpha alpha (real-in 0 1) (label-alpha)]
           ) renderer2d?
-  (point-label (match f
-                 [(vector fx fy)  (vector (fx t) (fy t))]
-                 [(? procedure?)  (f t)])
+  (point-label (sequence-head-vector 'parametric-label (f t) 2)
                label #:color color #:size size #:family family #:anchor anchor #:angle angle
                #:point-color point-color #:point-fill-color point-fill-color #:point-size point-size
                #:point-line-width point-line-width #:point-sym point-sym

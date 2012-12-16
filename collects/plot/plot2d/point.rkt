@@ -2,9 +2,11 @@
 
 ;; Renderers for points and other point-like things.
 
-(require racket/contract racket/class racket/match racket/math racket/list
+(require racket/contract racket/class racket/match racket/math racket/list racket/sequence
          unstable/latent-contract/defthing
-         plot/utils)
+         unstable/contract
+         plot/utils
+         "../common/utils.rkt")
 
 (provide (all-defined-out))
 
@@ -19,7 +21,7 @@
   
   (if label (point-legend-entry label sym color fill-color size line-width) empty))
 
-(defproc (points [vs  (listof (vector/c real? real?))]
+(defproc (points [vs  (sequence/c (sequence/c real?))]
                  [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
                  [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
                  [#:sym sym point-sym/c (point-sym)]
@@ -30,7 +32,8 @@
                  [#:alpha alpha (real-in 0 1) (point-alpha)]
                  [#:label label (or/c string? #f) #f]
                  ) renderer2d?
-  (let ([vs  (filter vrational? vs)])
+  (let* ([vs  (sequence->listof-vector 'points vs 2)]
+         [vs  (filter vrational? vs)])
     (cond
       [(empty? vs)  (renderer2d #f #f #f #f)]
       [else  (match-define (list (vector xs ys) ...) vs)
@@ -89,8 +92,8 @@
                     [else   empty])]))
 
 (defproc (vector-field
-          [f (or/c (real? real? . -> . (vector/c real? real?))
-                   ((vector/c real? real?) . -> . (vector/c real? real?)))]
+          [f (or/c (real? real? . -> . (sequence/c real?))
+                   ((vector/c real? real?) . -> . (sequence/c real?)))]
           [x-min (or/c rational? #f) #f] [x-max (or/c rational? #f) #f]
           [y-min (or/c rational? #f) #f] [y-max (or/c rational? #f) #f]
           [#:samples samples exact-positive-integer? (vector-field-samples)]
@@ -101,8 +104,10 @@
           [#:alpha alpha (real-in 0 1) (vector-field-alpha)]
           [#:label label (or/c string? #f) #f]
           ) renderer2d?
-  (let ([f  (cond [(procedure-arity-includes? f 2 #t)  f]
-                  [else  (λ (x y) (f (vector x y)))])])
+  (let ([f  (cond [(procedure-arity-includes? f 2 #t)
+                   (λ (x y) (sequence-head-vector 'vector-field (f x y) 2))]
+                  [else
+                   (λ (x y) (sequence-head-vector 'vector-field (f (vector x y)) 2))])])
     (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max)) #f default-ticks-fun
                 (vector-field-render-fun f samples scale color line-width line-style alpha label))))
 
@@ -126,7 +131,7 @@
   empty)
 
 (defproc (error-bars
-          [bars (listof (vector/c real? real? real?))]
+          [bars (sequence/c (sequence/c real?))]
           [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
           [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
           [#:color color plot-color/c (error-bar-color)]
@@ -135,7 +140,8 @@
           [#:width width (>=/c 0) (error-bar-width)]
           [#:alpha alpha (real-in 0 1) (error-bar-alpha)]
           ) renderer2d?
-  (let ([bars  (filter vrational? bars)])
+  (let* ([bars  (sequence->listof-vector 'error-bars bars 3)]
+         [bars  (filter vrational? bars)])
     (cond [(empty? bars)  (renderer2d #f #f #f #f)]
           [else
            (match-define (list (vector xs ys hs) ...) bars)

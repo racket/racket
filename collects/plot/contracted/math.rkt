@@ -21,7 +21,7 @@
          empty-ivl unknown-ivl rational-ivl?
          (activate-contract-out
           ivl-empty? ivl-known? ivl-rational? ivl-singular? ivl-length ivl-center ivl-zero-length?
-          ivl-inexact->exact ivl-contains? bounds->intervals clamp-real))
+          ivl-inexact->exact ivl-contains? ivl-translate bounds->intervals clamp-real))
 
 ;; Rectangles
 (provide (contract-out [rect-meet (->* () () #:rest (listof (vectorof ivl?)) (vectorof ivl?))]
@@ -29,4 +29,4 @@
          (activate-contract-out
           empty-rect unknown-rect bounding-rect rational-rect?
           rect-empty? rect-known? rect-rational? rect-area rect-center rect-zero-area? rect-singular?
-          rect-inexact->exact rect-contains?))
+          rect-inexact->exact rect-translate rect-contains?))

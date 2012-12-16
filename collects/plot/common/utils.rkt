@@ -11,6 +11,15 @@
              [_  (in-range (- end start))])
     e))
 
+(define (sequence-head-vector name xs n)
+  (define vec (for/vector ([x  xs] [i  (in-range n)]) x))
+  (unless (= n (vector-length vec))
+    (raise-argument-error name (format "sequence of length >= ~a" n) xs))
+  vec)
+
+(define (sequence->listof-vector name vs n)
+  (map (λ (v) (sequence-head-vector name v n)) (sequence->list vs)))
+
 (define (list-index v lst [equal? equal?])
   (for/first ([e  (in-list lst)] [i  (in-naturals)] #:when (equal? e v))
     i))
