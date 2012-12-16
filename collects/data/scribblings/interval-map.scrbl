@@ -39,6 +39,8 @@ end positions of the mapping's intervals.
 (dict-map r list)
 ]
 
+Operations on interval-maps are not thread-safe.
+
 @defproc[(make-interval-map [#:key-contract key-contract contract? any/c]
                             [#:value-contract value-contract contract? any/c])
          interval-map?]{

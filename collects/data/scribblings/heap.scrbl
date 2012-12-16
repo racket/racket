@@ -15,6 +15,8 @@
 
 Binary heaps are a simple implementation of priority queues.
 
+Operations on binary heaps are not thread-safe.
+
 @defproc[(make-heap [<=? (-> any/c any/c any/c)])
          heap?]{
 

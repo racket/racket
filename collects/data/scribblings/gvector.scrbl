@@ -26,6 +26,8 @@ number of elements in the gvector.
 Two gvectors are @racket[equal?] if they contain the same number of
 elements and if the contain equal elements at each index.
 
+Operations on gvectors are not thread-safe.
+
 @defproc[(make-gvector [#:capacity capacity exact-positive-integer? 10])
          gvector?]{
 

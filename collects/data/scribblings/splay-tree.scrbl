@@ -23,6 +23,11 @@ Tarjan in Journal of the ACM 32(3) pp652-686.
 A splay-tree is a ordered dictionary (@racket[dict?] and
 @racket[ordered-dict?]).
 
+Operations on splay-trees are not thread-safe. If a key in a
+splay-tree is mutated, the splay-tree's internal invariants may be
+violated, causing its behavior to become unpredictable.
+
+
 @defproc[(make-splay-tree [ord order? datum-order]
                           [#:key-contract key-contract contract? any/c]
                           [#:value-contract value-contract contract? any/c])
