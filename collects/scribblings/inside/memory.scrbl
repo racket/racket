@@ -728,7 +728,7 @@ Copies the null-terminated string @var{str}; the copy is collectable.}
 Copies the null-terminated string @var{str}; the copy will never be freed.}
 
 @function[(void* scheme_malloc_fail_ok
-           [size_t size]
+           [|void *(*)(size_t)| mallocf]
            [size_t size])]{
 
 Attempts to allocate @var{size} bytes using @var{mallocf}. If the
