@@ -1,6 +1,8 @@
 #lang typed/racket
 
-(require typed/plot)
+;; These tests "pass" when they pass the type checker and raise no exceptions
+
+(require plot/typed)
 
 (define xs (build-list 1000 (λ (_) (random))))
 (define ys (build-list 1000 (λ (_) (random))))
