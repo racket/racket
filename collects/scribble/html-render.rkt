@@ -15,6 +15,7 @@
          setup/main-collects
          setup/dirs
          net/url
+         net/uri-codec
          net/base64
          scheme/serialize
          (prefix-in xml: xml/xml)
@@ -64,7 +65,7 @@
                 (cond [(bytes? file)
                        (make-inline (bytes->string/utf-8 file))]
                       [(url? file)
-                       (make-ref (url->string file))]
+                       (make-ref (url->string* file))]
                       [(not (eq? 'inline path))
                        (make-ref (or path (let-values ([(base name dir?)
                                                         (split-path file)])
@@ -93,6 +94,10 @@
 (define extra-breaking? (make-parameter #f))
 (define current-version (make-parameter (version)))
 (define current-part-files (make-parameter #f))
+
+(define (url->string* u)
+  (parameterize ([current-url-encode-mode 'unreserved])
+    (url->string u)))
 
 ;; HTML anchors should be case-insensitively unique. To make them
 ;;  distinct, add a "." in front of capital letters.  Also clean up
@@ -353,7 +358,7 @@
                rel))
         => (lambda (rel)
              (cons
-              (url->string
+              (url->string*
                (struct-copy
                 url
                 (combine-url/relative
@@ -397,7 +402,8 @@
                   (if (dest-page? dest) "" "#")
                   (if (dest-page? dest)
                       ""
-                      (anchor-name (dest-anchor dest))))
+                      (uri-unreserved-encode
+                       (anchor-name (dest-anchor dest)))))
           "???"))
 
     (define/public (render-toc-view d ri)
@@ -798,7 +804,7 @@
                 [(equal? x "index.html") (values x "the manual top")]
                 [(equal? x "../index.html") (values x "the documentation top")]
                 [(string? x) (values x #f)]
-                [(path? x) (values (url->string (path->url x)) #f)]
+                [(path? x) (values (url->string* (path->url x)) #f)]
                 [else (error 'navigation "internal error ~e" x)]))
         (define title*
           (if (and tfrom (part? tfrom))
@@ -818,7 +824,7 @@
       (define top-link
         (titled-url
          "up" (if (path? up-path)
-                  (url->string (path->url up-path))
+                  (url->string* (path->url up-path))
                   "../index.html")
          `[onclick . ,(format "return GotoPLTRoot(\"~a\");" (version))]))
       (define navleft
@@ -1070,7 +1076,7 @@
                            null])))])])
            (let ([srcref (let ([p (install-file src)])
                            (if (path? p)
-                               (url->string (path->url (path->complete-path p)))
+                               (url->string* (path->url (path->complete-path p)))
                                p))])
              `((,(if svg? 'object 'img)
                 ([,(if svg? 'data 'src) ,srcref]
@@ -1118,7 +1124,7 @@
                                 (and (relative-path? rel)
                                      rel)))
                          => (lambda (rel)
-                              (url->string
+                              (url->string*
                                (struct-copy
                                 url
                                 (combine-url/relative
@@ -1135,7 +1141,7 @@
                                       (anchor-name (dest-anchor dest)))])))]
                         [(and ext? external-tag-path)
                          ;; Redirected to search:
-                         (url->string
+                         (url->string*
                           (let ([u (string->url external-tag-path)])
                             (struct-copy
                              url
