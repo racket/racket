@@ -63,7 +63,7 @@ This module also provides the exports from @racketmodname[net/websocket/conn].
  After the connection handshake is finished, @racket[conn-handle] receives the connection and is in
  sole control until the WebSocket connection completes.
  
- All other arguments are used as in a @secref["dispatch-server-unit" #:doc '(lib "web-server/scribblings/web-server-internal.scrbl")].
+ All other arguments are used as in a @secref["dispatch-server-unit" #:doc '(lib "web-server/scribblings/web-server-internal.scrbl")]. Similarly, the return result is a function that shuts down the server, just like a dispatch server.
 
  The @racket[#:tcp@] keyword is provided for building an SSL server.
 }
