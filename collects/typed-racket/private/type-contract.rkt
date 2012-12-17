@@ -153,15 +153,17 @@
             [(and
               (> (length arrs) 1)
               ;; Keyword args, range and rest specs all the same.
-              (let ([xs (map (match-lambda [(arr: _ rng rest-spec _ kws)
-					    (list rng rest-spec kws)])
-			     arrs)])
-                (foldl equal? (first xs) (rest xs)))
+              (let* ([xs (map (match-lambda [(arr: _ rng rest-spec _ kws)
+                                             (list rng rest-spec kws)])
+                              arrs)]
+                     [first-x (first xs)])
+                (for/and ([x (in-list (rest xs))])
+                  (equal? x first-x)))
               ;; Positionals are monotonically increasing by at most one.
               (let-values ([(_ ok?)
-                            (for/fold ([positionals '()]
+                            (for/fold ([positionals (arr-dom (first arrs))]
                                        [ok-so-far?  #t])
-                                ([arr (in-list arrs)])
+                                ([arr (in-list (rest arrs))])
                               (match arr
                                 [(arr: dom _ _ _ _)
                                  (define ldom         (length dom))
