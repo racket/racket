@@ -28,7 +28,11 @@ less than 128).
 The encoding, in line with RFC 2396's recommendation, represents a
 character as-is, if possible.  The decoding allows any characters
 to be represented by their hex values, and allows characters to be
-incorrectly represented as-is.
+incorrectly represented as-is. The library provides ``unreserved''
+encoders that encode @litchar{!}, @litchar{*}, @litchar{'},
+@litchar{(}, and @litchar{)} using their hex representation,
+which is not recommended by RFC 2396 but avoids problems with some
+contexts.
 
 The rules for the @tt{application/x-www-form-urlencoded} mimetype
 given in the HTML 4.0 spec are:
@@ -52,14 +56,16 @@ given in the HTML 4.0 spec are:
 
 ]
 
-These rules differs slightly from the straight encoding in RFC 2396 in
+These @tt{application/x-www-form-urlencoded} rules differs slightly from the straight encoding in RFC 2396 in
 that @litchar{+} is allowed, and it represents a space.  The
 @racketmodname[net/uri-codec] library follows this convention,
 encoding a space as @litchar{+} and decoding @litchar{+} as a space.
-In addtion, since there appear to be some brain-dead decoders on the
+In addition, since there appear to be some broken decoders on the
 web, the library also encodes @litchar{!}, @litchar{~}, @litchar{'},
 @litchar{(}, and @litchar{)} using their hex representation, which is
 the same choice as made by the Java's @tt{URLEncoder}.
+
+
 
 @; ----------------------------------------
 
@@ -91,6 +97,14 @@ Encodes a string according to the rules in @cite["RFC3986"](section 2.3) for the
 }
 @defproc[(uri-unreserved-decode [str string?]) string?]{
 Decodes a string according to the rules in @cite["RFC3986"](section 2.3) for the unreserved characters.
+}
+@defproc[(uri-path-segment-unreserved-encode [str string?]) string?]{
+Encodes a string according to the rules in @cite["RFC3986"] for path segments,
+but also encodes characters that @racket[uri-unreserved-encode] encodes
+and that @racket[uri-encode] does not.
+}
+@defproc[(uri-path-segment-unreserved-decode [str string?]) string?]{
+Decodes a string according to the rules in @cite["RFC3986"] for path segments.
 }
 
 
@@ -184,7 +198,9 @@ Imports nothing, exports @racket[uri-codec^].}
 
 @defsignature[uri-codec^ ()]{}
 
-Includes everything exported by the @racketmodname[net/uri-codec] module.
+Includes everything exported by the @racketmodname[net/uri-codec]
+module except @racket[uri-path-segment-unreserved-encode] and
+@racket[uri-path-segment-unreserved-decode].
 
 
 @close-eval[uri-codec-eval]

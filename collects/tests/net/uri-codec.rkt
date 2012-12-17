@@ -75,11 +75,16 @@
         (uri-path-segment-encode "M~(@; ") =>  "M~(@%3B%20"
         (uri-userinfo-encode "M~(@; ")     =>  "M~(%40;%20"
         (uri-unreserved-encode "M~(@; ")   =>  "M~%28%40%3B%20"         
+        (uri-path-segment-unreserved-encode "M~(@; ") =>  "M~%28@%3B%20"
         ;; matching decodes:
         (uri-decode "M~(%40%3B%20")              =>  "M~(@; "
         (uri-path-segment-decode "M~(@%3B%20")   =>  "M~(@; "
         (uri-userinfo-decode "M~(%40;%20")       =>  "M~(@; "
         (uri-unreserved-decode "M~%28%40%3B%20") =>  "M~(@; "
+        (uri-path-segment-unreserved-decode "M~%28@%3B%20")   =>  "M~(@; "
+
+        (uri-path-segment-decode "M~%28@%3B%20")   =>  "M~(@; "
+        (uri-path-segment-unreserved-decode "M~(@%3B%20")   =>  "M~(@; "
         ))
 
 ;; tests adapted from Noel Welsh's original test suite
