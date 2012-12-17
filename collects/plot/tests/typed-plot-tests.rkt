@@ -61,7 +61,7 @@
 (plot (list (function-interval sin cos -3 3)
             (inverse-interval cos sin -3 3 #:color 1 #:line1-color 1 #:line2-color 1)))
 
-(plot (isoline (λ (x y) (* (sin x) (cos y))) 1/2 -6 6 -6 6))
+(plot (isoline (λ: ([x : Real] [y : Real]) (* (sin x) (cos y))) 1/2 -6 6 -6 6))
 
 (plot (contours (λ: ([x : Real] [y : Real]) (* (sin x) (cos y))) -6 6 -6 6
                 #:levels '(-2/3 -1/3 0 1/3 2/3)
@@ -120,14 +120,14 @@
             (point-label #(1/2 1/2) "one-half, one-half")))
 
 (plot (list (parametric (λ: ([t : Real]) (list (sin t) (cos t))) 0 (* 2 pi))
-            (parametric-label (λ: ([t : Real]) (list (sin t) (cos t))) 0.4 #f)
+            (parametric-label (λ: ([t : Real]) (list (sin t) (cos t))) 0.4)
             (polar (λ: ([θ : Real]) 1/2) 0 (* 2 pi) #:color 3)
             (polar-label (λ: ([θ : Real]) 1/2) 0.4 "0.4")))
 
 (plot (list (function-interval sin cos -3 3)
-            (function-label sin -2 #f)
+            (function-label sin -2)
             (inverse-interval cos sin -3 3 #:color 1 #:line1-color 1 #:line2-color 1)
-            (inverse-label cos -2 #f)))
+            (inverse-label cos -2)))
 
 (plot3d (surface3d (λ: ([x : Real] [y : Real]) (* (sin x) (cos y))) -6 6 -6 6))
 
