@@ -5,16 +5,16 @@
          "../vector/vector.rkt"
          "types.rkt")
 
-(provide partition-count)
+(provide partitions)
 
 (define num-global-ps 200)
 (: global-ps (Vectorof Natural))
 (define global-ps (make-vector num-global-ps 0))
 (vector-set! global-ps 0 1)
 
-(: partition-count : Integer -> Natural)
+(: partitions : Integer -> Natural)
 ; http://en.wikipedia.org/wiki/Partition_(number_theory)
-(define (partition-count n)
+(define (partitions n)
   (define: local-ps : (Vectorof Natural)
     (make-vector (max 0 (- (+ n 1) num-global-ps)) 0))
   

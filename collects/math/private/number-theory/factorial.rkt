@@ -58,8 +58,8 @@
         [else  (assert (/ (factorial n) (factorial (- n k)))
                        exact-nonnegative-integer?)]))
 
-(: multinomial (Integer Integer * -> Natural))
-(define (multinomial n . ks)
+(: multinomial (Integer (Listof Integer) -> Natural))
+(define (multinomial n ks)
   (cond [(negative? n)  (raise-argument-error 'multinomial "Natural" 0 n ks)]
         [(ormap negative? ks)  (raise-argument-error 'multinomial "(Listof Natural)" 1 n ks)]
         [(not (= n (apply + ks)))  0]

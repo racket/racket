@@ -23,8 +23,15 @@ a C library that provides
           @item{Elementary and special functions that are efficient and proved correct.}
           @item{Well-defined semantics that correspond with the latest IEEE 754 standard.}
 ]
-The arbitrary-precision floating-point numbers MPFR provides and operates on are
-represented by the type @racket[Bigfloat].
+The arbitrary-precision floating-point numbers MPFR provides and operates on are represented by the
+Typed Racket type @racket[Bigfloat] and identified by the predicate @racket[bigfloat?].
+
+With a few noted exceptions, bigfloat functions regard their arguments as if they were exact,
+regardless of their precision.
+Conceptually, they compute exact results using infinitely many bits, and return results with
+@racket[(bf-precision)] bits by rounding them using @racket[(bf-rounding-mode)].
+In practice, they use finite algorithms that have been painstakingly proved to be
+equivalent to that conceptual, infinite process.
 
 MPFR is free and license-compatible with commercial software. It is distributed with Racket
 for Windows and Mac OS X, is installed on most Linux systems, and is
@@ -35,7 +42,7 @@ for Windows and Mac OS X, is installed on most Linux systems, and is
 @section[#:tag "quick"]{Quick Start}
 
 @itemlist[#:style 'ordered
-@item{Set the working precision using @racket[(bf-precision <some-number-of-bits>)].}
+@item{Set the bigfloat function result precision using @racket[(bf-precision <some-number-of-bits>)].}
 @item{Use @racket[bf] to convert real values and well-formed strings to bigfloats.}
 @item{Operate on bigfloats using @racket[bf]-prefixed functions like @racket[bf+] and @racket[bfsin].}
 @item{Convert bigfloats to real values using @racket[bigfloat->real], @racket[bigfloat->flonum],
@@ -103,10 +110,10 @@ My new laptop computes @(racket 5.221469689764144e+173) as it should.
 IEEE 754 provides for different rounding modes for the smallest bit of
 a flonum result, such as round to even and round toward zero. We might use
 this to implement interval arithmetic correctly, by rounding lower bounds
-downward and the upper bounds upward. But there isn't a portable way to set the
+downward and upper bounds upward. But there isn't a portable way to set the
 rounding mode!
 
-MPFR allows the rounding mode to be set before any operation, and
+MPFR allows the rounding mode to be different for any operation, and
 @racketmodname[math/bigfloat] exposes this capability using the parameter
 @racket[bf-rounding-mode].
 
@@ -135,74 +142,13 @@ number, so the decimal/bit boundary never lines up except at the decimal point.
 Thus, the last decimal digit of any bigfloat must represent fewer than 3.3 bits,
 so it's wrong more often than not. But it's the last @italic{bit} that counts.
 
-@section{Bigfloat Type and Accessors}
+@section{Type and Constructors}
 
-@defidform[Bigfloat]{
-An opaque type that represents an arbitrary-precision floating-point number, or a @tech{bigfloat}.
+@deftogether[(@defidform[Bigfloat]
+              @defproc[(bigfloat? [v Any]) Boolean])]{
+An opaque type that represents an arbitrary-precision floating-point number, or a @tech{bigfloat},
+and the opaque type's predicate.
 }
-
-@defproc[(bigfloat? [v Any]) Boolean]{
-Returns @racket[#t] when @racket[v] is a bigfloat.
-}
-
-@defproc[(bigfloat-precision [x Bigfloat]) Exact-Positive-Integer]{
-Returns the number of bits in the significand of @racket[x]. This is almost always
-the value of @racket[(bf-precision)] when @racket[x] was created.
-}
-
-@defproc[(bigfloat-signbit [x Bigfloat]) (U 0 1)]{
-Returns the sign bit of the significand of @racket[x].
-@examples[#:eval untyped-eval
-                 (eval:alts
-                  (bigfloat-signbit -1.bf)
-                  (eval:result @racketresultfont{1}))
-                 (eval:alts
-                  (bigfloat-signbit 0.bf)
-                  (eval:result @racketresultfont{0}))
-                 (eval:alts
-                  (bigfloat-signbit -0.bf)
-                  (eval:result @racketresultfont{1}))
-                 (eval:alts
-                  (bigfloat-signbit -inf.bf)
-                  (eval:result @racketresultfont{1}))]
-}
-
-@deftogether[(@defproc[(bigfloat-significand [x Bigfloat]) Integer]
-              @defproc[(bigfloat-exponent [x Bigfloat]) Integer])]{
-Return the @italic{signed} significand or exponent of @racket[x].
-
-To get both the significand and exponent at the same time, use @racket[bigfloat->sig+exp].
-}
-
-@section{Bigfloat Parameters}
-
-@defparam[bf-precision bits Integer]{
-A parameter that determines the precision of new @racket[Bigfloat] values.
-
-With a few noted exceptions, bigfloat functions conceptually compute in infinite
-precision, round the answers to @racket[(bf-precision)] bits using 
-@racket[(bf-rounding-mode)], and return the rounded answers. (In practice,
-they employ finite algorithms that have been painstakingly proved to be equivalent
-to the aforementioned infinite process.)
-                                                 
-This parameter has a guard that ensures @racket[(bf-precision)] is between
-@racket[bf-min-precision] and @racket[bf-max-precision].
-}
-
-@defparam[bf-rounding-mode mode (U 'nearest 'zero 'up 'down)]{
-A parameter that determines the rounding mode used when producing new @racket[Bigfloat] values.
-}
-
-@defthing[bf-min-precision Exact-Positive-Integer]{
-Equal to @racket[2], because single-bit bigfloats can't be correctly rounded.
-}
-
-@defthing[bf-max-precision Exact-Positive-Integer]{
-The largest value of @racket[(bf-precision)]. This is platform-dependent, and probably much
-larger than you'll ever need.
-}
-
-@section[#:tag "construction"]{Bigfloat Construction and Conversion}
 
 @defproc*[([(bf [x (U String Real)]) Bigfloat]
            [(bf [sig Integer] [exp Integer]) Bigfloat])]{
@@ -260,8 +206,7 @@ the two-argument variant in this way:
 }
 
 @defproc[(bfrandom) Bigfloat]{
-Returns a uniformly distributed random bigfloat @racket[x] such that
-@racket[(0.bf . bf<= . x)] and @racket[(x . bf< . 1.bf)].
+Returns a uniformly distributed random bigfloat in the interval [0,1].
 }
 
 @defproc[(bfcopy [x Bigfloat]) Bigfloat]{
@@ -278,6 +223,48 @@ A common pattern to compute bigfloats in higher precision is
                      (eval:result @racketresultfont{(bf #e1.61803398874989484821)}))]
 This example computes the golden ratio (@racket[phi.bf]) with 10 bits more than requested,
 to make up for triple rounding error.
+}
+
+@section{Accessors and Conversion Functions}
+
+@defproc[(bigfloat-precision [x Bigfloat]) Exact-Positive-Integer]{
+Returns the number of bits in the significand of @racket[x]. This is almost always
+the value of @racket[(bf-precision)] when @racket[x] was created.
+}
+
+@defproc[(bigfloat-signbit [x Bigfloat]) (U 0 1)]{
+Returns the sign bit of the significand of @racket[x].
+@examples[#:eval untyped-eval
+                 (eval:alts
+                  (bigfloat-signbit -1.bf)
+                  (eval:result @racketresultfont{1}))
+                 (eval:alts
+                  (bigfloat-signbit 0.bf)
+                  (eval:result @racketresultfont{0}))
+                 (eval:alts
+                  (bigfloat-signbit -0.bf)
+                  (eval:result @racketresultfont{1}))
+                 (eval:alts
+                  (bigfloat-signbit -inf.bf)
+                  (eval:result @racketresultfont{1}))]
+}
+
+@deftogether[(@defproc[(bigfloat-significand [x Bigfloat]) Integer]
+              @defproc[(bigfloat-exponent [x Bigfloat]) Integer])]{
+Return the @italic{signed} significand or exponent of @racket[x].
+
+To access the significand and exponent at the same time, use @racket[bigfloat->sig+exp].
+}
+
+@defproc[(bigfloat->sig+exp [x Bigfloat]) (Values Integer Integer)]{
+Returns the @italic{signed} significand and exponent of @racket[x].
+
+If @racket[(values sig exp) = (bigfloat->sig+exp x)], its value as an exact rational
+is @racket[(* sig (expt 2 exp))]. In fact, @racket[bigfloat->rational] converts
+bigfloats to rationals in exactly this way, after ensuring that @racket[(bfrational? x)]
+is @racket[#t].
+
+This function and the two-argument variant of @racket[bf] are mutual inverses.
 }
 
 @deftogether[(@defproc[(bigfloat->integer [x Bigfloat]) Integer]
@@ -326,15 +313,6 @@ using the current value of @racket[bf-rounding-mode].
 integers or exact rationals. Worse, they might fit, but have all your RAM and swap space for lunch.
 }
 
-@defproc[(bigfloat->sig+exp [x Bigfloat]) (Values Integer Integer)]{
-Returns the @italic{signed} significand and exponent of @racket[x].
-
-If @racket[(values sig exp) = (bigfloat->sig+exp x)], its value as an exact rational
-is @racket[(* sig (expt 2 exp))]. In fact, @racket[bigfloat->rational] converts
-bigfloats to rationals in exactly this way, after ensuring that @racket[(bfrational? x)]
-is @racket[#t].
-}
-
 @deftogether[(@defproc[(bigfloat->string [x Bigfloat]) String]
               @defproc[(string->bigfloat [s String]) (U Bigfloat False)])]{
 Convert a bigfloat @racket[x] to a string @racket[s] and back.
@@ -368,31 +346,36 @@ If @racket[s] isn't a well-formed decimal number with an optional exponent part,
                   (eval:result @racketresultfont{(bf #e3.14159265358979323851)}))]
 }
 
-@deftogether[(@defproc[(bftruncate [x Bigfloat]) Bigfloat]
-              @defproc[(bffloor [x Bigfloat]) Bigfloat]
-              @defproc[(bfceiling [x Bigfloat]) Bigfloat]
-              @defproc[(bfround [x Bigfloat]) Bigfloat])]{
-Like @racket[truncate], @racket[floor], @racket[ceiling] and @racket[round], but
-for bigfloats.
+@section{Parameters}
 
-Rounding is to the nearest integer, with ties broken by rounding to even.
-@examples[#:eval untyped-eval
-                 (eval:alts (bfround (bf 1.5)) (eval:result @racketresultfont{(bf 2)}))
-                 (eval:alts (bfround (bf 2.5)) (eval:result @racketresultfont{(bf 2)}))
-                 (eval:alts (bfround (bf -1.5)) (eval:result @racketresultfont{(bf -2)}))
-                 (eval:alts (bfround (bf -2.5)) (eval:result @racketresultfont{(bf -2)}))]
+@defparam[bf-precision bits Integer]{
+A parameter that determines the precision of bigfloats returned from most bigfloat functions.
+Exceptions are noted in the documentation for functions that do not use @racket[bf-precision].
+
+For nonzero, rational bigfloats, the number of bits @racket[bits] includes the leading one bit.
+For example, to simulate 64-bit floating point, use @racket[(bf-precision 53)] even though
+flonums have a 52-bit significand, because the one bit is implicit in a flonum.
+
+This parameter has a guard that ensures @racket[(bf-precision)] is between
+@racket[bf-min-precision] and @racket[bf-max-precision].
 }
 
-@defproc[(bffrac [x Bigfloat]) Bigfloat]{
-Returns the fractional part of @racket[x], with the same sign as @racket[x].
+@defparam[bf-rounding-mode mode (U 'nearest 'zero 'up 'down)]{
+A parameter that determines the mode used to round the results of most bigfloat functions.
+Conceptually, rounding is applied to infinite-precision results to fit them into
+@racket[(bf-precision)] bits.
 }
 
-@defproc[(bfrint [x Bigfloat]) Bigfloat]{
-Rounds @racket[x] to the nearest integer bigfloat, in the direction specified by
-@racket[(bf-rounding-mode)].
+@defthing[bf-min-precision Exact-Positive-Integer]{
+Equal to @racket[2], because single-bit bigfloats can't be correctly rounded.
 }
 
-@section[#:tag "constants"]{Bigfloat Constants}
+@defthing[bf-max-precision Exact-Positive-Integer]{
+The largest value of @racket[(bf-precision)]. This is platform-dependent, and probably much
+larger than you'll ever need.
+}
+
+@section[#:tag "constants"]{Constants}
 
 Most bigfloat ``constants'' are actually identifier macros that expand to the application
 of a zero-argument function. This allows, for example, @racket[pi.bf] to depend on the
@@ -474,7 +457,7 @@ and @racket[+nan.bf] have fixed precision.
 More fixed-precision bigfloat constants.
 }
 
-@section[#:tag "predicates"]{Bigfloat Predicates}
+@section[#:tag "predicates"]{Predicates}
 
 @deftogether[(@defproc[(bfzero? [x Bigfloat]) Boolean]
               @defproc[(bfpositive? [x Bigfloat]) Boolean]
@@ -500,7 +483,33 @@ than any other bigfloat, and every comparison returns @racket[#f] when either ar
 is @racket[+nan.bf].
 }
 
-@section[#:tag "ops"]{Bigfloat Operations}
+@section[#:tag "rounding"]{Rounding}
+
+@deftogether[(@defproc[(bftruncate [x Bigfloat]) Bigfloat]
+              @defproc[(bffloor [x Bigfloat]) Bigfloat]
+              @defproc[(bfceiling [x Bigfloat]) Bigfloat]
+              @defproc[(bfround [x Bigfloat]) Bigfloat])]{
+Like @racket[truncate], @racket[floor], @racket[ceiling] and @racket[round], but
+for bigfloats.
+
+Rounding is to the nearest integer, with ties broken by rounding to even.
+@examples[#:eval untyped-eval
+                 (eval:alts (bfround (bf 1.5)) (eval:result @racketresultfont{(bf 2)}))
+                 (eval:alts (bfround (bf 2.5)) (eval:result @racketresultfont{(bf 2)}))
+                 (eval:alts (bfround (bf -1.5)) (eval:result @racketresultfont{(bf -2)}))
+                 (eval:alts (bfround (bf -2.5)) (eval:result @racketresultfont{(bf -2)}))]
+}
+
+@defproc[(bffrac [x Bigfloat]) Bigfloat]{
+Returns the fractional part of @racket[x], with the same sign as @racket[x].
+}
+
+@defproc[(bfrint [x Bigfloat]) Bigfloat]{
+Rounds @racket[x] to the nearest integer bigfloat, in the direction specified by
+@racket[(bf-rounding-mode)].
+}
+
+@section[#:tag "ops"]{Mathematical Operations}
 
 @deftogether[(@defproc[(bfmax [x Bigfloat] ...) Bigfloat]
               @defproc[(bfmin [x Bigfloat] ...) Bigfloat])]{
@@ -664,7 +673,7 @@ asymptotically fast algorithms such as the one that computes @racket[bflog].
 }
 
 
-@section[#:tag "misc"]{Low-level Bigfloat Functions}
+@section[#:tag "misc"]{Low-level Functions}
 
 @deftogether[(@defproc[(bigfloat->ordinal [x Bigfloat]) Integer]
               @defproc[(ordinal->bigfloat [n Integer]) Bigfloat]

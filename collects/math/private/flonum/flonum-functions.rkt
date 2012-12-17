@@ -83,17 +83,14 @@
 
 (: flulp-error (Flonum Real -> Flonum))
 (define (flulp-error x r)
-  (cond [(eqv? r +nan.0)  (if (eqv? x +nan.0) 0.0 +nan.0)]
-        [(= r +inf.0)     (if (fl= x +inf.0)  0.0 +inf.0)]
-        [(= r -inf.0)     (if (fl= x -inf.0)  0.0 +inf.0)]
-        [(zero? r)        (if (zero? x)       0.0 +inf.0)]
-        [(eqv? x +nan.0)  +nan.0]
-        [(fl= x +inf.0)   +inf.0]
-        [(fl= x -inf.0)   +inf.0]
-        [(zero? x)        +inf.0]
-        [else  (flabs (real->double-flonum
-                       (/ (- (inexact->exact x) (inexact->exact r))
-                          (inexact->exact (flulp x)))))]))
+  (cond [(eqv? x r)  0.0]
+        [(and (fl= x 0.0) (zero? r))  0.0]
+        [(zero? r)  +inf.0]
+        [(and (rational? x) (rational? r))
+         (flabs (real->double-flonum
+                 (/ (- (inexact->exact x) (inexact->exact r))
+                    (inexact->exact (flulp x)))))]
+        [else  +inf.0]))
 
 ;; ===================================================================================================
 ;; More floating-point functions

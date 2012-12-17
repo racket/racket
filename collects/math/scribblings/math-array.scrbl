@@ -639,9 +639,10 @@ Like @racket[indexes-array], this does not allocate storage for its elements, an
 
 @defproc[(diagonal-array [dims Integer] [axes-length Integer] [on-value A] [off-value A])
          (Array A)]{
-Returns a square array with @racket[dims] axes, each with length @racket[axes-length]. The elements
-on the diagonal (i.e. at indexes of the form @racket[(vector j j ...)] for @racket[j < axes-length])
-have the value @racket[on-value]; the rest have the value @racket[off-value].
+Returns an array with @racket[dims] axes, each with length @racket[axes-length].
+(For example, the returned array for @racket[dims = 2] is square.)
+The elements on the diagonal (i.e. at indexes of the form @racket[(vector j j ...)] for
+@racket[j < axes-length]) have the value @racket[on-value]; the rest have @racket[off-value].
 @examples[#:eval typed-eval
                  (diagonal-array 2 7 1 0)]
 Like @racket[indexes-array], this does not allocate storage for its elements, and is @tech{strict}.
