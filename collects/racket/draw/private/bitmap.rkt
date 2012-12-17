@@ -719,48 +719,56 @@
             (cairo_surface_flush s)
             (let ([data (cairo_image_surface_get_data s)]
                   [row-width (cairo_image_surface_get_stride s)]
-                  [m (and (not pre-mult?) (get-mult-table))]
-                  [b&w-local? b&w?]
-                  [alpha-channel-local? alpha-channel?])
-              (let ([w2 (+ x (min (- width x) w))])
-                (for ([j (in-range y (min (+ y h) height))]
-                      [dj (in-naturals)])
-                  (let ([row (* j row-width)]
-                        [p (* 4 (* dj w))])
-                    (for ([i (in-range x w2)])
-                      (let* ([4i (unsafe-fx* 4 i)]
-                             [pi (unsafe-fx+ p (unsafe-fx* 4 (unsafe-fx- i x)))]
-                             [ri (unsafe-fx+ row 4i)])
-                        (if b&w-local?
-                            (let ([v (if (and (= (unsafe-bytes-ref bstr (+ pi 1)) 255)
-                                              (= (unsafe-bytes-ref bstr (+ pi 2)) 255)
-                                              (= (unsafe-bytes-ref bstr (+ pi 3)) 255))
-                                         255
-                                         0)])
-                              (unsafe-bytes-set! data (unsafe-fx+ ri A) (- 255 v))
-                              (unsafe-bytes-set! data (unsafe-fx+ ri 1) v)
-                              (unsafe-bytes-set! data (unsafe-fx+ ri 2) v)
-                              (unsafe-bytes-set! data (unsafe-fx+ ri B) v))
-                            (if alpha-channel-local?
-                                (let ([a (bytes-ref bstr pi)]
-                                      [pm (lambda (a v)
-                                            (if m
-                                                (unsafe-bytes-ref m (fx+ (fx* a 256) v))
-                                                (min a v)))])
-                                  (unsafe-bytes-set! data (unsafe-fx+ ri A) a)
-                                  (unsafe-bytes-set! data (unsafe-fx+ ri R)
-                                              (pm a (unsafe-bytes-ref bstr (unsafe-fx+ pi 1))))
-                                  (unsafe-bytes-set! data (unsafe-fx+ ri G)
-                                              (pm a (unsafe-bytes-ref bstr (unsafe-fx+ pi 2))))
-                                  (unsafe-bytes-set! data (unsafe-fx+ ri B)
-                                              (pm a (unsafe-bytes-ref bstr (unsafe-fx+ pi 3)))))
-                                (begin
-                                  (unsafe-bytes-set! data (unsafe-fx+ ri R)
-                                              (unsafe-bytes-ref bstr (unsafe-fx+ pi 1)))
-                                  (unsafe-bytes-set! data (unsafe-fx+ ri G)
-                                              (unsafe-bytes-ref bstr (unsafe-fx+ pi 2)))
-                                  (unsafe-bytes-set! data (unsafe-fx+ ri B)
-                                              (unsafe-bytes-ref bstr (unsafe-fx+ pi 3))))))))))))
+                  [m (and (not pre-mult?) (get-mult-table))])
+              (define-syntax-rule (set-loop body)
+                (let ([w2 (+ x (min (- width x) w))])
+                  (for ([j (in-range y (min (+ y h) height))]
+                        [dj (in-naturals)])
+                    (let ([row (* j row-width)]
+                          [p (* 4 (* dj w))])
+                      (for ([i (in-range x w2)])
+                        (let* ([4i (unsafe-fx* 4 i)]
+                               [pi (unsafe-fx+ p (unsafe-fx* 4 (unsafe-fx- i x)))]
+                               [ri (unsafe-fx+ row 4i)])
+                          (body pi ri)))))))
+              (cond
+               [b&w?
+                (set-loop
+                 (lambda (pi ri)
+                   (let ([v (if (and (= (unsafe-bytes-ref bstr (+ pi 1)) 255)
+                                     (= (unsafe-bytes-ref bstr (+ pi 2)) 255)
+                                     (= (unsafe-bytes-ref bstr (+ pi 3)) 255))
+                                255
+                                0)])
+                     (unsafe-bytes-set! data (unsafe-fx+ ri A) (- 255 v))
+                     (unsafe-bytes-set! data (unsafe-fx+ ri 1) v)
+                     (unsafe-bytes-set! data (unsafe-fx+ ri 2) v)
+                     (unsafe-bytes-set! data (unsafe-fx+ ri B) v))))]
+               [alpha-channel?
+                (define-syntax-rule (alpha-set-loop pm)
+                  (set-loop
+                   (lambda (pi ri)
+                     (let ([a (bytes-ref bstr pi)])
+                       (unsafe-bytes-set! data (unsafe-fx+ ri A) a)
+                       (unsafe-bytes-set! data (unsafe-fx+ ri R)
+                                          (pm a (unsafe-bytes-ref bstr (unsafe-fx+ pi 1))))
+                       (unsafe-bytes-set! data (unsafe-fx+ ri G)
+                                          (pm a (unsafe-bytes-ref bstr (unsafe-fx+ pi 2))))
+                       (unsafe-bytes-set! data (unsafe-fx+ ri B)
+                                          (pm a (unsafe-bytes-ref bstr (unsafe-fx+ pi 3))))))))
+                (if m
+                    (alpha-set-loop (lambda (a v)
+                                      (unsafe-bytes-ref m (unsafe-fx+ (unsafe-fx* a 256) v))))
+                    (alpha-set-loop (lambda (a v) (unsafe-fxmin a v))))]
+               [else
+                (set-loop
+                 (lambda (pi ri)
+                   (unsafe-bytes-set! data (unsafe-fx+ ri R)
+                                      (unsafe-bytes-ref bstr (unsafe-fx+ pi 1)))
+                   (unsafe-bytes-set! data (unsafe-fx+ ri G)
+                                      (unsafe-bytes-ref bstr (unsafe-fx+ pi 2)))
+                   (unsafe-bytes-set! data (unsafe-fx+ ri B)
+                                      (unsafe-bytes-ref bstr (unsafe-fx+ pi 3)))))]))
             (cairo_surface_mark_dirty s)))
         (cond
          [(and set-alpha?
