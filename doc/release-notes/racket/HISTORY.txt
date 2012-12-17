@@ -5,6 +5,7 @@ r5rs, r6rs: fixed case and cond to disallow internal definitions
 Add #fx() and #fl() reader forms for flvectors and fxvectors
 racket/serialize: fxvectors and flvectors are serializable
 racket/net: added uri-path-segment-unreserved-encode
+racket/url: added current-url-encode-mode
 
 Version 5.3.1.8
 file/untar: added
