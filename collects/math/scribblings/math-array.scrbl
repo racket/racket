@@ -24,9 +24,9 @@
 @title[#:tag "arrays" #:style 'toc]{Arrays}
 @(author-neil)
 
-@bold{Performance Warning:} Most of the array-producing functions exported by
-@racketmodname[math/array] run 25-50 times slower in untyped Racket, due to the
-overhead of checking higher-order contracts. We are working on it.
+@bold{Performance Warning:} Indexing the elements of arrays created in untyped Racket
+is currently 25-50 times slower than doing the same in Typed Racket, due to the overhead
+of checking higher-order contracts. We are working on it.
 
 For now, if you need speed, use the @racketmodname[typed/racket] language.
 
@@ -301,8 +301,8 @@ operations to succeed only if array shapes match exactly:
                       (array* (index-array #(3 3)) (array 10)))]
 
 Another option is @hyperlink["http://www.r-project.org"]{R}-style permissive broadcasting,
-which allows pointwise operations to @italic{always} succeed, by repeating any axis instead
-of stretching just singleton axes:
+which allows pointwise operations to @italic{always} succeed, by repeating shorter axes' rows
+instead of repeating just singleton axes' rows:
 @interaction[#:eval typed-eval
                     (define arr10 (array-map number->string (index-array #(10))))
                     (define arr3 (array-map number->string (index-array #(3))))
@@ -479,12 +479,14 @@ Returns the vector of data that @racket[arr] contains.
 
 @section{Construction}
 
-@defform[(array #[#[...] ...])]{
+@defform/subs[(array #[#[...] ...] maybe-type-ann)
+              [(maybe-type-ann (code:line) (code:line : type))]]{
 Creates a @tech{strict} @racket[Array] from nested rows of expressions.
 
 The vector syntax @racket[#[...]] delimits rows. These may be nested to any depth, and must have a
-rectangular shape. Using square parentheses is not required, but is encouraged to help distinguish
-array contents from array shapes and other vectors.
+rectangular shape. Using square parentheses is not required, but is encouraged to help visually
+distinguish array contents from array indexes and other vectors.
+(See the examples for @racket[indexes-array] for an illustration.)
 
 @examples[#:eval typed-eval
                  (array 0)
@@ -492,13 +494,16 @@ array contents from array shapes and other vectors.
                  (array #[#[1 2 3] #[4 5 6]])
                  (array #[#[1 2 3] #[4 5]])]
 As with the @racket[list] constructor, the type chosen for the array is the narrowest type
-all the elements can have. Unlike @racket[list], because @racket[array] is syntax, the only way
-to change the element type is to annotate the result.
+all the elements can have. Unlike @racket[list], because @racket[array] is syntax, instantiating
+@racket[array] with the desired element type is a syntax error:
 @interaction[#:eval typed-eval
                     (list 1 2 3)
                     (array #[1 2 3])
                     ((inst list Real) 1 2 3)
-                    ((inst array Real) #[1 2 3])
+                    ((inst array Real) #[1 2 3])]
+There are two easy ways to annotate the element type:
+@interaction[#:eval typed-eval
+                    (array #[1 2 3] : Real)
                     (ann (array #[1 2 3]) (Array Real))]
 Annotating should rarely be necessary because the @racket[Array] type is covariant.
 
@@ -509,6 +514,8 @@ Normally, the datums within literal vectors are implicitly quoted. However, when
                     (array #[not okay])
                     (array #['this 'is 'okay])
                     (array #['#(an) '#(array) '#(of) '#(vectors)])]
+
+Another way to create an immutable, strict array from literal data is to use @racket[list->array].
 }
 
 @defform/subs[(mutable-array #[#[...] ...] maybe-type-ann)
@@ -528,6 +535,8 @@ the array's elements:
                     arr
                     (array-set! arr #(0) 10.0)
                     arr]
+
+Another way to create a mutable array from literal data is to use @racket[vector->array].
 }
 
 @defproc[(make-array [ds In-Indexes] [value A]) (Array A)]{
@@ -584,16 +593,6 @@ time. Speeding it up to linear time only requires wrapping its definition with @
                      (ann (array #[0 1 1 2 3 5 8 13 21 34]) (Array Natural)))]
 Printing a lazy array computes and caches all of its elements, as does applying
 @racket[array-strict!] to it.
-}
-
-@defproc[(make-mutable-array [ds In-Indexes] [vs (Vectorof A)]) (Mutable-Array A)]{
-Returns a mutable array with @tech{shape} @racket[ds] and elements @racket[vs]; assumes
-@racket[vs] are in row-major order. If there are too many or too few elements in @racket[vs],
-@racket[(make-mutable-array ds vs)] raises an error.
-@examples[#:eval typed-eval
-                 (make-mutable-array #(3 3) #(0 1 2 3 4 5 6 7 8))
-                 (make-mutable-array #() #(singleton))
-                 (make-mutable-array #(4) #(1 2 3 4 5))]
 }
 
 @defproc[(array->mutable-array [arr (Array A)]) (Mutable-Array A)]{
@@ -664,37 +663,60 @@ This is used as an argument type to @racket[list*->array] and as the return type
 Like @racket[(Listof* A)], but for vectors. See @racket[vector*->array] and @racket[array->vector*].
 }
 
-@deftogether[(@defproc[(list->array [lst (Listof A)]) (Array A)]
+@deftogether[(@defproc*[([(list->array [lst (Listof A)]) (Array A)]
+                         [(list->array [ds In-Indexes] [lst (Listof A)]) (Array A)])]
               @defproc[(array->list [arr (Array A)]) (Listof A)])]{
-Convert lists to single-axis arrays and back. If @racket[arr] has no axes or more than one axis,
-it is (conceptually) flattened before being converted to a list.
+Convert lists to @tech{strict}, immutable arrays and back.
+
+The two-argument variant of @racket[list->array] assumes the elements in @racket[lst] are in
+row-major order.
+
+For @racket[array->list], if @racket[arr] has no axes or more than one axis, it is (conceptually)
+flattened before being converted to a list.
+
 @examples[#:eval typed-eval
                  (list->array '(1 2 3))
                  (list->array '((1 2 3) (4 5)))
+                 (list->array #(2 2) '(1 2 3 4))
                  (array->list (array #[1 2 3]))
                  (array->list (array 10))
                  (array->list (array #[#[1 2 3] #[4 5 6]]))]
 For conversion between nested lists and multidimensional arrays, see @racket[list*->array] and
 @racket[array->list*].
+For conversion from flat values to mutable arrays, see @racket[vector->array].
 }
 
-@deftogether[(@defproc[(vector->array [vec (Vectorof A)]) (Array A)]
+@deftogether[(@defproc*[([(vector->array [vec (Vectorof A)]) (Mutable-Array A)]
+                         [(vector->array [ds In-Indexes] [vec (Vectorof A)]) (Mutable-Array A)])]
               @defproc[(array->vector [arr (Array A)]) (Vectorof A)])]{
 Like @racket[list->array] and @racket[array->list], but for vectors.
+@examples[#:eval typed-eval
+                 (vector->array #(1 2 3))
+                 (vector->array #((1 2 3) (4 5)))
+                 (vector->array #(2 2) #(1 2 3 4))
+                 (array->vector (array #[1 2 3]))
+                 (array->vector (array 10))
+                 (array->vector (array #[#[1 2 3] #[4 5 6]]))]
+For conversion between nested vectors and multidimensional arrays, see @racket[vector*->array] and
+@racket[array->vector*].
 }
 
 @defproc[(list*->array [lsts (Listof* A)] [pred? ((Listof* A) -> Any : A)]) (Array A)]{
-Converts a nested list of elements of type @racket[A] to an array. The predicate @racket[pred?]
-identifies elements of type @racket[A]. The shape of @racket[lsts] must be rectangular.
+Converts a nested list of elements of type @racket[A] to a @tech{strict} array.
+The predicate @racket[pred?] identifies elements of type @racket[A].
+The shape of @racket[lsts] must be rectangular.
+
 @examples[#:eval typed-eval
                  (list*->array 'singleton symbol?)
                  (list*->array '(0 1 2 3) byte?)
                  (list*->array (list (list (list 5) (list 2 3))
                                      (list (list 4.0) (list 1.4 0.2 9.3)))
                                (make-predicate (Listof Nonnegative-Real)))]
-The last example demonstrates why a predicate is required. There is no well-typed Typed Racket
-function that behaves like @racket[list*->array] but does not require @racket[pred?], because
-without it, there is no way to distinguish between rows and elements.
+
+There is no well-typed Typed Racket function that behaves like @racket[list*->array] but does not
+require @racket[pred?].
+Without an element predicate, there is no way to prove to the type checker that
+@racket[list*->array]'s implementation correctly distinguishes elements from rows.
 }
 
 @defproc[(array->list* [arr (Array A)]) (Listof* A)]{
@@ -715,9 +737,10 @@ Like @racket[array->list*], but produces nested vectors of elements.
 }
 
 @defproc[(array-list->array [arrs (Listof (Array A))] [axis Integer 0]) (Array A)]{
-Concatenates @racket[arrs] along axis @racket[axis] to form a new array. If the arrays have
-different shapes, they are broadcast first. The axis number @racket[axis] must be nonnegative
-and @italic{no greater than} the number of axes after broadcasting.
+Concatenates @racket[arrs] along axis @racket[axis] to form a new array.
+If the arrays have different shapes, they are broadcast first.
+The axis number @racket[axis] must be nonnegative and @italic{no greater than} the number of axes in
+the highest dimensional array in @racket[arrs].
 @examples[#:eval typed-eval
                  (array-list->array (list (array 0) (array 1) (array 2) (array 3)))
                  (array-list->array (list (array 0) (array 1) (array 2) (array 3)) 1)
@@ -1756,7 +1779,7 @@ in-unsafe-array-indexes
 make-unsafe-array-set-proc
 make-unsafe-array-proc
 unsafe-build-array
-unsafe-mutable-array
+unsafe-vector->array
 unsafe-flarray
 unsafe-array-transform
 unsafe-array-axis-reduce

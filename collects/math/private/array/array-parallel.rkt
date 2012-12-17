@@ -37,7 +37,7 @@
 (define (parallel-array->mutable-array arr)
   (define size (array-size arr))
   (cond
-    [(zero? size)  (unsafe-mutable-array (array-shape arr) (vector))]
+    [(zero? size)  (unsafe-vector->array (array-shape arr) (vector))]
     [else
      (define ds (array-shape arr))
      (define dims (vector-length ds))
@@ -61,7 +61,7 @@
        (for: ([f  (in-list futures)])
          (touch f))
      
-       (unsafe-mutable-array ds vs))]))
+       (unsafe-vector->array ds vs))]))
 
 (: parallel-array-strict (All (A) ((Array A) -> (Array A))))
 (define (parallel-array-strict arr)

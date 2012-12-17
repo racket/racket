@@ -48,7 +48,7 @@
 (check-equal? (make-indexes-vector 2 3)
               #(#(0 0) #(0 1) #(0 2) #(1 0) #(1 1) #(1 2) #(2 0) #(2 1) #(2 2)))
 
-(let ([arr  (make-mutable-array #(4) #(a b c d))])
+(let ([arr  (vector->array #(4) #(a b c d))])
   (check-eq? arr (array-strict arr)))
 
 (let ([arr  (build-array #() (λ (js) 'foo))])
@@ -87,34 +87,34 @@
 ;; list*->array
 
 (check-equal? (list*->array 1.0 flonum?)
-              (make-mutable-array #() #(1.0)))
+              (vector->array #() #(1.0)))
 
 (check-equal? (list*->array '[] flonum?)
-              (make-mutable-array #(0) #()))
+              (vector->array #(0) #()))
 
 (check-equal? (list*->array '[[]] flonum?)
-              (make-mutable-array #(1 0) #()))
+              (vector->array #(1 0) #()))
 
 (check-equal? (list*->array '[1.0] flonum?)
-              (make-mutable-array #(1) #(1.0)))
+              (vector->array #(1) #(1.0)))
 
 (check-equal? (list*->array '[[1.0]] flonum?)
-              (make-mutable-array #(1 1) #(1.0)))
+              (vector->array #(1 1) #(1.0)))
 
 (check-equal? (list*->array '[[[1.0]]] flonum?)
-              (make-mutable-array #(1 1 1) #(1.0)))
+              (vector->array #(1 1 1) #(1.0)))
 
 (check-equal? (list*->array '() listof-flonum?)
-              (make-mutable-array #() #(())))
+              (vector->array #() #(())))
 
 (check-equal? (list*->array '[()] listof-flonum?)
-              (make-mutable-array #(1) #(())))
+              (vector->array #(1) #(())))
 
 (check-equal? (list*->array '[(1.0) (2.0)] listof-flonum?)
-              (make-mutable-array #(2) #((1.0) (2.0))))
+              (vector->array #(2) #((1.0) (2.0))))
 
 (check-equal? (list*->array '[((1.0)) ((2.0))] listof-flonum?)
-              (make-mutable-array #(2 1) #((1.0) (2.0))))
+              (vector->array #(2 1) #((1.0) (2.0))))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; array->list*
@@ -156,22 +156,22 @@
 ;; vector*->array
 
 (check-equal? (vector*->array 1.0 flonum?)
-              (make-mutable-array #() #(1.0)))
+              (vector->array #() #(1.0)))
 
 (check-equal? ((inst vector*->array Float) #() flonum?)
-              (make-mutable-array #(0) #()))
+              (vector->array #(0) #()))
 
 (check-equal? ((inst vector*->array Float) #(#()) flonum?)
-              (make-mutable-array #(1 0) #()))
+              (vector->array #(1 0) #()))
 
 (check-equal? ((inst vector*->array Float) #(1.0) flonum?)
-              (make-mutable-array #(1) #(1.0)))
+              (vector->array #(1) #(1.0)))
 
 (check-equal? ((inst vector*->array Float) #(#(1.0)) flonum?)
-              (make-mutable-array #(1 1) #(1.0)))
+              (vector->array #(1 1) #(1.0)))
 
 (check-equal? ((inst vector*->array Float) #(#(#(1.0))) flonum?)
-              (make-mutable-array #(1 1 1) #(1.0)))
+              (vector->array #(1 1 1) #(1.0)))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; array->vector
@@ -303,7 +303,7 @@
 (check-equal? (array-map (inst cons Float Float)
                          (array #[1.0 2.0])
                          (array #[10.0 20.0]))
-              (make-mutable-array #(2) #[(1.0 . 10.0) (2.0 . 20.0)]))
+              (vector->array #(2) #[(1.0 . 10.0) (2.0 . 20.0)]))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Fold

@@ -87,7 +87,7 @@
       (cond [(pred? lst)  (unsafe-build-strict-array #() (λ (js) lst))]
             [ds  (let ([ds  (check-array-shape ds raise-shape-error)])
                    (define size (array-shape-size ds))
-                   (unsafe-mutable-array ds (list*->flat-vector lst size pred?)))]
+                   (unsafe-vector->array ds (list*->flat-vector lst size pred?)))]
             [else  (raise-shape-error)]))
     
     (: vector*->array (All (A) ((Vectorof* A) ((Vectorof* A) -> Any : A) -> (Array A))))

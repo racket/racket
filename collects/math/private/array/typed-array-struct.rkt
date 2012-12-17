@@ -113,12 +113,25 @@
     (unsafe-build-strict-array ds (λ: ([js : Indexes])
                                     (proc (vector->immutable-vector js))))))
 
-(: flat-list->array (All (A) (In-Indexes (Listof A) -> (Array A))))
-(define (flat-list->array ds lst)
-  (let ([ds  (check-array-shape ds (λ () (raise-argument-error 'array "(Vectorof Index)" ds)))])
-    (define vs (list->vector lst))
-    (unsafe-build-strict-array
-     ds (λ: ([js : Indexes]) (unsafe-vector-ref vs (unsafe-array-index->value-index ds js))))))
+(: unsafe-list->array (All (A) (Indexes (Listof A) -> (Array A))))
+(define (unsafe-list->array ds xs)
+  (define vs (list->vector xs))
+  (unsafe-build-strict-array
+   ds (λ: ([js : Indexes]) (unsafe-vector-ref vs (unsafe-array-index->value-index ds js)))))
+
+(: list->array (All (A) (case-> ((Listof A) -> (Array A))
+                                (In-Indexes (Listof A) -> (Array A)))))
+(define list->array
+  (case-lambda
+    [(xs)  (unsafe-list->array ((inst vector Index) (length xs)) xs)]
+    [(ds xs)
+     (let* ([ds  (check-array-shape
+                  ds (λ () (raise-argument-error 'list->array "(Vectorof Index)" 0 ds xs)))]
+            [size  (array-shape-size ds)]
+            [n  (length xs)])
+       (if (= size n)
+           (unsafe-list->array ds xs)
+           (raise-argument-error 'list->array (format "List of length ~e" size) 1 ds xs)))]))
 
 (: array-lazy (All (A) ((Array A) -> (Array A))))
 (define (array-lazy arr)

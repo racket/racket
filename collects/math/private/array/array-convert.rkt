@@ -15,8 +15,6 @@
          vector*->array
          array->list*
          array->vector*
-         list->array
-         vector->array
          array->list
          array->vector)
 
