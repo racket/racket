@@ -91,8 +91,8 @@
     bit-vector-copy))
 
 (define (bit-vector-popcount bv)
-  (for/sum ([fx (in-bytes (bit-vector-words bv))])
-    (fxpopcount fx)))
+  (for/sum ([b (in-bytes (bit-vector-words bv))])
+    (unsafe-fxpopcount* b 8)))
 
 (define (bit-vector->list bv)
   (define len (bit-vector-size bv))

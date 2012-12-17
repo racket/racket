@@ -1,11 +1,12 @@
 #lang racket/base
 (require racket/unsafe/ops
          (for-syntax racket/base racket/fixnum racket/vector))
-(provide fxpopcount)
+(provide fxpopcount
+         unsafe-fxpopcount*)
 ;; Count set bits for 30 bit number in 5 steps.
-;; for 62 bit number in 6.
+;; for 62 bit number in 6, for 8 bit numbers in 3
 
-(define-for-syntax lut
+(define-for-syntax lut30
   #(#x2AAAAAAA
     #x0CCCCCCC
     #x30F0F0F0
@@ -20,15 +21,32 @@
     #x3FFF0000FFFF0000
     #x3FFFFFFF00000000))
 
-(define-syntax (mk-fxpopcount stx)
+(define-for-syntax lut8
+  #(#xAA
+    #xCC
+    #xF0))
+
+(define-syntax (define-fxpopcount stx)
   (syntax-case stx ()
-    [(_ name)
+    [(_ name bits)
+     #'(define (name n)
+         (unless (fixnum? n) (raise-argument-error 'name "fixnum?" 0 n))
+         (unsafe-fxpopcount* n bits))]))
+
+(define-syntax (unsafe-fxpopcount* stx)
+  (syntax-case stx ()
+    [(_ expr bits0)
      ;; Choose at compile time what word length is
-     (let* ([lut (if (fixnum? (expt 2 61)) lut62 lut)]
+     (let* ([bits (syntax-e #'bits0)]
+            [bits (or bits (if (fixnum? (expt 2 61)) 62 30))]
+            [lut
+             (cond [(<= bits 8) lut8]
+                   [(<= bits 30) lut30]
+                   [(<= bits 62) lut62]
+                   [else (raise-syntax-error "bit width too big" stx #'bits0)])]
             [flut (vector-map bitwise-not lut)])
        ;; Unroll the addition loop
-       #`(define (name n)
-           (unless (fixnum? n) (raise-argument-error 'name "fixnum?" 0 n))
+       #`(let ([n expr])
            (let* #,(for/list ([m (in-vector lut)]
                               [f (in-vector flut)]
                               [b (in-naturals)])
@@ -37,5 +55,4 @@
                                       (unsafe-fxand n #,f))])
              n)))]))
 
-(mk-fxpopcount fxpopcount)
-
+(define-fxpopcount fxpopcount #f)
