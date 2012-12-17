@@ -81,7 +81,7 @@ a UNC path is represented by a first element that is @racket[""] and
 then successive elements complete the drive components that are
 separated by @litchar{/} or @litchar{\}.}
 
-@defstruct[path/param ([path (or/c string? (one-of/c 'up 'same))]
+@defstruct[path/param ([path (or/c string? (or/c 'up 'same))]
                        [param (listof string?)])]{
 
 A pair that joins a path segment with its params in a URL.}
@@ -169,7 +169,10 @@ The @racket[url->string] procedure uses
 @racket[alist->form-urlencoded] when formatting the query, so it is
 sensitive to the @racket[current-alist-separator-mode] parameter for
 determining the association separator. The default is to separate
-associations with a @litchar{&}.}
+associations with a @litchar{&}.
+
+The encoding of path segments and fragment is sensitive to the
+@racket[current-url-encode-mode] parameter.}
 
 
 @defproc[(path->url [path (or/c path-string? path-for-some-system?)])
@@ -179,17 +182,34 @@ Converts a path to a @racket[url].}
 
 
 @defproc[(url->path [URL url?]
-                    [kind (one-of/c 'unix 'windows) (system-path-convention-type)])
+                    [kind (or/c 'unix 'windows) (system-path-convention-type)])
          path-for-some-system?]{
 
 Converts @racket[URL], which is assumed to be a @racket["file"] URL,
 to a path.}
 
 
-@defparam[file-url-path-convention-type kind (one-of/c 'unix 'windows)]{
+@defparam[file-url-path-convention-type kind (or/c 'unix 'windows)]{
 
 Determines the default conversion to and from strings for
 @racket["file"] URLs. See @racket[string->url] and @racket[url->string].}
+
+
+@defparam[current-url-encode-mode mode (or/c 'recommended 'unreserved)]{
+
+Determines how @racket[url->string] encodes @litchar{!}, @litchar{*}, @litchar{'}, @litchar{(},
+and @litchar{)} in path segments and fragments:
+@racket['recommended] leave them as-is, while @racket['unreserved]
+encodes them using @litchar{%}. The @racket['recommended] mode corresponds
+to the recommendations of RFC 2396 @cite["RFC2396"], but @racket['unreserved]
+avoids characters that are in some contexts mistaken for delimiters around
+URLs.
+
+Internally, @racket['recommended] mode uses
+@racket[uri-path-segment-encode] and @racket[uri-encode], while
+@racket['unreserved] mode uses
+@racket[uri-path-segment-unreserved-encode] and
+@racket[uri-unreserved-encode].}
 
 
 @deftogether[(
@@ -428,7 +448,8 @@ Note that @racket[net/url] does not provide the
 @defsignature[url^ ()]{
 
 Includes everything exported by the @racketmodname[net/url] module
-except @racket[current-https-protocol].  Note that the exports of
+except @racket[current-https-protocol] and @racket[current-url-encode-mode].
+Note that the exports of
 @racketmodname[net/url] and the @racket[url^] signature do not include
 @racket[current-connect-scheme].}
 
