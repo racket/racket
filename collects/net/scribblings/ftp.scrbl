@@ -106,6 +106,7 @@ is intended to limit polling.
 @racketblock[
 (ftp-download-file
  ftp-conn "." "testfile"
+ #:progress
  (lambda (get-count)
    (thread
     (lambda ()
