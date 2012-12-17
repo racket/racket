@@ -32,17 +32,19 @@ Creates a new bit-vector of size @racket[size]. All elements
 are initialized to @racket[fill].
 
 @examples[#:eval the-eval
-(define bv (make-bit-vector 3))
-(bit-vector-ref bv 1)]
+(bit-vector-ref (make-bit-vector 3) 2)
+(bit-vector-ref (make-bit-vector 3 #t) 2)
+]
 }
 
 @defproc[(bit-vector [elem boolean?] ...)
          bit-vector?]{
 
 Creates a new bit-vector containing each @racket[elem] in order.
+
 @examples[#:eval the-eval
-(define bv (bit-vector #f #t #f))
-(bit-vector-ref bv 1)]
+(bit-vector-ref (bit-vector #f #t #f) 1)
+]
 }
 
 @defproc[(bit-vector? [v any/c]) boolean?]{
@@ -56,8 +58,13 @@ Returns @racket[#t] if @racket[v] is a bit-vector, @racket[#f] otherwise.
          any/c]{
 
 Returns the element at index @racket[index], if @racket[index] is less
-than @racket[(bit-vector-length gv)]. Otherwise, @racket[default] is
+than @racket[(bit-vector-length bv)]. Otherwise, @racket[default] is
 invoked if it is a procedure, returned otherwise.
+
+@examples[#:eval the-eval
+(bit-vector-ref (bit-vector #f #t) 1)
+(bit-vector-ref (bit-vector #f #t) 5 'not-there)
+]
 }
 
 @defproc[(bit-vector-set! 
@@ -68,9 +75,13 @@ invoked if it is a procedure, returned otherwise.
          void?]{
 
 Sets the value at index @racket[index] to be @racket[value]. 
+
 @examples[#:eval the-eval
-(define bv (bit-vector #f #t #f))
-(bit-vector-ref bv 1)]
+(define bv (bit-vector #f #t))
+(bit-vector-ref bv 0)
+(bit-vector-set! bv 0 #t)
+(bit-vector-ref bv 0)
+]
 }
 
 @defproc[(bit-vector-length [bv bit-vector?])
@@ -83,6 +94,7 @@ Returns the number of items in the bit-vector @racket[bv].
          exact-nonnegative-integer?]{
 
 Returns the number of set bits in the bit-vector @racket[bv].
+
 @examples[#:eval the-eval
 (bit-vector-popcount (bit-vector #f #t #t))]
 }
@@ -103,10 +115,9 @@ to @racket[end] (exclusive).
 Returns a sequence whose elements are the elements of the bit-vector
 @racket[bv]. Mutation of @racket[bv] while the sequence is running
 changes the elements produced by the sequence. To obtain a sequence
-from a snapshot of @racket[gv], use @racket[(in-vector
+from a snapshot of @racket[bv], use @racket[(in-bit-vector
 (bit-vector-copy bv))] instead.
 
-                      
 @examples[#:eval the-eval
 (define bv (bit-vector #f #t #f))
 (for/list ([x (in-bit-vector bv)]) x)]
@@ -133,11 +144,13 @@ the value of @racket[fill-expr], which defaults to @racket[#f] (i.e.,
 the default argument of @racket[make-bit-vector]).
 
 @examples[#:eval the-eval
-(define (to-list bv) (for/list ([x bv]) x))                 
-(to-list (for/bit-vector ([i '(1 2 3)]) (odd? i)))
-(to-list (for/bit-vector #:length 2 ([i '(1 2 3)]) (odd? i)))
-(to-list (for/bit-vector #:length 4 ([i '(1 2 3)]) (odd? i)))
-(to-list 
+(bit-vector->list
+ (for/bit-vector ([i '(1 2 3)]) (odd? i)))
+(bit-vector->list
+ (for/bit-vector #:length 2 ([i '(1 2 3)]) (odd? i)))
+(bit-vector->list
+ (for/bit-vector #:length 4 ([i '(1 2 3)]) (odd? i)))
+(bit-vector->list
  (for/bit-vector #:length 4 #:fill #t ([i '(1 2 3)]) (odd? i)))
 ]
 
@@ -150,6 +163,22 @@ mutate a shared bit-vector.}
            body-or-break ... body)]{
 
 Like @racket[for/bit-vector] but with the implicit nesting of @racket[for*].
+}
+
+@deftogether[[
+@defproc[(bit-vector->list [bv bit-vector?]) (listof boolean?)]
+@defproc[(list->bit-vector [bits (listof boolean?)]) bit-vector?]
+@defproc[(bit-vector->string [bv bit-vector?]) (and/c string? #rx"^[01]*$")]
+@defproc[(string->bit-vector [s (and/c string? #rx"^[01]*$")]) bit-vector?]
+]]{
+
+Converts between bit-vectors and their representations as lists and
+strings.
+
+@examples[#:eval the-eval
+(bit-vector->list (string->bit-vector "100111"))
+(bit-vector->string (list->bit-vector '(#t #f #t #t)))
+]
 }
 
 @close-eval[the-eval]

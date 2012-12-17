@@ -114,3 +114,13 @@
              (for ([ws (in-list '(8 30 62))])
                (for ([i (in-range 10)])
                  (test (* ws 10))))))
+
+(test-case "bit-vector string->list"
+  (let ([bitstrings '("0" "1" "10" "11" "1010110011100011110000")])
+    (for ([s (in-list bitstrings)])
+      (check-equal? (bit-vector->string (string->bit-vector s)) s)
+      (let ([bitlist (for/list ([c (in-string s)]) (eqv? c #\1))])
+        (check-equal? (bit-vector->list (string->bit-vector s))
+                      bitlist)
+        (check-equal? (string->bit-vector s)
+                      (list->bit-vector bitlist))))))
