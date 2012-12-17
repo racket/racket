@@ -80,8 +80,8 @@ along with their corresponding Racket representations.
   @racket['timestamptz]   @& @tt{timestamptz}        @& @racket[sql-timestamp?] 
                                                         or @racket[-inf.0] or @racket[+inf.0] @//
   @racket['interval]      @& @tt{interval}           @& @racket[sql-interval?] @//
-  @racket['bit]           @& @tt{bit}                @& @racket[sql-bits?] @//
-  @racket['varbit]        @& @tt{varbit}             @& @racket[sql-bits?] @//
+  @racket['bit]           @& @tt{bit}                @& @racket[bit-vector?] @//
+  @racket['varbit]        @& @tt{varbit}             @& @racket[bit-vector?] @//
 
   @racket['json]          @& @tt{json}               @& @racket[jsexpr?] @//
   @racket['int4range]     @& @tt{int4range}          @& @racket[pg-range-or-empty?] @//
@@ -200,7 +200,7 @@ with their corresponding Racket representations.
   @racket['var-binary]         @& @racket[bytes?] @//
   @racket['blob]               @& @racket[bytes?] @//
 
-  @racket['bit]                @& @racket[sql-bits?] @//
+  @racket['bit]                @& @racket[bit-vector?] @//
   @racket['geometry]           @& @racket[geometry2d?]
 }
 }
@@ -211,7 +211,7 @@ of Racket values to parameters accepts strings, numbers
 (@racket[rational?]---no infinities or NaN), bytes, SQL date/time
 structures (@racket[sql-date?], @racket[sql-time?],
 @racket[sql-timestamp?], and @racket[sql-day-time-interval?]), bits
-(@racket[sql-bits?]), and geometric values
+(@racket[bit-vector?]), and geometric values
 (@racket[geometry2d?]). Numbers are sent as 64-bit signed integers, if
 possible, or as double-precision floating point numbers otherwise.
 
@@ -508,55 +508,30 @@ values.
 @subsection{Bits}
 
 The @tt{BIT} and @tt{BIT VARYING} (@tt{VARBIT}) SQL types are
-represented by sql-bits values.
+represented by bit-vectors (@racketmodname[data/bit-vector]).
 
+The following functions are provided for backwards compatibility. They
+are deprecated and will be removed in a future release of Racket.
+
+@deftogether[[
 @defproc[(make-sql-bits [len exact-nonnegative-integer?]) 
-         sql-bits?]{
-
-  Creates a new sql-bits value containing @racket[len] zeros.
-}
-
-@defproc[(sql-bits? [v any/c]) boolean?]{
-
-  Returns @racket[#t] if @racket[v] is a sql-bits value, @racket[#f]
-  otherwise.
-}
-
+         sql-bits?]
+@defproc[(sql-bits? [v any/c]) boolean?]
 @defproc[(sql-bits-length [b sql-bits?])
-         exact-nonnegative-integer?]{
-
-  Returns the number of bits stored in @racket[b].
-}
-
+         exact-nonnegative-integer?]
 @defproc[(sql-bits-ref [b sql-bits?] [i exact-nonnegative-integer?])
-         boolean?]{
-
-  Returns the bit stored by @racket[b] at index @racket[i] as a
-  boolean.
-}
-
+         boolean?]
 @defproc[(sql-bits-set! [b sql-bits?] 
                         [i exact-nonnegative-integer?] 
                         [v boolean?])
-         void?]{
-
-  Updates @racket[b], setting the bit at index @racket[i] to @racket[v].
-}
-
-@deftogether[[
+         void?]
 @defproc[(sql-bits->list [b sql-bits?]) (listof boolean?)]
 @defproc[(sql-bits->string [b sql-bits?]) string?]
 @defproc[(list->sql-bits [lst (listof boolean?)]) sql-bits?]
 @defproc[(string->sql-bits [s string?]) sql-bits?]]]{
 
-  Converts a sql-bits value to or from its representation as a list or
-  string.
+Deprecated; use @racketmodname[data/bit-vector] instead.
 
-@examples[#:eval the-eval
-(sql-bits->list (string->sql-bits "1011"))
-(sql-bits->string (query-value pgc "select B'010110111'"))
-]
 }
-
 
 @(close-eval the-eval)

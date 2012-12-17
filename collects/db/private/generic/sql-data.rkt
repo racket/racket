@@ -1,5 +1,6 @@
 #lang racket/base
-(require racket/serialize)
+(require racket/serialize
+         data/bit-vector)
 (provide (all-defined-out))
 
 ;; SQL Data
@@ -135,8 +136,31 @@
 
 ;; Bits
 
+;; A sql-bits is now just a bit-vector (see data/bit-vector).
+
+(define (sql-bits? v)
+  (bit-vector? v))
+(define (sql-bits-length b)
+  (bit-vector-length b))
+(define (make-sql-bits len)
+  (make-bit-vector len #f))
+(define (sql-bits-ref b i)
+  (bit-vector-ref b i))
+(define (sql-bits-set! b i v)
+  (bit-vector-set! b i v))
+(define (sql-bits->list b)
+  (bit-vector->list b))
+(define (list->sql-bits l)
+  (list->bit-vector l))
+(define (sql-bits->string b)
+  (bit-vector->string b))
+(define (string->sql-bits s)
+  (string->bit-vector s))
+
+;; ----
+
 #|
-A sql-bits is (sql-bits len bv offset)
+Formerly, a sql-bits was (sql-bits len bv offset)
 where len is the number of bits, and bv is a bytes, offset is nat.
 
 Bit order is little-endian wrt bytes, but big-endian wrt bits within a
@@ -144,97 +168,42 @@ byte. (Because that's PostgreSQL's binary format.) For example:
 
   (bytes 128 3) represents 1000000 0000011
 |#
-(serializable-struct sql-bits (length bv offset))
+;;(serializable-struct sql-bits (length bv offset))
 
-(define (make-sql-bits len)
-  (sql-bits len (make-bytes (/ceiling len 8) 0) 0))
+(define (make-sql-bits/bytes len bs offset)
+  (define bv (make-bit-vector len #f))
+  (for ([i (in-range len)])
+    (let ([n (+ i offset)])
+      (let-values ([(bytei biti) (quotient/remainder n 8)])
+        (when (bitwise-bit-set? (bytes-ref bs bytei) (- 7 biti))
+          (bit-vector-set! bv i #t)))))
+  bv)
 
-(define (make-sql-bits/bytes len bv offset)
-  (sql-bits len bv offset))
+(define deserialize-info:sql-bits-v0
+  (make-deserialize-info
+   make-sql-bits/bytes
+   (lambda () (error 'deserialize-info:sql-bits-v0 "cycles not allowed"))))
 
-(define (check-index fsym b index)
-  (let ([len (sql-bits-length b)])
-    (unless (< index len)
-      (raise-range-error fsym "sql-bits" "" index b 0 (sub1 len)))))
-
-(define (sql-bits-ref b i)
-  (check-index 'sql-bits-ref b i)
-  (bv-ref (sql-bits-bv b) (+ i (sql-bits-offset b))))
-(define (bv-ref bv i)
-  (let-values ([(bytei biti) (quotient/remainder i 8)])
-    (bitwise-bit-set? (bytes-ref bv bytei) (- 7 biti))))
-
-(define (sql-bits-set! b i v)
-  (check-index 'sql-bits-set! b i)
-  (bv-set! (sql-bits-bv b) (+ i (sql-bits-offset b)) v))
-(define (bv-set! bv i v)
-  (let-values ([(bytei biti) (quotient/remainder i 8)])
-    (let* ([oldbyte (bytes-ref bv bytei)]
-           [mask (arithmetic-shift 1 (- 7 biti))]
-           [newbyte (bitwise-ior (bitwise-and oldbyte (bitwise-xor 255 mask)) (if v mask 0))])
-      (unless (= oldbyte newbyte)
-        (bytes-set! bv bytei newbyte)))))
-
-(define (sql-bits->list b)
-  (let ([l (sql-bits-length b)]
-        [bv (sql-bits-bv b)]
-        [offset (sql-bits-offset b)])
-    (for/list ([i (in-range l)])
-      (bv-ref bv (+ offset i)))))
-
-(define (sql-bits->string b)
-  (let* ([l (sql-bits-length b)]
-         [bv (sql-bits-bv b)]
-         [offset (sql-bits-offset b)]
-         [s (make-string l)])
-    (for ([i (in-range l)])
-      (string-set! s i (if (bv-ref bv (+ offset i)) #\1 #\0)))
-    s))
-
-(define (list->sql-bits lst)
-  (let* ([b (make-sql-bits (length lst))]
-         [bv (sql-bits-bv b)])
-    (for ([v (in-list lst)]
-          [i (in-naturals)])
-      (bv-set! bv i v))
-    b))
-
-(define (string->sql-bits s)
-  (let* ([b (make-sql-bits (string-length s))]
-         [bv (sql-bits-bv b)])
-    (for ([i (in-range (string-length s))])
-      (case (string-ref s i)
-        ((#\0) (bv-set! bv i #f))
-        ((#\1) (bv-set! bv i #t))
-        (else (raise-type-error 'string->sql-bits "string over {0,1}" 0 s))))
-    b))
+;; align-sql-bits : bit-vector 'left/'right -> (values nat bytes 0)
+;; Formats a bit-vector in postgresql ('left) or mysql ('right) binary format.
+;; Returns number of bits, byte buffer, and starting point of data in buffer
+;; (as byte index, now always 0).
+(define (align-sql-bits bv dir)
+  (let* ([len (bit-vector-length bv)]
+         [offset (case dir
+                   ((left) 0)
+                   ((right) (- 8 (remainder len 8))))]
+         [bs (make-bytes (/ceiling len 8) 0)])
+    (for ([bvi (in-range len)]
+          [bsi (in-naturals offset)])
+      (when (bit-vector-ref bv bvi)
+        (let-values ([(bytei biti) (quotient/remainder bsi 8)])
+          (bytes-set! bs bytei (+ (bytes-ref bs bytei) (arithmetic-shift 1 (- 7 biti)))))))
+    (values len bs 0)))
 
 (define (/ceiling x y)
   (let-values ([(q r) (quotient/remainder x y)])
     (+ q (if (zero? r) 0 1))))
-
-(define (align-sql-bits b dir)
-  (let* ([len (sql-bits-length b)]
-         [bv (sql-bits-bv b)]
-         [offset (sql-bits-offset b)]
-         [offset* (case dir
-                    ((left) 0)
-                    ((right) (- 8 (remainder len 8))))])
-    (cond [(= (remainder offset 8) offset*)
-           (values len bv (quotient offset 8))]
-          [else
-           (let ([b* (copy-sql-bits b offset*)])
-             (values len (sql-bits-bv b*) 0))])))
-
-(define (copy-sql-bits b [offset* 0])
-  (let* ([len (sql-bits-length b)]
-         [bv0 (sql-bits-bv b)]
-         [offset0 (sql-bits-offset b)]
-         [bytelen* (/ceiling (+ len offset*) 8)]
-         [bv* (make-bytes bytelen* 0)])
-    (for ([i (in-range len)])
-      (bv-set! bv* (+ i offset*) (bv-ref bv0 (+ offset0 i))))
-    (sql-bits len bv* offset*)))
 
 ;; ----------------------------------------
 
