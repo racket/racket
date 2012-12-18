@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/unsafe/ops
-         (for-syntax racket/base racket/fixnum racket/vector))
+         (for-syntax racket/base racket/fixnum))
 (provide fxpopcount
          unsafe-fxpopcount*)
 ;; Count set bits for 30 bit number in 5 steps.
@@ -43,13 +43,12 @@
              (cond [(<= bits 8) lut8]
                    [(<= bits 30) lut30]
                    [(<= bits 62) lut62]
-                   [else (raise-syntax-error "bit width too big" stx #'bits0)])]
-            [flut (vector-map bitwise-not lut)])
+                   [else (raise-syntax-error "bit width too big" stx #'bits0)])])
        ;; Unroll the addition loop
        #`(let ([n expr])
            (let* #,(for/list ([m (in-vector lut)]
-                              [f (in-vector flut)]
                               [b (in-naturals)])
+                     (define f (bitwise-not m))
                      #`[n (unsafe-fx+ (unsafe-fxrshift (unsafe-fxand n #,m)
                                                        #,(fxlshift 1 b))
                                       (unsafe-fxand n #,f))])

@@ -1,8 +1,9 @@
 #lang racket/base
 (require (for-syntax racket/base)
+         (for-syntax "private/count-bits-in-fixnum.rkt")
          racket/private/vector-wraps
          racket/match
-         racket/dict         
+         racket/dict
          racket/contract/base
          racket/fixnum
          racket/unsafe/ops
@@ -90,9 +91,20 @@
            (bit-vector-copy bv start end)])])
     bit-vector-copy))
 
+(define popcount-table
+  (let ()
+    (define-syntax (make-table stx)
+      (with-syntax ([(elt ...)
+                     (for/list ([i (in-range 256)])
+                       (fxpopcount i))])
+        ;; Literal immutable vector allocated once (?)
+        #'(quote #(elt ...))))
+    (make-table)))
+
 (define (bit-vector-popcount bv)
   (for/sum ([b (in-bytes (bit-vector-words bv))])
-    (unsafe-fxpopcount* b 8)))
+    #| (unsafe-fxpopcount* b 8) |#
+    (unsafe-vector-ref popcount-table b)))
 
 (define (bit-vector->list bv)
   (define len (bit-vector-size bv))
