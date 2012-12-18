@@ -21,8 +21,6 @@ _Italic_. \_Just underlines\_.
 `Second line.`
 `Last line.`  
 
-The end.
-
 `THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS`   
 `“AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT`     
 `LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR` 
@@ -43,3 +41,7 @@ The end.
 
 Returns a new mutable string of length `k` where each position in the
 string is initialized with the character `char`
+
+> Note: This is a note. Let’s make it long enough that the markdown output
+> will have to line-wrap, to make sure the > mark starts each line
+> properly.
