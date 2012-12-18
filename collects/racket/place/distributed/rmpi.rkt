@@ -6,7 +6,8 @@
          racket/place
          racket/class
          racket/flonum
-         racket/fixnum)
+         racket/fixnum
+         racket/vector)
 
 (provide rmpi-init
          rmpi-send
@@ -353,27 +354,36 @@
           i)))
 
 (define (rmpi-alltoall comm outvec)
-  (match-define (rmpi-comm real-id cnt chs) comm)
-  (define-values (v! vr invec)
+  (match-define (rmpi-comm id cnt chs) comm)
+  (define-values (v! vr mkv vcopy)
     (cond 
-      [(vector? outvec) (values vector-set! vector-ref (make-vector (vector-length outvec) 0))]
-      [(fxvector? outvec) (values fxvector-set! fxvector-ref (make-fxvector (fxvector-length outvec) 0))]
-      [(flvector? outvec) (values flvector-set! flvector-ref (make-flvector (flvector-length outvec) 0.0))]
+      [(vector? outvec) (values vector-set! vector-ref make-vector vector-copy)]
+      [(fxvector? outvec) (values fxvector-set! fxvector-ref make-fxvector fxvector-copy)]
+      [(flvector? outvec) (values flvector-set! flvector-ref make-flvector flvector-copy)]
       [else (error (format "Unrecognized type of vector ~a" outvec))]))
-  (define (send+i i)
-    (define peer-id (modulo (fx+ real-id i) cnt))
-    ;(printf/f "A2ASEND ~a ~a ~a ~a\n" i real-id peer-id (vr outvec peer-id))
-    (place-channel-put (vector-ref chs peer-id) (vr outvec peer-id)))
-  (define (recv+i i)
-    (define peer-id (modulo (fx- real-id i) cnt))
-    (define val (place-channel-get (vector-ref chs peer-id)))
-    ;(printf/f "A2ARECV ~a ~a ~a ~a\n" i real-id peer-id val)
-    (v! invec peer-id val))
-  (v! invec real-id (vr outvec real-id))
-  (for ([i (in-range 1 cnt)])
-    (send+i i)
-    (recv+i i))
-  invec)
+
+  (define invec (mkv cnt))
+  (v! invec id (vr outvec id)) 
+
+  (define n
+    (let loop ([i 0])
+      (if (>= (arithmetic-shift 1 i) cnt)
+        i
+        (loop (add1 i)))))
+
+  (for ([i (in-range 1 (arithmetic-shift 1 n))])
+    (define peer-id (bitwise-xor id i))
+    (when (< peer-id cnt)
+      (if (> id peer-id)
+        (begin
+          (place-channel-put (vector-ref chs peer-id) (vr outvec peer-id))
+          (v! invec peer-id (place-channel-get (vector-ref chs peer-id))))
+        (begin
+          (v! invec peer-id (place-channel-get (vector-ref chs peer-id)))
+          (place-channel-put (vector-ref chs peer-id) (vr outvec peer-id))))))
+
+   invec)
+
 
 (define (rmpi-alltoallv comm outvec send-count send-displ invec recv-count recv-displ)
   (match-define (rmpi-comm real-id cnt chs) comm)
@@ -387,30 +397,14 @@
   ;; convert from outvec to vector of outvectors 
   (define outvv
     (for/vector #:length (fxvector-length send-count) ([i (in-fxvector send-count)]
-                                                     [d (in-fxvector send-displ)])
+                                                       [d (in-fxvector send-displ)])
       (define vv (mk-v i))
       (for ([ii (in-range d (fx+ d i))]
             [iii (in-naturals)])
         (v! vv iii (vr outvec ii)))
       vv))
-  (define invv (make-vector cnt #f))
 
-  ;; alltoall
-  (vector-set! invv real-id (vector-ref outvv real-id))
-  (define (send+i i)
-    (define peer-id (modulo (fx+ real-id i) cnt))
-    ;(printf/f "ALLTOALLV SENDING TO ~a ~a\n" peer-id real-id)
-    #;(thread (lambda ()
-              (sleep 1)
-              (printf/f "WOW!\n")))
-    (place-channel-put (vector-ref chs peer-id) (vector-ref outvv peer-id)))
-  (define (recv+i i)
-    (define peer-id (modulo (fx- real-id i) cnt))
-    ;(printf/f "ALLTOALLV RECVING FROM ~a ~a\n" peer-id real-id)
-    (vector-set! invv peer-id (place-channel-get (vector-ref chs peer-id))))
-  (for ([i (in-range 1 cnt)])
-    (send+i i)
-    (recv+i i))
+  (define invv (rmpi-alltoall comm outvv))
 
   ;; convert form vector of invectors to invector
   (for ([v (in-vector invv)]
@@ -462,7 +456,8 @@
   (rmpi-reduce (rmpi-comm 0 8 (vector 0 1 2 3 4 5 6 7)) 3 + 7)
   )
 
-(module+ test
+;Don't use eli-tester in the core, use rackunit
+#;(module+ test
   (require tests/eli-tester)
   (test 
     (partit 10 3 0) => (values 0 4)
