@@ -63,3 +63,7 @@ Example of a defproc:
 
 Returns a new mutable string of length `k` where each position in the
 string is initialized with the character `char`
+
+> Note: This is a note. Let’s make it long enough that the markdown output
+> will have to line-wrap, to make sure the > mark starts each line
+> properly.
