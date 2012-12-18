@@ -6,6 +6,7 @@ Add #fx() and #fl() reader forms for flvectors and fxvectors
 racket/serialize: fxvectors and flvectors are serializable
 racket/net: added uri-path-segment-unreserved-encode
 racket/url: added current-url-encode-mode
+ffi/com: added com-get-property*
 
 Version 5.3.1.8
 file/untar: added
