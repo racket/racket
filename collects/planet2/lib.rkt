@@ -45,10 +45,20 @@
 
 (define-logger planet2)
 
+(define (log-exn x what)
+  (log-planet2-error (~a "failure ~a\n"
+                         "  error: ~s")
+                     what
+                     (exn-message x)))
+
 (struct pkg-desc (source type name auto?))
 
 (define (file->value* pth def)
-  (with-handlers ([exn:fail? (λ (x) def)])
+  (with-handlers ([exn:fail? (λ (x) 
+                                ;; No logging, because this funciton is used only
+                                ;; for METADATA.rktd, which is going away, and we
+                                ;; don't want to complain about a missing file.
+                                def)])
     (file->value pth)))
 
 (define (path->bytes* pkg)
@@ -123,7 +133,9 @@
 (define (get-metadata metadata-ns pkg-dir key get-default
                       #:checker [checker void])
   (define get-info 
-    (with-handlers ([exn:fail? (λ (x) #f)])
+    (with-handlers ([exn:fail? (λ (x)
+                                  (log-exn x "getting info")
+                                  #f)])
       (get-info/full pkg-dir #:namespace metadata-ns)))
   (define v
     (if get-info
@@ -205,8 +217,12 @@
 
 (define (read-file-hash file)
   (define the-db
-    (with-handlers ([exn:fail? (λ (x) (hash))])
-      (file->value file)))
+    (with-handlers ([exn:fail? (λ (x) 
+                                  (log-exn x "reading file hash") 
+                                  (hash))])
+      (if (file-exists? file) ; don't complain if the file is missing
+          (file->value file)
+          (hash))))
   the-db)
 (define (write-file-hash! file new-db)
   (make-parent-directory* file)
