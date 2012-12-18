@@ -6,51 +6,49 @@
          racket/contract/base
          racket/fixnum
          racket/unsafe/ops
+         racket/serialize
          "private/count-bits-in-fixnum.rkt")
 
-(define bits-in-a-word
-  (if (fixnum? (expt 2 61)) 
-      ; 32 or 64-bit fixnums?
-      62 30))
+(define bits-in-a-word 8)
 
-(define largest-fixnum
+(define largest-word
   (- (expt 2 bits-in-a-word) 1))
-
-(define ((bad-index-error who index))
-  (raise-mismatch-error who "index out of range: " index))
 
 (define (make-bit-vector size [fill #f])
   (define-values (q r) (quotient/remainder size bits-in-a-word))
-  (define word-size (add1 q))
-  (define words (make-fxvector word-size (if fill largest-fixnum 0)))  
+  (define word-size (+ q (if (zero? r) 0 1)))
+  (define words (make-bytes word-size (if fill largest-word 0)))  
   (when (and fill (not (zero? r))) 
-    (fxvector-set! words q (- (expt 2 r) 1)))
-  (bit-vector words size word-size))
+    (bytes-set! words q (- (expt 2 r) 1)))
+  (bit-vector words size))
 
-(define (bit-vector* . init-bits)
-  (define bv (make-bit-vector (length init-bits)))
-  (for ([i (in-naturals)]
-        [b (in-list init-bits)])
-    (bit-vector-set! bv i b))
-  bv)
+(define bit-vector*
+  (let ([bit-vector
+         (lambda init-bits
+           (list->bit-vector init-bits))])
+    bit-vector))
 
-(define (bit-vector-ref bv n 
-                        [default (bad-index-error 'bit-vector-ref n)])
+(define not-given (gensym))
+
+(define (bit-vector-ref bv n [default not-given])
   (unless (exact-nonnegative-integer? n)
-    (raise-type-error 'bit-vector-ref "exact nonnegative integer" n))
-  (cond
-    [(>= n (bit-vector-size bv))
-     (if (procedure? default)
-         (default)
-         default)]
-    [else
-     (unsafe-bit-vector-ref bv n)]))
+    (raise-argument-error 'bit-vector-ref "exact-nonnegative-integer?" n))
+  (cond [(< n (bit-vector-size bv))
+         (unsafe-bit-vector-ref bv n)]
+        [else
+         (cond [(eq? default not-given)
+                (raise-range-error 'bit-vector-ref
+                                   "bit-vector"
+                                   "" n bv 0 (sub1 (bit-vector-size bv)))]
+               [(procedure? default)
+                (default)]
+               [else default])]))
 
 (define (unsafe-bit-vector-ref bv n)
   (define-values (wi bi) (quotient/remainder n bits-in-a-word))
   (match bv
-    [(struct bit-vector (words size word-size))
-     (define word (fxvector-ref words wi))
+    [(struct bit-vector (words size))
+     (define word (bytes-ref words wi))
      (define bit  (bitwise-bit-set? word bi))
      bit]))
 
@@ -71,11 +69,11 @@
 (define (bit-vector-set! bv n b)
   (define-values (wi bi) (quotient/remainder n bits-in-a-word))
   (match bv
-    [(struct bit-vector (words size word-size))
-     (define word (fxvector-ref words wi))
+    [(struct bit-vector (words size))
+     (define word (bytes-ref words wi))
      (define bit  (bitwise-bit-set? word bi))
      (unless (eq? bit b)
-       (fxvector-set! words wi (bitwise-xor word (expt 2 bi))))]))
+       (bytes-set! words wi (bitwise-xor word (expt 2 bi))))]))
 
 (define (bit-vector-length bv)
   (bit-vector-size bv))
@@ -84,9 +82,8 @@
   (let ([bit-vector-copy
          (case-lambda
           [(bv)
-           (bit-vector (fxvector-copy (bit-vector-words bv))
-                       (bit-vector-size bv)
-                       (bit-vector-word-size bv))]
+           (bit-vector (bytes-copy (bit-vector-words bv))
+                       (bit-vector-size bv))]
           [(bv start)
            (bit-vector-copy bv start)]
           [(bv start end)
@@ -94,8 +91,39 @@
     bit-vector-copy))
 
 (define (bit-vector-popcount bv)
-  (for/sum ([fx (in-fxvector (bit-vector-words bv))])
+  (for/sum ([fx (in-bytes (bit-vector-words bv))])
     (fxpopcount fx)))
+
+(define (bit-vector->list bv)
+  (define len (bit-vector-size bv))
+  (let loop ([i 0])
+    (cond [(< i len)
+           (cons (unsafe-bit-vector-ref bv i)
+                 (loop (add1 i)))]
+          [else null])))
+
+(define (list->bit-vector init-bits)
+  (define len (length init-bits))
+  (define bv (make-bit-vector len))
+  (for ([i (in-range len)]
+        [b (in-list init-bits)])
+    (bit-vector-set! bv i b))
+  bv)
+
+(define (bit-vector->string bv)
+  (let* ([l (bit-vector-size bv)]
+         [s (make-string l)])
+    (for ([i (in-range l)])
+      (string-set! s i (if (unsafe-bit-vector-ref bv i) #\1 #\0)))
+    s))
+
+(define (string->bit-vector s)
+  (let* ([bv (make-bit-vector (string-length s) #f)])
+    (for ([i (in-range (string-length s))])
+      (when (eqv? (string-ref s i) #\1)
+        (bit-vector-set! bv i #t)))
+    bv))
+
 
 (define-vector-wraps "bit-vector"
   bit-vector? bit-vector-length bit-vector-ref bit-vector-set! make-bit-vector
@@ -109,10 +137,21 @@
 
 ; A bit vector is represented as a vector of words.
 ; Each word contains 30 or 62 bits depending on the size of a fixnum.
-(struct bit-vector (words size word-size)
-  ; words     is the fxvector of words
+(serializable-struct bit-vector (words size)
+  ; words     is the bytes of words
   ; size      is the number of bits in bitvector
-  ; word-size is the number of words in words
+  #:guard ;; needed because deserialization doesn't go through contracts
+  (lambda (words size _name)
+    (unless (bytes? words)
+      (raise-argument-error 'bit-vector "bytes?" words))
+    (unless (exact-nonnegative-integer? size)
+      (raise-argument-error 'bit-vector "exact-nonnegative-integer?" size))
+    (let-values ([(q r) (quotient/remainder size bits-in-a-word)])
+      (unless (and (= (bytes-length words) (+ q (if (zero? r) 0 1)))
+                   ;; make sure "unreachable" bits are unset
+                   (or (zero? r) (< (bytes-ref words q) (expt 2 r))))
+        (error 'bit-vector "bit vector data contains wrong number of bits")))
+    (values words size))
   #:property prop:dict/contract
   (list (vector-immutable bit-vector-ref
                           bit-vector-set!
@@ -133,23 +172,20 @@
      (let ([vx (bit-vector-words x)]
            [vy (bit-vector-words y)]
            [nx (bit-vector-size x)]
-           [ny (bit-vector-size y)]
-           [wsx (bit-vector-word-size x)]
-           [wsy (bit-vector-word-size y)])
-       (and (= nx ny) (= wsx wsy) 
-            (for/and ([index (in-range (- (fxvector-length vx) 1))])
-              (eq? (fxvector-ref vx index)
-                   (fxvector-ref vy index)))
+           [ny (bit-vector-size y)])
+       (and (= nx ny)
+            (for/and ([index (in-range (- (bytes-length vx) 1))])
+              (eq? (bytes-ref vx index)
+                   (bytes-ref vy index)))
             ; TODO: check last word
             )))
    (define (hash-code x hc)
      (let ([v (bit-vector-words x)]
-           [n (bit-vector-size x)]
-           [ws (bit-vector-word-size x)])
+           [n (bit-vector-size x)])
        (bitwise-xor
-        (hc ws) (hc n)
-        (for/fold ([h 1]) ([i (in-range (fxvector-length v))])
-          (bitwise-xor h (hc (fxvector-ref v i)))))))
+        (hc n)
+        (for/fold ([h 1]) ([i (in-range (bytes-length v))])
+          (bitwise-xor h (hc (bytes-ref v i)))))))
    (define hash-proc  hash-code)
    (define hash2-proc hash-code)]
   #:property prop:sequence in-bit-vector)
@@ -171,6 +207,14 @@
   (-> bit-vector? any)]
  (rename bit-vector-copy*
          bit-vector-copy
-         (-> bit-vector? bit-vector?)))
+         (-> bit-vector? bit-vector?))
+ [bit-vector->list
+  (-> bit-vector? (listof boolean?))]
+ [list->bit-vector
+  (-> (listof boolean?) bit-vector?)]
+ [bit-vector->string
+  (-> bit-vector? string?)]
+ [string->bit-vector
+  (-> (and/c string? #rx"^[01]*$") bit-vector?)])
 
 (provide in-bit-vector for/bit-vector for*/bit-vector)

@@ -110,8 +110,11 @@
 
   ;; test the characters that need to be encoded in paths vs those that do not need to
   ;; be encoded in paths
-  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a:@!$&'()*+,=z") #("/?#[];") #("")) () #f)
-             "http://www.drscheme.org/a:@!$&'()*+,=z/%2F%3F%23%5B%5D%3B/")
+  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a:@!$&'()*+,=z") #("/?#[];") #("")) () "@!$&'()*+,=z")
+             "http://www.drscheme.org/a:@!$&'()*+,=z/%2F%3F%23%5B%5D%3B/#%40!%24%26'()*%2B%2C%3Dz")
+  (parameterize ([current-url-encode-mode 'unreserved])
+    (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a:@!$&'()*+,=z") #("/?#[];") #("")) () "@!$&'()*+,=z")
+               "http://www.drscheme.org/a:@%21$&%27%28%29%2A+,=z/%2F%3F%23%5B%5D%3B/#%40%21%24%26%27%28%29%2A%2B%2C%3Dz"))
 
   (test-s->u #("http" #f "www.drscheme.org" #f #t (#(".") #("..") #(same) #(up) #("...") #("abc.def")) () #f)
              "http://www.drscheme.org/%2e/%2e%2e/./../.../abc.def")

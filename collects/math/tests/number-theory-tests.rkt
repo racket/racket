@@ -63,7 +63,7 @@
                 (build-list 20 (λ: ([n : Integer]) (modulo ((make-fibonacci a b) n) mod)))))
 
 ; "partitions.rkt"
-(check-equal? (map partition-count '(0 1 2 3 4 5 6 7 8 9 10))
+(check-equal? (map partitions '(0 1 2 3 4 5 6 7 8 9 10))
               '(1 1 2 3 5 7 11 15 22 30 42))
 
 
@@ -100,7 +100,9 @@
 (check-equal? (permutations 10 10) 3628800)
 (check-equal? (permutations 0 0) 1)
 
-(check-equal? (multinomial 20 3 4 5 8) 3491888400)
+(check-equal? (multinomial 20 '(3 4 5 8)) 3491888400)
+(check-equal? (multinomial 0 '()) 1)
+(check-equal? (multinomial 4 '(1 1)) 0)
 
 ; "binomial.rkt"
 (check-equal? (binomial 10 3) 120)

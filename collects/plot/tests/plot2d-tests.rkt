@@ -4,6 +4,8 @@
 
 ;(plot-new-window? #t)
 
+(plot (function / -249 250))
+
 (time
  (define xs (build-list 10000 (λ _ (random))))
  (plot (density xs 1/2)))

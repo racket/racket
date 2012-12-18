@@ -87,7 +87,7 @@
         (combine-path-strings (url-path-absolute? url) path)
         ;; (if query (sa "?" (uri-encode query)) "")
         (if (null? query) "" (sa "?" (alist->form-urlencoded query)))
-        (if fragment (sa "#" (uri-encode fragment)) ""))))
+        (if fragment (sa "#" (uri-encode* fragment)) ""))))
 
 ;; url->default-port : url -> num
 (define (url->default-port url)
@@ -545,7 +545,7 @@
         [(eq?    p 'same) "."]
         [(equal? p "..")  "%2e%2e"]
         [(equal? p ".")   "%2e"]
-        [else (uri-path-segment-encode p)]))
+        [else (uri-path-segment-encode* p)]))
 
 (define (combine-path-strings absolute? path/params)
   (cond [(null? path/params) ""]
@@ -688,6 +688,18 @@
     (tcp-abandon-port client->server)
     server->client))
 
+(define current-url-encode-mode (make-parameter 'recommended))
+
+(define (uri-encode* str)
+  (case (current-url-encode-mode)
+    [(unreserved) (uri-unreserved-encode str)]
+    [(recommended) (uri-encode str)]))
+
+(define (uri-path-segment-encode* str)
+  (case (current-url-encode-mode)
+    [(unreserved) (uri-path-segment-unreserved-encode str)]
+    [(recommended) (uri-path-segment-encode str)]))
+
 (provide (struct-out url) (struct-out path/param))
 
 (provide/contract
@@ -728,4 +740,5 @@
  (current-proxy-servers
   (parameter/c (or/c false/c (listof (list/c string? string? number?)))))
  (file-url-path-convention-type
-  (parameter/c (one-of/c 'unix 'windows))))
+  (parameter/c (one-of/c 'unix 'windows)))
+ (current-url-encode-mode (parameter/c (one-of/c 'recommended 'unreserved))))

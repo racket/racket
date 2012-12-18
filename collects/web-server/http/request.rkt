@@ -193,7 +193,7 @@
             [(list _ field value)
              (list* (make-header field (read-one-head in value))
                     (read-header))])]
-      [else (network-error 'read-headers "malformed header")])))
+      [else (network-error 'read-headers "malformed header: ~e" l)])))
 
 ; read-one-head : iport bytes -> bytes
 (define (read-one-head in rhs)

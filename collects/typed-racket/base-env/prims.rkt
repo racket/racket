@@ -695,44 +695,54 @@ This file defines two sorts of primitives. All of them are provided into any mod
     ;; the annotation is not necessary (always of Void type), but kept
     ;; for consistency with the other for: macros
     [(_ (~seq : Void) ...
-        clauses ; no need to annotate the type, it's always Void
-        c:expr ...)
-     (let ((body (syntax-property #'(c ...) 'type-ascription #'Void)))
+        ;; c is not always an expression, could be a break-clause
+        clauses c ...) ; no need to annotate the type, it's always Void
+     (let ((body #`(; break-clause ...
+                    #,@(syntax-property #'(c ...) 'type-ascription #'Void))))
        (let loop ((clauses #'clauses))
-         (define-syntax-class for-clause
+         (define-splicing-syntax-class for-clause
            ;; single-valued seq-expr
            ;; unlike the definitions in for-clauses.rkt, this does not include
            ;; #:when clauses, which are handled separately here
-           (pattern (var:optionally-annotated-name seq-expr:expr)
-                    #:with expand #'(var.ann-name seq-expr))
+           (pattern (~seq (var:optionally-annotated-name seq-expr:expr))
+                    #:with (expand ...) #'((var.ann-name seq-expr)))
            ;; multi-valued seq-expr
            ;; currently disabled because it triggers an internal error in the typechecker
-           #;(pattern ((v:optionally-annotated-name ...) seq-expr:expr)
-                    #:with expand #'((v.ann-name ...) seq-expr)))
+           ;; (pattern ((v:optionally-annotated-name ...) seq-expr:expr)
+           ;;          #:with (expand ...) #'(((v.ann-name ...) seq-expr)))
+           ;; break-clause, pass it directly
+           ;; Note: these don't ever typecheck
+           (pattern (~seq (~and kw (~or #:break #:final)) guard-expr:expr)
+                    #:with (expand ...) #'(kw guard-expr)))
+         (define-syntax-class for-kw
+           (pattern #:when
+                    #:with replace-with #'when)
+           (pattern #:unless
+                    #:with replace-with #'unless))
          (syntax-parse clauses
-           [(head:for-clause next:for-clause ... #:when rest ...)
+           [(head:for-clause next:for-clause ... kw:for-kw rest ...)
             (syntax-property
              (quasisyntax/loc stx
                (for
-                (head.expand next.expand ...)
-                #,(loop #'(#:when rest ...))))
+                (head.expand ... next.expand ... ...)
+                #,(loop #'(kw rest ...))))
              'type-ascription
              #'Void)]
            [(head:for-clause ...) ; we reached the end
             (syntax-property
              (quasisyntax/loc stx
                (for
-                (head.expand ...)
+                (head.expand ... ...)
                 #,@body))
              'type-ascription
              #'Void)]
-           [(#:when guard) ; we end on a #:when clause
+           [(kw:for-kw guard) ; we end on a keyword clause
             (quasisyntax/loc stx
-              (when guard
+              (kw.replace-with guard
                 #,@body))]
-           [(#:when guard rest ...)
+           [(kw:for-kw guard rest ...)
             (quasisyntax/loc stx
-              (when guard
+              (kw.replace-with guard
                 #,(loop #'(rest ...))))])))]))
 
 (define-for-syntax (maybe-annotate-body body ty)
@@ -751,7 +761,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
     (syntax-parse stx #:literals (:)
       [(_ a:optional-standalone-annotation
           (clause:for-clause ...)
-          c:expr ...)
+          c ...) ; c is not always an expression, can be a break-clause
        (maybe-annotate-body
         (quasisyntax/loc stx
           (#,name
@@ -783,7 +793,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(_ : ty
         ((var:optionally-annotated-name) ...)
         (clause:for-clause ...)
-        c:expr ...)
+        c ...) ; c is not always an expression, can be a break-clause
      (syntax-property
       (quasisyntax/loc stx
         (for/lists (var.ann-name ...)
@@ -793,7 +803,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
       #'ty)]
     [(_ ((var:annotated-name) ...)
         (clause:for-clause ...)
-        c:expr ...)
+        c ...)
      (syntax-property
       (quasisyntax/loc stx
         (for/lists (var.ann-name ...)
@@ -806,7 +816,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(_ : ty
         ((var:optionally-annotated-name init:expr) ...)
         (clause:for-clause ...)
-        c:expr ...)
+        c ...) ; c is not always an expression, can be a break-clause
      (syntax-property
       (quasisyntax/loc stx
         (for/fold ((var.ann-name init) ...)
@@ -816,7 +826,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
       #'ty)]
     [(_ ((var:annotated-name init:expr) ...)
         (clause:for-clause ...)
-        c:expr ...)
+        c ...)
      (syntax-property
       (quasisyntax/loc stx
         (for/fold ((var.ann-name init) ...)
@@ -829,10 +839,10 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (for*: stx)
   (syntax-parse stx #:literals (:)
     [(_ (~seq : Void) ...
-        (clause:for*-clause ...)
-        c:expr ...)
+        (clause:for-clause ...)
+        c ...) ; c is not always an expression, can be a break-clause
      (quasisyntax/loc stx
-       (for: (clause.expand ... ...)
+       (for: (clause.expand* ... ...)
              c ...))]))
 
 ;; These currently only typecheck in very limited cases.
@@ -841,7 +851,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
     (syntax-parse stx #:literals (:)
       [(_ a:optional-standalone-annotation
           (clause:for-clause ...)
-          c:expr ...)
+          c ...) ; c is not always an expression, can be a break-clause
        (maybe-annotate-body
         (quasisyntax/loc stx
           (#,name (clause.expand ... ...)
@@ -867,22 +877,22 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-parse stx #:literals (:)
     [(_ : ty
         ((var:optionally-annotated-name) ...)
-        (clause:for*-clause ...)
-        c:expr ...)
+        (clause:for-clause ...)
+        c ...) ; c is not always an expression, can be a break-clause
      (syntax-property
       (quasisyntax/loc stx
         (for/lists (var.ann-name ...)
-          (clause.expand ... ...)
+          (clause.expand* ... ...)
           c ...))
       'type-ascription
       #'ty)]
     [(_ ((var:annotated-name) ...)
-        (clause:for*-clause ...)
-        c:expr ...)
+        (clause:for-clause ...)
+        c ...)
      (syntax-property
       (quasisyntax/loc stx
         (for/lists (var.ann-name ...)
-          (clause.expand ... ...)
+          (clause.expand* ... ...)
           c ...))
       'type-ascription
       #'(values var.ty ...))]))
@@ -890,22 +900,22 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-parse stx #:literals (:)
     [(_ : ty
         ((var:optionally-annotated-name init:expr) ...)
-        (clause:for*-clause ...)
-        c:expr ...)
+        (clause:for-clause ...)
+        c ...) ; c is not always an expression, can be a break-clause
      (syntax-property
       (quasisyntax/loc stx
         (for/fold ((var.ann-name init) ...)
-          (clause.expand ... ...)
+          (clause.expand* ... ...)
           c ...))
       'type-ascription
       #'ty)]
     [(_ ((var:annotated-name init:expr) ...)
-        (clause:for*-clause ...)
-        c:expr ...)
+        (clause:for-clause ...)
+        c ...)
      (syntax-property
       (quasisyntax/loc stx
         (for/fold ((var.ann-name init) ...)
-          (clause.expand ... ...)
+          (clause.expand* ... ...)
           c ...))
       'type-ascription
       #'(values var.ty ...))]))
@@ -916,7 +926,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
     (syntax-parse stx #:literals (:)
       [(_ : ty
           (clause:for-clause ...)
-          c:expr ...)
+          c ...) ; c is not always an expression, can be a break-clause
        ;; ty has to include exact 0, the initial value of the accumulator
        ;; (to be consistent with Racket semantics).
        ;; We can't just change the initial value to be 0.0 if we expect a
@@ -940,7 +950,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
     (syntax-parse stx
       #:literals (:)
       ((_ (~seq : return-annotation:expr)
-          (bind:optionally-annotated-binding ...) body:expr ...)
+          (bind:optionally-annotated-binding ...)
+          body ...) ; body is not always an expression, can be a break-clause
        (quasisyntax/loc stx
          (for/fold: : return-annotation
            ((return-hash : return-annotation (ann (#,hash-maker null) return-annotation)))
@@ -957,7 +968,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
     (syntax-parse stx
       #:literals (:)
       ((_ (~seq : return-annotation:expr)
-          (bind:optionally-annotated-binding ...) body:expr ...)
+          (bind:optionally-annotated-binding ...)
+          body ...) ; body is not always an expression, can be a break-clause
        (quasisyntax/loc stx
          (for*/fold: : return-annotation
            ((return-hash : return-annotation (ann (#,hash-maker null) return-annotation)))

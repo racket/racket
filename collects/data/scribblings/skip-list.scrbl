@@ -24,6 +24,11 @@ A skip-list is an ordered dictionary (@racket[dict?] and
 @racket[ordered-dict?]). It also supports extensions of the dictionary
 interface for iterator-based search and mutation.
 
+Operations on skip-lists are not thread-safe. If a key in a skip-list
+is mutated, the skip-list's internal invariants may be violated,
+causings its behavior to become unpredictable.
+
+
 @defproc[(make-skip-list [ord order? datum-order]
                          [#:key-contract key-contract contract? any/c]
                          [#:value-contract value-contract contract? any/c])

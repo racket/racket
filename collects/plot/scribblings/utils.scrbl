@@ -6,6 +6,10 @@
 
 @defmodule[plot/utils]
 
+Typed Racket users should use
+
+@defmodule*/no-declare[(plot/typed/utils)]
+
 @;====================================================================================================
 @section{Formatting}
 

@@ -43,11 +43,11 @@
 
 (define (bitmap-file-kind-symbol? s)
   (memq s '(unknown unknown/mask unknown/alpha
-                    gif gif/mask gif/alpha 
+                    gif gif/mask gif/alpha
                     jpeg jpeg/alpha
                     png png/mask png/alpha
-                    xbm xbm/alpha 
-                    xpm xpm/alpha 
+                    xbm xbm/alpha
+                    xpm xpm/alpha
                     bmp bmp/alpha
                     pict)))
 
@@ -117,7 +117,7 @@
 (define (alpha-unmult al v)
   (if (zero? al)
       255
-      (unsafe-fxmin 255 
+      (unsafe-fxmin 255
                     (unsafe-fl->fx
                      (unsafe-flround
                       (unsafe-fl/
@@ -143,7 +143,7 @@
   (class* object% (png-convertible<%>)
 
     ;; We support three kinds of bitmaps:
-    ;;  * Color with alpha channel; 
+    ;;  * Color with alpha channel;
     ;;    when used as a mask, alpha channel is used;
     ;;    this is the sensible one that works nicely with Cairo
     ;;  * Black and white; alpha channel is opposite
@@ -161,7 +161,7 @@
     (super-new)
 
     (define-values (alt? width height b&w? alpha-channel? s loaded-mask)
-      (case-args 
+      (case-args
        args
        [([alternate-bitmap-kind? a])
         (values #t
@@ -184,7 +184,7 @@
             [b&w?
              ;; Init transparent white:
              (transparent-white! s w h)]
-            [alpha? 
+            [alpha?
              ;; Init transparent:
              (bytes-fill! (cairo_image_surface_get_data s) 0)]
             [else
@@ -199,7 +199,7 @@
          [any? [complain-on-failure? #f]])
         (let-values ([(s b&w?) (do-load-bitmap filename kind bg-color complain-on-failure?)]
                      [(alpha?) (memq kind '(unknown/alpha gif/alpha jpeg/alpha
-                                                          png/alpha xbm/alpha xpm/alpha 
+                                                          png/alpha xbm/alpha xpm/alpha
                                                           bmp/alpha))]
                      [(mask?) (memq kind '(unknown/mask gif/mask png/mask))])
           (let ([mask-bm
@@ -320,10 +320,10 @@
                              (equal? (peek-bytes (bytes-length s) 0 in) s))])
               (cond
                [(starts? #"\211PNG\r\n")
-                (do-load-bitmap in 
-                                (if (eq? kind 'unknown/alpha) 
-                                    'png/alpha 
-                                    (if (eq? kind 'unknown/mask) 
+                (do-load-bitmap in
+                                (if (eq? kind 'unknown/alpha)
+                                    'png/alpha
+                                    (if (eq? kind 'unknown/mask)
                                         'png/mask
                                         'png))
                                 bg
@@ -353,7 +353,7 @@
                proc
                (values (cairo_image_surface_create_from_png_stream proc) #f)))
             ;; Using libpng directly:
-            (let-values ([(r w h b&w? alpha?) (create-png-reader 
+            (let-values ([(r w h b&w? alpha?) (create-png-reader
                                                in
                                                (memq kind '(png/mask png/alpha))
                                                (and bg
@@ -436,7 +436,7 @@
                     (values s #f))
                   (values #f #f)))]
            [else (values #f #f)])))
-    
+
     ;; s : Cairo bitmap surface
     ;; w, h : width and height in pixels
     ;; rows : a vector of `h' byte strings
@@ -469,7 +469,7 @@
                                    (unsafe-fxrshift 128 (unsafe-fxand i 7)))]
                           [pos (fx+ row (fx* 4 i))])
                       (let* ([v (if (zero? (unsafe-fxand bit (unsafe-bytes-ref r b)))
-                                    0 
+                                    0
                                     255)]
                              [v (if backward? (- 255 v) v)])
                         (unsafe-bytes-set! dest (fx+ pos A) (- 255 v))
@@ -514,7 +514,7 @@
       (and (ok?)
            (begin
              (if alt?
-                 (call-with-alt-bitmap 
+                 (call-with-alt-bitmap
                   0 0 width height
                   (lambda (bm)
                     (send bm save-file out kind quality)))
@@ -540,7 +540,7 @@
                  (for ([j (in-range height)])
                    (let ([row (vector-ref rows j)])
                      (for ([bi (in-range b)])
-                       (bytes-set! 
+                       (bytes-set!
                         row
                         bi
                         (let ([src (+ (* j row-width) (* (* bi 8) 4))])
@@ -553,7 +553,7 @@
                  (let ([w (create-png-writer out width height #t #f)])
                    (write-png w rows)
                    (destroy-png-writer w)))]
-              [else #;(and (not alpha-channel?) 
+              [else #;(and (not alpha-channel?)
                            loaded-mask
                            (= width (send loaded-mask get-width))
                            (= height (send loaded-mask get-height)))
@@ -642,7 +642,7 @@
       (when (ok?)
         (if alt?
             (call-with-alt-bitmap
-             x y w h 
+             x y w h
              (lambda (bm) (send bm get-argb-pixels 0 0 w h bstr get-alpha? pre-mult?)))
             (do-get-argb-pixels x y w h bstr get-alpha? pre-mult?))))
 
@@ -679,8 +679,8 @@
                   (for ([ri (in-range ri-start ri-end 4)]
                         [pi (in-range pi-start pi-end 4)])
                     (let ([a (unsafe-bytes-ref data (+ ri A))])
-                      (let-syntax ([unmult 
-                                    ;; Defined as a macro to copy the 
+                      (let-syntax ([unmult
+                                    ;; Defined as a macro to copy the
                                     ;; `unsafe-bytes-ref' to each branch,
                                     ;; instead of binding a local variable
                                     (syntax-rules ()
@@ -720,39 +720,55 @@
             (let ([data (cairo_image_surface_get_data s)]
                   [row-width (cairo_image_surface_get_stride s)]
                   [m (and (not pre-mult?) (get-mult-table))])
-              (let ([w2 (+ x (min (- width x) w))])
-                (for ([j (in-range y (min (+ y h) height))]
-                      [dj (in-naturals)])
-                  (let ([row (* j row-width)]
-                        [p (* 4 (* dj w))])
-                    (for ([i (in-range x w2)])
-                      (let* ([4i (* 4 i)]
-                             [pi (+ p (* 4 (- i x)))]
-                             [ri (+ row 4i)])
-                        (if b&w?
-                            (let ([v (if (and (= (bytes-ref bstr (+ pi 1)) 255)
-                                              (= (bytes-ref bstr (+ pi 2)) 255)
-                                              (= (bytes-ref bstr (+ pi 3)) 255))
-                                         255
-                                         0)])
-                              (bytes-set! data (+ ri A) (- 255 v))
-                              (bytes-set! data (+ ri 1) v)
-                              (bytes-set! data (+ ri 2) v)
-                              (bytes-set! data (+ ri B) v))
-                            (if alpha-channel?
-                                (let ([a (bytes-ref bstr pi)]
-                                      [pm (lambda (a v)
-                                            (if m
-                                                (unsafe-bytes-ref m (fx+ (fx* a 256) v))
-                                                (min a v)))])
-                                  (bytes-set! data (+ ri A) a)
-                                  (bytes-set! data (+ ri R) (pm a (bytes-ref bstr (+ pi 1))))
-                                  (bytes-set! data (+ ri G) (pm a (bytes-ref bstr (+ pi 2))))
-                                  (bytes-set! data (+ ri B) (pm a (bytes-ref bstr (+ pi 3)))))
-                                (begin
-                                  (bytes-set! data (+ ri R) (bytes-ref bstr (+ pi 1)))
-                                  (bytes-set! data (+ ri G) (bytes-ref bstr (+ pi 2)))
-                                  (bytes-set! data (+ ri B) (bytes-ref bstr (+ pi 3))))))))))))
+              (define-syntax-rule (set-loop body)
+                (let ([w2 (+ x (min (- width x) w))])
+                  (for ([j (in-range y (min (+ y h) height))]
+                        [dj (in-naturals)])
+                    (let ([row (* j row-width)]
+                          [p (* 4 (* dj w))])
+                      (for ([i (in-range x w2)])
+                        (let* ([4i (unsafe-fx* 4 i)]
+                               [pi (unsafe-fx+ p (unsafe-fx* 4 (unsafe-fx- i x)))]
+                               [ri (unsafe-fx+ row 4i)])
+                          (body pi ri)))))))
+              (cond
+               [b&w?
+                (set-loop
+                 (lambda (pi ri)
+                   (let ([v (if (and (= (unsafe-bytes-ref bstr (+ pi 1)) 255)
+                                     (= (unsafe-bytes-ref bstr (+ pi 2)) 255)
+                                     (= (unsafe-bytes-ref bstr (+ pi 3)) 255))
+                                255
+                                0)])
+                     (unsafe-bytes-set! data (unsafe-fx+ ri A) (- 255 v))
+                     (unsafe-bytes-set! data (unsafe-fx+ ri 1) v)
+                     (unsafe-bytes-set! data (unsafe-fx+ ri 2) v)
+                     (unsafe-bytes-set! data (unsafe-fx+ ri B) v))))]
+               [alpha-channel?
+                (define-syntax-rule (alpha-set-loop pm)
+                  (set-loop
+                   (lambda (pi ri)
+                     (let ([a (bytes-ref bstr pi)])
+                       (unsafe-bytes-set! data (unsafe-fx+ ri A) a)
+                       (unsafe-bytes-set! data (unsafe-fx+ ri R)
+                                          (pm a (unsafe-bytes-ref bstr (unsafe-fx+ pi 1))))
+                       (unsafe-bytes-set! data (unsafe-fx+ ri G)
+                                          (pm a (unsafe-bytes-ref bstr (unsafe-fx+ pi 2))))
+                       (unsafe-bytes-set! data (unsafe-fx+ ri B)
+                                          (pm a (unsafe-bytes-ref bstr (unsafe-fx+ pi 3))))))))
+                (if m
+                    (alpha-set-loop (lambda (a v)
+                                      (unsafe-bytes-ref m (unsafe-fx+ (unsafe-fx* a 256) v))))
+                    (alpha-set-loop (lambda (a v) (unsafe-fxmin a v))))]
+               [else
+                (set-loop
+                 (lambda (pi ri)
+                   (unsafe-bytes-set! data (unsafe-fx+ ri R)
+                                      (unsafe-bytes-ref bstr (unsafe-fx+ pi 1)))
+                   (unsafe-bytes-set! data (unsafe-fx+ ri G)
+                                      (unsafe-bytes-ref bstr (unsafe-fx+ pi 2)))
+                   (unsafe-bytes-set! data (unsafe-fx+ ri B)
+                                      (unsafe-bytes-ref bstr (unsafe-fx+ pi 3)))))]))
             (cairo_surface_mark_dirty s)))
         (cond
          [(and set-alpha?
@@ -760,7 +776,7 @@
           ;; Set alphas:
           (set-alphas-as-mask x y w h bstr (* 4 w) 0)])
         (drop-alpha-s)))
-    
+
     (define/public (get-alphas-as-mask x y w h bstr)
       (let ([data (cairo_image_surface_get_data (if (or b&w? alpha-channel?)
                                                     (begin
@@ -778,7 +794,7 @@
               (let ([p (* 4 (+ (- i x) (* (- j y) w)))]
                     [q (+ row (* i 4))])
                 (bytes-set! bstr p (bytes-ref data (+ q A)))))))))
-    
+
     (define/public (prep-alpha)
       (when (and (not b&w?)
                  (not alpha-channel?))
@@ -869,23 +885,23 @@
   (class bitmap%
     (init w h)
     (super-make-object (make-alternate-bitmap-kind w h))
-    
+
     (define s (build-cairo-surface w h))
     ;; erase the bitmap
     (let ([cr (cairo_create s)])
       (cairo_set_source_rgba cr 1.0 1.0 1.0 1.0)
       (cairo_paint cr)
       (cairo_destroy cr))
-    
-    (define/public (build-cairo-surface w h) 
+
+    (define/public (build-cairo-surface w h)
       (cairo_win32_surface_create_with_dib CAIRO_FORMAT_RGB24 w h))
-    
+
     (define/override (ok?) #t)
     (define/override (is-color?) #t)
     (define/override (has-alpha-channel?) #f)
-    
+
     (define/override (get-cairo-surface) s)
-    
+
     (define/override (release-bitmap-storage)
       (atomically
        (cairo_surface_destroy s)
@@ -895,7 +911,7 @@
   (class bitmap%
     (init w h [with-alpha? #t])
     (super-make-object (make-alternate-bitmap-kind w h))
-    
+
     (define s
       (let ([s (cairo_quartz_surface_create (if with-alpha?
                                                 CAIRO_FORMAT_ARGB32
@@ -911,20 +927,20 @@
           (cairo_paint cr)
           (cairo_destroy cr))
         s))
-    
+
     (define/override (ok?) (and s #t))
-    
+
     (define/override (is-color?) #t)
-    
+
     (define has-alpha? with-alpha?)
     (define/override (has-alpha-channel?) has-alpha?)
-    
+
     (define/override (get-cairo-surface) s)
-    (define/override (get-cairo-alpha-surface) 
+    (define/override (get-cairo-alpha-surface)
       (if has-alpha?
           s
           (super get-cairo-alpha-surface)))
-    
+
     (define/override (release-bitmap-storage)
       (atomically
        (when s

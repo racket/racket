@@ -23,14 +23,14 @@
                                  ds (λ () (raise-argument-error 'name "Indexes" ds)))])
            (define vs (for/vector #:length (array-shape-size ds) maybe-fill ...
                         (clause ...) maybe-type ... body ...))
-           (unsafe-mutable-array ds vs))))]
+           (unsafe-vector->array ds vs))))]
     [(_ name:id for/vector:id (clause ...) (~optional (~seq : A:expr)) body:expr ...+)
      (with-syntax ([(maybe-type ...)  (if (attribute A) #'(: A) #'())])
        (syntax/loc stx
          (let ()
            (define vs (for/vector (clause ...) maybe-type ... body ...))
            (define ds ((inst vector Index) (vector-length vs)))
-           (unsafe-mutable-array ds vs))))]))
+           (unsafe-vector->array ds vs))))]))
 
 (define-syntax-rule (for/array: e ...)
   (base-for/array: for/array: for/vector: e ...))
@@ -49,13 +49,13 @@
                       ds (λ () (raise-argument-error 'name "Indexes" ds)))])
            (define vs (for/vector #:length (array-shape-size ds) maybe-fill ...
                         (clause ...) body ...))
-           (unsafe-mutable-array ds vs))))]
+           (unsafe-vector->array ds vs))))]
     [(_ name:id for/vector:id (clause ...) body:expr ...+)
      (syntax/loc stx
        (let ()
          (define vs (for/vector (clause ...) body ...))
          (define ds ((inst vector Index) (vector-length vs)))
-         (unsafe-mutable-array ds vs)))]))
+         (unsafe-vector->array ds vs)))]))
 
 (define-syntax-rule (for/array e ...)
   (base-for/array for/array for/vector e ...))

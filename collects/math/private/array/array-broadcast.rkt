@@ -21,7 +21,7 @@
     (let ([shift  (- new-dims old-dims)])
       (cond [(index? shift)  shift]
             [else  (error 'array-broadcast
-                          "cannot broadcast to lower-dimensional array; given ~e and ~e"
+                          "cannot broadcast to a lower-dimensional shape; given ~e and ~e"
                           arr new-ds)])))
   (define old-js (make-thread-local-indexes old-dims))
   (define old-f (unsafe-array-proc arr))
@@ -95,8 +95,10 @@
 (: array-shape-broadcast (case-> ((Listof Indexes) -> Indexes)
                                  ((Listof Indexes) (U #f #t 'permissive) -> Indexes)))
 (define (array-shape-broadcast dss [broadcasting (array-broadcasting)])
-  (define (fail) (error 'array-shape-broadcast "incompatible array shapes (broadcasting ~v): ~a"
-                        broadcasting (string-join (map (λ (ds) (format "~e" ds)) dss) ", ")))
+  (define (fail) (error 'array-shape-broadcast
+                        "incompatible array shapes (array-broadcasting ~v): ~a"
+                        broadcasting
+                        (string-join (map (λ (ds) (format "~e" ds)) dss) ", ")))
   (cond [(empty? dss)  #()]
         [else  (for/fold ([new-ds  (first dss)]) ([ds  (in-list (rest dss))])
                  (shape-broadcast2 new-ds ds fail broadcasting))]))

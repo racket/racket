@@ -4,13 +4,18 @@
          typed/racket/base
          (for-syntax racket/base syntax/parse)
          "array-syntax.rkt"
-         (except-in "typed-array-struct.rkt" build-array build-strict-array))
+         (except-in "typed-array-struct.rkt"
+                    build-array
+                    build-strict-array
+                    list->array))
 
 (require/untyped-contract
  (begin (require "typed-array-struct.rkt"))
  "typed-array-struct.rkt"
  [build-array  (All (A) ((Vectorof Integer) ((Vectorof Index) -> A) -> (Array A)))]
- [build-strict-array  (All (A) ((Vectorof Integer) ((Vectorof Index) -> A) -> (Array A)))])
+ [build-strict-array  (All (A) ((Vectorof Integer) ((Vectorof Index) -> A) -> (Array A)))]
+ [list->array (All (A) (case-> ((Listof A) -> (Array A))
+                               ((Vectorof Integer) (Listof A) -> (Array A))))])
 
 (define-syntax array? (make-rename-transformer #'Array?))
 (define-syntax array-shape (make-rename-transformer #'Array-shape))
@@ -27,10 +32,13 @@
  array-strict
  array-strict!
  array-strict?
- make-unsafe-array-proc
  build-array
+ build-strict-array
+ list->array
+ make-unsafe-array-proc
  unsafe-build-array
  unsafe-build-strict-array
+ unsafe-list->array
  unsafe-array-proc
  array-lazy
  array
@@ -46,8 +54,11 @@
  array-lift-comparison)
 
 (define-syntax (array stx)
-  (syntax-parse stx
-    [(_ e:expr)  (syntax/loc stx (array/syntax array list flat-list->array e))]
+  (syntax-parse stx #:literals (:)
+    [(_ e:expr)
+     (syntax/loc stx (array/syntax array list unsafe-list->array e))]
+    [(_ e:expr : T:expr)
+     (syntax/loc stx (array/syntax array (inst list T) unsafe-list->array e))]
     [_:id  (raise-syntax-error 'array "not allowed as an expression" stx)]))
 
 (define-syntax-rule (array-strict arr-expr)

@@ -11,14 +11,6 @@
 ;; Conversion to arrays
 (make-to-array-functions list*->array vector*->array)
 
-(: list->array (All (A) ((Listof A) -> (Array A))))
-(define (list->array xs)
-  (vector->array (list->vector xs)))
-
-(: vector->array (All (A) ((Vectorof A) -> (Array A))))
-(define (vector->array xs)
-  (unsafe-mutable-array ((inst vector Index) (vector-length xs)) xs))
-
 (: array->list (All (A) ((Array A) -> (Listof A))))
 (define (array->list arr)
   (vector->list (array->vector arr)))

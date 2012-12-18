@@ -93,6 +93,8 @@ See more in PR8831.
          uri-userinfo-decode
          uri-unreserved-encode
          uri-unreserved-decode
+         uri-path-segment-unreserved-encode
+         uri-path-segment-unreserved-decode
          form-urlencoded-encode
          form-urlencoded-decode
          alist->form-urlencoded
@@ -115,15 +117,20 @@ See more in PR8831.
 (define uri-mapping (append alphanumeric-mapping safe-mapping))
 
 ;; The uri path segment mapping from RFC 3986
+(define path-segment-extra-mapping (self-map-chars "@+,=$&:"))
 (define uri-path-segment-mapping
-  (append alphanumeric-mapping
-          safe-mapping
-          (self-map-chars "@+,=$&:")))
+  (append uri-mapping
+          path-segment-extra-mapping))
 
 ;; from RFC 3986
 (define unreserved-mapping
   (append alphanumeric-mapping
           (self-map-chars "-._~")))
+
+;; The uri path segment mapping from RFC 3986
+(define uri-path-segment-unreserved-mapping
+  (append unreserved-mapping
+          path-segment-extra-mapping))
 
 ;; from RFC 3986
 (define sub-delims-mapping
@@ -175,6 +182,10 @@ See more in PR8831.
 (define-values (uri-unreserved-encoding-vector
                 uri-unreserved-decoding-vector)
   (make-codec-tables unreserved-mapping))
+
+(define-values (uri-path-segment-unreserved-encoding-vector
+                uri-path-segment-unreserved-decoding-vector)
+  (make-codec-tables uri-path-segment-unreserved-mapping))
 
 (define-values (form-urlencoded-encoding-vector
                 form-urlencoded-decoding-vector)
@@ -248,6 +259,14 @@ See more in PR8831.
 ;; string -> string
 (define (uri-unreserved-decode str)
   (decode uri-unreserved-decoding-vector str))
+
+;; string -> string
+(define (uri-path-segment-unreserved-encode str)
+  (encode uri-path-segment-unreserved-encoding-vector str))
+
+;; string -> string
+(define (uri-path-segment-unreserved-decode str)
+  (decode uri-path-segment-unreserved-decoding-vector str))
 
 ;; string -> string
 (define (form-urlencoded-encode str)

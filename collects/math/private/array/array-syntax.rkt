@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require (for-syntax racket/base))
+(require (for-syntax racket/base)
+         (only-in typed/racket/base inst Index))
 
 (provide array/syntax)
 
@@ -40,4 +41,4 @@
        (with-syntax ([(d ...)  ds]
                      [(v ...)  (syntax-vector-flatten #'e)])
          (syntax/loc stx
-           (->array (vector d ...) (constr v ...)))))]))
+           (->array ((inst vector Index) d ...) (constr v ...)))))]))

@@ -457,9 +457,11 @@
     (type-test-case '(varbit bit)
       (call-with-connection
        (lambda (c)
-         (check-roundtrip* c (string->sql-bits "1011") check-bits-equal?)
-         (check-roundtrip* c (string->sql-bits "000000") check-bits-equal?)
-         (check-roundtrip* c (string->sql-bits (make-string 30 #\1)) check-bits-equal?))))
+         (for ([s (list "1011"
+                        "000000"
+                        (make-string 30 #\1)
+                        (string-append (make-string 10 #\1) (make-string 20 #\0)))])
+           (check-roundtrip* c (string->sql-bits s) check-bits-equal?)))))
 
     (type-test-case '(point geometry)
       (call-with-connection

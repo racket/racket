@@ -15,6 +15,8 @@
 
 Binary heaps are a simple implementation of priority queues.
 
+Operations on binary heaps are not thread-safe.
+
 @defproc[(make-heap [<=? (-> any/c any/c any/c)])
          heap?]{
 
@@ -146,21 +148,6 @@ Makes a copy of heap @racket[h].
 ]
 }
 
-
-@;{--------}
-
-@defproc[(heap-sort! [<=? (-> any/c any/c any/c)] [v (and/c vector? (not/c immutable?))]) void?]{
-
-Sorts vector @racket[v] using the comparison function @racket[<=?].
-
-@examples[#:eval the-eval
-  (define terms (vector "batch" "deal" "flock" "good deal" "hatful" "lot"))
-  (heap-sort! string<=? terms)
-  terms
-]
-}
-
-
 @defproc[(in-heap/consume! [heap heap?]) sequence?]{
 Returns a sequence equivalent to @racket[heap], maintaining the heap's ordering. 
 The heap is consumed in the process. Equivalent to repeated calling 
@@ -190,5 +177,17 @@ Equivalent to @racket[in-heap/consume!] except the heap is copied first.
             (heap-count h)]
 }
 
+@;{--------}
+
+@defproc[(heap-sort! [v (and/c vector? (not/c immutable?))] [<=? (-> any/c any/c any/c)]) void?]{
+
+Sorts vector @racket[v] using the comparison function @racket[<=?].
+
+@examples[#:eval the-eval
+  (define terms (vector "batch" "deal" "flock" "good deal" "hatful" "lot"))
+  (heap-sort! terms string<=?)
+  terms
+]
+}
 
 @close-eval[the-eval]

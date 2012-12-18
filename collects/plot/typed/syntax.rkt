@@ -27,9 +27,6 @@
   (syntax-case stx ()
     [[name  ((Rs ...) (opts ...) arrow T)]
      (and (identifier? #'arrow) (eq? '->* (syntax->datum #'arrow)))
-     (syntax/loc stx
-       [name  (Rs ... opts ... -> T)])
-     #;
      (with-syntax ([(((Os ...) ...) (Ks ...))  (interpret-opts #'(opts ...))])
        (quasisyntax/loc stx
          [name  (case-> (Rs ... Os ... Ks ... -> T) ...)]))]

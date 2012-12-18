@@ -249,10 +249,15 @@ is not @racket[#f], and if @racket[index] is between @racket[alt-lower-bound]
 and @racket[upper-bound], then the error is report as @racket[index] being less
 than the ``starting'' index @racket[lower-bound].
 
+Since @racket[upper-bound] is inclusive, a typical value is @emph{one
+less than} the size of a collection---for example, @racket[(sub1
+(vector-length _vec))], @racket[(sub1 (length _lst))], and so on.
+
 @examples[
-(raise-range-error 'vector-ref "vector" "starting " 5 #(1 2 3) 0 3)
-(raise-range-error 'vector-ref "vector" "ending " 5 #(1 2 3) 0 3)
-(raise-range-error 'vector-ref "vector" "ending " 1 #(1 2 3) 2 3 0)
+(raise-range-error 'vector-ref "vector" "starting " 5 #(1 2 3 4) 0 3)
+(raise-range-error 'vector-ref "vector" "ending " 5 #(1 2 3 4) 0 3)
+(raise-range-error 'vector-ref "vector" "" 3 #() 0 -1)
+(raise-range-error 'vector-ref "vector" "ending " 1 #(1 2 3 4) 2 3 0)
 ]}
 
 

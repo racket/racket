@@ -701,25 +701,32 @@ Permutations}}
 
 @margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Multinomial_theorem#Multinomial_coefficients"]{Multinomial Coeffecient}}
 @defproc[(multinomial [n Integer] [ks (Listof Integer)]) Natural]{
-  A generalization of @racket[binomial] to multiple sets of choices; i.e.
-  @racket[(multinomial n (list k0 k1))] is the number of ways to choose a set of @racket[k0] items
-  and a set of @racket[k1] items from a set of @racket[n] items. All arguments must be nonnegative.
+  A generalization of @racket[binomial] to multiple sets of choices; e.g.
+  @racket[(multinomial n (list k0 k1 k2))] is the number of ways to choose a set of @racket[k0] items,
+  a set of @racket[k1] items, and a set of @racket[k2] items from a set of @racket[n] items.
+  All arguments must be nonnegative.
   
   When @racket[(apply + ks) = n], this is equivalent to
-  @racket[(apply / (factorial n) (map factorial ks))]. Otherwise, it returns @racket[0].
+  @racket[(apply / (factorial n) (map factorial ks))]. Otherwise, @racket[multinomial] returns @racket[0].
   @interaction[#:eval untyped-eval
-                      (multinomial 5 3 2)]
+                      (multinomial 5 '(3 2))
+                      (= (multinomial 8 '(5 3))
+                         (binomial 8 5)
+                         (binomial 8 3))
+                      (multinomial 10 '(5 3 2))
+                      (multinomial 0 '())
+                      (multinomial 4 '(1 1))]
 }
 
 @margin-note{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Partition_(number_theory)"]{Partition}}
-@defproc[(partition-count [n Integer]) Natural]{
+@defproc[(partitions [n Integer]) Natural]{
   Returns the number of partitions of @racket[n], which must be nonnegative.
   A partition of a positive integer @racket[n] is a way 
   of writing @racket[n] as a sum of positive integers.
   The number 3 has the partitions @racket[(+ 1 1 1)], @racket[(+ 1 2)] and @racket[(+ 3)].
   @interaction[#:eval untyped-eval
-                      (partition-count 3)
-                      (partition-count 4)]
+                      (partitions 3)
+                      (partitions 4)]
 }
 
 

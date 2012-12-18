@@ -384,7 +384,7 @@ approximation is not necessarily represented by a flonum.
               @defthing[-min.0 Flonum]
               @defthing[+min.0 Flonum]
               @defthing[+max.0 Flonum])]{
-The rational flonums with maximum and minimum magnitude.
+The nonzero, rational flonums with maximum and minimum magnitude.
 @examples[#:eval untyped-eval (list -max.0 -min.0 +min.0 +max.0)]
 }
 

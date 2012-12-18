@@ -108,6 +108,9 @@
 (define (gvector->vector gv)
   (vector-copy (gvector-vec gv) 0 (gvector-n gv)))
 
+(define (gvector->list gv)
+  (vector->list (gvector->vector gv)))
+
 ;; Iteration methods
 
 ;; A gvector position is represented as an exact-nonnegative-integer.
@@ -237,7 +240,9 @@
  [gvector-count
   (-> gvector? any)]
  [gvector->vector
-  (-> gvector? vector?)])
+  (-> gvector? vector?)]
+ [gvector->list
+  (-> gvector? list?)])
 
 (provide (rename-out [in-gvector* in-gvector])
          for/gvector
