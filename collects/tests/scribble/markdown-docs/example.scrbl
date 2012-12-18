@@ -30,8 +30,6 @@ Second line.
 Last line.
 }
 
-The end.
-
 @verbatim{
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -52,3 +50,7 @@ Returns a new mutable string of length @racket[k] where each position in the
 string is initialized with the character @racket[char]
 
 }
+
+@margin-note{Note: This is a note. Let's make it long enough that the
+markdown output will have to line-wrap, to make sure the > mark starts
+each line properly.}
