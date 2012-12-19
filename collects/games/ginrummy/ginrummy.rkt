@@ -1,5 +1,5 @@
-#lang racket/gui
-(require games/cards racket/class racket/unit)
+#lang racket/base
+(require racket/gui/base games/cards racket/class racket/unit)
 
 (provide game@)
 (define game@ (unit (import) (export)
