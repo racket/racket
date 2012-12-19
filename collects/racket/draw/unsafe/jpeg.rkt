@@ -45,7 +45,7 @@
 (define JPOOL_NUMPOOLS 2)
 (define JMSG_LENGTH_MAX  200)
 
-(define-cstruct _jpeg_error_mgr ([error_exit (_fun _j_common_ptr -> _void)]
+(define-cstruct _jpeg_error_mgr ([error_exit _fpointer] ; (_fun _j_common_ptr -> _void)
                                  [emit_message _pointer]
                                  [output_message _pointer]
                                  [format_message (_fun _j_common_ptr _pointer -> _void)]
@@ -85,7 +85,7 @@
     (let ([m (cast (malloc dummy-size 'raw) _pointer _jpeg_any_struct-pointer)]
           [e (cast (malloc sizeof_jpeg_error_mgr 'raw) _pointer _jpeg_error_mgr-pointer)])
       (set-jpeg_any_struct-err! m (jpeg_std_error e))
-      (set-jpeg_error_mgr-error_exit! e error-exit)
+      (set-jpeg_error_mgr-error_exit! e (cast error-exit (_fun _j_common_ptr -> _void) _fpointer))
       (let ([s (with-handlers ([exn:fail? (lambda (exn) (exn-message exn))])
                  (jpeg_CreateDecompress/test m 0 dummy-size)
                  "")])
@@ -327,11 +327,11 @@
 
 (define-cstruct _jpeg_source_mgr ([next_input_byte _pointer] ;; /* => next byte to read from buffer */
                                   [bytes_in_buffer _size_t]  ;; /* # of bytes remaining in buffer */
-                                  [init_source (_fun _j_decompress_ptr -> _void)]
-                                  [fill_input_buffer (_fun _j_decompress_ptr -> _jbool)]
-                                  [skip_input_data (_fun _j_decompress_ptr _long -> _void)]
-                                  [resync_to_restart (_fun _j_decompress_ptr _int -> _jbool)]
-                                  [term_source (_fun _j_decompress_ptr -> _void)]
+                                  [init_source _fpointer] ; (_fun _j_decompress_ptr -> _void)
+                                  [fill_input_buffer _fpointer] ; (_fun _j_decompress_ptr -> _jbool)
+                                  [skip_input_data _fpointer] ; (_fun _j_decompress_ptr _long -> _void)
+                                  [resync_to_restart _fpointer] ; (_fun _j_decompress_ptr _int -> _jbool)
+                                  [term_source _fpointer] ; (_fun _j_decompress_ptr -> _void)
                                   ;; extra fields specific to this binding:
                                   [buffer _pointer]))
 
@@ -532,9 +532,9 @@
 
 (define-cstruct _jpeg_destination_mgr ([next_output_byte _pointer] ;; /* => next byte to write in buffer */
                                        [free_in_buffer _size_t]  ;; /* # of byte spaces remaining in buffer */
-                                       [init_destination (_fun _j_compress_ptr -> _void)]
-                                       [empty_output_buffer (_fun _j_compress_ptr -> _jbool)]
-                                       [term_destination (_fun _j_compress_ptr -> _void)]
+                                       [init_destination _fpointer] ; (_fun _j_compress_ptr -> _void)
+                                       [empty_output_buffer _fpointer] ; (_fun _j_compress_ptr -> _jbool)
+                                       [term_destination _fpointer] ; (_fun _j_compress_ptr -> _void)
                                        ;; extra fields specific to this binding:
                                        [buffer _pointer]))
 
@@ -552,7 +552,7 @@
   (let* ([s (jpeg_decompress_struct-src m)]
          [b (jpeg_source_mgr-buffer s)]
          [bstr (scheme_make_sized_byte_string b BUFFER-SIZE 0)]
-         [in (ptr-ref (jpeg_decompress_struct-client_data m) _scheme)])
+         [in (car (ptr-ref (jpeg_decompress_struct-client_data m) _scheme))])
     (let* ([len (read-bytes! bstr in)]
            [len (if (zero? len)
                     (begin
@@ -571,7 +571,7 @@
         (begin
           (set-jpeg_source_mgr-next_input_byte! s (ptr-add (jpeg_source_mgr-next_input_byte s) len))
           (set-jpeg_source_mgr-bytes_in_buffer! s (- avail len)))
-        (let ([in (ptr-ref (jpeg_decompress_struct-client_data m) _scheme)])
+        (let ([in (car (ptr-ref (jpeg_decompress_struct-client_data m) _scheme))])
           (read-bytes (- len avail) in)
           (set-jpeg_source_mgr-next_input_byte! s #f)
           (set-jpeg_source_mgr-bytes_in_buffer! s 0)
@@ -580,7 +580,7 @@
 (define (term-source m)
   ;; Maybe add support to optionally close port as early as possible?
   (when #f
-    (let ([in (ptr-ref (jpeg_decompress_struct-client_data m) _scheme)])
+    (let ([in (car (ptr-ref (jpeg_decompress_struct-client_data m) _scheme))])
       (close-input-port in))))
 
 (define (init-destination m)
@@ -594,7 +594,7 @@
                                                   BUFFER-SIZE
                                                   (- BUFFER-SIZE (jpeg_destination_mgr-free_in_buffer d)))
                                               0)]
-         [out (ptr-ref (jpeg_compress_struct-client_data m) _scheme)])
+         [out (car (ptr-ref (jpeg_compress_struct-client_data m) _scheme))])
     (write-bytes bstr out)
     (set-jpeg_destination_mgr-next_output_byte! d b)
     (set-jpeg_destination_mgr-free_in_buffer! d BUFFER-SIZE)
@@ -607,7 +607,7 @@
   (do-empty-output-buffer m #f)
   ;; Maybe add support to optionally close port as early as possible?
   (when #f
-    (let ([in (ptr-ref (jpeg_decompress_struct-client_data m) _scheme)])
+    (let ([in (car (ptr-ref (jpeg_decompress_struct-client_data m) _scheme))])
       (close-input-port in))))
 
 (define (ptr-cast p t) (cast p _pointer t))
@@ -627,20 +627,31 @@
      (let ([m (ptr-cast (malloc _jpeg_decompress_struct 'raw) _jpeg_decompress_struct-pointer)]
            [s (ptr-cast (malloc _jpeg_source_mgr 'raw) _jpeg_source_mgr-pointer)]
            [e (ptr-cast (malloc sizeof_jpeg_error_mgr 'raw) _jpeg_error_mgr-pointer)]
-           [b (malloc 'raw BUFFER-SIZE)])
+           [b (malloc 'raw BUFFER-SIZE)]
+           [funs (box null)])
        (set-jpeg_decompress_struct-err! m (jpeg_std_error e))
-       (set-jpeg_error_mgr-error_exit! e error-exit)
+       (set-jpeg_error_mgr-error_exit! e (cast error-exit
+                                               (_fun #:keep funs _j_common_ptr -> _void)
+                                               _fpointer))
        (jpeg_CreateDecompress m JPEG_LIB_VERSION (ctype-sizeof _jpeg_decompress_struct))
        (set-jpeg_decompress_struct-src*! m s)
        (set-jpeg_source_mgr-buffer! s b)
-       (set-jpeg_decompress_struct-client_data! m (malloc-immobile-cell in))
+       (set-jpeg_decompress_struct-client_data! m (malloc-immobile-cell (cons in funs)))
        (set-jpeg_source_mgr-next_input_byte! s #f)
        (set-jpeg_source_mgr-bytes_in_buffer! s 0)
-       (set-jpeg_source_mgr-init_source! s init-source)
-       (set-jpeg_source_mgr-fill_input_buffer! s fill-input-buffer)
-       (set-jpeg_source_mgr-skip_input_data! s skip-input-data)
+       (set-jpeg_source_mgr-init_source! s (cast init-source
+                                                 (_fun #:keep funs _j_decompress_ptr -> _void)
+                                                 _fpointer))
+       (set-jpeg_source_mgr-fill_input_buffer! s (cast fill-input-buffer
+                                                       (_fun #:keep funs _j_decompress_ptr -> _jbool)
+                                                       _fpointer))
+       (set-jpeg_source_mgr-skip_input_data! s (cast skip-input-data
+                                                     (_fun #:keep funs _j_decompress_ptr _long -> _void)
+                                                     _fpointer))
        (set-jpeg_source_mgr-resync_to_restart! s jpeg_resync_to_restart)
-       (set-jpeg_source_mgr-term_source! s term-source)
+       (set-jpeg_source_mgr-term_source! s (cast term-source
+                                                 (_fun #:keep funs _j_decompress_ptr -> _void)
+                                                 _fpointer))
        m))))
 
 (define destroy-compress
@@ -658,18 +669,27 @@
      (let ([m (ptr-cast (malloc _jpeg_compress_struct 'raw) _jpeg_compress_struct-pointer)]
            [d (ptr-cast (malloc _jpeg_destination_mgr 'raw) _jpeg_destination_mgr-pointer)]
            [e (ptr-cast (malloc sizeof_jpeg_error_mgr 'raw) _jpeg_error_mgr-pointer)]
-           [b (malloc 'raw BUFFER-SIZE)])
+           [b (malloc 'raw BUFFER-SIZE)]
+           [funs (box null)])
        (set-jpeg_compress_struct-err! m (jpeg_std_error e))
-       (set-jpeg_error_mgr-error_exit! e error-exit)
+       (set-jpeg_error_mgr-error_exit! e (cast error-exit
+                                               (_fun #:keep funs _j_common_ptr -> _void)
+                                               _fpointer))
        (jpeg_CreateCompress m JPEG_LIB_VERSION (ctype-sizeof _jpeg_compress_struct))
        (set-jpeg_compress_struct-dest*! m d)
        (set-jpeg_destination_mgr-buffer! d b)
-       (set-jpeg_compress_struct-client_data! m (malloc-immobile-cell out))
+       (set-jpeg_compress_struct-client_data! m (malloc-immobile-cell (cons out funs)))
        (set-jpeg_destination_mgr-next_output_byte! d b)
        (set-jpeg_destination_mgr-free_in_buffer! d BUFFER-SIZE)
-       (set-jpeg_destination_mgr-init_destination! d init-destination)
-       (set-jpeg_destination_mgr-empty_output_buffer! d empty-output-buffer)
-       (set-jpeg_destination_mgr-term_destination! d term-destination)
+       (set-jpeg_destination_mgr-init_destination! d (cast init-destination
+                                                           (_fun #:keep funs _j_compress_ptr -> _void)
+                                                           _fpointer))
+       (set-jpeg_destination_mgr-empty_output_buffer! d (cast empty-output-buffer
+                                                              (_fun #:keep funs _j_compress_ptr -> _jbool)
+                                                              _fpointer))
+       (set-jpeg_destination_mgr-term_destination! d (cast term-destination
+                                                           (_fun #:keep funs _j_compress_ptr -> _void)
+                                                           _fpointer))
        m))))
 
 (define (create-jpeg-sample-array m len)
@@ -683,7 +703,7 @@
     (values samps (scheme_make_sized_byte_string (ptr-ref samps _pointer) len 0))))
 
 (define-jpeg/private jpeg_CreateDecompress (_fun _j_decompress_ptr _int _int -> _void))
-(define-jpeg/private jpeg_resync_to_restart (_fun _j_decompress_ptr _int -> _jbool))
+(define-jpeg/private jpeg_resync_to_restart _fpointer) ; (_fun _j_decompress_ptr _int -> _jbool))
 (define-jpeg jpeg_read_header (_fun _j_decompress_ptr _jbool -> _void))
 (define-jpeg jpeg_start_decompress (_fun _j_decompress_ptr -> _void))
 (define-jpeg jpeg_read_scanlines (_fun _j_decompress_ptr _pointer _int -> _void))
