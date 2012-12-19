@@ -10,7 +10,7 @@
   (define *-node (profile-*-node profile))
   (define hidden (get-hidden profile hide-self% hide-subs%))
   (define nodes  (remq* hidden (profile-nodes profile)))
-  (define total-time (profile-total-time profile))
+  (define total-time (max 1e-20 (profile-total-time profile)))
   (define node->
     (let ([t (make-hasheq)])
       (for ([node (in-list nodes)] [idx (in-naturals 1)])
