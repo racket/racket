@@ -8551,6 +8551,7 @@ static int subp_done(Scheme_Object *so)
         sp->done = 1;
         sp->status = status;
         child_mref_done(sp);
+        scheme_ended_child();
         return 1;
       }
       return 0;
@@ -8618,6 +8619,7 @@ static Scheme_Object *subprocess_status(int argc, Scheme_Object **argv)
       child_mref_done(sp);
       sp->done = 1;
       sp->status = status;
+      scheme_ended_child();
     }
   }
 # else
@@ -8707,6 +8709,7 @@ static Scheme_Object *do_subprocess_kill(Scheme_Object *_sp, Scheme_Object *kill
       sp->done = 1;
       child_mref_done(sp);
       scheme_wait_resume();
+      scheme_ended_child();
       return scheme_void;
     }
   }
@@ -8853,8 +8856,10 @@ static void unused_process_record(void *_sp, void *ignored)
   Scheme_Subprocess *sp = (Scheme_Subprocess *)_sp;
 
 # if defined(MZ_PLACES_WAITPID)
-  if (!sp->done)
+  if (!sp->done) {
     scheme_done_with_process_id(sp->pid, sp->is_group);
+    scheme_ended_child();
+  }
 # else
   if (!((System_Child *)sp->handle)->done) {
     void **unused_pid;
@@ -9308,13 +9313,15 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
     init_sigchld();
 
     sc = MALLOC_ONE_RT(System_Child);
-#ifdef MZTAG_REQUIRED
+# ifdef MZTAG_REQUIRED
     sc->type = scheme_rt_system_child;
-#endif
+# endif
     sc->id = 0;
     sc->done = 0;
 
     scheme_block_child_signals(1);
+#else
+    scheme_starting_child();
 #endif
 
 #if !defined(__QNX__)
@@ -9388,6 +9395,8 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 #else
     if (!pid)
       scheme_places_unblock_child_signal();
+    else if (pid == -1)
+      scheme_ended_child();
 #endif
   }
 
