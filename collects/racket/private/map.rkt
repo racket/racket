@@ -5,7 +5,7 @@
 (module map '#%kernel
   (#%require '#%utils ; built into mzscheme
              "small-scheme.rkt" "define.rkt"
-             "../performance-hint.rkt")
+             "performance-hint.rkt")
 
   (#%provide (rename map2 map)
              (rename for-each2 for-each)
