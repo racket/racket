@@ -131,7 +131,7 @@
       [(iso-8601)
        (values
         (list year "-" (add-zero (date-month date)) "-" (add-zero (date-day date)))
-        (list " " hour24 ":" minute ":" second))]
+        (list "T" hour24 ":" minute ":" second))]
       [(rfc2822)
        (values
         (list (substring week-day 0 3) ", " day " " (substring month 0 3) " " year)

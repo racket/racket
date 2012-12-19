@@ -187,7 +187,7 @@ type information, @racket[#f] otherwise.}
   @secref["com-types"] for more information.}
 
 
-@defproc[(com-invoke [obj com-object?] [method-name string?] [v any/c])
+@defproc[(com-invoke [obj com-object?] [method-name string?] [v any/c] ...)
          any/c]{
 
   Invokes @racket[method-name] on @racket[obj] with @racket[v]s as the
@@ -237,6 +237,13 @@ argument.}
   path of @racket[property]s, where each intermediate property must be a
   COM object.}
 
+@defproc[(com-get-property* [obj com-object?] [property string?] [v any/c] ...)
+         any/c]{
+
+  Returns the value of a parameterized property, which behaves like a
+  method and accepts the @racket[v]s as arguments (like
+  @racket[com-invoke]).  When no @racket[v]s are provided,
+  @racket[com-get-property*] is the same as @racket[com-get-property].}
 
 @defproc[(com-set-properties [obj/type (or/c com-object? com-type?)]) 
          (listof string?)]{

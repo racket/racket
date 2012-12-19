@@ -56,7 +56,7 @@
   (test-string 'irish #f "Thursday, 4th May 2006")
   (test-string 'irish #t "Thursday, 4th May 2006, 3:02am")
   (test-string 'iso-8601 #f "2006-05-04")
-  (test-string 'iso-8601 #t "2006-05-04 03:02:01")
+  (test-string 'iso-8601 #t "2006-05-04T03:02:01")
   (test-string 'rfc2822 #f "Thu, 4 May 2006")
   (test-string 'rfc2822 #t "Thu, 4 May 2006 03:02:01 -0600")
   (test-string 'julian #f "JD 2 453 860")

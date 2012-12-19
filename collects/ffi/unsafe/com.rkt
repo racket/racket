@@ -53,6 +53,7 @@
 
          com-methods com-method-type com-invoke com-omit
          com-get-properties com-get-property-type com-get-property
+         com-get-property*
          com-set-properties com-set-property-type com-set-property!
 
          com-events com-event-type
@@ -2047,6 +2048,9 @@
     (begin0
      (com-get-property target-obj (list-ref names (sub1 len)))
      (com-release target-obj))]))
+
+(define (com-get-property* obj name . args)
+  (do-com-invoke 'com-get-property obj name args INVOKE_PROPERTYGET))
 
 (define com-set-property!
   (case-lambda
