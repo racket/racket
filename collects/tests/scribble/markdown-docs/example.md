@@ -1,12 +1,22 @@
-# ```scheme
- (require racket/string)
-```
+# 1. Section
+
+This is a top-level section.
+
+## 1.1. Subsection
+
+This is a subsection.
+
+### 1.1.1. Subsubsection
+
+This is a subsubsection.
+
+Here is an itemize:
 
 * Item 1.
 
 * Item 2.
 
-## 1. Section
+Here is a hyperlink:
 
 [I am a hyperlink to Racket.](http://www.racket-lang.org/)
 
@@ -16,12 +26,14 @@ _Italic_. \_Just underlines\_.
 
 “Dobule quoted”. ‘Single quoted’.
 
+Example of vebatim:
+
 `Hi, world.`  
 `A “quote”.`  
 `Second line.`
 `Last line.`  
 
-The end.
+Another example of verbatim, with ticks/quotes:
 
 `THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS`   
 `“AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT`     
@@ -34,6 +46,14 @@ The end.
 `THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT`   
 `(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE` 
 `OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.`  
+
+Example of a defmodule:
+
+```scheme
+ (require racket/string)
+```
+
+Example of a defproc:
 
 ```scheme
 (make-string k [char]) -> string?

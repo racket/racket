@@ -3,14 +3,26 @@
 @(require scribble/manual
           (for-label racket/base racket/contract racket/string))
 
-@defmodule[racket/string]
+@section{Section}
+
+This is a top-level section.
+
+@subsection{Subsection}
+
+This is a subsection.
+
+@subsubsection{Subsubsection}
+
+This is a subsubsection.
+
+Here is an itemize:
 
 @itemize[
 @item{Item 1.}
 @item{Item 2.}
 ]
 
-@section{Section}
+Here is a hyperlink:
 
 @hyperlink["http://www.racket-lang.org/" "I am a hyperlink to Racket."]
 
@@ -23,6 +35,8 @@ _Just underlines_.
 ``Dobule quoted''.
 `Single quoted'.
 
+Example of vebatim:
+
 @verbatim{
 Hi, world.
 A ``quote''.
@@ -30,7 +44,7 @@ Second line.
 Last line.
 }
 
-The end.
+Another example of verbatim, with ticks/quotes:
 
 @verbatim{
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
@@ -45,6 +59,12 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 }
+
+Example of a defmodule:
+
+@defmodule[racket/string]
+
+Example of a defproc:
 
 @defproc[(make-string [k exact-nonnegative-integer?][char char? #\nul]) string?]{
 
