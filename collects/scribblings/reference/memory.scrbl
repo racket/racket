@@ -252,3 +252,50 @@ information in a dump. The information that is available depends on
 your Racket build; check the end of a dump from a particular build to
 see if it offers additional information; otherwise, all @racket[v]s are
 ignored.}
+
+@;------------------------------------------------------------------------
+@section[#:tag "phantom-bytes"]{Phantom Byte Strings}
+
+A @deftech{phantom byte string} is a small Racket value that is
+treated by the Racket memory manager as having an arbitrary size,
+which is specified when the @tech{phantom byte string} is created or
+when it is changed via @racket[set-phantom-bytes!].
+
+A @tech{phantom byte string} acts as a hint to Racket's memory
+manager that memory is allocated within the process but through a
+separate allocator, such as through a foreign library that is accessed
+via @racketmodname[ffi/unsafe]. This hint is used to trigger
+@tech{garbage collections} or to compute the result of
+@racket[current-memory-use]. Currently, the hint is used only in
+Racket 3m (the main variant of Racket).
+
+@defproc[(phantom-bytes? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] is a @tech{phantom byte string},
+@racket[#f] otherwise.}
+
+
+@defproc[(make-phantom-bytes [k exact-nonnegative-integer?])
+         phantom-bytes?]{
+
+Creates a @tech{phantom byte string} that is treated by the Racket
+memory manager as being @racket[k] bytes in size. For a large enough
+@racket[k], the @exnraise[exn:fail:out-of-memory]---either because the
+size is implausibly large, or because a memory limit has been
+installed with @racket[custodian-limit-memory].}
+
+
+@defproc[(set-phantom-bytes! [phantom-bstr phantom-bytes?]
+                             [k exact-nonnegative-integer?])
+         phantom-bytes?]{
+
+Adjusts the size of a @tech{phantom byte string} as it is treated by
+the Racket memory manager.
+
+For example, if the memory that @racket[phantom-bstr] represents is
+released through a foreign library, then @racket[(set-phantom-bytes!
+phantom-bstr 0)] can reflect the change in memory use.
+
+When @racket[k] is larger than the current size of
+@racket[phantom-bstr], then this function can raise
+@racket[exn:fail:out-of-memory], like @racket[make-phantom-bytes].}

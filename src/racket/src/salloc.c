@@ -113,7 +113,7 @@ void scheme_set_stack_base(void *base, int no_auto_statics) XFORM_SKIP_PROC
   GC_init_type_tags(_scheme_last_type_, 
                     scheme_pair_type, scheme_mutable_pair_type, scheme_weak_box_type, 
                     scheme_ephemeron_type, scheme_rt_weak_array,
-                    scheme_cust_box_type);
+                    scheme_cust_box_type, scheme_phantom_bytes_type);
   /* We want to be able to allocate symbols early. */
   scheme_register_traversers();
 #endif

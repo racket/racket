@@ -1,3 +1,6 @@
+Version 5.3.1.10
+Added phantom byte strings
+
 Version 5.3.1.9
 Changed case to use equal? instead of eqv?
 r5rs, r6rs: fixed case and cond to disallow internal definitions

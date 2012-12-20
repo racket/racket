@@ -1492,6 +1492,44 @@ intptr_t GC_alloc_alignment()
 
 intptr_t GC_malloc_stays_put_threshold() { return MAX_OBJECT_SIZE; }
 
+uintptr_t add_no_overflow(uintptr_t a, uintptr_t b)
+{
+  uintptr_t c = a + b;
+
+  if (c < a)
+    c = (uintptr_t)-1;
+
+  return c;
+}
+
+int GC_allocate_phantom_bytes(intptr_t request_size_bytes)
+{
+#ifdef NEWGC_BTC_ACCOUNT
+  NewGC *gc = GC_get_GC();
+
+  if (premaster_or_place_gc(gc)) {
+    if (BTC_single_allocation_limit(gc, request_size_bytes))
+      return 0;
+  }
+#endif
+
+  if ((request_size_bytes > 0)
+      && ((gc->phantom_count + request_size_bytes) < gc->phantom_count))
+    /* overflow */
+    return 1;
+
+  gc->phantom_count += request_size_bytes;
+  /* adjust `gc->memory_in_use', but protect against {over,under}flow: */
+  if (request_size_bytes < 0) {
+    request_size_bytes = -request_size_bytes;
+    if (gc->memory_in_use > request_size_bytes)
+      gc->memory_in_use -= request_size_bytes;
+  } else
+    gc->memory_in_use = add_no_overflow(gc->memory_in_use, request_size_bytes);
+
+  return 1;
+}
+
 void GC_create_message_allocator() {
   NewGC *gc = GC_get_GC();
   Allocator *a;
@@ -1769,8 +1807,10 @@ inline static void master_set_max_size(NewGC *gc)
 inline static void reset_nursery(NewGC *gc)
 {
   uintptr_t new_gen0_size;
+  
   new_gen0_size = NUM((GEN0_SIZE_FACTOR * (float)gc->memory_in_use) + GEN0_SIZE_ADDITION);
-  if(new_gen0_size > GEN0_MAX_SIZE)
+  if ((new_gen0_size > GEN0_MAX_SIZE)
+      || (gc->memory_in_use > GEN0_MAX_SIZE)) /* => overflow */
     new_gen0_size = GEN0_MAX_SIZE;
 
   resize_gen0(gc, new_gen0_size);
@@ -2205,6 +2245,34 @@ inline static void check_finalizers(NewGC *gc, int level)
 #include "weak.c"
 #undef is_marked
 #undef weak_box_resolve
+
+/*****************************************************************************/
+/* phantom bytes and accounting                                              */
+/*****************************************************************************/
+
+typedef struct {
+  short tag;
+  intptr_t count;
+} Phantom_Bytes;
+
+static int size_phantom(void *p, struct NewGC *gc)
+{
+  return gcBYTES_TO_WORDS(sizeof(Phantom_Bytes));
+}
+
+static int mark_phantom(void *p, struct NewGC *gc)
+{
+  Phantom_Bytes *pb = (Phantom_Bytes *)p;
+
+  gc->phantom_count = add_no_overflow(gc->phantom_count, pb->count);
+
+  return gcBYTES_TO_WORDS(sizeof(Phantom_Bytes));
+}
+
+static int fixup_phantom(void *p, struct NewGC *gc)
+{
+  return gcBYTES_TO_WORDS(sizeof(Phantom_Bytes));
+}
 
 /*****************************************************************************/
 /* Internal Stack Routines                                                   */
@@ -2729,7 +2797,9 @@ static void NewGC_initialize(NewGC *newgc, NewGC *inheritgc, NewGC *parentgc) {
 
 /* NOTE This method sets the constructed GC as the new Thread Specific GC. */
 static NewGC *init_type_tags_worker(NewGC *inheritgc, NewGC *parentgc, 
-                                    int count, int pair, int mutable_pair, int weakbox, int ephemeron, int weakarray, int custbox)
+                                    int count, int pair, int mutable_pair, int weakbox, 
+                                    int ephemeron, int weakarray, 
+                                    int custbox, int phantom)
 {
   NewGC *gc;
 
@@ -2744,6 +2814,7 @@ static NewGC *init_type_tags_worker(NewGC *inheritgc, NewGC *parentgc,
 # ifdef NEWGC_BTC_ACCOUNT
   gc->cust_box_tag    = custbox;
 # endif
+  gc->phantom_tag  = phantom;
 
   NewGC_initialize(gc, inheritgc, parentgc);
 
@@ -2763,6 +2834,7 @@ static NewGC *init_type_tags_worker(NewGC *inheritgc, NewGC *parentgc,
     GC_register_traversers2(gc->weak_box_tag, size_weak_box, mark_weak_box, fixup_weak_box, 0, 0);
     GC_register_traversers2(gc->ephemeron_tag, size_ephemeron, mark_ephemeron, fixup_ephemeron, 0, 0);
     GC_register_traversers2(gc->weak_array_tag, size_weak_array, mark_weak_array, fixup_weak_array, 0, 0);
+    GC_register_traversers2(gc->phantom_tag, size_phantom, mark_phantom, fixup_phantom, 0, 0);
   }
   initialize_signal_handler(gc);
   GC_add_roots(&gc->park, (char *)&gc->park + sizeof(gc->park) + 1);
@@ -2771,13 +2843,15 @@ static NewGC *init_type_tags_worker(NewGC *inheritgc, NewGC *parentgc,
   return gc;
 }
 
-void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, int ephemeron, int weakarray, int custbox)
+void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, int ephemeron, int weakarray, 
+                       int custbox, int phantom)
 {
   static int initialized = 0;
 
   if (!initialized) {
     initialized = 1;
-    init_type_tags_worker(NULL, NULL, count, pair, mutable_pair, weakbox, ephemeron, weakarray, custbox);
+    init_type_tags_worker(NULL, NULL, count, pair, mutable_pair, weakbox, ephemeron, weakarray, 
+                          custbox, phantom);
   } else {
     GCPRINT(GCOUTF, "GC_init_type_tags should only be called once!\n");
     abort();
@@ -2791,7 +2865,8 @@ struct NewGC *GC_get_current_instance() {
 #ifdef MZ_USE_PLACES
 void GC_construct_child_gc(struct NewGC *parent_gc, intptr_t limit) {
   NewGC *gc = MASTERGC;
-  NewGC *newgc = init_type_tags_worker(gc, parent_gc, 0, 0, 0, gc->weak_box_tag, gc->ephemeron_tag, gc->weak_array_tag, gc->cust_box_tag);
+  NewGC *newgc = init_type_tags_worker(gc, parent_gc, 0, 0, 0, gc->weak_box_tag, gc->ephemeron_tag, 
+                                       gc->weak_array_tag, gc->cust_box_tag, gc->phantom_tag);
   newgc->primoridal_gc = MASTERGC;
   newgc->dont_master_gc_until_child_registers = 1;
   if (limit)
@@ -2972,19 +3047,20 @@ void GC_register_traversers(short tag, Size_Proc size, Mark_Proc mark,
 intptr_t GC_get_memory_use(void *o) 
 {
   NewGC *gc = GC_get_GC();
-  intptr_t amt;
+  uintptr_t amt;
 #ifdef NEWGC_BTC_ACCOUNT
-  if(o) {
+  if (o) {
     return BTC_get_memory_use(gc, o);
   }
 #endif
-  amt = gen0_size_in_use(gc) + gc->memory_in_use;
+  amt = add_no_overflow(gen0_size_in_use(gc), gc->memory_in_use);
 #ifdef MZ_USE_PLACES
   mzrt_mutex_lock(gc->child_total_lock);
-  amt += gc->child_gc_total;
+  amt = add_no_overflow(amt, gc->child_gc_total);
   mzrt_mutex_unlock(gc->child_total_lock);
 #endif
-  return amt;
+  
+  return (intptr_t)amt;
 }
 
 /*****************************************************************************/
@@ -4255,7 +4331,7 @@ inline static void gen0_free_big_pages(NewGC *gc) {
 static void clean_up_heap(NewGC *gc)
 {
   int i;
-  size_t memory_in_use = 0;
+  uintptr_t memory_in_use = 0;
   PageMap pagemap = gc->page_maps;
 
   gen0_free_big_pages(gc);
@@ -4345,6 +4421,8 @@ static void clean_up_heap(NewGC *gc)
     }
     gc->med_freelist_pages[i] = prev;
   }
+
+  memory_in_use = add_no_overflow(memory_in_use, gc->phantom_count);
 
   gc->memory_in_use = memory_in_use;
   cleanup_vacated_pages(gc);
@@ -4532,6 +4610,9 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master, Log
      half the available memory */
   gc->in_unsafe_allocation_mode = 1;
   gc->unsafe_allocation_abort = out_of_memory_gc;
+
+  if (gc->gc_full)
+    gc->phantom_count = 0;
 
   TIME_INIT();
 
@@ -4811,7 +4892,7 @@ intptr_t GC_propagate_hierarchy_memory_use()
   }
 #endif
 
-  return gc->memory_in_use + gc->child_gc_total;
+  return add_no_overflow(gc->memory_in_use, gc->child_gc_total);
 }
 
 #if MZ_GC_BACKTRACE

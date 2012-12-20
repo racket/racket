@@ -307,6 +307,8 @@ scheme_init_type ()
 
   set_name(scheme_resolved_module_path_type, "<resolve-module-path>");
 
+  set_name(scheme_phantom_bytes_type, "<phantom-bytes>");
+
 #ifdef MZ_GC_BACKTRACE
   set_name(scheme_rt_meta_cont, "<meta-continuation>");
 #endif

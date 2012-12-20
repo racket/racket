@@ -91,7 +91,8 @@ GC2_EXTERN void GC_add_roots(void *start, void *end);
    `start' (inclusive) and `end' (exclusive) contains pointers. */
 
 GC2_EXTERN void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, 
-                                  int ephemeron, int weakarray, int custbox);
+                                  int ephemeron, int weakarray, int custbox,
+                                  int phantom);
 /*
    Called by Racket to indicate the number of different type tags it
    uses, starting from 0. `count' is always less than 256. The weakbox
@@ -275,6 +276,11 @@ GC2_EXTERN int GC_is_on_allocated_page(void *p);
    Returns 1 if p refers to a page of memory on which
    the GC allocates objects (although p may or may not
    be a valid pointer to the start of an alloctaed object). */
+
+GC2_EXTERN int GC_allocate_phantom_bytes(intptr_t);
+/* 
+   Returns 0 if allocation should fail due to a memory limit, 
+   1 otherwise. */
 
 /***************************************************************************/
 /* Memory tracing                                                          */
