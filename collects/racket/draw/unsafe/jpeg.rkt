@@ -623,7 +623,7 @@
 
 (define create-decompress
   ((allocator destroy-decompress)
-   (lambda (in)
+   (lambda (in) ;; `in' will be read in atomic mode!
      (let ([m (ptr-cast (malloc _jpeg_decompress_struct 'raw) _jpeg_decompress_struct-pointer)]
            [s (ptr-cast (malloc _jpeg_source_mgr 'raw) _jpeg_source_mgr-pointer)]
            [e (ptr-cast (malloc sizeof_jpeg_error_mgr 'raw) _jpeg_error_mgr-pointer)]
@@ -640,17 +640,21 @@
        (set-jpeg_source_mgr-next_input_byte! s #f)
        (set-jpeg_source_mgr-bytes_in_buffer! s 0)
        (set-jpeg_source_mgr-init_source! s (cast init-source
-                                                 (_fun #:keep funs _j_decompress_ptr -> _void)
+                                                 (_fun #:keep funs #:atomic? #t
+						       _j_decompress_ptr -> _void)
                                                  _fpointer))
        (set-jpeg_source_mgr-fill_input_buffer! s (cast fill-input-buffer
-                                                       (_fun #:keep funs _j_decompress_ptr -> _jbool)
+                                                       (_fun #:keep funs #:atomic? #t
+							     _j_decompress_ptr -> _jbool)
                                                        _fpointer))
        (set-jpeg_source_mgr-skip_input_data! s (cast skip-input-data
-                                                     (_fun #:keep funs _j_decompress_ptr _long -> _void)
+                                                     (_fun #:keep funs #:atomic? #t
+							   _j_decompress_ptr _long -> _void)
                                                      _fpointer))
        (set-jpeg_source_mgr-resync_to_restart! s jpeg_resync_to_restart)
        (set-jpeg_source_mgr-term_source! s (cast term-source
-                                                 (_fun #:keep funs _j_decompress_ptr -> _void)
+                                                 (_fun #:keep funs #:atomic? #t
+						       _j_decompress_ptr -> _void)
                                                  _fpointer))
        m))))
 
@@ -665,7 +669,7 @@
 
 (define create-compress
   ((allocator destroy-compress)
-   (lambda (out)
+   (lambda (out) ;; `out' will be written in atomic mode!
      (let ([m (ptr-cast (malloc _jpeg_compress_struct 'raw) _jpeg_compress_struct-pointer)]
            [d (ptr-cast (malloc _jpeg_destination_mgr 'raw) _jpeg_destination_mgr-pointer)]
            [e (ptr-cast (malloc sizeof_jpeg_error_mgr 'raw) _jpeg_error_mgr-pointer)]
@@ -682,13 +686,16 @@
        (set-jpeg_destination_mgr-next_output_byte! d b)
        (set-jpeg_destination_mgr-free_in_buffer! d BUFFER-SIZE)
        (set-jpeg_destination_mgr-init_destination! d (cast init-destination
-                                                           (_fun #:keep funs _j_compress_ptr -> _void)
+                                                           (_fun #:keep funs #:atomic? #t
+								 _j_compress_ptr -> _void)
                                                            _fpointer))
        (set-jpeg_destination_mgr-empty_output_buffer! d (cast empty-output-buffer
-                                                              (_fun #:keep funs _j_compress_ptr -> _jbool)
+                                                              (_fun #:keep funs #:atomic? #t
+								    _j_compress_ptr -> _jbool)
                                                               _fpointer))
        (set-jpeg_destination_mgr-term_destination! d (cast term-destination
-                                                           (_fun #:keep funs _j_compress_ptr -> _void)
+                                                           (_fun #:keep funs #:atomic? #t
+								 _j_compress_ptr -> _void)
                                                            _fpointer))
        m))))
 
