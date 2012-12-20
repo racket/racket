@@ -39,8 +39,9 @@
 
     (define/override (render-part d ht)
       (let ([number (collected-info-number (part-collected-info d ht))])
-        (printf (make-string (add1 (length number)) #\#))
-        (printf " ")
+        (unless (zero? (length number))
+          (printf (make-string (length number) #\#))
+          (printf " "))
         (for ([n (in-list (reverse number))] #:when n) (printf "~s." n))
         (when (part-title-content d)
           (when (ormap values number) (printf " "))
