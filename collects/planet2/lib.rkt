@@ -53,14 +53,6 @@
 
 (struct pkg-desc (source type name auto?))
 
-(define (file->value* pth def)
-  (with-handlers ([exn:fail? (λ (x) 
-                                ;; No logging, because this funciton is used only
-                                ;; for METADATA.rktd, which is going away, and we
-                                ;; don't want to complain about a missing file.
-                                def)])
-    (file->value pth)))
-
 (define (path->bytes* pkg)
   (cond
     [(path? pkg)
@@ -140,11 +132,7 @@
   (define v
     (if get-info
         (get-info key get-default)
-        ;; during a transition period, also check for "METADATA.rktd":
-        (if (eq? key 'deps)
-            (dict-ref (file->value* (build-path pkg-dir "METADATA.rktd") empty)
-                      'dependency (get-default))
-            (get-default))))
+        (get-default)))
   (checker v)
   v)
 
