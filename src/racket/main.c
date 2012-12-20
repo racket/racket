@@ -51,6 +51,10 @@
 # define DONT_LOAD_INIT_FILE
 #endif
 
+#if defined(MZ_XFORM) && defined(__MINGW32__) && !defined(USE_THREAD_LOCAL)
+XFORM_GC_VARIABLE_STACK_THROUGH_DIRECT_FUNCTION;
+#endif
+
 #ifdef MZ_XFORM
 START_XFORM_SUSPEND;
 #endif
