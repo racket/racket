@@ -211,8 +211,13 @@
 (define (package-index-lookup pkg)
   (or
    (for/or ([i (in-list (read-pkg-cfg/def "indexes"))])
-     (define addr (combine-url/relative (string->url i)
-                                        (format "pkg/~a" pkg)))
+     (define addr/no-query (combine-url/relative (string->url i)
+                                                 (format "pkg/~a" pkg)))
+     (define addr (struct-copy url addr/no-query
+                               [query (append
+                                       (url-query addr/no-query)
+                                       (list
+                                        (cons 'version (version))))]))
      (log-planet2-debug "resolving via ~a" (url->string addr))
      (call/input-url+200
       addr

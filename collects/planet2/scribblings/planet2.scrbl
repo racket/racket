@@ -154,11 +154,14 @@ means that it has only the characters @|package-name-chars|.}
 
 A @deftech{package name resolver} (@deftech{PNR}) is a server that
 converts package names to other package sources. A PNR is identified
-by a string representing a URL, such that appending
-@exec{pkg/}@nonterm{package} forms a URL that refers to a
+by a string representing a URL. This URL is combined with
+@exec{pkg/}@nonterm{package} path segments (where @nonterm{package} is a package name) plus a
+@exec{version=}@nonterm{version} query (where @nonterm{version} is the
+Racket version number) to form a URL that should refer to a
 @racket[read]-able hash table with the keys: @racket['source] mapped to
 the @tech{package source} string and @racket['checksum] mapped to the
-@tech{checksum} value. Typically, the source will be a remote URL.
+@tech{checksum} value. Typically, the @tech{package source} value for
+@racket['source] will be a remote URL.
 
 PLT supports two @tech{package name resolvers} that are enabled by
 default: @url{https://plt-etc.byu.edu:9004} for new
