@@ -36,6 +36,7 @@ low-level libraries and structures purely through Racket code.
 @include-section["structures.scrbl"]
 @include-section["security.scrbl"]
 @include-section["custodians.scrbl"]
+@include-section["subprocesses.scrbl"]
 @include-section["misc.scrbl"]
 @include-section["hooks.scrbl"]
 

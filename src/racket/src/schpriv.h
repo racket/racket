@@ -3898,6 +3898,8 @@ int scheme_places_register_child(int pid, int is_group, void *signal_fd, int *st
 void scheme_wait_suspend();
 void scheme_wait_resume();
 void scheme_done_with_process_id(int pid, int is_group);
+void scheme_starting_child();
+void scheme_ended_child();
 # endif
 #endif
 

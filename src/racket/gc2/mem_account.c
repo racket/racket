@@ -447,6 +447,9 @@ static void BTC_do_accounting(NewGC *gc)
     last = cur;
     while(cur) {
       int owner = custodian_to_owner_set(gc, cur);
+      uintptr_t save_count = gc->phantom_count;
+
+      gc->phantom_count = 0;
 
       gc->current_mark_owner = owner;
       GCDEBUG((DEBUGOUTF,"MARKING THREADS OF OWNER %i (CUST %p)\n", owner, cur));
@@ -458,6 +461,10 @@ static void BTC_do_accounting(NewGC *gc)
 
       last = cur;
       box = cur->global_next; cur = box ? SCHEME_PTR1_VAL(box) : NULL;
+
+      owner_table[owner]->memory_use = add_no_overflow(owner_table[owner]->memory_use, 
+                                                       gcBYTES_TO_WORDS(gc->phantom_count));
+      gc->phantom_count = save_count;
     }
 
     /* walk backward folding totals int parent */
@@ -470,7 +477,8 @@ static void BTC_do_accounting(NewGC *gc)
         int powner = custodian_to_owner_set(gc, parent);
 
         owner_table = gc->owner_table;
-        owner_table[powner]->memory_use += owner_table[owner]->memory_use;
+        owner_table[powner]->memory_use = add_no_overflow(owner_table[powner]->memory_use,
+                                                          owner_table[owner]->memory_use);
         owner_table[powner]->master_memory_use += owner_table[owner]->master_memory_use;
       }
 

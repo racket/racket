@@ -186,5 +186,38 @@
   (test #t < n 50))
      
 ;; ----------------------------------------
+;; Phantom bytes:
+
+(when (eq? '3m (system-type 'gc))
+  (define s (make-semaphore))
+  (define c (make-custodian))
+  (define t (parameterize ([current-custodian c])
+              (thread (lambda ()
+                        (semaphore-wait s)
+                        (define b (make-phantom-bytes (expt 2 29)))
+                        (test #t phantom-bytes? b)
+                        (test #f phantom-bytes? 0)
+                        (semaphore-wait s)
+                        (set-phantom-bytes! b 0)
+                        (semaphore-wait s)))))
+  (sync (system-idle-evt))
+  (collect-garbage)
+  (define m (current-memory-use))
+  (define mc (current-memory-use c))
+  (semaphore-post s)
+  (sync (system-idle-evt))
+  (test #t > (current-memory-use) (+ m (expt 2 28)))
+  (collect-garbage)
+  (test #t > (current-memory-use) (+ m (expt 2 28)))
+  (test #t > (current-memory-use c) (+ mc (expt 2 28)))
+  (semaphore-post s)
+  (sync (system-idle-evt))
+  (test #t < (current-memory-use) (+ m (expt 2 28)))
+  (collect-garbage)
+  (test #t < (current-memory-use) (+ m (expt 2 28)))
+  (test #t < (current-memory-use c) (+ mc (expt 2 28)))
+  (semaphore-post s))
+
+;; ----------------------------------------
 
 (report-errs)

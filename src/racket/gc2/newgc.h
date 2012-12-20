@@ -231,6 +231,9 @@ typedef struct NewGC {
   unsigned short weak_box_tag;
   unsigned short ephemeron_tag;
   unsigned short cust_box_tag;
+  unsigned short phantom_tag;
+
+  uintptr_t phantom_count;
 
   Roots roots;
   GC_Weak_Array *weak_arrays;
@@ -246,7 +249,7 @@ typedef struct NewGC {
   intptr_t previously_reported_total; /* how much we previously reported to the parent */
   mzrt_mutex *child_total_lock; /* lock on `child_gc_total' */
 #endif
-  intptr_t child_gc_total;
+  uintptr_t child_gc_total;
 
   uintptr_t place_memory_limit; /* set to propagate a custodian limit from a parent place */  
 

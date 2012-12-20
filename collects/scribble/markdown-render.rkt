@@ -18,6 +18,7 @@
 
 (define table-ticks-depth (make-parameter 0))
 (define phrase-ticks-depth (make-parameter 0))
+(define note-depth (make-parameter 0))
 
 (define (render-mixin %)
   (class %
@@ -38,8 +39,9 @@
 
     (define/override (render-part d ht)
       (let ([number (collected-info-number (part-collected-info d ht))])
-        (printf (make-string (add1 (length number)) #\#))
-        (printf " ")
+        (unless (zero? (length number))
+          (printf (make-string (length number) #\#))
+          (printf " "))
         (for ([n (in-list (reverse number))] #:when n) (printf "~s." n))
         (when (part-title-content d)
           (when (ormap values number) (printf " "))
@@ -140,14 +142,19 @@
                  (render-flow d part ht #f)))))))
 
     (define/override (render-paragraph p part ri)
+      (define (write-note)
+        (write-string (make-string (note-depth) #\>))
+        (unless (zero? (note-depth))
+          (write-string " ")))
       (define o (open-output-string))
       (parameterize ([current-output-port o])
         (super render-paragraph p part ri))
       (define to-wrap (regexp-replace* #rx"\n" (get-output-string o) " "))
       (define lines (wrap-line (string-trim to-wrap) (- 72 (current-indent))))
+      (write-note)
       (write-string (car lines))
       (for ([line (in-list (cdr lines))])
-        (newline) (indent) (write-string line))
+        (newline) (indent) (write-note) (write-string line))
       (newline)
       null)
 
@@ -207,7 +214,12 @@
     (define/override (render-nested-flow i part ri starting-item?)
       (define s (nested-flow-style i))
       (unless (memq 'decorative (style-properties s))
-        (super render-nested-flow i part ri starting-item?)))
+        (define note? (equal? (style-name s) "refcontent"))
+        (when note?
+          (note-depth (add1 (note-depth))))
+        (begin0 (super render-nested-flow i part ri starting-item?)
+          (when note?
+            (note-depth (sub1 (note-depth)))))))
 
     (define/override (render-other i part ht)
       (cond

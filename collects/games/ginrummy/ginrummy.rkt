@@ -1,5 +1,5 @@
-#lang mzscheme
-(require games/cards mred mzlib/class mzlib/unit mzlib/list)
+#lang racket/base
+(require racket/gui/base games/cards racket/class racket/unit)
 
 (provide game@)
 (define game@ (unit (import) (export)
@@ -342,7 +342,7 @@
 
 ;; This procedure finalizes the display when the game is over
 (define (end-of-game why)
-  (send t set-status-text
+  (send t set-status
         (format
          "~aGame over. ~a."
          why
@@ -375,7 +375,7 @@
     (send (car discards) snap-back-after-move #t)
     (send (car deck) user-can-move #t)
     (send (car deck) snap-back-after-move #t)
-    (send t set-status-text YOUR-TURN-MESSAGE)
+    (send t set-status YOUR-TURN-MESSAGE)
     (let ([something-happened (make-semaphore 0)])
       ;; Set callback in your region to receive the deck/discard card
       (set-region-callback!
@@ -412,7 +412,7 @@
       (yield something-happened))
 
     ;; Time for you to discard something
-    (send t set-status-text DISCARD-MESSAGE)
+    (send t set-status DISCARD-MESSAGE)
     (let ([something-happened (make-semaphore 0)])
       ;; This time, the discard pile is the active region
       (set-region-callback!

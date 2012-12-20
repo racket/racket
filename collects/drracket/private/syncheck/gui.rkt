@@ -2090,7 +2090,7 @@ If the namespace does not, they are colored the unbound color.
      (λ (defs-text val) 
        (log-timeline
         "replace-compile-comp-trace"
-        (send (send (send defs-text get-canvas) get-top-level-window)
+        (send (send (send defs-text get-tab) get-frame)
               replay-compile-comp-trace
               defs-text 
               val))))))

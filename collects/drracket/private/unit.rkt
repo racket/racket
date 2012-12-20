@@ -1215,6 +1215,10 @@ module browser threading seems wrong.
         (send frame enable-evaluation-in-tab this))
       (define/public (get-enabled) enabled?)
       
+      (define last-touched (current-inexact-milliseconds))
+      (define/public-final (touched) (set! last-touched (current-inexact-milliseconds)))
+      (define/public-final (get-last-touched) last-touched)
+      
       ;; current-execute-warning is a snapshot of the needs-execution-message
       ;; that is taken each time repl submission happens, and it gets reset
       ;; when "Run" is clicked.
@@ -2946,6 +2950,8 @@ module browser threading seems wrong.
             
             (send definitions-text update-frame-filename)
             (update-running (send current-tab is-running?))
+            (when (eq? this (get-top-level-focus-window))
+              (send current-tab touched))
             (on-tab-change old-tab current-tab)
             (send tab update-log)
             (send tab update-planet-status)
@@ -2991,10 +2997,9 @@ module browser threading seems wrong.
                         (set! tabs (remq tab tabs))
                         (send tabs-panel delete (send tab get-i))
                         (update-menu-bindings) 
-                        (change-to-tab (cond
-                                         [(< (send tab get-i) (length tabs))
-                                          (list-ref tabs (send tab get-i))]
-                                         [else (last tabs)])))
+                        (change-to-tab
+                         (argmax (λ (tab) (send tab get-last-touched)) 
+                                 tabs)))
                       (loop (cdr l-tabs))))]))]))
       
       ;; a helper private method for close-current-tab -- doesn't close an arbitrary tab.
@@ -3133,6 +3138,11 @@ module browser threading seems wrong.
                (update-close-tab-menu-item-shortcut this)]
               [else (super restore-keybinding)]))
           (super-new)))
+      
+      (define/override (on-activate active?)
+        (when active?
+          (send (get-current-tab) touched))
+        (super on-activate active?))
       
       (define/private (update-menu-bindings)
         (when close-tab-menu-item

@@ -155,7 +155,22 @@ Calls the definitions text's
 
    See also @method[drracket:unit:tab<%> add-bkg-running-color].
   }
-
+@defmethod[#:mode public-final (touched) void?]{
+  Called by the system to indicate that the tab has
+  just been switched to from another tab in the 
+  same frame (when the frame has the focus) 
+  or the frame itself has come to the 
+  front (via @method[top-level-window<%> on-activate])
+  and the tab is the current tab in that frame.
+ 
+  This method updates the private state that
+  @method[drracket:unit:tab<%> get-last-touched]
+  returns.
+  }
+@defmethod[#:mode public-final (get-last-touched) flonum?]{
+   Returns the time that this tab was last focused, as counted
+   by @racket[current-inexact-milliseconds].
+ }
 }
 
 

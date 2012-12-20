@@ -370,6 +370,12 @@ This file defines two sorts of primitives. All of them are provided into any mod
      (identifier? #'nm)
      (with-syntax ([new-nm (syntax-property #'nm 'type-label #'ty)])
        (syntax/loc stx (define new-nm body)))]
+    [(define: (tvars:id ...) nm:id : ty body)
+     (with-syntax ([type (syntax/loc #'ty (All (tvars ...) ty))])
+       (syntax/loc stx
+         (begin
+           (: nm : type)
+           (define nm body))))]
     [(define: (tvars:id ...) (nm:id . formals:annotated-formals) : ret-ty body ...)
      (with-syntax ([type (syntax/loc #'ret-ty (All (tvars ...) (formals.arg-ty ... -> ret-ty)))])
        (syntax/loc stx

@@ -688,6 +688,8 @@ SHARED_OK static Child_Status *child_statuses = NULL;
 SHARED_OK static mzrt_mutex* child_status_lock = NULL;
 SHARED_OK static mzrt_mutex* child_wait_lock = NULL; /* ordered before status lock */
 
+SHARED_OK static int started_thread, pending_children;
+
 /* When the Racket process value for a process in a different group becomes 
    GC-unreachable before a waitpid() on the process, then we 
    need to keep waiting on the pid to let the OS gc the process.
@@ -861,11 +863,18 @@ static void *mz_proc_thread_signal_worker(void *data) {
         /* We wait only on processes in the same group as Racket,
            because detecting the termination of a group's main process
            disables our ability to terminate all processes in the group. */
-        check_pid = 0; /* => processes in the same group as Racket */
+        if (pending_children)
+          check_pid = 0; /* => processes in the same group as Racket */
+        else
+          check_pid = -1; /* don't check */
         is_group = 0;
       }
 
-      pid = waitpid(check_pid, &status, WNOHANG);
+      if (check_pid == -1) {
+        pid = -1;
+        errno = ECHILD;
+      } else
+        pid = waitpid(check_pid, &status, WNOHANG);
 
       if (pid == -1) {
         if (errno == EINTR) {
@@ -994,13 +1003,8 @@ void scheme_places_unblock_child_signal() XFORM_SKIP_PROC
 
 void scheme_places_start_child_signal_handler()
 {
-  mz_proc_thread *signal_thread;
-
   mzrt_mutex_create(&child_status_lock);
   mzrt_mutex_create(&child_wait_lock);
-
-  signal_thread = mz_proc_thread_create(mz_proc_thread_signal_worker, NULL);
-  mz_proc_thread_detach(signal_thread);
 }
 
 void scheme_wait_suspend()
@@ -1010,6 +1014,29 @@ void scheme_wait_suspend()
 
 void scheme_wait_resume()
 {
+  mzrt_mutex_unlock(child_wait_lock);
+}
+
+void scheme_starting_child()
+{
+  mzrt_mutex_lock(child_wait_lock);
+
+  if (!started_thread) {
+    mz_proc_thread *signal_thread;  
+
+    signal_thread = mz_proc_thread_create(mz_proc_thread_signal_worker, NULL);
+    mz_proc_thread_detach(signal_thread);
+  }
+
+  pending_children++;
+
+  mzrt_mutex_unlock(child_wait_lock);
+}
+
+void scheme_ended_child()
+{
+  mzrt_mutex_lock(child_wait_lock);
+  --pending_children;
   mzrt_mutex_unlock(child_wait_lock);
 }
 

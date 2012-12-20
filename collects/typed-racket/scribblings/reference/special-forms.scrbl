@@ -229,17 +229,21 @@ annotations are optional.
 
 @defform*[[(define: v : t e)
            (define: (f . formals) : t . body)
+           (define: (a ...) v : t e)
            (define: (a ...) (f . formals) : t . body)]]{
 These forms define variables, with annotated types.  The first form
-defines @racket[v] with type @racket[t] and value @racket[e].  The
-second and third forms defines a function @racket[f] with appropriate
-types.  In most cases, use of @racket[:] is preferred to use of @racket[define:].
+defines @racket[v] with type @racket[t] and value @racket[e]. The third
+form does the same, but allows the specification of type variables.
+The second and fourth forms defines a function @racket[f] with appropriate
+types. In most cases, use of @racket[:] is preferred to use of @racket[define:].
 
 @ex[(define: foo : Integer 10)
 
     (define: (add [first : Integer]
                   [rest  : Integer]) : Integer
       (+ first rest))
+
+    (define: (A) mt-seq : (Sequenceof A) empty-sequence)
 
     (define: (A) (poly-app [func : (A A -> A)]
                            [first : A]
