@@ -262,9 +262,9 @@
           (set! alpha-s #f)
           (destroy s2))))
 
-    ;; Allocate memory proportional to the size of the bitmap, which
-    ;; helps the GC see that we're using that much memory.
-    (define shadow (make-bytes (* width height 4)))
+    ;; Claim memory proportional to the size of the bitmap, which
+    ;; helps the GC see that we're using that much memory:
+    (define shadow (make-phantom-bytes (* width height 4)))
 
     (def/public (get-width) (max 1 width))
     (def/public (get-height) (max 1 height))
@@ -286,7 +286,8 @@
       (when s
         (let ([s2 s])
           (set! s #f)
-          (destroy s2))))
+          (destroy s2)
+          (set! shadow #f))))
 
     (define/public (get-bitmap-gl-context)
       #f)
@@ -302,7 +303,7 @@
       (set!-values (s b&w?) (do-load-bitmap in kind bg complain-on-failure?))
       (set! width (if s (cairo_image_surface_get_width s) 0))
       (set! height (if s (cairo_image_surface_get_height s) 0))
-      (set! shadow (make-bytes (* width height 4)))
+      (set! shadow (make-phantom-bytes (* width height 4)))
       (and s #t))
 
     (define/private (do-load-bitmap in kind bg complain-on-failure?)
