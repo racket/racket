@@ -267,13 +267,6 @@ THREAD_LOCAL_DECL(struct Scheme_Hash_Table *place_local_misc_table);
 extern intptr_t GC_is_place();
 #endif
 
-
-#ifdef MZ_PRECISE_GC
-extern intptr_t GC_get_memory_use(void *c);
-#else
-extern MZ_DLLIMPORT intptr_t GC_get_memory_use();
-#endif
-
 typedef struct Thread_Cell {
   Scheme_Object so;
   char inherited, assigned;
