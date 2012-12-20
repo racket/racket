@@ -281,8 +281,13 @@ void scheme_setup_thread_local_key_if_needed() XFORM_SKIP_PROC
   {
     void **base;
 
+# ifdef __MINGW32__
+    asm("mov %%fs:(0x2C), %0;"
+	:"=r"(base));        /* output */
+# else
     __asm { mov ecx, FS:[0x2C]
             mov base, ecx }
+# endif
     scheme_tls_delta -= (uintptr_t)base[scheme_tls_index];
     scheme_tls_index *= sizeof(void*);
   }
