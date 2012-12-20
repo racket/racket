@@ -198,7 +198,9 @@
 
 (define (remote-package-checksum pkg)
   (match pkg
-    [`(pns ,pkg-name)
+    [`(pns ,pkg-name) ; compatibility, for now
+     (hash-ref (package-index-lookup pkg-name) 'checksum)]
+    [`(pnr ,pkg-name)
      (hash-ref (package-index-lookup pkg-name) 'checksum)]
     [`(url ,pkg-url-str)
      (package-url->checksum pkg-url-str)]))
@@ -592,7 +594,7 @@
        (update-install-info-checksum
         info
         checksum)
-       `(pns ,pkg))]
+       `(pnr ,pkg))]
      [else
       (pkg-error "cannot infer package source type\n  source: ~a" pkg)]))
   (define db (read-pkg-db))
@@ -623,7 +625,8 @@
     (match-define
      (install-info pkg-name orig-pkg pkg-dir clean? checksum)
      info)
-    (define pns? (eq? 'pns (first orig-pkg)))
+    (define name? (or (eq? 'pns (first orig-pkg)) ; compatibility, for now
+                      (eq? 'pnr (first orig-pkg))))
     (define (clean!)
       (when clean?
         (delete-directory/files pkg-dir)))
@@ -691,7 +694,7 @@
        (λ (unsatisfied-deps)
          (match
              (or dep-behavior
-                 (if pns?
+                 (if name?
                    'search-ask
                    'fail))
            ['fail
