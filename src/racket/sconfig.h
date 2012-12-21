@@ -608,7 +608,14 @@
 /* MS Visual C++ likes underscore prefixes */
 #if defined(_MSC_VER)
 # define MSC_IZE(x) _ ## x
+# define M_MSC_IZE(x) MSC_IZE(x)
 # define DIRECT_INCLUDE
+# else
+# define M_MSC_IZE(x) x
+#endif
+
+#if defined(__MINGW32__)
+# define MSC_IZE(x) _ ## x
 #endif
 
 #ifdef __BORLANDC__

@@ -199,7 +199,7 @@ void scheme_clear_ephemerons(void);
 #define BITS_PER_MZSHORT (8 * sizeof(mzshort))
 
 #ifndef NO_INLINE_KEYWORD
-# define MZ_INLINE MSC_IZE(inline)
+# define MZ_INLINE M_MSC_IZE(inline)
 #else
 # define MZ_INLINE /* empty */
 #endif
