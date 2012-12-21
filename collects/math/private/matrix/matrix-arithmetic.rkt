@@ -19,21 +19,18 @@
            [(_ . es)   (syntax/loc inner-stx (typed:fun . es))]
            [_          (syntax/loc inner-stx typed:fun)])))]))
 
-(define/inline-macro matrix* (a . as) inline-matrix* typed:matrix*)
-(define/inline-macro matrix+ (a . as) inline-matrix+ typed:matrix+)
-(define/inline-macro matrix- (a . as) inline-matrix- typed:matrix-)
+(define/inline-macro matrix* (a as ...) inline-matrix* typed:matrix*)
+(define/inline-macro matrix+ (a as ...) inline-matrix+ typed:matrix+)
+(define/inline-macro matrix- (a as ...) inline-matrix- typed:matrix-)
 (define/inline-macro matrix-scale (a x) inline-matrix-scale typed:matrix-scale)
 
+(define/inline-macro do-matrix-map (f a as ...) inline-matrix-map matrix-map)
+
 (provide
- ;; Equality
- (rename-out [typed:matrix=  matrix=])
- ;; Mapping
- inline-matrix-map
- matrix-map
- ;; Multiplication
+ (rename-out [do-matrix-map  matrix-map]
+             [typed:matrix=  matrix=]
+             [typed:matrix-sum  matrix-sum])
  matrix*
- ;; Pointwise operators
  matrix+
  matrix-
- matrix-scale
- (rename-out [typed:matrix-sum  matrix-sum]))
+ matrix-scale)

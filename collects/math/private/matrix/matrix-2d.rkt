@@ -2,7 +2,7 @@
 
 (require math/array
          "matrix-types.rkt"
-         "matrix-constructors.rkt")
+         "matrix-syntax.rkt")
 
 (provide matrix-2d-rotation
          matrix-2d-scaling

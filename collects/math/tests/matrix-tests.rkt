@@ -7,192 +7,673 @@
          "../private/matrix/matrix-column.rkt"
          "test-utils.rkt")
 
-(: random-matrix (Integer Integer Integer -> (Matrix Integer)))
-;; Generates a random matrix with integer elements < k. Useful to test properties.
-(define (random-matrix m n k)
+(: random-matrix (case-> (Integer Integer -> (Matrix Integer))
+                         (Integer Integer Integer -> (Matrix Integer))))
+;; Generates a random matrix with Natural elements < k. Useful to test properties.
+(define (random-matrix m n [k 100])
   (array-strict (build-array (vector m n) (λ (_) (random k)))))
 
+(define nonmatrices
+  (list (make-array #() 0)
+        (make-array #(1) 0)
+        (make-array #(1 0) 0)
+        (make-array #(0 1) 0)
+        (make-array #(0 0) 0)
+        (make-array #(1 1 1) 0)))
+
 ;; ===================================================================================================
-;; Types
+;; Literal syntax
+
+(check-equal? (matrix [[1]])
+              (array #[#[1]]))
+
+(check-equal? (matrix [[1 2 3 4]])
+              (array #[#[1 2 3 4]]))
+
+(check-equal? (matrix [[1 2] [3 4]])
+              (array #[#[1 2] #[3 4]]))
+
+(check-equal? (matrix [[1] [2] [3] [4]])
+              (array #[#[1] #[2] #[3] #[4]]))
+
+(check-equal? (row-matrix [1 2 3 4])
+              (matrix [[1 2 3 4]]))
+
+(check-equal? (col-matrix [1 2 3 4])
+              (matrix [[1] [2] [3] [4]]))
+
+;; ===================================================================================================
+;; Predicates
 
 (check-true (matrix? (array #[#[1]])))
 (check-false (matrix? (array #[1])))
 (check-false (matrix? (array 1)))
 (check-false (matrix? (array #[])))
+(for: ([a  (in-list nonmatrices)])
+  (check-false (matrix? a)))
+
+(check-true (square-matrix? (matrix [[1]])))
+(check-true (square-matrix? (matrix [[1 1] [1 1]])))
+(check-false (square-matrix? (matrix [[1 2]])))
+(check-false (square-matrix? (matrix [[1] [2]])))
+(for: ([a  (in-list nonmatrices)])
+  (check-false (square-matrix? a)))
 
 (check-true (row-matrix? (matrix [[1 2 3 4]])))
+(check-true (row-matrix? (matrix [[1]])))
 (check-false (row-matrix? (matrix [[1] [2] [3] [4]])))
+(for: ([a  (in-list nonmatrices)])
+  (check-false (row-matrix? a)))
 
 (check-true (col-matrix? (matrix [[1] [2] [3] [4]])))
+(check-true (col-matrix? (matrix [[1]])))
 (check-false (col-matrix? (matrix [[1 2 3 4]])))
+(check-false (col-matrix? (array #[1])))
+(check-false (col-matrix? (array 1)))
+(check-false (col-matrix? (array #[])))
+(for: ([a  (in-list nonmatrices)])
+  (check-false (col-matrix? a)))
+
+(check-true (matrix-zero? (make-matrix 4 3 0)))
+(check-true (matrix-zero? (make-matrix 4 3 0.0)))
+(check-true (matrix-zero? (make-matrix 4 3 0+0.0i)))
+(check-false (matrix-zero? (row-matrix [0 0 0 0 1])))
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix-zero? a))))
 
 ;; ===================================================================================================
-;; Matrix multiplication
+;; Accessors
 
-(check-equal? (matrix* (identity-matrix 2)
-                       (matrix [[1 20] [300 4000]]))
-              (matrix [[1 20] [300 4000]]))
+;; matrix-shape
 
-(check-equal? (matrix* (matrix [[1 2 3] [4 5 6] [7 8 9]])
-                       (matrix [[1 2 3] [4 5 6] [7 8 9]]))
-              (matrix [[30 36 42] [66 81 96] [102 126 150]]))
+(check-equal? (let-values ([(m n)  (matrix-shape (matrix [[1 2 3] [4 5 6]]))])
+                (list m n))
+              (list 2 3))
 
-(let ([m0  (random-matrix 4 5 100)]
-      [m1  (random-matrix 5 2 100)]
-      [m2  (random-matrix 2 10 100)])
-  (check-equal? (matrix* (matrix* m0 m1) m2)
-                (matrix* m0 (matrix* m1 m2))))
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (let-values ([(m n)  (matrix-shape a)])
+                                        (void)))))
+
+;; square-matrix-size
+
+(check-equal? (square-matrix-size (matrix [[1 2] [3 4]]))
+              2)
+
+(check-exn exn:fail:contract? (λ () (square-matrix-size (matrix [[1 2]]))))
+(check-exn exn:fail:contract? (λ () (square-matrix-size (matrix [[1] [2]]))))
+
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (square-matrix-size a))))
+
+;; matrix-num-rows
+
+(check-equal? (matrix-num-rows (matrix [[1 2 3] [4 5 6]]))
+              2)
+
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix-num-rows a))))
+
+;; matrix-num-cols
+
+(check-equal? (matrix-num-cols (matrix [[1 2 3] [4 5 6]]))
+              3)
+
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix-num-cols a))))
 
 ;; ===================================================================================================
-;; Construction
+;; Constructors
+
+;; identity-matrix
+
+(check-equal? (identity-matrix 1) (matrix [[1]]))
+(check-equal? (identity-matrix 2) (matrix [[1 0] [0 1]]))
+(check-equal? (identity-matrix 3) (matrix [[1 0 0] [0 1 0] [0 0 1]]))
+(check-exn exn:fail:contract? (λ () (identity-matrix 0)))
+
+;; make-matrix
+
+(check-equal? (make-matrix 1 1 4) (matrix [[4]]))
+(check-equal? (make-matrix 2 2 3) (matrix [[3 3] [3 3]]))
+(check-exn exn:fail:contract? (λ () (make-matrix 1 0 4)))
+(check-exn exn:fail:contract? (λ () (make-matrix 0 1 4)))
+
+;; build-matrix
+
+(check-equal? (build-matrix 4 4 (λ: ([i : Index] [j : Index])
+                                  (+ i j)))
+              (build-array #(4 4) (λ: ([js : Indexes])
+                                    (+ (vector-ref js 0) (vector-ref js 1)))))
+(check-exn exn:fail:contract? (λ () (build-matrix 1 0 (λ: ([i : Index] [j : Index]) (+ i j)))))
+(check-exn exn:fail:contract? (λ () (build-matrix 0 1 (λ: ([i : Index] [j : Index]) (+ i j)))))
+
+;; diagonal-matrix
+
+(check-equal? (diagonal-matrix '(1 2 3 4))
+              (matrix [[1 0 0 0]
+                       [0 2 0 0]
+                       [0 0 3 0]
+                       [0 0 0 4]]))
+
+(check-exn exn:fail:contract? (λ () (diagonal-matrix '())))
+
+;; block-diagonal-matrix
+
+(let ([m  (random-matrix 4 4 100)])
+  (check-equal? (block-diagonal-matrix (list m))
+                m))
 
 (check-equal?
  (block-diagonal-matrix
-  (list
-   (matrix [[1 2] [3 4]])
-   (matrix [[1 2 3] [4 5 6]])
-   (matrix [[1] [3] [5]])))
- (matrix
-  [[1 2 0 0 0 0]
-   [3 4 0 0 0 0]
-   [0 0 1 2 3 0]
-   [0 0 4 5 6 0]
-   [0 0 0 0 0 1]
-   [0 0 0 0 0 3]
-   [0 0 0 0 0 5]]))
+  (list (matrix [[1 2] [3 4]])
+        (matrix [[1 2 3] [4 5 6]])
+        (matrix [[1] [3] [5]])
+        (matrix [[2 4 6]])))
+ (matrix [[1 2 0 0 0 0 0 0 0]
+          [3 4 0 0 0 0 0 0 0]
+          [0 0 1 2 3 0 0 0 0]
+          [0 0 4 5 6 0 0 0 0]
+          [0 0 0 0 0 1 0 0 0]
+          [0 0 0 0 0 3 0 0 0]
+          [0 0 0 0 0 5 0 0 0]
+          [0 0 0 0 0 0 2 4 6]]))
+
+(check-equal?
+ (block-diagonal-matrix (map (λ: ([i : Integer]) (matrix [[i]])) '(1 2 3 4)))
+ (diagonal-matrix '(1 2 3 4)))
+
+(check-exn exn:fail:contract? (λ () (block-diagonal-matrix '())))
+
+;; Vandermonde matrix
+
+(check-equal? (vandermonde-matrix '(10) 1)
+              (matrix [[1]]))
+(check-equal? (vandermonde-matrix '(10) 4)
+              (matrix [[1 10 100 1000]]))
+(check-equal? (vandermonde-matrix '(1 2 3 4) 3)
+              (matrix [[1 1 1] [1 2 4] [1 3 9] [1 4 16]]))
+(check-exn exn:fail:contract? (λ () (vandermonde-matrix '() 1)))
+(check-exn exn:fail:contract? (λ () (vandermonde-matrix '(1) 0)))
 
 ;; ===================================================================================================
+;; Flat conversion
 
-(begin  
-  (begin "matrix-types.rkt"
-         (list
-          'matrix?
-          (matrix? (list*->array '[[1 2] [3 4]] real? ))
-          (not (matrix? (list*->array '[[[1 2] [3 4]] [[1 2] [3 4]]] real? ))))
-         (list
-          'square-matrix?
-          (square-matrix? (list*->array '[[1 2] [3 4]] real? ))
-          (not (square-matrix? (list*->array '[[1 2 3] [4 5 6]] real? ))))
-         (list
-          'square-matrix-size
-          (= 3 (square-matrix-size (list*->array '[[1 2 3] [4 5 6] [7 8 9]] real?))))
-         (list
-          'matrix=
-          (matrix= (list*->array '[[1 2] [3 4]] real?) (list*->array '[[1 2] [3 4]] real? ))
-          #;(not (matrix= (list*->array '[[1 2] [3 4]] real?) (list*->array '[[1 2]] real? ))))
-         (list
-          'matrix-shape
-          (let-values ([(m n) (matrix-shape (list*->matrix '[[1 2 3] [4 5 6]]))])
-            (equal? (list m n) '(2 3)))))
-  
-  (begin "matrix-constructors.rkt"
-         (list
-          'identity-matrix
-          (equal? (array->list* (identity-matrix 1)) '[[1]])
-          (equal? (array->list* (identity-matrix 2)) '[[1 0] [0 1]])
-          (equal? (array->list* (identity-matrix 3)) '[[1 0 0] [0 1 0] [0 0 1]]))
-         (list
-          'const-matrix
-          (equal? (array->list* (make-matrix 2 3 0)) '((0 0 0) (0 0 0)))
-          (equal? (array->list* (make-matrix 2 3 0.)) '((0. 0. 0.) (0. 0. 0.))))
-         (list
-          'matrix->list
-          (equal? (matrix->list* (list*->matrix '((1 2) (3 4)))) '((1 2) (3 4)))
-          (equal? (matrix->list* (list*->matrix '((1. 2.) (3. 4.)))) '((1. 2.) (3. 4.))))
-         (list
-          'matrix->vector
-          (equal? (matrix->vector* ((inst vector*->matrix Integer) '#(#(1 2) #(3 4))))
-                  '#(#(1 2) #(3 4)))
-          (equal? (matrix->vector* ((inst vector*->matrix Flonum) '#(#(1. 2.) #(3. 4.))))
-                  '#(#(1. 2.) #(3. 4.))))
-         (list
-          'matrix-row
-          (equal? (matrix-row (identity-matrix 3) 0) (list*->matrix '[[1 0 0]]))
-          (equal? (matrix-row (identity-matrix 3) 1) (list*->matrix '[[0 1 0]]))
-          (equal? (matrix-row (identity-matrix 3) 2) (list*->matrix '[[0 0 1]])))
-         (list
-          'matrix-col
-          (equal? (matrix-col (identity-matrix 3) 0) (list*->matrix '[[1] [0] [0]]))
-          (equal? (matrix-col (identity-matrix 3) 1) (list*->matrix '[[0] [1] [0]]))
-          (equal? (matrix-col (identity-matrix 3) 2) (list*->matrix '[[0] [0] [1]])))
-         (list
-          'submatrix
-          (equal? (submatrix (identity-matrix 3) 
-                             (in-range 0 1) (in-range 0 2)) (list*->matrix '[[1 0]]))
-          (equal? (submatrix (identity-matrix 3) 
-                             (in-range 0 2) (in-range 0 3)) (list*->matrix '[[1 0 0] [0 1 0]]))))
-  
-  (begin 
-    "matrix-pointwise.rkt"
-    (let ()
-      (define A   (list*->matrix '[[1 2] [3 4]]))
-      (define ~A  (list*->matrix '[[-1 -2] [-3 -4]]))
-      (define B   (list*->matrix '[[5 6] [7 8]]))
-      (define A+B (list*->matrix '[[6 8] [10 12]]))
-      (define A-B (list*->matrix '[[-4 -4] [-4 -4]]))         
-      (list 'matrix+ (equal? (matrix+ A B) A+B))
-      (list 'matrix- 
-            (equal? (matrix- A B) A-B)
-            (equal? (matrix- A)   ~A))))
-  
-  (begin  
-    "matrix-expt.rkt"
-    (let ()
-      (define A (list*->matrix '[[1 2] [3 4]]))
-      (list
-       'matrix-expt
-       (equal? (matrix-expt A 0) (identity-matrix 2))
-       (equal? (matrix-expt A 1) A)
-       (equal? (matrix-expt A 2) (list*->matrix '[[7 10] [15 22]]))
-       (equal? (matrix-expt A 3) (list*->matrix '[[37 54] [81 118]]))
-       (equal? (matrix-expt A 8) (list*->matrix '[[165751 241570] [362355 528106]])))))
+(check-equal? (list->matrix 1 3 '(1 2 3)) (row-matrix [1 2 3]))
+(check-equal? (list->matrix 3 1 '(1 2 3)) (col-matrix [1 2 3]))
+(check-exn exn:fail:contract? (λ () (list->matrix 0 1 '())))
+(check-exn exn:fail:contract? (λ () (list->matrix 1 0 '())))
+(check-exn exn:fail:contract? (λ () (list->matrix 1 1 '(1 2))))
+
+(check-equal? (vector->matrix 1 3 #(1 2 3)) (row-matrix [1 2 3]))
+(check-equal? (vector->matrix 3 1 #(1 2 3)) (col-matrix [1 2 3]))
+(check-exn exn:fail:contract? (λ () (vector->matrix 0 1 #())))
+(check-exn exn:fail:contract? (λ () (vector->matrix 1 0 #())))
+(check-exn exn:fail:contract? (λ () (vector->matrix 1 1 #(1 2))))
+
+(check-equal? (->row-matrix '(1 2 3)) (row-matrix [1 2 3]))
+(check-equal? (->row-matrix #(1 2 3)) (row-matrix [1 2 3]))
+(check-equal? (->row-matrix (row-matrix [1 2 3])) (row-matrix [1 2 3]))
+(check-equal? (->row-matrix (col-matrix [1 2 3])) (row-matrix [1 2 3]))
+(check-equal? (->row-matrix (make-array #() 1)) (row-matrix [1]))
+(check-equal? (->row-matrix (make-array #(3) 1)) (row-matrix [1 1 1]))
+(check-equal? (->row-matrix (make-array #(1 3 1) 1)) (row-matrix [1 1 1]))
+(check-exn exn:fail:contract? (λ () (->row-matrix (make-array #(2 3 1) 1))))
+(check-exn exn:fail:contract? (λ () (->row-matrix (make-array #(1 3 2) 1))))
+(check-exn exn:fail:contract? (λ () (->row-matrix (make-array #(0 3) 1))))
+(check-exn exn:fail:contract? (λ () (->row-matrix (make-array #(3 0) 1))))
+
+(check-equal? (->col-matrix '(1 2 3)) (col-matrix [1 2 3]))
+(check-equal? (->col-matrix #(1 2 3)) (col-matrix [1 2 3]))
+(check-equal? (->col-matrix (col-matrix [1 2 3])) (col-matrix [1 2 3]))
+(check-equal? (->col-matrix (row-matrix [1 2 3])) (col-matrix [1 2 3]))
+(check-equal? (->col-matrix (make-array #() 1)) (col-matrix [1]))
+(check-equal? (->col-matrix (make-array #(3) 1)) (col-matrix [1 1 1]))
+(check-equal? (->col-matrix (make-array #(1 3 1) 1)) (col-matrix [1 1 1]))
+(check-exn exn:fail:contract? (λ () (->col-matrix (make-array #(2 3 1) 1))))
+(check-exn exn:fail:contract? (λ () (->col-matrix (make-array #(1 3 2) 1))))
+(check-exn exn:fail:contract? (λ () (->col-matrix (make-array #(0 3) 1))))
+(check-exn exn:fail:contract? (λ () (->col-matrix (make-array #(3 0) 1))))
+
+(check-equal? (matrix->list (matrix [[1 2 3] [4 5 6]])) '(1 2 3 4 5 6))
+(check-equal? (matrix->list (row-matrix [1 2 3])) '(1 2 3))
+(check-equal? (matrix->list (col-matrix [1 2 3])) '(1 2 3))
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix->list a))))
+
+(check-equal? (matrix->vector (matrix [[1 2 3] [4 5 6]])) #(1 2 3 4 5 6))
+(check-equal? (matrix->vector (row-matrix [1 2 3])) #(1 2 3))
+(check-equal? (matrix->vector (col-matrix [1 2 3])) #(1 2 3))
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix->vector a))))
+
+;; ===================================================================================================
+;; Nested conversion
+
+(check-equal? (list*->matrix '((1 2 3) (4 5 6))) (matrix [[1 2 3] [4 5 6]]))
+(check-exn exn:fail:contract? (λ () (list*->matrix '((1 2 3) (4 5)))))
+(check-exn exn:fail:contract? (λ () (list*->matrix '(() () ()))))
+(check-exn exn:fail:contract? (λ () (list*->matrix '())))
+
+(check-equal? ((inst vector*->matrix Integer) #(#(1 2 3) #(4 5 6))) (matrix [[1 2 3] [4 5 6]]))
+(check-exn exn:fail:contract? (λ () ((inst vector*->matrix Integer) #(#(1 2 3) #(4 5)))))
+(check-exn exn:fail:contract? (λ () ((inst vector*->matrix Integer) #(#() #() #()))))
+(check-exn exn:fail:contract? (λ () ((inst vector*->matrix Integer) #())))
+
+(check-equal? (matrix->list* (matrix [[1 2 3] [4 5 6]])) '((1 2 3) (4 5 6)))
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix->list* a))))
+
+(check-equal? (matrix->vector* (matrix [[1 2 3] [4 5 6]])) #(#(1 2 3) #(4 5 6)))
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix->vector* a))))
+
+;; ===================================================================================================
+;; Equality
+
+(check-true (matrix= (matrix [[1 2 3]
+                              [4 5 6]])
+                     (matrix [[1.0 2.0 3.0]
+                              [4.0 5.0 6.0]])))
+
+(check-true (matrix= (matrix [[1 2 3]
+                              [4 5 6]])
+                     (matrix [[1.0 2.0 3.0]
+                              [4.0 5.0 6.0]])
+                     (matrix [[1.0+0.0i 2.0+0.0i 3.0+0.0i]
+                              [4.0+0.0i 5.0+0.0i 6.0+0.0i]])))
+
+(check-false (matrix= (matrix [[1 2 3] [4 5 6]])
+                      (matrix [[1 2 3] [4 5 7]])))
+
+(check-false (matrix= (matrix [[0 2 3] [4 5 6]])
+                      (matrix [[1 2 3] [4 5 7]])))
+
+(check-false (matrix= (matrix [[1 2 3] [4 5 6]])
+                      (matrix [[1 4] [2 5] [3 6]])))
+
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix= a (matrix [[1]]))))
+  (check-exn exn:fail:contract? (λ () (matrix= (matrix [[1]]) a)))
+  (check-exn exn:fail:contract? (λ () (matrix= (matrix [[1]]) (matrix [[1]]) a))))
+
+;; ===================================================================================================
+;; Pointwise operations
+
+(define-syntax-rule (test-matrix-map (matrix-map ...) (array-map ...))
+  (begin
+    (for: ([a  (in-list nonmatrices)])
+      (check-exn exn:fail:contract? (λ () (matrix-map ... a)))
+      (check-exn exn:fail:contract? (λ () (matrix-map ... (matrix [[1]]) a))))
+    
+    (for*: ([m  '(2 3 4)]
+            [n  '(2 3 4)])
+      (define a0 (random-matrix m n))
+      (define a1 (random-matrix m n))
+      (define a2 (random-matrix m n))
+      (check-equal? (matrix-map ... a0)
+                    (array-map ... a0))
+      (check-equal? (matrix-map ... a0 a1)
+                    (array-map ... a0 a1))
+      (check-equal? (matrix-map ... a0 a1 a2)
+                    (array-map ... a0 a1 a2))
+      ;; Don't know why this (void) is necessary, but TR complains without it
+      (void))))
+
+(test-matrix-map (matrix-map -) (array-map -))
+(test-matrix-map ((values matrix-map) -) (array-map -))
+
+(test-matrix-map (matrix+) (array+))
+(test-matrix-map ((values matrix+)) (array+))
+
+(test-matrix-map (matrix-) (array-))
+(test-matrix-map ((values matrix-)) (array-))
+
+(check-equal? (matrix-sum (list (matrix [[1 2 3] [4 5 6]])))
+              (matrix [[1 2 3] [4 5 6]]))
+(check-equal? (matrix-sum (list (matrix [[1 2 3] [4 5 6]])
+                                (matrix [[0 1 2] [3 4 5]])))
+              (matrix+ (matrix [[1 2 3] [4 5 6]])
+                       (matrix [[0 1 2] [3 4 5]])))
+(check-exn exn:fail:contract? (λ () (matrix-sum '())))
+
+(check-equal? (matrix-scale (matrix [[1 2 3] [4 5 6]]) 10)
+              (matrix [[10 20 30] [40 50 60]]))
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix-scale a 0))))
+
+;; ===================================================================================================
+;; Multiplication
+
+(define-syntax-rule (test-matrix* matrix*)
+  (begin
+    (for: ([a  (in-list nonmatrices)])
+      (check-exn exn:fail:contract? (λ () (matrix* a (matrix [[1]])))))
+    
+    (check-equal? (matrix* (matrix [[1 2 3] [4 5 6] [7 8 9]])
+                           (matrix [[1 2 3] [4 5 6] [7 8 9]]))
+                  (matrix [[30 36 42] [66 81 96] [102 126 150]]))
+    
+    (check-equal? (matrix* (row-matrix [1 2 3 4])
+                           (col-matrix [1 2 3 4]))
+                  (matrix [[30]]))
+    
+    (check-equal? (matrix* (col-matrix [1 2 3 4])
+                           (row-matrix [1 2 3 4]))
+                  (matrix [[1  2  3  4]
+                           [2  4  6  8]
+                           [3  6  9 12]
+                           [4  8 12 16]]))
+    
+    (check-equal? (matrix* (matrix [[3]]) (matrix [[7]]))
+                  (matrix [[21]]))
+    
+    ;; Left/right identity
+    (let ([m  (random-matrix 2 2)])
+      (check-equal? (matrix* (identity-matrix 2) m)
+                    m)
+      (check-equal? (matrix* m (identity-matrix 2))
+                    m))
+    
+    ;; Shape
+    (let ([m0  (random-matrix 4 5)]
+          [m1  (random-matrix 5 2)]
+          [m2  (random-matrix 2 10)])
+      (check-equal? (let-values ([(m n)  (matrix-shape (matrix* m0 m1))])
+                      (list m n))
+                    (list 4 2))
+      (check-equal? (let-values ([(m n)  (matrix-shape (matrix* m1 m2))])
+                      (list m n))
+                    (list 5 10))
+      (check-equal? (let-values ([(m n)  (matrix-shape (matrix* m0 m1 m2))])
+                      (list m n))
+                    (list 4 10)))
+    
+    (check-exn exn:fail? (λ () (matrix* (random-matrix 1 2) (random-matrix 3 2))))
+    
+    ;; Associativity
+    (let ([m0  (random-matrix 4 5)]
+          [m1  (random-matrix 5 2)]
+          [m2  (random-matrix 2 10)])
+      (check-equal? (matrix* m0 m1 m2)
+                    (matrix* (matrix* m0 m1) m2))
+      (check-equal? (matrix* (matrix* m0 m1) m2)
+                    (matrix* m0 (matrix* m1 m2))))
+    ))
+
+(test-matrix* matrix*)
+;; `matrix*' is an inlining macro, so we need to check the function version as well
+(test-matrix* (values matrix*))
+
+;; ===================================================================================================
+;; Exponentiation
+
+(let ([A  (matrix [[1 2] [3 4]])])
+  (check-equal? (matrix-expt A 0) (identity-matrix 2))
+  (check-equal? (matrix-expt A 1) A)
+  (check-equal? (matrix-expt A 2) (matrix [[7 10] [15 22]]))
+  (check-equal? (matrix-expt A 3) (matrix [[37 54] [81 118]]))
+  (check-equal? (matrix-expt A 8) (matrix [[165751 241570] [362355 528106]])))
+
+(check-equal? (matrix-expt (matrix [[2]]) 10) (matrix [[(expt 2 10)]]))
+
+(check-exn exn:fail:contract? (λ () (matrix-expt (row-matrix [1 2 3]) 0)))
+(check-exn exn:fail:contract? (λ () (matrix-expt (col-matrix [1 2 3]) 0)))
+
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix-expt a 0))))
+
+;; ===================================================================================================
+;; Comprehensions
+
+;; for/matrix and friends are defined in terms of for/array and friends, so we only need to test that
+;; it works for one case each, and that they properly raise exceptions when given zero-length axes
+
+(check-equal?
+ (for/matrix 2 2 ([i  (in-range 4)]) i)
+ (matrix [[0 1] [2 3]]))
+
+#;; TR can't type this, but it's defined using exactly the same wrapper as `for/matrix'
+(check-equal?
+ (for*/matrix 2 2 ([i  (in-range 2)] [j  (in-range 2)]) (+ i j))
+ (matrix [[0 1] [1 2]]))
+
+(check-equal?
+ (for/matrix: 2 2 ([i  (in-range 4)]) i)
+ (matrix [[0 1] [2 3]]))
+
+(check-equal?
+ (for*/matrix: 2 2 ([i  (in-range 2)] [j  (in-range 2)]) (+ i j))
+ (matrix [[0 1] [1 2]]))
+
+(check-exn exn:fail:contract? (λ () (for/matrix 2 0 () 0)))
+(check-exn exn:fail:contract? (λ () (for/matrix 0 2 () 0)))
+(check-exn exn:fail:contract? (λ () (for*/matrix 2 0 () 0)))
+(check-exn exn:fail:contract? (λ () (for*/matrix 0 2 () 0)))
+
+(check-exn exn:fail:contract? (λ () (for/matrix: 2 0 () 0)))
+(check-exn exn:fail:contract? (λ () (for/matrix: 0 2 () 0)))
+(check-exn exn:fail:contract? (λ () (for*/matrix: 2 0 () 0)))
+(check-exn exn:fail:contract? (λ () (for*/matrix: 0 2 () 0)))
+
+;; ===================================================================================================
+;; Extraction
+
+;; matrix-ref
+
+(let ([a  (matrix [[10 11] [12 13]])])
+  (check-equal? (matrix-ref a 0 0) 10)
+  (check-equal? (matrix-ref a 0 1) 11)
+  (check-equal? (matrix-ref a 1 0) 12)
+  (check-equal? (matrix-ref a 1 1) 13)
+  (check-exn exn:fail? (λ () (matrix-ref a 2 0)))
+  (check-exn exn:fail? (λ () (matrix-ref a 0 2)))
+  (check-exn exn:fail? (λ () (matrix-ref a -1 0)))
+  (check-exn exn:fail? (λ () (matrix-ref a 0 -1))))
+
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix-ref a 0 0))))
+
+;; matrix-diagonal
+
+(check-equal? (matrix-diagonal (diagonal-matrix '(1 2 3 4)))
+              (array #[1 2 3 4]))
+
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix-diagonal a))))
+
+;; submatrix
+
+(check-equal? (submatrix (identity-matrix 8) (:: 2 4) (:: 2 4))
+              (identity-matrix 2))
+
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (submatrix a '(0) '(0)))))
+
+;; matrix-row
+
+(let ([a  (matrix [[1 2 3] [4 5 6]])])
+  (check-equal? (matrix-row a 0) (row-matrix [1 2 3]))
+  (check-equal? (matrix-row a 1) (row-matrix [4 5 6]))
+  (check-exn exn:fail? (λ () (matrix-row a -1)))
+  (check-exn exn:fail? (λ () (matrix-row a 2))))
+
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix-row a 0))))
+
+;; matrix-col
+
+(let ([a  (matrix [[1 2 3] [4 5 6]])])
+  (check-equal? (matrix-col a 0) (col-matrix [1 4]))
+  (check-equal? (matrix-col a 1) (col-matrix [2 5]))
+  (check-equal? (matrix-col a 2) (col-matrix [3 6]))
+  (check-exn exn:fail? (λ () (matrix-col a -1)))
+  (check-exn exn:fail? (λ () (matrix-col a 3))))
+
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix-col a 0))))
+
+;; matrix-rows
+
+(check-equal? (matrix-rows (matrix [[1 2 3] [4 5 6]]))
+              (list (row-matrix [1 2 3])
+                    (row-matrix [4 5 6])))
+
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix-rows a))))
+
+;; matrix-cols
+
+(check-equal? (matrix-cols (matrix [[1 2 3] [4 5 6]]))
+              (list (col-matrix [1 4])
+                    (col-matrix [2 5])
+                    (col-matrix [3 6])))
+
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix-cols a))))
+
+;; ===================================================================================================
+;; Embiggenment (it's a perfectly cromulent word)
+
+;; matrix-augment
+
+(let ([a  (random-matrix 3 5)])
+  (check-equal? (matrix-augment (list a)) a)
+  (check-equal? (matrix-augment (matrix-cols a)) a))
+
+(check-equal? (matrix-augment (list (col-matrix [1 2 3]) (col-matrix [4 5 6])))
+              (matrix [[1 4] [2 5] [3 6]]))
+
+(check-equal? (matrix-augment (list (matrix [[1 2] [4 5]]) (col-matrix [3 6])))
+              (matrix [[1 2 3] [4 5 6]]))
+
+(check-exn exn:fail? (λ () (matrix-augment (list (matrix [[1 2] [4 5]]) (col-matrix [3])))))
+(check-exn exn:fail:contract? (λ () (matrix-augment '())))
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix-augment (list a))))
+  (check-exn exn:fail:contract? (λ () (matrix-augment (list (matrix [[1]]) a)))))
+
+;; matrix-stack
+
+(let ([a  (random-matrix 5 3)])
+  (check-equal? (matrix-stack (list a)) a)
+  (check-equal? (matrix-stack (matrix-rows a)) a))
+
+(check-equal? (matrix-stack (list (row-matrix [1 2 3]) (row-matrix [4 5 6])))
+              (matrix [[1 2 3] [4 5 6]]))
+
+(check-equal? (matrix-stack (list (matrix [[1 2 3] [4 5 6]]) (row-matrix [7 8 9])))
+              (matrix [[1 2 3] [4 5 6] [7 8 9]]))
+
+(check-exn exn:fail? (λ () (matrix-stack (list (matrix [[1 2 3] [4 5 6]]) (row-matrix [7 8])))))
+(check-exn exn:fail:contract? (λ () (matrix-stack '())))
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix-stack (list a))))
+  (check-exn exn:fail:contract? (λ () (matrix-stack (list (matrix [[1]]) a)))))
+
+;; ===================================================================================================
+;; Inner product space
+
+;; matrix-norm
+
+(check-equal? (matrix-norm (matrix [[1 2 3] [4 5 6]]))
+              (sqrt (+ (* 1 1) (* 2 2) (* 3 3) (* 4 4) (* 5 5) (* 6 6))))
+
+;; Default norm is Frobenius norm
+(check-equal? (matrix-norm (matrix [[1 2 3] [4 5 6]]))
+              (matrix-norm (matrix [[1 2 3] [4 5 6]]) 2))
+
+;; This shouldn't overflow (so we check against `flhypot', which also shouldn't overflow)
+(check-equal? (matrix-norm (matrix [[1e200 1e199]]))
+              (flhypot 1e200 1e199))
+
+;; Taxicab (Manhattan) norm
+(check-equal? (matrix-norm (matrix [[1 2 3] [4 5 6]]) 1)
+              (+ 1 2 3 4 5 6))
+
+;; Infinity (maximum) norm
+(check-equal? (matrix-norm (matrix [[1 2 3] [4 5 6]]) +inf.0)
+              (max 1 2 3 4 5 6))
+
+;; The actual norm is indistinguishable from floating-point 6
+(check-equal? (matrix-norm (matrix [[1 2 3] [4 5 6]]) 1000)
+              6.0)
+
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix-norm a 1)))
+  (check-exn exn:fail:contract? (λ () (matrix-norm a)))
+  (check-exn exn:fail:contract? (λ () (matrix-norm a 5)))
+  (check-exn exn:fail:contract? (λ () (matrix-norm a +inf.0))))
+
+(check-equal? (matrix-norm (row-matrix [1+1i]))
+              (sqrt 2))
+
+(check-equal? (matrix-norm (row-matrix [1+1i 2+2i 3+3i]))
+              (matrix-norm (row-matrix [(magnitude 1+1i) (magnitude 2+2i) (magnitude 3+3i)])))
+
+;; matrix-dot (induces the Frobenius norm)
+
+(check-equal? (matrix-dot (matrix [[1 -2 3] [-4 5 -6]])
+                          (matrix [[-1 2 -3] [4 -5 6]]))
+              (+ (* 1 -1) (* -2 2) (* 3 -3) (* -4 4) (* 5 -5) (* -6 6)))
+
+(check-equal? (matrix-dot (row-matrix [1 2 3])
+                          (row-matrix [0+4i 0-5i 0+6i]))
+              (+ (* 1 0-4i) (* 2 0+5i) (* 3 0-6i)))
+
+(check-exn exn:fail? (λ () (matrix-dot (random-matrix 1 3) (random-matrix 3 1))))
+
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix-dot a (matrix [[1]]))))
+  (check-exn exn:fail:contract? (λ () (matrix-dot (matrix [[1]]) a))))
+
+;; ===================================================================================================
+;; Simple operators
+
+;; matrix-transpose
+
+(check-equal? (matrix-transpose (matrix [[1 2 3] [4 5 6]]))
+              (matrix [[1 4] [2 5] [3 6]]))
+
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix-transpose a))))
+
+;; matrix-conjugate
+
+(check-equal? (matrix-conjugate (matrix [[1+i 2-i] [3+i 4-i]]))
+              (matrix [[1-i 2+i] [3-i 4+i]]))
+
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix-conjugate a))))
+
+;; matrix-hermitian
+
+(let ([a  (array-make-rectangular (random-matrix 5 6)
+                                  (random-matrix 5 6))])
+  (check-equal? (matrix-hermitian a)
+                (matrix-conjugate (matrix-transpose a)))
+  (check-equal? (matrix-hermitian a)
+                (matrix-transpose (matrix-conjugate a))))
+
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix-hermitian a))))
+
+;; matrix-trace
+
+(check-equal? (matrix-trace (matrix [[1 2 3] [4 5 6] [7 8 9]]))
+              (+ 1 5 9))
+
+(check-exn exn:fail:contract? (λ () (matrix-trace (row-matrix [1 2 3]))))
+(check-exn exn:fail:contract? (λ () (matrix-trace (col-matrix [1 2 3]))))
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix-trace a))))
+
+;; ===================================================================================================
+;; Tests not yet converted to rackunit
+
+(begin
   
   (begin
     "matrix-operations.rkt"
-    (list 'vandermonde-matrix
-          (equal? (vandermonde-matrix '(1 2 3) 5)
-                  (list*->matrix '[[1 1 1 1 1] [1 2 4 8 16] [1 3 9 27 81]])))
-    #;
-    (list 'in-column
-          (equal? (for/list: : (Listof Number) ([x : Number (in-column (matrix [[1 2] [3 4]]) 0)])
-                    x)
-                  '(1 3))
-          (equal? (for/list: : (Listof Number) ([x : Number (in-column (matrix [[1 2] [3 4]]) 1)])
-                    x)
-                  '(2 4))
-          (equal? (for/list: : (Listof Number) ([x (in-column (col-matrix [5 2 3]))]) x)
-                  '(5 2 3)))
-    #;
-    (list 'in-row
-          (equal? (for/list: : (Listof Number) ([x : Number (in-row (matrix [[1 2] [3 4]]) 0)])
-                    x)
-                  '(1 2))
-          (equal? (for/list: : (Listof Number) ([x : Number (in-row (matrix [[1 2] [3 4]]) 1)])
-                    x)
-                  '(3 4)))
-    (list 'for/matrix:
-          (equal? (for/matrix: : Number 2 4 ([i (in-naturals)]) i)
-                  (matrix [[0 1 2 3] [4 5 6 7]]))
-          (equal? (for/matrix: : Number 2 4 #:column ([i (in-naturals)]) i)
-                  (matrix [[0 2 4 6] [1 3 5 7]]))
-          (equal? (for/matrix: : Number 3 3 ([i (in-range 10 100)]) i)
-                  (matrix [[10 11 12] [13 14 15] [16 17 18]])))
-    (list 'for*/matrix:
-          (equal? (for*/matrix: : Number 3 3 ([i (in-range 3)] [j (in-range 3)]) (+ (* i 10) j))
-                  (matrix [[0 1 2] [10 11 12] [20 21 22]])))    
-    (list 'matrix-block-diagonal
-          (equal? (block-diagonal-matrix (list (matrix [[1 2] [3 4]]) (matrix [[5 6 7]])))
-                  (list*->matrix '[[1 2 0 0 0] [3 4 0 0 0] [0 0 5 6 7]])))
-    (list 'matrix-augment
-          (equal? (matrix-augment (list (col-matrix [1 2 3])
-                                        (col-matrix [4 5 6])
-                                        (col-matrix [7 8 9])))
-                  (matrix [[1 4 7] [2 5 8] [3 6 9]])))
-    (list 'matrix-stack
-          (equal? (matrix-stack (list (col-matrix [1 2 3])
-                                      (col-matrix [4 5 6])
-                                      (col-matrix [7 8 9])))
-                  (col-matrix [1 2 3 4 5 6 7 8 9])))
     #;
     (list 'column-dimension
           (= (column-dimension #(1 2 3)) 3)
@@ -206,8 +687,6 @@
                (+ (* 1 4) (* 2 5) (* 3 6)))
             (= (column-dot (col-matrix [+3i +4i]) (col-matrix [+3i +4i]))
                25)))
-    (list 'matrix-trace
-          (equal? (matrix-trace (vector->matrix 2 2 #(1 2 3 4))) 5))
     (let ([matrix: vector->matrix])
       (list 'column-norm
             (= (column-norm (col-matrix [2 4])) (sqrt 20))))
@@ -286,15 +765,6 @@
                                                        [9 10 -11 12]
                                                        [13 14 15 16]]))
                   5280))
-    (list 'matrix-scale
-          (equal? (matrix-scale (list*->matrix '[[1 2] [3 4]]) 2)
-                  (list*->matrix '[[2 4] [6 8]])))
-    (list 'matrix-transpose
-          (equal? (matrix-transpose (list*->matrix '[[1 2] [3 4]]))
-                  (list*->matrix '[[1 3] [2 4]])))
-    (list 'matrix-hermitian
-          (equal? (matrix-hermitian (list*->matrix '[[1+i 2-i] [3+i 4-i]]))
-                  (list*->matrix '[[1-i 3-i] [2+i 4+i]])))
     (let ()
       (: gauss-eliminate : (Matrix Number) Boolean Boolean -> (Matrix Number))
       (define (gauss-eliminate M u? p?)
@@ -366,75 +836,60 @@
      (equal? (matrix-nullity (list*->matrix '[[1 0] [0 3]])) 0)
      (equal? (matrix-nullity (list*->matrix '[[1 2] [2 4]])) 1)
      (equal? (matrix-nullity (list*->matrix '[[1 2] [3 4]])) 0))
-    #;(let ()
-        (define-values (c1 n1) 
-          (matrix-column+null-space (list*rix '[[0 0] [0 0]])))
-        (define-values (c2 n2) 
-          (matrix-column+null-space (list*->matrix '[[1 2] [2 4]])))
-        (define-values (c3 n3) 
-          (matrix-column+null-space (list*atrix '[[1 2] [2 5]])))
-        (list 
-         'matrix-column+null-space
-         (equal? c1 '())
-         (equal? n1 (list (list*->matrix '[[0] [0]])
-                          (list*->matrix '[[0] [0]])))
-         (equal? c2 (list (list*->matrix '[[1] [2]])))
-         ;(equal? n2 '([0 0]))
-         (equal? c3 (list (list*->matrix '[[1] [2]])
-                          (list*->matrix '[[2] [5]])))
-         (equal? n3 '()))))
+    #;
+    (let ()
+      (define-values (c1 n1) 
+        (matrix-column+null-space (list*rix '[[0 0] [0 0]])))
+      (define-values (c2 n2) 
+        (matrix-column+null-space (list*->matrix '[[1 2] [2 4]])))
+      (define-values (c3 n3) 
+        (matrix-column+null-space (list*atrix '[[1 2] [2 5]])))
+      (list 
+       'matrix-column+null-space
+       (equal? c1 '())
+       (equal? n1 (list (list*->matrix '[[0] [0]])
+                        (list*->matrix '[[0] [0]])))
+       (equal? c2 (list (list*->matrix '[[1] [2]])))
+       ;(equal? n2 '([0 0]))
+       (equal? c3 (list (list*->matrix '[[1] [2]])
+                        (list*->matrix '[[2] [5]])))
+       (equal? n3 '()))))
   
-  
-  
-  
-  
-  
-  
-  #;(begin
-      "matrix-multiply.rkt"
-      (list 'matrix*
-            (let ()
-              (define-values (A B AB) (values '[[1 2] [3 4]] '[[5 6] [7 8]] '[[19 22] [43 50]]))
-              (equal? (matrix* (list*->matrix A) (list*->matrix B)) (list*->matrix AB)))
-            (let () 
-              (define-values (A B AB) (values '[[1 2] [3 4]]
-                                              '[[5 6 7] [8 9 10]]
-                                              '[[21 24 27] [47 54 61]]))
-              (equal? (matrix* (list*->matrix A) (list*->matrix B)) (list*->matrix AB)))))
-  #;(begin
-      "matrix-2d.rkt"
-      (let ()
-        (define  e1  (matrix-transpose (vector->matrix #(#( 1  0)))))
-        (define  e2  (matrix-transpose (vector->matrix #(#( 0  1)))))
-        (define -e1  (matrix-transpose (vector->matrix #(#(-1  0)))))
-        (define -e2  (matrix-transpose (vector->matrix #(#( 0 -1)))))
-        (define   O  (matrix-transpose (vector->matrix #(#( 0  0)))))
-        (define 2*e1 (matrix-scale e1 2))
-        (define 4*e1 (matrix-scale e1 4))
-        (define 3*e2 (matrix-scale e2 3))
-        (define 4*e2 (matrix-scale e2 4))
-        (begin
-          (list 'matrix-2d-rotation
-                (<= (matrix-norm (matrix- (matrix* (matrix-2d-rotation (/ pi 2)) e1) e2 )) epsilon.0) 
-                (<= (matrix-norm (matrix- (matrix* (matrix-2d-rotation (/ pi 2)) e2) -e1)) epsilon.0))
-          (list
-           'matrix-2d-scaling
-           (equal? (matrix* (matrix-2d-scaling 2 3) (matrix+ e1 e2)) (matrix+ 2*e1 3*e2)))
-          (list
-           'matrix-2d-shear-x
-           (equal? (matrix* (matrix-2d-shear-x 3) (matrix+ e1 e2))   (matrix+ 4*e1   e2)))
-          (list
-           'matrix-2d-shear-y
-           (equal? (matrix* (matrix-2d-shear-y 3) (matrix+ e1 e2))   (matrix+   e1 4*e2)))
-          (list
-           'matrix-2d-reflection
-           (equal? (matrix* (matrix-2d-reflection 0 1) e1)           -e1)
-           (equal? (matrix* (matrix-2d-reflection 0 1) e2)            e2)
-           (equal? (matrix* (matrix-2d-reflection 1 0) e1)            e1)
-           (equal? (matrix* (matrix-2d-reflection 1 0) e2)           -e2))
-          (list
-           'matrix-2d-orthogonal-projection
-           (equal? (matrix* (matrix-2d-orthogonal-projection 1 0) e1) e1)
-           (equal? (matrix* (matrix-2d-orthogonal-projection 1 0) e2) O)
-           (equal? (matrix* (matrix-2d-orthogonal-projection 0 1) e1) O)
-           (equal? (matrix* (matrix-2d-orthogonal-projection 0 1) e2) e2))))))
+  #;
+  (begin
+    "matrix-2d.rkt"
+    (let ()
+      (define  e1  (matrix-transpose (vector->matrix #(#( 1  0)))))
+      (define  e2  (matrix-transpose (vector->matrix #(#( 0  1)))))
+      (define -e1  (matrix-transpose (vector->matrix #(#(-1  0)))))
+      (define -e2  (matrix-transpose (vector->matrix #(#( 0 -1)))))
+      (define   O  (matrix-transpose (vector->matrix #(#( 0  0)))))
+      (define 2*e1 (matrix-scale e1 2))
+      (define 4*e1 (matrix-scale e1 4))
+      (define 3*e2 (matrix-scale e2 3))
+      (define 4*e2 (matrix-scale e2 4))
+      (begin
+        (list 'matrix-2d-rotation
+              (<= (matrix-norm (matrix- (matrix* (matrix-2d-rotation (/ pi 2)) e1) e2 )) epsilon.0) 
+              (<= (matrix-norm (matrix- (matrix* (matrix-2d-rotation (/ pi 2)) e2) -e1)) epsilon.0))
+        (list
+         'matrix-2d-scaling
+         (equal? (matrix* (matrix-2d-scaling 2 3) (matrix+ e1 e2)) (matrix+ 2*e1 3*e2)))
+        (list
+         'matrix-2d-shear-x
+         (equal? (matrix* (matrix-2d-shear-x 3) (matrix+ e1 e2))   (matrix+ 4*e1   e2)))
+        (list
+         'matrix-2d-shear-y
+         (equal? (matrix* (matrix-2d-shear-y 3) (matrix+ e1 e2))   (matrix+   e1 4*e2)))
+        (list
+         'matrix-2d-reflection
+         (equal? (matrix* (matrix-2d-reflection 0 1) e1)           -e1)
+         (equal? (matrix* (matrix-2d-reflection 0 1) e2)            e2)
+         (equal? (matrix* (matrix-2d-reflection 1 0) e1)            e1)
+         (equal? (matrix* (matrix-2d-reflection 1 0) e2)           -e2))
+        (list
+         'matrix-2d-orthogonal-projection
+         (equal? (matrix* (matrix-2d-orthogonal-projection 1 0) e1) e1)
+         (equal? (matrix* (matrix-2d-orthogonal-projection 1 0) e2) O)
+         (equal? (matrix* (matrix-2d-orthogonal-projection 0 1) e1) O)
+         (equal? (matrix* (matrix-2d-orthogonal-projection 0 1) e2) e2))))))

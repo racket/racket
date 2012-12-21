@@ -3,7 +3,7 @@
 (require math/array
          math/base
          "matrix-types.rkt"
-         "matrix-constructors.rkt"
+         "matrix-conversion.rkt"
          "matrix-arithmetic.rkt"
          "../unsafe.rkt")
 

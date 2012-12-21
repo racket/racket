@@ -6,6 +6,7 @@
          "../unsafe.rkt"
          "matrix-types.rkt"
          "matrix-constructors.rkt"
+         "matrix-conversion.rkt"
          "matrix-arithmetic.rkt"
          "matrix-basic.rkt"
          "matrix-column.rkt"
@@ -18,13 +19,6 @@
 ; 3. Linear least squares problems (data fitting)
 ; 4. Pseudo inverse
 ; 5. Eigenvalues and eigenvectors
-
-; 6. "Bug"
-;    (for*/matrix : Number 2 3 ([i (in-naturals)]) i)
-;    ought to generate a matrix with numbers from 0 to 5.
-;    Problem: In expansion of for/matrix an extra [i (in-range (* m n))]
-;    is added to make sure the comprehension stops.
-;    But TR has problems with #:when so what is the proper expansion ?
 
 (provide 
  matrix-inverse
@@ -582,7 +576,7 @@
                 ; Note: We project onto vs (not on the original ws)
                 ;       in order to get numerical stability.
                 (let ([w-minus-proj (array-strict (array- w w-proj))])
-                  (if (zero-matrix? w-minus-proj)
+                  (if (matrix-zero? w-minus-proj)
                       (loop vs (cdr ws)) ; w in span{vs} => omit it
                       (loop (cons w-minus-proj vs) (cdr ws)))))]))
      (reverse (loop (list (car ws)) (cdr ws)))]))

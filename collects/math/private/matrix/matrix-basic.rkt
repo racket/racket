@@ -5,6 +5,7 @@
          math/array
          math/flonum
          "matrix-types.rkt"
+         "matrix-arithmetic.rkt"
          "utils.rkt"
          "../unsafe.rkt")
 
@@ -18,7 +19,7 @@
  matrix-rows
  matrix-cols
  ;; Predicates
- zero-matrix?
+ matrix-zero?
  ;; Embiggenment
  matrix-augment
  matrix-stack
@@ -73,7 +74,7 @@
             (unsafe-vector-set! ij 0 0)
             res))]))
 
-(: matrix-col (All (A) (Matrix A) Index -> (Matrix A)))
+(: matrix-col (All (A) (Matrix A) Integer -> (Matrix A)))
 (define (matrix-col a j)
   (define-values (m n) (matrix-shape a))
   (cond [(or (j . < . 0) (j . >= . n))
@@ -99,9 +100,9 @@
 ;; ===================================================================================================
 ;; Predicates
 
-(: zero-matrix? ((Array Number) -> Boolean))
-(define (zero-matrix? a)
-  (array-all-and (array-map zero? a)))
+(: matrix-zero? ((Array Number) -> Boolean))
+(define (matrix-zero? a)
+  (array-all-and (matrix-map zero? a)))
 
 ;; ===================================================================================================
 ;; Embiggenment (this is a perfectly cromulent word)
@@ -179,9 +180,14 @@
                       ((Array Number) (Array Number) -> Number)))
 ;; Computes the Frobenius inner product of two matrices
 (define (matrix-dot a b)
-  (cond [(not (matrix? a))  (raise-argument-error 'matrix-dot "matrix?" 0 a b)]
-        [(not (matrix? b))  (raise-argument-error 'matrix-dot "matrix?" 1 a b)]
-        [else  (array-all-sum (array* a (array-conjugate b)))]))
+  (define-values (m n) (matrix-shapes 'matrix-dot a b))
+  (define aproc (unsafe-array-proc a))
+  (define bproc (unsafe-array-proc b))
+  (array-all-sum
+   (unsafe-build-array
+    ((inst vector Index) m n)
+    (λ: ([js : Indexes])
+      (* (aproc js) (conjugate (bproc js)))))))
 
 ;; ===================================================================================================
 ;; Operators

@@ -15,7 +15,7 @@
 (define (matrix-shapes name arr . brrs)
   (define-values (m n) (matrix-shape arr))
   (unless (andmap (λ: ([brr : (Matrix Any)])
-                    (match-define (vector bm bn) (array-shape brr))
+                    (define-values (bm bn) (matrix-shape brr))
                     (and (= bm m) (= bn n)))
                   brrs)
     (error name

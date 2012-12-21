@@ -73,8 +73,6 @@
   
   )  ; module
 
-(require 'syntax-defs)
-
 (module untyped-defs typed/racket/base
   (require math/array
            (submod ".." syntax-defs)
@@ -102,4 +100,5 @@
   
   )  ; module
 
-(require 'untyped-defs)
+(require 'syntax-defs
+         'untyped-defs)
