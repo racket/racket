@@ -291,6 +291,7 @@ listed, this command fails atomically. It accepts the following @nonterm{option}
  @item{@DFlag{installation} or @Flag{i} --- Show only installation-wide packages.}
  @item{@DFlag{user} or @Flag{u} --- Show only user-specific, version-specific packages.}
  @item{@DFlag{shared} or @Flag{s} --- Show only user-specific, all-version packages.}
+ @item{@DFlag{version} @nonterm{vers} or @Flag{v} @nonterm{vers} --- Show only user-specific packages for Racket version @nonterm{vers}.}
  ]
 }
 

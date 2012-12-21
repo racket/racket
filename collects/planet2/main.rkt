@@ -1,5 +1,6 @@
 #lang racket/base
-(require racket/function
+(require (only-in racket/base [version r:version])
+         racket/function
          raco/command-name
          "lib.rkt"
          "commands.rkt"
@@ -113,12 +114,13 @@
   [#:bool installation ("-i") "Show only the installation-wide package database"]
   [#:bool shared ("-s") "Show only the user-specific all-version package database"]
   [#:bool user ("-u") "Show only the user- and version-specific package database"]
+  [(#:str #f) version ("-v") "Show only user--specific packages for specified version"]
   #:args ()
   (define only-mode (cond
                      [installation 'i]
                      [shared 's]
                      [user 'u]
-                     [else #f]))
+                     [else (if version 'u #f)]))
   (for ([mode '(i s u)])
     (when (or (eq? mode only-mode) (not only-mode))
       (unless only-mode
@@ -128,7 +130,8 @@
                          [(u) "User-specific, version-specific:"])))
       (parameterize ([current-install-system-wide? (eq? mode 'i)]
                      [current-install-version-specific? (eq? mode 'u)]
-                 [current-pkg-error (pkg-error 'show)])
+                     [current-pkg-error (pkg-error 'show)]
+                     [current-show-version (or version (r:version))])
         (with-package-lock
          (show-cmd (if only-mode "" " "))))))]
  [config

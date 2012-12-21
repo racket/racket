@@ -31,6 +31,8 @@
   (make-parameter #f))
 (define current-install-version-specific?
   (make-parameter #t))
+(define current-show-version
+  (make-parameter (version)))
 (define current-pkg-error
   (make-parameter (lambda args (apply error 'pkg args))))
 
@@ -101,7 +103,7 @@
   (build-path (cond
                [(current-install-system-wide?) (find-lib-dir)]
                [(current-install-version-specific?)
-                (build-path (find-system-path 'addon-dir) (version))]
+                (build-path (find-system-path 'addon-dir) (current-show-version))]
                [else
                 (find-system-path 'addon-dir)])
               "pkgs"))
@@ -1124,6 +1126,8 @@
    (parameter/c boolean?)]
   [current-install-version-specific?
    (parameter/c boolean?)]
+  [current-show-version
+   (parameter/c string?)]
   [current-pkg-error 
    (parameter/c procedure?)]
   [pkg-desc 
