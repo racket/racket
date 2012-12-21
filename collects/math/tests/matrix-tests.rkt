@@ -20,7 +20,7 @@
         (make-array #(0 1) 0)
         (make-array #(0 0) 0)
         (make-array #(1 1 1) 0)))
-
+#|
 ;; ===================================================================================================
 ;; Literal syntax
 
@@ -666,7 +666,34 @@
 (check-exn exn:fail:contract? (λ () (matrix-trace (col-matrix [1 2 3]))))
 (for: ([a  (in-list nonmatrices)])
   (check-exn exn:fail:contract? (λ () (matrix-trace a))))
+|#
+;; ===================================================================================================
+;; Gaussian elimination
 
+(: gauss-eliminate : (Matrix Number) Boolean Boolean -> (Matrix Number))
+(define (gauss-eliminate M reduce? partial-pivot?)
+  (let-values ([(M wp) (matrix-gauss-eliminate M reduce? partial-pivot?)])
+    M))
+
+(check-equal? (gauss-eliminate (matrix [[1 2] [3 4]]) #f #f)
+              (matrix [[1 2] [0 -2]]))
+
+(check-equal? (gauss-eliminate (matrix [[2 4] [3 4]]) #t #f)
+              (matrix [[1 2] [0 1]]))
+
+(check-equal? (gauss-eliminate (matrix [[2. 4.] [3. 4.]]) #t #t)
+              (matrix [[1. 1.3333333333333333] [0. 1.]]))
+
+(check-equal? (gauss-eliminate (matrix [[1 4] [2 4]]) #t #t)
+              (matrix [[1 2] [0 1]]))
+
+(check-equal? (gauss-eliminate (matrix [[1 2] [2 4]]) #f #t)
+              (matrix [[2 4] [0 0]]))
+
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (gauss-eliminate a #f #f))))
+
+#|
 ;; ===================================================================================================
 ;; Tests not yet converted to rackunit
 
@@ -765,27 +792,6 @@
                                                        [9 10 -11 12]
                                                        [13 14 15 16]]))
                   5280))
-    (let ()
-      (: gauss-eliminate : (Matrix Number) Boolean Boolean -> (Matrix Number))
-      (define (gauss-eliminate M u? p?)
-        (let-values ([(M wp) (matrix-gauss-eliminate M u? p?)])
-          M))
-      (list 'matrix-gauss-eliminate
-            (equal? (let ([M (list*->matrix '[[1 2] [3 4]])])
-                      (gauss-eliminate M #f #f))
-                    (list*->matrix '[[1 2] [0 -2]]))
-            (equal? (let ([M (list*->matrix  '[[2 4] [3 4]])])
-                      (gauss-eliminate M #t #f))
-                    (list*->matrix '[[1 2] [0 1]]))
-            (equal? (let ([M (list*->matrix  '[[2. 4.] [3. 4.]])])
-                      (gauss-eliminate M #t #t))
-                    (list*->matrix '[[1. 1.3333333333333333] [0. 1.]]))
-            (equal? (let ([M (list*->matrix  '[[1 4] [2 4]])])
-                      (gauss-eliminate M #t #t))
-                    (list*->matrix '[[1 2] [0 1]]))
-            (equal? (let ([M (list*->matrix  '[[1 2] [2 4]])])
-                      (gauss-eliminate M #f #t))
-                    (list*->matrix '[[2 4] [0 0]]))))
     (list 
      'matrix-scale-row
      (equal? (matrix-scale-row (identity-matrix 3) 0 2)
@@ -893,3 +899,4 @@
          (equal? (matrix* (matrix-2d-orthogonal-projection 1 0) e2) O)
          (equal? (matrix* (matrix-2d-orthogonal-projection 0 1) e1) O)
          (equal? (matrix* (matrix-2d-orthogonal-projection 0 1) e2) e2))))))
+|#

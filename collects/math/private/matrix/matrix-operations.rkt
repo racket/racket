@@ -1,9 +1,11 @@
 #lang typed/racket/base
 
-(require racket/list
+(require racket/fixnum
+         racket/list
          math/array
          (only-in typed/racket conjugate)
          "../unsafe.rkt"
+         "../vector/vector-mutate.rkt"
          "matrix-types.rkt"
          "matrix-constructors.rkt"
          "matrix-conversion.rkt"
@@ -198,71 +200,75 @@
 
 ;;; GAUSS ELIMINATION / ROW ECHELON FORM
 
+(: unsafe-vector2d-ref (All (A) ((Vectorof (Vectorof A)) Index Index -> A)))
+(define (unsafe-vector2d-ref vss i j)
+  (unsafe-vector-ref (unsafe-vector-ref vss i) j))
+
+(: find-partial-pivot (case-> ((Vectorof (Vectorof Real)) Index Index Index -> (U #f Index))
+                              ((Vectorof (Vectorof Number)) Index Index Index -> (U #f Index))))
+;; Find the element with maximum magnitude in a column
+(define (find-partial-pivot rows m i j)
+  (let loop ([#{l : Nonnegative-Fixnum} i] [#{max-current : Real} -inf.0] [#{max-index : Index} i])
+    (cond [(l . fx< . m)
+           (define v (magnitude (unsafe-vector2d-ref rows l j)))
+           (cond [(> v max-current)  (loop (fx+ l 1) v l)]
+                 [else  (loop (fx+ l 1) max-current max-index)])]
+          [else  max-index])))
+
+(: find-pivot (case-> ((Vectorof (Vectorof Real)) Index Index Index -> (U #f Index))
+                      ((Vectorof (Vectorof Number)) Index Index Index -> (U #f Index))))
+;; Find a non-zero element in a column
+(define (find-pivot rows m i j)
+  (let loop ([#{l : Nonnegative-Fixnum} i])
+    (cond [(l . fx>= . m)  #f]
+          [(not (zero? (unsafe-vector2d-ref rows l j)))  l]
+          [else  (loop (fx+ l 1))])))
+
 (: matrix-gauss-eliminate : 
-   (case-> ((Matrix Number) Boolean Boolean -> (Values (Matrix Number) (Listof Integer)))
-           ((Matrix Number) Boolean         -> (Values (Matrix Number) (Listof Integer)))
-           ((Matrix Number)                 -> (Values (Matrix Number) (Listof Integer)))))
-(define (matrix-gauss-eliminate M [unitize-pivot-row? #f] [partial-pivoting? #t])
+   (case-> ((Matrix Real)                 -> (Values (Matrix Real) (Listof Index)))
+           ((Matrix Real) Boolean         -> (Values (Matrix Real) (Listof Index)))
+           ((Matrix Real) Boolean Boolean -> (Values (Matrix Real) (Listof Index)))
+           ((Matrix Number)                 -> (Values (Matrix Number) (Listof Index)))
+           ((Matrix Number) Boolean         -> (Values (Matrix Number) (Listof Index)))
+           ((Matrix Number) Boolean Boolean -> (Values (Matrix Number) (Listof Index)))))
+;; Returns the result of Gaussian elimination and a list of column indexes that had no pivot value
+;; If `reduced?' is #t, the result is in *reduced* row-echelon form, and is unique (up to
+;; floating-point error)
+;; If `partial-pivoting?' is #t, the largest value in each column is used as the pivot
+(define (matrix-gauss-eliminate M [reduced? #f] [partial-pivoting? #t])
   (define-values (m n) (matrix-shape M))
-  (: loop : (Integer Integer (Matrix Number) Integer (Listof Integer) 
-                     -> (Values (Matrix Number) (Listof Integer))))
-  (define (loop i j ; i from 0 to m
-                M
-                k   ; count rows without pivot
-                without-pivot)
+  (define rows (matrix->vector* M))
+  (let loop ([#{i : Nonnegative-Fixnum} 0]
+             [#{j : Nonnegative-Fixnum} 0]
+             [#{without-pivot : (Listof Index)}  '()])
     (cond
-      [(or (= i m) (= j n)) (values M without-pivot)]
-      [else
-       ; find row to become pivot
-       (define p
-         (if partial-pivoting?
-             ; find element with maximal absolute value
-             (let: max-loop : (U False Integer) 
-               ([l : Integer i] ; i<=l<m
-                [max-current : Real -inf.0]
-                [max-index : Integer i])
-               (cond
-                 [(= l m) max-index]
-                 [else 
-                  (let ([v (magnitude (matrix-ref M l j))])
-                    (if (> (magnitude (matrix-ref M l j)) max-current)
-                        (max-loop (+ l 1) v l)
-                        (max-loop (+ l 1) max-current max-index)))]))
-             ; find non-zero element in column
-             (let: first-loop : (U False Integer) 
-               ([l : Integer i]) ; i<=l<m
-               (cond
-                 [(= l m) #f]
-                 [(not (zero? (matrix-ref M l j))) l]
-                 [else (first-loop (+ l 1))]))))
+      [(and (i . fx< . m) (j . fx< . n))
+       ;; Find the row with the pivot value
+       (define p (cond [partial-pivoting?  (find-partial-pivot rows m i j)]
+                       [else  (find-pivot rows m i j)]))
+       (define pivot (if p (unsafe-vector2d-ref rows p j) 0))
        (cond
-         [(or (eq? p #f)
-              (zero? (matrix-ref M p j)))
-          ; no pivot found
-          (loop i (+ j 1) M (+ k 1) (cons j without-pivot))]
+         [(or (not p) (zero? pivot))  ; didn't find pivot?
+          (loop i (fx+ j 1) (cons j without-pivot))]
          [else 
-          ; swap if neccessary
-          (let* ([M (if (= i p) M (matrix-swap-rows M i p))]
-                 ; now we now (i,j) is a pivot
-                 [M ; maybe scale row
-                  (if unitize-pivot-row?
-                      (let ([pivot (matrix-ref M i j)])
-                        (if (zero? pivot)
-                            M
-                            (matrix-scale-row M i (/ pivot))))
-                      M)])
-            (let ([pivot (matrix-ref M i j)])
-              ; remove elements below pivot
-              (let l-loop ([l (+ i 1)] [M M])
-                (if (= l m)
-                    (loop (+ i 1) (+ j 1) M k without-pivot)
-                    (let ([x_lj (matrix-ref M l j)])
-                      (l-loop (+ l 1)
-                              (if (zero? x_lj)
-                                  M
-                                  (matrix-add-scaled-row M l (- (/ x_lj pivot)) i))))))))])]))
-  (let-values ([(M without) (loop 0 0 M 0 '())])
-    (values M without)))
+          (vector-swap! rows i p)  ; swap pivot row with current
+          (let ([pivot  (cond [reduced?  (vector-scale! (unsafe-vector-ref rows i) (/ pivot))
+                                         (/ pivot pivot)]
+                              [else  pivot])])
+            ;; Remove elements below pivot by scaling and adding the pivot's row to each row below
+            (let l-loop ([#{l : Nonnegative-Fixnum} (fx+ i 1)])
+              (cond [(l . fx< . m)
+                     (define x_lj (unsafe-vector2d-ref rows l j))
+                     (unless (zero? x_lj)
+                       (vector-scaled-add! (unsafe-vector-ref rows l)
+                                           (unsafe-vector-ref rows i)
+                                           (- (/ x_lj pivot))))
+                     (l-loop (fx+ l 1))]
+                    [else
+                     (loop (fx+ i 1) (fx+ j 1) without-pivot)])))])]
+      [else
+       (values (vector*->matrix rows)
+               (reverse without-pivot))])))
 
 (: matrix-rank : (Matrix Number) -> Integer)
 (define (matrix-rank M)
