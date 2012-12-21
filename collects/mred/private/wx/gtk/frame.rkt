@@ -142,7 +142,7 @@
 	 (g_list_insert l i -1))))))
 
 ;; used for location->window
-(define all-frames (make-hasheq))
+(define all-frames (make-weak-hasheq))
 
 (define frame%
   (class (client-size-mixin window%)
