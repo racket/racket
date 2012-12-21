@@ -511,7 +511,9 @@
       (set! saved-title s)
       (gtk_window_set_title gtk (if is-modified?
                                     (string-append s "*")
-                                    s)))))
+                                    s)))
+    
+    (define/public (display-changed) (void))))
 
 ;; ----------------------------------------
 
@@ -572,3 +574,35 @@
            (maybe GDK_CONTROL_MASK 'control)
            (maybe GDK_MOD1_MASK 'alt)
            (maybe GDK_META_MASK 'meta))))
+
+(define (tell-all-frames-signal-changed n)
+  (define frames (for/list ([f (in-hash-keys all-frames)]) f))
+  (for ([f (in-hash-keys all-frames)])
+    (parameterize ([current-eventspace (send f get-eventspace)])
+      (queue-callback
+       (λ () 
+         (send f display-changed))))))
+
+(define-signal-handler 
+  connect-monitor-changed-signal
+  "monitors-changed"
+  (_fun _GdkScreen -> _void)
+  (λ (screen) (tell-all-frames-signal-changed 1)))
+
+(define-signal-handler 
+  connect-screen-changed-signal
+  "screen-changed"
+  (_fun _GdkScreen -> _void)
+  (λ (screen) (tell-all-frames-signal-changed 2)))
+
+(define-signal-handler 
+  connect-composited-changed-signal
+  "composited-changed"
+  (_fun _GdkScreen -> _void)
+  (λ (screen) (tell-all-frames-signal-changed 3)))
+
+(define (screen-size-signal-connect connect-signal)
+  (void (connect-signal (cast (gdk_screen_get_default) _GdkScreen _GtkWidget))))
+(screen-size-signal-connect connect-monitor-changed-signal)
+(screen-size-signal-connect connect-screen-changed-signal)
+(screen-size-signal-connect connect-composited-changed-signal)

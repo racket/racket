@@ -23,7 +23,8 @@
               post-dummy-event
 
               try-to-sync-refresh
-              sync-cocoa-events)
+              sync-cocoa-events
+              set-screen-changed-callback!)
 
  ;; from common/queue:
  current-eventspace
@@ -127,8 +128,12 @@
 ;;  is called, but sometimes the event loop gets stuck after
 ;;  that, so there's an additional hack above.
 (define-appserv CGDisplayRegisterReconfigurationCallback 
-  (_fun (_fun #:atomic? #t -> _void) _pointer -> _int32))
-(define (on-screen-changed) (post-dummy-event))
+  (_fun (_fun #:atomic? #t _uint32 _uint32 -> _void) _pointer -> _int32))
+(define (on-screen-changed display flags) 
+  (screen-changed-callback flags)
+  (post-dummy-event))
+(define screen-changed-callback void)
+(define (set-screen-changed-callback! c) (set! screen-changed-callback c))
 (let ([v (CGDisplayRegisterReconfigurationCallback on-screen-changed #f)])
   (unless (zero? v)
     (log-error (format "error from CGDisplayRegisterReconfigurationCallback: ~a" v))))
