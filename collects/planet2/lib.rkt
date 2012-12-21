@@ -1014,19 +1014,21 @@
   (let ()
     (define db (read-pkg-db))
     (define pkgs (sort (hash-keys db) string-ci<=?))
-    (table-display
-     (list*
-      (list (format "~aPackage(auto?)" indent) "Checksum" "Source")
-      (for/list ([pkg (in-list pkgs)])
-        (match-define (pkg-info orig-pkg checksum auto?) (hash-ref db pkg))
-        (list (format "~a~a~a"
-                      indent
-                      pkg
-                      (if auto?
-                        "*"
-                        ""))
-              (format "~a" checksum)
-              (format "~a" orig-pkg)))))))
+    (if (null? pkgs)
+        (printf " [none]\n")
+        (table-display
+         (list*
+          (list (format "~aPackage[*=auto]" indent) "Checksum" "Source")
+          (for/list ([pkg (in-list pkgs)])
+            (match-define (pkg-info orig-pkg checksum auto?) (hash-ref db pkg))
+            (list (format "~a~a~a"
+                          indent
+                          pkg
+                          (if auto?
+                              "*"
+                              ""))
+                  (format "~a" checksum)
+                  (format "~a" orig-pkg))))))))
 
 (define (config-cmd config:set key+vals)
   (cond
