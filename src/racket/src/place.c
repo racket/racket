@@ -92,7 +92,7 @@ static void register_traversers(void);
 # endif
 
 static void *place_start_proc(void *arg);
-static void *place_start_proc_after_stack(void *data_arg, void *stack_base);
+MZ_DO_NOT_INLINE(static void *place_start_proc_after_stack(void *data_arg, void *stack_base));
 
 # define PLACE_PRIM_W_ARITY(name, func, a1, a2, env) GLOBAL_PRIM_W_ARITY(name, func, a1, a2, env)
 
