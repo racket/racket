@@ -1029,6 +1029,7 @@ void scheme_starting_child()
 
     signal_thread = mz_proc_thread_create(mz_proc_thread_signal_worker, NULL);
     mz_proc_thread_detach(signal_thread);
+    started_thread = 1;
   }
 
   pending_children++;
