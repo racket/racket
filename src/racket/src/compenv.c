@@ -31,6 +31,8 @@
 READ_ONLY static Scheme_Object *scheme_local[MAX_CONST_LOCAL_POS][MAX_CONST_LOCAL_TYPES][MAX_CONST_LOCAL_FLAG_VAL + 1];
 READ_ONLY static Scheme_Object *toplevels[MAX_CONST_TOPLEVEL_DEPTH][MAX_CONST_TOPLEVEL_POS][SCHEME_TOPLEVEL_FLAGS_MASK + 1];
 
+READ_ONLY static Scheme_Object *unshadowable_symbol;
+
 /* If locked, these are probably sharable: */
 THREAD_LOCAL_DECL(static Scheme_Hash_Table *toplevels_ht);
 THREAD_LOCAL_DECL(static Scheme_Hash_Table *locals_ht[2]);
@@ -97,6 +99,12 @@ void scheme_init_compenv_places(void)
     ht = scheme_make_hash_table(SCHEME_hash_ptr);
     locals_ht[1] = ht;
   }
+}
+
+void scheme_init_compenv_symbol(void)
+{
+  REGISTER_SO(unshadowable_symbol);
+  unshadowable_symbol = scheme_intern_symbol("unshadowable");
 }
 
 /*========================================================================*/
@@ -2419,7 +2427,7 @@ Scheme_Object *scheme_namespace_lookup_value(Scheme_Object *sym, Scheme_Env *gen
 Scheme_Object *scheme_find_local_shadower(Scheme_Object *sym, Scheme_Object *sym_marks, Scheme_Comp_Env *env)
 {
   Scheme_Comp_Env *frame;
-  Scheme_Object *esym, *uid = NULL, *env_marks;
+  Scheme_Object *esym, *uid = NULL, *env_marks, *prop;
 
   /* Walk backward through the frames, looking for a renaming binding
      with the same marks as the given identifier, sym. Skip over
@@ -2431,16 +2439,19 @@ Scheme_Object *scheme_find_local_shadower(Scheme_Object *sym, Scheme_Object *sym
     for (i = frame->num_bindings; i--; ) {
       if (frame->values[i]) {
 	if (SAME_OBJ(SCHEME_STX_VAL(sym), SCHEME_STX_VAL(frame->values[i])))  {
-	  esym = frame->values[i];
-	  env_marks = scheme_stx_extract_marks(esym);
-	  if (scheme_equal(env_marks, sym_marks)) {
-	    sym = esym;
-	    if (frame->uids)
-	      uid = frame->uids[i];
-	    else
-	      uid = frame->uid;
-	    break;
-	  }
+          prop = scheme_stx_property(frame->values[i], unshadowable_symbol, NULL);
+          if (SCHEME_FALSEP(prop)) {
+            esym = frame->values[i];
+            env_marks = scheme_stx_extract_marks(esym);
+            if (scheme_equal(env_marks, sym_marks)) {
+              sym = esym;
+              if (frame->uids)
+                uid = frame->uids[i];
+              else
+                uid = frame->uid;
+              break;
+            }
+          }
 	}
       }
     }
@@ -2453,15 +2464,18 @@ Scheme_Object *scheme_find_local_shadower(Scheme_Object *sym, Scheme_Object *sym
           if (SAME_OBJ(SCHEME_STX_VAL(sym), 
                        SCHEME_STX_VAL(COMPILE_DATA(frame)->const_names[i]))) {
             esym = COMPILE_DATA(frame)->const_names[i];
-	    env_marks = scheme_stx_extract_marks(esym);
-	    if (scheme_equal(env_marks, sym_marks)) { /* This used to have 1 || --- why? */
-	      sym = esym;
-	      if (COMPILE_DATA(frame)->const_uids)
-		uid = COMPILE_DATA(frame)->const_uids[i];
-	      else
-		uid = frame->uid;
-	      break;
-	    }
+            prop = scheme_stx_property(esym, unshadowable_symbol, NULL);
+            if (SCHEME_FALSEP(prop)) {
+              env_marks = scheme_stx_extract_marks(esym);
+              if (scheme_equal(env_marks, sym_marks)) { /* This used to have 1 || --- why? */
+                sym = esym;
+                if (COMPILE_DATA(frame)->const_uids)
+                  uid = COMPILE_DATA(frame)->const_uids[i];
+                else
+                  uid = frame->uid;
+                break;
+              }
+            }
 	  }
 	}
       }
