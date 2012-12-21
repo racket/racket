@@ -454,16 +454,19 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
 
   if (!proc_thread) {
     mzrt_sema_destroy(ready);
+    ready = NULL;
     scheme_signal_error("place: place creation failed");
   }
 
   mz_proc_thread_detach(proc_thread);
+  proc_thread = NULL;
 
   /* wait until the place has started and grabbed the value
      from `place_data'; it's important that a GC doesn't happen
      here until the other place is far enough. */
   mzrt_sema_wait(ready);
   mzrt_sema_destroy(ready);
+  ready = NULL;
 
   place_data->ready = NULL;
   place_data->place_obj = NULL;
@@ -2370,6 +2373,7 @@ void scheme_place_check_for_interruption()
       pause_all_child_places();
       mzrt_sema_wait(local_pause);
       mzrt_sema_destroy(local_pause);
+      local_pause = NULL;
       resume_all_child_places();
     } else
       break;
@@ -2817,6 +2821,7 @@ static void async_channel_finalize(void *p, void* data) {
   maybe_report_message_size(ch);
 
   mzrt_mutex_destroy(ch->lock);
+  ch->lock = NULL;
   for (i = 0; i < ch->size ; i++) {
     ht = NULL;
     if (ch->msgs[i]) {
@@ -2843,8 +2848,8 @@ static void async_channel_finalize(void *p, void* data) {
       place_obj = ((Scheme_Place_Object *) ch->wakeup_signal);
 
       mzrt_mutex_lock(place_obj->lock);
-        place_obj->refcount--;
-        refcount = place_obj->refcount;
+      place_obj->refcount--;
+      refcount = place_obj->refcount;
       mzrt_mutex_unlock(place_obj->lock);
       if (!refcount) {
         destroy_place_object_locks(place_obj);

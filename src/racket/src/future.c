@@ -699,6 +699,7 @@ static void init_future_thread(Scheme_Future_State *fs, int i)
   t = mz_proc_thread_create_w_stacksize(worker_thread_future_loop, &params, FUTURE_C_STACK_SIZE);
   mzrt_sema_wait(params.ready_sema);
   mzrt_sema_destroy(params.ready_sema);
+  params.ready_sema = NULL;
 
   fts->t = t;
 	
