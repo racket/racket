@@ -58,22 +58,44 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; Data
 
+(struct dice-world (src board gt) #:transparent)
+;; DiceWorld = (dice-world (U #false Natural) Board GameTree)
+;; in (dice-world i b gt)
+;; -- if i is a Natural, it is an index for the territory that the player has marked for an attack
+;; -- if i is #f, no territory has been marked yet 
+;; b is the current board
+;; gt is the game-tree for the given i and b 
+
 (struct game (board player moves) #:transparent)
 ;; GameTree = (game Board Player [Listof Move]) 
+;; in (game-tree b p lm)
+;; -- b is the current board 
+;; -- p is the current player 
+;; -- lm is the list of moves that that player may execute 
 
-;; A Player is a Natural in [0, PLAYER#)
-
-;; A Board is a [List-of Territory]
+;; Board = [List-of Territory]
 ;; the first field in the list is the currently marked  territory
 
+;; Player ∈ [0, PLAYER#) | Natural 
+
+(struct move (action gt) #:transparent)
+;; Move = (move Action GameTree)
+;; in (move a gt)
+;; -- a represents the actione to be takem 
+;; -- gt is the game-tree resulting from that action 
+
+;; Action is one of:
+;; -- '()                      a passing move
+;; -- (list Natural Natural)   the move where the first attacks the second
+
 (struct territory (index player dice x y) #:transparent)
-;; A territory is a (territory Natural Player Dice Number Number)
-;; first field is a unique number identifying the territory and its initial location
-;;   in the board
-;; the second field is the player who owns this territory
-;; the third field is the number of dice on this board
-;; the fourth field is the x coordiate of this territory in pixels
-;; the fifth field is the y coordiate of this territory in pixels
+;; Territory = (territory Natural Player Dice Integer Integer)
+;; in (territory i p d x y)
+;; -- i is a unique identifier for the territory; it also determines its initial location
+;; -- p is the player who owns this territory
+;; -- d is the number of dice on this board
+;; -- x is the x coordiate of this territory in pixels
+;; -- y is the y coordiate of this territory in pixels
 
 ;; Territory Natural -> Territory 
 ;; updates number of dice on territory 
@@ -85,24 +107,8 @@
 (define (territory-set-player t p)
   (territory (territory-index t) p (territory-dice t) (territory-x t) (territory-y t)))
 
-(struct move (action gt) #:transparent)
-;; A Move is a (move Action GameTree)
-;; the first field is the action this move represents
-;; the second field is the gametree resulting from that move.
-
-;; an Action is one of
-;; -'()                    a passing move
-;; -(list Natural Natural)   The move where the first attacks the second
-
-(struct dice-world (src board gt) #:transparent)
-;; A DiceWorld is a (dice-world Natural Board GameTree)
-;; the first field is number the territory the current player has marked
-;;     to attack with #f if no territory has been marked
-;; the second is the board
-;; the third is the current game-tree
-
 ;; ---------------------------------------------------------------------------------------------------
-;; sample game tree for BOOK (NICOLE)
+;; sample game tree for BOOK 
 
 (define b1
   (list (territory 1 0 1 'a 'b)
