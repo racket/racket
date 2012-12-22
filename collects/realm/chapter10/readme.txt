@@ -1,5 +1,5 @@
 
-This chapter implements a graphical version of the "dice of doom" game from
+This chapter implements a GUI version of the "dice of doom" game from
 Barski's "Land of Lisp". To play or to experiment, open the file 
 
 	 source.rkt 
