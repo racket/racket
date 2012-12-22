@@ -97,6 +97,8 @@
      add-on-close-dialog-callback
      add-can-close-dialog-callback
      
+     add-check
+     
      show-dialog
      hide-dialog))
   
