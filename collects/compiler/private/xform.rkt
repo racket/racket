@@ -609,6 +609,9 @@
                       [(and (tok? e)
                             (eq? (tok-n e) 'XFORM_GC_VARIABLE_STACK_THROUGH_FUNCTION))
                        'function]
+                      [(and (tok? e)
+                            (eq? (tok-n e) 'XFORM_GC_VARIABLE_STACK_THROUGH_DIRECT_FUNCTION))
+                       'direct-function]
                       [(braces? e) (loop (seq->list (seq-in e)))]
                       [else #f]))
                    e-raw)))
@@ -631,7 +634,8 @@
                     "#define GC_VARIABLE_STACK ((&scheme_thread_locals)->GC_variable_stack_)\n"]
                    [else "#define GC_VARIABLE_STACK GC_variable_stack\n"]))
 
-          (if gc-variable-stack-through-funcs?
+          (if (or gc-variable-stack-through-funcs?
+		  (eq? gc-var-stack-mode 'direct-function))
 	      (begin
 		(printf "#define GET_GC_VARIABLE_STACK() GC_get_variable_stack()\n")
 		(printf "#define SET_GC_VARIABLE_STACK(v) GC_set_variable_stack(v)\n"))
@@ -1643,6 +1647,7 @@
           (and (pair? e)
                (or (eq? 'XFORM_GC_VARIABLE_STACK_THROUGH_GETSPECIFIC (tok-n (car e)))
                    (eq? 'XFORM_GC_VARIABLE_STACK_THROUGH_FUNCTION (tok-n (car e)))
+                   (eq? 'XFORM_GC_VARIABLE_STACK_THROUGH_DIRECT_FUNCTION (tok-n (car e)))
                    (eq? 'XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL (tok-n (car e))))))
         
         (define (access-modifier? e)

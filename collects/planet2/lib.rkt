@@ -23,6 +23,7 @@
          setup/getinfo
          setup/dirs
          racket/format
+         version/utils
          "name.rkt"
          "util.rkt")
 
@@ -52,14 +53,6 @@
                      (exn-message x)))
 
 (struct pkg-desc (source type name auto?))
-
-(define (file->value* pth def)
-  (with-handlers ([exn:fail? (λ (x) 
-                                ;; No logging, because this funciton is used only
-                                ;; for METADATA.rktd, which is going away, and we
-                                ;; don't want to complain about a missing file.
-                                def)])
-    (file->value pth)))
 
 (define (path->bytes* pkg)
   (cond
@@ -140,11 +133,7 @@
   (define v
     (if get-info
         (get-info key get-default)
-        ;; during a transition period, also check for "METADATA.rktd":
-        (if (eq? key 'deps)
-            (dict-ref (file->value* (build-path pkg-dir "METADATA.rktd") empty)
-                      'dependency (get-default))
-            (get-default))))
+        (get-default)))
   (checker v)
   v)
 
@@ -165,11 +154,34 @@
 (define (check-dependencies deps)
   (unless (and (list? deps)
                (for/and ([dep (in-list deps)])
-                 (and (string? dep)
-                      (package-source->name dep))))
+                 (define (package-source? dep)
+                   (and (string? dep)
+                        (package-source->name dep)))
+                 (define (version? s)
+                   (and (string? s)
+                        (valid-version? s)))
+                 (or (package-source? dep)
+                     (and (list? dep)
+                          (= 2 (length dep))
+                          (package-source? (car dep))
+                          (version? (cadr dep))))))
     (pkg-error (~a "invalid `deps' specification\n"
                    "  specification: ~e")
                deps)))
+
+(define (dependency->name dep)
+  (package-source->name
+   (dependency->source dep)))
+
+(define (dependency->source dep)
+  (if (string? dep)
+      dep
+      (car dep)))
+
+(define (dependency->version dep)
+  (if (string? dep)
+      #f
+      (cadr dep)))
 
 (define (with-package-lock* t)
   (make-directory* (pkg-dir))
@@ -199,10 +211,16 @@
 (define (package-index-lookup pkg)
   (or
    (for/or ([i (in-list (read-pkg-cfg/def "indexes"))])
+     (define addr/no-query (combine-url/relative (string->url i)
+                                                 (format "pkg/~a" pkg)))
+     (define addr (struct-copy url addr/no-query
+                               [query (append
+                                       (url-query addr/no-query)
+                                       (list
+                                        (cons 'version (version))))]))
+     (log-planet2-debug "resolving via ~a" (url->string addr))
      (call/input-url+200
-      (combine-url/relative
-       (string->url i)
-       (format "/pkg/~a" pkg))
+      addr
       read))
    (pkg-error (~a "cannot find package on indexes\n"
                   "  package: ~a")
@@ -210,7 +228,9 @@
 
 (define (remote-package-checksum pkg)
   (match pkg
-    [`(pns ,pkg-name)
+    [`(pns ,pkg-name) ; compatibility, for now
+     (hash-ref (package-index-lookup pkg-name) 'checksum)]
+    [`(pnr ,pkg-name)
      (hash-ref (package-index-lookup pkg-name) 'checksum)]
     [`(url ,pkg-url-str)
      (package-url->checksum pkg-url-str)]))
@@ -604,7 +624,7 @@
        (update-install-info-checksum
         info
         checksum)
-       `(pns ,pkg))]
+       `(pnr ,pkg))]
      [else
       (pkg-error "cannot infer package source type\n  source: ~a" pkg)]))
   (define db (read-pkg-db))
@@ -635,12 +655,14 @@
     (match-define
      (install-info pkg-name orig-pkg pkg-dir clean? checksum)
      info)
-    (define pns? (eq? 'pns (first orig-pkg)))
+    (define name? (or (eq? 'pns (first orig-pkg)) ; compatibility, for now
+                      (eq? 'pnr (first orig-pkg))))
     (define (clean!)
       (when clean?
         (delete-directory/files pkg-dir)))
     (define simultaneous-installs
-      (list->set (map install-info-name infos)))
+      (for/hash ([i (in-list infos)])
+        (values (install-info-name i) (install-info-directory i))))
     (cond
       [(and (not updating?) (package-info pkg-name #f))
        (clean!)
@@ -692,32 +714,38 @@
                                      'deps (lambda () empty)
                                      #:checker check-dependencies))
           (define unsatisfied-deps
-            (filter-not (λ (dep)
-                          (or (set-member? simultaneous-installs 
-                                           (package-source->name dep))
-                              (hash-has-key? db dep)))
-                        deps))
+            (map dependency->source
+                 (filter-not (λ (dep)
+                                (define name (dependency->name dep))
+                                (or (equal? name "racket")
+                                    (hash-ref simultaneous-installs name #f)
+                                    (hash-has-key? db name)))
+                             deps)))
           (and (not (empty? unsatisfied-deps))
                unsatisfied-deps)))
        =>
        (λ (unsatisfied-deps)
-         (match
+          (match
              (or dep-behavior
-                 (if pns?
+                 (if name?
                    'search-ask
                    'fail))
            ['fail
             (clean!)
-            (pkg-error "missing dependencies\n  missing packages:~a" (format-list unsatisfied-deps))]
+            (pkg-error (~a "missing dependencies\n"
+                           " for package: ~a\n"
+                           " missing packages:~a")
+                       pkg
+                       (format-list unsatisfied-deps))]
            ['search-auto
             (printf (string-append
                      "The following packages are listed as dependencies, but are not currently installed,\n"
-                     "so we will automatically install them:\n"))
+                     "so they will be automatically installed:\n"))
             (printf "\t")
             (for ([p (in-list unsatisfied-deps)])
               (printf "~a " p))
             (printf "\n")
-            (raise (vector infos unsatisfied-deps))]
+            (raise (vector updating? infos unsatisfied-deps void))]
            ['search-ask
             (printf "The following packages are listed as dependencies, but are not currently installed:\n")
             (printf "\t")
@@ -729,12 +757,109 @@
               (flush-output)
               (match (read-line)
                 [(or "y" "Y" "")
-                 (raise (vector infos unsatisfied-deps))]
+                 (raise (vector updating? infos unsatisfied-deps void))]
                 [(or "n" "N")
                  (clean!)
                  (pkg-error "missing dependencies\n  missing packages:~a" (format-list unsatisfied-deps))]
                 [x
                  (eprintf "Invalid input: ~e\n" x)
+                 (loop)]))]))]
+      [(and
+        (not (eq? dep-behavior 'force))
+        (let ()
+          (define deps (get-metadata metadata-ns pkg-dir 
+                                     'deps (lambda () empty)
+                                     #:checker check-dependencies))
+          (define update-deps
+            (filter-map (λ (dep)
+                          (define name (dependency->name dep))
+                          (define req-vers (dependency->version dep))
+                          (define-values (inst-vers* can-try-update?)
+                            (cond
+                             [(not req-vers)
+                              (values #f #f)]
+                             [(equal? name "racket")
+                              (values (version) #f)]
+                             [(hash-ref simultaneous-installs name #f)
+                              => (lambda (dir)
+                                   (values
+                                    (get-metadata metadata-ns dir
+                                                  'version (lambda () "0.0"))
+                                    #f))]
+                             [else
+                              (values (get-metadata metadata-ns (package-directory name)
+                                                    'version (lambda () "0.0"))
+                                      #t)]))
+                          (define inst-vers (if (and req-vers
+                                                     (not (and (string? inst-vers*)
+                                                               (valid-version? inst-vers*))))
+                                                (begin
+                                                  (log-planet2-error
+                                                   "bad verson specification for ~a: ~e"
+                                                   name
+                                                   inst-vers*)
+                                                  "0.0")
+                                                inst-vers*))
+                          (and req-vers
+                               ((version->integer req-vers) 
+                                . > .
+                                (version->integer inst-vers))
+                               (list name can-try-update? inst-vers req-vers)))
+                        deps))
+          (and (not (empty? update-deps))
+               update-deps)))
+       => (lambda (update-deps)
+            (define (report-mismatch update-deps)
+              (define multi? (1 . < . (length update-deps)))
+              (pkg-error (~a "version mismatch for dependenc~a\n"
+                             "  for package: ~a\n"
+                             "  mismatch packages:~a")
+                         (if multi? "ies" "y")
+                         pkg
+                         (format-deps update-deps)))
+            (define (format-deps update-deps)
+              (format-list (for/list ([ud (in-list update-deps)])
+                             (format "~a (have ~a, need ~a)"
+                                     (car ud)
+                                     (caddr ud)
+                                     (cadddr ud)))))
+            ;; If there's a mismatch that we can't attempt to update, complain.
+            (unless (andmap cadr update-deps)
+              (report-mismatch (filter (compose not cadr) update-deps)))
+            ;; Try updates:
+            (define update-pkgs (map car update-deps))
+            (define (make-pre-succeed)
+              (let ([to-update (filter-map update-package update-pkgs)])
+                (log-error "to update ~s" to-update)
+                (λ () (for-each (compose remove-package pkg-desc-name) to-update))))
+            (match (or dep-behavior
+                       (if name?
+                           'search-ask
+                           'fail))
+              ['fail
+               (clean!)
+               (report-mismatch update-deps)]
+              ['search-auto
+               (printf (string-append
+                        "The following packages are listed as dependencies, but are not at the required\n"
+                        "version, so they will be automatically updated:~a\n")
+                       (format-deps update-deps))
+               (raise (vector #t infos update-pkgs (make-pre-succeed)))]
+              ['search-ask
+               (printf (~a "The following packages are listed as dependencies, but are not at the required\n"
+                           "versions:~a\n")
+                       (format-deps update-deps))
+               (let loop ()
+                 (printf "Would you like to update them via your package indices? [Yn] ")
+                 (flush-output)
+                 (match (read-line)
+                   [(or "y" "Y" "")
+                    (raise (vector #t infos update-pkgs (make-pre-succeed)))]
+                   [(or "n" "N")
+                    (clean!)
+                    (report-mismatch update-deps)]
+                   [x
+                    (eprintf "Invalid input: ~e\n" x)
                  (loop)]))]))]
       [else
        (λ ()
@@ -797,14 +922,14 @@
                      #:updating? [updating? #f])
   (with-handlers* ([vector?
                     (match-lambda
-                     [(vector new-infos deps)
+                     [(vector updating? new-infos deps more-pre-succeed)
                       (install-cmd
                        #:old-infos new-infos
                        #:old-auto+pkgs (append old-descs descs)
                        #:force? force
                        #:ignore-checksums? ignore-checksums
                        #:dep-behavior dep-behavior
-                       #:pre-succeed pre-succeed
+                       #:pre-succeed (lambda () (pre-succeed) (more-pre-succeed))
                        #:updating? updating?
                        (for/list ([dep (in-list deps)])
                          (pkg-desc dep #f #f #t)))])])
@@ -850,7 +975,7 @@
      (and new-checksum
           (not (equal? checksum new-checksum))
           ;; FIXME: the type shouldn't be #f here; it should be
-          ;; preseved form instal time:
+          ;; preseved from install time:
           (pkg-desc orig-pkg-source #f pkg-name auto?))]))
 
 (define ((package-dependencies metadata-ns) pkg-name)

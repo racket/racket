@@ -191,7 +191,12 @@
 }
                                                      
 @definterface[frame:size-pref<%> (frame:basic<%>)]{
-
+  @defmethod[(adjust-size-when-monitor-setup-changes?) boolean?]{
+     Determines if the frame's size should be automatically adjusted
+     when the monitors configuration changes.
+     
+     Defaults to returning @racket[#f].
+   }
 }
 @defmixin[frame:size-pref-mixin (frame:basic<%>) (frame:size-pref<%>)]{
   @defconstructor/auto-super[([size-preferences-key symbol?]
@@ -209,6 +214,11 @@
     @racket[preferences:get] and @racket[preferences:set] to track the current
     position.
 
+    Both preferences are tracked on a per-monitor-configuration basis. That is,
+    the preference value saved is a mapping from the current monitor configuration
+    (derived from the results of @racket[get-display-count], @racket[get-display-left-top-inset],
+    and @racket[get-display-size]).
+    
     Passes the @racket[x], @racket[y], and @racket[width] and @racket[height] 
     initialization arguments to the superclass and calls @method[frame% maximize]
     based on the current values of the preferences.
@@ -217,13 +227,22 @@
 
   }
 
-  @defmethod*[#:mode override (((on-size (width number?) (height number?)) void?))]{
-
+  @defmethod[#:mode override (on-size (width (integer-in 0 10000)) 
+                                      (height (integer-in 0 10000)))
+                    void?]{
     Updates the preferences, according to the width and
     height. The preferences key is the one passed
     to the initialization argument of the class.
   }
+  @defmethod[#:mode override (on-move (width (integer-in -10000 10000))
+                                      (height (integer-in -10000 10000)))
+                    void?]{
+    Updates the preferences according to the width and
+    height, if @racket[position-preferences-key] is not @racket[#f], using
+    it as the preferences key.
+  }
 }
+
 @definterface[frame:register-group<%> ()]{
   Frames that implement this interface are registered with the group. See
   @racket[group:get-the-frame-group] and @racket[frame:register-group-mixin].

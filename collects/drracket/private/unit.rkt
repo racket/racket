@@ -1358,7 +1358,7 @@ module browser threading seems wrong.
     show-planet-status)
   
   (define frame-mixin
-    (mixin (drracket:frame:<%> frame:searchable-text<%> frame:delegate<%>)
+    (mixin (drracket:frame:<%> frame:searchable-text<%> frame:delegate<%> frame:size-pref<%>)
       (drracket:unit:frame<%>)
       (init filename)
       (inherit set-label-prefix get-show-menu
@@ -4283,6 +4283,12 @@ module browser threading seems wrong.
       
       (init-definitions-text (car tabs))
       
+      (define/override (adjust-size-when-monitor-setup-changes?) 
+        (= 1 (for/sum ([f (in-list (get-top-level-windows))])
+               (if (is-a? f drracket:unit:frame<%>)
+                   1
+                   0))))
+        
       (super-new
        [filename filename]
        [style '(toolbar-button)]

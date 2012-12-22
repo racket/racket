@@ -41,6 +41,19 @@
 ;;  problems.
 (define all-windows (make-hash))
 
+;; called in atomic mode
+(define (send-screen-change-notifications flags)
+  (when (zero? (bitwise-and flags 1)) ;; discard the "about to change" notifications
+    (for ([b (in-hash-values all-windows)])
+      (define f (weak-box-value b))
+      (when f
+        (parameterize ([current-eventspace (send f get-eventspace)])
+          (queue-callback
+           (λ ()
+             (send f display-changed))))))))
+
+(set-screen-changed-callback! send-screen-change-notifications)
+
 (define-objc-mixin (RacketWindowMethods Superclass)
   [wxb]
   [-a _scheme (getEventspace)
@@ -627,7 +640,9 @@
     (define/public (set-color-callback cb)
       (set! color-callback cb))
     (define/override (on-color-change)
-      (queue-window-event this (lambda () (color-callback))))))
+      (queue-window-event this (lambda () (color-callback))))
+    
+    (define/public (display-changed) (void))))
 
 ;; ----------------------------------------
 

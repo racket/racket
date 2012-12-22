@@ -101,6 +101,12 @@ void scheme_init_compenv_places(void)
   }
 }
 
+void scheme_init_compenv_symbol(void)
+{
+  REGISTER_SO(unshadowable_symbol);
+  unshadowable_symbol = scheme_intern_symbol("unshadowable");
+}
+
 /*========================================================================*/
 /*                       compilation info management                      */
 /*========================================================================*/
@@ -2422,11 +2428,6 @@ Scheme_Object *scheme_find_local_shadower(Scheme_Object *sym, Scheme_Object *sym
 {
   Scheme_Comp_Env *frame;
   Scheme_Object *esym, *uid = NULL, *env_marks, *prop;
-
-  if (!unshadowable_symbol) {
-    REGISTER_SO(unshadowable_symbol);
-    unshadowable_symbol = scheme_intern_symbol("unshadowable");
-  }
 
   /* Walk backward through the frames, looking for a renaming binding
      with the same marks as the given identifier, sym. Skip over

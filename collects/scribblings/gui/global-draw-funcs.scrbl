@@ -15,8 +15,11 @@ other actions depend on updating the display.}
 
 
 @defproc[(get-display-count) exact-positive-integer?]{
-Returns the number of monitors currently active. On Windows and Mac OS X,
- the result can change at any time.
+Returns the number of monitors currently active. 
+
+On Windows and Mac OS X, the result can change at any time.
+See also @xmethod[top-level-window<%> display-changed].
+
 }
 
 
@@ -49,7 +52,8 @@ When the optional @racket[avoid-bars?] argument is true, for @racket[monitor]
 
 If @racket[monitor] is not less than the current number of available
  monitors (which can change at any time), the results are @racket[#f]
- and @racket[#f].}
+ and @racket[#f]. See also @xmethod[top-level-window<%> display-changed].
+}
 
 
 @defproc[(get-display-size [full-screen? any/c #f]
@@ -67,7 +71,8 @@ On Windows and Mac OS X, if the optional argument is true and @racket[monitor] i
 
 If @racket[monitor] is not less than the current number of available
  monitors (which can change at any time), the results are @racket[#f]
- and @racket[#f].}
+ and @racket[#f]. See also @xmethod[top-level-window<%> display-changed].
+}
 
 
 @defproc[(is-color-display?)

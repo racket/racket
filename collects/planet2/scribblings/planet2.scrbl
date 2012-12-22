@@ -1,5 +1,8 @@
 #lang scribble/manual
-@(require scribble/bnf)
+@(require scribble/bnf
+          (for-label planet2
+                     (except-in racket/base remove)
+                     setup/dirs))
 
 @(define @|Planet1| @|PLaneT|)
 
@@ -36,26 +39,38 @@ metadata}.
 
 @deftech{Package metadata} is:
 @itemlist[
- @item{a name -- a string made of the characters @|package-name-chars|.}
- @item{a list of dependencies -- a list of strings that name other packages that must be installed simultaneously.}
- @item{a checksum -- a string that identifies different releases of a package.} 
+ @item{a @deftech{package name} --- a string made of the characters @|package-name-chars|.}
+ @item{a @deftech{version} --- a string of the form @nonterm{maj}@litchar{.}@nonterm{min},
+                     @nonterm{maj}@litchar{.}@nonterm{min}@litchar{.}@nonterm{sub}, or
+                     @nonterm{maj}@litchar{.}@nonterm{min}@litchar{.}@nonterm{sub}@litchar{.}@nonterm{rel},
+                     where @nonterm{maj}, @nonterm{min}, @nonterm{sub}, and @nonterm{rel} are
+                     all canonical decimal representations of natural numbers, @nonterm{min} has no more
+                     than two digits, and @nonterm{sub} and @nonterm{rel} has no more than
+                     three digits. A version is intended to reflect available features of
+                     a package, and should not be confused with different releases of
+                     a package as indicated by the @tech{checksum}.}
+ @item{a list of dependencies --- a list of packages to be installed simultaneously, optionally
+                                 with a lower bound on each package's version.}
+ @item{a @deftech{checksum} --- a string that identifies different releases of a package. A
+                                package can be updated when its @tech{checksum} changes 
+                                whether or not its @tech{version} changes.} 
 ]
 
 A @tech{package} is typically represented by a directory with the same
-name as the package. The checksum is typically left implicit.
-If the package depends on other packages, the directory can
-contain a file named @filepath{info.rkt} (see @secref["metadata"]).
+name as the package. The @tech{checksum} is typically left implicit.
+The package directory can contain a file named @filepath{info.rkt}
+to declare other metadata (see @secref["metadata"]).
 
 A @deftech{package source} identifies a @tech{package}
 representation. Each package source type has a different way of
-storing the checksum. The valid package source types are:
+storing the @tech{checksum}. The valid package source types are:
 
 @itemlist[
 
 @item{a local file path naming an archive -- The name of the package
-is the basename of the archive file. The checksum for archive
+is the basename of the archive file. The @tech{checksum} for archive
 @filepath{f.@nonterm{ext}} is given by the file @filepath{f.@nonterm{ext}.CHECKSUM}. For
-example, @filepath{~/tic-tac-toe.zip}'s checksum would be inside
+example, @filepath{~/tic-tac-toe.zip}'s @tech{checksum} would be inside
 @filepath{~/tic-tac-toe.zip.CHECKSUM}. The valid archive formats
 are (currently) @filepath{.zip}, @filepath{.tar}, @filepath{.tgz}, 
 @filepath{.tar.gz}, and
@@ -68,8 +83,8 @@ with alphabetic characters followed by @litchar{://}. The inferred
 package name is the filename without its suffix.}
 
 @item{a local directory -- The name of the package is the name of the
-directory. The checksum is not present. For example,
-@filepath{~/tic-tac-toe/}.
+directory. The @tech{checksum} is not present. For example,
+@filepath{~/tic-tac-toe/} is directory package source.
 
 A package source is inferred to refer
 to a directory only when it does not have a file-archive suffix, does
@@ -78,9 +93,10 @@ with alphabetic characters followed by @litchar{://}. The inferred
 package name is the directory name.}
 
 @item{a remote URL naming an archive -- This type follows the same
-rules as a local file path, but the archive and checksum files are
+rules as a local file path, but the archive and @tech{checksum} files are
 accessed via HTTP(S). For example,
-@filepath{http://game.com/tic-tac-toe.zip} and
+@filepath{http://game.com/tic-tac-toe.zip} is a remote URL package
+source whose @tech{checksum} is found at
 @filepath{http://game.com/tic-tac-toe.zip.CHECKSUM}.
 
 A package source is inferred to be a URL only when it
@@ -95,8 +111,9 @@ contain a file named @filepath{MANIFEST} that lists all the contingent
 files. These are downloaded into a local directory and then the rules
 for local directory paths are followed. However, if the remote
 directory contains a file named @filepath{.CHECKSUM}, then it is used
-to determine the checksum. For example,
-@filepath{http://game.com/tic-tac-toe/} and
+to determine the @tech{checksum}. For example,
+@filepath{http://game.com/tic-tac-toe/} is a directory URL package
+source whose @tech{checksum} is found at
 @filepath{http://game.com/tic-tac-toe/.CHECKSUM}.
 
 A package source is inferred to be a URL the same for a directory or
@@ -110,12 +127,12 @@ URLs is:
 @inset{@exec{github://github.com/}@nonterm{user}@exec{/}@nonterm{repository}@;
 @exec{/}@nonterm{branch}@exec{/}@nonterm{optional-subpath}}
 
-For example,
-@filepath{github://github.com/game/tic-tac-toe/master/}.
+For example, @filepath{github://github.com/game/tic-tac-toe/master/}
+is a GitHub package source.
 
 The @exec{zip}-formatted archive for the repository (generated by GitHub for
 every branch) is used as a remote URL archive path, except the
-checksum is the hash identifying the branch. 
+@tech{checksum} is the hash identifying the branch. 
 
 A package source is inferred to be a GitHub reference when it
 starts with @litchar{github://}; a package source that is otherwise
@@ -124,9 +141,10 @@ specified as a GitHub reference is automatically prefixed with
 is the last element of @nonterm{optional-subpath} if it is
 non-empty, otherwise the inferred name is @nonterm{repository}.}
 
-@item{a bare package name -- The local list of @tech{package name
-services} is consulted to determine the source and checksum for the
-package. For example, @exec{tic-tac-toe}.
+@item{a @tech{package name} -- A @tech{package name resolver} is
+consulted to determine the source and @tech{checksum} for the package. For
+example, @exec{tic-tac-toe} is a package name that can be used as a
+package source.
 
 A package source is inferred
 to be a package name when it fits the grammar of package names, which
@@ -134,18 +152,23 @@ means that it has only the characters @|package-name-chars|.}
 
 ]
 
-A @deftech{package name service} (@deftech{PNS}) is a string representing a URL,
-such that appending @exec{/pkg/}@nonterm{package} to the URL responds
-with a @racket[read]-able hash table with the keys: @racket['source]
-bound to the source and @racket['checksum] bound to the
-checksum. Typically, the source will be a remote URL string.
+A @deftech{package name resolver} (@deftech{PNR}) is a server that
+converts package names to other package sources. A PNR is identified
+by a string representing a URL. This URL is combined with
+@exec{pkg/}@nonterm{package} path segments (where @nonterm{package} is a package name) plus a
+@exec{version=}@nonterm{version} query (where @nonterm{version} is the
+Racket version number) to form a URL that should refer to a
+@racket[read]-able hash table with the keys: @racket['source] mapped to
+the @tech{package source} string and @racket['checksum] mapped to the
+@tech{checksum} value. Typically, the @tech{package source} value for
+@racket['source] will be a remote URL.
 
-PLT supports two @tech{package name services}, which are enabled by
+PLT supports two @tech{package name resolvers} that are enabled by
 default: @url{https://plt-etc.byu.edu:9004} for new
 packages and @url{https://plt-etc.byu.edu:9003} for
 automatically generated packages for old @|PLaneT|
-packages. Anyone may host their own @tech{package name service}. The
-source for the PLT-hosted servers is in the
+packages. Anyone may host their own @tech{package name resolver}. The
+source for the PLT-hosted resolvers is in the
 @racket[(build-path (find-collects-dir) "meta" "planet2-index")]
 directory.
 
@@ -167,8 +190,11 @@ the purposes of conflicts, a module is a file that ends in
 @filepath{.rkt} or @filepath{.ss}.
 
 Package A is a @deftech{package update} of Package B if (1) B is
-installed, (2) A and B have the same name, and (3) A's checksum is
-different than B's.
+installed, (2) A and B have the same name, and (3) A's @tech{checksum} is
+different than B's. Note that a package @tech{version} is not taken
+into account when determining a @tech{package update}, although a change
+in a package's @tech{version} (in either direction) should normally
+imply a change in the @tech{checksum}.
 
 @; ----------------------------------------
 
@@ -204,20 +230,20 @@ sub-sub-commands:
        environment variable @envvar{PLT_PLANET2_NOSETUP} is set to any non-empty value.}
 
  @item{@DFlag{installation} or @Flag{i} --- Install system-wide, rather than user-local.}
- @item{@DFlag{shared} or @Flag{s} --- Install for all versions, rather than user-local and version-specific.}
+ @item{@DFlag{shared} or @Flag{s} --- Install for all Racket versions, rather than user-local and version-specific.}
 
  @item{@DFlag{deps} @nonterm{behavior} --- Selects the behavior for dependencies, where @nonterm{behavior} is one of
   @itemlist[
-   @item{@exec{fail} --- Cancels the installation if dependencies are unmet (default for most packages)}
-   @item{@exec{force} --- Installs the package(s) despite missing dependencies (unsafe)}
-   @item{@exec{search-ask} --- Looks for the dependencies on the configured @tech{package name services} 
-         (default if the dependency is an indexed name) but asks if you would like it installed.}
-   @item{@exec{search-auto} --- Like @exec{search-ask}, but does not ask for permission to install.}
+   @item{@exec{fail} --- Cancels the installation if dependencies are version requirements are unmet (default for most packages)}
+   @item{@exec{force} --- Installs the package(s) despite missing dependencies or version requirements (unsafe)}
+   @item{@exec{search-ask} --- Looks for the dependencies or updates via the configured @tech{package name resolvers} 
+         (default if the dependency is an indexed name) but asks if you would like it installed or updated.}
+   @item{@exec{search-auto} --- Like @exec{search-ask}, but does not ask for permission to install or update.}
   ]}
 
   @item{@DFlag{force} --- Ignores conflicts (unsafe)}
 
-  @item{@DFlag{ignore-checksums} --- Ignores errors verifying package checksums (unsafe.)}
+  @item{@DFlag{ignore-checksums} --- Ignores errors verifying package @tech{checksums} (unsafe).}
 
   @item{@DFlag{link} --- Implies @exec{--type dir} (and overrides any specified type),
         and links the existing directory as an installed package.}
@@ -251,13 +277,14 @@ listed, this command fails atomically. It accepts the following @nonterm{option}
  @item{@DFlag{installation} or @Flag{i} --- Same as for @exec{install}.}
  @item{@DFlag{shared} or @Flag{s} --- Same as for @exec{install}.}
  @item{@DFlag{force} --- Ignore dependencies when removing packages.}
- @item{@DFlag{auto} --- Remove packages that were installed by the @exec{search-auto} and @exec{search-ask} dependency behavior that are no longer required.}
+ @item{@DFlag{auto} --- Remove packages that were installed by the @exec{search-auto} or @exec{search-ask}
+                        dependency behavior and are no longer required.}
  ]
 }
 
 @item{@exec{show} @nonterm{option} ... --- Print information about currently installed packages. 
  By default, packages are shown for all installation modes (installation-wide,
- user- and version-specific, and user-specific all-version).
+ user- and Racket-version-specific, and user-specific all-version).
  The command accepts the following @nonterm{option}s:
 
  @itemlist[
@@ -278,7 +305,7 @@ View and modify package configuration options. It accepts the following @nonterm
 
  The valid keys are:
  @itemlist[
-  @item{@exec{indexes} --- A list of URLs for @tech{package name services}.}           
+  @item{@exec{indexes} --- A list of URLs for @tech{package name resolvers}.}           
  ]
 }
 
@@ -295,7 +322,6 @@ View and modify package configuration options. It accepts the following @nonterm
 ]
 
 @subsection{Programmatic}
-@(require (for-label planet2))
 
 @defmodule[planet2]
 
@@ -391,7 +417,7 @@ first:
 
 @commandline{raco pkg create @nonterm{package}}
 
-And then upload the archive and its checksum to your site:
+And then upload the archive and its @tech{checksum} to your site:
 
 @commandline{scp @nonterm{package}.zip @nonterm{package}.zip.CHECKSUM your-host:public_html/}
 
@@ -399,8 +425,8 @@ Now, publish your package source as:
 
 @inset{@exec{http://your-host/~@nonterm{user}/@nonterm{package}.zip}}
 
-Whenever you want to release a new version, recreate and reupload the
-package archive (and checksum). Your changes will automatically be
+Whenever you want to provide a new release of a package, recreate and reupload the
+package archive (and @tech{checksum}). Your changes will automatically be
 discovered by those who used your package source when they use
 @exec{raco pkg update}.
 
@@ -409,9 +435,9 @@ discovered by those who used your package source when they use
 By using either of the above deployment techniques, anyone will be
 able to use your package by referring to your @tech{package source}.
 However, they will not be able to refer to
-it by a simple name until it is listed on a @tech{package name service}.
+it by a simple name until it is listed on a @tech{package name resolver}.
 
-If you'd like to use the official @tech{package name service}, browse
+If you'd like to use the official @tech{package name resolver}, browse
 to
 @link["https://plt-etc.byu.edu:9004/manage/upload"]{https://plt-etc.byu.edu:9004/manage/upload}
 and upload a new package. You will need to create an account and log
@@ -424,7 +450,7 @@ updates.
 If you use this server, and use GitHub for deployment, then you will
 never need to open a web browser to update your package for end
 users. You just need to push to your GitHub repository, then within 24
-hours, the official @tech{package name service} will notice, and
+hours, the official @tech{package name resolver} will notice, and
 @exec{raco pkg update} will work on your user's machines.
 
 @subsection{Naming and Designing Packages}
@@ -451,6 +477,16 @@ when backwards incompatible changes are necessary. For example,
 @pkgname{data-priority-queue1}. Exceptions include packages that
 present interfaces to external, versioned things, such as
 @pkgname{sqlite3} or @pkgname{libgtk2}.}
+
+@item{A @tech{version} declaration for a package is used only by other
+package implementors to effectively declare dependencies on provided
+features. Such declarations allow @exec{raco pkg install} and
+@exec{raco pkg update} to help check dependencies.  Declaring and
+changing a version is optional, and @tech{package name resolvers}
+ignore version declarations; in particular, a package is a candidate
+for updating when its @tech{checksum} changes, independent of whether
+the package's version changes or in which direction the version
+changes.}
 
 @item{Packages should not include large sets of utilities libraries
 that are likely to cause conflicts. For example, packages should not
@@ -484,11 +520,26 @@ The following fields are used by the package manager:
 
 @itemlist[
 
- @item{@racketidfont{deps} --- a list of @tech{package source} strings.
-       Each string determines a dependency on the @tech{package} whose name
-       is inferred from the @tech{package source} (i.e., dependencies are
-       on package names, not package sources), while the @tech{package source} indicates
-       where to get the package if needed to satisfy the dependency.}
+ @item{@racketidfont{version} --- a @tech{version} string. The default
+       @tech{version} of a package is @racket["0.0"].}
+
+ @item{@racketidfont{deps} --- a list of dependencies, where each
+       dependency is either a @tech{package source} strings or a list
+       containing a @tech{package source} string and a
+       @tech{version} string.
+
+       Each elements of the @racketidfont{deps} list determines a
+       dependency on the @tech{package} whose name is inferred from
+       the @tech{package source} (i.e., dependencies are on package
+       names, not package sources), while the @tech{package source}
+       indicates where to get the package if needed to satisfy the
+       dependency.
+
+       When provided, a @tech{version} string specifies a lower bound
+       on an acceptable @tech{version} of the package.
+
+       Use the package name @racket["racket"] to specify a dependency
+       on the version of the Racket installation.}
 
  @item{@racketidfont{setup-collects} --- a list of path strings and/or
        lists of path strings, which are used as collection names to
@@ -504,6 +555,7 @@ For example, a basic @filepath{info.rkt} file might be
 
 @codeblock{
 #lang setup/infotab
+(define version "1.0")
 (define deps (list _package-source-string ...))
 }
 
@@ -511,10 +563,10 @@ For example, a basic @filepath{info.rkt} file might be
 
 @section{@|Planet1| Compatibility}
 
-PLT maintains a @tech{package name service} to serve packages that
+PLT maintains a @tech{package name resolver} to serve packages that
 were developed using the original @seclink[#:doc '(lib
 "planet/planet.scrbl") "top"]{@|Planet1|} package system.  This
-compatibility service is at
+compatibility resolver is at
 @link["https://plt-etc.byu.edu:9003/"]{https://plt-etc.byu.edu:9003/},
 which is included by default in the package-server search path.
 
@@ -571,7 +623,7 @@ requires reinstallation of all packages every version change.)
 
 @subsection{Where and how are packages installed?}
 
-User-local and version-specific packages are in @racket[(build-path
+User-local and Racket-version-specific packages are in @racket[(build-path
 (find-system-path 'addon-dir) (version) "pkgs")], user-local and
 all-version packages are in @racket[(build-path (find-system-path
 'addon-dir) "pkgs")], and installation-wide packages are in
@@ -590,18 +642,20 @@ conflict checks for user-specific packages. Similarly, new
 user-specific but all-version packages can invalidate previous
 user-specific conflict checks for a different Racket version.
 
-@subsection{If packages have no version numbers, how can I update
-packages with error fixes, etc?}
+@subsection{Do I need to change a package's version when I update a package with error fixes, @|etc|?}
 
-If you have a new version of the code for a package, then it will have
-a new checksum. When package updates are searched for, the checksum of
-the installed package is compared with the checksum of the source, if
-they are different, then the source is re-installed. This allows code
-changes to be distributed.
+If you have new code for a package, then it should have a new
+@tech{checksum}. When package updates are searched for, the checksum
+of the installed package is compared with the checksum of the source,
+if they are different, then the source is re-installed. This allows
+code changes to be distributed. You do not need to declare an update a
+version number, except to allow other package implementors to indicate
+a dependency on particular features (where a bug fix might be
+considered a feature, but it is not usually necessary to consider it
+that way).
 
-@subsection{If packages have no version numbers, how can I specify
-which version of a package I depend on if its interface has changed
-and I need an old version?}
+@subsection{How can I specify which version of a package I depend on
+if its interface has changed and I need an @emph{old} version?}
 
 In such a situation, the author of the package has released a
 backwards incompatible edition of a package. The package manager provides
@@ -639,9 +693,7 @@ flexible---so that code can migrate in and out of the core, packages
 can easily be split up, combined, or taken over by other authors, etc.
 
 This change is bad because it makes the meaning of your program
-dependent on the state of the system. (This is already true of Racket
-code in general, because there's no way to make the required core
-version explicit, but the problem will be exacerbated by the package manager.)
+dependent on the state of the system.
 
 The second major difference is that @|Planet1| is committed to
 guaranteeing that packages that never conflict with one another, so
@@ -676,7 +728,7 @@ out of beta when these are completed.
 
 @itemlist[
 
-@item{The official PNS will divide packages into three
+@item{The official PNR will divide packages into three
 categories: @reponame{planet}, @reponame{solar-system}, and @reponame{galaxy}. The definitions
 for these categories are:
 
@@ -727,8 +779,8 @@ the @reponame{solar-system} category, automatically.
 @item{In order to mitigate the costs of external linking vis a vis the
 inability to understand code in isolation, we will create a module
 resolver that searches for providers of modules on the configured
-@tech{package name services}. For example, if a module requires
-@filepath{data/matrix.rkt}, and it is not available, then the PNS will
+@tech{package name resolvers}. For example, if a module requires
+@filepath{data/matrix.rkt}, and it is not available, then the PNR will
 be consulted to discover what packages provide it. @emph{Only packages
 in @reponame{solar-system} or @reponame{planet} will be
 returned.} (This category restriction ensures that the package to
@@ -741,7 +793,7 @@ wish to automatically install @reponame{planet} packages but not
 any.)
 
 This feature will be generalized across all @tech{package name
-services}, so users could maintain their own category definitions with
+resolvers}, so users could maintain their own category definitions with
 different policies.}
 
 ]
@@ -753,15 +805,15 @@ require a lot of cross-Racket integration.
 
 @itemlist[
 
-@item{The official PNS is bare bones. It could conceivably do a lot
+@item{The official PNR is bare bones. It could conceivably do a lot
 more: keep track of more statistics, enable "social" interactions
 about packages, link to documentation, problem reports, licenses,
 etc. Some of this is easy and obvious, but the community's needs are
 unclear.}
 
 @item{It would be nice to encrypt information from the official
-@tech{package name service} with a public key shipped with Racket, and
-allow other services to implement a similar security scheme.}
+@tech{package name resolver} with a public key shipped with Racket, and
+allow other resolvers to implement a similar security scheme.}
 
 @item{Packages in the @reponame{planet} category should be tested on
 DrDr. This would require a way to communicate information about how
@@ -788,12 +840,12 @@ these included are painful to maintain and unreliable given users with
 different versions of Racket installed.
 
 One solution is to have a separate place where such "binary" packages
-are available. For example, PLT could run a PNS for every Racket
+are available. For example, PLT could run a PNR for every Racket
 version, i.e., @filepath{https://binaries.racket-lang.org/5.3.1.4},
 that would contain the binaries for all the packages in the
 @reponame{planet} category. Thus, when you install package
 @pkgname{tic-tac-toe} you could also install the binary version from
-the appropriate PNS.
+the appropriate PNR.
 
 There are obvious problems with this... it could be expensive for PLT
 in terms of space and time... Racket compilation is not necessarily

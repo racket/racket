@@ -41,10 +41,6 @@
 (define (mutable-array-copy arr)
   (unsafe-vector->array (array-shape arr) (vector-copy-all (mutable-array-data arr))))
 
-(: flat-vector->matrix : (All (A) (Index Index (Vectorof A) -> (Array A))))
-(define (flat-vector->matrix m n v)
-  (vector->array (vector m n) v))
-
 ;; ===================================================================================================
 ;; Conversions
 

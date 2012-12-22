@@ -64,7 +64,6 @@
 
   (define top-x init-top-x)
   (define top-y init-top-y)
-  (define top-level-windows (make-weak-hasheq))
   
   ;; make-top-container%: adds the necessary functionality to wx:frame% and 
   ;; wx:dialog%.
@@ -362,9 +361,6 @@
         (lambda (on? do-show)
           (when on?
             (position-for-initial-show))
-          (if on?
-              (hash-set! top-level-windows this #t)
-              (hash-remove! top-level-windows this))
           (as-exit ; as-exit because there's an implicit wx:yield for dialogs
            do-show))])
       
@@ -645,7 +641,10 @@
                         (lambda () (send (get-mred) on-activate on?)))
                        (as-exit
                         (lambda ()
-                          (super on-activate on?)))))])
+                          (super on-activate on?)))))]
+       [display-changed
+        (λ () 
+          (send (get-mred) display-changed))])
       (public*
        [is-act-on? (lambda () act-on?)]
        [add-activate-update (lambda (win) (set! activate-refresh-wins  

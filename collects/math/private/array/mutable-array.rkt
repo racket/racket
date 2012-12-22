@@ -23,8 +23,7 @@
  mutable-array-copy
  mutable-array
  ;; Conversion
- array->mutable-array
- flat-vector->matrix)
+ array->mutable-array)
 
 (define-syntax (mutable-array stx)
   (syntax-parse stx #:literals (:)

@@ -51,6 +51,10 @@
 # define DONT_LOAD_INIT_FILE
 #endif
 
+#if defined(MZ_XFORM) && defined(__MINGW32__) && !defined(USE_THREAD_LOCAL)
+XFORM_GC_VARIABLE_STACK_THROUGH_DIRECT_FUNCTION;
+#endif
+
 #ifdef MZ_XFORM
 START_XFORM_SUSPEND;
 #endif
@@ -288,11 +292,11 @@ START_XFORM_SKIP;
 
 #ifdef IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
 extern intptr_t _tls_index;
-static __declspec(thread) void *tls_space;
+static __thread void *tls_space;
 #endif
 
 #ifdef DOS_FILE_SYSTEM
-static void load_delayed()
+void load_delayed()
 {
   /* Order matters: load dependencies first */
 # ifndef MZ_PRECISE_GC
@@ -301,7 +305,19 @@ static void load_delayed()
   load_delayed_dll(NULL, "libracket" DLL_3M_SUFFIX "xxxxxxx.dll");
   record_dll_path();
 # ifdef IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
+#  ifdef __MINGW32__
+  {
+    /* gcc declares space for the thread-local variable in a way that
+       the OS can set up, but its doesn't actually map variables
+       through the OS-supplied mechanism. Just assume that the first
+       thread-local variable is ours. */
+    void **base;
+    asm("mov %%fs:(0x2C), %0;" :"=r"(base));
+    scheme_register_tls_space(*base, _tls_index);
+  }
+#  else
   scheme_register_tls_space(&tls_space, _tls_index);
+#  endif
 # endif
 }
 #endif
