@@ -1,6 +1,5 @@
 #lang racket/base
 (require racket/class
-	 racket/port
          racket/unsafe/ops
          file/convertible
          (for-syntax racket/base)
@@ -369,10 +368,7 @@
                   (install-bytes-rows s w h rows b&w? alpha? pre? #f)
                   (values s b&w?))))]
            [(jpeg jpeg/alpha)
-	    ;; We'd like to read directly from `in', but we need to be able
-	    ;; to read in atomic mode:
-	    (define bstr (port->bytes in))
-            (let ([d (create-decompress (open-input-bytes bstr))])
+            (let ([d (create-decompress in)])
               (dynamic-wind
                   void
                   (lambda ()
@@ -591,10 +587,7 @@
                   proc
                   (cairo_surface_write_to_png_stream s proc)))])]
             [(jpeg)
-	     ;; We'd like to write directly to `out', but we need to be able
-	     ;; to write in atomic mode:
-	     (define sp (open-output-bytes))
-             (let ([c (create-compress sp)])
+             (let ([c (create-compress out)])
                (dynamic-wind
                    void
                    (lambda ()
@@ -622,8 +615,7 @@
                                  (bytes-set! bstr (+ ci 2) (bytes-ref dest (+ row (+ 4i B)))))))
                            (jpeg_write_scanlines c samps 1))))
                      (jpeg_finish_compress c))
-                   (lambda () (destroy-compress c))))
-	     (write-bytes (get-output-bytes sp) out)]
+                   (lambda () (destroy-compress c))))]
             [else (error (method-name 'bitmap% 'save-file)
                          "kind saving not yet implemented: ~e"
                          kind)])))
