@@ -1907,7 +1907,7 @@
 
   (define/oc-log (oc-finished res)
     (define-values (running-tab dirty/pending-tab dirty-tabs clean-tabs) (get-current-oc-state))
-    (when running-tab ;; why can this be #f?
+    (when running-tab
       (cond
         [(eq? (vector-ref res 0) 'handler-results)
          (line-of-interest)
@@ -1936,9 +1936,10 @@
       (oc-maybe-start-something)))
   
   (define/oc-log (oc-status-message sym str)
-    (line-of-interest)
     (define-values (running-tab dirty/pending-tab dirty-tabs clean-tabs) (get-current-oc-state))
-    (send running-tab set-oc-status (running sym str)))
+    (when running-tab
+      (line-of-interest)
+      (send running-tab set-oc-status (running sym str))))
   
   ;; get-focus-tab : -> (or/c tab #f)
   (define (get-focus-tab)
