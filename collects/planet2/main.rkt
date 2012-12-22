@@ -27,18 +27,23 @@
  "This tool is used for managing installed packages."
  [install
   "Install packages"
-  [(#:sym #f) type ("-t") ("Type of <pkg-source>;"
-                           "options are: file, dir, file-url, dir-url, github, or name;"
-                           "if not specified, the type is inferred syntactically")]
-  [(#:str #f) name ("-n") ("Name of package, instead of inferred"
-                           "(makes sense only when a single <pkg-source> is given)")]
-  [#:bool no-setup () ("Don't run 'raco setup' after changing packages"
+  #:once-each
+  [(#:sym type [file dir file-url dir-url github name] #f) type ("-t") 
+   ("Type of <pkg-source>;"
+    "valid <types>s are: file, dir, file-url, dir-url, github, or name;"
+    "if not specified, the type is inferred syntactically")]
+  [(#:str name #f) name ("-n") ("Name of package, instead of inferred"
+                                "(makes sense only when a single <pkg-source> is given)")]
+  [#:bool no-setup () ("Don't run `raco setup' after changing packages"
                        "(generally not a good idea)")]
-  [#:bool installation ("-i") "Operate on the installation-wide package database"]
-  [#:bool shared ("-s") "Install user-specific packages as shared for all versions"]
-  [(#:sym #f) deps ()
+  #:once-any
+  [#:bool installation ("-i") "Install for all users of the Racket installation"]
+  [#:bool shared ("-s") "Install as user-specific but shared for all Racket versions"]
+  [#:bool user ("-u") "Install as user- and version-specific (the default)"]
+  #:once-each
+  [(#:sym mode [fail force search-ask search-auto] #f) deps ()
    ("Specify the behavior for dependencies;"
-    "options are:"
+    "valid <mode>s are:"
     "  fail: cancels the installation if dependencies are unmet"
     "        (default for most packages)"
     "  force: installs the package despite missing dependencies"
@@ -63,15 +68,19 @@
      (setup no-setup installation setup-collects)))]
  [update
   "Update packages"
-  [#:bool no-setup () ("Don't run 'raco setup' after changing packages"
+  #:once-each
+  [#:bool no-setup () ("Don't run `raco setup' after changing packages"
                        "(generally not a good idea)")]
-  [#:bool installation ("-i") "Operate on the installation-wide package database"]
-  [#:bool shared ("-s") "Operate on the user-specific all-version package database"]
+  #:once-any
+  [#:bool installation ("-i") "Update only for all users of the Racket installation"]
+  [#:bool shared ("-s") "Update only user-specific packages for all Racket versions"]
+  [#:bool user ("-u") "Update only user- and version-specific packages (the default)"]
+  #:once-each
   [#:bool all ("-a") ("Update all packages;"
                       "only if no packages are given on the command line")]
-  [(#:sym #f) deps ()
+  [(#:sym mode [fail force search-ask search-auto] #f) deps ()
    ("Specify the behavior for dependencies;"
-    "options are:"
+    "valid <mods>s are:"
     "  fail: cancels the installation if dependencies are unmet"
     "        (default for most packages)"
     "  force: installs the package despite missing dependencies"
@@ -94,10 +103,14 @@
        (setup no-setup installation setup-collects))))]
  [remove
   "Remove packages"
-  [#:bool no-setup () ("Don't run 'raco setup' after changing packages"
+  #:once-each
+  [#:bool no-setup () ("Don't run `raco setup' after changing packages"
                        "(generally not a good idea)")]
-  [#:bool installation ("-i") "Operate on the installation-wide package database"]
-  [#:bool shared ("-s") "Operate on the user-specific all-version package database"]
+  #:once-any
+  [#:bool installation ("-i") "Remove packages for all users of the Racket installation"]
+  [#:bool shared ("-s") "Remove user-specific packages for all Racket versions"]
+  [#:bool user ("-u") "Remove user- and version-specific packages (the default)"]
+  #:once-each
   [#:bool force () "Force removal of packages"]
   [#:bool auto () "Remove automatically installed packages with no dependencies"]
   #:args pkgs
@@ -111,10 +124,11 @@
      (setup no-setup installation #f)))]
  [show
   "Show information about installed packages"
-  [#:bool installation ("-i") "Show only the installation-wide package database"]
-  [#:bool shared ("-s") "Show only the user-specific all-version package database"]
-  [#:bool user ("-u") "Show only the user- and version-specific package database"]
-  [(#:str #f) version ("-v") "Show only user--specific packages for specified version"]
+  #:once-any
+  [#:bool installation ("-i") "Show only for all users of the Racket installation"]
+  [#:bool shared ("-s") "Show only user-specific for all Racket versions"]
+  [#:bool user ("-u") "Show only the user- and version-specific"]
+  [(#:str vers #f) version ("-v") "Show only user-specific for Racket <vers>"]
   #:args ()
   (define only-mode (cond
                      [installation 'i]
@@ -136,8 +150,11 @@
          (show-cmd (if only-mode "" " "))))))]
  [config
   "View and modify the package configuration"
+  #:once-any
   [#:bool installation ("-i") "Operate on the installation-wide package database"]
   [#:bool shared ("-s") "Operate on the user-specific all-version package database"]
+  [#:bool user ("-u") "Operate on the user-specific, version-specific package database"]
+  #:once-each
   [#:bool set () "Completely replace the value"]
   #:args key+vals
   (parameterize ([current-install-system-wide? installation]
@@ -147,10 +164,11 @@
      (config-cmd set key+vals)))]
  [create
   "Bundle a new package"
-  [(#:str #f) format ()
+  #:once-any
+  [(#:sym fmt [zip tgz plt] #f) format ()
    ("Select the format of the package to be created;"
-    "options are: zip (the default), tgz, plt")]
+    "valid <fmt>s are: zip (the default), tgz, plt")]
   [#:bool manifest () "Creates a manifest file for a directory, rather than an archive"]
   #:args (maybe-dir)
   (parameterize ([current-pkg-error (pkg-error 'create)])
-    (create-cmd (if manifest "MANIFEST" (or format "zip")) maybe-dir))])
+    (create-cmd (if manifest 'MANIFEST (or format 'zip)) maybe-dir))])

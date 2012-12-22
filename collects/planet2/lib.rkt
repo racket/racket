@@ -1062,7 +1062,7 @@
     (unless (directory-exists? dir)
       (pkg-error "directory does not exist\n  path: ~a" dir))
     (match create:format
-      ["MANIFEST"
+      ['MANIFEST
        (with-output-to-file
            (build-path dir "MANIFEST")
          #:exists 'replace
@@ -1079,7 +1079,7 @@
           (path->string (file-name-from-path pkg))
           ""))
        (match create:format
-         ["tgz"
+         ['tgz
           (define pkg/complete (path->complete-path pkg))
           (when (file-exists? pkg/complete)
             (delete-file pkg/complete))
@@ -1089,7 +1089,7 @@
                                       (delete-file pkg/complete))
                                     (raise exn))])
               (apply tar-gzip pkg/complete (directory-list))))]
-         ["zip"
+         ['zip
           (define pkg/complete (path->complete-path pkg))
           (when (file-exists? pkg/complete)
             (delete-file pkg/complete))
@@ -1099,7 +1099,7 @@
                                       (delete-file pkg/complete))
                                     (raise exn))])
               (apply zip pkg/complete (directory-list))))]
-         ["plt"
+         ['plt
           (define dest (path->complete-path pkg))
           (parameterize ([current-directory dir])
             (define names (filter std-filter (directory-list)))
@@ -1140,7 +1140,7 @@
    (-> boolean? list?
        void?)]
   [create-cmd
-   (-> string? path-string?
+   (-> (or/c 'zip 'tgz 'plt 'MANIFEST) path-string?
        void?)]
   [update-packages
    (->* ((listof string?))

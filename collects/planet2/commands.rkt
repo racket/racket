@@ -8,6 +8,22 @@
                      racket/syntax
                      syntax/parse))
 
+(define ((string->option what valid-options) str)
+  (define s (string->symbol str))
+  (unless (memq s valid-options)
+    (raise-user-error (string->symbol 
+                       (format "~a ~a" 
+                               (short-program+command-name)
+                               (current-svn-style-command)))
+                      "invalid <~a>: ~a\n  valid <~a>s are:~a"
+                      what
+                      str
+                      what
+                      (apply string-append
+                             (for/list ([s (in-list valid-options)])
+                               (format " ~a" s)))))
+  s)
+
 (begin-for-syntax
   (define symbol->keyword
     (compose string->keyword symbol->string))
@@ -18,11 +34,11 @@
              #:attr (arg-val 1) empty
              #:attr default #'#f
              #:attr fun #'(λ () #t)]
-    [pattern (#:sym default:expr)
-             #:attr (arg-val 1) (list #'string)
-             #:attr fun #'string->symbol]
-    [pattern (#:str default:expr)
-             #:attr (arg-val 1) (list #'string)
+    [pattern (#:sym name:id [opt:id ...] default:expr)
+             #:attr (arg-val 1) (list #'name)
+             #:attr fun #'(string->option 'name '(opt ...))]
+    [pattern (#:str name:id default:expr)
+             #:attr (arg-val 1) (list #'name)
              #:attr fun #'identity])
 
   (define-syntax-class option
@@ -50,26 +66,42 @@
                 doc
                 (set! #,arg-var (k.fun k.arg-val ...))])])
 
+  (define-syntax-class group-kind
+    [pattern #:once-any]
+    [pattern #:once-each]
+    [pattern #:multi])
+
+  (define-splicing-syntax-class option-group
+    #:attributes ((command-line 1) variable (param 1) (call 1))
+    [pattern (~seq k:group-kind o:option ...)
+             #:attr (command-line 1)
+             (syntax->list #'(k o.command-line ...))
+             #:attr variable
+             #'(begin o.variable ...)
+             #:attr (param 1)
+             (syntax->list #'(o.param ... ...))
+             #:attr (call 1)
+             (syntax->list #'(o.call ... ...))])
+
   (define-syntax-class command
     #:attributes (name function variables command-line)
-    [pattern (name:id doc:expr o:option ... #:args args body:expr ...)
+    [pattern (name:id doc:expr og:option-group ... #:args args body:expr ...)
              #:do
              [(define name-str (symbol->string (syntax->datum #'name)))]
              #:attr function
              (syntax/loc #'name
-               (define (name o.param ... ... . args)
+               (define (name og.param ... ... . args)
                  body ...))
              #:attr variables
              (syntax/loc #'name
-               (begin o.variable ...))
+               (begin og.variable ...))
              #:attr command-line
              (quasisyntax/loc #'name
                [#,name-str
                 doc doc
-                #:once-each
-                o.command-line ...
+                og.command-line ... ...
                 #:args args
-                (args-app args (name o.call ... ...))])]))
+                (args-app args (name og.call ... ...))])]))
 
 (define-syntax (args-app stx)
   (syntax-parse stx
