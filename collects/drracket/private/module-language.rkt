@@ -1567,8 +1567,8 @@
                       (new menu-item% 
                            [parent menu]
                            [label (if on?
-                                      "Disable online compilation"
-                                      "Enable online compilation")]
+                                      (string-constant disable-online-expansion)
+                                      (string-constant enable-online-expansion))]
                            [callback
                             (λ args
                               (preferences:set 'drracket:online-compilation-default-on (not on?)))])

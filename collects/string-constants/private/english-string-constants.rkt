@@ -244,7 +244,9 @@ please adhere to these guidelines:
  ;; these next two show up in the bar along the bottom of the drracket window
  (online-expansion-pending "Background expansion pending ...")
  (online-expansion-finished "Background expansion finished") ;; note: there may still be errors in this case
-  
+ ;; the next two show up in a menu when you click on the circle in the bottom right corner
+ (disable-online-expansion "Disable background expansion")
+ (enable-online-expansion "Enable background expansion")
  ;; the online expansion preferences pane
  (online-expansion "Background expansion") ;; title of prefs pane
  ; the different kinds of errors
