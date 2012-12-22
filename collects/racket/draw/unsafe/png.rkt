@@ -116,20 +116,25 @@
                                _int _int _int _int
                                -> _void))
 
+(define current-fun-keep (make-parameter #f))
+
 (define-png png_set_read_fn (_fun _png_structp
                                   _pointer
-                                  (_fun _png_structp
+                                  (_fun #:keep (lambda (v) ((current-fun-keep) v))
+                                        _png_structp
                                         _pointer
                                         _png_size_t
                                         -> _void)
                                   -> _void))
 (define-png png_set_write_fn (_fun _png_structp
                                    _pointer
-                                   (_fun _png_structp
+                                   (_fun #:keep (lambda (v) ((current-fun-keep) v))
+                                         _png_structp
                                          _pointer
                                          _png_size_t
                                          -> _void)
-                                   (_fun _png_structp
+                                   (_fun #:keep (lambda (v) ((current-fun-keep) v))
+                                         _png_structp
                                          -> _void)
                                    -> _void))
 (define-png png_get_io_ptr (_fun _png_structp -> _pointer))
@@ -205,7 +210,7 @@
 
 (define (read-png-bytes png p len)
   (let ([bstr (scheme_make_sized_byte_string p len 0)])
-    (read-bytes! bstr (ptr-ref (png_get_io_ptr png) _scheme))))
+    (read-bytes! bstr (car (ptr-ref (png_get_io_ptr png) _scheme)))))
 
 (define free-cell ((deallocator) free-immobile-cell))
 (define make-cell ((allocator free-cell) malloc-immobile-cell))
@@ -213,8 +218,11 @@
 (define (create-png-reader in keep-alpha? bg-rgb)
   (let* ([png (png_create_read_struct PNG_LIBPNG_VER_STRING #f error-esc void)]
          [info (png_create_info_struct png)]
-         [ib (make-cell in)])
-    (png_set_read_fn png ib read-png-bytes)
+         [funs (box null)]
+         [ib (make-cell (cons in funs))])
+    (parameterize ([current-fun-keep (lambda (v)
+                                       (set-box! funs (cons v (unbox funs))))])
+      (png_set_read_fn png ib read-png-bytes))
     (png_read_info png info)
     (let-values ([(w h depth color-type
                      interlace-type compression-type filter-type)
@@ -327,16 +335,19 @@
 
 (define (write-png-bytes png p len)
   (let ([bstr (scheme_make_sized_byte_string p len 0)])
-    (write-bytes bstr (ptr-ref (png_get_io_ptr png) _scheme))))
+    (write-bytes bstr (car (ptr-ref (png_get_io_ptr png) _scheme)))))
 
 (define (flush-png-bytes png)
-  (flush-output (ptr-ref (png_get_io_ptr png) _scheme)))
+  (flush-output (car (ptr-ref (png_get_io_ptr png) _scheme))))
 
 (define (create-png-writer out w h b&w? alpha?)
   (let* ([png (png_create_write_struct PNG_LIBPNG_VER_STRING #f error-esc void)]
          [info (png_create_info_struct png)]
-         [ob (make-cell out)])
-    (png_set_write_fn png ob write-png-bytes flush-png-bytes)
+         [funs (box null)]
+         [ob (make-cell (cons out funs))])
+    (parameterize ([current-fun-keep (lambda (v)
+                                       (set-box! funs (cons v (unbox funs))))])
+      (png_set_write_fn png ob write-png-bytes flush-png-bytes))
     (png_set_IHDR png info w h (if b&w? 1 8)
                   (cond
                    [b&w? PNG_COLOR_TYPE_GRAY]
