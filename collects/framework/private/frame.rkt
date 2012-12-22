@@ -253,7 +253,10 @@
 (define current-icon (make-parameter #f))
 
 (define size-pref<%>
-  (interface (basic<%>)))
+  (interface (basic<%>)
+    adjust-size-when-monitor-setup-changes?))
+
+(define-local-member-name monitor-setup-changed)
 
 (define size-pref-mixin
   (mixin (basic<%>) (size-pref<%>)
@@ -261,34 +264,65 @@
                 [position-preferences-key #f])
     (inherit is-maximized?)
     (define/override (on-size w h)
-      (cond
-        [(is-maximized?)
-         (define old (preferences:get size-preferences-key)) 
-         (preferences:set size-preferences-key (cons #t (cdr old)))]
-        [else
-         (preferences:set size-preferences-key (list #f w h))])
+      
+      ;; if the monitor state is currently fluxuating, then
+      ;; don't save preferences values, since the OS is doing
+      ;; some adjustments for us.
+      (when (or (equal? (compute-current-monitor-information)
+                        latest-monitor-information)
+                (not (adjust-size-when-monitor-setup-changes?)))
+        (define old-table (preferences:get size-preferences-key)) 
+        (define new-val
+          (cond
+            [(is-maximized?)
+             (define old (or (hash-ref old-table latest-monitor-information #f)
+                             (hash-ref old-table #f)))
+             (cons #t (cdr old))]
+            [else
+             (list #f w h)]))
+        (preferences:set size-preferences-key 
+                         (hash-set*
+                          old-table
+                          latest-monitor-information new-val
+                          #f new-val)))
       (super on-size w h))
-    
+      
     (define on-move-timer-arg-x #f)
     (define on-move-timer-arg-y #f)
     (define on-move-timer-arg-max? #f)
-    (define on-move-timer #f)
+    (define on-move-callback-running? #f)
     (define/override (on-move x y)
       (when position-preferences-key
-        (unless on-move-timer
-          (set! on-move-timer 
-                (new timer% 
-                     [notify-callback
-                      (λ () 
-                        (unless on-move-timer-arg-max?
-                          (define-values (monitor delta-x delta-y) (find-closest on-move-timer-arg-x on-move-timer-arg-y))
-                          (preferences:set position-preferences-key (list monitor delta-x delta-y))))])))
+        (unless on-move-callback-running?
+          (set! on-move-callback-running? #t)
+          (queue-callback
+           (λ () 
+             (set! on-move-callback-running? #f)
+             (unless on-move-timer-arg-max?
+               
+               ;; if the monitor state is currently fluxuating, then
+               ;; don't save preferences values, since the OS is doing
+               ;; some adjustments for us.
+               (when (or (equal? (compute-current-monitor-information)
+                                 latest-monitor-information)
+                         (not (adjust-size-when-monitor-setup-changes?)))
+                 (define-values (monitor delta-x delta-y) (find-closest on-move-timer-arg-x on-move-timer-arg-y))
+                 (define old-table (preferences:get position-preferences-key))
+                 (define val (list monitor delta-x delta-y))
+                 (preferences:set position-preferences-key
+                                  (hash-set*
+                                   old-table
+                                   latest-monitor-information val
+                                   #f val)))))
+           #f))
         (set! on-move-timer-arg-x x)
         (set! on-move-timer-arg-y y)
-        (set! on-move-timer-arg-max? (is-maximized?))
-        (send on-move-timer stop)
-        (send on-move-timer start 250 #t))
+        (set! on-move-timer-arg-max? (is-maximized?)))
       (super on-move x y))
+    
+    (define/augment (display-changed)
+      (restart-montior-information-timer)
+      (inner (void) display-changed))
     
     ;; if all of the offsets have some negative direction, then
     ;; just keep the thing relative to the original montior; otherwise
@@ -320,12 +354,16 @@
                        (* delta-y delta-y)))))
     
     (inherit maximize)
-    (let ()
-      (define-values (maximized? w h) (apply values (preferences:get size-preferences-key)))
+    (define/private (get-sizes/maximzed)
+      (define size-table (preferences:get size-preferences-key))
+      (define-values (maximized? w h) (apply values (or (hash-ref size-table latest-monitor-information #f)
+                                                        (hash-ref size-table #f))))
       (define-values (x y origin-still-visible?)
         (cond
           [position-preferences-key
-           (define-values (monitor delta-x delta-y) (apply values (preferences:get position-preferences-key)))
+           (define pos-table (preferences:get position-preferences-key))
+           (define-values (monitor delta-x delta-y) (apply values (or (hash-ref pos-table latest-monitor-information #f)
+                                                                      (hash-ref pos-table #f))))
            (define-values (l t) (get-display-left-top-inset #:monitor monitor))
            (define-values (mw mh) (get-display-size #:monitor monitor))
            (if (and l t mw mh)
@@ -353,21 +391,45 @@
                     [y 0])
            (cond
              [(zero? n)
-              (super-new)]
+              (values #f #f #f #f maximized?)]
              [(already-one-there? x y w h)
               (define-values (dw dh) (get-display-size #:monitor 0))
               (define sw (- dw w))
               (define sh (- dh h))
               (if (or (<= sw 0)
                       (<= sh 0))
-                (super-new)
+                (values #f #f #f #f maximized?)
                 (loop (- n 1) 
                       (modulo (+ x 20) (- dw w))
                       (modulo (+ y 20) (- dh h))))]
              [else
-              (super-new [width w] [height h] [x x] [y y])]))]
+              (values w h x y maximized?)]))]
         [else
-         (super-new [width w] [height h] [x x] [y y])])
+         (values w h x y maximized?)]))
+    
+    (define/public (adjust-size-when-monitor-setup-changes?) #f)
+    
+    (inherit begin-container-sequence
+             end-container-sequence
+             move
+             resize)
+    (define/public (monitor-setup-changed) 
+      (when (adjust-size-when-monitor-setup-changes?)
+        (define-values (w h x y maximized?) (get-sizes/maximzed))
+        (when (and w h x y)
+          (begin-container-sequence)
+          (move x y)
+          (resize w h)
+          (when maximized?
+            (maximize #t))
+          (end-container-sequence))))
+    
+    (let-values ([(w h x y maximized?) (get-sizes/maximzed)])
+      (cond
+        [(and w h x y)
+         (super-new [width w] [height h] [x x] [y y])]
+        [else
+         (super-new)])
       (when maximized?
         (maximize #t)))))
 
@@ -375,16 +437,64 @@
                          #:maximized? [maximized? #f]
                          #:position-preferences [position-preferences-key #f])
   (preferences:set-default size-preferences-key 
-                           (list maximized? w h)
-                           (list/c boolean?
-                                   exact-nonnegative-integer?
-                                   exact-nonnegative-integer?))
+                           (hash #f (list maximized? w h))
+                           (hash/c (or/c (listof (list/c any/c any/c any/c any/c))
+                                         #f)
+                                   (list/c boolean?
+                                           exact-nonnegative-integer?
+                                           exact-nonnegative-integer?)
+                                   #:immutable #t
+                                   #:flat? #t))
   (when position-preferences-key
     (preferences:set-default position-preferences-key 
-                             (list 0 0 0)
-                             (list/c exact-nonnegative-integer?
-                                     exact-integer?
-                                     exact-integer?))))
+                             (hash #f (list 0 0 0))
+                             (hash/c (or/c (listof (list/c any/c any/c any/c any/c))
+                                           #f)
+                                     (list/c exact-nonnegative-integer?
+                                             exact-integer?
+                                             exact-integer?)
+                                     #:immutable #t
+                                     #:flat? #t))))
+
+(define (compute-current-monitor-information)
+  (filter
+   values
+   (for/list ([m (in-range (get-display-count))])
+     (define-values (left top) (get-display-left-top-inset #:monitor m))
+     (define-values (width height) (get-display-size #:monitor m))
+     (and left top width height
+          (list left top width height)))))
+
+(define latest-monitor-information (compute-current-monitor-information))
+(define pending-monitor-information #f)
+(define montior-information-timer
+  (new timer%
+       [notify-callback
+        (λ ()
+          (define new-monitor-information (compute-current-monitor-information))
+          (cond
+            [pending-monitor-information
+             (cond
+               [(equal? pending-monitor-information new-monitor-information)
+                (set! pending-monitor-information #f)
+                (set! latest-monitor-information new-monitor-information)
+                (queue-callback
+                 (λ ()
+                   (for ([frame (in-list (get-top-level-windows))])
+                     (when (is-a? frame size-pref<%>)
+                       (send frame monitor-setup-changed)))
+                   #f))]
+               [else
+                (set! pending-monitor-information new-monitor-information)
+                (restart-montior-information-timer)])]
+            [else
+             (unless (equal? latest-monitor-information new-monitor-information)
+               (set! pending-monitor-information new-monitor-information)
+               (restart-montior-information-timer))]))]))
+(define (restart-montior-information-timer)
+  (send montior-information-timer stop)
+  (send montior-information-timer start 250 #t))
+
 
 (define register-group<%> (interface ()))
 (define register-group-mixin
