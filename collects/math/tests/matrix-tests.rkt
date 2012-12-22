@@ -20,7 +20,7 @@
         (make-array #(0 1) 0)
         (make-array #(0 0) 0)
         (make-array #(1 1 1) 0)))
-
+#|
 ;; ===================================================================================================
 ;; Literal syntax
 
@@ -796,6 +796,39 @@
 
 (for: ([a  (in-list nonmatrices)])
   (check-exn exn:fail:contract? (λ () (matrix-inverse a))))
+|#
+;; ===================================================================================================
+;; LU decomposition
+
+(let ([M  (matrix [[ 1  1  0  3]
+                   [ 2  1 -1  1]
+                   [ 3 -1 -1  2]
+                   [-1  2  3 -1]])])
+  (define-values (L V) (matrix-lu M))
+  (check-equal? L (matrix [[ 1  0 0 0]
+                           [ 2  1 0 0]
+                           [ 3  4 1 0]
+                           [-1 -3 0 1]]))
+  (check-equal? V (matrix [[1  1  0   3]
+                           [0 -1 -1  -5]
+                           [0  0  3  13]
+                           [0  0  0 -13]]))
+  (check-equal? (matrix* L V) M))
+
+(: matrix-l ((Matrix Number) -> Any))
+(define (matrix-l M)
+  (define-values (L U) (matrix-lu M))
+  L)
+
+(check-exn exn:fail? (λ () (matrix-l (matrix [[1 1 0 2]
+                                              [0 2 0 1]
+                                              [1 0 0 0]
+                                              [1 1 2 1]]))))
+
+(check-exn exn:fail:contract? (λ () (matrix-l (random-matrix 3 4))))
+(check-exn exn:fail:contract? (λ () (matrix-l (random-matrix 4 3))))
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix-l a))))
 
 #|
 ;; ===================================================================================================
@@ -877,30 +910,6 @@
                       4 4 ((inst vector Number)
                            2 4 9 11 0 0.0 2.23606797749979 2.23606797749979 
                            0 0 0.0 4.440892098500626e-16 0 0 0 0.0))))))
-    (let ()
-      (define M (list*->matrix '[[1  1  0  3]
-                                 [2  1 -1  1]
-                                 [3 -1 -1  2]
-                                 [-1  2  3 -1]]))
-      (define LU (matrix-lu M))
-      (if (eq? LU #f)
-          (list 'matrix-lu #f)
-          (let ()  
-            (define L (if (list? LU) (first LU) #f))
-            (define V (if (list? LU) (second LU) #f))
-            (list
-             'matrix-lu
-             (equal? L (list*->matrix
-                        '[[1 0 0 0]
-                          [2 1 0 0]
-                          [3 4 1 0]
-                          [-1 -3 0 1]]))
-             (equal? V (list*->matrix
-                        '[[1  1  0   3]
-                          [0 -1 -1  -5]
-                          [0  0  3  13]
-                          [0  0  0 -13]]))
-             (equal? (matrix* L V) M)))))
   #;
   (begin
     "matrix-2d.rkt"
