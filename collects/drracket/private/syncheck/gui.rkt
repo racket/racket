@@ -87,6 +87,7 @@ If the namespace does not, they are colored the unbound color.
    'drracket:check-syntax-error-report-window-percentage 
    1/10
    number-between-zero-and-one?))
+(preferences:set-default 'drracket:syncheck:show-arrows? #t boolean?)
 
 (define (syncheck-add-to-preferences-panel parent)
   (color-prefs:build-color-selection-panel parent
@@ -726,7 +727,8 @@ If the namespace does not, they are colored the unbound color.
             (define/public (syncheck:add-arrow start-text start-pos-left start-pos-right
                                                end-text end-pos-left end-pos-right
                                                actual? level)
-              (when arrow-records
+              (when (and arrow-records
+                         (preferences:get 'drracket:syncheck:show-arrows?))
                 (when (add-to-bindings-table
                        start-text start-pos-left start-pos-right
                        end-text end-pos-left end-pos-right)
@@ -738,7 +740,8 @@ If the namespace does not, they are colored the unbound color.
             
             ;; syncheck:add-tail-arrow : text number text number -> void
             (define/public (syncheck:add-tail-arrow from-text from-pos to-text to-pos)
-              (when arrow-records
+              (when (and arrow-records
+                         (preferences:get 'drracket:syncheck:show-arrows?))
                 (let ([tail-arrow (make-tail-arrow to-text to-pos from-text from-pos)])
                   (add-to-range/key from-text from-pos (+ from-pos 1) tail-arrow #f #f)
                   (add-to-range/key to-text to-pos (+ to-pos 1) tail-arrow #f #f))))

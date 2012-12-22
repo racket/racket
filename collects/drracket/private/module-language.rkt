@@ -2294,4 +2294,7 @@
        (connect-to-prefs read-choice 'drracket:online-expansion:read-in-defs-errors)
        (connect-to-prefs var-choice 'drracket:online-expansion:variable-errors)
        (connect-to-prefs other-choice 'drracket:online-expansion:other-errors)
+       (preferences:add-check parent-vp
+                              'drracket:syncheck:show-arrows?
+                              (string-constant show-arrows-on-mouseover))
        parent-vp))))
