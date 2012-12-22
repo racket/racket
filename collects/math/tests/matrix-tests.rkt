@@ -20,7 +20,7 @@
         (make-array #(0 1) 0)
         (make-array #(0 0) 0)
         (make-array #(1 1 1) 0)))
-#|
+
 ;; ===================================================================================================
 ;; Literal syntax
 
@@ -666,32 +666,136 @@
 (check-exn exn:fail:contract? (λ () (matrix-trace (col-matrix [1 2 3]))))
 (for: ([a  (in-list nonmatrices)])
   (check-exn exn:fail:contract? (λ () (matrix-trace a))))
-|#
+
 ;; ===================================================================================================
 ;; Gaussian elimination
 
-(: gauss-eliminate : (Matrix Number) Boolean Boolean -> (Matrix Number))
-(define (gauss-eliminate M reduce? partial-pivot?)
-  (let-values ([(M wp) (matrix-gauss-eliminate M reduce? partial-pivot?)])
-    M))
+(check-equal? (matrix-row-echelon (matrix [[2 4] [3 4]]) #f #f)
+              (matrix [[3 4] [0 4/3]]))
 
-(check-equal? (gauss-eliminate (matrix [[1 2] [3 4]]) #f #f)
-              (matrix [[1 2] [0 -2]]))
+(check-equal? (matrix-row-echelon (matrix [[2 4] [3 4]]) #f #t)
+              (matrix [[1 4/3] [0 1]]))
 
-(check-equal? (gauss-eliminate (matrix [[2 4] [3 4]]) #t #f)
-              (matrix [[1 2] [0 1]]))
-
-(check-equal? (gauss-eliminate (matrix [[2. 4.] [3. 4.]]) #t #t)
-              (matrix [[1. 1.3333333333333333] [0. 1.]]))
-
-(check-equal? (gauss-eliminate (matrix [[1 4] [2 4]]) #t #t)
-              (matrix [[1 2] [0 1]]))
-
-(check-equal? (gauss-eliminate (matrix [[1 2] [2 4]]) #f #t)
+(check-equal? (matrix-row-echelon (matrix [[1 2] [2 4]]) #f #f)
               (matrix [[2 4] [0 0]]))
 
+(check-equal? (matrix-row-echelon (matrix [[1 4] [2 4]]) #f #t)
+              (matrix [[1 2] [0 1]]))
+
+(check-equal? (matrix-row-echelon (matrix [[ 2  1 -1   8]
+                                           [-3 -1  2 -11]
+                                           [-2  1  2  -3]])
+                                  #f #t)
+              (matrix [[1 1/3 -2/3 11/3]
+                       [0  1   2/5 13/5]
+                       [0  0    1   -1]]))
+
+(check-equal? (matrix-row-echelon (matrix [[ 2  1 -1   8]
+                                           [-3 -1  2 -11]
+                                           [-2  1  2  -3]])
+                                  #t)
+              (matrix [[1 0 0  2]
+                       [0 1 0  3]
+                       [0 0 1 -1]]))
+
 (for: ([a  (in-list nonmatrices)])
-  (check-exn exn:fail:contract? (λ () (gauss-eliminate a #f #f))))
+  (check-exn exn:fail:contract? (λ () (matrix-row-echelon a))))
+
+(check-equal? (matrix-rank (matrix [[0 0] [0 0]])) 0)
+(check-equal? (matrix-rank (matrix [[1 0] [0 0]])) 1)
+(check-equal? (matrix-rank (matrix [[1 0] [0 3]])) 2)
+(check-equal? (matrix-rank (matrix [[1 2] [2 4]])) 1)
+(check-equal? (matrix-rank (matrix [[1 2] [3 4]])) 2)
+(check-equal? (matrix-rank (matrix [[1 2 3]])) 1)
+(check-equal? (matrix-rank (matrix [[1 2 3] [2 3 5]])) 2)
+(check-equal? (matrix-rank (matrix [[1 2 3] [2 3 5] [3 4 7]])) 2)
+(check-equal? (matrix-rank (matrix [[1 2 3] [2 3 5] [3 4 7] [4 5 9]])) 2)
+(check-equal? (matrix-rank (matrix [[1 2 3 5] [2 3 5 8]])) 2)
+(check-equal? (matrix-rank (matrix [[1 5 2 3] [2 8 3 5]])) 2)
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix-rank a))))
+
+(check-equal? (matrix-nullity (matrix [[0 0] [0 0]])) 2)
+(check-equal? (matrix-nullity (matrix [[1 0] [0 0]])) 1)
+(check-equal? (matrix-nullity (matrix [[1 0] [0 3]])) 0)
+(check-equal? (matrix-nullity (matrix [[1 2] [2 4]])) 1)
+(check-equal? (matrix-nullity (matrix [[1 2] [3 4]])) 0)
+(check-equal? (matrix-nullity (matrix [[1 2 3]])) 2)
+(check-equal? (matrix-nullity (matrix [[1 2 3] [2 3 5]])) 1)
+(check-equal? (matrix-nullity (matrix [[1 2 3] [2 3 5] [3 4 7]])) 1)
+(check-equal? (matrix-nullity (matrix [[1 2 3] [2 3 5] [3 4 7] [4 5 9]])) 1)
+(check-equal? (matrix-nullity (matrix [[1 2 3 5] [2 3 5 8]])) 2)
+(check-equal? (matrix-nullity (matrix [[1 5 2 3] [2 8 3 5]])) 2)
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix-nullity a))))
+
+;; ===================================================================================================
+;; Determinant
+
+(check-equal? (matrix-determinant (matrix [[3]])) 3)
+(check-equal? (matrix-determinant (matrix [[1 2] [3 4]])) (- (* 1 4) (* 2 3)))
+(check-equal? (matrix-determinant (matrix [[1 2 3] [4  5 6] [7 8 9]])) 0)
+(check-equal? (matrix-determinant (matrix [[1 2 3] [4 -5 6] [7 8 9]])) 120)
+(check-equal? (matrix-determinant (matrix [[1 2 3 4]
+                                           [-5 6 7 8]
+                                           [9 10 -11 12]
+                                           [13 14 15 16]]))
+              5280)
+
+(for: ([_  (in-range 100)])
+  (define a (array- (random-matrix 3 3 7) (array 3)))
+  (check-equal? (matrix-determinant/row-reduction a)
+                (matrix-determinant a)))
+
+(check-exn exn:fail:contract? (λ () (matrix-determinant (matrix [[1 2 3] [4 5 6]]))))
+(check-exn exn:fail:contract? (λ () (matrix-determinant (matrix [[1 4] [2 5] [3 6]]))))
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix-determinant a))))
+
+;; ===================================================================================================
+;; Solving linear systems
+
+(for: ([_  (in-range 100)])
+  (define M (array- (random-matrix 3 3 7) (array 3)))
+  (define B (array- (random-matrix 3 (+ 1 (random 10)) 7) (array 3)))
+  (cond [(matrix-invertible? M)
+         (define X (matrix-solve M B))
+         (check-equal? (matrix* M X) B (format "M = ~a  B = ~a" M B))]
+        [else
+         (check-false (matrix-solve M B (λ () #f))
+                      (format "M = ~a  B = ~a" M B))]))
+
+(check-exn exn:fail? (λ () (matrix-solve (random-matrix 3 4) (random-matrix 3 1))))
+(check-exn exn:fail? (λ () (matrix-solve (random-matrix 4 3) (random-matrix 4 1))))
+
+(check-exn exn:fail:contract? (λ () (matrix-solve (random-matrix 3 4) (random-matrix 4 1))))
+(check-exn exn:fail:contract? (λ () (matrix-solve (random-matrix 4 3) (random-matrix 3 1))))
+
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix-solve a (matrix [[1]]))))
+  (check-exn exn:fail:contract? (λ () (matrix-solve (matrix [[1]]) a))))
+
+;; ===================================================================================================
+;; Inversion
+
+(for: ([_  (in-range 100)])
+  (define a (array- (random-matrix 3 3 7) (array 3)))
+  (cond [(matrix-invertible? a)
+         (check-equal? (matrix* a (matrix-inverse a))
+                       (identity-matrix 3)
+                       (format "~a" a))
+         (check-equal? (matrix* (matrix-inverse a) a)
+                       (identity-matrix 3)
+                       (format "~a" a))]
+        [else
+         (check-false (matrix-inverse a (λ () #f))
+                      (format "~a" a))]))
+
+(check-exn exn:fail:contract? (λ () (matrix-inverse (random-matrix 3 4))))
+(check-exn exn:fail:contract? (λ () (matrix-inverse (random-matrix 4 3))))
+
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix-inverse a))))
 
 #|
 ;; ===================================================================================================
@@ -773,37 +877,6 @@
                       4 4 ((inst vector Number)
                            2 4 9 11 0 0.0 2.23606797749979 2.23606797749979 
                            0 0 0.0 4.440892098500626e-16 0 0 0 0.0))))))
-    (list 'matrix-solve
-          (let* ([M (list*->matrix '[[1 5] [2 3]])] 
-                 [b (list*->matrix '[[5] [5]])])
-            (equal? (matrix* M (matrix-solve M b)) b)))
-    (list 'matrix-inverse
-          (equal? (let ([M (list*->matrix '[[1 2] [3 4]])]) (matrix* M (matrix-inverse M)))
-                  (identity-matrix 2))
-          (equal? (let ([M (list*->matrix '[[1 2] [3 4]])]) (matrix* (matrix-inverse M) M))
-                  (identity-matrix 2)))
-    (list 'matrix-determinant
-          (equal? (matrix-determinant (list*->matrix '[[3]])) 3)
-          (equal? (matrix-determinant (list*->matrix '[[1 2] [3 4]])) (- (* 1 4) (* 2 3)))
-          (equal? (matrix-determinant (list*->matrix '[[1 2 3] [4  5 6] [7 8 9]])) 0)
-          (equal? (matrix-determinant (list*->matrix '[[1 2 3] [4 -5 6] [7 8 9]])) 120)
-          (equal? (matrix-determinant (list*->matrix '[[1 2 3 4]
-                                                       [-5 6 7 8]
-                                                       [9 10 -11 12]
-                                                       [13 14 15 16]]))
-                  5280))
-    (list 
-     'matrix-scale-row
-     (equal? (matrix-scale-row (identity-matrix 3) 0 2)
-             (list*->array '[[2 0 0] [0 1 0] [0 0 1]] real? )))
-    (list
-     'matrix-swap-rows
-     (equal? (matrix-swap-rows (list*->array '[[1 2 3] [4 5 6] [7 8 9]] real? ) 0 1)
-             (list*->array '[[4 5 6] [1 2 3] [7 8 9]] real? )))
-    (list
-     'matrix-add-scaled-row
-     (equal? (matrix-add-scaled-row (list*->array '[[1 2 3] [4 5 6] [7 8 9]] real? ) 0 2 1)
-             (list*->array '[[9 12 15] [4 5 6] [7 8 9]] real? )))
     (let ()
       (define M (list*->matrix '[[1  1  0  3]
                                  [2  1 -1  1]
@@ -828,39 +901,6 @@
                           [0  0  3  13]
                           [0  0  0 -13]]))
              (equal? (matrix* L V) M)))))
-    (list 
-     'matrix-rank
-     (equal? (matrix-rank (list*->matrix '[[0 0] [0 0]])) 0)
-     (equal? (matrix-rank (list*->matrix '[[1 0] [0 0]])) 1)
-     (equal? (matrix-rank (list*->matrix '[[1 0] [0 3]])) 2)
-     (equal? (matrix-rank (list*->matrix '[[1 2] [2 4]])) 1)
-     (equal? (matrix-rank (list*->matrix '[[1 2] [3 4]])) 2))
-    (list 
-     'matrix-nullity
-     (equal? (matrix-nullity (list*->matrix '[[0 0] [0 0]])) 2)
-     (equal? (matrix-nullity (list*->matrix '[[1 0] [0 0]])) 1)
-     (equal? (matrix-nullity (list*->matrix '[[1 0] [0 3]])) 0)
-     (equal? (matrix-nullity (list*->matrix '[[1 2] [2 4]])) 1)
-     (equal? (matrix-nullity (list*->matrix '[[1 2] [3 4]])) 0))
-    #;
-    (let ()
-      (define-values (c1 n1) 
-        (matrix-column+null-space (list*rix '[[0 0] [0 0]])))
-      (define-values (c2 n2) 
-        (matrix-column+null-space (list*->matrix '[[1 2] [2 4]])))
-      (define-values (c3 n3) 
-        (matrix-column+null-space (list*atrix '[[1 2] [2 5]])))
-      (list 
-       'matrix-column+null-space
-       (equal? c1 '())
-       (equal? n1 (list (list*->matrix '[[0] [0]])
-                        (list*->matrix '[[0] [0]])))
-       (equal? c2 (list (list*->matrix '[[1] [2]])))
-       ;(equal? n2 '([0 0]))
-       (equal? c3 (list (list*->matrix '[[1] [2]])
-                        (list*->matrix '[[2] [5]])))
-       (equal? n3 '()))))
-  
   #;
   (begin
     "matrix-2d.rkt"

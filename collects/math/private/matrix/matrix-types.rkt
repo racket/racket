@@ -71,9 +71,9 @@
 (: matrix-num-rows (All (A) ((Array A) -> Index)))
 (define (matrix-num-rows a)
   (cond [(matrix? a)  (vector-ref (array-shape a) 0)]
-        [else  (raise-argument-error 'matrix-col-length "matrix?" a)]))
+        [else  (raise-argument-error 'matrix-num-rows "matrix?" a)]))
 
 (: matrix-num-cols (All (A) ((Array A) -> Index)))
 (define (matrix-num-cols a)
   (cond [(matrix? a)  (vector-ref (array-shape a) 1)]
-        [else  (raise-argument-error 'matrix-row-length "matrix?" a)]))
+        [else  (raise-argument-error 'matrix-num-cols "matrix?" a)]))
