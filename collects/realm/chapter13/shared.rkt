@@ -1,8 +1,9 @@
 #lang racket
 
-#|
- the shared vocabulary and knowledge of server and client 
+;; This module describes the shared vocabulary and knowledge for the server 
+;; and client modules of the distributed Guess My Number game. 
 
+#|
  Message Formats 
  ---------------
 

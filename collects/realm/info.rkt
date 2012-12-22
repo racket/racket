@@ -4,13 +4,11 @@
 
 (define compile-omit-paths
   '(
-    "10-12"
-;    "chapter2"
     "chapter5/ufo-source.rkt"
 ;    "chapter6"
 ;    "chapter8"
 ;    "chapter10"
-    "chapter12"
+;    "chapter12"
 ;    "chapter13"
 ;    "chapter14"
     ))
