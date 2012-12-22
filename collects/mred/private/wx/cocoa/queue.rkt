@@ -141,7 +141,7 @@
 (tellv app finishLaunching)
 
 ;; ------------------------------------------------------------
-;; Create an event to post when MzScheme has been sleeping but is
+;; Create an event to post when Racket has been sleeping but is
 ;;  ready to wake up
 
 (import-class NSEvent)
@@ -162,7 +162,7 @@
 
 ;; This callback will be invoked by the CoreFoundation run loop
 ;; when data is available on `ready_sock', which is used to indicate
-;; that MzScheme would like to wake up (and posting a Cocoa event
+;; that Racket would like to wake up (and posting a Cocoa event
 ;; causes the event-getting function to unblock).
 (define (socket_callback)
   (read2 ready_sock read-buf 1)
@@ -170,7 +170,7 @@
 
 ;; ------------------------------------------------------------
 ;; Create a pipe's pair of file descriptors, used to communicate
-;; from the MzScheme-sleep thread to the CoreFoundation run loop.
+;; from the Racket-sleep thread to the CoreFoundation run loop.
 
 (define pipe2 (get-ffi-obj 'pipe #f (_fun _pointer -> _int)))
 (define write2 (get-ffi-obj 'write #f (_fun _int _pointer _long -> _long)))
@@ -409,7 +409,7 @@
    (dispatch-all-ready)))
 
 ;; ------------------------------------------------------------
-;; Install an alternate "sleep" function (in the PLT Scheme core)
+;; Install an alternate "sleep" function (in the Racket core)
 ;; that wakes up if any Cocoa event is ready.
   
 (define-mz scheme_start_sleeper_thread (_fun _fpointer _float _pointer _int -> _void))
