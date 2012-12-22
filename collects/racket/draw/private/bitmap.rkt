@@ -598,7 +598,7 @@
                      (jpeg_set_defaults c)
                      (jpeg_set_quality c quality #t)
                      (jpeg_start_compress c #t)
-                     (let-values ([(samps bstr) (create-jpeg-sample-array c (* width height 3))]
+                     (let-values ([(samps bstr) (create-jpeg-sample-array c (* width 3))]
                                   [(A R G B) (argb-indices)])
                        (cairo_surface_flush s)
                        (let* ([dest (cairo_image_surface_get_data s)]
