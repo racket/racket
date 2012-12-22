@@ -1,19 +1,26 @@
 #lang racket
 
-(require rackunit rackunit/text-ui)
+#|
+   The Guess My Number game, played at DrRacket's REPL
+   ---------------------------------------------------
+   
+   You pick a number. The program guesses the nunber, 
+   by asking you questions. Your responses are "too 
+   small" "too large" or "you uessed it". 
 
-;; Play a Guess my Number game at the REPL.
-;; Run program. 
-;; Pick a number X between <n> and <m>. 
-;; Evaluate 
-;;     (start <n> <m>)
-;; The program will respond with a number.
-;; Use
-;;     (bigger)
-;; and
-;;     (smaller)
-;; to let it know what you think of the guess.
-;; Watch how qiuckly the program guesses X. 
+   Play
+   ----
+
+   Click Run. Pick a number X between <n> and <m>. 
+   Evaluate 
+     (start <n> <m>)
+   The program will respond with a number.
+   Use
+     (bigger)
+   and
+     (smaller)
+    to let it know what you think of its guess.
+|#
 
 ;                                          
 ;                                          
@@ -101,6 +108,8 @@
 
 
 (module+ test 
+  
+  (require rackunit rackunit/text-ui)
   
   ;; basic guesses 
   

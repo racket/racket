@@ -26,10 +26,10 @@
    Finally, "n" starts a new game. 
 
 
-   Play a Orc game 
-   -----------------
+   Play
+   ----
  
-   Run program and evaluate 
+   Run and evaluate 
      (start-game)
    This will pop up a window that displays the player's vitals, the orcs and
    their basic state, and the game instructions. 

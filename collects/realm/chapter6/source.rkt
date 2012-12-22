@@ -1,6 +1,9 @@
 #lang racket
 
 #|
+   The Snake game 
+   --------------
+
    The Snake game revolves around a room filled with pieces of radioactive goo
    and a snake that can remove this goo. 
 
@@ -13,13 +16,15 @@
    the four arrow keys. When the snake gets close to a piece of goo, it eats the 
    goo and grows a new segment. If the snake runs into itself or one of the four 
    walls, the game is over. The length of the snake is the player's score. 
-|#
 
-;; Play a Snake game. 
-;; Run program and evaluate 
-;;     (start-snake)
-;; This will pop up a window with instructions for interacting with the program. 
-;; Watch how qiuckly the program guesses X. 
+   Play
+   ----
+ 
+   Run and evaluate 
+     (start-snake)
+   This will pop up a window with instructions for interacting with the program. 
+   Watch how qiuckly the program guesses X. 
+|#
 
 ;
 ;

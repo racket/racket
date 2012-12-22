@@ -1,17 +1,23 @@
 #lang racket
 
-;;  -----------------------------------------------------------------------------
-;; Play a "Guess my Number" game with a GUI.
+#|
+   The Guess My Number game, with a simple graphical user interface (GUI)
+   ----------------------------------------------------------------------
+   
+   You pick a number. The program guesses the nunber, 
+   by asking you questions. Your responses are "too 
+   small" "too large" or "you uessed it". 
 
-(require rackunit rackunit/text-ui 2htdp/image 2htdp/universe)
+   Play
+   ----
 
-;; Play a Guess my Number game at the REPL.
-;; Run program. 
-;; Pick a number X between <n> and <m>. 
-;; Evaluate 
-;;     (start <n> <m>)
-;; This will pop up a window with instructions for interacting with the program. 
-;; Watch how qiuckly the program guesses X. 
+   Click Run. Pick a number X between <n> and <m>. 
+   Evaluate 
+     (start <n> <m>)
+   This will pop up a window with instructions for interacting with the program. 
+|#
+
+(require 2htdp/image 2htdp/universe)
 
 ;                              
 ;                              
@@ -189,6 +195,8 @@
 ;                                     
 
 (module+ test
+  
+  (require rackunit rackunit/text-ui)
   
   ;; testing the 'model' functions for basic guesses 
   
