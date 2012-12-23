@@ -78,33 +78,35 @@
 (define unmult-table #f)
 
 (define (get-mult-table)
-  (unless mult-table
-    (set! mult-table (make-bytes (* 256 256)))
-    (for ([a (in-range 256)])
-      (for ([v (in-range 256)])
-        (bytes-set! mult-table
-                    (fx+ (fx* a 256) v)
-                    (unsafe-fl->fx
-                     (unsafe-flround
-                      (unsafe-fl/
-                       (unsafe-fx->fl (fx* a v))
-                       255.0)))))))
+  (atomically
+   (unless mult-table
+     (set! mult-table (make-bytes (* 256 256)))
+     (for ([a (in-range 256)])
+       (for ([v (in-range 256)])
+         (bytes-set! mult-table
+                     (fx+ (fx* a 256) v)
+                     (unsafe-fl->fx
+                      (unsafe-flround
+                       (unsafe-fl/
+                        (unsafe-fx->fl (fx* a v))
+                        255.0))))))))
   mult-table)
 
 (define (get-unmult-table)
-  (unless unmult-table
-    (set! unmult-table (make-bytes (* 256 256)))
-    (for ([a (in-range 256)])
-      (for ([v (in-range 256)])
-        (bytes-set! unmult-table
-                    (fx+ (fx* a 256) v)
-                    (if (unsafe-fx<= a v)
-                        255
-                        (unsafe-fl->fx
-                         (unsafe-flround
-                          (unsafe-fl/
-                           (unsafe-fx->fl (fx* 255 v))
-                           (unsafe-fx->fl a)))))))))
+  (atomically
+   (unless unmult-table
+     (set! unmult-table (make-bytes (* 256 256)))
+     (for ([a (in-range 256)])
+       (for ([v (in-range 256)])
+         (bytes-set! unmult-table
+                     (fx+ (fx* a 256) v)
+                     (if (unsafe-fx<= a v)
+                         255
+                         (unsafe-fl->fx
+                          (unsafe-flround
+                           (unsafe-fl/
+                            (unsafe-fx->fl (fx* 255 v))
+                            (unsafe-fx->fl a))))))))))
   unmult-table)
 
 (define (alpha-mult al v)
