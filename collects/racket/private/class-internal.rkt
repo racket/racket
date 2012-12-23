@@ -3760,7 +3760,7 @@ An example
     (make-struct-type name type 0 0 #f props insp))
   make-)
 
-(define object<%> ((make-naming-constructor struct:interface 'interface:object% "interface")
+(define object<%> ((make-naming-constructor struct:interface 'interface:object% #f)
                    'object% null #f null (make-immutable-hash) #f null))
 (setup-all-implemented! object<%>)
 (define object% ((make-naming-constructor struct:class 'object% "class")
