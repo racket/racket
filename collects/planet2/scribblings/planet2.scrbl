@@ -229,8 +229,9 @@ sub-sub-commands:
  @item{@DFlag{no-setup} --- Does not run @exec{raco setup} after installation. This behavior is also the case if the
        environment variable @envvar{PLT_PLANET2_NOSETUP} is set to any non-empty value.}
 
- @item{@DFlag{installation} or @Flag{i} --- Install system-wide, rather than user-local.}
- @item{@DFlag{shared} or @Flag{s} --- Install for all Racket versions, rather than user-local and version-specific.}
+ @item{@DFlag{installation} or @Flag{i} --- Install packages for all users of a Racket installation, rather than user-specific.}
+ @item{@DFlag{shared} or @Flag{s} --- Install packages as user-specific, but for all Racket versions.}
+ @item{@DFlag{user} or @Flag{u} --- Install packages as user-specific and Racket version-specific (the default).}
 
  @item{@DFlag{deps} @nonterm{behavior} --- Selects the behavior for dependencies, where @nonterm{behavior} is one of
   @itemlist[
@@ -262,6 +263,7 @@ the following @nonterm{option}s:
  @item{@DFlag{no-setup} --- Same as for @exec{install}.}
  @item{@DFlag{installation} or @Flag{i} --- Same as for @exec{install}.}
  @item{@DFlag{shared} or @Flag{s} --- Same as for @exec{install}.}
+ @item{@DFlag{user} or @Flag{u} --- Same as for @exec{install} (the default).}
  @item{@DFlag{deps} @nonterm{behavior} --- Same as for @exec{install}.}
  @item{@DFlag{all} or @Flag{a} --- Update all packages, if no packages are given in the argument list.}
  @item{@DFlag{update-deps} --- Checks the named packages, and their dependencies (transitively) for updates.}
@@ -276,6 +278,7 @@ listed, this command fails atomically. It accepts the following @nonterm{option}
  @item{@DFlag{no-setup} --- Same as for @exec{install}.}
  @item{@DFlag{installation} or @Flag{i} --- Same as for @exec{install}.}
  @item{@DFlag{shared} or @Flag{s} --- Same as for @exec{install}.}
+ @item{@DFlag{user} or @Flag{u} --- Same as for @exec{install} (the default).}
  @item{@DFlag{force} --- Ignore dependencies when removing packages.}
  @item{@DFlag{auto} --- Remove packages that were installed by the @exec{search-auto} or @exec{search-ask}
                         dependency behavior and are no longer required.}
@@ -289,8 +292,9 @@ listed, this command fails atomically. It accepts the following @nonterm{option}
 
  @itemlist[
  @item{@DFlag{installation} or @Flag{i} --- Show only installation-wide packages.}
- @item{@DFlag{user} or @Flag{u} --- Show only user-specific, version-specific packages.}
  @item{@DFlag{shared} or @Flag{s} --- Show only user-specific, all-version packages.}
+ @item{@DFlag{user} or @Flag{u} --- Show only user-specific, version-specific packages.}
+ @item{@DFlag{version} @nonterm{vers} or @Flag{v} @nonterm{vers} --- Show only user-specific packages for Racket version @nonterm{vers}.}
  ]
 }
 
@@ -300,6 +304,7 @@ View and modify package configuration options. It accepts the following @nonterm
  @itemlist[
  @item{@DFlag{installation} or @Flag{i} --- Same as for @exec{install}.}
  @item{@DFlag{shared} or @Flag{s} --- Same as for @exec{install}.}
+ @item{@DFlag{user} or @Flag{u} --- Same as for @exec{install} (the default).}
  @item{@DFlag{set} --- Sets an option, rather than printing it.}
  ]
 
@@ -327,9 +332,8 @@ View and modify package configuration options. It accepts the following @nonterm
 
 The @racketmodname[planet2] module provides a programmatic interface
 to the command sub-sub-commands. Each long form option is keyword
-argument. An argument corresponding to @DFlag{type} or @DFlag{deps}
-accepts its argument as a symbol, and @DFlag{format} accepts its
-argument as a string. All other options accept booleans, where
+argument. An argument corresponding to @DFlag{type}, @DFlag{deps}, or @DFlag{format}
+accepts its argument as a symbol. All other options accept booleans, where
 @racket[#t] is equivalent to the presence of the option.
 
 @deftogether[

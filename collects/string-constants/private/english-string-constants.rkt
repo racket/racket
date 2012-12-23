@@ -241,10 +241,12 @@ please adhere to these guidelines:
   
  (jump-to-error "Jump to Error")
  (online-expansion-is-disabled "Background expansion is disabled")
- ;; these next two show up in the bar along the bottom of the drracket window
+ ; these next two show up in the bar along the bottom of the drracket window
  (online-expansion-pending "Background expansion pending ...")
  (online-expansion-finished "Background expansion finished") ;; note: there may still be errors in this case
-  
+ ; the next two show up in a menu when you click on the circle in the bottom right corner
+ (disable-online-expansion "Disable background expansion")
+ (enable-online-expansion "Enable background expansion")
  ;; the online expansion preferences pane
  (online-expansion "Background expansion") ;; title of prefs pane
  ; the different kinds of errors
@@ -254,6 +256,8 @@ please adhere to these guidelines:
  ; locations the errors can be shown
  (online-expansion-error-gold-highlight "with gold highlighting")
  (online-expansion-error-margin "in the margin")
+ ; the label of a preference in the (string-constant online-expansion) section
+ (show-arrows-on-mouseover "Show binding and tail-position arrows on mouseover")
  ;;; info bar at botttom of drscheme frame
  (collect-button-label "GC")
   (read-only "Read only")

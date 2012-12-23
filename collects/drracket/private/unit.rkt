@@ -4499,6 +4499,7 @@ module browser threading seems wrong.
       (update-save-message)
       (update-save-button)
       (language-changed)
+      (set-delegated-text definitions-text)
       
       (cond
         [filename

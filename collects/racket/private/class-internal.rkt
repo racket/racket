@@ -2074,8 +2074,8 @@
                    (let ([s (class-name super)])
                      (and s 
                           (not (eq? super object%))
-                          (if (symbol? s)
-                              (format "derived-from-~a" s)
+                          (if (symbol? s) ;; how can 's' not be a symbol at this point?
+                              (string->symbol (format "derived-from-~a" s))
                               s))))]
          ;; Combine method lists
          [public-names (append pubment-names public-final-names public-normal-names abstract-names)]
@@ -2212,14 +2212,13 @@
           
           ;; ---- Make the class and its interface ----
           (let* ([class-make (if name
-                                 (make-naming-constructor 
-                                  struct:class
-                                  (string->symbol (format "class:~a" name)))
+                                 (make-naming-constructor struct:class name "class")
                                  make-class)]
                  [interface-make (if name
                                      (make-naming-constructor 
                                       struct:interface
-                                      (string->symbol (format "interface:~a" name)))
+                                      (string->symbol (format "interface:~a" name))
+                                      #f)
                                      make-interface)]
                  [method-names (append (reverse public-names) super-method-ids)]
                  [field-names (append public-field-names super-field-ids)]
@@ -2904,9 +2903,7 @@ An example
                              (hash-copy (class-field-ht cls)))]
                [init (class-init cls)]
                [class-make (if name
-                               (make-naming-constructor 
-                                struct:class
-                                (string->symbol (format "class:~a" name)))
+                               (make-naming-constructor struct:class name "class")
                                make-class)]
                [c (class-make name
                               pos
@@ -3692,9 +3689,9 @@ An example
       ;; Check for [conflicting] implementation requirements
       (let ([class (get-implement-requirement supers 'interface #:intf-name name)]
             [interface-make (if name
-                                (make-naming-constructor 
-                                 struct:interface
-                                 (string->symbol (format "interface:~a" name)))
+                                (make-naming-constructor struct:interface 
+                                                         name
+                                                         "interface")
                                 make-interface)])
         ;; Add supervars to table:
         (for-each
@@ -3750,15 +3747,23 @@ An example
 ;;  object%
 ;;--------------------------------------------------------------------
 
-(define (make-naming-constructor type name)
-  (let-values ([(struct: make- ? -accessor -mutator)
-                (make-struct-type name type 0 0 #f null insp)])
-    make-))
+(define (make-naming-constructor type name prefix)
+  (define (writeer obj port mode)
+    (write-string "#<" port)
+    (when prefix
+      (write-string prefix port)
+      (write-string ":" port))
+    (write-string (symbol->string name) port)
+    (write-string ">" port))
+  (define props (list (cons prop:custom-write writeer)))
+  (define-values (struct: make- ? -accessor -mutator)
+    (make-struct-type name type 0 0 #f props insp))
+  make-)
 
-(define object<%> ((make-naming-constructor struct:interface 'interface:object%)
+(define object<%> ((make-naming-constructor struct:interface 'interface:object% "interface")
                    'object% null #f null (make-immutable-hash) #f null))
 (setup-all-implemented! object<%>)
-(define object% ((make-naming-constructor struct:class 'class:object%)
+(define object% ((make-naming-constructor struct:class 'object% "class")
                  'object%
                  0 (vector #f) 
                  object<%>
@@ -3904,9 +3909,7 @@ An example
                 [field-pub-width (class-field-pub-width cls)]
                 [field-ht (class-field-ht cls)]
                 [class-make (if name
-                                (make-naming-constructor
-                                 struct:class
-                                 (string->symbol (format "class:~a" name)))
+                                (make-naming-constructor struct:class name "class")
                                 make-class)]
                 [c (class-make name
                                (class-pos cls)
@@ -4856,9 +4859,7 @@ An example
                        (class-field-ht cls)
                        (hash-copy (class-field-ht cls)))]
          [class-make (if name
-                         (make-naming-constructor 
-                          struct:class
-                          (string->symbol (format "class:~a" name)))
+                         (make-naming-constructor struct:class name "class")
                          make-class)]
          [c (class-make name
                         (class-pos cls)

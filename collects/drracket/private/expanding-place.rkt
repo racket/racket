@@ -137,9 +137,25 @@
            (define io-sema (make-semaphore 0))
            (when log-io?
              (thread (λ () (catch-and-log in io-sema))))
+           (define original-path (make-parameter #f))
+           (define loaded-paths '())
            (define expanded 
              (parameterize ([current-output-port out]
-                            [current-error-port out])
+                            [current-error-port out]
+                            [current-load/use-compiled
+                             (let ([ol (current-load/use-compiled)])
+                               (λ (path mod-name)
+                                 (parameterize ([original-path path])
+                                   (ol path mod-name))))]
+                            [current-load
+                             (let ([cl (current-load)])
+                               (λ (path mod-name)
+                                 (set! loaded-paths
+                                       (cons (or (current-module-declare-source)
+                                                 (original-path)
+                                                 path)
+                                             loaded-paths))
+                                 (cl path mod-name)))])
                (expand transformed-stx)))
            (when log-io?
              (close-output-port out)
@@ -162,7 +178,7 @@
               (λ ()
                 (stop-watching-abnormal-termination)
                 (semaphore-post sema)
-                (channel-put result-chan handler-results))))
+                (channel-put result-chan (list handler-results loaded-paths)))))
            (semaphore-wait sema)
            (ep-log-info "expanding-place.rkt: 12 finished"))))))
   
@@ -197,8 +213,10 @@
                   '()))))
       (handle-evt
        result-chan
-       (λ (val)
-         (place-channel-put response-pc (vector 'handler-results val))))
+       (λ (val+loaded-files)
+         (place-channel-put response-pc (vector 'handler-results 
+                                                (list-ref val+loaded-files 0)
+                                                (list-ref val+loaded-files 1)))))
       (handle-evt
        exn-chan
        (λ (exn)

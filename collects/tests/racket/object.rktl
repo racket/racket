@@ -1576,10 +1576,35 @@
   (test-call supercall-tail-method))
 
 ;; ----------------------------------------
-;; Private field names
+;; names
 
 (let ([c% (class object% (define foo (lambda () 10)) (define/public (get) foo) (super-new))])
   (test 'foo object-name (send (new c%) get)))
+
+(let ([w-s (λ (x) 
+             (define sp (open-output-string))
+             (write x sp)
+             (get-output-string sp))])
+  
+  (test 'object% object-name object%)
+  (test "#<class:object%>" w-s object%)
+  
+  (test 'c% object-name (let ([c% (class object% (super-new))]) c%))
+  (test "#<class:c%>" w-s (let ([c% (class object% (super-new))]) c%))
+  
+  (test 'i<%> object-name (let ([i<%> (interface ())]) i<%>))
+  (test "#<interface:i<%>>" w-s (let ([i<%> (interface ())]) i<%>))
+  
+  (test 'interface:object% object-name (class->interface object%))
+  (test "#<interface:object%>" w-s (class->interface object%))
+  
+  (test 'interface:c% object-name (let ([c% (class object% (super-new))])
+                                    (class->interface c%)))
+  (test "#<interface:c%>" w-s (let ([c% (class object% (super-new))])
+                                (class->interface c%)))
+
+)
+
 
 ;; ----------------------------------------
 ;; Implementing printable<%>

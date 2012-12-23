@@ -390,9 +390,9 @@ the state transitions / contracts are:
          (proc main)
          main))))
   
-  ;; make-check : panel symbol string (boolean -> any) (any -> boolean)
+  ;; add-check : panel symbol string (boolean -> any) (any -> boolean) -> void
   ;; adds a check box preference to `main'.
-  (define (make-check main pref title bool->pref pref->bool)
+  (define (add-check main pref title [bool->pref values] [pref->bool values])
     (let* ([callback
             (λ (check-box _)
               (preferences:set pref (bool->pref (send check-box get-value))))]
@@ -403,7 +403,8 @@ the state transitions / contracts are:
       (preferences:add-callback
        pref
        (λ (p v)
-         (send c set-value (pref->bool v))))))
+         (send c set-value (pref->bool v))))
+      (void)))
   
   (define (make-recent-items-slider parent)
     (let ([slider (instantiate slider% ()
@@ -429,22 +430,22 @@ the state transitions / contracts are:
                   (string-constant editor-prefs-panel-label) 
                   (string-constant scheme-prefs-panel-label))
                  (λ (scheme-panel)
-                   (make-check scheme-panel
-                               'framework:highlight-parens
-                               (string-constant highlight-parens)
-                               values values)
-                   (make-check scheme-panel
-                               'framework:fixup-parens
-                               (string-constant fixup-close-parens)
-                               values values)
-                   (make-check scheme-panel
-                               'framework:fixup-open-parens
-                               (string-constant fixup-open-brackets)
-                               values values)
-                   (make-check scheme-panel
-                               'framework:paren-match
-                               (string-constant flash-paren-match)
-                               values values)
+                   (add-check scheme-panel
+                              'framework:highlight-parens
+                              (string-constant highlight-parens)
+                              values values)
+                   (add-check scheme-panel
+                              'framework:fixup-parens
+                              (string-constant fixup-close-parens)
+                              values values)
+                   (add-check scheme-panel
+                              'framework:fixup-open-parens
+                              (string-constant fixup-open-brackets)
+                              values values)
+                   (add-check scheme-panel
+                              'framework:paren-match
+                              (string-constant flash-paren-match)
+                              values values)
                    (scheme-panel-procs scheme-panel))))])
       (add-scheme-checkbox-panel)))
   
@@ -456,53 +457,43 @@ the state transitions / contracts are:
                  (list (string-constant editor-prefs-panel-label) 
                        (string-constant general-prefs-panel-label))
                  (λ (editor-panel)
-                   (make-check editor-panel 'framework:delete-forward? (string-constant map-delete-to-backspace)
-                               not not)
-                   (make-check editor-panel 
-                               'framework:auto-set-wrap?
-                               (string-constant wrap-words-in-editor-buffers)
-                               values values)
+                   (add-check editor-panel 'framework:delete-forward? (string-constant map-delete-to-backspace)
+                              not not)
+                   (add-check editor-panel 
+                              'framework:auto-set-wrap?
+                              (string-constant wrap-words-in-editor-buffers))
                    
-                   (make-check editor-panel 
-                               'framework:menu-bindings
-                               (string-constant enable-keybindings-in-menus)
-                               values values)
+                   (add-check editor-panel 
+                              'framework:menu-bindings
+                              (string-constant enable-keybindings-in-menus))
                    (when (memq (system-type) '(macosx))
-                     (make-check editor-panel 
-                                 'framework:special-meta-key
-                                 (string-constant command-as-meta)
-                                 values values))
+                     (add-check editor-panel 
+                                'framework:special-meta-key
+                                (string-constant command-as-meta)))
                    
-                   (make-check editor-panel 
-                               'framework:coloring-active
-                               (string-constant online-coloring-active)
-                               values values)
+                   (add-check editor-panel 
+                              'framework:coloring-active
+                              (string-constant online-coloring-active))
                    
-                   (make-check editor-panel
+                   (add-check editor-panel
                                'framework:anchored-search
-                               (string-constant find-anchor-based)
-                               values values)
-                   (make-check editor-panel
-                               'framework:do-paste-normalization
-                               (string-constant normalize-string-preference)
-                               values values)
-                   (make-check editor-panel
+                               (string-constant find-anchor-based))
+                   (add-check editor-panel
+                              'framework:do-paste-normalization
+                              (string-constant normalize-string-preference))
+                   (add-check editor-panel
                                'framework:overwrite-mode-keybindings
-                               (string-constant enable-overwrite-mode-keybindings)
-                               values values)
-                   (make-check editor-panel
+                               (string-constant enable-overwrite-mode-keybindings))
+                   (add-check editor-panel
                                'framework:automatic-parens
-                               (string-constant enable-automatic-parens)
-                               values values)
+                               (string-constant enable-automatic-parens))
                    (when (eq? (system-type) 'windows)
-                     (make-check editor-panel
+                     (add-check editor-panel
                                  'framework:always-use-platform-specific-linefeed-convention
-                                 (string-constant always-use-platform-specific-linefeed-convention)
-                                 values values))
-                   (make-check editor-panel
-                               'framework:line-spacing-add-gap?
-                               (string-constant add-spacing-between-lines)
-                               values values)
+                                 (string-constant always-use-platform-specific-linefeed-convention)))
+                   (add-check editor-panel
+                              'framework:line-spacing-add-gap?
+                              (string-constant add-spacing-between-lines))
                    (editor-panel-procs editor-panel))))])
       (add-editor-checkbox-panel)))
   
@@ -514,19 +505,17 @@ the state transitions / contracts are:
                  (list (string-constant general-prefs-panel-label))
                  (λ (editor-panel)
                    (make-recent-items-slider editor-panel)
-                   (make-check editor-panel
-                               'framework:autosaving-on? 
-                               (string-constant auto-save-files)
-                               values values)
-                   (make-check editor-panel 'framework:backup-files? (string-constant backup-files) values values)
-                   (make-check editor-panel 'framework:show-status-line (string-constant show-status-line) values values)
+                   (add-check editor-panel
+                              'framework:autosaving-on? 
+                              (string-constant auto-save-files))
+                   (add-check editor-panel 'framework:backup-files? (string-constant backup-files))
+                   (add-check editor-panel 'framework:show-status-line (string-constant show-status-line))
                    ;; does this not belong here?
-                   ;; (make-check editor-panel 'drracket:show-line-numbers (string-constant show-line-numbers)
-                   (make-check editor-panel 'framework:col-offsets (string-constant count-columns-from-one) values values)
-                   (make-check editor-panel 
-                               'framework:display-line-numbers
-                               (string-constant display-line-numbers)
-                               values values)
+                   ;; (add-check editor-panel 'drracket:show-line-numbers (string-constant show-line-numbers)
+                   (add-check editor-panel 'framework:col-offsets (string-constant count-columns-from-one))
+                   (add-check editor-panel 
+                              'framework:display-line-numbers
+                              (string-constant display-line-numbers))
                    (define print-rb (new radio-box% 
                                          [label (string-constant printing-mode)]
                                          [parent editor-panel]
@@ -557,18 +546,15 @@ the state transitions / contracts are:
                 (add-checkbox-panel
                  (string-constant warnings-prefs-panel-label)
                  (λ (warnings-panel)
-                   (make-check warnings-panel 
-                               'framework:verify-change-format 
-                               (string-constant ask-before-changing-format)
-                               values values)
-                   (make-check warnings-panel 
-                               'framework:verify-exit
-                               (string-constant verify-exit)
-                               values values)
-                   (make-check warnings-panel
-                               'framework:ask-about-paste-normalization
-                               (string-constant ask-about-normalizing-strings)
-                               values values)
+                   (add-check warnings-panel 
+                              'framework:verify-change-format 
+                              (string-constant ask-before-changing-format))
+                   (add-check warnings-panel 
+                              'framework:verify-exit
+                              (string-constant verify-exit))
+                   (add-check warnings-panel
+                              'framework:ask-about-paste-normalization
+                              (string-constant ask-about-normalizing-strings))
                    (warnings-panel-procs warnings-panel))))])
       (add-warnings-checkbox-panel)))
   

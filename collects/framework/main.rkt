@@ -363,6 +363,25 @@
     them return @racket[#f], the dialog is not closed.
     
     See also @racket[preferences:add-on-close-dialog-callback].})
+ 
+ (proc-doc/names
+  preferences:add-check
+  (->* ((is-a?/c area-container<%>) symbol? string?)
+       ((-> boolean? any/c)
+        (-> any/c boolean?))
+       void?)
+  ((parent pref-key label) ((from-boolean values) (to-boolean values)))
+  @{Adds a @racket[radio-box%] object (with @racket[label] as its label)
+    to @racket[parent] that, when checked
+    adjusts the preference with the key @racket[pref-key].
+    
+    The @racket[to-boolean] and @racket[from-boolean] functions
+    are used to convert from the preferences value to a booleans
+    when checking/unchecking the @racket[radio-box%] object. 
+    The defaults amount to treating the preference as a boolean such
+    that checking the @racket[radio-box%] sets the preference to
+    @racket[#t] and unchecking it sets the preference to @racket[#f].
+    })
 
  (proc-doc/names
   autosave:register

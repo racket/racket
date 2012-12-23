@@ -31,6 +31,8 @@
   (make-parameter #f))
 (define current-install-version-specific?
   (make-parameter #t))
+(define current-show-version
+  (make-parameter (version)))
 (define current-pkg-error
   (make-parameter (lambda args (apply error 'pkg args))))
 
@@ -101,7 +103,7 @@
   (build-path (cond
                [(current-install-system-wide?) (find-lib-dir)]
                [(current-install-version-specific?)
-                (build-path (find-system-path 'addon-dir) (version))]
+                (build-path (find-system-path 'addon-dir) (current-show-version))]
                [else
                 (find-system-path 'addon-dir)])
               "pkgs"))
@@ -1014,19 +1016,21 @@
   (let ()
     (define db (read-pkg-db))
     (define pkgs (sort (hash-keys db) string-ci<=?))
-    (table-display
-     (list*
-      (list (format "~aPackage(auto?)" indent) "Checksum" "Source")
-      (for/list ([pkg (in-list pkgs)])
-        (match-define (pkg-info orig-pkg checksum auto?) (hash-ref db pkg))
-        (list (format "~a~a~a"
-                      indent
-                      pkg
-                      (if auto?
-                        "*"
-                        ""))
-              (format "~a" checksum)
-              (format "~a" orig-pkg)))))))
+    (if (null? pkgs)
+        (printf " [none]\n")
+        (table-display
+         (list*
+          (list (format "~aPackage[*=auto]" indent) "Checksum" "Source")
+          (for/list ([pkg (in-list pkgs)])
+            (match-define (pkg-info orig-pkg checksum auto?) (hash-ref db pkg))
+            (list (format "~a~a~a"
+                          indent
+                          pkg
+                          (if auto?
+                              "*"
+                              ""))
+                  (format "~a" checksum)
+                  (format "~a" orig-pkg))))))))
 
 (define (config-cmd config:set key+vals)
   (cond
@@ -1058,7 +1062,7 @@
     (unless (directory-exists? dir)
       (pkg-error "directory does not exist\n  path: ~a" dir))
     (match create:format
-      ["MANIFEST"
+      ['MANIFEST
        (with-output-to-file
            (build-path dir "MANIFEST")
          #:exists 'replace
@@ -1075,7 +1079,7 @@
           (path->string (file-name-from-path pkg))
           ""))
        (match create:format
-         ["tgz"
+         ['tgz
           (define pkg/complete (path->complete-path pkg))
           (when (file-exists? pkg/complete)
             (delete-file pkg/complete))
@@ -1085,7 +1089,7 @@
                                       (delete-file pkg/complete))
                                     (raise exn))])
               (apply tar-gzip pkg/complete (directory-list))))]
-         ["zip"
+         ['zip
           (define pkg/complete (path->complete-path pkg))
           (when (file-exists? pkg/complete)
             (delete-file pkg/complete))
@@ -1095,7 +1099,7 @@
                                       (delete-file pkg/complete))
                                     (raise exn))])
               (apply zip pkg/complete (directory-list))))]
-         ["plt"
+         ['plt
           (define dest (path->complete-path pkg))
           (parameterize ([current-directory dir])
             (define names (filter std-filter (directory-list)))
@@ -1122,6 +1126,8 @@
    (parameter/c boolean?)]
   [current-install-version-specific?
    (parameter/c boolean?)]
+  [current-show-version
+   (parameter/c string?)]
   [current-pkg-error 
    (parameter/c procedure?)]
   [pkg-desc 
@@ -1134,7 +1140,7 @@
    (-> boolean? list?
        void?)]
   [create-cmd
-   (-> string? path-string?
+   (-> (or/c 'zip 'tgz 'plt 'MANIFEST) path-string?
        void?)]
   [update-packages
    (->* ((listof string?))
