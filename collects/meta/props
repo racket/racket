@@ -899,6 +899,7 @@ path/s is either such a string or a list of them.
 "collects/raco/raco.rkt" drdr:command-line #f
 "collects/reader" responsible (mflatt)
 "collects/readline" responsible (mflatt)
+"collects/realm" responsible (matthias)
 "collects/redex" responsible (clklein robby)
 "collects/redex/examples/arithmetic.rkt" drdr:command-line (racket * "--no-print")
 "collects/redex/examples/church.rkt" drdr:command-line (mzc *)
