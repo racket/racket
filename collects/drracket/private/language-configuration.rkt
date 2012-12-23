@@ -425,15 +425,18 @@
                  (define-values (ex ey) (send (get-editor) dc-location-to-editor-location
                                               (send evt get-x) 
                                               (send evt get-y)))
-                 (set!-values (hieritem-language-to-show-in-tooltip
-                               hieritem-tooltip-x
-                               hieritem-tooltip-y
-                               hieritem-tooltip-w
-                               hieritem-tooltip-h)
-                              (find-snip ex ey))
-                 (when tooltip-frame (send tooltip-frame show #f))
-                 (send tooltip-timer stop)
-                 (when hieritem-language-to-show-in-tooltip (send tooltip-timer start 200 #t))]
+                 (define-values (_to-show-in-tooltip _x _y _w _h)
+                   (find-snip ex ey))
+                 (unless (equal? _to-show-in-tooltip
+                                 hieritem-language-to-show-in-tooltip)
+                   (set! hieritem-language-to-show-in-tooltip _to-show-in-tooltip)
+                   (set! hieritem-tooltip-x _x)
+                   (set! hieritem-tooltip-y _y)
+                   (set! hieritem-tooltip-w _w)
+                   (set! hieritem-tooltip-h _h)
+                   (when tooltip-frame (send tooltip-frame show #f))
+                   (send tooltip-timer stop)
+                   (when hieritem-language-to-show-in-tooltip (send tooltip-timer start 200 #t)))]
                 [(send evt leaving?)
                  (set! hieritem-language-to-show-in-tooltip #f)
                  (send tooltip-timer stop)]))
@@ -495,13 +498,7 @@
                   (send tooltip-frame set-tooltip (list msg))
                   (send tooltip-frame show-over 
                         (+ hieritem-tooltip-x hieritem-tooltip-w 4)
-                        
-                        ;; why do I have to subtract here...?
-                        ;; that's definitely wrong. Something else
-                        ;; must be wrong earlier to get these bad
-                        ;; coordinates
-                        (- hieritem-tooltip-y hieritem-tooltip-h)
-                        
+                        hieritem-tooltip-y
                         0 
                         0))))
                  
