@@ -465,8 +465,10 @@
                       (define-values (x y) (client->screen
                                             (inexact->exact (round (unbox bl)))
                                             (inexact->exact (round (unbox bt)))))
+                      (define-values (dl dt) (get-display-left-top-inset))
                       (values (send snip get-item)
-                              x y
+                              (- x dl)
+                              (- y dt)
                               (inexact->exact (round w))
                               (inexact->exact (round h)))]
                      [(is-a? snip editor-snip%)
