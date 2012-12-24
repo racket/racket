@@ -3882,6 +3882,7 @@ designates the character that triggers autocompletion
   (mixin ((class->interface text%) editor:standard-style-list<%>) (line-numbers<%>)
     (inherit begin-edit-sequence
              end-edit-sequence
+             in-edit-sequence?
              get-visible-line-range
              get-visible-position-range
              last-line
@@ -3907,6 +3908,8 @@ designates the character that triggers autocompletion
     ;; only two values should be 'left or 'right
     (init-field [alignment 'right])
 
+    (define need-to-setup-padding? #f)
+    
     (define/private (number-space)
       (number->string (max (* 10 (add1 (last-line))) 100)))
     ;; add an extra 0 so it looks nice
@@ -4064,13 +4067,23 @@ designates the character that triggers autocompletion
     (define/augment (after-insert start length)
       (inner (void) after-insert start length)
       ; in case the max line number changed:
-      (setup-padding))
+      (if (in-edit-sequence?)
+          (set! need-to-setup-padding? #t)
+          (setup-padding)))
 
     (define/augment (after-delete start length)
       (inner (void) after-delete start length)
       ; in case the max line number changed:
-      (setup-padding))
+      (if (in-edit-sequence?)
+          (set! need-to-setup-padding? #t)
+          (setup-padding)))
 
+    (define/augment (after-edit-sequence)
+      (when need-to-setup-padding?
+        (set! need-to-setup-padding? #f)
+        (setup-padding))
+      (inner (void) after-edit-sequence))
+    
     (define/private (draw-numbers dc top bottom dx dy start-line end-line)
       (define last-paragraph #f)
       (define insertion-para
