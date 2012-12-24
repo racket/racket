@@ -1741,5 +1741,17 @@
 (test #t dynamic-require ''use-rename-checker 'v)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check `let` error messages
+
+(syntax-test #'(let*) #rx"missing binding")
+(syntax-test #'(let* ([x 10])) #rx"missing body")
+(syntax-test #'(let) #rx"missing name or")
+(syntax-test #'(let x) #rx"missing binding pairs or")
+(syntax-test #'(let ([10 10])) #rx"missing binding pairs or")
+(syntax-test #'(let x ([10 10])) #rx"missing body")
+(syntax-test #'(letrec) #rx"missing binding")
+(syntax-test #'(letrec ([x 3])) #rx"missing body")
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

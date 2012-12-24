@@ -29,12 +29,18 @@
                               #t
                               (let-values ([(tail1) (stx-cdr stx)])
                                 (if (stx-null? tail1)
-                                    #t
+                                    (if named?
+                                        (raise-syntax-error #f "bad syntax (missing name or binding pairs)")
+                                        (raise-syntax-error #f "bad syntax (missing binding pairs)" stx))
                                     (if (stx-null? (stx-cdr tail1))
-                                        #t
+                                        (if named?
+                                            (raise-syntax-error #f "bad syntax (missing binding pairs or body)" stx)
+                                            (raise-syntax-error #f "bad syntax (missing body)" stx))
                                         (if named?
                                             (if (symbol? (syntax-e (stx-car tail1)))
-                                                (stx-null? (stx-cdr (stx-cdr tail1)))
+                                                (if (stx-null? (stx-cdr (stx-cdr tail1)))
+                                                    (raise-syntax-error #f "bad syntax (missing body)" stx)
+                                                    #f)
                                                 #f)
                                             #f)))))
                           (raise-syntax-error #f "bad syntax" stx)
