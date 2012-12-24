@@ -2349,9 +2349,14 @@ static Scheme_Object *system_type(int argc, Scheme_Object *argv[])
 #endif
     }
 
+    sym = scheme_intern_symbol("word");
+    if (SAME_OBJ(argv[0], sym)) {
+      return scheme_make_integer(sizeof(void*)*8);
+    }
+
     sym = scheme_intern_symbol("os");
     if (!SAME_OBJ(argv[0], sym)) {
-      scheme_wrong_contract("system-type", "(or/c 'os 'link 'machine 'gc 'so-suffix)", 0, argc, argv);
+      scheme_wrong_contract("system-type", "(or/c 'os 'word 'link 'machine 'gc 'so-suffix 'word)", 0, argc, argv);
       return NULL;
     }
   }

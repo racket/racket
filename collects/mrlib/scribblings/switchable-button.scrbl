@@ -14,8 +14,9 @@
   
   The @racket[panel:discrete-sizes-mixin] explicitly
   uses @racket[switchable-button%]s via their
-  @method[switchable-button% get-small-width] and
-  @method[switchable-button% get-large-width] methods.
+  @method[switchable-button% get-small-width],
+  @method[switchable-button% get-large-width], and
+  @method[switchable-button% get-without-label-small-width] methods.
   See @racket[panel:discrete-sizes-mixin] for more details.
   
   @defconstructor/auto-super[([label (or/c string? (is-a?/c bitmap%) #f)]
@@ -65,5 +66,12 @@
      and when it is in label-visible
      mode (i.e., when @racket[set-label-visible] has been called
      with @racket[#t]).
+  }
+  
+  @defmethod[(get-without-label-small-width) exact-nonnegative-integer?]{
+     Returns the width of the button when
+     it is not in label-visible
+     mode (i.e., when @racket[set-label-visible] has been called
+     with @racket[#f]).
   }
 }

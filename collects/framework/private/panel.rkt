@@ -649,12 +649,13 @@
   (define discrete-sizes<%> (interface ((class->interface panel%))
                               get-orientation
                               set-orientation))
-  
   (define (discrete-get-widths c)
     (cond
       [(is-a? c switchable-button%) 
-       (list (send c get-large-width)
-             (send c get-small-width))]
+       (if (send c get-label-visible)
+           (list (send c get-large-width)
+                 (send c get-small-width))
+           (list (send c get-without-label-small-width)))]
       [(is-a? c discrete-sizes<%>)
        (send c get-discrete-widths)]
       [else

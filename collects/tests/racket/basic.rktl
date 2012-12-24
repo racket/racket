@@ -2572,6 +2572,9 @@
 (test #t symbol? (system-type 'link))
 (test #t relative-path? (system-library-subpath))
 
+(test #t pair? (memv (system-type 'word) '(32 64)))
+(test (fixnum? (expt 2 32)) = (system-type 'word) 64)
+
 (test #t 'cmdline (let ([v (current-command-line-arguments)])
 		    (and (vector? v)
 			 (andmap string? (vector->list v)))))

@@ -1,0 +1,12 @@
+
+This is the first complete draft of the Realm of Racket code. 
+------------------------------------------------------------
+
+1. need to eliminate the AI from chapter 10 
+
+2. the game in 12 does not correctly advertise whose turn it is 
+   same bug may exist in chapter 10 
+
+3. we should offer a way to link the chapter 12 game to the AI 
+   XOR to allow a second human player 
+

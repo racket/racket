@@ -1,5 +1,7 @@
 Version 5.3.1.10
 Added phantom byte strings
+Added 'word mode to system-type
+racket/gui: added display-changed to frame%
 
 Version 5.3.1.9
 Changed case to use equal? instead of eqv?
