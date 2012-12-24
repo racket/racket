@@ -153,6 +153,11 @@
                    (list (list (list #\[)))
                    (list (list (list #\[)))))
   
+  (define (ascii-art-box-spec before after)
+    (make-key-spec/allplatforms (make-buff-spec before 0 0) 
+                                (make-buff-spec after 0 0)
+                                (list '((#\x control) (#\r) (#\a)))))
+  
   ;; the keybindings test cases applied to racket:text% editors
   (define scheme-specs
     (list 
@@ -273,7 +278,28 @@
      (make-key-spec/allplatforms
       (make-buff-spec "[a]" 3 3)
       (make-buff-spec "[a]" 3 3)
-      (list '((#\c control) (#\[ control))))))
+      (list '((#\c control) (#\[ control))))
+     
+     (ascii-art-box-spec "+" "═")
+     (ascii-art-box-spec "x" "x")
+     (ascii-art-box-spec "+-+" "═══")
+     (ascii-art-box-spec "+\n|\n+\n" "║\n║\n║\n")
+     (ascii-art-box-spec (string-append "+-+\n"
+                                        "| |\n"
+                                        "+-+\n")
+                         (string-append "╔═╗\n"
+                                        "║ ║\n"
+                                        "╚═╝\n"))
+     (ascii-art-box-spec (string-append "+-+-+\n"
+                                        "| | |\n"
+                                        "+-+-+\n"
+                                        "| | |\n"
+                                        "+-+-+\n")
+                         (string-append "╔═╦═╗\n"
+                                        "║ ║ ║\n"
+                                        "╠═╬═╣\n"
+                                        "║ ║ ║\n"
+                                        "╚═╩═╝\n"))))
   
   (define automatic-scheme-specs
     (list (make-key-spec/allplatforms (make-buff-spec "" 0 0) 

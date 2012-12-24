@@ -1,16 +1,18 @@
-#lang scheme/unit
+#lang racket/base
 
 (require string-constants
-         mzlib/class
-         mzlib/list
+         racket/class
+         racket/match
+         racket/list
          mred/mred-sig
-         mzlib/match
          "../preferences.rkt"
          mrlib/tex-table
          (only-in srfi/13 string-prefix? string-prefix-length)
-         "sig.rkt")
+         "sig.rkt"
+         racket/unit)
+(provide keymap@)
 
-
+(define-unit keymap@
   (import mred^
           [prefix finder: framework:finder^]
           [prefix handler: framework:handler^]
@@ -38,8 +40,7 @@
                          (parameterize ([read-accept-reader #t])
                            (call-with-input-file path read)))])
          (match sexp
-           [`(module ,name ,lang
-               ,@(x ...)) 
+           [`(module ,name ,lang ,x ...)
 	    (cond
 	     [(valid-keybindings-lang? lang)
 	      (let ([km (dynamic-require spec '#%keymap)])
@@ -1010,7 +1011,15 @@
             (λ (txt event)
               (define pos (find-beginning-of-line txt))
               (when pos
-                (send txt extend-position pos)))])
+                (send txt extend-position pos)))]
+           
+           
+           [unicode-ascii-art-boxes
+            (λ (txt evt)
+              (define start (send txt get-start-position))
+              (when (= start (send txt get-end-position))
+                (do-unicode-ascii-art-boxes txt start)
+                (send txt set-position start)))])
       
       (λ (kmap)
         (let* ([map (λ (key func) 
@@ -1030,6 +1039,8 @@
                (add (format "insert ~a" c) 
                     (λ (txt evt) (send txt insert c)))))
            (string->list (string-append greek-letters Greek-letters)))
+          
+          (add "unicode-ascii-art-boxes" unicode-ascii-art-boxes)
           
           (add "shift-focus" (shift-focus values))
           (add "shift-focus-backwards" (shift-focus reverse))
@@ -1124,6 +1135,8 @@
                        (loop (+ i 1)))))])
             (setup-mappings greek-letters #f)
             (setup-mappings Greek-letters #t))
+          
+          (map "c:x;r;a" "unicode-ascii-art-boxes")
           
           (map "~m:c:\\" "TeX compress")
           (map "~c:m:\\" "TeX compress")
@@ -1476,4 +1489,102 @@
       (define eol (unbox eol-box))
       (if (< start-pos click-pos)
           (f click-pos eol start-pos click-pos)
-          (f click-pos eol click-pos end-pos))))
+          (f click-pos eol click-pos end-pos)))))
+
+
+(define (do-unicode-ascii-art-boxes t pos)
+  (define visited (make-hash))
+  (when (i? t pos)
+    (send t begin-edit-sequence)
+    (let loop ([pos pos])
+      (unless (hash-ref visited pos #f)
+        (hash-set! visited pos #t)
+        (define-values (x y) (pos->xy t pos))
+        (define up (xy->pos t x (- y 1)))
+        (define dn (xy->pos t x (+ y 1)))
+        (define lt (xy->pos t (- x 1) y))
+        (define rt (xy->pos t (+ x 1) y))
+        (define i-up? (i? t up))
+        (define i-dn? (i? t dn))
+        (define i-lt? (i? t lt))
+        (define i-rt? (i? t rt))
+        (cond
+          [(and i-up? i-dn? i-lt? i-rt?) (set t pos "╬")]
+          [(and i-dn? i-lt? i-rt?)       (set t pos "╦")]
+          [(and i-up? i-lt? i-rt?)       (set t pos "╩")]
+          [(and i-up? i-dn? i-rt?)       (set t pos "╠")]
+          [(and i-up? i-dn? i-lt?)       (set t pos "╣")]
+          [(and i-up? i-lt?)             (set t pos "╝")]
+          [(and i-up? i-rt?)             (set t pos "╚")]
+          [(and i-dn? i-lt?)             (set t pos "╗")]
+          [(and i-dn? i-rt?)             (set t pos "╔")]
+          [(or i-up? i-dn?)              (set t pos "║")]
+          [else                          (set t pos "═")])
+        (when i-up? (loop up))
+        (when i-dn? (loop dn))
+        (when i-lt? (loop lt))
+        (when i-rt? (loop rt))))
+    (send t end-edit-sequence)))
+
+(define (i? t pos)
+  (and pos 
+       (member (send t get-character pos) 
+               adjustable-chars)))
+(define (set t pos s)
+  (send t delete pos (+ pos 1))
+  (send t insert s pos pos))
+
+(define (pos->xy text pos)
+  (define para (send text position-paragraph pos))
+  (define start (send text paragraph-start-position para))
+  (values (- pos start) para))
+
+(define adjustable-chars
+  '(#\╬ 
+    #\╩ #\╦ #\╣ #\╠
+    #\╝ #\╗ #\╔ #\╚
+    #\═ #\║
+    #\+ #\- #\|))
+
+
+(define (xy->pos text x y)
+  (cond
+    [(and (<= 0 x) (<= 0 y (send text last-paragraph)))
+     (define para-start (send text paragraph-start-position y))
+     (define para-end (send text paragraph-end-position y))
+     (define pos (+ para-start x))
+     (and (< pos para-end)
+          ;; the newline at the end of the
+          ;; line is not on the line, so use this guard
+          pos)]
+    [else #f]))
+
+(module+ test
+  (require rackunit 
+           racket/gui/base)
+  (define sa string-append)
+  
+  (let ([t (new text%)])
+    (send t insert (sa "abc\n"
+                       "d\n"
+                       "ghi\n"))
+    (check-equal? (xy->pos t 0 0) 0)
+    (check-equal? (xy->pos t 1 0) 1)
+    (check-equal? (xy->pos t 0 1) 4)
+    (check-equal? (xy->pos t 3 0) #f)
+    (check-equal? (xy->pos t 0 3) #f)
+    (check-equal? (xy->pos t 1 1) #f)
+    (check-equal? (xy->pos t 2 1) #f)
+    (check-equal? (xy->pos t 0 2) 6)
+    (check-equal? (xy->pos t 1 2) 7)
+    (check-equal? (xy->pos t 2 -1) #f)
+    (check-equal? (xy->pos t -1 0) #f)
+    (check-equal? (xy->pos t 2 2) 8)
+    (check-equal? (xy->pos t 2 3) #f))
+  
+  (let ([t (new text%)])
+    (send t insert (sa "abc\n"
+                       "d\n"
+                       "ghi"))
+    (check-equal? (xy->pos t 2 2) 8)
+    (check-equal? (xy->pos t 2 3) #f)))

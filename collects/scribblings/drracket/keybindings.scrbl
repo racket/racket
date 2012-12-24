@@ -142,7 +142,7 @@ selected.
 @keybinding["M-["]{wrap selection in square brackets}
 @keybinding["M-{"]{wrap selection in curly brackets}
 @keybinding["M-S-L"]{wrap selection in @litchar{(lambda () }...@litchar{)}
-                     and put the insertion point in the arglist of the lambda}
+                     and put the insertion point in the argument list of the lambda}
 
 @keybinding["C-c C-o"]{the sexpression following the
   insertion point is put in place of its containing sexpression}
@@ -152,8 +152,24 @@ selected.
   sexpression following the insertion point and puts a printf in at
   that point (useful for debugging).}
 
-
 @keybinding["M-o"]{toggle @as-index{overwrite mode}}
+
+@keybinding["C-x r a"]{Adjust nearby ASCII art rectangles 
+                       (that use @litchar{+}, @litchar{-}, or @litchar{|})
+                       to use Unicode characters.
+                       
+                       For example, if the insertion point is next to this rectangle:
+                       @tabular[(list (list @litchar{+-+})
+                                      (list @litchar{| |})
+                                      (list @litchar{+-+}))]
+                       then the keystroke will turn it into this one:
+                       @tabular[(list (list @litchar{╔═╗})
+                                      (list @litchar{║ ║})
+                                      (list @litchar{╚═╝}))]
+                       Similarly, if the rectangle near the insertion point has
+                       mixed Unicode and ASCII, it will all be converted to 
+                       the Unicode characters.
+                       }
 ]
 
 @section{File Operations}
