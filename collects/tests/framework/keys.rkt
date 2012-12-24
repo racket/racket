@@ -290,6 +290,14 @@
                          (string-append "╔═╗\n"
                                         "║ ║\n"
                                         "╚═╝\n"))
+     (ascii-art-box-spec (string-append "+---+\n"
+                                        "| - |\n"
+                                        "|+ ||\n"
+                                        "+---+\n")
+                         (string-append "╔═══╗\n"
+                                        "║ - ║\n"
+                                        "║+ |║\n"
+                                        "╚═══╝\n"))
      (ascii-art-box-spec (string-append "+-+-+\n"
                                         "| | |\n"
                                         "+-+-+\n"

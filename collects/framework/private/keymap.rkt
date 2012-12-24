@@ -1499,14 +1499,15 @@
       (unless (hash-ref visited pos #f)
         (hash-set! visited pos #t)
         (define-values (x y) (pos->xy t pos))
+        (define c (send t get-character pos))
         (define up (xy->pos t x (- y 1)))
         (define dn (xy->pos t x (+ y 1)))
         (define lt (xy->pos t (- x 1) y))
         (define rt (xy->pos t (+ x 1) y))
-        (define i-up? (i? t up))
-        (define i-dn? (i? t dn))
-        (define i-lt? (i? t lt))
-        (define i-rt? (i? t rt))
+        (define i-up? (and (i? t up) (member c up-chars)))
+        (define i-dn? (and (i? t dn) (member c dn-chars)))
+        (define i-lt? (and (i? t lt) (member c lt-chars)))
+        (define i-rt? (and (i? t rt) (member c rt-chars)))
         (cond
           [(and i-up? i-dn? i-lt? i-rt?) (set t pos "╬")]
           [(and i-dn? i-lt? i-rt?)       (set t pos "╦")]
@@ -1539,12 +1540,37 @@
   (define start (send text paragraph-start-position para))
   (values (- pos start) para))
 
-(define adjustable-chars
+(define up-chars
   '(#\╬ 
-    #\╩ #\╦ #\╣ #\╠
-    #\╝ #\╗ #\╔ #\╚
-    #\═ #\║
-    #\+ #\- #\|))
+    #\╩ #\╣ #\╠
+    #\╝ #\╚
+    #\║
+    #\+ #\|))
+
+(define dn-chars
+  '(#\╬ 
+    #\╦ #\╣ #\╠
+    #\╗ #\╔
+    #\║
+    #\+ #\|))
+
+(define lt-chars
+  '(#\╬ 
+    #\╩ #\╦ #\╣
+    #\╝ #\╗ 
+    #\═ 
+    #\+ #\-))
+
+(define rt-chars
+  '(#\╬ 
+    #\╩ #\╦ #\╠
+    #\╔ #\╚
+    #\═
+    #\+ #\-))
+
+(define adjustable-chars
+  (remove-duplicates
+   (append up-chars dn-chars lt-chars rt-chars)))
 
 
 (define (xy->pos text x y)
