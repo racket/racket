@@ -1,7 +1,18 @@
 #lang racket/base
 
 (require racket/tcp)
+(require racket/list)
 (provide do-download)
+
+(define http-proxy (getenv "http_proxy"))
+(define http-proxy-host null)
+(define http-proxy-port null)
+
+(when http-proxy
+    (let ((matched (regexp-match #rx"([Hh][Tt][Tt][Pp]://)?([1-2]?[0-9]?[0-9]\\.[1-2]?[0-9]?[0-9]\\.[1-2]?[0-9]?[0-9]\\.[1-2]?[0-9]?[0-9])(:([0-9]+))?" "http://192.168.0.1:3128")))
+      (set! http-proxy-host (third matched))
+      (set! http-proxy-port (or (string->number (fifth matched)) 80))
+      (printf "Proxy detected: host ~a port ~a~%" http-proxy-host http-proxy-port)))
 
 (define url-host "download.racket-lang.org")
 (define url-path "/libs/10/")
@@ -35,10 +46,15 @@
 
 (define (download* file target)
   (define src (format "~a~a/~a" url-path architecture file))
-  (define-values [i o] (tcp-connect url-host 80))
-  (fprintf o "GET ~a HTTP/1.0\r\nHost: ~a\r\n\r\n" src url-host)
+  (define-values [i o] (if http-proxy
+                           (tcp-connect http-proxy-host http-proxy-port)
+                           (tcp-connect url-host 80)))
+  (if http-proxy
+      (fprintf o "GET ~a~a~a HTTP/1.0\r\nHost: ~a\r\n\r\n" "http://" url-host src url-host)
+      (fprintf o "GET ~a HTTP/1.0\r\nHost: ~a\r\n\r\n" src url-host))
   (flush-output o) (tcp-abandon-port o)
   (purify-port i)
+  
   (call-with-output-file target #:exists 'truncate/replace
     (λ (out) (copy-port i out))))
 
