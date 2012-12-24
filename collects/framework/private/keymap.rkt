@@ -1491,10 +1491,9 @@
           (f click-pos eol start-pos click-pos)
           (f click-pos eol click-pos end-pos)))))
 
-
 (define (do-unicode-ascii-art-boxes t pos)
-  (define visited (make-hash))
   (when (i? t pos)
+    (define visited (make-hash))
     (send t begin-edit-sequence)
     (let loop ([pos pos])
       (unless (hash-ref visited pos #f)
@@ -1531,8 +1530,9 @@
        (member (send t get-character pos) 
                adjustable-chars)))
 (define (set t pos s)
-  (send t delete pos (+ pos 1))
-  (send t insert s pos pos))
+  (unless (equal? (string-ref s 0) (send t get-character pos))
+    (send t delete pos (+ pos 1))
+    (send t insert s pos pos)))
 
 (define (pos->xy text pos)
   (define para (send text position-paragraph pos))
