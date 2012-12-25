@@ -38,7 +38,13 @@
 
 ;; rectangles : (or/c #f (listof rectangle))
 ;;  #f => range information needs to be computed for this rectangle
-(define-struct range (start end caret-space? style color [rectangles #:mutable]) #:inspector #f)
+(define-struct range ([start #:mutable] 
+                      [end #:mutable]
+                      caret-space?
+                      style color 
+                      adjust-on-insert/delete?
+                      key
+                      [rectangles #:mutable]) #:inspector #f)
 (define-struct rectangle (left top right bottom style color) #:inspector #f)
 
 (define (build-rectangle left top right bottom style color [info (λ () "")])
@@ -82,6 +88,7 @@
     highlight-range
     unhighlight-range
     unhighlight-ranges
+    unhighlight-ranges/key
     get-highlighted-ranges
     get-styles-fixed
     get-fixed-style
@@ -279,6 +286,40 @@
                                 end-x bottom-end-y
                                 style color))]))
     
+    (define/augment (after-insert insert-start insert-len)
+      (for ([r (in-queue ranges-deq)])
+        (when (range-adjust-on-insert/delete? r)
+          (define rstart (range-start r))
+          (define rend (range-end r))
+          (cond
+            [(<= insert-start rstart) 
+             (set-range-start! r (+ rstart insert-len))
+             (set-range-end! r (+ rend insert-len))]
+            [(<= insert-start rend)
+             (set-range-end! r (+ rend insert-len))])))
+      (inner (void) after-insert insert-start insert-len))
+    (define/augment (after-delete delete-start delete-len)
+      (define delete-end (+ delete-start delete-len))
+      (for ([r (in-queue ranges-deq)])
+        (when (range-adjust-on-insert/delete? r)
+          (define rstart (range-start r))
+          (define rend (range-end r))
+          (cond
+            [(<= delete-end rstart)
+             (set-range-start! r (- rstart delete-len))
+             (set-range-end! r (- rend delete-len))]
+            [(<= delete-start rstart delete-end rend)
+             (define new-len (- rend delete-end))
+             (set-range-start! r delete-start)
+             (set-range-end! r (+ delete-start new-len))]
+            [(<= rstart delete-start delete-end rend)
+             (define new-len (- rend delete-end))
+             (set-range-start! r delete-start)
+             (set-range-end! r (- rend delete-len))]
+            [(<= rstart delete-start rend)
+             (set-range-end! r delete-end)])))
+      (inner (void) after-delete delete-start delete-len))
+   
     (define/augment (on-reflow)
       (recompute-range-rectangles)
       (inner (void) on-reflow))
@@ -287,8 +328,10 @@
       (inner (void) after-load-file success?)
       (when success?
         (set! ranges-deq (make-queue))))
-    
-    (define/public (highlight-range start end color [caret-space? #f] [priority 'low] [style 'rectangle])
+        
+    (define/public (highlight-range start end in-color [caret-space? #f] [priority 'low] [style 'rectangle] 
+                                    #:adjust-on-insert/delete? [adjust-on-insert/delete? #f]
+                                    #:key [key #f])
       (unless (let ([exact-pos-int?
                      (λ (x) (and (integer? x) (exact? x) (x . >= . 0)))])
                 (and (exact-pos-int? start)
@@ -304,11 +347,11 @@
         (error 'highlight-range
                "expected priority argument to be either 'high or 'low, got: ~e"
                priority))
-      (unless (or (is-a? color color%)
-                  (and (string? color)
-                       (send the-color-database find-color color)))
+      (unless (or (is-a? in-color color%)
+                  (and (string? in-color)
+                       (send the-color-database find-color in-color)))
         (error 'highlight-range
-               "expected a color or a string in the-color-database for the third argument, got ~e" color))
+               "expected a color or a string in the-color-database for the third argument, got ~e" in-color))
       (unless (memq style '(rectangle hollow-ellipse ellipse dot))
         (error 'highlight-range
                "expected one of 'rectangle, 'ellipse 'hollow-ellipse, or 'dot as the style, got ~e" style))
@@ -317,16 +360,18 @@
           (error 'highlight-range
                  "when the style is 'dot, the start and end regions must be the same")))
       
-      (let* ([color (if (is-a? color color%)
-                        color
-                        (send the-color-database find-color color))]
-             [l (make-range start end caret-space? style color #f)])
-        (if (eq? priority 'high)
-            (enqueue! ranges-deq l)
-            (enqueue-front! ranges-deq l))
-        (set-range-rectangles! l (compute-rectangles l))
-        (invalidate-rectangles (range-rectangles l))
-        (λ () (unhighlight-range start end color caret-space? style))))
+      (define color (if (is-a? in-color color%)
+                        in-color
+                        (send the-color-database find-color in-color)))
+      (define l (make-range start end caret-space? style color adjust-on-insert/delete? key #f))
+      (if (eq? priority 'high)
+          (enqueue! ranges-deq l)
+          (enqueue-front! ranges-deq l))
+      (set-range-rectangles! l (compute-rectangles l))
+      (invalidate-rectangles (range-rectangles l))
+      (unless adjust-on-insert/delete?
+        (λ () 
+          (unhighlight-range start end color caret-space? style))))
         
     (define/public (unhighlight-range start end in-color [caret-space? #f] [style 'rectangle])
       (define color (if (is-a? in-color color%)
@@ -334,7 +379,7 @@
                         (send the-color-database find-color in-color)))
       (define found-one? #f)
       (unhighlight-ranges
-       (λ (r-start r-end r-color r-caret-space? r-style)
+       (λ (r-start r-end r-color r-caret-space? r-style r-adjust-on-insert/delete? r-key)
          (cond
            [found-one? #f]
            [(and (equal? start r-start)
@@ -345,6 +390,11 @@
             (set! found-one? #t)
             #t]
            [else #f]))))
+    
+    (define/public (unhighlight-ranges/key key)
+      (unhighlight-ranges
+       (λ (r-start r-end r-color r-caret-space? r-style r-adjust-on-insert/delete? r-key)
+         (equal? r-key key))))
     
     (define/public (unhighlight-ranges pred)
       (define left #f)
@@ -359,7 +409,9 @@
                   (range-end a-range)
                   (range-color a-range)
                   (range-caret-space? a-range)
-                  (range-style a-range))
+                  (range-style a-range)
+                  (range-adjust-on-insert/delete? a-range)
+                  (range-key a-range))
             (for ([rect (in-list (range-rectangles a-range))])
               (set!-values (left top right bottom)
                 (join-rectangles left top right bottom rect)))
@@ -939,7 +991,7 @@
   (mixin (editor:basic<%> editor:keymap<%> basic<%>) (searching<%>)
     (inherit invalidate-bitmap-cache
              get-start-position get-end-position
-             unhighlight-ranges unhighlight-range highlight-range
+             unhighlight-ranges/key unhighlight-range highlight-range
              run-after-edit-sequence begin-edit-sequence end-edit-sequence
              find-string get-admin position-line
              in-edit-sequence? get-pos/text-dc-location
@@ -1280,15 +1332,8 @@
     (define/private (clear-all-regions) 
       (when to-replace-highlight 
         (unhighlight-replace))
-      (unless (zero? (hash-count search-bubble-table))
-        (unhighlight-ranges
-         (λ (r-start r-end r-color r-caret-space? r-style)
-           (and (not r-caret-space?)
-                (eq? r-style 'hollow-ellipse)
-                (or (eq? r-color light-search-color)
-                    (eq? r-color normal-search-color))
-                (hash-ref search-bubble-table (cons r-start r-end) #f))))
-        (set! search-bubble-table (make-hash))))
+      (unhighlight-ranges/key 'plt:framework:search-bubbles)
+      (set! search-bubble-table (make-hash)))
     
     (define/private (do-search start end) (find-string searching-str 'forward start end #t case-sensitive?))
     
@@ -1296,6 +1341,10 @@
     ;; the search-bubble-table has it mapped to #t
     ;; the two methods below contribute to this, but
     ;; so does the 'clear-all-regions' method above
+    
+    
+    ;; this method may be called with bogus inputs (ie a pair that has no highlight)
+    ;; but only when there is a pending "erase all highlights and recompute everything" callback
     (define/private (unhighlight-hit pair)
       (hash-remove! search-bubble-table pair)
       (unhighlight-range (car pair) (cdr pair) 
@@ -1308,7 +1357,9 @@
                        (if replace-mode? light-search-color normal-search-color)
                        #f
                        'low
-                       'hollow-ellipse))
+                       'hollow-ellipse
+                       #:key 'plt:framework:search-bubbles
+                       #:adjust-on-insert/delete? #t))
     
     ;; INVARIANT: the "next to replace" highlight is always
     ;; saved in 'to-replace-highlight'
@@ -1654,16 +1705,19 @@
       (send delegate lock #t)
       (send delegate end-edit-sequence))
     
-    (define/override (highlight-range start end color [caret-space? #f] [priority 'low] [style 'rectangle])
+    (define/override (highlight-range start end color [caret-space? #f] [priority 'low] [style 'rectangle] 
+                                      #:adjust-on-insert/delete? [adjust-on-insert/delete? #f]
+                                      #:key [key #f])
       (when delegate 
-        (send delegate highlight-range start end color caret-space? priority style))
-      (super highlight-range start end color caret-space? priority style))
+        (send delegate highlight-range start end color caret-space? priority style
+              #:adjust-on-insert/delete? adjust-on-insert/delete?
+              #:key key))
+      (super highlight-range start end color caret-space? priority style 
+             #:adjust-on-insert/delete? adjust-on-insert/delete?
+             #:key key))
     
-    (define/override (unhighlight-range start end color [caret-space? #f] [style 'rectangle])
-      (when delegate 
-        (send delegate unhighlight-range start end color caret-space? style))
-      (super unhighlight-range start end color caret-space? style))
-    
+    ;; only need to override this unhighlight-ranges, since 
+    ;; all the other unhighlighting variants call this one
     (define/override (unhighlight-ranges pred)
       (when delegate 
         (send delegate unhighlight-ranges pred))
