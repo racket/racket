@@ -143,3 +143,11 @@
      (t "An " (racket id) " application can provide better performance for "
         (elem what)
         " iteration when it appears directly in a " (racket for) " clause.")]))
+
+(provide resultItself ResultItself)
+(define (esultItself T x)
+  (make-element #f (list T "he "
+                         (tech "synchronization result")
+                         " of a " x " is the " x " itself")))
+(define (ResultItself x) (esultItself "T" x))
+(define (resultItself x) (esultItself "t" x))

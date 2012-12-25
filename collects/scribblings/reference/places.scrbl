@@ -48,7 +48,11 @@ places that share the value, because they are allowed in a
 @deftech{shared memory space}. See @racket[place-message-allowed?].
 
 A @tech{place channel} can be used as a @tech{synchronizable event}
-(see @secref["sync"]) to receive a value through the channel. A place
+(see @secref["sync"]) to receive a value through the channel.
+A @tech{place channel} is @tech{ready for synchronization} when
+a message is available on the channel, and the @tech{place channel}'s
+@tech{synchronization result} is the message (which is removed on
+synchronization). A place
 can also receive messages with @racket[place-channel-get], and
 messages can be sent with @racket[place-channel-put].
 
@@ -237,7 +241,8 @@ The @racket[dynamic-place*] procedure returns four values:
 @defproc[(place-dead-evt [p place?]) evt?]{
 
 Returns a @tech{synchronizable event} (see @secref["sync"]) that is
-ready if and only if @racket[p] has terminated.
+@tech{ready for synchronization} if and only if @racket[p] has terminated.
+@ResultItself{place-dead event}.
 
 If any pumping threads were created to connect a non-@tech{file-stream
   port} to the ports in the place for @racket[p] (see

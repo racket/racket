@@ -13,6 +13,13 @@ Channel synchronization is @defterm{fair}: if a thread is blocked on a
 channel and transaction opportunities for the channel occur infinitely
 often, then the thread eventually participates in a transaction.
 
+In addition to its use with channel-specific procedures, a channel can
+be used as a @tech{synchronizable event} (see @secref["sync"]).  A
+channel is @tech{ready for synchronization} when @racket[make-channel]
+is ready when @racket[channel-get] would not block; the channel's
+@tech{synchronization result} is the same as the @racket[channel-get]
+result.
+
 For buffered asynchronous channels, see @secref["async-channel"].
 
 @defproc[(channel? [v any/c]) boolean?]{
@@ -48,9 +55,9 @@ through @racket[ch].}
 @defproc[(channel-put-evt [ch channel?] [v any/c]) channel-put-evt?]{
 
 Returns a fresh @tech{synchronizable event} for use with
-@racket[sync]. The event is ready when @racket[(channel-put ch v)]
-would not block, and the event's synchronization result is the event
-itself.}
+@racket[sync]. The event is @tech{ready for synchronization} when
+@racket[(channel-put ch v)] would not block, and the event's
+@tech{synchronization result} is the event itself.}
 
 
 @defproc[(channel-put-evt? [v any/c]) boolean?]{
