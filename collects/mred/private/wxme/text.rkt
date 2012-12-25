@@ -3592,7 +3592,7 @@
                                              s)])
                                   (vector-set! smap i s)
                                   (loop s (+ i direction)))))))
-
+                      (define text "")
                       (let a-loop ([s beyond]
                                    [s-pos s-pos]
                                    [snip snip]
@@ -3618,9 +3618,11 @@
                                        [thisoffset (+ offset (if (direction . < . 0) need checked))]
                                        [wl? write-locked?]
                                        [fl? flow-locked?])
+                                  (when (< (string-length text) (send snip get-count))
+                                    (set! text (make-string (send snip get-count))))
                                   (set! write-locked? #t)
                                   (set! flow-locked? #t)
-                                  (let ([text (send snip get-text thisoffset thistime #f)])
+                                  (send snip get-text! text thisoffset thistime 0)
                                     (set! write-locked? wl?)
                                     (set! flow-locked? fl?)
                                     
@@ -3684,7 +3686,7 @@
                                                 (c-loop (+ i direction)
                                                         n
                                                         s
-                                                        results)))))))))
+                                                        results))))))))
                             (if just-one?
                                 #f
                                 results)))))))))))

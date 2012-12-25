@@ -16,8 +16,10 @@ is @defterm{fair}: if a thread is blocked on a semaphore and the
 semaphore's internal value is non-zero infinitely often, then the
 thread is eventually unblocked.
 
-In addition to its use with semaphore-specific procedures, semaphores
-can be used as events; see @secref["sync"].
+In addition to its use with semaphore-specific procedures, a semaphore
+can be used as a @tech{synchronizable event} (see @secref["sync"]).
+A semaphore is @tech{ready for synchronization} when
+@racket[semaphore-wait] would not block; @resultItself{semaphore}.
 
 @defproc[(semaphore? [v any/c]) boolean?]{
 
@@ -57,9 +59,11 @@ called, then either the semaphore's counter is decremented or the
 @racket[exn:break] exception is raised, but not both.}
 
 @defproc[(semaphore-peek-evt [sema semaphore?]) semaphore-peek-evt?]{Creates and
-returns a new synchronizable event (for use with @racket[sync], for
-example) that is ready when @racket[sema] is ready, but synchronizing
-the event does not decrement @racket[sema]'s internal count.}
+returns a new @tech{synchronizable event} (for use with @racket[sync], for
+example) that is @tech{ready for synchronization} when @racket[sema] is ready,
+but synchronizing
+the event does not decrement @racket[sema]'s internal count.
+@ResultItself{semaphore-peek event}.}
 
 @defproc[(semaphore-peek-evt? [v any/c]) boolean?]{
 Returns @racket[#t] if @racket[v] is a semaphore wrapper produced by

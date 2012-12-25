@@ -132,6 +132,10 @@ executor, the weak box's content is not changed to @racket[#f] until
 all wills have been executed for the value and the value has been
 proven again reachable through only weak references.
 
+A will executor can be used as a @tech{synchronizable event} (see @secref["sync"]).
+A will executor is @tech{ready for synchronization} when
+@racket[will-execute] would not block; @resultItself{will executor}.}
+
 
 @defproc[(make-will-executor) will-executor?]{
 

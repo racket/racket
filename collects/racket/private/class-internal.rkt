@@ -4365,7 +4365,7 @@ An example
                                         (obj-error 'make-generic "no such method"
                                                    "method name" (as-write name)
                                                    #:class-name (class-name class))))]
-                       [instance? (class-object? class)]
+                       [instance? (class-object? (class-orig-cls class))]
                        [dynamic-generic
                         (lambda (obj)
                           (unless (instance? obj)

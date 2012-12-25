@@ -30,8 +30,9 @@ Returns @racket[#t] if the input or output port @racket[port] is
 closed, @racket[#f] otherwise.}
 
 @defproc[(port-closed-evt [port port?]) evt?]{
-Return a @tech{synchronizable event} that becomes ready when @racket[port] is 
-closed.}
+Return a @tech{synchronizable event} that becomes @tech{ready for
+synchronization} when @racket[port] is
+closed. @ResultItself{port-closed event}.}
 
 @defparam[current-input-port in input-port?]{A @tech{parameter} that
 determines a default input port for many operations, such as

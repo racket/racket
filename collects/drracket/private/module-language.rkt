@@ -1085,7 +1085,7 @@
                get-tab get-canvas invalidate-bitmap-cache 
                set-position get-start-position get-end-position
                highlight-range dc-location-to-editor-location
-               begin-edit-sequence end-edit-sequence)
+               begin-edit-sequence end-edit-sequence in-edit-sequence?)
       
       
       (define/public (fetch-data-to-send)
@@ -1312,13 +1312,25 @@
         
         (values x y w h))
         
+      (define need-to-dirty? #f)
+      
       (define/augment (after-insert start end) 
-        (oc-set-dirty (get-tab))
+        (if (in-edit-sequence?)
+            (set! need-to-dirty? #t)
+            (oc-set-dirty (get-tab)))
         (inner (void) after-insert start end))
       
       (define/augment (after-delete start end) 
-        (oc-set-dirty (get-tab))
+        (if (in-edit-sequence?)
+            (set! need-to-dirty? #t)
+            (oc-set-dirty (get-tab)))
         (inner (void) after-delete start end))
+      
+      (define/augment (after-edit-sequence)
+        (when need-to-dirty?
+          (set! need-to-dirty? #f)
+          (oc-set-dirty (get-tab)))
+        (inner (void) after-edit-sequence))
       
       (define/augment (after-load-file success?)
         (when success? 

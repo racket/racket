@@ -28,6 +28,15 @@ purposes. The @racket[read-syntax] procedure uses the name of an input
 port as the default source location for the @tech{syntax objects} that
 it produces.
 
+A port can be used as a @tech{synchronizable event}. An input port is
+@tech{ready for synchronization} when @racket[read-byte] would not
+block, and an output port is @tech{ready for synchronization} when
+@racket[write-bytes-avail] would not block or when the port contains
+buffered characters and @racket[write-bytes-avail*] can flush part of
+the buffer (although @racket[write-bytes-avail] might block). A value
+that can act as both an input port and an output port acts as an input
+port for a @tech{synchronizable event}. @ResultItself{port}.
+
 @;------------------------------------------------------------------------
 
 @local-table-of-contents[]

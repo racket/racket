@@ -25,20 +25,28 @@
                                   (stx-null? (stx-cdr (stx-cdr x)))
                                   #f)
                               #f)))
-                      (if (if (not (stx-list? stx))
-                              #t
-                              (let-values ([(tail1) (stx-cdr stx)])
-                                (if (stx-null? tail1)
-                                    #t
-                                    (if (stx-null? (stx-cdr tail1))
-                                        #t
-                                        (if named?
-                                            (if (symbol? (syntax-e (stx-car tail1)))
-                                                (stx-null? (stx-cdr (stx-cdr tail1)))
-                                                #f)
-                                            #f)))))
-                          (raise-syntax-error #f "bad syntax" stx)
-                          (void))
+                      (let-values ([(maybe-msg)
+                                    (if (not (stx-list? stx))
+                                        ""
+                                        (let-values ([(tail1) (stx-cdr stx)])
+                                          (if (stx-null? tail1)
+                                              (if named?
+                                                  "(missing name or binding pairs)"
+                                                  "(missing binding pairs)")
+                                              (if (stx-null? (stx-cdr tail1))
+                                                  (if named?
+                                                      "(missing binding pairs or body)"
+                                                      "(missing body)")
+                                                  (if named?
+                                                      (if (symbol? (syntax-e (stx-car tail1)))
+                                                          (if (stx-null? (stx-cdr (stx-cdr tail1)))
+                                                              "(missing body)"
+                                                              #f)
+                                                          #f)
+                                                      #f)))))])
+                        (if maybe-msg
+                            (raise-syntax-error #f (string-append "bad syntax " maybe-msg) stx)
+                            (void)))
                       (let-values ([(name) (if named?
                                                (let-values ([(n) (stx-cadr stx)])
                                                  (if (symbol? (syntax-e n))

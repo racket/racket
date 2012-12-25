@@ -108,14 +108,16 @@ must be the same as @racket[limit-cust], so that excessively large
 immediate allocations can be rejected with an
 @racket[exn:fail:out-of-memory] exception.}
 
+
 @defproc[(make-custodian-box [cust custodian?] [v any/c]) custodian-box?]{
 
 Returns a @tech{custodian box} that contains @racket[v] as long as
 @racket[cust] has not been shut down.
 
-A @tech{custodian box} is a @tech{synchronizable event} for use with
-functions like @racket[sync]. The @tech{custodian box} becomes ready
-when its custodian is shut down.}
+A @tech{custodian box} is a @tech{synchronizable event} (see @secref["sync"]).
+The @tech{custodian box} becomes ready when its custodian is shut down;
+@resultItself{@tech{custodian box}}.}
+
 
 @defproc[(custodian-box? [v any/c]) boolean?]{Returns @racket[#t] if
  @racket[v] is a @tech{custodian box} produced by

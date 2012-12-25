@@ -60,7 +60,11 @@ listener}. This value can be used in future calls to
 management of the current custodian (see @secref["custodians"]).
 
 If the server cannot be started by @racket[tcp-listen], the
-@exnraise[exn:fail:network].}
+@exnraise[exn:fail:network].
+
+A TCP listener can be used as a @tech{synchronizable event} (see @secref["sync"]).
+A TCP listener is @tech{ready for synchronization} when
+@racket[tcp-accept] would not block; @resultItself{TCP listener}.}
 
 
 @defproc[(tcp-connect [hostname string?]
@@ -200,11 +204,11 @@ Returns @racket[#t] if @racket[v] is a @tech{TCP listener} created by
 
 @defproc[(tcp-accept-evt [listener tcp-listener?]) evt?]{
 
-Returns a @tech{synchronizable event} (see @secref["sync"]) that is in
-a blocking state when @racket[tcp-accept] on @racket[listener] would
-block. If the event is chosen in a synchronization, the result is a
+Returns a @tech{synchronizable event} (see @secref["sync"]) that is
+@tech{ready for synchronization} when @racket[tcp-accept] on @racket[listener] would
+not block. The @tech{synchronization result} is a
 list of two items, which correspond to the two results of
-@racket[tcp-accept]. (If the event is not chosen, no connections are
+@racket[tcp-accept]. (If the event is not chosen in a @racket[syntax], no connections are
 accepted.) The ports are placed into the management of the custodian
 that is the current custodian (see @secref["custodians"]) at the time that
 @racket[tcp-accept-evt] is called.}
@@ -545,11 +549,11 @@ bstr start-pos end-pos)], and the synchronization result is
                       [end-pos exact-nonnegative-integer? (bytes-length bstr)]) 
          evt?]{
 
-Returns a @tech{synchronizable event}. The event is in a blocking
+Returns a @tech{synchronizable event}. The event is @tech{ready for synchronization}
 state when @racket[udp-send] on @racket[udp-socket] would
-block. Otherwise, if the event is chosen in a synchronization, data is
+not block. Otherwise, if the event is chosen in a synchronization, data is
 sent as for @racket[(udp-send-to udp-socket bstr start-pos end-pos)],
-and the synchronization result is @|void-const|. (No bytes are sent if
+and the @tech{synchronization result} is @|void-const|. (No bytes are sent if
 the event is not chosen.) If @racket[udp-socket] is closed or
 unconnected, the @exnraise[exn:fail:network] during a synchronization
 attempt.}
@@ -560,11 +564,11 @@ attempt.}
                        [end-pos exact-nonnegative-integer? (bytes-length bstr)])
          evt?]{
 
-Returns a @tech{synchronizable event}. The event is in a blocking
-state when @racket[udp-receive] on @racket[udp-socket] would
+Returns a @tech{synchronizable event}. The event is @tech{ready for synchronization}
+when @racket[udp-receive] on @racket[udp-socket] would not
 block. Otherwise, if the event is chosen in a synchronization, data is
 received into @racket[bstr] as for @racket[(udp-receive! udp-socket
-bytes start-pos end-pos)], and the synchronization result is a list of
+bytes start-pos end-pos)], and the @tech{synchronization result} is a list of
 three values, corresponding to the three results from
 @racket[udp-receive!]. (No bytes are received and the @racket[bstr]
 content is not modified if the event is not chosen.)}
