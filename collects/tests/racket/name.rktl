@@ -73,8 +73,8 @@
 (test #t src-name? (object-name (interface ())))
 
 ; Test class stuff ok when name
-(test 'class:c1 object-name (let ([c1 (class object% (super-make-object))]) c1))
-(test 'interface:i1 object-name (let ([i1 (interface ())]) i1))
+(test 'c1 object-name (let ([c1 (class object% (super-make-object))]) c1))
+(test 'i1 object-name (let ([i1 (interface ())]) i1))
 
 ; Test unit stuff ok when no name
 (test #t src-name? (object-name (unit (import) (export))))

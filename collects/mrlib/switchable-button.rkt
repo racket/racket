@@ -7,7 +7,10 @@
 (define margin 2)
 (define w-circle-space 6)
 (define h-circle-space 6)
-(define rhs-pad 2) ;; extra space outside the bitmap, but inside the mouse highlighting (on the right)
+
+;; extra space outside the bitmap, 
+;; but inside the mouse highlighting (on the right)
+(define rhs-pad 2) 
 
 (define half-gray (make-object color% 127 127 127))
 (define one-fifth-gray (make-object color% 200 200 200))
@@ -245,10 +248,16 @@
                                         (- (/ (send bitmap get-width) 2))
                                         (- rhs-pad)))
                   (send dc draw-text label text-start (- (/ ch 2) (/ th 2)))
-                  (draw-the-bitmap (+ text-start tw gap) (- (/ ch 2) (/ (send bitmap get-height) 2)))])]
+                  (draw-the-bitmap (+ text-start tw gap) 
+                                   (- (/ ch 2) (/ (send bitmap get-height) 2)))])]
               [else
-               (draw-the-bitmap (- (/ cw 2) (/ (send (if with-label? bitmap alternate-bitmap) get-width) 2))
-                                (- (/ ch 2) (/ (send (if with-label? bitmap alternate-bitmap) get-height) 2)))])
+               (draw-the-bitmap 
+                (- (/ cw 2) 
+                   (/ (send (if with-label? bitmap alternate-bitmap) get-width) 
+                      2))
+                (- (/ ch 2)
+                   (/ (send (if with-label? bitmap alternate-bitmap) get-height)
+                      2)))])
             
             (send dc set-pen pen)
             (send dc set-alpha alpha)
@@ -266,12 +275,14 @@
                   (if with-label? disable-bitmap alternate-disable-bitmap)
                   (send bm get-loaded-mask)))))
     
-    (define/public (set-label-visible h?)
+    (define/public (set-label-visible in-h?)
+      (define h? (and in-h? #t))
       (unless (equal? with-label? h?)
         (set! with-label? h?)
         (update-sizes)
         (update-float (and with-label? in?))
         (refresh)))
+    (define/public (get-label-visible) with-label?)
     
     (define/private (update-sizes)
       (define dc (get-dc))
@@ -306,7 +317,7 @@
            margin
            margin))))
     
-    (define/private (get-without-label-small-width)
+    (define/public (get-without-label-small-width)
       (inexact->exact
        (floor
         (+ (send alternate-bitmap get-width)
@@ -358,11 +369,14 @@
   (define label "Run")
   (define bitmap (make-object bitmap% (build-path (collection-path "icons") "run.png") 'png/mask))
   (define foot (make-object bitmap% (build-path (collection-path "icons") "foot.png") 'png/mask))
-  (define foot-up (make-object bitmap% (build-path (collection-path "icons") "foot-up.png") 'png/mask))
+  (define foot-up 
+    (make-object bitmap% (build-path (collection-path "icons") "foot-up.png") 'png/mask))
   
   (define b1 (new switchable-button% [parent p] [label label] [bitmap bitmap] [callback void]))
   (define b2 (new switchable-button% [parent p] [label label] [bitmap bitmap] [callback void]))
-  (define b3 (new switchable-button% [parent p] [label "Step"] [bitmap foot] [alternate-bitmap foot-up] [callback void]))
+  (define b3 (new switchable-button% [parent p] [label "Step"] [bitmap foot]
+                  [alternate-bitmap foot-up] 
+                  [callback void]))
   (define sb (new button% [parent p] [stretchable-width #t] [label "b"]))
   (define swap-button
     (new button% 

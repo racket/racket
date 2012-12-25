@@ -199,7 +199,7 @@ void scheme_clear_ephemerons(void);
 #define BITS_PER_MZSHORT (8 * sizeof(mzshort))
 
 #ifndef NO_INLINE_KEYWORD
-# define MZ_INLINE MSC_IZE(inline)
+# define MZ_INLINE M_MSC_IZE(inline)
 #else
 # define MZ_INLINE /* empty */
 #endif
@@ -307,6 +307,7 @@ void scheme_init_paramz(Scheme_Env *env);
 void scheme_init_parameterization();
 void scheme_init_getenv(void);
 void scheme_init_inspector(void);
+void scheme_init_compenv_symbol(void);
 
 #ifndef DONT_USE_FOREIGN
 void scheme_init_foreign_globals();
@@ -540,7 +541,7 @@ THREAD_LOCAL_DECL(extern volatile int scheme_fuel_counter);
 
 THREAD_LOCAL_DECL(extern Scheme_Thread *scheme_main_thread);
 
-#if defined(MZ_USE_PLACES) || defined(MZ_USE_FUTURES) || defined(USE_PTHREAD_THREAD_TIMER)
+#if defined(MZ_USE_PLACES) || defined(MZ_USE_FUTURES) || defined(USE_PTHREAD_THREAD_TIMER) || defined(WINDOWS_FILE_HANDLES)
 # define MZ_USE_MZRT
 #endif
 

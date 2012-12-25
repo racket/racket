@@ -150,6 +150,9 @@
  (online-expansion-pending "Hintergrund-Expansion läuft ...")
  (online-expansion-finished "Hintergrund-Expansion fertig") ;; note: there may still be errors in this case
  
+ ; the next two show up in a menu when you click on the circle in the bottom right corner
+ (disable-online-expansion "Hintergrund-Expansion deaktivieren")
+ (enable-online-expansion "Hintergrund-Expansion aktivieren")
  ;; the online expansion preferences pane
  (online-expansion "Hintergrund-Expansion") ;; title of prefs pane
  ; the different kinds of errors
@@ -159,6 +162,8 @@
  ; locations the errors can be shown
  (online-expansion-error-gold-highlight "mit goldener Markierung")
  (online-expansion-error-margin "am Rand")
+ ; the label of a preference in the (string-constant online-expansion) section
+ (show-arrows-on-mouseover "Bindungen und Tail-Positionen unter Mauszeiger anzeigen")
  ;;; info bar at botttom of drscheme frame
  (collect-button-label "GC")
  (read-only "Nur Lesen")

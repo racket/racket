@@ -282,6 +282,8 @@ Scheme_Env *scheme_engine_instance_init()
 
   scheme_init_logging_once();
 
+  scheme_init_compenv_symbol();
+
 #if defined(MZ_PLACES_WAITPID)
   scheme_places_start_child_signal_handler();
 #endif
@@ -1590,7 +1592,7 @@ namespace_variable_value(int argc, Scheme_Object *argv[])
   use_map = ((argc > 1) ? SCHEME_TRUEP(argv[1]) : 1);
   if ((argc > 2) && SCHEME_TRUEP(argv[2])
       && !scheme_check_proc_arity(NULL, 0, 2, argc, argv))
-    scheme_wrong_contract("namespace-variable-value", "(or/c (-> any) #f)", 1, argc, argv);
+    scheme_wrong_contract("namespace-variable-value", "(or/c (-> any) #f)", 2, argc, argv);
   if ((argc > 3) && !SCHEME_NAMESPACEP(argv[3]))
     scheme_wrong_contract("namespace-variable-value", "namespace?", 3, argc, argv);
 

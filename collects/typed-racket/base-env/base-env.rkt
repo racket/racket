@@ -1146,7 +1146,8 @@
   (-> (-val 'gc) (Un (-val 'cgc) (-val '3m)))
   (-> (-val 'link) (Un (-val 'static) (-val 'shared) (-val 'dll) (-val 'framework)))
   (-> (-val 'so-suffix) -Bytes)
-  (-> (-val 'machine) -String))]
+  (-> (-val 'machine) -String)
+  (-> (-val 'word) -PosInt))]
 [system-language+country (-> -String)]
 [system-library-subpath (->opt [(Un (-val #f) (-val 'cgc) (-val '3m))] -Path)]
 

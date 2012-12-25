@@ -281,8 +281,13 @@ void scheme_setup_thread_local_key_if_needed() XFORM_SKIP_PROC
   {
     void **base;
 
+# ifdef __MINGW32__
+    asm("mov %%fs:(0x2C), %0;"
+	:"=r"(base));        /* output */
+# else
     __asm { mov ecx, FS:[0x2C]
             mov base, ecx }
+# endif
     scheme_tls_delta -= (uintptr_t)base[scheme_tls_index];
     scheme_tls_index *= sizeof(void*);
   }
@@ -2583,14 +2588,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
 	struct GC_Set *home;
 
 	home = GC_set(v);
-	if (home
-	    && ((home == real_tagged)
-		|| (home == tagged_atomic)
-		|| (home == tagged_uncollectable)
-		|| (home == tagged_eternal))) {
-	  print_tagged_value("\n  ->", v, 0, diff, max_w, "");
-	} else
-	  print_tagged_value("\n  ->", v, 1, diff, max_w, "");
+	print_tagged_value("\n  ->", v, diff, max_w, "");
       }
       scheme_console_printf("\n");
     }

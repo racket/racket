@@ -9,6 +9,7 @@
          racket/runtime-path
          racket/math
          racket/match
+         racket/set
          racket/gui/base
          compiler/embed
          compiler/cm
@@ -893,7 +894,10 @@
     set-bottom-bar-status
     
     get-oc-status
-    set-oc-status)
+    set-oc-status
+    
+    set-dep-paths
+    set-dirty-if-dep)
   
   (define online-expansion-logger (make-logger 'online-expansion-state-machine (current-logger)))
   (define-syntax-rule
@@ -1065,6 +1069,12 @@
         (set! bkg-colors (filter (λ (x) (not (eq? (car x) id))) bkg-colors))
         (update-little-dot))
       
+      (define dep-paths (set))
+      (define/public (set-dep-paths d) (set! dep-paths d))
+      (define/public (set-dirty-if-dep path) 
+        (when (set-member? dep-paths path)
+          (oc-set-dirty this)))
+      
       (super-new)))
   
   (define module-language-online-expand-text-mixin 
@@ -1075,7 +1085,7 @@
                get-tab get-canvas invalidate-bitmap-cache 
                set-position get-start-position get-end-position
                highlight-range dc-location-to-editor-location
-               begin-edit-sequence end-edit-sequence)
+               begin-edit-sequence end-edit-sequence in-edit-sequence?)
       
       
       (define/public (fetch-data-to-send)
@@ -1302,13 +1312,25 @@
         
         (values x y w h))
         
+      (define need-to-dirty? #f)
+      
       (define/augment (after-insert start end) 
-        (oc-set-dirty (get-tab))
+        (if (in-edit-sequence?)
+            (set! need-to-dirty? #t)
+            (oc-set-dirty (get-tab)))
         (inner (void) after-insert start end))
       
       (define/augment (after-delete start end) 
-        (oc-set-dirty (get-tab))
+        (if (in-edit-sequence?)
+            (set! need-to-dirty? #t)
+            (oc-set-dirty (get-tab)))
         (inner (void) after-delete start end))
+      
+      (define/augment (after-edit-sequence)
+        (when need-to-dirty?
+          (set! need-to-dirty? #f)
+          (oc-set-dirty (get-tab)))
+        (inner (void) after-edit-sequence))
       
       (define/augment (after-load-file success?)
         (when success? 
@@ -1318,6 +1340,18 @@
       (define/augment (after-set-next-settings new-settings)
         (oc-language-change (get-tab))
         (inner (void) after-set-next-settings new-settings))
+      
+      (define/augment (after-save-file success?)
+        (when success?
+          (define bx (box #f))
+          (define path (get-filename bx))
+          (when (and path
+                     (not (unbox bx)))
+            (for ([frame (in-list (send (group:get-the-frame-group) get-frames))])
+              (when (is-a? frame drracket:unit:frame%)
+                (for ([tab (in-list (send frame get-tabs))])
+                  (send tab set-dirty-if-dep path))))))
+        (inner (void) after-save-file success?))
       
       (super-new)))
   
@@ -1545,8 +1579,8 @@
                       (new menu-item% 
                            [parent menu]
                            [label (if on?
-                                      "Disable online compilation"
-                                      "Enable online compilation")]
+                                      (string-constant disable-online-expansion)
+                                      (string-constant enable-online-expansion))]
                            [callback
                             (λ args
                               (preferences:set 'drracket:online-compilation-default-on (not on?)))])
@@ -1885,7 +1919,7 @@
 
   (define/oc-log (oc-finished res)
     (define-values (running-tab dirty/pending-tab dirty-tabs clean-tabs) (get-current-oc-state))
-    (when running-tab ;; why can this be #f?
+    (when running-tab
       (cond
         [(eq? (vector-ref res 0) 'handler-results)
          (line-of-interest)
@@ -1901,7 +1935,8 @@
                 (send running-tab get-defs)
                 val))))
          
-         (send running-tab set-oc-status (clean #f #f '()))]
+         (send running-tab set-oc-status (clean #f #f '()))
+         (send running-tab set-dep-paths (vector-ref res 2))]
         [else
          (line-of-interest)
          (send running-tab set-oc-status
@@ -1913,9 +1948,10 @@
       (oc-maybe-start-something)))
   
   (define/oc-log (oc-status-message sym str)
-    (line-of-interest)
     (define-values (running-tab dirty/pending-tab dirty-tabs clean-tabs) (get-current-oc-state))
-    (send running-tab set-oc-status (running sym str)))
+    (when running-tab
+      (line-of-interest)
+      (send running-tab set-oc-status (running sym str))))
   
   ;; get-focus-tab : -> (or/c tab #f)
   (define (get-focus-tab)
@@ -1981,13 +2017,19 @@
                                'finished-expansion
                                sc-online-expansion-running))))))
                (define res (place-channel-get pc-out))
+               (define res/set 
+                 (if (eq? (vector-ref res 0) 'handler-results)
+                     (vector (vector-ref res 0)
+                             (vector-ref res 1)
+                             (list->set (vector-ref res 2)))
+                     res))
                (queue-callback
                 (λ ()
                   (when (eq? us pending-thread)
                     (set-pending-thread #f #f))
                   (when (getenv "PLTDRPLACEPRINT")
                     (printf "PLTDRPLACEPRINT: got results back from the place\n"))
-                  (show-results res)))))))
+                  (show-results res/set)))))))
   
   (define (stop-place-running)
     (when expanding-place
@@ -2265,4 +2307,7 @@
        (connect-to-prefs read-choice 'drracket:online-expansion:read-in-defs-errors)
        (connect-to-prefs var-choice 'drracket:online-expansion:variable-errors)
        (connect-to-prefs other-choice 'drracket:online-expansion:other-errors)
+       (preferences:add-check parent-vp
+                              'drracket:syncheck:show-arrows?
+                              (string-constant show-arrows-on-mouseover))
        parent-vp))))

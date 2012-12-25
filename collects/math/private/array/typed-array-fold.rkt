@@ -21,23 +21,6 @@
      (raise-argument-error name (format "Index < ~a" dims) 1 arr k)]
     [else  k]))
 
-(: array-axis-reduce (All (A B) ((Array A) Integer (Index (Integer -> A) -> B) -> (Array B))))
-(define (array-axis-reduce arr k f)
-  (let ([k  (check-array-axis 'array-axis-reduce arr k)])
-    (define ds (array-shape arr))
-    (define dk (unsafe-vector-ref ds k))
-    (define new-ds (unsafe-vector-remove ds k))
-    (define proc (unsafe-array-proc arr))
-    (unsafe-build-array
-     new-ds (λ: ([js : Indexes])
-              (define old-js (unsafe-vector-insert js k 0))
-              (f dk (λ: ([jk : Integer])
-                      (cond [(or (jk . < . 0) (jk . >= . dk))
-                             (raise-argument-error 'array-axis-reduce (format "Index < ~a" dk) jk)]
-                            [else
-                             (unsafe-vector-set! old-js k jk)
-                             (proc (vector-copy-all old-js))])))))))
-
 (: unsafe-array-axis-reduce (All (A B) ((Array A) Index (Index (Index -> A) -> B) -> (Array B))))
 (begin-encourage-inline
   (define (unsafe-array-axis-reduce arr k f)
@@ -51,6 +34,19 @@
               (f dk (λ: ([jk : Index])
                       (unsafe-vector-set! old-js k jk)
                       (proc old-js)))))))
+
+(: array-axis-reduce (All (A B) ((Array A) Integer (Index (Integer -> A) -> B) -> (Array B))))
+(define (array-axis-reduce arr k f)
+  (let ([k  (check-array-axis 'array-axis-reduce arr k)])
+    (unsafe-array-axis-reduce
+     arr k
+     (λ: ([dk : Index] [proc : (Index -> A)])
+       (: safe-proc (Integer -> A))
+       (define (safe-proc jk)
+         (cond [(or (jk . < . 0) (jk . >= . dk))
+                (raise-argument-error 'array-axis-reduce (format "Index < ~a" dk) jk)]
+               [else  (proc jk)]))
+       (f dk safe-proc)))))
 
 (: array-axis-fold/init (All (A B) ((Array A) Integer (A B -> B) B -> (Array B))))
 (define (array-axis-fold/init arr k f init)

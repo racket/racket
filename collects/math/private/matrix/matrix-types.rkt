@@ -1,16 +1,21 @@
-#lang typed/racket
+#lang typed/racket/base
+
+(require "../array/array-struct.rkt"
+         "../array/array-fold.rkt"
+         "../array/array-pointwise.rkt"
+         "../unsafe.rkt")
+
 (provide Matrix
          Column Result-Column
          Column-Matrix
-         array-matrix?
-         matrix-all=
-         square-matrix? 
+         matrix?
+         square-matrix?
+         row-matrix?
+         col-matrix?
+         matrix-shape
          square-matrix-size
-         matrix-dimensions
-         matrix-row-dimension
-         matrix-column-dimension)
-
-(require math/array)
+         matrix-num-rows
+         matrix-num-cols)
 
 (define-type (Matrix A) (Array A))
 ; matrices are represented as arrays
@@ -22,39 +27,53 @@
 (define-type (Column-Matrix A) (Matrix A))
 ; a column vector represented as a matrix
 
-(: array-matrix? (All (A) ((Array A) -> Boolean)))
-(define (array-matrix? x)
-  (= 2 (array-dims x)))
+(: matrix? (All (A) ((Array A) -> Boolean)))
+(define (matrix? arr)
+  (and (> (array-size arr) 0)
+       (= (array-dims arr) 2)))
 
-(: square-matrix? : (All (A) (Matrix A) -> Boolean))
-(define (square-matrix? a)
-  (and (array-matrix? a)
-       (let ([sh (array-shape a)])
-         (= (vector-ref sh 0) (vector-ref sh 1)))))
+(: square-matrix? (All (A) ((Array A) -> Boolean)))
+(define (square-matrix? arr)
+  (define ds (array-shape arr))
+  (and (= (vector-length ds) 2)
+       (let ([d0  (unsafe-vector-ref ds 0)]
+             [d1  (unsafe-vector-ref ds 1)])
+         (and (> d0 0) (> d1 0) (= d0 d1)))))
 
-(: square-matrix-size : (All (A) (Matrix A) -> Index))
-(define (square-matrix-size a)
-  (vector-ref (array-shape a) 0))
+(: row-matrix? (All (A) ((Array A) -> Boolean)))
+(define (row-matrix? arr)
+  (define ds (array-shape arr))
+  (and (= (vector-length ds) 2)
+       (= (unsafe-vector-ref ds 0) 1)
+       (> (unsafe-vector-ref ds 1) 0)))
 
-(: matrix-all= : (Matrix Number) (Matrix Number) -> Boolean)
-(define (matrix-all= arr0 arr1)
-  (array-all-and (array= arr0 arr1)))
+(: col-matrix? (All (A) ((Array A) -> Boolean)))
+(define (col-matrix? arr)
+  (define ds (array-shape arr))
+  (and (= (vector-length ds) 2)
+       (> (unsafe-vector-ref ds 0) 0)
+       (= (unsafe-vector-ref ds 1) 1)))
 
-(: matrix-dimensions : (Matrix Number) -> (Values Index Index))
-(define (matrix-dimensions a)
-  (define sh (array-shape a))
-  ; TODO: Remove list conversion when trbug1 is fixed
-  (define sh-tmp (vector->list sh))
-  (values (car sh-tmp) (cadr sh-tmp))
-  ; (values (vector-ref sh 0) (vector-ref sh 1))
-  )
+(: matrix-shape (All (A) ((Array A) -> (Values Index Index))))
+(define (matrix-shape a)
+  (define ds (array-shape a))
+  (if (and (> (array-size a) 0)
+           (= (vector-length ds) 2))
+      (values (unsafe-vector-ref ds 0)
+              (unsafe-vector-ref ds 1))
+      (raise-argument-error 'matrix-shape "matrix?" a)))
 
-(: matrix-row-dimension : (Matrix Number) -> Index)
-(define (matrix-row-dimension a)
-  (define sh (array-shape a))
-  (vector-ref sh 0))
+(: square-matrix-size (All (A) ((Array A) -> Index)))
+(define (square-matrix-size arr)
+  (cond [(square-matrix? arr)  (unsafe-vector-ref (array-shape arr) 0)]
+        [else  (raise-argument-error 'square-matrix-size "square-matrix?" arr)]))
 
-(: matrix-column-dimension : (Matrix Number) -> Index)
-(define (matrix-column-dimension a)
-  (define sh (array-shape a))
-  (vector-ref sh 1))
+(: matrix-num-rows (All (A) ((Array A) -> Index)))
+(define (matrix-num-rows a)
+  (cond [(matrix? a)  (vector-ref (array-shape a) 0)]
+        [else  (raise-argument-error 'matrix-num-rows "matrix?" a)]))
+
+(: matrix-num-cols (All (A) ((Array A) -> Index)))
+(define (matrix-num-cols a)
+  (cond [(matrix? a)  (vector-ref (array-shape a) 1)]
+        [else  (raise-argument-error 'matrix-num-cols "matrix?" a)]))

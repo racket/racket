@@ -359,7 +359,12 @@
                        (or min-height
                            (POINT-y (MINMAXINFO-ptMinTrackSize mmi)))))))
       0]
-     [else (super wndproc w msg wParam lParam default)]))
+     [(= msg WM_DISPLAYCHANGE)
+      (parameterize ([current-eventspace (get-eventspace)])
+        (queue-callback (lambda () (display-changed))))
+      0]
+     [else
+      (super wndproc w msg wParam lParam default)]))
 
   (define/override (try-nc-mouse w msg wParam lParam)
     #f)
@@ -665,4 +670,7 @@
     (DefWindowProcW hwnd WM_SYSCHAR (char->integer c) (arithmetic-shift 1 29)))
 
   (define/public (system-menu)
-    (popup-menu-with-char #\space)))
+    (popup-menu-with-char #\space))
+
+  (define/public (display-changed) (void)))
+

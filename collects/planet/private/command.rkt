@@ -3,7 +3,8 @@
          racket/cmdline
          (for-syntax racket/base))
 
-(provide svn-style-command-line)
+(provide svn-style-command-line
+         current-svn-style-command)
 
 ;; implements an "svn-style" command-line interface as a wrapper around racket/cmdline. At the moment,
 ;; it is light on error-checking and makes choices that are somewhat specific to the PLaneT commandline
@@ -31,6 +32,8 @@
 ;;      This means that no command name may be a prefix of any other command name, because it
 ;;      would mean there was no way to unambiguously name the shorter one.
 
+(define current-svn-style-command (make-parameter #f))
+
 (define-syntax (svn-style-command-line stx)
   (syntax-case stx ()
     [(_ #:program prog 
@@ -52,19 +55,20 @@
                              (values (car argslist) (cdr argslist)))])
              (prefix-case the-command
                           [n 
-                           (command-line 
-                            #:program (format "~a ~a" p n)
-                            #:argv remainder 
-                            body ...
-                            #:handlers
-                            (λ (_ . formals) final-expr)
-                            (ensure-list (pimap symbol->string 'formals))
-                            (λ (help-string)
-                              (for-each (λ (l) (display l) (newline)) (wrap-to-count long-description 80))
-                              (newline)
-                              (display "Usage:\n")
-                              (display help-string)
-                              (exit)))] ...
+                           (parameterize ([current-svn-style-command n])
+                             (command-line 
+                              #:program (format "~a ~a" p n)
+                              #:argv remainder 
+                              body ...
+                              #:handlers
+                              (λ (_ . formals) final-expr)
+                              (ensure-list (pimap symbol->string 'formals))
+                              (λ (help-string)
+                                 (for-each (λ (l) (display l) (newline)) (wrap-to-count long-description 80))
+                                 (newline)
+                                 (display "Usage:\n")
+                                 (display help-string)
+                                 (exit))))] ...
                           ["help" (help)]
                           [else (help)]))))]))
 

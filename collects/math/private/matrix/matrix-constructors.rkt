@@ -1,62 +1,151 @@
-#lang typed/racket
+#lang typed/racket/base
 
-(require math/array
-         "../unsafe.rkt"
-         "matrix-types.rkt")
+(require racket/fixnum
+         racket/list
+         racket/vector
+         math/array
+         "matrix-types.rkt"
+         "../unsafe.rkt")
 
-(provide identity-matrix flidentity-matrix 
-         matrix->list list->matrix fllist->matrix
-         matrix->vector vector->matrix flvector->matrix
-         flat-vector->matrix
+(provide identity-matrix
          make-matrix
-         matrix-row
-         matrix-column
-         submatrix)
+         build-matrix
+         diagonal-matrix/zero
+         diagonal-matrix
+         block-diagonal-matrix/zero
+         block-diagonal-matrix
+         vandermonde-matrix)
 
-(: identity-matrix (Integer -> (Matrix Real)))
+;; ===================================================================================================
+;; Basic constructors
+
+(: identity-matrix (Integer -> (Matrix (U 0 1))))
 (define (identity-matrix m) (diagonal-array 2 m 1 0))
-
-(: flidentity-matrix (Integer -> (Matrix Float)))
-(define (flidentity-matrix m) (diagonal-array 2 m 1.0 0.0))
 
 (: make-matrix (All (A) (Integer Integer A -> (Matrix A))))
 (define (make-matrix m n x)
   (make-array (vector m n) x))
 
-(: list->matrix : (Listof* Number) -> (Matrix Number))
-(define (list->matrix rows)
-  (list*->array rows number?))
+(: build-matrix (All (A) (Integer Integer (Index Index -> A) -> (Matrix A))))
+(define (build-matrix m n proc)
+  (cond [(or (not (index? m)) (= m 0))
+         (raise-argument-error 'build-matrix "Positive-Index" 0 m n proc)]
+        [(or (not (index? n)) (= n 0))
+         (raise-argument-error 'build-matrix "Positive-Index" 1 m n proc)]
+        [else
+         (unsafe-build-array
+          ((inst vector Index) m n)
+          (λ: ([js : Indexes])
+            (proc (unsafe-vector-ref js 0)
+                  (unsafe-vector-ref js 1))))]))
 
-(: fllist->matrix : (Listof* Flonum) -> (Matrix Flonum))
-(define (fllist->matrix rows)
-  (list*->array rows flonum? ))
+;; ===================================================================================================
+;; Diagonal matrices
 
-(: matrix->list : (All (A) (Matrix A) -> (Listof* A)))
-(define (matrix->list a)
-  (array->list* a))
+(: diagonal-matrix/zero (All (A) (Listof A) A -> (Array A)))
+(define (diagonal-matrix/zero xs zero)
+  (cond [(empty? xs)
+         (raise-argument-error 'diagonal-matrix "nonempty List" xs)]
+        [else
+         (define vs (list->vector xs))
+         (define m (vector-length vs))
+         (unsafe-build-array
+          ((inst vector Index) m m)
+          (λ: ([js : Indexes])
+            (define i (unsafe-vector-ref js 0))
+            (cond [(= i (unsafe-vector-ref js 1))  (unsafe-vector-ref vs i)]
+                  [else  zero])))]))
 
-(: vector->matrix : (Vectorof* Number) -> (Matrix Number))
-(define (vector->matrix rows)
-  (vector*->array rows number? ))
+(: diagonal-matrix (case-> ((Listof Real) -> (Array Real))
+                           ((Listof Number) -> (Array Number))))
+(define (diagonal-matrix xs)
+  (diagonal-matrix/zero xs 0))
 
-(: flvector->matrix : (Vectorof* Flonum) -> (Matrix Flonum))
-(define (flvector->matrix rows)
-  (vector*->array rows flonum? ))
+;; ===================================================================================================
+;; Block diagonal matrices
 
-(: matrix->vector : (All (A) (Matrix A) -> (Vectorof* A)))
-(define (matrix->vector a)
-  (array->vector* a))
+(: block-diagonal-matrix/zero* (All (A) (Vectorof (Array A)) A -> (Array A)))
+(define (block-diagonal-matrix/zero* as zero)
+  (define num (vector-length as))
+  (define-values (ms ns)
+    (let-values ([(ms ns)  (for/fold: ([ms : (Listof Index)  empty]
+                                       [ns : (Listof Index)  empty]
+                                       ) ([a  (in-vector as)])
+                             (define-values (m n) (matrix-shape a))
+                             (values (cons m ms) (cons n ns)))])
+      (values (reverse ms) (reverse ns))))
+  (define res-m (assert (apply + ms) index?))
+  (define res-n (assert (apply + ns) index?))
+  (define vs ((inst make-vector Index) res-m 0))
+  (define hs ((inst make-vector Index) res-n 0))
+  (define is ((inst make-vector Index) res-m 0))
+  (define js ((inst make-vector Index) res-n 0))
+  (define-values (_res-i _res-j)
+    (for/fold: ([res-i : Nonnegative-Fixnum 0]
+                [res-j : Nonnegative-Fixnum 0]
+                ) ([m  (in-list ms)]
+                   [n  (in-list ns)]
+                   [k : Nonnegative-Fixnum  (in-range num)])
+      (let ([k  (assert k index?)])
+        (for: ([i : Nonnegative-Fixnum  (in-range m)])
+          (vector-set! vs (unsafe-fx+ res-i i) k)
+          (vector-set! is (unsafe-fx+ res-i i) (assert i index?)))
+        (for: ([j : Nonnegative-Fixnum  (in-range n)])
+          (vector-set! hs (unsafe-fx+ res-j j) k)
+          (vector-set! js (unsafe-fx+ res-j j) (assert j index?))))
+      (values (unsafe-fx+ res-i m) (unsafe-fx+ res-j n))))
+  (define procs (vector-map (λ: ([a : (Array A)]) (unsafe-array-proc a)) as))
+  (unsafe-build-array
+   ((inst vector Index) res-m res-n)
+   (λ: ([ij : Indexes])
+     (define i (unsafe-vector-ref ij 0))
+     (define j (unsafe-vector-ref ij 1))
+     (define v (unsafe-vector-ref vs i))
+     (cond [(fx= v (vector-ref hs j))
+            (define proc (unsafe-vector-ref procs v))
+            (define iv (unsafe-vector-ref is i))
+            (define jv (unsafe-vector-ref js j))
+            (unsafe-vector-set! ij 0 iv)
+            (unsafe-vector-set! ij 1 jv)
+            (define res (proc ij))
+            (unsafe-vector-set! ij 0 i)
+            (unsafe-vector-set! ij 1 j)
+            res]
+           [else
+            zero]))))
 
-(: submatrix : (Matrix Number) (Sequenceof Index) (Sequenceof Index) -> (Matrix Number))
-(define (submatrix a row-range col-range)
-  (array-slice-ref a (list row-range col-range)))
+(: block-diagonal-matrix/zero (All (A) (Listof (Array A)) A -> (Array A)))
+(define (block-diagonal-matrix/zero as zero)
+  (let ([as  (list->vector as)])
+    (define num (vector-length as))
+    (cond [(= num 0)
+           (raise-argument-error 'block-diagonal-matrix/zero "nonempty List" as)]
+          [(= num 1)
+           (unsafe-vector-ref as 0)]
+          [else
+           (block-diagonal-matrix/zero* as zero)])))
 
-(: matrix-row : (Matrix Number) Index -> (Matrix Number))
-(define (matrix-row a i)
-  (define-values (m n) (matrix-dimensions a))
-  (array-slice-ref a (list (in-range i (add1 i)) (in-range n))))
+(: block-diagonal-matrix (case-> ((Listof (Array Real)) -> (Array Real))
+                                 ((Listof (Array Number)) -> (Array Number))))
+(define (block-diagonal-matrix as)
+  (block-diagonal-matrix/zero as 0))
 
-(: matrix-column : (Matrix Number) Index -> (Matrix Number))
-(define (matrix-column a j)
-  (define-values (m n)(matrix-dimensions a))
-  (array-slice-ref a (list (in-range m) (in-range j (add1 j)))))
+;; ===================================================================================================
+;; Special matrices
+
+(: expt-hack (case-> (Real Integer -> Real)
+                     (Number Integer -> Number)))
+;; Stop using this when TR correctly derives expt : Real Integer -> Real
+(define (expt-hack x n)
+  (cond [(real? x)  (assert (expt x n) real?)]
+        [else  (expt x n)]))
+
+(: vandermonde-matrix (case-> ((Listof Real) Integer -> (Array Real))
+                              ((Listof Number) Integer -> (Array Number))))
+(define (vandermonde-matrix xs n)
+  (cond [(empty? xs)
+         (raise-argument-error 'vandermonde-matrix "nonempty List" 0 xs n)]
+        [(or (not (index? n)) (zero? n))
+         (raise-argument-error 'vandermonde-matrix "Positive-Index" 1 xs n)]
+        [else
+         (array-axis-expand (list->array xs) 1 n expt-hack)]))

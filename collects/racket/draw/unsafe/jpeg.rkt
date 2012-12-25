@@ -19,7 +19,7 @@
 (define-ffi-definer define-jpeg/private jpeg-lib)
 
 (define _j_common_ptr _pointer)
-(define _size_t _long)
+(define _size_t _intptr)
 (define _JDIMENSION _uint)
 (define _J_COLOR_SPACE _int)
 (define _J_DCT_METHOD _int)

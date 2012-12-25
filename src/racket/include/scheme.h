@@ -110,6 +110,9 @@ typedef long FILE;
 #ifndef MSC_IZE
 # define MSC_IZE(x) x
 #endif
+#ifndef M_MSC_IZE
+# define M_MSC_IZE(x) x
+#endif
 #ifndef MSCBOR_IZE
 # define MSCBOR_IZE(x) MSC_IZE(x)
 #endif

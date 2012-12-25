@@ -1385,7 +1385,7 @@ Returns an array with shape @racket[(vector (array-size arr))], with the element
 @;{==================================================================================================}
 
 
-@section{Folds and Other Axis Reductions}
+@section{Folds, Reductions and Expansions}
 
 @defproc*[([(array-axis-fold [arr (Array A)] [k Integer] [f (A A -> A)]) (Array A)]
            [(array-axis-fold [arr (Array A)] [k Integer] [f (A B -> B)] [init B]) (Array B)])]{
@@ -1547,18 +1547,6 @@ and @racket[array-all-or] is defined similarly.
                  (array-all-or (array= arr (array 0)))]
 }
 
-@defproc[(array->list-array [arr (Array A)] [k Integer]) (Array (Listof A))]{
-Returns an array of lists, computed as if by applying @racket[list] to the elements in each row of
-axis @racket[k].
-@examples[#:eval typed-eval
-                 (define arr (index-array #(3 3)))
-                 arr
-                 (array->list-array arr 1)
-                 (array-ref (array->list-array (array->list-array arr 1) 0) #())]
-See @racket[mean] for more useful examples, and @racket[array-axis-reduce] for an example that shows
-how @racket[array->list-array] is implemented.
-}
-
 @defproc[(array-axis-reduce [arr (Array A)] [k Integer] [h (Index (Integer -> A) -> B)]) (Array B)]{
 Like @racket[array-axis-fold], but allows evaluation control (such as short-cutting @racket[and] and
 @racket[or]) by moving the loop into @racket[h]. The result has the shape of @racket[arr], but with
@@ -1591,6 +1579,60 @@ Every fold, including @racket[array-axis-fold], is ultimately defined using
 @racket[array-axis-reduce] or its unsafe counterpart.
 }
 
+@defproc[(array-axis-expand [arr (Array A)] [k Integer] [dk Integer] [g (A Index -> B)]) (Array B)]{
+Inserts a new axis number @racket[k] of length @racket[dk], using @racket[g] to generate values;
+@racket[k] must be @italic{no greater than} the dimension of @racket[arr], and @racket[dk] must be
+nonnegative.
+
+Conceptually, @racket[g] is applied @racket[dk] times to each element in each row of axis @racket[k],
+once for each nonnegative index @racket[jk < dk]. (In reality, @racket[g] is applied only when the
+resulting array is indexed.)
+
+Turning vector elements into rows of a new last axis using @racket[array-axis-expand] and
+@racket[vector-ref]:
+@interaction[#:eval typed-eval
+                    (define arr (array #['#(a b c) '#(d e f) '#(g h i)]))
+                    (array-axis-expand arr 1 3 vector-ref)]
+Creating a @racket[vandermonde-matrix]:
+@interaction[#:eval typed-eval
+                    (array-axis-expand (list->array '(1 2 3 4)) 1 5 expt)]
+
+This function is a dual of @racket[array-axis-reduce] in that it can be used to invert applications
+of @racket[array-axis-reduce].
+To do so, @racket[g] should be a destructuring function that is dual to the constructor passed to
+@racket[array-axis-reduce].
+Example dual pairs are @racket[vector-ref] and @racket[build-vector], and @racket[list-ref] and
+@racket[build-list].
+
+(Do not pass @racket[list-ref] to @racket[array-axis-expand] if you care about performance, though.
+See @racket[list-array->array] for a more efficient solution.)
+}
+
+@defproc[(array->list-array [arr (Array A)] [k Integer 0]) (Array (Listof A))]{
+Returns an array of lists, computed as if by applying @racket[list] to the elements in each row of
+axis @racket[k].
+@examples[#:eval typed-eval
+                 (define arr (index-array #(3 3)))
+                 arr
+                 (array->list-array arr 1)
+                 (array-ref (array->list-array (array->list-array arr 1) 0) #())]
+See @racket[mean] for more useful examples, and @racket[array-axis-reduce] for an example that shows
+how @racket[array->list-array] is implemented.
+}
+
+@defproc[(list-array->array [arr (Array (Listof A))] [k Integer 0]) (Array A)]{
+Returns an array in which the list elements of @racket[arr] comprise a new axis @racket[k].
+Equivalent to @racket[(array-axis-expand arr k n list-ref)] where @racket[n] is the
+length of the lists in @racket[arr], but with O(1) indexing.
+
+@examples[#:eval typed-eval
+                 (define arr (array->list-array (index-array #(3 3)) 1))
+                 arr
+                 (list-array->array arr 1)]
+
+For fixed @racket[k], this function and @racket[array->list-array] are mutual inverses with respect
+to their array arguments.
+}
 
 @;{==================================================================================================}
 

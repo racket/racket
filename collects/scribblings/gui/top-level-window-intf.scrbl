@@ -192,6 +192,24 @@ Returns @|void-const|.
 }}
 
 
+@defmethod[(display-changed) any/c]{
+  @methspec{
+    Called when the displays configuration changes.
+
+    To determine the new monitor configuration, use
+    @racket[get-display-count], @racket[get-display-size], and
+    @racket[get-display-left-top-inset]. 
+
+    Note that this method may be invoked multiple times for a single
+    logical change to the monitors.
+    
+  }
+  @methimpl{
+    Returns @|void-const|.
+  }
+}
+
+
 @defmethod[(on-traverse-char [event (is-a?/c key-event%)])
            boolean?]{
 

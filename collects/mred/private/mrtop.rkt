@@ -35,7 +35,8 @@
     get-focus-window get-edit-target-window
     get-focus-object get-edit-target-object
     center move resize
-    on-message))
+    on-message
+    display-changed))
 
 (define-local-member-name
   do-create-status-line
@@ -76,7 +77,8 @@
      [get-eventspace (entry-point (lambda () (send wx get-eventspace)))])
     (pubment*
      [can-close? (lambda () (inner #t can-close?))]
-     [on-close (lambda () (inner (void) on-close))])
+     [on-close (lambda () (inner (void) on-close))]
+     [display-changed (λ () (inner (void) display-changed))])
     (public*
      [can-exit? (lambda () (can-close?))]
      [on-exit (lambda () (on-close) (show #f))]

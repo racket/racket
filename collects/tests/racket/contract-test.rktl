@@ -12114,17 +12114,17 @@ so that propagation occurs.
   (test-name '(or/c #f #t #\a "x") (or/c #f #t #\a "x"))
   (test-name '(or/c #f #t #\a "x" #rx"x" #rx#"x") (or/c #f #t #\a "x" #rx"x" #rx#"x"))
 
-  (test-name '(subclass?/c class:c%)
+  (test-name '(subclass?/c c%)
              (let ([c% (class object% (super-new))]) (subclass?/c c%)))
 
-  (test-name '(implementation?/c interface:i<%>)
+  (test-name '(implementation?/c i<%>)
              (let ([i<%> (interface ())])
                (implementation?/c i<%>)))
 
-  (test-name '(is-a?/c interface:i<%>)
+  (test-name '(is-a?/c i<%>)
              (let ([i<%> (interface ())])
                (is-a?/c i<%>)))
-  (test-name '(is-a?/c class:c%)
+  (test-name '(is-a?/c c%)
              (let ([i<%> (interface ())]
                    [c% (class object% (super-new))])
                (is-a?/c c%)))
