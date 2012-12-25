@@ -9,7 +9,7 @@
 (define http-proxy-port null)
 
 (when http-proxy
-    (let ((matched (regexp-match #rx"([Hh][Tt][Tt][Pp]://)?([1-2]?[0-9]?[0-9]\\.[1-2]?[0-9]?[0-9]\\.[1-2]?[0-9]?[0-9]\\.[1-2]?[0-9]?[0-9])(:([0-9]+))?" "http://192.168.0.1:3128")))
+    (let ((matched (regexp-match #rx"([Hh][Tt][Tt][Pp]://)?([^:]*)(:([0-9]+))?" http-proxy)))
       (set! http-proxy-host (third matched))
       (set! http-proxy-port (or (string->number (fifth matched)) 80))
       (printf "Proxy detected: host ~a port ~a~%" http-proxy-host http-proxy-port)))
