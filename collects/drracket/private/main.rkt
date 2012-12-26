@@ -64,6 +64,7 @@
 
 (application:current-app-name (string-constant drscheme))
 
+(preferences:set-default 'drracket:logger-receiver-string "error debug@GC debug@PLaneT" string?)
 (preferences:set-default 'drracket:logger-scroll-to-bottom? #t boolean?)
 
 (preferences:set-default 'drracket:submodules-to-choose-from 

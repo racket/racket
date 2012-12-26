@@ -37,6 +37,7 @@ module browser threading seems wrong.
          "get-defs.rkt"
          "local-member-names.rkt"
          "eval-helpers.rkt"
+         "parse-logger-args.rkt"
          (prefix-in drracket:arrow: "../arrow.rkt")
          (prefix-in icons: images/compile-time)
          mred
@@ -45,7 +46,11 @@ module browser threading seems wrong.
          mzlib/date
          
          framework/private/aspell
-         framework/private/logging-timer)
+         framework/private/logging-timer
+         
+         scribble/xref
+         setup/xref
+         (only-in scribble/base doc-prefix))
 
 (provide unit@)
 
@@ -1324,11 +1329,13 @@ module browser threading seems wrong.
       (define log-visible? #f)
       (define/public-final (toggle-log)
         (set! log-visible? (not log-visible?))
-        (send frame show/hide-log log-visible?))
+        (send frame show/hide-log log-visible?)
+        (send (get-ints) enable/disable-capture-log log-visible?))
       (define/public-final (hide-log)
         (when log-visible? (toggle-log)))
       (define/public-final (update-log)
-        (send frame show/hide-log log-visible?))
+        (send frame show/hide-log log-visible?)
+        (send frame set-logger-text-field-value (send (get-ints) get-user-log-receiver-args-str)))
       (define/public-final (update-logger-window command)
         (when (is-current-tab?)
           (send frame update-logger-window command)))
@@ -1355,6 +1362,7 @@ module browser threading seems wrong.
     enable-evaluation-in-tab
     update-toolbar-visibility
     show/hide-log
+    set-logger-text-field-value
     show-planet-status)
   
   (define frame-mixin
@@ -1460,12 +1468,14 @@ module browser threading seems wrong.
       (define logger-panel #f)
       (define logger-parent-panel #f)
       
-      ;; logger-gui-tab-panel: (or/c #f (is-a?/c tab-panel%))
+      ;; logger-gui-content-panel: (or/c #f (is-a?/c vertical-panel%))
       ;; this is #f when the GUI has not been built yet. After
-      ;; it becomes a tab-panel, it is always a tab-panel (altho the tab panel might not always be shown)
-      (define logger-gui-tab-panel #f)
+      ;; it becomes a panel, it is always a panel 
+      ;; (altho the panel might not always be shown)
+      (define logger-gui-content-panel #f)
       (define logger-gui-canvas #f)
       (define logger-checkbox #f)
+      (define logger-text-field #f)
       
       ;; logger-gui-text: (or/c #f (is-a?/c text%))
       ;; this is #f when the GUI has not been built or when the logging panel is hidden
@@ -1478,7 +1488,7 @@ module browser threading seems wrong.
         (let ([p (preferences:get 'drracket:logging-size-percentage)])
           (begin-container-sequence)
           (cond
-            [logger-gui-tab-panel
+            [logger-gui-content-panel
              (send logger-parent-panel change-children
                    (λ (l)
                      (cond
@@ -1502,34 +1512,67 @@ module browser threading seems wrong.
                         (remq logger-panel l)])))]
             [else
              (when show? ;; if we want to hide and it isn't built yet, do nothing
-               (define logger-gui-tab-panel-parent (new horizontal-panel% 
-                                                        [parent logger-panel]
-                                                        [stretchable-height #f]))
-               (set! logger-gui-tab-panel
-                     (new tab-panel% 
-                          [choices (list (string-constant logging-all)
-                                         "fatal" "error" "warning" "info" "debug")]
-                          [parent logger-gui-tab-panel-parent]
-                          [stretchable-height #f]
-                          [style '(no-border)]
-                          [callback
-                           (λ (tp evt)
-                             (preferences:set 'drracket:logger-gui-tab-panel-level
-                                              (send logger-gui-tab-panel get-selection))
-                             (update-logger-window #f))]))
-               (new button% [label (string-constant hide-log)]
-                    [callback (λ (x y) (send current-tab hide-log))]
-                    [parent logger-gui-tab-panel-parent])
-               (send logger-gui-tab-panel set-selection (preferences:get 'drracket:logger-gui-tab-panel-level))
+               (define logger-gui-content-panel-parent (new vertical-panel%
+                                                            [style '(border)]
+                                                            [parent logger-panel]
+                                                            [stretchable-height #t]))
+               (set! logger-gui-content-panel
+                     (new horizontal-panel%
+                          [parent logger-gui-content-panel-parent]
+                          [stretchable-height #f]))
                (new-logger-text)
                (set! logger-gui-canvas 
-                     (new editor-canvas% [parent logger-panel] [editor logger-gui-text]))
+                     (new editor-canvas%
+                          [parent logger-gui-content-panel-parent]
+                          [style '(transparent no-border)]
+                          [editor logger-gui-text]))
+               (new message% [label (string-constant log-messages)] [parent logger-gui-content-panel])
+               (new button% 
+                    [label (string-constant help)]
+                    [callback (λ (x y) 
+                                (define-values (path tag) 
+                                  (xref-tag->path+anchor (load-collections-xref)
+                                                         `(part
+                                                           ,(doc-prefix
+                                                             '(lib "scribblings/drracket/drracket.scrbl")
+                                                             #f
+                                                             "follow-log"))))
+                                (define url (path->url path))
+                                (define url2 (if tag
+                                                 (make-url (url-scheme url)
+                                                           (url-user url)
+                                                           (url-host url)
+                                                           (url-port url)
+                                                           (url-path-absolute? url)
+                                                           (url-path url)
+                                                           (url-query url)
+                                                           tag)
+                                                 url))
+                                (send-url (url->string url2)))]
+                    [parent logger-gui-content-panel])
+               (set! logger-text-field
+                     (new text-field% 
+                          [parent logger-gui-content-panel] 
+                          [label "‹level›@‹name› ..."]
+                          [init-value (send (get-interactions-text) get-user-log-receiver-args-str)]
+                          [callback
+                           (λ (tf evt)
+                             (define str (send (send tf get-editor) get-text))
+                             (define args (parse-logger-args str))
+                             (preferences:set 'drracket:logger-receiver-string str)
+                             (send (get-interactions-text) set-user-log-receiver-args str (if (null? args) #f args))
+                             (set-logger-text-field-bg-color args))]))
+               (set-logger-text-field-bg-color (parse-logger-args (send logger-text-field get-value)))
                (set! logger-checkbox 
                      (new check-box%
                           [label (string-constant logger-scroll-on-output)]
                           [callback (λ (a b) (preferences:set 'drracket:logger-scroll-to-bottom? (send logger-checkbox get-value)))]
-                          [parent logger-panel]
+                          [parent logger-gui-content-panel]
                           [value (preferences:get 'drracket:logger-scroll-to-bottom?)]))
+               (new button% 
+                    [label (string-constant hide-log)]
+                    [callback (λ (x y) (send current-tab hide-log))]
+                    [parent logger-gui-content-panel])
                (send logger-menu-item set-label (string-constant hide-log))
                (update-logger-window #f)
                (send logger-parent-panel change-children (lambda (l) (append l (list logger-panel)))))])
@@ -1538,8 +1581,16 @@ module browser threading seems wrong.
           (update-logger-button-label)
           (end-container-sequence)))
       
+      (define/public (set-logger-text-field-value str)
+        (send logger-text-field set-value str)
+        (set-logger-text-field-bg-color (parse-logger-args str)))
+      
+      (define/private (set-logger-text-field-bg-color good?)
+        (send logger-text-field set-field-background 
+              (send the-color-database find-color (if good? "white" "pink"))))
+      
       (define/private (log-shown?)
-        (and logger-gui-tab-panel
+        (and logger-gui-content-panel
              (member logger-panel (send logger-parent-panel get-children))))
       
       (define/private (new-logger-text)
@@ -1550,75 +1601,62 @@ module browser threading seems wrong.
       
       (define/public (update-logger-window command)
         (when logger-gui-text 
-          (let ([admin (send logger-gui-text get-admin)]
-                [canvas (send logger-gui-text get-canvas)])
-            (when (and canvas admin)
-              (let ([logger-messages (send interactions-text get-logger-messages)]
-                    [level (case (send logger-gui-tab-panel get-selection)
-                             [(0) #f]
-                             [(1) 'fatal]
-                             [(2) 'error]
-                             [(3) 'warning]
-                             [(4) 'info]
-                             [(5) 'debug])])
-                (cond
-                  [(and (pair? command)
-                        (pair? logger-messages)
-                        ;; just flush and redraw everything if there is one (or zero) logger messages
-                        (pair? (cdr logger-messages)))
-                   (let ([msg (cdr command)])
-                     (when (or (not level) 
-                               (eq? (vector-ref msg 0) level))
-                       (define scroll? (if (object? logger-checkbox)
-                                           (send logger-checkbox get-value)
-                                           #t))
-                       (send logger-gui-text begin-edit-sequence)
-                       (send logger-gui-text lock #f)
-                       (case (car command)
-                         [(add-line) (void)]
-                         [(clear-last-and-add-line)
-                          (send logger-gui-text delete
-                                0
-                                (send logger-gui-text paragraph-start-position 1)
-                                #f)])
-                       (send logger-gui-text insert
-                             "\n"
-                             (send logger-gui-text last-position)
-                             (send logger-gui-text last-position)
-                             #f)
-                       (send logger-gui-text insert 
-                             (vector-ref msg 1) 
-                             (send logger-gui-text last-position)
-                             (send logger-gui-text last-position)
-                             #f)
-                       (when scroll?
-                         (send logger-gui-text scroll-to-position
-                               (send logger-gui-text
-                                     paragraph-start-position
-                                     (send logger-gui-text last-paragraph))))
-                       (send logger-gui-text end-edit-sequence)
-                       (send logger-gui-text lock #t)))]
-                  [else
-                   (send logger-gui-text begin-edit-sequence)
-                   (send logger-gui-text lock #f)
-                   (send logger-gui-text erase)
-                   
-                   (let ([insert-one
-                          (λ (x newline?)
-                            (when (or (not level)
-                                      (eq? level (vector-ref x 0)))
-                              (when newline? (send logger-gui-text insert "\n" 0 0))
-                              (send logger-gui-text insert (vector-ref x 1) 0 0)))]) 
-                     
-                     (unless (null? logger-messages)
-                       ;; skip the last newline in the buffer
-                       (insert-one (car logger-messages) #f)
-                       (for-each
-                        (λ (x) (insert-one x #t))
-                        (cdr (send interactions-text get-logger-messages)))))
-                   
-                   (send logger-gui-text lock #t)
-                   (send logger-gui-text end-edit-sequence)]))))))
+          (define admin (send logger-gui-text get-admin))
+          (define canvas (send logger-gui-text get-canvas))
+          (when (and canvas admin)
+            (define logger-messages (send interactions-text get-logger-messages))
+            (cond
+              [(and (pair? command)
+                    (pair? logger-messages)
+                    ;; just flush and redraw everything if there is one (or zero) logger messages
+                    (pair? (cdr logger-messages)))
+               (define msg (cdr command))
+               (define scroll? (if (object? logger-checkbox)
+                                   (send logger-checkbox get-value)
+                                   #t))
+               (send logger-gui-text begin-edit-sequence)
+               (send logger-gui-text lock #f)
+               (case (car command)
+                 [(add-line) (void)]
+                 [(clear-last-and-add-line)
+                  (send logger-gui-text delete
+                        0
+                        (send logger-gui-text paragraph-start-position 1)
+                        #f)])
+               (send logger-gui-text insert
+                     "\n"
+                     (send logger-gui-text last-position)
+                     (send logger-gui-text last-position)
+                     #f)
+               (send logger-gui-text insert 
+                     msg 
+                     (send logger-gui-text last-position)
+                     (send logger-gui-text last-position)
+                     #f)
+               (when scroll?
+                 (send logger-gui-text scroll-to-position
+                       (send logger-gui-text
+                             paragraph-start-position
+                             (send logger-gui-text last-paragraph))))
+               (send logger-gui-text end-edit-sequence)
+               (send logger-gui-text lock #t)]
+              [else
+               (send logger-gui-text begin-edit-sequence)
+               (send logger-gui-text lock #f)
+               (send logger-gui-text erase)
+               
+               (define (insert-one msg)
+                 (send logger-gui-text insert msg 0 0)) 
+               
+               (unless (null? logger-messages)
+                 ;; skip the last newline in the buffer
+                 (insert-one (car logger-messages))
+                 (for ([msg (in-list (cdr (send interactions-text get-logger-messages)))])
+                   (insert-one "\n")
+                   (insert-one msg)))
+               
+               (send logger-gui-text lock #t)
+               (send logger-gui-text end-edit-sequence)]))))
       
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;;

@@ -311,8 +311,8 @@ please adhere to these guidelines:
   ;; menu items connected to the logger -- also in a button in the planet status line in the drs frame
   (show-log "Show &Log")
   (hide-log "Hide &Log")
-  (logging-all "All") ;; in the logging window in drscheme, shows all logs simultaneously
-  (logger-scroll-on-output "Scroll to show new output") ; a checkbox in the logger pane
+  (logger-scroll-on-output "Scroll on output") ; a checkbox in the logger pane
+  (log-messages "Log Messages") ;; label for the drracket logging gui panel
   
  ;; modes
  (mode-submenu-label "Modes")

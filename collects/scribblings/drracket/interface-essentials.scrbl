@@ -816,3 +816,13 @@ disable debugging, open the language dialog, click the @onscreen{Show
 Details} button, and select @onscreen{No debugging or profiling}, if
 it is available.
 
+@section[#:tag "follow-log"]{Following Log Messages}
+
+The @onscreen{Show Log} menu item in the @onscreen{View} menu opens
+a pane in the DrRacket window showing log messages. 
+
+Along the top of the window is a text field that should be filled with
+a description of which log messages are interesting, as described in
+the @secref[#:doc '(lib "scribblings/reference/reference.scrbl") "logging"]
+section of @other-doc['(lib "scribblings/reference/reference.scrbl")].
+
