@@ -1465,8 +1465,9 @@ module browser threading seems wrong.
       ;; it becomes a tab-panel, it is always a tab-panel (altho the tab panel might not always be shown)
       (define logger-gui-tab-panel #f)
       (define logger-gui-canvas #f)
+      (define logger-checkbox #f)
       
-      ;; logger-gui-text: (or/c #f (is-a?/c tab-panel%))
+      ;; logger-gui-text: (or/c #f (is-a?/c text%))
       ;; this is #f when the GUI has not been built or when the logging panel is hidden
       ;; in that case, the logging messages aren't begin saved in an editor anywhere
       (define logger-gui-text #f)
@@ -1523,6 +1524,12 @@ module browser threading seems wrong.
                (new-logger-text)
                (set! logger-gui-canvas 
                      (new editor-canvas% [parent logger-panel] [editor logger-gui-text]))
+               (set! logger-checkbox 
+                     (new check-box%
+                          [label (string-constant logger-scroll-on-output)]
+                          [callback (λ (a b) (preferences:set 'drracket:logger-scroll-to-bottom? (send logger-checkbox get-value)))]
+                          [parent logger-panel]
+                          [value (preferences:get 'drracket:logger-scroll-to-bottom?)]))
                (send logger-menu-item set-label (string-constant hide-log))
                (update-logger-window #f)
                (send logger-parent-panel change-children (lambda (l) (append l (list logger-panel)))))])
@@ -1536,7 +1543,9 @@ module browser threading seems wrong.
              (member logger-panel (send logger-parent-panel get-children))))
       
       (define/private (new-logger-text)
-        (set! logger-gui-text (new (text:hide-caret/selection-mixin text:line-spacing%)))
+        (set! logger-gui-text (new (text:hide-caret/selection-mixin 
+                                    (editor:standard-style-list-mixin
+                                     text:line-spacing%))))
         (send logger-gui-text lock #t))
       
       (define/public (update-logger-window command)
@@ -1560,6 +1569,9 @@ module browser threading seems wrong.
                    (let ([msg (cdr command)])
                      (when (or (not level) 
                                (eq? (vector-ref msg 0) level))
+                       (define scroll? (if (object? logger-checkbox)
+                                           (send logger-checkbox get-value)
+                                           #t))
                        (send logger-gui-text begin-edit-sequence)
                        (send logger-gui-text lock #f)
                        (case (car command)
@@ -1567,15 +1579,23 @@ module browser threading seems wrong.
                          [(clear-last-and-add-line)
                           (send logger-gui-text delete
                                 0
-                                (send logger-gui-text paragraph-start-position 1))]) 
+                                (send logger-gui-text paragraph-start-position 1)
+                                #f)])
                        (send logger-gui-text insert
                              "\n"
                              (send logger-gui-text last-position)
-                             (send logger-gui-text last-position))
+                             (send logger-gui-text last-position)
+                             #f)
                        (send logger-gui-text insert 
                              (vector-ref msg 1) 
                              (send logger-gui-text last-position)
-                             (send logger-gui-text last-position))
+                             (send logger-gui-text last-position)
+                             #f)
+                       (when scroll?
+                         (send logger-gui-text scroll-to-position
+                               (send logger-gui-text
+                                     paragraph-start-position
+                                     (send logger-gui-text last-paragraph))))
                        (send logger-gui-text end-edit-sequence)
                        (send logger-gui-text lock #t)))]
                   [else

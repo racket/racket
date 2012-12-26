@@ -1264,7 +1264,7 @@ TODO
                  
                  (thread
                   (λ ()
-                    (struct gui-event (start? msec name) #:prefab)
+                    (struct gui-event (start end name) #:prefab)
                     ;; forward system events the user's logger, and record any
                     ;; events that happen on the user's logger to show in the GUI
                     (let ([sys-evt (make-log-receiver drracket:init:system-logger 'debug)]

@@ -312,6 +312,7 @@ please adhere to these guidelines:
   (show-log "Show &Log")
   (hide-log "Hide &Log")
   (logging-all "All") ;; in the logging window in drscheme, shows all logs simultaneously
+  (logger-scroll-on-output "Scroll to show new output") ; a checkbox in the logger pane
   
  ;; modes
  (mode-submenu-label "Modes")
