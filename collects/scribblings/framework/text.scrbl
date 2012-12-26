@@ -7,13 +7,17 @@
 @definterface[text:basic<%> (editor:basic<%> text%)]{
   Classes matching this interface are expected to implement the basic
   functionality needed by the framework.
-  @defmethod*[(((highlight-range (start exact-nonnegative-integer?)
-                                 (end exact-nonnegative-integer?)
-                                 (color (or/c string? (is-a?/c color%)))
-                                 (caret-space boolean? #f)
-                                 (priority (or/c 'high 'low) 'low)
-                                 (style (or/c 'rectangle 'ellipse 'hollow-ellipse 'dot) 'rectangle))
-                (-> void?)))]{
+  @defmethod[(highlight-range [start exact-nonnegative-integer?]
+                              [end exact-nonnegative-integer?]
+                              [color (or/c string? (is-a?/c color%))]
+                              [caret-space boolean? #f]
+                              [priority (or/c 'high 'low) 'low]
+                              [style (or/c 'rectangle 'ellipse 'hollow-ellipse 'dot) 'rectangle]
+                              [#:adjust-on-insert/delete adjust-on-insert/delete boolean? #f]
+                              [#:key key any/c #f])
+             (if adjust-on-insert/delete
+                 void?
+                 (-> void?))]{
     This function highlights a region of text in the buffer.
 
     The range between @racket[start] and @racket[end] will be highlighted with
@@ -39,10 +43,31 @@
     the region with @racket['high] priority will be drawn second and only it
     will be visible in the overlapping region.
 
-    This method returns a thunk, which, when invoked, will turn off the
+    If @racket[adjust-on-insert/delete?] is @racket[#t], then insertions
+    and deletions to the text will adjust the @racket[start] and @racket[end]
+    of the range. Insertions and deletions before the range move the range forward
+    and backward; insertions and deletions after the range will be ignored. An insertion
+    in the middle of the range will enlarge the range and a deletion that overlaps
+    the range adjusts the range to reflect the deleted portion of the range and its
+    new position.
+    
+    The @racket[key] argument can be used with 
+    @method[text:basic<%> unhighlight-ranges/key]
+    and 
+    @method[text:basic<%> unhighlight-ranges]
+    to identify ranges whose start and end positions may have changed.
+    Symbols whose names begin with @litchar{plt:} are reserved
+    for internal use.
+    
+    If this method returns a thunk, invoking the thunk will turn off the
     highlighting from this range.
 
-    See also @method[text:basic<%> unhighlight-range].
+    Note that if @racket[adjust-on-insert/delete] is a true value, then
+    the result is not a thunk and instead 
+    @method[text:basic<%> unhighlight-range],
+    @method[text:basic<%> unhighlight-ranges/key], or
+    @method[text:basic<%> unhighlight-ranges]
+    must be called directly to remove the highlighting.
   }
 
   @defmethod[(unhighlight-range
@@ -63,16 +88,30 @@
     consider instead calling @method[text:basic<%> unhighlight-ranges].
   }
 
+  @defmethod[(unhighlight-ranges/key [key any/c]) void?]{
+    This method removes the highlight from regions in the buffer
+    that have the key @racket[key] 
+    (as passed to @method[text:basic<%> highlight-range]).
+  }
+
   @defmethod[(unhighlight-ranges
               [pred? (-> exact-nonnegative-integer?
                          exact-nonnegative-integer?
                          (is-a?/c color%)
                          boolean?
                          (or/c 'rectangle 'ellipse 'hollow-ellipse)
+                         (or/c boolean? exact-nonnegative-integer?)
+                         any/c
                          boolean?)])
                void?]{
     This method removes the highlight from regions in the buffer as 
-    selected by @racket[pred?].
+    selected by @racket[pred?]. The arguments to @racket[pred?] are the
+    same as the arguments to 
+    @method[text:basic<%> highlight-range] when it was originally called,
+    unless the @racket[_adjust-on-insert/delete] argument was a true value, in which case the 
+    first two arguments to the predicate will reflect the current state
+    of the bubble, if it is changed.
+
   }
 
   @defmethod*[(((get-highlighted-ranges) (listof text:range?)))]{

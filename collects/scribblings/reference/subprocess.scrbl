@@ -65,7 +65,7 @@ The @racket[subprocess] procedure returns four values:
 
 @itemize[
 
- @item{a subprocess value representing the created process;}
+ @item{a @deftech{subprocess} value representing the created process;}
 
  @item{an input port piped from the process's standard output, or
  @racket[#f] if @racket[stdout-output-port] was a port;}
@@ -99,7 +99,11 @@ and see @racket[subprocess-group-enabled] for additional caveats.
 The @racket[current-subprocess-custodian-mode] parameter determines
 whether the subprocess itself is registered with the current
 @tech{custodian} so that a custodian shutdown calls
-@racket[subprocess-kill] for the subprocess.}
+@racket[subprocess-kill] for the subprocess.
+
+A subprocess can be used as a @tech{synchronizable event} (see @secref["sync"]).
+A subprocess value is @tech{ready for synchronization} when
+@racket[subprocess-wait] would not block; @resultItself{subprocess value}.}
 
 
 @defproc[(subprocess-wait [subproc subprocess?]) void?]{

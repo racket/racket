@@ -228,9 +228,9 @@ descendants, as long as either @racket[name] is @racket[#f] or the
 reporting logger's name matches @racket[name].
 
 A @tech{log receiver} is a @tech{synchronizable event}. It becomes
-ready as an @tech{synchronizable event} when a logging event is
+@tech{ready for synchronization} when a logging event is
 received, so use @racket[sync] to receive an logged event. The
-@tech{log receiver}'s synchronization value is a vector containing
+@tech{log receiver}'s @tech{synchronization result} is a vector containing
 three values: the level of the event as a symbol, an immutable string
 for the event message, and an arbitrary value that was supplied as the
 last argument to @racket[log-message] when the event was logged.
@@ -243,3 +243,4 @@ the last given @racket[level]). A @racket[level] for a @racket[#f]
 provided @racket[name]. If the same @racket[name] is provided multiple
 times, the @racket[level] provided with the last instance in the
 argument list takes precedence.}
+

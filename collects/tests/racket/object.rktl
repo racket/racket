@@ -1828,8 +1828,6 @@
         '(class object% (init-rest))
         #'init-rest))
 
-;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; ----------------------------------------
 ;; Mixins
 
@@ -1848,6 +1846,46 @@
       (super-new)))
   (test 3 'mixin-with-local-member-names (send (new (mix c%)) x)))
   
+;; ----------------------------------------
+;; Class contracts & generics
 
+(module c%-class-contract-tests racket/base
+  (require racket/class
+           racket/contract)
+
+  (define c% (class object%
+               (super-new)
+               (define/public (m x) x)))
+  
+  (define c%/c
+    (class/c
+     (m (->m integer? integer?))))
+  
+  (provide
+   (contract-out
+    [c% c%/c])
+   is-c%?
+   c%-is?
+   is-a-c%?)
+  
+  (define (is-c%? c)
+    (c . subclass? . c%))
+  
+  (define (c%-is? c)
+    (c% . subclass? . c))
+
+  (define (is-a-c%? v)
+    (v . is-a? . c%)))
+
+(require 'c%-class-contract-tests)
+
+(test #t is-c%? c%)
+(test #t c%-is? c%)
+
+(test #t is-a-c%? (new c%))
+
+(test 5 'send-generic (send-generic (new c%) (generic c% m) 5))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

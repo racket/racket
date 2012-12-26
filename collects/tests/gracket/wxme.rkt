@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/class
-         (only-in scheme/gui/base
+#lang racket/base
+(require racket/class
+         (only-in racket/gui/base
                   color% 
                   font%
                   the-clipboard

@@ -23,6 +23,10 @@ an internal semaphore when its event queue is empty. Thus, the handler
 thread is collectible when the eventspace is unreachable and contains
 no visible windows or running timers.}
 
+A thread can be used as a @tech{synchronizable event} (see
+@secref["sync"]).  A thread is @tech{ready for synchronization} when
+@racket[thread-wait] would not block; @resultItself{thread}.
+
 All constant-time procedures and operations provided by Racket are
 thread-safe because they are @defterm{atomic}. For example,
 @racket[set!] assigns to a variable as an atomic action with respect
@@ -199,34 +203,35 @@ breaking is enabled; see @secref["breakhandler"]).}
 @defproc[(thread-dead-evt [thd thread?]) evt?]{
 
 Returns a @tech{synchronizable event} (see @secref["sync"]) that is
-ready if and only if @racket[thd] has terminated.  Unlike using
+@tech{ready for synchronization} if and only if @racket[thd] has terminated.  Unlike using
 @racket[thd] directly, however, a reference to the event does not
 prevent @racket[thd] from being garbage collected (see
 @secref["gc-model"]). For a given @racket[thd],
 @racket[thread-dead-evt] always returns the same (i.e., @racket[eq?])
-result.}
+result .@ResultItself{thread-dead event}.}
 
 @defproc[(thread-resume-evt [thd thread?]) evt?]{
 
 Returns a @tech{synchronizable event} (see @secref["sync"]) that
-becomes ready when @racket[thd] is running.  (If @racket[thd] has
+becomes @tech{ready for synchronization} when @racket[thd] is running.  (If @racket[thd] has
 terminated, the event never becomes ready.)  If @racket[thd] runs and
 is then suspended after a call to @racket[thread-resume-evt], the
 result event remains ready; after each suspend of @racket[thd] a fresh
 event is generated to be returned by @racket[thread-resume-evt].  The
 result of the event is @racket[thd], but if @racket[thd] is never
 resumed, then reference to the event does not prevent @racket[thd]
-from being garbage collected (see @secref["gc-model"]).}
+from being garbage collected (see @secref["gc-model"]).
+@ResultItself{thread-result event}.}
 
 @defproc[(thread-suspend-evt [thd thread?]) evt?]{
 
 Returns a @tech{synchronizable event} (see @secref["sync"]) that
-becomes ready when @racket[thd] is suspended.  (If @racket[thd] has
+becomes @tech{ready for synchronization} when @racket[thd] is suspended.  (If @racket[thd] has
 terminated, the event will never unblock.)  If @racket[thd] is
 suspended and then resumes after a call to
 @racket[thread-suspend-evt], the result event remains ready; after
 each resume of @racket[thd] created a fresh event to be returned by
-@racket[thread-suspend-evt].}
+@racket[thread-suspend-evt]. @ResultItself{thread-suspend event}.}
 
 @;------------------------------------------------------------------------
 @section[#:tag "threadmbox"]{Thread Mailboxes}
@@ -263,8 +268,8 @@ or returns @racket[#f] immediately if no message is available.}
 @defproc[(thread-receive-evt) evt?]{
 
 Returns a constant @tech{synchronizable event} (see @secref["sync"])
-that becomes ready when the synchronizing thread has a message to
-receive. The event result is the event itself.}
+that becomes @tech{ready for synchronization} when the synchronizing thread has a message to
+receive. @ResultItself{thread-receive event}.}
 
 @defproc[(thread-rewind-receive [lst list?]) void?]{
 
