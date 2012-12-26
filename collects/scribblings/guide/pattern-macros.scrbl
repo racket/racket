@@ -251,7 +251,8 @@ error is reported:
 
 @interaction[#:eval swap-eval (+ swap 3)]
 
-An @deftech{identifier macro} works in any expression. For example, we
+An @deftech{identifier macro} is a pattern-matching macro that
+works in any expression. For example, we
 can define @racket[clock] as an identifier macro that expands to
 @racket[(get-clock)], so @racket[(+ clock 3)] would expand to
 @racket[(+ (get-clock) 3)]. An identifier macro also cooperates with
