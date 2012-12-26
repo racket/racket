@@ -1,6 +1,6 @@
 #lang scribble/doc
 
-@(require scribble/manual "shared.rkt"
+@(require scribble/manual "shared.rkt" scribble/eval
           (for-label scheme
                      (only-in lang/htdp-beginner check-expect)
                      teachpack/2htdp/universe
@@ -288,27 +288,40 @@ The world ends when the clock has ticked more than @scheme[limit-expr] times.}}
 For simplicity, we represent key events with strings, but not all strings
  are key events. The representation of key events comes in distinct
  classes. First, a single-character string is used to signal that the user
- has hit a "regular" key. Some of these one-character strings may look
- unusual:
+ has hit a "regular" key, such as 
+@itemize[
+
+@item{@racket["q"] stands for the q key;}
+@item{@racket["w"] stands for the w key;}
+@item{@racket["e"] stands for the e key;}
+@item{@racket["r"] stands for the r key; and so on.}
+]
+ Some of these one-character strings look somewhat unusual:
 @itemize[
 
 @item{@racket[" "] stands for the space bar (@racket[#\space]);}
-@item{@racket["\r"] stands for the return key (@racket[#\return]);}
+@item{@racket["\r"] stands for the return and enter key (@racket[#\return]);}
 @item{@racket["\t"] stands for the tab key (@racket[#\tab]); and}
 @item{@racket["\b"] stands for the backspace key (@racket[#\backspace]).}
-
 ]
- On rare occasions you may also encounter @racket["\u007F"], which is the
- string representing the delete key (aka rubout).
+ Here is "proof" that these strings really have length 1: 
+@interaction[
+(string-length "\t")
+]
+ On rare occasions your programs may also encounter @racket["\u007F"],
+ which is the string representing the delete key (aka rubout).
 
 Second, some keys have multiple-character string representations. Strings
  with more than one character denote arrow keys or other special events,
- starting with the most important:
+ starting with the four most important ones:
 @itemize[
 @item{@racket["left"] is the left arrow;}
 @item{@racket["right"] is the right arrow;}
 @item{@racket["up"] is the up arrow;}
 @item{@racket["down"] is the down arrow;}
+]
+Here are some others that you may encounter: 
+@itemize[
 @item{@racket["start"]}
 @item{@racket["cancel"]}
 @item{@racket["clear"]}
@@ -330,24 +343,25 @@ Second, some keys have multiple-character string representations. Strings
 @item{@racket["snapshot"]}
 @item{@racket["insert"]}
 @item{@racket["help"]}
-@item{@racket["numpad0"],
- @racket["numpad1"],
- @racket["numpad2"],
- @racket["numpad3"],
- @racket["numpad4"],
- @racket["numpad5"],
- @racket["numpad6"],
- @racket["numpad7"],
- @racket["numpad8"],
- @racket["numpad9"],
- @racket["numpad-enter"],
- @racket["multiply"],
- @racket["add"],
- @racket["separator"],
- @racket["subtract"],
- @racket["decimal"],
- @racket["divide"]}
-@item{@racket["f1"],
+ @;item{@racket["numpad0"],
+ @;racket["numpad1"],
+ @;racket["numpad2"],
+ @;racket["numpad3"],
+ @;racket["numpad4"],
+ @;racket["numpad5"],
+ @;racket["numpad6"],
+ @;racket["numpad7"],
+ @;racket["numpad8"],
+ @;racket["numpad9"],
+ @;racket["numpad-enter"],
+ @;racket["multiply"],
+ @;racket["add"],
+ @;racket["separator"],
+ @;racket["subtract"],
+ @;racket["decimal"],
+ @;racket["divide"]}
+@item{function keys: 
+ @racket["f1"],
  @racket["f2"],
  @racket["f3"],
  @racket["f4"],
@@ -372,12 +386,22 @@ Second, some keys have multiple-character string representations. Strings
  @racket["f23"],
  @racket["f24"]}
 @item{@racket["numlock"]}
-@item{@racket["scroll"]}
+@item{@racket["scroll"]}]
+
+The following four count as keyevents even though they are triggered by
+physical events on some form of mouse: 
+@itemize[
 @item{@racket["wheel-up"]}
 @item{@racket["wheel-down"]}
 @item{@racket["wheel-left"]}
 @item{@racket["wheel-right"]}
 ]
+ The preceding enumeration is neither complete in covering all the events
+ that this library deals with nor does it specify which events the library
+ ignores. If you wish to design a program that relies on specific keys on
+ your keyboard, you should first write a small test program to find out
+ whether the chosen keystrokes are caught by the library and, if so, which
+ string representations are used for these events. 
 
 @defproc[(key-event? [x any]) boolean?]{
  determines whether @racket[x] is a @tech{KeyEvent}}
