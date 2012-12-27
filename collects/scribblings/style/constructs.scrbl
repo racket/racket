@@ -32,7 +32,7 @@ In addition to ``;'', we have two other mechanisms for commenting code:
  be composed in interesting ways with other comments, for example, ``#;#;''
  will comment two expressions, and a line with just ``;#;'' gives you a
  single-character ``toggle'' for the expression that starts on the next
- line.  But on the flip side, lots tools don't process them
+ line.  But on the flip side, many tools don't process them
  properly---treating them instead as a ``#'' followed by a commented line.
  For example, in DrRacket S-expression comments are ignored when it comes
  to syntax coloring, which makes it easy to miss them. In Emacs, the
