@@ -433,7 +433,7 @@
 #   define CYGWIN32
 #   define mach_type_known
 # endif
-# if defined(__MINGW32__)
+# if defined(__MINGW32__) && !defined(_WIN64) /* PLTSCHEME: no _WIN64 */
 #   define I386
 #   define MSWIN32
 #   define mach_type_known

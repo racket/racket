@@ -55,7 +55,7 @@ dynexmpl.o: $(srcdir)/dynexmpl.c  $(HEADERS)
 	$(PLAIN_CC) $(CFLAGS) -mwindows -DMRSTART -o ../mrstarter $(srcdir)/start.c sres.o
 
 sres.o:
-	windres -i $(srcdir)/../../worksp/starters/start.rc -o sres.o
+	@WINDRES@ -i $(srcdir)/../../worksp/starters/start.rc -o sres.o
 
 # Cygwin ########################################
 

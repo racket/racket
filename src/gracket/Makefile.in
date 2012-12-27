@@ -98,7 +98,7 @@ gracket@CGC@ : $(RACKETDEPS) grmain.@LTO@ $(GRACKETOBJECTS) $(MRSTATIC_STUB) $(G
 	$(GRACKETLINKER) $(GRACKETLDFLAGS) $(MRSTATIC) -o gracket@CGC@ $(GRACKETOBJECTS) $(GRACKETRES) $(GRACKETLDLIBS) $(MRSTATIC_STUB)
 
 gres.o : $(srcdir)/../worksp/gracket/gracket.rc
-	windres -i $(srcdir)/../worksp/gracket/gracket.rc -o gres.o
+	@WINDRES@ -i $(srcdir)/../worksp/gracket/gracket.rc -o gres.o
 
 resources@NOT_MINGW@ :
 	$(NOOP)
@@ -128,7 +128,7 @@ solaris-static:
 linux-static:
 	$(MAKE) gracket MRSTATIC=--static LDNONSTATICLIBS='-ldl'
 
-DEF_COLLECTS_DIR = -DINITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../collects; pwd`"'"'
+DEF_COLLECTS_DIR = -DINITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../collects; @PWD@`"'"'
 
 grmain.@LTO@ :  $(srcdir)/grmain.c $(srcdir)/../racket/main.c \
             $(srcdir)/../racket/cmdline.inc $(srcdir)/../racket/src/stypes.h \
@@ -174,7 +174,7 @@ install-post-collects:
 	$(MAKE) install-@WXVARIANT@-post-collects
 
 install-common:
-	@RUN_RACKET_CGC@ -c "$(srcdir)/../get-libs.rkt" gui "$(DESTDIR)$(libpltdir)"
+	@RUN_RACKET_CGC@ -c "$(srcdir)/../get-libs.rkt" gui @DIRCVTPRE@"$(DESTDIR)$(libpltdir)"@DIRCVTPOST@
 
 # X11 ----------------------------------------
 
@@ -196,7 +196,7 @@ install-lib-cgc-wx_xt:
 install-wx_xt-cgc:
 	$(MAKE) @MRLIBINSTALL@-cgc-wx_xt
 	cd ..; $(ICP) gracket/gracket@CGC@ "$(DESTDIR)@MZINSTALLBINDIR@/gracket@CGC_INSTALLED@"
-	@RUN_RACKET_CGC@ -cu "$(srcdir)/../racket/collects-path.rkt" "$(DESTDIR)@MZINSTALLBINDIR@/gracket@CGC_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
+	@RUN_RACKET_CGC@ -cu "$(srcdir)/../racket/collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)@MZINSTALLBINDIR@/gracket@CGC_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ @COLLECTS_PATH@
 
 install-wx_xt-cgc-final:
 	$(NOOP)
@@ -210,7 +210,7 @@ install-lib-3m-wx_xt:
 install-wx_xt-3m:
 	$(MAKE) @MRLIBINSTALL@-3m-wx_xt
 	cd ..; $(ICP) gracket/gracket@MMM@ "$(DESTDIR)@MZINSTALLBINDIR@/gracket@MMM_INSTALLED@"
-	@RUN_RACKET_MMM@ -cu "$(srcdir)/../racket/collects-path.rkt" "$(DESTDIR)@MZINSTALLBINDIR@/gracket@MMM_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
+	@RUN_RACKET_MMM@ -cu "$(srcdir)/../racket/collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)@MZINSTALLBINDIR@/gracket@MMM_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ @COLLECTS_PATH@
 
 install-wx_xt-3m-final:
 	$(NOOP)

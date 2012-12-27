@@ -28,7 +28,7 @@ extern "C" {
 #if defined(MZ_USE_PLACES) || defined(MZ_USE_FUTURES)
 # define USE_THREAD_LOCAL
 # ifdef _WIN32
-#  ifdef _WIN64
+#  if defined(_WIN64) && !defined(__MINGW32__)
 #   define THREAD_LOCAL __declspec(thread)
 #   define MZ_THREAD_EXTERN extern
 #   define IMPLEMENT_THREAD_LOCAL_EXTERNALLY_VIA_PROC
@@ -420,6 +420,17 @@ MZ_EXTERN int scheme_tls_index;
 static __inline Thread_Local_Variables **scheme_get_thread_local_variables_ptr(void) {
 # ifdef __MINGW32__
   Thread_Local_Variables **x;
+#  ifdef _WIN64
+  asm (
+       "mov %%gs:(0x58), %%rax;"
+       "mov (%%rax), %%rax;"
+       "add %1, %%rax;"
+       "mov %%rax, %0;"
+       :"=r"(x)        /* output */
+       :"r"(scheme_tls_delta)
+       :"%rax"  /* clobbered register */
+       );
+#  else
   asm (
        "mov %%fs:(0x2C), %%eax;"
        "mov (%%eax), %%eax;"
@@ -429,6 +440,7 @@ static __inline Thread_Local_Variables **scheme_get_thread_local_variables_ptr(v
        :"r"(scheme_tls_delta)
        :"%eax"  /* clobbered register */
        );
+#  endif
   return x;
 # else
   __asm { mov eax, FS:[0x2C]

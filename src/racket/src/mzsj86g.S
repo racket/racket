@@ -1,3 +1,5 @@
+#ifndef _WIN64
+
 .globl _scheme_mz_setjmp
 _scheme_mz_setjmp:
   push %EBP	
@@ -38,3 +40,4 @@ _scheme_mz_longjmp:
 .section .drectve,"r"
 .ascii " -export:scheme_mz_longjmp"
 	
+#endif

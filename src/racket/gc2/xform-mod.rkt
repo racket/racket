@@ -9,6 +9,9 @@
   (define output-depends-info? #f)
   (define gc-variable-stack-through-funcs? #f)
 
+  (define def-via-include? #f)
+  (define include-counter 1)
+
   (define palm? #f)
   (define pgc? #t)
   (define pgc-really? #t)
@@ -48,11 +51,27 @@
      (set! file-out dest-file)]
     [("--indirect") "access GC_variable_stack through functions"
      (set! gc-variable-stack-through-funcs? #t)]
+    [("--D-via-include") "implement +D via -include"
+     (set! def-via-include? #t)]
     [("+D") def "add CPP -D flag"
-     (set! cpp (string-append cpp " -D" 
-     	       		      (if (eq? (system-type) 'windows)
-				  def
-				  (regexp-replace* "[ \"]" def "'\\0'"))))]]
+     (cond
+      [def-via-include?
+       ;; This mode is useful when command-line argument parsing
+       ;; breaks down in corner cases, such as when using a Cygwin
+       ;; build of gcc.
+       (define fn (format "def~a.inc" include-counter))
+       (set! include-counter (add1 include-counter))
+       (define m (regexp-match #rx"^([^=]+)=(.*)$" def))
+       (call-with-output-file fn
+	 (lambda (out)
+	   (fprintf out "#define ~a ~a\n" (cadr m) (caddr m)))
+	 'truncate/replace)
+       (set! cpp (string-append cpp (format " -include ~a" fn)))]
+      [else
+       (set! cpp (string-append cpp " -D" 
+				(if (eq? (system-type) 'windows)
+				    def
+				    (regexp-replace* "[ \"]" def "'\\0'"))))])]]
    [args (file)
 	 (set! file-in file)])
 

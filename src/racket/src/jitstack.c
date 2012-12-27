@@ -125,7 +125,8 @@ uintptr_t scheme_approx_sp()
   return p;
 }
 
-#ifdef _WIN64
+#if defined( _WIN64) && !defined(__MINGW32__)
+# define USE_WIN64_UNWIND
 # ifndef UNWIND_HISTORY_TABLE_SIZE
 extern PRUNTIME_FUNCTION WINAPI RtlLookupFunctionEntry(ULONG64, ULONG64*, void*);
 extern PVOID WINAPI RtlVirtualUnwind(DWORD, DWORD64, DWORD64, PRUNTIME_FUNCTION,
@@ -216,7 +217,7 @@ Scheme_Object *scheme_native_stack_trace(void)
 #endif
   }
 
-#ifdef _WIN64
+#ifdef USE_WIN64_UNWIND
   {
     CONTEXT ctx;
     PRUNTIME_FUNCTION rf;

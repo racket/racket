@@ -244,8 +244,8 @@ typedef _int64 mzlonglong;
 typedef unsigned _int64 umzlonglong;
 #else
 # if defined(NO_LONG_LONG_TYPE) || defined(SIXTY_FOUR_BIT_INTEGERS)
-typedef long mzlonglong;
-typedef unsigned long umzlonglong;
+typedef intptr_t mzlonglong;
+typedef uintptr_t umzlonglong;
 # else
 typedef long long mzlonglong;
 typedef unsigned long long umzlonglong;

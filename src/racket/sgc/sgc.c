@@ -37,7 +37,9 @@
 
 #ifdef _WIN64
 # define SIZEOF_LONG 8
-# define inline _inline
+# ifdef _MSC_VER
+#  define inline _inline
+# endif
 #endif
 
 #ifdef SIZEOF_LONG
@@ -298,7 +300,13 @@
 # define LOG_PTR_SIZE 2
 # define LOW_32_BITS(x) x
 #endif
-# define PTR_SIZE (1 << LOG_PTR_SIZE)
+#define PTR_SIZE (1 << LOG_PTR_SIZE)
+
+#ifdef _WIN64
+# define ALLOC_ALIGNMENT 16
+#else
+# define ALLOC_ALIGNMENT PTR_SIZE
+#endif
 
 #define DOUBLE_SIZE sizeof(double)
 
@@ -1492,6 +1500,14 @@ static void free_managed(void *s)
 
 /*************************************************************/
 
+
+static intptr_t size_align(intptr_t s) {
+  if (s & (ALLOC_ALIGNMENT-1))
+    return s + (ALLOC_ALIGNMENT - (s & (ALLOC_ALIGNMENT-1)));
+  else
+    return s;
+}
+
 static void init_size_map()
 {
   int i, j, find_half;
@@ -1505,7 +1521,7 @@ static void init_size_map()
     size_index_map[i] = i;
   }
   for (i = 0; i < 8; i++) {
-    size_map[i] = (i + 1) * PTR_SIZE;
+    size_map[i] = size_align((i + 1) * PTR_SIZE);
   }
   /* i's final value is used below... */
 
@@ -1516,7 +1532,7 @@ static void init_size_map()
   while (j < (MAX_COMMON_SIZE >> 2)) {
     size_index_map[j] = i;
     if ((j + 1) == next) {
-      size_map[i] = next * PTR_SIZE;
+      size_map[i] = size_align(next * PTR_SIZE);
       i++;
       if (find_half) {
 	next = 2 * k;
@@ -1529,7 +1545,7 @@ static void init_size_map()
     j++;
   }
   if (i < NUM_COMMON_SIZE)
-    size_map[i] = next * PTR_SIZE;
+    size_map[i] = size_align(next * PTR_SIZE);
 
 #if 0
   FPRINTF(STDERR, "max: %d  num: %d\n", MAX_COMMON_SIZE, NUM_COMMON_SIZE);
@@ -2336,20 +2352,20 @@ static void *do_malloc(SET_NO_BACKINFO
     void *a;
     MemoryChunk *c;
 
-    /* Round up to ptr-aligned size: */
-    if (size & (PTR_SIZE-1))
-      size += PTR_SIZE - (size & (PTR_SIZE-1));
+    /* Round up to aligned size: */
+    if (size & (ALLOC_ALIGNMENT-1))
+      size += ALLOC_ALIGNMENT - (size & (ALLOC_ALIGNMENT-1));
 
     ALLOC_STATISTIC(num_chunk_allocs_stat++);
 
     cpos = 0;
 
-    a = malloc_sector(size + sizeof(MemoryChunk), sector_kind_chunk, 1);
+    a = malloc_sector(size + size_align(sizeof(MemoryChunk)), sector_kind_chunk, 1);
     if (!a) {
       if (mem_use >= mem_limit)
 	GC_gcollect();
       
-      a = malloc_sector(size + sizeof(MemoryChunk), sector_kind_chunk, 0);
+      a = malloc_sector(size + size_align(sizeof(MemoryChunk)), sector_kind_chunk, 0);
     }
 
     c = (MemoryChunk *)a;
@@ -2376,7 +2392,7 @@ static void *do_malloc(SET_NO_BACKINFO
       c->next->prev_ptr = &c->next;
 #endif
     
-    c->start = PTR_TO_INT(&c->data);
+    c->start = size_align(PTR_TO_INT(&c->data));
     c->end = c->start + size;
     c->atomic = flags & do_malloc_ATOMIC;
 
@@ -2431,10 +2447,10 @@ static void *do_malloc(SET_NO_BACKINFO
 #endif
 
   /* upper bound: */
-  elem_per_block = (SECTOR_SEGMENT_SIZE - sizeof(BlockOfMemory)) / sizeElemBit;
+  elem_per_block = (SECTOR_SEGMENT_SIZE - size_align(sizeof(BlockOfMemory))) / sizeElemBit;
   /*                ^- mem area size      ^- block record */
   /* use this one: */
-  elem_per_block = ((SECTOR_SEGMENT_SIZE - sizeof(BlockOfMemory) - elem_per_block
+  elem_per_block = ((SECTOR_SEGMENT_SIZE - size_align(sizeof(BlockOfMemory)) - elem_per_block
   /*                ^- mem area size      ^- block record       ^- elems     */
 		     - (extra_alignment + PTR_SIZE - 2)) / sizeElemBit);
   /*                     ^- possible elem padding, -2 since BlockOfMemory has free[1] */
@@ -2444,7 +2460,7 @@ static void *do_malloc(SET_NO_BACKINFO
   } else {
     elem_per_block = 1;
     /* Add (PTR_SIZE - 1) to ensure enough room after alignment: */
-    c = sizeof(BlockOfMemory) + (PTR_SIZE - 1) + sizeElemBit;
+    c = size_align(sizeof(BlockOfMemory)) + (PTR_SIZE - 1) + sizeElemBit;
   }
 
   block = (BlockOfMemory *)malloc_sector(c, sector_kind_block, 1);
@@ -2470,7 +2486,7 @@ static void *do_malloc(SET_NO_BACKINFO
 #endif
 
   /* offset for data (ptr aligned): */
-  c = sizeof(BlockOfMemory) + (elem_per_block - 1);
+  c = size_align(sizeof(BlockOfMemory) + (elem_per_block - 1));
   if (c & (PTR_SIZE - 1))
     c += (PTR_SIZE - (c & (PTR_SIZE - 1)));
 #if !PAD_BOUNDARY_BYTES

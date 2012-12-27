@@ -84,6 +84,7 @@
                                              (printf " (If this isn't a parallel make, then delete it.)\n")
                                              (printf " Waiting until the lock file disappears...\n")
                                              (let loop ()
+					       (flush-output)
                                                (sleep 0.1)
                                                (if (file-exists? lock-file)
                                                    (loop)

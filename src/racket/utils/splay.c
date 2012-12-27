@@ -56,14 +56,14 @@
 typedef struct tree_node Tree;
 struct tree_node {
     Tree * left, * right;
-    unsigned long item;
+    uintptr_t item;
     void *data;
 };
 # define Splay_Item(t) t->item
 # define Set_Splay_Item(t, v) t->item = v
 #endif
 
-static Tree * splay (unsigned long i, Tree * t) {
+static Tree * splay (uintptr_t i, Tree * t) {
 /* Simple top down splay, not requiring i to be in the tree t.  */
 /* What it does is described above.                             */
     Tree N, *l, *r, *y;
@@ -107,7 +107,7 @@ static Tree * splay (unsigned long i, Tree * t) {
     return t;
 }
 
-static Tree * splay_insert(unsigned long i, Tree * new, Tree * t) {
+static Tree * splay_insert(uintptr_t i, Tree * new, Tree * t) {
 /* Insert i into the tree t, unless it's already there.    */
 /* Return a pointer to the resulting tree.                 */
     Set_Splay_Item(new, i);
@@ -134,7 +134,7 @@ static Tree * splay_insert(unsigned long i, Tree * new, Tree * t) {
 
 #ifndef OMIT_SPLAY_DELETE
 
-static Tree * splay_delete(unsigned long i, Tree * t) {
+static Tree * splay_delete(uintptr_t i, Tree * t) {
 /* Deletes i from the tree if it's there.               */
 /* Return a pointer to the resulting tree.              */
     Tree * x;
