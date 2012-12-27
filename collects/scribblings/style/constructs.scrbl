@@ -72,6 +72,37 @@ racket
 ]
 ]
 
+@bold{Warning} A @racket[let*] binding block is not easily replaced with a
+series of @racket[define]s because the former has @emph{sequential} scope
+and the latter has @emph{mutually recursive} scope.
+@compare[
+@racketmod[#:file
+@tt{works}
+racket
+(define (print-two f)
+  (let* ([_ (print (first f))]
+	 [f (rest f)]
+	 [_ (print (first f))]
+	 [f (rest f)])
+    (code:comment "IN")
+    f))
+]
+@; -----------------------------------------------------------------------------
+@racketmod[#:file
+
+@tt{does @bold{not}}
+racket
+
+(define (print-two f)
+   (print (first f))
+   (define f (rest f))
+   (print (first f))
+   (define f (rest f))
+   (code:comment "IN")
+   f)
+]
+]
+
 @; -----------------------------------------------------------------------------
 @section{Conditionals}
 
