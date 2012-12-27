@@ -55,6 +55,8 @@ If a unit of code looks incomprehensible, it is probably too large. Break
  division; consider alternatives.
 
 @; -----------------------------------------------------------------------------
+@(define line
+   @t{---------------------------------------------------------------------------------------------------})
 @section{Modules and their Interfaces}
 
 The purpose of a module is to provide some services:
@@ -64,7 +66,7 @@ The purpose of a module is to provide some services:
 Often ``short'' means one line; occasionally you may need several lines.
 
 In order to understand a module's services, organize the module in three
-sections below the purpose statement: its imports, its exports, and its
+sections below the purpose statement: its exports, its imports, and its
 implementation:
 @;%
 @codebox[
@@ -76,13 +78,16 @@ implementation:
 
 ;; the module implements a tv server
 
-(require 2htdp/universe htdp/image)
-
 (provide
   ;; launch the tv server function
   tv-launch
   ;; set up a tv client to receive messages from the tv server
   tv-client)
+
+(code:comment #, @line)
+(code:comment #, @t{import and implementation section})
+
+(require 2htdp/universe htdp/image)
 
 (define (tv-launch)
   (universe ...))
@@ -92,9 +97,16 @@ implementation:
 ))]
 @;%
 
-If you choose to use @racket[provide/contract], define auxiliary concepts
- related to the contracts between the @racket[require] and the
- @racket[provide] sections:
+If you choose to use @racket[provide] with @racket[contract-out], you
+ may wish to have two @racket[require] sections:
+@itemlist[
+@item{the first one, placed above the @racket[provide] section, imports the
+ values needed to formulate the contracts and}
+@item{the second one, placed below the @racket[provide] section, imports
+ the values needed to implement the services.}
+]
+ If your contracts call for additional concepts, define those between the
+ @racket[require] for contracts and the @racket[provide] specification:
 @;%
 @codebox[
 @(begin
@@ -105,7 +117,7 @@ If you choose to use @racket[provide/contract], define auxiliary concepts
 
 ;; the module implements a tv server
 
-(require 2htdp/universe htdp/image xml)
+(require xml)
 
 (define player# 3)
 (define plain-board/c
@@ -114,14 +126,20 @@ If you choose to use @racket[provide/contract], define auxiliary concepts
 (define placement/c
   (flat-named-contract "placement" ...))
 
-(provide/contract
-  ;; initialize the board for the given number of players
-  [board-init        (-> player#/c plain-board/c)]
-  ;; initialize a board and place the tiles
-  [create-board      (-> player#/c (listof placement/c)
-                         (or/c plain-board/c string?))]
-  ;; create a board from an X-expression representation
-  [board-deserialize (-> xexpr? plain-board/c)])
+(provide
+  (contract-out
+    ;; initialize the board for the given number of players
+    [board-init        (-> player#/c plain-board/c)]
+    ;; initialize a board and place the tiles
+    [create-board      (-> player#/c (listof placement/c)
+			   (or/c plain-board/c string?))]
+    ;; create a board from an X-expression representation
+    [board-deserialize (-> xexpr? plain-board/c)]))
+
+(code:comment #, @line)
+(code:comment #, @t{import and implementation section})
+
+(require 2htdp/universe htdp/image)
 
 ; implementation:
 (define (board-init n)
@@ -135,8 +153,13 @@ If you choose to use @racket[provide/contract], define auxiliary concepts
   (class ... some 900 lines ...))
 ))]
 @;%
+ In the preceding code snippet, @xml[] imports the
+ @racket[xexpr?] predicate, which is needed to articulate the contract for
+ @racket[board-deserialize]. The @racket[require] line below the lines
+ imports an event-handling mechanism plus a simple image manipulation
+  library.
 
-Avoid @racket[(provide (all-defined-out))].
+Prefer specific export specifications over @racket[(provide (all-defined-out))].
 
 A test suite section---if located within the module---should come at the
  very end, including its specific dependencies, i.e., @racket[require]
@@ -145,9 +168,9 @@ A test suite section---if located within the module---should come at the
 @; -----------------------------------------------------------------------------
 @subsection{Require}
 
-With @racket[require] specifications at the top of the module, you let
- every reader know what is needed to understand the module. The
- @racket[require] specification nails down the external dependencies.
+With @racket[require] specifications at the top of the implementation
+ section, you let every reader know what is needed to understand the
+ module.
 
 @; -----------------------------------------------------------------------------
 @subsection{Provide}
@@ -169,7 +192,7 @@ This helps people find the relevant information quickly.
  racket
 
  ;; This module implements
- ;; several game strategies.
+ ;; several strategies.
 
  (require "game-basics.rkt")
 
@@ -181,7 +204,7 @@ This helps people find the relevant information quickly.
   human-strategy
 
   ;; Stgy
-  ;; complete tree traversal
+  ;; tree traversal
   ai-strategy)
 
  (define (general p)
@@ -202,7 +225,7 @@ This helps people find the relevant information quickly.
  racket
 
  ;; This module implements
- ;; several game strategies.
+ ;; several strategies.
 
  (require "game-basics.rkt")
 
@@ -223,7 +246,7 @@ This helps people find the relevant information quickly.
 
  (provide
   ;; Stgy
-  ;; a complete tree traversal
+  ;; a tree traversal
   ai-strategy)
 
  (define ai-strategy
@@ -261,8 +284,9 @@ racket
  define-strategy)
 ))]
 
-Use @scheme[provide/contract] for module interfaces.  Contracts often
- provide the right level of specification for first-time readers.
+Use @scheme[provide] with @racket[contract-out] for module interfaces.
+ Contracts often provide the right level of specification for first-time
+ readers.
 
 At a minimum, you should use type-like contracts, i.e., predicates that
  check for the constructor of data. They cost almost nothing, especially
@@ -319,9 +343,10 @@ As of version 5.3, Racket supports sub-modules. Use sub-modules to
 (module+ test
   (require rackunit))
 
-(provide/contract
-  (code:comment #, @t{convert a fahrenheit temperature to a celsius temperature})
-  [fahrenheit->celsius (-> number? number?)])
+(provide
+  (contract-out
+    (code:comment #, @t{convert a fahrenheit temperature to a celsius temperature})
+    [fahrenheit->celsius (-> number? number?)]))
 
 (define (fahrenheit->celsius f)
   (/ (* 5 (- f 32)) 9))
@@ -372,8 +397,9 @@ but the use of "module" in this phrase does @emph{not} only refer to
 file-based or physical Racket modules. Clearly, @defterm{contract boundary}
 is better than module boundary because it separates the two concepts.
 
-When you use @racket[provide/contract] at the module level, the boundary of
-the physical module and the contract boundary coincide.
+When you use @racket[provide] with @racket[contract-out] at the module
+level, the boundary of the physical module and the contract boundary
+coincide.
 
 When a module becomes too large to manage without contracts but you do not
 wish to distribute the source over several files, you may wish to use one

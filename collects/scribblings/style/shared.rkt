@@ -22,7 +22,7 @@
   ;; bad     ;; label a code fragment 'bad' [doesn't work]
   column-table
   row-table
-  rkt rkt/base rkt/gui)
+  rkt rkt/base rkt/gui xml)
 
 (define (LINEWIDTH) "102")
 
@@ -31,6 +31,7 @@
 (define (rkt) (racketmodname racket))
 (define (rkt/base) (racketmodname racket/base))
 (define (rkt/gui) (racketmodname racket/gui))
+(define (xml) (racketmodname xml))
 
 ;; compare: two code snippets, in two columns: left is good, right is bad
 (define (compare stuff1 stuff2)
