@@ -14,7 +14,7 @@ and its tools to connect to the scribble documentation. See also
 @defmodule[help/search]
 
 @defproc[(send-main-page [#:sub sub path-string? "index.html"]
-                         [#:notify notify (-> path? void)]
+                         [#:notify notify (-> path? void) void]
                          [#:fragment fragment (or/c #f ??) #f]
                          [#:query query (or/c #f ??) #f])
          any]{
