@@ -66,7 +66,32 @@ eos
 
 (module+ test
   (define (split file n)
-    (values (drop file n) (take file n))))
+    (values (drop file n) (take file n)))
+  
+  (require (for-syntax syntax/parse))
+  
+  ;; (parse-file x:id ([y:id e:expr][(u:id ...) f:expr] ...) body:expr)
+  ;; teases apart x (a list of lines) according to the expressions e, f, ... and successively binds 
+  ;; the values in the lines to y, u, ... and eventually evaluates the body ... expressions 
+  ;; Restriction: to one body expressions so that this form does not inject errors into *SLs 
+  (define-syntax (parse-file stx)
+    (syntax-parse stx
+      [(parse-file file:id ((x:id e:expr) clauses ...) body:expr)
+       #'(let-values ([(x file) (split-at file (enni e))])
+           (parse-file file (clauses ...) body))]
+      [(parse-file file:id (((x:id ...) e:expr) clauses ...) body:expr)
+       #'(let-values ([(file x ...) 
+                       (let-values ([(bundle file) (split-at file (enni e))])
+                         (apply values file (first bundle)))])
+           (parse-file file (clauses ...) body))]
+      [(parse-file file:id () body) #'body]))
+  
+  ;; Any -> Exact-nonnegative-integer
+  ;; coercion with error message for parse-file 
+  (define (enni x)
+    (if (exact-nonnegative-integer? x) x (error 'parse-file pem x)))
+  
+  (define pem "exact-nonnegative-integer expected for relative file position; given: ~e"))
 
 (module+ test
   ;; String -> Void
@@ -78,15 +103,15 @@ eos
         (cond
           [(zero? ds#) ""]
           [else
-           (let*-values ([(file sales-records# queries#) (apply values (rest file) (first file))]
-                         [(file sales-records)           (split file sales-records#)]
-                         [(file queries)                 (split file queries#)])
+           (parse-file file ([(sales-record# queries#) 1.02]
+                             [sales-records sales-record#]
+                             [queries queries#])
              (string-append (process-dataset sales-records queries) "\n" (loop (sub1 ds#) file)))])))
     ;; Dataset -> String 
     ;; process one dataset 
     (define (process-dataset sales-records queries)
       (foldr (λ (query r) (string-append (total-message sales-records (first query)) r)) "" queries))
-
+    
     ;; [Listof [List Number String Number]] String -> String 
     ;; compute query result and turn into string 
     (define (total-message sales-records query)
