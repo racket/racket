@@ -36,11 +36,11 @@ When you design your own macro with a large expansion, try to factor it
  into a function call that consumes small thunks or procedures.
 
 @compare[
-@racketmod[#:file
+@racketmod0[#:file
 @tt{good}
 racket
 ...
-(define-syntax (search->run s)
+(define-syntax (search s)
   (syntax-parse s
     [(_ x (e:expr ...)
         (~datum in)
@@ -60,11 +60,11 @@ racket
 @; -----------------------------------------------------------------------------
 @(begin
 #reader scribble/comment-reader
-[racketmod #:file
+[racketmod0 #:file
 @tt{bad}
 racket
 ...
-(define-syntax (search->run s)
+(define-syntax (search s)
   (syntax-parse s
     [(_ x (e:expr ...)
        (~datum in)

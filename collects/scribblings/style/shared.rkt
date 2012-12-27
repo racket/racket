@@ -60,11 +60,11 @@
 
 (define (sty columns width)
   (define space
-    (style #f `(,(attributes `((width . ,(format "~a" width)) (align . "center") (valign . "top"))))))
+    (style #f `(,(attributes `((width . ,(format "~a" width)) (align . "left") (valign . "top"))))))
   ;; -- in --
   (style #f
     (list
-      (attributes '((border . "1") (cellpadding . "10")))
+      (attributes '((border . "1") (cellpadding . "1")))
       (table-columns (make-list columns space)))))
 
 ;; ===================================================================================================

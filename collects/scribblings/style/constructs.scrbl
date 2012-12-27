@@ -51,7 +51,7 @@ for the last one, definitional constructs increase the indentation level.
 Therefore, favor @scheme[define] when feasible.
 
 @compare[
-@racketmod[#:file
+@racketmod0[#:file
 @tt{good}
 racket
 
@@ -61,7 +61,7 @@ racket
   (set-box! y t))
 ]
 @; -----------------------------------------------------------------------------
-@racketmod[#:file
+@racketmod0[#:file
 @tt{bad}
 racket
 
@@ -76,7 +76,7 @@ racket
 series of @racket[define]s because the former has @emph{sequential} scope
 and the latter has @emph{mutually recursive} scope.
 @compare[
-@racketmod[#:file
+@racketmod0[#:file
 @tt{works}
 racket
 (define (print-two f)
@@ -88,7 +88,7 @@ racket
     f))
 ]
 @; -----------------------------------------------------------------------------
-@racketmod[#:file
+@racketmod0[#:file
 
 @tt{does @bold{not}}
 racket
@@ -112,7 +112,7 @@ too. Because @scheme[cond] and its relatives (@scheme[case],
 prefer them over @scheme[if].
 
 @compare[
-@racketmod[#:file
+@racketmod0[#:file
 @tt{good}
 racket
 
@@ -125,7 +125,7 @@ racket
        (rate f)
        (curved (g r)))])
 ]
-@racketmod[#:file
+@racketmod0[#:file
 @tt{bad}
 racket
 
@@ -157,7 +157,7 @@ Don't nest expressions too deeply. Instead name intermediate results. With
 well-chosen names your expression becomes easy to read.
 
 @compare[
-@racketmod[#:file
+@racketmod0[#:file
 @tt{good}
 racket
 (define (next-month date)
@@ -168,7 +168,7 @@ racket
       `(,day ,(+ month 1))))
 ]
 @; -----------------------------------------------------------------------------
-@racketmod[#:file
+@racketmod0[#:file
 @tt{bad}
 racket
 (define (next-month d)
@@ -202,7 +202,7 @@ functions have names that tell you what they compute and that help
 accelerate reading.
 
 @compare[
-@racketmod[#:file
+@racketmod0[#:file
 @tt{good}
 racket
 
@@ -213,7 +213,7 @@ racket
        (to-list f)))
 ]
 @; -----------------------------------------------------------------------------
-@racketmod[#:file
+@racketmod0[#:file
 @tt{bad}
 racket
 
@@ -226,7 +226,7 @@ racket
 
 Even a curried function does not need @racket[lambda].
 @compare[
-@racketmod[#:file
+@racketmod0[#:file
 @tt{good}
 racket
 
@@ -234,7 +234,7 @@ racket
   ...)
 ]
 @; -----------------------------------------------------------------------------
-@racketmod[#:file
+@racketmod0[#:file
 @tt{acceptable}
 racket
 
@@ -277,7 +277,7 @@ With the availability of @racket[for/fold], @racket[for/list],
 @;%
 @(begin
 #reader scribble/comment-reader
-[racketmod #:file
+[racketmod0 #:file
 @tt{good}
 racket
 
@@ -297,7 +297,7 @@ racket
 @;%
 @(begin
 #reader scribble/comment-reader
-[racketmod #:file
+[racketmod0 #:file
 @tt{bad}
 racket
 
@@ -330,7 +330,7 @@ Define functions when possible, Or, do not introduce macros when functions
 will do.
 
 @compare[
-@racketmod[#:file
+@racketmod0[#:file
 @tt{good}
 racket
 ...
@@ -341,7 +341,7 @@ racket
 @; -----------------------------------------------------------------------------
 @(begin
 #reader scribble/comment-reader
-[racketmod #:file
+[racketmod0 #:file
 @tt{bad}
 racket
 ...
@@ -362,42 +362,46 @@ When you handle exceptions, specify the exception as precisely as
 possible.
 
 @compare[
-@racketmod[#:file
+@racketmod0[#:file
 @tt{good}
 racket
 ...
-;; String [X -> Y] String -> Void
+(code:comment #, @t{FN [X -> Y] FN -> Void})
 (define (convert in f out)
   (with-handlers
       ((exn:fail:read? X))
     (with-output-to out
-      (lambda ()
-        (with-input-from in
-          (reader f))))))
+      (writer f))))
 
-;; may raise exn:fail:read
-(define (reader f) ...)
+(code:comment #, @t{may raise exn:fail:read})
+(define ((writer f))
+ (with-input-from in
+   (reader f)))
 
-(define (X an-exn) ...)
+(code:comment #, @t{may raise exn:fail:read})
+(define ((reader f))
+ ... f ...)
 ]
 @; -----------------------------------------------------------------------------
-@racketmod[#:file
+@racketmod0[#:file
 @tt{bad}
 racket
 ...
-;; String [X -> Y] String -> Void
+(code:comment #, @t{FN [X -> Y] FN -> Void})
 (define (convert in f out)
   (with-handlers
       (((code:hilite (lambda _ #t)) X))
     (with-output-to out
-      (lambda ()
-        (with-input-from in
-          (reader f))))))
+      (writer f))))
 
-;; may raise exn:fail:read
-(define (reader f) ...)
+(code:comment #, @t{may raise exn:fail:read})
+(define ((writer f))
+ (with-input-from in
+   (reader f)))
 
-(define (X an-exn) ...)
+(code:comment #, @t{may raise exn:fail:read})
+(define ((reader f))
+ ... f ...)
 ]
 ]
  Using @racket[(lambda _ #t)] as an exception predicate suggests to the
@@ -410,41 +414,45 @@ It is equally bad to use @racket[exn?] as the exception predicate  even if
  exceptions, too. To catch all failures, use @racket[exn:fail?] as shown on
  the left:
 @compare[
-@racketmod[#:file
+@racketmod0[#:file
 @tt{good}
 racket
 ...
-;; String [X -> Y] String -> Void
+(code:comment #, @t{FN [X -> Y] FN -> Void})
 (define (convert in f out)
   (with-handlers
       ((exn:fail? X))
     (with-output-to out
-      (lambda ()
-        (with-input-from in
-          (reader f))))))
+      (writer f))))
 
-;; may raise exn:fail:read
-(define (reader f) ...)
+(code:comment #, @t{may raise exn:fail:read})
+(define ((writer f))
+ (with-input-from in
+   (reader f)))
 
-(define (X an-exn) ...)
+(code:comment #, @t{may raise exn:fail:read})
+(define ((reader f))
+ ... f ...)
 ]
-@racketmod[#:file
+@racketmod0[#:file
 @tt{bad}
 racket
 ...
-;; String [X -> Y] String -> Void
+(code:comment #, @t{FN [X -> Y] FN -> Void})
 (define (convert in f out)
   (with-handlers
       (((code:hilite exn?) X))
     (with-output-to out
-      (lambda ()
-        (with-input-from in
-          (reader f))))))
+      (writer f))))
 
-;; may raise exn:fail:read
-(define (reader f) ...)
+(code:comment #, @t{may raise exn:fail:read})
+(define ((writer f))
+ (with-input-from in
+   (reader f)))
 
-(define (X an-exn) ...)
+(code:comment #, @t{may raise exn:fail:read})
+(define ((reader f))
+ ... f ...)
 ]
 ]
 
@@ -452,24 +460,31 @@ Finally, a handler for a @racket[exn:fail?] clause should never
  succeed for all possible failures because it silences all kinds of
  exceptions that you probably want to see:
 @codebox[
-@racketmod[#:file
+@racketmod0[#:file
 @tt{bad}
 racket
 ...
-;; String [X -> Y] String -> Void
+(code:comment #, @t{FN [X -> Y] FN -> Void})
 (define (convert in f out)
-  (with-handlers ((exn:fail? (lambda (e)
-                               (cond
-				 [(exn:fail:read? e)
-				  (displayln "drracket is special")]
-                                 [else (void)]))))
+  (with-handlers ((exn:fail? handler))
     (with-output-to out
-      (lambda ()
-        (with-input-from in
-          (reader f))))))
+      (writer f))))
 
-;; may raise exn:fail:read
-(define (reader f) ...)
+(code:comment #, @t{Exn -> Void})
+(define (handler e)
+  (cond
+    [(exn:fail:read? e)
+     (displayln "drracket is special")]
+    [else (void)]))
+
+(code:comment #, @t{may raise exn:fail:read})
+(define ((writer f))
+ (with-input-from in
+   (reader f)))
+
+(code:comment #, @t{may raise exn:fail:read})
+(define ((reader f))
+ ... f ...)
 ]
 ]
  If you wish to deal with several different kind of failures, say
@@ -483,30 +498,34 @@ racket
 If you need to set a parameter, use @racket[parameterize]:
 
 @compare[
-@racketmod[#:file
+@racketmod0[#:file
 @tt{good}
 racket
 ...
-;; String OutputPort -> Void
-(define (send-to msg op)
-  (parameterize
-    ((current-output-port op))
-    (format-and-display msg))
-  (record-message-in-log msg))
+(define cop
+  current-output-port)
+
+(code:comment #, @t{String OPort -> Void})
+(define (send msg op)
+  (parameterize ((cop op))
+    (display msg))
+  (record msg))
 ]
 @; -----------------------------------------------------------------------------
-@racketmod[#:file
+@racketmod0[#:file
 @tt{bad}
 racket
 ...
-;; String OutputPort -> Void
-(define (send-to msg op)
-  (define cp
-    (current-output-port))
-  (current-output-port op)
-  (format-and-display msg)
-  (current-output-port cp)
-  (record-message-in-log msg))
+(define cop
+  current-output-port)
+
+(code:comment #, @t{String OPort -> Void})
+(define (send msg op)
+  (define cp (cop))
+  (cop op)
+  (display msg)
+  (cop cp)
+  (record msg))
 ]
 ]
 

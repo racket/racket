@@ -70,7 +70,7 @@ implementation:
 @codebox[
 @(begin
 #reader scribble/comment-reader
- (racketmod #:file
+ (racketmod0 #:file
  @tt{good}
  racket/base
 
@@ -99,7 +99,7 @@ If you choose to use @racket[provide/contract], define auxiliary concepts
 @codebox[
 @(begin
 #reader scribble/comment-reader
- (racketmod #:file
+ (racketmod0 #:file
  @tt{good}
  racket/base
 
@@ -115,9 +115,9 @@ If you choose to use @racket[provide/contract], define auxiliary concepts
   (flat-named-contract "placement" ...))
 
 (provide/contract
-  ;; initialize the game board for the specified number of players
+  ;; initialize the board for the given number of players
   [board-init        (-> player#/c plain-board/c)]
-  ;; initialize a board for some players and place the specified tiles
+  ;; initialize a board and place the tiles
   [create-board      (-> player#/c (listof placement/c)
                          (or/c plain-board/c string?))]
   ;; create a board from an X-expression representation
@@ -164,7 +164,7 @@ This helps people find the relevant information quickly.
 @;%
 @(begin
 #reader scribble/comment-reader
-(racketmod #:file
+(racketmod0 #:file
  @tt{good}
  racket
 
@@ -197,7 +197,7 @@ This helps people find the relevant information quickly.
 
 @(begin
 #reader scribble/comment-reader
-(racketmod #:file
+(racketmod0 #:file
  @tt{bad}
  racket
 
@@ -245,7 +245,7 @@ should come with a description of the grammar clause it introduces
 @codebox[
 @(begin
 #reader scribble/comment-reader
-(racketmod #:file
+(racketmod0 #:file
 @tt{good}
 racket
 
@@ -254,10 +254,10 @@ racket
  ;;   action:definition-or-expression)
  ;;
  ;; (define-strategy (s board tiles available score) ...)
- ;; defines a function from an instance of player to a placement
- ;; The four identifier denote the state of the board,
- ;; the player's hand, the places where a tile can be
- ;; placed, and the player's current score.
+ ;; defines a function from an instance of player to a
+ ;; placement. The four identifier denote the state of
+ ;; the board, the player's hand, the places where a
+ ;; tile can be placed, and the player's current score.
  define-strategy)
 ))]
 
@@ -312,7 +312,7 @@ As of version 5.3, Racket supports sub-modules. Use sub-modules to
 @codebox[
 @(begin
 #reader scribble/comment-reader
- (racketmod #:file
+ (racketmod0 #:file
  @tt{fahrenheit.rkt}
  racket
 
@@ -394,7 +394,7 @@ constants and one for a function.
 @codebox[
 @(begin
 #reader scribble/comment-reader
- (racketmod #:file
+ (racketmod0 #:file
  @tt{celsius.rkt}
  racket
 
@@ -402,6 +402,7 @@ constants and one for a function.
 (define/contract AbsoluteF real? -459.67)
 
 (define/contract (celsius->fahrenheit c)
+  (code:comment #, @t{convert a celsius temperature to a fahrenheit temperature})
   (-> (and/c real? (>=/c AbsoluteC))
       (and/c real? (>=/c AbsoluteF)))
   ;; -- IN --
@@ -453,7 +454,7 @@ contracts. Any value flow within the submodule is free of any constraints.
 @codebox[
 @(begin
 #reader scribble/comment-reader
- (racketmod #:file
+ (racketmod0 #:file
  @tt{graph-traversal.rkt}
  racket
  ...

@@ -306,7 +306,7 @@ Another widely used convention is to @emph{prefix} a function name with the data
 @tt{good}
 racket
 
-board-free-spaces      board-attackable-spaces    board-serialize
+board-free-spaces      board-closed-spaces    board-serialize
 ])]
  In contrast, variables use a @emph{suffix} that indicates their type:
 @codebox[
