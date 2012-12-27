@@ -72,30 +72,6 @@ racket
 ]
 ]
 
-@compare[
-@racketmod[#:file
-@tt{good}
-racket
-
-(define-syntax (bump stx)
-  (syntax-case stx ()
-    [(_ s sn fn i)
-     (define g (ff #'sn))
-     #'( ....)]))
-]
-@; -----------------------------------------------------------------------------
-@racketmod[#:file
-@tt{bad}
-racket
-
-(define-syntax (bump stx)
-  (syntax-case stx ()
-    [(_ s sn fn i)
-     (let ([g (ff #'sn)])
-        #'( ....))]))
-]
-]
-
 @; -----------------------------------------------------------------------------
 @section{Conditionals}
 
