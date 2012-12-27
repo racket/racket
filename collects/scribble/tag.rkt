@@ -31,7 +31,7 @@
 
 (define (taglet? v)
   (and (not (generated-tag? v))
-       (tag? (list 'something v))))
+       (tag? (list 'something (list v)))))
 
 (define interned (make-weak-hash))
   
