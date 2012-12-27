@@ -14,6 +14,7 @@
            setup/getinfo
            setup/xref
            scribble/xref
+           scribble/tag
            net/url
            syntax/toplevel
            browser/external
@@ -1342,7 +1343,8 @@
                   [else (void)])))
         (send t set-clickback before-docs after-docs 
               (λ (t start end)
-                (define-values (path tag) (xref-tag->path+anchor (load-collections-xref) `(mod-path ,(symbol->string lang))))
+                (define-values (path tag) (xref-tag->path+anchor (load-collections-xref) 
+                                                                 (make-module-language-tag lang)))
                 (define url (path->url path))
                 (define url2 (if tag
                                  (make-url (url-scheme url)

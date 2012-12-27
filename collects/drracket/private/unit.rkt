@@ -50,6 +50,7 @@ module browser threading seems wrong.
          
          scribble/xref
          setup/xref
+         scribble/tag
          (only-in scribble/base doc-prefix))
 
 (provide unit@)
@@ -1532,11 +1533,9 @@ module browser threading seems wrong.
                     [callback (λ (x y) 
                                 (define-values (path tag) 
                                   (xref-tag->path+anchor (load-collections-xref)
-                                                         `(part
-                                                           ,(doc-prefix
-                                                             '(lib "scribblings/drracket/drracket.scrbl")
-                                                             #f
-                                                             "follow-log"))))
+                                                         (make-section-tag
+                                                          "follow-log"
+                                                          #:doc '(lib "scribblings/drracket/drracket.scrbl"))))
                                 (define url (path->url path))
                                 (define url2 (if tag
                                                  (make-url (url-scheme url)

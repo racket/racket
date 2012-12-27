@@ -26,6 +26,11 @@ references a section in the document implemented by
 prefixes (for intermediate sections, typically) can be provided as
 @racket[tag-prefixes].}
 
+@defproc[(make-module-language-tag [lang symbol?]) tag?]{
+  Forms a @tech{tag} that refers to a section 
+  that contains @racket[defmodulelang] for the language
+  @racket[lang].
+}
 
 @defproc[(taglet? [v any/c]) boolean?]{
 

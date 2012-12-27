@@ -14,6 +14,7 @@
                       #:tag-prefixes (or/c #f (listof string?)))
                      . ->* .
                      tag?)]
+  [make-module-language-tag (-> symbol? tag?)]
   [taglet? (any/c . -> . boolean?)]
   [module-path-prefix->string (module-path? . -> . string?)]
   [module-path-index->taglet (module-path-index? . -> . taglet?)]
@@ -24,6 +25,9 @@
 
 (define (make-section-tag s #:doc [doc #f] #:tag-prefixes [prefix #f])
   `(part ,(doc-prefix doc prefix s)))
+
+(define (make-module-language-tag langname)
+  `(mod-path ,(symbol->string langname)))
 
 (define (taglet? v)
   (and (not (generated-tag? v))
