@@ -575,9 +575,9 @@ file based on the file's extension. If the file ends with
 @File{.txt}, DrRacket uses text mode. Otherwise, DrRacket
 uses Racket mode.
 
-@section{Language-specific capabilities}
+@section{Language-Specific Capabilities}
 
-@subsection[#:tag "drracket:lang-languages-customization"]{Customizing DrRacket's behavior}
+@subsection[#:tag "drracket:lang-languages-customization"]{Customizing DrRacket's Behavior}
 
 When using the language declared in the source, DrRacket queries  that
 language via @racket[module-compiled-language-info] to determine
@@ -864,7 +864,7 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
   The bitmap in the Check Syntax button on the DrRacket frame.
 }
 
-@subsection{Disappeared uses and bindings}
+@subsection{Disappeared Uses and Bindings}
 
 @section-index["disappeared-use" "disappeared-binding"]
 
@@ -926,7 +926,7 @@ not part of DrRacket proper, but one helper library is documented here.
 @include-section["module-language-tools.scrbl"]
 @include-section["module-language.scrbl"]
 
-@section{Backwards compatibility}
+@section{Backwards Compatibility}
 
 This section lists the bindings that begin with @tt{drscheme:} provided by the tools
 library; they are here for backwards compatibility and to provide links to the
