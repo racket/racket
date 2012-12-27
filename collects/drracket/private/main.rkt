@@ -64,6 +64,8 @@
 
 (application:current-app-name (string-constant drscheme))
 
+(preferences:set-default 'drracket:logger-scroll-to-bottom? #t boolean?)
+
 (preferences:set-default 'drracket:submodules-to-choose-from 
                          '((main) (test)) 
                          (cons/c (list/c 'main)

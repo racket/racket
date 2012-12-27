@@ -462,6 +462,7 @@ static void BTC_do_accounting(NewGC *gc)
       last = cur;
       box = cur->global_next; cur = box ? SCHEME_PTR1_VAL(box) : NULL;
 
+      owner_table = gc->owner_table;
       owner_table[owner]->memory_use = add_no_overflow(owner_table[owner]->memory_use, 
                                                        gcBYTES_TO_WORDS(gc->phantom_count));
       gc->phantom_count = save_count;
