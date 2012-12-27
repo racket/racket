@@ -570,7 +570,8 @@ mr-extras :+= (package: "sgl/")
 mz-extras :+= (package: "syntax-color") (doc: "red-black")
 
 ;; -------------------- plt-help
-dr-extras :+= (collects: "help") (bin: "Racket Documentation")
+dr-extras :+= (collects: "help") (doc: "help")
+              (bin: "Racket Documentation")
               (bin: "plt-help") (man: "plt-help")
 
 ;; -------------------- lang
