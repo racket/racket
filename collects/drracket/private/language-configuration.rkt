@@ -1271,14 +1271,6 @@
           (do-insert "#lang" #t)
           (loop (cdr strs))))
       
-      (define xref-chan (make-channel))
-      (thread
-       (λ ()
-         (define xref (load-collections-xref))
-         (let loop ()
-           (channel-put xref-chan xref)
-           (loop))))
-      
       (define spacer-snips '())
       (define spacer-poses '())
       
@@ -1350,7 +1342,7 @@
                   [else (void)])))
         (send t set-clickback before-docs after-docs 
               (λ (t start end)
-                (define-values (path tag) (xref-tag->path+anchor (channel-get xref-chan) `(mod-path ,(symbol->string lang))))
+                (define-values (path tag) (xref-tag->path+anchor (load-collections-xref) `(mod-path ,(symbol->string lang))))
                 (define url (path->url path))
                 (define url2 (if tag
                                  (make-url (url-scheme url)
