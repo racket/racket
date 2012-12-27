@@ -89,7 +89,7 @@ This time, however, the extra leading space of the second line of
 a part of the separator that surrounds the word @racket["good"].
 }
 
-@item{@reading[read-words/line (listof string?)]{a list of lists, one per line; each line is represented as a list of white-space separated tokens}
+@item{@reading[read-words/line (listof string?)]{a list of lists, one per line; each line is represented as a list of strings}
 
 @examples[#:eval (examples-batch-io)
 (read-words/line "data.txt")
@@ -98,6 +98,14 @@ The results is similar to the one that @racket[read-words] produces,
 except that the organization of the file into lines is preserved. 
 In particular, the empty third line is represented as an empty list of words. 
 }
+
+@item{@reading[read-words-and-numbers/line (listof (or number? string?))]{a list of lists, one per line; each line is represented as a list of strings and numbers}
+
+@examples[#:eval (examples-batch-io)
+(read-words-and-numbers/line "data.txt")
+]
+The results is like the one that @racket[read-words/line] produces,
+except strings that can be parsed as numbers are represented as numbers.}
 
 @item{@reading[read-csv-file (listof (listof any/c))]{a list of lists of comma-separated values}
 

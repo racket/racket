@@ -35,6 +35,9 @@
  read-words/line ;; String -> [Listof [Listof String]]
  ;; read the specified file as a list of lines, each line as a list of words
  
+ read-words-and-numbers/line ;; String -> [Listof [Listof String]]
+ ;; read the specified file as a list of lines, each line as a list of words
+ 
  read-csv-file ;; String -> [Listof [Listof (U Any)]]
  ;; -- f must be formated as a a file with comma-separated values (Any)
  ;; read the specified file as a list of lists---one per line---of values (Any)
@@ -76,6 +79,12 @@
   ;; String -> [Listof [Listof String]]
   ;; read the specified file as a list of lines, each line as a list of words
   (read-words/line/internal f cons))
+
+(def-reader (read-words-and-numbers/line f)
+  ;; String -> [Listof [Listof (U String Number)]]
+  ;; read the specified file as a list of lines, each line as a list of words and numbers
+  (read-words/line/internal f (lambda (line1 r)
+                                (cons (for/list ((t (in-list line1))) (or (string->number t) t)) r))))
 
 (define (read-words/line/internal f combine)
   (define lines (read-chunks f *read-line (lambda (x) x)))
@@ -147,7 +156,7 @@
 
 ;; String (-> X) ([Listof X] -> [Listof X]) -> [Listof X]
 ;; read a file as a list of X where process-accu is applied to accu when eof
-(define (read-chunks f read-chunk process-accu)
+(define (read-chunks f read-chunk process-accu) 
   (with-input-from-file f 
     #:mode 'text
     (lambda ()
