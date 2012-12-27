@@ -100,13 +100,13 @@ implementation:
 If you choose to use @racket[provide] with @racket[contract-out], you
  may wish to have two @racket[require] sections:
 @itemlist[
-@item{the first one, placed above the @racket[provide] section, imports the
+@item{the first one, placed with the @racket[provide] section, imports the
  values needed to formulate the contracts and}
 @item{the second one, placed below the @racket[provide] section, imports
  the values needed to implement the services.}
 ]
- If your contracts call for additional concepts, define those between the
- @racket[require] for contracts and the @racket[provide] specification:
+ If your contracts call for additional concepts, define those right below
+ the @racket[provide] specification:
 @;%
 @codebox[
 @(begin
@@ -117,15 +117,6 @@ If you choose to use @racket[provide] with @racket[contract-out], you
 
 ;; the module implements a tv server
 
-(require xml)
-
-(define player# 3)
-(define plain-board/c
-  (instanceof/c (and/c admin-board%/c board%-contracts/c)))
-
-(define placement/c
-  (flat-named-contract "placement" ...))
-
 (provide
   (contract-out
     ;; initialize the board for the given number of players
@@ -135,6 +126,15 @@ If you choose to use @racket[provide] with @racket[contract-out], you
 			   (or/c plain-board/c string?))]
     ;; create a board from an X-expression representation
     [board-deserialize (-> xexpr? plain-board/c)]))
+
+(require xml)
+
+(define player# 3)
+(define plain-board/c
+  (instanceof/c (and/c admin-board%/c board%-contracts/c)))
+
+(define placement/c
+  (flat-named-contract "placement" ...))
 
 (code:comment #, @line)
 (code:comment #, @t{import and implementation section})
@@ -153,11 +153,13 @@ If you choose to use @racket[provide] with @racket[contract-out], you
   (class ... some 900 lines ...))
 ))]
 @;%
- In the preceding code snippet, @xml[] imports the
- @racket[xexpr?] predicate, which is needed to articulate the contract for
- @racket[board-deserialize]. The @racket[require] line below the lines
- imports an event-handling mechanism plus a simple image manipulation
-  library.
+ In the preceding code snippet, @xml[] imports the @racket[xexpr?]
+ predicate. Since the latter is needed to articulate the contract for
+ @racket[board-deserialize], the @racket[require] line for @xml[] is a part
+ of the @racket[provide] section. In contrast, the @racket[require] line
+ below the lines imports an event-handling mechanism plus a simple image
+ manipulation library, and these tools are needed only for the
+ implementation of the provided services.
 
 Prefer specific export specifications over @racket[(provide (all-defined-out))].
 
@@ -174,6 +176,10 @@ With @racket[require] specifications at the top of the implementation
 
 @; -----------------------------------------------------------------------------
 @subsection{Provide}
+
+@(define 1/2-line
+   @t{---------------------------------})
+
 
 A module's interface describes the services it provides; its body
  implements these services. Others have to read the interface if the
@@ -194,8 +200,6 @@ This helps people find the relevant information quickly.
  ;; This module implements
  ;; several strategies.
 
- (require "game-basics.rkt")
-
  (provide
   ;; Stgy = State -> Action
 
@@ -206,6 +210,11 @@ This helps people find the relevant information quickly.
   ;; Stgy
   ;; tree traversal
   ai-strategy)
+
+ (code:comment #, @1/2-line)
+ (code:comment #, @t{implementation})
+
+ (require "basics.rkt")
 
  (define (general p)
    ... )
@@ -227,7 +236,10 @@ This helps people find the relevant information quickly.
  ;; This module implements
  ;; several strategies.
 
- (require "game-basics.rkt")
+ (code:comment #, @1/2-line)
+ (code:comment #, @t{implementation})
+
+ (require "basics.rkt")
 
  ;; Stgy = State -> Action
 
@@ -340,21 +352,19 @@ As of version 5.3, Racket supports sub-modules. Use sub-modules to
  @tt{fahrenheit.rkt}
  racket
 
-(module+ test
-  (require rackunit))
+ (provide
+   (contract-out
+     (code:comment #, @t{convert a fahrenheit temperature to a celsius})
+     [fahrenheit->celsius (-> number? number?)]))
 
-(provide
-  (contract-out
-    (code:comment #, @t{convert a fahrenheit temperature to a celsius temperature})
-    [fahrenheit->celsius (-> number? number?)]))
+ (define (fahrenheit->celsius f)
+   (/ (* 5 (- f 32)) 9))
 
-(define (fahrenheit->celsius f)
-  (/ (* 5 (- f 32)) 9))
-
-(module+ test
-  (check-equal? (fahrenheit->celsius -40) -40)
-  (check-equal? (fahrenheit->celsius 32) 0)
-  (check-equal? (fahrenheit->celsius 212) 100))
+ (module+ test
+   (require rackunit)
+   (check-equal? (fahrenheit->celsius -40) -40)
+   (check-equal? (fahrenheit->celsius 32) 0)
+   (check-equal? (fahrenheit->celsius 212) 100))
 ))]
 @;%
  If you develop your code in DrRacket, it will run the test sub-module
@@ -485,10 +495,11 @@ contracts. Any value flow within the submodule is free of any constraints.
  racket
  ...
  (module traversal racket
-   (require (submod ".." graph) (submod ".." contract))
    (provide
     (contract-out
      (find-path (-> graph? node? node? (option/c path?)))))
+
+   (require (submod ".." graph) (submod ".." contract))
 
    (define (find-path G s d (visited history0))
      (cond
