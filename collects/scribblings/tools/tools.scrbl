@@ -926,8 +926,6 @@ not part of DrRacket proper, but one helper library is documented here.
 @include-section["module-language-tools.scrbl"]
 @include-section["module-language.scrbl"]
 
-@include-section["documentation-utils.scrbl"]
-
 @section{Backwards compatibility}
 
 This section lists the bindings that begin with @tt{drscheme:} provided by the tools
