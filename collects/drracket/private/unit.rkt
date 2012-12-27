@@ -1582,8 +1582,9 @@ module browser threading seems wrong.
           (end-container-sequence)))
       
       (define/public (set-logger-text-field-value str)
-        (send logger-text-field set-value str)
-        (set-logger-text-field-bg-color (parse-logger-args str)))
+        (when logger-text-field
+          (send logger-text-field set-value str)
+          (set-logger-text-field-bg-color (parse-logger-args str))))
       
       (define/private (set-logger-text-field-bg-color good?)
         (send logger-text-field set-field-background 
