@@ -442,4 +442,53 @@ The screen shot below shows that @racket[define/contract] works for
 mutually recursive functions with modules. This capability is unique to
 @racket[define/contract].
 
-@image["mut-rec-contracts.png" #:scale .7]{Mutually recursive functions with contracts}
+@image["mut-rec-contracts.png" #:scale .8]{Mutually recursive functions with contracts}
+
+In contrast, submodules act exactly like plain modules when it comes to
+contract boundaries. Like @racket[define/contract], a submodue establishes
+a contract boundary between itself and the rest of the module. Any value
+flow between a client module and the submodule is governed by
+contracts. Any value flow within the submodule is free of any constraints.
+
+@codebox[
+@(begin
+#reader scribble/comment-reader
+ (racketmod #:file
+ @tt{graph-traversal.rkt}
+ racket
+ ...
+ (module traversal racket
+   (require (submod ".." graph) (submod ".." contract))
+   (provide
+    (contract-out
+     (find-path (-> graph? node? node? (option/c path?)))))
+
+   (define (find-path G s d (visited history0))
+     (cond
+       [(node=? s d) '()]
+       [(been-here? s visited) #f]
+       [else (define neighbors (node-neighbors G s))
+	     (define there (record s visited))
+	     (define path (find-path* G neighbors d there))
+	     (if path (cons s path) #f)]))
+
+   (define (find-path* G s* d visited)
+     (cond
+       [(empty? s*) #f]
+       [else (or (find-path G (first s*) d visited)
+		 (find-path* G (rest s*) d visited))]))
+
+   (define (node-neighbors G n)
+     (rest (assq n G))))
+
+ (module+ test
+   (require (submod ".." traversal) (submod ".." graph))
+   (find-path G 'a 'd))
+))]
+@;%
+
+Since modules and submodules cannot refer to each other in a mutual
+recursive fashion, submodule contract boundaries cannot enforce constraints
+on mutually recursive functions. It would thus be impossible to distribute
+the @racket[find-path] and @racket[find-path*] functions from the preceding
+code display into two distinct submodules.
