@@ -362,3 +362,84 @@ Similarly, if your function or method consumers two (or more)
 Write a purpose statement for your function.  If you can, add an informal
 type and/or contract statement.
 
+@; -----------------------------------------------------------------------------
+@section{Contracts}
+
+A contract establishes a boundary between a service provider and a service
+consumer aka @defterm{server} and @defterm{client}. Due to historical
+reasons, we tend to refer to this boundary as a @defterm{module boundary},
+but the use of "module" in this phrase does @emph{not} only refer to
+file-based or physical Racket modules. Clearly, @defterm{contract boundary}
+is better than module boundary because it separates the two concepts.
+
+When you use @racket[provide/contract] at the module level, the boundary of
+the physical module and the contract boundary coincide.
+
+When a module becomes too large to manage without contracts but you do not
+wish to distribute the source over several files, you may wish to use one
+of the following two constructs to erect contract boundaries internal to
+the physical module:
+@itemlist[
+@item{@racket[define/contract]}
+@item{@racket[module], as in submodule.}
+]
+
+Using the first one, @racket[define/contract], is like using
+@racket[define] except that it is also possible to add a contract between
+the header of the definition and its body. The following code display shows
+a file that erects three internal contract boundaries: two for plain
+constants and one for a function.
+
+@;%
+@codebox[
+@(begin
+#reader scribble/comment-reader
+ (racketmod #:file
+ @tt{celsius.rkt}
+ racket
+
+(define/contract AbsoluteC real? -273.15)
+(define/contract AbsoluteF real? -459.67)
+
+(define/contract (celsius->fahrenheit c)
+  (-> (and/c real? (>=/c AbsoluteC))
+      (and/c real? (>=/c AbsoluteF)))
+  ;; -- IN --
+  (+ (* 9/5 c) 32))
+
+(module+ test
+  (require rackunit)
+  (check-equal? (celsius->fahrenheit -40) -40)
+  (check-equal? (celsius->fahrenheit 0) 32)
+  (check-equal? (celsius->fahrenheit 100) 212))
+))]
+@;%
+
+To find out how these contract boundaries work, you may wish to conduct
+some experiments:
+@itemlist[#:style 'ordered
+@item{Add the following line to the bottom of the file:
+@;%
+@(begin
+#reader scribble/comment-reader
+(racketblock
+(celsius->fahrenheit -300)
+))
+@;%
+Save to file and observe how the contract system blames this line and what
+the blame report tells you.}
+
+@item{Replace the body of the @racket[celsius->fahrenheit] function with
+@racketblock[(sqrt c)]
+Once again, run the program and study the contract
+exceptions, in particular observe which party gets blamed.}
+
+@item{Change the right-hand side of @racket[AbsoluteC] to
+@racket[-273.15i], i.e., a complex number. This time a different contract
+party gets blamed.}
+]
+The screen shot below shows that @racket[define/contract] works for
+mutually recursive functions with modules. This capability is unique to
+@racket[define/contract].
+
+@image["mut-rec-contracts.png" #:scale .7]{Mutually recursive functions with contracts}
