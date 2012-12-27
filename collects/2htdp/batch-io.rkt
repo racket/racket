@@ -35,8 +35,8 @@
  read-words/line ;; String -> [Listof [Listof String]]
  ;; read the specified file as a list of lines, each line as a list of words
  
- read-words-and-numbers/line ;; String -> [Listof [Listof String]]
- ;; read the specified file as a list of lines, each line as a list of words
+ read-words-and-numbers/line ;; String -> [Listof [Listof (Union Number String)]]
+ ;; read the specified file as a list of lines, each line as a list of words and numbers 
  
  read-csv-file ;; String -> [Listof [Listof (U Any)]]
  ;; -- f must be formated as a a file with comma-separated values (Any)
