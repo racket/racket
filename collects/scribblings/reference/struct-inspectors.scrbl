@@ -142,8 +142,8 @@ is not controlled by the current inspector, the
 Returns a value for the name of @racket[v] if @racket[v] has a name,
 @racket[#f] otherwise. The argument @racket[v] can be any value, but
 only (some) procedures, @tech{structures}, @tech{structure types},
-@tech{structure type properties}, @tech{regexp values}, and
-@tech{ports} have names. See also @secref["infernames"].
+@tech{structure type properties}, @tech{regexp values},
+@tech{ports}, and @tech{loggers} have names. See also @secref["infernames"].
 
 The name (if any) of a procedure is always a symbol. The
 @racket[procedure-rename] function creates a procedure with a specific
@@ -165,5 +165,7 @@ same inputs.
 
 The name of a port can be any value, but many tools use a path or
 string name as the port's for (to report source locations, for
-example).}
+example).
+
+The name of a @tech{logger} is either a symbol or @racket[#f].}
 

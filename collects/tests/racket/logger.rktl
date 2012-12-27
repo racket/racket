@@ -13,7 +13,7 @@
 
 (test #f logger-name (make-logger))
 
-(arity-test make-logger 0 2)
+(arity-test make-logger 0 3)
 
 ; --------------------
 
@@ -26,7 +26,13 @@
                     (log-message l level "message" 'data)
                     (for-each (lambda (lr)
                                 (test (and on?
-                                           (vector level (format "~a: message" (logger-name l)) 'data))
+                                           (vector level (format "~a: message" (logger-name l)) 'data (logger-name l)))
+                                      sync/timeout 0 lr))
+                              lrs)
+                    (log-message l level 'name "message" 'data)
+                    (for-each (lambda (lr)
+                                (test (and on?
+                                           (vector level "name: message" 'data 'name))
                                       sync/timeout 0 lr))
                               lrs))])
   (test #t logger? l)
@@ -90,7 +96,7 @@
 
 (let ()
   (define root (make-logger))
-  (define sub1 (make-logger 'sub1 root))
+  (define sub1 (make-logger 'sub1 root #f))
   (define sub2 (make-logger 'sub2 root))
   (define sub3 (make-logger 'sub3 root))
   (define sub4 (make-logger 'sub4 root))
@@ -128,6 +134,43 @@
   (log-message sub4 'error "message" 'data)
   (log-message sub4 'fatal "message" 'data)
   (test #f get))
+
+; --------------------
+;; notification callback:
+
+(let ()
+  (define rt #f)
+  (define s1 #f)
+  (define root (make-logger #f #f (lambda (m) (set! rt m))))
+  (define sub1 (make-logger #f root (lambda (m) (set! s1 m))))
+  ;; no receivers:
+  (log-message sub1 'debug "message" 'data)
+  (test #f values rt)
+  (test #f values s1)
+  (define r (make-log-receiver root 'error))
+  ;; still no receivers for 'debug:
+  (log-message root 'debug "message" 'data)
+  (test #f values rt)
+  (test #f values s1)
+  ;; receivers for 'error:
+  (log-message sub1 'error "message" 'data)
+  (test rt vector 'error "message" 'data #f)
+  (test s1 vector 'error "message" 'data #f)
+  (set! rt #f)
+  (set! s1 #f)
+  (log-message root 'fatal 'name "message2" 'data2)
+  (test rt vector 'fatal "name: message2" 'data2 'name)
+  (test #f values s1)
+  (define sub2 (make-logger 'sub2 root (lambda (m) (abort-current-continuation 
+                                                    (default-continuation-prompt-tag) 
+                                                    void))))
+  (test 'aborted
+        call-with-continuation-prompt
+        (lambda () (log-message sub2 'fatal 'name "message2" 'data2))
+        (default-continuation-prompt-tag) 
+        (lambda (v) 'aborted))
+  
+  (void))
 
 ; --------------------
 

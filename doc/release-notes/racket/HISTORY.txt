@@ -1,3 +1,8 @@
+Version 5.3.1.11
+Changed log-message to support a name argument
+Changed the synchronization result of a log receiver to include an
+ event name
+
 Version 5.3.1.10
 Added phantom byte strings
 Added 'word mode to system-type
