@@ -1,6 +1,7 @@
 #lang typed/racket/base
 
-(require (only-in "mpfr.rkt" 1ary-funs 1ary-preds 1ary2-funs 2ary-funs)
+(require racket/flonum
+         (only-in "mpfr.rkt" 1ary-funs 1ary-preds 1ary2-funs 2ary-funs)
          "../base/base-random.rkt"
          "utils.rkt")
 
@@ -139,11 +140,18 @@
 (: bigfloat->fl2 (Bigfloat -> (Values Flonum Flonum)))
 (define (bigfloat->fl2 x)
   (define x2 (bigfloat->flonum x))
-  (values x2 (bigfloat->flonum (bf- x (flonum->bigfloat x2)))))
+  (cond [(rational? x2)
+         (let ([x2  (+ x2 (bigfloat->flonum (bf- x (flonum->bigfloat x2))))])
+           (cond [(rational? x2)
+                  (values x2 (bigfloat->flonum (bf- x (flonum->bigfloat x2))))]
+                 [else
+                  (values x2 0.0)]))]
+        [else  (values x2 0.0)]))
 
 (: fl2->bigfloat (Flonum Flonum -> Bigfloat))
 (define (fl2->bigfloat x2 x1)
-  (bf+ (flonum->bigfloat x1) (flonum->bigfloat x2)))
+  (cond [(fl= x1 0.0)  (bf x2)]
+        [else  (bf+ (flonum->bigfloat x1) (flonum->bigfloat x2))]))
 
 (provide
  ;; Parameters

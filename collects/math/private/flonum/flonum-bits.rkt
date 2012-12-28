@@ -4,6 +4,8 @@
          racket/performance-hint)
 
 (provide flonum->bit-field bit-field->flonum
+         flonum->fields fields->flonum
+         flonum->sig+exp sig+exp->flonum
          flonum->ordinal ordinal->flonum
          flstep flnext flprev flonums-between
          flulp)
@@ -19,6 +21,48 @@
          (floating-point-bytes->real (integer->integer-bytes i 8 #f))]
         [else
          (raise-argument-error 'bit-field->flonum "Integer in [0 .. #xffffffffffffffff]" i)]))
+
+(define implicit-leading-one (arithmetic-shift 1 52))
+(define max-significand (- implicit-leading-one 1))
+(define max-exponent 2047)
+(define max-signed-exponent 1023)
+(define min-signed-exponent -1074)
+
+(: flonum->fields (Flonum -> (Values (U 0 1) Index Natural)))
+(define (flonum->fields x)
+  (define n (flonum->bit-field x))
+  (values (if (zero? (bitwise-bit-field n 63 64)) 0 1)
+          (assert (bitwise-bit-field n 52 63) index?)
+          (bitwise-bit-field n 0 52)))
+
+(: fields->flonum (Integer Integer Integer -> Flonum))
+(define (fields->flonum s e m)
+  (cond [(not (or (= s 0) (= s 1)))
+         (raise-argument-error 'fields->flonum "(U 0 1)" 0 s e m)]
+        [(or (e . < . 0) (e . > . max-exponent))
+         (raise-argument-error 'fields->flonum (format "Natural <= ~e" max-exponent) 1 s e m)]
+        [(or (m . < . 0) (m . > . max-significand))
+         (raise-argument-error 'fields->flonum (format "Natural <= ~a" max-significand) 2 s e m)]
+        [else
+         (bit-field->flonum (bitwise-ior (arithmetic-shift s 63)
+                                         (arithmetic-shift e 52)
+                                         m))]))
+
+(: flonum->sig+exp (Flonum -> (Values Integer Fixnum)))
+(define (flonum->sig+exp x)
+  (define-values (s e m) (flonum->fields x))
+  (let-values ([(sig exp)  (if (= e 0)
+                               (values m -1074)
+                               (values (bitwise-ior m implicit-leading-one)
+                                       (assert (- e 1075) fixnum?)))])
+    (values (if (zero? s) sig (- sig)) exp)))
+
+(: sig+exp->flonum (Integer Integer -> Flonum))
+(define (sig+exp->flonum sig exp)
+  (cond [(= sig 0)  0.0]
+        [(exp . > . max-signed-exponent)  (if (sig . < . 0) -inf.0 +inf.0)]
+        [(exp . < . min-signed-exponent)  (if (sig . < . 0) -0.0 0.0)]
+        [else  (real->double-flonum (* sig (expt 2 exp)))]))
 
 (: flonum->ordinal (Flonum -> Integer))
 (define (flonum->ordinal x)

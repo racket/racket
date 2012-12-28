@@ -17,7 +17,7 @@ Note to self: exp(x+y)-1 = (exp(x)-1) * (exp(y)-1) + (exp(x)-1) + (exp(y)-1)
          "../../../base.rkt"
          "../../../bigfloat.rkt"
          "../flonum-functions.rkt"
-         "../flonum-syntax.rkt"
+         "../flonum-error.rkt"
          "../flonum-exp.rkt"
          "../flonum-constants.rkt"
          "expansion-base.rkt"

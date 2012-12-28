@@ -8,7 +8,7 @@
          "flonum-functions.rkt"
          "flonum-log.rkt"
          "flonum-more-functions.rkt"
-         "flonum-syntax.rkt")
+         "flonum-error.rkt")
 
 (provide flfactorial
          flbinomial
