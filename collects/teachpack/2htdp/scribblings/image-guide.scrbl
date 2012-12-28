@@ -164,10 +164,10 @@ and avoiding extra thick lines on the interior. For example, consider
 building a grid like this:
 
 @image-interaction[
-(define s (square 20 'outline 'black))
-(define r (beside s s s s s s))
-(define q (above  r r r r r r))
-q
+(define s1 (square 20 'outline 'black))
+(define r1 (beside s1 s1 s1 s1 s1 s1))
+(define q1 (above  r1 r1 r1 r1 r1 r1))
+q1
 ]
 
 The reason interior lines in this grid are the same thickness as the lines around the edge
@@ -205,13 +205,13 @@ black pen, but we can crop out the outer portion of the pen.
 Using that we can build a grid now too, but this grid has doubled lines on the
 interior.
 
-@image-interaction[(let* ([s (crop
-                              0 0 20 20
-                              (rectangle
-                               20 20 "outline" 
-                               (make-pen "black" 2 "solid" "round" "round")))]
-                          [r (beside s s s s s s)])
-                     (above r r r r r r))]
+@image-interaction[
+(define pn (make-pen "black" 2 "solid" "round" "round"))
+(define s2 (crop 0 0 20 20 (rectangle 20 20 "outline" pn)))
+(define r2 (beside s2 s2 s2 s2 s2 s2))
+(define q2 (above  r2 r2 r2 r2 r2 r2))
+q2
+]
 
 While this kind of rectangle is not useful for building grids, it 
 is important to be able to build rectangles whose drawing does not
