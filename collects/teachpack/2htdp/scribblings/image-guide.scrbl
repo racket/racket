@@ -62,33 +62,30 @@ Instead, we can use @racket[beside/align] to line up the two triangles
 along their bottoms instead of along the middles (which is what
 @racket[beside] does).
 
-@image-interaction[(above (beside/align "bottom"
-                                        (triangle 40 "solid" "red")
-                                        (triangle 30 "solid" "red"))
-                          (rectangle 70 40 "solid" "black"))]
-
+@image-interaction[
+(define victorian 
+  (above (beside/align "bottom"
+                       (triangle 40 "solid" "red")
+		       (triangle 30 "solid" "red"))
+         (rectangle 70 40 "solid" "black")))
+victorian
+]
+  
 To add a door to the house, we can overlay a brown @racket[rectangle],
 aligning it with the center bottom of the rest of the house.
 
-@image-interaction[(overlay/align "center" "bottom"
-                                  (rectangle 15 25 "solid" "brown")
-                                  (above (beside/align "bottom"
-                                                       (triangle 40 "solid" "red")
-                                                       (triangle 30 "solid" "red"))
-                                         (rectangle 70 40 "solid" "black")))]
+@image-interaction[
+(define door (rectangle 15 25 "solid" "brown"))
+(overlay/align "center" "bottom" door victorian)]
 
 We can use a similar technique to put a doorknob on the door, but instead of
 overlaying the doorknob on the entire house, we can overlay it just on the
 door.
 
-@image-interaction[(overlay/align "center" "bottom"
-                                  (overlay/align "right" "center" 
-                                                 (circle 3 "solid" "yellow")
-                                                 (rectangle 15 25 "solid" "brown"))
-                                  (above (beside/align "bottom"
-                                                       (triangle 40 "solid" "red")
-                                                       (triangle 30 "solid" "red"))
-                                         (rectangle 70 40 "solid" "black")))]
+@image-interaction[
+(define door-with-knob
+  (overlay/align "right" "center" (circle 3 "solid" "yellow") door))
+(overlay/align "center" "bottom" door-with-knob victorian)]
 
 @section{Recursive Image Functions}
 
