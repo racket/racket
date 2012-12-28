@@ -3,7 +3,8 @@
           scribble/bnf 
           "common.rkt"
           (for-label racket/base
-                     racket/contract))
+                     racket/contract
+                     setup/link))
 
 @title[#:tag "link"]{@exec{raco link}: Library Collection Links}
 
