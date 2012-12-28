@@ -27,7 +27,7 @@
      (guide-eval '(extra-margin num))
      (interaction-eval-show #:eval guide-eval exp)
      (guide-eval '(extra-margin 0))))
-     
+
 
 @title[#:tag "image-guide"]{Image Guide}
 

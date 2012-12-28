@@ -35,12 +35,26 @@
 
 @teachpack["image"]{Images}
 
-@(define mode/color-text
+@(define mode/color-and-nitty-text
    (make-splice
-    @list{If the @racket[mode] is @racket['outline] or @racket["outline"], then the last
-     argument can be a @racket[pen] struct or an @racket[image-color?], but if the @racket[mode]
+    @list{
+     Note that when the @racket[mode] is @racket['outline] or @racket["outline"], the shape
+     may draw outside of its bounding box and thus parts of the image may disappear
+     when it is cropped. See @secref["nitty-gritty"] (in the @seclink["image-guide"])
+     for a more careful explanation of the ramifications of this fact.
+
+     If the @racket[_mode] argument is @racket['outline] or @racket["outline"], then the last
+     argument can be a @racket[pen] struct or an @racket[image-color?], but if the @racket[_mode]
      is @racket['solid] or @racket["solid"], then the last argument must be an
      @racket[image-color?].}))
+
+@(define crop-warning
+   (make-splice
+    @list{Some shapes (notably those with @racket['outline] or @racket["outline"] as
+          the @racket[_mode] argument) draw outside of their bounding boxes and thus
+          cropping them may remove part of them (often the lower-left and lower-right
+          edges). See @secref["nitty-gritty"] (in the @seclink["image-guide"])
+          for a more careful discussion of this issue.}))
 
 @defmodule[#:require-form beginner-require 2htdp/image]
 
@@ -62,7 +76,7 @@ Existing images can be rotated, scaled, flipped, and overlaid on top of each oth
             image?])]{
   Constructs a circle with the given radius, height, mode, and color.
   
-  @mode/color-text
+  @mode/color-and-nitty-text
   
    @image-examples[(circle 30 "outline" "red")
                    (circle 20 "solid" "blue")
@@ -82,7 +96,7 @@ Existing images can be rotated, scaled, flipped, and overlaid on top of each oth
             image?])]{
   Constructs an ellipse with the given width, height, mode, and color.
 
-  @mode/color-text
+  @mode/color-and-nitty-text
   
   @image-examples[(ellipse 60 30 "outline" "black")
                   (ellipse 30 60 "solid" "blue")
@@ -239,7 +253,7 @@ Unlike @racket[scene+curve], if the line passes outside of @racket[image], the i
   determines the 
   length of the side of the triangle.
 
-    @mode/color-text
+    @mode/color-and-nitty-text
   
     @image-examples[(triangle 40 "solid" "tan")]
 
@@ -259,7 +273,7 @@ Unlike @racket[scene+curve], if the line passes outside of @racket[image], the i
   Constructs a triangle with a right angle where the two sides adjacent
   to the right angle have lengths @racket[side-length1] and @racket[side-length2].
 
-  @mode/color-text
+  @mode/color-and-nitty-text
   
   @image-examples[(right-triangle 36 48 "solid" "black")]
 }
@@ -281,7 +295,7 @@ Unlike @racket[scene+curve], if the line passes outside of @racket[image], the i
  @racket[180], then the triangle will point up and if the @racket[angle]
  is more, then the triangle will point down. 
  
- @mode/color-text
+ @mode/color-and-nitty-text
  
  @image-examples[(isosceles-triangle 200 170 "solid" "seagreen")
                  (isosceles-triangle 60 30 "solid" "aquamarine")
@@ -321,7 +335,7 @@ They all construct a triangle oriented as follows:
  Creates a triangle where the side lengths a, b, and, c are given by @racket[side-length-a],
  @racket[side-length-b], and, @racket[side-length-c] respectively.
  
- @mode/color-text
+ @mode/color-and-nitty-text
  
  @image-examples[(triangle/sss 40 60 80 "solid" "seagreen")
                  (triangle/sss 80 40 60 "solid" "aquamarine")
@@ -344,7 +358,7 @@ They all construct a triangle oriented as follows:
  @racket[side-length-b], and, @racket[side-length-c] respectively.
  See above for a diagram showing where which sides and which angles are which.
  
- @mode/color-text
+ @mode/color-and-nitty-text
  
  @image-examples[(triangle/ass 10  60 100 "solid" "seagreen")
                  (triangle/ass 90  60 100 "solid" "aquamarine")
@@ -367,7 +381,7 @@ They all construct a triangle oriented as follows:
  @racket[angle-b], and, @racket[side-length-c] respectively.
  See above for a diagram showing where which sides and which angles are which.
  
- @mode/color-text
+ @mode/color-and-nitty-text
  
  @image-examples[(triangle/sas 60  10 100 "solid" "seagreen")
                  (triangle/sas 60  90 100 "solid" "aquamarine")
@@ -390,7 +404,7 @@ They all construct a triangle oriented as follows:
  @racket[side-length-b], and, @racket[angle-c] respectively.
  See above for a diagram showing where which sides and which angles are which.
  
- @mode/color-text
+ @mode/color-and-nitty-text
  
  @image-examples[(triangle/ssa 60 100  10 "solid" "seagreen")
                  (triangle/ssa 60 100  90 "solid" "aquamarine")
@@ -412,7 +426,7 @@ They all construct a triangle oriented as follows:
  @racket[angle-b], and, @racket[side-length-c] respectively.
  See above for a diagram showing where which sides and which angles are which.
  
- @mode/color-text
+ @mode/color-and-nitty-text
  
  @image-examples[(triangle/aas  10 40 200 "solid" "seagreen")
                  (triangle/aas  90 40 200 "solid" "aquamarine")
@@ -435,7 +449,7 @@ They all construct a triangle oriented as follows:
  @racket[side-length-b], and, @racket[angle-c] respectively.
  See above for a diagram showing where which sides and which angles are which.
  
- @mode/color-text
+ @mode/color-and-nitty-text
  
  @image-examples[(triangle/asa  10 200 40 "solid" "seagreen")
                  (triangle/asa  90 200 40 "solid" "aquamarine")
@@ -458,7 +472,7 @@ They all construct a triangle oriented as follows:
  @racket[angle-b], and, @racket[angle-c] respectively.
  See above for a diagram showing where which sides and which angles are which.
  
- @mode/color-text
+ @mode/color-and-nitty-text
  
  @image-examples[(triangle/saa 200  10 40 "solid" "seagreen")
                  (triangle/saa 200  90 40 "solid" "aquamarine")
@@ -477,7 +491,7 @@ They all construct a triangle oriented as follows:
 
  Constructs a square.
  
- @mode/color-text
+ @mode/color-and-nitty-text
  
  @image-examples[(square 40 "solid" "slateblue")
                  (square 50 "outline" "darkmagenta")]
@@ -496,7 +510,7 @@ They all construct a triangle oriented as follows:
             image?])]{
   Constructs a rectangle with the given width, height, mode, and color.
   
-  @mode/color-text
+  @mode/color-and-nitty-text
   
   @image-examples[(rectangle 40 20 "outline" "black")
                   (rectangle 20 40 "solid" "blue")]
@@ -516,7 +530,7 @@ They all construct a triangle oriented as follows:
 Constructs a four sided polygon with all equal sides and thus where opposite angles are equal to each
 other. The top and bottom pair of angles is @racket[angle] and the left and right are @racket[(- 180 angle)].
 
-@mode/color-text
+@mode/color-and-nitty-text
 
 @image-examples[(rhombus 40 45 "solid" "magenta")
                 (rhombus 80 150 "solid" "mediumpurple")]
@@ -533,7 +547,7 @@ other. The top and bottom pair of angles is @racket[angle] and the left and righ
   Constructs a star with five points. The @racket[side-length] argument 
   determines the side length of the enclosing pentagon.
 
-  @mode/color-text
+  @mode/color-and-nitty-text
 
   @image-examples[(star 40 "solid" "gray")]
   
@@ -561,7 +575,7 @@ other. The top and bottom pair of angles is @racket[angle] and the left and righ
   For example, if @racket[side-count] is @racket[5] and @racket[step-count] is @racket[2],
   then this function produces a shape just like @racket[star].
   
-  @mode/color-text
+  @mode/color-and-nitty-text
 
   @image-examples[(star-polygon 40 5 2 "solid" "seagreen")
                   (star-polygon 40 7 3 "outline" "darkred")
@@ -603,7 +617,7 @@ the @racket[point-count] argument determines how many points the star has.
             image?])]{
   Constructs a regular polygon with @racket[side-count] sides.
 
-  @mode/color-text
+  @mode/color-and-nitty-text
 
   @image-examples[(regular-polygon 50 3 "outline" "red")
                   (regular-polygon 40 4 "outline" "blue")
@@ -621,7 +635,7 @@ the @racket[point-count] argument determines how many points the star has.
             image?])]{
   Constructs a polygon connecting the given vertices.
   
-  @mode/color-text
+  @mode/color-and-nitty-text
   
   @image-examples[(polygon (list (make-posn 0 0)
                                  (make-posn -10 20)
@@ -994,6 +1008,8 @@ a black outline.
  same size as @racket[scene]. The coordinates are relative to the top-left
  of @racket[scene].
   
+ @crop-warning
+ 
  @image-examples[(place-image 
                   (triangle 32 "solid" "red")
                   24 24
@@ -1027,6 +1043,8 @@ a black outline.
  crops the resulting image so that it has the 
  same size as @racket[scene].
   
+ @crop-warning
+ 
  @image-examples[(place-image/align (triangle 48 "solid" "yellowgreen")
                                     64 64 "right" "bottom"
                                     (rectangle 64 64 "solid" "mediumgoldenrod"))
@@ -1058,6 +1076,8 @@ a black outline.
   and going to the point (@racket[x2],@racket[y2]); unlike
   @racket[add-line], this function crops the resulting image to the size of @racket[scene].
   
+  @crop-warning
+  
   @image-examples[(scene+line (ellipse 40 40 "outline" "maroon")
                               0 40 40 0 "maroon")
                   (scene+line (rectangle 40 40 "solid" "gray")
@@ -1088,6 +1108,8 @@ mean that the curve stays with the angle longer.
 
 Unlike @racket[add-curve], this function crops the curve, only showing
 the parts that fit onto @racket[scene].
+
+@crop-warning
 
 @image-examples[(scene+curve (rectangle 100 100 "solid" "black")
                              20 20 0 1/3
@@ -1191,6 +1213,8 @@ the parts that fit onto @racket[scene].
 
  Crops @racket[image] to the rectangle with the upper left at the point (@racket[x],@racket[y])
  and with @racket[width] and @racket[height]. 
+ 
+ @crop-warning
  
  @image-examples[(crop 0 0 40 40 (circle 40 "solid" "chocolate"))
                  (crop 40 60 40 60 (ellipse 80 120 "solid" "dodgerblue"))
