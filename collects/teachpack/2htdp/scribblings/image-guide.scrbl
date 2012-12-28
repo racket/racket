@@ -32,7 +32,109 @@
 @title[#:tag "image-guide"]{Image Guide}
 
 This section introduces the @racketmodname[2htdp/image] library
-through a series of increasingly complex image constructions.
+through a series of increasingly complex image constructions
+and discusses some subtle details of cropping and outline
+images.
+
+@section{Overlaying, Above, and Beside: A House}
+
+To build a simple-looking house, we can simply place a triangle above 
+a rectangle.
+
+@image-interaction[(above (triangle 40 "solid" "red")
+                          (rectangle 40 30 "solid" "black"))]
+
+We can give the house two roofs by putting two triangles next to
+each other.
+
+@image-interaction[(above (beside (triangle 40 "solid" "red")
+                                  (triangle 40 "solid" "red"))
+                          (rectangle 80 40 "solid" "black"))]
+
+But if we want the new roof to be a little smaller, then they do not line
+up properly.
+
+@image-interaction[(above (beside (triangle 40 "solid" "red")
+                                  (triangle 30 "solid" "red"))
+                          (rectangle 70 40 "solid" "black"))]
+
+Instead, we can use @racket[beside/align] to line up the two triangles
+along their bottoms instead of along the middles (which is what
+@racket[beside] does).
+
+@image-interaction[(above (beside/align "bottom"
+                                        (triangle 40 "solid" "red")
+                                        (triangle 30 "solid" "red"))
+                          (rectangle 70 40 "solid" "black"))]
+
+To add a door to the house, we can overlay a brown @racket[rectangle],
+aligning it with the center bottom of the rest of the house.
+
+@image-interaction[(overlay/align "center" "bottom"
+                                  (rectangle 15 25 "solid" "brown")
+                                  (above (beside/align "bottom"
+                                                       (triangle 40 "solid" "red")
+                                                       (triangle 30 "solid" "red"))
+                                         (rectangle 70 40 "solid" "black")))]
+
+We can use a similar technique to put a doorknob on the door, but instead of
+overlaying the doorknob on the entire house, we can overlay it just on the
+door.
+
+@image-interaction[(overlay/align "center" "bottom"
+                                  (overlay/align "right" "center" 
+                                                 (circle 3 "solid" "yellow")
+                                                 (rectangle 15 25 "solid" "brown"))
+                                  (above (beside/align "bottom"
+                                                       (triangle 40 "solid" "red")
+                                                       (triangle 30 "solid" "red"))
+                                         (rectangle 70 40 "solid" "black")))]
+
+@section{Recursive Image Functions}
+
+It is also possible to make interesting looking shapes with little recursive functions.
+For example, this function repeatedly puts white circles that grow, evenly spaced around 
+the edge of the given shape:
+
+@image-interaction[(define (swoosh image s)
+                     (cond
+                       [(zero? s) image]
+                       [else (swoosh 
+                              (overlay/align "center" "top"
+                                             (circle (* s 1/2) "solid" "white")
+                                             (rotate 4 image))
+                              (- s 1))]))]
+
+@image-interaction[(swoosh (circle 100 "solid" "black") 
+                           94)]
+
+More conventional fractal shapes can also be written using the image
+library, e.g.:
+
+@image-interaction[(define (sierpinski-carpet n)
+                     (cond
+                       [(zero? n) (square 2 "solid" "black")]
+                       [else
+                        (define c (sierpinski-carpet (- n 1)))
+                        (define i (square (image-width c) "solid" "white"))
+                        (above (beside c c c)
+                               (beside c i c)
+                               (beside c c c))]))]
+
+@image-interaction[(sierpinski-carpet 4)]
+
+@image-interaction[(define (koch-snowflake n)
+                     (cond
+                       [(zero? n) (square 1 "solid" "black")]
+                       [else
+                        (define smaller (koch-snowflake (- n 1)))
+                        (beside/align "bottom"
+                                      smaller 
+                                      (rotate 60 smaller)
+                                      (rotate -60 smaller)
+                                      smaller)]))]
+
+@image-interaction[(koch-snowflake 5)]
 
 @section[#:tag "nitty-gritty"]{The nitty gritty of pixels, pens, and lines}
 
