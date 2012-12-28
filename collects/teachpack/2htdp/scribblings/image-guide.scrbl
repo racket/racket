@@ -165,8 +165,8 @@ building a grid like this:
 
 @image-interaction[
 (define s (square 20 'outline 'black))
-(define r (beside s s s s s s s s s s))
-(define q (above  r r r r r r r r r r))
+(define r (beside s s s s s s))
+(define q (above  r r r r r r))
 q
 ]
 
