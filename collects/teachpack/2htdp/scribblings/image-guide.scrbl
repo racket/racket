@@ -120,20 +120,26 @@ library, e.g.:
 
 @image-interaction[(sierpinski-carpet 4)]
 
-@image-interaction[(define (koch-snowflake n)
+@image-interaction[(define (koch-curve n)
                      (cond
                        [(zero? n) (square 1 "solid" "black")]
                        [else
-                        (define smaller (koch-snowflake (- n 1)))
+                        (define smaller (koch-curve (- n 1)))
                         (beside/align "bottom"
                                       smaller 
                                       (rotate 60 smaller)
                                       (rotate -60 smaller)
                                       smaller)]))]
 
-@image-interaction[(koch-snowflake 5)]
+@image-interaction[(koch-curve 5)]
 
-@section[#:tag "nitty-gritty"]{The nitty gritty of pixels, pens, and lines}
+@image-interaction[(above 
+                    (beside
+                     (rotate 60 (koch-curve 5))
+                     (rotate -60 (koch-curve 5)))
+                    (flip-vertical (koch-curve 5)))]
+
+@section[#:tag "nitty-gritty"]{The Nitty Gritty of Pixels, Pens, and Lines}
 
 The image library treats coordinates as if they are in the upper-left corner 
 of each pixel, and infinitesimally small (unlike pixels which have some area).
@@ -163,8 +169,7 @@ building a grid like this:
 @image-interaction[
 (define s1 (square 20 'outline 'black))
 (define r1 (beside s1 s1 s1 s1 s1 s1))
-(define q1 (above  r1 r1 r1 r1 r1 r1))
-q1
+(above  r1 r1 r1 r1 r1 r1)
 ]
 
 The reason interior lines in this grid are the same thickness as the lines around the edge
@@ -184,30 +189,23 @@ that is not possible. Instead, the same pixels are lit up as with the 2 pixel wi
 with only 1/2 of the intensity of the color. So a 1 pixel wide black @racket[pen] object draws
 a 2 pixel wide outline, but in gray.
 
-@image-interaction/margin[2
-                          (rectangle
-                           20 20 "outline" 
-                           (make-pen "black" 1 "solid" "round" "round"))]
+@image-interaction[(define p1 (make-pen "black" 1 "solid" "round" "round"))]
+@image-interaction/margin[2 (rectangle 20 20 "outline" p1)]
 
 When combining pens and cropping, we can make a rectangle that has a line that is one pixel
 wide, but where the line is drawn entirely within the rectangle. This rectangle has a two-pixel wide
 black pen, but we can crop out the outer portion of the pen.
 
-@image-interaction[(crop
-                    0 0 20 20
-                    (rectangle
-                     20 20 "outline" 
-                     (make-pen "black" 2 "solid" "round" "round")))]
+@image-interaction[(define p2 (make-pen "black" 2 "solid" "round" "round"))
+                   (define s2 (crop 0 0 20 20 (rectangle 20 20 "outline" p2)))
+                   s2]
 
 Using that we can build a grid now too, but this grid has doubled lines on the
 interior.
 
 @image-interaction[
-(define pn (make-pen "black" 2 "solid" "round" "round"))
-(define s2 (crop 0 0 20 20 (rectangle 20 20 "outline" pn)))
 (define r2 (beside s2 s2 s2 s2 s2 s2))
-(define q2 (above  r2 r2 r2 r2 r2 r2))
-q2
+(above  r2 r2 r2 r2 r2 r2)
 ]
 
 While this kind of rectangle is not useful for building grids, it 
