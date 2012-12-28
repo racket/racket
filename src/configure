@@ -742,7 +742,6 @@ FOREIGN_OBJSLIB
 FOREIGN_CONVENIENCE
 FOREIGNTARGET
 LIBRACKET_DEP
-LIBGRACKET_DEP
 LTO
 LTA
 collectsdir
@@ -3935,6 +3934,10 @@ if test "$CC_FOR_BUILD" = "" ; then
   CC_FOR_BUILD="$CC"
 fi
 
+if test "${enable_shared}" = "yes" ; then
+  LIBRACKET_DEP="${LIBRACKET_DEP} libmzgc.la"
+fi
+
 ############## platform tests ################
 
 # for flags we don't want to use in config tests:
@@ -4068,8 +4071,7 @@ _ACEOF
     MZINSTALLTARGET=unix-cygwin-install
     if test "${enable_shared}" = "yes" ; then
       ar_libtool_no_undefined=" -no-undefined"
-      LIBRACKET_DEP="libmzgc.la -liconv"
-      LIBGRACKET_DEP="../racket/libmzgc.la ../racket/libgracket.la"
+      LIBRACKET_DEP="${LIBRACKET_DEP} -liconv"
     fi
     EXE_SUFFIX=".exe"
     ;;
@@ -9033,7 +9035,6 @@ LIBS="$LIBS $EXTRALIBS"
 
 
 
-
 mk_needed_dir()
 {
   if test ! -d "$1" ; then
@@ -9891,7 +9892,6 @@ FOREIGN_OBJSLIB!$FOREIGN_OBJSLIB$ac_delim
 FOREIGN_CONVENIENCE!$FOREIGN_CONVENIENCE$ac_delim
 FOREIGNTARGET!$FOREIGNTARGET$ac_delim
 LIBRACKET_DEP!$LIBRACKET_DEP$ac_delim
-LIBGRACKET_DEP!$LIBGRACKET_DEP$ac_delim
 LTO!$LTO$ac_delim
 LTA!$LTA$ac_delim
 collectsdir!$collectsdir$ac_delim
@@ -9915,7 +9915,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 53; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 52; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

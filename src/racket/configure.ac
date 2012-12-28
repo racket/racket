@@ -465,6 +465,10 @@ if test "$CC_FOR_BUILD" = "" ; then
   CC_FOR_BUILD="$CC"
 fi
 
+if test "${enable_shared}" = "yes" ; then
+  LIBRACKET_DEP="${LIBRACKET_DEP} libmzgc.la"
+fi
+
 ############## platform tests ################
 
 # for flags we don't want to use in config tests:
@@ -594,8 +598,7 @@ case "$host_os" in
     MZINSTALLTARGET=unix-cygwin-install
     if test "${enable_shared}" = "yes" ; then
       ar_libtool_no_undefined=" -no-undefined"
-      LIBRACKET_DEP="libmzgc.la -liconv"
-      LIBGRACKET_DEP="../racket/libmzgc.la ../racket/libgracket.la"
+      LIBRACKET_DEP="${LIBRACKET_DEP} -liconv"
     fi
     EXE_SUFFIX=".exe"
     ;;
@@ -1360,7 +1363,6 @@ AC_SUBST(FOREIGN_CONVENIENCE)
 AC_SUBST(FOREIGNTARGET)
 
 AC_SUBST(LIBRACKET_DEP)
-AC_SUBST(LIBGRACKET_DEP)
 
 AC_SUBST(LTO)
 AC_SUBST(LTA)
