@@ -163,9 +163,12 @@ This kind of rectangle is useful when putting rectangles next to each other
 and avoiding extra thick lines on the interior. For example, consider
 building a grid like this:
 
-@image-interaction[(let* ([s (rectangle 20 20 "outline" "black")]
-                          [r (beside s s s s s s)])
-                     (above r r r r r r))]
+@image-interaction[
+(define s (square 20 'outline 'black))
+(define r (beside s s s s s s s s s s))
+(define q (above  r r r r r r r r r r))
+q
+]
 
 The reason interior lines in this grid are the same thickness as the lines around the edge
 is because the rectangles overlap with each other. 
