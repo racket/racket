@@ -362,7 +362,7 @@
           [(struct ok-packet (affected-rows insert-id status warnings message))
            (when wbox (set-box! wbox warnings))
            (vector 'command `((affected-rows . ,affected-rows)
-                              (insert-id . ,insert-id)
+                              (insert-id . ,(if (zero? insert-id) #f insert-id))
                               (status . ,status)
                               (message . ,message)))]
           [(struct result-set-header-packet (fields extra))

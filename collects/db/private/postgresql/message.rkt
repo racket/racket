@@ -267,7 +267,7 @@
 (define (parse:CommandComplete p)
   (with-length-in p #\C
     (let* ([command (io:read-null-terminated-string p)])
-      (make-CommandComplete command))))
+      (make-CommandComplete (string->command-alist command)))))
 
 (define-struct CopyInResponse (format column-formats) #:transparent)
 (define (parse:CopyInResponse p)
@@ -527,45 +527,25 @@
     [(transaction) #\T]
     [(failed) #\E]))
 
-(define (string->command s)
-  (cond [(regexp-match #rx"^SELECT *$" s)
-         => (lambda (m) (list 'select))]
-        [(regexp-match #rx"^INSERT ([0-9]*) ([0-9]*) *$" s)
+(define (string->command-alist s)
+  (cond [(regexp-match #rx"^INSERT ([0-9]*) ([0-9]*) *$" s)
          => (lambda (m)
-              (list 'insert 
-                    (string->number (cadr m))
-                    (string->number (caddr m))))]
-        [(regexp-match #rx"^DELETE ([0-9]* *$)" s)
+              `((insert-id . ,(let ([oid (string->number (cadr m))])
+                                (if (zero? oid) #f oid)))
+                (affected-rows . ,(string->number (caddr m)))))]
+        [(regexp-match #rx"^DELETE ([0-9]*) *$" s)
          => (lambda (m)
-              (list 'delete (string->number (cadr m))))]
+              `((affected-rows . ,(string->number (cadr m)))))]
         [(regexp-match #rx"^UPDATE ([0-9]*) *$" s)
          => (lambda (m)
-              (list 'update (string->number (cadr m))))]
-        [(regexp-match #rx"^MOVE ([0-9]*) *$" s)
-         => (lambda (m)
-              (list 'move (string->number (cadr m))))]
-        [(regexp-match #rx"^FETCH ([0-9]*) *$" s)
-         => (lambda (m)
-              (list 'fetch (string->number (cadr m))))]
-        [(regexp-match #rx"^(CREATE|ALTER|DROP) ([A-Z]*) *$" s)
-         => (lambda (m)
-              (list (string->symbol (string-downcase (cadr m)))
-                    (string->symbol (string-downcase (caddr m)))))]
-        [else s]))
-
-(define (command->string s)
-  (if (list? s)
-      (apply string-append
-             (case (car s)
-               [(insert) "INSERT"]
-               [(delete) "DELETE"]
-               [(update) "UPDATE"]
-               [(move) "MOVE"]
-               [(fetch) "FETCH"]
-               [else s])
-             (map (lambda (n) (format " ~a" n))
-                  (cdr s)))
-      s))
+              `((affected-rows . ,(string->number (cadr m)))))]
+        #|
+        [(regexp-match #rx"^SELECT *$" s) ...]
+        [(regexp-match #rx"^MOVE ([0-9]*) *$" s) ...]
+        [(regexp-match #rx"^FETCH ([0-9]*) *$" s) ...]
+        [(regexp-match #rx"^(CREATE|ALTER|DROP) ([A-Z]*) *$" s) ...]
+        |#
+        [else '()]))
 
 
 ;; dvec layout is #(name table-oid col-oid typeid typelen typemod text/binary)
