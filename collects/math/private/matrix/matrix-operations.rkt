@@ -16,14 +16,6 @@
          "utils.rkt"
          (for-syntax racket))
 
-; TODO:
-; 1. compute null space from QR factorization
-;    (better numerical stability than from Gauss elimination)
-; 2. S+N decomposition
-; 3. Linear least squares problems (data fitting)
-; 4. Pseudo inverse
-; 5. Eigenvalues and eigenvectors
-
 (provide 
  ;; Gaussian elimination
  matrix-gauss-elim
@@ -33,7 +25,7 @@
  matrix-nullity
  matrix-determinant
  matrix-determinant/row-reduction  ; for testing
- ;; Spaces (TODO: null space, row space, left null space)
+ ;; Spaces
  matrix-column-space
  ;; Solving
  matrix-invertible?
@@ -141,8 +133,6 @@
 (: matrix-rank : (Matrix Number) -> Index)
 ;; Returns the dimension of the column space (equiv. row space) of M
 (define (matrix-rank M)
-  ; TODO: Use QR or SVD instead for inexact matrices
-  ; See answer: http://scicomp.stackexchange.com/questions/1861/understanding-how-numpy-does-svd
   (define n (matrix-num-cols M))
   (define-values (_ cols-without-pivot) (matrix-gauss-elim M))
   (assert (- n (length cols-without-pivot)) index?))
@@ -333,7 +323,7 @@
       (matrix-sum (map (λ: ([b : (Column Number)])
                          (column-project v (->col-matrix b)))
                        bs))))
-  
+
 ; (projection-on-orthonormal-basis v bs)
 ;     Project the vector v on the orthonormal basis vectors in bs.
 ;     The basis bs must be either the column vectors of a matrix
@@ -394,7 +384,7 @@
 
 (: extend-span-to-basis :
    (Listof (Matrix Number)) Integer -> (Listof (Matrix Number)))
-; Extend the basis in vs to with rdimensional basis
+; Extend the basis in vs to r-dimensional basis
 (define (extend-span-to-basis vs r)
   (define-values (m n) (matrix-shape (car vs)))
   (: loop : (Listof (Matrix Number)) (Listof (Matrix Number)) Integer -> (Listof (Matrix Number)))
