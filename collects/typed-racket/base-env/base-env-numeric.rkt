@@ -1578,10 +1578,10 @@
                   (-FloatComplex . -> . -Flonum)
                   (-InexactComplex . -> . -InexactReal)
                   (N . -> . -Real))]
-[magnitude (cl->* (-Rat . -> . -Rat)
-                  (-FloatComplex . -> . -Flonum)
-                  (-InexactComplex . -> . -InexactReal)
-                  (N . -> . -Real))]
+[magnitude (cl->* (-Rat . -> . -NonNegRat)
+                  (-FloatComplex . -> . -NonNegFlonum)
+                  (-InexactComplex . -> . -NonNegInexactReal)
+                  (N . -> . -NonNegReal))]
 [angle     (cl->* (-PosReal . -> . -Zero)
                   (-FloatComplex . -> . -Flonum)
                   (-InexactComplex . -> . -InexactReal)
