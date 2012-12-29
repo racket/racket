@@ -196,7 +196,9 @@
       (if root?
           ;; Return root paths:
           (for/list ([e (in-list new-table)]
-                     #:when (eq? 'root (car e)))
+                     #:when (eq? 'root (car e))
+		     #:when (or (null? (cddr e))
+				(regexp-match? (caddr e) (version))))
             (simplify (cadr e)))
           ;; Return list of collections mapped for this version:
           (let ([ht (make-hash)])

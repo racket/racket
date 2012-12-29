@@ -27,14 +27,119 @@
      (guide-eval '(extra-margin num))
      (interaction-eval-show #:eval guide-eval exp)
      (guide-eval '(extra-margin 0))))
-     
+
 
 @title[#:tag "image-guide"]{Image Guide}
 
 This section introduces the @racketmodname[2htdp/image] library
-through a series of increasingly complex image constructions.
+through a series of increasingly complex image constructions
+and discusses some subtle details of cropping and outline
+images.
 
-@section[#:tag "nitty-gritty"]{The nitty gritty of pixels, pens, and lines}
+@section{Overlaying, Above, and Beside: A House}
+
+To build a simple-looking house, we can simply place a triangle above 
+a rectangle.
+
+@image-interaction[(above (triangle 40 "solid" "red")
+                          (rectangle 40 30 "solid" "black"))]
+
+We can give the house two roofs by putting two triangles next to
+each other.
+
+@image-interaction[(above (beside (triangle 40 "solid" "red")
+                                  (triangle 40 "solid" "red"))
+                          (rectangle 80 40 "solid" "black"))]
+
+But if we want the new roof to be a little smaller, then they do not line
+up properly.
+
+@image-interaction[(above (beside (triangle 40 "solid" "red")
+                                  (triangle 30 "solid" "red"))
+                          (rectangle 70 40 "solid" "black"))]
+
+Instead, we can use @racket[beside/align] to line up the two triangles
+along their bottoms instead of along the middles (which is what
+@racket[beside] does).
+
+@image-interaction[
+(define victorian 
+  (above (beside/align "bottom"
+                       (triangle 40 "solid" "red")
+		       (triangle 30 "solid" "red"))
+         (rectangle 70 40 "solid" "black")))
+victorian
+]
+  
+To add a door to the house, we can overlay a brown @racket[rectangle],
+aligning it with the center bottom of the rest of the house.
+
+@image-interaction[
+(define door (rectangle 15 25 "solid" "brown"))
+(overlay/align "center" "bottom" door victorian)]
+
+We can use a similar technique to put a doorknob on the door, but instead of
+overlaying the doorknob on the entire house, we can overlay it just on the
+door.
+
+@image-interaction[
+(define door-with-knob
+  (overlay/align "right" "center" (circle 3 "solid" "yellow") door))
+(overlay/align "center" "bottom" door-with-knob victorian)]
+
+@section{Recursive Image Functions}
+
+It is also possible to make interesting looking shapes with little recursive functions.
+For example, this function repeatedly puts white circles that grow, evenly spaced around 
+the edge of the given shape:
+
+@image-interaction[(define (swoosh image s)
+                     (cond
+                       [(zero? s) image]
+                       [else (swoosh 
+                              (overlay/align "center" "top"
+                                             (circle (* s 1/2) "solid" "white")
+                                             (rotate 4 image))
+                              (- s 1))]))]
+
+@image-interaction[(swoosh (circle 100 "solid" "black") 
+                           94)]
+
+More conventional fractal shapes can also be written using the image
+library, e.g.:
+
+@image-interaction[(define (sierpinski-carpet n)
+                     (cond
+                       [(zero? n) (square 2 "solid" "black")]
+                       [else
+                        (define c (sierpinski-carpet (- n 1)))
+                        (define i (square (image-width c) "solid" "white"))
+                        (above (beside c c c)
+                               (beside c i c)
+                               (beside c c c))]))]
+
+@image-interaction[(sierpinski-carpet 4)]
+
+@image-interaction[(define (koch-curve n)
+                     (cond
+                       [(zero? n) (square 1 "solid" "black")]
+                       [else
+                        (define smaller (koch-curve (- n 1)))
+                        (beside/align "bottom"
+                                      smaller 
+                                      (rotate 60 smaller)
+                                      (rotate -60 smaller)
+                                      smaller)]))]
+
+@image-interaction[(koch-curve 5)]
+
+@image-interaction[(above 
+                    (beside
+                     (rotate 60 (koch-curve 5))
+                     (rotate -60 (koch-curve 5)))
+                    (flip-vertical (koch-curve 5)))]
+
+@section[#:tag "nitty-gritty"]{The Nitty Gritty of Pixels, Pens, and Lines}
 
 The image library treats coordinates as if they are in the upper-left corner 
 of each pixel, and infinitesimally small (unlike pixels which have some area).
@@ -61,9 +166,11 @@ This kind of rectangle is useful when putting rectangles next to each other
 and avoiding extra thick lines on the interior. For example, consider
 building a grid like this:
 
-@image-interaction[(let* ([s (rectangle 20 20 "outline" "black")]
-                          [r (beside s s s s s s)])
-                     (above r r r r r r))]
+@image-interaction[
+(define s1 (square 20 'outline 'black))
+(define r1 (beside s1 s1 s1 s1 s1 s1))
+(above  r1 r1 r1 r1 r1 r1)
+]
 
 The reason interior lines in this grid are the same thickness as the lines around the edge
 is because the rectangles overlap with each other. 
@@ -82,31 +189,24 @@ that is not possible. Instead, the same pixels are lit up as with the 2 pixel wi
 with only 1/2 of the intensity of the color. So a 1 pixel wide black @racket[pen] object draws
 a 2 pixel wide outline, but in gray.
 
-@image-interaction/margin[2
-                          (rectangle
-                           20 20 "outline" 
-                           (make-pen "black" 1 "solid" "round" "round"))]
+@image-interaction[(define p1 (make-pen "black" 1 "solid" "round" "round"))]
+@image-interaction/margin[2 (rectangle 20 20 "outline" p1)]
 
 When combining pens and cropping, we can make a rectangle that has a line that is one pixel
 wide, but where the line is drawn entirely within the rectangle. This rectangle has a two-pixel wide
 black pen, but we can crop out the outer portion of the pen.
 
-@image-interaction[(crop
-                    0 0 20 20
-                    (rectangle
-                     20 20 "outline" 
-                     (make-pen "black" 2 "solid" "round" "round")))]
+@image-interaction[(define p2 (make-pen "black" 2 "solid" "round" "round"))
+                   (define s2 (crop 0 0 20 20 (rectangle 20 20 "outline" p2)))
+                   s2]
 
 Using that we can build a grid now too, but this grid has doubled lines on the
 interior.
 
-@image-interaction[(let* ([s (crop
-                              0 0 20 20
-                              (rectangle
-                               20 20 "outline" 
-                               (make-pen "black" 2 "solid" "round" "round")))]
-                          [r (beside s s s s s s)])
-                     (above r r r r r r))]
+@image-interaction[
+(define r2 (beside s2 s2 s2 s2 s2 s2))
+(above  r2 r2 r2 r2 r2 r2)
+]
 
 While this kind of rectangle is not useful for building grids, it 
 is important to be able to build rectangles whose drawing does not

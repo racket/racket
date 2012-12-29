@@ -730,6 +730,11 @@ WXPRECOMP
 USE_WXPRECOMP
 INCLUDEDEP
 WX_MMD_FLAG
+PWD
+DIRCVTPRE
+DIRCVTPOST
+WINDRES
+DLLTOOL
 OSKHOME
 EXTRA_OSK_LIBS
 FOREIGN_IF_USED
@@ -737,7 +742,6 @@ FOREIGN_OBJSLIB
 FOREIGN_CONVENIENCE
 FOREIGNTARGET
 LIBRACKET_DEP
-LIBGRACKET_DEP
 LTO
 LTA
 collectsdir
@@ -2183,7 +2187,7 @@ if test "${enable_shared}" = "yes" ; then
        exit 1
     fi
   ;;
-  mingw*)
+  *mingw*)
    echo "ERROR: don't use --enable-shared or --enable-dynlib with mingw"
    exit 1
   ;;
@@ -2387,6 +2391,12 @@ WXVARIANT="wx_xt"
 MROPTIONS=
 INCLUDEDEP="#"
 WX_MMD_FLAG=
+
+DIRCVTPRE=
+DIRCVTPOST=
+PWD=pwd
+WINDRES=windres
+DLLTOOL=dlltool
 
 PREFLAGS="$CPPFLAGS"
 
@@ -3924,6 +3934,10 @@ if test "$CC_FOR_BUILD" = "" ; then
   CC_FOR_BUILD="$CC"
 fi
 
+if test "${enable_shared}" = "yes" ; then
+  LIBRACKET_DEP="${LIBRACKET_DEP} libmzgc.la"
+fi
+
 ############## platform tests ################
 
 # for flags we don't want to use in config tests:
@@ -4022,7 +4036,7 @@ case "$host_os" in
     fi
     LIBS="$LIBS -Wl,-E"
     ;;
-  mingw*)
+  *mingw*)
     enable_parallel_by_default=yes
     use_flag_pthread=no
     MZOPTIONS="$MZOPTIONS -fno-omit-frame-pointer" # to make JIT backtraces work
@@ -4038,14 +4052,26 @@ cat >>confdefs.h <<\_ACEOF
 #define HAVE_STDINT_H 1
 _ACEOF
 
+    if `which ${host}-windres > /dev/null` ; then
+      WINDRES="${host}-windres"
+    fi
+    if `which ${host}-dlltool > /dev/null` ; then
+      DLLTOOL="${host}-dlltool"
+    fi
+    case "$build_os" in
+      *cygwin*)
+        PWD="cygpath -m \\\`pwd\\\`"
+        DIRCVTPRE="\`cygpath -m "
+        DIRCVTPOST="\`"
+        ;;
+    esac
     ;;
   cygwin*)
     enable_cgcdefault="yes"
     MZINSTALLTARGET=unix-cygwin-install
     if test "${enable_shared}" = "yes" ; then
       ar_libtool_no_undefined=" -no-undefined"
-      LIBRACKET_DEP="libmzgc.la -liconv"
-      LIBGRACKET_DEP="../racket/libmzgc.la ../racket/libgracket.la"
+      LIBRACKET_DEP="${LIBRACKET_DEP} -liconv"
     fi
     EXE_SUFFIX=".exe"
     ;;
@@ -4355,6 +4381,11 @@ fi
 
 if test "$using_gnu_cpp" = "yes" ; then
   XFORMFLAGS="$XFORMFLAGS --keep-lines"
+  case "$build_os" in
+    *cygwin*)
+      XFORMFLAGS="$XFORMFLAGS --D-via-include"
+     ;;
+  esac
 fi
 { echo "$as_me:$LINENO: result: $using_gnu_cpp" >&5
 echo "${ECHO_T}$using_gnu_cpp" >&6; }
@@ -8999,6 +9030,11 @@ LIBS="$LIBS $EXTRALIBS"
 
 
 
+
+
+
+
+
 mk_needed_dir()
 {
   if test ! -d "$1" ; then
@@ -9844,6 +9880,11 @@ WXPRECOMP!$WXPRECOMP$ac_delim
 USE_WXPRECOMP!$USE_WXPRECOMP$ac_delim
 INCLUDEDEP!$INCLUDEDEP$ac_delim
 WX_MMD_FLAG!$WX_MMD_FLAG$ac_delim
+PWD!$PWD$ac_delim
+DIRCVTPRE!$DIRCVTPRE$ac_delim
+DIRCVTPOST!$DIRCVTPOST$ac_delim
+WINDRES!$WINDRES$ac_delim
+DLLTOOL!$DLLTOOL$ac_delim
 OSKHOME!$OSKHOME$ac_delim
 EXTRA_OSK_LIBS!$EXTRA_OSK_LIBS$ac_delim
 FOREIGN_IF_USED!$FOREIGN_IF_USED$ac_delim
@@ -9851,7 +9892,6 @@ FOREIGN_OBJSLIB!$FOREIGN_OBJSLIB$ac_delim
 FOREIGN_CONVENIENCE!$FOREIGN_CONVENIENCE$ac_delim
 FOREIGNTARGET!$FOREIGNTARGET$ac_delim
 LIBRACKET_DEP!$LIBRACKET_DEP$ac_delim
-LIBGRACKET_DEP!$LIBGRACKET_DEP$ac_delim
 LTO!$LTO$ac_delim
 LTA!$LTA$ac_delim
 collectsdir!$collectsdir$ac_delim
@@ -9875,7 +9915,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 48; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 52; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

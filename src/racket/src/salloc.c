@@ -282,8 +282,13 @@ void scheme_setup_thread_local_key_if_needed() XFORM_SKIP_PROC
     void **base;
 
 # ifdef __MINGW32__
+#  ifdef _WIN64
+    asm("mov %%gs:(0x58), %0;"
+	:"=r"(base));        /* output */
+#  else
     asm("mov %%fs:(0x2C), %0;"
 	:"=r"(base));        /* output */
+#  endif
 # else
     __asm { mov ecx, FS:[0x2C]
             mov base, ecx }

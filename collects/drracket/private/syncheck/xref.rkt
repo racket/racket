@@ -1,20 +1,9 @@
 #lang racket/base
 (require setup/xref 
-         racket/promise
-         scribble/xref
-         scribble/manual-struct)
+         scribble/xref)
 (provide get-index-entry-info)
 
-(define delayed-xref
-  (if (getenv "PLTDRXREFDELAY")
-      (begin
-        (printf "PLTDRXREFDELAY: using plain delay\n")
-        (delay (begin
-                 (printf "PLTDRXREFDELAY: loading xref\n")
-                 (begin0
-                   (load-collections-xref)
-                   (printf "PLTDRXREFDELAY: loaded xref\n")))))
-      (delay/idle (load-collections-xref))))
+(define xref (load-collections-xref))
 
 (define req-chan (make-channel))
 
@@ -25,7 +14,6 @@
        (define-values (binding-info cd resp-chan nack-evt) (apply values (channel-get req-chan)))
        (define resp
          (parameterize ([current-directory cd])
-           (define xref (force delayed-xref))
            (and xref
                 (let ([definition-tag (xref-binding->definition-tag xref binding-info #f)])
                   (and definition-tag

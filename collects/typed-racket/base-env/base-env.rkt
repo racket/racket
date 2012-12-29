@@ -2108,7 +2108,8 @@
 [logger-name (-> -Logger (-opt Sym))]
 [current-logger (-Param -Logger -Logger)]
 
-[log-message (-> -Logger -Log-Level -String Univ -Void)]
+[log-message (Un (-> -Logger -Log-Level -String Univ -Void)
+                 (-> -Logger -Log-Level (Un (-val #f) -Symbol) -String Univ -Void))]
 [log-level? (-> -Logger -Log-Level  B)]
 
 [log-receiver? (make-pred-ty -Log-Receiver)]

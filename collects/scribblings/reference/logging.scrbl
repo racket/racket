@@ -16,13 +16,14 @@ levels, in decreasing order of importance, are @racket['fatal],
 
 To help organize logged events, @tech{loggers} can be named and
 hierarchical. Every event reported to a logger is also propagated to
-its parent (if any), but the event message is prefixed with the name
-(if any) of the logger to which is was originally reported. A logger
-is not required to have a parent or name.
+its parent (if any), but the event message is prefixed with a name (if
+any) that is typically the name of the logger to which is was
+originally reported. A logger is not required to have a parent or
+name.
 
 On start-up, Racket creates an initial logger that is used to
 record events from the core run-time system. For example, an
-@racket['info] event is reported for each garbage collection (see
+@racket['debug] event is reported for each garbage collection (see
 @secref["gc-model"]). For this initial logger, two log receivers are
 also created: one that writes events to the process's original error
 output port, and one that writes events to the system log. The level
@@ -44,12 +45,12 @@ through environment variables:
        initial @nonterm{level}, the value can contain space-separated
        specifications of the form
        @nonterm{level}@litchar["@"]@nonterm{name}, which prints events
-       from loggers whose name match @nonterm{name} only at the given
+       whose names match @nonterm{name} only at the given
        @nonterm{level} or higher (where a @nonterm{name} contains any
        character other than a space or @litchar["@"]). For example,
        the value @racket["error debug@GC"] prints all events at the
-       @racket['error] level and higher, but prints events for a
-       logger named @racket['GC] at the @racket['debug] level and
+       @racket['error] level and higher, but prints events
+       named @racket['GC] at the @racket['debug] level and
        higher (which includes all levels).
 
        The default is @racket["error"].}
@@ -83,10 +84,18 @@ otherwise.}
 
 
 @defproc[(make-logger [name (or/c symbol? #f) #f]
-                      [parent (or/c logger? #f) #f])
+                      [parent (or/c logger? #f) #f]
+                      [notify-callback (vector? . -> . any/c)])
          logger?]{
 
-Creates a new logger with an optional name and parent.}
+Creates a new @tech{logger} with an optional name and parent.
+
+If @racket[notify-callback] is provided, then it is called (under a
+@tech{continuation barrier}) whenever an event is logged to the result
+@tech{logger} or one of its descendants, but only if some @tech{log
+receiver} is inteested in the event in the same sense as
+@racket[log-level?]. The event is not propagated to any @tech{log
+receivers} until @racket[notify-callback] returns.}
 
 
 @defproc[(logger-name [logger logger?]) (or/c symbol? #f)]{
@@ -117,6 +126,7 @@ created when @racket[define-logger] is evaluated.}
 
 @defproc[(log-message [logger logger?]
                       [level (or/c 'fatal 'error 'warning 'info 'debug)]
+                      [name (or/c symbol? #f) (object-name logger)]
                       [message string?]
                       [data any/c])
           void?]{
@@ -126,9 +136,10 @@ information to any @tech{log receivers} attached to @racket[logger] or
 its ancestors that are interested in events at @racket[level] or
 higher.
 
-If @racket[logger] has a name, then @racket[message] is prefixed with
-the logger's name followed by @racket[": "] before it is sent to
-receivers.}
+@tech{Log receivers} can filter events based on @racket[name].  In
+addition, if @racket[name] is not @racket[#f], then @racket[message]
+is prefixed with the name followed by @racket[": "] before it is sent
+to receivers.}
 
 
 @defproc[(log-level? [logger logger?]
@@ -225,21 +236,23 @@ otherwise.}
 Creates a @tech{log receiver} to receive events of importance
 @racket[level] and higher as reported to @racket[logger] and its
 descendants, as long as either @racket[name] is @racket[#f] or the
-reporting logger's name matches @racket[name].
+event's name matches @racket[name].
 
 A @tech{log receiver} is a @tech{synchronizable event}. It becomes
 @tech{ready for synchronization} when a logging event is
 received, so use @racket[sync] to receive an logged event. The
-@tech{log receiver}'s @tech{synchronization result} is a vector containing
-three values: the level of the event as a symbol, an immutable string
-for the event message, and an arbitrary value that was supplied as the
-last argument to @racket[log-message] when the event was logged.
+@tech{log receiver}'s @tech{synchronization result} is an immutable vector containing
+four values: the level of the event as a symbol, an immutable string
+for the event message, an arbitrary value that was supplied as the
+last argument to @racket[log-message] when the event was logged, and a
+symbol or @racket[#f] for the event name (where a symbol is usually
+the name of the original logger for the event).
 
 Multiple pairs of @racket[level] and @racket[name] can be provided to
 indicate different specific @racket[level]s for different
 @racket[name]s (where @racket[name] defaults to @racket[#f] only for
 the last given @racket[level]). A @racket[level] for a @racket[#f]
-@racket[name] applies only to loggers whose names do not match any other
+@racket[name] applies only to events whose names do not match any other
 provided @racket[name]. If the same @racket[name] is provided multiple
 times, the @racket[level] provided with the last instance in the
 argument list takes precedence.}

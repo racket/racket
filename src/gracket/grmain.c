@@ -493,7 +493,7 @@ static BOOL CALLBACK CheckWindow(HWND wnd, LPARAM param)
   DWORD w;
   char **argv, *v;
   COPYDATASTRUCT cd;
-  DWORD result;
+  DWORD_PTR result;
   LRESULT ok;
 
   ok = SendMessageTimeout(wnd, wm_is_gracket,
@@ -507,7 +507,7 @@ static BOOL CALLBACK CheckWindow(HWND wnd, LPARAM param)
 
   if (ok == 0)
     return TRUE; /* ignore and continue */
-  if (result == 79) {
+  if ((intptr_t)result == 79) {
     /* found it */
   } else
     return TRUE; /* continue search */
@@ -609,16 +609,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored
   int j, argc;
   char **argv, *normalized_path;
 
-  /* Order matters: load dependencies first */
-# ifndef MZ_PRECISE_GC
-  load_delayed_dll(NULL, "libmzgcxxxxxxx.dll");
-# endif
-  load_delayed_dll(NULL, "libracket" DLL_3M_SUFFIX "xxxxxxx.dll");
-  record_dll_path();
-
-# ifdef __MINGW32__
-  scheme_set_atexit(atexit);
-# endif
+  load_delayed();
 
   {
     HANDLE h;

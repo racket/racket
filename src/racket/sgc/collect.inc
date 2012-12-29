@@ -49,12 +49,12 @@ static void COLLECT(OFFSET_ARG)
 #ifndef SIXTY_FOUR_BIT_INTEGERS
   SectorPage **local_sector_pagetables;
 #endif
-  unsigned long local_low_plausible;
-  unsigned long local_high_plausible;
+  uintptr_t local_low_plausible;
+  uintptr_t local_high_plausible;
   int local_collect_stack_size;
   int local_collect_stack_count;
-  unsigned long *local_collect_stack;
-  long local_mem_use;
+  uintptr_t *local_collect_stack;
+  intptr_t local_mem_use;
 
   /* Download globals into locals so they can be put in registers: */
 #ifndef SIXTY_FOUR_BIT_INTEGERS
@@ -68,9 +68,9 @@ static void COLLECT(OFFSET_ARG)
   local_mem_use = mem_use;
   
   IF_OR_WHILE (local_collect_stack_count) {
-    unsigned long s, end;
+    uintptr_t s, end;
 #if KEEP_DETAIL_PATH
-    unsigned long source;
+    uintptr_t source;
 #endif
 
 #if CHECK_SKIP_MARK_AT_FIRST
@@ -127,7 +127,7 @@ static void COLLECT(OFFSET_ARG)
 
     while (s < end) {
       void *d = *(void **)INT_TO_PTR(s);
-      unsigned long p = ADD_LOCAL_OFFSET(PTR_TO_INT(d));
+      uintptr_t p = ADD_LOCAL_OFFSET(PTR_TO_INT(d));
 
       MARK_STATISTIC(num_checks_stat++);
 #ifdef FOLLOW_INTERIOR
@@ -150,21 +150,21 @@ static void COLLECT(OFFSET_ARG)
 
 	if (pagetable) {
 	  SectorPage *page = pagetable + SECTOR_LOOKUP_PAGEPOS(p);
-	  long kind = page->kind;
+	  int kind = page->kind;
 
 	  MARK_STATISTIC(num_pages_stat++);
 
 	  if (kind == sector_kind_block) {
 	    /* Found common block: */
 	    BlockOfMemory *block = (BlockOfMemory *)INT_TO_PTR(page->start);
-	    unsigned long bstart = block->start;
+	    uintptr_t bstart = block->start;
 
 	    MARK_STATISTIC(num_blocks_stat++);
 
 	    if ((p >= bstart) && (p < block->top)) {
 	      int size = block->size;
 	      int pos = block->positions[(p - bstart) >> LOG_PTR_SIZE];
-	      unsigned long start = bstart + pos * size;
+	      uintptr_t start = bstart + pos * size;
 	    
 	      MARK_STATISTIC(num_blockallocs_stat++);
 

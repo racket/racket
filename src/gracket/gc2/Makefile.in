@@ -58,7 +58,7 @@ XFORMDEP = $(srcdir)/../../racket/gc2/xform.rkt $(srcdir)/../../racket/gc2/xform
 
 GRACKETLDFLAGS = $(LDFLAGS) -L../../racket
 
-DEF_COLLECTS_DIR = +D INITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../../collects; pwd`"'"'
+DEF_COLLECTS_DIR = +D INITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../../collects; @PWD@`"'"'
 
 XFORMWP = $(XFORM)
 

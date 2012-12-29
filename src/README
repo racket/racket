@@ -29,7 +29,9 @@ To compile with MinGW tools, follow the Unix instructions below; do not
 use `--enable-shared', because DLLs will be generated automatically.
 The result is a Windows-style build, but without MzCOM. If you are using
 a variant of MinGW without "libdelayimp.a", get the implementation of
-"delayimp.c" from MinGW-w64 and compile it to "libdelayimp.a".
+"delayimp.c" from MinGW-w64 and compile it to "libdelayimp.a". When
+compiling with MinGW-w64 for 64-bit mode, the `--enable-sgc' flag
+to `configure' is currently required.
 
 To compile with Cygwin tools, follow the Unix instructions below, and be
 sure to configure with `--enable-shared'.  The result is a Unix-style

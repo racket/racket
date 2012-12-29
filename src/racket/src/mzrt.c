@@ -596,7 +596,7 @@ typedef struct mzrt_rwlock {
   HANDLE readEvent;
   HANDLE writeMutex;
   LONG readers;
-} mzrt_rwlock;
+};
 
 int mzrt_rwlock_create(mzrt_rwlock **lock) {
   *lock = malloc(sizeof(mzrt_rwlock));

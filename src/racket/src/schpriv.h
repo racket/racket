@@ -3510,6 +3510,7 @@ struct Scheme_Logger {
   Scheme_Object *name;
   Scheme_Logger *parent;
   int want_level;
+  Scheme_Object *callback;
   intptr_t *timestamp, local_timestamp; /* determines when want_level is up-to-date */
   Scheme_Object *syslog_level; /* (list* <level-int> <name-sym> ... <level-int>) */
   Scheme_Object *stderr_level;

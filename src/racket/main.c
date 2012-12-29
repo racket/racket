@@ -312,7 +312,11 @@ void load_delayed()
        through the OS-supplied mechanism. Just assume that the first
        thread-local variable is ours. */
     void **base;
+#  ifdef _WIN64
+    asm("mov %%gs:(0x58), %0;" :"=r"(base));
+#  else
     asm("mov %%fs:(0x2C), %0;" :"=r"(base));
+#  endif
     scheme_register_tls_space(*base, _tls_index);
   }
 #  else

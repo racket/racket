@@ -13,12 +13,17 @@ This test checks:
 
   - if there are any duplicate shortcuts in the menus
 
+  - that the logger GUI is not completely broken (checks
+    that it opens, that it catches a GC message, and that
+    it closes)
+
 |#
 
 (require "private/drracket-test-util.rkt"
          drracket/private/local-member-names
          racket/gui/base
-         framework)
+         framework
+         string-constants)
 
 (define (main)
   (parameterize ([current-security-guard
@@ -34,7 +39,9 @@ This test checks:
     (fire-up-drracket-and-run-tests 
      #:prefs '([plt:framework-pref:drracket:online-compilation-default-on #f]) 
      (λ ()
-       (check-menus (wait-for-drracket-frame))
+       (define drr (wait-for-drracket-frame))
+       (check-log-panel drr)
+       (check-menus drr)
        
        (try-to-find-leak "online compilation disabled:" void)
        
@@ -161,5 +168,56 @@ This test checks:
   
   (process-container (send frame get-menu-bar))
   (check-shortcuts))
+
+(define (check-log-panel drr)
+  
+  (define (find-log-messages-message)
+    (let loop ([p drr])
+      (cond
+        [(is-a? p area-container<%>)
+         (for/or ([c (in-list (send p get-children))])
+           (loop c))]
+        [(is-a? p message%)
+         (and (equal? (send p get-label) (string-constant log-messages))
+              p)]
+        [else #f])))
+  
+  (test:menu-select "View" "Show Log")
+  
+  ;; wait for the log window to show up.
+  (poll-until
+   (λ ()
+     (queue-callback/res find-log-messages-message)))
+  
+  (collect-garbage)
+  
+  (define logger-string
+    (poll-until
+     (λ ()
+       (define str
+         (queue-callback/res
+          (λ ()
+            (define msg (find-log-messages-message))
+            (define msg-parent-parent (send (send msg get-parent) get-parent))
+            (let loop ([p msg-parent-parent])
+              (cond
+                [(is-a? p area-container<%>)
+                 (for/or ([c (in-list (send p get-children))])
+                   (loop c))]
+                [(is-a? p editor-canvas%)
+                 (send (send p get-editor) get-text)]
+                [else #f])))))
+       (and str
+            (not (equal? str ""))
+            str))))
+  
+  (unless (regexp-match #rx"GC: [0-9]+:MAJ" logger-string)
+    (error 'check-log-panel "didn't find GC log message: ~s" logger-string))
+  
+  (test:menu-select "View" "Hide Log")
+  
+  (poll-until
+   (λ ()
+     (not (queue-callback/res find-log-messages-message)))))
 
 (main)

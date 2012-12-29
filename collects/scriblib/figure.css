@@ -1,14 +1,17 @@
 
 .Centertext {
   text-align: center;
+  margin: 0 0 0 0;
 }
 
 .Centerfigure, .CenterfigureMulti, .centerfigureMultiWide, .Herefigure {
   text-align: center;
+  margin: 0 0 0 0;
 }
 
 .Leftfigure, .LeftfigureMulti, .leftfigureMultiWide {
   text-align: left;
+  margin: 0 0 0 0;
 }
 
 .Figure {

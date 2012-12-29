@@ -4486,10 +4486,10 @@ static void *expand_k(void)
   return obj;
 }
 
-static Scheme_Object *_expand(Scheme_Object *obj, Scheme_Comp_Env *env, 
-			      int depth, int rename, int just_to_top, 
-			      Scheme_Object *catch_lifts_key, int eb,
-                              int as_local)
+static Scheme_Object *r_expand(Scheme_Object *obj, Scheme_Comp_Env *env, 
+			       int depth, int rename, int just_to_top, 
+			       Scheme_Object *catch_lifts_key, int eb,
+			       int as_local)
   /* as_local < 0 => catch lifts to let */
 {
   Scheme_Thread *p = scheme_current_thread;
@@ -4507,8 +4507,8 @@ static Scheme_Object *_expand(Scheme_Object *obj, Scheme_Comp_Env *env,
 
 Scheme_Object *scheme_expand(Scheme_Object *obj, Scheme_Env *env)
 {
-  return _expand(obj, scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
-		 -1, 1, 0, scheme_true, -1, 0);
+  return r_expand(obj, scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
+		  -1, 1, 0, scheme_true, -1, 0);
 }
 
 Scheme_Object *scheme_tail_eval_expr(Scheme_Object *obj)
@@ -4681,8 +4681,8 @@ static Scheme_Object *expand(int argc, Scheme_Object **argv)
 
   env = scheme_get_env(NULL);
 
-  return _expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
-                 -1, 1, 0, scheme_false, 0, 0);
+  return r_expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
+		  -1, 1, 0, scheme_false, 0, 0);
 }
 
 static Scheme_Object *expand_stx(int argc, Scheme_Object **argv)
@@ -4694,8 +4694,8 @@ static Scheme_Object *expand_stx(int argc, Scheme_Object **argv)
 
   env = scheme_get_env(NULL);
   
-  return _expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
-                 -1, -1, 0, scheme_false, 0, 0);
+  return r_expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
+		  -1, -1, 0, scheme_false, 0, 0);
 }
 
 Scheme_Object *scheme_generate_lifts_key(void)
@@ -5026,7 +5026,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
   } else {
     /* Expand the expression. depth = -2 means expand all the way, but
        preserve letrec-syntax. */
-    l = _expand(l, env, -2, 0, 0, catch_lifts_key, 0, catch_lifts ? catch_lifts : 1);
+    l = r_expand(l, env, -2, 0, 0, catch_lifts_key, 0, catch_lifts ? catch_lifts : 1);
   }
 
   SCHEME_EXPAND_OBSERVE_LOCAL_POST(observer, l);
@@ -5112,8 +5112,8 @@ expand_once(int argc, Scheme_Object **argv)
 
   env = scheme_get_env(NULL);
 
-  return _expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
-                 1, 1, 0, scheme_false, 0, 0);
+  return r_expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
+		  1, 1, 0, scheme_false, 0, 0);
 }
 
 static Scheme_Object *
@@ -5126,8 +5126,8 @@ expand_stx_once(int argc, Scheme_Object **argv)
   
   env = scheme_get_env(NULL);
 
-  return _expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
-                 1, -1, 0, scheme_false, 0, 0);
+  return r_expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
+		  1, -1, 0, scheme_false, 0, 0);
 }
 
 static Scheme_Object *
@@ -5137,8 +5137,8 @@ expand_to_top_form(int argc, Scheme_Object **argv)
 
   env = scheme_get_env(NULL);
 
-  return _expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
-                 1, 1, 1, scheme_false, 0, 0);
+  return r_expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
+		  1, 1, 1, scheme_false, 0, 0);
 }
 
 static Scheme_Object *
@@ -5151,8 +5151,8 @@ expand_stx_to_top_form(int argc, Scheme_Object **argv)
   
   env = scheme_get_env(NULL);
 
-  return _expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
-                 1, -1, 1, scheme_false, 0, 0);
+  return r_expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
+		  1, -1, 1, scheme_false, 0, 0);
 }
 
 static Scheme_Object *do_eval_string_all(Scheme_Object *port, const char *str, Scheme_Env *env, 

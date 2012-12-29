@@ -4,7 +4,7 @@
 
 (define level/c (or/c 'fatal 'error 'warning 'info 'debug))
 (define log-spec/c (listof (or/c symbol? #f)))
-(define log-message/c (vector/c level/c string? any/c))
+(define log-message/c (vector/c level/c string? any/c (or/c symbol? #f)))
 
 ;; helper used below
 (define (receiver-thread receiver stop-chan intercept)

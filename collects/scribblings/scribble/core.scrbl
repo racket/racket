@@ -259,6 +259,9 @@ full tag, where the symbol part is supplied automatically. For
 example, @racket[section] and @racket[secref] both accept a string
 ``tag'', where @racket['part] is implicit.
 
+The @racketmodname[scribble/tag] library provides functions for constructing
+@tech{tags}.
+
 @; ------------------------------------------------------------------------
 
 @section[#:tag "style"]{Styles}

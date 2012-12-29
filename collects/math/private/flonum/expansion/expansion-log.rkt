@@ -8,7 +8,7 @@ perform one Newton step.
 |#
 
 (require "../flonum-functions.rkt"
-         "../flonum-syntax.rkt"
+         "../flonum-error.rkt"
          "../flonum-log.rkt"
          "expansion-base.rkt"
          "expansion-exp.rkt")

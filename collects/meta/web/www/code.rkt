@@ -1,6 +1,7 @@
 #lang meta/web
 
-(require syntax-color/module-lexer setup/xref scribble/xref)
+(require syntax-color/module-lexer setup/xref 
+         scribble/xref scribble/tag)
 
 (provide code)
 
@@ -53,7 +54,8 @@
     (if (or always-orig? (syntax-original? mp-stx))
       (let ([mp (syntax->datum mp-stx)])
         (define-values [p a]
-          (xref-tag->path+anchor xref `(mod-path ,(format "~s" mp))
+          (xref-tag->path+anchor xref 
+                                 (make-module-language-tag mp)
                                  #:external-root-url doc-root))
         (if p
           (list (let ([pos (sub1 (syntax-position mp-stx))])

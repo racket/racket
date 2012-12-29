@@ -45,6 +45,8 @@
     the highlight disappear completely when completely inside an
     error.
 
+  . Improved the log message gui
+
 ------------------------------
        Version 5.3.1
 ------------------------------

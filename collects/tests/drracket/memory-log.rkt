@@ -27,7 +27,6 @@
         [else
          (loop new-cmu (- n 1))]))))
     
-(void (putenv "PLTDRXREFDELAY" "yes"))
 (void (putenv "PLTDRPLACEPRINT" "yes"))
 
 (define (wait-and-print)

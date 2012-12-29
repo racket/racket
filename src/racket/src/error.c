@@ -690,10 +690,10 @@ void scheme_init_error(Scheme_Env *env)
   GLOBAL_NONCM_PRIM("exit",              scheme_do_exit,  0, 1, env);
   GLOBAL_NONCM_PRIM("log-level?",        log_level_p,     2, 2, env);
   GLOBAL_NONCM_PRIM("log-max-level",     log_max_level,   1, 1, env);
-  GLOBAL_NONCM_PRIM("make-logger",       make_logger,     0, 2, env);
+  GLOBAL_NONCM_PRIM("make-logger",       make_logger,     0, 3, env);
   GLOBAL_NONCM_PRIM("make-log-receiver", make_log_reader, 2, -1, env);
 
-  GLOBAL_PRIM_W_ARITY("log-message",    log_message,   4, 4, env);
+  GLOBAL_PRIM_W_ARITY("log-message",    log_message,   4, 5, env);
   GLOBAL_FOLDING_PRIM("logger?",        logger_p,      1, 1, 1, env);
   GLOBAL_FOLDING_PRIM("logger-name",    logger_name,   1, 1, 1, env);
   GLOBAL_FOLDING_PRIM("log-receiver?",  log_reader_p,  1, 1, 1, env);
@@ -3397,13 +3397,66 @@ static mzRegisterEventSourceProc mzRegisterEventSource;
 static mzReportEventProc mzReportEvent;
 #endif
 
-void scheme_log_message(Scheme_Logger *logger, int level, char *buffer, intptr_t len, Scheme_Object *data)
+
+
+static Scheme_Object *make_log_message(int level, Scheme_Object *name, 
+                                       char *buffer, intptr_t len, Scheme_Object *data) {
+  Scheme_Object *msg;
+  Scheme_Object *v;
+  
+  msg = scheme_make_vector(4, NULL);
+  switch (level) {
+  case SCHEME_LOG_FATAL:
+    v = fatal_symbol;
+    break;
+  case SCHEME_LOG_ERROR:
+    v = error_symbol;
+    break;
+  case SCHEME_LOG_WARNING:
+    v = warning_symbol;
+    break;
+  case SCHEME_LOG_INFO:
+    v = info_symbol;
+    break;
+  case SCHEME_LOG_DEBUG:
+  default:
+    v = debug_symbol;
+    break;
+  }
+  SCHEME_VEC_ELS(msg)[0] = v;
+          
+  if (name) {
+    /* Add logger name prefix: */
+    intptr_t slen;
+    char *cp;
+    slen = SCHEME_SYM_LEN(name);
+    cp = scheme_malloc_atomic(slen + 2 + len + 1);
+    memcpy(cp, SCHEME_SYM_VAL(name), slen);
+    memcpy(cp + slen, ": ", 2);
+    memcpy(cp + slen + 2, buffer, len + 1);
+    len += slen + 2;
+    buffer = cp;
+  }
+
+  v = scheme_make_sized_utf8_string(buffer, len);
+  SCHEME_SET_CHAR_STRING_IMMUTABLE(v);
+  SCHEME_VEC_ELS(msg)[1] = v;
+  SCHEME_VEC_ELS(msg)[2] = (data ? data : scheme_false);
+  SCHEME_VEC_ELS(msg)[3] = (name ? name : scheme_false);
+
+  SCHEME_SET_VECTOR_IMMUTABLE(msg);
+
+  return msg;
+}
+
+void scheme_log_name_message(Scheme_Logger *logger, int level, Scheme_Object *name, 
+                             char *buffer, intptr_t len, Scheme_Object *data)
 {
   /* This function must avoid GC allocation when called with the
      configuration of scheme_log_abort(). */
-  Scheme_Logger *orig_logger;
   Scheme_Object *queue, *q, *msg = NULL, *b;
   Scheme_Log_Reader *lr;
+  Scheme_Logger *lo;
 
   if (!logger) {
     Scheme_Config *config;
@@ -3417,10 +3470,26 @@ void scheme_log_message(Scheme_Logger *logger, int level, char *buffer, intptr_t
   if (logger->want_level < level)
     return;
 
-  orig_logger = logger;
+  if (!name)
+    name = logger->name;
+
+  /* run notification callbacks: */
+  for (lo = logger; lo; lo = lo->parent) {
+    if (lo->callback) {
+      Scheme_Object *a[1];
+      if (!msg)
+        msg = make_log_message(level, name, buffer, len, data);
+
+      a[0] = msg;
+      scheme_apply_multi(lo->callback, 1, a);
+    }
+  }
+
+  if (SCHEME_FALSEP(name))
+    name = NULL;
 
   while (logger) {
-    if (extract_spec_level(logger->syslog_level, orig_logger->name) >= level) {
+    if (extract_spec_level(logger->syslog_level, name) >= level) {
 #ifdef USE_C_SYSLOG
       int pri;
       switch (level) {
@@ -3441,8 +3510,8 @@ void scheme_log_message(Scheme_Logger *logger, int level, char *buffer, intptr_t
         pri = LOG_DEBUG;
         break;
       }
-      if (orig_logger->name)
-        syslog(pri, "%s: %s", SCHEME_SYM_VAL(orig_logger->name), buffer);
+      if (name)
+        syslog(pri, "%s: %s", SCHEME_SYM_VAL(name), buffer);
       else
         syslog(pri, "%s", buffer);
 #endif
@@ -3491,12 +3560,12 @@ void scheme_log_message(Scheme_Logger *logger, int level, char *buffer, intptr_t
           sev = 0;
           break;
         }
-        if (orig_logger->name) {
+        if (name) {
           char *naya;
           intptr_t slen;
-          slen = SCHEME_SYM_LEN(orig_logger->name);
+          slen = SCHEME_SYM_LEN(name);
           naya = (char *)scheme_malloc_atomic(slen + 2 + len + 1);
-          memcpy(naya, SCHEME_SYM_VAL(orig_logger->name), slen);
+          memcpy(naya, SCHEME_SYM_VAL(name), slen);
           memcpy(naya + slen, ": ", 2);
           memcpy(naya + slen + 2, buffer, len);
           naya[slen + 2 + len] = 0;
@@ -3512,11 +3581,11 @@ void scheme_log_message(Scheme_Logger *logger, int level, char *buffer, intptr_t
       }
 #endif
     }
-    if (extract_spec_level(logger->stderr_level, orig_logger->name) >= level) {
-      if (orig_logger->name) {
+    if (extract_spec_level(logger->stderr_level, name) >= level) {
+      if (name) {
         intptr_t slen;
-        slen = SCHEME_SYM_LEN(orig_logger->name);
-        fwrite(SCHEME_SYM_VAL(orig_logger->name), slen, 1, stderr);
+        slen = SCHEME_SYM_LEN(name);
+        fwrite(SCHEME_SYM_VAL(name), slen, 1, stderr);
         fwrite(": ", 2, 1, stderr);
       }
       fwrite(buffer, len, 1, stderr);
@@ -3529,48 +3598,9 @@ void scheme_log_message(Scheme_Logger *logger, int level, char *buffer, intptr_t
       b = SCHEME_CAR(b);
       lr = (Scheme_Log_Reader *)SCHEME_BOX_VAL(b);
       if (lr) {
-        if (extract_spec_level(lr->level, orig_logger->name) >= level) {
-          if (!msg) {
-            Scheme_Object *v;
-            msg = scheme_make_vector(3, NULL);
-            switch (level) {
-            case SCHEME_LOG_FATAL:
-              v = fatal_symbol;
-              break;
-            case SCHEME_LOG_ERROR:
-              v = error_symbol;
-              break;
-            case SCHEME_LOG_WARNING:
-              v = warning_symbol;
-              break;
-            case SCHEME_LOG_INFO:
-              v = info_symbol;
-              break;
-            case SCHEME_LOG_DEBUG:
-            default:
-              v = debug_symbol;
-              break;
-            }
-            SCHEME_VEC_ELS(msg)[0] = v;
-          
-            if (orig_logger->name) {
-              /* Add logger name prefix: */
-              intptr_t slen;
-              char *cp;
-              slen = SCHEME_SYM_LEN(orig_logger->name);
-              cp = scheme_malloc_atomic(slen + 2 + len + 1);
-              memcpy(cp, SCHEME_SYM_VAL(orig_logger->name), slen);
-              memcpy(cp + slen, ": ", 2);
-              memcpy(cp + slen + 2, buffer, len + 1);
-              len += slen + 2;
-              buffer = cp;
-            }
-
-            v = scheme_make_sized_utf8_string(buffer, len);
-            SCHEME_SET_CHAR_STRING_IMMUTABLE(v);
-            SCHEME_VEC_ELS(msg)[1] = v;
-            SCHEME_VEC_ELS(msg)[2] = (data ? data : scheme_false);
-          }
+        if (extract_spec_level(lr->level, name) >= level) {
+          if (!msg)
+            msg = make_log_message(level, name, buffer, len, data);
           
           /* enqueue */
           q = scheme_make_raw_pair(msg, NULL);
@@ -3587,6 +3617,11 @@ void scheme_log_message(Scheme_Logger *logger, int level, char *buffer, intptr_t
 
     logger = logger->parent;
   }
+}
+
+void scheme_log_message(Scheme_Logger *logger, int level, char *buffer, intptr_t len, Scheme_Object *data)
+{
+  scheme_log_name_message(logger, level, NULL, buffer, len, data);
 }
 
 void scheme_log_abort(char *buffer)
@@ -3692,7 +3727,8 @@ log_message(int argc, Scheme_Object *argv[])
 {
   Scheme_Logger *logger;
   Scheme_Object *bytes;
-  int level;
+  Scheme_Object *name;
+  int level, pos;
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_logger_type))
     scheme_wrong_contract("log-message", "logger?", 0, argc, argv);
@@ -3700,12 +3736,19 @@ log_message(int argc, Scheme_Object *argv[])
 
   level = extract_level("log-message", 0, 1, argc, argv);
 
-  bytes = argv[2];
+  pos = 2;
+  if (SCHEME_SYMBOLP(argv[pos]) || SCHEME_FALSEP(argv[pos]))
+    name = argv[pos++];
+  else
+    name = NULL;
+
+  bytes = argv[pos];
   if (!SCHEME_CHAR_STRINGP(bytes))
-    scheme_wrong_contract("log-message", "string?", 2, argc, argv);
+    scheme_wrong_contract("log-message", "string?", pos, argc, argv);
   bytes = scheme_char_string_to_byte_string(bytes);
+  pos++;
   
-  scheme_log_message(logger, level, SCHEME_BYTE_STR_VAL(bytes), SCHEME_BYTE_STRLEN_VAL(bytes), argv[3]);
+  scheme_log_name_message(logger, level, name, SCHEME_BYTE_STR_VAL(bytes), SCHEME_BYTE_STRLEN_VAL(bytes), argv[pos]);
 
   return scheme_void;
 }
@@ -3760,7 +3803,7 @@ log_max_level(int argc, Scheme_Object *argv[])
 static Scheme_Object *
 make_logger(int argc, Scheme_Object *argv[])
 {
-  Scheme_Logger *parent;
+  Scheme_Logger *parent, *logger;
 
   if (argc) {
     if (!SCHEME_FALSEP(argv[0]) && !SCHEME_SYMBOLP(argv[0]))
@@ -3774,15 +3817,23 @@ make_logger(int argc, Scheme_Object *argv[])
           scheme_wrong_contract("make-logger", "(or/c logger? #f)", 1, argc, argv);
         parent = (Scheme_Logger *)argv[1];
       }
+
+      if (argc > 2)
+        (void)scheme_check_proc_arity2("make-logger", 1, 2, argc, argv, 1);
     } else
       parent = NULL;
   } else
     parent = NULL;
 
-  return (Scheme_Object *)scheme_make_logger(parent, 
-                                             (argc 
-                                              ? (SCHEME_FALSEP(argv[0]) ? NULL : argv[0])
-                                              : NULL));
+  logger = scheme_make_logger(parent, 
+                              (argc 
+                               ? (SCHEME_FALSEP(argv[0]) ? NULL : argv[0])
+                               : NULL));
+
+  if ((argc > 2) && SCHEME_TRUEP(argv[2]))
+    logger->callback = argv[2];
+  
+  return (Scheme_Object *)logger;
 }
 
 Scheme_Logger *scheme_make_logger(Scheme_Logger *parent, Scheme_Object *name)

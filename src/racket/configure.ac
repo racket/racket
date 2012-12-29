@@ -113,7 +113,7 @@ if test "${enable_shared}" = "yes" ; then
        exit 1
     fi
   ;;
-  mingw*)
+  *mingw*)
    echo "ERROR: don't use --enable-shared or --enable-dynlib with mingw"
    exit 1
   ;;
@@ -318,6 +318,12 @@ MROPTIONS=
 INCLUDEDEP="#"
 WX_MMD_FLAG=
 
+DIRCVTPRE=
+DIRCVTPOST=
+PWD=pwd
+WINDRES=windres
+DLLTOOL=dlltool
+
 PREFLAGS="$CPPFLAGS"
 
 OWN_LIBFFI="ON"
@@ -459,6 +465,10 @@ if test "$CC_FOR_BUILD" = "" ; then
   CC_FOR_BUILD="$CC"
 fi
 
+if test "${enable_shared}" = "yes" ; then
+  LIBRACKET_DEP="${LIBRACKET_DEP} libmzgc.la"
+fi
+
 ############## platform tests ################
 
 # for flags we don't want to use in config tests:
@@ -557,7 +567,7 @@ case "$host_os" in
     fi
     LIBS="$LIBS -Wl,-E"
     ;;
-  mingw*)
+  *mingw*)
     enable_parallel_by_default=yes
     use_flag_pthread=no
     MZOPTIONS="$MZOPTIONS -fno-omit-frame-pointer" # to make JIT backtraces work
@@ -569,14 +579,26 @@ case "$host_os" in
     COLLECTS_PATH="collects"
     skip_iconv_check=yes
     AC_DEFINE(HAVE_STDINT_H,1,[Have stdint.h])
+    if `which ${host}-windres > /dev/null` ; then
+      WINDRES="${host}-windres"
+    fi
+    if `which ${host}-dlltool > /dev/null` ; then
+      DLLTOOL="${host}-dlltool"
+    fi
+    case "$build_os" in
+      *cygwin*)
+        PWD="cygpath -m \\\`pwd\\\`"
+        DIRCVTPRE="\`cygpath -m "
+        DIRCVTPOST="\`"
+        ;;
+    esac
     ;;    
   cygwin*)
     enable_cgcdefault="yes"
     MZINSTALLTARGET=unix-cygwin-install
     if test "${enable_shared}" = "yes" ; then
       ar_libtool_no_undefined=" -no-undefined"
-      LIBRACKET_DEP="libmzgc.la -liconv"
-      LIBGRACKET_DEP="../racket/libmzgc.la ../racket/libgracket.la"
+      LIBRACKET_DEP="${LIBRACKET_DEP} -liconv"
     fi
     EXE_SUFFIX=".exe"
     ;;
@@ -747,6 +769,11 @@ AC_TRY_RUN(
    }, using_gnu_cpp=yes, using_gnu_cpp=no, using_gnu_cpp=no)
 if test "$using_gnu_cpp" = "yes" ; then
   XFORMFLAGS="$XFORMFLAGS --keep-lines"
+  case "$build_os" in
+    *cygwin*)
+      XFORMFLAGS="$XFORMFLAGS --D-via-include"
+     ;;
+  esac
 fi
 AC_MSG_RESULT($using_gnu_cpp) 
 
@@ -1321,6 +1348,12 @@ AC_SUBST(USE_WXPRECOMP)
 AC_SUBST(INCLUDEDEP)
 AC_SUBST(WX_MMD_FLAG)
 
+AC_SUBST(PWD)
+AC_SUBST(DIRCVTPRE)
+AC_SUBST(DIRCVTPOST)
+AC_SUBST(WINDRES)
+AC_SUBST(DLLTOOL)
+
 AC_SUBST(OSKHOME)
 AC_SUBST(EXTRA_OSK_LIBS)
 
@@ -1330,7 +1363,6 @@ AC_SUBST(FOREIGN_CONVENIENCE)
 AC_SUBST(FOREIGNTARGET)
 
 AC_SUBST(LIBRACKET_DEP)
-AC_SUBST(LIBGRACKET_DEP)
 
 AC_SUBST(LTO)
 AC_SUBST(LTA)

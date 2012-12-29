@@ -83,13 +83,15 @@
 
 (: flulp-error (Flonum Real -> Flonum))
 (define (flulp-error x r)
+  (define r.0 (fl r))
   (cond [(eqv? x r)  0.0]
-        [(and (fl= x 0.0) (zero? r))  0.0]
+        [(and (fl= x 0.0) (fl= r.0 0.0))  0.0]
+        [(and (fl= x +inf.0) (fl= r.0 +inf.0))  0.0]
+        [(and (fl= x -inf.0) (fl= r.0 -inf.0))  0.0]
         [(zero? r)  +inf.0]
-        [(and (rational? x) (rational? r))
-         (flabs (real->double-flonum
-                 (/ (- (inexact->exact x) (inexact->exact r))
-                    (inexact->exact (flulp x)))))]
+        [(and (flrational? x) (flrational? r.0))
+         (flabs (fl (/ (- (inexact->exact x) (inexact->exact r))
+                       (inexact->exact (flmax +min.0 (flulp r.0))))))]
         [else  +inf.0]))
 
 ;; ===================================================================================================

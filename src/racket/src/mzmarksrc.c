@@ -1174,6 +1174,7 @@ mark_logger {
   Scheme_Logger *l = (Scheme_Logger *)p;
   gcMARK2(l->name, gc);
   gcMARK2(l->parent, gc);
+  gcMARK2(l->callback, gc);
   gcMARK2(l->timestamp, gc);
   gcMARK2(l->syslog_level, gc);
   gcMARK2(l->stderr_level, gc);

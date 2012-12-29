@@ -2771,6 +2771,10 @@ Scheme_Object *scheme_object_name(Scheme_Object *a)
     if (t->name) {
       return t->name;
     }
+  } else if (SAME_TYPE(SCHEME_TYPE(a), scheme_logger_type)) {
+    Scheme_Logger *logger = (Scheme_Logger *)a;
+    if (logger->name)
+      return logger->name;
   }
 
   return scheme_false;
