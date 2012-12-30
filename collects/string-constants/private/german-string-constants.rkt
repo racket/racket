@@ -214,7 +214,8 @@
   ;; menu items connected to the logger -- also in a button in the planet status line in the drs frame
   (show-log "&Log einblenden")
   (hide-log "&Log ausblenden")
-  (logging-all "Alle") ;; in the logging window in drscheme, shows all logs simultaneously
+  (logger-scroll-on-output "Bei Ausgabe scrollen") ; a checkbox in the logger pane
+  (log-messages "Log-Nachrichten") ;; label for the drracket logging gui panel
 
  ;; modes
  (mode-submenu-label "Modi")
