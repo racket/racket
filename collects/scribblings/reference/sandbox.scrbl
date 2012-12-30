@@ -226,9 +226,9 @@ of communication makes it impossible to have nested (or concurrent)
 calls to a single evaluator.  Usually this is not a problem, but in
 some cases you can get the evaluator function available inside the
 sandboxed code, for example:
-@racketblock[
+@interaction[#:eval box-eval
 (let ([e (make-evaluator 'racket/base)])
-  (e (,e 1)))
+  (e `(,e 1)))
 ]
 An error will be signaled in such cases.
 
