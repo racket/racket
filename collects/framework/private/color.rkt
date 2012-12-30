@@ -507,12 +507,22 @@ added get-regions
       (unless (andmap lexer-state-up-to-date? lexer-states)
         (begin-edit-sequence #f #f)
         (c-log "starting to color")
-        (set! re-tokenize-lses lexer-states)
+        (set! re-tokenize-lses (let loop ([lexer-states lexer-states])
+                                 (cond
+                                   [(null? lexer-states) null]
+                                   [else (if (lexer-state-up-to-date? (car lexer-states))
+                                             (loop (cdr lexer-states))
+                                             lexer-states)])))
         (define finished? (re-tokenize-move-to-next-ls (current-inexact-milliseconds) #f))
         (c-log (format "coloring stopped ~a" (if finished? "because it finished" "with more to do")))
+        (let loop ([states lexer-states])
+          (unless (eq? re-tokenize-lses states)
+            (cond
+              [(null? states) (void)]
+              [else
+               (set-lexer-state-up-to-date?! (car states) #t)
+               (loop (cdr states))])))
         (when finished?
-          (for ([ls (in-list lexer-states)])
-            (set-lexer-state-up-to-date?! ls #t))
           (update-lexer-state-observers)
           (c-log "updated observers"))
         (c-log "starting end-edit-sequence")
