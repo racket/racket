@@ -2407,9 +2407,12 @@ int scheme_closure_preserves_marks(Scheme_Object *p)
   Scheme_Type type = SCHEME_TYPE(p);
   Scheme_Closure_Data *data;
 
+#ifdef MZ_USE_JIT
   if (type == scheme_native_closure_type)
     return scheme_native_closure_preserves_marks(p);
-  else if (type == scheme_closure_type) {
+#endif
+
+  if (type == scheme_closure_type) {
     data = SCHEME_COMPILED_CLOS_CODE(p);
   } else if (type == scheme_unclosed_procedure_type) {
     data = (Scheme_Closure_Data *)p;
