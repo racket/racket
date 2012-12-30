@@ -491,11 +491,15 @@
     Evaluates the number of items on a list.
     @interaction[#:eval (bsl) x (length x)]
     }
-    @defproc[(memq [x any/c][l list?]) (or/c false list?)]{
-    Determines whether some value is on some list if so, it produces the
-    suffix of the list that starts with x if not, it produces false.  (It
-    compares values with the eq? predicate.)
+    @defproc[((beginner-memq memq) [x any/c][l list?]) boolean?]{
+    Determines whether some value @racket[x] is on some list @racket[l], 
+    using @racket[eq?] to compare @racket[x] with items on @racket[l].
     @interaction[#:eval (bsl) x (memq (list (list 1 2 3)) x)]
+    }
+    @defproc[((beginner-memq? memq?) [x any/c][l list?]) boolean?]{
+    Determines whether some value @racket[x] is on some list @racket[l], 
+    using @racket[eq?] to compare @racket[x] with items on @racket[l].
+    @interaction[#:eval (bsl) x (memq? (list (list 1 2 3)) x)]
     }
     @defproc[(memv [x any/c][l list?]) (or/c false list)]{
     Determines whether some value is on the list if so, it produces the

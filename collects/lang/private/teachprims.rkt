@@ -139,6 +139,16 @@ namespace.
         (current-continuation-marks))))
     (sqr a)))
 
+(define-teach beginner memq
+  (lambda (a b)
+    (check-second 'memq a b)
+    (not (boolean? (memq a b)))))
+
+(define-teach beginner memq?
+  (lambda (a b)
+    (check-second 'memq? a b)
+    (not (boolean? (memq a b)))))
+
 (define-teach beginner member 
   (lambda (a b)
     (check-second 'member a b)
@@ -402,6 +412,8 @@ namespace.
  beginner-list?
  beginner-member
  beginner-member?
+ beginner-memq
+ beginner-memq?
  beginner-remove
  beginner-cons
  beginner-car
