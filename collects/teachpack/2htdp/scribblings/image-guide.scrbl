@@ -29,6 +29,9 @@
      (interaction-eval-show #:eval guide-eval exp)
      (guide-eval '(extra-margin 0))))
 
+@(interaction-eval #:eval guide-eval 
+                   (require racket/list racket/local))
+
 
 @title[#:tag "image-guide"]{Image Guide}
 
@@ -219,28 +222,53 @@ library, e.g.:
 
 @image-interaction[(define (sierpinski-carpet n)
                      (cond
-                       [(zero? n) (square 2 "solid" "black")]
+                       [(zero? n) (square 1 "solid" "black")]
                        [else
-                        (define c (sierpinski-carpet (- n 1)))
-                        (define i (square (image-width c) "solid" "white"))
-                        (above (beside c c c)
-                               (beside c i c)
-                               (beside c c c))]))]
+                        (local [(define c (sierpinski-carpet (- n 1)))
+                                (define i (square (image-width c) "solid" "white"))]
+                          (above (beside c c c)
+                                 (beside c i c)
+                                 (beside c c c)))]))]
 
-@image-interaction[(sierpinski-carpet 4)]
+@image-interaction[(sierpinski-carpet 5)]
+
+We can adjust the carpet to add a little color:
+
+@image-interaction[(define (colored-carpet colors)
+                     (cond
+                       [(empty? (rest colors)) 
+                        (square 1 "solid" (first colors))]
+                       [else
+                        (local [(define c (colored-carpet (rest colors)))
+                                (define i (square (image-width c) "solid" (car colors)))]
+                          (above (beside c c c)
+                                 (beside c i c)
+                                 (beside c c c)))]))]
+
+@image-interaction[(colored-carpet 
+                    (list (color #x33 #x00 #xff)
+                          (color #x66 #x00 #xff)
+                          (color #x99 #x00 #xff)
+                          (color #xcc #x00 #xff)
+                          (color #xff #x00 #xff)
+                          (color 255 204 0)))]
+
+The Koch curve can be constructed by simply placing four
+curves next to each other, rotated appropriately:
 
 @image-interaction[(define (koch-curve n)
                      (cond
                        [(zero? n) (square 1 "solid" "black")]
                        [else
-                        (define smaller (koch-curve (- n 1)))
-                        (beside/align "bottom"
-                                      smaller 
-                                      (rotate 60 smaller)
-                                      (rotate -60 smaller)
-                                      smaller)]))]
+                        (local [(define smaller (koch-curve (- n 1)))]
+                          (beside/align "bottom"
+                                        smaller 
+                                        (rotate 60 smaller)
+                                        (rotate -60 smaller)
+                                        smaller))]))
+                   (koch-curve 5)]
 
-@image-interaction[(koch-curve 5)]
+And then put three of them together to form the Koch snowflake.
 
 @image-interaction[(above 
                     (beside
