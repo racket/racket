@@ -18,11 +18,11 @@
  #""
  #"")
 ((query-value pgc "select count(*) from the_numbers")
- ((3) 0 () 0 () () (c values c 4))
+ ((3) 0 () 0 () () (q values 4))
  #""
  #"")
-((query-value pgc "select false") ((3) 0 () 0 () () (c values c #f)) #"" #"")
-((query-value pgc "select 1 + $1" 2) ((3) 0 () 0 () () (c values c 3)) #"" #"")
+((query-value pgc "select false") ((3) 0 () 0 () () (q values #f)) #"" #"")
+((query-value pgc "select 1 + $1" 2) ((3) 0 () 0 () () (q values 3)) #"" #"")
 ((query-value pgc "select inet '127.0.0.1'")
  ((3)
   0
@@ -30,7 +30,7 @@
   0
   ()
   ()
-  (c exn c "query-value: unsupported type\n  type: inet\n  typeid: 869"))
+  (q exn "query-value: unsupported type\n  type: inet\n  typeid: 869"))
  #""
  #"")
 ((query-value pgc "select cast(inet '127.0.0.1' as varchar)")
@@ -38,30 +38,30 @@
  #""
  #"")
 ((query-value pgc "select real '+Infinity'")
- ((3) 0 () 0 () () (c values c +inf.0))
+ ((3) 0 () 0 () () (q values +inf.0))
  #""
  #"")
 ((query-value pgc "select numeric '12345678901234567890'")
- ((3) 0 () 0 () () (c values c 12345678901234567890))
+ ((3) 0 () 0 () () (q values 12345678901234567890))
  #""
  #"")
 ((query-value pgc "select 1 in (1, 2, 3)")
- ((3) 0 () 0 () () (c values c #t))
+ ((3) 0 () 0 () () (q values #t))
  #""
  #"")
 ((query-value
   pgc
   "select 1 = any ($1::integer[])"
   (list->pg-array (list 1 2 3)))
- ((3) 0 () 0 () () (c values c #t))
+ ((3) 0 () 0 () () (q values #t))
  #""
  #"")
 ((query-value pgc "select 1 = any ($1)" (list 1 2 3))
- ((3) 0 () 0 () () (c values c #t))
+ ((3) 0 () 0 () () (q values #t))
  #""
  #"")
 ((query-value pgc "select $1::integer = any ($2)" 1 (list 1 2 3))
- ((3) 0 () 0 () () (c values c #t))
+ ((3) 0 () 0 () () (q values #t))
  #""
  #"")
 ((query-value pgc "select $1 = any ($2)" 1 (list 1 2 3))
@@ -71,9 +71,8 @@
   0
   ()
   ()
-  (c
+  (q
    exn
-   c
    "query-value: cannot convert given value to SQL type\n  given: 1\n  type: string\n  expected: string?\n  dialect: PostgreSQL"))
  #""
  #"")
@@ -87,10 +86,10 @@
   (c values c (0)))
  #""
  #"")
-((sql-null->false "apple") ((3) 0 () 0 () () (c values c "apple")) #"" #"")
-((sql-null->false sql-null) ((3) 0 () 0 () () (c values c #f)) #"" #"")
-((sql-null->false #f) ((3) 0 () 0 () () (c values c #f)) #"" #"")
-((false->sql-null "apple") ((3) 0 () 0 () () (c values c "apple")) #"" #"")
+((sql-null->false "apple") ((3) 0 () 0 () () (q values "apple")) #"" #"")
+((sql-null->false sql-null) ((3) 0 () 0 () () (q values #f)) #"" #"")
+((sql-null->false #f) ((3) 0 () 0 () () (q values #f)) #"" #"")
+((false->sql-null "apple") ((3) 0 () 0 () () (q values "apple")) #"" #"")
 ((false->sql-null #f)
  ((3)
   1
@@ -143,13 +142,5 @@
   ()
   ()
   (c values c (0 1970 1 1 0 0 0 0 0)))
- #""
- #"")
-((sql-bits->list (string->sql-bits "1011"))
- ((3) 0 () 0 () () (c values c (c #t c #f c #t c #t)))
- #""
- #"")
-((sql-bits->string (query-value pgc "select B'010110111'"))
- ((3) 0 () 0 () () (c values c (u . "010110111")))
  #""
  #"")

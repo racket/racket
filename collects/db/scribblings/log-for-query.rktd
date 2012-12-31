@@ -35,7 +35,7 @@
  #""
  #"")
 ((query-list c "select n from the_numbers where n < 2")
- ((3) 0 () 0 () () (c values c (c 0 c 1)))
+ ((3) 0 () 0 () () (q values (0 1)))
  #""
  #"")
 ((query-list c "select 'hello'")
@@ -51,7 +51,7 @@
  #""
  #"")
 ((query-maybe-row pgc "select * from the_numbers where n = $1" 100)
- ((3) 0 () 0 () () (c values c #f))
+ ((3) 0 () 0 () () (q values #f))
  #""
  #"")
 ((query-maybe-row c "select 17")
@@ -75,15 +75,15 @@
  #""
  #"")
 ((query-maybe-value pgc "select d from the_numbers where n = $1" 100)
- ((3) 0 () 0 () () (c values c #f))
+ ((3) 0 () 0 () () (q values #f))
  #""
  #"")
 ((query-maybe-value c "select count(*) from the_numbers")
- ((3) 0 () 0 () () (c values c 4))
+ ((3) 0 () 0 () () (q values 4))
  #""
  #"")
 ((for/list ((n (in-query pgc "select n from the_numbers where n < 2"))) n)
- ((3) 0 () 0 () () (c values c (c 0 c 1)))
+ ((3) 0 () 0 () () (q values (0 1)))
  #""
  #"")
 ((call-with-transaction
@@ -103,9 +103,8 @@
   0
   ()
   ()
-  (c
+  (q
    exn
-   c
    "in-query: query returned wrong number of columns\n  statement: \"select * from the_numbers\"\n  expected: 1\n  got: 2"))
  #""
  #"")
@@ -134,13 +133,9 @@
    values
    c
    (0
-    (c
-     (c (c name . "type"))
-     c
-     (c
-      (c name . "grouped")
-      c
-      (c grouped c (c (c name . "maker")) c (c (c name . "model")))))
+    (q
+     ((name . "type"))
+     ((name . "grouped") (grouped ((name . "maker")) ((name . "model")))))
     (c
      (v!
       "car"
@@ -161,14 +156,14 @@
     .
     deserialize-info:rows-result-v0))
   1
-  ((c name . "grouped"))
+  ((q name . "grouped"))
   ()
   (c
    values
    c
    (0
     (c
-     (c (c name . "type"))
+     (q (name . "type"))
      c
      (c
       (? . 0)
@@ -176,15 +171,13 @@
       (c
        grouped
        c
-       (c (c name . "maker"))
+       (q (name . "maker"))
        c
-       (c (? . 0) c (c grouped c (c (c name . "model")))))))
+       (c (? . 0) q (grouped ((name . "model")))))))
     (c
-     (v!
-      "car"
-      (c (v! "honda" (c "civic")) c (v! "ford" (c "focus" c "pinto"))))
+     (v! "car" (c (v! "honda" (q "civic")) c (v! "ford" (q "focus" "pinto"))))
      c
-     (v! "bike" (c (v! "giant" (c "boulder")) c (v! "schwinn" ())))))))
+     (v! "bike" (c (v! "giant" (q "boulder")) c (v! "schwinn" ())))))))
  #""
  #"")
 ((rows->dict vehicles-result #:key "model" #:value '#("type" "maker"))
@@ -227,9 +220,9 @@
    (h
     -
     (equal)
-    ("ford" c "focus" c "pinto")
-    ("honda" c "civic")
-    ("giant" c "boulder")
+    ("ford" q "focus" "pinto")
+    ("honda" q "civic")
+    ("giant" q "boulder")
     ("schwinn"))))
  #""
  #"")
@@ -250,8 +243,8 @@
  ((3) 0 () 0 () () (c values c (void)))
  #""
  #"")
-((query-list pgc pst 3) ((3) 0 () 0 () () (c values c (c 0 c 1 c 2))) #"" #"")
-((query-list pgc pst 3) ((3) 0 () 0 () () (c values c (c 0 c 1 c 2))) #"" #"")
+((query-list pgc pst 3) ((3) 0 () 0 () () (q values (0 1 2))) #"" #"")
+((query-list pgc pst 3) ((3) 0 () 0 () () (q values (0 1 2))) #"" #"")
 ((with-handlers
   ((exn:fail:sql? exn:fail:sql-info))
   (query pgc "select * from nosuchtable"))

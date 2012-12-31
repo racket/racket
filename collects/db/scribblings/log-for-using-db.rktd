@@ -35,7 +35,7 @@
   0
   ()
   ()
-  (c values c (0 (c (c command u . "INSERT 0 1")))))
+  (c values c (0 (q (insert-id . #f) (affected-rows . 1)))))
  #""
  #"")
 ((query pgc "select n, d from the_numbers where n % 2 = 0")
@@ -52,23 +52,9 @@
    c
    (0
     (c
-     (c
-      (c name u . "n")
-      c
-      (c typeid . 23)
-      c
-      (c type-size . 4)
-      c
-      (c type-mod . -1))
+     (c (c name u . "n") q (typeid . 23) (type-size . 4) (type-mod . -1))
      c
-     (c
-      (c name u . "d")
-      c
-      (c typeid . 1043)
-      c
-      (c type-size . -1)
-      c
-      (c type-mod . 24)))
+     (c (c name u . "d") q (typeid . 1043) (type-size . -1) (type-mod . 24)))
     (c (v! 0 (u . "nothing")) c (v! 2 (u . "company"))))))
  #""
  #"")
@@ -107,7 +93,7 @@
  #""
  #"")
 ((query-value pgc "select count(*) from the_numbers")
- ((3) 0 () 0 () () (c values c 4))
+ ((3) 0 () 0 () () (q values 4))
  #""
  #"")
 ((query-value pgc "select d from the_numbers where n = 5")
@@ -117,14 +103,13 @@
   0
   ()
   ()
-  (c
+  (q
    exn
-   c
    "query-value: query returned wrong number of rows\n  statement: \"select d from the_numbers where n = 5\"\n  expected: 1\n  got: 0"))
  #""
  #"")
 ((query-maybe-value pgc "select d from the_numbers where n = 5")
- ((3) 0 () 0 () () (c values c #f))
+ ((3) 0 () 0 () () (q values #f))
  #""
  #"")
 ((for
@@ -137,7 +122,7 @@
   ((sum 0))
   ((n (in-query pgc "select n from the_numbers")))
   (+ sum n))
- ((3) 0 () 0 () () (c values c 6))
+ ((3) 0 () 0 () () (q values 6))
  #""
  #"")
 ((begin
@@ -153,7 +138,7 @@
  #""
  #"")
 ((query-list pgc "select n from the_numbers where n > $1 and n < $2" 0 3)
- ((3) 0 () 0 () () (c values c (c 1 c 2)))
+ ((3) 0 () 0 () () (q values (1 2)))
  #""
  #"")
 ((define get-less-than-pst
@@ -162,11 +147,11 @@
  #""
  #"")
 ((query-list pgc get-less-than-pst 1)
- ((3) 0 () 0 () () (c values c (c 0)))
+ ((3) 0 () 0 () () (q values (0)))
  #""
  #"")
 ((query-list pgc (bind-prepared-statement get-less-than-pst '(2)))
- ((3) 0 () 0 () () (c values c (c 0 c 1)))
+ ((3) 0 () 0 () () (q values (0 1)))
  #""
  #"")
 ((void) ((3) 0 () 0 () () (c values c (void))) #"" #"")
