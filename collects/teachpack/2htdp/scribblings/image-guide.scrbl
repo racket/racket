@@ -3,6 +3,7 @@
 @(require (for-label 2htdp/image
                      (except-in lang/htdp-beginner posn make-posn posn? posn-x posn-y image?)
                      lang/posn
+                     (only-in racket/base foldl)
                      (except-in racket/gui/base make-color make-pen))
           "shared.rkt"
           "img-eval.rkt"
@@ -38,7 +39,7 @@ images.
 
 @section{Overlaying, Above, and Beside: A House}
 
-To build a simple-looking house, we can simply place a triangle above 
+To build a simple-looking house, we can place a triangle above 
 a rectangle.
 
 @image-interaction[(above (triangle 40 "solid" "red")
@@ -86,6 +87,114 @@ door.
 (define door-with-knob
   (overlay/align "right" "center" (circle 3 "solid" "yellow") door))
 (overlay/align "center" "bottom" door-with-knob victorian)]
+
+@section{Rotating and Overlaying: A Rotary Phone Dial}
+
+A rotary phone dial can be built by from a black disk and 10 little white ones
+by placing the white disks, one at a time, at the top of the black disk and
+then rotating the entire black disk. To get started, lets define a function
+to make little white disks with numbers on them:
+
+@image-interaction[(define (a-number digit)
+                     (overlay
+                      (text (number->string digit) 12 "black")
+                      (circle 10 "solid" "white")))]
+
+We'll use @racket[place-and-turn] to put the numbers onto the disk:
+
+@image-interaction[(define (place-and-turn digit dial)
+                     (rotate 30
+                             (overlay/align "center" "top" 
+                                            (a-number digit)
+                                            dial)))]
+
+For example:
+
+@image-interaction[(place-and-turn
+                    0
+                    (circle 60 "solid" "black"))]
+
+@image-interaction[(place-and-turn
+                    8
+                    (place-and-turn
+                     9
+                     (place-and-turn
+                      0
+                      (circle 60 "solid" "black"))))]
+
+We can write a single function to put all of the numbers together into the dial:
+
+@image-interaction[(define (place-all-numbers dial)
+                     (place-and-turn
+                      1
+                      (place-and-turn
+                       2
+                       (place-and-turn
+                        3
+                        (place-and-turn
+                         4
+                         (place-and-turn
+                          5
+                          (place-and-turn
+                           6
+                           (place-and-turn
+                            7
+                            (place-and-turn
+                             8
+                             (place-and-turn
+                              9
+                              (place-and-turn
+                               0
+                               dial)))))))))))
+                                              
+                   (place-all-numbers (circle 60 "solid" "black"))]
+
+That definition is long and tedious to write. We can shorten it using
+@racket[foldl]:
+
+@image-interaction[(define (place-all-numbers dial)
+                     (foldl place-and-turn
+                            dial
+                            '(0 9 8 7 6 5 4 3 2 1)))
+                                              
+                   (place-all-numbers (circle 60 "solid" "black"))]
+
+To finish off the dial, we need to rotate it a little bit to its natural
+position and put a white disk in the center of it. Here's the inner dial:
+
+@image-interaction[(define inner-dial
+                     (overlay
+                      (text "555-1234" 9 "black")
+                      (circle 30 "solid" "white")))]
+
+and here's a function to build the entire rotary dial, with an argument
+that scales the dial:
+
+@image-interaction[(define (rotary-dial f)
+                     (scale
+                      f
+                      (overlay 
+                       inner-dial
+                       (rotate
+                        -90
+                        (place-all-numbers (circle 60 "solid" "black"))))))
+                   (rotary-dial 2)]
+
+Looking at the image, it feels like the numbers are too close to the edge of
+the dial. So we can adjust the @racket[place-and-turn] function to put a little
+black rectangle on top of each number. The rectangle is invisible because it
+ends up on top of the black dial, but it does serve to push the digits down
+a little.
+
+@image-interaction[(define (place-and-turn digit dial)
+                     (rotate 30
+                             (overlay/align "center" "top" 
+                                            (above 
+                                             (rectangle 1 5 "solid" "black")
+                                             (a-number digit))
+                                            dial)))
+                   
+                   (rotary-dial 2)]
 
 @section{Recursive Image Functions}
 
