@@ -40,6 +40,7 @@
  matrix-inf-norm
  matrix-norm
  matrix-dot
+ matrix-cos-angle
  matrix-angle
  matrix-normalize
  ;; Simple operators
@@ -240,10 +241,15 @@
        (λ: ([js : Indexes])
          (* (aproc js) (conjugate (bproc js))))))]))
 
+(: matrix-cos-angle (case-> ((Matrix Real) (Matrix Real) -> Real)
+                            ((Matrix Number) (Matrix Number) -> Number)))
+(define (matrix-cos-angle M N)
+  (/ (matrix-dot M N) (* (matrix-2norm M) (matrix-2norm N))))
+
 (: matrix-angle (case-> ((Matrix Real) (Matrix Real) -> Real)
                         ((Matrix Number) (Matrix Number) -> Number)))
 (define (matrix-angle M N)
-  (acos (/ (matrix-dot M N) (* (matrix-2norm M) (matrix-2norm N)))))
+  (acos (matrix-cos-angle M N)))
 
 (: matrix-normalize
    (All (A) (case-> ((Matrix Real)             -> (Matrix Real))
@@ -361,7 +367,7 @@
      (matrix-map-cols (make-matrix-normalize p) M fail)]))
 
 ;; ===================================================================================================
-;; Robust predicates using entrywise norms
+;; Approximate predicates using entrywise norms
 
 (: matrix-zero? (case-> ((Matrix Number) -> Boolean)
                         ((Matrix Number) Real -> Boolean)))
@@ -369,26 +375,26 @@
   (cond [(negative? eps)  (raise-argument-error 'matrix-zero? "Nonnegative-Real" 1 M eps)]
         [else  (<= (matrix-norm M +inf.0) eps)]))
 
-(: rows-orthogonal? ((Matrix Number) Nonnegative-Real -> Boolean))
-(define (rows-orthogonal? M eps)
-  (define rows (matrix->vector* M))
+(: pairwise-orthogonal? ((Listof (Matrix Number)) Nonnegative-Real -> Boolean))
+(define (pairwise-orthogonal? Ms eps)
+  (define rows (list->vector Ms))
   (define m (vector-length rows))
   (let/ec: return : Boolean
     (for*: ([i0  (in-range m)] [i1  (in-range (fx+ i0 1) m)])
       (define r0 (unsafe-vector-ref rows i0))
       (define r1 (unsafe-vector-ref rows i1))
-      (when ((sqrt (magnitude (vector-dot r0 r1))) . >= . eps) (return #f)))
+      (when ((magnitude (matrix-cos-angle r0 r1)) . >= . eps) (return #f)))
     #t))
 
 (: matrix-rows-orthogonal? (case-> ((Matrix Number) -> Boolean)
                                    ((Matrix Number) Real -> Boolean)))
 (define (matrix-rows-orthogonal? M [eps (* 10 epsilon.0)])
   (cond [(negative? eps)  (raise-argument-error 'matrix-rows-orthogonal? "Nonnegative-Real" 1 M eps)]
-        [else  (rows-orthogonal? M eps)]))
+        [else  (pairwise-orthogonal? (matrix-rows M) eps)]))
          
 
 (: matrix-cols-orthogonal? (case-> ((Matrix Number) -> Boolean)
                                    ((Matrix Number) Real -> Boolean)))
 (define (matrix-cols-orthogonal? M [eps (* 10 epsilon.0)])
   (cond [(negative? eps)  (raise-argument-error 'matrix-cols-orthogonal? "Nonnegative-Real" 1 M eps)]
-        [else  (rows-orthogonal? (matrix-transpose M) eps)]))
+        [else  (pairwise-orthogonal? (matrix-cols M) eps)]))

@@ -18,6 +18,7 @@
                     vandermonde-matrix)
          (except-in "private/matrix/matrix-basic.rkt"
                     matrix-dot
+                    matrix-cos-angle
                     matrix-angle
                     matrix-normalize
                     matrix-conjugate
@@ -70,6 +71,8 @@
  [matrix-dot
   (case-> ((Matrix Number) -> Nonnegative-Real)
           ((Matrix Number) (Matrix Number) -> Number))]
+ [matrix-cos-angle
+  ((Matrix Number) (Matrix Number) -> Number)]
  [matrix-angle
   ((Matrix Number) (Matrix Number) -> Number)]
  [matrix-normalize
