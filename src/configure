@@ -3938,6 +3938,13 @@ if test "${enable_shared}" = "yes" ; then
   LIBRACKET_DEP="${LIBRACKET_DEP} libmzgc.la"
 fi
 
+if test "${enable_foreign}" = "yes" ; then
+  check_for_mprotect=yes
+fi
+if test "${enable_jit}" = "yes" ; then
+  check_for_mprotect=yes
+fi
+
 ############## platform tests ################
 
 # for flags we don't want to use in config tests:
@@ -4047,6 +4054,7 @@ case "$host_os" in
     EXE_SUFFIX=".exe"
     COLLECTS_PATH="collects"
     skip_iconv_check=yes
+    check_for_mprotect=no
 
 cat >>confdefs.h <<\_ACEOF
 #define HAVE_STDINT_H 1
@@ -5529,6 +5537,72 @@ echo "${ECHO_T}$have_libffi" >&6; }
     OWN_LIBFFI="OFF"
   fi
  fi
+fi
+
+if test "${check_for_mprotect}" = "yes" ; then
+   msg="for mmap and mprotect"
+  { echo "$as_me:$LINENO: checking $msg" >&5
+echo $ECHO_N "checking $msg... $ECHO_C" >&6; }
+  if test "$cross_compiling" = yes; then
+  use_mprotect=no
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+  #include <sys/mman.h>
+    #include <fcntl.h>
+     int main() {
+      void *p;
+      p = mmap(0, 2 << 16, PROT_READ | PROT_WRITE, MAP_PRIVATE, open("/dev/zero", O_RDWR), 0);
+      mprotect(p, 2 << 16, PROT_READ | PROT_WRITE | PROT_EXEC);
+      return 0;
+     }
+_ACEOF
+rm -f conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  use_mprotect=yes
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+( exit $ac_status )
+use_mprotect=no
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+
+
+  { echo "$as_me:$LINENO: result: $use_mprotect" >&5
+echo "${ECHO_T}$use_mprotect" >&6; }
+  if test "${use_mprotect}" = "yes" ; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_MMAP_MPROTECT 1
+_ACEOF
+
+  fi
 fi
 
 if test "${enable_backtrace}" = "yes" ; then
