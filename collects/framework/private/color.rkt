@@ -328,6 +328,7 @@ added get-regions
          ;(define-values (_line2 _col2 pos-after) (port-next-location in))
          (cond
            [(eq? 'eof type) 
+            (set-lexer-state-up-to-date?! ls #t)
             (re-tokenize-move-to-next-ls start-time #t)]
            [else
             (unless (exact-nonnegative-integer? new-token-start)
@@ -371,6 +372,7 @@ added get-regions
                  (insert-last! (lexer-state-tokens ls)
                                (lexer-state-invalid-tokens ls))
                  (set-lexer-state-invalid-tokens-start! ls +inf.0)
+                 (set-lexer-state-up-to-date?! ls #t)
                  (re-tokenize-move-to-next-ls start-time #t)]
                 [else
                  (continue-re-tokenize start-time #t ls in in-start-pos new-lexer-mode)]))])]))
@@ -515,13 +517,6 @@ added get-regions
                                              lexer-states)])))
         (define finished? (re-tokenize-move-to-next-ls (current-inexact-milliseconds) #f))
         (c-log (format "coloring stopped ~a" (if finished? "because it finished" "with more to do")))
-        (let loop ([states lexer-states])
-          (unless (eq? re-tokenize-lses states)
-            (cond
-              [(null? states) (void)]
-              [else
-               (set-lexer-state-up-to-date?! (car states) #t)
-               (loop (cdr states))])))
         (when finished?
           (update-lexer-state-observers)
           (c-log "updated observers"))
