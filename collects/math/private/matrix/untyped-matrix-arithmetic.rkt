@@ -10,13 +10,16 @@
 (module syntax-defs racket/base
   (require (for-syntax racket/base)
            (only-in typed/racket/base λ: : inst Index)
-           math/array
            "matrix-types.rkt"
-           "utils.rkt")
+           "utils.rkt"
+           "../array/array-struct.rkt"
+           "../array/array-fold.rkt"
+           "../array/array-transform.rkt"
+           "../array/utils.rkt")
   
   (provide (all-defined-out))
   
-  ;(: matrix-multiply ((Array Number) (Array Number) -> (Array Number)))
+  ;(: matrix-multiply ((Matrix Number) (Matrix Number) -> (Matrix Number)))
   ;; This is a macro so the result can have as precise a type as possible
   (define-syntax-rule (inline-matrix-multiply arr-expr brr-expr)
     (let ([arr  arr-expr]
@@ -69,26 +72,31 @@
   
   (define-syntax-rule (inline-matrix+ arr0 arrs ...) (inline-matrix-map + arr0 arrs ...))
   (define-syntax-rule (inline-matrix- arr0 arrs ...) (inline-matrix-map - arr0 arrs ...))
-  (define-syntax-rule (inline-matrix-scale arr x) (inline-matrix-map (λ (y) (* x y)) arr))
+  (define-syntax-rule (inline-matrix-scale arr x-expr)
+    (let ([x x-expr])
+      (inline-matrix-map (λ (y) (* x y)) arr)))
   
   )  ; module
 
 (module untyped-defs typed/racket/base
-  (require math/array
-           (submod ".." syntax-defs)
-           "utils.rkt")
+  (require (submod ".." syntax-defs)
+           "matrix-types.rkt"
+           "utils.rkt"
+           "../array/array-struct.rkt"
+           "../array/utils.rkt")
   
   (provide matrix-map)
   
-  (: matrix-map (All (R A) (case-> ((A -> R) (Array A) -> (Array R))
-                                   ((A A A * -> R) (Array A) (Array A) (Array A) * -> (Array R)))))
+  (: matrix-map
+     (All (R A) (case-> ((A -> R) (Matrix A) -> (Matrix R))
+                        ((A A A * -> R) (Matrix A) (Matrix A) (Matrix A) * -> (Matrix R)))))
   (define matrix-map
     (case-lambda:
-      [([f : (A -> R)] [arr : (Array A)])
+      [([f : (A -> R)] [arr : (Matrix A)])
        (inline-matrix-map f arr)]
-      [([f : (A A -> R)] [arr0 : (Array A)] [arr1 : (Array A)])
+      [([f : (A A -> R)] [arr0 : (Matrix A)] [arr1 : (Matrix A)])
        (inline-matrix-map f arr0 arr1)]
-      [([f : (A A A * -> R)] [arr0 : (Array A)] [arr1 : (Array A)] . [arrs : (Array A) *])
+      [([f : (A A A * -> R)] [arr0 : (Matrix A)] [arr1 : (Matrix A)] . [arrs : (Matrix A) *])
        (define-values (m n) (apply matrix-shapes 'matrix-map arr0 arr1 arrs))
        (define g0 (unsafe-array-proc arr0))
        (define g1 (unsafe-array-proc arr1))

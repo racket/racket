@@ -1,7 +1,6 @@
 #lang typed/racket/base
 
-(require math/array
-         "matrix-types.rkt"
+(require "matrix-types.rkt"
          "matrix-syntax.rkt")
 
 (provide matrix-2d-rotation

@@ -4,14 +4,24 @@
          math/base
          math/flonum
          math/matrix
-         "../private/matrix/matrix-column.rkt"
          "test-utils.rkt")
 
+(define-syntax (check-matrix=? stx)
+  (syntax-case stx ()
+    [(_ a b)
+     (syntax/loc stx (check-true (matrix=? a b) (format "(matrix=? ~v ~v)" a b)))]
+    [(_ a b eps)
+     (syntax/loc stx (check-true (matrix=? a b eps) (format "(matrix=? ~v ~v ~v)" a b eps)))]))
+
 (: random-matrix (case-> (Integer Integer -> (Matrix Integer))
-                         (Integer Integer Integer -> (Matrix Integer))))
+                         (Integer Integer Integer -> (Matrix Integer))
+                         (Integer Integer Integer Integer -> (Matrix Integer))))
 ;; Generates a random matrix with Natural elements < k. Useful to test properties.
-(define (random-matrix m n [k 100])
-  (array-strict (build-array (vector m n) (λ (_) (random k)))))
+(define random-matrix
+  (case-lambda
+    [(m n)  (random-matrix m n 100)]
+    [(m n k)  (array-strict (build-matrix m n (λ (i j) (random-natural k))))]
+    [(m n k0 k1)  (array-strict (build-matrix m n (λ (i j) (random-integer k0 k1))))]))
 
 (define nonmatrices
   (list (make-array #() 0)
@@ -20,6 +30,16 @@
         (make-array #(0 1) 0)
         (make-array #(0 0) 0)
         (make-array #(1 1 1) 0)))
+
+(: matrix-l ((Matrix Number) -> (Matrix Number)))
+(define (matrix-l M)
+  (define-values (L U) (matrix-lu M))
+  L)
+
+(: matrix-q ((Matrix Number) -> (Matrix Number)))
+(define (matrix-q M)
+  (define-values (Q R) (matrix-qr M))
+  Q)
 
 ;; ===================================================================================================
 ;; Literal syntax
@@ -73,13 +93,6 @@
 (check-false (col-matrix? (array #[])))
 (for: ([a  (in-list nonmatrices)])
   (check-false (col-matrix? a)))
-
-(check-true (matrix-zero? (make-matrix 4 3 0)))
-(check-true (matrix-zero? (make-matrix 4 3 0.0)))
-(check-true (matrix-zero? (make-matrix 4 3 0+0.0i)))
-(check-false (matrix-zero? (row-matrix [0 0 0 0 1])))
-(for: ([a  (in-list nonmatrices)])
-  (check-exn exn:fail:contract? (λ () (matrix-zero? a))))
 
 ;; ===================================================================================================
 ;; Accessors
@@ -425,17 +438,9 @@
 ;; ===================================================================================================
 ;; Comprehensions
 
-;; for/matrix and friends are defined in terms of for/array and friends, so we only need to test that
-;; it works for one case each, and that they properly raise exceptions when given zero-length axes
-
-(check-equal?
- (for/matrix 2 2 ([i  (in-range 4)]) i)
- (matrix [[0 1] [2 3]]))
-
-#;; TR can't type this, but it's defined using exactly the same wrapper as `for/matrix'
-(check-equal?
- (for*/matrix 2 2 ([i  (in-range 2)] [j  (in-range 2)]) (+ i j))
- (matrix [[0 1] [1 2]]))
+;; for:/matrix and friends are defined in terms of for:/array and friends, so we only need to test
+;; that it works for one case each, and that they properly raise exceptions when given zero-length
+;; axes
 
 (check-equal?
  (for/matrix: 2 2 ([i  (in-range 4)]) i)
@@ -444,11 +449,6 @@
 (check-equal?
  (for*/matrix: 2 2 ([i  (in-range 2)] [j  (in-range 2)]) (+ i j))
  (matrix [[0 1] [1 2]]))
-
-(check-exn exn:fail:contract? (λ () (for/matrix 2 0 () 0)))
-(check-exn exn:fail:contract? (λ () (for/matrix 0 2 () 0)))
-(check-exn exn:fail:contract? (λ () (for*/matrix 2 0 () 0)))
-(check-exn exn:fail:contract? (λ () (for*/matrix 0 2 () 0)))
 
 (check-exn exn:fail:contract? (λ () (for/matrix: 2 0 () 0)))
 (check-exn exn:fail:contract? (λ () (for/matrix: 0 2 () 0)))
@@ -530,6 +530,10 @@
 
 (for: ([a  (in-list nonmatrices)])
   (check-exn exn:fail:contract? (λ () (matrix-cols a))))
+
+;; TODO: matrix-upper-triangle
+
+;; TODO: matrix-lower-triangle
 
 ;; ===================================================================================================
 ;; Embiggenment (it's a perfectly cromulent word)
@@ -626,6 +630,10 @@
   (check-exn exn:fail:contract? (λ () (matrix-dot a (matrix [[1]]))))
   (check-exn exn:fail:contract? (λ () (matrix-dot (matrix [[1]]) a))))
 
+;; TODO: matrix-angle
+
+;; TODO: matrix-normalize
+
 ;; ===================================================================================================
 ;; Simple operators
 
@@ -647,8 +655,8 @@
 
 ;; matrix-hermitian
 
-(let ([a  (array-make-rectangular (random-matrix 5 6)
-                                  (random-matrix 5 6))])
+(let ([a  (array-make-rectangular (random-matrix 5 6 -100 100)
+                                  (random-matrix 5 6 -100 100))])
   (check-equal? (matrix-hermitian a)
                 (matrix-conjugate (matrix-transpose a)))
   (check-equal? (matrix-hermitian a)
@@ -666,6 +674,86 @@
 (check-exn exn:fail:contract? (λ () (matrix-trace (col-matrix [1 2 3]))))
 (for: ([a  (in-list nonmatrices)])
   (check-exn exn:fail:contract? (λ () (matrix-trace a))))
+
+;; ===================================================================================================
+;; Row/column operators
+
+;; TODO: matrix-map-rows
+
+;; TODO: matrix-map-cols
+
+;; TODO: matrix-normalize-rows
+
+;; TODO: matrix-normalize-cols
+
+;; ===================================================================================================
+;; Operator norms
+
+;; TODO: matrix-op-1norm
+
+;; TODO: matrix-op-2norm (after it's implemented)
+
+;; TODO: matrix-op-inf-norm
+
+;; ===================================================================================================
+;; Error
+
+(for*: ([x  (in-list '(-inf.0 -10.0 -1.0 -0.1 -0.0 0.0 0.1 1.0 10.0 +inf.0 +nan.0))]
+        [y  (in-list '(-inf.0 -10.0 -1.0 -0.1 -0.0 0.0 0.1 1.0 10.0 +inf.0 +nan.0))])
+  (check-eqv? (fl (matrix-absolute-error (row-matrix [x])
+                                         (row-matrix [y])))
+              (fl (absolute-error x y))
+              (format "x = ~v  y = ~v" x y))
+  (check-eqv? (fl (matrix-relative-error (row-matrix [x])
+                                         (row-matrix [y])))
+              (fl (relative-error x y))
+              (format "x = ~v  y = ~v" x y)))
+
+(check-equal? (matrix-absolute-error (row-matrix [1 2])
+                                     (row-matrix [1 2]))
+              0)
+
+(check-equal? (matrix-absolute-error (row-matrix [1 2])
+                                     (row-matrix [2 2]))
+              1)
+
+(check-equal? (matrix-absolute-error (row-matrix [1 2])
+                                     (row-matrix [2 +nan.0]))
+              +inf.0)
+
+(check-equal? (matrix-relative-error (row-matrix [1 2])
+                                     (row-matrix [1 2]))
+              0)
+
+(check-equal? (matrix-relative-error (row-matrix [1 2])
+                                     (row-matrix [2 2]))
+              (/ 1 (matrix-op-inf-norm (row-matrix [2 2]))))
+
+(check-equal? (matrix-relative-error (row-matrix [1 2])
+                                     (row-matrix [2 +nan.0]))
+              +inf.0)
+
+;; TODO: matrix-basis-angle
+
+;; ===================================================================================================
+;; Approximate predicates
+
+;; matrix-zero? (TODO: approximations)
+
+(check-true (matrix-zero? (make-matrix 4 3 0)))
+(check-true (matrix-zero? (make-matrix 4 3 0.0)))
+(check-true (matrix-zero? (make-matrix 4 3 0+0.0i)))
+(check-false (matrix-zero? (row-matrix [0 0 0 0 1])))
+(for: ([a  (in-list nonmatrices)])
+  (check-exn exn:fail:contract? (λ () (matrix-zero? a))))
+
+;; TODO: matrix-rows-orthogonal?
+
+;; TODO: matrix-cols-orthogonal?
+
+;; TODO: matrix-identity?
+
+;; TODO: matrix-orthonormal?
 
 ;; ===================================================================================================
 ;; Gaussian elimination
@@ -743,7 +831,7 @@
               5280)
 
 (for: ([_  (in-range 100)])
-  (define a (array- (random-matrix 3 3 7) (array 3)))
+  (define a (random-matrix 3 3 -3 4))
   (check-equal? (matrix-determinant/row-reduction a)
                 (matrix-determinant a)))
 
@@ -756,8 +844,8 @@
 ;; Solving linear systems
 
 (for: ([_  (in-range 100)])
-  (define M (array- (random-matrix 3 3 7) (array 3)))
-  (define B (array- (random-matrix 3 (+ 1 (random 10)) 7) (array 3)))
+  (define M (random-matrix 3 3 -3 4))
+  (define B (random-matrix 3 (+ 1 (random 10)) -3 4))
   (cond [(matrix-invertible? M)
          (define X (matrix-solve M B))
          (check-equal? (matrix* M X) B (format "M = ~a  B = ~a" M B))]
@@ -779,7 +867,7 @@
 ;; Inversion
 
 (for: ([_  (in-range 100)])
-  (define a (array- (random-matrix 3 3 7) (array 3)))
+  (define a (random-matrix 3 3 -3 4))
   (cond [(matrix-invertible? a)
          (check-equal? (matrix* a (matrix-inverse a))
                        (identity-matrix 3)
@@ -815,11 +903,6 @@
                            [0  0  0 -13]]))
   (check-equal? (matrix* L V) M))
 
-(: matrix-l ((Matrix Number) -> Any))
-(define (matrix-l M)
-  (define-values (L U) (matrix-lu M))
-  L)
-
 (check-exn exn:fail? (λ () (matrix-l (matrix [[1 1 0 2]
                                               [0 2 0 1]
                                               [1 0 0 0]
@@ -830,15 +913,57 @@
 (for: ([a  (in-list nonmatrices)])
   (check-exn exn:fail:contract? (λ () (matrix-l a))))
 
+;; ===================================================================================================
+;; Gram-Schmidt
+
+(check-equal? (matrix-gram-schmidt (matrix [[3 2] [1 2]]))
+              (matrix [[3 -2/5] [1 6/5]]))
+
+(check-equal? (matrix-gram-schmidt (matrix [[3 2] [1 2]]) #t)
+              (matrix-scale (matrix [[3 -1] [1 3]]) (sqrt 1/10)))
+
+(check-equal? (matrix-gram-schmidt (matrix [[12 -51   4]
+                                            [ 6 167 -68]
+                                            [-4  24 -41]])
+                                   #t)
+              (matrix [[ 6/7 -69/175 -58/175]
+                       [ 3/7 158/175   6/175]
+                       [-2/7   6/35  -33/35 ]]))
+
+(check-equal? (matrix-gram-schmidt (matrix [[12 -51   4]
+                                            [ 6 167 -68]
+                                            [-4  24 -41]])
+                                   #t)
+              (matrix [[ 6/7 -69/175 -58/175]
+                       [ 3/7 158/175   6/175]
+                       [-2/7   6/35  -33/35 ]]))
+
+(check-equal? (matrix-gram-schmidt (matrix [[12 -51]
+                                            [ 6 167]
+                                            [-4  24]])
+                                   #t)
+              (matrix [[ 6/7  -69/175]
+                       [ 3/7  158/175]
+                       [-2/7    6/35 ]]))
+
+(check-equal? (matrix-gram-schmidt (col-matrix [12 6 -4]) #t)
+              (col-matrix [6/7 3/7 -2/7]))
+
+(check-equal? (matrix-gram-schmidt (col-matrix [12 6 -4]) #f)
+              (col-matrix [12 6 -4]))
+
+;; ===================================================================================================
+;; QR decomposition
+
+(check-true (matrix-orthonormal? (matrix-q (index-array #(100 1)))))
+
 #|
 ;; ===================================================================================================
 ;; Tests not yet converted to rackunit
 
-(matrix-gram-schmidt
-           (matrix [[2 1 2]
-                    [2 2 3]
-                    [5 1 5]])
-            #t)
+;; A particularly tricky one used to demonstrate loss of orthogonality
+(matrix-qr (matrix [[0.70000 0.70711]
+                    [0.70001 0.70711]]))
 
 (begin
   
