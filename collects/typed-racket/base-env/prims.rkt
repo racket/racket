@@ -416,13 +416,29 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
 (define-syntax (let: stx)
   (syntax-parse stx #:literals (:)
-    [(let: nm:id ~! : ret-ty (bs:annotated-binding ...) . body)
+    [(let: nm:id ~! ; named let:
+           (~and (~seq rest ...)
+                 (~seq (~optional (~seq : ret-ty))
+                       (bs:optionally-annotated-binding ...) body ...)))
      (quasisyntax/loc stx
-       (#,(quasisyntax/loc stx
-            (letrec: ([nm : (bs.ty ... -> ret-ty)
-                          #,(quasisyntax/loc stx
-                              (lambda (bs.ann-name ...) . #,(syntax/loc stx body)))])
-                     #,(quasisyntax/loc stx nm)))
+       (#,(syntax-parse #'(rest ...)
+            #:literals (:)
+            [(: ret-ty (bs:annotated-binding ...) . body)
+             (quasisyntax/loc stx
+               (letrec: ([nm : (bs.ty ... -> ret-ty)
+                             #,(quasisyntax/loc stx
+                                 (lambda (bs.ann-name ...) . #,(syntax/loc stx body)))])
+                        #,(quasisyntax/loc stx nm)))]
+            [(: ret-ty (bs:optionally-annotated-binding ...) . body)
+             (quasisyntax/loc stx
+               (letrec ([nm #,(quasisyntax/loc stx
+                                (lambda (bs.ann-name ...) . (ann #,(syntax/loc stx body) ret-ty)))])
+                 #,(quasisyntax/loc stx nm)))]
+            [((bs:optionally-annotated-binding ...) . body)
+             (quasisyntax/loc stx
+               (letrec ([nm #,(quasisyntax/loc stx
+                                (lambda (bs.ann-name ...) . #,(syntax/loc stx body)))])
+                 #,(quasisyntax/loc stx nm)))])
         bs.rhs ...))]
     [(let: . rest)
      (syntax/loc stx (let-internal: . rest))]))
