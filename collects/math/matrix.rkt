@@ -36,16 +36,19 @@
          )
 
 (require/untyped-contract
- (begin (require "private/matrix/matrix-types.rkt"))
+ (begin (require "private/matrix/matrix-types.rkt"
+                 "private/matrix/matrix-gauss-elim.rkt"))
  "private/matrix/matrix-gauss-elim.rkt"
  [matrix-gauss-elim
-  (case-> ((Matrix Number)         -> (Values (Matrix Number) (Listof Index)))
-          ((Matrix Number) Any     -> (Values (Matrix Number) (Listof Index)))
-          ((Matrix Number) Any Any -> (Values (Matrix Number) (Listof Index))))]
+  (case-> ((Matrix Number) -> (Values (Matrix Number) (Listof Index)))
+          ((Matrix Number) Any -> (Values (Matrix Number) (Listof Index)))
+          ((Matrix Number) Any Any -> (Values (Matrix Number) (Listof Index)))
+          ((Matrix Number) Any Any Pivoting -> (Values (Matrix Number) (Listof Index))))]
  [matrix-row-echelon
-  (case-> ((Matrix Number)         -> (Matrix Number))
-          ((Matrix Number) Any     -> (Matrix Number))
-          ((Matrix Number) Any Any -> (Matrix Number)))])
+  (case-> ((Matrix Number) -> (Matrix Number))
+          ((Matrix Number) Any -> (Matrix Number))
+          ((Matrix Number) Any Any -> (Matrix Number))
+          ((Matrix Number) Any Any Pivoting -> (Matrix Number)))])
 
 (require/untyped-contract
  (begin (require "private/matrix/matrix-types.rkt"))

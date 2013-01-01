@@ -83,6 +83,21 @@
                  [else  (loop (fx+ l 1) p pivot mag-pivot)])]
           [else  (values p pivot)])))
 
+(: find-first-pivot
+   (case-> ((Vectorof (Vectorof Real)) Index Index Index -> (Values Index Real))
+           ((Vectorof (Vectorof Number)) Index Index Index -> (Values Index Number))))
+;; Find the first nonzero element in a column
+(define (find-first-pivot rows m i j)
+  (define pivot (unsafe-vector2d-ref rows i j))
+  (if ((magnitude pivot) . > . 0)
+      (values i pivot)
+      (let loop ([#{l : Nonnegative-Fixnum} (fx+ i 1)])
+        (cond [(l . fx< . m)
+               (define pivot (unsafe-vector2d-ref rows l j))
+               (if ((magnitude pivot) . > . 0) (values l pivot) (loop (fx+ l 1)))]
+              [else
+               (values i pivot)]))))
+
 (: elim-rows!
    (case-> ((Vectorof (Vectorof Real)) Index Index Index Real Nonnegative-Fixnum -> Void)
            ((Vectorof (Vectorof Number)) Index Index Index Number Nonnegative-Fixnum -> Void)))

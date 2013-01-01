@@ -9,17 +9,22 @@
          "../vector/vector-mutate.rkt")
 
 (provide
+ Pivoting
  matrix-gauss-elim
  matrix-row-echelon)
 
+(define-type Pivoting (U 'first 'partial))
+
 (: matrix-gauss-elim
-   (case-> ((Matrix Real)         -> (Values (Matrix Real) (Listof Index)))
-           ((Matrix Real) Any     -> (Values (Matrix Real) (Listof Index)))
+   (case-> ((Matrix Real) -> (Values (Matrix Real) (Listof Index)))
+           ((Matrix Real) Any -> (Values (Matrix Real) (Listof Index)))
            ((Matrix Real) Any Any -> (Values (Matrix Real) (Listof Index)))
-           ((Matrix Number)         -> (Values (Matrix Number) (Listof Index)))
-           ((Matrix Number) Any     -> (Values (Matrix Number) (Listof Index)))
-           ((Matrix Number) Any Any -> (Values (Matrix Number) (Listof Index)))))
-(define (matrix-gauss-elim M [jordan? #f] [unitize-pivot? #f])
+           ((Matrix Real) Any Any Pivoting -> (Values (Matrix Real) (Listof Index)))
+           ((Matrix Number) -> (Values (Matrix Number) (Listof Index)))
+           ((Matrix Number) Any -> (Values (Matrix Number) (Listof Index)))
+           ((Matrix Number) Any Any -> (Values (Matrix Number) (Listof Index)))
+           ((Matrix Number) Any Any Pivoting -> (Values (Matrix Number) (Listof Index)))))
+(define (matrix-gauss-elim M [jordan? #f] [unitize-pivot? #f] [pivoting 'partial])
   (define-values (m n) (matrix-shape M))
   (define rows (matrix->vector* M))
   (let loop ([#{i : Nonnegative-Fixnum} 0]
@@ -36,7 +41,10 @@
                  (cond [(j . fx< . n)  (loop (fx+ j 1) (cons j without-pivot))]
                        [else  (reverse without-pivot)])))]
       [else
-       (define-values (p pivot) (find-partial-pivot rows m i j))
+       (define-values (p pivot)
+         (case pivoting
+           [(partial)  (find-partial-pivot rows m i j)]
+           [(first)    (find-first-pivot rows m i j)]))
        (cond
          [(zero? pivot)  (loop i (fx+ j 1) (cons j without-pivot))]
          [else
@@ -51,12 +59,14 @@
             (loop (fx+ i 1) (fx+ j 1) without-pivot))])])))
 
 (: matrix-row-echelon
-   (case-> ((Matrix Real)         -> (Matrix Real))
-           ((Matrix Real) Any     -> (Matrix Real))
+   (case-> ((Matrix Real) -> (Matrix Real))
+           ((Matrix Real) Any -> (Matrix Real))
            ((Matrix Real) Any Any -> (Matrix Real))
-           ((Matrix Number)         -> (Matrix Number))
-           ((Matrix Number) Any     -> (Matrix Number))
-           ((Matrix Number) Any Any -> (Matrix Number))))
-(define (matrix-row-echelon M [jordan? #f] [unitize-pivot? jordan?])
-  (let-values ([(M _) (matrix-gauss-elim M jordan? unitize-pivot?)])
+           ((Matrix Real) Any Any Pivoting -> (Matrix Real))
+           ((Matrix Number) -> (Matrix Number))
+           ((Matrix Number) Any -> (Matrix Number))
+           ((Matrix Number) Any Any -> (Matrix Number))
+           ((Matrix Number) Any Any Pivoting -> (Matrix Number))))
+(define (matrix-row-echelon M [jordan? #f] [unitize-pivot? #f] [pivoting 'partial])
+  (let-values ([(M _) (matrix-gauss-elim M jordan? unitize-pivot? pivoting)])
     M))
