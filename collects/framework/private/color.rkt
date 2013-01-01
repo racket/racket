@@ -1000,22 +1000,26 @@ added get-regions
     (define/private (find-next-close-paren pos closers [adj? #t])
       (define next-pos (skip-whitespace pos 'forward #t))
       (define ls (find-ls next-pos))
-      (define ls-start (lexer-state-start-pos ls))
-      (define tree (lexer-state-tokens ls))
-      (send tree search! (- next-pos ls-start))
-      (define start-pos (+ ls-start (send tree get-root-start-position)))
-      (define end-pos (+ ls-start (send tree get-root-end-position))) 
-
-      #;(printf "~a |~a| |~a|~n" (list pos next-pos start-pos end-pos (send tree get-root-data)) closers (get-text start-pos end-pos))
-
       (cond
-        [(or (not (send tree get-root-data)) (<= end-pos pos))
-         (values #f #f #f #f)]    ;; didn't find /any/ token ending after pos
-        [(and (<= pos start-pos)
-              (member (get-text start-pos end-pos) closers)) ; token at start-pos matches
-         (values start-pos end-pos (get-text start-pos end-pos) adj?)]
-        [else   ; skip ahead
-         (find-next-close-paren end-pos closers #f)]))
+        [ls
+         (define ls-start (lexer-state-start-pos ls))
+         (define tree (lexer-state-tokens ls))
+         (send tree search! (- next-pos ls-start))
+         (define start-pos (+ ls-start (send tree get-root-start-position)))
+         (define end-pos (+ ls-start (send tree get-root-end-position))) 
+         
+         #;(printf "~a |~a| |~a|~n" (list pos next-pos start-pos end-pos (send tree get-root-data)) closers (get-text start-pos end-pos))
+         
+         (cond
+           [(or (not (send tree get-root-data)) (<= end-pos pos))
+            (values #f #f #f #f)]    ;; didn't find /any/ token ending after pos
+           [(and (<= pos start-pos)
+                 (member (get-text start-pos end-pos) closers)) ; token at start-pos matches
+            (values start-pos end-pos (get-text start-pos end-pos) adj?)]
+           [else   ; skip ahead
+            (find-next-close-paren end-pos closers #f)])]
+        [else
+         (values #f #f #f #f)]))
 
 
     ;; given end-pos, a position right after a closing parens,
