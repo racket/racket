@@ -200,6 +200,21 @@ imply a change in the @tech{checksum}.
 
 @section{Using Packages}
 
+Modules installed using the Racket package manager
+may be @tech{require}d like any other
+modules. For instance, if the package @pkgname{tic-tac-toe} contains
+the module file  @filepath{data/matrix.rkt}, then package users
+who have this package installed may evaluate
+
+@racketblock[(require data/matrix)]
+
+...to require this module.
+
+@; ----------------------------------------
+
+@section{Managing Packages}
+
+
 The Racket package manager has two user interfaces: a command line @exec{raco}
 sub-command and a library. They have the exact same capabilities, as
 the command line interface invokes the library functions and
