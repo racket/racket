@@ -404,9 +404,14 @@
 				  (set! reported-activate on?)
 				  (on-activate on?)))))))
 
+    (define treat-focus-out-as-menu-click? #f)
+    (define/public (treat-focus-out-as-menu-click)
+      (set! treat-focus-out-as-menu-click? #t))
+
     (define focus-here? #f)
     (define/override (on-focus? on?)
-      (unless on? (on-menu-click))
+      (when (and (not on?) treat-focus-out-as-menu-click?)
+        (on-menu-click))
       (on-focus-child on?)
       (cond
        [on?

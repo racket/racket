@@ -72,6 +72,7 @@ Normally called when the user clicks on the menu bar containing the
  item (before the user sees any menu items), just before the popup
  menu containing the item is popped up, or just before inspecting the
  menu bar containing the item for a shortcut key binding.
+ See @xmethod[menu-item-container<%> on-demand] for further details.
 
 A @xmethod[menu-item-container<%> on-demand] method can be overridden
 in such a way that the container does not call the
