@@ -40,12 +40,12 @@
 (define (vector-scale! vs v)
   (vector-generic-scale! vs v *))
 
-(define-syntax-rule (vector-generic-scaled-add! vs0-expr vs1-expr v-expr + *)
+(define-syntax-rule (vector-generic-scaled-add! vs0-expr vs1-expr v-expr start-expr + *)
   (let* ([vs0  vs0-expr]
          [vs1  vs1-expr]
          [v    v-expr]
-         [n    (min (vector-length vs0) (vector-length vs1))])
-    (let loop ([#{i : Nonnegative-Fixnum} 0])
+         [n    (fxmin (vector-length vs0) (vector-length vs1))])
+    (let loop ([#{i : Nonnegative-Fixnum} (fxmin start-expr n)])
       (if (i . fx< . n)
           (begin (unsafe-vector-set! vs0 i (+ (unsafe-vector-ref vs0 i)
                                               (* (unsafe-vector-ref vs1 i) v)))
@@ -53,9 +53,11 @@
           (void)))))
 
 (: vector-scaled-add! (case-> ((Vectorof Real) (Vectorof Real) Real -> Void)
-                              ((Vectorof Number) (Vectorof Number) Number -> Void)))
-(define (vector-scaled-add! vs0 vs1 s)
-  (vector-generic-scaled-add! vs0 vs1 s + *))
+                              ((Vectorof Real) (Vectorof Real) Real Index -> Void)
+                              ((Vectorof Number) (Vectorof Number) Number -> Void)
+                              ((Vectorof Number) (Vectorof Number) Number Index -> Void)))
+(define (vector-scaled-add! vs0 vs1 s [start 0])
+  (vector-generic-scaled-add! vs0 vs1 s start + *))
 
 (: vector-mag^2 (case-> ((Vectorof Real) -> Nonnegative-Real)
                         ((Vectorof Number) -> Nonnegative-Real)))
