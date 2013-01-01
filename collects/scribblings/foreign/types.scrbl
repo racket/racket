@@ -863,19 +863,19 @@ A @tech{custom function type} like @racket[_list], except that it uses
 Racket vectors instead of lists.}
 
 
-@defform*[#:literals (o)
-          [(_bytes o len-expr)
-           _bytes]]{
+@defform*[#:id _bytes
+          #:literals (o)
+          [_bytes
+           (_bytes o len-expr)]]{
 
 A @tech{custom function type} that can be used by itself as a simple
 type for a byte string as a C pointer.  Alternatively, the second form
 is for a pointer return value, where the size should be explicitly
 specified.
 
-There is no need for other modes: input or input/output would be just
-like @racket[_bytes], since the string carries its size information
-(there is no real need for the @racket[o] part of the syntax, but it
-is present for consistency with the above macros).}
+There is no need for other modes analogous to those of @racket[_ptr]:
+input or input/output would be just like @racket[_bytes], since the
+string carries its size information.}
 
 
 @; ------------------------------------------------------------
