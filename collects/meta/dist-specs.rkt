@@ -753,12 +753,19 @@ platform
          x86_64-win32      => "Windows x64"
          ;; generic platforms for source distributions
          unix => "Unix"
-         mac  => "Macintosh"
+         mac  => "Mac OS X"
          win  => "Windows")
 
 readme-header
-:= "This is the Racket v"(version)" "(cond src  => "source" else => "binary")
+:= "This is the Racket v"(version)(cond src  => " source" unix => " binary")
    " package for "platform".\n"
-   (cond src => "See the build instructions in src/README.\n")
+   (cond src => "\n"
+                "See the build instructions in \"src/README\".\n"
+         mac => "\n"
+                "Install by dragging the enclosing Racket folder to your Applications folder\n"
+                "--- or wherever you like. You can move the Racket folder at any time, but do not\n"
+                "move applications or other files within the folder. If you want to use the\n"
+                "Racket command-line programs, then (optionally) add the path of the \"bin\"\n"
+                "subdirectory to your PATH environment variable.\n")
 
 ;; ============================================================================

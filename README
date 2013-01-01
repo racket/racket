@@ -1,26 +1,27 @@
-The Racket programming language
+The Racket Programming Language
 ===============================
 
-Important executables:
+Instructions for building Racket from source are in src/README.
+
+The main executables in this package:
 
 * DrRacket: Racket's integrated development environment (start here!).
 
-* Racket: the main command-line entry point for running racket programs
-  and scripts.
+* racket: command-line tool for running Racket programs.
 
-* GRacket: the GUI-mode Racket executable.
-
-* raco: Racket's command-line toolset.
+* raco: command-line tool for compilation, documentation, and more.
 
 
 More Information
 ----------------
 
-Racket comes with extensive documentation: use DrRacket's `Help' menu,
-or run `raco docs'.  Also, visit us at http://racket-lang.org/ for more
-Racket resources.
+For Racket documentation, use DrRacket's `Help' menu, run the `Racket
+Documentation' application (Windows or Mac OS X), or run `raco docs'
+from a command line.
 
-Instructions for building Racket from source are in src/README.
+Visit us at
+   http://racket-lang.org/ 
+for more Racket resources.
 
 
 License
