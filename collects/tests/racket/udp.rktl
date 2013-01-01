@@ -188,7 +188,7 @@
     s)
   
   (define s (q))
-  (err/rt-test (q) exn:fail:network?)
+  (err/rt-test (q) exn:fail:network:errno?)
   (udp-close s))
 
 

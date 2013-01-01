@@ -115,6 +115,14 @@ Returns @racket[#t] if @racket[v] is an immutable @tech{string},
 @tech{byte string}, @tech{vector}, @tech{hash table}, or box,
 @racket[#f] otherwise.
 
+Note that @racket[immutable?] is not a general predicate for
+immutability (despite its name). It works only for a handful of
+datatypes for which a single predicate---@racket[string?],
+@racket[vector?], @|etc|---recognizes both mutable and immutable variants
+of the datatype. In particular, @racket[immutable?] produces
+@racket[#f] for a @tech{pair}, even though pairs are immutable, since
+@racket[pair?] implies immutability.
+
 @examples[
 (immutable? 'hello)
 (immutable? "a string")

@@ -3,7 +3,7 @@
 (require (for-syntax racket/base
                      syntax/parse)
          (only-in typed/racket/base :)
-         math/array)
+         "../array/array-struct.rkt")
 
 (provide matrix row-matrix col-matrix)
 

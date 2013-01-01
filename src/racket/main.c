@@ -292,7 +292,11 @@ START_XFORM_SKIP;
 
 #ifdef IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
 extern intptr_t _tls_index;
+# ifdef __MINGW32__
 static __thread void *tls_space;
+# else
+static __declspec(thread) void *tls_space;
+# endif
 #endif
 
 #ifdef DOS_FILE_SYSTEM

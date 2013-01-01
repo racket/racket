@@ -16,9 +16,7 @@
 
 (: mag^2 (Number -> Nonnegative-Real))
 (define (mag^2 x)
-  (define y (* x (conjugate x)))
-  (cond [(and (real? y) (y . >= . 0))  y]
-        [else  (error 'impossible)]))
+  (max 0 (real-part (* x (conjugate x)))))
 
 (: vector-swap! (All (A) ((Vectorof A) Integer Integer -> Void)))
 (define (vector-swap! vs i0 i1)

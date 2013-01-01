@@ -57,8 +57,14 @@ propeties (the latter in curly braces), strings are contracts/comments.
                  (non-char [] "unexpected non-character"))
            (filesystem [] "error manipulating a filesystem object"
                        (exists [] "attempt to create a file that exists already")
-                       (version [] "version mismatch loading an extension"))
-           (network [] "TCP and UDP errors")
+                       (version [] "version mismatch loading an extension")
+                       (errno [errno_field_check
+                               (errno "pair of symbol and number" "system error code")]
+                              "error with system error code"))
+           (network [] "TCP and UDP errors"
+                    (errno [errno_field_check
+                            (errno "pair of symbol and number" "system error code")]
+                            "error with system error code"))
            (out-of-memory [] "out of memory")
            (unsupported [] "unsupported feature")
            (user [] "for end users"))

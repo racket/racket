@@ -2,7 +2,7 @@
 
 (require (for-syntax racket/base
                      syntax/parse)
-         math/array)
+         "../array/array-comprehension.rkt")
 
 (provide for/matrix:
          for*/matrix:
@@ -12,7 +12,7 @@
 (module typed-defs typed/racket/base
   (require (for-syntax racket/base
                        syntax/parse)
-           math/array)
+           "../array/array-comprehension.rkt")
   
   (provide (all-defined-out))
   

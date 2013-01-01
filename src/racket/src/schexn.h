@@ -18,13 +18,15 @@ enum {
   MZEXN_FAIL_FILESYSTEM,
   MZEXN_FAIL_FILESYSTEM_EXISTS,
   MZEXN_FAIL_FILESYSTEM_VERSION,
+  MZEXN_FAIL_FILESYSTEM_ERRNO,
   MZEXN_FAIL_NETWORK,
+  MZEXN_FAIL_NETWORK_ERRNO,
   MZEXN_FAIL_OUT_OF_MEMORY,
   MZEXN_FAIL_UNSUPPORTED,
   MZEXN_FAIL_USER,
   MZEXN_BREAK,
-  MZEXN_BREAK_TERMINATE,
   MZEXN_BREAK_HANG_UP,
+  MZEXN_BREAK_TERMINATE,
   MZEXN_OTHER
 };
 #endif
@@ -51,13 +53,15 @@ static exn_rec exn_table[] = {
   { 2, NULL, NULL, 0, NULL, 1 },
   { 2, NULL, NULL, 0, NULL, 13 },
   { 2, NULL, NULL, 0, NULL, 13 },
+  { 3, NULL, NULL, 0, NULL, 13 },
   { 2, NULL, NULL, 0, NULL, 1 },
+  { 3, NULL, NULL, 0, NULL, 17 },
   { 2, NULL, NULL, 0, NULL, 1 },
   { 2, NULL, NULL, 0, NULL, 1 },
   { 2, NULL, NULL, 0, NULL, 1 },
   { 3, NULL, NULL, 0, NULL, 0 },
-  { 3, NULL, NULL, 0, NULL, 20 },
-  { 3, NULL, NULL, 0, NULL, 20 }
+  { 3, NULL, NULL, 0, NULL, 22 },
+  { 3, NULL, NULL, 0, NULL, 22 }
 };
 #else
 static exn_rec *exn_table;
@@ -85,13 +89,15 @@ static exn_rec *exn_table;
   exn_table[MZEXN_FAIL_FILESYSTEM].args = 2;
   exn_table[MZEXN_FAIL_FILESYSTEM_EXISTS].args = 2;
   exn_table[MZEXN_FAIL_FILESYSTEM_VERSION].args = 2;
+  exn_table[MZEXN_FAIL_FILESYSTEM_ERRNO].args = 3;
   exn_table[MZEXN_FAIL_NETWORK].args = 2;
+  exn_table[MZEXN_FAIL_NETWORK_ERRNO].args = 3;
   exn_table[MZEXN_FAIL_OUT_OF_MEMORY].args = 2;
   exn_table[MZEXN_FAIL_UNSUPPORTED].args = 2;
   exn_table[MZEXN_FAIL_USER].args = 2;
   exn_table[MZEXN_BREAK].args = 3;
-  exn_table[MZEXN_BREAK_TERMINATE].args = 3;
   exn_table[MZEXN_BREAK_HANG_UP].args = 3;
+  exn_table[MZEXN_BREAK_TERMINATE].args = 3;
 #endif
 
 #endif
@@ -101,6 +107,8 @@ static exn_rec *exn_table;
   static const char *MZEXN_FAIL_CONTRACT_VARIABLE_FIELDS[1] = { "id" };
   static const char *MZEXN_FAIL_SYNTAX_FIELDS[1] = { "exprs" };
   static const char *MZEXN_FAIL_READ_FIELDS[1] = { "srclocs" };
+  static const char *MZEXN_FAIL_FILESYSTEM_ERRNO_FIELDS[1] = { "errno" };
+  static const char *MZEXN_FAIL_NETWORK_ERRNO_FIELDS[1] = { "errno" };
   static const char *MZEXN_BREAK_FIELDS[1] = { "continuation" };
 #endif
 
@@ -126,11 +134,13 @@ static exn_rec *exn_table;
   SETUP_STRUCT(MZEXN_FAIL_FILESYSTEM, EXN_PARENT(MZEXN_FAIL), "exn:fail:filesystem", 0, NULL, scheme_null, NULL)
   SETUP_STRUCT(MZEXN_FAIL_FILESYSTEM_EXISTS, EXN_PARENT(MZEXN_FAIL_FILESYSTEM), "exn:fail:filesystem:exists", 0, NULL, scheme_null, NULL)
   SETUP_STRUCT(MZEXN_FAIL_FILESYSTEM_VERSION, EXN_PARENT(MZEXN_FAIL_FILESYSTEM), "exn:fail:filesystem:version", 0, NULL, scheme_null, NULL)
+  SETUP_STRUCT(MZEXN_FAIL_FILESYSTEM_ERRNO, EXN_PARENT(MZEXN_FAIL_FILESYSTEM), "exn:fail:filesystem:errno", 1, MZEXN_FAIL_FILESYSTEM_ERRNO_FIELDS, scheme_null, scheme_make_prim(errno_field_check))
   SETUP_STRUCT(MZEXN_FAIL_NETWORK, EXN_PARENT(MZEXN_FAIL), "exn:fail:network", 0, NULL, scheme_null, NULL)
+  SETUP_STRUCT(MZEXN_FAIL_NETWORK_ERRNO, EXN_PARENT(MZEXN_FAIL_NETWORK), "exn:fail:network:errno", 1, MZEXN_FAIL_NETWORK_ERRNO_FIELDS, scheme_null, scheme_make_prim(errno_field_check))
   SETUP_STRUCT(MZEXN_FAIL_OUT_OF_MEMORY, EXN_PARENT(MZEXN_FAIL), "exn:fail:out-of-memory", 0, NULL, scheme_null, NULL)
   SETUP_STRUCT(MZEXN_FAIL_UNSUPPORTED, EXN_PARENT(MZEXN_FAIL), "exn:fail:unsupported", 0, NULL, scheme_null, NULL)
   SETUP_STRUCT(MZEXN_FAIL_USER, EXN_PARENT(MZEXN_FAIL), "exn:fail:user", 0, NULL, scheme_null, NULL)
   SETUP_STRUCT(MZEXN_BREAK, EXN_PARENT(MZEXN), "exn:break", 1, MZEXN_BREAK_FIELDS, scheme_null, scheme_make_prim(break_field_check))
-  SETUP_STRUCT(MZEXN_BREAK_TERMINATE, EXN_PARENT(MZEXN_BREAK), "exn:break:terminate", 0, NULL, scheme_null, NULL)
   SETUP_STRUCT(MZEXN_BREAK_HANG_UP, EXN_PARENT(MZEXN_BREAK), "exn:break:hang-up", 0, NULL, scheme_null, NULL)
+  SETUP_STRUCT(MZEXN_BREAK_TERMINATE, EXN_PARENT(MZEXN_BREAK), "exn:break:terminate", 0, NULL, scheme_null, NULL)
 #endif

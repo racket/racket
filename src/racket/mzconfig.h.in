@@ -61,6 +61,9 @@ typedef unsigned long uintptr_t;
 #undef HAVE_EPOLL_SYSCALL
 #undef HAVE_KQUEUE_SYSCALL
 
+/* When mmap() and mprotect() are available: */
+#undef HAVE_MMAP_MPROTECT
+
 /* Enable futures: */
 #undef MZ_USE_FUTURES
 

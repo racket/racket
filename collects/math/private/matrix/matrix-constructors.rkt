@@ -3,9 +3,12 @@
 (require racket/fixnum
          racket/list
          racket/vector
-         math/array
          "matrix-types.rkt"
-         "../unsafe.rkt")
+         "../unsafe.rkt"
+         "../array/array-struct.rkt"
+         "../array/array-constructors.rkt"
+         "../array/array-unfold.rkt"
+         "../array/utils.rkt")
 
 (provide identity-matrix
          make-matrix
@@ -42,7 +45,7 @@
 ;; ===================================================================================================
 ;; Diagonal matrices
 
-(: diagonal-matrix/zero (All (A) (Listof A) A -> (Array A)))
+(: diagonal-matrix/zero (All (A) ((Listof A) A -> (Matrix A))))
 (define (diagonal-matrix/zero xs zero)
   (cond [(empty? xs)
          (raise-argument-error 'diagonal-matrix "nonempty List" xs)]
@@ -56,15 +59,14 @@
             (cond [(= i (unsafe-vector-ref js 1))  (unsafe-vector-ref vs i)]
                   [else  zero])))]))
 
-(: diagonal-matrix (case-> ((Listof Real) -> (Array Real))
-                           ((Listof Number) -> (Array Number))))
+(: diagonal-matrix (All (A) ((Listof A) -> (Matrix (U A 0)))))
 (define (diagonal-matrix xs)
   (diagonal-matrix/zero xs 0))
 
 ;; ===================================================================================================
 ;; Block diagonal matrices
 
-(: block-diagonal-matrix/zero* (All (A) (Vectorof (Array A)) A -> (Array A)))
+(: block-diagonal-matrix/zero* (All (A) (Vectorof (Matrix A)) A -> (Matrix A)))
 (define (block-diagonal-matrix/zero* as zero)
   (define num (vector-length as))
   (define-values (ms ns)
@@ -94,7 +96,7 @@
           (vector-set! hs (unsafe-fx+ res-j j) k)
           (vector-set! js (unsafe-fx+ res-j j) (assert j index?))))
       (values (unsafe-fx+ res-i m) (unsafe-fx+ res-j n))))
-  (define procs (vector-map (λ: ([a : (Array A)]) (unsafe-array-proc a)) as))
+  (define procs (vector-map (λ: ([a : (Matrix A)]) (unsafe-array-proc a)) as))
   (unsafe-build-array
    ((inst vector Index) res-m res-n)
    (λ: ([ij : Indexes])
@@ -114,7 +116,7 @@
            [else
             zero]))))
 
-(: block-diagonal-matrix/zero (All (A) (Listof (Array A)) A -> (Array A)))
+(: block-diagonal-matrix/zero (All (A) ((Listof (Matrix A)) A -> (Matrix A))))
 (define (block-diagonal-matrix/zero as zero)
   (let ([as  (list->vector as)])
     (define num (vector-length as))
@@ -125,8 +127,7 @@
           [else
            (block-diagonal-matrix/zero* as zero)])))
 
-(: block-diagonal-matrix (case-> ((Listof (Array Real)) -> (Array Real))
-                                 ((Listof (Array Number)) -> (Array Number))))
+(: block-diagonal-matrix (All (A) ((Listof (Matrix A)) -> (Matrix (U A 0)))))
 (define (block-diagonal-matrix as)
   (block-diagonal-matrix/zero as 0))
 
@@ -140,8 +141,8 @@
   (cond [(real? x)  (assert (expt x n) real?)]
         [else  (expt x n)]))
 
-(: vandermonde-matrix (case-> ((Listof Real) Integer -> (Array Real))
-                              ((Listof Number) Integer -> (Array Number))))
+(: vandermonde-matrix (case-> ((Listof Real) Integer -> (Matrix Real))
+                              ((Listof Number) Integer -> (Matrix Number))))
 (define (vandermonde-matrix xs n)
   (cond [(empty? xs)
          (raise-argument-error 'vandermonde-matrix "nonempty List" 0 xs n)]

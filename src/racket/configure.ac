@@ -469,6 +469,13 @@ if test "${enable_shared}" = "yes" ; then
   LIBRACKET_DEP="${LIBRACKET_DEP} libmzgc.la"
 fi
 
+if test "${enable_foreign}" = "yes" ; then
+  check_for_mprotect=yes
+fi
+if test "${enable_jit}" = "yes" ; then
+  check_for_mprotect=yes
+fi
+
 ############## platform tests ################
 
 # for flags we don't want to use in config tests:
@@ -578,6 +585,7 @@ case "$host_os" in
     EXE_SUFFIX=".exe"
     COLLECTS_PATH="collects"
     skip_iconv_check=yes
+    check_for_mprotect=no
     AC_DEFINE(HAVE_STDINT_H,1,[Have stdint.h])
     if `which ${host}-windres > /dev/null` ; then
       WINDRES="${host}-windres"
@@ -974,6 +982,24 @@ if test "${enable_libffi}" = "yes" ; then
     OWN_LIBFFI="OFF"
   fi
  fi
+fi
+
+if test "${check_for_mprotect}" = "yes" ; then
+  [ msg="for mmap and mprotect" ]
+  AC_MSG_CHECKING($msg)
+  AC_TRY_RUN(
+  [  #include <sys/mman.h> ]
+  [  #include <fcntl.h> ]
+     int main() {
+      void *p;
+      p = mmap(0, 2 << 16, PROT_READ | PROT_WRITE, MAP_PRIVATE, open("/dev/zero", O_RDWR), 0);
+      mprotect(p, 2 << 16, PROT_READ | PROT_WRITE | PROT_EXEC);
+      return 0;
+     }, use_mprotect=yes, use_mprotect=no, use_mprotect=no)
+  AC_MSG_RESULT($use_mprotect)
+  if test "${use_mprotect}" = "yes" ; then
+     AC_DEFINE(HAVE_MMAP_MPROTECT,1,[Have mmap and mprotect])
+  fi
 fi
 
 if test "${enable_backtrace}" = "yes" ; then

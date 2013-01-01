@@ -39,7 +39,11 @@
 # define MALLOC malloc
 #endif
 
-#ifdef MZ_JIT_USE_MPROTECT
+#if defined(MZ_JIT_USE_MPROTECT) || defined(HAVE_MMAP_MPROTECT)
+# define MZ_CODE_ALLOC_USE_MPROTECT
+#endif
+
+#ifdef MZ_CODE_ALLOC_USE_MPROTECT
 # include <unistd.h>
 # include <sys/mman.h>
 # ifndef MAP_ANON
@@ -851,14 +855,14 @@ THREAD_LOCAL_DECL(static void *code_allocation_page_list);
 
 THREAD_LOCAL_DECL(intptr_t scheme_code_page_total);
 
-#if defined(MZ_JIT_USE_MPROTECT) && !defined(MAP_ANON)
+#if defined(MZ_CODE_ALLOC_USE_MPROTECT) && !defined(MAP_ANON)
 static int fd, fd_created;
 #endif
 
 #define LOG_CODE_MALLOC(lvl, s) /* if (lvl > 1) s */
 #define CODE_PAGE_OF(p) ((void *)(((uintptr_t)p) & ~(page_size - 1)))
 
-#if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
+#if defined(MZ_CODE_ALLOC_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
 
 struct free_list_entry {
   intptr_t size; /* size of elements in this bucket */
@@ -1030,7 +1034,7 @@ static intptr_t free_list_find_bucket(intptr_t size)
 
 void *scheme_malloc_code(intptr_t size)
 {
-#if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
+#if defined(MZ_CODE_ALLOC_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
 
   intptr_t size2, bucket, sz, page_size;
   void *p, *pg, *prev;
@@ -1109,7 +1113,7 @@ void *scheme_malloc_permanent_code(intptr_t size)
 /* allocate code that will never be freed and that can be used
    in multiple places */
 {
-#if defined(MZ_USE_PLACES) && (defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC))
+#if defined(MZ_USE_PLACES) && (defined(MZ_CODE_ALLOC_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC))
   void *p;
   intptr_t page_size;
 
@@ -1148,7 +1152,7 @@ void *scheme_malloc_permanent_code(intptr_t size)
 
 void scheme_free_code(void *p)
 {
-#if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
+#if defined(MZ_CODE_ALLOC_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
   intptr_t size, size2, bucket, page_size;
   int per_page, n;
   void *prev;
@@ -1234,7 +1238,7 @@ void scheme_free_code(void *p)
 
 void scheme_free_all_code(void)
 {
-#if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
+#if defined(MZ_CODE_ALLOC_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
   void *p, *next;
   intptr_t page_size;
 
@@ -1260,7 +1264,7 @@ void scheme_free_all_code(void)
    currently takes advantage of that combination, so we support it
    with scheme_malloc_gcable_code() --- but only in CGC mode. */
 
-#if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
+#if defined(MZ_CODE_ALLOC_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
 static uintptr_t jit_prev_page = 0, jit_prev_length = 0;
 #endif
 
@@ -1269,7 +1273,7 @@ void *scheme_malloc_gcable_code(intptr_t size)
   void *p;
   p = scheme_malloc(size);
   
-#if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
+#if defined(MZ_CODE_ALLOC_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
   {
     /* [This chunk of code moved from our copy of GNU lightning to here.] */
     uintptr_t page, length, page_size;
@@ -1324,7 +1328,7 @@ void *scheme_malloc_gcable_code(intptr_t size)
 
 void scheme_notify_code_gc()
 {
-#if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
+#if defined(MZ_CODE_ALLOC_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
   jit_prev_page = 0;
   jit_prev_length = 0;
 #endif

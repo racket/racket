@@ -1,7 +1,6 @@
-#lang typed/racket
+#lang typed/racket/base
 
-(require math/array
-         "matrix-types.rkt"
+(require "matrix-types.rkt"
          "matrix-constructors.rkt"
          "matrix-arithmetic.rkt")
 

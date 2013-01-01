@@ -1,3 +1,6 @@
+Version 5.3.1.12
+Added exn:fail:filesystem:errno and exn:fail:network:errno
+
 Version 5.3.1.11
 Changed log-message to support a name argument
 Changed the synchronization result of a log receiver to include an

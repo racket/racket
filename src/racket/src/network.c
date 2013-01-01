@@ -1449,7 +1449,7 @@ static intptr_t tcp_get_string(Scheme_Input_Port *port,
   if (data->b.bufmax == -1) {
     scheme_raise_exn(MZEXN_FAIL_NETWORK,
 		     "tcp-read: error reading\n"
-                     "  systen error: %e",
+                     "  system error: %e",
 		     errid);
     return 0;
   } else if (!data->b.bufmax) {

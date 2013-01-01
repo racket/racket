@@ -320,6 +320,26 @@
           (quote-syntax exn:fail:filesystem)))
        (λ () (quote-syntax kernel:exn:fail:filesystem:version)))))
   (begin
+    (#%require
+     (rename '#%kernel
+             kernel:exn:fail:filesystem:errno
+             exn:fail:filesystem:errno))
+    (define make-exn:fail:filesystem:errno kernel:exn:fail:filesystem:errno)
+    (define-syntax exn:fail:filesystem:errno
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn:fail:filesystem:errno)
+          (quote-syntax make-exn:fail:filesystem:errno)
+          (quote-syntax exn:fail:filesystem:errno?)
+          (list
+           (quote-syntax exn:fail:filesystem:errno-errno)
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f #f)
+          (quote-syntax exn:fail:filesystem)))
+       (λ () (quote-syntax kernel:exn:fail:filesystem:errno)))))
+  (begin
     (#%require (rename '#%kernel kernel:exn:fail:network exn:fail:network))
     (define make-exn:fail:network kernel:exn:fail:network)
     (define-syntax exn:fail:network
@@ -335,6 +355,24 @@
           '(#f #f)
           (quote-syntax exn:fail)))
        (λ () (quote-syntax kernel:exn:fail:network)))))
+  (begin
+    (#%require
+     (rename '#%kernel kernel:exn:fail:network:errno exn:fail:network:errno))
+    (define make-exn:fail:network:errno kernel:exn:fail:network:errno)
+    (define-syntax exn:fail:network:errno
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn:fail:network:errno)
+          (quote-syntax make-exn:fail:network:errno)
+          (quote-syntax exn:fail:network:errno?)
+          (list
+           (quote-syntax exn:fail:network:errno-errno)
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f #f)
+          (quote-syntax exn:fail:network)))
+       (λ () (quote-syntax kernel:exn:fail:network:errno)))))
   (begin
     (#%require
      (rename '#%kernel kernel:exn:fail:out-of-memory exn:fail:out-of-memory))
@@ -403,6 +441,23 @@
           (quote-syntax exn)))
        (λ () (quote-syntax kernel:exn:break)))))
   (begin
+    (#%require (rename '#%kernel kernel:exn:break:hang-up exn:break:hang-up))
+    (define make-exn:break:hang-up kernel:exn:break:hang-up)
+    (define-syntax exn:break:hang-up
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn:break:hang-up)
+          (quote-syntax make-exn:break:hang-up)
+          (quote-syntax exn:break:hang-up?)
+          (list
+           (quote-syntax exn:break-continuation)
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f #f)
+          (quote-syntax exn:break)))
+       (λ () (quote-syntax kernel:exn:break:hang-up)))))
+  (begin
     (#%require
      (rename '#%kernel kernel:exn:break:terminate exn:break:terminate))
     (define make-exn:break:terminate kernel:exn:break:terminate)
@@ -420,23 +475,6 @@
           '(#f #f #f)
           (quote-syntax exn:break)))
        (λ () (quote-syntax kernel:exn:break:terminate)))))
-  (begin
-    (#%require (rename '#%kernel kernel:exn:break:hang-up exn:break:hang-up))
-    (define make-exn:break:hang-up kernel:exn:break:hang-up)
-    (define-syntax exn:break:hang-up
-      (make-self-ctr-struct-info
-       (λ ()
-         (list
-          (quote-syntax struct:exn:break:hang-up)
-          (quote-syntax make-exn:break:hang-up)
-          (quote-syntax exn:break:hang-up?)
-          (list
-           (quote-syntax exn:break-continuation)
-           (quote-syntax exn-continuation-marks)
-           (quote-syntax exn-message))
-          '(#f #f #f)
-          (quote-syntax exn:break)))
-       (λ () (quote-syntax kernel:exn:break:hang-up)))))
   (begin
     (#%require (rename '#%kernel kernel:arity-at-least arity-at-least))
     (define make-arity-at-least kernel:arity-at-least)

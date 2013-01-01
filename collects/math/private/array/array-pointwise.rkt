@@ -25,8 +25,9 @@
 (define-syntax-rule (define-array-op name op)
   (define-syntax-rule (name arrs (... ...)) (array-map op arrs (... ...))))
 
-(define-syntax-rule (array-scale arr x)
-  (inline-array-map (λ (y) (* x y)) arr))
+(define-syntax-rule (array-scale arr x-expr)
+  (let ([x x-expr])
+    (inline-array-map (λ (y) (* x y)) arr)))
 
 (define-array-op1 array-sqr sqr)
 (define-array-op1 array-sqrt sqrt)

@@ -3,9 +3,13 @@
 (require racket/fixnum
          racket/list
          racket/vector
-         math/array
          "matrix-types.rkt"
          "utils.rkt"
+         "../array/array-struct.rkt"
+         "../array/array-convert.rkt"
+         "../array/array-transform.rkt"
+         "../array/mutable-array.rkt"
+         "../array/array-fold.rkt"
          "../array/utils.rkt"
          "../unsafe.rkt")
 
@@ -24,9 +28,9 @@
  matrix->vector*)
 
 ;; ===================================================================================================
-;; Flat conversion
+;; Flat conversion to rectangular matrices
 
-(: list->matrix (All (A) (Integer Integer (Listof A) -> (Array A))))
+(: list->matrix (All (A) (Integer Integer (Listof A) -> (Matrix A))))
 (define (list->matrix m n xs)
   (cond [(or (not (index? m)) (= m 0))
          (raise-argument-error 'list->matrix "Positive-Index" 0 m n xs)]
@@ -34,7 +38,7 @@
          (raise-argument-error 'list->matrix "Positive-Index" 1 m n xs)]
         [else  (list->array (vector m n) xs)]))
 
-(: matrix->list (All (A) ((Array A) -> (Listof A))))
+(: matrix->list (All (A) ((Matrix A) -> (Listof A))))
 (define (matrix->list a)
   (array->list (ensure-matrix 'matrix->list a)))
 
@@ -46,25 +50,17 @@
          (raise-argument-error 'vector->matrix "Positive-Index" 1 m n v)]
         [else  (vector->array (vector m n) v)]))
 
-(: matrix->vector (All (A) ((Array A) -> (Vectorof A))))
+(: matrix->vector (All (A) ((Matrix A) -> (Vectorof A))))
 (define (matrix->vector a)
   (array->vector (ensure-matrix 'matrix->vector a)))
 
-(: list->row-matrix (All (A) ((Listof A) -> (Array A))))
-(define (list->row-matrix xs)
-  (cond [(empty? xs)  (raise-argument-error 'list->row-matrix "nonempty List" xs)]
-        [else  (list->array ((inst vector Index) 1 (length xs)) xs)]))
+;; ===================================================================================================
+;; Flat conversion to column and row matrices
 
-(: list->col-matrix (All (A) ((Listof A) -> (Array A))))
+(: list->col-matrix (All (A) ((Listof A) -> (Matrix A))))
 (define (list->col-matrix xs)
   (cond [(empty? xs)  (raise-argument-error 'list->col-matrix "nonempty List" xs)]
         [else  (list->array ((inst vector Index) (length xs) 1) xs)]))
-
-(: vector->row-matrix (All (A) ((Vectorof A) -> (Mutable-Array A))))
-(define (vector->row-matrix xs)
-  (define n (vector-length xs))
-  (cond [(zero? n)  (raise-argument-error 'vector->row-matrix "nonempty Vector" xs)]
-        [else  (vector->array ((inst vector Index) 1 n) xs)]))
 
 (: vector->col-matrix (All (A) ((Vectorof A) -> (Mutable-Array A))))
 (define (vector->col-matrix xs)
@@ -80,40 +76,15 @@
                            (if (dk . > . 1) (values k dk) (loop (fx+ k 1)))]
           [else  (values 0 0)])))
 
-(: array->row-matrix (All (A) ((Array A) -> (Array A))))
-(define (array->row-matrix arr)
-  (define (fail)
-    (raise-argument-error 'array->row-matrix "nonempty Array with one axis of length >= 1" arr))
-  (define ds (array-shape arr))
-  (define dims (vector-length ds))
-  (define num-ones (vector-count (λ: ([d : Index]) (= d 1)) ds))
-  (cond [(zero? (array-size arr))  (fail)]
-        [(row-matrix? arr)  arr]
-        [(= num-ones dims)
-         (define: js : (Vectorof Index) (make-vector dims 0))
-         (define proc (unsafe-array-proc arr))
-         (unsafe-build-array ((inst vector Index) 1 1)
-                             (λ: ([ij : Indexes]) (proc js)))]
-        [(= num-ones (- dims 1))
-         (define-values (k n) (find-nontrivial-axis ds))
-         (define js (make-thread-local-indexes dims))
-         (define proc (unsafe-array-proc arr))
-         (unsafe-build-array ((inst vector Index) 1 n)
-                             (λ: ([ij : Indexes])
-                               (let ([js  (js)])
-                                 (unsafe-vector-set! js k (unsafe-vector-ref ij 1))
-                                 (proc js))))]
-        [else  (fail)]))
-
-(: array->col-matrix (All (A) ((Array A) -> (Array A))))
+(: array->col-matrix (All (A) ((Array A) -> (Matrix A))))
 (define (array->col-matrix arr)
   (define (fail)
-    (raise-argument-error 'array->col-matrix "nonempty Array with one axis of length >= 1" arr))
+    (raise-argument-error 'array->col-matrix
+                          "nonempty Array with exactly one axis of length >= 1" arr))
   (define ds (array-shape arr))
   (define dims (vector-length ds))
   (define num-ones (vector-count (λ: ([d : Index]) (= d 1)) ds))
   (cond [(zero? (array-size arr))  (fail)]
-        [(col-matrix? arr)  arr]
         [(= num-ones dims)
          (define: js : (Vectorof Index) (make-vector dims 0))
          (define proc (unsafe-array-proc arr))
@@ -130,17 +101,19 @@
                                  (proc js))))]
         [else  (fail)]))
 
-(: ->row-matrix (All (A) ((U (Listof A) (Vectorof A) (Array A)) -> (Array A))))
-(define (->row-matrix xs)
-  (cond [(list? xs)  (list->row-matrix xs)]
-        [(array? xs)  (array->row-matrix xs)]
-        [else  (vector->row-matrix xs)]))
-
-(: ->col-matrix (All (A) ((U (Listof A) (Vectorof A) (Array A)) -> (Array A))))
+(: ->col-matrix (All (A) ((U (Listof A) (Vectorof A) (Array A)) -> (Matrix A))))
 (define (->col-matrix xs)
   (cond [(list? xs)  (list->col-matrix xs)]
-        [(array? xs)  (array->col-matrix xs)]
-        [else  (vector->col-matrix xs)]))
+        [(vector? xs)  (vector->col-matrix xs)]
+        [(col-matrix? xs)  xs]
+        [else  (array->col-matrix xs)]))
+
+(: ->row-matrix (All (A) ((U (Listof A) (Vectorof A) (Array A)) -> (Matrix A))))
+(define (->row-matrix xs)
+  (cond [(list? xs)  (array-axis-swap (list->col-matrix xs) 0 1)]
+        [(vector? xs)  (array-axis-swap (vector->col-matrix xs) 0 1)]
+        [(row-matrix? xs)  xs]
+        [else  (array-axis-swap (array->col-matrix xs) 0 1)]))
 
 ;; ===================================================================================================
 ;; Nested conversion

@@ -648,8 +648,7 @@ dr-extras :+= (package: "typed-racket/" ; used in drracket
                         #:docs "ts-{reference|guide}/")
               (- (collects: "typed/")
                  (cond (not plt) => (collects: "typed/test-engine/")
-                                    (collects: "typed/rackunit/")
-                                    (srcfile: "typed/rackunit.rkt")))
+                                    (srcfile: "typed/rackunit/gui.rkt")))
               (collects: "typed-scheme") ; compatibility
 
 ;; -------------------- gui-debugger

@@ -74,6 +74,9 @@ ROSYM static Scheme_Object *error_symbol;
 ROSYM static Scheme_Object *warning_symbol;
 ROSYM static Scheme_Object *info_symbol;
 ROSYM static Scheme_Object *debug_symbol;
+ROSYM static Scheme_Object *posix_symbol;
+ROSYM static Scheme_Object *windows_symbol;
+ROSYM static Scheme_Object *gai_symbol;
 ROSYM static Scheme_Object *arity_property;
 ROSYM static Scheme_Object *def_err_val_proc;
 ROSYM static Scheme_Object *def_error_esc_proc;
@@ -270,7 +273,8 @@ Scheme_Config *scheme_init_error_escape_proc(Scheme_Config *config)
        is used only if the boolean is 1
 */
 
-static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list args, char **_s)
+static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list args, char **_s,
+                             Scheme_Object **_errno_val)
 /* NULL for s means allocate the buffer here (and return in (_s), but this function 
    doesn't allocate before extracting arguments from the stack. */
 {
@@ -460,6 +464,7 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	  {
 	    int en, he, none = 0;
 	    char *es;
+            Scheme_Object *err_kind;
             
 	    if (type == 'm') {
               none = !ints[ip++];
@@ -482,13 +487,16 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	    else
 	      es = NULL;
 
-	    if (he)
+	    if (he) {
 	      es = (char *)scheme_hostname_error(en);
+              err_kind = gai_symbol;
+            }
 
 	    if ((en || es) && !none) {
 #ifdef NO_STRERROR_AVAILABLE
 	      if (!es)
 		es = "Unknown error";
+              err_kind = posix_symbol;
 #else
 # ifdef DOS_FILE_SYSTEM
 	      wchar_t mbuf[256];
@@ -509,16 +517,23 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 		    else
 		      break;
 		  }
+                  err_kind = windows_symbol;
 		}
 	      }
 # endif
-	      if (!es)
+	      if (!es) {
 		es = strerror(en);
+                err_kind = posix_symbol;
+              }
 #endif
 	      tlen = strlen(es) + 24;
 	      t = (const char *)scheme_malloc_atomic(tlen);
 	      sprintf((char *)t, "%s; errno=%d", es, en);
 	      tlen = strlen(t);
+              if (_errno_val) {
+                err_kind = scheme_make_pair(scheme_make_integer_value(en), err_kind);
+                *_errno_val = err_kind;
+              }
 	    } else {
               if (none) {
                 t = "";
@@ -648,7 +663,7 @@ static intptr_t scheme_sprintf(char *s, intptr_t maxlen, const char *msg, ...)
   GC_CAN_IGNORE va_list args;
 
   HIDE_FROM_XFORM(va_start(args, msg));
-  len = sch_vsprintf(s, maxlen, msg, args, NULL);
+  len = sch_vsprintf(s, maxlen, msg, args, NULL, NULL);
   HIDE_FROM_XFORM(va_end(args));
 
   return len;
@@ -726,6 +741,13 @@ void scheme_init_error(Scheme_Env *env)
   warning_symbol  = scheme_intern_symbol("warning");
   info_symbol     = scheme_intern_symbol("info");
   debug_symbol    = scheme_intern_symbol("debug");
+
+  REGISTER_SO(posix_symbol);
+  REGISTER_SO(windows_symbol);
+  REGISTER_SO(gai_symbol);
+  posix_symbol    = scheme_intern_symbol("posix");
+  windows_symbol  = scheme_intern_symbol("windows");
+  gai_symbol      = scheme_intern_symbol("gai");
 
   REGISTER_SO(arity_property);
   {
@@ -929,7 +951,7 @@ scheme_signal_error (const char *msg, ...)
   intptr_t len;
 
   HIDE_FROM_XFORM(va_start(args, msg));
-  len = sch_vsprintf(NULL, 0, msg, args, &buffer);
+  len = sch_vsprintf(NULL, 0, msg, args, &buffer, NULL);
   HIDE_FROM_XFORM(va_end(args));
 
   if (scheme_current_thread->current_local_env) {
@@ -961,7 +983,7 @@ void scheme_warning(char *msg, ...)
   intptr_t len;
 
   HIDE_FROM_XFORM(va_start(args, msg));
-  len = sch_vsprintf(NULL, 0, msg, args, &buffer);
+  len = sch_vsprintf(NULL, 0, msg, args, &buffer, NULL);
   HIDE_FROM_XFORM(va_end(args));
 
   buffer[len++] = '\n';
@@ -985,7 +1007,7 @@ void scheme_log(Scheme_Logger *logger, int level, int flags,
   }
 
   HIDE_FROM_XFORM(va_start(args, msg));
-  len = sch_vsprintf(NULL, 0, msg, args, &buffer);
+  len = sch_vsprintf(NULL, 0, msg, args, &buffer, NULL);
   HIDE_FROM_XFORM(va_end(args));
 
   buffer[len] = 0;
@@ -1008,7 +1030,7 @@ void scheme_log_w_data(Scheme_Logger *logger, int level, int flags,
   }
 
   HIDE_FROM_XFORM(va_start(args, msg));
-  len = sch_vsprintf(NULL, 0, msg, args, &buffer);
+  len = sch_vsprintf(NULL, 0, msg, args, &buffer, NULL);
   HIDE_FROM_XFORM(va_end(args));
 
   buffer[len] = 0;
@@ -2038,7 +2060,7 @@ void scheme_read_err(Scheme_Object *port,
   Scheme_Object *loc;
 
   HIDE_FROM_XFORM(va_start(args, detail));
-  slen = sch_vsprintf(NULL, 0, detail, args, &s);
+  slen = sch_vsprintf(NULL, 0, detail, args, &s, NULL);
   HIDE_FROM_XFORM(va_end(args));
 
   ls = "";
@@ -2315,7 +2337,7 @@ void scheme_wrong_syntax(const char *where,
     GC_CAN_IGNORE va_list args;
 
     HIDE_FROM_XFORM(va_start(args, detail));
-    slen = sch_vsprintf(NULL, 0, detail, args, &s);
+    slen = sch_vsprintf(NULL, 0, detail, args, &s, NULL);
     HIDE_FROM_XFORM(va_end(args));
   }
 
@@ -2332,7 +2354,7 @@ void scheme_unbound_syntax(const char *where,
   GC_CAN_IGNORE va_list args;
 
   HIDE_FROM_XFORM(va_start(args, detail));
-  slen = sch_vsprintf(NULL, 0, detail, args, &s);
+  slen = sch_vsprintf(NULL, 0, detail, args, &s, NULL);
   HIDE_FROM_XFORM(va_end(args));
 
   do_wrong_syntax(where, detail_form, form, s, slen, scheme_null, MZEXN_FAIL_SYNTAX_UNBOUND);
@@ -2354,7 +2376,7 @@ void scheme_wrong_syntax_with_more_sources(const char *where,
     GC_CAN_IGNORE va_list args;
 
     HIDE_FROM_XFORM(va_start(args, detail));
-    slen = sch_vsprintf(NULL, 0, detail, args, &s);
+    slen = sch_vsprintf(NULL, 0, detail, args, &s, NULL);
     HIDE_FROM_XFORM(va_end(args));
   }
 
@@ -2399,7 +2421,7 @@ void scheme_wrong_return_arity(const char *where,
     GC_CAN_IGNORE va_list args;
 
     HIDE_FROM_XFORM(va_start(args, detail));
-    slen = sch_vsprintf(NULL, 0, detail, args, &s);
+    slen = sch_vsprintf(NULL, 0, detail, args, &s, NULL);
     HIDE_FROM_XFORM(va_end(args));
   }
 
@@ -2458,7 +2480,7 @@ void scheme_raise_out_of_memory(const char *where, const char *msg, ...)
     GC_CAN_IGNORE va_list args;
 
     HIDE_FROM_XFORM(va_start(args, msg));
-    slen = sch_vsprintf(NULL, 0, msg, args, &s);
+    slen = sch_vsprintf(NULL, 0, msg, args, &s, NULL);
     HIDE_FROM_XFORM(va_end(args));
   }
 
@@ -3982,7 +4004,7 @@ scheme_raise_exn(int id, ...)
   intptr_t alen;
   char *msg;
   int i, c;
-  Scheme_Object *eargs[MZEXN_MAXARGS];
+  Scheme_Object *eargs[MZEXN_MAXARGS], *errno_val = NULL;
   char *buffer;
 
   /* Precise GC: Don't allocate before getting hidden args off stack */
@@ -3999,12 +4021,23 @@ scheme_raise_exn(int id, ...)
 
   msg = mzVA_ARG(args, char*);
 
-  alen = sch_vsprintf(NULL, 0, msg, args, &buffer);
+  alen = sch_vsprintf(NULL, 0, msg, args, &buffer, &errno_val);
   HIDE_FROM_XFORM(va_end(args));
 
 #ifndef NO_SCHEME_EXNS
   eargs[0] = scheme_make_immutable_sized_utf8_string(buffer, alen);
   eargs[1] = TMP_CMARK_VALUE;
+  if (errno_val) {
+    if (id == MZEXN_FAIL_FILESYSTEM) {
+      id = MZEXN_FAIL_FILESYSTEM_ERRNO;
+      eargs[2] = errno_val;
+      c++;
+    } else if (id == MZEXN_FAIL_NETWORK) {
+      id = MZEXN_FAIL_NETWORK_ERRNO;
+      eargs[2] = errno_val;
+      c++;
+    }
+  }
 
   do_raise(scheme_make_struct_instance(exn_table[id].type,
 				       c, eargs),
@@ -4316,6 +4349,18 @@ static Scheme_Object *break_field_check(int argc, Scheme_Object **argv)
     scheme_wrong_field_type(argv[3], "escape continuation", argv[2]);
 
   return scheme_values(3, argv);
+}
+
+static Scheme_Object *errno_field_check(int argc, Scheme_Object **argv)
+{
+  if (!SCHEME_PAIRP(argv[2])
+      || !scheme_exact_p(SCHEME_CAR(argv[2]))
+      || !(SAME_OBJ(SCHEME_CDR(argv[2]), posix_symbol)
+           || SAME_OBJ(SCHEME_CDR(argv[2]), windows_symbol)
+           || SAME_OBJ(SCHEME_CDR(argv[2]), gai_symbol)))
+    scheme_wrong_field_contract(argv[3], "(cons/c exact-integer? (or/c 'posix 'windows 'gai))", argv[2]);
+
+  return scheme_values (3, argv);
 }
 
 static Scheme_Object *extract_syntax_locations(int argc, Scheme_Object **argv)

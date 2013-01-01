@@ -259,7 +259,7 @@
 (err/rt-test (open-input-file 8))
 (err/rt-test (open-input-file "x" 8))
 (err/rt-test (open-input-file "x" 'something-else))
-(err/rt-test (open-input-file "badfile") exn:fail:filesystem?)
+(err/rt-test (open-input-file "badfile") exn:fail:filesystem:errno?)
 
 (arity-test open-output-file 1 1)
 (err/rt-test (open-output-file 8))
@@ -1556,6 +1556,14 @@
   (test (list sub) 'in-directory (for/list ([v (in-directory tmp)]) v))
   (delete-directory sub)
   (delete-directory/files tmp))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test #t exn? (exn:fail:filesystem:errno "a" (current-continuation-marks) '(10 . posix)))
+(err/rt-test (exn:fail:filesystem:errno "a" (current-continuation-marks) 10))
+(err/rt-test (exn:fail:filesystem:errno "a" (current-continuation-marks) '(10 posix)))
+(err/rt-test (exn:fail:filesystem:errno "a" (current-continuation-marks) '(10)))
+(err/rt-test (exn:fail:filesystem:errno "a" (current-continuation-marks) '#(10)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
