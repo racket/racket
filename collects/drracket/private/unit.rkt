@@ -4350,8 +4350,8 @@ module browser threading seems wrong.
       (super-new
        [filename filename]
        [style '(toolbar-button)]
-       [size-preferences-key 'drracket:unit-window-size]
-       [position-preferences-key 'drracket:unit-window-position])
+       [size-preferences-key 'drracket:window-size]
+       [position-preferences-key 'drracket:window-position])
       
       (initialize-menus)
       
@@ -4571,7 +4571,7 @@ module browser threading seems wrong.
       
       (when (= 2 (length (send resizable-panel get-children)))
         (send resizable-panel set-percentages
-              (let ([p (preferences:get 'drracket:unit-window-size-percentage)])
+              (let ([p (preferences:get 'drracket:window-size-percentage)])
                 (list p (- 1 p)))))
       
       (set-label-prefix (string-constant drscheme))
