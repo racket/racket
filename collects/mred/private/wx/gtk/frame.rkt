@@ -406,6 +406,7 @@
 
     (define focus-here? #f)
     (define/override (on-focus? on?)
+      (unless on? (on-menu-click))
       (on-focus-child on?)
       (cond
        [on?
