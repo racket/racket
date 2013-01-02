@@ -11,14 +11,15 @@
 The @racketmodname[math] library provides functions and data structures useful
 for working with numbers and collections of numbers. These include
 @itemlist[
-  @item{Additional constants and elementary functions}
-  @item{Special functions}
-  @item{Bigfloats, or arbitrary-precision floating-point numbers}
-  @item{Number-theoretic functions}
-  @item{Functional arrays for storing and operating on large rectangular data sets}
-  @item{Probability distributions}
-  @item{Statistical functions}
-  @item{Linear algebra functions (currently under review)}
+  @item{@racketmodname[math/base]: Constants and elementary functions}
+  @item{@racketmodname[math/flonum]: Flonum functions, including high-accuracy support}
+  @item{@racketmodname[math/special-functions]: Special (i.e. non-elementary) functions}
+  @item{@racketmodname[math/bigfloat]: Arbitrary-precision floating-point functions}
+  @item{@racketmodname[math/number-theory]: Number-theoretic functions}
+  @item{@racketmodname[math/array]: Functional arrays for operating on large rectangular data sets}
+  @item{@racketmodname[math/matrix]: Linear algebra functions for arrays @bold{(currently being documented)}}
+  @item{@racketmodname[math/distributions]: Probability distributions}
+  @item{@racketmodname[math/statistics]: Statistical functions}
 ]
 
 With this library, we hope to support a wide variety of applied mathematics in
@@ -40,6 +41,7 @@ be used in untyped Racket. Exceptions and performance warnings are in @bold{bold
 @include-section["math-number-theory.scrbl"]
 @include-section["math-bigfloat.scrbl"]
 @include-section["math-array.scrbl"]
+@include-section["math-matrix.scrbl"]
 @include-section["math-statistics.scrbl"]
 @include-section["math-distributions.scrbl"]
 @include-section["math-utils.scrbl"]

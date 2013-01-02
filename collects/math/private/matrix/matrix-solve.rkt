@@ -64,7 +64,7 @@
                [else  (* prod sign)]))])))
 
 ;; ===================================================================================================
-;; Inversion and solving linear systems
+;; Inversion
 
 (: matrix-invertible? ((Matrix Number) -> Boolean))
 (define (matrix-invertible? M)
@@ -84,6 +84,9 @@
      (cond [(and (not (empty? wps)) (= (first wps) m))
             (submatrix IM^-1 (::) (:: m #f))]
            [else  (fail)])]))
+
+;; ===================================================================================================
+;; Solving linear systems
 
 (: matrix-solve (All (A) (case->
                           ((Matrix Real) (Matrix Real)        -> (Matrix Real))

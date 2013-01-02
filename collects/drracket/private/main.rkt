@@ -176,11 +176,11 @@
   (let-values ([(w h) (get-display-size)])
     (set! frame-width (min frame-width (- w window-trimming-upper-bound-width)))
     (set! frame-height (min frame-height (- h window-trimming-upper-bound-height))))
-  (frame:setup-size-pref 'drracket:unit-window-size 
+  (frame:setup-size-pref 'drracket:window-size 
                          frame-width
                          frame-height 
                          #:position-preferences
-                         'drracket:unit-window-position))
+                         'drracket:window-position))
 
 (drr:set-default 'drracket:backtrace-window-width 400 number?)
 (drr:set-default 'drracket:backtrace-window-height 300 number?)

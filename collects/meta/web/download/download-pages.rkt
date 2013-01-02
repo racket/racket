@@ -29,7 +29,7 @@
         @(let ([links (list ((release-page release) "Release Notes")
                             @license{License}
                             all-version-pages
-                            @pre:installers{Nightly installers})])
+                            @pre:installers{Nightly Installers})])
            (small (add-between links @list{ @nbsp @bull @nbsp })))}
       @hr
       @div[id: "linux_explain"

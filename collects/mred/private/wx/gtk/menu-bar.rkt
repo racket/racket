@@ -26,6 +26,9 @@
 
 (define-gtk gtk_widget_set_usize (_fun _GtkWidget _int _int -> _void))
 
+(define-gtk ubuntu_menu_proxy_get _fpointer
+  #:fail (lambda () #f))
+
 (define (fixup-mnemonic title)
   (mnemonic-string (regexp-replace #rx"\t.*$" title "")))
 
@@ -92,6 +95,8 @@
 
   (define/public (set-top-window top)
     (set! top-wx top)
+    (when ubuntu_menu_proxy_get
+      (send top treat-focus-out-as-menu-click))
     (install-widget-parent top)
     (fix-menu-height))
 

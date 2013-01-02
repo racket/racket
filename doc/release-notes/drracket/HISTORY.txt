@@ -41,6 +41,11 @@
   
   . DrRacket's window can now be substantially narrower
 
+  . DrRacket's frame preferences are now remembered on a
+    per-montior-configuration basis and, if there is only one frame
+    open, it will move itself around automatically when the monitor
+    configuration changes
+
   . DrRacket's paren highlighting uses alpha-blending to avoid having
     the highlight disappear completely when completely inside an
     error.

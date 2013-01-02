@@ -2729,7 +2729,17 @@ static double sch_pow(double x, double y)
         return scheme_infinity_val;
     }
   } else {
-    return protected_pow(x, y);
+    double r;
+    r = protected_pow(x, y);
+    if ((r == 0.0) && !minus_zero_p(r)) {
+      /* check zero result of a odd power of a negative number,
+         which some libraries get wrong for some reason */
+      if (y < 0) y = -y;
+      if ((x < 0) && (fmod(y, 2.0) == 1.0)) {
+	r = scheme_floating_point_nzero;
+      }
+    }
+    return r;
   }
 }
 #endif

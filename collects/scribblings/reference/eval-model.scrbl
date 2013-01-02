@@ -804,9 +804,9 @@ When a @tech{custodian} is shut down via
 @racket[custodian-shutdown-all], it forcibly and immediately closes
 the ports, TCP connections, @|etc|, that it manages, as well as
 terminating (or suspending) its threads. A custodian that has been
-shut down cannot manage new objects.  If the current custodian is shut
-down before a procedure is called to create a managed resource (e.g.,
-@racket[open-input-port], @racket[thread]), the
+shut down cannot manage new objects.  After the current custodian is shut
+down, if a procedure is called that attempts to create a managed resource (e.g.,
+@racket[open-input-port], @racket[thread]), then the
 @exnraise[exn:fail:contract].
 
 A thread can have multiple managing custodians, and a suspended thread

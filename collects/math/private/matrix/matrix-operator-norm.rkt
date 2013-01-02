@@ -30,12 +30,14 @@ See "How to Measure Errors" in the LAPACK manual for more details:
  matrix-op-1norm
  matrix-op-2norm
  matrix-op-inf-norm
+ matrix-basis-cos-angle
  matrix-basis-angle
  ;; Error measurement
  matrix-error-norm
  matrix-absolute-error
  matrix-relative-error
  ;; Approximate predicates
+ matrix-zero?
  matrix-identity?
  matrix-orthonormal?
  )
@@ -57,12 +59,18 @@ See "How to Measure Errors" in the LAPACK manual for more details:
 (define (matrix-op-inf-norm M)
   (assert (apply max (map matrix-1norm (matrix-rows M))) nonnegative?))
 
+(: matrix-basis-cos-angle (case-> ((Matrix Real) (Matrix Real) -> Real)
+                                  ((Matrix Number) (Matrix Number) -> Number)))
+;; Returns the angle between the two subspaces spanned by the two given sets of column vectors
+(define (matrix-basis-cos-angle M R)
+  ;(matrix-min-singular-value (matrix* (matrix-hermitian M) R))
+  (error 'unimplemented))
+
 (: matrix-basis-angle (case-> ((Matrix Real) (Matrix Real) -> Real)
                               ((Matrix Number) (Matrix Number) -> Number)))
 ;; Returns the angle between the two subspaces spanned by the two given sets of column vectors
 (define (matrix-basis-angle M R)
-  ;(acos (matrix-min-singular-value (matrix* (matrix-hermitian M) R)))
-  (error 'unimplemented))
+  (acos (matrix-basis-cos-angle M R)))
 
 ;; ===================================================================================================
 ;; Error measurement
@@ -105,6 +113,14 @@ See "How to Measure Errors" in the LAPACK manual for more details:
 
 ;; ===================================================================================================
 ;; Approximate predicates
+
+(: matrix-zero? (case-> ((Matrix Number) -> Boolean)
+                        ((Matrix Number) Real -> Boolean)))
+(define (matrix-zero? M [eps (* 10 epsilon.0)])
+  (cond [(eps . < . 0)  (raise-argument-error 'matrix-identity? "Nonnegative-Real" 1 M eps)]
+        [else
+         (define-values (m n) (matrix-shape M))
+         (<= (matrix-absolute-error M (make-matrix m n 0)) eps)]))
 
 (: matrix-identity? (case-> ((Matrix Number) -> Boolean)
                             ((Matrix Number) Real -> Boolean)))

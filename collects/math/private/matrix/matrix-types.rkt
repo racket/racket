@@ -6,8 +6,6 @@
          "../unsafe.rkt")
 
 (provide Matrix
-         Column Result-Column
-         Column-Matrix
          matrix?
          square-matrix?
          row-matrix?
@@ -17,15 +15,8 @@
          matrix-num-rows
          matrix-num-cols)
 
+;; Matrices are represented as arrays, but additionally must be nonempty and have exactly two axes
 (define-type (Matrix A) (Array A))
-; matrices are represented as arrays
-(define-type (Column A)        (U (Vectorof A) (Matrix A)))
-; functions accepting column vectors accept
-; both mx1 matries and (Racket) vectors as column vectors
-(define-type (Result-Column A) (Matrix A))
-; result columns are always lazy arrays
-(define-type (Column-Matrix A) (Matrix A))
-; a column vector represented as a matrix
 
 (: matrix? (All (A) ((Array A) -> Boolean)))
 (define (matrix? arr)

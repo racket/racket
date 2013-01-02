@@ -83,16 +83,33 @@
                  [else  (loop (fx+ l 1) p pivot mag-pivot)])]
           [else  (values p pivot)])))
 
+(: find-first-pivot
+   (case-> ((Vectorof (Vectorof Real)) Index Index Index -> (Values Index Real))
+           ((Vectorof (Vectorof Number)) Index Index Index -> (Values Index Number))))
+;; Find the first nonzero element in a column
+(define (find-first-pivot rows m i j)
+  (define pivot (unsafe-vector2d-ref rows i j))
+  (if ((magnitude pivot) . > . 0)
+      (values i pivot)
+      (let loop ([#{l : Nonnegative-Fixnum} (fx+ i 1)])
+        (cond [(l . fx< . m)
+               (define pivot (unsafe-vector2d-ref rows l j))
+               (if ((magnitude pivot) . > . 0) (values l pivot) (loop (fx+ l 1)))]
+              [else
+               (values i pivot)]))))
+
 (: elim-rows!
    (case-> ((Vectorof (Vectorof Real)) Index Index Index Real Nonnegative-Fixnum -> Void)
            ((Vectorof (Vectorof Number)) Index Index Index Number Nonnegative-Fixnum -> Void)))
 (define (elim-rows! rows m i j pivot start)
+  (define row_i (unsafe-vector-ref rows i))
   (let loop ([#{l : Nonnegative-Fixnum} start])
     (when (l . fx< . m)
       (unless (l . fx= . i)
-        (define x_lj (unsafe-vector2d-ref rows l j))
+        (define row_l (unsafe-vector-ref rows l))
+        (define x_lj (unsafe-vector-ref row_l j))
         (unless (zero? x_lj)
-          (vector-scaled-add! (unsafe-vector-ref rows l)
-                              (unsafe-vector-ref rows i)
-                              (- (/ x_lj pivot)))))
+          (vector-scaled-add! row_l row_i (- (/ x_lj pivot)) j)
+          ;; Make sure the element below the pivot is zero
+          (unsafe-vector-set! row_l j (- x_lj x_lj))))
       (loop (fx+ l 1)))))

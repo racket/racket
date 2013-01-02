@@ -548,6 +548,12 @@
 (test (- (expt 5 29)) min (- (expt 5 29)) (expt 5 27))
 (test (- (expt 5 29)) min (- (expt 5 27)) (- (expt 5 29)))
 (test (- (expt 5 29)) min (- (expt 5 29)) (- (expt 5 27)))
+(test 0.0 expt -0.1 10000000000000.0)
+(test -0.0 expt -0.1 10000000000001.0)
+(test 0.0 expt -0.0 10000000000000.0)
+(test -0.0 expt -0.0 10000000000001.0)
+(test 0.0 expt -10.0 -10000000000000.0)
+(test -0.0 expt -10.0 -10000000000001.0)
 
 (err/rt-test (max 0 'a))
 (err/rt-test (min 0 'a))

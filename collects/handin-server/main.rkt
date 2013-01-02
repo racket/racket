@@ -526,8 +526,9 @@
                    (not (has-password?
                          (a-ref data 'raw-password)
                          (a-ref data 'password)
-                         (cons (get-conf 'master-password)
-                               (map car user-datas)))))
+                         (let ([mp (get-conf 'master-password)]
+                               [up (map car user-datas)])
+                           (if mp (cons mp up) up)))))
            (log-line "failed login: ~a" (a-ref data 'username/s))
            (error* "bad username or password for ~a"
                    (a-ref data 'username/s)))

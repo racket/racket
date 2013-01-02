@@ -464,7 +464,7 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	  {
 	    int en, he, none = 0;
 	    char *es;
-            Scheme_Object *err_kind;
+            Scheme_Object *err_kind = NULL;
             
 	    if (type == 'm') {
               none = !ints[ip++];

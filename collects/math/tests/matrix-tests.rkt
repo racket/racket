@@ -781,7 +781,15 @@
 (check-equal? (matrix-row-echelon (matrix [[ 2  1 -1   8]
                                            [-3 -1  2 -11]
                                            [-2  1  2  -3]])
-                                  #t)
+                                  #t #t 'partial)
+              (matrix [[1 0 0  2]
+                       [0 1 0  3]
+                       [0 0 1 -1]]))
+
+(check-equal? (matrix-row-echelon (matrix [[ 2  1 -1   8]
+                                           [-3 -1  2 -11]
+                                           [-2  1  2  -3]])
+                                  #t #t 'first)
               (matrix [[1 0 0  2]
                        [0 1 0  3]
                        [0 0 1 -1]]))
