@@ -2174,23 +2174,24 @@ module browser threading seems wrong.
           (update-tab-label current-tab)))
       
       (define/public (language-changed)
-        (let* ([settings (send definitions-text get-next-settings)]
-               [language (drracket:language-configuration:language-settings-language settings)])
-          (send func-defs-canvas language-changed language (or (toolbar-is-left?)
-                                                               (toolbar-is-right?)))
-          (send language-message set-yellow/lang
-                (not (send definitions-text this-and-next-language-the-same?))
-                (string-append (send language get-language-name)
-                               (if (send language default-settings? 
-                                         (drracket:language-configuration:language-settings-settings
-                                          settings))
-                                   ""
-                                   (string-append " " (string-constant custom)))))
-          (when (is-a? language-specific-menu menu%)
-            (let ([label (send language-specific-menu get-label)]
-                  [new-label (send language capability-value 'drscheme:language-menu-title)])
-              (unless (equal? label new-label)
-                (send language-specific-menu set-label new-label))))))
+        (define settings (send definitions-text get-next-settings))
+        (define language (drracket:language-configuration:language-settings-language settings))
+        (send func-defs-canvas language-changed language (or (toolbar-is-left?)
+                                                             (toolbar-is-right?)))
+        (send language-message set-yellow/lang
+              (not (send definitions-text this-and-next-language-the-same?))
+              (string-append (send language get-language-name)
+                             (if (send language default-settings? 
+                                       (drracket:language-configuration:language-settings-settings
+                                        settings))
+                                 ""
+                                 (string-append " " (string-constant custom)))))
+        (update-teachpack-menu)
+        (when (is-a? language-specific-menu menu%)
+          (define label (send language-specific-menu get-label))
+          (define new-label (send language capability-value 'drscheme:language-menu-title))
+          (unless (equal? label new-label)
+            (send language-specific-menu set-label new-label))))
       
       (define/public (get-language-menu) language-specific-menu)
       
@@ -3880,7 +3881,8 @@ module browser threading seems wrong.
                      (λ (settings)
                        (send (get-definitions-text) set-next-settings 
                              (drracket:language-configuration:language-settings language settings))
-                       (send (get-definitions-text) teachpack-changed))])
+                       (send (get-definitions-text) teachpack-changed)
+                       (update-teachpack-menu))])
                (set! teachpack-items
                      (list*
                       (make-object separator-menu-item% language-menu)
@@ -3900,7 +3902,6 @@ module browser threading seems wrong.
                                         (update-settings 
                                          ((teachpack-callbacks-remove-all tp-callbacks)
                                           settings)))])])
-                        
                         (send mi enable (not (null? tp-names)))
                         mi)
                       (map (λ (name)
@@ -3939,327 +3940,321 @@ module browser threading seems wrong.
                              #:dialog-mixin frame:focus-table-mixin))])))])))
       
       (define/private (initialize-menus)
-        (let* ([mb (get-menu-bar)]
-               [language-menu-on-demand (λ (menu-item) (update-teachpack-menu))]
-               [_ (set! language-menu (make-object (get-menu%) 
-                                        (string-constant language-menu-name)
-                                        mb
-                                        #f
-                                        language-menu-on-demand))]
-               [_ (set! language-specific-menu (new (get-menu%) 
-                                                    [label (drracket:language:get-capability-default
-                                                            'drscheme:language-menu-title)]
-                                                    [parent mb]))]
-               [send-method
-                (λ (method)
-                  (λ (_1 _2)
-                    (let ([text (get-focus-object)])
-                      (when (is-a? text racket:text<%>)
-                        (method text)))))]
-               [show/hide-capability-menus
-                (λ ()
-                  (for-each (λ (menu) (update-items/capability menu))
-                            (send (get-menu-bar) get-items)))])
-          
-          (make-object menu:can-restore-menu-item%
-            (string-constant choose-language-menu-item-label)
-            language-menu
-            (λ (_1 _2) (choose-language-callback))
-            #\l)
-          
-          (set! execute-menu-item
-                (make-object menu:can-restore-menu-item%
-                  (string-constant execute-menu-item-label)
-                  language-specific-menu
-                  (λ (_1 _2) (execute-callback))
-                  #\r
-                  (string-constant execute-menu-item-help-string)))
-          (make-object menu:can-restore-menu-item%
-            (string-constant ask-quit-menu-item-label)
-            language-specific-menu
-            (λ (_1 _2) (send current-tab break-callback))
-            #\b
-            (string-constant ask-quit-menu-item-help-string))
-          (make-object menu:can-restore-menu-item%
-            (string-constant force-quit-menu-item-label)
-            language-specific-menu
-            (λ (_1 _2) (send interactions-text kill-evaluation))
-            #\k
-            (string-constant force-quit-menu-item-help-string))
-          (when (custodian-memory-accounting-available?)
-            (new menu-item%
-                 [label (string-constant limit-memory-menu-item-label)]
-                 [parent language-specific-menu]
-                 [callback
-                  (λ (item b)
-                    (let ([num (get-mbytes this 
-                                           (let ([limit (send interactions-text get-custodian-limit)])
-                                             (and limit
-                                                  (floor (/ limit 1024 1024)))))])
-                      (when num
-                        (cond
-                          [(eq? num #t)
-                           (preferences:set 'drracket:child-only-memory-limit #f)
-                           (send interactions-text set-custodian-limit #f)]
-                          [else
-                           (preferences:set 'drracket:child-only-memory-limit 
-                                            (* 1024 1024 num))
-                           (send interactions-text set-custodian-limit
-                                 (* 1024 1024 num))]))))]))
-            
+        (define mb (get-menu-bar))
+        (set! language-menu (new (get-menu%) 
+                                 [label (string-constant language-menu-name)]
+                                 [parent mb]))
+        (set! language-specific-menu (new (get-menu%) 
+                                          [label (drracket:language:get-capability-default
+                                                  'drscheme:language-menu-title)]
+                                          [parent mb]))
+        (define ((send-method method) _1 _2)
+          (define text (get-focus-object))
+          (when (is-a? text racket:text<%>)
+            (method text)))
+        (define (show/hide-capability-menus)
+          (for ([menu (in-list (send (get-menu-bar) get-items))])
+            (update-items/capability menu)))
+        
+        (make-object menu:can-restore-menu-item%
+          (string-constant choose-language-menu-item-label)
+          language-menu
+          (λ (_1 _2) (choose-language-callback))
+          #\l)
+        
+        (set! execute-menu-item
+              (make-object menu:can-restore-menu-item%
+                (string-constant execute-menu-item-label)
+                language-specific-menu
+                (λ (_1 _2) (execute-callback))
+                #\r
+                (string-constant execute-menu-item-help-string)))
+        (make-object menu:can-restore-menu-item%
+          (string-constant ask-quit-menu-item-label)
+          language-specific-menu
+          (λ (_1 _2) (send current-tab break-callback))
+          #\b
+          (string-constant ask-quit-menu-item-help-string))
+        (make-object menu:can-restore-menu-item%
+          (string-constant force-quit-menu-item-label)
+          language-specific-menu
+          (λ (_1 _2) (send interactions-text kill-evaluation))
+          #\k
+          (string-constant force-quit-menu-item-help-string))
+        (when (custodian-memory-accounting-available?)
+          (new menu-item%
+               [label (string-constant limit-memory-menu-item-label)]
+               [parent language-specific-menu]
+               [callback
+                (λ (item b)
+                  (let ([num (get-mbytes this 
+                                         (let ([limit (send interactions-text get-custodian-limit)])
+                                           (and limit
+                                                (floor (/ limit 1024 1024)))))])
+                    (when num
+                      (cond
+                        [(eq? num #t)
+                         (preferences:set 'drracket:child-only-memory-limit #f)
+                         (send interactions-text set-custodian-limit #f)]
+                        [else
+                         (preferences:set 'drracket:child-only-memory-limit 
+                                          (* 1024 1024 num))
+                         (send interactions-text set-custodian-limit
+                               (* 1024 1024 num))]))))]))
+        
+        (new menu:can-restore-menu-item%
+             (label (string-constant clear-error-highlight-menu-item-label))
+             (parent language-specific-menu)
+             (callback
+              (λ (_1 _2) 
+                (let* ([tab  (get-current-tab)]
+                       [ints (send tab get-ints)]
+                       [defs (send tab get-defs)])
+                  (send ints reset-error-ranges)
+                  (send defs clear-test-coverage))))
+             (help-string (string-constant clear-error-highlight-item-help-string))
+             (demand-callback
+              (λ (item)
+                (let* ([tab (get-current-tab)]
+                       [ints (send tab get-ints)])
+                  (send item enable (or (send ints get-error-ranges)
+                                        (send tab get-test-coverage-info-visible?)))))))
+        
+        ;; find-before-and-after : nat -> (values (or/c srcloc #f) (or/c srcloc #f) (listof srcloc))
+        ;;
+        ;; returns the source locations from the error ranges that are before and
+        ;; after get-start-position, or #f if the insertion point is before 
+        ;; all of them or after all of them, respectively
+        ;; also returns the sorted list of all srclocs
+        ;;
+        ;; this doesn't work properly when the positions are in embedded editor
+        ;;  (but it doesn't crash; it just has a strange notion of before and after)
+        (define (find-before-and-after)
+          (define tab (get-current-tab))
+          (define pos (send (send tab get-defs) get-start-position))
+          (define ranges (send (send tab get-ints) get-error-ranges))
+          (define sorted (sort ranges < #:key srcloc-position))
+          (let loop ([before #f]
+                     [lst sorted])
+            (cond
+              [(null? lst)
+               (values before #f sorted)]
+              [else
+               (define fst (car lst))
+               (cond 
+                 [(= pos (- (srcloc-position fst) 1))
+                  (values before 
+                          (if (null? (cdr lst))
+                              #f
+                              (cadr lst))
+                          sorted)]
+                 [(< pos (- (srcloc-position fst) 1))
+                  (values before fst sorted)]
+                 [else (loop (car lst) (cdr lst))])])))
+        
+        (define (jump-to-source-loc srcloc)
+          (define ed (srcloc-source srcloc))
+          (send ed set-position (- (srcloc-position srcloc) 1))
+          (send ed set-caret-owner #f 'global))
+        
+        (new menu:can-restore-menu-item%
+             (label (string-constant jump-to-next-error-highlight-menu-item-label))
+             (parent language-specific-menu)
+             (shortcut #\.)
+             (callback (λ (_1 _2) (jump-to-next-error-loc)))
+             (demand-callback
+              (λ (item)
+                (let* ([tab (get-current-tab)]
+                       [ints (send tab get-ints)])
+                  (send item enable (send ints get-error-ranges))))))
+        (new menu:can-restore-menu-item%
+             (label (string-constant jump-to-prev-error-highlight-menu-item-label))
+             (parent language-specific-menu)
+             (shortcut (if (eq? (system-type) 'macosx) #\. #\,))
+             (shortcut-prefix (if (eq? (system-type) 'macosx)
+                                  (cons 'shift (get-default-shortcut-prefix))
+                                  (get-default-shortcut-prefix)))
+             (callback (λ (_1 _2) (jump-to-previous-error-loc)))
+             (demand-callback
+              (λ (item)
+                (let* ([tab (get-current-tab)]
+                       [ints (send tab get-ints)])
+                  (send item enable (send ints get-error-ranges))))))
+        (make-object separator-menu-item% language-specific-menu)
+        (make-object menu:can-restore-menu-item%
+          (string-constant create-executable-menu-item-label)
+          language-specific-menu
+          (λ (x y) (create-executable this)))
+        (make-object menu:can-restore-menu-item%
+          (string-constant module-browser...)
+          language-specific-menu
+          (λ (x y) (drracket:module-overview:module-overview this)))
+        (let ()
+          (define base-title (format (string-constant module-browser-in-file) ""))
+          (define (update-menu-item i)
+            (define fn (send definitions-text get-filename))
+            (send i set-label 
+                  (if fn
+                      (let* ([str (path->string fn)]
+                             [overage (- 200 
+                                         (+ (string-length str)
+                                            (string-length base-title)))])
+                        (format (string-constant module-browser-in-file)
+                                (if (overage . >= . 0)
+                                    str
+                                    (string-append "..."
+                                                   (substring str
+                                                              (+ (- (string-length str) (abs overage)) 3)
+                                                              (string-length str))))))
+                      (string-constant module-browser-no-file)))
+            (send i enable fn))
+          (define i (new menu:can-restore-menu-item%
+                         [label base-title]
+                         [parent language-specific-menu]
+                         [demand-callback update-menu-item]
+                         [callback (λ (x y) 
+                                     (define fn (send definitions-text get-filename))
+                                     (when fn
+                                       (drracket:module-overview:module-overview/file fn this)))]))
+          (update-menu-item i))
+        (make-object separator-menu-item% language-specific-menu)
+        
+        (let ([cap-val
+               (λ ()
+                 (let* ([tab (get-current-tab)]
+                        [defs (send tab get-defs)]
+                        [settings (send defs get-next-settings)]
+                        [language (drracket:language-configuration:language-settings-language settings)])
+                   (send language capability-value 'drscheme:tabify-menu-callback)))])
           (new menu:can-restore-menu-item%
-               (label (string-constant clear-error-highlight-menu-item-label))
-               (parent language-specific-menu)
-               (callback
-                (λ (_1 _2) 
-                  (let* ([tab  (get-current-tab)]
-                         [ints (send tab get-ints)]
-                         [defs (send tab get-defs)])
-                    (send ints reset-error-ranges)
-                    (send defs clear-test-coverage))))
-               (help-string (string-constant clear-error-highlight-item-help-string))
-               (demand-callback
-                (λ (item)
-                  (let* ([tab (get-current-tab)]
-                         [ints (send tab get-ints)])
-                    (send item enable (or (send ints get-error-ranges)
-                                          (send tab get-test-coverage-info-visible?)))))))
+               [label (string-constant reindent-menu-item-label)]
+               [parent language-specific-menu]
+               [demand-callback (λ (m) (send m enable (cap-val)))]
+               [callback (send-method 
+                          (λ (x)
+                            (let ([f (cap-val)])
+                              (when f
+                                (f x
+                                   (send x get-start-position)
+                                   (send x get-end-position))))))])
           
-          ;; find-before-and-after : nat -> (values (or/c srcloc #f) (or/c srcloc #f) (listof srcloc))
-          ;;
-          ;; returns the source locations from the error ranges that are before and
-          ;; after get-start-position, or #f if the insertion point is before 
-          ;; all of them or after all of them, respectively
-          ;; also returns the sorted list of all srclocs
-          ;;
-          ;; this doesn't work properly when the positions are in embedded editor
-          ;;  (but it doesn't crash; it just has a strange notion of before and after)
-          (define (find-before-and-after)
-            (define tab (get-current-tab))
-            (define pos (send (send tab get-defs) get-start-position))
-            (define ranges (send (send tab get-ints) get-error-ranges))
-            (define sorted (sort ranges < #:key srcloc-position))
-            (let loop ([before #f]
-                       [lst sorted])
-              (cond
-                [(null? lst)
-                 (values before #f sorted)]
-                [else
-                 (define fst (car lst))
-                 (cond 
-                   [(= pos (- (srcloc-position fst) 1))
-                    (values before 
-                            (if (null? (cdr lst))
-                                #f
-                                (cadr lst))
-                            sorted)]
-                   [(< pos (- (srcloc-position fst) 1))
-                    (values before fst sorted)]
-                   [else (loop (car lst) (cdr lst))])])))
-          
-          (define (jump-to-source-loc srcloc)
-            (define ed (srcloc-source srcloc))
-            (send ed set-position (- (srcloc-position srcloc) 1))
-            (send ed set-caret-owner #f 'global))
-                  
           (new menu:can-restore-menu-item%
-               (label (string-constant jump-to-next-error-highlight-menu-item-label))
-               (parent language-specific-menu)
-               (shortcut #\.)
-               (callback (λ (_1 _2) (jump-to-next-error-loc)))
-               (demand-callback
-                (λ (item)
-                  (let* ([tab (get-current-tab)]
-                         [ints (send tab get-ints)])
-                    (send item enable (send ints get-error-ranges))))))
-          (new menu:can-restore-menu-item%
-               (label (string-constant jump-to-prev-error-highlight-menu-item-label))
-               (parent language-specific-menu)
-               (shortcut (if (eq? (system-type) 'macosx) #\. #\,))
-               (shortcut-prefix (if (eq? (system-type) 'macosx)
-                                    (cons 'shift (get-default-shortcut-prefix))
-                                    (get-default-shortcut-prefix)))
-               (callback (λ (_1 _2) (jump-to-previous-error-loc)))
-               (demand-callback
-                (λ (item)
-                  (let* ([tab (get-current-tab)]
-                         [ints (send tab get-ints)])
-                    (send item enable (send ints get-error-ranges))))))
-          (make-object separator-menu-item% language-specific-menu)
-          (make-object menu:can-restore-menu-item%
-            (string-constant create-executable-menu-item-label)
-            language-specific-menu
-            (λ (x y) (create-executable this)))
-          (make-object menu:can-restore-menu-item%
-            (string-constant module-browser...)
-            language-specific-menu
-            (λ (x y) (drracket:module-overview:module-overview this)))
-          (let ()
-            (define base-title (format (string-constant module-browser-in-file) ""))
-            (define (update-menu-item i)
-              (define fn (send definitions-text get-filename))
-              (send i set-label 
-                    (if fn
-                        (let* ([str (path->string fn)]
-                               [overage (- 200 
-                                           (+ (string-length str)
-                                              (string-length base-title)))])
-                          (format (string-constant module-browser-in-file)
-                                  (if (overage . >= . 0)
-                                      str
-                                      (string-append "..."
-                                                     (substring str
-                                                                (+ (- (string-length str) (abs overage)) 3)
-                                                                (string-length str))))))
-                        (string-constant module-browser-no-file)))
-              (send i enable fn))
-            (define i (new menu:can-restore-menu-item%
-                           [label base-title]
-                           [parent language-specific-menu]
-                           [demand-callback update-menu-item]
-                           [callback (λ (x y) 
-                                       (define fn (send definitions-text get-filename))
-                                       (when fn
-                                         (drracket:module-overview:module-overview/file fn this)))]))
-            (update-menu-item i))
-          (make-object separator-menu-item% language-specific-menu)
+               [label (string-constant reindent-all-menu-item-label)]
+               [parent language-specific-menu]
+               [callback 
+                (send-method 
+                 (λ (x)
+                   (let ([f (cap-val)])
+                     (when f
+                       (f x 0 (send x last-position))))))]
+               [shortcut #\i]
+               [demand-callback (λ (m) (send m enable (cap-val)))]))
+        
+        (make-object menu:can-restore-menu-item%
+          (string-constant box-comment-out-menu-item-label)
+          language-specific-menu
+          (send-method (λ (x) (send x box-comment-out-selection))))
+        (make-object menu:can-restore-menu-item%
+          (string-constant semicolon-comment-out-menu-item-label)
+          language-specific-menu
+          (send-method (λ (x) (send x comment-out-selection))))
+        (make-object menu:can-restore-menu-item%
+          (string-constant uncomment-menu-item-label)
+          language-specific-menu
+          (λ (x y)
+            (let ([text (get-focus-object)])
+              (when (is-a? text text%)
+                (let ([admin (send text get-admin)])
+                  (cond
+                    [(is-a? admin editor-snip-editor-admin<%>)
+                     (let ([es (send admin get-snip)])
+                       (cond
+                         [(is-a? es comment-box:snip%)
+                          (let ([es-admin (send es get-admin)])
+                            (when es-admin
+                              (let ([ed (send es-admin get-editor)])
+                                (when (is-a? ed racket:text<%>)
+                                  (send ed uncomment-box/selection)))))]
+                         [else (send text uncomment-selection)]))]
+                    [else (send text uncomment-selection)]))))))
+        
+        (set! insert-menu
+              (new (get-menu%)
+                   [label (string-constant insert-menu)]
+                   [parent mb]
+                   [demand-callback
+                    (λ (insert-menu)
+                      ;; just here for convience -- it actually works on all menus, not just the special menu
+                      (show/hide-capability-menus))]))
+        
+        (let ([has-editor-on-demand
+               (λ (menu-item)
+                 (let ([edit (get-edit-target-object)])
+                   (send menu-item enable (and edit (is-a? edit editor<%>)))))]
+              [callback
+               (λ (menu evt)
+                 (let ([edit (get-edit-target-object)])
+                   (when (and edit
+                              (is-a? edit editor<%>))
+                     (let ([number (get-fraction-from-user this)])
+                       (when number
+                         (send edit insert
+                               (number-snip:make-fraction-snip number #f)))))
+                   #t))]
+              [insert-lambda
+               (λ ()
+                 (let ([edit (get-edit-target-object)])
+                   (when (and edit
+                              (is-a? edit editor<%>))
+                     (send edit insert "\u03BB")))
+                 #t)]
+              [insert-large-semicolon-letters
+               (λ ()
+                 (let ([edit (get-edit-target-object)])
+                   (when edit
+                     (define language-settings (send definitions-text get-next-settings))
+                     (define-values(comment-prefix comment-character)
+                       (if language-settings
+                           (send (drracket:language-configuration:language-settings-language
+                                  language-settings)
+                                 get-comment-character)
+                           (values ";" #\;)))
+                     (insert-large-letters comment-prefix comment-character edit this))))]
+              [c% (get-menu-item%)])
           
-          (let ([cap-val
-                 (λ ()
-                   (let* ([tab (get-current-tab)]
-                          [defs (send tab get-defs)]
-                          [settings (send defs get-next-settings)]
-                          [language (drracket:language-configuration:language-settings-language settings)])
-                     (send language capability-value 'drscheme:tabify-menu-callback)))])
-            (new menu:can-restore-menu-item%
-                 [label (string-constant reindent-menu-item-label)]
-                 [parent language-specific-menu]
-                 [demand-callback (λ (m) (send m enable (cap-val)))]
-                 [callback (send-method 
-                            (λ (x)
-                              (let ([f (cap-val)])
-                                (when f
-                                  (f x
-                                     (send x get-start-position)
-                                     (send x get-end-position))))))])
-            
-            (new menu:can-restore-menu-item%
-                 [label (string-constant reindent-all-menu-item-label)]
-                 [parent language-specific-menu]
-                 [callback 
-                  (send-method 
-                   (λ (x)
-                     (let ([f (cap-val)])
-                       (when f
-                         (f x 0 (send x last-position))))))]
-                 [shortcut #\i]
-                 [demand-callback (λ (m) (send m enable (cap-val)))]))
+          (frame:add-snip-menu-items 
+           insert-menu 
+           c%
+           (λ (item)
+             (let ([label (send item get-label)])
+               (cond
+                 [(equal? label (string-constant insert-comment-box-menu-item-label))
+                  (register-capability-menu-item 'drscheme:special:insert-comment-box insert-menu)]
+                 [(equal? label (string-constant insert-image-item))
+                  (register-capability-menu-item 'drscheme:special:insert-image insert-menu)]))))
           
-          (make-object menu:can-restore-menu-item%
-            (string-constant box-comment-out-menu-item-label)
-            language-specific-menu
-            (send-method (λ (x) (send x box-comment-out-selection))))
-          (make-object menu:can-restore-menu-item%
-            (string-constant semicolon-comment-out-menu-item-label)
-            language-specific-menu
-            (send-method (λ (x) (send x comment-out-selection))))
-          (make-object menu:can-restore-menu-item%
-            (string-constant uncomment-menu-item-label)
-            language-specific-menu
-            (λ (x y)
-              (let ([text (get-focus-object)])
-                (when (is-a? text text%)
-                  (let ([admin (send text get-admin)])
-                    (cond
-                      [(is-a? admin editor-snip-editor-admin<%>)
-                       (let ([es (send admin get-snip)])
-                         (cond
-                           [(is-a? es comment-box:snip%)
-                            (let ([es-admin (send es get-admin)])
-                              (when es-admin
-                                (let ([ed (send es-admin get-editor)])
-                                  (when (is-a? ed racket:text<%>)
-                                    (send ed uncomment-box/selection)))))]
-                           [else (send text uncomment-selection)]))]
-                      [else (send text uncomment-selection)]))))))
+          (make-object c% (string-constant insert-fraction-menu-item-label)
+            insert-menu callback 
+            #f #f
+            has-editor-on-demand)
+          (register-capability-menu-item 'drscheme:special:insert-fraction insert-menu)
           
-          (set! insert-menu
-                (new (get-menu%)
-                     [label (string-constant insert-menu)]
-                     [parent mb]
-                     [demand-callback
-                      (λ (insert-menu)
-                        ;; just here for convience -- it actually works on all menus, not just the special menu
-                        (show/hide-capability-menus))]))
+          (make-object c% (string-constant insert-large-letters...)
+            insert-menu
+            (λ (x y) (insert-large-semicolon-letters))
+            #f #f
+            has-editor-on-demand)
+          (register-capability-menu-item 'drscheme:special:insert-large-letters insert-menu)
           
-          (let ([has-editor-on-demand
-                 (λ (menu-item)
-                   (let ([edit (get-edit-target-object)])
-                     (send menu-item enable (and edit (is-a? edit editor<%>)))))]
-                [callback
-                 (λ (menu evt)
-                   (let ([edit (get-edit-target-object)])
-                     (when (and edit
-                                (is-a? edit editor<%>))
-                       (let ([number (get-fraction-from-user this)])
-                         (when number
-                           (send edit insert
-                                 (number-snip:make-fraction-snip number #f)))))
-                     #t))]
-                [insert-lambda
-                 (λ ()
-                   (let ([edit (get-edit-target-object)])
-                     (when (and edit
-                                (is-a? edit editor<%>))
-                       (send edit insert "\u03BB")))
-                   #t)]
-                [insert-large-semicolon-letters
-                 (λ ()
-                   (let ([edit (get-edit-target-object)])
-                     (when edit
-                       (define language-settings (send definitions-text get-next-settings))
-                       (define-values(comment-prefix comment-character)
-                         (if language-settings
-                             (send (drracket:language-configuration:language-settings-language
-                                    language-settings)
-                                   get-comment-character)
-                             (values ";" #\;)))
-                       (insert-large-letters comment-prefix comment-character edit this))))]
-                [c% (get-menu-item%)])
-            
-            (frame:add-snip-menu-items 
-             insert-menu 
-             c%
-             (λ (item)
-               (let ([label (send item get-label)])
-                 (cond
-                   [(equal? label (string-constant insert-comment-box-menu-item-label))
-                    (register-capability-menu-item 'drscheme:special:insert-comment-box insert-menu)]
-                   [(equal? label (string-constant insert-image-item))
-                    (register-capability-menu-item 'drscheme:special:insert-image insert-menu)]))))
-            
-            (make-object c% (string-constant insert-fraction-menu-item-label)
-              insert-menu callback 
-              #f #f
-              has-editor-on-demand)
-            (register-capability-menu-item 'drscheme:special:insert-fraction insert-menu)
-            
-            (make-object c% (string-constant insert-large-letters...)
-              insert-menu
-              (λ (x y) (insert-large-semicolon-letters))
-              #f #f
-              has-editor-on-demand)
-            (register-capability-menu-item 'drscheme:special:insert-large-letters insert-menu)
-            
-            (make-object c% (string-constant insert-lambda)
-              insert-menu
-              (λ (x y) (insert-lambda))
-              #\\
-              #f
-              has-editor-on-demand)
-            (register-capability-menu-item 'drscheme:special:insert-lambda insert-menu))
-          
-          (frame:reorder-menus this)))
+          (make-object c% (string-constant insert-lambda)
+            insert-menu
+            (λ (x y) (insert-lambda))
+            #\\
+            #f
+            has-editor-on-demand)
+          (register-capability-menu-item 'drscheme:special:insert-lambda insert-menu))
+        
+        (frame:reorder-menus this))
       
       (define/public (jump-to-previous-error-loc)
         (define-values (before after sorted) (find-before-and-after))
