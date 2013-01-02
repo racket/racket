@@ -150,7 +150,7 @@
 
 ;; Register the approriate types to the struct bindings.
 (define/cond-contract (register-struct-bindings! sty names desc si)
-  (c-> Struct? struct-names? struct-desc? (or/c #f struct-info?) void?)
+  (c-> Struct? struct-names? struct-desc? (or/c #f struct-info?) (listof def-binding?))
 
 
   (define tvars (struct-desc-tvars desc))
@@ -203,14 +203,20 @@
             (add-struct-fn! s (make-StructPE poly-base i) #t)
             (cons s (poly-wrapper (->* (list poly-base t) -Void))))
           null))))
+
   (add-struct-constructor! (struct-names-constructor names))
-  (cons
-   (and si (make-def-struct-stx-binding (struct-names-type-name names) si))
-   (for/list ([b bindings])
-    (define id (car b))
-    (define t (cdr b))
-    (register-type id t)
-    (make-def-binding id t))))
+
+  (define def-bindings
+    (for/list ([b bindings])
+        (define id (car b))
+        (define t (cdr b))
+        (register-type id t)
+        (make-def-binding id t)))
+  (if si
+    (cons
+      (make-def-struct-stx-binding (struct-names-type-name names) si)
+      def-bindings)
+    def-bindings))
 
 (define (register-parsed-struct-sty! ps)
   (match ps
