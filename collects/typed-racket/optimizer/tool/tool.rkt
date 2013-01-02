@@ -49,6 +49,8 @@
   hide-optimization-coach
   get-filters
   set-filters!
+  get-profile-file
+  set-profile-file!
   optimization-coach-visible?
   build-optimization-coach-popup-menu
   launch-optimization-coach
@@ -75,7 +77,8 @@
       (inherit highlight-range unhighlight-range
                get-tab get-canvas get-pos/text
                position-line line-end-position
-               begin-edit-sequence end-edit-sequence)
+               begin-edit-sequence end-edit-sequence
+               get-port-name)
 
       (define highlights   '()) ; (listof `(,start ,end ,popup-fun))
       (define clear-thunks '()) ; list of thunks that clear highlights
@@ -89,6 +92,24 @@
       (define filters (map cdr check-boxes)) ; all enabled by default
       (define/public (get-filters) filters)
       (define/public (set-filters! fs) (set! filters fs))
+
+      ;; profile-file : String
+      ;; Name of the file where profile information should be found.
+      ;; Entered by the user, defaults to $PROGRAM.rkt.profile
+      ;; Stored here because this info belongs to individual buffers.
+      ;; Initialized lazily because `get-port-name' returns undefined if
+      ;; called at editor initialization time.
+      (define profile-file #f)
+      ;; TODO If I start with unsaved file, open OC, then open a file (reuses
+      ;;  same buffer), filename is not updated.
+      (define/public (get-profile-file)
+        (or profile-file
+            (let ([pf (string-append (format "~a" (get-port-name))
+                                     ".profile")])
+              (set! profile-file pf)
+              pf))
+        profile-file)
+      (define/public (set-profile-file! pf) (set! profile-file pf))
 
       ;; highlight-range, for ranges that span multiple lines, highlights
       ;; to the end of the first n-1 lines. Since the space at end of lines
@@ -180,8 +201,14 @@
 
       ;; gather profiling information, and use it to generate a refined report
       (define/public (optimization-coach-profile source)
-        (add-highlights #:source  source
-                        #:profile (generate-profile this source)))
+        (if (file-exists? profile-file)
+            (add-highlights
+             #:source  source
+             #:profile (generate-profile this source profile-file))
+            (message-box "Optimization Coach"
+                         (format "Profile file not found: ~a" profile-file)
+                         #f
+                         '(ok stop))))
 
       (super-new)))
 
@@ -232,23 +259,57 @@
 
 
       ;; control panel
-      (define panel #f)
+      (define panel              #f)
+      (define check-box-panel    #f)
+      (define profile-panel      #f)
+      (define profile-file-field #f)
       (define (create-panel)
-        (set! panel (new horizontal-panel%
-                         [parent (get-area-container)]
-                         [stretchable-height #f]))
+        (set! panel
+              (new vertical-panel%
+                   [parent (get-area-container)]
+                   [stretchable-height #f]))
+        (set! check-box-panel
+              (new horizontal-panel%
+                   [parent panel]
+                   [stretchable-height #f]))
+        (set! profile-panel
+              (new horizontal-panel%
+                   [parent panel]
+                   [stretchable-height #f]))
         (new button%
-             [label "Clear"]
-             [parent panel]
+             [label (string-constant close)]
+             [parent check-box-panel]
              [callback (lambda _ (close-optimization-coach))])
         (new button%
-             [label "Profile"]
-             [parent panel]
+             [label "Refine"]
+             [parent profile-panel]
              [callback (lambda _ (launch-profile))])
+        (set! profile-file-field
+              (new text-field%
+                   [label "Profile file:"]
+                   [parent profile-panel]
+                   [init-value (send (get-definitions-text) get-profile-file)]
+                   [callback ; when the value changes, propagate to master
+                    (lambda (text-field control-event)
+                      (send (get-definitions-text) set-profile-file!
+                            (send text-field get-value)))]))
+        (new button%
+             [label (string-constant browse...)]
+             [parent profile-panel]
+             [callback
+              (lambda _
+                (define-values (dir name _)
+                  (split-path
+                   (build-path (send profile-file-field get-value))))
+                (define f (get-file #f #f dir))
+                (when f
+                  (define fn (path->string f))
+                  (send profile-file-field set-value fn)
+                  (send (get-definitions-text) set-profile-file! fn)))])
         (for ([(l f) (in-pairs check-boxes)])
           (new check-box%
                [label l]
-               [parent panel]
+               [parent check-box-panel]
                [callback
                 (lambda _
                   (define definitions (get-definitions-text))
@@ -267,11 +328,15 @@
               [else  (create-panel)])
         ;; update check-boxes
         (define filters (send (get-definitions-text) get-filters))
-        (for ([c (in-list (for/list ([c (in-list (send panel get-children))]
+        (for ([c (in-list (for/list ([c (in-list (send check-box-panel
+                                                       get-children))]
                                      #:when (is-a? c check-box%))
                             c))]
               [(l f) (in-pairs check-boxes)])
-          (send c set-value (memq f filters))))
+          (send c set-value (memq f filters)))
+        ;; update profile-file-field
+        (send profile-file-field set-value
+              (send (get-definitions-text) get-profile-file)))
 
       (define/public (hide-optimization-coach)
         (send (get-area-container) delete-child panel))
