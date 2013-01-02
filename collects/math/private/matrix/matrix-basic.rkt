@@ -54,7 +54,6 @@
  matrix-normalize-rows
  matrix-normalize-cols
  ;; Predicates
- matrix-zero?
  matrix-rows-orthogonal?
  matrix-cols-orthogonal?)
 
@@ -367,13 +366,6 @@
      (matrix-map-cols (make-matrix-normalize p) M fail)]))
 
 ;; ===================================================================================================
-;; Approximate predicates using entrywise norms
-
-(: matrix-zero? (case-> ((Matrix Number) -> Boolean)
-                        ((Matrix Number) Real -> Boolean)))
-(define (matrix-zero? M [eps 0])
-  (cond [(negative? eps)  (raise-argument-error 'matrix-zero? "Nonnegative-Real" 1 M eps)]
-        [else  (<= (matrix-norm M +inf.0) eps)]))
 
 (: pairwise-orthogonal? ((Listof (Matrix Number)) Nonnegative-Real -> Boolean))
 (define (pairwise-orthogonal? Ms eps)

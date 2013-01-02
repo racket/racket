@@ -32,4 +32,4 @@
     [(_ [x xs ...])      (syntax/loc stx (array #[#[x] #[xs] ...]))]
     [(_ [x xs ...] : T)  (syntax/loc stx (array #[#[x] #[xs] ...] : T))]
     [(_ (~and [] c) (~optional (~seq : T)))
-     (raise-syntax-error 'row-matrix "given empty column" stx #'c)]))
+     (raise-syntax-error 'col-matrix "given empty column" stx #'c)]))

@@ -159,6 +159,7 @@
          vandermonde-matrix
          ;; matrix-basic.rkt
          matrix-dot
+         matrix-cos-angle
          matrix-angle
          matrix-normalize
          matrix-conjugate
