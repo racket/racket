@@ -175,7 +175,7 @@
 
 (start-splash (or the-splash-bitmap
                   the-bitmap-spec)
-              "DrRacket"
+              (format "DrRacket ~a" (version))
               700
               #:allow-funny? #t
               #:frame-icon todays-icon)
