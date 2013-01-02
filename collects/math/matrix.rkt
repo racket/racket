@@ -29,6 +29,7 @@
          (except-in "private/matrix/matrix-subspace.rkt"
                     matrix-col-space)
          (except-in "private/matrix/matrix-operator-norm.rkt"
+                    matrix-basis-cos-angle
                     matrix-basis-angle)
          ;;"private/matrix/matrix-qr.rkt"  ; all use require/untyped-contract
          ;;"private/matrix/matrix-lu.rkt"  ; all use require/untyped-contract
@@ -107,6 +108,8 @@
 (require/untyped-contract
  (begin (require "private/matrix/matrix-types.rkt"))
  "private/matrix/matrix-operator-norm.rkt"
+ [matrix-basis-cos-angle
+  ((Matrix Number) (Matrix Number) -> Number)]
  [matrix-basis-angle
   ((Matrix Number) (Matrix Number) -> Number)])
 
@@ -170,6 +173,7 @@
          ;; matrix-subspace.rkt
          matrix-col-space
          ;; matrix-operator-norm.rkt
+         matrix-basis-cos-angle
          matrix-basis-angle
          ;; matrix-qr.rkt
          matrix-qr
