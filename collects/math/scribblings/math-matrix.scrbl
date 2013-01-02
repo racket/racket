@@ -409,7 +409,7 @@ The function @racket[matrix-map-cols] works likewise but on rows.
 @examples[#:eval untyped-eval
                  (define A (matrix ([1 2 3] [4 5 6] [7 8 9] [10 11 12])))
                  (define (double-row r) (matrix-scale r 2))
-                 (matrix-map-rows double-row A)]                                                     
+                 (matrix-map-rows double-row A)]
 }
 
 
@@ -418,21 +418,32 @@ The function @racket[matrix-map-cols] works likewise but on rows.
 
 @section[#:tag "matrix:basic"]{Basic Operations}
 
-@defthing[matrix-conjugate Procedure]{
-@;{(: matrix-conjugate ((Matrix Number) -> (Matrix Number)))}
+@defproc[(matrix-conjugate [M (Matrix A)]) (Matrix A)]{
+Returns a matrix where each element of the given matrix is conjugated.
+@examples[#:eval untyped-eval
+                 (matrix-conjugate (matrix ([1 +i] [-1 2+i])))]
 }
 
-@deftogether[(@defthing[matrix-transpose Procedure]
-              @defthing[matrix-hermitian Procedure])]{
-@;{
-(: matrix-transpose (All (A) (Matrix A) -> (Matrix A)))
-(: matrix-hermitian ((Matrix Number) -> (Matrix Number)))
-}
+@margin-note{@hyperlink["http://en.wikipedia.org/wiki/Transpose"]{Wikipedia: Transpose}}
+@deftogether[(@defproc[(matrix-transpose [M (Matrix A)]) (Matrix A)]
+              @defproc[(matrix-hermitian [M (Matrix A)]) (Matrix A)])]{
+@margin-note{@hyperlink["http://en.wikipedia.org/wiki/Hermitian_matrix"]{Wikipedia: Hermitian}}
+Returns the transpose or the hermitian of the matrix. 
+The hermitian of a matrix is the conjugate of the transposed matrix.
+For a real matrix these operations return the the same result.
+@examples[#:eval untyped-eval
+                 (matrix-transpose (matrix ([1 1] [2 2] [3 3])))
+                 (matrix-hermitian (matrix ([1 +i] [2 +2i] [3 +3i])))]
 }
 
-@defthing[matrix-trace Procedure]{
-@;{(: matrix-trace ((Matrix Number) -> Number))}
+@margin-note{@hyperlink["http://en.wikipedia.org/wiki/Trace_(linear_algebra)"]{Wikipedia: Trace}}
+@defproc[(matrix-trace [M (Matrix Number)]) (Matrix Number)]{
+Returns the trace of the square matrix. The trace of matrix is the 
+the sum of the diagonal elements. 
+@examples[#:eval untyped-eval
+                 (matrix-trace (matrix ([1 2] [3 4])))]
 }
+
 
 
 @;{==================================================================================================}
@@ -555,9 +566,34 @@ Equivalent to @racket[(acos (matrix-cos-angle M0 M1))].
 
 @defthing[matrix-basis-extension Procedure]{}
 
-@defthing[matrix-qr Procedure]{}
+@margin-note{@hyperlink["http://en.wikipedia.org/wiki/QR_decomposition"]{Wikipedia: QR decomposition}}
+@deftogether[(@defproc[(matrix-qr [M (Matrix Real)])   (Values (Matrix Real) (Matrix Real))]
+              @defproc[(matrix-qr [M (Matrix Real)] [full Any]) (Values (Matrix Real) (Matrix Real))] 
+              @defproc[(matrix-qr [M (Matrix Number)])  (Values (Matrix Number) (Matrix Number))]
+              @defproc[(matrix-qr [M (Matrix Number)] [full Any]) (Values (Matrix Number) (Matrix Number))])]{
+Computes a QR-decomposition of the matrix @racket[M]. The values returned are
+the matrices @racket[Q] and @racket[R]. If @racket[full] is false, then
+a reduced decomposition is returned, otherwise a full decomposition is returned.
 
-                                                                                  
+@margin-note{An @italic{orthonormal} matrix has columns which are orthooginal, unit vectors.}
+The (full) decomposition of a square matrix consists of two matrices: 
+a orthogonal matrix @racket[Q] and an upper triangular matrix @racket[R], 
+such that @racket[QR = M]. 
+
+For tall non-square matrices @racket[R], the triangular part of the full decomposition,
+contains zeros below the diagonal. The reduced decomposition leaves the zeros out.
+See the Wikipedia entry on @hyperlink["http://en.wikipedia.org/wiki/QR_decomposition"]{QR decomposition}
+for more details.
+
+The decomposition @racket[M = QR] is useful for solving the equation @racket[Mx=v]. 
+Since the inverse of Q is simply the transpose of Q, 
+  @racket[Mx=v  <=>  QRx=v  <=>  Rx = Q^T v].
+And since @racket[R] is upper triangular, the system can be solved by back substitution.
+
+The algorithm used is Gram-Schmidt with reorthogonalization.
+See the paper @hyperlink["http://www.cerfacs.fr/algor/reports/2002/TR_PA_02_33.pdf"]{On the round-off error analysis of the Gram-Schmidt algorithm with reorthogonalization.}
+by Luc Giraud, Julien Langou, Miroslav Rozloznik.
+}                                                                                  
 @;{==================================================================================================}
 
 
