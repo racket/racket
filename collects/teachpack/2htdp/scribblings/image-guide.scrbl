@@ -199,6 +199,54 @@ a little.
                    
                    (rotary-dial 2)]
 
+@section{Alpha Blending}
+
+With shapes that have opaque colors like @racket["red"] and @racket["blue"], 
+overlaying one on top completely blots out the one one the bottom. 
+
+For example, the red rectangle here completely covers the blue one.
+
+@image-interaction[(overlay
+                    (rectangle 60 100 "solid" (color 127 255 127))
+                    (rectangle 100 60 "solid" (color 127 127 255)))]
+
+But @racketmodname[2htdp/image] also supports colors that are not 
+completely opaque, via the (optional) fourth argument to @racket[color].
+
+@image-interaction[(overlay
+                    (rectangle 60 100 "solid" (color 0 255 0 127))
+                    (rectangle 100 60 "solid" (color 0 0 255 127)))]
+
+In this example, the color @racket[(color 0 255 0 127)] looks just
+like the color @racket[(color 127 255 127)] when the background
+is white. Since white is @racket[(color 255 255 255)], we end up 
+getting @racket[1/2] of @racket[255] for the red and blue components
+and @racket[255] for the green one. 
+
+We can also use alpha blending to make some interesting effects. 
+For example, the function @racket[spin-alot] takes an image argument
+and repeatedly places it on top of itself, rotating it each time by 
+@racket[1] degree.
+
+@image-interaction[(define (spin-alot t)
+                     (local [(define (spin-more i θ)
+                               (cond
+                                 [(= θ 360) i]
+                                 [else 
+                                  (spin-more (overlay i (rotate θ t))
+                                             (+ θ 1))]))]
+                       (spin-more t 0)))]
+
+Here are some uses of @racket[spin-alot], first showing the original
+shape and then the spun shape.
+
+@image-interaction[(rectangle 12 120 "solid" (color 0 0 255))
+                   (spin-alot (rectangle 12 120 "solid" (color 0 0 255 1)))
+                   (triangle 120 "solid" (color 0 0 255))
+                   (spin-alot (triangle 120 "solid" (color 0 0 255 1)))
+                   (isosceles-triangle 120 30 "solid" (color 0 0 255))
+                   (spin-alot (isosceles-triangle 120 30 "solid" (color 0 0 255 1)))]
+
 @section{Recursive Image Functions}
 
 It is also possible to make interesting looking shapes with little recursive functions.
