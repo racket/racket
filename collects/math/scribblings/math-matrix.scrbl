@@ -316,67 +316,100 @@ tolerant to floating-point error.
 
 @section[#:tag "matrix:poly"]{Polymorphic Operations}
 
-@defthing[matrix-ref Procedure]{
-@;{(: matrix-ref (All (A) (Matrix A) Integer Integer -> A))}
+@defproc[(matrix-ref [M (Matrix A)] [i Integer] [j Integer]) A]{
+Returns the entry on row @racket[i] and column @racket[j].
+@examples[#:eval untyped-eval
+                 (define A (matrix ([1 2 3] [4 5 6])))
+                 (matrix-ref A 0 2)
+                 (matrix-ref A 1 2)]
 }
 
 @defthing[submatrix Procedure]{
-@;{
+@;{ TODO
 (: submatrix (All (A) (Matrix A) Slice-Spec Slice-Spec -> (Matrix A)))
 (define (submatrix a row-range col-range)
   (array-slice-ref (ensure-matrix 'submatrix a) (list row-range col-range)))
-}
-}
-
-@deftogether[(@defthing[matrix-row Procedure]
-              @defthing[matrix-col Procedure])]{
-@;{
-(: matrix-row (All (A) (Matrix A) Integer -> (Matrix A)))
-(: matrix-col (All (A) (Matrix A) Integer -> (Matrix A)))
-}
+} 
 }
 
-@defthing[matrix-diagonal Procedure]{
-@;{(: matrix-diagonal (All (A) ((Matrix A) -> (Array A))))}
+@deftogether[(@defproc[(matrix-row [M (Matrix A)] [i Integer]) (Matrix A)]
+              @defproc[(matrix-col [M (Matrix A)] [j Integer]) (Matrix A)])]{
+Returns the given row or column.
+@examples[#:eval untyped-eval
+                 (define A (matrix ([1 2 3] [4 5 6])))
+                 (matrix-row A 1)
+                 (matrix-col A 0)]
 }
 
-@deftogether[(@defthing[matrix-upper-triangle Procedure]
-              @defthing[matrix-lower-triangle Procedure])]{
-@;{
-(: matrix-upper-triangle (All (A) ((Matrix A) -> (Matrix (U A 0)))))
-(: matrix-lower-triangle (All (A) ((Matrix A) -> (Matrix (U A 0)))))
-}
-}
-
-@deftogether[(@defthing[matrix-rows Procedure]
-              @defthing[matrix-cols Procedure])]{
-@;{
-(: matrix-rows (All (A) (Matrix A) -> (Listof (Matrix A))))
-(: matrix-cols (All (A) (Matrix A) -> (Listof (Matrix A))))
-}
+@defproc[(matrix-diagonal [M (Matrix A)]) (Array A)]{
+Returns array of the elements on the diagonal of the square matrix.
+@examples[#:eval untyped-eval
+                 (define A (matrix ([1 2 3] [4 5 6] [7 8 9])))
+                 (matrix-diagonal A)]        
 }
 
-@deftogether[(@defthing[matrix-augment Procedure]
-              @defthing[matrix-stack Procedure])]{
-@;{
-(: matrix-augment (All (A) (Listof (Matrix A)) -> (Matrix A)))
-(: matrix-stack (All (A) (Listof (Matrix A)) -> (Matrix A)))
-}
+@deftogether[(@defproc[(matrix-upper-triangle [M (Matrix A)]) (Matrix A)]
+              @defproc[(matrix-lower-triangle [M (Matrix A)]) (Matrix A)])]{                                                           
+The function @racket[matrix-upper-triangle] returns an upper
+triangular matrix (entries below the diagonal are zero) with
+elements from the given matrix. Likewise the function 
+@racket[matrix-lower-triangle] returns an lower triangular
+matrix.
+@examples[#:eval untyped-eval
+                 (define A (matrix ([1 2 3] [4 5 6] [7 8 9])))
+                 (matrix-upper-triangle A)
+                 (matrix-lower-triangle A)]
 }
 
-@deftogether[(@defthing[matrix-map-rows Procedure]
-              @defthing[matrix-map-cols Procedure])]{
-@;{
-(: matrix-map-rows
-   (All (A B F) (case-> (((Matrix A) -> (Matrix B)) (Matrix A)        -> (Matrix B))
-                        (((Matrix A) -> (U #f (Matrix B))) (Matrix A) (-> F)
-                                                           -> (U F (Matrix B))))))
-
-(: matrix-map-cols
-   (All (A B F) (case-> (((Matrix A) -> (Matrix B)) (Matrix A)        -> (Matrix B))
-                        (((Matrix A) -> (U #f (Matrix B))) (Matrix A) (-> F)
-                                                           -> (U F (Matrix B))))))
+@deftogether[(@defproc[(matrix-rows [M (Matrix A)]) (Listof (Matrix A))]
+              @defproc[(matrix-cols [M (Matrix A)]) (Listof (Matrix A))])]{
+The functions respectively returns a list of the rows or columns
+of the matrix.
+@examples[#:eval untyped-eval
+                 (define A (matrix ([1 2 3] [4 5 6])))
+                 (matrix-rows A)
+                 (matrix-cols A)]
 }
+
+@deftogether[(@defproc[(matrix-augment [Ms (Listof (Matrix A))]) (Matrix A)]
+              @defproc[(matrix-stack [Ms (Listof (Matrix A))]) (Matrix A)])]{
+The function @racket[matrix-augment] returns a matrix whose columns are
+the columns of the matrices in @racket[Ms]. This implies that the matrices 
+in list must have the same number of rows.
+
+The function @racket[matrix-stack] returns a matrix whose rows are
+the rows of the matrices in @racket[Ms]. This implies that the matrices 
+in list must have the same number of columns.
+@examples[#:eval untyped-eval
+                 (define A (matrix ([1 1] [1 1])))
+                 (define B (matrix ([2 2] [2 2])))
+                 (define C (matrix ([3 3] [3 3])))
+                 (matrix-augment (list A B C))
+                 (matrix-stack (list A B C))]
+}
+
+@deftogether[
+(@defproc[(matrix-map-rows 
+           [f ((Matrix A) -> (Matrix B))] [M (Matrix A)]) (Matrix B)]
+  @defproc[(matrix-map-rows 
+            [f ((Matrix A) -> (U #f (Matrix B)))] [M (Matrix A)] [fail (-> F)]) (Matrix B)]
+  @defproc[(matrix-map-cols 
+            [f ((Matrix A) -> (Matrix B))] [M (Matrix A)]) (Matrix B)]
+  @defproc[(matrix-map-cols 
+            [f ((Matrix A) -> (U #f (Matrix B)))] [M (Matrix A)] [fail (-> F)]) (Matrix B)])]{
+
+In the simple case the function @racket[matrix-map-rows] applies the function @racket[f]
+to each row of @racket[M]. If the rows are called @racket[r0], @racket[r1], ... then
+the result matrix has the rows @racket[(f r0)], @racket[(f r1)], ... .
+In the three argument case, the result of @racket[(fail)] is used, 
+if @racket[f] returns @racket[#f].
+
+The function @racket[matrix-map-cols] works likewise but on rows.
+
+@examples[#:eval untyped-eval
+                 (define A (matrix ([1 2 3] [4 5 6] [7 8 9] [10 11 12])))
+                 (define (double-row r) (matrix-scale r 2))
+                 (matrix-map-rows double-row A)]                                                     
 }
 
 
