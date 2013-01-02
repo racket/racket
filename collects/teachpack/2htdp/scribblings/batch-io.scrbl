@@ -150,7 +150,7 @@ There is only one writer function at the moment:
 ]
  After evaluating this examples, the file named @racket["output.txt"]
  looks like this: 
- @(file-is "output.txt")
+cruel world
  Explain why.
 }
 ]
