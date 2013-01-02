@@ -1439,7 +1439,6 @@ TODO
       (define logger-editor #f)
       (define logger-messages '())
       (define user-log-receiver-args-str (preferences:get 'drracket:logger-receiver-string))
-      (define user-log-receiver #f)
       (define/public (set-user-log-receiver-args str args) 
         (set! user-log-receiver-args-str str)
         (update-log-receiver-to-match-str))
@@ -1449,19 +1448,13 @@ TODO
           [logging-on?
            (update-log-receiver-to-match-str)]
           [else
-           (when user-log-receiver
-             (set! user-log-receiver #f)
-             (semaphore-post user-log-receiver-changed))]))
+           (channel-put user-log-receiver-changed #f)]))
       (define/private (update-log-receiver-to-match-str)
         (define args (parse-logger-args user-log-receiver-args-str))
-        (set! user-log-receiver
-              (and args
-                   (apply make-log-receiver user-logger args)))
-        (semaphore-post user-log-receiver-changed))
-      
-      (define/private (inform-user-logger-thread-that-logger-changed)
-        (semaphore-post user-log-receiver-changed))
-      (define user-log-receiver-changed (make-semaphore 0))
+        (channel-put user-log-receiver-changed
+                     (and args
+                          (apply make-log-receiver user-logger args))))
+      (define user-log-receiver-changed (make-channel))
       (thread
        (λ ()
          (struct gui-event (start end name) #:prefab)
@@ -1476,10 +1469,11 @@ TODO
            (semaphore-post sema)
            (for ([vec (in-list (reverse my-evts))])
              (new-log-message vec)))
-         (let loop ()
+         (let loop ([user-log-receiver #f])
            (sync
             (handle-evt user-log-receiver-changed
-                        (λ (_) (loop)))
+                        (λ (user-log-receiver) 
+                          (loop user-log-receiver)))
             (if user-log-receiver
                 (handle-evt user-log-receiver
                             (λ (vec)
@@ -1490,7 +1484,7 @@ TODO
                                   (queue-callback user-event-handler-callback #f)
                                   (set! callback-running? #t))
                                 (semaphore-post sema))
-                              (loop)))
+                              (loop user-log-receiver)))
                 never-evt)))))
       (define/public (get-logger-messages) logger-messages)
       (define/private (new-log-message vec)
