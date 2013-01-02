@@ -390,14 +390,9 @@ in list must have the same number of columns.
 
 @deftogether[
 (@defproc[(matrix-map-rows 
-           [f ((Matrix A) -> (Matrix B))] [M (Matrix A)]) (Matrix B)]
-  @defproc[(matrix-map-rows 
-            [f ((Matrix A) -> (U #f (Matrix B)))] [M (Matrix A)] [fail (-> F)]) (Matrix B)]
-  @defproc[(matrix-map-cols 
-            [f ((Matrix A) -> (Matrix B))] [M (Matrix A)]) (Matrix B)]
-  @defproc[(matrix-map-cols 
-            [f ((Matrix A) -> (U #f (Matrix B)))] [M (Matrix A)] [fail (-> F)]) (Matrix B)])]{
-
+           [f ((Matrix A) -> (U #f (Matrix B)))] [M (Matrix A)] [fail (-> F) (λ () #f)]) (Matrix B)]  
+ @defproc[(matrix-map-cols 
+           [f ((Matrix A) -> (U #f (Matrix B)))] [M (Matrix A)] [fail (-> F) (λ () #f)]) (Matrix B)])]{
 In the simple case the function @racket[matrix-map-rows] applies the function @racket[f]
 to each row of @racket[M]. If the rows are called @racket[r0], @racket[r1], ... then
 the result matrix has the rows @racket[(f r0)], @racket[(f r1)], ... .
@@ -451,84 +446,122 @@ the sum of the diagonal elements.
 
 @section[#:tag "matrix:inner"]{Inner Product Space Operations}
 
-TODO: explain: operations on the inner product space of matrices
+The set of matrices of a given size forms a vector space.
+Since the vector space of @racket[mx1] matrices is isomorphic to
+the vector space of vectors of size @racket[m], any inner
+product (or norm) induce an inner product (or norm) on vectors.
 
-TODO: explain: probably most useful to use these functions on row and column matrices
+Put differently, the following innner products and norm, even
+though defined on general matrices, work on vectors in the
+form of column and row matrices.
 
 See @secref{matrix:op-norm} for similar functions (e.g. norms and angles) defined by considering
 matrices as operators between inner product spaces consisting of column matrices.
 
-@deftogether[(@defthing[matrix-1norm Procedure]
-              @defthing[matrix-2norm Procedure]
-              @defthing[matrix-inf-norm Procedure]
-              @defthing[matrix-norm Procedure])]{
-@;{
-(: matrix-1norm ((Matrix Number) -> Nonnegative-Real))
-;; Manhattan, taxicab, or sum norm
+@margin-note{@hyperlink["http://en.wikipedia.org/wiki/Norm_(mathematics)"]{Wikipedia: Norm}}
+@deftogether[(@defproc[(matrix-1norm [M (Matrix Number)]) Number]
+              @defproc[(matrix-2norm [M (Matrix Number)]) Number]
+              @defproc[(matrix-inf-norm [M (Matrix Number)]) Number]
+              @defproc[(matrix-norm [M (Matrix Number)]) Number]
+              @defproc[(matrix-norm [M (Matrix Number)] [p Real]) Number])]{
+The first three functions compute the L1-norm, the L2-norm, and, the L∞-norm respectively.
 
-(: matrix-2norm ((Matrix Number) -> Nonnegative-Real))
-;; Frobenius, or Euclidean norm
+The L1-norm is also known under the names Manhattan- or taxicab-norm.
+The L1-norm of a matrix is the sum of magnitudes of the entries in the matrix.
 
-(: matrix-inf-norm ((Matrix Number) -> Nonnegative-Real))
-;; Maximum, or infinity norm
+The L2-norm is also known under the names Euclidean- or Frobenius-norm. 
+The L2-norm of a matrix is the square root of the sum of squares of 
+magnitudes of the entries in the matrix.
 
-(: matrix-norm (case-> ((Matrix Number) -> Nonnegative-Real)
-                       ((Matrix Number) Real -> Nonnegative-Real)))
-;; Any p norm
-}
-}
+The L∞-norm is also known as the maximum- or infinity-norm.
+The L∞-norm computes the maximum magnitude of the entries in the matrix.
 
-@defthing[matrix-dot Procedure]{
-@;{
-(: matrix-dot (case-> ((Matrix Number) -> Nonnegative-Real)
-                      ((Matrix Number) (Matrix Number) -> Number)))
-;; Computes the Frobenius inner product of a matrix with itself or of two matrices
-}
-}
-
-@defthing[matrix-cos-angle Procedure]{
-@;{
-(: matrix-cos-angle ((Matrix Number) (Matrix Number) -> Number))
-;; Returns the cosine of the angle between two matrices w.r.t. the inner produce space induced by
-;; the Frobenius inner product
-}
+The function @racket[matrix-norm] computes the Lp-norm. 
+For a number @racket[p>=1] the @racket[p]th root of the sum
+of all entries to the @racket[p]th power. 
+@;{MathJax would be nice to have in Scribble...}
+If no @racket[p] is given, the 2-norm (Eucledian) is used.
+@examples[#:eval untyped-eval
+                 (matrix-1norm    (col-matrix [1 2]))
+                 (matrix-2norm    (col-matrix [1 2]))
+                 (matrix-inf-norm (col-matrix [1 2]))
+                 (matrix-norm     (col-matrix [1 2]) 3)]
 }
 
-@defthing[matrix-angle Procedure]{
+@deftogether[(@defproc[(matrix-dot [M (Matrix Number)]) Nonnegative-Real]
+              @defproc[(matrix-dot [M1 (Matrix Number)] [M2 (Matrix Number)]) Number])]{
+
+The call @racket[(matrix-dot M1 M2)] computes the Frobenius inner product of the 
+two matrices with the same shape.
+In other words the sum of @racket[(* a (conjugate b))] is computed where 
+@racket[a] runs over the entries in @racket[M1] and @racket[b] runs over
+the corresponding entries in @racket[M2].
+
+The call @racket[(matrix-dot M)] computes @racket[(matrix-dot M M)] efficiently.
+@examples[#:eval untyped-eval
+                 (matrix-dot (col-matrix [1 2]) (col-matrix [3 4]))
+                 (+ (* 1 3) (* 2 4))]
+}
+
+@defproc[(matrix-cos-angle [M (Matrix Number)]) Number]{
+Returns the cosine of the angle between two matrices w.r.t. the inner produce space induced by
+the Frobenius inner product. That is it returns 
+
+@racket[(/ (matrix-dot M N) (* (matrix-2norm M) (matrix-2norm N)))]
+
+@examples[#:eval untyped-eval
+                 (define e1 (col-matrix [1 0]))
+                 (define e2 (col-matrix [0 1]))
+                 (matrix-cos-angle e1 e2)
+                 (matrix-cos-angle e1 (matrix+ e1 e2))]
+}
+
+@defproc[(matrix-angle [M1 (Matrix Number)] [M2 (Matrix Number)]) Number]{
 Equivalent to @racket[(acos (matrix-cos-angle M0 M1))].
+@examples[#:eval untyped-eval
+                 (require racket/math) ; for radians->degrees
+                 (define e1 (col-matrix [1 0]))
+                 (define e2 (col-matrix [0 1]))
+                 (radians->degrees (matrix-angle e1 e2))
+                 (radians->degrees (matrix-angle e1 (matrix+ e1 e2)))]
 }
 
-@defthing[matrix-normalize Procedure]{
-@;{
-(: matrix-normalize
-   (All (A) (case-> ((Matrix Number)             -> (Matrix Number))
-                    ((Matrix Number) Real        -> (Matrix Number))
-                    ((Matrix Number) Real (-> A) -> (U A (Matrix Number))))))
-}
+@defproc[(matrix-normalize [M (Matrix Number)] [p Real 2] [fail (-> A) raise-argument-error]) (U (Matrix Number) A)]{
+To normalize a matrix is to scale it, such that the result has norm 1.
+                                                                                                              
+The call @racket[(matrix-normalize M p fail)] normalizes @racket[M] with respect to 
+the @racket[Lp]-norm. If the matrix @racket[M] has norm 0, the result of calling 
+the thunk @racket[fail] is returned.
+
+If no fail-thunk is given, an argument-error exception is raised.
+If no @racket[p] the L2-norm (Euclidean norm) is used.
+@examples[#:eval untyped-eval
+                 (require racket/math) ; for radians->degrees
+                 (matrix-normalize (col-matrix [1 1]))
+                 (matrix-normalize (col-matrix [1 1]) 1)
+                 (matrix-normalize (col-matrix [1 1]) +inf.0)]
 }
 
-@deftogether[(@defthing[matrix-normalize-rows Procedure]
-              @defthing[matrix-normalize-cols Procedure])]{
-@;{
-(: matrix-normalize-rows
-   (All (A) (case-> ((Matrix Number)             -> (Matrix Number))
-                    ((Matrix Number) Real        -> (Matrix Number))
-                    ((Matrix Number) Real (-> A) -> (U A (Matrix Number))))))
+@deftogether[(@defproc[(matrix-normalize-rows [M (matrix Number)] [p Real 2] [fail (-> A) raise-argument-error]) (Matrix Number)]
+              @defproc[(matrix-normalize-cols [M (matrix Number)] [p Real 2] [fail (-> A) raise-argument-error]) (Matrix Number)])]{
+As @racket[matrix-normalize] but each row or column is normalized separately.
+The result is this a matrix with unit vectors as rows or columns.
+@examples[#:eval untyped-eval
+                 (require racket/math) ; for radians->degrees
+                 (matrix-normalize-rows (matrix [[1 2] [2 4]]))
+                 (matrix-normalize-cols (matrix [[1 2] [2 4]]))]
+}
+                                                                                                             
+@deftogether[(@defproc[(matrix-rows-orthogonal? [M (Matrix Number)] [eps Real (* 10 epsilon.0)]) Boolean]
+              @defproc[(matrix-cols-orthogonal? [M (Matrix Number)] [eps Real (* 10 epsilon.0)]) Boolean])]{
+Returns @racket[#t] if the rows or columns of @racket[M] 
+are very close of being orthogonal (by default a few epsilons). 
+@examples[#:eval untyped-eval
+                 (require racket/math) ; for radians->degrees
+                 (matrix-rows-orthogonal? (matrix [[1 1] [-1 1]]))
+                 (matrix-cols-orthogonal? (matrix [[1 1] [-1 1]]))]
+}
 
-(: matrix-normalize-cols
-   (All (A) (case-> ((Matrix Number)             -> (Matrix Number))
-                    ((Matrix Number) Real        -> (Matrix Number))
-                    ((Matrix Number) Real (-> A) -> (U A (Matrix Number))))))
-}
-}
-
-@deftogether[(@defthing[matrix-rows-orthogonal? Procedure]
-              @defthing[matrix-cols-orthogonal? Procedure])]{
-@;{
-(: matrix-rows-orthogonal? ((Matrix Number) [Real (* 10 epsilon.0)] -> Boolean))
-(: matrix-cols-orthogonal? ((Matrix Number) [Real (* 10 epsilon.0)] -> Boolean))
-}
-}
 
 
 @;{==================================================================================================}
@@ -592,7 +625,7 @@ And since @racket[R] is upper triangular, the system can be solved by back subst
 
 The algorithm used is Gram-Schmidt with reorthogonalization.
 See the paper @hyperlink["http://www.cerfacs.fr/algor/reports/2002/TR_PA_02_33.pdf"]{On the round-off error analysis of the Gram-Schmidt algorithm with reorthogonalization.}
-by Luc Giraud, Julien Langou, Miroslav Rozloznik.
+by Luc Giraud, Julien Langou, and, Miroslav Rozloznik.
 }                                                                                  
 @;{==================================================================================================}
 
