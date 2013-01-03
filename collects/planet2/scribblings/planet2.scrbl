@@ -18,6 +18,9 @@
 @(define (inset . c)
    (cons (hspace 2) c))
 
+@(define (gtech s)
+   @tech[#:doc '(lib "scribblings/guide/guide.scrbl") s])
+
 @; ----------------------------------------
 
 @title{Package Management in Racket (Beta)}
@@ -33,13 +36,30 @@ programmers find libraries that you make available.
 
 @section{Package Concepts}
 
-A @deftech{package} is a set of modules from some number of
-collections. @tech{Packages} also have associated @tech{package
-metadata}.
+A @deftech{package} is a set of modules in some number of
+@gtech{collections}. Modules installed using the Racket package
+manager are @racket[require]d like any other modules. For example, if
+the package @pkgname{tic-tac-toe} contains the module
+@filepath{matrix.rkt} in a @filepath{data} collection, then after
+@pkgname{tic-tac-toe} is installed,
 
-@deftech{Package metadata} is:
+@racketblock[(require data/matrix)]
+
+imports the module. The package name is not mentioned with
+@racket[require], because packages are a way of managing library
+collections, not a way of referencing them. It is common, however, for
+a package to implement a collection whose name is the same as the
+package name---in which case a @racket[require] might appear to be
+referencing a @tech{package}, but it is actually referencing a
+@gtech{collection} provided by the @tech{package}.
+
+Each @tech{package} has associated @deftech{package metadata}:
+
 @itemlist[
  @item{a @deftech{package name} --- a string made of the characters @|package-name-chars|.}
+ @item{a @deftech{checksum} --- a string that identifies different releases of a package. A
+                                package can be updated when its @tech{checksum} changes,
+                                whether or not its @tech{version} changes.}
  @item{a @deftech{version} --- a string of the form @nonterm{maj}@litchar{.}@nonterm{min},
                      @nonterm{maj}@litchar{.}@nonterm{min}@litchar{.}@nonterm{sub}, or
                      @nonterm{maj}@litchar{.}@nonterm{min}@litchar{.}@nonterm{sub}@litchar{.}@nonterm{rel},
@@ -50,10 +70,7 @@ metadata}.
                      a package, and should not be confused with different releases of
                      a package as indicated by the @tech{checksum}.}
  @item{a list of dependencies --- a list of packages to be installed simultaneously, optionally
-                                 with a lower bound on each package's version.}
- @item{a @deftech{checksum} --- a string that identifies different releases of a package. A
-                                package can be updated when its @tech{checksum} changes 
-                                whether or not its @tech{version} changes.} 
+                                 with a lower bound on each package's @tech{version}.}
 ]
 
 A @tech{package} is typically represented by a directory with the same
@@ -195,20 +212,6 @@ different than B's. Note that a package @tech{version} is not taken
 into account when determining a @tech{package update}, although a change
 in a package's @tech{version} (in either direction) should normally
 imply a change in the @tech{checksum}.
-
-@; ----------------------------------------
-
-@section{Using Packages}
-
-Modules installed using the Racket package manager
-may be @tech{require}d like any other
-modules. For instance, if the package @pkgname{tic-tac-toe} contains
-the module file  @filepath{data/matrix.rkt}, then package users
-who have this package installed may evaluate
-
-@racketblock[(require data/matrix)]
-
-...to require this module.
 
 @; ----------------------------------------
 
