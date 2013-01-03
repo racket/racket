@@ -552,9 +552,11 @@
           (let ([back-name (path-utils:generate-backup-name name)])
             (when (or (not (file-exists? back-name))
                       (file-old? back-name))
-              (when (file-exists? back-name)
-                (delete-file back-name))
-              (with-handlers ([(λ (x) #t) void])
+              (with-handlers ([exn:fail? 
+                               (λ (exn)
+                                 (log-debug "failed to clean up autosave file.1: ~a" back-name))])
+                (when (file-exists? back-name)
+                  (delete-file back-name))
                 (copy-file name back-name)))))
         (inner (void) on-save-file name format))
       (define/augment (on-close)
@@ -635,9 +637,13 @@
       (define/public (remove-autosave)
         (when auto-saved-name
           (when (file-exists? auto-saved-name)
-            (delete-file auto-saved-name))
-          (set! auto-saved-name #f)))
-      (super-instantiate ())
+            (with-handlers ([exn:fail? 
+                             (λ (exn)
+                               (log-debug "failed to clean up autosave file.2: ~a" 
+                                          auto-saved-name))])            
+              (delete-file auto-saved-name)
+              (set! auto-saved-name #f)))))
+      (super-new)
       (autosave:register this)))
   
   (define info<%> (interface (basic<%>)))
