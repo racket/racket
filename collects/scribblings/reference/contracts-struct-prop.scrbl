@@ -55,7 +55,7 @@ constraint.
 (require 'propmod 'structmod)
 ]
 
-First we create an @racket[s] instance with a integer predicate, so
+First we create an @racket[s] instance with an integer predicate, so
 the constraint on @racket[prop] is in fact satisfied. The first call
 to @racket[app-prop] is correct; the second simply violates the
 contract of @racket[app-prop].
