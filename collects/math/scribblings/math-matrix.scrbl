@@ -275,28 +275,53 @@ As in the first example, Typed Racket often needs help inferring the type @racke
 
 @section[#:tag "matrix:arith"]{Entrywise Operations and Arithmetic}
 
-TODO: fill in empty docs
+@deftogether[(@defproc[(matrix+ [M (Matrix Number)] [N (Matrix Number)] ...) (Matrix Number)]
+              @defproc[(matrix- [M (Matrix Number)] [N (Matrix Number)] ...) (Matrix Number)]
+              @defproc[(matrix* [M (Matrix Number)] [N (Matrix Number)] ...) (Matrix Number)])]{
+Matrix addition, subtraction and products respectively.
+
+For matrix addition and subtraction all matrices must have the same shape.
+
+For matrix product the number of columns of one matrix must equal the 
+number of rows in the following matrix.
+
+@examples[#:eval untyped-eval
+                 (define A (matrix ([1 2] 
+                                    [3 4])))
+                 (define B (matrix ([5 6] 
+                                    [7 8])))
+                 (define C (matrix ([ 9 10 11]
+                                    [12 13 14])))
+                 (matrix+ A B)
+                 (matrix- A B)
+                 (matrix* A C)]
+}
+
+@defproc[(matrix-expt [M (Matrix Number)] [n Integer]) (Matrix Number)]{
+Computes @racket[(matrix* M ...)] with @racket[n] arguments, but more efficiently.
+@racket[M] must be a @racket[square-matrix?] and @racket[n] must be nonnegative.
+@examples[#:eval untyped-eval
+                 ; The 100th (and 101th) Fibonacci number:
+                 (matrix* (matrix-expt (matrix [[1 1] [1 0]]) 100)
+                          (col-matrix [0 1]))]
+}
+
+@defproc[(matrix-scale [M (Matrix Number)] [z Number]) (Matrix Number)]{
+Computes the matrix @racket[zM], a matrix of the same shape as @racket[M] 
+where each entry in @racket[M] is multiplied with @racket[z].
+@examples[#:eval untyped-eval
+                 (matrix-scale (matrix [[1 2] [3 4]]) 2)]
+}
 
 @defproc*[([(matrix-map [f (A -> R)] [arr0 (Matrix A)]) (Matrix R)]
            [(matrix-map [f (A B Ts ... -> R)] [arr0 (Matrix A)] [arr1 (Matrix B)] [arrs (Matrix Ts)]
                         ...)
             (Matrix R)])]{
 Like @racket[array-map], but requires at least one array argument and never @tech{broadcasts}.
-
-TODO: more
-}
-
-@deftogether[(@defproc[(matrix* [M (Matrix Number)] [N (Matrix Number)] ...) (Matrix Number)]
-              @defproc[(matrix+ [M (Matrix Number)] [N (Matrix Number)] ...) (Matrix Number)]
-              @defproc[(matrix- [M (Matrix Number)] [N (Matrix Number)] ...) (Matrix Number)])]{
-}
-
-@defproc[(matrix-expt [M (Matrix Number)] [n Integer]) (Matrix Number)]{
-Computes @racket[(matrix* M ...)] with @racket[n] arguments, but more efficiently.
-@racket[M] must be a @racket[square-matrix?] and @racket[n] must be nonnegative.
-}
-
-@defproc[(matrix-scale [M (Matrix Number)] [x Number]) (Matrix Number)]{
+@examples[#:eval untyped-eval
+                 (matrix-map sqr (matrix [[1 2] [3 4]]))
+                 (matrix-map  +  (matrix [[1 2] [3 4]])
+                                 (matrix [[5 6] [7 8]]))]
 }
 
 @defproc[(matrix-sum [Ms (Listof (Matrix Number))]) (Matrix Number)]{
@@ -330,6 +355,7 @@ Returns the entry on row @racket[i] and column @racket[j].
 (define (submatrix a row-range col-range)
   (array-slice-ref (ensure-matrix 'submatrix a) (list row-range col-range)))
 } 
+ TODO
 }
 
 @deftogether[(@defproc[(matrix-row [M (Matrix A)] [i Integer]) (Matrix A)]
