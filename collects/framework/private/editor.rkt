@@ -149,14 +149,9 @@
               #t))))
       
       (define/private (format-error-message exn)
-        (let ([sp (open-output-string)])
-          (parameterize ([current-output-port sp])
-            ((error-display-handler)
-             (if (exn? exn)
-                 (format "~a" (exn-message exn))
-                 (format "uncaught exn: ~s" exn))
-             exn))
-          (get-output-string sp)))
+        (if (exn? exn)
+            (format "~a" (exn-message exn))
+            (format "uncaught exn: ~s" exn)))
       
       (inherit refresh-delayed? 
                get-canvas
