@@ -488,8 +488,8 @@ matrices as operators between inner product spaces consisting of column matrices
 @deftogether[(@defproc[(matrix-1norm [M (Matrix Number)]) Number]
               @defproc[(matrix-2norm [M (Matrix Number)]) Number]
               @defproc[(matrix-inf-norm [M (Matrix Number)]) Number]
-              @defproc[(matrix-norm [M (Matrix Number)]) Number]
-              @defproc[(matrix-norm [M (Matrix Number)] [p Real]) Number])]{
+              @defproc*[([(matrix-norm [M (Matrix Number)]) Number]
+                         [(matrix-norm [M (Matrix Number)] [p Real]) Number])])]{
 The first three functions compute the L1-norm, the L2-norm, and, the L∞-norm respectively.
 
 The L1-norm is also known under the names Manhattan- or taxicab-norm.
@@ -514,8 +514,8 @@ If no @racket[p] is given, the 2-norm (Eucledian) is used.
                  (matrix-norm     (col-matrix [1 2]) 3)]
 }
 
-@deftogether[(@defproc[(matrix-dot [M (Matrix Number)]) Nonnegative-Real]
-              @defproc[(matrix-dot [M1 (Matrix Number)] [M2 (Matrix Number)]) Number])]{
+@defproc*[([(matrix-dot [M (Matrix Number)]) Nonnegative-Real]
+           [(matrix-dot [M1 (Matrix Number)] [M2 (Matrix Number)]) Number])]{
 
 The call @racket[(matrix-dot M1 M2)] computes the Frobenius inner product of the 
 two matrices with the same shape.
@@ -626,10 +626,10 @@ are very close of being orthogonal (by default a few epsilons).
 @defthing[matrix-basis-extension Procedure]{}
 
 @margin-note{@hyperlink["http://en.wikipedia.org/wiki/QR_decomposition"]{Wikipedia: QR decomposition}}
-@deftogether[(@defproc[(matrix-qr [M (Matrix Real)])   (Values (Matrix Real) (Matrix Real))]
-              @defproc[(matrix-qr [M (Matrix Real)] [full Any]) (Values (Matrix Real) (Matrix Real))] 
-              @defproc[(matrix-qr [M (Matrix Number)])  (Values (Matrix Number) (Matrix Number))]
-              @defproc[(matrix-qr [M (Matrix Number)] [full Any]) (Values (Matrix Number) (Matrix Number))])]{
+@defproc*[([(matrix-qr [M (Matrix Real)])   (Values (Matrix Real) (Matrix Real))]
+           [(matrix-qr [M (Matrix Real)] [full Any]) (Values (Matrix Real) (Matrix Real))] 
+           [(matrix-qr [M (Matrix Number)])  (Values (Matrix Number) (Matrix Number))]
+           [(matrix-qr [M (Matrix Number)] [full Any]) (Values (Matrix Number) (Matrix Number))])]{
 Computes a QR-decomposition of the matrix @racket[M]. The values returned are
 the matrices @racket[Q] and @racket[R]. If @racket[full] is false, then
 a reduced decomposition is returned, otherwise a full decomposition is returned.
