@@ -2262,14 +2262,23 @@
        (define parent-vp (new vertical-panel% 
                               [parent parent]
                               [alignment '(center top)]))
+       (new vertical-panel% [parent parent-vp])
        (define vp (new vertical-panel% 
                        [parent parent-vp]
                        [stretchable-width #f]
                        [stretchable-height #f]
                        [alignment '(left center)]))
+       (new vertical-panel% [parent parent-vp])
        
        (define ((make-callback pref-sym) choice evt)
          (preferences:set pref-sym (index->pref (send choice get-selection))))
+       (preferences:add-check (new horizontal-panel% 
+                                   [parent vp]
+                                   [stretchable-height #f]
+                                   [alignment '(center center)])
+                              'drracket:online-compilation-default-on
+                              (string-constant enable-online-expansion))
+       (new vertical-panel% [parent vp] [stretchable-height #f] [min-height 20])
        (define read-choice
          (new choice% 
               [parent vp]
@@ -2307,7 +2316,7 @@
        (connect-to-prefs read-choice 'drracket:online-expansion:read-in-defs-errors)
        (connect-to-prefs var-choice 'drracket:online-expansion:variable-errors)
        (connect-to-prefs other-choice 'drracket:online-expansion:other-errors)
-       (preferences:add-check parent-vp
+       (preferences:add-check vp
                               'drracket:syncheck:show-arrows?
                               (string-constant show-arrows-on-mouseover))
        parent-vp))))

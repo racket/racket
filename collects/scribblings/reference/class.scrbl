@@ -1488,7 +1488,7 @@ indicated by the generic produced by @racket[generic-expr]. Each
 procedure with @racket[apply], where @racket[arg-list-expr] is not a
 parenthesized expression.
 
-If @racket[obj-expr] does not produce a object, or if
+If @racket[obj-expr] does not produce an object, or if
 @racket[generic-expr] does not produce a generic, the
 @exnraise[exn:fail:contract]. If the result of @racket[obj-expr] is
 not an instance of the class or interface encapsulated by the result

@@ -225,7 +225,6 @@
        (-> -Byte -Byte B : (-FS (-filter -PosByte 1) -top))
        (-> -Pos -Byte B : (-FS (-and (-filter -PosByte 0) (-filter -PosByte 1)) -top))
        (-> -Byte -Pos B : (-FS -top (-and (-filter -PosByte 0) (-filter -PosByte 1))))
-       (-> -Nat -Byte B : (-FS (-and (-filter -Byte 0) (-filter -PosByte 1)) -top))
        (-> -Byte -Nat B : (-FS -top (-filter -Byte 1)))
        (-> -Index -Zero B : (-FS (-filter (Un) 0) -top))
        (-> -Index -One B : (-FS (-filter -Zero 0) -top))
@@ -234,6 +233,7 @@
        (-> -Index -Index B : (-FS (-filter -PosIndex 1) -top))
        (-> -Pos -Index B : (-FS (-and (-filter -PosIndex 0) (-filter -PosIndex 1)) -top))
        (-> -Index -Pos B : (-FS -top (-and (-filter -PosIndex 0) (-filter -PosIndex 1))))
+       (-> -Nat -Byte B : (-FS (-and (-filter -Byte 0) (-filter -PosByte 1)) -top))
        (-> -Nat -Index B : (-FS (-and (-filter -Index 0) (-filter -PosIndex 1)) -top))
        (-> -Index -Nat B : (-FS -top (-filter -Index 1)))
        ;; general integer cases
@@ -260,7 +260,6 @@
        (-> -Byte -Pos B : (-FS (-and (-filter -PosByte 0) (-filter -PosByte 1)) -top))
        (-> -Pos -Byte B : (-FS -top (-and (-filter -PosByte 0) (-filter -PosByte 1))))
        (-> -Byte -Nat B : (-FS (-and (-filter -PosByte 0) (-filter -Byte 1)) -top))
-       (-> -Nat -Byte B : (-FS -top (-filter -Byte 0)))
        (-> -Zero -Index B : (-FS (-filter (Un) 1) -top))
        (-> -One -Index B : (-FS (-filter -Zero 1) -top))
        (-> -Index -Zero B : (-FS (-filter -PosIndex 0) (-filter -Zero 0)))
@@ -269,6 +268,7 @@
        (-> -Index -Pos B : (-FS (-and (-filter -PosIndex 0) (-filter -PosIndex 1)) -top))
        (-> -Pos -Index B : (-FS -top (-and (-filter -PosIndex 0) (-filter -PosIndex 1))))
        (-> -Index -Nat B : (-FS (-and (-filter -PosIndex 0) (-filter -Index 1)) -top))
+       (-> -Nat -Byte B : (-FS -top (-filter -Byte 0)))
        (-> -Nat -Index B : (-FS -top (-filter -Index 0)))
        ;; general integer cases
        (-> -Zero -Int B : (-FS (-filter -NegFixnum 1) (-filter -NonNegFixnum 1)))
@@ -291,7 +291,6 @@
        (-> -Byte -Byte B : (-FS -top (-filter -PosByte 0)))
        (-> -Pos -Byte B : (-FS (-and (-filter -PosByte 0) (-filter -PosByte 1)) -top))
        (-> -Byte -Pos B : (-FS -top (-and (-filter -PosByte 0) (-filter -PosByte 1))))
-       (-> -Nat -Byte B : (-FS (-filter -Byte 0) -top))
        (-> -Byte -Nat B : (-FS -top (-and (-filter -PosByte 0) (-filter -Byte 1))))
        (-> -Index -Zero B : (-FS (-filter -Zero 0) (-filter -PosIndex 0)))
        (-> -Zero -Index B : (-FS -top (-filter (Un) 1)))
@@ -300,6 +299,7 @@
        (-> -Index -Index B : (-FS -top (-filter -PosIndex 0)))
        (-> -Pos -Index B : (-FS (-and (-filter -PosIndex 0) (-filter -PosIndex 1)) -top))
        (-> -Index -Pos B : (-FS -top (-and (-filter -PosIndex 0) (-filter -PosIndex 1))))
+       (-> -Nat -Byte B : (-FS (-filter -Byte 0) -top))
        (-> -Nat -Index B : (-FS (-filter -Index 0) -top))
        (-> -Index -Nat B : (-FS -top (-and (-filter -PosIndex 0) (-filter -Index 1))))
        ;; general integer cases
@@ -326,7 +326,6 @@
        (-> -Byte -Pos B : (-FS (-and (-filter -PosByte 1) (-filter -PosByte 0)) -top))
        (-> -Pos -Byte B : (-FS -top (-and (-filter -PosByte 1) (-filter -PosByte 0))))
        (-> -Byte -Nat B : (-FS (-filter -Byte 1) -top))
-       (-> -Nat -Byte B : (-FS -top (-and (-filter -Byte 0) (-filter -PosByte 1))))
        (-> -Zero -Index B : (-FS (-filter -Zero 1) (-filter -PosIndex 1)))
        (-> -Index -Zero B : (-FS -top (-filter (Un) 0)))
        (-> -Index -One B : (-FS (-filter -PosIndex 0) (-filter -Zero 0)))
@@ -335,6 +334,7 @@
        (-> -Index -Pos B : (-FS (-and (-filter -PosIndex 0) (-filter -PosIndex 1)) -top))
        (-> -Pos -Index B : (-FS -top (-and (-filter -PosIndex 0) (-filter -PosIndex 1))))
        (-> -Index -Nat B : (-FS (-filter -Index 1) -top))
+       (-> -Nat -Byte B : (-FS -top (-and (-filter -Byte 0) (-filter -PosByte 1))))
        (-> -Nat -Index B : (-FS -top (-and (-filter -Index 0) (-filter -PosIndex 1))))
        ;; general integer cases
        (-> -Zero -Nat B : (-FS (-filter -Zero 1) -top))

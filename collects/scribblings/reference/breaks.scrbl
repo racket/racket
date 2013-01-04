@@ -15,7 +15,7 @@ terminate breaks as reflected by @racket[exn:break:hang-up] and
 @racket[exn:break:terminate], respectively. Multiple breaks may be
 collapsed into a single exception, and multiple breaks of different
 kinds may be collapsed to a single ``strongest'' break, where a
-hang-up break is stronger than a interrupt break, and a terminate
+hang-up break is stronger than an interrupt break, and a terminate
 break is stronger than a hang-up break.
 
 A break exception can only occur in a

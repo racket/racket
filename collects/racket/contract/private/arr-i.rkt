@@ -7,7 +7,7 @@
          "misc.rkt"
          "blame.rkt"
          syntax/location
-         racket/performance-hint
+         racket/private/performance-hint
          (for-syntax racket/base
                      racket/stxparam-exptime
                      "arr-i-parse.rkt"

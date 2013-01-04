@@ -574,7 +574,7 @@ of requiring a separate @racket[define] for each identifier.
 #,let-expr-stx
 ]
 
-Each binding clause is an @nonterm{id} and a
+Each binding clause is an @nonterm{id} and an
 @nonterm{expr} surrounded by square brackets, and the
 expressions after the clauses are the body of the @racket[let]. In
 each clause, the @nonterm{id} is bound to the result of the

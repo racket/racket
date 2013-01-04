@@ -257,7 +257,7 @@
            ;; title, rest (without generic source reference)
            (if m
              (list (cadr m)
-                   (regexp-replace #rx"\nInstructions for building[^\n]*\n"
+                   (regexp-replace #rx"Instructions for building[^\n]*\n\n"
                                    (caddr m)
                                    ""))
              (error 'readme-skeleton "unexpected toplevel README")))))

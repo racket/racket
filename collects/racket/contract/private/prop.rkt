@@ -2,7 +2,7 @@
 
 (require "blame.rkt"
          "generate-base.rkt"
-         racket/performance-hint)
+         racket/private/performance-hint)
 
 (provide prop:contract
          contract-struct?

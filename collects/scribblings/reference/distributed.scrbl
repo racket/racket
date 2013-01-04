@@ -889,7 +889,7 @@ except there is no reply message from the server to client
 @defmodule[racket/place/private/async-bi-channel]
 
 @defproc[(make-async-bi-channel) async-bi-channel?]{
-Creates and returns a opaque structure, which is the async bidirectional channel.
+Creates and returns an opaque structure, which is the async bidirectional channel.
 }
 
 @defproc[(async-bi-channel? [ch any]) boolean?]{

@@ -42,7 +42,7 @@ then @racket[compile-proc] must return a compiled module form.
 
 The @racket[ext-proc] argument defaults to @racket[#f]. If it is not
 @racket[#f], it must be a procedure of two arguments that is called
-when a native-code version of @racket[path] is should be used. In that
+when a native-code version of @racket[path] should be used. In that
 case, the arguments to @racket[ext-proc] are the path for the
 extension, and a boolean indicating whether the extension is a @tt{_loader}
 file (@racket[#t]) or not (@racket[#f]).

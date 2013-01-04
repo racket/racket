@@ -109,7 +109,7 @@ reference if the count goes to zero.}
                           [#:manage? manage? any/c #t])
          com-object?]{
 
-Converts a @tech{COM object} into a object that can be used with the
+Converts a @tech{COM object} into an object that can be used with the
 COM automation functions, such as @racket[com-invoke].
 
 If @racket[manage?] is true, the resulting object is registered with

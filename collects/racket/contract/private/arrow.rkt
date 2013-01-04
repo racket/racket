@@ -25,7 +25,7 @@ v4 todo:
          "misc.rkt"
          "generate.rkt"
          racket/stxparam
-         racket/performance-hint)
+         racket/private/performance-hint)
 (require (for-syntax racket/base)
          (for-syntax "helpers.rkt")
          (for-syntax syntax/stx)
