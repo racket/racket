@@ -118,6 +118,7 @@ or else the filesystem server will never see the requests.
  [maybe-method
   code:blank
   (code:line #:method method)]
+ [method pat]
  [maybe-else-clause
   code:blank
   [else else-fun]])
@@ -137,9 +138,15 @@ the @racket[dispatch-fun] given as its first argument.
 @racket[(next-dispatcher)] to signal to the Web Server that this
 dispatcher does not apply.
 
- If any @racket[_method] is left out, it assumed to apply to requests
-without methods and GET methods.
+ The @racket[_method] syntax is used in a @racket[match] expression to
+match the @racket[request-method] part of the incoming request
+object. However, since HTTP allows methods to use any case, the byte
+string from @racket[request-method] is normalized to a lower-case
+string. Thus, valid patterns are things like: @racket["get"],
+@racket["post"], @racket["head"], @racket[(or "get" "post")], etc.
 
+ If @racket[_method] is left out, it assumed to apply to requests
+without methods and GET methods.
 }
 
 @defform[
