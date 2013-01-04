@@ -328,15 +328,14 @@ Scheme_Object *scheme_complex_power(const Scheme_Object *base, const Scheme_Obje
 
 #ifdef MZ_USE_SINGLE_FLOATS
   /* Coerce to double or float? */
-#ifdef USE_SINGLE_FLOATS_AS_DEFAULT
   if (!SCHEME_DBLP(cb->r) && !SCHEME_DBLP(cb->i)
       && !SCHEME_DBLP(ce->r) && !SCHEME_DBLP(ce->i))
-#else
-  if (SCHEME_FLTP(cb->r) && SCHEME_FLTP(cb->i)
-      && SCHEME_FLTP(ce->r) && SCHEME_FLTP(ce->i))
+#ifndef USE_SINGLE_FLOATS_AS_DEFAULT
+    if (SCHEME_FLTP(cb->r) || SCHEME_FLTP(cb->i)
+        || SCHEME_FLTP(ce->r) || SCHEME_FLTP(ce->i))
 #endif
-    return scheme_make_complex(scheme_make_float((float)r1), 
-			       scheme_make_float((float)r2));
+      return scheme_make_complex(scheme_make_float((float)r1), 
+                                 scheme_make_float((float)r2));
 #endif
 
   return scheme_make_complex(scheme_make_double(r1), 
@@ -380,9 +379,15 @@ Scheme_Object *scheme_complex_sqrt(const Scheme_Object *o)
   if (SCHEME_FLOATP(srssq)) {
     /* We may have lost too much precision, if i << r.  The result is
        going to be inexact, anyway, so switch to using expt. */
-    Scheme_Object *a[2];
+    Scheme_Object *a[2], *p;
     a[0] = (Scheme_Object *)o;
-    a[1] = scheme_make_double(0.5);
+#ifdef MZ_USE_SINGLE_FLOATS
+    if (SCHEME_FLTP(c->i))
+      p = scheme_make_float(0.5);
+    else
+#endif
+      p = scheme_make_double(0.5);
+    a[1] = p;
     return scheme_expt(2, a);
   }
 
