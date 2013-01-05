@@ -84,26 +84,33 @@
     ;; all of the languages supported in DrRacket
     (define languages null)
     
+    (define languages-allowing-executable-creation '())
+    (define (language-allows-executable-creation? lang)
+      (and (memq lang languages-allowing-executable-creation)
+           #t))
+    
     ;; add-language : (instanceof language%) -> void
     ;; only allows addition on phase2
     ;; effect: updates `languages'
-    (define add-language
-      (λ (language [front? #f])
-        
-        (drracket:tools:only-in-phase 'drracket:language:add-language 'phase2)
-        (for-each
-         (λ (i<%>)
-           (unless (is-a? language i<%>)
-             (error 'drracket:language:add-language
-                    "expected language ~e to implement ~e, forgot to use `drracket:language:get-default-mixin'?"
-                    language i<%>)))
-         (drracket:language:get-language-extensions))
-        
-        (ensure-no-duplicate-numbers language languages)
-        (set! languages 
-              (if front? 
-                  (cons language languages)
-                  (append languages (list language))))))
+    (define (add-language language [front? #f] #:allow-executable-creation? [allow-executable-creation? #f])
+      
+      (drracket:tools:only-in-phase 'drracket:language:add-language 'phase2)
+      (for-each
+       (λ (i<%>)
+         (unless (is-a? language i<%>)
+           (error 'drracket:language:add-language
+                  "expected language ~e to implement ~e, forgot to use `drracket:language:get-default-mixin'?"
+                  language i<%>)))
+       (drracket:language:get-language-extensions))
+      
+      (ensure-no-duplicate-numbers language languages)
+      (when allow-executable-creation?
+        (set! languages-allowing-executable-creation
+              (cons language languages-allowing-executable-creation)))
+      (set! languages 
+            (if front? 
+                (cons language languages)
+                (append languages (list language)))))
     
     (define (ensure-no-duplicate-numbers l1 languages)
       (for-each
@@ -1956,25 +1963,6 @@
                         [else (inner
                                (drracket:language:get-capability-default key)
                                capability-value key)]))
-                    (define/override (create-executable setting parent program-filename)
-                      (let ([executable-fn
-                             (drracket:language:put-executable
-                              parent
-                              program-filename
-                              #t
-                              mred-launcher?
-                              (if mred-launcher?
-                                  (string-constant save-a-mred-launcher)
-                                  (string-constant save-a-mzscheme-launcher)))])
-                        (when executable-fn
-                          (drracket:language:create-module-based-launcher
-                           program-filename
-                           executable-fn
-                           (get-module)
-                           (get-transformer-module)
-                           (get-init-code setting)
-                           mred-launcher?
-                           (use-namespace-require/copy-from-setting? setting)))))
                     (super-new))))]
              [make-simple
               (λ (module id position numbers mred-launcher? one-line-summary extra-mixin)

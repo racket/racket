@@ -647,14 +647,7 @@
         (module-based-language-front-end port (get-reader)))
       (define/public (front-end/interaction port settings)
         (module-based-language-front-end port (get-reader)))
-      (define/public (create-executable setting parent program-filename)
-        (create-module-based-language-executable parent 
-                                                 program-filename
-                                                 (get-module)
-                                                 (get-transformer-module)
-                                                 (get-init-code setting)
-                                                 (use-mred-launcher)
-                                                 (use-namespace-require/copy-from-setting? setting)))
+      (define/public (create-executable setting parent program-filename) (void))
       (define/public (extra-repl-information _1 _2) (void))
       (define/public (get-reader-module) #f)
       (define/public (get-metadata a b) #f)

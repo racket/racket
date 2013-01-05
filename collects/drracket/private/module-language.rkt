@@ -80,7 +80,8 @@
          (drracket:language:simple-module-based-language->module-based-language-mixin
           drracket:language:simple-module-based-language%)))))
     (drracket:language-configuration:add-language
-     (new module-language%)))
+     (new module-language%)
+     #:allow-executable-creation? #t))
   
   ;; collection-paths : (listof (union 'default string))
   ;; command-line-args : (vectorof string)

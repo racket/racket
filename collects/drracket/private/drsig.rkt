@@ -147,7 +147,8 @@
    make-language-settings
    get-settings-preferences-symbol
    language-dialog
-   fill-language-dialog))
+   fill-language-dialog
+   language-allows-executable-creation?))
 
 (define-signature drracket:language-configuration/internal^ extends drracket:language-configuration^
   (add-info-specified-languages
