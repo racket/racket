@@ -4,6 +4,7 @@
           scribble/html-properties scribble/latex-properties
           2htdp/batch-io
           "shared.rkt"
+	  (for-syntax racket)
           (for-label scheme teachpack/2htdp/batch-io))
 
 @(require scheme/runtime-path)
@@ -32,14 +33,14 @@
 
 @; -----------------------------------------------------------------------------
 
-@(define-syntax reading
-   (syntax-rules ()
-     [(_ name ctc s)
-      @defproc[(@name [f (or/c 'standard-out (and/c string? file-exists?))]) @ctc ]{
+@(define-syntax (reading stx)
+   (syntax-case stx ()
+     [(reading name ctc s)
+     #`@defproc[(@name [f (or/c 'standard-in 'stdin (and/c string? file-exists?))]) @ctc ]{
       reads the standard input device (until closed) or the content of file
       @racket[f] and produces it as @list[s].}] 
-     [(_ name ctc [x ctc2] s ...)
-      @defproc[(@name [f (or/c 'standard-out (and/c string? file-exists?))] [@x @ctc2]) @ctc ]{
+     [(reading name ctc [x ctc2] s ...)
+      #`@defproc[(@name [f (or/c 'standard-in 'stdin (and/c string? file-exists?))] [@x @ctc2]) @ctc ]{
       reads the standard input device (until closed) or the content of file
       @racket[f] and produces it as @list[s ...].}]))
 
@@ -144,7 +145,7 @@ elements.
 There is only one writer function at the moment: 
 @itemlist[
 
-@item{@defproc[(write-file [f (or/c 'standard-out string?)] [cntnt string?]) string?]{
+@item{@defproc[(write-file [f (or/c 'standard-out 'stdout string?)] [cntnt string?]) string?]{
  sends @racket[cntnt] to the standard output device or 
  turns @racket[cntnt] into the content of file @racket[f], located in the
  same folder (directory) as the program. If the write succeeds, the

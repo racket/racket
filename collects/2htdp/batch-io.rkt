@@ -2,6 +2,7 @@
 
 (require racket/function
          racket/file
+         racket/format
          racket/string
          racket/local
          (for-syntax racket/base
@@ -13,10 +14,17 @@
 ;; todo?
 ;; -- export tokenization?
 
-(define *input-devices* `((standard-in ,current-input-port)))
-(define *output-devices* `((standard-out ,current-output-port)))
+;; I am tryiing to use these lists to automate the documentation of the
+;; functions but my scribble skills are insufficient and my time is running
+;; out. 
+(module devices racket/base
+  (provide *input-devices* *output-devices*)
+  (define *input-devices*  `((stdin ,current-input-port)   (standard-in ,current-input-port)))
+  (define *output-devices* `((stdout ,current-output-port) (standard-out ,current-output-port))))
 
-;; -----------------------------------------------------------------------------
+(require (submod "." devices))
+
+;;---------------------------------------------------------------------------------------------------
 (provide simulate-file) ;; syntax (simulate-file reader string ...)
 
 (provide
@@ -185,13 +193,17 @@
 ;; effect: ensure that f is a file in current directory or report error for t
 (define (check-input-file f t)
   (define d? (assq f *input-devices*))
-  (check-arg t (or (string? f) d?) (format "string or one of: ~a" (map car *input-devices*)) "first" f)
+  (check-arg t (or (string? f) d?) (error-message (map car *input-devices*)) "first" f)
   (check-arg t (or d? (file-exists? f)) "name of file in program's folder" "first" f))
 
 ;; effect: ensure that f is a file in current directory or report error for t
 (define (check-output-file f t)
   (define d? (assq f *output-devices*))
-  (check-arg t (or (string? f) d?) (format "string or one of: ~a" (map car *output-devices*)) "first" f))
+  (check-arg t (or (string? f) d?) (error-message (map car *output-devices*)) "first" f))
+
+;; [Listof Symbol] -> String 
+(define (error-message los)
+  (string-append "string or one of: " (string-join (map ~e los) ", ")))
 
 ;; split : String [Regexp] -> [Listof String]
 ;; splits a string into a list of substrings using the given delimiter
