@@ -555,7 +555,8 @@
         (inner (void) on-save-file name format))
       (define/augment (after-save-file success?)
         (when success?
-          (set! auto-save-error? #f)))
+          (set! auto-save-error? #f))
+        (inner (void) after-save-file success?))
 
       (define/augment (on-close)
         (remove-autosave)
