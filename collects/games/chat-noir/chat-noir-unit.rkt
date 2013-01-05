@@ -1,8 +1,8 @@
-#lang scheme/base
-(require scheme/unit
-         scheme/runtime-path
-         scheme/gui/base
-         scheme/class
+#lang racket/base
+(require racket/unit
+         racket/runtime-path
+         racket/gui/base
+         racket/class
          "../show-scribbling.rkt"
          string-constants/string-constant
          (prefix-in x: lang/htdp-intermediate-lambda)
@@ -66,7 +66,6 @@
   
   (parameterize ([current-custodian sub-custodian])
     (parameterize ([current-namespace (make-base-namespace)])
-      (namespace-attach-module orig-namespace '(lib "mred.rkt" "mred"))
-      (namespace-attach-module orig-namespace '(lib "class.rkt" "scheme"))
+      (namespace-attach-module orig-namespace 'mred/mred)
+      (namespace-attach-module orig-namespace 'racket/class)
       ((dynamic-require chat-noir 'main)))))
-

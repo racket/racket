@@ -1,7 +1,7 @@
 #lang scribble/lp
 
-@(require (for-label scheme/math) ;; for 'pi' below
-          scheme/math
+@(require (for-label racket/math) ;; for 'pi' below
+          racket/math
           games/scribblings/common)
 
 @gametitle*["Chat Noir" "chat-noir" "Puzzle Game" #:style '(toc)]
@@ -50,9 +50,9 @@ code that handles drawing of the world, code that handles user input,
 and some code that builds an initial world and starts the game.
 
 @chunk[<main>
-       (require scheme/list scheme/math
-                (for-syntax scheme/base))
-       (require 2htdp/universe htdp/image lang/posn scheme/contract)
+       (require racket/list racket/math
+                (for-syntax racket/base))
+       (require 2htdp/universe htdp/image lang/posn racket/contract)
        <world>
        <breadth-first-search>
        <board->graph>
@@ -402,7 +402,7 @@ and a @racket[dist-table] that records the same information as a
 @racket[distance-map], but in an immutable hash-table. The
 @racket[dist-map] is an accumulator, recording the distances
 to all of the nodes that have already been visited in the graph,
-and is used here to speed up the compuation. The queue is
+and is used here to speed up the computation. The queue is
 represented as a list of vectors of length two. Each element
 in the queue contains a @racket[posn], or the symbol @racket['boundary]
 and that @racket[posn]'s  distance.
