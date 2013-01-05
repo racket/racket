@@ -2,6 +2,10 @@
        Version 5.3.2
 ------------------------------
 
+  . Removed 'Create Executable...' functionality from DrRacket,
+    except in the "The Racket Language" (#lang-based) language
+    and the teaching languages (HtDP and DMdA).
+
   . DrRacket is more responsive when editing
 
   . The language dialog has been revamped to encourage people even

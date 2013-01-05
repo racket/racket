@@ -4,6 +4,7 @@
           scribble/html-properties scribble/latex-properties
           2htdp/batch-io
           "shared.rkt"
+	  (for-syntax racket)
           (for-label scheme teachpack/2htdp/batch-io))
 
 @(require scheme/runtime-path)
@@ -32,9 +33,16 @@
 
 @; -----------------------------------------------------------------------------
 
-@(define-syntax-rule (reading name ctc s)
-   @defproc[(@name [f (and/c string? file-exists?)]) @ctc ]{
- reads the content of file @racket[f] and produces it as @s .} )
+@(define-syntax (reading stx)
+   (syntax-case stx ()
+     [(reading name ctc s)
+     #`@defproc[(@name [f (or/c 'standard-in 'stdin (and/c string? file-exists?))]) @ctc ]{
+      reads the standard input device (until closed) or the content of file
+      @racket[f] and produces it as @list[s].}] 
+     [(reading name ctc [x ctc2] s ...)
+      #`@defproc[(@name [f (or/c 'standard-in 'stdin (and/c string? file-exists?))] [@x @ctc2]) @ctc ]{
+      reads the standard input device (until closed) or the content of file
+      @racket[f] and produces it as @list[s ...].}]))
 
 @teachpack["batch-io"]{Batch Input/Output}
 
@@ -119,8 +127,7 @@ length. Here the third line of the file turns into a row of three
 elements. 
 }
 
-@item{@defproc[(@read-csv-file/rows [f (and/c string? exists?)][s
- (-> (listof any/c) X?)]) (listof X?)]{reads the content of file @racket[f] and
+@item{@reading[read-csv-file/rows (listof X?) [s (-> (listof any/c) X?)]]{reads the content of file @racket[f] and
  produces it as list of rows, each constructed via @racket[s]}
 
 @examples[#:eval (examples-batch-io)
@@ -132,12 +139,14 @@ elements.
  number of separated tokens and the result is just a list of numbers. 
  In many cases, the function argument is used to construct a structure from
  a row.}
+
 ]
 
 There is only one writer function at the moment: 
 @itemlist[
 
-@item{@defproc[(write-file [f string?] [cntnt string?]) string?]{
+@item{@defproc[(write-file [f (or/c 'standard-out 'stdout string?)] [cntnt string?]) string?]{
+ sends @racket[cntnt] to the standard output device or 
  turns @racket[cntnt] into the content of file @racket[f], located in the
  same folder (directory) as the program. If the write succeeds, the
  function produces the name of the file (@racket[f]); otherwise it signals

@@ -405,29 +405,35 @@ module browser threading seems wrong.
   
   ;; create-executable : (instanceof drracket:unit:frame<%>) -> void
   (define (create-executable frame)
-    (let* ([definitions-text (send frame get-definitions-text)]
-           [program-filename (send definitions-text get-filename)])
-      (cond
-        [(not program-filename)
-         (message-box (string-constant create-executable-title)
-                      (string-constant must-save-before-executable)
-                      frame
-                      #:dialog-mixin frame:focus-table-mixin)]
-        [else
-         (when (or (not (send definitions-text is-modified?))
-                   (gui-utils:get-choice
-                    (string-constant definitions-not-saved)
-                    (string-constant yes)
-                    (string-constant no)
-                    (string-constant drscheme)
-                    #f
-                    frame))
-           (let ([settings (send definitions-text get-next-settings)])
-             (send (drracket:language-configuration:language-settings-language settings)
-                   create-executable
-                   (drracket:language-configuration:language-settings-settings settings)
-                   frame
-                   program-filename)))])))
+    (define definitions-text (send frame get-definitions-text))
+    (define program-filename (send definitions-text get-filename))
+    (define settings (send definitions-text get-next-settings))
+    (cond
+      [(not (drracket:language-configuration:language-allows-executable-creation?
+             (drracket:language-configuration:language-settings-language settings)))
+       (message-box (string-constant drscheme)
+                    (string-constant drracket-creates-executables-only-in-some-languages)
+                    frame
+                    #:dialog-mixin frame:focus-table-mixin)]
+      [(not program-filename)
+       (message-box (string-constant create-executable-title)
+                    (string-constant must-save-before-executable)
+                    frame
+                    #:dialog-mixin frame:focus-table-mixin)]
+      [else
+       (when (or (not (send definitions-text is-modified?))
+                 (gui-utils:get-choice
+                  (string-constant definitions-not-saved)
+                  (string-constant yes)
+                  (string-constant no)
+                  (string-constant drscheme)
+                  #f
+                  frame))
+         (send (drracket:language-configuration:language-settings-language settings)
+               create-executable
+               (drracket:language-configuration:language-settings-settings settings)
+               frame
+               program-filename))]))
   
   (define-values (get-program-editor-mixin add-to-program-editor-mixin)
     (let* ([program-editor-mixin

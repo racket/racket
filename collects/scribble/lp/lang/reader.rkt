@@ -8,10 +8,10 @@ scribble/lp/lang/lang
 ;; don't use scribble-base-info for the #:info arg, since
 ;; scribble/lp files are not directly scribble'able.
 #:language-info (scribble-base-language-info)
-
+#:info (scribble-base-reader-info)
 (require scribble/reader
          (only-in scribble/base/reader
-                  scribble-base-info
+                  scribble-base-reader-info
                   scribble-base-language-info))
 
 

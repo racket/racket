@@ -2981,6 +2981,79 @@
 (err/rt-test (real->floating-point-bytes 1.0 8 #f (make-bytes 7)) exn:application:mismatch?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check single-flonum coercisons:
+
+(define ((check-single-flonum #:real-only? [real-only? #f]
+                              #:integer-only? [integer-only? #f]
+                              #:two-arg-real-only? [two-arg-real-only? real-only?])
+         op)
+  (define (single-flonum-ish? op . args)
+    (define v (apply op args))
+    (and (or (single-flonum? (real-part v))
+             (eq? 0 (real-part v)))
+         (or (single-flonum? (imag-part v))
+             (eq? 0 (imag-part v)))))
+  (when (procedure-arity-includes? op 1)
+    (test #t single-flonum-ish? op 2.0f0)
+    (unless real-only?
+      (test #t single-flonum-ish? op 2.0f0+4.0f0i)
+      (test #t single-flonum-ish? op 0+4.0f0i)))
+  (when (procedure-arity-includes? op 2)
+    (test #t single-flonum-ish? op 2.0f0 4.0f0)
+    (test #f single-flonum-ish? op 2.0 4.0f0)
+    (test #f single-flonum-ish? op 2.0f0 4.0)
+    (test #t single-flonum-ish? op 2.0f0 4)
+    (test #t single-flonum-ish? op 2 4.0f0)
+    (unless integer-only?
+      (unless two-arg-real-only? 
+        (test #t single-flonum-ish? op 2.0f0 2.0f0+4.0f0i)
+        (test #t single-flonum-ish? op 2.0f0 0+4.0f0i)
+        (test #f single-flonum-ish? op 2.0f0 2.0+4.0i)
+        (test #f single-flonum-ish? op 2.0f0 0+4.0i)
+        (test #f single-flonum-ish? op 2.0 2.0f0+4.0f0i)
+        (test #f single-flonum-ish? op 2.0 0+4.0f0i))
+      (test #t single-flonum-ish? op 2.0f0 0.5f0)
+      (test #f single-flonum-ish? op 2.0 0.5f0)
+      (test #f single-flonum-ish? op 2.0f0 0.5)
+      (test #t single-flonum-ish? op 2.0f0 1/2)
+      (test #t single-flonum-ish? op 4/5 0.5f0))))
+    
+
+(map (check-single-flonum)
+     (list + - * / 
+           add1
+           sub1
+           sqrt
+           expt
+           exp
+           log
+           sin
+           cos
+           tan
+           asin
+           acos))
+
+(map (check-single-flonum #:two-arg-real-only? #t)
+     (list atan))
+
+(map (check-single-flonum #:real-only? #f #:integer-only? #t)
+     (list quotient
+           remainder
+           modulo))
+
+(map (check-single-flonum #:real-only? #t)
+     (list
+      abs
+      max
+      min
+      gcd
+      lcm
+      round
+      floor
+      ceiling
+      truncate))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; This test once trigggered a crash due to an incorrect
 ;; hard-wired GC declaration for xform:
 

@@ -668,7 +668,18 @@
                                 (if (not (module-path? name))
                                     ;; Bad input
                                     (orig name rel-to stx load?)
-                                    (let-values ([(table-vec) (hash-ref regs (namespace-module-registry (current-namespace)) #f)])
+                                    (let-values ([(table-vec) (hash-ref regs (namespace-module-registry (current-namespace)) #f)]
+                                                 [(name) (if (pair? name)
+                                                             (if (eq? 'submod (car name))
+                                                                 (if (null? (cddr name))
+                                                                     (if (equal? ".." (cadr name))
+                                                                         name
+                                                                         (if (equal? "." (cadr name))
+                                                                             name
+                                                                             (cadr name))) ; strip away `submod' without a submodule path
+                                                                     name)
+                                                                 name)
+                                                             name)])
                                       (if (not table-vec)
                                           ;; No mappings in this registry
                                           (orig name rel-to stx load?)

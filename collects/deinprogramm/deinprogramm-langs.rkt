@@ -1350,7 +1350,9 @@
       
       ;; add-deinprogramm-language : (instanceof deinprogramm-language<%>) -> void
       (define (add-deinprogramm-language o)
-        (drscheme:language-configuration:add-language o))
+        (drscheme:language-configuration:add-language
+         o
+         #:allow-executable-creation? #t))
       
       (define (phase1) (void))
 

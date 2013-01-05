@@ -12,10 +12,13 @@ FIX THESE:
    in the context where the documentation is placed 
 
 2. need to expand the allowed scribble entries to 
-     defproc* for case-> in Advanced 
-     defthing for e, pi, null, and eof in Beginner (and possibly elsewhere)
+     defthing for e, pi, null, and eof in Beginner (and possibly elsewhere). done 
+     it feels a bit kludgey and needs changes in two files, but I don't have time 
+     to think about it more. 
 
-     then rewrite the case-> based things in Advanced 
+     still to do: 
+     defproc* for case-> in Advanced 
+     rewrite the case-> based things in Advanced 
 
 3. Fix up how primitives are "overwritten" in Advanced and friends 
 
@@ -35,6 +38,7 @@ tests to run:
 
 (provide 
  provide-and-scribble 
+ (for-syntax extract-names)
  all-from all-from-except defproc)
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -46,6 +50,7 @@ tests to run:
 (define-syntax all-from provide-and-scribble-only)
 (define-syntax all-from-except provide-and-scribble-only)
 (define-syntax defproc provide-and-scribble-only)
+(define-syntax defthing provide-and-scribble-only)
 
 (define-syntax (provide-and-scribble stx)
   (syntax-parse stx #:literals ()
@@ -62,19 +67,42 @@ tests to run:
         [(all-from tag:id path label:id)
          (define-values (a p) (provide-all-from #'path #'label #'tag #'()))
          (values (cons a add-docs-and-provide) (append (syntax->list p) provides))]
-        [(title (defproc (name args ...) range w ...) ...)
-         (define name* (syntax->list #'(name ...)))
+        [(title df ...)
+         (define name* (extract-names (syntax->list #'(df ...))))
+         (define exnm* (extract-external-name name*))
+         (define defs* (rewrite-defs (syntax->list #'(df ...)) exnm*))
          (values (cons (lambda ()  ;; delay the syntax creation until add-sections is set
-                         (with-syntax ([(ex ...) (extract-external-name name*)])
-                           #`(#,*add title (list (cons #'ex 
-                                                       (lambda (c)
-                                                         (defproc #:id [ex (datum->syntax c 'ex)]
-                                                           (ex args ...) range w ...)))
-                                                 ...))))
+                         (with-syntax ([(ex ...) exnm*]
+                                       [(df ...) defs*])
+                           #`(#,*add title (list (cons #'ex df) ...))))
                        add-docs-and-provide)
                  (cons #`(provide #,@(optional-rename-out name*))
                        provides))])))
   (provide-and-scribble-code requires doc-tag add-docs-and-provide provides))
+
+;; (U defproc defthing) -> [Listof (U (Id Id) Id)]
+;; extract names from documented definitions in section 
+(define-for-syntax (extract-names defs)
+  (map (λ (d)
+         (syntax-case d ()
+           [(defproc (name args ...) range w ...) #'name]
+           [(defthing name stuff ...) #'name]))
+       defs))
+
+;; (U defproc defthing) -> [Listof Syntax]
+;; get documented definitions in section ready (parameterized over context)
+(define-for-syntax (rewrite-defs defs names)
+  (define (rewrite-one-def d n)
+    (syntax-case d ()
+      [(defproc (name args ...) range w ...)
+       (with-syntax ([ex n])
+         #'(lambda (c)
+             (defproc #:id [ex (datum->syntax c 'ex)]
+               (ex args ...) range w ...)))]
+      [(defthing name range w ...)
+       #'(lambda (c) (defthing name range w ...))]))
+  (map rewrite-one-def defs names))
+
 
 ;; Path Identifier Identifier [Listof Identifier] ->* [-> Syntax] Syntax[List]
 ;; create the require and provide clauses AND

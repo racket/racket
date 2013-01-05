@@ -1000,6 +1000,8 @@ please adhere to these guidelines:
  ;;; executables
  (create-executable-menu-item-label "Create &Executable...")
  (create-executable-title "Create Executable")
+ (drracket-creates-executables-only-in-some-languages
+  "Executable creation in DrRacket is supported only in the teaching languages and when the #lang line specifies the language (in “The Racket Language”)\n\nConsider using the raco exe command-line tool instead.")
  (must-save-before-executable "You must save your program before creating an executable.")
  (save-a-mred-launcher "Save a GRacket Launcher")
  (save-a-mzscheme-launcher "Save a Racket Launcher")

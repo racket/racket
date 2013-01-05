@@ -4,14 +4,17 @@
 
 (require 2htdp/batch-io)
 
-(with-output-to-file "batch-io2.txt"
+(define file "batch-io2.txt")
+
+(with-output-to-file file
   (lambda ()
     (display "hello")
     (display #\return)
     (display #\linefeed))
   #:exists 'replace)
 
-(read-lines "batch-io2.txt")
+(require rackunit)
+(check-equal? (read-lines "batch-io2.txt") '("hello"))
 
-
-
+(when (file-exists? file)
+  (delete-file file))

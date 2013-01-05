@@ -94,6 +94,11 @@ added get-regions
     ;; is over.
     (define force-recolor-after-freeze #f)
     
+    ;; if we were coloring and discovered that an edit-sequence was 
+    ;; going on, then we postpone coloring until the edit-sequence
+    ;; ends
+    (define continue-after-edit-sequence? #f)
+    
     ;; ---------------------- Parenethesis matching ----------------------
     
     ;; The pairs of matching parens
@@ -279,6 +284,7 @@ added get-regions
        lexer-states)
       (update-lexer-state-observers)
       (set! restart-callback #f)
+      (set! continue-after-edit-sequence? #f)
       (set! force-recolor-after-freeze #f)
       (set! revision-when-started-parsing #f))
     
@@ -529,10 +535,13 @@ added get-regions
         ((is-locked?)
          (set! restart-callback #t))
         (else
-         (unless (in-edit-sequence?)
-           (colorer-driver))
-         (unless (andmap lexer-state-up-to-date? lexer-states)
-           (queue-callback (λ () (colorer-callback)) #f)))))
+         (cond
+           [(in-edit-sequence?)
+            (set! continue-after-edit-sequence? #t)]
+           [else
+            (colorer-driver)
+            (unless (andmap lexer-state-up-to-date? lexer-states)
+              (queue-callback (λ () (colorer-callback)) #f))]))))
     
     ;; Must not be called when the editor is locked
     (define/private (finish-now)
@@ -1131,6 +1140,9 @@ added get-regions
     
     (define/augment (after-edit-sequence)
       ;;(printf "(after-edit-sequence)\n")
+      (when continue-after-edit-sequence?
+        (set! continue-after-edit-sequence? #f)
+        (queue-callback (λ () (colorer-callback)) #f))
       (when (has-focus?)
         (match-parens))
       (inner (void) after-edit-sequence))

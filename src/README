@@ -100,7 +100,7 @@ Quick instructions:
    make install
 
  This will create an in-place installation of Racket and store the
- results of C/C++ compilation in a separate "build" subdirectory, which
+ results of C compilation in a separate "build" subdirectory, which
  is useful if you need to update your sources, delete the build, and
  start from scratch.
 
