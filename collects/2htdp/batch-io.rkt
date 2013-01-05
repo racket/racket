@@ -13,6 +13,9 @@
 ;; todo?
 ;; -- export tokenization?
 
+(define *input-devices* `((standard-in ,current-input-port)))
+(define *output-devices* `((standard-out ,current-output-port)))
+
 ;; -----------------------------------------------------------------------------
 (provide simulate-file) ;; syntax (simulate-file reader string ...)
 
@@ -50,6 +53,9 @@
  write-file ;; String String -> String 
  ;; (write-file filename str) writes str to filename; 
  ;; produces the file name as a confirmation that the write succeeded 
+ 
+ ;; *input-devives*: symbols that redirect input from an input-port 
+ ;; *output-devives*: symbols that redirect output from a output-port 
  )      
 
 ;; -----------------------------------------------------------------------------
@@ -57,7 +63,7 @@
 (define-syntax-rule
   (def-reader (name f s ...) body ...)
   (define (name f s ...)
-    (check-file f 'name)
+    (check-input-file f 'name)
     (let ()
       body ...)))
 
@@ -135,44 +141,57 @@
 ;; writer 
 
 (define (write-file f str)
-  (check-arg 'write-file (string? f) "string (name of file)" "first" f)
+  (check-output-file f 'write-file)
   (check-arg 'write-file (string? str) "string" "second" str)
-  (let ([result (not (file-exists? f))])
-    (with-output-to-file f 
-      (lambda () (printf "~a" str))
-      #:mode 'text
-      #:exists 'replace)
-    f))
+  (define (wt) (printf "~a" str))
+  (define device (assq f *output-devices*))
+  (if device 
+      (parameterize ((current-output-port [(cadr device)])) (wt))
+      (with-output-to-file f wt #:mode 'text #:exists 'replace))
+  f)
 
 ;; -----------------------------------------------------------------------------
 ;; auxiliaries 
 
 ;; String [([Listof X] -> Y)] -> [Listof Y]
-(define (read-csv-file/func f [row (lambda (x) x)])
-  (local ((define (reader o)
-            (make-csv-reader o '((strip-leading-whitespace?  . #t)
-                                 (strip-trailing-whitespace? . #t)))))
-    (map row (call-with-input-file f (compose csv->list reader)))))
 
 ;; String (-> X) ([Listof X] -> [Listof X]) -> [Listof X]
 ;; read a file as a list of X where process-accu is applied to accu when eof
 (define (read-chunks f read-chunk process-accu) 
-  (with-input-from-file f 
-    #:mode 'text
-    (lambda ()
-      (let loop ([accu '()])
+  (define (rd)
+    (let loop ([accu '()])
         (define nxt (read-chunk))
-        (if (eof-object? nxt) (process-accu accu) (loop (cons nxt accu)))))))
+        (if (eof-object? nxt) (process-accu accu) (loop (cons nxt accu)))))
+  (define device (assq f *input-devices*))
+  (if device 
+      (parameterize ((current-input-port [(cadr device)])) (rd))
+      (with-input-from-file f #:mode 'text rd)))
+
+(define (read-csv-file/func f [row (lambda (x) x)])
+  (define (reader o)
+    (csv->list
+     (make-csv-reader o '((strip-leading-whitespace?  . #t)
+                          (strip-trailing-whitespace? . #t)))))
+  (define device (assq f *input-devices*))
+  (map row
+       (if device 
+           (reader [(cadr device)])
+           (call-with-input-file f #:mode 'text reader))))
 
 ;; [Listof Char] -> [Listof Char]
 (define (drop-last-newline accu)
   (reverse (if (and (pair? accu) (char=? (car accu) #\newline)) (cdr accu) accu)))
 
-;; String[file name] Symbol -> Void
 ;; effect: ensure that f is a file in current directory or report error for t
-(define (check-file f t)
-  (check-arg t (string? f) "string" "first" f)
-  (check-arg t (file-exists? f) "name of file in program's folder" "first" f))
+(define (check-input-file f t)
+  (define d? (assq f *input-devices*))
+  (check-arg t (or (string? f) d?) (format "string or one of: ~a" (map car *input-devices*)) "first" f)
+  (check-arg t (or d? (file-exists? f)) "name of file in program's folder" "first" f))
+
+;; effect: ensure that f is a file in current directory or report error for t
+(define (check-output-file f t)
+  (define d? (assq f *output-devices*))
+  (check-arg t (or (string? f) d?) (format "string or one of: ~a" (map car *output-devices*)) "first" f))
 
 ;; split : String [Regexp] -> [Listof String]
 ;; splits a string into a list of substrings using the given delimiter
