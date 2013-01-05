@@ -89,7 +89,7 @@
              (define ((mkdef v) id)
                (if (memq id syms)
                    '()
-                   (list #`(define #,(datum->syntax stx id stx) #,v))))
+                   (list #`(define #,(datum->syntax stx id stx) (thwart-inline #,v)))))
              (syntax-property
               #`(#%plain-module-begin
                  (provide #,@path-exports #,@string-exports #,@flag-exports)
@@ -98,3 +98,10 @@
                  #,@(apply append (map (mkdef #'use-default) string-exports))
                  #,@(apply append (map (mkdef #'#f) flag-exports)))
               'certify-mode 'transparent))))])))
+
+;; Hack: we want to be able to replace "config.rkt" and recompile it
+;; in-place, without recompiling bytecode that may depend on it.
+;; To enable that, ensure that the exports of a configuration are
+;; not inlined.
+(define thwart-inline #f)
+(set! thwart-inline (lambda (v) v))
