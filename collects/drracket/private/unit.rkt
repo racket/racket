@@ -412,11 +412,7 @@ module browser threading seems wrong.
       [(not (drracket:language-configuration:language-allows-executable-creation?
              (drracket:language-configuration:language-settings-language settings)))
        (message-box (string-constant drscheme)
-                    (string-append
-                     "Executable creation in DrRacket is supported only in the teaching languages and"
-                     " when the #lang line specifies the language (in “The Racket Language”)"
-                     "\n\n"
-                     "Consider using the raco exe command-line tool instead.")
+                    (string-constant drracket-creates-executables-only-in-some-languages)
                     frame
                     #:dialog-mixin frame:focus-table-mixin)]
       [(not program-filename)
