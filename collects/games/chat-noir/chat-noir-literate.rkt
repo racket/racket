@@ -21,11 +21,12 @@ winning a game).
 
 @play-margin-note["Chat Noir"]
 
-To get some insight into the cat's behavior, hold down the ``h''
+To get some insight into the cat's behavior, press the ``h''
 key. It will show you the cells that are on the cat's shortest path to
 the edge, assuming that the cell underneath the mouse has been
 blocked, so you can experiment to see how the shortest paths change
-by moving your mouse around.
+by moving your mouse around. Note that this slows down the game
+considerably, so you can turn it back off by pressing ``h'' again.
 
 The game was inspired by the one at
 @link["http://www.gamedesign.jp/flash/chatnoir/chatnoir.html"]{Game
@@ -110,7 +111,7 @@ The main structure definition is the @racket[world] struct.
                                             odd?
                                             (>=/c 3))]
                                [mouse-posn (or/c #f posn?)]
-                               [h-down? boolean?])
+                               [help? boolean?])
   #:transparent)
 ]
 
@@ -139,8 +140,7 @@ It consists of a structure with six fields:
 @item{@tt{mouse-posn}: a @racket[posn] for the location of the
   mouse (or @racket[#f] if the mouse is not in the window), and}
 
-@item{@tt{h-down?}: a boolean indicating if the @tt{h} key is being
-  pushed down.}
+@item{@tt{help?}: a boolean indicating if help should be shown.}
 ]
 
 A @racket[cell] is a structure with two fields:
@@ -731,7 +731,7 @@ lost the game.
        (define/contract (on-cats-path? w)
          (-> world? (-> posn? boolean?))
          (cond
-           [(world-h-down? w)
+           [(world-help? w)
             (let ()
               (define edge-distance-map (build-bfs-table w 'boundary))
               (define cat-distance-map (build-bfs-table w (world-cat w)))
@@ -1101,7 +1101,6 @@ plus various helper functions.
 
 @chunk[<input>
        <change>
-       <release>
        <clack>
        <update-world-posn>
        <player-moved?>
@@ -1114,7 +1113,6 @@ plus various helper functions.
 
 @chunk[<input-tests>
        <change-tests>
-       <release-tests>
        <point-in-this-circle?-tests>
        <circle-at-point-tests>
        <lt/f-tests>
@@ -1141,23 +1139,8 @@ and otherwise do nothing.
                         (world-state w)
                         (world-size w)
                         (world-mouse-posn w)
-                        #t)]
+                        (not (world-help? w)))]
            [else w]))]
-
-The @racket[release] function adjusts the world for a key release event.
-
-@chunk[<release>
-       ;; release : world key-event -> world
-       (define (release w ke)
-         (make-world (world-board w)
-                     (world-cat w)
-                     (world-state w)
-                     (world-size w)
-                     (world-mouse-posn w)
-                     (if (key=? ke "h")
-                         #f
-                         (world-h-down? w))))]
-
 
 The @racket[clack] function handles mouse input. It has three tasks and each corresponds 
 to a helper function:
@@ -1280,7 +1263,7 @@ the @racket[clack] function blocks the clicked on cell using
                      (world-state w)
                      (world-size w)
                      (world-mouse-posn w)
-                     (world-h-down? w)))]
+                     (world-help? w)))]
 
 The @racket[move-cat] function uses calls @racket[build-bfs-table]
 to find the shortest distance from all of the cells to the boundary,
@@ -1326,7 +1309,7 @@ position and whether or not the cat won.
                      [else 'playing])
                    (world-size world)
                    (world-mouse-posn world)
-                   (world-h-down? world))]
+                   (world-help? world))]
 
 
 The @racket[find-best-positions] function accepts
@@ -1399,14 +1382,14 @@ is just updated to @racket[#f].
                              #f]
                             [else
                              mouse-spot])
-                          (world-h-down? w)))]
+                          (world-help? w)))]
            [else
             (make-world (world-board w)
                         (world-cat w)
                         (world-state w)
                         (world-size w)
                         #f
-                        (world-h-down? w))]))]
+                        (world-help? w))]))]
 
 
 @section{Tests}
@@ -2279,6 +2262,11 @@ and reports the results.
              (make-world '() (make-posn 1 1)
                          'playing 3 (make-posn 0 0) #t))
        (test (change (make-world '() (make-posn 1 1)
+                                 'playing 3 (make-posn 0 0) #t)
+                     "h")
+             (make-world '() (make-posn 1 1)
+                         'playing 3 (make-posn 0 0) #f))
+       (test (change (make-world '() (make-posn 1 1)
                                  'playing 3 (make-posn 0 0) #f)
                      "n")
              (make-world '() (make-posn 1 1)
@@ -2287,13 +2275,6 @@ and reports the results.
                                               'cat-lost 3 (make-posn 0 0) #f)
                                   "n"))
              'playing)]
-
-@chunk[<release-tests>
-       (test (release (make-world '() (make-posn 1 1)
-                                  'playing 3 (make-posn 0 0) #t)
-                      "h")
-             (make-world '() (make-posn 1 1)
-                         'playing 3 (make-posn 0 0) #f))]
 
 
 @chunk[<point-in-this-circle?-tests>
@@ -2402,6 +2383,5 @@ by calling @racket[big-bang] with the appropriate arguments.
                              (world-width board-size)
                              (world-height board-size))
                     (on-key change)
-                    (on-release release)
                     (on-mouse clack)
                     (name "Chat Noir"))))]
