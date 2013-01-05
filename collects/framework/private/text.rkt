@@ -1955,22 +1955,25 @@
     (define read-write? #t)
     (define/public (get-read-write?) read-write?)
     (define/private (check-lock)
-      (let* ([filename (get-filename)]
-             [can-edit? (if (and filename
-                                 (file-exists? filename))
-                            (and (member 'write (file-or-directory-permissions filename)) 
-                                 #t)
-                            #t)])
-        (set! read-write? can-edit?)))
+      (define filename (get-filename))
+      (define can-edit? 
+        (if (and filename
+                 (file-exists? filename))
+            (and (member 'write 
+                         (with-handlers ([exn:fail:filesystem? (λ (x) '())])
+                           (file-or-directory-permissions filename)))
+                 #t)
+            #t))
+      (set! read-write? can-edit?))
     
     (define/public (while-unlocked t)
-      (let ([unlocked? 'unint])
-        (dynamic-wind
-         (λ () 
-           (set! unlocked? read-write?)
-           (set! read-write? #t))
-         (λ () (t))
-         (λ () (set! read-write? unlocked?)))))
+      (define unlocked? 'unint)
+      (dynamic-wind
+       (λ () 
+         (set! unlocked? read-write?)
+         (set! read-write? #t))
+       (λ () (t))
+       (λ () (set! read-write? unlocked?))))
     
     (define/augment (can-insert? x y)
       (and read-write? (inner #t can-insert? x y)))
