@@ -45,7 +45,8 @@
 (define (try-one-exe exe expect mred?)
   (printf "Running ~a\n" exe)
   (let ([plthome (getenv "PLTHOME")]
-	[collects (getenv "PLTCOLLECTS")])
+	[collects (getenv "PLTCOLLECTS")]
+        [out (open-output-string)])
     ;; Try to hide usual collections:
     (when plthome
       (putenv "PLTHOME" (path->string (build-path (find-system-path 'temp-dir) "NOPE"))))
@@ -55,23 +56,29 @@
     (parameterize ([current-directory (find-system-path 'temp-dir)])
       (when (file-exists? "stdout")
 	(delete-file "stdout"))
-      (test #t
-            system* (if (and mred? (eq? 'macosx (system-type)))
-                        (let-values ([(base name dir?) (split-path exe)])
-                          (build-path exe "Contents" "MacOS"
-                                      (path-replace-suffix name #"")))
-                        exe)))
+      (let ([path (if (and mred? (eq? 'macosx (system-type)))
+                      (let-values ([(base name dir?) (split-path exe)])
+                        (build-path exe "Contents" "MacOS"
+                                    (path-replace-suffix name #"")))
+                      exe)])
+        (test #t
+              path
+              (parameterize ([current-output-port out])
+                (system* path)))))
     (when plthome
       (putenv "PLTHOME" plthome))
     (when collects
       (putenv "PLTCOLLECTS" collects))
-    (test expect with-input-from-file (build-path (find-system-path 'temp-dir) "stdout") 
-	  (lambda () (read-string 5000)))))
-
+    (let ([stdout-file (build-path (find-system-path 'temp-dir) "stdout")])
+      (if (file-exists? stdout-file)
+          (test expect with-input-from-file stdout-file
+                (lambda () (read-string 5000)))
+          (test expect get-output-string out)))))
+  
 (define (try-exe exe expect mred? [dist-hook void] #:dist? [dist? #t] . collects)
   (try-one-exe exe expect mred?)
   (when dist?
-    ;; Build a distirbution directory, and try that, too:
+    ;; Build a distribution directory, and try that, too:
     (printf " ... from distribution ...\n")
     (when (directory-exists? dist-dir)
       (delete-directory/files dist-dir))
@@ -522,12 +529,32 @@
 
 ;; ----------------------------------------
 
+(define (try-*sl)
+  (define (try-one src)
+    (printf "Trying ~a...\n" src)
+    (define exe (path->string (mk-dest #f)))
+    (system* raco
+             "exe"
+             "-o" exe
+             "--"
+             (path->string (build-path (collection-path "tests" "racket") src)))
+    (try-exe exe "10\n" #f))
+
+  (try-one "embed-bsl.rkt")
+  (try-one "embed-bsla.rkt")
+  (try-one "embed-isl.rkt")
+  (try-one "embed-isll.rkt")
+  (try-one "embed-asl.rkt"))
+  
+;; ----------------------------------------
+
 (try-basic)
 (try-mzc)
 (try-extension)
 (try-gracket)
 (try-reader)
 (try-planet)
+(try-*sl)
 
 ;; ----------------------------------------
 
