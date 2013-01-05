@@ -1956,7 +1956,7 @@
     (define/public (get-read-write?) read-write?)
     (define/private (check-lock)
       (define filename (get-filename))
-      (define can-edit? 
+      (define can-edit?
         (if (and filename
                  (file-exists? filename))
             (and (member 'write 

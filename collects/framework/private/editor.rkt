@@ -540,7 +540,6 @@
             #t))
       (define/public (backup?) (preferences:get 'framework:backup-files?))
       (define/augment (on-save-file name format)
-        (set! auto-save-error? #f)
         (when (and (backup?)
                    (not (eq? format 'copy))
                    (file-exists? name))
@@ -554,6 +553,10 @@
                   (delete-file back-name))
                 (copy-file name back-name)))))
         (inner (void) on-save-file name format))
+      (define/augment (after-save-file success?)
+        (when success?
+          (set! auto-save-error? #f)))
+
       (define/augment (on-close)
         (remove-autosave)
         (set! do-autosave? #f)
