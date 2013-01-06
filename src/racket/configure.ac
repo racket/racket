@@ -37,6 +37,7 @@ AC_ARG_ENABLE(floatinstead, [  --enable-floatinstead   use single-precision by d
 AC_ARG_ENABLE(racket,  [  --enable-racket=<path>  use <path> as Racket executable to build Racket])
 
 AC_ARG_ENABLE(origtree,[  --enable-origtree       install with original directory structure])
+AC_ARG_ENABLE(pkgscope,[  --enable-pkgscope=<s>   set `raco pkg' default: installation, user, or shared])
 
 AC_ARG_ENABLE(docs,    [  --enable-docs           build docs on install (enabled by default)], , enable_docs=yes)
 AC_ARG_ENABLE(usersetup, [  --enable-usersetup      setup user-specific files on install])
@@ -294,6 +295,28 @@ fi
 
 if test "${enable_racket}" != "" ; then
    echo "=== Using Racket executable ${enable_racket}"
+fi
+
+INSTALL_PKGSCOPE=user
+MAKE_INSTALL_PKGSCOPE=preserve
+if test "${enable_pkgscope}" != "" ; then
+  case "${enable_pkgscope}" in
+   installation)
+     INSTALL_PKGSCOPE=installation
+     ;;
+   user)
+     INSTALL_PKGSCOPE=user
+     ;;
+   shared)
+     INSTALL_PKGSCOPE=shared
+     ;;
+   *)
+     echo "Unrecognized package scope: ${enable_pkgscope}"
+     exit 1
+     ;;
+  esac
+  echo "=== Package scope: " $INSTALL_PKGSCOPE
+  MAKE_INSTALL_PKGSCOPE=adjust
 fi
 
 ###### Some defaults #######
@@ -1354,6 +1377,8 @@ AC_SUBST(FRAMEWORK_INSTALL_DIR)
 AC_SUBST(FRAMEWORK_REL_INSTALL)
 AC_SUBST(FRAMEWORK_PREFIX)
 AC_SUBST(INSTALL_ORIG_TREE)
+AC_SUBST(INSTALL_PKGSCOPE)
+AC_SUBST(MAKE_INSTALL_PKGSCOPE)
 AC_SUBST(EXE_SUFFIX)
 AC_SUBST(SO_SUFFIX)
 AC_SUBST(OWN_LIBFFI)

@@ -93,6 +93,7 @@ install-common-middle:
 
 install-common-last:
 	$(MAKE) fix-paths
+	$(MAKE) @MAKE_INSTALL_PKGSCOPE@-raco-pkg-default-scope
 
 install-no:
 	$(NOOP)
@@ -110,6 +111,12 @@ copytree-run:
           "$(srcdir)/../collects/setup/unixstyle-install.rkt" \
           make-install-copytree "$(srcdir)/.." \
           $(ALLDIRINFO) "@INSTALL_ORIG_TREE@"
+
+adjust-raco-pkg-default-scope:
+	@RUN_RACKET_CGC@ -l raco pkg config -i --set default-scope @INSTALL_PKGSCOPE@
+
+preserve-raco-pkg-default-scope:
+	$(NOOP)
 
 install-gracket-post-collects:
 	cd gracket; $(MAKE) install-post-collects

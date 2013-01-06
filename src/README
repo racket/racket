@@ -170,7 +170,7 @@ Detailed instructions:
     and/or GRacket.  The current directory at the time `configure' is
     run will be used as working space for building the executables
     (independent of `--prefix').  This build directory does not have to
-    be in the source tree, even for an "in-place" build.  It's ok to run
+    be in the source tree, even for an in-place build.  It's ok to run
     `configure' from its own directory (as in the first example above),
     but it's better to pick a separate build directory that is otherwise
     empty (as in the second example).

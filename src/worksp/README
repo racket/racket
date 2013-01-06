@@ -135,7 +135,6 @@ pre-built binary by modifying the machine code: change a comparison
 to 2, which is SYMBOL_CHARSET, to a comparsion to 3, which doesn't
 correspond to any CHARSET.
 
-
 Building Racket3m and GRacket3m
 -------------------------------
 
