@@ -51,7 +51,8 @@ Each file has the same format. They are each modules in the
 @racket[string-constants/private/string-constant-lang] language. The
 body of each module is a finite mapping table that gives the mapping
 from the symbolic name of a string constant to its translation in the
-appropriate language.
+appropriate language. Multiple string constants that appear together are
+implicitly concatenated.
 
 The @filepath{english-string-constants} is considered the master file;
 string constants will be set there and translated into each of the
