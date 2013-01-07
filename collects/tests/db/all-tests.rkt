@@ -229,18 +229,20 @@ Testing profiles are flattened, not hierarchical.
  [("-s" "--sqlite3") "Run sqlite3 in-memory db tests" (set! include-sqlite? #t)]
  [("-f" "--config-file") file  "Use configuration file" (pref-file file)]
  #:args labels
- (let* ([tests
+ (let* ([no-labels?
+         (not (or include-generic? include-sqlite? (pair? labels)))]
+        [tests
          (for/list ([label labels])
            (cons label
                  (make-all-tests label (get-dbconf (string->symbol label)))))]
         [tests
-         (cond [(or include-sqlite? (null? labels))
+         (cond [(or include-sqlite? no-labels?)
                 (list* (cons "sqlite3, memory" sqlite-test)
                        (cons "sqlite3, memory, #:use-place=#t" sqlite/p-test)
                        tests)]
                [else tests])]
         [tests
-         (cond [(or include-generic? (null? labels))
+         (cond [(or include-generic? no-labels?)
                 (cons (cons "generic" generic-test) tests)]
                [else tests])])
    (cond [gui?
