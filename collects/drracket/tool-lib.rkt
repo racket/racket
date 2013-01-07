@@ -163,6 +163,14 @@ all of the names in the tools library, for use defining keybindings
     since this procedure is invoked on DrRacket's eventspace's handler thread.})
  
  (proc-doc/names
+  drracket:module-language-tools:register-online-expansion-pref
+  (-> (-> (is-a?/c vertical-panel%) void?) void?)
+  (func)
+  @{Registers @racket[func] so that it is called while building the
+    preferences panel. The function is passed a panel that contains 
+    other configuration controls for online expansion.})
+ 
+ (proc-doc/names
   drracket:module-language:add-module-language
   (-> any)
   ()

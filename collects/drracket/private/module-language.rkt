@@ -2317,7 +2317,6 @@
        (connect-to-prefs read-choice 'drracket:online-expansion:read-in-defs-errors)
        (connect-to-prefs var-choice 'drracket:online-expansion:variable-errors)
        (connect-to-prefs other-choice 'drracket:online-expansion:other-errors)
-       (preferences:add-check vp
-                              'drracket:syncheck:show-arrows?
-                              (string-constant show-arrows-on-mouseover))
+       (for ([f (in-list (drracket:module-language-tools:get-online-expansion-pref-funcs))])
+         (f vp))
        parent-vp))))
