@@ -7,6 +7,7 @@
          setup/dirs
          setup/link
          framework
+         (prefix-in planet2: planet2)
          (for-syntax racket/base
                      racket/list)
          "buginfo.rkt"
@@ -247,6 +248,16 @@
      #f
      #:top-panel synthesized-panel))
   
+  (define planet2-info
+    (build/label
+     (string-constant bug-report-field-planet2)
+     (lambda (panel)
+       (keymap:call/text-keymap-initializer
+        (lambda ()
+          (make-object text-field% #f panel void ""))))
+     #f
+     #:top-panel synthesized-panel))
+  
   (define collections
     (make-big-text
      (string-constant bug-report-field-collections)
@@ -315,6 +326,7 @@
                    (format "Human Language: ~a\n" (send human-language get-value))
                    (format "(current-memory-use) ~a\n" (send memory-use get-value))
                    (format "Links: ~a\n" (send links-ctrl get-value))
+                   (format "Planet2 (show):\n~a\n" (send planet2-info get-value))
                    "\n"
                    "\nCollections:\n"
                    (format "~a" (send (send collections get-editor) get-text))
@@ -431,6 +443,13 @@
                      (links #:user? #f)
                      (links #:root? #t)
                      (links #:user? #f #:root? #t)))
+  
+  (define planet2-info-sp (open-output-string))
+  (parameterize ([current-output-port planet2-info-sp])
+    (planet2:show))
+  (send (send planet2-info get-editor)
+        insert
+        (get-output-string planet2-info-sp))
   
   (send human-language set-value (format "~a" (this-language)))
   (send memory-use set-value (format "~a" (current-memory-use)))

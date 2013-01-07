@@ -1729,6 +1729,8 @@ please adhere to these guidelines:
   (planet-docs-building "PLaneT: Building docs (triggered by ~a)...")
   (planet-no-status "PLaneT") ;; this can happen when there is status shown in a different and then the user switches to a tab where planet hasn't been used
   
+  (bug-report-field-planet2 "Package system info")
+  
   ;; string normalization. To see this, paste some text with a ligature into DrRacket
   ;; the first three strings are in the dialog that appears. The last one is in the preferences dialog
   (normalize "Normalize")
