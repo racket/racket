@@ -240,6 +240,29 @@ Sets @|readline|'s @tt{rl_completion_entry_function} to
 from @racketmodname[ffi/unsafe], determines the type of value supplied
 to the @racket[proc].}
 
+@defproc[(readline-newline) void?]{
+
+Sets the cursors to the start of a new line.}
+
+
+@defproc[(readline-redisplay) void?]{
+
+Forces a redisplay of the readline prompt and current user input. It can be used
+together with @racket[readline-newline] to prevent a background thread from 
+cluttering up the user input by interleaving its output.
+
+A wrapper function for the threads output might look like the following:
+@racketblock[
+(define (with-thread-safe-output output-thunk)
+  (dynamic-wind
+    (lambda ()
+      (start-atomic)
+      (readline-newline))
+    output-thunk
+    (lambda ()
+      (readline-redisplay)
+      (end-atomic))))]}
+
 
 @section[#:tag "readline-license"]{License Issues}
 
