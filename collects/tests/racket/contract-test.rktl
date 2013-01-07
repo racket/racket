@@ -3325,6 +3325,22 @@
       x)
    '(body ctc))
 
+  (test/pos-blame
+   '->i-bad-number-of-result-values1
+   '((contract (->i ((x any/c)) (result (x) any/c))
+               (λ (x) (values 1 2))
+               'pos
+               'neg)
+     1))
+
+  (test/pos-blame
+   '->i-bad-number-of-result-values2
+   '((contract (->i ((giraffe any/c)) (elephant any/c))
+               (λ (x) (values 1 2))
+               'pos
+               'neg)
+     1))
+  
 ;
 ;
 ;
