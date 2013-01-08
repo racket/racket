@@ -79,8 +79,12 @@
     (current-redirect-main url)]
    [("--redirect") url "redirect external links to tag search via <url>"
     (current-redirect url)]
-   [("++xref-in") module-path proc-id "load format-specific cross-ref info by"
-    "calling <proc-id> as exported by <module-path>"
+   [("+m" "++main-xref-in") ("load format-speficic cross-ref info for"
+                             "all installed library collections")
+    (current-xref-input-modules
+     (cons (cons 'setup/xref 'load-collections-xref) (current-xref-input-modules)))]
+   [("++xref-in") module-path proc-id ("load format-specific cross-ref info by"
+                                       "calling <proc-id> as exported by <module-path>")
     (let ([mod (read-one module-path)]
           [id (read-one proc-id)])
       (unless (module-path? mod)
