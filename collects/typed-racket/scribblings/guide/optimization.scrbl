@@ -193,3 +193,38 @@ Racket to display performance debugging information. Setting the Racket logging
 level can be done on the command line with the @racket[-W] flag:
 
 @commandline{racket -W debug my-typed-program.rkt}
+
+@subsubsection{Refining Recommendations with Profiling Information}
+
+Given profiling information about your program, Optimization Coach can tailor
+its recommendations to help you focus on the parts of your program that really
+matter.
+
+@; TODO when OC is moved to its own collect, change this, and declare exporting
+@(require (for-label (only-in typed-racket/base-env/prims optimization-coach-profile)))
+
+@defform[(optimization-coach-profile body ...)]{
+To gather profiling information for use with Optimization Coach, wrap the
+portion of your program that you want to profile (typically an entry point to
+the program) with @racket[optimization-coach-profile].
+
+When you next run your program, profiling information will be written to a
+file, ready to be used by Optimization Coach. The output filename is
+constructed by appending the @tt{.profile} suffix to the program's filename.
+}
+
+Once you have gathered profiling information, you can feed it to Optimization
+Coach by specifying the profile file and clicking the @bold{Refine} button.
+Optimization Coach will then reanalyze your program and produce new
+recommendations.
+
+Compared to the pre-profiling recommendations, those new recommendations should
+be both more targeted and more aggressive.
+Post profiling, Optimization Coach only recommends changes to functions that
+had a significant impact on program performance according to profile data.
+These are the functions where your tuning efforts are likely best spent.
+
+In addition, Optimization Coach's post-profiling recommendations are more
+aggressive. For example, it may recommend replacing convenient, high-level
+constructs---such as structs--with more performant but lower-level ones---such
+as vectors.
