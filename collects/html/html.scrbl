@@ -39,7 +39,7 @@ Reads HTML from a port, producing an @xexpr compatible with the
  with regards to what elements are allowed to be the children of
  other elements. For example, the top-level @racket["<html>"]
  element may only contain a @racket["<body>"] and @racket["<head>"]
- element. Defaults to @racket[#f].
+ element. Defaults to @racket[#t].
 }
 
 @section{Example}

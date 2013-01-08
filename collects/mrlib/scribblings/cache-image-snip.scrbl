@@ -1,10 +1,29 @@
 #lang scribble/doc
-@(require "common.rkt" (for-label mrlib/cache-image-snip))
+@(require "common.rkt" 
+          (for-label mrlib/cache-image-snip)
+          scribble/decode)
+
+@(define dont-use
+   (splice
+    @list{This function is in a library that will be 
+          removed in a future version. Do not use it.
+          
+          The mentions of ``argb'' in this library are not
+          @racket[bytes?] objects (i.e, not the
+          same as for example, the result of 
+          @method[bitmap-dc% get-argb-pixels])}))
 
 @title{Cache-image Snip}
 
 @defmodule[mrlib/cache-image-snip]{
 
+@deprecated[@racketmodname[racket/gui]]{This library will
+  no longer be public in a future release; much of it will
+  be available privately to continue to support the implementation
+  of @racket[htdp/image], but the other exported functions
+  here are not useful and have names that confusingly match
+  unrelated other libraries.}
+                                   
 The @racketmodname[mrlib/cache-image-snip] library provides the core
 data structure for DrRacket's @filepath{image.rkt} teachpack. Images in
 the @filepath{image.rkt} teachpack are instances of the
@@ -124,20 +143,31 @@ This snipclass is used for saved cache image snips.}
   Extracts the vector from @racket[argb]. The resulting vector
  has entries in row-major order, so that the data for the pixel
  at (x,y) winds up in four vector entries beginning at
- (4*(x+(width*y))).}
+ (4*(x+(width*y))).
+ 
+   @dont-use
+}
 
 @defproc[(argb-width [argb argb?]) exact-nonnegative-integer?]{
 
-  Extracts the width from @racket[argb].}
+   Extracts the width from @racket[argb].
+                           
+   @dont-use
+}
 
 @defproc[(argb-height [argb argb?]) exact-nonnegative-integer?]{
 
-  Extracts the height from @racket[argb].}
+  Extracts the height from @racket[argb].
+                           
+  @dont-use}
 
 
 @defproc[(argb? [v any/c]) boolean?]{
 
-Returns @racket[#t] if @racket[v] is an argb, @racket[#f] otherwise.}
+  Returns @racket[#t] if @racket[v] is an argb, @racket[#f] otherwise.
+          
+  @dont-use
+}
 
 
 @defproc[(overlay-bitmap [dest argb?]
@@ -148,7 +178,10 @@ Returns @racket[#t] if @racket[v] is an argb, @racket[#f] otherwise.}
          void?]{
 
 Changes @racket[argb], overlaying @racket[img] with masking based on
-@racket[mask] at @math{(@racket[dx], @racket[dy])} from the top-left.}
+@racket[mask] at @math{(@racket[dx], @racket[dy])} from the top-left.
+
+  @dont-use
+}
 
 
 @defproc[(build-bitmap [draw ((is-a?/c dc<%>) . -> . any)]
@@ -158,7 +191,10 @@ Changes @racket[argb], overlaying @racket[img] with masking based on
 
 Builds a bitmap of size @racket[width] by @racket[height], using the
 procedure @racket[draw] to render the bitmap content into the given
-@racket[dc<%>].}
+@racket[dc<%>].
+
+  @dont-use
+}
 
 
 @defproc[(flatten-bitmap [bitmap (is-a?/c bitmap%)]) (is-a?/c bitmap%)]{
@@ -167,14 +203,20 @@ procedure @racket[draw] to render the bitmap content into the given
     with its mask (as determined by @xmethod[bitmap%
     get-loaded-mask]), producing a bitmap that has no mask, and looks
     the way that bitmap would draw (when drawn with the mask) onto a
-    white background.}
+    white background.
+    
+    @dont-use
+}
 
 
 @defproc[(argb->cache-image-snip [argb argb?][dx real?][dy real?])
          (is-a?/c cache-image-snip%)]{
 
  Builds a new @racket[cache-image-snip%] based on the contents of
- @racket[argb], using @racket[dx] and @racket[dy] as the pinhole.}
+ @racket[argb], using @racket[dx] and @racket[dy] as the pinhole.
+ 
+  @dont-use
+}
 
 
 @defproc[(argb->bitmap [argb argb?]) (or/c false/c (is-a?/c bitmap%))]{
@@ -185,5 +227,7 @@ procedure @racket[draw] to render the bitmap content into the given
 
    If the width or height of @racket[argb] is @racket[0],
    this returns @racket[#f].
+   
+   @dont-use
 }
 

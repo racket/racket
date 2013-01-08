@@ -78,7 +78,7 @@ its sub-expressions are evaluated, and then how the results are
 combined to reduce the form away.
 
 The @deftech{dynamic extent} of an expression is the sequence of
-evaluation steps during which an expression contains the @tech{redex}.
+evaluation steps during which the expression contains the @tech{redex}.
 
 @;------------------------------------------------------------------------
 @section{Tail Position}

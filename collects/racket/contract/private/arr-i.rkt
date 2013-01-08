@@ -516,15 +516,20 @@
   (cond
     [(istx-ress an-istx)
      (list
-      #`(λ #,(vector->list wrapper-ress)
-          #,(add-wrapper-let 
-             (add-post-cond an-istx arg/res-to-indy-var #`(values #,@(vector->list wrapper-ress)))
-             #f
-             ordered-ress res-indices
-             res-proj-vars indy-res-proj-vars 
-             wrapper-ress indy-res-vars
-             arg/res-to-indy-var
-             blame-var-table)))]
+      #`(case-lambda
+          [#,(vector->list wrapper-ress)
+           #,(add-wrapper-let 
+              (add-post-cond an-istx arg/res-to-indy-var #`(values #,@(vector->list wrapper-ress)))
+              #f
+              ordered-ress res-indices
+              res-proj-vars indy-res-proj-vars 
+              wrapper-ress indy-res-vars
+              arg/res-to-indy-var
+              blame-var-table)]
+          [args
+           (bad-number-of-results blame val
+                                  #,(vector-length wrapper-ress)
+                                  args)]))]
     [else
      null]))
 

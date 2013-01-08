@@ -714,6 +714,8 @@ FRAMEWORK_INSTALL_DIR
 FRAMEWORK_REL_INSTALL
 FRAMEWORK_PREFIX
 INSTALL_ORIG_TREE
+INSTALL_PKGSCOPE
+MAKE_INSTALL_PKGSCOPE
 EXE_SUFFIX
 SO_SUFFIX
 OWN_LIBFFI
@@ -1343,6 +1345,7 @@ Optional Features:
   --enable-floatinstead   use single-precision by default
   --enable-racket=<path>  use <path> as Racket executable to build Racket
   --enable-origtree       install with original directory structure
+  --enable-pkgscope=<s>   set `raco pkg' default: installation, user, or shared
   --enable-docs           build docs on install (enabled by default)
   --enable-usersetup      setup user-specific files on install
   --enable-shared         create shared libraries
@@ -2015,6 +2018,11 @@ if test "${enable_origtree+set}" = set; then
   enableval=$enable_origtree;
 fi
 
+# Check whether --enable-pkgscope was given.
+if test "${enable_pkgscope+set}" = set; then
+  enableval=$enable_pkgscope;
+fi
+
 
 # Check whether --enable-docs was given.
 if test "${enable_docs+set}" = set; then
@@ -2368,6 +2376,28 @@ fi
 
 if test "${enable_racket}" != "" ; then
    echo "=== Using Racket executable ${enable_racket}"
+fi
+
+INSTALL_PKGSCOPE=user
+MAKE_INSTALL_PKGSCOPE=preserve
+if test "${enable_pkgscope}" != "" ; then
+  case "${enable_pkgscope}" in
+   installation)
+     INSTALL_PKGSCOPE=installation
+     ;;
+   user)
+     INSTALL_PKGSCOPE=user
+     ;;
+   shared)
+     INSTALL_PKGSCOPE=shared
+     ;;
+   *)
+     echo "Unrecognized package scope: ${enable_pkgscope}"
+     exit 1
+     ;;
+  esac
+  echo "=== Package scope: " $INSTALL_PKGSCOPE
+  MAKE_INSTALL_PKGSCOPE=adjust
 fi
 
 ###### Some defaults #######
@@ -9109,6 +9139,8 @@ LIBS="$LIBS $EXTRALIBS"
 
 
 
+
+
 mk_needed_dir()
 {
   if test ! -d "$1" ; then
@@ -9938,6 +9970,8 @@ for ac_last_try in false false false false false :; do
 FRAMEWORK_REL_INSTALL!$FRAMEWORK_REL_INSTALL$ac_delim
 FRAMEWORK_PREFIX!$FRAMEWORK_PREFIX$ac_delim
 INSTALL_ORIG_TREE!$INSTALL_ORIG_TREE$ac_delim
+INSTALL_PKGSCOPE!$INSTALL_PKGSCOPE$ac_delim
+MAKE_INSTALL_PKGSCOPE!$MAKE_INSTALL_PKGSCOPE$ac_delim
 EXE_SUFFIX!$EXE_SUFFIX$ac_delim
 SO_SUFFIX!$SO_SUFFIX$ac_delim
 OWN_LIBFFI!$OWN_LIBFFI$ac_delim
@@ -9989,7 +10023,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 52; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 54; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

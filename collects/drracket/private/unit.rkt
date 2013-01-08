@@ -3001,8 +3001,9 @@ module browser threading seems wrong.
             (set! definitions-text (send current-tab get-defs))
             (set! interactions-text (send current-tab get-ints))
             
-            
             (begin-container-sequence)
+            (send definitions-text begin-edit-sequence)
+            (send interactions-text begin-edit-sequence)
             (for-each (λ (defs-canvas) (send defs-canvas set-editor definitions-text #f))
                       definitions-canvases)
             (for-each (λ (ints-canvas) (send ints-canvas set-editor interactions-text #f))
@@ -3027,6 +3028,8 @@ module browser threading seems wrong.
             (for-each (λ (ints-canvas) (send ints-canvas refresh))
                       interactions-canvases)
             (set-color-status! (send definitions-text is-lexer-valid?))
+            (send definitions-text end-edit-sequence)
+            (send interactions-text end-edit-sequence)
             (end-container-sequence))))
       
       (define/pubment (on-tab-change from-tab to-tab)

@@ -285,6 +285,16 @@
    (pkg-config-file)
    (hash-set (read-pkg-cfg) key val)))
 
+(define (get-default-package-scope)
+  (match (get-default-package-scope-as-string)
+    ["installation" 'i]
+    ["shared" 's]
+    [else 'u]))
+(define (get-default-package-scope-as-string)
+  (parameterize ([current-install-system-wide? #t])
+    (define cfg (read-pkg-cfg))
+    (hash-ref cfg "default-scope" "user")))
+
 (struct pkg-info (orig-pkg checksum auto?) #:prefab)
 (struct install-info (name orig-pkg directory clean? checksum))
 
@@ -1038,6 +1048,21 @@
      (match key+vals
        [(list* (and key "indexes") val)
         (update-pkg-cfg! "indexes" val)]
+       [(list (and key "default-scope") val)
+        (unless (member val '("installation" "user" "shared"))
+          (pkg-error (~a "invliad value for config key\n"
+                         "  config key: ~a\n"
+                         "  given value: ~a\n"
+                         "  valid values: installation, user, or shared")
+                     key
+                     val))
+        (if (current-install-system-wide?)
+            (update-pkg-cfg! "default-scope" val)
+            (pkg-error (~a "config key makes sense only with --installation/-i\n"
+                           "  config key: ~a\n"
+                           "  given value: ~a")
+                       key
+                       val))]
        [(list key)
         (pkg-error "unsupported config key\n  key: ~e" key)]
        [(list)
@@ -1049,6 +1074,12 @@
           ["indexes"
            (for ([s (in-list (read-pkg-cfg/def "indexes"))])
              (printf "~a\n" s))]
+          ["default-scope"
+           (if (current-install-system-wide?)
+               (printf "~a\n" (get-default-package-scope-as-string))
+               (pkg-error (~a "config key makes sense only with --installation/-i\n"
+                           "  config key: ~a")
+                          key))]
           [_
            (pkg-error "unsupported config key\n  key: ~e" key)])]
        [(list)
@@ -1160,4 +1191,6 @@
         (#:dep-behavior dep-behavior/c
                         #:force? boolean?
                         #:ignore-checksums? boolean?)
-        (or/c #f (listof (or/c path-string? (non-empty-listof path-string?)))))]))
+        (or/c #f (listof (or/c path-string? (non-empty-listof path-string?)))))]
+  [get-default-package-scope
+   (-> (or/c 'i 'u 's))]))

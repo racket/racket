@@ -23,6 +23,23 @@
          (string->symbol (format "~a ~a" (short-program+command-name) cmd))
          args))
 
+(define (call-with-package-scope who given-scope installation shared user thunk)
+  (define scope
+    (case given-scope
+      [(installation) 'i]
+      [(user) 'u]
+      [(shared) 's]
+      [else
+       (cond
+        [installation 'i]
+        [user 'u]
+        [shared 's]
+        [else (get-default-package-scope)])]))
+  (parameterize ([current-install-system-wide? (eq? scope 'i)]
+                 [current-install-version-specific? (not (eq? scope 's))]
+                 [current-pkg-error (pkg-error who)])
+    (thunk)))
+
 (commands
  "This tool is used for managing installed packages."
  [install
@@ -36,14 +53,9 @@
                                 "(makes sense only when a single <pkg-source> is given)")]
   [#:bool no-setup () ("Don't run `raco setup' after changing packages"
                        "(generally not a good idea)")]
-  #:once-any
-  [#:bool installation ("-i") "Install for all users of the Racket installation"]
-  [#:bool shared ("-s") "Install as user-specific but shared for all Racket versions"]
-  [#:bool user ("-u") "Install as user- and version-specific (the default)"]
   #:once-each
   [(#:sym mode [fail force search-ask search-auto] #f) deps ()
-   ("Specify the behavior for dependencies;"
-    "valid <mode>s are:"
+   ("Specify the behavior for dependencies, with <mode> as one of"
     "  fail: cancels the installation if dependencies are unmet"
     "        (default for most packages)"
     "  force: installs the package despite missing dependencies"
@@ -54,33 +66,37 @@
   [#:bool force () "Ignores conflicts"]
   [#:bool ignore-checksums () "Ignores checksums"]
   [#:bool link () ("Link a directory package source in place")]
+  #:once-any
+  [(#:sym scope [installation user shared] #f) scope ()
+   ("Select package <scope>, one of"
+    "  installation: Install for all users of the Racket installation"
+    "  user: Install as user- and version-specific"
+    "  shared: Install as user-specific but shared for all Racket versions")]
+  [#:bool installation ("-i") "shorthand for `--scope installation'"]
+  [#:bool user ("-u") "shorthand for `--scope user'"]
+  [#:bool shared ("-s") "shorthand for `--scope shared'"]
   #:args pkg-source
-  (parameterize ([current-install-system-wide? installation]
-                 [current-install-version-specific? (not shared)]
-                 [current-pkg-error (pkg-error 'install)])
-    (with-package-lock
-     (define setup-collects
-       (install-cmd #:dep-behavior deps
-                    #:force? force
-                    #:ignore-checksums? ignore-checksums
-                    (for/list ([p (in-list pkg-source)])
-                      (pkg-desc p (or (and link 'link) type) name #f))))
-     (setup no-setup installation setup-collects)))]
+  (call-with-package-scope
+   'install
+   scope installation shared user
+   (lambda ()
+     (with-package-lock
+      (define setup-collects
+        (install-cmd #:dep-behavior deps
+                     #:force? force
+                     #:ignore-checksums? ignore-checksums
+                     (for/list ([p (in-list pkg-source)])
+                       (pkg-desc p (or (and link 'link) type) name #f))))
+      (setup no-setup installation setup-collects))))]
  [update
   "Update packages"
   #:once-each
   [#:bool no-setup () ("Don't run `raco setup' after changing packages"
                        "(generally not a good idea)")]
-  #:once-any
-  [#:bool installation ("-i") "Update only for all users of the Racket installation"]
-  [#:bool shared ("-s") "Update only user-specific packages for all Racket versions"]
-  [#:bool user ("-u") "Update only user- and version-specific packages (the default)"]
-  #:once-each
   [#:bool all ("-a") ("Update all packages;"
                       "only if no packages are given on the command line")]
   [(#:sym mode [fail force search-ask search-auto] #f) deps ()
-   ("Specify the behavior for dependencies;"
-    "valid <mods>s are:"
+   ("Specify the behavior for dependencies, with <mode> as one of"
     "  fail: cancels the installation if dependencies are unmet"
     "        (default for most packages)"
     "  force: installs the package despite missing dependencies"
@@ -89,10 +105,20 @@
     "              like it installed"
     "  search-auto: like 'search-ask' but does not ask for permission to install")]
   [#:bool update-deps () "Check named packages' dependencies for updates"]
+  #:once-any
+  [(#:sym scope [installation user shared] #f) scope ()
+   ("Select package scope, one of"
+    "  installation: Update only for all users of the Racket installation"
+    "  user: Update only user- and version-specific packages"
+    "  shared: Update only user-specific packages for all Racket versions")]
+  [#:bool installation ("-i") "shorthand for `--scope installation'"]
+  [#:bool user ("-u") "shorthand for `--scope user'"]
+  [#:bool shared ("-s") "shorthand for `--scope shared'"]
   #:args pkgs
-  (parameterize ([current-install-system-wide? installation]
-                 [current-install-version-specific? (not shared)]
-                 [current-pkg-error (pkg-error 'update)])
+  (call-with-package-scope
+   'update
+   scope installation shared user
+   (lambda ()
     (with-package-lock
      (define setup-collects
        (update-packages pkgs
@@ -100,41 +126,56 @@
                         #:dep-behavior deps
                         #:deps? update-deps))
      (when setup-collects
-       (setup no-setup installation setup-collects))))]
+       (setup no-setup installation setup-collects)))))]
  [remove
   "Remove packages"
   #:once-each
   [#:bool no-setup () ("Don't run `raco setup' after changing packages"
                        "(generally not a good idea)")]
-  #:once-any
-  [#:bool installation ("-i") "Remove packages for all users of the Racket installation"]
-  [#:bool shared ("-s") "Remove user-specific packages for all Racket versions"]
-  [#:bool user ("-u") "Remove user- and version-specific packages (the default)"]
-  #:once-each
   [#:bool force () "Force removal of packages"]
   [#:bool auto () "Remove automatically installed packages with no dependencies"]
+  #:once-any
+  [(#:sym scope [installation user shared] #f) scope ()
+   ("Select package <scope>, one of"
+    "  installation: Remove packages for all users of the Racket installation"
+    "  user: Remove user- and version-specific packages"
+    "  shared: Remove user-specific packages for all Racket versions")]
+  [#:bool installation ("-i") "shorthand for `--scope installation'"]
+  [#:bool user ("-u") "shorthand for `--scope user'"]
+  [#:bool shared ("-s") "shorthand for `--scope shared'"]
   #:args pkgs
-  (parameterize ([current-install-system-wide? installation]
-                 [current-install-version-specific? (not shared)]
-                 [current-pkg-error (pkg-error 'remove)])
-    (with-package-lock
-     (remove-packages pkgs
-                      #:auto? auto
-                      #:force? force)
-     (setup no-setup installation #f)))]
+  (call-with-package-scope
+   'remove
+   scope installation shared user
+   (lambda ()
+     (with-package-lock
+      (remove-packages pkgs
+                       #:auto? auto
+                       #:force? force)
+      (setup no-setup installation #f))))]
  [show
   "Show information about installed packages"
   #:once-any
-  [#:bool installation ("-i") "Show only for all users of the Racket installation"]
-  [#:bool shared ("-s") "Show only user-specific for all Racket versions"]
-  [#:bool user ("-u") "Show only the user- and version-specific"]
+  [(#:sym scope [installation user shared] #f) scope ()
+   ("Show only for package <scope>, one of"
+    "  installation: Show only for all users of the Racket installation"
+    "  user: Show only user- and version-specific"
+    "  shared: Show only user-specific for all Racket versions")]
   [(#:str vers #f) version ("-v") "Show only user-specific for Racket <vers>"]
+  [#:bool installation ("-i") "shorthand for `--scope installation'"]
+  [#:bool user ("-u") "shorthand for `--scope user'"]
+  [#:bool shared ("-s") "shorthand for `--scope shared'"]
   #:args ()
-  (define only-mode (cond
-                     [installation 'i]
-                     [shared 's]
-                     [user 'u]
-                     [else (if version 'u #f)]))
+  (define only-mode (case scope
+                      [(installation) 'i]
+                      [(user) 'u]
+                      [(shared) 's]
+                      [else
+                       (cond
+                        [installation 'i]
+                        [shared 's]
+                        [user 'u]
+                        [else (if version 'u #f)])]))
   (for ([mode '(i s u)])
     (when (or (eq? mode only-mode) (not only-mode))
       (unless only-mode
@@ -150,18 +191,24 @@
          (show-cmd (if only-mode "" " "))))))]
  [config
   "View and modify the package configuration"
-  #:once-any
-  [#:bool installation ("-i") "Operate on the installation-wide package database"]
-  [#:bool shared ("-s") "Operate on the user-specific all-version package database"]
-  [#:bool user ("-u") "Operate on the user-specific, version-specific package database"]
   #:once-each
   [#:bool set () "Completely replace the value"]
-  #:args key+vals
-  (parameterize ([current-install-system-wide? installation]
-                 [current-install-version-specific? (not shared)]
-                 [current-pkg-error (pkg-error 'config)])
-    (with-package-lock
-     (config-cmd set key+vals)))]
+  #:once-any
+  [(#:sym scope [installation user shared] #f) scope ()
+   ("Select configuration <scope>, one of"
+    "  installation: Operate on the installation-wide package configuration"
+    "  user: Operate on the user-specific, version-specific package configuration"
+    "  shared: Operate on the user-specific all-version package configuration")]
+  [#:bool installation ("-i") "shorthand for `--scope installation'"]
+  [#:bool user ("-u") "shorthand for `--scope user'"]
+  [#:bool shared ("-s") "shorthand for `--scope shared'"]
+  #:args key/val
+  (call-with-package-scope
+   'config
+   scope installation shared user
+   (lambda ()
+     (with-package-lock
+      (config-cmd set key/val))))]
  [create
   "Bundle a new package"
   #:once-any

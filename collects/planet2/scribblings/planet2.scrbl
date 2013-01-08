@@ -1,5 +1,6 @@
 #lang scribble/manual
 @(require scribble/bnf
+          scribble/core
           (for-label planet2
                      (except-in racket/base remove)
                      setup/dirs))
@@ -20,6 +21,16 @@
 
 @(define (gtech s)
    @tech[#:doc '(lib "scribblings/guide/guide.scrbl") s])
+
+@(define (command s)
+   @exec{raco pkg @|s|})
+
+@(define (command-ref s)
+   @(link-element "plainlink" @command[s] `(raco-pkg-cmd ,s)))
+
+@(define (command/toc s)
+   @(toc-target-element #f @command[s] `(raco-pkg-cmd ,s)))
+                        
 
 @; ----------------------------------------
 
@@ -213,6 +224,17 @@ into account when determining a @tech{package update}, although a change
 in a package's @tech{version} (in either direction) should normally
 imply a change in the @tech{checksum}.
 
+A @deftech{package scope} determines the effect of package installations,
+updates, @|etc|, with respect to different users, Racket versions, and
+Racket installations. The default @tech{package scope} can be configured, but it is
+normally @exec{user}, which is user-specific and version-specific;
+that is, package installation makes the package visible only for the
+installing user and with the installing version of Racket. The
+@exec{installation} scope means that package installation makes the
+package visible to all users of the specific Racket installation that
+is used to install the package. Finally, the @exec{shared} scope means
+user-specific, but for all versions and installations of Racket.
+
 @; ----------------------------------------
 
 @section{Managing Packages}
@@ -223,14 +245,14 @@ sub-command and a library. They have the exact same capabilities, as
 the command line interface invokes the library functions and
 reprovides all their options.
 
-@subsection{Command Line}
+@subsection[#:tag "cmdline"]{Command Line}
 
 The @as-index{@exec{raco pkg}} sub-command provides the following
 sub-sub-commands:
 
 @itemlist[
 
-@item{@exec{install} @nonterm{option} ... @nonterm{pkg-source} ... 
+@item{@command/toc{install} @nonterm{option} ... @nonterm{pkg-source} ... 
  --- Installs the given @tech{package sources} with the given
  @nonterm{option}s:
 
@@ -243,13 +265,6 @@ sub-sub-commands:
  @item{@DFlag{name} @nonterm{pkg} or @Flag{n} @nonterm{pkg} --- specifies the name of the package,
        which makes sense only when a single @nonterm{pkg-source} is provided. The name is normally
        inferred for each @nonterm{pkg-source}.}
-
- @item{@DFlag{no-setup} --- Does not run @exec{raco setup} after installation. This behavior is also the case if the
-       environment variable @envvar{PLT_PLANET2_NOSETUP} is set to any non-empty value.}
-
- @item{@DFlag{installation} or @Flag{i} --- Install packages for all users of a Racket installation, rather than user-specific.}
- @item{@DFlag{shared} or @Flag{s} --- Install packages as user-specific, but for all Racket versions.}
- @item{@DFlag{user} or @Flag{u} --- Install packages as user-specific and Racket version-specific (the default).}
 
  @item{@DFlag{deps} @nonterm{behavior} --- Selects the behavior for dependencies, where @nonterm{behavior} is one of
   @itemlist[
@@ -264,13 +279,28 @@ sub-sub-commands:
 
   @item{@DFlag{ignore-checksums} --- Ignores errors verifying package @tech{checksums} (unsafe).}
 
+ @item{@DFlag{no-setup} --- Does not run @exec{raco setup} after installation. This behavior is also the case if the
+       environment variable @envvar{PLT_PLANET2_NOSETUP} is set to any non-empty value.}
+
   @item{@DFlag{link} --- Implies @exec{--type dir} (and overrides any specified type),
         and links the existing directory as an installed package.}
+
+ @item{@DFlag{scope} @nonterm{scope} --- Selects the @tech{package scope} for installation, where @nonterm{scope} is one of
+  @itemlist[
+   @item{@exec{installation} --- Install packages for all users of a Racket installation, rather than user-specific.}
+   @item{@exec{user} --- Install packages as user-specific and Racket version-specific.}
+   @item{@exec{shared} --- Install packages as user-specific, but for all Racket versions.}
+  ]
+  The default package scope is normally @exec{user}, but it can be configured with
+  @command-ref{config}@exec{ -i --set default-scope @nonterm{scope}}.}
+ @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
+ @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
+ @item{@Flag{s} or @DFlag{shared} --- Shorthand for @exec{--scope shared}.}
  ]
 }
 
 
-@item{@exec{update} @nonterm{option} ... @nonterm{pkg} ... 
+@item{@command/toc{update} @nonterm{option} ... @nonterm{pkg} ... 
 --- Checks the specified packages for
 @tech{package updates}. If an update is found, but it cannot be
 installed (e.g. it is conflicted with another installed package), then
@@ -278,61 +308,75 @@ this command fails atomically. The @exec{update} sub-command accepts
 the following @nonterm{option}s:
 
  @itemlist[
- @item{@DFlag{no-setup} --- Same as for @exec{install}.}
- @item{@DFlag{installation} or @Flag{i} --- Same as for @exec{install}.}
- @item{@DFlag{shared} or @Flag{s} --- Same as for @exec{install}.}
- @item{@DFlag{user} or @Flag{u} --- Same as for @exec{install} (the default).}
- @item{@DFlag{deps} @nonterm{behavior} --- Same as for @exec{install}.}
+ @item{@DFlag{deps} @nonterm{behavior} --- Same as for @command-ref{install}.}
  @item{@DFlag{all} or @Flag{a} --- Update all packages, if no packages are given in the argument list.}
  @item{@DFlag{update-deps} --- Checks the named packages, and their dependencies (transitively) for updates.}
+ @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
+ @item{@DFlag{scope} @nonterm{scope} --- Selects a @tech{package scope}, the same as for @command-ref{install}.}
+ @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
+ @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
+ @item{@Flag{s} or @DFlag{shared} --- Shorthand for @exec{--scope shared}.}
  ]
 }
 
-@item{@exec{remove} @nonterm{option} ... @nonterm{pkg} ... 
+@item{@command/toc{remove} @nonterm{option} ... @nonterm{pkg} ... 
 --- Attempts to remove the given packages. If a package is the dependency of another package that is not 
 listed, this command fails atomically. It accepts the following @nonterm{option}s:
 
  @itemlist[
- @item{@DFlag{no-setup} --- Same as for @exec{install}.}
- @item{@DFlag{installation} or @Flag{i} --- Same as for @exec{install}.}
- @item{@DFlag{shared} or @Flag{s} --- Same as for @exec{install}.}
- @item{@DFlag{user} or @Flag{u} --- Same as for @exec{install} (the default).}
  @item{@DFlag{force} --- Ignore dependencies when removing packages.}
+ @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
  @item{@DFlag{auto} --- Remove packages that were installed by the @exec{search-auto} or @exec{search-ask}
                         dependency behavior and are no longer required.}
+ @item{@DFlag{scope} @nonterm{scope} --- Selects a @tech{package scope}, the same as for @command-ref{install}.}
+ @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
+ @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
+ @item{@Flag{s} or @DFlag{shared} --- Shorthand for @exec{--scope shared}.}
  ]
 }
 
-@item{@exec{show} @nonterm{option} ... --- Print information about currently installed packages. 
+@item{@command/toc{show} @nonterm{option} ... --- Print information about currently installed packages. 
  By default, packages are shown for all installation modes (installation-wide,
  user- and Racket-version-specific, and user-specific all-version).
  The command accepts the following @nonterm{option}s:
 
  @itemlist[
- @item{@DFlag{installation} or @Flag{i} --- Show only installation-wide packages.}
- @item{@DFlag{shared} or @Flag{s} --- Show only user-specific, all-version packages.}
- @item{@DFlag{user} or @Flag{u} --- Show only user-specific, version-specific packages.}
+
+ @item{@DFlag{scope} @nonterm{scope} --- Shows only packages in @nonterm{scope}, which is one of
+  @itemlist[
+   @item{@exec{installation} --- Show only installation-wide packages.}
+   @item{@exec{user} --- Show only user-specific, version-specific packages.}
+   @item{@exec{shared} --- Show only user-specific, all-version packages.}
+  ]
+  The default is to show packages for all @tech{package scopes}.}
+ @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
+ @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
+ @item{@Flag{s} or @DFlag{shared} --- Shorthand for @exec{--scope shared}.}
  @item{@DFlag{version} @nonterm{vers} or @Flag{v} @nonterm{vers} --- Show only user-specific packages for Racket version @nonterm{vers}.}
  ]
 }
 
-@item{@exec{config} @nonterm{option} ... @nonterm{key} @nonterm{val} ... --- 
+@item{@command/toc{config} @nonterm{option} ... @nonterm{key} @nonterm{val} ... --- 
 View and modify package configuration options. It accepts the following @nonterm{option}s:
 
  @itemlist[
- @item{@DFlag{installation} or @Flag{i} --- Same as for @exec{install}.}
- @item{@DFlag{shared} or @Flag{s} --- Same as for @exec{install}.}
- @item{@DFlag{user} or @Flag{u} --- Same as for @exec{install} (the default).}
  @item{@DFlag{set} --- Sets an option, rather than printing it.}
+ @item{@DFlag{scope} @nonterm{scope} --- Selects a @tech{package scope}, the same as for @command-ref{install}.}
+ @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
+ @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
+ @item{@Flag{s} or @DFlag{shared} --- Shorthand for @exec{--scope shared}.}
  ]
 
  The valid keys are:
  @itemlist[
-  @item{@exec{indexes} --- A list of URLs for @tech{package name resolvers}.}           
+  @item{@exec{indexes} --- A list of URLs for @tech{package name resolvers}.}
+  @item{@exec{default-scope} --- Either @exec{installation}, @exec{user}, or @exec{shared}.
+        This configuration option exists only with the @exec{installation} scope
+        (i.e., it's an installation-wide configuration of the default @tech{package scope} for @exec{raco pkg} commands).}
  ]
 }
 
-@item{@exec{create} @nonterm{option} ... @nonterm{package-directory}
+@item{@command/toc{create} @nonterm{option} ... @nonterm{package-directory}
 --- Bundles a package. It accepts the following @nonterm{option}s:
 
  @itemlist[
@@ -349,10 +393,7 @@ View and modify package configuration options. It accepts the following @nonterm
 @defmodule[planet2]
 
 The @racketmodname[planet2] module provides a programmatic interface
-to the command sub-sub-commands. Each long form option is keyword
-argument. An argument corresponding to @DFlag{type}, @DFlag{deps}, or @DFlag{format}
-accepts its argument as a symbol. All other options accept booleans, where
-@racket[#t] is equivalent to the presence of the option.
+to the command sub-sub-commands.
 
 @deftogether[
  (@defthing[install procedure?]             
@@ -362,8 +403,13 @@ accepts its argument as a symbol. All other options accept booleans, where
   @defthing[config procedure?]             
   @defthing[create procedure?])             
 ]{
- Duplicates the command line interface.  
-}
+ Duplicates the @seclink["cmdline"]{command line interface}. 
+
+ Each long form option of the command-line interface is keyword
+ argument. An argument corresponding to @DFlag{type}, @DFlag{deps},
+ @DFlag{format}, or @DFlag{scope} accepts its argument as a symbol. All other options
+ accept booleans, where @racket[#t] is equivalent to the presence of
+ the option.}
 
 @; ----------------------------------------
 
@@ -630,32 +676,43 @@ the package manager.
 Racket version?}
 
 By default, when you install a package, it is installed for a specific
-user and a specific version of Racket.
+user and a specific version of Racket. That is, the @tech{package
+scope} is user- and version-specific.
 
-You can use the @DFlag{installation} or @Flag{i} flag to install for
-all users of a particular Racket installation; an installation-wide
-package is not exactly version-specific, because the version of an
-installation can change if it corresponds to a source-code checkout
-that is periodically updated and rebuilt.
+You can change the default @tech{package scope} (for a particular
+Racket installation) with @command-ref{config}@exec{ -i --set
+default-scope installation}, in which case package operations apply
+for all users of a Racket installation.  You can also use the @Flag{i}
+or @DFlag{installation} flag with a specific @exec{raco pkg} command,
+instead of changing the default scope for all uses of @exec{raco
+pkg}. Note that an installation-wide package is not exactly
+version-specific, because the version of an installation can change if
+it corresponds to a source-code checkout that is periodically updated
+and rebuilt.
 
-Finally, you can use the @DFlag{shared} or @Flag{s} flag
+If you change the default @tech{package scope}, you can use the
+@Flag{u} or @DFlag{user} flag with a specific @exec{raco pkg} command
+to perform the command with user- and version-specific @tech{package
+scope}.
+
+Finally, you can use the @Flag{s} or @DFlag{shared} flag
 with @exec{raco pkg} commands to install user-specific packages that
 apply to all Racket versions that you run. (In contrast, @|Planet1|
 requires reinstallation of all packages every version change.)
 
 @subsection{Where and how are packages installed?}
 
-User-local and Racket-version-specific packages are in @racket[(build-path
-(find-system-path 'addon-dir) (version) "pkgs")], user-local and
+User-specific and Racket-version-specific packages are in @racket[(build-path
+(find-system-path 'addon-dir) (version) "pkgs")], user-specific and
 all-version packages are in @racket[(build-path (find-system-path
 'addon-dir) "pkgs")], and installation-wide packages are in
 @racket[(build-path (find-lib-dir) "pkgs")]. They are linked as
 collection roots with @exec{raco link}.
 
-@subsection{How are user-local and installation-wide packages
-related?}
+@subsection{How are user-specific and installation-wide @tech{package scopes}
+related for conflict checking?}
 
-User-local packages are checked against installation-wide packages
+User-specific packages are checked against installation-wide packages
 for conflicts. Installation-wide packages are checked only against
 other installation-wide packages.
 

@@ -1251,7 +1251,10 @@
 [min
  (from-cases (map varop (list -Zero -One))
              (commutative-case -Zero -One)
-             (map varop (list -PosByte -Byte -PosIndex -Index -PosInt -Nat))
+             (map varop (list -PosByte -Byte -PosIndex -Index -PosFixnum -NonNegFixnum))
+             (commutative-case -NegFixnum -Fixnum)
+             (commutative-case -NonPosFixnum -Fixnum)
+             (map varop (list -Fixnum -PosInt -Nat))
              (commutative-case -NegInt -Int)
              (commutative-case -NonPosInt -Int)
              (map varop (list -Int -PosRat -NonNegRat))

@@ -171,9 +171,12 @@ please adhere to these guidelines:
  (no-saved-bug-reports "No bug reports have been saved") ;; an info message that shows up as a disabled menu item when no saved bug reports are around
  (new-bug-report "New Bug Report") ;; button label the user sees when there are saved bug reports, but the user asks to save another one.
  (close-and-save "Close and Save") ;; button on the bottom of the bug report form
- (saved-unsubmitted-bug-reports "Saved, unsubmitted bug reports:") ;; next to previous line in same dialog, followed by list of bug report subjects (as buttons)
+ (saved-unsubmitted-bug-reports "Saved, unsubmitted bug reports:") 
+  ;; the above string constant is next to previous line in same dialog, followed by list of bug report subjects (as buttons)
  (error-sending-bug-report "Error Sending Bug Report")
- (error-sending-bug-report-expln "An error occurred when sending this bug report. If your internet connection is otherwise working fine, please visit:\n\n    http://bugs.racket-lang.org/\n\nand submit the bug via our online web-form. Sorry for the difficulties.\n\nThe error message is:\n~a")
+ (error-sending-bug-report-expln "An error occurred when sending this bug report."
+ " If your internet connection is otherwise working fine, please visit:\n\n    http://bugs.racket-lang.org/\n\nand"
+ " submit the bug via our online web-form. Sorry for the difficulties.\n\nThe error message is:\n~a")
  (illegal-bug-report "Illegal Bug Report")
  (pls-fill-in-field "Please fill in the \"~a\" field")
  (malformed-email-address "Malformed email address")
@@ -205,7 +208,9 @@ please adhere to these guidelines:
  (cs-status-loading-docs-index "Check Syntax: loading documentation index")
  (cs-mouse-over-import "binding ~s imported from ~s")
  (cs-view-docs "View documentation for ~a")
- (cs-view-docs-from "~a from ~a")  ;; a completed version of the line above (cs-view-docs) is put into the first ~a and a list of modules (separated by commas) is put into the second ~a. Use check syntax and right-click on a documented variable (eg, 'require') to see this in use
+ (cs-view-docs-from "~a from ~a")  ;; a completed version of the line above
+  ;; (cs-view-docs) is put into the first ~a and a list of modules (separated by commas) 
+  ;; is put into the second ~a. Use check syntax and right-click on a documented variable (eg, 'require') to see this in use
   
  (cs-lexical-variable "lexical variable")
  (cs-set!d-variable "set!’d variable")
@@ -381,10 +386,13 @@ please adhere to these guidelines:
  (plt:hd:help-desk-about-string
   "Help Desk is a complete source of information about Racket software.\n\nVersion ~a\nCopyright (c) ~a-~a PLT")
  (plt:hd:help-on-help "Help on Help")
- (plt:hd:help-on-help-details "For help on using Help Desk, follow the first link `Help Desk' on Help Desk's home page. (To get to the home page if you're not already there, click the `Home' button at the top of the Help Desk window.)")
+ (plt:hd:help-on-help-details 
+  "For help on using Help Desk, follow the first link `Help Desk' on Help Desk's home page."
+  " (To get to the home page if you're not already there, click the `Home' button at the top of the Help Desk window.)")
   (reload "Reload") ;; refresh the page in a web browser
   (plt:hd:ask-about-separate-browser
-   "You have selected a link to content from the world-wide web. Would you like to view it in the Help Desk browser, or would you like to use a separate browser program to view it?")
+   "You have selected a link to content from the world-wide web."
+   " Would you like to view it in the Help Desk browser, or would you like to use a separate browser program to view it?")
   (plt:hd:homebrew-browser "Help Desk Browser") ;; choice for the above string (in a button)
   (plt:hd:separate-browser "Separate Browser") ;; other choice for the above string (also in a button)
   (plt:hd:external-link-in-help "External URLs in Help")
@@ -475,7 +483,8 @@ please adhere to these guidelines:
  (steal-the-lock-and-retry "Steal the lock && retry") ;; in the preferences error dialog; this happens when the lockfile exists (after 3 pref writes). 
  
  (error-reading-preferences "Error reading preferences")
- (error-reading-preferences-explanation "The preferences file is locked and thus the ~a preference cannot be read") ;; ~a is filled with the name of the preference (a symbol)
+ (error-reading-preferences-explanation "The preferences file is locked and thus the ~a preference cannot be read")
+  ;; in the above, ~a is filled with the name of the preference (a symbol)
  (dont-ask-again-until-drracket-restarted "Don't ask again (until DrRacket is restarted)")
  ; difference between the above and below is one comes with a question (steal the lock or not) and the other with just a notation saying "the file is locked"
  (dont-notify-again-until-drracket-restarted "Don't notify again (until DrRacket is restarted)") 
@@ -484,8 +493,11 @@ please adhere to these guidelines:
  (give-up-and-use-the-default "Give up and use the default") ;; button label
   
  (prefs-file-still-locked "The preferences file is still locked (because the file ~a exists), so your preference change will not be saved.")
- (prefs-file-locked-nothing-doing "The preferences file is locked (via ~s) so changes to the preferences cannot be saved.") ;; the  ~s is filled with the lockfile; this string is (currently) used only on windows where lockfiles are less friendly (and there is no steal fallback)
- (scheme-prefs-panel-label "Racket")
+ (prefs-file-locked-nothing-doing 
+  "The preferences file is locked (via ~s) so changes to the preferences cannot be saved.")
+  ;; the  ~s is filled with the lockfile; this string is (currently) used only on windows where lockfiles are less friendly (and there is no steal fallback)
+ 
+  (scheme-prefs-panel-label "Racket")
  (warnings-prefs-panel-label "Warnings")
  (editor-prefs-panel-label "Editing")
  (general-prefs-panel-label "General")
@@ -521,7 +533,9 @@ please adhere to these guidelines:
  (show-line-numbers "Show line numbers")
  (show-line-numbers/menu "Show Line &Numbers")  ;; just like the above, but capitalized for appearance in a menu item
  (hide-line-numbers/menu "Hide Line &Numbers")
- (show-line-numbers-in-definitions "Show All Line Numbers in Definitions") ;; shows up in the popup menu item in the bottom of the drracket window; controls the line numbers on each line in the definitions; used in a checkable menu item
+ (show-line-numbers-in-definitions "Show All Line Numbers in Definitions")
+    ;; the constant above shows up in the popup menu item in the bottom of
+    ;; the drracket window; controls the line numbers on each line in the definitions; used in a checkable menu item
  (limit-interactions-size "Limit interactions size")
  (background-color "Background Color")
  (default-text-color "Default text") ;; used for configuring colors, but doesn't need the word "color"
@@ -798,7 +812,9 @@ please adhere to these guidelines:
   
  (user-defined-keybinding-error "Error running keybinding ~a\n\n~a")
  (user-defined-keybinding-malformed-file "The file ~a does not contain a module written in the framework/keybinding-lang language.")  
- (user-defined-keybinding-malformed-file/found-lang "The file ~a does not contain a module written in the framework/keybinding-lang language. Instead, found the language ~s")  
+ (user-defined-keybinding-malformed-file/found-lang
+  "The file ~a does not contain a module written in the"
+  " framework/keybinding-lang language. Instead, found the language ~s.")
   
  ;; menu items in the "special" menu
  (insert-text-box-item "Insert Text Box")
@@ -818,7 +834,8 @@ please adhere to these guidelines:
  (most-recent-window "Most Recent Window")
   (next-tab "Next Tab")
   (prev-tab "Previous Tab")
-  (tab-i "Tab ~a: ~a") ;; menu item in the windows menu under mac os x. first ~a is filled with a number between 1 and 9; second one is the filename of the tab
+  ;; menu item in the windows menu under mac os x. first ~a is filled with a number between 1 and 9; second one is the filename of the tab
+  (tab-i "Tab ~a: ~a")
 
  (view-menu-label "&View")
  (show-overview "Show &Program Contour") 
@@ -983,7 +1000,9 @@ please adhere to these guidelines:
  ; one after another. The first one is shown in a bold font and the second is not.
  ; (the first can be the empty string)
  (limit-memory-warning-prefix "Warning: ")
- (limit-memory-warning "the unlimited memory setting is unsafe. With this setting, DrRacket cannot protect itself against programs that allocate too much, and DrRacket may crash.")
+ (limit-memory-warning 
+  "the unlimited memory setting is unsafe. With this setting,"
+  " DrRacket cannot protect itself against programs that allocate too much, and DrRacket may crash.")
  
  (clear-error-highlight-menu-item-label "Clear Error Highlight")
  (clear-error-highlight-item-help-string "Removes the pink error highlighting")
@@ -1001,7 +1020,9 @@ please adhere to these guidelines:
  (create-executable-menu-item-label "Create &Executable...")
  (create-executable-title "Create Executable")
  (drracket-creates-executables-only-in-some-languages
-  "Executable creation in DrRacket is supported only in the teaching languages and when the #lang line specifies the language (in “The Racket Language”)\n\nConsider using the raco exe command-line tool instead.")
+  "Executable creation in DrRacket is supported only in the teaching"
+  " languages and when the #lang line specifies the language (in “The Racket"
+  " Language”)\n\nConsider using the raco exe command-line tool instead.")
  (must-save-before-executable "You must save your program before creating an executable.")
  (save-a-mred-launcher "Save a GRacket Launcher")
  (save-a-mzscheme-launcher "Save a Racket Launcher")
@@ -1191,7 +1212,9 @@ please adhere to these guidelines:
   ;; on #lang line placed into the ~a, and third one has the 
   ;; current #lang line in the first ~a and the clicked on in the second one.
   ;; The two comments are separated by a blank line.
-  (racket-dialect-in-buffer-message "Racket dialects are generally chosen by editing the buffer directly, not by selecting these entries in the language dialog.")
+  (racket-dialect-in-buffer-message 
+   "Racket dialects are generally chosen by editing the buffer directly,"
+   " not by selecting these entries in the language dialog.")
   (racket-dialect-add-new-#lang-line "That said, shall I add “~a” to the beginning of the definitions window?")
   (racket-dialect-replace-#lang-line "That said, I see you have “~a” in your file; shall I replace it with “~a”?")
   (racket-dialect-already-same-#lang-line "I see you already have “~a” in your file, however; so you should be all set to start programming!")
@@ -1257,7 +1280,9 @@ please adhere to these guidelines:
  (profiling-show-profile "Show Profile")
  (profiling-hide-profile "Hide Profile")
  (profiling-unknown-src "<< unknown >>")
- (profiling-no-information-available "There is no profiling information available. Please be sure that profiling is enabled in your language and you have run your program.")
+ (profiling-no-information-available 
+  "There is no profiling information available. Please be sure that"
+  " profiling is enabled in your language and you have run your program.")
  (profiling-clear? "Changing the definitions window invalidates the profiling information. Continue?")
  
  ;; test coverage
@@ -1381,9 +1406,10 @@ please adhere to these guidelines:
  (snips-and-arrows-popup-menu-tack-all-arrows "Tack All Arrows")
  (snips-and-arrows-popup-menu-untack-all-arrows "Untack All Arrows")
  (snips-and-arrows-user-action-disallowed-title "User Changes Currently Disallowed")
- (snips-and-arrows-user-action-disallowed "User changes are disallowed in editors that contain tool-inserted snips.  Hide all snips before modifying the content of the editor.")
+ (snips-and-arrows-user-action-disallowed
+   "User changes are disallowed in editors that contain tool-inserted snips."
+   " Hide all snips before modifying the content of the editor.")
  ;(snips-and-arrows-changing-terms-warning-title "Changing terms will be undoable")
- ;(snips-and-arrows-changing-terms-warning "Changing terms in an editor containing snips cannot be undone.  You can either cancel this action, remove the snips, and try the change again, or you can continue with the change, in which case the change will not be undoable (all others changes made before and afterward will still be undoable though).")
  (snips-and-arrows-hide-all-snips-in-editor "Hide all snips in editor")
 
  (xml-tool-insert-xml-box "Insert XML Box")
@@ -1679,7 +1705,9 @@ please adhere to these guidelines:
 
   ;; GUI Tool
   (gui-tool-heading "GUI Tool")
-  (gui-tool-before-clicking-message "Before clicking a tool icon, use \"Insert GUI\" from the \"Special\" menu to insert a root GUI item, or select an already inserted GUI.")
+  (gui-tool-before-clicking-message 
+   "Before clicking a tool icon, use \"Insert GUI\" from the \"Special\" menu"
+   " to insert a root GUI item, or select an already inserted GUI.")
   (gui-tool-show-gui-toolbar "Show GUI Toolbar")
   (gui-tool-hide-gui-toolbar "Hide GUI Toolbar")
   (gui-tool-insert-gui "Insert GUI")
@@ -1700,6 +1728,8 @@ please adhere to these guidelines:
   (planet-finished "PLaneT: Finished with ~a.")
   (planet-docs-building "PLaneT: Building docs (triggered by ~a)...")
   (planet-no-status "PLaneT") ;; this can happen when there is status shown in a different and then the user switches to a tab where planet hasn't been used
+  
+  (bug-report-field-planet2 "Package system info")
   
   ;; string normalization. To see this, paste some text with a ligature into DrRacket
   ;; the first three strings are in the dialog that appears. The last one is in the preferences dialog
