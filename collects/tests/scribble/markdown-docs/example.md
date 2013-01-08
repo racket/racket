@@ -49,13 +49,13 @@ Another example of verbatim, with ticks/quotes:
 
 Example of a defmodule:
 
-```scheme
+```racket
  (require racket/string)
 ```
 
 Example of a defproc:
 
-```scheme
+```racket
 (make-string k [char]) -> string?
   k : exact-nonnegative-integer? 
   char : char? = #\nul           
