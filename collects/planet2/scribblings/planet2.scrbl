@@ -192,8 +192,8 @@ the @tech{package source} string and @racket['checksum] mapped to the
 @racket['source] will be a remote URL.
 
 PLT supports two @tech{package name resolvers} that are enabled by
-default: @url{https://plt-etc.byu.edu:9004} for new
-packages and @url{https://plt-etc.byu.edu:9003} for
+default: @url{https://pnr.plt-etc.byu.edu} for new
+packages and @url{https://planet-compat.plt-etc.byu.edu} for
 automatically generated packages for old @|PLaneT|
 packages. Anyone may host their own @tech{package name resolver}. The
 source for the PLT-hosted resolvers is in the
@@ -507,7 +507,7 @@ it by a simple name until it is listed on a @tech{package name resolver}.
 
 If you'd like to use the official @tech{package name resolver}, browse
 to
-@link["https://plt-etc.byu.edu:9004/manage/upload"]{https://plt-etc.byu.edu:9004/manage/upload}
+@link["https://pnr.plt-etc.byu.edu/manage/upload"]{https://pnr.plt-etc.byu.edu/manage/upload}
 and upload a new package. You will need to create an account and log
 in first.
 
