@@ -311,6 +311,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (plambda: stx)
   (syntax-parse stx
     [(plambda: (tvars:id ...) formals . body)
+     #:fail-when (check-duplicate-identifier (syntax->list #'(tvars ...)))
+                 "duplicate type variable declaration"
      (quasisyntax/loc stx
        (#%expression
         #,(syntax-property (syntax/loc stx (lambda: formals . body))
@@ -320,6 +322,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (pcase-lambda: stx)
   (syntax-parse stx
     [(pcase-lambda: (tvars:id ...) cl ...)
+     #:fail-when (check-duplicate-identifier (syntax->list #'(tvars ...)))
+                 "duplicate type variable declaration"
      (quasisyntax/loc stx
        (#%expression
         #,(syntax-property (syntax/loc stx (case-lambda: cl ...))
@@ -329,6 +333,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (popt-lambda: stx)
   (syntax-parse stx
     [(popt-lambda: (tvars:id ...) formals . body)
+     #:fail-when (check-duplicate-identifier (syntax->list #'(tvars ...)))
+                 "duplicate type variable declaration"
      (quasisyntax/loc stx
        (#%expression
         #,(syntax-property (syntax/loc stx (opt-lambda: formals . body))
