@@ -380,8 +380,8 @@
                  (file->string
                   (build-path pkg-depo pkg-depo-dir (format "~a.plt.CHECKSUM" pkg-name)))
                  'source
-                 (format "https://plt-etc.byu.edu:~a/~a/~a.plt"
-                         port pkg-depo-dir pkg-name)
+                 (format "https://planet-compat.racket-lang.org/~a/~a.plt"
+                         pkg-depo-dir pkg-name)
                  'url
                  (let ()
                    (match-define (regexp #rx"^planet-([^-]+)-([^0-9]+)[0-9]+"

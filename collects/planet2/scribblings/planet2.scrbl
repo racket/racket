@@ -192,8 +192,8 @@ the @tech{package source} string and @racket['checksum] mapped to the
 @racket['source] will be a remote URL.
 
 PLT supports two @tech{package name resolvers} that are enabled by
-default: @url{https://pnr.plt-etc.byu.edu} for new
-packages and @url{https://planet-compat.plt-etc.byu.edu} for
+default: @url{https://pnr.racket-lang.org} for new
+packages and @url{https://planet-compat.racket-lang.org} for
 automatically generated packages for old @|PLaneT|
 packages. Anyone may host their own @tech{package name resolver}. The
 source for the PLT-hosted resolvers is in the
@@ -507,7 +507,7 @@ it by a simple name until it is listed on a @tech{package name resolver}.
 
 If you'd like to use the official @tech{package name resolver}, browse
 to
-@link["https://pnr.plt-etc.byu.edu/manage/upload"]{https://pnr.plt-etc.byu.edu/manage/upload}
+@link["https://pnr.racket-lang.org/manage/upload"]{https://pnr.racket-lang.org/manage/upload}
 and upload a new package. You will need to create an account and log
 in first.
 
@@ -635,7 +635,7 @@ PLT maintains a @tech{package name resolver} to serve packages that
 were developed using the original @seclink[#:doc '(lib
 "planet/planet.scrbl") "top"]{@|Planet1|} package system.  This
 compatibility resolver is at
-@link["https://plt-etc.byu.edu:9003/"]{https://plt-etc.byu.edu:9003/},
+@link["https://planet-compat.racket-lang.org/"]{https://planet-compat.racket-lang.org/},
 which is included by default in the package-server search path.
 
 Copies of @|Planet1| packages are automatically created by the
