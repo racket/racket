@@ -25,4 +25,7 @@ The @exec{raco test} command accepts a few flags:
 
  @item{@Flag{x} or @DFlag{no-run-if-absent}
        --- Ignores a file if the relevant submodule is not present.}
+
+ @item{@Flag{c} or @DFlag{collection}
+       --- Intreprets the arguments as collections where all files should be tested.}
 ]
