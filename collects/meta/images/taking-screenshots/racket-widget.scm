@@ -4,7 +4,7 @@
                     "Racket Widget"
                     "Take a screen shot of a Racket Widget"
                     "Diogo F. S. Ramos"
-                    "copyright 2012, Diogo F. S. Ramos"
+                    "copyright 2012-2013, Diogo F. S. Ramos"
                     "August, 2012"
                     "")
 (script-fu-menu-register "script-fu-racket-widget" "<Image>/File/Create")
