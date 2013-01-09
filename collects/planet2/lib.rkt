@@ -415,6 +415,10 @@
         (update-install-info-orig-pkg
          (match type
            ['github
+            (unless checksum
+              (pkg-error (~a "could not find checksum for github package source, which implies it doesn't exist\n"
+                             "  source: ~a")
+                         pkg))
             (match-define (list* user repo branch path)
                           (map path/param-path (url-path/no-slash pkg-url)))
             (define new-url
