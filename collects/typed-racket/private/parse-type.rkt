@@ -418,17 +418,17 @@
            (if (bound-tvar? var)
                (tc-error/stx #'bound "Used a type variable (~a) not bound with ... as a bound on a ..." var)
                (tc-error/stx #'bound "Type variable ~a is unbound" var)))
-         (make-ValuesDots (map parse-type (syntax->list #'(tys ...)))
-                          (extend-tvars (list var)
-                            (parse-type #'dty))
-                          var))]
+         (-values-dots (map parse-type (syntax->list #'(tys ...)))
+                       (extend-tvars (list var)
+                         (parse-type #'dty))
+                       var))]
       [((~and kw (~or t:Values values)) tys ... dty _:ddd)
        (add-disappeared-use #'kw)
        (let ([var (infer-index stx)])
-         (make-ValuesDots (map parse-type (syntax->list #'(tys ...)))
-                          (extend-tvars (list var)
-                              (parse-type #'dty))
-                            var))]
+         (-values-dots (map parse-type (syntax->list #'(tys ...)))
+                       (extend-tvars (list var)
+                         (parse-type #'dty))
+                       var))]
       [((~and kw (~or t:Values values)) tys ...)
        (add-disappeared-use #'kw)
        (-values (map parse-type (syntax->list #'(tys ...))))]
