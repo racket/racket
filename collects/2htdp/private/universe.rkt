@@ -94,10 +94,7 @@
               (send universe set (format "value returned from ~a" 'name) u)
               (unless (boolean? to-string) (send gui add (to-string u)))
               (broadcast mails)
-              (for-each (lambda (iw)
-                          (iworld-close iw)
-                          (set! iworlds (remq iw iworlds)))
-                        bad)))))
+              (for-each (lambda (iw) (kill iw "disconnected ~a")) bad)))))
       
       ;; [Listof Mail] -> Void
       ;; send payload of messages to designated worlds 
@@ -106,11 +103,11 @@
                     (define w (mail-to p+m))
                     (define p (mail-content p+m))
                     (define n (iworld-name w))
-                    (if (not (memq w iworlds))
-                        (send gui add (format "~s not on list" n))
-                        (with-handlers ((exn:fail? (lambda (e) (kill w))))
-                          (iworld-send w p)
-                          (send gui add (format "-> ~a: ~a" n p)))))
+                    (if (memq w iworlds)
+                        (with-handlers ((exn:fail? (lambda (e) (kill w "broadcast failed to ~a"))))
+                          (send gui add (format "-> ~a: ~a" n p))
+                          (iworld-send w p))
+                        (send gui add (format "~s not on list" n))))
                   lm))
       
       (def/cback private (pnew iworld) on-new
@@ -121,7 +118,7 @@
         (send gui add (format "~a ->: ~a" (iworld-name iworld) r)))
       
       (def/cback private (pdisconnect iworld) on-disconnect
-        (kill iworld))
+        (kill iworld "~a !! closed port"))
       
       ;; tick, tock : deal with a tick event for this world 
       (def/cback pubment (ptock) (let ([on-tick (lambda (w) (pptock w))]) on-tick))
@@ -129,13 +126,14 @@
       (define/public (name-of-tick-handler)
         "the on-tick-handler")
       
-      ;; IWorld -> Void 
+      ;; IWorld FormatString -> Void 
       ;; effect: remove from given iworld from iworlds 
       ;;         and shut down all connections 
-      (define/private (kill w)
-        (send gui add (format "~a !! closed port" (iworld-name w)))
+      (define/private (kill w msg)
+        (iworld-close w)
         (set! iworlds (remq w iworlds))
-        (iworld-close w))
+        (send gui add (format msg (iworld-name w)))
+        (when (null? iworlds) (restart)))
       
       ;; -----------------------------------------------------------------------
       ;; start and stop server, start and stop the universe
@@ -154,9 +152,7 @@
           (define (loop)
             (apply sync 
                    (handle-evt (tcp-accept-evt tcp-listener) add-iworld)
-                   (map(lambda (p) 
-                         (handle-evt (iworld-in p) (process-message p)))
-                       iworlds)))
+                   (map(lambda (p) (handle-evt (iworld-in p) (process-message p))) iworlds)))
           ;;; WHERE 
           (define tcp-listener 
             (with-handlers ((exn:fail:network? (lambda (x) (stop! x))))
@@ -179,7 +175,7 @@
             (lambda (in)
               (define (disc e)
                 (pdisconnect p)
-                (if (null? iworlds) (restart) (loop)))
+                (loop))
               (with-handlers ((tcp-eof? disc))
                 (pmsg p (tcp-receive in))
                 (loop))))
