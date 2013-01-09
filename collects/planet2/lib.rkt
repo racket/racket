@@ -305,8 +305,6 @@
   (struct-copy install-info if
                [checksum op]))
 
-
-
 (define (package-directory pkg-name)
   (match-define (pkg-info orig-pkg checksum _)
                 (package-info pkg-name))
@@ -1165,6 +1163,8 @@
    (parameter/c string?)]
   [current-pkg-error 
    (parameter/c procedure?)]
+  [package-directory
+   (-> string? path-string?)]
   [pkg-desc 
    (-> string? 
        (or/c #f 'file 'dir 'link 'file-url 'dir-url 'github 'name) 
