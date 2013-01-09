@@ -308,8 +308,8 @@ error is signaled in the evaluation of the @racket[class*] form,
 because implementing the @racket[fish-interface] interface requires
 those methods.
 
-The @racket[is-a?] predicate accepts either a class or interface as
-its first argument and an object as its second argument. When given a
+The @racket[is-a?] predicate accepts an object as its first argument
+and either a class or interface as its second argument. When given a
 class, @racket[is-a?] checks whether the object is an instance of that
 class or a derived class.  When given an interface, @racket[is-a?]
 checks whether the object's class implements the interface. In
