@@ -207,8 +207,8 @@
             (λ ()
               (match k
                 ["indexes"
-                 (list "https://pnr.plt-etc.byu.edu"
-                       "https://planet-compat.plt-etc.byu.edu")]))))
+                 (list "https://pnr.racket-lang.org"
+                       "https://planet-compat.racket-lang.org")]))))
 
 (define (package-index-lookup pkg)
   (or
