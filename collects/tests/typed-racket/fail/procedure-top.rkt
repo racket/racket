@@ -1,6 +1,6 @@
 #;
-(exn-pred exn:fail:contract:arity?)
-#lang racket/load
+(exn-pred exn:fail:contract?)
+#lang racket
 
 ;; fail version
 
