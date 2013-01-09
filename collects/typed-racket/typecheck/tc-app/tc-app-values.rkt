@@ -34,7 +34,12 @@
       (single-value #'arg) ;Type check the argument, to find other errors
       (tc-error/expr #:return expected
         "wrong number of values: expected ~a but got one"
-         (length ts))]))
+         (length ts))]
+     ;; match polydots case and error
+     [(tc-results: ts _ _ dty dbound)
+      (single-value #'arg)
+      (tc-error/expr #:return expected
+        "Expected ~a ..., but got only one value" dty)]))
   ;; handle `values' specially
   (pattern (values . args)
     (match expected

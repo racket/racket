@@ -75,11 +75,21 @@
   (c:->* (Type/c) (FilterSet? Object?) Result?)
   (make-Result t f o))
 
+;; convenient constructor for Values
+;; (wraps arg types with Result)
 (define/cond-contract (-values args)
-     (c:-> (listof Type/c) (or/c Type/c Values?))
-     (match args
-       ;[(list t) t]
-       [_ (make-Values (for/list ([i args]) (-result i)))]))
+  (c:-> (listof Type/c) (or/c Type/c Values?))
+  (match args
+    ;[(list t) t]
+    [_ (make-Values (for/list ([i args]) (-result i)))]))
+
+;; convenient constructor for ValuesDots
+;; (wraps arg types with Result)
+(define/cond-contract (-values-dots args dty dbound)
+  (c:-> (listof Type/c) Type/c (or/c symbol? natural-number/c)
+        ValuesDots?)
+  (make-ValuesDots (for/list ([i args]) (-result i))
+                   dty dbound))
 
 ;; basic types
 
