@@ -28,4 +28,7 @@ The @exec{raco test} command accepts a few flags:
 
  @item{@Flag{c} or @DFlag{collection}
        --- Intreprets the arguments as collections where all files should be tested.}
+
+ @item{@Flag{p} or @DFlag{package}
+       --- Intreprets the arguments as packages where all files should be tested. (All package scopes are searched for the first, most specific package.)}
 ]

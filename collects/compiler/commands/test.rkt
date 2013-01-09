@@ -2,11 +2,11 @@
 (require racket/cmdline
          racket/match
          racket/path
-         raco/command-name)
+         raco/command-name
+         planet2/lib)
 
 (define submodule 'test)
 (define run-anyways? #t)
-(define collections? #f)
 
 (define (do-test e [check-suffix? #f])
   (match e
@@ -48,10 +48,28 @@
              #:when (directory-exists? (build-path r c)))
     (build-path r c)))
 
+(define collections? #f)
+(define packages? #f)
+
 (define (do-test-wrap e)
   (cond
     [collections?
-     (for-each do-test (collection-paths e))]
+     (match (collection-paths e)
+       [(list)
+        (error 'test "Collection ~e is not installed" e)]
+       [l
+        (for-each do-test l)])]
+    [packages?
+     (unless
+         (for*/or ([civs (in-list '(#t #f))]
+                   [cisw (in-list '(#f #t))])
+           (define pd
+             (parameterize ([current-install-version-specific? civs]
+                            [current-install-system-wide? cisw])
+               (with-handlers ([exn:fail? (λ (x) #f)])
+                 (package-directory e))))
+           (and pd (do-test pd)))
+       (error 'test "Package ~e is not installed" e))]
     [else
      (do-test e)]))
 
@@ -67,8 +85,12 @@
  [("--no-run-if-absent" "-x")
   "Require nothing if submodule is absent"
   (set! run-anyways? #f)]
+ #:once-any
  [("--collection" "-c")
   "Interpret arguments as collections"
   (set! collections? #t)]
+ [("--package" "-p")
+  "Interpret arguments as packages"
+  (set! packages? #t)]
  #:args file-or-directory
  (for-each do-test-wrap file-or-directory))
