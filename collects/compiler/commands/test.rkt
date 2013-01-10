@@ -32,21 +32,52 @@
        [(not (file-exists? p))
         (error 'test "Given path ~e does not exist" p)])]))
 
-;; XXX This should be in Racket somewhere and return all the paths,
-;; including the ones from the user and system collection links files (the system one is not specified in the docs, so I can't actually implement it correctly)
-(define (all-library-collection-paths)
-  (find-library-collection-paths))
+(module paths racket/base
+  (require setup/link
+           racket/list)
 
-;; XXX This should be in Racket somewhere and return all the
-;; collection paths, rather than just the first as collection-path
-;; does.
-;;
-;; This implementation is wrong, btw, because it would ignore
-;; collect-only links
-(define (collection-paths c)
-  (for/list ([r (all-library-collection-paths)]
-             #:when (directory-exists? (build-path r c)))
-    (build-path r c)))
+  (struct col (name path) #:transparent)
+
+  (define (get-linked user? version?)
+    (define version-re
+      (and version?
+           (regexp-quote (version))))
+    (append
+     (for/list ([c+p (in-list (links #:user? user? #:version-regexp version-re #:with-path? #t))])
+       (col (car c+p)
+            (cdr c+p)))
+     (for/list ([cp (in-list (links #:root? #t #:user? user? #:version-regexp version-re))]
+                #:when (directory-exists? cp)
+                [collection (directory-list cp)]
+                #:when (directory-exists? (build-path cp collection)))
+       (col (path->string collection)
+            (build-path cp collection)))))
+
+  ;; A list of `col's, where each collection may be represented
+  ;; by multiple elements of the list, each with its own path.
+  (define (all-collections)
+    (remove-duplicates
+     (append*
+      (for/list ([cp (current-library-collection-paths)]
+                 #:when (directory-exists? cp)
+                 [collection (directory-list cp)]
+                 #:when (directory-exists? (build-path cp collection)))
+        (col (path->string collection)
+             (build-path cp collection)))
+      (for*/list ([user? (in-list '(#t #f))]
+                  [version? (in-list '(#t #f))])
+        (get-linked user? version?)))))
+
+  ;; This should be in Racket somewhere and return all the collection
+  ;; paths, rather than just the first as collection-path does.
+  (define (collection-paths c)
+    (for/list ([col (all-collections)]
+               #:when (string=? c (col-name col)))
+      (col-path col)))
+
+  (provide collection-paths))
+
+(require (submod "." paths))
 
 (define collections? #f)
 (define packages? #f)
