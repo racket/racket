@@ -320,15 +320,15 @@ platforms_of_dist_type() {
 }
 installer_of_dist_type_platform() { # input: dtype-dplatform
   case "$1" in
-    ( "src-unix"        ) echo "tgz"  ;;
-    ( "src-mac"         ) echo "dmg"  ;;
-    ( "src-win"         ) echo "zip"  ;;
-    ( "bin-"*"-linux"*  ) echo "sh"   ;;
-    ( "bin-"*"-freebsd" ) echo "sh"   ;;
-    ( "bin-"*"-solaris" ) echo "sh"   ;;
-    ( "bin-"*"-darwin"  ) echo "sh"   ;;
-    ( "bin-"*"-osx-mac" ) echo "idmg" ;;
-    ( "bin-"*"-win32"   ) echo "exe"  ;;
+    ( "src-unix"        ) echo "tgz" ;;
+    ( "src-mac"         ) echo "dmg" ;;
+    ( "src-win"         ) echo "zip" ;;
+    ( "bin-"*"-linux"*  ) echo "sh"  ;;
+    ( "bin-"*"-freebsd" ) echo "sh"  ;;
+    ( "bin-"*"-solaris" ) echo "sh"  ;;
+    ( "bin-"*"-darwin"  ) echo "sh"  ;;
+    ( "bin-"*"-osx-mac" ) echo "dmg" ;;
+    ( "bin-"*"-win32"   ) echo "exe" ;;
     ( * ) exit_error "Unknown dist type+platform for" \
                      "installer_of_dist_type_platform: \"$1\"" ;;
   esac
@@ -339,9 +339,6 @@ explanation_of_installer_type() {
                     "\"gunzip <file> | tar xvf -\"." ;;
     ( "dmg"  ) echo "Mount this disk image and copy the Racket folder to" \
                     "your disk." ;;
-    ( "idmg" ) echo "Some browsers will automatically mount & copy the" \
-                    "\"Racket\" folder to your desktop; if yours does not," \
-                    "mount the disk and copy it yourself." ;;
     ( "zip"  ) echo "Use unzip to extract the Racket folder to your disk." ;;
     ( "sh"   ) echo "Execute this file with \"sh <file>\"," \
                     "and follow the instructions." ;;
@@ -1716,8 +1713,8 @@ tgz_to_zip() {
   _rm "$tmpdir/tgz-to-zip-$$"
 }
 #----------------------------------------
-make_dmg() { # inputs: dir, dmg, internet-enabled?
-  local srcdir="$1" tgtdmg="$2" internet_enabled="$3"; shift 3
+make_dmg() { # inputs: dir, dmg
+  local srcdir="$1" tgtdmg="$2"; shift 2
   local tmpdmg="${tgtdmg%.dmg}-tmp.dmg"
   local src="$(basename "$srcdir")"
   local myself="$(id -nu):$(id -ng)"
@@ -1744,16 +1741,12 @@ make_dmg() { # inputs: dir, dmg, internet-enabled?
   # [4] remove the uncompressed image
   _run sudo chown "$myself" "$tgtdmg" "$tmpdmg"
   _rm "$tmpdmg"
-  # this will make browsers get the dmg, mount, copy contents, unmount
-  if [[ "$internet_enabled" = "yes" ]]; then
-    _run hdiutil internet-enable "$tgtdmg"
-  fi
 }
 #----------------------------------------
 do_tgz_to_dmg() {
-  local internet_enabled="$1" tmptgz="$2" tmpdmg="$3" version="$4"
-  local pname="$5" ptype="$6" srcplatform="$7"
-  shift 7
+  local tmptgz="$1" tmpdmg="$2" version="$3"
+  local pname="$4" ptype="$5" srcplatform="$6"
+  shift 6
   local distname="$(name_of_dist_package "$pname")"
   distname="$distname v$version"
   if [[ "$ptype" != "bin" ]]; then
@@ -1767,25 +1760,18 @@ do_tgz_to_dmg() {
   _rm "$tmptgz"
   _mv "$installdir" "$distname"
   _cd "$tmpdir/tgz-to-dmg-$$"
-  make_dmg "$distname" "$tmpdmg" "$internet_enabled"
+  make_dmg "$distname" "$tmpdmg"
   _cd "$savedpwd"
   _rm "$tmpdir/tgz-to-dmg-$$"
 }
-tgz_to_some_dmg() {
-  local internet_enabled="$1"; shift 1
+tgz_to_dmg() {
   local srctgz="$1" tgt="$2" pname="$3" ptype="$4" srcplatform="$5"; shift 5
   local tmptgz="$tmpdir/tgz2dmg.tgz"
   local tmpdmg="$tmpdir/tgz2dmg.dmg"
   _scp "$srctgz" "${dmgmachine}:$tmptgz"
-  run_part "$dmgmachine" "do_tgz_to_dmg" "$internet_enabled" \
+  run_part "$dmgmachine" "do_tgz_to_dmg" \
              "$tmptgz" "$tmpdmg" "$version" "$pname" "$ptype" "$srcplatform"
   _scp "${dmgmachine}:$tmpdmg" "$tgt.dmg"
-}
-tgz_to_dmg() {
-  tgz_to_some_dmg "no" "$@"
-}
-tgz_to_idmg() { # same as ..._dmg, but makes it internet-enabled
-  tgz_to_some_dmg "yes" "$@"
 }
 #----------------------------------------
 do_tgz_to_exe() {
