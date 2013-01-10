@@ -194,7 +194,7 @@ Like @racket[title-decl], but for a sub-part.  See @racket[decode] and
 See @racket[decode]. The two fields are as for @racket[index-element].}
 
 
-@defstruct[part-collect-decl ([element element?])]{
+@defstruct[part-collect-decl ([element (or/c element? part-relative-element?)])]{
 
 See @racket[decode].}
 

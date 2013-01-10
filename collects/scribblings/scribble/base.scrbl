@@ -148,7 +148,7 @@ combination with @racket[author].}
 
 @section{Blocks}
 
-@defproc[(para [#:style style (or/c style? string? symbol? #f)] 
+@defproc[(para [#:style style (or/c style? string? symbol? #f) #f] 
                [pre-content pre-content?] ...) paragraph?]{
 
  Creates a @tech{paragraph} containing the @tech{decode}d
@@ -161,7 +161,7 @@ combination with @racket[author].}
   @racket[style] arguments.)}
 
 
-@defproc[(nested [#:style style (or/c style? string? symbol? #f)] 
+@defproc[(nested [#:style style (or/c style? string? symbol? #f) #f] 
                  [pre-flow pre-flow?] ...) nested-flow?]{
 
  Creates a @tech{nested flow} containing the @tech{decode}d
