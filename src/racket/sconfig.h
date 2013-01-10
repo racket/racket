@@ -297,6 +297,10 @@
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-openbsd"
 # endif
 
+/* Same reason as for FreeBSD? */
+# define ASSUME_FIXED_STACK_SIZE
+# define FIXED_STACK_SIZE 1048576
+
 # include "uconfig.h"
 # undef HAS_STANDARD_IOB
 
@@ -360,7 +364,7 @@
 #  error Unported platform.
 # endif
 
-/* pthreads always enabled via configure', and
+/* pthreads always enabled via `configure', and
    initial pthread's stack size doesn't use rlimit: */
 # define ASSUME_FIXED_STACK_SIZE
 # define FIXED_STACK_SIZE 1048576
@@ -1015,7 +1019,7 @@
 #  error Unported platform.
 # endif
 
-/* pthreads always enabled via configure', and
+/* pthreads always enabled via `configure', and
    initial pthread's stack size doesn't use rlimit: */
 # define ASSUME_FIXED_STACK_SIZE
 # define FIXED_STACK_SIZE 1048576
