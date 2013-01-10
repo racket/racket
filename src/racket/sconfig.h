@@ -297,6 +297,9 @@
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-openbsd"
 # endif
 
+# define ASSUME_FIXED_STACK_SIZE
+# define FIXED_STACK_SIZE 1048576
+
 # include "uconfig.h"
 # undef HAS_STANDARD_IOB
 
