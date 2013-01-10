@@ -501,7 +501,7 @@ The currently recognized @tech{style properties} are as follows:
  @item{@racket['never-indents] --- For Latex and @tech{compound
        paragraphs}; see @racket[compound-paragraph].}
 
- @item{@racket[box-mode] --- For Latex output, uses an alternate
+ @item{@racket[box-mode] structure --- For Latex output, uses an alternate
        rendering form for @tech{boxing contexts} (such as a table cell); see
        @racket[box-mode].}
 
@@ -654,12 +654,15 @@ The following @tech{style properties} are currently recognized:
  @item{@racket['never-indents] --- For Latex and @tech{compound
        paragraphs}; see @racket[compound-paragraph].}
 
- @item{@racket[box-mode] --- For Latex output, uses an alternate
+ @item{@racket[box-mode] structure --- For Latex output, uses an alternate
        rendering form for @tech{boxing contexts} (such as a table cell); see
        @racket[box-mode].}
 
  @item{@racket['decorative] --- The content of the nested flow is intended
        for decoration. Text output skips a decorative nested flow.}
+
+ @item{@racket[alt-tag] structure --- Generates the indicated HTML tag
+       instead of @tt{<blockquote>}.}
 
 ]}
 
