@@ -269,7 +269,7 @@
   (define concrete-parent
     (if (Poly? parent)
         (if (> (Poly-n parent) (length new-tvars))
-            (tc-error "Could not instantiate parent struct type. Required ~a type variables, recieved ~a."
+            (tc-error "Could not instantiate parent struct type. Required ~a type variables, received ~a."
               (Poly-n parent)
               (length new-tvars))
             (instantiate-poly parent (take new-tvars (Poly-n parent))))
