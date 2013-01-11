@@ -744,19 +744,31 @@
                                    val
                                    (next success-k fail-k max-depth tasks)))]
                             [fail-k (lambda (max-depth tasks)
-                                      (let ([bad-tok (list-ref tok-list 
-                                                               (min (sub1 (length tok-list))
-                                                                    max-depth))])
+                                      (cond
+                                       [(null? tok-list)
                                         (if error-proc
                                             (error-proc #t
-                                                        (tok-orig-name bad-tok)
-                                                        (tok-val bad-tok)
-                                                        (tok-start bad-tok)
-                                                        (tok-end bad-tok))
+                                                        'no-tokens
+                                                        #f
+                                                        (make-position #f #f #f)
+                                                        (make-position #f #f #f))
                                             (error
                                              'cfg-parse
-                                             "failed at ~a" 
-                                             (tok-val bad-tok)))))])
+                                             "no tokens"))]
+                                       [else
+                                        (let ([bad-tok (list-ref tok-list 
+                                                                 (min (sub1 (length tok-list))
+                                                                      max-depth))])
+                                          (if error-proc
+                                              (error-proc #t
+                                                          (tok-orig-name bad-tok)
+                                                          (tok-val bad-tok)
+                                                          (tok-start bad-tok)
+                                                          (tok-end bad-tok))
+                                              (error
+                                               'cfg-parse
+                                               "failed at ~a" 
+                                               (tok-val bad-tok))))]))])
                      (#,start tok-list
                               ;; we simulate a token at the very beginning with zero width
                               ;; for use with the position-generating code (*-start-pos, *-end-pos).
