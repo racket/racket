@@ -179,9 +179,11 @@
         (when on?
           (send+ this (get-tab) (get-frame) (close-optimization-coach))))
       (define/augment (on-insert start len)
-        (clear-and-close))
+        (clear-and-close)
+        (inner #f on-insert start len))
       (define/augment (on-delete start len)
-        (clear-and-close))
+        (clear-and-close)
+        (inner #f on-delete start len))
 
       (define/public (build-optimization-coach-popup-menu menu pos text)
         (and pos
@@ -348,7 +350,8 @@
           (hide-optimization-coach))
         (when (send (send new-tab get-defs) optimization-coach-visible?)
           ;; if it was open before
-          (show-optimization-coach)))
+          (show-optimization-coach))
+        (inner #f on-tab-change old-tab new-tab))
 
 
       ;; sets up definitions copying, separate thread, error handling, etc.
