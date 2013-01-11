@@ -288,11 +288,15 @@
     [pattern x:str #:with result #'x]
     [pattern (~seq x:not-comma ...)
              #:with result (with-syntax ([name
+                                           ;; use the lexical context of the original syntax
+                                           (datum->syntax (car (syntax->list #'(x.x ...)))
                                            (string->symbol
                                              (apply string-append
                                                     (map (compose symbol->string syntax->datum)
-                                                         (syntax->list #'(x.x ...)))))])
-                             #'name)]))
+                                                         (syntax->list #'(x.x ...)))))
+                                           #'(x.x ...))
+                                           ])
+                             (fix-module-name #'name))]))
                                                                     
 (provide honu-require)
 (define-honu-syntax honu-require
