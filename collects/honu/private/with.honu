@@ -3,7 +3,7 @@
 provide withSyntax;
 
 macro withSyntax () {
- [variable:identifier expr:expression] { b ... /* body:statement */ }; } {
+ [variable expr:expression] { b ... /* body:statement */ }; } {
   primitiveWithSyntax [variable_result (datumToSyntax (syntax expr)
                                                       expr_result
                                                       (syntax expr)

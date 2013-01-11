@@ -35,6 +35,8 @@
          error
          (racket:rename-out
            [honu-cond cond]
+           [honu-time time]
+           [time-apply time_apply]
            [null empty]
            [make-hash mutable_hash]
            [hash-set! hash_update]

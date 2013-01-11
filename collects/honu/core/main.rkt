@@ -22,6 +22,7 @@
                                    [racket:else else]
                                    [racket:void void]
                                    [parse:honu-number number]
+                                   [parse:honu-string string]
                                    [honu-function function]
                                    [honu-function fun]
                                    [honu-var var]

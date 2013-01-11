@@ -81,8 +81,9 @@
   (syntax-parse stx #:literal-sets (local-literals)
     [(honu-$ x:not-dollar ... honu-$ rest ...)
      (debug 2 "Compressing ~a\n" #'(x.out ...))
-     (with-syntax ([(rest* ...) (compress-dollars #'(rest ...))])
-       (datum->syntax stx (syntax->list #'((repeat$ x.out ...) rest* ...))
+     (with-syntax ([(rest* ...) (compress-dollars #'(rest ...))]
+                   [(x.out* ...) (compress-dollars #'(x.out ...))])
+       (datum->syntax stx (syntax->list #'((repeat$ x.out* ...) rest* ...))
                       stx stx))]
     [(honu-$ rest ...)
      (error 'compress-dollars "unmatched $ ~a" (syntax->datum stx))]

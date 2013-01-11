@@ -399,12 +399,15 @@
                                                             [(#%braces what ...)
                                                              #'(what ...)])
                                                             ])
-                                             #'(#:with result (parse-stuff honu-syntax (#%parens out ...))))
+                                             ;; #'(#:with result (parse-stuff honu-syntax (#%parens out ...)))
+                                             #'(#:with result (parse-stuff out ...))
+                                             )
                                            #'(#:with result #'()))])
           (syntax/loc honu-pattern
                       [pattern (~seq new-pattern ...)
                                withs ... ...
                                result-with ...
+                               #:with (inner (... ...)) #'result
                                ])))
 
       (define pattern-stuff

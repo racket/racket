@@ -303,6 +303,7 @@
       (values (left current) stream)
       (begin
         (debug "Honu macro at phase ~a: ~a ~a\n" (syntax-local-phase-level) head (syntax-local-value head))
+        #;
         (emit-remark "Input to macro" 
                      (with-syntax ([head head]
                                      [(rest ...) rest])
@@ -316,6 +317,7 @@
                          (datum->syntax #'head
                                         (syntax->list #'(head rest ...))
                                         #'head #'head)))])
+          #;
           (emit-remark "Output from macro" parsed)
           #;
           (emit-local-step stream parsed #:id #'do-macro)
@@ -598,7 +600,7 @@
                      [else (if (not current)
                              (error 'what "don't know how to parse ~a" #'head)
                              (values (left current) stream))]
-                     [else (error 'what "don't know how to parse ~a" #'head)])])])])))
+                     [else (error 'parser "don't know how to parse ~a" #'head)])])])])))
 
   (emit-remark "Honu parse" input)
   (define-values (parsed unparsed)
@@ -750,6 +752,10 @@
                               #:literal-sets (cruft)
   [pattern x:number #:with result #'x])
 
+(provide honu-string)
+(define-splicing-syntax-class honu-string
+                              #:literal-sets (cruft)
+  [pattern x:str #:with result #'x])
 
 (provide identifier-comma-list)
 (define-splicing-syntax-class identifier-comma-list

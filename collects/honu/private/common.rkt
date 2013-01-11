@@ -29,3 +29,12 @@
                           ...))
          #'rest
          #t)])))
+
+(provide honu-time)
+(define-honu-syntax honu-time
+  (lambda (code)
+    (syntax-parse code #:literal-sets (cruft)
+      [(_ e:honu-expression . rest)
+       (values (racket-syntax (time e.result))
+               #'rest
+               #'t)])))

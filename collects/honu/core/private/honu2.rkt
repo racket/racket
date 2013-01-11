@@ -276,6 +276,8 @@
                     [(string? path) path]
                     [else (error 'combine-paths "what is ~a" path)])))
     (format-id name (string-join all "/")))
+  (define-splicing-syntax-class not-comma
+    [pattern x #:when (not ((literal-set->predicate cruft) #'x))])
   (define-splicing-syntax-class require-form
                                 #:literals (honu-prefix honu-for-syntax)
                                 #:literal-sets (cruft)
@@ -284,20 +286,19 @@
     [pattern (~seq honu-for-syntax ~! (#%parens module:require-form))
              #:with result #'(for-syntax module.result)]
     [pattern x:str #:with result #'x]
-    [pattern (~seq (~seq base:id (~literal honu-/)) ... x:id)
-             #:with result (with-syntax ([name (combine-paths
-                                                 (syntax->list #'(base ...))
-                                                 (fix-module-name #'x))])
-                             (emit-remark "require-form" #'honu-for-syntax #'x)
-                             (debug "Plain path: ~a ~a\n" #'name (free-identifier=? #'honu-for-syntax #'x))
-                             #'name)
-             #:when (not ((literal-set->predicate cruft) #'x))]))
-
+    [pattern (~seq x:not-comma ...)
+             #:with result (with-syntax ([name
+                                           (string->symbol
+                                             (apply string-append
+                                                    (map (compose symbol->string syntax->datum)
+                                                         (syntax->list #'(x.x ...)))))])
+                             #'name)]))
+                                                                    
 (provide honu-require)
 (define-honu-syntax honu-require
   (lambda (code)
     (syntax-parse code
-      [(_ form1:require-form form:require-form ... . rest)
+      [(_ form1:require-form (~seq honu-comma form:require-form) ... . rest)
        (values
          (racket-syntax (require (filtered-in (lambda (name)
                                                 (regexp-replace* #rx"-"
@@ -338,8 +339,9 @@
       [(_ condition:honu-expression body:honu-body . rest)
        (values
          (racket-syntax (let loop ()
-                      body.result
-                      (when condition.result (loop))))
+                          (when condition.result
+                            body.result
+                            (loop))))
          #'rest
          #t)])))
 
@@ -457,7 +459,9 @@
       [pattern (~seq name:id honu-equal data:honu-expression)
                #:with out #'(name data.result)]
       [pattern (~seq (#%parens name:id ellipses) honu-equal data:honu-expression)
-               #:with out #'((name (... ...)) data.result)])
+               #:with out #'((name (... ...)) data.result)]
+      [pattern (~seq (#%parens (#%parens name:id ellipses) ellipses) honu-equal data:honu-expression)
+               #:with out #'(((name (... ...)) (... ...)) data.result)])
     (syntax-parse code #:literal-sets (cruft)
                        #:literals (honu-equal)
       [(_ (~seq all:clause (~optional honu-comma)) ...
@@ -516,4 +520,3 @@
          (racket-syntax (define-honu-syntax name transformer.result))
          #'rest
          #t)])))
-
