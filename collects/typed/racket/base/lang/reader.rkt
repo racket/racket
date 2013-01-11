@@ -10,8 +10,11 @@ typed/racket/base
 (define (make-info key default use-default)
   (case key
     [(drscheme:toolbar-buttons)
-     (list (dynamic-require 'typed-racket/optimizer/tool/tool
-                            'optimization-coach-drracket-button))]
+     ;; If Optimization Coach is installed, load it.
+     (with-handlers ([exn:fail:filesystem? (lambda _ '())]) ; not found
+       (collection-path "optimization-coach")
+       (list (dynamic-require 'optimization-coach/tool
+                              'optimization-coach-drracket-button)))]
     [else (use-default key default)]))
 
 (define make-language-info

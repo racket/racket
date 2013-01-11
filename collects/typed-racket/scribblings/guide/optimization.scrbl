@@ -161,29 +161,8 @@ cases.
 
 @subsection[#:tag "optimization-coach"]{Optimization Coaching}
 
-Typed Racket provides optimization coaching support to help you get the
-most of its optimizer.
-
-The @deftech{Optimization Coach} DrRacket plugin can be used when editing a
-Typed Racket program in DrRacket. Clicking the @bold{Optimization Coach} button
-runs the optimizer and reports the results. All performed optimizations are
-highlighted in green in the editor. In addition, the optimizer also reports
-cases where an optimization was close to happening, but was not ultimately safe
-to perform. These cases are highlighted in shades of red in the editor. The
-redder the highlight, the higher the potential for optimization in the
-highlighted region is.
-
-Additional information can be accessed by right-clicking on the highlighted
-regions and picking the @bold{Show Optimization Info} menu entry.
-A summary of the performed optimizations and advice on how to adjust
-code to make it more amenable to optimization is provided as appropriate, and
-can serve as a starting point for further optimization.
-
-Optimization Coach is also available for other Racket languages through the
-@bold{Show Optimization Coach} entry in the @bold{View} menu.
-When running from unytped Racket languages, Optimization Coach does not report
-information about Typed Racket optimizations, and only reports information from
-the Racket inliner.
+The Optimization Coach package provides optimization coaching support to help
+you get the most of the Typed Racket optimizer.
 
 Similar information (albeit without in-depth explanations or advice) is
 available from the command line. When compiling a Typed Racket program, setting
@@ -193,38 +172,3 @@ Racket to display performance debugging information. Setting the Racket logging
 level can be done on the command line with the @racket[-W] flag:
 
 @commandline{racket -W debug my-typed-program.rkt}
-
-@subsubsection{Refining Recommendations with Profiling Information}
-
-Given profiling information about your program, Optimization Coach can tailor
-its recommendations to help you focus on the parts of your program that really
-matter.
-
-@; TODO when OC is moved to its own collect, change this, and declare exporting
-@(require (for-label (only-in typed-racket/base-env/prims optimization-coach-profile)))
-
-@defform[(optimization-coach-profile body ...)]{
-To gather profiling information for use with Optimization Coach, wrap the
-portion of your program that you want to profile (typically an entry point to
-the program) with @racket[optimization-coach-profile].
-
-When you next run your program, profiling information will be written to a
-file, ready to be used by Optimization Coach. The output filename is
-constructed by appending the @tt{.profile} suffix to the program's filename.
-}
-
-Once you have gathered profiling information, you can feed it to Optimization
-Coach by specifying the profile file and clicking the @bold{Refine} button.
-Optimization Coach will then reanalyze your program and produce new
-recommendations.
-
-Compared to the pre-profiling recommendations, those new recommendations should
-be both more targeted and more aggressive.
-Post profiling, Optimization Coach only recommends changes to functions that
-had a significant impact on program performance according to profile data.
-These are the functions where your tuning efforts are likely best spent.
-
-In addition, Optimization Coach's post-profiling recommendations are more
-aggressive. For example, it may recommend replacing convenient, high-level
-constructs---such as structs--with more performant but lower-level ones---such
-as vectors.
