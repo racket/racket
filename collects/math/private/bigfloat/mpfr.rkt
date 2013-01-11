@@ -81,9 +81,10 @@
   (register-custodian-shutdown 
    mpfr-free-cache ; acts as a "random" object for a shutdown handle
    (λ (free) 
-      ;; The direct reference here is important, since custodian holds only
-      ;; a weak reference to shutdown handle:
-      (mpfr-free-cache))))
+     (when mpfr-lib
+       ;; The direct reference here is important, since custodian holds only
+       ;; a weak reference to shutdown handle:
+       (mpfr-free-cache)))))
 
 ;; ===================================================================================================
 ;; MPFR types

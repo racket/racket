@@ -51,6 +51,8 @@
   ;(printf "parse-all-type: ~a \n" (syntax->datum stx))
   (syntax-parse stx #:literals (t:All)
     [((~and kw t:All) (vars:id ... v:id dd:ddd) . t)
+     (when (check-duplicate-identifier (syntax->list #'(vars ... v)))
+       (tc-error "All: duplicate type variable or index"))
      (let* ([vars (map syntax-e (syntax->list #'(vars ...)))]
             [v (syntax-e #'v)])
        (add-disappeared-use #'kw)
@@ -58,6 +60,8 @@
          (extend-tvars vars
            (make-PolyDots (append vars (list v)) (parse-all-body #'t)))))]
     [((~and kw t:All) (vars:id ...) . t)
+     (when (check-duplicate-identifier (syntax->list #'(vars ...)))
+       (tc-error "All: duplicate type variable"))
      (let* ([vars (map syntax-e (syntax->list #'(vars ...)))])
        (add-disappeared-use #'kw)
        (extend-tvars vars
@@ -414,17 +418,17 @@
            (if (bound-tvar? var)
                (tc-error/stx #'bound "Used a type variable (~a) not bound with ... as a bound on a ..." var)
                (tc-error/stx #'bound "Type variable ~a is unbound" var)))
-         (make-ValuesDots (map parse-type (syntax->list #'(tys ...)))
-                          (extend-tvars (list var)
-                            (parse-type #'dty))
-                          var))]
+         (-values-dots (map parse-type (syntax->list #'(tys ...)))
+                       (extend-tvars (list var)
+                         (parse-type #'dty))
+                       var))]
       [((~and kw (~or t:Values values)) tys ... dty _:ddd)
        (add-disappeared-use #'kw)
        (let ([var (infer-index stx)])
-         (make-ValuesDots (map parse-type (syntax->list #'(tys ...)))
-                          (extend-tvars (list var)
-                              (parse-type #'dty))
-                            var))]
+         (-values-dots (map parse-type (syntax->list #'(tys ...)))
+                       (extend-tvars (list var)
+                         (parse-type #'dty))
+                       var))]
       [((~and kw (~or t:Values values)) tys ...)
        (add-disappeared-use #'kw)
        (-values (map parse-type (syntax->list #'(tys ...))))]

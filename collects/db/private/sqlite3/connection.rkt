@@ -67,13 +67,17 @@
           (for ([i (in-naturals 1)]
                 [param (in-list params)])
             (load-param fsym db stmt i param))
-          (let ([info
-                 (for/list ([i (in-range (sqlite3_column_count stmt))])
-                   `((name . ,(sqlite3_column_name stmt i))
-                     (decltype . ,(sqlite3_column_decltype stmt i))))]
-                [result
-                 (or cursor?
-                     (step* fsym db stmt #f +inf.0))])
+          (let* ([info
+                  (for/list ([i (in-range (sqlite3_column_count stmt))])
+                    `((name . ,(sqlite3_column_name stmt i))
+                      (decltype . ,(sqlite3_column_decltype stmt i))))]
+                 [saved-last-insert-rowid
+                  (and (null? info) (sqlite3_last_insert_rowid db))]
+                 [saved-total-changes
+                  (and (null? info) (sqlite3_total_changes db))]
+                 [result
+                  (or cursor?
+                      (step* fsym db stmt #f +inf.0))])
             (unless (eq? (get-tx-status) 'invalid)
               (set-tx-status! fsym (read-tx-status)))
             (unless cursor?
@@ -83,7 +87,18 @@
                   [(and (pair? info) cursor?)
                    (cursor-result info pst (box #f))]
                   [else
-                   (simple-result '())])))))
+                   (simple-result
+                    (let ([last-insert-rowid (sqlite3_last_insert_rowid db)]
+                          [total-changes (sqlite3_total_changes db)])
+                      ;; Not all statements clear last_insert_rowid, changes; so
+                      ;; extra guards to make sure results are relevant.
+                      `((insert-id
+                         . ,(and (not (= last-insert-rowid saved-last-insert-rowid))
+                                 last-insert-rowid))
+                        (affected-rows
+                         . ,(if (> total-changes saved-total-changes)
+                                (sqlite3_changes db)
+                                0)))))])))))
 
     (define/public (fetch/cursor fsym cursor fetch-size)
       (let ([pst (cursor-result-pst cursor)]

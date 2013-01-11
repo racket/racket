@@ -44,20 +44,20 @@
  ((3) 0 () 0 () () (c values c (void)))
  #""
  #"")
-((connected? c) ((3) 0 () 0 () () (c values c #f)) #"" #"")
+((connected? c) ((3) 0 () 0 () () (q values #f)) #"" #"")
 ((query-value c "select 1")
- ((3) 0 () 0 () () (c values c 1))
+ ((3) 0 () 0 () () (q values 1))
  #"connecting!\n"
  #"")
-((connected? c) ((3) 0 () 0 () () (c values c #t)) #"" #"")
+((connected? c) ((3) 0 () 0 () () (q values #t)) #"" #"")
 ((void (thread (lambda () (displayln (query-value c "select 2")))))
  ((3) 0 () 0 () () (c values c (void)))
  #"connecting!\n2\n"
  #"")
 ((disconnect c) ((3) 0 () 0 () () (c values c (void))) #"" #"")
-((connected? c) ((3) 0 () 0 () () (c values c #f)) #"" #"")
+((connected? c) ((3) 0 () 0 () () (q values #f)) #"" #"")
 ((query-value c "select 3")
- ((3) 0 () 0 () () (c values c 3))
+ ((3) 0 () 0 () () (q values 3))
  #"connecting!\n"
  #"")
 ((prepare c "select 2 + $1")
@@ -67,15 +67,15 @@
   0
   ()
   ()
-  (c exn c "prepare: cannot prepare statement with virtual connection"))
+  (q exn "prepare: cannot prepare statement with virtual connection"))
  #""
  #"")
-((query-value c "select 2 + $1" 2) ((3) 0 () 0 () () (c values c 4)) #"" #"")
+((query-value c "select 2 + $1" 2) ((3) 0 () 0 () () (q values 4)) #"" #"")
 ((define pst (virtual-statement "select 2 + $1"))
  ((3) 0 () 0 () () (c values c (void)))
  #""
  #"")
-((query-value c pst 3) ((3) 0 () 0 () () (c values c 5)) #"" #"")
+((query-value c pst 3) ((3) 0 () 0 () () (q values 5)) #"" #"")
 ((begin (set! c #f) (set! pst #f))
  ((3) 0 () 0 () () (c values c (void)))
  #""

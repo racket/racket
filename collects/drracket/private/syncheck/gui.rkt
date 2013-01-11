@@ -89,6 +89,11 @@ If the namespace does not, they are colored the unbound color.
    number-between-zero-and-one?))
 (preferences:set-default 'drracket:syncheck:show-arrows? #t boolean?)
 
+(define (syncheck-add-to-online-expansion-prefs-panel vp)
+  (preferences:add-check vp
+                         'drracket:syncheck:show-arrows?
+                         (string-constant show-arrows-on-mouseover)))
+
 (define (syncheck-add-to-preferences-panel parent)
   (color-prefs:build-color-selection-panel parent
                                            lexically-bound-variable-style-pref
@@ -2081,6 +2086,7 @@ If the namespace does not, they are colored the unbound color.
     (add-check-syntax-key-bindings (drracket:rep:get-drs-bindings-keymap))
     (fw:color-prefs:add-to-preferences-panel (string-constant check-syntax)
                                              syncheck-add-to-preferences-panel)
+    (drracket:module-language-tools:register-online-expansion-pref syncheck-add-to-online-expansion-prefs-panel)
     (drracket:language:register-capability 'drscheme:check-syntax-button (flat-contract boolean?) #t)
     (drracket:get/extend:extend-definitions-text make-syncheck-text%)
     (drracket:get/extend:extend-definitions-canvas docs-editor-canvas-mixin)

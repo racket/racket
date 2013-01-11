@@ -297,14 +297,39 @@ A general query result is either a @racket[simple-result] or a
 @racket[rows-result].
 
 @defstruct*[simple-result
-            ([info any/c])]{
+            ([info (listof (cons/c symbol? any/c))])]{
 
 Represents the result of a SQL statement that does not return a
 relation, such as an @tt{INSERT} or @tt{DELETE} statement.  
 
-The @racket[info] field is usually an association list, but do not
-rely on its contents; it varies based on database system and may
-change in future versions of this library (even new minor versions).
+The @racket[info] field is an association list, but its contents vary
+based on database system and may change in future versions of this
+library (even new minor versions). The following keys are supported for
+multiple database systems:
+
+@itemlist[
+
+@item{@racket['insert-id]: If the value is a positive integer, the
+statement was an @tt{INSERT} statement and the value is a
+system-specific identifier for the inserted row. For PostgreSQL, the
+value is the row's OID, if the table has OIDs (for an alternative, see
+the @tt{INSERT ... RETURNING} statement). For MySQL, the value is the
+same as the result of
+@hyperlink["http://dev.mysql.com/doc/refman/5.0/en/information-functions.html#function_last-insert-id"]{last_insert_id}
+function---that is, the value of the row's @tt{AUTO_INCREMENT}
+field. If there is no such field, the value is @racket[#f]. For
+SQLite, the value is the same as the result of the
+@hyperlink["http://www.sqlite.org/lang_corefunc.html#last_insert_rowid"]{last_insert_rowid}
+function---that is, the
+@hyperlink["http://www.sqlite.org/lang_createtable.html#rowid"]{ROWID}
+of the inserted row.}
+
+@item{@racket['affected-rows]: The number (a nonnegative integer) of
+rows inserted by an @tt{INSERT} statement, modified by an @tt{UPDATE}
+statement, or deleted by a @tt{DELETE} statement. Only directly
+affected rows are counted; rows affected because of triggers or
+integrity constraint actions are not counted.}
+]
 }
 
 @defstruct*[rows-result

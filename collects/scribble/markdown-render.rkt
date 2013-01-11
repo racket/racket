@@ -102,7 +102,7 @@
                             (apply map list strs)))
         (define x-length (lambda (col) (if (eq? col 'cont) 0 (length col))))
         (when tick?
-          (displayln (string-append "```scheme")))
+          (displayln (string-append "```racket")))
         (for/fold ([indent? #f]) ([row (in-list strs)])
           (let ([h (apply max 0 (map x-length row))])
             (let ([row* (for/list ([i (in-range h)])

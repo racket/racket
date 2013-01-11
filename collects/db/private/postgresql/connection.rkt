@@ -379,7 +379,7 @@
 
     (define/private (query1:expect-completion fsym)
       (match (recv-message fsym)
-        [(struct CommandComplete (command)) `((command . ,command))]
+        [(struct CommandComplete (command)) command]
         [(struct EmptyQueryResponse ()) '()]
         [other-r (query1:error fsym other-r)]))
 

@@ -4,7 +4,8 @@
 (provide readline readline-bytes
          add-history add-history-bytes
          history-length history-get history-delete
-         set-completion-function!)
+         set-completion-function!
+         readline-newline readline-redisplay)
 
 ;; libtermcap needed on some platforms
 (define libtermcap  (with-handlers ([exn:fail? void]) (ffi-lib "libtermcap")))
@@ -117,3 +118,14 @@
 ;; make it possible to run Scheme threads while waiting for input
 (set-ffi-obj! "rl_event_hook" libreadline (_fun -> _int)
               (lambda () (sync/enable-break real-input-port) 0))
+
+
+;; force cursor on a new line
+(define readline-newline
+  (get-ffi-obj "rl_crlf" libreadline (_fun -> _void)
+               (lambda ()
+                 (get-ffi-obj "rl_newline" libreadline (_fun -> _void)))))
+
+;; force redisplay of prompt and current user input
+(define readline-redisplay
+  (get-ffi-obj "rl_forced_update_display" libreadline (_fun -> _void)))

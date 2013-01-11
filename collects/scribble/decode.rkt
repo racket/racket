@@ -73,7 +73,7 @@
  [decode-paragraph (-> (listof pre-content?)
                        paragraph?)]
  [decode-compound-paragraph (-> (listof pre-flow?)
-                                paragraph?)]
+                                block?)]
  [decode-content (-> (listof pre-content?)
                      content?)]
  [rename decode-content decode-elements

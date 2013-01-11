@@ -207,8 +207,8 @@
             (λ ()
               (match k
                 ["indexes"
-                 (list "https://plt-etc.byu.edu:9004"
-                       "https://plt-etc.byu.edu:9003")]))))
+                 (list "https://pnr.racket-lang.org"
+                       "https://planet-compat.racket-lang.org")]))))
 
 (define (package-index-lookup pkg)
   (or
@@ -304,8 +304,6 @@
 (define (update-install-info-checksum if op)
   (struct-copy install-info if
                [checksum op]))
-
-
 
 (define (package-directory pkg-name)
   (match-define (pkg-info orig-pkg checksum _)
@@ -415,6 +413,10 @@
         (update-install-info-orig-pkg
          (match type
            ['github
+            (unless checksum
+              (pkg-error (~a "could not find checksum for github package source, which implies it doesn't exist\n"
+                             "  source: ~a")
+                         pkg))
             (match-define (list* user repo branch path)
                           (map path/param-path (url-path/no-slash pkg-url)))
             (define new-url
@@ -1161,6 +1163,8 @@
    (parameter/c string?)]
   [current-pkg-error 
    (parameter/c procedure?)]
+  [package-directory
+   (-> string? path-string?)]
   [pkg-desc 
    (-> string? 
        (or/c #f 'file 'dir 'link 'file-url 'dir-url 'github 'name) 
