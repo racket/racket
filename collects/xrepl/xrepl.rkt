@@ -1189,7 +1189,7 @@
         (λ ()
           (let loop ()
             (match (sync r)
-              [(vector l m v)
+              [(vector l m v name)
                (display (format "; [~a] ~a~a\n"
                                 l m (if v (format " ~.s" v) "")))
                (flush-output)])
