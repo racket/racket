@@ -94,7 +94,7 @@
      (tc-setup
       stx #'form 'top-level body2 void tc-toplevel-form before type
       (with-syntax*
-       ([optimized-body (car (maybe-optimize #`(#,body2)))])
+       ([(optimized-body . _) (maybe-optimize #`(#,body2))])
        (syntax-parse body2
          ;; any of these do not produce an expression to be printed
          [(head:invis-kw . _) (arm #'optimized-body)]
