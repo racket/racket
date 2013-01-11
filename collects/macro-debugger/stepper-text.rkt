@@ -80,7 +80,7 @@
 
 (define (show-term stx partition)
   (define-values (datum flat=>stx stx=>flat)
-    (table stx partition 0 'always))
+    (table stx partition 0 'always #t))
   (define identifier-list 
     (filter identifier? (hash-map stx=>flat (lambda (k v) k))))
   (define (pp-size-hook obj display-like? port)

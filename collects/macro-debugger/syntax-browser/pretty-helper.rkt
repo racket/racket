@@ -83,7 +83,7 @@
               [(and partition (identifier? obj))
                (when (and (eq? suffixopt 'all-if-over-limit)
                           (> (send/i partition partition<%> count) limit))
-                 (call-with-values (lambda () (table stx partition #f 'always))
+                 (call-with-values (lambda () (table stx partition #f 'always abbrev?))
                                    escape))
                (let ([lp-datum (make-identifier-proxy obj)])
                  (hash-set! flat=>stx lp-datum obj)
