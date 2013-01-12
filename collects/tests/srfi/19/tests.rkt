@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 ;; Tests by Will Fitzgerald, augmented by:
 ;;   John Clements                                -- 2004-08-16
@@ -8,7 +8,7 @@
 ;;   Dave Gurnell  (serializable dates and times) -- 2010-03-03
 ;;   Dave Gurnell  (added ~x for string->date)    -- 2010-03-10
 (require (only-in racket/date date->julian/scalinger)
-         scheme/serialize
+         racket/serialize
          srfi/19/time)
 
 (require rackunit
