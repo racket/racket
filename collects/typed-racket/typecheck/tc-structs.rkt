@@ -13,6 +13,7 @@
          racket/function
          racket/match
          racket/list
+         racket/struct-info
          (only-in racket/contract
                   listof any/c or/c
                   [->* c->*]
@@ -150,7 +151,7 @@
 
 ;; Register the approriate types to the struct bindings.
 (define/cond-contract (register-struct-bindings! sty names desc si)
-  (c-> Struct? struct-names? struct-desc? (or/c #f struct-info?) (listof def-binding?))
+  (c-> Struct? struct-names? struct-desc? (or/c #f struct-info?) (listof binding?))
 
 
   (define tvars (struct-desc-tvars desc))
