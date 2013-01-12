@@ -10,14 +10,16 @@
                            [line (or/c number? false/c)]
                            [col (or/c number? false/c)]
                            [pos (or/c number? false/c)]
-                           [span (or/c number? false/c)]) 
+                           [span (or/c number? false/c)]
+                           [#:extra-srclocs extra-srclocs (listof srcloc?) '()]) 
          any]{
 
 Creates and raises an @racket[exn:fail:read] exception, using
 @racket[msg-string] as the base error message.
 
 Source-location information is added to the error message using the
-last five arguments (if the @racket[error-print-source-location]
+last five arguments and the @racket[extra-srclocs]
+(if the @racket[error-print-source-location]
 parameter is set to @racket[#t]). The @racket[source] argument is an
 arbitrary value naming the source location---usually a file path
 string. Each of the @racket[line], @racket[pos] arguments is
