@@ -99,4 +99,9 @@
 (test "JD 12" julian/scalinger->string 12)
 (test "JD 123" julian/scalinger->string 123)
 
+;; make sure that date* has the correct parent info
+(test #t date*?
+  (struct-copy date* (seconds->date (current-seconds))
+               [hour #:parent date 5]))
+
 (report-errs)
