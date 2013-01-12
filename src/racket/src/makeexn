@@ -253,7 +253,7 @@ Not an exception in the above sense:
                                  date-month date-day date-hour date-minute date-second) #t)
                          (date* (date*-time-zone-name date*-nanosecond
                                  date-time-zone-offset date-dst? date-year-day date-week-day date-year 
-                                 date-month date-day date-hour date-minute date-second) #t)
+                                 date-month date-day date-hour date-minute date-second) date)
                          (srcloc (srcloc-span srcloc-position srcloc-column srcloc-line srcloc-source) #t))))
   
   (with-output-to-file filename #:exists 'replace
