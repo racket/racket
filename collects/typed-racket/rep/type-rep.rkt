@@ -25,7 +25,17 @@
           (not (ValuesDots? e))
           (not (Result? e)))))
 
+;; (or/c Type/c Values? Results?)
+(define Values/c?
+   (λ (e)
+     (and (Type? e)
+          (not (Scope? e))
+          (not (arr? e))
+          (not (fld? e))
+          (not (ValuesDots? e)))))
+
 (define Type/c (flat-named-contract 'Type Type/c?))
+(define Values/c (flat-named-contract 'Values Values/c?))
 
 ;; Name = Symbol
 
@@ -417,7 +427,7 @@
 ;; handler: the type of the prompt handler
 ;;   prompts with this tag will return a union of `body` 
 ;;   and the codomains of `handler`
-(def-type Prompt-Tagof ([body Type/c] [handler Function?])
+(def-type Prompt-Tagof ([body Type/c] [handler Type/c])
   [#:frees (λ (f) (combine-frees (list (make-invariant (f body))
                                        (make-invariant (f handler)))))]
   [#:key 'prompt-tag])
@@ -760,6 +770,7 @@
  Mu? Poly? PolyDots?
  Filter? Object?
  Type/c Type/c?
+ Values/c
  Poly-n
  PolyDots-n
  free-vars*
