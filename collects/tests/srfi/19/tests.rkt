@@ -7,7 +7,8 @@
 ;;   John Clements (nanoseconds off by x100)      -- 2009-12-15
 ;;   Dave Gurnell  (serializable dates and times) -- 2010-03-03
 ;;   Dave Gurnell  (added ~x for string->date)    -- 2010-03-10
-(require scheme/serialize
+(require (only-in racket/date date->julian/scalinger)
+         scheme/serialize
          srfi/19/time)
 
 (require rackunit
@@ -221,8 +222,34 @@
       (check-equal? (deserialize (serialize (make-time time-utc 0 1))) (make-time time-utc 0 1))
       (check-equal? (deserialize (serialize (make-time time-tai 2 3))) (make-time time-tai 2 3))
       (check-equal? (deserialize (serialize (srfi:make-date 0 1 2 3 4 5 6 7))) (srfi:make-date 0 1 2 3 4 5 6 7)))
+
+    ;; make sure that older srfi-19 structures still deserialize
+    (test-case "old deserialization"
+      (check-equal? (deserialize '((3) 1 (((lib "srfi/19/time.rkt") . deserialize-info:tm:date-v0))
+                                   0 () () (0 0 1 2 3 4 5 6 7)))
+                    (srfi:make-date 0 1 2 3 4 5 6 7))
+      (check-equal? (deserialize '((3) 1 (((lib "srfi/19/time.rkt") . deserialize-info:tm:date-v0))
+                                   0 () () (0 0 0 0 0 1 1 2004 0)))
+                    (srfi:make-date 0 0 0 0 1 1 2004 0)))
+
+    ;; test racket/date, lax-date functionality
+    (test-case "check date? and lax-date?"
+               (check-true (date? (srfi:make-date 0 4 5 0 1 10 2013 0)))
+               (check-true (date? (srfi:make-date 0 0 0 0 1 1 2004 0)))
+               (check-equal? (date->julian/scalinger (srfi:make-date 0 0 0 0 1 1 2004 0))
+                             2453006)
+               (check-equal? (date->julian-day (srfi:make-date 0 0 0 0 1 1 2004 0))
+                             4906011/2)
+               (check-true (lax-date? (srfi:make-date 0 0 0 0 0 1 2004 0)))
+               (check-true (lax-date? (srfi:make-date 0 0 0 0 #t 1 2004 0)))
+               (check-true (lax-date? (srfi:make-date 0 0 0 0 #t #t 2004 0)))
+               (check-true (lax-date? (srfi:make-date 0 0 0 0 #t #t #t 0)))
+               (check-equal? (srfi:date-year (srfi:make-date 0 0 0 0 1 1 2004 #t))
+                             2004)
+               (check-equal? (srfi:date-year (srfi:make-date 0 0 0 0 1 1 2004 0))
+                             2004))
     
-    ;; nanosecnds off by a factor of 100...
+    ;; nanoseconds off by a factor of 100...
     (test-case "nanosecond order-of-magnitude"
       ;; half a second should be within 1/10th of 10^9 / 2 nanoseconds (currently off by a factor of 100)
       (check-within (let ([t (date-nanosecond (current-date))])

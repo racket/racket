@@ -78,7 +78,7 @@
          time-difference time-difference! add-duration add-duration! subtract-duration subtract-duration!
          ;; Date object and accessors
          ;; date structure is provided by core Racket, we just extended tu support miliseconds:
-         srfi:make-date srfi:date?
+         srfi:make-date srfi:date? lax-date?
          deserialize-info:tm:date-v0
          date-nanosecond srfi:date-second srfi:date-minute srfi:date-hour srfi:date-day srfi:date-month
          srfi:date-year date-zone-offset
@@ -608,40 +608,47 @@
   time-in)
 
 ;; -- Date Structures
-(define-values (tm:date srfi:make-date srfi:date? tm:date-ref tm:date-set!)
-  (make-struct-type 
-   'tm:date #f 8 0 #f
-   (list (cons prop:serializable
-               (make-serialize-info
-                (lambda (d)
-                  (vector (date-nanosecond  d)
-                          (srfi:date-second d)
-                          (srfi:date-minute d)
-                          (srfi:date-hour   d)
-                          (srfi:date-day    d)
-                          (srfi:date-month  d)
-                          (srfi:date-year   d)
-                          (date-zone-offset d)))
-                #'deserialize-info:tm:date-v0
-                #f
-                (or (current-load-relative-directory) 
-                    (current-directory)))))
-   (make-inspector) #f null))
 
-(define deserialize-info:tm:date-v0
-  (make-deserialize-info
-   srfi:make-date
-   (lambda ()
-     (let ([d0 (srfi:make-date #f #f #f #f #f #f #f #f)])
-       (values d0 (lambda (d1)
-                    (tm:set-date-nanosecond!  d1 (date-nanosecond  d0))
-                    (tm:set-date-second!      d1 (srfi:date-second d0))
-                    (tm:set-date-minute!      d1 (srfi:date-minute d0))
-                    (tm:set-date-hour!        d1 (srfi:date-hour   d0))
-                    (tm:set-date-day!         d1 (srfi:date-day    d0))
-                    (tm:set-date-month!       d1 (srfi:date-month  d0))
-                    (tm:set-date-year!        d1 (srfi:date-year   d0))
-                    (tm:set-date-zone-offset! d1 (date-zone-offset d0))))))))
+;; These identifiers originally referred to a separate date type,
+;; but they now use Racket's native date type
+(define (srfi:make-date nanosecond second minute
+                        hour day month
+                        year zone-offset)
+  (with-handlers ([exn:fail:contract?
+                   (lambda (e)
+                     (lax-date nanosecond second minute hour
+                               day month year zone-offset))]) 
+    (date* second minute hour
+           day month year
+           ;; compute derived fields
+           (tm:week-day day month year)
+           (tm:year-day day month year)
+           #f
+           zone-offset
+           nanosecond
+           "")))
+
+;; A struct type that emulates the old srfi/19 type
+;; This is lax about its contents, unlike date*
+(struct lax-date (nanosecond second minute
+                  hour day month
+                  year zone-offset)
+        #:transparent)
+
+;; Try to convert srfi-19 date to date*
+(define (lax-date->date* date)
+  (srfi:make-date (lax-date-nanosecond date)
+                  (lax-date-second date)
+                  (lax-date-minute date)
+                  (lax-date-hour date)
+                  (lax-date-day date)
+                  (lax-date-month date)
+                  (lax-date-year date)
+                  (lax-date-zone-offset date)))
+
+;; Predicate for dates
+(define (srfi:date? d)
+  (or (lax-date? d) (date? d)))
 
 ;; Racket's date structure has the following:
 ;;   * second : 0 to 61 (60 and 61 are for unusual leap-seconds)
@@ -655,23 +662,29 @@
 ;;   * dst? : #t (daylight savings time) or #f
 ;;   * time-zone-offset : the number of seconds east of GMT for this time zone (e.g., Pacific Standard Time is -28800), an exact integer 36
 
-(define (date-nanosecond d)  (tm:date-ref d 0))
-(define (srfi:date-second d) (tm:date-ref d 1))
-(define (srfi:date-minute d) (tm:date-ref d 2))
-(define (srfi:date-hour d)   (tm:date-ref d 3))
-(define (srfi:date-day d)    (tm:date-ref d 4))
-(define (srfi:date-month d)  (tm:date-ref d 5))
-(define (srfi:date-year d)   (tm:date-ref d 6))
-(define (date-zone-offset d) (tm:date-ref d 7))
+;; These accessors work over either style of date
+(define-syntax-rule (define-date-accessor accessor srfi-19-accessor date-accessor)
+  (define (accessor d)
+    (if (lax-date? d)
+        (srfi-19-accessor d)
+        (date-accessor d))))
 
-(define (tm:set-date-nanosecond! d ns) (tm:date-set! d 0 ns))
-(define (tm:set-date-second! d s)      (tm:date-set! d 1 s))
-(define (tm:set-date-minute! d m)      (tm:date-set! d 2 m))
-(define (tm:set-date-hour! d h)        (tm:date-set! d 3 h))
-(define (tm:set-date-day! d day)       (tm:date-set! d 4 day))
-(define (tm:set-date-month! d m)       (tm:date-set! d 5 m))
-(define (tm:set-date-year! d y)        (tm:date-set! d 6 y))
-(define (tm:set-date-zone-offset! d i) (tm:date-set! d 7 i))
+(define-date-accessor date-nanosecond lax-date-nanosecond date*-nanosecond)
+(define-date-accessor srfi:date-second lax-date-second date-second)
+(define-date-accessor srfi:date-minute lax-date-minute date-minute)
+(define-date-accessor srfi:date-hour lax-date-hour date-hour)
+(define-date-accessor srfi:date-day lax-date-day date-day)
+(define-date-accessor srfi:date-month lax-date-month date-month)
+(define-date-accessor srfi:date-year lax-date-year date-year)
+(define-date-accessor date-zone-offset
+  lax-date-zone-offset date-time-zone-offset)
+
+;; Serialization support for old srfi-19 structs
+(define deserialize-info:tm:date-v0
+  (make-deserialize-info
+   srfi:make-date
+   (lambda ()
+     (error 'deserialize-info:tm:date-v0 "cycles not allowed"))))
 
 ;; gives the julian day which starts at noon.
 (define (tm:encode-julian-day-number day month year)
@@ -774,9 +787,17 @@
 (define (time-tai->date time . tz-offset)
   (if (tm:tai-before-leap-second? (time-second time))
       ;; if it's *right* before the leap, we need to pretend to subtract a second ...
-      (let ((d (tm:time->date (subtract-duration! (time-tai->time-utc time) (make-time time-duration 0 1)) tz-offset time-utc)))
-        (tm:set-date-second! d 60)
-        d)
+      (let ((d (tm:time->date (subtract-duration! (time-tai->time-utc time)
+                                                  (make-time time-duration 0 1))
+                              tz-offset time-utc)))
+        (srfi:make-date (date-nanosecond d)
+                        60
+                        (srfi:date-minute d)
+                        (srfi:date-hour d)
+                        (srfi:date-day d)
+                        (srfi:date-month d)
+                        (srfi:date-year d)
+                        (date-zone-offset d)))
       (tm:time->date (time-tai->time-utc time) tz-offset time-utc)))
 
 (define (time-utc->date time . tz-offset)
@@ -1454,46 +1475,57 @@
      (list #\A char-alphabetic? locale-reader-long-weekday do-nothing)
      (list #\b char-alphabetic? locale-reader-abbr-month
            (lambda (val object)
-             (tm:set-date-month! object val)))
+             (struct-copy lax-date object [month val])))
      (list #\B char-alphabetic? locale-reader-long-month
            (lambda (val object)
-             (tm:set-date-month! object val)))
-     (list #\d char-numeric? ireader2 (lambda (val object)
-                                        (tm:set-date-day!
-                                         object val)))
-     (list #\e char-fail eireader2 (lambda (val object)
-                                     (tm:set-date-day! object val)))
+             (struct-copy lax-date object [month val])))
+     (list #\d char-numeric? ireader2
+           (lambda (val object)
+             (struct-copy lax-date object [day val])))
+     (list #\e char-fail eireader2
+           (lambda (val object)
+             (struct-copy lax-date object [day val])))
      (list #\h char-alphabetic? locale-reader-abbr-month
            (lambda (val object)
-             (tm:set-date-month! object val)))
-     (list #\H char-numeric? ireader2 (lambda (val object)
-                                        (tm:set-date-hour! object val)))
-     (list #\k char-fail eireader2 (lambda (val object)
-                                     (tm:set-date-hour! object val)))
-     (list #\m char-numeric? ireader2 (lambda (val object)
-                                        (tm:set-date-month! object val)))
-     (list #\M char-numeric? ireader2 (lambda (val object)
-                                        (tm:set-date-minute!
-                                         object val)))
-     (list #\N char-numeric? fireader9 (lambda (val object)
-                                         (tm:set-date-nanosecond! object val)))
-     (list #\S char-numeric? ireader2 (lambda (val object)
-                                        (tm:set-date-second! object val)))
+             (struct-copy lax-date object [month val])))
+     (list #\H char-numeric? ireader2
+           (lambda (val object)
+             (struct-copy lax-date object [hour val])))
+     (list #\k char-fail eireader2
+           (lambda (val object)
+             (struct-copy lax-date object [hour val])))
+     (list #\m char-numeric? ireader2
+           (lambda (val object)
+             (struct-copy lax-date object [month val])))
+     (list #\M char-numeric? ireader2
+           (lambda (val object)
+             (struct-copy lax-date object [minute val])))
+     (list #\N char-numeric? fireader9
+           (lambda (val object)
+             (struct-copy lax-date object [nanosecond val])))
+     (list #\S char-numeric? ireader2
+           (lambda (val object)
+             (struct-copy lax-date object [second val])))
      (list #\y char-fail eireader2 
            (lambda (val object)
-             (tm:set-date-year! object (tm:natural-year val))))
-     (list #\Y char-numeric? ireader4 (lambda (val object)
-                                        (tm:set-date-year! object val)))
+             (struct-copy lax-date object
+                          [year (tm:natural-year val)])))
+     (list #\Y char-numeric? ireader4
+           (lambda (val object)
+             (struct-copy lax-date object [year val])))
      (list #\z (lambda (c)
                  (or (char=? c #\Z)
                      (char=? c #\z)
                      (char=? c #\+)
                      (char=? c #\-)))
-           tm:zone-reader (lambda (val object)
-                            (tm:set-date-zone-offset! object val)))
+           tm:zone-reader
+           (lambda (val object)
+             (struct-copy lax-date object [zone-offset val])))
      ; PLT-specific extension for 2- or 4-digit years:
-     (list #\? char-numeric? ireader4 (lambda (val object)
-                                        (tm:set-date-year! object (tm:natural-year val))))
+     (list #\? char-numeric? ireader4
+           (lambda (val object)
+             (struct-copy lax-date object
+                          [year (tm:natural-year val)])))
      )))
 
 (define (tm:string->date date index format-string str-len port template-string)
@@ -1505,8 +1537,7 @@
             (read-char port)
             (skip-until port skipper)))))
   (if (>= index str-len)
-      (begin 
-        (values))
+      date
       (let ( (current-char (string-ref format-string index)) )
         (if (not (char=? current-char #\~))
             (let ((port-char (read-char port)))
@@ -1526,11 +1557,13 @@
                               (reader  (caddr format-info))
                               (actor   (cadddr format-info)))
                           (skip-until port skipper)
-                          (let ((val (reader port)))
-                            (if (eof-object? val)
-                                (tm:time-error 'string->date 'bad-date-format-string template-string)
-                                (actor val date)))
-                          (tm:string->date date (+ index 2) format-string  str-len port template-string))))))))))
+                          (define new-date
+                            (let ((val (reader port)))
+                              (if (eof-object? val)
+                                  (tm:time-error 'string->date 'bad-date-format-string template-string)
+                                  (actor val date))))
+                          (tm:string->date new-date (+ index 2) format-string str-len port template-string))))))))))
+
 
 (define (string->date input-string template-string)
   (define (tm:date-ok? date)
@@ -1542,15 +1575,16 @@
          (srfi:date-month date)
          (srfi:date-year date)
          (date-zone-offset date)))
-  (let ( (newdate (srfi:make-date 0 0 0 0 #t #t #t (tm:local-tz-offset))) )
-    (tm:string->date newdate
-                     0
-                     template-string
-                     (string-length template-string)
-                     (open-input-string input-string)
-                     template-string)
+  (let* ([initial (lax-date 0 0 0 0 #t #t #t (tm:local-tz-offset))]
+         [newdate (tm:string->date
+                   initial
+                   0
+                   template-string
+                   (string-length template-string)
+                   (open-input-string input-string)
+                   template-string)])
     (if (tm:date-ok? newdate)
-        newdate
+        (lax-date->date* newdate)
         (tm:time-error 'string->date 'bad-date-format-string (list "Incomplete date read. " newdate template-string)))))
   
   

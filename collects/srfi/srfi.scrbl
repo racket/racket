@@ -1,5 +1,6 @@
 #lang scribble/doc
 @(require scribble/manual
+          scribble/eval
           (for-syntax scheme/base)
           (for-label scheme/base
                      racket/stream))
@@ -569,9 +570,33 @@ are also available from @racketmodname[scheme/foreign].
  (string->date #f "string->date")
 )]
 
-Take care NOT to confuse the internal date structure with the
-Racket @racket[date]; they are not the same, and all procedures
-from the SRFI library expect the former.
+The date structure produced by this SRFI library is identical
+to the one provided by @racketmodname[racket/base] in most cases
+(see @racket[date]).
+
+For backwards compatibility, when an invalid date field value is
+provided to the SRFI constructor, the constructor will produce a lax
+date structure. A lax date structure is @emph{not} compatible with
+functions from @racketmodname[racket/base] or
+@racketmodname[racket/date]. SRFI functions such as
+@racket[string->date] may return a lax date structure depending on the
+format string.
+
+@(define srfi-19-eval (make-base-eval))
+@(srfi-19-eval '(require srfi/19))
+
+@defproc[(lax-date? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[_v] is a lax date structure. Otherwise
+returns @racket[#f].
+
+@examples[#:eval srfi-19-eval
+  (lax-date? (make-date 0 19 10 10 14 "bogus" "bogus" 0))
+  (lax-date? (make-date 0 19 10 10 14 1 2013 0))
+  (lax-date? (string->date "10:21:00" "~H:~M:~S"))
+]}
+
+@(close-eval srfi-19-eval)
 
 @; ----------------------------------------
 
