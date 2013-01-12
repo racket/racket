@@ -166,6 +166,8 @@ sitemapdir="$scriptdir/sitemap"
 
 # platform-installer stuff, all relative to the racket tree
 nsisdir="$scriptdir/nsis"
+dmgdir="$scriptdir/dmg"
+dmgbackground="$dmgdir/racket-rising.png"
 unixinstallerdir="$scriptdir/unix-installer"
 unixpathcheckscript="$unixinstallerdir/check-install-paths"
 unixinstallerscript="$unixinstallerdir/installer-header"
@@ -1713,12 +1715,13 @@ tgz_to_zip() {
   _rm "$tmpdir/tgz-to-zip-$$"
 }
 #----------------------------------------
-make_dmg() { # inputs: dir, dmg
-  local srcdir="$1" tgtdmg="$2"; shift 2
+make_dmg() { # inputs: dir, dmg, bg-image
+  local srcdir="$1" tgtdmg="$2" tmpbg="$3"; shift 3
   local tmpdmg="${tgtdmg%.dmg}-tmp.dmg"
   local src="$(basename "$srcdir")"
   local myself="$(id -nu):$(id -ng)"
   show "Making \"$tgtdmg\" from \"$srcdir\""
+  _cp "$tmpbg" "$srcdir"
   _cd "$(dirname "$srcdir")"
   _run sudo rm -f "$tgtdmg" "$tmpdmg"
   # It should be possible to create dmgs normally, but they'd be created with
@@ -1732,21 +1735,59 @@ make_dmg() { # inputs: dir, dmg
   #                      -mode 555 -volname "$src" -srcfolder "$src" "$tgtdmg"
   # so: [1] create an uncompressed image
   _run sudo hdiutil create -format UDRW -ov \
-                       -mode 555 -volname "$src" -srcfolder "$src" "$tmpdmg"
+                       -mode 755 -volname "$src" -srcfolder "$src" "$tmpdmg"
   # [2] remove the source tree
   _run sudo rm -rf "$src"
-  # [3] create the compressed image from the uncompressed image
+  # [3] do the expected dmg layout (see below)
+  easy_dmg_layout "$tmpdmg" "$src" "$(basename "$tmpbg")"
+  # [4] create the compressed image from the uncompressed image
   _run sudo hdiutil convert -format UDZO -imagekey zlib-level=9 -ov \
                        "$tmpdmg" -o "$tgtdmg"
-  # [4] remove the uncompressed image
+  # [5] remove the uncompressed image
   _run sudo chown "$myself" "$tgtdmg" "$tmpdmg"
   _rm "$tmpdmg"
 }
+easy_dmg_layout() {
+  local tmpdmg="$1" volname="$2" bg="$3"; shift 3
+  show "Mounting image for layout"
+  local vol_dev="$(
+    sudo hdiutil attach -readwrite -noverify -noautoopen "$tmpdmg" \
+           | grep '/dev/' | head -1 | awk '{print $1}')"
+  show "Creating layout via Finder"
+  sudo /usr/bin/osascript <<-EOF
+	tell application "Finder"
+	  tell disk "$volname"
+	    open
+	    set current view of container window to icon view
+	    set toolbar visible of container window to false
+	    set statusbar visible of container window to false
+	    set bounds of container window to {320, 160, 1000, 540}
+	    set theViewOptions to the icon view options of container window
+	    set arrangement of theViewOptions to not arranged
+	    set icon size of theViewOptions to 128
+	    set text size of theViewOptions to 16
+	    set background picture of theViewOptions to file "$bg"
+	    make new alias file at container window to POSIX file "/Applications" with properties {name:"Applications"}
+	    set position of item "$volname" of container window to {170, 180}
+	    set position of item "$bg" of container window to {900, 180}
+	    set position of item "Applications" of container window to {500, 180}
+	    set name of file "$bg" to ".$bg"
+	    close
+	    open
+	    update without registering applications
+	    delay 5
+	    close
+	  end tell
+	end tell
+EOF
+  sync; sync
+  _run sudo hdiutil detach "$vol_dev"
+}
 #----------------------------------------
 do_tgz_to_dmg() {
-  local tmptgz="$1" tmpdmg="$2" version="$3"
-  local pname="$4" ptype="$5" srcplatform="$6"
-  shift 6
+  local tmptgz="$1" tmpdmg="$2" tmpbg="$3"
+  local version="$4" pname="$5" ptype="$6" srcplatform="$7"
+  shift 7
   local distname="$(name_of_dist_package "$pname")"
   distname="$distname v$version"
   if [[ "$ptype" != "bin" ]]; then
@@ -1760,7 +1801,7 @@ do_tgz_to_dmg() {
   _rm "$tmptgz"
   _mv "$installdir" "$distname"
   _cd "$tmpdir/tgz-to-dmg-$$"
-  make_dmg "$distname" "$tmpdmg"
+  make_dmg "$distname" "$tmpdmg" "$tmpbg"
   _cd "$savedpwd"
   _rm "$tmpdir/tgz-to-dmg-$$"
 }
@@ -1768,9 +1809,12 @@ tgz_to_dmg() {
   local srctgz="$1" tgt="$2" pname="$3" ptype="$4" srcplatform="$5"; shift 5
   local tmptgz="$tmpdir/tgz2dmg.tgz"
   local tmpdmg="$tmpdir/tgz2dmg.dmg"
+  local tmpbg="$tmpdir/bg.png"
   _scp "$srctgz" "${dmgmachine}:$tmptgz"
+  _scp "$PLTHOME/$dmgbackground" "${dmgmachine}:$tmpbg"
   run_part "$dmgmachine" "do_tgz_to_dmg" \
-             "$tmptgz" "$tmpdmg" "$version" "$pname" "$ptype" "$srcplatform"
+             "$tmptgz" "$tmpdmg" "$tmpbg" \
+             "$version" "$pname" "$ptype" "$srcplatform"
   _scp "${dmgmachine}:$tmpdmg" "$tgt.dmg"
 }
 #----------------------------------------
