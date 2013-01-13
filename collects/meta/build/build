@@ -53,7 +53,7 @@ workmachine="winooski"
 maindir="/home/scheme"
 
 # machines for specific installer creations
-dmgmachine="weatherwax"
+dmgmachine="dublin"
 nsismachine="pitcairn"
 
 # list of environment variables that should be carried over to ssh jobs
@@ -1726,10 +1726,7 @@ make_dmg() { # inputs: dir, dmg, bg-image
   show "Making \"$tgtdmg\" from \"$srcdir\""
   if [[ "x$tmpbg" != "x-" ]]; then _cp "$tmpbg" "$srcdir"; fi
   _cd "$(dirname "$srcdir")"
-  _run sudo rm -f "$tgtdmg" "$tmpdmg"
-  # It should be possible to create dmgs normally, but they'd be created with
-  # the same user id of whoever runs this script...
-  _run sudo chown -R root:admin "$src"
+  _rm "$tgtdmg" "$tmpdmg"
   # The following command should work fine, but it looks like hdiutil in 10.4
   # is miscalculating the needed size, making it too big in our case (and too
   # small with >8GB images).  It seems that it works to first generate an
@@ -1737,31 +1734,46 @@ make_dmg() { # inputs: dir, dmg, bg-image
   # _run sudo hdiutil create -format UDZO -imagekey zlib-level=9 -ov \
   #                      -mode 555 -volname "$src" -srcfolder "$src" "$tgtdmg"
   # so: [1] create an uncompressed image
-  _run sudo hdiutil create -format UDRW -ov \
-                       -mode 755 -volname "$src" -srcfolder "$src" "$tmpdmg"
+  _run hdiutil create -format UDRW -ov \
+                      -mode 755 -volname "$src" -srcfolder "$src" "$tmpdmg"
   # [2] remove the source tree
-  _run sudo rm -rf "$src"
+  _rm "$src"
   # [3] do the expected dmg layout (see below)
   if [[ "x$tmpbg" != "x-" ]]; then
     easy_dmg_layout "$tmpdmg" "$src" "$(basename "$tmpbg")"
   fi
   # [4] create the compressed image from the uncompressed image
-  _run sudo hdiutil convert -format UDZO -imagekey zlib-level=9 -ov \
+  _run hdiutil convert -format UDBZ -imagekey zlib-level=9 -ov \
                        "$tmpdmg" -o "$tgtdmg"
   # [5] remove the uncompressed image
-  _run sudo chown "$myself" "$tgtdmg" "$tmpdmg"
   _rm "$tmpdmg"
 }
 easy_dmg_layout() {
   local tmpdmg="$1" volname="$2" bg="$3"; shift 3
   show "Mounting image for layout"
-  local vol_dev="$(
-    sudo hdiutil attach -readwrite -noverify -noautoopen "$tmpdmg" \
-           | grep '/dev/' | head -1 | awk '{print $1}')"
+  local mnt="mounted-dmg-$$"
+  _run hdiutil attach -readwrite -noverify -noautoopen \
+                      -mountpoint "$tmpdir/$mnt" "$tmpdmg"
   show "Creating layout via Finder"
-  sudo /usr/bin/osascript <<-EOF
+  # see also https://github.com/andreyvit/yoursway-create-dmg
+  /usr/bin/osascript <<-EOF
 	tell application "Finder"
-	  tell disk "$volname"
+	  -- look for a single disk with the mount point as its name
+	  -- (maybe this works only on newer osx versions?)
+	  set myDisks to every disk of desktop
+	  set theDMGDisk to ""
+	  repeat with d in myDisks
+	    if name of d = "$mnt"
+	      if theDMGDisk = ""
+	        set theDMGDisk to d
+	      else
+	        error "Too many attached DMGs found!"
+	      end if
+	    end if
+	  end repeat
+	  if theDMGDisk = "" then error "Attached DMG not found!"
+	  -- found a single matching disk, continue
+	  tell theDMGDisk
 	    open
 	    set current view of container window to icon view
 	    set toolbar visible of container window to false
@@ -1786,7 +1798,9 @@ easy_dmg_layout() {
 	end tell
 EOF
   sync; sync
-  _run sudo hdiutil detach "$vol_dev"
+  _run sudo chown -R root:admin "$tmpdir/$mnt/"* "$tmpdir/$mnt/".[^.]*
+  sync; sync
+  _run hdiutil detach "$tmpdir/$mnt"
 }
 #----------------------------------------
 do_tgz_to_dmg() {
@@ -1799,6 +1813,7 @@ do_tgz_to_dmg() {
     distname="$distname $(name_of_dist_type "$ptype")"
   fi
   local savedpwd="$(pwd)"
+  unset LD_LIBRARY_PATH # no warnings (http://openradar.appspot.com/11894054)
   _rm "$tmpdmg"
   _rmcd "$tmpdir/tgz-to-dmg-$$"
   _mcd "$distname"
@@ -1825,7 +1840,9 @@ tgz_to_dmg() {
     _scp "$PLTHOME/$dmgbackground" "${dmgmachine}:$tmpbg"
   fi
   local script="-"
-  if [[ -e "$dmgscriptname" ]]; then script="$(cat "$dmgscriptname")"; fi
+  if [[ "$simpledmg" = "no" && -e "$dmgscriptname" ]]; then
+    script="$(cat "$dmgscriptname")"
+  fi
   run_part "$dmgmachine" "do_tgz_to_dmg" \
              "$tmptgz" "$tmpdmg" "$tmpbg" "$script" \
              "$version" "$pname" "$ptype" "$srcplatform"
