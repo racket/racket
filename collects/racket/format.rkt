@@ -259,25 +259,44 @@
       (values #f precision)))
 
 (define (%positional N-abs base upper? precision exactly?)
-  (let* ([Nw (inexact->exact (floor N-abs))]
-         [Nf (- N-abs Nw)]
-         [whole-part (number->string* Nw base upper?)]
+  (define-values (Nw Nf) (decompose-positional N-abs base precision))
+  (let* ([whole-part (number->string* Nw base upper?)]
          [frac-part
-          (let* ([Nf* (inexact->exact (round (* Nf (expt base precision))))])
-            (cond [(and exactly? (= precision 0)) ""]
-                  [exactly? (number->fraction-string Nf* base upper? precision)]
-                  [(= Nf* 0) #f]
-                  [else
-                   (let-values ([(needed-precision Nf**)
-                                 (let loop ([np precision] [Nf* Nf*])
-                                   (let-values ([(q r) (quotient/remainder Nf* base)])
-                                     (cond [(zero? r) (loop (sub1 np) q)]
-                                           [else (values np Nf*)])))])
-                     (number->fraction-string Nf** base upper? needed-precision))]))]
+          (cond [(and exactly? (= precision 0)) ""]
+                [exactly? (number->fraction-string Nf base upper? precision)]
+                [(= Nf 0) #f]
+                [else
+                 (let-values ([(needed-precision Nf*)
+                               (reduce-precision base precision Nf)])
+                   (number->fraction-string Nf* base upper? needed-precision))])]
          [digits-part
           (cond [frac-part (string-append whole-part "." frac-part)]
                 [else whole-part])])
     digits-part))
+
+;; decompose-positional : nonnegative-real positive-nat nat -> (values nat nat)
+;; Returns (values whole fraction) where
+;;   N-abs is approximately (+ whole (/ fraction (expt base precision)))
+(define (decompose-positional N-abs base precision)
+  (let* ([Nw (inexact->exact (floor N-abs))]
+         [Nf (- N-abs Nw)]
+         [base^prec (expt base precision)]
+         [Nf* (inexact->exact (round* (* Nf base^prec)))])
+    (cond [(< Nf* base^prec)
+           (values Nw Nf*)]
+          [else
+           (values (add1 Nw) 0)])))
+
+;; reduce-precision : nat nat nat -> (values nat nat)
+;; Returns (values needed-precision N*) where
+;;   (/ N (expt base precision)) = (/ N* (expt base needed-precision))
+(define (reduce-precision base precision N)
+  (if (zero? N)
+      (values 0 0)
+      (let loop ([np precision] [N* N])
+        (let-values ([(q r) (quotient/remainder N* base)])
+          (cond [(zero? r) (loop (sub1 np) q)]
+                [else (values np N*)])))))
 
 (define (%exponential N-abs base upper? format-exponent significand-precision exactly?)
   (define-values (N* e-adjust actual-precision)
@@ -385,8 +404,10 @@
   (cond [(< d 10) (integer->char (+ d (char->integer #\0)))]
         [else (integer->char (+ (- d 10) (char->integer (if upper? #\A #\a))))]))
 
+;; round* : nonnegative-real -> nonnegative-integer (preserving exactness)
+;; Implements "round half up" rounding (thus this library formats using
+;; "round half away from zero", since it applies round* to absolute values)
 (define (round* x) ;; round is round-to-even :(
   (if (integer? x)
       x
-      (+ (truncate x)
-         (if (even? (truncate (+ x x))) 0 1))))
+      (truncate (+ x 1/2))))
