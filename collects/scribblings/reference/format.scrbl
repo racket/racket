@@ -215,7 +215,7 @@ marker is @racket["..."].
                [#:precision precision
                             (or/c exact-nonnegative-integer?
                                   (list/c '= exact-nonnegative-integer?)) 
-                            3]
+                            6]
                [#:notation notation
                            (or/c 'positional 'exponential
                                  (-> rational? (or/c 'positional 'exponential)))
