@@ -168,6 +168,7 @@ sitemapdir="$scriptdir/sitemap"
 nsisdir="$scriptdir/nsis"
 dmgdir="$scriptdir/dmg"
 dmgbackground="$dmgdir/racket-rising.png"
+dmgscriptname="$HOME/work/dmgscriptname" # absolute
 unixinstallerdir="$scriptdir/unix-installer"
 unixpathcheckscript="$unixinstallerdir/check-install-paths"
 unixinstallerscript="$unixinstallerdir/installer-header"
@@ -1789,9 +1790,9 @@ EOF
 }
 #----------------------------------------
 do_tgz_to_dmg() {
-  local tmptgz="$1" tmpdmg="$2" tmpbg="$3"
-  local version="$4" pname="$5" ptype="$6" srcplatform="$7"
-  shift 7
+  local tmptgz="$1" tmpdmg="$2" tmpbg="$3" script="$4"
+  local version="$5" pname="$6" ptype="$7" srcplatform="$8"
+  shift 8
   local distname="$(name_of_dist_package "$pname")"
   distname="$distname v$version"
   if [[ "$ptype" != "bin" ]]; then
@@ -1804,6 +1805,8 @@ do_tgz_to_dmg() {
   _tgunzip "$tmptgz"
   _rm "$tmptgz"
   _mv "$installdir" "$distname"
+  _cd "$distname"
+  if [[ "x$script" != "x-" && -e "$script" ]]; then "$script"; fi
   _cd "$tmpdir/tgz-to-dmg-$$"
   make_dmg "$distname" "$tmpdmg" "$tmpbg"
   _cd "$savedpwd"
@@ -1821,8 +1824,10 @@ tgz_to_dmg() {
     tmpbg="$tmpdir/bg.png"
     _scp "$PLTHOME/$dmgbackground" "${dmgmachine}:$tmpbg"
   fi
+  local script="-"
+  if [[ -e "$dmgscriptname" ]]; then script="$(cat "$dmgscriptname")"; fi
   run_part "$dmgmachine" "do_tgz_to_dmg" \
-             "$tmptgz" "$tmpdmg" "$tmpbg" \
+             "$tmptgz" "$tmpdmg" "$tmpbg" "$script" \
              "$version" "$pname" "$ptype" "$srcplatform"
   _scp "${dmgmachine}:$tmpdmg" "$tgt.dmg"
 }
