@@ -249,13 +249,9 @@
      #:top-panel synthesized-panel))
   
   (define planet2-info
-    (build/label
+    (make-big-text
      (string-constant bug-report-field-planet2)
-     (lambda (panel)
-       (keymap:call/text-keymap-initializer
-        (lambda ()
-          (make-object text-field% #f panel void ""))))
-     #f
+     #:stretch? #t
      #:top-panel synthesized-panel))
   
   (define collections
