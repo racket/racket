@@ -323,13 +323,13 @@ platforms_of_dist_type() {
 installer_of_dist_type_platform() { # input: dtype-dplatform
   case "$1" in
     ( "src-unix"        ) echo "tgz"  ;;
-    ( "src-mac"         ) echo "dmg"  ;;
+    ( "src-mac"         ) echo "sdmg" ;;
     ( "src-win"         ) echo "zip"  ;;
     ( "bin-"*"-linux"*  ) echo "sh"   ;;
     ( "bin-"*"-freebsd" ) echo "sh"   ;;
     ( "bin-"*"-solaris" ) echo "sh"   ;;
     ( "bin-"*"-darwin"  ) echo "sh"   ;;
-    ( "bin-"*"-osx-mac" ) echo "ldmg" ;;
+    ( "bin-"*"-osx-mac" ) echo "dmg"  ;;
     ( "bin-"*"-win32"   ) echo "exe"  ;;
     ( * ) exit_error "Unknown dist type+platform for" \
                      "installer_of_dist_type_platform: \"$1\"" ;;
@@ -339,9 +339,9 @@ explanation_of_installer_type() {
   case "$1" in
     ( "tgz"  ) echo "Unpack this file using" \
                     "\"gunzip <file> | tar xvf -\"." ;;
-    ( "dmg"  ) echo "Mount this disk image and copy the Racket folder to" \
-                    "your disk." ;;
-    ( "ldmg" ) echo "Mount this disk image and copy the Racket folder to" \
+    ( "sdmg" ) echo "Mount this disk image and copy the Racket source folder" \
+                    "to your disk." ;;
+    ( "dmg" )  echo "Mount this disk image and copy the Racket folder to" \
                     "the Applications folder on your disk." ;;
     ( "zip"  ) echo "Use unzip to extract the Racket folder to your disk." ;;
     ( "sh"   ) echo "Execute this file with \"sh <file>\"," \
@@ -1809,26 +1809,25 @@ do_tgz_to_dmg() {
   _cd "$savedpwd"
   _rm "$tmpdir/tgz-to-dmg-$$"
 }
-do_layout_bg="-"
 tgz_to_dmg() {
+  local simpledmg="no"
+  if [[ "x$1" = "x--simpledmg" ]]; then shift; simpledmg="yes"; fi
   local srctgz="$1" tgt="$2" pname="$3" ptype="$4" srcplatform="$5"; shift 5
   local tmptgz="$tmpdir/tgz2dmg.tgz"
   local tmpdmg="$tmpdir/tgz2dmg.dmg"
-  local tmpbg="-"
   _scp "$srctgz" "${dmgmachine}:$tmptgz"
-  if [[ "x$do_layout_bg" != "x-" ]]; then
-    _scp "$do_layout_bg" "${dmgmachine}:$tmpbg"
+  local tmpbg="-"
+  if [[ "$simpledmg" = "no" ]]; then
     tmpbg="$tmpdir/bg.png"
+    _scp "$PLTHOME/$dmgbackground" "${dmgmachine}:$tmpbg"
   fi
   run_part "$dmgmachine" "do_tgz_to_dmg" \
              "$tmptgz" "$tmpdmg" "$tmpbg" \
              "$version" "$pname" "$ptype" "$srcplatform"
   _scp "${dmgmachine}:$tmpdmg" "$tgt.dmg"
 }
-tgz_to_ldmg() {
-  do_layout_bg="$PLTHOME/$dmgbackground"
-  tgz_to_dmg "$@"
-  do_layout_bg="-"
+tgz_to_sdmg() {
+  tgz_to_dmg --simpledmg "$@"
 }
 #----------------------------------------
 do_tgz_to_exe() {
