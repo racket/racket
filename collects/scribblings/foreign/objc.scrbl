@@ -107,6 +107,23 @@ Defines each @racket[class-id] to the class (a value with FFI type
 @examples[
 #:eval objc-eval
 (eval:alts (import-class NSString) (void))
+]
+
+A class accessed by @racket[import-class] is normally declared as a
+side effect of loading a foreign library. For example, if you want to
+import the class @tt{NSString} on Mac OS X, the @filepath{Foundation}
+framework must be loaded, first. Beware that if you use
+@racket[import-class] in DrRacket or a module that @racket[require]s
+@racketmodname[racket/gui/base], then @filepath{Foundation} will have
+been loaded into the Racket process already. To avoid relying on other
+libraries to load @filepath{Foundation}, explicitly load it with
+@racket[ffi-lib]:
+
+@examples[
+#:eval objc-eval
+(eval:alts (ffi-lib
+            "/System/Library/Frameworks/Foundation.framework/Foundation") (void))
+(eval:alts (import-class NSString) (void))
 ]}
 
 @defform[(import-protocol protocol-id ...)]{
