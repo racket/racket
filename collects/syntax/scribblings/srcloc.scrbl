@@ -292,6 +292,33 @@ the whole macro application if no @racket[form] is given.
 
 }
 
+@deftogether[(
+@defform*[[(quote-srcloc-string) (quote-srcloc-string form)]]
+@defform*[[(quote-srcloc-prefix) (quote-srcloc-prefix form)]]
+)]{
+
+Quote the result of @racket[source-location->string] or
+@racket[source-location->prefix], respectively, applied to the source location
+of @racket[form], or of the whole macro application if no @racket[form] is
+given.
+
+@examples[#:eval (new-evaluator)
+(list (quote-srcloc-string)
+      (quote-srcloc-prefix))
+(define-syntax (not-here stx)
+  #'(list (quote-srcloc-string)
+          (quote-srcloc-prefix)))
+(not-here)
+(not-here)
+(define-syntax (here stx)
+  #`(list (quote-srcloc-string #,stx)
+          (quote-srcloc-prefix #,stx)))
+(here)
+(here)
+]
+
+}
+
 @(define (p . l) (decode-paragraph l))
 
 @defform[(quote-module-name submod-path-element ...)]{
