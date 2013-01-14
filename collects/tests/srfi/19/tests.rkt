@@ -2,7 +2,7 @@
 
 ;; Tests by Will Fitzgerald, augmented by:
 ;;   John Clements                                -- 2004-08-16
-;;   Dave Gurnell  (string->date, date->string)   -- 2007-09-14 
+;;   Dave Gurnell  (string->date, date->string)   -- 2007-09-14
 ;;   Dave Gurnell  (time{=,<,>,<=,>=}?)           -- 2009-11-26
 ;;   John Clements (nanoseconds off by x100)      -- 2009-12-15
 ;;   Dave Gurnell  (serializable dates and times) -- 2010-03-03
@@ -31,7 +31,7 @@
 
 (define srfi-19-test-suite
   (test-suite "Tests for SRFI 19"
-    
+
     (test-not-exn "Creating time structures"
       (lambda ()
         (list (current-time 'time-tai)
@@ -39,7 +39,7 @@
               (current-time 'time-monotonic)
               (current-time 'time-thread)
               (current-time 'time-process))))
-    
+
     (test-not-exn "Testing time resolutions"
       (lambda ()
         (list (time-resolution 'time-tai)
@@ -47,7 +47,7 @@
               (time-resolution 'time-monotonic)
               (time-resolution 'time-thread)
               (time-resolution 'time-process))))
-    
+
     (test-case "Time comparisons (time=?, etc.)"
       (let ([t0 (make-time 'time-utc 0 1)]
             [t1 (make-time 'time-utc 0 1)]
@@ -73,7 +73,7 @@
                                                         (#t #t #f #f)
                                                         (#t #t #t #f)
                                                         (#t #t #t #t)))))
-    
+
     (test-case "Time difference"
       (let ((t1 (make-time 'time-utc 0 3000))
             (t2 (make-time 'time-utc 0 1000))
@@ -81,7 +81,7 @@
             (t4 (make-time 'time-duration 0 -2000)))
         (check time=? t3 (time-difference t1 t2))
         (check time=? t4 (time-difference t2 t1))))
-    
+
     (test-case "TAI-UTC Conversions"
       (check-one-utc-tai-edge 915148800  32 31)
       (check-one-utc-tai-edge 867715200  31 30)
@@ -109,7 +109,7 @@
       (check-one-utc-tai-edge 0           0 0)   ;; at the epoch
       (check-one-utc-tai-edge 10          0 0)   ;; close to it ...
       (check-one-utc-tai-edge 1045789645 32 32)) ;; about now ...
-    
+
     (test-case "TAI-Date Conversions"
       (check tm:date= (time-tai->date (make-time time-tai 0 (+ 915148800 29)) 0)
              (srfi:make-date 0 58 59 23 31 12 1998 0))
@@ -119,7 +119,7 @@
              (srfi:make-date 0 60 59 23 31 12 1998 0))
       (check tm:date= (time-tai->date (make-time time-tai 0 (+ 915148800 32)) 0)
              (srfi:make-date 0 0 0 0 1 1 1999 0)))
-    
+
     (test-case "Date-UTC Conversions"
       (check time=? (make-time time-utc 0 (- 915148800 2))
              (date->time-utc (srfi:make-date 0 58 59 23 31 12 1998 0)))
@@ -132,24 +132,24 @@
              (date->time-utc (srfi:make-date 0 0 0 0 1 1 1999 0)))
       (check time=? (make-time time-utc 0 (+ 915148800 1))
              (date->time-utc (srfi:make-date 0 1 0 0 1 1 1999 0))))
-    
+
     (test-case "TZ Offset conversions"
       (let ((ct-utc (make-time time-utc 6320000 1045944859))
             (ct-tai (make-time time-tai 6320000 1045944891))
             (cd (srfi:make-date 6320000 19 14 15 22 2 2003 -18000)))
         (check time=? ct-utc (date->time-utc cd))
         (check time=? ct-tai (date->time-tai cd))))
-    
-    
-    ;; NOTE: documentation doesn't fully specify, e.g., zero-padding on ~c option, so I'm just going 
+
+
+    ;; NOTE: documentation doesn't fully specify, e.g., zero-padding on ~c option, so I'm just going
     ;; to change the test case to match the implementation...
     (test-case "date->string conversions"
       (check-equal? (date->string (srfi:make-date 1000 2 3 4 5 6 2007 (* 60 -120))
                                   "~~ @ ~a @ ~A @ ~b @ ~B @ ~c @ ~d @ ~D @ ~e @ ~f @ ~h @ ~H")
                     "~ @ Tue @ Tuesday @ Jun @ June @ Tue Jun 05 04:03:02-0200 2007 @ 05 @ 06/05/07 @  5 @ 02.000001 @ Jun @ 04"))
-    
-    
-    
+
+
+
     (test-case "date->string conversions of dates with nanosecond components"
       (check-equal? (date->string (srfi:make-date 123456789 2 3 4 5 6 2007 0) "~N") "123456789")
       (check-equal? (date->string (srfi:make-date 12345678  2 3 4 5 6 2007 0) "~N") "012345678")
@@ -160,7 +160,7 @@
       (check-equal? (date->string (srfi:make-date 123       2 3 4 5 6 2007 0) "~N") "000000123")
       (check-equal? (date->string (srfi:make-date 12        2 3 4 5 6 2007 0) "~N") "000000012")
       (check-equal? (date->string (srfi:make-date 1         2 3 4 5 6 2007 0) "~N") "000000001"))
-    
+
     (test-case "string->date conversions of dates with nanosecond components"
       (check-equal? (string->date "12:00:00.123456789" "~H:~M:~S.~N") (srfi:make-date 123456789 0 0 12 #t #t #t cur-tz) "check 1")
       (check-equal? (string->date "12:00:00.12345678"  "~H:~M:~S.~N") (srfi:make-date 123456780 0 0 12 #t #t #t cur-tz) "check 2")
@@ -180,7 +180,7 @@
       (check-equal? (string->date "12:00:00.000000123" "~H:~M:~S.~N") (srfi:make-date 123       0 0 12 #t #t #t cur-tz) "check 16")
       (check-equal? (string->date "12:00:00.000000012" "~H:~M:~S.~N") (srfi:make-date 12        0 0 12 #t #t #t cur-tz) "check 17")
       (check-equal? (string->date "12:00:00.000000001" "~H:~M:~S.~N") (srfi:make-date 1         0 0 12 #t #t #t cur-tz) "check 18"))
-    
+
     (test-case "interpretation of 1- to 4-digit years by ~y, ~Y and ~?:"
       ; ~y:
       (check-exn exn:fail? (lambda () (string->date    "1-03-02" "~y-~m-~d")))
@@ -197,27 +197,27 @@
       (check-not-exn (lambda () (check-equal? (string->date   "10-03-02" "~?-~m-~d") (srfi:make-date 0 0 0 0 2 3 2010 cur-tz))))
       (check-not-exn (lambda () (check-equal? (string->date  "100-03-02" "~?-~m-~d") (srfi:make-date 0 0 0 0 2 3  100 cur-tz))))
       (check-not-exn (lambda () (check-equal? (string->date "1000-03-02" "~?-~m-~d") (srfi:make-date 0 0 0 0 2 3 1000 cur-tz)))))
-    
+
     (test-case "type-like error on date->string"
-               (check-exn 
-                (lambda (exn) 
+               (check-exn
+                (lambda (exn)
                   (regexp-match #px"expects type <string>"
-                                (exn-message exn))) 
+                                (exn-message exn)))
                 (lambda () (date->string (srfi:make-date 1000 2 3 4 2 5 2011 (* 60 -120)) #t))))
-    
-    
+
+
     (test-case "date<->julian-day conversion"
       (check = 365 (- (date->julian-day (srfi:make-date 0 0 0 0 1 1 2004 0))
                       (date->julian-day (srfi:make-date 0 0 0 0 1 1 2003 0))))
       (let ([test-date (srfi:make-date 0 0 0 0 1 1 2003 -7200)])
         (check tm:date= test-date (julian-day->date (date->julian-day test-date) -7200))))
-    
+
     (test-case "date->modified-julian-day conversion"
       (check = 365 (- (date->modified-julian-day (srfi:make-date 0 0 0 0 1 1 2004 0))
                       (date->modified-julian-day (srfi:make-date 0 0 0 0 1 1 2003 0))))
       (let ([test-date (srfi:make-date 0 0 0 0 1 1 2003 -7200)])
         (check tm:date= test-date (modified-julian-day->date (date->modified-julian-day test-date) -7200))))
-    
+
     (test-case "serialize and deserialize"
       (check-equal? (deserialize (serialize (make-time time-utc 0 1))) (make-time time-utc 0 1))
       (check-equal? (deserialize (serialize (make-time time-tai 2 3))) (make-time time-tai 2 3))
@@ -248,7 +248,7 @@
                              2004)
                (check-equal? (srfi:date-year (srfi:make-date 0 0 0 0 1 1 2004 0))
                              2004))
-    
+
     ;; nanoseconds off by a factor of 100...
     (test-case "nanosecond order-of-magnitude"
       ;; half a second should be within 1/10th of 10^9 / 2 nanoseconds (currently off by a factor of 100)
@@ -269,19 +269,19 @@
          (tai-basic (make-time 'time-tai 0 (+ utc tai-diff)))
          (utc->tai-basic (time-utc->time-tai utc-basic))
          (tai->utc-basic (time-tai->time-utc tai-basic))
-         
+
          ;; a second before they should be the old diff
          (utc-basic-1 (make-time 'time-utc 0 (- utc 1)))
          (tai-basic-1 (make-time 'time-tai 0 (- (+ utc tai-last-diff) 1)))
          (utc->tai-basic-1 (time-utc->time-tai utc-basic-1))
          (tai->utc-basic-1 (time-tai->time-utc tai-basic-1))
-         
+
          ;; a second later they should be the new diff
          (utc-basic+1 (make-time 'time-utc 0 (+ utc 1)))
          (tai-basic+1 (make-time 'time-tai 0 (+ (+ utc tai-diff) 1)))
          (utc->tai-basic+1 (time-utc->time-tai utc-basic+1))
          (tai->utc-basic+1 (time-tai->time-utc tai-basic+1))
-         
+
          ;; ok, let's move the clock half a month or so plus half a second
          (shy (* 15 24 60 60))
          (hs (/ (expt 10 9) 2))
@@ -290,7 +290,7 @@
          (tai-basic+2 (make-time 'time-tai hs (+ (+ utc tai-diff) shy)))
          (utc->tai-basic+2 (time-utc->time-tai utc-basic+2))
          (tai->utc-basic+2 (time-tai->time-utc tai-basic+2)))
-    
+
     (check time=? utc-basic tai->utc-basic)
     (check time=? tai-basic utc->tai-basic)
     (check time=? utc-basic-1 tai->utc-basic-1)
