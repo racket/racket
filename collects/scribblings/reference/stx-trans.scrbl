@@ -4,7 +4,8 @@
           (for-label racket/require-transform
                      racket/require-syntax
                      racket/provide-transform
-                     racket/provide-syntax))
+                     racket/provide-syntax
+                     racket/keyword-transform))
 
 @(define stx-eval (make-base-eval))
 @(interaction-eval #:eval stx-eval (require (for-syntax racket/base)))
