@@ -14,28 +14,25 @@
 ;; SRFI-19: Time Data Types and Procedures.
 ;;
 ;; Copyright (C) I/NET, Inc. (2000, 2002, 2003). All Rights Reserved.
-;; Copyright (C) Neodesic Corporation (2000). All Rights Reserved.
 ;;
-;; This document and translations of it may be copied and furnished to others,
-;; and derivative works that comment on or otherwise explain it or assist in its
-;; implementation may be prepared, copied, published and distributed, in whole or
-;; in part, without restriction of any kind, provided that the above copyright
-;; notice and this paragraph are included on all such copies and derivative works.
-;; However, this document itself may not be modified in any way, such as by
-;; removing the copyright notice or references to the Scheme Request For
-;; Implementation process or editors, except as needed for the purpose of
-;; developing SRFIs in which case the procedures for copyrights defined in the SRFI
-;; process must be followed, or as required to translate it into languages other
-;; than English.
+;; Permission is hereby granted, free of charge, to any person obtaining
+;; a copy of this software and associated documentation files (the
+;; "Software"), to deal in the Software without restriction, including
+;; without limitation the rights to use, copy, modify, merge, publish,
+;; distribute, sublicense, and/or sell copies of the Software, and to
+;; permit persons to whom the Software is furnished to do so, subject to
+;; the following conditions:
 ;;
-;; The limited permissions granted above are perpetual and will not be revoked
-;; by the authors or their successors or assigns.
+;; The above copyright notice and this permission notice shall be
+;; included in all copies or substantial portions of the Software.
 ;;
-;; This document and the information contained herein is provided on an "AS IS"
-;; basis and THE AUTHOR AND THE SRFI EDITORS DISCLAIM ALL WARRANTIES, EXPRESS OR
-;; IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE
-;; INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED WARRANTIES OF
-;; MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+;; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+;; EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+;; MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+;; NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+;; LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+;; OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+;; WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ;; -- Racket implementation
 ;;
