@@ -249,13 +249,9 @@
      #:top-panel synthesized-panel))
   
   (define planet2-info
-    (build/label
+    (make-big-text
      (string-constant bug-report-field-planet2)
-     (lambda (panel)
-       (keymap:call/text-keymap-initializer
-        (lambda ()
-          (make-object text-field% #f panel void ""))))
-     #f
+     #:stretch? #t
      #:top-panel synthesized-panel))
   
   (define collections
@@ -446,7 +442,9 @@
   
   (define planet2-info-sp (open-output-string))
   (parameterize ([current-output-port planet2-info-sp])
-    (planet2:show))
+    (with-handlers ([exn:fail? (lambda (exn)
+                                 (printf "ERROR:\n~a" (exn-message exn)))])
+      (planet2:show)))
   (send (send planet2-info get-editor)
         insert
         (get-output-string planet2-info-sp))

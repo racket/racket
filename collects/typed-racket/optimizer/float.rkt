@@ -258,4 +258,36 @@
            #:with opt
            (begin (log-optimization "float sub1" float-opt-msg this-syntax)
                   (add-disappeared-use #'op)
-                  #'(unsafe-fl- n.opt 1.0))))
+                  #'(unsafe-fl- n.opt 1.0)))
+
+  ;; warn about (potentially) exact real arithmetic, in general
+  ;; Note: These patterns don't perform optimization. They only produce logging
+  ;;  for consumption by Optimization Coach.
+  (pattern (#%plain-app (~var op (float-op binary-float-ops))
+                        n ...)
+           #:when (maybe-exact-rational? this-syntax)
+           #:with opt
+           (begin (log-optimization-info "exact real arith"
+                                         this-syntax)
+                  this-syntax))
+  (pattern (#%plain-app (~var op (float-op binary-float-comps))
+                        n ...)
+           ;; can't look at return type, since it's always bool
+           #:when (andmap maybe-exact-rational? (syntax->list #'(n ...)))
+           #:with opt
+           (begin (log-optimization-info "exact real arith"
+                                         this-syntax)
+                  this-syntax))
+  (pattern (#%plain-app (~var op (float-op unary-float-ops))
+                        n ...)
+           #:when (maybe-exact-rational? this-syntax)
+           #:with opt
+           (begin (log-optimization-info "exact real arith"
+                                         this-syntax)
+                  this-syntax))
+  )
+
+(define (maybe-exact-rational? stx)
+  (and (subtypeof? stx -Real)
+       (not (subtypeof? stx -Flonum))
+       (not (subtypeof? stx -Int))))

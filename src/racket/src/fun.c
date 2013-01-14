@@ -8522,7 +8522,6 @@ Scheme_Lightweight_Continuation *scheme_restore_lightweight_continuation_marks(S
 
   cm_len = lw->saved_lwc->cont_mark_stack_end - lw->saved_lwc->cont_mark_stack_start;
   cm_pos_delta = MZ_CONT_MARK_POS + 2 - lw->saved_lwc->cont_mark_pos_start;
-  MZ_CONT_MARK_POS = lw->saved_lwc->cont_mark_pos_end + cm_pos_delta;
 
   if (cm_len) {
     /* install captured continuation marks, adjusting the pos
@@ -8539,6 +8538,8 @@ Scheme_Lightweight_Continuation *scheme_restore_lightweight_continuation_marks(S
 #endif      
     }
   }
+
+  MZ_CONT_MARK_POS = lw->saved_lwc->cont_mark_pos_end + cm_pos_delta;
 
   return lw;
 }

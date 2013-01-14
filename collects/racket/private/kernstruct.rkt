@@ -537,7 +537,7 @@
            (quote-syntax date-minute)
            (quote-syntax date-second))
           '(#f #f #f #f #f #f #f #f #f #f #f #f)
-          #t))
+          (quote-syntax date)))
        (λ () (quote-syntax kernel:date*)))))
   (begin
     (#%require (rename '#%kernel kernel:srcloc srcloc))

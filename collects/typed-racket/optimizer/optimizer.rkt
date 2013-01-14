@@ -6,7 +6,8 @@
          "../utils/utils.rkt"
          (optimizer utils logging
                     number fixnum float float-complex vector string list pair
-                    sequence box struct dead-code apply unboxed-let))
+                    sequence box struct dead-code apply unboxed-let
+                    hidden-costs))
 
 (provide optimize-top)
 
@@ -44,6 +45,7 @@
   (pattern e:sequence-opt-expr        #:with opt #'e.opt)
   (pattern e:box-opt-expr             #:with opt #'e.opt)
   (pattern e:struct-opt-expr          #:with opt #'e.opt)
+  (pattern e:hidden-cost-log-expr     #:with opt #'e.opt)
 
   ;; boring cases, just recur down
   (pattern ((~and op (~or (~literal #%plain-lambda) (~literal define-values)))

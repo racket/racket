@@ -35,6 +35,8 @@
   (make-parameter (version)))
 (define current-pkg-error
   (make-parameter (lambda args (apply error 'pkg args))))
+(define current-no-pkg-db
+  (make-parameter #f))
 
 (define (pkg-error . rest)
   (apply (current-pkg-error) rest))
@@ -185,17 +187,28 @@
       #f
       (cadr dep)))
 
-(define (with-package-lock* t)
-  (make-directory* (pkg-dir))
-  (call-with-file-lock/timeout
-   #f 'exclusive
-   t
-   (λ () (pkg-error  (~a "could not acquire package lock\n"
-                        "  lock file: ~a")
-                    (pkg-lock-file)))
-   #:lock-file (pkg-lock-file)))
+(define (with-package-lock* read-only? t)
+  (define d (pkg-dir))
+  (unless read-only? (make-directory* d))
+  (if (directory-exists? d)
+      ;; If the directory exists, assume that a lock file is
+      ;; available or creatable:
+      (call-with-file-lock/timeout
+       #f (if read-only? 'shared 'exclusive)
+       t
+       (λ () (pkg-error  (~a "could not acquire package lock\n"
+                             "  lock file: ~a")
+                         (pkg-lock-file)))
+       #:lock-file (pkg-lock-file))
+      ;; Directory does not exist; we must be in read-only mode.
+      ;; Run `t' under the claim that no database is available
+      ;; (in case the database is created concurrently):
+      (parameterize ([current-no-pkg-db #t])
+        (t))))
 (define-syntax-rule (with-package-lock e ...)
-  (with-package-lock* (λ () e ...)))
+  (with-package-lock* #f (λ () e ...)))
+(define-syntax-rule (with-package-lock/read-only e ...)
+  (with-package-lock* #t (λ () e ...)))
 
 (define (maybe-append lists)
   (and (for/and ([v (in-list lists)]) (not (eq? v 'all)))
@@ -253,7 +266,9 @@
     (λ () (write new-db))))
 
 (define (read-pkg-db)
-  (read-file-hash (pkg-db-file)))
+  (if (current-no-pkg-db)
+      #hash()
+      (read-file-hash (pkg-db-file))))
 
 (define (package-info pkg-name [fail? #t])
   (define db (read-pkg-db))
@@ -1154,6 +1169,7 @@
 
 (provide
  with-package-lock
+ with-package-lock/read-only
  (contract-out
   [current-install-system-wide?
    (parameter/c boolean?)]

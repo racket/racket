@@ -187,7 +187,7 @@
                      [current-install-version-specific? (eq? mode 'u)]
                      [current-pkg-error (pkg-error 'show)]
                      [current-show-version (or version (r:version))])
-        (with-package-lock
+        (with-package-lock/read-only
          (show-cmd (if only-mode "" " "))))))]
  [config
   "View and modify the package configuration"
@@ -207,8 +207,11 @@
    'config
    scope installation shared user
    (lambda ()
-     (with-package-lock
-      (config-cmd set key/val))))]
+     (if set
+         (with-package-lock
+          (config-cmd #t key/val))
+         (with-package-lock/read-only
+          (config-cmd #f key/val)))))]
  [create
   "Bundle a new package"
   #:once-any

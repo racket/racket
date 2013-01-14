@@ -1540,11 +1540,11 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 	  scheme_log(info->logger,
 		     SCHEME_LOG_DEBUG,
 		     0,
-		     "inlining: involving: %s%s size: %d threshold: %d",
+		     "inlining %s size: %d threshold: %d#<separator>%s",
 		     scheme_write_to_string(data->name ? data->name : scheme_false, NULL),
-		     scheme_optimize_context_to_string(info->context),
 		     sz,
-		     threshold);
+		     threshold,
+		     scheme_optimize_context_to_string(info->context));
           le = apply_inlined(le, data, sub_info, argc, app, app2, app3, context,
                              nested_count, orig_le, prev, prev_offset);
           if (nested_count)
@@ -1555,11 +1555,11 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 	  scheme_log(info->logger,
 		     SCHEME_LOG_DEBUG,
 		     0,
-		     "no inlining: involving: %s%s size: %d threshold: %d",
+		     "no-inlining %s size: %d threshold: %d#<separator>%s",
 		     scheme_write_to_string(data->name ? data->name : scheme_false, NULL),
-		     scheme_optimize_context_to_string(info->context),
 		     sz,
-		     threshold);
+		     threshold,
+		     scheme_optimize_context_to_string(info->context));
         }
       } else {
         LOG_INLINE(fprintf(stderr, "No fuel %s %d[%d]>%d@%d %d\n", scheme_write_to_string(data->name ? data->name : scheme_false, NULL),
@@ -1568,11 +1568,11 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 	scheme_log(info->logger,
 		   SCHEME_LOG_DEBUG,
 		   0,
-		   "no inlining, out of fuel: involving: %s%s size: %d threshold: %d",
+		   "out-of-fuel %s size: %d threshold: %d#<separator>%s",
 		   scheme_write_to_string(data->name ? data->name : scheme_false, NULL),
-		   scheme_optimize_context_to_string(info->context),
 		   sz,
-		   threshold);
+		   threshold,
+		   scheme_optimize_context_to_string(info->context));
       }
     } else {
       /* Issue warning below */
@@ -3559,6 +3559,31 @@ int scheme_compiled_propagate_ok(Scheme_Object *value, Optimize_Info *info)
     sz = closure_body_size((Scheme_Closure_Data *)value, 1, info, NULL);
     if ((sz >= 0) && (sz <= MAX_PROC_INLINE_SIZE))
       return 1;
+   else {
+     Scheme_Closure_Data *data = (Scheme_Closure_Data *)value;
+     if (sz < 0)
+       scheme_log(info->logger,
+		  SCHEME_LOG_DEBUG,
+		  0,
+		  /* contains non-copyable body elements that prevent inlining */
+		  "non-copyable %s size: %d threshold: %d#<separator>%s",
+		  scheme_write_to_string(data->name ? data->name : scheme_false, NULL),
+		  sz,
+		  0, /* no sensible threshold here */
+		  scheme_optimize_context_to_string(info->context));
+     else
+       scheme_log(info->logger,
+		  SCHEME_LOG_DEBUG,
+		  0,
+		  /* too large to be an inlining candidate */
+		  "too-large %s size: %d threshold: %d#<separator>%s",
+		  scheme_write_to_string(data->name ? data->name : scheme_false, NULL),
+		  sz,
+		  0, /* no sensible threshold here */
+		  scheme_optimize_context_to_string(info->context));
+     return 0;
+   }
+
   }
 
   if (SAME_TYPE(scheme_case_lambda_sequence_type, SCHEME_TYPE(value))) {

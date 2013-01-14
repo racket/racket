@@ -2,7 +2,9 @@
 (require (for-syntax racket/base
                      "util.rkt")
          "shelly.rkt"
-         "util.rkt")
+         "util.rkt"
+         racket/port
+         (only-in planet2 config))
 
 ;; By making these syntax-time includes, it made it so they would be
 ;; rebuilt and register as real dependencies.
@@ -27,9 +29,17 @@
      (shelly-case "All tests"
                   (for-each (λ (x) (x)) l)))))
 
+(let ([v (getenv "PLT_PLANET2_NOSETUP")])
+  (unless (and v (not (string=? v "")))
+    (error "Set the PLT_PLANET2_NOSETUP environment variable before running these tests\n")))
+
+(unless (equal? "user\n" (with-output-to-string
+                          (lambda () (config #:installation #t "default-scope"))))
+  (error "Run this test suite with `user' default package scope"))
+
 (run-tests
  "name"
- "basic" "create" "install"
+ "basic" "create" "install" "permissions"
  "network" "conflicts" "checksums"
  "deps" "update" 
  "remove"
