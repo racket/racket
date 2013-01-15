@@ -107,7 +107,7 @@
   (define (read-string)
     (let loop ([l* '()])
       ;; note: use a string regexp to extract utf-8-able text
-      (define m (cdr (or (regexp-try-match #rx"^(.*?)(\"|\\\\(.))" i)
+      (define m (cdr (or (regexp-try-match #rx"^([^\"\\]*)(\"|\\\\(.))" i)
                          (err "unterminated string"))))
       (define l (if ((bytes-length (car m)) . > . 0) (cons (car m) l*) l*))
       (define esc (caddr m))
