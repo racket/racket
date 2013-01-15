@@ -399,64 +399,83 @@
   (define-syntaxes (and)
     (let-values ([(here) (quote-syntax here)])
       (lambda (x)
-	(if (not (stx-list? x))
-	    (raise-syntax-error #f "bad syntax" x)
-            (void))
-	(let-values ([(e) (stx-cdr x)])
-	  (if (stx-null? e)
-	      (quote-syntax #t)
-	      (if (if (stx-pair? e)
-		      (stx-null? (stx-cdr e))
-		      #t)
-                  (datum->syntax
-                   here
-                   (list (quote-syntax #%expression)
-                         (stx-car e))
-                   x)
-		  (datum->syntax
-		   here
-		   (list (quote-syntax if)
-			 (stx-car e)
-			 (cons (quote-syntax and)
-			       (stx-cdr e))
-			 (quote-syntax #f))
-		   x)))))))
+	(if (identifier? x)
+	    (quote-syntax
+             (lambda a (letrec-values ([(loop)
+                                        (lambda (v)
+                                          (if (null? (cdr v))
+                                              (car v)
+                                              (if (car v)
+                                                  (loop (cdr v))
+                                                  #f)))])
+                         (if (null? a)
+                             #t
+                             (loop a)))))
+            (let-values ([(e) (stx-cdr x)])
+              (if (stx-null? e)
+                  (quote-syntax #t)
+                  (if (if (stx-pair? e)
+                          (stx-null? (stx-cdr e))
+                          #t)
+                      (datum->syntax
+                       here
+                       (list (quote-syntax #%expression)
+                             (stx-car e))
+                       x)
+                      (datum->syntax
+                       here
+                       (list (quote-syntax if)
+                             (stx-car e)
+                             (cons (quote-syntax and)
+                                   (stx-cdr e))
+                             (quote-syntax #f))
+                       x))))))))
 
   (define-syntaxes (or)
     (let-values ([(here) (quote-syntax here)])
       (lambda (x)
 	(if (identifier? x)
-	    (raise-syntax-error #f "bad syntax" x)
-            (void))
-	(let-values ([(e) (stx-cdr x)])
-	  (if (stx-null? e) 
-	      (quote-syntax #f)
-	      (if (if (stx-pair? e)
-		      (stx-null? (stx-cdr e))
-		      #f)
-                  (datum->syntax
-                   here
-                   (list (quote-syntax #%expression)
-                         (stx-car e))
-                   x)
-		  (if (stx-list? e)
-		      (let-values ([(tmp) 'or-part])
-			(datum->syntax
-			 here
-			 (list (quote-syntax let) (list
-						   (list
-						    tmp
-						    (stx-car e)))
-			       (list (quote-syntax if)
-				     tmp
-				     tmp
-				     (cons (quote-syntax or)
-					   (stx-cdr e))))
-			 x))
-		      (raise-syntax-error 
-		       #f
-		       "bad syntax"
-		       x))))))))
+	    (quote-syntax
+             (lambda a (letrec-values ([(loop)
+                                        (lambda (v)
+                                          (if (null? (cdr v))
+                                              (car v)
+                                              (let-values ([(t) (car v)])
+                                                (if t
+                                                    t
+                                                    (loop (cdr v))))))])
+                         (if (null? a)
+                             #f
+                             (loop a)))))
+            (let-values ([(e) (stx-cdr x)])
+              (if (stx-null? e) 
+                  (quote-syntax #f)
+                  (if (if (stx-pair? e)
+                          (stx-null? (stx-cdr e))
+                          #f)
+                      (datum->syntax
+                       here
+                       (list (quote-syntax #%expression)
+                             (stx-car e))
+                       x)
+                      (if (stx-list? e)
+                          (let-values ([(tmp) 'or-part])
+                            (datum->syntax
+                             here
+                             (list (quote-syntax let) (list
+                                                       (list
+                                                        tmp
+                                                        (stx-car e)))
+                                   (list (quote-syntax if)
+                                         tmp
+                                         tmp
+                                         (cons (quote-syntax or)
+                                               (stx-cdr e))))
+                             x))
+                          (raise-syntax-error 
+                           #f
+                           "bad syntax"
+                           x)))))))))
 
   (#%provide let let* letrec
              quasiquote and or))
