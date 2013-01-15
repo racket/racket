@@ -51,8 +51,9 @@
         [(= k (- dims 1))
          (fcarray-last-axis-fft (array->fcarray arr))]
         [else
-         (array-axis-swap (fcarray-last-axis-fft (array->fcarray (array-axis-swap arr k (- dims 1))))
-                          k (- dims 1))]))
+         (parameterize ([array-strictness #f])
+           (array-axis-swap (fcarray-last-axis-fft (array->fcarray (array-axis-swap arr k (- dims 1))))
+                            k (- dims 1)))]))
 
 (: fcarray-fft (FCArray -> FCArray))
 (define (fcarray-fft arr)

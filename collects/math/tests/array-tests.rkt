@@ -25,12 +25,6 @@
 (define-syntax-rule (array-axis-ormap arr k pred?)
   (array-axis-or (array-map pred? arr) k))
 
-(define-syntax-rule (array-all-andmap arr pred?)
-  (array-all-and (array-map pred? arr)))
-
-(define-syntax-rule (array-all-ormap arr pred?)
-  (array-all-or (array-map pred? arr)))
-
 ;; ---------------------------------------------------------------------------------------------------
 ;; array-mutable
 
@@ -370,32 +364,32 @@
 (let ([arr  (array #[#[1.0 1.0 2.0 3.0] #[0.0 -1.0 2.0 3.0]])])
   (check-equal? (array-axis-andmap arr 0 positive?) (array #[#f #f #t #t]))
   (check-equal? (array-axis-andmap arr 1 positive?) (array #[#t #f]))
-  (check-equal? (array-all-andmap arr positive?) #f))
+  (check-equal? (array-andmap positive? arr) #f))
 
 (let ([arr  (array #[#[1.0 1.0 2.0 3.0] #[2.0 3.0 2.0 3.0]])])
   (check-equal? (array-axis-andmap arr 0 positive?) (array #[#t #t #t #t]))
   (check-equal? (array-axis-andmap arr 1 positive?) (array #[#t #t]))
-  (check-equal? (array-all-andmap arr positive?) #t))
+  (check-equal? (array-andmap positive? arr) #t))
 
 (let ([arr  (array #[#[-1.0 -1.0 -2.0 -3.0] #[0.0 -1.0 2.0 3.0]])])
   (check-equal? (array-axis-ormap arr 0 positive?) (array #[#f #f #t #t]))
   (check-equal? (array-axis-ormap arr 1 positive?) (array #[#f #t]))
-  (check-equal? (array-all-ormap arr positive?) #t))
+  (check-equal? (array-ormap positive? arr) #t))
 
 (let ([arr  (array #[#[-1.0 -1.0 -2.0 -3.0] #[-2.0 -3.0 -2.0 -3.0]])])
   (check-equal? (array-axis-ormap arr 0 positive?) (array #[#f #f #f #f]))
   (check-equal? (array-axis-ormap arr 1 positive?) (array #[#f #f]))
-  (check-equal? (array-all-ormap arr positive?) #f))
+  (check-equal? (array-ormap positive? arr) #f))
 
 (let ([arr  (make-array #() 0.0)])
   (check-equal? (array-count positive? arr) 0)
-  (check-equal? (array-all-andmap arr positive?) #f)
-  (check-equal? (array-all-ormap arr positive?) #f))
+  (check-equal? (array-andmap positive? arr) #f)
+  (check-equal? (array-ormap positive? arr) #f))
 
 (let ([arr  (make-array #() 1.0)])
   (check-equal? (array-count positive? arr) 1)
-  (check-equal? (array-all-andmap arr positive?) #t)
-  (check-equal? (array-all-ormap arr positive?) #t))
+  (check-equal? (array-andmap positive? arr) #t)
+  (check-equal? (array-ormap positive? arr) #t))
 
 (let ([arr  (make-array #(4 0) 0.0)])
   (check-equal? (array-axis-count arr 0 positive?)  (array #[]))
@@ -405,8 +399,8 @@
   (check-equal? (array-axis-andmap arr 1 positive?) (array #[#t #t #t #t]))
   (check-equal? (array-axis-ormap arr 1 positive?)  (array #[#f #f #f #f]))
   (check-equal? (array-count positive? arr) 0)
-  (check-equal? (array-all-andmap arr positive?) #t)
-  (check-equal? (array-all-ormap arr positive?) #f))
+  (check-equal? (array-andmap positive? arr) #t)
+  (check-equal? (array-ormap positive? arr) #f))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; FFT
@@ -982,7 +976,7 @@
   (: arr (Array Integer))
   (define arr
     (array-lazy
-     (build-array
+     (build-simple-array
       #(12 12)
       (λ: ([js : Indexes])
         (match-define (vector j0 j1) js)

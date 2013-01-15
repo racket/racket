@@ -10,7 +10,7 @@
 (define (make-array ds v)
   (let ([ds  (check-array-shape
               ds (λ () (raise-argument-error 'make-array "(Vectorof Index)" 0 ds v)))])
-    (unsafe-build-strict-array ds (λ (js) v))))
+    (unsafe-build-simple-array ds (λ (js) v))))
 
 (: axis-index-array (In-Indexes Integer -> (Array Index)))
 (define (axis-index-array ds k)
@@ -18,21 +18,21 @@
                ds (λ () (raise-argument-error 'axis-index-array "(Vectorof Index)" 0 ds k)))]
          [dims  (vector-length ds)])
     (cond [(and (0 . <= . k) (k . < . dims))
-           (unsafe-build-strict-array ds (λ: ([js : Indexes]) (unsafe-vector-ref js k)))]
+           (unsafe-build-simple-array ds (λ: ([js : Indexes]) (unsafe-vector-ref js k)))]
           [else  (raise-argument-error 'axis-index-array (format "Index < ~a" dims) 1 ds k)])))
 
 (: index-array (In-Indexes -> (Array Index)))
 (define (index-array ds)
   (let ([ds  (check-array-shape
               ds (λ () (raise-argument-error 'index-array "(Vectorof Index)" ds)))])
-    (unsafe-build-strict-array ds (λ: ([js : Indexes])
+    (unsafe-build-simple-array ds (λ: ([js : Indexes])
                                     (assert (unsafe-array-index->value-index ds js) index?)))))
 
 (: indexes-array (In-Indexes -> (Array Indexes)))
 (define (indexes-array ds)
   (let ([ds  (check-array-shape
               ds (λ () (raise-argument-error 'indexes-array "(Vectorof Index)" ds)))])
-    (unsafe-build-strict-array ds (λ: ([js : Indexes]) (vector-copy-all js)))))
+    (unsafe-build-simple-array ds (λ: ([js : Indexes]) (vector-copy-all js)))))
 
 (: diagonal-array (All (A) (Integer Integer A A -> (Array A))))
 (define (diagonal-array dims size on-value off-value)
@@ -42,15 +42,15 @@
          (define: ds : Indexes (make-vector dims size))
          ;; specialize for various cases
          (cond [(or (dims . <= . 1) (size . <= . 1))
-                (unsafe-build-strict-array ds (λ: ([js : Indexes]) on-value))]
+                (unsafe-build-simple-array ds (λ: ([js : Indexes]) on-value))]
                [(= dims 2)
-                (unsafe-build-strict-array
+                (unsafe-build-simple-array
                  ds (λ: ([js : Indexes])
                       (define j0 (unsafe-vector-ref js 0))
                       (define j1 (unsafe-vector-ref js 1))
                       (if (= j0 j1) on-value off-value)))]
                [else
-                (unsafe-build-strict-array
+                (unsafe-build-simple-array
                  ds (λ: ([js : Indexes])
                       (define j0 (unsafe-vector-ref js 0))
                       (let: loop : A ([i : Nonnegative-Fixnum  1])
