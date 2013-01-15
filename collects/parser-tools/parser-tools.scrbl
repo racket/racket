@@ -831,11 +831,6 @@ Its interface is a subset of @racketmodname[parser-tools/yacc].
     use @tech{error production}s to continue parsing.  If it cannot, it
     raises @racket[exn:fail:read].
 
-    If multiple non-terminals are provided in @racket[start], the
-    @racket[parser] expression produces a list of parsing functions,
-    one for each non-terminal in the same order. Each parsing function
-    is like the result of a parser expression with only one
-    @racket[start] non-terminal,
 
     Each time the Racket code for a @racket[cfg-parser] is compiled
     (e.g. when a @filepath{.rkt} file containing a @racket[cfg-parser] form
