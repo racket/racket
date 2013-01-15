@@ -91,6 +91,9 @@
         (string->jsexpr @T{ {} }) => '#hasheq()
         (string->jsexpr @T{ {"x":1} }) => '#hasheq([x . 1])
         (string->jsexpr @T{ {"x":1,"y":2} }) => '#hasheq([x . 1] [y . 2])
+        (string->jsexpr @T{ [{"x": 1}, {"y": 2}] }) => 
+                        '(#hasheq([x . 1]) #hasheq([y . 2]))
+
         ;; string escapes
         (string->jsexpr @T{ " \b\n\r\f\t\\\"\/ " }) => " \b\n\r\f\t\\\"/ "
         (string->jsexpr @T{ "\uD834\uDD1E" }) => "\U1D11E"
@@ -105,6 +108,24 @@
         (string->jsexpr "foo") =error> "read-json:"
         (string->jsexpr "") => eof
         (string->jsexpr " \t\r\n") => eof
+
+        ;; More string escapes:
+        (string->jsexpr @T{ "hel\"lo" }) => "hel\"lo"
+        (string->jsexpr @T{ "\\//\\\\//" }) => "\\//\\\\//"
+        (string->jsexpr @T{ ["one", "t\\w\\o", 3] }) => '("one" "t\\w\\o" 3)
+        (string->jsexpr @T{ "\u000A" }) => "\u000A"
+        (string->jsexpr @T{ "/" }) => "/"
+        (string->jsexpr @T{ "\/" }) => "/"
+        ;; More error tests:
+        (string->jsexpr @T{ [1,2,,3] }) =error> "read-json:"
+        (string->jsexpr @T{ [1,2,3,] }) =error> "read-json:"
+        (string->jsexpr @T{ {42 : "bad-key!"} }) =error> "read-json:"
+        (string->jsexpr @T{ {'no-colon' , ""} }) =error> "read-json:"
+        (string->jsexpr @T{ {"x":1,,"y":2} }) =error> "read-json:"
+        (string->jsexpr @T{ {x:1, y:2} }) =error> "read-json:"
+        (string->jsexpr " {x:1, y:2] ") =error> "read-json:"
+        (string->jsexpr " [\"x\",1, \"y\",2} ") =error> "read-json:"
+                        
         ))
 
 (test do (pred-tests)
