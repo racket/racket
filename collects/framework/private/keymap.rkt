@@ -1493,10 +1493,11 @@
           (f click-pos eol click-pos end-pos)))))
 
 (define (do-unicode-ascii-art-boxes t pos)
-  (when (i? t pos)
+  (define start-pos (scan-for-start-pos t pos))
+  (when start-pos
     (define visited (make-hash))
     (send t begin-edit-sequence)
-    (let loop ([pos pos])
+    (let loop ([pos start-pos])
       (unless (hash-ref visited pos #f)
         (hash-set! visited pos #t)
         (define-values (x y) (pos->xy t pos))
@@ -1527,6 +1528,15 @@
         (when i-rt? (loop rt))))
     (send t end-edit-sequence)))
 
+(define (scan-for-start-pos t pos)
+  (define-values (x y) (pos->xy t pos))
+  (define adjs '(0 -1 1))
+  (findf
+     (λ (p) (i? t p))
+     (for*/list ([xadj adjs]
+                 [yadj adjs])
+       (xy->pos t (+ x xadj) (+ y yadj)))))
+       
 (define (i? t pos)
   (and pos 
        (member (send t get-character pos) 
