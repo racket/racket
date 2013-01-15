@@ -6,6 +6,7 @@
          racket/list
          mred/mred-sig
          "../preferences.rkt"
+         "dir-chars.rkt"
          mrlib/tex-table
          (only-in srfi/13 string-prefix? string-prefix-length)
          "sig.rkt"
@@ -1539,38 +1540,6 @@
   (define para (send text position-paragraph pos))
   (define start (send text paragraph-start-position para))
   (values (- pos start) para))
-
-(define up-chars
-  '(#\╬ 
-    #\╩ #\╣ #\╠
-    #\╝ #\╚
-    #\║
-    #\+ #\|))
-
-(define dn-chars
-  '(#\╬ 
-    #\╦ #\╣ #\╠
-    #\╗ #\╔
-    #\║
-    #\+ #\|))
-
-(define lt-chars
-  '(#\╬ 
-    #\╩ #\╦ #\╣
-    #\╝ #\╗ 
-    #\═ 
-    #\+ #\-))
-
-(define rt-chars
-  '(#\╬ 
-    #\╩ #\╦ #\╠
-    #\╔ #\╚
-    #\═
-    #\+ #\-))
-
-(define adjustable-chars
-  (remove-duplicates
-   (append up-chars dn-chars lt-chars rt-chars)))
 
 
 (define (xy->pos text x y)
