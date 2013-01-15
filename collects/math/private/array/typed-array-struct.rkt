@@ -8,6 +8,9 @@
 
 (provide (all-defined-out))
 
+(: array-strictness (Parameterof (U #f #t)))
+(define array-strictness (make-parameter #t))
+
 ;; ===================================================================================================
 ;; Equality and hashing
 
@@ -74,6 +77,13 @@
     ((Array-strict! arr))
     (set-box! strict? #t)))
 
+(: array-default-strict! (All (A) ((Array A) -> Void)))
+(define (array-default-strict! arr)
+  (define strict? (Array-strict? arr))
+  (when (and (not (unbox strict?)) (array-strictness))
+    ((Array-strict! arr))
+    (set-box! strict? #t)))
+
 (: unsafe-build-array (All (A) (Indexes (Indexes -> A) -> (Array A))))
 (define (unsafe-build-array ds f)
   ;; This box's contents get replaced when the array we're constructing is made strict, so that
@@ -94,29 +104,32 @@
       (λ: ([js : Indexes]) ((unbox f) js)))
     (Array ds size ((inst box Boolean) #f) strict! unsafe-proc)))
 
-(: unsafe-build-strict-array (All (A) (Indexes (Indexes -> A) -> (Array A))))
-(define (unsafe-build-strict-array ds f)
-  (define size (check-array-shape-size 'unsafe-build-strict-array ds))
+(: unsafe-build-simple-array (All (A) (Indexes (Indexes -> A) -> (Array A))))
+(define (unsafe-build-simple-array ds f)
+  (define size (check-array-shape-size 'unsafe-build-simple-array ds))
   (Array ds size (box #t) void f))
 
 (: build-array (All (A) (In-Indexes (Indexes -> A) -> (Array A))))
 (define (build-array ds proc)
   (let ([ds  (check-array-shape
               ds (λ () (raise-argument-error 'build-array "(Vectorof Index)" 0 ds proc)))])
-    (unsafe-build-array ds (λ: ([js : Indexes])
-                             (proc (vector->immutable-vector js))))))
+    (define arr
+      (unsafe-build-array ds (λ: ([js : Indexes])
+                               (proc (vector->immutable-vector js)))))
+    (array-default-strict! arr)
+    arr))
 
-(: build-strict-array (All (A) (In-Indexes (Indexes -> A) -> (Array A))))
-(define (build-strict-array ds proc)
+(: build-simple-array (All (A) (In-Indexes (Indexes -> A) -> (Array A))))
+(define (build-simple-array ds proc)
   (let ([ds  (check-array-shape
-              ds (λ () (raise-argument-error 'build-strict-array "(Vectorof Index)" 0 ds proc)))])
-    (unsafe-build-strict-array ds (λ: ([js : Indexes])
+              ds (λ () (raise-argument-error 'build-simple-array "(Vectorof Index)" 0 ds proc)))])
+    (unsafe-build-simple-array ds (λ: ([js : Indexes])
                                     (proc (vector->immutable-vector js))))))
 
 (: unsafe-list->array (All (A) (Indexes (Listof A) -> (Array A))))
 (define (unsafe-list->array ds xs)
   (define vs (list->vector xs))
-  (unsafe-build-strict-array
+  (unsafe-build-simple-array
    ds (λ: ([js : Indexes]) (unsafe-vector-ref vs (unsafe-array-index->value-index ds js)))))
 
 (: list->array (All (A) (case-> ((Listof A) -> (Array A))

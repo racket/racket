@@ -17,13 +17,17 @@
   
   (define-syntax (inline-array-map stx)
     (syntax-case stx ()
-      [(_ f)  (syntax/loc stx (unsafe-build-array #() (λ (js) (f))))]
+      [(_ f)
+       (syntax/loc stx
+         (array-default-strict
+          (unsafe-build-array #() (λ (js) (f)))))]
       [(_ f arr-expr)
        (syntax/loc stx
          (let ([arr  (ensure-array 'array-map arr-expr)])
            (define ds (array-shape arr))
            (define proc (unsafe-array-proc arr))
-           (unsafe-build-array ds (λ: ([js : Indexes]) (f (proc js))))))]
+           (array-default-strict
+            (unsafe-build-array ds (λ: ([js : Indexes]) (f (proc js)))))))]
       [(_ f arr-expr arr-exprs ...)
        (with-syntax ([(arrs ...)   (generate-temporaries #'(arr-exprs ...))]
                      [(procs ...)  (generate-temporaries #'(arr-exprs ...))])
@@ -35,42 +39,44 @@
                    [arrs  (array-broadcast arrs ds)] ...)
                (define proc  (unsafe-array-proc arr))
                (define procs (unsafe-array-proc arrs)) ...
-               (unsafe-build-array ds (λ: ([js : Indexes]) (f (proc js) (procs js) ...)))))))])))
+               (array-default-strict
+                (unsafe-build-array ds (λ: ([js : Indexes]) (f (proc js) (procs js) ...))))))))])))
 
 (require 'syntax-defs)
 
-(module untyped-defs typed/racket/base
-  (require "array-struct.rkt"
+(module untyped-defs racket/base
+  (require racket/contract
+           "array-struct.rkt"
            "array-broadcast.rkt"
            "utils.rkt"
            (submod ".." syntax-defs))
   
-  (provide array-map)
+  (provide (contract-out
+            [array-map  (->i ([f (unconstrained-domain-> any/c)])
+                             #:rest [xs (listof array?)]
+                             #:pre/name (f xs)
+                             "function has the wrong arity"
+                             (procedure-arity-includes? f (length xs))
+                             [_ array?])]))
   
-  (: array-map (All (R A) (case-> ((-> R) -> (Array R))
-                                  ((A -> R) (Array A) -> (Array R))
-                                  ((A A A * -> R) (Array A) (Array A) (Array A) * -> (Array R)))))
   (define array-map
-    (case-lambda:
-      [([f : (-> R)])
-       (inline-array-map f)]
-      [([f : (A -> R)] [arr : (Array A)])
-       (inline-array-map f arr)]
-      [([f : (A A -> R)] [arr0 : (Array A)] [arr1 : (Array A)])
-       (inline-array-map f arr0 arr1)]
-      [([f : (A A A * -> R)] [arr0 : (Array A)] [arr1 : (Array A)] . [arrs : (Array A) *])
+    (case-lambda
+      [(f)  (inline-array-map f)]
+      [(f arr)  (inline-array-map f arr)]
+      [(f arr0 arr1)  (inline-array-map f arr0 arr1)]
+      [(f arr0 arr1 . arrs)
        (define ds (array-shape-broadcast (list* (array-shape arr0)
                                                 (array-shape arr1)
-                                                (map (inst array-shape A) arrs))))
+                                                (map array-shape arrs))))
        (let ([arr0  (array-broadcast arr0 ds)]
              [arr1  (array-broadcast arr1 ds)]
-             [arrs  (map (λ: ([arr : (Array A)]) (array-broadcast arr ds)) arrs)])
+             [arrs  (map (λ (arr) (array-broadcast arr ds)) arrs)])
          (define g0 (unsafe-array-proc arr0))
          (define g1 (unsafe-array-proc arr1))
-         (define gs (map (inst unsafe-array-proc A) arrs))
-         (unsafe-build-array
-          ds (λ: ([js : Indexes]) (apply f (g0 js) (g1 js)
-                                         (map (λ: ([g : (Indexes -> A)]) (g js)) gs)))))]))
+         (define gs (map unsafe-array-proc arrs))
+         (array-default-strict
+          (unsafe-build-array
+           ds (λ (js) (apply f (g0 js) (g1 js) (map (λ (g) (g js)) gs))))))]))
   )
 
 (require 'untyped-defs)

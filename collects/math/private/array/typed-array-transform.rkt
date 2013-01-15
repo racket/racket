@@ -35,16 +35,17 @@
                                                                1 arr perm)))])
     (define dims (vector-length ds))
     (define old-js (make-thread-local-indexes dims))
-    (unsafe-array-transform
-     arr ds
-     (λ: ([js : Indexes])
-       (let ([old-js  (old-js)])
-         (let: loop : Indexes ([i : Nonnegative-Fixnum  0])
-           (cond [(i . < . dims)  (unsafe-vector-set! old-js
-                                                      (unsafe-vector-ref perm i)
-                                                      (unsafe-vector-ref js i))
-                                  (loop (+ i 1))]
-                 [else  old-js])))))))
+    (array-default-strict
+     (unsafe-array-transform
+      arr ds
+      (λ: ([js : Indexes])
+        (let ([old-js  (old-js)])
+          (let: loop : Indexes ([i : Nonnegative-Fixnum  0])
+            (cond [(i . < . dims)  (unsafe-vector-set! old-js
+                                                       (unsafe-vector-ref perm i)
+                                                       (unsafe-vector-ref js i))
+                                   (loop (+ i 1))]
+                  [else  old-js]))))))))
 
 (: array-axis-swap (All (A) ((Array A) Integer Integer -> (Array A))))
 (define (array-axis-swap arr i0 i1)
@@ -62,16 +63,17 @@
          (unsafe-vector-set! new-ds i0 j1)
          (unsafe-vector-set! new-ds i1 j0)
          (define proc (unsafe-array-proc arr))
-         (unsafe-build-array
-          new-ds (λ: ([js : Indexes])
-                   (define j0 (unsafe-vector-ref js i0))
-                   (define j1 (unsafe-vector-ref js i1))
-                   (unsafe-vector-set! js i0 j1)
-                   (unsafe-vector-set! js i1 j0)
-                   (define v (proc js))
-                   (unsafe-vector-set! js i0 j0)
-                   (unsafe-vector-set! js i1 j1)
-                   v))]))
+         (array-default-strict
+          (unsafe-build-array
+           new-ds (λ: ([js : Indexes])
+                    (define j0 (unsafe-vector-ref js i0))
+                    (define j1 (unsafe-vector-ref js i1))
+                    (unsafe-vector-set! js i0 j1)
+                    (unsafe-vector-set! js i1 j0)
+                    (define v (proc js))
+                    (unsafe-vector-set! js i0 j0)
+                    (unsafe-vector-set! js i1 j1)
+                    v)))]))
 
 ;; ===================================================================================================
 ;; Adding/removing axes
@@ -88,9 +90,8 @@
         [else
          (define new-ds (unsafe-vector-insert ds k dk))
          (define proc (unsafe-array-proc arr))
-         (unsafe-build-array
-          new-ds (λ: ([js : Indexes])
-                   (proc (unsafe-vector-remove js k))))]))
+         (array-default-strict
+          (unsafe-build-array new-ds (λ: ([js : Indexes]) (proc (unsafe-vector-remove js k)))))]))
 
 (: array-axis-ref (All (A) ((Array A) Integer Integer -> (Array A))))
 (define (array-axis-ref arr k jk)
@@ -104,9 +105,8 @@
         [else
          (define new-ds (unsafe-vector-remove ds k))
          (define proc (unsafe-array-proc arr))
-         (unsafe-build-array
-          new-ds (λ: ([js : Indexes])
-                   (proc (unsafe-vector-insert js k jk))))]))
+         (array-default-strict
+          (unsafe-build-array new-ds (λ: ([js : Indexes]) (proc (unsafe-vector-insert js k jk)))))]))
 
 ;; ===================================================================================================
 ;; Reshape
@@ -124,12 +124,13 @@
            (define old-dims (vector-length old-ds))
            (define g (unsafe-array-proc arr))
            (define old-js (make-thread-local-indexes old-dims))
-           (unsafe-build-array
-            ds (λ: ([js : Indexes])
-                 (let ([old-js  (old-js)])
-                   (define j (unsafe-array-index->value-index ds js))
-                   (unsafe-value-index->array-index! old-ds j old-js)
-                   (g old-js))))])))
+           (array-default-strict
+            (unsafe-build-array
+             ds (λ: ([js : Indexes])
+                  (let ([old-js  (old-js)])
+                    (define j (unsafe-array-index->value-index ds js))
+                    (unsafe-value-index->array-index! old-ds j old-js)
+                    (g old-js)))))])))
 
 (: array-flatten (All (A) ((Array A) -> (Array A))))
 (define (array-flatten arr)
@@ -141,12 +142,13 @@
          (define old-dims (vector-length old-ds))
          (define g (unsafe-array-proc arr))
          (define old-js (make-thread-local-indexes old-dims))
-         (unsafe-build-array
-          ds (λ: ([js : Indexes])
-               (let ([old-js  (old-js)])
-                 (define j (unsafe-vector-ref js 0))
-                 (unsafe-value-index->array-index! old-ds j old-js)
-                 (g old-js))))]))
+         (array-default-strict
+          (unsafe-build-array
+           ds (λ: ([js : Indexes])
+                (let ([old-js  (old-js)])
+                  (define j (unsafe-vector-ref js 0))
+                  (unsafe-value-index->array-index! old-ds j old-js)
+                  (g old-js)))))]))
 
 ;; ===================================================================================================
 ;; Append
@@ -200,11 +202,11 @@
                                   (unsafe-vector-set! old-jks jk i)
                                   (i-loop (+ i 1) (unsafe-fx+ jk 1))]
                    [else  (arrs-loop (cdr arrs) (cdr dks) jk)]))))
-       
-       (unsafe-build-array
-        new-ds (λ: ([js : Indexes])
-                 (define jk (unsafe-vector-ref js k))
-                 (unsafe-vector-set! js k (unsafe-vector-ref old-jks jk))
-                 (define v ((unsafe-vector-ref old-procs jk) js))
-                 (unsafe-vector-set! js k jk)
-                 v))])))
+       (array-default-strict
+        (unsafe-build-array
+         new-ds (λ: ([js : Indexes])
+                  (define jk (unsafe-vector-ref js k))
+                  (unsafe-vector-set! js k (unsafe-vector-ref old-jks jk))
+                  (define v ((unsafe-vector-ref old-procs jk) js))
+                  (unsafe-vector-set! js k jk)
+                  v)))])))

@@ -38,15 +38,16 @@
 (: array-axis-reduce (All (A B) ((Array A) Integer (Index (Integer -> A) -> B) -> (Array B))))
 (define (array-axis-reduce arr k f)
   (let ([k  (check-array-axis 'array-axis-reduce arr k)])
-    (unsafe-array-axis-reduce
-     arr k
-     (λ: ([dk : Index] [proc : (Index -> A)])
-       (: safe-proc (Integer -> A))
-       (define (safe-proc jk)
-         (cond [(or (jk . < . 0) (jk . >= . dk))
-                (raise-argument-error 'array-axis-reduce (format "Index < ~a" dk) jk)]
-               [else  (proc jk)]))
-       (f dk safe-proc)))))
+    (array-default-strict
+     (unsafe-array-axis-reduce
+      arr k
+      (λ: ([dk : Index] [proc : (Index -> A)])
+        (: safe-proc (Integer -> A))
+        (define (safe-proc jk)
+          (cond [(or (jk . < . 0) (jk . >= . dk))
+                 (raise-argument-error 'array-axis-reduce (format "Index < ~a" dk) jk)]
+                [else  (proc jk)]))
+        (f dk safe-proc))))))
 
 (: array-axis-fold/init (All (A B) ((Array A) Integer (A B -> B) B -> (Array B))))
 (define (array-axis-fold/init arr k f init)
@@ -72,8 +73,8 @@
                                       ((Array A) Integer (A B -> B) B -> (Array B)))))
 (define array-axis-fold
   (case-lambda
-    [(arr k f)  (array-axis-fold/no-init arr k f)]
-    [(arr k f init)  (array-axis-fold/init arr k f init)]))
+    [(arr k f)  (array-default-strict (array-axis-fold/no-init arr k f))]
+    [(arr k f init)  (array-default-strict (array-axis-fold/init arr k f init))]))
 
 ;; ===================================================================================================
 ;; Whole-array folds
@@ -93,13 +94,18 @@
   (define array-all-fold
     (case-lambda
       [(arr f)
-       (array-ref (array-fold arr (λ: ([arr : (Array A)] [k : Index])
-                                    (array-axis-fold arr k f)))
-                  #())]
+       ;; Though `f' is folded over multiple axes, each element of `arr' is referred to only once, so
+       ;; turning strictness off can't hurt performance
+       (parameterize ([array-strictness #f])
+         (array-ref (array-fold arr (λ: ([arr : (Array A)] [k : Index])
+                                      (array-axis-fold arr k f)))
+                    #()))]
       [(arr f init)
-       (array-ref (array-fold arr (λ: ([arr : (Array A)] [k : Index])
-                                    (array-axis-fold arr k f init)))
-                  #())]))
+       ;; See above for why non-strictness is okay
+       (parameterize ([array-strictness #f])
+         (array-ref (array-fold arr (λ: ([arr : (Array A)] [k : Index])
+                                      (array-axis-fold arr k f init)))
+                    #()))]))
   
   )  ; begin-encourage-inline
 
@@ -109,13 +115,14 @@
 (: array-axis-count (All (A) ((Array A) Integer (A -> Any) -> (Array Index))))
 (define (array-axis-count arr k pred?)
   (let ([k  (check-array-axis 'array-axis-count arr k)])
-    (unsafe-array-axis-reduce
-     arr k (λ: ([dk : Index] [proc : (Index -> A)])
-             (let: loop : Index ([jk : Nonnegative-Fixnum  0] [acc : Nonnegative-Fixnum  0])
-               (if (jk . fx< . dk)
-                   (cond [(pred? (proc jk))  (loop (fx+ jk 1) (unsafe-fx+ acc 1))]
-                         [else  (loop (fx+ jk 1) acc)])
-                   (assert acc index?)))))))
+    (array-default-strict
+     (unsafe-array-axis-reduce
+      arr k (λ: ([dk : Index] [proc : (Index -> A)])
+              (let: loop : Index ([jk : Nonnegative-Fixnum  0] [acc : Nonnegative-Fixnum  0])
+                (if (jk . fx< . dk)
+                    (cond [(pred? (proc jk))  (loop (fx+ jk 1) (unsafe-fx+ acc 1))]
+                          [else  (loop (fx+ jk 1) acc)])
+                    (assert acc index?))))))))
 
 ;; ===================================================================================================
 ;; Short-cutting axis folds
@@ -123,30 +130,36 @@
 (: array-axis-and (All (A) ((Array A) Integer -> (Array (U A Boolean)))))
 (define (array-axis-and arr k)
   (let ([k  (check-array-axis 'array-axis-and arr k)])
-    (unsafe-array-axis-reduce
-     arr k (λ: ([dk : Index] [proc : (Index -> A)])
-             (let: loop : (U A Boolean) ([jk : Nonnegative-Fixnum  0] [acc : (U A Boolean)  #t])
-               (cond [(jk . fx< . dk)  (define v (and acc (proc jk)))
-                                       (if v (loop (fx+ jk 1) v) v)]
-                     [else  acc]))))))
+    (array-default-strict
+     (unsafe-array-axis-reduce
+      arr k (λ: ([dk : Index] [proc : (Index -> A)])
+              (let: loop : (U A Boolean) ([jk : Nonnegative-Fixnum  0] [acc : (U A Boolean)  #t])
+                (cond [(jk . fx< . dk)  (define v (and acc (proc jk)))
+                                        (if v (loop (fx+ jk 1) v) v)]
+                      [else  acc])))))))
 
 (: array-axis-or (All (A) ((Array A) Integer -> (Array (U A #f)))))
 (define (array-axis-or arr k)
   (let ([k  (check-array-axis 'array-axis-or arr k)])
-    (unsafe-array-axis-reduce
-     arr k (λ: ([dk : Index] [proc : (Index -> A)])
-             (let: loop : (U A #f) ([jk : Nonnegative-Fixnum  0] [acc : (U A #f)  #f])
-               (cond [(jk . fx< . dk)  (define v (or acc (proc jk)))
-                                       (if v v (loop (fx+ jk 1) v))]
-                     [else  acc]))))))
+    (array-default-strict
+     (unsafe-array-axis-reduce
+      arr k (λ: ([dk : Index] [proc : (Index -> A)])
+              (let: loop : (U A #f) ([jk : Nonnegative-Fixnum  0] [acc : (U A #f)  #f])
+                (cond [(jk . fx< . dk)  (define v (or acc (proc jk)))
+                                        (if v v (loop (fx+ jk 1) v))]
+                      [else  acc])))))))
 
 (: array-all-and (All (A B) ((Array A) -> (U A Boolean))))
 (define (array-all-and arr)
-  (array-ref ((inst array-fold (U A Boolean)) arr array-axis-and) #()))
+  ;; See `array-all-fold' for why non-strictness is okay
+  (parameterize ([array-strictness #f])
+    (array-ref ((inst array-fold (U A Boolean)) arr array-axis-and) #())))
 
 (: array-all-or (All (A B) ((Array A) -> (U A #f))))
 (define (array-all-or arr)
-  (array-ref ((inst array-fold (U A #f)) arr array-axis-or) #()))
+  ;; See `array-all-fold' for why non-strictness is okay
+  (parameterize ([array-strictness #f])
+    (array-ref ((inst array-fold (U A #f)) arr array-axis-or) #())))
 
 ;; ===================================================================================================
 ;; Other folds
@@ -156,6 +169,7 @@
 (define (array->list-array arr [k 0])
   (define dims (array-dims arr))
   (cond [(and (k . >= . 0) (k . < . dims))
-         (unsafe-array-axis-reduce arr k (inst build-list A))]
+         (array-default-strict
+          (unsafe-array-axis-reduce arr k (inst build-list A)))]
         [else
          (raise-argument-error 'array->list-array (format "Index < ~a" dims) 1 arr k)]))

@@ -1,6 +1,9 @@
 #lang racket/base
 
 (require (for-syntax racket/base)
+         (only-in typed/racket/base assert index?)
+         "array-struct.rkt"
+         "array-pointwise.rkt"
          "typed-array-fold.rkt")
 
 ;; ===================================================================================================
@@ -28,6 +31,22 @@
 (define-all-fold array-all-min min)
 (define-all-fold array-all-max max)
 
+(define-syntax-rule (array-count f arr ...)
+  (assert
+   (parameterize ([array-strictness #f])
+     (array-all-sum (inline-array-map (λ (b) (if b 1 0))
+                                      (array-map f arr ...))
+                    0))
+   index?))
+
+(define-syntax-rule (array-andmap pred? arr ...)
+  (parameterize ([array-strictness #f])
+    (array-all-and (array-map pred? arr ...))))
+
+(define-syntax-rule (array-ormap pred? arr ...)
+  (parameterize ([array-strictness #f])
+    (array-all-or (array-map pred? arr ...))))
+
 (provide array-axis-fold
          array-axis-sum
          array-axis-prod
@@ -44,6 +63,9 @@
          array-all-max
          array-all-and
          array-all-or
+         array-count
+         array-andmap
+         array-ormap
          array-axis-reduce
          unsafe-array-axis-reduce
          array->list-array)

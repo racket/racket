@@ -33,7 +33,8 @@
 (define (array-axis-expand arr k dk f)
   (let ([k  (check-array-axis 'array-axis-expand arr k)])
     (cond [(not (index? dk))  (raise-argument-error 'array-axis-expand "Index" 2 arr k dk f)]
-          [else  (unsafe-array-axis-expand arr k dk f)])))
+          [else  (array-default-strict
+                  (unsafe-array-axis-expand arr k dk f))])))
 
 ;; ===================================================================================================
 ;; Specific unfolds/expansions
@@ -46,6 +47,7 @@
          (let ([arr  (array-strict (array-map (inst list->vector A) arr))])
            ;(define dks (remove-duplicates (array->list (array-map vector-length arr))))
            (define dk (array-all-min (array-map vector-length arr)))
-           (unsafe-array-axis-expand arr k dk (inst unsafe-vector-ref A)))]
+           (array-default-strict
+            (unsafe-array-axis-expand arr k dk (inst unsafe-vector-ref A))))]
         [else
          (raise-argument-error 'list-array->array (format "Index <= ~a" dims) 1 arr k)]))
