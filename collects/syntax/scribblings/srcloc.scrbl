@@ -292,13 +292,44 @@ the whole macro application if no @racket[form] is given.
 
 }
 
+@deftogether[(
+@defform*[[(quote-srcloc-string) (quote-srcloc-string form)]]
+@defform*[[(quote-srcloc-prefix) (quote-srcloc-prefix form)]]
+)]{
+
+Quote the result of @racket[source-location->string] or
+@racket[source-location->prefix], respectively, applied to the source location
+of @racket[form], or of the whole macro application if no @racket[form] is
+given.
+
+@examples[#:eval (new-evaluator)
+(list (quote-srcloc-string)
+      (quote-srcloc-prefix))
+(define-syntax (not-here stx)
+  #'(list (quote-srcloc-string)
+          (quote-srcloc-prefix)))
+(not-here)
+(not-here)
+(define-syntax (here stx)
+  #`(list (quote-srcloc-string #,stx)
+          (quote-srcloc-prefix #,stx)))
+(here)
+(here)
+]
+
+}
+
 @(define (p . l) (decode-paragraph l))
 
 @defform[(quote-module-name submod-path-element ...)]{
 
-Quotes the name of the module in which the form is compiled as a path,
-symbol, list, or @racket['top-level], where @racket['top-level] is
-produced when used outside of a module. A list corresponds to a
+Quotes the name of the module in a form suitable for printing, but not
+necessarily as a valid @tech[#:doc reference-path]{module path}.  See
+@racket[quote-module-path] for constructing quoted
+@tech[#:doc reference-path]{module path}s.
+
+Returns a path, symbol, list, or @racket['top-level], where @racket['top-level]
+is produced when used outside of a module. A list corresponds to a
 submodule in the same format as the result of
 @racket[variable-reference->module-name]. Any given
 @racket[submod-path-element]s (as in a @racket[submod] form) are added
@@ -339,10 +370,13 @@ b-name
 
 @defform[(quote-module-path submod-path-element ...)]{
 
-Quotes the name of the module in which the form is compiled as a
-@tech[#:doc reference-path]{module path} using @racket[quote], a path,
-@racket[submod], or @racket['top-level], where @racket['top-level] is
-produced when used outside of a module. Any given
+Quotes the name of the module in which the form is compiled.  When possible,
+the result is a valid @tech[#:doc reference-path]{module path} suitable for use
+by @racket[dynamic-require] and similar functions.
+
+Builds the result using
+@racket[quote], a path, @racket[submod], or @racket['top-level], where
+@racket['top-level] is produced when used outside of a module. Any given
 @racket[submod-path-element]s (as in a @racket[submod] form) are added
 to form a result submodule path.
 

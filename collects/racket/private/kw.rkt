@@ -3,6 +3,7 @@
              "small-scheme.rkt"
              "more-scheme.rkt"
              (for-syntax '#%kernel
+                         "procedure-alias.rkt"
                          "stx.rkt"
                          "small-scheme.rkt"
                          "stxcase-scheme.rkt"
@@ -972,14 +973,11 @@
   (define-for-syntax kw-expander-impl (make-struct-field-accessor kw-expander-ref 1 'impl))
   (define-for-syntax kw-expander-proc (make-struct-field-accessor kw-expander-ref 2 'proc))
 
-  (define-for-syntax kw-alias-of (gensym 'alias-of))
   (define-for-syntax kw-converted-arguments-variant-of (gensym 'converted-arguments-variant-of))
 
-  (define-for-syntax (syntax-procedure-alias-property stx)
-    (unless (syntax? stx) (raise-argument-error 'syntax-procedure-alias "syntax?" stx))
-    (syntax-property stx kw-alias-of))
   (define-for-syntax (syntax-procedure-converted-arguments-property stx) 
-    (unless (syntax? stx) (raise-argument-error 'syntax-procedure-converted-arguments "syntax?" stx))
+    (unless (syntax? stx)
+      (raise-argument-error 'syntax-procedure-converted-arguments "syntax?" stx))
     (syntax-property stx kw-converted-arguments-variant-of))
 
   (define-for-syntax (make-keyword-syntax get-ids n-req n-opt rest? req-kws all-kws)
@@ -1015,7 +1013,7 @@
                                   (cons (syntax-taint (syntax-local-introduce #'self))
                                         (syntax-taint (syntax-local-introduce impl-id))))]
                 [wrap-id/prop
-                 (syntax-property wrap-id kw-alias-of 
+                 (syntax-property wrap-id alias-of 
                                   (cons (syntax-taint (syntax-local-introduce #'self))
                                         (syntax-taint (syntax-local-introduce wrap-id))))])
             (if (free-identifier=? #'new-app (datum->syntax stx '#%app))
@@ -1124,7 +1122,7 @@
                                 orig))))
                 (datum->syntax stx (cons wrap-id/prop #'(arg ...)) stx stx)))]
          [self
-          (syntax-property wrap-id kw-alias-of (cons (syntax-taint (syntax-local-introduce #'self))
+          (syntax-property wrap-id alias-of (cons (syntax-taint (syntax-local-introduce #'self))
                                                      (syntax-taint (syntax-local-introduce wrap-id))))]))
      (lambda () (define-values (impl-id wrap-id) (get-ids)) impl-id)
      (lambda () (define-values (impl-id wrap-id) (get-ids)) wrap-id)))

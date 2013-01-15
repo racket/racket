@@ -3,6 +3,8 @@
          (for-syntax racket/base syntax/srcloc setup/path-to-relative))
 (provide (protect-out module-name-fixup)
          quote-srcloc
+         quote-srcloc-string
+         quote-srcloc-prefix
          quote-source-file
          quote-line-number
          quote-column-number
@@ -11,41 +13,81 @@
          quote-module-path
          quote-module-name)
 
-(define-syntax (quote-srcloc stx)
-  (syntax-case stx ()
-    [(_) #`(quote-srcloc #,stx)]
-    [(_ loc)
-     (let* ([src (build-source-location #'loc)])
-       (cond
-        [(and (path-string? (srcloc-source src))
-              (path->relative-string/library (srcloc-source src) #f))
-         =>
-         (lambda (rel)
-           (with-syntax ([src rel]
-                         [line (srcloc-line src)]
-                         [col (srcloc-column src)]
-                         [pos (srcloc-position src)]
-                         [span (srcloc-span src)])
-             #'(make-srcloc 'src 'line 'col 'pos 'span)))]
-        [else (with-syntax ([loc (identifier-prune-to-source-module
-                                  (datum->syntax #'loc 'loc #'loc #'loc))])
-                #'(build-source-location (quote-syntax loc)))]))]))
+(begin-for-syntax
 
-(define-syntax-rule (define-quote-srcloc-accessors [name accessor] ...)
-  (define-syntaxes [ name ... ]
-    (values
-     (lambda (stx)
-       (syntax-case stx ()
-         [(_) #`(name #,stx)]
-         [(_ loc) #`(accessor (quote-srcloc loc))]))
-     ...)))
+  (define (source-location-relative-source loc)
+    (define src (source-location-source loc))
+    (and (path-string? src)
+         (path->relative-string/library src #f)))
 
-(define-quote-srcloc-accessors
-  [quote-source-file source-location-source]
-  [quote-line-number source-location-line]
-  [quote-column-number source-location-column]
-  [quote-character-position source-location-position]
-  [quote-character-span source-location-span])
+  (define (syntax-quote-source stx)
+    (cond
+      [(source-location-relative-source stx)
+       =>
+       (lambda (rel) #`(quote #,rel))]
+      [else #`(source-location-source
+                (quote-syntax
+                  #,(identifier-prune-to-source-module
+                      (datum->syntax stx 'here stx stx))))]))
+
+  (define (syntax-quote-line stx) #`(quote #,(syntax-line stx)))
+
+  (define (syntax-quote-column stx) #`(quote #,(syntax-column stx)))
+  (define (syntax-quote-position stx) #`(quote #,(syntax-position stx)))
+  (define (syntax-quote-span stx) #`(quote #,(syntax-span stx)))
+  (define (syntax-quote-srcloc stx)
+    #`(srcloc
+        #,(syntax-quote-source stx)
+        #,(syntax-quote-line stx)
+        #,(syntax-quote-column stx)
+        #,(syntax-quote-position stx)
+        #,(syntax-quote-span stx)))
+
+  (define (syntax-quote-string stx)
+    (cond
+      [(source-location-relative-source stx)
+       #`(quote #,(source-location->string stx))]
+      [else
+       #`(source-location->string
+           #,(syntax-quote-srcloc stx))]))
+
+  (define (syntax-quote-prefix stx)
+    (cond
+      [(source-location-relative-source stx)
+       #`(quote #,(source-location->prefix stx))]
+      [else
+       #`(source-location->prefix
+           #,(syntax-quote-srcloc stx))]))
+
+  (define (source-transformer proc)
+    (lambda (stx)
+      (syntax-case stx ()
+        [(_) (proc stx)]
+        [(_ here) (proc #'here)]))))
+
+(define-syntax quote-srcloc
+  (source-transformer syntax-quote-srcloc))
+
+(define-syntax quote-source-file
+  (source-transformer syntax-quote-source))
+
+(define-syntax quote-line-number
+  (source-transformer syntax-quote-line))
+
+(define-syntax quote-column-number
+  (source-transformer syntax-quote-column))
+
+(define-syntax quote-character-position
+  (source-transformer syntax-quote-position))
+
+(define-syntax quote-character-span
+  (source-transformer syntax-quote-span))
+
+(define-syntax quote-srcloc-string
+  (source-transformer syntax-quote-string))
+
+(define-syntax quote-srcloc-prefix
+  (source-transformer syntax-quote-prefix))
 
 (define (variable-reference->module-source/submod vr)
   (define src (variable-reference->module-source vr))

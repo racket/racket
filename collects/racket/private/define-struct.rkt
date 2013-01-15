@@ -4,6 +4,7 @@
 (module define-struct '#%kernel
   (#%require "small-scheme.rkt" "define.rkt" "../stxparam.rkt"
              (for-syntax '#%kernel "define.rkt"
+                         "procedure-alias.rkt"
                          "stx.rkt" "stxcase-scheme.rkt" "small-scheme.rkt" 
                          "stxloc.rkt" "qqstx.rkt"
                          "struct-info.rkt"))
@@ -57,12 +58,21 @@
       (datum->syntax orig (syntax-e orig) stx orig))
     (syntax-case stx ()
       [(self arg ...) (datum->syntax stx
-                                     (cons (syntax-property (transfer-srcloc orig #'self)
-                                                            'constructor-for
-                                                            (syntax-local-introduce #'self))
-                                           (syntax-e (syntax (arg ...))))
+                                     (cons 
+                                      (syntax-property
+                                       (syntax-property (transfer-srcloc orig #'self)
+                                                        'constructor-for
+                                                        (syntax-local-introduce #'self))
+                                       alias-of (syntax-local-introduce #'self))
+                                      (syntax-e (syntax (arg ...))))
                                      stx
                                      stx)]
+      [self (identifier? #'self)
+       (syntax-property
+        (syntax-property (transfer-srcloc orig #'self)
+                         'constructor-for
+                         (syntax-local-introduce #'self))
+        alias-of (syntax-local-introduce #'self))]
       [_ (transfer-srcloc orig stx)]))
   
   (define-values-for-syntax (make-self-ctor-struct-info)

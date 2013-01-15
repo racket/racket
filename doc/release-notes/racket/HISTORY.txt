@@ -1,3 +1,7 @@
+Version 5.3.2.1
+srfi/19: made compatible with date* structs, produces
+ lax-date struct for backwards compatibility
+
 Version 5.3.1.12
 Added exn:fail:filesystem:errno and exn:fail:network:errno
 

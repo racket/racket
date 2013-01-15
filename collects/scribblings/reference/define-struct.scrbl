@@ -66,6 +66,9 @@ to @math{4+2n} names:
        inaccessible identifier that is bound to the constructor
        procedure; the expanded identifier has a
        @racket['constructor-for] property whose value is an identifier
+       that is @racket[free-identifier=?] to @racket[id] as well as 
+       a syntax property accessible via 
+       @racket[syntax-procedure-alias-property] with an identifier
        that is @racket[free-identifier=?] to @racket[id].}
 
  @item{@racket[id]@racketidfont{?}, a @deftech{predicate} procedure
