@@ -125,7 +125,12 @@
         (string->jsexpr @T{ {x:1, y:2} }) =error> "read-json:"
         (string->jsexpr " {x:1, y:2] ") =error> "read-json:"
         (string->jsexpr " [\"x\",1, \"y\",2} ") =error> "read-json:"
-                        
+        (string->jsexpr @T{ truelove }) =error> "read-json:"
+        (string->jsexpr @T{ truebred }) =error> "read-json:"
+        (string->jsexpr @T{ falsehood }) =error> "read-json:"
+        (string->jsexpr @T{ falsetto }) =error> "read-json:"
+        (string->jsexpr @T{ nullity }) =error> "read-json:"
+        (string->jsexpr @T{ nulliparous }) =error> "read-json:"
         ))
 
 (test do (pred-tests)
