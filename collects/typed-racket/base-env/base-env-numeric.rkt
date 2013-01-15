@@ -720,8 +720,8 @@
 [exact-positive-integer? (make-pred-ty -Pos)]
 [exact-nonnegative-integer? (make-pred-ty -Nat)]
 
-[odd? (-> -Int B : (-FS -top (-filter -Zero 0)))]
-[even? (-> -Int B)]
+[odd? (-> -Int B : (-FS (-not-filter -Zero 0) (-not-filter -One 0)))]
+[even? (-> -Int B : (-FS (-not-filter -One 0) (-not-filter -Zero 0)))]
 
 [=
  (from-cases
