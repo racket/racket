@@ -109,6 +109,7 @@
          (ep-log-info "expanding-place.rkt: 05 installing security guard")
          (install-security-guard) ;; must come after the call to set-module-language-parameters
          (ep-log-info "expanding-place.rkt: 06 setting uncaught-exception-handler")
+         (define loaded-paths '())
          (uncaught-exception-handler
           (λ (exn)
             (parameterize ([current-custodian orig-cust])
@@ -116,7 +117,7 @@
                (λ ()
                  (stop-watching-abnormal-termination)
                  (semaphore-post sema)
-                 (channel-put exn-chan exn))))
+                 (channel-put exn-chan (list exn loaded-paths)))))
             (semaphore-wait sema)
             ((error-escape-handler))))
          (ep-log-info "expanding-place.rkt: 07 starting read-syntax")
@@ -138,7 +139,6 @@
            (when log-io?
              (thread (λ () (catch-and-log in io-sema))))
            (define original-path (make-parameter #f))
-           (define loaded-paths '())
            (define expanded 
              (parameterize ([current-output-port out]
                             [current-error-port out]
@@ -210,16 +210,20 @@
                   ;; note: this message is actually ignored: a string 
                   ;; constant is used back in the drracket place
                   "Expansion thread terminated unexpectedly"
+                  '()
+                  
+                  ;; give up on dep paths in this case:
                   '()))))
       (handle-evt
        result-chan
-       (λ (val+loaded-files)
+       (λ (val+loaded-paths)
          (place-channel-put response-pc (vector 'handler-results 
-                                                (list-ref val+loaded-files 0)
-                                                (list-ref val+loaded-files 1)))))
+                                                (list-ref val+loaded-paths 0)
+                                                (list-ref val+loaded-paths 1)))))
       (handle-evt
        exn-chan
-       (λ (exn)
+       (λ (exn+loaded-paths)
+         (define exn (list-ref exn+loaded-paths 0))
          (place-channel-put 
           response-pc
           (vector 
@@ -249,7 +253,8 @@
                           (srcloc-span srcloc)))
                 <
                 #:key (λ (x) (vector-ref x 0)))
-               '()))))))))
+               '())
+           (list-ref exn+loaded-paths 1))))))))
   
   (define (stop-watching-abnormal-termination) 
     (channel-put normal-termination #t))
