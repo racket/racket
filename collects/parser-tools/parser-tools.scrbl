@@ -4,7 +4,8 @@
                      scheme/contract
                      parser-tools/lex
                      (prefix-in : parser-tools/lex-sre)
-                     parser-tools/yacc))
+                     parser-tools/yacc
+                     parser-tools/cfg-parser))
 
 @title{Parser Tools: @exec{lex} and @exec{yacc}-style Parsing}
 
@@ -555,6 +556,10 @@ the right choice when using @racket[lexer] in other situations.
       @racketidfont{$}@math{i}@racketidfont{-start-pos} and
       @racketidfont{$}@math{i}@racketidfont{-end-pos}).
 
+      An @deftech{error production} can be defined by providing
+      a production of the form @racket[(error α)], where α is a
+      string of grammar symbols, possibly empty.
+      
       All of the productions for a given non-terminal must be grouped
       with it. That is, no @racket[non-terminal-id] may appear twice
       on the left hand side in a parser.}
@@ -662,7 +667,7 @@ the right choice when using @racket[lexer] in other situations.
     The @racket[_parse] function returns the value associated with the
     parse tree by the semantic actions.  If the parser encounters an
     error, after invoking the supplied error function, it will try to
-    use error productions to continue parsing.  If it cannot, it
+    use @tech{error production}s to continue parsing.  If it cannot, it
     raises @racket[exn:fail:read].
 
     If multiple non-terminals are provided in @racket[start], the
@@ -677,6 +682,169 @@ the right choice when using @racket[lexer] in other situations.
     place the parser into a module and compile the module to a
     @filepath{.zo} bytecode file.}
 
+                                            
+                                            
+                                            
+@section{Ambiguous parsing}
+
+@section-index["cfg-parser"]
+
+@defmodule[parser-tools/cfg-parser]
+
+@racketmodname[parser-tools/cfg-parser] provides another parser
+generator as an alternative to @racketmodname[parser-tools/yacc].
+Unlike @racket[parser], @racket[cfg-parser] can consume ambiguous grammars.
+Its interface is a subset of @racketmodname[parser-tools/yacc].
+
+@defform/subs[#:literals (grammar tokens start end precs src-pos
+                          suppress debug yacc-output prec)
+              (cfg-parser clause ...)
+              ([clause (grammar (non-terminal-id 
+                                 ((grammar-id ...) maybe-prec expr)
+                                 ...)
+                                ...)
+                       (tokens group-id ...)
+                       (start non-terminal-id ...)
+                       (end token-id ...)
+                       (@#,racketidfont{error} expr)
+                       (src-pos)])]{
+    Creates a parser.  The clauses may be in any order, as long as there
+    are no duplicates and all non-@italic{OPTIONAL} declarations are
+    present:
+
+    @itemize[
+
+      @item{@racketblock0[(grammar (non-terminal-id
+                                    ((grammar-id ...) maybe-prec expr)
+                                    ...)
+                                   ...)]
+
+      Declares the grammar to be parsed.  Each @racket[grammar-id] can
+      be a @racket[token-id] from a @racket[group-id] named in a
+      @racket[tokens] declaration, or it can be a
+      @racket[non-terminal-id] declared in the @racket[grammar]
+      declaration.  The @racket[expr] is a
+      ``semantic action,'' which is evaluated when the input is found
+      to match its corresponding production.
+
+      Each action is Racket code that has the same scope as its
+      parser's definition, except that the variables @racket[$1], ...,
+      @racketidfont{$}@math{i} are bound, where @math{i} is the number
+      of @racket[grammar-id]s in the corresponding production. Each
+      @racketidfont{$}@math{k} is bound to the result of the action
+      for the @math{k}@superscript{th} grammar symbol on the right of
+      the production, if that grammar symbol is a non-terminal, or the
+      value stored in the token if the grammar symbol is a terminal.
+      If the @racket[src-pos] option is present in the parser, then
+      variables @racket[$1-start-pos], ...,
+      @racketidfont{$}@math{i}@racketidfont{-start-pos} and
+      @racket[$1-end-pos], ...,
+      @racketidfont{$}@math{i}@racketidfont{-end-pos} and are also
+      available, and they refer to the position structures
+      corresponding to the start and end of the corresponding
+      @racket[grammar-symbol]. Grammar symbols defined as empty-tokens
+      have no @racketidfont{$}@math{k} associated, but do have
+      @racketidfont{$}@math{k}@racketidfont{-start-pos} and
+      @racketidfont{$}@math{k}@racketidfont{-end-pos}.
+      Also @racketidfont{$n-start-pos} and @racketidfont{$n-end-pos}
+      are bound to the largest start and end positions, (i.e.,
+      @racketidfont{$}@math{i}@racketidfont{-start-pos} and
+      @racketidfont{$}@math{i}@racketidfont{-end-pos}).
+
+      An @tech{error production} can be defined by providing
+      a production of the form @racket[(error α)], where α is a
+      string of grammar symbols, possibly empty.
+      
+      All of the productions for a given non-terminal must be grouped
+      with it. That is, no @racket[non-terminal-id] may appear twice
+      on the left hand side in a parser.}
+
+
+      @item{@racket[(tokens group-id ...)]
+
+      Declares that all of the tokens defined in each
+      @racket[group-id]---as bound by @racket[define-tokens] or
+      @racket[define-empty-tokens]---can be used by the parser in the
+      @racket[grammar] declaration.}
+
+
+      @item{@racket[(start non-terminal-id)]
+
+      Declares a starting non-terminal for the grammar.
+      
+      Note: unlike @racket[parser], @racket[cfg-parser] does not
+      currently support multiple starting non-terminals
+      for the grammar.}
+
+
+      @item{@racket[(end token-id ...)]
+
+      Specifies a set of tokens from which some member must follow any
+      valid parse.  For example, an EOF token would be specified for a
+      parser that parses entire files and a newline token for a parser
+      that parses entire lines individually.}
+
+
+      @item{@racket[(@#,racketidfont{error} expr)]
+
+      The @racket[expr] should evaluate to a function which will be
+      executed for its side-effect whenever the parser encounters an
+      error.
+
+      If the @racket[src-pos] declaration is present, the function
+      should accept 5 arguments,:
+
+      @racketblock[(lambda (tok-ok? tok-name tok-value _start-pos _end-pos) 
+                     ....)]
+
+      Otherwise it should accept 3:
+
+      @racketblock[(lambda (tok-ok? tok-name tok-value) 
+                     ....)]
+
+      The first argument will be @racket[#f] if and only if the error
+      is that an invalid token was received.  The second and third
+      arguments will be the name and the value of the token at which
+      the error was detected.  The fourth and fifth arguments, if
+      present, provide the source positions of that token.}
+
+
+      @item{@racket[(src-pos)] @italic{OPTIONAL}
+
+      Causes the generated parser to expect input in the form
+      @racket[(make-position-token _token _start-pos _end-pos)] instead
+      of simply @racket[_token].  Include this option when using the
+      parser with a lexer generated with @racket[lexer-src-pos].}
+    ]
+
+    The result of a @racket[parser] expression with one @racket[start]
+    non-terminal is a function, @racket[_parse], that takes one
+    argument.  This argument must be a zero argument function,
+    @racket[_gen], that produces successive tokens of the input each
+    time it is called.  If desired, the @racket[_gen] may return
+    symbols instead of tokens, and the parser will treat symbols as
+    tokens of the corresponding name (with @racket[#f] as a value, so
+    it is usual to return symbols only in the case of empty tokens).
+    The @racket[_parse] function returns the value associated with the
+    parse tree by the semantic actions.  If the parser encounters an
+    error, after invoking the supplied error function, it will try to
+    use @tech{error production}s to continue parsing.  If it cannot, it
+    raises @racket[exn:fail:read].
+
+    If multiple non-terminals are provided in @racket[start], the
+    @racket[parser] expression produces a list of parsing functions,
+    one for each non-terminal in the same order. Each parsing function
+    is like the result of a parser expression with only one
+    @racket[start] non-terminal,
+
+    Each time the Racket code for a @racket[cfg-parser] is compiled
+    (e.g. when a @filepath{.rkt} file containing a @racket[cfg-parser] form
+    is loaded), the parser generator is run.  To avoid this overhead
+    place the parser into a module and compile the module to a
+    @filepath{.zo} bytecode file.
+                                             }
+                                            
+                                            
 @; ----------------------------------------------------------------------
 
 @section{Converting @exec{yacc} or @exec{bison} Grammars}
