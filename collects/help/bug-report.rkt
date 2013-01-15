@@ -201,6 +201,7 @@
     (set! cancel-kill-cust (make-custodian))
     (define response-chan (make-channel))
     (define exn-chan (make-channel))
+    (define starter-query (get-query))
     (define worker-thread
       (parameterize ([current-custodian cancel-kill-cust]
                      [current-alist-separator-mode 'amp])
@@ -222,16 +223,15 @@
                      "Are you human?" ; FIXME: use string-constant
                      captcha-question bug-frame)))
              (define post-data
-               (let* ([q (get-query)]
-                      [q (if captcha-answer
+               (let* ([q (if captcha-answer
                              `([captcha . ,captcha-answer]
                                ;; send back the question too: if things get really
                                ;; bad, then the server can make up random captchas
                                ;; and check the reply against the challenge that
                                ;; was used
                                [captcha-question . ,captcha-question]
-                               ,@q)
-                             q)])
+                               ,@starter-query)
+                             starter-query)])
                  (string->bytes/utf-8 (alist->form-urlencoded q))))
 
              (call/input-url
