@@ -88,17 +88,19 @@
         [(= num-ones dims)
          (define: js : (Vectorof Index) (make-vector dims 0))
          (define proc (unsafe-array-proc arr))
-         (unsafe-build-array ((inst vector Index) 1 1)
-                             (λ: ([ij : Indexes]) (proc js)))]
+         (array-default-strict
+          (unsafe-build-array ((inst vector Index) 1 1)
+                              (λ: ([ij : Indexes]) (proc js))))]
         [(= num-ones (- dims 1))
          (define-values (k m) (find-nontrivial-axis ds))
          (define js (make-thread-local-indexes dims))
          (define proc (unsafe-array-proc arr))
-         (unsafe-build-array ((inst vector Index) m 1)
-                             (λ: ([ij : Indexes])
-                               (let ([js  (js)])
-                                 (unsafe-vector-set! js k (unsafe-vector-ref ij 0))
-                                 (proc js))))]
+         (array-default-strict
+          (unsafe-build-array ((inst vector Index) m 1)
+                              (λ: ([ij : Indexes])
+                                (let ([js  (js)])
+                                  (unsafe-vector-set! js k (unsafe-vector-ref ij 0))
+                                  (proc js)))))]
         [else  (fail)]))
 
 (: ->col-matrix (All (A) ((U (Listof A) (Vectorof A) (Array A)) -> (Matrix A))))
@@ -157,7 +159,8 @@
 
 (: matrix->list* (All (A) (Matrix A) -> (Listof (Listof A))))
 (define (matrix->list* a)
-  (cond [(matrix? a)  (array->list (array->list-array a 1))]
+  (cond [(matrix? a)  (parameterize ([array-strictness #f])
+                        (array->list (array->list-array a 1)))]
         [else  (raise-argument-error 'matrix->list* "matrix?" a)]))
 
 (: vector*->matrix (All (A) (Vectorof (Vectorof A)) -> (Mutable-Array A)))
@@ -171,5 +174,6 @@
 
 (: matrix->vector* : (All (A) (Matrix A) -> (Vectorof (Vectorof A))))
 (define (matrix->vector* a)
-  (cond [(matrix? a)  (array->vector ((inst array-axis-reduce A (Vectorof A)) a 1 build-vector))]
+  (cond [(matrix? a)  (parameterize ([array-strictness #f])
+                        (array->vector ((inst array-axis-reduce A (Vectorof A)) a 1 build-vector)))]
         [else  (raise-argument-error 'matrix->vector* "matrix?" a)]))

@@ -7,7 +7,8 @@
          "utils.rkt"
          "../unsafe.rkt"
          "../vector/vector-mutate.rkt"
-         "../array/mutable-array.rkt")
+         "../array/mutable-array.rkt"
+         "../array/array-struct.rkt")
 
 (provide matrix-lu)
 
@@ -24,8 +25,10 @@
     [(M fail)
      (define m (square-matrix-size M))
      (define rows (matrix->vector* M))
-     ;; Construct L in a weird way to prove to TR that it has the right type
-     (define L (array->mutable-array (matrix-scale M (ann 0 Real))))
+     (define L
+       (parameterize ([array-strictness #f])
+         ;; Construct L in a weird way to prove to TR that it has the right type
+         (array->mutable-array (matrix-scale M (ann 0 Real)))))
      ;; Going to fill in the lower triangle by banging values into `ys'
      (define ys (mutable-array-data L))
      (let loop ([#{i : Nonnegative-Fixnum} 0])

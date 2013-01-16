@@ -49,3 +49,18 @@
 (check-exn exn:fail:contract? (λ () (for/matrix 0 2 () 0)))
 (check-exn exn:fail:contract? (λ () (for*/matrix 2 0 () 0)))
 (check-exn exn:fail:contract? (λ () (for*/matrix 0 2 () 0)))
+
+;; ===================================================================================================
+;; Arithmetic and mapping macros
+
+(check-equal? (matrix* (identity-matrix 4) (identity-matrix 4))
+              (identity-matrix 4))
+
+(check-equal? (matrix+ (identity-matrix 4) (identity-matrix 4))
+              (matrix-scale (identity-matrix 4) 2))
+
+(check-equal? (matrix- (identity-matrix 4) (identity-matrix 4))
+              (make-matrix 4 4 0))
+
+(check-equal? (matrix-map (λ (x) (* x -1)) (identity-matrix 4))
+              (matrix-scale (identity-matrix 4) -1))

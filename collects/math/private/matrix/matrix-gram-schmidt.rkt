@@ -36,15 +36,11 @@
       (vector-sub-proj! (unsafe-vector-ref rows i) row #f)
       (loop (fx+ i 1)))))
 
-(: matrix-gram-schmidt (case-> ((Matrix Real)             -> (Array Real))
-                               ((Matrix Real) Any         -> (Array Real))
-                               ((Matrix Real) Any Integer -> (Array Real))
-                               ((Matrix Number)             -> (Array Number))
-                               ((Matrix Number) Any         -> (Array Number))
-                               ((Matrix Number) Any Integer -> (Array Number))))
+(: matrix-gram-schmidt/ns (case-> ((Matrix Real) Any Integer -> (Array Real))
+                                  ((Matrix Number) Any Integer -> (Array Number))))
 ;; Performs Gram-Schmidt orthogonalization on M, assuming the rows before `start' are already
 ;; orthogonal
-(define (matrix-gram-schmidt M [normalize? #f] [start 0])
+(define (matrix-gram-schmidt/ns M normalize? start)
   (define rows (matrix->vector* (matrix-transpose M)))
   (define m (vector-length rows))
   (define i (find-nonzero-vector rows))
@@ -66,9 +62,18 @@
         [else
          (make-array (vector (matrix-num-rows M) 0) 0)]))
 
-(: matrix-basis-extension (case-> ((Matrix Real)   -> (Array Real))
-                                  ((Matrix Number) -> (Array Number))))
-(define (matrix-basis-extension B)
+(: matrix-gram-schmidt (case-> ((Matrix Real)             -> (Array Real))
+                               ((Matrix Real) Any         -> (Array Real))
+                               ((Matrix Real) Any Integer -> (Array Real))
+                               ((Matrix Number)             -> (Array Number))
+                               ((Matrix Number) Any         -> (Array Number))
+                               ((Matrix Number) Any Integer -> (Array Number))))
+(define (matrix-gram-schmidt M [normalize? #f] [start 0])
+  (call/ns (λ () (matrix-gram-schmidt/ns M normalize? start))))
+
+(: matrix-basis-extension/ns (case-> ((Matrix Real)   -> (Array Real))
+                                     ((Matrix Number) -> (Array Number))))
+(define (matrix-basis-extension/ns B)
   (define-values (m n) (matrix-shape B))
   (cond [(n . < . m)
          (define S (matrix-gram-schmidt (matrix-augment (list B (identity-matrix m))) #f n))
@@ -78,3 +83,8 @@
          (make-array (vector m 0) 0)]
         [else
          (raise-argument-error 'matrix-extend-row-basis "matrix? with width < height" B)]))
+
+(: matrix-basis-extension (case-> ((Matrix Real)   -> (Array Real))
+                                  ((Matrix Number) -> (Array Number))))
+(define (matrix-basis-extension B)
+  (call/ns (λ () (matrix-basis-extension/ns B))))

@@ -1,6 +1,7 @@
 #lang racket/base
 
-(provide inline-matrix*
+(provide inline-matrix-multiply
+         inline-matrix*
          inline-matrix+
          inline-matrix-
          inline-matrix-scale
@@ -41,12 +42,17 @@
               (* (arr-proc js) (brr-proc js))))
            2)))))
   
-  (define-syntax (inline-matrix* stx)
+  (define-syntax (do-inline-matrix* stx)
     (syntax-case stx ()
       [(_ arr)
        (syntax/loc stx arr)]
       [(_ arr brr crrs ...)
-       (syntax/loc stx (inline-matrix* (inline-matrix-multiply arr brr) crrs ...))]))
+       (syntax/loc stx (do-inline-matrix* (inline-matrix-multiply arr brr) crrs ...))]))
+  
+  (define-syntax-rule (inline-matrix* arr brrs ...)
+    (array-default-strict
+     (parameterize ([array-strictness #f])
+       (do-inline-matrix* arr brrs ...))))
   
   (define-syntax (inline-matrix-map stx)
     (syntax-case stx ()
@@ -55,7 +61,8 @@
          (let*-values ([(arr)  arr-expr]
                        [(m n)  (matrix-shape arr)]
                        [(proc)  (unsafe-array-proc arr)])
-           (unsafe-build-array ((inst vector Index) m n) (λ: ([js : Indexes]) (f (proc js))))))]
+           (array-default-strict
+            (unsafe-build-array ((inst vector Index) m n) (λ: ([js : Indexes]) (f (proc js)))))))]
       [(_ f arr-expr brr-exprs ...)
        (with-syntax ([(brrs ...)  (generate-temporaries #'(brr-exprs ...))]
                      [(procs ...)  (generate-temporaries #'(brr-exprs ...))])
@@ -65,10 +72,11 @@
              (let-values ([(m n)  (matrix-shapes 'matrix-map arr brrs ...)]
                           [(proc)  (unsafe-array-proc arr)]
                           [(procs)  (unsafe-array-proc brrs)] ...)
-               (unsafe-build-array
-                ((inst vector Index) m n)
-                (λ: ([js : Indexes])
-                  (f (proc js) (procs js) ...)))))))]))
+               (array-default-strict
+                (unsafe-build-array
+                 ((inst vector Index) m n)
+                 (λ: ([js : Indexes])
+                   (f (proc js) (procs js) ...))))))))]))
   
   (define-syntax-rule (inline-matrix+ arr0 arrs ...) (inline-matrix-map + arr0 arrs ...))
   (define-syntax-rule (inline-matrix- arr0 arrs ...) (inline-matrix-map - arr0 arrs ...))
@@ -101,10 +109,11 @@
        (define g0 (unsafe-array-proc arr0))
        (define g1 (unsafe-array-proc arr1))
        (define gs (map (inst unsafe-array-proc A) arrs))
-       (unsafe-build-array
-        ((inst vector Index) m n)
-        (λ: ([js : Indexes]) (apply f (g0 js) (g1 js)
-                                    (map (λ: ([g : (Indexes -> A)]) (g js)) gs))))]))
+       (array-default-strict
+        (unsafe-build-array
+         ((inst vector Index) m n)
+         (λ: ([js : Indexes]) (apply f (g0 js) (g1 js)
+                                     (map (λ: ([g : (Indexes -> A)]) (g js)) gs)))))]))
   
   )  ; module
 

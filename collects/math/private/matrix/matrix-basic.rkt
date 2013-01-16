@@ -81,13 +81,14 @@
          (raise-argument-error 'matrix-row (format "Index < ~a" m) 1 a i)]
         [else
          (define proc (unsafe-array-proc a))
-         (unsafe-build-array
-          ((inst vector Index) 1 n)
-          (λ: ([ij : Indexes])
-            (unsafe-vector-set! ij 0 i)
-            (define res (proc ij))
-            (unsafe-vector-set! ij 0 0)
-            res))]))
+         (array-default-strict
+          (unsafe-build-array
+           ((inst vector Index) 1 n)
+           (λ: ([ij : Indexes])
+             (unsafe-vector-set! ij 0 i)
+             (define res (proc ij))
+             (unsafe-vector-set! ij 0 0)
+             res)))]))
 
 (: matrix-col (All (A) (Matrix A) Integer -> (Matrix A)))
 (define (matrix-col a j)
@@ -96,53 +97,61 @@
          (raise-argument-error 'matrix-row (format "Index < ~a" n) 1 a j)]
         [else
          (define proc (unsafe-array-proc a))
-         (unsafe-build-array
-          ((inst vector Index) m 1)
-          (λ: ([ij : Indexes])
-            (unsafe-vector-set! ij 1 j)
-            (define res (proc ij))
-            (unsafe-vector-set! ij 1 0)
-            res))]))
+         (array-default-strict
+          (unsafe-build-array
+           ((inst vector Index) m 1)
+           (λ: ([ij : Indexes])
+             (unsafe-vector-set! ij 1 j)
+             (define res (proc ij))
+             (unsafe-vector-set! ij 1 0)
+             res)))]))
 
 (: matrix-rows (All (A) (Matrix A) -> (Listof (Matrix A))))
 (define (matrix-rows a)
-  (array->array-list (array-axis-insert (ensure-matrix 'matrix-rows a) 1) 0))
+  (map (λ: ([a : (Matrix A)]) (array-default-strict a))
+       (parameterize ([array-strictness #f])
+         (array->array-list (array-axis-insert (ensure-matrix 'matrix-rows a) 1) 0))))
 
 (: matrix-cols (All (A) (Matrix A) -> (Listof (Matrix A))))
 (define (matrix-cols a)
-  (array->array-list (array-axis-insert (ensure-matrix 'matrix-cols a) 2) 1))
+  (map (λ: ([a : (Matrix A)]) (array-default-strict a))
+       (parameterize ([array-strictness #f])
+         (array->array-list (array-axis-insert (ensure-matrix 'matrix-cols a) 2) 1))))
 
 (: matrix-diagonal (All (A) ((Matrix A) -> (Array A))))
 (define (matrix-diagonal a)
   (define m (square-matrix-size a))
   (define proc (unsafe-array-proc a))
-  (unsafe-build-array
-   ((inst vector Index) m)
-   (λ: ([js : Indexes])
-     (define i (unsafe-vector-ref js 0))
-     (proc ((inst vector Index) i i)))))
+  (array-default-strict
+   (unsafe-build-array
+    ((inst vector Index) m)
+    (λ: ([js : Indexes])
+      (define i (unsafe-vector-ref js 0))
+      (proc ((inst vector Index) i i))))))
 
 (: matrix-upper-triangle (All (A) ((Matrix A) -> (Matrix (U A 0)))))
 (define (matrix-upper-triangle M)
   (define-values (m n) (matrix-shape M))
   (define proc (unsafe-array-proc M))
-  (unsafe-build-array
-   ((inst vector Index) m n)
-   (λ: ([ij : Indexes])
-     (define i (unsafe-vector-ref ij 0))
-     (define j (unsafe-vector-ref ij 1))
-     (if (i . fx<= . j) (proc ij) 0))))
+  (array-default-strict
+   (unsafe-build-array
+    ((inst vector Index) m n)
+    (λ: ([ij : Indexes])
+      (define i (unsafe-vector-ref ij 0))
+      (define j (unsafe-vector-ref ij 1))
+      (if (i . fx<= . j) (proc ij) 0)))))
 
 (: matrix-lower-triangle (All (A) ((Matrix A) -> (Matrix (U A 0)))))
 (define (matrix-lower-triangle M)
   (define-values (m n) (matrix-shape M))
   (define proc (unsafe-array-proc M))
-  (unsafe-build-array
-   ((inst vector Index) m n)
-   (λ: ([ij : Indexes])
-     (define i (unsafe-vector-ref ij 0))
-     (define j (unsafe-vector-ref ij 1))
-     (if (i . fx>= . j) (proc ij) 0))))
+  (array-default-strict
+   (unsafe-build-array
+    ((inst vector Index) m n)
+    (λ: ([ij : Indexes])
+      (define i (unsafe-vector-ref ij 0))
+      (define j (unsafe-vector-ref ij 1))
+      (if (i . fx>= . j) (proc ij) 0)))))
 
 ;; ===================================================================================================
 ;; Embiggenment (this is a perfectly cromulent word)
@@ -176,34 +185,38 @@
 
 (: matrix-1norm ((Matrix Number) -> Nonnegative-Real))
 (define (matrix-1norm a)
-  (array-all-sum (array-magnitude a)))
+  (parameterize ([array-strictness #f])
+    (array-all-sum (array-magnitude a))))
 
 (: matrix-2norm ((Matrix Number) -> Nonnegative-Real))
 (define (matrix-2norm a)
-  (let ([a  (array-strict (array-magnitude a))])
-    ;; Compute this divided by the maximum to avoid underflow and overflow
-    (define mx (array-all-max a))
-    (cond [(and (rational? mx) (positive? mx))
-           (* mx (sqrt (array-all-sum
-                        (inline-array-map (λ: ([x : Nonnegative-Real]) (sqr (/ x mx))) a))))]
-          [else  mx])))
+  (parameterize ([array-strictness #f])
+    (let ([a  (array-strict (array-magnitude a))])
+      ;; Compute this divided by the maximum to avoid underflow and overflow
+      (define mx (array-all-max a))
+      (cond [(and (rational? mx) (positive? mx))
+             (* mx (sqrt (array-all-sum
+                          (inline-array-map (λ: ([x : Nonnegative-Real]) (sqr (/ x mx))) a))))]
+            [else  mx]))))
 
 (: matrix-inf-norm ((Matrix Number) -> Nonnegative-Real))
 (define (matrix-inf-norm a)
-  (array-all-max (array-magnitude a)))
+  (parameterize ([array-strictness #f])
+    (array-all-max (array-magnitude a))))
 
 (: matrix-p-norm ((Matrix Number) Positive-Real -> Nonnegative-Real))
 (define (matrix-p-norm a p)
-  (let ([a  (array-strict (array-magnitude a))])
-    ;; Compute this divided by the maximum to avoid underflow and overflow
-    (define mx (array-all-max a))
-    (cond [(and (rational? mx) (positive? mx))
-           (assert
-            (* mx (expt (array-all-sum
-                         (inline-array-map (λ: ([x : Nonnegative-Real]) (expt (/ x mx) p)) a))
-                        (/ p)))
-            (make-predicate Nonnegative-Real))]
-          [else  mx])))
+  (parameterize ([array-strictness #f])
+    (let ([a  (array-strict (array-magnitude a))])
+      ;; Compute this divided by the maximum to avoid underflow and overflow
+      (define mx (array-all-max a))
+      (cond [(and (rational? mx) (positive? mx))
+             (assert
+              (* mx (expt (array-all-sum
+                           (inline-array-map (λ: ([x : Nonnegative-Real]) (expt (/ x mx) p)) a))
+                          (/ p)))
+              (make-predicate Nonnegative-Real))]
+            [else  mx]))))
 
 (: matrix-norm (case-> ((Matrix Number) -> Nonnegative-Real)
                        ((Matrix Number) Real -> Nonnegative-Real)))
@@ -224,21 +237,23 @@
 (define matrix-dot
   (case-lambda
     [(a)
-     (assert
-      (array-all-sum
-       (inline-array-map
-        (λ (x) (* x (conjugate x)))
-        (ensure-matrix 'matrix-dot a)))
-      (make-predicate Nonnegative-Real))]
+     (parameterize ([array-strictness #f])
+       (assert
+        (array-all-sum
+         (inline-array-map
+          (λ (x) (* x (conjugate x)))
+          (ensure-matrix 'matrix-dot a)))
+        (make-predicate Nonnegative-Real)))]
     [(a b)
      (define-values (m n) (matrix-shapes 'matrix-dot a b))
      (define aproc (unsafe-array-proc a))
      (define bproc (unsafe-array-proc b))
-     (array-all-sum
-      (unsafe-build-array
-       ((inst vector Index) m n)
-       (λ: ([js : Indexes])
-         (* (aproc js) (conjugate (bproc js))))))]))
+     (parameterize ([array-strictness #f])
+       (array-all-sum
+        (unsafe-build-array
+         ((inst vector Index) m n)
+         (λ: ([js : Indexes])
+           (* (aproc js) (conjugate (bproc js)))))))]))
 
 (: matrix-cos-angle (case-> ((Matrix Real) (Matrix Real) -> Real)
                             ((Matrix Number) (Matrix Number) -> Number)))
@@ -283,12 +298,15 @@
 (: matrix-hermitian (case-> ((Matrix Real) -> (Matrix Real))
                             ((Matrix Number) -> (Matrix Number))))
 (define (matrix-hermitian a)
-  (array-axis-swap (array-conjugate (ensure-matrix 'matrix-hermitian a)) 0 1))
+  (array-default-strict
+   (parameterize ([array-strictness #f])
+     (array-axis-swap (array-conjugate (ensure-matrix 'matrix-hermitian a)) 0 1))))
 
 (: matrix-trace (case-> ((Matrix Real) -> Real)
                         ((Matrix Number) -> Number)))
 (define (matrix-trace a)
-  (array-all-sum (matrix-diagonal a)))
+  (parameterize ([array-strictness #f])
+    (array-all-sum (matrix-diagonal a))))
 
 ;; ===================================================================================================
 ;; Row/column operations
@@ -382,11 +400,13 @@
                                    ((Matrix Number) Real -> Boolean)))
 (define (matrix-rows-orthogonal? M [eps (* 10 epsilon.0)])
   (cond [(negative? eps)  (raise-argument-error 'matrix-rows-orthogonal? "Nonnegative-Real" 1 M eps)]
-        [else  (pairwise-orthogonal? (matrix-rows M) eps)]))
+        [else  (parameterize ([array-strictness #f])
+                 (pairwise-orthogonal? (matrix-rows M) eps))]))
          
 
 (: matrix-cols-orthogonal? (case-> ((Matrix Number) -> Boolean)
                                    ((Matrix Number) Real -> Boolean)))
 (define (matrix-cols-orthogonal? M [eps (* 10 epsilon.0)])
   (cond [(negative? eps)  (raise-argument-error 'matrix-cols-orthogonal? "Nonnegative-Real" 1 M eps)]
-        [else  (pairwise-orthogonal? (matrix-cols M) eps)]))
+        [else  (parameterize ([array-strictness #f])
+                 (pairwise-orthogonal? (matrix-cols M) eps))]))
