@@ -1530,12 +1530,11 @@
 
 (define (scan-for-start-pos t pos)
   (define-values (x y) (pos->xy t pos))
-  (define adjs '(0 -1 1))
   (findf
-     (λ (p) (i? t p))
-     (for*/list ([xadj adjs]
-                 [yadj adjs])
-       (xy->pos t (+ x xadj) (+ y yadj)))))
+   (λ (p) (i? t p))
+   (for*/list ([xadj '(0 -1)]
+               [yadj '(0 -1 1)])
+     (xy->pos t (+ x xadj) (+ y yadj)))))
        
 (define (i? t pos)
   (and pos 
