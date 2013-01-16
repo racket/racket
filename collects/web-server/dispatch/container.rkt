@@ -44,8 +44,8 @@
      c
      (snoc (container-bunches c) (bunch d u))))
 
-(define-syntax-rule (dispatch-rules! container-expr [pat fun] ...)
-  (let-values ([(dispatch url) (dispatch-rules [pat fun] ...)])
+(define-syntax-rule (dispatch-rules! container-expr pattern-clause ...)
+  (let-values ([(dispatch url) (dispatch-rules pattern-clause ...)])
     (container-cons! container-expr
                      dispatch url)))
 
