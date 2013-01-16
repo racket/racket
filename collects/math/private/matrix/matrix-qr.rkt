@@ -5,7 +5,8 @@
          "matrix-arithmetic.rkt"
          "matrix-constructors.rkt"
          "matrix-gram-schmidt.rkt"
-         "../array/array-transform.rkt")
+         "../array/array-transform.rkt"
+         "../array/array-struct.rkt")
 
 (provide matrix-qr)
 
@@ -23,11 +24,9 @@ produces matrices for which `matrix-orthogonal?' returns #t with eps <= 10*epsil
 independently of the matrix size.
 |#
 
-(: matrix-qr (case-> ((Matrix Real)     -> (Values (Matrix Real) (Matrix Real)))
-                     ((Matrix Real) Any -> (Values (Matrix Real) (Matrix Real)))
-                     ((Matrix Number)     -> (Values (Matrix Number) (Matrix Number)))
-                     ((Matrix Number) Any -> (Values (Matrix Number) (Matrix Number)))))
-(define (matrix-qr M [full? #t])
+(: matrix-qr/ns (case-> ((Matrix Real) Any -> (Values (Matrix Real) (Matrix Real)))
+                        ((Matrix Number) Any -> (Values (Matrix Number) (Matrix Number)))))
+(define (matrix-qr/ns M full?)
   (define B (matrix-gram-schmidt M #f))
   (define Q
     (matrix-gram-schmidt
@@ -37,3 +36,13 @@ independently of the matrix size.
            [else  (matrix-col (identity-matrix (matrix-num-rows M)) 0)])
      #t))
   (values Q (matrix-upper-triangle (matrix* (matrix-hermitian Q) M))))
+
+(: matrix-qr (case-> ((Matrix Real)     -> (Values (Matrix Real) (Matrix Real)))
+                     ((Matrix Real) Any -> (Values (Matrix Real) (Matrix Real)))
+                     ((Matrix Number)     -> (Values (Matrix Number) (Matrix Number)))
+                     ((Matrix Number) Any -> (Values (Matrix Number) (Matrix Number)))))
+(define (matrix-qr M [full? #t])
+  (define-values (Q R) (parameterize ([array-strictness #f])
+                         (matrix-qr/ns M full?)))
+  (values (array-default-strict Q)
+          (array-default-strict R)))

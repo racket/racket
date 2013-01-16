@@ -1,6 +1,7 @@
 #lang typed/racket/base
 
-(require racket/string
+(require racket/performance-hint
+         racket/string
          racket/fixnum
          "matrix-types.rkt"
          "../unsafe.rkt"
@@ -113,3 +114,13 @@
           ;; Make sure the element below the pivot is zero
           (unsafe-vector-set! row_l j (- x_lj x_lj))))
       (loop (fx+ l 1)))))
+
+(begin-encourage-inline
+  
+  (: call/ns (All (A) ((-> (Matrix A)) -> (Matrix A))))
+  (define (call/ns thnk)
+    (array-default-strict
+     (parameterize ([array-strictness #f])
+       (thnk))))
+  
+  )  ; begin-encourage-inline
