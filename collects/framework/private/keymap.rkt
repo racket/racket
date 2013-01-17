@@ -1506,10 +1506,10 @@
         (define dn (xy->pos t x (+ y 1)))
         (define lt (xy->pos t (- x 1) y))
         (define rt (xy->pos t (+ x 1) y))
-        (define i-up? (and (i? t up) (member c up-chars)))
-        (define i-dn? (and (i? t dn) (member c dn-chars)))
-        (define i-lt? (and (i? t lt) (member c lt-chars)))
-        (define i-rt? (and (i? t rt) (member c rt-chars)))
+        (define i-up? (and (i? t up) (or (member c up-chars) (member c double-barred-chars))))
+        (define i-dn? (and (i? t dn) (or (member c dn-chars) (member c double-barred-chars))))
+        (define i-lt? (and (i? t lt) (or (member c lt-chars) (member c double-barred-chars))))
+        (define i-rt? (and (i? t rt) (or (member c rt-chars) (member c double-barred-chars))))
         (cond
           [(and i-up? i-dn? i-lt? i-rt?) (set t pos "╬")]
           [(and i-dn? i-lt? i-rt?)       (set t pos "╦")]
@@ -1526,7 +1526,7 @@
         (when i-dn? (loop dn))
         (when i-lt? (loop lt))
         (when i-rt? (loop rt))))
-    (send t end-edit-sequence)))
+    (send t end-edit-sequence)))  
 
 (define (scan-for-start-pos t pos)
   (define-values (x y) (pos->xy t pos))
