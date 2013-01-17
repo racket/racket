@@ -217,10 +217,9 @@
                         (get-one (not cell-wall-broken?) (car previous-map) #f #t)
                         (get-one (not cell-wall-broken?) (car previous-map) #t #f)
                         (get-one (not cell-wall-broken?) (car previous-map) #t #t))))
-            (set! allowed-chars (filter values allowed-chars))
             (unless (member sep allowed-chars)
               (line-of-interest)
-              (readerr/expected allowed-chars pos))])
+              (readerr/expected (filter values allowed-chars) pos))])
          (cond
            [(null? table-column-breaks) 
             (whitespace-to-end (+ pos 1))
@@ -588,6 +587,14 @@
                      "  ║  ║  ║\n"
                      "  ╚══╩══╝\n"))
                   (list (srcloc #f 4 8 33 1)))
+    (check-equal? (get-err-locs 
+                   '("#2d\n"
+                     "  ╔══╦══╗\n"
+                     "  ║  ║  ║\n"
+                     "  ╠═\n"
+                     "  ║  ║  ║\n"
+                     "  ╚══╩══╝\n"))
+                  (list (srcloc #f 4 4 29 1)))
     (check-equal? (get-err-locs
                    '("#2d\n"
                      "  +----+\n"
@@ -613,6 +620,29 @@
                      "  ║  ║      ║\n"
                      "  ╚══╩══════╝\n"))
                   (list (srcloc #f 6 8 69 1)))
+    
+    (check-equal? (get-err-locs 
+                   '("#2d\n"
+                     "  ╔══╦══╦═══╗\n"
+                     "  ║  ║  ║   ║\n"
+                     "  ╠══╬══╩═══╣\n"
+                     "  ║  ║      ║\n"
+                     "  ╠══╬══╝═══╣\n"
+                     "  ║  ║      ║\n"
+                     "  ╚══╩══════╝\n")) 
+                  (list (srcloc #f 6 8 69 1)))
+    
+    (check-equal? (get-err-locs 
+                   '("#2d\n"
+                     "  ╔══╦═══╦═══╗\n"
+                     "  ║  ║   ║   ║\n"
+                     "  ╠══╬═══╬═══╣\n"
+                     "  ║  ║   ║   ║\n"
+                     "  ╠══╣ ═ ╠═══╣\n"
+                     "  ║  ║   ║   ║\n"
+                     "  ╚══╩═══╩═══╝\n")) 
+                  (list (srcloc #f 6 7 72 1)
+                        (srcloc #f 6 5 70 1)))
     )
     
   (let ([lines (hash-map lines-table (λ (x y) x))])
