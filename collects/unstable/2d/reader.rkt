@@ -120,37 +120,13 @@
             (set! initial-space-count pos)]
            [else
             (line-of-interest)
-            (readerr "expected the first character in the table to be ╔"
+            (readerr "expected the first non-whitespace character in the table to be ╔"
                      pos)])]
         [else
          (line-of-interest)
          (readerr "expected some non-whitespace characters in the first line of the table"
                   0
                   pos)]))
-    (let loop ([pos (+ initial-space-count 1)]
-               [current-column-width 0]
-               [column 0])
-      (cond
-        [(< pos (string-length current-line))
-         (case (string-ref current-line pos)
-           [(#\╦) 
-            (add-node column 0)
-            (cons current-column-width (loop (+ pos 1) 0 (+ column 1)))]
-           [(#\═) (loop (+ pos 1) (+ current-column-width 1) column)]
-           [(#\╗) 
-            (add-node column 0)
-            (let loop ([pos (+ pos 1)])
-              (when (< pos (string-length current-line))
-                (cond
-                  [(char-whitespace? (string-ref current-line pos))
-                   (loop (+ pos 1))]
-                  [else
-                   (line-of-interest)
-                   (readerr "expected only whitespace to follow ╗ (on the same line)" pos)]))
-              (list current-column-width))])]
-        [else 
-         (line-of-interest)
-         (readerr "expected ╗ to terminate the first line" pos)]))
     (let loop ([pos (+ initial-space-count 1)]
                [current-column-width 0]
                [column 0]
@@ -575,7 +551,10 @@
                 #f)
 
   (define lines-table (hash-copy all-line-of-interest))
+  
   (parameterize ([current-lines lines-table])
+    (check-equal? (get-err-locs '("#2d "))
+                  (list (srcloc #f 1 0 1 2)))
     (check-equal? (get-err-locs 
                    '("#2d\n"
                      "  ╔══╦══╗\n"
@@ -592,8 +571,50 @@
                      "  ╠══╬══╣\n"
                      "  ║  ║  ║\n"
                      "  ╚══╩══╝\n"))
-                  (list (srcloc #f 3 4 19 1)
-                        (srcloc #f 2 4 9 1))))
+                  (list (srcloc #f 3 4 19 1)))
+    (check-equal? (get-err-locs 
+                   '("#2d\n"
+                     "  ╔══╦══╗\n"
+                     " ║  ║  ║\n"
+                     " ╠══╬══╣\n"
+                     " ║  ║  ║\n"
+                     " ╚══╩══╝\n"))
+                  (list (srcloc #f 3 1 16 1)))
+    (check-equal? (get-err-locs 
+                   '("#2d\n"
+                     "  ╔══╦══╗\n"
+                     "  ║  ║  ║\n"
+                     "  ╠══╬══\n"
+                     "  ║  ║  ║\n"
+                     "  ╚══╩══╝\n"))
+                  (list (srcloc #f 4 8 33 1)))
+    (check-equal? (get-err-locs
+                   '("#2d\n"
+                     "  +----+\n"
+                     "  |    |\n"
+                     "  +----+\n"))
+                  (list (srcloc #f 2 2 7 1)))
+    (check-equal? (get-err-locs
+                   '("#2d\n"
+                     "   \n"))
+                  (list (srcloc #f 2 0 5 3)))
+    (check-equal? (get-err-locs 
+                   '("#2d\n"
+                     "  ╔══╦══\n"))
+                  (list (srcloc #f 2 8 13 1)))
+    
+    (check-equal? (get-err-locs 
+                   '("#2d\n"
+                     "  ╔══╦══╦═══╗\n"
+                     "  ║  ║  ║   ║\n"
+                     "  ╠══╬══╩═══╣\n"
+                     "  ║  ║      ║\n"
+                     "  ╠══╣  ═   ║\n"
+                     "  ║  ║      ║\n"
+                     "  ╚══╩══════╝\n"))
+                  (list (srcloc #f 6 8 69 1)))
+    )
+    
   (let ([lines (hash-map lines-table (λ (x y) x))])
     (unless (null? lines)
       (eprintf "no test case for errors on lines: ~s\n"
@@ -701,15 +722,17 @@
 (module+ main
   (define s (string-append 
              "#2d\n"
-             "  ╔══╦══╗\n"
-             "     ║  ║\n"
-             "  ╠══╬══╣\n"
-             "  ║  ║  ║\n"
-             "  ╚══╩══╝\n"))
+             "  ╔══╦══╦═══╗\n"
+             "  ║  ║  ║   ║\n"
+             "  ╠══╬══╩═══╣\n"
+             "  ║  ║      ║\n"
+             "  ╠══╣  ═   ║\n"
+             "  ║  ║      ║\n"
+             "  ╚══╩══════╝\n"))
   
   (define p (open-input-string s))
   (port-count-lines! p)
-  (with-handlers ((exn:fail:read? exn:fail:read-srclocs))
+  (with-handlers (#;(exn:fail:read? exn:fail:read-srclocs))
     (parameterize ([current-readtable rt])
       (read p)))
   ;; account for the "#2d" that was read from the first line
