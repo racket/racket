@@ -329,16 +329,16 @@
 (define/cond-contract (make-arr* dom rng
                                  #:rest [rest #f] #:drest [drest #f] #:kws [kws null]
                                  #:filters [filters -no-filter] #:object [obj -no-obj])
-  (c:->* ((listof Type/c) (or/c Values? ValuesDots? Type/c))
+  (c:->* ((listof Type/c) (or/c SomeValues/c Type/c))
          (#:rest (or/c #f Type/c)
           #:drest (or/c #f (cons/c Type/c symbol?))
           #:kws (listof Keyword?)
           #:filters FilterSet?
           #:object Object?)
          arr?)
-  (make-arr dom (if (or (Values? rng) (ValuesDots? rng))
-                    rng
-                    (make-Values (list (-result rng filters obj))))
+  (make-arr dom (if (Type/c? rng)
+                    (make-Values (list (-result rng filters obj)))
+                    rng)
             rest drest (sort #:key Keyword-kw kws keyword<?)))
 
 (define-syntax (->* stx)

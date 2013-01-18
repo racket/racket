@@ -83,7 +83,7 @@
                                          #:msg-thunk [msg-thunk (lambda (dom) dom)])
    ((syntax? syntax? Type/c (c:listof (c:listof Type/c)) (c:listof (c:or/c #f Type/c))
      (c:listof (c:or/c #f (c:cons/c Type/c (c:or/c c:natural-number/c symbol?))))
-     (c:listof (c:or/c Values? ValuesDots?)) (c:listof tc-results?) (c:or/c #f Type/c) c:any/c)
+     (c:listof SomeValues/c) (c:listof tc-results?) (c:or/c #f Type/c) c:any/c)
     (#:expected (c:or/c #f tc-results?) #:return tc-results?
      #:msg-thunk (c:-> string? string?))
     . c:->* . tc-results?)

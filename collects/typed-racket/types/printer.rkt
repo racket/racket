@@ -165,6 +165,8 @@
        (fp "~a ...~a~a "
            (car drest) (if (special-dots-printing?) "" " ") (cdr drest)))
      (match rng
+       [(AnyValues:)
+        (fp "-> AnyValues")]
        [(Values: (list (Result: t (FilterSet: (Top:) (Top:)) (Empty:))))
         (fp "-> ~a" t)]
        [(Values: (list (Result: t
@@ -272,7 +274,8 @@
     [(ListDots: dty dbound)
      (fp "(List ~a ...~a~a)" dty (if (special-dots-printing?) "" " ") dbound)]
     [(F: nm) (fp "~a" nm)]
-    ;; FIXME
+    ;; FIXME (Values are not types and shouldn't need to be considered here
+    [(AnyValues:) (fp "AnyValues")]
     [(Values: (list v)) (fp "~a" v)]
     [(Values: (list v ...)) (fp "~s" (cons 'values v))]
     [(ValuesDots: v dty dbound)

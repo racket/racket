@@ -13,7 +13,7 @@
 
 
 (define/cond-contract (abstract-results results arg-names)
-     (tc-results? (listof identifier?) . -> . (or/c Values? ValuesDots?))
+     (tc-results? (listof identifier?) . -> . SomeValues/c)
      (define keys (for/list ([(nm k) (in-indexed arg-names)]) k))
      (match results
        [(tc-results: ts fs os dty dbound)

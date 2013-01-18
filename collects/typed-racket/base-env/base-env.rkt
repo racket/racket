@@ -1970,7 +1970,7 @@
 [make-security-guard
  (->opt -Security-Guard
         (-> Sym (-opt -Path) (-lst Sym) ManyUniv)
-        (-> Sym (-opt -String) (-opt -PosInt) (Un (one-of/c 'server 'client)  ManyUniv))
+        (-> Sym (-opt -String) (-opt -PosInt) (one-of/c 'server 'client)  ManyUniv)
         [(-opt (-> Sym -Path -Path ManyUniv))]
         -Security-Guard)]
 [current-security-guard (-Param -Security-Guard -Security-Guard)]

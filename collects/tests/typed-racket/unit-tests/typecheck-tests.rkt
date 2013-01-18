@@ -1388,6 +1388,8 @@
 
         ;Wills
         (tc-e (make-will-executor) -Will-Executor)
+        ;; FIXME: Broken because ManyUniv doesn't have a corresponding tc-result
+        #;
         (tc-e (let: ((w : Will-Executor (make-will-executor)))
                 (will-register w 'a (lambda: ((s : Symbol)) (void)))
                 (will-execute w)) ManyUniv)
