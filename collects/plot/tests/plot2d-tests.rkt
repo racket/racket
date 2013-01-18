@@ -308,6 +308,10 @@
                             #:widths '(2) #:styles '(dot)))
             #:x-min -5 #:x-max 5 #:y-min -5 #:y-max 5))
 
+;; Both plots should be blank
+(plot (contours f2 -5 0) #:x-min 1 #:x-max 3 #:y-min 1 #:y-max 3)
+(plot (contour-intervals f2 -5 0) #:x-min 1 #:x-max 3 #:y-min 1 #:y-max 3)
+
 (time (plot (contour-intervals f1 -5 5 -5 5 #:label "z")))
 
 (time (plot (contour-intervals

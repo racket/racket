@@ -62,6 +62,9 @@
     (define num (animated-samples samples))
     (define sample (g (vector x-ivl y-ivl) (vector num num)))
     (match-define (2d-sample xs ys zss z-min z-max) sample)
+    
+    (unless (and z-min z-max) (return empty))
+    
     (match-define (list (tick zs _ labels) ...) (contour-ticks (plot-z-ticks) z-min z-max levels #f))
     
     ;; need to check this or in-cycle below does an infinite loop (I think it's an in-cycle bug)
@@ -120,6 +123,9 @@
     (define num (animated-samples samples))
     (define sample (g (vector x-ivl y-ivl) (vector num num)))
     (match-define (2d-sample xs ys zss z-min z-max) sample)
+    
+    (unless (and z-min z-max) (return empty))
+    
     (match-define (list (tick zs _ labels) ...) (contour-ticks (plot-z-ticks) z-min z-max levels #t))
     
     (define-values (z-ivls ivl-labels)
