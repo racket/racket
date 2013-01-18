@@ -1,5 +1,6 @@
 #;
 (
+ TR info: invalid-binary-nonzero-fixnum.rkt 10:3 display -- hidden parameter
 )
 
 #lang typed/scheme
