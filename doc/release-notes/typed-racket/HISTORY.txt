@@ -1,3 +1,6 @@
+5.3.2
+- Added types for control operators
+- Added `typed/untyped-utils`
 5.3.1
 - Revised handling of `Any` exported to untyped code
 - Added `cast`
