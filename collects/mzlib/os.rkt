@@ -68,48 +68,6 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; truncate-file
 
-;; From fcntl.h
-(define O_RDONLY #x0000)
-(define O_WRONLY #x0001)
-(define O_RDWR   #x0002)
-(define O_APPEND #x0008)
-(define O_CREAT  #x0100)
-(define O_TRUNC  #x0200)
-(define O_EXCL   #x0400)
-
-;; winize : string -> string
-(define (winize fn-name)
-  (if (eq? 'windows (system-type)) (string-append "_" fn-name) fn-name))
-
-;; open : string int -> int
-(define open
-  (delay-ffi-obj (winize "open") #f (_fun #:save-errno 'posix _string _int -> _int)))
-
-;; close : int -> int
-(define close
-  (delay-ffi-obj (winize "close") #f (_fun #:save-errno 'posix _int -> _int)))
-
-;; ftruncate : int int -> int
-(define ftruncate
-  (if (eq? 'windows (system-type))
-    (delay-ffi-obj "_chsize" #f (_fun #:save-errno 'posix _int _llong -> _int))
-    (delay-ffi-obj "ftruncate" #f (_fun #:save-errno 'posix _int _llong -> _int))))
-
-;; on-c-fail : int (-> X) int or X
-(define (on-c-fail thunk fail-k)
-  (let ([val (thunk)])
-    (cond
-     [(> val -1) val]
-     [(= (saved-errno) (lookup-errno 'EINTR))
-      ;; interrupted by a signal; retry
-      (on-c-fail thunk fail-k)]
-     [else (fail-k)])))
-
-(define scheme_security_check_file
-  (delay-ffi-obj "scheme_security_check_file" #f
-                 (_fun _string _string _int -> _void)))
-(define SCHEME_GUARD_FILE_WRITE #x2)
-
 ;; truncate-file : path int -> void
 (define truncate-file
   (opt-lambda (file [size 0])
@@ -119,25 +77,13 @@
     (when (not (integer? size))
       (error 'truncate-file
              "expects argument of type <integer>; given ~s" size))
-    ((force scheme_security_check_file)
-     "truncate-file"
-     (if (path? file) (path->string file) file)
-     SCHEME_GUARD_FILE_WRITE)
-    (let ([fd (on-c-fail
-               (lambda ()
-                 ((force open) file O_WRONLY))
-               (lambda ()
-                 (error 'truncate-file "could not open file")))])
-      (on-c-fail
-       (lambda ()
-         ((force ftruncate) fd size))
-       (lambda ()
-         ((force close) fd)
-         (error 'truncate-file "could not truncate file")))
-      (on-c-fail
-       (lambda ()
-         ((force close) fd))
-       void)
-      (void))))
+    (let ([c (make-custodian)]) ; avoid leaks on errors
+      (dynamic-wind
+          void
+          (lambda ()
+            (define out (open-output-file file 'update))
+            (file-truncate out size))
+          (lambda ()
+            (custodian-shutdown-all c))))))
 
 (provide truncate-file)

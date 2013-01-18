@@ -418,6 +418,20 @@
 (write-char #\x out-p)
 (close-output-port out-p)
 (test 'hx with-input-from-file tempfilename read)
+
+(let ([o (open-output-file tempfilename #:exists 'truncate)])
+  (close-output-port o))
+(test 0 file-size tempfilename)
+(let ([o (open-output-file tempfilename #:exists 'update)])
+  (file-position o 899)
+  (write-byte 0 o)
+  (close-output-port o))
+(test 900 file-size tempfilename)
+(let ([o (open-output-file tempfilename #:exists 'update)])
+  (file-truncate o 399)
+  (close-output-port o))
+(test 399 file-size tempfilename)
+
 (delete-file tempfilename)
 
 (arity-test call-with-input-file 2 2)

@@ -118,3 +118,14 @@ port's buffer.}
 Like @racket[file-position] on a single argument, but returns
 @racket[#f] if the position is not known.}
 
+@defproc[(file-truncate [port (and/c output-port? file-stream-port?)]
+                        [size exact-nonnegative-integer?]) 
+         void?]{
+
+Sets the size of the file written by @racket[port] to @racket[size],
+assuming that the port is associated to a file whose size can be set.
+
+The new file size can be either larger or smaller than its current
+size, but ``truncate'' in this function's name reflects that it is
+normally used to decrease the size of a file, since writing to a file
+or using @racket[file-position] can extend a file's size.}
