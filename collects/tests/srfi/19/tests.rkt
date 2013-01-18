@@ -249,6 +249,27 @@
                (check-equal? (srfi:date-year (srfi:make-date 0 0 0 0 1 1 2004 0))
                              2004))
 
+    ;; test leap seconds
+    (test-case "check latest leap seconds"
+               (check-equal?
+                1230768032
+                (time-second (date->time-tai (srfi:make-date 0 59 59 23 31 12 2008 0))))
+               (check-equal?
+                1230768033
+                (time-second (date->time-tai (srfi:make-date 0 60 59 23 31 12 2008 0))))
+               (check-equal?
+                1230768034
+                (time-second (date->time-tai (srfi:make-date 0 0 0 0 1 1 2009 0))))
+               (check-equal?
+                1341100833
+                (time-second (date->time-tai (srfi:make-date 0 59 59 23 30 6 2012 0))))
+               (check-equal?
+                1341100834
+                (time-second (date->time-tai (srfi:make-date 0 60 59 23 30 6 2012 0))))
+               (check-equal?
+                1341100835
+                (time-second (date->time-tai (srfi:make-date 0 0 0 0 1 7 2012 0)))))
+
     ;; nanoseconds off by a factor of 100...
     (test-case "nanosecond order-of-magnitude"
       ;; half a second should be within 1/10th of 10^9 / 2 nanoseconds (currently off by a factor of 100)
