@@ -622,7 +622,8 @@
            day month year
            ;; compute derived fields
            (tm:week-day day month year)
-           (tm:year-day day month year)
+           ;; date* and srfi/19 are off-by-1 on year day
+           (- (tm:year-day day month year) 1)
            #f
            zone-offset
            nanosecond

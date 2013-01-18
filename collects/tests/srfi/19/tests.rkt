@@ -270,6 +270,18 @@
                 1341100835
                 (time-second (date->time-tai (srfi:make-date 0 0 0 0 1 7 2012 0)))))
 
+    ;; test off-by-1 year-day behavior
+    ;; srfi/19's year day and Racket's year day are 1 and 0 indexed, respectively
+    (test-case "test off-by-1 year day"
+               (check-false (lax-date? (time-tai->date (make-time 'time-tai 0 1230768033))))
+               (check-true (lax-date? (srfi:make-date 0 58 59 18 31 12 2008 #f)))
+               (check-equal? (srfi:date-year-day (srfi:make-date 0 58 59 18 31 12 2008 #f))
+                             366)
+               (check-equal? (srfi:date-year-day (time-tai->date (make-time 'time-tai 0 1230768033)))
+                             366)
+               (check-equal? (date-year-day (time-tai->date (make-time 'time-tai 0 1230768033)))
+                             365))
+
     ;; nanoseconds off by a factor of 100...
     (test-case "nanosecond order-of-magnitude"
       ;; half a second should be within 1/10th of 10^9 / 2 nanoseconds (currently off by a factor of 100)
