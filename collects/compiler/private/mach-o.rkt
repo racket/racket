@@ -58,7 +58,11 @@
                  [link-edit-len 0]
                  [link-edit-vmlen 0]
                  [dyld-info-pos #f]
-                 [dyld-info-offs #f])
+                 [dyld-info-offs #f]
+                 [function-starts-pos #f]
+                 [function-starts-offset #f]
+                 [data-in-code-pos #f]
+                 [data-in-code-offset #f])
             ;; (printf "~a cmds, length 0x~x\n" cnt cmdssz)
             (read-ulong p) ; flags
             (when (equal? exe-id #xFeedFacf)
@@ -136,6 +140,14 @@
                            [exportbindsize (read-ulong p)])
                        (set! dyld-info-pos pos)
                        (set! dyld-info-offs (vector rebaseoff bindoff weakbindoff lazybindoff exportbindoff)))]
+                    [(#x26)
+                     ;; LC_FUNCTION_STARTS
+                     (set! function-starts-offset (read-ulong p))
+                     (set! function-starts-pos pos)]
+                    [(#x29)
+                     ;; LC_DATA_IN_CODE
+                     (set! data-in-code-offset (read-ulong p))
+                     (set! data-in-code-pos pos)]
                     [else
                      (void)])
                   (file-position p (+ pos sz))
@@ -187,6 +199,12 @@
               (when hints-pos
                 (when (hints-pos . > . link-edit-pos)
                   (set! hints-pos (+ hints-pos new-cmd-sz))))
+              (when function-starts-pos
+                (when (function-starts-pos . > . link-edit-pos)
+                  (set! function-starts-pos (+ function-starts-pos new-cmd-sz))))
+              (when data-in-code-pos
+                (when (data-in-code-pos . > . link-edit-pos)
+                  (set! data-in-code-pos (+ data-in-code-pos new-cmd-sz))))
               (set! link-edit-pos (+ link-edit-pos new-cmd-sz))
               (when move-link-edit?
                 ;; Update link-edit segment entry:
@@ -222,6 +240,14 @@
                   (let ([hints-offset (read-ulong p)])
                     (file-position out (+ hints-pos 8))
                     (write-ulong (+ hints-offset outlen) out)))
+                ;; Shift function starts:
+                (when function-starts-pos
+                  (file-position p (+ function-starts-pos 8))
+                  (write-ulong (+ function-starts-offset outlen) out))
+                ;; Shift data-in-code:
+                (when data-in-code-pos
+                  (file-position p (+ data-in-code-pos 8))
+                  (write-ulong (+ data-in-code-offset outlen) out))
                 ;; Shift dyld-info offs
                 (when dyld-info-pos
                   (let ([update (lambda (n)
