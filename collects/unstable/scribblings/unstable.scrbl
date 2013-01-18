@@ -104,6 +104,7 @@ Keep documentation and tests up to date.
 @include-section["custom-write.scrbl"] ;; Struct Printing
 @include-section["syntax.scrbl"]
 @include-section["../temp-c/scribblings/temp-c.scrbl"]
+@include-section["2d.scrbl"]
 
 @;{--------}
 
