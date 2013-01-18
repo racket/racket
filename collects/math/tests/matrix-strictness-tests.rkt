@@ -96,7 +96,7 @@
     (check-true (array-strict? (matrix-col M i))))
   
   (for*: ([M  (list nonstrict-2x2-arr strict-2x2-arr)]
-          [spec  (list '(0) 0)])
+          [spec  (list '(0) (:: #f #f 2))])
     (check-true (array-strict? (submatrix M (::) spec))))
   )
 
@@ -153,7 +153,7 @@
       (check-false (array-strict? R))))
   
   (for*: ([M  (list nonstrict-2x2-arr strict-2x2-arr)]
-          [spec  (list '(0) 0)])
+          [spec  (list '(0) (:: #f #f 2))])
     (check-false (array-strict? (submatrix M (::) spec))))
   
   (for*: ([M  (list nonstrict-2x2-arr strict-2x2-arr)]

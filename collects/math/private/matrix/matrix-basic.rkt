@@ -70,7 +70,8 @@
         [else
          (unsafe-array-ref a ((inst vector Index) i j))]))
 
-(: submatrix (All (A) (Matrix A) Slice-Spec Slice-Spec -> (Matrix A)))
+(: submatrix (All (A) (Matrix A) (U Slice (Sequenceof Integer)) (U Slice (Sequenceof Integer))
+                  -> (Array A)))
 (define (submatrix a row-range col-range)
   (array-slice-ref (ensure-matrix 'submatrix a) (list row-range col-range)))
 
@@ -120,11 +121,11 @@
 
 (: matrix-diagonal (All (A) ((Matrix A) -> (Array A))))
 (define (matrix-diagonal a)
-  (define m (square-matrix-size a))
+  (define-values (m n) (matrix-shape a))
   (define proc (unsafe-array-proc a))
   (array-default-strict
    (unsafe-build-array
-    ((inst vector Index) m)
+    ((inst vector Index) (fxmin m n))
     (λ: ([js : Indexes])
       (define i (unsafe-vector-ref js 0))
       (proc ((inst vector Index) i i))))))
@@ -305,8 +306,11 @@
 (: matrix-trace (case-> ((Matrix Real) -> Real)
                         ((Matrix Number) -> Number)))
 (define (matrix-trace a)
-  (parameterize ([array-strictness #f])
-    (array-all-sum (matrix-diagonal a))))
+  (cond [(square-matrix? a)
+         (parameterize ([array-strictness #f])
+           (array-all-sum (matrix-diagonal a)))]
+        [else
+         (raise-argument-error 'matrix-trace "square-matrix?" a)]))
 
 ;; ===================================================================================================
 ;; Row/column operations

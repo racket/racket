@@ -69,7 +69,8 @@
 
 (: matrix-invertible? ((Matrix Number) -> Boolean))
 (define (matrix-invertible? M)
-  (not (zero? (matrix-determinant M))))
+  (and (square-matrix? M)
+       (not (zero? (matrix-determinant M)))))
 
 (: matrix-inverse (All (A) (case-> ((Matrix Real)        -> (Matrix Real))
                                    ((Matrix Real) (-> A) -> (U A (Matrix Real)))
