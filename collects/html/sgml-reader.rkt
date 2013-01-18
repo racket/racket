@@ -315,19 +315,24 @@
 		       (list->string data))))
   |#
 
-
+(define (lex-name* in)
+  (define os (open-output-string))
+  (let loop ()
+    (define ch (peek-char in))
+    (when (name-char? ch)
+      (read-char in)
+      (display ch os)
+      (loop)))
+  (get-output-string os))
 ;; lex-name : Input-port -> Symbol
 (define (lex-name in)
-  (let ([s (bytes->string/utf-8 (car (regexp-match #rx"^[a-zA-Z_:0-9&.-]*" in)))])
-    (string->symbol
-     ;; Common case: string is already lowercased
-     (if (regexp-match-positions #rx"[A-Z]" s)
-         (string-downcase s)
-         s))))
+  (string->symbol 
+   (string-downcase
+    (lex-name* in))))
 ;; lex-name/case-sensitive : Input-port -> Symbol
 (define (lex-name/case-sensitive in)
-  (let ([s (bytes->string/utf-8 (car (regexp-match #rx"^[a-zA-Z_:0-9&.-]*" in)))])
-    (string->symbol s)))
+  (string->symbol 
+   (lex-name* in)))
 #|
       (define (lex-name in)
         (string->symbol
