@@ -48,7 +48,7 @@
 ;; is s a subtype of t?
 ;; type type -> boolean
 (define/cond-contract (subtype s t)
-  (c:-> (c:or/c Type/c Values?) (c:or/c Type/c Values?) boolean?)
+  (c:-> (c:or/c Type/c SomeValues/c) (c:or/c Type/c SomeValues/c) boolean?)
   (define k (cons (unsafe-struct-ref s 0) (unsafe-struct-ref t 0)))
   (define (new-val) 
     (define result (handle-failure (and (subtype* (current-seen) s t) #t)))
@@ -431,6 +431,7 @@
                (subtype* A0 parent other)]
               ;; subtyping on values is pointwise
               [((Values: vals1) (Values: vals2)) (subtypes* A0 vals1 vals2)]
+              [((or (Values: _) (AnyValues:)) (AnyValues:)) A0]
               ;; trivial case for Result
               [((Result: t f o) (Result: t* f o))
                (subtype* A0 t t*)]
@@ -458,7 +459,7 @@
 
 
 (provide/cond-contract
- [subtype (c:-> (c:or/c Type/c Values?) (c:or/c Type/c Values?) boolean?)])
+ [subtype (c:-> (c:or/c Type/c SomeValues/c) (c:or/c Type/c SomeValues/c) boolean?)])
 (provide
   type-compare? subtypes/varargs subtypes)
 

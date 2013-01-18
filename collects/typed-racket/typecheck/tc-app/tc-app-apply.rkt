@@ -5,7 +5,7 @@
          "utils.rkt"
          syntax/parse racket/match
          syntax/parse/experimental/reflect
-         (typecheck signatures tc-funapp check-below tc-subst)
+         (typecheck signatures tc-funapp check-below)
          (types abbrev utils)
          (rep type-rep)
 
@@ -24,7 +24,8 @@
   #:literals (k:apply apply values)
   (pattern ((~or apply k:apply) values e)
     (match (single-value #'e)
-      [(tc-result1: (ListDots: dty dbound)) (values->tc-results (make-ValuesDots null dty dbound) #f)]
+      [(tc-result1: (ListDots: dty dbound))
+       (ret null null null dty dbound)]
       [(tc-result1: (List: ts)) (ret ts)]
       [_ (tc/apply #'values #'(e))]))
   (pattern ((~or apply k:apply) f . args)
