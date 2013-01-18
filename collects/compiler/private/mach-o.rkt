@@ -45,7 +45,7 @@
           (read-ulong p)
           (read-ulong p)
           (check-same #x2 (read-ulong p))
-          (let* ([cnt (read-ulong p)]
+          (let* ([total-cnt (read-ulong p)]
                  [cmdssz (read-ulong p)]
                  [min-used (round-up-page cmdssz)]
                  [sym-tab-pos #f]
@@ -62,12 +62,15 @@
                  [function-starts-pos #f]
                  [function-starts-offset #f]
                  [data-in-code-pos #f]
-                 [data-in-code-offset #f])
+                 [data-in-code-offset #f]
+                 [code-signature-pos #f]
+                 [code-signature-size 0]
+                 [code-signature-lc-sz 0])
             ;; (printf "~a cmds, length 0x~x\n" cnt cmdssz)
             (read-ulong p) ; flags
             (when (equal? exe-id #xFeedFacf)
               (read-ulong p)) ; extra reserved word for 64-bit header
-            (let loop ([cnt cnt])
+            (let loop ([cnt total-cnt])
               (unless (zero? cnt)
                 (let ([pos (file-position p)]
                       [cmd (read-ulong p)]
@@ -148,18 +151,39 @@
                      ;; LC_DATA_IN_CODE
                      (set! data-in-code-offset (read-ulong p))
                      (set! data-in-code-pos pos)]
+                    [(#x1D)
+                     ;; LC_CODE_SIGNATURE
+                     (if (= cnt 1)
+                         (let ([offset (read-ulong p)]
+                               [size (read-ulong p)])
+                           (file-position p (+ offset size))
+                           (if (eof-object? (read-byte p))
+                               (let ([extra (detect-linkedit-padding p
+                                                                     link-edit-offset
+                                                                     link-edit-len
+                                                                     offset
+                                                                     (if link-edit-64? 8 4))])
+                                 (set! code-signature-pos pos)
+                                 (set! code-signature-lc-sz sz)
+                                 (set! code-signature-size (+ size extra)))
+                               (log-warning "WARNING: code signature is not at end of file")))
+                         (log-warning "WARNING: code signature is not last load command"))]
                     [else
                      (void)])
                   (file-position p (+ pos sz))
                   (loop (sub1 cnt)))))
             ;; (printf "Start offset: 0x~x\n" min-used)
-            (let ([end-cmd (+ cmdssz (if (equal? exe-id #xFeedFacf) 32 28))]
+            (let ([end-cmd (+ cmdssz 
+                              (if (equal? exe-id #xFeedFacf) 32 28)
+                              (- code-signature-lc-sz))]
                   [new-cmd-sz (if link-edit-64? 72 56)]
                   [outlen (round-up-page (bytes-length segdata))]
                   [out-offset (if move-link-edit?
                                   link-edit-offset
                                   (+ link-edit-offset (round-up-page link-edit-len)))]
-                  [out-addr (+ link-edit-addr (round-up-page link-edit-vmlen))])
+                  [out-addr (if move-link-edit?
+                                link-edit-addr
+                                (+ link-edit-addr (round-up-page link-edit-vmlen)))])
               (unless ((+ end-cmd new-cmd-sz) . < . min-used)
                 (error 'check-header 
                        "no room for a new section load command (current end is ~a; min used is ~a)"
@@ -172,8 +196,8 @@
                 (display s out))
               (file-position out 16)
               ;; Increment the number of load commands:
-              (write-ulong (+ cnt 1) out)
-              (write-ulong (+ cmdssz new-cmd-sz) out)
+              (write-ulong (+ total-cnt 1 (if code-signature-pos -1 0)) out)
+              (write-ulong (+ cmdssz (- code-signature-lc-sz) new-cmd-sz) out)
               ;; Write the new command:
               (file-position out link-edit-pos)
               (write-ulong (if link-edit-64? #x19 1) out) ; LC_SEGMENT[_64]
@@ -208,12 +232,15 @@
               (set! link-edit-pos (+ link-edit-pos new-cmd-sz))
               (when move-link-edit?
                 ;; Update link-edit segment entry:
-                (file-position out (+ link-edit-pos (if link-edit-64? 40 32)))
+                (file-position out (+ link-edit-pos 24))
+                ((if link-edit-64? write-xulong write-ulong) (+ link-edit-addr outlen) out)
+                ((if link-edit-64? write-xulong write-ulong) link-edit-vmlen out)
                 ;; (printf "Update to ~a\n" (+ out-offset outlen))
                 ((if link-edit-64? write-xulong write-ulong) (+ out-offset outlen) out)
+                ((if link-edit-64? write-xulong write-ulong) (- link-edit-len code-signature-size) out)
                 ;; Read link-edit segment:
                 (file-position p link-edit-offset)
-                (let ([link-edit (read-bytes link-edit-len p)])
+                (let ([link-edit (read-bytes (- link-edit-len code-signature-size) p)])
                   ;; Write link-edit data in new location:
                   (file-position out (+ link-edit-offset outlen))
                   (display link-edit out))
@@ -263,11 +290,38 @@
               (file-position out out-offset)
               (display segdata out)
               (display (make-bytes (- outlen (bytes-length segdata)) 0) out)
+              (file-truncate out (+ link-edit-offset link-edit-len (- code-signature-size) outlen))
               ;; Result is offset where data was written:
               out-offset)))
         (lambda ()
           (close-input-port p)
           (close-output-port out)))))
+
+(define (detect-linkedit-padding p offset size lc-offset alignment)
+  ;; To add a code signature, link-edit size may have been rounded up
+  ;; to a multiple of 16. Look for extra \0s before the code-signature
+  ;; offset.
+  (unless (zero? (modulo size 16))
+    (error 'detect-linkedit-padding "expected a multiple of 16 for current size"))
+  (define orig-pos (file-position p))
+  (file-position p (- lc-offset 16))
+  (define bstr (read-bytes 16 p))
+  (file-position p orig-pos)
+  (if (= alignment 8)
+      (if (regexp-match? #px#"\0{9}$" bstr)
+          8 ; must be an extra word
+          0)
+      (cond
+       [(regexp-match? #px#"\0{14}$" bstr)
+        ;; three extra words
+        12]
+       [(regexp-match? #px#"\0{10}$" bstr)
+        ;; two extra words
+        8]
+       [(regexp-match? #px#"\0{6}$" bstr)
+        ;; an extra word
+        4]
+       [else 0])))
 
 (define (fix-offset p pos out d base delta)
   (when (and out (not (zero? delta)))
