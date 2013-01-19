@@ -32,6 +32,8 @@ has been moved out).
                     make-pen make-color)
          (for-syntax racket/base)
          file/convertible
+         slideshow/pict-convert
+         (prefix-in pict: (only-in slideshow/pict dc))
          racket/math
          racket/contract
          "private/image-core-bitmap.rkt"
@@ -220,7 +222,7 @@ has been moved out).
 (define skip-image-equality-fast-path (make-parameter #f))
 (define render-normalized (make-parameter #f))
 
-(define png-convertible<%>
+(define convertible<%>
   (interface* ()
               ([prop:convertible
                 (lambda (img format default)
@@ -229,7 +231,18 @@ has been moved out).
                      (let ([s (open-output-bytes)])
                        (send (to-bitmap (to-img img)) save-file s 'png)
                        (get-output-bytes s))]
-                    [else default]))])))
+                    [else default]))]
+               [prop:pict-convertible
+                (λ (image)
+                  (define the-bb (send image get-bb))
+                  (pict:dc
+                   (λ (dc dx dy)
+                     (render-image image dc dx dy))
+                   (ceiling (inexact->exact (bb-right the-bb)))
+                   (ceiling (inexact->exact (bb-bottom the-bb)))
+                   0
+                   (ceiling (inexact->exact (- (bb-bottom the-bb) 
+                                               (bb-baseline the-bb))))))])))
 
 ;; these are used when building a bitmap to render the final image
 ;; they are probably smaller than the allowed maximum, but they are
@@ -253,7 +266,7 @@ has been moved out).
   compute-cached-bitmap)
 
 (define image%
-  (class* snip% (png-convertible<%> image<%>)
+  (class* snip% (convertible<%> image<%>)
     (init-field shape bb normalized? pinhole)
     
     (define/override (equal-to? that eq-recur) (compare-em that eq-recur))
