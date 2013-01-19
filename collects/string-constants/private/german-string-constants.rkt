@@ -903,8 +903,10 @@
  (create-executable-menu-item-label "Programmdatei generieren...")
  (create-executable-title "Programmdatei generieren")
  (drracket-creates-executables-only-in-some-languages
-  "Die Erzeugung von Programmdateien in DrRacket ist nur für die Lehrsprachen"
-  " und für “Die Sprache Racket” (also mit #lang-Zeile) unterstützt.\n\nZiehen"
+  "DrRacket unterstützt die Erzeugung von Programmdateien nur,"
+  " wenn eine Lehrsprache (DMdA oder HtDP) im Dialog “Sprache auswählen”"
+  " ausgewählt ist, oder wenn dort “Die Sprache Racket” ausgewählt ist und"
+  " eine #lang-Zeile am Anfang des Programms steht.\n\nZiehen"
   " Sie das Kommandozeilenprogramm \"raco exe\" in Betracht.")
  (must-save-before-executable "Sie müssen vor der Generierung einer Programmdatei speichern.")
  (save-a-mred-launcher "GRacket-Launcher speichern")
