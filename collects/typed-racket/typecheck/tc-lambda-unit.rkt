@@ -25,7 +25,7 @@
                                          [kws (listof (list/c keyword? identifier? Type/c boolean?))]
                                          [rest (or/c #f (list/c identifier? Type/c))]
                                          [drest (or/c #f (cons/c identifier? (cons/c Type/c symbol?)))]
-                                         [body tc-results?])
+                                         [body tc-results/c])
   #:transparent)
 
 (define (lam-result->type lr)
@@ -58,7 +58,8 @@
 ;; listof[id] option[id] block listof[type] option[type] option[(cons type var)] tc-result -> lam-result
 (define/cond-contract (check-clause arg-list rest body arg-tys rest-ty drest ret-ty)
      ((listof identifier?)
-      (or/c #f identifier?) syntax? (listof Type/c) (or/c #f Type/c) (or/c #f (cons/c Type/c symbol?)) tc-results?
+      (or/c #f identifier?) syntax? (listof Type/c) (or/c #f Type/c)
+      (or/c #f (cons/c Type/c symbol?)) tc-results/c
       . --> .
       lam-result?)
   (let* ([arg-len (length arg-list)]
@@ -241,7 +242,7 @@
                 (match (find-expected expected f*)
                   ;; very conservative -- only do anything interesting if we get exactly one thing that matches
                   [(list) 
-                   (if (and (= 1 (length formals*)) expected)
+                   (if (and (= 1 (length formals*)) (tc-results? expected))
                        (tc-error/expr #:return (list (lam-result null null (list #'here Univ) #f (ret (Un))))
                                       "Expected a function of type ~a, but got a function with the wrong arity"
                                       (match expected [(tc-result1: t) t]))
@@ -280,9 +281,9 @@
 ;; tc/plambda syntax syntax-list syntax-list type -> Poly
 ;; formals and bodies must by syntax-lists
 (define/cond-contract (tc/plambda form formals bodies expected)
-  (syntax? syntax? syntax? (or/c tc-results? #f) . --> . Type/c)
+  (syntax? syntax? syntax? (or/c tc-results/c #f) . --> . Type/c)
   (define/cond-contract (maybe-loop form formals bodies expected)
-    (syntax? syntax? syntax? tc-results? . --> . Type/c)
+    (syntax? syntax? syntax? tc-results/c . --> . Type/c)
     (match expected
       [(tc-result1: (Function: _)) (tc/mono-lambda/type formals bodies expected)]
       [(tc-result1: (or (Poly: _ _) (PolyDots: _ _)))
@@ -329,7 +330,7 @@
          (extend-tvars tvars
            (maybe-loop form formals bodies (ret expected*))))
        t)]
-    [#f
+    [(or (tc-any-results:) #f)
      (match (map syntax-e (syntax->list (plambda-prop form)))
        [(list tvars ... dotted-var '...)
         (let* ([ty (extend-indexes dotted-var

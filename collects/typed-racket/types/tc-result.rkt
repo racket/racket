@@ -13,6 +13,12 @@
 (define-struct/cond-contract tc-results
   ([ts (listof tc-result?)] [drest (or/c (cons/c Type/c symbol?) #f)])
   #:transparent)
+(define-struct/cond-contract tc-any-results () #:transparent)
+(define tc-any-results* (tc-any-results))
+
+(define (tc-results/c v)
+  (or (tc-results? v)
+      (tc-any-results? v)))
 
 (define-match-expander tc-result:
   (syntax-rules ()
@@ -30,6 +36,12 @@
    [(_ tp)
     (struct tc-results ((list (struct tc-result (tp _ _)) (... ...))
                           #f))]))
+
+(define-match-expander tc-any-results:
+  (syntax-rules ()
+   [(_)
+    (struct tc-any-results ())]))
+
 
 (define-match-expander tc-result1:
   (syntax-rules ()
@@ -107,10 +119,13 @@
 
 (define tc-result-equal? equal?)
 
-(provide tc-result: tc-results: tc-result1: Result1: Results:)
+(provide tc-result: tc-results: tc-any-results: tc-result1: Result1: Results:
+         (rename-out
+           (tc-any-results* tc-any-results)))
 (provide/cond-contract
  [combine-results ((listof tc-results?) . -> . tc-results?)]
  [tc-result? (any/c . -> . boolean?)]
  [tc-result-t (tc-result? . -> . Type/c)]
  [tc-result-equal? (tc-result? tc-result? . -> . boolean?)]
- [tc-results? (any/c . -> . boolean?)])
+ [tc-results? (any/c . -> . boolean?)]
+ [tc-results/c flat-contract?])

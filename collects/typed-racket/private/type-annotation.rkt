@@ -103,13 +103,13 @@
 (define (get-types stxs #:default [default #f])
   (map (lambda (e) (get-type e #:default default)) stxs))
 
-;; list[identifier] stx (stx -> tc-results?) (stx tc-results? -> tc-results?) -> tc-results?
+;; list[identifier] stx (stx -> tc-results/c) (stx tc-results/c -> tc-results/c) -> tc-results/c
 ;; stxs : the identifiers, possibly with type annotations on them
 ;; expr : the RHS expression
 ;; tc-expr : a function like `tc-expr' from tc-expr-unit
 ;; tc-expr/check : a function like `tc-expr/check' from tc-expr-unit
 (define/cond-contract (get-type/infer stxs expr tc-expr tc-expr/check)
-  ((listof identifier?) syntax? (syntax? . -> . tc-results?) (syntax? tc-results? . -> . tc-results?) . -> . tc-results?)
+  ((listof identifier?) syntax? (syntax? . -> . tc-results/c) (syntax? tc-results/c . -> . tc-results/c) . -> . tc-results/c)
   (match stxs
     [(list stx ...)
      (let ([anns (for/list ([s stxs]) (type-annotation s #:infer #t))])

@@ -27,12 +27,12 @@
      (ret ts (for/list ([f ts]) (make-NoFilter)) (for/list ([f ts]) (make-NoObject)))]))
 
 (define/cond-contract (do-check expr->type namess results expected-results form exprs body clauses expected #:abstract [abstract null])
-     (((syntax? syntax? tc-results? . c:-> . any/c)
-       (listof (listof identifier?)) (listof tc-results?) (listof tc-results?)
-       syntax? (listof syntax?) syntax? (listof syntax?) (or/c #f tc-results?))
+     (((syntax? syntax? tc-results/c . c:-> . any/c)
+       (listof (listof identifier?)) (listof tc-results/c) (listof tc-results/c)
+       syntax? (listof syntax?) syntax? (listof syntax?) (or/c #f tc-results/c))
       (#:abstract any/c)
       . c:->* .
-      tc-results?)
+      tc-results/c)
      (with-cond-contract t/p ([types          (listof (listof Type/c))] ; types that may contain undefined (letrec)
                               [expected-types (listof (listof Type/c))] ; types that may not contain undefined (what we got from the user)
                               [props          (listof (listof Filter?))])
@@ -77,6 +77,7 @@
                        (proc s nm (make-Empty) #t))))])
      (define (run res)
        (match res
+         [(tc-any-results:) res]
          [(tc-results: ts fs os)
           (ret (subber subst-type ts) (subber subst-filter-set fs) (subber subst-object os))]
          [(tc-results: ts fs os dt db)

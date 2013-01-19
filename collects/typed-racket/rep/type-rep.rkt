@@ -15,32 +15,6 @@
 
 (define name-table (make-weak-hasheq))
 
-(define Type/c?
-   (λ (e)
-     (and (Type? e)
-          (not (Scope? e))
-          (not (arr? e))
-          (not (fld? e))
-          (not (Values? e))
-          (not (ValuesDots? e))
-          (not (AnyValues? e))
-          (not (Result? e)))))
-
-;; (or/c Type/c Values? Results?)
-;; Anything that can be treated as a Values by sufficient expansion
-(define Values/c?
-   (λ (e)
-     (and (Type? e)
-          (not (Scope? e))
-          (not (arr? e))
-          (not (fld? e))
-          (not (ValuesDots? e))
-          (not (AnyValues? e)))))
-
-
-(define Type/c (flat-named-contract 'Type Type/c?))
-(define Values/c (flat-named-contract 'Values Values/c?))
-(define SomeValues/c (or/c Values? AnyValues? ValuesDots?))
 
 ;; Name = Symbol
 
@@ -768,6 +742,32 @@
                  (list nps bp)))])))
 
 ;(trace subst subst-all)
+
+(define Type/c?
+   (λ (e)
+     (and (Type? e)
+          (not (Scope? e))
+          (not (arr? e))
+          (not (fld? e))
+          (not (Values? e))
+          (not (ValuesDots? e))
+          (not (AnyValues? e))
+          (not (Result? e)))))
+
+;; (or/c Type/c Values? Results?)
+;; Anything that can be treated as a Values by sufficient expansion
+(define Values/c?
+   (λ (e)
+     (and (Type? e)
+          (not (Scope? e))
+          (not (arr? e))
+          (not (fld? e))
+          (not (ValuesDots? e))
+          (not (AnyValues? e)))))
+
+(define Type/c (flat-named-contract 'Type Type/c?))
+(define Values/c (flat-named-contract 'Values Values/c?))
+(define SomeValues/c (or/c Values? AnyValues? ValuesDots?))
 
 (provide
  Mu-name:
