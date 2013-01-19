@@ -16,6 +16,7 @@
      (tc-results? (listof identifier?) . -> . SomeValues/c)
      (define keys (for/list ([(nm k) (in-indexed arg-names)]) k))
      (match results
+       [(tc-any-results:) (make-AnyValues)]
        [(tc-results: ts fs os dty dbound)
         (make-ValuesDots
          (for/list ([t ts] [f fs] [o os])

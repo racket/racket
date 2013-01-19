@@ -43,9 +43,9 @@
                         #:expected expected))))]))
 
 (define/cond-contract (tc/funapp f-stx args-stx ftype0 argtys expected)
-  (syntax? (c:and/c syntax? syntax->list) tc-results? (c:listof tc-results?)
-           (c:or/c #f tc-results?)
-           . c:-> . tc-results?)
+  (syntax? (c:and/c syntax? syntax->list) tc-results/c (c:listof tc-results/c)
+           (c:or/c #f tc-results/c)
+           . c:-> . tc-results/c)
   (match* (ftype0 argtys)
     ;; we special-case this (no case-lambda) for improved error messages
     [((tc-result1: (and t (Function: (list (and a (arr: dom (Values: _)

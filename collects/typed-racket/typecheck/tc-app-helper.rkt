@@ -12,19 +12,24 @@
 
 (provide (all-defined-out))
 
-;; syntax? syntax? arr? (listof tc-results?) (or/c #f tc-results) [boolean?] -> tc-results?
+;; syntax? syntax? arr? (listof tc-results/c) (or/c #f tc-results/c) [boolean?] -> tc-results/c
 (define/cond-contract (tc/funapp1 f-stx args-stx ftype0 argtys expected #:check [check? #t])
-  ((syntax? (c:and/c syntax? syntax->list) arr? (c:listof tc-results?) (c:or/c #f tc-results?)) (#:check boolean?) . c:->* . tc-results?)
+  ((syntax? (c:and/c syntax? syntax->list) arr? (c:listof tc-results/c) (c:or/c #f tc-results/c)) (#:check boolean?) . c:->* . tc-results/c)
   (match* (ftype0 argtys)
     ;; we check that all kw args are optional
-    [((arr: dom (Values: (and results (list (Result: t-r f-r o-r) ...))) rest #f (and kws (list (Keyword: _ _ #f) ...)))
+    [((arr: dom (and rng (or (AnyValues:) (Values: _))) rest #f (and kws (list (Keyword: _ _ #f) ...)))
       (list (tc-result1: t-a phi-a o-a) ...))
+
      (when check?
+       (define error-ret
+         (match rng
+          ((AnyValues:) tc-any-results)
+          ((Values: (list (Result: t-r _ _) ...)) (ret t-r))))
        (cond [(and (not rest) (not (= (length dom) (length t-a))))
-              (tc-error/expr #:return (ret t-r)
+              (tc-error/expr #:return error-ret
                              "Wrong number of arguments, expected ~a and got ~a" (length dom) (length t-a))]
              [(and rest (< (length t-a) (length dom)))
-              (tc-error/expr #:return (ret t-r)
+              (tc-error/expr #:return error-ret
                              "Wrong number of arguments, expected at least ~a and got ~a" (length dom) (length t-a))])
        (for ([dom-t (if rest (in-sequence-forever dom rest) (in-list dom))]
              [a (in-list (syntax->list args-stx))]
@@ -39,11 +44,14 @@
                           [ta (in-sequence-forever (in-list t-a) (Un))])
                          (values (if (>= nm dom-count) (make-Empty) oa)
                                  ta))])
-         (define-values (t-r f-r o-r)
-           (for/lists (t-r f-r o-r)
-             ([r (in-list results)])
-             (open-Result r o-a t-a)))
-         (ret t-r f-r o-r)))]
+           (match rng
+            ((AnyValues:) tc-any-results)
+            ((Values: results)
+             (define-values (t-r f-r o-r)
+               (for/lists (t-r f-r o-r)
+                 ([r (in-list results)])
+                 (open-Result r o-a t-a)))
+             (ret t-r f-r o-r)))))]
     ;; this case should only match if the function type has mandatory keywords
     ;; but no keywords were provided in the application
     [((arr: _ _ _ _
@@ -86,7 +94,7 @@
      (c:listof SomeValues/c) (c:listof tc-results?) (c:or/c #f Type/c) c:any/c)
     (#:expected (c:or/c #f tc-results?) #:return tc-results?
      #:msg-thunk (c:-> string? string?))
-    . c:->* . tc-results?)
+    . c:->* . tc-results/c)
 
   (define arguments-str
     (stringify-domain arg-tys
@@ -198,7 +206,7 @@
       (ormap (lambda (x) (subtype x fun-ty))
              others))
 
-    ;; currently does not take advantage of multi-valued expected types
+    ;; currently does not take advantage of multi-valued or arbitrary-valued expected types,
     (define expected-ty (and expected (match expected [(tc-result1: t) t] [_ #f])))
     (define (returns-subtype-of-expected? fun-ty)
       (or (not expected)
@@ -217,6 +225,7 @@
       (map (compose make-Function list make-arr)
            doms
            (map (match-lambda ; strip filters
+                 [(AnyValues:) ManyUniv]
                  [(Values: (list (Result: t _ _) ...))
                   (-values t)]
                  [(ValuesDots: (list (Result: t _ _) ...) _ _)
