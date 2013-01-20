@@ -6,6 +6,8 @@
          typed/rackunit
          "../base/base-random.rkt"
          "../flonum/expansion/expansion-base.rkt"
+         "../flonum/expansion/expansion-exp.rkt"
+         "../flonum/expansion/expansion-log.rkt"
          "../flonum/flonum-functions.rkt"
          "../flonum/flonum-constants.rkt"
          "../flonum/flonum-bits.rkt"
@@ -26,8 +28,15 @@
 ;; Allowable error for different kinds of functions, in ulps
 (define flonum-fun-ulps 0.5)
 (define flonum/error-fun-ulps 0.5)
+(define flexp/error-fun-ulps 2.0)
+(define fl2-conversion-ulps 0.5)
 (define unary-fl2-fun-ulps 1.0)
 (define binary-fl2-fun-ulps 8.0)
+(define fl2exp-fun-ulps 2.5)
+(define fl2log-fun-ulps 1.5)
+
+(: current-max-ulp-error (Parameterof Nonnegative-Flonum))
+(define current-max-ulp-error (make-parameter 0.0))
 
 ;; ===================================================================================================
 ;; Helpers
@@ -94,13 +103,13 @@
    ;; Test squaring
    (- (flsqrt +min.0)) (flsqrt +min.0)
    (- (flsqrt +max-subnormal.0)) (flsqrt +max-subnormal.0)
-   (- (flsqrt +max-fl2-subnormal.0)) (flsqrt +max-fl2-subnormal.0)
+   (- (flsqrt +max-subnormal.hi)) (flsqrt +max-subnormal.hi)
    (- (flsqrt +max.0)) (flsqrt +max.0)
    ;; Test exp limits
-   (fllog +min.0) (fllog +max-subnormal.0) (fllog +max-fl2-subnormal.0) (fllog +max.0)
+   (fllog +min.0) (fllog +max-subnormal.0) (fllog +max-subnormal.hi) (fllog +max.0)
    ;; Standard special values
-   -inf.0 -max.0 -1.0 -max-fl2-subnormal.0 -max-subnormal.0 -min.0 -0.0
-   +inf.0 +max.0 +1.0 +max-fl2-subnormal.0 +max-subnormal.0 +min.0 +0.0
+   -inf.0 -max.0 -1.0 -max-subnormal.hi -max-subnormal.0 -min.0 -0.0
+   +inf.0 +max.0 +1.0 +max-subnormal.hi +max-subnormal.0 +min.0 +0.0
    +nan.0))
 
 (define standard-rs
@@ -123,8 +132,8 @@
 (define min-subnormal-ord (flonum->ordinal -max-subnormal.0))
 (define max-subnormal-ord (+ 1 (flonum->ordinal +max-subnormal.0)))
 
-(define min-fl2-subnormal-ord (flonum->ordinal -max-fl2-subnormal.0))
-(define max-fl2-subnormal-ord (+ 1 (flonum->ordinal +max-fl2-subnormal.0)))
+(define min-fl2-subnormal-ord (flonum->ordinal -max-subnormal.hi))
+(define max-fl2-subnormal-ord (+ 1 (flonum->ordinal +max-subnormal.hi)))
 
 (: sample-flonum (case-> (Integer -> (Listof Flonum))
                          (Integer Flonum Flonum -> (Listof Flonum))))
@@ -183,7 +192,7 @@
                                                           [i  (in-naturals 1)])
      (maybe-print-progress name i m)
      (list (list name x) (unary-flonum-fun-error f g x)))
-   flonum-fun-ulps))
+   (current-max-ulp-error)))
 
 (: binary-flonum-fun-error
    ((Flonum Flonum -> Flonum) (Bigfloat Bigfloat -> Bigfloat) Flonum Flonum -> Any))
@@ -205,7 +214,7 @@
                                                                  [i  (in-naturals 1)])
      (maybe-print-progress name i m)
      (list (list name x y) (binary-flonum-fun-error f g x y)))
-   flonum-fun-ulps))
+   (current-max-ulp-error)))
 
 ;; ===================================================================================================
 ;; fl2 conversion
@@ -230,7 +239,7 @@
                                                       [i  (in-naturals 1)])
      (maybe-print-progress 'fl2 i m)
      (list (list 'fl2 x) (fl2-conversion-error x)))
-   flonum/error-fun-ulps))
+   (current-max-ulp-error)))
 
 ;; ===================================================================================================
 ;; Flonum arithmetic with error
@@ -262,7 +271,7 @@
                                                           [i  (in-naturals 1)])
      (maybe-print-progress name i m)
      (list (list name x) (unary-flonum/error-fun-error f g x)))
-   flonum/error-fun-ulps))
+   (current-max-ulp-error)))
 
 (: test-binary-flonum/error-fun
    (Symbol (Flonum Flonum -> (Values Flonum Flonum)) (Bigfloat Bigfloat -> Bigfloat) Integer
@@ -278,7 +287,7 @@
                                                                  [i  (in-naturals 1)])
      (maybe-print-progress name i m)
      (list (list name x y) (binary-flonum/error-fun-error f g x y)))
-   flonum/error-fun-ulps))
+   (current-max-ulp-error)))
 
 ;; ===================================================================================================
 ;; Flonum expansions
@@ -302,7 +311,7 @@
      (maybe-print-progress name i m)
      (define-values (x2 x1) (fl2 x))
      (list (list name x2 x1) (unary-fl2-fun-error f g x2 x1)))
-   unary-fl2-fun-ulps))
+   (current-max-ulp-error)))
 
 (: binary-fl2-fun-error ((Flonum Flonum Flonum Flonum -> (Values Flonum Flonum))
                          (Bigfloat Bigfloat -> Bigfloat)
@@ -330,83 +339,110 @@
      (define-values (x2 x1) (fl2 x))
      (define-values (y2 y1) (fl2 y))
      (list (list name x2 x1 y2 y1) (binary-fl2-fun-error f g x2 x1 y2 y1)))
-   binary-fl2-fun-ulps))
+   (current-max-ulp-error)))
 
 ;; ===================================================================================================
 
 (: test-fpu-arith (Natural -> Any))
 (define (test-fpu-arith n)
-  (check-equal? (test-unary-flonum-fun 'flabs flabs bfabs n -inf.0 +inf.0)
-                '())
-  (check-equal? (test-binary-flonum-fun 'fl+ fl+ bf+ n)
-                '())
-  (check-equal? (test-binary-flonum-fun 'fl- fl- bf- n)
-                '())
-  (check-equal? (test-binary-flonum-fun 'fl* fl* bf* n)
-                '())
-  (check-equal? (test-binary-flonum-fun 'fl/ fl/ bf/ n)
-                '()))
+  (parameterize ([current-max-ulp-error  flonum-fun-ulps])
+    (check-equal? (test-unary-flonum-fun 'flabs flabs bfabs n -inf.0 +inf.0)
+                  '())
+    (check-equal? (test-binary-flonum-fun 'fl+ fl+ bf+ n)
+                  '())
+    (check-equal? (test-binary-flonum-fun 'fl- fl- bf- n)
+                  '())
+    (check-equal? (test-binary-flonum-fun 'fl* fl* bf* n)
+                  '())
+    (check-equal? (test-binary-flonum-fun 'fl/ fl/ bf/ n)
+                  '())))
 
 (: test-fpu-trig (Natural -> Any))
 (define (test-fpu-trig n)
-  (check-equal? (test-unary-flonum-fun 'flsin flsin bfsin n -inf.0 +inf.0)
-                '())
-  (check-equal? (test-unary-flonum-fun 'flcos flcos bfcos n -inf.0 +inf.0)
-                '())
-  (check-equal? (test-unary-flonum-fun 'fltan fltan bftan n -inf.0 +inf.0)
-                '())
-  (check-equal? (test-unary-flonum-fun 'flasin flasin bfasin n -1.0 1.0)
-                '())
-  (check-equal? (test-unary-flonum-fun 'flacos flacos bfacos n -1.0 1.0)
-                '())
-  (check-equal? (test-unary-flonum-fun 'flatan flatan bfatan n -inf.0 +inf.0)
-                '()))
+  (parameterize ([current-max-ulp-error  flonum-fun-ulps])
+    (check-equal? (test-unary-flonum-fun 'flsin flsin bfsin n -inf.0 +inf.0)
+                  '())
+    (check-equal? (test-unary-flonum-fun 'flcos flcos bfcos n -inf.0 +inf.0)
+                  '())
+    (check-equal? (test-unary-flonum-fun 'fltan fltan bftan n -inf.0 +inf.0)
+                  '())
+    (check-equal? (test-unary-flonum-fun 'flasin flasin bfasin n -1.0 1.0)
+                  '())
+    (check-equal? (test-unary-flonum-fun 'flacos flacos bfacos n -1.0 1.0)
+                  '())
+    (check-equal? (test-unary-flonum-fun 'flatan flatan bfatan n -inf.0 +inf.0)
+                  '())))
 
 (: test-fpu-non-trig (Natural -> Any))
 (define (test-fpu-non-trig n)
-  (check-equal? (test-unary-flonum-fun 'flsqrt flsqrt bfsqrt n 0.0 +inf.0)
-                '())
-  (check-equal? (test-unary-flonum-fun 'fllog fllog bflog n 0.0 +inf.0)
-                '())
-  (check-equal? (test-unary-flonum-fun 'flexp flexp bfexp n -746.0 710.0)
-                '())
-  (check-equal? (test-binary-flonum-fun 'flexpt flexpt bfexpt n)
-                '()))
+  (parameterize ([current-max-ulp-error  flonum-fun-ulps])
+    (check-equal? (test-unary-flonum-fun 'flsqrt flsqrt bfsqrt n 0.0 +inf.0)
+                  '())
+    (check-equal? (test-unary-flonum-fun 'fllog fllog bflog n 0.0 +inf.0)
+                  '())
+    (check-equal? (test-unary-flonum-fun 'flexp flexp bfexp n -746.0 710.0)
+                  '())
+    (check-equal? (test-binary-flonum-fun 'flexpt flexpt bfexpt n)
+                  '())))
 
 (: test-fpu-arith/error (Natural -> Any))
 (define (test-fpu-arith/error n)
-  (check-equal? (test-binary-flonum/error-fun 'fl+/error fl+/error bf+ n)
-                '())
-  (check-equal? (test-binary-flonum/error-fun 'fl-/error fl-/error bf- n)
-                '())
-  (check-equal? (test-binary-flonum/error-fun 'fl*/error fl*/error bf* n)
-                '())
-  (check-equal? (test-unary-flonum/error-fun 'flsqr/error flsqr/error bfsqr n)
-                '())
-  (check-equal? (test-binary-flonum/error-fun 'fl//error fl//error bf/ n)
-                '()))
+  (parameterize ([current-max-ulp-error  flonum/error-fun-ulps])
+    (check-equal? (test-binary-flonum/error-fun 'fl+/error fl+/error bf+ n)
+                  '())
+    (check-equal? (test-binary-flonum/error-fun 'fl-/error fl-/error bf- n)
+                  '())
+    (check-equal? (test-binary-flonum/error-fun 'fl*/error fl*/error bf* n)
+                  '())
+    (check-equal? (test-unary-flonum/error-fun 'flsqr/error flsqr/error bfsqr n)
+                  '())
+    (check-equal? (test-binary-flonum/error-fun 'fl//error fl//error bf/ n)
+                  '())))
+
+(: test-fpu-non-trig/error (Natural -> Any))
+(define (test-fpu-non-trig/error n)
+  (parameterize ([current-max-ulp-error  flexp/error-fun-ulps])
+    (check-equal? (test-unary-flonum/error-fun 'flexp/error flexp/error bfexp n)
+                  '())))
 
 (: test-fpu-arith/fl2 (Natural -> Any))
 (define (test-fpu-arith/fl2 n)
-  (check-equal? (test-fl2-conversion n)
-                '())
-  (check-equal? (test-unary-fl2-fun 'fl2abs fl2abs bfabs n)
-                '())
-  (check-equal? (test-binary-fl2-fun 'fl2+ fl2+ bf+ n)
-                '())
-  (check-equal? (test-binary-fl2-fun 'fl2- fl2- bf- n)
-                '())
-  (check-equal? (test-binary-fl2-fun 'fl2* fl2* bf* n)
-                '())
-  (check-equal? (test-unary-fl2-fun 'fl2sqr fl2sqr bfsqr n)
-                '())
-  (check-equal? (test-binary-fl2-fun 'fl2/ fl2/ bf/ n)
-                '()))
+  (parameterize ([current-max-ulp-error  fl2-conversion-ulps])
+    (check-equal? (test-fl2-conversion n)
+                  '()))
+  (parameterize ([current-max-ulp-error  unary-fl2-fun-ulps])
+    (check-equal? (test-unary-fl2-fun 'fl2abs fl2abs bfabs n)
+                  '())
+    (check-equal? (test-unary-fl2-fun 'fl2sqr fl2sqr bfsqr n)
+                  '()))
+  (parameterize ([current-max-ulp-error  binary-fl2-fun-ulps])
+    (check-equal? (test-binary-fl2-fun 'fl2+ fl2+ bf+ n)
+                  '())
+    (check-equal? (test-binary-fl2-fun 'fl2- fl2- bf- n)
+                  '())
+    (check-equal? (test-binary-fl2-fun 'fl2* fl2* bf* n)
+                  '())
+    (check-equal? (test-binary-fl2-fun 'fl2/ fl2/ bf/ n)
+                  '())))
 
 (: test-fpu-non-trig/fl2 (Natural -> Any))
 (define (test-fpu-non-trig/fl2 n)
-  (check-equal? (test-unary-fl2-fun 'fl2sqrt fl2sqrt bfsqrt n)
-                '()))
+  (parameterize ([current-max-ulp-error  unary-fl2-fun-ulps])
+    (check-equal? (test-unary-fl2-fun 'fl2sqrt fl2sqrt bfsqrt n)
+                  '()))
+  (parameterize ([current-max-ulp-error  fl2exp-fun-ulps])
+    (check-equal? (test-unary-fl2-fun 'fl2exp fl2exp bfexp n)
+                  '()))
+  (parameterize ([current-max-ulp-error  fl2exp-fun-ulps])
+    (check-equal? (test-unary-fl2-fun 'fl2expm1 fl2expm1 bfexpm1 n)
+                  '()))
+  (parameterize ([current-max-ulp-error  fl2log-fun-ulps])
+    (check-equal? (test-unary-fl2-fun 'fl2log fl2log bflog n)
+                  '()))
+  (parameterize ([current-max-ulp-error  fl2log-fun-ulps])
+    (check-equal? (test-unary-fl2-fun 'fl2log1p fl2log1p bflog1p n)
+                  '()))
+  )
 
 (: test-fpu (Natural -> Any))
 (define (test-fpu n)
@@ -414,5 +450,43 @@
   (test-fpu-trig n)
   (test-fpu-non-trig n)
   (test-fpu-arith/error n)
+  (test-fpu-non-trig/error n)
   (test-fpu-arith/fl2 n)
   (test-fpu-non-trig/fl2 n))
+
+(for*: ([x2  (list -inf.0 -max.0 -1.0 -min.0 -0.0 0.0 +min.0 +1.0 +max.0 +inf.0 +nan.0)]
+        [x1  (list -inf.0 -max.0 -1.0 -min.0 -0.0 0.0 +min.0 +1.0 +max.0 +inf.0 +nan.0)])
+  (define n
+    (count (λ: ([b : Boolean]) b)
+           (map (λ: ([f : (Flonum Flonum -> Boolean)])
+                  (f x2 x1))
+                (list fl2rational? fl2infinite? fl2nan?))))
+  (unless (= n 1) (printf "x2 = ~v  x1 = ~v~n" x2 x1)))
+
+#|
+Tests to add
+
+(for*: ([x2  (list -inf.0 -max.0 -1.0 -min.0 -0.0 0.0 +min.0 +1.0 +max.0 +inf.0 +nan.0)]
+        [x1  (list -inf.0 -max.0 -1.0 -min.0 -0.0 0.0 +min.0 +1.0 +max.0 +inf.0 +nan.0)])
+  (define n
+    (count (λ: ([b : Boolean]) b)
+           (map (λ: ([f : (Flonum Flonum -> Boolean)])
+                  (f x2 x1))
+                (list fl2rational? fl2infinite? fl2nan?))))
+  (unless (= n 1) (printf "x2 = ~v  x1 = ~v~n" x2 x1)))
+
+fl2=
+fl2>
+fl2<
+fl2>=
+fl2<=
+
+(fl2step x2 x1 n/2) twice = (fl2step x2 x1 n)
+
+|#
+
+(check-true (let-values ([(y2 y1)  (fl+/error +max.hi +max.lo)])
+              (fl2= y2 y1 +max.hi +max.lo)))
+
+(check-true (let*-values ([(y2 y1)  (fl2next +max.hi +max.lo)])
+              (fl2infinite? y2 y1)))
