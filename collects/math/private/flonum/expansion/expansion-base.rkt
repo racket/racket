@@ -10,16 +10,20 @@ Discrete & Computational Geometry 18(3):305–363, October 1997
 Other parts shamelessly stolen from crlibm (which is LGPL)
 |#
 
-(require "../flonum-functions.rkt"
+(require racket/math
+         "../flonum-functions.rkt"
          "../flonum-bits.rkt"
          "../flonum-error.rkt"
          "../flonum-constants.rkt"
          "../utils.rkt")
 
-(provide fl2? fl2 fl2->real
-         fl2ulp fl2ulp-error
-         +max-fl2-subnormal.0 -max-fl2-subnormal.0
-         fl2abs fl2+ fl2- fl2*split-fl fl2* fl2sqr fl2/
+(provide fl2? fl2zero? fl2rational? fl2positive? fl2negative? fl2infinite? fl2nan?
+         fl2 fl2->real
+         fl2ulp fl2ulp-error fl2step fl2next fl2prev
+         +max.hi +max.lo -max.hi -max.lo
+         +max-subnormal.hi -max-subnormal.hi
+         fl2abs fl2+ fl2- fl2= fl2> fl2< fl2>= fl2<=
+         fl2*split-fl fl2* fl2sqr fl2/
          fl2sqrt flsqrt/error)
 
 (: floverlapping? (Flonum Flonum -> Boolean))
@@ -38,30 +42,58 @@ Other parts shamelessly stolen from crlibm (which is LGPL)
   (cond [(flrational? x2)
          (cond [(flrational? x1)
                 (cond [((flabs x2) . < . (flabs x1))  #f]
-                      [else  (not (floverlapping? x2 x1))])]
+                      [else (not (floverlapping? x2 x1))])]
                [else  #f])]
-        [else  (fl= x1 0.0)]))
+        [else
+         (fl= x1 0.0)]))
+
+(define-syntax-rule (define-simple-fl2-predicate fl2pred? flpred?)
+  (begin
+    (: fl2pred? (Flonum Flonum -> Boolean))
+    (define (fl2pred? x2 x1)
+      (flpred? (fl+ x2 x1)))))
+
+(define-simple-fl2-predicate fl2zero? (λ (x) (fl= x 0.0)))
+(define-simple-fl2-predicate fl2positive? (λ (x) (fl> x 0.0)))
+(define-simple-fl2-predicate fl2negative? (λ (x) (fl< x 0.0)))
+(define-simple-fl2-predicate fl2rational? flrational?)
+(define-simple-fl2-predicate fl2nan? flnan?)
+(define-simple-fl2-predicate fl2infinite? flinfinite?)
 
 ;; ===================================================================================================
 ;; Conversion
 
-(: fl2 (Real -> (Values Flonum Flonum)))
-(define (fl2 x)
-  (cond [(flonum? x)  (values x 0.0)]
-        [(single-flonum? x)  (values (fl x) 0.0)]
-        [else  (let ([x2  (fl x)])
-                 (cond [(flrational? x2)
-                        (let ([x2  (fl+ x2 (fl (- x (inexact->exact x2))))])
-                          (cond [(flrational? x2)
-                                 (values x2 (fl (- x (inexact->exact x2))))]
-                                [else  (values x2 0.0)]))]
-                       [else  (values x2 0.0)]))]))
+(: fl2 (case-> (Real -> (Values Flonum Flonum))
+               (Flonum Flonum -> (Values Flonum Flonum))))
+(define fl2
+  (case-lambda
+    [(x)
+     (cond [(flonum? x)  (values x 0.0)]
+           [(single-flonum? x)  (values (fl x) 0.0)]
+           [else
+            (define x2 (fl x))
+            (if (flinfinite? x2)
+                (values x2 0.0)
+                (let* ([x  (- x (inexact->exact x2))]
+                       [x1  (fl x)]
+                       [x  (- x (inexact->exact x1))])
+                  (let-values ([(x2 x1)  (fl+/error x2 x1)])
+                    (values x2 (fl+ x1 (fl x))))))])]
+    [(x2 x1)
+     (if (and (fl= x2 0.0) (fl= x1 0.0))
+         (values x2 0.0)
+         (fl+/error x2 x1))]))
+
+(: fl2eqv? (case-> (Flonum Flonum Flonum -> Boolean)
+                   (Flonum Flonum Flonum Flonum -> Boolean)))
+(define (fl2eqv? x2 x1 y2 [y1 0.0])
+  (and (eqv? x2 y2) (fl= x1 y1)))
 
 (: fl2->real (Flonum Flonum -> Real))
 (define (fl2->real x2 x1)
-  (cond [(and (flrational? x2) (flrational? x1))
-         (+ (inexact->exact x2) (inexact->exact x1))]
-        [else  (fl+ x1 x2)]))
+  (if (flrational? x2)
+      (+ (inexact->exact x2) (inexact->exact x1))
+      x2))
 
 (: fl4->fl2 (Flonum Flonum Flonum Flonum -> (Values Flonum Flonum)))
 (define (fl4->fl2 e4 e3 e2 e1)
@@ -73,7 +105,7 @@ Other parts shamelessly stolen from crlibm (which is LGPL)
 (: fl2ulp (Flonum Flonum -> Flonum))
 (define (fl2ulp x2 x1)
   (cond [(fl= x2 0.0)  0.0]
-        [else  (flmax +min.0 (fl* (flulp x2) (flexpt 2.0 -52.0)))]))
+        [else  (flmax +min.0 (fl* (flulp x2) epsilon.0))]))
 
 (: fl2ulp-error (Flonum Flonum Real -> Flonum))
 (define (fl2ulp-error x2 x1 r)
@@ -89,20 +121,47 @@ Other parts shamelessly stolen from crlibm (which is LGPL)
                        (inexact->exact (flmax +min.0 (fl2ulp r2 r1))))))]
         [else  +inf.0]))
 
-(define +max-fl2-subnormal.0 1.0020841800044863e-292)  ; (flprev (flexpt 2.0 -970.0))
-(define -max-fl2-subnormal.0 (- +max-fl2-subnormal.0))
+(define-values (+max.hi +max.lo)
+  (values +max.0 (flprev (* 0.5 (flulp +max.0)))))
+
+(define-values (-max.hi -max.lo)
+  (values (- +max.hi) (- +max.lo)))
+
+(: fl2step (Flonum Flonum Integer -> (Values Flonum Flonum)))
+(define (fl2step x2 x1 n)
+  (let-values ([(x2 x1)  (fast-fl+/error x2 x1)])
+    (cond [(flnan? x2)  (values +nan.0 0.0)]
+          [(fl= x2 +inf.0)  (fl+/error +max.hi (flstep +max.lo (+ n 1)))]
+          [(fl= x2 -inf.0)  (fl+/error -max.hi (flstep -max.lo (- n 1)))]
+          [else  (fl+/error x2 (flstep x1 n))])))
+
+(: fl2next (Flonum Flonum -> (Values Flonum Flonum)))
+(define (fl2next x2 x1) (fl2step x2 x1 1))
+
+(: fl2prev (Flonum Flonum -> (Values Flonum Flonum)))
+(define (fl2prev x2 x1) (fl2step x2 x1 -1))
+
+(define +min-normal.hi (fl/ (flnext +max-subnormal.0) epsilon.0))
+
+(define-values (+max-subnormal.hi +max-subnormal.lo)
+  (fl2prev +min-normal.hi 0.0))
+
+(define-values (-max-subnormal.hi -max-subnormal.lo)
+  (values (- +max-subnormal.hi) (- +max-subnormal.lo)))
 
 ;; ===================================================================================================
 ;; Absolute value
 
 (: fl2abs (case-> (Flonum -> (Values Flonum Flonum))
                   (Flonum Flonum -> (Values Flonum Flonum))))
-(define (fl2abs x2 [x1 0.0])
-  (define x (fl+ x2 x1))
-  (cond [(not (flrational? x))  (values (flabs x2) 0.0)]
-        [(fl= x 0.0)  (values 0.0 0.0)]
-        [(fl> x 0.0)  (values x2 x1)]
-        [else  (values (- x2) (- x1))]))
+(define fl2abs
+  (case-lambda
+    [(x)  (values (flabs x) 0.0)]
+    [(x2 x1)
+     (cond [(flnan? x2)  (values +nan.0 0.0)]
+           [(fl= x2 0.0)  (values 0.0 0.0)]
+           [(fl> x2 0.0)  (values x2 x1)]
+           [else  (values (- x2) (- x1))])]))
 
 ;; ===================================================================================================
 ;; Addition and subtraction
@@ -124,6 +183,22 @@ Other parts shamelessly stolen from crlibm (which is LGPL)
                 (Flonum Flonum Flonum Flonum -> (Values Flonum Flonum))))
 (define (fl2- x2 x1 y2 [y1 0.0])
   (fl2+ x2 x1 (- y2) (- y1)))
+
+;; ===================================================================================================
+;; Comparison
+
+(define-syntax-rule (define-fl2-comparison name flcomp)
+  (begin
+    (: name (Flonum Flonum Flonum Flonum -> Boolean))
+    (define (name x2 x1 y2 y1)
+      (let-values ([(z2 z1)  (fl2- x2 x1 y2 y1)])
+        ((fl+ z2 z1) . flcomp . 0.0)))))
+
+(define-fl2-comparison fl2= fl=)
+(define-fl2-comparison fl2> fl>)
+(define-fl2-comparison fl2< fl<)
+(define-fl2-comparison fl2>= fl>=)
+(define-fl2-comparison fl2<= fl<=)
 
 ;; ===================================================================================================
 ;; Multiplication and division
@@ -164,10 +239,13 @@ Other parts shamelessly stolen from crlibm (which is LGPL)
                 (Flonum Flonum Flonum Flonum -> (Values Flonum Flonum))))
 (define (fl2* x2 x1 y2 [y1 0.0])
   (define z (fl* x2 y2))
-  (cond [(and (flrational? z) (not (fl= z 0.0)) (not (flsubnormal? z)))
+  (cond [(fl= z 0.0)  (values z 0.0)]
+        [(flsubnormal? z)  (values z 0.0)]
+        [(and (flrational? x2) (flrational? y2) (z . fl>= . -inf.0) (z . fl<= . +inf.0))
          (define dx (near-pow2 x2))
          (define dy (near-pow2 y2))
          (define d (fl* dx dy))
+         (define d? (and (d . fl> . 0.0) (d . fl< . +inf.0)))
          (let* ([x2  (fl/ x2 dx)]
                 [x1  (fl/ x1 dx)]
                 [y2  (fl/ y2 dy)]
@@ -187,8 +265,8 @@ Other parts shamelessly stolen from crlibm (which is LGPL)
                           (fl* x1 y2))]
                 [z2  (fl+ m2 m1)]
                 [z1  (fl+ (fl- m2 z2) m1)]
-                [z2  (fl* d z2)])
-           (values z2 (if (flrational? z2) (fl* d z1) 0.0)))]
+                [z2  (if d? (fl* z2 d) (fl* (fl* z2 dx) dy))])
+           (values z2 (if (flrational? z2) (if d? (fl* z1 d) (fl* (fl* z1 dx) dy)) 0.0)))]
         [else
          (values z 0.0)]))
 
@@ -200,11 +278,14 @@ Other parts shamelessly stolen from crlibm (which is LGPL)
     [(x)  (flsqr/error x)]
     [(x2 x1)
      (define z (fl* x2 x2))
-     (cond [(and (flrational? z) (not (fl= z 0.0)) (not (flsubnormal? z)))
-            (define d (near-pow2 x2))
-            (define d^2 (fl* d d))
-            (let* ([x2  (fl/ x2 d)]
-                   [x1  (fl/ x1 d)]
+     (cond [(fl= z 0.0)  (values z 0.0)]
+           [(flsubnormal? z)  (values z 0.0)]
+           [(and (flrational? x2) (z . fl>= . -inf.0) (z . fl<= . +inf.0))
+            (define dx (near-pow2 x2))
+            (define d (fl* dx dx))
+            (define d? (and (d . fl> . 0.0) (d . fl< . +inf.0)))
+            (let* ([x2  (fl/ x2 dx)]
+                   [x1  (fl/ x1 dx)]
                    [up  (fl* x2 (fl+ 1.0 (flexpt 2.0 27.0)))]
                    [u1  (fl+ (fl- x2 up) up)]
                    [u2  (fl- x2 u1)]
@@ -215,8 +296,8 @@ Other parts shamelessly stolen from crlibm (which is LGPL)
                              (fl* 2.0 (fl* x2 x1)))]
                    [z2  (fl+ m2 m1)]
                    [z1  (fl+ (fl- m2 z2) m1)]
-                   [z2  (fl* d^2 z2)])
-              (values z2 (if (flrational? z2) (fl* d^2 z1) 0.0)))]
+                   [z2  (if d? (fl* z2 d) (fl* (fl* z2 dx) dx))])
+              (values z2 (if (flrational? z2) (if d? (fl* z1 d) (fl* (fl* z1 dx) dx)) 0.0)))]
            [else
             (values z 0.0)])]))
 
@@ -245,8 +326,8 @@ Other parts shamelessly stolen from crlibm (which is LGPL)
 (define (fl2sqrt x2 [x1 0.0])
   (cond [(and (flrational? x2) (not (fl= x2 0.0)))
          (define-values (d^2 d)
-           (cond [(x2 . fl<= . +max-fl2-subnormal.0)  (values (flexpt 2.0 -104.0)
-                                                              (flexpt 2.0 -52.0))]
+           (cond [(x2 . fl<= . +max-subnormal.hi)  (values (flexpt 2.0 -104.0)
+                                                           (flexpt 2.0 -52.0))]
                  [(x2 . fl> . 1e300)  (values (flexpt 2.0 104.0)
                                               (flexpt 2.0 52.0))]
                  [else  (values 1.0 1.0)]))

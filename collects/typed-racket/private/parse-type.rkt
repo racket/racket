@@ -141,7 +141,7 @@
       #:literals (t:Class t:Refinement t:Instance t:List t:List* cons t:pred t:-> : case-lambda t:case->
                   t:Rec t:U t:All t:Opaque t:Parameter t:Vector quote t:Struct)
       [t
-       #:declare t (3d Type?)
+       #:declare t (3d Type/c?)
        (attribute t.datum)]
       [(fst . rst)
        #:fail-unless (not (syntax->list #'rst)) #f

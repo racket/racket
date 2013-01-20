@@ -146,12 +146,15 @@
         (values x2 (if (and (flrational? x2) (not (flsubnormal? x2)))
                        (let*-values ([(da db)  (values (near-pow2 a) (near-pow2 b))]
                                      [(d)  (fl* da db)]
+                                     [(d?)  (and (d . fl> . 0.0) (d . fl< . +inf.0))]
                                      [(a2 a1)  (flsplit (fl/ a da))]
-                                     [(b2 b1)  (flsplit (fl/ b db))])
-                         (fl* d (- (fl- (fl- (fl- (fl- (fl/ x2 d) (fl* a2 b2))
-                                                  (fl* a1 b2))
-                                             (fl* a2 b1))
-                                        (fl* a1 b1)))))
+                                     [(b2 b1)  (flsplit (fl/ b db))]
+                                     [(x2)  (if d? (fl/ x2 d) (fl/ (fl/ x2 da) db))]
+                                     [(x1)  (- (fl- (fl- (fl- (fl- x2 (fl* a2 b2))
+                                                              (fl* a1 b2))
+                                                         (fl* a2 b1))
+                                                    (fl* a1 b1)))])
+                         (if d? (fl* x1 d) (fl* (fl* x1 da) db)))
                        0.0))))
     
     (: flsqr/error (Flonum -> (Values Flonum Flonum)))
@@ -160,10 +163,13 @@
         (values x2 (if (and (flrational? x2) (not (flsubnormal? x2)))
                        (let*-values ([(d)  (near-pow2 a)]
                                      [(d^2)  (fl* d d)]
-                                     [(a2 a1)  (flsplit (fl/ a d))])
-                         (fl* d^2 (- (fl- (fl- (fl- (fl/ x2 d^2) (fl* a2 a2))
-                                               (fl* 2.0 (fl* a1 a2)))
-                                          (fl* a1 a1)))))
+                                     [(d^2?)  (and (d^2 . fl> . 0.0) (d^2 . fl< . +inf.0))]
+                                     [(a2 a1)  (flsplit (fl/ a d))]
+                                     [(x2)  (if d^2? (fl/ x2 d^2) (fl/ (fl/ x2 d) d))]
+                                     [(x1)  (- (fl- (fl- (fl- x2 (fl* a2 a2))
+                                                         (fl* 2.0 (fl* a1 a2)))
+                                                    (fl* a1 a1)))])
+                         (if d^2? (fl* x1 d^2) (fl* (fl* x1 d) d)))
                        0.0))))
     
     (: fl//error (Flonum Flonum -> (Values Flonum Flonum)))

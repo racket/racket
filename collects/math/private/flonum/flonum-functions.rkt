@@ -9,7 +9,7 @@
 
 (provide (all-from-out racket/flonum)
          fl
-         flsubnormal? flrational? flnan? flinteger?
+         flsubnormal? flrational? flinfinite? flnan? flinteger?
          flnext* flprev*
          flulp-error
          fleven? flodd? flsgn flhypot fllog/base
@@ -39,6 +39,10 @@
   (define flrational?
     (λ: ([x : Flonum])
       (and (x . fl> . -inf.0) (x . fl< . +inf.0))))
+  
+  (define flinfinite?
+    (λ: ([x : Flonum])
+      (or (x . fl= . -inf.0) (x . fl= . +inf.0))))
   
   (define flnan?
     (λ: ([x : Flonum])

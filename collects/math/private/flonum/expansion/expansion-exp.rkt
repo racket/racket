@@ -72,14 +72,13 @@ Note to self: exp(x+y)-1 = (exp(x)-1) * (exp(y)-1) + (exp(x)-1) + (exp(y)-1)
 
 ;; See "expansion-exp-reduction.rkt" for details on the argument reduction here
 
-(: flexp/error (Flonum -> (Values Flonum Flonum)))
-(define (flexp/error x)
-  (let: loop : (Values Flonum Flonum) ([x : Flonum  x] [n : Nonnegative-Fixnum  0])
+(: flexp/positive/error (Flonum -> (Values Flonum Flonum)))
+(define (flexp/positive/error x)
+  (let: loop ([x x] [n : Nonnegative-Fixnum  0])
     (cond
       [(or ((flabs x) . fl< . exp-min) (n . fx> . 15))  ; even n > 5 should never happen
        (let-values ([(y2 y1)  (flexpm1-small/error x)])
          (fl2+ y2 y1 1.0))]
-      [(x . fl< . (- (fllog +max.0)))  (values (flexp x) 0.0)]
       [(x . fl> . (fllog +max.0))  (values +inf.0 0.0)]
       [(rational? x)
        (let*-values ([(x d2 d1)  (flexpm1-reduction x)]
@@ -87,14 +86,29 @@ Note to self: exp(x+y)-1 = (exp(x)-1) * (exp(y)-1) + (exp(x)-1) + (exp(y)-1)
                      [(y2 y1)  (loop x (fx+ n 1))])
          (fl2* d2 d1 y2 y1))]
       [else
-       (values +nan.0 +nan.0)])))
+       (values +nan.0 0.0)])))
+
+(: flexp/error (Flonum -> (Values Flonum Flonum)))
+(define (flexp/error x)
+  (cond [(x . fl> . 0.0)  (flexp/positive/error x)]
+        [(x . fl= . 0.0)  (values 1.0 0.0)]
+        [(x . fl> . (- (fllog +max.0)))
+         (let*-values ([(y2 y1)  (flexp/positive/error (- x))])
+           (fl2/ 1.0 0.0 y2 y1))]
+        [(x . fl>= . -inf.0)  (values (flexp x) 0.0)]
+        [else  (values +nan.0 0.0)]))
 
 (: fl2exp (Flonum Flonum -> (Values Flonum Flonum)))
 (define (fl2exp x2 x1)
-  (let*-values ([(a2 a1)  (flexp/error x2)]
-                [(b2 b1)  (flexpm1-tiny/error x1)]
-                [(b2 b1)  (fl2+ b2 b1 1.0)])
-    (fl2* a2 a1 b2 b1)))
+  (cond [(x2 . fl> . -746.0)
+         (let*-values ([(a2 a1)  (flexp/error x2)]
+                       [(b2 b1)  (flexpm1-tiny/error x1)]
+                       [(b2 b1)  (fl2+ b2 b1 1.0)])
+           (fl2* a2 a1 b2 b1))]
+        [(x2 . fl>= . -inf.0)
+         (values 0.0 0.0)]
+        [else
+         (values +nan.0 0.0)]))
 
 ;; ===================================================================================================
 ;; expm1
@@ -118,12 +132,8 @@ The computation of R+1 definitely loses precision, but it doesn't seem to matter
 (: flexpm1/error (Flonum -> (Values Flonum Flonum)))
 (define (flexpm1/error x)
   (cond
-    [(x . < . -1.0)
-     ;; exp(x) is near zero here, so this is more accurate
-     (let-values ([(y2 y1)  (flexp/error x)])
-       (fl2+ y2 y1 -1.0))]
-    [else
-     (let: loop : (Values Flonum Flonum) ([x : Flonum  x] [n : Nonnegative-Fixnum  0])
+    [(x . fl> . -1.0)
+     (let: loop ([x x] [n : Nonnegative-Fixnum  0])
        (cond [(or ((flabs x) . fl< . expm1-min) (n . fx> . 15))  ; even n > 5 should never happen
               (flexpm1-small/error x)]
              [(x . fl< . (- (fllog +max.0)))  (values -1.0 0.0)]
@@ -135,14 +145,29 @@ The computation of R+1 definitely loses precision, but it doesn't seem to matter
                             [(y2 y1)  (fl2* d2 d1 w2 w1)])
                 (fl2+ y2 y1 r2 r1))]
              [else
-              (values +nan.0 +nan.0)]))]))
+              (values +nan.0 0.0)]))]
+    [(x . fl> . (fllog (* 0.25 epsilon.0)))
+     ;; exp(x) is near zero here, so this is more accurate
+     (let-values ([(y2 y1)  (flexp/error x)])
+       (fl2+ y2 y1 -1.0))]
+    [else
+     ;; The high-order flonum is -1 here, so return -1 + exp(x) directly
+     (values -1.0 (flexp x))]))
+
+(define-values (expm1-max-hi expm1-max-lo)
+  (values 709.782712893384 2.3691528222554853e-14))
 
 (: fl2expm1 (Flonum Flonum -> (Values Flonum Flonum)))
 (define (fl2expm1 x2 x1)
+  (define x (fl+ x2 x1))
   (cond
-    [((fl+ x1 x2) . < . -1.0)
+    [(x . fl< . -1.0)
      (let-values ([(y2 y1)  (fl2exp x2 x1)])
        (fl2+ y2 y1 -1.0))]
+    [(x2 x1 . fl2>= . expm1-max-hi expm1-max-lo)
+     (values +inf.0 0.0)]
+    [(x . fl= . 0.0)
+     (values x2 0.0)]
     [else
      (let*-values ([(a2 a1)  (flexpm1/error x2)]
                    [(b2 b1)  (flexpm1-tiny/error x1)]

@@ -10,7 +10,9 @@
    [(odd? n)
     (+ 1 (cycle-length (+ 1 (* 3 n))))]
    [(even? n)
-    (+ 1 (cycle-length (/ n 2)))]
+    ;; TR note: quotient would work better, but that's the other version of
+    ;;          the benchmark
+    (+ 1 (cycle-length (assert (/ n 2) integer?)))]
    [else (error "unreachable")]))
 
 (time (let: loop : (U False Integer)

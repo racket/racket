@@ -472,7 +472,18 @@ break). Beware, also, of catching and discarding exceptions, because
 discarding an error message can make debugging unnecessarily
 difficult; instead of discarding an error message, consider logging it
 via @racket[log-error] or a logging form created by
-@racket[define-logger].}
+@racket[define-logger].
+
+@examples[
+  (with-handlers ([exn:fail:syntax?
+                   (λ (e) (displayln "got a syntax error"))])
+    (raise-syntax-error #f "a syntax error"))
+  (with-handlers ([exn:fail:syntax?
+                   (λ (e) (displayln "got a syntax error"))]
+                  [exn:fail?
+                   (λ (e) (displayln "fallback clause"))])
+    (raise-syntax-error #f "a syntax error"))
+]}
 
 @defform[(with-handlers* ([pred-expr handler-expr] ...)
            body ...+)]{

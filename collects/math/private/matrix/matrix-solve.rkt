@@ -11,7 +11,8 @@
          "utils.rkt"
          "../vector/vector-mutate.rkt"
          "../array/array-indexing.rkt"
-         "../array/mutable-array.rkt")
+         "../array/mutable-array.rkt"
+         "../array/array-struct.rkt")
 
 (provide 
  matrix-determinant
@@ -68,7 +69,8 @@
 
 (: matrix-invertible? ((Matrix Number) -> Boolean))
 (define (matrix-invertible? M)
-  (not (zero? (matrix-determinant M))))
+  (and (square-matrix? M)
+       (not (zero? (matrix-determinant M)))))
 
 (: matrix-inverse (All (A) (case-> ((Matrix Real)        -> (Matrix Real))
                                    ((Matrix Real) (-> A) -> (U A (Matrix Real)))
@@ -80,7 +82,8 @@
     [(M fail)
      (define m (square-matrix-size M))
      (define I (identity-matrix m))
-     (define-values (IM^-1 wps) (matrix-gauss-elim (matrix-augment (list M I)) #t #t))
+     (define-values (IM^-1 wps) (parameterize ([array-strictness #f])
+                                  (matrix-gauss-elim (matrix-augment (list M I)) #t #t)))
      (cond [(and (not (empty? wps)) (= (first wps) m))
             (submatrix IM^-1 (::) (:: m #f))]
            [else  (fail)])]))
@@ -100,7 +103,8 @@
      (define m (square-matrix-size M))
      (define-values (s t) (matrix-shape B))
      (cond [(= m s)
-            (define-values (IX wps) (matrix-gauss-elim (matrix-augment (list M B)) #t #t))
+            (define-values (IX wps) (parameterize ([array-strictness #f])
+                                      (matrix-gauss-elim (matrix-augment (list M B)) #t #t)))
             (cond [(and (not (empty? wps)) (= (first wps) m))
                    (submatrix IX (::) (:: m #f))]
                   [else  (fail)])]

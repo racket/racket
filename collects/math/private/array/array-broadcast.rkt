@@ -40,7 +40,11 @@
 
 (: array-broadcast (All (A) ((Array A) Indexes -> (Array A))))
 (define (array-broadcast arr ds)
-  (if (equal? ds (array-shape arr)) arr (shift-stretch-axes arr ds)))
+  (cond [(equal? ds (array-shape arr))  arr]
+        [else  (define new-arr (shift-stretch-axes arr ds))
+               (if (or (array-strict? arr) ((array-size new-arr) . fx<= . (array-size arr)))
+                   new-arr
+                   (array-default-strict new-arr))]))
 
 (: shape-insert-axes (Indexes Fixnum -> Indexes))
 (define (shape-insert-axes ds n)

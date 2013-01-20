@@ -1,54 +1,39 @@
+Version 5.3.2.2
+Added file-truncate
+
 Version 5.3.2.1
 srfi/19: made compatible with date* structs, produces
  lax-date struct for backwards compatibility
 
-Version 5.3.1.12
-Added exn:fail:filesystem:errno and exn:fail:network:errno
-
-Version 5.3.1.11
+Version 5.3.2, January 2013
+Changed case to use equal? instead of eqv?
 Changed log-message to support a name argument
 Changed the synchronization result of a log receiver to include an
  event name
-
-Version 5.3.1.10
+Added exn:fail:filesystem:errno and exn:fail:network:errno
 Added phantom byte strings
 Added 'word mode to system-type
-racket/gui: added display-changed to frame%
-scribble/tag: added
-scribble/base: added make-section-tag, taglet?
-
-Version 5.3.1.9
-Changed case to use equal? instead of eqv?
-r5rs, r6rs: fixed case and cond to disallow internal definitions
- in clauses
+Added arguments to impersonate-prompt-tag and chaperone-prompt-tag
+ to support interposition on non-composable continuation results
 Add #fx() and #fl() reader forms for flvectors and fxvectors
+racket/unsafe/ops: added unsafe-cons-list
+racket/gui: added get-current-mouse-state, and added
+ display-changed to frame%
 racket/serialize: fxvectors and flvectors are serializable
 racket/net: added uri-path-segment-unreserved-encode
 racket/url: added current-url-encode-mode
-ffi/com: added com-get-property*
 racket/date: fixed 'iso-8601 date formatting
-
-Version 5.3.1.8
+scribble/tag: added
+scribble/base: added make-section-tag, taglet?
+r5rs, r6rs: fixed case and cond to disallow internal definitions
+ in clauses
+ffi/com: added com-get-property*
 file/untar: added
 file/untgz: added
 file/unzip: added
-
-Version 5.3.1.7
 compiler/zo-structs: generalize flonum? field to type
  field in localref, let-one, and fun 
-
-Version 5.3.1.6
-racket/unsafe/ops: added unsafe-cons-list
-
-Version 5.3.1.5
-racket/gui: added get-current-mouse-state
-
-Version 5.3.1.2
 compiler/zo-structs: added a constantness field to module-variable
-
-Version 5.3.1.1
-Added arguments to impersonate-prompt-tag and chaperone-prompt-tag
- to support interposition on non-composable continuation results
 
 Version 5.3.1, October 2012
 Changed make-log-receiver to accept a logger name as an

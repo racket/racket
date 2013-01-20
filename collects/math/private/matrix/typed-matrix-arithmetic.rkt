@@ -31,10 +31,11 @@
      (define g0 (unsafe-array-proc arr0))
      (define g1 (unsafe-array-proc arr1))
      (define gs (map unsafe-array-proc arrs))
-     (unsafe-build-array
-      ((inst vector Index) m n)
-      (λ: ([js : Indexes]) (apply f (g0 js) (g1 js)
-                                  (map (λ: ([g : (Indexes -> T)]) (g js)) gs))))]))
+     (array-default-strict
+      (unsafe-build-array
+       ((inst vector Index) m n)
+       (λ: ([js : Indexes]) (apply f (g0 js) (g1 js)
+                                   (map (λ: ([g : (Indexes -> T)]) (g js)) gs)))))]))
 
 (: matrix=? ((Matrix Number) (Matrix Number) -> Boolean))
 (define (matrix=? arr0 arr1)
@@ -44,10 +45,11 @@
        (= n0 n1)
        (let ([proc0  (unsafe-array-proc arr0)]
              [proc1  (unsafe-array-proc arr1)])
-         (array-all-and (unsafe-build-array
-                         ((inst vector Index) m0 n0)
-                         (λ: ([js : Indexes])
-                           (= (proc0 js) (proc1 js))))))))
+         (parameterize ([array-strictness #f])
+           (array-all-and (unsafe-build-array
+                           ((inst vector Index) m0 n0)
+                           (λ: ([js : Indexes])
+                             (= (proc0 js) (proc1 js)))))))))
 
 (: matrix= (case-> ((Matrix Number) (Matrix Number) -> Boolean)
                    ((Matrix Number) (Matrix Number) (Matrix Number) (Matrix Number) * -> Boolean)))
@@ -62,28 +64,41 @@
                   [else  (and (matrix=? arr1 (first arrs))
                               (loop (first arrs) (rest arrs)))])))]))
 
+
+(: matrix*/ns (case-> ((Matrix Real) (Listof (Matrix Real)) -> (Matrix Real))
+                      ((Matrix Number) (Listof (Matrix Number)) -> (Matrix Number))))
+(define (matrix*/ns a as)
+  (cond [(empty? as)  a]
+        [else  (matrix*/ns (inline-matrix-multiply a (first as)) (rest as))]))
+
 (: matrix* (case-> ((Matrix Real) (Matrix Real) * -> (Matrix Real))
                    ((Matrix Number) (Matrix Number) * -> (Matrix Number))))
-(define (matrix* a . as)
-  (let loop ([a a] [as as])
-    (cond [(empty? as)  a]
-          [else  (loop (inline-matrix* a (first as)) (rest as))])))
+(define (matrix* a . as) (call/ns (λ () (matrix*/ns a as))))
+
+
+(: matrix+/ns (case-> ((Matrix Real) (Listof (Matrix Real)) -> (Matrix Real))
+                      ((Matrix Number) (Listof (Matrix Number)) -> (Matrix Number))))
+(define (matrix+/ns a as)
+  (cond [(empty? as)  a]
+        [else  (matrix+/ns (inline-matrix+ a (first as)) (rest as))]))
 
 (: matrix+ (case-> ((Matrix Real) (Matrix Real) * -> (Matrix Real))
                    ((Matrix Number) (Matrix Number) * -> (Matrix Number))))
-(define (matrix+ a . as)
-  (let loop ([a a] [as as])
-    (cond [(empty? as)  a]
-          [else  (loop (inline-matrix+ a (first as)) (rest as))])))
+(define (matrix+ a . as) (call/ns (λ () (matrix+/ns a as))))
+
+
+(: matrix-/ns (case-> ((Matrix Real) (Listof (Matrix Real)) -> (Matrix Real))
+                      ((Matrix Number) (Listof (Matrix Number)) -> (Matrix Number))))
+(define (matrix-/ns a as)
+  (cond [(empty? as)  a]
+        [else  (matrix-/ns (inline-matrix- a (first as)) (rest as))]))
 
 (: matrix- (case-> ((Matrix Real) (Matrix Real) * -> (Matrix Real))
                    ((Matrix Number) (Matrix Number) * -> (Matrix Number))))
 (define (matrix- a . as)
-  (cond [(empty? as)  (inline-matrix- a)]
-        [else
-         (let loop ([a a] [as as])
-           (cond [(empty? as)  a]
-                 [else  (loop (inline-matrix- a (first as)) (rest as))]))]))
+  (call/ns (λ () (cond [(empty? as)  (inline-matrix- a)]
+                       [else  (matrix-/ns a as)]))))
+
 
 (: matrix-scale (case-> ((Matrix Real) Real -> (Matrix Real))
                         ((Matrix Number) Number -> (Matrix Number))))

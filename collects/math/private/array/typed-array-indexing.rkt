@@ -46,7 +46,8 @@
 (define (array-indexes-ref arr idxs)
   (define ds (array-shape idxs))
   (define idxs-proc (unsafe-array-proc idxs))
-  (unsafe-build-array ds (λ: ([js : Indexes]) (array-ref arr (idxs-proc js)))))
+  (array-default-strict
+   (unsafe-build-array ds (λ: ([js : Indexes]) (array-ref arr (idxs-proc js))))))
 
 (: array-indexes-set! (All (A) ((Settable-Array A) (Array In-Indexes) (Array A) -> Void)))
 (define (array-indexes-set! arr idxs vals)
@@ -232,14 +233,19 @@
     (unless (= dims num-specs)
       (error 'array-slice-ref "expected list with ~e slice specifications; given ~e in ~e"
              dims num-specs orig-slices))
-    (let-values ([(arr jss)  (slices->array-axis-transform 'array-slice-ref arr slices)])
-      (for/fold ([arr (unsafe-array-axis-transform arr jss)]) ([na  (in-list new-axes)])
-        (match-define (cons k dk) na)
-        (array-axis-insert arr k dk)))))
+    (array-default-strict
+     (parameterize ([array-strictness #f])
+       (let-values ([(arr jss)  (slices->array-axis-transform 'array-slice-ref arr slices)])
+         (for/fold: : (Array A) ([arr : (Array A)  (unsafe-array-axis-transform arr jss)]
+                                 ) ([na  (in-list new-axes)])
+           (match-define (cons k dk) na)
+           (array-axis-insert arr k dk)))))))
 
 (: array-slice-set! (All (A) ((Settable-Array A) (Listof Slice-Spec) (Array A) -> Void)))
 (define (array-slice-set! arr slices vals)
-  (let ([idxs  (array-slice-ref (indexes-array (array-shape arr)) slices)])
+  ;; No reason to make `idxs' strict, since we build it ourselves and don't return it
+  (let ([idxs  (parameterize ([array-strictness #f])
+                 (array-slice-ref (indexes-array (array-shape arr)) slices))])
     (array-indexes-set! arr idxs vals)))
 
 ;; ---------------------------------------------------------------------------------------------------

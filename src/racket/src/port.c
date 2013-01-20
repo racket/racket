@@ -5440,6 +5440,83 @@ scheme_file_position_star(int argc, Scheme_Object *argv[])
   return do_file_position("file-position*", argc, argv, 1);
 }
 
+Scheme_Object *scheme_file_truncate(int argc, Scheme_Object *argv[])
+{
+  mzlonglong nll;
+  Scheme_Output_Port *op;
+  intptr_t fd;
+  int errid;
+
+  if (!SCHEME_OUTPUT_PORTP(argv[0])
+      || SCHEME_FALSEP(scheme_file_stream_port_p(1, argv)))
+    scheme_wrong_contract("file-truncate", "(and/c output-port? file-stream-port?)", 0, argc, argv);
+
+  if (!(SCHEME_INTP(argv[1]) && (SCHEME_INT_VAL(argv[1]) >= 0))
+      && !(SCHEME_BIGNUMP(argv[1]) && SCHEME_BIGPOS(argv[1])))
+    scheme_wrong_contract("file-truncate", "exact-nonnegative-integer?", 1, argc, argv);
+
+  if (!scheme_get_long_long_val(argv[1], &nll)) {
+    scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                     "file-truncate: size change failed\n"
+                     "  reason: size too large");
+  }
+
+  op = scheme_output_port_record(argv[0]);
+  
+  if (SAME_OBJ(op->sub_type, file_output_port_type)) {
+    fd = MSC_IZE (fileno)((FILE *)((Scheme_Output_File *)op->port_data)->f);
+#ifdef MZ_FDS
+  } else if (SAME_OBJ(op->sub_type, fd_output_port_type)) {
+    fd = ((Scheme_FD *)op->port_data)->fd;
+#endif
+  } else
+    return scheme_void;
+
+  errid = -1;
+#ifdef WINDOWS_FILE_HANDLES
+  if (win_seekable(fd)) {
+    DWORD r;
+    LONG lo_w, hi_w, old_lo_w, old_hi_w;
+    old_hi_w = 0;
+    old_lo_w = SetFilePointer((HANDLE)fd, 0, &old_hi_w, FILE_CURRENT);
+    if ((old_lo_w == INVALID_SET_FILE_POINTER)
+        && GetLastError() != NO_ERROR) {
+      errid = GetLastError();
+    } else {
+      lo_w = (LONG)(nll & 0xFFFFFFFF);
+      hi_w = (LONG)(nll >> 32);
+      r = SetFilePointer((HANDLE)fd, lo_w, &hi_w, FILE_BEGIN);
+      if ((r == INVALID_SET_FILE_POINTER)
+	  && GetLastError() != NO_ERROR) {
+	errid = GetLastError();
+      } else {
+	if (SetEndOfFile((HANDLE)fd)) {
+	  /* we assume that this works: */
+	  (void)SetFilePointer((HANDLE)fd, lo_w, &hi_w, FILE_BEGIN);
+	  return scheme_void;
+	}
+        errid = GetLastError();
+      }
+    }
+  } else {
+    errid = ERROR_UNSUPPORTED_TYPE;
+  }
+#else
+# ifdef MZ_FDS
+  if (!BIG_OFF_T_IZE(ftruncate)(fd, nll))
+    return scheme_void;
+  errid = errno;
+# endif
+#endif
+
+  scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                   "file-truncate: size change failed\n"
+                   "  system error: " FILENAME_EXN_E,
+                   errid);
+
+  return NULL;
+}
+
 intptr_t scheme_set_file_position(Scheme_Object *port, intptr_t pos)
 {
   if (pos >= 0) {

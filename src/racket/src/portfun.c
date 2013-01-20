@@ -316,6 +316,7 @@ scheme_init_port_fun(Scheme_Env *env)
   GLOBAL_NONCM_PRIM("flush-output",                   flush_output,                   0, 1, env);
   GLOBAL_NONCM_PRIM("file-position",                  scheme_file_position,           1, 2, env);
   GLOBAL_NONCM_PRIM("file-position*",                 scheme_file_position_star,      1, 1, env);
+  GLOBAL_NONCM_PRIM("file-truncate",                  scheme_file_truncate,           2, 2, env);
   GLOBAL_NONCM_PRIM("file-stream-buffer-mode",        scheme_file_buffer,             1, 2, env);
   GLOBAL_NONCM_PRIM("port-try-file-lock?",            scheme_file_try_lock,           2, 2, env);
   GLOBAL_NONCM_PRIM("port-file-unlock",               scheme_file_unlock,             1, 1, env);

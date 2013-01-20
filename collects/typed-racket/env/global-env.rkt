@@ -16,7 +16,7 @@
          check-all-registered-types
          type-env-map)
 
-(lazy-require ["../rep/type-rep.rkt" (Type? type-equal?)])
+(lazy-require ["../rep/type-rep.rkt" (Type/c? type-equal?)])
 
 ;; free-id-table from id -> type or Box[type]
 ;; where id is a variable, and type is the type of the variable
@@ -32,7 +32,7 @@
   (cond [(free-id-table-ref the-mapping id (lambda _ #f))
          => (lambda (e)
               (define t (if (box? e) (unbox e) e))
-              (unless (and (Type? t) (type-equal? t type))
+              (unless (and (Type/c? t) (type-equal? t type))
                 (tc-error/expr #:stx id "Duplicate type annotation of ~a for ~a, previous was ~a" type (syntax-e id) t))
               (when (box? e)
                 (free-id-table-set! the-mapping id t)))]
@@ -46,7 +46,7 @@
          =>
          (λ (t) ;; it's ok to annotate with the same type
            (define t* (if (box? t) (unbox t) t))
-           (unless (and (Type? t*) (type-equal? type t*))
+           (unless (and (Type/c? t*) (type-equal? type t*))
              (void (tc-error/expr #:stx id "Duplicate type annotation of ~a for ~a, previous was ~a" type (syntax-e id) t*))))]
         [else (free-id-table-set! the-mapping id (box type))]))
 

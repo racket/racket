@@ -11,6 +11,11 @@ v5.3.2
 
   * added 'boolean' as a new pattern
 
+  * define-relation now compiles to judgment-form
+    (instead of a metafunction)
+  
+  * added show-derivations to visualize judgment form derivations
+    	     
 v5.3.1
 
   * added optional #:lang keyword to term

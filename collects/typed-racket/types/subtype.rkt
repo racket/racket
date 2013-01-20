@@ -342,12 +342,12 @@
               ;; rec types, applications and names (that aren't the same)
               [((? needs-resolving? s) other)
                (let ([s* (resolve-once s)])
-                 (if (Type? s*) ;; needed in case this was a name that hasn't been resolved yet
+                 (if (Type/c? s*) ;; needed in case this was a name that hasn't been resolved yet
                      (subtype* A0 s* other)
                      (fail! s t)))]
               [(other (? needs-resolving? t))
                (let ([t* (resolve-once t)])
-                 (if (Type? t*) ;; needed in case this was a name that hasn't been resolved yet
+                 (if (Type/c? t*) ;; needed in case this was a name that hasn't been resolved yet
                      (subtype* A0 other t*)
                      (fail! s t)))]
               ;; for unions, we check the cross-product
@@ -426,7 +426,7 @@
               [((Prompt-Tagof: _ _) (Prompt-TagTop:)) A0]
               [((Continuation-Mark-Keyof: _) (Continuation-Mark-KeyTop:)) A0]
               ;; subtyping on structs follows the declared hierarchy
-              [((Struct: nm (? Type? parent) _ _ _ _) other)
+              [((Struct: nm (? Type/c? parent) _ _ _ _) other)
                ;(dprintf "subtype - hierarchy : ~a ~a ~a\n" nm parent other)
                (subtype* A0 parent other)]
               ;; subtyping on values is pointwise

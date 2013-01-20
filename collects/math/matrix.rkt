@@ -6,9 +6,9 @@
          "private/matrix/matrix-conversion.rkt"
          "private/matrix/matrix-syntax.rkt"
          "private/matrix/matrix-comprehension.rkt"
-         "private/matrix/matrix-expt.rkt"
          "private/matrix/matrix-types.rkt"
          "private/matrix/matrix-2d.rkt"
+         ;;"private/matrix/matrix-expt.rkt"  ; all use require/untyped-contract
          ;;"private/matrix/matrix-gauss-elim.rkt"  ; all use require/untyped-contract
          (except-in "private/matrix/matrix-solve.rkt"
                     matrix-determinant
@@ -35,6 +35,11 @@
          ;;"private/matrix/matrix-lu.rkt"  ; all use require/untyped-contract
          ;;"private/matrix/matrix-gram-schmidt.rkt"  ; all use require/untyped-contract
          )
+
+(require/untyped-contract
+ (begin (require "private/matrix/matrix-types.rkt"))
+ "private/matrix/matrix-expt.rkt"
+ [matrix-expt  ((Matrix Number) Integer -> (Matrix Number))])
 
 (require/untyped-contract
  (begin (require "private/matrix/matrix-types.rkt"
@@ -148,9 +153,10 @@
           "private/matrix/matrix-solve.rkt"
           "private/matrix/matrix-operator-norm.rkt"
           "private/matrix/matrix-comprehension.rkt"
-          "private/matrix/matrix-expt.rkt"
           "private/matrix/matrix-types.rkt"
           "private/matrix/matrix-2d.rkt")
+         ;; matrix/matrix-expt.rkt
+         matrix-expt
          ;; matrix-gauss-elim.rkt
          matrix-gauss-elim
          matrix-row-echelon

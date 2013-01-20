@@ -50,7 +50,8 @@ A value of k that reduces any x to [0.5, 1.0] is
 (define (fl2log x2 x1)
   (define x (fl+ x1 x2))
   (cond [(x . fl<= . 0.0)  (cond [(fl= x 0.0)  (values -inf.0 0.0)]
-                                 [else  (values +nan.0 +nan.0)])]
+                                 [else  (values +nan.0 0.0)])]
+        [(x . fl= . +inf.0)  (values +inf.0 0.0)]
         [(or (x . fl< . 0.5) (x . fl> . 2.5))
          ;; Reduce arguments
          (let*-values ([(k x2 x1)  (fl2log-reduction x2 x1)]
@@ -80,10 +81,8 @@ A `k'  that reduces any argument `x' to (-1/2,1/2) is
   k = round(log1p(x)/log(2))
 |#
 
-(: fl2log1p-reduction (Flonum Flonum -> (Values Flonum Flonum Flonum)))
-(define (fl2log1p-reduction x2 x1)
-  (define-values (a2 a1) (fl2+ x2 x1 1.0))
-  (define y (fllog+ a2 a1))
+(: fl2log1p-reduction (Flonum Flonum Flonum Flonum Flonum -> (Values Flonum Flonum Flonum)))
+(define (fl2log1p-reduction x2 x1 a2 a1 y)
   (define k (flround (fl/ y (fllog 2.0))))
   (define 2^k (flexpt 2.0 k))
   (define-values (j2 j1) (fast-fl-/error (/ 1.0 2^k) 1.0))
@@ -96,9 +95,10 @@ A `k'  that reduces any argument `x' to (-1/2,1/2) is
   (define-values (a2 a1) (fl2+ x2 x1 1.0))
   (define y (fllog+ a2 a1))
   (cond
-    [(y . fl< . -0.5)  (fl2log a2 a1)]
+    [(or (y . fl< . -0.5) (a2 . fl> . 2.0))  (fl2log a2 a1)]
+    [(fl= (fl+ x2 x1) 0.0)  (values x2 0.0)]
     [(y . fl> . 0.5)
-     (let*-values ([(k x2 x1)  (fl2log1p-reduction x2 x1)]
+     (let*-values ([(k x2 x1)  (fl2log1p-reduction x2 x1 a2 a1 y)]
                    [(y2 y1)  (fl2log1p x2 x1)]
                    [(z2 z1)  (fl2* log2-hi log2-lo k)])
        (fl2+ y2 y1 z2 z1))]

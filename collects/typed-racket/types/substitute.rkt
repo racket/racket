@@ -37,7 +37,7 @@
 
 ;; substitute-many : Hash[Name,Type] Type -> Type
 (define/cond-contract (substitute-many subst target #:Un [Un (lambda (args) (apply Un args))])
-  ((simple-substitution/c Type/c) (#:Un procedure?) . ->* . Type/c)
+  ((simple-substitution/c (or/c Values/c arr?)) (#:Un procedure?) . ->* . (or/c Values/c arr?))
   (define (sb t) (substitute-many subst t #:Un Un))
   (define names (hash-keys subst))
   (define fvs (free-vars* target))
@@ -86,7 +86,7 @@
 ;; implements angle bracket substitution from the formalism
 ;; substitute-dots : Listof[Type] Option[type] Name Type -> Type
 (define/cond-contract (substitute-dots images rimage name target)
-  ((listof Type/c) (or/c #f Type/c) symbol? Type/c . -> . Type/c)
+  ((listof Type/c) (or/c #f Type/c) symbol? (or/c arr? Values/c) . -> . (or/c arr? Values/c))
   (define (sb t) (substitute-dots images rimage name t))
   (if (or (set-member? (free-vars-names (free-idxs* target)) name)
           (set-member? (free-vars-names (free-vars* target)) name))
@@ -163,7 +163,7 @@
 ;; substitution = Listof[U List[Name,Type] List[Name,Listof[Type]]]
 ;; subst-all : substitution Type -> Type
 (define/cond-contract (subst-all s ty)
-  (substitution/c Type/c . -> . Type/c)
+  (substitution/c (or/c arr? Values/c) . -> . (or/c Values/c arr?))
 
   (define t-substs
     (for/fold ([acc (hash)]) ([(v r) (in-hash s)])

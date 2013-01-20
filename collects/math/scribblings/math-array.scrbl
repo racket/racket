@@ -21,7 +21,7 @@
                                   racket/sequence
                                   racket/list)]
 
-@title[#:tag "arrays" #:style 'toc]{Arrays}
+@title[#:tag "array" #:style 'toc]{Arrays}
 @(author-neil)
 
 @bold{Performance Warning:} Indexing the elements of arrays created in untyped Racket
@@ -39,24 +39,10 @@ are perceived as requiring users to operate on them using destructive updates, w
 loops that micromanage array elements, and in general, stray far from the declarative
 ideal.
 
-@(define array-pdf
-   "http://research.microsoft.com/en-us/um/people/simonpj/papers/ndp/RArrays.pdf")
-
-@margin-note*{* @bold{Regular, shape-polymorphic, parallel arrays in Haskell},
-               Gabriele Keller, Manuel Chakravarty, Roman Leshchinskiy, Simon Peyton Jones,
-               and Ben Lippmeier. ICFP 2010. @hyperlink[array-pdf]{(PDF)}}
-Normally, they do. However, experience in Python, and more recently Data-Parallel Haskell*,
+Normally, they do. However, experience in Python, and more recently Data-Parallel Haskell,
 has shown that providing the right data types and a rich collection of whole-array operations
 allows working effectively with arrays in a functional, declarative style. As a bonus,
 doing so opens the possibility of parallelizing nearly every operation.
-
-It requires changing how we think of arrays, starting with this definition:
-
-@nested[#:style 'inset]{@bold{An @deftech{array} is a function with a finite, rectangular domain.}}
-
-Some arrays are mutable, some are lazy, some are strict, some are sparse, and most
-do not even allocate contiguous space to store their elements. All are functions that can be
-applied to indexes to retrieve elements.
 
 @local-table-of-contents[]
 
@@ -64,27 +50,85 @@ applied to indexes to retrieve elements.
 @;{==================================================================================================}
 
 
-@section{Preliminaries}
+@section[#:tag "array:quick"]{Quick Start}
 
-@subsection{Definitions}
+Arrays can be created from expressions denoting each element's value using the @racket[array]
+macro:
+@interaction[#:eval typed-eval
+                    (array #[0 1 2 3 4])
+                    (array #[#['first 'row 'data] #['second 'row 'data]])
+                    (array "This array has zero axes and one element")]
+They can also be created using @racket[build-array] to specify a @tech{shape} and @tech{procedure}:
+@interaction[#:eval typed-eval
+                    (define arr
+                      (build-array #(4 5) (λ: ([js : Indexes])
+                                            (match-define (vector j0 j1) js)
+                                            (+ j0 j1))))
+                    arr]
+Other ways to create arrays are to convert them from lists and vectors using
+@racket[list->array], @racket[list*->array], @racket[vector->array] and @racket[vector*->array],
+and to generate them in a loop using @racket[for/array:] and @racket[for*/array:].
 
-An array's domain is determined by its @deftech{shape}, a vector of @racket[Index] such as
-@racket[#(4 5)], @racket[#(10 1 5 8)] or @racket[#()]. The shape's length is the number of array
-dimensions, or @deftech{axes}, and its contents are the length of each axis in row-major order.
+Arrays can be indexed using @racket[array-ref], and settable arrays can be mutated using
+@racket[array-set!]:
+@interaction[#:eval typed-eval
+                    (array-ref arr #(2 3))
+                    (define brr (array->mutable-array arr))
+                    (array-set! brr #(2 3) -1000)
+                    brr]
+However, both of these activities are discouraged in favor of functional, whole-array operations.
+
+Arrays can be mapped over and otherwise operated on @tech{pointwise}:
+@interaction[#:eval typed-eval
+                    (array-map (λ: ([n : Natural]) (* 2 n)) arr)
+                    (array+ arr arr)]
+When arrays have different shapes, they can often be @tech{broadcast}, or stretched, to be the same
+shape before applying the pointwise operation:
+@interaction[#:eval typed-eval
+                    (array* arr (array 2))
+                    (array* arr (array #[0 2 0 2 0]))]
+By default, zero-dimensional arrays like @racket[(array 2)] can be broadcast to any shape.
+See @secref{array:broadcasting} for details.
+
+Arrays can be @tech[#:key "slicing"]{sliced} to yield sub-arrays, using a list of slice specifications
+that correspond to array axes.
+For example, keeping every row of @racket[arr] and every even-numbered column:
+@interaction[#:eval typed-eval
+                    (array-slice-ref arr (list (::) (:: 0 5 2)))]
+Here, @racket[::] has semantics almost, but not quite, entirely unlike @racket[in-range].
+See @secref{array:slicing} for details.
+
+Functional code that uses whole-array operations often creates many short-lived, intermediate arrays
+whose elements are referred to only once.
+The overhead of allocating and filling storage for these arrays can be removed entirely by using
+@tech{nonstrict} arrays, sometimes at the cost of making the code's performance more difficult to
+reason about.
+Another bonus is that computations with nonstrict arrays have fewer synchronization points, meaning
+that they will be easier to parallelize as Racket's support for parallel computation improves.
+See @secref{array:nonstrict} for details.
+
+
+@;{==================================================================================================}
+
+
+@section[#:tag "array:defs"]{Definitions}
+
+An array's domain is determined by its @deftech{shape}, a vector of nonnegative integers such as
+@racket[#(4 5)], @racket[#(10 1 5 8)] or @racket[#()].
+The shape's length is the number of array dimensions, or @deftech{axes}.
+The shape's contents are the length of each axis.
+
 The product of the axis lengths is the array's size. In particular, an array with shape
 @racket[#()] has one element.
 
-An array's @deftech{procedure} defines the function that the array represents. The procedure
-returns an element when applied to a vector of indexes in the array's domain.
+@deftech{Indexes} are a vector of nonnegative integers that identify a particular element.
+Indexes are in-bounds when there are the same number of them as axes, and each is
+@italic{less than} its corresponding axis length.
 
-A @deftech{strict} array is one whose procedure computes elements only by indexing a vector or
-some other kind of storage. Arrays that perform non-indexing computation to return elements
-are @deftech{non-strict}. Almost all array functions exported by @racket[math/array] return
-non-strict arrays. Exceptions are noted in the documentation.
-
-@bold{Non-strict arrays are not lazy.} By default, arrays do not cache computed elements, but
-like functions, recompute them every time they are referred to. Unlike functions, they can have
-every element computed and cached at once. See @secref{array:strictness} for details.
+An array's contents are determined by its @deftech{procedure}, which returns an element when applied
+to in-bounds @tech{indexes}.
+By default, most arrays' procedures look up elements in memory.
+Others, such as those returned by @racket[make-array], return computed values.
 
 A @deftech{pointwise} operation is one that operates on each array element independently, on each
 corresponding pair of elements from two arrays independently, or on a corresponding collection
@@ -93,148 +137,31 @@ of elements from many arrays independently. This is usually done using @racket[a
 When a pointwise operation is performed on arrays with different shapes, the arrays are
 @deftech{broadcast} so that their shapes match. See @secref{array:broadcasting} for details.
 
-@subsection{Quick Start}
 
-The most direct way to construct an array is to use @racket[build-array] to specify
-its @tech{shape} and @tech{procedure}:
-@interaction[#:eval typed-eval
-                    (define arr
-                      (build-array #(4 5) (λ: ([js : Indexes])
-                                            (match-define (vector j0 j1) js)
-                                            (+ j0 j1))))]
-This creates a @tech{non-strict} array, meaning that its elements are not computed unless
-referred to. One way to refer to elements is to print them:
-@interaction[#:eval typed-eval
-                    arr]
-@bold{Important:} Printing @racket[arr] did not cache its elements. A non-strict array's elements
-are recomputed every time they are referred to. But see @racket[array-lazy], which constructs
-arrays that cache computed elements.
+@;{==================================================================================================}
 
-Arrays can be made @tech{strict} using @racket[array-strict] or @racket[array->mutable-array]:
-@interaction[#:eval typed-eval
-                    (array-strict arr)
-                    (array->mutable-array arr)]
-While @racket[(array-strict arr)] causes @racket[arr] to compute and store all of its elements
-at once, @racket[array->mutable-array] makes a strict copy. See @secref{array:strictness} for
-details.
 
-Arrays can be indexed using @racket[array-ref], and settable arrays can be mutated using
-@racket[array-set!]:
-@interaction[#:eval typed-eval
-                    (array-ref arr #(2 3))
-                    (define brr (array->mutable-array arr))
-                    (array-set! brr #(2 3) -1)
-                    brr]
-However, both of these activities are discouraged in favor of functional, whole-array operations.
-
-An array can be sliced using a list of sequences or slice objects. The following examples are
-all equivalent, keeping every row of @racket[arr] and every even-numbered column:
-@interaction[#:eval typed-eval
-                    (array-slice-ref arr (list (in-range 0 4) (:: 0 5 2)))
-                    (array-slice-ref arr (list ::... (:: 0 5 2)))
-                    (array-slice-ref arr (list '(0 1 2 3) (:: 0 5 2)))
-                    (array-slice-ref arr (list (::) (in-range 0 5 2)))]
-Here, @racket[::] constructs a slice object and has semantics similar to, but not exactly like,
-@racket[in-range]. The special slice object @racket[::...] means ``every row in every unspecified,
-adjacent axis'' (which in this case means every row in axis 0).
-
-Arrays can be mapped over and otherwise operated on @tech{pointwise}:
-@interaction[#:eval typed-eval
-                    (array-map (λ: ([n : Natural]) (* 2 n)) arr)
-                    (array+ arr arr)]
-When arrays have different shapes, they are @tech{broadcast} to the same shape before applying
-the pointwise operation:
-@interaction[#:eval typed-eval
-                    (array* arr (array 2))
-                    (array* arr (array #[0 1 0 2 0]))]
-Zero-dimensional arrays like @racket[(array 2)] can be broadcast to any shape.
-See @secref{array:broadcasting} for details.
-
-@subsection[#:tag "array:strictness"]{Non-Strictness}
-
-Almost every function exported by @racketmodname[math/array] returns @tech{non-strict} arrays,
-meaning that they compute each element every time the element is referred to.
-
-This design decision is motivated by the observation that, in functional code that operates on
-arrays, the elements in most intermediate arrays are referred to exactly once. Additionally,
-many arrays consist only of a single, repeated constant.
-
-The problem is well-illustrated by operating on whole vectors in a functional style:
-@interaction[#:eval typed-eval
-                    (vector-map string-append
-                                (vector-map string-append
-                                            (vector "Hello " "Hallo " "Jó napot ")
-                                            (vector "Ada" "Edsger" "John"))
-                                (make-vector 3 "!"))]
-There are two memory inefficiencies here. The first is that the inner
-@racket[(vector-map string-append ...)] allocates a vector whose elements are referred to only
-once. The second is @racket[(vector "!" "!" "!")], which we construct to avoid looping over
-the seemingly extraneous intermediate vector.
-
-This is the same example using arrays:
-@interaction[#:eval typed-eval
-                    (array-map string-append
-                               (array-map string-append
-                                          (array #["Hello " "Hallo " "Jó napot "])
-                                          (array #["Ada" "Edsger" "John"]))
-                               (make-array #(3) "!"))]
-Here, because @racket[array-map] returns non-strict arrays, the inner
-@racket[(array-map string-append ...)] does not create intermediate storage. Neither does
-@racket[(make-array #(3) "!")]. In fact, no elements are computed until they are printed,
-and none of these arrays allocates contiguous space to store its elements.
-
-Because the major bottleneck in functional language performance is almost always allocation and
-subsequent garbage collection, avoiding allocation can significantly increase performance.
-Additionally, allocating contiguous space for intermediate array elements forces synchronization
-between array operations, so not doing so provides opportunities for future parallelization.
-
-@margin-note*{Still, it is easier to reason about non-strict array performance than lazy array
-              performance.}
-One downside is that it is more difficult to reason about the performance characteristics of
-operations on non-strict arrays. Also, when using arrays, the user must decide which arrays to make
-strict. (This can be done using @racket[array-strict!] or @racket[array-strict].) Fortunately,
-there is a simple rule of thumb:
-
-@nested[#:style 'inset]{@bold{Make arrays strict when you must refer to most of their elements
-                              more than once or twice.}}
-
-Additionally, having to name an array is a good indicator that it should be strict. In the
-following example, which computes @racket[(+ (expt x x) (expt x x))] for @racket[x] from @racket[0]
-to @racket[2499], elements in @racket[xrr] are computed twice whenever elements in @racket[res]
-are referred to:
-@racketblock[(define xrr (array-expt (index-array #(50 50))
-                                     (index-array #(50 50))))
-             (define res (array+ xrr xrr))]
-Having to name @racket[xrr] means we should make it strict:
-@racketblock[(define xrr (array-strict
-                          (array-expt (index-array #(50 50))
-                                      (index-array #(50 50)))))
-             (define res (array+ xrr xrr))]
-Doing so halves the time it takes to compute @racket[res]'s elements.
-
-An exception to these guidelines is returning an array from a function. In this
-case, application sites should make the array strict, if necessary.
-
-If you cannot determine whether to make arrays strict, or are using arrays for so-called
-``dynamic programming,'' you can make them lazy using @racket[array-lazy].
-
-@subsection[#:tag "array:broadcasting"]{Broadcasting}
+@section[#:tag "array:broadcasting"]{Broadcasting}
 
 It is often useful to apply a @tech{pointwise} operation to two or more arrays in a many-to-one
 manner. Library support for this, which @racketmodname[math/array] provides, is called
 @tech[#:key "broadcast"]{broadcasting}.
 
-@examples[#:eval typed-eval
-                 (define diag
-                   (diagonal-array 2 6 1 0))
-                 (array-shape diag)
-                 diag
-                 (array-shape (array 10))
-                 (array* diag (array 10))
-                 (array+ (array* diag (array 10))
-                         (array #[0 1 2 3 4 5]))]
+Creating a 6×6 identity matrix:
+@interaction[#:eval typed-eval
+                    (define diag (diagonal-array 2 6 1 0))
+                    (array-shape diag)
+                    diag]
+Multiplying each element by @racket[10]:
+@interaction[#:eval typed-eval
+                    (array-shape (array 10))
+                    (array* diag (array 10))]
+Adding @racket[(array #[0 1 2 3 4 5])] pointwise to every row:
+@interaction[#:eval typed-eval
+                    (array+ (array* diag (array 10))
+                            (array #[0 1 2 3 4 5]))]
 
-@subsubsection[#:tag "array:broadcasting:rules"]{Broadcasting Rules}
+@subsection[#:tag "array:broadcasting:rules"]{Broadcasting Rules}
 
 Suppose we have two array shapes @racket[ds = (vector d0 d1 ...)] and
 @racket[es = (vector e0 e1 ...)]. Broadcasting proceeds as follows:
@@ -244,10 +171,11 @@ Suppose we have two array shapes @racket[ds = (vector d0 d1 ...)] and
   @item{For each axis @racket[k], @racket[dk] and @racket[ek] are compared. If @racket[dk = ek],
         the result axis is @racket[dk]; if one axis is length @racket[1], the result axis
         is the length of the other; otherwise fail.}
-  @item{Both arrays' axes are stretched by (conceptually) copying singleton axes' rows.}
+  @item{Both arrays' axes are stretched by (conceptually) copying the rows of axes with length
+        @racket[1].}
   ]
 
-Suppose we have an array @racket[drr] with shape @racket[ds = #(4 1 3)] and another array
+Example: Suppose we have an array @racket[drr] with shape @racket[ds = #(4 1 3)] and another array
 @racket[err] with shape @racket[es = #(3 3)]. Following the rules:
 @itemlist[#:style 'ordered
   @item{@racket[es] is padded to get @racket[#(1 3 3)].}
@@ -257,47 +185,43 @@ Suppose we have an array @racket[drr] with shape @racket[ds = #(4 1 3)] and anot
         axis (which is length @racket[1] by rule 1) is stretched to length @racket[4].}
   ]
 
-Conceptually, step 1 is the same as adding square brackets around @racket[err] in literal
-@racket[array] syntax. For example, if @racket[err = (array #[#[0 1 2] #[3 4 5] #[6 7 8]])],
-after padding its shape, it is @racket[(array #[#[#[0 1 2] #[3 4 5] #[6 7 8]]])].
-
 The same example, but more concrete:
 @interaction[#:eval typed-eval
-                    (define nums
+                    (define drr
                       (array #[#[#["00" "01" "02"]]
                                #[#["10" "11" "12"]]
                                #[#["20" "21" "22"]]
                                #[#["30" "31" "32"]]]))
-                    (array-shape nums)
-                    (define lets
+                    (array-shape drr)
+                    (define err
                       (array #[#["aa" "ab" "ac"]
                                #["ba" "bb" "bc"]
                                #["ca" "cb" "cc"]]))
-                    (array-shape lets)
-                    (define nums+lets (array-map string-append nums lets))
-                    (array-shape nums+lets)
-                    nums+lets]
-Notice how the row @racket[#["00" "01" "02"]] in @racket[nums] is repeated in the result
-because @racket[nums]'s second axis was stretched during broadcasting. Also, the column
-@racket[#[#["aa"] #["ba"] #["ca"]]] in @racket[lets] is repeated because @racket[lets]'s first
+                    (array-shape err)
+                    (define drr+err (array-map string-append drr err))
+                    (array-shape drr+err)
+                    drr+err]
+Notice how the row @racket[#["00" "01" "02"]] in @racket[drr] is repeated in the result
+because @racket[drr]'s second axis was stretched during broadcasting. Also, the column
+@racket[#[#["aa"] #["ba"] #["ca"]]] in @racket[err] is repeated because @racket[err]'s first
 axis was stretched.
 
-Even more concretely:
+For the above example, @racket[array-map] does this before operating on @racket[drr] and @racket[err]:
 @interaction[#:eval typed-eval
-                    (define ds
-                      (array-shape-broadcast (list (array-shape nums) (array-shape lets))))
+                    (define ds (array-shape-broadcast (list (array-shape drr)
+                                                            (array-shape err))))
                     ds
-                    (array-broadcast nums ds)
-                    (array-broadcast lets ds)]
+                    (array-broadcast drr ds)
+                    (array-broadcast err ds)]
 
-@subsubsection[#:tag "array:broadcasting:control"]{Broadcasting Control}
+@subsection[#:tag "array:broadcasting:control"]{Broadcasting Control}
 
 The parameter @racket[array-broadcasting] controls how pointwise operations @tech{broadcast}
 arrays. Its default value is @racket[#t], which means that broadcasting proceeds as described
 in @secref{array:broadcasting:rules}. Another possible value is @racket[#f], which allows pointwise
 operations to succeed only if array shapes match exactly:
 @interaction[#:eval typed-eval
-                    (parameterize ([array-broadcasting  #f])
+                    (parameterize ([array-broadcasting #f])
                       (array* (index-array #(3 3)) (array 10)))]
 
 Another option is @hyperlink["http://www.r-project.org"]{R}-style permissive broadcasting,
@@ -318,27 +242,307 @@ Notice that @racket[(array #["+" "-"])] was repeated five times, and that
 @;{==================================================================================================}
 
 
-@section{Types, Predicates and Accessors}
+@section[#:tag "array:slicing"]{Slicing}
+
+One common array transformation is @deftech{slicing}: extracting sub-arrays by picking rows from
+each axis independently.
+
+Slicing is done by applying @racket[array-slice-ref] or @racket[array-slice-set!] to an array and a
+list of @deftech{slice specifications} corresponding to array @tech{axes}.
+There are five types of slice specification:
+@itemlist[@item{@racket[(Sequenceof Integer)]: pick rows from an axis by index.}
+          @item{@racket[Slice]: pick rows from an axis as with an @racket[in-range] sequence.}
+          @item{@racket[Slice-Dots]: preserve remaining adjacent axes}
+          @item{@racket[Integer]: remove an axis by replacing it with one of its rows.}
+          @item{@racket[Slice-New-Axis]: insert an axis of a given length.}]
+
+Create @racket[Slice] objects using @racket[::] and @racket[Slice-New-Axis] objects using
+@racket[::new]. There is only one @racket[Slice-Dots] object, namely @racket[::...].
+
+When slicing an array with @racket[n] axes, unless a list of slice specifications contains
+@racket[::...], it must contain exactly @racket[n] slice specifications.
+
+The remainder of this section uses the following example array:
+@interaction[#:eval typed-eval
+                    (define arr
+                      (build-array
+                       #(2 3 4)
+                       (λ: ([js : Indexes])
+                         (string-append* (map number->string (vector->list js))))))
+                    arr]
+
+@subsection{@racket[(Sequenceof Integer)]: pick rows}
+
+Using a sequence of integers as a slice specification picks rows from the corresponding axis. For
+example, we might use lists of integers to pick @italic{every} row from every axis:
+@interaction[#:eval typed-eval
+                    (array-slice-ref arr (list '(0 1) '(0 1 2) '(0 1 2 3)))]
+This simply copies the array.
+
+More usefully, we can use sequences to swap rows on the same axis:
+@interaction[#:eval typed-eval
+                    (array-slice-ref arr (list '(1 0) '(0 1 2) '(0 1 2 3)))]
+We can also remove rows:
+@interaction[#:eval typed-eval
+                    (array-slice-ref arr (list '(0 1) '(0 2) '(0 2)))
+                    (array-slice-ref arr (list '(0 1) '(0 1 2) '()))]
+Or duplicate rows:
+@interaction[#:eval typed-eval
+                    (array-slice-ref arr (list '(0 1) '(0 1 2) '(0 0 1 2 2 3)))]
+However, a sequence slice specification cannot alter the number of axes.
+
+Using sequence constructors like @racket[in-range], we can pick every even-indexed row in an axis:
+@interaction[#:eval typed-eval
+                    (array-slice-ref arr (list '(1 0) '(0 1 2) (in-range 0 4 2)))]
+We could also use @racket[in-range] to pick every row instead of enumerating their indexes in a
+list, but that would require another kind of tedium:
+@interaction[#:eval typed-eval
+                    (define ds (array-shape arr))
+                    (array-slice-ref arr (list (in-range (vector-ref ds 0))
+                                               (in-range (vector-ref ds 1))
+                                               (in-range (vector-ref ds 2))))]
+The situation calls for an @racket[in-range]-like slice specification that is aware of the lengths
+of the axes it is applied to.
+
+@subsection{@racket[Slice]: pick rows in a length-aware way}
+
+As a slice specification, a @racket[Slice] object acts like the sequence object returned
+by @racket[in-range], but either @racket[start] or @racket[end] may be @racket[#f].
+
+If @racket[start] is @racket[#f], it is interpreted as the first valid axis index in the direction
+of @racket[step]. If @racket[end] is @racket[#f], it is interpreted as the last valid axis index
+in the direction of @racket[step].
+
+Possibly the most common slice is @racket[(::)], equivalent to @racket[(:: #f #f 1)]. With a
+positive @racket[step = 1], @racket[start] is interpreted as @racket[0] and @racket[end] as
+the length of the axis. Thus, @racket[(::)] picks all rows from any axis:
+@interaction[#:eval typed-eval
+                    (array-slice-ref arr (list (::) (::) (::)))]
+The slice @racket[(:: #f #f -1)] reverses an axis:
+@interaction[#:eval typed-eval
+                    (array-slice-ref arr (list (::) (::) (:: #f #f -1)))]
+The slice @racket[(:: 2 #f 1)] picks every row starting from index @racket[2]:
+@interaction[#:eval typed-eval
+                    (array-slice-ref arr (list (::) (::) (:: 2 #f 1)))]
+The slice @racket[(:: 1 #f 2)] picks every odd-indexed row:
+@interaction[#:eval typed-eval
+                    (array-slice-ref arr (list (::) (::) (:: 1 #f 2)))]
+Notice that every example starts with two @racket[(::)]. In fact, slicing only one axis is so
+common that there is a slice specification object that represents any number of @racket[(::)].
+
+@subsection{@racket[Slice-Dots]: preserve remaining axes}
+
+As a slice specification, a @racket[Slice-Dots] object represents any number of leftover, adjacent
+axes, and preserves them all.
+
+For example, picking every odd-indexed row of the last axis can be done by
+@interaction[#:eval typed-eval
+                    (array-slice-ref arr (list ::... (:: 1 #f 2)))]
+For @racket[arr] specifically, @racket[::...] represents two @racket[(::)].
+
+Slicing only the first axis while preserving the rest can be done by
+@interaction[#:eval typed-eval
+                    (array-slice-ref arr (list '(0) ::...))]
+If more than one @racket[::...] appears in the list, only the first is expanded:
+@interaction[#:eval typed-eval
+                    (array-slice-ref arr (list ::... '(1) ::...))
+                    (array-slice-ref arr (list ::... '(1)))]
+If there are no leftover axes, @racket[::...] does nothing when placed in any position:
+@interaction[#:eval typed-eval
+                    (array-slice-ref arr (list ::... '(1) '(1) '(1)))
+                    (array-slice-ref arr (list '(1) ::... '(1) '(1)))
+                    (array-slice-ref arr (list '(1) '(1) ::... '(1)))
+                    (array-slice-ref arr (list '(1) '(1) '(1) ::...))]
+
+@subsection{@racket[Integer]: remove an axis}
+
+All of the slice specifications so far preserve the dimensions of the array. Removing an axis
+can be done by using an integer as a slice specification.
+
+This example removes the first axis by collapsing it to its first row:
+@interaction[#:eval typed-eval
+                    (array-slice-ref arr (list 0 ::...))]
+Removing the second axis by collapsing it to the row with index @racket[1]:
+@interaction[#:eval typed-eval
+                    (array-slice-ref arr (list (::) 1 ::...))]
+Removing the second-to-last axis (which for @racket[arr] is the same as the second):
+@interaction[#:eval typed-eval
+                    (array-slice-ref arr (list ::... 1 (::)))]
+All of these examples can be done using @racket[array-axis-ref]. However, removing an axis
+relative to the dimension of the array (e.g. the second-to-last axis) is easier to do
+using @racket[array-slice-ref], and it is sometimes convenient to combine axis removal with
+other slice operations.
+
+@subsection{@racket[Slice-New-Axis]: add an axis}
+
+As a slice specification, @racket[(::new dk)] inserts @racket[dk] into the resulting array's
+shape, in the corresponding axis position. The new axis has length @racket[dk], which must be
+nonnegative.
+
+For example, we might conceptually wrap another @racket[#[]] around an array's data:
+@interaction[#:eval typed-eval
+                    (array-slice-ref arr (list (::new) ::...))]
+Or duplicate the array twice, within two new outer rows:
+@interaction[#:eval typed-eval
+                    (array-slice-ref arr (list (::new 2) ::...))]
+Of course, @racket[dk = 0] is a valid new axis length, but is usually not very useful:
+@interaction[#:eval typed-eval
+                    (array-slice-ref arr (list (::) (::new 0) ::...))]
+Inserting axes can also be done using @racket[array-axis-insert].
+
+
+@;{==================================================================================================}
+
+
+@section[#:tag "array:nonstrict"]{Nonstrict Arrays}
+
+With few exceptions, by default, the functions exported by @racketmodname[math/array] return
+@deftech{strict} arrays, which are arrays whose @tech{procedures} compute elements by looking them
+up in a vector.
+
+This conservative default often wastes time and space. In functional code that operates on arrays,
+the elements in most intermediate arrays are referred to exactly once, so allocating and filling
+storage for them should be unnecessary. For example, consider the following array:
+@interaction[#:eval typed-eval
+                    (define (make-hellos)
+                      (array-map string-append
+                                 (array-map string-append
+                                            (array #["Hello " "Hallo " "Jó napot "])
+                                            (array #["Ada" "Edsger" "John"]))
+                                 (make-array #(3) "!")))
+                    (define arr (make-hellos))
+                    (array-strict? arr)
+                    arr]
+By default, the result of the inner @racket[array-map] has storage allocated for it and filled with
+strings such as @racket["Hello Ada"], even though its storage will be thrown away at the next garbage
+collection cycle.
+
+An additional concern becomes even more important as Racket's support for parallel computation
+improves. Allocating storage for intermediate arrays is a synchronization point in long computations,
+which divides them into many short computations, making them difficult to parallelize.
+
+@(define array-pdf
+   "http://research.microsoft.com/en-us/um/people/simonpj/papers/ndp/RArrays.pdf")
+
+@margin-note*{* @bold{Regular, shape-polymorphic, parallel arrays in Haskell},
+               Gabriele Keller, Manuel Chakravarty, Roman Leshchinskiy, Simon Peyton Jones,
+               and Ben Lippmeier. ICFP 2010. @hyperlink[array-pdf]{(PDF)}}
+
+A solution is to construct @deftech{nonstrict} arrays*, which are arrays whose procedures can do more
+than simply look up elements. Setting the parameter @racket[array-strictness] to @racket[#f] causes
+almost all @racketmodname[math/array] functions to return nonstrict arrays:
+@interaction[#:eval typed-eval
+                    (define arr (parameterize ([array-strictness #f])
+                                  (make-hellos)))
+                    (array-strict? arr)
+                    arr]
+In @racket[arr], the first element is the @italic{computation}
+@racket[(string-append (string-append "Hello " "Ada") "!")], not the value @racket["Hello Ada!"].
+The value @racket["Hello Ada!"] is recomputed every time the first element is referred to.
+
+To use nonstrict arrays effectively, think of every array as if it were the array's
+@tech{procedure} itself. In other words,
+
+@nested[#:style 'inset]{@bold{An @italic{array} is just a function with a finite,
+                                 rectangular domain.}}
+
+Some arrays are mutable, some are lazy, some are strict, some are sparse, and most
+do not even allocate contiguous space to store their elements. All are functions that can be
+applied to indexes to retrieve elements.
+
+The two most common kinds of operations, mapping over and transforming arrays, are compositions.
+Mapping @racket[f] over array @racket[arr] is nothing more than composing @racket[f] with
+@racket[arr]'s procedure.
+Transforming @racket[arr] using @racket[g], a function from new indexes to old indexes, is nothing
+more than composing @racket[arr]'s procedure with @racket[g].
+
+@subsection{Caching Nonstrict Elements}
+
+@bold{Nonstrict arrays are not lazy.} Very few nonstrict arrays cache computed elements,
+but like functions, recompute them every time they are referred to. Unlike functions, they can have
+every element computed and cached at once, by making them @tech{strict}.
+
+To compute and store an array's elements, use @racket[array-strict!] or @racket[array-strict]:
+@interaction[#:eval typed-eval
+                    (array-strict? arr)
+                    (array-strict! arr)
+                    (array-strict? arr)
+                    (array-strict arr)]
+If the array is already strict, as in the last example above, @racket[array-strict!] and
+@racket[array-strict] do nothing.
+
+To make a strict @italic{copy} of an array without making the original array strict, use
+@racket[array->mutable-array].
+
+@subsection{Performance Considerations}
+
+One downside to nonstrict arrays is that it is more difficult to reason about the performance of
+operations on them. Another is that the user must decide which arrays to make strict. Fortunately,
+there is a simple rule of thumb:
+
+@nested[#:style 'inset]{@bold{Make arrays strict when you must refer to most of their elements
+                              more than once or twice.}}
+
+Having to name an array is a good indicator that it should be strict. In the
+following example, which computes @racket[(+ (expt x x) (expt x x))] for @racket[x] from @racket[0]
+to @racket[2499], each element in @racket[xrr] is computed twice whenever its corresponding element
+in @racket[res] is referred to:
+@racketblock[(define xrr (array-map expt
+                                    (index-array #(50 50))
+                                    (index-array #(50 50))))
+             (define res (array+ xrr xrr))]
+Having to name @racket[xrr] means we should make it strict:
+@racketblock[(define xrr (array-strict
+                          (array-map expt
+                                     (index-array #(50 50))
+                                     (index-array #(50 50)))))
+             (define res (array+ xrr xrr))]
+Doing so halves the time it takes to compute @racket[res]'s elements.
+
+When returning an array from a function, return nonstrict arrays as they are, to allow the caller to
+decide whether the result should be strict.
+
+When writing library functions that may be called with either @racket[(array-strictness #t)] or
+@racket[(array-strictness #f)], operate on nonstrict arrays and wrap the result with
+@racket[array-default-strict] to return what the user is expecting.
+For example, if @racket[make-hellos] is a library function, it should be written as
+@racketblock[(define (make-hellos)
+               (array-default-strict
+                (parameterize ([array-strictness #f])
+                  (array-map string-append
+                             (array-map string-append
+                                        (array #["Hello " "Hallo " "Jó napot "])
+                                        (array #["Ada" "Edsger" "John"]))
+                             (make-array #(3) "!")))))]
+
+If you cannot determine whether to make arrays strict, or are using arrays for so-called
+``dynamic programming,'' you can make them lazy using @racket[array-lazy].
+
+
+@;{==================================================================================================}
+
+
+@section[#:tag "array:types"]{Types, Predicates and Accessors}
 
 @defform[(Array A)]{
 The parent array type. Its type parameter is the type of the array's elements.
 
 The polymorphic @racket[Array] type is @italic{covariant}, meaning that @racket[(Array A)] is a
 subtype of @racket[(Array B)] if @racket[A] is a subtype of @racket[B]:
-@examples[#:eval typed-eval
-                 (define arr (array #[1 2 3 4 5]))
-                 arr
-                 (ann arr (Array Real))
-                 (ann arr (Array Any))]
+@interaction[#:eval typed-eval
+                    (define arr (array #[1 2 3 4 5]))
+                    arr
+                    (ann arr (Array Real))
+                    (ann arr (Array Any))]
 Because subtyping is transitive, the @racket[(Array A)] in the preceeding subtyping rule can be
 replaced with any of @racket[(Array A)]'s subtypes, including descendant types of @racket[Array].
 For example, @racket[(Mutable-Array A)] is a subtype of @racket[(Array B)] if @racket[A] is a
 subtype of @racket[B]:
-@examples[#:eval typed-eval
-                 (define arr (mutable-array #[1 2 3 4 5]))
-                 arr
-                 (ann arr (Array Real))
-                 (ann arr (Array Any))]
+@interaction[#:eval typed-eval
+                    (define arr (mutable-array #[1 2 3 4 5]))
+                    arr
+                    (ann arr (Array Real))
+                    (ann arr (Array Any))]
 }
 
 @defform[(Settable-Array A)]{
@@ -349,21 +553,22 @@ The parent type of arrays whose elements can be mutated. Functions like @racket[
 This type is @italic{invariant}, meaning that @racket[(Settable-Array A)] is @bold{not} a subtype
 of @racket[(Settable-Array B)] if @racket[A] and @racket[B] are different types, even if @racket[A]
 is a subtype of @racket[B]:
-@examples[#:eval typed-eval
-                 (define arr (mutable-array #[1 2 3 4 5]))
-                 arr
-                 (ann arr (Settable-Array Integer))
-                 (ann arr (Settable-Array Real))]
+@interaction[#:eval typed-eval
+                    (define arr (mutable-array #[1 2 3 4 5]))
+                    arr
+                    (ann arr (Settable-Array Integer))
+                    (ann arr (Settable-Array Real))]
 }
 
 @defform[(Mutable-Array A)]{
 The type of mutable arrays. Its type parameter is the type of the array's elements.
 
-Arrays of this type are always strict, and store their elements in a @racket[(Vectorof A)]:
-@examples[#:eval typed-eval
-                 (define arr (mutable-array #[1 2 3 4 5]))
-                 (array-strict? arr)
-                 (mutable-array-data arr)]
+Arrays of this type store their elements in a @racket[(Vectorof A)]:
+@interaction[#:eval typed-eval
+                    (define arr (mutable-array #[#[1 2] #[3 4]]))
+                    (vector-set! (mutable-array-data arr) 0 -10)
+                    arr]
+Mutable arrays are always @tech{strict}.
 }
 
 @defidform[Indexes]{
@@ -419,32 +624,6 @@ their predicates have @racket[Struct] filters:
                     mutable-array?]
 }
 
-@defproc[(array-strict? [arr (Array A)]) Boolean]{
-Returns @racket[#t] when @racket[arr] is @tech{strict}.
-@examples[#:eval typed-eval
-                 (define arr (array+ (array 10) (array #[0 1 2 3])))
-                 (array-strict? arr)
-                 (array-strict! arr)
-                 (array-strict? arr)]
-}
-
-@defproc[(array-strict! [arr (Array A)]) Void]{
-Causes @racket[arr] to compute and store all of its elements. Thereafter, @racket[arr]
-computes its elements by retrieving them from the store.
-
-If @racket[arr] is already strict, @racket[(array-strict! arr)] does nothing.
-}
-
-@defform[(array-strict arr)
-         #:contracts ([arr (Array A)])]{
-An expression form of @racket[array-strict!], which is often more convenient. First evaluates
-@racket[(array-strict! arr)], then returns @racket[arr].
-
-This is a macro so that Typed Racket will preserve @racket[arr]'s type exactly. If it were a
-function, @racket[(array-strict arr)] would always have the type @racket[(Array A)], even if
-@racket[arr] were a subtype of @racket[(Array A)], such as @racket[(Mutable-Array A)].
-}
-
 @defproc[(array-shape [arr (Array A)]) Indexes]{
 Returns @racket[arr]'s @tech{shape}, a vector of indexes that contains the lengths
 of @racket[arr]'s axes.
@@ -477,11 +656,11 @@ Returns the vector of data that @racket[arr] contains.
 @;{==================================================================================================}
 
 
-@section{Construction}
+@section[#:tag "array:construct"]{Construction}
 
 @defform/subs[(array #[#[...] ...] maybe-type-ann)
               [(maybe-type-ann (code:line) (code:line : type))]]{
-Creates a @tech{strict} @racket[Array] from nested rows of expressions.
+Creates an @racket[Array] from nested rows of expressions.
 
 The vector syntax @racket[#[...]] delimits rows. These may be nested to any depth, and must have a
 rectangular shape. Using square parentheses is not required, but is encouraged to help visually
@@ -515,7 +694,8 @@ Normally, the datums within literal vectors are implicitly quoted. However, when
                     (array #['this 'is 'okay])
                     (array #['#(an) '#(array) '#(of) '#(vectors)])]
 
-Another way to create an immutable, strict array from literal data is to use @racket[list->array].
+Arrays returned by @racket[array] are @tech{strict}.
+Another way to create immutable, strict arrays from literal data is to use @racket[list->array].
 }
 
 @defform/subs[(mutable-array #[#[...] ...] maybe-type-ann)
@@ -536,63 +716,23 @@ the array's elements:
                     (array-set! arr #(0) 10.0)
                     arr]
 
-Another way to create a mutable array from literal data is to use @racket[vector->array].
+Another way to create mutable arrays from literal data is to use @racket[vector->array].
 }
 
 @defproc[(make-array [ds In-Indexes] [value A]) (Array A)]{
 Returns an array with @tech{shape} @racket[ds], with every element's value as @racket[value].
-Analogous to @racket[make-vector], but does not allocate storage for its elements.
+Analogous to @racket[make-vector].
 @examples[#:eval typed-eval
                  (make-array #() 5)
                  (make-array #(1 2) 'sym)
                  (make-array #(4 0 2) "Invisible")]
-The arrays returned by @racket[make-array] are @tech{strict}.
+The arrays returned by @racket[make-array] do not allocate storage for their elements and
+are @tech{strict}.
 }
 
 @defproc[(build-array [ds In-Indexes] [proc (Indexes -> A)]) (Array A)]{
 Returns an array with @tech{shape} @racket[ds] and @tech{procedure} @racket[proc].
-Analogous to @racket[build-vector], but returns a @tech{non-strict} array.
-@examples[#:eval typed-eval
-                 (eval:alts
-                  (define: fibs : (Array Natural)
-                    (build-array
-                     #(10) (λ: ([js : Indexes])
-                             (define j (vector-ref js 0))
-                             (cond [(j . < . 2)  j]
-                                   [else  (+ (array-ref fibs (vector (- j 1)))
-                                             (array-ref fibs (vector (- j 2))))]))))
-                  (void))
-                 (eval:alts
-                  fibs
-                  (ann (array #[0 1 1 2 3 5 8 13 21 34]) (Array Natural)))]
-Because @racket[build-array] returns non-strict arrays, @racket[fibs] may refer to itself
-within its definition. Of course, this naïve implementation computes its elements in time
-exponential in the size of @racket[fibs]. A quick, widely applicable fix is given in
-@racket[array-lazy]'s documentation.
-}
-
-@defproc[(array-lazy [arr (Array A)]) (Array A)]{
-Returns a @tech{non-strict} array with the same elements as @racket[arr], but element
-computations are cached and reused.
-
-The example in @racket[build-array]'s documentation computes the Fibonacci numbers in exponential
-time. Speeding it up to linear time only requires wrapping its definition with @racket[array-lazy]:
-@interaction[#:eval typed-eval
-                    (eval:alts
-                     (define: fibs : (Array Natural)
-                       (array-lazy
-                        (build-array
-                         #(10) (λ: ([js : Indexes])
-                                 (define j (vector-ref js 0))
-                                 (cond [(j . < . 2)  j]
-                                       [else  (+ (array-ref fibs (vector (- j 1)))
-                                                 (array-ref fibs (vector (- j 2))))])))))
-                     (void))
-                    (eval:alts
-                     fibs
-                     (ann (array #[0 1 1 2 3 5 8 13 21 34]) (Array Natural)))]
-Printing a lazy array computes and caches all of its elements, as does applying
-@racket[array-strict!] to it.
+Analogous to @racket[build-vector].
 }
 
 @defproc[(array->mutable-array [arr (Array A)]) (Mutable-Array A)]{
@@ -612,7 +752,7 @@ array.
                  (indexes-array #(4))
                  (indexes-array #(2 3))
                  (indexes-array #(4 0 2))]
-The resulting array does not allocate storage for its elements, and is @tech{strict}.
+The resulting array does not allocate storage for its return value's elements, and is @tech{strict}.
 (It is essentially the identity function for the domain @racket[ds].)
 }
 
@@ -622,7 +762,8 @@ the array.
 @examples[#:eval typed-eval
                  (index-array #(2 3))
                  (array-flatten (index-array #(2 3)))]
-Like @racket[indexes-array], this does not allocate storage for its elements, and is @tech{strict}.
+As with @racket[indexes-array], the result does not allocate storage for its elements, and is
+@tech{strict}.
 }
 
 @defproc[(axis-index-array [ds In-Indexes] [axis Integer]) (Array Index)]{
@@ -633,7 +774,8 @@ Returns an array with @tech{shape} @racket[ds], with each element set to its pos
                  (axis-index-array #(3 3) 0)
                  (axis-index-array #(3 3) 1)
                  (axis-index-array #() 0)]
-Like @racket[indexes-array], this does not allocate storage for its elements, and is @tech{strict}.
+As with @racket[indexes-array], the result does not allocate storage for its elements, and is
+@tech{strict}.
 }
 
 @defproc[(diagonal-array [dims Integer] [axes-length Integer] [on-value A] [off-value A])
@@ -644,14 +786,15 @@ The elements on the diagonal (i.e. at indexes of the form @racket[(vector j j ..
 @racket[j < axes-length]) have the value @racket[on-value]; the rest have @racket[off-value].
 @examples[#:eval typed-eval
                  (diagonal-array 2 7 1 0)]
-Like @racket[indexes-array], this does not allocate storage for its elements, and is @tech{strict}.
+As with @racket[indexes-array], the result does not allocate storage for its elements, and is
+@tech{strict}.
 }
 
 
 @;{==================================================================================================}
 
 
-@section{Conversion}
+@section[#:tag "array:convert"]{Conversion}
 
 @defform[(Listof* A)]{
 Equivalent to @racket[(U A (Listof A) (Listof (Listof A)) ...)] if infinite unions were allowed.
@@ -666,7 +809,7 @@ Like @racket[(Listof* A)], but for vectors. See @racket[vector*->array] and @rac
 @deftogether[(@defproc*[([(list->array [lst (Listof A)]) (Array A)]
                          [(list->array [ds In-Indexes] [lst (Listof A)]) (Array A)])]
               @defproc[(array->list [arr (Array A)]) (Listof A)])]{
-Convert lists to @tech{strict}, immutable arrays and back.
+Convert lists to immutable arrays and back.
 
 The two-argument variant of @racket[list->array] assumes the elements in @racket[lst] are in
 row-major order.
@@ -684,6 +827,8 @@ flattened before being converted to a list.
 For conversion between nested lists and multidimensional arrays, see @racket[list*->array] and
 @racket[array->list*].
 For conversion from flat values to mutable arrays, see @racket[vector->array].
+
+The arrays returned by @racket[list->array] are always @tech{strict}.
 }
 
 @deftogether[(@defproc*[([(vector->array [vec (Vectorof A)]) (Mutable-Array A)]
@@ -702,7 +847,7 @@ For conversion between nested vectors and multidimensional arrays, see @racket[v
 }
 
 @defproc[(list*->array [lsts (Listof* A)] [pred? ((Listof* A) -> Any : A)]) (Array A)]{
-Converts a nested list of elements of type @racket[A] to a @tech{strict} array.
+Converts a nested list of elements of type @racket[A] to an array.
 The predicate @racket[pred?] identifies elements of type @racket[A].
 The shape of @racket[lsts] must be rectangular.
 
@@ -717,13 +862,15 @@ There is no well-typed Typed Racket function that behaves like @racket[list*->ar
 require @racket[pred?].
 Without an element predicate, there is no way to prove to the type checker that
 @racket[list*->array]'s implementation correctly distinguishes elements from rows.
+
+The arrays returned by @racket[list*->array] are always @tech{strict}.
 }
 
 @defproc[(array->list* [arr (Array A)]) (Listof* A)]{
 The inverse of @racket[list*->array].
 }
 
-@defproc[(vector*->array [vecs (Vectorof* A)] [pred? ((Vectorof* A) -> Any : A)]) (Array A)]{
+@defproc[(vector*->array [vecs (Vectorof* A)] [pred? ((Vectorof* A) -> Any : A)]) (Mutable-Array A)]{
 Like @racket[list*->array], but accepts nested vectors of elements.
 @examples[#:eval typed-eval
                  (vector*->array 'singleton symbol?)
@@ -765,7 +912,7 @@ The axis number @racket[axis] must be nonnegative and less than the number of @r
                  (array->array-list (array 10))]
 }
 
-@subsection{Printing}
+@subsection[#:tag "array:print"]{Printing}
 
 @defparam[array-custom-printer
           print-array
@@ -802,7 +949,7 @@ See @racket[prop:custom-write] for the meaning of the @racket[port] and @racket[
 @;{==================================================================================================}
 
 
-@section{Comprehensions and Sequences}
+@section[#:tag "array:sequences"]{Comprehensions and Sequences}
 
 Sometimes sequential processing is unavoidable, so @racket[math/array] provides loops and sequences.
 
@@ -879,7 +1026,7 @@ Returns a sequence of indexes for shape @racket[ds], in row-major order.
 @;{==================================================================================================}
 
 
-@section{Pointwise Operations}
+@section[#:tag "array:pointwise"]{Pointwise Operations}
 
 Most of the operations documented in this section are simple macros that apply @racket[array-map]
 to a function and their array arguments.
@@ -980,10 +1127,12 @@ Equivalent to @racket[(array-map f arr0 arr1 arrs ...)], where @racket[f] is res
               @defform[(array-if cond-arr true-arr false-err)])]{
 Boolean operators lifted to operate on arrays.
 
-The short-cutting behavior of @racket[array-and], @racket[array-or] and @racket[array-if]
-can keep array arguments' elements from being referred to (and thus computed). However,
-they cannot be used to distinguish base and inductive cases in a recursive function, because
-the array arguments are eagerly evaluated. For example, this function never returns:
+When given @tech{nonstrict} arrays, the short-cutting behavior of @racket[array-and],
+@racket[array-or] and @racket[array-if] can keep their elements from being referred to (and thus
+computed).
+However, these macros cannot be used to distinguish base and inductive cases in a recursive function,
+because the array arguments are eagerly evaluated. For example, this function never returns, even
+when @racket[array-strictness] is @racket[#f]:
 @racketblock[(: array-factorial ((Array Integer) -> (Array Integer)))
              (define (array-factorial arr)
                (array-if (array<= arr (array 0))
@@ -1021,13 +1170,19 @@ This is used for both @racket[(array-broadcasting #t)] and @racket[(array-broadc
                  (array-broadcast (array 10) ((inst vector Index) 10))
                  (array-broadcast (array #[0 1]) #())
                  (array-broadcast (array #[0 1]) ((inst vector Index) 5))]
+
+When @racket[array-strictness] is @racket[#f], @racket[array-broadcast] always returns a
+@tech{nonstrict} array.
+
+When @racket[array-strictness] is @racket[#t], @racket[array-broadcast] returns a strict array
+when @racket[arr] is nonstrict and the result has more elements than @racket[arr].
 }
 
 
 @;{==================================================================================================}
 
 
-@section{Indexing and Slicing}
+@section[#:tag "array:indexing"]{Indexing and Slicing}
 
 @defproc[(array-ref [arr (Array A)] [js In-Indexes]) A]{
 Returns the element of @racket[arr] at position @racket[js]. If any index in @racket[js] is
@@ -1073,7 +1228,7 @@ than once in some unspecified order.
 
 @defproc[(array-slice-ref [arr (Array A)] [specs (Listof Slice-Spec)]) (Array A)]{
 Returns a transformation of @racket[arr] according to the list of slice specifications
-@racket[specs]. See @secref{array:slice-specs} for documentation and examples.
+@racket[specs]. See @secref{array:slicing} for a discussion and examples.
 }
 
 @defproc[(array-slice-set! [arr (Settable-Array A)] [specs (Listof Slice-Spec)] [vals (Array A)])
@@ -1081,199 +1236,72 @@ Returns a transformation of @racket[arr] according to the list of slice specific
 Like @racket[array-indexes-set!], but for slice specifications. Equivalent to
 @racketblock[(let ([idxs  (array-slice-ref (indexes-array (array-shape arr)) specs)])
                (array-indexes-set! arr idxs vals))]
+@examples[#:eval typed-eval
+                 (define arr (array->mutable-array (axis-index-array #(5 5) 1)))
+                 (array-slice-set! arr (list (:: 1 #f 2) (::)) (array 1))
+                 arr
+                 (array-slice-set!
+                  arr (list (::) (:: 1 #f 2))
+                  (array-scale (array-slice-ref arr (list (::) (:: 1 #f 2))) -1))
+                 arr]
 When a slice specification refers to an element in @racket[arr] more than once, the element is
 mutated more than once in some unspecified order.
 }
 
-@subsection[#:tag "array:slice-specs"]{Slice Specifications}
-
 @defidform[Slice-Spec]{
 The type of a slice specification. Currently defined as
 @racketblock[(U (Sequenceof Integer) Slice Slice-Dots Integer Slice-New-Axis)]
+
+A @racket[(Sequenceof Integer)] slice specification causes @racket[array-slice-ref] to pick rows
+from an axis.
+An @racket[Integer] slice specification causes @racket[array-slice-ref] to remove an axis by
+replacing it with one of its rows.
+
+See @secref{array:slicing} for an extended example.
 }
-
-Slice specifications operate on axes independently. Different types represent different
-transformations:
-@itemlist[@item{@racket[(Sequenceof Integer)]: pick rows from an axis by index.}
-          @item{@racket[Slice]: pick rows from an axis as with an @racket[in-range] sequence.}
-          @item{@racket[Slice-Dots]: preserve remaining adjacent axes}
-          @item{@racket[Integer]: remove an axis by replacing it with one of its rows.}
-          @item{@racket[Slice-New-Axis]: insert an axis of a given length.}]
-
-Create @racket[Slice] objects using @racket[::] and @racket[Slice-New-Axis] objects using
-@racket[::new]. There is only one @racket[Slice-Dots] object, namely @racket[::...].
-
-When slicing an array with @racket[n] axes, unless a list of slice specifications contains
-@racket[::...], it must contain exactly @racket[n] slice specifications.
-
-The remainder of this section uses the following example array:
-@interaction[#:eval typed-eval
-                    (define arr
-                      (build-array
-                       #(2 3 4)
-                       (λ: ([js : Indexes])
-                         (string-append* (map number->string (vector->list js))))))
-                    arr]
-
-@subsubsection{@racket[(Sequenceof Integer)]: pick rows}
-
-Using a sequence of integers as a slice specification picks rows from the corresponding axis. For
-example, we might use lists of integers to pick @italic{every} row from every axis:
-@interaction[#:eval typed-eval
-                    (array-slice-ref arr (list '(0 1) '(0 1 2) '(0 1 2 3)))]
-This simply copies the array. (However, because a sliced array is @tech{non-strict}, it does not
-copy the elements.)
-
-More usefully, we can use sequences to swap rows on the same axis:
-@interaction[#:eval typed-eval
-                    (array-slice-ref arr (list '(1 0) '(0 1 2) '(0 1 2 3)))]
-We can also remove rows:
-@interaction[#:eval typed-eval
-                    (array-slice-ref arr (list '(0 1) '(0 2) '(0 2)))
-                    (array-slice-ref arr (list '(0 1) '(0 1 2) '()))]
-Or duplicate rows:
-@interaction[#:eval typed-eval
-                    (array-slice-ref arr (list '(0 1) '(0 1 2) '(0 0 1 2 2 3)))]
-However, a sequence slice specification cannot remove axes.
-
-Using sequence constructors like @racket[in-range], we can pick every even-indexed row in an axis:
-@interaction[#:eval typed-eval
-                    (array-slice-ref arr (list '(1 0) '(0 1 2) (in-range 0 4 2)))]
-We could also use @racket[in-range] to pick every row instead of enumerating their indexes in a
-list, but that would require another kind of tedium:
-@interaction[#:eval typed-eval
-                    (define ds (array-shape arr))
-                    (array-slice-ref arr (list (in-range (vector-ref ds 0))
-                                               (in-range (vector-ref ds 1))
-                                               (in-range (vector-ref ds 2))))]
-The situation calls for an @racket[in-range]-like slice specification that is aware of the lengths
-of the axes it is applied to.
-
-@subsubsection{@racket[Slice]: pick rows in a length-aware way}
 
 @deftogether[(@defidform[Slice]
               @defproc*[([(:: [end (U #f Integer) #f]) Slice]
                          [(:: [start (U #f Integer)] [end (U #f Integer)] [step Integer 1])
-                          Slice])])]{
-As a slice specification, a @racket[Slice] object acts like the sequence object returned
-by @racket[in-range], but either @racket[start] or @racket[end] may be @racket[#f].
-
-If @racket[start] is @racket[#f], it is interpreted as the first valid axis index in the direction
-of @racket[step]. If @racket[end] is @racket[#f], it is interpreted as the last valid axis index
-in the direction of @racket[step].
-
-Possibly the most common slice is @racket[(::)], equivalent to @racket[(:: #f #f 1)]. With a
-positive @racket[step = 1], @racket[start] is interpreted as @racket[0] and @racket[end] as
-the length of the axis. Thus, @racket[(::)] picks all rows from any axis:
-@interaction[#:eval typed-eval
-                    (array-slice-ref arr (list (::) (::) (::)))]
-The slice @racket[(:: #f #f -1)] reverses an axis:
-@interaction[#:eval typed-eval
-                    (array-slice-ref arr (list (::) (::) (:: #f #f -1)))]
-The slice @racket[(:: 2 #f 1)] picks every row starting from index @racket[2]:
-@interaction[#:eval typed-eval
-                    (array-slice-ref arr (list (::) (::) (:: 2 #f 1)))]
-The slice @racket[(:: 1 #f 2)] picks every odd-indexed row:
-@interaction[#:eval typed-eval
-                    (array-slice-ref arr (list (::) (::) (:: 1 #f 2)))]
-Notice that every example starts with two @racket[(::)]. In fact, slicing only one axis is so
-common that there is a slice specification object that represents any number of @racket[(::)].
-}
-
-@subsubsection{@racket[Slice-Dots]: preserve remaining axes}
-
-@deftogether[(@defidform[Slice-Dots]
-              @defthing[::... Slice-Dots])]{
-As a slice specification, a @racket[Slice-Dots] object represents any number of leftover, adjacent
-axes, and preserves them all.
-
-For example, picking every odd-indexed row of the last axis can be done by
-@interaction[#:eval typed-eval
-                    (array-slice-ref arr (list ::... (:: 1 #f 2)))]
-For @racket[arr] specifically, @racket[::...] represents two @racket[(::)].
-
-Slicing only the first axis while preserving the rest can be done by
-@interaction[#:eval typed-eval
-                    (array-slice-ref arr (list '(0) ::...))]
-If more than one @racket[::...] appears in the list, only the first is expanded:
-@interaction[#:eval typed-eval
-                    (array-slice-ref arr (list ::... '(1) ::...))
-                    (array-slice-ref arr (list ::... '(1)))]
-If there are no leftover axes, @racket[::...] does nothing when placed in any position:
-@interaction[#:eval typed-eval
-                    (array-slice-ref arr (list ::... '(1) '(1) '(1)))
-                    (array-slice-ref arr (list '(1) ::... '(1) '(1)))
-                    (array-slice-ref arr (list '(1) '(1) ::... '(1)))
-                    (array-slice-ref arr (list '(1) '(1) '(1) ::...))]
-}
-
-@subsubsection{@racket[Integer]: remove an axis}
-
-All of the slice specifications so far preserve the dimensions of the array. Removing an axis
-can be done by using an integer as a slice specification.
-
-This example removes the first axis by collapsing it to its first row:
-@interaction[#:eval typed-eval
-                    (array-slice-ref arr (list 0 ::...))]
-Removing the second axis by collapsing it to the row with index @racket[1]:
-@interaction[#:eval typed-eval
-                    (array-slice-ref arr (list (::) 1 ::...))]
-Removing the second-to-last axis (which for @racket[arr] is the same as the second):
-@interaction[#:eval typed-eval
-                    (array-slice-ref arr (list ::... 1 (::)))]
-All of these examples can be done using @racket[array-axis-ref]. However, removing an axis
-relative to the dimension of the array (e.g. the second-to-last axis) is easier to do
-using @racket[array-slice-ref], and it is sometimes convenient to combine axis removal with
-other slice operations.
-
-@subsubsection{@racket[Slice-New-Axis]: add an axis}
-
-@deftogether[(@defidform[Slice-New-Axis]
-              @defproc[(::new [dk Integer 1]) Slice-New-Axis])]{
-As a slice specification, @racket[(::new dk)] inserts @racket[dk] into the resulting array's
-shape, in the corresponding axis position. The new axis has length @racket[dk], which must be
-nonnegative.
-
-For example, we might conceptually wrap another @racket[#[]] around an array's data:
-@interaction[#:eval typed-eval
-                    (array-slice-ref arr (list (::new) ::...))]
-Or duplicate the array twice, within two new outer rows:
-@interaction[#:eval typed-eval
-                    (array-slice-ref arr (list (::new 2) ::...))]
-Of course, @racket[dk = 0] is a valid new axis length, but is usually not very useful:
-@interaction[#:eval typed-eval
-                    (array-slice-ref arr (list (::) (::new 0) ::...))]
-Inserting axes can also be done using @racket[array-axis-insert].
-}
-
-@subsubsection{Other Slice Functions}
-
-@deftogether[(@defproc[(slice? [v Any]) Boolean]
+                          Slice])]
+              @defproc[(slice? [v Any]) Boolean]
               @defproc[(slice-start [s Slice]) (U #f Fixnum)]
               @defproc[(slice-end [s Slice]) (U #f Fixnum)]
               @defproc[(slice-step [s Slice]) Fixnum])]{
-The @racket[Slice] predicate and accessors.
-}
+The type of @racket[in-range]-like slice specifications, its constructor, predicate, and accessors.
 
-@defproc[(slice-dots? [v Any]) Boolean]{
-Returns @racket[#t] when @racket[v] is @racket[::...].
-}
-
-@deftogether[(@defproc[(slice-new-axis? [v Any]) Boolean]
-              @defproc[(slice-new-axis-length [s Slice-New-Axis]) Index])]{
-The @racket[Slice-New-Axis] predicate and accessors.
+@racket[array-slice-ref] interprets a @racket[Slice] like an @racket[in-range] sequence object.
+When @racket[start] or @racket[end] is @racket[#f], it is interpreted as an axis-length-dependent
+endpoint.
 }
 
 @defproc[(slice->range-values [s Slice] [dk Index]) (Values Fixnum Fixnum Fixnum)]{
 Given a slice @racket[s] and an axis length @racket[dk], returns the arguments to @racket[in-range]
 that would produce an equivalent slice specification.
+
+This is used internally by @racket[array-slice-ref] to interpret a @racket[Slice] object as a
+sequence of indexes.
+}
+
+@deftogether[(@defidform[Slice-Dots]
+              @defthing[::... Slice-Dots]
+              @defproc[(slice-dots? [v Any]) Boolean])]{
+The type of greedy, multiple-axis-preserving slice specifications, its singleton value, and predicate.
+}
+
+@deftogether[(@defidform[Slice-New-Axis]
+              @defproc[(::new [dk Integer 1]) Slice-New-Axis]
+              @defproc[(slice-new-axis? [v Any]) Boolean]
+              @defproc[(slice-new-axis-length [s Slice-New-Axis]) Index])]{
+The type of slice specifications that indicate inserting a new axis, its constructor, predicate, and
+accessor. The axis length @racket[dk] must be nonnegative.
 }
 
 
 @;{==================================================================================================}
 
 
-@section{Transformations}
+@section[#:tag "array:transform"]{Transformations}
 
 @defproc[(array-transform [arr (Array A)] [ds In-Indexes] [proc (Indexes -> In-Indexes)])
          (Array A)]{
@@ -1285,7 +1313,7 @@ indexes and returns constant indexes:
 @interaction[#:eval typed-eval
                     (define arr (array #[#[0 1] #[2 'three]]))
                     (array-transform arr #(3 3) (λ: ([js : Indexes]) #(1 1)))]
-Double an array in every dimension by duplicating elements:
+Doubling an array in every dimension by duplicating elements:
 @interaction[#:eval typed-eval
                     (define arr (index-array #(3 3)))
                     arr
@@ -1294,11 +1322,11 @@ Double an array in every dimension by duplicating elements:
                      (vector-map (λ: ([d : Index]) (* d 2)) (array-shape arr))
                      (λ: ([js : Indexes])
                        (vector-map (λ: ([j : Index]) (quotient j 2)) js)))]
-Because @racket[array-transform] returns @tech{non-strict} arrays, the above result takes
-little more space than the original array.
+When @racket[array-strictness] is @racket[#f], the above result takes little more space than the
+original array.
 
-Almost all array transformations, including those effected by @secref{array:slice-specs}, are
-implemented using @racket[array-transform] or its unsafe counterpart.
+Almost all array transformations, including @secref{array:slicing}, are implemented using
+@racket[array-transform] or its unsafe counterpart.
 }
 
 @defproc[(array-append* [arrs (Listof (Array A))] [k Integer 0]) (Array A)]{
@@ -1385,7 +1413,9 @@ Returns an array with shape @racket[(vector (array-size arr))], with the element
 @;{==================================================================================================}
 
 
-@section{Folds, Reductions and Expansions}
+@section[#:tag "array:fold"]{Folds, Reductions and Expansions}
+
+@subsection{Axis Folds}
 
 @defproc*[([(array-axis-fold [arr (Array A)] [k Integer] [f (A A -> A)]) (Array A)]
            [(array-axis-fold [arr (Array A)] [k Integer] [f (A B -> B)] [init B]) (Array B)])]{
@@ -1432,6 +1462,40 @@ variants require axis @racket[k] to have positive length.
                  (array-axis-sum arr 0 0.0)]
 }
 
+@defproc[(array-axis-count [arr (Array A)] [k Integer] [pred? (A -> Any)]) (Array Index)]{
+Counts the elements @racket[x] in rows of axis @racket[k] for which @racket[(pred? x)] is true.
+@examples[#:eval typed-eval
+                 (define arr (index-array #(3 3)))
+                 arr
+                 (array-axis-count arr 1 odd?)]
+}
+
+@deftogether[(@defproc[(array-axis-and [arr (Array A)] [k Integer]) (Array (U A Boolean))]
+              @defproc[(array-axis-or [arr (Array A)] [k Integer]) (Array (U A #f))])]{
+Apply @racket[and] or @racket[or] to each row in axis @racket[k] of array @racket[arr].
+Evaluation is short-cut as with the @racket[and] and @racket[or] macros, which is only observable
+if @racket[arr] is @tech{nonstrict}.
+
+In the following example, computing the second array element sets @racket[second?] to @racket[#t]:
+@interaction[#:eval typed-eval
+                    (define second? (ann #f Boolean))
+                    (define arr
+                      (parameterize ([array-strictness #f])
+                        (build-array #(2) (λ: ([js : Indexes])
+                                            (cond [(zero? (vector-ref js 0))  #f]
+                                                  [else  (set! second? #t)
+                                                         #t])))))]
+Printing @racket[arr] causes @racket[(set! second? #t)] to be evaluated, but applying
+@racket[array-axis-and] does not:
+@interaction[#:eval typed-eval
+                    (array-axis-and arr 0)
+                    second?]
+However, if @racket[arr] were strict, @racket[(set! second? #t)] would be evaluated when @racket[arr]
+was created.
+}
+
+@subsection{Whole-Array Folds}
+
 @defproc[(array-fold [arr (Array A)] [g ((Array A) Index -> (Array A))]) (Array A)]{
 Folds @racket[g] over @italic{each axis} of @racket[arr], in reverse order. The arguments
 to @racket[g] are an array (initially @racket[arr]) and the current axis.
@@ -1441,15 +1505,9 @@ It should return an array with one fewer dimension than the array given, but doe
                  arr
                  (array-fold arr (λ: ([arr : (Array Integer)] [k : Index])
                                    (array-axis-sum arr k)))
-                 (+ 0 1 2 3 4 5 6 7 8 9 10 11)
-                 (array-fold
-                  arr
-                  (λ: ([arr : (Array (Listof* Index))] [k : Index])
-                    (array-map
-                     (inst reverse (Listof* Index))
-                     (array-axis-fold arr k
-                                      (inst cons (Listof* Index) (Listof (Listof* Index)))
-                                      empty))))]
+                 (apply + (array->list arr))
+                 (array-ref (array-fold arr (inst array->list-array (Listof* Integer)))
+                            #())]
 }
 
 @defproc*[([(array-all-fold [arr (Array A)] [f (A A -> A)]) A]
@@ -1466,6 +1524,8 @@ positive length.
                  arr
                  (array-all-fold arr +)
                  (array-all-fold (array #[]) + 0.0)]
+Because @racket[f] is folded over the last axis first, it receives @racket[arr]'s elements (as its
+first argument) in row-major order.
 }
 
 @deftogether[(@defform*[((array-all-sum arr)
@@ -1491,53 +1551,10 @@ variants require each axis in @racket[arr] to have positive length.
                  (array-all-sum arr 0.0)]
 }
 
-@defproc[(array-axis-count [arr (Array A)] [k Integer] [pred? (A -> Any)]) (Array Index)]{
-Counts the elements @racket[x] in rows of axis @racket[k] for which @racket[(pred? x)] is true.
-@examples[#:eval typed-eval
-                 (define arr (index-array #(3 3)))
-                 arr
-                 (array-axis-count arr 1 odd?)]
-}
-
-@defproc*[([(array-count [pred? (A -> Any)] [arr0 (Array A)]) Index]
-           [(array-count [pred? (A B Ts ... -> Any)]
-                         [arr0 (Array A)]
-                         [arr1 (Array B)]
-                         [arrs (Array Ts)] ...)
-            Index])]{
-The two-argument variant returns the number of elements @racket[x] in @racket[arr] for which
-@racket[(pred? x)] is true. The other variant does the same with the corresponding elements from
-any number of arrays. If the arrays' shapes are not the same, they are @tech{broadcast} first.
-@examples[#:eval typed-eval
-                 (array-count zero? (array #[#[0 1 0 2] #[0 3 -1 4]]))
-                 (array-count equal?
-                              (array #[#[0 1] #[2 3] #[0 1] #[2 3]])
-                              (array #[0 1]))]
-}
-
-@deftogether[(@defproc[(array-axis-and [arr (Array A)] [k Integer]) (Array (U A Boolean))]
-              @defproc[(array-axis-or [arr (Array A)] [k Integer]) (Array (U A #f))])]{
-Apply @racket[and] or @racket[or] to each row in axis @racket[k] of array @racket[arr], using
-short-cut evaluation.
-
-Consider the following array, whose second element takes 10 seconds to compute:
-@interaction[#:eval typed-eval
-                    (define arr (build-array #(2) (λ: ([js : Indexes])
-                                                    (cond [(zero? (vector-ref js 0))  #f]
-                                                          [else  (sleep 10)
-                                                                 #t]))))]
-Printing it takes over 10 seconds, but this returns immediately:
-@interaction[#:eval typed-eval
-                    (array-axis-and arr 0)]
-}
-
 @deftogether[(@defproc[(array-all-and [arr (Array A)]) (U A Boolean)]
               @defproc[(array-all-or [arr (Array A)]) (U A #f)])]{
-Apply @racket[and] or @racket[or] to each element in @racket[arr] using short-cut evaluation.
-
-@racket[(array-all-and arr)] is defined as
-@racketblock[(array-ref (array-fold arr array-axis-and) #())]
-and @racket[array-all-or] is defined similarly.
+Apply @racket[and] or @racket[or] to @racket[arr]'s elements using short-cut evaluation in row-major
+order.
 
 @examples[#:eval typed-eval
                  (define arr (index-array #(3 3)))
@@ -1545,7 +1562,65 @@ and @racket[array-all-or] is defined similarly.
                  (define brr (array+ arr (array 1)))
                  (array-all-and (array= arr brr))
                  (array-all-or (array= arr (array 0)))]
+
+@racket[(array-all-and arr)] is defined as
+@racketblock[(parameterize ([array-strictness #f])
+               (array-ref (array-fold arr array-axis-and) #()))]
+and @racket[array-all-or] is defined similarly, using @racket[array-axis-or].
 }
+
+@defform[(array-count pred? arrs ...)
+         #:contracts ([arrs   (Array Ts)]
+                      [pred?  (Ts ... -> Any)])]{
+When given one array @racket[arr], returns the number of elements @racket[x] in @racket[arr] for
+which @racket[(pred? x)] is true.
+When given multiple arrays, @racket[array-count] does the same with the corresponding elements from
+any number of arrays.
+If the arrays' shapes are not the same, they are @tech{broadcast} first.
+
+@examples[#:eval typed-eval
+                 (array-count zero? (array #[#[0 1 0 2] #[0 3 -1 4]]))
+                 (array-count equal?
+                              (array #[#[0 1] #[2 3] #[0 1] #[2 3]])
+                              (array #[0 1]))]
+
+@racket[(array-count pred? arrs ...)] is like
+@racketblock[(array-all-sum (array-map (λ (x ...) (if (pred? x ...) 1 0)) arrs ...)
+                            0)]
+but does not create intermediate (strict) arrays, and always returns an @racket[Index].
+}
+
+@deftogether[(@defform[(array-andmap pred? arrs ...)]
+              @defform[(array-ormap pred? arrs ...)
+                       #:contracts ([arrs   (Array Ts)]
+                                    [pred?  (Ts ... -> Any)])])]{
+Like @racket[andmap] and @racket[ormap], but for arrays.
+Evaluation is short-cut, in row-major order.
+If the arrays' shapes are not the same, they are @tech{broadcast} first.
+
+Determining whether each row is equal to @racket[(array #[0 1])]:
+@interaction[#:eval typed-eval
+                    (array-andmap equal?
+                                  (array #[#[0 1] #[0 1] #[0 1] #[0 1]])
+                                  (array #[0 1]))]
+Determining whether any row has @racket[0] as its first element or @racket[1] as its second:
+@interaction[#:eval typed-eval
+                    (array-ormap equal?
+                                 (array #[#[0 2] #[2 3] #[1 1] #[2 3]])
+                                 (array #[0 1]))]
+Determining whether any row is equal to @racket[(array #[0 1])]:
+@interaction[#:eval typed-eval
+                    (array-ormap equal?
+                                 (array->list-array (array #[#[0 2] #[2 3] #[1 1] #[2 3]]))
+                                 (array->list-array (array #[0 1])))]
+
+@racket[(array-andmap pred? arrs ...)] is defined as
+@racketblock[(parameterize ([array-strictness #f])
+               (array-all-and (array-map pred? arrs ...)))]
+and @racket[array-ormap] is defined similarly, using @racket[array-all-or].
+}
+
+@subsection{General Reductions and Expansions}
 
 @defproc[(array-axis-reduce [arr (Array A)] [k Integer] [h (Index (Integer -> A) -> B)]) (Array B)]{
 Like @racket[array-axis-fold], but allows evaluation control (such as short-cutting @racket[and] and
@@ -1585,8 +1660,7 @@ Inserts a new axis number @racket[k] of length @racket[dk], using @racket[g] to 
 nonnegative.
 
 Conceptually, @racket[g] is applied @racket[dk] times to each element in each row of axis @racket[k],
-once for each nonnegative index @racket[jk < dk]. (In reality, @racket[g] is applied only when the
-resulting array is indexed.)
+once for each nonnegative index @racket[jk < dk].
 
 Turning vector elements into rows of a new last axis using @racket[array-axis-expand] and
 @racket[vector-ref]:
@@ -1637,7 +1711,7 @@ to their array arguments.
 @;{==================================================================================================}
 
 
-@section{Other Array Operations}
+@section[#:tag "array:other"]{Other Array Operations}
 
 @subsection{Fast Fourier Transform}
 
@@ -1670,13 +1744,13 @@ The inverse of @racket[array-fft], performed by parameterizing the forward trans
 @;{==================================================================================================}
 
 
-@section{Subtypes}
+@section[#:tag "array:subtypes"]{Subtypes}
 
-@subsection{Flonum Arrays}
+@subsection[#:tag "flarray"]{Flonum Arrays}
 
 @defidform[FlArray]{
 The type of @deftech{flonum arrays}, a subtype of @racket[(Settable-Array Flonum)] that stores its
-elements in an @racket[FlVector]. A flonum array is always strict.
+elements in an @racket[FlVector]. A flonum array is always @tech{strict}.
 }
 
 @defform[(flarray #[#[...] ...])]{
@@ -1697,7 +1771,7 @@ elements will likely lose precision during conversion.
 @defproc[(flarray-data [arr FlArray]) FlVector]{
 Returns the elements of @racket[arr] in a flonum vector, in row-major order.
 @examples[#:eval typed-eval
-                 (flvector->list (flarray-data (flarray #[#[1 2] #[3 4]])))]
+                 (flarray-data (flarray #[#[1 2] #[3 4]]))]
 }
 
 @defproc[(flarray-map [f (Flonum ... -> Flonum)] [arrs FlArray] ...) FlArray]{
@@ -1734,11 +1808,12 @@ Like @racket[inline-array-map], but for flonum arrays.
 Arithmetic lifted to flonum arrays.
 }
 
-@subsection{Float-Complex Arrays}
+@subsection[#:tag "fcarray"]{Float-Complex Arrays}
 
 @defidform[FCArray]{
 The type of @deftech{float-complex arrays}, a subtype of @racket[(Settable-Array Float-Complex)]
-that stores its elements in a pair of @racket[FlVector]s. A float-complex array is always strict.
+that stores its elements in a pair of @racket[FlVector]s. A float-complex array is always
+@tech{strict}.
 }
 
 @defform[(fcarray #[#[...] ...])]{
@@ -1761,8 +1836,8 @@ elements will likely lose precision during conversion.
 Return the real and imaginary parts of @racket[arr]'s elements in flonum vectors, in row-major order.
 @examples[#:eval typed-eval
                  (define arr (fcarray #[#[1 2+1i] #[3 4+3i]]))
-                 (flvector->list (fcarray-real-data arr))
-                 (flvector->list (fcarray-imag-data arr))]
+                 (fcarray-real-data arr)
+                 (fcarray-imag-data arr)]
 }
 
 @defproc[(fcarray-map [f (Float-Complex ... -> Float-Complex)] [arrs FCArray] ...) FCArray]{
@@ -1806,11 +1881,151 @@ Arithmetic lifted to float-complex arrays.
 Conversions to and from complex numbers, lifted to flonum and float-complex arrays.
 }
 
+
+@;{==================================================================================================}
+
+
+@section[#:tag "array:strict"]{Strictness}
+
+@defparam[array-strictness strictness Boolean]{
+Determines whether @racketmodname[math/array] functions return strict arrays.
+The default value is @racket[#t].
+
+See @secref{array:nonstrict} for a discussion on nonstrict arrays.
+}
+
+@defproc[(array-strict? [arr (Array A)]) Boolean]{
+Returns @racket[#t] when @racket[arr] is @tech{strict}.
+@examples[#:eval typed-eval
+                 (define arr
+                   (parameterize ([array-strictness #f])
+                     (array+ (array 10) (array #[0 1 2 3]))))
+                 (array-strict? arr)
+                 (array-strict! arr)
+                 (array-strict? arr)]
+}
+
+@defproc[(array-strict! [arr (Array A)]) Void]{
+Causes @racket[arr] to compute and store all of its elements. Thereafter, @racket[arr]
+computes its elements by retrieving them from the store.
+
+If @racket[arr] is already strict, @racket[(array-strict! arr)] does nothing.
+}
+
+@defform[(array-strict arr)
+         #:contracts ([arr (Array A)])]{
+An expression form of @racket[array-strict!], which is often more convenient. First evaluates
+@racket[(array-strict! arr)], then returns @racket[arr].
+
+This is a macro so that Typed Racket will preserve @racket[arr]'s type exactly. If it were a
+function, @racket[(array-strict arr)] would always have the type @racket[(Array A)], even if
+@racket[arr] were a subtype of @racket[(Array A)], such as @racket[(Mutable-Array A)].
+}
+
+@deftogether[(@defproc[(array-default-strict! [arr (Array A)]) Void]
+              @defform[(array-default-strict arr)
+                       #:contracts ([arr (Array A)])])]{
+Like @racket[array-strict!] and @racket[array-strict], but do nothing when @racket[array-strictness]
+is @racket[#f].
+
+Apply one of these to return values from library functions to ensure that users get strict arrays
+by default. See @secref{array:nonstrict} for details.
+}
+
+@defproc[(build-simple-array [ds In-Indexes] [proc (Indexes -> A)]) (Array A)]{
+Like @racket[build-array], but returns an array without storage that is nevertheless considered to be
+strict, regardless of the value of @racket[array-strictness].
+Such arrays will @italic{not} cache their elements when @racket[array-strict!] or
+@racket[array-strict] is applied to them.
+
+Use @racket[build-simple-array] to create arrays that represent simple functions of their indexes.
+For example, basic array constructors such as @racket[make-array] are defined in terms of this or its
+unsafe counterpart.
+
+@bold{Be careful with this function.} While it creates arrays that are always memory-efficient,
+it is easy to ruin your program's performance by using it to define arrays for which element lookup
+is permanently expensive. In the wrong circumstances, using it instead of @racket[build-array] can
+turn a linear algorithm into an exponential one!
+
+In general, use @racket[build-simple-array] when
+@itemlist[@item{Computing an element is never more expensive than computing a row-major index followed
+                by applying @racket[vector-ref]. An example is @racket[index-array], which only
+                computes row-major indexes.}
+          @item{Computing an element is independent of any other array's elements.
+                In this circumstance, it is impossible to compose some unbounded number of possibly
+                expensive array @tech{procedures}.}
+          @item{You can prove that each element will be computed at most once, throughout the
+                entire life of your program. This is true, for example, when the result is sent
+                only to a function that makes a copy of it, such as @racket[array-lazy] or
+                @racket[array->mutable-array].}]
+See @racket[array-lazy] for an example of the last circumstance.
+}
+
+@defproc[(array-lazy [arr (Array A)]) (Array A)]{
+Returns an immutable, @tech{nonstrict} array with the same elements as @racket[arr], but element
+computations are cached.
+
+Perhaps the most natural way to use @racket[array-lazy] is for so-called ``dynamic programming,''
+or memoizing a function that happens to have a rectangular domain.
+For example, this computes the first 10 Fibonacci numbers in linear time:
+@interaction[#:eval typed-eval
+                    (eval:alts
+                     (define: fibs : (Array Natural)
+                       (array-lazy
+                        (build-simple-array
+                         #(10) (λ: ([js : Indexes])
+                                 (define j (vector-ref js 0))
+                                 (cond [(j . < . 2)  j]
+                                       [else  (+ (array-ref fibs (vector (- j 1)))
+                                                 (array-ref fibs (vector (- j 2))))])))))
+                     (void))
+                    (eval:alts
+                     fibs
+                     (ann (array #[0 1 1 2 3 5 8 13 21 34]) (Array Natural)))]
+Because @racket[build-simple-array] never stores its elements, its procedure argument may refer to
+the array it returns.
+Wrapping its result with @racket[array-lazy] makes each @racket[array-ref] take no more than linear
+time; further, each takes constant time when the elements of @racket[fibs] are computed in order.
+Without @racket[array-lazy], computing the elements of @racket[fibs] would take exponential time.
+
+Printing a lazy array computes and caches all of its elements, as does applying
+@racket[array-strict!] or @racket[array-strict] to it.
+
+Except for arrays returned by @racket[build-simple-array], it is useless to apply @racket[array-lazy]
+to a @tech{strict} array.
+Using the lazy copy instead of the original only degrades performance.
+
+While it may seem that @racket[array-lazy] should just return @racket[arr] when @racket[arr] is
+strict, this would violate the invariant that @racket[array-lazy] returns immutable arrays.
+For example:
+@interaction[#:eval typed-eval
+                    (eval:alts
+                     (: array-maybe-lazy (All (A) ((Array A) -> (Array A))))
+                     (void))
+                    (eval:alts
+                     (define (array-maybe-lazy arr)
+                       (if (array-strict? arr) arr (array-lazy arr)))
+                     (void))
+                    (eval:alts
+                     (define arr (mutable-array #[0 1 2 3]))
+                     (void))
+                    (eval:alts
+                     (define brr (array-maybe-lazy arr))
+                     (void))
+                    (eval:alts
+                     (array-set! arr #(0) -1000)
+                     (void))
+                    (eval:alts
+                     brr
+                     (ann (array #[-1000 1 2 3]) (Array Integer)))]
+}
+
+
 @;{==================================================================================================}
 
 
 @;{
-@section{Unsafe Operations}
+@section[#:tag "array:unsafe"]{Unsafe Operations}
 
 unsafe-array-ref
 unsafe-array-set!
@@ -1821,6 +2036,7 @@ in-unsafe-array-indexes
 make-unsafe-array-set-proc
 make-unsafe-array-proc
 unsafe-build-array
+unsafe-build-simple-array
 unsafe-vector->array
 unsafe-flarray
 unsafe-array-transform
@@ -1833,7 +2049,6 @@ Don't know whether or how to document these yet:
 parallel-array-strict
 parallel-array->mutable-array
 array/syntax
-flat-vector->matrix
 }
 
 @(close-eval typed-eval)

@@ -36,11 +36,12 @@
         [(or (not (index? n)) (= n 0))
          (raise-argument-error 'build-matrix "Positive-Index" 1 m n proc)]
         [else
-         (unsafe-build-array
-          ((inst vector Index) m n)
-          (λ: ([js : Indexes])
-            (proc (unsafe-vector-ref js 0)
-                  (unsafe-vector-ref js 1))))]))
+         (array-default-strict
+          (unsafe-build-array
+           ((inst vector Index) m n)
+           (λ: ([js : Indexes])
+             (proc (unsafe-vector-ref js 0)
+                   (unsafe-vector-ref js 1)))))]))
 
 ;; ===================================================================================================
 ;; Diagonal matrices
@@ -52,7 +53,7 @@
         [else
          (define vs (list->vector xs))
          (define m (vector-length vs))
-         (unsafe-build-array
+         (unsafe-build-simple-array
           ((inst vector Index) m m)
           (λ: ([js : Indexes])
             (define i (unsafe-vector-ref js 0))
@@ -97,24 +98,25 @@
           (vector-set! js (unsafe-fx+ res-j j) (assert j index?))))
       (values (unsafe-fx+ res-i m) (unsafe-fx+ res-j n))))
   (define procs (vector-map (λ: ([a : (Matrix A)]) (unsafe-array-proc a)) as))
-  (unsafe-build-array
-   ((inst vector Index) res-m res-n)
-   (λ: ([ij : Indexes])
-     (define i (unsafe-vector-ref ij 0))
-     (define j (unsafe-vector-ref ij 1))
-     (define v (unsafe-vector-ref vs i))
-     (cond [(fx= v (vector-ref hs j))
-            (define proc (unsafe-vector-ref procs v))
-            (define iv (unsafe-vector-ref is i))
-            (define jv (unsafe-vector-ref js j))
-            (unsafe-vector-set! ij 0 iv)
-            (unsafe-vector-set! ij 1 jv)
-            (define res (proc ij))
-            (unsafe-vector-set! ij 0 i)
-            (unsafe-vector-set! ij 1 j)
-            res]
-           [else
-            zero]))))
+  (array-default-strict
+   (unsafe-build-array
+    ((inst vector Index) res-m res-n)
+    (λ: ([ij : Indexes])
+      (define i (unsafe-vector-ref ij 0))
+      (define j (unsafe-vector-ref ij 1))
+      (define v (unsafe-vector-ref vs i))
+      (cond [(fx= v (vector-ref hs j))
+             (define proc (unsafe-vector-ref procs v))
+             (define iv (unsafe-vector-ref is i))
+             (define jv (unsafe-vector-ref js j))
+             (unsafe-vector-set! ij 0 iv)
+             (unsafe-vector-set! ij 1 jv)
+             (define res (proc ij))
+             (unsafe-vector-set! ij 0 i)
+             (unsafe-vector-set! ij 1 j)
+             res]
+            [else
+             zero])))))
 
 (: block-diagonal-matrix/zero (All (A) ((Listof (Matrix A)) A -> (Matrix A))))
 (define (block-diagonal-matrix/zero as zero)

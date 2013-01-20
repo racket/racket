@@ -17,17 +17,18 @@ for working with numbers and collections of numbers. These include
   @item{@racketmodname[math/bigfloat]: Arbitrary-precision floating-point functions}
   @item{@racketmodname[math/number-theory]: Number-theoretic functions}
   @item{@racketmodname[math/array]: Functional arrays for operating on large rectangular data sets}
-  @item{@racketmodname[math/matrix]: Linear algebra functions for arrays @bold{(currently being documented)}}
+  @item{@racketmodname[math/matrix]: Linear algebra functions for arrays}
   @item{@racketmodname[math/distributions]: Probability distributions}
   @item{@racketmodname[math/statistics]: Statistical functions}
 ]
 
 With this library, we hope to support a wide variety of applied mathematics in
 Racket, including simulation, statistical inference, signal processing, and
-combinatorics. If you find it lacking for your variety of mathematics,
-please contact us or post to one of the
-@hyperlink["http://racket-lang.org/community.html"]{mailing lists}
-to make suggestions or submit patches.
+combinatorics. If you find it lacking for your variety of mathematics, please
+@itemlist[@item{Visit the @hyperlink["https://github.com/plt/racket/wiki/Math-Library-Features"]{Math Library Features wiki page}
+                to see what is planned.}
+          @item{Contact us or post to one of the @hyperlink["http://racket-lang.org/community.html"]{mailing lists} to
+                make suggestions or submit patches.}]
 
 @bold{This is a Typed Racket library.} It is most efficient to use it in Typed
 Racket, so that contracts are checked statically. However, almost all of it can

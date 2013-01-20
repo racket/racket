@@ -6,14 +6,14 @@
          "array-syntax.rkt"
          (except-in "typed-array-struct.rkt"
                     build-array
-                    build-strict-array
+                    build-simple-array
                     list->array))
 
 (require/untyped-contract
  (begin (require "typed-array-struct.rkt"))
  "typed-array-struct.rkt"
  [build-array  (All (A) ((Vectorof Integer) ((Vectorof Index) -> A) -> (Array A)))]
- [build-strict-array  (All (A) ((Vectorof Integer) ((Vectorof Index) -> A) -> (Array A)))]
+ [build-simple-array  (All (A) ((Vectorof Integer) ((Vectorof Index) -> A) -> (Array A)))]
  [list->array (All (A) (case-> ((Listof A) -> (Array A))
                                ((Vectorof Integer) (Listof A) -> (Array A))))])
 
@@ -29,15 +29,18 @@
  array-shape
  array-dims
  array-size
+ array-strictness
  array-strict
  array-strict!
+ array-default-strict
+ array-default-strict!
  array-strict?
  build-array
- build-strict-array
+ build-simple-array
  list->array
  make-unsafe-array-proc
  unsafe-build-array
- unsafe-build-strict-array
+ unsafe-build-simple-array
  unsafe-list->array
  unsafe-array-proc
  array-lazy
@@ -64,4 +67,9 @@
 (define-syntax-rule (array-strict arr-expr)
   (let ([arr arr-expr])
     (array-strict! arr)
+    arr))
+
+(define-syntax-rule (array-default-strict arr-expr)
+  (let ([arr arr-expr])
+    (array-default-strict! arr)
     arr))

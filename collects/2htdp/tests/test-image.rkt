@@ -55,6 +55,8 @@
          wxme
          rackunit
          file/convertible
+         slideshow/pict-convert
+         (only-in slideshow/pict pict?)
          (only-in lang/imageeq image=?)
          (prefix-in 1: htdp/image)
          (only-in lang/htdp-advanced equal~?)
@@ -2317,6 +2319,8 @@
 
 (test (convertible? (circle 20 "solid" "red")) => #t)
 (test (bytes? (convert (circle 20 "solid" "red") 'png-bytes)) => #t)
+(test (pict-convertible? (circle 20 "solid" "red")) => #t)
+(test (pict? (pict-convert (circle 20 "solid" "red"))) => #t)
 (let ()
   (define tmpfile (make-temporary-file "2htdpimage-test-~a"))
   (define i (circle 15 "solid" "red"))

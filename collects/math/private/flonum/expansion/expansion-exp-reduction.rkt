@@ -88,6 +88,7 @@ negative.
                     (cons y2 y1)))))
 |#
 
+(: positive-ds (Vectorof (Pair Flonum Flonum)))
 (define positive-ds
   #((0.00048511293333186416 . 7.287053259455084e-21)
     (0.0005002765039165264 . 5.174812552711603e-20)
@@ -553,6 +554,7 @@ negative.
     (1.0134858165681662e+305 . -1.1960732643227e+288)
     (+inf.0 . -inf.0)))
 
+(: negative-ds (Vectorof (Pair Flonum Flonum)))
 (define negative-ds
   #((-0.0004848777128822606 . -2.106959040416988e-20)
     (-0.0005000263524810411 . 1.7625505823099235e-20)

@@ -45,7 +45,8 @@ See "How to Measure Errors" in the LAPACK manual for more details:
 (: matrix-op-1norm ((Matrix Number) -> Nonnegative-Real))
 ;; When M is a column matrix, this is equivalent to matrix-1norm
 (define (matrix-op-1norm M)
-  (assert (apply max (map matrix-1norm (matrix-cols M))) nonnegative?))
+  (parameterize ([array-strictness #f])
+    (assert (apply max (map matrix-1norm (matrix-cols M))) nonnegative?)))
 
 (: matrix-op-2norm ((Matrix Number) -> Nonnegative-Real))
 ;; When M is a column matrix, this is equivalent to matrix-2norm
@@ -57,7 +58,8 @@ See "How to Measure Errors" in the LAPACK manual for more details:
 (: matrix-op-inf-norm ((Matrix Number) -> Nonnegative-Real))
 ;; When M is a column matrix, this is equivalent to matrix-inf-norm
 (define (matrix-op-inf-norm M)
-  (assert (apply max (map matrix-1norm (matrix-rows M))) nonnegative?))
+  (parameterize ([array-strictness #f])
+    (assert (apply max (map matrix-1norm (matrix-rows M))) nonnegative?)))
 
 (: matrix-basis-cos-angle (case-> ((Matrix Real) (Matrix Real) -> Real)
                                   ((Matrix Number) (Matrix Number) -> Number)))
@@ -83,33 +85,35 @@ See "How to Measure Errors" in the LAPACK manual for more details:
            ((Matrix Number) (Matrix Number) ((Matrix Number) -> Nonnegative-Real)
                             -> Nonnegative-Real)))
 (define (matrix-absolute-error M R [norm (matrix-error-norm)])
-  (define-values (m n) (matrix-shapes 'matrix-absolute-error M R))
-  (array-strict! M)
-  (array-strict! R)
-  (cond [(array-all-and (inline-array-map eqv? M R))  0]
-        [(and (array-all-and (inline-array-map number-rational? M))
-              (array-all-and (inline-array-map number-rational? R)))
-         (norm (matrix- (inline-array-map inexact->exact M)
-                        (inline-array-map inexact->exact R)))]
-        [else  +inf.0]))
+  (parameterize ([array-strictness #f])
+    (define-values (m n) (matrix-shapes 'matrix-absolute-error M R))
+    (array-strict! M)
+    (array-strict! R)
+    (cond [(array-all-and (inline-array-map eqv? M R))  0]
+          [(and (array-all-and (inline-array-map number-rational? M))
+                (array-all-and (inline-array-map number-rational? R)))
+           (norm (matrix- (inline-array-map inexact->exact M)
+                          (inline-array-map inexact->exact R)))]
+          [else  +inf.0])))
 
 (: matrix-relative-error
    (case-> ((Matrix Number) (Matrix Number) -> Nonnegative-Real)
            ((Matrix Number) (Matrix Number) ((Matrix Number) -> Nonnegative-Real)
                             -> Nonnegative-Real)))
 (define (matrix-relative-error M R [norm (matrix-error-norm)])
-  (define-values (m n) (matrix-shapes 'matrix-relative-error M R))
-  (array-strict! M)
-  (array-strict! R)
-  (cond [(array-all-and (inline-array-map eqv? M R))  0]
-        [(and (array-all-and (inline-array-map number-rational? M))
-              (array-all-and (inline-array-map number-rational? R)))
-         (define num (norm (matrix- M R)))
-         (define den (norm R))
-         (cond [(and (zero? num) (zero? den))  0]
-               [(zero? den)  +inf.0]
-               [else  (assert (/ num den) nonnegative?)])]
-        [else  +inf.0]))
+  (parameterize ([array-strictness #f])
+    (define-values (m n) (matrix-shapes 'matrix-relative-error M R))
+    (array-strict! M)
+    (array-strict! R)
+    (cond [(array-all-and (inline-array-map eqv? M R))  0]
+          [(and (array-all-and (inline-array-map number-rational? M))
+                (array-all-and (inline-array-map number-rational? R)))
+           (define num (norm (matrix- M R)))
+           (define den (norm R))
+           (cond [(and (zero? num) (zero? den))  0]
+                 [(zero? den)  +inf.0]
+                 [else  (assert (/ num den) nonnegative?)])]
+          [else  +inf.0])))
 
 ;; ===================================================================================================
 ;; Approximate predicates

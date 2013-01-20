@@ -6,6 +6,7 @@
          racket/list
          mred/mred-sig
          "../preferences.rkt"
+         "dir-chars.rkt"
          mrlib/tex-table
          (only-in srfi/13 string-prefix? string-prefix-length)
          "sig.rkt"
@@ -1492,10 +1493,11 @@
           (f click-pos eol click-pos end-pos)))))
 
 (define (do-unicode-ascii-art-boxes t pos)
-  (when (i? t pos)
+  (define start-pos (scan-for-start-pos t pos))
+  (when start-pos
     (define visited (make-hash))
     (send t begin-edit-sequence)
-    (let loop ([pos pos])
+    (let loop ([pos start-pos])
       (unless (hash-ref visited pos #f)
         (hash-set! visited pos #t)
         (define-values (x y) (pos->xy t pos))
@@ -1504,10 +1506,10 @@
         (define dn (xy->pos t x (+ y 1)))
         (define lt (xy->pos t (- x 1) y))
         (define rt (xy->pos t (+ x 1) y))
-        (define i-up? (and (i? t up) (member c up-chars)))
-        (define i-dn? (and (i? t dn) (member c dn-chars)))
-        (define i-lt? (and (i? t lt) (member c lt-chars)))
-        (define i-rt? (and (i? t rt) (member c rt-chars)))
+        (define i-up? (and (i? t up) (or (member c up-chars) (member c double-barred-chars))))
+        (define i-dn? (and (i? t dn) (or (member c dn-chars) (member c double-barred-chars))))
+        (define i-lt? (and (i? t lt) (or (member c lt-chars) (member c double-barred-chars))))
+        (define i-rt? (and (i? t rt) (or (member c rt-chars) (member c double-barred-chars))))
         (cond
           [(and i-up? i-dn? i-lt? i-rt?) (set t pos "╬")]
           [(and i-dn? i-lt? i-rt?)       (set t pos "╦")]
@@ -1524,8 +1526,16 @@
         (when i-dn? (loop dn))
         (when i-lt? (loop lt))
         (when i-rt? (loop rt))))
-    (send t end-edit-sequence)))
+    (send t end-edit-sequence)))  
 
+(define (scan-for-start-pos t pos)
+  (define-values (x y) (pos->xy t pos))
+  (findf
+   (λ (p) (i? t p))
+   (for*/list ([xadj '(0 -1)]
+               [yadj '(0 -1 1)])
+     (xy->pos t (+ x xadj) (+ y yadj)))))
+       
 (define (i? t pos)
   (and pos 
        (member (send t get-character pos) 
@@ -1539,38 +1549,6 @@
   (define para (send text position-paragraph pos))
   (define start (send text paragraph-start-position para))
   (values (- pos start) para))
-
-(define up-chars
-  '(#\╬ 
-    #\╩ #\╣ #\╠
-    #\╝ #\╚
-    #\║
-    #\+ #\|))
-
-(define dn-chars
-  '(#\╬ 
-    #\╦ #\╣ #\╠
-    #\╗ #\╔
-    #\║
-    #\+ #\|))
-
-(define lt-chars
-  '(#\╬ 
-    #\╩ #\╦ #\╣
-    #\╝ #\╗ 
-    #\═ 
-    #\+ #\-))
-
-(define rt-chars
-  '(#\╬ 
-    #\╩ #\╦ #\╠
-    #\╔ #\╚
-    #\═
-    #\+ #\-))
-
-(define adjustable-chars
-  (remove-duplicates
-   (append up-chars dn-chars lt-chars rt-chars)))
 
 
 (define (xy->pos text x y)

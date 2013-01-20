@@ -322,7 +322,7 @@
                    (format "Human Language: ~a\n" (send human-language get-value))
                    (format "(current-memory-use) ~a\n" (send memory-use get-value))
                    (format "Links: ~a\n" (send links-ctrl get-value))
-                   (format "Planet2 (show):\n~a\n" (send planet2-info get-value))
+                   (format "Planet2 (show):\n~a\n" (send (send planet2-info get-editor) get-text))
                    "\n"
                    "\nCollections:\n"
                    (format "~a" (send (send collections get-editor) get-text))

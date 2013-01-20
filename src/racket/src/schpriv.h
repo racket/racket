@@ -3680,6 +3680,7 @@ Scheme_Object *scheme_do_open_output_file(char *name, int offset, int argc, Sche
                                           int internal, char **err, int *eerrno);
 Scheme_Object *scheme_file_position(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_file_position_star(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_file_truncate(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_file_buffer(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_file_identity(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_file_try_lock(int argc, Scheme_Object **argv);

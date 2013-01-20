@@ -1937,7 +1937,7 @@
                 val))))
          
          (send running-tab set-oc-status (clean #f #f '()))
-         (send running-tab set-dep-paths (vector-ref res 2))]
+         (send running-tab set-dep-paths (list->set (vector-ref res 2)))]
         [else
          (line-of-interest)
          (send running-tab set-oc-status
@@ -1945,7 +1945,8 @@
                       (if (eq? (vector-ref res 0) 'abnormal-termination)
                           sc-abnormal-termination
                           (vector-ref res 1))
-                      (vector-ref res 2)))])
+                      (vector-ref res 2)))
+         (send running-tab set-dep-paths (list->set (vector-ref res 3)))])
       (oc-maybe-start-something)))
   
   (define/oc-log (oc-status-message sym str)
@@ -2018,19 +2019,13 @@
                                'finished-expansion
                                sc-online-expansion-running))))))
                (define res (place-channel-get pc-out))
-               (define res/set 
-                 (if (eq? (vector-ref res 0) 'handler-results)
-                     (vector (vector-ref res 0)
-                             (vector-ref res 1)
-                             (list->set (vector-ref res 2)))
-                     res))
                (queue-callback
                 (λ ()
                   (when (eq? us pending-thread)
                     (set-pending-thread #f #f))
                   (when (getenv "PLTDRPLACEPRINT")
                     (printf "PLTDRPLACEPRINT: got results back from the place\n"))
-                  (show-results res/set)))))))
+                  (show-results res)))))))
   
   (define (stop-place-running)
     (when expanding-place

@@ -56,11 +56,11 @@
          (for/fold: ([sum : Exact-Rational  0]
                      [bin : Integer  (binomial (+ m 3) m-6)]
                      ) ([j  (in-range 1 (+ M 1))])
-           (values (+ sum (* bin (bern (- m (* 6 j)))))
+           (values (+ sum (* bin (bern (assert (- m (* 6 j)) natural?))))
                    (next-binom bin (+ m 3) (- m (* 6 j))))))
        sum]))
   
-  (: bern : Integer -> Exact-Rational)
+  (: bern : Natural -> Exact-Rational)
   (define (bern n)
     (bs-ref!
      n (λ ()
