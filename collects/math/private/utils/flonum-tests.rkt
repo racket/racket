@@ -28,12 +28,12 @@
 ;; Allowable error for different kinds of functions, in ulps
 (define flonum-fun-ulps 0.5)
 (define flonum/error-fun-ulps 0.5)
-(define flexp/error-fun-ulps 2.0)
+(define flexp/error-fun-ulps 3.0)
 (define fl2-conversion-ulps 0.5)
 (define unary-fl2-fun-ulps 1.0)
 (define binary-fl2-fun-ulps 8.0)
-(define fl2exp-fun-ulps 2.5)
-(define fl2log-fun-ulps 1.5)
+(define fl2exp-fun-ulps 3.0)
+(define fl2log-fun-ulps 2.0)
 
 (: current-max-ulp-error (Parameterof Nonnegative-Flonum))
 (define current-max-ulp-error (make-parameter 0.0))
