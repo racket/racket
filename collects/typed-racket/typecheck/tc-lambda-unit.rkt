@@ -242,7 +242,7 @@
                 (match (find-expected expected f*)
                   ;; very conservative -- only do anything interesting if we get exactly one thing that matches
                   [(list) 
-                   (if (and (= 1 (length formals*)) (tc-results? expected))
+                   (if (and (= 1 (length formals*)) (match expected ((tc-results: _) #t) (_ #f)))
                        (tc-error/expr #:return (list (lam-result null null (list #'here Univ) #f (ret (Un))))
                                       "Expected a function of type ~a, but got a function with the wrong arity"
                                       (match expected [(tc-result1: t) t]))

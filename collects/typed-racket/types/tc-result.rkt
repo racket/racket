@@ -110,7 +110,7 @@
                    Object?)]
         [dty Type/c]
         [dbound symbol?])
-       [res tc-results?])])
+       [res tc-results/c])])
 
 (define (combine-results tcs)
   (match tcs
@@ -124,7 +124,6 @@
            (tc-any-results* tc-any-results)))
 (provide/cond-contract
  [combine-results ((listof tc-results?) . -> . tc-results?)]
- [tc-result? (any/c . -> . boolean?)]
  [tc-result-t (tc-result? . -> . Type/c)]
  [tc-result-equal? (tc-result? tc-result? . -> . boolean?)]
  [tc-results? (any/c . -> . boolean?)]

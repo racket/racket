@@ -17,12 +17,7 @@
 
 ;A Type that corresponds to the any contract for the
 ;return type of functions
-;FIXME
-;This is not correct as Univ is only a single value.
-(define ManyUniv Univ)
-
-
-
+(define ManyUniv (make-AnyValues))
 
 ;; Char type (needed because of how sequences are checked in subtype)
 (define -Char (make-Base 'Char #'char? char? #'-Char #f))

@@ -13,7 +13,7 @@
 
 
 (define/cond-contract (abstract-results results arg-names)
-     (tc-results? (listof identifier?) . -> . SomeValues/c)
+     (tc-results/c (listof identifier?) . -> . SomeValues/c)
      (define keys (for/list ([(nm k) (in-indexed arg-names)]) k))
      (match results
        [(tc-any-results:) (make-AnyValues)]
