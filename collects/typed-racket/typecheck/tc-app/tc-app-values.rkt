@@ -27,7 +27,7 @@
   ;; we just ignore the values, except that it forces arg to return one value
   (pattern (values arg)
     (match expected
-     [#f (single-value #'arg)]
+     [(or #f (tc-any-results:)) (single-value #'arg)]
      [(tc-result1: tp)
       (single-value #'arg expected)]
      [(tc-results: ts)

@@ -117,6 +117,11 @@
            (tc-expr/check expr (ret anns))
            (let ([ty (tc-expr expr)])
              (match ty
+               [(tc-any-results:)
+                (ret
+                  (tc-error/expr
+                    "Expression should produce ~a values, but produces an unknown number of values"
+                    (length stxs)))]
                [(tc-results: tys fs os)
                 (if (not (= (length stxs) (length tys)))
                     (begin
@@ -127,8 +132,8 @@
                     (combine-results
                      (for/list ([stx stxs] [ty tys] [a anns] [f fs] [o os])
                        (cond [a (check-type stx ty a) (ret a f o)]
-			     ;; mutated variables get generalized, so that we don't infer too small a type
-			     [(is-var-mutated? stx) (ret (generalize ty) f o)]
+                             ;; mutated variables get generalized, so that we don't infer too small a type
+                             [(is-var-mutated? stx) (ret (generalize ty) f o)]
                              [else (ret ty f o)]))))]))))]))
 
 ;; check that e-type is compatible with ty in context of stx

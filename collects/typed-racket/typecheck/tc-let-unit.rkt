@@ -29,7 +29,7 @@
 
 (define/cond-contract (do-check expr->type namess results expected-results form exprs body clauses expected #:abstract [abstract null])
      (((syntax? syntax? tc-results/c . c:-> . any/c)
-       (listof (listof identifier?)) (listof tc-results?) (listof tc-results?)
+       (listof (listof identifier?)) (listof tc-results/c) (listof tc-results/c)
        syntax? (listof syntax?) syntax? (listof syntax?) (or/c #f tc-results/c))
       (#:abstract any/c)
       . c:->* .
@@ -130,7 +130,6 @@
       (cond
         ;; after everything, check the body expressions
         [(null? names)
-         ;(if expected (tc-exprs/check (syntax->list body) expected) (tc-exprs (syntax->list body)))
          (do-check void null null null form null body null expected #:abstract orig-flat-names)]
         ;; if none of the names bound in the letrec are free vars of this rhs
         [(not (ormap (lambda (n) (s:member n flat-names bound-identifier=?))
