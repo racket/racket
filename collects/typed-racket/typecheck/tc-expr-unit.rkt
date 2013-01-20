@@ -188,7 +188,7 @@
 ;; the identifier has variable effect
 ;; tc-id : identifier -> tc-results
 (define/cond-contract (tc-id id)
-  (--> identifier? tc-results?)
+  (--> identifier? tc-results/c)
   (let* ([ty (lookup-type/lexical id)])
     (ret ty
          (make-FilterSet (-not-filter (-val #f) id)
@@ -206,7 +206,7 @@
     [(tc-result1: t) t]))
 
 (define (tc-expr/check/type form expected)
-  #;(syntax? Type/c . -> . tc-results?)
+  #;(syntax? Type/c . -> . tc-results/c)
   (tc-expr/check form (ret expected)))
 
 (define (tc-expr/check form expected)
@@ -273,7 +273,7 @@
 
 ;; tc-expr/check : syntax tc-results -> tc-results
 (define/cond-contract (tc-expr/check/internal form expected)
-  (--> syntax? tc-results? tc-results?)
+  (--> syntax? tc-results/c tc-results/c)
   (parameterize ([current-orig-stx form])
     ;(printf "form: ~a\n" (syntax-object->datum form))
     ;; the argument must be syntax
@@ -511,6 +511,9 @@
                                                  (tc-expr/check form ann))]
                     [else (internal-tc-expr form)])])
       (match ty
+        [(tc-any-results:)
+         (add-typeof-expr form ty)
+         ty]
         [(tc-results: ts fs os)
          (let* ([ts* (do-inst form ts)]
                 [r (ret ts* fs os)])
@@ -518,7 +521,7 @@
            r)]))))
 
 (define/cond-contract (tc/send form rcvr method args [expected #f])
-  (-->* (syntax? syntax? syntax? syntax?) ((-or/c tc-results? #f)) tc-results?)
+  (-->* (syntax? syntax? syntax? syntax?) ((-or/c tc-results/c #f)) tc-results/c)
   (match (tc-expr rcvr)
     [(tc-result1: (Instance: (and c (Class: _ _ methods))))
      (match (tc-expr method)
@@ -547,11 +550,11 @@
 (define (tc-exprs exprs)
   (cond [(null? exprs) (ret -Void)]
         [(null? (cdr exprs)) (tc-expr (car exprs))]
-        [else (tc-expr/check/type (car exprs) Univ)
+        [else (tc-expr/check (car exprs) tc-any-results)
               (tc-exprs (cdr exprs))]))
 
 (define (tc-exprs/check exprs expected)
   (cond [(null? exprs) (check-below (ret -Void) expected)]
         [(null? (cdr exprs)) (tc-expr/check (car exprs) expected)]
-        [else (tc-expr/check/type (car exprs) Univ)
+        [else (tc-expr/check (car exprs) tc-any-results)
               (tc-exprs/check (cdr exprs) expected)]))

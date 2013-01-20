@@ -145,10 +145,11 @@
 
 
 
-;; (or/c Values? ValuesDots?) listof[identifier] -> tc-results?
+;; SomeValues/c (or/c #f listof[identifier]) -> tc-results/c
 (define/cond-contract (values->tc-results tc formals)
-  ((or/c Values? ValuesDots?) (or/c #f (listof identifier?)) . -> . tc-results?)
+  (SomeValues/c (or/c #f (listof identifier?)) . -> . tc-results/c)
   (match tc
+    [(AnyValues:) tc-any-results]
     [(ValuesDots: (list (and rs (Result: ts fs os)) ...) dty dbound)
      (if formals
          (let-values ([(ts fs os)

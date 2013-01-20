@@ -19,7 +19,7 @@
 ;return type of functions
 ;FIXME
 ;This is not correct as Univ is only a single value.
-(define ManyUniv Univ)
+(define ManyUniv (make-AnyValues))
 
 
 

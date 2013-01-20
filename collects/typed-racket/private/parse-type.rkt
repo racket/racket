@@ -21,8 +21,8 @@
 
 (provide/cond-contract [parse-type (syntax? . c:-> . Type/c)]
                        [parse-type/id (syntax? c:any/c . c:-> . Type/c)]
-                       [parse-tc-results (syntax? . c:-> . tc-results?)]
-                       [parse-tc-results/id (syntax? c:any/c . c:-> . tc-results?)])
+                       [parse-tc-results (syntax? . c:-> . tc-results/c)]
+                       [parse-tc-results/id (syntax? c:any/c . c:-> . tc-results/c)])
 
 (provide star ddd/bound)
 (define enable-mu-parsing (make-parameter #t))

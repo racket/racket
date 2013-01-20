@@ -103,13 +103,13 @@
 (define (get-types stxs #:default [default #f])
   (map (lambda (e) (get-type e #:default default)) stxs))
 
-;; list[identifier] stx (stx -> tc-results?) (stx tc-results? -> tc-results?) -> tc-results?
+;; list[identifier] stx (stx -> tc-results/c) (stx tc-results/c -> tc-results/c) -> tc-results/c
 ;; stxs : the identifiers, possibly with type annotations on them
 ;; expr : the RHS expression
 ;; tc-expr : a function like `tc-expr' from tc-expr-unit
 ;; tc-expr/check : a function like `tc-expr/check' from tc-expr-unit
 (define/cond-contract (get-type/infer stxs expr tc-expr tc-expr/check)
-  ((listof identifier?) syntax? (syntax? . -> . tc-results?) (syntax? tc-results? . -> . tc-results?) . -> . tc-results?)
+  ((listof identifier?) syntax? (syntax? . -> . tc-results/c) (syntax? tc-results/c . -> . tc-results/c) . -> . tc-results/c)
   (match stxs
     [(list stx ...)
      (let ([anns (for/list ([s stxs]) (type-annotation s #:infer #t))])
@@ -117,6 +117,11 @@
            (tc-expr/check expr (ret anns))
            (let ([ty (tc-expr expr)])
              (match ty
+               [(tc-any-results:)
+                (ret
+                  (tc-error/expr
+                    "Expression should produce ~a values, but produces an unknown number of values"
+                    (length stxs)))]
                [(tc-results: tys fs os)
                 (if (not (= (length stxs) (length tys)))
                     (begin
@@ -127,8 +132,8 @@
                     (combine-results
                      (for/list ([stx stxs] [ty tys] [a anns] [f fs] [o os])
                        (cond [a (check-type stx ty a) (ret a f o)]
-			     ;; mutated variables get generalized, so that we don't infer too small a type
-			     [(is-var-mutated? stx) (ret (generalize ty) f o)]
+                             ;; mutated variables get generalized, so that we don't infer too small a type
+                             [(is-var-mutated? stx) (ret (generalize ty) f o)]
                              [else (ret ty f o)]))))]))))]))
 
 ;; check that e-type is compatible with ty in context of stx

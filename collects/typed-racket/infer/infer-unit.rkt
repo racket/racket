@@ -312,7 +312,7 @@
 ;; the index variables from the TOPLAS paper
 (define/cond-contract (cgen V X Y S T)
   ((listof symbol?) (listof symbol?) (listof symbol?)
-   (or/c Values/c ValuesDots?) (or/c Values/c ValuesDots?). -> . cset?)
+   (or/c Values/c ValuesDots? AnyValues?) (or/c Values/c ValuesDots? AnyValues?) . -> . cset?)
   ;; useful quick loop
   (define/cond-contract (cg S T)
    (Type/c Type/c . -> . cset?)
@@ -334,6 +334,7 @@
           [(a a) empty]
           ;; CG-Top
           [(_ (Univ:)) empty]
+          [(_ (AnyValues:)) empty]
 
           ;; check all non Type/c first so that calling subtype is safe
 
