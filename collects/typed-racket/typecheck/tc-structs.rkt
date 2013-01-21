@@ -231,7 +231,7 @@
 
 (define (refine-struct-variance! parsed-structs)
   (define stys (map parsed-struct-sty parsed-structs))
-  (define tvarss (map (compose struct-desc-tvars parsed-struct-desc)  parsed-structs))
+  (define tvarss (map (compose struct-desc-tvars parsed-struct-desc) parsed-structs))
   (let loop ()
     (define sames
       (for/list ((sty stys) (tvars tvarss))
