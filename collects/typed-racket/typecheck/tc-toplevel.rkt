@@ -74,19 +74,20 @@
       [(define-values () (begin (quote-syntax (define-typed-struct/exec-internal ~! nm ([fld : ty] ...) proc-ty)) (#%plain-app values)))
        (tc/struct null #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:proc-ty #'proc-ty)])))
 
-(define (add-constant-variance! form)
+(define (type-vars-of-struct form)
   (parameterize ([current-orig-stx form])
     (syntax-parse form
       #:literals (values define-typed-struct-internal quote-syntax #%plain-app)
       ;; define-typed-struct
       [(define-values () (begin (quote-syntax (define-typed-struct-internal ~! . dts:define-typed-struct)) (#%plain-app values)))
-       ;; TODO make constant
-       (unless (null? (attribute dts.tvars))
-         (register-type-variance! #'dts.name (map (lambda (_) Covariant) (attribute dts.tvars))))]
+       (attribute dts.tvars)]
       [(define-values () (begin (quote-syntax (define-typed-struct/exec-internal ~! nm ([fld : ty] ...) proc-ty)) (#%plain-app values)))
        ;; Not polymorphic
-       (void)])))
+       null])))
 
+(define (add-constant-variance! name vars)
+  (unless (null? vars)
+    (register-type-variance name (map (lambda (_) Constant) vars))))
 
 
 
@@ -305,8 +306,10 @@
   (for-each (compose register-type-alias parse-type-alias) type-aliases)
   ;; Add the struct names to the type table, but not with a type
   ;(printf "before adding type names~n")
-  (for-each (compose register-type-name name-of-struct) struct-defs)
-  (for-each add-constant-variance! struct-defs)
+  (let ((names (map name-of-struct struct-defs))
+        (type-vars (map type-vars-of-struct struct-defs)))
+    (for-each register-type-name names)
+    (for-each add-constant-variant names type-vars))
   ;(printf "after adding type names~n")
   ;; resolve all the type aliases, and error if there are cycles
   (resolve-type-aliases parse-type)
