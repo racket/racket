@@ -47,10 +47,12 @@
     (for ([b (in-hash-values all-windows)])
       (define f (weak-box-value b))
       (when f
-        (parameterize ([current-eventspace (send f get-eventspace)])
-          (queue-callback
-           (λ ()
-             (send f display-changed))))))))
+        (define e (send f get-eventspace))
+        (unless (eventspace-shutdown? e)
+          (parameterize ([current-eventspace e])
+            (queue-callback
+             (λ ()
+               (send f display-changed)))))))))
 
 (set-screen-changed-callback! send-screen-change-notifications)
 

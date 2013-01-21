@@ -584,10 +584,12 @@
 (define (tell-all-frames-signal-changed n)
   (define frames (for/list ([f (in-hash-keys all-frames)]) f))
   (for ([f (in-hash-keys all-frames)])
-    (parameterize ([current-eventspace (send f get-eventspace)])
-      (queue-callback
-       (λ () 
-         (send f display-changed))))))
+    (define e (send f get-eventspace))
+    (unless (eventspace-shutdown? e)
+      (parameterize ([current-eventspace e])
+        (queue-callback
+         (λ () 
+           (send f display-changed)))))))
 
 (define-signal-handler 
   connect-monitor-changed-signal
