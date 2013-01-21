@@ -26,7 +26,7 @@
 (require (for-template racket/base
                        "internal-forms.rkt"))
 
-(provide tc/struct names-of-struct d-s
+(provide tc/struct name-of-struct d-s
          refine-struct-variance!
          register-parsed-struct-sty!
          register-parsed-struct-bindings!)
@@ -59,9 +59,7 @@
 (define (struct-desc-parent-count fields)
   (length (struct-desc-parent-fields fields)))
 
-
-;; TODO make this not return a list
-(define (names-of-struct stx)
+(define (name-of-struct stx)
   (syntax-parse stx
     #:literal-sets (kernel-literals)
     #:literals (define-typed-struct-internal values)
@@ -73,7 +71,7 @@
                                     (define-typed-struct/exec-internal
                                       nm/par:parent . rest)))
                                 (#%plain-app values)))
-     (list #'nm/par.name)]))
+     #'nm/par.name]))
 
 
 ;; parse name field of struct, determining whether a parent struct was specified

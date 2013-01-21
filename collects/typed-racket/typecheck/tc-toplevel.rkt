@@ -278,10 +278,6 @@
     [(define-syntaxes (nm ...) . rest) (syntax->list #'(nm ...))]
     [_ #f]))
 
-
-(define (add-type-name! names)
-  (for-each register-type-name names))
-
 (define (parse-type-alias form)
   (kernel-syntax-case* form #f
     (define-type-alias-internal values)
@@ -309,7 +305,7 @@
   (for-each (compose register-type-alias parse-type-alias) type-aliases)
   ;; Add the struct names to the type table, but not with a type
   ;(printf "before adding type names~n")
-  (for-each (compose add-type-name! names-of-struct) struct-defs)
+  (for-each (compose register-type-name name-of-struct) struct-defs)
   (for-each add-constant-variance! struct-defs)
   ;(printf "after adding type names~n")
   ;; resolve all the type aliases, and error if there are cycles
