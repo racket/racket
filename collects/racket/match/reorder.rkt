@@ -51,8 +51,7 @@
   (ormap (lambda (p) (andmap p l)) ps))
 
 (define (count-while pred l)
-  (let loop ([l l] [r 0])
-    (if (or (null? l) (not (pred (car l)))) r (loop (cdr l) (add1 r)))))
+  (for/sum ([e (in-list l)] #:break (not (pred e))) 1))
 
 (define (score col)
   (define n (length col))

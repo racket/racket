@@ -326,8 +326,10 @@ In more detail, patterns match as follows:
  @item{@racket[(#,(racketidfont "?") _expr _pat ...)] --- applies
        @racket[_expr] to the value to be matched, and checks whether
        the result is a true value; the additional @racket[_pat]s must
-       also match (i.e., @racketidfont{?} combines a predicate
-       application and an @racketidfont{and} pattern).
+       also match; i.e., @racketidfont{?} combines a predicate
+       application and an @racketidfont{and} pattern.  However,
+       @racketidfont{?}, unlike @racketidfont{and}, guarantees that
+       @racket[_expr] is matched before any of the @racket[_pat]s.
 
        @examples[
        #:eval match-eval
