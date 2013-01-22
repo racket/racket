@@ -65,46 +65,65 @@
                               (loop (first arrs) (rest arrs)))])))]))
 
 
-(: matrix*/ns (case-> ((Matrix Real) (Listof (Matrix Real)) -> (Matrix Real))
-                      ((Matrix Number) (Listof (Matrix Number)) -> (Matrix Number))))
+(: matrix*/ns
+   (case-> ((Matrix Flonum) (Listof (Matrix Flonum)) -> (Matrix Flonum))
+           ((Matrix Real) (Listof (Matrix Real)) -> (Matrix Real))
+           ((Matrix Float-Complex) (Listof (Matrix Float-Complex)) -> (Matrix Float-Complex))
+           ((Matrix Number) (Listof (Matrix Number)) -> (Matrix Number))))
 (define (matrix*/ns a as)
   (cond [(empty? as)  a]
         [else  (matrix*/ns (inline-matrix-multiply a (first as)) (rest as))]))
 
-(: matrix* (case-> ((Matrix Real) (Matrix Real) * -> (Matrix Real))
+(: matrix* (case-> ((Matrix Flonum) (Matrix Flonum) * -> (Matrix Flonum))
+                   ((Matrix Real) (Matrix Real) * -> (Matrix Real))
+                   ((Matrix Float-Complex) (Matrix Float-Complex) * -> (Matrix Float-Complex))
                    ((Matrix Number) (Matrix Number) * -> (Matrix Number))))
 (define (matrix* a . as) (call/ns (λ () (matrix*/ns a as))))
 
 
-(: matrix+/ns (case-> ((Matrix Real) (Listof (Matrix Real)) -> (Matrix Real))
-                      ((Matrix Number) (Listof (Matrix Number)) -> (Matrix Number))))
+(: matrix+/ns
+   (case-> ((Matrix Flonum) (Listof (Matrix Flonum)) -> (Matrix Flonum))
+           ((Matrix Real) (Listof (Matrix Real)) -> (Matrix Real))
+           ((Matrix Float-Complex) (Listof (Matrix Float-Complex)) -> (Matrix Float-Complex))
+           ((Matrix Number) (Listof (Matrix Number)) -> (Matrix Number))))
 (define (matrix+/ns a as)
   (cond [(empty? as)  a]
         [else  (matrix+/ns (inline-matrix+ a (first as)) (rest as))]))
 
-(: matrix+ (case-> ((Matrix Real) (Matrix Real) * -> (Matrix Real))
+(: matrix+ (case-> ((Matrix Flonum) (Matrix Flonum) * -> (Matrix Flonum))
+                   ((Matrix Real) (Matrix Real) * -> (Matrix Real))
+                   ((Matrix Float-Complex) (Matrix Float-Complex) * -> (Matrix Float-Complex))
                    ((Matrix Number) (Matrix Number) * -> (Matrix Number))))
 (define (matrix+ a . as) (call/ns (λ () (matrix+/ns a as))))
 
 
-(: matrix-/ns (case-> ((Matrix Real) (Listof (Matrix Real)) -> (Matrix Real))
-                      ((Matrix Number) (Listof (Matrix Number)) -> (Matrix Number))))
+(: matrix-/ns
+   (case-> ((Matrix Flonum) (Listof (Matrix Flonum)) -> (Matrix Flonum))
+           ((Matrix Real) (Listof (Matrix Real)) -> (Matrix Real))
+           ((Matrix Float-Complex) (Listof (Matrix Float-Complex)) -> (Matrix Float-Complex))
+           ((Matrix Number) (Listof (Matrix Number)) -> (Matrix Number))))
 (define (matrix-/ns a as)
   (cond [(empty? as)  a]
         [else  (matrix-/ns (inline-matrix- a (first as)) (rest as))]))
 
-(: matrix- (case-> ((Matrix Real) (Matrix Real) * -> (Matrix Real))
+(: matrix- (case-> ((Matrix Flonum) (Matrix Flonum) * -> (Matrix Flonum))
+                   ((Matrix Real) (Matrix Real) * -> (Matrix Real))
+                   ((Matrix Float-Complex) (Matrix Float-Complex) * -> (Matrix Float-Complex))
                    ((Matrix Number) (Matrix Number) * -> (Matrix Number))))
 (define (matrix- a . as)
-  (call/ns (λ () (cond [(empty? as)  (inline-matrix- a)]
+  (call/ns (λ () (cond [(empty? as)  (inline-matrix-scale a -1)]
                        [else  (matrix-/ns a as)]))))
 
 
-(: matrix-scale (case-> ((Matrix Real) Real -> (Matrix Real))
+(: matrix-scale (case-> ((Matrix Flonum) Flonum -> (Matrix Flonum))
+                        ((Matrix Real) Real -> (Matrix Real))
+                        ((Matrix Float-Complex) Float-Complex -> (Matrix Float-Complex))
                         ((Matrix Number) Number -> (Matrix Number))))
 (define (matrix-scale a x) (inline-matrix-scale a x))
 
-(: matrix-sum (case-> ((Listof (Matrix Real)) -> (Matrix Real))
+(: matrix-sum (case-> ((Listof (Matrix Flonum)) -> (Matrix Flonum))
+                      ((Listof (Matrix Real)) -> (Matrix Real))
+                      ((Listof (Matrix Float-Complex)) -> (Matrix Float-Complex))
                       ((Listof (Matrix Number)) -> (Matrix Number))))
 (define (matrix-sum lst)
   (cond [(empty? lst)  (raise-argument-error 'matrix-sum "nonempty List" lst)]

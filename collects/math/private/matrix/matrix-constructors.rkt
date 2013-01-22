@@ -1,8 +1,10 @@
 #lang typed/racket/base
 
 (require racket/fixnum
+         racket/flonum
          racket/list
          racket/vector
+         math/base
          "matrix-types.rkt"
          "../unsafe.rkt"
          "../array/array-struct.rkt"
@@ -22,8 +24,14 @@
 ;; ===================================================================================================
 ;; Basic constructors
 
-(: identity-matrix (Integer -> (Matrix (U 0 1))))
-(define (identity-matrix m) (diagonal-array 2 m 1 0))
+(: identity-matrix (All (A) (case-> (Integer -> (Matrix (U 1 0)))
+                                    (Integer A -> (Matrix (U A 0)))
+                                    (Integer A A -> (Matrix A)))))
+(define identity-matrix
+  (case-lambda
+    [(m)  (diagonal-array 2 m 1 0)]
+    [(m one)  (diagonal-array 2 m one 0)]
+    [(m one zero)  (diagonal-array 2 m one zero)]))
 
 (: make-matrix (All (A) (Integer Integer A -> (Matrix A))))
 (define (make-matrix m n x)
@@ -60,9 +68,12 @@
             (cond [(= i (unsafe-vector-ref js 1))  (unsafe-vector-ref vs i)]
                   [else  zero])))]))
 
-(: diagonal-matrix (All (A) ((Listof A) -> (Matrix (U A 0)))))
-(define (diagonal-matrix xs)
-  (diagonal-matrix/zero xs 0))
+(: diagonal-matrix (All (A) (case-> ((Listof A) -> (Matrix (U A 0)))
+                                    ((Listof A) A -> (Matrix A)))))
+(define diagonal-matrix
+  (case-lambda
+    [(xs)  (diagonal-matrix/zero xs 0)]
+    [(xs zero)  (diagonal-matrix/zero xs zero)]))
 
 ;; ===================================================================================================
 ;; Block diagonal matrices
@@ -129,21 +140,29 @@
           [else
            (block-diagonal-matrix/zero* as zero)])))
 
-(: block-diagonal-matrix (All (A) ((Listof (Matrix A)) -> (Matrix (U A 0)))))
-(define (block-diagonal-matrix as)
-  (block-diagonal-matrix/zero as 0))
+(: block-diagonal-matrix (All (A) (case-> ((Listof (Matrix A)) -> (Matrix (U A 0)))
+                                          ((Listof (Matrix A)) A -> (Matrix A)))))
+(define block-diagonal-matrix
+  (case-lambda
+    [(as)  (block-diagonal-matrix/zero as 0)]
+    [(as zero)  (block-diagonal-matrix/zero as zero)]))
 
 ;; ===================================================================================================
 ;; Special matrices
 
-(: expt-hack (case-> (Real Integer -> Real)
-                     (Number Integer -> Number)))
-;; Stop using this when TR correctly derives expt : Real Integer -> Real
-(define (expt-hack x n)
-  (cond [(real? x)  (assert (expt x n) real?)]
+(: sane-expt (case-> (Flonum Index -> Flonum)
+                     (Real Index -> Real)
+                     (Float-Complex Index -> Float-Complex)
+                     (Number Index -> Number)))
+(define (sane-expt x n)
+  (cond [(flonum? x)  (flexpt x (real->double-flonum n))]
+        [(real? x)  (real-part (expt x n))]  ; remove `real-part' when expt : Real Index -> Real
+        [(float-complex? x)  (number->float-complex (expt x n))]
         [else  (expt x n)]))
 
-(: vandermonde-matrix (case-> ((Listof Real) Integer -> (Matrix Real))
+(: vandermonde-matrix (case-> ((Listof Flonum) Integer -> (Matrix Flonum))
+                              ((Listof Real) Integer -> (Matrix Real))
+                              ((Listof Float-Complex) Integer -> (Matrix Float-Complex))
                               ((Listof Number) Integer -> (Matrix Number))))
 (define (vandermonde-matrix xs n)
   (cond [(empty? xs)
@@ -151,4 +170,4 @@
         [(or (not (index? n)) (zero? n))
          (raise-argument-error 'vandermonde-matrix "Positive-Index" 1 xs n)]
         [else
-         (array-axis-expand (list->array xs) 1 n expt-hack)]))
+         (array-axis-expand (list->array xs) 1 n sane-expt)]))
