@@ -187,7 +187,7 @@ will automatically add them, where @litchar{Date} is based on
 @racket[seconds], and @litchar{Server} is @litchar{Racket}.
 
 If @racket[headers] does not include @litchar{Content-Type} and
-@racket[mime] is not @racket[#f], then @racket[mime] is add as a
+@racket[mime] is not @racket[#f], then @racket[mime] is added as a
 @litchar{Content-Type} header.
 
 The server will always replace your @litchar{Connection} header if it
