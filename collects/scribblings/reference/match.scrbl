@@ -592,10 +592,14 @@ syntax object as for a @tech{match expander}..
 If the property value is a @tech{assignment transformer}, then the wrapped
 procedure is extracted with
 @racket[set!-transformer-procedure] before it is called.
+
+This binding is provided @racket[for-syntax].
 }
 
 @defthing[prop:legacy-match-expander struct-type-property?]{
 Like @racket[prop:match-expander], but for the legacy match syntax.
+
+This binding is provided @racket[for-syntax].
 }
 
 
