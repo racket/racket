@@ -50,7 +50,7 @@
     (define/private (default-font s)
       (case s
         [(modern) (case (system-type)
-                    [(windows macosx) "Courier New"]
+                    [(windows) "Courier New"]
                     [else "Monospace"])]
         [(roman) (case (system-type)
                    [(windows) "Times New Roman"]
