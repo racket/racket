@@ -220,7 +220,7 @@
             (λ ()
               (match k
                 ["indexes"
-                 (list "https://pnr.racket-lang.org"
+                 (list "https://pkg.racket-lang.org"
                        "https://planet-compat.racket-lang.org")]))))
 
 (define (package-index-lookup pkg)

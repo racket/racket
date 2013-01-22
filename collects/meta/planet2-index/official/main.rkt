@@ -322,7 +322,7 @@
          empty empty
          (list "Someone tried to register your email address for an account on Planet2. If you want to authorize this registration and log in, please click the following link:"
                ""
-               (format "https://pnr.racket-lang.org~a" k-url)
+               (format "https://pkg.racket-lang.org~a" k-url)
                ""
                "This link will expire, so if it is not available, you'll have to try to register again."))
         (template
