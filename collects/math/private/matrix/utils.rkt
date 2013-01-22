@@ -3,6 +3,7 @@
 (require racket/performance-hint
          racket/string
          racket/fixnum
+         math/base
          "matrix-types.rkt"
          "../unsafe.rkt"
          "../array/array-struct.rkt"
@@ -69,7 +70,9 @@
                       (rational? (imag-part z)))])))
 
 (: find-partial-pivot
-   (case-> ((Vectorof (Vectorof Real)) Index Index Index -> (Values Index Real))
+   (case-> ((Vectorof (Vectorof Flonum)) Index Index Index -> (Values Index Flonum))
+           ((Vectorof (Vectorof Real)) Index Index Index -> (Values Index Real))
+           ((Vectorof (Vectorof Float-Complex)) Index Index Index -> (Values Index Float-Complex))
            ((Vectorof (Vectorof Number)) Index Index Index -> (Values Index Number))))
 ;; Find the element with maximum magnitude in a column
 (define (find-partial-pivot rows m i j)
@@ -85,7 +88,9 @@
           [else  (values p pivot)])))
 
 (: find-first-pivot
-   (case-> ((Vectorof (Vectorof Real)) Index Index Index -> (Values Index Real))
+   (case-> ((Vectorof (Vectorof Flonum)) Index Index Index -> (Values Index Flonum))
+           ((Vectorof (Vectorof Real)) Index Index Index -> (Values Index Real))
+           ((Vectorof (Vectorof Float-Complex)) Index Index Index -> (Values Index Float-Complex))
            ((Vectorof (Vectorof Number)) Index Index Index -> (Values Index Number))))
 ;; Find the first nonzero element in a column
 (define (find-first-pivot rows m i j)
@@ -100,7 +105,10 @@
                (values i pivot)]))))
 
 (: elim-rows!
-   (case-> ((Vectorof (Vectorof Real)) Index Index Index Real Nonnegative-Fixnum -> Void)
+   (case-> ((Vectorof (Vectorof Flonum)) Index Index Index Flonum Nonnegative-Fixnum -> Void)
+           ((Vectorof (Vectorof Real)) Index Index Index Real Nonnegative-Fixnum -> Void)
+           ((Vectorof (Vectorof Float-Complex)) Index Index Index Float-Complex Nonnegative-Fixnum 
+                                                -> Void)
            ((Vectorof (Vectorof Number)) Index Index Index Number Nonnegative-Fixnum -> Void)))
 (define (elim-rows! rows m i j pivot start)
   (define row_i (unsafe-vector-ref rows i))
@@ -109,8 +117,8 @@
       (unless (l . fx= . i)
         (define row_l (unsafe-vector-ref rows l))
         (define x_lj (unsafe-vector-ref row_l j))
-        (unless (zero? x_lj)
-          (vector-scaled-add! row_l row_i (- (/ x_lj pivot)) j)
+        (unless (= x_lj 0)
+          (vector-scaled-add! row_l row_i (* -1 (/ x_lj pivot)) j)
           ;; Make sure the element below the pivot is zero
           (unsafe-vector-set! row_l j (- x_lj x_lj))))
       (loop (fx+ l 1)))))
@@ -124,3 +132,51 @@
        (thnk))))
   
   )  ; begin-encourage-inline
+
+(: make-thread-local-box (All (A) (A -> (-> (Boxof A)))))
+(define (make-thread-local-box contents)
+  (let: ([val : (Thread-Cellof (U #f (Boxof A))) (make-thread-cell #f)])
+    (λ () (or (thread-cell-ref val)
+              (let: ([v : (Boxof A)  (box contents)])
+                (thread-cell-set! val v)
+                v)))))
+
+(: one (case-> (Flonum -> Nonnegative-Flonum)
+               (Real -> (U 1 Nonnegative-Flonum))
+               (Float-Complex -> Nonnegative-Flonum)
+               (Number -> (U 1 Nonnegative-Flonum))))
+(define (one x)
+  (cond [(flonum? x)  1.0]
+        [(real? x)  1]
+        [(float-complex? x)  1.0]
+        [else  1]))
+
+(: zero (case-> (Flonum -> Flonum-Positive-Zero)
+                (Real -> (U 0 Flonum-Positive-Zero))
+                (Float-Complex -> Flonum-Positive-Zero)
+                (Number -> (U 0 Flonum-Positive-Zero))))
+(define (zero x)
+  (cond [(flonum? x)  0.0]
+        [(real? x)  0]
+        [(float-complex? x)  0.0]
+        [else  0]))
+
+(: one* (case-> (Flonum -> Nonnegative-Flonum)
+                (Real -> (U 1 Nonnegative-Flonum))
+                (Float-Complex -> Float-Complex)
+                (Number -> (U 1 Nonnegative-Flonum Float-Complex))))
+(define (one* x)
+  (cond [(flonum? x)  1.0]
+        [(real? x)  1]
+        [(float-complex? x)  1.0+0.0i]
+        [else  1]))
+
+(: zero* (case-> (Flonum -> Flonum-Positive-Zero)
+                 (Real -> (U 0 Flonum-Positive-Zero))
+                 (Float-Complex -> Float-Complex)
+                 (Number -> (U 0 Flonum-Positive-Zero Float-Complex))))
+(define (zero* x)
+  (cond [(flonum? x)  0.0]
+        [(real? x)  0]
+        [(float-complex? x)  0.0+0.0i]
+        [else  0]))

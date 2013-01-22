@@ -8,15 +8,22 @@
          "../unsafe.rkt"
          "../vector/vector-mutate.rkt"
          "../array/mutable-array.rkt"
-         "../array/array-struct.rkt")
+         "../array/array-struct.rkt"
+         "../array/array-pointwise.rkt")
 
 (provide matrix-lu)
 
 ;; An LU factorization exists iff Gaussian elimination can be done without row swaps.
 
 (: matrix-lu
-   (All (A) (case-> ((Matrix Real)        -> (Values (Matrix Real) (Matrix Real)))
+   (All (A) (case-> ((Matrix Flonum)        -> (Values (Matrix Flonum) (Matrix Flonum)))
+                    ((Matrix Flonum) (-> A) -> (Values (U A (Matrix Flonum)) (Matrix Flonum)))
+                    ((Matrix Real)        -> (Values (Matrix Real) (Matrix Real)))
                     ((Matrix Real) (-> A) -> (Values (U A (Matrix Real)) (Matrix Real)))
+                    ((Matrix Float-Complex)        -> (Values (Matrix Float-Complex)
+                                                              (Matrix Float-Complex)))
+                    ((Matrix Float-Complex) (-> A) -> (Values (U A (Matrix Float-Complex))
+                                                              (Matrix Float-Complex)))
                     ((Matrix Number)        -> (Values (Matrix Number) (Matrix Number)))
                     ((Matrix Number) (-> A) -> (Values (U A (Matrix Number)) (Matrix Number))))))
 (define matrix-lu
@@ -28,7 +35,7 @@
      (define L
        (parameterize ([array-strictness #f])
          ;; Construct L in a weird way to prove to TR that it has the right type
-         (array->mutable-array (matrix-scale M (ann 0 Real)))))
+         (array->mutable-array (inline-array-map zero* M))))
      ;; Going to fill in the lower triangle by banging values into `ys'
      (define ys (mutable-array-data L))
      (let loop ([#{i : Nonnegative-Fixnum} 0])
@@ -51,12 +58,13 @@
                     ;; Add row i, scaled
                     (vector-scaled-add! (unsafe-vector-ref rows l)
                                         (unsafe-vector-ref rows i)
-                                        (- y_li)))
+                                        (* -1 y_li)))
                   (l-loop (fx+ l 1))]
                  [else
                   (loop (fx+ i 1))]))])]
          [else
           ;; L's lower triangle has been filled; now fill the diagonal with 1s
           (for: ([i : Integer (in-range 0 m)])
-            (vector-set! ys (+ (* i m) i) 1))
+            (define j (+ (* i m) i))
+            (vector-set! ys j (one* (vector-ref ys j))))
           (values L (vector*->matrix rows))]))]))

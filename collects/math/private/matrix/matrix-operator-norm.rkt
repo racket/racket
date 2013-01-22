@@ -42,33 +42,46 @@ See "How to Measure Errors" in the LAPACK manual for more details:
  matrix-orthonormal?
  )
 
-(: matrix-op-1norm ((Matrix Number) -> Nonnegative-Real))
+(: matrix-op-1norm (case-> ((Matrix Flonum) -> Nonnegative-Flonum)
+                           ((Matrix Real) -> Nonnegative-Real)
+                           ((Matrix Float-Complex) -> Nonnegative-Flonum)
+                           ((Matrix Number) -> Nonnegative-Real)))
 ;; When M is a column matrix, this is equivalent to matrix-1norm
 (define (matrix-op-1norm M)
   (parameterize ([array-strictness #f])
     (assert (apply max (map matrix-1norm (matrix-cols M))) nonnegative?)))
 
-(: matrix-op-2norm ((Matrix Number) -> Nonnegative-Real))
+(: matrix-op-2norm (case-> ((Matrix Flonum) -> Nonnegative-Flonum)
+                           ((Matrix Real) -> Nonnegative-Real)
+                           ((Matrix Float-Complex) -> Nonnegative-Flonum)
+                           ((Matrix Number) -> Nonnegative-Real)))
 ;; When M is a column matrix, this is equivalent to matrix-2norm
 (define (matrix-op-2norm M)
   ;(matrix-max-singular-value M)
   ;(sqrt (matrix-max-eigenvalue M))
   (error 'unimplemented))
 
-(: matrix-op-inf-norm ((Matrix Number) -> Nonnegative-Real))
+(: matrix-op-inf-norm (case-> ((Matrix Flonum) -> Nonnegative-Flonum)
+                              ((Matrix Real) -> Nonnegative-Real)
+                              ((Matrix Float-Complex) -> Nonnegative-Flonum)
+                              ((Matrix Number) -> Nonnegative-Real)))
 ;; When M is a column matrix, this is equivalent to matrix-inf-norm
 (define (matrix-op-inf-norm M)
   (parameterize ([array-strictness #f])
     (assert (apply max (map matrix-1norm (matrix-rows M))) nonnegative?)))
 
-(: matrix-basis-cos-angle (case-> ((Matrix Real) (Matrix Real) -> Real)
+(: matrix-basis-cos-angle (case-> ((Matrix Flonum) (Matrix Flonum) -> Flonum)
+                                  ((Matrix Real) (Matrix Real) -> Real)
+                                  ((Matrix Float-Complex) (Matrix Float-Complex) -> Float-Complex)
                                   ((Matrix Number) (Matrix Number) -> Number)))
 ;; Returns the angle between the two subspaces spanned by the two given sets of column vectors
 (define (matrix-basis-cos-angle M R)
   ;(matrix-min-singular-value (matrix* (matrix-hermitian M) R))
   (error 'unimplemented))
 
-(: matrix-basis-angle (case-> ((Matrix Real) (Matrix Real) -> Real)
+(: matrix-basis-angle (case-> ((Matrix Flonum) (Matrix Flonum) -> Flonum)
+                              ((Matrix Real) (Matrix Real) -> Real)
+                              ((Matrix Float-Complex) (Matrix Float-Complex) -> Float-Complex)
                               ((Matrix Number) (Matrix Number) -> Number)))
 ;; Returns the angle between the two subspaces spanned by the two given sets of column vectors
 (define (matrix-basis-angle M R)

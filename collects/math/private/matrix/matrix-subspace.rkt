@@ -35,7 +35,9 @@
   (cond [(= j0 j1)  Bs]
         [else  (cons (submatrix M (::) (:: j0 j1)) Bs)]))
 
-(: matrix-col-space/ns (All (A) (case-> ((Matrix Real) -> (U #f (Matrix Real)))
+(: matrix-col-space/ns (All (A) (case-> ((Matrix Flonum) -> (U #f (Matrix Flonum)))
+                                        ((Matrix Real) -> (U #f (Matrix Real)))
+                                        ((Matrix Float-Complex) -> (U #f (Matrix Float-Complex)))
                                         ((Matrix Number) -> (U #f (Matrix Number))))))
 (define (matrix-col-space/ns M)
   (define n (matrix-num-cols M))
@@ -52,13 +54,19 @@
                   (define next-j (first wps))
                   (loop next-j (rest wps) (maybe-cons-submatrix M (fx+ j 1) next-j Bs))]))]))
 
-(: matrix-col-space (All (A) (case-> ((Matrix Real)        -> (Matrix Real))
+(: matrix-col-space (All (A) (case-> ((Matrix Flonum)        -> (Array Flonum))
+                                     ((Matrix Flonum) (-> A) -> (U A (Matrix Flonum)))
+                                     ((Matrix Real)        -> (Array Real))
                                      ((Matrix Real) (-> A) -> (U A (Matrix Real)))
-                                     ((Matrix Number)        -> (Matrix Number))
+                                     ((Matrix Float-Complex)        -> (Array Float-Complex))
+                                     ((Matrix Float-Complex) (-> A) -> (U A (Matrix Float-Complex)))
+                                     ((Matrix Number)        -> (Array Number))
                                      ((Matrix Number) (-> A) -> (U A (Matrix Number))))))
 (define matrix-col-space 
   (case-lambda
-    [(M)  (matrix-col-space M (λ () (make-array (vector 0 (matrix-num-cols M)) 0)))]
+    [(M)  (matrix-col-space M (λ ()
+                                (define x00 (matrix-ref M 0 0))
+                                (make-array (vector 0 (matrix-num-cols M)) (zero* x00))))]
     [(M fail)
      (define S (parameterize ([array-strictness #f])
                  (matrix-col-space/ns M)))

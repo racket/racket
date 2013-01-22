@@ -16,7 +16,9 @@
 (provide matrix-gram-schmidt
          matrix-basis-extension)
 
-(: find-nonzero-vector (case-> ((Vectorof (Vectorof Real))   -> (U #f Index))
+(: find-nonzero-vector (case-> ((Vectorof (Vectorof Flonum)) -> (U #f Index))
+                               ((Vectorof (Vectorof Real)) -> (U #f Index))
+                               ((Vectorof (Vectorof Float-Complex)) -> (U #f Index))
                                ((Vectorof (Vectorof Number)) -> (U #f Index))))
 (define (find-nonzero-vector vss)
   (define n (vector-length vss))
@@ -28,7 +30,10 @@
                        [else  #f]))]))
 
 (: subtract-projections!
-   (case-> ((Vectorof (Vectorof Real))   Nonnegative-Fixnum Index (Vectorof Real)   -> Void)
+   (case-> ((Vectorof (Vectorof Flonum)) Nonnegative-Fixnum Index (Vectorof Flonum) -> Void)
+           ((Vectorof (Vectorof Real)) Nonnegative-Fixnum Index (Vectorof Real) -> Void)
+           ((Vectorof (Vectorof Float-Complex)) Nonnegative-Fixnum Index (Vectorof Float-Complex)
+                                                -> Void)
            ((Vectorof (Vectorof Number)) Nonnegative-Fixnum Index (Vectorof Number) -> Void)))
 (define (subtract-projections! rows i m row)
   (let loop ([#{i : Nonnegative-Fixnum} i])
@@ -36,7 +41,9 @@
       (vector-sub-proj! (unsafe-vector-ref rows i) row #f)
       (loop (fx+ i 1)))))
 
-(: matrix-gram-schmidt/ns (case-> ((Matrix Real) Any Integer -> (Array Real))
+(: matrix-gram-schmidt/ns (case-> ((Matrix Flonum) Any Integer -> (Array Flonum))
+                                  ((Matrix Real) Any Integer -> (Array Real))
+                                  ((Matrix Float-Complex) Any Integer -> (Array Float-Complex))
                                   ((Matrix Number) Any Integer -> (Array Number))))
 ;; Performs Gram-Schmidt orthogonalization on M, assuming the rows before `start' are already
 ;; orthogonal
@@ -60,31 +67,46 @@
                  [else
                   (matrix-transpose (vector*->matrix (list->vector (reverse bs))))]))]
         [else
-         (make-array (vector (matrix-num-rows M) 0) 0)]))
+         (make-array (vector (matrix-num-rows M) 0)
+                     ;; Value won't be in the matrix, but this satisfies TR:
+                     (zero* (unsafe-vector2d-ref rows 0 0)))]))
 
-(: matrix-gram-schmidt (case-> ((Matrix Real)             -> (Array Real))
+(: matrix-gram-schmidt (case-> ((Matrix Flonum)             -> (Array Flonum))
+                               ((Matrix Flonum) Any         -> (Array Flonum))
+                               ((Matrix Flonum) Any Integer -> (Array Flonum))
+                               ((Matrix Real)             -> (Array Real))
                                ((Matrix Real) Any         -> (Array Real))
                                ((Matrix Real) Any Integer -> (Array Real))
+                               ((Matrix Float-Complex)             -> (Array Float-Complex))
+                               ((Matrix Float-Complex) Any         -> (Array Float-Complex))
+                               ((Matrix Float-Complex) Any Integer -> (Array Float-Complex))
                                ((Matrix Number)             -> (Array Number))
                                ((Matrix Number) Any         -> (Array Number))
                                ((Matrix Number) Any Integer -> (Array Number))))
 (define (matrix-gram-schmidt M [normalize? #f] [start 0])
   (call/ns (λ () (matrix-gram-schmidt/ns M normalize? start))))
 
-(: matrix-basis-extension/ns (case-> ((Matrix Real)   -> (Array Real))
+(: matrix-basis-extension/ns (case-> ((Matrix Flonum)   -> (Array Flonum))
+                                     ((Matrix Real)   -> (Array Real))
+                                     ((Matrix Float-Complex) -> (Array Float-Complex))
                                      ((Matrix Number) -> (Array Number))))
 (define (matrix-basis-extension/ns B)
   (define-values (m n) (matrix-shape B))
+  (define x00 (matrix-ref B 0 0))
+  (define zero (zero* x00))
+  (define one (one* x00))
   (cond [(n . < . m)
-         (define S (matrix-gram-schmidt (matrix-augment (list B (identity-matrix m))) #f n))
+         (define S (matrix-gram-schmidt (matrix-augment (list B (identity-matrix m one zero))) #f n))
          (define R (submatrix S (::) (:: n #f)))
          (matrix-augment (take (sort/key (matrix-cols R) > matrix-norm) (- m n)))]
         [(n . = . m)
-         (make-array (vector m 0) 0)]
+         (make-array (vector m 0) zero)]
         [else
          (raise-argument-error 'matrix-extend-row-basis "matrix? with width < height" B)]))
 
-(: matrix-basis-extension (case-> ((Matrix Real)   -> (Array Real))
+(: matrix-basis-extension (case-> ((Matrix Flonum) -> (Array Flonum))
+                                  ((Matrix Real) -> (Array Real))
+                                  ((Matrix Float-Complex) -> (Array Float-Complex))
                                   ((Matrix Number) -> (Array Number))))
 (define (matrix-basis-extension B)
   (call/ns (λ () (matrix-basis-extension/ns B))))
