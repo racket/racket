@@ -103,7 +103,7 @@ eos
         (cond
           [(zero? ds#) ""]
           [else
-           (parse-file file ([(sales-record# queries#) 1.02]
+           (parse-file file ([(sales-record# queries#) 1]
                              [sales-records sales-record#]
                              [queries queries#])
              (string-append (process-dataset sales-records queries) "\n" (loop (sub1 ds#) file)))])))
