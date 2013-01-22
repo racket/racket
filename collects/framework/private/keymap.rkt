@@ -1502,14 +1502,20 @@
         (hash-set! visited pos #t)
         (define-values (x y) (pos->xy t pos))
         (define c (send t get-character pos))
-        (define up (xy->pos t x (- y 1)))
-        (define dn (xy->pos t x (+ y 1)))
-        (define lt (xy->pos t (- x 1) y))
-        (define rt (xy->pos t (+ x 1) y))
-        (define i-up? (and (i? t up) (or (member c up-chars) (member c double-barred-chars))))
-        (define i-dn? (and (i? t dn) (or (member c dn-chars) (member c double-barred-chars))))
-        (define i-lt? (and (i? t lt) (or (member c lt-chars) (member c double-barred-chars))))
-        (define i-rt? (and (i? t rt) (or (member c rt-chars) (member c double-barred-chars))))
+        (define-values (up upc) (xy->pos t x (- y 1)))
+        (define-values (dn dnc) (xy->pos t x (+ y 1)))
+        (define-values (lt ltc) (xy->pos t (- x 1) y))
+        (define-values (rt rtc) (xy->pos t (+ x 1) y))
+        
+        (define (interesting-dir? dir-c dir-chars) 
+          (or (and (member dir-c adjustable-chars)
+                   (member c dir-chars))
+              (and (member dir-c double-barred-chars)
+                   (member c double-barred-chars))))
+        (define i-up? (interesting-dir? upc up-chars))
+        (define i-dn? (interesting-dir? dnc dn-chars))
+        (define i-lt? (interesting-dir? ltc lt-chars))
+        (define i-rt? (interesting-dir? rtc rt-chars))
         (cond
           [(and i-up? i-dn? i-lt? i-rt?) (set t pos "╬")]
           [(and i-dn? i-lt? i-rt?)       (set t pos "╦")]
@@ -1526,20 +1532,22 @@
         (when i-dn? (loop dn))
         (when i-lt? (loop lt))
         (when i-rt? (loop rt))))
-    (send t end-edit-sequence)))  
+    (send t end-edit-sequence)))
 
 (define (scan-for-start-pos t pos)
   (define-values (x y) (pos->xy t pos))
   (findf
-   (λ (p) (i? t p))
+   (λ (p) (adj? t p))
    (for*/list ([xadj '(0 -1)]
                [yadj '(0 -1 1)])
-     (xy->pos t (+ x xadj) (+ y yadj)))))
+     (define-values (d dc) (xy->pos t (+ x xadj) (+ y yadj)))
+     d)))
        
-(define (i? t pos)
+(define (adj? t pos)
   (and pos 
        (member (send t get-character pos) 
                adjustable-chars)))
+
 (define (set t pos s)
   (unless (equal? (string-ref s 0) (send t get-character pos))
     (send t delete pos (+ pos 1))
@@ -1557,38 +1565,98 @@
      (define para-start (send text paragraph-start-position y))
      (define para-end (send text paragraph-end-position y))
      (define pos (+ para-start x))
-     (and (< pos para-end)
-          ;; the newline at the end of the
-          ;; line is not on the line, so use this guard
-          pos)]
-    [else #f]))
+     (define res-pos
+       (and (< pos para-end)
+            ;; the newline at the end of the
+            ;; line is not on the line, so use this guard
+            pos))
+     (if res-pos
+         (values res-pos (send text get-character res-pos))
+         (values #f #f))]
+    [else (values #f #f)]))
 
 (module+ test
   (require rackunit 
            racket/gui/base)
   (define sa string-append)
   
+  (define (first-value-xy->pos a b c)
+    (define-values (d e) (xy->pos a b c))
+    d)
+  
   (let ([t (new text%)])
     (send t insert (sa "abc\n"
                        "d\n"
                        "ghi\n"))
-    (check-equal? (xy->pos t 0 0) 0)
-    (check-equal? (xy->pos t 1 0) 1)
-    (check-equal? (xy->pos t 0 1) 4)
-    (check-equal? (xy->pos t 3 0) #f)
-    (check-equal? (xy->pos t 0 3) #f)
-    (check-equal? (xy->pos t 1 1) #f)
-    (check-equal? (xy->pos t 2 1) #f)
-    (check-equal? (xy->pos t 0 2) 6)
-    (check-equal? (xy->pos t 1 2) 7)
-    (check-equal? (xy->pos t 2 -1) #f)
-    (check-equal? (xy->pos t -1 0) #f)
-    (check-equal? (xy->pos t 2 2) 8)
-    (check-equal? (xy->pos t 2 3) #f))
+    (check-equal? (first-value-xy->pos t 0 0) 0)
+    (check-equal? (first-value-xy->pos t 1 0) 1)
+    (check-equal? (first-value-xy->pos t 0 1) 4)
+    (check-equal? (first-value-xy->pos t 3 0) #f)
+    (check-equal? (first-value-xy->pos t 0 3) #f)
+    (check-equal? (first-value-xy->pos t 1 1) #f)
+    (check-equal? (first-value-xy->pos t 2 1) #f)
+    (check-equal? (first-value-xy->pos t 0 2) 6)
+    (check-equal? (first-value-xy->pos t 1 2) 7)
+    (check-equal? (first-value-xy->pos t 2 -1) #f)
+    (check-equal? (first-value-xy->pos t -1 0) #f)
+    (check-equal? (first-value-xy->pos t 2 2) 8)
+    (check-equal? (first-value-xy->pos t 2 3) #f))
   
   (let ([t (new text%)])
     (send t insert (sa "abc\n"
                        "d\n"
                        "ghi"))
-    (check-equal? (xy->pos t 2 2) 8)
-    (check-equal? (xy->pos t 2 3) #f)))
+    (check-equal? (first-value-xy->pos t 2 2) 8)
+    (check-equal? (first-value-xy->pos t 2 3) #f))
+  
+  (let ([t (new text%)])
+    (send t insert (string-append "+-+\n"
+                                  "| |\n"
+                                  "+-+\n"))
+    (do-unicode-ascii-art-boxes t 0)
+    (check-equal? (send t get-text)
+                  (string-append
+                   "╔═╗\n"
+                   "║ ║\n"
+                   "╚═╝\n")))
+  
+  (let ([t (new text%)])
+    (send t insert (string-append "+=+\n"
+                                  "| |\n"
+                                  "+=+\n"))
+    (do-unicode-ascii-art-boxes t 0)
+    (check-equal? (send t get-text)
+                  (string-append
+                   "╔═╗\n"
+                   "║ ║\n"
+                   "╚═╝\n")))
+  
+  (let ([t (new text%)])
+    (send t insert (string-append "+-+-+\n"
+                                  "| | |\n"
+                                  "+-+-+\n"
+                                  "| | |\n"
+                                  "+-+-+\n"))
+    (do-unicode-ascii-art-boxes t 0)
+    (check-equal? (send t get-text)
+                  (string-append
+                   "╔═╦═╗\n"
+                   "║ ║ ║\n"
+                   "╠═╬═╣\n"
+                   "║ ║ ║\n"
+                   "╚═╩═╝\n")))
+  
+  (let ([t (new text%)])
+    (send t insert (string-append
+                    "╔═══╗\n"
+                    "║ - ║\n"
+                    "╚═══╝\n"))
+    
+    (do-unicode-ascii-art-boxes t 0)
+    (check-equal? (send t get-text)
+                  (string-append
+                   "╔═══╗\n"
+                   "║ - ║\n"
+                   "╚═══╝\n")))
+                   
+  )
