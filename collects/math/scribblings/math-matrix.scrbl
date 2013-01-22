@@ -45,12 +45,13 @@ Like all of @racketmodname[math], @racketmodname[math/matrix] is a work in progr
 Most of the basic algorithms are implemented, but some are still in planning.
 Possibly the most useful unimplemented algorithms are
 @itemlist[@item{LUP decomposition (currently, LU decomposition is implemented, in @racket[matrix-lu])}
-          @item{@racket[matrix-solve] for upper-triangular matrices}
+          @item{@racket[matrix-solve] for triangular matrices}
           @item{Singular value decomposition (SVD)}
           @item{Eigendecomposition}
           @item{Decomposition-based solvers}
-          @item{Pseudoinverse, least-squares fitting}]
-All of these are planned for the next Racket release.
+          @item{Pseudoinverse and least-squares solving}]
+All of these are planned for the next Racket release, as well as fast flonum-specific matrix
+operations and LAPACK integration.
 
 @local-table-of-contents[]
 
@@ -66,8 +67,7 @@ From the point of view of the functions in @racketmodname[math/matrix], a @defte
 
 Technically, a matrix's entries may be any type, and some fully polymorphic matrix functions such as
 @racket[matrix-row] and @racket[matrix-map] operate on any kind of matrix.
-Other functions, such as @racket[matrix+], require their input matrices to contain either
-@racket[Real] or @racket[Number] values.
+Other functions, such as @racket[matrix+], require their matrix arguments to contain numeric values.
 
 @subsection[#:tag "matrix:function-types"]{Function Types}
 
@@ -77,17 +77,22 @@ that a return value is a matrix.
 
 Most functions that implement matrix algorithms are documented as accepting @racket[(Matrix Number)]
 values. This includes @racket[(Matrix Real)], which is a subtype. Most of these functions have a more
-precise type than is documented. For example, @racket[matrix-conjugate] actually has the type
-@racketblock[(case-> ((Matrix Real)   -> (Matrix Real))
-                     ((Matrix Number) -> (Matrix Number)))]
-even though it is documented as having the less precise type
-@racket[((Matrix Number) -> (Matrix Number))].
+precise type than is documented. For example, @racket[matrix-conjugate] has the type
+@racketblock[(case-> ((Matrix Flonum)        -> (Matrix Flonum))
+                     ((Matrix Real)          -> (Matrix Real))
+                     ((Matrix Float-Complex) -> (Matrix Float-Complex))
+                     ((Matrix Number)        -> (Matrix Number)))]
+but is documented as having the type @racket[((Matrix Number) -> (Matrix Number))].
 
 Precise function types allow Typed Racket to prove more facts about @racketmodname[math/matrix]
-client programs. In particular, it is usually easy for it to prove that matrix expressions on real
+client programs. In particular, it is usually easy for it to prove that operations on real
 matrices return real matrices:
 @interaction[#:eval typed-eval
                     (matrix-conjugate (matrix [[1 2 3] [4 5 6]]))]
+and that operations on inexact matrices return inexact matrices:
+@interaction[#:eval typed-eval
+                    (matrix-conjugate (matrix [[1.0+2.0i 2.0+3.0i 3.0+4.0i]
+                                               [4.0+5.0i 5.0+6.0i 6.0+7.0i]]))]
 
 @subsection[#:tag "matrix:failure"]{Failure Arguments}
 
@@ -102,7 +107,7 @@ For example, the (simplified) type of @racket[matrix-inverse] is
 Thus, if a failure thunk is given, the call site is required to check for return values of type
 @racket[F] explicitly.
 
-The default failure thunk, which raises an error, has type @racket[(-> Nothing)].
+Default failure thunks usually raise an error, and have the type @racket[(-> Nothing)].
 For such failure thunks, @racket[(U F (Matrix Number))] is equivalent to @racket[(Matrix Number)],
 because @racket[Nothing] is part of every type. (In Racket, any expression may raise an error.)
 Thus, in this case, no explicit test for values of type @racket[F] is necessary (though of course they
@@ -110,8 +115,8 @@ may be caught using @racket[with-handlers] or similar).
 
 @subsection[#:tag "matrix:broadcasting"]{Broadcasting}
 
-Pointwise matrix operations do not @tech{broadcast} their arguments when given matrices with
-different sizes:
+Unlike array operations, pointwise matrix operations @bold{do not} @tech{broadcast} their arguments
+when given matrices with different axis lengths:
 @interaction[#:eval typed-eval
                     (matrix+ (identity-matrix 2) (matrix [[10]]))]
 If you need broadcasting, use array operations:
@@ -217,8 +222,12 @@ Like @racket[matrix], but returns a @tech{column matrix}.
                  (col-matrix [])]
 }
 
-@defproc[(identity-matrix [n Integer]) (Matrix (U 0 1))]{
-Returns an @racket[n]×@racket[n] identity matrix; @racket[n] must be positive.
+@defproc[(identity-matrix [n Integer] [one A 1] [zero A 0]) (Matrix A)]{
+Returns an @racket[n]×@racket[n] identity matrix, which has the value @racket[one] on the diagonal
+and @racket[zero] everywhere else. The height/width @racket[n] must be positive.
+@examples[#:eval typed-eval
+                 (identity-matrix 3)
+                 (identity-matrix 4 1.0+0.0i 0.0+0.0i)]
 }
 
 @defproc[(make-matrix [m Integer] [n Integer] [x A]) (Matrix A)]{
@@ -233,22 +242,28 @@ both @racket[m] and @racket[n] must be positive.
 Analogous to @racket[build-array] (and defined in terms of it).
 }
 
-@defproc[(diagonal-matrix [xs (Listof A)]) (Matrix (U A 0))]{
-Returns a matrix with @racket[xs] along the diagonal and @racket[0] everywhere else.
+@defproc[(diagonal-matrix [xs (Listof A)] [zero A 0]) (Matrix A)]{
+Returns a matrix with @racket[xs] along the diagonal and @racket[zero] everywhere else.
 The length of @racket[xs] must be positive.
+@examples[#:eval typed-eval
+                 (diagonal-matrix '(1 2 3 4 5 6))
+                 (diagonal-matrix '(1.0 2.0 3.0 4.0 5.0) 0.0)]
 }
 
 @define[block-diagonal-url]{http://en.wikipedia.org/wiki/Block_matrix#Block_diagonal_matrices}
 
 @margin-note*{@hyperlink[block-diagonal-url]{Wikipedia: Block-diagonal matrices}}
-@defproc[(block-diagonal-matrix [Xs (Listof (Matrix A))]) (Matrix (U A 0))]{
-Returns a matrix with matrices @racket[Xs] along the diagonal and @racket[0] everywhere else.
+@defproc[(block-diagonal-matrix [Xs (Listof (Matrix A))] [zero A 0]) (Matrix A)]{
+Returns a matrix with matrices @racket[Xs] along the diagonal and @racket[zero] everywhere else.
 The length of @racket[Xs] must be positive.
 @examples[#:eval typed-eval
                  (block-diagonal-matrix (list (matrix [[6 7] [8 9]])
                                               (diagonal-matrix '(7 5 7))
                                               (col-matrix [1 2 3])
-                                              (row-matrix [4 5 6])))]
+                                              (row-matrix [4 5 6])))
+                 (block-diagonal-matrix (list (make-matrix 2 2 2.0+3.0i)
+                                              (make-matrix 2 2 5.0+7.0i))
+                                        0.0+0.0i)]
 }
 
 @define[vandermonde-url]{http://en.wikipedia.org/wiki/Vandermonde_matrix}
@@ -257,7 +272,8 @@ The length of @racket[Xs] must be positive.
 @defproc[(vandermonde-matrix [xs (Listof Number)] [n Integer]) (Matrix Number)]{
 Returns an @racket[m]×@racket[n] Vandermonde matrix, where @racket[m = (length xs)].
 @examples[#:eval typed-eval
-                 (vandermonde-matrix '(1 2 3 4) 5)]
+                 (vandermonde-matrix '(1 2 3 4) 5)
+                 (vandermonde-matrix '(5.2 3.4 2.0) 3)]
 Using a Vandermonde matrix to find a Lagrange polynomial (the polynomial of least degree that passes
 through a given set of points):
 @interaction[#:eval untyped-eval
@@ -384,7 +400,8 @@ Computes @racket[(matrix* M ...)] with @racket[n] arguments, but more efficientl
 @examples[#:eval untyped-eval
                  ; The 100th (and 101th) Fibonacci number:
                  (matrix* (matrix-expt (matrix [[1 1] [1 0]]) 100)
-                          (col-matrix [0 1]))]
+                          (col-matrix [0 1]))
+                 (->col-matrix (list (fibonacci 100) (fibonacci 99)))]
 }
 
 @defproc[(matrix-scale [M (Matrix Number)] [z Number]) (Matrix Number)]{
@@ -459,18 +476,19 @@ Returns array of the entries on the diagonal of @racket[M].
                   (matrix ([1 2 3] [4 5 6] [7 8 9])))]
 }
 
-@deftogether[(@defproc[(matrix-upper-triangle [M (Matrix A)]) (Matrix (U A 0))]
-              @defproc[(matrix-lower-triangle [M (Matrix A)]) (Matrix (U A 0))])]{
+@deftogether[(@defproc[(matrix-upper-triangle [M (Matrix A)] [zero A 0]) (Matrix A)]
+              @defproc[(matrix-lower-triangle [M (Matrix A)] [zero A 0]) (Matrix A)])]{
 The function @racket[matrix-upper-triangle] returns an upper
-triangular matrix (entries below the diagonal are zero) with
+triangular matrix (entries below the diagonal have the value @racket[zero]) with
 entries from the given matrix. Likewise the function 
 @racket[matrix-lower-triangle] returns a lower triangular
 matrix.
-@examples[#:eval untyped-eval
+@examples[#:eval typed-eval
                  (define M (array+ (array 1) (axis-index-array #(5 7) 1)))
                  M
                  (matrix-upper-triangle M)
-                 (matrix-lower-triangle M)]
+                 (matrix-lower-triangle M)
+                 (matrix-lower-triangle (array->flarray M) 0.0)]
 }
 
 @deftogether[(@defproc[(matrix-rows [M (Matrix A)]) (Listof (Matrix A))]
@@ -1010,7 +1028,7 @@ The norm used by @racket[matrix-relative-error] and @racket[matrix-absolute-erro
 The default value is @racket[matrix-op-inf-norm].
 
 Besides being a true norm, @racket[norm] should also be @deftech{submultiplicative}:
-@racketblock[(norm (matrix* M0 M1)) <= (* (norm A) (norm B))]
+@racketblock[(norm (matrix* M0 M1)) <= (* (norm M0) (norm M1))]
 This additional triangle-like inequality makes it possible to prove error bounds for formulas that
 involve matrix multiplication.
 

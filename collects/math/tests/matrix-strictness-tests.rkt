@@ -131,7 +131,7 @@
   
   (for*: ([M  (list nonstrict-2x2-arr strict-2x2-arr)])
     (check-false (array-strict? (matrix-scale M -1)))
-    (check-true (array-strict? (matrix-expt M 0)))
+    (check-false (array-strict? (matrix-expt M 0)))
     (check-false (array-strict? (matrix-expt (array-lazy M) 1)))
     (check-false (array-strict? (matrix-expt M 2)))
     (check-false (array-strict? (matrix-expt M 3)))

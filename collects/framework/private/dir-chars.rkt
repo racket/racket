@@ -26,19 +26,19 @@
     #\╩ #\╦ #\╣
     #\╝ #\╗ 
     #\═ 
-    #\+ #\-))
+    #\+ #\- #\=))
 
 (define rt-chars
   '(#\╬ 
     #\╩ #\╦ #\╠
     #\╔ #\╚
     #\═
-    #\+ #\-))
+    #\+ #\- #\=))
 
 (define adjustable-chars
   (remove-duplicates
    (append up-chars dn-chars lt-chars rt-chars)))
 
 (define double-barred-chars
-  (remove* '(#\+ #\- #\|) 
+  (remove* '(#\+ #\- #\= #\|) 
            adjustable-chars))

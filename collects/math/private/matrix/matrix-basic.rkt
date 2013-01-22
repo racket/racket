@@ -130,29 +130,37 @@
       (define i (unsafe-vector-ref js 0))
       (proc ((inst vector Index) i i))))))
 
-(: matrix-upper-triangle (All (A) ((Matrix A) -> (Matrix (U A 0)))))
-(define (matrix-upper-triangle M)
-  (define-values (m n) (matrix-shape M))
-  (define proc (unsafe-array-proc M))
-  (array-default-strict
-   (unsafe-build-array
-    ((inst vector Index) m n)
-    (λ: ([ij : Indexes])
-      (define i (unsafe-vector-ref ij 0))
-      (define j (unsafe-vector-ref ij 1))
-      (if (i . fx<= . j) (proc ij) 0)))))
+(: matrix-upper-triangle (All (A) (case-> ((Matrix A) -> (Matrix (U A 0)))
+                                          ((Matrix A) A -> (Matrix A)))))
+(define matrix-upper-triangle
+  (case-lambda
+    [(M)  (matrix-upper-triangle M 0)]
+    [(M zero)
+     (define-values (m n) (matrix-shape M))
+     (define proc (unsafe-array-proc M))
+     (array-default-strict
+      (unsafe-build-array
+       ((inst vector Index) m n)
+       (λ: ([ij : Indexes])
+         (define i (unsafe-vector-ref ij 0))
+         (define j (unsafe-vector-ref ij 1))
+         (if (i . fx<= . j) (proc ij) zero))))]))
 
-(: matrix-lower-triangle (All (A) ((Matrix A) -> (Matrix (U A 0)))))
-(define (matrix-lower-triangle M)
-  (define-values (m n) (matrix-shape M))
-  (define proc (unsafe-array-proc M))
-  (array-default-strict
-   (unsafe-build-array
-    ((inst vector Index) m n)
-    (λ: ([ij : Indexes])
-      (define i (unsafe-vector-ref ij 0))
-      (define j (unsafe-vector-ref ij 1))
-      (if (i . fx>= . j) (proc ij) 0)))))
+(: matrix-lower-triangle (All (A) (case-> ((Matrix A) -> (Matrix (U A 0)))
+                                          ((Matrix A) A -> (Matrix A)))))
+(define matrix-lower-triangle
+  (case-lambda
+    [(M)  (matrix-lower-triangle M 0)]
+    [(M zero)
+     (define-values (m n) (matrix-shape M))
+     (define proc (unsafe-array-proc M))
+     (array-default-strict
+      (unsafe-build-array
+       ((inst vector Index) m n)
+       (λ: ([ij : Indexes])
+         (define i (unsafe-vector-ref ij 0))
+         (define j (unsafe-vector-ref ij 1))
+         (if (i . fx>= . j) (proc ij) zero))))]))
 
 ;; ===================================================================================================
 ;; Embiggenment (this is a perfectly cromulent word)
@@ -184,42 +192,63 @@
 ;; ===================================================================================================
 ;; Inner product space (entrywise norm)
 
-(: matrix-1norm ((Matrix Number) -> Nonnegative-Real))
-(define (matrix-1norm a)
-  (parameterize ([array-strictness #f])
-    (array-all-sum (array-magnitude a))))
+(: nonstupid-magnitude (case-> (Flonum -> Nonnegative-Flonum)
+                               (Real -> Nonnegative-Real)
+                               (Float-Complex -> Nonnegative-Flonum)
+                               (Number -> Nonnegative-Real)))
+(define (nonstupid-magnitude x)
+  (if (real? x) (abs x) (magnitude x)))
 
-(: matrix-2norm ((Matrix Number) -> Nonnegative-Real))
-(define (matrix-2norm a)
+(: matrix-1norm (case-> ((Matrix Flonum) -> Nonnegative-Flonum)
+                        ((Matrix Real) -> Nonnegative-Real)
+                        ((Matrix Float-Complex) -> Nonnegative-Flonum)
+                        ((Matrix Number) -> Nonnegative-Real)))
+(define (matrix-1norm M)
   (parameterize ([array-strictness #f])
-    (let ([a  (array-strict (array-magnitude a))])
+    (array-all-sum (inline-array-map nonstupid-magnitude M))))
+
+(: matrix-2norm (case-> ((Matrix Flonum) -> Nonnegative-Flonum)
+                        ((Matrix Real) -> Nonnegative-Real)
+                        ((Matrix Float-Complex) -> Nonnegative-Flonum)
+                        ((Matrix Number) -> Nonnegative-Real)))
+(define (matrix-2norm M)
+  (parameterize ([array-strictness #f])
+    (let ([M  (array-strict (inline-array-map nonstupid-magnitude M))])
       ;; Compute this divided by the maximum to avoid underflow and overflow
-      (define mx (array-all-max a))
+      (define mx (array-all-max M))
       (cond [(and (rational? mx) (positive? mx))
-             (* mx (sqrt (array-all-sum
-                          (inline-array-map (λ: ([x : Nonnegative-Real]) (sqr (/ x mx))) a))))]
+             (* mx (sqrt (array-all-sum (inline-array-map (λ (x) (sqr (/ x mx))) M))))]
             [else  mx]))))
 
-(: matrix-inf-norm ((Matrix Number) -> Nonnegative-Real))
-(define (matrix-inf-norm a)
+(: matrix-inf-norm (case-> ((Matrix Flonum) -> Nonnegative-Flonum)
+                           ((Matrix Real) -> Nonnegative-Real)
+                           ((Matrix Float-Complex) -> Nonnegative-Flonum)
+                           ((Matrix Number) -> Nonnegative-Real)))
+(define (matrix-inf-norm M)
   (parameterize ([array-strictness #f])
-    (array-all-max (array-magnitude a))))
+    (array-all-max (inline-array-map nonstupid-magnitude M))))
 
-(: matrix-p-norm ((Matrix Number) Positive-Real -> Nonnegative-Real))
-(define (matrix-p-norm a p)
+(: matrix-p-norm (case-> ((Matrix Flonum) Positive-Real -> Nonnegative-Flonum)
+                         ((Matrix Real) Positive-Real -> Nonnegative-Real)
+                         ((Matrix Float-Complex) Positive-Real -> Nonnegative-Flonum)
+                         ((Matrix Number) Positive-Real -> Nonnegative-Real)))
+(define (matrix-p-norm M p)
   (parameterize ([array-strictness #f])
-    (let ([a  (array-strict (array-magnitude a))])
+    (let ([M  (array-strict (inline-array-map nonstupid-magnitude M))])
       ;; Compute this divided by the maximum to avoid underflow and overflow
-      (define mx (array-all-max a))
+      (define mx (array-all-max M))
       (cond [(and (rational? mx) (positive? mx))
-             (assert
-              (* mx (expt (array-all-sum
-                           (inline-array-map (λ: ([x : Nonnegative-Real]) (expt (/ x mx) p)) a))
-                          (/ p)))
-              (make-predicate Nonnegative-Real))]
+             (* mx (expt (array-all-sum (inline-array-map (λ (x) (expt (abs (/ x mx)) p)) M))
+                         (/ p)))]
             [else  mx]))))
 
-(: matrix-norm (case-> ((Matrix Number) -> Nonnegative-Real)
+(: matrix-norm (case-> ((Matrix Flonum)      -> Nonnegative-Flonum)
+                       ((Matrix Flonum) Real -> Nonnegative-Flonum)
+                       ((Matrix Real)      -> Nonnegative-Real)
+                       ((Matrix Real) Real -> Nonnegative-Real)
+                       ((Matrix Float-Complex)      -> Nonnegative-Flonum)
+                       ((Matrix Float-Complex) Real -> Nonnegative-Flonum)
+                       ((Matrix Number)      -> Nonnegative-Real)
                        ((Matrix Number) Real -> Nonnegative-Real)))
 ;; Computes the p norm of a matrix
 (define (matrix-norm a [p 2])
@@ -230,8 +259,12 @@
         [(p . > . 1)       (matrix-p-norm a p)]
         [else  (raise-argument-error 'matrix-norm "Real >= 1" 1 a p)]))
 
-(: matrix-dot (case-> ((Matrix Real) -> Nonnegative-Real)
+(: matrix-dot (case-> ((Matrix Flonum) -> Nonnegative-Flonum)
+                      ((Matrix Flonum) (Matrix Flonum) -> Flonum)
+                      ((Matrix Real) -> Nonnegative-Real)
                       ((Matrix Real) (Matrix Real) -> Real)
+                      ((Matrix Float-Complex) -> Nonnegative-Flonum)
+                      ((Matrix Float-Complex) (Matrix Float-Complex) -> Float-Complex)
                       ((Matrix Number) -> Nonnegative-Real)
                       ((Matrix Number) (Matrix Number) -> Number)))
 ;; Computes the Frobenius inner product of a matrix with itself or of two matrices
@@ -256,20 +289,30 @@
          (λ: ([js : Indexes])
            (* (aproc js) (conjugate (bproc js)))))))]))
 
-(: matrix-cos-angle (case-> ((Matrix Real) (Matrix Real) -> Real)
+(: matrix-cos-angle (case-> ((Matrix Flonum) (Matrix Flonum) -> Flonum)
+                            ((Matrix Real) (Matrix Real) -> Real)
+                            ((Matrix Float-Complex) (Matrix Float-Complex) -> Float-Complex)
                             ((Matrix Number) (Matrix Number) -> Number)))
 (define (matrix-cos-angle M N)
   (/ (matrix-dot M N) (* (matrix-2norm M) (matrix-2norm N))))
 
-(: matrix-angle (case-> ((Matrix Real) (Matrix Real) -> Real)
+(: matrix-angle (case-> ((Matrix Flonum) (Matrix Flonum) -> Flonum)
+                        ((Matrix Real) (Matrix Real) -> Real)
+                        ((Matrix Float-Complex) (Matrix Float-Complex) -> Float-Complex)
                         ((Matrix Number) (Matrix Number) -> Number)))
 (define (matrix-angle M N)
   (acos (matrix-cos-angle M N)))
 
 (: matrix-normalize
-   (All (A) (case-> ((Matrix Real)             -> (Matrix Real))
+   (All (A) (case-> ((Matrix Flonum)             -> (Matrix Flonum))
+                    ((Matrix Flonum) Real        -> (Matrix Flonum))
+                    ((Matrix Flonum) Real (-> A) -> (U A (Matrix Flonum)))
+                    ((Matrix Real)             -> (Matrix Real))
                     ((Matrix Real) Real        -> (Matrix Real))
                     ((Matrix Real) Real (-> A) -> (U A (Matrix Real)))
+                    ((Matrix Float-Complex)             -> (Matrix Float-Complex))
+                    ((Matrix Float-Complex) Real        -> (Matrix Float-Complex))
+                    ((Matrix Float-Complex) Real (-> A) -> (U A (Matrix Float-Complex)))
                     ((Matrix Number)             -> (Matrix Number))
                     ((Matrix Number) Real        -> (Matrix Number))
                     ((Matrix Number) Real (-> A) -> (U A (Matrix Number))))))
@@ -291,19 +334,25 @@
 (define (matrix-transpose a)
   (array-axis-swap (ensure-matrix 'matrix-transpose a) 0 1))
 
-(: matrix-conjugate (case-> ((Matrix Real) -> (Matrix Real))
+(: matrix-conjugate (case-> ((Matrix Flonum) -> (Matrix Flonum))
+                            ((Matrix Real) -> (Matrix Real))
+                            ((Matrix Float-Complex) -> (Matrix Float-Complex))
                             ((Matrix Number) -> (Matrix Number))))
 (define (matrix-conjugate a)
   (array-conjugate (ensure-matrix 'matrix-conjugate a)))
 
-(: matrix-hermitian (case-> ((Matrix Real) -> (Matrix Real))
+(: matrix-hermitian (case-> ((Matrix Flonum) -> (Matrix Flonum))
+                            ((Matrix Real) -> (Matrix Real))
+                            ((Matrix Float-Complex) -> (Matrix Float-Complex))
                             ((Matrix Number) -> (Matrix Number))))
 (define (matrix-hermitian a)
   (array-default-strict
    (parameterize ([array-strictness #f])
      (array-axis-swap (array-conjugate (ensure-matrix 'matrix-hermitian a)) 0 1))))
 
-(: matrix-trace (case-> ((Matrix Real) -> Real)
+(: matrix-trace (case-> ((Matrix Flonum) -> Flonum)
+                        ((Matrix Real) -> Real)
+                        ((Matrix Float-Complex) -> Float-Complex)
                         ((Matrix Number) -> Number)))
 (define (matrix-trace a)
   (cond [(square-matrix? a)
@@ -349,15 +398,23 @@
                                     [else  (fail)])]))]
            [else  (fail)])]))
 
-(: make-matrix-normalize (Real -> (case-> ((Matrix Real) -> (U #f (Matrix Real)))
+(: make-matrix-normalize (Real -> (case-> ((Matrix Flonum) -> (U #f (Matrix Flonum)))
+                                          ((Matrix Real) -> (U #f (Matrix Real)))
+                                          ((Matrix Float-Complex) -> (U #f (Matrix Float-Complex)))
                                           ((Matrix Number) -> (U #f (Matrix Number))))))
 (define ((make-matrix-normalize p) M)
   (matrix-normalize M p (λ () #f)))
 
 (: matrix-normalize-rows
-   (All (A) (case-> ((Matrix Real)             -> (Matrix Real))
+   (All (A) (case-> ((Matrix Flonum)             -> (Matrix Flonum))
+                    ((Matrix Flonum) Real        -> (Matrix Flonum))
+                    ((Matrix Flonum) Real (-> A) -> (U A (Matrix Flonum)))
+                    ((Matrix Real)             -> (Matrix Real))
                     ((Matrix Real) Real        -> (Matrix Real))
                     ((Matrix Real) Real (-> A) -> (U A (Matrix Real)))
+                    ((Matrix Float-Complex)             -> (Matrix Float-Complex))
+                    ((Matrix Float-Complex) Real        -> (Matrix Float-Complex))
+                    ((Matrix Float-Complex) Real (-> A) -> (U A (Matrix Float-Complex)))
                     ((Matrix Number)             -> (Matrix Number))
                     ((Matrix Number) Real        -> (Matrix Number))
                     ((Matrix Number) Real (-> A) -> (U A (Matrix Number))))))
@@ -371,9 +428,15 @@
      (matrix-map-rows (make-matrix-normalize p) M fail)]))
 
 (: matrix-normalize-cols
-   (All (A) (case-> ((Matrix Real)             -> (Matrix Real))
+   (All (A) (case-> ((Matrix Flonum)             -> (Matrix Flonum))
+                    ((Matrix Flonum) Real        -> (Matrix Flonum))
+                    ((Matrix Flonum) Real (-> A) -> (U A (Matrix Flonum)))
+                    ((Matrix Real)             -> (Matrix Real))
                     ((Matrix Real) Real        -> (Matrix Real))
                     ((Matrix Real) Real (-> A) -> (U A (Matrix Real)))
+                    ((Matrix Float-Complex)             -> (Matrix Float-Complex))
+                    ((Matrix Float-Complex) Real        -> (Matrix Float-Complex))
+                    ((Matrix Float-Complex) Real (-> A) -> (U A (Matrix Float-Complex)))
                     ((Matrix Number)             -> (Matrix Number))
                     ((Matrix Number) Real        -> (Matrix Number))
                     ((Matrix Number) Real (-> A) -> (U A (Matrix Number))))))
