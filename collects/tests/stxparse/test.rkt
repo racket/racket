@@ -79,6 +79,14 @@
              [+ (void)]
              [_ (error 'wrong)]))
 
+(test-case "datum literals"
+  (syntax-parse #'one #:datum-literals (one)
+    [one (void)]))
+(test-case "datum literals (not id=?)"
+  (let ([one 1])
+    (syntax-parse (let ([one 2]) #'one) #:datum-literals (one)
+      [one (void)])))
+
 ;; compound patterns
 (tok (a b c) (x y z)
      (and (bound (x 0) (y 0) (z 0)) (s= x 'a) (s= y 'b))

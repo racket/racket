@@ -29,6 +29,7 @@ structures can share syntax class definitions.
                  (code:line #:commit)
                  (code:line #:no-delimit-cut)
                  (code:line #:literals (literal-entry ...))
+                 (code:line #:datum-literals (datum-literal-entry ...))
                  (code:line #:literal-sets (literal-set ...))
                  (code:line #:conventions (convention-id ...))
                  (code:line #:local-conventions (convention-rule ...))
@@ -107,7 +108,8 @@ It is an error to use both @racket[#:commit] and
 @racket[#:no-delimit-cut].
 }
 
-@specsubform[(code:line #:literals (literal-entry))]
+@specsubform[(code:line #:literals (literal-entry ...))]
+@specsubform[(code:line #:datum-literals (datum-literal-entry ...))]
 @specsubform[(code:line #:literal-sets (literal-set ...))]
 @specsubform[(code:line #:conventions (convention-id ...))]{
 

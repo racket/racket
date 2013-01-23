@@ -97,6 +97,18 @@
     (go #'begin #f)
     (void)))
 
+;; Litsets with datum-lits
+
+(test-case "litset, datum-lits"
+  (let ([one 1])
+    (define-literal-set lits-d #:datum-literals (one two) ())
+    (syntax-parse #'one #:literal-sets (lits-d)
+                  [one (void)])
+    (let ([one 2])
+      (syntax-parse #'one #:literal-sets (lits-d) [one (void)]))))
+
+;; literal-set->predicate
+
 (require (for-label '#%kernel))
 
 (test-case "litset->pred"

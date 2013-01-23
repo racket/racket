@@ -72,6 +72,7 @@ DeclEnv =
 
 DeclEntry =
   (den:lit id id ct-phase ct-phase)
+  (den:datum-lit id symbol)
   (den:class id id Arguments)
   (den:magic-class id id Arguments stx)
   (den:parser id (listof SAttr) bool bool bool)
@@ -82,6 +83,7 @@ Arguments is defined in rep-patterns.rkt
 A DeclEnv is built up in stages:
   1) syntax-parse (or define-syntax-class) directives
      #:literals -> den:lit
+     #:datum-literals -> den:datum-lit
      #:local-conventions -> den:class
      #:conventions -> den:delayed
      #:literal-sets -> den:lit
@@ -101,20 +103,22 @@ expressions are duplicated, and may be evaluated in different scopes.
 
 (define-struct declenv (table conventions))
 
-(define-struct den:lit (internal external input-phase lit-phase))
 (define-struct den:class (name class argu))
 (define-struct den:magic-class (name class argu role))
 (define-struct den:parser (parser attrs splicing? commit? delimit-cut?))
-;; and from residual.rkt: (define-struct den:delayed (parser class))
+;; and from residual.rkt:
+;;  (define-struct den:lit (internal external input-phase lit-phase))
+;;  (define-struct den:datum-lit (internal external))
+;;  (define-struct den:delayed (parser class))
 
 (define (new-declenv literals #:conventions [conventions null])
-  (make-declenv
-   (for/fold ([table (make-immutable-bound-id-table)])
-       ([literal (in-list literals)])
-     (bound-id-table-set table (car literal)
-                         (make den:lit (first literal) (second literal)
-                               (third literal) (fourth literal))))
-   conventions))
+  (let* ([table (make-immutable-bound-id-table)]
+         [table (for/fold ([table table]) ([literal (in-list literals)])
+                  (let ([id (cond [(den:lit? literal) (den:lit-internal literal)]
+                                  [(den:datum-lit? literal) (den:datum-lit-internal literal)])])
+                    ;;(eprintf ">> added ~e\n" id)
+                    (bound-id-table-set table id literal)))])
+    (make-declenv table conventions)))
 
 (define (declenv-lookup env id #:use-conventions? [use-conventions? #t])
   (or (bound-id-table-ref (declenv-table env) id #f)
@@ -128,6 +132,8 @@ expressions are duplicated, and may be evaluated in different scopes.
   (let ([val (declenv-lookup env id #:use-conventions? #f)])
     (match val
       [(den:lit _i _e _ip _lp)
+       (wrong-syntax id "identifier previously declared as literal")]
+      [(den:datum-lit _i _e)
        (wrong-syntax id "identifier previously declared as literal")]
       [(den:magic-class name _c _a _r)
        (if (and blame-declare? stxclass-name)
@@ -191,7 +197,7 @@ expressions are duplicated, and may be evaluated in different scopes.
 (define DeclEnv/c declenv?)
 
 (define DeclEntry/c 
-  (or/c den:lit? den:class? den:magic-class? den:parser? den:delayed?))
+  (or/c den:lit? den:datum-lit? den:class? den:magic-class? den:parser? den:delayed?))
 
 (define SideClause/c
   (or/c clause:fail? clause:with? clause:attr? clause:do?))
@@ -200,11 +206,12 @@ expressions are duplicated, and may be evaluated in different scopes.
 ;;   usually = #'(syntax-local-phase-level)
 (define ct-phase/c syntax?)
 
-(provide (struct-out den:lit)
-         (struct-out den:class)
+(provide (struct-out den:class)
          (struct-out den:magic-class)
          (struct-out den:parser)
          ;; from residual.rkt:
+         (struct-out den:lit)
+         (struct-out den:datum-lit)
          (struct-out den:delayed))
 
 (provide/contract
@@ -218,7 +225,7 @@ expressions are duplicated, and may be evaluated in different scopes.
  [stxclass-colon-notation? (parameter/c boolean?)]
 
  [new-declenv
-  (->* [(listof (list/c identifier? identifier? ct-phase/c ct-phase/c))]
+  (->* [(listof (or/c den:lit? den:datum-lit?))]
        [#:conventions list?]
        DeclEnv/c)]
  [declenv-lookup
