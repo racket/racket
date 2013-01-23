@@ -418,6 +418,10 @@
                               (color->string (background-color-property-color v)))
                       (loop (cdr l) tt?)
                       (printf "}")]
+                     [(command-extras? (car l))
+                      (loop (cdr l) tt?)
+                      (for ([l (in-list (command-extras-arguments (car l)))])
+                        (printf "{~a}" l))]
                      [else (loop (cdr l) tt?)]))))))
         (when part-label?
           (printf "}"))

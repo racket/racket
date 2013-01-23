@@ -1,5 +1,6 @@
 Version 5.3.2.2
 Added file-truncate
+scribble/latex-properties: added command-extras
 
 Version 5.3.2.1
 srfi/19: made compatible with date* structs, produces
