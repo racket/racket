@@ -476,10 +476,27 @@ inspect the entire tree.
 }
 
 
-@defproc[(parameter/c [c contract?]) contract?]{
+@defproc[(parameter/c [in contract?] [out contract? in])
+         contract?]{
 
 Produces a contract on parameters whose values must match
-@racket[contract].}
+@racket[_out]. When the value in the contracted parameter
+is set, it must match @racket[_in].
+
+@examples[#:eval (contract-eval)
+(define/contract current-snack
+  (parameter/c string?)
+  (make-parameter "potato-chip"))
+(define baked/c
+  (flat-named-contract 'baked/c (λ (s) (regexp-match #rx"baked" s))))
+(define/contract current-dinner
+  (parameter/c string? baked/c)
+  (make-parameter "turkey" (λ (s) (string-append "roasted " s))))
+
+(current-snack 'not-a-snack)
+(parameterize ([current-dinner "tofurkey"])
+  (current-dinner))
+]}
 
 
 @defproc[(procedure-arity-includes/c [n exact-nonnegative-integer?]) flat-contract?]{

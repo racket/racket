@@ -3869,11 +3869,42 @@
      #f))
 
   (test/pos-blame
-   'parameter/c1
+   'parameter/c2
    '((contract (parameter/c integer?)
                (make-parameter 'not-an-int)
                'pos 'neg)))
 
+  (test/pos-blame
+   'parameter/c3
+   '((contract (parameter/c integer? string?)
+               (make-parameter 'not-an-int number->string)
+               'pos 'neg)))
+
+  (test/neg-blame
+   'parameter/c4
+   '((contract (parameter/c integer? string?)
+               (make-parameter 5 number->string)
+               'pos 'neg)
+     'not-an-int))
+
+  (test/spec-passed
+   'parameter/c5
+   '((contract (parameter/c integer? string?)
+               (make-parameter "foo" number->string)
+               'pos 'neg)))
+
+  (test/spec-passed
+   'parameter/c6
+   '((contract (parameter/c integer? string?)
+               (make-parameter "foo" number->string)
+               'pos 'neg)
+     5))
+
+  (test/pos-blame
+   'parameter/c7
+   '((contract (parameter/c integer? string?)
+               (make-parameter 5 values)
+               'pos 'neg)))
 
 ;
 ;
@@ -12185,7 +12216,8 @@ so that propagation occurs.
   (test-name '(list/c (-> boolean? boolean?) integer?)
              (list/c (-> boolean? boolean?) integer?))
 
-  (test-name '(parameter/c integer?) (parameter/c integer?))
+  (test-name '(parameter/c integer? integer?) (parameter/c integer?))
+  (test-name '(parameter/c integer? string?) (parameter/c integer? string?))
 
   (test-name '(hash/c symbol? boolean?) (hash/c symbol? boolean?))
   (test-name '(hash/c symbol? boolean? #:immutable #t) (hash/c symbol? boolean? #:immutable #t))
@@ -12362,6 +12394,19 @@ so that propagation occurs.
   (ctest #t contract-stronger? (parameter/c (between/c 0 5)) (parameter/c (between/c 0 5)))
   (ctest #f contract-stronger? (parameter/c (between/c 0 5)) (parameter/c (between/c 1 4)))
   (ctest #f contract-stronger? (parameter/c (between/c 1 4)) (parameter/c (between/c 0 5)))
+
+  (ctest #f contract-stronger? (parameter/c (between/c 1 4) (between/c 0 5))
+                               (parameter/c (between/c 0 5)))
+  (ctest #t contract-stronger? (parameter/c (between/c 0 5) (between/c 1 4))
+                               (parameter/c (between/c 1 4)))
+  (ctest #t contract-stronger? (parameter/c (between/c 0 5))
+                               (parameter/c (between/c 1 4) (between/c 0 5)))
+  (ctest #f contract-stronger? (parameter/c (between/c 1 4))
+                               (parameter/c (between/c 0 5) (between/c 0 5)))
+  (ctest #t contract-stronger? (parameter/c (between/c 0 5) (between/c 1 4))
+                               (parameter/c (between/c 1 4) (between/c 0 5)))
+  (ctest #f contract-stronger? (parameter/c (between/c 1 4) (between/c 0 5))
+                               (parameter/c (between/c 0 5) (between/c 1 4)))
 
   (ctest #t contract-stronger? (symbols 'x 'y) (symbols 'x 'y 'z))
   (ctest #f contract-stronger? (symbols 'x 'y 'z) (symbols 'x 'y))
