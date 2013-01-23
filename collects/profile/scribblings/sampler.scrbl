@@ -10,7 +10,8 @@
 @defproc[(create-sampler [to-track (or/c thread? custodian?
                                          (listof (or/c thread? custodian?)))]
                          [delay (>=/c 0.0)]
-                         [super-cust custodian? (current-custodian)])
+                         [super-cust custodian? (current-custodian)]
+                         [custom-keys (listof any/c) '()])
          ((symbol?) (any/c) . ->* . any/c)]{
 
 Creates a stack-snapshot collector thread, which tracks the given
@@ -20,6 +21,10 @@ thread), a custodian (track all threads managed by the custodian), or
 a list of threads and/or custodians.  If a custodian is given, it must
 be subordinate to @racket[super-cust], which defaults to the current
 custodian.
+
+When @racket[custom-keys] are provided, the sampler takes snapshots of the
+continuation marks corresponding to the given keys, in addition to taking
+snapshots of the stack.
 
 The resulting value is a controller function, which consumes a message
 consisting of a symbol and an optional argument, and can affect the
@@ -45,11 +50,11 @@ sampler.  The following messages are currently supported:
   distributed, the results will still be correct: the cpu time between
   samples is taken into account when the collected data is analyzed.}
 
-@item{Finally, a @racket['get-snapshots] message will make the
-  controller return the currently collected data.  Note that this can
-  be called multiple times, each call will return the data that is
-  collected up to that point in time.  In addition, it can be (and
-  usually is) called after the sampler was stopped.
+@item{A @racket['get-snapshots] message will make the controller return
+  the currently collected data.  Note that this can be called multiple
+  times, each call will return the data that is collected up to that
+  point in time.  In addition, it can be (and usually is) called after
+  the sampler was stopped.
 
   The value that is returned should be considered as an undocumented
   internal detail of the profiler, intended to be sent to
@@ -58,5 +63,11 @@ sampler.  The following messages are currently supported:
   several sampler results, making it possible to combine a profile
   analysis from several individual runs, possibly from different
   machines.}
+
+@item{Finally, a @racket['get-custom-snapshots] message will make the
+  controller return the currently collected snapshots corresponding to
+  @racket[custom-keys]. This returns a list of samples, where each sample
+  is a list of vectors of marks in the same format as the output of
+  @racket[continuation-mark-set->list*].}
 
 ]}

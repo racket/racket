@@ -12,6 +12,8 @@
 ;;   custodian (track all threads managed by the custodian), or a list of
 ;;   threads and/or custodians.  If a custodian is given, it must be
 ;;   subordinate to the current custodian or to the given super custodian.
+;;   Also optionally takes a list of continuation mark keys, which will be
+;;   monitored in addition to the stack trace continuation mark key.
 ;; * The collected values are (<thread-id> <thread-time> . <stack>), where
 ;;   - The <thread-id> is an integer number identifying the thread, starting
 ;;     from 0.  If the collected data has thread ids in a 0..N range
@@ -50,9 +52,16 @@
 ;;   - 'get-snapshots: returns the currently collected list of snapshots.  Note
 ;;     that this can be called multiple times, each will return the data that
 ;;     is collected up to that point in time.
-(define (create-sampler to-track delay [super-cust (current-custodian)])
+;;   - 'get-custom-snapshots: returns the currently collected list of custom
+;;     key snapshots. Returns a list of samples, where each sample is in the
+;;     same format as the output of continuation-mark-set->list*.
+(define (create-sampler to-track delay
+                        [super-cust  (current-custodian)]
+                        [custom-keys #f])
   ;; the collected data
   (define snapshots '())
+  ;; listof (cons continuation-mark-key value/#f)
+  (define custom-snapshots '())
   ;; intern the entries (which are (cons id/#f srcloc/#f))
   (define entry-table (make-hash))
   (define (intern-entry entry)
@@ -66,6 +75,9 @@
       en
       (begin (hash-set! entry-table key entry) entry)))
   (define (validate to-track who)
+    (unless (or (not custom-keys) (list? custom-keys))
+      (raise-type-error
+       who "list of continuation mark keys" custom-keys))
     (let loop ([t to-track])
       (cond
         [(thread? t)]
@@ -92,6 +104,15 @@
       (let loop ([t to-track])
         (cond [(thread? t)
                (unless (eq? t sampler-thread)
+                 (when custom-keys
+                   (set! custom-snapshots
+                         (cons (let ([cms (continuation-mark-set->list*
+                                           (continuation-marks t)
+                                           custom-keys)])
+                                 (if (null? cms)
+                                     #f
+                                     (car cms))) ; value
+                               custom-snapshots)))
                  (set! snapshots
                        (cons (list* (thread-id t)
                                     (current-process-milliseconds t)
@@ -132,5 +153,6 @@
                       (w/sema (set! to-track arg))]
       [(set-delay!)   (w/sema (set! delay arg))]
       [(get-snapshots) (add-time) (cons cpu-time snapshots)]
+      [(get-custom-snapshots) custom-snapshots]
       [else (error 'sampler-controller "unknown message: ~e" msg)]))
   sampler-controller)
