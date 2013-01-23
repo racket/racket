@@ -486,7 +486,7 @@ the right choice when using @racket[lexer] in other situations.
 
 @; ----------------------------------------------------------------------
 
-@section{Parsers}
+@section{LALR(1) Parsers}
 
 @section-index["yacc"]
 
@@ -685,14 +685,13 @@ the right choice when using @racket[lexer] in other situations.
                                             
                                             
                                             
-@section{Ambiguous parsing}
+@section{Context-Free Parsers}
 
 @section-index["cfg-parser"]
 
-@defmodule[parser-tools/cfg-parser]
-
-@racketmodname[parser-tools/cfg-parser] provides another parser
-generator as an alternative to @racketmodname[parser-tools/yacc].
+@defmodule[parser-tools/cfg-parser]{The @racketmodname[parser-tools/cfg-parser]
+library provides a parser generator that is an alternative to that of 
+@racketmodname[parser-tools/yacc].}
 
 @defform/subs[#:literals (grammar tokens start end precs src-pos
                           suppress debug yacc-output prec)
@@ -706,10 +705,11 @@ generator as an alternative to @racketmodname[parser-tools/yacc].
                        (end token-id ...)
                        (@#,racketidfont{error} expr)
                        (src-pos)])]{
+
     Creates a parser similar to that of @racket[parser].  Unlike @racket[parser],
-    @racket[cfg-parser] can consume ambiguous grammars.
-    Its interface is a subset of @racketmodname[parser-tools/yacc].
-    The major differences in the interface are:
+    @racket[cfg-parser], can consume arbitrary and potentially ambiguous context-free
+    grammars. Its interface is a subset of @racketmodname[parser-tools/yacc], with
+    the following differences:
                                         
     @itemize[
 
@@ -718,12 +718,11 @@ generator as an alternative to @racketmodname[parser-tools/yacc].
       Unlike @racket[parser], @racket[cfg-parser] only allows for
       a single non-terminal-id.}
                        
-      @item{@racket[cfg-parser] does not support the @racket[precs], 
+      @item{The @racket[cfg-parser] form does not support the @racket[precs], 
              @racket[suppress], @racket[debug], or @racket[yacc-output]
              options of @racket[parser].}
    ]
-                                             }
-                                            
+}                                            
                                             
 @; ----------------------------------------------------------------------
 
