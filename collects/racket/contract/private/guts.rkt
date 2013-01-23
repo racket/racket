@@ -42,7 +42,9 @@
          eq-contract?
          eq-contract-val
          equal-contract?
-         equal-contract-val)
+         equal-contract-val
+
+         contract-continuation-mark-key)
 
 (define (has-contract? v)
   (or (has-prop:contracted? v)
@@ -346,3 +348,9 @@
 (define (check-flat-contract predicate) (coerce-flat-contract 'flat-contract predicate))
 (define (build-flat-contract name pred [generate (make-generate-ctc-fail)])
   (make-predicate-contract name pred generate))
+
+
+;; Key used by the continuation mark that holds blame information for the current contract.
+;; That information is consumed by the contract profiler.
+(define contract-continuation-mark-key
+  (make-continuation-mark-key 'contract))

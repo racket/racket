@@ -252,7 +252,10 @@
               (define-values (new-chaperone-args new-impersonate-args)
                 (cond
                   [(immutable? subcontract)
-                   (define projd (proj (sel v)))
+                   (define projd
+                     (with-continuation-mark
+                      contract-continuation-mark-key blame
+                      (proj (sel v))))
                    (values (if (flat-contract? (indep-ctc subcontract))
                                chaperone-args
                                (list* sel
@@ -261,21 +264,36 @@
                            impersonate-args)]
                   [(lazy-immutable? subcontract)
                    (values (list* sel
-                                  (cache-λ (fld v) (proj v))
+                                  (cache-λ (fld v)
+                                           (with-continuation-mark
+                                            contract-continuation-mark-key blame
+                                            (proj v)))
                                   chaperone-args)
                            impersonate-args)]
                   [(mutable? subcontract)
                    (if (impersonator-contract? (indep-ctc subcontract))
                        (values chaperone-args
                                (list* sel
-                                      (λ (fld v) (proj v))
+                                      (λ (fld v)
+                                        (with-continuation-mark
+                                         contract-continuation-mark-key blame
+                                         (proj v)))
                                       (mutable-set subcontract)
-                                      (λ (fld v) (mut-proj v))
+                                      (λ (fld v)
+                                        (with-continuation-mark
+                                         contract-continuation-mark-key blame
+                                         (mut-proj v)))
                                       impersonate-args))
                        (values (list* sel
-                                      (λ (fld v) (proj v))
+                                      (λ (fld v)
+                                        (with-continuation-mark
+                                         contract-continuation-mark-key blame
+                                         (proj v)))
                                       (mutable-set subcontract)
-                                      (λ (fld v) (mut-proj v))
+                                      (λ (fld v)
+                                        (with-continuation-mark
+                                         contract-continuation-mark-key blame
+                                         (mut-proj v)))
                                       chaperone-args)
                                impersonate-args))]
                   [else
@@ -286,44 +304,70 @@
                       (values (if (flat-contract? dep-ctc)
                                   chaperone-args
                                   (list* sel
-                                         (λ (fld v) projd)
+                                         (λ (fld v)
+                                           (with-continuation-mark
+                                            contract-continuation-mark-key blame
+                                            projd))
                                          chaperone-args))
                               impersonate-args)]
                      [(dep-lazy-immutable? subcontract)
                       (values (list* sel
-                                     (cache-λ (fld v) (proj v))
+                                     (cache-λ (fld v)
+                                              (with-continuation-mark
+                                               contract-continuation-mark-key blame
+                                               (proj v)))
                                      chaperone-args)
                               impersonate-args)]
                      [(dep-mutable? subcontract)
                       (define mut-proj (dep-ctc-blame-proj mut-blame))
                       (if (eq? (dep-type subcontract) '#:impersonator)
                           (values (list* sel
-                                         (λ (fld v) (proj v))
+                                         (λ (fld v)
+                                           (with-continuation-mark
+                                            contract-continuation-mark-key blame
+                                            (proj v)))
                                          (dep-mutable-set subcontract)
-                                         (λ (fld v) (mut-proj v))
+                                         (λ (fld v)
+                                           (with-continuation-mark
+                                            contract-continuation-mark-key blame
+                                            (mut-proj v)))
                                          chaperone-args)
                                   impersonate-args)
                           (values chaperone-args
                                   (list* sel
-                                         (λ (fld v) (proj v))
+                                         (λ (fld v)
+                                           (with-continuation-mark
+                                            contract-continuation-mark-key blame
+                                            (proj v)))
                                          (dep-mutable-set subcontract)
-                                         (λ (fld v) (mut-proj v))
+                                         (λ (fld v)
+                                           (with-continuation-mark
+                                            contract-continuation-mark-key blame
+                                            (mut-proj v)))
                                          impersonate-args)))]
                      [(dep-on-state-immutable? subcontract)
                       (proj (sel v))
                       (values (list* sel
-                                     (λ (strct val) (build-dep-on-state-proj (base-struct/dc-subcontracts ctc) subcontract strct
-                                                                             orig-indy-projs orig-indy-blames blame val))
+                                     (λ (strct val)
+                                       (with-continuation-mark
+                                        contract-continuation-mark-key blame
+                                        (build-dep-on-state-proj
+                                         (base-struct/dc-subcontracts ctc) subcontract strct
+                                         orig-indy-projs orig-indy-blames blame val)))
                                      chaperone-args)
                               impersonate-args)]
                      [(dep-on-state-mutable? subcontract)
                       (proj (sel v))
                       (define (get-chap-proc strct val)
-                        (build-dep-on-state-proj (base-struct/dc-subcontracts ctc) subcontract strct
-                                                 orig-indy-projs orig-indy-blames blame val))
+                        (with-continuation-mark
+                         contract-continuation-mark-key blame
+                         (build-dep-on-state-proj (base-struct/dc-subcontracts ctc) subcontract strct
+                                                  orig-indy-projs orig-indy-blames blame val)))
                       (define (set-chap-proc strct val)
-                        (build-dep-on-state-proj (base-struct/dc-subcontracts ctc) subcontract strct
-                                                 orig-mut-indy-projs orig-mut-indy-blames mut-blame val))
+                        (with-continuation-mark
+                         contract-continuation-mark-key blame
+                         (build-dep-on-state-proj (base-struct/dc-subcontracts ctc) subcontract strct
+                                                  orig-mut-indy-projs orig-mut-indy-blames mut-blame val)))
                       (if (eq? (dep-type subcontract) '#:impersonator)
                           (values chaperone-args
                                   (list* sel

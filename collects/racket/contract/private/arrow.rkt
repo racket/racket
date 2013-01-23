@@ -118,15 +118,19 @@ v4 todo:
                         val
                         (make-keyword-procedure
                          (λ (kwds kwd-vals . args)
-                           #,(check-tail-contract
-                              #'(p-app-x ...)
-                              (list #'res-checker)
-                              (λ (s) #`(apply values #,@s kwd-vals args))))
+                           (with-continuation-mark
+                            contract-continuation-mark-key orig-blame
+                            #,(check-tail-contract
+                               #'(p-app-x ...)
+                               (list #'res-checker)
+                               (λ (s) #`(apply values #,@s kwd-vals args)))))
                          (λ args
-                           #,(check-tail-contract
-                              #'(p-app-x ...)
-                              (list #'res-checker)
-                              (λ (s) #`(apply values #,@s args)))))
+                           (with-continuation-mark
+                            contract-continuation-mark-key orig-blame
+                            #,(check-tail-contract
+                               #'(p-app-x ...)
+                               (list #'res-checker)
+                               (λ (s) #`(apply values #,@s args))))))
                         impersonator-prop:contracted ctc
                         impersonator-prop:application-mark (cons contract-key (list p-app-x ...))))))))
              (define ctc
@@ -244,8 +248,11 @@ v4 todo:
                                                  #'(values/drop (rng-ctc rng-x) ...))])
                                 #'(case-lambda
                                     [(rng-x ...)
-                                     post ...
-                                     rng-results]
+                                     (with-continuation-mark
+                                      contract-continuation-mark-key blame
+                                      (let ()
+                                        post ...
+                                        rng-results))]
                                     [args
                                      (bad-number-of-results blame val rng-len args)]))))
                            null)])
@@ -321,9 +328,26 @@ v4 todo:
                                          (outer-stx-gen #'())
                                          (check-tail-contract #'(rng-ctc ...) #'(rng-checker-name ...) outer-stx-gen))))])
                 (with-syntax ([basic-lambda-name (gensym 'basic-lambda)]
-                              [basic-lambda #'(λ basic-params pre ... basic-return)]
+                              [basic-lambda #'(λ basic-params
+                                                ;; Arrow contract domain checking is instrumented
+                                                ;; both here, and in `arity-checking-wrapper'.
+                                                ;; We need to instrument here, because sometimes
+                                                ;; a-c-w doesn't wrap, and just returns us.
+                                                ;; We need to instrument in a-c-w to count arity
+                                                ;; checking time.
+                                                ;; Overhead of double-wrapping has not been
+                                                ;; noticeable in my measurements so far.
+                                                ;;  - stamourv
+                                                (with-continuation-mark
+                                                 contract-continuation-mark-key blame
+                                                 (let ()
+                                                   pre ... basic-return)))]
                               [kwd-lambda-name (gensym 'kwd-lambda)]
-                              [kwd-lambda #`(λ kwd-lam-params pre ... kwd-return)])
+                              [kwd-lambda #`(λ kwd-lam-params
+                                              (with-continuation-mark
+                                               contract-continuation-mark-key blame
+                                               (let ()
+                                                 pre ... kwd-return)))])
                   (with-syntax ([(basic-checker-name) (generate-temporaries '(basic-checker))])
                     (cond
                       [(and (null? req-keywords) (null? opt-keywords))
@@ -391,6 +415,9 @@ v4 todo:
              (raise-blame-error (blame-swap blame) val
                                 '(expected: "no keywords")))
            (λ (kwds kwd-args . args)
+             (with-continuation-mark
+              contract-continuation-mark-key blame
+              (let ()
              (define args-len (length args))
              (unless (valid-number-of-args? args)
                (raise-blame-error (blame-swap blame) val
@@ -409,16 +436,19 @@ v4 todo:
                  (raise-blame-error (blame-swap blame) val
                                     "received unexpected keyword argument ~a"
                                     k)))
-             (keyword-apply kwd-lambda kwds kwd-args args))))
+             (keyword-apply kwd-lambda kwds kwd-args args))))))
      (define basic-checker-name 
        (if (null? req-kwd)
            (λ args
+             (with-continuation-mark
+              contract-continuation-mark-key blame
+              (let ()
              (unless (valid-number-of-args? args)
                (define args-len (length args))
                (raise-blame-error (blame-swap blame) val
                                   '("received ~a argument~a" expected: "~a")
                                   args-len (if (= args-len 1) "" "s") arity-string))
-             (apply basic-lambda args))
+             (apply basic-lambda args))))
            (λ args
              (raise-blame-error (blame-swap blame) val
                                 "expected required keyword ~a"
@@ -1226,7 +1256,9 @@ v4 todo:
            val
            (make-keyword-procedure
             (λ (kwd-args kwd-arg-vals . raw-orig-args)
-              (let* ([orig-args (if (base-->d-mtd? ->d-stct)
+              (with-continuation-mark
+               contract-continuation-mark-key blame
+               (let* ([orig-args (if (base-->d-mtd? ->d-stct)
                                     (cdr raw-orig-args)
                                     raw-orig-args)]
                      [this (and (base-->d-mtd? ->d-stct) (car raw-orig-args))]
@@ -1254,7 +1286,9 @@ v4 todo:
                         [rng-underscore? (box? (base-->d-range ->d-stct))])
                     (if rng
                         (list (λ orig-results
-                                (let* ([range-count (length rng)]
+                                (with-continuation-mark
+                                 contract-continuation-mark-key blame
+                                 (let* ([range-count (length rng)]
                                        [post-args (append orig-results raw-orig-args)]
                                        [post-non-kwd-arg-count (+ non-kwd-ctc-count range-count)]
                                        [dep-post-args (build-dep-ctc-args post-non-kwd-arg-count
@@ -1290,7 +1324,7 @@ v4 todo:
                                                          (car results)
                                                          blame
                                                          #f)
-                                         (loop (cdr results) (cdr result-contracts)))]))))))
+                                         (loop (cdr results) (cdr result-contracts)))])))))))
                         null))
                   
                   ;; contracted keyword arguments
@@ -1332,7 +1366,7 @@ v4 todo:
                            (error 'shouldnt\ happen))]
                       [else (cons (invoke-dep-ctc (car non-kwd-ctcs) dep-pre-args (car args) blame #t)
                                   (loop (cdr args)
-                                        (cdr non-kwd-ctcs)))])))))))
+                                        (cdr non-kwd-ctcs)))]))))))))
            impersonator-prop:contracted ->d-stct)))))
 
 (define (build-values-string desc dep-pre-args)
@@ -1633,11 +1667,13 @@ v4 todo:
                                       (λ (kwds kwd-args . args)
                                         (raise-blame-error blame f "expected no keywords, got keyword ~a" (car kwds)))
                                       (λ args
-                                        (apply #,(let ([case-lam (syntax/loc stx (case-lambda [formals body] ...))])
-                                                   (if name 
-                                                       #`(let ([#,name #,case-lam]) #,name)
-                                                       case-lam))
-                                               args)))]
+                                        (with-continuation-mark
+                                         contract-continuation-mark-key blame
+                                         (apply #,(let ([case-lam (syntax/loc stx (case-lambda [formals body] ...))])
+                                                    (if name
+                                                        #`(let ([#,name #,case-lam]) #,name)
+                                                        case-lam))
+                                                args))))]
                                     [same-rngs (same-range-projections (list (list rng-proj-x ...) ...))])
                                 (if same-rngs
                                     (wrapper
@@ -1676,7 +1712,13 @@ v4 todo:
                                           "the domain of" 
                                           #:swap? #t)))
                                  dom-ctcs+case-nums)
-                            (map (λ (f) (f rng-blame)) rng-ctcs)))
+                            (map (λ (f)
+                                   (define p (f rng-blame))
+                                   (lambda args
+                                     (with-continuation-mark
+                                      contract-continuation-mark-key blame
+                                      (apply p args))))
+                                 rng-ctcs)))
       (define (chk val mtd?) 
         (cond
           [(null? specs)
