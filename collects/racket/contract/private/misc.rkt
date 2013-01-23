@@ -853,11 +853,19 @@
 ;; (parameter/c in/out-ctc)
 ;; (parameter/c in-ctc out-ctc)
 (define/subexpression-pos-prop parameter/c
-  (λ (in-ctc [out-ctc in-ctc])
-    (make-parameter/c (coerce-contract 'parameter/c in-ctc)
-                      (coerce-contract 'parameter-c out-ctc))))
+  (case-lambda
+    [(in-ctc)
+     (define ctc (coerce-contract 'parameter/c in-ctc))
+     (make-parameter/c ctc ctc #f)]
+    [(in-ctc out-ctc)
+     (make-parameter/c (coerce-contract 'parameter/c in-ctc)
+                       (coerce-contract 'parameter-c out-ctc)
+                       #t)]))
 
-(define-struct parameter/c (in out)
+;; in - negative contract
+;; out - positive contract
+;; both-supplied? - for backwards compat printing
+(define-struct parameter/c (in out both-supplied?)
   #:omit-define-syntaxes
   #:property prop:contract
   (build-contract-property
@@ -880,9 +888,11 @@
                (raise-blame-error blame val '(expected "a parameter"))])))))
 
    #:name
-   (λ (ctc) (build-compound-type-name 'parameter/c
-                                      (parameter/c-in ctc)
-                                      (parameter/c-out ctc)))
+   (λ (ctc) (apply build-compound-type-name
+                   `(parameter/c ,(parameter/c-in ctc)
+                                 ,@(if (parameter/c-both-supplied? ctc)
+                                       (list (parameter/c-out ctc))
+                                       (list)))))
    #:first-order
    (λ (ctc)
       (let ([tst (contract-first-order (parameter/c-out ctc))])

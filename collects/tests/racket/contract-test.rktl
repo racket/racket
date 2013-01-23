@@ -12216,7 +12216,7 @@ so that propagation occurs.
   (test-name '(list/c (-> boolean? boolean?) integer?)
              (list/c (-> boolean? boolean?) integer?))
 
-  (test-name '(parameter/c integer? integer?) (parameter/c integer?))
+  (test-name '(parameter/c integer?) (parameter/c integer?))
   (test-name '(parameter/c integer? string?) (parameter/c integer? string?))
 
   (test-name '(hash/c symbol? boolean?) (hash/c symbol? boolean?))
