@@ -377,7 +377,7 @@
   (define accomplice-logger (make-logger))
   (define log-th
     (let ([orig-log (current-logger)]
-          [receiver (make-log-receiver accomplice-logger 'info)])
+          [receiver (make-log-receiver accomplice-logger 'debug)])
       (thread (lambda ()
                 (let loop ()
                   (let ([l (sync receiver)])
