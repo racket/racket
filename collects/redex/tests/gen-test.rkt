@@ -130,6 +130,28 @@
        (void)])))
 
 (let ()
+  
+  (define-language TL
+    (T (N T T)
+       (L number)))
+  
+  (define-relation TL
+    [(tree (N T_1 T_2))
+     (tree T_1)
+     (tree T_2)]
+    [(tree (L number))])
+  
+  (test-equal
+   (not
+    (empty?
+     (filter
+      values
+      (for/list ([_ 100])
+        (generate-term TL #:satisfying (tree T) 2)))))
+   #t)
+  )
+
+(let ()
   (define-language STLC
     (τ int
        (τ → τ))

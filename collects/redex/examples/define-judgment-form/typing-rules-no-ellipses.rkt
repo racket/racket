@@ -24,22 +24,18 @@
   (i integer)
   (x variable-not-otherwise-mentioned))
 
-;; Order is important!
-;; When generating random terms, the clauses
-;; are tried in order when the depth bound is reached.
-;; (In general, the most recursive clauses should go last.)
 (define-judgment-form STLC
   #:mode (typeof I I O)
   #:contract (typeof Γ e τ)
-  [(typeof Γ i int)]
-  [(typeof Γ add1 (int → int))]
-  [(typeof Γ x τ)
-   (where τ (lookup Γ x))]
   [(typeof Γ (λ (x τ_1) e) (τ_1 → τ_2))
    (typeof ([x τ_1] Γ) e τ_2)]
   [(typeof Γ (e_1 e_2) τ)
    (typeof Γ e_1 (τ_2 → τ))
-   (typeof Γ e_2 τ_2)])
+   (typeof Γ e_2 τ_2)]
+  [(typeof Γ x τ)
+   (where τ (lookup Γ x))]
+  [(typeof Γ i int)]
+  [(typeof Γ add1 (int → int))])
 
 
 (define-metafunction STLC
