@@ -31,11 +31,10 @@ written.
                                         #f) 
                                   #f]
                           [get-location (or/c 
-                                         (() 
-                                          . ->* . 
-                                          ((or/c exact-positive-integer? #f)
-                                           (or/c exact-nonnegative-integer? #f)
-                                           (or/c exact-positive-integer? #f)))
+                                         (->
+                                          (values (or/c exact-positive-integer? #f)
+                                                  (or/c exact-nonnegative-integer? #f)
+                                                  (or/c exact-positive-integer? #f)))
                                          #f)
                                         #f]
                           [count-lines! (-> any) void]
@@ -722,11 +721,10 @@ s
                                                    #f)
                                                   #f]
                            [get-location (or/c 
-                                          (() 
-                                           . ->* . 
-                                           ((or/c exact-positive-integer? #f)
-                                            (or/c exact-nonnegative-integer? #f)
-                                            (or/c exact-positive-integer? #f)))
+                                          (->
+                                           (values (or/c exact-positive-integer? #f)
+                                                   (or/c exact-nonnegative-integer? #f)
+                                                   (or/c exact-positive-integer? #f)))
                                           #f)
                                          #f]
                            [count-lines! (-> any) void]
