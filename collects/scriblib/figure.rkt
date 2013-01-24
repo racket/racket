@@ -15,9 +15,10 @@
          Figure-target 
          Figure-ref
          figure-ref
-         (rename-out [leftfigure-style left]
-                     [leftfiguremulti-style leftfiguremulti]
-                     [leftfiguremultiwide-style leftfiguremultiwide]))
+         left-figure-style
+         center-figure-style
+         right-figure-style
+         (rename-out [left-figure-style left]))
 
 (define figure-style-extras
   (let ([abs (lambda (s)
@@ -26,56 +27,60 @@
     (list (make-css-addition (abs "figure.css"))
           (make-tex-addition (abs "figure.tex")))))
 
+;; outer layer:
 (define herefigure-style  (make-style "Herefigure" figure-style-extras))
+(define figure-style (make-style "Figure" figure-style-extras))
+(define figuremulti-style (make-style "FigureMulti" figure-style-extras))
+(define figuremultiwide-style (make-style "FigureMultiWide" figure-style-extras))
+
+;; middle layer:
+(define center-figure-style (make-style "Centerfigure" figure-style-extras))
+(define left-figure-style (make-style "Leftfigure" figure-style-extras))
+(define right-figure-style (make-style "Rightfigure" figure-style-extras))
+
+;; inner layer:
 (define figureinside-style (make-style "FigureInside" figure-style-extras))
+
 (define legend-style (make-style "Legend" figure-style-extras))
-(define figure-target-style (make-style "FigureTarget" figure-style-extras))
 
 (define centertext-style (make-style "Centertext" figure-style-extras))
-(define figure-style (make-style "Figure" figure-style-extras))
 
-(define centerfigure-style (make-style "Centerfigure" figure-style-extras))
-(define centerfiguremulti-style (make-style "CenterfigureMulti" figure-style-extras))
-(define centerfiguremultiwide-style (make-style "CenterfigureMultiWide" figure-style-extras))
+(define (make-figure-ref c s)
+  (element (style "FigureRef" (list* (command-extras (list s))
+                                     figure-style-extras))
+    c))
+(define (make-figure-target c s)
+  (element (style "FigureTarget" (cons (command-extras (list s))
+                                       figure-style-extras))
+    c))
 
-(define leftfigure-style (make-style "Leftfigure" figure-style-extras))
-(define leftfiguremulti-style (make-style "LeftfigureMulti" figure-style-extras))
-(define leftfiguremultiwide-style (make-style "LeftfigureMultiWide" figure-style-extras))
+(define (figure tag caption #:style [style center-figure-style] . content)
+  (figure-helper figure-style style tag caption content))
 
-(define (figure tag caption #:style [style centerfigure-style] . content)
-  (apply figure-helper figure-style style tag caption content))
+(define (figure-here tag caption #:style [style center-figure-style] . content)
+  (figure-helper herefigure-style style tag caption content))
 
-(define (figure-here tag caption . content)
-  (apply figure-helper herefigure-style centerfigure-style tag caption content))
+(define (figure* tag caption #:style [style center-figure-style] . content)
+  (figure-helper figuremulti-style style tag caption content))
+(define (figure** tag caption #:style [style center-figure-style] . content)
+  (figure-helper figuremultiwide-style style tag caption content))
 
-(define (figure-helper figure-style content-style tag caption . content)
+(define (figure-helper figure-style content-style tag caption content)
   (make-nested-flow 
    figure-style 
    (list
-     (make-nested-flow content-style (list (make-nested-flow figureinside-style (decode-flow content))))
-     (make-paragraph centertext-style (list (make-element legend-style (list (make-element figure-target-style (list (Figure-target tag) ": ")) caption)))))))
-
-(define (*figure style tag caption content)
-  (make-nested-flow
-   style
-   (list
     (make-nested-flow
-     figureinside-style
-     (append
-      (decode-flow content)
-      (list
-       (make-paragraph
-        plain
-        (list (make-element legend-style (list (make-element figure-target-style (list (Figure-target tag) ": ")) caption))))))))))
+     content-style
+     (list (make-nested-flow figureinside-style (decode-flow content))))
+    (make-paragraph
+     centertext-style
+     (list (make-element legend-style (list (Figure-target tag) caption)))))))
 
-(define (figure* tag caption . content)
-  (*figure centerfiguremulti-style tag caption content))
-(define (figure** tag caption . content)
-  (*figure centerfiguremultiwide-style tag caption content))
-
-(define figures (new-counter "figure"))
+(define figures (new-counter "figure" 
+                             #:target-wrap make-figure-target
+                             #:ref-wrap make-figure-ref))
 (define (Figure-target tag)
-  (counter-target figures tag "Figure"))
+  (counter-target figures tag "Figure" ": "))
 
 (define (ref-proc initial)
   (case-lambda 
