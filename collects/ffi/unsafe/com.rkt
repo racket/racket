@@ -1590,7 +1590,15 @@
 (define (scheme-to-variant! var a elem-desc scheme-type #:mode [mode '(in)])
   (cond
    [(type-described? a)
-    (scheme-to-variant! var (type-described-value a) elem-desc scheme-type #:mode mode)]
+    (scheme-to-variant! var
+			(type-described-value a)
+			(if (any-type? scheme-type)
+			    #f
+			    elem-desc)
+			(if (any-type? scheme-type)
+			    (type-described-description a)
+			    scheme-type)
+			#:mode mode)]
    [(and (pair? scheme-type) (eq? 'variant (car scheme-type)))
     (scheme-to-variant! var a elem-desc (cadr scheme-type) #:mode mode)]
    [(eq? a com-omit)
