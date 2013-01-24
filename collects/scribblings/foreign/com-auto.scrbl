@@ -416,13 +416,13 @@ used to represent various atomic types:
 
  @item{@racket['unsigned-int] --- a 32-bit unsigned integer}
 
- @item{@racket['short] --- a 16-bit signed integer}
+ @item{@racket['short-int] --- a 16-bit signed integer}
 
  @item{@racket['unsigned-short] --- a 16-bit unsigned integer}
 
- @item{@racket['char] --- an 8-bit signed integer}
+ @item{@racket['signed-char] --- an 8-bit signed integer}
 
- @item{@racket['unsigned-char] --- an 8-bit unsigned integer}
+ @item{@racket['char] --- an 8-bit unsigned integer}
 
  @item{@racket['long-long] --- a 64-bit signed integer}
 
