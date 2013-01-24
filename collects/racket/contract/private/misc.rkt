@@ -859,7 +859,7 @@
      (make-parameter/c ctc ctc #f)]
     [(in-ctc out-ctc)
      (make-parameter/c (coerce-contract 'parameter/c in-ctc)
-                       (coerce-contract 'parameter-c out-ctc)
+                       (coerce-contract 'parameter/c out-ctc)
                        #t)]))
 
 ;; in - negative contract
