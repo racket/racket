@@ -15,7 +15,8 @@ As a remedy, @racketmodname[syntax/parse] offers @deftech{literal
 sets}. A literal set is defined via @racket[define-literal-set] and
 used via the @racket[#:literal-set] option of @racket[syntax-parse].
 
-@defform/subs[(define-literal-set id maybe-phase maybe-imports (literal ...))
+@defform/subs[(define-literal-set id maybe-phase maybe-imports maybe-datum-literals
+                (literal ...))
               ([literal literal-id
                         (pattern-id literal-id)]
                [maybe-phase (code:line)
@@ -23,6 +24,8 @@ used via the @racket[#:literal-set] option of @racket[syntax-parse].
                             (code:line #:for-syntax)
                             (code:line #:for-label)
                             (code:line #:phase phase-level)]
+               [maybe-datum-literals (code:line)
+                                     (code:line #:datum-literals (datum-literal ...))]
                [maybe-imports (code:line)
                               (code:line #:literal-sets (imported-litset-id ...))])]{
 

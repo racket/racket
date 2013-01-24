@@ -101,10 +101,10 @@
     (values (mk 'tautology) (mk 'contradiction) (mk 'neither))))
 
 (provide/cond-contract
- [add-typeof-expr (syntax? tc-results? . -> . any)]
- [type-of (syntax? . -> . tc-results?)]
- [reset-type-table (-> any)]
- [add-struct-fn! (identifier? StructPE? boolean? . -> . any)]
+ [add-typeof-expr (syntax? tc-results/c . -> . any/c)]
+ [type-of (syntax? . -> . tc-results/c)]
+ [reset-type-table (-> any/c)]
+ [add-struct-fn! (identifier? StructPE? boolean? . -> . any/c)]
  [add-struct-constructor! (identifier? . -> . any)]
  [struct-constructor? (identifier? . -> . boolean?)]
  [struct-accessor? (identifier? . -> . (or/c #f StructPE?))]

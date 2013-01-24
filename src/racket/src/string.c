@@ -3891,8 +3891,8 @@ static Scheme_Object *normalize_c(Scheme_Object *o)
 
   s2[j] = 0;
   if (len - j > 16) {
-    s2 = (mzchar *)scheme_malloc_atomic((j + 1) * sizeof(mzchar));
-    memcpy(s2, s, (j + 1) * sizeof(mzchar));
+    s = (mzchar *)scheme_malloc_atomic((j + 1) * sizeof(mzchar));
+    memcpy(s, s2, (j + 1) * sizeof(mzchar));
     s2 = s;
   }
 

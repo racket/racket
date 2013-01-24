@@ -255,7 +255,7 @@
                     (loop (cdr l)))))]
 
       ;; otherwise, the form was just an expression
-      [_ (tc-expr form)])))
+      [_ (tc-expr/check form tc-any-results)])))
 
 
 
@@ -416,7 +416,7 @@
 
 ;; typecheck a top-level form
 ;; used only from #%top-interaction
-;; syntax -> (values #f (or/c void? tc-results?))
+;; syntax -> (values #f (or/c void? tc-results/c))
 (define (tc-toplevel-form form)
   (tc-toplevel/pass1 form)
   (begin0 (values #f (tc-toplevel/pass2 form))

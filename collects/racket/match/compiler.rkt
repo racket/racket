@@ -249,20 +249,22 @@
                          esc))))]
     ;; the And rule
     [(And? first)
-     ;; we only handle 1-row Ands atm - this is all the mixture rule should
-     ;; give us
+     ;; we only handle 1-row Ands 
+     ;; this is all the mixture rule should give us
      (unless (null? (cdr block))
        (error 'compile-one "And block with multiple rows: ~a" block))
-     (let* ([row (car block)]
-            [pats (Row-pats row)]
-            ;; all the patterns
-            [qs (And-ps (car pats))])
-       (compile* (append (map (lambda _ x) qs) xs)
-                 (list (make-Row (append qs (cdr pats))
-                                 (Row-rhs row)
-                                 (Row-unmatch row)
-                                 (Row-vars-seen row)))
-                 esc))]
+     (define row (car block))
+     (define pats (Row-pats row))
+     ;; all the patterns
+     (define qs (And-ps (car pats)))
+     (compile* (append (map (lambda _ x) qs) xs)
+               (list (make-Row (append qs (cdr pats))
+                               (Row-rhs row)
+                               (Row-unmatch row)
+                               (Row-vars-seen row)))
+               esc
+               ;; don't re-order OrderedAnd patterns
+               (not (OrderedAnd? first)))]
     ;; the Not rule
     [(Not? first)
      ;; we only handle 1-row Nots atm - this is all the mixture rule should
@@ -407,7 +409,7 @@
                         #'failkv)))]
     [else (error 'compile "unsupported pattern: ~a\n" first)]))
 
-(define (compile* vars rows esc)
+(define (compile* vars rows esc [reorder? #t])
   (define (let/wrap clauses body)
     (if (stx-null? clauses)
       body
@@ -447,7 +449,9 @@
     ;; and compile each block with a reference to its continuation
    [else
     (let*-values
-        ([(rows vars) (reorder-columns rows vars)]
+        ([(rows vars) (if reorder?
+                          (reorder-columns rows vars)
+                          (values rows vars))]
          [(fns)
           (let loop ([blocks (reverse (split-rows rows))] [esc esc] [acc null])
             (if (null? blocks)

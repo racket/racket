@@ -69,6 +69,7 @@
 ;; ps are patterns
 (define-struct (Or Pat) (ps) #:transparent)
 (define-struct (And Pat) (ps) #:transparent)
+(define-struct (OrderedAnd And) () #:transparent)
 ;; p is a pattern
 (define-struct (Not Pat) (p) #:transparent)
 

@@ -40,7 +40,7 @@ means specifically @tech{@Spattern}.
                  (@#,ref[~var s-] id)
                  (@#,ref[~var s+] id syntax-class-id maybe-role)
                  (@#,ref[~var s+] id (syntax-class-id arg ...) maybe-role)
-                 (~literal literal-id)
+                 (~literal literal-id maybe-phase)
                  atomic-datum
                  (~datum datum)
                  (H-pattern . S-pattern)
@@ -298,7 +298,9 @@ combined with the syntax class's description in error messages.
 ]
 }
 
-@specsubform[(@#,defhere[~literal] literal-id)]{
+@specsubform/subs[(@#,defhere[~literal] literal-id maybe-phase)
+                  ([maybe-phase (code:line)
+                                (code:line #:phase phase-expr)])]{
 
 A @deftech{literal} identifier pattern. Matches any identifier
 @racket[free-identifier=?] to @racket[literal-id].
@@ -309,6 +311,10 @@ A @deftech{literal} identifier pattern. Matches any identifier
 (syntax-parse #'(lambda x 12)
   [((~literal define) var:id body:expr) 'ok])
 ]
+
+The identifiers are compared at the phase given by
+@racket[phase-expr], if it is given, or
+@racket[(syntax-local-phase-level)] otherwise.
 }
 
 @specsubform[atomic-datum]{

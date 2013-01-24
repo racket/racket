@@ -66,7 +66,7 @@
           (values (and env/f (unify fresh-pat 'any env/f lang))
                   fails)))
       (set-last-gen-trace! (generation-trace))
-      (set! fs (trim-fails fails))
+      (set! fs (shuffle-fails fails))  ;; how to test if we're randomizing here?
       (set! name-nums (unique-name-nums))
       (set! v-locs (visited-locs))
       ans)))
@@ -135,7 +135,7 @@
                                   (if (positive? bound)
                                       #;(shuffle-clauses-stlc prem-cls (sub1 bound))
                                       (shuffle prem-cls)
-                                      prem-cls)
+                                      (order-clauses prem-cls))
                                   (cons n tr-loc)
                                   (- bound 1))))
            (define new-fringe (append new-fringe-elements
@@ -143,6 +143,22 @@
            (choose-rule (p*e-e res-pe)
                         new-fringe
                         (cons (fail-cont env failure-fringe bound) fail))])])]))
+
+(define (order-clauses cs)
+  (define num-prems->cs (hash))
+  (for ([c cs])
+    (set! num-prems->cs
+          (hash-set num-prems->cs
+                    (length (clause-prems c))
+                    (set-add
+                     (hash-ref num-prems->cs
+                               (length (clause-prems c))
+                               (λ () (set)))
+                     c))))
+  (apply append
+         (for/list ([k (sort (hash-keys num-prems->cs) <)])
+           (shuffle (set->list (hash-ref num-prems->cs k))))))
+  
 
 
 (define (do-unification clse input env)

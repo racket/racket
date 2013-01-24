@@ -5,8 +5,12 @@
          (struct-out integrate)
          (struct-out conventions)
          (struct-out literalset)
+         (struct-out lse:lit)
+         (struct-out lse:datum-lit)
          (struct-out eh-alternative-set)
          (struct-out eh-alternative)
+         (struct-out den:lit)
+         (struct-out den:datum-lit)
          (struct-out den:delayed))
 
 ;; == from rep-attr.rkt
@@ -38,9 +42,14 @@ A ConventionRule is (list regexp DeclEntry)
 
 #|
 A LiteralSet is
- (make-literalset (listof (list symbol id phase-var-id)))
+ (make-literalset (listof LiteralSetEntry))
+An LiteralSetEntry is one of
+ - (make-lse:lit symbol id ct-phase)
+ - (make-lse:datum-lit symbol symbol)
 |#
 (define-struct literalset (literals) #:transparent)
+(define-struct lse:lit (internal external phase) #:transparent)
+(define-struct lse:datum-lit (internal external) #:transparent)
 
 #|
 An EH-alternative-set is
@@ -51,4 +60,6 @@ An EH-alternative is
 (define-struct eh-alternative-set (alts))
 (define-struct eh-alternative (repc attrs parser))
 
+(define-struct den:lit (internal external input-phase lit-phase) #:transparent)
+(define-struct den:datum-lit (internal external) #:transparent)
 (define-struct den:delayed (parser class))

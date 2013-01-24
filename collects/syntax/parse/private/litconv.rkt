@@ -14,6 +14,7 @@
   [syntax/parse/private/rep ;; keep abs. path
    (parse-kw-formals
     check-conventions-rules
+    check-datum-literals-list
     create-aux-def)]))
 ;; FIXME: workaround for phase>0 bug in racket/runtime-path (and thus lazy-require)
 ;; Without this, dependencies don't get collected.
@@ -79,6 +80,7 @@
     (raise-syntax-error #f "expected phase-level (exact integer or #f)" ctx stx))
   stx)
 
+;; check-litset-list : stx stx -> (listof (cons id literalset))
 (define-for-syntax (check-litset-list stx ctx)
   (syntax-case stx ()
     [(litset-id ...)
@@ -101,17 +103,23 @@
      (list #'id #'id)]
     [_ (raise-syntax-error #f "expected literal entry" ctx stx)]))
 
-(define-for-syntax (check-duplicate-literals stx imports lits)
+(define-for-syntax (check-duplicate-literals ctx imports lits datum-lits)
   (let ([lit-t (make-hasheq)]) ;; sym => #t
     (define (check+enter! key blame-stx)
       (when (hash-ref lit-t key #f)
-        (raise-syntax-error #f (format "duplicate literal: ~a" key) stx blame-stx))
+        (raise-syntax-error #f (format "duplicate literal: ~a" key) ctx blame-stx))
       (hash-set! lit-t key #t))
     (for ([id+litset (in-list imports)])
       (let ([litset-id (car id+litset)]
             [litset (cdr id+litset)])
         (for ([entry (in-list (literalset-literals litset))])
-          (check+enter! (car entry) litset-id))))
+          (cond [(lse:lit? entry)
+                 (check+enter! (lse:lit-internal entry) litset-id)]
+                [(lse:datum-lit? entry)
+                 (check+enter! (lse:datum-lit-internal entry) litset-id)]))))
+    (for ([datum-lit (in-list datum-lits)])
+      (let ([internal (den:datum-lit-internal datum-lit)])
+        (check+enter! (syntax-e internal) internal)))
     (for ([lit (in-list lits)])
       (check+enter! (syntax-e (car lit)) (car lit)))))
 
@@ -122,6 +130,7 @@
                    (parse-keyword-options
                     #'rest
                     `((#:literal-sets ,check-litset-list)
+                      (#:datum-literals ,check-datum-literals-list)
                       (#:phase ,check-phase-level)
                       (#:for-template)
                       (#:for-syntax)
@@ -136,28 +145,35 @@
                     [(assq '#:for-syntax chunks) 1]
                     [(assq '#:for-label chunks) #f]
                     [else (options-select-value chunks '#:phase #:default 0)])]
+             [datum-lits
+              (options-select-value chunks '#:datum-literals #:default null)]
              [lits (syntax-case rest ()
                      [( (lit ...) )
                       (for/list ([lit (in-list (syntax->list #'(lit ...)))])
                         (check-literal-entry/litset lit stx))]
                      [_ (raise-syntax-error #f "bad syntax" stx)])]
              [imports (options-select-value chunks '#:literal-sets #:default null)])
-         (check-duplicate-literals stx imports lits)
+         (check-duplicate-literals stx imports lits datum-lits)
          (with-syntax ([((internal external) ...) lits]
+                       [(datum-internal ...) (map den:datum-lit-internal datum-lits)]
+                       [(datum-external ...) (map den:datum-lit-external datum-lits)]
                        [(litset-id ...) (map car imports)]
                        [relphase relphase])
            #`(begin
                (define phase-of-literals
-                 (if 'relphase
-                     (+ (phase-of-enclosing-module) 'relphase)
-                     'relphase))
+                 (and 'relphase
+                      (+ (variable-reference->module-base-phase (#%variable-reference))
+                         'relphase)))
                (define-syntax name
                  (make-literalset
                   (append (literalset-literals (syntax-local-value (quote-syntax litset-id)))
                           ...
-                          (list (list 'internal
-                                      (quote-syntax external)
-                                      (quote-syntax phase-of-literals))
+                          (list (make-lse:lit 'internal
+                                              (quote-syntax external)
+                                              (quote-syntax phase-of-literals))
+                                ...
+                                (make-lse:datum-lit 'datum-internal
+                                                    'datum-external)
                                 ...))))
                (begin-for-syntax/once
                 (for ([x (in-list (syntax->list #'(external ...)))])
@@ -174,26 +190,42 @@
                                         (quote-syntax #,stx) x))))))))]))
 
 #|
-Literal sets: The goal is for literals to refer to their bindings at
+NOTES ON PHASES AND BINDINGS
 
-  phase 0 relative to the enclosing module
+(module M ....
+  .... (define-literal-set LS #:phase PL ....)
+  ....)
 
-Use cases, explained:
-1) module X with def-lit-set is required-for-syntax
-     phase-of-mod-inst = 1
-     phase-of-def = 0
-     literals looked up at abs phase 1
-       which is phase 0 rel to module X
-2) module X with local def-lit-set within define-syntax
-     phase-of-mod-inst = 1 (mod at 0, but +1 within define-syntax)
-     phase-of-def = 1
-     literals looked up at abs phase 0
-       which is phase 0 rel to module X
-3) module X with def-lit-set in phase-2 position (really uncommon case!)
-     phase-of-mod-inst = 1 (not 2, apparently)
-     phase-of-def = 2
-     literals looked up at abs phase 0
-       (that's why the weird (if (z?) 0 1) term)
+For the expansion of the define-literal-set form, the bindings of the literals
+can be accessed by (identifier-binding lit PL), because the phase of the enclosing
+module (M) is 0.
+
+LS may be used, however, in a context where the phase of the enclosing
+module is not 0, so each instantiation of LS needs to calculate the
+phase of M and add that to PL.
+
+--
+
+Normally, literal sets that define the same name conflict. But it
+would be nice to allow them to both be imported in the case where they
+refer to the same binding.
+
+Problem: Can't do the check eagerly, because the binding of L may
+change between when define-literal-set is compiled and the comparison
+involving L. For example:
+
+  (module M racket
+    (require syntax/parse)
+    (define-literal-set LS (lambda))
+    (require (only-in some-other-lang lambda))
+    .... LS ....)
+
+The expansion of the LS definition sees a different lambda than the
+one that the literal in LS actually refers to.
+
+Similarly, a literal in LS might not be defined when the expander
+runs, but might get defined later. (Although I think that will already
+cause an error, so don't worry about that case.)
 |#
 
 ;; FIXME: keep one copy of each identifier (?)
@@ -205,7 +237,10 @@ Use cases, explained:
                      (syntax-local-value/record #'litset-id literalset?))])
        (unless val (raise-syntax-error #f "expected literal set name" stx #'litset-id))
        (let ([lits (literalset-literals val)])
-         (with-syntax ([((_sym lit phase-var) ...) lits])
+         (with-syntax ([((lit phase-var) ...)
+                        (for/list ([lit (in-list lits)]
+                                   #:when (lse:lit? lit))
+                          (list (lse:lit-external lit) (lse:lit-phase lit)))])
            #'(make-literal-set-predicate (list (list (quote-syntax lit) phase-var) ...)))))]))
 
 (define (make-literal-set-predicate lits)

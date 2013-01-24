@@ -174,18 +174,45 @@ Here is an example typical of what you will find in many applications:
             [mime (or/c false/c bytes?)]
             [headers (listof header?)]
             [output (output-port? . -> . void)])]{
- An HTTP response where @racket[output] produces the body. @racket[code] is the response code,
- @racket[message] the message, @racket[seconds] the generation time, @racket[mime]
- the MIME type of the file, and @racket[headers] are the headers. If @racket[headers] does not include @litchar{Date}, @litchar{Last-Modified}, @litchar{Server}, or @litchar{Content-Type} headers, then the server will automatically add them. The server will always replace your @litchar{Connection} header if it needs to ensure the connection will be closed. (Typically with an HTTP/1.0 client.)
 
- Example:
+An HTTP response where @racket[output] produces the body by writing to
+the output port. @racket[code] is the response code, @racket[message]
+the message, @racket[seconds] the generation time, @racket[mime] the
+MIME type of the file, and @racket[headers] are the headers.
+
+If @racket[headers] does not include @litchar{Date},
+@litchar{Last-Modified}, or @litchar{Server} headers, then the server
+will automatically add them, where @litchar{Date} is based on
+@racket[current-seconds], @litchar{Last-Modified} is based on
+@racket[seconds], and @litchar{Server} is @litchar{Racket}.
+
+If @racket[headers] does not include @litchar{Content-Type} and
+@racket[mime] is not @racket[#f], then @racket[mime] is added as a
+@litchar{Content-Type} header.
+
+The server will always replace your @litchar{Connection} header if it
+needs to ensure the connection will be closed. (Typically with an
+HTTP/1.0 client.)
+
+Examples:
  @racketblock[
+  (response
+   301 #"OK"
+   (current-seconds) TEXT/HTML-MIME-TYPE
+   empty
+   (λ (op) (write-bytes #"<html><body>Hello, World!</body></html>" op)))
   (response
    301 #"Moved Permanently"
    (current-seconds) TEXT/HTML-MIME-TYPE
    (list (make-header #"Location"
                       #"http://racket-lang.org/download"))
    (λ (op) (write-bytes #"Moved" op)))
+  (response
+   304 #"Not Modified"
+   (current-seconds) #f
+   (list (make-header #"Location"
+                      #"http://racket-lang.org/download"))
+   void)
  ]
 }
 

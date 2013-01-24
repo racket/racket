@@ -1970,7 +1970,7 @@
 [make-security-guard
  (->opt -Security-Guard
         (-> Sym (-opt -Path) (-lst Sym) ManyUniv)
-        (-> Sym (-opt -String) (-opt -PosInt) (Un (one-of/c 'server 'client)  ManyUniv))
+        (-> Sym (-opt -String) (-opt -PosInt) (one-of/c 'server 'client)  ManyUniv)
         [(-opt (-> Sym -Path -Path ManyUniv))]
         -Security-Guard)]
 [current-security-guard (-Param -Security-Guard -Security-Guard)]
@@ -2028,7 +2028,9 @@
     (-> (-> b) Univ)))]
 [abort-current-continuation
  (-polydots (a b d e c)
-   (->... (list (make-Prompt-Tagof b (->... '() (c c) d))) (c c) e))]
+   (cl->*
+    (->... (list (make-Prompt-Tagof b (->... '() (c c) d))) (c c) e)
+    (->... (list (make-Prompt-Tagof b (->... '() (c c) ManyUniv))) (c c) e)))]
 [make-continuation-prompt-tag
  (-poly (a b) (->opt [Sym] (make-Prompt-Tagof a b)))]
 ;; default-continuation-prompt-tag is defined in "base-contracted.rkt"

@@ -4,31 +4,34 @@
   margin: 0 0 0 0;
 }
 
-.Centerfigure, .CenterfigureMulti, .centerfigureMultiWide, .Herefigure {
+.Figure, .FigureMulti, .FigureMultiWide, .Herefigure {
+  margin: 1em 0 1em 0;
+  border: 1px solid #1818FF;
+}
+
+.Figure, .FigureMulti, .Herefigure {
+  width: 100%;
+}
+
+.FigureMultiWide {
+  width: 125%;
+}
+
+.Centerfigure {
   text-align: center;
   margin: 0 0 0 0;
 }
 
-.Leftfigure, .LeftfigureMulti, .leftfigureMultiWide {
+.Leftfigure {
   text-align: left;
   margin: 0 0 0 0;
 }
 
-.Figure {
-  margin: 1em 0 1em 0;
-  width: 100%;
-  border: 1px solid #1818FF;
-}
-
-.CenterfigureMultiWide {
-  width: 125%;
+.Rightfigure {
+  text-align: right;
+  margin: 0 0 0 0;
 }
 
 .FigureInside {
   margin: 1em 1em 1em 1em;
 }
-
-.Caption:before {
-  content: "Figure: ";
-}
-

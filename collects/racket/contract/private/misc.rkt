@@ -850,20 +850,33 @@
                                   (values p-app promise))))))))
        #:first-order promise?))))
 
-(define/subexpression-pos-prop (parameter/c x)
-  (make-parameter/c (coerce-contract 'parameter/c x)))
+;; (parameter/c in/out-ctc)
+;; (parameter/c in-ctc out-ctc)
+(define/subexpression-pos-prop parameter/c
+  (case-lambda
+    [(in-ctc)
+     (define ctc (coerce-contract 'parameter/c in-ctc))
+     (make-parameter/c ctc ctc #f)]
+    [(in-ctc out-ctc)
+     (make-parameter/c (coerce-contract 'parameter/c in-ctc)
+                       (coerce-contract 'parameter/c out-ctc)
+                       #t)]))
 
-(define-struct parameter/c (ctc)
+;; in - negative contract
+;; out - positive contract
+;; both-supplied? - for backwards compat printing
+(define-struct parameter/c (in out both-supplied?)
   #:omit-define-syntaxes
   #:property prop:contract
   (build-contract-property
    #:projection
    (λ (ctc)
-      (let ([c-proc (contract-projection (parameter/c-ctc ctc))])
+      (let* ([in-proc (contract-projection (parameter/c-in ctc))]
+             [out-proc (contract-projection (parameter/c-out ctc))])
         (λ (blame)
           (define blame/c (blame-add-context blame "the parameter of"))
-          (define partial-neg-contract (c-proc (blame-swap blame/c)))
-          (define partial-pos-contract (c-proc blame/c))
+          (define partial-neg-contract (in-proc (blame-swap blame/c)))
+          (define partial-pos-contract (out-proc blame/c))
           (λ (val)
             (cond
               [(parameter? val)
@@ -875,23 +888,25 @@
                (raise-blame-error blame val '(expected "a parameter"))])))))
 
    #:name
-   (λ (ctc) (build-compound-type-name 'parameter/c (parameter/c-ctc ctc)))
+   (λ (ctc) (apply build-compound-type-name
+                   `(parameter/c ,(parameter/c-in ctc)
+                                 ,@(if (parameter/c-both-supplied? ctc)
+                                       (list (parameter/c-out ctc))
+                                       (list)))))
    #:first-order
    (λ (ctc)
-      (let ([tst (contract-first-order (parameter/c-ctc ctc))])
+      (let ([tst (contract-first-order (parameter/c-out ctc))])
         (λ (x)
            (and (parameter? x)
                 (tst (x))))))
 
    #:stronger
    (λ (this that)
-      ;; must be invariant (because the library doesn't currently split out pos/neg contracts
-      ;; which could be tested individually ....)
       (and (parameter/c? that)
-           (contract-stronger? (parameter/c-ctc this) 
-                               (parameter/c-ctc that))
-           (contract-stronger? (parameter/c-ctc that) 
-                               (parameter/c-ctc this))))))
+           (and (contract-stronger? (parameter/c-out this)
+                                    (parameter/c-out that))
+                (contract-stronger? (parameter/c-in that)
+                                    (parameter/c-in this)))))))
 
 (define-struct procedure-arity-includes/c (n)
   #:omit-define-syntaxes

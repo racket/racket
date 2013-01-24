@@ -326,8 +326,10 @@ In more detail, patterns match as follows:
  @item{@racket[(#,(racketidfont "?") _expr _pat ...)] --- applies
        @racket[_expr] to the value to be matched, and checks whether
        the result is a true value; the additional @racket[_pat]s must
-       also match (i.e., @racketidfont{?} combines a predicate
-       application and an @racketidfont{and} pattern).
+       also match; i.e., @racketidfont{?} combines a predicate
+       application and an @racketidfont{and} pattern.  However,
+       @racketidfont{?}, unlike @racketidfont{and}, guarantees that
+       @racket[_expr] is matched before any of the @racket[_pat]s.
 
        @examples[
        #:eval match-eval
@@ -592,10 +594,14 @@ syntax object as for a @tech{match expander}..
 If the property value is a @tech{assignment transformer}, then the wrapped
 procedure is extracted with
 @racket[set!-transformer-procedure] before it is called.
+
+This binding is provided @racket[for-syntax].
 }
 
 @defthing[prop:legacy-match-expander struct-type-property?]{
 Like @racket[prop:match-expander], but for the legacy match syntax.
+
+This binding is provided @racket[for-syntax].
 }
 
 

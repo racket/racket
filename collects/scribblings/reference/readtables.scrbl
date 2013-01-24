@@ -108,7 +108,7 @@ The possible combinations for @racket[key], @racket[mode], and
  @item{@racket[(code:line _char (unsyntax @indexed-racket['dispatch-macro]) _proc)] --- like the
  @racket['non-terminating-macro] variant, but for @racket[_char] only
  when it follows a @litchar{#} (or, more precisely, when the character
- follows one that has been mapped to the behavior of @litchar{#}hash
+ follows one that has been mapped to the behavior of @litchar{#}
  in the default readtable).}
 
  @item{@racket[(code:line _char _like-char _readtable)] --- causes
@@ -144,12 +144,14 @@ optionally accept two arguments. The first two arguments are always
 the character that triggered the reader macro and the input port for
 reading. When the reader macro is triggered by @racket[read-syntax]
 (or @racket[read-syntax/recursive]), the procedure is passed four
-additional arguments that represent a source location. When the reader
-macro is triggered by @racket[read] (or @racket[read/recursive]), the
-procedure is passed only two arguments if it accepts two arguments,
-otherwise it is passed six arguments where the last four are all
-@racket[#f]. See @secref["reader-procs"] for information on the
-procedure's results.
+additional arguments that represent a source location for
+already-consumed character(s): the source name, a line number or
+@racket[#f], a column number or @racket[#f], and a position or
+@racket[#f]. When the reader macro is triggered by @racket[read] (or
+@racket[read/recursive]), the procedure is passed only two arguments
+if it accepts two arguments, otherwise it is passed six arguments
+where the last four are all @racket[#f]. See @secref["reader-procs"]
+for information on the procedure's results.
 
 A reader macro normally reads characters from the given input port to
 produce a value to be used as the ``reader macro-expansion'' of the

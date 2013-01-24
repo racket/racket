@@ -13,9 +13,10 @@
 
 
 (define/cond-contract (abstract-results results arg-names)
-     (tc-results? (listof identifier?) . -> . (or/c Values? ValuesDots?))
+     (tc-results/c (listof identifier?) . -> . SomeValues/c)
      (define keys (for/list ([(nm k) (in-indexed arg-names)]) k))
      (match results
+       [(tc-any-results:) (make-AnyValues)]
        [(tc-results: ts fs os dty dbound)
         (make-ValuesDots
          (for/list ([t ts] [f fs] [o os])
@@ -72,6 +73,7 @@
 
 (define (tc-results->values tc)
   (match tc
+    [(tc-any-results:) ManyUniv]
     [(tc-results: ts) (-values ts)]))
 
 (provide combine-props tc-results->values)

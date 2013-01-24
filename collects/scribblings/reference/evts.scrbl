@@ -239,7 +239,9 @@ A @tech{structure type property} that identifies structure types whose
  structure is similar to an event generated
  by @racket[guard-evt], except that the would-be guard
  procedure @racket[_proc] receives the structure as an argument, instead
- of no arguments.}
+ of no arguments; also, a non-event result from @racket[_proc]
+ is replaced with an event that is already @tech{ready for synchronization}
+ and whose @tech{synchronization result} is the structure.}
 
  @item{An exact, non-negative integer between @racket[0] (inclusive)
  and the number of non-automatic fields in the structure type

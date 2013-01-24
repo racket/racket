@@ -80,4 +80,10 @@
 	      (test c5 string-normalize-nfkd c5)))
 	  test-strings)
 
+;; Some tests where the composed form is much smaller than decomposed:
+(let ()
+  (define s (list->string (for/list ([i 64]) #\é)))
+  (test s string-normalize-nfc s)
+  (test s string-normalize-nfc (string-normalize-nfd s)))
+
 (report-errs)

@@ -6,6 +6,7 @@
   (define (u)
     (universe 0
               (on-new (lambda (u w) (make-bundle (+ u 1) '() '())))
+              (on-tick (lambda (w) (make-bundle w '() '())) 1 5)
               (on-msg (lambda (u w m) (make-bundle (- u 1) '() (list w))))
               (state #t)))
   
@@ -28,6 +29,7 @@
   (define (u)
     (universe '()
               (on-new (lambda (u w) (make-bundle (cons w u) '() '())))
+              (on-tick (lambda (w) w) 1 5)
               (on-msg (lambda (u w m) 
                         ;; set *world* to the first world that comes around, reuse
                         (unless *world* (set! *world* w))

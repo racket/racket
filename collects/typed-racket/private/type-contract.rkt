@@ -422,7 +422,7 @@
         ;; TODO Is this sound?
 	[(Param: in out) 
 	 (set-impersonator!)
-	 #`(parameter/c #,(t->c out))]
+	 #`(parameter/c #,(t->c in) #,(t->c out))]
         [(Hashtable: k v)
          (when (equal? kind flat-sym) (exit (fail)))
          #`(hash/c #,(t->c k #:kind chaperone-sym) #,(t->c v) #:immutable 'dont-care)]

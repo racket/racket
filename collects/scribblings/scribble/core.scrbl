@@ -823,6 +823,9 @@ The following @tech{style properties} are currently recognized:
         name} is a string, render the elements content exactly
         (without escapes).}
 
+  @item{@racket[command-extras] structure --- For Latex output,
+         adds strings as arguments to the Latex command.}
+
 ]}
 
 
@@ -1502,14 +1505,7 @@ rendering.
 See also @racketmodname[scribble/latex-prefix].}
 
 
-@defstruct[latex-auto-extra-files ([paths (listof (or/c path-string? 
-                                                        (cons/c 'collects (listof bytes?))))])]{
+@defstruct[command-extras ([arguments (listof string?)])]{
 
-Used as a @tech{style property} for the main @racket[part] of a
-document to supply extra files needed to build the document via the
-@exec{scribble} command-line tool (for @DFlag{latex} and @DFlag{pdf}
-mode).
-
-Languages (used with @hash-lang[]) like
-@racketmodname[scribble/sigplan] add this property to a document to specify
-appropriate extra files.}
+Used as a @tech{style property} on an @racket[element] to add extra
+arguments to the element's command in Latex output.}

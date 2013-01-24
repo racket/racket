@@ -97,7 +97,7 @@
    
    
    (tc-e (make-handle-get-preference-locked .3 'sym (lambda () 'eseh) 'timestamp #f #:lock-there #f #:max-delay .45)
-         (t:-> -Pathlike ManyUniv))
+         (t:-> -Pathlike Univ))
    
    (tc-e (call-with-file-lock/timeout #f 'exclusive (lambda () 'res) (lambda () 'err)
                                       #:lock-file "lock"
