@@ -3,6 +3,9 @@
 #
 
 srcdir = @srcdir@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+libdir = @libdir@
 
 CC = @CC@
 CXX = @CXX@

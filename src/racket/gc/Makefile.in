@@ -19,6 +19,11 @@ AS_ABI_FLAG=$(ABI_FLAG)
 # ABI flag for assembler.  On HP/UX this is +A64 for 64 bit
 # executables.
 
+# PLTSCHEME: these paths are ultimately used for installing libs:
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+libdir = @libdir@
+
 CC= @CC@ $(ABI_FLAG)
 CXX= @CXX@ $(ABI_FLAG)
 AS= @AS@ $(ABI_FLAG)
