@@ -38,11 +38,15 @@
         (let* ([a (widget-allocation gtk)]
                [w (sub1 (GtkAllocation-width a))]
                [h (sub1 (GtkAllocation-height a))])
-          (let loop ([gtk gtk] [x 0] [y 0])
-            (if (not (zero? (bitwise-and (get-gtk-object-flags gtk) GTK_NO_WINDOW)))
+          (let loop ([gtk gtk] [x 0] [y 0] [can-super? #t])
+            (if (and can-super?
+		     (not (zero? (bitwise-and (get-gtk-object-flags gtk) GTK_NO_WINDOW))))
                 ;; no window:
                 (let ([a (widget-allocation gtk)])
-                  (loop (widget-parent gtk) (+ x (GtkAllocation-x a)) (+ y (GtkAllocation-y a))))
+                  (loop (widget-parent gtk) (+ x (GtkAllocation-x a)) (+ y (GtkAllocation-y a))
+			;; It seems that a widget's allocation is with respect
+			;; to a window, not its parent.
+			#f))
                 ;; found window:
                 (gdk_draw_rectangle win gc #f x y w h))))
         (gdk_gc_unref gc)))
