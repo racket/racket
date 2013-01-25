@@ -1,5 +1,5 @@
 #lang racket/base
-(require (except-in "../utils/utils.rkt" infer) racket/unsafe/ops
+(require (except-in "../utils/utils.rkt" infer)
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
          (types utils resolve base-abbrev numeric-tower substitute)
@@ -49,7 +49,7 @@
 ;; type type -> boolean
 (define/cond-contract (subtype s t)
   (c:-> (c:or/c Type/c SomeValues/c) (c:or/c Type/c SomeValues/c) boolean?)
-  (define k (cons (unsafe-struct-ref s 0) (unsafe-struct-ref t 0)))
+  (define k (cons (Type-seq s) (Type-seq t)))
   (define (new-val) 
     (define result (handle-failure (and (subtype* (current-seen) s t) #t)))
     ;(printf "subtype cache miss ~a ~a\n" s t)
