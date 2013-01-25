@@ -92,7 +92,7 @@
    ((syntax? syntax? Type/c (c:listof (c:listof Type/c)) (c:listof (c:or/c #f Type/c))
      (c:listof (c:or/c #f (c:cons/c Type/c (c:or/c c:natural-number/c symbol?))))
      (c:listof SomeValues/c) (c:listof tc-results?) (c:or/c #f Type/c) c:any/c)
-    (#:expected (c:or/c #f tc-results?) #:return tc-results?
+    (#:expected (c:or/c #f tc-results/c) #:return tc-results?
      #:msg-thunk (c:-> string? string?))
     . c:->* . tc-results/c)
 

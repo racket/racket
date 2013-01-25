@@ -27,12 +27,12 @@
 (define (seen-before s t)
   (cons (Type-seq s) (Type-seq t)))
 (define/cond-contract (remember s t A)
- (Values/c Values/c
+ ((or/c AnyValues? Values/c) (or/c AnyValues? Values/c)
   (listof (cons/c exact-nonnegative-integer? exact-nonnegative-integer?)) . -> .
   (listof (cons/c exact-nonnegative-integer? exact-nonnegative-integer?)))
  (cons (seen-before s t) A))
 (define/cond-contract (seen? s t)
- (Values/c Values/c . -> . any/c)
+ ((or/c AnyValues? Values/c) (or/c AnyValues? Values/c) . -> . any/c)
  (member (seen-before s t) (current-seen)))
 
 
@@ -587,7 +587,7 @@
 ;; Y : (listof symbol?) - index variables that must have entries
 ;; R : Type/c - result type into which we will be substituting
 (define/cond-contract (subst-gen C Y R)
-  (cset? (listof symbol?) (or/c Values/c ValuesDots?) . -> . (or/c #f substitution/c))
+  (cset? (listof symbol?) (or/c Values/c AnyValues? ValuesDots?) . -> . (or/c #f substitution/c))
   (define var-hash (free-vars-hash (free-vars* R)))
   (define idx-hash (free-vars-hash (free-idxs* R)))
   ;; v : Symbol - variable for which to check variance
@@ -721,7 +721,7 @@
   (define/cond-contract (infer X Y S T R [expected #f])
     (((listof symbol?) (listof symbol?) (listof Type/c) (listof Type/c)
       (or/c #f Values/c ValuesDots?))
-     ((or/c #f Values/c ValuesDots?))
+     ((or/c #f Values/c AnyValues? ValuesDots?))
      . ->* . (or/c boolean? substitution/c))
     (with-handlers ([exn:infer? (lambda _ #f)])
       (let* ([expected-cset (if expected

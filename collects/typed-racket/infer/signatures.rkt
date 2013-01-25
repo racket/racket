@@ -41,7 +41,7 @@
                             ;; range
                             (or/c #f Values/c ValuesDots?))
                            ;; optional expected type
-                           ((or/c #f Values/c ValuesDots?))
+                           ((or/c #f Values/c AnyValues? ValuesDots?))
                            . ->* . any)]
    [cond-contracted infer/vararg ((;; variables from the forall
                                    (listof symbol?)
@@ -56,7 +56,7 @@
                                    ;; range
                                    (or/c #f Values/c ValuesDots?))
                                   ;; [optional] expected type
-                                  ((or/c #f Values/c ValuesDots?)) . ->* . any)]
+                                  ((or/c #f Values/c AnyValues? ValuesDots?)) . ->* . any)]
    [cond-contracted infer/dots (((listof symbol?)
                                  symbol?
                                  (listof Values/c)
@@ -64,4 +64,4 @@
                                  Values/c
                                  (or/c Values/c ValuesDots?)
                                  (listof symbol?))
-                                (#:expected (or/c #f Values/c ValuesDots?)) . ->* . any)]))
+                                (#:expected (or/c #f Values/c AnyValues? ValuesDots?)) . ->* . any)]))
