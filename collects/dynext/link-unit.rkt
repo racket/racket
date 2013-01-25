@@ -348,7 +348,7 @@
 					    in))
 			 libs
 			 output-strings)])
-		  (unless #f ; quiet? 
+		  (unless quiet? 
 		    (printf "link-extension: ~a\n" command))
 		  (stdio-link (lambda (quiet?)
 				(apply my-process* command))
