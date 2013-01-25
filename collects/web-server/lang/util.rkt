@@ -75,7 +75,7 @@
       (let ([stx (local-expand (quasisyntax/loc stx
                                  (#%module-begin (require web-server/lang/lang-api) forms ...))
                                'module-begin 
-                               empty)])
+                               (list #'module*))])
         (with-syntax ([(pmb body ...) (disarm stx)])
           (define base-labeling (make-labeling (string->bytes/utf-8 (format "~a" (syntax->datum stx)))))      
           (define new-defs 
