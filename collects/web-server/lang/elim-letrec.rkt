@@ -103,7 +103,7 @@
      [id (identifier? #'id)
          (if (bound-identifier-member? #'id ids)
              (syntax/loc stx (#%plain-app unbox id))
-             #'id)]
+             stx)]
      [(letrec-syntaxes+values ([(sv ...) se] ...)
         ([(vv ...) ve] ...)
         be ...)

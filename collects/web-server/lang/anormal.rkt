@@ -140,7 +140,7 @@
        [(#%variable-reference . v)
         (ctxt stx)]
        [id (identifier? #'id)
-           (ctxt #'id)]
+           (ctxt stx)]
        [(letrec-syntaxes+values ([(sv ...) se] ...)
           ([(vv ...) ve] ...)
           be ...)
