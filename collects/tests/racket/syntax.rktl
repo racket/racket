@@ -1753,5 +1753,24 @@
 (syntax-test #'(letrec ([x 3])) #rx"missing body")
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that expansion generated for internal definitions
+;; introduces `values' and `begin' as if by macros:
+
+(let ()
+  (define (int-def-check)
+    (define (values) (error 'hygiene "is broken"))
+    1 ; expansion uses `values' and `begin'
+    (define x 2)
+    3)
+  (test 3 int-def-check)
+
+  (define (int-def-check2)
+    (define (begin) (error 'hygiene "is broken"))
+    1
+    (define x 2)
+    30)
+  (test 30 int-def-check2))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
