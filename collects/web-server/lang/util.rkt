@@ -48,26 +48,22 @@
      (list* #'rv (syntax->list #'(v ...)))]))
 
 (define ((make-define-case inner) stx)
-  (syntax-case stx (define-values define-syntaxes define-values-for-syntax #%require begin-for-syntax)
+  (syntax-case stx (define-values define-syntaxes #%require)
+    [(define-syntaxes . ds) stx]      
+    [(#%require . r) stx]
     [(define-values (v ...) ve)
      (let-values ([(nve) (inner #'ve)])
        (quasisyntax/loc stx
          (define-values (v ...) #,nve)))]
-    [(define-syntaxes (v ...) ve)
-     stx]      
-    [(define-values-for-syntax (v ...) ve)
-     stx]
-    [(begin-for-syntax e ...)
-     stx]
-    [(#%require spec ...)
-     stx]
     [expr
      (inner #'expr)]))
 
 (define ((make-module-case inner) stx)
-  (syntax-case* stx (#%provide) free-identifier=?     
-    [(#%provide spec ...)
-     stx]
+  (syntax-case* stx (#%provide begin-for-syntax module module*) free-identifier=?     
+    [(#%provide . p) stx]
+    [(module* . m) stx]
+    [(module . m) stx]
+    [(begin-for-syntax . e) stx]
     [_
      (inner stx)]))
 
