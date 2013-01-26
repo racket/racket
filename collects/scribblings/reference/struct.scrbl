@@ -718,7 +718,47 @@ specified through a transformer binding to such a value.}
          struct-info?]{
 
 Encapsulates a thunk that returns structure-type information in list
-form.}
+form. Note that accessors are listed in reverse order, as mentioned in @secref{structinfo}.}
+      
+@(struct-eval '(require (for-syntax racket/base)))
+@(struct-eval '(require racket/match))
+@(struct-eval '(require (for-syntax racket/struct-info)))
+@examples[
+#:eval struct-eval
+(define (new-pair? x) (displayln "new pair?") (pair? x))
+(define (new-car x) (displayln "new car") (car x))
+(define (new-cdr x) (displayln "new cdr") (cdr x))
+(define-syntax new-list 
+  (make-struct-info 
+   (λ () (list #f 
+               #'cons 
+               #'new-pair? 
+               (list #'new-cdr #'new-car) 
+               (list #f #f)
+               #t))))
+(match (list 1 2 3)
+  [(new-list hd tl) (append tl (list hd))])
+]
+
+@examples[
+#:eval struct-eval
+(struct A (x y))
+(define (new-A-x a) (displayln "A-x") (A-x a))
+(define (new-A-y a) (displayln "A-y") (A-y a))
+(define (new-A? a) (displayln "A?") (A? a))
+(define-syntax A-info
+  (make-struct-info
+   (λ () (list #'A
+               #'A
+               #'new-A?
+               (list #'new-A-y #'new-A-x)
+               (list #f #f)
+               #t))))
+(define-match-expander B
+  (syntax-rules () [(_ x ...) (A-info x ...)]))
+(match (A 10 20)
+  [(B x y) (list y x)])
+]
 
 @defproc[(extract-struct-info [v struct-info?])
          (and/c struct-info? list?)]{
