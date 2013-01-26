@@ -947,27 +947,28 @@ added get-regions
     ;; find-next-outer-paren : number (list string)
     ;;            -> (values (or #f number) (or #f number) (or #f string))
     (define/private (find-next-outer-paren pos closers)
-      (cond
-        [(null? closers) (values #f #f #f)]
-        [else
-         (define c (car closers))       ; pick a close parens
-         (define l (string-length c))
-         (define ls (find-ls pos))
-         (cond
-           [(not ls) (values #f #f #f)]
-           [else
-            (define start-pos (lexer-state-start-pos ls))
-            (insert c pos)             ; temporarily insert c
-            (define m (backward-match (+ l pos) start-pos)) ; find matching open parens
-            (delete pos (+ l pos))     ; delete c
-            (define n                  ; now from the open parens find the *real* matching close parens
-              (and m (forward-match m (last-position)))) ; n is the position *after* the close
-            #;(printf "outer: ~a~n" (list pos n m (and n m (let-values ([(a b) (get-token-range (- n l))])
-                                                           (list a b)))))
-            (if n
-                (let-values ([(a b) (get-token-range (- n l))])
-                  (values a b (get-text a b)))
-                (find-next-outer-paren pos (cdr closers)))])]))
+      (let loop ([pos pos])
+        (define after-ws (skip-whitespace pos 'forward #f))
+        (cond
+          [after-ws
+           (define tok (classify-position after-ws))
+           (define-values (a b) (get-token-range after-ws))
+           (cond
+             [(eq? tok 'parenthesis)
+              (define str (get-text a b))
+              (cond
+                [(member str closers) 
+                 (values a b str)]
+                [else
+                 (define m (forward-match a (last-position)))
+                 (cond
+                   [m (loop m)]
+                   [else (values #f #f #f)])])]
+             [(<= b (last-position))
+              (loop b)]
+             [else
+              (values #f #f #f)])]
+          [else (values #f #f)])))
     
 
     ;; returns the start and end positions of the next token at or after
