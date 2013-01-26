@@ -111,6 +111,7 @@
       `(let* ([t (new racket:text%)]
               [f (new frame% [label ""] [width 600] [height 600])]
               [ec (new editor-canvas% [parent f] [editor t])])
+         (preferences:set 'framework:fixup-parens #t)
          (preferences:set 'framework:automatic-parens ,auto-parens?)
          (send f reflow-container)
          (send t insert ,initial-text)
