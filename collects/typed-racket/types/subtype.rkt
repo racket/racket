@@ -2,7 +2,7 @@
 (require (except-in "../utils/utils.rkt" infer)
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
-         (types utils resolve base-abbrev numeric-tower substitute)
+         (types utils resolve base-abbrev numeric-tower substitute current-seen)
          (env type-name-env)
          racket/match unstable/match
          racket/function
@@ -24,14 +24,6 @@
   (syntax-rules ()
     [(_ s t) (raise (make-exn:subtype "subtyping failed" (current-continuation-marks) s t))]))
 
-;; data structures for remembering things on recursive calls
-(define (empty-set) '())
-
-(define current-seen (make-parameter (empty-set)))
-
-(define (seen-before s t) (cons (Type-seq s) (Type-seq t)))
-(define (remember s t A) (cons (seen-before s t) A))
-(define (seen? s t) (member (seen-before s t) (current-seen)))
 
 (define subtype-cache (make-hash))
 (define (cache-types s t)
@@ -54,7 +46,8 @@
     (define result (handle-failure (and (subtype* (current-seen) s t) #t)))
     ;(printf "subtype cache miss ~a ~a\n" s t)
     result)
-  (hash-ref! subtype-cache k new-val))
+  ((if (currently-subtyping?) hash-ref hash-ref!)
+   subtype-cache k new-val))
 
 ;; are all the s's subtypes of all the t's?
 ;; [type] [type] -> boolean
@@ -162,7 +155,7 @@
 (define (subtypes/varargs args dom rst)
   (with-handlers
       ([exn:subtype? (lambda _ #f)])
-    (subtypes*/varargs (empty-set) args dom rst)))
+    (subtypes*/varargs null args dom rst)))
 
 (define (subtypes*/varargs A0 argtys dom rst)
   (let loop-varargs ([dom dom] [argtys argtys] [A A0])

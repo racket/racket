@@ -4,7 +4,7 @@
 (require (rep type-rep rep-utils free-variance)
          (env type-name-env)
          (utils tc-utils)
-         (types utils)
+         (types utils current-seen)
          racket/match
          racket/contract
          racket/format)
@@ -82,7 +82,7 @@
                   [(App: r r* s)
                    (resolve-app r r* s)]
                   [(Name: _) (resolve-name t)])])
-        (when r*
+        (when (and r* (not (currently-subtyping?)))
           (hash-set! resolver-cache seq r*))
         r*)))
 
