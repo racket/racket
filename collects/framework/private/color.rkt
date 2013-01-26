@@ -1075,7 +1075,7 @@ added get-regions
            (cond
              [(eq? smart-skip 'adjacent)
               (end-edit-sequence)  ;; wraps up the net-zero editing changes done by get-close-paren etc.
-              (undo)               ;; to avoid messing up the editor's modified state in case of a simple skip
+              (when fixup? (undo)) ;; to avoid messing up the editor's modified state in case of a simple skip
               (if (and next-close-start next-close-adj?
                        (string=? insert-str next-close-str))
                   (skip next-close-end)
