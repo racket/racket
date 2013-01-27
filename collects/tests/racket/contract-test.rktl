@@ -9493,6 +9493,10 @@
               'pos
               'neg))
 
+  (test/no-error '(syntax/c (list/c #f)))
+  (contract-error-test 'syntax/c-non-flat '(syntax/c (vector/c #f))
+                       (λ (x) (regexp-match #rx"expected a flat contract" (exn-message x))))
+
 
 ;
 ;
