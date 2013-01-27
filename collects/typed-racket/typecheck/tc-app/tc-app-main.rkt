@@ -5,7 +5,7 @@
          "utils.rkt"
          syntax/parse racket/match 
          syntax/parse/experimental/reflect
-         (typecheck signatures tc-funapp tc-app-helper)
+         (typecheck signatures tc-funapp tc-app-helper tc-subst)
          (types utils abbrev)
          (rep type-rep filter-rep object-rep rep-utils)
          (for-template racket/base))
@@ -57,23 +57,56 @@
 
 
 
+;; TODO: handle drest, and filters/objects
+(define (arr-matches? arr args)
+  (match arr
+    [(arr: domain
+           (Values: (list (Result: v (FilterSet: (Top:) (Top:)) (Empty:)) ...))
+           rest #f (list (Keyword: _ _ #f) ...))
+     (cond
+       [(< (length domain) (length args)) rest]
+       [(= (length domain) (length args)) #t]
+       [else #f])]
+    [_ #f]))
+
+(define (has-filter? arr)
+  (match arr
+    [(arr: _ (Values: (list (Result: v (FilterSet: (Top:) (Top:)) (Empty:)) ...))
+           _ _ (list (Keyword: _ _ #f) ...)) #f]
+    [else #t]))
+
+
 (define (tc/app-regular form expected)
   (syntax-case form ()
     [(f . args)
      (let* ([f-ty (single-value #'f)]
             [args* (syntax->list #'args)])
-       (match f-ty
-         [(tc-result1:
-           (and t (Function:
-                   (list (and a (arr: (? (λ (d) (= (length d) (length args*))) dom)
-                                      (Values: (list (Result: v (FilterSet: (Top:) (Top:)) (Empty:))))
-                                      #f #f (list (Keyword: _ _ #f) ...)))))))
-          (for ([a (in-list args*)] [t (in-list dom)])
-            (tc-expr/check a (ret t)))
-          (ret v)]
-         [_
-          (let ([arg-tys (map single-value (syntax->list #'args))])
-            (tc/funapp #'f #'args f-ty arg-tys expected))]))]))
+       (define (matching-arities arrs)
+         (for/list ([arr (in-list arrs)] #:when (arr-matches? arr args*)) arr))
+       (define (has-drest/filter? arrs)
+         (for/or ([arr arrs])
+           (or (has-filter? arr) (arr-drest arr))))
+
+       (define arg-tys
+         (match f-ty
+           [(tc-result1: (Function: (? has-drest/filter?)))
+            (map single-value args*)]
+           [(tc-result1:
+             (Function:
+               (app matching-arities
+                 (list (arr: doms ranges rests drests _) ..1))))
+            (define matching-domains
+              (in-values-sequence
+                (apply in-parallel
+                  (for/list ((dom (in-list doms)) (rest (in-list rests)))
+                    (in-sequences (in-list dom) (in-cycle (in-value rest)))))))
+            (for/list ([a (in-list args*)] [types matching-domains])
+              (match-define (cons t ts) types)
+              (if (for/and ((t2 ts)) (equal? t t2))
+                  (tc-expr/check a (ret t))
+                  (single-value a)))]
+           [_ (map single-value args*)]))
+       (tc/funapp #'f #'args f-ty arg-tys expected))]))
 
 ;(trace tc/app/internal)
 
