@@ -1584,7 +1584,7 @@ If the namespace does not, they are colored the unbound color.
           (when (set-syncheck-running-mode bx)
             
             ;; reset any previous check syntax information
-            (let ([tab (get-current-tab)])
+            (let ([tab (send defs-text get-tab)])
               (send tab syncheck:clear-error-message)
               (send tab syncheck:clear-highlighting)
               (send defs-text syncheck:reset-docs-im))
