@@ -697,11 +697,8 @@
 [complex? (make-pred-ty N)]
 ;; `rational?' includes all Reals, except infinities and NaN.
 [rational? (asym-pred Univ B (-FS (-filter -Real 0) (-not-filter -Rat 0)))]
-[exact? (asym-pred N B (-FS -top (-not-filter -ExactNumber 0)))]
-;; `inexact?' can't be a predicate for `(Un -InexactReal -InexactComplex)' because it
-;; returns #t on things like 0+1.2i, which are not -InexactComplex (`real-part' of it
-;; is exact 0)
-[inexact? (asym-pred N B  (-FS -top (-not-filter (Un -InexactReal -InexactComplex) 0)))]
+[exact? (make-pred-ty -ExactNumber)]
+[inexact? (make-pred-ty (Un -InexactReal -InexactImaginary -InexactComplex))]
 [fixnum? (make-pred-ty -Fixnum)]
 [index? (make-pred-ty -Index)]
 [positive? (cl->* (-> -Byte B : (-FS (-filter -PosByte 0) (-filter -Zero 0)))
