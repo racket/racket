@@ -1123,7 +1123,7 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
       rand = (alt_rands 
               ? alt_rands[i+1+args_already_in_place] 
               : app->args[i+1+args_already_in_place]);
-      mz_ld_fppush(JIT_FPR0, arg_tmp_offset);
+      mz_ld_fppush(JIT_FPR0, arg_tmp_offset, 0);
       arg_tmp_offset -= sizeof(double);
       already_unboxed = 1;
       if (!already_loaded && !SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)) {
@@ -1141,7 +1141,7 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
       if (!already_unboxed)
         jit_ldxi_d_fppush(JIT_FPR0, JIT_R0, &((Scheme_Double *)0x0)->double_val); 
       arg_offset += sizeof(double);
-      mz_st_fppop(arg_offset, JIT_FPR0);
+      mz_st_fppop(arg_offset, JIT_FPR0, 0);
     }
 #endif
     CHECK_LIMIT();
@@ -1536,8 +1536,8 @@ static int generate_fp_argument_shuffle(int direct_flostack_offset, mz_jit_state
           i_pos = jitter->flostack_offset - direct_flostack_offset + i + sizeof(double);
           a_pos = direct_flostack_offset - i;
           if (i_pos != a_pos) {
-            mz_ld_fppush(JIT_FPR0, i_pos);
-            mz_st_fppop(a_pos, JIT_FPR0);
+            mz_ld_fppush(JIT_FPR0, i_pos, 0);
+            mz_st_fppop(a_pos, JIT_FPR0, 0);
             CHECK_LIMIT();
           }
         }
@@ -1548,10 +1548,10 @@ static int generate_fp_argument_shuffle(int direct_flostack_offset, mz_jit_state
         int i_pos, j_pos;
         i_pos = jitter->flostack_offset - direct_flostack_offset + i + sizeof(double);
         j_pos = jitter->flostack_offset - direct_flostack_offset + j + sizeof(double);
-        mz_ld_fppush(JIT_FPR1, i_pos);
-        mz_ld_fppush(JIT_FPR0, j_pos);
-        mz_st_fppop(i_pos, JIT_FPR0);
-        mz_st_fppop(j_pos, JIT_FPR1);
+        mz_ld_fppush(JIT_FPR1, i_pos, 0);
+        mz_ld_fppush(JIT_FPR0, j_pos, 0);
+        mz_st_fppop(i_pos, JIT_FPR0, 0);
+        mz_st_fppop(j_pos, JIT_FPR1, 0);
         CHECK_LIMIT();
       }
      
@@ -1560,9 +1560,9 @@ static int generate_fp_argument_shuffle(int direct_flostack_offset, mz_jit_state
         for (i = 0; i < direct_flostack_offset; i += sizeof(double)) {
           int i_pos, a_pos;
           i_pos = jitter->flostack_offset - direct_flostack_offset + i + sizeof(double);
-          mz_ld_fppush(JIT_FPR0, i_pos);
+          mz_ld_fppush(JIT_FPR0, i_pos, 0);
           a_pos = i + sizeof(double);
-          mz_st_fppop(a_pos, JIT_FPR0);
+          mz_st_fppop(a_pos, JIT_FPR0, 0);
           CHECK_LIMIT();
         }
       }
@@ -1593,8 +1593,8 @@ static int generate_call_path_with_unboxes(mz_jit_state *jitter, int direct_flos
     int i_pos, a_pos;
     i_pos = jitter->flostack_offset - direct_flostack_offset + i + sizeof(double);
     a_pos = direct_flostack_offset - i;
-    mz_ld_fppush_x(JIT_FPR0, i_pos, JIT_R2);
-    mz_st_fppop(a_pos, JIT_FPR0);
+    mz_ld_fppush_x(JIT_FPR0, i_pos, JIT_R2, 0);
+    mz_st_fppop(a_pos, JIT_FPR0, 0);
     CHECK_LIMIT();
   }
 
@@ -1622,7 +1622,7 @@ static int generate_call_path_with_unboxes(mz_jit_state *jitter, int direct_flos
       offset = jitter->flostack_offset - direct_flostack_offset + k;
       offset = JIT_FRAME_FLOSTACK_OFFSET - offset;
       jit_ldxi_p(JIT_R0, JIT_RUNSTACK, WORDS_TO_BYTES(i));
-      scheme_generate_flonum_local_boxing(jitter, i, offset, JIT_R0);
+      scheme_generate_flonum_local_boxing(jitter, i, offset, JIT_R0, 0);
     }
   }
 
@@ -1882,7 +1882,8 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
              : app->args[1+args_already_in_place]);
       t = SCHEME_TYPE(arg);
       if ((num_rands == 1) && ((SAME_TYPE(scheme_local_type, t)
-                                && ((SCHEME_GET_LOCAL_TYPE(arg) != SCHEME_LOCAL_TYPE_FLONUM)))
+                                && (SCHEME_GET_LOCAL_TYPE(arg) != SCHEME_LOCAL_TYPE_FLONUM)
+                                && (SCHEME_GET_LOCAL_TYPE(arg) != SCHEME_LOCAL_TYPE_EXTFLONUM))
 			       || (t >= _scheme_values_types_))) {
 	/* App of something complex to a local variable. We
 	   can move the proc directly to V1. */
@@ -1920,9 +1921,9 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
         && (CLOSURE_ARGUMENT_IS_FLONUM(direct_data, i+args_already_in_place))) {
       int directly;
       jitter->unbox++;
-      if (scheme_can_unbox_inline(arg, 5, JIT_FPR_NUM-1, 0))
+      if (scheme_can_unbox_inline(arg, 5, JIT_FPR_NUM-1, 0, 0))
         directly = 2;
-      else if (scheme_can_unbox_directly(arg))
+      else if (scheme_can_unbox_directly(arg, 0))
         directly = 1;
       else
         directly = 0;
@@ -1930,7 +1931,7 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
       --jitter->unbox;
       --jitter->unbox_depth;
       CHECK_LIMIT();
-      scheme_generate_flonum_local_unboxing(jitter, 0);
+      scheme_generate_flonum_local_unboxing(jitter, 0, 0);
       CHECK_LIMIT();
       if (SAME_TYPE(SCHEME_TYPE(arg), scheme_local_type)) {
         /* Keep local Scheme_Object view, in case a box has been allocated */

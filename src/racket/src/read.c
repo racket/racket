@@ -4776,6 +4776,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       RANGE_CHECK(l, < (EXPECTED_PRIM_COUNT 
                         + EXPECTED_UNSAFE_COUNT 
                         + EXPECTED_FLFXNUM_COUNT 
+                        + EXPECTED_EXTFL_COUNT 
                         + EXPECTED_FUTURES_COUNT));
       return variable_references[l];
       break;

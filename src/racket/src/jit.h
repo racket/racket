@@ -98,6 +98,17 @@ END_XFORM_ARITH;
 #define JIT_LOG_DOUBLE_SIZE 3
 #define JIT_DOUBLE_SIZE (1 << JIT_LOG_DOUBLE_SIZE)
 
+#ifdef MZ_LONG_DOUBLE
+# ifdef MZ_USE_JIT_X86_64
+#  define JIT_LOG_LONG_DOUBLE_SIZE 4
+#  define JIT_LONG_DOUBLE_SIZE (1 << JIT_LOG_LONG_DOUBLE_SIZE)
+# else
+#  define JIT_LOG_LONG_DOUBLE_SIZE not_implemented
+#  define JIT_LONG_DOUBLE_SIZE 12
+#endif
+
+#endif
+
 /* a mzchar is an int: */
 #define LOG_MZCHAR_SIZE 2
 
@@ -151,6 +162,8 @@ Fix me! See use.
 # endif
 #endif
 
+#include "jitfpu.h"
+
 #if 0
 static void assert_failure(int where) { printf("JIT assert failed %d\n", where); }
 #define JIT_ASSERT(v) if (!(v)) assert_failure(__LINE__);
@@ -184,6 +197,10 @@ extern int scheme_jit_malloced;
 #ifdef JIT_USE_FP_OPS
 THREAD_LOCAL_DECL(extern double scheme_jit_save_fp);
 THREAD_LOCAL_DECL(extern double scheme_jit_save_fp2);
+# ifdef MZ_LONG_DOUBLE
+THREAD_LOCAL_DECL(extern long double scheme_jit_save_extfp);
+THREAD_LOCAL_DECL(extern long double scheme_jit_save_extfp2);
+# endif
 #endif
 
 typedef int (*Native_Check_Arity_Proc)(Scheme_Object *o, int argc, int dummy EXTRA_NATIVE_ARGUMENT_TYPE);
@@ -214,6 +231,12 @@ typedef struct Apply_LWC_Args {
 
 typedef Scheme_Object *(*Continuation_Apply_Indirect)(Apply_LWC_Args *, intptr_t);
 typedef Scheme_Object *(*Continuation_Apply_Finish)(Apply_LWC_Args *args, void *stack, void *frame);
+
+#ifdef MZ_LONG_DOUBLE
+# define JIT_NUM_FL_KINDS 2
+#else
+# define JIT_NUM_FL_KINDS 1
+#endif
 
 struct scheme_jit_common_record {
   int skip_checks;
@@ -257,7 +280,8 @@ struct scheme_jit_common_record {
   void *chap_vector_ref_code, *chap_vector_ref_check_index_code, *chap_vector_set_code, *chap_vector_set_check_index_code;
   void *string_ref_code, *string_ref_check_index_code, *string_set_code, *string_set_check_index_code;
   void *bytes_ref_code, *bytes_ref_check_index_code, *bytes_set_code, *bytes_set_check_index_code;
-  void *flvector_ref_check_index_code, *flvector_set_check_index_code, *flvector_set_flonum_check_index_code;
+  void *flvector_ref_check_index_code[JIT_NUM_FL_KINDS];
+  void *flvector_set_check_index_code[JIT_NUM_FL_KINDS], *flvector_set_flonum_check_index_code[JIT_NUM_FL_KINDS];
   void *fxvector_ref_code, *fxvector_ref_check_index_code, *fxvector_set_code, *fxvector_set_check_index_code;
   void *struct_raw_ref_code, *struct_raw_set_code;
   void *syntax_e_code;
@@ -284,7 +308,12 @@ struct scheme_jit_common_record {
   void *finish_tail_call_code, *finish_tail_call_fixup_code;
   void *module_run_start_code, *module_exprun_start_code, *module_start_start_code;
   void *box_flonum_from_stack_code, *box_flonum_from_reg_code;
-  void *fl1_fail_code, *fl2rr_fail_code[2], *fl2fr_fail_code[2], *fl2rf_fail_code[2];
+  void *fl1_fail_code[JIT_NUM_FL_KINDS], *fl2rr_fail_code[2][JIT_NUM_FL_KINDS];
+  void *fl2fr_fail_code[2][JIT_NUM_FL_KINDS], *fl2rf_fail_code[2][JIT_NUM_FL_KINDS];
+#ifdef MZ_LONG_DOUBLE
+  void *bad_extflvector_length_code;
+  void *box_extflonum_from_stack_code, *box_extflonum_from_reg_code;
+#endif
   void *wcm_code, *wcm_nontail_code, *wcm_chaperone;
   void *apply_to_list_tail_code, *apply_to_list_code, *apply_to_list_multi_ok_code;
   void *eqv_code, *eqv_branch_code;
@@ -295,6 +324,9 @@ struct scheme_jit_common_record {
   void *retry_alloc_code;
   void *retry_alloc_code_keep_r0_r1;
   void *retry_alloc_code_keep_fpr1;
+# ifdef MZ_LONG_DOUBLE
+  void *retry_alloc_code_keep_extfpr1;
+# endif
 #endif
 
   Continuation_Apply_Indirect continuation_apply_indirect_code;
@@ -353,6 +385,9 @@ typedef struct mz_jit_state {
   int rs_virtual_offset;
   int unbox, unbox_depth;
   int flostack_offset, flostack_space;
+#ifdef MZ_LONG_DOUBLE
+  int unbox_extflonum;
+#endif
   int self_restart_offset, self_restart_space;
 } mz_jit_state;
 
@@ -415,6 +450,10 @@ typedef struct {
 # define tl_fixup_already_in_place         tl_delta(fixup_already_in_place)
 # define tl_scheme_jit_save_fp             tl_delta(scheme_jit_save_fp)
 # define tl_scheme_jit_save_fp2            tl_delta(scheme_jit_save_fp2)
+#ifdef MZ_LONG_DOUBLE
+# define tl_scheme_jit_save_extfp          tl_delta(scheme_jit_save_extfp)
+# define tl_scheme_jit_save_extfp2         tl_delta(scheme_jit_save_extfp2)
+#endif
 # define tl_scheme_fuel_counter            tl_delta(scheme_fuel_counter)
 # define tl_scheme_jit_stack_boundary      tl_delta(scheme_jit_stack_boundary)
 # define tl_jit_future_storage             tl_delta(jit_future_storage)
@@ -439,6 +478,8 @@ void *scheme_jit_get_threadlocal_table();
 #  define mz_tl_ldr_i(reg, addr) jit_ldxi_i(reg, JIT_R14, addr)
 #  define mz_tl_str_d_fppop(tmp_reg, reg, addr) jit_stxi_d_fppop(addr, JIT_R14, reg)
 #  define mz_tl_ldr_d_fppush(reg, tmp_reg, addr) jit_ldxi_d_fppush(reg, JIT_R14, addr)
+#  define mz_fpu_tl_str_ld_fppop(tmp_reg, reg, addr) jit_fpu_stxi_ld_fppop(addr, JIT_R14, reg)
+#  define mz_fpu_tl_ldr_ld_fppush(reg, tmp_reg, addr) jit_fpu_ldxi_ld_fppush(reg, JIT_R14, addr)
 #  define mz_tl_addr_tmp_i(tmp_reg, addr) (void)0
 #  define mz_tl_addr_untmp_i(tmp_reg) (void)0
 #  define mz_tl_tmp_reg_i(tmp_reg) tmp_reg
@@ -469,6 +510,8 @@ void *scheme_jit_get_threadlocal_table();
 #  define mz_tl_ldr_i(reg, addr) jit_ldr_i(reg, reg)
 #  define mz_tl_str_d_fppop(tmp_reg, reg, addr) jit_str_d_fppop(tmp_reg, reg)
 #  define mz_tl_ldr_d_fppush(reg, tmp_reg, addr) jit_ldr_d_fppush(reg, tmp_reg)
+#  define mz_fpu_tl_str_ld_fppop(tmp_reg, reg, addr) jit_fpu_str_ld_fppop(tmp_reg, reg)
+#  define mz_fpu_tl_ldr_ld_fppush(reg, tmp_reg, addr) jit_fpu_ldr_ld_fppush(reg, tmp_reg)
 # endif
 
 /* A given tmp_reg doesn't have to be unused; it just has to be distinct from other arguments. */
@@ -480,6 +523,8 @@ void *scheme_jit_get_threadlocal_table();
 # define mz_tl_ldi_i(reg, addr) (mz_tl_addr(reg, addr), mz_tl_ldr_i(reg, addr))
 # define mz_tl_sti_d_fppop(addr, reg, tmp_reg) (mz_tl_addr(tmp_reg, addr), mz_tl_str_d_fppop(tmp_reg, reg, addr))
 # define mz_tl_ldi_d_fppush(reg, addr, tmp_reg) (mz_tl_addr(tmp_reg, addr), mz_tl_ldr_d_fppush(reg, tmp_reg, addr))
+# define mz_fpu_tl_sti_ld_fppop(addr, reg, tmp_reg) (mz_tl_addr(tmp_reg, addr), mz_fpu_tl_str_ld_fppop(tmp_reg, reg, addr))
+# define mz_fpu_tl_ldi_ld_fppush(reg, addr, tmp_reg) (mz_tl_addr(tmp_reg, addr), mz_fpu_tl_ldr_ld_fppush(reg, tmp_reg, addr))
 #else
 # define mz_tl_sti_p(addr, reg, tmp_reg) jit_sti_p(addr, reg)
 # define mz_tl_sti_l(addr, reg, tmp_reg) jit_sti_l(addr, reg)
@@ -489,6 +534,8 @@ void *scheme_jit_get_threadlocal_table();
 # define mz_tl_ldi_i(reg, addr) jit_ldi_i(reg, addr)
 # define mz_tl_sti_d_fppop(addr, reg, tmp_reg) jit_sti_d_fppop(addr, reg)
 # define mz_tl_ldi_d_fppush(reg, addr, tmp_reg) jit_ldi_d_fppush(reg, addr)
+# define mz_fpu_tl_sti_ld_fppop(addr, reg, tmp_reg) jit_fpu_sti_ld_fppop(addr, reg)
+# define mz_fpu_tl_ldi_ld_fppush(reg, addr, tmp_reg) jit_fpu_ldi_ld_fppush(reg, addr)
 # define tl_MZ_RUNSTACK (&MZ_RUNSTACK)
 # define tl_MZ_RUNSTACK_START (&MZ_RUNSTACK_START)
 # define tl_GC_gen0_alloc_page_ptr (&GC_gen0_alloc_page_ptr)
@@ -501,6 +548,10 @@ void *scheme_jit_get_threadlocal_table();
 # define tl_fixup_already_in_place (&fixup_already_in_place)
 # define tl_scheme_jit_save_fp (&scheme_jit_save_fp)
 # define tl_scheme_jit_save_fp2 (&scheme_jit_save_fp2)
+# ifdef MZ_LONG_DOUBLE
+#  define tl_scheme_jit_save_extfp (&scheme_jit_save_extfp)
+#  define tl_scheme_jit_save_extfp2 (&scheme_jit_save_extfp2)
+# endif
 # define tl_scheme_fuel_counter (&scheme_fuel_counter)
 # define tl_scheme_jit_stack_boundary (&scheme_jit_stack_boundary)
 #endif
@@ -875,10 +926,10 @@ static jit_insn *fp_tmpr;
 #endif
 
 #define FLOSTACK_SPACE_CHUNK 16
-# define mz_ld_fppush_x(r, i, FP) (check_fp_depth(i, FP), jit_ldxi_d_fppush(r, FP, (JIT_FRAME_FLOSTACK_OFFSET - (i))))
-# define mz_ld_fppush(r, i) mz_ld_fppush_x(r, i, JIT_FP) 
-# define mz_st_fppop_x(i, r, FP) (check_fp_depth(i, FP), (void)jit_stxi_d_fppop((JIT_FRAME_FLOSTACK_OFFSET - (i)), FP, r))
-# define mz_st_fppop(i, r) mz_st_fppop_x(i, r, JIT_FP) 
+# define mz_ld_fppush_x(r, i, FP, extfl) (check_fp_depth(i, FP), jit_FPSEL_ldxi_xd_fppush(extfl, r, FP, (JIT_FRAME_FLOSTACK_OFFSET - (i))))
+# define mz_ld_fppush(r, i, extfl) mz_ld_fppush_x(r, i, JIT_FP, extfl) 
+# define mz_st_fppop_x(i, r, FP, extfl) (check_fp_depth(i, FP), (void)jit_FPSEL_stxi_xd_fppop(extfl, (JIT_FRAME_FLOSTACK_OFFSET - (i)), FP, r))
+# define mz_st_fppop(i, r, extfl) mz_st_fppop_x(i, r, JIT_FP, extfl) 
 
 #define mz_patch_branch(a) mz_patch_branch_at(a, (_jit.x.pc))
 #define mz_patch_ucbranch(a) mz_patch_ucbranch_at(a, (_jit.x.pc))
@@ -1076,6 +1127,11 @@ static void emit_indentation(mz_jit_state *jitter)
 #define JIT_FPR_1(r) JIT_FPR1
 #endif
 
+#ifdef MZ_LONG_DOUBLE
+#define JIT_FPU_FPR_0(r) JIT_FPU_FPR0
+#define JIT_FPU_FPR_1(r) JIT_FPU_FPR1
+#endif
+
 #if defined(MZ_USE_JIT_I386)
 # define mz_movi_d_fppush(rd,immd,tmp)    { GC_CAN_IGNORE void *addr; \
                                             addr = scheme_mz_retain_double(jitter, immd); \
@@ -1085,10 +1141,24 @@ static void emit_indentation(mz_jit_state *jitter)
 # define mz_movi_d_fppush(rd,immd,tmp)    jit_movi_d_fppush(rd,immd)    
 #endif
 
+#ifdef MZ_LONG_DOUBLE
+# define mz_fpu_movi_ld_fppush(rd,immd,tmp)    { GC_CAN_IGNORE void *addr; \
+                                                 addr = scheme_mz_retain_long_double(jitter, immd); \
+                                                 (void)jit_patchable_movi_p(tmp, addr);        \
+                                                 jit_fpu_ldr_ld_fppush(rd, tmp); }
+#endif
+
+
 /**********************************************************************/
 
 /* Does boxing a type require registers, possibly GC, etc.? */
+#ifdef MZ_LONG_DOUBLE
+#define JIT_TYPE_NEEDS_BOXING(t) ((t) == SCHEME_LOCAL_TYPE_FLONUM \
+                                  || (t) == SCHEME_LOCAL_TYPE_EXTFLONUM)
+                                  
+#else
 #define JIT_TYPE_NEEDS_BOXING(t) ((t) == SCHEME_LOCAL_TYPE_FLONUM)
+#endif
 
 /**********************************************************************/
 
@@ -1189,6 +1259,9 @@ int scheme_mz_flostack_save(mz_jit_state *jitter, int *pos);
 int scheme_mz_compute_runstack_restored(mz_jit_state *jitter, int adj, int skip);
 int scheme_mz_retain_it(mz_jit_state *jitter, void *v);
 double *scheme_mz_retain_double(mz_jit_state *jitter, double d);
+#ifdef MZ_LONG_DOUBLE
+long double *scheme_mz_retain_long_double(mz_jit_state *jitter, long double d);
+#endif
 int scheme_mz_remap_it(mz_jit_state *jitter, int i);
 void scheme_mz_pushr_p_it(mz_jit_state *jitter, int reg);
 void scheme_mz_popr_p_it(mz_jit_state *jitter, int reg, int discard);
@@ -1214,6 +1287,16 @@ int scheme_mz_try_runstack_pop(mz_jit_state *jitter, int n);
 #define mz_runstack_flonum_pushed(j, n) scheme_mz_runstack_flonum_pushed(j, n) 
 #define mz_runstack_popped(j, n) scheme_mz_runstack_popped(j, n) 
 #define mz_try_runstack_pop(j, n) scheme_mz_try_runstack_pop(j, n) 
+
+typedef struct {
+  int unbox;
+#ifdef MZ_LONG_DOUBLE
+  int unbox_extflonum;
+#endif
+} mz_jit_unbox_state;
+
+void scheme_mz_unbox_save(mz_jit_state *jitter, mz_jit_unbox_state *r);
+void scheme_mz_unbox_restore(mz_jit_state *jitter, mz_jit_unbox_state *r);
 
 /**********************************************************************/
 /*                             jitinline                              */
@@ -1246,7 +1329,8 @@ int scheme_generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_
 
 #ifdef CAN_INLINE_ALLOC
 int scheme_inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int flags,
-			int keep_r0_r1, int keep_fpr1, int inline_retry);
+			int keep_r0_r1, int keep_fpr1, int inline_retry
+                        , int keep_extfpr1);
 int scheme_generate_alloc_retry(mz_jit_state *jitter, int i);
 #else
 Scheme_Object *scheme_jit_make_list(GC_CAN_IGNORE Scheme_Object **rs, intptr_t n);
@@ -1264,8 +1348,8 @@ Scheme_Object *scheme_jit_make_two_element_ivector(Scheme_Object *a, Scheme_Obje
 /**********************************************************************/
 
 int scheme_jit_is_fixnum(Scheme_Object *rand);
-int scheme_can_unbox_inline(Scheme_Object *obj, int fuel, int regs, int unsafely);
-int scheme_can_unbox_directly(Scheme_Object *obj);
+int scheme_can_unbox_inline(Scheme_Object *obj, int fuel, int regs, int unsafely, int extfl);
+int scheme_can_unbox_directly(Scheme_Object *obj, int extfl);
 int scheme_generate_unboxing(mz_jit_state *jitter, int target);
 int scheme_generate_pop_unboxed(mz_jit_state *jitter);
 int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
@@ -1277,6 +1361,16 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
                           Branch_Info *for_branch, int branch_short,
                           int unsafe_fx, int unsafe_fl, GC_CAN_IGNORE jit_insn *overflow_refslow,
                           int dest);
+
+#ifdef MZ_LONG_DOUBLE
+int scheme_generate_alloc_long_double(mz_jit_state *jitter, int inline_retry, int dest);
+int scheme_generate_extflonum_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Object *rand, Scheme_Object *rand2, 
+                                      int orig_args, int arith, int cmp, int v, 
+                                      Branch_Info *for_branch, int branch_short, int unsafe_fx, int unsafe_extfl,
+                                      GC_CAN_IGNORE jit_insn *overflow_refslow, int dest);
+#endif
+
+int scheme_generate_alloc_X_double(mz_jit_state *jitter, int inline_retry, int dest, int extfl);
 
 /**********************************************************************/
 /*                              jitcall                               */
@@ -1347,8 +1441,8 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int tail_ok, int w
 int scheme_generate_unboxed(Scheme_Object *obj, mz_jit_state *jitter, int inlined_ok, int unbox_anyway);
 
 #ifdef USE_FLONUM_UNBOXING
-int scheme_generate_flonum_local_unboxing(mz_jit_state *jitter, int push);
-int scheme_generate_flonum_local_boxing(mz_jit_state *jitter, int pos, int offset, int target);
+int scheme_generate_flonum_local_unboxing(mz_jit_state *jitter, int push, int extfl);
+int scheme_generate_flonum_local_boxing(mz_jit_state *jitter, int pos, int offset, int target, int extfl);
 #endif
 int scheme_generate_unboxed(Scheme_Object *obj, mz_jit_state *jitter, int inlined_ok, int unbox_anyway);
 int scheme_generate_non_tail_mark_pos_prefix(mz_jit_state *jitter);
@@ -1373,7 +1467,7 @@ int scheme_can_delay_and_avoids_r1(Scheme_Object *obj);
 int scheme_can_delay_and_avoids_r1_r2(Scheme_Object *obj);
 int scheme_is_constant_and_avoids_r1(Scheme_Object *obj);
 int scheme_is_relatively_constant_and_avoids_r1_maybe_fp(Scheme_Object *obj, Scheme_Object *wrt,
-                                                         int fp_ok);
+                                                         int fp_ok, int extfl);
 int scheme_is_relatively_constant_and_avoids_r1(Scheme_Object *obj, Scheme_Object *wrt);
 int scheme_needs_only_target_register(Scheme_Object *obj, int and_can_reorder);
 int scheme_is_noncm(Scheme_Object *a, mz_jit_state *jitter, int depth, int stack_start);

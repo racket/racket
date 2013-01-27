@@ -517,6 +517,22 @@ double_obj {
   gcBYTES_TO_WORDS(sizeof(Scheme_Double));
 }
 
+#ifdef MZ_LONG_DOUBLE
+long_double_obj {
+ mark:
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Long_Double));
+}
+#else
+long_double_obj {
+ mark:
+  Scheme_Long_Double *ld = (Scheme_Long_Double *)p;
+  gcMARK2(ld->printed_form, gc);
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Long_Double));
+}
+#endif
+
 complex_obj {
  mark:
   Scheme_Complex *c = (Scheme_Complex *)p;
@@ -595,6 +611,17 @@ flvector_obj {
   gcBYTES_TO_WORDS((sizeof(Scheme_Double_Vector) 
 		    + ((vec->size - mzFLEX_DELTA) * sizeof(double))));
 }
+
+#ifdef MZ_LONG_DOUBLE
+extflvector_obj {
+  Scheme_Long_Double_Vector *vec = (Scheme_Long_Double_Vector *)p;
+
+ mark:
+ size:
+  gcBYTES_TO_WORDS((sizeof(Scheme_Long_Double_Vector) 
+		    + ((vec->size - mzFLEX_DELTA) * sizeof(long double))));
+}
+#endif
 
 input_port {
  mark:

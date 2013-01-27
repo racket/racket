@@ -33,6 +33,7 @@ AC_ARG_ENABLE(places,  [  --enable-places         support places (3m only; usual
 AC_ARG_ENABLE(futures, [  --enable-futures        support futures (usually enabled by default)])
 AC_ARG_ENABLE(float,   [  --enable-float          support single-precision floats (enabled by default)], , enable_float=yes)
 AC_ARG_ENABLE(floatinstead, [  --enable-floatinstead   use single-precision by default])
+AC_ARG_ENABLE(extflonum,    [  --enable-extflonum      support extflonums (enabled by default, if available)], , enable_extflonum=yes)
 
 AC_ARG_ENABLE(racket,  [  --enable-racket=<path>  use <path> as Racket executable to build Racket])
 
@@ -274,6 +275,7 @@ show_explicitly_enabled "${enable_backtrace}" "3m GC backtraces"
 
 show_explicitly_disabled "${enable_float}" "Single-precision floats"
 show_explicitly_enabled "${enable_floatinstead}" "Single-precision default floats"
+show_explicitly_disabled "${enable_extflonum}" "Extflonums"
 
 show_explicitly_enabled "${enable_pthread}" "pthreads"
 show_explicitly_enabled "${enable_oskit}" "OSKit"
@@ -413,6 +415,10 @@ fi
 
 if test "${enable_float}" = "yes" ; then
   AC_DEFINE(USE_SINGLE_FLOATS,1,[Single-precision floats])
+fi
+
+if test "${enable_extflonum}" = "no" ; then
+  AC_DEFINE(MZ_NO_EXTFLONUMS,1,[Extflonums disabled])
 fi
 
 ###### Autoconfigure #######

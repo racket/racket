@@ -163,6 +163,10 @@ typedef struct Thread_Local_Variables {
   void *retry_alloc_r1_;
   double scheme_jit_save_fp_;
   double scheme_jit_save_fp2_;
+#ifdef MZ_LONG_DOUBLE
+  long double scheme_jit_save_extfp_;
+  long double scheme_jit_save_extfp2_;
+#endif
   struct Scheme_Bucket_Table *starts_table_;
   struct Scheme_Bucket_Table *submodule_empty_modidx_table_;
   struct Scheme_Modidx *modidx_caching_chain_;
@@ -543,6 +547,10 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define retry_alloc_r1 XOA (scheme_get_thread_local_variables()->retry_alloc_r1_)
 #define scheme_jit_save_fp XOA (scheme_get_thread_local_variables()->scheme_jit_save_fp_)
 #define scheme_jit_save_fp2 XOA (scheme_get_thread_local_variables()->scheme_jit_save_fp2_)
+#ifdef MZ_LONG_DOUBLE
+#define scheme_jit_save_extfp XOA (scheme_get_thread_local_variables()->scheme_jit_save_extfp_)
+#define scheme_jit_save_extfp2 XOA (scheme_get_thread_local_variables()->scheme_jit_save_extfp2_)
+#endif
 #define starts_table XOA (scheme_get_thread_local_variables()->starts_table_)
 #define submodule_empty_modidx_table XOA (scheme_get_thread_local_variables()->submodule_empty_modidx_table_)
 #define modidx_caching_chain XOA (scheme_get_thread_local_variables()->modidx_caching_chain_)

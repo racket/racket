@@ -126,6 +126,8 @@
             (values #t #f)]
            [(regexp-match? #rx"#ifdef MZ_USE_SINGLE_FLOATS" l)
             (values #t #f)]
+           [(regexp-match? #rx"#ifdef MZ_LONG_DOUBLE" l)
+            (values #t #f)]
            [(and (exports-mode)
                  (regexp-match? #rx"#ifdef USE_MZ_SETJMP" l))
             (values #t #f)]

@@ -1164,8 +1164,11 @@ typedef _uc		jit_insn;
 #define XORQir(IM, RD)			_qOs_Mrm_sL	(0x81		,_b11,_b110  ,_r8(RD)			,IM	)
 
 /* x87 instructions -- yay, we found a use for octal constants :-) */
-
+#ifdef JIT_X86_64
+#define ESCmi(D,B,I,S,OP)	_qOd_r_X(0xd8|(OP >> 3), (OP & 7), D,B,I,S)
+#else
 #define ESCmi(D,B,I,S,OP)	_O_r_X(0xd8|(OP >> 3), (OP & 7), D,B,I,S)
+#endif
 #define ESCri(RD,OP)		_O_Mrm(0xd8|(OP >> 3), _b11, (OP & 7), RD)
 
 #define ESCrri(RS,RD,OP)	((RS) == _ST0 ? ESCri(RD,(OP|040))			\

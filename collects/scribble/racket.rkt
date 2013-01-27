@@ -5,6 +5,7 @@
            "private/manual-sprop.rkt"
            "private/on-demand.rkt"
            file/convertible
+           racket/extflonum
            (for-syntax racket/base))
   
   (provide define-code
@@ -262,7 +263,8 @@
                              (char? v)
                              (regexp? v)
                              (byte-regexp? v)
-                             (boolean? v)))
+                             (boolean? v)
+                             (extflonum? v)))
                        value-color]
                       [(identifier? c) 
                        (cond

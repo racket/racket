@@ -159,9 +159,8 @@
 # if defined(i386)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-linux"
 #  define REGISTER_POOR_MACHINE
-#  ifndef MZ_USE_JIT_SSE
-#   define ASM_DBLPREC_CONTROL_87
-#  endif
+#  define MZ_TRY_EXTFLONUMS
+#  define ASM_DBLPREC_CONTROL_87
 # endif
 # if defined(powerpc)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-linux"
@@ -185,9 +184,8 @@
 # if defined(__x86_64__)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-linux"
 #  define REGISTER_POOR_MACHINE
-#  ifdef MZ_NO_JIT_SSE
-#   define ASM_DBLPREC_CONTROL_87
-#  endif
+#  define ASM_DBLPREC_CONTROL_87
+#  define MZ_TRY_EXTFLONUMS
 # endif
 # ifndef SCHEME_PLATFORM_LIBRARY_SUBPATH
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "unknown-linux"
@@ -341,21 +339,19 @@
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-freebsd"
 #  define REGISTER_POOR_MACHINE
 #  define MZ_USE_JIT_I386
-#  ifndef MZ_JIT_X86_SSE
-#    if defined(__FreeBSD_kernel__)
-#     define ASM_DBLPREC_CONTROL_87
-#    else
-#     define FREEBSD_CONTROL_387
-#    endif
+#  define MZ_TRY_EXTFLONUMS
+#  if defined(__FreeBSD_kernel__)
+#   define ASM_DBLPREC_CONTROL_87
+#  else
+#   define FREEBSD_CONTROL_387
 #  endif
 # elif defined(__amd64__)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "amd64-freebsd"
 #  define REGISTER_POOR_MACHINE
 #  define MZ_USE_JIT_X86_64
-#  ifdef MZ_NO_JIT_SSE
-#    if defined(__FreeBSD_kernel__)
-#     define ASM_DBLPREC_CONTROL_87
-#    endif
+#  define MZ_TRY_EXTFLONUMS
+#  if defined(__FreeBSD_kernel__)
+#   define ASM_DBLPREC_CONTROL_87
 #  endif
 # elif defined(__sparc64__)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "sparc64-freebsd"
@@ -632,6 +628,7 @@
 # define IGNORE_BY_MS_CONTROL_87
 #endif
 #if defined(__MINGW32__)
+# define MZ_TRY_EXTFLONUMS
 # define ASM_DBLPREC_CONTROL_87
 #endif
 
@@ -646,6 +643,7 @@
 # else
 #  define MZ_USE_JIT_I386
 # endif
+
 # define MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC
 
 # define FLAGS_ALREADY_SET
@@ -772,18 +770,16 @@
 
 #if defined(__POWERPC__)
 # define MZ_USE_JIT_PPC
-#elif defined(__x86_64__)
-# define MZ_USE_JIT_X86_64
 #else
-# define MZ_USE_JIT_I386
-# ifndef MZ_NO_JIT_SSE
-#  define MZ_USE_JIT_SSE
+# if defined(__x86_64__)
+#  define MZ_USE_JIT_X86_64
+# else
+#  define MZ_USE_JIT_I386
 # endif
+# define ASM_DBLPREC_CONTROL_87
+# define MZ_TRY_EXTFLONUMS
 #endif
 
-#ifdef MZ_NO_JIT_SSE
-# define ASM_DBLPREC_CONTROL_87
-#endif
 # define POW_HANDLES_CASES_CORRECTLY
 
 # define MZ_JIT_USE_MPROTECT
@@ -1005,16 +1001,14 @@
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-dragonfly"
 #  define REGISTER_POOR_MACHINE
 #  define MZ_USE_JIT_I386
-#  ifndef MZ_JIT_X86_SSE
-#     define ASM_DBLPREC_CONTROL_87
-#  endif
+#  define ASM_DBLPREC_CONTROL_87
+#  define MZ_TRY_EXTFLONUMS
 # elif defined(__amd64__)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "amd64-dragonfly"
 #  define REGISTER_POOR_MACHINE
 #  define MZ_USE_JIT_X86_64
-#  ifdef MZ_NO_JIT_SSE
-#     define ASM_DBLPREC_CONTROL_87
-#  endif
+#  define ASM_DBLPREC_CONTROL_87
+#  define MZ_TRY_EXTFLONUMS
 # else
 #  error Unported platform.
 # endif
@@ -1348,7 +1342,9 @@
 
  /* ASM_DBLPREC_CONTROL_87 uses inline assembly to set Intel '387
     floating-point operations to double-precision instead of
-    extended-precision arithmetic. */
+    extended-precision arithmetic. This definition is turned off
+    if the C compiler and JIT use SSE, and ASM_EXTPREC_CONTROL_87
+    is turned on instead if extflonums are enabled. */
 
  /* IGNORE_BY_BORLAND_CONTROL_87 turns off floating-point error for
     Intel '387 with Borlad-style _control87. DONT_IGNORE_PIPE_SIGNAL

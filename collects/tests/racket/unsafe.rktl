@@ -3,10 +3,11 @@
 
 (Section 'unsafe)
 
-(require scheme/unsafe/ops
-         scheme/flonum
-         scheme/fixnum
-         scheme/foreign)
+(require racket/unsafe/ops
+         racket/flonum
+         racket/fixnum
+         ffi/vector
+         racket/extflonum)
 
 (let ()
   (define ((add-star str) sym)
@@ -136,6 +137,54 @@
   (test-bin -inf.0 'unsafe-fl/ -17.0 0.0)
   (test-bin 1.5 'unsafe-fl/ 1.5 1.0)
 
+  (when (extflonum-available?)
+    (test-bin 3.4t0 'unsafe-extfl+ 1.4t0 2.0t0)
+    (test-bin -1.0999999999999999999t0 'unsafe-extfl+ 1.0t0 -2.1t0)
+    (test-bin +inf.t 'unsafe-extfl+ 1.0t0 +inf.t)
+    (test-bin -inf.t 'unsafe-extfl+ 1.0t0 -inf.t)
+    (test-bin +nan.t 'unsafe-extfl+ +nan.t -inf.t)
+    (test-bin 1.5t0 'unsafe-extfl+ 1.5t0 0.0t0)
+    (test-bin 1.7t0 'unsafe-extfl+ 0.0t0 1.7t0)
+
+    (test-bin 7.9t0 'unsafe-extfl- 10.0t0 2.1t0)
+    (test-bin 3.7t0 'unsafe-extfl- 1.0t0 -2.7t0)
+    (test-bin 1.5t0 'unsafe-extfl- 1.5t0 0.0t0)
+
+    (test-bin 20.002t0 'unsafe-extfl* 10.001t0 2.0t0)
+    (test-bin -20.002t0 'unsafe-extfl* 10.001t0 -2.0t0)
+    (test-bin +nan.t 'unsafe-extfl* +inf.t 0.0t0)
+    (test-bin 1.8t0 'unsafe-extfl* 1.0t0 1.8t0)
+    (test-bin 1.81t0 'unsafe-extfl* 1.81t0 1.0t0)
+    
+    (test-bin (real->extfl 17/5) 'unsafe-extfl/ 17.0t0 5.0t0)
+    (test-bin +inf.t 'unsafe-extfl/ 17.0t0 0.0t0)
+    (test-bin -inf.t 'unsafe-extfl/ -17.0t0 0.0t0)
+    (test-bin 1.5t0 'unsafe-extfl/ 1.5t0 1.0t0)
+
+    (test-un 5.0t0 unsafe-extflabs 5.0t0)
+    (test-un 5.0t0 unsafe-extflabs -5.0t0)
+    (test-un 0.0t0 unsafe-extflabs -0.0t0)
+    (test-un +inf.t unsafe-extflabs -inf.t)
+
+    (test-un 5.0t0 unsafe-extflsqrt 25.0t0)
+    (test-un 0.5t0 unsafe-extflsqrt 0.25t0)
+    (test-un +nan.t unsafe-extflsqrt -1.0t0)
+
+    (test-un 8.0t0 'unsafe-fx->extfl 8)
+    (test-un -8.0t0 'unsafe-fx->extfl -8)
+
+    (test-un 8 'unsafe-extfl->fx 8.0t0)
+    (test-un -8 'unsafe-extfl->fx -8.0t0)
+
+    (test-bin 3.7t0 'unsafe-extflmin 3.7t0 4.1t0)
+    (test-bin 2.1t0 'unsafe-extflmin 3.7t0 2.1t0)
+    (test-bin +nan.t 'unsafe-extflmin +nan.t 2.1t0)
+    (test-bin +nan.t 'unsafe-extflmin 2.1t0 +nan.t)
+    (test-bin 3.7t0 'unsafe-extflmax 3.7t0 2.1t0)
+    (test-bin 4.1t0 'unsafe-extflmax 3.7t0 4.1t0)
+    (test-bin +nan.t 'unsafe-extflmax +nan.t 2.1t0)
+    (test-bin +nan.t 'unsafe-extflmax 2.1t0 +nan.t))
+
   (test-bin 3 'unsafe-fxand 7 3)
   (test-bin 2 'unsafe-fxand 6 3)
   (test-bin 3 'unsafe-fxand -1 3)
@@ -201,12 +250,32 @@
   (test-tri 'yes '(lambda (x y z) (if (unsafe-fl< (unsafe-fl+ x y) z) 'yes 'no)) 1.2 3.4 5.0)
   (test-tri #f '(lambda (x y z) (unsafe-fl> (unsafe-fl+ x y) z)) 1.2 3.4 5.0)
   (test-tri 'no '(lambda (x y z) (if (unsafe-fl> (unsafe-fl+ x y) z) 'yes 'no)) 1.2 3.4 5.0)
+
+  (when (extflonum-available?)
+    (test-tri 9.0t0 '(lambda (x y z) (unsafe-extfl+ (unsafe-extfl- x z) y)) 4.5t0 7.0t0 2.5t0)
+    (test-tri 9.0t0 '(lambda (x y z) (unsafe-extfl+ y (unsafe-extfl- x z))) 4.5t0 7.0t0 2.5t0)
+    (test-bin 10.0t0 '(lambda (x y) (unsafe-extfl+ (unsafe-fx->extfl x) y)) 2 8.0t0)
+    (test-bin 10.0t0 '(lambda (x y) (unsafe-extfl+ (unsafe-fx->extfl x) y)) 2 8.0t0)
+    (test-bin 9.5t0 '(lambda (x y) (unsafe-extfl+ (unsafe-extflabs x) y)) -2.0t0 7.5t0)
+    (test-tri (unsafe-extfl/ 20.0t0 0.8t0) '(lambda (x y z) (unsafe-extfl/ (unsafe-extfl* x z) y)) 4.0t0 0.8t0 5.0t0)
+    (test-tri (unsafe-extfl/ 0.8t0 20.0t0) '(lambda (x y z) (unsafe-extfl/ y (unsafe-extfl* x z))) 4.0t0 0.8t0 5.0t0)
+    
+    (test-tri #t '(lambda (x y z) (unsafe-extfl< (unsafe-extfl+ x y) z)) 1.2t0 3.4t0 5.0t0)
+    (test-tri 'yes '(lambda (x y z) (if (unsafe-extfl< (unsafe-extfl+ x y) z) 'yes 'no)) 1.2t0 3.4t0 5.0t0)
+    (test-tri #f '(lambda (x y z) (unsafe-extfl> (unsafe-extfl+ x y) z)) 1.2t0 3.4t0 5.0t0)
+    (test-tri 'no '(lambda (x y z) (if (unsafe-extfl> (unsafe-extfl+ x y) z) 'yes 'no)) 1.2t0 3.4t0 5.0t0))
   
   ;; test unboxing interaction with free variables:
   (test-tri 4.4 '(lambda (x y z) (with-handlers ([exn:fail:contract:variable? 
                                                   (lambda (exn) (unsafe-fl+ x y))])
                                    (unsafe-fl- (unsafe-fl+ x y) NO-SUCH-VARIABLE)))
             1.1 3.3 5.2)
+
+  (when (extflonum-available?)
+    (test-tri 4.4t0 '(lambda (x y z) (with-handlers ([exn:fail:contract:variable? 
+                                                      (lambda (exn) (unsafe-extfl+ x y))])
+                                       (unsafe-extfl- (unsafe-extfl+ x y) NO-SUCH-VARIABLE)))
+              1.1t0 3.3t0 5.2t0))
 
   (test-un 5 'unsafe-car (cons 5 9))
   (test-un 9 'unsafe-cdr (cons 5 9))
@@ -304,6 +373,15 @@
               #:post (lambda (x) (list x (f64vector-ref v 2)))
               #:literal-ok? #f))
 
+  (when (extflonum-available?)
+    (test-bin 9.5t0 'unsafe-extflvector-ref (extflvector 1.0t0 9.5t0 18.7t0) 1)
+    (test-un 5 'unsafe-extflvector-length (extflvector 1.1t0 2.0t0 3.1t0 4.5t0 5.7t0))
+    (let ([v (extflvector 1.0t0 9.5t0 18.7t0)])
+      (test-tri (list (void) 27.4t0) 'unsafe-extflvector-set! v 2 27.4t0
+                #:pre (lambda () (extflvector-set! v 2 0.0t0))
+                #:post (lambda (x) (list x (extflvector-ref v 2)))
+                #:literal-ok? #f)))
+
   (test-bin 95 'unsafe-fxvector-ref (fxvector 10 95 187) 1)
   (test-un 5 'unsafe-fxvector-length (fxvector 11 20 31 45 57))
   (let ([v (fxvector 10 95 187)])
@@ -394,6 +472,38 @@
                            (- n 1))))))])
   (test 500000.0 f 1.0))
 
+(when (extflonum-available?)
+  (let ([f (lambda (x)
+             (let ([x (unsafe-extfl+ x 1.0t0)])
+               (let loop ([v 0.0t0][n 10000])
+                 (if (zero? n)
+                     v
+                     (loop (unsafe-extfl+ v x)
+                           (- n 1))))))])
+    (test 20000.0t0 f 1.0t0))
+  (let ([f (lambda (x)
+             (let ([x (unsafe-extfl+ x 1.0t0)])
+               (let loop ([v 0.0t0][n 10000][q 2.0t0])
+                 (if (zero? n)
+                     (unsafe-extfl+ v q)
+                     (loop (unsafe-extfl+ v x)
+                           (- n 1)
+                           (unsafe-extfl- 0.0t0 q))))))])
+    (test 20002.0t0 f 1.0t0))
+
+  (let ([f (lambda (x)
+             (let loop ([a 0.0t0][v 0.0t0][n 1000000])
+               (if (zero? n)
+                   v
+                   (if (odd? n)
+                       (let ([b (unsafe-extfl+ a a)])
+                         (loop b v (sub1 n)))
+                       ;; First arg is un place, but may need re-boxing
+                       (loop a
+                             (unsafe-extfl+ v x)
+                             (- n 1))))))])
+    (test 1000000.0t0 f 2.0t0)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Check that compiling a misapplication of `unsafe-car' and `unsafe-cdr'
@@ -421,6 +531,16 @@
             N1)))
   
   (test 15388.0 floor (* 1000.0 (weird (lambda () 64.0)))))
+
+(when (extflonum-available?)
+  (define weird #f)
+  (set! weird 
+        (lambda (get-M)
+          (let* ([M  (get-M)]
+                 [N1 (unsafe-extfl/ M (unsafe-extfllog M))])
+            (get-M) ; triggers safe-for-space clearing of M
+            N1)))
+  (test 15388.0t0 unsafe-extflfloor (unsafe-extfl* 1000.0t0 (weird (lambda () 64.0t0)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

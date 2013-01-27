@@ -101,7 +101,7 @@ of printing enclosing datatypes, a symbol is @tech{quotable}.
 
 A @tech{number} prints the same way in @racket[write], @racket[display], and
 @racket[print] modes. For the purposes of printing enclosing
-datatypes, a symbol is @tech{quotable}.
+datatypes, a number is @tech{quotable}.
 
 A @tech{complex number} that is not a @tech{real number} always prints
 as @nonterm{m}@litchar{+}@nonterm{n}@litchar{i}, where @nonterm{m} and
@@ -125,6 +125,19 @@ determined by @racket[numerator] and @racket[denominator]).
 
 A negative @tech{exact number} prints with a @litchar{-} prefix on the
 printed form of the number's exact negation.
+
+@section[#:tag "print-extflonum"]{Printing Extflonums}
+
+An @tech{extflonum} prints the same way in @racket[write],
+@racket[display], and @racket[print] modes. For the purposes of
+printing enclosing datatypes, an extflonum is @tech{quotable}.
+
+An extflonum prints in the same way an inexact number, but
+always with a @litchar{t} or @litchar{T} exponent marker. When
+extflonum operations are supported, printing always uses
+@litchar{t}; when extflonum operations are not supported, an
+extflonum prints the same as its reader (see @secref["reader"])
+source, since reading is the only way to produce an extflonum.
 
 @section[#:tag "print-booleans"]{Printing Booleans}
 

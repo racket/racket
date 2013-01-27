@@ -26,6 +26,7 @@
    "Moy Easwaran, "
    "Will Farr, "
    "Matthias Felleisen, "
+   "Michael Filonenko, "
    "Robby Findler, "
    "Kathi Fisler, "
    "Cormac Flanagan, "

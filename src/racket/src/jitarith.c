@@ -42,14 +42,14 @@ int scheme_jit_is_fixnum(Scheme_Object *rand)
     return 0;
 }
 
-static int can_reorder_unboxing(Scheme_Object *rand, Scheme_Object *rand2)
+static int can_reorder_unboxing(Scheme_Object *rand, Scheme_Object *rand2, int extfl)
 {
   /* Can we reorder `rand' and `rand2', given that we want floating-point
      results (so it's ok for `rand' to be a floating-point local)? */
-  return scheme_is_relatively_constant_and_avoids_r1_maybe_fp(rand, rand2, 1);
+  return scheme_is_relatively_constant_and_avoids_r1_maybe_fp(rand, rand2, 1, extfl);
 }
 
-static int is_inline_unboxable_op(Scheme_Object *obj, int flag, int unsafely, int just_checking_result)
+static int is_inline_unboxable_op(Scheme_Object *obj, int flag, int unsafely, int just_checking_result, int extfl)
 /* If unsafely, a result of 2 means that arguments should be checked safely. */
 {
   if (!SCHEME_PRIMP(obj))
@@ -62,49 +62,94 @@ static int is_inline_unboxable_op(Scheme_Object *obj, int flag, int unsafely, in
      properties of the JIT rather than inherent properties of the 
      functions. */
 
-  if (IS_NAMED_PRIM(obj, "unsafe-fl+")) return 1;
-  if (IS_NAMED_PRIM(obj, "unsafe-fl-")) return 1;
-  if (IS_NAMED_PRIM(obj, "unsafe-fl*")) return 1;
-  if (IS_NAMED_PRIM(obj, "unsafe-fl/")) return 1;
-  if (IS_NAMED_PRIM(obj, "unsafe-flabs")) return 1;
-  if (IS_NAMED_PRIM(obj, "unsafe-flsqrt")) return 1;
-  if (IS_NAMED_PRIM(obj, "unsafe-flmin")) return 1;
-  if (IS_NAMED_PRIM(obj, "unsafe-flmax")) return 1;
-  if (IS_NAMED_PRIM(obj, "unsafe-fx->fl")) return 1;
-  if (IS_NAMED_PRIM(obj, "unsafe-f64vector-ref")) return 1;
-  if (IS_NAMED_PRIM(obj, "unsafe-flvector-ref")) return 1;
-  if (IS_NAMED_PRIM(obj, "unsafe-flimag-part")) return 1;
-  if (IS_NAMED_PRIM(obj, "unsafe-flreal-part")) return 1;
+  if (!extfl) {
+    if (IS_NAMED_PRIM(obj, "unsafe-fl+")) return 1;
+    if (IS_NAMED_PRIM(obj, "unsafe-fl-")) return 1;
+    if (IS_NAMED_PRIM(obj, "unsafe-fl*")) return 1;
+    if (IS_NAMED_PRIM(obj, "unsafe-fl/")) return 1;
+    if (IS_NAMED_PRIM(obj, "unsafe-flabs")) return 1;
+    if (IS_NAMED_PRIM(obj, "unsafe-flsqrt")) return 1;
+    if (IS_NAMED_PRIM(obj, "unsafe-flmin")) return 1;
+    if (IS_NAMED_PRIM(obj, "unsafe-flmax")) return 1;
+    if (IS_NAMED_PRIM(obj, "unsafe-fx->fl")) return 1;
+    if (IS_NAMED_PRIM(obj, "unsafe-f64vector-ref")) return 1;
+    if (IS_NAMED_PRIM(obj, "unsafe-flvector-ref")) return 1;
+    if (IS_NAMED_PRIM(obj, "unsafe-flimag-part")) return 1;
+    if (IS_NAMED_PRIM(obj, "unsafe-flreal-part")) return 1;
 
-  if (unsafely) {
-    /* These are inline-unboxable when their args are
-       safely inline-unboxable: */
-    if (IS_NAMED_PRIM(obj, "fl+")) return 2;
-    if (IS_NAMED_PRIM(obj, "fl-")) return 2;
-    if (IS_NAMED_PRIM(obj, "fl*")) return 2;
-    if (IS_NAMED_PRIM(obj, "fl/")) return 2;
-    if (IS_NAMED_PRIM(obj, "flabs")) return 2;
-    if (IS_NAMED_PRIM(obj, "flsqrt")) return 2;
-    if (IS_NAMED_PRIM(obj, "flmin")) return 2;
-    if (IS_NAMED_PRIM(obj, "flmax")) return 2;
-    if (IS_NAMED_PRIM(obj, "flimag-part")) return 2;
-    if (IS_NAMED_PRIM(obj, "flreal-part")) return 2;
+    if (unsafely) {
+      /* These are inline-unboxable when their args are
+         safely inline-unboxable: */
+      if (IS_NAMED_PRIM(obj, "fl+")) return 2;
+      if (IS_NAMED_PRIM(obj, "fl-")) return 2;
+      if (IS_NAMED_PRIM(obj, "fl*")) return 2;
+      if (IS_NAMED_PRIM(obj, "fl/")) return 2;
+      if (IS_NAMED_PRIM(obj, "flabs")) return 2;
+      if (IS_NAMED_PRIM(obj, "flsqrt")) return 2;
+      if (IS_NAMED_PRIM(obj, "flmin")) return 2;
+      if (IS_NAMED_PRIM(obj, "flmax")) return 2;
+      if (IS_NAMED_PRIM(obj, "flimag-part")) return 2;
+      if (IS_NAMED_PRIM(obj, "flreal-part")) return 2;
 
-    if (just_checking_result) {
-      if (IS_NAMED_PRIM(obj, "flfloor")) return 1;
-      if (IS_NAMED_PRIM(obj, "flceiling")) return 1;
-      if (IS_NAMED_PRIM(obj, "fltruncate")) return 1;
-      if (IS_NAMED_PRIM(obj, "flround")) return 1;
-      if (IS_NAMED_PRIM(obj, "flsin")) return 1;
-      if (IS_NAMED_PRIM(obj, "flcos")) return 1;
-      if (IS_NAMED_PRIM(obj, "fltan")) return 1;
-      if (IS_NAMED_PRIM(obj, "flasin")) return 1;
-      if (IS_NAMED_PRIM(obj, "flacos")) return 1;
-      if (IS_NAMED_PRIM(obj, "flatan")) return 1;
-      if (IS_NAMED_PRIM(obj, "fllog")) return 1;
-      if (IS_NAMED_PRIM(obj, "flexp")) return 1;
+      if (just_checking_result) {
+        if (IS_NAMED_PRIM(obj, "flfloor")) return 1;
+        if (IS_NAMED_PRIM(obj, "flceiling")) return 1;
+        if (IS_NAMED_PRIM(obj, "fltruncate")) return 1;
+        if (IS_NAMED_PRIM(obj, "flround")) return 1;
+        if (IS_NAMED_PRIM(obj, "flsin")) return 1;
+        if (IS_NAMED_PRIM(obj, "flcos")) return 1;
+        if (IS_NAMED_PRIM(obj, "fltan")) return 1;
+        if (IS_NAMED_PRIM(obj, "flasin")) return 1;
+        if (IS_NAMED_PRIM(obj, "flacos")) return 1;
+        if (IS_NAMED_PRIM(obj, "flatan")) return 1;
+        if (IS_NAMED_PRIM(obj, "fllog")) return 1;
+        if (IS_NAMED_PRIM(obj, "flexp")) return 1;
+      }
     }
   }
+  
+#ifdef MZ_LONG_DOUBLE
+  if (extfl) {
+    if (IS_NAMED_PRIM(obj, "unsafe-extfl+")) return 1;
+    if (IS_NAMED_PRIM(obj, "unsafe-extfl-")) return 1;
+    if (IS_NAMED_PRIM(obj, "unsafe-extfl*")) return 1;
+    if (IS_NAMED_PRIM(obj, "unsafe-extfl/")) return 1;
+    if (IS_NAMED_PRIM(obj, "unsafe-extflabs")) return 1;
+    if (IS_NAMED_PRIM(obj, "unsafe-extflsqrt")) return 1;
+    if (IS_NAMED_PRIM(obj, "unsafe-extflmin")) return 1;
+    if (IS_NAMED_PRIM(obj, "unsafe-extflmax")) return 1;
+    if (IS_NAMED_PRIM(obj, "unsafe-fx->extfl")) return 1;
+    if (IS_NAMED_PRIM(obj, "unsafe-extflvector-ref")) return 1;
+
+    if (unsafely) {
+      /* These are inline-unboxable when their args are
+         safely inline-unboxable: */
+      if (IS_NAMED_PRIM(obj, "extfl+")) return 2;
+      if (IS_NAMED_PRIM(obj, "extfl-")) return 2;
+      if (IS_NAMED_PRIM(obj, "extfl*")) return 2;
+      if (IS_NAMED_PRIM(obj, "extfl/")) return 2;
+      if (IS_NAMED_PRIM(obj, "extflabs")) return 2;
+      if (IS_NAMED_PRIM(obj, "extflsqrt")) return 2;
+      if (IS_NAMED_PRIM(obj, "extflmin")) return 2;
+      if (IS_NAMED_PRIM(obj, "extflmax")) return 2;
+
+      if (just_checking_result) {
+        if (IS_NAMED_PRIM(obj, "extflfloor")) return 1;
+        if (IS_NAMED_PRIM(obj, "extflceiling")) return 1;
+        if (IS_NAMED_PRIM(obj, "extfltruncate")) return 1;
+        if (IS_NAMED_PRIM(obj, "extflround")) return 1;
+        if (IS_NAMED_PRIM(obj, "extflsin")) return 1;
+        if (IS_NAMED_PRIM(obj, "extflcos")) return 1;
+        if (IS_NAMED_PRIM(obj, "extfltan")) return 1;
+        if (IS_NAMED_PRIM(obj, "extflasin")) return 1;
+        if (IS_NAMED_PRIM(obj, "extflacos")) return 1;
+        if (IS_NAMED_PRIM(obj, "extflatan")) return 1;
+        if (IS_NAMED_PRIM(obj, "extfllog")) return 1;
+        if (IS_NAMED_PRIM(obj, "extflexp")) return 1;
+      }
+    }
+  }
+#endif
 
   return 0;
 }
@@ -134,15 +179,23 @@ int scheme_generate_pop_unboxed(mz_jit_state *jitter)
   return 1;
 }
 
-static int is_unboxing_immediate(Scheme_Object *obj, int unsafely)
+static int is_unboxing_immediate(Scheme_Object *obj, int unsafely, int extfl)
 {
   Scheme_Type t;
 
   t = SCHEME_TYPE(obj);
   switch (t) {
   case scheme_local_type:
-    if (SCHEME_GET_LOCAL_TYPE(obj) == SCHEME_LOCAL_TYPE_FLONUM)
-      return 1;
+    if (!extfl) {
+      if (SCHEME_GET_LOCAL_TYPE(obj) == SCHEME_LOCAL_TYPE_FLONUM)
+        return 1;
+    }
+#ifdef MZ_LONG_DOUBLE
+    if (extfl) {
+      if (SCHEME_GET_LOCAL_TYPE(obj) == SCHEME_LOCAL_TYPE_EXTFLONUM)
+        return 1;
+    }
+#endif
     return unsafely;
   case scheme_toplevel_type:
     /* Can generalize to allow any toplevel if scheme_generate_pop_unboxed() is fixed */
@@ -154,13 +207,20 @@ static int is_unboxing_immediate(Scheme_Object *obj, int unsafely)
     return unsafely;
     break;
   default:
-    if (!unsafely)
-      return SCHEME_FLOATP(obj);
+    if (!unsafely) {
+      if (!extfl)
+        return SCHEME_FLOATP(obj);
+#ifdef MZ_LONG_DOUBLE
+      if (extfl)
+        return SCHEME_LONG_DBLP(obj);
+#endif
+      return 0;
+    }
     return (t > _scheme_values_types_);
   }
 }
 
-int scheme_can_unbox_inline(Scheme_Object *obj, int fuel, int regs, int unsafely)
+int scheme_can_unbox_inline(Scheme_Object *obj, int fuel, int regs, int unsafely, int extfl)
 /* Assuming that `arg' is [unsafely] assumed to produce a flonum, can we
    just unbox it without using more than `regs' registers? There
    cannot be any errors or function calls, unless we've specifically
@@ -179,18 +239,18 @@ int scheme_can_unbox_inline(Scheme_Object *obj, int fuel, int regs, int unsafely
     {
       Scheme_App2_Rec *app = (Scheme_App2_Rec *)obj;
       int ok_op;
-      ok_op = is_inline_unboxable_op(app->rator, SCHEME_PRIM_IS_UNARY_INLINED, unsafely, 0);
+      ok_op = is_inline_unboxable_op(app->rator, SCHEME_PRIM_IS_UNARY_INLINED, unsafely, 0, extfl);
       if (!ok_op)
         return 0;
       else if (ok_op == 2)
         unsafely = 0;
-      return scheme_can_unbox_inline(app->rand, fuel - 1, regs, unsafely);
+      return scheme_can_unbox_inline(app->rand, fuel - 1, regs, unsafely, extfl);
     }
   case scheme_application3_type:
     {
       Scheme_App3_Rec *app = (Scheme_App3_Rec *)obj;
       int ok_op;
-      ok_op = is_inline_unboxable_op(app->rator, SCHEME_PRIM_IS_BINARY_INLINED, unsafely, 0);
+      ok_op = is_inline_unboxable_op(app->rator, SCHEME_PRIM_IS_BINARY_INLINED, unsafely, 0, extfl);
       if (!ok_op)
         return 0;
       else if (ok_op == 2)
@@ -198,21 +258,30 @@ int scheme_can_unbox_inline(Scheme_Object *obj, int fuel, int regs, int unsafely
       if ((SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_IS_BINARY_INLINED)
           && (IS_NAMED_PRIM(app->rator, "unsafe-f64vector-ref")
               || IS_NAMED_PRIM(app->rator, "unsafe-flvector-ref"))) {
-        if (is_unboxing_immediate(app->rand1, 1)
-            && is_unboxing_immediate(app->rand2, 1)) {
+        if (is_unboxing_immediate(app->rand1, 1, extfl)
+            && is_unboxing_immediate(app->rand2, 1, extfl)) {
           return 1;
         }
       }
-      if (!scheme_can_unbox_inline(app->rand1, fuel - 1, regs, unsafely))
+#ifdef MZ_LONG_DOUBLE_UNBOXED
+      if ((SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_IS_BINARY_INLINED)
+          && (IS_NAMED_PRIM(app->rator, "unsafe-extflvector-ref"))) {
+        if (is_unboxing_immediate(app->rand1, 1, extfl)
+            && is_unboxing_immediate(app->rand2, 1, extfl)) {
+          return 1;
+        }
+      }
+#endif
+      if (!scheme_can_unbox_inline(app->rand1, fuel - 1, regs, unsafely, extfl))
         return 0;
-      return scheme_can_unbox_inline(app->rand2, fuel - 1, regs - 1, unsafely);
+      return scheme_can_unbox_inline(app->rand2, fuel - 1, regs - 1, unsafely, extfl);
     }    
   default:
-    return is_unboxing_immediate(obj, unsafely);
+    return is_unboxing_immediate(obj, unsafely, extfl);
   }
 }
 
-int scheme_can_unbox_directly(Scheme_Object *obj)
+int scheme_can_unbox_directly(Scheme_Object *obj, int extfl)
 /* Used only when !can_unbox_inline(). Detects safe operations that
    produce flonums when they don't raise an exception, and that the JIT
    supports directly unboxing. */
@@ -225,13 +294,22 @@ int scheme_can_unbox_directly(Scheme_Object *obj)
     case scheme_application2_type:
       {
         Scheme_App2_Rec *app = (Scheme_App2_Rec *)obj;
-        if (is_inline_unboxable_op(app->rator, SCHEME_PRIM_IS_UNARY_INLINED, 1, 1))
+        if (is_inline_unboxable_op(app->rator, SCHEME_PRIM_IS_UNARY_INLINED, 1, 1, extfl))
           return 1;
         if (SCHEME_PRIMP(app->rator)
             && (SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_IS_UNARY_INLINED)) {
-          if (IS_NAMED_PRIM(app->rator, "->fl")
-              || IS_NAMED_PRIM(app->rator, "fx->fl"))
-            return 1;
+          if (!extfl) {
+            if (IS_NAMED_PRIM(app->rator, "->fl")
+                || IS_NAMED_PRIM(app->rator, "fx->fl"))
+              return 1;
+          }
+#ifdef MZ_LONG_DOUBLE_UNBOXED
+          if (extfl) {
+            if (IS_NAMED_PRIM(app->rator, "->extfl")
+                || IS_NAMED_PRIM(app->rator, "fx->extfl"))
+              return 1;
+          }
+#endif
         }
         return 0;
       }
@@ -239,11 +317,18 @@ int scheme_can_unbox_directly(Scheme_Object *obj)
     case scheme_application3_type:
       {
         Scheme_App3_Rec *app = (Scheme_App3_Rec *)obj;
-        if (is_inline_unboxable_op(app->rator, SCHEME_PRIM_IS_BINARY_INLINED, 1, 1))
+        if (is_inline_unboxable_op(app->rator, SCHEME_PRIM_IS_BINARY_INLINED, 1, 1, extfl))
           return 1;
         if (SCHEME_PRIMP(app->rator)
             && (SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_IS_BINARY_INLINED)) {
-          if (IS_NAMED_PRIM(app->rator, "flvector-ref")) return 1;
+          if (!extfl) {
+            if (IS_NAMED_PRIM(app->rator, "flvector-ref")) return 1;
+          }
+#ifdef MZ_LONG_DOUBLE_UNBOXED
+          if (extfl) {
+            if (IS_NAMED_PRIM(app->rator, "extflvector-ref")) return 1;
+          }
+#endif
         }
         return 0;
       }    
@@ -380,8 +465,15 @@ static int can_fast_double(int arith, int cmp, int two_args)
 
 #ifdef CAN_INLINE_ALLOC
 # ifdef JIT_USE_FP_OPS
-#define DECL_FP_GLUE(op) static void call_ ## op(void) XFORM_SKIP_PROC {  \
+#  define DECL_FLONUM_GLUE(op) static void call_ ## op(void) XFORM_SKIP_PROC {  \
     scheme_jit_save_fp = scheme_double_ ## op(scheme_jit_save_fp); }
+#  ifdef MZ_LONG_DOUBLE
+#   define DECL_EXTNUM_GLUE(op) static void call_long_double_ ## op(void) XFORM_SKIP_PROC {  \
+      scheme_jit_save_extfp = scheme_long_double_ ## op(scheme_jit_save_extfp); }
+#   define DECL_FP_GLUE(op) DECL_FLONUM_GLUE(op) DECL_EXTNUM_GLUE(op)
+#  else
+#   define DECL_FP_GLUE(op) DECL_FLONUM_GLUE(op)
+#  endif
 DECL_FP_GLUE(sin)
 DECL_FP_GLUE(cos)
 DECL_FP_GLUE(tan)
@@ -394,12 +486,28 @@ DECL_FP_GLUE(floor)
 DECL_FP_GLUE(ceiling)
 DECL_FP_GLUE(truncate)
 DECL_FP_GLUE(round)
-typedef void (*call_fp_proc)(void);
 
-#define DECL_BIN_FP_GLUE(op) static void call_ ## op(void) XFORM_SKIP_PROC {  \
+typedef void (*call_fp_proc)(void);
+#  ifdef MZ_LONG_DOUBLE
+typedef void (*call_extfp_proc)(void);
+#  endif
+
+#  define DECL_BIN_FLONUM_GLUE(op) static void call_ ## op(void) XFORM_SKIP_PROC {  \
     scheme_jit_save_fp = scheme_double_ ## op(scheme_jit_save_fp, scheme_jit_save_fp2); }
+#  ifdef MZ_LONG_DOUBLE
+#   define DECL_BIN_EXTNUM_GLUE(op) static void call_long_double_ ## op(void) XFORM_SKIP_PROC {  \
+     scheme_jit_save_extfp = scheme_long_double_ ## op(scheme_jit_save_extfp, scheme_jit_save_extfp2); }
+#   define DECL_BIN_FP_GLUE(op) DECL_BIN_FLONUM_GLUE(op) DECL_BIN_EXTNUM_GLUE(op)
+#  else
+#   define DECL_BIN_FP_GLUE(op) DECL_BIN_FLONUM_GLUE(op)
+#  endif
+
 DECL_BIN_FP_GLUE(expt)
 typedef void (*call_fp_bin_proc)(void);
+
+#  ifdef MZ_LONG_DOUBLE
+typedef void (*call_extfp_bin_proc)(void);
+#  endif
 # endif
 #endif
 
@@ -407,10 +515,19 @@ int scheme_generate_unboxing(mz_jit_state *jitter, int target)
 {
   int fpr0;
 
-  fpr0 = JIT_FPR_0(jitter->unbox_depth);
-  jit_ldxi_d_fppush(fpr0, target, &((Scheme_Double *)0x0)->double_val);
-  jitter->unbox_depth++;
+#ifdef MZ_LONG_DOUBLE
+  if (jitter->unbox_extflonum) {
+    fpr0 = JIT_FPU_FPR_0(jitter->unbox_depth);
+    jit_fpu_ldxi_ld_fppush(fpr0, target, &((Scheme_Long_Double *)0x0)->long_double_val);
+  } else 
+#endif
+    {
+      fpr0 = JIT_FPR_0(jitter->unbox_depth);
+      jit_ldxi_d_fppush(fpr0, target, &((Scheme_Double *)0x0)->double_val);
+    }
 
+  jitter->unbox_depth++;
+  
   return 1;
 }
 
@@ -419,7 +536,7 @@ int scheme_generate_alloc_double(mz_jit_state *jitter, int inline_retry, int des
 {
 #ifdef INLINE_FP_OPS
 # ifdef CAN_INLINE_ALLOC
-  scheme_inline_alloc(jitter, sizeof(Scheme_Double), scheme_double_type, 0, 0, 1, inline_retry);
+  scheme_inline_alloc(jitter, sizeof(Scheme_Double), scheme_double_type, 0, 0, 1, inline_retry, 0);
   CHECK_LIMIT();
   jit_addi_p(dest, JIT_V1, OBJHEAD_SIZE);
   (void)jit_stxi_d_fppop(&((Scheme_Double *)0x0)->double_val, dest, JIT_FPR0);
@@ -437,11 +554,43 @@ int scheme_generate_alloc_double(mz_jit_state *jitter, int inline_retry, int des
   return 1;
 }
 
-static int generate_double_arith(mz_jit_state *jitter, Scheme_Object *rator,
-                                 int arith, int cmp, int reversed, int two_args, int second_const,
-                                 jit_insn **_refd, jit_insn **_refdt, Branch_Info *for_branch,
-                                 int branch_short, int unsafe_fl, int unboxed, int unboxed_result,
-                                 int dest)
+#ifdef MZ_LONG_DOUBLE
+int scheme_generate_alloc_long_double(mz_jit_state *jitter, int inline_retry, int dest)
+/* same as above */
+{
+#ifdef INLINE_FP_OPS
+# ifdef CAN_INLINE_ALLOC
+  scheme_inline_alloc(jitter, sizeof(Scheme_Long_Double), scheme_long_double_type, 0, 0, 1, inline_retry, 1);
+  CHECK_LIMIT();
+  jit_addi_p(dest, JIT_V1, OBJHEAD_SIZE);
+  (void)jit_fpu_stxi_ld_fppop(&((Scheme_Long_Double *)0x0)->long_double_val, dest, JIT_FPU_FPR0);
+# else
+  (void)mz_fpu_ta_tl_sti_ld_fppop(tl_scheme_jit_save_extfp, JIT_FPU_FPR0, JIT_R0);
+  JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+  mz_prepare(0);
+  {
+    GC_CAN_IGNORE jit_insn *refr;
+    (void)mz_finish_lwe(ts_malloc_long_double, refr);
+  }
+  jit_retval(dest);
+# endif
+#endif
+  return 1;
+}
+#endif
+
+int scheme_generate_alloc_X_double(mz_jit_state *jitter, int inline_retry, int dest, int extfl)
+{
+  MZ_FPUSEL_STMT(extfl,
+                 return scheme_generate_alloc_long_double(jitter, inline_retry, dest),
+                 return scheme_generate_alloc_double(jitter, inline_retry, dest));
+}
+
+static int generate_float_point_arith(mz_jit_state *jitter, Scheme_Object *rator,
+                                      int arith, int cmp, int reversed, int two_args, int second_const,
+                                      jit_insn **_refd, jit_insn **_refdt, Branch_Info *for_branch,
+                                      int branch_short, int unsafe_fl, int unboxed, int unboxed_result,
+                                      int dest, int extfl)
 /* Unless unboxed, first arg is in JIT_R1, second in JIT_R0.
    If unboxed in push/pop mode, first arg is pushed before second.
    If unboxed in direct mode, first arg is in JIT_FPR0+depth
@@ -461,10 +610,16 @@ static int generate_double_arith(mz_jit_state *jitter, Scheme_Object *rator,
     } else
       ref8 = NULL;
     jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
-    ref9 = jit_bnei_i(jit_forward(), JIT_R2, scheme_double_type);
+    if (extfl)
+      ref9 = jit_bnei_i(jit_forward(), JIT_R2, scheme_long_double_type);
+    else
+      ref9 = jit_bnei_i(jit_forward(), JIT_R2, scheme_double_type);
     if (two_args) {
       jit_ldxi_s(JIT_R2, JIT_R1, &((Scheme_Object *)0x0)->type);
-      ref10 = jit_bnei_i(jit_forward(), JIT_R2, scheme_double_type);
+      if (extfl)
+        ref10 = jit_bnei_i(jit_forward(), JIT_R2, scheme_long_double_type);
+      else
+        ref10 = jit_bnei_i(jit_forward(), JIT_R2, scheme_double_type);
     } else
       ref10 = NULL;
     CHECK_LIMIT();
@@ -482,12 +637,15 @@ static int generate_double_arith(mz_jit_state *jitter, Scheme_Object *rator,
        right with stacks, that means pushing the second argument first. */
     int fpr1, fpr0;
 
-    fpr0 = JIT_FPR_0(jitter->unbox_depth);
-    fpr1 = JIT_FPR_1(1+jitter->unbox_depth);
-
+    fpr0 = JIT_FPUSEL_FPR_0(extfl, jitter->unbox_depth);
+    fpr1 = JIT_FPUSEL_FPR_1(extfl, 1+jitter->unbox_depth);
+  
     if (two_args) {
-      if (!unboxed)
-        jit_ldxi_d_fppush(fpr1, JIT_R1, &((Scheme_Double *)0x0)->double_val);
+      if (!unboxed) {
+        MZ_FPUSEL_STMT(extfl,
+                       jit_fpu_ldxi_ld_fppush(fpr1, JIT_R1, &((Scheme_Long_Double *)0x0)->long_double_val),
+                       jit_ldxi_d_fppush(fpr1, JIT_R1, &((Scheme_Double *)0x0)->double_val));
+      }
     } else if ((arith == ARITH_SUB) && !second_const && reversed) {
       reversed = 0;
     } else if (arith == ARITH_ABS) {
@@ -501,20 +659,27 @@ static int generate_double_arith(mz_jit_state *jitter, Scheme_Object *rator,
     } else if (arith == ARITH_INEX_EX) {
       /* inexact->exact needs no extra number */
     } else {
+#ifdef MZ_LONG_DOUBLE
+      long double ld = second_const;
+#endif
       double d = second_const;
-      mz_movi_d_fppush(fpr1, d, JIT_R2);
+      MZ_FPUSEL_STMT(extfl,
+                     mz_fpu_movi_ld_fppush(fpr1, ld, JIT_R2),
+                     mz_movi_d_fppush(fpr1, d, JIT_R2));
       reversed = !reversed;
       cmp = -cmp;
     }
 
     if (!unboxed) {
       if (arith != ARITH_EX_INEX) {
-        jit_ldxi_d_fppush(fpr0, JIT_R0, &((Scheme_Double *)0x0)->double_val);
+        MZ_FPUSEL_STMT(extfl,
+                       jit_fpu_ldxi_ld_fppush(fpr0, JIT_R0, &((Scheme_Long_Double *)0x0)->long_double_val),
+                       jit_ldxi_d_fppush(fpr0, JIT_R0, &((Scheme_Double *)0x0)->double_val));
       }
     }
 
 #ifdef DIRECT_FPR_ACCESS
-    if (unboxed) {
+    if (unboxed && !extfl) {
       /* arguments are backward */
       reversed = !reversed;
       cmp = -cmp;
@@ -524,26 +689,26 @@ static int generate_double_arith(mz_jit_state *jitter, Scheme_Object *rator,
     if (arith) {
       switch (arith) {
       case ARITH_ADD:
-        jit_addr_d_fppop(fpr0, fpr0, fpr1);
+        jit_FPSEL_addr_xd_fppop(extfl, fpr0, fpr0, fpr1);
         break;
       case ARITH_MUL:
-        jit_mulr_d_fppop(fpr0, fpr0, fpr1);
+        jit_FPSEL_mulr_xd_fppop(extfl, fpr0, fpr0, fpr1);
         break;
       case ARITH_DIV:
         if (!reversed)
-          jit_divrr_d_fppop(fpr0, fpr0, fpr1);
+          jit_FPSEL_divrr_xd_fppop(extfl, fpr0, fpr0, fpr1);
         else
-          jit_divr_d_fppop(fpr0, fpr0, fpr1);
+          jit_FPSEL_divr_xd_fppop(extfl, fpr0, fpr0, fpr1);
         break;
       case ARITH_SUB:
         {
           if (!two_args && !second_const && !reversed) {
             /* Need a special case to make sure that (- 0.0) => -0.0 */
-            jit_negr_d_fppop(fpr0, fpr0);
+            jit_FPSEL_negr_xd_fppop(extfl, fpr0, fpr0);
           } else if (reversed)
-            jit_subr_d_fppop(fpr0, fpr0, fpr1);
+            jit_FPSEL_subr_xd_fppop(extfl, fpr0, fpr0, fpr1);
           else
-            jit_subrr_d_fppop(fpr0, fpr0, fpr1);
+            jit_FPSEL_subrr_xd_fppop(extfl, fpr0, fpr0, fpr1);
         }
         break;
       case ARITH_MIN:
@@ -551,31 +716,33 @@ static int generate_double_arith(mz_jit_state *jitter, Scheme_Object *rator,
         {
           GC_CAN_IGNORE jit_insn *refc, *refn;
           __START_TINY_JUMPS__(1);
-	  /* If R0 is nan, then copy to R1, ensuring nan result */
-	  refn = jit_beqr_d(jit_forward(), fpr0, fpr0);
+
+          /* If R0 is nan, then copy to R1, ensuring nan result */
+          refn = jit_FPSEL_beqr_xd(extfl, jit_forward(), fpr0, fpr0);
           if (unboxed)
-            jit_movr_d_rel(fpr1, fpr0);
+            jit_FPSEL_movr_xd_rel(extfl, fpr1, fpr0);
           else
             jit_movr_p(JIT_R1, JIT_R0);
-	  mz_patch_branch(refn);
+          mz_patch_branch(refn);
           if (arith == ARITH_MIN) {
             if (unboxed) {
-              refc = jit_bltr_d(jit_forward(), fpr0, fpr1);
+              refc = jit_FPSEL_bltr_xd(extfl, jit_forward(), fpr0, fpr1);
             } else {
-              refc = jit_bltr_d_fppop(jit_forward(), fpr0, fpr1);
+              refc = jit_FPSEL_bltr_xd_fppop(extfl, jit_forward(), fpr0, fpr1);
             }
           } else {
             if (unboxed) {
-              refc = jit_bger_d(jit_forward(), fpr0, fpr1);
+              refc = jit_FPSEL_bger_xd(extfl, jit_forward(), fpr0, fpr1);
             } else {
-              refc = jit_bger_d_fppop(jit_forward(), fpr0, fpr1);
+              refc = jit_FPSEL_bger_xd_fppop(extfl, jit_forward(), fpr0, fpr1);
             }
           }
           if (unboxed) {
-            jit_movr_d_rel(fpr0, fpr1);
+            jit_FPSEL_movr_xd_rel(extfl, fpr0, fpr1);
             need_post_pop = 1;
           } else
             jit_movr_p(JIT_R0, JIT_R1);
+          
           mz_patch_branch(refc);
           __END_TINY_JUMPS__(1);
           if (!unboxed) {
@@ -586,7 +753,7 @@ static int generate_double_arith(mz_jit_state *jitter, Scheme_Object *rator,
         }
         break;
       case ARITH_ABS:
-        jit_abs_d_fppop(fpr0, fpr0);
+        jit_FPSEL_abs_xd_fppop(extfl, fpr0, fpr0);
         break;
       case ARITH_EX_INEX: /* exact->inexact */
         /* no work to do, because argument is already inexact;
@@ -597,18 +764,18 @@ static int generate_double_arith(mz_jit_state *jitter, Scheme_Object *rator,
         break;
       case ARITH_INEX_EX: /* inexact->exact */
         if (!unsafe_fl) {
-          jit_movr_d_fppush(fpr1, fpr0);
+          jit_FPSEL_movr_xd_fppush(extfl, fpr1, fpr0);
         }
-        jit_roundr_d_l_fppop(JIT_R1, fpr0);
+        jit_FPSEL_roundr_xd_l_fppop(extfl, JIT_R1, fpr0);
         if (!unsafe_fl) {
           /* to check whether it fits in a fixnum, we
              need to convert back and check whether it
              is the same */
           if (unboxed)
-            jit_movr_d_fppush(fpr1+1, fpr1); /* for slow path */
-          jit_extr_l_d_fppush(fpr0, JIT_R1);
+            jit_FPSEL_movr_xd_fppush(extfl, fpr1+1, fpr1); /* for slow path */
+          jit_FPSEL_extr_l_xd_fppush(extfl, fpr0, JIT_R1);
           __START_TINY_JUMPS__(1);
-          refs = jit_bantieqr_d_fppop(jit_forward(), fpr0, fpr1);
+          refs = jit_FPSEL_bantieqr_xd_fppop(extfl, jit_forward(), fpr0, fpr1);
           __END_TINY_JUMPS__(1);
           /* result still may not fit in a fixnum */
           jit_lshi_l(JIT_R2, JIT_R1, 1);
@@ -618,67 +785,120 @@ static int generate_double_arith(mz_jit_state *jitter, Scheme_Object *rator,
           __END_TINY_JUMPS__(1);
 #ifndef DIRECT_FPR_ACCESS
           if (unboxed)
-            jit_roundr_d_l_fppop(JIT_R1, fpr2); /* slow path won't be needed */
+            jit_FPSEL_roundr_xd_l_fppop(extfl, JIT_R1, fpr2); /* slow path won't be needed */
 #endif
         }
         jit_fixnum_l(dest, JIT_R1);
         no_alloc = 1;
         break;
       case ARITH_SQRT:
-        jit_sqrt_d_fppop(fpr0, fpr0);
+        jit_FPSEL_sqrt_xd_fppop(extfl, fpr0, fpr0);
         break;
 #ifdef CAN_INLINE_ALLOC
 # ifdef JIT_USE_FP_OPS
       case ARITH_FLUNOP: /* flfloor, flsin, etc. */
         {
           call_fp_proc f;
-
-          if (IS_NAMED_PRIM(rator, "flsin"))
-            f = call_sin;
-          else if (IS_NAMED_PRIM(rator, "flcos"))
-            f = call_cos;
-          else if (IS_NAMED_PRIM(rator, "fltan"))
-            f = call_tan;
-          else if (IS_NAMED_PRIM(rator, "flasin"))
-            f = call_asin;
-          else if (IS_NAMED_PRIM(rator, "flacos"))
-            f = call_acos;
-          else if (IS_NAMED_PRIM(rator, "flatan"))
-            f = call_atan;
-          else if (IS_NAMED_PRIM(rator, "flexp"))
-            f = call_exp;
-          else if (IS_NAMED_PRIM(rator, "fllog"))
-            f = call_log;
-          else if (IS_NAMED_PRIM(rator, "flfloor"))
-            f = call_floor;
-          else if (IS_NAMED_PRIM(rator, "flceiling"))
-            f = call_ceiling;
-          else if (IS_NAMED_PRIM(rator, "fltruncate"))
-            f = call_truncate;
-          else if (IS_NAMED_PRIM(rator, "flround"))
-            f = call_round;
-          else {
-            scheme_signal_error("internal error: unknown flonum function");
-            f = NULL;
+#ifdef MZ_LONG_DOUBLE
+          if (extfl) {
+            if (IS_NAMED_PRIM(rator, "extflsin"))
+              f = call_long_double_sin;
+            else if (IS_NAMED_PRIM(rator, "extflcos"))
+              f = call_long_double_cos;
+            else if (IS_NAMED_PRIM(rator, "extfltan"))
+              f = call_long_double_tan;
+            else if (IS_NAMED_PRIM(rator, "extflasin"))
+              f = call_long_double_asin;
+            else if (IS_NAMED_PRIM(rator, "extflacos"))
+              f = call_long_double_acos;
+            else if (IS_NAMED_PRIM(rator, "extflatan"))
+              f = call_long_double_atan;
+            else if (IS_NAMED_PRIM(rator, "extflexp"))
+              f = call_long_double_exp;
+            else if (IS_NAMED_PRIM(rator, "extfllog"))
+              f = call_long_double_log;
+            else if (IS_NAMED_PRIM(rator, "extflfloor"))
+              f = call_long_double_floor;
+            else if (IS_NAMED_PRIM(rator, "extflceiling"))
+              f = call_long_double_ceiling;
+            else if (IS_NAMED_PRIM(rator, "extfltruncate"))
+              f = call_long_double_truncate;
+            else if (IS_NAMED_PRIM(rator, "extflround"))
+              f = call_long_double_round;
+            else {
+              scheme_signal_error("internal error: unknown extflonum function");
+              f = NULL;
+            }
+            (void)mz_fpu_tl_sti_ld_fppop(tl_scheme_jit_save_extfp, JIT_FPU_FPR0, JIT_R2);
+            mz_prepare(0);
+            (void)mz_finish(f);
+            (void)mz_fpu_tl_ldi_ld_fppush(JIT_FPU_FPR0, tl_scheme_jit_save_extfp, JIT_R2);
+          } else
+#endif           
+            {
+            if (IS_NAMED_PRIM(rator, "flsin"))
+              f = call_sin;
+            else if (IS_NAMED_PRIM(rator, "flcos"))
+              f = call_cos;
+            else if (IS_NAMED_PRIM(rator, "fltan"))
+              f = call_tan;
+            else if (IS_NAMED_PRIM(rator, "flasin"))
+              f = call_asin;
+            else if (IS_NAMED_PRIM(rator, "flacos"))
+              f = call_acos;
+            else if (IS_NAMED_PRIM(rator, "flatan"))
+              f = call_atan;
+            else if (IS_NAMED_PRIM(rator, "flexp"))
+              f = call_exp;
+            else if (IS_NAMED_PRIM(rator, "fllog"))
+              f = call_log;
+            else if (IS_NAMED_PRIM(rator, "flfloor"))
+              f = call_floor;
+            else if (IS_NAMED_PRIM(rator, "flceiling"))
+              f = call_ceiling;
+            else if (IS_NAMED_PRIM(rator, "fltruncate"))
+              f = call_truncate;
+            else if (IS_NAMED_PRIM(rator, "flround"))
+              f = call_round;
+            else {
+              scheme_signal_error("internal error: unknown flonum function");
+              f = NULL;
+            }
+            (void)mz_tl_sti_d_fppop(tl_scheme_jit_save_fp, JIT_FPR0, JIT_R2);
+            mz_prepare(0);
+            (void)mz_finish(f);
+            (void)mz_tl_ldi_d_fppush(JIT_FPR0, tl_scheme_jit_save_fp, JIT_R2);
           }
-          (void)mz_tl_sti_d_fppop(tl_scheme_jit_save_fp, JIT_FPR0, JIT_R2);
-          mz_prepare(0);
-          (void)mz_finish(f);
-          (void)mz_tl_ldi_d_fppush(JIT_FPR0, tl_scheme_jit_save_fp, JIT_R2);
         }
         break;
       case ARITH_EXPT: /* flexpt */
         {
-          if (!reversed) {
-            (void)mz_tl_sti_d_fppop(tl_scheme_jit_save_fp2, JIT_FPR0, JIT_R2);
-            (void)mz_tl_sti_d_fppop(tl_scheme_jit_save_fp, JIT_FPR1, JIT_R2);
-          } else {
-            (void)mz_tl_sti_d_fppop(tl_scheme_jit_save_fp, JIT_FPR0, JIT_R2);
-            (void)mz_tl_sti_d_fppop(tl_scheme_jit_save_fp2, JIT_FPR1, JIT_R2);
+#ifdef MZ_LONG_DOUBLE
+          if (extfl) {
+            if (!reversed) {
+              (void)mz_fpu_tl_sti_ld_fppop(tl_scheme_jit_save_extfp2, JIT_FPU_FPR0, JIT_R2);
+              (void)mz_fpu_tl_sti_ld_fppop(tl_scheme_jit_save_extfp, JIT_FPU_FPR1, JIT_R2);
+            } else {
+              (void)mz_fpu_tl_sti_ld_fppop(tl_scheme_jit_save_extfp, JIT_FPU_FPR0, JIT_R2);
+              (void)mz_fpu_tl_sti_ld_fppop(tl_scheme_jit_save_extfp2, JIT_FPU_FPR1, JIT_R2);
+            }
+            mz_prepare(0);
+            (void)mz_finish(call_long_double_expt);
+            (void)mz_fpu_tl_ldi_ld_fppush(JIT_FPU_FPR0, tl_scheme_jit_save_extfp, JIT_R2);
+          } else
+#endif
+            {
+            if (!reversed) {
+              (void)mz_tl_sti_d_fppop(tl_scheme_jit_save_fp2, JIT_FPR0, JIT_R2);
+              (void)mz_tl_sti_d_fppop(tl_scheme_jit_save_fp, JIT_FPR1, JIT_R2);
+            } else {
+              (void)mz_tl_sti_d_fppop(tl_scheme_jit_save_fp, JIT_FPR0, JIT_R2);
+              (void)mz_tl_sti_d_fppop(tl_scheme_jit_save_fp2, JIT_FPR1, JIT_R2);
+            }
+            mz_prepare(0);
+            (void)mz_finish(call_expt);
+            (void)mz_tl_ldi_d_fppush(JIT_FPR0, tl_scheme_jit_save_fp, JIT_R2);          
           }
-          mz_prepare(0);
-          (void)mz_finish(call_expt);
-          (void)mz_tl_ldi_d_fppush(JIT_FPR0, tl_scheme_jit_save_fp, JIT_R2);          
         }
         break;
 # endif
@@ -690,7 +910,7 @@ static int generate_double_arith(mz_jit_state *jitter, Scheme_Object *rator,
 
       if (!no_alloc) {
         mz_rs_sync(); /* needed if arguments were unboxed */
-        scheme_generate_alloc_double(jitter, 0, dest);
+        scheme_generate_alloc_X_double(jitter, 0, dest, extfl);
         CHECK_LIMIT();
 #if defined(MZ_USE_JIT_I386)
         if (need_post_pop)
@@ -717,19 +937,19 @@ static int generate_double_arith(mz_jit_state *jitter, Scheme_Object *rator,
       R0_FP_ADJUST(_jitl.r0_can_be_tmp++);
       switch (cmp) {
       case CMP_LT:
-        refd = jit_bantigtr_d_fppop(jit_forward(), fpr0, fpr1);
+        refd = jit_FPSEL_bantigtr_xd_fppop(extfl, jit_forward(), fpr0, fpr1);
         break;
       case CMP_LEQ:
-        refd = jit_bantiger_d_fppop(jit_forward(), fpr0, fpr1);
+        refd = jit_FPSEL_bantiger_xd_fppop(extfl, jit_forward(), fpr0, fpr1);
         break;
       case CMP_EQUAL:
-        refd = jit_bantieqr_d_fppop(jit_forward(), fpr0, fpr1);
+        refd = jit_FPSEL_bantieqr_xd_fppop(extfl, jit_forward(), fpr0, fpr1);
         break;
       case CMP_GEQ:
-        refd = jit_bantiler_d_fppop(jit_forward(), fpr0, fpr1);
+        refd = jit_FPSEL_bantiler_xd_fppop(extfl, jit_forward(), fpr0, fpr1);
         break;
       case CMP_GT:
-        refd = jit_bantiltr_d_fppop(jit_forward(), fpr0, fpr1);
+        refd = jit_FPSEL_bantiltr_xd_fppop(extfl, jit_forward(), fpr0, fpr1);
         break;
       default:
         refd = NULL;
@@ -771,7 +991,7 @@ static int generate_double_arith(mz_jit_state *jitter, Scheme_Object *rator,
   return 1;
 }
 
-static int check_flonum_result(mz_jit_state *jitter, int reg, void *fail_code, Scheme_Object *rator)
+static int check_float_type_result(mz_jit_state *jitter, int reg, void *fail_code, Scheme_Object *rator, int type)
 /* Doesn't use R0 or R1, except for `reg' */
 {
   /* Check for flonum result */
@@ -793,13 +1013,20 @@ static int check_flonum_result(mz_jit_state *jitter, int reg, void *fail_code, S
 
   jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
   __START_SHORT_JUMPS__(1);
-  (void)jit_bnei_i(reffail, JIT_R2, scheme_double_type);
+  (void)jit_bnei_i(reffail, JIT_R2, type);
   __END_SHORT_JUMPS__(1);
   CHECK_LIMIT();
 
   scheme_generate_unboxing(jitter, reg);
 
   return 1;
+}
+
+static int check_flonum_result(mz_jit_state *jitter, int reg, void **fail_code, Scheme_Object *rator, int extfl)
+/* Doesn't use R0 or R1, except for `reg' */
+{
+  return check_float_type_result(jitter, reg, fail_code[extfl], rator, 
+                                 (extfl ? scheme_long_double_type : scheme_double_type));
 }
 
 static void generate_modulo_setup(mz_jit_state *jitter, int branch_short, int a1, int a2)
@@ -820,11 +1047,11 @@ static void generate_modulo_setup(mz_jit_state *jitter, int branch_short, int a1
   __END_INNER_TINY__(branch_short);
 }
 
-int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Object *rand, Scheme_Object *rand2, 
-			  int orig_args, int arith, int cmp, int v, 
-                          Branch_Info *for_branch, int branch_short,
-                          int unsafe_fx, int unsafe_fl, GC_CAN_IGNORE jit_insn *overflow_refslow,
-                          int dest)
+int scheme_generate_arith_for(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Object *rand, Scheme_Object *rand2, 
+                              int orig_args, int arith, int cmp, int v, 
+                              Branch_Info *for_branch, int branch_short,
+                              int unsafe_fx, int unsafe_fl, GC_CAN_IGNORE jit_insn *overflow_refslow,
+                              int dest, int extfl)
 /* needs de-sync */
 /* Operation codes are defined in jit.h.
    Either arith is non-zero or it's a cmp; the value of each determines the operation:
@@ -858,7 +1085,7 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
    already in R0 (fixnum or min/max) or a floating-point register
    (flonum) and the second argument is in R1 (fixnum or min/max) or a
    floating-point register (flonum).
-   For unsafe_fx or unsafe_fl, -1 means safe but specific to the type.
+   For unsafe_fx or unsafe_fl -1 means safe but specific to the type.
 */
 {
   GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *ref4, *refd = NULL, *refdt = NULL;
@@ -878,11 +1105,11 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
     if (!rand) {
       inlined_flonum1 = inlined_flonum2 = 1;
     } else {
-      if (scheme_can_unbox_inline(rand, 5, JIT_FPR_NUM-2, unsafe_fl > 0))
+      if (scheme_can_unbox_inline(rand, 5, MZ_FPUSEL(extfl, JIT_FPU_FPR_NUM, JIT_FPR_NUM)-2, unsafe_fl > 0, extfl))
         inlined_flonum1 = 1;
       else
         inlined_flonum1 = 0;
-      if (!rand2 || scheme_can_unbox_inline(rand2, 5, JIT_FPR_NUM-3, unsafe_fl > 0))
+      if (!rand2 || scheme_can_unbox_inline(rand2, 5, MZ_FPUSEL(extfl, JIT_FPU_FPR_NUM, JIT_FPR_NUM)-3, unsafe_fl > 0, extfl))
         inlined_flonum2 = 1;
       else
         inlined_flonum2 = 0;
@@ -906,7 +1133,7 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
     if (!args_unboxed && rand)
       scheme_signal_error("internal error: invalid mode");
 
-    if (inlined_flonum1 && !inlined_flonum2 && can_reorder_unboxing(rand, rand2)) {
+    if (inlined_flonum1 && !inlined_flonum2 && can_reorder_unboxing(rand, rand2, extfl)) {
       GC_CAN_IGNORE Scheme_Object *tmp;
       reversed = !reversed;
       cmp = -cmp;
@@ -921,14 +1148,16 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
     if (inlined_flonum1)
       can_direct1 = 2;
     else
-      can_direct1 = scheme_can_unbox_directly(rand);
+      can_direct1 = scheme_can_unbox_directly(rand, extfl);
     if (inlined_flonum2)
       can_direct2 = 2;
     else 
-      can_direct2 = scheme_can_unbox_directly(rand2);
+      can_direct2 = scheme_can_unbox_directly(rand2, extfl);
 
-    if (args_unboxed)
+    if (args_unboxed) {
       jitter->unbox++;
+      MZ_FPUSEL_STMT_ONLY(extfl, jitter->unbox_extflonum++);
+    }
     if (!rand) {
       CHECK_LIMIT();
       if (args_unboxed)
@@ -941,7 +1170,7 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
       CHECK_LIMIT();
       mz_runstack_unskipped(jitter, 1);
       if (!can_direct1 && (unsafe_fl <= 0)) {
-        check_flonum_result(jitter, JIT_R0, sjc.fl1_fail_code, rator);
+        check_flonum_result(jitter, JIT_R0, sjc.fl1_fail_code, rator, extfl);
         CHECK_LIMIT();
       }
       flonum_depth = 1;
@@ -959,7 +1188,7 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 #ifdef USE_FLONUM_UNBOXING
           flostack = scheme_mz_flostack_save(jitter, &flopos);
           --jitter->unbox_depth;
-          scheme_generate_flonum_local_unboxing(jitter, 0);
+          scheme_generate_flonum_local_unboxing(jitter, 0, extfl);
           CHECK_LIMIT();
 #endif        
         }
@@ -970,8 +1199,8 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
         if ((can_direct1 || (unsafe_fl > 0)) && !inlined_flonum2) {
 #ifdef USE_FLONUM_UNBOXING
           int fpr0;
-          fpr0 = JIT_FPR_0(jitter->unbox_depth);
-          mz_ld_fppush(fpr0, jitter->flostack_offset);
+          fpr0 = JIT_FPUSEL_FPR_0(extfl, jitter->unbox_depth);
+          mz_ld_fppush(fpr0, jitter->flostack_offset, extfl);
           scheme_mz_flostack_restore(jitter, flostack, flopos, 1, 1);
           CHECK_LIMIT();
           jitter->unbox_depth++;
@@ -981,15 +1210,15 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
           jit_movr_p(JIT_R1, JIT_R0);
           if (!can_direct1) {
             mz_popr_p(JIT_R0);
-            check_flonum_result(jitter, JIT_R0, sjc.fl2rr_fail_code[fl_reversed], rator);
+            check_flonum_result(jitter, JIT_R0, sjc.fl2rr_fail_code[fl_reversed], rator, extfl);
             CHECK_LIMIT();
           }
-          check_flonum_result(jitter, JIT_R1, sjc.fl2fr_fail_code[fl_reversed], rator);
+          check_flonum_result(jitter, JIT_R1, sjc.fl2fr_fail_code[fl_reversed], rator, extfl);
           CHECK_LIMIT();
         } else {
           if (!can_direct1 && (unsafe_fl <= 0)) {
             mz_popr_p(JIT_R0);
-            check_flonum_result(jitter, JIT_R0, sjc.fl2rf_fail_code[fl_reversed], rator);
+            check_flonum_result(jitter, JIT_R0, sjc.fl2rf_fail_code[fl_reversed], rator, extfl);
             CHECK_LIMIT();
           }
           if (!(can_direct1 || (unsafe_fl > 0)) || !inlined_flonum2) {
@@ -1001,8 +1230,10 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
       mz_runstack_unskipped(jitter, 2);
       flonum_depth = 2;
     }
-    if (args_unboxed)
+    if (args_unboxed) {
       --jitter->unbox;
+      MZ_FPUSEL_STMT_ONLY(extfl, --jitter->unbox_extflonum);
+    }
     jitter->unbox_depth -= flonum_depth;
     if (!jitter->unbox && jitter->unbox_depth && rand)
       scheme_signal_error("internal error: broken unbox depth");
@@ -1010,10 +1241,10 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
         || (arith == ARITH_INEX_EX)) /* has slow path */
       mz_rs_sync(); /* needed if arguments were unboxed */
 
-    generate_double_arith(jitter, rator, arith, cmp, reversed, !!rand2, 0,
-                          &refd, &refdt, for_branch, branch_short, 
-                          (arith == ARITH_INEX_EX) ? (unsafe_fl > 0) : 1, 
-                          args_unboxed, jitter->unbox, dest);
+    generate_float_point_arith(jitter, rator, arith, cmp, reversed, !!rand2, 0,
+                               &refd, &refdt, for_branch, branch_short, 
+                               (arith == ARITH_INEX_EX) ? (unsafe_fl > 0) : 1, 
+                               args_unboxed, jitter->unbox, dest, extfl);
     CHECK_LIMIT();
     ref3 = NULL;
     ref = NULL;
@@ -1022,7 +1253,9 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
     if ((arith == ARITH_INEX_EX) && (unsafe_fl < 1)) {
       /* need a slow path */
       if (args_unboxed) {
-        (void)jit_calli(sjc.box_flonum_from_reg_code);
+        MZ_FPUSEL_STMT(extfl,
+                       (void)jit_calli(sjc.box_extflonum_from_reg_code),
+                       (void)jit_calli(sjc.box_flonum_from_reg_code));
       }
       generate_arith_slow_path(jitter, rator, &ref, &ref4, for_branch, branch_short, orig_args, reversed, arith, 0, 0, dest);
       /* assert: !ref4, since not for_branch */
@@ -1034,7 +1267,7 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 
     __START_SHORT_JUMPS__(branch_short);
   } else {
-    int unbox = jitter->unbox;
+    mz_jit_unbox_state ubs;
 
     if (unsafe_fl < 0) {
       has_fixnum_fast = 0;
@@ -1042,7 +1275,7 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
     }
 
     /* While generating a fixnum op, don't unbox! */
-    jitter->unbox = 0;
+    scheme_mz_unbox_save(jitter, &ubs);
 
     if (!rand) {
       /* generating for an nary operation; first arg in R0, 
@@ -1180,8 +1413,8 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
                           && can_fast_double(arith, cmp, 1))) {
           /* Maybe they're both doubles... */
           if (unsafe_fl) mz_rs_sync();
-          generate_double_arith(jitter, rator, arith, cmp, reversed, 1, 0, &refd, &refdt, 
-                                for_branch, branch_short, unsafe_fl, 0, unbox, dest);
+          generate_float_point_arith(jitter, rator, arith, cmp, reversed, 1, 0, &refd, &refdt, 
+                                     for_branch, branch_short, unsafe_fl, 0, ubs.unbox, dest, extfl);
           CHECK_LIMIT();
         }
 
@@ -1241,8 +1474,8 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
                 /* watch out: divide by 0 is special: */
                 && ((arith != ARITH_DIV) || v || reversed))) {
           /* Maybe it's a double... */
-          generate_double_arith(jitter, rator, arith, cmp, reversed, 0, v, &refd, &refdt, 
-                                for_branch, branch_short, unsafe_fl, 0, unbox, dest);
+          generate_float_point_arith(jitter, rator, arith, cmp, reversed, 0, v, &refd, &refdt, 
+                                     for_branch, branch_short, unsafe_fl, 0, ubs.unbox, dest, extfl);
           CHECK_LIMIT();
         }
 
@@ -1614,14 +1847,14 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
             } else if (arith == ARITH_EX_INEX) {
               /* exact->inexact */
               int fpr0;
-              fpr0 = JIT_FPR_0(jitter->unbox_depth);
+              fpr0 = JIT_FPUSEL_FPR_0(extfl, jitter->unbox_depth);
               jit_rshi_l(JIT_R0, JIT_R0, 1);
-              jit_extr_l_d_fppush(fpr0, JIT_R0);
+              jit_FPSEL_extr_l_xd_fppush(extfl, fpr0, JIT_R0);
               CHECK_LIMIT();
-              if (!unbox) {
+              if (!ubs.unbox) {
                 mz_rs_sync(); /* needed for unsafe op before allocation */
                 __END_SHORT_JUMPS__(branch_short);
-                scheme_generate_alloc_double(jitter, 0, dest);
+                scheme_generate_alloc_X_double(jitter, 0, dest, extfl);
                 __START_SHORT_JUMPS__(branch_short);
               } else {
                 jitter->unbox_depth++;
@@ -1743,7 +1976,7 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
       ref3 = NULL;
     }
 
-    jitter->unbox = unbox;
+    scheme_mz_unbox_restore(jitter, &ubs);
   }
 
   if (!arith) {
@@ -1786,6 +2019,33 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 
   return 1;
 }
+
+int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Object *rand, Scheme_Object *rand2, 
+			  int orig_args, int arith, int cmp, int v, 
+                          Branch_Info *for_branch, int branch_short,
+                          int unsafe_fx, int unsafe_fl, GC_CAN_IGNORE jit_insn *overflow_refslow,
+                          int dest)
+{
+  return scheme_generate_arith_for(jitter, rator, rand, rand2, 
+                                   orig_args, arith, cmp, v, 
+                                   for_branch, branch_short,
+                                   unsafe_fx, unsafe_fl, overflow_refslow,
+                                   dest, 0);
+}
+
+int scheme_generate_extflonum_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Object *rand, Scheme_Object *rand2, 
+                                    int orig_args, int arith, int cmp, int v, 
+                                    Branch_Info *for_branch, int branch_short,
+                                    int unsafe_fx, int unsafe_extfl, GC_CAN_IGNORE jit_insn *overflow_refslow,
+                                    int dest)
+{
+  return scheme_generate_arith_for(jitter, rator, rand, rand2, 
+                                   orig_args, arith, cmp, v, 
+                                   for_branch, branch_short,
+                                   unsafe_fx, unsafe_extfl, overflow_refslow,
+                                   dest, 1);
+}
+
 
 #define MAX_NON_SIMPLE_ARGS 5
 

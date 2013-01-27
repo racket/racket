@@ -194,6 +194,43 @@ int scheme_eq (Scheme_Object *obj1, Scheme_Object *obj2)
   return SAME_OBJ(obj1, obj2);
 }
 
+#ifdef MZ_LONG_DOUBLE
+XFORM_NONGCING static MZ_INLINE int long_double_eqv(long double a, long double b)
+{
+# ifndef NAN_EQUALS_ANYTHING
+  if (a != b) {
+# endif
+    /* Double-check for NANs: */
+    if (MZ_IS_LONG_NAN(a)) {
+      if (MZ_IS_LONG_NAN(b))
+        return 1;
+# ifdef NAN_EQUALS_ANYTHING
+      return 0;
+# endif
+    }
+# ifdef NAN_EQUALS_ANYTHING
+    if (MZ_IS_LONG_NAN(b))
+      return 0;
+    else {
+      if (a == 0.0L) {
+        if (b == 0.0L) {
+          return scheme_long_minus_zero_p(a) == scheme_long_minus_zero_p(b);
+        }
+      }
+      return (a == b);
+    }
+# else
+    return 0;
+  }
+  if (a == 0.0L) {
+    if (b == 0.0L) {
+      return scheme_long_minus_zero_p(a) == scheme_long_minus_zero_p(b);
+    }
+  }
+  return 1;
+# endif
+}
+#endif
 XFORM_NONGCING static MZ_INLINE int double_eqv(double a, double b)
 {
 # ifndef NAN_EQUALS_ANYTHING
@@ -249,6 +286,10 @@ XFORM_NONGCING static int is_eqv(Scheme_Object *obj1, Scheme_Object *obj2)
       return double_eqv(SCHEME_DBL_VAL(obj1), SCHEME_FLT_VAL(obj2));
 #endif
     return -1;
+#ifdef MZ_LONG_DOUBLE
+  } else if (t1 == scheme_long_double_type) {
+    return long_double_eqv(SCHEME_LONG_DBL_VAL(obj1), SCHEME_LONG_DBL_VAL(obj2));
+#endif
 #ifdef MZ_USE_SINGLE_FLOATS
   } else if (t1 == scheme_float_type) {
     return double_eqv(SCHEME_FLT_VAL(obj1), SCHEME_FLT_VAL(obj2));
@@ -471,6 +512,21 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
       return 1;
     }
     return 0;
+#ifdef MZ_LONG_DOUBLE
+  } else if (t1 == scheme_extflvector_type) {
+    intptr_t l1, l2, i;
+    l1 = SCHEME_EXTFLVEC_SIZE(obj1);
+    l2 = SCHEME_EXTFLVEC_SIZE(obj2);
+    if (l1 == l2) {
+      for (i = 0; i < l1; i++) {
+        if (!long_double_eqv(SCHEME_EXTFLVEC_ELS(obj1)[i],
+                             SCHEME_EXTFLVEC_ELS(obj2)[i]))
+          return 0;
+      }
+      return 1;
+    }
+    return 0;
+#endif
   } else if ((t1 == scheme_byte_string_type)
              || ((t1 >= scheme_unix_path_type) 
                  && (t1 <= scheme_windows_path_type))) {

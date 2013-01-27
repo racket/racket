@@ -63,6 +63,26 @@
 # define MZ_USE_SINGLE_FLOATS
 #endif
 
+/* gcc defines __SSE_MATH__ when SSE floating point is enabled: */
+#ifdef __SSE_MATH__
+# define C_COMPILER_USES_SSE 1
+#endif
+
+#ifdef C_COMPILER_USES_SSE
+# if defined(MZ_TRY_EXTFLONUMS) && !defined(MZ_NO_EXTFLONUMS)
+#  define MZ_LONG_DOUBLE
+#  ifdef ASM_DBLPREC_CONTROL_87
+#   define ASM_EXTPREC_CONTROL_87
+#  endif
+# endif
+# ifdef ASM_DBLPREC_CONTROL_87
+#  undef ASM_DBLPREC_CONTROL_87
+# endif
+# if defined(MZ_USE_JIT_I386) && !defined(MZ_NO_JIT_SSE)
+#  define MZ_USE_JIT_SSE
+# endif
+#endif
+
 #ifdef DONT_ITIMER
 # undef USE_ITIMER
 #endif
@@ -328,6 +348,18 @@ typedef struct {
   double double_val;
 } Scheme_Double;
 
+#ifdef MZ_LONG_DOUBLE
+typedef struct {
+  Scheme_Object so;
+  long double long_double_val;
+} Scheme_Long_Double;
+#else
+typedef struct {
+  Scheme_Object so;
+  const char *printed_form;
+} Scheme_Long_Double;
+#endif 
+
 #ifdef MZ_USE_SINGLE_FLOATS
 typedef struct {
   Scheme_Object so;
@@ -356,6 +388,14 @@ typedef struct Scheme_Double_Vector {
   intptr_t size;
   double els[mzFLEX_ARRAY_DECL];
 } Scheme_Double_Vector;
+
+#ifdef MZ_LONG_DOUBLE
+typedef struct Scheme_Long_Double_Vector {
+  Scheme_Inclhash_Object iso; /* & 0x2 indicates allocated in the MASTERGC */
+  intptr_t size;
+  long double els[mzFLEX_ARRAY_DECL];
+} Scheme_Long_Double_Vector;
+#endif
 
 typedef struct Scheme_Print_Params Scheme_Print_Params;
 typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int for_display, Scheme_Print_Params *pp);
@@ -416,6 +456,8 @@ typedef intptr_t (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj, void *cycle_d
 #define SCHEME_REALP(obj)  (SCHEME_INTP(obj) || ((_SCHEME_TYPE(obj) >= scheme_bignum_type) && (_SCHEME_TYPE(obj) < scheme_complex_type)))
 #define SCHEME_NUMBERP(obj)  (SCHEME_INTP(obj) || ((_SCHEME_TYPE(obj) >= scheme_bignum_type) && (_SCHEME_TYPE(obj) <= scheme_complex_type)))
 
+#define SCHEME_LONG_DBLP(obj)     SAME_TYPE(SCHEME_TYPE(obj), scheme_long_double_type)
+
 #define SCHEME_CHAR_STRINGP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_char_string_type)
 #define SCHEME_MUTABLE_CHAR_STRINGP(obj)  (SCHEME_CHAR_STRINGP(obj) && SCHEME_MUTABLEP(obj))
 #define SCHEME_IMMUTABLE_CHAR_STRINGP(obj)  (SCHEME_CHAR_STRINGP(obj) && SCHEME_IMMUTABLEP(obj))
@@ -469,6 +511,7 @@ typedef intptr_t (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj, void *cycle_d
 #define SCHEME_IMMUTABLE_VECTORP(obj)  (SCHEME_VECTORP(obj) && SCHEME_IMMUTABLEP(obj))
 
 #define SCHEME_FLVECTORP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_flvector_type)
+#define SCHEME_EXTFLVECTORP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_extflvector_type)
 #define SCHEME_FXVECTORP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_fxvector_type)
 
 #define SCHEME_STRUCTP(obj) (SAME_TYPE(SCHEME_TYPE(obj), scheme_structure_type) || SAME_TYPE(SCHEME_TYPE(obj), scheme_proc_struct_type))
@@ -535,6 +578,9 @@ typedef intptr_t (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj, void *cycle_d
 #define SCHEME_CHAR_VAL(obj) (((Scheme_Small_Object *)(obj))->u.char_val)
 #define SCHEME_INT_VAL(obj)  (OBJ_TO_LONG(obj)>>1)
 #define SCHEME_DBL_VAL(obj)  (((Scheme_Double *)(obj))->double_val)
+#ifdef MZ_LONG_DOUBLE
+#define SCHEME_LONG_DBL_VAL(obj)  (((Scheme_Long_Double *)(obj))->long_double_val)
+#endif
 #ifdef MZ_USE_SINGLE_FLOATS
 # define SCHEME_FLT_VAL(obj)  (((Scheme_Float *)(obj))->float_val)
 # define SCHEME_FLOAT_VAL(obj) (SCHEME_DBLP(obj) ? SCHEME_DBL_VAL(obj) : SCHEME_FLT_VAL(obj))
@@ -580,6 +626,11 @@ typedef intptr_t (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj, void *cycle_d
 
 #define SCHEME_FLVEC_SIZE(obj) (((Scheme_Double_Vector *)(obj))->size)
 #define SCHEME_FLVEC_ELS(obj)  (((Scheme_Double_Vector *)(obj))->els)
+
+#ifdef MZ_LONG_DOUBLE
+#define SCHEME_EXTFLVEC_SIZE(obj) (((Scheme_Long_Double_Vector *)(obj))->size)
+#define SCHEME_EXTFLVEC_ELS(obj)  (((Scheme_Long_Double_Vector *)(obj))->els)
+#endif
 
 #define SCHEME_FXVEC_SIZE(obj) SCHEME_VEC_SIZE(obj)
 #define SCHEME_FXVEC_ELS(obj) SCHEME_VEC_ELS(obj)

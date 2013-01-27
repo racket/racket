@@ -65,6 +65,9 @@
   scheme_extension_table->scheme_make_vector = scheme_make_vector;
   scheme_extension_table->scheme_make_integer_value = scheme_make_integer_value;
   scheme_extension_table->scheme_make_double = scheme_make_double;
+#ifdef MZ_LONG_DOUBLE
+  scheme_extension_table->scheme_make_long_double = scheme_make_long_double;
+#endif
   scheme_extension_table->scheme_make_char = scheme_make_char;
   scheme_extension_table->scheme_make_compiled_syntax = scheme_make_compiled_syntax;
   scheme_extension_table->scheme_make_promise = scheme_make_promise;
@@ -72,6 +75,10 @@
   scheme_extension_table->scheme_make_bignum = scheme_make_bignum;
   scheme_extension_table->scheme_bignum_to_float = scheme_bignum_to_float;
   scheme_extension_table->scheme_bignum_from_float = scheme_bignum_from_float;
+#ifdef MZ_LONG_DOUBLE
+  scheme_extension_table->scheme_bignum_to_long_double = scheme_bignum_to_long_double;
+  scheme_extension_table->scheme_bignum_from_long_double = scheme_bignum_from_long_double;
+#endif
   scheme_extension_table->scheme_bignum_to_string = scheme_bignum_to_string;
   scheme_extension_table->scheme_read_bignum = scheme_read_bignum;
   scheme_extension_table->scheme_bignum_normalize = scheme_bignum_normalize;

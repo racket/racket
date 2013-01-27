@@ -1890,6 +1890,19 @@ static int wants_local_type_arguments(Scheme_Object *rator, int argpos)
       if (flags & SCHEME_PRIM_WANTS_FLONUM_THIRD)
         return SCHEME_LOCAL_TYPE_FLONUM;
     }
+
+#ifdef MZ_LONG_DOUBLE
+    if (argpos == 0) {
+      if (flags & SCHEME_PRIM_WANTS_EXTFLONUM_FIRST)
+        return SCHEME_LOCAL_TYPE_EXTFLONUM;
+    } else if (argpos == 1) {
+      if (flags & SCHEME_PRIM_WANTS_EXTFLONUM_SECOND)
+        return SCHEME_LOCAL_TYPE_EXTFLONUM;
+    } else if (argpos == 2) {
+      if (flags & SCHEME_PRIM_WANTS_EXTFLONUM_THIRD)
+        return SCHEME_LOCAL_TYPE_EXTFLONUM;
+    }
+#endif
   }
 
   return 0;
@@ -1945,6 +1958,10 @@ int scheme_expr_produces_local_type(Scheme_Object *expr)
     default:
       if (SCHEME_FLOATP(expr))
         return SCHEME_LOCAL_TYPE_FLONUM;
+#ifdef MZ_LONG_DOUBLE
+      if (SCHEME_LONG_DBLP(expr))
+        return SCHEME_LOCAL_TYPE_EXTFLONUM;
+#endif
       if (SCHEME_INTP(expr) 
           && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(expr)))
         return SCHEME_LOCAL_TYPE_FIXNUM;
@@ -2606,6 +2623,32 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
       if (SCHEME_FLOATP(app->rand2) && (SCHEME_FLOAT_VAL(app->rand2) == 1.0))
         return scheme_make_double(0.0);
     }
+#ifdef MZ_LONG_DOUBLE
+    z1 = (SCHEME_LONG_DBLP(app->rand1) && (SCHEME_LONG_DBL_VAL(app->rand1) == 0.0L));
+    z2 = (SCHEME_LONG_DBLP(app->rand2) && (SCHEME_LONG_DBL_VAL(app->rand2) == 0.0L));
+
+    if (IS_NAMED_PRIM(app->rator, "unsafe-extfl+")) {
+      if (z1)
+        return app->rand2;
+      else if (z2)
+        return app->rand1;
+    } else if (IS_NAMED_PRIM(app->rator, "unsafe-extfl-")) {
+      if (z2)
+        return app->rand1;
+    } else if (IS_NAMED_PRIM(app->rator, "unsafe-extfl*")) {
+      if (SCHEME_LONG_DBLP(app->rand1) && (SCHEME_LONG_DBL_VAL(app->rand1) == 1.0L))
+        return app->rand2;
+      if (SCHEME_LONG_DBLP(app->rand2) && (SCHEME_LONG_DBL_VAL(app->rand2) == 1.0L))
+        return app->rand1;
+    } else if (IS_NAMED_PRIM(app->rator, "unsafe-extfl/")) {
+      if (SCHEME_LONG_DBLP(app->rand2) && (SCHEME_LONG_DBL_VAL(app->rand2) == 1.0L))
+        return app->rand1;
+    } else if (IS_NAMED_PRIM(app->rator, "unsafe-extflremainder")
+               || IS_NAMED_PRIM(app->rator, "unsafe-extflmodulo")) {
+      if (SCHEME_LONG_DBLP(app->rand2) && (SCHEME_LONG_DBL_VAL(app->rand2) == 1.0L))
+        return scheme_make_long_double(0.0L);
+    }
+#endif
   }
 
   register_local_argument_types(NULL, NULL, app, info);

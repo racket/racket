@@ -4552,18 +4552,20 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 	
 	if (rec[drec].comp) {
 	  scheme_compile_rec_done_local(rec, drec);
+          if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)) {
+            if (scheme_extract_unsafe(var)) {
+              scheme_register_unsafe_in_prefix(env, rec, drec, menv);
+              return scheme_extract_unsafe(var);
+            } else if (scheme_extract_flfxnum(var)) {
+              return scheme_extract_flfxnum(var);
+            } else if (scheme_extract_extfl(var)) {
+              return scheme_extract_extfl(var);
+            } else if (scheme_extract_futures(var)) {
+              return scheme_extract_futures(var);
+            }
+          }
           if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
-              && scheme_extract_unsafe(var)) {
-            scheme_register_unsafe_in_prefix(env, rec, drec, menv);
-            return scheme_extract_unsafe(var);
-          } else if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
-                     && scheme_extract_flfxnum(var)) {
-            return scheme_extract_flfxnum(var);
-          } else if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
-                     && scheme_extract_futures(var)) {
-            return scheme_extract_futures(var);
-          } else if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
-                     || SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type))
+              || SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type))
 	    return scheme_register_toplevel_in_prefix(var, env, rec, drec, 
                                                       scheme_is_imported(var, env),
                                                       inline_variant);

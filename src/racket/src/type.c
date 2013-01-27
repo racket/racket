@@ -161,6 +161,7 @@ scheme_init_type ()
   set_name(scheme_box_type, "<box>");
   set_name(scheme_integer_type, "<fixnum-integer>");
   set_name(scheme_double_type, "<inexact-number>");
+  set_name(scheme_long_double_type, "<extflonum>");
   set_name(scheme_float_type, "<inexact-number*>");
   set_name(scheme_undefined_type, "<undefined>");
   set_name(scheme_eof_type, "<eof>");
@@ -187,6 +188,7 @@ scheme_init_type ()
   set_name(scheme_macro_type, "<macro>");
   set_name(scheme_vector_type, "<vector>");
   set_name(scheme_flvector_type, "<flvector>");
+  set_name(scheme_extflvector_type, "<extflvector>");
   set_name(scheme_fxvector_type, "<fxvector>");
   set_name(scheme_bignum_type, "<bignum-integer>");
   set_name(scheme_escaping_cont_type, "<escape-continuation>");
@@ -602,6 +604,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_rational_type, rational_obj);
   GC_REG_TRAV(scheme_float_type,  float_obj);
   GC_REG_TRAV(scheme_double_type, double_obj);
+  GC_REG_TRAV(scheme_long_double_type, long_double_obj);
   GC_REG_TRAV(scheme_complex_type, complex_obj);
   GC_REG_TRAV(scheme_char_string_type, string_obj);
   GC_REG_TRAV(scheme_byte_string_type, bstring_obj);
@@ -619,6 +622,9 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_raw_pair_type, cons_cell);
   GC_REG_TRAV(scheme_vector_type, vector_obj);
   GC_REG_TRAV(scheme_flvector_type, flvector_obj);
+#ifdef MZ_LONG_DOUBLE
+  GC_REG_TRAV(scheme_extflvector_type, extflvector_obj);
+#endif
   GC_REG_TRAV(scheme_fxvector_type, fxvector_obj);
   GC_REG_TRAV(scheme_cpointer_type, cpointer_obj);
 

@@ -64,7 +64,7 @@ characters are @defterm{delimiters}:
 }
 
 A delimited sequence that starts with any other character is typically
-parsed as either a symbol or number, but a few non-delimiter
+parsed as either a symbol, number, or @tech{extflonum}, but a few non-delimiter
 characters play special roles:
 
 @itemize[
@@ -144,10 +144,10 @@ on the next character or characters in the input stream as follows:
 
   @dispatch[@cilitchar{#i}]{starts a @tech{number}; see @secref["parse-number"]}
   @dispatch[@cilitchar{#e}]{starts a @tech{number}; see @secref["parse-number"]}
-  @dispatch[@cilitchar{#x}]{starts a @tech{number}; see @secref["parse-number"]}
-  @dispatch[@cilitchar{#o}]{starts a @tech{number}; see @secref["parse-number"]}
-  @dispatch[@cilitchar{#d}]{starts a @tech{number}; see @secref["parse-number"]}
-  @dispatch[@cilitchar{#b}]{starts a @tech{number}; see @secref["parse-number"]}
+  @dispatch[@cilitchar{#x}]{starts a @tech{number} or @tech{extflonum}; see @secref["parse-number"]}
+  @dispatch[@cilitchar{#o}]{starts a @tech{number} or @tech{extflonum}; see @secref["parse-number"]}
+  @dispatch[@cilitchar{#d}]{starts a @tech{number} or @tech{extflonum}; see @secref["parse-number"]}
+  @dispatch[@cilitchar{#b}]{starts a @tech{number} or @tech{extflonum}; see @secref["parse-number"]}
 
   @dispatch[@cilitchar["#<<"]]{starts a @tech{string}; see @secref["parse-string"]}
 
@@ -187,12 +187,14 @@ on the next character or characters in the input stream as follows:
 @guideintro["symbols"]{the syntax of symbols}
 
 A sequence that does not start with a delimiter or @litchar{#} is
-parsed as either a @tech{symbol} or a @tech{number} (see
-@secref["parse-number"]), except that @litchar{.} by itself is never
-parsed as a symbol or character (unless the @racket[read-accept-dot]
+parsed as either a @tech{symbol}, a @tech{number} (see
+@secref["parse-number"]), or a @tech{extflonum}
+(see @secref["parse-extflonum"]), 
+except that @litchar{.} by itself is never
+parsed as a symbol or number (unless the @racket[read-accept-dot]
 parameter is set to @racket[#f]). A @as-index{@litchar{#%}} also
 starts a symbol. The resulting symbol is @tech{interned}. A successful
-number parse takes precedence over a symbol parse.
+number or extflonum parse takes precedence over a symbol parse.
 
 @index["case-sensitivity"]{@index["case-insensitive"]{When}} the
 @racket[read-case-sensitive] @tech{parameter} is set to @racket[#f],
@@ -245,6 +247,7 @@ If the reader encounters @as-index{@litchar{#b}} (binary),
 @as-index{@litchar{#o}} (octal), @as-index{@litchar{#d}} (decimal), or
 @as-index{@litchar{#x}} (hexadecimal), it must be followed by a
 sequence that is terminated by a delimiter or end-of-file, and that
+is either an @tech{extflonum} (see @secref["parse-extflonum"]) or
 matches the @nonterm{general-number@sub{2}},
 @nonterm{general-number@sub{8}}, @nonterm{general-number@sub{10}}, or
 @nonterm{general-number@sub{16}} grammar, respectively.
@@ -323,6 +326,18 @@ that the digit's actual value is unknown.
 "#x2e5"
 "#b101"
 ]
+
+@section[#:tag "parse-extflonum"]{Reading Extflonums}
+
+An @tech{extflonum} has the same syntax as an @nunterm{inexact-real}
+that includes an @nunterm{exp-mark}, but with @litchar{t} or
+@litchar{T} in place of the @nunterm{exp-mark}. A @litchar{#b}
+(binary), @litchar{#o} (octal), @litchar{#d} (decimal), or
+@litchar{#x} (hexadecimal) radix specification can prefix an
+extflonum, but @litchar{#i} or @litchar{#e} cannot, and a
+extflonum cannot be used to form a @tech{complex number}.  The
+@racket[read-decimal-as-inexact] @tech{parameter} has no effect on
+extflonum reading.
 
 @section[#:tag "parse-boolean"]{Reading Booleans}
 

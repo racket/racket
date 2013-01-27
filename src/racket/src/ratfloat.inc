@@ -1,14 +1,23 @@
 
-/* Optimization sometimes causes a problem: n or d is represented in an
-   extended format instead of a `double'. We don't want to turn off
-   floatng-point optimizations in the rest of the program, so we use a
-   little function to defeat the optimization: */
+/* Back when we didn't set force the FP mode to double-precision on
+   x87, compiler optimization would make n or d is represented in an
+   extended format instead of a `double'. We didn't want to turn off
+   floating-point optimizations in the rest of the program, so we used
+   a little function to defeat the optimization. This is almost
+   certainly not necessary anymore. */
 
 FP_TYPE DO_FLOAT_DIV(FP_TYPE n, FP_TYPE d)
 {
   return n / d;
 }
 
+#ifndef FP_ZEROx
+# define FP_ZEROx 0
+# define FP_POWx pow
+# define FP_MODFx modf
+# define FP_FREXPx frexp
+# define FP_DOUBLE_TYPE double
+#endif
 
 FP_TYPE SCHEME_RATIONAL_TO_FLOAT(const Scheme_Object *o)
 {
@@ -82,7 +91,7 @@ FP_TYPE SCHEME_RATIONAL_TO_FLOAT(const Scheme_Object *o)
     else
       res = SCHEME_BIGNUM_TO_FLOAT_INF_INFO(n, 0, NULL);
 
-    res = res * pow(2, p - shift);
+    res = res * FP_POWx(2, p - shift);
 
     if (SCHEME_INTP(r->num)) {
       if (SCHEME_INT_VAL(r->num) < 0)
@@ -99,12 +108,12 @@ FP_TYPE SCHEME_RATIONAL_TO_FLOAT(const Scheme_Object *o)
 
 Scheme_Object *SCHEME_RATIONAL_FROM_FLOAT(FP_TYPE d)
 {
-  double frac, i;
+  FP_DOUBLE_TYPE frac, i;
   int count, exponent, is_neg;
   Scheme_Object *int_part, *frac_part, *frac_num, *frac_denom, *two, *result;
 #ifdef COMPUTE_NEG_INEXACT_TO_EXACT_AS_POS
   int negate;
-  if (d < 0) {
+  if (d < FP_ZEROx) {
     d = -d;
     negate = 1;
   } else
@@ -113,10 +122,10 @@ Scheme_Object *SCHEME_RATIONAL_FROM_FLOAT(FP_TYPE d)
 
   SCHEME_CHECK_FLOAT("inexact->exact", d, "exact");
 
-  is_neg = (d < 0);
+  is_neg = (d < FP_ZEROx);
 
-  frac = modf((double)d, &i);
-  (void)frexp(d, &exponent);
+  frac = FP_MODFx((FP_DOUBLE_TYPE)d, &i);
+  (void)FP_FREXPx(d, &exponent);
 
   int_part = SCHEME_BIGNUM_FROM_FLOAT(i);
 
@@ -137,7 +146,7 @@ Scheme_Object *SCHEME_RATIONAL_FROM_FLOAT(FP_TYPE d)
     count++;
     frac_num = scheme_bin_mult(frac_num, two);
     frac_denom = scheme_bin_mult(frac_denom, two);    
-    frac = modf(ldexp(frac, 1), &i);
+    frac = FP_MODFx(ldexp(frac, 1), &i);
     if (i) {
       if (is_neg)	
 	frac_num = scheme_bin_minus(frac_num, one);
@@ -157,3 +166,18 @@ Scheme_Object *SCHEME_RATIONAL_FROM_FLOAT(FP_TYPE d)
 
   return result;
 }
+
+#undef FP_TYPE
+#undef SCHEME_RATIONAL_TO_FLOAT
+#undef SCHEME_RATIONAL_FROM_FLOAT
+#undef SCHEME_BIGNUM_TO_FLOAT_INF_INFO
+#undef SCHEME_BIGNUM_FROM_FLOAT
+#undef SCHEME_CHECK_FLOAT
+#undef DO_FLOAT_DIV 
+#undef FLOAT_E_MIN
+#undef FLOAT_M_BITS
+#undef FP_ZEROx
+#undef FP_POWx
+#undef FP_MODFx
+#undef FP_FREXPx
+#undef FP_DOUBLE_TYPE

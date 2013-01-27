@@ -3,7 +3,7 @@ string=? ; exec "${PLTHOME}/bin/racket" -gqr $0 "$@"
 
 ; Script to check that global and static variables are registered
 
-(define ignore-types (list "int" "long" "short" "double" "float" "DWORD"))
+(define ignore-types (list "int" "long" "short" "double" "long double" "float" "DWORD"))
 
 (define-struct decl (type file))
 

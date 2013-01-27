@@ -1149,6 +1149,27 @@
 (err/rt-test (read-syntax 'x (open-input-string "#fl()")) exn:fail:read?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require racket/extflonum)
+
+(test #t extflonum? (readstr "0.0t0"))
+(test #t extflonum? (readstr "-0.0t0"))
+(test #t extflonum? (readstr "3.0t0"))
+(test #t extflonum? (readstr "#b1.0t0"))
+(test #t extflonum? (readstr "#d3.0t0"))
+(test #t extflonum? (readstr "#o3.0t0"))
+(test #t extflonum? (readstr "#x3.0t0"))
+(test #f string->number "3.0t0")
+
+(test #t extflonum? (parameterize ([read-decimal-as-inexact #f])
+                      (readstr "3.0t0")))
+
+(when (extflonum-available?)
+  (test 3t0 readstr "3.0t0")
+  (test 3t0 readstr "#b11.0t0")
+  (test 9t0 readstr "#o11.0t0")
+  (test 17t0 readstr "#x11.0t0"))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
 
