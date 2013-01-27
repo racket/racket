@@ -584,6 +584,7 @@
   (case type
     [(flonum) 1]
     [(fixnum) 2]
+    [(extflonum) 3]
     [else (error 'type->index "unknown type: ~e" type)]))
 
 (define (out-anything v out)
