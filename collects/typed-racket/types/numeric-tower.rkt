@@ -18,7 +18,8 @@
          -SingleFlonumPosZero -SingleFlonumNegZero -SingleFlonumZero -SingleFlonumNan -PosSingleFlonum -NonNegSingleFlonum -NegSingleFlonum -NonPosSingleFlonum -SingleFlonum
          -InexactRealPosZero -InexactRealNegZero -InexactRealZero -InexactRealNan -PosInexactReal -NonNegInexactReal -NegInexactReal -NonPosInexactReal -InexactReal
          -RealZero -PosReal -NonNegReal -NegReal -NonPosReal -Real
-         -ExactNumber -FloatComplex -SingleFlonumComplex -InexactComplex -Number
+         -ExactImaginary -FloatImaginary -SingleFlonumImaginary -InexactImaginary -Imaginary
+         -ExactNumber -ExactComplex -FloatComplex -SingleFlonumComplex -InexactComplex -Number
          (rename-out (-Int -Integer)))
 
 ;; all the types defined here are numeric
@@ -235,23 +236,60 @@
 ;; real-part, imag-part and others.
 ;; We could have Complex be a 2-argument type constructor (although it
 ;; could construct uninhabitable types like (Complex Integer Float), which
-;; can't exist in Racket (parts must be both exact or both inexact)).
-;; Imaginaries could have their own type hierarchy as well.
-;; That's future work.
+;; can't exist in Racket (parts must be both exact, both inexact, or one is
+;; exact-zero)).  That's future work.
 
-;; Both parts of a complex number must be of the same exactness.
 ;; Thus, the only possible kinds of complex numbers are:
-;; Real/Real, Flonum/Flonum, SingleFlonum/SingleFlonum
-(define -ExactNumberNotReal
-  (make-Base 'Exact-Number-Not-Real
+;; Zero/Rat, Zero/Flonum, Zero/SingleFlonum.
+;; Rat/Rat, Flonum/Flonum, SingleFlonum/SingleFlonum.
+(define -ExactImaginary
+  (make-Base 'Exact-Imaginary
              #'(and/c number?
                       (not/c real?)
-                      (lambda (x) (exact? (imag-part x))))
+                      (lambda (x)
+                        (and
+                          (eqv? 0 (real-part x))
+                          (exact? (imag-part x)))))
              (lambda (x) (and (number? x)
                               (not (real? x))
+                              (eqv? 0 (real-part x))
                               (exact? (imag-part x))))
-             #'-ExactNumberNotReal))
-(define -ExactNumber (*Un -ExactNumberNotReal -Rat))
+             #'-ExactImaginary))
+(define -ExactComplex
+  (make-Base 'Exact-Complex
+             #'(and/c number?
+                      (not/c real?)
+                      (lambda (x)
+                        (and
+                          (not (eqv? 0 (real-part x)))
+                          (exact? (real-part x))
+                          (exact? (imag-part x)))))
+             (lambda (x) (and (number? x)
+                              (not (real? x))
+                              (not (eqv? 0 (real-part x)))
+                              (exact? (real-part x))
+                              (exact? (imag-part x))))
+             #'-ExactComplex))
+(define -FloatImaginary (make-Base 'Float-Imaginary
+                                   #'(and/c number?
+                                            (lambda (x)
+                                              (and (flonum? (imag-part x))
+                                                   (eqv? 0 (real-part x)))))
+                                   (lambda (x)
+                                     (and (number? x)
+                                          (flonum? (imag-part x))
+                                          (eqv? 0 (real-part x))))
+                                   #'-FloatImaginary))
+(define -SingleFlonumImaginary (make-Base 'Single-Flonum-Imaginary
+                                          #'(and/c number?
+                                                   (lambda (x)
+                                                     (and (single-flonum? (imag-part x))
+                                                          (eqv? 0 (real-part x)))))
+                                          (lambda (x)
+                                            (and (number? x)
+                                                 (single-flonum? (imag-part x))
+                                                 (eqv? 0 (real-part x))))
+                                          #'-SingleFlonumImaginary))
 (define -FloatComplex (make-Base 'Float-Complex
                                  #'(and/c number?
                                           (lambda (x)
@@ -272,6 +310,9 @@
                                              (single-flonum? (imag-part x))
                                              (single-flonum? (real-part x))))
                                       #'-SingleFlonumComplex))
+(define -ExactNumber (*Un -ExactImaginary -ExactComplex -Rat))
+(define -InexactImaginary (*Un -FloatImaginary -SingleFlonumImaginary))
+(define -Imaginary (*Un -ExactImaginary -InexactImaginary))
 (define -InexactComplex (*Un -FloatComplex -SingleFlonumComplex))
-(define -Complex (*Un -Real -InexactComplex -ExactNumberNotReal))
+(define -Complex (*Un -Real -Imaginary -ExactComplex -InexactComplex))
 (define -Number -Complex)
