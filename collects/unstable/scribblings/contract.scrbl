@@ -72,7 +72,7 @@ flat contract.
 
 @addition{Asumu Takikawa}
 
-@defproc[(option/c [contract contract?]) contract?]{
+@defproc[(maybe/c [contract contract?]) contract?]{
 
 Creates a contract that acts like @racket[contract] but will also
 accept @racket[#f]. Intended to describe situations where a failure
