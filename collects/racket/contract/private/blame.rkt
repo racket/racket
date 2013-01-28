@@ -4,8 +4,8 @@
 (provide blame?
          (rename-out [-make-blame make-blame])
          blame-source
-         blame-positive
-         blame-negative
+         (rename-out [show-blame-positive blame-positive])
+         (rename-out [show-blame-negative blame-negative])
          blame-contract
          blame-value
          blame-original?
@@ -104,6 +104,15 @@
      [positive (append extra-positive pos)]
      [negative (append extra-negative neg)])))
 
+(define (show-blame accessor)
+  (λ (blm)
+    (let ([info (accessor blm)])
+      (cond [(empty? (rest info)) (first info)]
+            [else info]))))
+
+(define show-blame-positive (show-blame blame-positive))
+
+(define show-blame-negative (show-blame blame-negative))
 
 (define (blame-swapped? b)
   (not (blame-original? b)))
