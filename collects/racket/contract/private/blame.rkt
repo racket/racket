@@ -1,5 +1,5 @@
 #lang racket/base
-(require syntax/srcloc racket/pretty setup/path-to-relative)
+(require syntax/srcloc racket/pretty setup/path-to-relative racket/list)
 
 (provide blame?
          (rename-out [-make-blame make-blame])
@@ -12,6 +12,7 @@
          blame-swapped?
          blame-swap
          blame-replace-negative ;; used for indy blame
+         blame-update ;; used for option contract transfers
          blame-add-context
          blame-add-unknown-context
          blame-context 
@@ -45,7 +46,16 @@
 (define -make-blame
   (let ([make-blame
          (λ (source value build-name positive negative original?)
-           (make-blame source value build-name positive negative original? '() #t #f))])
+           (make-blame 
+            source
+            value
+            build-name
+            (list positive)
+            (list negative)
+            original?
+            '()
+            #t 
+            #f))])
     make-blame))
 
 ;; s : (or/c string? #f)
@@ -77,8 +87,23 @@
    [positive (blame-negative b)]
    [negative (blame-positive b)]))
 
+
 (define (blame-replace-negative b new-neg)
-  (struct-copy blame b [negative new-neg]))
+  (struct-copy blame b [negative (list new-neg)]))
+
+(define (blame-replace-positive b new-pos)
+  (struct-copy blame b [positive (list new-pos)]))
+
+
+(define (blame-update blame-info extra-positive extra-negative)
+  (let ((pos (blame-positive blame-info))
+        (neg (blame-negative blame-info)))
+    (struct-copy 
+     blame 
+     blame-info
+     [positive (append extra-positive pos)]
+     [negative (append extra-negative neg)])))
+
 
 (define (blame-swapped? b)
   (not (blame-original? b)))
@@ -139,7 +164,6 @@
 
 (define (default-blame-format blme x custom-message)
   (define source-message (source-location->string (blame-source blme)))
-  (define positive-message (show/display (convert-blame-party (blame-positive blme))))
   
   (define context (blame-context blme))
   (define context-lines (if (null? context)
@@ -169,13 +193,19 @@
       [else
        (format "~a:" self-or-not)]))
   
-  (define blaming-line (format " blaming: ~a" positive-message))
+  (define blaming-line 
+    (format " blaming: ~a" (show/display (convert-blame-party (blame-positive blme)))))
   
   (define from-line 
     (if (blame-original? blme)
-        (format " contract from: ~a" positive-message)
-        (let ([negative-message (show/display (convert-blame-party (blame-negative blme)))])
-          (format " contract from: ~a" negative-message))))
+        (let ([from-positive-message 
+               (show/display
+                (from-info (blame-positive blme)))])
+          (format " contract from: ~a" from-positive-message))
+        (let ([from-negative-message 
+               (show/display
+                (from-info (blame-negative blme)))])
+          (format " contract from: ~a" from-negative-message))))
   
   (combine-lines
    start-of-message
@@ -228,10 +258,27 @@
     (pretty-write v port)
     (get-output-string port)))
 
-(define (convert-blame-party x)
+(define (convert-blame-singleton x)
   (cond
     [(path? x) (path->relative-string/library x)]
     [else x]))
+
+
+(define (from-info x)
+  (convert-blame-singleton (last x))) 
+
+
+(define (convert-blame-party x)
+  (let ((preface 
+         (cond [(< 1 (length x))
+                " -- Multiple blame parties due to option contract transfers --\n"]
+               [else ""])))
+    (string-append 
+     preface
+     (foldr 
+      (λ (fst rst) (string-append (format "~a\n" (convert-blame-singleton fst)) rst))
+      ""
+      x)))) 
 
 (define show/display (show pretty-format/display))
 (define show/write (show pretty-format/write))
