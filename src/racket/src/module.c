@@ -170,7 +170,6 @@ READ_ONLY static Scheme_Object *kernel_modidx;
 READ_ONLY static Scheme_Module *kernel;
 READ_ONLY static Scheme_Object *flfxnum_modname;
 READ_ONLY static Scheme_Object *extfl_modname;
-READ_ONLY static Scheme_Object *extfl_unsafe_modname;
 READ_ONLY static Scheme_Object *futures_modname;
 READ_ONLY static Scheme_Object *unsafe_modname;
 

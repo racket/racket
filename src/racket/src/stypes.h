@@ -73,8 +73,10 @@ enum {
   scheme_double_type,                   /* 53 */
   scheme_complex_type,                  /* 54 */
 
-  /* other values */
+  /* other eqv?-able values (must be with numbers) */
   scheme_char_type,                     /* 55 */
+
+  /* other values */
   scheme_long_double_type,              /* 56 */
   scheme_char_string_type,              /* 57 */
   scheme_byte_string_type,              /* 58 */

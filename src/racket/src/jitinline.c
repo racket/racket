@@ -2470,8 +2470,8 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     ref_f3 = jit_bner_i(jit_forward(), JIT_R2, JIT_V1);
 
     /* check in range of type treated by eqv: */
-    ref_f4 = jit_blti_i(jit_forward(), JIT_R2, scheme_char_type);
-    ref_f5 = jit_bgti_i(jit_forward(), JIT_R2, scheme_complex_type);
+    ref_f4 = jit_blti_i(jit_forward(), JIT_R2, scheme_integer_type);
+    ref_f5 = jit_bgti_i(jit_forward(), JIT_R2, scheme_char_type);
     CHECK_LIMIT();
     
     /* in range of interesting types, so break out the generic comparison */
