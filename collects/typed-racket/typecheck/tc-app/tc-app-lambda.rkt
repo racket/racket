@@ -6,7 +6,7 @@
          syntax/parse racket/match racket/list
          syntax/parse/experimental/reflect
          unstable/sequence
-         (typecheck signatures tc-funapp check-below find-annotation )
+         (typecheck signatures tc-funapp find-annotation)
          (types abbrev utils generalize type-table)
          (private type-annotation)
          (rep type-rep)
@@ -98,7 +98,7 @@
                  (let* ([infer-t (or (type-annotation f #:infer #t)
                                      (find-annotation #'(begin . body*) f))])
                    (if infer-t
-                       (check-below (tc-expr/t ac) infer-t)
+                       (tc-expr/check/t ac (ret infer-t))
                        (generalize (tc-expr/t ac)))))])
        (add-typeof-expr lam (tc/rec-lambda/check form args body lp ts expected))
        expected)]))
