@@ -1778,6 +1778,12 @@ the other; both are provided for convenience and clarity.
              position @racket[b] has.
 }
 
+@defproc[(blame-update [b blame?] [pos any/c] [neg any/c]) blame?]{
+  Produces a @racket[blame?] object just like @racket[b] except
+             that it adds @racket[pos] and @racket[neg] to the positive
+             and negative parties of @racket[b] respectively.
+}
+
 @defproc[(raise-blame-error [b blame?]
                             [x any/c]
                             [fmt (or/c string?
