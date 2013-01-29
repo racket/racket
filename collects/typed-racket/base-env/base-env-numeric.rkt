@@ -1336,7 +1336,7 @@
   ;; we don't have equivalent for fixnums:
   ;; (quotient min-fixnum -1) -> max-fixnum + 1
   (commutative-binop -NonNegFixnum -NonPosFixnum -NonPosFixnum)
-  (-NonPosFixnum -NonPosFixnum . -> . -NonNegFixnum)
+  (-NonPosFixnum -NonPosFixnum . -> . -Nat)
   (-NonNegFixnum -Nat . -> . -NonNegFixnum)
   (-NonNegFixnum -Int . -> . -Fixnum)
   (binop -Nat)
