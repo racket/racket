@@ -3,9 +3,10 @@
 (require racket/performance-hint
          "flonum-functions.rkt"
          "flonum-constants.rkt"
-         "flonum-polyfun.rkt")
+         "flonum-polyfun.rkt"
+         "../unsafe.rkt")
 
-(provide flexpm1 flexpsqr flgauss flexp1p)
+(provide flexpm1 flexpsqr flgauss flexp1p flexp2)
 
 (define expm1-poly-numer
   (make-flpolyfun
@@ -32,6 +33,10 @@
                           (fl/ (- y) (fl+ y 1.0))]
         [else  (fl+ (fl* x 0.10281276702880859e1)
                     (fl* x (fl/ (expm1-poly-numer x) (expm1-poly-denom x))))]))
+
+;; Integer arguments for flexp2
+(: flexp2s (Vectorof Nonnegative-Flonum))
+(define flexp2s (build-vector (- 1024 -1074) (λ: ([n : Index]) (fl (expt 2 (- n 1074))))))
 
 (begin-encourage-inline
   
@@ -82,5 +87,12 @@
            (define lg2x+1 (flfloor (fl/ (fllog (fl+ 1.0 x)) (fllog 2.0))))
            (cond [(fl= lg2x lg2x+1)  (flexp (fl+ 1.0 x))]
                  [else  (fl* (flexp x) (flexp 1.0))])]))
+  
+  (: flexp2 (Flonum -> Nonnegative-Flonum))
+  (define (flexp2 x)
+    (cond [(fl<= x -1075.0)  0.0]
+          [(fl>= x 1024.0)  +inf.0]
+          [(fl= x (flround x))  (unsafe-vector-ref flexp2s (fl->exact-integer (fl+ x 1074.0)))]
+          [else  (flexpt 2.0 x)]))
   
   )  ; begin-encourage-inline

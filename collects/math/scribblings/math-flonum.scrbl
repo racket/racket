@@ -1,12 +1,15 @@
 #lang scribble/manual
 
 @(require scribble/eval
+          scribble/core
+          scribble/html-properties
           racket/sandbox
           (for-label racket/base racket/vector racket/list
                      math plot
                      (only-in typed/racket/base
                               ->
-                              Flonum Integer Index Real Boolean Any Listof Vectorof FlVector))
+                              Flonum Integer Index Real Boolean Any Listof Vectorof FlVector
+                              Nonnegative-Flonum))
           "utils.rkt")
 
 @(define untyped-eval (make-untyped-math-eval))
@@ -162,6 +165,82 @@ But see @racket[flexpt1p], which is more accurate still.
 
 @defproc[(flexpt1p [x Flonum] [y Flonum]) Flonum]{
 Like @racket[(flexpt (+ 1.0 x) y)], but accurate for any @racket[x] and @racket[y].
+}
+
+@defproc[(flexp2 [x Flonum]) Nonnegative-Flonum]{
+Equivalent to @racket[(flexpt 2.0 x)], but faster when @racket[x] is an integer.
+}
+
+@defproc[(fllog2 [x Flonum]) Flonum]{
+Computes the base-2 log of @racket[x] more accurately than @racket[(/ (fllog x) (fllog 2.0))].
+In particular, @racket[(fllog2 x)] is correct for any power of two @racket[x].
+@examples[#:eval untyped-eval
+                 (fllog2 4.5)
+                 (/ (fllog (flexp2 -1066.0)) (fllog 2.0))
+                 (fllog2 (flexp2 -1066.0))]
+Maximum observed error is 0.5006 @tech{ulps}, but is almost always no more than 0.5 (i.e. it is
+almost always @italic{correct}).
+}
+
+@defproc[(fllogb [b Flonum] [x Flonum]) Flonum]{
+Computes the base-@racket[b] log of @racket[x] more accurately than @racket[(/ (fllog x) (fllog b))],
+and handles limit values correctly.
+@examples[#:eval untyped-eval
+                 (plot3d (contour-intervals3d (λ (b x) (fllogb (fl b) (fl x))) 0 4 0 4)
+                         #:x-label "b" #:y-label "x")]
+
+Maximum observed error is 2.1 @tech{ulps}, but is usually less than 0.7 (i.e. near rounding error).
+
+Except possibly at limit values (such as @racket[0.0] and @racket[+inf.0], and @racket[b = 1.0])
+and except when the inner expression underflows or overflows, @racket[fllogb] approximately meets
+these identities for @racket[b > 0.0]:
+@itemlist[@item{Left inverse: @racket[(fllogb b (flexpt b y)) = y]}
+          @item{Right inverse: @racket[(flexpt b (fllogb b x)) = x] when @racket[x > 0.0]}]
+
+Unlike with @racket[flexpt], there is no standard for @racket[fllogb]'s behavior at limit values.
+Fortunately, deriving the following rules (applied in order) is not prohibitively difficult.
+@centered{
+@tabular[#:style
+         (style 'plain
+                (list (table-columns (list (style 'plain (list 'left))
+                                           (style 'plain (list 'center))
+                                           (style 'plain (list 'right))))
+                      (attributes '((width . "90%")))))
+         (list (list @bold{Case} @bold{Condition} @bold{Value})
+               (list @racket[(fllogb b 1.0)] "" @racket[0.0])
+               (list @racket[(fllogb 1.0 x)] "" @racket[+nan.0])
+               (list @racket[(fllogb b x)]
+                     @nested{@racket[b < 0.0] or @racket[x < 0.0]}
+                     @racket[+nan.0])
+               (list @italic{Double limits} 'cont 'cont)
+               (list @racket[(fllogb 0.0 0.0)] "" @racket[+inf.0])
+               (list @racket[(fllogb 0.0 +inf.0)] "" @racket[-inf.0])
+               (list @racket[(fllogb +inf.0 0.0)] "" @racket[-inf.0])
+               (list @racket[(fllogb +inf.0 +inf.0)] "" @racket[+inf.0])
+               (list @italic{Limits with respect to @racket[b]} 'cont 'cont)
+               (list @racket[(fllogb 0.0 x)] @nested{@racket[x < 1.0]} @racket[0.0])
+               (list @racket[(fllogb 0.0 x)] @nested{@racket[x > 1.0]} @racket[-0.0])
+               (list @racket[(fllogb +inf.0 x)] @nested{@racket[x > 1.0]} @racket[0.0])
+               (list @racket[(fllogb +inf.0 x)] @nested{@racket[x < 1.0]} @racket[-0.0])
+               (list @italic{Limits with respect to @racket[x]} 'cont 'cont)
+               (list @racket[(fllogb b 0.0)] @nested{@racket[b < 1.0]} @racket[+inf.0])
+               (list @racket[(fllogb b 0.0)] @nested{@racket[b > 1.0]} @racket[-inf.0])
+               (list @racket[(fllogb b +inf.0)] @nested{@racket[b > 1.0]} @racket[+inf.0])
+               (list @racket[(fllogb b +inf.0)] @nested{@racket[b < 1.0]} @racket[-inf.0]))]}
+Most of these rules are derived by taking limits of the mathematical base-@racket[b] log function.
+Except for @racket[(fllogb 1.0 x)], when doing so gives rise to ambiguities, they are resolved using
+@racket[flexpt]'s behavior, which follows the IEEE 754 and C99 standards for @tt{pow}.
+
+For example, consider @racket[(fllogb 0.0 0.0)].
+Taking an interated limit, we get ∞ if the outer limit is with respect to @racket[x], or 0 if the
+outer limit is with respect to @racket[b].
+This would normally mean @racket[(fllogb 0.0 0.0) = +nan.0].
+
+However, choosing @racket[+inf.0] ensures that these additional left-inverse and right-inverse
+identities hold:
+@racketblock[(fllogb 0.0 (flexpt 0.0 +inf.0)) = +inf.0
+             (flexpt 0.0 (fllogb 0.0 0.0)) = 0.0]
+Further, choosing @racket[0.0] does not ensure that any additional identities hold.
 }
 
 @defproc[(make-flexpt [x Real]) (Flonum -> Flonum)]{

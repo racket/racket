@@ -145,7 +145,55 @@
                 (format "x = ~a" x)))
 
 ;; ===================================================================================================
+;; fllog2
+
+;; Make sure it's exact for exact powers of two
+(for ([x  (in-range -1074.0 1024.0)])
+  (define y (flexp2 x))
+  (define x0 (fllog2 y))
+  (check-equal? x0 x))
+
+;; ===================================================================================================
+;; fl2 tests
+
+(for* ([x2  (list -inf.0 -max.0 -1.0 -min.0 -0.0 0.0 +min.0 +1.0 +max.0 +inf.0 +nan.0)]
+       [x1  (list -inf.0 -max.0 -1.0 -min.0 -0.0 0.0 +min.0 +1.0 +max.0 +inf.0 +nan.0)])
+  (define n
+    (count (λ (b) b)
+           (map (λ (f) (f x2 x1))
+                (list fl2rational? fl2infinite? fl2nan?))))
+  (unless (= n 1) (printf "x2 = ~v  x1 = ~v~n" x2 x1)))
+
+#|
+Tests to add
+
+(for*: ([x2  (list -inf.0 -max.0 -1.0 -min.0 -0.0 0.0 +min.0 +1.0 +max.0 +inf.0 +nan.0)]
+        [x1  (list -inf.0 -max.0 -1.0 -min.0 -0.0 0.0 +min.0 +1.0 +max.0 +inf.0 +nan.0)])
+  (define n
+    (count (λ: ([b : Boolean]) b)
+           (map (λ: ([f : (Flonum Flonum -> Boolean)])
+                  (f x2 x1))
+                (list fl2rational? fl2infinite? fl2nan?))))
+  (unless (= n 1) (printf "x2 = ~v  x1 = ~v~n" x2 x1)))
+
+fl2=
+fl2>
+fl2<
+fl2>=
+fl2<=
+
+(fl2step x2 x1 n/2) twice = (fl2step x2 x1 n)
+|#
+
+(check-true (let-values ([(y2 y1)  (fl+/error +max.hi +max.lo)])
+              (fl2= y2 y1 +max.hi +max.lo)))
+
+(check-true (let*-values ([(y2 y1)  (fl2next +max.hi +max.lo)])
+              (fl2infinite? y2 y1)))
+
+;; ===================================================================================================
 ;; FPU testing
 
-(parameterize ([print-test-progress? #f])
-  (test-fpu 1000))
+(check-equal? (parameterize ([print-fp-test-progress? #f])
+                (test-floating-point 1000))
+              empty)
