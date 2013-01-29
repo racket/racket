@@ -22,6 +22,8 @@ These operations are not thread-safe.
 
 Makes a new set with the canonical element @racket[c].
 
+This is a constant time operation.
+                                           
 @examples[#:eval the-eval
                  (uf-new 'whale)
                  (uf-new 'dwarf-lantern)]
@@ -32,6 +34,8 @@ Makes a new set with the canonical element @racket[c].
 
 Returns @racket[#t] if @racket[x] was created with @racket[uf-new],
         and @racket[#f] otherwise.
+        
+This is a constant time operation.
 
 @examples[#:eval the-eval
   (uf-set? (uf-new 'spiny-dogfish))
@@ -40,6 +44,8 @@ Returns @racket[#t] if @racket[x] was created with @racket[uf-new],
 
 @defproc[(uf-find [a uf-set?]) any/c]{
   Returns the canonical element of @racket[a].
+
+  This is an amortized (essentially) constant time operation.
                                    
   @examples[#:eval the-eval
                    (uf-find (uf-new 'tasselled-wobbegong))]
@@ -52,6 +58,8 @@ them both have the same canonical element. Either
 of @racket[a] or @racket[b]'s  canonical elements may
 become the canonical element for the union.
 
+This is an amortized (essentially) constant time operation.
+
 @examples[#:eval the-eval
   (define a (uf-new 'sand-devil))
   (define b (uf-new 'pigeye))
@@ -61,9 +69,27 @@ become the canonical element for the union.
 ]
 }
 
+@defproc[(uf-same-set? [a uf-set?] [b uf-set?]) boolean?]{
+  Returns @racket[#t] if the sets @racket[a] and @racket[b]
+  have been unioned.
+
+This is an amortized (essentially) constant time operation.
+
+@examples[#:eval the-eval
+  (define a (uf-new 'finetooth))
+  (define b (uf-new 'speartooth))
+  (uf-same-set? a b)
+  (uf-union! a b)
+  (uf-same-set? a b)
+]
+
+  
+}
 
 @defproc[(uf-set-canonical! [a uf-set?] [c any/c]) void?]{
-  Changes @racket[a] to have a new canonical element
+  Changes @racket[a] to have a new canonical element.
+          
+This is an amortized (essentially) constant time operation.
 
  @examples[#:eval the-eval
   (define a (uf-new 'sand-devil))

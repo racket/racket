@@ -1,10 +1,12 @@
 #lang racket/base
-
-(provide uf-set? 
-         uf-new
-         uf-union!
-         uf-find
-         uf-set-canonical!)
+(require racket/contract)
+(provide uf-set? uf-new)
+(provide
+ (contract-out
+  [uf-union! (-> uf-set? uf-set? void?)]
+  [uf-find (-> uf-set? any/c)]
+  [uf-set-canonical! (-> uf-set? any/c void?)]
+  [uf-same-set? (-> uf-set? uf-set? boolean?)]))
 
 (struct uf-set (x rank) #:mutable
   #:methods gen:custom-write
@@ -28,22 +30,22 @@
     [else
      (set-uf-set-x! b a)
      (when (= a-rank b-rank)
-       (set-uf-set-rank! a 1))]))
+       (set-uf-set-rank! a (+ a-rank 1)))]))
 (define (uf-find a)
   (define bx (uf-get-box a))
   (unbox bx))
 (define (uf-set-canonical! a b)
   (set-box! (uf-get-box a) b))
 (define (uf-get-box a)
-  (let loop ([a a])
+  (let loop ([a (uf-set-x a)])
     (cond
-      [(box? (uf-set-x a))
-       (uf-set-x a)]
+      [(box? a) a]
       [else
        (define fnd (loop (uf-set-x a)))
        (set-uf-set-x! a fnd)
        fnd])))
-
+(define (uf-same-set? a b)
+  (eq? (uf-get-box a) (uf-get-box b)))
 
 (module+ test
   (require rackunit
@@ -72,6 +74,13 @@
                   (uf-find b)
                   (uf-find b))
                 1)
+  (check-equal? (uf-same-set? (uf-new 1) (uf-new 2)) #f)
+  (check-equal? (uf-same-set? (uf-new 1) (uf-new 1)) #f)
+  (check-equal? (let ([a (uf-new 1)]
+                      [b (uf-new 1)])
+                  (uf-union! a b) 
+                  (uf-same-set? a b))
+                #t)
   (check-equal? (let ([sp (open-output-string)])
                   (display (uf-new "x") sp)
                   (get-output-string sp))
@@ -98,6 +107,18 @@
                   (get-output-string sp))
                 "#0=#<uf-set: #0#>")
   
+  (check-equal? (let ([a (uf-new 1)]
+                      [b (uf-new 2)]
+                      [c (uf-new 3)]
+                      [d (uf-new 4)])
+                  (uf-union! a b)
+                  (uf-union! c d)
+                  (uf-union! a c)
+                  (max (uf-set-rank a)
+                       (uf-set-rank b)
+                       (uf-set-rank c)
+                       (uf-set-rank d)))
+                2)
   
   (define (check-ranks uf)
     (let loop ([uf/box uf]
