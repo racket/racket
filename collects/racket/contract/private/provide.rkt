@@ -74,17 +74,24 @@
                                            [pos-module-source pos-module-source]
                                            [loc-id (identifier-prune-to-source-module id)])
                                (let ([srcloc-code
-                                      (with-syntax
-                                          ([src
-                                            (or (and (path-string? (syntax-source #'id))
-                                                     (path->relative-string/library
-                                                      (syntax-source #'id) #f))
-                                                (syntax-source #'id))]
-                                           [line (syntax-line     #'id)]
-                                           [col  (syntax-column   #'id)]
-                                           [pos  (syntax-position #'id)]
-                                           [span (syntax-span     #'id)])
-                                        #'(make-srcloc 'src 'line 'col 'pos 'span))])
+                                      ;; If id has no source location, use the external-id's.
+                                      ;; Otherwise, constructor contracts have no useful
+                                      ;; source location information. This may not be the best
+                                      ;; solution. We may want to look deeper into this.
+                                      (with-syntax ([location-id (if (syntax-source #'id)
+                                                                     #'id
+                                                                     #'external-id)])
+                                        (with-syntax
+                                            ([src
+                                              (or (and (path-string? (syntax-source #'location-id))
+                                                       (path->relative-string/library
+                                                        (syntax-source #'location-id) #f))
+                                                  (syntax-source #'location-id))]
+                                             [line (syntax-line     #'location-id)]
+                                             [col  (syntax-column   #'location-id)]
+                                             [pos  (syntax-position #'location-id)]
+                                             [span (syntax-span     #'location-id)])
+                                          #'(make-srcloc 'src 'line 'col 'pos 'span)))])
                                  (syntax-local-introduce
                                   (syntax-local-lift-expression
                                    #`(contract contract-id
