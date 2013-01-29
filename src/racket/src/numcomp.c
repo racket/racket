@@ -257,54 +257,54 @@ void scheme_init_extfl_numcomp(Scheme_Env *env)
 
   p = scheme_make_folding_prim(extfl_eq, "extfl=", 2, 2, 1);
   if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_comp()))
-    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+    flags = SCHEME_PRIM_IS_BINARY_INLINED;
   else
-    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_SOMETIMES_INLINED;
+    flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_BOTH);
   scheme_add_global_constant("extfl=", p, env);
 
   p = scheme_make_folding_prim(extfl_lt, "extfl<", 2, 2, 1);
   if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_comp()))
-    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+    flags = SCHEME_PRIM_IS_BINARY_INLINED;
   else
-    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_SOMETIMES_INLINED;
+    flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_BOTH);
   scheme_add_global_constant("extfl<", p, env);
 
   p = scheme_make_folding_prim(extfl_gt, "extfl>", 2, 2, 1);
   if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_comp()))
-    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+    flags = SCHEME_PRIM_IS_BINARY_INLINED;
   else
-    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_SOMETIMES_INLINED;
+    flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_BOTH);
   scheme_add_global_constant("extfl>", p, env);
 
   p = scheme_make_folding_prim(extfl_lt_eq, "extfl<=", 2, 2, 1);
   if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_comp()))
-    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+    flags = SCHEME_PRIM_IS_BINARY_INLINED;
   else
-    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_SOMETIMES_INLINED;
+    flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_BOTH);
   scheme_add_global_constant("extfl<=", p, env);
 
   p = scheme_make_folding_prim(extfl_gt_eq, "extfl>=", 2, 2, 1);
   if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_comp()))
-    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+    flags = SCHEME_PRIM_IS_BINARY_INLINED;
   else
-    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_SOMETIMES_INLINED;
+    flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_BOTH);
   scheme_add_global_constant("extfl>=", p, env);
 
   p = scheme_make_folding_prim(extfl_min, "extflmin", 2, 2, 1);
   if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_op()))
-    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+    flags = SCHEME_PRIM_IS_BINARY_INLINED;
   else
-    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_SOMETIMES_INLINED;
+    flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_BOTH);
@@ -312,9 +312,9 @@ void scheme_init_extfl_numcomp(Scheme_Env *env)
   
   p = scheme_make_folding_prim(extfl_max, "extflmax", 2, 2, 1);
   if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_op()))
-    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+    flags = SCHEME_PRIM_IS_BINARY_INLINED;
   else
-    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_SOMETIMES_INLINED;
+    flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_BOTH);
