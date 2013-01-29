@@ -335,10 +335,10 @@
     (match t
       [#t k]
       [(counterexample p)
-       (pretty-print p)
+       (pretty-print p (current-error-port))
        (exit 1)]))
   (test (time (test-internal-properties/cycles #:attempts 4000 #:print? #f))
         (test (time (test-external-properties #:attempts 250 #:print? #f))
               (void))))
 
-(module+ main (main))
+(module+ main (void (main)))
