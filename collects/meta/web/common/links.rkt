@@ -46,3 +46,16 @@
     @i{Programming Languages: Application and Interpretation}})
 
 (define* -bootstrap @make-link["http://www.bootstrapworld.org/"]{Bootstrap})
+
+(provide -rcon)
+(define (-rcon #:year [year #f] 
+               [body (if year 
+                         (format "~a" year)
+                         "RacketCon")])
+  (make-link (string-append
+              "http://con.racket-lang.org/"
+              (case year
+                [(2011) "2011/"]
+                [(#f 2012) ""]
+                [else (error 'rcon "unknown year: ~e" year)]))
+             body))

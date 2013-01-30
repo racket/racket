@@ -15,6 +15,8 @@
         worthwhile for experience programmers who are new to “functional
         programming.”}
       @text{@-plai — a textbook on programming languages.}]
+    @parlist[@strong{Videos}
+      @text{See the @a[href: "https://github.com/plt/racket/wiki/Videos"]{videos page at the Racket wiki}.}]
     @parlist[
       @strong{Outreach}
       @text{@-pbd — a workshop to train teachers using @-htdp in the

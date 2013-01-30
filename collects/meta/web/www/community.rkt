@@ -13,13 +13,13 @@
            resources for developers, RacketCon, blog, and more.}]{
     @mailing-lists-quick
     @irc-quick
-    @parlist[@strong{PLT Scheme Inc.}
+    @parlist[@strong{RacketCon}
+             @text{@-rcon{RacketCon} is our annual conference: @-rcon[#:year 2012] and @-rcon[#:year 2011].}]
+    @parlist[@strong{PLT Design Inc.}
       @text{@blog — announcements, helpful hints, and thoughtful rants.}
       @text{@a[href: "http://twitter.com/#!/racketlang"]{Twitter}
-            — random racket bits.}
-      @text{@people — the people behind Racket.}
-      @text{@a[href: "http://con.racket-lang.org/"]{RacketCon}
-            — our annual conference.}]
+            — random Racket bits.}
+      @text{@people — the people behind Racket.}]
     @parlist[@strong{Development}
       @text{@git (also available on
             @a[href: "http://github.com/plt/racket/"]{GitHub}).}
