@@ -126,7 +126,7 @@
       (cond
         [(box? uf/box) (void)]
         [else 
-         (unless (<= rank (uf-set-rank uf))
+         (unless (< rank (uf-set-rank uf/box))
            (error 'check-ranks "failed for ~s" 
                   (let loop ([uf uf])
                     (cond
