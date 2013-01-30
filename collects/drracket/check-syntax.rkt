@@ -29,6 +29,7 @@
  syncheck:add-require-open-menu
  syncheck:add-docs-menu
  syncheck:add-id-set
+ syncheck:add-rename-menu
  syncheck:add-arrow
  syncheck:add-tail-arrow
  syncheck:add-mouse-over-status

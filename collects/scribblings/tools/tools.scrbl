@@ -621,11 +621,12 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
 
 @defproc[(make-traversal [namespace namespace?]
                          [path (or/c #f path-string?)])
-         (values (->* (syntax?) ((-> (and/c syntax?
-                                            (λ (x)
-                                              (define lst (syntax->list x))
-                                              (and lst (andmap identifier? lst))))
-                                     void?))
+         (values (->* (syntax?)
+                      ((-> (and/c syntax?
+                                  (λ (x)
+                                    (define lst (syntax->list x))
+                                    (and lst (andmap identifier? lst))))
+                           void?))
                       void?)
                  (-> void?))]{
   This function creates some local state about a traversal of syntax objects
@@ -782,21 +783,42 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
    in @racket[mode]. The mode either indicates regular check syntax or is used indicate blame for potential contract
    violations (and still experimental).
  }
+ @defmethod[(syncheck:add-rename-menu [id symbol?]
+                                      [all-ids (listof (list/c (not/c #f) 
+                                                               exact-nonnegative-integer?
+                                                               exact-nonnegative-integer?))]
+                                      [new-name-interferes? (-> symbol boolean?)])
+            void?]{
+    This method is listed only for backwards compatibility. It is not called directly
+    by check syntax, but it is called by the default implementation of 
+    @method[syncheck-annotations<%> syncheck:add-rename-menu] in 
+    @racket[annotations-mixin].
+  }
 }
+
+@(define syncheck-example-eval (make-base-eval))
 
 @defmixin[annotations-mixin () (syncheck-annotations<%>)]{
   Supplies all of the methods in @racket[syncheck-annotations<%>]
   with default behavior. Be sure to use this mixin to future-proof
   your code and then override the methods you're interested in.
   
-  The @racket[syncheck:find-source-object] method ignores its arguments
-  and returns @racket[#f];
-  all of the other methods ignore their arguments and return @racket[(void)].
-  
-  @examples[#:eval (let ([evaluator (make-base-eval)])
-                   (evaluator '(require drracket/check-syntax))
-                   evaluator)
-            (require racket/class)
+  By default:
+  @itemlist[@item{The @method[syncheck-annotations<%> syncheck:find-source-object] 
+                      method ignores its arguments and returns @racket[#f];}
+            @item{the @method[syncheck-annotations<%> syncheck:add-id-set]
+                      manufactures a symbol and then passes that and its arguments to 
+                      @method[syncheck-annotations<%> syncheck:add-rename-menu]
+                      (this is for backwards compatibility -- the @method[syncheck-annotations<%> syncheck:add-rename-menu]
+                      is not called directly by Check Syntax anymore; the @method[syncheck-annotations<%> syncheck:add-id-set]
+                      calls it instead); and}
+            @item{all of the other methods ignore their arguments and return @racket[(void)].}]
+    
+  Here is an example showing how use this library to extract all
+  of the arrows that Check Syntax would draw from various
+  expressions:
+  @interaction[#:eval syncheck-example-eval
+            (require drracket/check-syntax racket/class)
             (define arrows-collector%
               (class (annotations-mixin object%)
                 (super-new)
@@ -838,6 +860,8 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
             (arrows `(λ (,(make-id 'x 1 #t)) x))]
 }
 
+@(close-eval syncheck-example-eval)
+
 @(define-syntax-rule 
    (syncheck-method-id x ...)
    (begin @defidform[x]{Bound to an identifier created with @racket[define-local-member-name]
@@ -852,6 +876,7 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
                     syncheck:add-tail-arrow
                     syncheck:add-mouse-over-status
                     syncheck:add-jump-to-definition
+                    syncheck:add-id-set 
                     syncheck:color-range]
 
 @subsection{Check Syntax Button}
