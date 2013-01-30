@@ -1084,6 +1084,9 @@ If the namespace does not, they are colored the unbound color.
               (or text-changed? eles-changed? tooltip-changed?))
             
             (define/private (update-drawn-arrows)
+	      (define latent-stuff (let ([im (hash-ref arrow-records latent-text #f)]) (if im (interval-map-ref im latent-pos '()) '())))
+	      (define cursor-stuff (let ([im (hash-ref arrow-records cursor-text #f)]) (if im (interval-map-ref im cursor-pos '()) '())))
+
               (set! cursor-pos latent-pos)
               (set! cursor-text latent-text)
               (set! cursor-eles latent-eles)
@@ -1091,8 +1094,8 @@ If the namespace does not, they are colored the unbound color.
               
               (update-tooltip-frame)
               (update-docs-background cursor-eles)
-              
-              (invalidate-bitmap-cache))
+              (unless (equal? latent-stuff cursor-stuff)
+                (invalidate-bitmap-cache)))
             
             (define mouse-admin #f)  ; editor admin for the last mouse move
             (define mouse-x #f)      ; last known mouse position
