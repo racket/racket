@@ -650,6 +650,10 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
   from @racket[make-traversal]. 
 }
 
+@defparam[current-max-to-send-at-once m (or/c +inf.0 (and/c exact-integer? (>=/c 2)))]{
+ See @xmethod[syncheck-annotations<%> syncheck:add-id-set].
+}
+
 @definterface[syncheck-annotations<%> ()]{
 
   Classes implementing this interface are
@@ -708,14 +712,26 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
    be longer than 200 characters).
  }
                   
- @defmethod[(syncheck:add-rename-menu [id symbol?]
-                                      [all-ids (listof (list/c (not/c #f) exact-nonnegative-integer? exact-nonnegative-integer?))]
-                                      [new-name-interferes? (-> symbol boolean?)])
+ @defmethod[(syncheck:add-id-set [all-ids (listof (list/c (not/c #f) 
+                                                          exact-nonnegative-integer?
+                                                          exact-nonnegative-integer?))]
+                                 [new-name-interferes? (-> symbol boolean?)])
             void?]{
-   Called to indicate that there is a variable that can be renamed. The
-   identifier's name is @racket[id] and all of the occurrences of the identifier are given in the
-   list @racket[all-ids]. The @racket[new-name-interferes?] procedure determines if a potential name would 
-   interfere with the existing bindings.
+   Called to indicate that all of the locations in the @racket[all-ids] list 
+   refer to the same identifier.
+   
+   The @racket[new-name-interferes?] procedure determines if a potential new name
+   at one of the corresponding places would interfere with the existing bindings
+   in the program.
+   
+   Usually, this method is called with maximal sets in @racket[all-ids], in the
+   sense that, for a given call, either a source location is in the list, or
+   the location it does not contain a identifier that refers to one of the ones
+   in @racket[all-ids]. If, however, @racket[current-max-to-send-at-once] is not
+   @racket[+inf.0], then this set might not contain all of the source locations
+   for a given identifier and multiple calls are made. In the case that multiple
+   calls are made, the intersection of the @racket[all-ids] lists (on those
+   multiple calls) is non-empty.
  }
                   
  @defmethod[(syncheck:add-arrow [start-source-obj (not/c #f)]

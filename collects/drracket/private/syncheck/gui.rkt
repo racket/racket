@@ -38,6 +38,7 @@ If the namespace does not, they are colored the unbound color.
          framework
          net/url
          browser/external
+         data/union-find
          (for-syntax racket/base)
          (only-in ffi/unsafe register-finalizer)
          "../../syncheck-drracket-button.rkt"
@@ -219,11 +220,15 @@ If the namespace does not, they are colored the unbound color.
     
     (define-struct tooltip-info (text pos-left pos-right msg) #:transparent)
     
+    ;; set : (uf-set (list/c source position span))
+    ;; name-dup? : symbol? -> boolean?
+    (define-struct identifier-location-set (set name-dup?) #:transparent)
+        
     ;; color : string
     ;; text: text:basic<%>
     ;; start, fin: number
     ;; used to represent regions to highlight when passing the mouse over the syncheck window
-    (define-struct colored-region (color text start fin))
+    (define-struct colored-region (color text start fin) #:transparent)
     
     ;; id : symbol  --  the nominal-source-id from identifier-binding
     ;; filename : path
@@ -355,10 +360,29 @@ If the namespace does not, they are colored the unbound color.
             ;;   - tail-link
             ;;   - arrow
             ;;   - string
+            ;;   - colored-region
+            ;;   - identifier-location-set
             (define/private (get-arrow-record table text)
+              (unless (object? text)
+                (error 'get-arrow-record "expected a text as the second argument, got ~e" text))
               (hash-ref! table text (lambda () (make-interval-map))))
 
             (define arrow-records #f)
+            
+            (define/public (dump-arrow-records)
+              (cond
+                [arrow-records
+                 (for ([(k v) (in-hash arrow-records)])
+                   (printf "\n\n~s:\n" k)
+                   (let loop ([it (interval-map-iterate-first v)])
+                     (when it
+                       (printf "~s =>\n" (interval-map-iterate-key v it))
+                       (for ([v (in-list (interval-map-iterate-value v it))])
+                         (printf "  ~s\n" v))
+                       (printf "\n")
+                       (loop (interval-map-iterate-next v it)))))]
+                [else
+                 (printf "arrow-records empty\n")]))
             
             ;; cleanup-texts : (or/c #f (listof text))
             (define cleanup-texts #f)
@@ -612,17 +636,23 @@ If the namespace does not, they are colored the unbound color.
                     (λ (x y)
                       (visit-docs-url)))))))
             
-            (define/public (syncheck:add-rename-menu id-as-sym to-be-renamed/poss name-dup?)
-              (define (make-menu menu)
-                (let ([name-to-offer (format "~a" id-as-sym)])
-                  (new menu-item%
-                       [parent menu]
-                       [label (fw:gui-utils:format-literal-label (string-constant cs-rename-var) name-to-offer)]
-                       [callback
-                        (λ (x y)
-                          (let ([frame-parent (find-menu-parent menu)])
-                            (rename-callback name-to-offer
-                                             frame-parent)))])))
+            (define/public (syncheck:add-id-set to-be-renamed/poss name-dup?)
+              (add-identifier-to-range to-be-renamed/poss name-dup?))
+
+            (define/private (make-rename-menu menu an-identifier-location-set)
+              (define example-lst (set-first (uf-find (identifier-location-set-set an-identifier-location-set))))
+              (define name-to-offer (send (list-ref example-lst 0) get-text
+                                          (list-ref example-lst 1)
+                                          (list-ref example-lst 2)))
+              (new menu-item%
+                   [parent menu]
+                   [label (fw:gui-utils:format-literal-label (string-constant cs-rename-var) name-to-offer)]
+                   [callback
+                    (λ (x y)
+                      (let ([frame-parent (find-menu-parent menu)])
+                        (rename-menu-callback frame-parent
+                                              name-to-offer
+                                              an-identifier-location-set)))]))
               
               ;; rename-callback : string 
               ;;                   (and/c syncheck-text<%> definitions-text<%>)
@@ -631,61 +661,63 @@ If the namespace does not, they are colored the unbound color.
               ;;                   (union #f (is-a?/c top-level-window<%>)) 
               ;;                -> void
               ;; callback for the rename popup menu item
-              (define (rename-callback name-to-offer parent)
-                (let ([new-str
-                       (fw:keymap:call/text-keymap-initializer
-                        (λ ()
-                          (get-text-from-user
-                           (string-constant cs-rename-id)
-                           (fw:gui-utils:format-literal-label (string-constant cs-rename-var-to) name-to-offer)
-                           parent
-                           name-to-offer
-                           #:dialog-mixin frame:focus-table-mixin)))])
-                  (when new-str
-                    (define new-sym (format "~s" (string->symbol new-str)))
-                    (define dup-name? (name-dup? new-sym))
-                    
-                    (define do-renaming?
-                      (or (not dup-name?)
-                          (equal?
-                           (message-box/custom
-                            (string-constant check-syntax)
-                            (fw:gui-utils:format-literal-label (string-constant cs-name-duplication-error) 
-                                                               new-sym)
-                            (string-constant cs-rename-anyway)
-                            (string-constant cancel)
-                            #f
-                            parent
-                            '(stop default=2)
-                            #:dialog-mixin frame:focus-table-mixin)
-                           1)))
-                    
-                    (when do-renaming?
-                      (unless (null? to-be-renamed/poss)
-                        (let ([txts (list this)])
-                          (define positions-to-rename 
-                            (remove-duplicates
-                             (sort to-be-renamed/poss
-                                   >
-                                   #:key cadr)))
-                          (begin-edit-sequence)
-                          (for ([info (in-list positions-to-rename)])
-                            (define source-editor (list-ref info 0))
-                            (define start (list-ref info 1))
-                            (define end (list-ref info 2))
-                            (when (is-a? source-editor text%)
-                              (unless (memq source-editor txts)
-                                (send source-editor begin-edit-sequence)
-                                (set! txts (cons source-editor txts)))
-                              (send source-editor delete start end #f)
-                              (send source-editor insert new-sym start start #f)))
-                          (invalidate-bitmap-cache)
-                          (for ([txt (in-list txts)])
-                            (send txt end-edit-sequence))))))))
+            (define/private (rename-menu-callback parent name-to-offer an-identifier-location-set)
+              (define name-dup? (identifier-location-set-name-dup? an-identifier-location-set))
+              (let ([new-str
+                     (fw:keymap:call/text-keymap-initializer
+                      (λ ()
+                        (get-text-from-user
+                         (string-constant cs-rename-id)
+                         (fw:gui-utils:format-literal-label (string-constant cs-rename-var-to) name-to-offer)
+                         parent
+                         name-to-offer
+                         #:dialog-mixin frame:focus-table-mixin)))])
+                (when new-str
+                  (define new-sym (format "~s" (string->symbol new-str)))
+                  (define dup-name? (name-dup? new-sym))
+                  
+                  (define do-renaming?
+                    (or (not dup-name?)
+                        (equal?
+                         (message-box/custom
+                          (string-constant check-syntax)
+                          (fw:gui-utils:format-literal-label (string-constant cs-name-duplication-error) 
+                                                             new-sym)
+                          (string-constant cs-rename-anyway)
+                          (string-constant cancel)
+                          #f
+                          parent
+                          '(stop default=2)
+                          #:dialog-mixin frame:focus-table-mixin)
+                         1)))
+                  
+                  (when do-renaming?
+                    (let ([txts (list this)])
+                      (define positions-to-rename 
+                        (remove-duplicates
+                         (sort (set->list (uf-find
+                                           (identifier-location-set-set 
+                                            an-identifier-location-set)))
+                               >
+                               #:key cadr)))
+                      (begin-edit-sequence)
+                      (for ([info (in-list positions-to-rename)])
+                        (define source-editor (list-ref info 0))
+                        (define start (list-ref info 1))
+                        (define end (list-ref info 2))
+                        (when (is-a? source-editor text%)
+                          (unless (memq source-editor txts)
+                            (send source-editor begin-edit-sequence)
+                            (set! txts (cons source-editor txts)))
+                          (send source-editor delete start end #f)
+                          (send source-editor insert new-sym start start #f)))
+                      (invalidate-bitmap-cache)
+                      (for ([txt (in-list txts)])
+                        (send txt end-edit-sequence)))))))
               
               
               ;; find-parent : menu-item-container<%> -> (union #f (is-a?/c top-level-window<%>)
-              (define (find-menu-parent menu)
+              (define/private (find-menu-parent menu)
                 (let loop ([menu menu])
                   (cond
                     [(is-a? menu menu-bar%) (send menu get-frame)]
@@ -701,13 +733,7 @@ If the namespace does not, they are colored the unbound color.
                          [else #f]))]
                     [(is-a? menu menu-item<%>) (loop (send menu get-parent))]
                     [else #f])))
-              
-              (for ([loc (in-list to-be-renamed/poss)])
-                (define source (list-ref loc 0))
-                (define start (list-ref loc 1))
-                (define fin (list-ref loc 2))
-                (syncheck:add-menu source start fin id-as-sym make-menu)))
-              
+            
             (define/private (syncheck:add-menu text start-pos end-pos key make-menu)
               (when arrow-records
                 (when (<= 0 start-pos end-pos (last-position))
@@ -791,6 +817,31 @@ If the namespace does not, they are colored the unbound color.
                        (interval-map-cons*! arrow-record
                                             start (add1 end) 
                                             to-add null)])))
+            
+            (define/private (add-identifier-to-range text/start/ends name-dup?)
+              (define id-set (apply set text/start/ends))
+              (define fresh-uf (uf-new id-set))
+              (define new-il-set (identifier-location-set fresh-uf name-dup?))
+              (for ([text/start/span (in-list text/start/ends)])
+                (define arrow-record (get-arrow-record arrow-records (list-ref text/start/span 0)))
+                (define start (list-ref text/start/span 1))
+                (define end (list-ref text/start/span 2))
+                (interval-map-update*! arrow-record
+                                       start (add1 end)
+                                       (lambda (curr-val)
+                                         (define this-uf-set
+                                           (for/or ([thing (in-list curr-val)])
+                                             (and (identifier-location-set? thing)
+                                                  (identifier-location-set-set thing))))
+                                         (cond
+                                           [this-uf-set
+                                            (set! id-set (set-union (uf-find this-uf-set) id-set))
+                                            (uf-union! fresh-uf this-uf-set)
+                                            (uf-set-canonical! this-uf-set id-set)
+                                            curr-val]
+                                           [else 
+                                            (cons new-il-set curr-val)]))
+                                       '())))
             
             (inherit get-top-level-window)
             
@@ -1092,6 +1143,10 @@ If the namespace does not, they are colored the unbound color.
                   (define var-arrows (filter var-arrow? arrows))
                   (define add-menus (append (map cdr (filter pair? vec-ents))
                                             (filter procedure? vec-ents)))
+                  (define identifier-location-set/f 
+                    (for/or ([x (in-list vec-ents)])
+                      (and (identifier-location-set? x)
+                           x)))
                   (unless (null? arrows)
                     (add-sep)
                     (make-object menu-item%
@@ -1149,7 +1204,10 @@ If the namespace does not, they are colored the unbound color.
                          arrow-record
                          start-selection
                          end-selection))))
-                  (for-each (λ (f) (f menu)) add-menus))))
+                  (for-each (λ (f) (f menu)) add-menus)
+                  (when identifier-location-set/f
+                    (make-rename-menu menu identifier-location-set/f))
+                  (void))))
             
             (define tooltip-frame #f)
             (define/private (update-tooltip-frame)
@@ -1635,7 +1693,7 @@ If the namespace does not, they are colored the unbound color.
              (send defs-text syncheck:add-require-open-menu defs-text start-pos end-pos file)]
             [`#(syncheck:add-docs-menu,start-pos ,end-pos ,key ,the-label ,path ,definition-tag ,tag)
              (send defs-text syncheck:add-docs-menu defs-text start-pos end-pos key the-label path definition-tag tag)]
-            [`#(syncheck:add-rename-menu ,id-as-sym ,to-be-renamed/poss ,name-dup-pc ,name-dup-id)
+            [`#(syncheck:add-id-set ,to-be-renamed/poss ,name-dup-pc ,name-dup-id)
              (define other-side-dead? #f)
              (define (name-dup? name) 
                (cond
@@ -1654,8 +1712,7 @@ If the namespace does not, they are colored the unbound color.
              (define to-be-renamed/poss/fixed
                (for/list ([lst (in-list to-be-renamed/poss)])
                  (list defs-text (list-ref lst 0) (list-ref lst 1))))
-             (send defs-text syncheck:add-rename-menu id-as-sym to-be-renamed/poss/fixed 
-                   name-dup?)]))
+             (send defs-text syncheck:add-id-set to-be-renamed/poss/fixed name-dup?)]))
         
         (define/augment (enable-evaluation)
           (send check-syntax-button enable #t)

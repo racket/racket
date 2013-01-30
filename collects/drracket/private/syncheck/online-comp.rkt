@@ -56,10 +56,10 @@
     (log syncheck:add-jump-to-definition _text start end id filename)
     (log syncheck:add-require-open-menu _text start-pos end-pos file)
     (log syncheck:add-docs-menu _text start-pos end-pos key the-label path definition-tag tag)
-    (define/override (syncheck:add-rename-menu id-as-sym to-be-renamed/poss dup-name?)
+    (define/override (syncheck:add-id-set to-be-renamed/poss dup-name?)
       (define id (hash-count table))
       (hash-set! table id dup-name?)
-      (add-to-trace (vector 'syncheck:add-rename-menu id-as-sym (map cdr to-be-renamed/poss) remote id)))
+      (add-to-trace (vector 'syncheck:add-id-set (map cdr to-be-renamed/poss) remote id)))
     
     (define/public (get-trace) (reverse trace))
     (define/private (add-to-trace thing) 
@@ -67,23 +67,24 @@
     (super-new)))
 
 (define (go expanded path the-source orig-cust)
-  (with-handlers ((exn:fail? (λ (x) 
-                               (printf "~a\n" (exn-message x))
-                               (printf "---\n")
-                               (for ([x (in-list 
-                                         (continuation-mark-set->context 
-                                          (exn-continuation-marks
-                                           x)))])
-                                 (printf "  ~s\n" x))
-                               (printf "===\n")
-                               (raise x))))
-    (define obj (new obj%
-                     [src the-source]
-                     [orig-cust orig-cust]))
-    (define-values (expanded-expression expansion-completed) 
-      (make-traversal (current-namespace)
-                      (get-init-dir path)))
-    (parameterize ([current-annotations obj])
-      (expanded-expression expanded)
-      (expansion-completed))
-    (send obj get-trace)))
+  (parameterize ([current-max-to-send-at-once 50])
+    (with-handlers ((exn:fail? (λ (x) 
+                                 (printf "~a\n" (exn-message x))
+                                 (printf "---\n")
+                                 (for ([x (in-list 
+                                           (continuation-mark-set->context 
+                                            (exn-continuation-marks
+                                             x)))])
+                                   (printf "  ~s\n" x))
+                                 (printf "===\n")
+                                 (raise x))))
+      (define obj (new obj%
+                       [src the-source]
+                       [orig-cust orig-cust]))
+      (define-values (expanded-expression expansion-completed) 
+        (make-traversal (current-namespace)
+                        (get-init-dir path)))
+      (parameterize ([current-annotations obj])
+        (expanded-expression expanded)
+        (expansion-completed))
+      (send obj get-trace))))
