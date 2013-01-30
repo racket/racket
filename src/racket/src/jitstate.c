@@ -106,6 +106,20 @@ double *scheme_mz_retain_double(mz_jit_state *jitter, double d)
 }
 #endif
 
+#ifdef MZ_LONG_DOUBLE
+long double *scheme_mz_retain_long_double(mz_jit_state *jitter, long double ld)
+{
+  /* Save a long double into two cells of double */
+  void *p;
+  if (jitter->retain_start)
+    memcpy(&jitter->retain_double_start[jitter->retained_double], &ld, sizeof(long double));
+  p = jitter->retain_double_start + jitter->retained_double;
+  jitter->retained_double++;
+  jitter->retained_double++;
+  return p;
+}
+#endif
+
 #ifdef SET_DEFAULT_LONG_JUMPS
 static int check_long_mode(uintptr_t low, uintptr_t size) 
 {
@@ -348,6 +362,8 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
       /* That was big enough: */
       if (jitter->unbox || jitter->unbox_depth)
 	scheme_signal_error("internal error: ended with unbox or depth");
+      if (MZ_LONG_DOUBLE_AND(jitter->unbox_extflonum))
+	scheme_signal_error("internal error: ended with unbox_extflonum");
       if (known_size) {
 	/* That was in the permanent area, so return: */
 	jit_flush_code(buffer, jit_get_ip().ptr);
@@ -355,22 +371,19 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
       } else {
 	/* Allocate permanent area and jit again: */
 	known_size = ((uintptr_t)jit_get_ip().ptr) - (uintptr_t)buffer;
+        /* Make sure room for pointers is aligned: */
 	if (known_size & (JIT_WORD_SIZE - 1)) {
 	  known_size += (JIT_WORD_SIZE - (known_size & (JIT_WORD_SIZE - 1)));
 	}
         if (jitter->retained_double) {
+          /* even stronger: `double'-aligned: */
           if (known_size & (JIT_DOUBLE_SIZE - 1)) {
             known_size += (JIT_DOUBLE_SIZE - (known_size & (JIT_DOUBLE_SIZE - 1)));
-          } 
+          }
         }
 	num_retained = jitter->retained;
         if (num_retained == 1) num_retained = 0;
 	num_retained_double = jitter->retained_double;
-        if (num_retained_double) {
-          if (known_size & (sizeof(double) - 1)) {
-            known_size += (sizeof(double) - (known_size & (sizeof(double) - 1)));
-          }
-        }
 	/* Keep this buffer? Don't if it's too big, or if it's
 	   a part of old_jitter, or if there's already a bigger
 	   cache. */
@@ -774,6 +787,25 @@ int scheme_stack_safety(mz_jit_state *jitter, int cnt, int offset)
   if (valid) mz_SET_REG_STATUS_VALID(1);
 
   return 1;
+}
+
+void scheme_mz_unbox_save(mz_jit_state *jitter, mz_jit_unbox_state *r)
+{
+  r->unbox = jitter->unbox;
+  jitter->unbox = 0;
+
+#ifdef MZ_LONG_DOUBLE
+  r->unbox_extflonum = jitter->unbox_extflonum;
+  jitter->unbox_extflonum = 0;
+#endif
+  }
+
+void scheme_mz_unbox_restore(mz_jit_state *jitter, mz_jit_unbox_state *r)
+{
+  jitter->unbox = r->unbox;
+#ifdef MZ_LONG_DOUBLE
+  jitter->unbox_extflonum = r->unbox_extflonum;
+#endif  
 }
 
 #endif

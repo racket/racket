@@ -551,7 +551,7 @@ static int inline_struct_alloc(mz_jit_state *jitter, int c, int inline_slow)
   return scheme_inline_alloc(jitter, 
                              sizeof(Scheme_Structure) + ((c - mzFLEX_DELTA) * sizeof(Scheme_Object*)), 
                              scheme_structure_type, 
-                             0, 1, 0, inline_slow);
+                             0, 1, 0, inline_slow, 0);
 }
 #endif
 
@@ -1013,6 +1013,9 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
   } else if (IS_NAMED_PRIM(rator, "flonum?")) {
     generate_inlined_type_test(jitter, app, scheme_double_type, scheme_double_type, 0, for_branch, branch_short, need_sync, dest);
     return 1;
+  } else if (IS_NAMED_PRIM(rator, "extflonum?")) {
+    generate_inlined_type_test(jitter, app, scheme_long_double_type, scheme_long_double_type, 0, for_branch, branch_short, need_sync, dest);
+    return 1;
   } else if (IS_NAMED_PRIM(rator, "single-flonum?")) {
     generate_inlined_type_test(jitter, app, SCHEME_FLOAT_TYPE, SCHEME_FLOAT_TYPE, 0, for_branch, branch_short, need_sync, dest);
     return 1;
@@ -1348,9 +1351,12 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
                || IS_NAMED_PRIM(rator, "unsafe-fxvector-length")
                || IS_NAMED_PRIM(rator, "unsafe-vector*-length")
                || IS_NAMED_PRIM(rator, "flvector-length")
-               || IS_NAMED_PRIM(rator, "unsafe-flvector-length")) {
+               || IS_NAMED_PRIM(rator, "unsafe-flvector-length")
+               || MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "extflvector-length")
+                                     || IS_NAMED_PRIM(rator, "unsafe-extflvector-length"))) {
       GC_CAN_IGNORE jit_insn *reffail, *ref;
       int unsafe = 0, for_fl = 0, for_fx = 0, can_chaperone = 0;
+      int extfl = 0;
 
       if (IS_NAMED_PRIM(rator, "unsafe-vector*-length")
           || IS_NAMED_PRIM(rator, "unsafe-fxvector-length")) {
@@ -1365,6 +1371,12 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
         for_fl = 1;
       } else if (IS_NAMED_PRIM(rator, "fxvector-length")) {
         for_fx = 1;
+      } else if (MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "extflvector-length"))) {
+        extfl = 1;
+        unsafe = 1;
+      } else if (MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "unsafe-extflvector-length"))) {
+        extfl = 1;
+        unsafe = 1;
       } else {
         can_chaperone = 1;
       }
@@ -1386,9 +1398,11 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
         __END_TINY_JUMPS__(1);
         
         reffail = _jit.x.pc;
-        if (for_fl)
-          (void)jit_calli(sjc.bad_flvector_length_code);
-        else if (for_fx)
+        if (for_fl) {
+          MZ_FPUSEL_STMT(extfl,
+                         (void)jit_calli(sjc.bad_extflvector_length_code),
+                         (void)jit_calli(sjc.bad_flvector_length_code));
+        } else if (for_fx)
           (void)jit_calli(sjc.bad_fxvector_length_code);
         else {
           (void)jit_calli(sjc.bad_vector_length_code);
@@ -1398,9 +1412,11 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
 
         __START_TINY_JUMPS__(1);
         mz_patch_branch(ref);
-        if (for_fl)
-          (void)mz_bnei_t(reffail, JIT_R0, scheme_flvector_type, JIT_R1);
-        else if (for_fx)
+        if (for_fl) {
+          MZ_FPUSEL_STMT(extfl,
+                         (void)mz_bnei_t(reffail, JIT_R0, scheme_extflvector_type, JIT_R1),
+                         (void)mz_bnei_t(reffail, JIT_R0, scheme_flvector_type, JIT_R1));
+        } else if (for_fx)
           (void)mz_bnei_t(reffail, JIT_R0, scheme_fxvector_type, JIT_R1);
         else
           (void)mz_bnei_t(reffail, JIT_R0, scheme_vector_type, JIT_R1);
@@ -1414,10 +1430,13 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       }
       CHECK_LIMIT();
 
-      if (!for_fl)
+      if (for_fl) {
+        MZ_FPUSEL_STMT(extfl,
+                       (void)jit_ldxi_l(JIT_R0, JIT_R0, &SCHEME_EXTFLVEC_SIZE(0x0)),
+                       (void)jit_ldxi_l(JIT_R0, JIT_R0, &SCHEME_FLVEC_SIZE(0x0)));
+      } else
         (void)jit_ldxi_l(JIT_R0, JIT_R0, &SCHEME_VEC_SIZE(0x0));
-      else
-        (void)jit_ldxi_l(JIT_R0, JIT_R0, &SCHEME_FLVEC_SIZE(0x0));
+
       jit_fixnum_l(dest, JIT_R0);
             
       return 1;
@@ -1540,12 +1559,11 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
                || IS_NAMED_PRIM(rator, "flreal-part")) {
       GC_CAN_IGNORE jit_insn *reffail = NULL, *ref, *refdone;
       const char *name = ((Scheme_Primitive_Proc *)rator)->name;
-      int unbox;
+      mz_jit_unbox_state ubs;
 
       LOG_IT(("inlined %s\n", name));
 
-      unbox = jitter->unbox;
-      jitter->unbox = 0;
+      scheme_mz_unbox_save(jitter, &ubs);
 
       mz_runstack_skipped(jitter, 1);
 
@@ -1554,7 +1572,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
 
       mz_runstack_unskipped(jitter, 1);
 
-      jitter->unbox = unbox;
+      scheme_mz_unbox_restore(jitter, &ubs);
 
       mz_rs_sync();
 
@@ -1613,19 +1631,18 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     } else if (IS_NAMED_PRIM(rator, "unsafe-flimag-part")
                || IS_NAMED_PRIM(rator, "unsafe-flreal-part")) {
       const char *name = ((Scheme_Primitive_Proc *)rator)->name;
-      int unbox;
+      mz_jit_unbox_state ubs;
 
       LOG_IT(("inlined %s\n", name));
       
       mz_runstack_skipped(jitter, 1);
 
-      unbox = jitter->unbox;
-      jitter->unbox = 0;
+      scheme_mz_unbox_save(jitter, &ubs);
 
       scheme_generate_non_tail(app->rand, jitter, 0, 1, 0);
       CHECK_LIMIT();
 
-      jitter->unbox = unbox;
+      scheme_mz_unbox_restore(jitter, &ubs);
 
       mz_runstack_unskipped(jitter, 1);
 
@@ -1705,6 +1722,54 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
                || IS_NAMED_PRIM(rator, "fl->fx")) {
       scheme_generate_arith(jitter, rator, app->rand, NULL, 1, ARITH_INEX_EX, 0, 0, NULL, 1, 0, -1, NULL, dest);
       return 1;
+#ifdef MZ_LONG_DOUBLE
+    } else if (IS_NAMED_PRIM(rator, "unsafe-extflabs")) {
+      scheme_generate_extflonum_arith(jitter, rator, app->rand, NULL, 1, ARITH_ABS, 0, 0, NULL, 1, 0, 1, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "extflabs")) {
+      scheme_generate_extflonum_arith(jitter, rator, app->rand, NULL, 1, ARITH_ABS, 0, 0, NULL, 1, 0, -1, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "unsafe-extflsqrt")) {
+      scheme_generate_extflonum_arith(jitter, rator, app->rand, NULL, 1, ARITH_SQRT, 0, 0, NULL, 1, 0, 1, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "extflsqrt")) {
+      scheme_generate_extflonum_arith(jitter, rator, app->rand, NULL, 1, ARITH_SQRT, 0, 0, NULL, 1, 0, -1, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "extflfloor")
+               || IS_NAMED_PRIM(rator, "extflceiling")
+               || IS_NAMED_PRIM(rator, "extflround")
+               || IS_NAMED_PRIM(rator, "extfltruncate")
+               || IS_NAMED_PRIM(rator, "extflsin")
+               || IS_NAMED_PRIM(rator, "extflcos")
+               || IS_NAMED_PRIM(rator, "extfltan")
+               || IS_NAMED_PRIM(rator, "extflasin")
+               || IS_NAMED_PRIM(rator, "extflacos")
+               || IS_NAMED_PRIM(rator, "extflatan")
+               || IS_NAMED_PRIM(rator, "extflexp")
+               || IS_NAMED_PRIM(rator, "extfllog")) {
+      scheme_generate_extflonum_arith(jitter, rator, app->rand, NULL, 1, ARITH_FLUNOP, 0, 0, NULL, 1, 0, -1, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "real->extfl")) {
+      scheme_generate_extflonum_arith(jitter, rator, app->rand, NULL, 1, ARITH_EX_INEX, 0, 0, NULL, 1, 0, 0, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "unsafe-fx->extfl")) {
+      scheme_generate_extflonum_arith(jitter, rator, app->rand, NULL, 1, ARITH_EX_INEX, 0, 0, NULL, 1, 1, 0, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "->extfl")
+               || IS_NAMED_PRIM(rator, "fx->extfl")) {
+      scheme_generate_extflonum_arith(jitter, rator, app->rand, NULL, 1, ARITH_EX_INEX, 0, 0, NULL, 1, -1, 0, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "extfl->exact")) {
+      scheme_generate_extflonum_arith(jitter, rator, app->rand, NULL, 1, ARITH_INEX_EX, 0, 0, NULL, 1, 0, 0, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "unsafe-extfl->fx")) {
+      scheme_generate_extflonum_arith(jitter, rator, app->rand, NULL, 1, ARITH_INEX_EX, 0, 0, NULL, 1, 0, 1, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "extfl->exact-integer")
+               || IS_NAMED_PRIM(rator, "extfl->fx")) {
+      scheme_generate_extflonum_arith(jitter, rator, app->rand, NULL, 1, ARITH_INEX_EX, 0, 0, NULL, 1, 0, -1, NULL, dest);
+      return 1;
+#endif
     } else if (IS_NAMED_PRIM(rator, "bitwise-not")) {
       scheme_generate_arith(jitter, rator, app->rand, NULL, 1, ARITH_NOT, 0, 9, NULL, 1, 0, 0, NULL, dest);
       return 1;
@@ -1744,7 +1809,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
 #ifdef CAN_INLINE_ALLOC
       /* Inlined alloc */
       (void)jit_movi_p(JIT_R1, NULL); /* needed because R1 is marked during a GC */
-      scheme_inline_alloc(jitter, sizeof(Scheme_Small_Object), scheme_box_type, 0, 1, 0, 0);
+      scheme_inline_alloc(jitter, sizeof(Scheme_Small_Object), scheme_box_type, 0, 1, 0, 0, 0);
       CHECK_LIMIT();
       
       jit_stxi_p((intptr_t)&SCHEME_BOX_VAL(0x0) + OBJHEAD_SIZE, JIT_V1, JIT_R0);
@@ -2024,7 +2089,7 @@ static int generate_binary_char(mz_jit_state *jitter, Scheme_App3_Rec *app,
 }
 
 static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int base_offset, 
-                              int for_fl, int unsafe, 
+                              int for_fl, int extfl, int unsafe, 
                               int unbox_flonum, int result_ignored, int can_chaperone, 
                               int for_struct, int for_fx, int check_mutable, 
                               int known_fixnum_index, int known_fixnum_val,
@@ -2060,9 +2125,9 @@ static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int 
       else if (!for_fl)
         (void)jit_calli(sjc.vector_set_check_index_code);
       else if (unbox_flonum)
-        (void)jit_calli(sjc.flvector_set_flonum_check_index_code);
+        (void)jit_calli(sjc.flvector_set_flonum_check_index_code[extfl]);
       else
-        (void)jit_calli(sjc.flvector_set_check_index_code);
+        (void)jit_calli(sjc.flvector_set_check_index_code[extfl]);
     } else {
       if (for_struct)
         (void)jit_calli(sjc.struct_raw_ref_code);
@@ -2071,7 +2136,7 @@ static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int 
       else if (!for_fl)
         (void)jit_calli(sjc.vector_ref_check_index_code);
       else
-        (void)jit_calli(sjc.flvector_ref_check_index_code);
+        (void)jit_calli(sjc.flvector_ref_check_index_code[extfl]);
     }
     CHECK_LIMIT();
     if (can_chaperone) {
@@ -2102,8 +2167,12 @@ static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int 
         }
         jit_ldxi_l(JIT_R2, JIT_R0, (int)&SCHEME_VEC_SIZE(0x0));
       } else {
-        (void)mz_bnei_t(reffail, JIT_R0, scheme_flvector_type, JIT_R2);
-        jit_ldxi_l(JIT_R2, JIT_R0, (int)&SCHEME_FLVEC_SIZE(0x0));
+        MZ_FPUSEL_STMT(extfl,
+                       (void)mz_bnei_t(reffail, JIT_R0, scheme_extflvector_type, JIT_R2),
+                       (void)mz_bnei_t(reffail, JIT_R0, scheme_flvector_type, JIT_R2));
+        MZ_FPUSEL_STMT(extfl,
+                       jit_ldxi_l(JIT_R2, JIT_R0, (int)&SCHEME_EXTFLVEC_SIZE(0x0)),
+                       jit_ldxi_l(JIT_R2, JIT_R0, (int)&SCHEME_FLVEC_SIZE(0x0)));
       }
       if (!int_ready) {
         jit_rshi_ul(JIT_V1, JIT_R1, 1);
@@ -2116,7 +2185,9 @@ static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int 
       if (for_fl && set && !unbox_flonum) {
         jit_ldr_p(JIT_R2, JIT_RUNSTACK);
         (void)jit_bmsi_ul(reffail, JIT_R2, 0x1);
-        (void)mz_bnei_t(reffail, JIT_R2, scheme_double_type, JIT_R2);
+        MZ_FPUSEL_STMT(extfl,
+                       (void)mz_bnei_t(reffail, JIT_R2, scheme_long_double_type, JIT_R2),
+                       (void)mz_bnei_t(reffail, JIT_R2, scheme_double_type, JIT_R2));
         CHECK_LIMIT();
       }
     } else if (!int_ready) {
@@ -2133,8 +2204,11 @@ static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int 
   if (!int_ready) {
     if (!for_fl)
       jit_lshi_ul(JIT_V1, JIT_V1, JIT_LOG_WORD_SIZE);
-    else
-      jit_lshi_ul(JIT_V1, JIT_V1, JIT_LOG_DOUBLE_SIZE);
+    else {
+      MZ_FPUSEL_STMT(extfl,
+                     jit_muli_ui(JIT_V1, JIT_V1, sizeof(long double)),
+                     jit_lshi_ul(JIT_V1, JIT_V1, JIT_LOG_DOUBLE_SIZE));
+    }
     jit_addi_p(JIT_V1, JIT_V1, base_offset);
   }
   if (set) {
@@ -2143,9 +2217,14 @@ static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int 
     if (!for_fl) {
       jit_stxr_p(JIT_V1, JIT_R0, JIT_R2);
     } else {
-      if (!unbox_flonum)
-        jit_ldxi_d_fppush(JIT_FPR0, JIT_R2, &((Scheme_Double *)0x0)->double_val);  
-      jit_stxr_d_fppop(JIT_V1, JIT_R0, JIT_FPR0);
+      if (!unbox_flonum) {
+        MZ_FPUSEL_STMT(extfl,
+                       jit_fpu_ldxi_ld_fppush(JIT_FPU_FPR0, JIT_R2, &((Scheme_Long_Double *)0x0)->long_double_val),
+                       jit_ldxi_d_fppush(JIT_FPR0, JIT_R2, &((Scheme_Double *)0x0)->double_val));
+      }
+      MZ_FPUSEL_STMT(extfl,
+                     jit_fpu_stxr_ld_fppop(JIT_V1, JIT_R0, JIT_FPU_FPR0),
+                     jit_stxr_d_fppop(JIT_V1, JIT_R0, JIT_FPR0));
       if (unbox_flonum) {
         --jitter->unbox_depth;
       }
@@ -2159,12 +2238,12 @@ static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int 
       jit_ldxr_p(dest, JIT_R0, JIT_V1);
     } else {
       int fpr0;
-      fpr0 = JIT_FPR_0(jitter->unbox_depth);
-      jit_ldxr_d_fppush(fpr0, JIT_R0, JIT_V1);
+      fpr0 = JIT_FPUSEL_FPR_0(extfl, jitter->unbox_depth);
+      jit_FPSEL_ldxr_xd_fppush(extfl, fpr0, JIT_R0, JIT_V1);
       if (unbox_flonum)
         jitter->unbox_depth++;
       else
-        scheme_generate_alloc_double(jitter, 0, dest);
+        scheme_generate_alloc_X_double(jitter, 0, dest, extfl);
     }
     if (can_chaperone)
       mz_patch_ucbranch(pref);
@@ -2177,7 +2256,7 @@ static int allocate_rectangular(mz_jit_state *jitter, int dest)
 {
 #ifdef CAN_INLINE_ALLOC
   /* Inlined alloc */
-  scheme_inline_alloc(jitter, sizeof(Scheme_Complex), scheme_complex_type, 0, 1, 0, 0);
+  scheme_inline_alloc(jitter, sizeof(Scheme_Complex), scheme_complex_type, 0, 1, 0, 0, 0);
   CHECK_LIMIT();
   
   jit_stxi_p((intptr_t)&(((Scheme_Complex *)0x0)->r) + OBJHEAD_SIZE, JIT_V1, JIT_R0);
@@ -2391,8 +2470,8 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     ref_f3 = jit_bner_i(jit_forward(), JIT_R2, JIT_V1);
 
     /* check in range of type treated by eqv: */
-    ref_f4 = jit_blti_i(jit_forward(), JIT_R2, scheme_char_type);
-    ref_f5 = jit_bgti_i(jit_forward(), JIT_R2, scheme_complex_type);
+    ref_f4 = jit_blti_i(jit_forward(), JIT_R2, scheme_integer_type);
+    ref_f5 = jit_bgti_i(jit_forward(), JIT_R2, scheme_char_type);
     CHECK_LIMIT();
     
     /* in range of interesting types, so break out the generic comparison */
@@ -2507,6 +2586,35 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
   } else if (IS_NAMED_PRIM(rator, "fl>")) {
     scheme_generate_arith(jitter, rator, app->rand1, app->rand2, 2, 0, CMP_GT, 0, for_branch, branch_short, 0, -1, NULL, dest);
     return 1;
+#ifdef MZ_LONG_DOUBLE
+  } else if (IS_NAMED_PRIM(rator, "unsafe-extfl=")) {
+    scheme_generate_extflonum_arith(jitter, rator, app->rand1, app->rand2, 2, 0, CMP_EQUAL, 0, for_branch, branch_short, 0, 1, NULL, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "unsafe-extfl<=")) {
+    scheme_generate_extflonum_arith(jitter, rator, app->rand1, app->rand2, 2, 0, CMP_LEQ, 0, for_branch, branch_short, 0, 1, NULL, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "extfl<=")) {
+    scheme_generate_extflonum_arith(jitter, rator, app->rand1, app->rand2, 2, 0, CMP_LEQ, 0, for_branch, branch_short, 0, -1, NULL, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "unsafe-extfl<")) {
+    scheme_generate_extflonum_arith(jitter, rator, app->rand1, app->rand2, 2, 0, CMP_LT, 0, for_branch, branch_short, 0, 1, NULL, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "extfl<")) {
+    scheme_generate_extflonum_arith(jitter, rator, app->rand1, app->rand2, 2, 0, CMP_LT, 0, for_branch, branch_short, 0, -1, NULL, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "unsafe-extfl>=")) {
+    scheme_generate_extflonum_arith(jitter, rator, app->rand1, app->rand2, 2, 0, CMP_GEQ, 0, for_branch, branch_short, 0, 1, NULL, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "extfl>=")) {
+    scheme_generate_extflonum_arith(jitter, rator, app->rand1, app->rand2, 2, 0, CMP_GEQ, 0, for_branch, branch_short, 0, -1, NULL, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "unsafe-extfl>")) {
+    scheme_generate_extflonum_arith(jitter, rator, app->rand1, app->rand2, 2, 0, CMP_GT, 0, for_branch, branch_short, 0, 1, NULL, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "extfl>")) {
+    scheme_generate_extflonum_arith(jitter, rator, app->rand1, app->rand2, 2, 0, CMP_GT, 0, for_branch, branch_short, 0, -1, NULL, dest);
+    return 1;
+#endif
   } else if (IS_NAMED_PRIM(rator, "bitwise-bit-set?")) {
     scheme_generate_arith(jitter, rator, app->rand1, app->rand2, 2, 0, CMP_BIT, 0, for_branch, branch_short, 0, 0, NULL, dest);
     return 1;
@@ -2670,6 +2778,47 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     } else if (IS_NAMED_PRIM(rator, "flexpt")) {
       scheme_generate_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_EXPT, 0, 0, NULL, 1, 0, -1, NULL, dest);
       return 1;
+#ifdef MZ_LONG_DOUBLE
+    } else if (IS_NAMED_PRIM(rator, "unsafe-extfl+")) {
+      scheme_generate_extflonum_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_ADD, 0, 0, NULL, 1, 0, 1, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "extfl+")) {
+      scheme_generate_extflonum_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_ADD, 0, 0, NULL, 1, 0, -1, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "unsafe-extfl-")) {
+      scheme_generate_extflonum_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_SUB, 0, 0, NULL, 1, 0, 1, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "extfl-")) {
+      scheme_generate_extflonum_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_SUB, 0, 0, NULL, 1, 0, -1, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "unsafe-extfl*")) {
+      scheme_generate_extflonum_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_MUL, 0, 0, NULL, 1, 0, 1, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "extfl*")) {
+      scheme_generate_extflonum_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_MUL, 0, 0, NULL, 1, 0, -1, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "unsafe-extfl/")) {
+      scheme_generate_extflonum_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_DIV, 0, 0, NULL, 1, 0, 1, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "extfl/")) {
+      scheme_generate_extflonum_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_DIV, 0, 0, NULL, 1, 0, -1, NULL, dest);
+      return 1;
+    }  else if (IS_NAMED_PRIM(rator, "unsafe-extflmin")) {
+      scheme_generate_extflonum_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_MIN, 0, 0, NULL, 1, 0, 1, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "unsafe-extflmax")) {
+      scheme_generate_extflonum_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_MAX, 0, 0, NULL, 1, 0, 1, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "extflmin")) {
+      scheme_generate_extflonum_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_MIN, 0, 0, NULL, 1, 0, -1, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "extflmax")) {
+      scheme_generate_extflonum_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_MAX, 0, 0, NULL, 1, 0, -1, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "extflexpt")) {
+      scheme_generate_extflonum_arith(jitter, rator, app->rand1, app->rand2, 2, ARITH_EXPT, 0, 0, NULL, 1, 0, -1, NULL, dest);
+      return 1;
+#endif
     } else if (IS_NAMED_PRIM(rator, "vector-ref")
                || IS_NAMED_PRIM(rator, "unsafe-vector-ref")
                || IS_NAMED_PRIM(rator, "unsafe-vector*-ref")
@@ -2680,12 +2829,16 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 	       || IS_NAMED_PRIM(rator, "bytes-ref")
 	       || IS_NAMED_PRIM(rator, "unsafe-bytes-ref")
 	       || IS_NAMED_PRIM(rator, "flvector-ref")
+               || MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "extflvector-ref"))
 	       || IS_NAMED_PRIM(rator, "fxvector-ref")
 	       || IS_NAMED_PRIM(rator, "unsafe-fxvector-ref")) {
       int simple;
       int which, unsafe = 0, base_offset = ((int)&SCHEME_VEC_ELS(0x0));
-      int unbox = jitter->unbox;
+      mz_jit_unbox_state ubs;
       int can_chaperone = 1, for_struct = 0, for_fx = 0;
+      int extfl = 0;
+
+      scheme_mz_unbox_save(jitter, &ubs);
 
       if (IS_NAMED_PRIM(rator, "vector-ref")) {
         which = 0;
@@ -2705,15 +2858,17 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       } else if (IS_NAMED_PRIM(rator, "unsafe-vector-ref")) {
 	which = 0;
         unsafe = 1;
-      } else if (IS_NAMED_PRIM(rator, "flvector-ref")) {
+      } else if (IS_NAMED_PRIM(rator, "flvector-ref")
+                 || MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "extflvector-ref"))) {
 	which = 3;
         base_offset = ((int)&SCHEME_FLVEC_ELS(0x0));
-        if (unbox) {
+        if (ubs.unbox) {
           if (jitter->unbox_depth) 
             scheme_signal_error("internal error: bad depth for flvector-ref");
-          jitter->unbox = 0;
         }
         can_chaperone = 0;
+        if (MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "extflvector-ref")))
+          extfl = 1;
       } else if (IS_NAMED_PRIM(rator, "unsafe-struct*-ref")) {
 	which = 0;
         unsafe = 1;
@@ -2751,15 +2906,15 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
         if (!which) {
           /* vector-ref is relatively simple and worth inlining */
           if (can_chaperone) scheme_mz_need_space(jitter, 3);
-          generate_vector_op(jitter, 0, 0, base_offset, 0, unsafe, 
+          generate_vector_op(jitter, 0, 0, base_offset, 0, 0, unsafe, 
                              0, 0, can_chaperone, for_struct, for_fx, 0,
                              scheme_jit_is_fixnum(app->rand2), 0,
                              dest);
           CHECK_LIMIT();
 	} else if (which == 3) {
           /* flvector-ref is relatively simple and worth inlining */
-          generate_vector_op(jitter, 0, 0, base_offset, 1, unsafe, 
-                             unbox, 0, can_chaperone, for_struct, for_fx, 0,
+          generate_vector_op(jitter, 0, 0, base_offset, 1, extfl, unsafe, 
+                             ubs.unbox, 0, can_chaperone, for_struct, for_fx, 0,
                              scheme_jit_is_fixnum(app->rand2), 0,
                              dest);
           CHECK_LIMIT();
@@ -2807,22 +2962,22 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 	if (!which)
 	  offset = base_offset + WORDS_TO_BYTES(offset);
 	else if (which == 3)
-	  offset = base_offset + (offset * sizeof(double));
+          offset = base_offset + (offset * MZ_FPUSEL(extfl, sizeof(long double), sizeof(double)));
 	else if (which == 1)
 	  offset = offset << LOG_MZCHAR_SIZE;
 	jit_movi_l(JIT_V1, offset);
 	if (!which) {
           /* vector-ref is relatively simple and worth inlining */
           if (can_chaperone) scheme_mz_need_space(jitter, 3);
-          generate_vector_op(jitter, 0, 1, base_offset, 0, unsafe, 
+          generate_vector_op(jitter, 0, 1, base_offset, 0, 0, unsafe, 
                              0, 0, can_chaperone, for_struct, for_fx, 0,
                              scheme_jit_is_fixnum(app->rand2), 0,
                              dest);
           CHECK_LIMIT();
 	} else if (which == 3) {
           /* flvector-ref is relatively simple and worth inlining */
-          generate_vector_op(jitter, 0, 1, base_offset, 1, unsafe, 
-                             unbox, 0, can_chaperone, for_struct, for_fx, 0,
+          generate_vector_op(jitter, 0, 1, base_offset, 1, extfl, unsafe, 
+                             ubs.unbox, 0, can_chaperone, for_struct, for_fx, 0,
                              scheme_jit_is_fixnum(app->rand2), 0,
                              dest);
           CHECK_LIMIT();
@@ -2853,19 +3008,23 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
         mz_runstack_unskipped(jitter, 2);
       }
 
-      if (unbox) jitter->unbox = unbox;
+      scheme_mz_unbox_restore(jitter, &ubs);
 
       return 1;
     } else if (IS_NAMED_PRIM(rator, "unsafe-f64vector-ref")
-               || IS_NAMED_PRIM(rator, "unsafe-flvector-ref")) {
-      int fpr0, unbox = jitter->unbox;
+               || IS_NAMED_PRIM(rator, "unsafe-flvector-ref")
+               || MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "unsafe-extflvector-ref"))) {
+      int fpr0;
       int is_f64;
+      int extfl;
+      mz_jit_unbox_state ubs;
 
       is_f64 = IS_NAMED_PRIM(rator, "unsafe-f64vector-ref");
-      
-      jitter->unbox = 0; /* no unboxing of vector and index arguments */
+      extfl = MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "unsafe-extflvector-ref"));
+
+      scheme_mz_unbox_save(jitter, &ubs); /* no unboxing of vector and index arguments */
       scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
-      jitter->unbox = unbox;
+      scheme_mz_unbox_restore(jitter, &ubs);
       CHECK_LIMIT();
 
       if (is_f64) {
@@ -2873,24 +3032,30 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
         jit_ldxi_p(JIT_R0, JIT_R0, (intptr_t)&SCHEME_CPTR_VAL(0x0));
       }
       jit_rshi_ul(JIT_R1, JIT_R1, 1);
-      jit_lshi_ul(JIT_R1, JIT_R1, JIT_LOG_DOUBLE_SIZE);
+      MZ_FPUSEL_STMT(extfl,
+                     jit_muli_ui(JIT_R1, JIT_R1, sizeof(long double)),
+                     jit_lshi_ul(JIT_R1, JIT_R1, JIT_LOG_DOUBLE_SIZE));
       if (!is_f64) {
-        jit_addi_ul(JIT_R1, JIT_R1, (int)(&SCHEME_FLVEC_ELS(0x0)));
+        MZ_FPUSEL_STMT(extfl,
+                       jit_addi_ul(JIT_R1, JIT_R1, (int)(&SCHEME_EXTFLVEC_ELS(0x0))),
+                       jit_addi_ul(JIT_R1, JIT_R1, (int)(&SCHEME_FLVEC_ELS(0x0))));
       }
 
       if (jitter->unbox)
         fpr0 = JIT_FPR_0(jitter->unbox_depth);
       else
-        fpr0 = JIT_FPR0;
+        fpr0 = MZ_FPUSEL(extfl, JIT_FPU_FPR0, JIT_FPR0);
 
-      jit_ldxr_d_fppush(fpr0, JIT_R0, JIT_R1);
+      MZ_FPUSEL_STMT(extfl,
+                     jit_fpu_ldxr_ld_fppush(fpr0, JIT_R0, JIT_R1),
+                     jit_ldxr_d_fppush(fpr0, JIT_R0, JIT_R1));
       CHECK_LIMIT();
 
       if (jitter->unbox)
         jitter->unbox_depth++;
       else {
         mz_rs_sync();
-        scheme_generate_alloc_double(jitter, 0, dest);
+        scheme_generate_alloc_X_double(jitter, 0, dest, extfl);
       }
 
       return 1;
@@ -3098,7 +3263,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
 #ifdef CAN_INLINE_ALLOC
       /* Inlined alloc */
-      scheme_inline_alloc(jitter, sizeof(Scheme_Simple_Object), scheme_mutable_pair_type, 0, 1, 0, 0);
+      scheme_inline_alloc(jitter, sizeof(Scheme_Simple_Object), scheme_mutable_pair_type, 0, 1, 0, 0, 0);
       CHECK_LIMIT();
 
       jit_stxi_p((intptr_t)&SCHEME_MCAR(0x0) + OBJHEAD_SIZE, JIT_V1, JIT_R0);
@@ -3290,7 +3455,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
   }
 
   if (!for_branch) {
-    scheme_console_printf("Inlining expected.\n");
+    scheme_console_printf("Inlining expected for %s.\n", scheme_write_to_string(rator, NULL));
     abort();
   }
 
@@ -3440,6 +3605,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
         || IS_NAMED_PRIM(rator, "unsafe-vector-set!")
         || IS_NAMED_PRIM(rator, "unsafe-vector*-set!")
         || IS_NAMED_PRIM(rator, "flvector-set!")
+        || MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "extflvector-set!"))
         || IS_NAMED_PRIM(rator, "fxvector-set!")
         || IS_NAMED_PRIM(rator, "unsafe-fxvector-set!")
         || IS_NAMED_PRIM(rator, "unsafe-struct-set!")
@@ -3454,6 +3620,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       int which, unsafe = 0, base_offset = ((int)&SCHEME_VEC_ELS(0x0));
       int pushed, flonum_arg;
       int can_chaperone = 1, for_struct = 0, for_fx = 0, check_mutable = 0;
+      int extfl = 0;
 
       if (IS_NAMED_PRIM(rator, "vector-set!")) {
 	which = 0;
@@ -3480,6 +3647,10 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       } else if (IS_NAMED_PRIM(rator, "flvector-set!")) {
 	which = 3;
         base_offset = ((int)&SCHEME_FLVEC_ELS(0x0));
+      } else if (MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "extflvector-set!"))) {
+        extfl = 1;
+	which = 3;
+        base_offset = MZ_FPUSEL(extfl, ((int)&SCHEME_EXTFLVEC_ELS(0x0)), 0);
       } else if (IS_NAMED_PRIM(rator, "unsafe-struct*-set!")) {
         which = 0;
         unsafe = 1;
@@ -3529,9 +3700,9 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       constval = scheme_can_delay_and_avoids_r1(app->args[3]);
 
       if (which == 3) {
-        if (scheme_can_unbox_inline(app->args[3], 5, JIT_FPR_NUM-3, 0))
+        if (scheme_can_unbox_inline(app->args[3], 5, JIT_FPUSEL_FPR_NUM(extfl)-3, 0, extfl))
           flonum_arg = 2;
-        else if (scheme_can_unbox_directly(app->args[3]))
+        else if (scheme_can_unbox_directly(app->args[3], extfl))
           flonum_arg = 1;
         else
           flonum_arg = 0;
@@ -3593,8 +3764,10 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 
       if (flonum_arg) {
         jitter->unbox++;
+        MZ_FPUSEL_STMT_ONLY(extfl, jitter->unbox_extflonum++);
         scheme_generate_unboxed(app->args[3], jitter, flonum_arg, 0);
         --jitter->unbox;
+        MZ_FPUSEL_STMT_ONLY(extfl, --jitter->unbox_extflonum);
       } else {
         if (constval)
           scheme_generate(app->args[3], jitter, 0, 0, 0, JIT_R2, NULL); /* sync'd below */
@@ -3639,7 +3812,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 	if (!which) {
           /* vector-set! is relatively simple and worth inlining */
           if (can_chaperone) scheme_mz_need_space(jitter, 3);
-          generate_vector_op(jitter, 1, 0, base_offset, 0, unsafe, 
+          generate_vector_op(jitter, 1, 0, base_offset, 0, 0, unsafe, 
                              flonum_arg, result_ignored, can_chaperone, 
                              for_struct, for_fx, check_mutable, 
                              scheme_jit_is_fixnum(app->args[2]), for_fx > 1,
@@ -3647,7 +3820,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
           CHECK_LIMIT();
 	} else if (which == 3) {
           /* flvector-set! is relatively simple and worth inlining */
-          generate_vector_op(jitter, 1, 0, base_offset, 1, unsafe, 
+          generate_vector_op(jitter, 1, 0, base_offset, 1, extfl, unsafe, 
                              flonum_arg, result_ignored, can_chaperone, 
                              for_struct, for_fx, 0, 
                              scheme_jit_is_fixnum(app->args[2]), for_fx > 1,
@@ -3703,7 +3876,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 	if (!which)
 	  offset = base_offset + WORDS_TO_BYTES(offset);
 	else if (which == 3)
-	  offset = base_offset + (offset * sizeof(double));
+          offset = base_offset + (offset * MZ_FPUSEL(extfl, sizeof(long double), sizeof(double)));
 	else if (which == 1)
 	  offset = offset << LOG_MZCHAR_SIZE;
         else if ((which == 4) || (which == 5))
@@ -3712,7 +3885,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 	if (!which) {
           /* vector-set! is relatively simple and worth inlining */
           if (can_chaperone) scheme_mz_need_space(jitter, 3);
-          generate_vector_op(jitter, 1, 1, base_offset, 0, unsafe, 
+          generate_vector_op(jitter, 1, 1, base_offset, 0, 0, unsafe, 
                              flonum_arg, result_ignored, can_chaperone, 
                              for_struct, for_fx, check_mutable, 
                              scheme_jit_is_fixnum(app->args[2]), for_fx > 1,
@@ -3732,7 +3905,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
             (void)jit_movi_p(dest, scheme_void);
 	} else if (which == 3) {
           /* flvector-set! is relatively simple and worth inlining */
-          generate_vector_op(jitter, 1, 1, base_offset, 1, unsafe, 
+          generate_vector_op(jitter, 1, 1, base_offset, 1, extfl, unsafe, 
                              flonum_arg, result_ignored, can_chaperone, 
                              for_struct, for_fx, 0, 
                              scheme_jit_is_fixnum(app->args[2]), for_fx > 1, 
@@ -3776,12 +3949,15 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 
       return 1;
     } else if (IS_NAMED_PRIM(rator, "unsafe-f64vector-set!")
-               || IS_NAMED_PRIM(rator, "unsafe-flvector-set!")) {
+               || IS_NAMED_PRIM(rator, "unsafe-flvector-set!")
+               || MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "unsafe-extflvector-set!"))) {
       int is_f64;
       int can_direct, got_two;
+      int extfl;
 
       is_f64 = IS_NAMED_PRIM(rator, "unsafe-f64vector-set!");
-
+      extfl = MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "unsafe-extflvector-set!"));
+      
       if (scheme_is_constant_and_avoids_r1(app->args[1])
           && scheme_is_constant_and_avoids_r1(app->args[2])) {
         mz_runstack_skipped(jitter, 3);
@@ -3792,16 +3968,18 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
         scheme_generate_app(app, NULL, 2, jitter, 0, 0, 0, 2);
       }
 
-      if (scheme_can_unbox_inline(app->args[3], 5, JIT_FPR_NUM-1, 1))
+      if (scheme_can_unbox_inline(app->args[3], 5, JIT_FPUSEL_FPR_NUM(extfl)-1, 1, extfl))
         can_direct = 2;
-      else if (scheme_can_unbox_directly(app->args[3]))
+      else if (scheme_can_unbox_directly(app->args[3], extfl))
         can_direct = 1;
       else
         can_direct = 0;
 
       jitter->unbox++;
+      MZ_FPUSEL_STMT_ONLY(extfl, jitter->unbox_extflonum++);
       scheme_generate_unboxed(app->args[3], jitter, can_direct, 1);
       --jitter->unbox;
+      MZ_FPUSEL_STMT_ONLY(extfl, --jitter->unbox_extflonum);
       --jitter->unbox_depth;
       CHECK_LIMIT();
       
@@ -3824,11 +4002,17 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
         jit_ldxi_p(JIT_R0, JIT_R0, (intptr_t)&SCHEME_CPTR_VAL(0x0));
       }
       jit_rshi_ul(JIT_R1, JIT_R1, 1);
-      jit_lshi_ul(JIT_R1, JIT_R1, JIT_LOG_DOUBLE_SIZE);
+      MZ_FPUSEL_STMT(extfl,
+                     jit_muli_ui(JIT_R1, JIT_R1, sizeof(long double)),
+                     jit_lshi_ul(JIT_R1, JIT_R1, JIT_LOG_DOUBLE_SIZE));
       if (!is_f64) {
-        jit_addi_ul(JIT_R1, JIT_R1, (int)(&SCHEME_FLVEC_ELS(0x0)));
+        MZ_FPUSEL_STMT(extfl,
+                       jit_addi_ul(JIT_R1, JIT_R1, (int)(&SCHEME_EXTFLVEC_ELS(0x0))),
+                       jit_addi_ul(JIT_R1, JIT_R1, (int)(&SCHEME_FLVEC_ELS(0x0))));
       }
-      jit_stxr_d_fppop(JIT_R1, JIT_R0, JIT_FPR0);
+      MZ_FPUSEL_STMT(extfl,
+                     jit_fpu_stxr_ld_fppop(JIT_R1, JIT_R0, JIT_FPU_FPR0),
+                     jit_stxr_d_fppop(JIT_R1, JIT_R0, JIT_FPR0));
       CHECK_LIMIT();
       
       if (!result_ignored)
@@ -3960,7 +4144,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
   }
 
   if (!for_branch) {
-    scheme_console_printf("Inlining expected.\n");
+    scheme_console_printf("Inlining expected %s.\n", scheme_write_to_string(rator, NULL));
     abort();
   }
 
@@ -3975,7 +4159,7 @@ int scheme_generate_cons_alloc(mz_jit_state *jitter, int rev, int inline_retry, 
 #ifdef CAN_INLINE_ALLOC
   /* Inlined alloc */
   scheme_inline_alloc(jitter, sizeof(Scheme_Simple_Object), scheme_pair_type, 0, 1, 
-                      known_list ? PAIR_IS_LIST : 0, inline_retry);
+                      known_list ? PAIR_IS_LIST : 0, inline_retry, 0);
   CHECK_LIMIT();
   
   if (rev) {
@@ -4041,7 +4225,7 @@ static int generate_vector_alloc(mz_jit_state *jitter, Scheme_Object *rator,
   scheme_inline_alloc(jitter, 
                       sizeof(Scheme_Vector) + ((c - mzFLEX_DELTA) * sizeof(Scheme_Object*)), 
                       scheme_vector_type, 
-                      imm, app2 || app3, 0, 0);
+                      imm, app2 || app3, 0, 0, 0);
   CHECK_LIMIT();
 
   if ((c == 2) || (c == 1)) {

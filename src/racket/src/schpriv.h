@@ -37,10 +37,12 @@
 /*========================================================================*/
 
 /* Used with SCHEME_LOCAL_TYPE_MASK, LET_ONE_TYPE_MASK, etc.*/
-#define SCHEME_LOCAL_TYPE_FLONUM   1
-#define SCHEME_LOCAL_TYPE_FIXNUM   2
+#define SCHEME_LOCAL_TYPE_FLONUM    1
+#define SCHEME_LOCAL_TYPE_FIXNUM    2
+#define SCHEME_LOCAL_TYPE_EXTFLONUM 3
 
-#define SCHEME_MAX_LOCAL_TYPE       2
+#define SCHEME_MAX_LOCAL_TYPE       3
+
 #define SCHEME_MAX_LOCAL_TYPE_MASK  0x3
 #define SCHEME_MAX_LOCAL_TYPE_BITS  2
 
@@ -62,8 +64,11 @@
 #define SCHEME_PRIM_WANTS_FLONUM_FIRST   64
 #define SCHEME_PRIM_WANTS_FLONUM_SECOND  128
 #define SCHEME_PRIM_WANTS_FLONUM_THIRD   256
+#define SCHEME_PRIM_WANTS_EXTFLONUM_FIRST   512
+#define SCHEME_PRIM_WANTS_EXTFLONUM_SECOND  1024
+#define SCHEME_PRIM_WANTS_EXTFLONUM_THIRD   2048
 
-#define SCHEME_PRIM_OPT_TYPE_SHIFT           9
+#define SCHEME_PRIM_OPT_TYPE_SHIFT           12
 #define SCHEME_PRIM_OPT_TYPE_MASK            (SCHEME_MAX_LOCAL_TYPE_MASK << SCHEME_PRIM_OPT_TYPE_SHIFT)
 #define SCHEME_PRIM_OPT_TYPE(x) ((x & SCHEME_PRIM_OPT_TYPE_MASK) >> SCHEME_PRIM_OPT_TYPE_SHIFT)
 
@@ -71,6 +76,9 @@
 #define SCHEME_PRIM_PRODUCES_FIXNUM (SCHEME_LOCAL_TYPE_FIXNUM << SCHEME_PRIM_OPT_TYPE_SHIFT)
 
 #define SCHEME_PRIM_WANTS_FLONUM_BOTH (SCHEME_PRIM_WANTS_FLONUM_FIRST | SCHEME_PRIM_WANTS_FLONUM_SECOND)
+
+#define SCHEME_PRIM_PRODUCES_EXTFLONUM (SCHEME_LOCAL_TYPE_EXTFLONUM << SCHEME_PRIM_OPT_TYPE_SHIFT)
+#define SCHEME_PRIM_WANTS_EXTFLONUM_BOTH (SCHEME_PRIM_WANTS_EXTFLONUM_FIRST | SCHEME_PRIM_WANTS_EXTFLONUM_SECOND)
 
 extern int scheme_prim_opt_flags[]; /* uses an index from SCHEME_PRIM_OPT_INDEX_MASK */
 extern XFORM_NONGCING int scheme_intern_prim_opt_flags(int);
@@ -268,14 +276,21 @@ void scheme_init_unsafe_vector(Scheme_Env *env);
 void scheme_init_string(Scheme_Env *env);
 void scheme_init_number(Scheme_Env *env);
 void scheme_init_flfxnum_number(Scheme_Env *env);
+void scheme_init_extfl_number(Scheme_Env *env);
 void scheme_init_unsafe_number(Scheme_Env *env);
+void scheme_init_extfl_unsafe_number(Scheme_Env *env);
 void scheme_init_numarith(Scheme_Env *env);
 void scheme_init_flfxnum_numarith(Scheme_Env *env);
+void scheme_init_extfl_numarith(Scheme_Env *env);
 void scheme_init_unsafe_numarith(Scheme_Env *env);
+void scheme_init_extfl_unsafe_numarith(Scheme_Env *env);
 void scheme_init_numcomp(Scheme_Env *env);
 void scheme_init_flfxnum_numcomp(Scheme_Env *env);
+void scheme_init_extfl_numcomp(Scheme_Env *env);
 void scheme_init_unsafe_numcomp(Scheme_Env *env);
+void scheme_init_extfl_unsafe_numcomp(Scheme_Env *env);
 void scheme_init_numstr(Scheme_Env *env);
+void scheme_init_extfl_numstr(Scheme_Env *env);
 void scheme_init_eval(Scheme_Env *env);
 void scheme_init_promise(Scheme_Env *env);
 void scheme_init_struct(Scheme_Env *env);
@@ -1843,6 +1858,12 @@ intptr_t scheme_get_semaphore_init(const char *who, int n, Scheme_Object **p);
 # define scheme_exact_one scheme_make_integer(1)
 #endif
 
+#ifdef MZ_LONG_DOUBLE
+# define MZ_LONG_DOUBLE_AND(x) (x)
+#else
+# define MZ_LONG_DOUBLE_AND(x) 0
+#endif
+
 void scheme_configure_floating_point(void);
 
 /****** Bignums *******/
@@ -1880,6 +1901,9 @@ typedef struct {
 XFORM_NONGCING Scheme_Object *scheme_make_small_bignum(intptr_t v, Small_Bignum *s);
 char *scheme_number_to_string(int radix, Scheme_Object *obj);
 char *scheme_double_to_string (double d, char* s, int slen, int was_single, int *used_buffer);
+#ifdef MZ_LONG_DOUBLE
+char *scheme_long_double_to_string (long double d, char* s, int slen, int *used_buffer);
+#endif
 
 Scheme_Object *scheme_bignum_copy(const Scheme_Object *n);
 
@@ -1914,6 +1938,9 @@ Scheme_Object *scheme_bignum_not(const Scheme_Object *a);
 Scheme_Object *scheme_bignum_shift(const Scheme_Object *a, intptr_t shift);
 
 XFORM_NONGCING double scheme_bignum_to_double_inf_info(const Scheme_Object *n, intptr_t just_use, intptr_t *only_need);
+#ifdef MZ_LONG_DOUBLE
+XFORM_NONGCING long double scheme_bignum_to_long_double_inf_info(const Scheme_Object *n, intptr_t just_use, intptr_t *only_need);
+#endif
 #ifdef MZ_USE_SINGLE_FLOATS
 XFORM_NONGCING float scheme_bignum_to_float_inf_info(const Scheme_Object *n, intptr_t just_use, intptr_t *only_need);
 #else
@@ -1995,6 +2022,9 @@ XFORM_NONGCING int scheme_is_complex_exact(const Scheme_Object *o);
 #define REAL_NUMBER_STR "real number"
 
 int scheme_check_double(const char *where, double v, const char *dest);
+#ifdef MZ_LONG_DOUBLE
+int scheme_check_long_double(const char *where, long double v, const char *dest);
+#endif
 #ifdef MZ_USE_SINGLE_FLOATS
 int scheme_check_float(const char *where, float v, const char *dest);
 #else
@@ -2003,6 +2033,13 @@ int scheme_check_float(const char *where, float v, const char *dest);
 
 double scheme_get_val_as_double(const Scheme_Object *n);
 XFORM_NONGCING int scheme_minus_zero_p(double d);
+
+#ifdef MZ_LONG_DOUBLE
+long double scheme_get_val_as_long_double(const Scheme_Object *n);
+XFORM_NONGCING int scheme_long_minus_zero_p(long double d);
+#else
+# define scheme_long_minus_zero_p(d) scheme_minus_zero_p(d)
+#endif
 
 #ifdef MZ_USE_SINGLE_FLOATS
 float scheme_get_val_as_float(const Scheme_Object *n);
@@ -2046,10 +2083,10 @@ extern int scheme_is_nan(double);
 #    define MZ_IS_NAN(d) isnan(d)
 #   else
 #    ifdef USE_CARBON_FP_PREDS
-#     define MZ_IS_INFINITY(d) (!__isfinited(d))
-#     define MZ_IS_POS_INFINITY(d) (!__isfinited(d) && (d > 0))
-#     define MZ_IS_NEG_INFINITY(d) (!__isfinited(d) && (d < 0))
-#     define MZ_IS_NAN(d) __isnand(d)
+#     define MZ_IS_INFINITY(d) (!__isfinite(d))
+#     define MZ_IS_POS_INFINITY(d) (!__isfinite(d) && (d > 0))
+#     define MZ_IS_NEG_INFINITY(d) (!__isfinite(d) && (d < 0))
+#     define MZ_IS_NAN(d) __isnan(d)
 #    else
 #     ifdef USE_MSVC_FP_PREDS
 #      include <float.h>
@@ -2070,6 +2107,11 @@ extern int scheme_is_nan(double);
 # endif
 #endif
 
+#define MZ_IS_LONG_INFINITY(d) MZ_IS_INFINITY(d)
+#define MZ_IS_LONG_POS_INFINITY(d) MZ_IS_POS_INFINITY(d)
+#define MZ_IS_LONG_NEG_INFINITY(d) MZ_IS_NEG_INFINITY(d)
+#define MZ_IS_LONG_NAN(d) MZ_IS_NAN(d)
+
 #ifndef MZ_IS_INFINITY
 # define MZ_IS_INFINITY(d) (MZ_IS_POS_INFINITY(d) || MZ_IS_NEG_INFINITY(d))
 #endif
@@ -2081,6 +2123,13 @@ extern double scheme_floating_point_zero;
 extern double scheme_floating_point_nzero;
 extern Scheme_Object *scheme_zerod, *scheme_nzerod, *scheme_pi, *scheme_half_pi, *scheme_plus_i, *scheme_minus_i;
 extern Scheme_Object *scheme_inf_object, *scheme_minus_inf_object, *scheme_nan_object;
+#ifdef MZ_LONG_DOUBLE
+extern long double scheme_long_infinity_val, scheme_long_minus_infinity_val;
+extern long double scheme_long_floating_point_zero;
+extern long double scheme_long_floating_point_nzero;
+extern Scheme_Object *scheme_zerol, *scheme_nzerol, *scheme_long_scheme_pi;
+extern Scheme_Object *scheme_long_inf_object, *scheme_long_minus_inf_object, *scheme_long_nan_object;
+#endif
 #ifdef MZ_USE_SINGLE_FLOATS
 extern Scheme_Object *scheme_zerof, *scheme_nzerof, *scheme_single_scheme_pi;
 extern Scheme_Object *scheme_single_inf_object, *scheme_single_minus_inf_object, *scheme_single_nan_object;
@@ -2124,6 +2173,9 @@ Scheme_Object *scheme_inexact_to_exact(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_exact_to_inexact(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_inexact_p(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_TO_DOUBLE(const Scheme_Object *n);
+#ifdef MZ_LONG_DOUBLE
+Scheme_Object *scheme_TO_LONG_DOUBLE(const Scheme_Object *n);
+#endif
 Scheme_Object *scheme_to_bignum(const Scheme_Object *o);
 XFORM_NONGCING int scheme_is_integer(const Scheme_Object *o);
 XFORM_NONGCING int scheme_is_zero(const Scheme_Object *o);
@@ -2184,6 +2236,22 @@ double scheme_double_log(double x);
 double scheme_double_exp(double x);
 double scheme_double_expt(double x, double y);
 
+/***** extflonums *****/
+#ifdef MZ_LONG_DOUBLE
+long double scheme_long_double_truncate(long double x);
+long double scheme_long_double_round(long double x);
+long double scheme_long_double_floor(long double x);
+long double scheme_long_double_ceiling(long double x);
+long double scheme_long_double_sin(long double x);
+long double scheme_long_double_cos(long double x);
+long double scheme_long_double_tan(long double x);
+long double scheme_long_double_asin(long double x);
+long double scheme_long_double_acos(long double x);
+long double scheme_long_double_atan(long double x);
+long double scheme_long_double_log(long double x);
+long double scheme_long_double_exp(long double x);
+long double scheme_long_double_expt(long double x, long double y);
+#endif
 /*========================================================================*/
 /*                     read, eval, print                                  */
 /*========================================================================*/
@@ -2500,6 +2568,9 @@ typedef struct Scheme_Current_LWC {
   void *original_dest;
   void *saved_v1;
   double saved_save_fp;
+#ifdef MZ_LONG_DOUBLE
+  long double saved_save_extfp;
+#endif
 } Scheme_Current_LWC;
 
 void scheme_init_thread_lwc(void);
@@ -2612,6 +2683,7 @@ int scheme_is_imported(Scheme_Object *var, Scheme_Comp_Env *env);
 
 Scheme_Object *scheme_extract_unsafe(Scheme_Object *o);
 Scheme_Object *scheme_extract_flfxnum(Scheme_Object *o);
+Scheme_Object *scheme_extract_extfl(Scheme_Object *o);
 Scheme_Object *scheme_extract_futures(Scheme_Object *o);
 
 Scheme_Object *scheme_add_env_renames(Scheme_Object *stx, Scheme_Comp_Env *env,
@@ -3371,6 +3443,7 @@ Scheme_Env *scheme_get_kernel_env();
 int scheme_is_kernel_env();
 Scheme_Env *scheme_get_unsafe_env();
 Scheme_Env *scheme_get_flfxnum_env();
+Scheme_Env *scheme_get_extfl_env();
 Scheme_Env *scheme_get_futures_env();
 
 void scheme_install_initial_module_set(Scheme_Env *env);
@@ -3385,6 +3458,7 @@ Scheme_Module *scheme_extract_compiled_module(Scheme_Object *o);
 int scheme_is_kernel_modname(Scheme_Object *modname);
 int scheme_is_unsafe_modname(Scheme_Object *modname);
 int scheme_is_flfxnum_modname(Scheme_Object *modname);
+int scheme_is_extfl_modname(Scheme_Object *modname);
 int scheme_is_futures_modname(Scheme_Object *modname);
 
 void scheme_clear_modidx_cache(void);
@@ -3803,6 +3877,9 @@ Scheme_Object *scheme_vector_length(Scheme_Object *v);
 Scheme_Object *scheme_checked_flvector_ref(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_flvector_set(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_flvector_length(Scheme_Object *v);
+Scheme_Object *scheme_checked_extflvector_ref(int argc, Scheme_Object **argv);
+Scheme_Object *scheme_checked_extflvector_set(int argc, Scheme_Object **argv);
+Scheme_Object *scheme_extflvector_length(Scheme_Object *v);
 Scheme_Vector *scheme_alloc_fxvector(intptr_t size);
 Scheme_Object *scheme_checked_fxvector_ref(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_fxvector_set(int argc, Scheme_Object **argv);

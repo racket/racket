@@ -367,6 +367,21 @@ directory) has been modified slightly from Boehm's standard
 distribution.  Mostly, the change modify the way that object
 finalization is handled.
 
+Floating point, x87, SSE, Extflonums, and the JIT
+-------------------------------------------------
+
+Pre-processor tests in "sconfig.h" and "scheme.h" attempt to determine
+when the x87 floating-point processor needs to be configured for
+double-precision mode, when JIT can use SSE instructions, and when
+extflonums can be supported because both the JIT and C code use SSE
+for double-precision floating-point while `long double' is available
+for extflonums.
+
+In particular, "scheme.h" looks for __SSE_MATH__ to indicate that gcc
+is compiling floating-point operations as SSE, so be sure to include
+flags like "-mfpmath=sse" or "-mfpmath=387" in CPPFLAGS, and not just
+CFLAGS. See related configuration options below.
+
 Configuration Options
 ---------------------
 
@@ -379,6 +394,9 @@ Some CPP flags control default settings in "racket/sconfig.h":
 
  * MZ_USE_DETERMINSTIC_FUEL - disables use of itimer or pthread for
    Racket thread scheduling.
+
+ * C_COMPILER_USES_SSE - declares that the C compiler is using SSE
+   instructions to implement `double' floating-point operations.
 
 Modifying Racket
 ----------------

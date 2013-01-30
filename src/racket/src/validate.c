@@ -1946,7 +1946,11 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
                       NULL, 0, 0, vc, 0, 0, procs, 1, NULL);
       }
     } else if (need_local_type) {
-      if (!SCHEME_FLOATP(expr))
+      if (!SCHEME_FLOATP(expr)
+#ifdef MZ_LONG_DOUBLE
+          && !SCHEME_LONG_DBLP(expr)
+#endif
+          )
         no_typed(need_local_type, port);
     }
     break;

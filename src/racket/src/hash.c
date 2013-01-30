@@ -1026,6 +1026,49 @@ XFORM_NONGCING static uintptr_t dbl_hash2_val(double d)
   return to_unsigned_hash(e);
 }
 
+#ifdef MZ_LONG_DOUBLE
+XFORM_NONGCING static uintptr_t long_dbl_hash_val(long double d) 
+  XFORM_SKIP_PROC
+{
+  int e;
+  
+  if (MZ_IS_LONG_NAN(d)) {
+    d = 0.0L;
+    e = 1000;
+  } else if (MZ_IS_LONG_POS_INFINITY(d)) {
+    d = 0.5L;
+    e = 1000;
+  } else if (MZ_IS_LONG_NEG_INFINITY(d)) {
+    d = -0.5L;
+    e = 1000;
+  } else if (!d && scheme_long_minus_zero_p(d)) {
+    d = 0L;
+    e = 1000;
+  } else {
+    /* frexpl should not be used on inf or nan: */
+    d = frexpl(d, &e);
+  }
+
+  return ((uintptr_t)(d * (1 << 30))) + e;
+}
+
+XFORM_NONGCING static uintptr_t long_dbl_hash2_val(long double d)  
+  XFORM_SKIP_PROC
+{
+  int e;
+  
+  if (MZ_IS_LONG_NAN(d)
+      || MZ_IS_LONG_POS_INFINITY(d)
+      || MZ_IS_LONG_NEG_INFINITY(d)) {
+    e = 1;
+  } else {
+    /* frexp should not be used on inf or nan: */
+    d = frexpl(d, &e);
+  }
+  return to_unsigned_hash(e);
+}
+#endif
+
 #define OVERFLOW_HASH() overflow_equal_hash_key(o, k - t, hi)
 
 /* Based on Bob Jenkins's one-at-a-time hash function at
@@ -1060,6 +1103,12 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
     {
       return k + dbl_hash_val(SCHEME_DBL_VAL(o));
     }
+#ifdef MZ_LONG_DOUBLE
+  case scheme_long_double_type:
+    {
+      return k + long_dbl_hash_val(SCHEME_LONG_DBL_VAL(o));
+    }
+#endif
   case scheme_bignum_type:
     {
       int i = SCHEME_BIGLEN(o);
@@ -1150,6 +1199,24 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       
       return k;
     }
+#ifdef MZ_LONG_DOUBLE
+  case scheme_extflvector_type:
+    {
+      intptr_t len = SCHEME_EXTFLVEC_SIZE(o), i;
+      long double d;
+
+      if (!len)
+	return k + 1;
+      
+      for (i = 0; i < len; i++) {
+	SCHEME_USE_FUEL(1);
+	d = SCHEME_EXTFLVEC_ELS(o)[i];
+        k = (k << 5) + k + long_dbl_hash_val(d);
+      }
+      
+      return k;
+    }
+#endif
   case scheme_char_type:
     return k + SCHEME_CHAR_VAL(o);
   case scheme_byte_string_type:
@@ -1514,6 +1581,12 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
     {
       return dbl_hash2_val(SCHEME_FLOAT_VAL(o));
     }
+#ifdef MZ_LONG_DOUBLE
+  case scheme_long_double_type:
+    {
+      return long_dbl_hash2_val(SCHEME_LONG_DBL_VAL(o));
+    }
+#endif
   case scheme_bignum_type:
     return SCHEME_BIGDIG(o)[0];
   case scheme_rational_type:
@@ -1583,6 +1656,25 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       
       return k;
     }
+#ifdef MZ_LONG_DOUBLE
+  case scheme_extflvector_type:
+    {
+      intptr_t len = SCHEME_EXTFLVEC_SIZE(o), i;
+      long double d;
+      uintptr_t k = 0;
+
+      if (!len)
+	return k + 1;
+      
+      for (i = 0; i < len; i++) {
+	SCHEME_USE_FUEL(1);
+	d = SCHEME_EXTFLVEC_ELS(o)[i];
+        k = (k << 5) + k + long_dbl_hash2_val(d);
+      }
+      
+      return k;
+    }
+#endif
   case scheme_char_type:
     return t;
   case scheme_byte_string_type:

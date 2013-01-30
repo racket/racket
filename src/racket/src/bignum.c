@@ -1432,14 +1432,6 @@ static void bignum_add1_inplace(Scheme_Object **_stk_o)
 #include "bgnfloat.inc"
 
 #ifdef MZ_USE_SINGLE_FLOATS
-# undef USE_FLOAT_BITS
-# undef FP_TYPE
-# undef IS_FLOAT_INF
-# undef SCHEME_BIGNUM_TO_FLOAT_INFO
-# undef SCHEME_BIGNUM_TO_FLOAT
-# undef SCHEME_CHECK_FLOAT
-# undef SCHEME_BIGNUM_FROM_FLOAT
-
 # define USE_FLOAT_BITS 24
 # define FP_TYPE float
 # define IS_FLOAT_INF scheme__is_float_inf
@@ -1450,6 +1442,22 @@ static void bignum_add1_inplace(Scheme_Object **_stk_o)
 # include "bgnfloat.inc"
 #endif
 
+#ifdef MZ_LONG_DOUBLE
+# define USE_FLOAT_BITS 64
+# define FP_TYPE long double
+# define IS_FLOAT_INF scheme__is_long_double_inf
+# define SCHEME_BIGNUM_TO_FLOAT_INFO scheme_bignum_to_long_double_inf_info
+# define SCHEME_BIGNUM_TO_FLOAT scheme_bignum_to_long_double
+# define SCHEME_CHECK_FLOAT scheme_check_long_double
+# define SCHEME_BIGNUM_FROM_FLOAT scheme_bignum_from_long_double
+# define FP_ZEROx 0.0L
+# define FP_ONEx 1.0L
+# define FP_TWOx 2.0L
+# define FP_POWx powl
+# define FP_MZ_IS_POS_INFINITY(x) MZ_IS_LONG_POS_INFINITY(x)
+# define FP_scheme_floating_point_nzero scheme_long_floating_point_nzero
+# include "bgnfloat.inc"
+#endif
 
 void scheme_bignum_divide(const Scheme_Object *n, const Scheme_Object *d,
 			  Scheme_Object **_stk_qp, Scheme_Object **_stk_rp, int norm)

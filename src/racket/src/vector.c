@@ -382,13 +382,21 @@ void scheme_bad_vec_index(char *name, Scheme_Object *i, const char *which, Schem
 {
   const char *type;
 
+#ifdef MZ_LONG_DOUBLE
+#define BAD_EXTFLVEC_INDEX  (SCHEME_EXTFLVECTORP(vec)? "extflvector" : NULL)
+#else
+#define BAD_EXTFLVEC_INDEX  NULL
+#endif
+
   type = (SCHEME_CHAPERONE_VECTORP(vec) 
           ? "vector" 
           : (SCHEME_FLVECTORP(vec)
              ? "flvector"
              : (SCHEME_FXVECTORP(vec)
                 ? "fxvector"
-                : NULL)));
+                : BAD_EXTFLVEC_INDEX
+                )));
+
 
   scheme_out_of_range(name, type, which, i, vec, bottom, len-1);
 }

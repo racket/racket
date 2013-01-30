@@ -198,7 +198,7 @@
  [if/c (-> procedure? contract? contract? contract?)]
  [failure-result/c contract?]
  [rename-contract (-> contract? any/c contract?)]
- [option/c (-> contract? contract?)]
+ [rename option/c maybe/c (-> contract? contract?)]
 
  [truth/c flat-contract?]
 

@@ -12,11 +12,15 @@
          racket/set
          racket/class
          racket/list
+         racket/contract
          syntax/boundmap
          framework/preferences
          scribble/manual-struct)
 
-(provide make-traversal)
+(provide make-traversal
+         current-max-to-send-at-once)
+
+(define current-max-to-send-at-once (make-parameter +inf.0))
     
     
     ;                                                                                                             
@@ -1134,22 +1138,23 @@
                                   (for/or ([(level id-set) (in-hash phase-to-map)])
                                     (get-ids id-set new-id))))))))
                       #t))
-               (define max-to-send-at-once 30)
+               
+               (define max-to-send-at-once (current-max-to-send-at-once))
                (let loop ([loc-lst loc-lst]
                           [len (length loc-lst)])
                  (cond
                    [(<= len max-to-send-at-once)
-                    (send defs-text syncheck:add-rename-menu
-                          id-as-sym
+                    (send defs-text syncheck:add-id-set
                           loc-lst
                           name-dup?)]
                    [else
-                    (send defs-text syncheck:add-rename-menu
-                          id-as-sym
+                    (send defs-text syncheck:add-id-set
                           (take loc-lst max-to-send-at-once)
                           name-dup?)
-                    (loop (drop loc-lst max-to-send-at-once)
-                          (- len max-to-send-at-once))]))))))))
+                    ;; drop one fewer so that we're sure that the 
+                    ;; sets get unioned properly
+                    (loop (drop loc-lst (- max-to-send-at-once 1))
+                          (- len (- max-to-send-at-once 1)))]))))))))
     
     ;; remove-duplicates-stx : (listof syntax[original]) -> (listof syntax[original])
     ;; removes duplicates, based on the source locations of the identifiers

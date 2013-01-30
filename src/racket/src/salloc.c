@@ -2869,6 +2869,11 @@ intptr_t scheme_count_memory(Scheme_Object *root, Scheme_Hash_Table *ht)
   case scheme_double_type:
     s = sizeof(Scheme_Double);
     break;
+#ifdef MZ_LONG_DOUBLE
+  case scheme_long_double_type:
+    s = sizeof(Scheme_Long_Double);
+    break;
+#endif
   case scheme_float_type:
     break;
   case scheme_char_string_type:

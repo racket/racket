@@ -580,6 +580,18 @@ static int common1b(mz_jit_state *jitter, void *_data)
   CHECK_LIMIT();
   scheme_jit_register_sub_func(jitter, sjc.bad_flvector_length_code, scheme_false);
 
+#ifdef MZ_LONG_DOUBLE
+    /* *** bad_extflvector_length_code *** */
+  /* R0 is argument */
+  sjc.bad_extflvector_length_code = jit_get_ip().ptr;
+  mz_prolog(JIT_R1);
+  jit_prepare(1);
+  jit_pusharg_p(JIT_R0);
+  (void)mz_finish_lwe(ts_scheme_extflvector_length, ref);
+  CHECK_LIMIT();
+  scheme_jit_register_sub_func(jitter, sjc.bad_extflvector_length_code, scheme_false);
+#endif
+
   /* *** bad_fxvector_length_code *** */
   /* R0 is argument */
   sjc.bad_fxvector_length_code = jit_get_ip().ptr;
@@ -1658,51 +1670,57 @@ static int common4(mz_jit_state *jitter, void *_data)
 
   /* *** {flvector}_{ref,set}_check_index_code *** */
   /* Same calling convention as for vector ops.    */
-  for (i = 0; i < 3; i++) {
-    void *code;
+  for (iii = 0; iii < JIT_NUM_FL_KINDS; iii++) {
+    for (i = 0; i < 3; i++) {
+      void *code;
 
-    code = jit_get_ip().ptr;
+      code = jit_get_ip().ptr;
 
-    if (!i) {
-      sjc.flvector_ref_check_index_code = code;
-    } else if (i == 1) {
-      sjc.flvector_set_check_index_code = code;
-    } else {
-      sjc.flvector_set_flonum_check_index_code = code;
-    }
-
-    mz_prolog(JIT_R2);
-
-    jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
-    CHECK_RUNSTACK_OVERFLOW();
-    jit_str_p(JIT_RUNSTACK, JIT_R0);
-    jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R1);
-    if (!i) {
-      jit_movi_i(JIT_R1, 2);
-    } else {
-      /* In set mode, value was already on run stack 
-         or in FP register */
-      jit_movi_i(JIT_R1, 3);
-      if (i == 2) {
-        /* need to box flonum */
-        scheme_generate_alloc_double(jitter, 1, JIT_R0);
-        jit_stxi_p(WORDS_TO_BYTES(2), JIT_RUNSTACK, JIT_R0);
+      if (!i) {
+        sjc.flvector_ref_check_index_code[iii] = code;
+      } else if (i == 1) {
+        sjc.flvector_set_check_index_code[iii] = code;
+      } else {
+        sjc.flvector_set_flonum_check_index_code[iii] = code;
       }
-    }
-    CHECK_LIMIT();
-    JIT_UPDATE_THREAD_RSPTR();
-    jit_prepare(2);
-    jit_pusharg_p(JIT_RUNSTACK);
-    jit_pusharg_i(JIT_R1);
-    if (!i) {
-      (void)mz_finish_lwe(ts_scheme_checked_flvector_ref, ref);
-    } else {
-      (void)mz_finish_lwe(ts_scheme_checked_flvector_set, ref);
-    }
-    /* does not return */
-    CHECK_LIMIT();
 
-    scheme_jit_register_sub_func(jitter, code, scheme_false);
+      mz_prolog(JIT_R2);
+
+      jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
+      CHECK_RUNSTACK_OVERFLOW();
+      jit_str_p(JIT_RUNSTACK, JIT_R0);
+      jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R1);
+      if (!i) {
+        jit_movi_i(JIT_R1, 2);
+      } else {
+        /* In set mode, value was already on run stack 
+           or in FP register */
+        jit_movi_i(JIT_R1, 3);
+        if (i == 2) {
+          /* need to box flonum */
+          scheme_generate_alloc_double(jitter, 1, JIT_R0);
+          jit_stxi_p(WORDS_TO_BYTES(2), JIT_RUNSTACK, JIT_R0);
+        }
+      }
+      CHECK_LIMIT();
+      JIT_UPDATE_THREAD_RSPTR();
+      jit_prepare(2);
+      jit_pusharg_p(JIT_RUNSTACK);
+      jit_pusharg_i(JIT_R1);
+      if (!i) {
+        MZ_FPUSEL_STMT(iii,
+                       (void)mz_finish_lwe(ts_scheme_checked_extflvector_ref, ref),
+                       (void)mz_finish_lwe(ts_scheme_checked_flvector_ref, ref));
+      } else {
+        MZ_FPUSEL_STMT(iii,
+                       (void)mz_finish_lwe(ts_scheme_checked_extflvector_set, ref),
+                       (void)mz_finish_lwe(ts_scheme_checked_flvector_set, ref));
+      }
+      /* does not return */
+      CHECK_LIMIT();
+
+      scheme_jit_register_sub_func(jitter, code, scheme_false);
+    }
   }
 
   /* *** struct_raw_{ref,set}_code *** */
@@ -2119,17 +2137,29 @@ static int common4c(mz_jit_state *jitter, void *_data)
 
 static int common5(mz_jit_state *jitter, void *_data)
 {
-  int i, ii;
+  int i, ii, iii;
+
+#ifdef MZ_LONG_DOUBLE
+# define END_OF_I 4
+#else
+# define END_OF_I 3
+#endif
 
 #ifdef CAN_INLINE_ALLOC
   /* *** retry_alloc_code[{_keep_r0_r1,_keep_fpr1}] *** */
-  for (i = 0; i < 3; i++) { 
+  for (i = 0; i < END_OF_I; i++) { 
     if (!i)
       sjc.retry_alloc_code = jit_get_ip().ptr;
     else if (i == 1)
       sjc.retry_alloc_code_keep_r0_r1 = jit_get_ip().ptr;
-    else
+    else if (i == 2) {
       sjc.retry_alloc_code_keep_fpr1 = jit_get_ip().ptr;
+    }
+#ifdef MZ_LONG_DOUBLE
+    else if (i == 3) {
+      sjc.retry_alloc_code_keep_extfpr1 = jit_get_ip().ptr;
+    }
+#endif
 
     mz_prolog(JIT_V1);
     scheme_generate_alloc_retry(jitter, i);
@@ -2218,10 +2248,31 @@ static int common5(mz_jit_state *jitter, void *_data)
     mz_epilog(JIT_R2);
   }
 
-  /* *** fl1_code *** */
-  /* R0 has argument, V1 has primitive proc */
+  /* *** box_extflonum_from_reg_code *** */
+  /* JIT_FPU_FPR2 (reg-based) or JIT_FPU_FPR0 (stack-based) has value */
+#ifdef MZ_LONG_DOUBLE
   {
-    sjc.fl1_fail_code = jit_get_ip().ptr;
+    sjc.box_extflonum_from_reg_code = jit_get_ip().ptr;
+
+    mz_prolog(JIT_R2);
+
+    JIT_UPDATE_THREAD_RSPTR();
+
+#ifdef DISABLED_DIRECT_FPR_ACCESS
+    jit_fpu_movr_ld(JIT_FPU_FPR0, JIT_FPU_FPR2);
+#endif
+
+    scheme_generate_alloc_long_double(jitter, 1, JIT_R0);
+    CHECK_LIMIT();
+    
+    mz_epilog(JIT_R2);
+  }
+#endif
+
+  /* *** fl1_fail_code *** */
+  /* R0 has argument, V1 has primitive proc */
+  for (iii = 0; iii < JIT_NUM_FL_KINDS; iii++) {
+    sjc.fl1_fail_code[iii] = jit_get_ip().ptr;
 
     mz_prolog(JIT_R2);
 
@@ -2240,73 +2291,77 @@ static int common5(mz_jit_state *jitter, void *_data)
       CHECK_LIMIT();
     }
 
-    scheme_jit_register_sub_func(jitter, sjc.fl1_fail_code, scheme_false);
+    scheme_jit_register_sub_func(jitter, sjc.fl1_fail_code[iii], scheme_false);
   }
 
-  /* *** fl2{rf}{rf}_code *** */
+  /* *** fl2{rf}{rf}_fail_code *** */
   /* R0 and/or R1 have arguments, V1 has primitive proc,
      non-register argument is in FPR0 */
-  for (ii = 0; ii < 2; ii++) {
-    for (i = 0; i < 3; i++) {
-      void *code;
-      int a0, a1;
+  for (iii = 0; iii < JIT_NUM_FL_KINDS; iii++) {
+    for (ii = 0; ii < 2; ii++) {
+      for (i = 0; i < 3; i++) {
+        void *code;
+        int a0, a1;
 
-      code = jit_get_ip().ptr;
-      switch (i) {
-      case 0:
-        sjc.fl2rr_fail_code[ii] = code;
-        break;
-      case 1:
-        sjc.fl2fr_fail_code[ii] = code;
-        break;
-      case 2:
-        sjc.fl2rf_fail_code[ii] = code;
-        break;
-      }
-
-      if (!ii) {
-        a0 = 0; a1 = 1;
-      } else {
-        a0 = 1; a1 = 0;
-      }
-
-      mz_prolog(JIT_R2);
-
-      jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
-      JIT_UPDATE_THREAD_RSPTR();
-      if ((i == 0) || (i == 2))
-        jit_stxi_p(WORDS_TO_BYTES(a0), JIT_RUNSTACK, JIT_R0);
-      else
-        jit_stxi_p(WORDS_TO_BYTES(a0), JIT_RUNSTACK, JIT_V1);
-      if ((i == 0) || (i == 1))
-        jit_stxi_p(WORDS_TO_BYTES(a1), JIT_RUNSTACK, JIT_R1);
-      else
-        jit_stxi_p(WORDS_TO_BYTES(a1), JIT_RUNSTACK, JIT_V1);
-
-      if (i != 0) {
-        scheme_generate_alloc_double(jitter, 1, JIT_R0);
-        CHECK_LIMIT();
-        if (i == 1) {
-          jit_ldxi_p(JIT_V1, JIT_RUNSTACK, WORDS_TO_BYTES(a0));
-          jit_stxi_p(WORDS_TO_BYTES(a0), JIT_RUNSTACK, JIT_R0);
-        } else {
-          jit_ldxi_p(JIT_V1, JIT_RUNSTACK, WORDS_TO_BYTES(a1));
-          jit_stxi_p(WORDS_TO_BYTES(a1), JIT_RUNSTACK, JIT_R0);
+        code = jit_get_ip().ptr;
+        switch (i) {
+        case 0:
+          sjc.fl2rr_fail_code[ii][iii] = code;
+          break;
+        case 1:
+          sjc.fl2fr_fail_code[ii][iii] = code;
+          break;
+        case 2:
+          sjc.fl2rf_fail_code[ii][iii] = code;
+          break;
         }
-      }
-    
-      jit_movi_i(JIT_R1, 2);
-      CHECK_LIMIT();
-    
-      mz_prepare_direct_prim(2);
-      {
-        mz_generate_direct_prim(jit_pusharg_p(JIT_RUNSTACK),
-                                jit_pusharg_i(JIT_R1),
-                                JIT_V1, scheme_noncm_prim_indirect);
-        CHECK_LIMIT();
-      }
 
-      scheme_jit_register_sub_func(jitter, code, scheme_false);
+        if (!ii) {
+          a0 = 0; a1 = 1;
+        } else {
+          a0 = 1; a1 = 0;
+        }
+
+        mz_prolog(JIT_R2);
+
+        jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
+        JIT_UPDATE_THREAD_RSPTR();
+        if ((i == 0) || (i == 2))
+          jit_stxi_p(WORDS_TO_BYTES(a0), JIT_RUNSTACK, JIT_R0);
+        else
+          jit_stxi_p(WORDS_TO_BYTES(a0), JIT_RUNSTACK, JIT_V1);
+        if ((i == 0) || (i == 1))
+          jit_stxi_p(WORDS_TO_BYTES(a1), JIT_RUNSTACK, JIT_R1);
+        else
+          jit_stxi_p(WORDS_TO_BYTES(a1), JIT_RUNSTACK, JIT_V1);
+
+        if (i != 0) {
+          MZ_FPUSEL_STMT(iii,
+                         scheme_generate_alloc_long_double(jitter, 1, JIT_R0),
+                         scheme_generate_alloc_double(jitter, 1, JIT_R0));
+          CHECK_LIMIT();
+          if (i == 1) {
+            jit_ldxi_p(JIT_V1, JIT_RUNSTACK, WORDS_TO_BYTES(a0));
+            jit_stxi_p(WORDS_TO_BYTES(a0), JIT_RUNSTACK, JIT_R0);
+          } else {
+            jit_ldxi_p(JIT_V1, JIT_RUNSTACK, WORDS_TO_BYTES(a1));
+            jit_stxi_p(WORDS_TO_BYTES(a1), JIT_RUNSTACK, JIT_R0);
+          }
+        }
+    
+        jit_movi_i(JIT_R1, 2);
+        CHECK_LIMIT();
+    
+        mz_prepare_direct_prim(2);
+        {
+          mz_generate_direct_prim(jit_pusharg_p(JIT_RUNSTACK),
+                                  jit_pusharg_i(JIT_R1),
+                                  JIT_V1, scheme_noncm_prim_indirect);
+          CHECK_LIMIT();
+        }
+
+        scheme_jit_register_sub_func(jitter, code, scheme_false);
+      }
     }
   }
 

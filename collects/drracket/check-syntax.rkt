@@ -11,6 +11,9 @@
       (or/c path-string? #f)
       (values (->* (syntax?) ((-> syntax? void?)) void?)
               (-> void?)))]
+ 
+ [current-max-to-send-at-once
+  (parameter/c (or/c +inf.0 (and/c exact-integer? (>=/c 2))))]
  [syncheck-annotations<%>
   interface?]
  [current-annotations 
@@ -25,7 +28,7 @@
  syncheck:add-background-color
  syncheck:add-require-open-menu
  syncheck:add-docs-menu
- syncheck:add-rename-menu
+ syncheck:add-id-set
  syncheck:add-arrow
  syncheck:add-tail-arrow
  syncheck:add-mouse-over-status

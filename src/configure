@@ -1343,6 +1343,7 @@ Optional Features:
   --enable-futures        support futures (usually enabled by default)
   --enable-float          support single-precision floats (enabled by default)
   --enable-floatinstead   use single-precision by default
+  --enable-extflonum      support extflonums (enabled by default, if available)
   --enable-racket=<path>  use <path> as Racket executable to build Racket
   --enable-origtree       install with original directory structure
   --enable-pkgscope=<s>   set `raco pkg' default: installation, user, or shared
@@ -2006,6 +2007,13 @@ if test "${enable_floatinstead+set}" = set; then
   enableval=$enable_floatinstead;
 fi
 
+# Check whether --enable-extflonum was given.
+if test "${enable_extflonum+set}" = set; then
+  enableval=$enable_extflonum;
+else
+  enable_extflonum=yes
+fi
+
 
 # Check whether --enable-racket was given.
 if test "${enable_racket+set}" = set; then
@@ -2355,6 +2363,7 @@ show_explicitly_enabled "${enable_backtrace}" "3m GC backtraces"
 
 show_explicitly_disabled "${enable_float}" "Single-precision floats"
 show_explicitly_enabled "${enable_floatinstead}" "Single-precision default floats"
+show_explicitly_disabled "${enable_extflonum}" "Extflonums"
 
 show_explicitly_enabled "${enable_pthread}" "pthreads"
 show_explicitly_enabled "${enable_oskit}" "OSKit"
@@ -2504,6 +2513,14 @@ if test "${enable_float}" = "yes" ; then
 
 cat >>confdefs.h <<\_ACEOF
 #define USE_SINGLE_FLOATS 1
+_ACEOF
+
+fi
+
+if test "${enable_extflonum}" = "no" ; then
+
+cat >>confdefs.h <<\_ACEOF
+#define MZ_NO_EXTFLONUMS 1
 _ACEOF
 
 fi

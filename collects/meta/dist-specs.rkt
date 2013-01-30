@@ -558,10 +558,18 @@ mz-extras :+= (package: "planet")
 mz-extras :+= (package: "planet2")
 
 ;; -------------------- mrlib
-mr-extras :+= (- (+ (package: "mrlib/")
-                    (collects: "hierlist/")
-                    (collects: "icons/turn-{up|down}{|-click}.png")
-                    (tests: "aligned-pasteboard/")))
+mr-extras :+= (+ (package: "mrlib/")
+                 (collects: "hierlist/")
+                 (collects: "icons/turn-{up|down}{|-click}.png")
+                 (tests: "aligned-pasteboard/"))
+
+;; -------------------- pict library
+mr-extras :+= (- (+ (collects: "texpict/")
+                    (srcfile: "slideshow/pict.rkt")
+                    (srcfile: "slideshow/pict-convert.rkt"))
+                 (srcfile: "texpict/slideshow-run.rkt")
+                 (srcfile: "texpict/slideshow.rkt")
+                 (srcfile: "texpict/symbol.rkt"))
 
 ;; -------------------- sgl
 mr-extras :+= (package: "sgl/")
@@ -636,9 +644,13 @@ plt-extras :+= (- (+ (package: "games/" #:executable "plt-games")
                      (doc+src: "gl-board-game/" "cards/"))
                   "paint-by-numbers/{hattori|solution-sets|raw-problems}")
 
-;; -------------------- texpict & slideshow
-plt-extras :+= (collects: "texpict/")
-               (package: "slideshow")
+;; -------------------- slideshow
+plt-extras :+= (- (+ (package: "slideshow")
+                     (srcfile: "texpict/slideshow-run.rkt")
+                     (srcfile: "texpict/slideshow.rkt")
+                     (srcfile: "texpict/symbol.rkt"))
+                  (srcfile: "slideshow/pict.rkt")
+                  (srcfile: "slideshow/pict-convert.rkt"))
 
 ;; -------------------- frtime
 plt-extras :+= (package: "frtime/")

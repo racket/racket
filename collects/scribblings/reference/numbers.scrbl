@@ -1196,6 +1196,7 @@ Returns @racket[#t] if @racket[z] is @racket[+inf.0], @racket[-inf.0], @racket[+
 
 @include-section["flonums.scrbl"]
 @include-section["fixnums.scrbl"]
+@include-section["extflonums.scrbl"]
 
 @; ----------------------------------------------------------------------
 

@@ -814,7 +814,7 @@
    #:projection list/c-chaperone/other-projection))
 
 (define/subexpression-pos-prop (syntax/c ctc-in)
-  (let ([ctc (coerce-contract 'syntax/c ctc-in)])
+  (let ([ctc (coerce-flat-contract 'syntax/c ctc-in)])
     (flat-named-contract
      (build-compound-type-name 'syntax/c ctc)
      (let ([pred (flat-contract-predicate ctc)])

@@ -1241,6 +1241,9 @@ static Scheme_Object *trivial_copy(Scheme_Object *so, Scheme_Object **master_cha
       return so;
     case scheme_byte_string_type:
     case scheme_flvector_type:
+#ifdef MZ_LONG_DOUBLE
+    case scheme_extflvector_type:
+#endif
     case scheme_fxvector_type:
       if (SHARED_ALLOCATEDP(so)) {
         scheme_hash_key(so);
@@ -1320,6 +1323,12 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
       if (copy_mode)
         new_so = scheme_make_double(SCHEME_DBL_VAL(so));
       break;
+#ifdef MZ_LONG_DOUBLE
+    case scheme_long_double_type:
+      if (copy_mode)
+        new_so = scheme_make_long_double(SCHEME_LONG_DBL_VAL(so));
+      break;
+#endif
     case scheme_complex_type:
       if (copy_mode) {
         Scheme_Object *r;
@@ -1408,6 +1417,22 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
         new_so = (Scheme_Object *) vec;
       }
       break;
+#ifdef MZ_LONG_DOUBLE
+    case scheme_extflvector_type:
+      /* not allocated as shared, since that's covered above */
+      if (copy_mode) {
+        Scheme_Long_Double_Vector *vec;
+        intptr_t i;
+        intptr_t size = SCHEME_EXTFLVEC_SIZE(so);
+        vec = scheme_alloc_extflvector(size);
+
+        for (i = 0; i < size; i++) {
+          SCHEME_EXTFLVEC_ELS(vec)[i] = SCHEME_EXTFLVEC_ELS(so)[i];
+        }
+        new_so = (Scheme_Object *) vec;
+      }
+      break;
+#endif
     case scheme_cpointer_type:
       if (SCHEME_CPTR_FLAGS(so) & 0x1) {
         if (copy_mode) {

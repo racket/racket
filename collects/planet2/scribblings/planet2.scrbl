@@ -193,7 +193,7 @@ the @tech{package source} string and @racket['checksum] mapped to the
 @racket['source] will be a remote URL.
 
 PLT supports two @tech{package name resolvers} that are enabled by
-default: @url{https://pnr.racket-lang.org} for new
+default: @url{https://pkg.racket-lang.org} for new
 packages and @url{https://planet-compat.racket-lang.org} for
 automatically generated packages for old @|PLaneT|
 packages. Anyone may host their own @tech{package name resolver}. The
@@ -508,7 +508,7 @@ it by a simple name until it is listed on a @tech{package name resolver}.
 
 If you'd like to use the official @tech{package name resolver}, browse
 to
-@link["https://pnr.racket-lang.org/manage/upload"]{https://pnr.racket-lang.org/manage/upload}
+@link["https://pkg.racket-lang.org/manage/upload"]{https://pkg.racket-lang.org/manage/upload}
 and upload a new package. You will need to create an account and log
 in first.
 

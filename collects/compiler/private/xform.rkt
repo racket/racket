@@ -885,11 +885,11 @@
                
                __get_errno_ptr ; QNX preprocesses errno to __get_errno_ptr
 
-               strlen cos sin exp pow log sqrt atan2 
+               strlen cos cosl sin sinl exp expl pow powl log logl sqrt sqrtl atan2 atan2l
                isnan isinf fpclass _fpclass __fpclassify __fpclassifyf __fpclassifyl
 	       _isnan __isfinited __isnanl __isnan
                __isinff __isinfl isnanf isinff __isinfd __isnanf __isnand __isinf
-               floor ceil round fmod modf fabs __maskrune _errno __errno
+               floor floorl ceil ceill round roundl fmod fmodl modf modfl fabs fabsl __maskrune _errno __errno
                isalpha isdigit isspace tolower toupper
                fread fwrite socket fcntl setsockopt connect send recv close
                __builtin_next_arg __builtin_saveregs 
@@ -1030,7 +1030,7 @@
         
         ;; Accum top-level typedefs for pointers and non-pointers as a list-of-sym:
         (define pointer-types '())
-        (define non-pointer-types '(int char long unsigned intptr_t ulong uint uintptr_t void float double uchar wchar_t))
+        (define non-pointer-types '(int char long unsigned intptr_t ulong uint uintptr_t void float double |long double| uchar wchar_t))
         ;; Accum top-level struct decls as list of (cons sym (list (cons symbol vtype) ...))
         (define struct-defs '())
         

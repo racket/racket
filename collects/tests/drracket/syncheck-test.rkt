@@ -1121,7 +1121,35 @@
                          "   (super-new)\n"
                          "\n"
                          "   (define/private (put t pl)\n"
-                         "     (set! tiles(remove t tiles)))))\n"))))
+                         "     (set! tiles(remove t tiles)))))\n"))
+     
+     (build-rename-test 
+      (string-append
+       "#lang racket/base\n"
+       "(define (f y)\n"
+       "  y y y y y y y y y y y y y y y y y y y y y y y y\n"
+       "  y y y y y y y y y y y y y y y y y y y y y y y y\n"
+       "  y y y y y y y y y y y y y y y y y y y y y y y y\n"
+       "  y y y y y y y y y y y y y y y y y y y y y y y y\n"
+       "  y y y y y y y y y y y y y y y y y y y y y y y y\n"
+       "  y y y y y y y y y y y y y y y y y y y y y y y y\n"
+       "  y y y y y y y y y y y y y y y y y y y y y y y y\n"
+       "  y y y y y y y y y y y y y y y y y y y y y y y y)\n")
+      29
+      "y"
+      "x"
+      (string-append
+       "#lang racket/base\n"
+       "(define (f x)\n"
+       "  x x x x x x x x x x x x x x x x x x x x x x x x\n"
+       "  x x x x x x x x x x x x x x x x x x x x x x x x\n"
+       "  x x x x x x x x x x x x x x x x x x x x x x x x\n"
+       "  x x x x x x x x x x x x x x x x x x x x x x x x\n"
+       "  x x x x x x x x x x x x x x x x x x x x x x x x\n"
+       "  x x x x x x x x x x x x x x x x x x x x x x x x\n"
+       "  x x x x x x x x x x x x x x x x x x x x x x x x\n"
+       "  x x x x x x x x x x x x x x x x x x x x x x x x)\n"))
+     ))
                   
   
   (define (main)

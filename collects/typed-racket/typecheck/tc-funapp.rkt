@@ -67,7 +67,7 @@
       ;; if nothing matched, error
       (domain-mismatches
        f-stx args-stx t doms rests drests rngs argtys #f #f
-       #:expected expected #:return (or expected (ret (Un)))
+       #:expected expected #:return (if (tc-results? expected) expected (ret (Un)))
        #:msg-thunk (lambda (dom)
                      (string-append
                       "No function domains matched in function application:\n"

@@ -13,7 +13,7 @@
   syncheck:add-docs-menu
   syncheck:color-range
   syncheck:add-require-open-menu
-  syncheck:add-rename-menu
+  syncheck:add-id-set
   syncheck:add-arrow
   syncheck:add-tail-arrow
   syncheck:add-mouse-over-status

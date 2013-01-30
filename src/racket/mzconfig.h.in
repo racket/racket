@@ -82,4 +82,7 @@ typedef unsigned long uintptr_t;
 #undef USE_SINGLE_FLOATS
 #undef USE_SINGLE_FLOATS_AS_DEFAULT
 
+/* To disable extflonums when they would otherwise work: */
+#undef MZ_NO_EXTFLONUMS
+
 #endif

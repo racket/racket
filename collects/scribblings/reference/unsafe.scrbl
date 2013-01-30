@@ -2,6 +2,7 @@
 @(require "mz.rkt"
           (for-label racket/unsafe/ops
                      racket/flonum
+                     racket/extflonum
                      (only-in ffi/vector
                               f64vector?
                               f64vector-ref
@@ -321,3 +322,87 @@ The index @racket[k] must be between @racket[0] (inclusive) and
 the number of fields in the structure (exclusive). In the case of
 @racket[unsafe-struct-set!], the field must be mutable.}
 
+@; ------------------------------------------------------------------------
+
+@section[#:tag "unsafeextfl"]{Unsafe Extflonum Operations}
+
+@deftogether[(
+@defproc[(unsafe-extfl+   [a extflonum?] [b extflonum?]) extflonum?]
+@defproc[(unsafe-extfl-   [a extflonum?] [b extflonum?]) extflonum?]
+@defproc[(unsafe-extfl*   [a extflonum?] [b extflonum?]) extflonum?]
+@defproc[(unsafe-extfl/   [a extflonum?] [b extflonum?]) extflonum?]
+@defproc[(unsafe-extflabs [a extflonum?]) extflonum?]
+)]{
+
+Unchecked versions of @racket[extfl+], @racket[extfl-],
+@racket[extfl*], @racket[extfl/], and @racket[extflabs].}
+
+
+@deftogether[(
+@defproc[(unsafe-extfl=   [a extflonum?] [b extflonum?]) boolean?]
+@defproc[(unsafe-extfl<   [a extflonum?] [b extflonum?]) boolean?]
+@defproc[(unsafe-extfl>   [a extflonum?] [b extflonum?]) boolean?]
+@defproc[(unsafe-extfl<=  [a extflonum?] [b extflonum?]) boolean?]
+@defproc[(unsafe-extfl>=  [a extflonum?] [b extflonum?]) boolean?]
+@defproc[(unsafe-extflmin [a extflonum?] [b extflonum?]) extflonum?]
+@defproc[(unsafe-extflmax [a extflonum?] [b extflonum?]) extflonum?]
+)]{
+
+Unchecked versions of @racket[extfl=], @racket[extfl<],
+@racket[extfl>], @racket[extfl<=], @racket[extfl>=], @racket[extflmin], and
+@racket[extflmax].}
+
+
+@deftogether[(
+@defproc[(unsafe-extflround [a extflonum?]) extflonum?]
+@defproc[(unsafe-extflfloor [a extflonum?]) extflonum?]
+@defproc[(unsafe-extflceiling [a extflonum?]) extflonum?]
+@defproc[(unsafe-extfltruncate [a extflonum?]) extflonum?]
+)]{
+
+Unchecked (potentially) versions of @racket[extflround],
+@racket[extflfloor], @racket[extflceiling], and
+@racket[extfltruncate]. Currently, these bindings are simply aliases
+for the corresponding safe bindings.}
+
+
+@deftogether[(
+@defproc[(unsafe-extflsin [a extflonum?]) extflonum?]
+@defproc[(unsafe-extflcos [a extflonum?]) extflonum?]
+@defproc[(unsafe-extfltan [a extflonum?]) extflonum?]
+@defproc[(unsafe-extflasin [a extflonum?]) extflonum?]
+@defproc[(unsafe-extflacos [a extflonum?]) extflonum?]
+@defproc[(unsafe-extflatan [a extflonum?]) extflonum?]
+@defproc[(unsafe-extfllog [a extflonum?]) extflonum?]
+@defproc[(unsafe-extflexp [a extflonum?]) extflonum?]
+@defproc[(unsafe-extflsqrt [a extflonum?]) extflonum?]
+@defproc[(unsafe-extflexpt [a extflonum?] [b extflonum?]) extflonum?]
+)]{
+
+Unchecked (potentially) versions of @racket[extflsin],
+@racket[extflcos], @racket[extfltan], @racket[extflasin],
+@racket[extflacos], @racket[extflatan], @racket[extfllog],
+@racket[extflexp], @racket[extflsqrt], and
+@racket[extflexpt]. Currently, some of these bindings are simply
+aliases for the corresponding safe bindings.}
+
+
+@deftogether[(
+@defproc[(unsafe-fx->extfl [a fixnum?]) extflonum?]
+@defproc[(unsafe-extfl->fx [a extflonum?]) fixnum?]
+)]{
+Unchecked conversion of a @tech{fixnum} to an integer @tech{extflonum} and vice versa.
+These are similar to the safe bindings @racket[->extfl] and @racket[extfl->exact-integer],
+but further constrained to consume or produce a fixnum.
+}
+
+@deftogether[(
+@defproc[(unsafe-extflvector-length [v extflvector?]) fixnum?]
+@defproc[(unsafe-extflvector-ref [v extflvector?] [k fixnum?]) any/c]
+@defproc[(unsafe-extflvector-set! [v extflvector?] [k fixnum?] [x extflonum?]) void?]
+)]{
+
+Unchecked versions of @racket[extflvector-length], @racket[extflvector-ref], and
+@racket[extflvector-set!]. A @tech{extflvector}'s size can never be larger than a
+@tech{fixnum} (so even @racket[extflvector-length] always returns a
+fixnum).}

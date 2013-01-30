@@ -146,10 +146,10 @@
                                 [flags (listof (or/c 'preserves-marks 'is-method 'single-result
                                                      'only-rest-arg-not-used 'sfs-clear-rest-args))]
                                 [num-params exact-nonnegative-integer?]
-                                [param-types (listof (or/c 'val 'ref 'flonum 'fixnum))]
+                                [param-types (listof (or/c 'val 'ref 'flonum 'fixnum 'extflonum))]
                                 [rest? boolean?]
                                 [closure-map (vectorof exact-nonnegative-integer?)]
-                                [closure-types (listof (or/c 'val/ref 'flonum 'fixnum))]
+                                [closure-types (listof (or/c 'val/ref 'flonum 'fixnum 'extflonum))]
                                 [toplevel-map (or/c #f (set/c exact-nonnegative-integer?))]
                                 [max-let-depth exact-nonnegative-integer?]
                                 [body (or/c expr? seq? any/c)])) ; `lambda'
@@ -158,7 +158,7 @@
 
 (define-form-struct (let-one expr) ([rhs (or/c expr? seq? any/c)]  ; pushes one value onto stack
                                     [body (or/c expr? seq? any/c)] 
-                                    [type (or/c #f 'flonum 'fixnum)]
+                                    [type (or/c #f 'flonum 'fixnum 'extflonum)]
                                     [unused? boolean?]))
 (define-form-struct (let-void expr) ([count exact-nonnegative-integer?] [boxes? boolean?] [body (or/c expr? seq? any/c)])) ; create new stack slots
 (define-form-struct (install-value expr) ([count exact-nonnegative-integer?] 
@@ -173,7 +173,7 @@
                                      [pos exact-nonnegative-integer?] 
                                      [clear? boolean?] 
                                      [other-clears? boolean?] 
-                                     [type (or/c #f 'flonum 'fixnum)])) ; access local via stack
+                                     [type (or/c #f 'flonum 'fixnum 'extflonum)])) ; access local via stack
 
 
 (define-form-struct (topsyntax expr) ([depth exact-nonnegative-integer?] [pos exact-nonnegative-integer?] [midpt exact-nonnegative-integer?])) ; access syntax object via prefix array (which is on stack)

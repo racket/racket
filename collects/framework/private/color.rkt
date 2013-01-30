@@ -940,36 +940,6 @@ added get-regions
                                      comments?))
                    (else position))))))))
     
-    (define/private (get-close-paren pos closers continue-after-non-paren?)
-      (cond
-        ((null? closers) #f)
-        (else
-         (let* ((c (car closers))
-                (l (string-length c)))
-           (let ([ls (find-ls pos)])
-             (if ls
-                 (let ([start-pos (lexer-state-start-pos ls)])
-                   (insert c pos)
-                   (let ((cls (classify-position pos)))
-                     (if (eq? cls 'parenthesis)
-                         (let ((m (backward-match (+ l pos) start-pos)))
-                           (cond
-                             ((and m
-                                   (send (lexer-state-parens ls) is-open-pos? (- m start-pos))
-                                   (send (lexer-state-parens ls) is-close-pos? (- pos start-pos)))
-                              (delete pos (+ l pos))
-                              c)
-                             (else
-                              (delete pos (+ l pos))
-                              (get-close-paren pos (cdr closers) #t))))
-                         (begin
-                           (delete pos (+ l pos))
-                           (if continue-after-non-paren?
-                               (get-close-paren pos (cdr closers) #t)
-                               #f)))))
-                 c))))))
-
-
     ;; this returns the start/end positions
     ;; of the matching close paren of the first open paren to the left of pos,
     ;; if it is properly balanced. (this one assumes though that closers
@@ -977,27 +947,28 @@ added get-regions
     ;; find-next-outer-paren : number (list string)
     ;;            -> (values (or #f number) (or #f number) (or #f string))
     (define/private (find-next-outer-paren pos closers)
-      (cond
-        [(null? closers) (values #f #f #f)]
-        [else
-         (define c (car closers))       ; pick a close parens
-         (define l (string-length c))
-         (define ls (find-ls pos))
-         (cond
-           [(not ls) (values #f #f #f)]
-           [else
-            (define start-pos (lexer-state-start-pos ls))
-            (insert c pos)             ; temporarily insert c
-            (define m (backward-match (+ l pos) start-pos)) ; find matching open parens
-            (delete pos (+ l pos))     ; delete c
-            (define n                  ; now from the open parens find the *real* matching close parens
-              (and m (forward-match m (last-position)))) ; n is the position *after* the close
-            #;(printf "outer: ~a~n" (list pos n m (and n m (let-values ([(a b) (get-token-range (- n l))])
-                                                           (list a b)))))
-            (if n
-                (let-values ([(a b) (get-token-range (- n l))])
-                  (values a b (get-text a b)))
-                (find-next-outer-paren pos (cdr closers)))])]))
+      (let loop ([pos pos])
+        (define after-ws (skip-whitespace pos 'forward #f))
+        (cond
+          [after-ws
+           (define tok (classify-position after-ws))
+           (define-values (a b) (get-token-range after-ws))
+           (cond
+             [(eq? tok 'parenthesis)
+              (define str (get-text a b))
+              (cond
+                [(member str closers) 
+                 (values a b str)]
+                [else
+                 (define m (forward-match a (last-position)))
+                 (cond
+                   [m (loop m)]
+                   [else (values #f #f #f)])])]
+             [(<= b (last-position))
+              (loop b)]
+             [else
+              (values #f #f #f)])]
+          [else (values #f #f)])))
     
 
     ;; returns the start and end positions of the next token at or after
@@ -1045,19 +1016,12 @@ added get-regions
                   (flash-on to-pos (+ 1 to-pos)))))))))
 
 
-    (inherit insert delete flash-on on-default-char set-position undo)
+    (inherit insert delete flash-on on-default-char set-position get-character)
     ;; See docs
     ;; smart-skip : (or/c #f 'adjacent 'forward)
     (define/public (insert-close-paren pos char flash? fixup? [smart-skip #f])
-      (begin-edit-sequence #t #f)  ;; to hide get-close-paren's temporary edits
       (define closers (map symbol->string (map cadr pairs)))
-      (define closer
-        (get-close-paren pos (if fixup? ;; Ensure preference for given character:
-                                 (cons (string char) (remove (string char) closers))
-                                 null)
-                         ;; If the inserted preferred (i.e., given) paren doesn't parse
-                         ;;  as a paren, then don't try to change it.
-                         #f))
+      (define closer (and fixup? (get-close-paren pos)))
       (define insert-str (if closer closer (string char)))
       (define (insert)
         (for ([c (in-string insert-str)])
@@ -1074,8 +1038,6 @@ added get-regions
              (find-next-close-paren pos closers))
            (cond
              [(eq? smart-skip 'adjacent)
-              (end-edit-sequence)  ;; wraps up the net-zero editing changes done by get-close-paren etc.
-              (undo)               ;; to avoid messing up the editor's modified state in case of a simple skip
               (if (and next-close-start next-close-adj?
                        (string=? insert-str next-close-str))
                   (skip next-close-end)
@@ -1083,8 +1045,6 @@ added get-regions
              [(eq? smart-skip 'forward)
               (define-values (outer-close-start outer-close-end outer-close-str)
                 (find-next-outer-paren pos closers))
-              (end-edit-sequence)  ;; wraps up the net-zero editing changes done by get-close-paren etc.
-              (undo)               ;; to avoid messing up the editor's modified state in case of a simple skip
               (cond
                 [(and outer-close-start
                       (or fixup? (string=? insert-str outer-close-str)))
@@ -1094,17 +1054,30 @@ added get-regions
                  (skip next-close-end)]
                 [else  (insert)])]
              [else
-              (end-edit-sequence)  ;; wraps up the net-zero editing changes done by get-close-paren etc.
-              (undo)               ;; to avoid messing up the editor's modified state in case of a simple skip
               (error 'insert-close-paren
                      (format "invalid smart-skip option: ~a" smart-skip))])]
           [else
-           (begin0
-             (insert)
-             (end-edit-sequence))]))
+           (insert)]))
       
       (when (and flash? (not stopped?)) (flash-from end-pos)))
-
+    
+    ;; find-closer : exact-nonnegative-integer? -> (or/c #f string?)
+    ;; returns what the close paren should be at position pos to
+    ;; match whatever the opening paren is at the other end, unless
+    ;; the position is inside some other token or there is no opening
+    ;; paren, in which case it returns #f.
+    (define/private (get-close-paren pos)
+      (define-values (a b) (get-token-range pos))
+      (cond
+        [(or (= a pos) (= b pos))
+         (define bcs (backward-containing-sexp pos 0))
+         (cond
+           [(and bcs (> bcs 0))
+            (define a (assoc (string->symbol (string (get-character (- bcs 1))))
+                             pairs))
+            (and a (symbol->string (cadr a)))]
+           [else #f])]
+        [else #f]))
     
     (define/public (debug-printout)
       (for-each 

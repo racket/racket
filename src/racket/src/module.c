@@ -169,6 +169,7 @@ READ_ONLY static Scheme_Object *kernel_symbol;
 READ_ONLY static Scheme_Object *kernel_modidx;
 READ_ONLY static Scheme_Module *kernel;
 READ_ONLY static Scheme_Object *flfxnum_modname;
+READ_ONLY static Scheme_Object *extfl_modname;
 READ_ONLY static Scheme_Object *futures_modname;
 READ_ONLY static Scheme_Object *unsafe_modname;
 
@@ -396,6 +397,7 @@ void scheme_init_module(Scheme_Env *env)
   REGISTER_SO(kernel_modidx);
   REGISTER_SO(unsafe_modname);
   REGISTER_SO(flfxnum_modname);
+  REGISTER_SO(extfl_modname);
   REGISTER_SO(futures_modname);
   kernel_symbol = scheme_intern_symbol("#%kernel");
   kernel_modname = scheme_intern_resolved_module_path(kernel_symbol);
@@ -406,6 +408,7 @@ void scheme_init_module(Scheme_Env *env)
   (void)scheme_hash_key(kernel_modidx);
   unsafe_modname = scheme_intern_resolved_module_path(scheme_intern_symbol("#%unsafe"));
   flfxnum_modname = scheme_intern_resolved_module_path(scheme_intern_symbol("#%flfxnum"));
+  extfl_modname = scheme_intern_resolved_module_path(scheme_intern_symbol("#%extfl"));
   futures_modname = scheme_intern_resolved_module_path(scheme_intern_symbol("#%futures"));
   
   REGISTER_SO(module_begin_symbol);
@@ -707,6 +710,11 @@ int scheme_is_flfxnum_modname(Scheme_Object *modname)
   return SAME_OBJ(modname, flfxnum_modname);
 }
 
+int scheme_is_extfl_modname(Scheme_Object *modname)
+{
+  return SAME_OBJ(modname, extfl_modname);
+}
+
 int scheme_is_futures_modname(Scheme_Object *modname)
 {
   return SAME_OBJ(modname, futures_modname);
@@ -720,6 +728,8 @@ Scheme_Module *get_special_module(Scheme_Object *name)
     return scheme_get_unsafe_env()->module;
   else if (SAME_OBJ(name, flfxnum_modname))
     return scheme_get_flfxnum_env()->module;
+  else if (SAME_OBJ(name, extfl_modname))
+    return scheme_get_extfl_env()->module;
   else if (SAME_OBJ(name, futures_modname))
     return scheme_get_futures_env()->module;
   else
@@ -732,6 +742,8 @@ Scheme_Env *get_special_modenv(Scheme_Object *name)
     return scheme_get_kernel_env();
   else if (SAME_OBJ(name, flfxnum_modname))
     return scheme_get_flfxnum_env();
+  else if (SAME_OBJ(name, extfl_modname))
+    return scheme_get_extfl_env();
   else if (SAME_OBJ(name, futures_modname))
     return scheme_get_futures_env();
   else if (SAME_OBJ(name, unsafe_modname))
@@ -745,6 +757,7 @@ static int is_builtin_modname(Scheme_Object *modname)
   return (SAME_OBJ(modname, kernel_modname)
           || SAME_OBJ(modname, unsafe_modname)
           || SAME_OBJ(modname, flfxnum_modname)
+          || SAME_OBJ(modname, extfl_modname)
           || SAME_OBJ(modname, futures_modname));
 }
 
@@ -2185,6 +2198,7 @@ static Scheme_Object *namespace_unprotect_module(int argc, Scheme_Object *argv[]
 
   if (!SAME_OBJ(name, kernel_modname)
       && !SAME_OBJ(name, flfxnum_modname)
+      && !SAME_OBJ(name, extfl_modname)
       && !SAME_OBJ(name, futures_modname)) {
     if (SAME_OBJ(name, unsafe_modname))
       menv2 = scheme_get_unsafe_env();
@@ -4549,6 +4563,7 @@ int scheme_module_export_position(Scheme_Object *modname, Scheme_Env *env, Schem
   if (SAME_OBJ(modname, kernel_modname)
       || SAME_OBJ(modname, unsafe_modname)
       || SAME_OBJ(modname, flfxnum_modname)
+      || SAME_OBJ(modname, extfl_modname)
       || SAME_OBJ(modname, futures_modname))
     return -1;
 
@@ -4582,8 +4597,9 @@ Scheme_Object *scheme_module_syntax(Scheme_Object *modname, Scheme_Env *env,
     return scheme_lookup_in_table(kenv->syntax, (char *)name);
   } else if (SAME_OBJ(modname, unsafe_modname)
              || SAME_OBJ(modname, flfxnum_modname)
+             || SAME_OBJ(modname, extfl_modname)
              || SAME_OBJ(modname, futures_modname)) {
-    /* no unsafe, flfxnum, or futures syntax */
+    /* no unsafe, flfxnum, extfl, or futures syntax */
     return NULL;
   } else {
     Scheme_Env *menv;
@@ -5877,6 +5893,12 @@ Scheme_Object *scheme_builtin_value(const char *name)
   if (v)
     return v;
 
+  /* Try extfl next: */
+  a[0] = extfl_modname;
+  v = _dynamic_require(2, a, scheme_get_env(NULL), 0, 0, 0, 0, 0, -1);
+  if (v)
+    return v;
+
   /* Try unsafe next: */
   a[0] = unsafe_modname;
   v = _dynamic_require(2, a, scheme_get_env(NULL), 0, 0, 0, 0, 0, -1);
@@ -6924,6 +6946,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   if (SAME_OBJ(m->modname, kernel_modname)
       || SAME_OBJ(m->modname, unsafe_modname)
       || SAME_OBJ(m->modname, flfxnum_modname)
+      || SAME_OBJ(m->modname, extfl_modname)
       || SAME_OBJ(m->modname, futures_modname)) {
     /* Too confusing. Give it a different name while compiling. */
     Scheme_Object *k2;
@@ -6932,6 +6955,8 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
       kname = "#%kernel";
     else if (SAME_OBJ(m->modname, flfxnum_modname))
       kname = "#%flfxnum";
+    else if (SAME_OBJ(m->modname, extfl_modname))
+      kname = "#%extfl";
     else if (SAME_OBJ(m->modname, futures_modname))
       kname = "#%futures";
     else

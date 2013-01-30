@@ -285,8 +285,8 @@
 (define module-type-num 26)
 (define inline-variants-type-num 27)
 (define variable-type-num 35)
-(define prefix-type-num 113)
-(define free-id-info-type-num 162)
+(define prefix-type-num 114)
+(define free-id-info-type-num 164)
 
 (define-syntax define-enum
   (syntax-rules ()
@@ -584,6 +584,7 @@
   (case type
     [(flonum) 1]
     [(fixnum) 2]
+    [(extflonum) 3]
     [else (error 'type->index "unknown type: ~e" type)]))
 
 (define (out-anything v out)

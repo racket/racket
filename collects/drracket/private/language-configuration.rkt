@@ -85,9 +85,11 @@
     (define languages null)
     
     (define languages-allowing-executable-creation '())
-    (define (language-allows-executable-creation? lang)
-      (and (memq lang languages-allowing-executable-creation)
-           #t))
+    (define (language-allows-executable-creation? candidate-lang)
+      (define candidates-positions (send candidate-lang get-language-position))
+      (for/or ([allowed-lang (in-list languages-allowing-executable-creation)])
+        (equal? (send allowed-lang get-language-position)
+                candidates-positions)))
     
     ;; add-language : (instanceof language%) -> void
     ;; only allows addition on phase2

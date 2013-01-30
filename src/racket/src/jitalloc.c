@@ -44,6 +44,10 @@ THREAD_LOCAL_DECL(static void *retry_alloc_r1); /* set by prepare_retry_alloc() 
 #ifdef JIT_USE_FP_OPS
 THREAD_LOCAL_DECL(double scheme_jit_save_fp);
 THREAD_LOCAL_DECL(double scheme_jit_save_fp2);
+# ifdef MZ_LONG_DOUBLE
+THREAD_LOCAL_DECL(long double scheme_jit_save_extfp);
+THREAD_LOCAL_DECL(long double scheme_jit_save_extfp2);
+# endif
 #endif
 
 static void *prepare_retry_alloc(void *p, void *p2)
@@ -115,7 +119,8 @@ static intptr_t initial_tag_word(Scheme_Type tag, int flags)
 }
 
 int scheme_inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int flags,
-			int keep_r0_r1, int keep_fpr1, int inline_retry)
+			int keep_r0_r1, int keep_fpr1, int inline_retry,
+                        int keep_extfpr1)
 /* Puts allocated result at JIT_V1; first word is GC tag.
    Uses JIT_R2 as temporary. The allocated memory is "dirty" (i.e., not 0ed).
    Save FP0 when FP ops are enabled. */
@@ -145,7 +150,13 @@ int scheme_inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int flags
     }
   } else if (keep_fpr1) {
     (void)jit_calli(sjc.retry_alloc_code_keep_fpr1);
-  } else {
+  } 
+#ifdef MZ_LONG_DOUBLE
+  else if (keep_extfpr1) {
+    (void)jit_calli(sjc.retry_alloc_code_keep_extfpr1);
+  }
+#endif
+  else {
     (void)jit_calli(sjc.retry_alloc_code);
   }
   __START_TINY_JUMPS__(1);
@@ -206,6 +217,12 @@ static void *malloc_double(void)
 {
   return scheme_make_double(scheme_jit_save_fp);
 }
+#ifdef MZ_LONG_DOUBLE
+static void *malloc_long_double(void)
+{
+  return scheme_make_long_double(scheme_jit_save_extfp);
+}
+#endif
 #endif
 
 #ifdef MZ_PRECISE_GC
@@ -281,6 +298,8 @@ Scheme_Object *scheme_jit_make_two_element_ivector(Scheme_Object *a, Scheme_Obje
 #endif
 
 #ifdef CAN_INLINE_ALLOC
+long double ld1;
+
 int scheme_generate_alloc_retry(mz_jit_state *jitter, int i)
 {
   GC_CAN_IGNORE jit_insn *refr;
@@ -289,6 +308,11 @@ int scheme_generate_alloc_retry(mz_jit_state *jitter, int i)
   if (i == 2) {
     (void)mz_tl_sti_d_fppop(tl_scheme_jit_save_fp, JIT_FPR0, JIT_R2);
   }
+# ifdef MZ_LONG_DOUBLE
+  if (i == 3) {
+    (void)mz_fpu_tl_sti_ld_fppop(tl_scheme_jit_save_extfp, JIT_FPU_FPR0, JIT_R2);
+  }
+# endif
 #endif
   JIT_UPDATE_THREAD_RSPTR();
   jit_prepare(2);
@@ -310,6 +334,11 @@ int scheme_generate_alloc_retry(mz_jit_state *jitter, int i)
   if (i == 2) {
     (void)mz_tl_ldi_d_fppush(JIT_FPR0, tl_scheme_jit_save_fp, JIT_R2);
   }
+# ifdef MZ_LONG_DOUBLE
+  if (i == 3) {
+    (void)mz_fpu_tl_ldi_ld_fppush(JIT_FPU_FPR0, tl_scheme_jit_save_extfp, JIT_R2);
+  }
+# endif
 #endif
   return 1;
 }

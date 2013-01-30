@@ -607,6 +607,9 @@ MZ_EXTERN mzchar *scheme_string_recase(mzchar *s, int d, int len, int mode, int 
 
 MZ_EXTERN Scheme_Object *scheme_make_vector(intptr_t size, Scheme_Object *fill);
 MZ_EXTERN Scheme_Double_Vector *scheme_alloc_flvector(intptr_t size);
+#ifdef MZ_LONG_DOUBLE
+MZ_EXTERN Scheme_Long_Double_Vector *scheme_alloc_extflvector(intptr_t size);
+#endif
 MZ_EXTERN Scheme_Vector *scheme_alloc_fxvector(intptr_t size);
 MZ_EXTERN Scheme_Object *scheme_make_integer_value(intptr_t i);
 MZ_EXTERN Scheme_Object *scheme_make_integer_value_from_unsigned(uintptr_t i);
@@ -615,6 +618,9 @@ MZ_EXTERN Scheme_Object *scheme_make_integer_value_from_unsigned_long_long(umzlo
 MZ_EXTERN Scheme_Object *scheme_make_integer_value_from_long_halves(uintptr_t lowhalf, uintptr_t hihalf);
 MZ_EXTERN Scheme_Object *scheme_make_integer_value_from_unsigned_long_halves(uintptr_t lowhalf, uintptr_t hihalf);
 MZ_EXTERN Scheme_Object *scheme_make_double(double d);
+#ifdef MZ_LONG_DOUBLE
+MZ_EXTERN Scheme_Object *scheme_make_long_double(long double d);
+#endif
 #ifdef MZ_USE_SINGLE_FLOATS
 MZ_EXTERN Scheme_Object *scheme_make_float(float f) ;
 #endif
@@ -636,6 +642,9 @@ XFORM_NONGCING MZ_EXTERN int scheme_get_long_long_val(Scheme_Object *o, mzlonglo
 XFORM_NONGCING MZ_EXTERN int scheme_get_unsigned_long_long_val(Scheme_Object *o, umzlonglong *v);
 
 MZ_EXTERN double scheme_real_to_double(Scheme_Object *r);
+#ifdef MZ_LONG_DOUBLE
+MZ_EXTERN long double scheme_real_to_long_double(Scheme_Object *r);
+#endif
 
 MZ_EXTERN Scheme_Object *scheme_make_cptr(void *cptr, Scheme_Object *typetag);
 MZ_EXTERN Scheme_Object *scheme_make_offset_cptr(void *cptr, intptr_t offset, Scheme_Object *typetag);
@@ -697,6 +706,10 @@ MZ_EXTERN Scheme_Object *scheme_make_bignum_from_long_long(mzlonglong v);
 MZ_EXTERN Scheme_Object *scheme_make_bignum_from_unsigned_long_long(umzlonglong v);
 XFORM_NONGCING MZ_EXTERN double scheme_bignum_to_double(const Scheme_Object *n);
 MZ_EXTERN Scheme_Object *scheme_bignum_from_double(double d);
+#ifdef MZ_LONG_DOUBLE
+XFORM_NONGCING MZ_EXTERN long double scheme_bignum_to_long_double(const Scheme_Object *n);
+MZ_EXTERN Scheme_Object *scheme_bignum_from_long_double(long double d);
+#endif
 #ifdef MZ_USE_SINGLE_FLOATS
 XFORM_NONGCING MZ_EXTERN float scheme_bignum_to_float(const Scheme_Object *n);
 MZ_EXTERN Scheme_Object *scheme_bignum_from_float(float d);
@@ -717,6 +730,10 @@ XFORM_NONGCING MZ_EXTERN Scheme_Object *scheme_bignum_normalize(const Scheme_Obj
 MZ_EXTERN Scheme_Object *scheme_make_rational(const Scheme_Object *r, const Scheme_Object *d);
 MZ_EXTERN double scheme_rational_to_double(const Scheme_Object *n);
 MZ_EXTERN Scheme_Object *scheme_rational_from_double(double d);
+#ifdef MZ_LONG_DOUBLE
+MZ_EXTERN long double scheme_rational_to_long_double(const Scheme_Object *n);
+MZ_EXTERN Scheme_Object *scheme_rational_from_long_double(long double d);
+#endif
 #ifdef MZ_USE_SINGLE_FLOATS
 MZ_EXTERN float scheme_rational_to_float(const Scheme_Object *n);
 MZ_EXTERN Scheme_Object *scheme_rational_from_float(float d);

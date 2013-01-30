@@ -527,16 +527,6 @@ Scheme_Object *scheme_rational_sqrt(const Scheme_Object *o)
 #include "ratfloat.inc"
 
 #ifdef MZ_USE_SINGLE_FLOATS
-# undef FP_TYPE
-# undef SCHEME_RATIONAL_TO_FLOAT
-# undef SCHEME_RATIONAL_FROM_FLOAT
-# undef SCHEME_BIGNUM_TO_FLOAT_INF_INFO
-# undef SCHEME_BIGNUM_FROM_FLOAT
-# undef SCHEME_CHECK_FLOAT
-# undef DO_FLOAT_DIV 
-# undef FLOAT_E_MIN
-# undef FLOAT_M_BITS
-
 #define FP_TYPE float
 #define SCHEME_RATIONAL_TO_FLOAT scheme_rational_to_float
 #define SCHEME_RATIONAL_FROM_FLOAT scheme_rational_from_float
@@ -549,3 +539,20 @@ Scheme_Object *scheme_rational_sqrt(const Scheme_Object *o)
 #include "ratfloat.inc"
 #endif
 
+#ifdef MZ_LONG_DOUBLE
+# define FP_TYPE long double
+# define SCHEME_RATIONAL_TO_FLOAT scheme_rational_to_long_double
+# define SCHEME_RATIONAL_FROM_FLOAT scheme_rational_from_long_double
+# define SCHEME_BIGNUM_TO_FLOAT_INF_INFO scheme_bignum_to_long_double_inf_info
+# define SCHEME_CHECK_FLOAT scheme_check_long_double
+# define SCHEME_BIGNUM_FROM_FLOAT scheme_bignum_from_long_double
+# define DO_FLOAT_DIV scheme__do_long_double_div
+# define FLOAT_E_MIN -16383
+# define FLOAT_M_BITS 64
+# define FP_ZEROx 0L
+# define FP_POWx powl
+# define FP_MODFx modfl
+# define FP_FREXPx frexpl
+# define FP_DOUBLE_TYPE FP_TYPE
+#include "ratfloat.inc"
+#endif
