@@ -69,16 +69,21 @@ you may want to skip to @|guide|.
 
 To get into the spirit of this tutorial, we suggest that you set
 DrRacket aside for a moment, and switch to raw @exec{racket} in a
-terminal. You'll also need a text editor, such as Emacs, vi, or even
+terminal.
+@;
+@margin-note*{If you're already spoiled, you can keep using
+DrRacket. In that case, skip @secref["ready"], build the program in
+DrRacket's definitions window instead of a @filepath{serve.rkt} file
+as described in @secref["set"], and click the @onscreen{Run} button
+instead of using @racket[enter!] as shown in @secref["go"].}
+@;
+You'll also need a text editor, such as Emacs, vi, or even
 Notepad---any editor will do, but one that supports parenthesis
 matching would be helpful. Finally, you'll need a web client, perhaps
 Lynx or Firefox.
 
-@margin-note{Of course, if you're already spoiled, you can keep using
-DrRacket.}
-
 @; ----------------------------------------------------------------------
-@section{Ready...}
+@section[#:tag "ready"]{Ready...}
 
 @link[url:download-drracket]{Download Racket}, install, and then
 start @exec{racket} with no command-line arguments:
@@ -123,7 +128,7 @@ you're running a shell inside Emacs, or if you're on Windows and use a
 ]
 
 @; ----------------------------------------------------------------------
-@section{Set...}
+@section[#:tag "set"]{Set...}
 
 In the same directory where you started @exec{racket}, create a text
 file @filepath{serve.rkt}, and start it like this:
@@ -138,7 +143,7 @@ racket
 @whole-prog["0"]
 
 @; ----------------------------------------------------------------------
-@section{Go!}
+@section[#:tag "go"]{Go!}
 
 Back in @exec{racket}, try loading the file and running @racket[go]:
 
