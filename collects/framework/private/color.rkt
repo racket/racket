@@ -869,7 +869,12 @@ added get-regions
       (let loop ((cur-pos position))
         (let ((p (internal-backward-match cur-pos cutoff)))
           (cond
-            ((eq? 'open p) cur-pos)
+            ((eq? 'open p) 
+             ;; Should this function skip  
+             ;; backwards past whitespace? 
+             ;; the docs seem to indicate it
+             ;; does, but it doesn't really
+             cur-pos)
             ((not p) #f)
             (else (loop p))))))
     
@@ -1070,7 +1075,8 @@ added get-regions
       (define-values (a b) (get-token-range pos))
       (cond
         [(or (= a pos) (= b pos))
-         (define bcs (backward-containing-sexp pos 0))
+         (define raw-bcs (backward-containing-sexp pos 0))
+         (define bcs (skip-whitespace raw-bcs 'backward #t))
          (cond
            [(and bcs (> bcs 0))
             (define a (assoc (string->symbol (string (get-character (- bcs 1))))
