@@ -42,7 +42,7 @@ but roughly by quoting the source term with
 hyperlinked via @racket[for-label] imports.
 
 The two different approaches to typesetting code---@racket[codeblock]
-and @racket[code] versus @racket[racketbock] and
+and @racket[code] versus @racket[racketblock] and
 @racket[racket]---have different advantages and disadvantages:
 
 @itemlist[
