@@ -636,6 +636,8 @@ If the namespace does not, they are colored the unbound color.
                     (λ (x y)
                       (visit-docs-url)))))))
             
+            ;; no longer used, but must be here for backwards compatibility
+            (define/public (syncheck:add-rename-menu id to-be-renamed/poss name-dup?) (void))
             (define/public (syncheck:add-id-set to-be-renamed/poss name-dup?)
               (add-identifier-to-range to-be-renamed/poss name-dup?))
 
