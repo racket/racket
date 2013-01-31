@@ -369,6 +369,13 @@ If the namespace does not, they are colored the unbound color.
 
             (define arrow-records #f)
             
+            (define/private (fetch-arrow-records txt pos)
+              (and arrow-records
+                   (let ([im (hash-ref arrow-records txt #f)]) 
+                     (if im
+                         (interval-map-ref im pos '())
+                         '()))))
+            
             (define/public (dump-arrow-records)
               (cond
                 [arrow-records
@@ -656,85 +663,85 @@ If the namespace does not, they are colored the unbound color.
                                               name-to-offer
                                               an-identifier-location-set)))]))
               
-              ;; rename-callback : string 
-              ;;                   (and/c syncheck-text<%> definitions-text<%>)
-              ;;                   (list source number number)
-              ;;                   (listof id-set) 
-              ;;                   (union #f (is-a?/c top-level-window<%>)) 
-              ;;                -> void
-              ;; callback for the rename popup menu item
+            ;; rename-callback : string 
+            ;;                   (and/c syncheck-text<%> definitions-text<%>)
+            ;;                   (list source number number)
+            ;;                   (listof id-set) 
+            ;;                   (union #f (is-a?/c top-level-window<%>)) 
+            ;;                -> void
+            ;; callback for the rename popup menu item
             (define/private (rename-menu-callback parent name-to-offer an-identifier-location-set)
               (define name-dup? (identifier-location-set-name-dup? an-identifier-location-set))
-              (let ([new-str
-                     (fw:keymap:call/text-keymap-initializer
-                      (λ ()
-                        (get-text-from-user
-                         (string-constant cs-rename-id)
-                         (fw:gui-utils:format-literal-label (string-constant cs-rename-var-to) name-to-offer)
-                         parent
-                         name-to-offer
-                         #:dialog-mixin frame:focus-table-mixin)))])
-                (when new-str
-                  (define new-sym (format "~s" (string->symbol new-str)))
-                  (define dup-name? (name-dup? new-sym))
-                  
-                  (define do-renaming?
-                    (or (not dup-name?)
-                        (equal?
-                         (message-box/custom
-                          (string-constant check-syntax)
-                          (fw:gui-utils:format-literal-label (string-constant cs-name-duplication-error) 
-                                                             new-sym)
-                          (string-constant cs-rename-anyway)
-                          (string-constant cancel)
-                          #f
-                          parent
-                          '(stop default=2)
-                          #:dialog-mixin frame:focus-table-mixin)
-                         1)))
-                  
-                  (when do-renaming?
-                    (let ([txts (list this)])
-                      (define positions-to-rename 
-                        (remove-duplicates
-                         (sort (set->list (uf-find
-                                           (identifier-location-set-set 
-                                            an-identifier-location-set)))
-                               >
-                               #:key cadr)))
-                      (begin-edit-sequence)
-                      (for ([info (in-list positions-to-rename)])
-                        (define source-editor (list-ref info 0))
-                        (define start (list-ref info 1))
-                        (define end (list-ref info 2))
-                        (when (is-a? source-editor text%)
-                          (unless (memq source-editor txts)
-                            (send source-editor begin-edit-sequence)
-                            (set! txts (cons source-editor txts)))
-                          (send source-editor delete start end #f)
-                          (send source-editor insert new-sym start start #f)))
-                      (invalidate-bitmap-cache)
-                      (for ([txt (in-list txts)])
-                        (send txt end-edit-sequence)))))))
+              (define new-str
+                (fw:keymap:call/text-keymap-initializer
+                 (λ ()
+                   (get-text-from-user
+                    (string-constant cs-rename-id)
+                    (fw:gui-utils:format-literal-label (string-constant cs-rename-var-to) name-to-offer)
+                    parent
+                    name-to-offer
+                    #:dialog-mixin frame:focus-table-mixin))))
+              (when new-str
+                (define new-sym (format "~s" (string->symbol new-str)))
+                (define dup-name? (name-dup? new-sym))
+                
+                (define do-renaming?
+                  (or (not dup-name?)
+                      (equal?
+                       (message-box/custom
+                        (string-constant check-syntax)
+                        (fw:gui-utils:format-literal-label (string-constant cs-name-duplication-error) 
+                                                           new-sym)
+                        (string-constant cs-rename-anyway)
+                        (string-constant cancel)
+                        #f
+                        parent
+                        '(stop default=2)
+                        #:dialog-mixin frame:focus-table-mixin)
+                       1)))
+                
+                (when do-renaming?
+                  (define txts (list this))
+                  (define positions-to-rename 
+                    (remove-duplicates
+                     (sort (set->list (uf-find
+                                       (identifier-location-set-set 
+                                        an-identifier-location-set)))
+                           >
+                           #:key cadr)))
+                  (begin-edit-sequence)
+                  (for ([info (in-list positions-to-rename)])
+                    (define source-editor (list-ref info 0))
+                    (define start (list-ref info 1))
+                    (define end (list-ref info 2))
+                    (when (is-a? source-editor text%)
+                      (unless (memq source-editor txts)
+                        (send source-editor begin-edit-sequence)
+                        (set! txts (cons source-editor txts)))
+                      (send source-editor delete start end #f)
+                      (send source-editor insert new-sym start start #f)))
+                  (invalidate-bitmap-cache)
+                  (for ([txt (in-list txts)])
+                    (send txt end-edit-sequence)))))
               
               
-              ;; find-parent : menu-item-container<%> -> (union #f (is-a?/c top-level-window<%>)
-              (define/private (find-menu-parent menu)
-                (let loop ([menu menu])
-                  (cond
-                    [(is-a? menu menu-bar%) (send menu get-frame)]
-                    [(is-a? menu popup-menu%)
-                     (let ([target (send menu get-popup-target)])
-                       (cond
-                         [(is-a? target editor<%>) 
-                          (let ([canvas (send target get-canvas)])
-                            (and canvas
-                                 (send canvas get-top-level-window)))]
-                         [(is-a? target window<%>) 
-                          (send target get-top-level-window)]
-                         [else #f]))]
-                    [(is-a? menu menu-item<%>) (loop (send menu get-parent))]
-                    [else #f])))
+            ;; find-parent : menu-item-container<%> -> (union #f (is-a?/c top-level-window<%>)
+            (define/private (find-menu-parent menu)
+              (let loop ([menu menu])
+                (cond
+                  [(is-a? menu menu-bar%) (send menu get-frame)]
+                  [(is-a? menu popup-menu%)
+                   (let ([target (send menu get-popup-target)])
+                     (cond
+                       [(is-a? target editor<%>) 
+                        (let ([canvas (send target get-canvas)])
+                          (and canvas
+                               (send canvas get-top-level-window)))]
+                       [(is-a? target window<%>) 
+                        (send target get-top-level-window)]
+                       [else #f]))]
+                  [(is-a? menu menu-item<%>) (loop (send menu get-parent))]
+                  [else #f])))
             
             (define/private (syncheck:add-menu text start-pos end-pos key make-menu)
               (when arrow-records
@@ -889,7 +896,7 @@ If the namespace does not, they are colored the unbound color.
                 (define scrolled? (update-view-corner admin))
                 ;; when painting on the canvas the mouse is over...
                 (when (eq? mouse-admin admin)
-                  (define update-tooltip-frame?
+                  (define update-tooltip-frame-and-matching-identifiers?
                     (cond
                       ;; turn off arrows immediately if scrolling
                       [scrolled? (set! cursor-tooltip #f)
@@ -904,8 +911,8 @@ If the namespace does not, they are colored the unbound color.
                        (set! cursor-tooltip (get-tooltip cursor-eles))
                        (not (eq? cursor-tooltip 'out-of-sync))]
                       [else #f]))
-                  (when update-tooltip-frame?
-                    (update-tooltip-frame))
+                  (when update-tooltip-frame-and-matching-identifiers?
+                    (update-tooltip-frame-and-matching-identifiers))
                   ;; update on a timer if the arrows changed
                   (when (update-latent-arrows mouse-x mouse-y)
                     (start-arrow-draw-timer syncheck-arrow-delay)))
@@ -953,10 +960,10 @@ If the namespace does not, they are colored the unbound color.
                                       (draw-arrow2 arrow))))
                   (when (and cursor-pos
                              cursor-text)
-                    (define arrow-record (hash-ref arrow-records cursor-text #f))
+                    (define arrow-records-at-cursor (fetch-arrow-records cursor-text cursor-pos))
                     (define tail-arrows '())
-                    (when arrow-record
-                      (for ([ele (in-list (interval-map-ref arrow-record cursor-pos null))])
+                    (when arrow-records-at-cursor
+                      (for ([ele (in-list arrow-records-at-cursor)])
                         (cond [(var-arrow? ele)
                                (if (var-arrow-actual? ele)
                                    (begin (send dc set-pen (get-var-pen white-on-black?))
@@ -1094,17 +1101,10 @@ If the namespace does not, they are colored the unbound color.
               (set! cursor-eles latent-eles)
               (set! cursor-tooltip latent-tooltip)
               
-              (update-tooltip-frame)
+              (update-tooltip-frame-and-matching-identifiers)
               (update-docs-background cursor-eles)
               (unless (equal? latent-stuff cursor-stuff)
                 (invalidate-bitmap-cache)))
-            
-            (define/private (fetch-arrow-records txt pos)
-              (and arrow-records
-                   (let ([im (hash-ref arrow-records txt #f)]) 
-                     (if im
-                         (interval-map-ref im pos '())
-                         '()))))
             
             (define mouse-admin #f)  ; editor admin for the last mouse move
             (define mouse-x #f)      ; last known mouse position
@@ -1221,6 +1221,10 @@ If the namespace does not, they are colored the unbound color.
                     (make-rename-menu menu identifier-location-set/f))
                   (void))))
             
+            (define/private (update-tooltip-frame-and-matching-identifiers)
+              (update-tooltip-frame)
+              (update-matching-identifiers))
+            
             (define tooltip-frame #f)
             (define/private (update-tooltip-frame)
               (unless tooltip-frame (set! tooltip-frame (new tooltip-frame%)))
@@ -1232,6 +1236,41 @@ If the namespace does not, they are colored the unbound color.
                  (send tooltip-frame show-over x y w h)]
                 ;; #f or 'out-of-sync
                 [_ (send tooltip-frame show #f)]))
+            
+            (define current-matching-identifiers (set))
+            (define/private (update-matching-identifiers)
+              (define arrow-records (fetch-arrow-records cursor-text cursor-pos))
+              (define id-set (if arrow-records
+                                 (let ([an-identifier-location-set
+                                        (for/or ([x (in-list arrow-records)])
+                                          (and (identifier-location-set? x)
+                                               x))])
+                                   (if an-identifier-location-set
+                                       (uf-find (identifier-location-set-set
+                                                 an-identifier-location-set))
+                                       (set)))
+                                 (set)))
+              (define clr "GreenYellow")
+              (define style 'ellipse) 
+              (unless (equal? current-matching-identifiers id-set)
+                (define in-edit-sequence (list this))
+                (begin-edit-sequence)
+                (define (uh/highlight highlight?)
+                  (for ([lst (in-set current-matching-identifiers)])
+                    (define txt (list-ref lst 0))
+                    (define start (list-ref lst 1))
+                    (define end (list-ref lst 2))
+                    (unless (member txt in-edit-sequence)
+                      (set! in-edit-sequence (cons txt in-edit-sequence))
+                      (send txt begin-edit-sequence))
+                    (if highlight?
+                        (send txt highlight-range start end clr #f 'low style)
+                        (send txt unhighlight-range start end clr #f style))))
+                (uh/highlight #f)
+                (set! current-matching-identifiers id-set)
+                (uh/highlight #t)
+                (for ([x (in-list in-edit-sequence)])
+                  (send x end-edit-sequence))))
             
             ;; Sometimes when this is called, the calls to 'tooltip-info->ltrb'
             ;; fail and we get no information back. When that happens, we return 
