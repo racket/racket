@@ -1611,6 +1611,7 @@
       (define/public (set-msg _msg _err?) 
         (set! msg _msg)
         (set! err? _err?)
+        (set-the-height/dc-font (preferences:get 'framework:standard-style-list:font-size))
         (refresh))
       (define/override (on-event evt)
         (cond
@@ -1632,29 +1633,40 @@
       (define/override (on-paint)
         (define dc (get-dc))
         (define-values (cw ch) (get-client-size))
-        (send dc set-font (if err? error-font normal-control-font))
         (define-values (tw th td ta) (send dc get-text-extent msg))
         (send dc set-text-foreground (if err? "firebrick" "black"))
         (send dc draw-text msg 2 (- (/ ch 2) (/ th 2))))
       (super-new [style '(transparent)])
       
+      ;; need object to hold onto this function, so this is
+      ;; intentionally a private field, not a method
+      (define (font-size-changed-callback _ new-size)
+        (set-the-height/dc-font new-size)
+        (refresh))
+      (preferences:add-callback
+       'framework:standard-style-list:font-size
+       font-size-changed-callback
+       #t)
+      
+      (define/private (set-the-height/dc-font font-size)
+        (define dc (get-dc))
+        (send dc set-font 
+              (send the-font-list find-or-create-font
+                    font-size
+                    (send normal-control-font get-family)
+                    (if err? 
+                        'italic
+                        (send normal-control-font get-style))
+                    (send normal-control-font get-weight)
+                    (send normal-control-font get-underlined)
+                    (send normal-control-font get-smoothing)))
+        (define-values (tw th td ta) (send dc get-text-extent msg))
+        (min-height (inexact->exact (ceiling th))))
+      
       (inherit min-height)
-      (let ()
-        (send (get-dc) set-font (if err? error-font normal-control-font))
-        (define-values (tw th td ta) (send (get-dc) get-text-extent msg))
-        (min-height (inexact->exact (ceiling th))))))
+      (set-the-height/dc-font
+       (preferences:get 'framework:standard-style-list:font-size))))
   
-  (define error-font
-    (let ([base-font normal-control-font])
-      (send the-font-list find-or-create-font
-            (send normal-control-font get-point-size)
-            (send normal-control-font get-family)
-            'italic
-            (send normal-control-font get-weight)
-            (send normal-control-font get-underlined)
-            (send normal-control-font get-smoothing)
-            (send normal-control-font get-size-in-pixels))))
-        
   (define yellow-message%
     (class canvas%
       (inherit get-dc refresh get-client-size
