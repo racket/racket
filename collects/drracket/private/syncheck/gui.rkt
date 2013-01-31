@@ -636,12 +636,12 @@ If the namespace does not, they are colored the unbound color.
               (syncheck:add-menu 
                text start-pos end-pos id
                (λ (menu)
-                 (instantiate menu-item% ()
-                   (parent menu)
-                   (label (gui-utils:format-literal-label "~a" the-label))
-                   (callback
-                    (λ (x y)
-                      (visit-docs-url)))))))
+                 (new menu-item% 
+                      [parent menu]
+                      [label (gui-utils:format-literal-label "~a" the-label)]
+                      [callback
+                       (λ (x y)
+                         (visit-docs-url))]))))
             
             ;; no longer used, but must be here for backwards compatibility
             (define/public (syncheck:add-rename-menu id to-be-renamed/poss name-dup?) (void))
@@ -1790,17 +1790,17 @@ If the namespace does not, they are colored the unbound color.
                          (inner (void) after-percentage-change))
                        (super-new))
                      [parent (super get-definitions/interactions-panel-parent)]))
-          (set! report-error-panel (instantiate horizontal-panel% ()
-                                     (parent report-error-parent-panel)
-                                     (stretchable-height #f)
-                                     (alignment '(center center))
-                                     (style '(border))))
+          (set! report-error-panel (new horizontal-panel%
+                                        [parent report-error-parent-panel]
+                                        [stretchable-height #f]
+                                        [alignment '(center center)]
+                                        [style '(border)]))
           (send report-error-parent-panel change-children (λ (l) null))
-          (let ([message-panel (instantiate vertical-panel% ()
-                                 (parent report-error-panel)
-                                 (stretchable-width #f)
-                                 (stretchable-height #f)
-                                 (alignment '(left center)))])
+          (let ([message-panel (new vertical-panel%
+                                    [parent report-error-panel]
+                                    [stretchable-width #f]
+                                    [stretchable-height #f]
+                                    [alignment '(left center)])])
             (make-object message% (string-constant check-syntax) message-panel)
             (make-object message% (string-constant cs-error-message) message-panel))
           (set! report-error-canvas (new editor-canvas% 
@@ -1808,11 +1808,11 @@ If the namespace does not, they are colored the unbound color.
                                          (editor (send (get-current-tab) get-error-report-text))
                                          (line-count 3)
                                          (style '(no-hscroll))))
-          (instantiate button% () 
-            (label (string-constant hide))
-            (parent report-error-panel)
-            (callback (λ (x y) (hide-error-report)))
-            (stretchable-height #t))
+          (new button% 
+               [label (string-constant hide)]
+               [parent report-error-panel]
+               [callback (λ (x y) (hide-error-report))]
+               [stretchable-height #t])
           (define res (make-object vertical-panel% report-error-parent-panel))
           res)
         
