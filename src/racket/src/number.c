@@ -3318,7 +3318,8 @@ static double sch_pow(double x, double y)
 #ifdef MZ_LONG_DOUBLE
 static long double sch_powl(long double x, long double y)
 {
-  /* Explciitly handle all cases described by C99 */
+  /* Like sch_pow(), but with an extra case for x < 0 and non-integer y */
+
   if (x == 1.0L)
     return 1.0L; /* even for NaN */
   else if (y == 0.0L)
@@ -3362,13 +3363,13 @@ static long double sch_powl(long double x, long double y)
     else
       return 0.0L;
   } else if (MZ_IS_LONG_POS_INFINITY(x)) {
-    if (y < 0L)
+    if (y < 0.0L)
       return 0.0L;
     else
       return scheme_long_infinity_val;
   } else if (MZ_IS_LONG_NEG_INFINITY(x)) {
     int neg = 0;
-    if (y < 0L) {
+    if (y < 0.0L) {
       neg = 1;
       y = -y;
     }
@@ -3383,6 +3384,9 @@ static long double sch_powl(long double x, long double y)
       else
         return scheme_long_infinity_val;
     }
+  } else if ((x < 0.0L) && (y != floorl(y))) {
+    /* powl() on some platforms has trouble with this case */
+    return long_not_a_number_val;
   } else {
     return protected_powl(x, y);
   }
