@@ -1640,7 +1640,7 @@ void scheme_enable_garbage_collection(int on)
 #endif
 }
 
-MZ_DO_NOT_INLINE(uintptr_t scheme_get_deeper_address(void))
+MZ_DO_NOT_INLINE(uintptr_t scheme_get_deeper_address(void));
 
 uintptr_t scheme_get_deeper_address(void)
 {

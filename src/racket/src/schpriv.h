@@ -174,11 +174,11 @@ int scheme_num_types(void);
 #endif
 
 #if MZ_USE_NOINLINE
-# define MZ_DO_NOT_INLINE(decl) decl __attribute__ ((noinline));
+# define MZ_DO_NOT_INLINE(decl) decl __attribute__ ((noinline))
 #elif _MSC_VER
-# define MZ_DO_NOT_INLINE(decl) __declspec(noinline) decl;
+# define MZ_DO_NOT_INLINE(decl) __declspec(noinline) decl
 #else
-# define MZ_DO_NOT_INLINE(decl)
+# define MZ_DO_NOT_INLINE(decl) decl
 #endif
 
 
