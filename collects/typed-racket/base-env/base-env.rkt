@@ -1587,9 +1587,9 @@
 [vector-take-right   (-poly (a) ((-vec a) -Integer . -> . (-vec a)))]
 [vector-drop-right   (-poly (a) ((-vec a) -Integer . -> . (-vec a)))]
 [vector-split-at
- (-poly (a) ((list (-vec a)) -Integer . ->* . (-values (list (-vec a) (-vec a)))))]
+ (-poly (a) ((-vec a) -Integer . -> . (-values (list (-vec a) (-vec a)))))]
 [vector-split-at-right
- (-poly (a) ((list (-vec a)) -Integer . ->* . (-values (list (-vec a) (-vec a)))))]
+ (-poly (a) ((-vec a) -Integer . -> . (-values (list (-vec a) (-vec a)))))]
 
 ;vector->values
 
