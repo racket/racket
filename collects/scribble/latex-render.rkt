@@ -56,6 +56,7 @@
              render-part
              install-file
              format-number
+             number-depth
              extract-part-style-files
              extract-version
              extract-date
@@ -148,32 +149,62 @@
             (for ([pre (in-list pres)])
               (printf "\n\n")
               (do-render-paragraph pre d ri #t #f)))
+          (define depth (+ (number-depth number) (or (render-part-depth) 0)))
+          (define grouper? (part-style? d 'grouper))
+          (define (inc-section-number)
+            (printf "\\Sinc~a" (case depth
+                                 [(0 1) (if grouper? "part" "section")]
+                                 [(2) "subsection"]
+                                 [(3) "subsubsection"]
+                                 [(4) "subsubsubsection"]
+                                 [else "subsubsubsubsection"])))
           (cond
            [completely-hidden?
-            (printf "\n\n\\notitlesection")]
+            (printf "\n\n\\notitlesection")
+            (unless (part-style? d 'unnumbered)
+              (inc-section-number))]
            [else
-            (let ([no-number? (and (pair? number) 
-                                   (or (not (car number))
-                                       ((length number) . > . 3)))])
-              (printf "\n\n\\~a~a~a"
-                      (case (+ (length number) (or (render-part-depth) 0))
-                        [(0 1) "sectionNewpage\n\n\\Ssection"]
-                        [(2) "Ssubsection"]
-                        [(3) "Ssubsubsection"]
-                        [(4) "Ssubsubsubsection"]
-                        [else "Ssubsubsubsubsection"])
-                      (if (and (part-style? d 'hidden) (not no-number?))
-                          "hidden" "")
-                      (if no-number? "star" ""))
-              (when (not (or (part-style? d 'hidden) no-number?))
-                (printf "{")
-                (parameterize ([disable-images #t]
-                               [escape-brackets #t])
-                  (render-content (part-title-content d) d ri))
-                (printf "}")))
+            (define no-number? (and (pair? number) 
+                                    (or (not (car number))
+                                        ((length number) . > . 3))))
+            (define no-toc? (part-style? d 'toc-hidden))
+            (define (show-number)
+              (when (and (part-style? d 'grouper)
+                         (depth . > . 1)
+                         (not no-number?))
+                (printf "~a\\quad{}" (car (format-number number null)))))
+            (printf "\n\n\\~a~a~a"
+                    (case depth
+                      [(0 1) (if grouper?
+                                 "partNewpage\n\n\\Spart"
+                                 "sectionNewpage\n\n\\Ssection")]
+                      [(2) "Ssubsection"]
+                      [(3) "Ssubsubsection"]
+                      [(4) "Ssubsubsubsection"]
+                      [else "Ssubsubsubsubsection"])
+                    (if (and grouper?
+                             (depth . > . 1))
+                        "grouper"
+                        "")
+                    (if no-number? 
+                        (if no-toc?
+                            "star"
+                            "starx")
+                        ""))
+            (unless (and no-number? no-toc?)
+              (printf "{")
+              (show-number)
+              (parameterize ([disable-images #t]
+                             [escape-brackets #t])
+                (render-content (part-title-content d) d ri))
+              (printf "}"))
             (printf "{")
+            (show-number)
             (render-content (part-title-content d) d ri)
             (printf "}")
+            (when (and (part-style? d 'hidden-number)
+                       (not (part-style? d 'unnumbered)))
+              (inc-section-number))
             (when (eq? (style-name (part-style d)) 'index) (printf "\n\n"))]))
         (for ([t (part-tags d)])
           (printf "\\label{t:~a}~a" (t-encode (add-current-tag-prefix (tag-key t ri)))

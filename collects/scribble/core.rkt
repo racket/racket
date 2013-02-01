@@ -207,7 +207,7 @@
             [center-name string?]
             [bottom-name string?])]
 
- [collected-info ([number (listof (or/c false/c integer?))]
+ [collected-info ([number (listof (or/c false/c exact-nonnegative-integer? string?))]
                   [parent (or/c false/c part?)]
                   [info any/c])])
 

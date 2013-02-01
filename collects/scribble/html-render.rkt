@@ -220,6 +220,7 @@
              install-file
              get-dest-directory
              format-number
+             number-depth
              quiet-table-of-contents
              extract-part-style-files
              extract-version
@@ -280,7 +281,7 @@
       (map (lambda (d fn)
              (parameterize ([current-output-file fn]
                             [current-top-part d])
-               (collect-part d #f ci null)))
+               (collect-part d #f ci null 1)))
            ds
            fns))
 
@@ -916,7 +917,7 @@
                                                 (add-current-tag-prefix
                                                  (tag-key t ri))))))))
                     (part-tags d))]
-              [else `((,(case (length number)
+              [else `((,(case (number-depth number)
                           [(0) 'h2]
                           [(1) 'h3]
                           [(2) 'h4]
@@ -1542,7 +1543,7 @@
                  orig-s))
         (hash-set! (current-part-files) s #t)))
 
-    (define/override (collect-part d parent ci number)
+    (define/override (collect-part d parent ci number sub-init-number)
       (let ([prev-sub (collecting-sub)])
         (parameterize ([collecting-sub (if (part-style? d 'toc)
                                            1 
@@ -1555,8 +1556,8 @@
                                               filename)])
               (check-duplicate-filename full-filename)
               (parameterize ([current-output-file full-filename])
-                (super collect-part d parent ci number)))
-            (super collect-part d parent ci number)))))
+                (super collect-part d parent ci number sub-init-number)))
+            (super collect-part d parent ci number sub-init-number)))))
 
     (define/override (render ds fns ri)
       (map (lambda (d fn)

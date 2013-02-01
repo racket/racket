@@ -332,9 +332,9 @@ searching for information in each enclosing part before sibling parts.
 
 @section{Structure Reference}
 
-@defstruct[part ([tag-prefix (or/c false/c string?)]
+@defstruct[part ([tag-prefix (or/c #f string?)]
                  [tags (listof tag?)]
-                 [title-content (or/c false/c list?)]
+                 [title-content (or/c #f list?)]
                  [style style?]
                  [to-collect list?]
                  [blocks (listof block?)]
@@ -362,9 +362,28 @@ The recognized @tech{style properties} are as follows:
 
 @itemize[
 
- @item{@racket['unnumbered] --- A section number is computed for an
-       unnumbered section during the @techlink{collect pass}, but the
-       number is not rendered.}
+ @item{@racket['unnumbered] --- A section number is not computed or
+       rendered for the section.}
+
+ @item{@racket['hidden-number] --- A section number is computed for
+       the section, but it is not rendered as part of the section name.}
+
+ @item{@racket['toc-hidden] --- The part title is not shown in tables
+       of contents, including in ``on this page'' boxes. For Latex
+       rendering, the part title is omitted only if it is unnumbered
+       or has a hidden number.}
+
+ @item{@racket['hidden] --- The part title is not shown; for Latex
+       output, the part title is not shown only if its is empty, and
+       in that case, it is also excluded from tables of contents.  The
+       @racket['toc-hidden] style usually should be included with
+       @racket['hidden] (for consistency in non-Latex output).}
+
+ @item{@racket['grouper] --- The part is numbered with a Roman
+       numeral, and its subsections continue numbering as if they
+       appeared in the preceeding part. In other works, the part acts
+       like a ``part'' in a book where chapter numbering is continuous
+       across parts.}
 
  @item{@racket['toc] --- Sub-parts of the part are rendered on separate
        pages for multi-page HTML mode.}
@@ -376,14 +395,6 @@ The recognized @tech{style properties} are as follows:
  @item{@racket['reveal] --- Shows sub-parts when this part is
        displayed in a table-of-contents panel in HTML output (which
        normally shows only the top-level sections).}
-
- @item{@racket['hidden] --- The part title is not shown in rendered
-       HTML output, and the part title is not shown in Latex output if it
-       is empty. The @racket['toc-hidden] style usually should be
-       included with @racket['hidden].}
-
- @item{@racket['toc-hidden] --- The part title is not shown in tables
-       of contents, including in ``on this page'' boxes.}
 
  @item{@racket['quiet] --- In HTML output and most other output modes,
        hides entries for sub-parts of this part in a
@@ -509,7 +520,7 @@ The currently recognized @tech{style properties} are as follows:
 
 
 @defstruct[table ([style style?]
-                  [blockss (listof (listof (or/c block? (one-of/c 'cont))))])]{
+                  [blockss (listof (listof (or/c block? 'cont)))])]{
 
 See also the @racket[tabular] function.
 
@@ -997,11 +1008,17 @@ If a @racket[render-element] instance is serialized (such as when
 saving collected info), it is reduced to a @racket[element] instance.}
 
 
-@defstruct[collected-info ([number (listof (or/c false/c integer?))]
-                           [parent (or/c false/c part?)]
+@defstruct[collected-info ([number (listof (or/c #f exact-nonnegative-integer? string?))]
+                           [parent (or/c #f part?)]
                            [info any/c])]{
 
-Computed for each part by the @techlink{collect pass}.}
+Computed for each part by the @techlink{collect pass}.
+
+The length of the @racket[number] list indicates the section's nesting
+depth.  Numbers in @racket[number] correspond to the section's number,
+it's parent's number, etc. A string is used for a @racket['grouping]
+section, and @racket[#f] is used in place of all numbers for an
+unnumbered section.}
 
 
 @defstruct[target-url ([addr path-string?])]{
@@ -1011,13 +1028,13 @@ allowed for @racket[addr], but a string is interpreted as a URL rather
 than a file path.}
 
 
-@defstruct[document-version ([text (or/c string? false/c)])]{
+@defstruct[document-version ([text (or/c string? #f)])]{
 
 Used as a @tech{style property} for a @racket[part] to indicate a
 version number.}
 
 
-@defstruct[document-date ([text (or/c string? false/c)])]{
+@defstruct[document-date ([text (or/c string? #f)])]{
 
 Used as a @tech{style property} for a @racket[part] to indicate a
 date (which is typically used for Latex output).}
@@ -1251,7 +1268,7 @@ only during the @techlink{collect pass}.
 
 }
 
-@defproc[(resolve-get [p (or/c part? false/c)] [ri resolve-info?] [key info-key?])
+@defproc[(resolve-get [p (or/c part? #f)] [ri resolve-info?] [key info-key?])
          any/c]{
 
 Extract information during the @techlink{resolve pass} or
@@ -1267,7 +1284,7 @@ documentation.
 }
 
 
-@defproc[(resolve-get/ext? [p (or/c part? false/c)] [ri resolve-info?] [key info-key?])
+@defproc[(resolve-get/ext? [p (or/c part? #f)] [ri resolve-info?] [key info-key?])
          (values any/c boolean?)]{
 
 Like @racket[render-get], but returns a second value to indicate
@@ -1275,7 +1292,7 @@ whether the resulting information originated from an external source
 (i.e., a different document).}
 
 
-@defproc[(resolve-search [dep-key any/c] [p (or/c part? false/c)] [ri resolve-info?] [key info-key?])
+@defproc[(resolve-search [dep-key any/c] [p (or/c part? #f)] [ri resolve-info?] [key info-key?])
          void?]{
 
 Like @racket[resolve-get], but a shared @racket[dep-key] groups
@@ -1289,7 +1306,7 @@ mean that an earlier attempt would succeed next time).
 
 }
 
-@defproc[(resolve-get/tentative [p (or/c part? false/c)] [ri resolve-info?] [key info-key?])
+@defproc[(resolve-get/tentative [p (or/c part? #f)] [ri resolve-info?] [key info-key?])
          any/c]{
 
 Like @racket[resolve-search], but without dependency tracking. For
@@ -1299,7 +1316,7 @@ is suitable for use only for information within a single document.
 
 }
 
-@defproc[(resolve-get-keys [p (or/c part? false/c)]
+@defproc[(resolve-get-keys [p (or/c part? #f)]
                            [ri resolve-info?] 
                            [pred (info-key? . -> . any/c)])
          list?]{

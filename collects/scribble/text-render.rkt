@@ -1,5 +1,7 @@
 #lang racket/base
-(require "core.rkt" "base-render.rkt"
+(require "core.rkt" 
+         "base-render.rkt"
+         "private/render-utils.rkt"
          racket/class racket/port racket/list racket/string
          scribble/text/wrap)
 (provide render-mixin)
@@ -29,17 +31,24 @@
         (#rx"''" "\U201D")
         (#rx"'" "\U2019")))
 
-    (inherit render-block)
+    (inherit render-block
+             format-number)
 
     (define/override (render-part d ht)
       (let ([number (collected-info-number (part-collected-info d ht))])
-        (for ([n (in-list (reverse number))] #:when n) (printf "~s." n))
-        (when (part-title-content d)
-          (when (ormap values number) (printf " "))
-          (render-content (part-title-content d) d ht))
-        (when (or (ormap values number) (part-title-content d))
-          (newline)
-          (newline))
+        (unless (part-style? d 'hidden)
+          (let ([s (format-number number '())])
+            (unless (null? s)
+              (printf "~a.~a" 
+                      (car s)
+                      (if (part-title-content d)
+                          " "
+                          "")))
+            (when (part-title-content d)
+              (render-content (part-title-content d) d ht))
+            (when (or (pair? number) (part-title-content d))
+              (newline)
+              (newline))))
         (render-flow (part-blocks d) d ht #f)
         (let loop ([pos 1]
                    [secs (part-parts d)]
