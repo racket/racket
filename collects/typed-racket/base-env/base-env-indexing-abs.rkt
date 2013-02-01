@@ -243,9 +243,9 @@
    [take-right   (-poly (a) ((-lst a) index-type . -> . (-lst a)))]
    [drop-right   (-poly (a) ((-lst a) index-type . -> . (-lst a)))]
    [split-at
-    (-poly (a) ((list (-lst a)) index-type . ->* . (-values (list (-lst a) (-lst a)))))]
+    (-poly (a) ((-lst a) index-type . -> . (-values (list (-lst a) (-lst a)))))]
    [split-at-right
-    (-poly (a) ((list (-lst a)) index-type . ->* . (-values (list (-lst a) (-lst a)))))]
+    (-poly (a) ((-lst a) index-type . -> . (-values (list (-lst a) (-lst a)))))]
 
    [vector-ref (-poly (a) (cl->* ((-vec a) index-type . -> . a)
                                  (-VectorTop index-type . -> . Univ)))]

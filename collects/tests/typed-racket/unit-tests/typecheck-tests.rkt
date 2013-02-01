@@ -1596,6 +1596,12 @@
           (let ((s (ann (set 2) Any)))
             (if (set? s) (ann s (Setof String)) ((inst set String))))]
 
+        [tc-e (split-at (list 0 2 3 4 5 6) 3)
+              (list (-lst -Byte) (-lst -Byte))]
+        [tc-e (vector-split-at (vector 2 3 4 5 6) 3)
+              (list (-vec -Integer) (-vec -Integer))]
+
+
         )
   (test-suite
    "check-type tests"
