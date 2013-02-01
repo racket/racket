@@ -246,8 +246,13 @@ style:
        the title in quotes.}
 
  @item{@ltxd[2]{ChapRef} --- like @ltx{SecRef}, but for a top-level
-       section with a document. The default implementation defers to
+       section within a document. The default implementation defers to
        @ltx{SecRef}.}
+
+ @item{@ltxd[2]{PartRef} --- like @ltx{SecRef}, but for a top-level
+       section within a document whose part has the @racket['grouper]
+       style property. The default shows ``part'' followed by the
+       section number (ignoring the title).}
 
  @item{@ltxd[2]{BookRef} --- like @ltx{SecRef}, but for a document (as
        opposed to a section within the document). The default
@@ -256,11 +261,14 @@ style:
  @item{@ltxd[2]{SecRefUC} --- like @ltx{SecRef}, but for @racket[Secref].
        The default shows ``Section'' followed by the section number.}
 
- @item{@ltxd[2]{ChapRefUC} --- like @ltx{SecRefUC}, but for a top-level
+ @item{@ltxd[2]{ChapRefUC} --- like @ltx{ChapRef}, but for @racket[Secref].
        section with a document. The default implementation defers to
        @ltx{SecRefUC}.}
 
- @item{@ltxd[2]{SecRefUC} --- like @ltx{BookRef}, but for @racket[Secref].
+ @item{@ltxd[2]{PartRefUC} --- like @ltx{PartRef}, but for @racket[Secref].
+       The default shows ``Part'' followed by the section number.}
+
+ @item{@ltxd[2]{BookRefUC} --- like @ltx{BookRef}, but for @racket[Secref].
        The default shows defers to @ltx{BookRef}.}
 
  @item{@ltxd[2]{Ssection}, @ltxd[2]{Ssubsection},
@@ -274,14 +282,27 @@ style:
  @item{@ltxd[1]{Ssectionstar}, @ltxd[1]{Ssubsectionstar},
         @ltxd[1]{Ssubsubsectionstar}, @ltxd[1]{Ssubsubsubsectionstar},
         @ltxd[1]{Ssubsubsubsubsectionstar} --- like @ltx{Ssection},
-        etc., but for unnumbered sections.}
+        etc., but for unnumbered sections that are omitted from the
+        table of contents.}
 
- @item{@ltxd[1]{Ssectionhidden}, @ltxd[1]{Ssubsectionhidden},
-        @ltxd[1]{Ssubsubsectionhidden}, @ltxd[1]{Ssubsubsubsectionhidden},
-        @ltxd[1]{Ssubsubsubsubsectionhidden} --- like @ltx{Ssection},
-        etc., but for sections with the @racket['hidden] style property.}
+ @item{@ltxd[2]{Ssectionstarx}, @ltxd[1]{Ssubsectionstarx},
+        @ltxd[2]{Ssubsubsectionstarx},
+        @ltxd[2]{Ssubsubsubsectionstarx},
+        @ltxd[2]{Ssubsubsubsubsectionstarx} --- like @ltx{Ssection},
+        etc., but for unnumbered sections (that nevertheless appear in
+        the table of contents).}
 
-]
+ @item{@ltxd[0]{Sincsection}, @ltxd[0]{Sincsubsection},
+       @ltxd[0]{Sincsubsubsection}, @ltxd[0]{Sincsubsubsubsection},
+       @ltxd[0]{Sincsubsubsubsubsection} --- increments the section
+       counter.}
+
+ @item{@ltxd[2]{Spart}, @ltxd[1]{Spartstar}, @ltxd[2]{Spartstarx},
+       @ltxd[0]{Sincpart} --- like the section commands, but used for
+       in place of @ltxd[2]{Ssection}, @ltxd[1]{Ssectionstar}, @|etc|
+       for a part with the @racket['grouper] style property.}
+
+ ]
 
 @; ------------------------------------------------------------
 
