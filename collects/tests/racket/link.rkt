@@ -103,9 +103,9 @@
 
 (define mzlib-dir (build-path work-dir "mzlib"))
 (make-directory mzlib-dir)
-(test '("c1" "mzlib") (links mzlib-dir #:file link-file))
+(test '("c1" "mzlib") (sort (links mzlib-dir #:file link-file) string<?))
 
-(test '("c1" "mzlib") (links #:file link-file))
+(test '("c1" "mzlib") (sort (links #:file link-file) string<?))
 (test null (links #:file link-file #:root? #t))
 
 (with-output-to-file (build-path mzlib-dir "m1.rkt")
