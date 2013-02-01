@@ -292,9 +292,9 @@
             (let* ([dest (resolve-get part ri (link-element-tag e))]
                    [number (and dest (vector-ref dest 2))])
               (printf "\\~aRef~a{"
-                      (case (and dest (length number))
+                      (case (and dest (number-depth number))
                         [(0) "Book"]
-                        [(1) "Chap"]
+                        [(1) (if (string? (car number)) "Part" "Chap")]
                         [else "Sec"])
                       (if (let ([s (element-style e)])
                             (and (style? s) (memq 'uppercase (style-properties s))))

@@ -10,7 +10,7 @@
 @title{JFP Paper Format}
 
 @defmodulelang[scribble/jfp]{The @racketmodname[scribble/jfp]
-language is like @racketmodname[scribble/manual], but configured with
+language is like @racketmodname[scribble/base], but configured with
 Latex style defaults to use the @filepath{jfp1.cls} class
 file. The class file is not included with Scribble due to license
 issues, but if the file is not manually installed into the
