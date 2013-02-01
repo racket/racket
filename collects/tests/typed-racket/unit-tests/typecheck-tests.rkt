@@ -7,7 +7,7 @@
          (for-syntax racket/base)
          (for-template racket/base))
 (require (private type-annotation parse-type)
-         (except-in 
+         (except-in
           (base-env prims
                     base-types-extra
                     base-env-indexing base-structs)
@@ -39,9 +39,9 @@
 (require (prefix-in b: (base-env base-env))
          (prefix-in n: (base-env base-env-numeric)))
 
-(provide typecheck-tests g tc-expr/expand)
+(provide typecheck-tests g)
 
-(b:init) (n:init) (initialize-structs) (initialize-indexing) 
+(b:init) (n:init) (initialize-structs) (initialize-indexing)
 (dynamic-require '(submod typed-racket/base-env/base-types #%type-decl) #f)
 
 (define N -Number)
@@ -67,39 +67,52 @@
     [(_ lit ty)
      (check-type-equal? (format "~s" 'lit) (tc-literal #'lit) ty)]))
 
+
+(define (expand-helper stx k)
+  (parameterize ([delay-errors? #f]
+                 [current-namespace (namespace-anchor->namespace anch)]
+                 [orig-module-stx stx])
+    (let ([ex (expand stx)])
+      (find-mutated-vars ex mvar-env)
+      (k ex))))
+
 ;; local-expand and then typecheck an expression
 (define-syntax (tc-expr/expand/values stx)
   (syntax-case stx ()
     [(_ e)
-     #`(parameterize ([delay-errors? #f]
-                      [current-namespace (namespace-anchor->namespace anch)]
-                      [orig-module-stx (quote-syntax e)])
-         (let ([ex (expand 'e)])
-	   (find-mutated-vars ex mvar-env)
-           (values (lambda () (tc-expr ex)) ex)))]))
+     #'(expand-helper (quote-syntax e)
+         (λ (ex) (values (lambda () (tc-expr ex)) ex)))]))
 
-(define-syntax (tc-expr/expand stx)
+(define-syntax (tc-expr/expand/check stx)
   (syntax-case stx ()
-    [(_ e)
-     #`(parameterize ([delay-errors? #f]
-                      [current-namespace (namespace-anchor->namespace anch)]
-                      [orig-module-stx (quote-syntax e)])
-         (let ([ex (expand 'e)])
-           (find-mutated-vars ex mvar-env)
-           (tc-expr ex)))]))
+    [(_ e exp)
+     #'(expand-helper (quote-syntax e)
+                      (λ (stx)
+                        (let ((expected exp))
+                          (if expected
+                              (tc-expr/check stx expected)
+                              (tc-expr stx)))))]))
 
-;; check that an expression typechecks correctly
+(begin-for-syntax
+  (define-splicing-syntax-class return
+    (pattern ty:expr #:attr v #'(ret ty))
+    (pattern (~seq #:ret r:expr) #:attr v #'r)
+    (pattern (~seq ty:expr f:expr o:expr) #:attr v #'(ret ty f o)))
+
+  (define-splicing-syntax-class expected
+    (pattern (~seq #:expected v:expr))
+    (pattern (~seq) #:attr v #'#f)))
+
 (define-syntax (tc-e stx)
-  (syntax-case stx ()
-    [(_ expr ty) (syntax/loc stx (tc-e expr #:ret (ret ty)))]
-    [(_ expr #:proc p)
+  (syntax-parse stx
+    [(_ expr:expr #:proc p)
      (quasisyntax/loc stx
        (let-values ([(t e) (tc-expr/expand/values expr)])
          #,(quasisyntax/loc stx (check-tc-result-equal? (format "~a ~s" #,(syntax-line stx) 'expr) (t) (p e)))))]
-    [(_ expr #:ret r)
+    [(_ expr:expr r:return x:expected)
      (quasisyntax/loc stx
-       (check-tc-result-equal? (format "~a ~a" #,(syntax-line stx) 'expr) (tc-expr/expand expr) r))]
-    [(_ expr ty f o) (syntax/loc stx (tc-e expr #:ret (ret ty f o)))]))
+        (check-tc-result-equal? (format "~a ~a" #,(syntax-line stx) 'expr)
+                                (tc-expr/expand/check expr x.v) r.v))]))
 
 (define-syntax (tc-e/t stx)
   (syntax-parse stx
@@ -116,12 +129,12 @@
                         [e (local-expand #'e 'expression '())])))
 
 ;; check that typechecking this expression fails
-(define-syntax tc-err
-  (syntax-rules ()
-    [(_ expr)
-     (test-exn (format "~a" 'expr)
-               exn:fail:syntax?
-               (lambda () (tc-expr/expand expr)))]))
+(define-syntax (tc-err stx)
+  (syntax-parse stx
+    [(_ expr ex:expected)
+     #'(test-exn (format "~a" 'expr)
+                 exn:fail:syntax?
+                 (lambda () (tc-expr/expand/check expr ex.v)))]))
 
 (define-syntax-class (let-name n)
   #:literals (let-values)
@@ -238,11 +251,15 @@
         [tc-e (void) -Void]
         [tc-e (void 3 4) -Void]
         [tc-e (void #t #f '(1 2 3)) -Void]
+        [tc-e/t #() (make-HeterogeneousVector (list))]
         [tc-e/t #(3 4 5) (make-HeterogeneousVector (list -Integer -Integer -Integer))]
         [tc-e/t '(2 3 4) (-lst* -PosByte -PosByte -PosByte)]
         [tc-e/t '(2 3 #t) (-lst* -PosByte -PosByte (-val #t))]
         [tc-e/t #(2 3 #t) (make-HeterogeneousVector (list -Integer -Integer -Boolean))]
         [tc-e (vector 2 "3" #t) (make-HeterogeneousVector (list -Integer -String -Boolean))]
+        [tc-e (vector) (make-HeterogeneousVector (list))]
+        [tc-e (vector) (make-HeterogeneousVector (list)) #:expected tc-any-results]
+        [tc-err (vector) #:expected (ret -Integer)]
         [tc-e (vector-immutable 2 "3" #t) (make-HeterogeneousVector (list -Integer -String -Boolean))]
         [tc-e (make-vector 4 1) (-vec -Integer)]
         [tc-e (build-vector 4 (lambda (x) 1)) (-vec -Integer)]
@@ -947,7 +964,7 @@
               (-lst -Number)]
         [tc-err (list (values 1 2))]
 
- 
+
         ;;Path tests
         (tc-e (path-string? "foo") B)
         (tc-e (path-string? (string->path "foo")) #:ret (ret B (-FS -top -bot)))
@@ -1163,7 +1180,7 @@
         (tc-e (filesystem-root-list) (-lst -Path))
 
 
-        
+
 
         (tc-e (copy-directory/files "tmp/src" "tmp/dest") -Void)
         (tc-e (delete-directory/files "tmp/src") -Void)
@@ -1179,7 +1196,7 @@
 
         (tc-e (make-directory* "tmp/a/b/c") -Void)
 
-        
+
         (tc-e (put-preferences (list 'sym 'sym2) (list 'v1 'v2)) -Void)
 
         (tc-e (preferences-lock-file-mode) (one-of/c 'exists 'file-lock))
@@ -1213,7 +1230,7 @@
         (tc-e (syntax-span #'here) (-opt -Nat))
 
 
-        ;Parameters        
+        ;Parameters
         (tc-e (parameter-procedure=? current-input-port current-output-port) B)
 
         ;Namespaces
@@ -1447,7 +1464,7 @@
         [tc-e (#%variable-reference +) -Variable-Reference]
         [tc-e (apply (λ: ([x : String] [y : String]) (string-append x y)) (list "foo" "bar")) -String]
         [tc-e (apply (plambda: (a) ([x : a] [y : a]) x) (list "foo" "bar")) -String]
-        [tc-e (ann 
+        [tc-e (ann
                (case-lambda [(x) (add1 x)]
                             [(x y) (add1 x)])
                (case-> (Integer -> Integer)
@@ -1463,18 +1480,18 @@
          (let ()
            (define: long : (List 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 Integer)
              (list 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1))
-           
+
            (define-syntax-rule (go acc ...)
              (begin (ann (acc long) One) ...))
-           
+
            (go first second third fourth fifth sixth seventh eighth ninth tenth))
          (-val 1)]
-        
+
         [tc-e (vector-append #(1) #(2))
               (-vec -Integer)]
-	[tc-e/t (ann #() (Vectorof Integer))
+        [tc-e/t (ann #() (Vectorof Integer))
                 (-vec -Integer)]
-        
+
         [tc-e (let: ([x : Float 0.0])
                 (= 0 x))
               #:ret (ret -Boolean (-FS -top -top) (make-Empty))]
@@ -1484,9 +1501,9 @@
         [tc-e (let: ([x : Real 0.0])
                 (= 0 x))
               #:ret (ret -Boolean (-FS -top -top) (make-Empty))]
-        
+
         [tc-e/t (ann (lambda: ([x : Boolean]) (if x x #t)) (Boolean -> #t)) (t:-> -Boolean (-val #t))]
-        
+
         [tc-e (sequence? 'foo)
               -Boolean]
         [tc-err (stop-before (inst empty-sequence Symbol) zero?)]
