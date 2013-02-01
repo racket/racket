@@ -47,7 +47,7 @@
                        (define-lex-abbrev a b)
                        (define-lex-abbrev b a)
                        (let ()
-                         (lexer ((a) 1))))))
+                         (lexer (a 1))))))
 
 (check-regexp-match #rx"regular-expression"
                     (catch-syn-error 
@@ -55,7 +55,7 @@
                        (define-lex-abbrev a (repetition 0 1 b))
                        (define-lex-abbrev b (repetition 0 1 a))
                        (let ()
-                         (lexer ((a) 1))))))
+                         (lexer (a 1))))))
 
 ;; Detecting cycle within same abbreviation:
 (check-regexp-match #rx"regular-expression"
