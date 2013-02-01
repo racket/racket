@@ -21,12 +21,6 @@
 
 ;; A date is always represented by the number of seconds since the platform-specific, UTC epoch
 
-(define (date*->seconds dt [local-time? #t])
-  (match-define (date* s mn h d m y wd yd dst? tz ns tz-name)
-    dt)
-  (+ (date->seconds (date s mn h d m y wd yd dst? tz) local-time?)
-     (/ ns 1000000000)))
-
 (define (date*->utc-seconds dt)
   (- (date*->seconds dt #f) (date-time-zone-offset dt)))
 

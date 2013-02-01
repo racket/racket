@@ -3,7 +3,7 @@
 
 (Section 'date)
 
-(require mzlib/date)
+(require racket/date)
 
 (test #t date? (date* 0 0 0 1 1 -3000 0 0 #f -1000 0 "AST"))
 (test #t date? (date* 60 59 23 31 12 3000 6 365 #t 1000 999999999 "ZST"))
@@ -38,12 +38,21 @@
 (let* ([secs (find-seconds 1 2 3 4 5 2006)]
        [d-some-tz (seconds->date secs)]
        [d (struct-copy date d-some-tz
-                       [time-zone-offset -21600])])
+                       [time-zone-offset -21600])]
+       [d* (date* (date-second d) (date-minute d) (date-hour d)
+                  (date-day d) (date-month d) (date-year d)
+                  (date-week-day d) (date-year-day d) (date-dst? d)
+                  (date-time-zone-offset d)
+                  62500
+                  "MDT")]) 
   (define (test-string fmt time? result)
     (test (parameterize ([date-display-format fmt])
             (date->string d time?))
           fmt result))
   (test secs date->seconds d)
+  (test secs date*->seconds d)
+  (test (+ secs #e0.0625) date*->seconds d*)
+  (test (date->seconds d*) date->seconds (seconds->date (date*->seconds d*)))
   
   (test-string 'american #f "Thursday, May 4th, 2006")
   (test-string 'american #t "Thursday, May 4th, 2006 3:02:01am")

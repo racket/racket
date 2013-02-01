@@ -6,8 +6,9 @@
          racket/contract/base)
 
 (provide/contract
- [current-date (-> date?)]
+ [current-date (-> date*?)]
  [date->seconds ((date?) (any/c) . ->* . exact-integer?)]
+ [date*->seconds ((date?) (any/c) . ->* . real?)]
  [date->string ((date?) (any/c) . ->* . string?)]
  [date-display-format (parameter/c (symbols 'american 'chinese 'german 'indian 'irish 'julian 'iso-8601 'rfc2822))]
  [find-seconds (((integer-in 0 61)
@@ -23,7 +24,7 @@
  [julian/scalinger->string (exact-integer? . -> . string?)])
 
 (define (current-date)
-  (seconds->date (current-seconds)))
+  (seconds->date (* #i1/1000 (current-inexact-milliseconds))))
 
 ;; Support for Julian calendar added by Shriram;
 ;; current version only works until 2099 CE Gregorian
@@ -262,6 +263,12 @@
    (date-month date) 
    (date-year date)
    local-time?))
+
+(define (date*->seconds date [local-time? #t])
+  (define s (date->seconds date local-time?))
+  (if (date*? date)
+      (+ s (/ (date*-nanosecond date) 1000000))
+      s))
 
 (define (find-seconds sec min hour day month year [local-time? #t])
   (define (signal-error msg)
