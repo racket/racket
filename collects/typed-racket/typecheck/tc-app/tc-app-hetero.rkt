@@ -130,7 +130,9 @@
          [(list t0) (tc/app/check #'(#%plain-app . form) (ret t0))]
          [_ (continue)])]
       ;; since vectors are mutable, if there is no expected type, we want to generalize the element type
-      [(or #f (tc-result1: _))
-       (ret (make-HeterogeneousVector (map (lambda (x) (generalize (tc-expr/t x)))
-                                           (syntax->list #'(args ...)))))]
+      [(or #f (tc-any-results:) (tc-result1: _))
+       (cond-check-below
+         (ret (make-HeterogeneousVector (map (lambda (x) (generalize (tc-expr/t x)))
+                                             (syntax->list #'(args ...)))))
+         expected)]
       [_ (int-err "bad expected: ~a" expected)])))
