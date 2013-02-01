@@ -40,6 +40,35 @@
                        (let ()
                          (lexer ((a) 1))))))
 
+;; Detecting mutual recursion cycle:
+(check-regexp-match #rx"regular-expression"
+                    (catch-syn-error 
+                     (let ()
+                       (define-lex-abbrev a b)
+                       (define-lex-abbrev b a)
+                       (let ()
+                         (lexer ((a) 1))))))
+
+(check-regexp-match #rx"regular-expression"
+                    (catch-syn-error 
+                     (let ()
+                       (define-lex-abbrev a (repetition 0 1 b))
+                       (define-lex-abbrev b (repetition 0 1 a))
+                       (let ()
+                         (lexer ((a) 1))))))
+
+;; Detecting cycle within same abbreviation:
+(check-regexp-match #rx"regular-expression"
+                    (catch-syn-error 
+                     (let ()
+                       (define-lex-abbrev balanced 
+                         (union (concatenation "(" balanced ")" balanced)
+                                any-char))
+                       (lexer
+                        [balanced (string-append lexeme (balanced input-port))]
+                        [(eof) ""]))))
+
+
 (check-regexp-match #rx"regular-expression" (catch-syn-error (lexer (1 1))))
 (check-regexp-match #rx"repetition" (catch-syn-error (lexer ((repetition) 1))))
 (check-regexp-match #rx"repetition" (catch-syn-error (lexer ((repetition #\1 #\1 "3") 1))))
