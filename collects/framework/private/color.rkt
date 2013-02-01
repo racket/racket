@@ -1073,7 +1073,9 @@ added get-regions
     ;; paren, in which case it returns #f.
     (define/private (get-close-paren pos)
       (define-values (a b) (get-token-range pos))
+      (define token (classify-position pos))
       (cond
+        [(memq token '(string comment error)) #f]
         [(or (= a pos) (= b pos))
          (define raw-bcs (backward-containing-sexp pos 0))
          (define bcs (skip-whitespace raw-bcs 'backward #t))
