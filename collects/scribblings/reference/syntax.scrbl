@@ -2623,12 +2623,12 @@ binding to an @tech{assignment transformer}.}
 
 @defform[(with-continuation-mark key-expr val-expr result-expr)]{
 
-The @racket[key-expr], @racket[mark-expr], and @racket[result-expr]
+The @racket[key-expr], @racket[val-expr], and @racket[result-expr]
 expressions are evaluated in order. After @racket[key-expr] is
-evaluated to obtain a key and @racket[mark-expr] is evaluated to
-obtain a mark, the key is mapped to the mark in the current
-continuation's initial frame. If the frame already has a mark for the
-key, it is replaced. Finally, the @racket[result-expr] is evaluated;
+evaluated to obtain a key and @racket[val-expr] is evaluated to
+obtain a value, the key is mapped to the value as a @tech{continuation mark} in the current
+continuation's initial @tech{continuation frame}. If the frame already has a mark for the
+key, the mark is replaced. Finally, the @racket[result-expr] is evaluated;
 the continuation for evaluating @racket[result-expr] is the
 continuation of the @racket[with-continuation-mark] expression (so the
 result of the @racket[result-expr] is the result of the
