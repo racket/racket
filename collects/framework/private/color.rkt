@@ -1078,7 +1078,7 @@ added get-regions
         [(memq token '(string comment error)) #f]
         [(or (= a pos) (= b pos))
          (define raw-bcs (backward-containing-sexp pos 0))
-         (define bcs (skip-whitespace raw-bcs 'backward #t))
+         (define bcs (and raw-bcs (skip-whitespace raw-bcs 'backward #t)))
          (cond
            [(and bcs (> bcs 0))
             (define a (assoc (string->symbol (string (get-character (- bcs 1))))

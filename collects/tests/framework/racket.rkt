@@ -342,6 +342,12 @@
                            '(["[()\")" "" "\""]
                              ["[()\")" "" "\""]))
 
+(test-parens-behavior/full 'close-adjusts-properly-when-no-containing-sexp
+                           ")" "" ""
+                           #\]
+                           '([")]" "" ""]
+                             [")]" "" ""]))
+
 #| for these, the key-event with meta-down doesn't seem to work... maybe a Mac OS
   issue; and may cause problems with these tests on another platform? .nah. |#
 (when (equal? 'macosx (system-type))
