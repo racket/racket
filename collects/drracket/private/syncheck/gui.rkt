@@ -912,7 +912,7 @@ If the namespace does not, they are colored the unbound color.
                        (not (eq? cursor-tooltip 'out-of-sync))]
                       [else #f]))
                   (when update-tooltip-frame-and-matching-identifiers?
-                    (update-tooltip-frame-and-matching-identifiers))
+                    (update-tooltip-frame-and-matching-identifiers #t))
                   ;; update on a timer if the arrows changed
                   (when (update-latent-arrows mouse-x mouse-y)
                     (start-arrow-draw-timer syncheck-arrow-delay)))
@@ -1101,7 +1101,7 @@ If the namespace does not, they are colored the unbound color.
               (set! cursor-eles latent-eles)
               (set! cursor-tooltip latent-tooltip)
               
-              (update-tooltip-frame-and-matching-identifiers)
+              (update-tooltip-frame-and-matching-identifiers #f)
               (update-docs-background cursor-eles)
               (unless (equal? latent-stuff cursor-stuff)
                 (invalidate-bitmap-cache)))
@@ -1221,9 +1221,9 @@ If the namespace does not, they are colored the unbound color.
                     (make-rename-menu menu identifier-location-set/f))
                   (void))))
             
-            (define/private (update-tooltip-frame-and-matching-identifiers)
+            (define/private (update-tooltip-frame-and-matching-identifiers refreshing?)
               (update-tooltip-frame)
-              (update-matching-identifiers))
+              (update-matching-identifiers refreshing?))
             
             (define tooltip-frame #f)
             (define/private (update-tooltip-frame)
@@ -1238,7 +1238,7 @@ If the namespace does not, they are colored the unbound color.
                 [_ (send tooltip-frame show #f)]))
             
             (define current-matching-identifiers (set))
-            (define/private (update-matching-identifiers)
+            (define/private (update-matching-identifiers refreshing?)
               (define arrow-records (fetch-arrow-records cursor-text cursor-pos))
               (define id-set (if arrow-records
                                  (let ([an-identifier-location-set
@@ -1253,16 +1253,16 @@ If the namespace does not, they are colored the unbound color.
               (define clr "GreenYellow")
               (define style 'ellipse) 
               (unless (equal? current-matching-identifiers id-set)
-                (define in-edit-sequence (list this))
-                (begin-edit-sequence)
+                (define in-edit-sequence '())
                 (define (uh/highlight highlight?)
                   (for ([lst (in-set current-matching-identifiers)])
                     (define txt (list-ref lst 0))
                     (define start (list-ref lst 1))
                     (define end (list-ref lst 2))
-                    (unless (member txt in-edit-sequence)
-                      (set! in-edit-sequence (cons txt in-edit-sequence))
-                      (send txt begin-edit-sequence))
+                    (unless refreshing?
+                      (unless (member txt in-edit-sequence)
+                        (set! in-edit-sequence (cons txt in-edit-sequence))
+                        (send txt begin-edit-sequence)))
                     (if highlight?
                         (send txt highlight-range start end clr #f 'low style)
                         (send txt unhighlight-range start end clr #f style))))
