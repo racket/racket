@@ -210,7 +210,8 @@ See also @xmethod[editor<%> on-paint].
 
 The snip's editor is usually internally locked for
  writing and reflowing when this method is called
- (see also @|lockdiscuss|).
+ (see also @|lockdiscuss|), and it is normally in a refresh (see 
+ @secref["editorthreads"]).
 
 }
 @methimpl{

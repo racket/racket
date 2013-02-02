@@ -210,18 +210,31 @@ See also @method[editor<%> refresh-delayed?] and @method[editor<%>
 
 If the @racket[undoable?] flag is @racket[#f], then the changes made
  in the sequence cannot be reversed through the @method[editor<%>
- undo] method. To accomplish this, the editor just does not add
- entries to the undo log when in an edit sequence where the
- @racket[undoable?] flag is @racket[#f]. So, for example, if an
- @litchar{a} is inserted into the editor and then a @litchar{b}
- is inserted, and then an un-undoable edit-sequence begins,
- and the @litchar{a} is colored red, and then the edit-sequence ends,
- then an undo will remove the @litchar{b}, leaving the @litchar{a}
- colored red.
- 
- This behavior also means that editors can get confused. Consider
- this program:
- @examples[#:eval 
+ undo] method. See @elemref["ed-seq-undo"]{below} for more information
+ on undo. The @racket[undoable?] flag is only effective for the outermost
+ @method[editor<%> begin-edit-sequence] when nested sequences are
+ used. Note that, for a @racket[text%] object, the character-inserting
+ version of @method[text% insert] interferes with sequence-based undo
+ groupings.
+
+If the @racket[interrupt-streak?] flag is @racket[#f] and the sequence is
+ outermost, then special actions before and after the sequence count
+ as consecutive actions. For example, @method[editor<%> kill]s just before 
+ and after the sequence are appended in the clipboard.
+
+@elemtag["ed-seq-undo"]{@italic{Undo details:}} The behavior of @racket[undoable?] as @racket[#f] is
+ implemented by not adding entries to an undo log. For example, suppose that
+ an @litchar{a} is inserted into the editor, a @litchar{b}
+ is inserted, and then an un-undoable edit sequence begins,
+ and the @litchar{a} is colored red, and then the edit sequence ends.
+ An undo will remove the @litchar{b}, leaving the @litchar{a}
+ colored red. 
+
+ As another example, in the following interaction,
+ @method[editor<%> undo] removes the @litchar{a}
+ instead of the @litchar{b}:
+
+ @interaction[#:eval 
            editor-eval
            (eval:alts (define t (new text%))
                       ;; this is a pretty horrible hack, but 
@@ -243,29 +256,18 @@ If the @racket[undoable?] flag is @racket[#f], then the changes made
                                     "cab"]
                                    [else "cb"]))
                                (super-new)))))
-           (send t set-max-undo-history 'forever)
-           (send t insert "a")
-           (send t insert "b")
-           (send t begin-edit-sequence #f #f)
-           (send t insert "c" 0 0)
-           (send t end-edit-sequence)
-           (send t get-text)
-           (send t undo)
-           (send t get-text)]
- You might hope that the undo would remove the @litchar{b}, but it removes
- the @litchar{a}.
+           (begin
+            (send t set-max-undo-history 'forever)
+            (send t insert "a")
+            (send t insert "b")
+            (send t begin-edit-sequence #f #f)
+            (send t insert "c" 0 0)
+            (send t end-edit-sequence)
+            (send t get-text))
+           (begin
+            (send t undo)
+            (send t get-text))]
       
- The @racket[undoable?] flag is only effective for the outermost
- @method[editor<%> begin-edit-sequence] when nested sequences are
- used. Note that, for a @racket[text%] object, the character-inserting
- version of @method[text% insert] interferes with sequence-based undo
- groupings.
-
-If the @racket[interrupt-streak?] flag is @racket[#f] and the sequence is
- outermost, then special actions before and after the sequence count
- as consecutive actions. For example, kills just before and after the
- sequence are appended in the copy buffer.
-
 }
 @methimpl{
 
@@ -1611,7 +1613,9 @@ The @method[editor<%> on-paint] method must not make any assumptions
  restore any drawing context settings that it changes.
 
 The editor is internally locked for writing and reflowing during a
- call to this method (see also @|lockdiscuss|).
+ call to this method (see also @|lockdiscuss|). The @method[editor<%>
+ on-paint] method is called during a refresh; see
+ @secref["editorthreads"].
 
 See also @method[editor<%> invalidate-bitmap-cache].
 
