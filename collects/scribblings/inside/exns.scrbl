@@ -220,7 +220,7 @@ default. Call @cpp{scheme_set_can_break} (which is the same as calling
 the Racket function @racket[break-enabled]) to enable or disable
 breaks. To enable or disable breaks during the dynamic extent of
 another evaluation (where you would use
-@racket[with-break-parameterization] in Racket), use
+@racket[call-with-break-parameterization] in Racket), use
 @cppi{scheme_push_break_enable} before and
 @cppi{scheme_pop_break_enable} after, instead.
 
@@ -523,7 +523,7 @@ calling @racket[break-enabled].}
 
 Use this function with @cpp{scheme_pop_break_enable} to enable or
 disable breaks in the same way as
-@racket[with-break-parameterization]; this function writes to
+@racket[call-with-break-parameterization]; this function writes to
 @var{cframe} to initialize it, and @cpp{scheme_pop_break_enable} reads
 from @var{cframe}. If @var{pre_check} is non-zero and breaks are
 currently enabled, any pending break exception is raised.}
