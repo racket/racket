@@ -35,8 +35,6 @@ Like @cpp{scheme_equal}, but accepts an extra value for cycle
 tracking. This procedure is meant to be called by a procedure
 installed with @cpp{scheme_set_type_equality}.}
 
-Returns 1 if the Racket values are @racket[equal?].}
-
 @function[(intptr_t scheme_equal_hash_key
            [Scheme_Object* obj])]{
 
@@ -54,8 +52,6 @@ Returns the secondary @racket[equal?]-hash key for @var{obj}.}
 Like @cpp{scheme_equal_hash_key}, but accepts an extra value for cycle
 tracking. This procedure is meant to be called by a hashing procedure
 installed with @cpp{scheme_set_type_equality}.}
-
-Returns the primary @racket[equal?]-hash key for @var{obj}.}
 
 @function[(intptr_t scheme_recur_equal_hash_key2
            [Scheme_Object* obj]
