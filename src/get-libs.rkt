@@ -65,7 +65,7 @@
         ["libglib-2.0.0.dylib" 1689952]
         ["libpango-1.0.0.dylib" 392432]
         ["libgmodule-2.0.0.dylib" 19768]
-        ["libpangocairo-1.0.0.dylib" 96640]
+        ["libpangocairo-1.0.0.dylib" 97352]
         ["libgobject-2.0.0.dylib" 438192]
         ["libpixman-1.0.dylib" 633368]
         ["libgthread-2.0.0.dylib" 8592]

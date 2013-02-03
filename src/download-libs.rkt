@@ -21,7 +21,7 @@
 
 
 (define url-host "download.racket-lang.org")
-(define url-path "/libs/10/")
+(define url-path "/libs/11/")
 (define url-base (string-append "http://" url-host url-path))
 (define architecture #f) ;; set in `do-download'
 

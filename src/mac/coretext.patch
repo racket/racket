@@ -1,6 +1,6 @@
 diff -r -u pango-1.29.5-orig/modules/basic/basic-coretext.c pango-1.29.5/modules/basic/basic-coretext.c
---- pango-1.29.5-orig/modules/basic/basic-coretext.c	2011-08-15 19:11:08.000000000 -0600
-+++ pango-1.29.5/modules/basic/basic-coretext.c	2012-05-17 14:04:39.000000000 -0600
+--- pango-1.29.5-orig/modules/basic/basic-coretext.c	2011-08-15 18:11:08.000000000 -0700
++++ pango-1.29.5/modules/basic/basic-coretext.c	2012-05-17 13:04:39.000000000 -0700
 @@ -54,18 +54,26 @@
  	   PangoGlyphString *glyphs,
  	   int               i,
@@ -186,8 +186,8 @@ diff -r -u pango-1.29.5-orig/modules/basic/basic-coretext.c pango-1.29.5/modules
    CFRelease (attstr);
    CFRelease (cstr);
 diff -r -u pango-1.29.5-orig/pango/pangocairo-coretextfont.c pango-1.29.5/pango/pangocairo-coretextfont.c
---- pango-1.29.5-orig/pango/pangocairo-coretextfont.c	2011-08-15 19:11:08.000000000 -0600
-+++ pango-1.29.5/pango/pangocairo-coretextfont.c	2012-02-17 14:18:18.000000000 -0700
+--- pango-1.29.5-orig/pango/pangocairo-coretextfont.c	2011-08-15 18:11:08.000000000 -0700
++++ pango-1.29.5/pango/pangocairo-coretextfont.c	2012-05-17 14:14:02.000000000 -0700
 @@ -147,6 +147,12 @@
    metrics->strikethrough_position = metrics->ascent / 3;
    metrics->strikethrough_thickness = CTFontGetUnderlineThickness (ctfont) * PANGO_SCALE;
@@ -201,3 +201,15 @@ diff -r -u pango-1.29.5-orig/pango/pangocairo-coretextfont.c pango-1.29.5/pango/
    layout = pango_layout_new (context);
    font_desc = pango_font_describe_with_absolute_size ((PangoFont *) font);
    pango_layout_set_font_description (layout, font_desc);
+diff -r -u pango-1.29.5-orig/pango/pangocoretext-fontmap.c pango-1.29.5/pango/pangocoretext-fontmap.c
+--- pango-1.29.5-orig/pango/pangocoretext-fontmap.c	2011-11-22 11:02:35.000000000 -0800
++++ pango-1.29.5/pango/pangocoretext-fontmap.c	2013-02-02 06:13:34.000000000 -0800
+@@ -941,6 +941,8 @@
+       CTFontDescriptorRef desc = CFArrayGetValueAtIndex (ctfaces, i);
+ 
+       str = CTFontDescriptorCopyAttribute (desc, kCTFontFamilyNameAttribute);
++      if (!str) continue;
++
+       buffer = gchar_from_cf_string (str);
+ 
+       family_name = g_utf8_casefold (buffer, -1);
