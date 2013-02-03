@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require "command-name.rkt"
          "all-tools.rkt")
 
@@ -79,7 +79,7 @@
    (if show-all?
        (list #f #t)
        (list #f)))
-  (printf "\nA command can be specified by an unambigous prefix.")
+  (printf "\nA command can be specified by an unambiguous prefix.")
   (unless show-all?
     (printf "\nSee `raco help' for a complete list of commands."))
   (printf "\nSee `raco help <command>' for help on a command.")
