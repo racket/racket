@@ -24,18 +24,25 @@
              (or (not check-suffix?)
                  (regexp-match #rx#"\\.rkt$" (path->bytes p))))
         (define something-wasnt-declared? #f)
-        (unless quiet?
-          (printf "testing ~a\n" p))
         (for ([submodule (in-list (if (null? submodules)
                                       '(test)
                                       (reverse submodules)))])
           (define mod `(submod ,p ,submodule))
           (cond
             [(module-declared? mod #t)
+             (unless quiet?
+               (printf "running ~s:\n" `(submod ,(if (absolute-path? p)
+                                             `(file ,(path->string p))
+                                             (path->string p))
+                                        ,submodule)))
              (dynamic-require mod #f)]
             [else
              (set! something-wasnt-declared? #t)]))
         (when (and run-anyways? something-wasnt-declared?)
+          (unless quiet?
+            (printf "running ~s:\n" (if (absolute-path? p)
+                                `(file ,(path->string p))
+                                (path->string p))))
           (dynamic-require p #f))]
        [(not (file-exists? p))
         (error 'test "given path ~e does not exist" p)])]))
