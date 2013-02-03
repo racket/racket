@@ -5,8 +5,9 @@
          raco/command-name
          planet2/lib)
 
-(define submodule 'test)
+(define submodules '())
 (define run-anyways? #t)
+(define quiet? #f)
 
 (define (do-test e [check-suffix? #f])
   (match e
@@ -22,15 +23,22 @@
        [(and (file-exists? p)
              (or (not check-suffix?)
                  (regexp-match #rx#"\\.rkt$" (path->bytes p))))
-        (printf "testing ~a\n" p)
-        (define mod `(submod ,p ,submodule))
-        (cond
-          [(module-declared? mod #t)
-           (dynamic-require mod #f)]
-          [(and run-anyways? (module-declared? p #t))
-           (dynamic-require p #f)])]
+        (define something-wasnt-declared? #f)
+        (unless quiet?
+          (printf "testing ~a\n" p))
+        (for ([submodule (in-list (if (null? submodules)
+                                      '(test)
+                                      (reverse submodules)))])
+          (define mod `(submod ,p ,submodule))
+          (cond
+            [(module-declared? mod #t)
+             (dynamic-require mod #f)]
+            [else
+             (set! something-wasnt-declared? #t)]))
+        (when (and run-anyways? something-wasnt-declared?)
+          (dynamic-require p #f))]
        [(not (file-exists? p))
-        (error 'test "Given path ~e does not exist" p)])]))
+        (error 'test "given path ~e does not exist" p)])]))
 
 (module paths racket/base
   (require setup/link
@@ -106,16 +114,21 @@
 
 (command-line
  #:program (short-program+command-name)
- #:once-each
+ #:multi
  [("--submodule" "-s") name
-  "Runs submodule <name> (defaults to `test')"
-  (set! submodule (string->symbol name))]
+  "Runs submodule <name>\n    (defaults to running just the `test' submodule)"
+  (let ([n (string->symbol name)])
+    (set! submodules (cons n submodules)))]
+ #:once-each
  [("--run-if-absent" "-r")
   "Require module if submodule is absent (on by default)"
   (set! run-anyways? #t)]
  [("--no-run-if-absent" "-x")
   "Require nothing if submodule is absent"
   (set! run-anyways? #f)]
+ [("--quiet" "-q")
+  "Suppress `Running ...' message"
+  (set! quiet? #t)]
  #:once-any
  [("--collection" "-c")
   "Interpret arguments as collections"
