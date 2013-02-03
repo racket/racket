@@ -474,6 +474,8 @@
            (cg t t*)]
           [((Hashtable: k v) (Sequence: (list k* v*)))
            (cgen/list V X Y (list k v) (list k* v*))]
+          [((Set: t) (Sequence: (list t*)))
+           (cg t t*)]
           ;; ListDots can be below a Listof
           ;; must be above mu unfolding
           [((ListDots: s-dty dbound) (Listof: t-elem))
