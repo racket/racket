@@ -1026,7 +1026,11 @@ added get-regions
     ;; smart-skip : (or/c #f 'adjacent 'forward)
     (define/public (insert-close-paren pos char flash? fixup? [smart-skip #f])
       (define closers (map symbol->string (map cadr pairs)))
-      (define closer (and fixup? (get-close-paren pos)))
+      (define closer (get-close-paren pos
+                                      (if fixup? ;; Ensure preference for given character:
+                                          (cons (string char) (remove (string char) closers))
+                                          null)
+                                      #f))
       (define insert-str (if closer closer (string char)))
       (define (insert)
         (for ([c (in-string insert-str)])
@@ -1071,21 +1075,37 @@ added get-regions
     ;; match whatever the opening paren is at the other end, unless
     ;; the position is inside some other token or there is no opening
     ;; paren, in which case it returns #f.
-    (define/private (get-close-paren pos)
-      (define-values (a b) (get-token-range pos))
-      (define token (classify-position pos))
+    (define/private (get-close-paren pos closers continue-after-non-paren?)
       (cond
-        [(memq token '(string comment error)) #f]
-        [(or (= a pos) (= b pos))
-         (define raw-bcs (backward-containing-sexp pos 0))
-         (define bcs (and raw-bcs (skip-whitespace raw-bcs 'backward #t)))
+        [(null? closers) #f]
+        [else
+         (define c (car closers))
+         (define l (string-length c))
+         (define ls (find-ls pos))
          (cond
-           [(and bcs (> bcs 0))
-            (define a (assoc (string->symbol (string (get-character (- bcs 1))))
-                             pairs))
-            (and a (symbol->string (cadr a)))]
-           [else #f])]
-        [else #f]))
+           [ls
+            (define start-pos (lexer-state-start-pos ls))
+            (insert c pos)
+            (define cls (classify-position pos))
+            (cond
+              [(eq? cls 'parenthesis)
+               (define m (backward-match (+ l pos) start-pos))
+               (cond
+                 [(and m
+                       (send (lexer-state-parens ls) is-open-pos? (- m start-pos))
+                       (send (lexer-state-parens ls) is-close-pos? (- pos start-pos)))
+                  (delete pos (+ l pos))
+                  c]
+                 [else
+                  (delete pos (+ l pos))
+                  (get-close-paren pos (cdr closers) #t)])]
+              [else
+               (delete pos (+ l pos))
+               (if continue-after-non-paren?
+                   (get-close-paren pos (cdr closers) #t)
+                   #f)])]
+           [else c])]))
+
     
     (define/public (debug-printout)
       (for-each 

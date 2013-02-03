@@ -331,6 +331,11 @@
                            #\)
                            '(["[();)" "" ""]
                              ["[();)" "" ""]))
+(test-parens-behavior/full 'close-adjusts-properly-when-inside-a-comment.2
+                           "[;" "" "\n"
+                           #\)
+                           '(["[;)" "" "\n"]
+                             ["[;)" "" "\n"]))
 (test-parens-behavior/full 'close-adjusts-properly-when-inside-an-unclosed-string
                            "[()\"" "" ""
                            #\)
@@ -347,6 +352,7 @@
                            #\]
                            '([")]" "" ""]
                              [")]" "" ""]))
+
 
 #| for these, the key-event with meta-down doesn't seem to work... maybe a Mac OS
   issue; and may cause problems with these tests on another platform? .nah. |#
