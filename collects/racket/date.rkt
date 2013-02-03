@@ -272,9 +272,9 @@
 
 (define (find-seconds sec min hour day month year [local-time? #t])
   (define (signal-error msg)
-    (error 'find-secs (string-append 
-                       msg 
-                       " (inputs: ~a ~a ~a ~a ~a ~a)")
+    (error 'find-seconds (string-append 
+                          msg 
+                          " (inputs: ~a ~a ~a ~a ~a ~a)")
            sec min hour day month year))
   (let loop ([below-secs (get-min-seconds)]
              [secs (floor (/ (+ (get-min-seconds) (get-max-seconds)) 2))]
