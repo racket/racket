@@ -292,6 +292,8 @@
                (subtype* A0 -Nat t*)]
               [((Hashtable: k v) (Sequence: (list k* v*)))
                (subtypes* A0 (list k v) (list k* v*))]
+              [((Set: t) (Sequence: (list t*)))
+               (subtype* A0 t t*)]
               ;; special-case for case-lambda/union with only one argument              
               [((Function: arr1) (Function: (list arr2)))
                (when (null? arr1) (fail! s t))
