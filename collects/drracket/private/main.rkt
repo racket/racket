@@ -628,10 +628,13 @@
 
 (color-prefs:register-color-preference test-coverage-on-style-pref
                                        drracket:debug:test-coverage-on-style-name
-                                       (send the-color-database find-color "forest green"))
+                                       (send the-color-database find-color "black")
+                                       (send the-color-database find-color "white"))
 (color-prefs:register-color-preference test-coverage-off-style-pref
                                        drracket:debug:test-coverage-off-style-name
-                                       (send the-color-database find-color "maroon"))
+                                       (send the-color-database find-color "orange")
+                                       (send the-color-database find-color "indianred")
+                                       #:background (send the-color-database find-color "black"))
 (color-prefs:add-to-preferences-panel 
  "Module Language"
  (λ (parent)
