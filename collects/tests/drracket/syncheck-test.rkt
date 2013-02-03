@@ -1149,7 +1149,20 @@
        "  x x x x x x x x x x x x x x x x x x x x x x x x\n"
        "  x x x x x x x x x x x x x x x x x x x x x x x x\n"
        "  x x x x x x x x x x x x x x x x x x x x x x x x)\n"))
-     ))
+     (build-rename-test
+      (string-append
+       "#lang racket\n"
+       "(let ([x 1])\n"
+       "  x`1\n"
+       "  `2)\n")
+      20
+      "x"
+      "y"
+      (string-append
+       "#lang racket\n"
+       "(let ([y 1])\n"
+       "  y`1\n"
+       "  `2)\n"))))
                   
   
   (define (main)

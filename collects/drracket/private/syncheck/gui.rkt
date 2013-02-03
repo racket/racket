@@ -811,11 +811,12 @@ If the namespace does not, they are colored the unbound color.
                 ;;    the last test in the above and is because some syntax objects
                 ;;    appear to be from the original source, but can have bogus information.
 
-                ;; Use (add1 end) below, because interval-maps use half-open intervals
-                ;; ie, [start, end] = [start, end+1)
+                ;; interval-maps use half-open intervals which works out well for positions
+                ;; in the editor, since the interval [0,3) covers the characters just after
+                ;; positions 0, 1, and 2, but not the character at position 3 (positions are
+                ;; between characters)
                 (cond [use-key?
-                       (interval-map-update*! arrow-record
-                                              start (add1 end)
+                       (interval-map-update*! arrow-record start end
                                               (lambda (old)
                                                 (if (for/or ([x (in-list old)])
                                                       (and (pair? x) (car x) (eq? (car x) key)))
@@ -823,9 +824,8 @@ If the namespace does not, they are colored the unbound color.
                                                     (cons (cons key to-add) old)))
                                               null)]
                       [else
-                       (interval-map-cons*! arrow-record
-                                            start (add1 end) 
-                                            to-add null)])))
+                       (interval-map-cons*!
+                        arrow-record start end to-add null)])))
             
             (define/private (add-identifier-to-range text/start/ends name-dup?)
               (define id-set (apply set text/start/ends))
@@ -835,8 +835,7 @@ If the namespace does not, they are colored the unbound color.
                 (define arrow-record (get-arrow-record arrow-records (list-ref text/start/span 0)))
                 (define start (list-ref text/start/span 1))
                 (define end (list-ref text/start/span 2))
-                (interval-map-update*! arrow-record
-                                       start (add1 end)
+                (interval-map-update*! arrow-record start end
                                        (lambda (curr-val)
                                          (define this-uf-set
                                            (for/or ([thing (in-list curr-val)])
