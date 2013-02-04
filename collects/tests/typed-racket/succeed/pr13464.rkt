@@ -42,7 +42,50 @@
   (define neg-real     +nan.0)
   (define pos-real     +nan.0)
   (define non-neg-real +nan.0)
-  (define non-pos-real +nan.0))
+  (define non-pos-real +nan.0)
+
+
+  ;; extra tests for zeroes
+  (: non-neg-flonum+0 Nonnegative-Flonum)
+  (: non-pos-flonum+0 Nonpositive-Flonum)
+  (: non-neg-flonum-0 Nonnegative-Flonum)
+  (: non-pos-flonum-0 Nonpositive-Flonum)
+
+  (: non-neg-single-flonum+0 Nonnegative-Single-Flonum)
+  (: non-pos-single-flonum+0 Nonpositive-Single-Flonum)
+  (: non-neg-single-flonum-0 Nonnegative-Single-Flonum)
+  (: non-pos-single-flonum-0 Nonpositive-Single-Flonum)
+
+  (: non-neg-ineact-real+0 Nonnegative-Inexact-Real)
+  (: non-pos-ineact-real+0 Nonpositive-Inexact-Real)
+  (: non-neg-ineact-real-0 Nonnegative-Inexact-Real)
+  (: non-pos-ineact-real-0 Nonpositive-Inexact-Real)
+
+  (: non-neg-real+0 Nonnegative-Real)
+  (: non-pos-real+0 Nonpositive-Real)
+  (: non-neg-real-0 Nonnegative-Real)
+  (: non-pos-real-0 Nonpositive-Real)
+
+  (define non-neg-flonum+0 0.0)
+  (define non-pos-flonum+0 0.0)
+  (define non-neg-flonum-0 -0.0)
+  (define non-pos-flonum-0 -0.0)
+
+  (define non-neg-single-flonum+0 0.0f0)
+  (define non-pos-single-flonum+0 0.0f0)
+  (define non-neg-single-flonum-0 -0.0f0)
+  (define non-pos-single-flonum-0 -0.0f0)
+
+  (define non-neg-ineact-real+0 0.0)
+  (define non-pos-ineact-real+0 0.0)
+  (define non-neg-ineact-real-0 -0.0)
+  (define non-pos-ineact-real-0 -0.0)
+
+  (define non-neg-real+0 0.0)
+  (define non-pos-real+0 0.0)
+  (define non-neg-real-0 -0.0)
+  (define non-pos-real-0 -0.0)
+  )
 
 
 (require 'defs)
@@ -63,3 +106,23 @@ neg-real
 pos-real
 non-neg-real
 non-pos-real
+
+non-neg-flonum+0
+non-pos-flonum+0
+non-neg-flonum-0
+non-pos-flonum-0
+
+non-neg-single-flonum+0
+non-pos-single-flonum+0
+non-neg-single-flonum-0
+non-pos-single-flonum-0
+
+non-neg-ineact-real+0
+non-pos-ineact-real+0
+non-neg-ineact-real-0
+non-pos-ineact-real-0
+
+non-neg-real+0
+non-pos-real+0
+non-neg-real-0
+non-pos-real-0
