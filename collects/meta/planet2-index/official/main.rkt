@@ -247,7 +247,12 @@
                      (a ([href ,(main-url page/manage)])
                         ,(if (current-user req #f)
                            "Manage Your Packages"
-                           "Contribute a Package")))))
+                           "Contribute a Package")))
+               ,(if (current-user req #f)
+                  ""
+                  `(span ([class "menu_option"])
+                         (a ([href ,(main-url page/login)])
+                            "Login")))))
    (package-tags pkgs terms)
    (package-table page/info pkgs #:terms terms)))
 
@@ -680,7 +685,7 @@
     (package-ref i 'checksum))
   (define now (current-seconds))
   (define new-checksum
-    (package-url->checksum 
+    (package-url->checksum
      (package-ref i 'source)
      (list (cons 'client_id (client_id))
            (cons 'client_secret (client_secret)))))
