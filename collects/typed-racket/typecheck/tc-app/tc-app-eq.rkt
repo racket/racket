@@ -19,9 +19,10 @@
 (export tc-app-eq^)
 
 ;; comparators that inform the type system
+;; `=' is not included. Its type is more useful than this typing rule.
 (define-syntax-class comparator
-  #:literals (eq? equal? eqv? = string=? symbol=? memq member memv)
-  (pattern eq?) (pattern equal?) (pattern eqv?) (pattern =) (pattern string=?) (pattern symbol=?)
+  #:literals (eq? equal? eqv? string=? symbol=? memq member memv)
+  (pattern eq?) (pattern equal?) (pattern eqv?) (pattern string=?) (pattern symbol=?)
   (pattern member) (pattern memq) (pattern memv))
 
 
@@ -46,7 +47,7 @@
     (define-syntax-rule (alt nm pred ...)
       (and (free-identifier=? #'nm comparator) (or (pred val) ...)))
     (or (alt symbol=? symbol?)
-        (alt string=? string?)        
+        (alt string=? string?)
         (alt eq? eq?-able)
         (alt eqv? eqv?-able)
         (alt equal? equal?-able)))
