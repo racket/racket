@@ -341,6 +341,12 @@
         [tc-e/t (lambda: ([x : Number] . [y : Boolean *]) (car y)) (->* (list N) B B)]
         [tc-e ((lambda: ([x : Number] . [y : Boolean *]) (car y)) 3) B]
         [tc-e (apply (lambda: ([x : Number] . [y : Boolean *]) (car y)) 3 '(#f)) B]
+        [tc-e (lambda args (void)) #:ret (ret (t:-> -String -Void) (-FS -top -bot))
+                                   #:expected (ret (t:-> -String -Void) (-FS -top -bot))]
+        [tc-e (lambda (x y . z) 
+                (+ x y (+ (length z))))
+              #:ret (ret (t:-> -Byte -Index N) (-FS -top -bot))
+              #:expected (ret (t:-> -Byte -Index N) (-FS -top -bot))]
 
         [tc-e/t (let: ([x : Number 3])
                       (when (number? x) #t))
