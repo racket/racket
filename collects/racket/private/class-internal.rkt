@@ -3228,25 +3228,16 @@ An example
         
         c))))
 
-(define (blame-add-method-context blame thing)
+(define (blame-add-method-context blame name)
   (cond
-    [(and (procedure? thing)
-          (object-name thing))
-     (define name (object-name thing))
-     ;; the procedure name of a method has ' method in ...' in it; trim that away
-     (define method-name (regexp-replace #rx" method in .*%.?$" (symbol->string name) ""))
+    [(symbol? name)
      (blame-add-context blame 
-                        (format "the ~a method in" method-name)
+                        (format "the ~a method in" name)
                         #:important
                         name)]
-    [(symbol? thing)
-     ;; the procedure name of a method has ' method in ...' in it; trim that away
-     (blame-add-context blame 
-                        (format "the ~a method in" thing)
-                        #:important
-                        thing)]
-    [else
-     (blame-add-context blame "an unnamed method in")]))
+    [(not name)
+     (blame-add-context blame "an unnamed method in")]
+    [else (error 'blame-add-method-context "uhoh ~s" name)]))
 
 (define-struct class/c 
   (methods method-contracts fields field-contracts inits init-contracts
