@@ -72,7 +72,7 @@
                           [(> arg-len tys-len) (append arg-tys
                                                        (map (lambda _ (or rest-ty (Un)))
                                                             (drop arg-list tys-len)))]))])
-    (define (check-body)
+    (define (check-body [rest-ty rest-ty])
       (with-lexical-env/extend
        arg-list arg-types
        (make-lam-result (for/list ([al arg-list] [at arg-types] [a-ty arg-tys]) (list al at)) null
@@ -80,7 +80,8 @@
                         ;; make up a fake name if none exists, this is an error case anyway
                         (and drest (cons (or rest (generate-temporary)) drest))
                         (tc-exprs/check (syntax->list body) ret-ty))))
-    (when (or (not (= arg-len tys-len))
+    (when (or (and (< arg-len tys-len) (not rest))
+              (> arg-len tys-len)
               (and (or rest-ty drest) (not rest)))
       (tc-error/delayed (expected-str tys-len rest-ty drest arg-len rest)))
     (cond
@@ -101,11 +102,10 @@
        (let ([rest-type (cond
                           [rest-ty rest-ty]
                           [(type-annotation rest) (get-type rest #:default Univ)]
-                          [(< arg-len tys-len) (list-ref arg-tys arg-len)]
-                          [else (Un)])])
+                          [else Univ])])
          (with-lexical-env/extend
           (list rest) (list (-lst rest-type))
-          (check-body)))])))
+          (check-body rest-type)))])))
 
 ;; typecheck a single lambda, with argument list and body
 ;; drest-ty and drest-bound are both false or not false
@@ -231,7 +231,7 @@
                 f)]
              [else
               (for/list ([a argss] [f fs]  [r rests] [dr drests]
-                                   #:when (and (or r dr) (= (length a) (sub1 (syntax-len fml)))))
+                                   #:when (>= (length a) (sub1 (syntax-len fml))))
                 f)])]
        [_ null]))
   (define (go expected formals bodies formals* bodies* nums-seen)
@@ -241,7 +241,7 @@
               (for/list ([f* formals*] [b* bodies*])                
                 (match (find-expected expected f*)
                   ;; very conservative -- only do anything interesting if we get exactly one thing that matches
-                  [(list) 
+                  [(list)
                    (if (and (= 1 (length formals*)) (match expected ((tc-results: _) #t) (_ #f)))
                        (tc-error/expr #:return (list (lam-result null null (list #'here Univ) #f (ret (Un))))
                                       "Expected a function of type ~a, but got a function with the wrong arity"
