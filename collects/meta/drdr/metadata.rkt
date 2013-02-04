@@ -11,7 +11,7 @@
   (define default-cmd
     (and suffix
          (case (string->symbol (bytes->string/utf-8 suffix))
-           [(ss scm scrbl rkt sls) '(racket *)]
+           [(ss scm scrbl rkt sls) '(raco "test" "-q" "-s" "main" "-s" "test" *)]
            [(rktl)                 '(racket "-f" *)]
            [else                   #f])))
   (define (replace-* s)
