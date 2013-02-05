@@ -711,7 +711,7 @@
                             [maybe-box? [descent #f]] [maybe-box? [space #f]]
                             [maybe-box? [lspace #f]] [maybe-box? [rspace #f]])
     (let* ([old-w str-metric]
-           [changed? (old-w . < . 0)])
+           [changed? (not old-w)])
       (super get-extent dc ex ey wi h descent space lspace rspace)
 
       (when changed?
