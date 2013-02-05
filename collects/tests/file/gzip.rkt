@@ -21,6 +21,56 @@
                                              (test (< (/ o i) ratio))))))
         => buf))
 
+
+
+(define (test-degenerate-input-1)
+  ;; The content here causes fails in Racket <= 5.3.2.  This test case
+  ;; makes sure it doesn't break now.
+  (define sample-file
+    (bytes-append #"(\"5.3.2\" (\"ab7f6f4533252566bc62383ca395f8272851592b\""
+                  #" . \"9364523f1c28f962fb967025aa140670c9b5b9a5\") "
+                  #"#\"/Users/dyoo/work/minipascal/minipascal/lang/../semantics.rkt\""
+                  #" (collects #\"syntax\" #\"parse\" #\"private\" #\"runtime-report.rkt\")"
+                  #" #\"/Users/dyoo/work/minipascal/minipascal/lang/reader.rkt\")\n"))
+  
+  (define compressed (open-output-bytes))
+  
+  (deflate (open-input-bytes sample-file) compressed)
+  
+  (define inflated (open-output-bytes))
+  (define ip (open-input-bytes (get-output-bytes compressed)))
+  (inflate ip inflated)
+  
+  (test (get-output-bytes inflated) => sample-file)
+  (test (read-byte ip) => eof))
+
+
+(define (test-degenerate-input-2)
+  ;; Like the first test, but we add a zero byte at the end.  We make sure the inflater
+  ;; doesn't consume the extra byte.
+  (define sample-file
+    (bytes-append #"(\"5.3.2\" (\"ab7f6f4533252566bc62383ca395f8272851592b\""
+                  #" . \"9364523f1c28f962fb967025aa140670c9b5b9a5\") "
+                  #"#\"/Users/dyoo/work/minipascal/minipascal/lang/../semantics.rkt\""
+                  #" (collects #\"syntax\" #\"parse\" #\"private\" #\"runtime-report.rkt\")"
+                  #" #\"/Users/dyoo/work/minipascal/minipascal/lang/reader.rkt\")\n"))
+  
+  (define compressed (open-output-bytes))
+  
+  (deflate (open-input-bytes sample-file) compressed)
+  
+  (define inflated (open-output-bytes))
+  (define ip (open-input-bytes (bytes-append (get-output-bytes compressed) (bytes 0))))
+  (inflate ip inflated)
+  
+  (test (get-output-bytes inflated) => sample-file)
+  (test (read-byte ip) => 0)
+  (test (read-byte ip) => eof))
+
+
+
+
+
 (define (test-big-file)
   (define big-file
     (build-path (collection-path "drracket/private") "unit.rkt"))
@@ -31,6 +81,8 @@
   (define (rand-bytes)
     (list->bytes (for/list ([j (in-range (random 1000))]) (random 256))))
   (test-big-file)
+  (test-degenerate-input-1)
+  (test-degenerate-input-2)
   (for ([i (in-range 100)]) (id* (rand-bytes)))
   (regression-test))
 
