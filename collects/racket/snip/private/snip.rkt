@@ -378,10 +378,10 @@
   (super-new)
   (set! s-count 0)
 
-  (field [str-w -1.0]
+  (field [str-metric #f] ; a number (in which case height, decsent, and space matches style) or a vector
          [s-dtext 0]
          [s-buffer ""])
-  (define/public (set-str-w v) (set! str-w v))
+  (define/public (set-str-w v) (set! str-metric v))
   (define/public (get-s-dtext) s-dtext)
 
   (let-values ([(str len)
@@ -419,20 +419,18 @@
     (set! s-buffer ""))
 
   (def/override (size-cache-invalid)
-    (set! str-w -1.0))
+    (set! str-metric #f))
 
   (define/private (get-text-extent dc count)
     (let ([font (send s-style get-font)])
-      (let-values ([(w h d a) 
-                    (send dc get-text-extent (replace-nuls (substring s-buffer s-dtext (+ s-dtext count)))
-                          font #f)])
-        w)))
+      (send dc get-text-extent (replace-nuls (substring s-buffer s-dtext (+ s-dtext count)))
+            font #f)))
 
   (def/override (get-extent [dc<%> dc] [real? ex] [real? ey] 
                             [maybe-box? [wo #f]] [maybe-box? [ho #f]]
                             [maybe-box? [dso #f]] [maybe-box? [so #f]]
                             [maybe-box? [ls #f]] [maybe-box? [rs #f]])
-    (when (str-w . < . 0)
+    (unless str-metric
       (let ([count s-count])
         (if (or (has-flag? s-flags INVISIBLE)
                 (zero? count)
@@ -441,23 +439,37 @@
                          (eq? (string-ref s-buffer s-dtext) #\tab))))
             (if (and (= count 1) 
                      (eq? (string-ref s-buffer s-dtext) #\tab))
-                (set! str-w (send s-style get-text-width dc))
-                (set! str-w 0.0))
-            (set! str-w (get-text-extent dc count)))))
+                (set! str-metric (send s-style get-text-width dc))
+                (set! str-metric 0.0))
+            (let-values ([(w h d s) (get-text-extent dc count)])
+              (if (and (= h (send s-style get-text-height dc))
+                       (= d (send s-style get-text-descent dc))
+                       (= s (send s-style get-text-space dc)))
+                  (set! str-metric w)
+                  (set! str-metric (vector w h d s)))))))
 
-    (when wo (set-box! wo str-w))
+    (when wo (set-box! wo (if (vector? str-metric)
+                              (vector-ref str-metric 0)
+                              str-metric)))
     (when ho
-      (set-box! ho (send s-style get-text-height dc)))
+      (set-box! ho (if (vector? str-metric)
+                       (vector-ref str-metric 1)
+                       (send s-style get-text-height dc))))
     (when dso
-      (set-box! dso (send s-style get-text-descent dc)))
+      (set-box! dso (if (vector? str-metric)
+                        (vector-ref str-metric 2)
+                        (send s-style get-text-descent dc))))
     (when so
-      (set-box! so (send s-style get-text-space dc)))
+      (set-box! so (if (vector? str-metric)
+                       (vector-ref str-metric 3)
+                       (send s-style get-text-space dc))))
     (when ls (set-box! ls 0.0))
     (when rs (set-box! rs 0.0)))
 
   (def/override (partial-offset [dc<%> dc] [real? ex] [real? ey] 
                                 [exact-nonnegative-integer? offset])
-    (get-text-extent dc (min offset s-count)))
+    (let-values ([(w h d a) (get-text-extent dc (min offset s-count))])
+      w))
 
   (def/override (draw [dc<%> dc] [real? x] [real? y] 
                       [real? left] [real? top] [real? bottom] [real? right] 
@@ -479,22 +491,27 @@
                         (substring s-buffer 
                                    (+ s-dtext (min (cdr caret) s-count))
                                    (+ s-dtext s-count)))])
-            (unless (string=? before "")
-              (send dc draw-text before x y #f))
-            (let-values ([(w h d a) (if (string=? before "")
-                                        (values 0 0 0 0)
-                                        (send dc get-text-extent before))])
+            (let-values ([(bw bh bd ba) (if (string=? before "")
+                                            (values 0.0 0.0 0.0 0.0)
+                                            (send dc get-text-extent before))]
+                         [(sw sh sd sa) (send dc get-text-extent sel)]
+                         [(aw ah ad aa) (if (string=? after "")
+                                            (values 0.0 0.0 0.0 0.0)
+                                            (send dc get-text-extent after))])
+              (define (baseline-delta h d)
+                (- (max (- bh bd) (- sh sd) (- ah ad)) (- h d)))
+              (unless (string=? before "")
+                (send dc draw-text before x (+ y (baseline-delta bh bd)) #f))
               (let ([col (send dc get-text-foreground)]
                     [mode (send dc get-text-mode)])
                 (when (and s-admin (send s-admin get-selected-text-color))
                   (send dc set-text-foreground (send s-admin get-selected-text-color)))
                 (send dc set-text-mode 'transparent)
-                (send dc draw-text sel (+ x w) y #f)
+                (send dc draw-text sel (+ x bw) (+ y (baseline-delta sh sd)) #f)
                 (send dc set-text-foreground col)
-                (send dc set-text-mode mode))
-              (unless (string=? after "")
-                (let-values ([(w2 h d a) (send dc get-text-extent sel)])
-                  (send dc draw-text after (+ x w w2) y #f)))))
+                (send dc set-text-mode mode)
+                (unless (string=? after "")
+                  (send dc draw-text after (+ x bw sw) (+ y (baseline-delta ah ad)) #f)))))
           ;; Just draw the string
           (send dc draw-text (replace-nuls (substring s-buffer s-dtext (+ s-dtext s-count))) x y #f))))
 
@@ -509,7 +526,7 @@
                         (make-object string-snip% "\n")
                         (make-object string-snip% position))])
           
-          (set! str-w -1.0)
+          (set! str-metric #f)
 
           (let ([s (string-snip-buffer snip)])
             (unless ((string-length s) . >= . position)
@@ -539,7 +556,7 @@
             (send s-admin resized this #t))))))
 
   (def/override (merge-with [snip% pred])
-    (set! str-w -1.0)      
+    (set! str-metric #f)
     (insert-with-offset (string-snip-buffer pred)
                         (snip->count pred)
                         (string-snip-dtext pred)
@@ -572,7 +589,7 @@
                       delta 
                       (+ delta len))
         (set! s-count (+ count len))
-        (set! str-w -1.0)
+        (set! str-metric #f)
         (when (not (has-flag? s-flags CAN-SPLIT))
           (when s-admin
             (unless (send s-admin recounted this #t)
@@ -648,7 +665,7 @@
               (for ([i (in-range len)])
                 (let ([c (integer-bytes->integer b #f big? (* i 4) (* (add1 i) 4))])
                   (string-set! s-buffer i (char->integer c))))))]))
-      (set! str-w -1.0))))
+      (set! str-metric #f))))
 
 (define string-snip-buffer (class-field-accessor string-snip% s-buffer))
 (define string-snip-dtext (class-field-accessor string-snip% s-dtext))
@@ -678,7 +695,7 @@
   (inherit-field s-snipclass
                  s-flags
                  s-admin
-                 str-w)
+                 str-metric)
   (inherit set-str-w
            set-s-snipclass
            do-copy-to)
@@ -693,7 +710,7 @@
                             [maybe-box? [wi #f]] [maybe-box? [h #f]] 
                             [maybe-box? [descent #f]] [maybe-box? [space #f]]
                             [maybe-box? [lspace #f]] [maybe-box? [rspace #f]])
-    (let* ([old-w str-w]
+    (let* ([old-w str-metric]
            [changed? (old-w . < . 0)])
       (super get-extent dc ex ey wi h descent space lspace rspace)
 
@@ -713,9 +730,9 @@
                                   space
                                   (if units? 
                                       1 
-                                      (if (zero? str-w)
+                                      (if (zero? str-metric)
                                           1.0
-                                          str-w))))])
+                                          str-metric))))])
             (set-str-w
              (let loop ([i 0])
                (if (= i n)
@@ -731,7 +748,7 @@
                          (- (* mult v) ex)
                          (loop (add1 i))))))))))
 
-      (when wi (set-box! wi str-w))))
+      (when wi (set-box! wi str-metric))))
 
   (def/override (partial-offset [dc<%> dc] [real? x] [real? y] 
                                 [exact-nonnegative-integer? offset])
