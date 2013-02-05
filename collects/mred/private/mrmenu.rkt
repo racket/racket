@@ -441,7 +441,7 @@
     (define wx-parent #f)
     (define shown? #f)
     (public*
-     [get-frame (lambda () prnt)]
+     [get-frame (lambda () (if (eq? root-menu-frame prnt) 'root prnt))]
      [get-items (entry-point (lambda () (send wx get-items)))]
      [enable (entry-point (lambda (on?) (send wx enable-all on?)))]
      [is-enabled? (entry-point (lambda () (send wx all-enabled?)))]

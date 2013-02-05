@@ -41,9 +41,10 @@ Enables or disables the menu bar (i.e., all of its menus).  Each
 
 
 @defmethod[(get-frame)
-           (is-a?/c frame%)]{
+           (or/c (is-a?/c frame%) 'root)]{
 
-Returns the menu bar's frame.
+Returns the menu bar's frame, or returns @racket['root] if the menu
+bar is shown when no other frames are shown.
 
 }
 
