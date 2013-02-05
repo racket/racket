@@ -289,7 +289,8 @@ Called when the user changes one of the canvas's scrollbars. A
  scroll action.
 
 This method is called only when manual
- scrollbars are changed, not automatic scrollbars; for automatic scrollbars,
+ scrollbars are changed (see @method[canvas% init-manual-scrollbars]), 
+ not automatic scrollbars; for automatic scrollbars,
  the
 @method[canvas<%> on-paint] method is called, instead.
 
