@@ -2,13 +2,13 @@
 @(require scribble/manual
           (for-label syntax-color/token-tree
                      syntax-color/paren-tree
-                     syntax-color/scheme-lexer
+                     syntax-color/racket-lexer
                      syntax-color/module-lexer
                      syntax-color/scribble-lexer
                      syntax-color/default-lexer
                      framework/framework
                      framework/private/color
-                     scheme))
+                     racket))
 
 @title{Syntax Color: Utilities}
 
@@ -31,22 +31,22 @@ Parenthesis matching code built on top of @racket[token-tree%].
 
 @; ----------------------------------------------------------------------
 
-@section{Scheme Lexer}
+@section{Racket Lexer}
 
-@defmodule[syntax-color/scheme-lexer]
+@defmodule[syntax-color/racket-lexer]
 
-@defproc[(scheme-lexer [in input-port?]) 
+@defproc[(racket-lexer [in input-port?]) 
          (values (or/c string? eof-object?) 
                  symbol?
                  (or/c symbol? false/c) 
                  (or/c number? false/c) 
                  (or/c number? false/c))]{
 
-A lexer for Scheme, including reader extensions (@secref[#:doc'(lib
+A lexer for Racket, including reader extensions (@secref[#:doc'(lib
 "scribblings/reference/reference.scrbl")]{Reader_Extension}), built
 specifically for @racket[color:text%].
 
-The @racket[scheme-lexer] function returns 5 values:
+The @racket[racket-lexer] function returns 5 values:
 
 @itemize[
   @item{Either a string containing the matching text or the eof object.  
@@ -64,7 +64,7 @@ The @racket[scheme-lexer] function returns 5 values:
 
 }
 
-@defproc[(scheme-lexer/status [in input-port?]) 
+@defproc[(racket-lexer/status [in input-port?]) 
          (values (or/c string? eof-object?) 
                  symbol?
                  (or/c symbol? false/c) 
@@ -72,13 +72,13 @@ The @racket[scheme-lexer] function returns 5 values:
                  (or/c number? false/c)
                  (or/c 'datum 'open 'close 'continue))]{
 
-Like @racket[scheme-lexer], but returns an extra value. The last
+Like @racket[racket-lexer], but returns an extra value. The last
 return value indicates whether the consumed token should count as a
 datum, an opening parenthesis (or similar starting token to group
 other tokens), a closing parenthesis (or similar), or a prefix (such
 as whitespace) on a datum.}
 
-@defproc[(scheme-nobar-lexer/status [in input-port?]) 
+@defproc[(racket-nobar-lexer/status [in input-port?]) 
          (values (or/c string? eof-object?) 
                  symbol?
                  (or/c symbol? false/c) 
@@ -86,8 +86,8 @@ as whitespace) on a datum.}
                  (or/c number? false/c)
                  (or/c 'datum 'open 'close 'continue))]{
 
-Like @racket[scheme-lexer/status], but for a dialect of Scheme where
-@litchar{|} is a delimiter instead of quoting syntax for a symbol.
+Like @racket[racket-lexer/status], except it treats
+@litchar{|} as a delimiter instead of quoting syntax for a symbol.
 This function is used by @racket[scribble-lexer].}
 
 
@@ -140,14 +140,14 @@ A lexer that only identifies @litchar{(}, @litchar{)}, @litchar{[},
                        (-> input-port? any)
                        (cons/c (-> input-port? any/c any) any/c)))]{
 
-Like @racket[scheme-lexer], but with several differences:
+Like @racket[racket-lexer], but with several differences:
 
 @itemize[
 
  @item{The @racket[module-lexer] function accepts an offset and lexer
        mode, instead of just an input port.}
 
- @item{In addition to the results of @racket[scheme-lexer],
+ @item{In addition to the results of @racket[racket-lexer],
        @racket[module-lexer] returns a backup distance and a new lexer
        mode.}
 
@@ -169,7 +169,7 @@ Like @racket[scheme-lexer], but with several differences:
 
        If the language is specified but it provides no
        @racket[get-info] or @racket['color-lexer] result, then
-       @racket[scheme-lexer] is returned as the mode.}
+       @racket[racket-lexer] is returned as the mode.}
 
  @item{When @racket[mode] is a lexer procedure, the lexer is applied
        to @racket[in]. The lexer's results are returned, plus the
@@ -197,7 +197,7 @@ Like @racket[scheme-lexer], but with several differences:
                  exact-nonnegative-integer?
                  any/c)]{
 
-Like @racket[scheme-lexer], but for Scheme extended with Scribbles
+Like @racket[racket-lexer], but for Racket extended with Scribble's
 @"@" notation (see @secref[#:doc '(lib
 "scribblings/scribble/scribble.scrbl") "reader"]).}
 
@@ -213,7 +213,7 @@ Like @racket[scheme-lexer], but for Scheme extended with Scribbles
                  any/c)]{
 
 Like @racket[scribble-lexer], but starting in ``text'' mode instead of
-Scheme mode.}
+Racket mode.}
 
 @; ----------------------------------------------------------------------
 

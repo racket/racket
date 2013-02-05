@@ -1,4 +1,4 @@
-;; This implements the equivalent of mzscheme's read-syntax for R5RS scheme.
+;; This implements the equivalent of racket's read-syntax for R5RS scheme.
 ;; It has not been thoroughly tested.  Also it will read an entire file into a 
 ;; list of syntax objects, instead of returning one syntax object at a time
 
@@ -59,7 +59,7 @@
    [comment (:: #\; (:* (:~ #\newline)) #\newline)]
    
    
-   ;; See ${PLTHOME}/collects/syntax-color/scheme-lexer.rkt for an example of
+   ;; See ${PLTHOME}/collects/syntax-color/racket-lexer.rkt for an example of
    ;; using regexp macros to avoid the cut and paste.
    ;   [numR (:: prefixR complexR)]
    ;   [complexR (:or realR

@@ -54,7 +54,7 @@ style lexer and parser generators.
      @racket[re]'s against the buffer, and returns the result of
      executing the corresponding @racket[action-expr].
 
-     @margin-note{The implementation of @racketmodname[syntax-color/scheme-lexer]
+     @margin-note{The implementation of @racketmodname[syntax-color/racket-lexer]
                  contains a lexer for the @racketmodname[racket] language.
                  In addition, files in the @filepath{examples} sub-directory
                  of the @filepath{parser-tools} collection contain
