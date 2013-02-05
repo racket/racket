@@ -1732,14 +1732,25 @@
             (when active-canvas
               (send (send active-canvas get-top-level-window) delegate-moved))))))
     
+    (define no-delegate-edit-sequence-depth 0)
+     
     (define/augment (on-edit-sequence)
-      (when delegate 
-        (send delegate begin-edit-sequence))
+      (cond
+        [delegate 
+         (send delegate begin-edit-sequence)]
+        [else
+         (set! no-delegate-edit-sequence-depth
+               (+ no-delegate-edit-sequence-depth 1))])
       (inner (void) on-edit-sequence))
 
     (define/augment (after-edit-sequence)
-      (when delegate 
-        (send delegate end-edit-sequence))
+      (cond
+        [(and delegate 
+              (= 0 no-delegate-edit-sequence-depth))
+         (send delegate end-edit-sequence)]
+        [else
+         (set! no-delegate-edit-sequence-depth
+               (- no-delegate-edit-sequence-depth 1))])
       (inner (void) after-edit-sequence))
     
     (define/override (resized snip redraw-now?)
