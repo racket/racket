@@ -6,7 +6,6 @@
 
 (define-signature tc-expr^
   ([cond-contracted tc-expr (syntax? . -> . tc-results/c)]
-   [cond-contracted tc-literal (->* (syntax?) ((or/c #f Type/c)) Type/c)]
    [cond-contracted tc-expr/check (syntax? tc-results/c . -> . tc-results/c)]
    [cond-contracted tc-expr/check/t (syntax? tc-results/c . -> . Type/c)]
    [cond-contracted tc-exprs ((listof syntax?) . -> . tc-results/c)]
@@ -21,6 +20,9 @@
 
 (define-signature tc-if^
   ([cond-contracted tc/if-twoarm ((syntax? syntax? syntax?) (tc-results/c) . ->* . tc-results/c)]))
+
+(define-signature tc-literal^
+  ([cond-contracted tc-literal (->* (syntax?) ((or/c Type/c #f)) Type/c)]))
 
 (define-signature tc-lambda^
   ([cond-contracted tc/lambda (syntax? syntax? syntax? . -> . tc-results/c)]
