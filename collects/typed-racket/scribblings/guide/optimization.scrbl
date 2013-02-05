@@ -167,8 +167,9 @@ you get the most of the Typed Racket optimizer.
 Similar information (albeit without in-depth explanations or advice) is
 available from the command line. When compiling a Typed Racket program, setting
 the racket @seclink[#:doc '(lib "scribblings/reference/reference.scrbl")
-"logging"]{logging} facilities to the @racket['debug] level causes Typed
-Racket to display performance debugging information. Setting the Racket logging
-level can be done on the command line with the @racket[-W] flag:
+"logging"]{logging} facilities to the @racket['debug] level and listening to
+the @racket['TR-optimizer] logger causes Typed Racket to display performance
+debugging information. Setting the Racket logging level can be done on the
+command line with the @racket[-W] flag:
 
-@commandline{racket -W debug my-typed-program.rkt}
+@commandline["racket -W debug@TR-optimizer my-typed-program.rkt"]
