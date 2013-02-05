@@ -4284,9 +4284,9 @@ static Scheme_Object *exn_field_check(int argc, Scheme_Object **argv)
   Scheme_Object *a[2], *v;
 
   if (!SCHEME_CHAR_STRINGP(argv[0]))
-    scheme_wrong_field_type(argv[2], "string", argv[0]);
+    scheme_wrong_field_contract(argv[2], "string?", argv[0]);
   if (!SAME_OBJ(argv[1], TMP_CMARK_VALUE) && !SCHEME_CONT_MARK_SETP(argv[1]))
-    scheme_wrong_field_type(argv[2], "continuation mark set", argv[1]);
+    scheme_wrong_field_contract(argv[2], "continuation-mark-set?", argv[1]);
 
   a[0] = argv[0];
   a[1] = argv[1];
@@ -4304,7 +4304,7 @@ static Scheme_Object *exn_field_check(int argc, Scheme_Object **argv)
 static Scheme_Object *variable_field_check(int argc, Scheme_Object **argv)
 {
   if (!SCHEME_SYMBOLP(argv[2]))
-    scheme_wrong_field_type(argv[3], "symbol", argv[2]);
+    scheme_wrong_field_contract(argv[3], "symbol?", argv[2]);
 
   return scheme_values(3, argv);
 }
@@ -4321,7 +4321,7 @@ static Scheme_Object *syntax_field_check(int argc, Scheme_Object **argv)
   }
 
   if (!SCHEME_NULLP(l))
-    scheme_wrong_field_type(argv[3], "list of syntax objects", argv[2]);
+    scheme_wrong_field_contract(argv[3], "(listof syntax?)", argv[2]);
 
   return scheme_values(3, argv);
 }
@@ -4338,7 +4338,7 @@ static Scheme_Object *read_field_check(int argc, Scheme_Object **argv)
   }
 
   if (!SCHEME_NULLP(l))
-    scheme_wrong_field_type(argv[3], "list of locations", argv[2]);
+    scheme_wrong_field_contract(argv[3], "(listof srcloc?)", argv[2]);
 
   return scheme_values(3, argv);
 }
@@ -4346,7 +4346,7 @@ static Scheme_Object *read_field_check(int argc, Scheme_Object **argv)
 static Scheme_Object *break_field_check(int argc, Scheme_Object **argv)
 {
   if (!SCHEME_ECONTP(argv[2]))
-    scheme_wrong_field_type(argv[3], "escape continuation", argv[2]);
+    scheme_wrong_field_contract(argv[3], "escape-continuation?", argv[2]);
 
   return scheme_values(3, argv);
 }
