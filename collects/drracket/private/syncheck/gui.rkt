@@ -362,10 +362,10 @@ If the namespace does not, they are colored the unbound color.
             ;;   - string
             ;;   - colored-region
             ;;   - identifier-location-set
-            (define/private (get-arrow-record table text)
+            (define/private (get-arrow-record text)
               (unless (object? text)
                 (error 'get-arrow-record "expected a text as the second argument, got ~e" text))
-              (hash-ref! table text (lambda () (make-interval-map))))
+              (hash-ref! arrow-records text (lambda () (make-interval-map))))
 
             (define arrow-records #f)
             
@@ -805,7 +805,7 @@ If the namespace does not, they are colored the unbound color.
             ;; If use-key? is #f, it adds `to-add' without a key.
             ;; pre: arrow-records is not #f
             (define/private (add-to-range/key text start end to-add key use-key?)
-              (let ([arrow-record (get-arrow-record arrow-records text)])
+              (let ([arrow-record (get-arrow-record text)])
                 ;; Dropped the check (< _ (vector-length arrow-vector))
                 ;; which had the following comment:
                 ;;    the last test in the above and is because some syntax objects
@@ -828,28 +828,29 @@ If the namespace does not, they are colored the unbound color.
                         arrow-record start end to-add null)])))
             
             (define/private (add-identifier-to-range text/start/ends name-dup?)
-              (define id-set (apply set text/start/ends))
-              (define fresh-uf (uf-new id-set))
-              (define new-il-set (identifier-location-set fresh-uf name-dup?))
-              (for ([text/start/span (in-list text/start/ends)])
-                (define arrow-record (get-arrow-record arrow-records (list-ref text/start/span 0)))
-                (define start (list-ref text/start/span 1))
-                (define end (list-ref text/start/span 2))
-                (interval-map-update*! arrow-record start end
-                                       (lambda (curr-val)
-                                         (define this-uf-set
-                                           (for/or ([thing (in-list curr-val)])
-                                             (and (identifier-location-set? thing)
-                                                  (identifier-location-set-set thing))))
-                                         (cond
-                                           [this-uf-set
-                                            (set! id-set (set-union (uf-find this-uf-set) id-set))
-                                            (uf-union! fresh-uf this-uf-set)
-                                            (uf-set-canonical! this-uf-set id-set)
-                                            curr-val]
-                                           [else 
-                                            (cons new-il-set curr-val)]))
-                                       '())))
+              (when arrow-records
+                (define id-set (apply set text/start/ends))
+                (define fresh-uf (uf-new id-set))
+                (define new-il-set (identifier-location-set fresh-uf name-dup?))
+                (for ([text/start/span (in-list text/start/ends)])
+                  (define arrow-record (get-arrow-record (list-ref text/start/span 0)))
+                  (define start (list-ref text/start/span 1))
+                  (define end (list-ref text/start/span 2))
+                  (interval-map-update*! arrow-record start end
+                                         (lambda (curr-val)
+                                           (define this-uf-set
+                                             (for/or ([thing (in-list curr-val)])
+                                               (and (identifier-location-set? thing)
+                                                    (identifier-location-set-set thing))))
+                                           (cond
+                                             [this-uf-set
+                                              (set! id-set (set-union (uf-find this-uf-set) id-set))
+                                              (uf-union! fresh-uf this-uf-set)
+                                              (uf-set-canonical! this-uf-set id-set)
+                                              curr-val]
+                                             [else 
+                                              (cons new-il-set curr-val)]))
+                                         '()))))
             
             (inherit get-top-level-window)
             
