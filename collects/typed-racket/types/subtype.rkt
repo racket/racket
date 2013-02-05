@@ -53,7 +53,7 @@
 
 ;; are all the s's subtypes of all the t's?
 ;; [type] [type] -> boolean
-(define (subtypes s t) (handle-failure (subtypes* (current-seen) s t)))
+(define (subtypes s t) (handle-failure (and (subtypes* (current-seen) s t) #t)))
 
 ;; subtyping under constraint set, but produces boolean result instead of raising exn
 ;; List[(cons Number Number)] type type -> maybe[List[(cons Number Number)]]
@@ -77,11 +77,11 @@
   (define-syntax-class sub*
     (pattern e:expr))
   (syntax-parse stx
-    [(_ init (s1:sub* . args1) (s:sub* . args) ...)
-     (with-syntax ([(A* ... A-last) (generate-temporaries #'(s1 s ...))])
+    [(_ init (s:sub* . args) ...+)
+     (with-syntax ([(A* ... A-last) (generate-temporaries #'(s ...))])
        (with-syntax ([(clauses ...)
-                      (for/list ([s (syntax->list #'(s1 s ...))]
-                                 [args (syntax->list #'(args1 args ...))]
+                      (for/list ([s (syntax->list #'(s ...))]
+                                 [args (syntax->list #'(args ...))]
                                  [A (syntax->list #'(init A* ...))]
                                  [A-next (syntax->list #'(A* ... A-last))])
                          #`[#,A-next (#,s #,A . #,args)])])
@@ -163,9 +163,7 @@
    [(_ _) (fail! s t)]))
 
 (define (subtypes/varargs args dom rst)
-  (with-handlers
-      ([exn:subtype? (lambda _ #f)])
-    (subtypes*/varargs null args dom rst)))
+  (handle-failure (and (subtypes*/varargs null args dom rst) #t)))
 
 (define (subtypes*/varargs A0 argtys dom rst)
   (let loop-varargs ([dom dom] [argtys argtys] [A A0])
@@ -560,9 +558,12 @@
 
 
 (provide/cond-contract
- [subtype (c:-> (c:or/c Type/c SomeValues/c) (c:or/c Type/c SomeValues/c) boolean?)])
-(provide
-  type-compare? subtypes/varargs subtypes)
+ [subtype (c:-> (c:or/c Type/c SomeValues/c) (c:or/c Type/c SomeValues/c) boolean?)]
+ [type-compare? (c:-> (c:or/c Type/c SomeValues/c) (c:or/c Type/c SomeValues/c) boolean?)]
+ [subtypes (c:-> (c:listof (c:or/c Type/c SomeValues/c))
+                 (c:listof (c:or/c Type/c SomeValues/c))
+                 boolean?)]
+ [subtypes/varargs (c:-> (c:listof Type/c) (c:listof Type/c) (c:or/c Type/c #f) boolean?)])
 
 ;(require racket/trace)
 ;(trace subtype*)
