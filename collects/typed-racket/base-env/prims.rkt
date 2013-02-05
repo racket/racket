@@ -254,30 +254,33 @@ This file defines two sorts of primitives. All of them are provided into any mod
                    'typechecker:ignore-some #t)
              ty)))
 
-     (if (syntax-transforming-module-expression?)
-         (let ((ctc (syntax-local-lift-expression
-                       (syntax-property #'#f 'typechecker:contract-def #'ty))))
-           (define (check-valid-type _)
-             (define type (parse-type #'ty))
-             (define vars (fv type))
-             ;; If there was an error don't create another one
-             (unless (or (Error? type) (null? vars))
-               (tc-error/delayed
-                 "Type ~a could not be converted to a contract because it contains free variables."
-                 type)))
-             (syntax-property (apply-contract ctc)
-                              'typechecker:external-check check-valid-type))
-         (let ([typ (parse-type #'ty)])
-           (if (Error? typ)
-               ;; This code should never get run, typechecking will have an error earlier
-               #`(error 'cast "Couldn't parse type")
-               (apply-contract
-                 (type->contract
-                   typ
-                   ;; the value is not from the typed side
-                   #:typed-side #f
-                   (lambda ()
-                     (tc-error/stx #'ty "Type ~a could not be converted to a contract" typ)))))))]))
+     (cond [(not (unbox typed-context?)) ; no-check, don't check
+            #'v]
+           [(syntax-transforming-module-expression?)
+            (let ((ctc (syntax-local-lift-expression
+                        (syntax-property #'#f 'typechecker:contract-def #'ty))))
+              (define (check-valid-type _)
+                (define type (parse-type #'ty))
+                (define vars (fv type))
+                ;; If there was an error don't create another one
+                (unless (or (Error? type) (null? vars))
+                  (tc-error/delayed
+                   "Type ~a could not be converted to a contract because it contains free variables."
+                   type)))
+              (syntax-property (apply-contract ctc)
+                               'typechecker:external-check check-valid-type))]
+           [else
+            (let ([typ (parse-type #'ty)])
+              (if (Error? typ)
+                  ;; This code should never get run, typechecking will have an error earlier
+                  #`(error 'cast "Couldn't parse type")
+                  (apply-contract
+                   (type->contract
+                    typ
+                    ;; the value is not from the typed side
+                    #:typed-side #f
+                    (lambda ()
+                      (tc-error/stx #'ty "Type ~a could not be converted to a contract" typ))))))])]))
 
 
 (define-syntax (:type stx)
