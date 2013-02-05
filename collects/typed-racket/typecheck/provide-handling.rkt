@@ -1,16 +1,16 @@
 #lang racket/base
 
 (require "../utils/utils.rkt"
-	 (only-in srfi/1/list s:member)
+         (only-in srfi/1/list s:member)
          syntax/kerncase syntax/boundmap
-         (env type-name-env type-alias-env)         
+         (env type-name-env type-alias-env)
          (only-in (private type-contract) type->contract)
          "renamer.rkt"
          (rep type-rep)
-	 (utils tc-utils)
+         (utils tc-utils)
          (for-syntax syntax/parse racket/base)
          racket/contract/private/provide unstable/list
-          syntax/id-table racket/dict
+         syntax/id-table syntax/location racket/dict
          racket/syntax racket/struct-info racket/match
          "def-binding.rkt" syntax/parse
          (for-template racket/base "def-export.rkt" racket/contract))
@@ -96,7 +96,15 @@
                  (define-syntax cnt-id
                    (make-provide/contract-transformer
                     (quote-syntax the-contract)
-                    (quote-syntax id)
+                    (datum->syntax ; preserve source location in expanded code
+                     (quote-syntax id)
+                     (syntax->datum (quote-syntax id))
+                     (list (quote-source-file id)
+                           (quote-line-number id)
+                           (quote-column-number id)
+                           (quote-character-position id)
+                           (quote-character-span id))
+                     (quote-syntax id))
                     (quote-syntax export-id)
                     (quote-syntax module-source)))
                  (def-export export-id id cnt-id)))
