@@ -183,7 +183,7 @@
                          (let ([scribble-style
                                 (case style
                                   [(symbol) symbol-color]
-                                  [(parenthesis) paren-color]
+                                  [(parenthesis hash-colon-keyword) paren-color]
                                   [(constant string) value-color]
                                   [(comment) comment-color]
                                   [else default-color])])

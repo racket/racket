@@ -297,6 +297,7 @@
       (comment ,(make-object color% 194 116 31) ,(string-constant scheme-mode-color-comment))
       (string ,constant-green ,(string-constant scheme-mode-color-string))
       (constant ,constant-green ,(string-constant scheme-mode-color-constant))
+      (hash-colon-keyword ,(make-object color% "brown") ,(string-constant scheme-mode-color-hash-colon-keyword))
       (parenthesis ,(make-object color% "brown") ,(string-constant scheme-mode-color-parenthesis))
       (error ,(make-object color% "red") ,(string-constant scheme-mode-color-error))
       (other ,(make-object color% "black") ,(string-constant scheme-mode-color-other)))))
@@ -309,6 +310,7 @@
             (comment ,(make-object color% 249 148 40))
             (string ,(make-object color% 51 174 51))
             (constant ,(make-object color% 60 194 57))
+            (hash-colon-keyword ,(make-object color% 151 69 43))
             (parenthesis ,(make-object color% 151 69 43))
             (other ,(make-object color% "white")))])
     (map 

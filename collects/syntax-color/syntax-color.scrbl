@@ -54,7 +54,7 @@ The @racket[racket-lexer] function returns 5 values:
    This may change in the future to other string or non-string data.}
 
   @item{A symbol in @racket['(error comment sexp-comment 
-   white-space constant string no-color parenthesis other symbol eof)].}
+   white-space constant string no-color parenthesis hash-colon-keyword symbol eof other)].}
 
   @item{A symbol in @racket['(|(| |)| |[| |]| |{| |}|)] or @racket[#f].}
 

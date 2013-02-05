@@ -330,6 +330,7 @@ please adhere to these guidelines:
  (scheme-mode-color-string "String")
  (scheme-mode-color-constant "Constant")
  (scheme-mode-color-parenthesis "Parenthesis")
+ (scheme-mode-color-hash-colon-keyword "#:Keyword")
  (scheme-mode-color-error "Error")
  (scheme-mode-color-other "Other")
  ;; the ~a is filled in with one of the above (scheme-mode-*)

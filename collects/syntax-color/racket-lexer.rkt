@@ -315,7 +315,7 @@
            (make-num digit10 (:? radix10))
            (make-num digit16 radix16))
       (ret lexeme 'constant #f start-pos end-pos 'datum)]
-     [keyword (ret lexeme 'parenthesis #f start-pos end-pos 'datum)]
+     [keyword (ret lexeme 'hash-colon-keyword #f start-pos end-pos 'datum)]
      [str (ret lexeme 'string #f start-pos end-pos 'datum)]
      [";"
       (values (apply string (read-line/skip-over-specials input-port)) 'comment #f 
