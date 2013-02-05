@@ -398,7 +398,10 @@
          #:force? [force? #f]
          descs)
   (define check-sums? (not ignore-checksums?))
-  (define (install-package pkg given-type given-pkg-name)
+  (define (install-package pkg 
+                           given-type
+                           given-pkg-name
+                           #:given-checksum [given-checksum #f])
     (define-values (inferred-pkg-name type) 
       (if (path? pkg)
           (package-source->name+type (path->string pkg)
@@ -428,16 +431,19 @@
         (update-install-info-orig-pkg
          (match type
            ['github
+            (when given-checksum
+              (set! checksum given-checksum))
             (unless checksum
-              (pkg-error (~a "could not find checksum for github package source, which implies it doesn't exist\n"
-                             "  source: ~a")
-                         pkg))
+              (pkg-error 
+               (~a "could not find checksum for github package source, which implies it doesn't exist\n"
+                   "  source: ~a")
+               pkg))
             (match-define (list* user repo branch path)
                           (map path/param-path (url-path/no-slash pkg-url)))
             (define new-url
               (url "https" #f "github.com" #f #t
                    (map (λ (x) (path/param x empty))
-                        (list user repo "tarball" branch))
+                        (list user repo "tarball" checksum))
                    empty
                    #f))
             (define tmp.tgz
@@ -644,7 +650,8 @@
       (define checksum (hash-ref index-info 'checksum))
       (define info (install-package source
                                     #f
-                                    pkg-name))
+                                    pkg-name
+                                    #:given-checksum checksum))
       (when (and (install-info-checksum info)
                  check-sums?
                  (not (equal? (install-info-checksum info) checksum)))
