@@ -1,3 +1,6 @@
+Version 5.3.3, February 2013
+No changes
+
 Version 5.3.2, January 2013
 Changed case to use equal? instead of eqv?
 Changed log-message to support a name argument
