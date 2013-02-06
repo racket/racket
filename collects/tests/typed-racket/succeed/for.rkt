@@ -159,6 +159,13 @@
                      (+ i j))
        185794560)
 
+;; for/product: had problems with Real due to an unannotated accumulator
+(check =
+       (for/product: : Real
+                     ([i (in-list (list 1.2 -1.0 0.5))])
+         i)
+       -0.6)
+
 ;; multiclause versions of these don't currently work properly
 (check =
        (for*/sum: : Integer
