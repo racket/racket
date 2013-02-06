@@ -10,17 +10,17 @@
          (private-in parse-type type-annotation)
          (rep type-rep filter-rep object-rep)
          (only-in (infer infer) restrict)
-         (except-in (utils tc-utils stxclass-util))
+         (utils tc-utils stxclass-util)
          (env lexical-env type-env-structs tvar-env index-env)
          racket/private/class-internal
-         (except-in syntax/parse id)
+         syntax/parse
          unstable/function #;unstable/debug         
          (only-in srfi/1 split-at)
          (for-template "internal-forms.rkt" (only-in '#%paramz [parameterization-key pz:pk])))
 
 (require (for-template racket/base racket/private/class-internal))
 
-(import tc-if^ tc-lambda^ tc-app^ tc-let^ check-subforms^ tc-literal^)
+(import tc-if^ tc-lambda^ tc-app^ tc-let^ tc-send^ check-subforms^ tc-literal^)
 (export tc-expr^)
 
 ;; do-inst : syntax type -> type
@@ -417,21 +417,6 @@
                 [r (ret ts* fs os)])
            (add-typeof-expr form r)
            r)]))))
-
-(define/cond-contract (tc/send form rcvr method args [expected #f])
-  (-->* (syntax? syntax? syntax? syntax?) ((-or/c tc-results/c #f)) tc-results/c)
-  (match (tc-expr rcvr)
-    [(tc-result1: (Instance: (and c (Class: _ _ methods))))
-     (match (tc-expr method)
-       [(tc-result1: (Value: (? symbol? s)))
-        (let* ([ftype (cond [(assq s methods) => cadr]
-                            [else (tc-error/expr "send: method ~a not understood by class ~a" s c)])]
-               [ret-ty (tc/funapp rcvr args (ret ftype) (map tc-expr (syntax->list args)) expected)]
-               [retval (cond-check-below ret-ty expected)])
-          (add-typeof-expr form retval)
-          retval)]
-       [(tc-result1: t) (int-err "non-symbol methods not supported by Typed Racket: ~a" t)])]
-    [(tc-result1: t) (tc-error/expr #:return (or expected (ret (Un))) "send: expected a class instance, got ~a" t)]))
 
 (define (single-value form [expected #f])
   (define t (if expected (tc-expr/check form expected) (tc-expr form)))
