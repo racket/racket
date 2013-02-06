@@ -1,20 +1,38 @@
 #lang racket/base
 
-(require "../utils/utils.rkt" racket/match unstable/list unstable/sequence
-         syntax/parse
-         racket/set
+(require "../utils/utils.rkt"
+         racket/match unstable/list unstable/sequence racket/set syntax/parse
          (only-in srfi/1 unzip4) (only-in racket/list make-list)
-         (prefix-in c: racket/contract)
-         "check-below.rkt" "tc-subst.rkt"
+         (contract-req)
+         (typecheck check-below tc-subst)
          (utils tc-utils)
          (rep type-rep object-rep)
-         (types utils union abbrev subtype))
+         (except-in (types utils union abbrev subtype)
+                    -> ->* one-of/c))
 
-(provide (all-defined-out))
+(provide/cond-contract
+  [cleanup-type ((Type/c) ((or/c #f Type/c)) . ->* . Type/c)]
+  [poly-fail ((syntax? syntax? Type/c (listof tc-results?))
+              (#:name (or/c #f syntax?)
+               #:expected (or/c #f tc-results/c))
+              . ->* . tc-results/c)]
+  [tc/funapp1
+    ((syntax? (and/c syntax? syntax->list) arr? (listof tc-results/c) (or/c #f tc-results/c))
+     (#:check boolean?)
+     . ->* . tc-results/c)]
+  [domain-mismatches
+   ((syntax? syntax? Type/c (listof (listof Type/c)) (listof (or/c #f Type/c))
+     (listof (or/c #f (cons/c Type/c (or/c natural-number/c symbol?))))
+     (listof SomeValues/c) (listof tc-results?) (or/c #f Type/c) any/c)
+    (#:expected (or/c #f tc-results/c)
+     #:return tc-results?
+     #:msg-thunk (-> string? string?))
+    . ->* . tc-results/c)])
 
-;; syntax? syntax? arr? (listof tc-results/c) (or/c #f tc-results/c) [boolean?] -> tc-results/c
-(define/cond-contract (tc/funapp1 f-stx args-stx ftype0 argtys expected #:check [check? #t])
-  ((syntax? (c:and/c syntax? syntax->list) arr? (c:listof tc-results/c) (c:or/c #f tc-results/c)) (#:check boolean?) . c:->* . tc-results/c)
+
+
+;; syntax? syntax-list? arr? (listof tc-results/c) (or/c #f tc-results/c) [boolean?] -> tc-results/c
+(define (tc/funapp1 f-stx args-stx ftype0 argtys expected #:check [check? #t])
   (match* (ftype0 argtys)
     ;; we check that all kw args are optional
     [((arr: dom (and rng (or (AnyValues:) (Values: _))) rest #f (and kws (list (Keyword: _ _ #f) ...)))
@@ -86,15 +104,9 @@
           [else (string-append (stringify (map make-printable dom)) rng-string)])))
 
 ;; Generates error messages when operand types don't match operator domains.
-(define/cond-contract (domain-mismatches f-stx args-stx ty doms rests drests rngs arg-tys tail-ty tail-bound
-                                         #:expected [expected #f] #:return [return -Bottom]
-                                         #:msg-thunk [msg-thunk (lambda (dom) dom)])
-   ((syntax? syntax? Type/c (c:listof (c:listof Type/c)) (c:listof (c:or/c #f Type/c))
-     (c:listof (c:or/c #f (c:cons/c Type/c (c:or/c c:natural-number/c symbol?))))
-     (c:listof SomeValues/c) (c:listof tc-results?) (c:or/c #f Type/c) c:any/c)
-    (#:expected (c:or/c #f tc-results/c) #:return tc-results?
-     #:msg-thunk (c:-> string? string?))
-    . c:->* . tc-results/c)
+(define (domain-mismatches f-stx args-stx ty doms rests drests rngs arg-tys tail-ty tail-bound
+                           #:expected [expected #f] #:return [return -Bottom]
+                           #:msg-thunk [msg-thunk (lambda (dom) dom)])
 
   (define arguments-str
     (stringify-domain arg-tys
