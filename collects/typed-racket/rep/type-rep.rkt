@@ -5,9 +5,10 @@
 
 (require "../utils/utils.rkt")
 
+;; TODO use contract-req
 (require (utils tc-utils)
          "rep-utils.rkt" "object-rep.rkt" "filter-rep.rkt" "free-variance.rkt"
-         racket/match ;mzlib/etc
+         racket/match
          racket/contract
          racket/lazy-require
          (for-syntax racket/base syntax/parse))

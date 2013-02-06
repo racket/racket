@@ -7,7 +7,7 @@
          (rename-in (types abbrev union utils printer filter-ops resolve)
                     [make-arr* make-arr])
          (utils tc-utils stxclass-util)
-         syntax/stx (prefix-in c: racket/contract)
+         syntax/stx (prefix-in c: (contract-req))
          syntax/parse racket/dict
          (env type-env-structs tvar-env type-name-env type-alias-env
               lexical-env index-env)
@@ -28,7 +28,6 @@
                        [parse-tc-results/id (syntax? c:any/c . c:-> . tc-results/c)])
 
 (provide star ddd/bound)
-(define enable-mu-parsing (make-parameter #t))
 (print-complex-filters? #t)
 
 ;; (Syntax -> Type) -> Syntax Any -> Syntax
@@ -217,7 +216,6 @@
        (add-disappeared-use #'kw)
        (make-Vector (parse-type #'t))]
       [((~and kw t:Rec) x:id t)
-       #:fail-unless (enable-mu-parsing) "Recursive types not allowed"
        (let* ([var (syntax-e #'x)]
               [tvar (make-F var)])
          (add-disappeared-use #'kw)

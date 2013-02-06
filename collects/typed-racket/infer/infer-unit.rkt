@@ -1,6 +1,6 @@
 #lang racket/unit
 
-(require racket/require (path-up "utils/utils.rkt")
+(require "../utils/utils.rkt"
          (except-in
           (combine-in
            (utils tc-utils)
@@ -13,7 +13,7 @@
          "signatures.rkt"
          racket/match
          mzlib/etc
-         racket/contract
+         (contract-req)
          unstable/sequence unstable/list unstable/hash
          racket/list)
 

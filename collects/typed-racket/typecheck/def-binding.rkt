@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/contract "../utils/utils.rkt" racket/struct-info)
+(require "../utils/utils.rkt" (contract-req) racket/struct-info)
 
 (define-struct binding (name) #:transparent)
 (define-struct (def-binding binding) (ty) #:transparent)

@@ -1,23 +1,17 @@
 #lang racket/unit
 
-(require (rename-in "../utils/utils.rkt" [infer r:infer])
-         "signatures.rkt"
-         "tc-metafunctions.rkt"
-         "tc-subst.rkt"
-         racket/dict
-         racket/list syntax/parse
-         syntax/id-table
-         racket/syntax unstable/struct syntax/stx
-         (rename-in racket/contract [-> -->] [->* -->*] [one-of/c -one-of/c])
+(require "../utils/utils.rkt"
+         racket/dict racket/list syntax/parse racket/syntax syntax/stx
+         racket/match syntax/id-table
+         (contract-req)
          (except-in (rep type-rep) make-arr)
-         (rename-in (types abbrev utils union)
+         (rename-in (except-in (types abbrev utils union) -> ->* one-of/c)
                     [make-arr* make-arr])
          (private type-annotation)
+         (typecheck signatures tc-metafunctions tc-subst check-below)
          (env type-env-structs lexical-env tvar-env index-env)
          (utils tc-utils)
-
-         racket/match)
-(require (for-template racket/base "internal-forms.rkt"))
+         (for-template racket/base "internal-forms.rkt"))
 
 (import tc-expr^)
 (export tc-lambda^)
@@ -78,7 +72,7 @@
      ((listof identifier?)
       (or/c #f identifier?) syntax? (listof Type/c) (or/c #f Type/c)
       (or/c #f (cons/c Type/c symbol?)) tc-results/c
-      . --> .
+      . -> .
       lam-result?)
   (let* ([arg-len (length arg-list)]
          [tys-len (length arg-tys)]
@@ -174,12 +168,12 @@
   (for/list ([arg-types (in-list new-arg-types)])
     (with-lexical-env/extend
      arg-list arg-types
-     (make lam-result
-           (map list arg-list arg-types)
-           null
-           #f
-           #f
-           (tc-exprs (syntax->list body))))))
+     (lam-result
+       (map list arg-list arg-types)
+       null
+       #f
+       #f
+       (tc-exprs (syntax->list body))))))
 
 
 
@@ -213,34 +207,34 @@
               (with-lexical-env/extend
                (cons rest-id arg-list)
                (cons (make-ListDots rest-type bound) arg-types)
-               (make lam-result
-                     combined-args
-                     null
-                     #f
-                     (list rest-id (cons rest-type bound))
-                     (tc-exprs (syntax->list body))))))]
+               (lam-result
+                 combined-args
+                 null
+                 #f
+                 (list rest-id (cons rest-type bound))
+                 (tc-exprs (syntax->list body))))))]
          ;; Lambda with regular rest argument
          [rest-id
           (let ([rest-type (get-type rest-id #:default Univ)])
             (with-lexical-env/extend
              (cons rest-id arg-list)
              (cons (make-Listof rest-type) arg-types)
-             (make lam-result
-                   combined-args
-                   null
-                   (list rest-id rest-type)
-                   #f
-                   (tc-exprs (syntax->list body)))))]
+             (lam-result
+               combined-args
+               null
+               (list rest-id rest-type)
+               #f
+               (tc-exprs (syntax->list body)))))]
          ;; Lambda with no rest argument
          [else
           (with-lexical-env/extend
            arg-list arg-types
-           (make lam-result
-                 combined-args
-                 null
-                 #f
-                 #f
-                 (tc-exprs (syntax->list body))))]))]))
+           (lam-result
+             combined-args
+             null
+             #f
+             #f
+             (tc-exprs (syntax->list body))))]))]))
 
 (struct formals (positional rest) #:transparent)
 
@@ -337,9 +331,9 @@
 ;; tc/plambda syntax syntax-list syntax-list type -> Poly
 ;; formals and bodies must by syntax-lists
 (define/cond-contract (tc/plambda form formals bodies expected)
-  (syntax? syntax? syntax? (or/c tc-results/c #f) . --> . Type/c)
+  (syntax? syntax? syntax? (or/c tc-results/c #f) . -> . Type/c)
   (define/cond-contract (maybe-loop form formals bodies expected)
-    (syntax? syntax? syntax? tc-results/c . --> . Type/c)
+    (syntax? syntax? syntax? tc-results/c . -> . Type/c)
     (match expected
       [(tc-result1: (Function: _)) (tc/mono-lambda/type formals bodies expected)]
       [(tc-result1: (or (Poly: _ _) (PolyDots: _ _)))

@@ -6,7 +6,7 @@
          (utils tc-utils)
          (types utils current-seen)
          racket/match
-         racket/contract
+         (contract-req)
          racket/format)
 
 (provide resolve-name resolve-app needs-resolving?
@@ -18,7 +18,7 @@
 (define (resolve-name t)
   (match t
     [(Name: n) (let ([t (lookup-type-name n)])
-                 (if (Type/c t) t #f))]
+                 (if (Type/c? t) t #f))]
     [_ (int-err "resolve-name: not a name ~a" t)]))
 
 (define already-resolving? (make-parameter #f))
