@@ -1,9 +1,10 @@
 #lang racket/unit
 
 (require "../utils/utils.rkt"
-	 "signatures.rkt" "constraint-structs.rkt"
-	 (utils tc-utils) racket/contract
-	 unstable/sequence unstable/hash racket/match)
+         "signatures.rkt" "constraint-structs.rkt"
+         (utils tc-utils) 
+         (contract-req)
+         unstable/sequence unstable/hash racket/match)
 
 (import constraints^)
 (export dmap^)

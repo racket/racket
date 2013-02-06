@@ -1,22 +1,15 @@
 #lang racket/unit
 
-(require (rename-in "../utils/utils.rkt" [infer r:infer])
-         "signatures.rkt"
-         "tc-metafunctions.rkt"
-         "tc-subst.rkt" "check-below.rkt"
-         racket/dict
-         racket/list syntax/parse "parse-cl.rkt"
-         racket/syntax unstable/struct syntax/stx
-         (rename-in racket/contract [-> -->] [->* -->*] [one-of/c -one-of/c])
+(require "../utils/utils.rkt"
+         racket/dict racket/list syntax/parse racket/syntax syntax/stx racket/match
+         (contract-req)
          (except-in (rep type-rep) make-arr)
-         (rename-in (types abbrev utils union)
+         (rename-in (except-in (types abbrev utils union) -> ->* one-of/c)
                     [make-arr* make-arr])
          (private type-annotation)
+         (typecheck signatures tc-metafunctions tc-subst check-below parse-cl)
          (env type-env-structs lexical-env tvar-env index-env)
-         (utils tc-utils)
-
-         racket/match)
-(require (for-template racket/base "internal-forms.rkt"))
+         (utils tc-utils))
 
 (import tc-expr^)
 (export tc-lambda^)
@@ -60,7 +53,7 @@
      ((listof identifier?)
       (or/c #f identifier?) syntax? (listof Type/c) (or/c #f Type/c)
       (or/c #f (cons/c Type/c symbol?)) tc-results/c
-      . --> .
+      . -> .
       lam-result?)
   (let* ([arg-len (length arg-list)]
          [tys-len (length arg-tys)]
@@ -153,12 +146,12 @@
        (for/list ([arg-types (in-list new-arg-types)])
          (with-lexical-env/extend
           arg-list arg-types
-          (make lam-result
-                (map list arg-list arg-types)
-                null
-                #f
-                #f
-                (tc-exprs (syntax->list body))))))]
+          (lam-result
+            (map list arg-list arg-types)
+            null
+            #f
+            #f
+            (tc-exprs (syntax->list body))))))]
     [(args ... . rest)
      (let* ([arg-list (syntax->list #'(args ...))]
             [arg-types (get-types arg-list #:default Univ)])
@@ -175,24 +168,24 @@
               (with-lexical-env/extend
                (cons #'rest arg-list)
                (cons (make-ListDots rest-type bound) arg-types)
-               (list (make lam-result
-                           (map list arg-list arg-types)
-                           null
-                           #f
-                           (cons #'rest (cons rest-type bound))
-                           (tc-exprs (syntax->list body)))))))]
+               (list (lam-result
+                       (map list arg-list arg-types)
+                       null
+                       #f
+                       (cons #'rest (cons rest-type bound))
+                       (tc-exprs (syntax->list body)))))))]
          [else
           (let ([rest-type (get-type #'rest #:default Univ)])
             (with-lexical-env/extend
              (cons #'rest arg-list)
              (cons (make-Listof rest-type) arg-types)
              (list
-              (make lam-result
-                    (map list arg-list arg-types)
-                    null
-                    (list #'rest rest-type)
-                    #f
-                    (tc-exprs (syntax->list body))))))]))]))
+              (lam-result
+                (map list arg-list arg-types)
+                null
+                (list #'rest rest-type)
+                #f
+                (tc-exprs (syntax->list body))))))]))]))
 
 (define (formals->list l)
   (let loop ([l (syntax-e l)])
@@ -281,9 +274,9 @@
 ;; tc/plambda syntax syntax-list syntax-list type -> Poly
 ;; formals and bodies must by syntax-lists
 (define/cond-contract (tc/plambda form formals bodies expected)
-  (syntax? syntax? syntax? (or/c tc-results/c #f) . --> . Type/c)
+  (syntax? syntax? syntax? (or/c tc-results/c #f) . -> . Type/c)
   (define/cond-contract (maybe-loop form formals bodies expected)
-    (syntax? syntax? syntax? tc-results/c . --> . Type/c)
+    (syntax? syntax? syntax? tc-results/c . -> . Type/c)
     (match expected
       [(tc-result1: (Function: _)) (tc/mono-lambda/type formals bodies expected)]
       [(tc-result1: (or (Poly: _ _) (PolyDots: _ _)))

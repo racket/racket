@@ -1,6 +1,6 @@
 #lang racket/unit
 
-(require racket/require (path-up "utils/utils.rkt")
+(require "../utils/utils.rkt"
          (except-in
           (combine-in
            (utils tc-utils)
@@ -13,7 +13,7 @@
          "signatures.rkt"
          racket/match
          mzlib/etc
-         racket/contract
+         (contract-req)
          unstable/sequence unstable/list unstable/hash
          racket/list)
 
@@ -27,12 +27,12 @@
 (define (seen-before s t)
   (cons (Type-seq s) (Type-seq t)))
 (define/cond-contract (remember s t A)
- ((or/c AnyValues? Values/c) (or/c AnyValues? Values/c)
+ ((or/c ValuesDots? AnyValues? Values/c) (or/c ValuesDots? AnyValues? Values/c)
   (listof (cons/c exact-nonnegative-integer? exact-nonnegative-integer?)) . -> .
   (listof (cons/c exact-nonnegative-integer? exact-nonnegative-integer?)))
  (cons (seen-before s t) A))
 (define/cond-contract (seen? s t)
- ((or/c AnyValues? Values/c) (or/c AnyValues? Values/c) . -> . any/c)
+ ((or/c ValuesDots? AnyValues? Values/c) (or/c ValuesDots? AnyValues? Values/c) . -> . any/c)
  (member (seen-before s t) (current-seen)))
 
 

@@ -1,25 +1,24 @@
 #lang racket/base
 
 (require (rename-in "../utils/utils.rkt" [infer infer-in]))
-(require (rename-in (types subtype abbrev remove-intersect union)
-                    [-> -->]
-                    [->* -->*]
-                    [one-of/c -one-of/c])
+(require racket/match
+         unstable/list
+         (contract-req)
          (infer-in infer)
          (rep type-rep filter-rep object-rep)
          (utils tc-utils)
-         (types resolve)
+         (types resolve subtype remove-intersect union)
          (only-in (env type-env-structs lexical-env)
                   env? update-type/lexical env-map env-props replace-props)
-         racket/contract racket/match
-         unstable/struct
-         unstable/list
-         "tc-metafunctions.rkt"
-         (for-syntax racket/base))
+         (rename-in (types abbrev)
+                    [-> -->]
+                    [->* -->*]
+                    [one-of/c -one-of/c])
+         (typecheck tc-metafunctions))
 
 ;(trace replace-nth)
 
-(define/contract (update t lo)
+(define/cond-contract (update t lo)
   (Type/c Filter/c . -> . Type/c)
   (match* ((resolve t) lo)
     ;; pair ops

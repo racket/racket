@@ -2,7 +2,7 @@
 
 
 (require (rename-in "../utils/utils.rkt" [private private-in])
-         racket/match (prefix-in - racket/contract)
+         racket/match (prefix-in - (contract-req))
          "signatures.rkt" "tc-envops.rkt" "tc-metafunctions.rkt" "tc-subst.rkt"
          "check-below.rkt" "tc-funapp.rkt" "tc-app-helper.rkt" "../types/kw-types.rkt"
          (types utils abbrev numeric-tower union subtype

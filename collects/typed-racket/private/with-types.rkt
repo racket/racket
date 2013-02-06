@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require racket/require racket/promise
+(require "../utils/utils.rkt"
+         racket/require racket/promise
          (for-template
           (except-in racket/base for for* with-handlers lambda λ define
                      default-continuation-prompt-tag)
@@ -19,7 +20,6 @@
                   "env/global-env.rkt"
                   "env/tvar-env.rkt"
                   "utils/tc-utils.rkt"
-                  "utils/utils.rkt"
                   "types/utils.rkt"))
 
 (provide wt-core)

@@ -1,18 +1,15 @@
 #lang racket/base
 
 (require "../utils/utils.rkt"
-	 (only-in srfi/1/list s:member)
-         syntax/kerncase syntax/boundmap
-         (env type-name-env type-alias-env)         
+         unstable/list syntax/id-table racket/dict racket/syntax
+         racket/struct-info racket/match syntax/parse
+         (only-in srfi/1/list s:member)
          (only-in (private type-contract) type->contract)
-         "renamer.rkt"
+         (env type-name-env type-alias-env)
+         (typecheck renamer def-binding)
          (rep type-rep)
-	 (utils tc-utils)
+         (utils tc-utils)
          (for-syntax syntax/parse racket/base)
-         racket/contract/private/provide unstable/list
-          syntax/id-table racket/dict
-         racket/syntax racket/struct-info racket/match
-         "def-binding.rkt" syntax/parse
          (for-template racket/base "def-export.rkt" racket/contract))
 
 (provide remove-provides provide? generate-prov get-alternate)

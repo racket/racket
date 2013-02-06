@@ -1,7 +1,8 @@
 #lang racket/base
-(require racket/unit racket/contract
-         "../utils/utils.rkt" "../utils/unit-utils.rkt"
-         (rep type-rep) (types utils))
+(require "../utils/utils.rkt" 
+         racket/unit 
+         (contract-req)
+         (utils unit-utils) (rep type-rep) (types utils))
 (provide (all-defined-out))
 
 (define-signature tc-expr^

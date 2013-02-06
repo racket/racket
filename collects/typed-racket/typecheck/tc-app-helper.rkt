@@ -15,7 +15,7 @@
   [poly-fail ((syntax? syntax? Type/c (listof tc-results?))
               (#:name (or/c #f syntax?)
                #:expected (or/c #f tc-results/c))
-              . -> . tc-results/c)]
+              . ->* . tc-results/c)]
   [tc/funapp1
     ((syntax? (and/c syntax? syntax->list) arr? (listof tc-results/c) (or/c #f tc-results/c))
      (#:check boolean?)

@@ -1,19 +1,20 @@
 #lang racket/base
 
 (require "../utils/utils.rkt"
+         racket/match racket/set racket/function unstable/function
+         racket/lazy-require
+         (contract-req)
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
          (rep free-variance)
-         (env index-env tvar-env)
-         racket/match
-         racket/set
-         racket/contract
-         racket/lazy-require)
+         (env index-env tvar-env))
 (lazy-require ("union.rkt" (Un)))
 
 (provide subst-all substitute substitute-dots substitute-dotted subst
-         (struct-out t-subst) (struct-out i-subst) (struct-out i-subst/starred) (struct-out i-subst/dotted)
-         substitution/c make-simple-substitution)
+         (struct-out t-subst) (struct-out i-subst)
+         (struct-out i-subst/starred) (struct-out i-subst/dotted)
+         make-simple-substitution)
+(provide-for-cond-contract substitution/c)
 
 (define-struct/cond-contract subst-rhs () #:transparent)
 (define-struct/cond-contract (t-subst subst-rhs) ([type Type/c]) #:transparent)
@@ -21,8 +22,8 @@
 (define-struct/cond-contract (i-subst/starred subst-rhs) ([types (listof Type/c)] [starred Type/c]) #:transparent)
 (define-struct/cond-contract (i-subst/dotted subst-rhs) ([types (listof Type/c)] [dty Type/c] [dbound symbol?]) #:transparent)
 
-(define substitution/c (hash/c symbol? subst-rhs? #:immutable #t))
-(define simple-substitution/c (hash/c symbol? Type/c #:immutable #t))
+(define-for-cond-contract substitution/c (hash/c symbol? subst-rhs? #:immutable #t))
+(define-for-cond-contract simple-substitution/c (hash/c symbol? Type/c #:immutable #t))
 
 (define (subst v t e) (substitute t v e))
 
@@ -65,13 +66,13 @@
                                      (map sb kws))])]
                  [#:ValuesDots types dty dbound
                                (cond
-                                 [(ormap (and/c dbound (not/c bound-tvar?)) names) =>
+                                 [(ormap (lambda (x) (and (equal? dbound x) (not bound-tvar? x))) names) =>
                                   (lambda (name)
                                     (int-err "substitute used on ... variable ~a in type ~a" name target))]
                                  [else (make-ValuesDots (map sb types) (sb dty) dbound)])]
                  [#:ListDots dty dbound
                              (cond
-                               [(ormap (and/c dbound (not/c bound-tvar?)) names) =>
+                               [(ormap (lambda (x) (and (equal? dbound x) (not bound-tvar? x))) names) =>
                                 (lambda (name)
                                   (int-err "substitute used on ... variable ~a in type ~a" name target))]
                                [else (make-ListDots (sb dty) dbound)])])
