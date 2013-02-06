@@ -1,6 +1,9 @@
 #lang racket/base
 
+;;TODO use contract-req
 (require "rep-utils.rkt" "free-variance.rkt" racket/contract/base)
+
+(provide Filter/c FilterSet/c name-ref/c hash-name filter-equal?)
 
 (define (Filter/c-predicate? e)
   (and (Filter? e) (not (NoFilter? e)) (not (FilterSet? e))))
@@ -11,7 +14,6 @@
    'FilterSet
    (λ (e) (or (FilterSet? e) (NoFilter? e)))))
 
-(provide Filter/c FilterSet/c name-ref/c hash-name)
 
 (define name-ref/c (or/c identifier? integer?))
 (define (hash-name v) (if (identifier? v) (hash-id v) (list v)))
@@ -50,4 +52,3 @@
 (def-filter NoFilter () [#:fold-rhs #:base])
 
 (define (filter-equal? a b) (= (Rep-seq a) (Rep-seq b)))
-(provide filter-equal?)

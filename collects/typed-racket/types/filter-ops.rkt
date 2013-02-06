@@ -1,14 +1,13 @@
 #lang racket/base
 
 (require "../utils/utils.rkt"
-         (rep type-rep filter-rep object-rep rep-utils)
-         (utils tc-utils) (only-in (infer infer) restrict)
-         (only-in racket/contract [-> -->] listof)
-         (types union subtype utils remove-intersect abbrev)
          racket/list racket/match
-         (for-syntax syntax/parse racket/base)
-         syntax/id-table racket/dict
-         (for-template racket/base))
+         racket/dict
+         (prefix-in c: (contract-req))
+         (rep type-rep filter-rep rep-utils)
+         (utils tc-utils)
+         (only-in (infer infer) restrict)
+         (types union subtype remove-intersect abbrev))
 
 (provide (all-defined-out))
 
@@ -59,7 +58,7 @@
 ;; props : propositions to compress
 ;; or? : is this an OrFilter (alternative is AndFilter)
 (define/cond-contract (compact props or?)
-     ((listof Filter/c) boolean? . --> . (listof Filter/c))
+     ((c:listof Filter/c) boolean? . c:-> . (c:listof Filter/c))
   (define tf-map (make-hash))
   (define ntf-map (make-hash))
   ;; props: the propositions we're processing

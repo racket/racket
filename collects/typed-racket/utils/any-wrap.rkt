@@ -8,8 +8,8 @@
 (define (traverse b)
   (define (fail v)
     (raise-blame-error 
-     (blame-swap b) v 
-     "Attempted to use a higher-order value passed as `Any` in untyped code: ~v" v))
+      (blame-swap b) v 
+      "Attempted to use a higher-order value passed as `Any` in untyped code: ~v" v))
 
   (define (t v)
     (define (wrap-struct s)
@@ -23,7 +23,7 @@
               ([n (in-range (+ init auto))])
             (if (and (pair? imms) (= (car imms) n))
                 ;; field is immutable
-                (values 
+                (values
                  (list* (make-struct-field-accessor ref n)
                         (lambda (s v) (t v))
                         res)
@@ -47,21 +47,21 @@
       [(? (lambda (e)
             (or (number? e) (string? e) (char? e) (symbol? e)
                 (null? e) (regexp? e) (eq? undef e) (path? e)
-		(regexp? e) (keyword? e) (bytes? e) (boolean? e) (void? e))))
+                (regexp? e) (keyword? e) (bytes? e) (boolean? e) (void? e))))
        v]
       [(cons x y) (cons (t x) (t y))]
       [(? vector? (? immutable?))
        ;; fixme -- should have an immutable for/vector
        (vector->immutable-vector
-	(for/vector #:length (vector-length v)
-		    ([i (in-vector v)]) (t i)))]
+        (for/vector #:length (vector-length v)
+                    ([i (in-vector v)]) (t i)))]
       [(? box? (? immutable?)) (box-immutable (t (unbox v)))]
       ;; fixme -- handling keys
       ;; [(? hasheq? (? immutable?))
       ;;  (for/hasheq ([(k v) (in-hash v)]) (values k v))]
       ;; [(? hasheqv? (? immutable?))
       ;;  (for/hasheqv ([(k v) (in-hash v)]) (values k v))]
-      
+
       [(? hash? (? immutable?))
        (for/hash ([(k v) (in-hash v)]) (values (t k) (t v)))]
       [(? vector?) (chaperone-vector v
@@ -77,7 +77,7 @@
                                  (lambda (h k) (t k)))] ;; key
       [(? evt?) (chaperone-evt v (lambda (e) (values e t)))]
       [(? struct?) (wrap-struct v)]
-      [(? procedure?) 
+      [(? procedure?)
        (if (procedure-arity-includes? v 0)
            (chaperone-procedure v (case-lambda [() (values)]
                                                [_ (fail v)]))

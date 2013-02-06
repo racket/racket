@@ -1,14 +1,13 @@
 #lang racket/base
 
-(require "../utils/utils.rkt")
-
-(require (rename-in (types numeric-predicates base-abbrev)
+(require "../utils/utils.rkt"
+         (rename-in (types numeric-predicates base-abbrev)
                     [simple-Un *Un])
          (rename-in (rep type-rep) [make-Base make-Base*])
          racket/match
          racket/function
          unstable/function
-         (for-template racket/base racket/contract racket/flonum (types numeric-predicates)))
+         (for-template racket/base racket/contract/base racket/flonum (types numeric-predicates)))
 
 (provide portable-fixnum? portable-index?
          -Zero -One -PosByte -Byte -PosIndex -Index

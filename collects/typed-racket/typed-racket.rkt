@@ -5,6 +5,7 @@
  (for-syntax "utils/timing.rkt") ;; only for timing/debugging
  ;; the below requires are needed since they provide identifiers
  ;; that may appear in the residual program
+ ;; TODO: figure out why this are needed here and not somewhere else
  "utils/utils.rkt"
  (for-syntax "utils/utils.rkt")
  "utils/any-wrap.rkt" unstable/contract racket/contract/parametric)

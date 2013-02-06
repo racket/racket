@@ -1,15 +1,10 @@
 #lang racket/base
 
-(require (rename-in "../utils/utils.rkt" [private private-in])
-         racket/match (prefix-in - racket/contract)
-         (types utils union subtype type-table filter-ops)
-         (private-in parse-type type-annotation)
-         (rep type-rep object-rep filter-rep)
-         (only-in (infer infer) restrict)
-         (except-in (utils tc-utils stxclass-util))
-         (env lexical-env type-env-structs tvar-env index-env)
-         (except-in syntax/parse id)
-         (only-in srfi/1 split-at))
+(require "../utils/utils.rkt"
+         racket/match (prefix-in - (contract-req))
+         (types utils union subtype filter-ops)
+         (utils tc-utils)
+         (rep type-rep object-rep filter-rep))
 
 (provide/cond-contract
  [check-below (-->d ([s (-or/c Type/c tc-results/c)] [t (-or/c Type/c tc-results/c)]) ()

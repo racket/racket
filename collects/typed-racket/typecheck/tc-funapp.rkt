@@ -1,31 +1,20 @@
 #lang racket/base
 
 (require (rename-in "../utils/utils.rkt" [infer r:infer])
-         "signatures.rkt" "tc-metafunctions.rkt"
-         "tc-app-helper.rkt" "find-annotation.rkt"
-         (prefix-in c: racket/contract)
-         syntax/parse racket/match racket/list
-         ;; fixme - don't need to be bound in this phase - only to make
-         ;; syntax/parse happy
-         racket/bool racket/unsafe/ops
-         (only-in racket/private/class-internal make-object do-make-object)
-         (only-in '#%kernel [apply k:apply])
-         ;; end fixme
-         (for-syntax syntax/parse racket/base (utils tc-utils))
-         (private type-annotation)
-         (types utils union subtype resolve abbrev type-table substitute)
+         racket/match
+         (prefix-in c: (contract-req))
+         (for-syntax syntax/parse racket/base)
+         (types utils union subtype resolve abbrev substitute)
+         (typecheck tc-metafunctions tc-app-helper)
          (utils tc-utils)
-         (except-in (env type-env-structs tvar-env index-env) extend)
-         (rep type-rep filter-rep rep-utils)
-         (r:infer infer)
-         '#%paramz
-         (for-template
-          racket/unsafe/ops
-          (only-in '#%kernel [apply k:apply])
-          "internal-forms.rkt" racket/base racket/bool '#%paramz
-          (only-in racket/private/class-internal make-object do-make-object)))
+         (rep type-rep)
+         (r:infer infer))
 
-(provide tc/funapp)
+(provide/cond-contract
+  [tc/funapp
+   (syntax? (c:and/c syntax? syntax->list) tc-results/c (c:listof tc-results/c)
+    (c:or/c #f tc-results/c)
+    . c:-> . tc-results/c)])
 
 (define-syntax (handle-clauses stx)
   (syntax-parse stx
@@ -42,10 +31,7 @@
                         #:name (and (identifier? f-stx) f-stx)
                         #:expected expected))))]))
 
-(define/cond-contract (tc/funapp f-stx args-stx ftype0 argtys expected)
-  (syntax? (c:and/c syntax? syntax->list) tc-results/c (c:listof tc-results/c)
-           (c:or/c #f tc-results/c)
-           . c:-> . tc-results/c)
+(define (tc/funapp f-stx args-stx ftype0 argtys expected)
   (match* (ftype0 argtys)
     ;; we special-case this (no case-lambda) for improved error messages
     [((tc-result1: (and t (Function: (list (and a (arr: dom (Values: _)

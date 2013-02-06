@@ -1,15 +1,11 @@
 #lang errortrace racket/base
 (require (except-in "../utils/utils.rkt" infer)
+         racket/match unstable/match racket/function racket/lazy-require racket/list
+         (prefix-in c: (contract-req))
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
          (types utils resolve base-abbrev match-expanders
                 numeric-tower substitute current-seen)
-         (env type-name-env)
-         racket/match unstable/match
-         racket/function
-         racket/list
-         racket/lazy-require
-         (prefix-in c: racket/contract)
          (for-syntax racket/base syntax/parse))
 (require racket/trace)
 (lazy-require

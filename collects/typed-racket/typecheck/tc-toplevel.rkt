@@ -1,34 +1,27 @@
 #lang racket/base
 
 (require (rename-in "../utils/utils.rkt" [infer r:infer])
-         syntax/kerncase
-         unstable/list racket/syntax syntax/parse
-         mzlib/etc racket/list
-         racket/match
-         "signatures.rkt"
-         "tc-structs.rkt"
-         "typechecker.rkt"
-         ;; to appease syntax-parse
-         "internal-forms.rkt"
+         syntax/kerncase racket/syntax syntax/parse syntax/id-table
+         racket/list unstable/list racket/dict racket/match
+         (prefix-in c: (contract-req))
          (rep type-rep free-variance)
          (types utils abbrev type-table)
          (private parse-type type-annotation type-contract)
          (env global-env init-envs type-name-env type-alias-env lexical-env env-req mvar-env)
-         syntax/id-table
          (utils tc-utils mutated-vars)
-         "provide-handling.rkt"
-         "def-binding.rkt"
-         (prefix-in c: racket/contract)
-         racket/dict
+         (typecheck provide-handling def-binding tc-structs typechecker)
+
+         ;; to appease syntax-parse in the tests
+         (typecheck internal-forms)
          syntax/location
+
          (for-template
           "internal-forms.rkt"
           syntax/location
-          mzlib/contract
           racket/base
-          "../env/env-req.rkt"))
+          (env env-req)))
 
-(c:provide/contract
+(provide/cond-contract
  [type-check (syntax? . c:-> . (values syntax? syntax?))]
  [tc-module (syntax? . c:-> . (values syntax? syntax?))]
  [tc-toplevel-form (syntax? . c:-> . (values #f c:any/c))])
