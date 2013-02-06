@@ -160,6 +160,29 @@
        (send t load-file)
        (length (send t get-highlighted-ranges)))))))
 
+(test
+ 'highlight-range-delegate-1
+ (lambda (x) (equal? x 0))
+ (λ ()
+   (queue-sexp-to-mred
+    `(let ([t (new text:delegate%)])
+       (send t insert "abc")
+       (send t highlight-range 1 2 "red")
+       (send t unhighlight-range 1 2 "red")
+       (length (send t get-highlighted-ranges))))))
+
+(test
+ 'highlight-range-delegate-1
+ (lambda (x) (equal? x 0))
+ (λ ()
+   (queue-sexp-to-mred
+    `(let ([t (new text:delegate%)])
+       (send t set-delegate (new text:basic%))
+       (send t insert "abc")
+       (send t highlight-range 1 2 "red")
+       (send t unhighlight-range 1 2 "red")
+       (length (send t get-highlighted-ranges))))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
