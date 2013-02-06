@@ -1,3 +1,23 @@
+Version 5.3.2.3
+Added extflonums
+racket/extflonum: added
+racket/unsafe/ops: added extflonum operations
+racket/date: changed current-date to provide nanoseconds,
+ added date*->seconds
+racket/gui/base: changed menu-bar% get-frame method to
+ return 'root for root menu bar
+syntax-color/racket-lexer: added 'hash-colon-keyword 
+ (which also affects syntax-color/scheme-lexer,
+  syntax-color/module-lexer, and syntax-color/scribble-lexer)
+
+Version 5.3.2.2
+Added file-truncate
+scribble/latex-properties: added command-extras
+
+Version 5.3.2.1
+srfi/19: made compatible with date* structs, produces
+ lax-date struct for backwards compatibility
+
 Version 5.3.3, February 2013
 No changes
 
