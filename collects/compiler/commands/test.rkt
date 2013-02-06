@@ -36,7 +36,7 @@
                                                        `(file ,(path->string p))
                                                        (path->string p))
                                                   ,submodule)))
-               (dynamic-require mod #f)]
+               (dynamic-require mod 0)]
               [else
                (set! something-wasnt-declared? #t)]))
           (when (and run-anyways? something-wasnt-declared?)
@@ -44,7 +44,7 @@
               (printf "running ~s:\n" (if (absolute-path? p)
                                           `(file ,(path->string p))
                                           (path->string p))))
-            (dynamic-require p #f)))]
+            (dynamic-require p 0)))]
        [(not (file-exists? p))
         (error 'test "given path ~e does not exist" p)])]))
 
