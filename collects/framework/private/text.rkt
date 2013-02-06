@@ -383,22 +383,25 @@
               (equal? end r-end)
               (equal? color r-color)
               (equal? caret-space? r-caret-space?)
-              (equal? style r-style)))))
+              (equal? style r-style)))
+       #t))
     
     (define/public (unhighlight-ranges/key key)
       (unhighlight-ranges
        (λ (r-start r-end r-color r-caret-space? r-style r-adjust-on-insert/delete? r-key)
          (equal? r-key key))))
     
-    (define/public (unhighlight-ranges pred)
+    (define/public (unhighlight-ranges pred [just-one? #f])
       (define left #f)
       (define top #f)
       (define right #f)
       (define bottom #f)
+      (define found-one? #f)
       (queue-filter! 
        ranges-deq
        (λ (a-range)
          (cond
+           [(and just-one? found-one?) #t]
            [(pred (range-start a-range)
                   (range-end a-range)
                   (range-color a-range)
@@ -406,6 +409,7 @@
                   (range-style a-range)
                   (range-adjust-on-insert/delete? a-range)
                   (range-key a-range))
+            (set! found-one? #t)
             (for ([rect (in-list (range-rectangles a-range))])
               (set!-values (left top right bottom)
                 (join-rectangles left top right bottom rect)))
@@ -1712,10 +1716,10 @@
     
     ;; only need to override this unhighlight-ranges, since 
     ;; all the other unhighlighting variants call this one
-    (define/override (unhighlight-ranges pred)
+    (define/override (unhighlight-ranges pred [just-one? #f])
       (when delegate 
-        (send delegate unhighlight-ranges pred))
-      (super unhighlight-ranges pred))
+        (send delegate unhighlight-ranges pred just-one?))
+      (super unhighlight-ranges pred just-one?))
     
     (inherit get-canvases get-active-canvas has-focus?)
     (define/override (on-paint before? dc left top right bottom dx dy draw-caret?)
