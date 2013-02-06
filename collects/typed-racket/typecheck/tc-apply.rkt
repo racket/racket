@@ -1,22 +1,16 @@
 #lang racket/unit
 
 (require (rename-in "../utils/utils.rkt" [infer r:infer])
-         "signatures.rkt" "tc-app-helper.rkt"
          racket/match racket/list
-         (for-syntax (utils tc-utils))
-         (private type-annotation)
-         (types utils union subtype resolve abbrev type-table substitute)
+         (typecheck signatures tc-app-helper)
+         (types utils union subtype abbrev substitute)
          (utils tc-utils)
-         (only-in srfi/1 alist-delete)
-         (except-in (env type-env-structs tvar-env index-env) extend)
-         (rep type-rep filter-rep object-rep rep-utils)
+         (env tvar-env index-env)
+         (rep type-rep filter-rep object-rep)
          (r:infer infer)
-         '#%paramz
          (for-template
-          racket/unsafe/ops
           (only-in '#%kernel [apply k:apply])
-          "internal-forms.rkt" racket/base racket/bool '#%paramz
-          (only-in racket/private/class-internal make-object do-make-object)))
+          racket/base))
 
 (import tc-expr^ tc-lambda^ tc-let^ tc-app^)
 (export tc-apply^)
