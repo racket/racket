@@ -99,7 +99,7 @@
   (let* ([imps (map ref->imp refs)])
     (refine-imps/one-require mod reqphase imps)))
 
-;; refine-imps/one-require : mod phase Imps -> RefineTable or #f
+;; refine-imps/one-require : mpi phase Imps -> RefineTable or #f
 ;; where all imps come from mod at phase
 ;; the result table contains new (refined) imps
 (define (refine-imps/one-require mod reqphase imps)

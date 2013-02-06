@@ -5,6 +5,7 @@
           scribble/eval
           (for-label racket/base
                      racket/contract/base
+                     racket/lazy-require
                      racket/runtime-path
                      macro-debugger/expand
                      macro-debugger/emit
@@ -519,7 +520,9 @@ is interpreted as a module path. See @racket[show-dependencies] for a
 description of the output format.
 
 @defproc[(show-dependencies [root module-path?] ...
-                            [#:exclude exclusions
+                            [#:exclude exclude
+                             (listof module-path?) null]
+                            [#:exclude-deps exclude-deps
                              (listof module-path?) null]
                             [#:show-context? show-context? boolean? #f])
          void?]{
@@ -528,7 +531,7 @@ Computes the set of modules transitively required by the @racket[root]
 module(s). A @racket[root] module is included in the output
 only if it is a dependency of another @racket[root] module. The
 computed dependencies do not include modules reached through
-@racket[dynamic-require] or referenced by
+@racket[dynamic-require] or @racket[lazy-require] or referenced by
 @racket[define-runtime-module-path-index] but do include modules
 referenced by @racket[define-runtime-module-path] (since that
 implicitly creates a @racket[for-label] dependency).
@@ -545,9 +548,12 @@ require @racket[_dep-module].
 }
 
 The dependencies are trimmed by removing any module reachable from (or
-equal to) a module in @racket[exclusions].
+equal to) a module in @racket[exclude] as well as any module
+reachable from (but not equal to) a module in @racket[exclude-deps].
 
 @examples[#:eval the-eval
+(show-dependencies 'openssl
+                   #:exclude (list 'racket))
 (show-dependencies 'openssl
                    #:show-context? #t
                    #:exclude (list 'racket))
@@ -555,7 +561,9 @@ equal to) a module in @racket[exclusions].
 }
 
 @defproc[(get-dependencies [root module-path?] ...
-                           [#:exclude exclusions
+                           [#:exclude exclude
+                            (listof module-path?) null]
+                           [#:exclude-deps exclude-deps
                             (listof module-path?) null])
          (listof (list module-path? (listof module-path?)))]{
 
@@ -567,6 +575,5 @@ module path and the module paths of its immediate dependents.
 (get-dependencies 'openssl #:exclude (list 'racket))
 ]
 }
-
 
 @close-eval[the-eval]

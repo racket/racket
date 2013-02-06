@@ -1,14 +1,18 @@
 #lang racket/base
 (require racket/cmdline
+         racket/match
+         syntax/modresolve
          "private/util.rkt")
 (provide get-dependencies
          show-dependencies
          main)
 
-(define (get-dependencies-table #:include? include? ms)
-  (define visited (make-hash)) ;; resolved-module-path => (listof mpi-list)
-  (define (loop m ctx)
-    (let* ([resolved (module-path-index-resolve m)]
+;; A Table is hash[resolved-module-path => (listof mpi-list)]
+
+(define (get-dependencies-table ms #:include? include?)
+  (define visited (make-hash)) ;; Table
+  (define (loop m ctx relto)
+    (let* ([resolved (resolve-module-path-index* m relto)]
            [ctx (cons m ctx)]
            [already-visited? (hash-ref visited resolved #f)])
       (when (or include? (pair? (cdr ctx)))
@@ -16,16 +20,30 @@
         (hash-set! visited resolved
                    (cons ctx (hash-ref visited resolved null))))
       (unless already-visited?
-        (unless (symbol? (resolved-module-path-name resolved))
-          (let ([imports (get-module-imports m)])
-            (for* ([phase+mods (in-list imports)]
-                   [mod (in-list (cdr phase+mods))])
-            (loop mod ctx)))))))
+        (let* ([resolved-mod (resolved-module-path-name resolved)]
+               [resolved-base (if (pair? resolved-mod) (car resolved-mod) resolved-mod)])
+          (unless (symbol? resolved-base)
+            (let ([imports (get-module-imports resolved)])
+              (for* ([phase+mods (in-list imports)]
+                     [mod (in-list (cdr phase+mods))])
+                (loop mod ctx resolved-base))))))))
   (for ([m (in-list ms)])
-    (loop (module-path-index-join m #f) null))
+    (loop (module-path-index-join m #f) null #f))
   visited)
 
-;; table->dependencies : table -> (listof (list module-path (listof module-path)))
+;; resolve-module-path-index* : mpi file-path -> resolved-module-path
+(define (resolve-module-path-index* mpi relto)
+  (let ([v (resolve-module-path-index mpi relto)])
+    (match v
+      [(? path?) (make-resolved-module-path v)]
+      [(? symbol?) (make-resolved-module-path v)]
+      [(list* 'submod (? path? base) syms)
+       (make-resolved-module-path (cons base syms))]
+      [(list* 'submod (? symbol? base) syms)
+       (error 'resolve-module-path-index*
+              "failed to resolve submodule path base in: ~e" v)])))
+
+;; table->dependencies : Table -> (listof (list module-path (listof module-path)))
 (define (table->dependencies visited)
   (let* ([unsorted
           (for/list ([(key mpi-lists) (in-hash visited)])
@@ -50,22 +68,35 @@
          ;; obviously, we don't care that much about performance in this case
          (string<? (format "~s" A) (format "~s" B))]))
 
-;; get-dependencies : module-path ... #:excludse (listof module-path)
+;; get-dependencies : module-path ... #:exclude (listof module-path)
 ;;                 -> (listof (list module-path (listof module-path)))
-(define (get-dependencies #:exclude [exclusions null]
+(define (get-dependencies #:exclude [exclude null]
+                          #:exclude-deps [exclude-deps null]
                           . module-paths)
   (let* ([table
           (get-dependencies-table #:include? #f module-paths)]
          [exclude-table
-          (get-dependencies-table #:include? #t exclusions)])
+          (get-dependencies-table #:include? #t exclude)]
+         [exclude-deps-roots
+          (for/hash ([mod (in-list exclude-deps)])
+            (values (resolve-module-path-index* (module-path-index-join mod #f) #f) #t))]
+         [exclude-deps-table
+          (get-dependencies-table #:include? #f exclude-deps)])
     (for ([key (in-hash-keys exclude-table)])
       (hash-remove! table key))
+    (for ([key (in-hash-keys exclude-deps-table)])
+      (unless (hash-ref exclude-deps-roots key #f)
+        (hash-remove! table key)))
     (table->dependencies table)))
 
-(define (show-dependencies #:exclude [exclusions null]
+(define (show-dependencies #:exclude [exclude null]
+                           #:exclude-deps [exclude-deps null]
                            #:show-context? [context? #f]
                            . module-paths)
-  (for ([dep (in-list (apply get-dependencies #:exclude exclusions module-paths))])
+  (for ([dep (in-list (apply get-dependencies
+                             #:exclude exclude
+                             #:exclude-deps exclude-deps
+                             module-paths))])
     (let ([mod (car dep)]
           [direct-requirers (cadr dep)])
       (printf "~s" mod)
@@ -78,7 +109,8 @@
 (define (main . argv)
   (define mode 'auto)
   (define context? #f)
-  (define exclusions null)
+  (define excludes null)
+  (define exclude-deps null)
   (command-line
    #:argv argv
    #:once-each
@@ -88,10 +120,12 @@
     (set! mode 'file)]
    [("-m" "--module-path") "Interpret arguments as module-paths"
     (set! mode 'module-path)]
-   [("-x" "--exclude") exclude "Exclude modules reachable from <exclude>"
-    (set! exclusions (cons exclude exclusions))]
+   [("-x" "--exclude") mod "Exclude <mod> and its dependencies"
+    (set! excludes (cons mod excludes))]
+   [("-X" "--exclude-deps") mod "Exclude the dependencies of <mod> (but not <mod> itself)"
+    (set! exclude-deps (cons mod exclude-deps))]
    [("-b") "Same as --exclude racket/base"
-    (set! exclusions (cons 'racket/base exclusions))]
+    (set! excludes (cons 'racket/base excludes))]
    #:args module-path
    (let ()
      (define (->modpath x)
@@ -106,7 +140,8 @@
                  (read (open-input-string x))))]
              [else x]))
      (apply show-dependencies
-            #:exclude (map ->modpath exclusions)
+            #:exclude (map ->modpath excludes)
+            #:exclude-deps (map ->modpath exclude-deps)
             #:show-context? context?
             (map ->modpath module-path)))))
 

@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/path
+         racket/list
          racket/match
          syntax/modcode
          syntax/modresolve
@@ -126,44 +127,81 @@
          get-module-stx-exports
          get-module-all-exports)
 
-(struct modinfo (imports var-exports stx-exports) #:prefab)
+(struct modinfo (imports var-exports stx-exports imports/r var-exports/r stx-exports/r)
+  #:prefab)
 
-;; cache : hash[path/symbol => modinfo]
+;; cache : hash[path/symbol/list => modinfo]
 (define cache (make-hash))
+
+;; get-module-code* : (U path (cons path (listof symbol))) -> compiled-module
+(define (get-module-code* resolved)
+  (let* ([path (if (pair? resolved) (car resolved) resolved)]
+         [subs (if (pair? resolved) (cdr resolved) null)]
+         [code (get-module-code path)])
+    (for/fold ([code code]) ([submod-name (in-list subs)])
+      (define (choose-submod? sub)
+        (let* ([sub-name (module-compiled-name sub)])
+          (equal? (last sub-name) submod-name)))
+      (or (for/or ([sub (in-list (module-compiled-submodules code #t))])
+            (and (choose-submod? sub) sub))
+          (for/or ([sub (in-list (module-compiled-submodules code #f))])
+            (and (choose-submod? sub) sub))
+          (error 'get-module-code* "couldn't get code for: ~s" resolved)))))
 
 ;; get-module-info/no-cache : path -> modinfo
 (define (get-module-info/no-cache resolved)
-  (let ([compiled (get-module-code resolved)])
+  (let ([compiled (get-module-code* resolved)]
+        [resolved-base (if (pair? resolved) (car resolved) resolved)])
     (let-values ([(imports) (module-compiled-imports compiled)]
-                 [(var-exports stx-exports) (module-compiled-exports compiled)])
-      (parameterize ((current-directory (path-only resolved)))
+                 [(var-exports stx-exports) (module-compiled-exports compiled)]
+                 [(dir) (path-only (if (pair? resolved) (car resolved) resolved))])
+      (parameterize ((current-directory dir)
+                     (current-load-relative-directory dir))
         (force-all-mpis imports)
         (force-all-mpis (cons var-exports stx-exports)))
-      (modinfo imports var-exports stx-exports))))
+      (modinfo imports var-exports stx-exports
+               (resolve-all-mpis imports resolved-base)
+               (resolve-all-mpis var-exports resolved-base)
+               (resolve-all-mpis stx-exports resolved-base)))))
 
 ;; get-module-info : (or module-path module-path-index) -> modinfo
 (define (get-module-info mod)
   (let ([resolved (resolve mod)])
+    (when #f
+      (eprintf "fetch ~s => ~s\n"
+               (if (module-path-index? mod) (cons 'mpi (mpi->list mod)) mod)
+               resolved))
     (hash-ref! cache resolved (lambda () (get-module-info/no-cache resolved)))))
 
-;; resolve : (or module-path module-path-index) -> path
+;; resolve : (or module-path resolved-module-path module-path-index)
+;;        -> (U (U path symbol) (cons (U path symbol) (listof symbol)))
 (define (resolve mod)
   (cond [(module-path-index? mod)
          (resolved-module-path-name (module-path-index-resolve mod))]
+        [(resolved-module-path? mod)
+         (resolved-module-path-name mod)]
         [else (resolve-module-path mod #f)]))
 
-(define (get-module-imports path)
-  (modinfo-imports (get-module-info path)))
-(define (get-module-var-exports path)
-  (modinfo-var-exports (get-module-info path)))
-(define (get-module-stx-exports path)
-  (modinfo-stx-exports (get-module-info path)))
-(define (get-module-exports path)
-  (let ([info (get-module-info path)])
-    (values (modinfo-var-exports info) (modinfo-stx-exports info))))
-(define (get-module-all-exports path)
-  (append (get-module-var-exports path)
-          (get-module-stx-exports path)))
+(define (get-module-imports path #:resolve? [resolve? #f])
+  ((if resolve? modinfo-imports/r modinfo-imports) (get-module-info path)))
+(define (get-module-var-exports path #:resolve? [resolve? #f])
+  ((if resolve? modinfo-var-exports/r modinfo-var-exports) (get-module-info path)))
+(define (get-module-stx-exports path #:resolve? [resolve? #f])
+  ((if resolve? modinfo-stx-exports/r modinfo-stx-exports) (get-module-info path)))
+(define (get-module-exports path #:resolve? [resolve? #f])
+  (values (get-module-var-exports path #:resolve? resolve?)
+          (get-module-stx-exports path #:resolve? resolve?)))
+(define (get-module-all-exports path #:resolve? [resolve? #f])
+  (append (get-module-var-exports path #:resolve? resolve?)
+          (get-module-stx-exports path #:resolve? resolve?)))
+
+(define (resolve-all-mpis x base)
+  (let loop ([x x])
+    (cond [(pair? x)
+           (cons (loop (car x)) (loop (cdr x)))]
+          [(module-path-index? x)
+           (resolve-module-path-index x base)]
+          [else x])))
 
 (define (force-all-mpis x)
   (let loop ([x x])
