@@ -118,7 +118,8 @@
              (if (identifier? stx)
                  (proc1)
                  (datum->syntax stx
-                                #`(#,(proc1) . #,(cdr (syntax-e stx)))
+                                ;; Use cons, not #`(#,op #,@args), to avoid replacing implicit #%app binding
+                                (cons (proc1) (cdr (syntax-e stx)))
                                 stx
                                 stx)))
            proc1)
