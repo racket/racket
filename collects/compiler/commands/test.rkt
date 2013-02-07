@@ -32,18 +32,18 @@
             (cond
               [(module-declared? mod #t)
                (unless quiet?
-                 (printf "running ~s:\n" `(submod ,(if (absolute-path? p)
-                                                       `(file ,(path->string p))
-                                                       (path->string p))
-                                                  ,submodule)))
+                 (printf "raco test ~s:\n" `(submod ,(if (absolute-path? p)
+                                                         `(file ,(path->string p))
+                                                         (path->string p))
+                                                    ,submodule)))
                (dynamic-require mod 0)]
               [else
                (set! something-wasnt-declared? #t)]))
           (when (and run-anyways? something-wasnt-declared?)
             (unless quiet?
-              (printf "running ~s:\n" (if (absolute-path? p)
-                                          `(file ,(path->string p))
-                                          (path->string p))))
+              (printf "raco test ~s:\n" (if (absolute-path? p)
+                                            `(file ,(path->string p))
+                                            (path->string p))))
             (dynamic-require p 0)))]
        [(not (file-exists? p))
         (error 'test "given path ~e does not exist" p)])]))
