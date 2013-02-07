@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require rackunit
+         unstable/2d/private/read-util
          unstable/2d/private/readtable
          racket/set)
 
@@ -352,7 +353,16 @@
                    "  ╠══╩═══╬═══╣\n"
                    "  ║      ║   ║     NOT WHITESPACE\n"
                    "  ╚══════╩═══╝\n")) 
-                (list (srcloc #f 5 19 69 1))))
+                (list (srcloc #f 5 19 69 1)))
+
+  (check-equal? (get-err-locs 
+                 '("#2d\n"
+                   "╔══╦-══╗\n"
+                   "║  ║   ║\n"
+                   "╠══╬-══╣\n"
+                   "║  ║   ║\n"
+                   "╚══╩-══╝\n"))
+                (list (srcloc #f 2 4 9 1))))
 
 (let ([lines (hash-map lines-table (λ (x y) x))])
   (unless (null? lines)
@@ -650,6 +660,16 @@
                        0)
   (check-equal? str
                 "             \n             \n             \n      1      \n             \n             \n"))
+
+(let ()
+  (define scratch (string-copy "                                "))
+  (check-equal? (fill-scratch-string (set '(0 0))
+                                     #(("╔══╦══╗\n" "║12║34║\n") ("╠══╬══╣\n" "║56║78║\n"))
+                                     scratch
+                                     '(2 2)
+                                     0
+                                     #t)
+                '((9 . 11))))
 
 (let ()
   (define sp (open-input-string 

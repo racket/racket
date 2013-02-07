@@ -31,7 +31,9 @@
    (lambda (proc)
      (lambda (key defval)
        (case key
-         #;
          [(color-lexer)
-          (dynamic-require 'syntax-color/scribble-lexer 'scribble-lexer)]
+          (define theirs 
+            (or (and proc (proc key #f))
+                (dynamic-require 'syntax-color/racket-lexer 'racket-lexer)))
+          ((dynamic-require 'unstable/2d/lexer 'lexer) theirs)]
          [else (if proc (proc key defval) defval)])))))
