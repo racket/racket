@@ -6,7 +6,7 @@
          racket/list
          mred/mred-sig
          "../preferences.rkt"
-         "dir-chars.rkt"
+         unstable/2d/dir-chars
          mrlib/tex-table
          (only-in srfi/13 string-prefix? string-prefix-length)
          "sig.rkt"

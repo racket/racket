@@ -18,7 +18,7 @@ example uses:
          racket/match
          racket/set
          ;syntax/rect
-         framework/private/dir-chars
+         "../dir-chars.rkt"
          (for-syntax racket/base
                      racket/list))
 
