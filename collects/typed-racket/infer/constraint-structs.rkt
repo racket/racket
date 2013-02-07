@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require "../utils/utils.rkt" (rep type-rep) racket/contract racket/match (for-syntax racket/base syntax/parse))
+(require "../utils/utils.rkt" (rep type-rep) (contract-req) racket/match (for-syntax racket/base syntax/parse))
 
 ;; S, T types
 ;; X a var
@@ -23,7 +23,7 @@
 ;; bound : var
 (define-struct/cond-contract dcon-dotted ([fixed (listof c?)] [type c?] [bound symbol?]) #:transparent)
 
-(define dcon/c (or/c dcon? dcon-exact? dcon-dotted?))
+(define-for-cond-contract dcon/c (or/c dcon? dcon-exact? dcon-dotted?))
 
 ;; map : hash mapping index variables to dcons
 (define-struct/cond-contract dmap ([map (hash/c symbol? dcon/c)]) #:transparent)
@@ -42,5 +42,12 @@
       [(_ s x t)
        #'(struct c (s x t))])))
 
-(provide (struct-out cset) (struct-out dmap) (struct-out dcon) (struct-out dcon-dotted) (struct-out dcon-exact) (struct-out c)
-         c: dcon/c)
+(provide-for-cond-contract dcon/c)
+(provide
+  (struct-out cset)
+  (struct-out dmap)
+  (struct-out dcon)
+  (struct-out dcon-dotted)
+  (struct-out dcon-exact)
+  (struct-out c)
+  c:)

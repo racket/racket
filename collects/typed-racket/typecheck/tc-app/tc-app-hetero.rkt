@@ -15,7 +15,7 @@
          (rep type-rep rep-utils)
          (for-template racket/unsafe/ops racket/base))
 
-(import tc-expr^ tc-app^)
+(import tc-expr^ tc-app^ tc-literal^)
 (export tc-app-hetero^)
 
 

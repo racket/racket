@@ -6,7 +6,7 @@ at least theoretically.
 |#
 
 (require (for-syntax racket/base syntax/parse racket/string)
-         racket/require-syntax racket/provide-syntax         
+         racket/require-syntax racket/provide-syntax
          racket/struct-info "timing.rkt")
 
 (provide
@@ -46,14 +46,14 @@ at least theoretically.
                                      (datum->syntax
                                       id
                                       `(lib
-					,(datum->syntax
-					  #f
-					  (string-join
-					   (list "typed-racket"
-						 (symbol->string (syntax-e #'nm))
-						 (string-append (symbol->string (syntax-e id)) ".rkt"))
-					   "/")
-					  id id))
+                                        ,(datum->syntax
+                                          #f
+                                          (string-join
+                                           (list "typed-racket"
+                                                 (symbol->string (syntax-e #'nm))
+                                                 (string-append (symbol->string (syntax-e id)) ".rkt"))
+                                           "/")
+                                          id id))
                                       id id))
                                    (syntax->list #'(id ...)))])
                  (syntax-property (syntax/loc stx (combine-in id* ...))
@@ -67,14 +67,14 @@ at least theoretically.
                                      (datum->syntax
                                       id
                                       `(lib
-					,(datum->syntax
-					  #f
-					  (string-join
-					   (list "typed-racket"
-						 (symbol->string (syntax-e #'nm))
-						 (string-append (symbol->string (syntax-e id)) ".rkt"))
-					   "/")
-					  id id))))
+                                        ,(datum->syntax
+                                          #f
+                                          (string-join
+                                           (list "typed-racket"
+                                                 (symbol->string (syntax-e #'nm))
+                                                 (string-append (symbol->string (syntax-e id)) ".rkt"))
+                                           "/")
+                                          id id))))
                                    (syntax->list #'(id ...)))])
                  (syntax/loc stx (combine-out (all-from-out id*) ...)))]))
           (provide nm nm-out)))]))
@@ -93,17 +93,39 @@ at least theoretically.
 ;; turn contracts on and off - off by default for performance.
 (provide (for-syntax enable-contracts?)
          provide/cond-contract
-         with-cond-contract         
+         with-cond-contract
          define-struct/cond-contract
          define/cond-contract
          contract-req
-         define/cond-contract/provide)
+         define/cond-contract/provide
+         define-for-cond-contract
+         provide-for-cond-contract
+         require-for-cond-contract)
 
 (define-require-syntax contract-req
   (if enable-contracts?
       (lambda (stx) (datum->syntax stx 'racket/contract))
       (syntax-rules ()
         [(_) (combine-in)])))
+
+(define-syntax define-for-cond-contract
+  (if enable-contracts?
+      (make-rename-transformer #'define)
+      (syntax-parser
+        [(_ args:expr body:expr) #'(begin)])))
+
+(define-syntax provide-for-cond-contract
+  (if enable-contracts?
+      (make-rename-transformer #'provide)
+      (syntax-parser
+        [(_ provide-spec:expr ...) #'(begin)])))
+
+(define-syntax require-for-cond-contract
+  (if enable-contracts?
+      (make-rename-transformer #'require)
+      (syntax-parser
+        [(_ require-spec:expr ...) #'(begin)])))
+
 
 (define-syntax-rule (define/cond-contract/provide (name . args) c . body)
   (begin (define/cond-contract name c
@@ -121,8 +143,8 @@ at least theoretically.
           #:literals ()
           #:attributes (i)
           (pattern [(~datum struct) (~or nm:id (nm:id super:id)) (flds ...)]
-		   #:with i #'(struct-out nm))
-	  (pattern [(~datum rename) out:id in:id cnt:expr]
+                   #:with i #'(struct-out nm))
+          (pattern [(~datum rename) out:id in:id cnt:expr]
                    #:with i #'(rename-out [out in]))
           (pattern [i:id cnt:expr]))
         (syntax-parse stx

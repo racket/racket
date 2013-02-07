@@ -1,12 +1,12 @@
 #lang racket/base
-(require racket/unit racket/contract
-         "../utils/utils.rkt" "../utils/unit-utils.rkt"
-         (rep type-rep) (types utils))
+(require "../utils/utils.rkt" 
+         racket/unit 
+         (contract-req)
+         (utils unit-utils) (rep type-rep) (types utils))
 (provide (all-defined-out))
 
 (define-signature tc-expr^
   ([cond-contracted tc-expr (syntax? . -> . tc-results/c)]
-   [cond-contracted tc-literal (->* (syntax?) ((or/c #f Type/c)) Type/c)]
    [cond-contracted tc-expr/check (syntax? tc-results/c . -> . tc-results/c)]
    [cond-contracted tc-expr/check/t (syntax? tc-results/c . -> . Type/c)]
    [cond-contracted tc-exprs ((listof syntax?) . -> . tc-results/c)]
@@ -21,6 +21,12 @@
 
 (define-signature tc-if^
   ([cond-contracted tc/if-twoarm ((syntax? syntax? syntax?) (tc-results/c) . ->* . tc-results/c)]))
+
+(define-signature tc-literal^
+  ([cond-contracted tc-literal (->* (syntax?) ((or/c Type/c #f)) Type/c)]))
+
+(define-signature tc-send^
+  ([cond-contracted tc/send ((syntax? syntax? syntax? syntax?) ((or/c tc-results/c #f)) . ->* . tc-results/c)]))
 
 (define-signature tc-lambda^
   ([cond-contracted tc/lambda (syntax? syntax? syntax? . -> . tc-results/c)]

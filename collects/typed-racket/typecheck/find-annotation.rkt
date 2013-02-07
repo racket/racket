@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require "../utils/utils.rkt" syntax/parse
-         racket/contract
+         (contract-req)
          (rep type-rep)
          (env lexical-env)
          (private type-annotation)

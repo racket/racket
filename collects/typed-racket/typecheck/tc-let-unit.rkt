@@ -1,22 +1,18 @@
 #lang racket/unit
 
-(require (rename-in "../utils/utils.rkt" [infer r:infer])
-         "signatures.rkt" "tc-metafunctions.rkt" "tc-subst.rkt"
-         "check-below.rkt"
-         (types utils abbrev)
+(require "../utils/utils.rkt"
+         (only-in srfi/1/list s:member)
+         (except-in (types utils abbrev) -> ->* one-of/c)
+         (only-in (types abbrev) (-> t:->))
          (private type-annotation parse-type)
          (env lexical-env type-alias-env global-env type-env-structs)
          (rep type-rep filter-rep object-rep)
          syntax/free-vars
-         racket/match (prefix-in c: racket/contract)
-         (except-in racket/contract -> ->* one-of/c)
+         (typecheck signatures tc-metafunctions tc-subst check-below)
+         racket/match (contract-req)
          syntax/kerncase syntax/parse unstable/syntax
+         (for-template racket/base (typecheck internal-forms)))
 
-         (for-template
-          racket/base
-          "internal-forms.rkt"))
-
-(require (only-in srfi/1/list s:member))
 
 (import tc-expr^)
 (export tc-let^)
@@ -28,11 +24,11 @@
      (ret ts (for/list ([f ts]) (make-NoFilter)) (for/list ([f ts]) (make-NoObject)))]))
 
 (define/cond-contract (do-check expr->type namess results expected-results form exprs body clauses expected #:abstract [abstract null])
-     (((syntax? syntax? tc-results/c . c:-> . any/c)
+     (((syntax? syntax? tc-results/c . -> . any/c)
        (listof (listof identifier?)) (listof tc-results/c) (listof tc-results/c)
        syntax? (listof syntax?) syntax? (listof syntax?) (or/c #f tc-results/c))
       (#:abstract any/c)
-      . c:->* .
+      . ->* .
       tc-results/c)
      (with-cond-contract t/p ([types          (listof (listof Type/c))] ; types that may contain undefined (letrec)
                               [expected-types (listof (listof Type/c))] ; types that may not contain undefined (what we got from the user)
@@ -216,7 +212,7 @@
   (syntax-parse e #:literals (#%plain-lambda)
     [(#%plain-lambda () _)
      #:fail-unless (and expected (syntax-property e 'typechecker:called-in-tail-position)) #f
-     (tc-expr/check e (ret (-> (tc-results->values expected))))]
+     (tc-expr/check e (ret (t:-> (tc-results->values expected))))]
     [_
      #:fail-unless (and expected (syntax-property e 'typechecker:called-in-tail-position)) #f
      (tc-expr/check e expected)]

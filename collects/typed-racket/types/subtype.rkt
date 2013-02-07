@@ -1,13 +1,10 @@
 #lang racket/base
 (require (except-in "../utils/utils.rkt" infer)
+         racket/match unstable/match racket/function racket/lazy-require
+         (prefix-in c: (contract-req))
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
          (types utils resolve base-abbrev numeric-tower substitute current-seen)
-         (env type-name-env)
-         racket/match unstable/match
-         racket/function
-         racket/lazy-require
-         (prefix-in c: racket/contract)
          (for-syntax racket/base syntax/parse))
 
 (lazy-require
@@ -75,11 +72,11 @@
   (define-syntax-class sub*
     (pattern e:expr))
   (syntax-parse stx
-    [(_ init (s1:sub* . args1) (s:sub* . args) ...)
-     (with-syntax ([(A* ... A-last) (generate-temporaries #'(s1 s ...))])
+    [(_ init (s:sub* . args) ...+)
+     (with-syntax ([(A* ... A-last) (generate-temporaries #'(s ...))])
        (with-syntax ([(clauses ...)
-                      (for/list ([s (syntax->list #'(s1 s ...))]
-                                 [args (syntax->list #'(args1 args ...))]
+                      (for/list ([s (syntax->list #'(s ...))]
+                                 [args (syntax->list #'(args ...))]
                                  [A (syntax->list #'(init A* ...))]
                                  [A-next (syntax->list #'(A* ... A-last))])
                          #`[#,A-next (#,s #,A . #,args)])])
@@ -447,14 +444,17 @@
               ;; otherwise, not a subtype
               [(_ _) (fail! s t) #;(dprintf "failed")])))]))))
 
-  (define (type-compare? a b)
+(define (type-compare? a b)
   (and (subtype a b) (subtype b a)))
 
 
 (provide/cond-contract
- [subtype (c:-> (c:or/c Type/c SomeValues/c) (c:or/c Type/c SomeValues/c) boolean?)])
-(provide
-  type-compare? subtypes/varargs subtypes)
+ [subtype (c:-> (c:or/c Type/c SomeValues/c) (c:or/c Type/c SomeValues/c) boolean?)]
+ [type-compare? (c:-> (c:or/c Type/c SomeValues/c) (c:or/c Type/c SomeValues/c) boolean?)]
+ [subtypes (c:-> (listof (c:or/c Type/c SomeValues/c))
+                 (listof (c:or/c Type/c SomeValues/c))
+                 boolean?)]
+ [subtypes/varargs (c:-> (listof Type/c) (listof Type/c) (or/c Type/c #f) boolean?)])
 
 ;(trace subtype*)
 ;(trace supertype-of-one/arr)

@@ -1,8 +1,9 @@
 #lang racket/base
 
-(require racket/contract unstable/sequence racket/dict syntax/id-table
+(require unstable/sequence racket/dict syntax/id-table racket/match unstable/struct
          (prefix-in r: "../utils/utils.rkt")
-         racket/match (r:rep filter-rep rep-utils type-rep) unstable/struct
+         (r:contract-req)
+         (r:rep filter-rep rep-utils type-rep)
          (except-in (r:utils tc-utils) make-env))
 
 (provide extend

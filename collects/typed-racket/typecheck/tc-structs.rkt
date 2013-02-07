@@ -1,29 +1,18 @@
 #lang racket/base
 
 (require "../utils/utils.rkt"
+         syntax/struct syntax/parse racket/function racket/match racket/list
+         racket/struct-info
+
+         (prefix-in c: (contract-req))
          (rep type-rep object-rep free-variance)
          (private parse-type)
          (types abbrev utils union resolve substitute type-table)
          (env global-env type-env-structs type-name-env tvar-env)
          (utils tc-utils)
-         "def-binding.rkt"
-         syntax/kerncase
-         syntax/struct
-         syntax/parse
-         racket/function
-         racket/match
-         racket/list
-         racket/struct-info
-         (only-in racket/contract
-                  listof any/c or/c
-                  [->* c->*]
-                  [-> c->])
-         (for-syntax
-          syntax/parse
-          racket/base))
-
-
-(require (for-template racket/base
+         (typecheck def-binding)
+         (for-syntax syntax/parse racket/base)
+         (for-template racket/base
                        "internal-forms.rkt"))
 
 (provide tc/struct names-of-struct d-s
@@ -78,7 +67,7 @@
 ;; parse name field of struct, determining whether a parent struct was specified
 ;; syntax -> (values identifier Option[Name] Option[Struct])
 (define/cond-contract (parse-parent nm/par)
-  (c-> syntax? (values identifier? (or/c Name? #f) (or/c Mu? Poly? Struct? #f)))
+  (c:-> syntax? (values identifier? (c:or/c Name? #f) (c:or/c Mu? Poly? Struct? #f)))
   (syntax-parse nm/par
     [v:parent
       (if (attribute v.par)
@@ -116,7 +105,7 @@
 ;; gets the fields of the parent type, if they exist
 ;; Option[Struct-Ty] -> Listof[Type]
 (define/cond-contract (get-flds p)
-  (c-> (or/c Struct? #f) (listof fld?))
+  (c:-> (c:or/c Struct? #f) (c:listof fld?))
   (match p
     [(Struct: _ _ flds _ _ _) flds]
     [#f null]))
@@ -124,8 +113,8 @@
 
 ;; Constructs the Struct value for a structure type
 ;; The returned value has free type variables
-(define (mk/inner-struct-type names desc parent)
-  (c-> struct-names? struct-desc? (or/c Struct? #f) void?)
+(define/cond-contract (mk/inner-struct-type names desc parent)
+  (c:-> struct-names? struct-desc? (c:or/c Struct? #f) Struct?)
 
   (let* ([this-flds (for/list ([t (in-list (struct-desc-self-fields desc))]
                                [g (in-list (struct-names-getters names))])
@@ -141,7 +130,7 @@
 ;; identifier listof[identifier] type listof[fld] listof[Type] boolean ->
 ;;  (values Type listof[Type] listof[Type])
 (define/cond-contract (register-sty! sty names desc)
-  (c-> Struct? struct-names? struct-desc? void?)
+  (c:-> Struct? struct-names? struct-desc? void?)
 
   (register-type-name (struct-names-type-name names)
                       (make-Poly (struct-desc-tvars desc) sty)))
@@ -151,7 +140,7 @@
 
 ;; Register the approriate types to the struct bindings.
 (define/cond-contract (register-struct-bindings! sty names desc si)
-  (c-> Struct? struct-names? struct-desc? (or/c #f struct-info?) (listof binding?))
+  (c:-> Struct? struct-names? struct-desc? (c:or/c #f struct-info?) (c:listof binding?))
 
 
   (define tvars (struct-desc-tvars desc))
@@ -303,9 +292,9 @@
 ;;                     -> void
 ;; FIXME - figure out how to make this lots lazier
 (define/cond-contract (tc/builtin-struct nm parent fld-names tys kernel-maker)
-     (c-> identifier? (or/c #f identifier?) (listof identifier?)
-          (listof Type/c) (or/c #f identifier?)
-          any/c)
+     (c:-> identifier? (c:or/c #f identifier?) (c:listof identifier?)
+           (c:listof Type/c) (c:or/c #f identifier?)
+           c:any/c)
   (define parent-type (and parent (resolve-name (make-Name parent))))
   (define parent-tys (map fld-t (get-flds parent-type)))
 

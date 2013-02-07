@@ -1,27 +1,28 @@
 #lang racket/base
 
-(require "../utils/utils.rkt")
-
-(require (rename-in (rep type-rep object-rep filter-rep rep-utils) [make-Base make-Base*])
-         (utils tc-utils)
-         "base-abbrev.rkt"
-         (types union numeric-tower)
-         (env mvar-env)
+(require "../utils/utils.rkt"
          racket/list
          racket/match
          racket/function
-         racket/pretty
-         ;; avoid the other dependencies of `racket/place`
-         '#%place
          unstable/function
-         racket/lazy-require
-         (except-in racket/contract/base ->* -> one-of/c)
-         (prefix-in c: racket/contract/base)
+
+         (prefix-in c: (contract-req))
+         (rename-in (rep type-rep object-rep filter-rep rep-utils)
+                    [make-Base make-Base*])
+         (utils tc-utils)
+         (types union numeric-tower)
+         "base-abbrev.rkt" ;; Using this form so all-from-out works
+         (env mvar-env)
+
          (for-syntax racket/base syntax/parse racket/list)
-         (for-template racket/base racket/contract/base racket/promise racket/tcp racket/flonum racket/udp '#%place)
-         racket/pretty racket/udp
+
+         ;; for base type contracts
+         (for-template racket/base racket/contract/base racket/promise
+                       racket/tcp racket/flonum racket/udp '#%place)
          ;; for base type predicates
-         racket/promise racket/tcp racket/flonum)
+         racket/pretty racket/udp
+         racket/promise racket/tcp racket/flonum
+         '#%place) ;; avoid the other dependencies of `racket/place`
 
 
 (provide (except-out (all-defined-out) make-Base)
@@ -78,7 +79,7 @@
 ;; convenient constructor for Values
 ;; (wraps arg types with Result)
 (define/cond-contract (-values args)
-  (c:-> (listof Type/c) (or/c Type/c Values?))
+  (c:-> (c:listof Type/c) (c:or/c Type/c Values?))
   (match args
     ;[(list t) t]
     [_ (make-Values (for/list ([i args]) (-result i)))]))
@@ -86,7 +87,7 @@
 ;; convenient constructor for ValuesDots
 ;; (wraps arg types with Result)
 (define/cond-contract (-values-dots args dty dbound)
-  (c:-> (listof Type/c) Type/c (or/c symbol? natural-number/c)
+  (c:-> (c:listof Type/c) Type/c (c:or/c symbol? c:natural-number/c)
         ValuesDots?)
   (make-ValuesDots (for/list ([i args]) (-result i))
                    dty dbound))
@@ -329,10 +330,10 @@
 (define/cond-contract (make-arr* dom rng
                                  #:rest [rest #f] #:drest [drest #f] #:kws [kws null]
                                  #:filters [filters -no-filter] #:object [obj -no-obj])
-  (c:->* ((listof Type/c) (or/c SomeValues/c Type/c))
-         (#:rest (or/c #f Type/c)
-          #:drest (or/c #f (cons/c Type/c symbol?))
-          #:kws (listof Keyword?)
+  (c:->* ((c:listof Type/c) (c:or/c SomeValues/c Type/c))
+         (#:rest (c:or/c #f Type/c)
+          #:drest (c:or/c #f (c:cons/c Type/c symbol?))
+          #:kws (c:listof Keyword?)
           #:filters FilterSet?
           #:object Object?)
          arr?)
@@ -431,13 +432,13 @@
   (make-Struct name parent flds proc poly pred))
 
 (define/cond-contract (-filter t i [p null])
-     (c:->* (Type/c name-ref/c) ((listof PathElem?)) Filter/c)
+     (c:->* (Type/c name-ref/c) ((c:listof PathElem?)) Filter/c)
      (if (or (type-equal? Univ t) (and (identifier? i) (is-var-mutated? i)))
          -top
          (make-TypeFilter t p i)))
 
 (define/cond-contract (-not-filter t i [p null])
-     (c:->* (Type/c name-ref/c) ((listof PathElem?)) Filter/c)
+     (c:->* (Type/c name-ref/c) ((c:listof PathElem?)) Filter/c)
      (if (or (type-equal? (make-Union null) t) (and (identifier? i) (is-var-mutated? i)))
          -top
          (make-NotTypeFilter t p i)))
@@ -455,10 +456,10 @@
   (make-Function (list (make-arr* (list dom) rng #:filters filter))))
 
 (define/cond-contract make-pred-ty
-  (case-> (c:-> Type/c Type/c)
-          (c:-> (listof Type/c) Type/c Type/c Type/c)
-          (c:-> (listof Type/c) Type/c Type/c integer? Type/c)
-          (c:-> (listof Type/c) Type/c Type/c integer? (listof PathElem?) Type/c))
+  (c:case-> (c:-> Type/c Type/c)
+            (c:-> (c:listof Type/c) Type/c Type/c Type/c)
+            (c:-> (c:listof Type/c) Type/c Type/c integer? Type/c)
+            (c:-> (c:listof Type/c) Type/c Type/c integer? (c:listof PathElem?) Type/c))
   (case-lambda
     [(in out t n p)
      (define xs (for/list ([(_ i) (in-indexed (in-list in))]) i))
