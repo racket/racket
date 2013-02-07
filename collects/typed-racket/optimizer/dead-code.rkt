@@ -11,7 +11,7 @@
 
 (define-syntax-class predicate
   #:literals (flvector? fxvector? exact-integer? fixnum? flonum? vector? string? bytes?)
-  [pattern (~and x:id (~or flvector? exact-integer? fixnum? flonum? vector? fxvector?))])
+  [pattern (~and x:id (~or flvector? fxvector? exact-integer? fixnum? flonum? vector? string? bytes?))])
 
 (define (pure? stx)
   (syntax-parse stx
