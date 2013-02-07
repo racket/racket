@@ -138,6 +138,9 @@
    [(-struct #'a #f null) (-struct #'a #f null)]
    [(-struct #'a #f (list (make-fld -String #'values #f))) (-struct #'a #f (list (make-fld -String #'values #f)))]
    [(-struct #'a #f (list (make-fld -String #'values #f))) (-struct #'a #f (list (make-fld Univ #'values #f)))]
+   [(-val 0.0f0) -SingleFlonum]
+   [(-val -0.0f0) -SingleFlonum]
+   [(-val 1.0f0) -SingleFlonum]
    ))
 
 (define-go
