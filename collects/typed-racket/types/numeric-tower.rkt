@@ -103,6 +103,9 @@
              #'-NegFixnum))
 (define -NonPosFixnum (*Un -NegFixnum -Zero))
 (define -Fixnum       (*Un -NegFixnum -Zero -PosFixnum))
+;; This type, and others like it, should *not* be exported, or used for
+;; anything but building unions. Especially, no literals should be given
+;; these types.
 (define -PosIntNotFixnum
   (make-Base 'Positive-Integer-Not-Fixnum
              #'(and/c exact-integer? positive? (not/c fixnum?))
