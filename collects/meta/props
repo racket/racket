@@ -731,6 +731,7 @@ path/s is either such a string or a list of them.
 "collects/ffi/unsafe/objc.rkt" responsible (mflatt) drdr:command-line (mzc *)
 "collects/file" responsible (mflatt)
 "collects/framework" responsible (robby)
+"collects/framework/private/encode.rkt" drdr:command-line (racket *)
 "collects/frtime" responsible (jay gcooper)
 "collects/frtime/animation.rkt" drdr:command-line (mzc *)
 "collects/frtime/demos/analog-clock.rkt" drdr:command-line (mzc *)
