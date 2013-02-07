@@ -1,7 +1,9 @@
-#lang scheme
+#lang racket/base
 (require rackunit
          plai/random-mutator
-         scheme/runtime-path
+         racket/runtime-path
+         racket/file
+         racket/pretty
          ;; test find-heap-values and save-random-mutator via the contract'd
          ;; interface, just in case they break their contracts
          (except-in plai/private/random-mutator find-heap-values save-random-mutator))
@@ -20,14 +22,14 @@
       (λ (port)
         (fprintf port "#lang plai/mutator\n")
         (fprintf port "~s\n" `(allocator-setup tests/plai/gc/good-collectors/good-collector 100))
-        (for-each (λ (exp) (pretty-print exp port)) exps))
+        (for-each (λ (exp) (pretty-write exp port)) exps))
       #:exists 'truncate)
 
     (let ([sp (open-output-string)])
       (parameterize ([current-output-port sp])
         (dynamic-require tmpfile #f))
       (delete-file tmpfile)
-      (and (regexp-match #rx"Value at location [0-9]+:\npassed\n"
+      (and (regexp-match #rx"Value at location [0-9]+:\n'passed\n"
                          (get-output-string sp))
            #t))))
 
