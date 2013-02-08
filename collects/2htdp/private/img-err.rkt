@@ -56,7 +56,7 @@
                       [final-arg 
                        (for/list ([x (in-list final-arg)]
                                   [j (in-naturals #,(+ len 1))])
-                         (check/normalize 'fn-name 'final-arg x j))])
+                         (check/normalize '#,fn-name 'final-arg x j))])
                   #,@bodies))))]
         [(args ...)
          (with-syntax ([(i ...) (build-list (length (syntax->list #'(args ...))) add1)]
