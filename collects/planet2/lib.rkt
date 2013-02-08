@@ -401,7 +401,7 @@
   (define (install-package pkg 
                            given-type
                            given-pkg-name
-                           #:given-checksum [given-checksum #f])
+                           #:given-checksum [given-checksum #f])    
     (define-values (inferred-pkg-name type) 
       (if (path? pkg)
           (package-source->name+type (path->string pkg)
@@ -420,7 +420,7 @@
            (not (regexp-match? #rx"^github://" pkg)))
       ;; Add "github://github.com/"
       (install-package (string-append "github://github.com/" pkg) type 
-                       pkg-name)]
+                       pkg-name #:given-checksum given-checksum)]
      [(or (eq? type 'file-url) (eq? type 'dir-url) (eq? type 'github))
       (define pkg-url (string->url pkg))
       (define scheme (url-scheme pkg-url))

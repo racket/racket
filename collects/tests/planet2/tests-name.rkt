@@ -54,6 +54,7 @@
   (check-equal-values? (package-source->name+type "http://racket-lang.org/fish" #f) (values "fish" 'dir-url))
 
   (check-equal-values? (package-source->name+type "github://github.com/racket/fish/master" #f) (values "fish" 'github))
+  (check-equal-values? (package-source->name+type "github://github.com/racket/fish.rkt/master" #f) (values #f 'github))
   (check-equal-values? (package-source->name+type "github://github.com/racket/fish/release" #f) (values "fish" 'github))
   (check-equal-values? (package-source->name+type "github://github.com/racket/fish/release/catfish" #f) (values "catfish" 'github))
   (check-equal-values? (package-source->name+type "github://github.com/racket/fish/release/catfish/" #f) (values "catfish" 'github))

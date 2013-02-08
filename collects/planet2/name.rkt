@@ -67,7 +67,7 @@
                              (if (= (length p) 3)
                                  (path/param-path (second (reverse p)))
                                  (path/param-path (last-non-empty p))))))))
-              (values name (or type (and name 'github)))]
+              (values name (or type 'github))]
              [(if type
                   (eq? type 'file-url)
                   (and (pair? p)
@@ -78,7 +78,7 @@
              [else
               (values (validate-name (path/param-path (last-non-empty p))) 'dir-url)]))
           (values #f #f)))
-    (values (validate-name name) (or type (and name name-type)))]
+    (values (validate-name name) (or type (and name-type)))]
    [(and (not type)
          (regexp-match? #rx"^[a-zA-Z]*://" s))
     (values #f #f)]
