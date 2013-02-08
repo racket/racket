@@ -1021,7 +1021,7 @@ if test "${check_for_mprotect}" = "yes" ; then
   [  #include <fcntl.h> ]
      int main() {
       void *p;
-      p = mmap(0, 2 << 16, PROT_READ | PROT_WRITE, MAP_PRIVATE, open("/dev/zero", O_RDWR), 0);
+      p = mmap(0, 2 << 16, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE, open("/dev/zero", O_RDWR), 0);
       mprotect(p, 2 << 16, PROT_READ | PROT_WRITE | PROT_EXEC);
       return 0;
      }, use_mprotect=yes, use_mprotect=no, use_mprotect=no)
