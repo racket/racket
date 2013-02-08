@@ -59,7 +59,7 @@
   ;; via initialize. We could do the same via a key? parameter
   ;; (exercise). add key k with value v to this dictionary 
   [put         (->d ([d dictionary?]
-                     [k (and symbol? (not-has? d))]
+                     [k (and/c symbol? (not-has? d))]
                      [v (dictionary-value? d)])
                     ()
                     [result dictionary?]
