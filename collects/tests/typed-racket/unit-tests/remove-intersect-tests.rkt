@@ -38,6 +38,8 @@
    [-Listof -Sexp (-lst (Un B N -String Sym))]
    #;
    [-Sexp -Listof (-lst -Sexp)]
+   [(-val "one") -Fixnum (Un)]
+   [(Un (-val "one") (-val "two")) (Un (-val "one") (-val 1)) (-val "one")]
    ))
 
 (define-syntax (remo-tests stx)
