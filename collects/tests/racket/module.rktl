@@ -949,6 +949,22 @@
        
        (req (only-in data/queue enqueue!))))
   (expand-syntax (expand src)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; catch errors due to a module that is not available
+
+(module avail-z racket/base
+  (provide foo)
+  (define-syntax-rule (foo x) x))
+
+(module avail-y racket/base
+  (require 'avail-z)
+  (eval #'(foo 10)))
+
+(err/rt-test (dynamic-require ''avail-y #f)
+             (lambda (exn) (and (exn? exn)
+                                (regexp-match? #rx"module that is not available"
+                                               (exn-message exn)))))
   
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

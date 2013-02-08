@@ -4278,7 +4278,7 @@ static void check_certified(Scheme_Object *stx,
         symbol = stx;
         stx = NULL;
       }
-      scheme_wrong_syntax("compile", stx, symbol, 
+      scheme_wrong_syntax(scheme_compile_stx_string, stx, symbol, 
                           "access disallowed by code inspector to %s %s from module: %D",
                           prot ? "protected" : "unexported",
                           var ? "variable" : "syntax",
@@ -4616,6 +4616,23 @@ Scheme_Object *scheme_module_syntax(Scheme_Object *modname, Scheme_Env *env,
 
     if (!menv)
       return NULL;
+
+    if (menv->module 
+        && menv->running
+        && ((mod_phase+1) < menv->module->num_phases)
+        && !menv->running[mod_phase+1]) {
+      scheme_wrong_syntax(scheme_compile_stx_string, NULL, name, 
+                          "module mismatch;\n"
+                          " attempted to use a module that is not available\n"
+                          "  possible cause:\n"
+                          "   using (dynamic-require .... #f)\n"
+                          "   but need (dynamic-require .... 0)\n"
+                          "  module: %D\n"
+                          "  phase: %d",
+                          menv->module->modsrc,
+                          mod_phase);
+      return NULL;
+    }
 
     for (i = 0; i < mod_phase; i++) {
       scheme_prepare_exp_env(menv);
@@ -5777,8 +5794,8 @@ Scheme_Env *scheme_primitive_module(Scheme_Object *name, Scheme_Env *for_env)
   scheme_hash_set(for_env->module_registry->loaded, m->modname, (Scheme_Object *)m);
 
   running = scheme_malloc_atomic(2);
-  running[0] = 0;
-  running[1] = 0;
+  running[0] = 1;
+  running[1] = 1;
   env->running = running;
 
   return env;
