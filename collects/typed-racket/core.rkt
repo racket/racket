@@ -60,7 +60,8 @@
                   #,(parameterize ([print-multi-line-case-> #t])
                       (format "~a\n" (match type
                                        [(tc-result1: t f o) t]
-                                       [(tc-results: t) (cons 'Values t)])))))]
+                                       [(tc-results: t) (cons 'Values t)]
+                                       [(tc-any-results:) ManyUniv])))))]
     ;; given a function and input types, display the result type
     [(_ . ((~literal :query-type/args) op:expr arg-type:expr ...))
      (with-syntax ([(dummy-arg ...) (generate-temporaries #'(arg-type ...))])
