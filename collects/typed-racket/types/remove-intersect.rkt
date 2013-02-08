@@ -7,6 +7,15 @@
 
 (provide (rename-out [*remove remove]) overlap)
 
+(define (simple-datum? v)
+  (or (null? v)
+      (symbol? v)
+      (number? v)
+      (boolean? v)
+      (pair? v)
+      (string? v)
+      (keyword? v)))
+
 
 (define (overlap t1 t2)
   (let ([ks (Type-key t1)] [kt (Type-key t2)])
@@ -66,10 +75,13 @@
          [(or (list (Pair: _ _) _)
               (list _ (Pair: _ _)))
           #f]
-         [(or (list (Value: (? (λ (e) (or (null? e) (symbol? e) (number? e) (boolean? e) (pair? e) (keyword? e)))))
+         [(list (Value: (? simple-datum? v1))
+                (Value: (? simple-datum? v2)))
+          (equal? v1 v2)]
+         [(or (list (Value: (? simple-datum?))
                     (Struct: n _ flds _ _ _))
               (list (Struct: n _ flds _ _ _) 
-                    (Value: (? (λ (e) (or (null? e) (symbol? e) (number? e) (boolean? e) (pair? e) (keyword? e)))))))
+                    (Value: (? simple-datum?))))
           #f]
          [(list (Struct: n _ flds _ _ _)
                 (Struct: n* _ flds* _ _ _)) (=> nevermind)
