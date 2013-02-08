@@ -1,19 +1,31 @@
 #lang racket/base
 (require racket/contract
+         web-server/dispatchers/dispatch
          web-server/servlet/servlet-structs)
 
+(define tester/c
+  (->* ()
+       ((or/c string? url? request? false/c)
+        (listof binding?)
+        #:raw? boolean?
+        #:headers? boolean?)
+       (or/c bytes?
+             xexpr?
+             (cons/c bytes?
+                     (or/c bytes?
+                           xexpr?)))))
+
 (provide/contract
+ [tester/c contract?]
  [make-servlet-tester
   (-> (-> request?
           can-be-response?)
-      (->* ()
-           ((or/c string? url? request? false/c)
-            (listof binding?)
-            #:raw? boolean?)
-           (or/c bytes?
-                 xexpr?)))])
+      tester/c)]
+ [make-dispatcher-tester
+  (-> dispatcher/c
+      tester/c)])
 
-; Real Library
+;; Real Library
 (require racket/list
          racket/promise
          net/url
@@ -22,39 +34,47 @@
 
 (define (make-servlet-tester servlet)
   (define d (dispatch/servlet servlet))
-  (λ ([s-or-u-or-req #f] 
+  (make-dispatcher-tester d))
+
+(define (make-dispatcher-tester d)
+  (λ ([s-or-u-or-req #f]
       [bs empty]
-      #:raw? [raw? #f])
+      #:raw? [raw? #f]
+      #:headers? [hs? #f])
     (define req
       (if (request? s-or-u-or-req)
-          s-or-u-or-req
-          (let ()
-            (define s-or-u
-              (if s-or-u-or-req
-                  s-or-u-or-req
-                  ""))
-            (define u 
-              (if (string? s-or-u)
-                  (string->url s-or-u)
-                  s-or-u))
-            (make-request #"GET" u empty (delay bs) #"" "127.0.0.1" 80 "127.0.0.1"))))
-    (call d req #:raw? raw?)))
+        s-or-u-or-req
+        (let ()
+          (define s-or-u
+            (if s-or-u-or-req
+              s-or-u-or-req
+              "/"))
+          (define u
+            (if (string? s-or-u)
+              (string->url s-or-u)
+              s-or-u))
+          (make-request #"GET" u empty (delay bs) #"" "127.0.0.1" 80 "127.0.0.1"))))
+    (call d req #:raw? raw? #:headers? hs?)))
 
-; Intermediate Library
+;; Intermediate Library
 (require racket/match
          xml
          web-server/private/timer
          web-server/private/connection-manager
          web-server/private/web-server-structs)
 
-(define (call d req #:raw? raw?)
-  (htxml (collect d req) raw?))
-(define (htxml bs raw?)
-  (match (regexp-match #"^.+\r\n\r\n(.*)$" bs)
-    [(list _ s)
-     (if raw?
+(define (call d req #:raw? raw? #:headers? hs?)
+  (htxml (collect d req) raw? hs?))
+(define (htxml bs raw? hs?)
+  (match (regexp-match #"^(.+)\r\n\r\n(.*)$" bs)
+    [(list _ h s)
+     (define body
+       (if raw?
          s
-         (string->xexpr (bytes->string/utf-8 s)))]
+         (string->xexpr (bytes->string/utf-8 s))))
+     (if hs?
+       (cons h body)
+       body)]
     [_
      (error 'servlet "Servlet did not return an HTTP response, instead returned ~v"
             bs)]))
@@ -77,7 +97,7 @@
           op))
 
 (define (redact b)
-  (regexp-replace 
+  (regexp-replace
    #"Date: [a-zA-Z0-9:, ]+ GMT\r\n"
    (regexp-replace
     #"Last-Modified: [a-zA-Z0-9:, ]+ GMT\r\n"

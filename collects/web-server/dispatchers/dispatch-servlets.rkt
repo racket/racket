@@ -56,7 +56,7 @@
           #:responders-servlet-loading [responders-servlet-loading servlet-loading-responder]
           #:responders-servlet [responders-servlet servlet-error-responder])
   (lambda (conn req)
-    (define uri (request-uri req))
+    (define uri (request-uri req))    
     (define instance-custodian (make-servlet-custodian))      
     (parameterize ([current-custodian instance-custodian]
                    [current-execution-context (make-execution-context req)]
