@@ -254,5 +254,13 @@
     (test #\3 peek-char s)))
 
 ;; ----------------------------------------
+;; Check sequence constructors with keywords
+
+(define (in-X #:x seq) seq)
+(test '(1 2 3) 'kw-seq (for/list ([x (in-X #:x '(1 2 3))]) x))
+(define-sequence-syntax in-X* (lambda () #'in-X) (lambda (stx) #f))
+(test '(1 2 3) 'kw-seq (for/list ([x (in-X* #:x '(1 2 3))]) x))
+
+;; ----------------------------------------
 
 (report-errs)
