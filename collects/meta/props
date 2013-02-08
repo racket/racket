@@ -803,6 +803,7 @@ path/s is either such a string or a list of them.
 "collects/macro-debugger" responsible (ryanc)
 "collects/make" responsible (mflatt)
 "collects/math" responsible (ntoronto)
+"collects/math/tests/matrix-tests.rkt" drdr:timeout 120
 "collects/meta" responsible (eli)
 "collects/meta/build" drdr:command-line #f
 "collects/meta/check-dists.rkt" drdr:timeout 480
