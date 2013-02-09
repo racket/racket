@@ -128,7 +128,17 @@
    [(-poly (a) (a . -> . (make-Listof a))) ((-v b) . -> . (make-Listof (-v b)))]
    [(-poly (a) (a . -> . (make-Listof a))) ((-pair -Number (-v b)) . -> . (make-Listof (-pair -Number (-v b))))]
 
-   (FAIL (-poly (a b) (-> a a)) (-poly (a b) (-> a b)))
+   [FAIL (-poly (a b) (-> a a)) (-poly (a b) (-> a b))]
+   [FAIL (-poly (a) (-poly (b) (-pair a b))) (-poly (a) (-poly (b) (-pair b a)))]
+
+   ;; The following currently are not subtypes, because they are not replacable
+   ;; in an instantiation context. It may be sound for them to be subtypes but
+   ;; the implications of that change are unknown.
+   [FAIL (-poly (x) (-lst x)) (-poly (x y) (-lst x))]
+   [FAIL (-poly (y z) (-lst y)) (-poly (z y) (-lst y))]
+   [FAIL (-poly (y) (-poly (z) (-pair y z))) (-poly (y z) (-pair y z))]
+   [FAIL (-poly (y z) (-pair y z)) (-poly (y) (-poly (z) (-pair y z)))]
+
 
    ;; polymorphic function types should be subtypes of the function top
    [(-poly (a) (a . -> . a)) top-func]
