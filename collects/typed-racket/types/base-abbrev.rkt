@@ -7,7 +7,8 @@
          racket/match racket/list
          (for-template racket/base))
 
-(provide (all-defined-out))
+(provide (all-defined-out)
+         (rename-out [make-Listof -lst]))
 
 ;Top and error types
 (define Univ (make-Univ))
@@ -18,8 +19,9 @@
 ;return type of functions
 (define ManyUniv (make-AnyValues))
 
-;; Char type (needed because of how sequences are checked in subtype)
+;; Char type and List type (needed because of how sequences are checked in subtype)
 (define -Char (make-Base 'Char #'char? char? #'-Char #f))
+(define (make-Listof elem) (-mu list-rec (simple-Un (make-Value null) (make-Pair elem list-rec))))
 
 
 ;; Simple union type, does not check for overlaps
@@ -50,3 +52,14 @@
       [(t) t]
       [args
        (make-union* (remove-dups (sort (append-map flat args) type<?)))])))
+
+;; Recursive types
+(define-syntax -v
+  (syntax-rules ()
+    [(_ x) (make-F 'x)]))
+
+(define-syntax -mu
+  (syntax-rules ()
+    [(_ var ty)
+     (let ([var (-v var)])
+       (make-Mu 'var ty))]))
