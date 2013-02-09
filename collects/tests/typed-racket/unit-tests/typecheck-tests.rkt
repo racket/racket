@@ -1527,6 +1527,10 @@
         [tc-e ((inst list Any) 1 2 3)
               (-lst Univ)]
 
+        [tc-err
+          (let ((s (ann (set 2) Any)))
+            (if (set? s) (ann s (Setof String)) ((inst set String))))]
+
         )
   (test-suite
    "check-type tests"

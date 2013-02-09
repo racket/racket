@@ -980,6 +980,8 @@
 [set-empty? (-poly (e) (-> (-set e) B))]
 [set-count (-poly (e) (-> (-set e) -Index))]
 [set-member? (-poly (e) (-> (-set e) e B))]
+[set-first (-poly (e) (-> (-set e) e))]
+[set-rest (-poly (e) (-> (-set e) (-set e)))]
 [set-add (-poly (e) (-> (-set e) e (-set e)))]
 [set-remove (-poly (e) (-> (-set e) e (-set e)))]
 
@@ -994,17 +996,18 @@
 [proper-subset? (-poly (e) (-> (-set e) (-set e) B))]
 [set-map (-poly (e b) (-> (-set e) (-> e b) (-lst b)))]
 [set-for-each (-poly (e b) (-> (-set e) (-> e b) -Void))]
-[set? (make-pred-ty (-poly (e) (-set e)))]
+[set? (make-pred-ty (-set Univ))]
 [set-equal? (-poly (e) (-> (-set e) B))]
 [set-eqv? (-poly (e) (-> (-set e) B))]
 [set-eq? (-poly (e) (-> (-set e) B))]
 
-
+[in-set (-poly (e) (-> (-set e) (-seq e)))]
 [list->set    (-poly (e) (-> (-lst e) (-set e)))]
 [list->seteq  (-poly (e) (-> (-lst e) (-set e)))]
 [list->seteqv (-poly (e) (-> (-lst e) (-set e)))]
 [set->list (-poly (e) (-> (-set e) (-lst e)))]
 
+;Section 3.4 (Byte Strings)
 [bytes (->* (list) -Integer -Bytes)]
 [bytes? (make-pred-ty -Bytes)]
 [make-bytes (cl-> [(-Integer -Integer) -Bytes]
