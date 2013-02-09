@@ -2257,6 +2257,10 @@
           =>
           #rx"^beside/align")
 
+(test/exn (beside (empty-scene 10 10) (empty-scene 10 10) '())
+          =>
+          #rx"^beside:")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;  testing the wxme connection for 2htdp/image images
