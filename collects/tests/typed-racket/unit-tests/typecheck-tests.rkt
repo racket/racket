@@ -1575,6 +1575,10 @@
         [tc-err (let ()
                   (: g (All (i ...) Any -> (values Any ... i)))
                   (define (g x) 2))]
+        [tc-err
+          (let ((s (ann (set 2) Any)))
+            (if (set? s) (ann s (Setof String)) ((inst set String))))]
+
         )
   (test-suite
    "check-type tests"
