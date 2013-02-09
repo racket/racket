@@ -32,11 +32,49 @@
         (let ([s (bytes->string/utf-8 (make-byte-string x))]) (free x) s)
         eof))))
 
-(define readline
-  (get-ffi-obj "readline" libreadline (_fun _string -> _string/eof/free)))
 
-(define readline-bytes
-  (get-ffi-obj "readline" libreadline (_fun _bytes -> _bytes/eof/free)))
+(define rl-callback-handler-install
+  (get-ffi-obj "rl_callback_handler_install" libreadline
+               (_fun _string (_fun _string/eof/free -> _void) -> _void)))
+
+(define rl-callback-handler-install/bytes
+  (get-ffi-obj "rl_callback_handler_install" libreadline
+               (_fun _bytes (_fun _bytes/eof/free -> _void) -> _void)))
+
+(define rl-callback-read-char
+  (get-ffi-obj "rl_callback_read_char" libreadline
+               (_fun -> _void)))
+
+(define rl-callback-handler-remove
+  (get-ffi-obj "rl_callback_handler_remove" libreadline
+               (_fun -> _void)))
+
+;; We need to tell readline to pull content through our own 
+;; function, to avoid the buffering issues between C and Racket.
+(set-ffi-obj! "rl_getc_function" libreadline (_fun _pointer -> _int)
+              (lambda (_)
+                (define next-byte (read-byte real-input-port))
+                (if (eof-object? next-byte) -1 next-byte)))
+
+
+(define (make-readline rl-callback-handler-install)
+  (define (readline prompt)
+    (define result #f)
+    (rl-callback-handler-install prompt 
+                                 (lambda (r) 
+                                   (rl-callback-handler-remove)
+                                   (set! result r)))
+    (let loop ()
+      (cond [result result]
+            [else
+             (sync/enable-break real-input-port)
+             (rl-callback-read-char)
+             (loop)])))
+  readline)
+
+(define readline (make-readline rl-callback-handler-install))
+(define readline-bytes (make-readline rl-callback-handler-install/bytes))
+
 
 (define add-history
   (get-ffi-obj "add_history" libreadline (_fun _string -> _void)))
@@ -115,9 +153,6 @@
 (unless (terminal-port? real-input-port)
   (log-warning "mzrl warning: input port is not a terminal\n"))
 
-;; make it possible to run Scheme threads while waiting for input
-(set-ffi-obj! "rl_event_hook" libreadline (_fun -> _int)
-              (lambda () (sync/enable-break real-input-port) 0))
 
 
 ;; force cursor on a new line

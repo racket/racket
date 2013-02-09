@@ -1478,8 +1478,24 @@
 ;; ----------------------------------------------------------------------------
 ;; set up the xrepl environment
 
+
+
+;; When a user types "(require xrepl)" and presses enter at the normal
+;; repl, there's a trailing newline that we want to consume so that readline
+;; doesn't see it.
+(define (maybe-consume-newline)
+  (when (terminal-port? (current-input-port))
+    (define buffer (bytes 0 0))
+    (define peeked (peek-bytes-avail!* buffer 0 #f (current-input-port)))
+    (when (number? peeked)
+      (for ([i peeked])
+        (define b (bytes-ref buffer i))
+        (when (member (integer->char b)  '(#\newline #\return))
+          (read-byte (current-input-port)))))))
+
 (provide setup-xrepl-environment)
 (define (setup-xrepl-environment)
+  (maybe-consume-newline)
   (define (tweak param maker) (param (maker (param))))
   (tweak error-display-handler make-xrepl-display-handler)
   (tweak current-eval make-xrepl-evaluator)
