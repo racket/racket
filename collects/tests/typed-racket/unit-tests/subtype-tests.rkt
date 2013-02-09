@@ -151,6 +151,9 @@
    [(-val 0.0f0) -SingleFlonum]
    [(-val -0.0f0) -SingleFlonum]
    [(-val 1.0f0) -SingleFlonum]
+   [(-pair -String (-lst -String)) (-seq -String)]
+   [FAIL (-pair -String (-lst -Symbol)) (-seq -String)]
+   [FAIL (-pair -String (-vec -String)) (-seq -String)]
    ))
 
 (define-go

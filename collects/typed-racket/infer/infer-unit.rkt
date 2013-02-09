@@ -449,6 +449,8 @@
            (cgen/list V X Y ts ts*)]
           [((Listof: t) (Sequence: (list t*)))
            (cg t t*)]
+          [((Pair: t1 t2) (Sequence: (list t*)))
+           (cset-meet (cg t1 t*) (cg t2 (-lst t*)))]
           [((List: ts) (Sequence: (list t*)))
            (cset-meet* (for/list ([t (in-list ts)])
                          (cg t t*)))]

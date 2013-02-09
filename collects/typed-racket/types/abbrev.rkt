@@ -26,8 +26,7 @@
 
 (provide (except-out (all-defined-out) make-Base)
          (all-from-out "base-abbrev.rkt" "match-expanders.rkt")
-         (rename-out [make-Listof -lst]
-                     [make-MListof -mlst]))
+         (rename-out [make-MListof -mlst]))
 
 ;; all the types defined here are not numeric
 (define (make-Base name contract predicate marshaled)
@@ -56,7 +55,6 @@
 
 
 
-(define (make-Listof elem) (-mu list-rec (Un (-val null) (-pair elem list-rec))))
 (define (make-MListof elem) (-mu mlist-rec (Un (-val null) (-mpair elem mlist-rec))))
 
 (define (-lst* #:tail [tail (-val null)] . args)
@@ -299,9 +297,6 @@
 
 ;; convenient syntax
 
-(define-syntax -v
-  (syntax-rules ()
-    [(_ x) (make-F 'x)]))
 
 (define-syntax -poly
   (syntax-rules ()
@@ -316,11 +311,6 @@
            [vars (-v vars)] ...)
        (make-PolyDots (list 'vars ... 'dotted) ty))]))
 
-(define-syntax -mu
-  (syntax-rules ()
-    [(_ var ty)
-     (let ([var (-v var)])
-       (make-Mu 'var ty))]))
 
 ;; function type constructors
 

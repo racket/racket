@@ -279,6 +279,9 @@
                (subtypes* A0 ts ts*)]
               [((Listof: t) (Sequence: (list t*)))
                (subtype* A0 t t*)]
+              [((Pair: t1 t2) (Sequence: (list t*)))
+               (let ([A1 (subtype* A0 t1 t*)])
+                 (and A1 (subtype* A1 t2 (-lst t*))))]
               [((List: ts) (Sequence: (list t*)))
                (subtypes* A0 ts (map (λ _ t*) ts))]
               [((HeterogeneousVector: ts) (Sequence: (list t*)))
