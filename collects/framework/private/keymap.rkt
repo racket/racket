@@ -1314,7 +1314,8 @@
                 (let ([frame
                        (cond
                          [(is-a? edit editor<%>)
-                          (let ([canvas (send edit get-active-canvas)])
+                          (let ([canvas (or (send edit get-active-canvas)
+                                            (send edit get-canvas))])
                             (and canvas
                                  (send canvas get-top-level-window)))]
                          [(is-a? edit area<%>)
