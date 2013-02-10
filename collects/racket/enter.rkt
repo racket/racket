@@ -64,7 +64,9 @@
         (eprintf "  [~aloading ~a]\n" (if re? "re-" "") path))
       void))
   (lambda (path name)
-    (if name
+    (if (and name
+             (not (and (pair? name)
+                       (not (car name)))))
       ;; Module load:
       (let* ([code (get-module-code
                     path "compiled"
@@ -87,7 +89,7 @@
         ;; Evaluate the module:
         (parameterize ([current-module-declare-source actual-path])
           (eval code)))
-      ;; Not a module:
+      ;; Not a module, or a submodule that we shouldn't load from source:
       (begin (notify path) (orig path name)))))
 
 (define (get-timestamp path)
