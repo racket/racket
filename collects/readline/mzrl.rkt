@@ -115,9 +115,14 @@
 (unless (terminal-port? real-input-port)
   (log-warning "mzrl warning: input port is not a terminal\n"))
 
-;; make it possible to run Scheme threads while waiting for input
-(set-ffi-obj! "rl_event_hook" libreadline (_fun -> _int)
-              (lambda () (sync/enable-break real-input-port) 0))
+
+;; We need to tell readline to pull content through our own function,
+;; to avoid buffering issues between C and Racket, and to allow
+;; racket threads to run while waiting for input.
+(set-ffi-obj! "rl_getc_function" libreadline (_fun _pointer -> _int)
+              (lambda (_) 
+                (define next-byte (read-byte real-input-port))
+                (if (eof-object? next-byte) -1 next-byte)))
 
 
 ;; force cursor on a new line
