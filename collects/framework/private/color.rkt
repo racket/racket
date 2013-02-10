@@ -328,18 +328,18 @@ added get-regions
         [(and did-something? ((+ start-time 20.0) . <= . (current-inexact-milliseconds)))
          #f]
         [else
-         ;(define-values (_line1 _col1 pos-before) (port-next-location in))
+         (define-values (_line1 _col1 pos-before) (port-next-location in))
          (define-values (lexeme type data new-token-start new-token-end backup-delta new-lexer-mode) 
            (get-token in in-start-pos lexer-mode))
-         ;(define-values (_line2 _col2 pos-after) (port-next-location in))
+         (define-values (_line2 _col2 pos-after) (port-next-location in))
          (cond
            [(eq? 'eof type) 
             (set-lexer-state-up-to-date?! ls #t)
             (re-tokenize-move-to-next-ls start-time #t)]
            [else
-            (unless (exact-nonnegative-integer? new-token-start)
+            (unless (exact-positive-integer? new-token-start)
               (error 'color:text<%> "expected an exact nonnegative integer for the token start, got ~e" new-token-start))
-            (unless (exact-nonnegative-integer? new-token-end)
+            (unless (exact-positive-integer? new-token-end)
               (error 'color:text<%> "expected an exact nonnegative integer for the token end, got ~e" new-token-end))
             (unless (exact-nonnegative-integer? backup-delta)
               (error 'color:text<%> "expected an exact nonnegative integer for the backup delta, got ~e" backup-delta))
@@ -347,13 +347,13 @@ added get-regions
               (error 'color:text<%>
                      "expected the distance between the start and end position for each token to be positive, but start was ~e and end was ~e"
                      new-token-start new-token-end))
+            (unless (<= pos-before new-token-start pos-after)
+              (error 'color:text<%>
+                     "expected the token start to be between ~s and ~s, got ~s" pos-before pos-after new-token-start))
+            (unless (<= pos-before new-token-end pos-after)
+              (error 'color:text<%>
+                     "expected the token end to be between ~s and ~s, got ~s" pos-before pos-after new-token-end))
             (let ((len (- new-token-end new-token-start)))
-              #;
-              (unless (= len (- pos-after pos-before))
-                ;; this check requires the two calls to port-next-location to be also uncommented
-                ;; when this check fails, bad things can happen non-deterministically later on
-                (eprintf "pos changed bad ; len ~s pos-before ~s pos-after ~s (token ~s mode ~s)\n" 
-                         len pos-before pos-after lexeme new-lexer-mode))
               (set-lexer-state-current-pos! ls (+ len (lexer-state-current-pos ls)))
               (set-lexer-state-current-lexer-mode! ls new-lexer-mode)
               (sync-invalid ls)
