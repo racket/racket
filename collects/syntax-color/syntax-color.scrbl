@@ -15,7 +15,7 @@
 @author["Scott Owens"]
 
 The @filepath{syntax-color} collection provides the underlying data
-structures and some helpful utilities for the @racket[color:text%]
+structures and some helpful utilities for the @racket[color:text<%>]
 class of the @other-manual['(lib
 "scribblings/framework/framework.scrbl")].
 
@@ -44,7 +44,7 @@ Parenthesis matching code built on top of @racket[token-tree%].
 
 A lexer for Racket, including reader extensions (@secref[#:doc'(lib
 "scribblings/reference/reference.scrbl")]{Reader_Extension}), built
-specifically for @racket[color:text%].
+specifically for @racket[color:text<%>].
 
 The @racket[racket-lexer] function returns 5 values:
 
@@ -103,7 +103,7 @@ This function is used by @racket[scribble-lexer].}
 
 A lexer that only identifies @litchar{(}, @litchar{)}, @litchar{[},
 @litchar{]}, @litchar["{"], and @litchar["}"] built specifically for
-@racket[color:text%].
+@racket[color:text<%>].
 
 @racket[default-lexer] returns 5 values:
 
@@ -163,7 +163,7 @@ Like @racket[racket-lexer], but with several differences:
        @racket[get-info] function, then it is called with
        @racket['color-lexer]. If the result is not @racket[#f], then
        it should be a lexer function for use with
-       @racket[color:text%]. The result mode is the lexer---paired
+       @racket[color:text<%>]. The result mode is the lexer---paired
        with @racket[#f] if the lexer is a procedure arity 3---so that
        future calls will dispatch to the language-supplied lexer.
 
@@ -276,5 +276,9 @@ Inserts @racket[tree1] into @racket[tree2] as the last thing, setting
 
 @defproc[(insert-last-spec! [tree (is-a?/c token-tree%)] [n natural-number/c] [v any/c]) void?]{
 
-Same as @racket[(insert-last! tree (new token-tree% [length n] [data
-v]))]. This optimization is important for the colorer.}
+Same as @racketblock[(insert-last! tree
+                                   (new token-tree% 
+                                        [length n]
+                                        [data v]))]
+
+This optimization is important for the colorer.}
