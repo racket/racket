@@ -394,7 +394,7 @@ Racket.
     (module TYPED typed/racket
       (require/typed 'UNTYPED
                      [n Natural]
-                     [struct IntTree
+                     [#:struct IntTree
                        ([elem  : Integer]
                         [left  : IntTree]
                         [right : IntTree])]))]
