@@ -778,7 +778,7 @@ v4 todo:
                             null
                             (if (syntax->datum #'use-any?) #f (syntax->list #'(rng-names ...)))))])
         (syntax-property
-         (syntax
+         (syntax/loc stx
           (build--> '->
                     #f #f
                     (list dom-ctcs ...) '() #f
@@ -915,7 +915,8 @@ v4 todo:
                              [(rng ...) (generate-temporaries (or rng-ctc '()))]
                              [(this-parameter ...)
                               (make-this-parameters (car (generate-temporaries '(this))))])
-                 #`(build-->
+                 (quasisyntax/loc stx
+                   (build-->
                     '->*
                     #,(if pre #`(λ () #,pre) #'#f)
                     #,(if post #`(λ () #,post) #'#f)
@@ -951,7 +952,7 @@ v4 todo:
                               (syntax->list #'(mandatory-dom-kwd-proj ...)))
                          (map list (syntax->list #'(optional-dom-kwd ...))
                               (syntax->list #'(optional-dom-kwd-proj ...)))
-                         (if rng-ctc (syntax->list #'(rng-proj ...)) #f))))))))))]))
+                         (if rng-ctc (syntax->list #'(rng-proj ...)) #f)))))))))))]))
 
 (define-syntax (->* stx) #`(syntax-parameterize ((making-a-method #f)) #,(->*/proc/main stx)))
 

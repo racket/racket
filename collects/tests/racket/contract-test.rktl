@@ -14852,6 +14852,24 @@ so that propagation occurs.
    'make-proj-contract-4
    '((contract proj:add1->sub1 sqrt 'pos 'neg) 'dummy))
 
+  ;; errortrace test
+  (let ()
+    (define sp (open-input-string (format "~s\n" '(-> (λ (a b c) #f) any))))
+    (define stx (read-syntax 'whereitsat sp))
+    (define exn
+      (parameterize ([current-namespace (make-base-namespace)])
+        (namespace-require 'racket/contract)
+        (namespace-require 'errortrace)
+        (with-handlers ((exn:fail? values))
+          (eval stx))))
+    (define sp2 (open-output-string))
+    (parameterize ([current-error-port sp2])
+      ((error-display-handler) (exn-message exn) exn))
+    (test #t 
+          'checking-arrow-src-locs
+          (regexp-match? #rx"whereitsat" (get-output-string sp2))))
+
+  
   (report-errs)
 
 ))
