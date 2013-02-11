@@ -611,6 +611,16 @@
 
         [tc-e (letrec: ([x : Number (values 1)]) (add1 x)) N]
 
+        [tc-e (let ()
+                 (: complicated Boolean)
+                 (define complicated #f)
+                 (: undefined Undefined)
+                 (define undefined (letrec: ((x : Undefined x)) x))
+                 (letrec: ((x : Undefined (if complicated undefined undefined))
+                           (y : Undefined (if complicated x undefined)))
+                   y))
+          -Undefined]
+
         [tc-err (let ([x (add1 5)])
                   (set! x "foo")
                   x)]
